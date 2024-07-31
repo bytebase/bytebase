@@ -1,4 +1,4 @@
-export type AppMode = "CONSOLE" | "SQL-EDITOR";
+export type WorkspaceMode = "CONSOLE" | "EDITOR";
 
 export type AppFeatures = {
   // Use simple and accurate phrases. Namespace if needed
@@ -27,7 +27,6 @@ export type AppFeatures = {
   >;
   "bb.feature.databases.hide-unassigned": boolean;
   "bb.feature.databases.hide-inalterable": boolean;
-  "bb.feature.sql-editor.custom-query-datasource": boolean;
   "bb.feature.sql-editor.disable-setting": boolean;
   "bb.feature.sql-editor.disallow-share-worksheet": boolean;
   "bb.feature.sql-editor.disallow-export-query-data": boolean;
@@ -39,7 +38,7 @@ export type AppFeatures = {
 };
 
 export type AppProfile = {
-  mode: AppMode;
+  mode: WorkspaceMode;
   embedded: boolean; // Whether the web app is embedded within iframe or not
   features: AppFeatures;
 };
@@ -73,7 +72,6 @@ export const defaultAppProfile = (): AppProfile => ({
     ]),
     "bb.feature.databases.hide-unassigned": false,
     "bb.feature.databases.hide-inalterable": false,
-    "bb.feature.sql-editor.custom-query-datasource": false,
     "bb.feature.sql-editor.disable-setting": false,
     "bb.feature.sql-editor.disallow-share-worksheet": false,
     "bb.feature.sql-editor.disallow-export-query-data": false,

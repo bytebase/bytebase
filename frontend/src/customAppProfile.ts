@@ -1,11 +1,25 @@
-import { useActuatorV1Store, useAppFeature } from "./store";
+import { computed, watch } from "vue";
+import { useActuatorV1Store, useAppFeature, useSettingByName } from "./store";
+import { DatabaseChangeMode } from "./types/proto/v1/setting_service";
 import { useCustomTheme } from "./utils/customTheme";
 
 export const overrideAppProfile = () => {
-  const query = new URLSearchParams(window.location.search);
   const actuatorStore = useActuatorV1Store();
-  const mode = query.get("mode");
-  if (mode === "STANDALONE") {
+  const setting = useSettingByName("bb.workspace.profile");
+  const workspaceMode = computed(() => {
+    return setting.value?.value?.workspaceProfileSettingValue
+      ?.databaseChangeMode === DatabaseChangeMode.EDITOR
+      ? "EDITOR"
+      : "CONSOLE";
+  });
+  actuatorStore.appProfile.mode = workspaceMode.value;
+  watch(workspaceMode, (mode) => {
+    actuatorStore.appProfile.mode = mode;
+  });
+
+  const query = new URLSearchParams(window.location.search);
+  const modeInQuery = query.get("mode");
+  if (modeInQuery === "STANDALONE") {
     // The webapp is embedded within iframe
     actuatorStore.appProfile.embedded = true;
 
@@ -49,7 +63,6 @@ export const overrideAppProfile = () => {
         "--color-accent-hover": "#00554f",
         "--color-accent-disabled": "#b8c3c3",
       },
-      "bb.feature.sql-editor.custom-query-datasource": true,
       "bb.feature.sql-editor.disallow-export-query-data": true,
     });
     if (actuatorStore.appProfile.embedded) {

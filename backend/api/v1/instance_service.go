@@ -1049,7 +1049,7 @@ func convertToInstance(instance *store.InstanceMessage) (*v1pb.Instance, error) 
 		Environment:   fmt.Sprintf("environments/%s", instance.EnvironmentID),
 		Activation:    instance.Activation,
 		Options:       convertToInstanceOptions(instance.Options),
-		Roles:         convertToInstanceRoles(instance.Metadata.Roles),
+		Roles:         convertToInstanceRoles(instance.Metadata.GetRoles()),
 	}, nil
 }
 

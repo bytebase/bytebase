@@ -29,6 +29,7 @@ service PlanService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // Search for plans that the caller has the bb.plans.get permission on and also satisfy the specified filter & query.
   rpc SearchPlans(SearchPlansRequest) returns (SearchPlansResponse) {
     option (google.api.http) = {get: "/v1/{parent=projects/*}/plans:search"};
     option (google.api.method_signature) = "parent";
@@ -46,6 +47,8 @@ service PlanService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // UpdatePlan updates the plan.
+  // The plan creator and the user with bb.plans.update permission on the project can update the plan.
   rpc UpdatePlan(UpdatePlanRequest) returns (Plan) {
     option (google.api.http) = {
       patch: "/v1/{plan.name=projects/*/plans/*}"

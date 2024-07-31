@@ -672,6 +672,14 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 		return nil, err
 	}
 
+	ok, err := s.checkDataSourceQueriable(ctx, user, database, request.DataSourceId)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to check data source queriable: %v", err)
+	}
+	if !ok {
+		return nil, status.Errorf(codes.PermissionDenied, "data source %q is not queriable", request.DataSourceId)
+	}
+
 	statement := request.Statement
 	// In Redshift datashare, Rewrite query used for parser.
 	if database.DataShare {
@@ -1592,4 +1600,97 @@ func getOffsetAndOriginTable(backupTable string) (int, string, error) {
 		return 0, "", status.Errorf(codes.InvalidArgument, "invalid offset: %s", parts[0])
 	}
 	return offset, strings.Join(parts[3:], "_"), nil
+}
+
+func (s *SQLService) checkDataSourceQueriable(ctx context.Context, user *store.UserMessage, database *store.DatabaseMessage, dataSourceID string) (bool, error) {
+	// Always allow the owner to query the data source.
+	ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionInstancesAdminExecute, user, database.ProjectID)
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to check permission")
+	}
+	if ok {
+		return true, nil
+	}
+
+	dataSource, err := s.store.GetDataSource(ctx, &store.FindDataSourceMessage{Name: &dataSourceID})
+	if err != nil {
+		return false, errors.Wrap(err, "failed to get data source")
+	}
+	if dataSource == nil {
+		return false, errors.Errorf("data source %q not found", dataSourceID)
+	}
+	// Pass if the data source is not admin type.
+	if dataSource.Type != api.Admin {
+		return true, nil
+	}
+
+	var envAdminDataSourceRestriction, projectAdminDataSourceRestriction v1pb.DataSourceQueryPolicy_Restriction
+	environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &database.EffectiveEnvironmentID})
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to get environment")
+	}
+	if environment == nil {
+		return false, errors.Errorf("environment %q not found", database.EffectiveEnvironmentID)
+	}
+	dataSourceQueryPolicyType := api.PolicyTypeDataSourceQuery
+	environmentResourceType := api.PolicyResourceTypeEnvironment
+	projectResourceType := api.PolicyResourceTypeProject
+	environmentPolicy, err := s.store.GetPolicyV2(ctx, &store.FindPolicyMessage{
+		ResourceType: &environmentResourceType,
+		ResourceUID:  &environment.UID,
+		Type:         &dataSourceQueryPolicyType,
+	})
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to get policy")
+	}
+	if environmentPolicy != nil {
+		envPayload, err := convertToV1PBDataSourceQueryPolicy(environmentPolicy.Payload)
+		if err != nil {
+			return false, errors.Wrapf(err, "failed to convert policy payload")
+		}
+		envAdminDataSourceRestriction = envPayload.DataSourceQueryPolicy.GetAdminDataSourceRestriction()
+	}
+
+	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{ResourceID: &database.ProjectID})
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to get project")
+	}
+	if project == nil {
+		return false, errors.Errorf("project %q not found", database.ProjectID)
+	}
+	projectPolicy, err := s.store.GetPolicyV2(ctx, &store.FindPolicyMessage{
+		ResourceType: &projectResourceType,
+		ResourceUID:  &project.UID,
+		Type:         &dataSourceQueryPolicyType,
+	})
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to get policy")
+	}
+	if projectPolicy != nil {
+		projectPayload, err := convertToV1PBDataSourceQueryPolicy(projectPolicy.Payload)
+		if err != nil {
+			return false, errors.Wrapf(err, "failed to convert policy payload")
+		}
+		projectAdminDataSourceRestriction = projectPayload.DataSourceQueryPolicy.GetAdminDataSourceRestriction()
+	}
+
+	// If any of the policy is DISALLOW, then return false.
+	if envAdminDataSourceRestriction == v1pb.DataSourceQueryPolicy_DISALLOW || projectAdminDataSourceRestriction == v1pb.DataSourceQueryPolicy_DISALLOW {
+		return false, nil
+	} else if envAdminDataSourceRestriction == v1pb.DataSourceQueryPolicy_FALLBACK || projectAdminDataSourceRestriction == v1pb.DataSourceQueryPolicy_FALLBACK {
+		readOnlyDataSourceType := api.RO
+		readOnlyDataSources, err := s.store.ListDataSourcesV2(ctx, &store.FindDataSourceMessage{
+			InstanceID: &database.InstanceID,
+			Type:       &readOnlyDataSourceType,
+		})
+		if err != nil {
+			return false, errors.Wrapf(err, "failed to list read-only data sources")
+		}
+		// If there is any read-only data source, then return false.
+		if len(readOnlyDataSources) > 0 {
+			return false, nil
+		}
+	}
+
+	return true, nil
 }

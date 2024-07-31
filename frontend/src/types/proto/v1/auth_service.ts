@@ -1445,6 +1445,10 @@ export const AuthServiceDefinition = {
   name: "AuthService",
   fullName: "bytebase.v1.AuthService",
   methods: {
+    /**
+     * Get the user.
+     * Any authenticated user can get the user.
+     */
     getUser: {
       name: "GetUser",
       requestType: GetUserRequest,
@@ -1483,6 +1487,10 @@ export const AuthServiceDefinition = {
         },
       },
     },
+    /**
+     * List all users.
+     * Any authenticated user can list users.
+     */
     listUsers: {
       name: "ListUsers",
       requestType: ListUsersRequest,
@@ -1497,6 +1505,11 @@ export const AuthServiceDefinition = {
         },
       },
     },
+    /**
+     * Create a user.
+     * When Disallow Signup is enabled, only the caller with bb.users.create on the workspace can create a user.
+     * Otherwise, any unauthenticated user can create a user.
+     */
     createUser: {
       name: "CreateUser",
       requestType: CreateUserRequest,
@@ -1513,6 +1526,7 @@ export const AuthServiceDefinition = {
         },
       },
     },
+    /** Only the user itself and the user with bb.users.create permission on the workspace can update the user. */
     updateUser: {
       name: "UpdateUser",
       requestType: UpdateUserRequest,
@@ -1563,6 +1577,10 @@ export const AuthServiceDefinition = {
         },
       },
     },
+    /**
+     * Only the user with bb.users.delete permission on the workspace can delete the user.
+     * The last remaining workspace admin cannot be deleted.
+     */
     deleteUser: {
       name: "DeleteUser",
       requestType: DeleteUserRequest,
@@ -1601,6 +1619,7 @@ export const AuthServiceDefinition = {
         },
       },
     },
+    /** Only the user with bb.users.undelete permission on the workspace can undelete the user. */
     undeleteUser: {
       name: "UndeleteUser",
       requestType: UndeleteUserRequest,

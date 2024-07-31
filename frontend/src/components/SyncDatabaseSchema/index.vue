@@ -71,7 +71,7 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { StepTab } from "@/components/v2";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
-import { WORKSPACE_HOME_MODULE } from "@/router/dashboard/workspaceRoutes";
+import { WORKSPACE_ROOT_MODULE } from "@/router/dashboard/workspaceRoutes";
 import { useProjectV1Store } from "@/store";
 import type { ComposedProject } from "@/types";
 import {
@@ -284,7 +284,7 @@ const generateIssueName = (databaseNameList: string[]) => {
 
 const cancelSetup = () => {
   router.replace({
-    name: WORKSPACE_HOME_MODULE,
+    name: WORKSPACE_ROOT_MODULE,
   });
 };
 </script>

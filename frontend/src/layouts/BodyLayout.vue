@@ -1,7 +1,7 @@
 <template>
   <div class="h-full flex flex-col overflow-hidden">
     <div class="flex-1 flex overflow-hidden">
-      <template v-if="!hideSidebar">
+      <template v-if="!hideSidebar && !isRootPath">
         <!-- Off-canvas menu for mobile, show/hide based on off-canvas menu state. -->
         <div
           v-show="state.showMobileOverlay"
@@ -178,7 +178,7 @@
         data-label="bb-main-body-wrapper"
       >
         <nav
-          v-if="!hideHeader"
+          v-if="!hideHeader && !isRootPath"
           class="bg-white border-b border-block-border"
           data-label="bb-dashboard-header"
         >
@@ -187,7 +187,7 @@
           </div>
         </nav>
 
-        <aside v-if="!hideSidebar" class="md:hidden">
+        <aside v-if="!hideSidebar && !isRootPath" class="md:hidden">
           <!-- Static sidebar for mobile -->
           <div
             class="flex items-center justify-start bg-gray-50 border-b border-block-border px-4"
@@ -255,6 +255,7 @@ import { computed, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
 import ReleaseRemindModal from "@/components/ReleaseRemindModal.vue";
 import TrialModal from "@/components/TrialModal.vue";
+import { WORKSPACE_ROOT_MODULE } from "@/router/dashboard/workspaceRoutes";
 import { SETTING_ROUTE_WORKSPACE_SUBSCRIPTION } from "@/router/dashboard/workspaceSetting";
 import {
   useActuatorV1Store,
@@ -291,6 +292,10 @@ const state = reactive<LocalState>({
 const currentUserV1 = useCurrentUserV1();
 const mainContainerRef = ref<HTMLDivElement>();
 const { width: windowWidth } = useWindowSize();
+
+const isRootPath = computed(() => {
+  return router.currentRoute.value.name === WORKSPACE_ROOT_MODULE;
+});
 
 const sidebarView = computed(() => {
   return windowWidth.value >= 768 ? "DESKTOP" : "MOBILE";

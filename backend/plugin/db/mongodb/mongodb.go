@@ -58,6 +58,8 @@ func (driver *Driver) Open(ctx context.Context, _ storepb.Engine, connCfg db.Con
 		return nil, errors.Wrap(err, "failed to get SSL config")
 	}
 	if tlsConfig != nil {
+		// TODO(zp): User uses ssh tunnel?
+		tlsConfig.InsecureSkipVerify = true
 		opts.SetTLSConfig(tlsConfig)
 	}
 	client, err := mongo.Connect(ctx, opts)
@@ -154,7 +156,8 @@ func (*Driver) Dump(_ context.Context, _ io.Writer) (string, error) {
 	return "", nil
 }
 
-// getBasicMongoDBConnectionURI returns the MongoDB connection URI.
+// getBasicMongoDBConnectionURI returns the basic MongoDB connection URI, the following fields are excluded:
+// - TLS related
 // https://www.mongodb.com/docs/manual/reference/connection-string/
 func getBasicMongoDBConnectionURI(connConfig db.ConnectionConfig) string {
 	u := &url.URL{
@@ -194,15 +197,6 @@ func getBasicMongoDBConnectionURI(connConfig db.ConnectionConfig) string {
 		values.Add("replicaSet", connConfig.ReplicaSet)
 	}
 	values.Add("appName", "bytebase")
-	// Add SSL options if provided
-	if connConfig.TLSConfig.SslCA != "" {
-		values.Add("tlsCAFile", connConfig.TLSConfig.SslCA)
-		if connConfig.TLSConfig.SslCert != "" && connConfig.TLSConfig.SslKey != "" {
-			values.Add("tlsCertificateKeyFile", connConfig.TLSConfig.SslCert)
-			values.Add("tlsCertificateKeyFilePassword", connConfig.TLSConfig.SslKey)
-		}
-		values.Add("tlsAllowInvalidHostnames", "true")
-	}
 	if connConfig.DirectConnection {
 		values.Add("directConnection", "true")
 	}

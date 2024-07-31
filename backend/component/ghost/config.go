@@ -229,6 +229,9 @@ func NewMigrationContext(ctx context.Context, taskID int, taskCreatedTs int64, d
 		migrationContext.TLSCertificate = cert
 		migrationContext.TLSKey = key
 		migrationContext.TLSAllowInsecure = true
+		if err := migrationContext.SetupTLS(); err != nil {
+			return nil, errors.Wrapf(err, "failed to set up tls")
+		}
 	}
 	migrationContext.InspectorConnectionConfig.Key.Port = port
 	migrationContext.CliUser = dataSource.Username

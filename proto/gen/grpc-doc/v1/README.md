@@ -1715,12 +1715,12 @@ The user&#39;s `name` field is used to identify the user to update. Format: user
 
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
-| GetUser | [GetUserRequest](#bytebase-v1-GetUserRequest) | [User](#bytebase-v1-User) |  |
-| ListUsers | [ListUsersRequest](#bytebase-v1-ListUsersRequest) | [ListUsersResponse](#bytebase-v1-ListUsersResponse) |  |
-| CreateUser | [CreateUserRequest](#bytebase-v1-CreateUserRequest) | [User](#bytebase-v1-User) |  |
-| UpdateUser | [UpdateUserRequest](#bytebase-v1-UpdateUserRequest) | [User](#bytebase-v1-User) |  |
-| DeleteUser | [DeleteUserRequest](#bytebase-v1-DeleteUserRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
-| UndeleteUser | [UndeleteUserRequest](#bytebase-v1-UndeleteUserRequest) | [User](#bytebase-v1-User) |  |
+| GetUser | [GetUserRequest](#bytebase-v1-GetUserRequest) | [User](#bytebase-v1-User) | Get the user. Any authenticated user can get the user. |
+| ListUsers | [ListUsersRequest](#bytebase-v1-ListUsersRequest) | [ListUsersResponse](#bytebase-v1-ListUsersResponse) | List all users. Any authenticated user can list users. |
+| CreateUser | [CreateUserRequest](#bytebase-v1-CreateUserRequest) | [User](#bytebase-v1-User) | Create a user. When Disallow Signup is enabled, only the caller with bb.users.create on the workspace can create a user. Otherwise, any unauthenticated user can create a user. |
+| UpdateUser | [UpdateUserRequest](#bytebase-v1-UpdateUserRequest) | [User](#bytebase-v1-User) | Only the user itself and the user with bb.users.create permission on the workspace can update the user. |
+| DeleteUser | [DeleteUserRequest](#bytebase-v1-DeleteUserRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Only the user with bb.users.delete permission on the workspace can delete the user. The last remaining workspace admin cannot be deleted. |
+| UndeleteUser | [UndeleteUserRequest](#bytebase-v1-UndeleteUserRequest) | [User](#bytebase-v1-User) | Only the user with bb.users.undelete permission on the workspace can undelete the user. |
 | Login | [LoginRequest](#bytebase-v1-LoginRequest) | [LoginResponse](#bytebase-v1-LoginResponse) |  |
 | Logout | [LogoutRequest](#bytebase-v1-LogoutRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
 
@@ -6854,9 +6854,9 @@ Type is the database change type.
 | ----------- | ------------ | ------------- | ------------|
 | GetPlan | [GetPlanRequest](#bytebase-v1-GetPlanRequest) | [Plan](#bytebase-v1-Plan) |  |
 | ListPlans | [ListPlansRequest](#bytebase-v1-ListPlansRequest) | [ListPlansResponse](#bytebase-v1-ListPlansResponse) |  |
-| SearchPlans | [SearchPlansRequest](#bytebase-v1-SearchPlansRequest) | [SearchPlansResponse](#bytebase-v1-SearchPlansResponse) |  |
+| SearchPlans | [SearchPlansRequest](#bytebase-v1-SearchPlansRequest) | [SearchPlansResponse](#bytebase-v1-SearchPlansResponse) | Search for plans that the caller has the bb.plans.get permission on and also satisfy the specified filter &amp; query. |
 | CreatePlan | [CreatePlanRequest](#bytebase-v1-CreatePlanRequest) | [Plan](#bytebase-v1-Plan) |  |
-| UpdatePlan | [UpdatePlanRequest](#bytebase-v1-UpdatePlanRequest) | [Plan](#bytebase-v1-Plan) |  |
+| UpdatePlan | [UpdatePlanRequest](#bytebase-v1-UpdatePlanRequest) | [Plan](#bytebase-v1-Plan) | UpdatePlan updates the plan. The plan creator and the user with bb.plans.update permission on the project can update the plan. |
 | ListPlanCheckRuns | [ListPlanCheckRunsRequest](#bytebase-v1-ListPlanCheckRunsRequest) | [ListPlanCheckRunsResponse](#bytebase-v1-ListPlanCheckRunsResponse) |  |
 | RunPlanChecks | [RunPlanChecksRequest](#bytebase-v1-RunPlanChecksRequest) | [RunPlanChecksResponse](#bytebase-v1-RunPlanChecksResponse) |  |
 | BatchCancelPlanCheckRuns | [BatchCancelPlanCheckRunsRequest](#bytebase-v1-BatchCancelPlanCheckRunsRequest) | [BatchCancelPlanCheckRunsResponse](#bytebase-v1-BatchCancelPlanCheckRunsResponse) |  |

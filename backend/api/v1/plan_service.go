@@ -85,16 +85,6 @@ func (s *PlanService) ListPlans(ctx context.Context, request *v1pb.ListPlansRequ
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
-	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
-	if !ok {
-		return nil, status.Errorf(codes.Internal, "user not found")
-	}
-
-	projectIDs, err := getProjectIDsWithPermission(ctx, s.store, user, s.iamManager, iam.PermissionPlansList)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get projectIDs, error: %v", err)
-	}
-
 	limit, offset, err := parseLimitAndOffset(request.PageToken, int(request.PageSize))
 	if err != nil {
 		return nil, err
@@ -102,14 +92,10 @@ func (s *PlanService) ListPlans(ctx context.Context, request *v1pb.ListPlansRequ
 	limitPlusOne := limit + 1
 
 	find := &store.FindPlanMessage{
-		Limit:      &limitPlusOne,
-		Offset:     &offset,
-		ProjectIDs: projectIDs,
+		Limit:     &limitPlusOne,
+		Offset:    &offset,
+		ProjectID: &projectID,
 	}
-	if projectID != "-" {
-		find.ProjectID = &projectID
-	}
-
 	plans, err := s.store.ListPlans(ctx, find)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to list plans, error: %v", err)
@@ -277,23 +263,23 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 	if !ok {
 		return nil, status.Errorf(codes.Internal, "user not found")
 	}
-	planID, err := common.GetPlanID(request.Plan.Name)
+	projectID, planID, err := common.GetProjectIDPlanID(request.Plan.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
-	oldPlan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{UID: &planID})
+	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{ResourceID: &projectID})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get project %q, err: %v", projectID, err)
+	}
+	if project == nil {
+		return nil, status.Errorf(codes.NotFound, "project %q not found", projectID)
+	}
+	oldPlan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{ProjectID: &projectID, UID: &planID})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get plan %q: %v", request.Plan.Name, err)
 	}
 	if oldPlan == nil {
 		return nil, status.Errorf(codes.NotFound, "plan %q not found", request.Plan.Name)
-	}
-	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{ResourceID: &oldPlan.ProjectID})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get project %q, err: %v", oldPlan.ProjectID, err)
-	}
-	if project == nil {
-		return nil, status.Errorf(codes.NotFound, "project %q not found", oldPlan.ProjectID)
 	}
 
 	ok, err = func() (bool, error) {

@@ -1550,7 +1550,12 @@
     "production-environment": "生产环境",
     "access-control": {
       "title": "访问控制",
-      "disable-copy-data-from-sql-editor": "限制 SQL 编辑器中的数据复制 (管理员/DBA 可以复制)"
+      "disable-copy-data-from-sql-editor": "限制 SQL 编辑器中的数据复制 (管理员/DBA 可以复制)",
+      "restrict-admin-data-sources": {
+        "self": "限制管理员数据源的查询权限",
+        "disallow": "禁止查询管理员数据源",
+        "fallback": "如果没有只读数据源，则可以查询管理员数据源"
+      }
     }
   },
   "quick-start": {
@@ -2252,8 +2257,8 @@
     "connection-type": "连接类型",
     "additional-node-addresses": "附加节点地址",
     "replica-set": "副本集",
-    "admin": "主库",
-    "read-only": "从库",
+    "admin": "管理员",
+    "read-only": "只读",
     "direct-connection": "Direct Connection"
   },
   "setting": {
@@ -2416,6 +2421,10 @@
         "description": "自动补全功能可能会受到限制或无效。",
         "disconnected": "WebSocket 已断开连接"
       }
+    },
+    "query-context": {
+      "admin-data-source-is-disallowed-to-query": "禁止查询管理员数据源。",
+      "admin-data-source-is-disallowed-to-query-when-read-only-data-source-is-available": "当只读数据源可用时，不允许查询管理员数据源。"
     }
   },
   "schema-editor": {
