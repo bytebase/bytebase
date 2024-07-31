@@ -4458,6 +4458,13 @@ Some fields are omitted because they are too large or contain sensitive informat
             <tbody>
               
                 <tr>
+                  <td>parent</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
                   <td>filter</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
@@ -4527,6 +4534,13 @@ For example:
               <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
             </thead>
             <tbody>
+              
+                <tr>
+                  <td>parent</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
               
                 <tr>
                   <td>filter</td>
@@ -4725,6 +4739,13 @@ to retrieve the next page of log entities. </p></td>
               <tr>
                 <td>SearchAuditLogs</td>
                 <td>GET</td>
+                <td>/v1/{parent=projects/*}/auditLogs:search</td>
+                <td></td>
+              </tr>
+              
+              <tr>
+                <td>SearchAuditLogs</td>
+                <td>GET</td>
                 <td>/v1/auditLogs:search</td>
                 <td></td>
               </tr>
@@ -4735,8 +4756,15 @@ to retrieve the next page of log entities. </p></td>
               <tr>
                 <td>ExportAuditLogs</td>
                 <td>POST</td>
-                <td>/v1/auditLogs:export</td>
+                <td>/v1/{parent=projects/*}/auditLogs:export</td>
                 <td>*</td>
+              </tr>
+              
+              <tr>
+                <td>ExportAuditLogs</td>
+                <td>POST</td>
+                <td>/v1/auditLogs:export</td>
+                <td></td>
               </tr>
               
             

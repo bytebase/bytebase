@@ -68,7 +68,8 @@ const (
 	PermissionWorksheetsManage           Permission = "bb.worksheets.manage"
 
 	// Project-level permissions.
-	PermissionAuditLogsGet          Permission = "bb.auditLogs.get"
+	PermissionAuditLogsExport       Permission = "bb.auditLogs.export"
+	PermissionAuditLogsSearch       Permission = "bb.auditLogs.search"
 	PermissionBranchesCreate        Permission = "bb.branches.create"
 	PermissionBranchesDelete        Permission = "bb.branches.delete"
 	PermissionBranchesGet           Permission = "bb.branches.get"
@@ -192,7 +193,8 @@ var allWorkspacePermissions = []Permission{
 	PermissionWorksheetsGet,
 }
 var allProjectPermissions = []Permission{
-	PermissionAuditLogsGet,
+	PermissionAuditLogsExport,
+	PermissionAuditLogsSearch,
 	PermissionBranchesCreate,
 	PermissionBranchesDelete,
 	PermissionBranchesGet,

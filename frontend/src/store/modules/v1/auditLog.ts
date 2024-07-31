@@ -12,9 +12,6 @@ dayjs.extend(utc);
 
 const buildFilter = (search: SearchAuditLogsParams): string => {
   const filter: string[] = [];
-  if (search.parent) {
-    filter.push(`parent == "${search.parent}"`);
-  }
   if (search.method) {
     filter.push(`method == "${search.method}"`);
   }
@@ -42,6 +39,7 @@ export const useAuditLogStore = defineStore("audit_log", () => {
 
   const fetchAuditLogs = async (search: SearchAuditLogsParams) => {
     const resp = await auditLogServiceClient.searchAuditLogs({
+      parent: search.parent,
       filter: buildFilter(search),
       orderBy: search.order ? `create_time ${search.order}` : undefined,
       pageSize: search.pageSize,
@@ -60,6 +58,7 @@ export const useAuditLogStore = defineStore("audit_log", () => {
     format: ExportFormat
   ) => {
     const { content } = await auditLogServiceClient.exportAuditLogs({
+      parent: search.parent,
       filter: buildFilter(search),
       orderBy: search.order ? `create_time ${search.order}` : undefined,
       format,
