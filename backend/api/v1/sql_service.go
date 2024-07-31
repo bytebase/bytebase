@@ -1612,13 +1612,19 @@ func (s *SQLService) checkDataSourceQueriable(ctx context.Context, user *store.U
 		return true, nil
 	}
 
-	dataSource, err := s.store.GetDataSource(ctx, &store.FindDataSourceMessage{ID: &dataSourceID})
+	dataSource, err := s.store.GetDataSource(ctx, &store.FindDataSourceMessage{Name: &dataSourceID})
 	if err != nil {
 		return false, errors.Wrap(err, "failed to get data source")
 	}
 	if dataSource == nil {
 		return false, errors.Errorf("data source %q not found", dataSourceID)
 	}
+	// Pass if the data source is not admin type.
+	if dataSource.Type != api.Admin {
+		return true, nil
+	}
+
+	var envAdminDataSourceRestriction, projectAdminDataSourceRestriction v1pb.DataSourceQueryPolicy_Restriction
 	environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &database.EffectiveEnvironmentID})
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to get environment")
@@ -1637,9 +1643,12 @@ func (s *SQLService) checkDataSourceQueriable(ctx context.Context, user *store.U
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to get policy")
 	}
-	envPayload, err := convertToV1PBDataSourceQueryPolicy(environmentPolicy.Payload)
-	if err != nil {
-		return false, errors.Wrapf(err, "failed to convert policy payload")
+	if environmentPolicy != nil {
+		envPayload, err := convertToV1PBDataSourceQueryPolicy(environmentPolicy.Payload)
+		if err != nil {
+			return false, errors.Wrapf(err, "failed to convert policy payload")
+		}
+		envAdminDataSourceRestriction = envPayload.DataSourceQueryPolicy.GetAdminDataSourceRestriction()
 	}
 
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{ResourceID: &database.ProjectID})
@@ -1654,12 +1663,17 @@ func (s *SQLService) checkDataSourceQueriable(ctx context.Context, user *store.U
 		ResourceUID:  &project.UID,
 		Type:         &dataSourceQueryPolicyType,
 	})
-	projectPayload, err := convertToV1PBDataSourceQueryPolicy(projectPolicy.Payload)
 	if err != nil {
-		return false, errors.Wrapf(err, "failed to convert policy payload")
+		return false, errors.Wrapf(err, "failed to get policy")
 	}
-	envAdminDataSourceRestriction := envPayload.DataSourceQueryPolicy.GetAdminDataSourceRestriction()
-	projectAdminDataSourceRestriction := projectPayload.DataSourceQueryPolicy.GetAdminDataSourceRestriction()
+	if projectPolicy != nil {
+		projectPayload, err := convertToV1PBDataSourceQueryPolicy(projectPolicy.Payload)
+		if err != nil {
+			return false, errors.Wrapf(err, "failed to convert policy payload")
+		}
+		projectAdminDataSourceRestriction = projectPayload.DataSourceQueryPolicy.GetAdminDataSourceRestriction()
+	}
+
 	// If any of the policy is DISALLOW, then return false.
 	if envAdminDataSourceRestriction == v1pb.DataSourceQueryPolicy_DISALLOW || projectAdminDataSourceRestriction == v1pb.DataSourceQueryPolicy_DISALLOW {
 		return false, nil

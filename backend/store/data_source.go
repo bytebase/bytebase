@@ -64,6 +64,7 @@ type DataSourceMessage struct {
 // FindDataSourceMessage is the message for finding a database.
 type FindDataSourceMessage struct {
 	ID         *string
+	Name       *string
 	InstanceID *string
 	Type       *api.DataSourceType
 }
@@ -161,6 +162,9 @@ func (*Store) listDataSourceV2(ctx context.Context, tx *Tx, find *FindDataSource
 	where, args := []string{"TRUE"}, []any{}
 	if find.ID != nil {
 		where, args = append(where, fmt.Sprintf("data_source.id = $%d", len(args)+1)), append(args, *find.ID)
+	}
+	if find.Name != nil {
+		where, args = append(where, fmt.Sprintf("data_source.name = $%d", len(args)+1)), append(args, *find.Name)
 	}
 	if find.InstanceID != nil {
 		where, args = append(where, fmt.Sprintf("instance.resource_id = $%d", len(args)+1)), append(args, *find.InstanceID)
