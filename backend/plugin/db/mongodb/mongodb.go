@@ -156,7 +156,7 @@ func (*Driver) Dump(_ context.Context, _ io.Writer) (string, error) {
 	return "", nil
 }
 
-// getBasicMongoDBConnectionURI returns the basic MongoDB connection URI, the following fields are excluding:
+// getBasicMongoDBConnectionURI returns the basic MongoDB connection URI, the following fields are excluded:
 // - TLS related
 // https://www.mongodb.com/docs/manual/reference/connection-string/
 func getBasicMongoDBConnectionURI(connConfig db.ConnectionConfig) string {
