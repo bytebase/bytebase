@@ -29,6 +29,7 @@ export type AppFeatures = {
   "bb.feature.databases.hide-inalterable": boolean;
   "bb.feature.sql-editor.disable-setting": boolean;
   "bb.feature.sql-editor.disallow-share-worksheet": boolean;
+  "bb.feature.sql-editor.disallow-batch-query": boolean;
   "bb.feature.sql-editor.disallow-export-query-data": boolean;
   "bb.feature.sql-editor.disallow-request-query": boolean;
   "bb.feature.sql-editor.disallow-sync-schema": boolean;
@@ -37,7 +38,6 @@ export type AppFeatures = {
   "bb.feature.sql-editor.hide-readonly-datasource-hint": boolean;
   "bb.feature.sql-editor.hide-projects": boolean;
   "bb.feature.sql-editor.hide-environments": boolean;
-  "bb.feature.sql-editor.hide-batch-query": boolean;
 };
 
 export type AppProfile = {
@@ -77,6 +77,7 @@ export const defaultAppProfile = (): AppProfile => ({
     "bb.feature.databases.hide-inalterable": false,
     "bb.feature.sql-editor.disable-setting": false,
     "bb.feature.sql-editor.disallow-share-worksheet": false,
+    "bb.feature.sql-editor.disallow-batch-query": false,
     "bb.feature.sql-editor.disallow-export-query-data": false,
     "bb.feature.sql-editor.disallow-request-query": false,
     "bb.feature.sql-editor.disallow-sync-schema": false,
@@ -85,6 +86,5 @@ export const defaultAppProfile = (): AppProfile => ({
     "bb.feature.sql-editor.hide-readonly-datasource-hint": false,
     "bb.feature.sql-editor.hide-projects": false,
     "bb.feature.sql-editor.hide-environments": false,
-    "bb.feature.sql-editor.hide-batch-query": false,
   },
 });

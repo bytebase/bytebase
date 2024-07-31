@@ -94,6 +94,8 @@ const overrideAppFeatures = (
     actuatorStore.overrideAppFeatures({
       "bb.feature.sql-editor.hide-projects": true,
       "bb.feature.sql-editor.hide-environments": true,
+      "bb.feature.sql-editor.disallow-batch-query": true,
+      "bb.feature.sql-editor.disallow-share-worksheet": true,
     });
   }
 };
