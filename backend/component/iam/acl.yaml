@@ -112,6 +112,8 @@ roles:
       - bb.userGroups.get
       - bb.userGroups.list
       - bb.userGroups.update
+      - bb.worksheets.manage
+      - bb.worksheets.get
   - name: roles/workspaceDBA
     permissions:
       - bb.auditLogs.get
@@ -222,6 +224,8 @@ roles:
       - bb.taskRuns.list
       - bb.userGroups.get
       - bb.userGroups.list
+      - bb.worksheets.manage
+      - bb.worksheets.get
   - name: roles/workspaceMember
     permissions:
       - bb.environments.get
