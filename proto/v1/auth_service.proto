@@ -44,7 +44,7 @@ service AuthService {
     option (bytebase.v1.audit) = true;
   }
 
-  // Only the user itself and the user with bb.users.create permission on the workspace can update the user.
+  // Only the user itself and the user with bb.users.update permission on the workspace can update the user.
   rpc UpdateUser(UpdateUserRequest) returns (User) {
     option (google.api.http) = {
       patch: "/v1/{user.name=users/*}"

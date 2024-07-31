@@ -1526,7 +1526,7 @@ export const AuthServiceDefinition = {
         },
       },
     },
-    /** Only the user itself and the user with bb.users.create permission on the workspace can update the user. */
+    /** Only the user itself and the user with bb.users.update permission on the workspace can update the user. */
     updateUser: {
       name: "UpdateUser",
       requestType: UpdateUserRequest,
