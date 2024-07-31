@@ -462,7 +462,6 @@
       "gitops": "GitOps",
       "subscription": "订阅",
       "labels": "标签",
-      "debug-log": "Debug 日志",
       "sensitive-data": "数据脱敏",
       "access-control": "数据访问控制",
       "audit-log": "审计日志",
@@ -2885,30 +2884,6 @@
     "rule-detail": "规则详情",
     "view-definition": "查看定义",
     "other-engines": "其他数据库类型"
-  },
-  "debug-log": {
-    "title": "Debug 日志",
-    "no-logs": "暂无 Debug 日志",
-    "count-of-logs": "从服务端获取的最新 {count} 条日志。",
-    "debug-log-detail": "日志详情",
-    "enabled": "Debug 模式已开启",
-    "open-debug-mode": "开启 Debug 模式",
-    "table": {
-      "record-ts": "时间",
-      "method": "方法",
-      "request-path": "请求路径",
-      "error": "错误消息",
-      "stack-trace": "调用栈",
-      "empty": "<无>",
-      "operation": {
-        "operation": "操作",
-        "view-details": "查看详情",
-        "copy": "拷贝",
-        "copy-all": "拷贝全部",
-        "copied": "已拷贝",
-        "export": "导出"
-      }
-    }
   },
   "audit-log": {
     "no-logs": "暂无审计日志",

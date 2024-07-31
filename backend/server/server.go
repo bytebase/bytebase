@@ -80,17 +80,16 @@ type Server struct {
 
 	licenseService enterprise.LicenseService
 
-	profile         *config.Profile
-	echoServer      *echo.Echo
-	grpcServer      *grpc.Server
-	muxServer       cmux.CMux
-	lspServer       *lsp.Server
-	store           *store.Store
-	sheetManager    *sheet.Manager
-	dbFactory       *dbfactory.DBFactory
-	startedTs       int64
-	secret          string
-	errorRecordRing api.ErrorRecordRing
+	profile      *config.Profile
+	echoServer   *echo.Echo
+	grpcServer   *grpc.Server
+	muxServer    cmux.CMux
+	lspServer    *lsp.Server
+	store        *store.Store
+	sheetManager *sheet.Manager
+	dbFactory    *dbfactory.DBFactory
+	startedTs    int64
+	secret       string
 
 	// Stubs.
 	planService    *apiv1.PlanService
@@ -116,9 +115,8 @@ type Server struct {
 // NewServer creates a server.
 func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	s := &Server{
-		profile:         profile,
-		startedTs:       time.Now().Unix(),
-		errorRecordRing: api.NewErrorRecordRing(),
+		profile:   profile,
+		startedTs: time.Now().Unix(),
 	}
 
 	// Display config
@@ -284,7 +282,7 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	authProvider := auth.New(s.store, s.secret, tokenDuration, s.licenseService, s.stateCfg, s.profile)
 	auditProvider := apiv1.NewAuditInterceptor(s.store)
 	aclProvider := apiv1.NewACLInterceptor(s.store, s.secret, s.iamManager, s.profile)
-	debugProvider := apiv1.NewDebugInterceptor(&s.errorRecordRing, s.metricReporter)
+	debugProvider := apiv1.NewDebugInterceptor(s.metricReporter)
 	onPanic := func(p any) error {
 		stack := stacktrace.TakeStacktrace(20 /* n */, 5 /* skip */)
 		// keep a multiline stack
@@ -336,7 +334,7 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 		}
 		return nil
 	}
-	planService, rolloutService, issueService, sqlService, err := configureGrpcRouters(ctx, mux, s.grpcServer, s.store, s.sheetManager, s.dbFactory, s.licenseService, s.profile, s.metricReporter, s.stateCfg, s.schemaSyncer, s.webhookManager, s.iamManager, s.relayRunner, s.planCheckScheduler, postCreateUser, s.secret, &s.errorRecordRing, tokenDuration)
+	planService, rolloutService, issueService, sqlService, err := configureGrpcRouters(ctx, mux, s.grpcServer, s.store, s.sheetManager, s.dbFactory, s.licenseService, s.profile, s.metricReporter, s.stateCfg, s.schemaSyncer, s.webhookManager, s.iamManager, s.relayRunner, s.planCheckScheduler, postCreateUser, s.secret, tokenDuration)
 	if err != nil {
 		return nil, err
 	}
