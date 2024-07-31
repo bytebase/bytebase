@@ -7749,6 +7749,7 @@ paths:
         post:
             tags:
                 - WorksheetService
+            description: Create a personal worksheet used in SQL Editor.
             operationId: WorksheetService_CreateWorksheet
             requestBody:
                 content:
@@ -7773,6 +7774,12 @@ paths:
         get:
             tags:
                 - WorksheetService
+            description: |-
+                Get a worksheet by name.
+                 The users can access this method if,
+                 - they are the creator of the worksheet;
+                 - they have bb.worksheets.get permission on the workspace;
+                 - the sheet is shared with them with PROJECT_READ and PROJECT_WRITE visibility, and they have bb.projects.get permission on the project.
             operationId: WorksheetService_GetWorksheet
             parameters:
                 - name: worksheet
@@ -7797,6 +7804,9 @@ paths:
         delete:
             tags:
                 - WorksheetService
+            description: |-
+                Delete a worksheet.
+                 The access is the same as UpdateWorksheet method.
             operationId: WorksheetService_DeleteWorksheet
             parameters:
                 - name: worksheet
@@ -7818,6 +7828,12 @@ paths:
         patch:
             tags:
                 - WorksheetService
+            description: |-
+                Update a worksheet.
+                 The users can access this method if,
+                 - they are the creator of the worksheet;
+                 - they have bb.worksheets.manage permission on the workspace;
+                 - the sheet is shared with them with PROJECT_WRITE visibility, and they have bb.projects.get permission on the project.
             operationId: WorksheetService_UpdateWorksheet
             parameters:
                 - name: worksheet
@@ -7863,6 +7879,9 @@ paths:
         patch:
             tags:
                 - WorksheetService
+            description: |-
+                Update the organizer of a worksheet.
+                 The access is the same as UpdateWorksheet method.
             operationId: WorksheetService_UpdateWorksheetOrganizer
             parameters:
                 - name: worksheet
@@ -7904,6 +7923,10 @@ paths:
         get:
             tags:
                 - WorksheetService
+            description: |-
+                Search for worksheets.
+                 This is used for finding my worksheets or worksheets shared by other people.
+                 The sheet accessibility is the same as GetWorksheet().
             operationId: WorksheetService_SearchWorksheets
             parameters:
                 - name: filter

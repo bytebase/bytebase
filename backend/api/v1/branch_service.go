@@ -19,14 +19,12 @@ import (
 
 	"github.com/epiclabs-io/diff3"
 	"github.com/google/go-cmp/cmp"
-	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/iam"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
@@ -855,14 +853,6 @@ func (s *BranchService) getProject(ctx context.Context, projectID string) (*stor
 
 func (s *BranchService) checkProtectionRules(ctx context.Context, project *store.ProjectMessage, branchID string, databaseSource bool, user *store.UserMessage) error {
 	if len(project.Setting.GetProtectionRules()) == 0 {
-		return nil
-	}
-	// Skip protection check for workspace owner and DBA.
-	containsRole, err := s.iamManager.CheckUserContainsWorkspaceRoles(ctx, user, api.WorkspaceAdmin, api.WorkspaceDBA)
-	if err != nil {
-		return errors.Wrapf(err, "failed to check workspace role")
-	}
-	if containsRole {
 		return nil
 	}
 
