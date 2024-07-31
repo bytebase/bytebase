@@ -25,6 +25,7 @@ import { AUTH_SIGNIN_MODULE } from "@/router/auth";
 import {
   useActuatorV1Store,
   useAppFeature,
+  useWorkspaceMode,
   useAuthStore,
   useCurrentUserV1,
   useSubscriptionV1Store,
@@ -45,9 +46,7 @@ const router = useRouter();
 const { setLocale, locale } = useLanguage();
 const currentUserV1 = useCurrentUserV1();
 const showDropdown = ref(false);
-const disallowNavigateToConsole = useAppFeature(
-  "bb.feature.disallow-navigate-to-console"
-);
+const workspaceMode = useWorkspaceMode();
 const hideQuickstart = useAppFeature("bb.feature.hide-quick-start");
 const hideHelp = useAppFeature("bb.feature.hide-help");
 
@@ -216,9 +215,9 @@ const options = computed((): DropdownOption[] => [
   {
     key: "profile",
     type: "render",
-    show: !disallowNavigateToConsole.value,
     render() {
       return h(ProfilePreview, {
+        link: workspaceMode.value === "CONSOLE",
         onClick: () => (showDropdown.value = false),
       });
     },
@@ -226,7 +225,6 @@ const options = computed((): DropdownOption[] => [
   {
     key: "header-divider",
     type: "divider",
-    show: !disallowNavigateToConsole.value,
   },
   {
     key: "language",

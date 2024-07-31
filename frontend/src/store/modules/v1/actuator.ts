@@ -173,3 +173,7 @@ export const useActuatorV1Store = defineStore("actuator_v1", {
 export const useAppFeature = <T extends keyof AppFeatures>(feature: T) => {
   return computed(() => useActuatorV1Store().appProfile.features[feature]);
 };
+
+export const useWorkspaceMode = () => {
+  return computed(() => useActuatorV1Store().appProfile.mode);
+};
