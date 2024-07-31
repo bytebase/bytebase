@@ -310,20 +310,9 @@ func (s *IssueService) ListIssues(ctx context.Context, request *v1pb.ListIssuesR
 		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("page size must be non-negative: %d", request.PageSize))
 	}
 
-	requestProjectID, err := common.GetProjectID(request.Parent)
+	projectID, err := common.GetProjectID(request.Parent)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
-	}
-
-	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
-	if !ok {
-		return nil, status.Errorf(codes.Internal, "user not found")
-	}
-	permissionFilter, err := func() (*store.FindIssueMessagePermissionFilter, error) {
-		return getIssuePermissionFilter(ctx, s.store, user, s.iamManager, iam.PermissionIssuesList)
-	}()
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get project ids and issue types filter, error: %v", err)
 	}
 
 	limit, offset, err := parseLimitAndOffset(request.PageToken, int(request.PageSize))
@@ -332,11 +321,10 @@ func (s *IssueService) ListIssues(ctx context.Context, request *v1pb.ListIssuesR
 	}
 	limitPlusOne := limit + 1
 
-	issueFind, err := s.getIssueFind(ctx, permissionFilter, requestProjectID, request.Filter, request.Query, &limitPlusOne, &offset)
+	issueFind, err := s.getIssueFind(ctx, nil, projectID, request.Filter, request.Query, &limitPlusOne, &offset)
 	if err != nil {
 		return nil, err
 	}
-
 	issues, err := s.store.ListIssueV2(ctx, issueFind)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to search issue, error: %v", err)
@@ -367,7 +355,7 @@ func (s *IssueService) SearchIssues(ctx context.Context, request *v1pb.SearchIss
 		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("page size must be non-negative: %d", request.PageSize))
 	}
 
-	requestProjectID, err := common.GetProjectID(request.Parent)
+	projectID, err := common.GetProjectID(request.Parent)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -388,7 +376,7 @@ func (s *IssueService) SearchIssues(ctx context.Context, request *v1pb.SearchIss
 	}
 	limitPlusOne := limit + 1
 
-	issueFind, err := s.getIssueFind(ctx, permissionFilter, requestProjectID, request.Filter, request.Query, &limitPlusOne, &offset)
+	issueFind, err := s.getIssueFind(ctx, permissionFilter, projectID, request.Filter, request.Query, &limitPlusOne, &offset)
 	if err != nil {
 		return nil, err
 	}
