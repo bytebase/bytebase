@@ -8,7 +8,6 @@ export const SETTING_ROUTE_PROFILE = `${SETTING_ROUTE}.profile`;
 export const SETTING_ROUTE_PROFILE_TWO_FACTOR = `${SETTING_ROUTE_PROFILE}.two-factor`;
 export const SETTING_ROUTE_WORKSPACE_GENERAL = `${SETTING_ROUTE_WORKSPACE}.general`;
 export const SETTING_ROUTE_WORKSPACE_SUBSCRIPTION = `${SETTING_ROUTE_WORKSPACE}.subscription`;
-export const SETTING_ROUTE_WORKSPACE_DEBUG_LOG = `${SETTING_ROUTE_WORKSPACE}.debug-log`;
 export const SETTING_ROUTE_WORKSPACE_ARCHIVE = `${SETTING_ROUTE_WORKSPACE}.archive`;
 
 const workspaceSettingRoutes: RouteRecordRaw[] = [
@@ -57,16 +56,6 @@ const workspaceSettingRoutes: RouteRecordRaw[] = [
           requiredWorkspacePermissionList: () => ["bb.settings.get"],
         },
         component: () => import("@/views/SettingWorkspaceSubscription.vue"),
-        props: true,
-      },
-      {
-        path: "debug-log",
-        name: SETTING_ROUTE_WORKSPACE_DEBUG_LOG,
-        meta: {
-          title: () => t("settings.sidebar.debug-log"),
-          requiredWorkspacePermissionList: () => ["bb.settings.get"],
-        },
-        component: () => import("@/views/SettingWorkspaceDebugLog.vue"),
         props: true,
       },
       {

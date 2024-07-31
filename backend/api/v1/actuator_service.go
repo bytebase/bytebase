@@ -24,19 +24,17 @@ import (
 // ActuatorService implements the actuator service.
 type ActuatorService struct {
 	v1pb.UnimplementedActuatorServiceServer
-	store           *store.Store
-	profile         *config.Profile
-	errorRecordRing *api.ErrorRecordRing
-	licenseService  enterprise.LicenseService
+	store          *store.Store
+	profile        *config.Profile
+	licenseService enterprise.LicenseService
 }
 
 // NewActuatorService creates a new ActuatorService.
-func NewActuatorService(store *store.Store, profile *config.Profile, errorRecordRing *api.ErrorRecordRing, licenseService enterprise.LicenseService) *ActuatorService {
+func NewActuatorService(store *store.Store, profile *config.Profile, licenseService enterprise.LicenseService) *ActuatorService {
 	return &ActuatorService{
-		store:           store,
-		profile:         profile,
-		errorRecordRing: errorRecordRing,
-		licenseService:  licenseService,
+		store:          store,
+		profile:        profile,
+		licenseService: licenseService,
 	}
 }
 
@@ -61,27 +59,6 @@ func (s *ActuatorService) UpdateActuatorInfo(ctx context.Context, request *v1pb.
 	}
 
 	return s.getServerInfo(ctx)
-}
-
-// ListDebugLog lists the debug log.
-func (s *ActuatorService) ListDebugLog(_ context.Context, _ *v1pb.ListDebugLogRequest) (*v1pb.ListDebugLogResponse, error) {
-	resp := &v1pb.ListDebugLogResponse{}
-
-	s.errorRecordRing.RWMutex.RLock()
-	defer s.errorRecordRing.RWMutex.RUnlock()
-
-	s.errorRecordRing.Ring.Do(func(p any) {
-		if p == nil {
-			return
-		}
-		errRecord, ok := p.(*v1pb.DebugLog)
-		if !ok {
-			return
-		}
-		resp.Logs = append(resp.Logs, errRecord)
-	})
-
-	return resp, nil
 }
 
 // DeleteCache deletes the cache.

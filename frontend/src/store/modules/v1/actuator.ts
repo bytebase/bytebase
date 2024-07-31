@@ -1,8 +1,8 @@
 import type { RemovableRef } from "@vueuse/core";
 import { useLocalStorage } from "@vueuse/core";
 import axios from "axios";
-import { defineStore, storeToRefs } from "pinia";
-import { computed, watchEffect } from "vue";
+import { defineStore } from "pinia";
+import { computed } from "vue";
 import { actuatorServiceClient } from "@/grpcweb";
 import { useSilentRequest } from "@/plugins/silent-request";
 import {
@@ -15,7 +15,6 @@ import {
 import type {
   ActuatorInfo,
   ResourcePackage,
-  DebugLog,
 } from "@/types/proto/v1/actuator_service";
 import { semverCompare } from "@/utils";
 
@@ -28,7 +27,6 @@ interface ActuatorState {
   serverInfo?: ActuatorInfo;
   resourcePackage?: ResourcePackage;
   releaseInfo: RemovableRef<ReleaseInfo>;
-  debugLogList: DebugLog[];
   appProfile: AppProfile;
 }
 
@@ -40,7 +38,6 @@ export const useActuatorV1Store = defineStore("actuator_v1", {
       ignoreRemindModalTillNextRelease: false,
       nextCheckTs: 0,
     }),
-    debugLogList: [],
     appProfile: defaultAppProfile(),
   }),
   getters: {
@@ -120,11 +117,6 @@ export const useActuatorV1Store = defineStore("actuator_v1", {
       });
       this.setServerInfo(serverInfo);
     },
-    async fetchDebugLogList() {
-      const { logs } = await actuatorServiceClient.listDebugLog({});
-      this.debugLogList = logs;
-      return logs;
-    },
     async tryToRemindRelease(): Promise<boolean> {
       if (this.serverInfo?.saas ?? false) {
         return false;
@@ -177,13 +169,6 @@ export const useActuatorV1Store = defineStore("actuator_v1", {
     },
   },
 });
-
-export const useDebugLogList = () => {
-  const store = useActuatorV1Store();
-  watchEffect(() => store.fetchDebugLogList());
-
-  return storeToRefs(store).debugLogList;
-};
 
 export const useAppFeature = <T extends keyof AppFeatures>(feature: T) => {
   return computed(() => useActuatorV1Store().appProfile.features[feature]);

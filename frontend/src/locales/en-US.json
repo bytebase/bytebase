@@ -462,7 +462,6 @@
       "gitops": "GitOps",
       "subscription": "Subscription",
       "labels": "Labels",
-      "debug-log": "Debug Log",
       "sensitive-data": "Data Masking",
       "access-control": "Data Access Control",
       "audit-log": "Audit Log",
@@ -2885,30 +2884,6 @@
     "rule-detail": "Rule detail",
     "view-definition": "View definition",
     "other-engines": "Other engines"
-  },
-  "debug-log": {
-    "title": "Debug Log",
-    "no-logs": "No debug logs",
-    "count-of-logs": "Fetched latest {count} log(s) from server.",
-    "debug-log-detail": "Debug Log Details",
-    "enabled": "Debug mode is enabled.",
-    "open-debug-mode": "Enable debug",
-    "table": {
-      "record-ts": "Time",
-      "method": "Method",
-      "request-path": "Request path",
-      "error": "Error",
-      "stack-trace": "Stack trace",
-      "empty": "<Empty>",
-      "operation": {
-        "operation": "Operation",
-        "view-details": "View Details",
-        "copy": "Copy",
-        "copy-all": "Copy All",
-        "copied": "Copied!",
-        "export": "Export"
-      }
-    }
   },
   "audit-log": {
     "no-logs": "No audit logs",
