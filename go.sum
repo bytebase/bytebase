@@ -778,8 +778,8 @@ github.com/bytebase/antlr/v4 v4.0.0-20240628084508-8a85f73b60b3 h1:TSzeWiRWr7T8h
 github.com/bytebase/antlr/v4 v4.0.0-20240628084508-8a85f73b60b3/go.mod h1:ykhjIPiv0IWpu3OGXCHdz2eUSe8UNGGD6baqjs8jSuU=
 github.com/bytebase/bq-parser v0.0.0-20240529032606-614a0230b8f7 h1:tDEAGOa3tSmTOfUshYBwsOqunGajGu7SBL8NMlM71bU=
 github.com/bytebase/bq-parser v0.0.0-20240529032606-614a0230b8f7/go.mod h1:uDDETOUNvOuKjha/g+oC8NdqhcGyGEl4NOeoKh2OhNE=
-github.com/bytebase/gh-ost2 v0.0.0-20240226091811-8bc079577744 h1:quO7ADa+58XcEOXBqAB0Ofd0RJbzal94TmXd60ezrx4=
-github.com/bytebase/gh-ost2 v0.0.0-20240226091811-8bc079577744/go.mod h1:VRPqaDM7UYxJbcCtQkjBcNkxW17p6LJJdkM/nYwQhqg=
+github.com/bytebase/gh-ost2 v0.0.0-20240731091141-e7a12a9401ab h1:hJ3tfjfm5D63QwCH+znK1ZQQzk9/rG4Jjz7CSxVtSrQ=
+github.com/bytebase/gh-ost2 v0.0.0-20240731091141-e7a12a9401ab/go.mod h1:VRPqaDM7UYxJbcCtQkjBcNkxW17p6LJJdkM/nYwQhqg=
 github.com/bytebase/go-lsp v0.0.0-20240130071507-c04b5c75010c h1:W832GNANCst4C6TgYbQnKKxbuMZKQxTD4++b3HOuzBo=
 github.com/bytebase/go-lsp v0.0.0-20240130071507-c04b5c75010c/go.mod h1:SULmZY7YNBsvNiQbrb/BEDdEJ84TGnfyUQxaHt8t8rY=
 github.com/bytebase/go-mssqldb v0.0.0-20240613094500-7f9ca9381f8f h1:hcjpjIaVVPuZOrHvkXiu7HDSow03aDdK+fXTZM6g93c=
