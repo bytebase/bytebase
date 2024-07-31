@@ -1,4 +1,4 @@
-export type AppMode = "CONSOLE" | "SQL-EDITOR";
+export type WorkspaceMode = "CONSOLE" | "EDITOR";
 
 export type AppFeatures = {
   // Use simple and accurate phrases. Namespace if needed
@@ -38,7 +38,7 @@ export type AppFeatures = {
 };
 
 export type AppProfile = {
-  mode: AppMode;
+  mode: WorkspaceMode;
   embedded: boolean; // Whether the web app is embedded within iframe or not
   features: AppFeatures;
 };

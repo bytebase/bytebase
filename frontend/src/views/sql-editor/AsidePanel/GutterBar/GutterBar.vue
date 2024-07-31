@@ -108,7 +108,7 @@ const hideSettingButton = computed(() => {
     return true;
   }
 
-  return true;
+  return false;
 });
 
 const handleClickTab = (target: AsidePanelTab) => {

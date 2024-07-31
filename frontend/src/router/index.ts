@@ -29,7 +29,7 @@ import {
   ENVIRONMENT_V1_ROUTE_DASHBOARD,
   INSTANCE_ROUTE_DASHBOARD,
   PROJECT_V1_ROUTE_DASHBOARD,
-  WORKSPACE_HOME_MODULE,
+  WORKSPACE_ROOT_MODULE,
 } from "./dashboard/workspaceRoutes";
 import { SETTING_ROUTE } from "./dashboard/workspaceSetting";
 import sqlEditorRoutes from "./sqlEditor";
@@ -79,10 +79,10 @@ router.beforeEach((to, from, next) => {
 
   const fromModule = from.name
     ? from.name.toString().split(".")[0]
-    : WORKSPACE_HOME_MODULE;
+    : WORKSPACE_ROOT_MODULE;
   const toModule = to.name
     ? to.name.toString().split(".")[0]
-    : WORKSPACE_HOME_MODULE;
+    : WORKSPACE_ROOT_MODULE;
 
   if (toModule != fromModule) {
     routerStore.setBackPath(from.fullPath);
@@ -119,7 +119,7 @@ router.beforeEach((to, from, next) => {
         location.replace(to.query.redirect);
         return;
       }
-      next({ name: WORKSPACE_HOME_MODULE, replace: true });
+      next({ name: WORKSPACE_ROOT_MODULE, replace: true });
     } else {
       next();
     }

@@ -1,4 +1,5 @@
 import { defineStore } from "pinia";
+import { computed } from "vue";
 import { settingServiceClient } from "@/grpcweb";
 import { settingNamePrefix } from "@/store/modules/v1/common";
 import type {
@@ -130,3 +131,10 @@ export const useSettingV1Store = defineStore("setting_v1", {
     },
   },
 });
+
+export const useSettingByName = (name: SettingName) => {
+  const store = useSettingV1Store();
+  const setting = computed(() => store.getSettingByName(name));
+  store.getOrFetchSettingByName(name);
+  return setting;
+};

@@ -1,4 +1,4 @@
-export const WORKSPACE_HOME_MODULE = "workspace.home";
+export const WORKSPACE_ROOT_MODULE = "workspace.root";
 export const WORKSPACE_ROUTE_MY_ISSUES = "workspace.my-issues";
 export const WORKSPACE_ROUTE_REVIEW_CENTER = "workspace.review-center";
 export const WORKSPACE_ROUTE_EXPORT_CENTER = "workspace.export-center";
