@@ -3,16 +3,18 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, watchEffect } from "vue";
 import ProjectSettingPanel from "@/components/ProjectSettingPanel.vue";
-import { useProjectV1Store } from "@/store";
+import { usePolicyV1Store, useProjectV1Store } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
+import { PolicyResourceType } from "@/types/proto/v1/org_policy_service";
 
 const props = defineProps<{
   projectId: string;
   allowEdit: boolean;
 }>();
 
+const policyV1Store = usePolicyV1Store();
 const projectV1Store = useProjectV1Store();
 
 const project = computed(() => {
@@ -20,4 +22,13 @@ const project = computed(() => {
     `${projectNamePrefix}${props.projectId}`
   );
 });
+
+const preparePolicies = () => {
+  policyV1Store.fetchPolicies({
+    parent: project.value.name,
+    resourceType: PolicyResourceType.PROJECT,
+  });
+};
+
+watchEffect(preparePolicies);
 </script>
