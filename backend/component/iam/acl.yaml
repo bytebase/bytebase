@@ -1,7 +1,8 @@
 roles:
   - name: roles/workspaceAdmin
     permissions:
-      - bb.auditLogs.get
+      - bb.auditLogs.export
+      - bb.auditLogs.search
       - bb.branches.create
       - bb.branches.delete
       - bb.branches.get
@@ -122,7 +123,8 @@ roles:
       - bb.worksheets.get
   - name: roles/workspaceDBA
     permissions:
-      - bb.auditLogs.get
+      - bb.auditLogs.export
+      - bb.auditLogs.search
       - bb.branches.create
       - bb.branches.delete
       - bb.branches.get
@@ -253,7 +255,8 @@ roles:
       - bb.userGroups.list
   - name: roles/projectOwner
     permissions:
-      - bb.auditLogs.get
+      - bb.auditLogs.export
+      - bb.auditLogs.search
       - bb.branches.create
       - bb.branches.delete
       - bb.branches.get

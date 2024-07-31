@@ -58,21 +58,16 @@ func (s *AuditLogService) SearchAuditLogs(ctx context.Context, request *v1pb.Sea
 	}
 	limitPlusOne := limit + 1
 
-	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
-	if !ok {
-		return nil, status.Errorf(codes.Internal, "failed to get user")
+	var project *string
+	if request.Parent != "" {
+		project = &request.Parent
 	}
-	permissionFilter, serr := getSearchAuditLogsPermissionFilter(ctx, s.store, user, s.iamManager)
-	if serr != nil {
-		return nil, serr.Err()
-	}
-
 	auditLogFind := &store.AuditLogFind{
-		Limit:            &limitPlusOne,
-		Offset:           &offset,
-		Filter:           filter,
-		OrderByKeys:      orderByKeys,
-		PermissionFilter: permissionFilter,
+		Project:     project,
+		Limit:       &limitPlusOne,
+		Offset:      &offset,
+		Filter:      filter,
+		OrderByKeys: orderByKeys,
 	}
 	auditLogs, err := s.store.SearchAuditLogs(ctx, auditLogFind)
 	if err != nil {
@@ -278,7 +273,7 @@ func getSearchAuditLogsFilter(filter string) (*store.AuditLogFilter, *status.Sta
 					}
 				}
 				switch variable {
-				case "resource", "parent", "method", "user", "severity":
+				case "resource", "method", "user", "severity":
 				default:
 					return "", errors.Errorf("unknown variable %s", variable)
 				}
@@ -360,22 +355,4 @@ func getSearchAuditLogsOrderByKeys(orderBy string) ([]store.OrderByKey, error) {
 		})
 	}
 	return orderByKeys, nil
-}
-
-func getSearchAuditLogsPermissionFilter(ctx context.Context, s *store.Store, user *store.UserMessage, iamManager *iam.Manager) (*store.AuditLogPermissionFilter, *status.Status) {
-	projectIDs, err := getProjectIDsWithPermission(ctx, s, user, iamManager, iam.PermissionAuditLogsGet)
-	if err != nil {
-		return nil, status.Newf(codes.Internal, "failed to get projectIDs with permission")
-	}
-	if projectIDs == nil {
-		return nil, nil
-	}
-
-	var projects []string
-	for _, p := range *projectIDs {
-		projects = append(projects, common.FormatProject(p))
-	}
-	return &store.AuditLogPermissionFilter{
-		Projects: projects,
-	}, nil
 }
