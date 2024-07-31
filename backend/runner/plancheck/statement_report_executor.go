@@ -395,7 +395,7 @@ func reportForMySQL(ctx context.Context, sm *sheet.Manager, sqlDB *sql.DB, engin
 		if isExplained {
 			explainCount++
 		}
-		if isDML && explainCount > common.MaximumLintExplainSize {
+		if isDML && explainCount >= common.MaximumLintExplainSize {
 			totalAffectedRows = int64(len(nodes)) * (totalAffectedRows / int64(i+1))
 			break
 		}
