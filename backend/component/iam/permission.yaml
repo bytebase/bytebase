@@ -104,3 +104,5 @@ permissions:
     - bb.settings.get
     - bb.settings.list
     - bb.settings.set
+    - bb.worksheets.manage
+    - bb.worksheets.get

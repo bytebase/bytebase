@@ -60,6 +60,8 @@ const (
 	PermissionSettingsGet                Permission = "bb.settings.get"
 	PermissionSettingsList               Permission = "bb.settings.list"
 	PermissionSettingsSet                Permission = "bb.settings.set"
+	PermissionWorksheetsGet              Permission = "bb.worksheets.get"
+	PermissionWorksheetsManage           Permission = "bb.worksheets.manage"
 
 	// Project-level permissions.
 	PermissionAuditLogsGet          Permission = "bb.auditLogs.get"
