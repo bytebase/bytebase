@@ -117,12 +117,10 @@ service DatabaseService {
   }
 
   rpc ListSlowQueries(ListSlowQueriesRequest) returns (ListSlowQueriesResponse) {
-    option (google.api.http) = {get: "/v1/{parent=instances/*/databases/*}/slowQueries"};
+    option (google.api.http) = {get: "/v1/{parent=projects/*}/slowQueries"};
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.permission) = "bb.slowQueries.list";
-    option (bytebase.v1.auth_method) = CUSTOM;
-    // TODO(d): secure it.
-    // Change the design of this API.
+    option (bytebase.v1.auth_method) = IAM;
   }
 
   rpc ListSecrets(ListSecretsRequest) returns (ListSecretsResponse) {
@@ -1006,18 +1004,18 @@ message DatabaseSchema {
 
 // ListSlowQueriesRequest is the request of listing slow query.
 message ListSlowQueriesRequest {
-  // Format: instances/{instance}/databases/{database}
+  // Format: projects/{project}
   string parent = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference) = {type: "bytebase.com/Database"}
+    (google.api.resource_reference) = {type: "bytebase.com/Project"}
   ];
 
   // The filter of the slow query log.
   // follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax.
-  // Support filter by project and start_time in SlowQueryDetails for now.
+  // Support filter by database and start_time in SlowQueryDetails for now.
   // For example:
-  // Search the slow query log of the specific project:
-  //   - the specific project: project = "projects/{project}"
+  // Search the slow query log of the specific database:
+  //   - the specific database: database = "instances/{instance}/databases/{database}"
   // Search the slow query log that start_time after 2022-01-01T12:00:00.000Z:
   //   - start_time > "2022-01-01T12:00:00.000Z"
   //   - Should use [RFC-3339 format](https://www.rfc-editor.org/rfc/rfc3339).

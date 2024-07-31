@@ -1186,15 +1186,15 @@ export interface DatabaseSchema {
 
 /** ListSlowQueriesRequest is the request of listing slow query. */
 export interface ListSlowQueriesRequest {
-  /** Format: instances/{instance}/databases/{database} */
+  /** Format: projects/{project} */
   parent: string;
   /**
    * The filter of the slow query log.
    * follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax.
-   * Support filter by project and start_time in SlowQueryDetails for now.
+   * Support filter by database and start_time in SlowQueryDetails for now.
    * For example:
-   * Search the slow query log of the specific project:
-   *   - the specific project: project = "projects/{project}"
+   * Search the slow query log of the specific database:
+   *   - the specific database: database = "instances/{instance}/databases/{database}"
    * Search the slow query log that start_time after 2022-01-01T12:00:00.000Z:
    *   - start_time > "2022-01-01T12:00:00.000Z"
    *   - Should use [RFC-3339 format](https://www.rfc-editor.org/rfc/rfc3339).
@@ -10015,12 +10015,12 @@ export const DatabaseServiceDefinition = {
               116,
             ]),
           ],
-          800016: [new Uint8Array([2])],
+          800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
-              50,
+              37,
               18,
-              48,
+              35,
               47,
               118,
               49,
@@ -10033,26 +10033,13 @@ export const DatabaseServiceDefinition = {
               110,
               116,
               61,
-              105,
-              110,
-              115,
-              116,
-              97,
-              110,
+              112,
+              114,
+              111,
+              106,
+              101,
               99,
-              101,
-              115,
-              47,
-              42,
-              47,
-              100,
-              97,
               116,
-              97,
-              98,
-              97,
-              115,
-              101,
               115,
               47,
               42,
