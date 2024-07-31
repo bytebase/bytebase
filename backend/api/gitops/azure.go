@@ -19,11 +19,20 @@ func getAzurePullRequestInfo(ctx context.Context, vcsProvider *store.VCSProvider
 		return nil, errors.Errorf("failed to unmarshal push event, error %v", err)
 	}
 
-	if strings.ToLower(pushEvent.Resource.Status) != "completed" {
-		return nil, errors.Errorf("invalid pull request status: %v", pushEvent.Resource.Status)
-	}
-	if strings.ToLower(pushEvent.Resource.MergeStatus) != "succeeded" {
-		return nil, errors.Errorf("invalid pull request merge status: %v", pushEvent.Resource.MergeStatus)
+	var actionType webhookAction
+	switch pushEvent.EventType {
+	case azure.PullRequestEventCreated, azure.PullRequestEventUpdated:
+		actionType = webhookActionSQLReview
+	case azure.PullRequestEventMerged:
+		if strings.ToLower(pushEvent.Resource.Status) != "completed" {
+			return nil, errors.Errorf("invalid pull request status: %v", pushEvent.Resource.Status)
+		}
+		if strings.ToLower(pushEvent.Resource.MergeStatus) != "succeeded" {
+			return nil, errors.Errorf("invalid pull request merge status: %v", pushEvent.Resource.MergeStatus)
+		}
+		actionType = webhookActionCreateIssue
+	default:
+		return nil, errors.Errorf(`skip webhook event action "%v"`, pushEvent.EventType)
 	}
 
 	targetBranch, err := vcs.Branch(pushEvent.Resource.TargetRefName)
@@ -35,20 +44,26 @@ func getAzurePullRequestInfo(ctx context.Context, vcsProvider *store.VCSProvider
 		return nil, errors.Errorf("committed to branch %q, want branch %q", targetBranch, vcsConnector.Payload.Branch)
 	}
 
-	mrFiles, err := vcs.Get(
+	azurePlugin, ok := vcs.Get(
 		storepb.VCSType_AZURE_DEVOPS,
 		vcs.ProviderConfig{InstanceURL: vcsProvider.InstanceURL, AuthToken: vcsProvider.AccessToken},
-	).ListPullRequestFile(
+	).(*azure.Provider)
+	if !ok {
+		return nil, errors.Errorf("failed to get azure plugin")
+	}
+
+	mrFiles, err := azurePlugin.ListPullRequestFileInCommit(
 		ctx,
 		vcsConnector.Payload.ExternalId,
 		pushEvent.Resource.LastMergeCommit.CommitID,
+		pushEvent.Resource.PullRequestID,
 	)
 	if err != nil {
 		return nil, errors.Errorf("failed to list merge request files by commit %v, error %v", pushEvent.Resource.LastMergeCommit.CommitID, err)
 	}
 
 	prInfo := &pullRequestInfo{
-		action: webhookActionCreateIssue,
+		action: actionType,
 		// TODO(ed): get the email.
 		url:         pushEvent.Resource.Links.Web.Href,
 		title:       pushEvent.Resource.Title,
@@ -57,10 +72,7 @@ func getAzurePullRequestInfo(ctx context.Context, vcsProvider *store.VCSProvider
 	}
 
 	for _, file := range prInfo.changes {
-		content, err := vcs.Get(
-			storepb.VCSType_AZURE_DEVOPS,
-			vcs.ProviderConfig{InstanceURL: vcsProvider.InstanceURL, AuthToken: vcsProvider.AccessToken},
-		).ReadFileContent(
+		content, err := azurePlugin.ReadFileContent(
 			ctx,
 			vcsConnector.Payload.ExternalId,
 			file.path,

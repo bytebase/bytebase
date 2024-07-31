@@ -36,14 +36,24 @@ type PullRequestResource struct {
 	CreatedBy       *PullRequestCreatedBy            `json:"createdBy"`
 }
 
+type PullRequestEventType string
+
+const (
+	// A pull request is created in a Git repository.
+	PullRequestEventCreated PullRequestEventType = "git.pullrequest.created"
+	// A pull request is updated; status, review list, reviewer vote changed, or the source branch is updated with a push.
+	PullRequestEventUpdated PullRequestEventType = "git.pullrequest.updated"
+	// A merge commit was created on a pull request.
+	PullRequestEventMerged PullRequestEventType = "git.pullrequest.merged"
+)
+
 // PullRequestEvent is the API message for pull request webhook event.
 //
 // Docs: https://learn.microsoft.com/en-us/azure/devops/service-hooks/events?view=azure-devops#pull-request-merge-commit-created
 type PullRequestEvent struct {
 	// ID is the webhook message id.
-	ID string `json:"id"`
-	// EventType should be "git.pullrequest.merged".
-	EventType string               `json:"eventType"`
+	ID        string               `json:"id"`
+	EventType PullRequestEventType `json:"eventType"`
 	Resource  *PullRequestResource `json:"resource"`
 }
 
@@ -66,7 +76,7 @@ type WebhookCreatePublisherInputs struct {
 	// The target branch for PR without "refs/heads/" prefix.
 	Branch string `json:"branch"`
 	// The merge result for PR, we only need the "Succeeded".
-	MergeResult WebhookMergeResult `json:"mergeResult"`
+	MergeResult WebhookMergeResult `json:"mergeResult,omitempty"`
 	ProjectID   string             `json:"projectId"`
 }
 

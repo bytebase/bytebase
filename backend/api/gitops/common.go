@@ -56,21 +56,19 @@ func getChangesByFileList(files []*vcs.PullRequestFile, rootDir string) []*fileC
 		if filepath.Dir(prFilePath) != rootDir {
 			continue
 		}
-		change, err := getFileChange(v.Path)
+		change, err := getFileChange(v)
 		if err != nil {
 			slog.Error("failed to get file change info", slog.String("path", v.Path), log.BBError(err))
 		}
 		if change != nil {
-			change.path = v.Path
-			change.webURL = v.WebURL
 			changes = append(changes, change)
 		}
 	}
 	return changes
 }
 
-func getFileChange(path string) (*fileChange, error) {
-	filename := filepath.Base(path)
+func getFileChange(file *vcs.PullRequestFile) (*fileChange, error) {
+	filename := filepath.Base(file.Path)
 	if filepath.Ext(filename) != ".sql" {
 		return nil, nil
 	}
@@ -96,10 +94,11 @@ func getFileChange(path string) (*fileChange, error) {
 	}
 	description = strings.TrimLeft(description, "_")
 	return &fileChange{
-		path:        path,
+		path:        file.Path,
 		version:     version,
 		changeType:  changeType,
 		description: description,
+		webURL:      file.WebURL,
 	}, nil
 }
 
