@@ -68,6 +68,7 @@ service OrgPolicyService {
     option (google.api.method_signature) = "parent,policy";
     option (bytebase.v1.permission) = "bb.policies.create";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = true;
   }
 
   rpc UpdatePolicy(UpdatePolicyRequest) returns (Policy) {
@@ -95,6 +96,7 @@ service OrgPolicyService {
     option (google.api.method_signature) = "policy,update_mask";
     option (bytebase.v1.permission) = "bb.policies.update";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = true;
   }
 
   rpc DeletePolicy(DeletePolicyRequest) returns (google.protobuf.Empty) {
@@ -109,6 +111,7 @@ service OrgPolicyService {
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.policies.delete";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = true;
   }
 }
 
