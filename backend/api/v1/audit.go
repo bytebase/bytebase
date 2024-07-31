@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 	"reflect"
+	"strings"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -11,6 +12,8 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/reflect/protoregistry"
+	"google.golang.org/protobuf/types/descriptorpb"
 	"google.golang.org/protobuf/types/known/anypb"
 
 	"github.com/pkg/errors"
@@ -19,6 +22,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
+	v1 "github.com/bytebase/bytebase/proto/generated-go/v1"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -101,14 +105,21 @@ func (in *AuditInterceptor) AuditInterceptor(ctx context.Context, request any, s
 	ctx = common.WithSetServiceData(ctx, func(a *anypb.Any) {
 		serviceData = a
 	})
+
 	response, rerr := handler(ctx, request)
-	if isAuditMethod(serverInfo.FullMethod) {
-		if err := func() error {
-			return createAuditLog(ctx, request, response, serverInfo.FullMethod, in.store, serviceData, rerr)
-		}(); err != nil {
+
+	requireAudit, err := isAuditMethod(serverInfo.FullMethod)
+	if err != nil {
+		slog.Warn("audit interceptor: failed", log.BBError(err))
+		return response, rerr
+	}
+
+	if requireAudit {
+		if err := createAuditLog(ctx, request, response, serverInfo.FullMethod, in.store, serviceData, rerr); err != nil {
 			slog.Warn("audit interceptor: failed to create audit log", log.BBError(err))
 		}
 	}
+
 	return response, rerr
 }
 
@@ -393,31 +404,6 @@ func redactQueryResponse(r *v1pb.QueryResponse) *v1pb.QueryResponse {
 	return n
 }
 
-func isAuditMethod(method string) bool {
-	switch method {
-	case
-		v1pb.AuthService_Login_FullMethodName,
-		v1pb.AuthService_CreateUser_FullMethodName,
-		v1pb.AuthService_UpdateUser_FullMethodName,
-		v1pb.ProjectService_SetIamPolicy_FullMethodName,
-		v1pb.DatabaseService_UpdateDatabase_FullMethodName,
-		v1pb.DatabaseService_BatchUpdateDatabases_FullMethodName,
-		v1pb.SQLService_Export_FullMethodName,
-		v1pb.SQLService_Query_FullMethodName,
-		v1pb.RiskService_CreateRisk_FullMethodName,
-		v1pb.RiskService_DeleteRisk_FullMethodName,
-		v1pb.RiskService_UpdateRisk_FullMethodName,
-		v1pb.EnvironmentService_CreateEnvironment_FullMethodName,
-		v1pb.EnvironmentService_UpdateEnvironment_FullMethodName,
-		v1pb.EnvironmentService_DeleteEnvironment_FullMethodName,
-		v1pb.EnvironmentService_UndeleteEnvironment_FullMethodName,
-		v1pb.SettingService_UpdateSetting_FullMethodName:
-		return true
-	default:
-	}
-	return false
-}
-
 func isStreamAuditMethod(method string) bool {
 	switch method {
 	case v1pb.SQLService_AdminExecute_FullMethodName:
@@ -425,4 +411,36 @@ func isStreamAuditMethod(method string) bool {
 	default:
 		return false
 	}
+}
+
+func getMethodOptionsByName(fullMethod string) (*descriptorpb.MethodOptions, error) {
+	tokens := strings.Split(fullMethod, "/")
+	if len(tokens) != 3 {
+		return nil, errors.Errorf("invalid full method name %q", fullMethod)
+	}
+	rd, err := protoregistry.GlobalFiles.FindDescriptorByName(protoreflect.FullName(tokens[1]))
+	if err != nil {
+		return nil, errors.Wrapf(err, "invalid registry service descriptor, full method name %q", fullMethod)
+	}
+	sd, ok := rd.(protoreflect.ServiceDescriptor)
+	if !ok {
+		return nil, errors.Errorf("invalid service descriptor, full method name %q", fullMethod)
+	}
+	md, ok := sd.Methods().ByName(protoreflect.Name(tokens[2])).Options().(*descriptorpb.MethodOptions)
+	if !ok {
+		return nil, errors.Errorf("invalid method options, full method name %q", fullMethod)
+	}
+	return md, nil
+}
+
+func isAuditMethod(fullMethod string) (bool, error) {
+	md, err := getMethodOptionsByName(fullMethod)
+	if err != nil {
+		return false, err
+	}
+	requireAudit, ok := proto.GetExtension(md, v1.E_Audit).(bool)
+	if !ok {
+		return false, errors.Errorf("invalid audit extension, full method name %q", fullMethod)
+	}
+	return requireAudit, nil
 }
