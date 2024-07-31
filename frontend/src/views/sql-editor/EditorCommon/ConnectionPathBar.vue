@@ -123,6 +123,9 @@ const hideReadonlyDatasourceHint = useAppFeature(
 const hideEnvironments = useAppFeature(
   "bb.feature.sql-editor.hide-environments"
 );
+const disallowBatchQuery = useAppFeature(
+  "bb.feature.sql-editor.disallow-batch-query"
+);
 
 const { instance, database, environment } =
   useConnectionOfCurrentSQLEditorTab();
@@ -139,6 +142,10 @@ const isProductionEnvironment = computed(() => {
 });
 
 const showBatchQuerySelector = computed(() => {
+  if (disallowBatchQuery.value) {
+    return false;
+  }
+
   const tab = currentTab.value;
   return (
     tab &&
