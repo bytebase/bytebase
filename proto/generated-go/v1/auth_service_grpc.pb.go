@@ -44,7 +44,7 @@ type AuthServiceClient interface {
 	// When Disallow Signup is enabled, only the caller with bb.users.create on the workspace can create a user.
 	// Otherwise, any unauthenticated user can create a user.
 	CreateUser(ctx context.Context, in *CreateUserRequest, opts ...grpc.CallOption) (*User, error)
-	// Only the user itself and the user with bb.users.create permission on the workspace can update the user.
+	// Only the user itself and the user with bb.users.update permission on the workspace can update the user.
 	UpdateUser(ctx context.Context, in *UpdateUserRequest, opts ...grpc.CallOption) (*User, error)
 	// Only the user with bb.users.delete permission on the workspace can delete the user.
 	// The last remaining workspace admin cannot be deleted.
@@ -157,7 +157,7 @@ type AuthServiceServer interface {
 	// When Disallow Signup is enabled, only the caller with bb.users.create on the workspace can create a user.
 	// Otherwise, any unauthenticated user can create a user.
 	CreateUser(context.Context, *CreateUserRequest) (*User, error)
-	// Only the user itself and the user with bb.users.create permission on the workspace can update the user.
+	// Only the user itself and the user with bb.users.update permission on the workspace can update the user.
 	UpdateUser(context.Context, *UpdateUserRequest) (*User, error)
 	// Only the user with bb.users.delete permission on the workspace can delete the user.
 	// The last remaining workspace admin cannot be deleted.
