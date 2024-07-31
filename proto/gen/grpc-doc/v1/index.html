@@ -5307,42 +5307,47 @@ Could be empty. </p></td>
                 <td>GetUser</td>
                 <td><a href="#bytebase.v1.GetUserRequest">GetUserRequest</a></td>
                 <td><a href="#bytebase.v1.User">User</a></td>
-                <td><p></p></td>
+                <td><p>Get the user.
+Any authenticated user can get the user.</p></td>
               </tr>
             
               <tr>
                 <td>ListUsers</td>
                 <td><a href="#bytebase.v1.ListUsersRequest">ListUsersRequest</a></td>
                 <td><a href="#bytebase.v1.ListUsersResponse">ListUsersResponse</a></td>
-                <td><p></p></td>
+                <td><p>List all users.
+Any authenticated user can list users.</p></td>
               </tr>
             
               <tr>
                 <td>CreateUser</td>
                 <td><a href="#bytebase.v1.CreateUserRequest">CreateUserRequest</a></td>
                 <td><a href="#bytebase.v1.User">User</a></td>
-                <td><p></p></td>
+                <td><p>Create a user.
+When Disallow Signup is enabled, only the caller with bb.users.create on the workspace can create a user.
+Otherwise, any unauthenticated user can create a user.</p></td>
               </tr>
             
               <tr>
                 <td>UpdateUser</td>
                 <td><a href="#bytebase.v1.UpdateUserRequest">UpdateUserRequest</a></td>
                 <td><a href="#bytebase.v1.User">User</a></td>
-                <td><p></p></td>
+                <td><p>Only the user itself and the user with bb.users.create permission on the workspace can update the user.</p></td>
               </tr>
             
               <tr>
                 <td>DeleteUser</td>
                 <td><a href="#bytebase.v1.DeleteUserRequest">DeleteUserRequest</a></td>
                 <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
-                <td><p></p></td>
+                <td><p>Only the user with bb.users.delete permission on the workspace can delete the user.
+The last remaining workspace admin cannot be deleted.</p></td>
               </tr>
             
               <tr>
                 <td>UndeleteUser</td>
                 <td><a href="#bytebase.v1.UndeleteUserRequest">UndeleteUserRequest</a></td>
                 <td><a href="#bytebase.v1.User">User</a></td>
-                <td><p></p></td>
+                <td><p>Only the user with bb.users.undelete permission on the workspace can undelete the user.</p></td>
               </tr>
             
               <tr>
