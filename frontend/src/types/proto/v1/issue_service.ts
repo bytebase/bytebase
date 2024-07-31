@@ -4936,6 +4936,10 @@ export const IssueServiceDefinition = {
         },
       },
     },
+    /**
+     * ApproveIssue approves the issue.
+     * The access is based on approval flow.
+     */
     approveIssue: {
       name: "ApproveIssue",
       requestType: ApproveIssueRequest,
@@ -4996,6 +5000,10 @@ export const IssueServiceDefinition = {
         },
       },
     },
+    /**
+     * RejectIssue rejects the issue.
+     * The access is based on approval flow.
+     */
     rejectIssue: {
       name: "RejectIssue",
       requestType: RejectIssueRequest,
@@ -5055,6 +5063,10 @@ export const IssueServiceDefinition = {
         },
       },
     },
+    /**
+     * RequestIssue requests the issue.
+     * The access is based on approval flow.
+     */
     requestIssue: {
       name: "RequestIssue",
       requestType: RequestIssueRequest,

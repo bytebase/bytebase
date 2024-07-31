@@ -4642,6 +4642,9 @@ paths:
         post:
             tags:
                 - IssueService
+            description: |-
+                ApproveIssue approves the issue.
+                 The access is based on approval flow.
             operationId: IssueService_ApproveIssue
             parameters:
                 - name: project
@@ -4795,6 +4798,9 @@ paths:
         post:
             tags:
                 - IssueService
+            description: |-
+                RejectIssue rejects the issue.
+                 The access is based on approval flow.
             operationId: IssueService_RejectIssue
             parameters:
                 - name: project
@@ -4832,6 +4838,9 @@ paths:
         post:
             tags:
                 - IssueService
+            description: |-
+                RequestIssue requests the issue.
+                 The access is based on approval flow.
             operationId: IssueService_RequestIssue
             parameters:
                 - name: project
