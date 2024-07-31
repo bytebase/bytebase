@@ -124,6 +124,7 @@ func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 	}
 
 	if setting.DisallowSignup {
+		// TODO(d): use fine-grained permission.
 		rolePtr := ctx.Value(common.RoleContextKey)
 		if rolePtr == nil || rolePtr.(api.Role) != api.WorkspaceAdmin {
 			return nil, status.Errorf(codes.PermissionDenied, "sign up is disallowed")

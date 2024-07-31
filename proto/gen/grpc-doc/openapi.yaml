@@ -7332,6 +7332,9 @@ paths:
         get:
             tags:
                 - AuthService
+            description: |-
+                List all users.
+                 Any authenticated user can list users.
             operationId: AuthService_ListUsers
             parameters:
                 - name: pageSize
@@ -7375,6 +7378,10 @@ paths:
         post:
             tags:
                 - AuthService
+            description: |-
+                Create a user.
+                 When Disallow Signup is enabled, only the caller with bb.users.create on the workspace can create a user.
+                 Otherwise, any unauthenticated user can create a user.
             operationId: AuthService_CreateUser
             requestBody:
                 content:
@@ -7399,6 +7406,9 @@ paths:
         get:
             tags:
                 - AuthService
+            description: |-
+                Get the user.
+                 Any authenticated user can get the user.
             operationId: AuthService_GetUser
             parameters:
                 - name: user
@@ -7423,6 +7433,9 @@ paths:
         delete:
             tags:
                 - AuthService
+            description: |-
+                Only the user with bb.users.delete permission on the workspace can delete the user.
+                 The last remaining workspace admin cannot be deleted.
             operationId: AuthService_DeleteUser
             parameters:
                 - name: user
@@ -7444,6 +7457,7 @@ paths:
         patch:
             tags:
                 - AuthService
+            description: Only the user itself and the user with bb.users.create permission on the workspace can update the user.
             operationId: AuthService_UpdateUser
             parameters:
                 - name: user
@@ -7498,6 +7512,7 @@ paths:
         post:
             tags:
                 - AuthService
+            description: Only the user with bb.users.undelete permission on the workspace can undelete the user.
             operationId: AuthService_UndeleteUser
             parameters:
                 - name: user
