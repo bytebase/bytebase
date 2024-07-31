@@ -72,7 +72,7 @@ service SQLService {
       post: "/v1/sql/differPreview"
       body: "*"
     };
-    option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.allow_without_credential) = true;
   }
 
   rpc Check(CheckRequest) returns (CheckResponse) {
@@ -89,7 +89,6 @@ service SQLService {
       body: "*"
     };
     option (bytebase.v1.allow_without_credential) = true;
-    option (bytebase.v1.auth_method) = CUSTOM;
   }
 
   rpc Pretty(PrettyRequest) returns (PrettyResponse) {
@@ -97,7 +96,7 @@ service SQLService {
       post: "/v1/sql/pretty"
       body: "*"
     };
-    option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.allow_without_credential) = true;
   }
 
   rpc StringifyMetadata(StringifyMetadataRequest) returns (StringifyMetadataResponse) {
@@ -105,9 +104,10 @@ service SQLService {
       post: "/v1/schemaDesign:stringifyMetadata"
       body: "*"
     };
-    option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.allow_without_credential) = true;
   }
 
+  // Deprecated.
   rpc GenerateRestoreSQL(GenerateRestoreSQLRequest) returns (GenerateRestoreSQLResponse) {
     option (google.api.http) = {
       post: "/v1/{name=instances/*/databases/*}:generateRestoreSQL"

@@ -10489,7 +10489,7 @@ Type of the SheetPayload.
 | ParseMyBatisMapper | [ParseMyBatisMapperRequest](#bytebase-v1-ParseMyBatisMapperRequest) | [ParseMyBatisMapperResponse](#bytebase-v1-ParseMyBatisMapperResponse) |  |
 | Pretty | [PrettyRequest](#bytebase-v1-PrettyRequest) | [PrettyResponse](#bytebase-v1-PrettyResponse) |  |
 | StringifyMetadata | [StringifyMetadataRequest](#bytebase-v1-StringifyMetadataRequest) | [StringifyMetadataResponse](#bytebase-v1-StringifyMetadataResponse) |  |
-| GenerateRestoreSQL | [GenerateRestoreSQLRequest](#bytebase-v1-GenerateRestoreSQLRequest) | [GenerateRestoreSQLResponse](#bytebase-v1-GenerateRestoreSQLResponse) |  |
+| GenerateRestoreSQL | [GenerateRestoreSQLRequest](#bytebase-v1-GenerateRestoreSQLRequest) | [GenerateRestoreSQLResponse](#bytebase-v1-GenerateRestoreSQLResponse) | Deprecated. |
 
  
 

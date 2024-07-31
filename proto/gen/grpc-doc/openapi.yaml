@@ -2395,6 +2395,7 @@ paths:
         post:
             tags:
                 - SQLService
+            description: Deprecated.
             operationId: SQLService_GenerateRestoreSQL
             parameters:
                 - name: instance
