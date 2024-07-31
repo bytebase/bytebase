@@ -1,6 +1,7 @@
 permissions:
   projectPermissions:
-    - bb.auditLogs.get
+    - bb.auditLogs.export
+    - bb.auditLogs.search
     - bb.branches.create
     - bb.branches.delete
     - bb.branches.get

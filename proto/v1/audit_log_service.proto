@@ -4,6 +4,7 @@ package bytebase.v1;
 
 import "google/api/annotations.proto";
 import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
 import "google/protobuf/any.proto";
 import "google/protobuf/timestamp.proto";
 import "google/rpc/status.proto";
@@ -15,19 +16,30 @@ option go_package = "generated-go/v1";
 
 service AuditLogService {
   rpc SearchAuditLogs(SearchAuditLogsRequest) returns (SearchAuditLogsResponse) {
-    option (google.api.http) = {get: "/v1/auditLogs:search"};
-    option (bytebase.v1.auth_method) = CUSTOM;
+    option (google.api.http) = {
+      get: "/v1/{parent=projects/*}/auditLogs:search"
+      additional_bindings: {get: "/v1/auditLogs:search"}
+    };
+    option (bytebase.v1.permission) = "bb.auditLogs.search";
+    option (bytebase.v1.auth_method) = IAM;
   }
   rpc ExportAuditLogs(ExportAuditLogsRequest) returns (ExportAuditLogsResponse) {
     option (google.api.http) = {
-      post: "/v1/auditLogs:export"
+      post: "/v1/{parent=projects/*}/auditLogs:export"
+      additional_bindings: {post: "/v1/auditLogs:export"}
       body: "*"
     };
-    option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.permission) = "bb.auditLogs.export";
+    option (bytebase.v1.auth_method) = IAM;
   }
 }
 
 message SearchAuditLogsRequest {
+  string parent = 5 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {child_type: "bytebase.com/AuditLog"}
+  ];
+
   // The filter of the log. It should be a valid CEL expression.
   // For example:
   //  - filter = "method == '/bytebase.v1.SQLService/Query'"
@@ -64,6 +76,11 @@ message SearchAuditLogsResponse {
 }
 
 message ExportAuditLogsRequest {
+  string parent = 4 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {child_type: "bytebase.com/AuditLog"}
+  ];
+
   // The filter of the log. It should be a valid CEL expression.
   // For example:
   //  - filter = "method == '/bytebase.v1.SQLService/Query'"

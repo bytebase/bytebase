@@ -10,6 +10,7 @@ import { PolicyDelta } from "./iam_policy";
 export const protobufPackage = "bytebase.v1";
 
 export interface SearchAuditLogsRequest {
+  parent: string;
   /**
    * The filter of the log. It should be a valid CEL expression.
    * For example:
@@ -52,6 +53,7 @@ export interface SearchAuditLogsResponse {
 }
 
 export interface ExportAuditLogsRequest {
+  parent: string;
   /**
    * The filter of the log. It should be a valid CEL expression.
    * For example:
@@ -215,11 +217,14 @@ export interface AuditData {
 }
 
 function createBaseSearchAuditLogsRequest(): SearchAuditLogsRequest {
-  return { filter: "", orderBy: "", pageSize: 0, pageToken: "" };
+  return { parent: "", filter: "", orderBy: "", pageSize: 0, pageToken: "" };
 }
 
 export const SearchAuditLogsRequest = {
   encode(message: SearchAuditLogsRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.parent !== "") {
+      writer.uint32(42).string(message.parent);
+    }
     if (message.filter !== "") {
       writer.uint32(10).string(message.filter);
     }
@@ -242,6 +247,13 @@ export const SearchAuditLogsRequest = {
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.parent = reader.string();
+          continue;
         case 1:
           if (tag !== 10) {
             break;
@@ -281,6 +293,7 @@ export const SearchAuditLogsRequest = {
 
   fromJSON(object: any): SearchAuditLogsRequest {
     return {
+      parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
       filter: isSet(object.filter) ? globalThis.String(object.filter) : "",
       orderBy: isSet(object.orderBy) ? globalThis.String(object.orderBy) : "",
       pageSize: isSet(object.pageSize) ? globalThis.Number(object.pageSize) : 0,
@@ -290,6 +303,9 @@ export const SearchAuditLogsRequest = {
 
   toJSON(message: SearchAuditLogsRequest): unknown {
     const obj: any = {};
+    if (message.parent !== "") {
+      obj.parent = message.parent;
+    }
     if (message.filter !== "") {
       obj.filter = message.filter;
     }
@@ -310,6 +326,7 @@ export const SearchAuditLogsRequest = {
   },
   fromPartial(object: DeepPartial<SearchAuditLogsRequest>): SearchAuditLogsRequest {
     const message = createBaseSearchAuditLogsRequest();
+    message.parent = object.parent ?? "";
     message.filter = object.filter ?? "";
     message.orderBy = object.orderBy ?? "";
     message.pageSize = object.pageSize ?? 0;
@@ -395,11 +412,14 @@ export const SearchAuditLogsResponse = {
 };
 
 function createBaseExportAuditLogsRequest(): ExportAuditLogsRequest {
-  return { filter: "", orderBy: "", format: ExportFormat.FORMAT_UNSPECIFIED };
+  return { parent: "", filter: "", orderBy: "", format: ExportFormat.FORMAT_UNSPECIFIED };
 }
 
 export const ExportAuditLogsRequest = {
   encode(message: ExportAuditLogsRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.parent !== "") {
+      writer.uint32(34).string(message.parent);
+    }
     if (message.filter !== "") {
       writer.uint32(10).string(message.filter);
     }
@@ -419,6 +439,13 @@ export const ExportAuditLogsRequest = {
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.parent = reader.string();
+          continue;
         case 1:
           if (tag !== 10) {
             break;
@@ -451,6 +478,7 @@ export const ExportAuditLogsRequest = {
 
   fromJSON(object: any): ExportAuditLogsRequest {
     return {
+      parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
       filter: isSet(object.filter) ? globalThis.String(object.filter) : "",
       orderBy: isSet(object.orderBy) ? globalThis.String(object.orderBy) : "",
       format: isSet(object.format) ? exportFormatFromJSON(object.format) : ExportFormat.FORMAT_UNSPECIFIED,
@@ -459,6 +487,9 @@ export const ExportAuditLogsRequest = {
 
   toJSON(message: ExportAuditLogsRequest): unknown {
     const obj: any = {};
+    if (message.parent !== "") {
+      obj.parent = message.parent;
+    }
     if (message.filter !== "") {
       obj.filter = message.filter;
     }
@@ -476,6 +507,7 @@ export const ExportAuditLogsRequest = {
   },
   fromPartial(object: DeepPartial<ExportAuditLogsRequest>): ExportAuditLogsRequest {
     const message = createBaseExportAuditLogsRequest();
+    message.parent = object.parent ?? "";
     message.filter = object.filter ?? "";
     message.orderBy = object.orderBy ?? "";
     message.format = object.format ?? ExportFormat.FORMAT_UNSPECIFIED;
@@ -821,15 +853,62 @@ export const AuditLogServiceDefinition = {
       responseStream: false,
       options: {
         _unknownFields: {
-          800016: [new Uint8Array([2])],
+          800010: [
+            new Uint8Array([19, 98, 98, 46, 97, 117, 100, 105, 116, 76, 111, 103, 115, 46, 115, 101, 97, 114, 99, 104]),
+          ],
+          800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
+              66,
+              90,
               22,
               18,
               20,
               47,
               118,
               49,
+              47,
+              97,
+              117,
+              100,
+              105,
+              116,
+              76,
+              111,
+              103,
+              115,
+              58,
+              115,
+              101,
+              97,
+              114,
+              99,
+              104,
+              18,
+              40,
+              47,
+              118,
+              49,
+              47,
+              123,
+              112,
+              97,
+              114,
+              101,
+              110,
+              116,
+              61,
+              112,
+              114,
+              111,
+              106,
+              101,
+              99,
+              116,
+              115,
+              47,
+              42,
+              125,
               47,
               97,
               117,
@@ -860,18 +939,86 @@ export const AuditLogServiceDefinition = {
       responseStream: false,
       options: {
         _unknownFields: {
-          800016: [new Uint8Array([2])],
+          800010: [
+            new Uint8Array([
+              19,
+              98,
+              98,
+              46,
+              97,
+              117,
+              100,
+              105,
+              116,
+              76,
+              111,
+              103,
+              115,
+              46,
+              101,
+              120,
+              112,
+              111,
+              114,
+              116,
+            ]),
+          ],
+          800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
-              25,
+              69,
               58,
               1,
               42,
+              90,
+              22,
               34,
               20,
               47,
               118,
               49,
+              47,
+              97,
+              117,
+              100,
+              105,
+              116,
+              76,
+              111,
+              103,
+              115,
+              58,
+              101,
+              120,
+              112,
+              111,
+              114,
+              116,
+              34,
+              40,
+              47,
+              118,
+              49,
+              47,
+              123,
+              112,
+              97,
+              114,
+              101,
+              110,
+              116,
+              61,
+              112,
+              114,
+              111,
+              106,
+              101,
+              99,
+              116,
+              115,
+              47,
+              42,
+              125,
               47,
               97,
               117,
