@@ -99,7 +99,7 @@ func (in *ACLInterceptor) ACLInterceptor(ctx context.Context, request any, serve
 }
 
 // ACLStreamInterceptor is the unary interceptor for gRPC API.
-func (in *ACLInterceptor) ACLStreamInterceptor(request any, ss grpc.ServerStream, serverInfo *grpc.StreamServerInfo, handler grpc.StreamHandler) (err error) {
+func (in *ACLInterceptor) ACLStreamInterceptor(srv any, ss grpc.ServerStream, serverInfo *grpc.StreamServerInfo, handler grpc.StreamHandler) (err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			perr, ok := r.(error)
@@ -129,7 +129,7 @@ func (in *ACLInterceptor) ACLStreamInterceptor(request any, ss grpc.ServerStream
 		ss = &overrideStream{ServerStream: ss, childCtx: ctx, iamManager: in.iamManager, store: in.store, user: user, fullMethod: serverInfo.FullMethod}
 	}
 
-	return handler(request, ss)
+	return handler(srv, ss)
 }
 
 type overrideStream struct {
