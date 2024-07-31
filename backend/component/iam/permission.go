@@ -178,6 +178,8 @@ var allWorkspacePermissions = []Permission{
 	PermissionSettingsGet,
 	PermissionSettingsList,
 	PermissionSettingsSet,
+	PermissionWorksheetsManage,
+	PermissionWorksheetsGet,
 }
 var allProjectPermissions = []Permission{
 	PermissionAuditLogsGet,
