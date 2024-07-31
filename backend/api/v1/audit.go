@@ -158,6 +158,7 @@ func (s *auditStream) SendMsg(resp any) error {
 func (in *AuditInterceptor) AuditStreamInterceptor(srv any, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
 	overrideStream, ok := ss.(*overrideStream)
 	if !ok {
+		// Service reflection.
 		return handler(srv, ss)
 	}
 
