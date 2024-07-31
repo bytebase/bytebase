@@ -35,7 +35,6 @@ import {
 } from "@/router/sqlEditor";
 import {
   usePolicyV1Store,
-  useInstanceV1Store,
   useProjectV1Store,
   useCurrentUserV1,
   useDatabaseV1Store,
@@ -320,43 +319,34 @@ const prepareConnectionParams = async () => {
   }
   const instanceName = route.params.instance;
   const databaseName = route.params.database;
-  if (typeof instanceName !== "string" || !instanceName) {
+  if (
+    typeof instanceName !== "string" ||
+    !instanceName ||
+    typeof databaseName !== "string" ||
+    !databaseName
+  ) {
     return false;
   }
 
-  if (typeof databaseName !== "string" || !databaseName) {
-    // connected to instance
-    const instance = await useInstanceV1Store().getOrFetchInstanceByName(
-      `instances/${instanceName}`
-    );
-    if (isValidInstanceName(instance.name)) {
-      connect({
-        instance: instance.name,
-        database: "",
+  const database = await useDatabaseV1Store().getOrFetchDatabaseByName(
+    `instances/${instanceName}/databases/${databaseName}`
+  );
+  if (database.uid !== String(UNKNOWN_ID)) {
+    if (!isDatabaseV1Queryable(database, me.value)) {
+      router.push({
+        name: "error.403",
       });
-      return true;
     }
-  } else {
-    const database = await useDatabaseV1Store().getOrFetchDatabaseByName(
-      `instances/${instanceName}/databases/${databaseName}`
-    );
-    if (database.uid !== String(UNKNOWN_ID)) {
-      if (!isDatabaseV1Queryable(database, me.value)) {
-        router.push({
-          name: "error.403",
-        });
-      }
 
-      // connected to db
-      await maybeSwitchProject(database.project);
-      connect({
-        instance: database.instance,
-        database: database.name,
-        schema: filter.schema,
-        table: filter.table,
-      });
-      return true;
-    }
+    // connected to db
+    await maybeSwitchProject(database.project);
+    connect({
+      instance: database.instance,
+      database: database.name,
+      schema: filter.schema,
+      table: filter.table,
+    });
+    return true;
   }
   return false;
 };
