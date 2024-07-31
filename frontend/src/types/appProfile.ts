@@ -27,7 +27,6 @@ export type AppFeatures = {
   >;
   "bb.feature.databases.hide-unassigned": boolean;
   "bb.feature.databases.hide-inalterable": boolean;
-  "bb.feature.sql-editor.custom-query-datasource": boolean;
   "bb.feature.sql-editor.disable-setting": boolean;
   "bb.feature.sql-editor.disallow-share-worksheet": boolean;
   "bb.feature.sql-editor.disallow-export-query-data": boolean;
@@ -73,7 +72,6 @@ export const defaultAppProfile = (): AppProfile => ({
     ]),
     "bb.feature.databases.hide-unassigned": false,
     "bb.feature.databases.hide-inalterable": false,
-    "bb.feature.sql-editor.custom-query-datasource": false,
     "bb.feature.sql-editor.disable-setting": false,
     "bb.feature.sql-editor.disallow-share-worksheet": false,
     "bb.feature.sql-editor.disallow-export-query-data": false,

@@ -8,14 +8,38 @@
       </NButton>
     </template>
     <div>
-      <p class="mb-1">{{ $t("data-source.select-data-source") }}</p>
-      <NSelect
-        class="!w-40"
-        :options="dataSourceOptions"
+      <p class="mb-1 textinfolabel">
+        {{ $t("data-source.select-data-source") }}
+      </p>
+      <NRadioGroup
+        class="max-w-44"
         :value="selectedDataSourceId"
-        :render-label="renderLabel"
-        @update:value="handleDataSourceSelect"
-      />
+        @update:value="onDataSourceSelected"
+      >
+        <NTooltip
+          v-for="ds in dataSources"
+          :key="ds.id"
+          :disabled="!Boolean(dataSourceUnaccessibleReason(ds))"
+        >
+          <template #trigger>
+            <NRadio
+              class="w-full"
+              :value="ds.id"
+              :disabled="Boolean(dataSourceUnaccessibleReason(ds))"
+            >
+              <div class="max-w-36 flex flex-row justify-start items-center">
+                <span class="text-xs opacity-60 shrink-0">{{
+                  readableDataSourceType(ds.type)
+                }}</span>
+                <span class="ml-1 truncate">{{ ds.username }}</span>
+              </div>
+            </NRadio>
+          </template>
+          <p class="text-nowrap">
+            {{ dataSourceUnaccessibleReason(ds) }}
+          </p>
+        </NTooltip>
+      </NRadioGroup>
     </div>
   </NPopover>
 </template>
@@ -23,93 +47,112 @@
 <script lang="ts" setup>
 import { head, orderBy } from "lodash-es";
 import { ChevronDown } from "lucide-vue-next";
-import type { SelectOption, SelectRenderLabel } from "naive-ui";
-import { NButton, NEllipsis, NPopover, NSelect } from "naive-ui";
-import { computed, h, watch } from "vue";
+import { NButton, NPopover, NRadioGroup, NRadio, NTooltip } from "naive-ui";
+import { computed, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import {
   useConnectionOfCurrentSQLEditorTab,
+  useCurrentUserV1,
+  usePolicyV1Store,
   useSQLEditorTabStore,
 } from "@/store";
-import type { DataSource } from "@/types/proto/v1/instance_service";
-import { DataSourceType } from "@/types/proto/v1/instance_service";
-
-interface DataSourceSelectOption extends SelectOption {
-  value: string;
-  dataSource: DataSource;
-}
+import { isValidDatabaseName } from "@/types";
+import { DataSource, DataSourceType } from "@/types/proto/v1/instance_service";
+import {
+  DataSourceQueryPolicy_Restriction,
+  PolicyType,
+} from "@/types/proto/v1/org_policy_service";
+import { hasWorkspacePermissionV2 } from "@/utils";
 
 const { t } = useI18n();
 const tabStore = useSQLEditorTabStore();
-const { connection, instance: selectedInstance } =
-  useConnectionOfCurrentSQLEditorTab();
+const { connection } = useConnectionOfCurrentSQLEditorTab();
+const currentUser = useCurrentUserV1();
+const policyStore = usePolicyV1Store();
+const { database } = useConnectionOfCurrentSQLEditorTab();
+
+const adminDataSourceRestriction = computed(() => {
+  if (!database.value) {
+    return {
+      environmentPolicy:
+        DataSourceQueryPolicy_Restriction.RESTRICTION_UNSPECIFIED,
+      projectPolicy: DataSourceQueryPolicy_Restriction.RESTRICTION_UNSPECIFIED,
+    };
+  }
+  if (
+    hasWorkspacePermissionV2(currentUser.value, "bb.instances.adminExecute")
+  ) {
+    return {
+      environmentPolicy:
+        DataSourceQueryPolicy_Restriction.RESTRICTION_UNSPECIFIED,
+      projectPolicy: DataSourceQueryPolicy_Restriction.RESTRICTION_UNSPECIFIED,
+    };
+  }
+
+  const projectLevelPolicy = policyStore.getPolicyByParentAndType({
+    parentPath: database.value.project,
+    policyType: PolicyType.DATA_SOURCE_QUERY,
+  });
+  const projectLevelAdminDSRestriction =
+    projectLevelPolicy?.dataSourceQueryPolicy?.adminDataSourceRestriction;
+  const envLevelPolicy = policyStore.getPolicyByParentAndType({
+    parentPath: database.value.effectiveEnvironment,
+    policyType: PolicyType.DATA_SOURCE_QUERY,
+  });
+  const envLevelAdminDSRestriction =
+    envLevelPolicy?.dataSourceQueryPolicy?.adminDataSourceRestriction;
+  return {
+    environmentPolicy:
+      envLevelAdminDSRestriction ??
+      DataSourceQueryPolicy_Restriction.RESTRICTION_UNSPECIFIED,
+    projectPolicy:
+      projectLevelAdminDSRestriction ??
+      DataSourceQueryPolicy_Restriction.RESTRICTION_UNSPECIFIED,
+  };
+});
+
 const selectedDataSourceId = computed(() => {
   return connection.value.dataSourceId;
 });
 
 const dataSources = computed(() => {
-  return orderBy(selectedInstance.value?.dataSources ?? [], "type");
+  return orderBy(database.value.instanceResource.dataSources, "type");
 });
 
-const dataSourceOptions = computed(() => {
-  return dataSources.value.map((dataSource) => {
-    return {
-      value: dataSource.id,
-      label: dataSource.username,
-      dataSource: dataSource,
-    };
-  });
-});
-
-const renderLabel: SelectRenderLabel = (option) => {
-  const { dataSource } = option as DataSourceSelectOption;
-  if (!dataSource) {
-    return;
+const dataSourceUnaccessibleReason = (
+  dataSource: DataSource
+): string | undefined => {
+  if (dataSource.type === DataSourceType.ADMIN) {
+    if (
+      adminDataSourceRestriction.value.environmentPolicy ===
+        DataSourceQueryPolicy_Restriction.DISALLOW ||
+      adminDataSourceRestriction.value.projectPolicy ===
+        DataSourceQueryPolicy_Restriction.DISALLOW
+    ) {
+      return t(
+        "sql-editor.query-context.admin-data-source-is-disallowed-to-query"
+      );
+    }
+    const readOnlyDataSources = dataSources.value.filter(
+      (ds) => ds.type === DataSourceType.READ_ONLY
+    );
+    if (
+      readOnlyDataSources.length > 0 &&
+      (adminDataSourceRestriction.value.environmentPolicy ===
+        DataSourceQueryPolicy_Restriction.FALLBACK ||
+        adminDataSourceRestriction.value.projectPolicy ===
+          DataSourceQueryPolicy_Restriction.FALLBACK)
+    ) {
+      return t(
+        "sql-editor.query-context.admin-data-source-is-disallowed-to-query-when-read-only-data-source-is-available"
+      );
+    }
   }
 
-  const children = [
-    h(
-      "span",
-      {
-        class: "text-gray-400 text-sm",
-      },
-      [readableDataSourceType(dataSource.type)]
-    ),
-    h(
-      NPopover,
-      {
-        placement: "top",
-        trigger: "hover",
-        class: "ml-1",
-      },
-      {
-        trigger: () => {
-          return h(
-            "span",
-            {
-              class: "ml-1",
-            },
-            [dataSource.username]
-          );
-        },
-        default: () => {
-          return h("div", {}, [dataSource.host, ":", dataSource.port]);
-        },
-      }
-    ),
-  ];
-  return h(
-    NEllipsis,
-    {
-      class: "w-full",
-    },
-    {
-      default: () => children,
-    }
-  );
+  return undefined;
 };
 
-const handleDataSourceSelect = (dataSourceId?: string) => {
+const onDataSourceSelected = (dataSourceId?: string) => {
   tabStore.updateCurrentTab({
     connection: {
       ...connection.value,
@@ -141,10 +184,30 @@ watch(
     );
     // Default set the first read only data source as selected.
     if (readOnlyDataSources.length > 0) {
-      handleDataSourceSelect(readOnlyDataSources[0].id);
+      onDataSourceSelected(readOnlyDataSources[0].id);
     } else {
-      handleDataSourceSelect(head(dataSources.value)?.id);
+      onDataSourceSelected(head(dataSources.value)?.id);
     }
+  },
+  {
+    immediate: true,
+  }
+);
+
+watch(
+  () => database.value.name,
+  async () => {
+    if (!isValidDatabaseName(database.value.name)) {
+      return;
+    }
+    await policyStore.getOrFetchPolicyByParentAndType({
+      parentPath: database.value.effectiveEnvironment,
+      policyType: PolicyType.DATA_SOURCE_QUERY,
+    });
+    await policyStore.getOrFetchPolicyByParentAndType({
+      parentPath: database.value.project,
+      policyType: PolicyType.DATA_SOURCE_QUERY,
+    });
   },
   {
     immediate: true,
