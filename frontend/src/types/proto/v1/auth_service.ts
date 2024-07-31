@@ -1508,6 +1508,7 @@ export const AuthServiceDefinition = {
           8410: [new Uint8Array([4, 117, 115, 101, 114])],
           800000: [new Uint8Array([1])],
           800016: [new Uint8Array([2])],
+          800024: [new Uint8Array([1])],
           578365826: [new Uint8Array([17, 58, 4, 117, 115, 101, 114, 34, 9, 47, 118, 49, 47, 117, 115, 101, 114, 115])],
         },
       },
@@ -1522,6 +1523,7 @@ export const AuthServiceDefinition = {
         _unknownFields: {
           8410: [new Uint8Array([16, 117, 115, 101, 114, 44, 117, 112, 100, 97, 116, 101, 95, 109, 97, 115, 107])],
           800016: [new Uint8Array([2])],
+          800024: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               31,
@@ -1657,6 +1659,7 @@ export const AuthServiceDefinition = {
       options: {
         _unknownFields: {
           800000: [new Uint8Array([1])],
+          800024: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([19, 58, 1, 42, 34, 14, 47, 118, 49, 47, 97, 117, 116, 104, 47, 108, 111, 103, 105, 110]),
           ],

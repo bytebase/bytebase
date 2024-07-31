@@ -10,6 +10,7 @@ extend google.protobuf.MethodOptions {
   bool allow_without_credential = 100000;
   string permission = 100001;
   AuthMethod auth_method = 100002;
+  bool audit = 100003;
 }
 
 enum AuthMethod {
