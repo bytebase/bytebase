@@ -1,5 +1,6 @@
 import { startCase } from "lodash-es";
 import type { RouteRecordRaw } from "vue-router";
+import DummyRootView from "@/DummyRootView";
 import { t } from "@/plugins/i18n";
 import MyIssues from "@/views/MyIssues.vue";
 import {
@@ -32,39 +33,39 @@ import {
   WORKSPACE_ROUTE_IM,
 } from "./workspaceRoutes";
 
-const homePage: RouteRecordRaw = {
+const rootRoute: RouteRecordRaw = {
   path: "",
   name: WORKSPACE_HOME_MODULE,
-  meta: {
-    getQuickActionList: () => {
-      return [
-        "quickaction.bb.database.schema.update",
-        "quickaction.bb.database.data.update",
-        "quickaction.bb.database.create",
-        "quickaction.bb.instance.create",
-        "quickaction.bb.issue.grant.request.querier",
-        "quickaction.bb.issue.grant.request.exporter",
-      ];
-    },
-  },
   components: {
-    content: MyIssues,
-    leftSidebar: () => import("@/views/DashboardSidebar.vue"),
-  },
-  props: {
-    content: true,
-    leftSidebar: true,
+    content: DummyRootView,
   },
 };
 
 const workspaceRoutes: RouteRecordRaw[] = [
+  rootRoute,
   {
-    ...homePage,
-  },
-  {
-    ...homePage,
     path: "issues",
     name: WORKSPACE_ROUTE_MY_ISSUES,
+    meta: {
+      getQuickActionList: () => {
+        return [
+          "quickaction.bb.database.schema.update",
+          "quickaction.bb.database.data.update",
+          "quickaction.bb.database.create",
+          "quickaction.bb.instance.create",
+          "quickaction.bb.issue.grant.request.querier",
+          "quickaction.bb.issue.grant.request.exporter",
+        ];
+      },
+    },
+    components: {
+      content: MyIssues,
+      leftSidebar: () => import("@/views/DashboardSidebar.vue"),
+    },
+    props: {
+      content: true,
+      leftSidebar: true,
+    },
   },
   {
     path: "projects",

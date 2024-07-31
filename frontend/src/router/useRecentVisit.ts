@@ -1,6 +1,7 @@
 import { useLocalStorage, useDebounce } from "@vueuse/core";
 import { computed, ref, watch, nextTick } from "vue";
 import { useRoute } from "vue-router";
+import { WORKSPACE_HOME_MODULE } from "./dashboard/workspaceRoutes";
 
 type RecentVisit = {
   title: string;
@@ -46,7 +47,14 @@ export function useRecentVisit() {
     useDebounce(currentRoute, 50),
     async (currentRoute) => {
       if (!currentRoute) return;
-      if (currentRoute.path.startsWith("/auth") || currentRoute.path.startsWith("/sql-editor")) {
+      if (currentRoute.name === WORKSPACE_HOME_MODULE) {
+        // ignore app root path
+        return;
+      }
+      if (
+        currentRoute.path.startsWith("/auth") ||
+        currentRoute.path.startsWith("/sql-editor")
+      ) {
         // ignore auth related pages
         // kbar is invisible on these pages
         // and navigating to these pages does not make sense
