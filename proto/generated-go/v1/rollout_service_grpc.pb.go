@@ -40,8 +40,16 @@ type RolloutServiceClient interface {
 	ListTaskRuns(ctx context.Context, in *ListTaskRunsRequest, opts ...grpc.CallOption) (*ListTaskRunsResponse, error)
 	GetTaskRunLog(ctx context.Context, in *GetTaskRunLogRequest, opts ...grpc.CallOption) (*TaskRunLog, error)
 	GetTaskRunSession(ctx context.Context, in *GetTaskRunSessionRequest, opts ...grpc.CallOption) (*TaskRunSession, error)
+	// BatchRunTasks creates task runs for the specified tasks.
+	// DataExport issue only allows the creator to run the task.
+	// Users with "bb.taskRuns.create" permission can run the task, e.g. Workspace Admin and DBA.
+	// Follow role-based rollout policy for the environment.
 	BatchRunTasks(ctx context.Context, in *BatchRunTasksRequest, opts ...grpc.CallOption) (*BatchRunTasksResponse, error)
+	// BatchSkipTasks skips the specified tasks.
+	// The access is the same as BatchRunTasks().
 	BatchSkipTasks(ctx context.Context, in *BatchSkipTasksRequest, opts ...grpc.CallOption) (*BatchSkipTasksResponse, error)
+	// BatchSkipTasks cancels the specified task runs in batch.
+	// The access is the same as BatchRunTasks().
 	BatchCancelTaskRuns(ctx context.Context, in *BatchCancelTaskRunsRequest, opts ...grpc.CallOption) (*BatchCancelTaskRunsResponse, error)
 }
 
@@ -153,8 +161,16 @@ type RolloutServiceServer interface {
 	ListTaskRuns(context.Context, *ListTaskRunsRequest) (*ListTaskRunsResponse, error)
 	GetTaskRunLog(context.Context, *GetTaskRunLogRequest) (*TaskRunLog, error)
 	GetTaskRunSession(context.Context, *GetTaskRunSessionRequest) (*TaskRunSession, error)
+	// BatchRunTasks creates task runs for the specified tasks.
+	// DataExport issue only allows the creator to run the task.
+	// Users with "bb.taskRuns.create" permission can run the task, e.g. Workspace Admin and DBA.
+	// Follow role-based rollout policy for the environment.
 	BatchRunTasks(context.Context, *BatchRunTasksRequest) (*BatchRunTasksResponse, error)
+	// BatchSkipTasks skips the specified tasks.
+	// The access is the same as BatchRunTasks().
 	BatchSkipTasks(context.Context, *BatchSkipTasksRequest) (*BatchSkipTasksResponse, error)
+	// BatchSkipTasks cancels the specified task runs in batch.
+	// The access is the same as BatchRunTasks().
 	BatchCancelTaskRuns(context.Context, *BatchCancelTaskRunsRequest) (*BatchCancelTaskRunsResponse, error)
 	mustEmbedUnimplementedRolloutServiceServer()
 }
