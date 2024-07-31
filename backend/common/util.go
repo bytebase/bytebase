@@ -32,6 +32,7 @@ const (
 	MaximumCommands = 200
 	// MaximumAdvicePerStatus is the maximum number of advice that can be returned per status.
 	MaximumAdvicePerStatus = 50
+	MaximumLintExplainSize = 10
 
 	// ExternalURLPlaceholder is the docs link to configure --external-url.
 	ExternalURLPlaceholder = "https://www.bytebase.com/docs/get-started/install/external-url"

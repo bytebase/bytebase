@@ -10,6 +10,7 @@ import (
 	mysql "github.com/bytebase/mysql-parser"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -49,6 +50,9 @@ func (*StatementDisallowUsingTemporaryAdvisor) Check(ctx advisor.Context, _ stri
 		for _, stmt := range stmtList {
 			checker.baseLine = stmt.BaseLine
 			antlr.ParseTreeWalkerDefault.Walk(checker, stmt.Tree)
+			if checker.explainCount >= common.MaximumLintExplainSize {
+				break
+			}
 		}
 	}
 
@@ -58,12 +62,13 @@ func (*StatementDisallowUsingTemporaryAdvisor) Check(ctx advisor.Context, _ stri
 type disallowUsingTemporaryChecker struct {
 	*mysql.BaseMySQLParserListener
 
-	baseLine   int
-	adviceList []*storepb.Advice
-	level      storepb.Advice_Status
-	title      string
-	driver     *sql.DB
-	ctx        context.Context
+	baseLine     int
+	adviceList   []*storepb.Advice
+	level        storepb.Advice_Status
+	title        string
+	driver       *sql.DB
+	ctx          context.Context
+	explainCount int
 }
 
 func (checker *disallowUsingTemporaryChecker) EnterSelectStatement(ctx *mysql.SelectStatementContext) {
@@ -75,6 +80,7 @@ func (checker *disallowUsingTemporaryChecker) EnterSelectStatement(ctx *mysql.Se
 	}
 
 	query := ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
+	checker.explainCount++
 	res, err := advisor.Query(checker.ctx, checker.driver, storepb.Engine_MYSQL, fmt.Sprintf("EXPLAIN %s", query))
 	if err != nil {
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{
