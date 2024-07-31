@@ -5070,6 +5070,9 @@ paths:
         patch:
             tags:
                 - PlanService
+            description: |-
+                UpdatePlan updates the plan.
+                 The plan creator and the user with bb.plans.update permission on the project can update the plan.
             operationId: PlanService_UpdatePlan
             parameters:
                 - name: project
@@ -5238,6 +5241,7 @@ paths:
         get:
             tags:
                 - PlanService
+            description: Search for plans that the caller has the bb.plans.get permission on and also satisfy the specified filter & query.
             operationId: PlanService_SearchPlans
             parameters:
                 - name: project

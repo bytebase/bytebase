@@ -3651,6 +3651,7 @@ export const PlanServiceDefinition = {
         },
       },
     },
+    /** Search for plans that the caller has the bb.plans.get permission on and also satisfy the specified filter & query. */
     searchPlans: {
       name: "SearchPlans",
       requestType: SearchPlansRequest,
@@ -3764,6 +3765,10 @@ export const PlanServiceDefinition = {
         },
       },
     },
+    /**
+     * UpdatePlan updates the plan.
+     * The plan creator and the user with bb.plans.update permission on the project can update the plan.
+     */
     updatePlan: {
       name: "UpdatePlan",
       requestType: UpdatePlanRequest,
