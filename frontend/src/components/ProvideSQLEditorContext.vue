@@ -120,7 +120,7 @@ const initializeProjects = async () => {
   } else if (typeof projectInParams === "string" && projectInParams) {
     // "/sql-editor/projects/{project}"
     const project = `projects/${projectInParams}`;
-    editorStore.strictProject = "strict" in route.query || hideProjects.value;
+    editorStore.strictProject = "strict" in route.query;
     await initProject(project);
   } else {
     // plain "/sql-editor"
@@ -128,7 +128,7 @@ const initializeProjects = async () => {
     if (hideProjects.value) {
       // Direct to Default Project
       editorStore.project = DEFAULT_PROJECT_NAME;
-      editorStore.strictProject = true;
+      editorStore.strictProject = false;
       await initProject(DEFAULT_PROJECT_NAME);
     } else {
       const projectList = await projectStore.fetchProjectList(false);
