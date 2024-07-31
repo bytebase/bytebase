@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/github/gh-ost/go/logic"
+	gomysql "github.com/go-sql-driver/mysql"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -108,6 +109,9 @@ func (e *GhostSyncExecutor) Run(ctx context.Context, config *storepb.PlanCheckRu
 	if err != nil {
 		return nil, common.Wrapf(err, common.Internal, "failed to create migration context")
 	}
+	defer func() {
+		gomysql.DeregisterTLSConfig(migrationContext.Uuid)
+	}()
 
 	migrator := logic.NewMigrator(migrationContext, "bb")
 

@@ -11,6 +11,8 @@ import (
 	"github.com/github/gh-ost/go/logic"
 	"github.com/pkg/errors"
 
+	gomysql "github.com/go-sql-driver/mysql"
+
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/ghost"
@@ -105,6 +107,9 @@ func (exec *SchemaUpdateGhostSyncExecutor) runGhostMigration(ctx context.Context
 	if err != nil {
 		return true, nil, errors.Wrap(err, "failed to init migrationContext for gh-ost")
 	}
+	defer func() {
+		gomysql.DeregisterTLSConfig(migrationContext.Uuid)
+	}()
 
 	migrator := logic.NewMigrator(migrationContext, "bb")
 
