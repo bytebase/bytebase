@@ -158,7 +158,11 @@ func (s *auditStream) SendMsg(resp any) error {
 func (in *AuditInterceptor) AuditStreamInterceptor(srv any, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
 	overrideStream, ok := ss.(*overrideStream)
 	if !ok {
-		return errors.New("type assertions failed: grpc.ServerStream -> overrideStream")
+		slog.Warn("type assertions failed: grpc.ServerStream -> overrideStream")
+		if err := handler(srv, ss); err != nil {
+			return createAuditLog(ss.Context(), nil, nil, info.FullMethod, in.store, nil, err)
+		}
+		return nil
 	}
 
 	auditStream := &auditStream{
@@ -169,8 +173,7 @@ func (in *AuditInterceptor) AuditStreamInterceptor(srv any, ss grpc.ServerStream
 		storage:      in.store,
 	}
 
-	err := handler(srv, auditStream)
-	if err != nil {
+	if err := handler(srv, auditStream); err != nil {
 		return createAuditLog(auditStream.ctx, auditStream.curRequest, nil, auditStream.method, auditStream.storage, nil, err)
 	}
 
