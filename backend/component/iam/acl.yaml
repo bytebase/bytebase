@@ -107,6 +107,7 @@ roles:
       - bb.settings.list
       - bb.settings.set
       - bb.slowQueries.list
+      - bb.taskRuns.create
       - bb.taskRuns.list
       - bb.userGroups.create
       - bb.userGroups.delete
@@ -223,6 +224,7 @@ roles:
       - bb.settings.list
       - bb.settings.set
       - bb.slowQueries.list
+      - bb.taskRuns.create
       - bb.taskRuns.list
       - bb.userGroups.get
       - bb.userGroups.list

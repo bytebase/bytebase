@@ -119,6 +119,7 @@ const (
 	PermissionRolloutsGet           Permission = "bb.rollouts.get"
 	PermissionRolloutsPreview       Permission = "bb.rollouts.preview"
 	PermissionSlowQueriesList       Permission = "bb.slowQueries.list"
+	PermissionTaskRunsCreate        Permission = "bb.taskRuns.create"
 	PermissionTaskRunsList          Permission = "bb.taskRuns.list"
 )
 
@@ -238,6 +239,7 @@ var allProjectPermissions = []Permission{
 	PermissionRolloutsGet,
 	PermissionRolloutsPreview,
 	PermissionSlowQueriesList,
+	PermissionTaskRunsCreate,
 	PermissionTaskRunsList,
 }
 
