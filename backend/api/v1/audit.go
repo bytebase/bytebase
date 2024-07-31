@@ -4,7 +4,6 @@ import (
 	"context"
 	"log/slog"
 	"reflect"
-	"strings"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -12,8 +11,6 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
-	"google.golang.org/protobuf/reflect/protoregistry"
-	"google.golang.org/protobuf/types/descriptorpb"
 	"google.golang.org/protobuf/types/known/anypb"
 
 	"github.com/pkg/errors"
@@ -107,13 +104,13 @@ func (in *AuditInterceptor) AuditInterceptor(ctx context.Context, request any, s
 
 	response, rerr := handler(ctx, request)
 
-	requireAudit, err := isAuditMethod(serverInfo.FullMethod)
-	if err != nil {
-		slog.Warn("audit interceptor: failed to check isAuditMethod", log.BBError(err))
+	authCtx, ok := common.GetAuthContextFromContext(ctx)
+	if !ok {
+		slog.Warn("audit interceptor: failed to get auth context")
 		return response, rerr
 	}
 
-	if requireAudit {
+	if authCtx.Audit {
 		if err := createAuditLog(ctx, request, response, serverInfo.FullMethod, in.store, serviceData, rerr); err != nil {
 			slog.Warn("audit interceptor: failed to create audit log", log.BBError(err))
 		}
@@ -410,36 +407,4 @@ func isStreamAuditMethod(method string) bool {
 	default:
 		return false
 	}
-}
-
-func getMethodOptionsByName(fullMethod string) (*descriptorpb.MethodOptions, error) {
-	tokens := strings.Split(fullMethod, "/")
-	if len(tokens) != 3 {
-		return nil, errors.Errorf("invalid full method name %q", fullMethod)
-	}
-	rd, err := protoregistry.GlobalFiles.FindDescriptorByName(protoreflect.FullName(tokens[1]))
-	if err != nil {
-		return nil, errors.Wrapf(err, "invalid registry service descriptor, full method name %q", fullMethod)
-	}
-	sd, ok := rd.(protoreflect.ServiceDescriptor)
-	if !ok {
-		return nil, errors.Errorf("invalid service descriptor, full method name %q", fullMethod)
-	}
-	md, ok := sd.Methods().ByName(protoreflect.Name(tokens[2])).Options().(*descriptorpb.MethodOptions)
-	if !ok {
-		return nil, errors.Errorf("invalid method options, full method name %q", fullMethod)
-	}
-	return md, nil
-}
-
-func isAuditMethod(fullMethod string) (bool, error) {
-	md, err := getMethodOptionsByName(fullMethod)
-	if err != nil {
-		return false, err
-	}
-	requireAudit, ok := proto.GetExtension(md, v1pb.E_Audit).(bool)
-	if !ok {
-		return false, errors.Errorf("invalid audit extension, full method name %q", fullMethod)
-	}
-	return requireAudit, nil
 }
