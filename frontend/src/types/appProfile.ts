@@ -37,6 +37,7 @@ export type AppFeatures = {
   "bb.feature.sql-editor.hide-readonly-datasource-hint": boolean;
   "bb.feature.sql-editor.hide-projects": boolean;
   "bb.feature.sql-editor.hide-environments": boolean;
+  "bb.feature.sql-editor.hide-batch-query": boolean;
 };
 
 export type AppProfile = {
@@ -84,5 +85,6 @@ export const defaultAppProfile = (): AppProfile => ({
     "bb.feature.sql-editor.hide-readonly-datasource-hint": false,
     "bb.feature.sql-editor.hide-projects": false,
     "bb.feature.sql-editor.hide-environments": false,
+    "bb.feature.sql-editor.hide-batch-query": false,
   },
 });
