@@ -234,6 +234,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ db.Execut
 	}
 	defer tx.Rollback()
 	// To submit a variable number of SQL statements in the statement field, set MULTI_STATEMENT_COUNT to 0."
+	// https://docs.snowflake.com/en/developer-guide/sql-api/submitting-multiple-statements
 	mctx, err := snow.WithMultiStatement(ctx, 0 /* MULTI_STATEMENT_COUNT */)
 	if err != nil {
 		return 0, err
