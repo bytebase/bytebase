@@ -784,8 +784,8 @@ github.com/bytebase/gh-ost2 v0.0.0-20240731091141-e7a12a9401ab h1:hJ3tfjfm5D63Qw
 github.com/bytebase/gh-ost2 v0.0.0-20240731091141-e7a12a9401ab/go.mod h1:VRPqaDM7UYxJbcCtQkjBcNkxW17p6LJJdkM/nYwQhqg=
 github.com/bytebase/go-lsp v0.0.0-20240130071507-c04b5c75010c h1:W832GNANCst4C6TgYbQnKKxbuMZKQxTD4++b3HOuzBo=
 github.com/bytebase/go-lsp v0.0.0-20240130071507-c04b5c75010c/go.mod h1:SULmZY7YNBsvNiQbrb/BEDdEJ84TGnfyUQxaHt8t8rY=
-github.com/bytebase/go-mssqldb v0.0.0-20240613094500-7f9ca9381f8f h1:hcjpjIaVVPuZOrHvkXiu7HDSow03aDdK+fXTZM6g93c=
-github.com/bytebase/go-mssqldb v0.0.0-20240613094500-7f9ca9381f8f/go.mod h1:kOvZKUdrhhFQmxLZqbwUV0rHkNkZpthMITIb2Ko1IoA=
+github.com/bytebase/go-mssqldb v0.0.0-20240801091126-3ff3ca07d898 h1:0ggqA9XL4yvtePPvRDRYMed3jtdNk4s0o8AMW8uJPSA=
+github.com/bytebase/go-mssqldb v0.0.0-20240801091126-3ff3ca07d898/go.mod h1:2KhUz4GSLcdJGXSJMXAf2BjmakcgoOkNyPpHdGAxRpY=
 github.com/bytebase/go-obo v0.0.0-20231026081615-705a7fffbfd2 h1:nEHZi8S7PHT4GxP9GfJiuhO8KkYcHmePvy5BfiYxwNk=
 github.com/bytebase/go-obo v0.0.0-20231026081615-705a7fffbfd2/go.mod h1:wjDx6Xm9q7dFtHJvIlrI99JytznLw5wQ4R+9mNXJwGI=
 github.com/bytebase/gohive v0.0.0-20240422092929-d76993a958a4 h1:5o+GWOu+j68eAODMw7/lFJavWCCiPMeqEHuOGx0YmoU=
