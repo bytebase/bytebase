@@ -4,12 +4,14 @@ import {
   useEnvironmentV1Store,
   useDatabaseV1Store,
   useProjectV1Store,
+  useCurrentUserV1,
 } from "@/store";
 import {
   environmentNamePrefix,
   projectNamePrefix,
   isDatabaseName,
 } from "@/store/modules/v1/common";
+import { hasWorkspacePermissionV2 } from "@/utils";
 
 export type ResourceType = "environment" | "project" | "database";
 
@@ -17,6 +19,7 @@ export const useReviewConfigAttachedResource = (resource: Ref<string>) => {
   const environmentV1Store = useEnvironmentV1Store();
   const databaseStore = useDatabaseV1Store();
   const projectStore = useProjectV1Store();
+  const me = useCurrentUserV1();
 
   const resourceType = computed((): ResourceType | undefined => {
     if (resource.value.startsWith(environmentNamePrefix)) {
@@ -43,13 +46,19 @@ export const useReviewConfigAttachedResource = (resource: Ref<string>) => {
   watchEffect(async () => {
     switch (resourceType.value) {
       case "database":
-        await databaseStore.getOrFetchDatabaseByName(resource.value);
+        if (hasWorkspacePermissionV2(me.value, "bb.databases.get")) {
+          await databaseStore.getOrFetchDatabaseByName(resource.value);
+        }
         return;
       case "environment":
-        await environmentV1Store.getOrFetchEnvironmentByName(resource.value);
+        if (hasWorkspacePermissionV2(me.value, "bb.environments.get")) {
+          await environmentV1Store.getOrFetchEnvironmentByName(resource.value);
+        }
         return;
       case "project":
-        await projectStore.getOrFetchProjectByName(resource.value);
+        if (hasWorkspacePermissionV2(me.value, "bb.projects.get")) {
+          await projectStore.getOrFetchProjectByName(resource.value);
+        }
         return;
     }
   });
