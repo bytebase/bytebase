@@ -114,13 +114,15 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ db.Execut
 
 	if driver.connCfg.TLSConfig.UseSSL {
 		mongoshArgs = append(mongoshArgs, "--tls")
+		mongoshArgs = append(mongoshArgs, "--tlsAllowInvalidHostnames")
 
+		uuid := uuid.New().String()
 		if driver.connCfg.TLSConfig.SslCA == "" {
 			mongoshArgs = append(mongoshArgs, "--tlsUseSystemCA")
 		} else {
 			// Write the tlsCAFile to a temporary file, and use the temporary file as the value of --tlsCAFile.
 			// The reason is that the --tlsCAFile option of mongosh does not support the value of the certificate directly.
-			caFileName := fmt.Sprintf("mongodb-tls-ca-%s-%s", driver.connCfg.ConnectionDatabase, uuid.New().String())
+			caFileName := fmt.Sprintf("mongodb-tls-ca-%s-%s", driver.connCfg.ConnectionDatabase, uuid)
 			defer func() {
 				// While error occurred in mongosh, the temporary file may not created, so we ignore the error here.
 				_ = os.Remove(caFileName)
@@ -129,6 +131,28 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ db.Execut
 				return 0, errors.Wrap(err, "failed to write tlsCAFile to temporary file")
 			}
 			mongoshArgs = append(mongoshArgs, "--tlsCAFile", caFileName)
+		}
+
+		if driver.connCfg.TLSConfig.SslKey != "" && driver.connCfg.TLSConfig.SslCert != "" {
+			clientCertName := fmt.Sprintf("mongodb-tls-client-cert-%s-%s", driver.connCfg.ConnectionDatabase, uuid)
+			defer func() {
+				// While error occurred in mongosh, the temporary file may not created, so we ignore the error here.
+				_ = os.Remove(clientCertName)
+			}()
+			var sb strings.Builder
+			if _, err := sb.WriteString(driver.connCfg.TLSConfig.SslKey); err != nil {
+				return 0, errors.Wrapf(err, "failed to write ssl key into string builder")
+			}
+			if _, err := sb.WriteString("\n"); err != nil {
+				return 0, errors.Wrapf(err, "failed to write new line into string builder")
+			}
+			if _, err := sb.WriteString(driver.connCfg.TLSConfig.SslCert); err != nil {
+				return 0, errors.Wrapf(err, "failed to write ssl cert into string builder")
+			}
+			if err := os.WriteFile(clientCertName, []byte(sb.String()), 0400); err != nil {
+				return 0, errors.Wrap(err, "failed to write tlsCAFile to temporary file")
+			}
+			mongoshArgs = append(mongoshArgs, "--tlsCertificateKeyFile", clientCertName)
 		}
 	}
 
@@ -250,12 +274,15 @@ func (driver *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement stri
 
 	if driver.connCfg.TLSConfig.UseSSL {
 		mongoshArgs = append(mongoshArgs, "--tls")
+		mongoshArgs = append(mongoshArgs, "--tlsAllowInvalidHostnames")
+
+		uuid := uuid.New().String()
 		if driver.connCfg.TLSConfig.SslCA == "" {
 			mongoshArgs = append(mongoshArgs, "--tlsUseSystemCA")
 		} else {
 			// Write the tlsCAFile to a temporary file, and use the temporary file as the value of --tlsCAFile.
 			// The reason is that the --tlsCAFile option of mongosh does not support the value of the certificate directly.
-			caFileName := fmt.Sprintf("mongodb-tls-ca-%s-%s", driver.connCfg.ConnectionDatabase, uuid.New().String())
+			caFileName := fmt.Sprintf("mongodb-tls-ca-%s-%s", driver.connCfg.ConnectionDatabase, uuid)
 			defer func() {
 				// While error occurred in mongosh, the temporary file may not created, so we ignore the error here.
 				_ = os.Remove(caFileName)
@@ -264,6 +291,28 @@ func (driver *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement stri
 				return nil, errors.Wrap(err, "failed to write tlsCAFile to temporary file")
 			}
 			mongoshArgs = append(mongoshArgs, "--tlsCAFile", caFileName)
+		}
+
+		if driver.connCfg.TLSConfig.SslKey != "" && driver.connCfg.TLSConfig.SslCert != "" {
+			clientCertName := fmt.Sprintf("mongodb-tls-client-cert-%s-%s", driver.connCfg.ConnectionDatabase, uuid)
+			defer func() {
+				// While error occurred in mongosh, the temporary file may not created, so we ignore the error here.
+				_ = os.Remove(clientCertName)
+			}()
+			var sb strings.Builder
+			if _, err := sb.WriteString(driver.connCfg.TLSConfig.SslKey); err != nil {
+				return nil, errors.Wrapf(err, "failed to write ssl key into string builder")
+			}
+			if _, err := sb.WriteString("\n"); err != nil {
+				return nil, errors.Wrapf(err, "failed to write new line into string builder")
+			}
+			if _, err := sb.WriteString(driver.connCfg.TLSConfig.SslCert); err != nil {
+				return nil, errors.Wrapf(err, "failed to write ssl cert into string builder")
+			}
+			if err := os.WriteFile(clientCertName, []byte(sb.String()), 0400); err != nil {
+				return nil, errors.Wrap(err, "failed to write tlsCAFile to temporary file")
+			}
+			mongoshArgs = append(mongoshArgs, "--tlsCertificateKeyFile", clientCertName)
 		}
 	}
 

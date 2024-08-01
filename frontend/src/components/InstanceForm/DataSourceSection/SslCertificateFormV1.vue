@@ -77,11 +77,11 @@ const state = reactive<LocalState>({
 });
 
 const hasSSLKeyField = computed(() => {
-  return ![Engine.MONGODB, Engine.MSSQL].includes(props.engineType);
+  return ![Engine.MSSQL].includes(props.engineType);
 });
 
 const hasSSLCertField = computed(() => {
-  return ![Engine.MONGODB, Engine.MSSQL].includes(props.engineType);
+  return ![Engine.MSSQL].includes(props.engineType);
 });
 
 // Sync the latest version to local state when props.value changed.
