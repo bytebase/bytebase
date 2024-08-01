@@ -709,8 +709,7 @@ func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL bas
 	}
 
 	startTime := time.Now()
-	sqlWithBytebaseAppComment := util.MySQLPrependBytebaseAppComment(statement)
-	rows, err := conn.QueryContext(ctx, sqlWithBytebaseAppComment)
+	rows, err := conn.QueryContext(ctx, statement)
 	if err != nil {
 		return nil, util.FormatErrorWithQuery(err, statement)
 	}
