@@ -376,8 +376,20 @@ func (driver *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, single
 	}
 
 	startTime := time.Now()
-	result, err := util.Query(ctx, storepb.Engine_REDSHIFT, conn, statement)
+	rows, err := conn.QueryContext(ctx, statement)
 	if err != nil {
+		return nil, util.FormatErrorWithQuery(err, statement)
+	}
+	defer rows.Close()
+
+	result, err := util.RowsToQueryResult(storepb.Engine_REDSHIFT, rows)
+	if err != nil {
+		// nolint
+		return &v1pb.QueryResult{
+			Error: err.Error(),
+		}, nil
+	}
+	if err := rows.Err(); err != nil {
 		return nil, err
 	}
 	result.Latency = durationpb.New(time.Since(startTime))
