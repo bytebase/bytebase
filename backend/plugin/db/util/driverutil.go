@@ -31,27 +31,6 @@ func FormatErrorWithQuery(err error, query string) error {
 	return errors.Wrapf(err, "failed to execute query %q", query)
 }
 
-// Query will execute a readonly / SELECT query.
-func Query(ctx context.Context, dbType storepb.Engine, conn *sql.Conn, statement string) (*v1pb.QueryResult, error) {
-	startTime := time.Now()
-	rows, err := conn.QueryContext(ctx, statement)
-	if err != nil {
-		return nil, FormatErrorWithQuery(err, statement)
-	}
-	defer rows.Close()
-
-	result, err := rowsToQueryResult(dbType, rows)
-	if err != nil {
-		// nolint
-		return &v1pb.QueryResult{
-			Error: err.Error(),
-		}, nil
-	}
-	result.Latency = durationpb.New(time.Since(startTime))
-	result.Statement = statement
-	return result, nil
-}
-
 // RunStatement runs a SQL statement in a given connection.
 func RunStatement(ctx context.Context, engineType storepb.Engine, conn *sql.Conn, statement string) ([]*v1pb.QueryResult, error) {
 	singleSQLs, err := base.SplitMultiSQL(engineType, statement)
@@ -118,7 +97,7 @@ func adminQuery(ctx context.Context, dbType storepb.Engine, conn *sql.Conn, stat
 	}
 	defer rows.Close()
 
-	result, err := rowsToQueryResult(dbType, rows)
+	result, err := RowsToQueryResult(dbType, rows)
 	if err != nil {
 		return &v1pb.QueryResult{
 			Error: err.Error(),
@@ -129,7 +108,7 @@ func adminQuery(ctx context.Context, dbType storepb.Engine, conn *sql.Conn, stat
 	return result
 }
 
-func rowsToQueryResult(dbType storepb.Engine, rows *sql.Rows) (*v1pb.QueryResult, error) {
+func RowsToQueryResult(dbType storepb.Engine, rows *sql.Rows) (*v1pb.QueryResult, error) {
 	columnNames, err := rows.Columns()
 	if err != nil {
 		return nil, err

@@ -484,7 +484,7 @@ func getConnectionID(ctx context.Context, conn *sql.Conn) (string, error) {
 	return id, nil
 }
 
-func (d *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL base.SingleSQL, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
+func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL base.SingleSQL, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
 	statement := util.TrimStatement(singleSQL.Text)
 	isSet := variableSetStmtRegexp.MatchString(statement)
 	isShow := variableShowStmtRegexp.MatchString(statement)
@@ -498,8 +498,20 @@ func (d *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL b
 
 	startTime := time.Now()
 	sqlWithBytebaseAppComment := util.MySQLPrependBytebaseAppComment(statement)
-	result, err := util.Query(ctx, d.dbType, conn, sqlWithBytebaseAppComment)
+	rows, err := conn.QueryContext(ctx, sqlWithBytebaseAppComment)
 	if err != nil {
+		return nil, util.FormatErrorWithQuery(err, statement)
+	}
+	defer rows.Close()
+
+	result, err := util.RowsToQueryResult(storepb.Engine_MYSQL, rows)
+	if err != nil {
+		// nolint
+		return &v1pb.QueryResult{
+			Error: err.Error(),
+		}, nil
+	}
+	if err := rows.Err(); err != nil {
 		return nil, err
 	}
 	result.Latency = durationpb.New(time.Since(startTime))
