@@ -40,17 +40,6 @@ var ApprovalFactors = []cel.EnvOption{
 	cel.ParserExpressionSizeLimit(celLimit),
 }
 
-// IAMPolicyConditionCELAttributes are the variables when evaluating IAM policy condition.
-var IAMPolicyConditionCELAttributes = []cel.EnvOption{
-	cel.Variable("resource.environment_name", cel.StringType),
-	cel.Variable("resource.database", cel.StringType),
-	cel.Variable("resource.schema", cel.StringType),
-	cel.Variable("resource.table", cel.StringType),
-	cel.Variable("request.row_limit", cel.IntType),
-	cel.Variable("request.time", cel.TimestampType),
-	cel.ParserExpressionSizeLimit(celLimit),
-}
-
 // MaskingRulePolicyCELAttributes are the variables when evaluating masking rule.
 var MaskingRulePolicyCELAttributes = []cel.EnvOption{
 	cel.Variable("environment_id", cel.StringType),
@@ -64,14 +53,10 @@ var MaskingRulePolicyCELAttributes = []cel.EnvOption{
 	cel.ParserExpressionSizeLimit(celLimit),
 }
 
-// MaskingExceptionPolicyCELAttributes are the variables when evaluating masking exception.
-var MaskingExceptionPolicyCELAttributes = []cel.EnvOption{
-	cel.Variable("resource.instance_id", cel.StringType),
-	cel.Variable("resource.database_name", cel.StringType),
-	cel.Variable("resource.table_name", cel.StringType),
-	cel.Variable("resource.schema_name", cel.StringType),
-	cel.Variable("resource.column_name", cel.StringType),
-	cel.Variable("request.time", cel.TimestampType),
+// CommonCELAttributes are the common variables for CEL expressions.
+var CommonCELAttributes = []cel.EnvOption{
+	cel.Variable("resource", cel.MapType(cel.StringType, cel.AnyType)),
+	cel.Variable("request", cel.MapType(cel.StringType, cel.AnyType)),
 	cel.ParserExpressionSizeLimit(celLimit),
 }
 
@@ -119,9 +104,7 @@ func ConvertUnparsedApproval(expression *expr.Expr) (*exprproto.ParsedExpr, erro
 
 // ValidateGroupCELExpr validates group expr.
 func ValidateGroupCELExpr(expr string) (cel.Program, error) {
-	e, err := cel.NewEnv(
-		cel.Variable("resource", cel.MapType(cel.StringType, cel.AnyType)),
-	)
+	e, err := cel.NewEnv(CommonCELAttributes...)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
@@ -157,9 +140,7 @@ func ValidateMaskingRuleCELExpr(expr string) (cel.Program, error) {
 
 // ValidateMaskingExceptionCELExpr validates masking exception expr.
 func ValidateMaskingExceptionCELExpr(expr string) (cel.Program, error) {
-	e, err := cel.NewEnv(
-		MaskingExceptionPolicyCELAttributes...,
-	)
+	e, err := cel.NewEnv(CommonCELAttributes...)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
@@ -178,9 +159,7 @@ func ValidateProjectMemberCELExpr(expression *expr.Expr) (cel.Program, error) {
 	if expression == nil || expression.Expression == "" {
 		return nil, nil
 	}
-	e, err := cel.NewEnv(
-		IAMPolicyConditionCELAttributes...,
-	)
+	e, err := cel.NewEnv(CommonCELAttributes...)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
@@ -209,7 +188,7 @@ func GetQueryExportFactors(expression string) (*QueryExportFactors, error) {
 	}
 
 	factors := &QueryExportFactors{}
-	e, err := cel.NewEnv(IAMPolicyConditionCELAttributes...)
+	e, err := cel.NewEnv(CommonCELAttributes...)
 	if err != nil {
 		return nil, err
 	}
@@ -266,7 +245,7 @@ func doEvalBindingCondition(expr string, input map[string]any) (bool, error) {
 		return true, nil
 	}
 
-	e, err := cel.NewEnv(IAMPolicyConditionCELAttributes...)
+	e, err := cel.NewEnv(CommonCELAttributes...)
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to new cel env")
 	}

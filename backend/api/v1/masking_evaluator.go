@@ -270,10 +270,7 @@ func evaluateMaskingExceptionPolicyCondition(expression string, attributes map[s
 	if expression == "" {
 		return true, nil
 	}
-	maskingExceptionPolicyEnv, err := cel.NewEnv(
-		cel.Variable("resource", cel.MapType(cel.StringType, cel.AnyType)),
-		cel.Variable("request", cel.MapType(cel.StringType, cel.AnyType)),
-	)
+	maskingExceptionPolicyEnv, err := cel.NewEnv(common.CommonCELAttributes...)
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to create CEL environment for masking exception policy")
 	}
@@ -335,7 +332,7 @@ func evaluateQueryExportPolicyCondition(expression string, attributes map[string
 	if expression == "" {
 		return true, nil
 	}
-	env, err := cel.NewEnv(common.IAMPolicyConditionCELAttributes...)
+	env, err := cel.NewEnv(common.CommonCELAttributes...)
 	if err != nil {
 		return false, err
 	}

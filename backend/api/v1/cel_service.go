@@ -24,7 +24,7 @@ func NewCelService() *CelService {
 
 // Parse parses a CEL expression.
 func (*CelService) BatchParse(_ context.Context, request *v1pb.BatchParseRequest) (*v1pb.BatchParseResponse, error) {
-	e, err := cel.NewEnv(common.IAMPolicyConditionCELAttributes...)
+	e, err := cel.NewEnv(common.CommonCELAttributes...)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to create CEL environment: %v", err)
 	}

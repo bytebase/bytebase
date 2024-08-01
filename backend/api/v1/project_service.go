@@ -1227,7 +1227,7 @@ func convertToV1IamPolicy(ctx context.Context, stores *store.Store, iamPolicy *s
 			v1pbBinding.Condition = &expr.Expr{}
 		}
 		if v1pbBinding.Condition.Expression != "" {
-			e, err := cel.NewEnv(common.IAMPolicyConditionCELAttributes...)
+			e, err := cel.NewEnv(common.CommonCELAttributes...)
 			if err != nil {
 				return nil, status.Errorf(codes.Internal, "failed to create cel environment with error: %v", err)
 			}
