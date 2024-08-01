@@ -11,6 +11,7 @@ import (
 
 	mysql "github.com/bytebase/mysql-parser"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -57,6 +58,9 @@ func (*StatementAffectedRowLimitAdvisor) Check(ctx advisor.Context, _ string) ([
 		for _, stmt := range stmtList {
 			checker.baseLine = stmt.BaseLine
 			antlr.ParseTreeWalkerDefault.Walk(checker, stmt.Tree)
+			if checker.explainCount >= common.MaximumLintExplainSize {
+				break
+			}
 		}
 	}
 
@@ -66,14 +70,15 @@ func (*StatementAffectedRowLimitAdvisor) Check(ctx advisor.Context, _ string) ([
 type statementAffectedRowLimitChecker struct {
 	*mysql.BaseMySQLParserListener
 
-	baseLine   int
-	adviceList []*storepb.Advice
-	level      storepb.Advice_Status
-	title      string
-	text       string
-	maxRow     int
-	driver     *sql.DB
-	ctx        context.Context
+	baseLine     int
+	adviceList   []*storepb.Advice
+	level        storepb.Advice_Status
+	title        string
+	text         string
+	maxRow       int
+	driver       *sql.DB
+	ctx          context.Context
+	explainCount int
 }
 
 func (checker *statementAffectedRowLimitChecker) EnterQuery(ctx *mysql.QueryContext) {
@@ -98,6 +103,7 @@ func (checker *statementAffectedRowLimitChecker) EnterDeleteStatement(ctx *mysql
 
 func (checker *statementAffectedRowLimitChecker) handleStmt(lineNumber int) {
 	lineNumber += checker.baseLine
+	checker.explainCount++
 	res, err := advisor.Query(checker.ctx, checker.driver, storepb.Engine_MYSQL, fmt.Sprintf("EXPLAIN %s", checker.text))
 	if err != nil {
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{

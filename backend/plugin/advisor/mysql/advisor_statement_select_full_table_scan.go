@@ -11,6 +11,7 @@ import (
 
 	mysql "github.com/bytebase/mysql-parser"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -50,6 +51,9 @@ func (*StatementSelectFullTableScanAdvisor) Check(ctx advisor.Context, _ string)
 		for _, stmt := range stmtList {
 			checker.baseLine = stmt.BaseLine
 			antlr.ParseTreeWalkerDefault.Walk(checker, stmt.Tree)
+			if checker.explainCount >= common.MaximumLintExplainSize {
+				break
+			}
 		}
 	}
 
@@ -59,12 +63,13 @@ func (*StatementSelectFullTableScanAdvisor) Check(ctx advisor.Context, _ string)
 type statementSelectFullTableScanChecker struct {
 	*mysql.BaseMySQLParserListener
 
-	baseLine   int
-	adviceList []*storepb.Advice
-	level      storepb.Advice_Status
-	title      string
-	driver     *sql.DB
-	ctx        context.Context
+	baseLine     int
+	adviceList   []*storepb.Advice
+	level        storepb.Advice_Status
+	title        string
+	driver       *sql.DB
+	ctx          context.Context
+	explainCount int
 }
 
 func (checker *statementSelectFullTableScanChecker) EnterSelectStatement(ctx *mysql.SelectStatementContext) {
@@ -76,6 +81,7 @@ func (checker *statementSelectFullTableScanChecker) EnterSelectStatement(ctx *my
 	}
 
 	query := ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
+	checker.explainCount++
 	res, err := advisor.Query(checker.ctx, checker.driver, storepb.Engine_MYSQL, fmt.Sprintf("EXPLAIN %s", query))
 	if err != nil {
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{

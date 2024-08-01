@@ -11,6 +11,7 @@ import (
 
 	mysql "github.com/bytebase/mysql-parser"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -54,6 +55,9 @@ func (*StatementQueryMinumumPlanLevelAdvisor) Check(ctx advisor.Context, _ strin
 		for _, stmt := range stmtList {
 			checker.baseLine = stmt.BaseLine
 			antlr.ParseTreeWalkerDefault.Walk(checker, stmt.Tree)
+			if checker.explainCount >= common.MaximumLintExplainSize {
+				break
+			}
 		}
 	}
 
@@ -63,14 +67,15 @@ func (*StatementQueryMinumumPlanLevelAdvisor) Check(ctx advisor.Context, _ strin
 type statementQueryMinumumPlanLevelChecker struct {
 	*mysql.BaseMySQLParserListener
 
-	baseLine    int
-	adviceList  []*storepb.Advice
-	level       storepb.Advice_Status
-	title       string
-	text        string
-	driver      *sql.DB
-	ctx         context.Context
-	explainType ExplainType
+	baseLine     int
+	adviceList   []*storepb.Advice
+	level        storepb.Advice_Status
+	title        string
+	text         string
+	driver       *sql.DB
+	ctx          context.Context
+	explainType  ExplainType
+	explainCount int
 }
 
 type ExplainType int
@@ -136,6 +141,7 @@ func (checker *statementQueryMinumumPlanLevelChecker) EnterSelectStatement(ctx *
 	}
 
 	query := ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
+	checker.explainCount++
 	res, err := advisor.Query(checker.ctx, checker.driver, storepb.Engine_MYSQL, fmt.Sprintf("EXPLAIN %s", query))
 	if err != nil {
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{
