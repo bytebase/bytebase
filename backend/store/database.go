@@ -535,7 +535,8 @@ func (*Store) listDatabaseImplV2(ctx context.Context, tx *Tx, find *FindDatabase
 		LEFT JOIN project ON db.project_id = project.id
 		LEFT JOIN instance ON db.instance_id = instance.id
 		WHERE %s
-		GROUP BY db.id, project.resource_id, instance.resource_id`, strings.Join(where, " AND "))
+		GROUP BY db.id, project.resource_id, instance.resource_id
+		ORDER BY project.resource_id, instance.resource_id, db.name`, strings.Join(where, " AND "))
 	if v := find.Limit; v != nil {
 		query += fmt.Sprintf(" LIMIT %d", *v)
 	}
