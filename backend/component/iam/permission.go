@@ -57,6 +57,10 @@ const (
 	PermissionUserGroupsGet              Permission = "bb.userGroups.get"
 	PermissionUserGroupsList             Permission = "bb.userGroups.list"
 	PermissionUserGroupsUpdate           Permission = "bb.userGroups.update"
+	PermissionUsersCreate                Permission = "bb.users.create"
+	PermissionUsersUpdate                Permission = "bb.users.update"
+	PermissionUsersDelete                Permission = "bb.users.delete"
+	PermissionUsersUndelete              Permission = "bb.users.undelete"
 	PermissionSettingsGet                Permission = "bb.settings.get"
 	PermissionSettingsList               Permission = "bb.settings.list"
 	PermissionSettingsSet                Permission = "bb.settings.set"
@@ -64,7 +68,8 @@ const (
 	PermissionWorksheetsManage           Permission = "bb.worksheets.manage"
 
 	// Project-level permissions.
-	PermissionAuditLogsGet          Permission = "bb.auditLogs.get"
+	PermissionAuditLogsExport       Permission = "bb.auditLogs.export"
+	PermissionAuditLogsSearch       Permission = "bb.auditLogs.search"
 	PermissionBranchesCreate        Permission = "bb.branches.create"
 	PermissionBranchesDelete        Permission = "bb.branches.delete"
 	PermissionBranchesGet           Permission = "bb.branches.get"
@@ -177,6 +182,10 @@ var allWorkspacePermissions = []Permission{
 	PermissionUserGroupsGet,
 	PermissionUserGroupsList,
 	PermissionUserGroupsUpdate,
+	PermissionUsersCreate,
+	PermissionUsersUpdate,
+	PermissionUsersDelete,
+	PermissionUsersUndelete,
 	PermissionSettingsGet,
 	PermissionSettingsList,
 	PermissionSettingsSet,
@@ -184,7 +193,8 @@ var allWorkspacePermissions = []Permission{
 	PermissionWorksheetsGet,
 }
 var allProjectPermissions = []Permission{
-	PermissionAuditLogsGet,
+	PermissionAuditLogsExport,
+	PermissionAuditLogsSearch,
 	PermissionBranchesCreate,
 	PermissionBranchesDelete,
 	PermissionBranchesGet,

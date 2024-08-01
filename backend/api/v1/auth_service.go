@@ -124,9 +124,19 @@ func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 	}
 
 	if setting.DisallowSignup {
-		rolePtr := ctx.Value(common.RoleContextKey)
-		if rolePtr == nil || rolePtr.(api.Role) != api.WorkspaceAdmin {
+		if _, ok := ctx.Value(common.PrincipalIDContextKey).(int); !ok {
 			return nil, status.Errorf(codes.PermissionDenied, "sign up is disallowed")
+		}
+		callerUser, err := s.getCallerUser(ctx)
+		if err != nil {
+			return nil, err
+		}
+		ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionUsersCreate, callerUser)
+		if err != nil {
+			return nil, err
+		}
+		if !ok {
+			return nil, status.Errorf(codes.PermissionDenied, "user does not have permission %q", iam.PermissionUsersCreate)
 		}
 	}
 	if request.User == nil {
@@ -273,12 +283,18 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 		return nil, status.Errorf(codes.NotFound, "user %q has been deleted", userID)
 	}
 
-	role, ok := ctx.Value(common.RoleContextKey).(api.Role)
-	if !ok {
-		return nil, status.Errorf(codes.Internal, "role not found")
-	}
-	if principalID != userID && role != api.WorkspaceAdmin {
-		return nil, status.Errorf(codes.PermissionDenied, "only workspace owner or user itself can update the user %d", userID)
+	if principalID != userID {
+		callerUser, err := s.getCallerUser(ctx)
+		if err != nil {
+			return nil, err
+		}
+		ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionUsersUpdate, callerUser)
+		if err != nil {
+			return nil, err
+		}
+		if !ok {
+			return nil, status.Errorf(codes.PermissionDenied, "user does not have permission %q", iam.PermissionUsersUpdate)
+		}
 	}
 
 	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
@@ -420,6 +436,19 @@ func (s *AuthService) DeleteUser(ctx context.Context, request *v1pb.DeleteUserRe
 	if !ok {
 		return nil, status.Errorf(codes.Internal, "principal ID not found")
 	}
+
+	callerUser, err := s.getCallerUser(ctx)
+	if err != nil {
+		return nil, err
+	}
+	ok, err = s.iamManager.CheckPermission(ctx, iam.PermissionUsersDelete, callerUser)
+	if err != nil {
+		return nil, err
+	}
+	if !ok {
+		return nil, status.Errorf(codes.PermissionDenied, "user does not have permission %q", iam.PermissionUsersDelete)
+	}
+
 	userID, err := common.GetUserID(request.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
@@ -435,13 +464,6 @@ func (s *AuthService) DeleteUser(ctx context.Context, request *v1pb.DeleteUserRe
 		return nil, status.Errorf(codes.NotFound, "user %q has been deleted", userID)
 	}
 
-	role, ok := ctx.Value(common.RoleContextKey).(api.Role)
-	if !ok {
-		return nil, status.Errorf(codes.Internal, "role not found")
-	}
-	if role != api.WorkspaceAdmin {
-		return nil, status.Errorf(codes.PermissionDenied, "only workspace owner can delete the user %d", userID)
-	}
 	// Check if the user is the only workspace admin.
 	isAdmin, err := s.iamManager.CheckUserContainsWorkspaceRoles(ctx, user, api.WorkspaceAdmin)
 	if err != nil {
@@ -473,6 +495,19 @@ func (s *AuthService) UndeleteUser(ctx context.Context, request *v1pb.UndeleteUs
 	if !ok {
 		return nil, status.Errorf(codes.Internal, "principal ID not found")
 	}
+
+	callerUser, err := s.getCallerUser(ctx)
+	if err != nil {
+		return nil, err
+	}
+	ok, err = s.iamManager.CheckPermission(ctx, iam.PermissionUsersUndelete, callerUser)
+	if err != nil {
+		return nil, err
+	}
+	if !ok {
+		return nil, status.Errorf(codes.PermissionDenied, "user does not have permission %q", iam.PermissionUsersUndelete)
+	}
+
 	userID, err := common.GetUserID(request.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
@@ -486,14 +521,6 @@ func (s *AuthService) UndeleteUser(ctx context.Context, request *v1pb.UndeleteUs
 	}
 	if !user.MemberDeleted {
 		return nil, status.Errorf(codes.InvalidArgument, "user %q is already active", userID)
-	}
-
-	role, ok := ctx.Value(common.RoleContextKey).(api.Role)
-	if !ok {
-		return nil, status.Errorf(codes.Internal, "role not found")
-	}
-	if role != api.WorkspaceAdmin {
-		return nil, status.Errorf(codes.PermissionDenied, "only workspace owner can undelete the user %d", userID)
 	}
 
 	user, err = s.store.UpdateUser(ctx, user, &store.UpdateUserMessage{Delete: &undeletePatch}, principalID)
@@ -977,4 +1004,19 @@ func (s *AuthService) userCountGuard(ctx context.Context) error {
 		return status.Errorf(codes.ResourceExhausted, "reached the maximum user count %d", userLimit)
 	}
 	return nil
+}
+
+func (s *AuthService) getCallerUser(ctx context.Context) (*store.UserMessage, error) {
+	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "principal ID not found")
+	}
+	user, err := s.store.GetUserByID(ctx, principalID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get user, error: %v", err)
+	}
+	if user == nil {
+		return nil, status.Errorf(codes.NotFound, "user %d not found", principalID)
+	}
+	return user, nil
 }

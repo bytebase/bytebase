@@ -34,11 +34,22 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type AuthServiceClient interface {
+	// Get the user.
+	// Any authenticated user can get the user.
 	GetUser(ctx context.Context, in *GetUserRequest, opts ...grpc.CallOption) (*User, error)
+	// List all users.
+	// Any authenticated user can list users.
 	ListUsers(ctx context.Context, in *ListUsersRequest, opts ...grpc.CallOption) (*ListUsersResponse, error)
+	// Create a user.
+	// When Disallow Signup is enabled, only the caller with bb.users.create on the workspace can create a user.
+	// Otherwise, any unauthenticated user can create a user.
 	CreateUser(ctx context.Context, in *CreateUserRequest, opts ...grpc.CallOption) (*User, error)
+	// Only the user itself and the user with bb.users.update permission on the workspace can update the user.
 	UpdateUser(ctx context.Context, in *UpdateUserRequest, opts ...grpc.CallOption) (*User, error)
+	// Only the user with bb.users.delete permission on the workspace can delete the user.
+	// The last remaining workspace admin cannot be deleted.
 	DeleteUser(ctx context.Context, in *DeleteUserRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	// Only the user with bb.users.undelete permission on the workspace can undelete the user.
 	UndeleteUser(ctx context.Context, in *UndeleteUserRequest, opts ...grpc.CallOption) (*User, error)
 	Login(ctx context.Context, in *LoginRequest, opts ...grpc.CallOption) (*LoginResponse, error)
 	Logout(ctx context.Context, in *LogoutRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
@@ -136,11 +147,22 @@ func (c *authServiceClient) Logout(ctx context.Context, in *LogoutRequest, opts 
 // All implementations must embed UnimplementedAuthServiceServer
 // for forward compatibility
 type AuthServiceServer interface {
+	// Get the user.
+	// Any authenticated user can get the user.
 	GetUser(context.Context, *GetUserRequest) (*User, error)
+	// List all users.
+	// Any authenticated user can list users.
 	ListUsers(context.Context, *ListUsersRequest) (*ListUsersResponse, error)
+	// Create a user.
+	// When Disallow Signup is enabled, only the caller with bb.users.create on the workspace can create a user.
+	// Otherwise, any unauthenticated user can create a user.
 	CreateUser(context.Context, *CreateUserRequest) (*User, error)
+	// Only the user itself and the user with bb.users.update permission on the workspace can update the user.
 	UpdateUser(context.Context, *UpdateUserRequest) (*User, error)
+	// Only the user with bb.users.delete permission on the workspace can delete the user.
+	// The last remaining workspace admin cannot be deleted.
 	DeleteUser(context.Context, *DeleteUserRequest) (*emptypb.Empty, error)
+	// Only the user with bb.users.undelete permission on the workspace can undelete the user.
 	UndeleteUser(context.Context, *UndeleteUserRequest) (*User, error)
 	Login(context.Context, *LoginRequest) (*LoginResponse, error)
 	Logout(context.Context, *LogoutRequest) (*emptypb.Empty, error)
