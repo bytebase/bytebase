@@ -37,12 +37,14 @@ service SQLService {
     };
     option (bytebase.v1.permission) = "bb.databases.execute";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = true;
   }
 
   rpc AdminExecute(stream AdminExecuteRequest) returns (stream AdminExecuteResponse) {
     option (google.api.http) = {get: "/v1:adminExecute"};
     option (bytebase.v1.permission) = "bb.instances.adminExecute";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = true;
   }
 
   // SearchQueryHistories searches query histories for the caller.
