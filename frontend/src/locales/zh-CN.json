@@ -1552,9 +1552,9 @@
       "title": "访问控制",
       "disable-copy-data-from-sql-editor": "限制 SQL 编辑器中的数据复制 (管理员/DBA 可以复制)",
       "restrict-admin-data-sources": {
-        "self": "限制管理员数据源的查询权限",
-        "disallow": "禁止查询管理员数据源",
-        "fallback": "如果没有只读数据源，则可以查询管理员数据源"
+        "self": "管理员数据源查询限制",
+        "disallow": "禁止从管理员数据源查询数据",
+        "fallback": "如果没有只读数据源，则可以对管理员数据源进行查询"
       }
     }
   },
