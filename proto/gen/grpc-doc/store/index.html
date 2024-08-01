@@ -314,6 +314,10 @@
                   <a href="#bytebase.store.AuditLog"><span class="badge">M</span>AuditLog</a>
                 </li>
               
+                <li>
+                  <a href="#bytebase.store.RequestMetadata"><span class="badge">M</span>RequestMetadata</a>
+                </li>
+              
               
                 <li>
                   <a href="#bytebase.store.AuditLog.Severity"><span class="badge">E</span>AuditLog.Severity</a>
@@ -2510,6 +2514,45 @@ Some fields are omitted because they are too large or contain sensitive informat
                   <td><a href="#google.protobuf.Any">google.protobuf.Any</a></td>
                   <td></td>
                   <td><p>service-specific data about the request, response, and other activities. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>request_metadata</td>
+                  <td><a href="#bytebase.store.RequestMetadata">RequestMetadata</a></td>
+                  <td></td>
+                  <td><p>Metadata about the operation. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.RequestMetadata">RequestMetadata</h3>
+        <p>Metadata about the request.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>caller_ip</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The IP address of the caller. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>caller_supplied_user_agent</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The user agent of the caller.
+This information is not authenticated and should be treated accordingly. </p></td>
                 </tr>
               
             </tbody>

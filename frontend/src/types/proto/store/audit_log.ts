@@ -35,7 +35,11 @@ export interface AuditLog {
     | Status
     | undefined;
   /** service-specific data about the request, response, and other activities. */
-  serviceData: Any | undefined;
+  serviceData:
+    | Any
+    | undefined;
+  /** Metadata about the operation. */
+  requestMetadata: RequestMetadata | undefined;
 }
 
 export enum AuditLog_Severity {
@@ -139,6 +143,17 @@ export function auditLog_SeverityToNumber(object: AuditLog_Severity): number {
   }
 }
 
+/** Metadata about the request. */
+export interface RequestMetadata {
+  /** The IP address of the caller. */
+  callerIp: string;
+  /**
+   * The user agent of the caller.
+   * This information is not authenticated and should be treated accordingly.
+   */
+  callerSuppliedUserAgent: string;
+}
+
 function createBaseAuditLog(): AuditLog {
   return {
     parent: "",
@@ -150,6 +165,7 @@ function createBaseAuditLog(): AuditLog {
     response: "",
     status: undefined,
     serviceData: undefined,
+    requestMetadata: undefined,
   };
 }
 
@@ -181,6 +197,9 @@ export const AuditLog = {
     }
     if (message.serviceData !== undefined) {
       Any.encode(message.serviceData, writer.uint32(82).fork()).ldelim();
+    }
+    if (message.requestMetadata !== undefined) {
+      RequestMetadata.encode(message.requestMetadata, writer.uint32(90).fork()).ldelim();
     }
     return writer;
   },
@@ -255,6 +274,13 @@ export const AuditLog = {
 
           message.serviceData = Any.decode(reader, reader.uint32());
           continue;
+        case 11:
+          if (tag !== 90) {
+            break;
+          }
+
+          message.requestMetadata = RequestMetadata.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -275,6 +301,7 @@ export const AuditLog = {
       response: isSet(object.response) ? globalThis.String(object.response) : "",
       status: isSet(object.status) ? Status.fromJSON(object.status) : undefined,
       serviceData: isSet(object.serviceData) ? Any.fromJSON(object.serviceData) : undefined,
+      requestMetadata: isSet(object.requestMetadata) ? RequestMetadata.fromJSON(object.requestMetadata) : undefined,
     };
   },
 
@@ -307,6 +334,9 @@ export const AuditLog = {
     if (message.serviceData !== undefined) {
       obj.serviceData = Any.toJSON(message.serviceData);
     }
+    if (message.requestMetadata !== undefined) {
+      obj.requestMetadata = RequestMetadata.toJSON(message.requestMetadata);
+    }
     return obj;
   },
 
@@ -328,6 +358,85 @@ export const AuditLog = {
     message.serviceData = (object.serviceData !== undefined && object.serviceData !== null)
       ? Any.fromPartial(object.serviceData)
       : undefined;
+    message.requestMetadata = (object.requestMetadata !== undefined && object.requestMetadata !== null)
+      ? RequestMetadata.fromPartial(object.requestMetadata)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseRequestMetadata(): RequestMetadata {
+  return { callerIp: "", callerSuppliedUserAgent: "" };
+}
+
+export const RequestMetadata = {
+  encode(message: RequestMetadata, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.callerIp !== "") {
+      writer.uint32(10).string(message.callerIp);
+    }
+    if (message.callerSuppliedUserAgent !== "") {
+      writer.uint32(18).string(message.callerSuppliedUserAgent);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): RequestMetadata {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseRequestMetadata();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.callerIp = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.callerSuppliedUserAgent = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): RequestMetadata {
+    return {
+      callerIp: isSet(object.callerIp) ? globalThis.String(object.callerIp) : "",
+      callerSuppliedUserAgent: isSet(object.callerSuppliedUserAgent)
+        ? globalThis.String(object.callerSuppliedUserAgent)
+        : "",
+    };
+  },
+
+  toJSON(message: RequestMetadata): unknown {
+    const obj: any = {};
+    if (message.callerIp !== "") {
+      obj.callerIp = message.callerIp;
+    }
+    if (message.callerSuppliedUserAgent !== "") {
+      obj.callerSuppliedUserAgent = message.callerSuppliedUserAgent;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<RequestMetadata>): RequestMetadata {
+    return RequestMetadata.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<RequestMetadata>): RequestMetadata {
+    const message = createBaseRequestMetadata();
+    message.callerIp = object.callerIp ?? "";
+    message.callerSuppliedUserAgent = object.callerSuppliedUserAgent ?? "";
     return message;
   },
 };
