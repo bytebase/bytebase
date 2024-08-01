@@ -124,12 +124,9 @@ func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 	}
 
 	if setting.DisallowSignup {
-		if _, ok := ctx.Value(common.PrincipalIDContextKey).(int); !ok {
+		callerUser, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+		if !ok {
 			return nil, status.Errorf(codes.PermissionDenied, "sign up is disallowed")
-		}
-		callerUser, err := s.getCallerUser(ctx)
-		if err != nil {
-			return nil, err
 		}
 		ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionUsersCreate, callerUser)
 		if err != nil {
@@ -257,9 +254,9 @@ func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 
 // UpdateUser updates a user.
 func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRequest) (*v1pb.User, error) {
-	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	callerUser, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
 	if !ok {
-		return nil, status.Errorf(codes.Internal, "principal ID not found")
+		return nil, status.Errorf(codes.PermissionDenied, "failed to get caller user")
 	}
 	if request.User == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "user must be set")
@@ -283,11 +280,7 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 		return nil, status.Errorf(codes.NotFound, "user %q has been deleted", userID)
 	}
 
-	if principalID != userID {
-		callerUser, err := s.getCallerUser(ctx)
-		if err != nil {
-			return nil, err
-		}
+	if callerUser.ID != userID {
 		ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionUsersUpdate, callerUser)
 		if err != nil {
 			return nil, err
@@ -418,7 +411,7 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 		}
 	}
 
-	user, err = s.store.UpdateUser(ctx, user, patch, principalID)
+	user, err = s.store.UpdateUser(ctx, user, patch, callerUser.ID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to update user, error: %v", err)
 	}
@@ -432,16 +425,11 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 
 // DeleteUser deletes a user.
 func (s *AuthService) DeleteUser(ctx context.Context, request *v1pb.DeleteUserRequest) (*emptypb.Empty, error) {
-	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	callerUser, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
 	if !ok {
-		return nil, status.Errorf(codes.Internal, "principal ID not found")
+		return nil, status.Errorf(codes.PermissionDenied, "failed to get caller user")
 	}
-
-	callerUser, err := s.getCallerUser(ctx)
-	if err != nil {
-		return nil, err
-	}
-	ok, err = s.iamManager.CheckPermission(ctx, iam.PermissionUsersDelete, callerUser)
+	ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionUsersDelete, callerUser)
 	if err != nil {
 		return nil, err
 	}
@@ -479,7 +467,7 @@ func (s *AuthService) DeleteUser(ctx context.Context, request *v1pb.DeleteUserRe
 		}
 	}
 
-	if _, err := s.store.UpdateUser(ctx, user, &store.UpdateUserMessage{Delete: &deletePatch}, principalID); err != nil {
+	if _, err := s.store.UpdateUser(ctx, user, &store.UpdateUserMessage{Delete: &deletePatch}, callerUser.ID); err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 	return &emptypb.Empty{}, nil
@@ -491,16 +479,11 @@ func (s *AuthService) UndeleteUser(ctx context.Context, request *v1pb.UndeleteUs
 		return nil, err
 	}
 
-	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	callerUser, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
 	if !ok {
-		return nil, status.Errorf(codes.Internal, "principal ID not found")
+		return nil, status.Errorf(codes.PermissionDenied, "failed to get caller user")
 	}
-
-	callerUser, err := s.getCallerUser(ctx)
-	if err != nil {
-		return nil, err
-	}
-	ok, err = s.iamManager.CheckPermission(ctx, iam.PermissionUsersUndelete, callerUser)
+	ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionUsersUndelete, callerUser)
 	if err != nil {
 		return nil, err
 	}
@@ -523,7 +506,7 @@ func (s *AuthService) UndeleteUser(ctx context.Context, request *v1pb.UndeleteUs
 		return nil, status.Errorf(codes.InvalidArgument, "user %q is already active", userID)
 	}
 
-	user, err = s.store.UpdateUser(ctx, user, &store.UpdateUserMessage{Delete: &undeletePatch}, principalID)
+	user, err = s.store.UpdateUser(ctx, user, &store.UpdateUserMessage{Delete: &undeletePatch}, callerUser.ID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
@@ -1004,19 +987,4 @@ func (s *AuthService) userCountGuard(ctx context.Context) error {
 		return status.Errorf(codes.ResourceExhausted, "reached the maximum user count %d", userLimit)
 	}
 	return nil
-}
-
-func (s *AuthService) getCallerUser(ctx context.Context) (*store.UserMessage, error) {
-	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
-	if !ok {
-		return nil, status.Errorf(codes.Internal, "principal ID not found")
-	}
-	user, err := s.store.GetUserByID(ctx, principalID)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get user, error: %v", err)
-	}
-	if user == nil {
-		return nil, status.Errorf(codes.NotFound, "user %d not found", principalID)
-	}
-	return user, nil
 }
