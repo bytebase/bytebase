@@ -10,6 +10,7 @@ import (
 	"github.com/pingcap/tidb/pkg/parser/ast"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -50,6 +51,9 @@ func (*StatementDmlDryRunAdvisor) Check(ctx advisor.Context, _ string) ([]*store
 			checker.text = stmt.Text()
 			checker.line = stmt.OriginTextPosition()
 			(stmt).Accept(checker)
+			if checker.explainCount >= common.MaximumLintExplainSize {
+				break
+			}
 		}
 	}
 
@@ -57,19 +61,21 @@ func (*StatementDmlDryRunAdvisor) Check(ctx advisor.Context, _ string) ([]*store
 }
 
 type statementDmlDryRunChecker struct {
-	adviceList []*storepb.Advice
-	level      storepb.Advice_Status
-	title      string
-	text       string
-	line       int
-	driver     *sql.DB
-	ctx        context.Context
+	adviceList   []*storepb.Advice
+	level        storepb.Advice_Status
+	title        string
+	text         string
+	line         int
+	driver       *sql.DB
+	ctx          context.Context
+	explainCount int
 }
 
 // Enter implements the ast.Visitor interface.
 func (checker *statementDmlDryRunChecker) Enter(in ast.Node) (ast.Node, bool) {
 	switch node := in.(type) {
 	case *ast.InsertStmt, *ast.UpdateStmt, *ast.DeleteStmt:
+		checker.explainCount++
 		if _, err := advisor.Query(checker.ctx, checker.driver, storepb.Engine_TIDB, fmt.Sprintf("EXPLAIN %s", node.Text())); err != nil {
 			checker.adviceList = append(checker.adviceList, &storepb.Advice{
 				Status:  checker.level,
