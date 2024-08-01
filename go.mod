@@ -337,6 +337,6 @@ replace (
 	github.com/beltran/gosasl => github.com/bytebase/gosasl v0.0.0-20240422091407-6b7481e86f08
 )
 
-replace github.com/microsoft/go-mssqldb => github.com/bytebase/go-mssqldb v0.0.0-20240613094500-7f9ca9381f8f
+replace github.com/microsoft/go-mssqldb => github.com/bytebase/go-mssqldb v0.0.0-20240801091126-3ff3ca07d898
 
 replace github.com/youmark/pkcs8 => github.com/bytebase/pkcs8 v0.0.0-20240612095628-fcd0a7484c94
