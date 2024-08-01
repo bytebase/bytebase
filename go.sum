@@ -745,8 +745,8 @@ github.com/aws/aws-sdk-go-v2/service/licensemanager v1.27.3 h1:oUTGt/MXO80UlPnEL
 github.com/aws/aws-sdk-go-v2/service/licensemanager v1.27.3/go.mod h1:tIZEgscb0JE5oYdt3zbdMTiB/zZlsPW2XFCkiZnDtco=
 github.com/aws/aws-sdk-go-v2/service/s3 v1.57.1 h1:aHPtNY87GZ214N4rShgIo+5JQz7ICrJ50i17JbueUTw=
 github.com/aws/aws-sdk-go-v2/service/s3 v1.57.1/go.mod h1:hdV0NTYd0RwV4FvNKhKUNbPLZoq9CTr/lke+3I7aCAI=
-github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.32.3 h1:ilavrucVBQHYnMjD2KmZQDCU1fuluQb0l9zRigGNVEc=
-github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.32.3/go.mod h1:TKKN7IQoM7uTnyuFm9bm9cw5P//ZYTl4m3htBWQ1G/c=
+github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.32.4 h1:NgRFYyFpiMD62y4VPXh4DosPFbZd4vdMVBWKk0VmWXc=
+github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.32.4/go.mod h1:TKKN7IQoM7uTnyuFm9bm9cw5P//ZYTl4m3htBWQ1G/c=
 github.com/aws/aws-sdk-go-v2/service/sso v1.22.3 h1:Fv1vD2L65Jnp5QRsdiM64JvUM4Xe+E0JyVsRQKv6IeA=
 github.com/aws/aws-sdk-go-v2/service/sso v1.22.3/go.mod h1:ooyCOXjvJEsUw7x+ZDHeISPMhtwI3ZCB7ggFMcFfWLU=
 github.com/aws/aws-sdk-go-v2/service/ssooidc v1.26.4 h1:yiwVzJW2ZxZTurVbYWA7QOrAaCYQR72t0wrSBfoesUE=
