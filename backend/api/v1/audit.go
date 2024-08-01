@@ -209,6 +209,20 @@ func getRequestResource(request any) string {
 		return r.Name
 	case *v1pb.UndeleteEnvironmentRequest:
 		return r.Name
+	case *v1pb.CreateInstanceRequest:
+		return r.GetInstance().GetName()
+	case *v1pb.UpdateInstanceRequest:
+		return r.GetInstance().GetName()
+	case *v1pb.DeleteInstanceRequest:
+		return r.GetName()
+	case *v1pb.UndeleteInstanceRequest:
+		return r.GetName()
+	case *v1pb.AddDataSourceRequest:
+		return r.GetName()
+	case *v1pb.RemoveDataSourceRequest:
+		return r.GetName()
+	case *v1pb.UpdateDataSourceRequest:
+		return r.GetName()
 	case *v1pb.UpdateSettingRequest:
 		return r.GetSetting().GetName()
 	default:
@@ -236,6 +250,21 @@ func getRequestString(request any) (string, error) {
 				return redactLoginRequest(r)
 			}
 			return nil
+		case *v1pb.CreateInstanceRequest:
+			r.Instance = redactInstance(r.Instance)
+			return r
+		case *v1pb.UpdateInstanceRequest:
+			r.Instance = redactInstance(r.Instance)
+			return r
+		case *v1pb.AddDataSourceRequest:
+			r.DataSource = redactDataSource(r.DataSource)
+			return r
+		case *v1pb.UpdateDataSourceRequest:
+			r.DataSource = redactDataSource(r.DataSource)
+			return r
+		case *v1pb.RemoveDataSourceRequest:
+			r.DataSource = redactDataSource(r.DataSource)
+			return r
 		default:
 			if p, ok := r.(protoreflect.ProtoMessage); ok {
 				return p
@@ -269,6 +298,8 @@ func getResponseString(response any) (string, error) {
 			return nil
 		case *v1pb.User:
 			return redactUser(r)
+		case *v1pb.Instance:
+			return redactInstance(r)
 		default:
 			if p, ok := r.(protoreflect.ProtoMessage); ok {
 				return p
@@ -342,6 +373,55 @@ func redactUser(r *v1pb.User) *v1pb.User {
 		Title:    r.Title,
 		UserType: r.UserType,
 	}
+}
+
+func redactInstance(i *v1pb.Instance) *v1pb.Instance {
+	if i == nil {
+		return nil
+	}
+	var dataSources []*v1pb.DataSource
+	for _, d := range i.DataSources {
+		dataSources = append(dataSources, redactDataSource(d))
+	}
+	i.DataSources = dataSources
+	return i
+}
+
+func redactDataSource(d *v1pb.DataSource) *v1pb.DataSource {
+	if d.Password != "" {
+		d.Password = maskedString
+	}
+	if d.SslCa != "" {
+		d.SslCa = maskedString
+	}
+	if d.SslCert != "" {
+		d.SslCert = maskedString
+	}
+	if d.SslKey != "" {
+		d.SslKey = maskedString
+	}
+	if d.SshPassword != "" {
+		d.SshPassword = maskedString
+	}
+	if d.SshPrivateKey != "" {
+		d.SshPrivateKey = maskedString
+	}
+	if d.AuthenticationPrivateKey != "" {
+		d.AuthenticationPrivateKey = maskedString
+	}
+	if d.ExternalSecret != nil {
+		d.ExternalSecret = new(v1pb.DataSourceExternalSecret)
+	}
+	if d.SaslConfig != nil {
+		if krbConf := d.SaslConfig.GetKrbConfig(); krbConf != nil {
+			krbConf.Keytab = []byte(maskedString)
+			d.SaslConfig.Mechanism = &v1pb.SASLConfig_KrbConfig{KrbConfig: krbConf}
+		}
+	}
+	if d.MasterPassword != "" {
+		d.MasterPassword = maskedString
+	}
+	return d
 }
 
 func redactAdminExecuteResponse(r *v1pb.AdminExecuteResponse) *v1pb.AdminExecuteResponse {

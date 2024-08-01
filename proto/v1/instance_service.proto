@@ -51,6 +51,7 @@ service InstanceService {
     option (google.api.method_signature) = "instance";
     option (bytebase.v1.permission) = "bb.instances.create";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = true;
   }
 
   rpc UpdateInstance(UpdateInstanceRequest) returns (Instance) {
@@ -61,6 +62,7 @@ service InstanceService {
     option (google.api.method_signature) = "instance,update_mask";
     option (bytebase.v1.permission) = "bb.instances.update";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = true;
   }
 
   rpc DeleteInstance(DeleteInstanceRequest) returns (google.protobuf.Empty) {
@@ -68,6 +70,7 @@ service InstanceService {
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.instances.delete";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = true;
   }
 
   rpc UndeleteInstance(UndeleteInstanceRequest) returns (Instance) {
@@ -77,6 +80,7 @@ service InstanceService {
     };
     option (bytebase.v1.permission) = "bb.instances.undelete";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = true;
   }
 
   rpc SyncInstance(SyncInstanceRequest) returns (SyncInstanceResponse) {
@@ -104,6 +108,7 @@ service InstanceService {
     };
     option (bytebase.v1.permission) = "bb.instances.update";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = true;
   }
 
   rpc RemoveDataSource(RemoveDataSourceRequest) returns (Instance) {
@@ -113,6 +118,7 @@ service InstanceService {
     };
     option (bytebase.v1.permission) = "bb.instances.update";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = true;
   }
 
   rpc UpdateDataSource(UpdateDataSourceRequest) returns (Instance) {
@@ -122,6 +128,7 @@ service InstanceService {
     };
     option (bytebase.v1.permission) = "bb.instances.update";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = true;
   }
 
   rpc SyncSlowQueries(SyncSlowQueriesRequest) returns (google.protobuf.Empty) {
