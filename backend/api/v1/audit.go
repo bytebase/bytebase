@@ -187,6 +187,12 @@ func getRequestResource(request any) string {
 		return r.Database.Name
 	case *v1pb.BatchUpdateDatabasesRequest:
 		return r.Parent
+	case *v1pb.UpdateDatabaseMetadataRequest:
+		return r.GetDatabaseMetadata().GetName()
+	case *v1pb.UpdateSecretRequest:
+		return r.GetSecret().GetName()
+	case *v1pb.DeleteSecretRequest:
+		return r.GetName()
 	case *v1pb.SetIamPolicyRequest:
 		return r.Resource
 	case *v1pb.CreateUserRequest:
@@ -265,6 +271,9 @@ func getRequestString(request any) (string, error) {
 		case *v1pb.RemoveDataSourceRequest:
 			r.DataSource = redactDataSource(r.DataSource)
 			return r
+		case *v1pb.UpdateSecretRequest:
+			r.Secret = redactSecret(r.Secret)
+			return r
 		default:
 			if p, ok := r.(protoreflect.ProtoMessage); ok {
 				return p
@@ -300,6 +309,8 @@ func getResponseString(response any) (string, error) {
 			return redactUser(r)
 		case *v1pb.Instance:
 			return redactInstance(r)
+		case *v1pb.Secret:
+			return redactSecret(r)
 		default:
 			if p, ok := r.(protoreflect.ProtoMessage); ok {
 				return p
@@ -473,6 +484,11 @@ func redactQueryResponse(r *v1pb.QueryResponse) *v1pb.QueryResponse {
 		})
 	}
 	return n
+}
+
+func redactSecret(s *v1pb.Secret) *v1pb.Secret {
+	s.Value = maskedString
+	return s
 }
 
 func needAudit(ctx context.Context) bool {
