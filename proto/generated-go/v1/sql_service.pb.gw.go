@@ -664,6 +664,7 @@ func local_request_SQLService_GenerateRestoreSQL_0(ctx context.Context, marshale
 // UnaryRPC     :call SQLServiceServer directly.
 // StreamingRPC :currently unsupported pending https://github.com/grpc/grpc-go/issues/906.
 // Note that using this registration option will cause many gRPC library features to stop working. Consider using RegisterSQLServiceHandlerFromEndpoint instead.
+// GRPC interceptors will not work for this type of registration. To use interceptors, you must use the "runtime.WithMiddlewares" option in the "runtime.NewServeMux" call.
 func RegisterSQLServiceHandlerServer(ctx context.Context, mux *runtime.ServeMux, server SQLServiceServer) error {
 
 	mux.Handle("POST", pattern_SQLService_Query_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
@@ -1036,7 +1037,7 @@ func RegisterSQLServiceHandler(ctx context.Context, mux *runtime.ServeMux, conn 
 // to "mux". The handlers forward requests to the grpc endpoint over the given implementation of "SQLServiceClient".
 // Note: the gRPC framework executes interceptors within the gRPC handler. If the passed in "SQLServiceClient"
 // doesn't go through the normal gRPC flow (creating a gRPC client etc.) then it will be up to the passed in
-// "SQLServiceClient" to call the correct interceptors.
+// "SQLServiceClient" to call the correct interceptors. This client ignores the HTTP middlewares.
 func RegisterSQLServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux, client SQLServiceClient) error {
 
 	mux.Handle("POST", pattern_SQLService_Query_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
