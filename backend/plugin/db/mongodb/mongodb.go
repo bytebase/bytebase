@@ -117,8 +117,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ db.Execut
 
 		if driver.connCfg.TLSConfig.SslCA == "" {
 			mongoshArgs = append(mongoshArgs, "--tlsUseSystemCA")
-		}
-		if driver.connCfg.TLSConfig.SslCA != "" {
+		} else {
 			// Write the tlsCAFile to a temporary file, and use the temporary file as the value of --tlsCAFile.
 			// The reason is that the --tlsCAFile option of mongosh does not support the value of the certificate directly.
 			caFileName := fmt.Sprintf("mongodb-tls-ca-%s-%s", driver.connCfg.ConnectionDatabase, uuid.New().String())
@@ -253,8 +252,7 @@ func (driver *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement stri
 		mongoshArgs = append(mongoshArgs, "--tls")
 		if driver.connCfg.TLSConfig.SslCA == "" {
 			mongoshArgs = append(mongoshArgs, "--tlsUseSystemCA")
-		}
-		if driver.connCfg.TLSConfig.SslCA != "" {
+		} else {
 			// Write the tlsCAFile to a temporary file, and use the temporary file as the value of --tlsCAFile.
 			// The reason is that the --tlsCAFile option of mongosh does not support the value of the certificate directly.
 			caFileName := fmt.Sprintf("mongodb-tls-ca-%s-%s", driver.connCfg.ConnectionDatabase, uuid.New().String())
