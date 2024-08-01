@@ -42,14 +42,3 @@ export const toggleSubscribeIssue = async (
   }
   return await updateIssueSubscribers(issue, subscribers);
 };
-
-export const doSubscribeIssue = async (issue: Issue, user: ComposedUser) => {
-  const subscribers = [...issue.subscribers];
-  const userTag = `users/${user.email}`;
-  const isSubscribed = subscribers.includes(userTag);
-  if (isSubscribed) {
-    return;
-  }
-  subscribers.push(userTag);
-  return await updateIssueSubscribers(issue, subscribers, true);
-};
