@@ -664,7 +664,7 @@ func GetMatchedAndUnmatchedDatabasesInDatabaseGroup(ctx context.Context, databas
 	// DONOT check bb.feature.database-grouping for instance. The API here is read-only in the frontend, we need to show if the instance is matched but missing required license.
 	// The feature guard will works during issue creation.
 	for _, database := range allDatabases {
-		matched, err := CheckDatabaseGroupMatch(ctx, databaseGroup, database)
+		matched, err := CheckDatabaseGroupMatch(ctx, databaseGroup.Expression.Expression, database)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -677,8 +677,8 @@ func GetMatchedAndUnmatchedDatabasesInDatabaseGroup(ctx context.Context, databas
 	return matches, unmatches, nil
 }
 
-func CheckDatabaseGroupMatch(ctx context.Context, databaseGroup *store.DatabaseGroupMessage, database *store.DatabaseMessage) (bool, error) {
-	prog, err := common.ValidateGroupCELExpr(databaseGroup.Expression.Expression)
+func CheckDatabaseGroupMatch(ctx context.Context, expression string, database *store.DatabaseMessage) (bool, error) {
+	prog, err := common.ValidateGroupCELExpr(expression)
 	if err != nil {
 		return false, err
 	}

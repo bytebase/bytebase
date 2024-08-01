@@ -304,7 +304,7 @@ func (exec *DatabaseCreateExecutor) reconcilePlan(ctx context.Context, project *
 			if databaseGroup == nil || !databaseGroup.Payload.Multitenancy {
 				return nil
 			}
-			isMatched, err := utils.CheckDatabaseGroupMatch(ctx, databaseGroup, createdDatabase)
+			isMatched, err := utils.CheckDatabaseGroupMatch(ctx, databaseGroup.Expression.Expression, createdDatabase)
 			if err != nil || !isMatched {
 				// continue if current database is not matched.
 				//nolint:nilerr
@@ -541,7 +541,7 @@ func (exec *DatabaseCreateExecutor) getPeerTenantDatabasesFromDatabaseGroup(ctx 
 			continue
 		}
 
-		isMatched, err := utils.CheckDatabaseGroupMatch(ctx, dbGroup, database)
+		isMatched, err := utils.CheckDatabaseGroupMatch(ctx, dbGroup.Expression.Expression, database)
 		if err != nil {
 			return nil, errors.Wrapf(err, "Failed to get matched and unmatched databases in database group %q", dbGroup.Placeholder)
 		}
