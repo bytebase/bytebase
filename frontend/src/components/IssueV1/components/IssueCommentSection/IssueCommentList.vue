@@ -124,7 +124,7 @@ import { isValidProjectName } from "@/types";
 import type { ComposedIssue } from "@/types";
 import { ListIssueCommentsRequest } from "@/types/proto/v1/issue_service";
 import { extractUserResourceName, hasProjectPermissionV2 } from "@/utils";
-import { doSubscribeIssue, useIssueContext } from "../../logic";
+import { useIssueContext } from "../../logic";
 import {
   IssueCommentView,
   isSimilarIssueComment,
@@ -222,13 +222,6 @@ const doCreateComment = async (comment: string) => {
   });
   state.newComment = "";
   await prepareIssueComments();
-  // Because the user just added a comment and we assume she is interested in this
-  // issue, and we add her to the subscriber list if she is not there
-  try {
-    await doSubscribeIssue(issue.value, currentUser.value);
-  } catch {
-    // Nothing
-  }
 };
 
 const allowEditIssueComment = (comment: ComposedIssueComment) => {
