@@ -1552,9 +1552,9 @@
       "title": "Access control",
       "disable-copy-data-from-sql-editor": "Restrict data copying in SQL Editor (Admins/DBAs allowed)",
       "restrict-admin-data-sources": {
-        "self": "Restrict admin data sources",
-        "disallow": "Disallow to query data from admin data source",
-        "fallback": "Fallback to admin data source if no read-only data source is available"
+        "self": "Admin Data Source Query Restrictions",
+        "disallow": "Disallow querying data from the admin data source",
+        "fallback": "Fallback to the admin data source if no read-only data source is available"
       }
     }
   },
