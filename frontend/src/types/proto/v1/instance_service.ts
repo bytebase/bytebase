@@ -3829,6 +3829,7 @@ export const InstanceServiceDefinition = {
             new Uint8Array([19, 98, 98, 46, 105, 110, 115, 116, 97, 110, 99, 101, 115, 46, 99, 114, 101, 97, 116, 101]),
           ],
           800016: [new Uint8Array([1])],
+          800024: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               25,
@@ -3920,6 +3921,7 @@ export const InstanceServiceDefinition = {
             ]),
           ],
           800016: [new Uint8Array([1])],
+          800024: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               43,
@@ -4005,6 +4007,7 @@ export const InstanceServiceDefinition = {
             ]),
           ],
           800016: [new Uint8Array([1])],
+          800024: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               24,
@@ -4072,6 +4075,7 @@ export const InstanceServiceDefinition = {
             ]),
           ],
           800016: [new Uint8Array([1])],
+          800024: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               36,
@@ -4245,6 +4249,7 @@ export const InstanceServiceDefinition = {
             ]),
           ],
           800016: [new Uint8Array([1])],
+          800024: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               41,
@@ -4327,6 +4332,7 @@ export const InstanceServiceDefinition = {
             ]),
           ],
           800016: [new Uint8Array([1])],
+          800024: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               44,
@@ -4412,6 +4418,7 @@ export const InstanceServiceDefinition = {
             ]),
           ],
           800016: [new Uint8Array([1])],
+          800024: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               44,
