@@ -13,7 +13,9 @@
 
       <div class="bb-grid-cell">
         <EnvironmentV1Name
-          :environment="item.instance.environmentEntity"
+          :environment="
+            environmentStore.getEnvironmentByName(item.instance.environment)
+          "
           :link="false"
         />
       </div>
@@ -37,16 +39,18 @@ import {
   EnvironmentV1Name,
   SpinnerSwitch,
 } from "@/components/v2";
-import { useCurrentUserV1 } from "@/store";
-import type { ComposedInstance, ComposedSlowQueryPolicy } from "@/types";
+import { useCurrentUserV1, useEnvironmentV1Store } from "@/store";
+import type { ComposedSlowQueryPolicy } from "@/types";
+import type { InstanceResource } from "@/types/proto/v1/instance_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
 defineProps<{
   composedSlowQueryPolicyList: ComposedSlowQueryPolicy[];
-  toggleActive: (instance: ComposedInstance, active: boolean) => Promise<void>;
+  toggleActive: (instance: InstanceResource, active: boolean) => Promise<void>;
 }>();
 
 const { t } = useI18n();
+const environmentStore = useEnvironmentV1Store();
 const currentUserV1 = useCurrentUserV1();
 
 const COLUMNS = computed((): BBGridColumn[] => {

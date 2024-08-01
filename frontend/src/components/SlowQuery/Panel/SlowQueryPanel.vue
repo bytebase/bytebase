@@ -77,7 +77,7 @@ import {
   useSlowQueryPolicyStore,
   useSlowQueryStore,
 } from "@/store";
-import type { ComposedSlowQueryLog } from "@/types";
+import type { ComposedSlowQueryLog, WorkspacePermission } from "@/types";
 import type { SearchScope, SearchParams, SearchScopeId } from "@/utils";
 import { extractInstanceResourceName, hasWorkspacePermissionV2 } from "@/utils";
 import { SlowQuerySettings } from "../Settings";
@@ -96,11 +96,7 @@ const props = withDefaults(
     showDatabaseColumn?: boolean;
   }>(),
   {
-    supportOptionIdList: () => [
-      "environment",
-      "project",
-      "database",
-    ],
+    supportOptionIdList: () => ["environment", "project", "database"],
     readonlySearchScopes: () => [],
     showProjectColumn: true,
     showEnvironmentColumn: true,
@@ -179,7 +175,13 @@ const params = computed(() => {
 });
 
 const allowAdmin = computed(() => {
-  return hasWorkspacePermissionV2(currentUser.value, "bb.policies.update");
+  const neededWorkspacePermissions: WorkspacePermission[] = [
+    "bb.instances.list",
+    "bb.policies.update",
+  ];
+  return neededWorkspacePermissions.every((permission) =>
+    hasWorkspacePermissionV2(currentUser.value, permission)
+  );
 });
 
 const { list: slowQueryPolicyList } = useSlowQueryPolicyList();

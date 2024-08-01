@@ -136,10 +136,10 @@ import {
   useDatabaseV1Store,
   useCurrentUserV1,
   useEnvironmentV1Store,
-  useInstanceV1Store,
   pushNotification,
   usePolicyV1Store,
   useSubscriptionV1Store,
+  useInstanceResourceByName,
 } from "@/store";
 import {
   UNKNOWN_ENVIRONMENT_NAME,
@@ -191,7 +191,6 @@ const databaseStore = useDatabaseV1Store();
 const policyStore = usePolicyV1Store();
 const environmentStore = useEnvironmentV1Store();
 const subscriptionStore = useSubscriptionV1Store();
-const instanceV1Store = useInstanceV1Store();
 const hasSensitiveDataFeature = featureToRef("bb.feature.sensitive-data");
 const policyList = usePolicyListByResourceTypeAndPolicyType({
   resourceType: PolicyResourceType.DATABASE,
@@ -386,9 +385,7 @@ const filteredColumnList = computed(() => {
 
 const findInstanceWithoutLicense = (columnList: SensitiveColumn[]) => {
   for (const column of columnList) {
-    const instance = instanceV1Store.getInstanceByName(
-      column.database.instance
-    );
+    const instance = useInstanceResourceByName(column.database.instance);
     const missingLicense = isMissingLicenseForInstance(instance);
     if (missingLicense) {
       return instance;
