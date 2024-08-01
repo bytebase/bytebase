@@ -87,6 +87,7 @@ func local_request_CelService_BatchDeparse_0(ctx context.Context, marshaler runt
 // UnaryRPC     :call CelServiceServer directly.
 // StreamingRPC :currently unsupported pending https://github.com/grpc/grpc-go/issues/906.
 // Note that using this registration option will cause many gRPC library features to stop working. Consider using RegisterCelServiceHandlerFromEndpoint instead.
+// GRPC interceptors will not work for this type of registration. To use interceptors, you must use the "runtime.WithMiddlewares" option in the "runtime.NewServeMux" call.
 func RegisterCelServiceHandlerServer(ctx context.Context, mux *runtime.ServeMux, server CelServiceServer) error {
 
 	mux.Handle("POST", pattern_CelService_BatchParse_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
@@ -177,7 +178,7 @@ func RegisterCelServiceHandler(ctx context.Context, mux *runtime.ServeMux, conn 
 // to "mux". The handlers forward requests to the grpc endpoint over the given implementation of "CelServiceClient".
 // Note: the gRPC framework executes interceptors within the gRPC handler. If the passed in "CelServiceClient"
 // doesn't go through the normal gRPC flow (creating a gRPC client etc.) then it will be up to the passed in
-// "CelServiceClient" to call the correct interceptors.
+// "CelServiceClient" to call the correct interceptors. This client ignores the HTTP middlewares.
 func RegisterCelServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux, client CelServiceClient) error {
 
 	mux.Handle("POST", pattern_CelService_BatchParse_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
