@@ -49,8 +49,8 @@
 import { NInputGroup, NRadio, NRadioGroup } from "naive-ui";
 import { computed, reactive, watch } from "vue";
 import { InstanceSelect, ProjectSelect, SearchBox } from "@/components/v2";
-import { useInstanceV1Store, useProjectV1Store } from "@/store";
-import type { ComposedDatabase, ComposedInstance } from "@/types";
+import { useInstanceResourceByName, useProjectV1Store } from "@/store";
+import type { ComposedDatabase } from "@/types";
 import {
   DEFAULT_PROJECT_NAME,
   PresetRoleType,
@@ -73,7 +73,7 @@ const props = withDefaults(
     rawDatabaseList?: ComposedDatabase[];
     transferSource: TransferSource;
     hasPermissionForDefaultProject: boolean;
-    instanceFilter?: ComposedInstance;
+    instanceFilter?: InstanceResource;
     projectFilter?: Project;
     searchText: string;
   }>(),
@@ -87,7 +87,7 @@ const props = withDefaults(
 
 const emit = defineEmits<{
   (event: "change", src: TransferSource): void;
-  (event: "select-instance", instance: ComposedInstance | undefined): void;
+  (event: "select-instance", instance: InstanceResource | undefined): void;
   (event: "select-project", project: Project | undefined): void;
   (event: "search-text-change", searchText: string): void;
 }>();
@@ -108,7 +108,7 @@ const changeInstanceFilter = (name: string | undefined) => {
   if (!isValidInstanceName(name)) {
     return emit("select-instance", undefined);
   }
-  emit("select-instance", useInstanceV1Store().getInstanceByName(name));
+  emit("select-instance", useInstanceResourceByName(name));
 };
 
 const filterInstance = (instance: InstanceResource) => {

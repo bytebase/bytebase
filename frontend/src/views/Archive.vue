@@ -77,11 +77,8 @@ const currentUserV1 = useCurrentUserV1();
 const { projectList } = useProjectV1List(true /* showDeleted */);
 
 const prepareList = () => {
-  if (hasWorkspacePermissionV2(currentUserV1.value, "bb.instances.list")) {
-    instanceStore.listInstances(true /* showDeleted */);
-
-    useEnvironmentV1Store().fetchEnvironments(true);
-  }
+  instanceStore.listInstances(true /* showDeleted */);
+  useEnvironmentV1Store().fetchEnvironments(true /* showDeleted */);
 };
 
 watchEffect(prepareList);
