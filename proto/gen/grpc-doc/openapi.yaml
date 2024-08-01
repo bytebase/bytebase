@@ -8736,6 +8736,10 @@ components:
                     allOf:
                         - $ref: '#/components/schemas/GoogleProtobufAny'
                     description: service-specific data about the request, response, and other activities.
+                requestMetadata:
+                    allOf:
+                        - $ref: '#/components/schemas/RequestMetadata'
+                    description: Metadata about the operation.
         BatchCancelPlanCheckRunsRequest:
             required:
                 - parent
@@ -12295,6 +12299,18 @@ components:
                          Format: projects/{project}/issues/{issue}
                 comment:
                     type: string
+        RequestMetadata:
+            type: object
+            properties:
+                callerIp:
+                    type: string
+                    description: The IP address of the caller.
+                callerSuppliedUserAgent:
+                    type: string
+                    description: |-
+                        The user agent of the caller.
+                         This information is not authenticated and should be treated accordingly.
+            description: Metadata about the request.
         ResourcePackage:
             type: object
             properties:
