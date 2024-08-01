@@ -27,11 +27,10 @@
       </a>
     </div>
 
-    <SQLReviewPolicyDataTable
+    <SQLReviewPolicyTable
       v-if="sqlReviewStore.reviewPolicyList.length > 0"
       :review-list="filteredReviewConfigList"
       :filter="searchText"
-      :allow-edit="hasUpdatePolicyPermission"
     />
     <NoDataPlaceholder v-else>
       <template #default>
@@ -52,7 +51,7 @@
 import { NButton } from "naive-ui";
 import { watchEffect, ref, computed } from "vue";
 import { useRouter } from "vue-router";
-import SQLReviewPolicyDataTable from "@/components/SQLReview/components/SQLReviewPolicyDataTable.vue";
+import SQLReviewPolicyTable from "@/components/SQLReview/components/SQLReviewPolicyTable.vue";
 import NoDataPlaceholder from "@/components/misc/NoDataPlaceholder.vue";
 import { SearchBox } from "@/components/v2";
 import { WORKSPACE_ROUTE_SQL_REVIEW_CREATE } from "@/router/dashboard/workspaceRoutes";
@@ -70,10 +69,6 @@ watchEffect(() => {
 
 const hasCreatePolicyPermission = computed(() => {
   return hasWorkspacePermissionV2(currentUserV1.value, "bb.policies.create");
-});
-
-const hasUpdatePolicyPermission = computed(() => {
-  return hasWorkspacePermissionV2(currentUserV1.value, "bb.policies.update");
 });
 
 const createSQLReview = () => {
