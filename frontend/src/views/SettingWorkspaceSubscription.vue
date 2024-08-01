@@ -160,6 +160,7 @@ import WeChatQRModal from "@/components/WeChatQRModal.vue";
 import { useLanguage } from "@/composables/useLanguage";
 import {
   pushNotification,
+  useInstanceV1List,
   useInstanceV1Store,
   useSubscriptionV1Store,
 } from "@/store";
@@ -179,10 +180,11 @@ defineProps<{
   allowEdit: boolean;
 }>();
 
-const subscriptionStore = useSubscriptionV1Store();
-const instanceV1Store = useInstanceV1Store();
 const { t } = useI18n();
 const { locale } = useLanguage();
+const subscriptionStore = useSubscriptionV1Store();
+const instanceV1Store = useInstanceV1Store();
+useInstanceV1List(/* showDeleted */ false, /* forceUpdate */ true);
 
 const state = reactive<LocalState>({
   loading: false,

@@ -87,13 +87,14 @@ import {
   useDatabaseV1Store,
   useProjectByName,
 } from "@/store";
-import type { ComposedDatabase, ComposedInstance } from "@/types";
+import type { ComposedDatabase } from "@/types";
 import {
   DEFAULT_PROJECT_NAME,
   defaultProject,
   isValidInstanceName,
 } from "@/types";
 import type { UpdateDatabaseRequest } from "@/types/proto/v1/database_service";
+import type { InstanceResource } from "@/types/proto/v1/instance_service";
 import type { Project } from "@/types/proto/v1/project_service";
 import {
   filterDatabaseV1ByKeyword,
@@ -105,7 +106,7 @@ import { DrawerContent } from "./v2";
 
 interface LocalState {
   transferSource: TransferSource;
-  instanceFilter: ComposedInstance | undefined;
+  instanceFilter: InstanceResource | undefined;
   projectFilter: Project | undefined;
   searchText: string;
   loading: boolean;

@@ -53,6 +53,10 @@ const hasPermission = computed(() => {
 });
 
 onMounted(() => {
+  if (!hasPermission.value) {
+    return;
+  }
+
   instanceStore.getOrFetchInstanceByName(
     `${instanceNamePrefix}${props.instanceId}`
   );
