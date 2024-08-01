@@ -61,7 +61,7 @@ func (driver *Driver) Open(_ context.Context, _ storepb.Engine, config db.Connec
 	// See: https://github.com/microsoft/go-mssqldb/issues/33
 	query.Add("tlsmin", "1.0")
 
-	trustServerCertificate := "false"
+	trustServerCertificate := "true"
 
 	var err error
 	if config.TLSConfig.UseSSL && config.TLSConfig.SslCA != "" {
