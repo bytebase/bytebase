@@ -95,6 +95,7 @@ service DatabaseService {
     };
     option (bytebase.v1.permission) = "bb.databases.update";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = true;
   }
 
   rpc GetDatabaseSchema(GetDatabaseSchemaRequest) returns (DatabaseSchema) {
@@ -139,12 +140,14 @@ service DatabaseService {
     };
     option (bytebase.v1.permission) = "bb.databaseSecrets.update";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = true;
   }
 
   rpc DeleteSecret(DeleteSecretRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {delete: "/v1/{name=instances/*/databases/*/secrets/*}"};
     option (bytebase.v1.permission) = "bb.databaseSecrets.delete";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = true;
   }
 
   rpc AdviseIndex(AdviseIndexRequest) returns (AdviseIndexResponse) {
