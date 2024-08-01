@@ -108,7 +108,8 @@ const databaseStore = useDatabaseV1Store();
 const isLoggedIn = useIsLoggedIn();
 const me = useCurrentUserV1();
 
-const { events: editorEvents, showConnectionPanel } = useSQLEditorContext();
+const editorContext = useSQLEditorContext();
+const { events: editorEvents, showConnectionPanel } = editorContext;
 const searchHistory = useSearchHistory();
 const {
   state: hoverState,
@@ -231,8 +232,11 @@ const nodeProps = ({ option }: { option: TreeOption }) => {
         if (type === "database") {
           if (canQueryDatabase(node.meta.target as ComposedDatabase)) {
             setConnection(node, {
-              worksheet: tabStore.currentTab?.worksheet ?? "",
-              mode: DEFAULT_SQL_EDITOR_TAB_MODE,
+              extra: {
+                worksheet: tabStore.currentTab?.worksheet ?? "",
+                mode: DEFAULT_SQL_EDITOR_TAB_MODE,
+              },
+              context: editorContext,
             });
             showConnectionPanel.value = false;
           }
