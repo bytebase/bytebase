@@ -258,21 +258,30 @@ message BatchUpdateIssuesStatusResponse {}
 message ApproveIssueRequest {
   // The name of the issue to add an approver.
   // Format: projects/{project}/issues/{issue}
-  string name = 1 [(google.api.field_behavior) = REQUIRED];
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Issue"}
+  ];
   string comment = 2;
 }
 
 message RejectIssueRequest {
   // The name of the issue to add an rejection.
   // Format: projects/{project}/issues/{issue}
-  string name = 1 [(google.api.field_behavior) = REQUIRED];
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Issue"}
+  ];
   string comment = 2;
 }
 
 message RequestIssueRequest {
   // The name of the issue to request a issue.
   // Format: projects/{project}/issues/{issue}
-  string name = 1 [(google.api.field_behavior) = REQUIRED];
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Issue"}
+  ];
   string comment = 2;
 }
 
@@ -465,7 +474,10 @@ message ApprovalNode {
 
 message ListIssueCommentsRequest {
   // Format: projects/{projects}/issues/{issue}
-  string parent = 1 [(google.api.field_behavior) = REQUIRED];
+  string parent = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Issue"}
+  ];
 
   // The maximum number of issues to return. The service may return fewer than
   // this value.
@@ -492,7 +504,10 @@ message ListIssueCommentsResponse {
 message CreateIssueCommentRequest {
   // The issue name
   // Format: projects/{project}/issues/{issue}
-  string parent = 1;
+  string parent = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Issue"}
+  ];
 
   IssueComment issue_comment = 2;
 }
@@ -500,7 +515,10 @@ message CreateIssueCommentRequest {
 message UpdateIssueCommentRequest {
   // The issue name
   // Format: projects/{project}/issues/{issue}
-  string parent = 1;
+  string parent = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Issue"}
+  ];
 
   IssueComment issue_comment = 2;
 

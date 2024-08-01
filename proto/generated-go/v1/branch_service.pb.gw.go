@@ -641,6 +641,7 @@ func local_request_BranchService_DiffMetadata_0(ctx context.Context, marshaler r
 // UnaryRPC     :call BranchServiceServer directly.
 // StreamingRPC :currently unsupported pending https://github.com/grpc/grpc-go/issues/906.
 // Note that using this registration option will cause many gRPC library features to stop working. Consider using RegisterBranchServiceHandlerFromEndpoint instead.
+// GRPC interceptors will not work for this type of registration. To use interceptors, you must use the "runtime.WithMiddlewares" option in the "runtime.NewServeMux" call.
 func RegisterBranchServiceHandlerServer(ctx context.Context, mux *runtime.ServeMux, server BranchServiceServer) error {
 
 	mux.Handle("GET", pattern_BranchService_GetBranch_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
@@ -906,7 +907,7 @@ func RegisterBranchServiceHandler(ctx context.Context, mux *runtime.ServeMux, co
 // to "mux". The handlers forward requests to the grpc endpoint over the given implementation of "BranchServiceClient".
 // Note: the gRPC framework executes interceptors within the gRPC handler. If the passed in "BranchServiceClient"
 // doesn't go through the normal gRPC flow (creating a gRPC client etc.) then it will be up to the passed in
-// "BranchServiceClient" to call the correct interceptors.
+// "BranchServiceClient" to call the correct interceptors. This client ignores the HTTP middlewares.
 func RegisterBranchServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux, client BranchServiceClient) error {
 
 	mux.Handle("GET", pattern_BranchService_GetBranch_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
