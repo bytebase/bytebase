@@ -1608,6 +1608,23 @@ func (s *IssueService) CreateIssueComment(ctx context.Context, request *v1pb.Cre
 		return nil, status.Errorf(codes.Internal, "failed to create issue comment: %v", err)
 	}
 
+	// Add issue commenter to issue subscribers.
+	hasSubscriber := false
+	for _, subscriber := range issue.Subscribers {
+		if subscriber.ID == user.ID {
+			hasSubscriber = true
+			break
+		}
+	}
+	if !hasSubscriber {
+		issue.Subscribers = append(issue.Subscribers, user)
+		if _, err := s.store.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{
+			Subscribers: &issue.Subscribers,
+		}, user.ID); err != nil {
+			return nil, err
+		}
+	}
+
 	return convertToIssueComment(request.Parent, ic), nil
 }
 
