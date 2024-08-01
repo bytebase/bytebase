@@ -63,7 +63,11 @@ const workspaceSettingRoutes: RouteRecordRaw[] = [
         name: SETTING_ROUTE_WORKSPACE_ARCHIVE,
         meta: {
           title: () => t("common.archived"),
-          requiredWorkspacePermissionList: () => ["bb.settings.get"],
+          requiredWorkspacePermissionList: () => [
+            "bb.projects.list",
+            "bb.instances.list",
+            "bb.environments.list",
+          ],
         },
         component: () => import("@/views/Archive.vue"),
         props: true,
