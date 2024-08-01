@@ -21,7 +21,6 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	"github.com/bytebase/bytebase/backend/plugin/parser/standard"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 
@@ -229,26 +228,14 @@ func getDatabasesTxn(ctx context.Context, tx *sql.Tx) ([]string, error) {
 
 // Execute executes a SQL statement and returns the affected rows.
 func (driver *Driver) Execute(ctx context.Context, statement string, _ db.ExecuteOptions) (int64, error) {
-	singleSQLs, err := standard.SplitSQL(statement)
-	if err != nil {
-		return 0, err
-	}
-	singleSQLs = base.FilterEmptySQL(singleSQLs)
-	if len(singleSQLs) == 0 {
-		return 0, nil
-	}
-
-	count := len(singleSQLs)
-	if count <= 0 {
-		return 0, nil
-	}
-
 	tx, err := driver.db.BeginTx(ctx, nil)
 	if err != nil {
 		return 0, err
 	}
 	defer tx.Rollback()
-	mctx, err := snow.WithMultiStatement(ctx, count)
+	// To submit a variable number of SQL statements in the statement field, set MULTI_STATEMENT_COUNT to 0."
+	// https://docs.snowflake.com/en/developer-guide/sql-api/submitting-multiple-statements
+	mctx, err := snow.WithMultiStatement(ctx, 0 /* MULTI_STATEMENT_COUNT */)
 	if err != nil {
 		return 0, err
 	}
