@@ -405,6 +405,7 @@ func local_request_DatabaseGroupService_DeleteDatabaseGroup_0(ctx context.Contex
 // UnaryRPC     :call DatabaseGroupServiceServer directly.
 // StreamingRPC :currently unsupported pending https://github.com/grpc/grpc-go/issues/906.
 // Note that using this registration option will cause many gRPC library features to stop working. Consider using RegisterDatabaseGroupServiceHandlerFromEndpoint instead.
+// GRPC interceptors will not work for this type of registration. To use interceptors, you must use the "runtime.WithMiddlewares" option in the "runtime.NewServeMux" call.
 func RegisterDatabaseGroupServiceHandlerServer(ctx context.Context, mux *runtime.ServeMux, server DatabaseGroupServiceServer) error {
 
 	mux.Handle("GET", pattern_DatabaseGroupService_ListDatabaseGroups_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
@@ -570,7 +571,7 @@ func RegisterDatabaseGroupServiceHandler(ctx context.Context, mux *runtime.Serve
 // to "mux". The handlers forward requests to the grpc endpoint over the given implementation of "DatabaseGroupServiceClient".
 // Note: the gRPC framework executes interceptors within the gRPC handler. If the passed in "DatabaseGroupServiceClient"
 // doesn't go through the normal gRPC flow (creating a gRPC client etc.) then it will be up to the passed in
-// "DatabaseGroupServiceClient" to call the correct interceptors.
+// "DatabaseGroupServiceClient" to call the correct interceptors. This client ignores the HTTP middlewares.
 func RegisterDatabaseGroupServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux, client DatabaseGroupServiceClient) error {
 
 	mux.Handle("GET", pattern_DatabaseGroupService_ListDatabaseGroups_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {

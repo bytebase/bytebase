@@ -237,6 +237,7 @@ func local_request_AuditLogService_ExportAuditLogs_1(ctx context.Context, marsha
 // UnaryRPC     :call AuditLogServiceServer directly.
 // StreamingRPC :currently unsupported pending https://github.com/grpc/grpc-go/issues/906.
 // Note that using this registration option will cause many gRPC library features to stop working. Consider using RegisterAuditLogServiceHandlerFromEndpoint instead.
+// GRPC interceptors will not work for this type of registration. To use interceptors, you must use the "runtime.WithMiddlewares" option in the "runtime.NewServeMux" call.
 func RegisterAuditLogServiceHandlerServer(ctx context.Context, mux *runtime.ServeMux, server AuditLogServiceServer) error {
 
 	mux.Handle("GET", pattern_AuditLogService_SearchAuditLogs_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
@@ -377,7 +378,7 @@ func RegisterAuditLogServiceHandler(ctx context.Context, mux *runtime.ServeMux, 
 // to "mux". The handlers forward requests to the grpc endpoint over the given implementation of "AuditLogServiceClient".
 // Note: the gRPC framework executes interceptors within the gRPC handler. If the passed in "AuditLogServiceClient"
 // doesn't go through the normal gRPC flow (creating a gRPC client etc.) then it will be up to the passed in
-// "AuditLogServiceClient" to call the correct interceptors.
+// "AuditLogServiceClient" to call the correct interceptors. This client ignores the HTTP middlewares.
 func RegisterAuditLogServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux, client AuditLogServiceClient) error {
 
 	mux.Handle("GET", pattern_AuditLogService_SearchAuditLogs_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
