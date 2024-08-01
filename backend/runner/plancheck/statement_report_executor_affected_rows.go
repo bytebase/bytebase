@@ -56,8 +56,9 @@ func buildGetTableDataSizeFuncForMySQL(metadata *model.DBSchema) func(schemaName
 	}
 }
 
-func buildGetRowsCountByQueryForMySQL(sqlDB *sql.DB, engine storepb.Engine) func(ctx context.Context, statement string) (int64, error) {
+func buildGetRowsCountByQueryForMySQL(sqlDB *sql.DB, engine storepb.Engine, isExplained *bool) func(ctx context.Context, statement string) (int64, error) {
 	return func(ctx context.Context, statement string) (int64, error) {
+		*isExplained = true
 		switch engine {
 		case storepb.Engine_OCEANBASE:
 			return getAffectedRowsCount(ctx, sqlDB, fmt.Sprintf("EXPLAIN FORMAT=JSON %s", statement), getAffectedRowsCountForOceanBase)

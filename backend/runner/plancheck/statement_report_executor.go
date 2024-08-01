@@ -51,6 +51,7 @@ func (e *StatementReportExecutor) Run(ctx context.Context, config *storepb.PlanC
 }
 
 func (e *StatementReportExecutor) runForDatabaseTarget(ctx context.Context, config *storepb.PlanCheckRunConfig) ([]*storepb.PlanCheckRunResult_Result, error) {
+	isDML := config.ChangeDatabaseType == storepb.PlanCheckRunConfig_DML
 	instanceUID := int(config.InstanceUid)
 	instance, err := e.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &instanceUID})
 	if err != nil {
@@ -136,7 +137,7 @@ func (e *StatementReportExecutor) runForDatabaseTarget(ctx context.Context, conf
 		defer driver.Close(ctx)
 		sqlDB := driver.GetDB()
 
-		return reportForMySQL(ctx, e.sheetManager, sqlDB, instance.Engine, database.DatabaseName, renderedStatement, dbSchema)
+		return reportForMySQL(ctx, e.sheetManager, sqlDB, instance.Engine, database.DatabaseName, renderedStatement, dbSchema, isDML)
 	case storepb.Engine_ORACLE, storepb.Engine_DM, storepb.Engine_OCEANBASE_ORACLE:
 		return reportForOracle(e.sheetManager, database.DatabaseName, database.DatabaseName, renderedStatement, dbSchema)
 	default:
@@ -152,6 +153,7 @@ func (e *StatementReportExecutor) runForDatabaseTarget(ctx context.Context, conf
 }
 
 func (e *StatementReportExecutor) runForDatabaseGroupTarget(ctx context.Context, config *storepb.PlanCheckRunConfig, databaseGroupUID int64) ([]*storepb.PlanCheckRunResult_Result, error) {
+	isDML := config.ChangeDatabaseType == storepb.PlanCheckRunConfig_DML
 	databaseGroup, err := e.store.GetDatabaseGroup(ctx, &store.FindDatabaseGroupMessage{
 		UID: &databaseGroupUID,
 	})
@@ -263,7 +265,7 @@ func (e *StatementReportExecutor) runForDatabaseGroupTarget(ctx context.Context,
 				defer driver.Close(ctx)
 				sqlDB := driver.GetDB()
 
-				return reportForMySQL(ctx, e.sheetManager, sqlDB, instance.Engine, database.DatabaseName, renderedStatement, dbSchema)
+				return reportForMySQL(ctx, e.sheetManager, sqlDB, instance.Engine, database.DatabaseName, renderedStatement, dbSchema, isDML)
 			case storepb.Engine_ORACLE, storepb.Engine_DM, storepb.Engine_OCEANBASE_ORACLE:
 				return reportForOracle(e.sheetManager, database.DatabaseName, database.DatabaseName, renderedStatement, dbSchema)
 			default:
@@ -345,7 +347,7 @@ func reportForOracle(sm *sheet.Manager, databaseName string, schemaName string, 
 	}, nil
 }
 
-func reportForMySQL(ctx context.Context, sm *sheet.Manager, sqlDB *sql.DB, engine storepb.Engine, databaseName string, statement string, dbMetadata *model.DBSchema) ([]*storepb.PlanCheckRunResult_Result, error) {
+func reportForMySQL(ctx context.Context, sm *sheet.Manager, sqlDB *sql.DB, engine storepb.Engine, databaseName string, statement string, dbMetadata *model.DBSchema, isDML bool) ([]*storepb.PlanCheckRunResult_Result, error) {
 	ast, advices := sm.GetAST(storepb.Engine_MYSQL, statement)
 	if len(advices) > 0 {
 		// nolint:nilerr
@@ -372,7 +374,8 @@ func reportForMySQL(ctx context.Context, sm *sheet.Manager, sqlDB *sql.DB, engin
 	var totalAffectedRows int64
 	var changedResources []base.SchemaResource
 
-	for _, node := range nodes {
+	explainCount := 0
+	for i, node := range nodes {
 		sqlType := mysqlparser.GetStatementType(node)
 		sqlTypeSet[sqlType] = struct{}{}
 		resources, err := base.ExtractChangedResources(storepb.Engine_MYSQL, databaseName, "" /* currentSchema */, node)
@@ -382,11 +385,19 @@ func reportForMySQL(ctx context.Context, sm *sheet.Manager, sqlDB *sql.DB, engin
 			changedResources = append(changedResources, resources...)
 		}
 
-		affectedRows, err := base.GetAffectedRows(ctx, engine, node, buildGetRowsCountByQueryForMySQL(sqlDB, engine), buildGetTableDataSizeFuncForMySQL(dbMetadata))
+		isExplained := false
+		affectedRows, err := base.GetAffectedRows(ctx, engine, node, buildGetRowsCountByQueryForMySQL(sqlDB, engine, &isExplained), buildGetTableDataSizeFuncForMySQL(dbMetadata))
 		if err != nil {
 			slog.Error("failed to get affected rows for mysql", slog.String("database", databaseName), log.BBError(err))
 		} else {
 			totalAffectedRows += affectedRows
+		}
+		if isExplained {
+			explainCount++
+		}
+		if isDML && explainCount >= common.MaximumLintExplainSize {
+			totalAffectedRows = int64(len(nodes)) * (totalAffectedRows / int64(i+1))
+			break
 		}
 	}
 
