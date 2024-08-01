@@ -258,7 +258,7 @@ func getConnectionID(ctx context.Context, conn *sql.Conn) (string, error) {
 	return id, nil
 }
 
-func (driver *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL base.SingleSQL, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
+func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL base.SingleSQL, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
 	statement := util.TrimStatement(singleSQL.Text)
 	isSet, _ := regexp.MatchString(`(?i)^SET\s+?`, statement)
 	if !isSet {
