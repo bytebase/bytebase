@@ -311,15 +311,17 @@ func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, 
 			}
 			return util.BuildAffectedRowsResult(affectedRows), nil
 		}()
+		stop := false
 		if err != nil {
 			queryResult = &v1pb.QueryResult{
 				Error: err.Error(),
 			}
+			stop = true
 		}
 		queryResult.Statement = statement
 		queryResult.Latency = durationpb.New(time.Since(startTime))
 		results = append(results, queryResult)
-		if err != nil {
+		if stop {
 			break
 		}
 	}
