@@ -66,8 +66,7 @@ type Profile struct {
 	// Unique ID per Bytebase instance run.
 	DeployID string
 
-	Lsp             bool
-	PreUpdateBackup bool
+	Lsp bool
 
 	// can be set in runtime
 	RuntimeDebug atomic.Bool

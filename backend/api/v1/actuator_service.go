@@ -126,7 +126,7 @@ func (s *ActuatorService) getServerInfo(ctx context.Context) (*v1pb.ActuatorInfo
 		GitopsWebhookUrl:   setting.GitopsWebhookUrl,
 		Debug:              s.profile.RuntimeDebug.Load(),
 		Lsp:                s.profile.Lsp,
-		PreUpdateBackup:    s.profile.PreUpdateBackup,
+		PreUpdateBackup:    true,
 		UnlicensedFeatures: unlicensedFeaturesString,
 	}
 
