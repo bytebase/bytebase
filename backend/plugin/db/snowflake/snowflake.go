@@ -278,7 +278,6 @@ func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, 
 			statement = stmt
 		}
 
-		// TODO(d): support snowflake ValidateSQLForEditor.
 		_, allQuery, err := base.ValidateSQLForEditor(storepb.Engine_SNOWFLAKE, statement)
 		if err != nil {
 			slog.Error("failed to validate sql", slog.String("statement", statement), log.BBError(err))
@@ -312,15 +311,19 @@ func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, 
 			}
 			return util.BuildAffectedRowsResult(affectedRows), nil
 		}()
+		stop := false
 		if err != nil {
 			queryResult = &v1pb.QueryResult{
 				Error: err.Error(),
 			}
+			stop = true
 		}
-
 		queryResult.Statement = statement
 		queryResult.Latency = durationpb.New(time.Since(startTime))
 		results = append(results, queryResult)
+		if stop {
+			break
+		}
 	}
 
 	return results, nil

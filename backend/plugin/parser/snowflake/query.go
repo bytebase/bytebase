@@ -12,7 +12,57 @@ import (
 )
 
 func init() {
+	base.RegisterQueryValidator(storepb.Engine_SNOWFLAKE, validateQuery)
 	base.RegisterExtractResourceListFunc(storepb.Engine_SNOWFLAKE, ExtractResourceList)
+}
+
+// validateQuery validates the SQL statement for SQL editor.
+func validateQuery(statement string) (bool, bool, error) {
+	parseResult, err := ParseSnowSQL(statement)
+	if err != nil {
+		return false, false, err
+	}
+	l := &queryValidateListener{
+		valid: true,
+	}
+	antlr.ParseTreeWalkerDefault.Walk(l, parseResult.Tree)
+	if !l.valid {
+		return false, false, nil
+	}
+	return true, !l.hasExecute, nil
+}
+
+type queryValidateListener struct {
+	*parser.BaseSnowflakeParserListener
+
+	valid      bool
+	hasExecute bool
+}
+
+func (l *queryValidateListener) EnterSql_command(ctx *parser.Sql_commandContext) {
+	if !l.valid {
+		return
+	}
+	if ctx.Dml_command() == nil && ctx.Other_command() == nil && ctx.Describe_command() == nil && ctx.Show_command() == nil {
+		l.valid = false
+		return
+	}
+	if dml := ctx.Dml_command(); dml != nil {
+		if dml.Query_statement() == nil {
+			l.valid = false
+			return
+		}
+	}
+	if other := ctx.Other_command(); other != nil {
+		if other.Set() != nil {
+			l.hasExecute = true
+			return
+		}
+		if other.Explain() == nil {
+			l.valid = false
+			return
+		}
+	}
 }
 
 // ExtractResourceList extracts the list of resources from the SELECT statement, and normalizes the object names with the NON-EMPTY currentNormalizedDatabase and currentNormalizedSchema.

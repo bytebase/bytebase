@@ -15,7 +15,6 @@ import (
 
 func init() {
 	base.RegisterQueryValidator(storepb.Engine_CLICKHOUSE, ValidateSQLForEditor)
-	base.RegisterQueryValidator(storepb.Engine_SNOWFLAKE, ValidateSQLForEditor)
 	base.RegisterQueryValidator(storepb.Engine_SQLITE, ValidateSQLForEditor)
 	base.RegisterQueryValidator(storepb.Engine_SPANNER, ValidateSQLForEditor)
 	base.RegisterQueryValidator(storepb.Engine_HIVE, ValidateSQLForEditor)
