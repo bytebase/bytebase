@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"log/slog"
 	"net"
-	"regexp"
 	"strings"
 	"time"
 
@@ -343,14 +342,57 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 
 	var results []*v1pb.QueryResult
 	for _, singleSQL := range singleSQLs {
-		result, err := driver.querySingleSQL(ctx, conn, singleSQL, queryContext)
-		if err != nil {
-			results = append(results, &v1pb.QueryResult{
-				Error: err.Error(),
-			})
-		} else {
-			results = append(results, result)
+		statement := singleSQL.Text
+		if driver.datashare {
+			statement = strings.ReplaceAll(statement, fmt.Sprintf("%s.", queryContext.CurrentDatabase), "")
 		}
+		if queryContext != nil && queryContext.Explain {
+			statement = fmt.Sprintf("EXPLAIN %s", statement)
+		} else if queryContext != nil && queryContext.Limit > 0 {
+			statement = getStatementWithResultLimit(statement, queryContext.Limit)
+		}
+
+		_, allQuery, err := base.ValidateSQLForEditor(storepb.Engine_POSTGRES, statement)
+		if err != nil {
+			return nil, err
+		}
+		startTime := time.Now()
+		queryResult, err := func() (*v1pb.QueryResult, error) {
+			if allQuery {
+				rows, err := conn.QueryContext(ctx, statement)
+				if err != nil {
+					return nil, util.FormatErrorWithQuery(err, statement)
+				}
+				defer rows.Close()
+				r, err := util.RowsToQueryResult(storepb.Engine_POSTGRES, rows)
+				if err != nil {
+					return nil, err
+				}
+				if err := rows.Err(); err != nil {
+					return nil, err
+				}
+				return r, nil
+			}
+
+			sqlResult, err := conn.ExecContext(ctx, statement)
+			if err != nil {
+				return nil, err
+			}
+			affectedRows, err := sqlResult.RowsAffected()
+			if err != nil {
+				slog.Info("rowsAffected returns error", log.BBError(err))
+			}
+			return util.BuildAffectedRowsResult(affectedRows), nil
+		}()
+		if err != nil {
+			queryResult = &v1pb.QueryResult{
+				Error: err.Error(),
+			}
+		}
+
+		queryResult.Statement = statement
+		queryResult.Latency = durationpb.New(time.Since(startTime))
+		results = append(results, queryResult)
 	}
 
 	return results, nil
@@ -360,44 +402,7 @@ func getStatementWithResultLimit(stmt string, limit int) string {
 	return fmt.Sprintf("WITH result AS (%s) SELECT * FROM result LIMIT %d;", stmt, limit)
 }
 
-func (driver *Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL base.SingleSQL, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
-	statement := strings.Trim(singleSQL.Text, " \n\t;")
-	isSet, _ := regexp.MatchString(`(?i)^SET\s+?`, statement)
-	if !isSet {
-		if queryContext != nil && queryContext.Explain {
-			statement = fmt.Sprintf("EXPLAIN %s", statement)
-		} else if queryContext != nil && queryContext.Limit > 0 {
-			statement = getStatementWithResultLimit(statement, queryContext.Limit)
-		}
-	}
-
-	if driver.datashare {
-		statement = strings.ReplaceAll(statement, fmt.Sprintf("%s.", queryContext.CurrentDatabase), "")
-	}
-
-	startTime := time.Now()
-	rows, err := conn.QueryContext(ctx, statement)
-	if err != nil {
-		return nil, util.FormatErrorWithQuery(err, statement)
-	}
-	defer rows.Close()
-
-	result, err := util.RowsToQueryResult(storepb.Engine_REDSHIFT, rows)
-	if err != nil {
-		// nolint
-		return &v1pb.QueryResult{
-			Error: err.Error(),
-		}, nil
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	result.Latency = durationpb.New(time.Since(startTime))
-	result.Statement = statement
-	return result, nil
-}
-
 // RunStatement runs a SQL statement in a given connection.
-func (*Driver) RunStatement(ctx context.Context, conn *sql.Conn, statement string) ([]*v1pb.QueryResult, error) {
-	return util.RunStatement(ctx, storepb.Engine_REDSHIFT, conn, statement)
+func (driver *Driver) RunStatement(ctx context.Context, conn *sql.Conn, statement string) ([]*v1pb.QueryResult, error) {
+	return driver.QueryConn(ctx, conn, statement, nil)
 }
