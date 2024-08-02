@@ -29,7 +29,7 @@ import {
   instanceV1HasReadonlyMode,
   tryConnectToCoreSQLEditorTab,
 } from "@/utils";
-import { useSQLEditorContext } from "../../context";
+import { useSQLEditorContext, type SQLEditorContext } from "../../context";
 
 type DropdownOptionWithTreeNode = DropdownOption & {
   onSelect: () => void;
@@ -37,7 +37,8 @@ type DropdownOptionWithTreeNode = DropdownOption & {
 
 export const useDropdown = () => {
   const router = useRouter();
-  const { events: editorEvents, showConnectionPanel } = useSQLEditorContext();
+  const editorContext = useSQLEditorContext();
+  const { events: editorEvents, showConnectionPanel } = editorContext;
   const disallowNavigateAwaySQLEditor = useAppFeature(
     "bb.feature.disallow-navigate-to-console"
   );
@@ -79,7 +80,9 @@ export const useDropdown = () => {
             label: t("sql-editor.connect"),
             icon: () => <LinkIcon class="w-4 h-4" />,
             onSelect: () => {
-              setConnection(node);
+              setConnection(node, {
+                context: editorContext,
+              });
               showConnectionPanel.value = false;
             },
           });
@@ -88,11 +91,11 @@ export const useDropdown = () => {
             label: t("sql-editor.connect-in-new-tab"),
             icon: () => <LinkIcon class="w-4 h-4" />,
             onSelect: () => {
-              setConnection(
-                node,
-                { worksheet: "", mode: DEFAULT_SQL_EDITOR_TAB_MODE },
-                /* newTab */ true
-              );
+              setConnection(node, {
+                extra: { worksheet: "", mode: DEFAULT_SQL_EDITOR_TAB_MODE },
+                newTab: true,
+                context: editorContext,
+              });
               showConnectionPanel.value = false;
             },
           });
@@ -103,7 +106,10 @@ export const useDropdown = () => {
             label: t("sql-editor.connect-in-admin-mode"),
             icon: () => <WrenchIcon class="w-4 h-4" />,
             onSelect: () => {
-              setConnection(node, { worksheet: "", mode: "ADMIN" });
+              setConnection(node, {
+                extra: { worksheet: "", mode: "ADMIN" },
+                context: editorContext,
+              });
               showConnectionPanel.value = false;
             },
           });
@@ -169,11 +175,11 @@ export const useDropdown = () => {
 
 export const setConnection = (
   node: TreeNode<"database">,
-  extra: { worksheet: string; mode: TabMode } = {
-    worksheet: "",
-    mode: DEFAULT_SQL_EDITOR_TAB_MODE,
-  },
-  newTab = false
+  options: {
+    extra?: { worksheet: string; mode: TabMode };
+    newTab?: boolean;
+    context?: SQLEditorContext;
+  } = {}
 ) => {
   if (!node) {
     return;
@@ -182,6 +188,14 @@ export const setConnection = (
     // one more guard
     return;
   }
+  const {
+    extra = {
+      worksheet: "",
+      mode: DEFAULT_SQL_EDITOR_TAB_MODE,
+    },
+    newTab = false,
+    context,
+  } = options;
   const coreTab: CoreSQLEditorTab = {
     connection: emptySQLEditorConnection(),
     ...extra,
@@ -191,4 +205,8 @@ export const setConnection = (
   conn.instance = database.instance;
   conn.database = database.name;
   tryConnectToCoreSQLEditorTab(coreTab, /* overrideTitle */ true, newTab);
+
+  if (context) {
+    context.asidePanelTab.value = "SCHEMA";
+  }
 };

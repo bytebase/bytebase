@@ -17,7 +17,7 @@
     </nav>
 
     <router-link
-      class="flex-shrink-0 flex gap-x-2 justify-start items-center border-t border-block-border px-3 py-1.5 hover:bg-control-bg-hover cursor-pointer"
+      class="flex-shrink-0 flex gap-x-2 justify-start items-center border-t border-block-border px-3 py-2 hover:bg-control-bg-hover cursor-pointer text-sm"
       :to="{ name: SQL_EDITOR_HOME_MODULE }"
     >
       <ChevronLeftIcon class="w-5 h-5" />
