@@ -290,27 +290,6 @@ func hasDelimiter(statement string, options ...tokenizer.Option) (bool, []base.S
 	return false, list, nil
 }
 
-// IsMySQLAffectedRowsStatement returns true if the given statement is an affected rows statement.
-func IsMySQLAffectedRowsStatement(statement string) bool {
-	lexer := parser.NewMySQLLexer(antlr.NewInputStream(statement))
-	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
-	stream.Fill()
-	tokens := stream.GetAllTokens()
-
-	for _, token := range tokens {
-		if token.GetChannel() == antlr.TokenDefaultChannel {
-			switch token.GetTokenType() {
-			case parser.MySQLParserDELETE_SYMBOL, parser.MySQLParserINSERT_SYMBOL, parser.MySQLParserREPLACE_SYMBOL, parser.MySQLParserUPDATE_SYMBOL, parser.MySQLParserCREATE_SYMBOL, parser.MySQLParserDROP_SYMBOL:
-				return true
-			default:
-				return false
-			}
-		}
-	}
-
-	return false
-}
-
 // IsTopMySQLRule returns true if the given context is a top-level MySQL rule.
 func IsTopMySQLRule(ctx *antlr.BaseParserRuleContext) bool {
 	if ctx.GetParent() == nil {
