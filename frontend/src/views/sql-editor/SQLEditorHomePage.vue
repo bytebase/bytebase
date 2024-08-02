@@ -40,6 +40,8 @@
       <Pane class="relative flex flex-col">
         <TabList />
 
+        <ConnectionPathBar class="border-b" />
+
         <EditorPanel />
 
         <div
@@ -97,6 +99,7 @@ import {
 import { allowUsingSchemaEditor, extractProjectResourceName } from "@/utils";
 import AsidePanel from "./AsidePanel";
 import ConnectionPanel from "./ConnectionPanel";
+import { ConnectionPathBar } from "./EditorCommon";
 import EditorPanel from "./EditorPanel";
 import { useSheetContext } from "./Sheet";
 import SheetPanel from "./SheetPanel";

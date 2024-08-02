@@ -1,9 +1,15 @@
 <template>
-  <div class="flex h-full w-full flex-col justify-start items-stretch">
-    <ConnectionPathBar class="border-b" />
-
-    <Panels content-class="flex flex-col">
-      <template #code-panel>
+  <Splitpanes
+    v-if="!tab || tab.mode === 'READONLY' || tab.mode === 'STANDARD'"
+    horizontal
+    class="default-theme"
+    :dbl-click-splitter="false"
+  >
+    <Pane class="flex flex-row overflow-hidden">
+      <div
+        v-if="isDisconnected || allowReadonlyMode"
+        class="flex h-full w-full flex-col justify-start items-stretch"
+      >
         <template v-if="!tab || tab.editMode === 'SQL-EDITOR'">
           <EditorAction @execute="handleExecute" />
           <div v-if="tab" class="w-full flex-1 flex flex-row items-stretch">
@@ -29,31 +35,46 @@
             @apply-statement="handleApplyStatement"
           />
         </Suspense>
-      </template>
-    </Panels>
 
-    <ExecutingHintModal />
+        <ExecutingHintModal />
 
-    <SaveSheetModal />
-  </div>
+        <SaveSheetModal />
+      </div>
+
+      <ReadonlyModeNotSupported v-else />
+    </Pane>
+    <Pane
+      v-if="!isDisconnected && allowReadonlyMode"
+      class="relative"
+      :size="40"
+    >
+      <ResultPanel />
+    </Pane>
+  </Splitpanes>
 </template>
 
 <script lang="ts" setup>
 import { storeToRefs } from "pinia";
-import { defineAsyncComponent, watch } from "vue";
+import { Pane, Splitpanes } from "splitpanes";
+import { computed, defineAsyncComponent, watch } from "vue";
 import { BBSpin } from "@/bbkit";
 import { useExecuteSQL } from "@/composables/useExecuteSQL";
 import { AIChatToSQL } from "@/plugins/ai";
-import { useDatabaseV1Store, useSQLEditorTabStore } from "@/store";
+import {
+  useConnectionOfCurrentSQLEditorTab,
+  useDatabaseV1Store,
+  useSQLEditorTabStore,
+} from "@/store";
 import type { SQLEditorConnection, SQLEditorQueryParams } from "@/types";
+import { instanceV1HasReadonlyMode } from "@/utils";
 import {
   EditorAction,
-  ConnectionPathBar,
   ExecutingHintModal,
   SaveSheetModal,
 } from "../../EditorCommon";
 import { useSQLEditorContext } from "../../context";
-import Panels from "../Panels";
+import ReadonlyModeNotSupported from "../ReadonlyModeNotSupported.vue";
+import ResultPanel from "../ResultPanel";
 import Welcome from "../Welcome.vue";
 
 const SQLEditor = defineAsyncComponent(() => import("./SQLEditor.vue"));
@@ -61,6 +82,13 @@ const SQLEditor = defineAsyncComponent(() => import("./SQLEditor.vue"));
 const tabStore = useSQLEditorTabStore();
 const { currentTab: tab, isDisconnected } = storeToRefs(tabStore);
 const { showAIChatBox, standardModeEnabled } = useSQLEditorContext();
+const { instance } = useConnectionOfCurrentSQLEditorTab();
+
+const allowReadonlyMode = computed(() => {
+  if (isDisconnected.value) return false;
+
+  return instanceV1HasReadonlyMode(instance.value);
+});
 
 const { execute } = useExecuteSQL();
 
