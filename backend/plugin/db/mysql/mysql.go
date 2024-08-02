@@ -458,7 +458,10 @@ func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string
 
 		_, allQuery, err := base.ValidateSQLForEditor(storepb.Engine_MYSQL, statement)
 		if err != nil {
-			return nil, err
+			// TODO(d): need to fix parser.
+			// INSERT INTO tbl (id, name, gender, height) VALUES(1, 'Alice', B'0', B'01111111');
+			slog.Error("failed to validate sql", slog.String("statement", statement), log.BBError(err))
+			allQuery = false
 		}
 		startTime := time.Now()
 		queryResult, err := func() (*v1pb.QueryResult, error) {
