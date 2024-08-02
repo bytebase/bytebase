@@ -307,9 +307,6 @@ func (d *Driver) querySingleSQL(ctx context.Context, statement string) (*v1pb.Qu
 		return nil, err
 	}
 	result.ColumnTypeNames = columnTypeNames
-	// spanner doesn't mask the sensitive fields.
-	// Return the all false boolean slice here as the placeholder.
-	result.Masked = make([]bool, len(result.ColumnNames))
 
 	for {
 		rowData, err := readRow2(row)
