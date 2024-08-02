@@ -72,12 +72,6 @@ func noneMask(data *MaskData) *v1pb.RowValue {
 					},
 				}
 			}
-		case *mssqldb.UniqueIdentifier:
-			return &v1pb.RowValue{
-				Kind: &v1pb.RowValue_StringValue{
-					StringValue: raw.String(),
-				},
-			}
 		case *sql.NullBool:
 			if raw.Valid {
 				return &v1pb.RowValue{
