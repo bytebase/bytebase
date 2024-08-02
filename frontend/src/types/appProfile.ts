@@ -29,12 +29,16 @@ export type AppFeatures = {
   "bb.feature.databases.hide-inalterable": boolean;
   "bb.feature.sql-editor.disable-setting": boolean;
   "bb.feature.sql-editor.disallow-share-worksheet": boolean;
+  "bb.feature.sql-editor.disallow-batch-query": boolean;
   "bb.feature.sql-editor.disallow-export-query-data": boolean;
   "bb.feature.sql-editor.disallow-request-query": boolean;
   "bb.feature.sql-editor.disallow-sync-schema": boolean;
   "bb.feature.sql-editor.hide-bytebase-logo": boolean;
   "bb.feature.sql-editor.hide-profile": boolean;
   "bb.feature.sql-editor.hide-readonly-datasource-hint": boolean;
+  "bb.feature.sql-editor.hide-projects": boolean;
+  "bb.feature.sql-editor.hide-environments": boolean;
+  "bb.feature.sql-editor.hide-advance-instance-features": boolean;
 };
 
 export type AppProfile = {
@@ -74,11 +78,15 @@ export const defaultAppProfile = (): AppProfile => ({
     "bb.feature.databases.hide-inalterable": false,
     "bb.feature.sql-editor.disable-setting": false,
     "bb.feature.sql-editor.disallow-share-worksheet": false,
+    "bb.feature.sql-editor.disallow-batch-query": false,
     "bb.feature.sql-editor.disallow-export-query-data": false,
     "bb.feature.sql-editor.disallow-request-query": false,
     "bb.feature.sql-editor.disallow-sync-schema": false,
     "bb.feature.sql-editor.hide-bytebase-logo": false,
     "bb.feature.sql-editor.hide-profile": false,
     "bb.feature.sql-editor.hide-readonly-datasource-hint": false,
+    "bb.feature.sql-editor.hide-projects": false,
+    "bb.feature.sql-editor.hide-environments": false,
+    "bb.feature.sql-editor.hide-advance-instance-features": false,
   },
 });

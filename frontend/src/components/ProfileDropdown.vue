@@ -24,6 +24,8 @@ import { useLanguage } from "@/composables/useLanguage";
 import { AUTH_SIGNIN_MODULE } from "@/router/auth";
 import {
   useActuatorV1Store,
+  useAppFeature,
+  useWorkspaceMode,
   useAuthStore,
   useCurrentUserV1,
   useSubscriptionV1Store,
@@ -44,6 +46,9 @@ const router = useRouter();
 const { setLocale, locale } = useLanguage();
 const currentUserV1 = useCurrentUserV1();
 const showDropdown = ref(false);
+const workspaceMode = useWorkspaceMode();
+const hideQuickstart = useAppFeature("bb.feature.hide-quick-start");
+const hideHelp = useAppFeature("bb.feature.hide-help");
 
 // For now, debug mode is a global setting and will affect all users.
 // So we only allow DBA and Owner to toggle it.
@@ -212,6 +217,7 @@ const options = computed((): DropdownOption[] => [
     type: "render",
     render() {
       return h(ProfilePreview, {
+        link: workspaceMode.value === "CONSOLE",
         onClick: () => (showDropdown.value = false),
       });
     },
@@ -268,6 +274,7 @@ const options = computed((): DropdownOption[] => [
   {
     key: "quick-start",
     type: "render",
+    show: !hideQuickstart.value,
     render() {
       return h(
         "div",
@@ -282,6 +289,7 @@ const options = computed((): DropdownOption[] => [
   {
     key: "help",
     type: "render",
+    show: !hideHelp.value,
     render() {
       return h(
         "a",

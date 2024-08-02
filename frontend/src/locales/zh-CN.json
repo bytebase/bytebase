@@ -2425,7 +2425,8 @@
     "query-context": {
       "admin-data-source-is-disallowed-to-query": "禁止查询管理员数据源。",
       "admin-data-source-is-disallowed-to-query-when-read-only-data-source-is-available": "当只读数据源可用时，不允许查询管理员数据源。"
-    }
+    },
+    "manage-connections": "管理连接"
   },
   "schema-editor": {
     "self": "Schema 编辑器",
