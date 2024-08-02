@@ -8,21 +8,25 @@ import (
 
 func TestValidateSQLForStandard(t *testing.T) {
 	type testData struct {
-		sql string
-		ans bool
+		sql      string
+		valid    bool
+		allQuery bool
 	}
 	tests := []testData{
 		{
-			sql: `select* from t`,
-			ans: true,
+			sql:      `select* from t`,
+			valid:    true,
+			allQuery: true,
 		},
 		{
-			sql: `explain select * from t;`,
-			ans: true,
+			sql:      `explain select * from t;`,
+			valid:    true,
+			allQuery: true,
 		},
 		{
-			sql: `explain    analyze select * from t`,
-			ans: false,
+			sql:      `explain    analyze select * from t`,
+			valid:    false,
+			allQuery: false,
 		},
 		{
 			sql: `
@@ -33,7 +37,8 @@ func TestValidateSQLForStandard(t *testing.T) {
 				)
 				update t set a = 1;
 				`,
-			ans: false,
+			valid:    false,
+			allQuery: false,
 		},
 		{
 			sql: `
@@ -44,11 +49,13 @@ func TestValidateSQLForStandard(t *testing.T) {
 				)
 				insert into t values (1, 2, 3);
 				`,
-			ans: false,
+			valid:    false,
+			allQuery: false,
 		},
 		{
-			sql: "select * from t where a = 'klasjdfkljsa$tag$; -- lkjdlkfajslkdfj'",
-			ans: true,
+			sql:      "select * from t where a = 'klasjdfkljsa$tag$; -- lkjdlkfajslkdfj'",
+			valid:    true,
+			allQuery: true,
 		},
 		{
 			sql: `
@@ -59,17 +66,20 @@ func TestValidateSQLForStandard(t *testing.T) {
 				) /* UPDATE */
 				select "update" from t;
 				`,
-			ans: true,
+			valid:    true,
+			allQuery: true,
 		},
 		{
-			sql: `create table t (a int);`,
-			ans: false,
+			sql:      `create table t (a int);`,
+			valid:    false,
+			allQuery: false,
 		},
 	}
 
 	for _, test := range tests {
-		ans, err := ValidateSQLForEditor(test.sql)
+		gotValid, gotAllQuery, err := ValidateSQLForEditor(test.sql)
 		require.NoError(t, err)
-		require.Equal(t, test.ans, ans, test.sql)
+		require.Equal(t, test.valid, gotValid, test.sql)
+		require.Equal(t, test.allQuery, gotAllQuery, test.sql)
 	}
 }
