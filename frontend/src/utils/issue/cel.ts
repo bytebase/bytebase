@@ -1,6 +1,6 @@
 import { cloneDeep, last } from "lodash-es";
 import type { SimpleExpr } from "@/plugins/cel";
-import { resolveCELExpr } from "@/plugins/cel";
+import { isRawStringExpr, resolveCELExpr } from "@/plugins/cel";
 import type { DatabaseResource } from "@/types";
 import type { Expr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
 import { batchConvertCELStringToParsedExpr } from "@/utils";
@@ -177,6 +177,11 @@ export const convertFromCELString = async (
   };
 
   async function processCondition(expr: SimpleExpr) {
+    // Do not process raw string expression.
+    if (isRawStringExpr(expr)) {
+      return;
+    }
+
     if (expr.operator === "_&&_" || expr.operator === "_||_") {
       for (const arg of expr.args) {
         await processCondition(arg);
@@ -263,6 +268,11 @@ export const convertFromExpr = (expr: Expr): ConditionExpression => {
   };
 
   function processCondition(expr: SimpleExpr) {
+    // Do not process raw string expression.
+    if (isRawStringExpr(expr)) {
+      return;
+    }
+
     if (expr.operator === "_&&_" || expr.operator === "_||_") {
       for (const arg of expr.args) {
         processCondition(arg);

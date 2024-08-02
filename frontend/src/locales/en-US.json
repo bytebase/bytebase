@@ -3493,6 +3493,7 @@
       "description-tips": "A condition is a rule that can be configured via an expression. For example, the condition \"Environment is prod\" will match issues executed in the \"prod\" environment.",
       "add": "Add condition",
       "add-group": "Add condition group",
+      "add-raw-expression": "Add raw expression",
       "group": {
         "or": {
           "description": "Any of the following are true..."
