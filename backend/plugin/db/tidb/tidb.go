@@ -384,22 +384,26 @@ func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string
 			}
 			return util.BuildAffectedRowsResult(affectedRows), nil
 		}()
+		stop := false
 		if err != nil {
 			if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
 				slog.Info("cancel connection", slog.String("connectionID", connectionID))
 				if err := d.StopConnectionByID(connectionID); err != nil {
 					slog.Error("failed to cancel connection", slog.String("connectionID", connectionID), log.BBError(err))
 				}
-				break
 			}
 			queryResult = &v1pb.QueryResult{
 				Error: err.Error(),
 			}
+			stop = true
 		}
 
 		queryResult.Statement = statement
 		queryResult.Latency = durationpb.New(time.Since(startTime))
 		results = append(results, queryResult)
+		if stop {
+			break
+		}
 	}
 
 	return results, nil
