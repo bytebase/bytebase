@@ -184,7 +184,7 @@ const { t } = useI18n();
 const { locale } = useLanguage();
 const subscriptionStore = useSubscriptionV1Store();
 const instanceV1Store = useInstanceV1Store();
-useInstanceV1List(/* showDeleted */ false, /* forceUpdate */ true);
+useInstanceV1List(/* showDeleted */ false);
 
 const state = reactive<LocalState>({
   loading: false,

@@ -595,14 +595,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.SearchInstancesRequest"><span class="badge">M</span>SearchInstancesRequest</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.SearchInstancesResponse"><span class="badge">M</span>SearchInstancesResponse</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.SyncInstanceRequest"><span class="badge">M</span>SyncInstanceRequest</a>
                 </li>
               
@@ -6664,16 +6656,6 @@ Format: environments/prod where prod is the environment resource ID. </p></td>
             <tbody>
               
                 <tr>
-                  <td>parent</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Deprecated.
-The parent parameter&#39;s value depends on the target resource for the request.
-- instances.list(): An empty string. This method doesn&#39;t require a resource; it simply returns all instances the user has access to.
-- projects.instances.list(): projects/{PROJECT_ID}. This method lists all instances that have databases in the project. </p></td>
-                </tr>
-              
-                <tr>
                   <td>page_size</td>
                   <td><a href="#int32">int32</a></td>
                   <td></td>
@@ -6788,63 +6770,6 @@ Only READ_ONLY data source can be removed. </p></td>
                   <td><a href="#bytebase.v1.KerberosConfig">KerberosConfig</a></td>
                   <td></td>
                   <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.SearchInstancesRequest">SearchInstancesRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>parent</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The parent parameter&#39;s value depends on the target resource for the request.
-- instances.list(): An empty string. This method doesn&#39;t require a resource; it simply returns all instances the user has access to.
-- projects.instances.list(): projects/{PROJECT_ID}. This method lists all instances that have databases in the project. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>show_deleted</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>Show deleted instances if specified. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.SearchInstancesResponse">SearchInstancesResponse</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>instances</td>
-                  <td><a href="#bytebase.v1.Instance">Instance</a></td>
-                  <td>repeated</td>
-                  <td><p>The instances from the specified request. </p></td>
                 </tr>
               
             </tbody>
@@ -7238,13 +7163,6 @@ Format: instances/{instance} </p></td>
               </tr>
             
               <tr>
-                <td>SearchInstances</td>
-                <td><a href="#bytebase.v1.SearchInstancesRequest">SearchInstancesRequest</a></td>
-                <td><a href="#bytebase.v1.SearchInstancesResponse">SearchInstancesResponse</a></td>
-                <td><p>Deprecated.</p></td>
-              </tr>
-            
-              <tr>
                 <td>CreateInstance</td>
                 <td><a href="#bytebase.v1.CreateInstanceRequest">CreateInstanceRequest</a></td>
                 <td><a href="#bytebase.v1.Instance">Instance</a></td>
@@ -7348,30 +7266,6 @@ Format: instances/{instance} </p></td>
                 <td>ListInstances</td>
                 <td>GET</td>
                 <td>/v1/instances</td>
-                <td></td>
-              </tr>
-              
-              <tr>
-                <td>ListInstances</td>
-                <td>GET</td>
-                <td>/v1/{parent=projects/*}/instances</td>
-                <td></td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>SearchInstances</td>
-                <td>GET</td>
-                <td>/v1/instances:search</td>
-                <td></td>
-              </tr>
-              
-              <tr>
-                <td>SearchInstances</td>
-                <td>GET</td>
-                <td>/v1/{parent=projects/*}/instances:search</td>
                 <td></td>
               </tr>
               
