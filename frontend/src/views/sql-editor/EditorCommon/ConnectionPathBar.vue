@@ -23,7 +23,10 @@
         @click="changeConnection"
       >
         <div class="flex flex-row gap-x-2 text-main">
-          <NPopover :disabled="!isProductionEnvironment">
+          <NPopover
+            v-if="!hideEnvironments"
+            :disabled="!isProductionEnvironment"
+          >
             <template #trigger>
               <div class="inline-flex items-center text-sm rounded-sm bg-white">
                 <span
@@ -117,6 +120,12 @@ const { projectContextReady } = storeToRefs(useSQLEditorStore());
 const hideReadonlyDatasourceHint = useAppFeature(
   "bb.feature.sql-editor.hide-readonly-datasource-hint"
 );
+const hideEnvironments = useAppFeature(
+  "bb.feature.sql-editor.hide-environments"
+);
+const disallowBatchQuery = useAppFeature(
+  "bb.feature.sql-editor.disallow-batch-query"
+);
 
 const { instance, database, environment } =
   useConnectionOfCurrentSQLEditorTab();
@@ -133,6 +142,10 @@ const isProductionEnvironment = computed(() => {
 });
 
 const showBatchQuerySelector = computed(() => {
+  if (disallowBatchQuery.value) {
+    return false;
+  }
+
   const tab = currentTab.value;
   return (
     tab &&

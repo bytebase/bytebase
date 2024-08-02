@@ -170,7 +170,7 @@
         "
         class="mt-4 sm:col-span-3 sm:col-start-1"
       >
-        <div class="mb-4">
+        <div v-if="!hideAdvancedFeatures" class="mb-4">
           <NRadioGroup
             class="textlabel"
             :value="state.passwordType"
@@ -221,7 +221,7 @@
           <label class="textlabel block">
             {{ $t("common.password") }}
           </label>
-          <div class="flex space-x-2 text-sm">
+          <div v-if="!hideAdvancedFeatures" class="flex space-x-2 text-sm">
             <div class="text-gray-400">
               {{ $t("instance.password-type.password-tip") }}
             </div>
@@ -814,6 +814,7 @@ MIIEvQ...
 
   <div
     v-if="
+      !hideAdvancedFeatures &&
       showSSH &&
       dataSource.authenticationType === DataSource_AuthenticationType.PASSWORD
     "
@@ -916,6 +917,7 @@ const {
   adminDataSource,
   hasReadonlyReplicaFeature,
   missingFeature,
+  hideAdvancedFeatures,
 } = useInstanceFormContext();
 
 const {
