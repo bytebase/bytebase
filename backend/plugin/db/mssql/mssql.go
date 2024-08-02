@@ -264,9 +264,8 @@ func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, 
 			return nil, err
 		}
 		startTime := time.Now()
-		var queryResult *v1pb.QueryResult
-		if allQuery {
-			r, err := func() (*v1pb.QueryResult, error) {
+		queryResult, err := func() (*v1pb.QueryResult, error) {
+			if allQuery {
 				rows, err := conn.QueryContext(ctx, statement)
 				if err != nil {
 					return nil, util.FormatErrorWithQuery(err, statement)
@@ -280,15 +279,8 @@ func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, 
 					return nil, err
 				}
 				return r, nil
-			}()
-			if err != nil {
-				queryResult = &v1pb.QueryResult{
-					Error: err.Error(),
-				}
-			} else {
-				queryResult = r
 			}
-		} else {
+
 			sqlResult, err := conn.ExecContext(ctx, statement)
 			if err != nil {
 				return nil, err
@@ -297,10 +289,15 @@ func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, 
 			if err != nil {
 				slog.Info("rowsAffected returns error", log.BBError(err))
 			}
-
-			queryResult = util.BuildAffectedRowsResult(affectedRows)
+			return util.BuildAffectedRowsResult(affectedRows), nil
+		}()
+		if err != nil {
+			queryResult = &v1pb.QueryResult{
+				Error: err.Error(),
+			}
 		}
-		queryResult.Statement = singleSQL.Text
+
+		queryResult.Statement = statement
 		queryResult.Latency = durationpb.New(time.Since(startTime))
 		results = append(results, queryResult)
 	}
