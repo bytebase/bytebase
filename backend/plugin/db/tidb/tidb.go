@@ -37,9 +37,6 @@ var (
 	sequenceTableType = "SEQUENCE"
 
 	_ db.Driver = (*Driver)(nil)
-
-	variableSetStmtRegexp  = regexp.MustCompile(`(?i)^SET\s+?`)
-	variableShowStmtRegexp = regexp.MustCompile(`(?i)^SHOW\s+?`)
 )
 
 func init() {
