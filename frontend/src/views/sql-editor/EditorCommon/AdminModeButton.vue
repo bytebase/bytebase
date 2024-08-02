@@ -3,6 +3,7 @@
     v-if="showButton"
     :size="props.size"
     type="warning"
+    :dashed="true"
     :disabled="isDisconnected"
     @click="enterAdminMode"
   >
