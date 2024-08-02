@@ -58,9 +58,7 @@
 
       <template v-if="showSheetsFeature">
         <NButton
-          secondary
-          strong
-          type="primary"
+          :strong="allowSave"
           size="small"
           :disabled="!allowSave"
           @click="handleClickSave"
@@ -80,6 +78,7 @@
         >
           <template #trigger>
             <NButton
+              :strong="allowShare"
               size="small"
               :disabled="!allowShare"
               @click="handleShareButtonClick"
