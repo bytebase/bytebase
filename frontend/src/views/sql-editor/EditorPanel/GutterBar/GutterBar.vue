@@ -1,6 +1,6 @@
 <template>
   <div
-    class="h-full flex flex-col items-stretch justify-between overflow-hidden text-sm p-1 border-r border-control-border"
+    class="h-full flex flex-col items-stretch justify-between overflow-hidden text-sm p-1 shrink-0"
   >
     <div class="flex flex-col gap-y-1">
       <TabItem view="CODE" />

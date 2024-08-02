@@ -1,80 +1,92 @@
 <template>
   <div
-    class="flex h-full w-full flex-col justify-start items-start overflow-hidden bg-dark-bg"
+    class="flex h-full w-full flex-col justify-start items-stretch overflow-hidden bg-dark-bg"
   >
-    <ConnectionPathBar />
+    <ConnectionPathBar class="border-b" />
 
-    <EditorAction @execute="handleExecute" @clear-screen="handleClearScreen" />
+    <div class="flex-1 flex items-stretch overflow-hidden">
+      <GutterBar class="bg-white" />
 
-    <div
-      v-if="!tabStore.isDisconnected"
-      ref="queryListContainerRef"
-      class="w-full flex-1 overflow-y-auto bg-dark-bg"
-    >
-      <div
-        ref="queryListRef"
-        class="w-full flex flex-col"
-        :data-height="queryListHeight"
-      >
-        <div v-for="query in queryList" :key="query.id" class="relative">
-          <Suspense>
-            <CompactSQLEditor
-              v-model:sql="query.sql"
-              class="min-h-[2rem]"
-              :class="[
-                isEditableQueryItem(query)
-                  ? 'active-editor'
-                  : 'read-only-editor',
-              ]"
-              :readonly="!isEditableQueryItem(query)"
-              @execute="handleExecute"
-              @history="handleHistory"
-              @clear-screen="handleClearScreen"
-            />
-            <template #fallback>
+      <div class="flex-1">
+        <EditorAction
+          class="border-l border-control-border"
+          @execute="handleExecute"
+          @clear-screen="handleClearScreen"
+        />
+
+        <div
+          v-if="!tabStore.isDisconnected"
+          ref="queryListContainerRef"
+          class="w-full flex-1 overflow-y-auto bg-dark-bg"
+        >
+          <div
+            ref="queryListRef"
+            class="w-full flex flex-col"
+            :data-height="queryListHeight"
+          >
+            <div v-for="query in queryList" :key="query.id" class="relative">
+              <Suspense>
+                <CompactSQLEditor
+                  v-model:sql="query.sql"
+                  class="min-h-[2rem]"
+                  :class="[
+                    isEditableQueryItem(query)
+                      ? 'active-editor'
+                      : 'read-only-editor',
+                  ]"
+                  :readonly="!isEditableQueryItem(query)"
+                  @execute="handleExecute"
+                  @history="handleHistory"
+                  @clear-screen="handleClearScreen"
+                />
+                <template #fallback>
+                  <div
+                    class="w-full min-h-[2rem] flex flex-col items-center justify-center"
+                  >
+                    <BBSpin />
+                  </div>
+                </template>
+              </Suspense>
+              <ResultViewV1
+                v-if="query.params && query.resultSet"
+                class="max-h-[20rem] flex-1 flex flex-col overflow-hidden"
+                :execute-params="query.params"
+                :result-set="query.resultSet"
+                :database="
+                  databaseStore.getDatabaseByName(
+                    query.params.connection.database
+                  )
+                "
+                :loading="query.status === 'RUNNING'"
+                :dark="true"
+              />
+
               <div
-                class="w-full min-h-[2rem] flex flex-col items-center justify-center"
+                v-if="query.resultSet?.error"
+                class="p-2 pb-1 text-md font-normal text-matrix-green-hover"
+              >
+                {{ $t("sql-editor.connection-lost") }}
+              </div>
+
+              <div
+                v-if="query.status === 'RUNNING'"
+                class="absolute inset-0 bg-black/20 flex justify-center items-center gap-2"
               >
                 <BBSpin />
+                <div
+                  v-if="query === currentQuery && expired"
+                  class="text-gray-400 cursor-pointer hover:underline select-none"
+                  @click="handleCancelQuery"
+                >
+                  {{ $t("common.cancel") }}
+                </div>
               </div>
-            </template>
-          </Suspense>
-          <ResultViewV1
-            v-if="query.params && query.resultSet"
-            class="max-h-[20rem] flex-1 flex flex-col overflow-hidden"
-            :execute-params="query.params"
-            :result-set="query.resultSet"
-            :database="
-              databaseStore.getDatabaseByName(query.params.connection.database)
-            "
-            :loading="query.status === 'RUNNING'"
-            :dark="true"
-          />
-
-          <div
-            v-if="query.resultSet?.error"
-            class="p-2 pb-1 text-md font-normal text-matrix-green-hover"
-          >
-            {{ $t("sql-editor.connection-lost") }}
-          </div>
-
-          <div
-            v-if="query.status === 'RUNNING'"
-            class="absolute inset-0 bg-black/20 flex justify-center items-center gap-2"
-          >
-            <BBSpin />
-            <div
-              v-if="query === currentQuery && expired"
-              class="text-gray-400 cursor-pointer hover:underline select-none"
-              @click="handleCancelQuery"
-            >
-              {{ $t("common.cancel") }}
             </div>
           </div>
         </div>
+        <ConnectionHolder v-else />
       </div>
     </div>
-    <ConnectionHolder v-else />
   </div>
 </template>
 
@@ -95,6 +107,7 @@ import {
   ConnectionHolder,
   ResultViewV1,
 } from "../../EditorCommon";
+import GutterBar from "../GutterBar";
 import { useAttractFocus } from "./useAttractFocus";
 import { useHistory } from "./useHistory";
 
