@@ -37,9 +37,6 @@ var (
 	sequenceTableType = "SEQUENCE"
 
 	_ db.Driver = (*Driver)(nil)
-
-	variableSetStmtRegexp  = regexp.MustCompile(`(?i)^SET\s+?`)
-	variableShowStmtRegexp = regexp.MustCompile(`(?i)^SHOW\s+?`)
 )
 
 func init() {
@@ -330,11 +327,6 @@ func isNonTransactionStatement(stmt string) bool {
 
 // QueryConn queries a SQL statement in a given connection.
 func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
-	connectionID, err := getConnectionID(ctx, conn)
-	if err != nil {
-		return nil, err
-	}
-	slog.Debug("connectionID", slog.String("connectionID", connectionID))
 	singleSQLs, err := base.SplitMultiSQL(storepb.Engine_MYSQL, statement)
 	if err != nil {
 		return nil, err
@@ -344,13 +336,55 @@ func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string
 		return nil, nil
 	}
 
+	connectionID, err := getConnectionID(ctx, conn)
+	if err != nil {
+		return nil, err
+	}
+	slog.Debug("connectionID", slog.String("connectionID", connectionID))
+
 	var results []*v1pb.QueryResult
 	for _, singleSQL := range singleSQLs {
-		result, err := d.querySingleSQL(ctx, conn, singleSQL, queryContext)
+		statement := singleSQL.Text
+		if queryContext != nil && queryContext.Explain {
+			statement = fmt.Sprintf("EXPLAIN %s", statement)
+		} else if queryContext != nil && queryContext.Limit > 0 {
+			statement = getStatementWithResultLimit(statement, queryContext.Limit)
+		}
+		sqlWithBytebaseAppComment := util.MySQLPrependBytebaseAppComment(statement)
+
+		_, allQuery, err := base.ValidateSQLForEditor(storepb.Engine_TIDB, statement)
 		if err != nil {
-			results = append(results, &v1pb.QueryResult{
-				Error: err.Error(),
-			})
+			return nil, err
+		}
+		startTime := time.Now()
+		queryResult, err := func() (*v1pb.QueryResult, error) {
+			if allQuery {
+				rows, err := conn.QueryContext(ctx, sqlWithBytebaseAppComment)
+				if err != nil {
+					return nil, util.FormatErrorWithQuery(err, statement)
+				}
+				defer rows.Close()
+				r, err := util.RowsToQueryResult(storepb.Engine_TIDB, rows)
+				if err != nil {
+					return nil, err
+				}
+				if err := rows.Err(); err != nil {
+					return nil, err
+				}
+				return r, nil
+			}
+
+			sqlResult, err := conn.ExecContext(ctx, statement)
+			if err != nil {
+				return nil, err
+			}
+			affectedRows, err := sqlResult.RowsAffected()
+			if err != nil {
+				slog.Info("rowsAffected returns error", log.BBError(err))
+			}
+			return util.BuildAffectedRowsResult(affectedRows), nil
+		}()
+		if err != nil {
 			if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
 				slog.Info("cancel connection", slog.String("connectionID", connectionID))
 				if err := d.StopConnectionByID(connectionID); err != nil {
@@ -358,9 +392,14 @@ func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string
 				}
 				break
 			}
-		} else {
-			results = append(results, result)
+			queryResult = &v1pb.QueryResult{
+				Error: err.Error(),
+			}
 		}
+
+		queryResult.Statement = statement
+		queryResult.Latency = durationpb.New(time.Since(startTime))
+		results = append(results, queryResult)
 	}
 
 	return results, nil
@@ -380,42 +419,7 @@ func getConnectionID(ctx context.Context, conn *sql.Conn) (string, error) {
 	return id, nil
 }
 
-func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL base.SingleSQL, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
-	statement := util.TrimStatement(singleSQL.Text)
-	isSet := variableSetStmtRegexp.MatchString(statement)
-	isShow := variableShowStmtRegexp.MatchString(statement)
-	if !isSet && !isShow {
-		if queryContext != nil && queryContext.Explain {
-			statement = fmt.Sprintf("EXPLAIN %s", statement)
-		} else if queryContext != nil && queryContext.Limit > 0 {
-			statement = getStatementWithResultLimit(statement, queryContext.Limit)
-		}
-	}
-
-	startTime := time.Now()
-	sqlWithBytebaseAppComment := util.MySQLPrependBytebaseAppComment(statement)
-	rows, err := conn.QueryContext(ctx, sqlWithBytebaseAppComment)
-	if err != nil {
-		return nil, util.FormatErrorWithQuery(err, statement)
-	}
-	defer rows.Close()
-
-	result, err := util.RowsToQueryResult(storepb.Engine_MYSQL, rows)
-	if err != nil {
-		// nolint
-		return &v1pb.QueryResult{
-			Error: err.Error(),
-		}, nil
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	result.Latency = durationpb.New(time.Since(startTime))
-	result.Statement = statement
-	return result, nil
-}
-
 // RunStatement runs a SQL statement in a given connection.
-func (*Driver) RunStatement(ctx context.Context, conn *sql.Conn, statement string) ([]*v1pb.QueryResult, error) {
-	return util.RunStatement(ctx, storepb.Engine_MYSQL, conn, statement)
+func (d *Driver) RunStatement(ctx context.Context, conn *sql.Conn, statement string) ([]*v1pb.QueryResult, error) {
+	return d.QueryConn(ctx, conn, statement, nil)
 }

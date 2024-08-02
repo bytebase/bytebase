@@ -4,7 +4,6 @@ import { defineStore } from "pinia";
 import { computed } from "vue";
 import { vcsProviderServiceClient } from "@/grpcweb";
 import { useCache } from "@/store/cache";
-import type { VCSId } from "@/types";
 import type { VCSProvider } from "@/types/proto/v1/vcs_provider_service";
 import { vcsProviderPrefix } from "./common";
 
@@ -67,7 +66,7 @@ export const useVCSProviderStore = defineStore("vcs_provider", () => {
     return vcs;
   };
 
-  const getVCSById = (vcsId: VCSId) => {
+  const getVCSById = (vcsId: string) => {
     return getVCSByName(`${vcsProviderPrefix}${vcsId}`);
   };
 
