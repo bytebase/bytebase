@@ -104,8 +104,8 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 			Source:     v1pb.ChangeHistory_UI,
 			Type:       v1pb.ChangeHistory_DATA,
 			Status:     v1pb.ChangeHistory_DONE,
-			Schema:     "",
-			PrevSchema: "",
+			Schema:     dumpedSchema,
+			PrevSchema: dumpedSchema,
 		},
 		{
 			Source:     v1pb.ChangeHistory_UI,

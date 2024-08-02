@@ -9,30 +9,26 @@ import (
 func TestValidateQuery(t *testing.T) {
 	tests := []struct {
 		statement string
-		valid     bool
-		allQuery  bool
+		validate  bool
 		err       bool
 	}{
 		{
 			statement: "get hello",
-			valid:     true,
-			allQuery:  true,
+			validate:  true,
 		},
 		{
 			statement: "set hello 1",
-			valid:     false,
-			allQuery:  false,
+			validate:  false,
 		},
 	}
 
 	for _, test := range tests {
-		gotValid, gotAllQuery, err := validateQuery(test.statement)
+		got, err := validateQuery(test.statement)
 		if test.err {
 			require.Error(t, err)
 		} else {
 			require.NoError(t, err)
-			require.Equal(t, test.valid, gotValid)
-			require.Equal(t, test.allQuery, gotAllQuery)
+			require.Equal(t, test.validate, got)
 		}
 	}
 }

@@ -395,7 +395,7 @@ func (s *Store) listInstanceImplV2(ctx context.Context, tx *Tx, find *FindInstan
 	}
 
 	var instanceMessages []*InstanceMessage
-	rows, err := tx.QueryContext(ctx, fmt.Sprintf(`
+	rows, err := tx.QueryContext(ctx, `
 		SELECT
 			id,
 			resource_id,
@@ -409,8 +409,7 @@ func (s *Store) listInstanceImplV2(ctx context.Context, tx *Tx, find *FindInstan
 			options,
 			metadata
 		FROM instance
-		WHERE %s
-		ORDER BY resource_id`, strings.Join(where, " AND ")),
+		WHERE `+strings.Join(where, " AND "),
 		args...,
 	)
 	if err != nil {

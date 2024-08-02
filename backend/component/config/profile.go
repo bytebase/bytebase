@@ -68,6 +68,7 @@ type Profile struct {
 
 	Lsp             bool
 	PreUpdateBackup bool
+	ExecuteDetail   bool
 
 	DevelopmentAudit bool
 

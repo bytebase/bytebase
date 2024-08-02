@@ -20,19 +20,19 @@ func init() {
 }
 
 // validateQuery validates the SQL statement for SQL editor.
-func validateQuery(statement string) (bool, bool, error) {
+func validateQuery(statement string) (bool, error) {
 	tree, _, err := ParsePLSQL(statement)
 	if err != nil {
-		return false, false, err
+		return false, err
 	}
 	l := &queryValidateListener{
 		validate: true,
 	}
 	antlr.ParseTreeWalkerDefault.Walk(l, tree)
 	if !l.validate {
-		return false, false, nil
+		return false, nil
 	}
-	return true, true, nil
+	return true, nil
 }
 
 type queryValidateListener struct {

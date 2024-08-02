@@ -23,7 +23,6 @@ import { provideInstanceFormContext } from "./context";
 
 const props = defineProps<{
   instance?: Instance;
-  hideAdvancedFeatures?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -33,8 +32,7 @@ const emit = defineEmits<{
 const settingV1Store = useSettingV1Store();
 
 const instance = toRef(props, "instance");
-const hideAdvancedFeatures = toRef(props, "hideAdvancedFeatures");
-const context = provideInstanceFormContext({ instance, hideAdvancedFeatures });
+const context = provideInstanceFormContext({ instance });
 const { events, isCreating, basicInfo, adminDataSource, missingFeature } =
   context;
 onMounted(async () => {

@@ -25,7 +25,7 @@ var (
 	generateRestoreSQL      = make(map[storepb.Engine]GenerateRestoreSQLFunc)
 )
 
-type ValidateSQLForEditorFunc func(string) (bool, bool, error)
+type ValidateSQLForEditorFunc func(string) (bool, error)
 type ExtractChangedResourcesFunc func(string, string, any) ([]SchemaResource, error)
 type ExtractResourceListFunc func(string, string, string) ([]SchemaResource, error)
 type SplitMultiSQLFunc func(string) ([]SingleSQL, error)
@@ -57,11 +57,10 @@ func RegisterQueryValidator(engine storepb.Engine, f ValidateSQLForEditorFunc) {
 // 1. EXPLAIN statement, except EXPLAIN ANALYZE
 // 2. SELECT statement
 // We also support CTE with SELECT statements, but not with DML statements.
-// The first bool indicates whether the query can run in read-only mode, and the second bool determines whether all queries return data.
-func ValidateSQLForEditor(engine storepb.Engine, statement string) (bool, bool, error) {
+func ValidateSQLForEditor(engine storepb.Engine, statement string) (bool, error) {
 	f, ok := queryValidators[engine]
 	if !ok {
-		return true, true, nil
+		return true, nil
 	}
 	return f(statement)
 }

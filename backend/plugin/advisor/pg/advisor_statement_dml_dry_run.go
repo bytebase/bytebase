@@ -9,7 +9,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -49,9 +48,6 @@ func (*StatementDmlDryRunAdvisor) Check(ctx advisor.Context, _ string) ([]*store
 	if checker.driver != nil {
 		for _, stmt := range stmtList {
 			ast.Walk(checker, stmt)
-			if checker.explainCount >= common.MaximumLintExplainSize {
-				break
-			}
 		}
 	}
 
@@ -59,19 +55,17 @@ func (*StatementDmlDryRunAdvisor) Check(ctx advisor.Context, _ string) ([]*store
 }
 
 type statementDmlDryRunChecker struct {
-	adviceList   []*storepb.Advice
-	level        storepb.Advice_Status
-	title        string
-	driver       *sql.DB
-	ctx          context.Context
-	explainCount int
+	adviceList []*storepb.Advice
+	level      storepb.Advice_Status
+	title      string
+	driver     *sql.DB
+	ctx        context.Context
 }
 
 // Visit implements ast.Visitor interface.
 func (checker *statementDmlDryRunChecker) Visit(in ast.Node) ast.Visitor {
 	switch node := in.(type) {
 	case *ast.InsertStmt, *ast.UpdateStmt, *ast.DeleteStmt:
-		checker.explainCount++
 		if _, err := advisor.Query(checker.ctx, checker.driver, storepb.Engine_POSTGRES, fmt.Sprintf("EXPLAIN %s", node.Text())); err != nil {
 			checker.adviceList = append(checker.adviceList, &storepb.Advice{
 				Status:  checker.level,

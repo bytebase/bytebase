@@ -17,20 +17,20 @@ func init() {
 	base.RegisterQueryValidator(storepb.Engine_MSSQL, ValidateSQLForEditor)
 }
 
-func ValidateSQLForEditor(statement string) (bool, bool, error) {
+func ValidateSQLForEditor(statement string) (bool, error) {
 	parseResult, err := ParseTSQL(statement)
 	if err != nil {
-		return false, false, err
+		return false, err
 	}
 	if parseResult == nil {
-		return false, false, nil
+		return false, nil
 	}
 
 	l := &queryValidateListener{
 		valid: true,
 	}
 	antlr.ParseTreeWalkerDefault.Walk(l, parseResult.Tree)
-	return l.valid, l.valid, nil
+	return l.valid, nil
 }
 
 type queryValidateListener struct {

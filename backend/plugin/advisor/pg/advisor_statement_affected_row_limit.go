@@ -9,7 +9,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -55,9 +54,6 @@ func (*StatementAffectedRowLimitAdvisor) Check(ctx advisor.Context, _ string) ([
 		for _, stmt := range stmtList {
 			checker.text = advisor.NormalizeStatement(stmt.Text())
 			ast.Walk(checker, stmt)
-			if checker.explainCount >= common.MaximumLintExplainSize {
-				break
-			}
 		}
 	}
 
@@ -65,14 +61,13 @@ func (*StatementAffectedRowLimitAdvisor) Check(ctx advisor.Context, _ string) ([
 }
 
 type statementAffectedRowLimitChecker struct {
-	adviceList   []*storepb.Advice
-	level        storepb.Advice_Status
-	text         string
-	title        string
-	maxRow       int
-	driver       *sql.DB
-	ctx          context.Context
-	explainCount int
+	adviceList []*storepb.Advice
+	level      storepb.Advice_Status
+	text       string
+	title      string
+	maxRow     int
+	driver     *sql.DB
+	ctx        context.Context
 }
 
 // Visit implements ast.Visitor interface.
@@ -81,7 +76,6 @@ func (checker *statementAffectedRowLimitChecker) Visit(in ast.Node) ast.Visitor 
 	rows := int64(0)
 	switch node := in.(type) {
 	case *ast.UpdateStmt, *ast.DeleteStmt:
-		checker.explainCount++
 		res, err := advisor.Query(checker.ctx, checker.driver, storepb.Engine_POSTGRES, fmt.Sprintf("EXPLAIN %s", node.Text()))
 		if err != nil {
 			checker.adviceList = append(checker.adviceList, &storepb.Advice{

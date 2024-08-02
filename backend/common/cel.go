@@ -106,15 +106,15 @@ func ConvertUnparsedApproval(expression *expr.Expr) (*exprproto.ParsedExpr, erro
 func ValidateGroupCELExpr(expr string) (cel.Program, error) {
 	e, err := cel.NewEnv(CommonCELAttributes...)
 	if err != nil {
-		return nil, err
+		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 	ast, issues := e.Compile(expr)
 	if issues != nil && issues.Err() != nil {
-		return nil, issues.Err()
+		return nil, status.Errorf(codes.InvalidArgument, issues.Err().Error())
 	}
 	prog, err := e.Program(ast)
 	if err != nil {
-		return nil, err
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 	return prog, nil
 }

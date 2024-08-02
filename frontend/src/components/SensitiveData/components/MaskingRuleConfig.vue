@@ -193,7 +193,7 @@ const isValid = computed(() => {
 const onConfirm = async () => {
   const expressions = await batchConvertParsedExprToCELString([
     ParsedExpr.fromJSON({
-      expr: await buildCELExpr(state.expr),
+      expr: buildCELExpr(state.expr),
     }),
   ]);
   emit("confirm", {

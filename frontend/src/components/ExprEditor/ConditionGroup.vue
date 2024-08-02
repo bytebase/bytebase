@@ -74,12 +74,6 @@
           @remove="removeCondition(operand)"
           @update="$emit('update')"
         />
-        <RawString
-          v-if="enableRawExpression && isRawStringExpr(operand)"
-          :expr="operand"
-          @remove="removeRawString(operand)"
-          @update="$emit('update')"
-        />
       </div>
     </div>
 
@@ -90,17 +84,9 @@
         /></template>
         <span class="text-gray-500">{{ $t("cel.condition.add") }}</span>
       </NButton>
-      <NButton size="small" quaternary @click="addRawString">
-        <template #icon
-          ><heroicons:plus class="w-4 h-4 text-gray-500"
-        /></template>
-        <span class="text-gray-500">{{
-          $t("cel.condition.add-raw-expression")
-        }}</span>
-      </NButton>
     </div>
 
-    <div v-if="root && allowAdmin" class="space-x-1">
+    <div v-if="root && allowAdmin" class="space-x-1 pt-3">
       <NButton size="small" quaternary @click="addCondition">
         <template #icon><heroicons:plus class="w-4 h-4" /></template>
         <span>{{ $t("cel.condition.add") }}</span>
@@ -117,10 +103,6 @@
           </div>
         </NTooltip>
       </NButton>
-      <NButton size="small" quaternary @click="addRawString">
-        <template #icon><heroicons:plus class="w-4 h-4" /></template>
-        <span>{{ $t("cel.condition.add-raw-expression") }}</span>
-      </NButton>
     </div>
   </div>
 </template>
@@ -136,12 +118,8 @@ import {
   LogicalOperatorList,
   isConditionGroupExpr,
   isConditionExpr,
-  isRawStringExpr,
-  ExprType,
-  type RawStringExpr,
 } from "@/plugins/cel";
 import Condition from "./Condition.vue";
-import RawString from "./RawString.vue";
 import { getOperatorListByFactor } from "./components/common";
 import { useExprEditorContext } from "./context";
 
@@ -156,8 +134,7 @@ const emit = defineEmits<{
 }>();
 
 const context = useExprEditorContext();
-const { allowAdmin, enableRawExpression, factorList, factorOperatorOverrideMap } =
-  context;
+const { allowAdmin, factorList, factorOperatorOverrideMap } = context;
 
 const operator = computed({
   get() {
@@ -188,24 +165,14 @@ const addCondition = () => {
   );
 
   args.value.push({
-    type: ExprType.Condition,
     operator: operators[0] ?? "",
     args: [factor, ""],
   } as any);
   emit("update");
 };
 
-const addRawString = () => {
-  args.value.push({
-    type: ExprType.RawString,
-    content: "",
-  } as any);
-  emit("update");
-};
-
 const addConditionGroup = () => {
   args.value.push({
-    type: ExprType.ConditionGroup,
     operator: LogicalOperatorList[0],
     args: [],
   });
@@ -222,14 +189,6 @@ const removeCondition = (condition: ConditionExpr) => {
 
 const removeConditionGroup = (group: ConditionGroupExpr) => {
   const index = args.value.indexOf(group);
-  if (index >= 0) {
-    args.value.splice(index, 1);
-    emit("update");
-  }
-};
-
-const removeRawString = (rawString: RawStringExpr) => {
-  const index = args.value.indexOf(rawString);
   if (index >= 0) {
     args.value.splice(index, 1);
     emit("update");

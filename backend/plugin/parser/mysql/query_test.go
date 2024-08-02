@@ -10,60 +10,49 @@ import (
 
 func TestValidateSQLForEditor(t *testing.T) {
 	tests := []struct {
-		statement   string
-		valid       bool
-		gotAllQuery bool
-		err         bool
+		statement string
+		validate  bool
+		err       bool
 	}{
 		{
-			statement:   "SHOW CREATE TABLE bytebase;",
-			valid:       true,
-			gotAllQuery: true,
+			statement: "SHOW CREATE TABLE bytebase;",
+			validate:  true,
 		},
 		{
-			statement:   "DESC bytebase;",
-			valid:       true,
-			gotAllQuery: true,
+			statement: "DESC bytebase;",
+			validate:  true,
 		},
 		{
-			statement:   "SELECT * FROM t1 WHERE c1 = 1; SELECT * FROM t2;",
-			valid:       true,
-			gotAllQuery: true,
+			statement: "SELECT * FROM t1 WHERE c1 = 1; SELECT * FROM t2;",
+			validate:  true,
 		},
 		{
-			statement:   "CREATE TABLE t1 (c1 INT);",
-			valid:       false,
-			gotAllQuery: false,
+			statement: "CREATE TABLE t1 (c1 INT);",
+			validate:  false,
 		},
 		{
-			statement:   "UPDATE t1 SET c1 = 1;",
-			valid:       false,
-			gotAllQuery: false,
+			statement: "UPDATE t1 SET c1 = 1;",
+			validate:  false,
 		},
 		{
-			statement:   "EXPLAIN SELECT * FROM t1;",
-			valid:       true,
-			gotAllQuery: true,
+			statement: "EXPLAIN SELECT * FROM t1;",
+			validate:  true,
 		},
 		{
-			statement:   "EXPLAIN FORMAT=JSON DELETE FROM t1;",
-			valid:       false,
-			gotAllQuery: false,
+			statement: "EXPLAIN FORMAT=JSON DELETE FROM t1;",
+			validate:  false,
 		},
 		{
-			statement:   `select* from t`,
-			valid:       true,
-			gotAllQuery: true,
+			statement: `select* from t`,
+			validate:  true,
 		},
 		{
-			statement:   `explain select * from t;`,
-			valid:       true,
-			gotAllQuery: true,
+			statement: `explain select * from t;`,
+			validate:  true,
 		},
 		{
-			statement:   `explain    analyze select * from t`,
-			valid:       true,
-			gotAllQuery: true,
+			statement: `explain    analyze select * from t`,
+			validate:  true,
 		},
 		{
 			statement: `
@@ -74,8 +63,7 @@ func TestValidateSQLForEditor(t *testing.T) {
 				)
 				update t set a = 1;
 				`,
-			valid:       false,
-			gotAllQuery: false,
+			validate: false,
 		},
 		{
 			statement: `
@@ -86,14 +74,12 @@ func TestValidateSQLForEditor(t *testing.T) {
 				)
 				insert into t values (1, 2, 3);
 				`,
-			valid:       false,
-			gotAllQuery: false,
-			err:         true,
+			validate: false,
+			err:      true,
 		},
 		{
-			statement:   "select * from t where a = 'klasjdfkljsa$tag$; -- lkjdlkfajslkdfj'",
-			valid:       true,
-			gotAllQuery: true,
+			statement: "select * from t where a = 'klasjdfkljsa$tag$; -- lkjdlkfajslkdfj'",
+			validate:  true,
 		},
 		{
 			statement: `
@@ -103,29 +89,25 @@ func TestValidateSQLForEditor(t *testing.T) {
 				"   select * from `delete`" +
 				`) /* UPDATE */` +
 				"select `update` from t;",
-			valid:       true,
-			gotAllQuery: true,
+			validate: true,
 		},
 		{
-			statement:   `create table t (a int);`,
-			valid:       false,
-			gotAllQuery: false,
+			statement: `create table t (a int);`,
+			validate:  false,
 		},
 		{
-			statement:   `SET max_execution_time = 1000; select * from t`,
-			valid:       true,
-			gotAllQuery: false,
+			statement: `SET max_execution_time = 1000; select * from t`,
+			validate:  true,
 		},
 	}
 
 	for _, test := range tests {
-		gotValid, gotAllQuery, err := validateQuery(test.statement)
+		got, err := validateQuery(test.statement)
 		if test.err {
 			require.Error(t, err)
 		} else {
 			require.NoError(t, err)
-			require.Equal(t, test.valid, gotValid, test.statement)
-			require.Equal(t, test.gotAllQuery, gotAllQuery, test.statement)
+			require.Equal(t, test.validate, got)
 		}
 	}
 }

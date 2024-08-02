@@ -32,17 +32,10 @@
         <ExprEditor
           :expr="state.expr"
           :allow-admin="true"
-          :enable-raw-expression="true"
           :factor-list="FactorList"
           :factor-support-dropdown="factorSupportDropdown"
           :factor-options-map="DatabaseGroupFactorOptionsMap(project)"
         />
-        <p
-          v-if="matchingError"
-          class="mt-2 text-sm border border-red-600 px-2 py-1 rounded-lg bg-red-50 text-red-600"
-        >
-          {{ matchingError }}
-        </p>
       </div>
       <div class="col-span-2">
         <MatchedDatabaseView
@@ -75,21 +68,13 @@
 import { useDebounceFn } from "@vueuse/core";
 import { cloneDeep } from "lodash-es";
 import { NCheckbox, NInput, NDivider } from "naive-ui";
-import { ClientError, Status } from "nice-grpc-web";
+import { Status } from "nice-grpc-web";
 import { computed, onMounted, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import ExprEditor from "@/components/ExprEditor";
 import type { ConditionGroupExpr } from "@/plugins/cel";
-import {
-  emptySimpleExpr,
-  validateSimpleExpr,
-  wrapAsGroup,
-} from "@/plugins/cel";
-import {
-  useDatabaseV1ListByProject,
-  useDBGroupStore,
-  useSubscriptionV1Store,
-} from "@/store";
+import { emptySimpleExpr, wrapAsGroup } from "@/plugins/cel";
+import { useDBGroupStore, useSubscriptionV1Store } from "@/store";
 import {
   databaseGroupNamePrefix,
   getProjectNameAndDatabaseGroupName,
@@ -134,7 +119,6 @@ const state = reactive<LocalState>({
   expr: wrapAsGroup(emptySimpleExpr()),
   multitenancy: false,
 });
-const { databaseList } = useDatabaseV1ListByProject(props.project.name);
 const resourceIdField = ref<InstanceType<typeof ResourceIdField>>();
 
 const isCreating = computed(() => props.databaseGroup === undefined);
@@ -198,32 +182,17 @@ const validateResourceId = async (
   return [];
 };
 
-const matchingError = ref<string | undefined>(undefined);
 const matchedDatabaseList = ref<ComposedDatabase[]>([]);
 const unmatchedDatabaseList = ref<ComposedDatabase[]>([]);
 const updateDatabaseMatchingState = useDebounceFn(async () => {
-  if (!validateSimpleExpr(state.expr)) {
-    matchingError.value = undefined;
-    matchedDatabaseList.value = [];
-    unmatchedDatabaseList.value = databaseList.value;
-    return;
-  }
-
   state.isRequesting = true;
-  try {
-    const result = await dbGroupStore.fetchDatabaseGroupMatchList({
-      projectName: props.project.name,
-      expr: state.expr,
-    });
+  const result = await dbGroupStore.fetchDatabaseGroupMatchList({
+    projectName: props.project.name,
+    expr: state.expr,
+  });
 
-    matchingError.value = undefined;
-    matchedDatabaseList.value = result.matchedDatabaseList;
-    unmatchedDatabaseList.value = result.unmatchedDatabaseList;
-  } catch (error) {
-    matchingError.value = (error as ClientError).details;
-    matchedDatabaseList.value = [];
-    unmatchedDatabaseList.value = databaseList.value;
-  }
+  matchedDatabaseList.value = result.matchedDatabaseList;
+  unmatchedDatabaseList.value = result.unmatchedDatabaseList;
   state.isRequesting = false;
 }, 500);
 

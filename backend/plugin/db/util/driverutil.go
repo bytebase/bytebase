@@ -31,6 +31,27 @@ func FormatErrorWithQuery(err error, query string) error {
 	return errors.Wrapf(err, "failed to execute query %q", query)
 }
 
+// Query will execute a readonly / SELECT query.
+func Query(ctx context.Context, dbType storepb.Engine, conn *sql.Conn, statement string) (*v1pb.QueryResult, error) {
+	startTime := time.Now()
+	rows, err := conn.QueryContext(ctx, statement)
+	if err != nil {
+		return nil, FormatErrorWithQuery(err, statement)
+	}
+	defer rows.Close()
+
+	result, err := rowsToQueryResult(dbType, rows)
+	if err != nil {
+		// nolint
+		return &v1pb.QueryResult{
+			Error: err.Error(),
+		}, nil
+	}
+	result.Latency = durationpb.New(time.Since(startTime))
+	result.Statement = statement
+	return result, nil
+}
+
 // RunStatement runs a SQL statement in a given connection.
 func RunStatement(ctx context.Context, engineType storepb.Engine, conn *sql.Conn, statement string) ([]*v1pb.QueryResult, error) {
 	singleSQLs, err := base.SplitMultiSQL(engineType, statement)
@@ -44,7 +65,6 @@ func RunStatement(ctx context.Context, engineType storepb.Engine, conn *sql.Conn
 
 	var results []*v1pb.QueryResult
 	for _, singleSQL := range singleSQLs {
-		var queryResult *v1pb.QueryResult
 		startTime := time.Now()
 		runningStatement := singleSQL.Text
 		if engineType == storepb.Engine_MYSQL {
@@ -60,19 +80,36 @@ func RunStatement(ctx context.Context, engineType storepb.Engine, conn *sql.Conn
 				slog.Info("rowsAffected returns error", log.BBError(err))
 			}
 
-			queryResult = BuildAffectedRowsResult(affectedRows)
-		} else {
-			queryResult = adminQuery(ctx, engineType, conn, runningStatement)
+			field := []string{"Affected Rows"}
+			types := []string{"INT"}
+			rows := []*v1pb.QueryRow{
+				{
+					Values: []*v1pb.RowValue{
+						{
+							Kind: &v1pb.RowValue_Int64Value{
+								Int64Value: affectedRows,
+							},
+						},
+					},
+				},
+			}
+			results = append(results, &v1pb.QueryResult{
+				ColumnNames:     field,
+				ColumnTypeNames: types,
+				Rows:            rows,
+				Latency:         durationpb.New(time.Since(startTime)),
+				Statement:       singleSQL.Text,
+			})
+			continue
 		}
-		queryResult.Statement = singleSQL.Text
-		queryResult.Latency = durationpb.New(time.Since(startTime))
-		results = append(results, queryResult)
+		results = append(results, adminQuery(ctx, engineType, conn, singleSQL.Text))
 	}
 
 	return results, nil
 }
 
 func adminQuery(ctx context.Context, dbType storepb.Engine, conn *sql.Conn, statement string) *v1pb.QueryResult {
+	startTime := time.Now()
 	rows, err := conn.QueryContext(ctx, statement)
 	if err != nil {
 		return &v1pb.QueryResult{
@@ -81,35 +118,18 @@ func adminQuery(ctx context.Context, dbType storepb.Engine, conn *sql.Conn, stat
 	}
 	defer rows.Close()
 
-	result, err := RowsToQueryResult(dbType, rows)
+	result, err := rowsToQueryResult(dbType, rows)
 	if err != nil {
 		return &v1pb.QueryResult{
 			Error: err.Error(),
 		}
 	}
+	result.Latency = durationpb.New(time.Since(startTime))
 	result.Statement = statement
 	return result
 }
 
-func BuildAffectedRowsResult(affectedRows int64) *v1pb.QueryResult {
-	return &v1pb.QueryResult{
-		ColumnNames:     []string{"Affected Rows"},
-		ColumnTypeNames: []string{"INT"},
-		Rows: []*v1pb.QueryRow{
-			{
-				Values: []*v1pb.RowValue{
-					{
-						Kind: &v1pb.RowValue_Int64Value{
-							Int64Value: affectedRows,
-						},
-					},
-				},
-			},
-		},
-	}
-}
-
-func RowsToQueryResult(dbType storepb.Engine, rows *sql.Rows) (*v1pb.QueryResult, error) {
+func rowsToQueryResult(dbType storepb.Engine, rows *sql.Rows) (*v1pb.QueryResult, error) {
 	columnNames, err := rows.Columns()
 	if err != nil {
 		return nil, err

@@ -52,7 +52,6 @@ const KEY = Symbol(
 
 export const provideInstanceFormContext = (baseContext: {
   instance: Ref<Instance | undefined>;
-  hideAdvancedFeatures: Ref<boolean | undefined>;
 }) => {
   const $d = useDialog();
   const { t } = useI18n();

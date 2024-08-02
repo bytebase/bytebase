@@ -28,33 +28,27 @@ func init() {
 // 1. Remove all quoted text(quoted identifier, string literal) and comments from the statement.
 // 2. Use regexp to check if the statement is a normal SELECT statement and EXPLAIN statement.
 // 3. For CTE, use regexp to check if the statement has UPDATE, DELETE and INSERT statements.
-func validateQuery(statement string) (bool, bool, error) {
+func validateQuery(statement string) (bool, error) {
 	trees, err := ParseMySQL(statement)
 	if err != nil {
-		return false, false, err
+		return false, err
 	}
-	hasExecute := false
 	for _, item := range trees {
 		l := &queryValidateListener{
-			valid:      true,
-			hasExecute: false,
+			valid: true,
 		}
 		antlr.ParseTreeWalkerDefault.Walk(l, item.Tree)
 		if !l.valid {
-			return false, false, nil
-		}
-		if l.hasExecute {
-			hasExecute = true
+			return false, nil
 		}
 	}
-	return true, !hasExecute, nil
+	return true, nil
 }
 
 type queryValidateListener struct {
 	*parser.BaseMySQLParserListener
 
-	valid      bool
-	hasExecute bool
+	valid bool
 }
 
 // EnterQuery is called when production query is entered.
@@ -71,9 +65,6 @@ func (l *queryValidateListener) EnterQuery(ctx *parser.QueryContext) {
 func (l *queryValidateListener) EnterSimpleStatement(ctx *parser.SimpleStatementContext) {
 	if !l.valid {
 		return
-	}
-	if ctx.SetStatement() != nil {
-		l.hasExecute = true
 	}
 	if ctx.SelectStatement() == nil && ctx.UtilityStatement() == nil && ctx.SetStatement() == nil && ctx.ShowStatement() == nil {
 		l.valid = false

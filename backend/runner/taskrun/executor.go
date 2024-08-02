@@ -225,7 +225,7 @@ func executeMigration(
 		stateCfg.TaskRunConnectionID.Delete(taskRunUID)
 	}
 
-	if stateCfg != nil {
+	if profile.ExecuteDetail && stateCfg != nil {
 		switch task.Type {
 		case api.TaskDatabaseSchemaUpdate, api.TaskDatabaseDataUpdate:
 			switch instance.Engine {

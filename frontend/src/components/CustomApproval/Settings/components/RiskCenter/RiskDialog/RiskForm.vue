@@ -201,7 +201,7 @@ const handleUpsert = async () => {
 
   const expressions = await batchConvertParsedExprToCELString([
     ParsedExpr.fromPartial({
-      expr: await buildCELExpr(state.value.expr),
+      expr: buildCELExpr(state.value.expr),
     }),
   ]);
   risk.condition = Expr.fromPartial({
