@@ -1,6 +1,16 @@
 import { isNumber } from "lodash-es";
-import type { ConditionExpr, ConditionGroupExpr, SimpleExpr } from "../types";
-import { isEqualityExpr, isNumberFactor, isStringFactor } from "../types";
+import type {
+  ConditionExpr,
+  ConditionGroupExpr,
+  RawStringExpr,
+  SimpleExpr,
+} from "../types";
+import {
+  isEqualityExpr,
+  isNumberFactor,
+  isRawStringExpr,
+  isStringFactor,
+} from "../types";
 import {
   isCollectionExpr,
   isConditionExpr,
@@ -63,9 +73,13 @@ export const validateSimpleExpr = (expr: SimpleExpr): boolean => {
     if (args.length === 0) return false;
     return args.every(validate);
   };
+  const validateRawString = (rawString: RawStringExpr): boolean => {
+    return Boolean(rawString.content);
+  };
   const validate = (expr: SimpleExpr): boolean => {
     if (isConditionGroupExpr(expr)) return validateConditionGroup(expr);
     if (isConditionExpr(expr)) return validateCondition(expr);
+    if (isRawStringExpr(expr)) return validateRawString(expr);
     throw new Error(`unsupported expr '${JSON.stringify(expr)}'`);
   };
   return validate(expr);

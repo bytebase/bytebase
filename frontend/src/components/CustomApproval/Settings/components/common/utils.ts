@@ -4,7 +4,6 @@ import { type Factor, SQLTypeList } from "@/plugins/cel";
 import { t, te } from "@/plugins/i18n";
 import { useEnvironmentV1Store, useProjectV1List } from "@/store";
 import {
-  engineName,
   PresetRiskLevelList,
   SupportedSourceList,
   DEFAULT_PROJECT_NAME,
@@ -12,9 +11,10 @@ import {
 import type { Risk } from "@/types/proto/v1/risk_service";
 import { Risk_Source, risk_SourceToJSON } from "@/types/proto/v1/risk_service";
 import {
+  engineNameV1,
   extractEnvironmentResourceName,
   extractProjectResourceName,
-  supportedEngineList,
+  supportedEngineV1List,
 } from "@/utils";
 
 export const sourceText = (source: Risk_Source) => {
@@ -122,7 +122,7 @@ const FactorList = {
       "affected_rows",
       "table_rows",
       "sql_type",
-      "table_name",
+      "table_name"
     )
   ),
 };
@@ -172,8 +172,8 @@ const getProjectIdOptions = () => {
 };
 
 const getDBEndingOptions = () => {
-  return supportedEngineList().map<SelectOption>((type) => ({
-    label: engineName(type),
+  return supportedEngineV1List().map<SelectOption>((type) => ({
+    label: engineNameV1(type),
     value: type,
   }));
 };

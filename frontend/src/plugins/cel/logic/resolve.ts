@@ -8,12 +8,12 @@ import type {
   EqualityOperator,
   SimpleExpr,
   CollectionExpr,
-  ConditionExpr,
   ConditionGroupExpr,
   CompareExpr,
   EqualityExpr,
   StringExpr,
   LogicalOperator,
+  RawStringExpr,
 } from "../types";
 import {
   isEqualityOperator,
@@ -26,7 +26,9 @@ import {
   isStringFactor,
   isTimestampFactor,
   isNegativeOperator,
+  ExprType,
 } from "../types";
+import stringifyExpr from "./stringify";
 
 // For simplify UI implementation, the "root" condition need to be a group.
 export const wrapAsGroup = (
@@ -35,6 +37,7 @@ export const wrapAsGroup = (
 ): ConditionGroupExpr => {
   if (isConditionGroupExpr(expr)) return expr;
   return {
+    type: ExprType.ConditionGroup,
     operator,
     args: [expr],
   };
@@ -42,52 +45,59 @@ export const wrapAsGroup = (
 
 // Convert common expr to simple expr
 export const resolveCELExpr = (expr: CELExpr): SimpleExpr => {
-  const dfs = (
-    expr: CELExpr,
-    negative: boolean = false
-  ): ConditionGroupExpr | ConditionExpr => {
+  const dfs = (expr: CELExpr, negative: boolean = false): SimpleExpr => {
     const { callExpr } = expr;
     if (!callExpr) {
-      return emptySimpleExpr();
-      // throw new Error(`unsupported expr "${JSON.stringify(expr)}"`);
+      // If no callExpr, we treat it as a raw string.
+      return resolveRawStringExpr(expr);
     }
 
-    const { args } = callExpr;
-    const operator = callExpr.function as Operator;
-    if (isLogicalOperator(operator)) {
-      const group: ConditionGroupExpr = {
-        operator,
-        args: [],
-      };
-      const [left, right] = args;
-      const sub = (subTree: CELExpr, expand: boolean) => {
-        const subExpr = dfs(subTree);
-        if (expand && subExpr.operator === operator) {
-          group.args.push(...subExpr.args);
-        } else {
-          group.args.push(subExpr);
-        }
-      };
-      sub(left, true);
-      sub(right, false);
-      return group;
+    try {
+      const { args } = callExpr;
+      const operator = callExpr.function as Operator;
+      if (isLogicalOperator(operator)) {
+        const group: ConditionGroupExpr = {
+          type: ExprType.ConditionGroup,
+          operator,
+          args: [],
+        };
+        const [left, right] = args;
+        const sub = (subTree: CELExpr, expand: boolean) => {
+          const subExpr = dfs(subTree);
+          if (
+            expand &&
+            isConditionGroupExpr(subExpr) &&
+            subExpr.operator === operator
+          ) {
+            group.args.push(...subExpr.args);
+          } else {
+            group.args.push(subExpr);
+          }
+        };
+        sub(left, true);
+        sub(right, false);
+        return group;
+      }
+      if (isNegativeOperator(operator)) {
+        return dfs(args[0], true);
+      }
+      if (isEqualityOperator(operator)) {
+        return resolveEqualityExpr(expr);
+      }
+      if (isCompareOperator(operator)) {
+        return resolveCompareExpr(expr);
+      }
+      if (isStringOperator(operator)) {
+        return resolveStringExpr(expr);
+      }
+      if (isCollectionOperator(operator)) {
+        return resolveCollectionExpr(expr, negative);
+      }
+      throw new Error(`unsupported expr "${JSON.stringify(expr)}"`);
+    } catch (error) {
+      // Any error occurs, we treat it as a raw string.
+      return resolveRawStringExpr(expr);
     }
-    if (isNegativeOperator(operator)) {
-      return dfs(args[0], true);
-    }
-    if (isEqualityOperator(operator)) {
-      return resolveEqualityExpr(expr);
-    }
-    if (isCompareOperator(operator)) {
-      return resolveCompareExpr(expr);
-    }
-    if (isStringOperator(operator)) {
-      return resolveStringExpr(expr);
-    }
-    if (isCollectionOperator(operator)) {
-      return resolveCollectionExpr(expr, negative);
-    }
-    throw new Error(`unsupported expr "${JSON.stringify(expr)}"`);
   };
   return dfs(expr);
 };
@@ -98,12 +108,14 @@ const resolveEqualityExpr = (expr: CELExpr): EqualityExpr => {
   const factor = getFactorName(factorExpr);
   if (isNumberFactor(factor)) {
     return {
+      type: ExprType.Condition,
       operator,
       args: [factor, valueExpr.constExpr!.int64Value!.toNumber() ?? 0],
     };
   }
   if (isStringFactor(factor)) {
     return {
+      type: ExprType.Condition,
       operator,
       args: [factor, valueExpr.constExpr!.stringValue! ?? ""],
     };
@@ -117,12 +129,14 @@ const resolveCompareExpr = (expr: CELExpr): CompareExpr => {
   const factor = getFactorName(factorExpr);
   if (isNumberFactor(factor)) {
     return {
+      type: ExprType.Condition,
       operator,
       args: [factor, valueExpr.constExpr!.int64Value!.toNumber()],
     };
   }
   if (isTimestampFactor(factor)) {
     return {
+      type: ExprType.Condition,
       operator,
       args: [
         factor,
@@ -138,6 +152,7 @@ const resolveStringExpr = (expr: CELExpr): StringExpr => {
   const factor = getFactorName(expr.callExpr!.target!);
   const value = expr.callExpr!.args[0];
   return {
+    type: ExprType.Condition,
     operator,
     args: [factor as StringFactor, value.constExpr!.stringValue!],
   };
@@ -156,6 +171,7 @@ const resolveCollectionExpr = (
 
   if (isNumberFactor(factor)) {
     return {
+      type: ExprType.Condition,
       operator,
       args: [
         factor,
@@ -167,6 +183,7 @@ const resolveCollectionExpr = (
   }
   if (isStringFactor(factor)) {
     return {
+      type: ExprType.Condition,
       operator,
       args: [
         factor,
@@ -179,10 +196,18 @@ const resolveCollectionExpr = (
   throw new Error(`cannot resolve expr ${JSON.stringify(expr)}`);
 };
 
+const resolveRawStringExpr = (expr: CELExpr): RawStringExpr => {
+  return {
+    type: ExprType.RawString,
+    content: stringifyExpr(expr),
+  };
+};
+
 export const emptySimpleExpr = (
   operator: LogicalOperator = "_&&_"
 ): ConditionGroupExpr => {
   return {
+    type: ExprType.ConditionGroup,
     operator: operator,
     args: [],
   };

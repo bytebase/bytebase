@@ -16,8 +16,8 @@ import type { PropType } from "vue";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import type { ComposedDatabase } from "@/types";
-import { Engine } from "@/types/proto/v1/common";
 import type { ViewMetadata } from "@/types/proto/v1/database_service";
+import { hasSchemaProperty } from "@/utils";
 import EllipsisSQLView from "./EllipsisSQLView.vue";
 
 const props = defineProps({
@@ -38,14 +38,6 @@ const props = defineProps({
 const { t } = useI18n();
 
 const engine = computed(() => props.database.instanceResource.engine);
-
-const hasSchemaProperty = computed(() => {
-  return (
-    engine.value === Engine.POSTGRES ||
-    engine.value === Engine.SNOWFLAKE ||
-    engine.value === Engine.RISINGWAVE
-  );
-});
 
 const columns = computed(() => {
   const columns: (DataTableColumn<ViewMetadata> & { hide?: boolean })[] = [
@@ -76,7 +68,7 @@ const columns = computed(() => {
 });
 
 const getViewName = (viewName: string) => {
-  if (hasSchemaProperty.value) {
+  if (hasSchemaProperty(engine.value)) {
     return `"${props.schemaName}"."${viewName}"`;
   }
   return viewName;

@@ -21,7 +21,6 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	"github.com/bytebase/bytebase/backend/plugin/parser/standard"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 
@@ -229,26 +228,14 @@ func getDatabasesTxn(ctx context.Context, tx *sql.Tx) ([]string, error) {
 
 // Execute executes a SQL statement and returns the affected rows.
 func (driver *Driver) Execute(ctx context.Context, statement string, _ db.ExecuteOptions) (int64, error) {
-	singleSQLs, err := standard.SplitSQL(statement)
-	if err != nil {
-		return 0, err
-	}
-	singleSQLs = base.FilterEmptySQL(singleSQLs)
-	if len(singleSQLs) == 0 {
-		return 0, nil
-	}
-
-	count := len(singleSQLs)
-	if count <= 0 {
-		return 0, nil
-	}
-
 	tx, err := driver.db.BeginTx(ctx, nil)
 	if err != nil {
 		return 0, err
 	}
 	defer tx.Rollback()
-	mctx, err := snow.WithMultiStatement(ctx, count)
+	// To submit a variable number of SQL statements in the statement field, set MULTI_STATEMENT_COUNT to 0."
+	// https://docs.snowflake.com/en/developer-guide/sql-api/submitting-multiple-statements
+	mctx, err := snow.WithMultiStatement(ctx, 0 /* MULTI_STATEMENT_COUNT */)
 	if err != nil {
 		return 0, err
 	}
@@ -271,48 +258,77 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ db.Execut
 }
 
 // QueryConn queries a SQL statement in a given connection.
-func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
+func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
 	// TODO(rebelice): support multiple queries in a single statement.
-	var results []*v1pb.QueryResult
+	singleSQLs := []base.SingleSQL{
+		{Text: statement},
+	}
 
-	result, err := driver.querySingleSQL(ctx, conn, base.SingleSQL{Text: statement}, queryContext)
-	if err != nil {
-		results = append(results, &v1pb.QueryResult{
-			Error: err.Error(),
-		})
-	} else {
-		results = append(results, result)
+	var results []*v1pb.QueryResult
+	for _, singleSQL := range singleSQLs {
+		statement := singleSQL.Text
+		if queryContext != nil && queryContext.Explain {
+			statement = fmt.Sprintf("EXPLAIN %s", statement)
+		} else if queryContext != nil && queryContext.Limit > 0 {
+			stmt, err := getStatementWithResultLimit(statement, queryContext.Limit)
+			if err != nil {
+				slog.Error("fail to add limit clause", "statement", statement, log.BBError(err))
+				stmt = fmt.Sprintf("SELECT * FROM (%s) LIMIT %d", util.TrimStatement(stmt), queryContext.Limit)
+			}
+			statement = stmt
+		}
+
+		// TODO(d): support snowflake ValidateSQLForEditor.
+		_, allQuery, err := base.ValidateSQLForEditor(storepb.Engine_SNOWFLAKE, statement)
+		if err != nil {
+			slog.Error("failed to validate sql", slog.String("statement", statement), log.BBError(err))
+			allQuery = true
+		}
+		startTime := time.Now()
+		queryResult, err := func() (*v1pb.QueryResult, error) {
+			if allQuery {
+				rows, err := conn.QueryContext(ctx, statement)
+				if err != nil {
+					return nil, util.FormatErrorWithQuery(err, statement)
+				}
+				defer rows.Close()
+				r, err := util.RowsToQueryResult(storepb.Engine_SNOWFLAKE, rows)
+				if err != nil {
+					return nil, err
+				}
+				if err := rows.Err(); err != nil {
+					return nil, err
+				}
+				return r, nil
+			}
+
+			sqlResult, err := conn.ExecContext(ctx, statement)
+			if err != nil {
+				return nil, err
+			}
+			affectedRows, err := sqlResult.RowsAffected()
+			if err != nil {
+				slog.Info("rowsAffected returns error", log.BBError(err))
+			}
+			return util.BuildAffectedRowsResult(affectedRows), nil
+		}()
+		if err != nil {
+			queryResult = &v1pb.QueryResult{
+				Error: err.Error(),
+			}
+		}
+
+		queryResult.Statement = statement
+		queryResult.Latency = durationpb.New(time.Since(startTime))
+		results = append(results, queryResult)
 	}
 
 	return results, nil
 }
 
-func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL base.SingleSQL, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
-	statement := singleSQL.Text
-	if queryContext != nil && queryContext.Explain {
-		statement = fmt.Sprintf("EXPLAIN %s", statement)
-	} else if queryContext != nil && queryContext.Limit > 0 {
-		stmt, err := getStatementWithResultLimit(statement, queryContext.Limit)
-		if err != nil {
-			slog.Error("fail to add limit clause", "statement", statement, log.BBError(err))
-			stmt = fmt.Sprintf("SELECT * FROM (%s) LIMIT %d", util.TrimStatement(stmt), queryContext.Limit)
-		}
-		statement = stmt
-	}
-
-	startTime := time.Now()
-	result, err := util.Query(ctx, storepb.Engine_SNOWFLAKE, conn, statement)
-	if err != nil {
-		return nil, err
-	}
-	result.Latency = durationpb.New(time.Since(startTime))
-	result.Statement = statement
-	return result, nil
-}
-
 // RunStatement runs a SQL statement in a given connection.
-func (*Driver) RunStatement(ctx context.Context, conn *sql.Conn, statement string) ([]*v1pb.QueryResult, error) {
-	return util.RunStatement(ctx, storepb.Engine_SNOWFLAKE, conn, statement)
+func (driver *Driver) RunStatement(ctx context.Context, conn *sql.Conn, statement string) ([]*v1pb.QueryResult, error) {
+	return driver.QueryConn(ctx, conn, statement, nil)
 }
 
 func decodeRSAPrivateKey(key string) (*rsa.PrivateKey, error) {

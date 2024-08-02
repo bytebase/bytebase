@@ -2425,7 +2425,8 @@
     "query-context": {
       "admin-data-source-is-disallowed-to-query": "No se permite realizar consultas a la fuente de datos del administrador.",
       "admin-data-source-is-disallowed-to-query-when-read-only-data-source-is-available": "No se permite realizar consultas a la fuente de datos del administrador cuando la fuente de datos de solo lectura está disponible."
-    }
+    },
+    "manage-connections": "Gestionar las conexiones"
   },
   "schema-editor": {
     "self": "Editor de esquema",
@@ -3492,6 +3493,7 @@
       "description-tips": "Una condición es una regla que se puede configurar mediante una expresión. Por ejemplo, la condición \"Entorno es prod\" coincidirá con las incidencias ejecutadas en el entorno \"prod\".",
       "add": "Agregar condición",
       "add-group": "Agregar grupo de condiciones",
+      "add-raw-expression": "Agregar expresión cruda",
       "group": {
         "or": {
           "description": "Cualquiera de los siguientes es verdadero..."

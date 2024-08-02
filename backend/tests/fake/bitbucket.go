@@ -64,7 +64,9 @@ func NewBitbucket(port int) VCSProvider {
 	g.GET("/repositories/:owner/:repo/src/:ref/:filepath", bb.getRepositoryContent)
 	g.GET("/repositories/:owner/:repo/refs/branches/:branchName", bb.getRepositoryBranch)
 	g.GET("/repositories/:owner/:repo/pullrequests/:prID/diffstat", bb.listPullRequestFile)
-	g.GET("/repositories/:owner/:repo/pullrequests/:prID/comments", bb.createPullRequestComment)
+	g.GET("/repositories/:owner/:repo/pullrequests/:prID/comments", bb.listPullRequestComment)
+	g.POST("/repositories/:owner/:repo/pullrequests/:prID/comments", bb.createPullRequestComment)
+	g.PUT("/repositories/:owner/:repo/pullrequests/:prID/comments/:comment", bb.updatePullRequestComment)
 	return bb
 }
 
@@ -344,4 +346,19 @@ func (bb *Bitbucket) listPullRequestFile(c echo.Context) error {
 
 func (*Bitbucket) createPullRequestComment(echo.Context) error {
 	return nil
+}
+
+func (*Bitbucket) updatePullRequestComment(echo.Context) error {
+	return nil
+}
+
+func (*Bitbucket) listPullRequestComment(c echo.Context) error {
+	type listComment struct {
+		Values []*bitbucket.Comment `json:"values"`
+	}
+	buf, err := json.Marshal(listComment{})
+	if err != nil {
+		return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to marshal response body: %v", err))
+	}
+	return c.String(http.StatusOK, string(buf))
 }

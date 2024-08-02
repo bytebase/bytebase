@@ -487,7 +487,7 @@ func (s *IssueService) createIssueDatabaseChange(ctx context.Context, request *v
 	}
 
 	var planUID *int64
-	planID, err := common.GetPlanID(request.Issue.Plan)
+	_, planID, err := common.GetProjectIDPlanID(request.Issue.Plan)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -689,7 +689,7 @@ func (s *IssueService) createIssueDatabaseDataExport(ctx context.Context, reques
 	}
 
 	var planUID *int64
-	planID, err := common.GetPlanID(request.Issue.Plan)
+	_, planID, err := common.GetProjectIDPlanID(request.Issue.Plan)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -1606,6 +1606,23 @@ func (s *IssueService) CreateIssueComment(ctx context.Context, request *v1pb.Cre
 	}, user.ID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to create issue comment: %v", err)
+	}
+
+	// Add issue commenter to issue subscribers.
+	hasSubscriber := false
+	for _, subscriber := range issue.Subscribers {
+		if subscriber.ID == user.ID {
+			hasSubscriber = true
+			break
+		}
+	}
+	if !hasSubscriber {
+		issue.Subscribers = append(issue.Subscribers, user)
+		if _, err := s.store.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{
+			Subscribers: &issue.Subscribers,
+		}, user.ID); err != nil {
+			return nil, err
+		}
 	}
 
 	return convertToIssueComment(request.Parent, ic), nil

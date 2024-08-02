@@ -33,8 +33,5 @@ func getBaseProfile(dataDir string) *config.Profile {
 		DeployID:           uuid.NewString()[:8],
 		LastActiveTs:       time.Now().Unix(),
 		Lsp:                flags.lsp,
-		PreUpdateBackup:    flags.preUpdateBackup,
-		ExecuteDetail:      flags.executeDetail,
-		DevelopmentAudit:   flags.developmentAudit,
 	}
 }

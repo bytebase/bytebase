@@ -28,27 +28,33 @@ func init() {
 // 1. Remove all quoted text(quoted identifier, string literal) and comments from the statement.
 // 2. Use regexp to check if the statement is a normal SELECT statement and EXPLAIN statement.
 // 3. For CTE, use regexp to check if the statement has UPDATE, DELETE and INSERT statements.
-func validateQuery(statement string) (bool, error) {
+func validateQuery(statement string) (bool, bool, error) {
 	trees, err := ParseMySQL(statement)
 	if err != nil {
-		return false, err
+		return false, false, err
 	}
+	hasExecute := false
 	for _, item := range trees {
 		l := &queryValidateListener{
-			valid: true,
+			valid:      true,
+			hasExecute: false,
 		}
 		antlr.ParseTreeWalkerDefault.Walk(l, item.Tree)
 		if !l.valid {
-			return false, nil
+			return false, false, nil
+		}
+		if l.hasExecute {
+			hasExecute = true
 		}
 	}
-	return true, nil
+	return true, !hasExecute, nil
 }
 
 type queryValidateListener struct {
 	*parser.BaseMySQLParserListener
 
-	valid bool
+	valid      bool
+	hasExecute bool
 }
 
 // EnterQuery is called when production query is entered.
@@ -66,6 +72,9 @@ func (l *queryValidateListener) EnterSimpleStatement(ctx *parser.SimpleStatement
 	if !l.valid {
 		return
 	}
+	if ctx.SetStatement() != nil {
+		l.hasExecute = true
+	}
 	if ctx.SelectStatement() == nil && ctx.UtilityStatement() == nil && ctx.SetStatement() == nil && ctx.ShowStatement() == nil {
 		l.valid = false
 	}
@@ -78,16 +87,13 @@ func (l *queryValidateListener) EnterUtilityStatement(ctx *parser.UtilityStateme
 	}
 	if ctx.ExplainStatement() == nil && ctx.DescribeStatement() == nil {
 		l.valid = false
-	}
-}
-
-// EnterExplainableStatement is called when production explainableStatement is entered.
-func (l *queryValidateListener) EnterExplainableStatement(ctx *parser.ExplainableStatementContext) {
-	if !l.valid {
 		return
 	}
-	if ctx.DeleteStatement() != nil || ctx.UpdateStatement() != nil || ctx.InsertStatement() != nil || ctx.ReplaceStatement() != nil {
-		l.valid = false
+	if ctx.ExplainStatement() != nil {
+		if ctx.ExplainStatement().ANALYZE_SYMBOL() != nil {
+			l.valid = false
+			return
+		}
 	}
 }
 

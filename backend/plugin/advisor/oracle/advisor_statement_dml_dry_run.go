@@ -10,6 +10,7 @@ import (
 
 	parser "github.com/bytebase/plsql-parser"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -54,11 +55,12 @@ func (*StatementDmlDryRunAdvisor) Check(ctx advisor.Context, _ string) ([]*store
 type statementDmlDryRunChecker struct {
 	*parser.BasePlSqlParserListener
 
-	adviceList []*storepb.Advice
-	level      storepb.Advice_Status
-	title      string
-	driver     *sql.DB
-	ctx        context.Context
+	adviceList   []*storepb.Advice
+	level        storepb.Advice_Status
+	title        string
+	driver       *sql.DB
+	ctx          context.Context
+	explainCount int
 }
 
 func (s *statementDmlDryRunChecker) EnterInsert_statement(ctx *parser.Insert_statementContext) {
@@ -86,6 +88,10 @@ func (s *statementDmlDryRunChecker) EnterMerge_statement(ctx *parser.Merge_state
 }
 
 func (s *statementDmlDryRunChecker) handleStmt(text string, lineNumber int) {
+	if s.explainCount >= common.MaximumLintExplainSize {
+		return
+	}
+	s.explainCount++
 	if _, err := advisor.Query(s.ctx, s.driver, storepb.Engine_ORACLE, fmt.Sprintf("EXPLAIN PLAN FOR %s", text)); err != nil {
 		s.adviceList = append(s.adviceList, &storepb.Advice{
 			Status:  s.level,

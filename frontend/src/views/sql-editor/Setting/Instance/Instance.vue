@@ -37,6 +37,7 @@
     >
       <InstanceForm
         :instance="state.detail.instance"
+        :hide-advanced-features="hideAdvancedFeatures"
         @dismiss="state.detail.show = false"
       >
         <DrawerContent
@@ -78,6 +79,7 @@ import {
   useEnvironmentV1List,
   useInstanceV1List,
   useInstanceV1Store,
+  useAppFeature,
 } from "@/store";
 import { UNKNOWN_ID } from "@/types";
 import type { Instance } from "@/types/proto/v1/instance_service";
@@ -105,8 +107,10 @@ const instanceV1Store = useInstanceV1Store();
 const environmentList = useEnvironmentV1List();
 // Users are workspace admins in Bytebase Editor. So we don't need to check permission here.
 const { instanceList: rawInstanceV1List, ready } = useInstanceV1List(
-  /* showDeleted */ false,
-  /* forceUpdate */ true
+  /* showDeleted */ false
+);
+const hideAdvancedFeatures = useAppFeature(
+  "bb.feature.sql-editor.hide-advance-instance-features"
 );
 
 const state = reactive<LocalState>({

@@ -34,14 +34,15 @@ func init() {
 // 1. Remove all quoted text(quoted identifier, string literal) and comments from the statement.
 // 2. Use regexp to check if the statement is a normal SELECT statement and EXPLAIN statement.
 // 3. For CTE, use regexp to check if the statement has UPDATE, DELETE and INSERT statements.
-func ValidateSQLForEditor(statement string) (bool, error) {
+func ValidateSQLForEditor(statement string) (bool, bool, error) {
 	textWithoutQuotedAndComment, err := tokenizer.StandardRemoveQuotedTextAndComment(statement)
 	if err != nil {
 		slog.Debug("Failed to remove quoted text and comment", slog.String("statement", statement), log.BBError(err))
-		return false, err
+		return false, false, err
 	}
 
-	return CheckStatementWithoutQuotedTextAndComment(textWithoutQuotedAndComment), nil
+	ok := CheckStatementWithoutQuotedTextAndComment(textWithoutQuotedAndComment)
+	return ok, ok, nil
 }
 
 func CheckStatementWithoutQuotedTextAndComment(statement string) bool {

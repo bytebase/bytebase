@@ -1,5 +1,6 @@
 import { computed, watch } from "vue";
 import { useActuatorV1Store, useAppFeature, useSettingByName } from "./store";
+import { defaultAppProfile, type WorkspaceMode } from "./types";
 import { DatabaseChangeMode } from "./types/proto/v1/setting_service";
 import { useCustomTheme } from "./utils/customTheme";
 
@@ -18,6 +19,23 @@ export const overrideAppProfile = () => {
   });
 
   const query = new URLSearchParams(window.location.search);
+  overrideAppFeatures(workspaceMode.value, query);
+  useCustomTheme(useAppFeature("bb.feature.custom-color-scheme"));
+
+  watch(workspaceMode, (mode) => {
+    overrideAppFeatures(mode, query);
+  });
+};
+
+const overrideAppFeatures = (
+  workspaceMode: WorkspaceMode,
+  query: URLSearchParams
+) => {
+  const actuatorStore = useActuatorV1Store();
+
+  actuatorStore.appProfile = defaultAppProfile();
+  actuatorStore.appProfile.mode = workspaceMode;
+
   const modeInQuery = query.get("mode");
   if (modeInQuery === "STANDALONE") {
     // The webapp is embedded within iframe
@@ -72,5 +90,16 @@ export const overrideAppProfile = () => {
     }
   }
 
-  useCustomTheme(useAppFeature("bb.feature.custom-color-scheme"));
+  if (workspaceMode === "EDITOR") {
+    actuatorStore.overrideAppFeatures({
+      "bb.feature.hide-quick-start": true,
+      "bb.feature.hide-help": true,
+
+      "bb.feature.sql-editor.hide-projects": true,
+      "bb.feature.sql-editor.hide-environments": true,
+      "bb.feature.sql-editor.disallow-batch-query": true,
+      "bb.feature.sql-editor.disallow-share-worksheet": true,
+      "bb.feature.sql-editor.hide-advance-instance-features": true,
+    });
+  }
 };

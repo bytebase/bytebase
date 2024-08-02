@@ -160,3 +160,11 @@ export const defaultCollationOfEngineV1 = (engine: Engine): string => {
   }
   return "";
 };
+
+export function isPostgresFamily(type: Engine): boolean {
+  return (
+    type == Engine.POSTGRES ||
+    type == Engine.REDSHIFT ||
+    type == Engine.RISINGWAVE
+  );
+}

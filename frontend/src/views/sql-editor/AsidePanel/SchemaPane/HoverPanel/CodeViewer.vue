@@ -28,11 +28,11 @@ import { MonacoEditor } from "@/components/MonacoEditor";
 import formatSQL from "@/components/MonacoEditor/sqlFormatter";
 import type { ComposedDatabase } from "@/types";
 import { dialectOfEngineV1 } from "@/types";
-import { Engine } from "@/types/proto/v1/common";
 import type {
   DatabaseMetadata,
   SchemaMetadata,
 } from "@/types/proto/v1/database_service";
+import { hasSchemaProperty } from "@/utils";
 
 const props = defineProps<{
   db: ComposedDatabase;
@@ -47,13 +47,9 @@ const format = useLocalStorage<boolean>(
 );
 const instanceEngine = computed(() => props.db.instanceResource.engine);
 
-const hasSchemaProperty = computed(() => {
-  return [Engine.POSTGRES, Engine.RISINGWAVE].includes(instanceEngine.value);
-});
-
 const name = computed(() => {
   const { schema, name } = props;
-  if (hasSchemaProperty.value) {
+  if (hasSchemaProperty(instanceEngine.value)) {
     return `${schema.name}.${name}`;
   }
   return name;

@@ -58,6 +58,7 @@
     - [AuditLog](#bytebase-v1-AuditLog)
     - [ExportAuditLogsRequest](#bytebase-v1-ExportAuditLogsRequest)
     - [ExportAuditLogsResponse](#bytebase-v1-ExportAuditLogsResponse)
+    - [RequestMetadata](#bytebase-v1-RequestMetadata)
     - [SearchAuditLogsRequest](#bytebase-v1-SearchAuditLogsRequest)
     - [SearchAuditLogsResponse](#bytebase-v1-SearchAuditLogsResponse)
   
@@ -112,8 +113,6 @@
     - [ListInstancesResponse](#bytebase-v1-ListInstancesResponse)
     - [RemoveDataSourceRequest](#bytebase-v1-RemoveDataSourceRequest)
     - [SASLConfig](#bytebase-v1-SASLConfig)
-    - [SearchInstancesRequest](#bytebase-v1-SearchInstancesRequest)
-    - [SearchInstancesResponse](#bytebase-v1-SearchInstancesResponse)
     - [SyncInstanceRequest](#bytebase-v1-SyncInstanceRequest)
     - [SyncInstanceResponse](#bytebase-v1-SyncInstanceResponse)
     - [SyncSlowQueriesRequest](#bytebase-v1-SyncSlowQueriesRequest)
@@ -1340,6 +1339,7 @@ The type of action performed on a Binding in a policy.
 | response | [string](#string) |  | JSON-encoded response. Some fields are omitted because they are too large or contain sensitive information. |
 | status | [google.rpc.Status](#google-rpc-Status) |  |  |
 | service_data | [google.protobuf.Any](#google-protobuf-Any) |  | service-specific data about the request, response, and other activities. |
+| request_metadata | [RequestMetadata](#bytebase-v1-RequestMetadata) |  | Metadata about the operation. |
 
 
 
@@ -1373,6 +1373,22 @@ The type of action performed on a Binding in a policy.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | content | [bytes](#bytes) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-RequestMetadata"></a>
+
+### RequestMetadata
+Metadata about the request.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| caller_ip | [string](#string) |  | The IP address of the caller. |
+| caller_supplied_user_agent | [string](#string) |  | The user agent of the caller. This information is not authenticated and should be treated accordingly. |
 
 
 
@@ -2124,7 +2140,6 @@ InstanceOptions is the option for instances.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | Deprecated. The parent parameter&#39;s value depends on the target resource for the request. - instances.list(): An empty string. This method doesn&#39;t require a resource; it simply returns all instances the user has access to. - projects.instances.list(): projects/{PROJECT_ID}. This method lists all instances that have databases in the project. |
 | page_size | [int32](#int32) |  | The maximum number of instances to return. The service may return fewer than this value. If unspecified, at most 50 instances will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
 | page_token | [string](#string) |  | A page token, received from a previous `ListInstances` call. Provide this to retrieve the subsequent page.
 
@@ -2177,37 +2192,6 @@ When paginating, all other parameters provided to `ListInstances` must match the
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | krb_config | [KerberosConfig](#bytebase-v1-KerberosConfig) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-SearchInstancesRequest"></a>
-
-### SearchInstancesRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent parameter&#39;s value depends on the target resource for the request. - instances.list(): An empty string. This method doesn&#39;t require a resource; it simply returns all instances the user has access to. - projects.instances.list(): projects/{PROJECT_ID}. This method lists all instances that have databases in the project. |
-| show_deleted | [bool](#bool) |  | Show deleted instances if specified. |
-
-
-
-
-
-
-<a name="bytebase-v1-SearchInstancesResponse"></a>
-
-### SearchInstancesResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| instances | [Instance](#bytebase-v1-Instance) | repeated | The instances from the specified request. |
 
 
 
@@ -2401,7 +2385,6 @@ The instance&#39;s `name` field is used to identify the instance to update. Form
 | ----------- | ------------ | ------------- | ------------|
 | GetInstance | [GetInstanceRequest](#bytebase-v1-GetInstanceRequest) | [Instance](#bytebase-v1-Instance) |  |
 | ListInstances | [ListInstancesRequest](#bytebase-v1-ListInstancesRequest) | [ListInstancesResponse](#bytebase-v1-ListInstancesResponse) |  |
-| SearchInstances | [SearchInstancesRequest](#bytebase-v1-SearchInstancesRequest) | [SearchInstancesResponse](#bytebase-v1-SearchInstancesResponse) | Deprecated. |
 | CreateInstance | [CreateInstanceRequest](#bytebase-v1-CreateInstanceRequest) | [Instance](#bytebase-v1-Instance) |  |
 | UpdateInstance | [UpdateInstanceRequest](#bytebase-v1-UpdateInstanceRequest) | [Instance](#bytebase-v1-Instance) |  |
 | DeleteInstance | [DeleteInstanceRequest](#bytebase-v1-DeleteInstanceRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |

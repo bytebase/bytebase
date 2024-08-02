@@ -36,7 +36,7 @@ import type { ComposedDatabase } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import type { TableMetadata } from "@/types/proto/v1/database_service";
 import { DataClassificationSetting_DataClassificationConfig as DataClassificationConfig } from "@/types/proto/v1/setting_service";
-import { bytesToString, isGhostTable } from "@/utils";
+import { bytesToString, hasSchemaProperty, isGhostTable } from "@/utils";
 import TableDetailDrawer from "./TableDetailDrawer.vue";
 
 type LocalState = {
@@ -100,16 +100,6 @@ const isPostgres = computed(
   () => engine.value === Engine.POSTGRES || engine.value === Engine.RISINGWAVE
 );
 
-const hasSchemaProperty = computed(() => {
-  return (
-    isPostgres.value ||
-    engine.value === Engine.SNOWFLAKE ||
-    engine.value === Engine.ORACLE ||
-    engine.value === Engine.DM ||
-    engine.value === Engine.MSSQL
-  );
-});
-
 const hasClassificationProperty = computed(() => {
   return !!classificationConfig.value;
 });
@@ -140,7 +130,7 @@ const columns = computed(() => {
     {
       key: "schema",
       title: t("common.schema"),
-      hide: !hasSchemaProperty.value,
+      hide: !hasSchemaProperty(engine.value),
       ellipsis: {
         tooltip: true,
       },

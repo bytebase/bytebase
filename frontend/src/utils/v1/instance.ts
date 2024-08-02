@@ -1,8 +1,9 @@
 import { keyBy, orderBy } from "lodash-es";
+import { computed, unref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useEnvironmentV1Store, useSubscriptionV1Store } from "@/store";
-import type { ComposedInstance } from "@/types";
-import { isValidProjectName } from "@/types";
+import type { ComposedInstance, MaybeRef } from "@/types";
+import { isValidProjectName, languageOfEngineV1 } from "@/types";
 import { Engine, State } from "@/types/proto/v1/common";
 import type { Environment } from "@/types/proto/v1/environment_service";
 import type {
@@ -111,20 +112,6 @@ export const supportedEngineV1List = () => {
   }
   return engines;
 };
-
-// export const useInstanceEditorLanguage = (
-//   instance: MaybeRef<Instance | undefined>
-// ) => {
-//   return computed((): Language => {
-//     return languageOfEngine(unref(instance)?.engine);
-//   });
-// };
-
-// export const isValidSpannerHost = (host: string) => {
-//   const RE =
-//     /^projects\/(?<PROJECT_ID>(?:[a-z]|[-.:]|[0-9])+)\/instances\/(?<INSTANCE_ID>(?:[a-z]|[-]|[0-9])+)$/;
-//   return RE.test(host);
-// };
 
 export const instanceV1HasAlterSchema = (
   instanceOrEngine: Instance | InstanceResource | Engine
@@ -312,4 +299,29 @@ export const engineNameV1 = (type: Engine): string => {
       return "Databricks";
   }
   return "";
+};
+
+export const hasSchemaProperty = (databaseEngine: Engine) => {
+  return (
+    databaseEngine === Engine.POSTGRES ||
+    databaseEngine === Engine.SNOWFLAKE ||
+    databaseEngine === Engine.ORACLE ||
+    databaseEngine === Engine.MSSQL ||
+    databaseEngine === Engine.REDSHIFT ||
+    databaseEngine === Engine.RISINGWAVE
+  );
+};
+
+export const useInstanceV1EditorLanguage = (
+  instance: MaybeRef<Instance | InstanceResource | undefined>
+) => {
+  return computed(() => {
+    return languageOfEngineV1(unref(instance)?.engine);
+  });
+};
+
+export const isValidSpannerHost = (host: string) => {
+  const RE =
+    /^projects\/(?<PROJECT_ID>(?:[a-z]|[-.:]|[0-9])+)\/instances\/(?<INSTANCE_ID>(?:[a-z]|[-]|[0-9])+)$/;
+  return RE.test(host);
 };

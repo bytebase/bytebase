@@ -38,6 +38,7 @@
   
 - [store/audit_log.proto](#store_audit_log-proto)
     - [AuditLog](#bytebase-store-AuditLog)
+    - [RequestMetadata](#bytebase-store-RequestMetadata)
   
     - [AuditLog.Severity](#bytebase-store-AuditLog-Severity)
   
@@ -776,6 +777,23 @@ ANY means approving any node will proceed.
 | response | [string](#string) |  | Marshalled response. Some fields are omitted because they are too large or contain sensitive information. |
 | status | [google.rpc.Status](#google-rpc-Status) |  |  |
 | service_data | [google.protobuf.Any](#google-protobuf-Any) |  | service-specific data about the request, response, and other activities. |
+| request_metadata | [RequestMetadata](#bytebase-store-RequestMetadata) |  | Metadata about the operation. |
+
+
+
+
+
+
+<a name="bytebase-store-RequestMetadata"></a>
+
+### RequestMetadata
+Metadata about the request.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| caller_ip | [string](#string) |  | The IP address of the caller. |
+| caller_supplied_user_agent | [string](#string) |  | The user agent of the caller. This information is not authenticated and should be treated accordingly. |
 
 
 

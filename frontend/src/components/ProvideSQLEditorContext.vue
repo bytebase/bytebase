@@ -44,6 +44,7 @@ import {
   useUserGroupStore,
   pushNotification,
   useFilterStore,
+  useAppFeature,
 } from "@/store";
 import type { SQLEditorConnection } from "@/types";
 import {
@@ -95,6 +96,7 @@ const {
   events: editorEvents,
   maybeSwitchProject,
 } = useSQLEditorContext();
+const hideProjects = useAppFeature("bb.feature.sql-editor.hide-projects");
 
 const initializeProjects = async () => {
   const initProject = async (project: string) => {
@@ -122,23 +124,31 @@ const initializeProjects = async () => {
     await initProject(project);
   } else {
     // plain "/sql-editor"
-    const projectList = await projectStore.fetchProjectList(false);
-    const lastView = editorStore.storedLastViewedProject;
-    if (
-      lastView &&
-      projectList.findIndex((proj) => proj.name === lastView) >= 0
-    ) {
-      editorStore.project = lastView;
+
+    if (hideProjects.value) {
+      // Direct to Default Project
+      editorStore.project = DEFAULT_PROJECT_NAME;
+      editorStore.strictProject = false;
+      await initProject(DEFAULT_PROJECT_NAME);
     } else {
-      const projectListWithoutDefaultProject = projectList.filter(
-        (proj) => proj.name !== DEFAULT_PROJECT_NAME
-      );
-      editorStore.project =
-        head(projectListWithoutDefaultProject)?.name ??
-        head(projectList)?.name ??
-        "";
+      const projectList = await projectStore.fetchProjectList(false);
+      const lastView = editorStore.storedLastViewedProject;
+      if (
+        lastView &&
+        projectList.findIndex((proj) => proj.name === lastView) >= 0
+      ) {
+        editorStore.project = lastView;
+      } else {
+        const projectListWithoutDefaultProject = projectList.filter(
+          (proj) => proj.name !== DEFAULT_PROJECT_NAME
+        );
+        editorStore.project =
+          head(projectListWithoutDefaultProject)?.name ??
+          head(projectList)?.name ??
+          "";
+      }
+      editorStore.strictProject = false;
     }
-    editorStore.strictProject = false;
   }
 
   tabStore.maybeInitProject(editorStore.project);

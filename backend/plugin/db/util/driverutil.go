@@ -2,24 +2,17 @@
 package util
 
 import (
-	"context"
 	"database/sql"
 	"fmt"
-	"log/slog"
 	"strings"
-	"time"
 
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/types/known/durationpb"
 
 	mssqldb "github.com/microsoft/go-mssqldb"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/masker"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
@@ -31,105 +24,25 @@ func FormatErrorWithQuery(err error, query string) error {
 	return errors.Wrapf(err, "failed to execute query %q", query)
 }
 
-// Query will execute a readonly / SELECT query.
-func Query(ctx context.Context, dbType storepb.Engine, conn *sql.Conn, statement string) (*v1pb.QueryResult, error) {
-	startTime := time.Now()
-	rows, err := conn.QueryContext(ctx, statement)
-	if err != nil {
-		return nil, FormatErrorWithQuery(err, statement)
-	}
-	defer rows.Close()
-
-	result, err := rowsToQueryResult(dbType, rows)
-	if err != nil {
-		// nolint
-		return &v1pb.QueryResult{
-			Error: err.Error(),
-		}, nil
-	}
-	result.Latency = durationpb.New(time.Since(startTime))
-	result.Statement = statement
-	return result, nil
-}
-
-// RunStatement runs a SQL statement in a given connection.
-func RunStatement(ctx context.Context, engineType storepb.Engine, conn *sql.Conn, statement string) ([]*v1pb.QueryResult, error) {
-	singleSQLs, err := base.SplitMultiSQL(engineType, statement)
-	if err != nil {
-		return nil, err
-	}
-	singleSQLs = base.FilterEmptySQL(singleSQLs)
-	if len(singleSQLs) == 0 {
-		return nil, nil
-	}
-
-	var results []*v1pb.QueryResult
-	for _, singleSQL := range singleSQLs {
-		startTime := time.Now()
-		runningStatement := singleSQL.Text
-		if engineType == storepb.Engine_MYSQL {
-			runningStatement = MySQLPrependBytebaseAppComment(singleSQL.Text)
-		}
-		if mysqlparser.IsMySQLAffectedRowsStatement(singleSQL.Text) {
-			sqlResult, err := conn.ExecContext(ctx, runningStatement)
-			if err != nil {
-				return nil, err
-			}
-			affectedRows, err := sqlResult.RowsAffected()
-			if err != nil {
-				slog.Info("rowsAffected returns error", log.BBError(err))
-			}
-
-			field := []string{"Affected Rows"}
-			types := []string{"INT"}
-			rows := []*v1pb.QueryRow{
-				{
-					Values: []*v1pb.RowValue{
-						{
-							Kind: &v1pb.RowValue_Int64Value{
-								Int64Value: affectedRows,
-							},
+func BuildAffectedRowsResult(affectedRows int64) *v1pb.QueryResult {
+	return &v1pb.QueryResult{
+		ColumnNames:     []string{"Affected Rows"},
+		ColumnTypeNames: []string{"INT"},
+		Rows: []*v1pb.QueryRow{
+			{
+				Values: []*v1pb.RowValue{
+					{
+						Kind: &v1pb.RowValue_Int64Value{
+							Int64Value: affectedRows,
 						},
 					},
 				},
-			}
-			results = append(results, &v1pb.QueryResult{
-				ColumnNames:     field,
-				ColumnTypeNames: types,
-				Rows:            rows,
-				Latency:         durationpb.New(time.Since(startTime)),
-				Statement:       singleSQL.Text,
-			})
-			continue
-		}
-		results = append(results, adminQuery(ctx, engineType, conn, singleSQL.Text))
+			},
+		},
 	}
-
-	return results, nil
 }
 
-func adminQuery(ctx context.Context, dbType storepb.Engine, conn *sql.Conn, statement string) *v1pb.QueryResult {
-	startTime := time.Now()
-	rows, err := conn.QueryContext(ctx, statement)
-	if err != nil {
-		return &v1pb.QueryResult{
-			Error: err.Error(),
-		}
-	}
-	defer rows.Close()
-
-	result, err := rowsToQueryResult(dbType, rows)
-	if err != nil {
-		return &v1pb.QueryResult{
-			Error: err.Error(),
-		}
-	}
-	result.Latency = durationpb.New(time.Since(startTime))
-	result.Statement = statement
-	return result
-}
-
-func rowsToQueryResult(dbType storepb.Engine, rows *sql.Rows) (*v1pb.QueryResult, error) {
+func RowsToQueryResult(dbType storepb.Engine, rows *sql.Rows) (*v1pb.QueryResult, error) {
 	columnNames, err := rows.Columns()
 	if err != nil {
 		return nil, err

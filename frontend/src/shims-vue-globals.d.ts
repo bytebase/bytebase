@@ -1,13 +1,10 @@
 import type dayjs from "dayjs";
 import type { isEmpty } from "lodash-es";
 import type {
-  environmentName,
   humanizeTs,
   humanizeDuration,
   humanizeDurationV1,
   humanizeDate,
-  instanceName,
-  projectName,
   sizeToFit,
   urlfy,
 } from "./utils";
@@ -26,8 +23,5 @@ declare module "vue" {
     sizeToFit: typeof sizeToFit;
     urlfy: typeof urlfy;
     isEmpty: typeof isEmpty;
-    environmentName: typeof environmentName;
-    projectName: typeof projectName;
-    instanceName: typeof instanceName;
   }
 }

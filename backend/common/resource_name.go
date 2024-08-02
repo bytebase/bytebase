@@ -294,19 +294,6 @@ func GetTaskID(name string) (int, error) {
 	return taskID, nil
 }
 
-// GetPlanID returns the plan ID from a resource name.
-func GetPlanID(name string) (int64, error) {
-	tokens, err := GetNameParentTokens(name, ProjectNamePrefix, PlanPrefix)
-	if err != nil {
-		return 0, err
-	}
-	planID, err := strconv.ParseInt(tokens[1], 10, 64)
-	if err != nil {
-		return 0, errors.Errorf("invalid plan ID %q", tokens[1])
-	}
-	return planID, nil
-}
-
 // GetProjectIDPlanID returns the project ID and plan ID from a resource name.
 func GetProjectIDPlanID(name string) (string, int64, error) {
 	tokens, err := GetNameParentTokens(name, ProjectNamePrefix, PlanPrefix)

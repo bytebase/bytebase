@@ -1,5 +1,4 @@
 import { orderBy } from "lodash-es";
-import type { SimpleExpr } from "@/plugins/cel";
 import {
   hasFeature,
   useCurrentUserIamPolicy,
@@ -243,13 +242,3 @@ export function allowDatabaseV1Access(
 
   return false;
 }
-
-export const extractEnvironmentNameListFromExpr = (
-  expr: SimpleExpr
-): string[] => {
-  const [left, right] = expr.args;
-  if (expr.operator === "@in" && left === "resource.environment_name") {
-    return right as any as string[];
-  }
-  return [];
-};
