@@ -422,8 +422,3 @@ func getConnectionID(ctx context.Context, conn *sql.Conn) (string, error) {
 	}
 	return id, nil
 }
-
-// RunStatement runs a SQL statement in a given connection.
-func (d *Driver) RunStatement(ctx context.Context, conn *sql.Conn, statement string) ([]*v1pb.QueryResult, error) {
-	return d.QueryConn(ctx, conn, statement, nil)
-}

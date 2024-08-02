@@ -127,10 +127,6 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, _
 	return results, nil
 }
 
-func (d *Driver) RunStatement(ctx context.Context, _ *sql.Conn, statement string) ([]*v1pb.QueryResult, error) {
-	return d.QueryConn(ctx, nil, statement, nil)
-}
-
 func (d *Driver) Execute(ctx context.Context, statement string, _ db.ExecuteOptions) (int64, error) {
 	// No ways of fetching affected rows.
 	_, err := d.QueryConn(ctx, nil, statement, nil)

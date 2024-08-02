@@ -236,7 +236,3 @@ func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, 
 func getStatementWithResultLimit(statement string, limit int) string {
 	return fmt.Sprintf("SELECT * FROM (%s) WHERE ROWNUM <= %d", util.TrimStatement(statement), limit)
 }
-
-func (driver *Driver) RunStatement(ctx context.Context, conn *sql.Conn, statement string) ([]*v1pb.QueryResult, error) {
-	return driver.QueryConn(ctx, conn, statement, nil)
-}

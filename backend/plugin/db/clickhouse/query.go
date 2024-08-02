@@ -83,11 +83,6 @@ func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, 
 	return results, nil
 }
 
-// RunStatement runs a SQL statement.
-func (driver *Driver) RunStatement(ctx context.Context, conn *sql.Conn, statement string) ([]*v1pb.QueryResult, error) {
-	return driver.QueryConn(ctx, conn, statement, nil)
-}
-
 func getStatementWithResultLimit(statement string, limit int) string {
 	return fmt.Sprintf("WITH result AS (%s) SELECT * FROM result LIMIT %d;", util.TrimStatement(statement), limit)
 }

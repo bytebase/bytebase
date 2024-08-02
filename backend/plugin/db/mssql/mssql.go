@@ -309,11 +309,6 @@ func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, 
 	return results, nil
 }
 
-// RunStatement runs a SQL statement.
-func (driver *Driver) RunStatement(ctx context.Context, conn *sql.Conn, statement string) ([]*v1pb.QueryResult, error) {
-	return driver.QueryConn(ctx, conn, statement, nil)
-}
-
 func NewBatch(statement string) *tsqlbatch.Batch {
 	// Split to batches to support some client commands like GO.
 	s := strings.Split(statement, "\n")

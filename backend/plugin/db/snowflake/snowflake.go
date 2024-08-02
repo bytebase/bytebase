@@ -329,11 +329,6 @@ func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, 
 	return results, nil
 }
 
-// RunStatement runs a SQL statement in a given connection.
-func (driver *Driver) RunStatement(ctx context.Context, conn *sql.Conn, statement string) ([]*v1pb.QueryResult, error) {
-	return driver.QueryConn(ctx, conn, statement, nil)
-}
-
 func decodeRSAPrivateKey(key string) (*rsa.PrivateKey, error) {
 	block, _ := pem.Decode([]byte(key))
 	if block == nil {

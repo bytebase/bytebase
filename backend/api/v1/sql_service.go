@@ -157,7 +157,7 @@ func (*SQLService) doAdminExecute(ctx context.Context, driver db.Driver, conn *s
 	}
 	ctx, cancelCtx := context.WithTimeout(ctx, timeout)
 	defer cancelCtx()
-	result, err := driver.RunStatement(ctx, conn, request.Statement)
+	result, err := driver.QueryConn(ctx, conn, request.Statement, nil)
 	select {
 	case <-ctx.Done():
 		// canceled or timed out
@@ -274,7 +274,7 @@ func (s *SQLService) doExecute(ctx context.Context, instance *store.InstanceMess
 	}
 	ctx, cancelCtx := context.WithTimeout(ctx, timeout)
 	defer cancelCtx()
-	result, err := driver.RunStatement(ctx, conn, request.Statement)
+	result, err := driver.QueryConn(ctx, conn, request.Statement, nil)
 	select {
 	case <-ctx.Done():
 		// canceled or timed out

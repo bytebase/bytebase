@@ -175,11 +175,6 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 	return results, nil
 }
 
-// this func is used for admin mode in SQL Editor.
-func (d *Driver) RunStatement(ctx context.Context, _ *sql.Conn, statement string) ([]*v1pb.QueryResult, error) {
-	return d.QueryConn(ctx, nil, statement, nil)
-}
-
 // This function converts basic types to types that have implemented isRowValue_Kind interface.
 func parseValueType(value any, gohiveType string) (*v1pb.RowValue, error) {
 	var rowValue v1pb.RowValue

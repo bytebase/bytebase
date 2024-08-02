@@ -206,11 +206,6 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 	return results, nil
 }
 
-// RunStatement executes a SQL statement.
-func (d *Driver) RunStatement(ctx context.Context, _ *sql.Conn, statement string) ([]*v1pb.QueryResult, error) {
-	return d.QueryConn(ctx, nil, statement, nil)
-}
-
 func getStatementWithResultLimit(statement string, limit int) string {
 	limitPart := ""
 	if limit > 0 {
