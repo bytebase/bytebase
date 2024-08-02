@@ -33,7 +33,8 @@ func TestSQLExport(t *testing.T) {
 		reset             string
 		export            string
 		want              bool
-		affectedRows      []*v1pb.QueryResult
+		queryResult       []*v1pb.QueryResult
+		resetResult       []*v1pb.QueryResult
 	}{
 		{
 			databaseName:      "Test1",
@@ -43,7 +44,12 @@ func TestSQLExport(t *testing.T) {
 			reset:             "DELETE FROM tbl;",
 			export:            "SELECT * FROM Test1.tbl;",
 			password:          "123",
-			affectedRows: []*v1pb.QueryResult{
+			queryResult: []*v1pb.QueryResult{
+				{
+					Statement: "INSERT INTO Test1.tbl (id, name, gender, height) VALUES(1, 'Alice', B'0', B'01111111');",
+				},
+			},
+			resetResult: []*v1pb.QueryResult{
 				{
 					ColumnNames:     []string{"Affected Rows"},
 					ColumnTypeNames: []string{"INT"},
@@ -65,7 +71,20 @@ func TestSQLExport(t *testing.T) {
 			reset:             "DELETE FROM tbl;",
 			export:            "SELECT * FROM tbl;",
 			password:          "",
-			affectedRows: []*v1pb.QueryResult{
+			queryResult: []*v1pb.QueryResult{
+				{
+					ColumnNames:     []string{"Affected Rows"},
+					ColumnTypeNames: []string{"INT"},
+					Rows: []*v1pb.QueryRow{
+						{
+							Values: []*v1pb.RowValue{
+								{Kind: &v1pb.RowValue_Int64Value{Int64Value: 1}},
+							},
+						},
+					},
+				},
+			},
+			resetResult: []*v1pb.QueryResult{
 				{
 					ColumnNames:     []string{"Affected Rows"},
 					ColumnTypeNames: []string{"INT"},
@@ -161,7 +180,7 @@ func TestSQLExport(t *testing.T) {
 		statement := tt.query
 		results, err := ctl.adminQuery(ctx, database, statement)
 		a.NoError(err)
-		checkResults(a, tt.databaseName, statement, tt.affectedRows, results)
+		checkResults(a, tt.databaseName, statement, tt.queryResult, results)
 
 		request := &v1pb.ExportRequest{
 			Name:      database.Name,
@@ -177,7 +196,7 @@ func TestSQLExport(t *testing.T) {
 		statement = tt.reset
 		results, err = ctl.adminQuery(ctx, database, statement)
 		a.NoError(err)
-		checkResults(a, tt.databaseName, statement, tt.affectedRows, results)
+		checkResults(a, tt.databaseName, statement, tt.resetResult, results)
 
 		if tt.password != "" {
 			reader := bytes.NewReader(export.Content)
@@ -199,12 +218,12 @@ func TestSQLExport(t *testing.T) {
 
 		results, err = ctl.adminQuery(ctx, database, statement)
 		a.NoError(err)
-		checkResults(a, tt.databaseName, statement, tt.affectedRows, results)
+		checkResults(a, tt.databaseName, statement, tt.queryResult, results)
 
 		statement = tt.reset
 		results, err = ctl.adminQuery(ctx, database, statement)
 		a.NoError(err)
-		checkResults(a, tt.databaseName, statement, tt.affectedRows, results)
+		checkResults(a, tt.databaseName, statement, tt.resetResult, results)
 	}
 }
 
