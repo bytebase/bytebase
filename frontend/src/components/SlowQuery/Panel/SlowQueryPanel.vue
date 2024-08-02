@@ -77,7 +77,7 @@ import {
   useSlowQueryPolicyStore,
   useSlowQueryStore,
 } from "@/store";
-import type { ComposedSlowQueryLog, WorkspacePermission } from "@/types";
+import type { ComposedSlowQueryLog, Permission } from "@/types";
 import type { SearchScope, SearchParams, SearchScopeId } from "@/utils";
 import { extractInstanceResourceName, hasWorkspacePermissionV2 } from "@/utils";
 import { SlowQuerySettings } from "../Settings";
@@ -175,7 +175,7 @@ const params = computed(() => {
 });
 
 const allowAdmin = computed(() => {
-  const neededWorkspacePermissions: WorkspacePermission[] = [
+  const neededWorkspacePermissions: Permission[] = [
     "bb.instances.list",
     "bb.policies.update",
   ];
