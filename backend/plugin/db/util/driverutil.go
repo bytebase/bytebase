@@ -8,13 +8,11 @@ import (
 
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/component/masker"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
-
-var noneMasker = masker.NewNoneMasker()
 
 // FormatErrorWithQuery will format the error with failed query.
 func FormatErrorWithQuery(err error, query string) error {
@@ -39,6 +37,12 @@ func BuildAffectedRowsResult(affectedRows int64) *v1pb.QueryResult {
 	}
 }
 
+var nullRowValue = &v1pb.RowValue{
+	Kind: &v1pb.RowValue_NullValue{
+		NullValue: structpb.NullValue_NULL_VALUE,
+	},
+}
+
 func RowsToQueryResult(rows *sql.Rows) (*v1pb.QueryResult, error) {
 	columnNames, err := rows.Columns()
 	if err != nil {
@@ -58,44 +62,69 @@ func RowsToQueryResult(rows *sql.Rows) (*v1pb.QueryResult, error) {
 		ColumnNames:     columnNames,
 		ColumnTypeNames: columnTypeNames,
 	}
+	columnLength := len(columnNames)
 
-	if len(columnTypeNames) > 0 {
+	if columnLength > 0 {
 		for rows.Next() {
-			// isByteValues want to convert StringValue to BytesValue when columnTypeName is BIT or VARBIT
-			isByteValues := make([]bool, len(columnTypeNames))
-			values := make([]any, len(columnTypeNames))
+			values := make([]any, columnLength)
 			for i, v := range columnTypeNames {
-				// TODO(steven need help): Consult a common list of data types from database driver documentation. e.g. MySQL,PostgreSQL.
-				switch v {
-				case "VARCHAR", "TEXT", "UUID", "TIMESTAMP":
-					values[i] = new(sql.NullString)
-				case "BOOL":
-					values[i] = new(sql.NullBool)
-				case "INT", "INTEGER":
-					values[i] = new(sql.NullInt64)
-				case "FLOAT", "DOUBLE":
-					values[i] = new(sql.NullFloat64)
-				case "BIT", "VARBIT":
-					isByteValues[i] = true
-					values[i] = new(sql.NullString)
-				default:
-					values[i] = new(sql.NullString)
-				}
+				values[i] = makeValueByTypeName(v)
 			}
 
 			if err := rows.Scan(values...); err != nil {
 				return nil, err
 			}
 
-			var rowData v1pb.QueryRow
-			for i := range columnTypeNames {
-				rowData.Values = append(rowData.Values, noneMasker.Mask(&masker.MaskData{
-					Data:      values[i],
-					WantBytes: isByteValues[i],
-				}))
+			row := &v1pb.QueryRow{}
+			for i := 0; i < columnLength; i++ {
+				rowValue := nullRowValue
+				switch raw := values[i].(type) {
+				case *sql.NullString:
+					if raw.Valid {
+						rowValue = &v1pb.RowValue{
+							Kind: &v1pb.RowValue_StringValue{
+								StringValue: raw.String,
+							},
+						}
+					}
+				case *sql.NullInt64:
+					if raw.Valid {
+						rowValue = &v1pb.RowValue{
+							Kind: &v1pb.RowValue_Int64Value{
+								Int64Value: raw.Int64,
+							},
+						}
+					}
+				case *sql.RawBytes:
+					if len(*raw) > 0 {
+						rowValue = &v1pb.RowValue{
+							Kind: &v1pb.RowValue_BytesValue{
+								BytesValue: *raw,
+							},
+						}
+					}
+				case *sql.NullBool:
+					if raw.Valid {
+						rowValue = &v1pb.RowValue{
+							Kind: &v1pb.RowValue_BoolValue{
+								BoolValue: raw.Bool,
+							},
+						}
+					}
+				case *sql.NullFloat64:
+					if raw.Valid {
+						rowValue = &v1pb.RowValue{
+							Kind: &v1pb.RowValue_DoubleValue{
+								DoubleValue: raw.Float64,
+							},
+						}
+					}
+				}
+
+				row.Values = append(row.Values, rowValue)
 			}
 
-			result.Rows = append(result.Rows, &rowData)
+			result.Rows = append(result.Rows, row)
 			n := len(result.Rows)
 			if (n&(n-1) == 0) && proto.Size(result) > common.MaximumSQLResultSize {
 				result.Error = common.MaximumSQLResultSizeExceeded
@@ -109,6 +138,23 @@ func RowsToQueryResult(rows *sql.Rows) (*v1pb.QueryResult, error) {
 	}
 
 	return result, nil
+}
+
+func makeValueByTypeName(typeName string) any {
+	switch typeName {
+	case "VARCHAR", "TEXT", "UUID", "TIMESTAMP":
+		return new(sql.NullString)
+	case "BOOL":
+		return new(sql.NullBool)
+	case "INT", "INTEGER":
+		return new(sql.NullInt64)
+	case "FLOAT", "DOUBLE":
+		return new(sql.NullFloat64)
+	case "BIT", "VARBIT":
+		return new(sql.RawBytes)
+	default:
+		return new(sql.NullString)
+	}
 }
 
 // TrimStatement trims the unused characters from the statement for making getStatementWithResultLimit() happy.
