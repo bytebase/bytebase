@@ -27,12 +27,15 @@ func validateQuery(statement string) (bool, bool, error) {
 	}
 	hasExecute := false
 	for _, stmt := range stmtList {
-		switch stmt.(type) {
+		switch stmt := stmt.(type) {
 		case *tidbast.SelectStmt:
-		case *tidbast.SetOprStmt:
+		case *tidbast.SetStmt:
 			hasExecute = true
 		case *tidbast.ShowStmt:
 		case *tidbast.ExplainStmt:
+			if stmt.Analyze {
+				return false, false, nil
+			}
 		default:
 			return false, false, nil
 		}
