@@ -1,12 +1,14 @@
 <!-- eslint-disable vue/no-mutating-props -->
 
 <template>
-  <NInputGroup class="w-full flex items-center overflow-x-hidden">
-    <FactorSelect :expr="expr" />
-
-    <OperatorSelect :expr="expr" />
-
-    <ValueInput :expr="expr" />
+  <NInputGroup class="w-full flex items-start overflow-x-hidden">
+    <NInput
+      v-model:value="expr.content"
+      type="textarea"
+      :autosize="{ minRows: 2, maxRows: 4 }"
+      placeholder="Enter raw CEL expression"
+      size="small"
+    />
 
     <NButton
       v-if="allowAdmin"
@@ -21,14 +23,13 @@
 </template>
 
 <script lang="ts" setup>
-import { NButton, NInputGroup } from "naive-ui";
+import { NButton, NInput, NInputGroup } from "naive-ui";
 import { watch } from "vue";
-import { type ConditionExpr } from "@/plugins/cel";
-import { FactorSelect, OperatorSelect, ValueInput } from "./components";
+import { type RawStringExpr } from "@/plugins/cel";
 import { useExprEditorContext } from "./context";
 
 const props = defineProps<{
-  expr: ConditionExpr;
+  expr: RawStringExpr;
 }>();
 
 const emit = defineEmits<{

@@ -283,7 +283,7 @@ func (s *Store) listProjectImplV2(ctx context.Context, tx *Tx, find *FindProject
 	}
 
 	var projectMessages []*ProjectMessage
-	rows, err := tx.QueryContext(ctx, `
+	rows, err := tx.QueryContext(ctx, fmt.Sprintf(`
 		SELECT
 			id,
 			resource_id,
@@ -294,8 +294,8 @@ func (s *Store) listProjectImplV2(ctx context.Context, tx *Tx, find *FindProject
 			setting,
 			row_status
 		FROM project
-		WHERE `+strings.Join(where, " AND ")+`
-		ORDER BY project.id`,
+		WHERE %s
+		ORDER BY project.resource_id`, strings.Join(where, " AND ")),
 		args...,
 	)
 	if err != nil {

@@ -31,26 +31,29 @@ func init() {
 // Consider that the tokenizer cannot handle the dollar-sign($), so that we use pg_query_go to parse the statement.
 // For EXPLAIN and normal SELECT statements, we can directly use regexp to check.
 // For CTE, we need to parse the statement to JSON and check the JSON keys.
-func validateQuery(statement string) (bool, error) {
+func validateQuery(statement string) (bool, bool, error) {
 	stmtList, err := pgrawparser.Parse(pgrawparser.ParseContext{}, statement)
 	if err != nil {
-		return false, convertToSyntaxError(statement, err)
+		return false, false, convertToSyntaxError(statement, err)
 	}
 
 	explainAnalyze := false
+	hasExecute := false
 	for _, stmt := range stmtList {
 		switch stmt := stmt.(type) {
-		case *ast.SelectStmt, *ast.VariableSetStmt, *ast.VariableShowStmt:
+		case *ast.SelectStmt, *ast.VariableShowStmt:
+		case *ast.VariableSetStmt:
+			hasExecute = true
 		case *ast.ExplainStmt:
 			if stmt.Analyze {
 				// We only support analyze select, because analyze will actually execute the statement.
 				if _, ok := stmt.Statement.(*ast.SelectStmt); !ok {
-					return false, nil
+					return false, false, nil
 				}
 				explainAnalyze = true
 			}
 		default:
-			return false, nil
+			return false, false, nil
 		}
 	}
 
@@ -58,7 +61,7 @@ func validateQuery(statement string) (bool, error) {
 	jsonText, err := pgquery.ParseToJSON(statement)
 	if err != nil {
 		slog.Debug("Failed to parse statement to JSON", slog.String("statement", statement), log.BBError(err))
-		return false, err
+		return false, false, err
 	}
 
 	formattedStr := strings.ToUpper(strings.TrimSpace(statement))
@@ -69,15 +72,16 @@ func validateQuery(statement string) (bool, error) {
 
 		if err := json.Unmarshal([]byte(jsonText), &jsonData); err != nil {
 			slog.Debug("Failed to unmarshal JSON", slog.String("jsonText", jsonText), log.BBError(err))
-			return false, err
+			return false, false, err
 		}
 
 		dmlKeyList := []string{"InsertStmt", "UpdateStmt", "DeleteStmt"}
 
-		return !keyExistsInJSONData(jsonData, dmlKeyList), nil
+		ok := !keyExistsInJSONData(jsonData, dmlKeyList)
+		return ok, ok, nil
 	}
 
-	return true, nil
+	return true, !hasExecute, nil
 }
 
 func keyExistsInJSONData(jsonData map[string]any, keyList []string) bool {

@@ -15,6 +15,7 @@ const props = withDefaults(
   defineProps<{
     expr: ConditionGroupExpr;
     allowAdmin?: boolean;
+    enableRawExpression?: boolean;
     factorList: Factor[];
     factorSupportDropdown?: Factor[];
     factorOptionsMap?: Map<Factor, SelectOption[]>;
@@ -22,6 +23,7 @@ const props = withDefaults(
   }>(),
   {
     allowAdmin: false,
+    enableRawExpression: false,
     factorOperatorOverrideMap: undefined,
     factorSupportDropdown: () => [],
     factorOptionsMap: () => new Map(),
@@ -34,6 +36,7 @@ defineEmits<{
 
 provideExprEditorContext({
   allowAdmin: toRef(props, "allowAdmin"),
+  enableRawExpression: toRef(props, "enableRawExpression"),
   factorList: toRef(props, "factorList"),
   factorSupportDropdown: toRef(props, "factorSupportDropdown"),
   factorOptionsMap: toRef(props, "factorOptionsMap"),

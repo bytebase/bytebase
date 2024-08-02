@@ -1,5 +1,8 @@
 <template>
-  <div class="sm:col-span-4 sm:col-start-1 flex flex-col gap-y-2">
+  <div
+    v-if="!hideAdvancedFeatures"
+    class="sm:col-span-4 sm:col-start-1 flex flex-col gap-y-2"
+  >
     <label class="textlabel">
       {{ $t("instance.scan-interval.self") }}
     </label>
@@ -84,7 +87,7 @@ const emit = defineEmits<{
 }>();
 
 const subscriptionStore = useSubscriptionV1Store();
-const { instance } = useInstanceFormContext();
+const { instance, hideAdvancedFeatures } = useInstanceFormContext();
 
 const hasSecretFeature = computed(() => {
   return subscriptionStore.hasInstanceFeature(
