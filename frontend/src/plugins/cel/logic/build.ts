@@ -1,3 +1,5 @@
+import { head } from "lodash-es";
+import { celServiceClient } from "@/grpcweb";
 import { Expr as CELExpr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
 import type { ConditionExpr, ConditionGroupExpr, SimpleExpr } from "../types";
 import {
@@ -7,6 +9,8 @@ import {
   isConditionGroupExpr,
   isCompareExpr,
   isStringExpr,
+  ExprType,
+  isRawStringExpr,
 } from "../types";
 
 const seq = {
@@ -17,10 +21,34 @@ const seq = {
 };
 
 // Build CEL expr according to simple expr
-export const buildCELExpr = (expr: SimpleExpr): CELExpr | undefined => {
-  const convert = (expr: ConditionGroupExpr | ConditionExpr): CELExpr => {
+export const buildCELExpr = async (
+  expr: SimpleExpr
+): Promise<CELExpr | undefined> => {
+  const convert = async (expr: SimpleExpr): Promise<CELExpr | undefined> => {
     if (isConditionGroupExpr(expr)) return convertGroup(expr);
     if (isConditionExpr(expr)) return convertCondition(expr);
+    if (isRawStringExpr(expr)) {
+      if (!expr.content) {
+        return undefined;
+      }
+      const celExpr = head(
+        (
+          await celServiceClient.batchParse(
+            {
+              expressions: [expr.content],
+            },
+            {
+              silent: true,
+            }
+          )
+        ).expressions
+      )?.expr;
+      if (celExpr) {
+        return celExpr;
+      } else {
+        return undefined;
+      }
+    }
     throw new Error(`unexpected type "${String(expr)}"`);
   };
   const convertCondition = (condition: ConditionExpr): CELExpr => {
@@ -64,29 +92,36 @@ export const buildCELExpr = (expr: SimpleExpr): CELExpr | undefined => {
     }
     throw new Error(`unsupported condition '${JSON.stringify(condition)}'`);
   };
-  const convertGroup = (group: ConditionGroupExpr): CELExpr => {
+  const convertGroup = async (
+    group: ConditionGroupExpr
+  ): Promise<CELExpr | undefined> => {
     const { operator, args } = group;
+    if (args.length === 0) {
+      return undefined;
+    }
     if (args.length === 1) {
       // A dangled Logical Group should be extracted as single condition
-      return convert(args[0]);
+      return await convert(args[0]);
     }
     const [left, ...rest] = args;
-    const _args = [
-      convert(left),
-      convertGroup({
-        operator,
-        args: rest,
-      }),
-    ];
-    // return createCallExpr(operator, args);
-    return wrapCallExpr(operator, _args);
+    return wrapCallExpr(
+      operator,
+      [
+        await convert(left),
+        await convertGroup({
+          type: ExprType.ConditionGroup,
+          operator,
+          args: rest,
+        }),
+      ].filter(Boolean) as CELExpr[]
+    );
   };
 
   seq.id = 1;
   try {
-    return convert(expr);
+    return await convert(expr);
   } catch (err) {
-    console.debug(err);
+    console.error(err);
     return undefined;
   }
 };
