@@ -17,12 +17,14 @@
       />
       <template #footer>
         <div class="w-full flex justify-between items-center">
-          <NButton v-if="showDeleteButton" text @click="doDelete">
-            <template #icon>
-              <Trash2Icon class="w-4 h-auto" />
-            </template>
-            {{ $t("common.delete") }}
-          </NButton>
+          <div>
+            <NButton v-if="showDeleteButton" text @click="doDelete">
+              <template #icon>
+                <Trash2Icon class="w-4 h-auto" />
+              </template>
+              {{ $t("common.delete") }}
+            </NButton>
+          </div>
           <div class="flex flex-row justify-end items-center gap-x-2">
             <NButton @click="$emit('close')">{{ $t("common.cancel") }}</NButton>
             <NButton
@@ -40,21 +42,24 @@
 </template>
 
 <script lang="ts" setup>
+import { head } from "lodash-es";
 import { Trash2Icon } from "lucide-vue-next";
 import { NButton, useDialog } from "naive-ui";
-import type { ClientError } from "nice-grpc-common";
 import { computed, onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { Drawer, DrawerContent } from "@/components/v2";
-import { buildCELExpr } from "@/plugins/cel/logic";
+import { buildCELExpr, validateSimpleExpr } from "@/plugins/cel/logic";
 import {
   PROJECT_V1_ROUTE_DATABASE_GROUPS,
   PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL,
 } from "@/router/dashboard/projectV1";
 import { pushNotification, useDBGroupStore } from "@/store";
 import type { ComposedDatabaseGroup, ComposedProject } from "@/types";
-import { ParsedExpr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
+import {
+  ParsedExpr,
+  Expr as CELExpr,
+} from "@/types/proto/google/api/expr/v1alpha1/syntax";
 import { Expr } from "@/types/proto/google/type/expr";
 import type { DatabaseGroup } from "@/types/proto/v1/database_group_service";
 import { batchConvertParsedExprToCELString } from "@/utils";
@@ -88,18 +93,18 @@ const title = computed(() => {
 
 const allowConfirm = computed(() => {
   if (!formRef.value) {
-    return true;
+    return false;
   }
 
-  if (!isCreating.value) {
-    return true;
-  }
-
-  const formState = formRef.value.getFormState();
+  const formState = formRef.value?.getFormState();
   if (formState.existMatchedUnactivateInstance) {
     return false;
   }
-  return formState.resourceId && formState.placeholder;
+  return (
+    formState.resourceId &&
+    formState.placeholder &&
+    validateSimpleExpr(formState.expr)
+  );
 });
 
 const showDeleteButton = computed(() => {
@@ -140,62 +145,70 @@ const doDelete = () => {
 
 const doConfirm = async () => {
   const formState = formRef.value?.getFormState();
-  if (!formState) {
+  if (!formState || !allowConfirm.value) {
     return;
   }
 
+  let celExpr: CELExpr | undefined = undefined;
   try {
-    if (isCreating.value) {
-      const celStrings = await batchConvertParsedExprToCELString([
-        ParsedExpr.fromJSON({
-          expr: buildCELExpr(formState.expr),
-        }),
-      ]);
-      const resourceId = formState.resourceId;
-      await dbGroupStore.createDatabaseGroup({
-        projectName: props.project.name,
-        databaseGroup: {
-          name: `${props.project.name}/databaseGroups/${resourceId}`,
-          databasePlaceholder: formState.placeholder,
-          databaseExpr: Expr.fromJSON({
-            expression: celStrings[0] || "true",
-          }),
-          multitenancy: formState.multitenancy,
-        },
-        databaseGroupId: resourceId,
-      });
-      emit("created", resourceId);
-    } else {
-      const celStrings = await batchConvertParsedExprToCELString([
-        ParsedExpr.fromJSON({
-          expr: buildCELExpr(formState.expr),
-        }),
-      ]);
-      await dbGroupStore.updateDatabaseGroup({
-        ...props.databaseGroup!,
-        databasePlaceholder: formState.placeholder,
-        databaseExpr: Expr.fromJSON({
-          expression: celStrings[0] || "true",
-        }),
-        multitenancy: formState.multitenancy,
-      });
-    }
-
-    pushNotification({
-      module: "bytebase",
-      style: "SUCCESS",
-      title: isCreating.value ? t("common.created") : t("common.updated"),
-    });
-    emit("close");
+    celExpr = await buildCELExpr(formState.expr);
   } catch (error) {
-    console.error(error);
     pushNotification({
       module: "bytebase",
       style: "CRITICAL",
-      title: `Request error occurred`,
-      description: (error as ClientError).details,
+      title: `CEL expression error occurred`,
+      description: (error as Error).message,
     });
     return;
   }
+
+  const celStrings = await batchConvertParsedExprToCELString([
+    ParsedExpr.fromJSON({
+      expr: celExpr,
+    }),
+  ]);
+  const celString = head(celStrings);
+  if (!celString) {
+    pushNotification({
+      module: "bytebase",
+      style: "CRITICAL",
+      title: `CEL expression error occurred`,
+      description: "CEL expression is empty",
+    });
+    return;
+  }
+
+  if (isCreating.value) {
+    const resourceId = formState.resourceId;
+    await dbGroupStore.createDatabaseGroup({
+      projectName: props.project.name,
+      databaseGroup: {
+        name: `${props.project.name}/databaseGroups/${resourceId}`,
+        databasePlaceholder: formState.placeholder,
+        databaseExpr: Expr.fromPartial({
+          expression: celString,
+        }),
+        multitenancy: formState.multitenancy,
+      },
+      databaseGroupId: resourceId,
+    });
+    emit("created", resourceId);
+  } else {
+    await dbGroupStore.updateDatabaseGroup({
+      ...props.databaseGroup!,
+      databasePlaceholder: formState.placeholder,
+      databaseExpr: Expr.fromPartial({
+        expression: celString,
+      }),
+      multitenancy: formState.multitenancy,
+    });
+  }
+
+  pushNotification({
+    module: "bytebase",
+    style: "SUCCESS",
+    title: isCreating.value ? t("common.created") : t("common.updated"),
+  });
+  emit("close");
 };
 </script>

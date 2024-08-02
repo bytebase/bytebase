@@ -3493,6 +3493,7 @@
       "description-tips": "条件是通过表达式配置的规则。例如：条件「环境 为 prod」将会匹配在「prod」环境中执行的工单。",
       "add": "添加条件",
       "add-group": "添加条件组",
+      "add-raw-expression": "添加 Raw 表达式",
       "group": {
         "or": {
           "description": "以下任一为真…"
