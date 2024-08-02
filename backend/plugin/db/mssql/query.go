@@ -1,16 +1,150 @@
 package mssql
 
 import (
+	"database/sql"
 	"fmt"
 	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/proto"
 
 	tsql "github.com/bytebase/tsql-parser"
+	mssqldb "github.com/microsoft/go-mssqldb"
 
+	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/component/masker"
 	tsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
+	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
+
+var noneMasker = masker.NewNoneMasker()
+
+func rowsToQueryResult(rows *sql.Rows) (*v1pb.QueryResult, error) {
+	columnNames, err := rows.Columns()
+	if err != nil {
+		return nil, err
+	}
+	columnTypes, err := rows.ColumnTypes()
+	if err != nil {
+		return nil, err
+	}
+	// DatabaseTypeName returns the database system name of the column type.
+	// refer: https://pkg.go.dev/database/sql#ColumnType.DatabaseTypeName
+	var columnTypeNames []string
+	for _, v := range columnTypes {
+		columnTypeNames = append(columnTypeNames, strings.ToUpper(v.DatabaseTypeName()))
+	}
+	result := &v1pb.QueryResult{
+		ColumnNames:     columnNames,
+		ColumnTypeNames: columnTypeNames,
+	}
+
+	if len(columnTypeNames) > 0 {
+		for rows.Next() {
+			values := make([]any, len(columnTypeNames))
+			// isByteValues want to convert StringValue to BytesValue when columnTypeName is BIT or VARBIT
+			isByteValues := make([]bool, len(columnTypeNames))
+			for i, v := range columnTypeNames {
+				values[i], isByteValues[i] = makeValueByTypeName(v)
+			}
+
+			if err := rows.Scan(values...); err != nil {
+				return nil, err
+			}
+
+			var rowData v1pb.QueryRow
+			for i := range columnTypeNames {
+				rowData.Values = append(rowData.Values, noneMasker.Mask(&masker.MaskData{
+					Data:      values[i],
+					WantBytes: isByteValues[i],
+				}))
+			}
+
+			result.Rows = append(result.Rows, &rowData)
+			n := len(result.Rows)
+			if (n&(n-1) == 0) && proto.Size(result) > common.MaximumSQLResultSize {
+				result.Error = common.MaximumSQLResultSizeExceeded
+				break
+			}
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+// makeValueByTypeName makes a value and wantByte bool by the type name.
+func makeValueByTypeName(typeName string) (any, bool) {
+	switch typeName {
+	case "TINYINT":
+		return new(sql.NullInt64), false
+	case "SMALLINT":
+		return new(sql.NullInt64), false
+	case "INT":
+		return new(sql.NullInt64), false
+	case "BIGINT":
+		return new(sql.NullInt64), false
+	case "REAL":
+		return new(sql.NullFloat64), false
+	case "FLOAT":
+		return new(sql.NullFloat64), false
+	case "VARBINARY":
+		// TODO(zp): Null bytes?
+		return new(sql.NullString), true
+	case "VARCHAR":
+		return new(sql.NullString), false
+	case "NVARCHAR":
+		return new(sql.NullString), false
+	case "BIT":
+		return new(sql.NullBool), false
+	case "DECIMAL":
+		return new(sql.NullString), false
+	case "SMALLMONEY":
+		return new(sql.NullString), false
+	case "MONEY":
+		return new(sql.NullString), false
+
+	// TODO(zp): Scan to string now, switch to use time.Time while masking support it.
+	// // Source values of type [time.Time] may be scanned into values of type
+	// *time.Time, *interface{}, *string, or *[]byte. When converting to
+	// the latter two, [time.RFC3339Nano] is used.
+	case "SMALLDATETIME":
+		return new(sql.NullString), false
+	case "DATETIME":
+		return new(sql.NullString), false
+	case "DATETIME2":
+		return new(sql.NullString), false
+	case "DATE":
+		return new(sql.NullString), false
+	case "TIME":
+		return new(sql.NullString), false
+	case "DATETIMEOFFSET":
+		return new(sql.NullString), false
+
+	case "CHAR":
+		return new(sql.NullString), false
+	case "NCHAR":
+		return new(sql.NullString), false
+	case "UNIQUEIDENTIFIER":
+		return new(mssqldb.NullUniqueIdentifier), false
+	case "XML":
+		return new(sql.NullString), false
+	case "TEXT":
+		return new(sql.NullString), false
+	case "NTEXT":
+		return new(sql.NullString), false
+	case "IMAGE":
+		return new(sql.NullString), true
+	case "BINARY":
+		return new(sql.NullString), true
+	case "SQL_VARIANT":
+		return new(sql.NullString), true
+	}
+	return new(sql.NullString), true
+}
 
 // singleStatement must be a selectStatement for mssql.
 func getMSSQLStatementWithResultLimit(singleStatement string, limitCount int) (string, error) {

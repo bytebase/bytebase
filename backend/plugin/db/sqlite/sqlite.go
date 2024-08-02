@@ -157,7 +157,7 @@ func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, 
 	}
 	defer rows.Close()
 
-	result, err := util.RowsToQueryResult(storepb.Engine_SQLITE, rows)
+	result, err := util.RowsToQueryResult(rows)
 	if err != nil {
 		// nolint
 		return []*v1pb.QueryResult{
