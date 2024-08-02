@@ -248,8 +248,7 @@ func ExecuteMigrationDefault(ctx context.Context, driverCtx context.Context, sto
 // ExecuteMigrationWithFunc executes the migration with custom migration function.
 func ExecuteMigrationWithFunc(ctx context.Context, driverCtx context.Context, s *store.Store, stateCfg *state.State, taskRunUID int, driver db.Driver, m *db.MigrationInfo, statement string, sheetID *int, execFunc func(ctx context.Context, execStatement string) error, opts db.ExecuteOptions) (migrationHistoryID string, updatedSchema string, resErr error) {
 	var prevSchemaBuf bytes.Buffer
-	// don't dump for dml tasks.
-	if m.Type != db.Data {
+	if m.Type.NeedDump() {
 		opts.LogSchemaDumpStart()
 		// Don't record schema if the database hasn't existed yet or is schemaless, e.g. MongoDB.
 		// For baseline migration, we also record the live schema to detect the schema drift.
@@ -326,8 +325,7 @@ func ExecuteMigrationWithFunc(ctx context.Context, driverCtx context.Context, s 
 
 	// Phase 4 - Dump the schema after migration
 	var afterSchemaBuf bytes.Buffer
-	// don't dump for dml tasks.
-	if m.Type != db.Data {
+	if m.Type.NeedDump() {
 		opts.LogSchemaDumpStart()
 		if _, err := driver.Dump(ctx, &afterSchemaBuf); err != nil {
 			// We will ignore the dump error if the database is dropped.

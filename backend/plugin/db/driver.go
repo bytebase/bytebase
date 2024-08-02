@@ -124,6 +124,15 @@ func (t MigrationType) GetVersionTypeSuffix() string {
 	return ""
 }
 
+func (t MigrationType) NeedDump() bool {
+	switch t {
+	case Baseline, Migrate, MigrateSDL:
+		return true
+	default:
+		return false
+	}
+}
+
 // MigrationStatus is the status of migration.
 type MigrationStatus string
 
