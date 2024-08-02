@@ -39,33 +39,7 @@
           </div>
         </dd>
       </div>
-      <div v-if="subscriptionStore.currentPlan === PlanType.FREE" class="my-3">
-        <dt class="text-gray-400">
-          {{ $t("subscription.max-instance-count") }}
-        </dt>
-        <dd
-          class="mt-1 text-4xl flex items-center gap-x-2 cursor-pointer group"
-        >
-          <span class="group-hover:underline">
-            {{ subscriptionStore.instanceCountLimit }}
-          </span>
-        </dd>
-      </div>
-      <div v-else class="my-3">
-        <dt class="text-gray-400">
-          {{ $t("subscription.instance-assignment.used-and-total-license") }}
-        </dt>
-        <dd
-          v-if="allowEdit"
-          class="mt-1 text-4xl flex items-center gap-x-2 cursor-pointer group"
-          @click="state.showInstanceAssignmentDrawer = true"
-        >
-          <span class="group-hover:underline">{{ activateLicenseCount }}</span>
-          <span class="text-xl">/</span>
-          <span class="group-hover:underline">{{ totalLicenseCount }}</span>
-          <heroicons-outline:pencil class="h-6 w-6" />
-        </dd>
-      </div>
+      <WorkspaceInstanceLicenseStats v-if="allowManageInstanceLicenses" />
       <div v-if="!subscriptionStore.isFreePlan" class="my-3">
         <dt class="text-gray-400">
           {{ $t("subscription.expires-at") }}
@@ -142,30 +116,25 @@
     :title="$t('subscription.inquire-enterprise-plan')"
     @close="state.showQRCodeModal = false"
   />
-
-  <InstanceAssignment
-    :show="state.showInstanceAssignmentDrawer"
-    @dismiss="state.showInstanceAssignmentDrawer = false"
-  />
 </template>
 
 <script lang="ts" setup>
 import { NButton, NInput } from "naive-ui";
 import { storeToRefs } from "pinia";
-import { computed, reactive, onMounted } from "vue";
+import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
-import InstanceAssignment from "@/components/InstanceAssignment.vue";
 import TrialModal from "@/components/TrialModal.vue";
 import WeChatQRModal from "@/components/WeChatQRModal.vue";
+import WorkspaceInstanceLicenseStats from "@/components/WorkspaceInstanceLicenseStats.vue";
 import { useLanguage } from "@/composables/useLanguage";
 import {
   pushNotification,
-  useInstanceV1List,
-  useInstanceV1Store,
+  useCurrentUserV1,
   useSubscriptionV1Store,
 } from "@/store";
 import { ENTERPRISE_INQUIRE_LINK } from "@/types";
 import { PlanType } from "@/types/proto/v1/subscription_service";
+import { hasWorkspacePermissionV2 } from "@/utils";
 import PricingTable from "../components/PricingTable/";
 
 interface LocalState {
@@ -173,32 +142,22 @@ interface LocalState {
   license: string;
   showQRCodeModal: boolean;
   showTrialModal: boolean;
-  showInstanceAssignmentDrawer: boolean;
 }
 
-defineProps<{
+const props = defineProps<{
   allowEdit: boolean;
 }>();
 
 const { t } = useI18n();
 const { locale } = useLanguage();
+const currentUser = useCurrentUserV1();
 const subscriptionStore = useSubscriptionV1Store();
-const instanceV1Store = useInstanceV1Store();
-useInstanceV1List(/* showDeleted */ false, /* forceUpdate */ true);
 
 const state = reactive<LocalState>({
   loading: false,
   license: "",
   showTrialModal: false,
   showQRCodeModal: false,
-  showInstanceAssignmentDrawer: false,
-});
-
-onMounted(() => {
-  const params = new URLSearchParams(window.location.search);
-  if (params.get("manageLicense")) {
-    state.showInstanceAssignmentDrawer = true;
-  }
 });
 
 const disabled = computed((): boolean => {
@@ -230,18 +189,13 @@ const uploadLicense = async () => {
   }
 };
 
-const { expireAt, isTrialing, isExpired, instanceLicenseCount } =
-  storeToRefs(subscriptionStore);
+const { expireAt, isTrialing, isExpired } = storeToRefs(subscriptionStore);
 
-const totalLicenseCount = computed((): string => {
-  if (instanceLicenseCount.value === Number.MAX_VALUE) {
-    return t("subscription.unlimited");
-  }
-  return `${instanceLicenseCount.value}`;
-});
-
-const activateLicenseCount = computed((): string => {
-  return `${instanceV1Store.activateInstanceCount}`;
+const allowManageInstanceLicenses = computed(() => {
+  return (
+    props.allowEdit &&
+    hasWorkspacePermissionV2(currentUser.value, "bb.instances.list")
+  );
 });
 
 const currentPlan = computed((): string => {
