@@ -259,6 +259,7 @@ import type { DataClassificationSetting_DataClassificationConfig } from "@/types
 import {
   bytesToString,
   hasProjectPermissionV2,
+  hasSchemaProperty,
   isDatabaseV1Queryable,
   isGhostTable,
 } from "@/utils";
@@ -339,12 +340,6 @@ const allowQuery = computed(() => {
   return isDatabaseV1Queryable(database.value, currentUserV1.value);
 });
 
-const hasSchemaProperty = computed(
-  () =>
-    instanceEngine.value === Engine.POSTGRES ||
-    instanceEngine.value === Engine.RISINGWAVE
-);
-
 const hasPartitionTables = computed(() => {
   return (
     // Only show partition tables for PostgreSQL.
@@ -375,7 +370,7 @@ const shouldShowColumnTable = computed(() => {
 });
 
 const getTableName = (tableName: string) => {
-  if (hasSchemaProperty.value) {
+  if (hasSchemaProperty(instanceEngine.value)) {
     return `"${props.schemaName}"."${tableName}"`;
   }
   return tableName;

@@ -2,6 +2,7 @@ import { EMPTY_ID, UNKNOWN_ID } from "../const";
 import { State } from "../proto/v1/common";
 import { IamPolicy } from "../proto/v1/iam_policy";
 import { Project, Workflow } from "../proto/v1/project_service";
+import type { VCSProvider, VCSRepository } from "../proto/v1/vcs_provider_service";
 
 export const DEFAULT_PROJECT_UID = 1;
 export const EMPTY_PROJECT_NAME = `projects/${EMPTY_ID}`;
@@ -51,4 +52,17 @@ export const isValidProjectName = (name: string | undefined) => {
     name !== EMPTY_PROJECT_NAME &&
     name !== UNKNOWN_PROJECT_NAME
   );
+};
+
+export type RepositoryConfig = {
+  baseDirectory: string;
+  branch: string;
+  resourceId: string;
+  databaseGroup: string;
+};
+
+export type ProjectRepositoryConfig = {
+  vcs: VCSProvider;
+  repositoryInfo: VCSRepository;
+  repositoryConfig: RepositoryConfig;
 };

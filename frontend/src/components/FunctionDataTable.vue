@@ -16,8 +16,8 @@ import type { PropType } from "vue";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import type { ComposedDatabase } from "@/types";
-import { Engine } from "@/types/proto/v1/common";
 import type { FunctionMetadata } from "@/types/proto/v1/database_service";
+import { hasSchemaProperty } from "@/utils";
 import EllipsisSQLView from "./EllipsisSQLView.vue";
 
 const props = defineProps({
@@ -39,25 +39,12 @@ const { t } = useI18n();
 
 const engine = computed(() => props.database.instanceResource.engine);
 
-const isPostgres = computed(() => engine.value === Engine.POSTGRES);
-
-const hasSchemaProperty = computed(() => {
-  return (
-    isPostgres.value ||
-    engine.value === Engine.SNOWFLAKE ||
-    engine.value === Engine.ORACLE ||
-    engine.value === Engine.DM ||
-    engine.value === Engine.MSSQL ||
-    engine.value === Engine.RISINGWAVE
-  );
-});
-
 const columns = computed(() => {
   const columns: (DataTableColumn<FunctionMetadata> & { hide?: boolean })[] = [
     {
       key: "name",
       title: t("common.schema"),
-      hide: !hasSchemaProperty.value,
+      hide: !hasSchemaProperty(engine.value),
       ellipsis: {
         tooltip: true,
       },
