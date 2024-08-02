@@ -1,7 +1,11 @@
 <template>
   <NTooltip placement="right" :delay="300" :disabled="disabled">
     <template #trigger>
-      <NButton :style="buttonStyle" v-bind="{ ...buttonProps, ...$attrs }">
+      <NButton
+        :style="buttonStyle"
+        v-bind="{ ...buttonProps, ...$attrs }"
+        @click="handleClick"
+      >
         <template #icon>
           <CodeIcon v-if="view === 'CODE'" />
           <InfoIcon v-if="view === 'INFO'" />
@@ -40,7 +44,7 @@ const props = defineProps<{
 
 const { t } = useI18n();
 
-const { viewState } = useEditorPanelContext();
+const { viewState, updateViewState } = useEditorPanelContext();
 const { props: buttonProps, style: buttonStyle } = useButton({
   active: computed(() => props.view === viewState.value?.view),
   disabled: toRef(props, "disabled"),
@@ -64,4 +68,10 @@ const text = computed(() => {
   console.assert(false, "should never reach this line");
   return "";
 });
+
+const handleClick = () => {
+  updateViewState({
+    view: props.view,
+  });
+};
 </script>

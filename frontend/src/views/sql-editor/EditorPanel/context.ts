@@ -23,21 +23,24 @@ export const provideEditorPanelContext = (base: {
 }) => {
   const { tab } = base;
 
-  const viewState = computed<ViewState | undefined>({
-    get() {
-      if (!tab.value) return undefined;
-      return viewStateByTab.get(tab.value.id) ?? defaultViewState();
-    },
-    set(vs) {
-      if (!tab.value) return;
-      if (!vs) return;
-      viewStateByTab.set(tab.value.id, vs);
-    },
+  const viewState = computed(() => {
+    if (!tab.value) return undefined;
+    return viewStateByTab.get(tab.value.id) ?? defaultViewState();
   });
+
+  const updateViewState = (patch: Partial<ViewState>) => {
+    const curr = viewState.value;
+    if (!curr) return;
+    if (!tab.value) return;
+
+    Object.assign(curr, patch);
+    viewStateByTab.set(tab.value.id, curr);
+  };
 
   const context = {
     ...base,
     viewState,
+    updateViewState,
   };
 
   provide(KEY, context);
