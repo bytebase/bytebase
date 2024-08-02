@@ -1,102 +1,56 @@
 <template>
-  <div class="flex h-full w-full flex-col justify-start items-start">
-    <ConnectionPathBar class="border-b" />
+  <div class="w-full flex-1 flex flex-row items-stretch overflow-hidden">
+    <Splitpanes
+      v-if="
+        !currentTab ||
+        currentTab.mode === 'READONLY' ||
+        currentTab.mode === 'STANDARD'
+      "
+      horizontal
+      class="default-theme"
+      :dbl-click-splitter="false"
+    >
+      <Pane class="flex flex-row overflow-hidden">
+        <StandardPanel v-if="isDisconnected || allowReadonlyMode" />
+        <ReadonlyModeNotSupported v-else />
+      </Pane>
+      <Pane
+        v-if="!isDisconnected && allowReadonlyMode"
+        class="relative"
+        :size="40"
+      >
+        <ResultPanel />
+      </Pane>
+    </Splitpanes>
 
-    <template v-if="!tab || tab.editMode === 'SQL-EDITOR'">
-      <EditorAction @execute="handleExecute" />
-      <template v-if="tab">
-        <Suspense>
-          <SQLEditor @execute="handleExecute" />
-          <template #fallback>
-            <div
-              class="w-full h-auto flex-grow flex flex-col items-center justify-center"
-            >
-              <BBSpin />
-            </div>
-          </template>
-        </Suspense>
-      </template>
-      <template v-else>
-        <Welcome />
-      </template>
-    </template>
+    <TerminalPanel v-else-if="currentTab.mode === 'ADMIN'" />
 
-    <Suspense>
-      <AIChatToSQL
-        v-if="tab && !isDisconnected && showAIChatBox"
-        @apply-statement="handleApplyStatement"
-      />
-    </Suspense>
-
-    <ExecutingHintModal />
-
-    <SaveSheetModal />
+    <AccessDenied v-else />
   </div>
 </template>
 
-<script lang="ts" setup>
+<script setup lang="ts">
 import { storeToRefs } from "pinia";
-import { defineAsyncComponent, watch } from "vue";
-import { BBSpin } from "@/bbkit";
-import { useExecuteSQL } from "@/composables/useExecuteSQL";
-import { AIChatToSQL } from "@/plugins/ai";
-import { useDatabaseV1Store, useSQLEditorTabStore } from "@/store";
-import type { SQLEditorConnection, SQLEditorQueryParams } from "@/types";
+import { Pane, Splitpanes } from "splitpanes";
+import { computed } from "vue";
 import {
-  EditorAction,
-  ConnectionPathBar,
-  ExecutingHintModal,
-  SaveSheetModal,
-} from "../EditorCommon";
-import { useSQLEditorContext } from "../context";
-import Welcome from "./Welcome.vue";
-
-const SQLEditor = defineAsyncComponent(() => import("./SQLEditor.vue"));
+  useConnectionOfCurrentSQLEditorTab,
+  useSQLEditorTabStore,
+} from "@/store";
+import { instanceV1HasReadonlyMode } from "@/utils";
+import AccessDenied from "./AccessDenied.vue";
+import ReadonlyModeNotSupported from "./ReadonlyModeNotSupported.vue";
+import ResultPanel from "./ResultPanel";
+import StandardPanel from "./StandardPanel";
+import TerminalPanel from "./TerminalPanel";
 
 const tabStore = useSQLEditorTabStore();
-const { currentTab: tab, isDisconnected } = storeToRefs(tabStore);
-const { showAIChatBox, standardModeEnabled } = useSQLEditorContext();
+const { currentTab, isDisconnected } = storeToRefs(tabStore);
+const { instance } = useConnectionOfCurrentSQLEditorTab();
 
-const { execute } = useExecuteSQL();
+const allowReadonlyMode = computed(() => {
+  if (isDisconnected.value) return false;
 
-const handleExecute = (params: SQLEditorQueryParams) => {
-  execute(params);
-};
-
-const handleApplyStatement = async (
-  statement: string,
-  connection: SQLEditorConnection,
-  run: boolean
-) => {
-  if (!tab.value) {
-    return;
-  }
-  tab.value.statement = statement;
-  if (run) {
-    const database = useDatabaseV1Store().getDatabaseByName(
-      connection.database
-    );
-    handleExecute({
-      connection,
-      statement,
-      engine: database.instanceResource.engine,
-      explain: false,
-    });
-  }
-};
-
-watch(
-  [() => tab.value?.id, standardModeEnabled],
-  () => {
-    if (!tab.value) return;
-    // Fallback to READONLY mode if standard.value mode is not allowed.
-    if (!standardModeEnabled.value && tab.value.mode === "STANDARD") {
-      tab.value.mode = "READONLY";
-    }
-  },
-  {
-    immediate: true,
-    deep: false,
-  }
-);
+  return instanceV1HasReadonlyMode(instance.value);
+});
 </script>

@@ -94,7 +94,7 @@ import {
   ConnectionPathBar,
   ConnectionHolder,
   ResultViewV1,
-} from "../EditorCommon";
+} from "../../EditorCommon";
 import { useAttractFocus } from "./useAttractFocus";
 import { useHistory } from "./useHistory";
 

@@ -17,7 +17,7 @@
 <script lang="ts" setup>
 import { InstanceV1Name } from "@/components/v2";
 import { useConnectionOfCurrentSQLEditorTab } from "@/store";
-import AdminModeButton from "./EditorCommon/AdminModeButton.vue";
+import AdminModeButton from "../EditorCommon/AdminModeButton.vue";
 
 const { instance } = useConnectionOfCurrentSQLEditorTab();
 </script>
