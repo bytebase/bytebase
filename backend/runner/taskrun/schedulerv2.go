@@ -330,10 +330,13 @@ func (s *SchedulerV2) scheduleRunningTaskRuns(ctx context.Context) error {
 		if task.DatabaseID == nil {
 			continue
 		}
-		if _, ok := minTaskIDForDatabase[*task.DatabaseID]; !ok {
-			minTaskIDForDatabase[*task.DatabaseID] = task.ID
-		} else if minTaskIDForDatabase[*task.DatabaseID] > task.ID {
-			minTaskIDForDatabase[*task.DatabaseID] = task.ID
+
+		if task.Type.Sequential() {
+			if _, ok := minTaskIDForDatabase[*task.DatabaseID]; !ok {
+				minTaskIDForDatabase[*task.DatabaseID] = task.ID
+			} else if minTaskIDForDatabase[*task.DatabaseID] > task.ID {
+				minTaskIDForDatabase[*task.DatabaseID] = task.ID
+			}
 		}
 	}
 
@@ -347,7 +350,7 @@ func (s *SchedulerV2) scheduleRunningTaskRuns(ctx context.Context) error {
 			slog.Error("failed to get task", slog.Int("task id", taskRun.TaskUID), log.BBError(err))
 			continue
 		}
-		if task.DatabaseID != nil {
+		if task.DatabaseID != nil && task.Type.Sequential() {
 			if minTaskIDForDatabase[*task.DatabaseID] != task.ID {
 				slog.Debug("skip running task run because another task on the database has a smaller id", "task run id", taskRun.ID, "task id", task.ID, "database id", *task.DatabaseID)
 				continue
