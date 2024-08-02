@@ -5,7 +5,7 @@
     :data-width="containerWidth"
   >
     <div
-      v-if="!strictProject"
+      v-if="!strictProject && !hideProjects"
       class="flex flex-row items-center gap-x-1 px-1 py-1 border-b"
     >
       <ProjectSelect
@@ -45,7 +45,11 @@ import { useElementSize } from "@vueuse/core";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 import { ProjectSelect } from "@/components/v2";
-import { useSQLEditorTreeStore, useSQLEditorStore } from "@/store";
+import {
+  useSQLEditorTreeStore,
+  useSQLEditorStore,
+  useAppFeature,
+} from "@/store";
 import { isValidProjectName } from "@/types";
 import { useSQLEditorContext } from "../context";
 import GutterBar from "./GutterBar";
@@ -60,6 +64,7 @@ const { project, projectContextReady, strictProject } =
   storeToRefs(editorStore);
 const containerRef = ref<HTMLDivElement>();
 const { width: containerWidth } = useElementSize(containerRef);
+const hideProjects = useAppFeature("bb.feature.sql-editor.hide-projects");
 
 const projectName = computed(() => {
   return editorStore.currentProject?.name ?? null;

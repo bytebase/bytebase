@@ -1,5 +1,6 @@
 <template>
   <NPopover
+    v-if="show"
     raw
     :show-arrow="false"
     to="body"
@@ -40,7 +41,10 @@ defineOptions({
 });
 
 const treeStore = useSQLEditorTreeStore();
-const { factorList } = storeToRefs(treeStore);
+const { factorList, availableFactorList } = storeToRefs(treeStore);
+const show = computed(() => {
+  return availableFactorList.value.all.length > 1;
+});
 
 const viewMode = computed((): "PRESET" | "CUSTOM" => {
   if (factorList.value.length === 0) {
