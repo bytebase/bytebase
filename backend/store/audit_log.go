@@ -42,9 +42,6 @@ type AuditLogFilter struct {
 }
 
 func (s *Store) CreateAuditLog(ctx context.Context, payload *storepb.AuditLog) error {
-	if !s.profile.DevelopmentAudit {
-		return nil
-	}
 	query := `
 		INSERT INTO audit_log (payload) VALUES ($1)
 	`
