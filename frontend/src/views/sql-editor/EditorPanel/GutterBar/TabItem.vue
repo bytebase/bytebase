@@ -30,7 +30,7 @@ import {
   ProcedureIcon,
 } from "@/components/Icon";
 import { useButton } from "./common";
-import type { EditorPanelView } from "./types";
+import type { EditorPanelView } from "../types";
 
 const props = defineProps<{
   view: EditorPanelView;

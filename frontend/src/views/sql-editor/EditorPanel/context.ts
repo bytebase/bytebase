@@ -7,7 +7,7 @@ const KEY = Symbol(
 ) as InjectionKey<EditorPanelContext>;
 
 export const provideEditorPanelContext = (baseContext: {
-  tab: Ref<SQLEditorTab>;
+  tab: Ref<SQLEditorTab | undefined>;
 }) => {
   const view = ref<EditorPanelView>("CODE");
   const context = {

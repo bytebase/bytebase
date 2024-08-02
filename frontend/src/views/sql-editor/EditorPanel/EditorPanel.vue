@@ -43,10 +43,14 @@ import ReadonlyModeNotSupported from "./ReadonlyModeNotSupported.vue";
 import ResultPanel from "./ResultPanel";
 import StandardPanel from "./StandardPanel";
 import TerminalPanel from "./TerminalPanel";
+import { provideEditorPanelContext } from "./context";
 
 const tabStore = useSQLEditorTabStore();
 const { currentTab, isDisconnected } = storeToRefs(tabStore);
 const { instance } = useConnectionOfCurrentSQLEditorTab();
+provideEditorPanelContext({
+  tab: currentTab,
+});
 
 const allowReadonlyMode = computed(() => {
   if (isDisconnected.value) return false;
