@@ -4,7 +4,8 @@ export type EditorPanelView =
   | "TABLES"
   | "VIEWS"
   | "FUNCTIONS"
-  | "PROCEDURES";
+  | "PROCEDURES"
+  | "DIAGRAM";
 
 export type EditorPanelViewState = {
   view: EditorPanelView;

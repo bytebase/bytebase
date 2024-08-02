@@ -7,12 +7,34 @@
         @click="handleClick"
       >
         <template #icon>
-          <CodeIcon v-if="view === 'CODE'" />
-          <InfoIcon v-if="view === 'INFO'" />
-          <TableIcon v-if="view === 'TABLES'" />
-          <ViewIcon v-if="view === 'VIEWS'" />
-          <FunctionIcon v-if="view === 'FUNCTIONS'" class="text-main" />
-          <ProcedureIcon v-if="view === 'PROCEDURES'" class="text-main" />
+          <CodeIcon
+            v-if="view === 'CODE'"
+            :class="active ? '!text-current' : 'text-main'"
+          />
+          <InfoIcon
+            v-if="view === 'INFO'"
+            :class="active ? '!text-current' : 'text-main'"
+          />
+          <TableIcon
+            v-if="view === 'TABLES'"
+            :class="active ? '!text-current' : 'text-main'"
+          />
+          <ViewIcon
+            v-if="view === 'VIEWS'"
+            :class="active ? '!text-current' : 'text-main'"
+          />
+          <FunctionIcon
+            v-if="view === 'FUNCTIONS'"
+            :class="active ? '!text-current' : 'text-main'"
+          />
+          <ProcedureIcon
+            v-if="view === 'PROCEDURES'"
+            :class="active ? '!text-current' : 'text-main'"
+          />
+          <SchemaDiagramIcon
+            v-if="view === 'DIAGRAM'"
+            :class="active ? '!text-current' : 'text-main'"
+          />
         </template>
       </NButton>
     </template>
@@ -33,6 +55,7 @@ import {
   ViewIcon,
   ProcedureIcon,
 } from "@/components/Icon";
+import { SchemaDiagramIcon } from "@/components/SchemaDiagram";
 import { useEditorPanelContext } from "../context";
 import type { EditorPanelView } from "../types";
 import { useButton } from "./common";
@@ -44,9 +67,10 @@ const props = defineProps<{
 
 const { t } = useI18n();
 
+const active = computed(() => props.view === viewState.value?.view);
 const { viewState, updateViewState } = useEditorPanelContext();
 const { props: buttonProps, style: buttonStyle } = useButton({
-  active: computed(() => props.view === viewState.value?.view),
+  active,
   disabled: toRef(props, "disabled"),
 });
 
@@ -64,6 +88,8 @@ const text = computed(() => {
       return t("db.functions");
     case "PROCEDURES":
       return t("db.procedures");
+    case "DIAGRAM":
+      return t("schema-diagram.self");
   }
   console.assert(false, "should never reach this line");
   return "";

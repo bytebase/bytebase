@@ -10,6 +10,7 @@
       <TabItem view="VIEWS" />
       <TabItem view="FUNCTIONS" />
       <TabItem view="PROCEDURES" />
+      <TabItem view="DIAGRAM" />
     </div>
   </div>
 </template>

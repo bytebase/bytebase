@@ -1,0 +1,1 @@
+<template>DiagramPanel</template>

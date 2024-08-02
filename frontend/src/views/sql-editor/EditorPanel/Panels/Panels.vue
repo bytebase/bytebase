@@ -11,6 +11,7 @@
         <ViewsPanel v-if="viewState.view === 'VIEWS'" />
         <FunctionsPanel v-if="viewState.view === 'FUNCTIONS'" />
         <ProceduresPanel v-if="viewState.view === 'PROCEDURES'" />
+        <DiagramPanel v-if="viewState.view === 'DIAGRAM'" />
       </template>
     </div>
   </div>
@@ -20,6 +21,7 @@
 import type { VueClass } from "@/utils";
 import GutterBar from "../GutterBar";
 import { useEditorPanelContext } from "../context";
+import DiagramPanel from "./DiagramPanel";
 import FunctionsPanel from "./FunctionsPanel";
 import InfoPanel from "./InfoPanel";
 import ProceduresPanel from "./ProceduresPanel";
