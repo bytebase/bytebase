@@ -68,7 +68,9 @@ func NewGitHub(port int) VCSProvider {
 	g.GET("/repos/:owner/:repo/contents/:filePath", gh.readRepositoryFile)
 	g.GET("/repos/:owner/:repo/git/ref/heads/:branchName", gh.getRepositoryBranch)
 	g.GET("/repos/:owner/:repo/pulls/:prID/files", gh.listPullRequestFile)
+	g.GET("/repos/:owner/:repo/issues/:prID/comments", gh.listIssueComment)
 	g.POST("/repos/:owner/:repo/issues/:prID/comments", gh.createIssueComment)
+	g.PATCH("/repos/:owner/:repo/issues/:prID/comments", gh.updateIssueComment)
 	return gh
 }
 
@@ -210,6 +212,19 @@ func (gh *GitHub) listPullRequestFile(c echo.Context) error {
 
 func (*GitHub) createIssueComment(echo.Context) error {
 	return nil
+}
+
+func (*GitHub) updateIssueComment(echo.Context) error {
+	return nil
+}
+
+func (*GitHub) listIssueComment(c echo.Context) error {
+	comments := []github.Comment{}
+	buf, err := json.Marshal(comments)
+	if err != nil {
+		return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to marshal response body: %v", err))
+	}
+	return c.String(http.StatusOK, string(buf))
 }
 
 func (gh *GitHub) validRepository(c echo.Context) (*githubRepositoryData, error) {
