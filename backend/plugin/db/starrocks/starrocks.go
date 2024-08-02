@@ -238,7 +238,7 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 		if err != nil {
 			// TODO(d): need to make parser compatible.
 			slog.Error("failed to validate sql", slog.String("statement", statement), log.BBError(err))
-			allQuery = false
+			allQuery = true
 		}
 		startTime := time.Now()
 		queryResult, err := func() (*v1pb.QueryResult, error) {
