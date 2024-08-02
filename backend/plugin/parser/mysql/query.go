@@ -87,16 +87,13 @@ func (l *queryValidateListener) EnterUtilityStatement(ctx *parser.UtilityStateme
 	}
 	if ctx.ExplainStatement() == nil && ctx.DescribeStatement() == nil {
 		l.valid = false
-	}
-}
-
-// EnterExplainableStatement is called when production explainableStatement is entered.
-func (l *queryValidateListener) EnterExplainableStatement(ctx *parser.ExplainableStatementContext) {
-	if !l.valid {
 		return
 	}
-	if ctx.DeleteStatement() != nil || ctx.UpdateStatement() != nil || ctx.InsertStatement() != nil || ctx.ReplaceStatement() != nil {
-		l.valid = false
+	if ctx.ExplainStatement() != nil {
+		if ctx.ExplainStatement().ANALYZE_SYMBOL() != nil {
+			l.valid = false
+			return
+		}
 	}
 }
 
