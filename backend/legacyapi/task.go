@@ -52,6 +52,20 @@ const (
 	TaskDatabaseDataExport TaskType = "bb.task.database.data.export"
 )
 
+// Sequetial returns whether the task should be executed sequentially.
+func (t TaskType) Sequential() bool {
+	switch t {
+	case
+		TaskDatabaseSchemaUpdate,
+		TaskDatabaseSchemaUpdateSDL,
+		TaskDatabaseSchemaUpdateGhostSync,
+		TaskDatabaseSchemaUpdateGhostCutover:
+		return true
+	default:
+		return false
+	}
+}
+
 // These payload types are only used when marshalling to the json format for saving into the database.
 // So we annotate with json tag using camelCase naming which is consistent with normal
 // json naming convention

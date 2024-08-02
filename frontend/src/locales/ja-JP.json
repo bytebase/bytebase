@@ -2425,7 +2425,8 @@
     "query-context": {
       "admin-data-source-is-disallowed-to-query": "管理者データ ソースはクエリできません。",
       "admin-data-source-is-disallowed-to-query-when-read-only-data-source-is-available": "読み取り専用データ ソースが使用可能な場合、管理データ ソースはクエリを実行できません。"
-    }
+    },
+    "manage-connections": "接続を管理する"
   },
   "schema-editor": {
     "self": "スキーマエディタ",
@@ -3492,6 +3493,7 @@
       "description-tips": "条件は、式を通じて設定されるルールです。たとえば、「環境は本番」という条件は、「本番」環境で実行されたチケットと一致します。",
       "add": "条件を追加する",
       "add-group": "条件グループの追加",
+      "add-raw-expression": "生の表現を追加する",
       "group": {
         "or": {
           "description": "次のいずれかが当てはまります…"

@@ -4,7 +4,10 @@
       <SearchBox v-model:searchPattern="searchPattern" class="flex-1" />
       <GroupingBar class="shrink-0" />
     </div>
-    <div class="flex items-center space-x-2 px-2 py-2">
+    <div
+      v-if="hasMissingQueryDatabases"
+      class="flex items-center space-x-2 px-2 py-2"
+    >
       <NCheckbox v-model:checked="showMissingQueryDatabases">
         <span class="textinfolabel text-sm">
           {{ $t("sql-editor.show-databases-without-query-permission") }}
@@ -105,7 +108,8 @@ const databaseStore = useDatabaseV1Store();
 const isLoggedIn = useIsLoggedIn();
 const me = useCurrentUserV1();
 
-const { events: editorEvents, showConnectionPanel } = useSQLEditorContext();
+const editorContext = useSQLEditorContext();
+const { events: editorEvents, showConnectionPanel } = editorContext;
 const searchHistory = useSearchHistory();
 const {
   state: hoverState,
@@ -152,7 +156,8 @@ const selectedKeys = computed(() => {
   }
   return [];
 });
-const { expandedKeys, showMissingQueryDatabases } = storeToRefs(treeStore);
+const { expandedKeys, hasMissingQueryDatabases, showMissingQueryDatabases } =
+  storeToRefs(treeStore);
 const upsertExpandedKeys = (key: string) => {
   if (expandedKeys.value.includes(key)) {
     return;
@@ -227,8 +232,11 @@ const nodeProps = ({ option }: { option: TreeOption }) => {
         if (type === "database") {
           if (canQueryDatabase(node.meta.target as ComposedDatabase)) {
             setConnection(node, {
-              worksheet: tabStore.currentTab?.worksheet ?? "",
-              mode: DEFAULT_SQL_EDITOR_TAB_MODE,
+              extra: {
+                worksheet: tabStore.currentTab?.worksheet ?? "",
+                mode: DEFAULT_SQL_EDITOR_TAB_MODE,
+              },
+              context: editorContext,
             });
             showConnectionPanel.value = false;
           }

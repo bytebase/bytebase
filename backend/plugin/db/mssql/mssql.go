@@ -64,11 +64,11 @@ func (driver *Driver) Open(_ context.Context, _ storepb.Engine, config db.Connec
 	trustServerCertificate := "true"
 
 	var err error
-	if config.TLSConfig.SslCA != "" {
+	if config.TLSConfig.UseSSL && config.TLSConfig.SslCA != "" {
 		// We should not TrustServerCertificate in production environment, otherwise, TLS is susceptible
 		// to man-in-the middle attacks. TrustServerCertificate makes driver accepts any certificate presented by the server
 		// and any host name in that certificate.
-		// Due to Golang runtime limitation, x509 package will throw the error of 'certificate relies on legacy Common Name field, use SANs instead' if
+		// Due to Golang runtime limitation, x509 package will throw the error of 'certificate relies on legacy Common Name field, use SANs instead if
 		// TrustServerCertificate is false.
 		trustServerCertificate = "false"
 		// Driver reads the certificate from file instead of regarding it as certificate content.
@@ -274,8 +274,20 @@ func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, singleSQL bas
 	}
 
 	startTime := time.Now()
-	result, err := util.Query(ctx, storepb.Engine_MSSQL, conn, statement)
+	rows, err := conn.QueryContext(ctx, statement)
 	if err != nil {
+		return nil, util.FormatErrorWithQuery(err, statement)
+	}
+	defer rows.Close()
+
+	result, err := util.RowsToQueryResult(storepb.Engine_MSSQL, rows)
+	if err != nil {
+		// nolint
+		return &v1pb.QueryResult{
+			Error: err.Error(),
+		}, nil
+	}
+	if err := rows.Err(); err != nil {
 		return nil, err
 	}
 	result.Latency = durationpb.New(time.Since(startTime))

@@ -34,7 +34,6 @@ func getBaseProfile(dataDir string) *config.Profile {
 		LastActiveTs:       time.Now().Unix(),
 		Lsp:                flags.lsp,
 		PreUpdateBackup:    flags.preUpdateBackup,
-		ExecuteDetail:      flags.executeDetail,
 		DevelopmentAudit:   flags.developmentAudit,
 	}
 }

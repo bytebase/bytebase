@@ -82,7 +82,6 @@ var (
 		lsp             bool
 		preUpdateBackup bool
 
-		executeDetail    bool
 		developmentAudit bool
 	}
 
@@ -129,8 +128,6 @@ func init() {
 	rootCmd.PersistentFlags().BoolVar(&flags.preUpdateBackup, "pre-update-backup", true, "whether to enable feature of data backup prior to data update")
 	rootCmd.PersistentFlags().BoolVar(&flags.disableMetric, "disable-metric", false, "disable the metric collector")
 	rootCmd.PersistentFlags().BoolVar(&flags.disableSample, "disable-sample", false, "disable the sample instance")
-
-	rootCmd.PersistentFlags().BoolVar(&flags.executeDetail, "execute-detail", true, "expose execute details")
 
 	rootCmd.PersistentFlags().BoolVar(&flags.developmentAudit, "development-audit", true, "enable audit logs")
 }

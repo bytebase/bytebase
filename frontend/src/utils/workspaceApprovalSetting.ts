@@ -1,7 +1,13 @@
 import { cloneDeep, isNumber } from "lodash-es";
 import { v4 as uuidv4 } from "uuid";
 import type { EqualityExpr, LogicalExpr, SimpleExpr } from "@/plugins/cel";
-import { buildCELExpr, resolveCELExpr } from "@/plugins/cel";
+import {
+  buildCELExpr,
+  ExprType,
+  isConditionExpr,
+  isConditionGroupExpr,
+  resolveCELExpr,
+} from "@/plugins/cel";
 import { t, te } from "@/plugins/i18n";
 import { useSettingV1Store, useUserStore } from "@/store";
 import { userNamePrefix } from "@/store/modules/v1/common";
@@ -136,6 +142,7 @@ const resolveApprovalConfigRules = (rules: LocalApprovalRule[]) => {
   };
 
   const resolveLogicAndExpr = (expr: SimpleExpr, rule: LocalApprovalRule) => {
+    if (!isConditionGroupExpr(expr)) return fail(expr, rule);
     const { operator, args } = expr;
     if (operator !== "_&&_") return fail(expr, rule);
     if (!args || args.length !== 2) return fail(expr, rule);
@@ -153,23 +160,27 @@ const resolveApprovalConfigRules = (rules: LocalApprovalRule[]) => {
   };
 
   const resolveLogicOrExpr = (expr: SimpleExpr, rule: LocalApprovalRule) => {
+    if (!isConditionGroupExpr(expr)) return fail(expr, rule);
     const { operator, args } = expr;
     if (operator !== "_||_") return fail(expr, rule);
     if (!args || args.length === 0) return fail(expr, rule);
 
-    for (let i = 0; i < args.length; i++) {
-      if (args[i].operator === "_&&_") {
-        resolveLogicAndExpr(args[i], rule);
+    for (const subExpr of args) {
+      if (!isConditionGroupExpr(subExpr)) {
+        continue;
       }
-      if (args[i].operator === "_||_") {
-        resolveLogicOrExpr(args[i], rule);
+      if (subExpr.operator === "_&&_") {
+        resolveLogicAndExpr(subExpr, rule);
+      }
+      if (subExpr.operator === "_||_") {
+        resolveLogicOrExpr(subExpr, rule);
       }
     }
   };
 
   for (const rule of rules) {
     const expr = rule.expr;
-    if (!expr) {
+    if (!expr || !isConditionGroupExpr(expr)) {
       fail(expr, rule);
       continue;
     }
@@ -207,7 +218,7 @@ export const buildWorkspaceApprovalSetting = async (
     approvalRuleMap.set(i, approvalRule);
 
     const parsed = parsedMap.get(uid) ?? [];
-    const parsedExpr = buildParsedExpression(parsed);
+    const parsedExpr = await buildParsedExpression(parsed);
     if (parsedExpr.expr) {
       exprList.push(parsedExpr);
       ruleIndexList.push(i);
@@ -228,6 +239,7 @@ export const buildWorkspaceApprovalSetting = async (
 };
 
 const resolveSourceExpr = (expr: SimpleExpr): Risk_Source => {
+  if (!isConditionExpr(expr)) return Risk_Source.UNRECOGNIZED;
   const { operator, args } = expr;
   if (operator !== "_==_") return Risk_Source.UNRECOGNIZED;
   if (!args || args.length !== 2) return Risk_Source.UNRECOGNIZED;
@@ -239,6 +251,7 @@ const resolveSourceExpr = (expr: SimpleExpr): Risk_Source => {
 };
 
 const resolveLevelExpr = (expr: SimpleExpr): number => {
+  if (!isConditionExpr(expr)) return Number.NaN;
   const { operator, args } = expr;
   if (operator !== "_==_") return Number.NaN;
   if (!args || args.length !== 2) return Number.NaN;
@@ -264,30 +277,34 @@ const toMap = <T extends { rule: string }>(items: T[]): Map<string, T[]> => {
   }, new Map());
 };
 
-const buildParsedExpression = (parsed: ParsedApprovalRule[]) => {
+const buildParsedExpression = async (parsed: ParsedApprovalRule[]) => {
   if (parsed.length === 0) {
     return ParsedExpr.fromJSON({});
   }
-  const args = parsed.map<LogicalExpr>(({ source, level }) => {
+  const args = parsed.map(({ source, level }) => {
     const sourceExpr: EqualityExpr = {
+      type: ExprType.Condition,
       operator: "_==_",
       args: ["source", source],
     };
     const levelExpr: EqualityExpr = {
+      type: ExprType.Condition,
       operator: "_==_",
       args: ["level", level],
     };
     return {
+      type: ExprType.Condition,
       operator: "_&&_",
       args: [sourceExpr, levelExpr],
     };
   });
   const listedOrExpr: LogicalExpr = {
+    type: ExprType.ConditionGroup,
     operator: "_||_",
-    args,
+    args: args as SimpleExpr[],
   };
   // expr will be unwrapped to an "&&" expr if listedOrExpr.length === 0
-  const expr = buildCELExpr(listedOrExpr);
+  const expr = await buildCELExpr(listedOrExpr);
   return ParsedExpr.fromJSON({
     expr,
   });

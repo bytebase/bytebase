@@ -487,7 +487,7 @@ func (s *IssueService) createIssueDatabaseChange(ctx context.Context, request *v
 	}
 
 	var planUID *int64
-	planID, err := common.GetPlanID(request.Issue.Plan)
+	_, planID, err := common.GetProjectIDPlanID(request.Issue.Plan)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -689,7 +689,7 @@ func (s *IssueService) createIssueDatabaseDataExport(ctx context.Context, reques
 	}
 
 	var planUID *int64
-	planID, err := common.GetPlanID(request.Issue.Plan)
+	_, planID, err := common.GetProjectIDPlanID(request.Issue.Plan)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
