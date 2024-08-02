@@ -1,7 +1,4 @@
-export type MemberStatus = "INVITED" | "ACTIVE";
-
-export type RoleType = "OWNER" | "DBA" | "DEVELOPER";
-
+// IAM related resource definition.
 export interface DatabaseResource {
   databaseName: string;
   schema?: string;
