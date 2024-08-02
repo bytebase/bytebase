@@ -39,7 +39,7 @@
           </div>
         </dd>
       </div>
-      <WorkspaceInstanceLicenseStats v-if="allowManageInstances" />
+      <WorkspaceInstanceLicenseStats v-if="allowManageInstanceLicenses" />
       <div v-if="!subscriptionStore.isFreePlan" class="my-3">
         <dt class="text-gray-400">
           {{ $t("subscription.expires-at") }}
@@ -191,7 +191,7 @@ const uploadLicense = async () => {
 
 const { expireAt, isTrialing, isExpired } = storeToRefs(subscriptionStore);
 
-const allowManageInstances = computed(() => {
+const allowManageInstanceLicenses = computed(() => {
   return (
     props.allowEdit &&
     hasWorkspacePermissionV2(currentUser.value, "bb.instances.list")
