@@ -8,17 +8,21 @@ import (
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	tsql "github.com/bytebase/tsql-parser"
 	mssqldb "github.com/microsoft/go-mssqldb"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/component/masker"
 	tsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
-var noneMasker = masker.NewNoneMasker()
+var nullRowValue = &v1pb.RowValue{
+	Kind: &v1pb.RowValue_NullValue{
+		NullValue: structpb.NullValue_NULL_VALUE,
+	},
+}
 
 func rowsToQueryResult(rows *sql.Rows) (*v1pb.QueryResult, error) {
 	columnNames, err := rows.Columns()
@@ -39,29 +43,81 @@ func rowsToQueryResult(rows *sql.Rows) (*v1pb.QueryResult, error) {
 		ColumnNames:     columnNames,
 		ColumnTypeNames: columnTypeNames,
 	}
+	columnLength := len(columnNames)
 
-	if len(columnTypeNames) > 0 {
+	if columnLength > 0 {
 		for rows.Next() {
-			values := make([]any, len(columnTypeNames))
-			// isByteValues want to convert StringValue to BytesValue when columnTypeName is BIT or VARBIT
-			isByteValues := make([]bool, len(columnTypeNames))
+			values := make([]any, columnLength)
 			for i, v := range columnTypeNames {
-				values[i], isByteValues[i] = makeValueByTypeName(v)
+				values[i] = makeValueByTypeName(v)
 			}
 
 			if err := rows.Scan(values...); err != nil {
 				return nil, err
 			}
 
-			var rowData v1pb.QueryRow
-			for i := range columnTypeNames {
-				rowData.Values = append(rowData.Values, noneMasker.Mask(&masker.MaskData{
-					Data:      values[i],
-					WantBytes: isByteValues[i],
-				}))
+			row := &v1pb.QueryRow{}
+			for i := 0; i < columnLength; i++ {
+				rowValue := nullRowValue
+				switch raw := values[i].(type) {
+				case *sql.NullString:
+					if raw.Valid {
+						rowValue = &v1pb.RowValue{
+							Kind: &v1pb.RowValue_StringValue{
+								StringValue: raw.String,
+							},
+						}
+					}
+				case *sql.NullInt64:
+					if raw.Valid {
+						rowValue = &v1pb.RowValue{
+							Kind: &v1pb.RowValue_Int64Value{
+								Int64Value: raw.Int64,
+							},
+						}
+					}
+				case *sql.RawBytes:
+					if len(*raw) > 0 {
+						rowValue = &v1pb.RowValue{
+							Kind: &v1pb.RowValue_BytesValue{
+								BytesValue: *raw,
+							},
+						}
+					}
+				case *sql.NullBool:
+					if raw.Valid {
+						var v int64
+						if raw.Bool {
+							v = 1
+						}
+						rowValue = &v1pb.RowValue{
+							Kind: &v1pb.RowValue_Int64Value{
+								Int64Value: v,
+							},
+						}
+					}
+				case *sql.NullFloat64:
+					if raw.Valid {
+						rowValue = &v1pb.RowValue{
+							Kind: &v1pb.RowValue_DoubleValue{
+								DoubleValue: raw.Float64,
+							},
+						}
+					}
+				case *mssqldb.NullUniqueIdentifier:
+					if raw.Valid {
+						rowValue = &v1pb.RowValue{
+							Kind: &v1pb.RowValue_StringValue{
+								StringValue: raw.UUID.String(),
+							},
+						}
+					}
+				}
+
+				row.Values = append(row.Values, rowValue)
 			}
 
-			result.Rows = append(result.Rows, &rowData)
+			result.Rows = append(result.Rows, row)
 			n := len(result.Rows)
 			if (n&(n-1) == 0) && proto.Size(result) > common.MaximumSQLResultSize {
 				result.Error = common.MaximumSQLResultSizeExceeded
@@ -76,74 +132,42 @@ func rowsToQueryResult(rows *sql.Rows) (*v1pb.QueryResult, error) {
 	return result, nil
 }
 
-// makeValueByTypeName makes a value and wantByte bool by the type name.
-func makeValueByTypeName(typeName string) (any, bool) {
+func makeValueByTypeName(typeName string) any {
 	switch typeName {
-	case "TINYINT":
-		return new(sql.NullInt64), false
-	case "SMALLINT":
-		return new(sql.NullInt64), false
-	case "INT":
-		return new(sql.NullInt64), false
-	case "BIGINT":
-		return new(sql.NullInt64), false
-	case "REAL":
-		return new(sql.NullFloat64), false
-	case "FLOAT":
-		return new(sql.NullFloat64), false
+	case "UNIQUEIDENTIFIER":
+		return new(mssqldb.NullUniqueIdentifier)
+	case "TINYINT", "SMALLINT", "INT", "BIGINT":
+		return new(sql.NullInt64)
+	case "VARCHAR", "NVARCHAR", "CHAR", "NCHAR", "TEXT", "NTEXT", "XML":
+		return new(sql.NullString)
+	case "REAL", "FLOAT":
+		return new(sql.NullFloat64)
 	case "VARBINARY":
-		// TODO(zp): Null bytes?
-		return new(sql.NullString), true
-	case "VARCHAR":
-		return new(sql.NullString), false
-	case "NVARCHAR":
-		return new(sql.NullString), false
+		return new(sql.RawBytes)
+	// BIT type must use sql.NullBool. All SQL Editors show 0/1 for BIT type instead of true/false.
+	// So we have to do extra conversion from bool to int.
 	case "BIT":
-		return new(sql.NullBool), false
+		return new(sql.NullBool)
 	case "DECIMAL":
-		return new(sql.NullString), false
+		return new(sql.NullString)
 	case "SMALLMONEY":
-		return new(sql.NullString), false
+		return new(sql.NullString)
 	case "MONEY":
-		return new(sql.NullString), false
-
+		return new(sql.NullString)
 	// TODO(zp): Scan to string now, switch to use time.Time while masking support it.
 	// // Source values of type [time.Time] may be scanned into values of type
 	// *time.Time, *interface{}, *string, or *[]byte. When converting to
 	// the latter two, [time.RFC3339Nano] is used.
-	case "SMALLDATETIME":
-		return new(sql.NullString), false
-	case "DATETIME":
-		return new(sql.NullString), false
-	case "DATETIME2":
-		return new(sql.NullString), false
-	case "DATE":
-		return new(sql.NullString), false
-	case "TIME":
-		return new(sql.NullString), false
-	case "DATETIMEOFFSET":
-		return new(sql.NullString), false
-
-	case "CHAR":
-		return new(sql.NullString), false
-	case "NCHAR":
-		return new(sql.NullString), false
-	case "UNIQUEIDENTIFIER":
-		return new(mssqldb.NullUniqueIdentifier), false
-	case "XML":
-		return new(sql.NullString), false
-	case "TEXT":
-		return new(sql.NullString), false
-	case "NTEXT":
-		return new(sql.NullString), false
+	case "SMALLDATETIME", "DATETIME", "DATETIME2", "DATE", "TIME", "DATETIMEOFFSET":
+		return new(sql.NullString)
 	case "IMAGE":
-		return new(sql.NullString), true
+		return new(sql.RawBytes)
 	case "BINARY":
-		return new(sql.NullString), true
+		return new(sql.RawBytes)
 	case "SQL_VARIANT":
-		return new(sql.NullString), true
+		return new(sql.RawBytes)
 	}
-	return new(sql.NullString), true
+	return new(sql.NullString)
 }
 
 // singleStatement must be a selectStatement for mssql.

@@ -333,7 +333,7 @@ func doMaskResult(maskers []masker.Masker, result *v1pb.QueryResult) {
 			maskedValue := row.Values[j]
 			if j < len(maskers) && maskers[j] != nil {
 				maskedValue = maskers[j].Mask(&masker.MaskData{
-					DataV2: row.Values[j],
+					Data: row.Values[j],
 				})
 			}
 			result.Rows[i].Values[j] = maskedValue
