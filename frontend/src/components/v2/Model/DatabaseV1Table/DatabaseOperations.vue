@@ -112,7 +112,7 @@ import {
   pushNotification,
   useAppFeature,
 } from "@/store";
-import type { ComposedDatabase, ProjectPermission } from "@/types";
+import type { ComposedDatabase, Permission } from "@/types";
 import { DEFAULT_PROJECT_NAME } from "@/types";
 import {
   Database,
@@ -213,7 +213,7 @@ const selectedProjectName = computed(() => {
 
 const canEditDatabase = (
   db: ComposedDatabase,
-  requiredProjectPermission: ProjectPermission
+  requiredProjectPermission: Permission
 ): boolean => {
   if (isArchivedDatabaseV1(db)) {
     return false;

@@ -8,7 +8,7 @@ import sqlEditorRoutes, {
   SQL_EDITOR_SETTING_INSTANCE_MODULE,
 } from "@/router/sqlEditor";
 import { useCurrentUserV1, useAppFeature } from "@/store";
-import type { WorkspacePermission } from "@/types";
+import type { Permission } from "@/types";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
 export const useSidebarItems = () => {
@@ -26,10 +26,10 @@ export const useSidebarItems = () => {
 
   const getFlattenRoutes = (
     routes: RouteRecordRaw[],
-    permissions: WorkspacePermission[] = []
+    permissions: Permission[] = []
   ): {
     name: string;
-    permissions: WorkspacePermission[];
+    permissions: Permission[];
   }[] => {
     return routes.reduce(
       (list, workspaceRoute) => {
@@ -55,7 +55,7 @@ export const useSidebarItems = () => {
         }
         return list;
       },
-      [] as { name: string; permissions: WorkspacePermission[] }[]
+      [] as { name: string; permissions: Permission[] }[]
     );
   };
 

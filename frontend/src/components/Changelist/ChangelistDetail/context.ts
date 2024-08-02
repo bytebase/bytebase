@@ -8,7 +8,7 @@ import {
   useProjectV1Store,
 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
-import type { ComposedProject, ProjectPermission } from "@/types";
+import type { ComposedProject, Permission } from "@/types";
 import { unknownChangelist, unknownProject } from "@/types";
 import type {
   Changelist,
@@ -77,7 +77,7 @@ export const provideChangelistDetailContext = () => {
     );
   });
 
-  const checkPermission = (permission: ProjectPermission): boolean => {
+  const checkPermission = (permission: Permission): boolean => {
     return (
       hasProjectPermissionV2(project.value, me.value, permission) ||
       extractUserResourceName(changelist.value.creator) === me.value.email
