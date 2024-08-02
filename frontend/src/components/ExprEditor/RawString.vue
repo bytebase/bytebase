@@ -1,7 +1,7 @@
 <!-- eslint-disable vue/no-mutating-props -->
 
 <template>
-  <NInputGroup class="w-full flex items-start gap-x-1 overflow-x-hidden">
+  <NInputGroup class="w-full flex items-start overflow-x-hidden">
     <NInput
       v-model:value="expr.content"
       type="textarea"
