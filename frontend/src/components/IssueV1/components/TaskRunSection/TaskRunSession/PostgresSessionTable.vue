@@ -9,7 +9,6 @@
     />
 
     <div class="pt-2 flex flex-row justify-start items-center">
-      <AlignHorizontalJustifyEndIcon class="w-4 h-auto mr-2 opacity-80" />
       <span class="textlabel">
         {{ $t("issue.task-run.task-run-session.blocking-sessions.self") }}
       </span>
@@ -49,10 +48,7 @@
 </template>
 
 <script setup lang="tsx">
-import {
-  AlignHorizontalJustifyEndIcon,
-  AlignHorizontalJustifyStartIcon,
-} from "lucide-vue-next";
+import { AlignHorizontalJustifyStartIcon } from "lucide-vue-next";
 import { NDataTable, type DataTableColumn } from "naive-ui";
 import { computed } from "vue";
 import {
