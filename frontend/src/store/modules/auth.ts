@@ -10,7 +10,7 @@ import type {
 } from "@/types/proto/v1/auth_service";
 import { UserType } from "@/types/proto/v1/auth_service";
 import { getIntCookie } from "@/utils";
-import { useUserStore } from ".";
+import { useUserStore, useWorkspaceV1Store } from ".";
 
 export const useAuthStore = defineStore("auth_v1", () => {
   const userStore = useUserStore();
@@ -38,6 +38,7 @@ export const useAuthStore = defineStore("auth_v1", () => {
     currentUserId.value = getIntCookie("user");
     if (currentUserId.value) {
       await useUserStore().getOrFetchUserById(String(currentUserId.value));
+      await useWorkspaceV1Store().fetchIamPolicy();
     }
   };
 
@@ -55,6 +56,7 @@ export const useAuthStore = defineStore("auth_v1", () => {
       password: signupInfo.password,
       web: true,
     });
+    await useWorkspaceV1Store().fetchIamPolicy();
   };
 
   const logout = async () => {
@@ -89,6 +91,7 @@ export const useAuthStore = defineStore("auth_v1", () => {
         String(currentUserId.value),
         true // silent
       );
+      await useWorkspaceV1Store().fetchIamPolicy();
     }
   };
 
