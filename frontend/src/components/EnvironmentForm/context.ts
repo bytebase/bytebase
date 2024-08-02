@@ -3,8 +3,9 @@ import { cloneDeep, isEmpty, isEqual } from "lodash-es";
 import { useDialog } from "naive-ui";
 import type { InjectionKey, Ref } from "vue";
 import { provide, inject, computed, ref, watch } from "vue";
+import type { ResourceIdField } from "@/components/v2";
 import { useCurrentUserV1 } from "@/store";
-import type { FeatureType, WorkspacePermission } from "@/types";
+import type { FeatureType, Permission } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import type {
   Environment,
@@ -12,7 +13,6 @@ import type {
 } from "@/types/proto/v1/environment_service";
 import { PolicyType, type Policy } from "@/types/proto/v1/org_policy_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
-import type { ResourceIdField } from "@/components/v2";
 
 export type LocalState = {
   environment: Environment;
@@ -82,7 +82,7 @@ export const provideEnvironmentFormContext = (baseContext: {
     }
   };
 
-  const hasPermission = (permission: WorkspacePermission) => {
+  const hasPermission = (permission: Permission) => {
     return hasWorkspacePermissionV2(me.value, permission);
   };
 

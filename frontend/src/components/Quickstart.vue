@@ -129,7 +129,7 @@ import {
   useUIStateStore,
   useProjectV1Store,
 } from "@/store";
-import type { WorkspacePermission } from "@/types";
+import type { Permission } from "@/types";
 import {
   PresetRoleType,
   UNKNOWN_PROJECT_NAME,
@@ -148,7 +148,7 @@ type IntroItem = {
   done: Ref<boolean>;
   click?: () => void;
   hide?: boolean;
-  requiredPermissions?: WorkspacePermission[];
+  requiredPermissions?: Permission[];
 };
 
 const { t } = useI18n();
