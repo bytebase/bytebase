@@ -69,7 +69,9 @@ func NewGitLab(port int) VCSProvider {
 	projectGroup.POST("/projects/:id/repository/branches", gl.createProjectBranch)
 	projectGroup.POST("/projects/:id/merge_requests", gl.createProjectPullRequest)
 	projectGroup.GET("/projects/:id/merge_requests/:mrID/changes", gl.getMergeRequestChanges)
-	projectGroup.GET("/projects/:id/merge_requests/:mrID/notes", gl.createMergeRequestComment)
+	projectGroup.GET("/projects/:id/merge_requests/:mrID/notes", gl.listMergeRequestComment)
+	projectGroup.POST("/projects/:id/merge_requests/:mrID/notes", gl.createMergeRequestComment)
+	projectGroup.PUT("/projects/:id/merge_requests/:mrID/notes/:note", gl.updateMergeRequestComment)
 
 	return gl
 }
@@ -351,6 +353,19 @@ func (gl *GitLab) getMergeRequestChanges(c echo.Context) error {
 
 func (*GitLab) createMergeRequestComment(echo.Context) error {
 	return nil
+}
+
+func (*GitLab) updateMergeRequestComment(echo.Context) error {
+	return nil
+}
+
+func (*GitLab) listMergeRequestComment(c echo.Context) error {
+	comments := []*gitlab.Comment{}
+	buf, err := json.Marshal(comments)
+	if err != nil {
+		return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to marshal response body: %v", err))
+	}
+	return c.String(http.StatusOK, string(buf))
 }
 
 // SendWebhookPush sends out a webhook for a push event for the GitLab project
