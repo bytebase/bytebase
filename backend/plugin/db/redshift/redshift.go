@@ -352,7 +352,7 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 			statement = getStatementWithResultLimit(statement, queryContext.Limit)
 		}
 
-		_, allQuery, err := base.ValidateSQLForEditor(storepb.Engine_MSSQL, statement)
+		_, allQuery, err := base.ValidateSQLForEditor(storepb.Engine_POSTGRES, statement)
 		if err != nil {
 			return nil, err
 		}
