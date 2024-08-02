@@ -47,13 +47,13 @@ import {
   useSettingV1Store,
 } from "@/store";
 import type { ComposedDatabase } from "@/types";
-import { Engine } from "@/types/proto/v1/common";
 import {
   DatabaseMetadata,
   DatabaseMetadataView,
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto/v1/database_service";
+import { hasSchemaProperty } from "@/utils";
 
 const props = defineProps<{
   database: ComposedDatabase;
@@ -98,7 +98,7 @@ const tableMetadata = computed(() => {
 
 const resourceName = computed(() => {
   if (props.table) {
-    if (hasSchemaProperty.value) {
+    if (hasSchemaProperty(engine.value)) {
       return `${props.schema}.${props.table}`;
     } else {
       return props.table;
@@ -108,18 +108,6 @@ const resourceName = computed(() => {
     return props.schema;
   }
   return props.database.name;
-});
-
-const hasSchemaProperty = computed(() => {
-  return (
-    engine.value === Engine.POSTGRES ||
-    engine.value === Engine.SNOWFLAKE ||
-    engine.value === Engine.ORACLE ||
-    engine.value === Engine.DM ||
-    engine.value === Engine.MSSQL ||
-    engine.value === Engine.REDSHIFT ||
-    engine.value === Engine.RISINGWAVE
-  );
 });
 
 onMounted(async () => {

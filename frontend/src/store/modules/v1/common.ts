@@ -1,4 +1,4 @@
-import type { ResourceId, Project, SheetId } from "@/types";
+import type { ResourceId } from "@/types";
 import { UNKNOWN_ID } from "@/types";
 
 export const userNamePrefix = "users/";
@@ -130,22 +130,6 @@ export const getProjectNameAndDatabaseGroupName = (name: string): string[] => {
   }
 
   return tokens;
-};
-
-export const getProjectPathByLegacyProject = (project: Project): string => {
-  return `${projectNamePrefix}${project.resourceId}`;
-};
-
-export const getSheetPathByLegacyProject = (
-  project: Project,
-  sheetId: SheetId
-): string => {
-  if (sheetId === UNKNOWN_ID) {
-    return "";
-  }
-  return `${getProjectPathByLegacyProject(
-    project
-  )}/${sheetNamePrefix}${sheetId}`;
 };
 
 export const getProjectPathFromRepoName = (repoName: string): string => {

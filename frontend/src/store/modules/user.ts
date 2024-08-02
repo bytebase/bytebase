@@ -3,7 +3,6 @@ import { defineStore } from "pinia";
 import { computed, ref, watch } from "vue";
 import { authServiceClient } from "@/grpcweb";
 import {
-  type PrincipalType,
   PresetRoleType,
   PRESET_WORKSPACE_ROLES,
   ALL_USERS_USER_EMAIL,
@@ -218,16 +217,4 @@ export const getUpdateMaskFromUsers = (
     updateMask.push("phone");
   }
   return updateMask;
-};
-
-export const convertUserTypeToPrincipalType = (
-  userType: UserType
-): PrincipalType => {
-  if (userType === UserType.SYSTEM_BOT) {
-    return "SYSTEM_BOT";
-  } else if (userType === UserType.SERVICE_ACCOUNT) {
-    return "SERVICE_ACCOUNT";
-  } else {
-    return "END_USER";
-  }
 };

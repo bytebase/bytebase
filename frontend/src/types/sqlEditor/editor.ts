@@ -1,5 +1,4 @@
 import type * as monaco from "monaco-editor";
-import type { EngineType } from "@/types";
 import { Engine } from "../proto/v1/common";
 
 export type EditorModel = monaco.editor.ITextModel;
@@ -27,17 +26,6 @@ export const EngineToSQLDialectMap = new Map<Engine, SQLDialect>([
   [Engine.SPANNER, "SPANNER"],
   [Engine.OCEANBASE, "OCEANBASE"],
 ]);
-
-export const languageOfEngine = (engine?: EngineType | "unknown"): Language => {
-  if (engine === "MONGODB") {
-    return "javascript";
-  }
-  if (engine === "REDIS") {
-    return "redis";
-  }
-
-  return "sql";
-};
 
 export const languageOfEngineV1 = (engine?: Engine): Language => {
   if (engine === Engine.MONGODB) {
