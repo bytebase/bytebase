@@ -22,7 +22,6 @@ const _ = grpc.SupportPackageIsVersion9
 const (
 	InstanceService_GetInstance_FullMethodName        = "/bytebase.v1.InstanceService/GetInstance"
 	InstanceService_ListInstances_FullMethodName      = "/bytebase.v1.InstanceService/ListInstances"
-	InstanceService_SearchInstances_FullMethodName    = "/bytebase.v1.InstanceService/SearchInstances"
 	InstanceService_CreateInstance_FullMethodName     = "/bytebase.v1.InstanceService/CreateInstance"
 	InstanceService_UpdateInstance_FullMethodName     = "/bytebase.v1.InstanceService/UpdateInstance"
 	InstanceService_DeleteInstance_FullMethodName     = "/bytebase.v1.InstanceService/DeleteInstance"
@@ -41,8 +40,6 @@ const (
 type InstanceServiceClient interface {
 	GetInstance(ctx context.Context, in *GetInstanceRequest, opts ...grpc.CallOption) (*Instance, error)
 	ListInstances(ctx context.Context, in *ListInstancesRequest, opts ...grpc.CallOption) (*ListInstancesResponse, error)
-	// Deprecated.
-	SearchInstances(ctx context.Context, in *SearchInstancesRequest, opts ...grpc.CallOption) (*SearchInstancesResponse, error)
 	CreateInstance(ctx context.Context, in *CreateInstanceRequest, opts ...grpc.CallOption) (*Instance, error)
 	UpdateInstance(ctx context.Context, in *UpdateInstanceRequest, opts ...grpc.CallOption) (*Instance, error)
 	DeleteInstance(ctx context.Context, in *DeleteInstanceRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
@@ -77,16 +74,6 @@ func (c *instanceServiceClient) ListInstances(ctx context.Context, in *ListInsta
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ListInstancesResponse)
 	err := c.cc.Invoke(ctx, InstanceService_ListInstances_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *instanceServiceClient) SearchInstances(ctx context.Context, in *SearchInstancesRequest, opts ...grpc.CallOption) (*SearchInstancesResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(SearchInstancesResponse)
-	err := c.cc.Invoke(ctx, InstanceService_SearchInstances_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -199,8 +186,6 @@ func (c *instanceServiceClient) SyncSlowQueries(ctx context.Context, in *SyncSlo
 type InstanceServiceServer interface {
 	GetInstance(context.Context, *GetInstanceRequest) (*Instance, error)
 	ListInstances(context.Context, *ListInstancesRequest) (*ListInstancesResponse, error)
-	// Deprecated.
-	SearchInstances(context.Context, *SearchInstancesRequest) (*SearchInstancesResponse, error)
 	CreateInstance(context.Context, *CreateInstanceRequest) (*Instance, error)
 	UpdateInstance(context.Context, *UpdateInstanceRequest) (*Instance, error)
 	DeleteInstance(context.Context, *DeleteInstanceRequest) (*emptypb.Empty, error)
@@ -226,9 +211,6 @@ func (UnimplementedInstanceServiceServer) GetInstance(context.Context, *GetInsta
 }
 func (UnimplementedInstanceServiceServer) ListInstances(context.Context, *ListInstancesRequest) (*ListInstancesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListInstances not implemented")
-}
-func (UnimplementedInstanceServiceServer) SearchInstances(context.Context, *SearchInstancesRequest) (*SearchInstancesResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method SearchInstances not implemented")
 }
 func (UnimplementedInstanceServiceServer) CreateInstance(context.Context, *CreateInstanceRequest) (*Instance, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateInstance not implemented")
@@ -313,24 +295,6 @@ func _InstanceService_ListInstances_Handler(srv interface{}, ctx context.Context
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(InstanceServiceServer).ListInstances(ctx, req.(*ListInstancesRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _InstanceService_SearchInstances_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(SearchInstancesRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(InstanceServiceServer).SearchInstances(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: InstanceService_SearchInstances_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(InstanceServiceServer).SearchInstances(ctx, req.(*SearchInstancesRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -529,10 +493,6 @@ var InstanceService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListInstances",
 			Handler:    _InstanceService_ListInstances_Handler,
-		},
-		{
-			MethodName: "SearchInstances",
-			Handler:    _InstanceService_SearchInstances_Handler,
 		},
 		{
 			MethodName: "CreateInstance",

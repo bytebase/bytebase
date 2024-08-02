@@ -9,6 +9,7 @@ import { extractInstanceResourceName } from "@/utils";
 import { useEnvironmentV1Store } from "./environment";
 
 export const useInstanceV1Store = defineStore("instance_v1", () => {
+  const listInitialized = ref(false);
   const instanceMapByName = reactive(new Map<string, ComposedInstance>());
 
   const reset = () => {
@@ -45,12 +46,19 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
     });
     return composedInstances;
   };
-  const listInstances = async (showDeleted = false, parent?: string) => {
+  const listInstances = async (showDeleted = false, force?: boolean) => {
+    if (!force && listInitialized.value) {
+      return showDeleted
+        ? instanceList.value
+        : instanceList.value.filter(
+            (instance) => instance.state === State.ACTIVE
+          );
+    }
     const { instances } = await instanceServiceClient.listInstances({
       showDeleted,
-      parent,
     });
     const composed = await upsertInstances(instances);
+    listInitialized.value = true;
     return composed;
   };
   const createInstance = async (instance: Instance) => {
@@ -158,6 +166,7 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
 
   return {
     reset,
+    listInitialized,
     instanceList,
     activeInstanceList,
     activateInstanceCount,
@@ -178,19 +187,18 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
 
 export const useInstanceV1List = (
   showDeleted: MaybeRef<boolean> = false,
-  forceUpdate = false,
-  parent: MaybeRef<string | undefined> = undefined
+  forceUpdate = false
 ) => {
   const store = useInstanceV1Store();
   const ready = ref(false);
   watchEffect(() => {
-    if (!unref(forceUpdate)) {
+    if (!unref(forceUpdate) && store.listInitialized) {
       ready.value = true;
       return;
     }
 
     ready.value = false;
-    store.listInstances(unref(showDeleted), unref(parent)).then(() => {
+    store.listInstances(unref(showDeleted)).then(() => {
       ready.value = true;
     });
   });
