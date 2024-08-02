@@ -62,7 +62,9 @@ func NewAzure(port int) VCSProvider {
 
 	repo := e.Group("/:organization/:project/_apis/git/repositories/:repo")
 	repo.GET("/stats/branches", az.getRepositoryBranch)
+	repo.GET("/pullRequests/:pr/threads", az.listIssueComments)
 	repo.POST("/pullRequests/:pr/threads", az.createIssueComment)
+	repo.PATCH("/pullRequests/:pr/threads/:thread", az.updateIssueComment)
 	repo.GET("/commits/:commit/changes", az.getCommitChanges)
 	repo.GET("/items", az.readRepositoryFile)
 
@@ -217,7 +219,23 @@ func (az *Azure) getRepositoryBranch(c echo.Context) error {
 	return az.getResponse(c, r.refs[fmt.Sprintf("refs/heads/%s", branchName)])
 }
 
+func (*Azure) listIssueComments(c echo.Context) error {
+	type listComment struct {
+		Value []*azure.PullRequestThread `json:"value"`
+	}
+
+	buf, err := json.Marshal(listComment{})
+	if err != nil {
+		return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to marshal response body for list comments: %v", err))
+	}
+	return c.String(http.StatusOK, string(buf))
+}
+
 func (*Azure) createIssueComment(echo.Context) error {
+	return nil
+}
+
+func (*Azure) updateIssueComment(echo.Context) error {
 	return nil
 }
 
