@@ -61,7 +61,6 @@ func RunStatement(ctx context.Context, engineType storepb.Engine, conn *sql.Conn
 			}
 
 			queryResult = BuildAffectedRowsResult(affectedRows)
-			results = append(results, queryResult)
 		} else {
 			queryResult = adminQuery(ctx, engineType, conn, runningStatement)
 		}
