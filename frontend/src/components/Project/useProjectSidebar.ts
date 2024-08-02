@@ -1,7 +1,6 @@
 import { startCase } from "lodash-es";
 import {
   Database,
-  GitBranch,
   CircleDot,
   Users,
   Link,
@@ -13,10 +12,7 @@ import {
   SquareGanttChartIcon,
 } from "lucide-vue-next";
 import { computed, h, unref } from "vue";
-import type {
-  RouteLocationNormalizedLoaded,
-  RouteRecordRaw,
-} from "vue-router";
+import type { RouteLocationNormalizedLoaded, RouteRecordRaw } from "vue-router";
 import { useRoute } from "vue-router";
 import type { SidebarItem } from "@/components/CommonSidebar.vue";
 import { t } from "@/plugins/i18n";
@@ -32,7 +28,6 @@ import projectV1Routes, {
   PROJECT_V1_ROUTE_MEMBERS,
   PROJECT_V1_ROUTE_SETTINGS,
   PROJECT_V1_ROUTE_WEBHOOKS,
-  PROJECT_V1_ROUTE_BRANCHES,
   PROJECT_V1_ROUTE_CHANGELISTS,
   PROJECT_V1_ROUTE_DATABASE_GROUPS,
   PROJECT_V1_ROUTE_DEPLOYMENT_CONFIG,
@@ -177,13 +172,6 @@ export const useProjectSidebar = (
         title: t("export-center.self"),
         icon: () => h(DownloadIcon),
         path: PROJECT_V1_ROUTE_EXPORT_CENTER,
-        type: "div",
-        hide: isDefaultProject.value,
-      },
-      {
-        title: t("common.branches"),
-        path: PROJECT_V1_ROUTE_BRANCHES,
-        icon: () => h(GitBranch),
         type: "div",
         hide: isDefaultProject.value,
       },
