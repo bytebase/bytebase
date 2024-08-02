@@ -5,3 +5,13 @@ export type EditorPanelView =
   | "VIEWS"
   | "FUNCTIONS"
   | "PROCEDURES";
+
+export type EditorPanelViewState = {
+  view: EditorPanelView;
+};
+
+export const defaultViewState = (): EditorPanelViewState => {
+  return {
+    view: "CODE",
+  };
+};

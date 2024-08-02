@@ -2,7 +2,7 @@
   <div class="flex h-full w-full flex-col justify-start items-stretch">
     <ConnectionPathBar class="border-b" />
 
-    <Panels>
+    <Panels content-class="flex flex-col">
       <template #code-panel>
         <template v-if="!tab || tab.editMode === 'SQL-EDITOR'">
           <EditorAction @execute="handleExecute" />

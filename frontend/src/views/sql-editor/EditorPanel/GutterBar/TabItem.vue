@@ -29,8 +29,9 @@ import {
   ViewIcon,
   ProcedureIcon,
 } from "@/components/Icon";
-import { useButton } from "./common";
+import { useEditorPanelContext } from "../context";
 import type { EditorPanelView } from "../types";
+import { useButton } from "./common";
 
 const props = defineProps<{
   view: EditorPanelView;
@@ -39,8 +40,9 @@ const props = defineProps<{
 
 const { t } = useI18n();
 
+const { viewState } = useEditorPanelContext();
 const { props: buttonProps, style: buttonStyle } = useButton({
-  active: computed(() => props.view === "VIEWS"),
+  active: computed(() => props.view === viewState.value?.view),
   disabled: toRef(props, "disabled"),
 });
 
