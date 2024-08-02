@@ -4,7 +4,6 @@ import { shallowReactive } from "vue";
 import {
   PRESET_WORKSPACE_ROLES,
   type ComposedProject,
-  type ProjectPermission,
   type ComposedUser,
   type Permission,
 } from "@/types";
@@ -14,7 +13,7 @@ import { useRoleStore } from "../role";
 export const usePermissionStore = defineStore("permission", () => {
   const projectRoleListCache = shallowReactive(new Map<string, string[]>());
   const projectPermissionsCache = shallowReactive(
-    new Map<string, Set<ProjectPermission>>()
+    new Map<string, Set<Permission>>()
   );
   const workspaceLevelPermissionsMapByUserName = shallowReactive(
     new Map<string, Set<Permission>>()
@@ -78,7 +77,7 @@ export const usePermissionStore = defineStore("permission", () => {
       roles
         .map((role) => roleStore.getRoleByName(role))
         .flatMap(
-          (role) => (role ? role.permissions : []) as ProjectPermission[]
+          (role) => (role ? role.permissions : []) as Permission[]
         )
     );
     projectPermissionsCache.set(key, permissions);

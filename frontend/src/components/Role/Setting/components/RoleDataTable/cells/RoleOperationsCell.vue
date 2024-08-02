@@ -28,7 +28,7 @@ import {
   useUserStore,
   pushNotification,
 } from "@/store";
-import type { WorkspacePermission } from "@/types";
+import type { Permission } from "@/types";
 import type { Role } from "@/types/proto/v1/role_service";
 import { hasWorkspacePermissionV2, isCustomRole } from "@/utils";
 import { useCustomRoleSettingContext } from "../../../context";
@@ -48,7 +48,7 @@ const userStore = useUserStore();
 const $dialog = useDialog();
 const { t } = useI18n();
 
-const hasPermission = (permission: WorkspacePermission) => {
+const hasPermission = (permission: Permission) => {
   return hasWorkspacePermissionV2(currentUser.value, permission);
 };
 
