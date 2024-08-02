@@ -1,10 +1,10 @@
 package masker
 
 import (
-	"database/sql"
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
@@ -63,7 +63,11 @@ func TestRangeMask(t *testing.T) {
 		{
 			description: "Single slice",
 			input: &MaskData{
-				Data: &sql.NullString{String: "012345678", Valid: true},
+				Data: &v1pb.RowValue{
+					Kind: &v1pb.RowValue_StringValue{
+						StringValue: "012345678",
+					},
+				},
 			},
 			slices: []*MaskRangeSlice{
 				{
@@ -81,7 +85,11 @@ func TestRangeMask(t *testing.T) {
 		{
 			description: "Single slice - only keep 1st raw value",
 			input: &MaskData{
-				Data: &sql.NullString{String: "012345678", Valid: true},
+				Data: &v1pb.RowValue{
+					Kind: &v1pb.RowValue_StringValue{
+						StringValue: "012345678",
+					},
+				},
 			},
 			slices: []*MaskRangeSlice{
 				{
@@ -99,7 +107,11 @@ func TestRangeMask(t *testing.T) {
 		{
 			description: "Single slice - mask last 3 value",
 			input: &MaskData{
-				Data: &sql.NullString{String: "012345678", Valid: true},
+				Data: &v1pb.RowValue{
+					Kind: &v1pb.RowValue_StringValue{
+						StringValue: "012345678",
+					},
+				},
 			},
 			slices: []*MaskRangeSlice{
 				{
@@ -117,7 +129,11 @@ func TestRangeMask(t *testing.T) {
 		{
 			description: "Multiple slices",
 			input: &MaskData{
-				Data: &sql.NullString{String: "012345678", Valid: true},
+				Data: &v1pb.RowValue{
+					Kind: &v1pb.RowValue_StringValue{
+						StringValue: "012345678",
+					},
+				},
 			},
 			slices: []*MaskRangeSlice{
 				{
@@ -140,7 +156,11 @@ func TestRangeMask(t *testing.T) {
 		{
 			description: "Multiple slices",
 			input: &MaskData{
-				Data: &sql.NullString{String: "012345678", Valid: true},
+				Data: &v1pb.RowValue{
+					Kind: &v1pb.RowValue_StringValue{
+						StringValue: "012345678",
+					},
+				},
 			},
 			slices: []*MaskRangeSlice{
 				{
@@ -163,7 +183,11 @@ func TestRangeMask(t *testing.T) {
 		{
 			description: "Mask slices out of data range",
 			input: &MaskData{
-				Data: &sql.NullString{String: "0123", Valid: true},
+				Data: &v1pb.RowValue{
+					Kind: &v1pb.RowValue_StringValue{
+						StringValue: "0123",
+					},
+				},
 			},
 			slices: []*MaskRangeSlice{
 				{
@@ -186,7 +210,11 @@ func TestRangeMask(t *testing.T) {
 		{
 			description: "Emoji",
 			input: &MaskData{
-				Data: &sql.NullString{String: "😂😠😡😊😂", Valid: true},
+				Data: &v1pb.RowValue{
+					Kind: &v1pb.RowValue_StringValue{
+						StringValue: "😂😠😡😊😂",
+					},
+				},
 			},
 			slices: []*MaskRangeSlice{
 				{
@@ -218,7 +246,13 @@ func TestInnerOuterMask(t *testing.T) {
 		want   *v1pb.RowValue
 	}{
 		{
-			input: &MaskData{Data: &sql.NullString{String: "012345678", Valid: true}},
+			input: &MaskData{
+				Data: &v1pb.RowValue{
+					Kind: &v1pb.RowValue_StringValue{
+						StringValue: "012345678",
+					},
+				},
+			},
 			masker: InnerOuterMasker{
 				maskerType:   InnerOuterMaskerTypeOuter,
 				prefixLen:    1,
@@ -230,7 +264,13 @@ func TestInnerOuterMask(t *testing.T) {
 			},
 		},
 		{
-			input: &MaskData{Data: &sql.NullBool{Bool: true, Valid: true}},
+			input: &MaskData{
+				Data: &v1pb.RowValue{
+					Kind: &v1pb.RowValue_Int64Value{
+						Int64Value: 1,
+					},
+				},
+			},
 			masker: InnerOuterMasker{
 				maskerType:   InnerOuterMaskerTypeOuter,
 				prefixLen:    2,
@@ -238,11 +278,17 @@ func TestInnerOuterMask(t *testing.T) {
 				substitution: "*",
 			},
 			want: &v1pb.RowValue{
-				Kind: &v1pb.RowValue_StringValue{StringValue: "******"},
+				Kind: &v1pb.RowValue_StringValue{StringValue: "1"},
 			},
 		},
 		{
-			input: &MaskData{Data: &sql.NullFloat64{Float64: 123.4567, Valid: true}},
+			input: &MaskData{
+				Data: &v1pb.RowValue{
+					Kind: &v1pb.RowValue_DoubleValue{
+						DoubleValue: 123.4567,
+					},
+				},
+			},
 			masker: InnerOuterMasker{
 				maskerType:   InnerOuterMaskerTypeOuter,
 				prefixLen:    1,
@@ -254,7 +300,13 @@ func TestInnerOuterMask(t *testing.T) {
 			},
 		},
 		{
-			input: &MaskData{Data: &sql.NullInt64{Int64: 27865874362589245, Valid: true}},
+			input: &MaskData{
+				Data: &v1pb.RowValue{
+					Kind: &v1pb.RowValue_Int64Value{
+						Int64Value: 27865874362589245,
+					},
+				},
+			},
 			masker: InnerOuterMasker{
 				maskerType:   InnerOuterMaskerTypeInner,
 				prefixLen:    6,
@@ -266,7 +318,13 @@ func TestInnerOuterMask(t *testing.T) {
 			},
 		},
 		{
-			input: &MaskData{Data: &sql.NullString{String: "😂😠😡😊😂", Valid: true}},
+			input: &MaskData{
+				Data: &v1pb.RowValue{
+					Kind: &v1pb.RowValue_StringValue{
+						StringValue: "😂😠😡😊😂",
+					},
+				},
+			},
 			masker: InnerOuterMasker{
 				maskerType:   InnerOuterMaskerTypeInner,
 				prefixLen:    1,
@@ -278,7 +336,13 @@ func TestInnerOuterMask(t *testing.T) {
 			},
 		},
 		{
-			input: &MaskData{Data: &sql.NullString{String: "", Valid: false}},
+			input: &MaskData{
+				Data: &v1pb.RowValue{
+					Kind: &v1pb.RowValue_NullValue{
+						NullValue: structpb.NullValue_NULL_VALUE,
+					},
+				},
+			},
 			masker: InnerOuterMasker{
 				maskerType:   InnerOuterMaskerTypeInner,
 				prefixLen:    1,
@@ -290,7 +354,13 @@ func TestInnerOuterMask(t *testing.T) {
 			},
 		},
 		{
-			input: &MaskData{Data: &sql.NullString{String: "1234", Valid: true}},
+			input: &MaskData{
+				Data: &v1pb.RowValue{
+					Kind: &v1pb.RowValue_StringValue{
+						StringValue: "1234",
+					},
+				},
+			},
 			masker: InnerOuterMasker{
 				maskerType:   InnerOuterMaskerTypeInner,
 				prefixLen:    1000,
@@ -302,7 +372,13 @@ func TestInnerOuterMask(t *testing.T) {
 			},
 		},
 		{
-			input: &MaskData{Data: &sql.NullString{String: "Love this LMG", Valid: true}},
+			input: &MaskData{
+				Data: &v1pb.RowValue{
+					Kind: &v1pb.RowValue_StringValue{
+						StringValue: "Love this LMG",
+					},
+				},
+			},
 			masker: InnerOuterMasker{
 				maskerType:   InnerOuterMaskerTypeInner,
 				prefixLen:    -1,
