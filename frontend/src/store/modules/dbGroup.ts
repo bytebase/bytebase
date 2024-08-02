@@ -1,5 +1,5 @@
 import { computedAsync } from "@vueuse/core";
-import { isEqual } from "lodash-es";
+import { head, isEqual } from "lodash-es";
 import { defineStore } from "pinia";
 import type { MaybeRef } from "vue";
 import { computed, ref, unref } from "vue";
@@ -184,12 +184,17 @@ export const useDBGroupStore = defineStore("db-group", () => {
     validateOnly?: boolean;
   }) => {
     const createdDatabaseGroup =
-      await databaseGroupServiceClient.createDatabaseGroup({
-        parent: projectName,
-        databaseGroup,
-        databaseGroupId,
-        validateOnly,
-      });
+      await databaseGroupServiceClient.createDatabaseGroup(
+        {
+          parent: projectName,
+          databaseGroup,
+          databaseGroupId,
+          validateOnly,
+        },
+        {
+          silent: validateOnly,
+        }
+      );
 
     if (!validateOnly) {
       const composedData = await batchComposeDatabaseGroup([
@@ -209,10 +214,10 @@ export const useDBGroupStore = defineStore("db-group", () => {
   }) => {
     const celStrings = await batchConvertParsedExprToCELString([
       ParsedExpr.fromJSON({
-        expr: buildCELExpr(expr),
+        expr: await buildCELExpr(expr),
       }),
     ]);
-    const expression = celStrings[0] || "true";
+    const expression = head(celStrings) || "true"; // Fallback to true.
     const validateOnlyResourceId = `creating-database-group-${Date.now()}`;
 
     const result = await createDatabaseGroup({

@@ -4,6 +4,7 @@ import type { Factor, Operator } from "@/plugins/cel";
 
 export type ExprEditorContext = {
   allowAdmin: Ref<boolean>;
+  enableRawExpression: Ref<boolean>;
   factorList: Ref<Factor[]>;
   factorSupportDropdown: Ref<Factor[]>;
   factorOptionsMap: Ref<Map<Factor, SelectOption[]>>;

@@ -1,7 +1,7 @@
 import { first, last } from "lodash-es";
 import { computed } from "vue";
 import type { ConditionGroupExpr } from "@/plugins/cel";
-import { wrapAsGroup } from "@/plugins/cel";
+import { ExprType, wrapAsGroup } from "@/plugins/cel";
 import { t, te } from "@/plugins/i18n";
 import { useEnvironmentV1List } from "@/store";
 import { PresetRiskLevel } from "@/types";
@@ -46,6 +46,7 @@ export const useRuleTemplates = () => {
       templates.push({
         key: "environment-prod-high",
         expr: wrapAsGroup({
+          type: ExprType.Condition,
           operator: "_==_",
           args: [
             "environment_id",
@@ -61,6 +62,7 @@ export const useRuleTemplates = () => {
       templates.push({
         key: "environment-dev-low",
         expr: wrapAsGroup({
+          type: ExprType.Condition,
           operator: "_==_",
           args: [
             "environment_id",
@@ -77,9 +79,11 @@ export const useRuleTemplates = () => {
       templates.push({
         key: "dml-in-environment-prod-10k-rows-high",
         expr: wrapAsGroup({
+          type: ExprType.ConditionGroup,
           operator: "_&&_",
           args: [
             {
+              type: ExprType.Condition,
               operator: "_==_",
               args: [
                 "environment_id",
@@ -87,10 +91,12 @@ export const useRuleTemplates = () => {
               ],
             },
             {
+              type: ExprType.Condition,
               operator: "_>_",
               args: ["affected_rows", 10000],
             },
             {
+              type: ExprType.Condition,
               operator: "@in",
               args: ["sql_type", ["UPDATE", "DELETE"]],
             },
@@ -107,6 +113,7 @@ export const useRuleTemplates = () => {
       templates.push({
         key: "create-database-in-environment-prod-moderate",
         expr: wrapAsGroup({
+          type: ExprType.Condition,
           operator: "_==_",
           args: [
             "environment_id",

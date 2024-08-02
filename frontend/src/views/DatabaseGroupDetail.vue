@@ -69,6 +69,7 @@
           <ExprEditor
             :expr="state.expr!"
             :allow-admin="false"
+            :enable-raw-expression="true"
             :factor-list="FactorList"
             :factor-support-dropdown="factorSupportDropdown"
             :factor-options-map="DatabaseGroupFactorOptionsMap(project)"

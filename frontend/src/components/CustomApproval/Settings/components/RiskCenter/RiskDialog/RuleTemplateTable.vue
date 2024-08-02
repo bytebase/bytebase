@@ -137,7 +137,7 @@ const applyTemplate = async (template: RuleTemplate) => {
   const { mode } = dialog.value!;
   const expressions = await batchConvertParsedExprToCELString([
     ParsedExpr.fromJSON({
-      expr: buildCELExpr(expr),
+      expr: await buildCELExpr(expr),
     }),
   ]);
   const overrides: Partial<Risk> = {

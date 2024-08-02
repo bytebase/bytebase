@@ -3,28 +3,18 @@
     <span class="text-base mr-2">{{ $t("common.databases") }}</span>
     <BBSpin v-if="loading" class="opacity-60" />
   </div>
-  <div
-    class="w-full border rounded min-h-[20rem] max-h-[24rem] overflow-y-auto"
+
+  <NCollapse
+    class="border p-2 rounded-lg"
+    :expanded-names="collapseExpandedNames"
+    @update:expanded-names="onExpandedNamesChange"
   >
-    <div
-      class="sticky top-0 z-[1] w-full flex flex-row justify-between items-center px-2 py-1 bg-gray-100 border-b cursor-pointer"
-      @click="state.showMatchedDatabaseList = !state.showMatchedDatabaseList"
+    <NCollapseItem
+      :title="$t('database-group.matched-database')"
+      :disabled="matchedDatabaseList.length === 0"
+      name="matched"
     >
-      <div class="text-sm font-medium">
-        <span>{{ $t("database-group.matched-database") }}</span>
-        <span class="ml-1 text-gray-400"
-          >({{ matchedDatabaseList.length }})</span
-        >
-      </div>
-      <button class="opacity-60">
-        <heroicons-outline:chevron-right
-          v-if="!state.showMatchedDatabaseList"
-          class="w-5 h-auto"
-        />
-        <heroicons-outline:chevron-down v-else class="w-5 h-auto" />
-      </button>
-    </div>
-    <div v-show="state.showMatchedDatabaseList" class="w-full">
+      <template #header-extra>{{ matchedDatabaseList.length }}</template>
       <NVirtualList
         class="w-full py-1 max-h-[12rem]"
         :item-size="28"
@@ -56,28 +46,13 @@
           </div>
         </template>
       </NVirtualList>
-    </div>
-    <div
-      class="sticky top-7 z-[1] w-full flex flex-row justify-between items-center px-2 py-1 bg-gray-100 border-y cursor-pointer"
-      @click="
-        state.showUnmatchedDatabaseList = !state.showUnmatchedDatabaseList
-      "
+    </NCollapseItem>
+    <NCollapseItem
+      :title="$t('database-group.unmatched-database')"
+      :disabled="unmatchedDatabaseList.length === 0"
+      name="unmatched"
     >
-      <div class="text-sm font-medium">
-        <span>{{ $t("database-group.unmatched-database") }}</span>
-        <span class="ml-1 text-gray-400"
-          >({{ unmatchedDatabaseList.length }})</span
-        >
-      </div>
-      <button class="opacity-60">
-        <heroicons-outline:chevron-right
-          v-if="!state.showUnmatchedDatabaseList"
-          class="w-5 h-auto"
-        />
-        <heroicons-outline:chevron-down v-else class="w-5 h-auto" />
-      </button>
-    </div>
-    <div v-show="state.showUnmatchedDatabaseList" class="w-full">
+      <template #header-extra>{{ unmatchedDatabaseList.length }}</template>
       <NVirtualList
         class="w-full py-1 max-h-[12rem]"
         :item-size="28"
@@ -109,32 +84,44 @@
           </div>
         </template>
       </NVirtualList>
-    </div>
-  </div>
+    </NCollapseItem>
+  </NCollapse>
 </template>
 
 <script lang="ts" setup>
-import { NEllipsis, NVirtualList } from "naive-ui";
-import { reactive } from "vue";
+import { NEllipsis, NVirtualList, NCollapse, NCollapseItem } from "naive-ui";
+import { ref, watch } from "vue";
 import { BBSpin } from "@/bbkit";
 import type { ComposedDatabase } from "@/types";
-import { InstanceV1EngineIcon } from "../v2";
 import { FeatureBadge } from "../FeatureGuard";
+import { InstanceV1EngineIcon } from "../v2";
 
-interface LocalState {
-  showMatchedDatabaseList: boolean;
-  showUnmatchedDatabaseList: boolean;
-}
-
-defineProps<{
+const props = defineProps<{
   matchedDatabaseList: ComposedDatabase[];
   unmatchedDatabaseList: ComposedDatabase[];
   loading?: boolean;
   hideTitle?: boolean;
 }>();
 
-const state = reactive<LocalState>({
-  showMatchedDatabaseList: true,
-  showUnmatchedDatabaseList: true,
-});
+const collapseExpandedNames = ref<string[]>([]);
+
+const onExpandedNamesChange = (expandedNames: string[]) => {
+  collapseExpandedNames.value = expandedNames;
+};
+
+watch(
+  () => props.matchedDatabaseList.length,
+  () => {
+    collapseExpandedNames.value = [];
+    if (props.matchedDatabaseList.length > 0) {
+      collapseExpandedNames.value.push("matched");
+    }
+    if (props.unmatchedDatabaseList.length > 0) {
+      collapseExpandedNames.value.push("unmatched");
+    }
+  },
+  {
+    immediate: true,
+  }
+);
 </script>

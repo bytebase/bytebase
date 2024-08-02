@@ -3493,6 +3493,7 @@
       "description-tips": "Una condición es una regla que se puede configurar mediante una expresión. Por ejemplo, la condición \"Entorno es prod\" coincidirá con las incidencias ejecutadas en el entorno \"prod\".",
       "add": "Agregar condición",
       "add-group": "Agregar grupo de condiciones",
+      "add-raw-expression": "Agregar expresión cruda",
       "group": {
         "or": {
           "description": "Cualquiera de los siguientes es verdadero..."
