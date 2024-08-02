@@ -2,24 +2,17 @@
 package util
 
 import (
-	"context"
 	"database/sql"
 	"fmt"
-	"log/slog"
 	"strings"
-	"time"
 
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/types/known/durationpb"
 
 	mssqldb "github.com/microsoft/go-mssqldb"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/masker"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
@@ -29,66 +22,6 @@ var noneMasker = masker.NewNoneMasker()
 // FormatErrorWithQuery will format the error with failed query.
 func FormatErrorWithQuery(err error, query string) error {
 	return errors.Wrapf(err, "failed to execute query %q", query)
-}
-
-// RunStatement runs a SQL statement in a given connection.
-func RunStatement(ctx context.Context, engineType storepb.Engine, conn *sql.Conn, statement string) ([]*v1pb.QueryResult, error) {
-	singleSQLs, err := base.SplitMultiSQL(engineType, statement)
-	if err != nil {
-		return nil, err
-	}
-	singleSQLs = base.FilterEmptySQL(singleSQLs)
-	if len(singleSQLs) == 0 {
-		return nil, nil
-	}
-
-	var results []*v1pb.QueryResult
-	for _, singleSQL := range singleSQLs {
-		var queryResult *v1pb.QueryResult
-		startTime := time.Now()
-		runningStatement := singleSQL.Text
-		if engineType == storepb.Engine_MYSQL {
-			runningStatement = MySQLPrependBytebaseAppComment(singleSQL.Text)
-		}
-		if mysqlparser.IsMySQLAffectedRowsStatement(singleSQL.Text) {
-			sqlResult, err := conn.ExecContext(ctx, runningStatement)
-			if err != nil {
-				return nil, err
-			}
-			affectedRows, err := sqlResult.RowsAffected()
-			if err != nil {
-				slog.Info("rowsAffected returns error", log.BBError(err))
-			}
-
-			queryResult = BuildAffectedRowsResult(affectedRows)
-		} else {
-			queryResult = adminQuery(ctx, engineType, conn, runningStatement)
-		}
-		queryResult.Statement = singleSQL.Text
-		queryResult.Latency = durationpb.New(time.Since(startTime))
-		results = append(results, queryResult)
-	}
-
-	return results, nil
-}
-
-func adminQuery(ctx context.Context, dbType storepb.Engine, conn *sql.Conn, statement string) *v1pb.QueryResult {
-	rows, err := conn.QueryContext(ctx, statement)
-	if err != nil {
-		return &v1pb.QueryResult{
-			Error: err.Error(),
-		}
-	}
-	defer rows.Close()
-
-	result, err := RowsToQueryResult(dbType, rows)
-	if err != nil {
-		return &v1pb.QueryResult{
-			Error: err.Error(),
-		}
-	}
-	result.Statement = statement
-	return result
 }
 
 func BuildAffectedRowsResult(affectedRows int64) *v1pb.QueryResult {
