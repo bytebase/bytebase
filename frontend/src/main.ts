@@ -18,15 +18,12 @@ import { router } from "./router";
 import { AUTH_SIGNIN_MODULE } from "./router/auth";
 import { pinia, pushNotification, useAuthStore } from "./store";
 import {
-  environmentName,
   humanizeTs,
   humanizeDuration,
   humanizeDurationV1,
   humanizeDate,
-  instanceName,
   isDev,
   isRelease,
-  projectName,
   sizeToFit,
   urlfy,
 } from "./utils";
@@ -136,9 +133,6 @@ app.config.globalProperties.isRelease = isRelease();
 app.config.globalProperties.sizeToFit = sizeToFit;
 app.config.globalProperties.urlfy = urlfy;
 app.config.globalProperties.isEmpty = isEmpty;
-app.config.globalProperties.environmentName = environmentName;
-app.config.globalProperties.projectName = projectName;
-app.config.globalProperties.instanceName = instanceName;
 
 app
   // Need to use a directive on the element.

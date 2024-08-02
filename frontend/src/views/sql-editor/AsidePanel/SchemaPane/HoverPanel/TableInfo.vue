@@ -30,7 +30,7 @@ import type {
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto/v1/database_service";
-import { bytesToString } from "@/utils";
+import { bytesToString, hasSchemaProperty } from "@/utils";
 import InfoItem from "./InfoItem.vue";
 
 const props = defineProps<{
@@ -42,13 +42,9 @@ const props = defineProps<{
 
 const instanceEngine = computed(() => props.db.instanceResource.engine);
 
-const hasSchemaProperty = computed(() => {
-  return [Engine.POSTGRES, Engine.RISINGWAVE].includes(instanceEngine.value);
-});
-
 const name = computed(() => {
   const { schema, table } = props;
-  if (hasSchemaProperty.value) {
+  if (hasSchemaProperty(instanceEngine.value)) {
     return `${schema.name}.${table.name}`;
   }
   return table.name;

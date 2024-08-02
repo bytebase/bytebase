@@ -143,9 +143,12 @@ import {
   useDBSchemaV1Store,
 } from "@/store";
 import { DEFAULT_PROJECT_NAME, defaultProject } from "@/types";
-import { Engine } from "@/types/proto/v1/common";
 import { TableMetadata } from "@/types/proto/v1/database_service";
-import { hasProjectPermissionV2, isDatabaseV1Queryable } from "@/utils";
+import {
+  hasProjectPermissionV2,
+  hasSchemaProperty,
+  isDatabaseV1Queryable,
+} from "@/utils";
 import ColumnDataTable from "./ColumnDataTable/index.vue";
 import { SQLEditorButtonV1 } from "./DatabaseDetail";
 
@@ -210,14 +213,8 @@ const allowQuery = computed(() => {
   return isDatabaseV1Queryable(database.value, currentUserV1.value);
 });
 
-const hasSchemaProperty = computed(
-  () =>
-    instanceEngine.value === Engine.POSTGRES ||
-    instanceEngine.value === Engine.RISINGWAVE
-);
-
 const getTableName = (tableName: string) => {
-  if (hasSchemaProperty.value) {
+  if (hasSchemaProperty(instanceEngine.value)) {
     return `"${props.schemaName}"."${tableName}"`;
   }
   return tableName;
