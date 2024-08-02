@@ -4,7 +4,8 @@
 
     <template v-if="!tab || tab.editMode === 'SQL-EDITOR'">
       <EditorAction @execute="handleExecute" />
-      <template v-if="tab">
+      <div v-if="tab" class="w-full flex-1 flex flex-row items-stretch">
+        <GutterBar />
         <Suspense>
           <SQLEditor @execute="handleExecute" />
           <template #fallback>
@@ -15,7 +16,7 @@
             </div>
           </template>
         </Suspense>
-      </template>
+      </div>
       <template v-else>
         <Welcome />
       </template>
@@ -49,6 +50,7 @@ import {
   SaveSheetModal,
 } from "../../EditorCommon";
 import { useSQLEditorContext } from "../../context";
+import GutterBar from "../GutterBar";
 import Welcome from "../Welcome.vue";
 
 const SQLEditor = defineAsyncComponent(() => import("./SQLEditor.vue"));
