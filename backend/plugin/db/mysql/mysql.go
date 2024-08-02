@@ -471,7 +471,7 @@ func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string
 					return nil, util.FormatErrorWithQuery(err, statement)
 				}
 				defer rows.Close()
-				r, err := util.RowsToQueryResult(storepb.Engine_MYSQL, rows)
+				r, err := util.RowsToQueryResult(rows)
 				if err != nil {
 					return nil, err
 				}
