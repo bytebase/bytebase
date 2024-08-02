@@ -69,8 +69,6 @@ type Profile struct {
 	Lsp             bool
 	PreUpdateBackup bool
 
-	DevelopmentAudit bool
-
 	// can be set in runtime
 	RuntimeDebug atomic.Bool
 }
