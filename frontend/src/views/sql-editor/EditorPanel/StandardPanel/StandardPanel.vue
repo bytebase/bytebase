@@ -2,10 +2,8 @@
   <div class="flex h-full w-full flex-col justify-start items-stretch">
     <ConnectionPathBar class="border-b" />
 
-    <div class="flex-1 flex items-stretch overflow-hidden">
-      <GutterBar class="border-r border-control-border" />
-
-      <div class="flex-1">
+    <Panels>
+      <template #code-panel>
         <template v-if="!tab || tab.editMode === 'SQL-EDITOR'">
           <EditorAction @execute="handleExecute" />
           <div v-if="tab" class="w-full flex-1 flex flex-row items-stretch">
@@ -31,8 +29,8 @@
             @apply-statement="handleApplyStatement"
           />
         </Suspense>
-      </div>
-    </div>
+      </template>
+    </Panels>
 
     <ExecutingHintModal />
 
@@ -55,7 +53,7 @@ import {
   SaveSheetModal,
 } from "../../EditorCommon";
 import { useSQLEditorContext } from "../../context";
-import GutterBar from "../GutterBar";
+import Panels from "../Panels";
 import Welcome from "../Welcome.vue";
 
 const SQLEditor = defineAsyncComponent(() => import("./SQLEditor.vue"));
