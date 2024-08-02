@@ -81,13 +81,6 @@ export interface GetInstanceRequest {
 
 export interface ListInstancesRequest {
   /**
-   * Deprecated.
-   * The parent parameter's value depends on the target resource for the request.
-   * - instances.list(): An empty string. This method doesn't require a resource; it simply returns all instances the user has access to.
-   * - projects.instances.list(): projects/{PROJECT_ID}. This method lists all instances that have databases in the project.
-   */
-  parent: string;
-  /**
    * The maximum number of instances to return. The service may return fewer than
    * this value.
    * If unspecified, at most 50 instances will be returned.
@@ -114,22 +107,6 @@ export interface ListInstancesResponse {
    * If this field is omitted, there are no subsequent pages.
    */
   nextPageToken: string;
-}
-
-export interface SearchInstancesRequest {
-  /**
-   * The parent parameter's value depends on the target resource for the request.
-   * - instances.list(): An empty string. This method doesn't require a resource; it simply returns all instances the user has access to.
-   * - projects.instances.list(): projects/{PROJECT_ID}. This method lists all instances that have databases in the project.
-   */
-  parent: string;
-  /** Show deleted instances if specified. */
-  showDeleted: boolean;
-}
-
-export interface SearchInstancesResponse {
-  /** The instances from the specified request. */
-  instances: Instance[];
 }
 
 export interface CreateInstanceRequest {
@@ -787,14 +764,11 @@ export const GetInstanceRequest = {
 };
 
 function createBaseListInstancesRequest(): ListInstancesRequest {
-  return { parent: "", pageSize: 0, pageToken: "", showDeleted: false };
+  return { pageSize: 0, pageToken: "", showDeleted: false };
 }
 
 export const ListInstancesRequest = {
   encode(message: ListInstancesRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.parent !== "") {
-      writer.uint32(34).string(message.parent);
-    }
     if (message.pageSize !== 0) {
       writer.uint32(8).int32(message.pageSize);
     }
@@ -814,13 +788,6 @@ export const ListInstancesRequest = {
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
-        case 4:
-          if (tag !== 34) {
-            break;
-          }
-
-          message.parent = reader.string();
-          continue;
         case 1:
           if (tag !== 8) {
             break;
@@ -853,7 +820,6 @@ export const ListInstancesRequest = {
 
   fromJSON(object: any): ListInstancesRequest {
     return {
-      parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
       pageSize: isSet(object.pageSize) ? globalThis.Number(object.pageSize) : 0,
       pageToken: isSet(object.pageToken) ? globalThis.String(object.pageToken) : "",
       showDeleted: isSet(object.showDeleted) ? globalThis.Boolean(object.showDeleted) : false,
@@ -862,9 +828,6 @@ export const ListInstancesRequest = {
 
   toJSON(message: ListInstancesRequest): unknown {
     const obj: any = {};
-    if (message.parent !== "") {
-      obj.parent = message.parent;
-    }
     if (message.pageSize !== 0) {
       obj.pageSize = Math.round(message.pageSize);
     }
@@ -882,7 +845,6 @@ export const ListInstancesRequest = {
   },
   fromPartial(object: DeepPartial<ListInstancesRequest>): ListInstancesRequest {
     const message = createBaseListInstancesRequest();
-    message.parent = object.parent ?? "";
     message.pageSize = object.pageSize ?? 0;
     message.pageToken = object.pageToken ?? "";
     message.showDeleted = object.showDeleted ?? false;
@@ -962,141 +924,6 @@ export const ListInstancesResponse = {
     const message = createBaseListInstancesResponse();
     message.instances = object.instances?.map((e) => Instance.fromPartial(e)) || [];
     message.nextPageToken = object.nextPageToken ?? "";
-    return message;
-  },
-};
-
-function createBaseSearchInstancesRequest(): SearchInstancesRequest {
-  return { parent: "", showDeleted: false };
-}
-
-export const SearchInstancesRequest = {
-  encode(message: SearchInstancesRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.parent !== "") {
-      writer.uint32(10).string(message.parent);
-    }
-    if (message.showDeleted === true) {
-      writer.uint32(16).bool(message.showDeleted);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): SearchInstancesRequest {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseSearchInstancesRequest();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.parent = reader.string();
-          continue;
-        case 2:
-          if (tag !== 16) {
-            break;
-          }
-
-          message.showDeleted = reader.bool();
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): SearchInstancesRequest {
-    return {
-      parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
-      showDeleted: isSet(object.showDeleted) ? globalThis.Boolean(object.showDeleted) : false,
-    };
-  },
-
-  toJSON(message: SearchInstancesRequest): unknown {
-    const obj: any = {};
-    if (message.parent !== "") {
-      obj.parent = message.parent;
-    }
-    if (message.showDeleted === true) {
-      obj.showDeleted = message.showDeleted;
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<SearchInstancesRequest>): SearchInstancesRequest {
-    return SearchInstancesRequest.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<SearchInstancesRequest>): SearchInstancesRequest {
-    const message = createBaseSearchInstancesRequest();
-    message.parent = object.parent ?? "";
-    message.showDeleted = object.showDeleted ?? false;
-    return message;
-  },
-};
-
-function createBaseSearchInstancesResponse(): SearchInstancesResponse {
-  return { instances: [] };
-}
-
-export const SearchInstancesResponse = {
-  encode(message: SearchInstancesResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    for (const v of message.instances) {
-      Instance.encode(v!, writer.uint32(10).fork()).ldelim();
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): SearchInstancesResponse {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseSearchInstancesResponse();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.instances.push(Instance.decode(reader, reader.uint32()));
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): SearchInstancesResponse {
-    return {
-      instances: globalThis.Array.isArray(object?.instances)
-        ? object.instances.map((e: any) => Instance.fromJSON(e))
-        : [],
-    };
-  },
-
-  toJSON(message: SearchInstancesResponse): unknown {
-    const obj: any = {};
-    if (message.instances?.length) {
-      obj.instances = message.instances.map((e) => Instance.toJSON(e));
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<SearchInstancesResponse>): SearchInstancesResponse {
-    return SearchInstancesResponse.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<SearchInstancesResponse>): SearchInstancesResponse {
-    const message = createBaseSearchInstancesResponse();
-    message.instances = object.instances?.map((e) => Instance.fromPartial(e)) || [];
     return message;
   },
 };
@@ -3671,148 +3498,7 @@ export const InstanceServiceDefinition = {
           8410: [new Uint8Array([0])],
           800010: [new Uint8Array([17, 98, 98, 46, 105, 110, 115, 116, 97, 110, 99, 101, 115, 46, 108, 105, 115, 116])],
           800016: [new Uint8Array([1])],
-          578365826: [
-            new Uint8Array([
-              52,
-              90,
-              35,
-              18,
-              33,
-              47,
-              118,
-              49,
-              47,
-              123,
-              112,
-              97,
-              114,
-              101,
-              110,
-              116,
-              61,
-              112,
-              114,
-              111,
-              106,
-              101,
-              99,
-              116,
-              115,
-              47,
-              42,
-              125,
-              47,
-              105,
-              110,
-              115,
-              116,
-              97,
-              110,
-              99,
-              101,
-              115,
-              18,
-              13,
-              47,
-              118,
-              49,
-              47,
-              105,
-              110,
-              115,
-              116,
-              97,
-              110,
-              99,
-              101,
-              115,
-            ]),
-          ],
-        },
-      },
-    },
-    /** Deprecated. */
-    searchInstances: {
-      name: "SearchInstances",
-      requestType: SearchInstancesRequest,
-      requestStream: false,
-      responseType: SearchInstancesResponse,
-      responseStream: false,
-      options: {
-        _unknownFields: {
-          8410: [new Uint8Array([0])],
-          800016: [new Uint8Array([2])],
-          578365826: [
-            new Uint8Array([
-              66,
-              90,
-              42,
-              18,
-              40,
-              47,
-              118,
-              49,
-              47,
-              123,
-              112,
-              97,
-              114,
-              101,
-              110,
-              116,
-              61,
-              112,
-              114,
-              111,
-              106,
-              101,
-              99,
-              116,
-              115,
-              47,
-              42,
-              125,
-              47,
-              105,
-              110,
-              115,
-              116,
-              97,
-              110,
-              99,
-              101,
-              115,
-              58,
-              115,
-              101,
-              97,
-              114,
-              99,
-              104,
-              18,
-              20,
-              47,
-              118,
-              49,
-              47,
-              105,
-              110,
-              115,
-              116,
-              97,
-              110,
-              99,
-              101,
-              115,
-              58,
-              115,
-              101,
-              97,
-              114,
-              99,
-              104,
-            ]),
-          ],
+          578365826: [new Uint8Array([15, 18, 13, 47, 118, 49, 47, 105, 110, 115, 116, 97, 110, 99, 101, 115])],
         },
       },
     },

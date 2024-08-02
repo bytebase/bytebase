@@ -107,8 +107,7 @@ const instanceV1Store = useInstanceV1Store();
 const environmentList = useEnvironmentV1List();
 // Users are workspace admins in Bytebase Editor. So we don't need to check permission here.
 const { instanceList: rawInstanceV1List, ready } = useInstanceV1List(
-  /* showDeleted */ false,
-  /* forceUpdate */ true
+  /* showDeleted */ false
 );
 const hideAdvancedFeatures = useAppFeature(
   "bb.feature.sql-editor.hide-advance-instance-features"
