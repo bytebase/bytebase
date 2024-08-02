@@ -62,15 +62,6 @@ func (exec *DataUpdateExecutor) RunOnce(ctx context.Context, driverCtx context.C
 		return true, nil, errors.Wrap(err, "invalid database data update payload")
 	}
 
-	instance, err := exec.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
-	if err != nil {
-		return true, nil, err
-	}
-	database, err := exec.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: task.DatabaseID})
-	if err != nil {
-		return true, nil, err
-	}
-
 	sheetID := int(payload.SheetId)
 	statement, err := exec.store.GetSheetStatementByID(ctx, sheetID)
 	if err != nil {
@@ -86,30 +77,6 @@ func (exec *DataUpdateExecutor) RunOnce(ctx context.Context, driverCtx context.C
 		// Save prior backup detail to task run result.
 		result.PriorBackupDetail = priorBackupDetail
 	}
-	// sync database schema anyways
-	exec.store.CreateTaskRunLogS(ctx, taskRunUID, time.Now(), exec.profile.DeployID, &storepb.TaskRunLog{
-		Type:              storepb.TaskRunLog_DATABASE_SYNC_START,
-		DatabaseSyncStart: &storepb.TaskRunLog_DatabaseSyncStart{},
-	})
-	if err := exec.schemaSyncer.SyncDatabaseSchema(ctx, database, false /* force */); err != nil {
-		exec.store.CreateTaskRunLogS(ctx, taskRunUID, time.Now(), exec.profile.DeployID, &storepb.TaskRunLog{
-			Type: storepb.TaskRunLog_DATABASE_SYNC_END,
-			DatabaseSyncEnd: &storepb.TaskRunLog_DatabaseSyncEnd{
-				Error: err.Error(),
-			},
-		})
-		slog.Error("failed to sync database schema",
-			slog.String("instanceName", instance.ResourceID),
-			slog.String("databaseName", database.DatabaseName),
-			log.BBError(err),
-		)
-	}
-	exec.store.CreateTaskRunLogS(ctx, taskRunUID, time.Now(), exec.profile.DeployID, &storepb.TaskRunLog{
-		Type: storepb.TaskRunLog_DATABASE_SYNC_END,
-		DatabaseSyncEnd: &storepb.TaskRunLog_DatabaseSyncEnd{
-			Error: "",
-		},
-	})
 	return terminated, result, err
 }
 
