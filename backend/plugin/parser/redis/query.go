@@ -46,20 +46,20 @@ func init() {
 	base.RegisterQueryValidator(storepb.Engine_REDIS, validateQuery)
 }
 
-func validateQuery(statement string) (bool, error) {
+func validateQuery(statement string) (bool, bool, error) {
 	lines := strings.Split(statement, "\n")
 	for _, line := range lines {
 		fields, err := shlex.Split(line)
 		if err != nil {
-			return false, errors.Wrapf(err, "failed to split command %s", line)
+			return false, false, errors.Wrapf(err, "failed to split command %s", line)
 		}
 		if len(fields) == 0 {
 			continue
 		}
 		command := strings.ToLower(fields[0])
 		if !readCommands[command] {
-			return false, nil
+			return false, false, nil
 		}
 	}
-	return true, nil
+	return true, true, nil
 }

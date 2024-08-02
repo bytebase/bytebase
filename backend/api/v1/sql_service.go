@@ -1057,7 +1057,7 @@ func (s *SQLService) prepareRelatedMessage(ctx context.Context, requestName stri
 }
 
 func validateQueryRequest(instance *store.InstanceMessage, statement string) error {
-	ok, err := base.ValidateSQLForEditor(instance.Engine, statement)
+	ok, _, err := base.ValidateSQLForEditor(instance.Engine, statement)
 	if err != nil {
 		syntaxErr, ok := err.(*base.SyntaxError)
 		if ok {
