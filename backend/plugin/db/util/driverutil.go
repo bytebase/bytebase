@@ -9,11 +9,8 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
 
-	mssqldb "github.com/microsoft/go-mssqldb"
-
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/masker"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -42,30 +39,69 @@ func BuildAffectedRowsResult(affectedRows int64) *v1pb.QueryResult {
 	}
 }
 
-func RowsToQueryResult(dbType storepb.Engine, rows *sql.Rows) (*v1pb.QueryResult, error) {
+func RowsToQueryResult(rows *sql.Rows) (*v1pb.QueryResult, error) {
 	columnNames, err := rows.Columns()
 	if err != nil {
 		return nil, err
 	}
-
 	columnTypes, err := rows.ColumnTypes()
 	if err != nil {
 		return nil, err
 	}
-
+	// DatabaseTypeName returns the database system name of the column type.
+	// refer: https://pkg.go.dev/database/sql#ColumnType.DatabaseTypeName
 	var columnTypeNames []string
 	for _, v := range columnTypes {
-		// DatabaseTypeName returns the database system name of the column type.
-		// refer: https://pkg.go.dev/database/sql#ColumnType.DatabaseTypeName
 		columnTypeNames = append(columnTypeNames, strings.ToUpper(v.DatabaseTypeName()))
 	}
-
 	result := &v1pb.QueryResult{
 		ColumnNames:     columnNames,
 		ColumnTypeNames: columnTypeNames,
 	}
-	if err := readRows(result, dbType, rows, columnTypeNames); err != nil {
-		return nil, err
+
+	if len(columnTypeNames) > 0 {
+		for rows.Next() {
+			// isByteValues want to convert StringValue to BytesValue when columnTypeName is BIT or VARBIT
+			isByteValues := make([]bool, len(columnTypeNames))
+			values := make([]any, len(columnTypeNames))
+			for i, v := range columnTypeNames {
+				// TODO(steven need help): Consult a common list of data types from database driver documentation. e.g. MySQL,PostgreSQL.
+				switch v {
+				case "VARCHAR", "TEXT", "UUID", "TIMESTAMP":
+					values[i] = new(sql.NullString)
+				case "BOOL":
+					values[i] = new(sql.NullBool)
+				case "INT", "INTEGER":
+					values[i] = new(sql.NullInt64)
+				case "FLOAT", "DOUBLE":
+					values[i] = new(sql.NullFloat64)
+				case "BIT", "VARBIT":
+					isByteValues[i] = true
+					values[i] = new(sql.NullString)
+				default:
+					values[i] = new(sql.NullString)
+				}
+			}
+
+			if err := rows.Scan(values...); err != nil {
+				return nil, err
+			}
+
+			var rowData v1pb.QueryRow
+			for i := range columnTypeNames {
+				rowData.Values = append(rowData.Values, noneMasker.Mask(&masker.MaskData{
+					Data:      values[i],
+					WantBytes: isByteValues[i],
+				}))
+			}
+
+			result.Rows = append(result.Rows, &rowData)
+			n := len(result.Rows)
+			if (n&(n-1) == 0) && proto.Size(result) > common.MaximumSQLResultSize {
+				result.Error = common.MaximumSQLResultSizeExceeded
+				break
+			}
+		}
 	}
 
 	if err := rows.Err(); err != nil {
@@ -75,60 +111,13 @@ func RowsToQueryResult(dbType storepb.Engine, rows *sql.Rows) (*v1pb.QueryResult
 	return result, nil
 }
 
-func readRows(result *v1pb.QueryResult, dbType storepb.Engine, rows *sql.Rows, columnTypeNames []string) error {
-	if len(columnTypeNames) == 0 {
-		// No rows.
-		// The oracle driver will panic if there is no rows such as EXPLAIN PLAN FOR statement.
-		return nil
-	}
-	for rows.Next() {
-		// wantBytesValue want to convert StringValue to BytesValue when columnTypeName is BIT or VARBIT
-		wantBytesValue := make([]bool, len(columnTypeNames))
-		scanArgs := make([]any, len(columnTypeNames))
-		for i, v := range columnTypeNames {
-			// TODO(steven need help): Consult a common list of data types from database driver documentation. e.g. MySQL,PostgreSQL.
-			if dbType == storepb.Engine_MSSQL {
-				scanArgs[i], wantBytesValue[i] = mssqlMakeScanDestByTypeName(v)
-				continue
-			}
-			switch v {
-			case "VARCHAR", "TEXT", "UUID", "TIMESTAMP":
-				scanArgs[i] = new(sql.NullString)
-			case "BOOL":
-				scanArgs[i] = new(sql.NullBool)
-			case "INT", "INTEGER":
-				scanArgs[i] = new(sql.NullInt64)
-			case "FLOAT", "DOUBLE":
-				scanArgs[i] = new(sql.NullFloat64)
-			case "BIT", "VARBIT":
-				wantBytesValue[i] = true
-				scanArgs[i] = new(sql.NullString)
-			default:
-				scanArgs[i] = new(sql.NullString)
-			}
-		}
+// TrimStatement trims the unused characters from the statement for making getStatementWithResultLimit() happy.
+func TrimStatement(statement string) string {
+	return strings.TrimLeft(strings.TrimRight(statement, " \n\t;"), " \n\t")
+}
 
-		if err := rows.Scan(scanArgs...); err != nil {
-			return err
-		}
-
-		var rowData v1pb.QueryRow
-		for i := range columnTypeNames {
-			rowData.Values = append(rowData.Values, noneMasker.Mask(&masker.MaskData{
-				Data:      scanArgs[i],
-				WantBytes: wantBytesValue[i],
-			}))
-		}
-
-		result.Rows = append(result.Rows, &rowData)
-		n := len(result.Rows)
-		if (n&(n-1) == 0) && proto.Size(result) > common.MaximumSQLResultSize {
-			result.Error = common.MaximumSQLResultSizeExceeded
-			return nil
-		}
-	}
-
-	return nil
+func MySQLPrependBytebaseAppComment(statement string) string {
+	return fmt.Sprintf("/*app=bytebase*/ %s", statement)
 }
 
 // ConvertYesNo converts YES/NO to bool.
@@ -142,84 +131,4 @@ func ConvertYesNo(s string) (bool, error) {
 	default:
 		return false, errors.Errorf("unrecognized isNullable type %q", s)
 	}
-}
-
-// TODO(zp): This function should be moved back to the driver-specific package, put it here
-// now to avoid cyclic dependency problem.
-func mssqlMakeScanDestByTypeName(tn string) (dest any, wantByte bool) {
-	switch strings.ToUpper(tn) {
-	case "TINYINT":
-		return new(sql.NullInt64), false
-	case "SMALLINT":
-		return new(sql.NullInt64), false
-	case "INT":
-		return new(sql.NullInt64), false
-	case "BIGINT":
-		return new(sql.NullInt64), false
-	case "REAL":
-		return new(sql.NullFloat64), false
-	case "FLOAT":
-		return new(sql.NullFloat64), false
-	case "VARBINARY":
-		// TODO(zp): Null bytes?
-		return new(sql.NullString), true
-	case "VARCHAR":
-		return new(sql.NullString), false
-	case "NVARCHAR":
-		return new(sql.NullString), false
-	case "BIT":
-		return new(sql.NullBool), false
-	case "DECIMAL":
-		return new(sql.NullString), false
-	case "SMALLMONEY":
-		return new(sql.NullString), false
-	case "MONEY":
-		return new(sql.NullString), false
-
-	// TODO(zp): Scan to string now, switch to use time.Time while masking support it.
-	// // Source values of type [time.Time] may be scanned into values of type
-	// *time.Time, *interface{}, *string, or *[]byte. When converting to
-	// the latter two, [time.RFC3339Nano] is used.
-	case "SMALLDATETIME":
-		return new(sql.NullString), false
-	case "DATETIME":
-		return new(sql.NullString), false
-	case "DATETIME2":
-		return new(sql.NullString), false
-	case "DATE":
-		return new(sql.NullString), false
-	case "TIME":
-		return new(sql.NullString), false
-	case "DATETIMEOFFSET":
-		return new(sql.NullString), false
-
-	case "CHAR":
-		return new(sql.NullString), false
-	case "NCHAR":
-		return new(sql.NullString), false
-	case "UNIQUEIDENTIFIER":
-		return new(mssqldb.NullUniqueIdentifier), false
-	case "XML":
-		return new(sql.NullString), false
-	case "TEXT":
-		return new(sql.NullString), false
-	case "NTEXT":
-		return new(sql.NullString), false
-	case "IMAGE":
-		return new(sql.NullString), true
-	case "BINARY":
-		return new(sql.NullString), true
-	case "SQL_VARIANT":
-		return new(sql.NullString), true
-	}
-	return new(sql.NullString), true
-}
-
-// TrimStatement trims the unused characters from the statement for making getStatementWithResultLimit() happy.
-func TrimStatement(statement string) string {
-	return strings.TrimLeft(strings.TrimRight(statement, " \n\t;"), " \n\t")
-}
-
-func MySQLPrependBytebaseAppComment(statement string) string {
-	return fmt.Sprintf("/*app=bytebase*/ %s", statement)
 }
