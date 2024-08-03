@@ -152,8 +152,8 @@ func runWalkThroughTest(t *testing.T, file string, engineType storepb.Engine, or
 			state = finder.Origin
 		}
 
-		ast, _ := sm.GetAST(engineType, test.Statement)
-		err := state.WalkThrough(ast)
+		asts, _ := sm.GetASTsForChecks(engineType, test.Statement)
+		err := state.WalkThrough(asts)
 		if err != nil {
 			if record {
 				walkThroughError, ok := err.(*WalkThroughError)

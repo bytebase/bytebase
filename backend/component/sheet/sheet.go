@@ -191,7 +191,9 @@ type Result struct {
 	advices []*storepb.Advice
 }
 
-func (sm *Manager) GetAST(dbType storepb.Engine, statement string) (any, []*storepb.Advice) {
+// GetASTsForChecks gets the ASTs of statement with caching, and it should only be used
+// for plan checks because it involves some truncating.
+func (sm *Manager) GetASTsForChecks(dbType storepb.Engine, statement string) (any, []*storepb.Advice) {
 	var result *Result
 	h := xxh3.HashString(statement)
 	key := astHashKey{hash: h, engine: dbType}
@@ -277,6 +279,7 @@ func partiqlSyntaxCheck(statement string) (any, []*storepb.Advice) {
 		return nil, nil
 	}
 
+	// TODO(d): burnout early.
 	return result.Tree, nil
 }
 
@@ -314,6 +317,7 @@ func mssqlSyntaxCheck(statement string) (any, []*storepb.Advice) {
 		return nil, nil
 	}
 
+	// TODO(d): burnout early.
 	return result.Tree, nil
 }
 
@@ -350,6 +354,7 @@ func snowflakeSyntaxCheck(statement string) (any, []*storepb.Advice) {
 		return nil, nil
 	}
 
+	// TODO(d): burnout early.
 	return result.Tree, nil
 }
 
@@ -383,6 +388,7 @@ func oracleSyntaxCheck(statement string) (any, []*storepb.Advice) {
 		}
 	}
 
+	// TODO(d): burnout early.
 	return tree, nil
 }
 
@@ -419,6 +425,10 @@ func postgresSyntaxCheck(statement string) (any, []*storepb.Advice) {
 		if node != nil {
 			res = append(res, node)
 		}
+	}
+	// Burnout if the number of SQL commands exceeds the limit.
+	if len(res) > common.MaximumCommands {
+		res = res[:common.MaximumCommands]
 	}
 	return res, nil
 }
@@ -479,6 +489,10 @@ func mysqlSyntaxCheck(statement string) (any, []*storepb.Advice) {
 		}
 	}
 
+	// Burnout if the number of SQL commands exceeds the limit.
+	if len(res) > common.MaximumCommands {
+		res = res[:common.MaximumCommands]
+	}
 	return res, nil
 }
 
@@ -560,5 +574,9 @@ func tidbSyntaxCheck(statement string) (any, []*storepb.Advice) {
 		baseLine = singleSQL.LastLine
 	}
 
+	// Burnout if the number of SQL commands exceeds the limit.
+	if len(returnNodes) > common.MaximumCommands {
+		returnNodes = returnNodes[:common.MaximumCommands]
+	}
 	return returnNodes, adviceList
 }
