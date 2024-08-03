@@ -4,14 +4,14 @@ import (
 	"context"
 	_ "embed"
 
-	lru "github.com/hashicorp/golang-lru/v2"
 	"github.com/pkg/errors"
+	"gopkg.in/yaml.v3"
 
 	"github.com/bytebase/bytebase/backend/common"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
-	"github.com/bytebase/bytebase/backend/utils"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 //go:embed acl.yaml
@@ -26,19 +26,14 @@ type acl struct {
 }
 
 type Manager struct {
+	// rolePermissions is a map from role to permissions. Key is "roles/{role}".
 	rolePermissions map[string]map[Permission]bool
 	PredefinedRoles []*store.RoleMessage
 	store           *store.Store
 	licenseService  enterprise.LicenseService
-	// user uid: workspace role list
-	userRoleCache *lru.Cache[int, []string]
 }
 
 func NewManager(store *store.Store, licenseService enterprise.LicenseService) (*Manager, error) {
-	userRoleCache, err := lru.New[int, []string](32768)
-	if err != nil {
-		return nil, err
-	}
 	predefinedRoles, err := loadPredefinedRoles()
 	if err != nil {
 		return nil, err
@@ -48,7 +43,6 @@ func NewManager(store *store.Store, licenseService enterprise.LicenseService) (*
 		PredefinedRoles: predefinedRoles,
 		store:           store,
 		licenseService:  licenseService,
-		userRoleCache:   userRoleCache,
 	}
 	return m, nil
 }
@@ -61,22 +55,42 @@ func (m *Manager) CheckPermission(ctx context.Context, p Permission, user *store
 		return true, nil
 	}
 
-	ok, err := m.doCheckPermission(ctx, p, user, projectIDs...)
+	policyMessage, err := m.store.GetWorkspaceIamPolicy(ctx)
 	if err != nil {
-		return false, errors.Wrapf(err, "failed to check permission")
+		return false, err
 	}
-	if ok {
+	if ok := check(user.ID, p, policyMessage.Policy, m.rolePermissions); ok {
 		return true, nil
 	}
-	allUsers, err := m.store.GetUserByID(ctx, api.AllUsersID)
-	if err != nil {
-		return false, errors.Wrapf(err, "failed to get allUsers")
+
+	if len(projectIDs) > 0 {
+		allOK := true
+		for _, projectID := range projectIDs {
+			project, err := m.store.GetProjectV2(ctx, &store.FindProjectMessage{
+				ResourceID:  &projectID,
+				ShowDeleted: true,
+			})
+			if err != nil {
+				return false, err
+			}
+			if project == nil {
+				return false, errors.Errorf("project %q not found", projectID)
+			}
+			policyMessage, err := m.store.GetProjectIamPolicy(ctx, project.UID)
+			if err != nil {
+				return false, err
+			}
+			if ok := check(user.ID, p, policyMessage.Policy, m.rolePermissions); !ok {
+				allOK = false
+				break
+			}
+		}
+		return allOK, nil
 	}
-	return m.doCheckPermission(ctx, p, allUsers, projectIDs...)
+	return false, nil
 }
 
 func (m *Manager) ReloadCache(ctx context.Context) error {
-	m.userRoleCache.Purge()
 	roles, err := m.store.ListRoles(ctx)
 	if err != nil {
 		return err
@@ -85,124 +99,65 @@ func (m *Manager) ReloadCache(ctx context.Context) error {
 
 	rolePermissions := make(map[string]map[Permission]bool)
 	for _, role := range roles {
-		rolePermissions[role.ResourceID] = role.Permissions
+		rolePermissions[common.FormatRole(role.ResourceID)] = role.Permissions
 	}
 	m.rolePermissions = rolePermissions
 	return nil
 }
 
-func (m *Manager) doCheckPermission(ctx context.Context, p Permission, user *store.UserMessage, projectIDs ...string) (bool, error) {
-	workspaceRoles, err := m.getWorkspaceRoles(ctx, user)
-	if err != nil {
-		return false, errors.Wrapf(err, "failed to get workspace roles")
-	}
-	projectRoles, err := m.getProjectRoles(ctx, user, projectIDs)
-	if err != nil {
-		return false, errors.Wrapf(err, "failed to get project roles")
-	}
-	return m.hasPermission(p, workspaceRoles, projectRoles)
-}
-
 // GetPermissions returns all permissions for the given role.
 // Role format is roles/{role}.
-func (m *Manager) GetPermissions(roleName string) (map[Permission]bool, error) {
-	roleID, err := common.GetRoleID(roleName)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get role id from %q", roleName)
-	}
-	permissions, ok := m.rolePermissions[roleID]
+func (m *Manager) GetPermissions(role string) (map[Permission]bool, error) {
+	permissions, ok := m.rolePermissions[role]
 	if !ok {
 		return nil, nil
 	}
 	return permissions, nil
 }
 
-func (m *Manager) hasPermission(p Permission, workspaceRoles []string, projectRoles [][]string) (bool, error) {
-	ok, err := m.hasPermissionOnWorkspace(p, workspaceRoles)
-	if err != nil {
-		return false, errors.Wrapf(err, "failed to check permission on workspace")
-	}
-	if ok {
-		return true, nil
-	}
-	ok, err = m.hasPermissionOnEveryProject(p, projectRoles)
-	if err != nil {
-		return false, errors.Wrapf(err, "failed to check permission on every project")
-	}
-	return ok, nil
-}
-
-func (m *Manager) hasPermissionOnWorkspace(p Permission, workspaceRoles []string) (bool, error) {
-	for _, role := range workspaceRoles {
-		permissions, err := m.GetPermissions(role)
-		if err != nil {
-			return false, errors.Wrapf(err, "failed to get permissions")
+func check(userID int, p Permission, policy *storepb.IamPolicy, rolePermissions map[string]map[Permission]bool) bool {
+	for _, binding := range policy.GetBindings() {
+		permissions, ok := rolePermissions[binding.GetRole()]
+		if !ok {
+			continue
 		}
-		if permissions[p] {
-			return true, nil
+		if !permissions[p] {
+			continue
 		}
-	}
-	return false, nil
-}
-
-func (m *Manager) hasPermissionOnEveryProject(p Permission, projectRoles [][]string) (bool, error) {
-	if len(projectRoles) == 0 {
-		return false, nil
-	}
-	for _, projectRole := range projectRoles {
-		has := false
-		for _, role := range projectRole {
-			permissions, err := m.GetPermissions(role)
-			if err != nil {
-				return false, errors.Wrapf(err, "failed to get permissions")
+		for _, member := range binding.GetMembers() {
+			if member == common.FormatUserUID(userID) {
+				return true
 			}
-			if permissions[p] {
-				has = true
-				break
+			if member == api.AllUsers {
+				return true
 			}
 		}
-		if !has {
-			return false, nil
-		}
 	}
-	return true, nil
+	return false
 }
 
-// getWorkspaceRoles returns roles for the user in the workspace IAM policy.
-func (m *Manager) getWorkspaceRoles(ctx context.Context, user *store.UserMessage) ([]string, error) {
-	if v, ok := m.userRoleCache.Get(user.ID); ok {
-		return v, nil
+func loadPredefinedRoles() ([]*store.RoleMessage, error) {
+	predefinedACL := new(acl)
+	if err := yaml.Unmarshal(aclYaml, predefinedACL); err != nil {
+		return nil, errors.Wrapf(err, "failed to unmarshal predefined acl")
 	}
-	policyMessage, err := m.store.GetWorkspaceIamPolicy(ctx)
-	if err != nil {
-		return nil, err
-	}
-	roles := utils.GetUserRolesInIamPolicy(ctx, m.store, user, policyMessage.Policy)
-	m.userRoleCache.Add(user.ID, roles)
-
-	return roles, nil
-}
-
-func (m *Manager) getProjectRoles(ctx context.Context, user *store.UserMessage, projectIDs []string) ([][]string, error) {
-	var roles [][]string
-	for _, projectID := range projectIDs {
-		project, err := m.store.GetProjectV2(ctx, &store.FindProjectMessage{
-			ResourceID: &projectID,
-		})
+	var roles []*store.RoleMessage
+	for _, role := range predefinedACL.Roles {
+		resourceID, err := common.GetRoleID(role.Name)
 		if err != nil {
 			return nil, err
 		}
-		if project == nil {
-			return nil, errors.Errorf("cannot found project %s", projectID)
+		permissions := make(map[string]bool)
+		for _, p := range role.Permissions {
+			permissions[p] = true
 		}
-
-		policyMessage, err := m.store.GetProjectIamPolicy(ctx, project.UID)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get iam policy for project %q", projectID)
-		}
-
-		projectRoles := utils.GetUserRolesInIamPolicy(ctx, m.store, user, policyMessage.Policy)
-		roles = append(roles, projectRoles)
+		roles = append(roles, &store.RoleMessage{
+			CreatorID:   api.SystemBotID,
+			ResourceID:  resourceID,
+			Name:        role.Title,
+			Description: "",
+			Permissions: permissions,
+		})
 	}
 	return roles, nil
 }
