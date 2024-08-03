@@ -231,6 +231,9 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	}
 	s.secret = secret
 	s.iamManager, err = iam.NewManager(storeInstance, s.licenseService)
+	if err := s.iamManager.ReloadCache(ctx); err != nil {
+		return nil, err
+	}
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create iam manager")
 	}

@@ -13,8 +13,8 @@ func TestPermissionExists(t *testing.T) {
 	predefinedRoles, err := loadPredefinedRoles()
 	a.NoError(err)
 
-	for _, permissions := range predefinedRoles {
-		for p := range permissions {
+	for _, role := range predefinedRoles {
+		for p := range role.Permissions {
 			exist := PermissionsExist(p)
 			a.True(exist, "permission %s is not defined as a constant", p)
 		}

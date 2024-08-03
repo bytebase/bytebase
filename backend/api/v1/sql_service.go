@@ -1098,7 +1098,7 @@ func (s *SQLService) hasDatabaseAccessRights(ctx context.Context, user *store.Us
 
 	bindings := utils.GetUserIAMPolicyBindings(ctx, s.store, user, projectPolicy)
 	for _, binding := range bindings {
-		permissions, err := s.iamManager.GetPermissions(ctx, binding.Role)
+		permissions, err := s.iamManager.GetPermissions(binding.Role)
 		if err != nil {
 			return false, errors.Wrapf(err, "failed to get permissions")
 		}

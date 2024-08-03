@@ -20,12 +20,14 @@ var aclYaml []byte
 type acl struct {
 	Roles []struct {
 		Name        string   `yaml:"name"`
+		Title       string   `yaml:"title"`
 		Permissions []string `yaml:"permissions"`
 	} `yaml:"roles"`
 }
 
 type Manager struct {
-	predefinedRoles map[string]map[Permission]bool
+	rolePermissions map[string]map[Permission]bool
+	PredefinedRoles []*store.RoleMessage
 	store           *store.Store
 	licenseService  enterprise.LicenseService
 	// user uid: workspace role list
@@ -43,12 +45,11 @@ func NewManager(store *store.Store, licenseService enterprise.LicenseService) (*
 	}
 
 	m := &Manager{
-		predefinedRoles: predefinedRoles,
+		PredefinedRoles: predefinedRoles,
 		store:           store,
 		licenseService:  licenseService,
 		userRoleCache:   userRoleCache,
 	}
-	m.ReloadCache()
 	return m, nil
 }
 
@@ -74,8 +75,20 @@ func (m *Manager) CheckPermission(ctx context.Context, p Permission, user *store
 	return m.doCheckPermission(ctx, p, allUsers, projectIDs...)
 }
 
-func (m *Manager) ReloadCache() {
+func (m *Manager) ReloadCache(ctx context.Context) error {
 	m.userRoleCache.Purge()
+	roles, err := m.store.ListRoles(ctx)
+	if err != nil {
+		return err
+	}
+	roles = append(roles, m.PredefinedRoles...)
+
+	rolePermissions := make(map[string]map[Permission]bool)
+	for _, role := range roles {
+		rolePermissions[role.ResourceID] = role.Permissions
+	}
+	m.rolePermissions = rolePermissions
+	return nil
 }
 
 func (m *Manager) doCheckPermission(ctx context.Context, p Permission, user *store.UserMessage, projectIDs ...string) (bool, error) {
@@ -87,47 +100,41 @@ func (m *Manager) doCheckPermission(ctx context.Context, p Permission, user *sto
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to get project roles")
 	}
-	return m.hasPermission(ctx, p, workspaceRoles, projectRoles)
+	return m.hasPermission(p, workspaceRoles, projectRoles)
 }
 
 // GetPermissions returns all permissions for the given role.
 // Role format is roles/{role}.
-func (m *Manager) GetPermissions(ctx context.Context, roleName string) (map[Permission]bool, error) {
-	if permissions, ok := m.predefinedRoles[roleName]; ok {
-		return permissions, nil
-	}
+func (m *Manager) GetPermissions(roleName string) (map[Permission]bool, error) {
 	roleID, err := common.GetRoleID(roleName)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get role id from %q", roleName)
 	}
-	role, err := m.store.GetRole(ctx, roleID)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get role %q", roleID)
-	}
-	if role == nil {
+	permissions, ok := m.rolePermissions[roleID]
+	if !ok {
 		return nil, nil
 	}
-	return role.Permissions, nil
+	return permissions, nil
 }
 
-func (m *Manager) hasPermission(ctx context.Context, p Permission, workspaceRoles []string, projectRoles [][]string) (bool, error) {
-	ok, err := m.hasPermissionOnWorkspace(ctx, p, workspaceRoles)
+func (m *Manager) hasPermission(p Permission, workspaceRoles []string, projectRoles [][]string) (bool, error) {
+	ok, err := m.hasPermissionOnWorkspace(p, workspaceRoles)
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to check permission on workspace")
 	}
 	if ok {
 		return true, nil
 	}
-	ok, err = m.hasPermissionOnEveryProject(ctx, p, projectRoles)
+	ok, err = m.hasPermissionOnEveryProject(p, projectRoles)
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to check permission on every project")
 	}
 	return ok, nil
 }
 
-func (m *Manager) hasPermissionOnWorkspace(ctx context.Context, p Permission, workspaceRoles []string) (bool, error) {
+func (m *Manager) hasPermissionOnWorkspace(p Permission, workspaceRoles []string) (bool, error) {
 	for _, role := range workspaceRoles {
-		permissions, err := m.GetPermissions(ctx, role)
+		permissions, err := m.GetPermissions(role)
 		if err != nil {
 			return false, errors.Wrapf(err, "failed to get permissions")
 		}
@@ -138,14 +145,14 @@ func (m *Manager) hasPermissionOnWorkspace(ctx context.Context, p Permission, wo
 	return false, nil
 }
 
-func (m *Manager) hasPermissionOnEveryProject(ctx context.Context, p Permission, projectRoles [][]string) (bool, error) {
+func (m *Manager) hasPermissionOnEveryProject(p Permission, projectRoles [][]string) (bool, error) {
 	if len(projectRoles) == 0 {
 		return false, nil
 	}
 	for _, projectRole := range projectRoles {
 		has := false
 		for _, role := range projectRole {
-			permissions, err := m.GetPermissions(ctx, role)
+			permissions, err := m.GetPermissions(role)
 			if err != nil {
 				return false, errors.Wrapf(err, "failed to get permissions")
 			}
