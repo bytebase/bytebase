@@ -3,7 +3,6 @@ package iam
 import (
 	"context"
 	_ "embed"
-	"slices"
 
 	lru "github.com/hashicorp/golang-lru/v2"
 	"github.com/pkg/errors"
@@ -78,21 +77,6 @@ func (m *Manager) CheckPermission(ctx context.Context, p Permission, user *store
 		return false, errors.Wrapf(err, "failed to get allUsers")
 	}
 	return m.doCheckPermission(ctx, p, allUsers, projectIDs...)
-}
-
-// CheckUserContainsWorkspaceRoles checks if the user has any of the roles in the workspace IAM policy.
-func (m *Manager) CheckUserContainsWorkspaceRoles(ctx context.Context, user *store.UserMessage, roles ...api.Role) (bool, error) {
-	workspaceRoles, err := m.getWorkspaceRoles(ctx, user)
-	if err != nil {
-		return false, errors.Wrapf(err, "failed to get workspace roles")
-	}
-
-	for _, role := range roles {
-		if slices.Contains(workspaceRoles, common.FormatRole(role.String())) {
-			return true, nil
-		}
-	}
-	return false, nil
 }
 
 func (m *Manager) GetWorkspaceUsersByRole(ctx context.Context, role api.Role) ([]*store.UserMessage, error) {
