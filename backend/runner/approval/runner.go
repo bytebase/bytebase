@@ -341,24 +341,6 @@ func getIssueRisk(ctx context.Context, s *store.Store, sheetManager *sheet.Manag
 	}
 }
 
-func getRiskSourceByTaskType(pipeline *store.PipelineMessage) store.RiskSource {
-	for _, stage := range pipeline.Stages {
-		for _, task := range stage.TaskList {
-			switch task.Type {
-			case api.TaskDatabaseCreate:
-				return store.RiskSourceDatabaseCreate
-			case api.TaskDatabaseSchemaUpdate,
-				api.TaskDatabaseSchemaUpdateSDL,
-				api.TaskDatabaseSchemaUpdateGhostSync:
-				return store.RiskSourceDatabaseSchemaUpdate
-			case api.TaskDatabaseDataUpdate:
-				return store.RiskSourceDatabaseDataUpdate
-			}
-		}
-	}
-	return store.RiskSourceUnknown
-}
-
 func getDatabaseGeneralIssueRisk(ctx context.Context, s *store.Store, sheetManager *sheet.Manager, licenseService enterprise.LicenseService, dbFactory *dbfactory.DBFactory, issue *store.IssueMessage, risks []*store.RiskMessage) (int32, store.RiskSource, bool, error) {
 	if issue.PlanUID == nil {
 		return 0, store.RiskSourceUnknown, false, errors.Errorf("expected plan UID in issue %v", issue.UID)
@@ -369,6 +351,13 @@ func getDatabaseGeneralIssueRisk(ctx context.Context, s *store.Store, sheetManag
 	}
 	if plan == nil {
 		return 0, store.RiskSourceUnknown, false, errors.Errorf("plan %v not found", *issue.PlanUID)
+	}
+
+	// Conclude risk source from task types.
+	riskSource := getRiskSourceFromPlan(plan.Config)
+	// Cannot conclude risk source.
+	if riskSource == store.RiskSourceUnknown {
+		return 0, store.RiskSourceUnknown, true, nil
 	}
 
 	planCheckRuns, err := s.ListPlanCheckRuns(ctx, &store.FindPlanCheckRunMessage{
@@ -393,25 +382,6 @@ func getDatabaseGeneralIssueRisk(ctx context.Context, s *store.Store, sheetManag
 			latestPlanCheckRun[key] = run
 		}
 	}
-	for _, run := range latestPlanCheckRun {
-		// the latest plan check run is not done yet, return done=false
-		if run.Status != store.PlanCheckRunStatusDone {
-			return 0, store.RiskSourceUnknown, false, nil
-		}
-	}
-
-	pipelineCreate, err := apiv1.GetPipelineCreate(ctx, s, sheetManager, licenseService, dbFactory, plan.Config.Steps, issue.Project)
-	if err != nil {
-		return 0, store.RiskSourceUnknown, false, errors.Wrap(err, "failed to get pipeline create")
-	}
-
-	// Conclude risk source from task types.
-	// TODO(d): use type from statement.
-	riskSource := getRiskSourceByTaskType(pipelineCreate)
-	// cannot conclude risk source
-	if riskSource == store.RiskSourceUnknown {
-		return 0, store.RiskSourceUnknown, true, nil
-	}
 
 	// If any plan check run is skipped because of large SQL,
 	// return the max risk level in the risks of the same risk source.
@@ -431,6 +401,18 @@ func getDatabaseGeneralIssueRisk(ctx context.Context, s *store.Store, sheetManag
 				return 0, riskSource, true, nil
 			}
 		}
+	}
+
+	// the latest plan check run is not done yet, return done=false
+	for _, run := range latestPlanCheckRun {
+		if run.Status != store.PlanCheckRunStatusDone {
+			return 0, store.RiskSourceUnknown, false, nil
+		}
+	}
+
+	pipelineCreate, err := apiv1.GetPipelineCreate(ctx, s, sheetManager, licenseService, dbFactory, plan.Config.Steps, issue.Project)
+	if err != nil {
+		return 0, store.RiskSourceUnknown, false, errors.Wrap(err, "failed to get pipeline create")
 	}
 
 	e, err := cel.NewEnv(common.RiskFactors...)
@@ -839,6 +821,25 @@ func getGrantRequestIssueRisk(ctx context.Context, s *store.Store, issue *store.
 	}
 
 	return maxRisk, riskSource, true, nil
+}
+
+func getRiskSourceFromPlan(config *storepb.PlanConfig) store.RiskSource {
+	for _, step := range config.GetSteps() {
+		for _, spec := range step.GetSpecs() {
+			switch v := spec.Config.(type) {
+			case *storepb.PlanConfig_Spec_CreateDatabaseConfig:
+				return store.RiskSourceDatabaseCreate
+			case *storepb.PlanConfig_Spec_ChangeDatabaseConfig:
+				switch v.ChangeDatabaseConfig.Type {
+				case storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE, storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE_GHOST, storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE_SDL:
+					return store.RiskSourceDatabaseSchemaUpdate
+				case storepb.PlanConfig_ChangeDatabaseConfig_DATA:
+					return store.RiskSourceDatabaseDataUpdate
+				}
+			}
+		}
+	}
+	return store.RiskSourceUnknown
 }
 
 func updateIssueApprovalPayload(ctx context.Context, s *store.Store, issue *store.IssueMessage, approval *storepb.IssuePayloadApproval) error {
