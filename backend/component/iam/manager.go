@@ -79,14 +79,6 @@ func (m *Manager) CheckPermission(ctx context.Context, p Permission, user *store
 	return m.doCheckPermission(ctx, p, allUsers, projectIDs...)
 }
 
-func (m *Manager) GetWorkspaceUsersByRole(ctx context.Context, role api.Role) ([]*store.UserMessage, error) {
-	policyMessage, err := m.store.GetWorkspaceIamPolicy(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return utils.GetUsersByRoleInIAMPolicy(ctx, m.store, role, policyMessage.Policy), nil
-}
-
 func (m *Manager) ClearCache() {
 	m.userRoleCache.Purge()
 }

@@ -130,6 +130,11 @@ func (s *SlowQueryWeeklyMailSender) sendEmail(ctx context.Context, now time.Time
 		slog.Error("Failed to list slow query policies", log.BBError(err))
 		return
 	}
+	workspaceIAMPolicy, err := s.store.GetWorkspaceIamPolicy(ctx)
+	if err != nil {
+		slog.Error("Failed to get workspace IAM policy", log.BBError(err))
+		return
+	}
 
 	var activePolicies []*store.PolicyMessage
 	for _, policy := range policies {
@@ -144,45 +149,33 @@ func (s *SlowQueryWeeklyMailSender) sendEmail(ctx context.Context, now time.Time
 	}
 
 	if len(activePolicies) == 0 {
-		users, err := s.iamManager.GetWorkspaceUsersByRole(ctx, api.WorkspaceDBA)
-		if err != nil {
-			slog.Error("Failed to list dba users", log.BBError(err))
-		} else {
-			for _, user := range users {
-				if user.Email == api.SystemBotEmail {
-					continue
-				}
-				if err := s.sendNeedConfigSlowQueryPolicyEmail(storeValue, user.Email, consoleRedirectURL); err != nil {
-					slog.Error("Failed to send need config slow query policy email", slog.String("user", user.Name), slog.String("email", user.Email), log.BBError(err))
-				}
+		users := utils.GetUsersByRoleInIAMPolicy(ctx, s.store, api.WorkspaceDBA, workspaceIAMPolicy.Policy)
+		for _, user := range users {
+			if user.Email == api.SystemBotEmail {
+				continue
+			}
+			if err := s.sendNeedConfigSlowQueryPolicyEmail(storeValue, user.Email, consoleRedirectURL); err != nil {
+				slog.Error("Failed to send need config slow query policy email", slog.String("user", user.Name), slog.String("email", user.Email), log.BBError(err))
 			}
 		}
 
-		users, err = s.iamManager.GetWorkspaceUsersByRole(ctx, api.WorkspaceAdmin)
-		if err != nil {
-			slog.Error("Failed to list owner users", log.BBError(err))
-		} else {
-			for _, user := range users {
-				if err := s.sendNeedConfigSlowQueryPolicyEmail(storeValue, user.Email, consoleRedirectURL); err != nil {
-					slog.Error("Failed to send need config slow query policy email", slog.String("user", user.Name), slog.String("email", user.Email), log.BBError(err))
-				}
+		users = utils.GetUsersByRoleInIAMPolicy(ctx, s.store, api.WorkspaceAdmin, workspaceIAMPolicy.Policy)
+		for _, user := range users {
+			if err := s.sendNeedConfigSlowQueryPolicyEmail(storeValue, user.Email, consoleRedirectURL); err != nil {
+				slog.Error("Failed to send need config slow query policy email", slog.String("user", user.Name), slog.String("email", user.Email), log.BBError(err))
 			}
 		}
 		return
 	}
 
 	if body, err := s.generateWeeklyEmailForDBA(ctx, activePolicies, now, consoleRedirectURL); err == nil {
-		users, err := s.iamManager.GetWorkspaceUsersByRole(ctx, api.WorkspaceDBA)
-		if err != nil {
-			slog.Error("Failed to list dba users", log.BBError(err))
-		} else {
-			for _, user := range users {
-				if user.Email == api.SystemBotEmail {
-					continue
-				}
-				if err := send(storeValue, user.Email, fmt.Sprintf("Database slow query weekly report %s", generateDateRange(now)), body); err != nil {
-					slog.Error("Failed to send need config slow query policy email", slog.String("user", user.Name), slog.String("email", user.Email), log.BBError(err))
-				}
+		users := utils.GetUsersByRoleInIAMPolicy(ctx, s.store, api.WorkspaceDBA, workspaceIAMPolicy.Policy)
+		for _, user := range users {
+			if user.Email == api.SystemBotEmail {
+				continue
+			}
+			if err := send(storeValue, user.Email, fmt.Sprintf("Database slow query weekly report %s", generateDateRange(now)), body); err != nil {
+				slog.Error("Failed to send need config slow query policy email", slog.String("user", user.Name), slog.String("email", user.Email), log.BBError(err))
 			}
 		}
 	} else {
