@@ -191,7 +191,9 @@ type Result struct {
 	advices []*storepb.Advice
 }
 
-func (sm *Manager) GetAST(dbType storepb.Engine, statement string) (any, []*storepb.Advice) {
+// GetASTsForChecks gets the ASTs of statement with caching, and it should only be used
+// for plan checks because it involves some truncating.
+func (sm *Manager) GetASTsForChecks(dbType storepb.Engine, statement string) (any, []*storepb.Advice) {
 	var result *Result
 	h := xxh3.HashString(statement)
 	key := astHashKey{hash: h, engine: dbType}
@@ -210,6 +212,11 @@ func (sm *Manager) GetAST(dbType storepb.Engine, statement string) (any, []*stor
 		return result.ast, result.advices
 	}
 	result.ast, result.advices = syntaxCheck(dbType, statement)
+	// Burn-out if the number of SQL commands exceeds the limit.
+	l, ok := result.ast.([]any)
+	if ok && len(l) > common.MaximumCommands {
+		result.ast = l[:common.MaximumCommands]
+	}
 	return result.ast, result.advices
 }
 
