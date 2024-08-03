@@ -314,6 +314,7 @@ roles:
       - bb.taskRuns.list
   - name: roles/projectDeveloper
     permissions:
+      - bb.auditLogs.search
       - bb.branches.create
       - bb.branches.get
       - bb.branches.list

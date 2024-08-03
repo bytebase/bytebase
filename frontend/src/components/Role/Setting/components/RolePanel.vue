@@ -114,7 +114,7 @@ import { Drawer, DrawerContent, ResourceIdField } from "@/components/v2";
 import { pushNotification, useRoleStore } from "@/store";
 import { roleNamePrefix } from "@/store/modules/v1/common";
 import type { ValidatedMessage } from "@/types";
-import { PROJECT_PERMISSIONS, WORKSPACE_PERMISSIONS } from "@/types";
+import { PERMISSIONS } from "@/types";
 import { Role } from "@/types/proto/v1/role_service";
 import { extractRoleResourceName } from "@/utils";
 import { displayPermissionTitle } from "@/utils/permission";
@@ -159,7 +159,7 @@ const resourceId = computed({
 });
 
 const permissionOptions = computed(() => {
-  return [...WORKSPACE_PERMISSIONS, ...PROJECT_PERMISSIONS].sort().map((p) => ({
+  return PERMISSIONS.sort().map((p) => ({
     label: displayPermissionTitle(p),
     value: p,
   }));
