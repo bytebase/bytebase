@@ -3,8 +3,6 @@ package iam
 import (
 	"context"
 	_ "embed"
-	"slices"
-	"strings"
 
 	lru "github.com/hashicorp/golang-lru/v2"
 	"github.com/pkg/errors"
@@ -81,45 +79,12 @@ func (m *Manager) CheckPermission(ctx context.Context, p Permission, user *store
 	return m.doCheckPermission(ctx, p, allUsers, projectIDs...)
 }
 
-// CheckUserContainsWorkspaceRoles checks if the user has any of the roles in the workspace IAM policy.
-func (m *Manager) CheckUserContainsWorkspaceRoles(ctx context.Context, user *store.UserMessage, roles ...api.Role) (bool, error) {
-	workspaceRoles, err := m.GetWorkspaceRoles(ctx, user)
-	if err != nil {
-		return false, errors.Wrapf(err, "failed to get workspace roles")
-	}
-
-	for _, role := range roles {
-		if slices.Contains(workspaceRoles, common.FormatRole(role.String())) {
-			return true, nil
-		}
-	}
-	return false, nil
-}
-
-func (m *Manager) GetWorkspaceUsersByRole(ctx context.Context, role api.Role) ([]*store.UserMessage, error) {
-	policyMessage, err := m.store.GetWorkspaceIamPolicy(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return utils.GetUsersByRoleInIAMPolicy(ctx, m.store, role, policyMessage.Policy), nil
-}
-
-// See backfillRoleFromRoles.
-func (m *Manager) BackfillWorkspaceRoleForUser(ctx context.Context, user *store.UserMessage) (api.Role, error) {
-	workspaceRoles, err := m.GetWorkspaceRoles(ctx, user)
-	if err != nil {
-		return api.WorkspaceMember, errors.Wrapf(err, "failed to get workspace roles")
-	}
-
-	return backfillRoleFromRoles(workspaceRoles), nil
-}
-
 func (m *Manager) ClearCache() {
 	m.userRoleCache.Purge()
 }
 
 func (m *Manager) doCheckPermission(ctx context.Context, p Permission, user *store.UserMessage, projectIDs ...string) (bool, error) {
-	workspaceRoles, err := m.GetWorkspaceRoles(ctx, user)
+	workspaceRoles, err := m.getWorkspaceRoles(ctx, user)
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to get workspace roles")
 	}
@@ -201,8 +166,8 @@ func (m *Manager) hasPermissionOnEveryProject(ctx context.Context, p Permission,
 	return true, nil
 }
 
-// GetWorkspaceRoles returns roles for the user in the workspace IAM policy.
-func (m *Manager) GetWorkspaceRoles(ctx context.Context, user *store.UserMessage) ([]string, error) {
+// getWorkspaceRoles returns roles for the user in the workspace IAM policy.
+func (m *Manager) getWorkspaceRoles(ctx context.Context, user *store.UserMessage) ([]string, error) {
 	if v, ok := m.userRoleCache.Get(user.ID); ok {
 		return m.getWorkspaceRolesByRBAC(v), nil
 	}
@@ -245,26 +210,4 @@ func (m *Manager) getProjectRoles(ctx context.Context, user *store.UserMessage, 
 		roles = append(roles, projectRoles)
 	}
 	return roles, nil
-}
-
-// backfillRoleFromRoles finds the highest workspace level role from roles.
-func backfillRoleFromRoles(roles []string) api.Role {
-	admin, dba := false, false
-	for _, role := range roles {
-		r := api.Role(strings.TrimPrefix(role, "roles/"))
-		if r == api.WorkspaceAdmin {
-			admin = true
-			break
-		}
-		if r == api.WorkspaceDBA {
-			dba = true
-		}
-	}
-	if admin {
-		return api.WorkspaceAdmin
-	}
-	if dba {
-		return api.WorkspaceDBA
-	}
-	return api.WorkspaceMember
 }

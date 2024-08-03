@@ -943,13 +943,14 @@ func (s *SQLService) accessCheck(
 	limit int32,
 	isAdmin,
 	isExport bool) error {
-	// Check if the caller is admin for exporting with admin mode.
-	role, err := s.iamManager.BackfillWorkspaceRoleForUser(ctx, user)
-	if err != nil {
-		return err
-	}
-	if isAdmin && isExport && (role != api.WorkspaceAdmin && role != api.WorkspaceDBA) {
-		return status.Errorf(codes.PermissionDenied, "only workspace owner and DBA can export data using admin mode")
+	if isExport {
+		ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionDatabasesExport, user)
+		if err != nil {
+			return err
+		}
+		if isAdmin && !ok {
+			return status.Errorf(codes.PermissionDenied, "only users with %s permission on the workspace can export data using admin mode", iam.PermissionDatabasesExport)
+		}
 	}
 
 	for _, span := range spans {

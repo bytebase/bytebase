@@ -62,12 +62,6 @@ func (in *ACLInterceptor) ACLInterceptor(ctx context.Context, request any, serve
 		return nil, status.Errorf(codes.PermissionDenied, err.Error())
 	}
 	if user != nil {
-		// Store workspace role into context.
-		role, err := in.iamManager.BackfillWorkspaceRoleForUser(ctx, user)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to backfill workspace role for user with error: %v", err.Error())
-		}
-		ctx = context.WithValue(ctx, common.RoleContextKey, role)
 		ctx = context.WithValue(ctx, common.UserContextKey, user)
 	}
 
@@ -119,12 +113,6 @@ func (in *ACLInterceptor) ACLStreamInterceptor(srv any, ss grpc.ServerStream, se
 		return status.Errorf(codes.PermissionDenied, err.Error())
 	}
 	if user != nil {
-		// Store workspace role into context.
-		role, err := in.iamManager.BackfillWorkspaceRoleForUser(ctx, user)
-		if err != nil {
-			return status.Errorf(codes.Internal, "failed to backfill workspace role for user with error: %v", err.Error())
-		}
-		ctx = context.WithValue(ctx, common.RoleContextKey, role)
 		ctx = context.WithValue(ctx, common.UserContextKey, user)
 		ss = &overrideStream{ServerStream: ss, childCtx: ctx, iamManager: in.iamManager, store: in.store, user: user, fullMethod: serverInfo.FullMethod}
 	}
