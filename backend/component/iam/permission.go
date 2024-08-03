@@ -128,7 +128,7 @@ const (
 	PermissionTaskRunsList          Permission = "bb.taskRuns.list"
 )
 
-var allWorkspacePermissions = []Permission{
+var allPermissions = []Permission{
 	PermissionEnvironmentsCreate,
 	PermissionEnvironmentsDelete,
 	PermissionEnvironmentsGet,
@@ -191,8 +191,6 @@ var allWorkspacePermissions = []Permission{
 	PermissionSettingsSet,
 	PermissionWorksheetsManage,
 	PermissionWorksheetsGet,
-}
-var allProjectPermissions = []Permission{
 	PermissionAuditLogsExport,
 	PermissionAuditLogsSearch,
 	PermissionBranchesCreate,
@@ -253,49 +251,14 @@ var allProjectPermissions = []Permission{
 	PermissionTaskRunsList,
 }
 
-var allWorkspacePermissionsMap = func() map[Permission]bool {
+var allPermissionsMap = func() map[Permission]bool {
 	m := make(map[Permission]bool)
-	for _, p := range allWorkspacePermissions {
-		m[p] = true
-	}
-	return m
-}()
-
-var allProjectPermissionsMap = func() map[Permission]bool {
-	m := make(map[Permission]bool)
-	for _, p := range allProjectPermissions {
+	for _, p := range allPermissions {
 		m[p] = true
 	}
 	return m
 }()
 
 func PermissionExist(p Permission) bool {
-	if allWorkspacePermissionsMap[p] {
-		return true
-	}
-	if allProjectPermissionsMap[p] {
-		return true
-	}
-	return false
-}
-
-type PermissionLevel string
-
-const (
-	PermissionLevelWorkspace PermissionLevel = "WORKSPACE"
-	PermissionLevelProject   PermissionLevel = "PROJECT"
-)
-
-func (p PermissionLevel) String() string {
-	return string(p)
-}
-
-func GetPermissionLevel(permission Permission) PermissionLevel {
-	if allWorkspacePermissionsMap[permission] {
-		return PermissionLevelWorkspace
-	}
-	if allProjectPermissionsMap[permission] {
-		return PermissionLevelProject
-	}
-	return ""
+	return allPermissionsMap[p]
 }

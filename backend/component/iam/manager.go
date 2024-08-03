@@ -179,9 +179,6 @@ func (m *Manager) hasPermissionOnWorkspace(ctx context.Context, p Permission, wo
 }
 
 func (m *Manager) hasPermissionOnEveryProject(ctx context.Context, p Permission, projectRoles [][]string) (bool, error) {
-	if GetPermissionLevel(p) == PermissionLevelWorkspace {
-		return false, nil
-	}
 	if len(projectRoles) == 0 {
 		return false, nil
 	}
