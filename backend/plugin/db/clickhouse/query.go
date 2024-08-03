@@ -27,8 +27,8 @@ import (
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
-// RunStatement runs a SQL statement.
-func (*Driver) RunStatement(ctx context.Context, conn *sql.Conn, statement string) ([]*v1pb.QueryResult, error) {
+// QueryConn queries a SQL statement in a given connection.
+func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
 	singleSQLs, err := standard.SplitSQL(statement)
 	if err != nil {
 		return nil, err
@@ -40,48 +40,44 @@ func (*Driver) RunStatement(ctx context.Context, conn *sql.Conn, statement strin
 
 	var results []*v1pb.QueryResult
 	for _, singleSQL := range singleSQLs {
+		statement := singleSQL.Text
+		if queryContext != nil && queryContext.Explain {
+			statement = fmt.Sprintf("EXPLAIN %s", statement)
+		} else if queryContext != nil && queryContext.Limit > 0 {
+			statement = getStatementWithResultLimit(statement, queryContext.Limit)
+		}
+
 		startTime := time.Now()
-		result, err := func() (*v1pb.QueryResult, error) {
-			rows, err := conn.QueryContext(ctx, singleSQL.Text)
+		queryResult, err := func() (*v1pb.QueryResult, error) {
+			rows, err := conn.QueryContext(ctx, statement)
 			if err != nil {
 				// ClickHouse will return "driver: bad connection" if we use non-SELECT statement for Query(). We need to ignore the error.
 				// nolint
 				return nil, nil
 			}
 			defer rows.Close()
-
-			result, err := convertRowsToQueryResult(rows)
+			r, err := convertRowsToQueryResult(rows)
 			if err != nil {
-				result = &v1pb.QueryResult{
-					Error: err.Error(),
-				}
+				return nil, err
 			}
-			result.Latency = durationpb.New(time.Since(startTime))
-			result.Statement = singleSQL.Text
-			return result, nil
+			if err := rows.Err(); err != nil {
+				return nil, err
+			}
+			return r, nil
 		}()
+		stop := false
 		if err != nil {
-			return nil, err
+			queryResult = &v1pb.QueryResult{
+				Error: err.Error(),
+			}
+			stop = true
 		}
-
-		results = append(results, result)
-	}
-
-	return results, nil
-}
-
-// QueryConn queries a SQL statement in a given connection.
-func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
-	// TODO(rebelice): implement multi-statement query
-	var results []*v1pb.QueryResult
-
-	result, err := driver.querySingleSQL(ctx, conn, statement, queryContext)
-	if err != nil {
-		results = append(results, &v1pb.QueryResult{
-			Error: err.Error(),
-		})
-	} else {
-		results = append(results, result)
+		queryResult.Statement = statement
+		queryResult.Latency = durationpb.New(time.Since(startTime))
+		results = append(results, queryResult)
+		if stop {
+			break
+		}
 	}
 
 	return results, nil
@@ -91,60 +87,26 @@ func getStatementWithResultLimit(statement string, limit int) string {
 	return fmt.Sprintf("WITH result AS (%s) SELECT * FROM result LIMIT %d;", util.TrimStatement(statement), limit)
 }
 
-func (*Driver) querySingleSQL(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) (*v1pb.QueryResult, error) {
-	startTime := time.Now()
-
-	if queryContext != nil && queryContext.Explain {
-		statement = fmt.Sprintf("EXPLAIN %s", statement)
-	} else if queryContext != nil && queryContext.Limit > 0 {
-		statement = getStatementWithResultLimit(statement, queryContext.Limit)
-	}
-
-	// Clickhouse doesn't support READ ONLY transactions (Error: sql: driver does not support read-only transactions).
-	tx, err := conn.BeginTx(ctx, &sql.TxOptions{})
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-
-	rows, err := tx.QueryContext(ctx, statement)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	result, err := convertRowsToQueryResult(rows)
-	if err != nil {
-		return nil, err
-	}
-	result.Latency = durationpb.New(time.Since(startTime))
-	result.Statement = statement
-
-	return result, err
-}
-
 func convertRowsToQueryResult(rows *sql.Rows) (*v1pb.QueryResult, error) {
 	columnNames, err := rows.Columns()
 	if err != nil {
 		return nil, err
 	}
-
 	columnTypes, err := rows.ColumnTypes()
 	if err != nil {
 		return nil, err
 	}
-
 	var columnTypeNames []string
 	for _, v := range columnTypes {
 		// DatabaseTypeName returns the database system name of the column type.
 		// refer: https://pkg.go.dev/database/sql#ColumnType.DatabaseTypeName
 		columnTypeNames = append(columnTypeNames, strings.ToUpper(v.DatabaseTypeName()))
 	}
-
 	result := &v1pb.QueryResult{
 		ColumnNames:     columnNames,
 		ColumnTypeNames: columnTypeNames,
 	}
+
 	if err := readRows(result, rows, columnTypes, columnTypeNames); err != nil {
 		return nil, err
 	}

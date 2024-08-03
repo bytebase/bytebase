@@ -516,11 +516,6 @@ func convertRows(data []byte) ([]any, error) {
 	return rows, nil
 }
 
-// RunStatement runs a SQL statement in a given connection.
-func (driver *Driver) RunStatement(ctx context.Context, _ *sql.Conn, statement string) ([]*v1pb.QueryResult, error) {
-	return driver.QueryConn(ctx, nil, statement, nil)
-}
-
 func isMongoStatement(statement string) bool {
 	statement = strings.ToLower(statement)
 	if strings.HasPrefix(statement, "db.") {
