@@ -65,10 +65,22 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 	defer wg.Done()
 	slog.Debug(fmt.Sprintf("Approval runner started and will run every %v", approvalRunnerInterval))
 	r.retryFindApprovalTemplate(ctx)
+
 	for {
 		select {
 		case <-ticker.C:
-			r.runOnce(ctx)
+			func() {
+				defer func() {
+					if r := recover(); r != nil {
+						err, ok := r.(error)
+						if !ok {
+							err = errors.Errorf("%v", r)
+						}
+						slog.Error("Approval runner PANIC RECOVER", log.BBError(err), log.BBStack("panic-stack"))
+					}
+				}()
+				r.runOnce(ctx)
+			}()
 		case <-ctx.Done():
 			return
 		}
@@ -76,46 +88,30 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 }
 
 func (r *Runner) runOnce(ctx context.Context) {
-	defer func() {
-		if r := recover(); r != nil {
-			err, ok := r.(error)
-			if !ok {
-				err = errors.Errorf("%v", r)
-			}
-			slog.Error("Approval runner PANIC RECOVER", log.BBError(err), log.BBStack("panic-stack"))
-		}
-	}()
-
-	if err := func() error {
-		risks, err := r.store.ListRisks(ctx)
-		if err != nil {
-			return errors.Wrap(err, "failed to list risks")
-		}
-		approvalSetting, err := r.store.GetWorkspaceApprovalSetting(ctx)
-		if err != nil {
-			return errors.Wrap(err, "failed to get workspace approval setting")
-		}
-
-		var errs error
-		r.stateCfg.ApprovalFinding.Range(func(key, value any) bool {
-			issue, ok := value.(*store.IssueMessage)
-			if !ok {
-				return true
-			}
-			done, err := r.findApprovalTemplateForIssue(ctx, issue, risks, approvalSetting)
-			if err != nil {
-				errs = multierr.Append(errs, errors.Wrapf(err, "failed to find approval template for issue %v", issue.UID))
-			}
-			if err != nil || done {
-				r.stateCfg.ApprovalFinding.Delete(key)
-			}
-			return true
-		})
-
-		return errs
-	}(); err != nil {
-		slog.Error("approval runner", log.BBError(err))
+	risks, err := r.store.ListRisks(ctx)
+	if err != nil {
+		slog.Error("failed to list risks", log.BBError(err))
+		return
 	}
+	approvalSetting, err := r.store.GetWorkspaceApprovalSetting(ctx)
+	if err != nil {
+		slog.Error("failed to get workspace approval setting", log.BBError(err))
+	}
+
+	r.stateCfg.ApprovalFinding.Range(func(key, value any) bool {
+		issue, ok := value.(*store.IssueMessage)
+		if !ok {
+			return true
+		}
+		done, err := r.findApprovalTemplateForIssue(ctx, issue, risks, approvalSetting)
+		if err != nil {
+			slog.Error("failed to find approval template for issue", slog.Int("issue", issue.UID), log.BBError(err))
+		}
+		if err != nil || done {
+			r.stateCfg.ApprovalFinding.Delete(key)
+		}
+		return true
+	})
 }
 
 func (r *Runner) retryFindApprovalTemplate(ctx context.Context) {
