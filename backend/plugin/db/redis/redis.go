@@ -310,8 +310,3 @@ func getResultRow(i int, v any) *v1pb.QueryRow {
 		{Kind: &v1pb.RowValue_StringValue{StringValue: s}}},
 	}
 }
-
-// RunStatement runs a SQL statement in a given connection.
-func (d *Driver) RunStatement(ctx context.Context, _ *sql.Conn, statement string) ([]*v1pb.QueryResult, error) {
-	return d.QueryConn(ctx, nil, statement, nil)
-}
