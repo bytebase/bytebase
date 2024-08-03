@@ -6,7 +6,6 @@ import (
 
 	lru "github.com/hashicorp/golang-lru/v2"
 	"github.com/pkg/errors"
-	"gopkg.in/yaml.v3"
 
 	"github.com/bytebase/bytebase/backend/common"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
@@ -34,32 +33,23 @@ type Manager struct {
 }
 
 func NewManager(store *store.Store, licenseService enterprise.LicenseService) (*Manager, error) {
-	predefinedACL := new(acl)
-	if err := yaml.Unmarshal(aclYaml, predefinedACL); err != nil {
-		return nil, errors.Wrapf(err, "failed to unmarshal predefined acl")
-	}
-
 	userRoleCache, err := lru.New[int, []string](32768)
 	if err != nil {
 		return nil, err
 	}
-
-	predefinedRoles := make(map[string]map[Permission]bool)
-	for _, binding := range predefinedACL.Roles {
-		for _, permission := range binding.Permissions {
-			if _, ok := predefinedRoles[binding.Name]; !ok {
-				predefinedRoles[binding.Name] = make(map[Permission]bool)
-			}
-			predefinedRoles[binding.Name][Permission(permission)] = true
-		}
+	predefinedRoles, err := loadPredefinedRoles()
+	if err != nil {
+		return nil, err
 	}
 
-	return &Manager{
+	m := &Manager{
 		predefinedRoles: predefinedRoles,
 		store:           store,
 		licenseService:  licenseService,
 		userRoleCache:   userRoleCache,
-	}, nil
+	}
+	m.ReloadCache()
+	return m, nil
 }
 
 // Check if the user or `allUsers` or the user group has the permission p
@@ -84,7 +74,7 @@ func (m *Manager) CheckPermission(ctx context.Context, p Permission, user *store
 	return m.doCheckPermission(ctx, p, allUsers, projectIDs...)
 }
 
-func (m *Manager) ClearCache() {
+func (m *Manager) ReloadCache() {
 	m.userRoleCache.Purge()
 }
 
