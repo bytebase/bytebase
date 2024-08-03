@@ -10,7 +10,6 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -104,63 +103,6 @@ func (s *Store) ListRoles(ctx context.Context) ([]*RoleMessage, error) {
 	defer rows.Close()
 
 	var roles []*RoleMessage
-	roles = append(roles,
-		&RoleMessage{
-			CreatorID:   api.SystemBotID,
-			ResourceID:  api.WorkspaceAdmin.String(),
-			Name:        "Workspace admin",
-			Description: "",
-		},
-		&RoleMessage{
-			CreatorID:   api.SystemBotID,
-			ResourceID:  api.WorkspaceDBA.String(),
-			Name:        "Workspace DBA",
-			Description: "",
-		},
-		&RoleMessage{
-			CreatorID:   api.SystemBotID,
-			ResourceID:  api.WorkspaceMember.String(),
-			Name:        "Workspace member",
-			Description: "",
-		},
-		&RoleMessage{
-			CreatorID:   api.SystemBotID,
-			ResourceID:  api.ProjectOwner.String(),
-			Name:        "Project owner",
-			Description: "",
-		},
-		&RoleMessage{
-			CreatorID:   api.SystemBotID,
-			ResourceID:  api.ProjectDeveloper.String(),
-			Name:        "Project developer",
-			Description: "",
-		},
-		&RoleMessage{
-			CreatorID:   api.SystemBotID,
-			ResourceID:  api.ProjectReleaser.String(),
-			Name:        "Project releaser",
-			Description: "",
-		},
-		&RoleMessage{
-			CreatorID:   api.SystemBotID,
-			ResourceID:  api.ProjectQuerier.String(),
-			Name:        "Project querier",
-			Description: "",
-		},
-		&RoleMessage{
-			CreatorID:   api.SystemBotID,
-			ResourceID:  api.ProjectExporter.String(),
-			Name:        "Project exporter",
-			Description: "",
-		},
-		&RoleMessage{
-			CreatorID:   api.SystemBotID,
-			ResourceID:  api.ProjectViewer.String(),
-			Name:        "Project viewer",
-			Description: "",
-		},
-	)
-
 	for rows.Next() {
 		role := &RoleMessage{
 			Permissions: map[string]bool{},
@@ -217,7 +159,8 @@ func (s *Store) UpdateRole(ctx context.Context, patch *UpdateRoleMessage) (*Role
 	`, len(args))
 
 	role := &RoleMessage{
-		ResourceID: patch.ResourceID,
+		ResourceID:  patch.ResourceID,
+		Permissions: map[string]bool{},
 	}
 	var permissionBytes []byte
 	if err := s.db.db.QueryRowContext(ctx, query, args...).Scan(&role.CreatorID, &role.Name, &role.Description, &permissionBytes); err != nil {

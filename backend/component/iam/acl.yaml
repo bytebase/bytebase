@@ -1,5 +1,6 @@
 roles:
   - name: roles/workspaceAdmin
+    title: Workspace admin
     permissions:
       - bb.auditLogs.export
       - bb.auditLogs.search
@@ -122,6 +123,7 @@ roles:
       - bb.worksheets.get
       - bb.worksheets.manage
   - name: roles/workspaceDBA
+    title: Workspace DBA
     permissions:
       - bb.auditLogs.export
       - bb.auditLogs.search
@@ -237,6 +239,7 @@ roles:
       - bb.worksheets.get
       - bb.worksheets.manage
   - name: roles/workspaceMember
+    title: Workspace member
     permissions:
       - bb.environments.get
       - bb.environments.list
@@ -254,6 +257,7 @@ roles:
       - bb.vcsProviders.list
       - bb.vcsProviders.searchProjects
   - name: roles/projectOwner
+    title: Project owner
     permissions:
       - bb.auditLogs.export
       - bb.auditLogs.search
@@ -313,6 +317,7 @@ roles:
       - bb.vcsConnectors.list
       - bb.vcsConnectors.update
   - name: roles/projectDeveloper
+    title: Project developer
     permissions:
       - bb.auditLogs.search
       - bb.branches.create
@@ -352,6 +357,7 @@ roles:
       - bb.vcsConnectors.get
       - bb.vcsConnectors.list
   - name: roles/projectQuerier
+    title: Project querier
     permissions:
       - bb.databases.get
       - bb.databases.getSchema
@@ -360,6 +366,7 @@ roles:
       - bb.projects.get
       - bb.projects.getIamPolicy
   - name: roles/projectExporter
+    title: Project exporter
     permissions:
       - bb.databases.export
       - bb.databases.get
@@ -368,6 +375,7 @@ roles:
       - bb.projects.get
       - bb.projects.getIamPolicy
   - name: roles/projectReleaser
+    title: Project releaser
     permissions:
       - bb.branches.get
       - bb.changeHistories.get
@@ -389,6 +397,7 @@ roles:
       - bb.rollouts.get
       - bb.taskRuns.list
   - name: roles/projectViewer
+    title: Project viewer
     permissions:
       - bb.databases.get
       - bb.databases.getSchema
