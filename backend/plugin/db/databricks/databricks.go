@@ -85,13 +85,9 @@ func (*Driver) GetDB() *sql.DB {
 	return nil
 }
 
-func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, stmt string, _ *db.QueryContext) ([]*v1pb.QueryResult, error) {
-	return d.RunStatement(ctx, nil, stmt)
-}
-
-func (d *Driver) RunStatement(ctx context.Context, _ *sql.Conn, statementStr string) ([]*v1pb.QueryResult, error) {
+func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, _ *db.QueryContext) ([]*v1pb.QueryResult, error) {
 	var results []*v1pb.QueryResult
-	stmts, err := base.SplitMultiSQL(storepb.Engine_DATABRICKS, statementStr)
+	stmts, err := base.SplitMultiSQL(storepb.Engine_DATABRICKS, statement)
 	if err != nil {
 		return nil, err
 	}
@@ -131,9 +127,9 @@ func (d *Driver) RunStatement(ctx context.Context, _ *sql.Conn, statementStr str
 	return results, nil
 }
 
-func (d *Driver) Execute(ctx context.Context, stmt string, _ db.ExecuteOptions) (int64, error) {
-	_, err := d.RunStatement(ctx, nil, stmt)
-	// TODO(tommy): no approaches for fetching affected rows.
+func (d *Driver) Execute(ctx context.Context, statement string, _ db.ExecuteOptions) (int64, error) {
+	// No ways of fetching affected rows.
+	_, err := d.QueryConn(ctx, nil, statement, nil)
 	return 0, err
 }
 

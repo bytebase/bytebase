@@ -405,8 +405,3 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 func getStatementWithResultLimit(stmt string, limit int) string {
 	return fmt.Sprintf("WITH result AS (%s) SELECT * FROM result LIMIT %d;", stmt, limit)
 }
-
-// RunStatement runs a SQL statement in a given connection.
-func (driver *Driver) RunStatement(ctx context.Context, conn *sql.Conn, statement string) ([]*v1pb.QueryResult, error) {
-	return driver.QueryConn(ctx, conn, statement, nil)
-}

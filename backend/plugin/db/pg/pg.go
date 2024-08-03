@@ -737,11 +737,6 @@ func getStatementWithResultLimit(stmt string, limit int) string {
 	return fmt.Sprintf("WITH result AS (\n%s\n) SELECT * FROM result LIMIT %d;", util.TrimStatement(stmt), limit)
 }
 
-// RunStatement runs a SQL statement in a given connection.
-func (driver *Driver) RunStatement(ctx context.Context, conn *sql.Conn, statement string) ([]*v1pb.QueryResult, error) {
-	return driver.QueryConn(ctx, conn, statement, nil)
-}
-
 func isPlSQLBlock(stmt string) bool {
 	tree, err := pgquery.Parse(stmt)
 	if err != nil {

@@ -226,14 +226,6 @@ func (d *Driver) QueryConn(_ context.Context, _ *sql.Conn, statement string, _ *
 	return results, nil
 }
 
-func (d *Driver) RunStatement(ctx context.Context, _ *sql.Conn, statement string) ([]*v1pb.QueryResult, error) {
-	results, err := d.QueryConn(ctx, nil, statement, nil)
-	if err != nil {
-		return nil, err
-	}
-	return results, nil
-}
-
 func (*Driver) GetDB() *sql.DB {
 	return nil
 }
