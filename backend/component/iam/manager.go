@@ -65,6 +65,11 @@ func NewManager(store *store.Store, licenseService enterprise.LicenseService) (*
 // Check if the user or `allUsers` or the user group has the permission p
 // or has the permission p in every project.
 func (m *Manager) CheckPermission(ctx context.Context, p Permission, user *store.UserMessage, projectIDs ...string) (bool, error) {
+	if m.licenseService.IsFeatureEnabled(api.FeatureRBAC) != nil {
+		// nolint
+		return true, nil
+	}
+
 	ok, err := m.doCheckPermission(ctx, p, user, projectIDs...)
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to check permission")
@@ -169,7 +174,7 @@ func (m *Manager) hasPermissionOnEveryProject(ctx context.Context, p Permission,
 // getWorkspaceRoles returns roles for the user in the workspace IAM policy.
 func (m *Manager) getWorkspaceRoles(ctx context.Context, user *store.UserMessage) ([]string, error) {
 	if v, ok := m.userRoleCache.Get(user.ID); ok {
-		return m.getWorkspaceRolesByRBAC(v), nil
+		return v, nil
 	}
 	policyMessage, err := m.store.GetWorkspaceIamPolicy(ctx)
 	if err != nil {
@@ -178,14 +183,7 @@ func (m *Manager) getWorkspaceRoles(ctx context.Context, user *store.UserMessage
 	roles := utils.GetUserRolesInIamPolicy(ctx, m.store, user, policyMessage.Policy)
 	m.userRoleCache.Add(user.ID, roles)
 
-	return m.getWorkspaceRolesByRBAC(roles), nil
-}
-
-func (m *Manager) getWorkspaceRolesByRBAC(roles []string) []string {
-	if m.licenseService.IsFeatureEnabled(api.FeatureRBAC) != nil {
-		return utils.Uniq(append(roles, common.FormatRole(api.WorkspaceAdmin.String())))
-	}
-	return roles
+	return roles, nil
 }
 
 func (m *Manager) getProjectRoles(ctx context.Context, user *store.UserMessage, projectIDs []string) ([][]string, error) {
