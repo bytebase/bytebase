@@ -471,10 +471,6 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, request *v1pb.BatchR
 	if !ok {
 		return nil, status.Errorf(codes.Internal, "user not found")
 	}
-	role, ok := ctx.Value(common.RoleContextKey).(api.Role)
-	if !ok {
-		return nil, status.Errorf(codes.Internal, "role not found")
-	}
 
 	ok, err = s.canUserRunStageTasks(ctx, user, issue, stageToRun.EnvironmentID)
 	if err != nil {
@@ -488,7 +484,11 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, request *v1pb.BatchR
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to check if the issue is approved, error: %v", err)
 	}
-	if !approved && !(role == api.WorkspaceAdmin || role == api.WorkspaceDBA) {
+	ok, err = s.iamManager.CheckPermission(ctx, iam.PermissionTaskRunsCreate, user)
+	if err != nil {
+		return nil, err
+	}
+	if !approved && !ok {
 		return nil, status.Errorf(codes.FailedPrecondition, "cannot run the tasks because the issue is not approved")
 	}
 
