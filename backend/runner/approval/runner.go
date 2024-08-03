@@ -396,10 +396,8 @@ func getDatabaseGeneralIssueRisk(ctx context.Context, s *store.Store, sheetManag
 					if risk.Source != riskSource {
 						continue
 					}
-					fmt.Printf("Barny1: %v, %v\n", risk.Level, riskSource)
 					return risk.Level, riskSource, true, nil
 				}
-				fmt.Printf("Barny2: %v\n", riskSource)
 				return 0, riskSource, true, nil
 			}
 		}
