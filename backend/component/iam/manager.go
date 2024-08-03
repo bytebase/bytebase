@@ -55,10 +55,20 @@ func (m *Manager) CheckPermission(ctx context.Context, p Permission, user *store
 		return true, nil
 	}
 
+	policyMessage, err := m.store.GetWorkspaceIamPolicy(ctx)
+	if err != nil {
+		return false, err
+	}
+	if ok := check(user.ID, p, policyMessage.Policy, m.rolePermissions); ok {
+		return true, nil
+	}
+
 	if len(projectIDs) > 0 {
+		allOK := true
 		for _, projectID := range projectIDs {
 			project, err := m.store.GetProjectV2(ctx, &store.FindProjectMessage{
-				ResourceID: &projectID,
+				ResourceID:  &projectID,
+				ShowDeleted: true,
 			})
 			if err != nil {
 				return false, err
@@ -71,18 +81,13 @@ func (m *Manager) CheckPermission(ctx context.Context, p Permission, user *store
 				return false, err
 			}
 			if ok := check(user.ID, p, policyMessage.Policy, m.rolePermissions); !ok {
-				return false, nil
+				allOK = false
+				break
 			}
 		}
+		return allOK, nil
 	}
-	policyMessage, err := m.store.GetWorkspaceIamPolicy(ctx)
-	if err != nil {
-		return false, err
-	}
-	if ok := check(user.ID, p, policyMessage.Policy, m.rolePermissions); !ok {
-		return false, nil
-	}
-	return true, nil
+	return false, nil
 }
 
 func (m *Manager) ReloadCache(ctx context.Context) error {
