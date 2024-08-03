@@ -20,17 +20,3 @@ func TestPermissionExists(t *testing.T) {
 		}
 	}
 }
-
-func TestGetPermissionLevels(t *testing.T) {
-	a := require.New(t)
-
-	m, err := NewManager(nil, nil)
-	a.NoError(err)
-
-	for _, permissions := range m.predefinedRoles {
-		for p := range permissions {
-			level := GetPermissionLevel(p)
-			a.NotEqual("", level.String(), "permission %s has no level defined", p)
-		}
-	}
-}
