@@ -1,14 +1,5 @@
 package iam
 
-import (
-	"github.com/pkg/errors"
-	"gopkg.in/yaml.v3"
-
-	"github.com/bytebase/bytebase/backend/common"
-	api "github.com/bytebase/bytebase/backend/legacyapi"
-	"github.com/bytebase/bytebase/backend/store"
-)
-
 type Permission = string
 
 const (
@@ -272,30 +263,4 @@ func PermissionsExist(permissions ...string) bool {
 		}
 	}
 	return true
-}
-
-func loadPredefinedRoles() ([]*store.RoleMessage, error) {
-	predefinedACL := new(acl)
-	if err := yaml.Unmarshal(aclYaml, predefinedACL); err != nil {
-		return nil, errors.Wrapf(err, "failed to unmarshal predefined acl")
-	}
-	var roles []*store.RoleMessage
-	for _, role := range predefinedACL.Roles {
-		resourceID, err := common.GetRoleID(role.Name)
-		if err != nil {
-			return nil, err
-		}
-		permissions := make(map[string]bool)
-		for _, p := range role.Permissions {
-			permissions[p] = true
-		}
-		roles = append(roles, &store.RoleMessage{
-			CreatorID:   api.SystemBotID,
-			ResourceID:  resourceID,
-			Name:        role.Title,
-			Description: "",
-			Permissions: permissions,
-		})
-	}
-	return roles, nil
 }
