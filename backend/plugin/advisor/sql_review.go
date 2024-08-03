@@ -493,15 +493,15 @@ func SQLReviewCheck(
 	ruleList []*storepb.SQLReviewRule,
 	checkContext SQLReviewCheckContext,
 ) ([]*storepb.Advice, error) {
-	ast, parseResult := sm.GetAST(checkContext.DbType, statements)
-	if ast == nil || len(ruleList) == 0 {
+	asts, parseResult := sm.GetASTsForChecks(checkContext.DbType, statements)
+	if asts == nil || len(ruleList) == 0 {
 		return parseResult, nil
 	}
 
 	finder := checkContext.Catalog.GetFinder()
 	switch checkContext.DbType {
 	case storepb.Engine_TIDB, storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_POSTGRES, storepb.Engine_OCEANBASE:
-		if err := finder.WalkThrough(ast); err != nil {
+		if err := finder.WalkThrough(asts); err != nil {
 			return convertWalkThroughErrorToAdvice(checkContext, err)
 		}
 	}
@@ -537,7 +537,7 @@ func SQLReviewCheck(
 				DBSchema:              checkContext.DBSchema,
 				ChangeType:            checkContext.ChangeType,
 				PreUpdateBackupDetail: checkContext.PreUpdateBackupDetail,
-				AST:                   ast,
+				AST:                   asts,
 				Statements:            statements,
 				Rule:                  rule,
 				Catalog:               finder,
