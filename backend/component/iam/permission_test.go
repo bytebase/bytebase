@@ -10,12 +10,12 @@ import (
 func TestPermissionExists(t *testing.T) {
 	a := require.New(t)
 
-	m, err := NewManager(nil, nil)
+	predefinedRoles, err := loadPredefinedRoles()
 	a.NoError(err)
 
-	for _, permissions := range m.predefinedRoles {
+	for _, permissions := range predefinedRoles {
 		for p := range permissions {
-			exist := PermissionExist(p)
+			exist := PermissionsExist(p)
 			a.True(exist, "permission %s is not defined as a constant", p)
 		}
 	}

@@ -75,7 +75,7 @@ func (s *RoleService) CreateRole(ctx context.Context, request *v1pb.CreateRoleRe
 		Description: request.Role.Description,
 		Permissions: permissions,
 	}
-	if valid := validatePermissions(request.Role.Permissions); !valid {
+	if ok := iam.PermissionsExist(request.Role.Permissions...); !ok {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid permissions")
 	}
 	roleMessage, err := s.store.CreateRole(ctx, create, principalID)
@@ -128,7 +128,7 @@ func (s *RoleService) UpdateRole(ctx context.Context, request *v1pb.UpdateRoleRe
 				permissions[v] = true
 			}
 			patch.Permissions = &permissions
-			if valid := validatePermissions(request.Role.Permissions); !valid {
+			if ok := iam.PermissionsExist(request.Role.Permissions...); !ok {
 				return nil, status.Errorf(codes.InvalidArgument, "invalid permissions")
 			}
 		default:
@@ -231,14 +231,4 @@ func convertToRole(ctx context.Context, iamManager *iam.Manager, role *store.Rol
 		Description: role.Description,
 		Permissions: convertedPermissions,
 	}, nil
-}
-
-func validatePermissions(permissions []string) bool {
-	// Check if all permissions exist.
-	for _, permission := range permissions {
-		if !iam.PermissionExist(iam.Permission(permission)) {
-			return false
-		}
-	}
-	return true
 }

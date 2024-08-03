@@ -10,11 +10,6 @@ roles:
       - bb.branches.update
       - bb.changeHistories.get
       - bb.changeHistories.list
-      - bb.vcsConnectors.create
-      - bb.vcsConnectors.delete
-      - bb.vcsConnectors.get
-      - bb.vcsConnectors.list
-      - bb.vcsConnectors.update
       - bb.changelists.create
       - bb.changelists.delete
       - bb.changelists.get
@@ -25,12 +20,12 @@ roles:
       - bb.databaseSecrets.update
       - bb.databases.adviseIndex
       - bb.databases.check
+      - bb.databases.execute
       - bb.databases.export
       - bb.databases.get
       - bb.databases.getSchema
       - bb.databases.list
       - bb.databases.query
-      - bb.databases.execute
       - bb.databases.sync
       - bb.databases.update
       - bb.environments.create
@@ -39,18 +34,6 @@ roles:
       - bb.environments.list
       - bb.environments.undelete
       - bb.environments.update
-      - bb.vcsProviders.create
-      - bb.vcsProviders.delete
-      - bb.vcsProviders.update
-      - bb.vcsProviders.get
-      - bb.vcsProviders.list
-      - bb.vcsProviders.listProjects
-      - bb.vcsProviders.searchProjects
-      - bb.reviewConfigs.create
-      - bb.reviewConfigs.delete
-      - bb.reviewConfigs.update
-      - bb.reviewConfigs.get
-      - bb.reviewConfigs.list
       - bb.identityProviders.create
       - bb.identityProviders.delete
       - bb.identityProviders.get
@@ -64,22 +47,19 @@ roles:
       - bb.instances.sync
       - bb.instances.undelete
       - bb.instances.update
+      - bb.issueComments.create
+      - bb.issueComments.list
+      - bb.issueComments.update
       - bb.issues.create
       - bb.issues.get
       - bb.issues.list
       - bb.issues.update
-      - bb.issueComments.list
-      - bb.issueComments.create
-      - bb.issueComments.update
       - bb.planCheckRuns.list
       - bb.planCheckRuns.run
       - bb.plans.create
       - bb.plans.get
       - bb.plans.list
       - bb.plans.update
-      - bb.sheets.create
-      - bb.sheets.update
-      - bb.sheets.get
       - bb.policies.create
       - bb.policies.delete
       - bb.policies.get
@@ -93,6 +73,11 @@ roles:
       - bb.projects.setIamPolicy
       - bb.projects.undelete
       - bb.projects.update
+      - bb.reviewConfigs.create
+      - bb.reviewConfigs.delete
+      - bb.reviewConfigs.get
+      - bb.reviewConfigs.list
+      - bb.reviewConfigs.update
       - bb.risks.create
       - bb.risks.delete
       - bb.risks.list
@@ -107,6 +92,9 @@ roles:
       - bb.settings.get
       - bb.settings.list
       - bb.settings.set
+      - bb.sheets.create
+      - bb.sheets.get
+      - bb.sheets.update
       - bb.slowQueries.list
       - bb.taskRuns.create
       - bb.taskRuns.list
@@ -116,11 +104,23 @@ roles:
       - bb.userGroups.list
       - bb.userGroups.update
       - bb.users.create
-      - bb.users.update
       - bb.users.delete
       - bb.users.undelete
-      - bb.worksheets.manage
+      - bb.users.update
+      - bb.vcsConnectors.create
+      - bb.vcsConnectors.delete
+      - bb.vcsConnectors.get
+      - bb.vcsConnectors.list
+      - bb.vcsConnectors.update
+      - bb.vcsProviders.create
+      - bb.vcsProviders.delete
+      - bb.vcsProviders.get
+      - bb.vcsProviders.list
+      - bb.vcsProviders.listProjects
+      - bb.vcsProviders.searchProjects
+      - bb.vcsProviders.update
       - bb.worksheets.get
+      - bb.worksheets.manage
   - name: roles/workspaceDBA
     permissions:
       - bb.auditLogs.export
@@ -132,11 +132,6 @@ roles:
       - bb.branches.update
       - bb.changeHistories.get
       - bb.changeHistories.list
-      - bb.vcsConnectors.create
-      - bb.vcsConnectors.delete
-      - bb.vcsConnectors.get
-      - bb.vcsConnectors.list
-      - bb.vcsConnectors.update
       - bb.changelists.create
       - bb.changelists.delete
       - bb.changelists.get
@@ -147,12 +142,12 @@ roles:
       - bb.databaseSecrets.update
       - bb.databases.adviseIndex
       - bb.databases.check
+      - bb.databases.execute
       - bb.databases.export
       - bb.databases.get
       - bb.databases.getSchema
       - bb.databases.list
       - bb.databases.query
-      - bb.databases.execute
       - bb.databases.sync
       - bb.databases.update
       - bb.environments.create
@@ -161,18 +156,6 @@ roles:
       - bb.environments.list
       - bb.environments.undelete
       - bb.environments.update
-      - bb.vcsProviders.create
-      - bb.vcsProviders.delete
-      - bb.vcsProviders.update
-      - bb.vcsProviders.get
-      - bb.vcsProviders.list
-      - bb.vcsProviders.listProjects
-      - bb.vcsProviders.searchProjects
-      - bb.reviewConfigs.create
-      - bb.reviewConfigs.delete
-      - bb.reviewConfigs.update
-      - bb.reviewConfigs.get
-      - bb.reviewConfigs.list
       - bb.identityProviders.create
       - bb.identityProviders.delete
       - bb.identityProviders.get
@@ -186,22 +169,19 @@ roles:
       - bb.instances.sync
       - bb.instances.undelete
       - bb.instances.update
+      - bb.issueComments.create
+      - bb.issueComments.list
+      - bb.issueComments.update
       - bb.issues.create
       - bb.issues.get
       - bb.issues.list
       - bb.issues.update
-      - bb.issueComments.list
-      - bb.issueComments.create
-      - bb.issueComments.update
       - bb.planCheckRuns.list
       - bb.planCheckRuns.run
       - bb.plans.create
       - bb.plans.get
       - bb.plans.list
       - bb.plans.update
-      - bb.sheets.create
-      - bb.sheets.update
-      - bb.sheets.get
       - bb.policies.create
       - bb.policies.delete
       - bb.policies.get
@@ -215,6 +195,11 @@ roles:
       - bb.projects.setIamPolicy
       - bb.projects.undelete
       - bb.projects.update
+      - bb.reviewConfigs.create
+      - bb.reviewConfigs.delete
+      - bb.reviewConfigs.get
+      - bb.reviewConfigs.list
+      - bb.reviewConfigs.update
       - bb.risks.create
       - bb.risks.delete
       - bb.risks.list
@@ -229,30 +214,45 @@ roles:
       - bb.settings.get
       - bb.settings.list
       - bb.settings.set
+      - bb.sheets.create
+      - bb.sheets.get
+      - bb.sheets.update
       - bb.slowQueries.list
       - bb.taskRuns.create
       - bb.taskRuns.list
       - bb.userGroups.get
       - bb.userGroups.list
-      - bb.worksheets.manage
+      - bb.vcsConnectors.create
+      - bb.vcsConnectors.delete
+      - bb.vcsConnectors.get
+      - bb.vcsConnectors.list
+      - bb.vcsConnectors.update
+      - bb.vcsProviders.create
+      - bb.vcsProviders.delete
+      - bb.vcsProviders.get
+      - bb.vcsProviders.list
+      - bb.vcsProviders.listProjects
+      - bb.vcsProviders.searchProjects
+      - bb.vcsProviders.update
       - bb.worksheets.get
+      - bb.worksheets.manage
   - name: roles/workspaceMember
     permissions:
       - bb.environments.get
       - bb.environments.list
-      - bb.vcsProviders.get
-      - bb.vcsProviders.list
-      - bb.vcsProviders.searchProjects
-      - bb.reviewConfigs.get
-      - bb.reviewConfigs.list
       - bb.policies.get
       - bb.policies.list
+      - bb.reviewConfigs.get
+      - bb.reviewConfigs.list
       - bb.risks.list
       - bb.roles.list
       - bb.settings.get
       - bb.settings.list
       - bb.userGroups.get
       - bb.userGroups.list
+      - bb.vcsProviders.get
+      - bb.vcsProviders.list
+      - bb.vcsProviders.searchProjects
   - name: roles/projectOwner
     permissions:
       - bb.auditLogs.export
@@ -264,11 +264,6 @@ roles:
       - bb.branches.update
       - bb.changeHistories.get
       - bb.changeHistories.list
-      - bb.vcsConnectors.create
-      - bb.vcsConnectors.delete
-      - bb.vcsConnectors.get
-      - bb.vcsConnectors.list
-      - bb.vcsConnectors.update
       - bb.changelists.create
       - bb.changelists.delete
       - bb.changelists.get
@@ -279,30 +274,27 @@ roles:
       - bb.databaseSecrets.update
       - bb.databases.adviseIndex
       - bb.databases.check
+      - bb.databases.execute
       - bb.databases.export
       - bb.databases.get
       - bb.databases.getSchema
       - bb.databases.list
       - bb.databases.query
-      - bb.databases.execute
       - bb.databases.sync
       - bb.databases.update
+      - bb.issueComments.create
+      - bb.issueComments.list
+      - bb.issueComments.update
       - bb.issues.create
       - bb.issues.get
       - bb.issues.list
       - bb.issues.update
-      - bb.issueComments.list
-      - bb.issueComments.create
-      - bb.issueComments.update
       - bb.planCheckRuns.list
       - bb.planCheckRuns.run
       - bb.plans.create
       - bb.plans.get
       - bb.plans.list
       - bb.plans.update
-      - bb.sheets.create
-      - bb.sheets.update
-      - bb.sheets.get
       - bb.projects.get
       - bb.projects.getIamPolicy
       - bb.projects.setIamPolicy
@@ -310,8 +302,16 @@ roles:
       - bb.rollouts.create
       - bb.rollouts.get
       - bb.rollouts.preview
+      - bb.sheets.create
+      - bb.sheets.get
+      - bb.sheets.update
       - bb.slowQueries.list
       - bb.taskRuns.list
+      - bb.vcsConnectors.create
+      - bb.vcsConnectors.delete
+      - bb.vcsConnectors.get
+      - bb.vcsConnectors.list
+      - bb.vcsConnectors.update
   - name: roles/projectDeveloper
     permissions:
       - bb.auditLogs.search
@@ -320,8 +320,6 @@ roles:
       - bb.branches.list
       - bb.changeHistories.get
       - bb.changeHistories.list
-      - bb.vcsConnectors.get
-      - bb.vcsConnectors.list
       - bb.changelists.create
       - bb.changelists.get
       - bb.changelists.list
@@ -330,27 +328,29 @@ roles:
       - bb.databases.getSchema
       - bb.databases.list
       - bb.databases.sync
+      - bb.issueComments.create
+      - bb.issueComments.list
+      - bb.issueComments.update
       - bb.issues.create
       - bb.issues.get
       - bb.issues.list
-      - bb.issueComments.list
-      - bb.issueComments.create
-      - bb.issueComments.update
       - bb.planCheckRuns.list
       - bb.planCheckRuns.run
       - bb.plans.create
       - bb.plans.get
       - bb.plans.list
-      - bb.sheets.create
-      - bb.sheets.update
-      - bb.sheets.get
       - bb.projects.get
       - bb.projects.getIamPolicy
       - bb.rollouts.create
       - bb.rollouts.get
       - bb.rollouts.preview
+      - bb.sheets.create
+      - bb.sheets.get
+      - bb.sheets.update
       - bb.slowQueries.list
       - bb.taskRuns.list
+      - bb.vcsConnectors.get
+      - bb.vcsConnectors.list
   - name: roles/projectQuerier
     permissions:
       - bb.databases.get
@@ -375,11 +375,11 @@ roles:
       - bb.databases.get
       - bb.databases.getSchema
       - bb.databases.list
+      - bb.issueComments.create
+      - bb.issueComments.list
+      - bb.issueComments.update
       - bb.issues.get
       - bb.issues.list
-      - bb.issueComments.list
-      - bb.issueComments.create
-      - bb.issueComments.update
       - bb.planCheckRuns.list
       - bb.planCheckRuns.run
       - bb.plans.get
@@ -393,9 +393,9 @@ roles:
       - bb.databases.get
       - bb.databases.getSchema
       - bb.databases.list
-      - bb.issues.create
-      - bb.issueComments.list
       - bb.issueComments.create
+      - bb.issueComments.list
       - bb.issueComments.update
+      - bb.issues.create
       - bb.projects.get
       - bb.projects.getIamPolicy
