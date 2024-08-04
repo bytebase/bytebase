@@ -21,10 +21,10 @@ func TestCheck(t *testing.T) {
 	}
 
 	tests := []struct {
-		permission       Permission
-		policy           *storepb.IamPolicy
-		userGroupMembers map[string]map[string]bool
-		want             bool
+		permission   Permission
+		policy       *storepb.IamPolicy
+		groupMembers map[string]map[string]bool
+		want         bool
 	}{
 		{
 			permission: PermissionInstancesCreate,
@@ -36,8 +36,8 @@ func TestCheck(t *testing.T) {
 					},
 				},
 			},
-			userGroupMembers: nil,
-			want:             false,
+			groupMembers: nil,
+			want:         false,
 		},
 		{
 			permission: PermissionInstancesCreate,
@@ -49,8 +49,8 @@ func TestCheck(t *testing.T) {
 					},
 				},
 			},
-			userGroupMembers: nil,
-			want:             true,
+			groupMembers: nil,
+			want:         true,
 		},
 		{
 			permission: PermissionInstancesCreate,
@@ -62,8 +62,8 @@ func TestCheck(t *testing.T) {
 					},
 				},
 			},
-			userGroupMembers: nil,
-			want:             false,
+			groupMembers: nil,
+			want:         false,
 		},
 		{
 			permission: PermissionInstancesCreate,
@@ -75,8 +75,8 @@ func TestCheck(t *testing.T) {
 					},
 				},
 			},
-			userGroupMembers: nil,
-			want:             true,
+			groupMembers: nil,
+			want:         true,
 		},
 		{
 			permission: PermissionInstancesCreate,
@@ -88,7 +88,7 @@ func TestCheck(t *testing.T) {
 					},
 				},
 			},
-			userGroupMembers: map[string]map[string]bool{
+			groupMembers: map[string]map[string]bool{
 				"groups/eng@bytebase.com": {
 					"users/123": true,
 				},
@@ -97,7 +97,7 @@ func TestCheck(t *testing.T) {
 		}}
 
 	for i, test := range tests {
-		got := check(userID, test.permission, test.policy, rolePermissions, test.userGroupMembers)
+		got := check(userID, test.permission, test.policy, rolePermissions, test.groupMembers)
 		if got != test.want {
 			require.Equal(t, test.want, got, i)
 		}

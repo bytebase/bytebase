@@ -7,7 +7,7 @@ import { Timestamp } from "../google/protobuf/timestamp";
 
 export const protobufPackage = "bytebase.v1";
 
-export interface GetUserGroupRequest {
+export interface GetGroupRequest {
   /**
    * The name of the group to retrieve.
    * Format: groups/{email}
@@ -15,7 +15,7 @@ export interface GetUserGroupRequest {
   name: string;
 }
 
-export interface ListUserGroupsRequest {
+export interface ListGroupsRequest {
   /**
    * The maximum number of groups to return. The service may return fewer than
    * this value.
@@ -24,18 +24,18 @@ export interface ListUserGroupsRequest {
    */
   pageSize: number;
   /**
-   * A page token, received from a previous `ListUsers` call.
+   * A page token, received from a previous `ListGroups` call.
    * Provide this to retrieve the subsequent page.
    *
-   * When paginating, all other parameters provided to `ListUsers` must match
+   * When paginating, all other parameters provided to `ListGroups` must match
    * the call that provided the page token.
    */
   pageToken: string;
 }
 
-export interface ListUserGroupsResponse {
+export interface ListGroupsResponse {
   /** The groups from the specified request. */
-  groups: UserGroup[];
+  groups: Group[];
   /**
    * A token, which can be sent as `page_token` to retrieve the next page.
    * If this field is omitted, there are no subsequent pages.
@@ -43,12 +43,12 @@ export interface ListUserGroupsResponse {
   nextPageToken: string;
 }
 
-export interface CreateUserGroupRequest {
+export interface CreateGroupRequest {
   /** The group to create. */
-  group: UserGroup | undefined;
+  group: Group | undefined;
 }
 
-export interface UpdateUserGroupRequest {
+export interface UpdateGroupRequest {
   /**
    * The group to update.
    *
@@ -56,13 +56,13 @@ export interface UpdateUserGroupRequest {
    * Format: groups/{email}
    */
   group:
-    | UserGroup
+    | Group
     | undefined;
   /** The list of fields to update. */
   updateMask: string[] | undefined;
 }
 
-export interface DeleteUserGroupRequest {
+export interface DeleteGroupRequest {
   /**
    * The name of the group to delete.
    * Format: groups/{email}
@@ -70,73 +70,73 @@ export interface DeleteUserGroupRequest {
   name: string;
 }
 
-export interface UserGroupMember {
+export interface GroupMember {
   /**
-   * Member is the principal who belong to this user group.
+   * Member is the principal who belong to this group.
    *
    * Format: users/hello@world.com
    */
   member: string;
-  role: UserGroupMember_Role;
+  role: GroupMember_Role;
 }
 
-export enum UserGroupMember_Role {
+export enum GroupMember_Role {
   ROLE_UNSPECIFIED = "ROLE_UNSPECIFIED",
   OWNER = "OWNER",
   MEMBER = "MEMBER",
   UNRECOGNIZED = "UNRECOGNIZED",
 }
 
-export function userGroupMember_RoleFromJSON(object: any): UserGroupMember_Role {
+export function groupMember_RoleFromJSON(object: any): GroupMember_Role {
   switch (object) {
     case 0:
     case "ROLE_UNSPECIFIED":
-      return UserGroupMember_Role.ROLE_UNSPECIFIED;
+      return GroupMember_Role.ROLE_UNSPECIFIED;
     case 1:
     case "OWNER":
-      return UserGroupMember_Role.OWNER;
+      return GroupMember_Role.OWNER;
     case 2:
     case "MEMBER":
-      return UserGroupMember_Role.MEMBER;
+      return GroupMember_Role.MEMBER;
     case -1:
     case "UNRECOGNIZED":
     default:
-      return UserGroupMember_Role.UNRECOGNIZED;
+      return GroupMember_Role.UNRECOGNIZED;
   }
 }
 
-export function userGroupMember_RoleToJSON(object: UserGroupMember_Role): string {
+export function groupMember_RoleToJSON(object: GroupMember_Role): string {
   switch (object) {
-    case UserGroupMember_Role.ROLE_UNSPECIFIED:
+    case GroupMember_Role.ROLE_UNSPECIFIED:
       return "ROLE_UNSPECIFIED";
-    case UserGroupMember_Role.OWNER:
+    case GroupMember_Role.OWNER:
       return "OWNER";
-    case UserGroupMember_Role.MEMBER:
+    case GroupMember_Role.MEMBER:
       return "MEMBER";
-    case UserGroupMember_Role.UNRECOGNIZED:
+    case GroupMember_Role.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
   }
 }
 
-export function userGroupMember_RoleToNumber(object: UserGroupMember_Role): number {
+export function groupMember_RoleToNumber(object: GroupMember_Role): number {
   switch (object) {
-    case UserGroupMember_Role.ROLE_UNSPECIFIED:
+    case GroupMember_Role.ROLE_UNSPECIFIED:
       return 0;
-    case UserGroupMember_Role.OWNER:
+    case GroupMember_Role.OWNER:
       return 1;
-    case UserGroupMember_Role.MEMBER:
+    case GroupMember_Role.MEMBER:
       return 2;
-    case UserGroupMember_Role.UNRECOGNIZED:
+    case GroupMember_Role.UNRECOGNIZED:
     default:
       return -1;
   }
 }
 
-export interface UserGroup {
+export interface Group {
   /**
    * The name of the group to retrieve.
-   * Format: groups/{userGroup}, userGroup is an email.
+   * Format: groups/{group}, group is an email.
    */
   name: string;
   title: string;
@@ -146,27 +146,27 @@ export interface UserGroup {
    * Format: users/hello@world.com
    */
   creator: string;
-  members: UserGroupMember[];
+  members: GroupMember[];
   /** The timestamp when the group was created. */
   createTime: Date | undefined;
 }
 
-function createBaseGetUserGroupRequest(): GetUserGroupRequest {
+function createBaseGetGroupRequest(): GetGroupRequest {
   return { name: "" };
 }
 
-export const GetUserGroupRequest = {
-  encode(message: GetUserGroupRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const GetGroupRequest = {
+  encode(message: GetGroupRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
     }
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): GetUserGroupRequest {
+  decode(input: _m0.Reader | Uint8Array, length?: number): GetGroupRequest {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseGetUserGroupRequest();
+    const message = createBaseGetGroupRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -186,11 +186,11 @@ export const GetUserGroupRequest = {
     return message;
   },
 
-  fromJSON(object: any): GetUserGroupRequest {
+  fromJSON(object: any): GetGroupRequest {
     return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
   },
 
-  toJSON(message: GetUserGroupRequest): unknown {
+  toJSON(message: GetGroupRequest): unknown {
     const obj: any = {};
     if (message.name !== "") {
       obj.name = message.name;
@@ -198,22 +198,22 @@ export const GetUserGroupRequest = {
     return obj;
   },
 
-  create(base?: DeepPartial<GetUserGroupRequest>): GetUserGroupRequest {
-    return GetUserGroupRequest.fromPartial(base ?? {});
+  create(base?: DeepPartial<GetGroupRequest>): GetGroupRequest {
+    return GetGroupRequest.fromPartial(base ?? {});
   },
-  fromPartial(object: DeepPartial<GetUserGroupRequest>): GetUserGroupRequest {
-    const message = createBaseGetUserGroupRequest();
+  fromPartial(object: DeepPartial<GetGroupRequest>): GetGroupRequest {
+    const message = createBaseGetGroupRequest();
     message.name = object.name ?? "";
     return message;
   },
 };
 
-function createBaseListUserGroupsRequest(): ListUserGroupsRequest {
+function createBaseListGroupsRequest(): ListGroupsRequest {
   return { pageSize: 0, pageToken: "" };
 }
 
-export const ListUserGroupsRequest = {
-  encode(message: ListUserGroupsRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const ListGroupsRequest = {
+  encode(message: ListGroupsRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.pageSize !== 0) {
       writer.uint32(8).int32(message.pageSize);
     }
@@ -223,10 +223,10 @@ export const ListUserGroupsRequest = {
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): ListUserGroupsRequest {
+  decode(input: _m0.Reader | Uint8Array, length?: number): ListGroupsRequest {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseListUserGroupsRequest();
+    const message = createBaseListGroupsRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -253,14 +253,14 @@ export const ListUserGroupsRequest = {
     return message;
   },
 
-  fromJSON(object: any): ListUserGroupsRequest {
+  fromJSON(object: any): ListGroupsRequest {
     return {
       pageSize: isSet(object.pageSize) ? globalThis.Number(object.pageSize) : 0,
       pageToken: isSet(object.pageToken) ? globalThis.String(object.pageToken) : "",
     };
   },
 
-  toJSON(message: ListUserGroupsRequest): unknown {
+  toJSON(message: ListGroupsRequest): unknown {
     const obj: any = {};
     if (message.pageSize !== 0) {
       obj.pageSize = Math.round(message.pageSize);
@@ -271,25 +271,25 @@ export const ListUserGroupsRequest = {
     return obj;
   },
 
-  create(base?: DeepPartial<ListUserGroupsRequest>): ListUserGroupsRequest {
-    return ListUserGroupsRequest.fromPartial(base ?? {});
+  create(base?: DeepPartial<ListGroupsRequest>): ListGroupsRequest {
+    return ListGroupsRequest.fromPartial(base ?? {});
   },
-  fromPartial(object: DeepPartial<ListUserGroupsRequest>): ListUserGroupsRequest {
-    const message = createBaseListUserGroupsRequest();
+  fromPartial(object: DeepPartial<ListGroupsRequest>): ListGroupsRequest {
+    const message = createBaseListGroupsRequest();
     message.pageSize = object.pageSize ?? 0;
     message.pageToken = object.pageToken ?? "";
     return message;
   },
 };
 
-function createBaseListUserGroupsResponse(): ListUserGroupsResponse {
+function createBaseListGroupsResponse(): ListGroupsResponse {
   return { groups: [], nextPageToken: "" };
 }
 
-export const ListUserGroupsResponse = {
-  encode(message: ListUserGroupsResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const ListGroupsResponse = {
+  encode(message: ListGroupsResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     for (const v of message.groups) {
-      UserGroup.encode(v!, writer.uint32(10).fork()).ldelim();
+      Group.encode(v!, writer.uint32(10).fork()).ldelim();
     }
     if (message.nextPageToken !== "") {
       writer.uint32(18).string(message.nextPageToken);
@@ -297,10 +297,10 @@ export const ListUserGroupsResponse = {
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): ListUserGroupsResponse {
+  decode(input: _m0.Reader | Uint8Array, length?: number): ListGroupsResponse {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseListUserGroupsResponse();
+    const message = createBaseListGroupsResponse();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -309,7 +309,7 @@ export const ListUserGroupsResponse = {
             break;
           }
 
-          message.groups.push(UserGroup.decode(reader, reader.uint32()));
+          message.groups.push(Group.decode(reader, reader.uint32()));
           continue;
         case 2:
           if (tag !== 18) {
@@ -327,17 +327,17 @@ export const ListUserGroupsResponse = {
     return message;
   },
 
-  fromJSON(object: any): ListUserGroupsResponse {
+  fromJSON(object: any): ListGroupsResponse {
     return {
-      groups: globalThis.Array.isArray(object?.groups) ? object.groups.map((e: any) => UserGroup.fromJSON(e)) : [],
+      groups: globalThis.Array.isArray(object?.groups) ? object.groups.map((e: any) => Group.fromJSON(e)) : [],
       nextPageToken: isSet(object.nextPageToken) ? globalThis.String(object.nextPageToken) : "",
     };
   },
 
-  toJSON(message: ListUserGroupsResponse): unknown {
+  toJSON(message: ListGroupsResponse): unknown {
     const obj: any = {};
     if (message.groups?.length) {
-      obj.groups = message.groups.map((e) => UserGroup.toJSON(e));
+      obj.groups = message.groups.map((e) => Group.toJSON(e));
     }
     if (message.nextPageToken !== "") {
       obj.nextPageToken = message.nextPageToken;
@@ -345,33 +345,33 @@ export const ListUserGroupsResponse = {
     return obj;
   },
 
-  create(base?: DeepPartial<ListUserGroupsResponse>): ListUserGroupsResponse {
-    return ListUserGroupsResponse.fromPartial(base ?? {});
+  create(base?: DeepPartial<ListGroupsResponse>): ListGroupsResponse {
+    return ListGroupsResponse.fromPartial(base ?? {});
   },
-  fromPartial(object: DeepPartial<ListUserGroupsResponse>): ListUserGroupsResponse {
-    const message = createBaseListUserGroupsResponse();
-    message.groups = object.groups?.map((e) => UserGroup.fromPartial(e)) || [];
+  fromPartial(object: DeepPartial<ListGroupsResponse>): ListGroupsResponse {
+    const message = createBaseListGroupsResponse();
+    message.groups = object.groups?.map((e) => Group.fromPartial(e)) || [];
     message.nextPageToken = object.nextPageToken ?? "";
     return message;
   },
 };
 
-function createBaseCreateUserGroupRequest(): CreateUserGroupRequest {
+function createBaseCreateGroupRequest(): CreateGroupRequest {
   return { group: undefined };
 }
 
-export const CreateUserGroupRequest = {
-  encode(message: CreateUserGroupRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const CreateGroupRequest = {
+  encode(message: CreateGroupRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.group !== undefined) {
-      UserGroup.encode(message.group, writer.uint32(10).fork()).ldelim();
+      Group.encode(message.group, writer.uint32(10).fork()).ldelim();
     }
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): CreateUserGroupRequest {
+  decode(input: _m0.Reader | Uint8Array, length?: number): CreateGroupRequest {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseCreateUserGroupRequest();
+    const message = createBaseCreateGroupRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -380,7 +380,7 @@ export const CreateUserGroupRequest = {
             break;
           }
 
-          message.group = UserGroup.decode(reader, reader.uint32());
+          message.group = Group.decode(reader, reader.uint32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -391,38 +391,36 @@ export const CreateUserGroupRequest = {
     return message;
   },
 
-  fromJSON(object: any): CreateUserGroupRequest {
-    return { group: isSet(object.group) ? UserGroup.fromJSON(object.group) : undefined };
+  fromJSON(object: any): CreateGroupRequest {
+    return { group: isSet(object.group) ? Group.fromJSON(object.group) : undefined };
   },
 
-  toJSON(message: CreateUserGroupRequest): unknown {
+  toJSON(message: CreateGroupRequest): unknown {
     const obj: any = {};
     if (message.group !== undefined) {
-      obj.group = UserGroup.toJSON(message.group);
+      obj.group = Group.toJSON(message.group);
     }
     return obj;
   },
 
-  create(base?: DeepPartial<CreateUserGroupRequest>): CreateUserGroupRequest {
-    return CreateUserGroupRequest.fromPartial(base ?? {});
+  create(base?: DeepPartial<CreateGroupRequest>): CreateGroupRequest {
+    return CreateGroupRequest.fromPartial(base ?? {});
   },
-  fromPartial(object: DeepPartial<CreateUserGroupRequest>): CreateUserGroupRequest {
-    const message = createBaseCreateUserGroupRequest();
-    message.group = (object.group !== undefined && object.group !== null)
-      ? UserGroup.fromPartial(object.group)
-      : undefined;
+  fromPartial(object: DeepPartial<CreateGroupRequest>): CreateGroupRequest {
+    const message = createBaseCreateGroupRequest();
+    message.group = (object.group !== undefined && object.group !== null) ? Group.fromPartial(object.group) : undefined;
     return message;
   },
 };
 
-function createBaseUpdateUserGroupRequest(): UpdateUserGroupRequest {
+function createBaseUpdateGroupRequest(): UpdateGroupRequest {
   return { group: undefined, updateMask: undefined };
 }
 
-export const UpdateUserGroupRequest = {
-  encode(message: UpdateUserGroupRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const UpdateGroupRequest = {
+  encode(message: UpdateGroupRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.group !== undefined) {
-      UserGroup.encode(message.group, writer.uint32(10).fork()).ldelim();
+      Group.encode(message.group, writer.uint32(10).fork()).ldelim();
     }
     if (message.updateMask !== undefined) {
       FieldMask.encode(FieldMask.wrap(message.updateMask), writer.uint32(18).fork()).ldelim();
@@ -430,10 +428,10 @@ export const UpdateUserGroupRequest = {
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): UpdateUserGroupRequest {
+  decode(input: _m0.Reader | Uint8Array, length?: number): UpdateGroupRequest {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseUpdateUserGroupRequest();
+    const message = createBaseUpdateGroupRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -442,7 +440,7 @@ export const UpdateUserGroupRequest = {
             break;
           }
 
-          message.group = UserGroup.decode(reader, reader.uint32());
+          message.group = Group.decode(reader, reader.uint32());
           continue;
         case 2:
           if (tag !== 18) {
@@ -460,17 +458,17 @@ export const UpdateUserGroupRequest = {
     return message;
   },
 
-  fromJSON(object: any): UpdateUserGroupRequest {
+  fromJSON(object: any): UpdateGroupRequest {
     return {
-      group: isSet(object.group) ? UserGroup.fromJSON(object.group) : undefined,
+      group: isSet(object.group) ? Group.fromJSON(object.group) : undefined,
       updateMask: isSet(object.updateMask) ? FieldMask.unwrap(FieldMask.fromJSON(object.updateMask)) : undefined,
     };
   },
 
-  toJSON(message: UpdateUserGroupRequest): unknown {
+  toJSON(message: UpdateGroupRequest): unknown {
     const obj: any = {};
     if (message.group !== undefined) {
-      obj.group = UserGroup.toJSON(message.group);
+      obj.group = Group.toJSON(message.group);
     }
     if (message.updateMask !== undefined) {
       obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask));
@@ -478,35 +476,33 @@ export const UpdateUserGroupRequest = {
     return obj;
   },
 
-  create(base?: DeepPartial<UpdateUserGroupRequest>): UpdateUserGroupRequest {
-    return UpdateUserGroupRequest.fromPartial(base ?? {});
+  create(base?: DeepPartial<UpdateGroupRequest>): UpdateGroupRequest {
+    return UpdateGroupRequest.fromPartial(base ?? {});
   },
-  fromPartial(object: DeepPartial<UpdateUserGroupRequest>): UpdateUserGroupRequest {
-    const message = createBaseUpdateUserGroupRequest();
-    message.group = (object.group !== undefined && object.group !== null)
-      ? UserGroup.fromPartial(object.group)
-      : undefined;
+  fromPartial(object: DeepPartial<UpdateGroupRequest>): UpdateGroupRequest {
+    const message = createBaseUpdateGroupRequest();
+    message.group = (object.group !== undefined && object.group !== null) ? Group.fromPartial(object.group) : undefined;
     message.updateMask = object.updateMask ?? undefined;
     return message;
   },
 };
 
-function createBaseDeleteUserGroupRequest(): DeleteUserGroupRequest {
+function createBaseDeleteGroupRequest(): DeleteGroupRequest {
   return { name: "" };
 }
 
-export const DeleteUserGroupRequest = {
-  encode(message: DeleteUserGroupRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const DeleteGroupRequest = {
+  encode(message: DeleteGroupRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
     }
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): DeleteUserGroupRequest {
+  decode(input: _m0.Reader | Uint8Array, length?: number): DeleteGroupRequest {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseDeleteUserGroupRequest();
+    const message = createBaseDeleteGroupRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -526,11 +522,11 @@ export const DeleteUserGroupRequest = {
     return message;
   },
 
-  fromJSON(object: any): DeleteUserGroupRequest {
+  fromJSON(object: any): DeleteGroupRequest {
     return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
   },
 
-  toJSON(message: DeleteUserGroupRequest): unknown {
+  toJSON(message: DeleteGroupRequest): unknown {
     const obj: any = {};
     if (message.name !== "") {
       obj.name = message.name;
@@ -538,35 +534,35 @@ export const DeleteUserGroupRequest = {
     return obj;
   },
 
-  create(base?: DeepPartial<DeleteUserGroupRequest>): DeleteUserGroupRequest {
-    return DeleteUserGroupRequest.fromPartial(base ?? {});
+  create(base?: DeepPartial<DeleteGroupRequest>): DeleteGroupRequest {
+    return DeleteGroupRequest.fromPartial(base ?? {});
   },
-  fromPartial(object: DeepPartial<DeleteUserGroupRequest>): DeleteUserGroupRequest {
-    const message = createBaseDeleteUserGroupRequest();
+  fromPartial(object: DeepPartial<DeleteGroupRequest>): DeleteGroupRequest {
+    const message = createBaseDeleteGroupRequest();
     message.name = object.name ?? "";
     return message;
   },
 };
 
-function createBaseUserGroupMember(): UserGroupMember {
-  return { member: "", role: UserGroupMember_Role.ROLE_UNSPECIFIED };
+function createBaseGroupMember(): GroupMember {
+  return { member: "", role: GroupMember_Role.ROLE_UNSPECIFIED };
 }
 
-export const UserGroupMember = {
-  encode(message: UserGroupMember, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const GroupMember = {
+  encode(message: GroupMember, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.member !== "") {
       writer.uint32(10).string(message.member);
     }
-    if (message.role !== UserGroupMember_Role.ROLE_UNSPECIFIED) {
-      writer.uint32(16).int32(userGroupMember_RoleToNumber(message.role));
+    if (message.role !== GroupMember_Role.ROLE_UNSPECIFIED) {
+      writer.uint32(16).int32(groupMember_RoleToNumber(message.role));
     }
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): UserGroupMember {
+  decode(input: _m0.Reader | Uint8Array, length?: number): GroupMember {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseUserGroupMember();
+    const message = createBaseGroupMember();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -582,7 +578,7 @@ export const UserGroupMember = {
             break;
           }
 
-          message.role = userGroupMember_RoleFromJSON(reader.int32());
+          message.role = groupMember_RoleFromJSON(reader.int32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -593,41 +589,41 @@ export const UserGroupMember = {
     return message;
   },
 
-  fromJSON(object: any): UserGroupMember {
+  fromJSON(object: any): GroupMember {
     return {
       member: isSet(object.member) ? globalThis.String(object.member) : "",
-      role: isSet(object.role) ? userGroupMember_RoleFromJSON(object.role) : UserGroupMember_Role.ROLE_UNSPECIFIED,
+      role: isSet(object.role) ? groupMember_RoleFromJSON(object.role) : GroupMember_Role.ROLE_UNSPECIFIED,
     };
   },
 
-  toJSON(message: UserGroupMember): unknown {
+  toJSON(message: GroupMember): unknown {
     const obj: any = {};
     if (message.member !== "") {
       obj.member = message.member;
     }
-    if (message.role !== UserGroupMember_Role.ROLE_UNSPECIFIED) {
-      obj.role = userGroupMember_RoleToJSON(message.role);
+    if (message.role !== GroupMember_Role.ROLE_UNSPECIFIED) {
+      obj.role = groupMember_RoleToJSON(message.role);
     }
     return obj;
   },
 
-  create(base?: DeepPartial<UserGroupMember>): UserGroupMember {
-    return UserGroupMember.fromPartial(base ?? {});
+  create(base?: DeepPartial<GroupMember>): GroupMember {
+    return GroupMember.fromPartial(base ?? {});
   },
-  fromPartial(object: DeepPartial<UserGroupMember>): UserGroupMember {
-    const message = createBaseUserGroupMember();
+  fromPartial(object: DeepPartial<GroupMember>): GroupMember {
+    const message = createBaseGroupMember();
     message.member = object.member ?? "";
-    message.role = object.role ?? UserGroupMember_Role.ROLE_UNSPECIFIED;
+    message.role = object.role ?? GroupMember_Role.ROLE_UNSPECIFIED;
     return message;
   },
 };
 
-function createBaseUserGroup(): UserGroup {
+function createBaseGroup(): Group {
   return { name: "", title: "", description: "", creator: "", members: [], createTime: undefined };
 }
 
-export const UserGroup = {
-  encode(message: UserGroup, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const Group = {
+  encode(message: Group, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
     }
@@ -641,7 +637,7 @@ export const UserGroup = {
       writer.uint32(34).string(message.creator);
     }
     for (const v of message.members) {
-      UserGroupMember.encode(v!, writer.uint32(42).fork()).ldelim();
+      GroupMember.encode(v!, writer.uint32(42).fork()).ldelim();
     }
     if (message.createTime !== undefined) {
       Timestamp.encode(toTimestamp(message.createTime), writer.uint32(50).fork()).ldelim();
@@ -649,10 +645,10 @@ export const UserGroup = {
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): UserGroup {
+  decode(input: _m0.Reader | Uint8Array, length?: number): Group {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseUserGroup();
+    const message = createBaseGroup();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -689,7 +685,7 @@ export const UserGroup = {
             break;
           }
 
-          message.members.push(UserGroupMember.decode(reader, reader.uint32()));
+          message.members.push(GroupMember.decode(reader, reader.uint32()));
           continue;
         case 6:
           if (tag !== 50) {
@@ -707,20 +703,18 @@ export const UserGroup = {
     return message;
   },
 
-  fromJSON(object: any): UserGroup {
+  fromJSON(object: any): Group {
     return {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
       title: isSet(object.title) ? globalThis.String(object.title) : "",
       description: isSet(object.description) ? globalThis.String(object.description) : "",
       creator: isSet(object.creator) ? globalThis.String(object.creator) : "",
-      members: globalThis.Array.isArray(object?.members)
-        ? object.members.map((e: any) => UserGroupMember.fromJSON(e))
-        : [],
+      members: globalThis.Array.isArray(object?.members) ? object.members.map((e: any) => GroupMember.fromJSON(e)) : [],
       createTime: isSet(object.createTime) ? fromJsonTimestamp(object.createTime) : undefined,
     };
   },
 
-  toJSON(message: UserGroup): unknown {
+  toJSON(message: Group): unknown {
     const obj: any = {};
     if (message.name !== "") {
       obj.name = message.name;
@@ -735,7 +729,7 @@ export const UserGroup = {
       obj.creator = message.creator;
     }
     if (message.members?.length) {
-      obj.members = message.members.map((e) => UserGroupMember.toJSON(e));
+      obj.members = message.members.map((e) => GroupMember.toJSON(e));
     }
     if (message.createTime !== undefined) {
       obj.createTime = message.createTime.toISOString();
@@ -743,38 +737,36 @@ export const UserGroup = {
     return obj;
   },
 
-  create(base?: DeepPartial<UserGroup>): UserGroup {
-    return UserGroup.fromPartial(base ?? {});
+  create(base?: DeepPartial<Group>): Group {
+    return Group.fromPartial(base ?? {});
   },
-  fromPartial(object: DeepPartial<UserGroup>): UserGroup {
-    const message = createBaseUserGroup();
+  fromPartial(object: DeepPartial<Group>): Group {
+    const message = createBaseGroup();
     message.name = object.name ?? "";
     message.title = object.title ?? "";
     message.description = object.description ?? "";
     message.creator = object.creator ?? "";
-    message.members = object.members?.map((e) => UserGroupMember.fromPartial(e)) || [];
+    message.members = object.members?.map((e) => GroupMember.fromPartial(e)) || [];
     message.createTime = object.createTime ?? undefined;
     return message;
   },
 };
 
-export type UserGroupServiceDefinition = typeof UserGroupServiceDefinition;
-export const UserGroupServiceDefinition = {
-  name: "UserGroupService",
-  fullName: "bytebase.v1.UserGroupService",
+export type GroupServiceDefinition = typeof GroupServiceDefinition;
+export const GroupServiceDefinition = {
+  name: "GroupService",
+  fullName: "bytebase.v1.GroupService",
   methods: {
-    getUserGroup: {
-      name: "GetUserGroup",
-      requestType: GetUserGroupRequest,
+    getGroup: {
+      name: "GetGroup",
+      requestType: GetGroupRequest,
       requestStream: false,
-      responseType: UserGroup,
+      responseType: Group,
       responseStream: false,
       options: {
         _unknownFields: {
           8410: [new Uint8Array([4, 110, 97, 109, 101])],
-          800010: [
-            new Uint8Array([17, 98, 98, 46, 117, 115, 101, 114, 71, 114, 111, 117, 112, 115, 46, 103, 101, 116]),
-          ],
+          800010: [new Uint8Array([13, 98, 98, 46, 103, 114, 111, 117, 112, 115, 46, 103, 101, 116])],
           800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
@@ -805,57 +797,31 @@ export const UserGroupServiceDefinition = {
         },
       },
     },
-    listUserGroups: {
-      name: "ListUserGroups",
-      requestType: ListUserGroupsRequest,
+    listGroups: {
+      name: "ListGroups",
+      requestType: ListGroupsRequest,
       requestStream: false,
-      responseType: ListUserGroupsResponse,
+      responseType: ListGroupsResponse,
       responseStream: false,
       options: {
         _unknownFields: {
           8410: [new Uint8Array([0])],
-          800010: [
-            new Uint8Array([18, 98, 98, 46, 117, 115, 101, 114, 71, 114, 111, 117, 112, 115, 46, 108, 105, 115, 116]),
-          ],
+          800010: [new Uint8Array([14, 98, 98, 46, 103, 114, 111, 117, 112, 115, 46, 108, 105, 115, 116])],
           800016: [new Uint8Array([1])],
           578365826: [new Uint8Array([12, 18, 10, 47, 118, 49, 47, 103, 114, 111, 117, 112, 115])],
         },
       },
     },
-    createUserGroup: {
-      name: "CreateUserGroup",
-      requestType: CreateUserGroupRequest,
+    createGroup: {
+      name: "CreateGroup",
+      requestType: CreateGroupRequest,
       requestStream: false,
-      responseType: UserGroup,
+      responseType: Group,
       responseStream: false,
       options: {
         _unknownFields: {
           8410: [new Uint8Array([5, 103, 114, 111, 117, 112])],
-          800010: [
-            new Uint8Array([
-              20,
-              98,
-              98,
-              46,
-              117,
-              115,
-              101,
-              114,
-              71,
-              114,
-              111,
-              117,
-              112,
-              115,
-              46,
-              99,
-              114,
-              101,
-              97,
-              116,
-              101,
-            ]),
-          ],
+          800010: [new Uint8Array([16, 98, 98, 46, 103, 114, 111, 117, 112, 115, 46, 99, 114, 101, 97, 116, 101])],
           800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([19, 58, 5, 103, 114, 111, 117, 112, 34, 10, 47, 118, 49, 47, 103, 114, 111, 117, 112, 115]),
@@ -864,43 +830,19 @@ export const UserGroupServiceDefinition = {
       },
     },
     /**
-     * UpdateUserGroup updates the user group.
-     * Users with "bb.userGroups.update" permission on the workspace or the user group owner can access this method.
+     * UpdateGroup updates the group.
+     * Users with "bb.groups.update" permission on the workspace or the group owner can access this method.
      */
-    updateUserGroup: {
-      name: "UpdateUserGroup",
-      requestType: UpdateUserGroupRequest,
+    updateGroup: {
+      name: "UpdateGroup",
+      requestType: UpdateGroupRequest,
       requestStream: false,
-      responseType: UserGroup,
+      responseType: Group,
       responseStream: false,
       options: {
         _unknownFields: {
           8410: [new Uint8Array([17, 103, 114, 111, 117, 112, 44, 117, 112, 100, 97, 116, 101, 95, 109, 97, 115, 107])],
-          800010: [
-            new Uint8Array([
-              20,
-              98,
-              98,
-              46,
-              117,
-              115,
-              101,
-              114,
-              71,
-              114,
-              111,
-              117,
-              112,
-              115,
-              46,
-              117,
-              112,
-              100,
-              97,
-              116,
-              101,
-            ]),
-          ],
+          800010: [new Uint8Array([16, 98, 98, 46, 103, 114, 111, 117, 112, 115, 46, 117, 112, 100, 97, 116, 101])],
           800016: [new Uint8Array([2])],
           578365826: [
             new Uint8Array([
@@ -944,40 +886,16 @@ export const UserGroupServiceDefinition = {
         },
       },
     },
-    deleteUserGroup: {
-      name: "DeleteUserGroup",
-      requestType: DeleteUserGroupRequest,
+    deleteGroup: {
+      name: "DeleteGroup",
+      requestType: DeleteGroupRequest,
       requestStream: false,
       responseType: Empty,
       responseStream: false,
       options: {
         _unknownFields: {
           8410: [new Uint8Array([4, 110, 97, 109, 101])],
-          800010: [
-            new Uint8Array([
-              20,
-              98,
-              98,
-              46,
-              117,
-              115,
-              101,
-              114,
-              71,
-              114,
-              111,
-              117,
-              112,
-              115,
-              46,
-              100,
-              101,
-              108,
-              101,
-              116,
-              101,
-            ]),
-          ],
+          800010: [new Uint8Array([16, 98, 98, 46, 103, 114, 111, 117, 112, 115, 46, 100, 101, 108, 101, 116, 101])],
           800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([

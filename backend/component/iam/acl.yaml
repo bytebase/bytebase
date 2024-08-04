@@ -99,11 +99,11 @@ roles:
       - bb.slowQueries.list
       - bb.taskRuns.create
       - bb.taskRuns.list
-      - bb.userGroups.create
-      - bb.userGroups.delete
-      - bb.userGroups.get
-      - bb.userGroups.list
-      - bb.userGroups.update
+      - bb.groups.create
+      - bb.groups.delete
+      - bb.groups.get
+      - bb.groups.list
+      - bb.groups.update
       - bb.users.create
       - bb.users.delete
       - bb.users.undelete
@@ -222,8 +222,8 @@ roles:
       - bb.slowQueries.list
       - bb.taskRuns.create
       - bb.taskRuns.list
-      - bb.userGroups.get
-      - bb.userGroups.list
+      - bb.groups.get
+      - bb.groups.list
       - bb.vcsConnectors.create
       - bb.vcsConnectors.delete
       - bb.vcsConnectors.get
@@ -251,8 +251,8 @@ roles:
       - bb.roles.list
       - bb.settings.get
       - bb.settings.list
-      - bb.userGroups.get
-      - bb.userGroups.list
+      - bb.groups.get
+      - bb.groups.list
       - bb.vcsProviders.get
       - bb.vcsProviders.list
       - bb.vcsProviders.searchProjects

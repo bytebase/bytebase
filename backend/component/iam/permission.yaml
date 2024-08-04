@@ -88,11 +88,11 @@ permissions:
   - bb.slowQueries.list
   - bb.taskRuns.create
   - bb.taskRuns.list
-  - bb.userGroups.create
-  - bb.userGroups.delete
-  - bb.userGroups.get
-  - bb.userGroups.list
-  - bb.userGroups.update
+  - bb.groups.create
+  - bb.groups.delete
+  - bb.groups.get
+  - bb.groups.list
+  - bb.groups.update
   - bb.users.create
   - bb.users.delete
   - bb.users.undelete

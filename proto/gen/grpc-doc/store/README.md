@@ -111,6 +111,12 @@
 - [store/export_archive.proto](#store_export_archive-proto)
     - [ExportArchivePayload](#bytebase-store-ExportArchivePayload)
   
+- [store/group.proto](#store_group-proto)
+    - [GroupMember](#bytebase-store-GroupMember)
+    - [GroupPayload](#bytebase-store-GroupPayload)
+  
+    - [GroupMember.Role](#bytebase-store-GroupMember-Role)
+  
 - [store/idp.proto](#store_idp-proto)
     - [FieldMapping](#bytebase-store-FieldMapping)
     - [IdentityProviderConfig](#bytebase-store-IdentityProviderConfig)
@@ -301,12 +307,6 @@
   
 - [store/user.proto](#store_user-proto)
     - [MFAConfig](#bytebase-store-MFAConfig)
-  
-- [store/user_group.proto](#store_user_group-proto)
-    - [UserGroupMember](#bytebase-store-UserGroupMember)
-    - [UserGroupPayload](#bytebase-store-UserGroupPayload)
-  
-    - [UserGroupMember.Role](#bytebase-store-UserGroupMember-Role)
   
 - [store/vcs.proto](#store_vcs-proto)
     - [VCSConnector](#bytebase-store-VCSConnector)
@@ -1904,6 +1904,68 @@ PostgreSQL: RANGE, LIST, HASH (https://www.postgresql.org/docs/current/ddl-parti
 
 
  
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="store_group-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## store/group.proto
+
+
+
+<a name="bytebase-store-GroupMember"></a>
+
+### GroupMember
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| member | [string](#string) |  | Member is the principal who belong to this group.
+
+Format: users/{userUID}. |
+| role | [GroupMember.Role](#bytebase-store-GroupMember-Role) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-GroupPayload"></a>
+
+### GroupPayload
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| members | [GroupMember](#bytebase-store-GroupMember) | repeated |  |
+
+
+
+
+
+ 
+
+
+<a name="bytebase-store-GroupMember-Role"></a>
+
+### GroupMember.Role
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| ROLE_UNSPECIFIED | 0 |  |
+| OWNER | 1 |  |
+| MEMBER | 2 |  |
+
 
  
 
@@ -4635,68 +4697,6 @@ MFAConfig is the MFA configuration for a user.
 
 
  
-
- 
-
- 
-
- 
-
-
-
-<a name="store_user_group-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## store/user_group.proto
-
-
-
-<a name="bytebase-store-UserGroupMember"></a>
-
-### UserGroupMember
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| member | [string](#string) |  | Member is the principal who belong to this user group.
-
-Format: users/{userUID}. |
-| role | [UserGroupMember.Role](#bytebase-store-UserGroupMember-Role) |  |  |
-
-
-
-
-
-
-<a name="bytebase-store-UserGroupPayload"></a>
-
-### UserGroupPayload
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| members | [UserGroupMember](#bytebase-store-UserGroupMember) | repeated |  |
-
-
-
-
-
- 
-
-
-<a name="bytebase-store-UserGroupMember-Role"></a>
-
-### UserGroupMember.Role
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| ROLE_UNSPECIFIED | 0 |  |
-| OWNER | 1 |  |
-| MEMBER | 2 |  |
-
 
  
 

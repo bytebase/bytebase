@@ -4,8 +4,8 @@ package bytebase.store;
 
 option go_package = "generated-go/store";
 
-message UserGroupMember {
-  // Member is the principal who belong to this user group.
+message GroupMember {
+  // Member is the principal who belong to this group.
   //
   // Format: users/{userUID}.
   string member = 1;
@@ -19,6 +19,6 @@ message UserGroupMember {
   Role role = 2;
 }
 
-message UserGroupPayload {
-  repeated UserGroupMember members = 1;
+message GroupPayload {
+  repeated GroupMember members = 1;
 }

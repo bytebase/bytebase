@@ -22,11 +22,11 @@
 <script lang="ts" setup>
 import { PencilIcon, Trash2Icon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
-import type { UserGroup } from "@/types/proto/v1/user_group";
+import type { Group } from "@/types/proto/v1/group";
 import RemoveGroupButton from "../../RemoveGroupButton.vue";
 
 defineProps<{
-  group: UserGroup;
+  group: Group;
   allowEdit: boolean;
 }>();
 
