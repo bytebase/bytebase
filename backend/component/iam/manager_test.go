@@ -11,18 +11,20 @@ import (
 )
 
 func TestCheck(t *testing.T) {
+	userID := 123
+
 	roles, err := loadPredefinedRoles()
 	require.NoError(t, err)
 	rolePermissions := make(map[string]map[Permission]bool)
 	for _, role := range roles {
 		rolePermissions[common.FormatRole(role.ResourceID)] = role.Permissions
 	}
-	userID := 123
 
 	tests := []struct {
-		permission Permission
-		policy     *storepb.IamPolicy
-		want       bool
+		permission       Permission
+		policy           *storepb.IamPolicy
+		userGroupMembers map[string]map[string]bool
+		want             bool
 	}{
 		{
 			permission: PermissionInstancesCreate,
@@ -34,7 +36,8 @@ func TestCheck(t *testing.T) {
 					},
 				},
 			},
-			want: false,
+			userGroupMembers: nil,
+			want:             false,
 		},
 		{
 			permission: PermissionInstancesCreate,
@@ -46,7 +49,8 @@ func TestCheck(t *testing.T) {
 					},
 				},
 			},
-			want: true,
+			userGroupMembers: nil,
+			want:             true,
 		},
 		{
 			permission: PermissionInstancesCreate,
@@ -58,7 +62,8 @@ func TestCheck(t *testing.T) {
 					},
 				},
 			},
-			want: false,
+			userGroupMembers: nil,
+			want:             false,
 		},
 		{
 			permission: PermissionInstancesCreate,
@@ -70,14 +75,31 @@ func TestCheck(t *testing.T) {
 					},
 				},
 			},
-			want: true,
+			userGroupMembers: nil,
+			want:             true,
 		},
-	}
+		{
+			permission: PermissionInstancesCreate,
+			policy: &storepb.IamPolicy{
+				Bindings: []*storepb.Binding{
+					{
+						Role:    "roles/workspaceAdmin",
+						Members: []string{"groups/eng@bytebase.com"},
+					},
+				},
+			},
+			userGroupMembers: map[string]map[string]bool{
+				"groups/eng@bytebase.com": {
+					"users/123": true,
+				},
+			},
+			want: true,
+		}}
 
-	for _, test := range tests {
-		got := check(userID, test.permission, test.policy, rolePermissions)
+	for i, test := range tests {
+		got := check(userID, test.permission, test.policy, rolePermissions, test.userGroupMembers)
 		if got != test.want {
-			require.Equal(t, test.want, got)
+			require.Equal(t, test.want, got, i)
 		}
 	}
 }

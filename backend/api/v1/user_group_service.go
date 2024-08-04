@@ -91,6 +91,10 @@ func (s *UserGroupService) CreateUserGroup(ctx context.Context, request *v1pb.Cr
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
+	if err := s.iamManager.ReloadCache(ctx); err != nil {
+		return nil, err
+	}
+
 	return s.convertToV1Group(ctx, group)
 }
 
@@ -101,13 +105,33 @@ func (s *UserGroupService) UpdateUserGroup(ctx context.Context, request *v1pb.Up
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
-	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
+	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
 	if !ok {
-		return nil, status.Errorf(codes.Internal, "principal ID not found")
+		return nil, status.Errorf(codes.Internal, "user not found")
+	}
+	userName := common.FormatUserUID(user.ID)
+
+	group, err := s.store.GetUserGroup(ctx, groupEmail)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get group %q with error: %v", groupEmail, err)
+	}
+	if group == nil {
+		return nil, status.Errorf(codes.NotFound, "group %q not found", groupEmail)
 	}
 
-	if err := s.checkPermission(ctx, groupEmail); err != nil {
-		return nil, err
+	ok, err = func() (bool, error) {
+		for _, member := range group.Payload.GetMembers() {
+			if member.Role == storepb.UserGroupMember_OWNER && member.Member == userName {
+				return true, nil
+			}
+		}
+		return s.iamManager.CheckPermission(ctx, iam.PermissionUserGroupsUpdate, user)
+	}()
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to check permission, error: %v", err)
+	}
+	if !ok {
+		return nil, status.Errorf(codes.PermissionDenied, "permission denied to update group")
 	}
 
 	patch := &store.UpdateUserGroupMessage{}
@@ -128,9 +152,13 @@ func (s *UserGroupService) UpdateUserGroup(ctx context.Context, request *v1pb.Up
 		}
 	}
 
-	groupMessage, err := s.store.UpdateUserGroup(ctx, groupEmail, patch, principalID)
+	groupMessage, err := s.store.UpdateUserGroup(ctx, groupEmail, patch, user.ID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+
+	if err := s.iamManager.ReloadCache(ctx); err != nil {
+		return nil, err
 	}
 
 	return s.convertToV1Group(ctx, groupMessage)
@@ -147,37 +175,11 @@ func (s *UserGroupService) DeleteUserGroup(ctx context.Context, request *v1pb.De
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
+	if err := s.iamManager.ReloadCache(ctx); err != nil {
+		return nil, err
+	}
+
 	return &emptypb.Empty{}, nil
-}
-
-func (s *UserGroupService) checkPermission(ctx context.Context, groupEmail string) error {
-	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
-	if !ok {
-		return status.Errorf(codes.Internal, "user not found")
-	}
-	userName := common.FormatUserUID(user.ID)
-
-	group, err := s.store.GetUserGroup(ctx, groupEmail)
-	if err != nil {
-		return status.Errorf(codes.Internal, "failed to get user group %q with error: %v", groupEmail, err)
-	}
-	if group == nil {
-		return status.Errorf(codes.NotFound, "group %q not found", groupEmail)
-	}
-	for _, member := range group.Payload.GetMembers() {
-		if member.Role == storepb.UserGroupMember_OWNER && member.Member == userName {
-			return nil
-		}
-	}
-
-	ok, err = s.iamManager.CheckPermission(ctx, iam.PermissionUserGroupsUpdate, user)
-	if err != nil {
-		return status.Errorf(codes.Internal, "failed to check permission with error: %v", err)
-	}
-	if !ok {
-		return status.Errorf(codes.PermissionDenied, "only group owner or user with permission %q can update group", iam.PermissionUserGroupsUpdate)
-	}
-	return nil
 }
 
 func (s *UserGroupService) convertToGroupPayload(ctx context.Context, group *v1pb.UserGroup) (*storepb.UserGroupPayload, error) {
