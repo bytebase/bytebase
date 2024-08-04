@@ -27,9 +27,9 @@ import { useI18n } from "vue-i18n";
 import { BBAlert } from "@/bbkit";
 import { useUserStore } from "@/store";
 import { type ComposedUser } from "@/types";
-import type { UserGroup } from "@/types/proto/v1/user_group";
+import type { Group } from "@/types/proto/v1/group";
 import { copyServiceKeyToClipboardIfNeeded } from "../common";
-import UserGroupsCell from "./cells/UserGroupsCell.vue";
+import GroupsCell from "./cells/GroupsCell.vue";
 import UserNameCell from "./cells/UserNameCell.vue";
 import UserOperationsCell from "./cells/UserOperationsCell.vue";
 import UserRolesCell from "./cells/UserRolesCell.vue";
@@ -49,7 +49,7 @@ defineProps<{
 
 const emit = defineEmits<{
   (event: "update-user", user: ComposedUser): void;
-  (event: "select-group", group: UserGroup): void;
+  (event: "select-group", group: Group): void;
 }>();
 
 const { t } = useI18n();
@@ -87,7 +87,7 @@ const columns = computed(() => {
       title: t("settings.members.table.groups"),
       resizable: true,
       render: (user: ComposedUser) => {
-        return h(UserGroupsCell, {
+        return h(GroupsCell, {
           user,
           "onSelect-group": (group) => emit("select-group", group),
         });

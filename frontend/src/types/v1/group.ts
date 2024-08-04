@@ -1,12 +1,12 @@
-import { userGroupNamePrefix } from "@/store/modules/v1/common";
+import { groupNamePrefix } from "@/store/modules/v1/common";
 import { EMPTY_ID, UNKNOWN_ID } from "../const";
-import { UserGroup } from "../proto/v1/user_group";
+import { Group } from "../proto/v1/group";
 
-export const UNKNOWN_GROUP_NAME = `${userGroupNamePrefix}${UNKNOWN_ID}`;
+export const UNKNOWN_GROUP_NAME = `${groupNamePrefix}${UNKNOWN_ID}`;
 
 export const emptyGroup = () => {
-  return UserGroup.fromPartial({
-    name: `${userGroupNamePrefix}${EMPTY_ID}`,
+  return Group.fromPartial({
+    name: `${groupNamePrefix}${EMPTY_ID}`,
     title: "",
     description: "",
     members: [],

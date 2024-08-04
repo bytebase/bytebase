@@ -35,7 +35,7 @@
           </template>
         </NButton>
       </div>
-      <UserGroupSelect
+      <GroupSelect
         v-model:value="state.memberList"
         class="mt-2"
         :multiple="true"
@@ -102,14 +102,14 @@ import { NInputNumber, NInput, NRadioGroup, NRadio, NButton } from "naive-ui";
 import { computed, reactive, watch } from "vue";
 import ExpirationSelector from "@/components/ExpirationSelector.vue";
 import QuerierDatabaseResourceForm from "@/components/Issue/panel/RequestQueryPanel/DatabaseResourceForm/index.vue";
-import { ProjectRoleSelect, UserGroupSelect, UserSelect } from "@/components/v2/Select";
+import { ProjectRoleSelect, GroupSelect, UserSelect } from "@/components/v2/Select";
 import {
   useUserStore,
-  useUserGroupStore,
+  useGroupStore,
   extractGroupEmail,
   useSettingV1Store,
 } from "@/store";
-import { userGroupNamePrefix } from "@/store/modules/v1/common";
+import { groupNamePrefix } from "@/store/modules/v1/common";
 import type { ComposedProject, DatabaseResource } from "@/types";
 import {
   getUserEmailInBinding,
@@ -207,7 +207,7 @@ const maximumRoleExpiration = computed(() => {
 });
 
 const userStore = useUserStore();
-const groupStore = useUserGroupStore();
+const groupStore = useGroupStore();
 const settingV1Store = useSettingV1Store();
 const state = reactive<LocalState>(getInitialState());
 
@@ -216,11 +216,11 @@ watch(
   (type) => {
     if (
       type === "MEMBER" &&
-      !state.memberList.every((m) => !m.startsWith(userGroupNamePrefix))
+      !state.memberList.every((m) => !m.startsWith(groupNamePrefix))
     ) {
       state.memberList = [];
     } else if (
-      !state.memberList.every((m) => m.startsWith(userGroupNamePrefix))
+      !state.memberList.every((m) => m.startsWith(groupNamePrefix))
     ) {
       state.memberList = [];
     }

@@ -19,12 +19,12 @@ import { NCheckbox, NSelect, NTag, type SelectOption } from "naive-ui";
 import type { SelectBaseOption } from "naive-ui/lib/select/src/interface";
 import { computed } from "vue";
 import GroupNameCell from "@/components/User/Settings/UserDataTableByGroup/cells/GroupNameCell.vue";
-import { useUserGroupStore } from "@/store";
-import type { UserGroup } from "@/types/proto/v1/user_group";
+import { useGroupStore } from "@/store";
+import type { Group } from "@/types/proto/v1/group";
 
 export interface GroupSelectOption extends SelectOption {
   value: string;
-  group: UserGroup;
+  group: Group;
 }
 
 const props = withDefaults(
@@ -49,7 +49,7 @@ defineEmits<{
   (event: "update:value", val: string | string[]): void;
 }>();
 
-const groupStore = useUserGroupStore();
+const groupStore = useGroupStore();
 
 const options = computed(() => {
   return groupStore.groupList.map<GroupSelectOption>((group) => ({

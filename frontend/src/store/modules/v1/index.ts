@@ -24,7 +24,7 @@ export * from "./anomaly";
 export * from "./changelist";
 export * from "./issueComment";
 export * from "./auditLog";
-export * from "./userGroup";
+export * from "./group";
 export * from "./permission";
 export * from "./workspace";
 export * from "./instanceResource";

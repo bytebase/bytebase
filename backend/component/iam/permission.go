@@ -100,11 +100,11 @@ const (
 	PermissionSlowQueriesList            Permission = "bb.slowQueries.list"
 	PermissionTaskRunsCreate             Permission = "bb.taskRuns.create"
 	PermissionTaskRunsList               Permission = "bb.taskRuns.list"
-	PermissionUserGroupsCreate           Permission = "bb.userGroups.create"
-	PermissionUserGroupsDelete           Permission = "bb.userGroups.delete"
-	PermissionUserGroupsGet              Permission = "bb.userGroups.get"
-	PermissionUserGroupsList             Permission = "bb.userGroups.list"
-	PermissionUserGroupsUpdate           Permission = "bb.userGroups.update"
+	PermissionGroupsCreate               Permission = "bb.groups.create"
+	PermissionGroupsDelete               Permission = "bb.groups.delete"
+	PermissionGroupsGet                  Permission = "bb.groups.get"
+	PermissionGroupsList                 Permission = "bb.groups.list"
+	PermissionGroupsUpdate               Permission = "bb.groups.update"
 	PermissionUsersCreate                Permission = "bb.users.create"
 	PermissionUsersDelete                Permission = "bb.users.delete"
 	PermissionUsersUndelete              Permission = "bb.users.undelete"
@@ -223,11 +223,11 @@ var allPermissions = []Permission{
 	PermissionSlowQueriesList,
 	PermissionTaskRunsCreate,
 	PermissionTaskRunsList,
-	PermissionUserGroupsCreate,
-	PermissionUserGroupsDelete,
-	PermissionUserGroupsGet,
-	PermissionUserGroupsList,
-	PermissionUserGroupsUpdate,
+	PermissionGroupsCreate,
+	PermissionGroupsDelete,
+	PermissionGroupsGet,
+	PermissionGroupsList,
+	PermissionGroupsUpdate,
 	PermissionUsersCreate,
 	PermissionUsersDelete,
 	PermissionUsersUndelete,
