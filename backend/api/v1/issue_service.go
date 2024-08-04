@@ -113,13 +113,10 @@ func (s *IssueService) GetIssue(ctx context.Context, request *v1pb.GetIssueReque
 	return issueV1, nil
 }
 
-func (s *IssueService) getIssueFind(ctx context.Context, projectID string, filter string, query string, limit, offset *int) (*store.FindIssueMessage, error) {
+func (s *IssueService) getIssueFind(ctx context.Context, filter string, query string, limit, offset *int) (*store.FindIssueMessage, error) {
 	issueFind := &store.FindIssueMessage{
 		Limit:  limit,
 		Offset: offset,
-	}
-	if projectID != "-" {
-		issueFind.ProjectID = &projectID
 	}
 	if query != "" {
 		issueFind.Query = &query
@@ -290,10 +287,12 @@ func (s *IssueService) ListIssues(ctx context.Context, request *v1pb.ListIssuesR
 	}
 	limitPlusOne := limit + 1
 
-	issueFind, err := s.getIssueFind(ctx, projectID, request.Filter, request.Query, &limitPlusOne, &offset)
+	issueFind, err := s.getIssueFind(ctx, request.Filter, request.Query, &limitPlusOne, &offset)
 	if err != nil {
 		return nil, err
 	}
+	issueFind.ProjectID = &projectID
+
 	issues, err := s.store.ListIssueV2(ctx, issueFind)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to search issue, error: %v", err)
@@ -335,10 +334,22 @@ func (s *IssueService) SearchIssues(ctx context.Context, request *v1pb.SearchIss
 	}
 	limitPlusOne := limit + 1
 
-	issueFind, err := s.getIssueFind(ctx, projectID, request.Filter, request.Query, &limitPlusOne, &offset)
+	issueFind, err := s.getIssueFind(ctx, request.Filter, request.Query, &limitPlusOne, &offset)
 	if err != nil {
 		return nil, err
 	}
+	if projectID != "-" {
+		issueFind.ProjectID = &projectID
+	}
+	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "user not found")
+	}
+	projectIDsFilter, err := getProjectIDsSearchFilter(ctx, user, iam.PermissionIssuesGet, s.iamManager, s.store)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get projectIDs, error: %v", err)
+	}
+	issueFind.ProjectIDs = projectIDsFilter
 
 	issues, err := s.store.ListIssueV2(ctx, issueFind)
 	if err != nil {

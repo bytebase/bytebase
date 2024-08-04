@@ -143,8 +143,7 @@ func (s *PlanService) SearchPlans(ctx context.Context, request *v1pb.SearchPlans
 	if !ok {
 		return nil, status.Errorf(codes.Internal, "user not found")
 	}
-
-	projectIDs, err := s.getProjectIDsWithPermission(ctx, user)
+	projectIDsFilter, err := getProjectIDsSearchFilter(ctx, user, iam.PermissionPlansGet, s.iamManager, s.store)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get projectIDs, error: %v", err)
 	}
@@ -158,7 +157,7 @@ func (s *PlanService) SearchPlans(ctx context.Context, request *v1pb.SearchPlans
 	find := &store.FindPlanMessage{
 		Limit:      &limitPlusOne,
 		Offset:     &offset,
-		ProjectIDs: projectIDs,
+		ProjectIDs: projectIDsFilter,
 	}
 	if projectID != "-" {
 		find.ProjectID = &projectID
@@ -194,23 +193,22 @@ func (s *PlanService) SearchPlans(ctx context.Context, request *v1pb.SearchPlans
 	}, nil
 }
 
-func (s *PlanService) getProjectIDsWithPermission(ctx context.Context, user *store.UserMessage) (*[]string, error) {
-	permission := iam.PermissionPlansGet
-	ok, err := s.iamManager.CheckPermission(ctx, permission, user)
+func getProjectIDsSearchFilter(ctx context.Context, user *store.UserMessage, permission iam.Permission, iamManager *iam.Manager, stores *store.Store) (*[]string, error) {
+	ok, err := iamManager.CheckPermission(ctx, permission, user)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to check permission %q", permission)
 	}
 	if ok {
 		return nil, nil
 	}
-	projects, err := s.store.ListProjectV2(ctx, &store.FindProjectMessage{})
+	projects, err := stores.ListProjectV2(ctx, &store.FindProjectMessage{})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to list projects")
 	}
 
 	var projectIDs []string
 	for _, project := range projects {
-		ok, err := s.iamManager.CheckPermission(ctx, permission, user, project.ResourceID)
+		ok, err := iamManager.CheckPermission(ctx, permission, user, project.ResourceID)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to check permission %q", permission)
 		}
