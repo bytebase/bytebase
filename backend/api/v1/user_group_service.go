@@ -91,6 +91,10 @@ func (s *UserGroupService) CreateUserGroup(ctx context.Context, request *v1pb.Cr
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
+	if err := s.iamManager.ReloadCache(ctx); err != nil {
+		return nil, err
+	}
+
 	return s.convertToV1Group(ctx, group)
 }
 
@@ -133,6 +137,10 @@ func (s *UserGroupService) UpdateUserGroup(ctx context.Context, request *v1pb.Up
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
+	if err := s.iamManager.ReloadCache(ctx); err != nil {
+		return nil, err
+	}
+
 	return s.convertToV1Group(ctx, groupMessage)
 }
 
@@ -149,6 +157,10 @@ func (s *UserGroupService) DeleteUserGroup(ctx context.Context, request *v1pb.De
 
 	if err := s.store.DeleteUserGroup(ctx, email); err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+
+	if err := s.iamManager.ReloadCache(ctx); err != nil {
+		return nil, err
 	}
 
 	return &emptypb.Empty{}, nil
