@@ -113,11 +113,10 @@ func (s *IssueService) GetIssue(ctx context.Context, request *v1pb.GetIssueReque
 	return issueV1, nil
 }
 
-func (s *IssueService) getIssueFind(ctx context.Context, permissionFilter *store.FindIssueMessagePermissionFilter, projectID string, filter string, query string, limit, offset *int) (*store.FindIssueMessage, error) {
+func (s *IssueService) getIssueFind(ctx context.Context, projectID string, filter string, query string, limit, offset *int) (*store.FindIssueMessage, error) {
 	issueFind := &store.FindIssueMessage{
-		PermissionFilter: permissionFilter,
-		Limit:            limit,
-		Offset:           offset,
+		Limit:  limit,
+		Offset: offset,
 	}
 	if projectID != "-" {
 		issueFind.ProjectID = &projectID
@@ -291,7 +290,7 @@ func (s *IssueService) ListIssues(ctx context.Context, request *v1pb.ListIssuesR
 	}
 	limitPlusOne := limit + 1
 
-	issueFind, err := s.getIssueFind(ctx, nil, projectID, request.Filter, request.Query, &limitPlusOne, &offset)
+	issueFind, err := s.getIssueFind(ctx, projectID, request.Filter, request.Query, &limitPlusOne, &offset)
 	if err != nil {
 		return nil, err
 	}
@@ -330,23 +329,13 @@ func (s *IssueService) SearchIssues(ctx context.Context, request *v1pb.SearchIss
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
-	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
-	if !ok {
-		return nil, status.Errorf(codes.Internal, "user not found")
-	}
-
-	permissionFilter, err := getIssuePermissionFilter(ctx, s.store, user, s.iamManager)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get project ids and issue types filter, error: %v", err)
-	}
-
 	limit, offset, err := parseLimitAndOffset(request.PageToken, int(request.PageSize))
 	if err != nil {
 		return nil, err
 	}
 	limitPlusOne := limit + 1
 
-	issueFind, err := s.getIssueFind(ctx, permissionFilter, projectID, request.Filter, request.Query, &limitPlusOne, &offset)
+	issueFind, err := s.getIssueFind(ctx, projectID, request.Filter, request.Query, &limitPlusOne, &offset)
 	if err != nil {
 		return nil, err
 	}
@@ -1642,114 +1631,4 @@ func isUserReviewer(ctx context.Context, stores *store.Store, step *storepb.Appr
 	default:
 		return false, errors.Errorf("invalid node payload type")
 	}
-}
-
-// 1. if the user is the issue creator
-// 2. with bb.issues.get/list permission, users can see grant request type issues.
-// 3. with bb.issues.get/list and bb.plans.get/list permissions, users can see change database type issues.
-func getIssuePermissionFilter(ctx context.Context, stores *store.Store, user *store.UserMessage, iamManager *iam.Manager) (*store.FindIssueMessagePermissionFilter, error) {
-	issuePermission := iam.PermissionIssuesList
-	planPermission := iam.PermissionPlansList
-
-	projects, err := stores.ListProjectV2(ctx, &store.FindProjectMessage{})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to list projects")
-	}
-	var allProjectIDs []string
-	for _, project := range projects {
-		allProjectIDs = append(allProjectIDs, project.ResourceID)
-	}
-
-	issueProjectIDs, err := getProjectIDsWithPermission(ctx, stores, user, iamManager, issuePermission)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get project ids with permission %q", issuePermission)
-	}
-	planProjectIDs, err := getProjectIDsWithPermission(ctx, stores, user, iamManager, planPermission)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get project ids with permission %q", planPermission)
-	}
-
-	// no filter, the user can see all.
-	if issueProjectIDs == nil && planProjectIDs == nil {
-		return nil, nil
-	}
-
-	intersectProjectIDs := func(array1 *[]string, array2 *[]string) *[]string {
-		if array1 == nil && array2 == nil {
-			return nil
-		}
-		if array1 == nil {
-			return array2
-		}
-		if array2 == nil {
-			return array1
-		}
-		res := intersect(*array1, *array2)
-		return &res
-	}
-
-	allowGrantRequest := issueProjectIDs
-	allowChangeDatabase := intersectProjectIDs(issueProjectIDs, planProjectIDs)
-	if allowGrantRequest == nil {
-		allowGrantRequest = &allProjectIDs
-	}
-	if allowChangeDatabase == nil {
-		allowChangeDatabase = &allProjectIDs
-	}
-
-	res := &store.FindIssueMessagePermissionFilter{
-		CreatorUID: user.ID,
-	}
-	for _, id := range *allowGrantRequest {
-		res.ProjectIDs = append(res.ProjectIDs, id)
-		res.IssueTypes = append(res.IssueTypes, api.IssueGrantRequest.String())
-	}
-	for _, id := range *allowChangeDatabase {
-		res.ProjectIDs = append(res.ProjectIDs, id)
-		res.IssueTypes = append(res.IssueTypes, api.IssueDatabaseGeneral.String())
-	}
-	return res, nil
-}
-
-func getProjectIDsWithPermission(ctx context.Context, s *store.Store, user *store.UserMessage, iamManager *iam.Manager, permission iam.Permission) (*[]string, error) {
-	ok, err := iamManager.CheckPermission(ctx, permission, user)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to check permission %q", permission)
-	}
-	if ok {
-		return nil, nil
-	}
-	projects, err := s.ListProjectV2(ctx, &store.FindProjectMessage{})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to list projects")
-	}
-
-	projectIDs := []string{}
-	for _, project := range projects {
-		ok, err := iamManager.CheckPermission(ctx, permission, user, project.ResourceID)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to check permission %q", permission)
-		}
-		if ok {
-			projectIDs = append(projectIDs, project.ResourceID)
-		}
-	}
-	return &projectIDs, nil
-}
-
-func intersect[T comparable](array1 []T, array2 []T) []T {
-	res := []T{}
-	seen := map[T]struct{}{}
-
-	for _, e := range array1 {
-		seen[e] = struct{}{}
-	}
-
-	for _, elem := range array2 {
-		if _, ok := seen[elem]; ok {
-			res = append(res, elem)
-		}
-	}
-
-	return res
 }
