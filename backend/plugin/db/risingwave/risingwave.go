@@ -383,7 +383,7 @@ func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, 
 					return nil, util.FormatErrorWithQuery(err, statement)
 				}
 				defer rows.Close()
-				r, err := util.RowsToQueryResult(storepb.Engine_POSTGRES, rows)
+				r, err := util.RowsToQueryResult(rows)
 				if err != nil {
 					return nil, err
 				}
@@ -403,15 +403,19 @@ func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, 
 			}
 			return util.BuildAffectedRowsResult(affectedRows), nil
 		}()
+		stop := false
 		if err != nil {
 			queryResult = &v1pb.QueryResult{
 				Error: err.Error(),
 			}
+			stop = true
 		}
-
 		queryResult.Statement = statement
 		queryResult.Latency = durationpb.New(time.Since(startTime))
 		results = append(results, queryResult)
+		if stop {
+			break
+		}
 	}
 
 	return results, nil
@@ -419,9 +423,4 @@ func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, 
 
 func getStatementWithResultLimit(stmt string, limit int) string {
 	return fmt.Sprintf("WITH result AS (%s) SELECT * FROM result LIMIT %d;", stmt, limit)
-}
-
-// RunStatement runs a SQL statement in a given connection.
-func (driver *Driver) RunStatement(ctx context.Context, conn *sql.Conn, statement string) ([]*v1pb.QueryResult, error) {
-	return driver.QueryConn(ctx, conn, statement, nil)
 }

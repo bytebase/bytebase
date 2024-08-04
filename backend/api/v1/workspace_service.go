@@ -78,7 +78,9 @@ func (s *WorkspaceService) SetIamPolicy(ctx context.Context, request *v1pb.SetIa
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	s.iamManager.ClearCache()
+	if err := s.iamManager.ReloadCache(ctx); err != nil {
+		return nil, err
+	}
 
 	policy, err := s.store.GetWorkspaceIamPolicy(ctx)
 	if err != nil {

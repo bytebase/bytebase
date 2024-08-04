@@ -383,7 +383,10 @@ const workspaceRoutes: RouteRecordRaw[] = [
         name: WORKSPACE_ROUTE_AUDIT_LOG,
         meta: {
           title: () => t("settings.sidebar.audit-log"),
-          requiredWorkspacePermissionList: () => ["bb.settings.get"],
+          requiredWorkspacePermissionList: () => [
+            "bb.settings.get",
+            "bb.auditLogs.search",
+          ],
         },
         component: () => import("@/views/SettingWorkspaceAuditLog.vue"),
         props: true,

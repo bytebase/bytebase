@@ -65,10 +65,22 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 	defer wg.Done()
 	slog.Debug(fmt.Sprintf("Approval runner started and will run every %v", approvalRunnerInterval))
 	r.retryFindApprovalTemplate(ctx)
+
 	for {
 		select {
 		case <-ticker.C:
-			r.runOnce(ctx)
+			func() {
+				defer func() {
+					if r := recover(); r != nil {
+						err, ok := r.(error)
+						if !ok {
+							err = errors.Errorf("%v", r)
+						}
+						slog.Error("Approval runner PANIC RECOVER", log.BBError(err), log.BBStack("panic-stack"))
+					}
+				}()
+				r.runOnce(ctx)
+			}()
 		case <-ctx.Done():
 			return
 		}
@@ -76,46 +88,30 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 }
 
 func (r *Runner) runOnce(ctx context.Context) {
-	defer func() {
-		if r := recover(); r != nil {
-			err, ok := r.(error)
-			if !ok {
-				err = errors.Errorf("%v", r)
-			}
-			slog.Error("Approval runner PANIC RECOVER", log.BBError(err), log.BBStack("panic-stack"))
-		}
-	}()
-
-	if err := func() error {
-		risks, err := r.store.ListRisks(ctx)
-		if err != nil {
-			return errors.Wrap(err, "failed to list risks")
-		}
-		approvalSetting, err := r.store.GetWorkspaceApprovalSetting(ctx)
-		if err != nil {
-			return errors.Wrap(err, "failed to get workspace approval setting")
-		}
-
-		var errs error
-		r.stateCfg.ApprovalFinding.Range(func(key, value any) bool {
-			issue, ok := value.(*store.IssueMessage)
-			if !ok {
-				return true
-			}
-			done, err := r.findApprovalTemplateForIssue(ctx, issue, risks, approvalSetting)
-			if err != nil {
-				errs = multierr.Append(errs, errors.Wrapf(err, "failed to find approval template for issue %v", issue.UID))
-			}
-			if err != nil || done {
-				r.stateCfg.ApprovalFinding.Delete(key)
-			}
-			return true
-		})
-
-		return errs
-	}(); err != nil {
-		slog.Error("approval runner", log.BBError(err))
+	risks, err := r.store.ListRisks(ctx)
+	if err != nil {
+		slog.Error("failed to list risks", log.BBError(err))
+		return
 	}
+	approvalSetting, err := r.store.GetWorkspaceApprovalSetting(ctx)
+	if err != nil {
+		slog.Error("failed to get workspace approval setting", log.BBError(err))
+	}
+
+	r.stateCfg.ApprovalFinding.Range(func(key, value any) bool {
+		issue, ok := value.(*store.IssueMessage)
+		if !ok {
+			return true
+		}
+		done, err := r.findApprovalTemplateForIssue(ctx, issue, risks, approvalSetting)
+		if err != nil {
+			slog.Error("failed to find approval template for issue", slog.Int("issue", issue.UID), log.BBError(err))
+		}
+		if err != nil || done {
+			r.stateCfg.ApprovalFinding.Delete(key)
+		}
+		return true
+	})
 }
 
 func (r *Runner) retryFindApprovalTemplate(ctx context.Context) {
@@ -341,24 +337,6 @@ func getIssueRisk(ctx context.Context, s *store.Store, sheetManager *sheet.Manag
 	}
 }
 
-func getRiskSourceByTaskType(pipeline *store.PipelineMessage) store.RiskSource {
-	for _, stage := range pipeline.Stages {
-		for _, task := range stage.TaskList {
-			switch task.Type {
-			case api.TaskDatabaseCreate:
-				return store.RiskSourceDatabaseCreate
-			case api.TaskDatabaseSchemaUpdate,
-				api.TaskDatabaseSchemaUpdateSDL,
-				api.TaskDatabaseSchemaUpdateGhostSync:
-				return store.RiskSourceDatabaseSchemaUpdate
-			case api.TaskDatabaseDataUpdate:
-				return store.RiskSourceDatabaseDataUpdate
-			}
-		}
-	}
-	return store.RiskSourceUnknown
-}
-
 func getDatabaseGeneralIssueRisk(ctx context.Context, s *store.Store, sheetManager *sheet.Manager, licenseService enterprise.LicenseService, dbFactory *dbfactory.DBFactory, issue *store.IssueMessage, risks []*store.RiskMessage) (int32, store.RiskSource, bool, error) {
 	if issue.PlanUID == nil {
 		return 0, store.RiskSourceUnknown, false, errors.Errorf("expected plan UID in issue %v", issue.UID)
@@ -369,6 +347,13 @@ func getDatabaseGeneralIssueRisk(ctx context.Context, s *store.Store, sheetManag
 	}
 	if plan == nil {
 		return 0, store.RiskSourceUnknown, false, errors.Errorf("plan %v not found", *issue.PlanUID)
+	}
+
+	// Conclude risk source from task types.
+	riskSource := getRiskSourceFromPlan(plan.Config)
+	// Cannot conclude risk source.
+	if riskSource == store.RiskSourceUnknown {
+		return 0, store.RiskSourceUnknown, true, nil
 	}
 
 	planCheckRuns, err := s.ListPlanCheckRuns(ctx, &store.FindPlanCheckRunMessage{
@@ -393,25 +378,6 @@ func getDatabaseGeneralIssueRisk(ctx context.Context, s *store.Store, sheetManag
 			latestPlanCheckRun[key] = run
 		}
 	}
-	for _, run := range latestPlanCheckRun {
-		// the latest plan check run is not done yet, return done=false
-		if run.Status != store.PlanCheckRunStatusDone {
-			return 0, store.RiskSourceUnknown, false, nil
-		}
-	}
-
-	pipelineCreate, err := apiv1.GetPipelineCreate(ctx, s, sheetManager, licenseService, dbFactory, plan.Config.Steps, issue.Project)
-	if err != nil {
-		return 0, store.RiskSourceUnknown, false, errors.Wrap(err, "failed to get pipeline create")
-	}
-
-	// Conclude risk source from task types.
-	// TODO(d): use type from statement.
-	riskSource := getRiskSourceByTaskType(pipelineCreate)
-	// cannot conclude risk source
-	if riskSource == store.RiskSourceUnknown {
-		return 0, store.RiskSourceUnknown, true, nil
-	}
 
 	// If any plan check run is skipped because of large SQL,
 	// return the max risk level in the risks of the same risk source.
@@ -431,6 +397,18 @@ func getDatabaseGeneralIssueRisk(ctx context.Context, s *store.Store, sheetManag
 				return 0, riskSource, true, nil
 			}
 		}
+	}
+
+	// the latest plan check run is not done yet, return done=false
+	for _, run := range latestPlanCheckRun {
+		if run.Status != store.PlanCheckRunStatusDone {
+			return 0, store.RiskSourceUnknown, false, nil
+		}
+	}
+
+	pipelineCreate, err := apiv1.GetPipelineCreate(ctx, s, sheetManager, licenseService, dbFactory, plan.Config.Steps, issue.Project)
+	if err != nil {
+		return 0, store.RiskSourceUnknown, false, errors.Wrap(err, "failed to get pipeline create")
 	}
 
 	e, err := cel.NewEnv(common.RiskFactors...)
@@ -839,6 +817,25 @@ func getGrantRequestIssueRisk(ctx context.Context, s *store.Store, issue *store.
 	}
 
 	return maxRisk, riskSource, true, nil
+}
+
+func getRiskSourceFromPlan(config *storepb.PlanConfig) store.RiskSource {
+	for _, step := range config.GetSteps() {
+		for _, spec := range step.GetSpecs() {
+			switch v := spec.Config.(type) {
+			case *storepb.PlanConfig_Spec_CreateDatabaseConfig:
+				return store.RiskSourceDatabaseCreate
+			case *storepb.PlanConfig_Spec_ChangeDatabaseConfig:
+				switch v.ChangeDatabaseConfig.Type {
+				case storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE, storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE_GHOST, storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE_SDL:
+					return store.RiskSourceDatabaseSchemaUpdate
+				case storepb.PlanConfig_ChangeDatabaseConfig_DATA:
+					return store.RiskSourceDatabaseDataUpdate
+				}
+			}
+		}
+	}
+	return store.RiskSourceUnknown
 }
 
 func updateIssueApprovalPayload(ctx context.Context, s *store.Store, issue *store.IssueMessage, approval *storepb.IssuePayloadApproval) error {

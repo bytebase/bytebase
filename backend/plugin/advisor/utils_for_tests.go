@@ -290,11 +290,6 @@ func (*MockDriver) QueryConn(_ context.Context, _ *sql.Conn, _ string, _ *databa
 	return nil, nil
 }
 
-// RunStatement implements the Driver interface.
-func (*MockDriver) RunStatement(_ context.Context, _ *sql.Conn, _ string) ([]*v1pb.QueryResult, error) {
-	return nil, nil
-}
-
 // SyncInstance implements the Driver interface.
 func (*MockDriver) SyncInstance(_ context.Context) (*database.InstanceMetadata, error) {
 	return nil, nil

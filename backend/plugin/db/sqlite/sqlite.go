@@ -157,7 +157,7 @@ func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, 
 	}
 	defer rows.Close()
 
-	result, err := util.RowsToQueryResult(storepb.Engine_SQLITE, rows)
+	result, err := util.RowsToQueryResult(rows)
 	if err != nil {
 		// nolint
 		return []*v1pb.QueryResult{
@@ -172,9 +172,4 @@ func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, 
 	result.Latency = durationpb.New(time.Since(startTime))
 	result.Statement = statement
 	return []*v1pb.QueryResult{result}, nil
-}
-
-// RunStatement runs a SQL statement.
-func (*Driver) RunStatement(_ context.Context, _ *sql.Conn, _ string) ([]*v1pb.QueryResult, error) {
-	return nil, errors.New("not implemented")
 }

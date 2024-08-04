@@ -5,7 +5,7 @@ import {
   databaseNamePrefix,
   instanceNamePrefix,
 } from "@/store/modules/v1/common";
-import type { ComposedDatabase, ProjectPermission } from "@/types";
+import type { ComposedDatabase, Permission } from "@/types";
 import { DEFAULT_PROJECT_NAME } from "@/types";
 import {
   hasProjectPermissionV2,
@@ -52,7 +52,7 @@ export const provideDatabaseDetailContext = (
     );
   });
 
-  const checkPermission = (permission: ProjectPermission): boolean => {
+  const checkPermission = (permission: Permission): boolean => {
     return hasProjectPermissionV2(
       database.value.projectEntity,
       me.value,

@@ -1,16 +1,174 @@
 package mssql
 
 import (
+	"database/sql"
 	"fmt"
 	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	tsql "github.com/bytebase/tsql-parser"
+	mssqldb "github.com/microsoft/go-mssqldb"
 
+	"github.com/bytebase/bytebase/backend/common"
 	tsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
+	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
+
+var nullRowValue = &v1pb.RowValue{
+	Kind: &v1pb.RowValue_NullValue{
+		NullValue: structpb.NullValue_NULL_VALUE,
+	},
+}
+
+func rowsToQueryResult(rows *sql.Rows) (*v1pb.QueryResult, error) {
+	columnNames, err := rows.Columns()
+	if err != nil {
+		return nil, err
+	}
+	columnTypes, err := rows.ColumnTypes()
+	if err != nil {
+		return nil, err
+	}
+	// DatabaseTypeName returns the database system name of the column type.
+	// refer: https://pkg.go.dev/database/sql#ColumnType.DatabaseTypeName
+	var columnTypeNames []string
+	for _, v := range columnTypes {
+		columnTypeNames = append(columnTypeNames, strings.ToUpper(v.DatabaseTypeName()))
+	}
+	result := &v1pb.QueryResult{
+		ColumnNames:     columnNames,
+		ColumnTypeNames: columnTypeNames,
+	}
+	columnLength := len(columnNames)
+
+	if columnLength > 0 {
+		for rows.Next() {
+			values := make([]any, columnLength)
+			for i, v := range columnTypeNames {
+				values[i] = makeValueByTypeName(v)
+			}
+
+			if err := rows.Scan(values...); err != nil {
+				return nil, err
+			}
+
+			row := &v1pb.QueryRow{}
+			for i := 0; i < columnLength; i++ {
+				rowValue := nullRowValue
+				switch raw := values[i].(type) {
+				case *sql.NullString:
+					if raw.Valid {
+						rowValue = &v1pb.RowValue{
+							Kind: &v1pb.RowValue_StringValue{
+								StringValue: raw.String,
+							},
+						}
+					}
+				case *sql.NullInt64:
+					if raw.Valid {
+						rowValue = &v1pb.RowValue{
+							Kind: &v1pb.RowValue_Int64Value{
+								Int64Value: raw.Int64,
+							},
+						}
+					}
+				case *sql.RawBytes:
+					if len(*raw) > 0 {
+						rowValue = &v1pb.RowValue{
+							Kind: &v1pb.RowValue_BytesValue{
+								BytesValue: *raw,
+							},
+						}
+					}
+				case *sql.NullBool:
+					if raw.Valid {
+						var v int64
+						if raw.Bool {
+							v = 1
+						}
+						rowValue = &v1pb.RowValue{
+							Kind: &v1pb.RowValue_Int64Value{
+								Int64Value: v,
+							},
+						}
+					}
+				case *sql.NullFloat64:
+					if raw.Valid {
+						rowValue = &v1pb.RowValue{
+							Kind: &v1pb.RowValue_DoubleValue{
+								DoubleValue: raw.Float64,
+							},
+						}
+					}
+				case *mssqldb.NullUniqueIdentifier:
+					if raw.Valid {
+						rowValue = &v1pb.RowValue{
+							Kind: &v1pb.RowValue_StringValue{
+								StringValue: raw.UUID.String(),
+							},
+						}
+					}
+				}
+
+				row.Values = append(row.Values, rowValue)
+			}
+
+			result.Rows = append(result.Rows, row)
+			n := len(result.Rows)
+			if (n&(n-1) == 0) && proto.Size(result) > common.MaximumSQLResultSize {
+				result.Error = common.MaximumSQLResultSizeExceeded
+				break
+			}
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+func makeValueByTypeName(typeName string) any {
+	switch typeName {
+	case "UNIQUEIDENTIFIER":
+		return new(mssqldb.NullUniqueIdentifier)
+	case "TINYINT", "SMALLINT", "INT", "BIGINT":
+		return new(sql.NullInt64)
+	case "VARCHAR", "NVARCHAR", "CHAR", "NCHAR", "TEXT", "NTEXT", "XML":
+		return new(sql.NullString)
+	case "REAL", "FLOAT":
+		return new(sql.NullFloat64)
+	case "VARBINARY":
+		return new(sql.RawBytes)
+	// BIT type must use sql.NullBool. All SQL Editors show 0/1 for BIT type instead of true/false.
+	// So we have to do extra conversion from bool to int.
+	case "BIT":
+		return new(sql.NullBool)
+	case "DECIMAL":
+		return new(sql.NullString)
+	case "SMALLMONEY":
+		return new(sql.NullString)
+	case "MONEY":
+		return new(sql.NullString)
+	// TODO(zp): Scan to string now, switch to use time.Time while masking support it.
+	// // Source values of type [time.Time] may be scanned into values of type
+	// *time.Time, *interface{}, *string, or *[]byte. When converting to
+	// the latter two, [time.RFC3339Nano] is used.
+	case "SMALLDATETIME", "DATETIME", "DATETIME2", "DATE", "TIME", "DATETIMEOFFSET":
+		return new(sql.NullString)
+	case "IMAGE":
+		return new(sql.RawBytes)
+	case "BINARY":
+		return new(sql.RawBytes)
+	case "SQL_VARIANT":
+		return new(sql.RawBytes)
+	}
+	return new(sql.NullString)
+}
 
 // singleStatement must be a selectStatement for mssql.
 func getMSSQLStatementWithResultLimit(singleStatement string, limitCount int) (string, error) {

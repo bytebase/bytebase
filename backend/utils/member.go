@@ -65,13 +65,13 @@ func GetUsersByMember(ctx context.Context, stores *store.Store, member string) [
 		if user != nil {
 			users = append(users, user)
 		}
-	} else if strings.HasPrefix(member, common.UserGroupPrefix) {
-		groupEmail, err := common.GetUserGroupEmail(member)
+	} else if strings.HasPrefix(member, common.GroupPrefix) {
+		groupEmail, err := common.GetGroupEmail(member)
 		if err != nil {
 			slog.Error("failed to parse group email", slog.String("group", member), log.BBError(err))
 			return users
 		}
-		group, err := stores.GetUserGroup(ctx, groupEmail)
+		group, err := stores.GetGroup(ctx, groupEmail)
 		if err != nil {
 			slog.Error("failed to get group", slog.String("group", member), log.BBError(err))
 			return users
@@ -126,13 +126,13 @@ func GetUserIAMPolicyBindings(ctx context.Context, stores *store.Store, user *st
 				hasUser = true
 				break
 			}
-			if strings.HasPrefix(member, common.UserGroupPrefix) {
-				groupEmail, err := common.GetUserGroupEmail(member)
+			if strings.HasPrefix(member, common.GroupPrefix) {
+				groupEmail, err := common.GetGroupEmail(member)
 				if err != nil {
 					slog.Error("failed to parse group email", slog.String("group", member), log.BBError(err))
 					continue
 				}
-				group, err := stores.GetUserGroup(ctx, groupEmail)
+				group, err := stores.GetGroup(ctx, groupEmail)
 				if err != nil {
 					slog.Error("failed to get group", slog.String("group", member), log.BBError(err))
 					continue

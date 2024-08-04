@@ -85,7 +85,7 @@
             <div class="flex items-center justify-between">
               {{ $t("project.members.select-groups") }}
             </div>
-            <UserGroupSelect
+            <GroupSelect
               v-model:value="state.memberList"
               class="mt-2"
               :multiple="true"
@@ -122,7 +122,7 @@ import { useI18n } from "vue-i18n";
 import {
   Drawer,
   DrawerContent,
-  UserGroupSelect,
+  GroupSelect,
   UserSelect,
 } from "@/components/v2";
 import {

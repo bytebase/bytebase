@@ -10,27 +10,13 @@ import (
 func TestPermissionExists(t *testing.T) {
 	a := require.New(t)
 
-	m, err := NewManager(nil, nil)
+	predefinedRoles, err := loadPredefinedRoles()
 	a.NoError(err)
 
-	for _, permissions := range m.predefinedRoles {
-		for p := range permissions {
-			exist := PermissionExist(p)
+	for _, role := range predefinedRoles {
+		for p := range role.Permissions {
+			exist := PermissionsExist(p)
 			a.True(exist, "permission %s is not defined as a constant", p)
-		}
-	}
-}
-
-func TestGetPermissionLevels(t *testing.T) {
-	a := require.New(t)
-
-	m, err := NewManager(nil, nil)
-	a.NoError(err)
-
-	for _, permissions := range m.predefinedRoles {
-		for p := range permissions {
-			level := GetPermissionLevel(p)
-			a.NotEqual("", level.String(), "permission %s has no level defined", p)
 		}
 	}
 }

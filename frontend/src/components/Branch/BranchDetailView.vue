@@ -168,7 +168,7 @@ import { getProjectAndBranchId } from "@/store/modules/v1/common";
 import {
   unknownDatabase,
   type ComposedProject,
-  type ProjectPermission,
+  type Permission,
 } from "@/types";
 import { Branch } from "@/types/proto/v1/branch_service";
 import { DatabaseMetadata } from "@/types/proto/v1/database_service";
@@ -229,7 +229,7 @@ const selectTargetDatabasesContext = ref<{
 
 const currentUser = useCurrentUserV1();
 
-const checkPermission = (permission: ProjectPermission): boolean => {
+const checkPermission = (permission: Permission): boolean => {
   return (
     hasProjectPermissionV2(props.project, currentUser.value, permission) ||
     extractUserEmail(props.cleanBranch.creator) === currentUser.value.email

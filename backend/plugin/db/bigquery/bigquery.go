@@ -109,149 +109,101 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 		return nil, errors.New("BigQuery does not support EXPLAIN")
 	}
 
-	stmts, err := util.SanitizeSQL(statement)
+	statements, err := util.SanitizeSQL(statement)
 	if err != nil {
 		return nil, err
 	}
 
 	var results []*v1pb.QueryResult
-	for _, stmt := range stmts {
-		stmt = getStatementWithResultLimit(stmt, queryContext.Limit)
-		result, err := d.querySingleSQL(ctx, stmt)
-		if err != nil {
-			results = append(results, &v1pb.QueryResult{
-				Error: err.Error(),
-			})
-		} else {
-			results = append(results, result)
+	for _, statement := range statements {
+		if queryContext != nil && queryContext.Limit > 0 {
+			statement = getStatementWithResultLimit(statement, queryContext.Limit)
 		}
-	}
 
-	return results, nil
-}
-
-// RunStatement executes a SQL statement.
-func (d *Driver) RunStatement(ctx context.Context, _ *sql.Conn, statement string) ([]*v1pb.QueryResult, error) {
-	stmts, err := util.SanitizeSQL(statement)
-	if err != nil {
-		return nil, err
-	}
-
-	var results []*v1pb.QueryResult
-	for _, stmt := range stmts {
 		startTime := time.Now()
-		if util.IsSelect(stmt) {
-			result, err := d.querySingleSQL(ctx, stmt)
-			if err != nil {
-				results = append(results, &v1pb.QueryResult{
-					Error: err.Error(),
-				})
-				continue
-			}
-			results = append(results, result)
-			continue
-		}
+		queryResult, err := func() (*v1pb.QueryResult, error) {
+			if util.IsSelect(statement) {
+				q := d.client.Query(statement)
+				q.DefaultDatasetID = d.databaseName
+				it, err := q.Read(ctx)
+				if err != nil {
+					return nil, err
+				}
 
-		q := d.client.Query(stmt)
-		q.DefaultDatasetID = d.databaseName
-		job, err := q.Run(ctx)
-		if err != nil {
-			return nil, err
-		}
-		status, err := job.Wait(ctx)
-		if err != nil {
-			results = append(results, &v1pb.QueryResult{
-				Error: err.Error(),
-			})
-			continue
-		}
-		if err := status.Err(); err != nil {
-			results = append(results, &v1pb.QueryResult{
-				Error: err.Error(),
-			})
-			continue
-		}
-		switch r := status.Statistics.Details.(type) {
-		case *bigquery.QueryStatistics:
-			field := []string{"Affected Rows"}
-			types := []string{"INT64"}
-			rows := []*v1pb.QueryRow{
-				{
-					Values: []*v1pb.RowValue{
-						{
-							Kind: &v1pb.RowValue_Int64Value{Int64Value: r.NumDMLAffectedRows},
-						},
-					},
-				},
+				result := &v1pb.QueryResult{}
+				readOnce := false
+				var fieldTypes []bigquery.FieldType
+				for {
+					var values []bigquery.Value
+					err := it.Next(&values)
+					if err == iterator.Done {
+						break
+					}
+					if err != nil {
+						return nil, err
+					}
+
+					// Get schema columns.
+					if !readOnce {
+						readOnce = true
+						for _, s := range it.Schema {
+							result.ColumnNames = append(result.ColumnNames, s.Name)
+							result.ColumnTypeNames = append(result.ColumnTypeNames, string(s.Type))
+							fieldTypes = append(fieldTypes, s.Type)
+						}
+					}
+
+					row := &v1pb.QueryRow{}
+					for i, v := range values {
+						row.Values = append(row.Values, convertValue(v, fieldTypes[i]))
+					}
+					result.Rows = append(result.Rows, row)
+					n := len(result.Rows)
+					if (n&(n-1) == 0) && proto.Size(result) > common.MaximumSQLResultSize {
+						result.Error = common.MaximumSQLResultSizeExceeded
+						break
+					}
+				}
+
+				return result, nil
 			}
-			results = append(results, &v1pb.QueryResult{
-				ColumnNames:     field,
-				ColumnTypeNames: types,
-				Rows:            rows,
-				Latency:         durationpb.New(time.Since(startTime)),
-				Statement:       stmt,
-			})
-		default:
-			results = append(results, &v1pb.QueryResult{})
+
+			q := d.client.Query(statement)
+			q.DefaultDatasetID = d.databaseName
+			job, err := q.Run(ctx)
+			if err != nil {
+				return nil, err
+			}
+			status, err := job.Wait(ctx)
+			if err != nil {
+				return nil, err
+			}
+			if err := status.Err(); err != nil {
+				return nil, err
+			}
+			switch r := status.Statistics.Details.(type) {
+			case *bigquery.QueryStatistics:
+				return util.BuildAffectedRowsResult(r.NumDMLAffectedRows), nil
+			default:
+				return nil, errors.New("invalid status statistics detail type")
+			}
+		}()
+		stop := false
+		if err != nil {
+			queryResult = &v1pb.QueryResult{
+				Error: err.Error(),
+			}
+			stop = true
+		}
+		queryResult.Statement = statement
+		queryResult.Latency = durationpb.New(time.Since(startTime))
+		results = append(results, queryResult)
+		if stop {
+			break
 		}
 	}
 
 	return results, nil
-}
-
-func (d *Driver) querySingleSQL(ctx context.Context, statement string) (*v1pb.QueryResult, error) {
-	startTime := time.Now()
-	q := d.client.Query(statement)
-	q.DefaultDatasetID = d.databaseName
-	it, err := q.Read(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	result := &v1pb.QueryResult{
-		Statement: statement,
-	}
-	readOnce := false
-
-	var fieldTypes []bigquery.FieldType
-	for {
-		var values []bigquery.Value
-		err := it.Next(&values)
-		if err == iterator.Done {
-			break
-		}
-		if err != nil {
-			return nil, err
-		}
-
-		// Get schema columns.
-		if !readOnce {
-			readOnce = true
-			for _, s := range it.Schema {
-				result.ColumnNames = append(result.ColumnNames, s.Name)
-				result.ColumnTypeNames = append(result.ColumnTypeNames, string(s.Type))
-				fieldTypes = append(fieldTypes, s.Type)
-			}
-		}
-
-		row := &v1pb.QueryRow{}
-		for i, v := range values {
-			row.Values = append(row.Values, convertValue(v, fieldTypes[i]))
-		}
-		result.Rows = append(result.Rows, row)
-		n := len(result.Rows)
-		if (n&(n-1) == 0) && proto.Size(result) > common.MaximumSQLResultSize {
-			result.Error = common.MaximumSQLResultSizeExceeded
-			break
-		}
-	}
-
-	// BigQuery doesn't mask the sensitive fields.
-	// Return the all false boolean slice here as the placeholder.
-	result.Masked = make([]bool, len(result.ColumnNames))
-	result.Latency = durationpb.New(time.Since(startTime))
-
-	return result, nil
 }
 
 func getStatementWithResultLimit(statement string, limit int) string {

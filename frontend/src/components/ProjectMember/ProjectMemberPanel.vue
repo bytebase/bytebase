@@ -83,7 +83,7 @@ import {
   useProjectIamPolicy,
   useProjectIamPolicyStore,
   useUserStore,
-  useUserGroupStore,
+  useGroupStore,
 } from "@/store";
 import type { ComposedProject, ComposedUser } from "@/types";
 import {
@@ -94,7 +94,7 @@ import {
   groupBindingPrefix,
 } from "@/types";
 import { State } from "@/types/proto/v1/common";
-import type { UserGroup } from "@/types/proto/v1/user_group";
+import type { Group } from "@/types/proto/v1/group";
 import { FeatureAttention } from "../FeatureGuard";
 import { SearchBox } from "../v2";
 import AddProjectMembersPanel from "./AddProjectMember/AddProjectMembersPanel.vue";
@@ -121,7 +121,7 @@ const props = defineProps<{
 const { t } = useI18n();
 const dialog = useDialog();
 const currentUserV1 = useCurrentUserV1();
-const groupStore = useUserGroupStore();
+const groupStore = useGroupStore();
 const projectResourceName = computed(() => props.project.name);
 const { policy: iamPolicy } = useProjectIamPolicy(projectResourceName);
 
@@ -171,7 +171,7 @@ const activeGroupList = computed(() => {
     .map((member) => {
       return groupStore.getGroupByIdentifier(member);
     })
-    .filter((group) => !!group) as UserGroup[];
+    .filter((group) => !!group) as Group[];
 });
 
 const groupRoleMap = computed(() => {

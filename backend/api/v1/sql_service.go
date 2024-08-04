@@ -157,7 +157,7 @@ func (*SQLService) doAdminExecute(ctx context.Context, driver db.Driver, conn *s
 	}
 	ctx, cancelCtx := context.WithTimeout(ctx, timeout)
 	defer cancelCtx()
-	result, err := driver.RunStatement(ctx, conn, request.Statement)
+	result, err := driver.QueryConn(ctx, conn, request.Statement, nil)
 	select {
 	case <-ctx.Done():
 		// canceled or timed out
@@ -274,7 +274,7 @@ func (s *SQLService) doExecute(ctx context.Context, instance *store.InstanceMess
 	}
 	ctx, cancelCtx := context.WithTimeout(ctx, timeout)
 	defer cancelCtx()
-	result, err := driver.RunStatement(ctx, conn, request.Statement)
+	result, err := driver.QueryConn(ctx, conn, request.Statement, nil)
 	select {
 	case <-ctx.Done():
 		// canceled or timed out
@@ -943,13 +943,14 @@ func (s *SQLService) accessCheck(
 	limit int32,
 	isAdmin,
 	isExport bool) error {
-	// Check if the caller is admin for exporting with admin mode.
-	role, err := s.iamManager.BackfillWorkspaceRoleForUser(ctx, user)
-	if err != nil {
-		return err
-	}
-	if isAdmin && isExport && (role != api.WorkspaceAdmin && role != api.WorkspaceDBA) {
-		return status.Errorf(codes.PermissionDenied, "only workspace owner and DBA can export data using admin mode")
+	if isExport {
+		ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionDatabasesExport, user)
+		if err != nil {
+			return err
+		}
+		if isAdmin && !ok {
+			return status.Errorf(codes.PermissionDenied, "only users with %s permission on the workspace can export data using admin mode", iam.PermissionDatabasesExport)
+		}
 	}
 
 	for _, span := range spans {
@@ -1097,7 +1098,7 @@ func (s *SQLService) hasDatabaseAccessRights(ctx context.Context, user *store.Us
 
 	bindings := utils.GetUserIAMPolicyBindings(ctx, s.store, user, projectPolicy)
 	for _, binding := range bindings {
-		permissions, err := s.iamManager.GetPermissions(ctx, binding.Role)
+		permissions, err := s.iamManager.GetPermissions(binding.Role)
 		if err != nil {
 			return false, errors.Wrapf(err, "failed to get permissions")
 		}

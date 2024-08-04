@@ -177,10 +177,10 @@ import {
   useCurrentUserV1,
   useUserStore,
   useUIStateStore,
-  useUserGroupStore,
+  useGroupStore,
   useSettingV1Store,
 } from "@/store";
-import { userGroupNamePrefix } from "@/store/modules/v1/common";
+import { groupNamePrefix } from "@/store/modules/v1/common";
 import {
   ALL_USERS_USER_EMAIL,
   PresetRoleType,
@@ -190,7 +190,7 @@ import {
 import { UserType } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
 import { WorkspaceProfileSetting } from "@/types/proto/v1/setting_service";
-import type { UserGroup } from "@/types/proto/v1/user_group";
+import type { Group } from "@/types/proto/v1/group";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
 const tabList = ["members", "groups"] as const;
@@ -207,7 +207,7 @@ type LocalState = {
   showCreateUserDrawer: boolean;
   showCreateGroupDrawer: boolean;
   editingUser?: ComposedUser;
-  editingGroup?: UserGroup;
+  editingGroup?: Group;
 };
 
 const state = reactive<LocalState>({
@@ -224,7 +224,7 @@ const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
 const userStore = useUserStore();
-const groupStore = useUserGroupStore();
+const groupStore = useGroupStore();
 const currentUserV1 = useCurrentUserV1();
 const uiStateStore = useUIStateStore();
 const subscriptionV1Store = useSubscriptionV1Store();
@@ -263,7 +263,7 @@ const hasRBACFeature = computed(() =>
 );
 
 const allowCreateGroup = computed(() =>
-  hasWorkspacePermissionV2(currentUserV1.value, "bb.userGroups.create")
+  hasWorkspacePermissionV2(currentUserV1.value, "bb.groups.create")
 );
 
 const allowCreateUser = computed(() => {
@@ -271,7 +271,7 @@ const allowCreateUser = computed(() => {
 });
 
 const allowEditGroup = computed(() => {
-  return hasWorkspacePermissionV2(currentUserV1.value, "bb.userGroups.update");
+  return hasWorkspacePermissionV2(currentUserV1.value, "bb.groups.update");
 });
 
 onMounted(() => {
@@ -283,7 +283,7 @@ onMounted(() => {
   }
 
   const name = route.query.name as string;
-  if (name?.startsWith(userGroupNamePrefix)) {
+  if (name?.startsWith(groupNamePrefix)) {
     state.typeTab = "groups";
     state.editingGroup = groupStore.groupList.find(
       (group) => group.name === name
@@ -376,7 +376,7 @@ const handleCreateGroup = () => {
   state.showCreateGroupDrawer = true;
 };
 
-const handleUpdateGroup = (group: UserGroup) => {
+const handleUpdateGroup = (group: Group) => {
   state.editingGroup = group;
   state.showCreateGroupDrawer = true;
 };

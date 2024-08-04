@@ -867,8 +867,8 @@ paths:
     /v1/groups:
         get:
             tags:
-                - UserGroupService
-            operationId: UserGroupService_ListUserGroups
+                - GroupService
+            operationId: GroupService_ListGroups
             parameters:
                 - name: pageSize
                   in: query
@@ -883,10 +883,10 @@ paths:
                 - name: pageToken
                   in: query
                   description: |-
-                    A page token, received from a previous `ListUsers` call.
+                    A page token, received from a previous `ListGroups` call.
                      Provide this to retrieve the subsequent page.
 
-                     When paginating, all other parameters provided to `ListUsers` must match
+                     When paginating, all other parameters provided to `ListGroups` must match
                      the call that provided the page token.
                   schema:
                     type: string
@@ -896,7 +896,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/ListUserGroupsResponse'
+                                $ref: '#/components/schemas/ListGroupsResponse'
                 default:
                     description: Default error response
                     content:
@@ -905,13 +905,13 @@ paths:
                                 $ref: '#/components/schemas/Status'
         post:
             tags:
-                - UserGroupService
-            operationId: UserGroupService_CreateUserGroup
+                - GroupService
+            operationId: GroupService_CreateGroup
             requestBody:
                 content:
                     application/json:
                         schema:
-                            $ref: '#/components/schemas/UserGroup'
+                            $ref: '#/components/schemas/Group'
                 required: true
             responses:
                 "200":
@@ -919,7 +919,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/UserGroup'
+                                $ref: '#/components/schemas/Group'
                 default:
                     description: Default error response
                     content:
@@ -929,8 +929,8 @@ paths:
     /v1/groups/{group}:
         get:
             tags:
-                - UserGroupService
-            operationId: UserGroupService_GetUserGroup
+                - GroupService
+            operationId: GroupService_GetGroup
             parameters:
                 - name: group
                   in: path
@@ -944,7 +944,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/UserGroup'
+                                $ref: '#/components/schemas/Group'
                 default:
                     description: Default error response
                     content:
@@ -953,8 +953,8 @@ paths:
                                 $ref: '#/components/schemas/Status'
         delete:
             tags:
-                - UserGroupService
-            operationId: UserGroupService_DeleteUserGroup
+                - GroupService
+            operationId: GroupService_DeleteGroup
             parameters:
                 - name: group
                   in: path
@@ -974,8 +974,11 @@ paths:
                                 $ref: '#/components/schemas/Status'
         patch:
             tags:
-                - UserGroupService
-            operationId: UserGroupService_UpdateUserGroup
+                - GroupService
+            description: |-
+                UpdateGroup updates the group.
+                 Users with "bb.groups.update" permission on the workspace or the group owner can access this method.
+            operationId: GroupService_UpdateGroup
             parameters:
                 - name: group
                   in: path
@@ -993,7 +996,7 @@ paths:
                 content:
                     application/json:
                         schema:
-                            $ref: '#/components/schemas/UserGroup'
+                            $ref: '#/components/schemas/Group'
                 required: true
             responses:
                 "200":
@@ -1001,7 +1004,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/UserGroup'
+                                $ref: '#/components/schemas/Group'
                 default:
                     description: Default error response
                     content:
@@ -10145,6 +10148,50 @@ components:
                 expiration:
                     pattern: ^-?(?:0|[1-9][0-9]{0,11})(?:\.[0-9]{1,9})?s$
                     type: string
+        Group:
+            type: object
+            properties:
+                name:
+                    readOnly: true
+                    type: string
+                    description: |-
+                        The name of the group to retrieve.
+                         Format: groups/{group}, group is an email.
+                title:
+                    type: string
+                description:
+                    type: string
+                creator:
+                    readOnly: true
+                    type: string
+                    description: |-
+                        The name for the creator.
+                         Format: users/hello@world.com
+                members:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/GroupMember'
+                createTime:
+                    readOnly: true
+                    type: string
+                    description: The timestamp when the group was created.
+                    format: date-time
+        GroupMember:
+            type: object
+            properties:
+                member:
+                    type: string
+                    description: |-
+                        Member is the principal who belong to this group.
+
+                         Format: users/{userUID}.
+                role:
+                    enum:
+                        - ROLE_UNSPECIFIED
+                        - OWNER
+                        - MEMBER
+                    type: string
+                    format: enum
         IamPolicy:
             type: object
             properties:
@@ -10872,6 +10919,19 @@ components:
                     description: |-
                         A token, which can be sent as `page_token` to retrieve the next page.
                          If this field is omitted, there are no subsequent pages.
+        ListGroupsResponse:
+            type: object
+            properties:
+                groups:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/Group'
+                    description: The groups from the specified request.
+                nextPageToken:
+                    type: string
+                    description: |-
+                        A token, which can be sent as `page_token` to retrieve the next page.
+                         If this field is omitted, there are no subsequent pages.
         ListIdentityProvidersResponse:
             type: object
             properties:
@@ -11081,19 +11141,6 @@ components:
                     items:
                         $ref: '#/components/schemas/TaskRun'
                     description: The taskRuns from the specified request.
-                nextPageToken:
-                    type: string
-                    description: |-
-                        A token, which can be sent as `page_token` to retrieve the next page.
-                         If this field is omitted, there are no subsequent pages.
-        ListUserGroupsResponse:
-            type: object
-            properties:
-                groups:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/UserGroup'
-                    description: The groups from the specified request.
                 nextPageToken:
                     type: string
                     description: |-
@@ -14035,50 +14082,6 @@ components:
                     description: |-
                         Should be a valid E.164 compliant phone number.
                          Could be empty.
-        UserGroup:
-            type: object
-            properties:
-                name:
-                    readOnly: true
-                    type: string
-                    description: |-
-                        The name of the group to retrieve.
-                         Format: userGroups/{userGroup}, userGroup is an email.
-                title:
-                    type: string
-                description:
-                    type: string
-                creator:
-                    readOnly: true
-                    type: string
-                    description: |-
-                        The name for the creator.
-                         Format: users/hello@world.com
-                members:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/UserGroupMember'
-                createTime:
-                    readOnly: true
-                    type: string
-                    description: The timestamp when the group was created.
-                    format: date-time
-        UserGroupMember:
-            type: object
-            properties:
-                member:
-                    type: string
-                    description: |-
-                        Member is the principal who belong to this user group.
-
-                         Format: users/{userUID}.
-                role:
-                    enum:
-                        - ROLE_UNSPECIFIED
-                        - OWNER
-                        - MEMBER
-                    type: string
-                    format: enum
         VCSConnector:
             type: object
             properties:
@@ -14482,6 +14485,7 @@ tags:
     - name: DatabaseGroupService
     - name: DatabaseService
     - name: EnvironmentService
+    - name: GroupService
     - name: IdentityProviderService
     - name: InstanceRoleService
     - name: InstanceService
@@ -14497,7 +14501,6 @@ tags:
     - name: SettingService
     - name: SheetService
     - name: SubscriptionService
-    - name: UserGroupService
     - name: VCSConnectorService
     - name: VCSProviderService
     - name: WorksheetService

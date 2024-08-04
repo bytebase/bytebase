@@ -15,6 +15,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 
 	// register splitter functions init().
@@ -141,12 +142,12 @@ func (d *Driver) Execute(ctx context.Context, statementsStr string, _ db.Execute
 	return affectedRows, nil
 }
 
-func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statementsStr string, queryCtx *db.QueryContext) ([]*v1pb.QueryResult, error) {
+func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, queryCtx *db.QueryContext) ([]*v1pb.QueryResult, error) {
 	if d.connPool == nil {
 		return nil, errors.Errorf("no database connection established")
 	}
 
-	statements, err := base.SplitMultiSQL(storepb.Engine_HIVE, statementsStr)
+	singleSQLs, err := base.SplitMultiSQL(storepb.Engine_HIVE, statement)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to split statements")
 	}
@@ -158,38 +159,17 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statementsStr strin
 	defer d.connPool.Put(conn)
 
 	var results []*v1pb.QueryResult
-	for _, statement := range statements {
-		statementStr := strings.TrimRight(statement.Text, ";")
+	for _, singleSQL := range singleSQLs {
+		statement := util.TrimStatement(singleSQL.Text)
 		if queryCtx != nil && queryCtx.Explain {
-			statementStr = fmt.Sprintf("EXPLAIN %s", statementStr)
+			statement = fmt.Sprintf("EXPLAIN %s", statement)
 		}
 
-		result, err := runSingleStatement(ctx, conn, statementStr)
+		result, err := runSingleStatement(ctx, conn, statement)
 		if err != nil && result == nil {
 			return results, err
 		}
 
-		results = append(results, result)
-	}
-	return results, nil
-}
-
-// this func is used for admin mode in SQL Editor.
-func (d *Driver) RunStatement(ctx context.Context, _ *sql.Conn, statementsStr string) ([]*v1pb.QueryResult, error) {
-	var results []*v1pb.QueryResult
-
-	statements, err := base.SplitMultiSQL(storepb.Engine_HIVE, statementsStr)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to split statements")
-	}
-
-	for _, statement := range statements {
-		statementStr := strings.TrimRight(statement.Text, ";")
-
-		result, err := runSingleStatement(ctx, d.conn, statementStr)
-		if err != nil && result == nil {
-			return results, err
-		}
 		results = append(results, result)
 	}
 	return results, nil
@@ -246,34 +226,31 @@ func runSingleStatement(ctx context.Context, conn *gohive.Connection, statement 
 
 	// We will get an error when a certain statement doesn't need returned results.
 	columnNamesAndTypes := cursor.Description()
-	if cursor.Err == nil {
-		for _, row := range columnNamesAndTypes {
-			result.ColumnNames = append(result.ColumnNames, row[0])
-		}
-
-		// process query results.
-		for cursor.HasMore(ctx) {
-			var queryRow v1pb.QueryRow
-			rowMap := cursor.RowMap(ctx)
-			for idx, columnName := range result.ColumnNames {
-				gohiveTypeStr := columnNamesAndTypes[idx][1]
-				val, err := parseValueType(rowMap[columnName], gohiveTypeStr)
-				if err != nil {
-					return result, err
-				}
-				queryRow.Values = append(queryRow.Values, val)
-			}
-
-			// Rows.
-			result.Rows = append(result.Rows, &queryRow)
-			n := len(result.Rows)
-			if (n&(n-1) == 0) && proto.Size(result) > common.MaximumSQLResultSize {
-				result.Error = common.MaximumSQLResultSizeExceeded
-				break
-			}
-		}
-		result.Latency = durationpb.New(time.Since(startTime))
-		return result, nil
+	for _, row := range columnNamesAndTypes {
+		result.ColumnNames = append(result.ColumnNames, row[0])
 	}
-	return nil, nil
+
+	// process query results.
+	for cursor.HasMore(ctx) {
+		var queryRow v1pb.QueryRow
+		rowMap := cursor.RowMap(ctx)
+		for idx, columnName := range result.ColumnNames {
+			gohiveTypeStr := columnNamesAndTypes[idx][1]
+			val, err := parseValueType(rowMap[columnName], gohiveTypeStr)
+			if err != nil {
+				return result, err
+			}
+			queryRow.Values = append(queryRow.Values, val)
+		}
+
+		// Rows.
+		result.Rows = append(result.Rows, &queryRow)
+		n := len(result.Rows)
+		if (n&(n-1) == 0) && proto.Size(result) > common.MaximumSQLResultSize {
+			result.Error = common.MaximumSQLResultSizeExceeded
+			break
+		}
+	}
+	result.Latency = durationpb.New(time.Since(startTime))
+	return result, nil
 }

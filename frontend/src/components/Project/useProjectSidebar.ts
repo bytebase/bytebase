@@ -36,9 +36,8 @@ import projectV1Routes, {
   PROJECT_V1_ROUTE_REVIEW_CENTER,
 } from "@/router/dashboard/projectV1";
 import { useCurrentUserV1 } from "@/store";
-import type { ComposedProject, MaybeRef } from "@/types";
+import type { ComposedProject, MaybeRef, Permission } from "@/types";
 import { DEFAULT_PROJECT_NAME } from "@/types";
-import type { ProjectPermission } from "@/types";
 import { hasProjectPermissionV2 } from "@/utils";
 
 interface ProjectSidebarItem extends SidebarItem {
@@ -61,10 +60,10 @@ export const useProjectSidebar = (
 
   const getFlattenProjectV1Routes = (
     routes: RouteRecordRaw[],
-    permissions: ProjectPermission[] = []
+    permissions: Permission[] = []
   ): {
     name: string;
-    permissions: ProjectPermission[];
+    permissions: Permission[];
   }[] => {
     return routes.reduce(
       (list, projectV1Route) => {
@@ -93,7 +92,7 @@ export const useProjectSidebar = (
         }
         return list;
       },
-      [] as { name: string; permissions: ProjectPermission[] }[]
+      [] as { name: string; permissions: Permission[] }[]
     );
   };
 

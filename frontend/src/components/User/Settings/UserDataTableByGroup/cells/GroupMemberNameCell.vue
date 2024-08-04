@@ -17,11 +17,11 @@
             v-if="role"
             size="small"
             round
-            :type="role === UserGroupMember_Role.OWNER ? 'primary' : 'default'"
+            :type="role === GroupMember_Role.OWNER ? 'primary' : 'default'"
           >
             {{
               $t(
-                `settings.members.groups.form.role.${userGroupMember_RoleToJSON(role).toLowerCase()}`
+                `settings.members.groups.form.role.${groupMember_RoleToJSON(role).toLowerCase()}`
               )
             }}
           </NTag>
@@ -44,14 +44,14 @@ import { useCurrentUserV1 } from "@/store";
 import { SYSTEM_BOT_USER_NAME, type ComposedUser } from "@/types";
 import { UserType } from "@/types/proto/v1/auth_service";
 import {
-  UserGroupMember_Role,
-  userGroupMember_RoleToJSON,
-} from "@/types/proto/v1/user_group";
+  GroupMember_Role,
+  groupMember_RoleToJSON,
+} from "@/types/proto/v1/group";
 
 withDefaults(
   defineProps<{
     user: ComposedUser;
-    role?: UserGroupMember_Role;
+    role?: GroupMember_Role;
   }>(),
   {
     role: undefined,
