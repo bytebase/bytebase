@@ -136,7 +136,7 @@ export function userGroupMember_RoleToNumber(object: UserGroupMember_Role): numb
 export interface UserGroup {
   /**
    * The name of the group to retrieve.
-   * Format: userGroups/{userGroup}, userGroup is an email.
+   * Format: groups/{userGroup}, userGroup is an email.
    */
   name: string;
   title: string;
@@ -863,6 +863,10 @@ export const UserGroupServiceDefinition = {
         },
       },
     },
+    /**
+     * UpdateUserGroup updates the user group.
+     * Users with "bb.userGroups.update" permission on the workspace or the user group owner can access this method.
+     */
     updateUserGroup: {
       name: "UpdateUserGroup",
       requestType: UpdateUserGroupRequest,
@@ -897,7 +901,7 @@ export const UserGroupServiceDefinition = {
               101,
             ]),
           ],
-          800016: [new Uint8Array([1])],
+          800016: [new Uint8Array([2])],
           578365826: [
             new Uint8Array([
               34,

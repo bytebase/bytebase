@@ -32,7 +32,7 @@ func NewUserGroupService(store *store.Store, iamManager *iam.Manager) *UserGroup
 
 // GetUserGroup gets a group.
 func (s *UserGroupService) GetUserGroup(ctx context.Context, request *v1pb.GetUserGroupRequest) (*v1pb.UserGroup, error) {
-	email, err := common.GetUserGroupEmail(request.Name)
+	email, err := common.GetGroupEmail(request.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -96,7 +96,7 @@ func (s *UserGroupService) CreateUserGroup(ctx context.Context, request *v1pb.Cr
 
 // UpdateUserGroup updates a group.
 func (s *UserGroupService) UpdateUserGroup(ctx context.Context, request *v1pb.UpdateUserGroupRequest) (*v1pb.UserGroup, error) {
-	email, err := common.GetUserGroupEmail(request.Group.Name)
+	groupEmail, err := common.GetGroupEmail(request.Group.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
@@ -106,7 +106,7 @@ func (s *UserGroupService) UpdateUserGroup(ctx context.Context, request *v1pb.Up
 		return nil, status.Errorf(codes.Internal, "principal ID not found")
 	}
 
-	if err := s.checkPermission(ctx, email, iam.PermissionUserGroupsUpdate); err != nil {
+	if err := s.checkPermission(ctx, groupEmail); err != nil {
 		return nil, err
 	}
 
@@ -128,7 +128,7 @@ func (s *UserGroupService) UpdateUserGroup(ctx context.Context, request *v1pb.Up
 		}
 	}
 
-	groupMessage, err := s.store.UpdateUserGroup(ctx, email, patch, principalID)
+	groupMessage, err := s.store.UpdateUserGroup(ctx, groupEmail, patch, principalID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
@@ -138,13 +138,9 @@ func (s *UserGroupService) UpdateUserGroup(ctx context.Context, request *v1pb.Up
 
 // DeleteUserGroup deletes a group.
 func (s *UserGroupService) DeleteUserGroup(ctx context.Context, request *v1pb.DeleteUserGroupRequest) (*emptypb.Empty, error) {
-	email, err := common.GetUserGroupEmail(request.Name)
+	email, err := common.GetGroupEmail(request.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
-	}
-
-	if err := s.checkPermission(ctx, email, iam.PermissionUserGroupsDelete); err != nil {
-		return nil, err
 	}
 
 	if err := s.store.DeleteUserGroup(ctx, email); err != nil {
@@ -154,11 +150,12 @@ func (s *UserGroupService) DeleteUserGroup(ctx context.Context, request *v1pb.De
 	return &emptypb.Empty{}, nil
 }
 
-func (s *UserGroupService) checkPermission(ctx context.Context, groupEmail string, permission iam.Permission) error {
+func (s *UserGroupService) checkPermission(ctx context.Context, groupEmail string) error {
 	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
 	if !ok {
 		return status.Errorf(codes.Internal, "user not found")
 	}
+	userName := common.FormatUserUID(user.ID)
 
 	group, err := s.store.GetUserGroup(ctx, groupEmail)
 	if err != nil {
@@ -168,16 +165,17 @@ func (s *UserGroupService) checkPermission(ctx context.Context, groupEmail strin
 		return status.Errorf(codes.NotFound, "group %q not found", groupEmail)
 	}
 	for _, member := range group.Payload.GetMembers() {
-		if member.Role == storepb.UserGroupMember_OWNER && member.Member == common.FormatUserUID(user.ID) {
+		if member.Role == storepb.UserGroupMember_OWNER && member.Member == userName {
 			return nil
 		}
 	}
-	hasPermission, err := s.iamManager.CheckPermission(ctx, permission, user)
+
+	ok, err = s.iamManager.CheckPermission(ctx, iam.PermissionUserGroupsUpdate, user)
 	if err != nil {
 		return status.Errorf(codes.Internal, "failed to check permission with error: %v", err)
 	}
-	if !hasPermission {
-		return status.Errorf(codes.PermissionDenied, "permission denied: %v", permission)
+	if !ok {
+		return status.Errorf(codes.PermissionDenied, "only group owner or user with permission %q can update group", iam.PermissionUserGroupsUpdate)
 	}
 	return nil
 }
@@ -214,7 +212,7 @@ func (s *UserGroupService) convertToGroupPayload(ctx context.Context, group *v1p
 }
 
 func (s *UserGroupService) convertToGroupMessage(ctx context.Context, group *v1pb.UserGroup) (*store.UserGroupMessage, error) {
-	email, err := common.GetUserGroupEmail(group.Name)
+	email, err := common.GetGroupEmail(group.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
