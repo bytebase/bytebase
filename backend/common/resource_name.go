@@ -532,8 +532,8 @@ func GetWorkspaceProjectVCSConnectorID(name string) (string, string, string, err
 	return tokens[0], tokens[1], tokens[2], nil
 }
 
-// GetUserGroupEmail returns the group email.
-func GetUserGroupEmail(name string) (string, error) {
+// GetGroupEmail returns the group email.
+func GetGroupEmail(name string) (string, error) {
 	tokens, err := GetNameParentTokens(name, UserGroupPrefix)
 	if err != nil {
 		return "", err

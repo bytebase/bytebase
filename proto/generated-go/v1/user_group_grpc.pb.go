@@ -34,6 +34,8 @@ type UserGroupServiceClient interface {
 	GetUserGroup(ctx context.Context, in *GetUserGroupRequest, opts ...grpc.CallOption) (*UserGroup, error)
 	ListUserGroups(ctx context.Context, in *ListUserGroupsRequest, opts ...grpc.CallOption) (*ListUserGroupsResponse, error)
 	CreateUserGroup(ctx context.Context, in *CreateUserGroupRequest, opts ...grpc.CallOption) (*UserGroup, error)
+	// UpdateUserGroup updates the user group.
+	// Users with "bb.userGroups.update" permission on the workspace or the user group owner can access this method.
 	UpdateUserGroup(ctx context.Context, in *UpdateUserGroupRequest, opts ...grpc.CallOption) (*UserGroup, error)
 	DeleteUserGroup(ctx context.Context, in *DeleteUserGroupRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
@@ -103,6 +105,8 @@ type UserGroupServiceServer interface {
 	GetUserGroup(context.Context, *GetUserGroupRequest) (*UserGroup, error)
 	ListUserGroups(context.Context, *ListUserGroupsRequest) (*ListUserGroupsResponse, error)
 	CreateUserGroup(context.Context, *CreateUserGroupRequest) (*UserGroup, error)
+	// UpdateUserGroup updates the user group.
+	// Users with "bb.userGroups.update" permission on the workspace or the user group owner can access this method.
 	UpdateUserGroup(context.Context, *UpdateUserGroupRequest) (*UserGroup, error)
 	DeleteUserGroup(context.Context, *DeleteUserGroupRequest) (*emptypb.Empty, error)
 	mustEmbedUnimplementedUserGroupServiceServer()
