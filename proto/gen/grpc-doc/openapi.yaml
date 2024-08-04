@@ -975,6 +975,9 @@ paths:
         patch:
             tags:
                 - UserGroupService
+            description: |-
+                UpdateUserGroup updates the user group.
+                 Users with "bb.userGroups.update" permission on the workspace or the user group owner can access this method.
             operationId: UserGroupService_UpdateUserGroup
             parameters:
                 - name: group
@@ -14043,7 +14046,7 @@ components:
                     type: string
                     description: |-
                         The name of the group to retrieve.
-                         Format: userGroups/{userGroup}, userGroup is an email.
+                         Format: groups/{userGroup}, userGroup is an email.
                 title:
                     type: string
                 description:

@@ -28870,7 +28870,7 @@ Format: groups/{email} </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The name of the group to retrieve.
-Format: userGroups/{userGroup}, userGroup is an email. </p></td>
+Format: groups/{userGroup}, userGroup is an email. </p></td>
                 </tr>
               
                 <tr>
@@ -29017,7 +29017,8 @@ Format: users/hello@world.com </p></td>
                 <td>UpdateUserGroup</td>
                 <td><a href="#bytebase.v1.UpdateUserGroupRequest">UpdateUserGroupRequest</a></td>
                 <td><a href="#bytebase.v1.UserGroup">UserGroup</a></td>
-                <td><p></p></td>
+                <td><p>UpdateUserGroup updates the user group.
+Users with &#34;bb.userGroups.update&#34; permission on the workspace or the user group owner can access this method.</p></td>
               </tr>
             
               <tr>
