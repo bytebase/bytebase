@@ -38,6 +38,8 @@ service UserGroupService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  // UpdateUserGroup updates the user group.
+  // Users with "bb.userGroups.update" permission on the workspace or the user group owner can access this method.
   rpc UpdateUserGroup(UpdateUserGroupRequest) returns (UserGroup) {
     option (google.api.http) = {
       patch: "/v1/{group.name=groups/*}"
@@ -45,7 +47,7 @@ service UserGroupService {
     };
     option (google.api.method_signature) = "group,update_mask";
     option (bytebase.v1.permission) = "bb.userGroups.update";
-    option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.auth_method) = CUSTOM;
   }
 
   rpc DeleteUserGroup(DeleteUserGroupRequest) returns (google.protobuf.Empty) {
@@ -132,11 +134,11 @@ message UserGroupMember {
 message UserGroup {
   option (google.api.resource) = {
     type: "bytebase.com/UserGroup"
-    pattern: "userGroups/{userGroup}"
+    pattern: "groups/{userGroup}"
   };
 
   // The name of the group to retrieve.
-  // Format: userGroups/{userGroup}, userGroup is an email.
+  // Format: groups/{userGroup}, userGroup is an email.
   string name = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   string title = 2;

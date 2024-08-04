@@ -10537,7 +10537,7 @@ The group&#39;s `name` field is used to identify the group to update. Format: gr
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the group to retrieve. Format: userGroups/{userGroup}, userGroup is an email. |
+| name | [string](#string) |  | The name of the group to retrieve. Format: groups/{userGroup}, userGroup is an email. |
 | title | [string](#string) |  |  |
 | description | [string](#string) |  |  |
 | creator | [string](#string) |  | The name for the creator. Format: users/hello@world.com |
@@ -10596,7 +10596,7 @@ Format: users/hello@world.com |
 | GetUserGroup | [GetUserGroupRequest](#bytebase-v1-GetUserGroupRequest) | [UserGroup](#bytebase-v1-UserGroup) |  |
 | ListUserGroups | [ListUserGroupsRequest](#bytebase-v1-ListUserGroupsRequest) | [ListUserGroupsResponse](#bytebase-v1-ListUserGroupsResponse) |  |
 | CreateUserGroup | [CreateUserGroupRequest](#bytebase-v1-CreateUserGroupRequest) | [UserGroup](#bytebase-v1-UserGroup) |  |
-| UpdateUserGroup | [UpdateUserGroupRequest](#bytebase-v1-UpdateUserGroupRequest) | [UserGroup](#bytebase-v1-UserGroup) |  |
+| UpdateUserGroup | [UpdateUserGroupRequest](#bytebase-v1-UpdateUserGroupRequest) | [UserGroup](#bytebase-v1-UserGroup) | UpdateUserGroup updates the user group. Users with &#34;bb.userGroups.update&#34; permission on the workspace or the user group owner can access this method. |
 | DeleteUserGroup | [DeleteUserGroupRequest](#bytebase-v1-DeleteUserGroupRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
 
  
