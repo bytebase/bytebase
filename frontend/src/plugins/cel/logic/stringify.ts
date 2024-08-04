@@ -57,7 +57,7 @@ function stringifyExpr(expr: Expr): string {
     const result = stringifyExpr(expr.comprehensionExpr.result!);
     return `comprehension(${expr.comprehensionExpr.iterVar} in ${iterRange}; ${expr.comprehensionExpr.accuVar} = ${accuInit}; ${loopCondition}; ${loopStep}; ${result})`;
   } else {
-    throw new Error("Unknown expression type");
+    return "";
   }
 }
 
