@@ -1,8 +1,6 @@
 # Overview
 
-_Work In Progress_
-
-This is the next version of demo data for https://demo.bytebase.com.
+This is the demo data for https://demo.bytebase.com.
 
 `dump.sql` itself is dumped from the meta database and holds schema and data for the demo.
 
