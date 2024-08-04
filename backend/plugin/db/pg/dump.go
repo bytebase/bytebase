@@ -20,6 +20,10 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
+var (
+	pgdumpRootCertPath = "/usr/local/share/ca-certificates/ca-certificates.crt"
+)
+
 // Dump dumps the database.
 func (driver *Driver) Dump(ctx context.Context, out io.Writer) (string, error) {
 	// We don't support pg_dump for CloudSQL, because pg_dump not support IAM & instance name for authentication.
@@ -132,21 +136,35 @@ func (driver *Driver) execPgDump(ctx context.Context, args []string, out io.Writ
 	cmd := exec.CommandContext(ctx, pgDumpPath, args...)
 
 	sslMode := getSSLMode(driver.config.TLSConfig, driver.config.SSHConfig)
-	cmd.Env = append(cmd.Env, fmt.Sprintf("PGSSLMODE=%s", sslMode))
 
-	if driver.config.TLSConfig.SslCA != "" {
-		caTempFile, err := os.CreateTemp("", "pg-ssl-ca-")
-		if err != nil {
-			return err
+	// Unfortunately, pg_dump doesn't directly support the use of system certificates.
+	// Instead, you should utilize the PGSSLROOTCERT environment variable to specify the root CA certificate.
+	// Different OS stores the trusted cert in different location, we use /usr/local/share/ca-certificates/ca-certificates.crt only.
+	if driver.config.TLSConfig.UseSSL {
+		var sslRootCertPath string
+		if _, err := os.Stat(pgdumpRootCertPath); err == nil {
+			sslRootCertPath = pgdumpRootCertPath
 		}
-		defer os.Remove(caTempFile.Name())
-		if _, err := caTempFile.WriteString(driver.config.TLSConfig.SslCA); err != nil {
-			return err
+		if driver.config.TLSConfig.SslCA != "" {
+			caTempFile, err := os.CreateTemp("", "pg-ssl-ca-")
+			if err != nil {
+				return err
+			}
+			defer os.Remove(caTempFile.Name())
+			if _, err := caTempFile.WriteString(driver.config.TLSConfig.SslCA); err != nil {
+				return err
+			}
+			if err := caTempFile.Close(); err != nil {
+				return err
+			}
+			sslRootCertPath = caTempFile.Name()
 		}
-		if err := caTempFile.Close(); err != nil {
-			return err
+		if sslRootCertPath != "" {
+			cmd.Env = append(cmd.Env, fmt.Sprintf("PGSSLROOTCERT=%s", sslRootCertPath))
+		} else {
+			sslMode = SSLModeRequire
 		}
-		cmd.Env = append(cmd.Env, fmt.Sprintf("PGSSLROOTCERT=%s", caTempFile.Name()))
+		cmd.Env = append(cmd.Env, fmt.Sprintf("PGSSLMODE=%s", sslMode))
 	}
 	if driver.config.TLSConfig.SslCert != "" {
 		certTempFile, err := os.CreateTemp("", "pg-ssl-cert-")
