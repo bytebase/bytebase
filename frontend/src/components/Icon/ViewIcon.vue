@@ -1,6 +1,6 @@
 <template>
   <div class="relative">
-    <TableIcon v-bind="$attrs" class="opacity-80" />
+    <TableIcon v-bind="$attrs" class="text-gray-400"/>
     <GlassesIcon
       class="absolute bottom-0 right-0 w-3/4 h-3/4"
       stroke="rgb(var(--color-accent))"
@@ -11,5 +11,5 @@
 </template>
 <script setup lang="ts">
 import { GlassesIcon } from "lucide-vue-next";
-import TableIcon from "~icons/heroicons-outline/table-cells";
+import { TableIcon } from "lucide-vue-next";
 </script>
