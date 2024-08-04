@@ -165,7 +165,6 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 		}()
 		childCtx := context.WithValue(ctx, common.PrincipalIDContextKey, user.ID)
 		childCtx = context.WithValue(childCtx, common.UserContextKey, user)
-		childCtx = context.WithValue(childCtx, common.LoopbackContextKey, true)
 
 		var comment string
 		var commentPrefix string
