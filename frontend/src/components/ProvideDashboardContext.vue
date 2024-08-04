@@ -30,7 +30,7 @@ import {
   useUserStore,
   useUIStateStore,
   useDatabaseV1Store,
-  useUserGroupStore,
+  useGroupStore,
 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { PolicyResourceType } from "@/types/proto/v1/org_policy_service";
@@ -82,7 +82,7 @@ onMounted(async () => {
   // Then prepare the other resources.
   await Promise.all([
     useUserStore().fetchUserList(),
-    useUserGroupStore().fetchGroupList(),
+    useGroupStore().fetchGroupList(),
     useEnvironmentV1Store().fetchEnvironments(),
     useProjectV1Store().fetchProjectList(true /* showDeleted */),
   ]);

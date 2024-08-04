@@ -37,12 +37,12 @@ import UserRolesCell from "@/components/ProjectMember/ProjectMemberDataTable/cel
 import type { ProjectRole } from "@/components/ProjectMember/types";
 import { WORKSPACE_ROUTE_MEMBERS } from "@/router/dashboard/workspaceRoutes";
 import { extractGroupEmail, extractUserEmail, useCurrentUserV1 } from "@/store";
-import { UserGroup } from "@/types/proto/v1/user_group";
+import { Group } from "@/types/proto/v1/group";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
 const props = withDefaults(
   defineProps<{
-    group: UserGroup;
+    group: Group;
     role?: ProjectRole;
     showIcon?: boolean;
     showEmail?: boolean;
@@ -66,6 +66,6 @@ const allowGetGroup = computed(() => {
   ) {
     return true;
   }
-  return hasWorkspacePermissionV2(currentUser.value, "bb.userGroups.get");
+  return hasWorkspacePermissionV2(currentUser.value, "bb.groups.get");
 });
 </script>

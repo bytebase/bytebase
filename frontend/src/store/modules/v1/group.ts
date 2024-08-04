@@ -1,20 +1,20 @@
 import { orderBy } from "lodash-es";
 import { defineStore } from "pinia";
 import { computed, reactive } from "vue";
-import { userGroupServiceClient } from "@/grpcweb";
+import { groupServiceClient } from "@/grpcweb";
 import { useCurrentUserV1 } from "@/store";
-import type { UserGroup } from "@/types/proto/v1/user_group";
+import type { Group } from "@/types/proto/v1/group";
 import { hasWorkspacePermissionV2 } from "@/utils";
-import { userGroupNamePrefix } from "./common";
+import { groupNamePrefix } from "./common";
 
 export const extractGroupEmail = (emailResource: string) => {
   const matches = emailResource.match(/^(?:group:|groups\/)(.+)$/);
   return matches?.[1] ?? emailResource;
 };
 
-export const useUserGroupStore = defineStore("user_group", () => {
+export const useGroupStore = defineStore("group", () => {
   const currentUser = useCurrentUserV1();
-  const groupMapByName = reactive(new Map<string, UserGroup>());
+  const groupMapByName = reactive(new Map<string, Group>());
   const resetCache = () => {
     groupMapByName.clear();
   };
@@ -29,7 +29,7 @@ export const useUserGroupStore = defineStore("user_group", () => {
   });
 
   // Actions
-  const getGroupName = (email: string) => `${userGroupNamePrefix}${email}`;
+  const getGroupName = (email: string) => `${groupNamePrefix}${email}`;
 
   const getGroupByEmail = (email: string) => {
     return groupMapByName.get(getGroupName(email));
@@ -40,11 +40,11 @@ export const useUserGroupStore = defineStore("user_group", () => {
   };
 
   const fetchGroupList = async () => {
-    if (!hasWorkspacePermissionV2(currentUser.value, "bb.userGroups.list")) {
+    if (!hasWorkspacePermissionV2(currentUser.value, "bb.groups.list")) {
       return [];
     }
 
-    const { groups } = await userGroupServiceClient.listUserGroups({});
+    const { groups } = await groupServiceClient.listGroups({});
     resetCache();
     for (const group of groups) {
       groupMapByName.set(group.name, group);
@@ -53,7 +53,7 @@ export const useUserGroupStore = defineStore("user_group", () => {
   };
 
   const getOrFetchGroupByEmail = async (email: string) => {
-    if (!hasWorkspacePermissionV2(currentUser.value, "bb.userGroups.get")) {
+    if (!hasWorkspacePermissionV2(currentUser.value, "bb.groups.get")) {
       return;
     }
 
@@ -61,26 +61,26 @@ export const useUserGroupStore = defineStore("user_group", () => {
       return getGroupByEmail(email);
     }
 
-    const group = await userGroupServiceClient.getUserGroup({
+    const group = await groupServiceClient.getGroup({
       name: getGroupName(email),
     });
     groupMapByName.set(group.name, group);
     return group;
   };
 
-  const createGroup = async (group: UserGroup) => {
-    const resp = await userGroupServiceClient.createUserGroup({ group });
+  const createGroup = async (group: Group) => {
+    const resp = await groupServiceClient.createGroup({ group });
     groupMapByName.set(resp.name, resp);
     return resp;
   };
 
   const deleteGroup = async (name: string) => {
-    await userGroupServiceClient.deleteUserGroup({ name });
+    await groupServiceClient.deleteGroup({ name });
     groupMapByName.delete(name);
   };
 
-  const updateGroup = async (group: UserGroup, updateMask: string[]) => {
-    const updated = await userGroupServiceClient.updateUserGroup({
+  const updateGroup = async (group: Group, updateMask: string[]) => {
+    const updated = await groupServiceClient.updateGroup({
       group,
       updateMask,
     });

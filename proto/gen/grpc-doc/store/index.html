@@ -616,6 +616,29 @@
         
           
           <li>
+            <a href="#store%2fgroup.proto">store/group.proto</a>
+            <ul>
+              
+                <li>
+                  <a href="#bytebase.store.GroupMember"><span class="badge">M</span>GroupMember</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.GroupPayload"><span class="badge">M</span>GroupPayload</a>
+                </li>
+              
+              
+                <li>
+                  <a href="#bytebase.store.GroupMember.Role"><span class="badge">E</span>GroupMember.Role</a>
+                </li>
+              
+              
+              
+            </ul>
+          </li>
+        
+          
+          <li>
             <a href="#store%2fidp.proto">store/idp.proto</a>
             <ul>
               
@@ -1400,29 +1423,6 @@
                   <a href="#bytebase.store.MFAConfig"><span class="badge">M</span>MFAConfig</a>
                 </li>
               
-              
-              
-              
-            </ul>
-          </li>
-        
-          
-          <li>
-            <a href="#store%2fuser_group.proto">store/user_group.proto</a>
-            <ul>
-              
-                <li>
-                  <a href="#bytebase.store.UserGroupMember"><span class="badge">M</span>UserGroupMember</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.UserGroupPayload"><span class="badge">M</span>UserGroupPayload</a>
-                </li>
-              
-              
-                <li>
-                  <a href="#bytebase.store.UserGroupMember.Role"><span class="badge">E</span>UserGroupMember.Role</a>
-                </li>
               
               
               
@@ -5362,6 +5362,106 @@ Used for authentication when connecting to the data source. </p></td>
         
       
 
+      
+
+      
+
+      
+    
+      
+      <div class="file-heading">
+        <h2 id="store/group.proto">store/group.proto</h2><a href="#title">Top</a>
+      </div>
+      <p></p>
+
+      
+        <h3 id="bytebase.store.GroupMember">GroupMember</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>member</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Member is the principal who belong to this group.
+
+Format: users/{userUID}. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>role</td>
+                  <td><a href="#bytebase.store.GroupMember.Role">GroupMember.Role</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.GroupPayload">GroupPayload</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>members</td>
+                  <td><a href="#bytebase.store.GroupMember">GroupMember</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+
+      
+        <h3 id="bytebase.store.GroupMember.Role">GroupMember.Role</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>ROLE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>OWNER</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>MEMBER</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
       
 
       
@@ -11368,106 +11468,6 @@ Format: instances/{instance}/databases/{database} </p></td>
         
       
 
-      
-
-      
-
-      
-    
-      
-      <div class="file-heading">
-        <h2 id="store/user_group.proto">store/user_group.proto</h2><a href="#title">Top</a>
-      </div>
-      <p></p>
-
-      
-        <h3 id="bytebase.store.UserGroupMember">UserGroupMember</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>member</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Member is the principal who belong to this user group.
-
-Format: users/{userUID}. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>role</td>
-                  <td><a href="#bytebase.store.UserGroupMember.Role">UserGroupMember.Role</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.store.UserGroupPayload">UserGroupPayload</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>members</td>
-                  <td><a href="#bytebase.store.UserGroupMember">UserGroupMember</a></td>
-                  <td>repeated</td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-
-      
-        <h3 id="bytebase.store.UserGroupMember.Role">UserGroupMember.Role</h3>
-        <p></p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>ROLE_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>OWNER</td>
-                <td>1</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>MEMBER</td>
-                <td>2</td>
-                <td><p></p></td>
-              </tr>
-            
-          </tbody>
-        </table>
       
 
       

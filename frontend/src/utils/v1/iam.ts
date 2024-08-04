@@ -1,5 +1,5 @@
 import { orderBy, uniq } from "lodash-es";
-import { extractUserEmail, useUserStore, useUserGroupStore } from "@/store";
+import { extractUserEmail, useUserStore, useGroupStore } from "@/store";
 import { userNamePrefix, roleNamePrefix } from "@/store/modules/v1/common";
 import {
   ALL_USERS_USER_EMAIL,
@@ -31,7 +31,7 @@ export const getUserEmailListInBinding = (binding: Binding): string[] => {
     return [];
   }
 
-  const groupStore = useUserGroupStore();
+  const groupStore = useGroupStore();
   const userStore = useUserStore();
   const emailList = [];
 
@@ -112,7 +112,7 @@ export const memberListInIAM = (iamPolicy: IamPolicy) => {
 };
 
 export const roleListInIAM = (iamPolicy: IamPolicy, email: string) => {
-  const groupStore = useUserGroupStore();
+  const groupStore = useGroupStore();
   const userInBinding = getUserEmailInBinding(email);
 
   const roles = iamPolicy.bindings

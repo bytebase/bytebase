@@ -1,6 +1,6 @@
 import type { ComposedUser } from "@/types";
 import type { Binding } from "@/types/proto/v1/iam_policy";
-import type { UserGroup } from "@/types/proto/v1/user_group";
+import type { Group } from "@/types/proto/v1/group";
 
 export interface ProjectRole {
   // Format: "roles/{roleName}"
@@ -15,5 +15,5 @@ export interface ProjectBinding extends ProjectRole {
   binding: string;
   type: "users" | "groups";
   user?: ComposedUser;
-  group?: UserGroup;
+  group?: Group;
 }
