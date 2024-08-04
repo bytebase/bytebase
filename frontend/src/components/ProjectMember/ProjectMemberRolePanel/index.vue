@@ -223,7 +223,7 @@ import {
   useUserStore,
   pushNotification,
 } from "@/store";
-import { userGroupNamePrefix } from "@/store/modules/v1/common";
+import { groupNamePrefix } from "@/store/modules/v1/common";
 import type { ComposedProject, DatabaseResource, ComposedUser } from "@/types";
 import { PresetRoleType, PRESET_ROLES } from "@/types";
 import { State } from "@/types/proto/v1/common";
@@ -378,7 +378,7 @@ const allowRemoveRole = (role: string) => {
       }
       members.push(
         ...((binding?.members || [])
-          .filter((member) => !member.startsWith(userGroupNamePrefix))
+          .filter((member) => !member.startsWith(groupNamePrefix))
           .map((userIdentifier) => {
             return userStore.getUserByIdentifier(userIdentifier);
           })

@@ -138,19 +138,19 @@ import EmailInput from "@/components/EmailInput.vue";
 import { Drawer, DrawerContent, UserSelect } from "@/components/v2";
 import {
   extractGroupEmail,
-  useUserGroupStore,
+  useGroupStore,
   useCurrentUserV1,
   pushNotification,
   useUserStore,
   useSettingV1Store,
 } from "@/store";
-import { userNamePrefix, userGroupNamePrefix } from "@/store/modules/v1/common";
+import { userNamePrefix, groupNamePrefix } from "@/store/modules/v1/common";
 import { getUserEmailFromIdentifier } from "@/store/modules/v1/common";
 import {
-  UserGroup,
-  UserGroupMember,
-  UserGroupMember_Role,
-} from "@/types/proto/v1/user_group";
+  Group,
+  GroupMember,
+  GroupMember_Role,
+} from "@/types/proto/v1/group";
 import {
   isValidEmail,
   extractUserUID,
@@ -165,12 +165,12 @@ interface LocalState {
     email: string;
     title: string;
     description: string;
-    members: UserGroupMember[];
+    members: GroupMember[];
   };
 }
 
 const props = defineProps<{
-  group?: UserGroup;
+  group?: Group;
 }>();
 
 const emit = defineEmits<{
@@ -180,7 +180,7 @@ const emit = defineEmits<{
 const { t } = useI18n();
 const settingV1Store = useSettingV1Store();
 const userStore = useUserStore();
-const groupStore = useUserGroupStore();
+const groupStore = useGroupStore();
 const currentUserV1 = useCurrentUserV1();
 
 const state = reactive<LocalState>({
@@ -191,8 +191,8 @@ const state = reactive<LocalState>({
     description: props.group?.description ?? "",
     members: cloneDeep(
       props.group?.members ?? [
-        UserGroupMember.fromPartial({
-          role: UserGroupMember_Role.OWNER,
+        GroupMember.fromPartial({
+          role: GroupMember_Role.OWNER,
           member: `${userNamePrefix}${currentUserV1.value.email}`,
         }),
       ]
@@ -214,30 +214,30 @@ const selfMemberInGroup = computed(() => {
 });
 
 const allowEdit = computed(() => {
-  if (selfMemberInGroup.value?.role === UserGroupMember_Role.OWNER) {
+  if (selfMemberInGroup.value?.role === GroupMember_Role.OWNER) {
     return true;
   }
   return hasWorkspacePermissionV2(
     currentUserV1.value,
-    isCreating.value ? "bb.userGroups.create" : "bb.userGroups.update"
+    isCreating.value ? "bb.groups.create" : "bb.groups.update"
   );
 });
 
 const validGroup = computed(() => {
-  const memberMap = new Map<string, UserGroupMember>();
+  const memberMap = new Map<string, GroupMember>();
   for (const member of state.group.members) {
     if (!member.member) {
       continue;
     }
     if (
       !memberMap.has(member.member) ||
-      member.role === UserGroupMember_Role.OWNER
+      member.role === GroupMember_Role.OWNER
     ) {
       memberMap.set(member.member, member);
     }
   }
-  return UserGroup.fromPartial({
-    name: `${userGroupNamePrefix}${state.group.email}`,
+  return Group.fromPartial({
+    name: `${groupNamePrefix}${state.group.email}`,
     title: state.group.title,
     creator: props.group?.creator ?? "",
     description: state.group.description,
@@ -257,7 +257,7 @@ const errorMessage = computed(() => {
   }
   if (
     !validGroup.value.members.some(
-      (member) => member.role === UserGroupMember_Role.OWNER
+      (member) => member.role === GroupMember_Role.OWNER
     )
   ) {
     return "At least has 1 owner in the group";
@@ -275,16 +275,16 @@ const allowConfirm = computed(() => {
 });
 
 const addMember = () => {
-  const member = UserGroupMember.fromPartial({
+  const member = GroupMember.fromPartial({
     role:
       state.group.members.length === 0
-        ? UserGroupMember_Role.OWNER
-        : UserGroupMember_Role.MEMBER,
+        ? GroupMember_Role.OWNER
+        : GroupMember_Role.MEMBER,
   });
   state.group.members.push(member);
 };
 
-const getUserUidForMember = (member: UserGroupMember) => {
+const getUserUidForMember = (member: GroupMember) => {
   if (!member.member) {
     return;
   }
@@ -310,7 +310,7 @@ const updateMemberEmail = (index: number, uid: string | undefined) => {
   };
 };
 
-const updateMemberRole = (index: number, role: UserGroupMember_Role) => {
+const updateMemberRole = (index: number, role: GroupMember_Role) => {
   state.group.members[index] = {
     ...state.group.members[index],
     role,

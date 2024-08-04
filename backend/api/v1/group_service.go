@@ -15,29 +15,29 @@ import (
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
-// UserGroupService implements the user group service.
-type UserGroupService struct {
-	v1pb.UnimplementedUserGroupServiceServer
+// GroupService implements the group service.
+type GroupService struct {
+	v1pb.UnimplementedGroupServiceServer
 	store      *store.Store
 	iamManager *iam.Manager
 }
 
-// NewUserGroupService creates a new UserGroupService.
-func NewUserGroupService(store *store.Store, iamManager *iam.Manager) *UserGroupService {
-	return &UserGroupService{
+// NewGroupService creates a new GroupService.
+func NewGroupService(store *store.Store, iamManager *iam.Manager) *GroupService {
+	return &GroupService{
 		store:      store,
 		iamManager: iamManager,
 	}
 }
 
-// GetUserGroup gets a group.
-func (s *UserGroupService) GetUserGroup(ctx context.Context, request *v1pb.GetUserGroupRequest) (*v1pb.UserGroup, error) {
+// GetGroup gets a group.
+func (s *GroupService) GetGroup(ctx context.Context, request *v1pb.GetGroupRequest) (*v1pb.Group, error) {
 	email, err := common.GetGroupEmail(request.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
-	group, err := s.store.GetUserGroup(ctx, email)
+	group, err := s.store.GetGroup(ctx, email)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
@@ -45,14 +45,14 @@ func (s *UserGroupService) GetUserGroup(ctx context.Context, request *v1pb.GetUs
 	return s.convertToV1Group(ctx, group)
 }
 
-// ListUserGroups lists all groups.
-func (s *UserGroupService) ListUserGroups(ctx context.Context, _ *v1pb.ListUserGroupsRequest) (*v1pb.ListUserGroupsResponse, error) {
-	groups, err := s.store.ListUserGroups(ctx, &store.FindUserGroupMessage{})
+// ListGroups lists all groups.
+func (s *GroupService) ListGroups(ctx context.Context, _ *v1pb.ListGroupsRequest) (*v1pb.ListGroupsResponse, error) {
+	groups, err := s.store.ListGroups(ctx, &store.FindGroupMessage{})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	response := &v1pb.ListUserGroupsResponse{}
+	response := &v1pb.ListGroupsResponse{}
 	for _, groupMessage := range groups {
 		group, err := s.convertToV1Group(ctx, groupMessage)
 		if err != nil {
@@ -63,8 +63,8 @@ func (s *UserGroupService) ListUserGroups(ctx context.Context, _ *v1pb.ListUserG
 	return response, nil
 }
 
-// CreateUserGroup creates a group.
-func (s *UserGroupService) CreateUserGroup(ctx context.Context, request *v1pb.CreateUserGroupRequest) (*v1pb.UserGroup, error) {
+// CreateGroup creates a group.
+func (s *GroupService) CreateGroup(ctx context.Context, request *v1pb.CreateGroupRequest) (*v1pb.Group, error) {
 	groupMessage, err := s.convertToGroupMessage(ctx, request.Group)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
@@ -75,7 +75,7 @@ func (s *UserGroupService) CreateUserGroup(ctx context.Context, request *v1pb.Cr
 		return nil, status.Errorf(codes.Internal, "failed to get workspace setting: %v", err)
 	}
 	if len(setting.Domains) == 0 {
-		return nil, status.Errorf(codes.FailedPrecondition, "workspace domain is required for creating user groups")
+		return nil, status.Errorf(codes.FailedPrecondition, "workspace domain is required for creating groups")
 	}
 	if err := validateEmail(groupMessage.Email, setting.Domains, false /* isServiceAccount */); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid email %q, error: %v", groupMessage.Email, err)
@@ -86,7 +86,7 @@ func (s *UserGroupService) CreateUserGroup(ctx context.Context, request *v1pb.Cr
 		return nil, status.Errorf(codes.Internal, "principal ID not found")
 	}
 
-	group, err := s.store.CreateUserGroup(ctx, groupMessage, principalID)
+	group, err := s.store.CreateGroup(ctx, groupMessage, principalID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
@@ -98,8 +98,8 @@ func (s *UserGroupService) CreateUserGroup(ctx context.Context, request *v1pb.Cr
 	return s.convertToV1Group(ctx, group)
 }
 
-// UpdateUserGroup updates a group.
-func (s *UserGroupService) UpdateUserGroup(ctx context.Context, request *v1pb.UpdateUserGroupRequest) (*v1pb.UserGroup, error) {
+// UpdateGroup updates a group.
+func (s *GroupService) UpdateGroup(ctx context.Context, request *v1pb.UpdateGroupRequest) (*v1pb.Group, error) {
 	groupEmail, err := common.GetGroupEmail(request.Group.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
@@ -111,7 +111,7 @@ func (s *UserGroupService) UpdateUserGroup(ctx context.Context, request *v1pb.Up
 	}
 	userName := common.FormatUserUID(user.ID)
 
-	group, err := s.store.GetUserGroup(ctx, groupEmail)
+	group, err := s.store.GetGroup(ctx, groupEmail)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get group %q with error: %v", groupEmail, err)
 	}
@@ -121,11 +121,11 @@ func (s *UserGroupService) UpdateUserGroup(ctx context.Context, request *v1pb.Up
 
 	ok, err = func() (bool, error) {
 		for _, member := range group.Payload.GetMembers() {
-			if member.Role == storepb.UserGroupMember_OWNER && member.Member == userName {
+			if member.Role == storepb.GroupMember_OWNER && member.Member == userName {
 				return true, nil
 			}
 		}
-		return s.iamManager.CheckPermission(ctx, iam.PermissionUserGroupsUpdate, user)
+		return s.iamManager.CheckPermission(ctx, iam.PermissionGroupsUpdate, user)
 	}()
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to check permission, error: %v", err)
@@ -134,7 +134,7 @@ func (s *UserGroupService) UpdateUserGroup(ctx context.Context, request *v1pb.Up
 		return nil, status.Errorf(codes.PermissionDenied, "permission denied to update group")
 	}
 
-	patch := &store.UpdateUserGroupMessage{}
+	patch := &store.UpdateGroupMessage{}
 	for _, path := range request.UpdateMask.Paths {
 		switch path {
 		case "title":
@@ -152,7 +152,7 @@ func (s *UserGroupService) UpdateUserGroup(ctx context.Context, request *v1pb.Up
 		}
 	}
 
-	groupMessage, err := s.store.UpdateUserGroup(ctx, groupEmail, patch, user.ID)
+	groupMessage, err := s.store.UpdateGroup(ctx, groupEmail, patch, user.ID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
@@ -164,14 +164,14 @@ func (s *UserGroupService) UpdateUserGroup(ctx context.Context, request *v1pb.Up
 	return s.convertToV1Group(ctx, groupMessage)
 }
 
-// DeleteUserGroup deletes a group.
-func (s *UserGroupService) DeleteUserGroup(ctx context.Context, request *v1pb.DeleteUserGroupRequest) (*emptypb.Empty, error) {
+// DeleteGroup deletes a group.
+func (s *GroupService) DeleteGroup(ctx context.Context, request *v1pb.DeleteGroupRequest) (*emptypb.Empty, error) {
 	email, err := common.GetGroupEmail(request.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
-	if err := s.store.DeleteUserGroup(ctx, email); err != nil {
+	if err := s.store.DeleteGroup(ctx, email); err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
@@ -182,8 +182,8 @@ func (s *UserGroupService) DeleteUserGroup(ctx context.Context, request *v1pb.De
 	return &emptypb.Empty{}, nil
 }
 
-func (s *UserGroupService) convertToGroupPayload(ctx context.Context, group *v1pb.UserGroup) (*storepb.UserGroupPayload, error) {
-	payload := &storepb.UserGroupPayload{}
+func (s *GroupService) convertToGroupPayload(ctx context.Context, group *v1pb.Group) (*storepb.GroupPayload, error) {
+	payload := &storepb.GroupPayload{}
 	for _, member := range group.Members {
 		email, err := common.GetUserEmail(member.Member)
 		if err != nil {
@@ -197,14 +197,14 @@ func (s *UserGroupService) convertToGroupPayload(ctx context.Context, group *v1p
 			return nil, status.Errorf(codes.InvalidArgument, "cannot found member %s", member.Member)
 		}
 
-		m := &storepb.UserGroupMember{
+		m := &storepb.GroupMember{
 			Member: common.FormatUserUID(user.ID),
 		}
 		switch member.Role {
-		case v1pb.UserGroupMember_MEMBER:
-			m.Role = storepb.UserGroupMember_MEMBER
-		case v1pb.UserGroupMember_OWNER:
-			m.Role = storepb.UserGroupMember_OWNER
+		case v1pb.GroupMember_MEMBER:
+			m.Role = storepb.GroupMember_MEMBER
+		case v1pb.GroupMember_OWNER:
+			m.Role = storepb.GroupMember_OWNER
 		default:
 			return nil, status.Errorf(codes.InvalidArgument, "unsupport group member role %v", member.Role)
 		}
@@ -213,17 +213,17 @@ func (s *UserGroupService) convertToGroupPayload(ctx context.Context, group *v1p
 	return payload, nil
 }
 
-func (s *UserGroupService) convertToGroupMessage(ctx context.Context, group *v1pb.UserGroup) (*store.UserGroupMessage, error) {
+func (s *GroupService) convertToGroupMessage(ctx context.Context, group *v1pb.Group) (*store.GroupMessage, error) {
 	email, err := common.GetGroupEmail(group.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
-	groupMessage := &store.UserGroupMessage{
+	groupMessage := &store.GroupMessage{
 		Email:       email,
 		Title:       group.Title,
 		Description: group.Description,
-		Payload:     &storepb.UserGroupPayload{},
+		Payload:     &storepb.GroupPayload{},
 	}
 
 	payload, err := s.convertToGroupPayload(ctx, group)
@@ -234,7 +234,7 @@ func (s *UserGroupService) convertToGroupMessage(ctx context.Context, group *v1p
 	return groupMessage, nil
 }
 
-func (s *UserGroupService) convertToV1Group(ctx context.Context, groupMessage *store.UserGroupMessage) (*v1pb.UserGroup, error) {
+func (s *GroupService) convertToV1Group(ctx context.Context, groupMessage *store.GroupMessage) (*v1pb.Group, error) {
 	if groupMessage == nil {
 		return nil, status.Errorf(codes.NotFound, "cannot found group")
 	}
@@ -246,7 +246,7 @@ func (s *UserGroupService) convertToV1Group(ctx context.Context, groupMessage *s
 		return nil, status.Errorf(codes.NotFound, "creator %d not found", groupMessage.CreatorUID)
 	}
 
-	group := &v1pb.UserGroup{
+	group := &v1pb.Group{
 		Name:        common.FormatGroupEmail(groupMessage.Email),
 		Title:       groupMessage.Title,
 		Description: groupMessage.Description,
@@ -267,15 +267,15 @@ func (s *UserGroupService) convertToV1Group(ctx context.Context, groupMessage *s
 			continue
 		}
 
-		m := &v1pb.UserGroupMember{
+		m := &v1pb.GroupMember{
 			Member: common.FormatUserEmail(user.Email),
-			Role:   v1pb.UserGroupMember_ROLE_UNSPECIFIED,
+			Role:   v1pb.GroupMember_ROLE_UNSPECIFIED,
 		}
 		switch member.Role {
-		case storepb.UserGroupMember_MEMBER:
-			m.Role = v1pb.UserGroupMember_MEMBER
-		case storepb.UserGroupMember_OWNER:
-			m.Role = v1pb.UserGroupMember_OWNER
+		case storepb.GroupMember_MEMBER:
+			m.Role = v1pb.GroupMember_MEMBER
+		case storepb.GroupMember_OWNER:
+			m.Role = v1pb.GroupMember_OWNER
 		}
 		group.Members = append(group.Members, m)
 	}

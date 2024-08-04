@@ -90,7 +90,7 @@
           <p class="mb-2">
             {{ $t("settings.members.groups.self") }}
           </p>
-          <UserGroupSelect v-model:value="state.memberList" :multiple="true" />
+          <GroupSelect v-model:value="state.memberList" :multiple="true" />
         </div>
       </div>
       <template #footer>
@@ -130,7 +130,7 @@ import QuerierDatabaseResourceForm from "@/components/Issue/panel/RequestQueryPa
 import {
   Drawer,
   DrawerContent,
-  UserGroupSelect,
+  GroupSelect,
   UserSelect,
 } from "@/components/v2";
 import {
@@ -139,7 +139,7 @@ import {
   useProjectIamPolicy,
   useProjectIamPolicyStore,
   useUserStore,
-  useUserGroupStore,
+  useGroupStore,
   pushNotification,
 } from "@/store";
 import type { ComposedProject, DatabaseResource } from "@/types";
@@ -181,7 +181,7 @@ interface LocalState {
 const { t } = useI18n();
 const databaseStore = useDatabaseV1Store();
 const userStore = useUserStore();
-const groupStore = useUserGroupStore();
+const groupStore = useGroupStore();
 
 const state = reactive<LocalState>({
   title: "",

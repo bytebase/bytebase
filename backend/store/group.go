@@ -14,31 +14,31 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-// FindUserGroupMessage is the message for finding groups.
-type FindUserGroupMessage struct {
+// FindGroupMessage is the message for finding groups.
+type FindGroupMessage struct {
 	Email *string
 }
 
-// UpdateUserGroupMessage is the message to update a group.
-type UpdateUserGroupMessage struct {
+// UpdateGroupMessage is the message to update a group.
+type UpdateGroupMessage struct {
 	Title       *string
 	Description *string
-	Payload     *storepb.UserGroupPayload
+	Payload     *storepb.GroupPayload
 }
 
-// UserGroupMessage is the message for a group.
-type UserGroupMessage struct {
+// GroupMessage is the message for a group.
+type GroupMessage struct {
 	Email       string
 	Title       string
 	Description string
 	CreatorUID  int
-	Payload     *storepb.UserGroupPayload
+	Payload     *storepb.GroupPayload
 	CreatedTime time.Time
 }
 
-// GetUserGroup gets a group.
-func (s *Store) GetUserGroup(ctx context.Context, email string) (*UserGroupMessage, error) {
-	if v, ok := s.userGroupCache.Get(email); ok {
+// GetGroup gets a group.
+func (s *Store) GetGroup(ctx context.Context, email string) (*GroupMessage, error) {
+	if v, ok := s.groupCache.Get(email); ok {
 		return v, nil
 	}
 
@@ -48,7 +48,7 @@ func (s *Store) GetUserGroup(ctx context.Context, email string) (*UserGroupMessa
 	}
 	defer tx.Rollback()
 
-	groups, err := s.listUserGroupImpl(ctx, tx, &FindUserGroupMessage{
+	groups, err := s.listGroupImpl(ctx, tx, &FindGroupMessage{
 		Email: &email,
 	})
 	if err != nil {
@@ -66,15 +66,15 @@ func (s *Store) GetUserGroup(ctx context.Context, email string) (*UserGroupMessa
 	return groups[0], nil
 }
 
-// ListUserGroups list all groups.
-func (s *Store) ListUserGroups(ctx context.Context, find *FindUserGroupMessage) ([]*UserGroupMessage, error) {
+// ListGroups list all groups.
+func (s *Store) ListGroups(ctx context.Context, find *FindGroupMessage) ([]*GroupMessage, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
 	defer tx.Rollback()
 
-	groups, err := s.listUserGroupImpl(ctx, tx, find)
+	groups, err := s.listGroupImpl(ctx, tx, find)
 	if err != nil {
 		return nil, err
 	}
@@ -83,18 +83,18 @@ func (s *Store) ListUserGroups(ctx context.Context, find *FindUserGroupMessage) 
 	}
 
 	for _, group := range groups {
-		s.userGroupCache.Add(group.Email, group)
+		s.groupCache.Add(group.Email, group)
 	}
 	return groups, nil
 }
 
-func (*Store) listUserGroupImpl(ctx context.Context, tx *Tx, find *FindUserGroupMessage) ([]*UserGroupMessage, error) {
+func (*Store) listGroupImpl(ctx context.Context, tx *Tx, find *FindGroupMessage) ([]*GroupMessage, error) {
 	where, args := []string{"TRUE"}, []any{}
 	if v := find.Email; v != nil {
 		where, args = append(where, fmt.Sprintf("email = $%d", len(args)+1)), append(args, *v)
 	}
 
-	var groups []*UserGroupMessage
+	var groups []*GroupMessage
 	rows, err := tx.QueryContext(ctx, fmt.Sprintf(`
 	SELECT
 		email,
@@ -113,7 +113,7 @@ func (*Store) listUserGroupImpl(ctx context.Context, tx *Tx, find *FindUserGroup
 	defer rows.Close()
 
 	for rows.Next() {
-		var group UserGroupMessage
+		var group GroupMessage
 		var payload []byte
 		var createdTs int64
 		if err := rows.Scan(
@@ -127,7 +127,7 @@ func (*Store) listUserGroupImpl(ctx context.Context, tx *Tx, find *FindUserGroup
 			return nil, err
 		}
 		group.CreatedTime = time.Unix(createdTs, 0)
-		groupPayload := storepb.UserGroupPayload{}
+		groupPayload := storepb.GroupPayload{}
 		if err := common.ProtojsonUnmarshaler.Unmarshal(payload, &groupPayload); err != nil {
 			return nil, err
 		}
@@ -141,10 +141,10 @@ func (*Store) listUserGroupImpl(ctx context.Context, tx *Tx, find *FindUserGroup
 	return groups, nil
 }
 
-// CreateUserGroup creates a group.
-func (s *Store) CreateUserGroup(ctx context.Context, create *UserGroupMessage, creatorUID int) (*UserGroupMessage, error) {
+// CreateGroup creates a group.
+func (s *Store) CreateGroup(ctx context.Context, create *GroupMessage, creatorUID int) (*GroupMessage, error) {
 	if create.Payload == nil {
-		create.Payload = &storepb.UserGroupPayload{}
+		create.Payload = &storepb.GroupPayload{}
 	}
 	create.CreatorUID = creatorUID
 
@@ -189,12 +189,12 @@ func (s *Store) CreateUserGroup(ctx context.Context, create *UserGroupMessage, c
 		return nil, errors.Wrap(err, "failed to commit")
 	}
 
-	s.userGroupCache.Add(create.Email, create)
+	s.groupCache.Add(create.Email, create)
 	return create, nil
 }
 
-// UpdateUserGroup updates a group.
-func (s *Store) UpdateUserGroup(ctx context.Context, email string, patch *UpdateUserGroupMessage, updaterID int) (*UserGroupMessage, error) {
+// UpdateGroup updates a group.
+func (s *Store) UpdateGroup(ctx context.Context, email string, patch *UpdateGroupMessage, updaterID int) (*GroupMessage, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to begin transaction")
@@ -217,7 +217,7 @@ func (s *Store) UpdateUserGroup(ctx context.Context, email string, patch *Update
 	}
 	args = append(args, email)
 
-	var group UserGroupMessage
+	var group GroupMessage
 	var payload []byte
 	var createdTs int64
 
@@ -244,7 +244,7 @@ func (s *Store) UpdateUserGroup(ctx context.Context, email string, patch *Update
 	}
 
 	group.CreatedTime = time.Unix(createdTs, 0)
-	groupPayload := storepb.UserGroupPayload{}
+	groupPayload := storepb.GroupPayload{}
 	if err := common.ProtojsonUnmarshaler.Unmarshal(payload, &groupPayload); err != nil {
 		return nil, err
 	}
@@ -254,12 +254,12 @@ func (s *Store) UpdateUserGroup(ctx context.Context, email string, patch *Update
 		return nil, errors.Wrap(err, "failed to commit transaction")
 	}
 
-	s.userGroupCache.Add(group.Email, &group)
+	s.groupCache.Add(group.Email, &group)
 	return &group, nil
 }
 
-// DeleteUserGroup deletes a group.
-func (s *Store) DeleteUserGroup(ctx context.Context, email string) error {
+// DeleteGroup deletes a group.
+func (s *Store) DeleteGroup(ctx context.Context, email string) error {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return errors.Wrap(err, "failed to begin transaction")
@@ -274,6 +274,6 @@ func (s *Store) DeleteUserGroup(ctx context.Context, email string) error {
 		return errors.Wrap(err, "failed to commit transaction")
 	}
 
-	s.userGroupCache.Remove(email)
+	s.groupCache.Remove(email)
 	return nil
 }

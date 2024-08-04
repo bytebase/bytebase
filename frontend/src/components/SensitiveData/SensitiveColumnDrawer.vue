@@ -280,7 +280,7 @@ import {
   usePolicyV1Store,
   usePolicyByParentAndType,
   useUserStore,
-  useUserGroupStore,
+  useGroupStore,
   pushNotification,
   useCurrentUserV1,
   useDBSchemaV1Store,
@@ -304,7 +304,7 @@ import {
   PolicyResourceType,
   MaskingExceptionPolicy_MaskingException_Action,
 } from "@/types/proto/v1/org_policy_service";
-import type { UserGroup } from "@/types/proto/v1/user_group";
+import type { Group } from "@/types/proto/v1/group";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import UserAvatar from "../User/UserAvatar.vue";
 import GrantAccessDrawer from "./GrantAccessDrawer.vue";
@@ -315,7 +315,7 @@ import { getMaskDataIdentifier, isCurrentColumnException } from "./utils";
 
 interface AccessUser {
   type: "user" | "group";
-  group?: UserGroup;
+  group?: Group;
   user?: ComposedUser;
   supportActions: Set<MaskingExceptionPolicy_MaskingException_Action>;
   maskingLevel: MaskingLevel;
@@ -359,7 +359,7 @@ const MASKING_LEVELS = [
 
 const { t } = useI18n();
 const userStore = useUserStore();
-const groupStore = useUserGroupStore();
+const groupStore = useGroupStore();
 const currentUserV1 = useCurrentUserV1();
 const accessUserList = ref<AccessUser[]>([]);
 const policyStore = usePolicyV1Store();
