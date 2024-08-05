@@ -21,7 +21,7 @@
     <div class="textinfolabel">
       {{ $t("project.members.description") }}
       <a
-        href="https://www.bytebase.com/docs/concepts/roles-and-permissions/#project-roles?source=console"
+        href="https://www.bytebase.com/docs/concepts/roles-and-permissions/?source=console#project-roles"
         target="_blank"
         class="normal-link inline-flex flex-row items-center"
       >
