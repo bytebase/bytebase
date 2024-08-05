@@ -1,6 +1,6 @@
 <template>
   <div class="flex items-center max-w-full overflow-hidden gap-x-1">
-    <SchemaIcon />
+    <SchemaIcon class="w-4 h-4"/>
     <HighlightLabelText
       :text="target.schema.name"
       :keyword="keyword"
