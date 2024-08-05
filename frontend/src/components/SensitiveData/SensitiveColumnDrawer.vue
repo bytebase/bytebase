@@ -374,7 +374,7 @@ const { semanticType } = useSemanticType({
 });
 
 const columnDefaultMaskingAlgorithm = computed(() => {
-  if (!!semanticType.value) {
+  if (semanticType.value) {
     return t("settings.sensitive-data.algorithms.default-with-semantic-type");
   }
   return t("settings.sensitive-data.algorithms.default");
