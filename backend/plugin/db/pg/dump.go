@@ -158,8 +158,8 @@ func (driver *Driver) execPgDump(ctx context.Context, args []string, out io.Writ
 			}
 			cmd.Env = append(cmd.Env, fmt.Sprintf("PGSSLROOTCERT=%s", caTempFile.Name()))
 		}
-		cmd.Env = append(cmd.Env, fmt.Sprintf("PGSSLMODE=%s", sslMode))
 	}
+	cmd.Env = append(cmd.Env, fmt.Sprintf("PGSSLMODE=%s", sslMode))
 	if driver.config.TLSConfig.SslCert != "" {
 		certTempFile, err := os.CreateTemp("", "pg-ssl-cert-")
 		if err != nil {
