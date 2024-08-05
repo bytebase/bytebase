@@ -691,7 +691,7 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 		}
 	}
 	if !found {
-		return nil, status.Errorf(codes.NotFound, "data source not found")
+		return nil, status.Errorf(codes.NotFound, `cannot found data source "%s"`, request.DataSource.Id)
 	}
 
 	if dataSource.Type == api.RO {
