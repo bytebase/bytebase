@@ -67,6 +67,7 @@ const overrideAppFeatures = (
       "bb.feature.sql-editor.disable-setting": true,
       "bb.feature.sql-editor.disallow-request-query": true,
       "bb.feature.sql-editor.disallow-sync-schema": true,
+      "bb.feature.sql-editor.disallow-export-query-data": true,
       "bb.feature.sql-editor.hide-bytebase-logo": true,
       "bb.feature.sql-editor.hide-profile": true,
       "bb.feature.sql-editor.hide-readonly-datasource-hint": true,
