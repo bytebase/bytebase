@@ -121,6 +121,10 @@ func (p *provider) refreshToken(ctx context.Context) error {
 }
 
 func (p *provider) getUserIDByEmail(ctx context.Context, email string) (string, error) {
+	if id, ok := userIDCache.Get(email); ok {
+		return id, nil
+	}
+
 	url, err := url.Parse("https://qyapi.weixin.qq.com/cgi-bin/user/get_userid_by_email")
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to parse url")
@@ -148,6 +152,8 @@ func (p *provider) getUserIDByEmail(ctx context.Context, email string) (string, 
 	if err := json.Unmarshal(resp, &payload); err != nil {
 		return "", errors.Wrapf(err, "failed to unmarshal payload for get user id by email")
 	}
+
+	userIDCache.Add(email, payload.UserID)
 
 	return payload.UserID, nil
 }
@@ -263,6 +269,14 @@ var tokenCache = func() *lru.Cache[cacheKey, *tokenValue] {
 }()
 
 var tokenCacheLock sync.Mutex
+
+var userIDCache = func() *lru.Cache[string, string] {
+	cache, err := lru.New[string, string](5000)
+	if err != nil {
+		panic(err)
+	}
+	return cache
+}()
 
 func getTokenCached(ctx context.Context, c *http.Client, corpID, secret string) (string, error) {
 	tokenCacheLock.Lock()
