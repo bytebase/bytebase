@@ -1,9 +1,6 @@
 <template>
-  <div class="flex flex-col w-full h-full overflow-y-hidden pt-2">
-    <div
-      v-if="shouldShowToolbar"
-      class="pb-2 w-full flex flex-row justify-between items-center"
-    >
+  <div class="flex flex-col w-full h-full overflow-y-hidden">
+    <div class="py-2 w-full flex flex-row justify-between items-center">
       <div>
         <div
           v-if="state.selectedSubTab === 'table-list'"
@@ -62,7 +59,7 @@
           </div>
         </div>
       </div>
-      <div v-if="!hideSchemaDiagram" class="flex justify-end items-center">
+      <div class="flex justify-end items-center">
         <div
           class="flex flex-row justify-end items-center bg-gray-100 p-1 rounded whitespace-nowrap"
         >
@@ -155,7 +152,7 @@
 import { cloneDeep, head, sumBy } from "lodash-es";
 import { PlusIcon } from "lucide-vue-next";
 import { NButton, NSelect, NTooltip } from "naive-ui";
-import { computed, nextTick, reactive, unref, watch } from "vue";
+import { computed, nextTick, reactive, watch } from "vue";
 import { FeatureBadge, FeatureModal } from "@/components/FeatureGuard";
 import SchemaDiagram, { SchemaDiagramIcon } from "@/components/SchemaDiagram";
 import { Drawer, DrawerContent } from "@/components/v2";
@@ -212,7 +209,6 @@ const {
   markEditStatus,
   upsertTableConfig,
   queuePendingScrollToTable,
-  hideSchemaDiagram,
 } = context;
 const state = reactive<LocalState>({
   selectedSubTab: "table-list",
@@ -247,15 +243,6 @@ const allowCreateTable = computed(() => {
     );
   }
   return true;
-});
-
-const shouldShowToolbar = computed(() => {
-  if (!unref(hideSchemaDiagram)) return true;
-  if (state.selectedSubTab === "schema-diagram") return true;
-  if (shouldShowSchemaSelector.value) return true;
-  if (!readonly.value) return true;
-  if (selectionEnabled.value) return true;
-  return false;
 });
 
 const schemaSelectorOptionList = computed(() => {
