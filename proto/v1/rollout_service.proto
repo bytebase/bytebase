@@ -458,15 +458,17 @@ message TaskRun {
   PriorBackupDetail prior_backup_detail = 17;
 
   message SchedulerInfo {
+    google.protobuf.Timestamp report_time = 1;
+
     message WaitingCause {
       oneof cause {
         bool connection_limit = 1;
         string task = 2;
       }
     }
-    WaitingCause waiting_cause = 1;
+    WaitingCause waiting_cause = 2;
   }
-  SchedulerInfo scheduler_info = 18;
+  SchedulerInfo scheduler_info = 18 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 message TaskRunLog {
