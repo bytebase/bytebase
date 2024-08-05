@@ -84,6 +84,7 @@ func (s *Store) GetSheetStatementByID(ctx context.Context, id int) (string, erro
 
 // GetSheet gets a sheet.
 func (s *Store) GetSheet(ctx context.Context, find *FindSheetMessage) (*SheetMessage, error) {
+	// TODO(d): cache sheet.
 	sheets, err := s.listSheets(ctx, find)
 	if err != nil {
 		return nil, err
