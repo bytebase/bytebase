@@ -223,7 +223,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 func execute(ctx context.Context, tx *sql.Tx, statement string) (int64, error) {
 	sqlResult, err := tx.ExecContext(ctx, statement)
 	if err != nil {
-		return 0, errors.Wrapf(err, "failed to execute statement: %s", statement)
+		return 0, errors.Wrap(err, "failed to execute statement")
 	}
 	rowsAffected, err := sqlResult.RowsAffected()
 	if err != nil {

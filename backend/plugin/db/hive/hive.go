@@ -133,7 +133,7 @@ func (d *Driver) Execute(ctx context.Context, statementsStr string, _ db.Execute
 	for _, statement := range statements {
 		cursor.Execute(ctx, strings.TrimRight(statement.Text, ";"), false)
 		if cursor.Err != nil {
-			return 0, errors.Wrapf(cursor.Err, "failed to execute statement %s", statement.Text)
+			return 0, errors.Wrap(cursor.Err, "failed to execute statement")
 		}
 		operationStatus := cursor.Poll(false)
 		affectedRows += operationStatus.GetNumModifiedRows()
@@ -217,7 +217,7 @@ func runSingleStatement(ctx context.Context, conn *gohive.Connection, statement 
 	// run query.
 	cursor.Execute(ctx, statement, false)
 	if cursor.Err != nil {
-		return nil, errors.Wrapf(cursor.Err, "failed to execute statement %s", statement)
+		return nil, errors.Wrap(cursor.Err, "failed to execute statement")
 	}
 
 	result := &v1pb.QueryResult{
