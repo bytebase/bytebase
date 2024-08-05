@@ -31,6 +31,8 @@ type State struct {
 	// TaskRunExecutionStatuses is the map from task run ID to task run execution status.
 	TaskRunExecutionStatuses sync.Map // map[taskRunID]TaskRunExecutionStatus
 
+	TaskRunSchedulerInfo sync.Map // map[taskRunID]*storepb.SchedulerInfo
+
 	// TaskRunConnectionID is the map from task run ID to the connection id of the connection to the database.
 	TaskRunConnectionID sync.Map // map[taskRunID]string
 
@@ -38,8 +40,8 @@ type State struct {
 	RunningTaskRuns sync.Map // map[taskRunID]bool
 	// RunningTaskRunsCancelFunc is the cancelFunc of running taskruns.
 	RunningTaskRunsCancelFunc sync.Map // map[taskRunID]context.CancelFunc
-	// RunningDatabaseMigration denotes if there is a running migration on the database.
-	RunningDatabaseMigration sync.Map // map[databaseID]bool
+	// RunningDatabaseMigration is the taskUID of the running migration on the database.
+	RunningDatabaseMigration sync.Map // map[databaseID]taskUID
 
 	// RunningPlanChecks is the set of running plan checks.
 	RunningPlanChecks sync.Map

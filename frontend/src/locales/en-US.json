@@ -97,6 +97,7 @@
     "stage": "Stage",
     "task": "Task",
     "tasks": "Tasks",
+    "blocking-task": "Blocking task",
     "sql": "SQL",
     "unassigned": "Unassigned",
     "new": "New",
@@ -411,7 +412,9 @@
       "executing-sql": "Executing SQL.",
       "executing-sql-detail": "Executing SQL {current} of {total}, from ({startLine}, {startColumn}) to ({endLine}, {endColumn}).",
       "dumping-schema-after-executing-sql": "SQL execution completed, dumping schema.",
-      "failed-sql-detail": "Execution failed from ({startLine}, {startColumn}) to ({endLine}, {endColumn}): {message}."
+      "failed-sql-detail": "Execution failed from ({startLine}, {startColumn}) to ({endLine}, {endColumn}): {message}.",
+      "waiting-connection": "Waiting for available instance connections. The instance connection count has reached the limit.",
+      "waiting-task": "Waiting for another task to finish."
     }
   },
   "banner": {

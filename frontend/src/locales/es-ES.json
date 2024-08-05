@@ -279,7 +279,8 @@
     "options": "Opciones",
     "reset": "Reiniciar",
     "refresh": "Actualizar",
-    "rollback": "Retroceder"
+    "rollback": "Retroceder",
+    "blocking-task": "Tarea de bloqueo"
   },
   "error-page": {
     "go-back-home": "Volver al inicio"
@@ -411,7 +412,9 @@
       "executing-sql": "Ejecutando SQL.",
       "executing-sql-detail": "Ejecutando SQL {actual} de {total}, desde ({startLine}, {startColumn}) hasta ({endLine}, {endColumn}).",
       "dumping-schema-after-executing-sql": "Ejecución SQL completada, exportando esquema ahora.",
-      "failed-sql-detail": "La ejecución falló desde ({startLine}, {startColumn}) hasta ({endLine}, {endColumn}): {message}."
+      "failed-sql-detail": "La ejecución falló desde ({startLine}, {startColumn}) hasta ({endLine}, {endColumn}): {message}.",
+      "waiting-connection": "Esperando conexiones de instancia disponibles. \nEl recuento de conexiones de instancia ha alcanzado el límite.",
+      "waiting-task": "Esperando a que termine otra tarea."
     }
   },
   "banner": {

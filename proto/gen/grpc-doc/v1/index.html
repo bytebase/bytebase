@@ -2215,6 +2215,18 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.TaskRun.SchedulerInfo"><span class="badge">M</span>TaskRun.SchedulerInfo</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.TaskRun.SchedulerInfo.WaitingCause"><span class="badge">M</span>TaskRun.SchedulerInfo.WaitingCause</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.TaskRun.SchedulerInfo.WaitingCause.Task"><span class="badge">M</span>TaskRun.SchedulerInfo.WaitingCause.Task</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.TaskRunLog"><span class="badge">M</span>TaskRunLog</a>
                 </li>
               
@@ -23678,6 +23690,13 @@ Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory
                   <td><p>The prior backup detail that will be used to rollback the task run. </p></td>
                 </tr>
               
+                <tr>
+                  <td>scheduler_info</td>
+                  <td><a href="#bytebase.v1.TaskRun.SchedulerInfo">TaskRun.SchedulerInfo</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -23860,6 +23879,99 @@ Format: instances/{instance}/databases/{database} </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.TaskRun.SchedulerInfo">TaskRun.SchedulerInfo</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>report_time</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>waiting_cause</td>
+                  <td><a href="#bytebase.v1.TaskRun.SchedulerInfo.WaitingCause">TaskRun.SchedulerInfo.WaitingCause</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.TaskRun.SchedulerInfo.WaitingCause">TaskRun.SchedulerInfo.WaitingCause</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>connection_limit</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>task</td>
+                  <td><a href="#bytebase.v1.TaskRun.SchedulerInfo.WaitingCause.Task">TaskRun.SchedulerInfo.WaitingCause.Task</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.TaskRun.SchedulerInfo.WaitingCause.Task">TaskRun.SchedulerInfo.WaitingCause.Task</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>task</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>issue</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Format: projects/{project}/issues/{issue} </p></td>
                 </tr>
               
             </tbody>
