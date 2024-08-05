@@ -303,7 +303,10 @@ const projectV1Routes: RouteRecordRaw[] = [
         name: PROJECT_V1_ROUTE_AUDIT_LOGS,
         meta: {
           overrideTitle: true,
-          requiredProjectPermissionList: () => ["bb.projects.get"],
+          requiredProjectPermissionList: () => [
+            "bb.projects.get",
+            "bb.auditLogs.search",
+          ],
         },
         component: () => import("@/views/project/ProjectAuditLogDashboard.vue"),
         props: true,
