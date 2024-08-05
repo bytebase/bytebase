@@ -2,7 +2,7 @@
   <div class="flex-1 flex items-stretch overflow-hidden">
     <GutterBar class="border-r border-control-border" :class="gutterBarClass" />
 
-    <div class="flex-1" :class="contentClass">
+    <div class="flex-1 overflow-y-hidden overflow-x-auto" :class="contentClass">
       <slot v-if="!viewState || viewState.view === 'CODE'" name="code-panel" />
 
       <template v-if="viewState">

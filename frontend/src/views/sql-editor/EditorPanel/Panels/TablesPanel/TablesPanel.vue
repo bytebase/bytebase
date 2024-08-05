@@ -142,6 +142,8 @@ provideSchemaEditorContext({
   options: ref({
     hideSemanticTypeColumn: true,
     hideClassificationColumn: true,
+    forceShowIndexes: true,
+    forceShowPartitions: true,
   }),
 });
 </script>

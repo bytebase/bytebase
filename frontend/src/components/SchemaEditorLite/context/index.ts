@@ -36,6 +36,8 @@ export type SchemaEditorEvents = Emittery<{
 export type SchemaEditorOptions = {
   hideSemanticTypeColumn: boolean;
   hideClassificationColumn: boolean;
+  forceShowIndexes: boolean;
+  forceShowPartitions: boolean;
 };
 
 export const provideSchemaEditorContext = (params: {

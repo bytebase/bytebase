@@ -53,7 +53,7 @@
             </NButton>
           </template>
           <NButton
-            v-if="engineSupportsEditIndexes(engine)"
+            v-if="showIndexes"
             size="small"
             :disabled="disableChangeTable"
             @click="state.mode = 'INDEXES'"
@@ -254,6 +254,7 @@ const {
   project,
   readonly,
   events,
+  options,
   addTab,
   markEditStatus,
   removeEditStatus,
@@ -339,6 +340,13 @@ const allowReorderColumns = computed(() => {
 
   const status = statusForTable();
   return instanceV1AllowsReorderColumns(engine.value) && status === "created";
+});
+
+const showIndexes = computed(() => {
+  if (options?.value.forceShowIndexes) {
+    return true;
+  }
+  return engineSupportsEditIndexes(engine.value);
 });
 
 const disableAlterColumn = (column: ColumnMetadata): boolean => {
