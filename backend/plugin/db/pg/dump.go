@@ -20,10 +20,6 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-var (
-	pgdumpRootCertPath = "/usr/local/share/ca-certificates/ca-certificates.crt"
-)
-
 // Dump dumps the database.
 func (driver *Driver) Dump(ctx context.Context, out io.Writer) (string, error) {
 	// We don't support pg_dump for CloudSQL, because pg_dump not support IAM & instance name for authentication.
@@ -137,14 +133,17 @@ func (driver *Driver) execPgDump(ctx context.Context, args []string, out io.Writ
 
 	sslMode := getSSLMode(driver.config.TLSConfig, driver.config.SSHConfig)
 
-	// Unfortunately, pg_dump doesn't directly support the use of system certificates.
-	// Instead, you should utilize the PGSSLROOTCERT environment variable to specify the root CA certificate.
-	// Different OS stores the trusted cert in different location, we use /usr/local/share/ca-certificates/ca-certificates.crt only.
+	// Unfortunately, pg_dump doesn't directly support use system certificate directly. Instead, it supprots
+	// specify one cert file path in PGSSLROOTCERT environment variable.
+	// MacOS(dev-env):
+	// 1. The system certs are stored in the Keychain utility, and it is not recommended to access them outside of Keychain.
+	// 2. The user self-signed ca should be add in Keychain utility and mark it is trusted.
+	// Debian(our docker image based):
+	// 1. The system certs are mostly stored in the /etc/ssl/certs/ca-certificates.crt, and some are stored in the /usr/share/ca-certificates/xxx.crt.
+	// 2. The user self-signed ca should be added in /usr/share/ca-certificates/xxx.crt.
+	// We should expose this option to user. For now, using require ssl mode to trust server certificate anyway.
 	if driver.config.TLSConfig.UseSSL {
-		var sslRootCertPath string
-		if _, err := os.Stat(pgdumpRootCertPath); err == nil {
-			sslRootCertPath = pgdumpRootCertPath
-		}
+		sslMode = SSLModeRequire
 		if driver.config.TLSConfig.SslCA != "" {
 			caTempFile, err := os.CreateTemp("", "pg-ssl-ca-")
 			if err != nil {
@@ -157,12 +156,7 @@ func (driver *Driver) execPgDump(ctx context.Context, args []string, out io.Writ
 			if err := caTempFile.Close(); err != nil {
 				return err
 			}
-			sslRootCertPath = caTempFile.Name()
-		}
-		if sslRootCertPath != "" {
-			cmd.Env = append(cmd.Env, fmt.Sprintf("PGSSLROOTCERT=%s", sslRootCertPath))
-		} else {
-			sslMode = SSLModeRequire
+			cmd.Env = append(cmd.Env, fmt.Sprintf("PGSSLROOTCERT=%s", caTempFile.Name()))
 		}
 		cmd.Env = append(cmd.Env, fmt.Sprintf("PGSSLMODE=%s", sslMode))
 	}
