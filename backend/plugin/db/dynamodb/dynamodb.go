@@ -129,7 +129,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 		})
 		if err != nil {
 			return 0, &db.ErrorWithPosition{
-				Err: errors.Wrapf(err, "failed to execute statement: %s", statement.Text),
+				Err: errors.Wrap(err, "failed to execute statement"),
 				Start: &storepb.TaskRunResult_Position{
 					Line:   int32(statement.FirstStatementLine),
 					Column: int32(statement.FirstStatementColumn),
@@ -207,7 +207,7 @@ func (d *Driver) querySinglePartiQL(ctx context.Context, statement string, query
 		input.NextToken = nextToken
 		output, err := d.client.ExecuteStatement(ctx, input)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to execute statement: %s", statement)
+			return nil, errors.Wrap(err, "failed to execute statement")
 		}
 		for _, item := range output.Items {
 			totalRowCount++
