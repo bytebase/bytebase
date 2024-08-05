@@ -28,6 +28,18 @@ export const provideEditorPanelContext = (base: {
     return viewStateByTab.get(tab.value.id) ?? defaultViewState();
   });
 
+  const selectedSchemaName = computed({
+    get() {
+      return viewState.value?.schema;
+    },
+    set(schema) {
+      if (schema === undefined) return;
+      updateViewState({
+        schema,
+      });
+    },
+  });
+
   const updateViewState = (patch: Partial<ViewState>) => {
     const curr = viewState.value;
     if (!curr) return;
@@ -40,6 +52,7 @@ export const provideEditorPanelContext = (base: {
   const context = {
     ...base,
     viewState,
+    selectedSchemaName,
     updateViewState,
   };
 
