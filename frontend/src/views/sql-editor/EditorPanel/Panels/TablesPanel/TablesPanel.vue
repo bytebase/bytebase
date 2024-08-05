@@ -7,7 +7,7 @@
       <template v-if="!metadata.table">
         <div
           v-if="showSchemaSelect"
-          class="pl-1 flex flex-row justify-start items-center text-sm gap-x-2"
+          class="flex flex-row justify-start items-center text-sm gap-x-2"
         >
           <span>Schema:</span>
           <NSelect
@@ -48,14 +48,10 @@
 </template>
 
 <script setup lang="ts">
-import { first } from "lodash-es";
 import { ArrowLeftIcon } from "lucide-vue-next";
 import { NButton, NSelect } from "naive-ui";
 import { computed, ref, watch } from "vue";
-import {
-  provideSchemaEditorContext,
-  type EditTarget,
-} from "@/components/SchemaEditorLite";
+import { provideSchemaEditorContext } from "@/components/SchemaEditorLite";
 import TableEditor from "@/components/SchemaEditorLite/Panels/TableEditor.vue";
 import TableList from "@/components/SchemaEditorLite/Panels/TableList";
 import {
@@ -70,12 +66,15 @@ import {
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto/v1/database_service";
-import { hasSchemaProperty } from "@/utils";
-import { useEditorPanelContext } from "../../context";
+import { useSelectSchema } from "../../common";
 
 const editorStore = useSQLEditorStore();
-const { database, instance } = useConnectionOfCurrentSQLEditorTab();
-const { selectedSchemaName } = useEditorPanelContext();
+const {
+  selectedSchemaName,
+  options: schemaSelectOptions,
+  showSchemaSelect,
+} = useSelectSchema();
+const { database } = useConnectionOfCurrentSQLEditorTab();
 const databaseMetadata = computed(() => {
   return useDBSchemaV1Store().getDatabaseMetadata(
     database.value.name,
@@ -89,10 +88,6 @@ const metadata = ref<{
   table?: TableMetadata;
 }>();
 
-const showSchemaSelect = computed(() => {
-  return hasSchemaProperty(instance.value.engine);
-});
-
 const showToolbar = computed(() => {
   if (metadata.value?.table) {
     // should show table detail
@@ -101,17 +96,6 @@ const showToolbar = computed(() => {
 
   if (showSchemaSelect.value) return true;
   return false;
-});
-
-const schemaSelectOptions = computed(() => {
-  const options = [];
-  for (const schema of databaseMetadata.value.schemas) {
-    options.push({
-      label: schema.name,
-      value: schema.name,
-    });
-  }
-  return options;
 });
 
 const handleSelectTable = (selected: {
@@ -130,9 +114,6 @@ const deselectTable = () => {
 watch(
   [databaseMetadata, selectedSchemaName],
   ([database, schema]) => {
-    if (database && schema === undefined) {
-      selectedSchemaName.value = first(database.schemas)?.name;
-    }
     metadata.value = {
       database,
       schema: database.schemas.find((s) => s.name === schema),
@@ -143,14 +124,13 @@ watch(
 );
 
 provideSchemaEditorContext({
-  targets: computed(() => {
-    const target: EditTarget = {
+  targets: computed(() => [
+    {
       database: database.value,
       metadata: databaseMetadata.value,
       baselineMetadata: databaseMetadata.value,
-    };
-    return [target];
-  }),
+    },
+  ]),
   project: computed(() =>
     useProjectV1Store().getProjectByName(editorStore.project)
   ),
