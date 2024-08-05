@@ -269,7 +269,8 @@ SELECT
 FROM
   all_views
   JOIN rw_schemas S ON all_views.schema_id = S.id
-  AND S.name NOT IN ` + fmt.Sprintf("(%s)", systemSchemas)
+  AND S.name NOT IN ` + fmt.Sprintf("(%s)", systemSchemas) + `
+ORDER BY schema_name, view_name;`
 
 // getViews gets all views of a database.
 func getViews(txn *sql.Tx) (map[string][]*storepb.ViewMetadata, error) {
