@@ -8,10 +8,10 @@
     v-bind="$attrs"
   >
     <template #item="{ item: taskRun }: TaskRunGridRow">
-      <div class="bb-grid-cell block">
+      <div class="bb-grid-cell">
         <TaskRunStatusIcon :status="taskRun.status" />
       </div>
-      <div class="bb-grid-cell whitespace-pre-wrap break-words !block">
+      <div class="bb-grid-cell">
         <TaskRunComment :task-run="taskRun" />
       </div>
       <div class="bb-grid-cell">
