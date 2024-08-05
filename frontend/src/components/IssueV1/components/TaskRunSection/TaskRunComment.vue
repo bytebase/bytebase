@@ -1,18 +1,17 @@
 <template>
-  {{ comment }}
+  <NEllipsis expand-trigger="click" line-clamp="3" :tooltip="false">
+    {{ comment }}
+  </NEllipsis>
 
   <template v-if="commentLink.link">
     <template v-if="commentLink.link.startsWith('/')">
-      <router-link
-        class="bb-comment-link ml-1 normal-link"
-        :to="commentLink.link"
-      >
+      <router-link class="ml-1 inline normal-link" :to="commentLink.link">
         {{ commentLink.title }}
       </router-link>
     </template>
     <template v-else>
       <a
-        class="bb-comment-link ml-1 normal-link"
+        class="ml-1 inline normal-link"
         :href="commentLink.link"
         target="_blank"
         rel="noopener noreferrer"
@@ -24,6 +23,7 @@
 </template>
 
 <script setup lang="ts">
+import { NEllipsis } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { unknownTask, isPostgresFamily } from "@/types";
