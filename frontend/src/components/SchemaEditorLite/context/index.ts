@@ -5,6 +5,10 @@ import { supportSetClassificationFromComment } from "@/components/ColumnDataTabl
 import { useSettingV1Store } from "@/store";
 import type { ComposedProject } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
+import type {
+  SchemaMetadata,
+  TableMetadata,
+} from "@/types/proto/v1/database_service";
 import type { RebuildMetadataEditReset } from "../algorithm/rebuild";
 import type { EditTarget, ResourceType, RolloutObject } from "../types";
 import { useEditConfigs } from "./config";
@@ -22,7 +26,17 @@ export type SchemaEditorEvents = Emittery<{
   };
   ["rebuild-edit-status"]: { resets: RebuildMetadataEditReset[] };
   ["clear-tabs"]: undefined;
+
+  ["select-table"]: {
+    schema: SchemaMetadata;
+    table: TableMetadata;
+  };
 }>;
+
+export type SchemaEditorOptions = {
+  hideSemanticTypeColumn: boolean;
+  hideClassificationColumn: boolean;
+};
 
 export const provideSchemaEditorContext = (params: {
   resourceType: Ref<ResourceType>;
@@ -32,7 +46,7 @@ export const provideSchemaEditorContext = (params: {
   selectedRolloutObjects: Ref<RolloutObject[] | undefined>;
   showLastUpdater: Ref<boolean>;
   disableDiffColoring: Ref<boolean>;
-  hideSchemaDiagram?: Ref<boolean | undefined>;
+  options: Ref<SchemaEditorOptions> | undefined;
 }) => {
   const events = new Emittery() as SchemaEditorEvents;
   const showDatabaseConfigColumn = computed(

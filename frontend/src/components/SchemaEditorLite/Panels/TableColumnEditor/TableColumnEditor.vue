@@ -170,6 +170,7 @@ const {
   showDatabaseConfigColumn,
   disableDiffColoring,
   selectionEnabled,
+  options,
   markEditStatus,
   getColumnStatus,
   getColumnConfig,
@@ -254,15 +255,19 @@ const semanticTypeList = computed(() => {
 
 const showSemanticTypeColumn = computed(() => {
   return (
+    !options?.value.hideSemanticTypeColumn &&
     subscriptionV1Store.hasFeature("bb.feature.sensitive-data") &&
     showDatabaseConfigColumn.value
   );
 });
 
 const showClassification = computed(() => {
-  return showClassificationColumn(
-    props.engine,
-    classificationConfig.value?.classificationFromConfig ?? false
+  return (
+    !options?.value.hideClassificationColumn &&
+    showClassificationColumn(
+      props.engine,
+      classificationConfig.value?.classificationFromConfig ?? false
+    )
   );
 });
 

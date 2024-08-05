@@ -1,7 +1,12 @@
 <template>
-  <div class="flex flex-col pt-2 gap-y-2 w-full h-full overflow-y-hidden">
+  <div
+    class="flex flex-col pt-2 gap-y-2 w-full h-full overflow-y-hidden"
+    v-bind="$attrs"
+  >
     <div class="w-full flex flex-row justify-between items-center">
       <div class="w-full flex justify-start items-center gap-x-2">
+        <slot v-if="state.mode === 'COLUMNS'" name="toolbar-prefix" />
+
         <template
           v-if="state.mode === 'INDEXES' || state.mode === 'PARTITIONS'"
         >
@@ -230,7 +235,7 @@ const props = withDefaults(
     database: DatabaseMetadata;
     schema: SchemaMetadata;
     table: TableMetadata;
-    searchPattern: string;
+    searchPattern?: string;
   }>(),
   {
     searchPattern: "",

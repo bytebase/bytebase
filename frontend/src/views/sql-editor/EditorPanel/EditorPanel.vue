@@ -1,6 +1,6 @@
 <template>
   <div class="w-full flex-1 flex flex-row items-stretch overflow-hidden">
-    <Panels>
+    <Panels :key="currentTab?.id">
       <template #code-panel>
         <StandardPanel
           v-if="
