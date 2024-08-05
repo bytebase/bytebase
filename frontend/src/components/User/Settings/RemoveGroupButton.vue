@@ -24,7 +24,7 @@ import { PROJECT_V1_ROUTE_MEMBERS } from "@/router/dashboard/projectV1";
 import { WORKSPACE_ROUTE_SENSITIVE_DATA } from "@/router/dashboard/workspaceRoutes";
 import {
   useCurrentUserV1,
-  useUserGroupStore,
+  useGroupStore,
   useProjectV1Store,
   pushNotification,
   extractGroupEmail,
@@ -36,13 +36,13 @@ import { getGroupEmailInBinding } from "@/types";
 import { PolicyType } from "@/types/proto/v1/org_policy_service";
 import type { Project } from "@/types/proto/v1/project_service";
 import {
-  type UserGroup,
-  UserGroupMember_Role,
-} from "@/types/proto/v1/user_group";
+  type Group,
+  GroupMember_Role,
+} from "@/types/proto/v1/group";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
 const props = defineProps<{
-  group: UserGroup;
+  group: Group;
 }>();
 
 const emit = defineEmits<{
@@ -51,7 +51,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 const dialog = useDialog();
-const groupStore = useUserGroupStore();
+const groupStore = useGroupStore();
 const currentUserV1 = useCurrentUserV1();
 const projectStore = useProjectV1Store();
 const policyStore = usePolicyV1Store();
@@ -64,13 +64,13 @@ const selfMemberInGroup = computed(() => {
 });
 
 const allowDelete = computed(() => {
-  if (selfMemberInGroup.value?.role === UserGroupMember_Role.OWNER) {
+  if (selfMemberInGroup.value?.role === GroupMember_Role.OWNER) {
     return true;
   }
-  return hasWorkspacePermissionV2(currentUserV1.value, "bb.userGroups.delete");
+  return hasWorkspacePermissionV2(currentUserV1.value, "bb.groups.delete");
 });
 
-const getProjectsBindingGroup = async (group: UserGroup) => {
+const getProjectsBindingGroup = async (group: Group) => {
   const member = getGroupEmailInBinding(extractGroupEmail(group.name));
   interface ProjectGroupResource {
     member: boolean;

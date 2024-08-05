@@ -1228,6 +1228,57 @@
         
           
           <li>
+            <a href="#v1%2fgroup.proto">v1/group.proto</a>
+            <ul>
+              
+                <li>
+                  <a href="#bytebase.v1.CreateGroupRequest"><span class="badge">M</span>CreateGroupRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.DeleteGroupRequest"><span class="badge">M</span>DeleteGroupRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.GetGroupRequest"><span class="badge">M</span>GetGroupRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.Group"><span class="badge">M</span>Group</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.GroupMember"><span class="badge">M</span>GroupMember</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.ListGroupsRequest"><span class="badge">M</span>ListGroupsRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.ListGroupsResponse"><span class="badge">M</span>ListGroupsResponse</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.UpdateGroupRequest"><span class="badge">M</span>UpdateGroupRequest</a>
+                </li>
+              
+              
+                <li>
+                  <a href="#bytebase.v1.GroupMember.Role"><span class="badge">E</span>GroupMember.Role</a>
+                </li>
+              
+              
+              
+                <li>
+                  <a href="#bytebase.v1.GroupService"><span class="badge">S</span>GroupService</a>
+                </li>
+              
+            </ul>
+          </li>
+        
+          
+          <li>
             <a href="#v1%2fidp_service.proto">v1/idp_service.proto</a>
             <ul>
               
@@ -2660,57 +2711,6 @@
               
                 <li>
                   <a href="#bytebase.v1.SQLService"><span class="badge">S</span>SQLService</a>
-                </li>
-              
-            </ul>
-          </li>
-        
-          
-          <li>
-            <a href="#v1%2fuser_group.proto">v1/user_group.proto</a>
-            <ul>
-              
-                <li>
-                  <a href="#bytebase.v1.CreateUserGroupRequest"><span class="badge">M</span>CreateUserGroupRequest</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.DeleteUserGroupRequest"><span class="badge">M</span>DeleteUserGroupRequest</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.GetUserGroupRequest"><span class="badge">M</span>GetUserGroupRequest</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.ListUserGroupsRequest"><span class="badge">M</span>ListUserGroupsRequest</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.ListUserGroupsResponse"><span class="badge">M</span>ListUserGroupsResponse</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.UpdateUserGroupRequest"><span class="badge">M</span>UpdateUserGroupRequest</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.UserGroup"><span class="badge">M</span>UserGroup</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.UserGroupMember"><span class="badge">M</span>UserGroupMember</a>
-                </li>
-              
-              
-                <li>
-                  <a href="#bytebase.v1.UserGroupMember.Role"><span class="badge">E</span>UserGroupMember.Role</a>
-                </li>
-              
-              
-              
-                <li>
-                  <a href="#bytebase.v1.UserGroupService"><span class="badge">S</span>UserGroupService</a>
                 </li>
               
             </ul>
@@ -13727,6 +13727,437 @@ Format: environments/{environment} </p></td>
                 <td>POST</td>
                 <td>/v1/{name=environments/*}:undelete</td>
                 <td>*</td>
+              </tr>
+              
+            
+            </tbody>
+          </table>
+          
+        
+    
+      
+      <div class="file-heading">
+        <h2 id="v1/group.proto">v1/group.proto</h2><a href="#title">Top</a>
+      </div>
+      <p></p>
+
+      
+        <h3 id="bytebase.v1.CreateGroupRequest">CreateGroupRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>group</td>
+                  <td><a href="#bytebase.v1.Group">Group</a></td>
+                  <td></td>
+                  <td><p>The group to create. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.DeleteGroupRequest">DeleteGroupRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of the group to delete.
+Format: groups/{email} </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.GetGroupRequest">GetGroupRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of the group to retrieve.
+Format: groups/{email} </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.Group">Group</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of the group to retrieve.
+Format: groups/{group}, group is an email. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>title</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>description</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>creator</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name for the creator.
+Format: users/hello@world.com </p></td>
+                </tr>
+              
+                <tr>
+                  <td>members</td>
+                  <td><a href="#bytebase.v1.GroupMember">GroupMember</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>create_time</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p>The timestamp when the group was created. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.GroupMember">GroupMember</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>member</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Member is the principal who belong to this group.
+
+Format: users/hello@world.com </p></td>
+                </tr>
+              
+                <tr>
+                  <td>role</td>
+                  <td><a href="#bytebase.v1.GroupMember.Role">GroupMember.Role</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.ListGroupsRequest">ListGroupsRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>page_size</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>The maximum number of groups to return. The service may return fewer than
+this value.
+If unspecified, at most 50 groups will be returned.
+The maximum value is 1000; values above 1000 will be coerced to 1000. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>page_token</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>A page token, received from a previous `ListGroups` call.
+Provide this to retrieve the subsequent page.
+
+When paginating, all other parameters provided to `ListGroups` must match
+the call that provided the page token. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.ListGroupsResponse">ListGroupsResponse</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>groups</td>
+                  <td><a href="#bytebase.v1.Group">Group</a></td>
+                  <td>repeated</td>
+                  <td><p>The groups from the specified request. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>next_page_token</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>A token, which can be sent as `page_token` to retrieve the next page.
+If this field is omitted, there are no subsequent pages. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.UpdateGroupRequest">UpdateGroupRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>group</td>
+                  <td><a href="#bytebase.v1.Group">Group</a></td>
+                  <td></td>
+                  <td><p>The group to update.
+
+The group&#39;s `name` field is used to identify the group to update.
+Format: groups/{email} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>update_mask</td>
+                  <td><a href="#google.protobuf.FieldMask">google.protobuf.FieldMask</a></td>
+                  <td></td>
+                  <td><p>The list of fields to update. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+
+      
+        <h3 id="bytebase.v1.GroupMember.Role">GroupMember.Role</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>ROLE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>OWNER</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>MEMBER</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+
+      
+
+      
+        <h3 id="bytebase.v1.GroupService">GroupService</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Method Name</td><td>Request Type</td><td>Response Type</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>GetGroup</td>
+                <td><a href="#bytebase.v1.GetGroupRequest">GetGroupRequest</a></td>
+                <td><a href="#bytebase.v1.Group">Group</a></td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>ListGroups</td>
+                <td><a href="#bytebase.v1.ListGroupsRequest">ListGroupsRequest</a></td>
+                <td><a href="#bytebase.v1.ListGroupsResponse">ListGroupsResponse</a></td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>CreateGroup</td>
+                <td><a href="#bytebase.v1.CreateGroupRequest">CreateGroupRequest</a></td>
+                <td><a href="#bytebase.v1.Group">Group</a></td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>UpdateGroup</td>
+                <td><a href="#bytebase.v1.UpdateGroupRequest">UpdateGroupRequest</a></td>
+                <td><a href="#bytebase.v1.Group">Group</a></td>
+                <td><p>UpdateGroup updates the group.
+Users with &#34;bb.groups.update&#34; permission on the workspace or the group owner can access this method.</p></td>
+              </tr>
+            
+              <tr>
+                <td>DeleteGroup</td>
+                <td><a href="#bytebase.v1.DeleteGroupRequest">DeleteGroupRequest</a></td>
+                <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+
+        
+          
+          
+          <h4>Methods with HTTP bindings</h4>
+          <table>
+            <thead>
+              <tr>
+                <td>Method Name</td>
+                <td>Method</td>
+                <td>Pattern</td>
+                <td>Body</td>
+              </tr>
+            </thead>
+            <tbody>
+            
+              
+              
+              <tr>
+                <td>GetGroup</td>
+                <td>GET</td>
+                <td>/v1/{name=groups/*}</td>
+                <td></td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>ListGroups</td>
+                <td>GET</td>
+                <td>/v1/groups</td>
+                <td></td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>CreateGroup</td>
+                <td>POST</td>
+                <td>/v1/groups</td>
+                <td>group</td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>UpdateGroup</td>
+                <td>PATCH</td>
+                <td>/v1/{group.name=groups/*}</td>
+                <td>group</td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>DeleteGroup</td>
+                <td>DELETE</td>
+                <td>/v1/{name=groups/*}</td>
+                <td></td>
               </tr>
               
             
@@ -28662,436 +29093,6 @@ to retrieve the next page of history. </p></td>
                 <td>POST</td>
                 <td>/v1/{name=instances/*/databases/*}:generateRestoreSQL</td>
                 <td>*</td>
-              </tr>
-              
-            
-            </tbody>
-          </table>
-          
-        
-    
-      
-      <div class="file-heading">
-        <h2 id="v1/user_group.proto">v1/user_group.proto</h2><a href="#title">Top</a>
-      </div>
-      <p></p>
-
-      
-        <h3 id="bytebase.v1.CreateUserGroupRequest">CreateUserGroupRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>group</td>
-                  <td><a href="#bytebase.v1.UserGroup">UserGroup</a></td>
-                  <td></td>
-                  <td><p>The group to create. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.DeleteUserGroupRequest">DeleteUserGroupRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The name of the group to delete.
-Format: groups/{email} </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.GetUserGroupRequest">GetUserGroupRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The name of the group to retrieve.
-Format: groups/{email} </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.ListUserGroupsRequest">ListUserGroupsRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>page_size</td>
-                  <td><a href="#int32">int32</a></td>
-                  <td></td>
-                  <td><p>The maximum number of groups to return. The service may return fewer than
-this value.
-If unspecified, at most 50 groups will be returned.
-The maximum value is 1000; values above 1000 will be coerced to 1000. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>page_token</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>A page token, received from a previous `ListUsers` call.
-Provide this to retrieve the subsequent page.
-
-When paginating, all other parameters provided to `ListUsers` must match
-the call that provided the page token. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.ListUserGroupsResponse">ListUserGroupsResponse</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>groups</td>
-                  <td><a href="#bytebase.v1.UserGroup">UserGroup</a></td>
-                  <td>repeated</td>
-                  <td><p>The groups from the specified request. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>next_page_token</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>A token, which can be sent as `page_token` to retrieve the next page.
-If this field is omitted, there are no subsequent pages. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.UpdateUserGroupRequest">UpdateUserGroupRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>group</td>
-                  <td><a href="#bytebase.v1.UserGroup">UserGroup</a></td>
-                  <td></td>
-                  <td><p>The group to update.
-
-The group&#39;s `name` field is used to identify the group to update.
-Format: groups/{email} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>update_mask</td>
-                  <td><a href="#google.protobuf.FieldMask">google.protobuf.FieldMask</a></td>
-                  <td></td>
-                  <td><p>The list of fields to update. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.UserGroup">UserGroup</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The name of the group to retrieve.
-Format: userGroups/{userGroup}, userGroup is an email. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>title</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>description</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>creator</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The name for the creator.
-Format: users/hello@world.com </p></td>
-                </tr>
-              
-                <tr>
-                  <td>members</td>
-                  <td><a href="#bytebase.v1.UserGroupMember">UserGroupMember</a></td>
-                  <td>repeated</td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>create_time</td>
-                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
-                  <td></td>
-                  <td><p>The timestamp when the group was created. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.UserGroupMember">UserGroupMember</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>member</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Member is the principal who belong to this user group.
-
-Format: users/hello@world.com </p></td>
-                </tr>
-              
-                <tr>
-                  <td>role</td>
-                  <td><a href="#bytebase.v1.UserGroupMember.Role">UserGroupMember.Role</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-
-      
-        <h3 id="bytebase.v1.UserGroupMember.Role">UserGroupMember.Role</h3>
-        <p></p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>ROLE_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>OWNER</td>
-                <td>1</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>MEMBER</td>
-                <td>2</td>
-                <td><p></p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-      
-
-      
-
-      
-        <h3 id="bytebase.v1.UserGroupService">UserGroupService</h3>
-        <p></p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Method Name</td><td>Request Type</td><td>Response Type</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>GetUserGroup</td>
-                <td><a href="#bytebase.v1.GetUserGroupRequest">GetUserGroupRequest</a></td>
-                <td><a href="#bytebase.v1.UserGroup">UserGroup</a></td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>ListUserGroups</td>
-                <td><a href="#bytebase.v1.ListUserGroupsRequest">ListUserGroupsRequest</a></td>
-                <td><a href="#bytebase.v1.ListUserGroupsResponse">ListUserGroupsResponse</a></td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>CreateUserGroup</td>
-                <td><a href="#bytebase.v1.CreateUserGroupRequest">CreateUserGroupRequest</a></td>
-                <td><a href="#bytebase.v1.UserGroup">UserGroup</a></td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>UpdateUserGroup</td>
-                <td><a href="#bytebase.v1.UpdateUserGroupRequest">UpdateUserGroupRequest</a></td>
-                <td><a href="#bytebase.v1.UserGroup">UserGroup</a></td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>DeleteUserGroup</td>
-                <td><a href="#bytebase.v1.DeleteUserGroupRequest">DeleteUserGroupRequest</a></td>
-                <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
-                <td><p></p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-
-        
-          
-          
-          <h4>Methods with HTTP bindings</h4>
-          <table>
-            <thead>
-              <tr>
-                <td>Method Name</td>
-                <td>Method</td>
-                <td>Pattern</td>
-                <td>Body</td>
-              </tr>
-            </thead>
-            <tbody>
-            
-              
-              
-              <tr>
-                <td>GetUserGroup</td>
-                <td>GET</td>
-                <td>/v1/{name=groups/*}</td>
-                <td></td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>ListUserGroups</td>
-                <td>GET</td>
-                <td>/v1/groups</td>
-                <td></td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>CreateUserGroup</td>
-                <td>POST</td>
-                <td>/v1/groups</td>
-                <td>group</td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>UpdateUserGroup</td>
-                <td>PATCH</td>
-                <td>/v1/{group.name=groups/*}</td>
-                <td>group</td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>DeleteUserGroup</td>
-                <td>DELETE</td>
-                <td>/v1/{name=groups/*}</td>
-                <td></td>
               </tr>
               
             

@@ -224,7 +224,7 @@ func (*Driver) Dump(_ context.Context, _ io.Writer) (string, error) {
 // QueryConn queries a SQL statement in a given connection.
 func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
 	if queryContext != nil && queryContext.Explain {
-		return nil, errors.New("MongoDB does not support EXPLAIN")
+		return nil, errors.New("Redis does not support EXPLAIN")
 	}
 
 	startTime := time.Now()
@@ -309,9 +309,4 @@ func getResultRow(i int, v any) *v1pb.QueryRow {
 		{Kind: &v1pb.RowValue_Int32Value{Int32Value: int32(i)}},
 		{Kind: &v1pb.RowValue_StringValue{StringValue: s}}},
 	}
-}
-
-// RunStatement runs a SQL statement in a given connection.
-func (d *Driver) RunStatement(ctx context.Context, _ *sql.Conn, statement string) ([]*v1pb.QueryResult, error) {
-	return d.QueryConn(ctx, nil, statement, nil)
 }

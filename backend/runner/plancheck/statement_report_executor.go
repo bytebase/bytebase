@@ -301,7 +301,7 @@ func (e *StatementReportExecutor) runForDatabaseGroupTarget(ctx context.Context,
 }
 
 func reportForOracle(sm *sheet.Manager, databaseName string, schemaName string, statement string, dbMetadata *model.DBSchema) ([]*storepb.PlanCheckRunResult_Result, error) {
-	ast, advices := sm.GetAST(storepb.Engine_ORACLE, statement)
+	asts, advices := sm.GetASTsForChecks(storepb.Engine_ORACLE, statement)
 	if len(advices) > 0 {
 		// nolint:nilerr
 		return []*storepb.PlanCheckRunResult_Result{
@@ -318,9 +318,9 @@ func reportForOracle(sm *sheet.Manager, databaseName string, schemaName string, 
 			},
 		}, nil
 	}
-	nodes, ok := ast.(antlr.Tree)
+	nodes, ok := asts.(antlr.Tree)
 	if !ok {
-		return nil, errors.Errorf("invalid ast type %T", ast)
+		return nil, errors.Errorf("invalid ast type %T", asts)
 	}
 
 	var changedResources []base.SchemaResource
@@ -348,7 +348,7 @@ func reportForOracle(sm *sheet.Manager, databaseName string, schemaName string, 
 }
 
 func reportForMySQL(ctx context.Context, sm *sheet.Manager, sqlDB *sql.DB, engine storepb.Engine, databaseName string, statement string, dbMetadata *model.DBSchema, isDML bool) ([]*storepb.PlanCheckRunResult_Result, error) {
-	ast, advices := sm.GetAST(storepb.Engine_MYSQL, statement)
+	asts, advices := sm.GetASTsForChecks(storepb.Engine_MYSQL, statement)
 	if len(advices) > 0 {
 		// nolint:nilerr
 		return []*storepb.PlanCheckRunResult_Result{
@@ -365,9 +365,9 @@ func reportForMySQL(ctx context.Context, sm *sheet.Manager, sqlDB *sql.DB, engin
 			},
 		}, nil
 	}
-	nodes, ok := ast.([]*mysqlparser.ParseResult)
+	nodes, ok := asts.([]*mysqlparser.ParseResult)
 	if !ok {
-		return nil, errors.Errorf("invalid ast type %T", ast)
+		return nil, errors.Errorf("invalid ast type %T", asts)
 	}
 
 	sqlTypeSet := map[string]struct{}{}
@@ -446,7 +446,7 @@ func convertToChangedResources(dbMetadata *model.DBSchema, resources []base.Sche
 }
 
 func reportForPostgres(ctx context.Context, sm *sheet.Manager, sqlDB *sql.DB, database, statement string, dbMetadata *model.DBSchema) ([]*storepb.PlanCheckRunResult_Result, error) {
-	pgAst, advices := sm.GetAST(storepb.Engine_POSTGRES, statement)
+	asts, advices := sm.GetASTsForChecks(storepb.Engine_POSTGRES, statement)
 	if len(advices) > 0 {
 		// nolint:nilerr
 		return []*storepb.PlanCheckRunResult_Result{
@@ -463,9 +463,9 @@ func reportForPostgres(ctx context.Context, sm *sheet.Manager, sqlDB *sql.DB, da
 			},
 		}, nil
 	}
-	nodes, ok := pgAst.([]ast.Node)
+	nodes, ok := asts.([]ast.Node)
 	if !ok {
-		return nil, errors.Errorf("invalid ast type %T", pgAst)
+		return nil, errors.Errorf("invalid ast type %T", asts)
 	}
 
 	sqlTypeSet := map[string]struct{}{}

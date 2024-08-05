@@ -85,15 +85,27 @@ func (s *ProjectService) SearchProjects(ctx context.Context, request *v1pb.Searc
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
+
+	ok, err = s.iamManager.CheckPermission(ctx, iam.PermissionProjectsGet, user)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to check permission, error %v", err)
+	}
+	if !ok {
+		var ps []*store.ProjectMessage
+		for _, project := range projects {
+			ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionProjectsGet, user, project.ResourceID)
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to check permission for project %q: %v", project.ResourceID, err)
+			}
+			if ok {
+				ps = append(ps, project)
+			}
+		}
+		projects = ps
+	}
+
 	response := &v1pb.SearchProjectsResponse{}
 	for _, project := range projects {
-		ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionProjectsGet, user, project.ResourceID)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to check permission for project %q: %v", project.ResourceID, err)
-		}
-		if !ok {
-			continue
-		}
 		response.Projects = append(response.Projects, convertToProject(project))
 	}
 	return response, nil
@@ -371,17 +383,11 @@ func (s *ProjectService) SetIamPolicy(ctx context.Context, request *v1pb.SetIamP
 	if !ok {
 		return nil, status.Errorf(codes.Internal, "cannot get principal ID from context")
 	}
-	roleMessages, err := s.store.ListRoles(ctx)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to list roles: %v", err)
-	}
-	roles, err := convertToRoles(ctx, s.iamManager, roleMessages)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to convert to roles: %v", err)
-	}
-	if err := s.validateIAMPolicy(ctx, request.Policy, roles); err != nil {
+
+	if err := s.validateIAMPolicy(ctx, request.Policy); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
+
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
 		ResourceID: &projectID,
 	})
@@ -1207,8 +1213,8 @@ func convertToV1IamPolicy(ctx context.Context, stores *store.Store, iamPolicy *s
 					continue
 				}
 				members = append(members, fmt.Sprintf("user:%s", user.Email))
-			} else if strings.HasPrefix(member, common.UserGroupPrefix) {
-				email, err := common.GetUserGroupEmail(member)
+			} else if strings.HasPrefix(member, common.GroupPrefix) {
+				email, err := common.GetGroupEmail(member)
 				if err != nil {
 					return nil, status.Errorf(codes.Internal, "failed to parse group email from member %s with error: %v", member, err)
 				}
@@ -1503,10 +1509,11 @@ func convertToStoreLabelSelectorOperator(operator v1pb.OperatorType) (store.Oper
 	return store.OperatorType(""), errors.Errorf("invalid operator type: %v", operator)
 }
 
-func (s *ProjectService) validateIAMPolicy(ctx context.Context, policy *v1pb.IamPolicy, roles []*v1pb.Role) error {
+func (s *ProjectService) validateIAMPolicy(ctx context.Context, policy *v1pb.IamPolicy) error {
 	if policy == nil {
 		return errors.Errorf("IAM Policy is required")
 	}
+
 	generalSetting, err := s.store.GetWorkspaceGeneralSetting(ctx)
 	if err != nil {
 		return errors.Wrap(err, "failed to get workspace general setting")
@@ -1515,6 +1522,14 @@ func (s *ProjectService) validateIAMPolicy(ctx context.Context, policy *v1pb.Iam
 	if generalSetting != nil {
 		maximumRoleExpiration = generalSetting.MaximumRoleExpiration
 	}
+
+	roleMessages, err := s.store.ListRoles(ctx)
+	if err != nil {
+		return status.Errorf(codes.Internal, "failed to list roles: %v", err)
+	}
+	roleMessages = append(roleMessages, s.iamManager.PredefinedRoles...)
+	roles := convertToRoles(roleMessages)
+
 	return s.validateBindings(policy.Bindings, roles, maximumRoleExpiration)
 }
 

@@ -53,7 +53,7 @@ import { NTabs, NTab, NButton } from "naive-ui";
 import { nextTick, ref, watch } from "vue";
 import { BBButtonConfirm } from "@/bbkit";
 import { useCurrentUserV1, useInstanceV1Store } from "@/store";
-import type { WorkspacePermission } from "@/types";
+import type { Permission } from "@/types";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import type { EditDataSource } from "../common";
 import { useInstanceFormContext } from "../context";
@@ -74,7 +74,7 @@ const {
   hasReadOnlyDataSource,
 } = useInstanceFormContext();
 
-const hasPermission = (permission: WorkspacePermission) => {
+const hasPermission = (permission: Permission) => {
   return hasWorkspacePermissionV2(currentUser.value, permission);
 };
 

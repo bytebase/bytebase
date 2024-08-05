@@ -157,7 +157,7 @@ func (*SQLService) doAdminExecute(ctx context.Context, driver db.Driver, conn *s
 	}
 	ctx, cancelCtx := context.WithTimeout(ctx, timeout)
 	defer cancelCtx()
-	result, err := driver.RunStatement(ctx, conn, request.Statement)
+	result, err := driver.QueryConn(ctx, conn, request.Statement, nil)
 	select {
 	case <-ctx.Done():
 		// canceled or timed out
@@ -274,7 +274,7 @@ func (s *SQLService) doExecute(ctx context.Context, instance *store.InstanceMess
 	}
 	ctx, cancelCtx := context.WithTimeout(ctx, timeout)
 	defer cancelCtx()
-	result, err := driver.RunStatement(ctx, conn, request.Statement)
+	result, err := driver.QueryConn(ctx, conn, request.Statement, nil)
 	select {
 	case <-ctx.Done():
 		// canceled or timed out
@@ -672,12 +672,22 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 		return nil, err
 	}
 
-	ok, err := s.checkDataSourceQueriable(ctx, user, database, request.DataSourceId)
+	dataSource, err := s.store.GetDataSource(ctx, &store.FindDataSourceMessage{
+		InstanceID: &database.InstanceID,
+		Name:       &request.DataSourceId,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get data source: %v", err)
+	}
+	if dataSource == nil {
+		return nil, status.Errorf(codes.NotFound, "data source %q not found", request.DataSourceId)
+	}
+	ok, err := s.checkDataSourceQueriable(ctx, database, dataSource)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to check data source queriable: %v", err)
 	}
 	if !ok {
-		return nil, status.Errorf(codes.PermissionDenied, "data source %q is not queriable", request.DataSourceId)
+		return nil, status.Errorf(codes.InvalidArgument, "data source %q is not queriable", dataSource.Username)
 	}
 
 	statement := request.Statement
@@ -943,13 +953,14 @@ func (s *SQLService) accessCheck(
 	limit int32,
 	isAdmin,
 	isExport bool) error {
-	// Check if the caller is admin for exporting with admin mode.
-	role, err := s.iamManager.BackfillWorkspaceRoleForUser(ctx, user)
-	if err != nil {
-		return err
-	}
-	if isAdmin && isExport && (role != api.WorkspaceAdmin && role != api.WorkspaceDBA) {
-		return status.Errorf(codes.PermissionDenied, "only workspace owner and DBA can export data using admin mode")
+	if isExport {
+		ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionDatabasesExport, user)
+		if err != nil {
+			return err
+		}
+		if isAdmin && !ok {
+			return status.Errorf(codes.PermissionDenied, "only users with %s permission on the workspace can export data using admin mode", iam.PermissionDatabasesExport)
+		}
 	}
 
 	for _, span := range spans {
@@ -1097,7 +1108,7 @@ func (s *SQLService) hasDatabaseAccessRights(ctx context.Context, user *store.Us
 
 	bindings := utils.GetUserIAMPolicyBindings(ctx, s.store, user, projectPolicy)
 	for _, binding := range bindings {
-		permissions, err := s.iamManager.GetPermissions(ctx, binding.Role)
+		permissions, err := s.iamManager.GetPermissions(binding.Role)
 		if err != nil {
 			return false, errors.Wrapf(err, "failed to get permissions")
 		}
@@ -1602,24 +1613,8 @@ func getOffsetAndOriginTable(backupTable string) (int, string, error) {
 	return offset, strings.Join(parts[3:], "_"), nil
 }
 
-func (s *SQLService) checkDataSourceQueriable(ctx context.Context, user *store.UserMessage, database *store.DatabaseMessage, dataSourceID string) (bool, error) {
-	// Always allow the owner to query the data source.
-	ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionInstancesAdminExecute, user, database.ProjectID)
-	if err != nil {
-		return false, errors.Wrapf(err, "failed to check permission")
-	}
-	if ok {
-		return true, nil
-	}
-
-	dataSource, err := s.store.GetDataSource(ctx, &store.FindDataSourceMessage{Name: &dataSourceID})
-	if err != nil {
-		return false, errors.Wrap(err, "failed to get data source")
-	}
-	if dataSource == nil {
-		return false, errors.Errorf("data source %q not found", dataSourceID)
-	}
-	// Pass if the data source is not admin type.
+func (s *SQLService) checkDataSourceQueriable(ctx context.Context, database *store.DatabaseMessage, dataSource *store.DataSourceMessage) (bool, error) {
+	// Always allow non-admin data source.
 	if dataSource.Type != api.Admin {
 		return true, nil
 	}

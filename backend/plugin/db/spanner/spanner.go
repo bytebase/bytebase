@@ -269,16 +269,53 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 
 	var results []*v1pb.QueryResult
 	for _, statement := range stmts {
-		if queryContext != nil {
+		if queryContext != nil && queryContext.Limit > 0 {
 			statement = getStatementWithResultLimit(statement, queryContext.Limit)
 		}
-		result, err := d.querySingleSQL(ctx, statement)
+
+		startTime := time.Now()
+		queryResult, err := func() (*v1pb.QueryResult, error) {
+			if util.IsSelect(statement) {
+				return d.querySingleSQL(ctx, statement)
+			}
+			if util.IsDDL(statement) {
+				op, err := d.dbClient.UpdateDatabaseDdl(ctx, &databasepb.UpdateDatabaseDdlRequest{
+					Database:   getDSN(d.config.Host, d.databaseName),
+					Statements: []string{statement},
+				})
+				if err != nil {
+					return nil, err
+				}
+				if err := op.Wait(ctx); err != nil {
+					return nil, err
+				}
+				return &v1pb.QueryResult{}, nil
+			}
+			var rowCount int64
+			if _, err := d.client.ReadWriteTransaction(ctx, func(ctx context.Context, rwt *spanner.ReadWriteTransaction) error {
+				count, err := rwt.Update(ctx, spanner.NewStatement(statement))
+				if err != nil {
+					return err
+				}
+				rowCount = count
+				return nil
+			}); err != nil {
+				return nil, err
+			}
+			return util.BuildAffectedRowsResult(rowCount), nil
+		}()
+		stop := false
 		if err != nil {
-			results = append(results, &v1pb.QueryResult{
+			queryResult = &v1pb.QueryResult{
 				Error: err.Error(),
-			})
-		} else {
-			results = append(results, result)
+			}
+			stop = true
+		}
+		queryResult.Statement = statement
+		queryResult.Latency = durationpb.New(time.Since(startTime))
+		results = append(results, queryResult)
+		if stop {
+			break
 		}
 	}
 
@@ -286,7 +323,6 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 }
 
 func (d *Driver) querySingleSQL(ctx context.Context, statement string) (*v1pb.QueryResult, error) {
-	startTime := time.Now()
 	iter := d.client.Single().Query(ctx, spanner.NewStatement(statement))
 	defer iter.Stop()
 
@@ -298,21 +334,17 @@ func (d *Driver) querySingleSQL(ctx context.Context, statement string) (*v1pb.Qu
 		return nil, err
 	}
 
-	result := &v1pb.QueryResult{
-		Statement: statement,
-	}
-	result.ColumnNames = getColumnNames(iter)
 	columnTypeNames, err := getColumnTypeNames(iter)
 	if err != nil {
 		return nil, err
 	}
-	result.ColumnTypeNames = columnTypeNames
-	// spanner doesn't mask the sensitive fields.
-	// Return the all false boolean slice here as the placeholder.
-	result.Masked = make([]bool, len(result.ColumnNames))
+	result := &v1pb.QueryResult{
+		ColumnNames:     getColumnNames(iter),
+		ColumnTypeNames: columnTypeNames,
+	}
 
 	for {
-		rowData, err := readRow2(row)
+		rowData, err := readRow(row)
 		if err != nil {
 			return nil, err
 		}
@@ -331,12 +363,10 @@ func (d *Driver) querySingleSQL(ctx context.Context, statement string) (*v1pb.Qu
 			return nil, err
 		}
 	}
-	result.Latency = durationpb.New(time.Since(startTime))
-
 	return result, nil
 }
 
-func readRow2(row *spanner.Row) (*v1pb.QueryRow, error) {
+func readRow(row *spanner.Row) (*v1pb.QueryRow, error) {
 	result := &v1pb.QueryRow{}
 	for i := 0; i < row.Size(); i++ {
 		var col spanner.GenericColumnValue
@@ -347,85 +377,4 @@ func readRow2(row *spanner.Row) (*v1pb.QueryRow, error) {
 	}
 
 	return result, nil
-}
-
-// RunStatement executes a SQL statement.
-func (d *Driver) RunStatement(ctx context.Context, _ *sql.Conn, statement string) ([]*v1pb.QueryResult, error) {
-	stmts, err := util.SanitizeSQL(statement)
-	if err != nil {
-		return nil, err
-	}
-
-	var results []*v1pb.QueryResult
-	for _, statement := range stmts {
-		startTime := time.Now()
-		if util.IsSelect(statement) {
-			result, err := d.querySingleSQL(ctx, statement)
-			if err != nil {
-				results = append(results, &v1pb.QueryResult{
-					Error: err.Error(),
-				})
-				continue
-			}
-			results = append(results, result)
-			continue
-		}
-
-		if util.IsDDL(statement) {
-			op, err := d.dbClient.UpdateDatabaseDdl(ctx, &databasepb.UpdateDatabaseDdlRequest{
-				Database:   getDSN(d.config.Host, d.databaseName),
-				Statements: []string{statement},
-			})
-			if err != nil {
-				results = append(results, &v1pb.QueryResult{
-					Error: err.Error(),
-				})
-				continue
-			}
-			if err := op.Wait(ctx); err != nil {
-				results = append(results, &v1pb.QueryResult{
-					Error: err.Error(),
-				})
-				continue
-			}
-			results = append(results, &v1pb.QueryResult{})
-			continue
-		}
-
-		var rowCount int64
-		if _, err := d.client.ReadWriteTransaction(ctx, func(ctx context.Context, rwt *spanner.ReadWriteTransaction) error {
-			count, err := rwt.Update(ctx, spanner.NewStatement(statement))
-			if err != nil {
-				return err
-			}
-			rowCount = count
-			return nil
-		}); err != nil {
-			results = append(results, &v1pb.QueryResult{
-				Error: err.Error(),
-			})
-			continue
-		}
-
-		field := []string{"Affected Rows"}
-		types := []string{"INT64"}
-		rows := []*v1pb.QueryRow{
-			{
-				Values: []*v1pb.RowValue{
-					{
-						Kind: &v1pb.RowValue_Int64Value{Int64Value: rowCount},
-					},
-				},
-			},
-		}
-		results = append(results, &v1pb.QueryResult{
-			ColumnNames:     field,
-			ColumnTypeNames: types,
-			Rows:            rows,
-			Latency:         durationpb.New(time.Since(startTime)),
-			Statement:       statement,
-		})
-	}
-
-	return results, nil
 }

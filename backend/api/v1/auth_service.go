@@ -452,25 +452,37 @@ func (s *AuthService) DeleteUser(ctx context.Context, request *v1pb.DeleteUserRe
 		return nil, status.Errorf(codes.NotFound, "user %q has been deleted", userID)
 	}
 
-	// Check if the user is the only workspace admin.
-	isAdmin, err := s.iamManager.CheckUserContainsWorkspaceRoles(ctx, user, api.WorkspaceAdmin)
+	// Check if there is still workspace admin if the current user is deleted.
+	policy, err := s.store.GetWorkspaceIamPolicy(ctx)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to check admin role")
+		return nil, err
 	}
-	if isAdmin {
-		adminUsers, err := s.iamManager.GetWorkspaceUsersByRole(ctx, api.WorkspaceAdmin)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to find workspace admin, error: %v", err)
-		}
-		if len(adminUsers) == 1 && adminUsers[0].ID == userID {
-			return nil, status.Errorf(codes.InvalidArgument, "workspace must have at least one admin")
-		}
+	ok = hasExtraWorkspaceAdmin(policy.Policy, user.ID)
+	if !ok {
+		return nil, status.Errorf(codes.InvalidArgument, "workspace must have at least one admin")
 	}
 
 	if _, err := s.store.UpdateUser(ctx, user, &store.UpdateUserMessage{Delete: &deletePatch}, callerUser.ID); err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 	return &emptypb.Empty{}, nil
+}
+
+func hasExtraWorkspaceAdmin(policy *storepb.IamPolicy, userID int) bool {
+	workspaceAdminRole := common.FormatRole(api.WorkspaceAdmin.String())
+	userMember := common.FormatUserUID(userID)
+	systemBotMember := common.FormatUserUID(api.SystemBotID)
+	for _, binding := range policy.GetBindings() {
+		if binding.GetRole() != workspaceAdminRole {
+			continue
+		}
+		for _, member := range binding.GetMembers() {
+			if member != userMember && member != systemBotMember {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // UndeleteUser undeletes a user.

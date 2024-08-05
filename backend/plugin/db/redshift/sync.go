@@ -504,16 +504,16 @@ func getViews(txn *sql.Tx) (map[string][]*storepb.ViewMetadata, error) {
 	viewMap := make(map[string][]*storepb.ViewMetadata)
 
 	query := `
-	SELECT
-		pgv.schemaname,
-		pgv.viewname,
-		pgv.definition,
-		obj_description(pc.oid) AS comment
-	FROM pg_catalog.pg_views AS pgv
-	JOIN pg_namespace AS pns ON pns.nspname = pgv.schemaname
-	JOIN pg_class AS pc ON pc.relname = pgv.viewname AND pns.oid = pc.relnamespace
-	WHERE pgv.schemaname NOT IN ('pg_catalog', 'information_schema');
-	`
+SELECT
+	pgv.schemaname,
+	pgv.viewname,
+	pgv.definition,
+	obj_description(pc.oid) AS comment
+FROM pg_catalog.pg_views AS pgv
+JOIN pg_namespace AS pns ON pns.nspname = pgv.schemaname
+JOIN pg_class AS pc ON pc.relname = pgv.viewname AND pns.oid = pc.relnamespace
+WHERE pgv.schemaname NOT IN ('pg_catalog', 'information_schema')
+ORDER BY pgv.schemaname, pgv.viewname;`
 	rows, err := txn.Query(query)
 	if err != nil {
 		return nil, err

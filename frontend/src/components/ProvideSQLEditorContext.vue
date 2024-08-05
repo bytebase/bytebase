@@ -41,7 +41,7 @@ import {
   useSQLEditorStore,
   useSQLEditorTabStore,
   useWorkSheetStore,
-  useUserGroupStore,
+  useGroupStore,
   pushNotification,
   useFilterStore,
   useAppFeature,
@@ -87,7 +87,7 @@ const databaseStore = useDatabaseV1Store();
 const editorStore = useSQLEditorStore();
 const worksheetStore = useWorkSheetStore();
 const tabStore = useSQLEditorTabStore();
-const groupStore = useUserGroupStore();
+const groupStore = useGroupStore();
 const policyStore = usePolicyV1Store();
 const { isFetching: isFetchingWorksheet } = useSheetContext();
 const { filter } = useFilterStore();

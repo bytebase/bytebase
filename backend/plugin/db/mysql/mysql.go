@@ -471,7 +471,7 @@ func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string
 					return nil, util.FormatErrorWithQuery(err, statement)
 				}
 				defer rows.Close()
-				r, err := util.RowsToQueryResult(storepb.Engine_MYSQL, rows)
+				r, err := util.RowsToQueryResult(rows)
 				if err != nil {
 					return nil, err
 				}
@@ -491,22 +491,25 @@ func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string
 			}
 			return util.BuildAffectedRowsResult(affectedRows), nil
 		}()
+		stop := false
 		if err != nil {
 			if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
 				slog.Info("cancel connection", slog.String("connectionID", connectionID))
 				if err := d.StopConnectionByID(connectionID); err != nil {
 					slog.Error("failed to cancel connection", slog.String("connectionID", connectionID), log.BBError(err))
 				}
-				break
 			}
 			queryResult = &v1pb.QueryResult{
 				Error: err.Error(),
 			}
+			stop = true
 		}
-
 		queryResult.Statement = statement
 		queryResult.Latency = durationpb.New(time.Since(startTime))
 		results = append(results, queryResult)
+		if stop {
+			break
+		}
 	}
 
 	return results, nil
@@ -524,9 +527,4 @@ func getConnectionID(ctx context.Context, conn *sql.Conn) (string, error) {
 		return "", err
 	}
 	return id, nil
-}
-
-// RunStatement runs a SQL statement in a given connection.
-func (d *Driver) RunStatement(ctx context.Context, conn *sql.Conn, statement string) ([]*v1pb.QueryResult, error) {
-	return d.QueryConn(ctx, conn, statement, nil)
 }

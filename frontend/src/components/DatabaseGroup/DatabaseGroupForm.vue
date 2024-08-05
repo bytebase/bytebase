@@ -65,6 +65,10 @@
         />
         <p class="text-sm text-gray-400 pl-6 ml-0.5">
           {{ $t("database-group.multitenancy.description") }}
+          <LearnMoreLink
+            url="https://www.bytebase.com/docs/change-database/batch-change/?source=console#multitenancy"
+            class="text-sm"
+          />
         </p>
       </div>
     </div>
@@ -79,6 +83,7 @@ import { ClientError, Status } from "nice-grpc-web";
 import { computed, onMounted, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import ExprEditor from "@/components/ExprEditor";
+import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import type { ConditionGroupExpr } from "@/plugins/cel";
 import {
   emptySimpleExpr,

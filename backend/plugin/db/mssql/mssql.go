@@ -223,7 +223,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 func execute(ctx context.Context, tx *sql.Tx, statement string) (int64, error) {
 	sqlResult, err := tx.ExecContext(ctx, statement)
 	if err != nil {
-		return 0, errors.Wrapf(err, "failed to execute statement: %s", statement)
+		return 0, errors.Wrap(err, "failed to execute statement")
 	}
 	rowsAffected, err := sqlResult.RowsAffected()
 	if err != nil {
@@ -271,7 +271,7 @@ func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, 
 					return nil, util.FormatErrorWithQuery(err, statement)
 				}
 				defer rows.Close()
-				r, err := util.RowsToQueryResult(storepb.Engine_MSSQL, rows)
+				r, err := rowsToQueryResult(rows)
 				if err != nil {
 					return nil, err
 				}
@@ -291,23 +291,22 @@ func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, 
 			}
 			return util.BuildAffectedRowsResult(affectedRows), nil
 		}()
+		stop := false
 		if err != nil {
 			queryResult = &v1pb.QueryResult{
 				Error: err.Error(),
 			}
+			stop = true
 		}
-
 		queryResult.Statement = statement
 		queryResult.Latency = durationpb.New(time.Since(startTime))
 		results = append(results, queryResult)
+		if stop {
+			break
+		}
 	}
 
 	return results, nil
-}
-
-// RunStatement runs a SQL statement.
-func (driver *Driver) RunStatement(ctx context.Context, conn *sql.Conn, statement string) ([]*v1pb.QueryResult, error) {
-	return driver.QueryConn(ctx, conn, statement, nil)
 }
 
 func NewBatch(statement string) *tsqlbatch.Batch {

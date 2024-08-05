@@ -6,7 +6,7 @@
     :value="value"
     :size="size"
     :options="options"
-    @update:value="(val: UserGroupMember_Role) => $emit('update:value', val)"
+    @update:value="(val: GroupMember_Role) => $emit('update:value', val)"
   />
 </template>
 
@@ -15,29 +15,29 @@ import { NSelect, type SelectOption } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import {
-  UserGroupMember_Role,
-  userGroupMember_RoleToJSON,
-} from "@/types/proto/v1/user_group";
+  GroupMember_Role,
+  groupMember_RoleToJSON,
+} from "@/types/proto/v1/group";
 
 defineProps<{
-  value: UserGroupMember_Role;
+  value: GroupMember_Role;
   size: "tiny" | "small" | "medium" | "large";
 }>();
 
 defineEmits<{
-  (event: "update:value", value: UserGroupMember_Role): void;
+  (event: "update:value", value: GroupMember_Role): void;
 }>();
 
 const { t } = useI18n();
 
 const options = computed(() => {
   return [
-    UserGroupMember_Role.OWNER,
-    UserGroupMember_Role.MEMBER,
+    GroupMember_Role.OWNER,
+    GroupMember_Role.MEMBER,
   ].map<SelectOption>((role) => ({
     value: role,
     label: t(
-      `settings.members.groups.form.role.${userGroupMember_RoleToJSON(role).toLowerCase()}`
+      `settings.members.groups.form.role.${groupMember_RoleToJSON(role).toLowerCase()}`
     ),
   }));
 });

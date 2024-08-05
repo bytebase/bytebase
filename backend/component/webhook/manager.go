@@ -381,7 +381,11 @@ func (m *Manager) postWebhookList(ctx context.Context, webhookCtx *webhook.Conte
 
 func (m *Manager) getUsersFromWorkspaceRole(role api.Role) func(context.Context) ([]*store.UserMessage, error) {
 	return func(ctx context.Context) ([]*store.UserMessage, error) {
-		return m.iamManager.GetWorkspaceUsersByRole(ctx, role)
+		policyMessage, err := m.store.GetWorkspaceIamPolicy(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return utils.GetUsersByRoleInIAMPolicy(ctx, m.store, role, policyMessage.Policy), nil
 	}
 }
 

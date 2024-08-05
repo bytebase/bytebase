@@ -811,7 +811,8 @@
         "override-desc": "Los algoritmos existentes se anularán; deberá volver a configurar el algoritmo para tipos semánticos.",
         "override-confirm": "Aún subiendo",
         "default": "Por defecto",
-        "default-desc": "Utilice *** como máscara de datos",
+        "default-with-semantic-type": "Predeterminado (Seguir tipo semántico)",
+        "default-desc": "Utilice * para cubrir texto completo o parcial según el nivel de enmascaramiento",
         "table": {
           "title": "Título",
           "description": "Descripción",

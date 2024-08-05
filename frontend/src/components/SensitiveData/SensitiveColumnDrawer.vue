@@ -43,10 +43,10 @@
                 v-model:value="state.fullMaskingAlgorithmId"
                 :options="algorithmList"
                 :consistent-menu-width="false"
-                :placeholder="$t('settings.sensitive-data.algorithms.default')"
+                :placeholder="columnDefaultMaskingAlgorithm"
                 :fallback-option="
                   (_: string) => ({
-                    label: $t('settings.sensitive-data.algorithms.default'),
+                    label: columnDefaultMaskingAlgorithm,
                     value: '',
                   })
                 "
@@ -77,10 +77,10 @@
                 v-model:value="state.partialMaskingAlgorithmId"
                 :options="algorithmList"
                 :consistent-menu-width="false"
-                :placeholder="$t('settings.sensitive-data.algorithms.default')"
+                :placeholder="columnDefaultMaskingAlgorithm"
                 :fallback-option="
                   (_: string) => ({
-                    label: $t('settings.sensitive-data.algorithms.default'),
+                    label: columnDefaultMaskingAlgorithm,
                     value: '',
                   })
                 "
@@ -272,6 +272,7 @@ import { computed, reactive, watch, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBGrid } from "@/bbkit";
 import type { BBGridColumn, BBGridRow } from "@/bbkit/types";
+import { useSemanticType } from "@/components/SensitiveData/useSemanticType";
 import GroupNameCell from "@/components/User/Settings/UserDataTableByGroup/cells/GroupNameCell.vue";
 import { Drawer, DrawerContent, MiniActionButton } from "@/components/v2";
 import { WORKSPACE_ROUTE_USER_PROFILE } from "@/router/dashboard/workspaceRoutes";
@@ -280,7 +281,7 @@ import {
   usePolicyV1Store,
   usePolicyByParentAndType,
   useUserStore,
-  useUserGroupStore,
+  useGroupStore,
   pushNotification,
   useCurrentUserV1,
   useDBSchemaV1Store,
@@ -294,6 +295,7 @@ import {
 } from "@/types";
 import { Expr } from "@/types/proto/google/type/expr";
 import { MaskingLevel, maskingLevelToJSON } from "@/types/proto/v1/common";
+import type { Group } from "@/types/proto/v1/group";
 import type {
   Policy,
   MaskData,
@@ -304,7 +306,6 @@ import {
   PolicyResourceType,
   MaskingExceptionPolicy_MaskingException_Action,
 } from "@/types/proto/v1/org_policy_service";
-import type { UserGroup } from "@/types/proto/v1/user_group";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import UserAvatar from "../User/UserAvatar.vue";
 import GrantAccessDrawer from "./GrantAccessDrawer.vue";
@@ -315,7 +316,7 @@ import { getMaskDataIdentifier, isCurrentColumnException } from "./utils";
 
 interface AccessUser {
   type: "user" | "group";
-  group?: UserGroup;
+  group?: Group;
   user?: ComposedUser;
   supportActions: Set<MaskingExceptionPolicy_MaskingException_Action>;
   maskingLevel: MaskingLevel;
@@ -359,12 +360,25 @@ const MASKING_LEVELS = [
 
 const { t } = useI18n();
 const userStore = useUserStore();
-const groupStore = useUserGroupStore();
+const groupStore = useGroupStore();
 const currentUserV1 = useCurrentUserV1();
 const accessUserList = ref<AccessUser[]>([]);
 const policyStore = usePolicyV1Store();
 const dbSchemaStore = useDBSchemaV1Store();
 const settingStore = useSettingV1Store();
+const { semanticType } = useSemanticType({
+  database: props.column.database.name,
+  schema: props.column.maskData.schema,
+  table: props.column.maskData.table,
+  column: props.column.maskData.column,
+});
+
+const columnDefaultMaskingAlgorithm = computed(() => {
+  if (semanticType.value) {
+    return t("settings.sensitive-data.algorithms.default-with-semantic-type");
+  }
+  return t("settings.sensitive-data.algorithms.default");
+});
 
 const policy = usePolicyByParentAndType(
   computed(() => ({
@@ -730,7 +744,7 @@ const algorithmList = computed((): SelectOption[] => {
   }));
 
   list.unshift({
-    label: t("settings.sensitive-data.algorithms.default"),
+    label: columnDefaultMaskingAlgorithm.value,
     value: "",
   });
 

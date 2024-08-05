@@ -811,7 +811,8 @@
         "override-desc": "现有的算法将被覆盖，您必须重新配置语义类型的算法。",
         "override-confirm": "继续导入",
         "default": "默认",
-        "default-desc": "使用 *** 为数据遮挡",
+        "default-with-semantic-type": "默认（遵循语义类型）",
+        "default-desc": "根据脱敏程度使用 * 遮挡所有或者部分数据",
         "table": {
           "title": "名称",
           "description": "描述",

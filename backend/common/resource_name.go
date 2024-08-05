@@ -47,7 +47,7 @@ const (
 	ChangelistsPrefix          = "changelists/"
 	VCSConnectorPrefix         = "vcsConnectors/"
 	AuditLogPrefix             = "auditLogs/"
-	UserGroupPrefix            = "groups/"
+	GroupPrefix                = "groups/"
 	ReviewConfigPrefix         = "reviewConfigs/"
 
 	SchemaSuffix          = "/schema"
@@ -532,9 +532,9 @@ func GetWorkspaceProjectVCSConnectorID(name string) (string, string, string, err
 	return tokens[0], tokens[1], tokens[2], nil
 }
 
-// GetUserGroupEmail returns the group email.
-func GetUserGroupEmail(name string) (string, error) {
-	tokens, err := GetNameParentTokens(name, UserGroupPrefix)
+// GetGroupEmail returns the group email.
+func GetGroupEmail(name string) (string, error) {
+	tokens, err := GetNameParentTokens(name, GroupPrefix)
 	if err != nil {
 		return "", err
 	}
@@ -587,7 +587,7 @@ func FormatUserUID(uid int) string {
 }
 
 func FormatGroupEmail(email string) string {
-	return fmt.Sprintf("%s%s", UserGroupPrefix, email)
+	return fmt.Sprintf("%s%s", GroupPrefix, email)
 }
 
 func FormatReviewConfig(id string) string {
