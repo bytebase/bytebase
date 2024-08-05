@@ -78,12 +78,6 @@ type UpdateIssueMessage struct {
 	PipelineUID *int
 }
 
-type FindIssueMessagePermissionFilter struct {
-	ProjectIDs []string
-	IssueTypes []string
-	CreatorUID int
-}
-
 // FindIssueMessage is the message to find issues.
 type FindIssueMessage struct {
 	UID        *int
@@ -111,8 +105,6 @@ type FindIssueMessage struct {
 	Offset *int
 
 	Query *string
-
-	PermissionFilter *FindIssueMessagePermissionFilter
 
 	LabelList []string
 
@@ -410,10 +402,6 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 	}
 	if v := find.ProjectIDs; v != nil {
 		where, args = append(where, fmt.Sprintf("project.resource_id = ANY($%d)", len(args)+1)), append(args, *v)
-	}
-	if v := find.PermissionFilter; v != nil {
-		where = append(where, fmt.Sprintf("(issue.creator_id = $%d OR (project.resource_id, issue.type) = ANY(SELECT * FROM unnest($%d::TEXT[], $%d::TEXT[])))", len(args)+1, len(args)+2, len(args)+3))
-		args = append(args, v.CreatorUID, v.ProjectIDs, v.IssueTypes)
 	}
 	if v := find.InstanceResourceID; v != nil {
 		where, args = append(where, fmt.Sprintf("EXISTS (SELECT 1 FROM task LEFT JOIN instance ON instance.id = task.instance_id WHERE task.pipeline_id = issue.pipeline_id AND instance.resource_id = $%d)", len(args)+1)), append(args, *v)

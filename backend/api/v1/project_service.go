@@ -85,15 +85,27 @@ func (s *ProjectService) SearchProjects(ctx context.Context, request *v1pb.Searc
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
+
+	ok, err = s.iamManager.CheckPermission(ctx, iam.PermissionProjectsGet, user)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to check permission, error %v", err)
+	}
+	if !ok {
+		var ps []*store.ProjectMessage
+		for _, project := range projects {
+			ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionProjectsGet, user, project.ResourceID)
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to check permission for project %q: %v", project.ResourceID, err)
+			}
+			if ok {
+				ps = append(ps, project)
+			}
+		}
+		projects = ps
+	}
+
 	response := &v1pb.SearchProjectsResponse{}
 	for _, project := range projects {
-		ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionProjectsGet, user, project.ResourceID)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to check permission for project %q: %v", project.ResourceID, err)
-		}
-		if !ok {
-			continue
-		}
 		response.Projects = append(response.Projects, convertToProject(project))
 	}
 	return response, nil

@@ -12,8 +12,6 @@ type ContextKey int
 const (
 	// PrincipalIDContextKey is the key name used to store principal id in the context.
 	PrincipalIDContextKey ContextKey = iota
-	// LoopbackContextKey is the key name used for loopback interface in the context.
-	LoopbackContextKey
 	// UserContextKey is the key name used to store user message in the context.
 	UserContextKey
 	AuthContextKey
