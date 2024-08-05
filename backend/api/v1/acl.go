@@ -257,7 +257,7 @@ func populateRawResources(ctx context.Context, stores *store.Store, authContext 
 				return err
 			}
 			resource.ProjectID = projectID
-		case strings.HasPrefix(resource.Name, "instances/") && strings.Contains(resource.Name, "/databases/"):
+		case strings.HasPrefix(resource.Name, "instances/") && strings.Contains(resource.Name, "/databases/") && !strings.HasPrefix(resource.Name, "instances/-/databases/"):
 			match := databaseRegex.FindString(resource.Name)
 			if match != "" {
 				database, err := getDatabaseMessage(ctx, stores, match)
