@@ -117,7 +117,12 @@
           </div>
         </NTooltip>
       </NButton>
-      <NButton size="small" quaternary @click="addRawString">
+      <NButton
+        v-if="enableRawExpression"
+        size="small"
+        quaternary
+        @click="addRawString"
+      >
         <template #icon><heroicons:plus class="w-4 h-4" /></template>
         <span>{{ $t("cel.condition.add-raw-expression") }}</span>
       </NButton>
@@ -155,9 +160,12 @@ const emit = defineEmits<{
   (event: "update"): void;
 }>();
 
-const context = useExprEditorContext();
-const { allowAdmin, enableRawExpression, factorList, factorOperatorOverrideMap } =
-  context;
+const {
+  allowAdmin,
+  enableRawExpression,
+  factorList,
+  factorOperatorOverrideMap,
+} = useExprEditorContext();
 
 const operator = computed({
   get() {
