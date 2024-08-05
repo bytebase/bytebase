@@ -255,19 +255,15 @@ const semanticTypeList = computed(() => {
 
 const showSemanticTypeColumn = computed(() => {
   return (
-    !options?.value.hideSemanticTypeColumn &&
     subscriptionV1Store.hasFeature("bb.feature.sensitive-data") &&
     showDatabaseConfigColumn.value
   );
 });
 
 const showClassification = computed(() => {
-  return (
-    !options?.value.hideClassificationColumn &&
-    showClassificationColumn(
-      props.engine,
-      classificationConfig.value?.classificationFromConfig ?? false
-    )
+  return showClassificationColumn(
+    props.engine,
+    classificationConfig.value?.classificationFromConfig ?? false
   );
 });
 

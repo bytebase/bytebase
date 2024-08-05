@@ -66,7 +66,7 @@
             }}
           </NButton>
           <NButton
-            v-if="engineSupportsEditTablePartitions(engine)"
+            v-if="showPartitions"
             size="small"
             :disabled="disableChangeTable"
             @click="state.mode = 'PARTITIONS'"
@@ -344,9 +344,16 @@ const allowReorderColumns = computed(() => {
 
 const showIndexes = computed(() => {
   if (options?.value.forceShowIndexes) {
-    return true;
+    return props.table.indexes.length > 0;
   }
   return engineSupportsEditIndexes(engine.value);
+});
+
+const showPartitions = computed(() => {
+  if (options?.value.forceShowPartitions) {
+    return props.table.partitions.length > 0;
+  }
+  return engineSupportsEditTablePartitions(engine.value);
 });
 
 const disableAlterColumn = (column: ColumnMetadata): boolean => {

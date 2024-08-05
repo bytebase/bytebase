@@ -114,8 +114,6 @@ provideSchemaEditorContext({
   showLastUpdater: ref(false),
   disableDiffColoring: ref(true),
   options: ref({
-    hideSemanticTypeColumn: true,
-    hideClassificationColumn: true,
     forceShowIndexes: true,
     forceShowPartitions: true,
   }),
