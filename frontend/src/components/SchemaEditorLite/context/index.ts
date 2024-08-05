@@ -32,6 +32,7 @@ export const provideSchemaEditorContext = (params: {
   selectedRolloutObjects: Ref<RolloutObject[] | undefined>;
   showLastUpdater: Ref<boolean>;
   disableDiffColoring: Ref<boolean>;
+  hideSchemaDiagram?: Ref<boolean | undefined>;
 }) => {
   const events = new Emittery() as SchemaEditorEvents;
   const showDatabaseConfigColumn = computed(

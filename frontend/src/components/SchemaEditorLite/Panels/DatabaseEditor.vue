@@ -59,7 +59,7 @@
           </div>
         </div>
       </div>
-      <div class="flex justify-end items-center">
+      <div v-if="hideSchemaDiagram" class="flex justify-end items-center">
         <div
           class="flex flex-row justify-end items-center bg-gray-100 p-1 rounded whitespace-nowrap"
         >
@@ -209,6 +209,7 @@ const {
   markEditStatus,
   upsertTableConfig,
   queuePendingScrollToTable,
+  hideSchemaDiagram,
 } = context;
 const state = reactive<LocalState>({
   selectedSubTab: "table-list",
