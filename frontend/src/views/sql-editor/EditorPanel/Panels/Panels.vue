@@ -18,6 +18,13 @@
 </template>
 
 <script setup lang="ts">
+import { first } from "lodash-es";
+import { computed, watch } from "vue";
+import {
+  useConnectionOfCurrentSQLEditorTab,
+  useDBSchemaV1Store,
+} from "@/store";
+import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
 import type { VueClass } from "@/utils";
 import GutterBar from "../GutterBar";
 import { useEditorPanelContext } from "../context";
@@ -33,5 +40,22 @@ defineProps<{
   contentClass?: VueClass;
 }>();
 
-const { viewState } = useEditorPanelContext();
+const { viewState, selectedSchemaName } = useEditorPanelContext();
+const { database } = useConnectionOfCurrentSQLEditorTab();
+const databaseMetadata = computed(() => {
+  return useDBSchemaV1Store().getDatabaseMetadata(
+    database.value.name,
+    DatabaseMetadataView.DATABASE_METADATA_VIEW_FULL
+  );
+});
+
+watch(
+  [databaseMetadata, selectedSchemaName],
+  ([database, schema]) => {
+    if (database && schema === undefined) {
+      selectedSchemaName.value = first(database.schemas)?.name;
+    }
+  },
+  { immediate: true }
+);
 </script>

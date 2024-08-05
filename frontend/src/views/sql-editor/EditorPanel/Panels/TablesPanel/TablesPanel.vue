@@ -1,25 +1,10 @@
 <template>
-  <div v-if="metadata" class="px-2 py-2 h-full overflow-hidden flex flex-col">
-    <div
-      v-if="showToolbar"
-      class="pb-2 w-full flex flex-row justify-between items-center"
-    >
-      <template v-if="!metadata.table">
-        <div
-          v-if="showSchemaSelect"
-          class="flex flex-row justify-start items-center text-sm gap-x-2"
-        >
-          <span>Schema:</span>
-          <NSelect
-            v-model:value="selectedSchemaName"
-            :options="schemaSelectOptions"
-            class="min-w-[8rem]"
-          />
-        </div>
-      </template>
-    </div>
-
-    <template v-if="metadata.schema">
+  <div
+    v-if="metadata?.schema"
+    class="px-2 py-2 gap-y-2 h-full overflow-hidden flex flex-col"
+  >
+    <template v-if="!metadata.table">
+      <SchemaSelectToolbar />
       <TableList
         v-if="!metadata.table"
         :db="database"
@@ -27,8 +12,11 @@
         :schema="metadata.schema"
         :tables="metadata.schema.tables"
         :custom-click="true"
-        @click="handleSelectTable"
+        @click="select"
       />
+    </template>
+
+    <template v-if="metadata.table">
       <TableEditor
         v-if="metadata.table"
         :db="database"
@@ -38,7 +26,7 @@
         class="!pt-0"
       >
         <template #toolbar-prefix>
-          <NButton size="small" @click="deselectTable">
+          <NButton size="small" @click="deselect">
             <ArrowLeftIcon class="w-4 h-4" />
           </NButton>
         </template>
@@ -49,7 +37,7 @@
 
 <script setup lang="ts">
 import { ArrowLeftIcon } from "lucide-vue-next";
-import { NButton, NSelect } from "naive-ui";
+import { NButton } from "naive-ui";
 import { computed, ref, watch } from "vue";
 import { provideSchemaEditorContext } from "@/components/SchemaEditorLite";
 import TableEditor from "@/components/SchemaEditorLite/Panels/TableEditor.vue";
@@ -66,15 +54,12 @@ import {
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto/v1/database_service";
-import { useSelectSchema } from "../../common";
+import { useEditorPanelContext } from "../../context";
+import { SchemaSelectToolbar } from "../common";
 
 const editorStore = useSQLEditorStore();
-const {
-  selectedSchemaName,
-  options: schemaSelectOptions,
-  showSchemaSelect,
-} = useSelectSchema();
 const { database } = useConnectionOfCurrentSQLEditorTab();
+const { selectedSchemaName } = useEditorPanelContext();
 const databaseMetadata = computed(() => {
   return useDBSchemaV1Store().getDatabaseMetadata(
     database.value.name,
@@ -88,17 +73,7 @@ const metadata = ref<{
   table?: TableMetadata;
 }>();
 
-const showToolbar = computed(() => {
-  if (metadata.value?.table) {
-    // should show table detail
-    return false;
-  }
-
-  if (showSchemaSelect.value) return true;
-  return false;
-});
-
-const handleSelectTable = (selected: {
+const select = (selected: {
   database: DatabaseMetadata;
   schema: SchemaMetadata;
   table: TableMetadata;
@@ -106,7 +81,7 @@ const handleSelectTable = (selected: {
   metadata.value = selected;
 };
 
-const deselectTable = () => {
+const deselect = () => {
   if (!metadata.value) return;
   metadata.value.table = undefined;
 };

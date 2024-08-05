@@ -16,9 +16,8 @@
 </template>
 
 <script setup lang="ts">
-import { first } from "lodash-es";
 import { NSelect, type SelectOption } from "naive-ui";
-import { computed, watch } from "vue";
+import { computed } from "vue";
 import {
   useConnectionOfCurrentSQLEditorTab,
   useDBSchemaV1Store,
@@ -44,14 +43,4 @@ const schemaSelectOptions = computed(() => {
 const showSchemaSelect = computed(() => {
   return hasSchemaProperty(instance.value.engine);
 });
-
-watch(
-  [databaseMetadata, selectedSchemaName],
-  ([database, schema]) => {
-    if (database && schema === undefined) {
-      selectedSchemaName.value = first(database.schemas)?.name;
-    }
-  },
-  { immediate: true }
-);
 </script>
