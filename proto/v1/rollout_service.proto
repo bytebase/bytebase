@@ -463,7 +463,11 @@ message TaskRun {
     message WaitingCause {
       oneof cause {
         bool connection_limit = 1;
-        string task = 2;
+        Task task = 2;
+      }
+      message Task {
+        string task = 1;
+        string issue = 2;
       }
     }
     WaitingCause waiting_cause = 2;
