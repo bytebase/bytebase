@@ -1334,6 +1334,14 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.store.SchedulerInfo"><span class="badge">M</span>SchedulerInfo</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.SchedulerInfo.WaitingCause"><span class="badge">M</span>SchedulerInfo.WaitingCause</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.store.TaskRunResult"><span class="badge">M</span>TaskRunResult</a>
                 </li>
               
@@ -10819,6 +10827,68 @@ Format: instances/{instance}/databases/{database} </p></td>
                 <tr>
                   <td>table</td>
                   <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.SchedulerInfo">SchedulerInfo</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>report_time</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>waiting_cause</td>
+                  <td><a href="#bytebase.store.SchedulerInfo.WaitingCause">SchedulerInfo.WaitingCause</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.SchedulerInfo.WaitingCause">SchedulerInfo.WaitingCause</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>connection_limit</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>task_uid</td>
+                  <td><a href="#int32">int32</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>

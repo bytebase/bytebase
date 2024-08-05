@@ -41,6 +41,7 @@ import {
   isDatabaseDataExportIssue,
 } from "@/utils";
 import { databaseForTask, specForTask, useIssueContext } from "../../logic";
+import {getProjectIdRolloutUidStageUidTaskUid} from "@/store/modules/v1/common"
 
 export type CommentLink = {
   title: string;
@@ -78,6 +79,15 @@ const comment = computed(() => {
     }
     return t("task-run.status.enqueued");
   } else if (taskRun.status === TaskRun_Status.RUNNING) {
+    if (taskRun.schedulerInfo) {
+      const cause = taskRun.schedulerInfo.waitingCause
+      if (cause?.connectionLimit) {
+        return t("task-run.status.waiting-connection")
+      }
+      if (cause?.task) {
+        return t("task-run.status.waiting-task")
+      }
+    }
     if (taskRun.executionStatus === TaskRun_ExecutionStatus.PRE_EXECUTING) {
       if (isDatabaseDataExportIssue(issue.value)) {
         return t("task-run.status.preparing-to-export-data");
@@ -133,7 +143,17 @@ const commentLink = computed((): CommentLink => {
     flattenTaskV1List(issue.value.rolloutEntity).find(
       (task) => task.uid === taskUID
     ) ?? unknownTask();
-  if (taskRun.status === TaskRun_Status.DONE) {
+  if (taskRun.status === TaskRun_Status.RUNNING) {
+    const task = taskRun.schedulerInfo?.waitingCause?.task
+    if (task) {
+      const [, , stageUid, taskUid] = getProjectIdRolloutUidStageUidTaskUid(task.task)
+      const link = `/${task.issue}?stage=${stageUid}&task=${taskUid}`
+      return {
+        title: t("common.blocking-task"),
+        link: link,
+      }
+    }
+  } else if (taskRun.status === TaskRun_Status.DONE) {
     switch (task.type) {
       case Task_Type.DATABASE_SCHEMA_BASELINE:
       case Task_Type.DATABASE_SCHEMA_UPDATE:

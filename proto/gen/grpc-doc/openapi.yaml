@@ -12575,6 +12575,14 @@ components:
                     description: The title of the deployment (stage) in a schedule.
                 spec:
                     $ref: '#/components/schemas/DeploymentSpec'
+        SchedulerInfo_WaitingCause:
+            type: object
+            properties:
+                connectionLimit:
+                    type: boolean
+                taskUid:
+                    type: integer
+                    format: int32
         SchemaConfig:
             type: object
             properties:
@@ -13648,6 +13656,10 @@ components:
                     allOf:
                         - $ref: '#/components/schemas/TaskRun_PriorBackupDetail'
                     description: The prior backup detail that will be used to rollback the task run.
+                schedulerInfo:
+                    readOnly: true
+                    allOf:
+                        - $ref: '#/components/schemas/TaskRun_SchedulerInfo'
         TaskRunLog:
             type: object
             properties:
@@ -13814,6 +13826,14 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/PriorBackupDetail_Item'
+        TaskRun_SchedulerInfo:
+            type: object
+            properties:
+                reportTime:
+                    type: string
+                    format: date-time
+                waitingCause:
+                    $ref: '#/components/schemas/SchedulerInfo_WaitingCause'
         Task_DatabaseCreate:
             type: object
             properties:

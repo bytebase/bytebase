@@ -1,6 +1,7 @@
 /* eslint-disable */
 import Long from "long";
 import _m0 from "protobufjs/minimal";
+import { Timestamp } from "../google/protobuf/timestamp";
 import { Position } from "./common";
 
 export const protobufPackage = "bytebase.store";
@@ -49,6 +50,16 @@ export interface PriorBackupDetail_Item_Table {
   database: string;
   schema: string;
   table: string;
+}
+
+export interface SchedulerInfo {
+  reportTime: Date | undefined;
+  waitingCause: SchedulerInfo_WaitingCause | undefined;
+}
+
+export interface SchedulerInfo_WaitingCause {
+  connectionLimit?: boolean | undefined;
+  taskUid?: number | undefined;
 }
 
 function createBaseTaskRunResult(): TaskRunResult {
@@ -552,6 +563,156 @@ export const PriorBackupDetail_Item_Table = {
   },
 };
 
+function createBaseSchedulerInfo(): SchedulerInfo {
+  return { reportTime: undefined, waitingCause: undefined };
+}
+
+export const SchedulerInfo = {
+  encode(message: SchedulerInfo, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.reportTime !== undefined) {
+      Timestamp.encode(toTimestamp(message.reportTime), writer.uint32(10).fork()).ldelim();
+    }
+    if (message.waitingCause !== undefined) {
+      SchedulerInfo_WaitingCause.encode(message.waitingCause, writer.uint32(18).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): SchedulerInfo {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSchedulerInfo();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.reportTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.waitingCause = SchedulerInfo_WaitingCause.decode(reader, reader.uint32());
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SchedulerInfo {
+    return {
+      reportTime: isSet(object.reportTime) ? fromJsonTimestamp(object.reportTime) : undefined,
+      waitingCause: isSet(object.waitingCause) ? SchedulerInfo_WaitingCause.fromJSON(object.waitingCause) : undefined,
+    };
+  },
+
+  toJSON(message: SchedulerInfo): unknown {
+    const obj: any = {};
+    if (message.reportTime !== undefined) {
+      obj.reportTime = message.reportTime.toISOString();
+    }
+    if (message.waitingCause !== undefined) {
+      obj.waitingCause = SchedulerInfo_WaitingCause.toJSON(message.waitingCause);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<SchedulerInfo>): SchedulerInfo {
+    return SchedulerInfo.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<SchedulerInfo>): SchedulerInfo {
+    const message = createBaseSchedulerInfo();
+    message.reportTime = object.reportTime ?? undefined;
+    message.waitingCause = (object.waitingCause !== undefined && object.waitingCause !== null)
+      ? SchedulerInfo_WaitingCause.fromPartial(object.waitingCause)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseSchedulerInfo_WaitingCause(): SchedulerInfo_WaitingCause {
+  return { connectionLimit: undefined, taskUid: undefined };
+}
+
+export const SchedulerInfo_WaitingCause = {
+  encode(message: SchedulerInfo_WaitingCause, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.connectionLimit !== undefined) {
+      writer.uint32(8).bool(message.connectionLimit);
+    }
+    if (message.taskUid !== undefined) {
+      writer.uint32(16).int32(message.taskUid);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): SchedulerInfo_WaitingCause {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSchedulerInfo_WaitingCause();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 8) {
+            break;
+          }
+
+          message.connectionLimit = reader.bool();
+          continue;
+        case 2:
+          if (tag !== 16) {
+            break;
+          }
+
+          message.taskUid = reader.int32();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SchedulerInfo_WaitingCause {
+    return {
+      connectionLimit: isSet(object.connectionLimit) ? globalThis.Boolean(object.connectionLimit) : undefined,
+      taskUid: isSet(object.taskUid) ? globalThis.Number(object.taskUid) : undefined,
+    };
+  },
+
+  toJSON(message: SchedulerInfo_WaitingCause): unknown {
+    const obj: any = {};
+    if (message.connectionLimit !== undefined) {
+      obj.connectionLimit = message.connectionLimit;
+    }
+    if (message.taskUid !== undefined) {
+      obj.taskUid = Math.round(message.taskUid);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<SchedulerInfo_WaitingCause>): SchedulerInfo_WaitingCause {
+    return SchedulerInfo_WaitingCause.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<SchedulerInfo_WaitingCause>): SchedulerInfo_WaitingCause {
+    const message = createBaseSchedulerInfo_WaitingCause();
+    message.connectionLimit = object.connectionLimit ?? undefined;
+    message.taskUid = object.taskUid ?? undefined;
+    return message;
+  },
+};
+
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 
 export type DeepPartial<T> = T extends Builtin ? T
@@ -559,6 +720,32 @@ export type DeepPartial<T> = T extends Builtin ? T
   : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
+
+function toTimestamp(date: Date): Timestamp {
+  const seconds = numberToLong(date.getTime() / 1_000);
+  const nanos = (date.getTime() % 1_000) * 1_000_000;
+  return { seconds, nanos };
+}
+
+function fromTimestamp(t: Timestamp): Date {
+  let millis = (t.seconds.toNumber() || 0) * 1_000;
+  millis += (t.nanos || 0) / 1_000_000;
+  return new globalThis.Date(millis);
+}
+
+function fromJsonTimestamp(o: any): Date {
+  if (o instanceof globalThis.Date) {
+    return o;
+  } else if (typeof o === "string") {
+    return new globalThis.Date(o);
+  } else {
+    return fromTimestamp(Timestamp.fromJSON(o));
+  }
+}
+
+function numberToLong(number: number) {
+  return Long.fromNumber(number);
+}
 
 if (_m0.util.Long !== Long) {
   _m0.util.Long = Long as any;

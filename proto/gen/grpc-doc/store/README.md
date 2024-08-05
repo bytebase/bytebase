@@ -285,6 +285,8 @@
     - [PriorBackupDetail](#bytebase-store-PriorBackupDetail)
     - [PriorBackupDetail.Item](#bytebase-store-PriorBackupDetail-Item)
     - [PriorBackupDetail.Item.Table](#bytebase-store-PriorBackupDetail-Item-Table)
+    - [SchedulerInfo](#bytebase-store-SchedulerInfo)
+    - [SchedulerInfo.WaitingCause](#bytebase-store-SchedulerInfo-WaitingCause)
     - [TaskRunResult](#bytebase-store-TaskRunResult)
     - [TaskRunResult.Position](#bytebase-store-TaskRunResult-Position)
   
@@ -4390,6 +4392,38 @@ TaskDatabaseDataUpdatePayload is the task payload for database data update (DML)
 | database | [string](#string) |  | The database information. Format: instances/{instance}/databases/{database} |
 | schema | [string](#string) |  |  |
 | table | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-SchedulerInfo"></a>
+
+### SchedulerInfo
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| report_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| waiting_cause | [SchedulerInfo.WaitingCause](#bytebase-store-SchedulerInfo-WaitingCause) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-SchedulerInfo-WaitingCause"></a>
+
+### SchedulerInfo.WaitingCause
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| connection_limit | [bool](#bool) |  |  |
+| task_uid | [int32](#int32) |  |  |
 
 
 
