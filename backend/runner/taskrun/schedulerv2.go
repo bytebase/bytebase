@@ -10,6 +10,7 @@ import (
 
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -351,13 +352,29 @@ func (s *SchedulerV2) scheduleRunningTaskRuns(ctx context.Context) error {
 			continue
 		}
 		if task.DatabaseID != nil && task.Type.Sequential() {
-			if minTaskIDForDatabase[*task.DatabaseID] != task.ID {
-				slog.Debug("skip running task run because another task on the database has a smaller id", "task run id", taskRun.ID, "task id", task.ID, "database id", *task.DatabaseID)
+			// Skip the task run if there is an ongoing migration on the database.
+			if taskUIDAny, ok := s.stateCfg.RunningDatabaseMigration.Load(*task.DatabaseID); ok {
+				if taskUID, ok := taskUIDAny.(int); ok {
+					s.stateCfg.TaskRunSchedulerInfo.Store(taskRun.ID, &storepb.SchedulerInfo{
+						ReportTime: timestamppb.Now(),
+						WaitingCause: &storepb.SchedulerInfo_WaitingCause{
+							Cause: &storepb.SchedulerInfo_WaitingCause_TaskUid{
+								TaskUid: int32(taskUID),
+							},
+						},
+					})
+				}
 				continue
 			}
-			// Skip the task run if there is an ongoing migration on the database.
-			if _, ok := s.stateCfg.RunningDatabaseMigration.Load(*task.DatabaseID); ok {
-				slog.Debug("skip running task run because another task is running on the database", "task run id", taskRun.ID, "task id", task.ID, "database id", *task.DatabaseID)
+			if taskUID := minTaskIDForDatabase[*task.DatabaseID]; taskUID != task.ID {
+				s.stateCfg.TaskRunSchedulerInfo.Store(taskRun.ID, &storepb.SchedulerInfo{
+					ReportTime: timestamppb.Now(),
+					WaitingCause: &storepb.SchedulerInfo_WaitingCause{
+						Cause: &storepb.SchedulerInfo_WaitingCause_TaskUid{
+							TaskUid: int32(taskUID),
+						},
+					},
+				})
 				continue
 			}
 		}
@@ -380,13 +397,22 @@ func (s *SchedulerV2) scheduleRunningTaskRuns(ctx context.Context) error {
 		}
 		maximumConnections := int(instance.Options.GetMaximumConnections())
 		if s.stateCfg.InstanceOutstandingConnections.Increment(task.InstanceID, maximumConnections) {
-			slog.Debug("skip running task run because instance connection is not available", "task run id", taskRun.ID, "task id", task.ID, "instance id", task.InstanceID, "database id", *task.DatabaseID)
+			s.stateCfg.TaskRunSchedulerInfo.Store(taskRun.ID, &storepb.SchedulerInfo{
+				ReportTime: timestamppb.Now(),
+				WaitingCause: &storepb.SchedulerInfo_WaitingCause{
+					Cause: &storepb.SchedulerInfo_WaitingCause_ConnectionLimit{
+						ConnectionLimit: true,
+					},
+				},
+			})
 			continue
 		}
 
+		s.stateCfg.TaskRunSchedulerInfo.Delete(taskRun.ID)
+
 		s.stateCfg.RunningTaskRuns.Store(taskRun.ID, true)
 		if task.DatabaseID != nil {
-			s.stateCfg.RunningDatabaseMigration.Store(*task.DatabaseID, true)
+			s.stateCfg.RunningDatabaseMigration.Store(*task.DatabaseID, task.ID)
 		}
 
 		s.store.CreateTaskRunLogS(ctx, taskRun.ID, time.Now(), s.profile.DeployID, &storepb.TaskRunLog{
