@@ -672,12 +672,22 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 		return nil, err
 	}
 
-	ok, err := s.checkDataSourceQueriable(ctx, database, request.DataSourceId)
+	dataSource, err := s.store.GetDataSource(ctx, &store.FindDataSourceMessage{
+		InstanceID: &database.InstanceID,
+		Name:       &request.DataSourceId,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get data source: %v", err)
+	}
+	if dataSource == nil {
+		return nil, status.Errorf(codes.NotFound, "data source %q not found", request.DataSourceId)
+	}
+	ok, err := s.checkDataSourceQueriable(ctx, database, dataSource)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to check data source queriable: %v", err)
 	}
 	if !ok {
-		return nil, status.Errorf(codes.PermissionDenied, "data source %q is not queriable", request.DataSourceId)
+		return nil, status.Errorf(codes.InvalidArgument, "data source %q is not queriable", dataSource.Username)
 	}
 
 	statement := request.Statement
@@ -1603,15 +1613,8 @@ func getOffsetAndOriginTable(backupTable string) (int, string, error) {
 	return offset, strings.Join(parts[3:], "_"), nil
 }
 
-func (s *SQLService) checkDataSourceQueriable(ctx context.Context, database *store.DatabaseMessage, dataSourceID string) (bool, error) {
-	dataSource, err := s.store.GetDataSource(ctx, &store.FindDataSourceMessage{Name: &dataSourceID})
-	if err != nil {
-		return false, errors.Wrap(err, "failed to get data source")
-	}
-	if dataSource == nil {
-		return false, errors.Errorf("data source %q not found", dataSourceID)
-	}
-	// Pass if the data source is not admin type.
+func (s *SQLService) checkDataSourceQueriable(ctx context.Context, database *store.DatabaseMessage, dataSource *store.DataSourceMessage) (bool, error) {
+	// Always allow non-admin data source.
 	if dataSource.Type != api.Admin {
 		return true, nil
 	}
