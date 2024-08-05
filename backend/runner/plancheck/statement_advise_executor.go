@@ -47,51 +47,13 @@ func (e *StatementAdviseExecutor) Run(ctx context.Context, config *storepb.PlanC
 	if config.ChangeDatabaseType == storepb.PlanCheckRunConfig_CHANGE_DATABASE_TYPE_UNSPECIFIED {
 		return nil, errors.Errorf("change database type is unspecified")
 	}
-
-	if config.DatabaseGroupUid != nil {
-		return e.runForDatabaseGroupTarget(ctx, config, *config.DatabaseGroupUid)
-	}
-	return e.runForDatabaseTarget(ctx, config)
-}
-
-func (e *StatementAdviseExecutor) runForDatabaseTarget(ctx context.Context, config *storepb.PlanCheckRunConfig) ([]*storepb.PlanCheckRunResult_Result, error) {
-	changeType := config.ChangeDatabaseType
-
-	instanceUID := int(config.InstanceUid)
-	instance, err := e.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &instanceUID})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get instance UID %v", instanceUID)
-	}
-	if instance == nil {
-		return nil, errors.Errorf("instance not found UID %v", instanceUID)
-	}
-
-	if !common.StatementAdviseEngines[instance.Engine] {
-		return []*storepb.PlanCheckRunResult_Result{
-			{
-				Status:  storepb.PlanCheckRunResult_Result_SUCCESS,
-				Code:    common.Ok.Int32(),
-				Title:   fmt.Sprintf("Statement advise is not supported for %s", instance.Engine),
-				Content: "",
-			},
-		}, nil
-	}
-
-	database, err := e.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID, DatabaseName: &config.DatabaseName})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get database %q", config.DatabaseName)
-	}
-	if database == nil {
-		return nil, errors.Errorf("database not found %q", config.DatabaseName)
-	}
-
 	if err := e.licenseService.IsFeatureEnabled(api.FeatureSQLReview); err != nil {
 		// nolint:nilerr
 		return []*storepb.PlanCheckRunResult_Result{
 			{
 				Status:  storepb.PlanCheckRunResult_Result_WARNING,
 				Code:    0,
-				Title:   fmt.Sprintf("SQL review disabled for instance %s", instance.ResourceID),
+				Title:   "SQL review is disabled",
 				Content: err.Error(),
 				Report: &storepb.PlanCheckRunResult_Result_SqlReviewReport_{
 					SqlReviewReport: &storepb.PlanCheckRunResult_Result_SqlReviewReport{
@@ -102,11 +64,6 @@ func (e *StatementAdviseExecutor) runForDatabaseTarget(ctx context.Context, conf
 				},
 			},
 		}, nil
-	}
-
-	dbSchema, err := e.store.GetDBSchema(ctx, database.UID)
-	if err != nil {
-		return nil, err
 	}
 
 	sheetUID := int(config.SheetUid)
@@ -127,9 +84,121 @@ func (e *StatementAdviseExecutor) runForDatabaseTarget(ctx context.Context, conf
 			},
 		}, nil
 	}
-	statement, err := e.store.GetSheetStatementByID(ctx, sheetUID)
+	statement := sheet.Statement
+	changeType := config.ChangeDatabaseType
+	preUpdateBackupDetail := config.PreUpdateBackupDetail
+
+	var databases []*store.DatabaseMessage
+	if config.DatabaseGroupUid != nil {
+		databaseGroup, err := e.store.GetDatabaseGroup(ctx, &store.FindDatabaseGroupMessage{
+			UID: config.DatabaseGroupUid,
+		})
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get database group %d", *config.DatabaseGroupUid)
+		}
+		if databaseGroup == nil {
+			return nil, errors.Errorf("database group not found %d", *config.DatabaseGroupUid)
+		}
+		project, err := e.store.GetProjectV2(ctx, &store.FindProjectMessage{
+			UID: &databaseGroup.ProjectUID,
+		})
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get project %d", databaseGroup.ProjectUID)
+		}
+		if project == nil {
+			return nil, errors.Errorf("project not found %d", databaseGroup.ProjectUID)
+		}
+
+		allDatabases, err := e.store.ListDatabases(ctx, &store.FindDatabaseMessage{ProjectID: &project.ResourceID})
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to list databases for project %q", project.ResourceID)
+		}
+		matchedDatabases, _, err := utils.GetMatchedAndUnmatchedDatabasesInDatabaseGroup(ctx, databaseGroup, allDatabases)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get matched and unmatched databases in database group %q", databaseGroup.ResourceID)
+		}
+		if len(matchedDatabases) == 0 {
+			return nil, errors.Errorf("no matched databases found in database group %q", databaseGroup.ResourceID)
+		}
+		databases = matchedDatabases
+	} else {
+		instanceUID := int(config.InstanceUid)
+		instance, err := e.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &instanceUID})
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get instance UID %v", instanceUID)
+		}
+		if instance == nil {
+			return nil, errors.Errorf("instance not found UID %v", instanceUID)
+		}
+		database, err := e.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID, DatabaseName: &config.DatabaseName})
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get database %q", config.DatabaseName)
+		}
+		if database == nil {
+			return nil, errors.Errorf("database not found %q", config.DatabaseName)
+		}
+		databases = append(databases, database)
+	}
+
+	var results []*storepb.PlanCheckRunResult_Result
+	for _, database := range databases {
+		instance, err := e.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get instance %q", database.InstanceID)
+		}
+		if instance == nil {
+			return nil, errors.Errorf("instance not found %q", database.InstanceID)
+		}
+
+		if !common.StatementAdviseEngines[instance.Engine] {
+			return []*storepb.PlanCheckRunResult_Result{
+				{
+					Status:  storepb.PlanCheckRunResult_Result_SUCCESS,
+					Code:    common.Ok.Int32(),
+					Title:   fmt.Sprintf("Statement advise is not supported for %s", instance.Engine),
+					Content: "",
+				},
+			}, nil
+		}
+
+		r, err := e.runReview(ctx, instance, database, changeType, statement, preUpdateBackupDetail)
+		if err != nil {
+			return nil, err
+		}
+		results = append(results, r...)
+	}
+
+	if len(results) == 0 {
+		return []*storepb.PlanCheckRunResult_Result{
+			{
+				Status:  storepb.PlanCheckRunResult_Result_SUCCESS,
+				Title:   "OK",
+				Content: "",
+				Code:    common.Ok.Int32(),
+				Report:  nil,
+			},
+		}, nil
+	}
+	return results, nil
+}
+
+func (e *StatementAdviseExecutor) runReview(
+	ctx context.Context,
+	instance *store.InstanceMessage,
+	database *store.DatabaseMessage,
+	changeType storepb.PlanCheckRunConfig_ChangeDatabaseType,
+	statement string,
+	preUpdateBackupDetail *storepb.PreUpdateBackupDetail,
+) ([]*storepb.PlanCheckRunResult_Result, error) {
+	dbSchema, err := e.store.GetDBSchema(ctx, database.UID)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get sheet statement %d", sheetUID)
+		return nil, err
+	}
+	if dbSchema == nil {
+		return nil, errors.Errorf("database schema not found: %d", database.UID)
+	}
+	if dbSchema.GetMetadata() == nil {
+		return nil, errors.Errorf("database schema metadata not found: %d", database.UID)
 	}
 
 	reviewConfig, err := e.store.GetReviewConfigForDatabase(ctx, database)
@@ -165,7 +234,7 @@ func (e *StatementAdviseExecutor) runForDatabaseTarget(ctx context.Context, conf
 		Catalog:               catalog,
 		Driver:                connection,
 		Context:               ctx,
-		PreUpdateBackupDetail: config.PreUpdateBackupDetail,
+		PreUpdateBackupDetail: preUpdateBackupDetail,
 	})
 	if err != nil {
 		return nil, err
@@ -199,202 +268,6 @@ func (e *StatementAdviseExecutor) runForDatabaseTarget(ctx context.Context, conf
 				},
 			},
 		})
-	}
-
-	if len(results) == 0 {
-		return []*storepb.PlanCheckRunResult_Result{
-			{
-				Status:  storepb.PlanCheckRunResult_Result_SUCCESS,
-				Title:   "OK",
-				Content: "",
-				Code:    common.Ok.Int32(),
-				Report:  nil,
-			},
-		}, nil
-	}
-
-	return results, nil
-}
-
-func (e *StatementAdviseExecutor) runForDatabaseGroupTarget(ctx context.Context, config *storepb.PlanCheckRunConfig, databaseGroupUID int64) ([]*storepb.PlanCheckRunResult_Result, error) {
-	changeType := config.ChangeDatabaseType
-	databaseGroup, err := e.store.GetDatabaseGroup(ctx, &store.FindDatabaseGroupMessage{
-		UID: &databaseGroupUID,
-	})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get database group %d", databaseGroupUID)
-	}
-	if databaseGroup == nil {
-		return nil, errors.Errorf("database group not found %d", databaseGroupUID)
-	}
-	project, err := e.store.GetProjectV2(ctx, &store.FindProjectMessage{
-		UID: &databaseGroup.ProjectUID,
-	})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get project %d", databaseGroup.ProjectUID)
-	}
-	if project == nil {
-		return nil, errors.Errorf("project not found %d", databaseGroup.ProjectUID)
-	}
-
-	allDatabases, err := e.store.ListDatabases(ctx, &store.FindDatabaseMessage{ProjectID: &project.ResourceID})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to list databases for project %q", project.ResourceID)
-	}
-
-	matchedDatabases, _, err := utils.GetMatchedAndUnmatchedDatabasesInDatabaseGroup(ctx, databaseGroup, allDatabases)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get matched and unmatched databases in database group %q", databaseGroup.ResourceID)
-	}
-	if len(matchedDatabases) == 0 {
-		return nil, errors.Errorf("no matched databases found in database group %q", databaseGroup.ResourceID)
-	}
-
-	sheetUID := int(config.SheetUid)
-	sheet, err := e.store.GetSheet(ctx, &store.FindSheetMessage{UID: &sheetUID})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get sheet %d", sheetUID)
-	}
-	if sheet == nil {
-		return nil, errors.Errorf("sheet %d not found", sheetUID)
-	}
-	if sheet.Size > common.MaxSheetCheckSize {
-		return []*storepb.PlanCheckRunResult_Result{
-			{
-				Status:  storepb.PlanCheckRunResult_Result_WARNING,
-				Code:    common.SizeExceeded.Int32(),
-				Title:   "Large SQL review policy is disabled",
-				Content: "",
-			},
-		}, nil
-	}
-	sheetStatement, err := e.store.GetSheetStatementByID(ctx, sheetUID)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get sheet statement %d", sheetUID)
-	}
-
-	var results []*storepb.PlanCheckRunResult_Result
-	for _, database := range matchedDatabases {
-		if database.DatabaseName != config.DatabaseName {
-			continue
-		}
-
-		instance, err := e.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get instance %q", database.InstanceID)
-		}
-		if instance == nil {
-			return nil, errors.Errorf("instance %q not found", database.InstanceID)
-		}
-		if instance.UID != int(config.InstanceUid) {
-			continue
-		}
-
-		if err := e.licenseService.IsFeatureEnabled(api.FeatureSQLReview); err != nil {
-			// nolint:nilerr
-			return []*storepb.PlanCheckRunResult_Result{
-				{
-					Status:  storepb.PlanCheckRunResult_Result_WARNING,
-					Code:    0,
-					Title:   fmt.Sprintf("SQL review disabled for instance %s", instance.ResourceID),
-					Content: err.Error(),
-					Report: &storepb.PlanCheckRunResult_Result_SqlReviewReport_{
-						SqlReviewReport: &storepb.PlanCheckRunResult_Result_SqlReviewReport{
-							Line:   0,
-							Detail: "",
-							Code:   advisor.Unsupported.Int32(),
-						},
-					},
-				},
-			}, nil
-		}
-
-		dbSchema, err := e.store.GetDBSchema(ctx, database.UID)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get db schema %q", database.UID)
-		}
-
-		reviewConfig, err := e.store.GetReviewConfigForDatabase(ctx, database)
-		if err != nil {
-			if e, ok := err.(*common.Error); ok && e.Code == common.NotFound {
-				reviewConfig = &storepb.ReviewConfigPayload{}
-			} else {
-				return nil, common.Wrapf(err, common.Internal, "failed to get SQL review config")
-			}
-		}
-
-		catalog, err := catalog.NewCatalog(ctx, e.store, database.UID, instance.Engine, store.IgnoreDatabaseAndTableCaseSensitive(instance), nil /* Override Metadata */)
-		if err != nil {
-			return nil, common.Wrapf(err, common.Internal, "failed to create a catalog")
-		}
-
-		stmtResults, err := func() ([]*storepb.PlanCheckRunResult_Result, error) {
-			driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{UseDatabaseOwner: true})
-			if err != nil {
-				return nil, err
-			}
-			defer driver.Close(ctx)
-			connection := driver.GetDB()
-
-			materials := utils.GetSecretMapFromDatabaseMessage(database)
-			// To avoid leaking the rendered statement, the error message should use the original statement and not the rendered statement.
-			renderedStatement := utils.RenderStatement(sheetStatement, materials)
-			adviceList, err := advisor.SQLReviewCheck(e.sheetManager, renderedStatement, reviewConfig.SqlReviewRules, advisor.SQLReviewCheckContext{
-				Charset:    dbSchema.GetMetadata().CharacterSet,
-				Collation:  dbSchema.GetMetadata().Collation,
-				DBSchema:   dbSchema.GetMetadata(),
-				ChangeType: changeType,
-				DbType:     instance.Engine,
-				Catalog:    catalog,
-				Driver:     connection,
-				Context:    ctx,
-			})
-			if err != nil {
-				return nil, err
-			}
-
-			var results []*storepb.PlanCheckRunResult_Result
-			for _, advice := range adviceList {
-				status := storepb.PlanCheckRunResult_Result_SUCCESS
-				switch advice.Status {
-				case storepb.Advice_SUCCESS:
-					continue
-				case storepb.Advice_WARNING:
-					status = storepb.PlanCheckRunResult_Result_WARNING
-				case storepb.Advice_ERROR:
-					status = storepb.PlanCheckRunResult_Result_ERROR
-				}
-
-				results = append(results, &storepb.PlanCheckRunResult_Result{
-					Status:  status,
-					Title:   advice.Title,
-					Content: advice.Content,
-					Code:    0,
-					Report: &storepb.PlanCheckRunResult_Result_SqlReviewReport_{
-						SqlReviewReport: &storepb.PlanCheckRunResult_Result_SqlReviewReport{
-							Line:          advice.GetStartPosition().GetLine(),
-							Column:        advice.GetStartPosition().GetColumn(),
-							Code:          advice.Code,
-							Detail:        advice.Detail,
-							StartPosition: advice.StartPosition,
-							EndPosition:   advice.EndPosition,
-						},
-					},
-				})
-			}
-			return results, nil
-		}()
-		if err != nil {
-			results = append(results, &storepb.PlanCheckRunResult_Result{
-				Status:  storepb.PlanCheckRunResult_Result_ERROR,
-				Title:   "Failed to run SQL review",
-				Content: err.Error(),
-				Code:    common.Internal.Int32(),
-				Report:  nil,
-			})
-		} else {
-			results = append(results, stmtResults...)
-		}
 	}
 
 	if len(results) == 0 {
