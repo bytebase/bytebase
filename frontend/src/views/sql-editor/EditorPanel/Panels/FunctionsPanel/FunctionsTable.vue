@@ -7,6 +7,7 @@
       :row-key="getFunctionKey"
       :columns="columns"
       :data="layoutReady ? funcs : []"
+      :row-props="rowProps"
       :max-height="tableBodyHeight"
       :virtual-scroll="true"
       :striped="true"
@@ -69,9 +70,7 @@ const columns = computed(() => {
       render: (func) => {
         return (
           <NPerformantEllipsis class="w-full cursor-pointer leading-6 hover:text-accent">
-            <span onClick={() => handleClickFunctionItem(func)}>
-              {func.name}
-            </span>
+            {func.name}
           </NPerformantEllipsis>
         );
       },
@@ -80,12 +79,16 @@ const columns = computed(() => {
   return columns;
 });
 
-const handleClickFunctionItem = (func: FunctionMetadata) => {
-  emit("click", {
-    database: props.database,
-    schema: props.schema,
-    func,
-  });
+const rowProps = (func: FunctionMetadata) => {
+  return {
+    onClick: () => {
+      emit("click", {
+        database: props.database,
+        schema: props.schema,
+        func,
+      });
+    },
+  };
 };
 </script>
 
