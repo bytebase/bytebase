@@ -2,10 +2,6 @@ import type { ApprovalStep, Issue_Approver } from "./proto/v1/issue_service";
 import { ApprovalTemplate } from "./proto/v1/issue_service";
 import type { ComposedUser } from "./v1/user";
 
-export type ApprovalEvent = {
-  status: "APPROVED" | "REJECTED" | "PENDING";
-};
-
 export type ReviewFlow = {
   template: ApprovalTemplate;
   approvers: Issue_Approver[];

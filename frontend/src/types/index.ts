@@ -1,7 +1,6 @@
 export * from "./actuator";
 export * from "./anomaly";
 export * from "./auditLog";
-export * from "./auth";
 export * from "./common";
 export * from "./const";
 export * from "./dataSource";
@@ -20,7 +19,6 @@ export * from "./sqlEditor";
 export * from "./sheet";
 export * from "./sqlReview";
 export * from "./utils";
-export * from "./externalApproval";
 export * from "./risk";
 export * from "./workspaceApprovalSetting";
 export * from "./review";
