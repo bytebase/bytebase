@@ -481,6 +481,7 @@ export interface TaskRun {
   exportArchiveStatus: TaskRun_ExportArchiveStatus;
   /** The prior backup detail that will be used to rollback the task run. */
   priorBackupDetail: TaskRun_PriorBackupDetail | undefined;
+  schedulerInfo: TaskRun_SchedulerInfo | undefined;
 }
 
 export enum TaskRun_Status {
@@ -712,6 +713,23 @@ export interface TaskRun_PriorBackupDetail_Item_Table {
   database: string;
   schema: string;
   table: string;
+}
+
+export interface TaskRun_SchedulerInfo {
+  reportTime: Date | undefined;
+  waitingCause: TaskRun_SchedulerInfo_WaitingCause | undefined;
+}
+
+export interface TaskRun_SchedulerInfo_WaitingCause {
+  connectionLimit?: boolean | undefined;
+  task?: TaskRun_SchedulerInfo_WaitingCause_Task | undefined;
+}
+
+export interface TaskRun_SchedulerInfo_WaitingCause_Task {
+  /** Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task} */
+  task: string;
+  /** Format: projects/{project}/issues/{issue} */
+  issue: string;
 }
 
 export interface TaskRunLog {
@@ -2942,6 +2960,7 @@ function createBaseTaskRun(): TaskRun {
     startTime: undefined,
     exportArchiveStatus: TaskRun_ExportArchiveStatus.EXPORT_ARCHIVE_STATUS_UNSPECIFIED,
     priorBackupDetail: undefined,
+    schedulerInfo: undefined,
   };
 }
 
@@ -2994,6 +3013,9 @@ export const TaskRun = {
     }
     if (message.priorBackupDetail !== undefined) {
       TaskRun_PriorBackupDetail.encode(message.priorBackupDetail, writer.uint32(138).fork()).ldelim();
+    }
+    if (message.schedulerInfo !== undefined) {
+      TaskRun_SchedulerInfo.encode(message.schedulerInfo, writer.uint32(146).fork()).ldelim();
     }
     return writer;
   },
@@ -3117,6 +3139,13 @@ export const TaskRun = {
 
           message.priorBackupDetail = TaskRun_PriorBackupDetail.decode(reader, reader.uint32());
           continue;
+        case 18:
+          if (tag !== 146) {
+            break;
+          }
+
+          message.schedulerInfo = TaskRun_SchedulerInfo.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3152,6 +3181,7 @@ export const TaskRun = {
       priorBackupDetail: isSet(object.priorBackupDetail)
         ? TaskRun_PriorBackupDetail.fromJSON(object.priorBackupDetail)
         : undefined,
+      schedulerInfo: isSet(object.schedulerInfo) ? TaskRun_SchedulerInfo.fromJSON(object.schedulerInfo) : undefined,
     };
   },
 
@@ -3205,6 +3235,9 @@ export const TaskRun = {
     if (message.priorBackupDetail !== undefined) {
       obj.priorBackupDetail = TaskRun_PriorBackupDetail.toJSON(message.priorBackupDetail);
     }
+    if (message.schedulerInfo !== undefined) {
+      obj.schedulerInfo = TaskRun_SchedulerInfo.toJSON(message.schedulerInfo);
+    }
     return obj;
   },
 
@@ -3233,6 +3266,9 @@ export const TaskRun = {
       TaskRun_ExportArchiveStatus.EXPORT_ARCHIVE_STATUS_UNSPECIFIED;
     message.priorBackupDetail = (object.priorBackupDetail !== undefined && object.priorBackupDetail !== null)
       ? TaskRun_PriorBackupDetail.fromPartial(object.priorBackupDetail)
+      : undefined;
+    message.schedulerInfo = (object.schedulerInfo !== undefined && object.schedulerInfo !== null)
+      ? TaskRun_SchedulerInfo.fromPartial(object.schedulerInfo)
       : undefined;
     return message;
   },
@@ -3686,6 +3722,234 @@ export const TaskRun_PriorBackupDetail_Item_Table = {
     message.database = object.database ?? "";
     message.schema = object.schema ?? "";
     message.table = object.table ?? "";
+    return message;
+  },
+};
+
+function createBaseTaskRun_SchedulerInfo(): TaskRun_SchedulerInfo {
+  return { reportTime: undefined, waitingCause: undefined };
+}
+
+export const TaskRun_SchedulerInfo = {
+  encode(message: TaskRun_SchedulerInfo, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.reportTime !== undefined) {
+      Timestamp.encode(toTimestamp(message.reportTime), writer.uint32(10).fork()).ldelim();
+    }
+    if (message.waitingCause !== undefined) {
+      TaskRun_SchedulerInfo_WaitingCause.encode(message.waitingCause, writer.uint32(18).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): TaskRun_SchedulerInfo {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseTaskRun_SchedulerInfo();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.reportTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.waitingCause = TaskRun_SchedulerInfo_WaitingCause.decode(reader, reader.uint32());
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): TaskRun_SchedulerInfo {
+    return {
+      reportTime: isSet(object.reportTime) ? fromJsonTimestamp(object.reportTime) : undefined,
+      waitingCause: isSet(object.waitingCause)
+        ? TaskRun_SchedulerInfo_WaitingCause.fromJSON(object.waitingCause)
+        : undefined,
+    };
+  },
+
+  toJSON(message: TaskRun_SchedulerInfo): unknown {
+    const obj: any = {};
+    if (message.reportTime !== undefined) {
+      obj.reportTime = message.reportTime.toISOString();
+    }
+    if (message.waitingCause !== undefined) {
+      obj.waitingCause = TaskRun_SchedulerInfo_WaitingCause.toJSON(message.waitingCause);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<TaskRun_SchedulerInfo>): TaskRun_SchedulerInfo {
+    return TaskRun_SchedulerInfo.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<TaskRun_SchedulerInfo>): TaskRun_SchedulerInfo {
+    const message = createBaseTaskRun_SchedulerInfo();
+    message.reportTime = object.reportTime ?? undefined;
+    message.waitingCause = (object.waitingCause !== undefined && object.waitingCause !== null)
+      ? TaskRun_SchedulerInfo_WaitingCause.fromPartial(object.waitingCause)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseTaskRun_SchedulerInfo_WaitingCause(): TaskRun_SchedulerInfo_WaitingCause {
+  return { connectionLimit: undefined, task: undefined };
+}
+
+export const TaskRun_SchedulerInfo_WaitingCause = {
+  encode(message: TaskRun_SchedulerInfo_WaitingCause, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.connectionLimit !== undefined) {
+      writer.uint32(8).bool(message.connectionLimit);
+    }
+    if (message.task !== undefined) {
+      TaskRun_SchedulerInfo_WaitingCause_Task.encode(message.task, writer.uint32(18).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): TaskRun_SchedulerInfo_WaitingCause {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseTaskRun_SchedulerInfo_WaitingCause();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 8) {
+            break;
+          }
+
+          message.connectionLimit = reader.bool();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.task = TaskRun_SchedulerInfo_WaitingCause_Task.decode(reader, reader.uint32());
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): TaskRun_SchedulerInfo_WaitingCause {
+    return {
+      connectionLimit: isSet(object.connectionLimit) ? globalThis.Boolean(object.connectionLimit) : undefined,
+      task: isSet(object.task) ? TaskRun_SchedulerInfo_WaitingCause_Task.fromJSON(object.task) : undefined,
+    };
+  },
+
+  toJSON(message: TaskRun_SchedulerInfo_WaitingCause): unknown {
+    const obj: any = {};
+    if (message.connectionLimit !== undefined) {
+      obj.connectionLimit = message.connectionLimit;
+    }
+    if (message.task !== undefined) {
+      obj.task = TaskRun_SchedulerInfo_WaitingCause_Task.toJSON(message.task);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<TaskRun_SchedulerInfo_WaitingCause>): TaskRun_SchedulerInfo_WaitingCause {
+    return TaskRun_SchedulerInfo_WaitingCause.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<TaskRun_SchedulerInfo_WaitingCause>): TaskRun_SchedulerInfo_WaitingCause {
+    const message = createBaseTaskRun_SchedulerInfo_WaitingCause();
+    message.connectionLimit = object.connectionLimit ?? undefined;
+    message.task = (object.task !== undefined && object.task !== null)
+      ? TaskRun_SchedulerInfo_WaitingCause_Task.fromPartial(object.task)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseTaskRun_SchedulerInfo_WaitingCause_Task(): TaskRun_SchedulerInfo_WaitingCause_Task {
+  return { task: "", issue: "" };
+}
+
+export const TaskRun_SchedulerInfo_WaitingCause_Task = {
+  encode(message: TaskRun_SchedulerInfo_WaitingCause_Task, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.task !== "") {
+      writer.uint32(10).string(message.task);
+    }
+    if (message.issue !== "") {
+      writer.uint32(18).string(message.issue);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): TaskRun_SchedulerInfo_WaitingCause_Task {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseTaskRun_SchedulerInfo_WaitingCause_Task();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.task = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.issue = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): TaskRun_SchedulerInfo_WaitingCause_Task {
+    return {
+      task: isSet(object.task) ? globalThis.String(object.task) : "",
+      issue: isSet(object.issue) ? globalThis.String(object.issue) : "",
+    };
+  },
+
+  toJSON(message: TaskRun_SchedulerInfo_WaitingCause_Task): unknown {
+    const obj: any = {};
+    if (message.task !== "") {
+      obj.task = message.task;
+    }
+    if (message.issue !== "") {
+      obj.issue = message.issue;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<TaskRun_SchedulerInfo_WaitingCause_Task>): TaskRun_SchedulerInfo_WaitingCause_Task {
+    return TaskRun_SchedulerInfo_WaitingCause_Task.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<TaskRun_SchedulerInfo_WaitingCause_Task>): TaskRun_SchedulerInfo_WaitingCause_Task {
+    const message = createBaseTaskRun_SchedulerInfo_WaitingCause_Task();
+    message.task = object.task ?? "";
+    message.issue = object.issue ?? "";
     return message;
   },
 };

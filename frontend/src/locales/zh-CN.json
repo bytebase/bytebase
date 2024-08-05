@@ -279,7 +279,8 @@
     "options": "配置项",
     "reset": "重置",
     "refresh": "刷新",
-    "rollback": "回滚"
+    "rollback": "回滚",
+    "blocking-task": "阻塞任务"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -411,7 +412,9 @@
       "executing-sql": "正在执行 SQL。",
       "executing-sql-detail": "正在执行 SQL {current} of {total}，从 ({startLine}, {startColumn}) 到 ({endLine}, {endColumn})。",
       "dumping-schema-after-executing-sql": "SQL 执行完毕，正在导出 schema。",
-      "failed-sql-detail": "从 ({startLine}, {startColumn}) 到 ({endLine}, {endColumn}) 的执行失败：{message}。"
+      "failed-sql-detail": "从 ({startLine}, {startColumn}) 到 ({endLine}, {endColumn}) 的执行失败：{message}。",
+      "waiting-connection": "等待可用的实例连接。实例连接数已达到限制。",
+      "waiting-task": "等待另一个任务完成。"
     }
   },
   "banner": {

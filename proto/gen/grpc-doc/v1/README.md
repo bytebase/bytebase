@@ -534,6 +534,9 @@
     - [TaskRun.PriorBackupDetail](#bytebase-v1-TaskRun-PriorBackupDetail)
     - [TaskRun.PriorBackupDetail.Item](#bytebase-v1-TaskRun-PriorBackupDetail-Item)
     - [TaskRun.PriorBackupDetail.Item.Table](#bytebase-v1-TaskRun-PriorBackupDetail-Item-Table)
+    - [TaskRun.SchedulerInfo](#bytebase-v1-TaskRun-SchedulerInfo)
+    - [TaskRun.SchedulerInfo.WaitingCause](#bytebase-v1-TaskRun-SchedulerInfo-WaitingCause)
+    - [TaskRun.SchedulerInfo.WaitingCause.Task](#bytebase-v1-TaskRun-SchedulerInfo-WaitingCause-Task)
     - [TaskRunLog](#bytebase-v1-TaskRunLog)
     - [TaskRunLogEntry](#bytebase-v1-TaskRunLogEntry)
     - [TaskRunLogEntry.CommandExecute](#bytebase-v1-TaskRunLogEntry-CommandExecute)
@@ -8536,6 +8539,7 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 | start_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | export_archive_status | [TaskRun.ExportArchiveStatus](#bytebase-v1-TaskRun-ExportArchiveStatus) |  |  |
 | prior_backup_detail | [TaskRun.PriorBackupDetail](#bytebase-v1-TaskRun-PriorBackupDetail) |  | The prior backup detail that will be used to rollback the task run. |
+| scheduler_info | [TaskRun.SchedulerInfo](#bytebase-v1-TaskRun-SchedulerInfo) |  |  |
 
 
 
@@ -8620,6 +8624,54 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 | database | [string](#string) |  | The database information. Format: instances/{instance}/databases/{database} |
 | schema | [string](#string) |  |  |
 | table | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-TaskRun-SchedulerInfo"></a>
+
+### TaskRun.SchedulerInfo
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| report_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| waiting_cause | [TaskRun.SchedulerInfo.WaitingCause](#bytebase-v1-TaskRun-SchedulerInfo-WaitingCause) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-TaskRun-SchedulerInfo-WaitingCause"></a>
+
+### TaskRun.SchedulerInfo.WaitingCause
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| connection_limit | [bool](#bool) |  |  |
+| task | [TaskRun.SchedulerInfo.WaitingCause.Task](#bytebase-v1-TaskRun-SchedulerInfo-WaitingCause-Task) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-TaskRun-SchedulerInfo-WaitingCause-Task"></a>
+
+### TaskRun.SchedulerInfo.WaitingCause.Task
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| task | [string](#string) |  | Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task} |
+| issue | [string](#string) |  | Format: projects/{project}/issues/{issue} |
 
 
 
