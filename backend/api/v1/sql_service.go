@@ -672,7 +672,7 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 		return nil, err
 	}
 
-	ok, err := s.checkDataSourceQueriable(ctx, user, database, request.DataSourceId)
+	ok, err := s.checkDataSourceQueriable(ctx, database, request.DataSourceId)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to check data source queriable: %v", err)
 	}
@@ -1603,16 +1603,7 @@ func getOffsetAndOriginTable(backupTable string) (int, string, error) {
 	return offset, strings.Join(parts[3:], "_"), nil
 }
 
-func (s *SQLService) checkDataSourceQueriable(ctx context.Context, user *store.UserMessage, database *store.DatabaseMessage, dataSourceID string) (bool, error) {
-	// Always allow the owner to query the data source.
-	ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionInstancesAdminExecute, user, database.ProjectID)
-	if err != nil {
-		return false, errors.Wrapf(err, "failed to check permission")
-	}
-	if ok {
-		return true, nil
-	}
-
+func (s *SQLService) checkDataSourceQueriable(ctx context.Context, database *store.DatabaseMessage, dataSourceID string) (bool, error) {
 	dataSource, err := s.store.GetDataSource(ctx, &store.FindDataSourceMessage{Name: &dataSourceID})
 	if err != nil {
 		return false, errors.Wrap(err, "failed to get data source")
