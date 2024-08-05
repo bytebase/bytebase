@@ -4,5 +4,5 @@
   </div>
 </template>
 <script setup lang="ts">
-import SchemaIcon from "~icons/heroicons-outline/view-columns";
+import { BoxIcon as SchemaIcon } from "lucide-vue-next";
 </script>
