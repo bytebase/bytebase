@@ -226,8 +226,8 @@ import {
   useAuthStore,
   useOnboardingStateStore,
 } from "@/store";
-import type { SignupInfo } from "@/types";
 import { TEXT_VALIDATION_DELAY } from "@/types";
+import type { User } from "@/types/proto/v1/auth_service";
 import { isValidEmail } from "@/utils";
 import AuthFooter from "./AuthFooter.vue";
 
@@ -346,7 +346,7 @@ const trySignup = async () => {
     state.isLoading = true;
 
     try {
-      const signupInfo: SignupInfo = {
+      const signupInfo: Partial<User> = {
         email: state.email,
         password: state.password,
         name: state.name,
