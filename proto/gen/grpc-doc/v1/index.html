@@ -2215,6 +2215,14 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.TaskRun.SchedulerInfo"><span class="badge">M</span>TaskRun.SchedulerInfo</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.TaskRun.SchedulerInfo.WaitingCause"><span class="badge">M</span>TaskRun.SchedulerInfo.WaitingCause</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.TaskRunLog"><span class="badge">M</span>TaskRunLog</a>
                 </li>
               
@@ -23678,6 +23686,13 @@ Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory
                   <td><p>The prior backup detail that will be used to rollback the task run. </p></td>
                 </tr>
               
+                <tr>
+                  <td>scheduler_info</td>
+                  <td><a href="#bytebase.v1.TaskRun.SchedulerInfo">TaskRun.SchedulerInfo</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -23857,6 +23872,61 @@ Format: instances/{instance}/databases/{database} </p></td>
               
                 <tr>
                   <td>table</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.TaskRun.SchedulerInfo">TaskRun.SchedulerInfo</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>waiting_cause</td>
+                  <td><a href="#bytebase.v1.TaskRun.SchedulerInfo.WaitingCause">TaskRun.SchedulerInfo.WaitingCause</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.TaskRun.SchedulerInfo.WaitingCause">TaskRun.SchedulerInfo.WaitingCause</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>connection_limit</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>task</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
