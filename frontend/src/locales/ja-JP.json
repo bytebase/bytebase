@@ -811,7 +811,8 @@
         "override-desc": "既存のアルゴリズムは上書きされるため、セマンティック タイプに合わせてアルゴリズムを再構成する必要があります。",
         "override-confirm": "インポートを続行する",
         "default": "デフォルト",
-        "default-desc": "*** を使用してデータをマスクする",
+        "default-with-semantic-type": "デフォルト（セマンティックタイプに従う）",
+        "default-desc": "* を使用して、感度解除のレベルに応じてデータのすべてまたは一部をブロックします。",
         "table": {
           "title": "名前",
           "description": "説明する",

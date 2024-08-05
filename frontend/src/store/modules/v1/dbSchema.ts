@@ -224,12 +224,17 @@ export const useDBSchemaV1Store = defineStore("dbSchema_v1", () => {
     );
   };
 
-  const getColumnConfig = (
-    database: string,
-    schema: string,
-    table: string,
-    column: string
-  ) => {
+  const getColumnConfig = ({
+    database,
+    schema,
+    table,
+    column,
+  }: {
+    database: string;
+    schema: string;
+    table: string;
+    column: string;
+  }) => {
     const tableConfig = getTableConfig(database, schema, table);
 
     return (

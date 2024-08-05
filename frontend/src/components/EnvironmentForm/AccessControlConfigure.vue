@@ -65,7 +65,7 @@
 
 <script setup lang="ts">
 import { NRadioGroup, NRadio } from "naive-ui";
-import { computed } from "vue";
+import { computed, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import {
   hasFeature,
@@ -89,6 +89,19 @@ const props = defineProps<{
 const policyStore = usePolicyV1Store();
 const me = useCurrentUserV1();
 const { t } = useI18n();
+
+watchEffect(async () => {
+  await Promise.all([
+    policyStore.getOrFetchPolicyByParentAndType({
+      parentPath: props.resource,
+      policyType: PolicyType.DISABLE_COPY_DATA,
+    }),
+    policyStore.getOrFetchPolicyByParentAndType({
+      parentPath: props.resource,
+      policyType: PolicyType.DATA_SOURCE_QUERY,
+    }),
+  ]);
+});
 
 const disableCopyDataPolicy = computed(() => {
   return policyStore.getPolicyByParentAndType({

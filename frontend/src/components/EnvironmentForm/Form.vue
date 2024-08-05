@@ -135,22 +135,14 @@
 <script lang="ts" setup>
 import { NCheckbox, NInput } from "naive-ui";
 import { Status } from "nice-grpc-common";
-import { computed, onMounted } from "vue";
+import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBButtonConfirm } from "@/bbkit";
-import {
-  useEnvironmentV1List,
-  useEnvironmentV1Store,
-  usePolicyV1Store,
-} from "@/store";
+import { useEnvironmentV1List, useEnvironmentV1Store } from "@/store";
 import { environmentNamePrefix } from "@/store/modules/v1/common";
 import type { ResourceId, ValidatedMessage } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import { EnvironmentTier } from "@/types/proto/v1/environment_service";
-import {
-  PolicyResourceType,
-  PolicyType,
-} from "@/types/proto/v1/org_policy_service";
 import { extractEnvironmentResourceName } from "@/utils";
 import { getErrorCode } from "@/utils/grpcweb";
 import { FeatureBadge } from "../FeatureGuard";
@@ -176,7 +168,6 @@ const {
   events,
   resourceIdField,
 } = useEnvironmentFormContext();
-const policyStore = usePolicyV1Store();
 const environmentList = useEnvironmentV1List();
 
 const allowArchive = computed(() => {
@@ -188,13 +179,6 @@ const allowArchive = computed(() => {
 const allowRestore = computed(() => {
   return hasPermission("bb.environments.undelete");
 });
-
-const prepareEnvironmentDisableCopyDataPolicy = async () => {
-  await policyStore.fetchPolicies({
-    resourceType: PolicyResourceType.ENVIRONMENT,
-    policyType: PolicyType.DISABLE_COPY_DATA,
-  });
-};
 
 const validateResourceId = async (
   resourceId: ResourceId
@@ -233,8 +217,4 @@ const archiveEnvironment = () => {
 const restoreEnvironment = () => {
   events.emit("restore", state.value.environment);
 };
-
-onMounted(() => {
-  prepareEnvironmentDisableCopyDataPolicy();
-});
 </script>
