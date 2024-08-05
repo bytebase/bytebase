@@ -8,7 +8,6 @@ import "./assets/css/github-markdown-style.css";
 import "./assets/css/inter.css";
 import "./assets/css/tailwind.css";
 import { overrideAppProfile } from "./customAppProfile";
-import dataSourceType from "./directives/data-source-type";
 import dayjs from "./plugins/dayjs";
 import highlight from "./plugins/highlight";
 import i18n from "./plugins/i18n";
@@ -134,12 +133,7 @@ app.config.globalProperties.sizeToFit = sizeToFit;
 app.config.globalProperties.urlfy = urlfy;
 app.config.globalProperties.isEmpty = isEmpty;
 
-app
-  // Need to use a directive on the element.
-  // The normal hljs.initHighlightingOnLoad() won't work because router change would cause vue
-  // to re-render the page and remove the event listener required for
-  .directive("data-source-type", dataSourceType)
-  .use(pinia);
+app.use(pinia);
 
 const overrideLang = () => {
   const query = new URLSearchParams(window.location.search);

@@ -2,11 +2,11 @@ import axios from "axios";
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
 import { authServiceClient } from "@/grpcweb";
-import type { SignupInfo, ActivateInfo } from "@/types";
 import { unknownUser } from "@/types";
 import type {
   LoginRequest,
   LoginResponse,
+  User,
 } from "@/types/proto/v1/auth_service";
 import { UserType } from "@/types/proto/v1/auth_service";
 import { getIntCookie } from "@/utils";
@@ -42,18 +42,18 @@ export const useAuthStore = defineStore("auth_v1", () => {
     }
   };
 
-  const signup = async (signupInfo: SignupInfo) => {
+  const signup = async (request: Partial<User>) => {
     await authServiceClient.createUser({
       user: {
-        email: signupInfo.email,
-        title: signupInfo.name,
-        password: signupInfo.password,
+        email: request.email,
+        title: request.name,
+        password: request.password,
         userType: UserType.USER,
       },
     });
     await login({
-      email: signupInfo.email,
-      password: signupInfo.password,
+      email: request.email,
+      password: request.password,
       web: true,
     });
     await useWorkspaceV1Store().fetchIamPolicy();
@@ -66,22 +66,6 @@ export const useAuthStore = defineStore("auth_v1", () => {
     } catch {
       // nothing
     }
-  };
-
-  const activate = async (activateInfo: ActivateInfo) => {
-    const activatedUser = (
-      await axios.post("/api/auth/activate", {
-        data: { type: "activateInfo", attributes: activateInfo },
-      })
-    ).data.data;
-
-    currentUserId.value = activatedUser.id;
-
-    // Refresh the corresponding user.
-    const user = await useUserStore().getOrFetchUserById(
-      String(activatedUser.id)
-    );
-    return user;
   };
 
   const restoreUser = async () => {
@@ -111,7 +95,6 @@ export const useAuthStore = defineStore("auth_v1", () => {
     login,
     signup,
     logout,
-    activate,
     restoreUser,
     refreshUserIfNeeded,
   };
