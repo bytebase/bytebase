@@ -1,8 +1,8 @@
 <template>
   <div class="flex items-center">
-    {{ columnSemanticType?.title }}
+    {{ semanticType?.title }}
     <button
-      v-if="!readonly && columnSemanticType"
+      v-if="!readonly && semanticType"
       class="w-5 h-5 p-0.5 hover:bg-gray-300 rounded cursor-pointer"
       @click.prevent="onSemanticTypeApply('')"
     >
@@ -36,11 +36,8 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 import { reactive } from "vue";
-import {
-  useDBSchemaV1Store,
-  useSettingV1Store,
-  useSubscriptionV1Store,
-} from "@/store";
+import { useSemanticType } from "@/components/SensitiveData/useSemanticType";
+import { useSubscriptionV1Store } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import type {
   ColumnMetadata,
@@ -68,8 +65,12 @@ const state = reactive<LocalState>({
   showSemanticTypesDrawer: false,
 });
 const subscriptionV1Store = useSubscriptionV1Store();
-const settingV1Store = useSettingV1Store();
-const dbSchemaV1Store = useDBSchemaV1Store();
+const { semanticType, semanticTypeList } = useSemanticType({
+  database: props.database.name,
+  schema: props.schema,
+  table: props.table.name,
+  column: props.column.name,
+});
 
 const hasSensitiveDataFeature = computed(() => {
   return subscriptionV1Store.hasFeature("bb.feature.sensitive-data");
@@ -79,28 +80,6 @@ const instanceMissingLicense = computed(() => {
   return subscriptionV1Store.instanceMissingLicense(
     "bb.feature.sensitive-data",
     props.database.instanceResource
-  );
-});
-
-const semanticTypeList = computed(() => {
-  return (
-    settingV1Store.getSettingByName("bb.workspace.semantic-types")?.value
-      ?.semanticTypeSettingValue?.types ?? []
-  );
-});
-
-const columnSemanticType = computed(() => {
-  const config = dbSchemaV1Store.getColumnConfig(
-    props.database.name,
-    props.schema,
-    props.table.name,
-    props.column.name
-  );
-  if (!config.semanticTypeId) {
-    return;
-  }
-  return semanticTypeList.value.find(
-    (data) => data.id === config.semanticTypeId
   );
 });
 

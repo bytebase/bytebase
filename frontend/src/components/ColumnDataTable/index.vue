@@ -206,12 +206,12 @@ const columns = computed(() => {
       width: 140,
       resizable: true,
       render: (column) => {
-        const columnConfig = dbSchemaStore.getColumnConfig(
-          props.database.name,
-          props.schema,
-          props.table.name,
-          column.name
-        );
+        const columnConfig = dbSchemaStore.getColumnConfig({
+          database: props.database.name,
+          schema: props.schema,
+          table: props.table.name,
+          column: column.name,
+        });
         return h(ClassificationCell, {
           classification: columnConfig.classificationId,
           classificationConfig:
