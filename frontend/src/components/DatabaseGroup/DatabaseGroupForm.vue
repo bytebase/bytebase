@@ -66,7 +66,7 @@
         <p class="text-sm text-gray-400 pl-6 ml-0.5">
           {{ $t("database-group.multitenancy.description") }}
           <LearnMoreLink
-            url="https://www.bytebase.com/docs/change-database/batch-change/#multitenancy?source=console"
+            url="https://www.bytebase.com/docs/change-database/batch-change/?source=console#multitenancy"
             class="text-sm"
           />
         </p>
