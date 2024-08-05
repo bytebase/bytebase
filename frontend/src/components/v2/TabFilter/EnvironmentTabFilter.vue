@@ -2,7 +2,7 @@
   <TabFilter
     :value="environment"
     :items="items"
-    @update:value="$emit('update:environment-name', $event as string)"
+    @update:value="$emit('update:environment', $event as string)"
   >
     <template #label="{ item }">
       <template v-if="item.value === UNKNOWN_ENVIRONMENT_NAME">{{
@@ -43,7 +43,7 @@ const props = withDefaults(
 );
 
 defineEmits<{
-  (event: "update:environment-name", id: string): void;
+  (event: "update:environment", name: string): void;
 }>();
 
 const { t } = useI18n();
