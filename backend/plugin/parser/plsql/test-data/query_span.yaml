@@ -1,3 +1,64 @@
+- description: Test for alias.* with join
+  statement: SELECT t1.*, alias1.* FROM t1 JOIN (select * from t1) alias1 on t1.a = alias1.a;
+  connectedDatabase: PUBLIC
+  metadata: |-
+    {
+      "name":  "PUBLIC",
+      "schemas":  [
+        {
+          "name": "PUBLIC",
+          "tables":  [
+            {
+              "name":  "T1",
+              "columns":  [
+                {
+                  "name":  "A"
+                },
+                {
+                  "name":  "B"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    results:
+        - name: A
+          sourcecolumns:
+            - server: ""
+              database: PUBLIC
+              schema: PUBLIC
+              table: T1
+              column: A
+        - name: B
+          sourcecolumns:
+            - server: ""
+              database: PUBLIC
+              schema: PUBLIC
+              table: T1
+              column: B
+        - name: A
+          sourcecolumns:
+            - server: ""
+              database: PUBLIC
+              schema: PUBLIC
+              table: T1
+              column: A
+        - name: B
+          sourcecolumns:
+            - server: ""
+              database: PUBLIC
+              schema: PUBLIC
+              table: T1
+              column: B
+    sourcecolumns:
+        - server: ""
+          database: PUBLIC
+          schema: PUBLIC
+          table: T1
+          column: ""
 - description: Test for Join
   statement: SELECT T1.* FROM T1 JOIN T2;
   connectedDatabase: PUBLIC
