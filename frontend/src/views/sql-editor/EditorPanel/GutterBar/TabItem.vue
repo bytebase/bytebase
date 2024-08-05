@@ -17,10 +17,12 @@
           />
           <TableIcon
             v-if="view === 'TABLES'"
+            class="w-4 h-4"
             :class="active ? '!text-current' : 'text-main'"
           />
           <ViewIcon
             v-if="view === 'VIEWS'"
+            class="w-4 h-4"
             :class="active ? '!text-current' : 'text-main'"
           />
           <FunctionIcon
