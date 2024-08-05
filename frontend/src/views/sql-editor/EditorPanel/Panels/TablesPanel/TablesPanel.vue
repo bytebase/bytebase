@@ -5,13 +5,12 @@
   >
     <template v-if="!metadata.table">
       <SchemaSelectToolbar />
-      <TableList
+      <TablesTable
         v-if="!metadata.table"
         :db="database"
         :database="metadata.database"
         :schema="metadata.schema"
         :tables="metadata.schema.tables"
-        :custom-click="true"
         @click="select"
       />
     </template>
@@ -41,7 +40,6 @@ import { NButton } from "naive-ui";
 import { computed, ref, watch } from "vue";
 import { provideSchemaEditorContext } from "@/components/SchemaEditorLite";
 import TableEditor from "@/components/SchemaEditorLite/Panels/TableEditor.vue";
-import TableList from "@/components/SchemaEditorLite/Panels/TableList";
 import {
   useConnectionOfCurrentSQLEditorTab,
   useDBSchemaV1Store,
@@ -56,6 +54,7 @@ import {
 } from "@/types/proto/v1/database_service";
 import { useEditorPanelContext } from "../../context";
 import { SchemaSelectToolbar } from "../common";
+import TablesTable from "./TablesTable.vue";
 
 const editorStore = useSQLEditorStore();
 const { database } = useConnectionOfCurrentSQLEditorTab();
