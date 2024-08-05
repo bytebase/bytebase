@@ -13,7 +13,7 @@
       {{ placeholder }}
     </div>
 
-    <NPopover v-if="ready" placement="left">
+    <NPopover v-if="ready && !readonly" placement="left">
       <template #trigger>
         <div
           class="absolute top-[3px] right-[18px] w-4 h-4 flex items-center justify-center cursor-pointer z-50 opacity-50 hover:opacity-100 transition-all"
