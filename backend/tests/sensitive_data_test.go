@@ -152,7 +152,9 @@ func TestSensitiveData(t *testing.T) {
 
 	// Validate query syntax error.
 	_, err = ctl.sqlServiceClient.Query(ctx, &v1pb.QueryRequest{
-		Name: database.Name, Statement: "SELECT hello TO world;",
+		Name:         database.Name,
+		Statement:    "SELECT hello TO world;",
+		DataSourceId: "admin",
 	})
 	st := status.Convert(err)
 	a.Len(st.Details(), 1)
@@ -215,7 +217,9 @@ func TestSensitiveData(t *testing.T) {
 
 	// Query masked data.
 	queryResp, err := ctl.sqlServiceClient.Query(ctx, &v1pb.QueryRequest{
-		Name: database.Name, Statement: queryTable,
+		Name:         database.Name,
+		Statement:    queryTable,
+		DataSourceId: "admin",
 	})
 	a.NoError(err)
 	a.Equal(1, len(queryResp.Results))
