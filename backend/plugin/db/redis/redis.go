@@ -224,7 +224,7 @@ func (*Driver) Dump(_ context.Context, _ io.Writer) (string, error) {
 // QueryConn queries a SQL statement in a given connection.
 func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
 	if queryContext != nil && queryContext.Explain {
-		return nil, errors.New("MongoDB does not support EXPLAIN")
+		return nil, errors.New("Redis does not support EXPLAIN")
 	}
 
 	startTime := time.Now()
