@@ -83,10 +83,10 @@ export const projectWebhookV1TypeItemList = (): ProjectWebhookV1TypeItem[] => {
       type: Webhook_Type.TYPE_CUSTOM,
       name: t("common.custom"),
       urlPrefix:
-        "https://bytebase.com/docs/change-database/webhook#custom?source=console",
+        "https://bytebase.com/docs/change-database/webhook/?source=console#custom",
       urlPlaceholder: "https://example.com/api/webhook/...",
       docUrl:
-        "https://www.bytebase.com/docs/change-database/webhook#custom?source=console",
+        "https://www.bytebase.com/docs/change-database/webhook/?source=console#custom",
       supportDirectMessage: false,
     },
   ];
