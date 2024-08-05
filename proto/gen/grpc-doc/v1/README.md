@@ -536,6 +536,7 @@
     - [TaskRun.PriorBackupDetail.Item.Table](#bytebase-v1-TaskRun-PriorBackupDetail-Item-Table)
     - [TaskRun.SchedulerInfo](#bytebase-v1-TaskRun-SchedulerInfo)
     - [TaskRun.SchedulerInfo.WaitingCause](#bytebase-v1-TaskRun-SchedulerInfo-WaitingCause)
+    - [TaskRun.SchedulerInfo.WaitingCause.Task](#bytebase-v1-TaskRun-SchedulerInfo-WaitingCause-Task)
     - [TaskRunLog](#bytebase-v1-TaskRunLog)
     - [TaskRunLogEntry](#bytebase-v1-TaskRunLogEntry)
     - [TaskRunLogEntry.CommandExecute](#bytebase-v1-TaskRunLogEntry-CommandExecute)
@@ -8654,7 +8655,23 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | connection_limit | [bool](#bool) |  |  |
+| task | [TaskRun.SchedulerInfo.WaitingCause.Task](#bytebase-v1-TaskRun-SchedulerInfo-WaitingCause-Task) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-TaskRun-SchedulerInfo-WaitingCause-Task"></a>
+
+### TaskRun.SchedulerInfo.WaitingCause.Task
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
 | task | [string](#string) |  |  |
+| issue | [string](#string) |  |  |
 
 
 
