@@ -65,5 +65,6 @@ provideSchemaEditorContext({
   selectedRolloutObjects: ref(undefined),
   showLastUpdater: ref(false),
   disableDiffColoring: ref(true),
+  hideSchemaDiagram: ref(true),
 });
 </script>
