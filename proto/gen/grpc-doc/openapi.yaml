@@ -12580,8 +12580,9 @@ components:
             properties:
                 connectionLimit:
                     type: boolean
-                task:
-                    type: string
+                taskUid:
+                    type: integer
+                    format: int32
         SchemaConfig:
             type: object
             properties:
