@@ -716,6 +716,7 @@ export interface TaskRun_PriorBackupDetail_Item_Table {
 }
 
 export interface TaskRun_SchedulerInfo {
+  reportTime: Date | undefined;
   waitingCause: TaskRun_SchedulerInfo_WaitingCause | undefined;
 }
 
@@ -3719,13 +3720,16 @@ export const TaskRun_PriorBackupDetail_Item_Table = {
 };
 
 function createBaseTaskRun_SchedulerInfo(): TaskRun_SchedulerInfo {
-  return { waitingCause: undefined };
+  return { reportTime: undefined, waitingCause: undefined };
 }
 
 export const TaskRun_SchedulerInfo = {
   encode(message: TaskRun_SchedulerInfo, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.reportTime !== undefined) {
+      Timestamp.encode(toTimestamp(message.reportTime), writer.uint32(10).fork()).ldelim();
+    }
     if (message.waitingCause !== undefined) {
-      TaskRun_SchedulerInfo_WaitingCause.encode(message.waitingCause, writer.uint32(10).fork()).ldelim();
+      TaskRun_SchedulerInfo_WaitingCause.encode(message.waitingCause, writer.uint32(18).fork()).ldelim();
     }
     return writer;
   },
@@ -3742,6 +3746,13 @@ export const TaskRun_SchedulerInfo = {
             break;
           }
 
+          message.reportTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
           message.waitingCause = TaskRun_SchedulerInfo_WaitingCause.decode(reader, reader.uint32());
           continue;
       }
@@ -3755,6 +3766,7 @@ export const TaskRun_SchedulerInfo = {
 
   fromJSON(object: any): TaskRun_SchedulerInfo {
     return {
+      reportTime: isSet(object.reportTime) ? fromJsonTimestamp(object.reportTime) : undefined,
       waitingCause: isSet(object.waitingCause)
         ? TaskRun_SchedulerInfo_WaitingCause.fromJSON(object.waitingCause)
         : undefined,
@@ -3763,6 +3775,9 @@ export const TaskRun_SchedulerInfo = {
 
   toJSON(message: TaskRun_SchedulerInfo): unknown {
     const obj: any = {};
+    if (message.reportTime !== undefined) {
+      obj.reportTime = message.reportTime.toISOString();
+    }
     if (message.waitingCause !== undefined) {
       obj.waitingCause = TaskRun_SchedulerInfo_WaitingCause.toJSON(message.waitingCause);
     }
@@ -3774,6 +3789,7 @@ export const TaskRun_SchedulerInfo = {
   },
   fromPartial(object: DeepPartial<TaskRun_SchedulerInfo>): TaskRun_SchedulerInfo {
     const message = createBaseTaskRun_SchedulerInfo();
+    message.reportTime = object.reportTime ?? undefined;
     message.waitingCause = (object.waitingCause !== undefined && object.waitingCause !== null)
       ? TaskRun_SchedulerInfo_WaitingCause.fromPartial(object.waitingCause)
       : undefined;

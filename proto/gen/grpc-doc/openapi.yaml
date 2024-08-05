@@ -13656,7 +13656,9 @@ components:
                         - $ref: '#/components/schemas/TaskRun_PriorBackupDetail'
                     description: The prior backup detail that will be used to rollback the task run.
                 schedulerInfo:
-                    $ref: '#/components/schemas/TaskRun_SchedulerInfo'
+                    readOnly: true
+                    allOf:
+                        - $ref: '#/components/schemas/TaskRun_SchedulerInfo'
         TaskRunLog:
             type: object
             properties:
@@ -13826,6 +13828,9 @@ components:
         TaskRun_SchedulerInfo:
             type: object
             properties:
+                reportTime:
+                    type: string
+                    format: date-time
                 waitingCause:
                     $ref: '#/components/schemas/SchedulerInfo_WaitingCause'
         Task_DatabaseCreate:

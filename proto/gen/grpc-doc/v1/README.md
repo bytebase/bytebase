@@ -8637,6 +8637,7 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
+| report_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | waiting_cause | [TaskRun.SchedulerInfo.WaitingCause](#bytebase-v1-TaskRun-SchedulerInfo-WaitingCause) |  |  |
 
 
