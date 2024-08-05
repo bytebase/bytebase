@@ -9,7 +9,7 @@
   </div>
 
   <MonacoEditor
-    :content="format ? formatted.data : code"
+    :content="content"
     :readonly="true"
     class="border w-full rounded flex-1 relative"
   />
@@ -61,4 +61,8 @@ const formatted = computedAsync(
     data: props.code,
   }
 );
+
+const content = computed(() => {
+  return format.value ? formatted.value.data : props.code;
+});
 </script>
