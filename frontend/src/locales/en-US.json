@@ -811,7 +811,8 @@
         "override-desc": "Existed algorithms will be overridden, you have to re-configure the algorithm for semantic types.",
         "override-confirm": "Still upload",
         "default": "Default",
-        "default-desc": "Use *** as data mask",
+        "default-with-semantic-type": "Default (Follow semantic type)",
+        "default-desc": "Use * to cover full or partial text depending on the masking level",
         "table": {
           "title": "Title",
           "description": "Description",
