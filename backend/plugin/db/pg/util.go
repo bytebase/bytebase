@@ -19,12 +19,12 @@ const (
 
 func getSSLMode(tlsConfig db.TLSConfig, sshConfig db.SSHConfig) sslMode {
 	sslMode := SSLModePrefer
-	if tlsConfig.SslCA != "" || tlsConfig.SslCert != "" || tlsConfig.SslKey != "" {
+	if tlsConfig.UseSSL {
 		sslMode = SSLModeVerifyFull
-		// If users use TLS/SSL with SSH tunneling together, the TLS/SSL handshake will be established between the localhost and the remote server.
-		// Then, we connect to the db server via the SSH tunnel(localhost), so we do not verify the SAN/CN of the certificate to avoid the hostname mismatch error.
-		if sshConfig.Host != "" {
-			sslMode = SSLModeVerifyCA
+		if tlsConfig.SslCA != "" {
+			if sshConfig.Host != "" {
+				sslMode = SSLModeVerifyCA
+			}
 		}
 	}
 	return sslMode
