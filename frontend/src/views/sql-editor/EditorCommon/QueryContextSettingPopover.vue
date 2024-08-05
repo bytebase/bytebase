@@ -66,10 +66,9 @@ import { hasWorkspacePermissionV2 } from "@/utils";
 
 const { t } = useI18n();
 const tabStore = useSQLEditorTabStore();
-const { connection } = useConnectionOfCurrentSQLEditorTab();
+const { connection, database } = useConnectionOfCurrentSQLEditorTab();
 const currentUser = useCurrentUserV1();
 const policyStore = usePolicyV1Store();
-const { database } = useConnectionOfCurrentSQLEditorTab();
 
 const adminDataSourceRestriction = computed(() => {
   if (!database.value) {
