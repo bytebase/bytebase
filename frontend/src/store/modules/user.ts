@@ -38,6 +38,7 @@ export const useUserStore = defineStore("user", () => {
       }
     );
     userMapByName.value.set(user.name, composedUser);
+    usePermissionStore().invalidCacheByUser(composedUser);
 
     return composedUser;
   };
