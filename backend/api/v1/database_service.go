@@ -35,7 +35,6 @@ import (
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/store/model"
-	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
@@ -143,7 +142,7 @@ func (s *DatabaseService) SearchDatabases(ctx context.Context, request *v1pb.Sea
 		}
 	}
 
-	databaseMessages, err := filterDatabasesV2(ctx, s.store, s.iamManager, databases, iam.PermissionDatabasesGet)
+	databaseMessages, err := filterDatabasesV2(ctx, s.iamManager, databases)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to filter databases, error: %v", err)
 	}
@@ -318,17 +317,17 @@ func getDatabaseFind(filter string) (*store.FindDatabaseMessage, error) {
 	return find, nil
 }
 
-func filterDatabasesV2(ctx context.Context, s *store.Store, iamManager *iam.Manager, databases []*store.DatabaseMessage, needPermission iam.Permission) ([]*store.DatabaseMessage, error) {
+func filterDatabasesV2(ctx context.Context, iamManager *iam.Manager, databases []*store.DatabaseMessage) ([]*store.DatabaseMessage, error) {
 	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
 	if !ok {
 		return nil, status.Errorf(codes.Internal, "user not found")
 	}
 
-	hasPermission, err := iamManager.CheckPermission(ctx, needPermission, user)
+	ok, err := iamManager.CheckPermission(ctx, iam.PermissionDatabasesGet, user)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to check permissions")
 	}
-	if hasPermission {
+	if ok {
 		return databases, nil
 	}
 
@@ -338,71 +337,15 @@ func filterDatabasesV2(ctx context.Context, s *store.Store, iamManager *iam.Mana
 	}
 	var filteredDatabases []*store.DatabaseMessage
 	for projectID, dbs := range projectDatabases {
-		filteredProjectDatabases, err := filterProjectDatabasesV2(ctx, s, iamManager, user, projectID, dbs, needPermission)
+		ok, err := iamManager.CheckPermission(ctx, iam.PermissionDatabasesGet, user, projectID)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to filter databases in project %q", projectID)
+			return nil, errors.Wrapf(err, "failed to check permissions")
 		}
-		filteredDatabases = append(filteredDatabases, filteredProjectDatabases...)
-	}
-	return filteredDatabases, nil
-}
-
-func filterProjectDatabasesV2(ctx context.Context, s *store.Store, iamManager *iam.Manager, user *store.UserMessage, projectID string, databases []*store.DatabaseMessage, needPermission iam.Permission) ([]*store.DatabaseMessage, error) {
-	project, err := s.GetProjectV2(ctx, &store.FindProjectMessage{
-		ResourceID: &projectID,
-	})
-	if err != nil {
-		return nil, err
-	}
-	if project == nil {
-		return nil, errors.Errorf("cannot found project %s", projectID)
-	}
-
-	policy, err := s.GetProjectIamPolicy(ctx, project.UID)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get project policy for project %q", projectID)
-	}
-
-	expressionDBsFromAllRoles := make(map[string]bool)
-	bindings := utils.GetUserIAMPolicyBindings(ctx, s, user, policy.Policy)
-
-	for _, binding := range bindings {
-		permissions, err := iamManager.GetPermissions(binding.Role)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get permissions")
-		}
-		if !permissions[needPermission] {
-			continue
-		}
-
-		expressionDBs := getDatabasesFromExpression(binding.Condition.Expression)
-		if len(expressionDBs) == 0 {
-			return databases, nil
-		}
-		for db := range expressionDBs {
-			expressionDBsFromAllRoles[db] = true
-		}
-	}
-
-	var filteredDatabases []*store.DatabaseMessage
-	for _, database := range databases {
-		databaseName := common.FormatDatabase(database.InstanceID, database.DatabaseName)
-		if expressionDBsFromAllRoles[databaseName] {
-			filteredDatabases = append(filteredDatabases, database)
+		if ok {
+			filteredDatabases = append(filteredDatabases, dbs...)
 		}
 	}
 	return filteredDatabases, nil
-}
-
-var databaseNamePattern = regexp.MustCompile(`"instances/[^/]+/databases/[^"]+"`)
-
-func getDatabasesFromExpression(expression string) map[string]bool {
-	matches := databaseNamePattern.FindAllString(expression, -1)
-	databaseNames := make(map[string]bool)
-	for _, m := range matches {
-		databaseNames[m[1:len(m)-1]] = true
-	}
-	return databaseNames
 }
 
 // UpdateDatabase updates a database.
