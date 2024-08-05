@@ -12,8 +12,6 @@ import (
 	"strings"
 	"time"
 
-	// Import pg driver.
-	// init() in pgx/v5/stdlib will register it's pgx driver.
 	"cloud.google.com/go/cloudsqlconn"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/feature/rds/auth"

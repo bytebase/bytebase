@@ -132,22 +132,34 @@ func (driver *Driver) execPgDump(ctx context.Context, args []string, out io.Writ
 	cmd := exec.CommandContext(ctx, pgDumpPath, args...)
 
 	sslMode := getSSLMode(driver.config.TLSConfig, driver.config.SSHConfig)
-	cmd.Env = append(cmd.Env, fmt.Sprintf("PGSSLMODE=%s", sslMode))
 
-	if driver.config.TLSConfig.SslCA != "" {
-		caTempFile, err := os.CreateTemp("", "pg-ssl-ca-")
-		if err != nil {
-			return err
+	// Unfortunately, pg_dump doesn't directly support use system certificate directly. Instead, it supprots
+	// specify one cert file path in PGSSLROOTCERT environment variable.
+	// MacOS(dev-env):
+	// 1. The system certs are stored in the Keychain utility, and it is not recommended to access them outside of Keychain.
+	// 2. The user self-signed ca should be add in Keychain utility and mark it is trusted.
+	// Debian(our docker image based):
+	// 1. The system certs are mostly stored in the /etc/ssl/certs/ca-certificates.crt, and some are stored in the /usr/share/ca-certificates/xxx.crt.
+	// 2. The user self-signed ca should be added in /usr/share/ca-certificates/xxx.crt.
+	// We should expose this option to user. For now, using require ssl mode to trust server certificate anyway.
+	if driver.config.TLSConfig.UseSSL {
+		sslMode = SSLModeRequire
+		if driver.config.TLSConfig.SslCA != "" {
+			caTempFile, err := os.CreateTemp("", "pg-ssl-ca-")
+			if err != nil {
+				return err
+			}
+			defer os.Remove(caTempFile.Name())
+			if _, err := caTempFile.WriteString(driver.config.TLSConfig.SslCA); err != nil {
+				return err
+			}
+			if err := caTempFile.Close(); err != nil {
+				return err
+			}
+			cmd.Env = append(cmd.Env, fmt.Sprintf("PGSSLROOTCERT=%s", caTempFile.Name()))
 		}
-		defer os.Remove(caTempFile.Name())
-		if _, err := caTempFile.WriteString(driver.config.TLSConfig.SslCA); err != nil {
-			return err
-		}
-		if err := caTempFile.Close(); err != nil {
-			return err
-		}
-		cmd.Env = append(cmd.Env, fmt.Sprintf("PGSSLROOTCERT=%s", caTempFile.Name()))
 	}
+	cmd.Env = append(cmd.Env, fmt.Sprintf("PGSSLMODE=%s", sslMode))
 	if driver.config.TLSConfig.SslCert != "" {
 		certTempFile, err := os.CreateTemp("", "pg-ssl-cert-")
 		if err != nil {
