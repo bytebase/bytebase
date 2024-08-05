@@ -52,7 +52,6 @@ import { computed, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import {
   useConnectionOfCurrentSQLEditorTab,
-  useCurrentUserV1,
   usePolicyV1Store,
   useSQLEditorTabStore,
 } from "@/store";
@@ -62,25 +61,14 @@ import {
   DataSourceQueryPolicy_Restriction,
   PolicyType,
 } from "@/types/proto/v1/org_policy_service";
-import { hasWorkspacePermissionV2 } from "@/utils";
 
 const { t } = useI18n();
 const tabStore = useSQLEditorTabStore();
 const { connection, database } = useConnectionOfCurrentSQLEditorTab();
-const currentUser = useCurrentUserV1();
 const policyStore = usePolicyV1Store();
 
 const adminDataSourceRestriction = computed(() => {
   if (!database.value) {
-    return {
-      environmentPolicy:
-        DataSourceQueryPolicy_Restriction.RESTRICTION_UNSPECIFIED,
-      projectPolicy: DataSourceQueryPolicy_Restriction.RESTRICTION_UNSPECIFIED,
-    };
-  }
-  if (
-    hasWorkspacePermissionV2(currentUser.value, "bb.instances.adminExecute")
-  ) {
     return {
       environmentPolicy:
         DataSourceQueryPolicy_Restriction.RESTRICTION_UNSPECIFIED,
