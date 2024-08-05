@@ -26,6 +26,9 @@ export const groupNamePrefix = "groups/";
 export const reviewConfigNamePrefix = "reviewConfigs/";
 export const planNamePrefix = "plans/";
 export const planCheckRunPrefix = "planCheckRuns/";
+export const rolloutNamePrefix = "rollouts/";
+export const stageNamePrefix = "stages/";
+export const taskNamePrefix = "tasks/";
 
 export const getNameParentTokens = (
   name: string,
@@ -82,6 +85,16 @@ export const getProjectNamePlanIdPlanCheckRunId = (name: string): string[] => {
   ]);
   return [tokens[0], tokens[1], tokens[2]];
 };
+
+export const getProjectIdRolloutUidStageUidTaskUid = (name: string): string[] => {
+  const tokens = getNameParentTokens(name, [
+    projectNamePrefix,
+    rolloutNamePrefix,
+    stageNamePrefix,
+    taskNamePrefix,
+  ]);
+  return [tokens[0], tokens[1], tokens[2], tokens[3]];
+}
 
 export const getWorksheetId = (name: string): string => {
   const tokens = getNameParentTokens(name, [worksheetNamePrefix]);
