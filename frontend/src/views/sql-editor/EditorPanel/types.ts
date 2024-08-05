@@ -9,10 +9,12 @@ export type EditorPanelView =
 
 export type EditorPanelViewState = {
   view: EditorPanelView;
+  schema?: string;
 };
 
 export const defaultViewState = (): EditorPanelViewState => {
   return {
     view: "CODE",
+    schema: undefined,
   };
 };
