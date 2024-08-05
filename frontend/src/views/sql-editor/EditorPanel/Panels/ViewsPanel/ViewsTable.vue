@@ -4,9 +4,9 @@
       v-bind="$attrs"
       ref="dataTableRef"
       size="small"
-      :row-key="getFunctionKey"
+      :row-key="getViewKey"
       :columns="columns"
-      :data="layoutReady ? funcs : []"
+      :data="layoutReady ? views : []"
       :row-props="rowProps"
       :max-height="tableBodyHeight"
       :virtual-scroll="true"
@@ -28,7 +28,7 @@ import { useI18n } from "vue-i18n";
 import type { ComposedDatabase } from "@/types";
 import type {
   DatabaseMetadata,
-  FunctionMetadata,
+  ViewMetadata,
   SchemaMetadata,
 } from "@/types/proto/v1/database_service";
 import { useAutoHeightDataTable } from "../../common";
@@ -37,7 +37,7 @@ const props = defineProps<{
   db: ComposedDatabase;
   database: DatabaseMetadata;
   schema: SchemaMetadata;
-  funcs: FunctionMetadata[];
+  views: ViewMetadata[];
 }>();
 
 const emit = defineEmits<{
@@ -46,7 +46,7 @@ const emit = defineEmits<{
     metadata: {
       database: DatabaseMetadata;
       schema: SchemaMetadata;
-      func: FunctionMetadata;
+      view: ViewMetadata;
     }
   ): void;
 }>();
@@ -55,21 +55,21 @@ const { t } = useI18n();
 const { containerElRef, tableBodyHeight, layoutReady } =
   useAutoHeightDataTable();
 
-const getFunctionKey = (func: FunctionMetadata) => {
-  return func.name;
+const getViewKey = (view: ViewMetadata) => {
+  return view.name;
 };
 
 const columns = computed(() => {
-  const columns: (DataTableColumn<FunctionMetadata> & { hide?: boolean })[] = [
+  const columns: (DataTableColumn<ViewMetadata> & { hide?: boolean })[] = [
     {
       key: "name",
       title: t("schema-editor.database.name"),
       resizable: true,
       className: "truncate",
-      render: (func) => {
+      render: (view) => {
         return (
           <NPerformantEllipsis class="w-full cursor-pointer leading-6 hover:text-accent">
-            {func.name}
+            {view.name}
           </NPerformantEllipsis>
         );
       },
@@ -78,13 +78,13 @@ const columns = computed(() => {
   return columns;
 });
 
-const rowProps = (func: FunctionMetadata) => {
+const rowProps = (view: ViewMetadata) => {
   return {
     onClick: () => {
       emit("click", {
         database: props.database,
         schema: props.schema,
-        func,
+        view,
       });
     },
   };
