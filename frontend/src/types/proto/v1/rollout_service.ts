@@ -726,7 +726,9 @@ export interface TaskRun_SchedulerInfo_WaitingCause {
 }
 
 export interface TaskRun_SchedulerInfo_WaitingCause_Task {
+  /** Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task} */
   task: string;
+  /** Format: projects/{project}/issues/{issue} */
   issue: string;
 }
 

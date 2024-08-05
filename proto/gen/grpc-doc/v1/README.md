@@ -8670,8 +8670,8 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| task | [string](#string) |  |  |
-| issue | [string](#string) |  |  |
+| task | [string](#string) |  | Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task} |
+| issue | [string](#string) |  | Format: projects/{project}/issues/{issue} |
 
 
 

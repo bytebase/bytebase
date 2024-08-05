@@ -2775,7 +2775,9 @@ type TaskRun_SchedulerInfo_WaitingCause_Task struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Task  string `protobuf:"bytes,1,opt,name=task,proto3" json:"task,omitempty"`
+	// Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
+	Task string `protobuf:"bytes,1,opt,name=task,proto3" json:"task,omitempty"`
+	// Format: projects/{project}/issues/{issue}
 	Issue string `protobuf:"bytes,2,opt,name=issue,proto3" json:"issue,omitempty"`
 }
 

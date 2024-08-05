@@ -466,7 +466,9 @@ message TaskRun {
         Task task = 2;
       }
       message Task {
+        // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
         string task = 1;
+        // Format: projects/{project}/issues/{issue}
         string issue = 2;
       }
     }
