@@ -1604,7 +1604,10 @@ func getOffsetAndOriginTable(backupTable string) (int, string, error) {
 }
 
 func (s *SQLService) checkDataSourceQueriable(ctx context.Context, database *store.DatabaseMessage, dataSourceID string) (bool, error) {
-	dataSource, err := s.store.GetDataSource(ctx, &store.FindDataSourceMessage{Name: &dataSourceID})
+	dataSource, err := s.store.GetDataSource(ctx, &store.FindDataSourceMessage{
+		InstanceID: &database.InstanceID,
+		Name:       &dataSourceID,
+	})
 	if err != nil {
 		return false, errors.Wrap(err, "failed to get data source")
 	}
