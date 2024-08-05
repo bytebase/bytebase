@@ -146,7 +146,7 @@ const commentLink = computed((): CommentLink => {
   if (taskRun.status === TaskRun_Status.RUNNING) {
     const task = taskRun.schedulerInfo?.waitingCause?.task
     if (task) {
-      const [_projectId, _rolloutUid, stageUid, taskUid] = getProjectIdRolloutUidStageUidTaskUid(task.task)
+      const [, , stageUid, taskUid] = getProjectIdRolloutUidStageUidTaskUid(task.task)
       const link = `/${task.issue}?stage=${stageUid}&task=${taskUid}`
       return {
         title: t("common.blocking-task"),
