@@ -285,6 +285,10 @@ func (q *querySpanExtractor) plsqlExtractQueryBlock(ctx plsql.IQuery_blockContex
 	fromClause := ctx.From_clause()
 	var fromTableSource []base.TableSource
 	if fromClause != nil {
+		previousTableSourcesFromLength := len(q.tableSourcesFrom)
+		defer func() {
+			q.tableSourcesFrom = q.tableSourcesFrom[:previousTableSourcesFromLength]
+		}()
 		tableSources, err := q.plsqlExtractFromClause(fromClause)
 		if err != nil {
 			return nil, err
@@ -292,9 +296,6 @@ func (q *querySpanExtractor) plsqlExtractQueryBlock(ctx plsql.IQuery_blockContex
 		q.tableSourcesFrom = append(q.tableSourcesFrom, tableSources...)
 		fromTableSource = tableSources
 	}
-	defer func() {
-		q.tableSourcesFrom = nil
-	}()
 
 	result := new(base.PseudoTable)
 
@@ -313,7 +314,7 @@ func (q *querySpanExtractor) plsqlExtractQueryBlock(ctx plsql.IQuery_blockContex
 		selectListElements := selectedList.AllSelect_list_elements()
 		for _, element := range selectListElements {
 			if element.Table_wild() != nil {
-				_, schemaName, tableName := NormalizeTableViewName(q.connectedDatabase, element.Table_wild().Tableview_name())
+				_, schemaName, tableName := NormalizeTableViewName("", element.Table_wild().Tableview_name())
 				find := false
 				for _, tableSource := range fromTableSource {
 					if (schemaName == "" || schemaName == tableSource.GetSchemaName()) &&
