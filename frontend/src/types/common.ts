@@ -14,9 +14,6 @@ export const TEXT_VALIDATION_DELAY = 1000;
 export const ENTERPRISE_INQUIRE_LINK =
   "https://www.bytebase.com/contact-us?source=console";
 
-// RowStatus
-export type RowStatus = "NORMAL" | "ARCHIVED";
-
 // Router
 export type RouterSlug = {
   issueSlug?: string;

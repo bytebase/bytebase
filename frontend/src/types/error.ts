@@ -7,10 +7,3 @@ export enum SQLReviewPolicyErrorCode {
 }
 
 export type ErrorCode = GeneralErrorCode | SQLReviewPolicyErrorCode | number;
-
-export type ErrorTag = "General" | "Compatibility";
-
-export type ErrorMeta = {
-  code: ErrorCode;
-  hash: string;
-};
