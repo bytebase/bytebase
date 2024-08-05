@@ -456,6 +456,16 @@ func convertToTaskRun(ctx context.Context, s *store.Store, stateCfg *state.State
 		}
 	}
 
+	if v, ok := stateCfg.TaskRunSchedulerInfo.Load(taskRun.ID); ok {
+		if info, ok := v.(*storepb.SchedulerInfo); ok {
+			si, err := convertToSchedulerInfo(ctx, s, info)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to convert to scheduler info")
+			}
+			t.SchedulerInfo = si
+		}
+	}
+
 	if taskRun.Status == api.TaskRunFailed && taskRun.ResultProto.StartPosition != nil && taskRun.ResultProto.EndPosition != nil {
 		t.ExecutionDetail = &v1pb.TaskRun_ExecutionDetail{
 			CommandStartPosition: &v1pb.TaskRun_ExecutionDetail_Position{
@@ -486,6 +496,62 @@ func convertToTaskRun(ctx context.Context, s *store.Store, stateCfg *state.State
 	}
 
 	return t, nil
+}
+
+func convertToSchedulerInfo(ctx context.Context, s *store.Store, si *storepb.SchedulerInfo) (*v1pb.TaskRun_SchedulerInfo, error) {
+	if si == nil {
+		return nil, nil
+	}
+
+	cause, err := convertToSchedulerInfoWaitingCause(ctx, s, si.WaitingCause)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to convert to scheduler info waiting cause")
+	}
+
+	return &v1pb.TaskRun_SchedulerInfo{
+		ReportTime:   si.ReportTime,
+		WaitingCause: cause,
+	}, nil
+}
+
+func convertToSchedulerInfoWaitingCause(ctx context.Context, s *store.Store, c *storepb.SchedulerInfo_WaitingCause) (*v1pb.TaskRun_SchedulerInfo_WaitingCause, error) {
+	if c == nil {
+		return nil, nil
+	}
+	switch cause := c.Cause.(type) {
+	case *storepb.SchedulerInfo_WaitingCause_ConnectionLimit:
+		return &v1pb.TaskRun_SchedulerInfo_WaitingCause{
+			Cause: &v1pb.TaskRun_SchedulerInfo_WaitingCause_ConnectionLimit{
+				ConnectionLimit: cause.ConnectionLimit,
+			},
+		}, nil
+	case *storepb.SchedulerInfo_WaitingCause_TaskUid:
+		taskUID := cause.TaskUid
+		task, err := s.GetTaskV2ByID(ctx, int(taskUID))
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get task %v", taskUID)
+		}
+		if task == nil {
+			return nil, errors.Errorf("task %v not found", taskUID)
+		}
+		issue, err := s.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &task.PipelineID})
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get issue by pipeline %v", task.PipelineID)
+		}
+		if issue == nil {
+			return nil, errors.Errorf("issue not found by pipeline %v", task.PipelineID)
+		}
+		return &v1pb.TaskRun_SchedulerInfo_WaitingCause{
+			Cause: &v1pb.TaskRun_SchedulerInfo_WaitingCause_Task_{
+				Task: &v1pb.TaskRun_SchedulerInfo_WaitingCause_Task{
+					Task:  common.FormatTask(issue.Project.ResourceID, task.PipelineID, task.StageID, task.ID),
+					Issue: common.FormatIssue(issue.Project.ResourceID, issue.UID),
+				},
+			},
+		}, nil
+	default:
+		return nil, nil
+	}
 }
 
 func convertToTaskRunStatus(status api.TaskRunStatus) v1pb.TaskRun_Status {
