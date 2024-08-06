@@ -1,5 +1,8 @@
 <template>
-  <ProjectChangeHistoryPanel :database-list="databaseV1List" />
+  <ProjectChangeHistoryPanel
+    :database-list="databaseV1List"
+    :project="project"
+  />
 </template>
 
 <script setup lang="ts">

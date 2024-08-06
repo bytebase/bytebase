@@ -106,7 +106,7 @@ const filteredRoleList = computed(() => {
 });
 
 const addRole = () => {
-  selectRole(Role.fromJSON({}), "ADD");
+  selectRole(Role.fromPartial({}), "ADD");
 };
 
 const selectRole = (role: Role | undefined, mode?: "ADD" | "EDIT") => {

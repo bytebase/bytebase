@@ -11,10 +11,12 @@
     <div class="">
       <ProjectV1Table
         v-if="state.selectedTab == 'PROJECT'"
+        key="archived-project-table"
         :project-list="filteredProjectList"
       />
       <InstanceV1Table
         v-else-if="state.selectedTab == 'INSTANCE'"
+        key="archived-instance-table"
         :instance-list="filteredInstanceList"
         :show-selection="false"
         :can-assign-license="false"
@@ -22,11 +24,13 @@
       />
       <EnvironmentV1Table
         v-else-if="state.selectedTab == 'ENVIRONMENT'"
+        key="archived-environment-table"
         class="border-x"
         :environment-list="filteredEnvironmentList"
       />
       <IdentityProviderTable
         v-else-if="state.selectedTab == 'SSO'"
+        key="archived-sso-table"
         class="border-x"
         :identity-provider-list="filteredSSOList(deletedSSOList)"
       />
