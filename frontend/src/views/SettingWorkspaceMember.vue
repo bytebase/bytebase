@@ -163,7 +163,7 @@ import { PlusIcon } from "lucide-vue-next";
 import { NButton, NCheckbox, NTabs, NTabPane, NPopover } from "naive-ui";
 import { computed, onMounted, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { useRoute, useRouter, RouterLink } from "vue-router";
+import { useRoute, RouterLink } from "vue-router";
 import { FeatureAttention } from "@/components/FeatureGuard";
 import CreateGroupDrawer from "@/components/User/Settings/CreateGroupDrawer.vue";
 import CreateUserDrawer from "@/components/User/Settings/CreateUserDrawer.vue";
@@ -189,8 +189,8 @@ import {
 } from "@/types";
 import { UserType } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
-import { WorkspaceProfileSetting } from "@/types/proto/v1/setting_service";
 import type { Group } from "@/types/proto/v1/group";
+import { WorkspaceProfileSetting } from "@/types/proto/v1/setting_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
 const tabList = ["members", "groups"] as const;
@@ -222,7 +222,6 @@ const state = reactive<LocalState>({
 
 const { t } = useI18n();
 const route = useRoute();
-const router = useRouter();
 const userStore = useUserStore();
 const groupStore = useGroupStore();
 const currentUserV1 = useCurrentUserV1();
@@ -242,13 +241,6 @@ watch(
   },
   {
     immediate: true,
-  }
-);
-
-watch(
-  () => state.typeTab,
-  (tab) => {
-    router.push({ hash: `#${tab}` });
   }
 );
 
