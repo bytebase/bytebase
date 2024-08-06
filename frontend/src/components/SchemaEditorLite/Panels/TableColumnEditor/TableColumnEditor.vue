@@ -170,7 +170,6 @@ const {
   showDatabaseConfigColumn,
   disableDiffColoring,
   selectionEnabled,
-  options,
   markEditStatus,
   getColumnStatus,
   getColumnConfig,
