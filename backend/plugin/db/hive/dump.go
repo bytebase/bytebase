@@ -172,6 +172,8 @@ func (d *Driver) showCreateSchemaDDL(ctx context.Context, schemaType string, sch
 	if err != nil {
 		return "", err
 	}
+	defer d.connPool.Put(conn)
+
 	schemaDDLResult, err := runSingleStatement(ctx, conn, queryStatement)
 	if err != nil {
 		return "", err
