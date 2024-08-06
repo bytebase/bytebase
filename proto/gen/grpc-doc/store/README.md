@@ -2775,7 +2775,7 @@ Type is the database change type.
 | change_database_type | [PlanCheckRunConfig.ChangeDatabaseType](#bytebase-store-PlanCheckRunConfig-ChangeDatabaseType) |  |  |
 | instance_uid | [int32](#int32) |  |  |
 | database_name | [string](#string) |  |  |
-| database_group_uid | [int64](#int64) | optional | database_group_uid is optional. If it&#39;s set, it means the database is part of a database group. |
+| database_group_uid | [int64](#int64) | optional | **Deprecated.**  |
 | ghost_flags | [PlanCheckRunConfig.GhostFlagsEntry](#bytebase-store-PlanCheckRunConfig-GhostFlagsEntry) | repeated |  |
 | pre_update_backup_detail | [PreUpdateBackupDetail](#bytebase-store-PreUpdateBackupDetail) | optional | If set, a backup of the modified data will be created automatically before any changes are applied. |
 

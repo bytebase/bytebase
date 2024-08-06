@@ -77,6 +77,18 @@ const props = defineProps<{
   schema: SchemaMetadata;
   tables: TableMetadata[];
   searchPattern?: string;
+  customClick?: boolean;
+}>();
+
+const emit = defineEmits<{
+  (
+    event: "click",
+    metadata: {
+      database: DatabaseMetadata;
+      schema: SchemaMetadata;
+      table: TableMetadata;
+    }
+  ): void;
 }>();
 
 interface LocalState {
@@ -324,6 +336,10 @@ const columns = computed(() => {
 });
 
 const handleTableItemClick = (table: TableMetadata) => {
+  if (props.customClick) {
+    emit("click", metadataForTable(table));
+    return;
+  }
   addTab({
     type: "table",
     database: props.db,

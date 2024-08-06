@@ -126,7 +126,7 @@ func getPlanCheckRunsFromChangeDatabaseConfigDatabaseGroupTarget(ctx context.Con
 
 	var planCheckRuns []*store.PlanCheckRunMessage
 	for _, database := range matchedDatabases {
-		runs, err := getPlanCheckRunsFromChangeDatabaseConfigForDatabase(ctx, s, plan, config, sheetUID, database, &databaseGroup.UID)
+		runs, err := getPlanCheckRunsFromChangeDatabaseConfigForDatabase(ctx, s, plan, config, sheetUID, database)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get plan check runs from spec with change database config for database %q", database.DatabaseName)
 		}
@@ -167,7 +167,7 @@ func getPlanCheckRunsFromChangeDatabaseConfigDatabaseTarget(ctx context.Context,
 		return nil, errors.Wrapf(err, "failed to get sheet id from sheet name %q", config.Sheet)
 	}
 
-	return getPlanCheckRunsFromChangeDatabaseConfigForDatabase(ctx, s, plan, config, sheetUID, database, nil)
+	return getPlanCheckRunsFromChangeDatabaseConfigForDatabase(ctx, s, plan, config, sheetUID, database)
 }
 
 func getPlanCheckRunsFromChangeDatabaseConfigDeploymentConfigTarget(ctx context.Context, s *store.Store, plan *store.PlanMessage, config *storepb.PlanConfig_ChangeDatabaseConfig) ([]*store.PlanCheckRunMessage, error) {
@@ -217,7 +217,7 @@ func getPlanCheckRunsFromChangeDatabaseConfigDeploymentConfigTarget(ctx context.
 	var planCheckRuns []*store.PlanCheckRunMessage
 	for _, databases := range matrix {
 		for _, database := range databases {
-			runs, err := getPlanCheckRunsFromChangeDatabaseConfigForDatabase(ctx, s, plan, config, sheetUID, database, nil)
+			runs, err := getPlanCheckRunsFromChangeDatabaseConfigForDatabase(ctx, s, plan, config, sheetUID, database)
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to get plan check runs from spec with change database config for database %q", database.DatabaseName)
 			}
@@ -228,7 +228,7 @@ func getPlanCheckRunsFromChangeDatabaseConfigDeploymentConfigTarget(ctx context.
 	return planCheckRuns, nil
 }
 
-func getPlanCheckRunsFromChangeDatabaseConfigForDatabase(ctx context.Context, s *store.Store, plan *store.PlanMessage, config *storepb.PlanConfig_ChangeDatabaseConfig, sheetUID int, database *store.DatabaseMessage, databaseGroupUID *int64) ([]*store.PlanCheckRunMessage, error) {
+func getPlanCheckRunsFromChangeDatabaseConfigForDatabase(ctx context.Context, s *store.Store, plan *store.PlanMessage, config *storepb.PlanConfig_ChangeDatabaseConfig, sheetUID int, database *store.DatabaseMessage) ([]*store.PlanCheckRunMessage, error) {
 	instance, err := s.GetInstanceV2(ctx, &store.FindInstanceMessage{
 		ResourceID: &database.InstanceID,
 	})
@@ -251,7 +251,6 @@ func getPlanCheckRunsFromChangeDatabaseConfigForDatabase(ctx context.Context, s 
 			ChangeDatabaseType: convertToChangeDatabaseType(config.Type),
 			InstanceUid:        int32(instance.UID),
 			DatabaseName:       database.DatabaseName,
-			DatabaseGroupUid:   nil,
 		},
 	})
 
@@ -276,7 +275,6 @@ func getPlanCheckRunsFromChangeDatabaseConfigForDatabase(ctx context.Context, s 
 			ChangeDatabaseType:    convertToChangeDatabaseType(config.Type),
 			InstanceUid:           int32(instance.UID),
 			DatabaseName:          database.DatabaseName,
-			DatabaseGroupUid:      databaseGroupUID,
 			PreUpdateBackupDetail: preUpdateBackupDetail,
 		},
 	})
@@ -291,10 +289,9 @@ func getPlanCheckRunsFromChangeDatabaseConfigForDatabase(ctx context.Context, s 
 			ChangeDatabaseType: convertToChangeDatabaseType(config.Type),
 			InstanceUid:        int32(instance.UID),
 			DatabaseName:       database.DatabaseName,
-			DatabaseGroupUid:   databaseGroupUID,
 		},
 	})
-	if databaseGroupUID == nil && config.Type == storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE_GHOST {
+	if config.Type == storepb.PlanConfig_ChangeDatabaseConfig_MIGRATE_GHOST {
 		planCheckRuns = append(planCheckRuns, &store.PlanCheckRunMessage{
 			CreatorUID: api.SystemBotID,
 			UpdaterUID: api.SystemBotID,
@@ -306,7 +303,6 @@ func getPlanCheckRunsFromChangeDatabaseConfigForDatabase(ctx context.Context, s 
 				ChangeDatabaseType: convertToChangeDatabaseType(config.Type),
 				InstanceUid:        int32(instance.UID),
 				DatabaseName:       database.DatabaseName,
-				DatabaseGroupUid:   databaseGroupUID,
 				GhostFlags:         config.GhostFlags,
 			},
 		})

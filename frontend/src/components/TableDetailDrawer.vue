@@ -110,7 +110,10 @@
             <div class="max-w-6xl px-6 space-y-6 divide-y divide-block-border">
               <!-- Description list -->
               <dl class="grid grid-cols-1 gap-x-4 gap-y-4 sm:grid-cols-3">
-                <div v-if="hasTableEngineProperty" class="col-span-1">
+                <div
+                  v-if="hasTableEngineProperty(instanceEngine)"
+                  class="col-span-1"
+                >
                   <dt class="text-sm font-medium text-control-light">
                     {{ $t("database.engine") }}
                   </dt>
@@ -150,7 +153,10 @@
                   </dd>
                 </div>
 
-                <div v-if="hasIndexSizeProperty" class="col-span-1">
+                <div
+                  v-if="hasIndexSizeProperty(instanceEngine)"
+                  class="col-span-1"
+                >
                   <dt class="text-sm font-medium text-control-light">
                     {{ $t("database.index-size") }}
                   </dt>
@@ -159,7 +165,7 @@
                   </dd>
                 </div>
 
-                <template v-if="hasCollationProperty">
+                <template v-if="hasCollationProperty(instanceEngine)">
                   <div class="col-span-1">
                     <dt class="text-sm font-medium text-control-light">
                       {{ $t("db.collation") }}
@@ -258,8 +264,11 @@ import { PolicyType } from "@/types/proto/v1/org_policy_service";
 import type { DataClassificationSetting_DataClassificationConfig } from "@/types/proto/v1/setting_service";
 import {
   bytesToString,
+  hasCollationProperty,
+  hasIndexSizeProperty,
   hasProjectPermissionV2,
   hasSchemaProperty,
+  hasTableEngineProperty,
   isDatabaseV1Queryable,
   isGhostTable,
 } from "@/utils";
@@ -346,18 +355,6 @@ const hasPartitionTables = computed(() => {
     database.value.instanceResource.engine === Engine.POSTGRES &&
     table.value &&
     table.value.partitions.length > 0
-  );
-});
-
-const hasTableEngineProperty = computed(() => {
-  return ![Engine.POSTGRES, Engine.SNOWFLAKE].includes(instanceEngine.value);
-});
-const hasIndexSizeProperty = computed(() => {
-  return ![Engine.CLICKHOUSE, Engine.SNOWFLAKE].includes(instanceEngine.value);
-});
-const hasCollationProperty = computed(() => {
-  return ![Engine.POSTGRES, Engine.CLICKHOUSE, Engine.SNOWFLAKE].includes(
-    instanceEngine.value
   );
 });
 

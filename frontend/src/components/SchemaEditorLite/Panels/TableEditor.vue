@@ -1,7 +1,12 @@
 <template>
-  <div class="flex flex-col pt-2 gap-y-2 w-full h-full overflow-y-hidden">
+  <div
+    class="flex flex-col pt-2 gap-y-2 w-full h-full overflow-y-hidden"
+    v-bind="$attrs"
+  >
     <div class="w-full flex flex-row justify-between items-center">
       <div class="w-full flex justify-start items-center gap-x-2">
+        <slot v-if="state.mode === 'COLUMNS'" name="toolbar-prefix" />
+
         <template
           v-if="state.mode === 'INDEXES' || state.mode === 'PARTITIONS'"
         >
@@ -48,7 +53,7 @@
             </NButton>
           </template>
           <NButton
-            v-if="engineSupportsEditIndexes(engine)"
+            v-if="showIndexes"
             size="small"
             :disabled="disableChangeTable"
             @click="state.mode = 'INDEXES'"
@@ -61,7 +66,7 @@
             }}
           </NButton>
           <NButton
-            v-if="engineSupportsEditTablePartitions(engine)"
+            v-if="showPartitions"
             size="small"
             :disabled="disableChangeTable"
             @click="state.mode = 'PARTITIONS'"
@@ -230,7 +235,7 @@ const props = withDefaults(
     database: DatabaseMetadata;
     schema: SchemaMetadata;
     table: TableMetadata;
-    searchPattern: string;
+    searchPattern?: string;
   }>(),
   {
     searchPattern: "",
@@ -249,6 +254,7 @@ const {
   project,
   readonly,
   events,
+  options,
   addTab,
   markEditStatus,
   removeEditStatus,
@@ -334,6 +340,20 @@ const allowReorderColumns = computed(() => {
 
   const status = statusForTable();
   return instanceV1AllowsReorderColumns(engine.value) && status === "created";
+});
+
+const showIndexes = computed(() => {
+  if (options?.value.forceShowIndexes) {
+    return props.table.indexes.length > 0;
+  }
+  return engineSupportsEditIndexes(engine.value);
+});
+
+const showPartitions = computed(() => {
+  if (options?.value.forceShowPartitions) {
+    return props.table.partitions.length > 0;
+  }
+  return engineSupportsEditTablePartitions(engine.value);
 });
 
 const disableAlterColumn = (column: ColumnMetadata): boolean => {

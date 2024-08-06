@@ -737,7 +737,7 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 	var durationNs int64
 	if adviceStatus != storepb.Advice_ERROR {
 		results, durationNs, queryErr = s.doQuery(ctx, request, instance, database)
-		if queryErr == nil && s.licenseService.IsFeatureEnabledForInstance(api.FeatureSensitiveData, instance) == nil {
+		if queryErr == nil && s.licenseService.IsFeatureEnabledForInstance(api.FeatureSensitiveData, instance) == nil && !request.Explain {
 			masker := NewQueryResultMasker(s.store)
 			if err := masker.MaskResults(ctx, spans, results, instance, storepb.MaskingExceptionPolicy_MaskingException_QUERY); err != nil {
 				return nil, status.Errorf(codes.Internal, err.Error())
@@ -1566,15 +1566,12 @@ func (s *SQLService) GenerateRestoreSQL(ctx context.Context, request *v1pb.Gener
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to get sheet UID: %v", err)
 	}
-	sheet, err := s.store.GetSheet(ctx, &store.FindSheetMessage{UID: &sheetUID, LoadFull: true})
+	statement, err := s.store.GetSheetStatementByID(ctx, sheetUID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get sheet: %v", err)
 	}
-	if sheet == nil {
-		return nil, status.Errorf(codes.NotFound, "sheet %q not found", sheetUID)
-	}
 
-	list, err := base.SplitMultiSQL(storepb.Engine_MYSQL, sheet.Statement)
+	list, err := base.SplitMultiSQL(storepb.Engine_MYSQL, statement)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to split SQL: %v", err)
 	}
