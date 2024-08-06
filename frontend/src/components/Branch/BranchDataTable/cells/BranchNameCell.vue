@@ -5,56 +5,26 @@
       @click.stop="handleBranchClick"
       >{{ branchName }}</span
     >
-    <span v-if="isProtected">
-      <NTooltip trigger="hover">
-        <template #trigger>
-          <ShieldAlertIcon class="w-4 h-auto text-gray-500" />
-        </template>
-        {{ $t("branch.branch-is-protected") }}
-      </NTooltip>
-    </span>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { ShieldAlertIcon } from "lucide-vue-next";
-import { NTooltip } from "naive-ui";
 import { computed } from "vue";
 import { useRouter } from "vue-router";
 import { PROJECT_V1_ROUTE_BRANCH_DETAIL } from "@/router/dashboard/projectV1";
-import { useProjectV1Store } from "@/store";
 import {
   getProjectAndBranchId,
-  projectNamePrefix,
 } from "@/store/modules/v1/common";
-import { useProjectBranchProtectionRules } from "@/store/modules/v1/projectProtectionRoles";
 import type { Branch } from "@/types/proto/v1/branch_service";
-import { wildcardToRegex } from "../../utils";
 
 const props = defineProps<{
   branch: Branch;
 }>();
 
 const router = useRouter();
-const projectStore = useProjectV1Store();
-
-const project = computed(() => {
-  const [projectId] = getProjectAndBranchId(props.branch.name);
-  return projectStore.getProjectByName(`${projectNamePrefix}${projectId}`);
-});
-
-const branchProtectionRules = useProjectBranchProtectionRules(
-  project.value.name
-);
 
 const branchName = computed(() => {
   return props.branch.branchId;
-});
-
-const isProtected = computed(() => {
-  return branchProtectionRules.value.some((rule) => {
-    return wildcardToRegex(rule.nameFilter).test(props.branch.branchId);
-  });
 });
 
 const handleBranchClick = async () => {
