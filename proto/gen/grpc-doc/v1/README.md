@@ -2878,6 +2878,7 @@ ForeignKeyMetadata is the metadata for foreign keys.
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name is the name of a function. |
 | updater | [string](#string) |  | The last updater of the function in branch. Format: users/{email} |
+| source_branch | [string](#string) |  | The last change come from branch. Format: projcets/{project}/branches/{branch} |
 | update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The timestamp when the function is updated in branch. |
 
 
@@ -3217,6 +3218,7 @@ MaterializedViewMetadata is the metadata for materialized views.
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name is the name of a procedure. |
 | updater | [string](#string) |  | The last updater of the procedure in branch. Format: users/{email} |
+| source_branch | [string](#string) |  | The last change come from branch. Format: projcets/{project}/branches/{branch} |
 | update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The timestamp when the procedure is updated in branch. |
 
 
@@ -3459,6 +3461,7 @@ SlowQueryStatistics is the statistics of the slow query log.
 | column_configs | [ColumnConfig](#bytebase-v1-ColumnConfig) | repeated | The column_configs is the ordered list of configs for columns in a table. |
 | classification_id | [string](#string) |  |  |
 | updater | [string](#string) |  | The last updater of the table in branch. Format: users/{email} |
+| source_branch | [string](#string) |  | The last change come from branch. Format: projcets/{project}/branches/{branch} |
 | update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The timestamp when the table is updated in branch. |
 
 
@@ -3603,6 +3606,7 @@ The database&#39;s `name` field is used to identify the database to update. Form
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name is the name of a view. |
 | updater | [string](#string) |  | The last updater of the view in branch. Format: users/{email} |
+| source_branch | [string](#string) |  | The last change come from branch. Format: projcets/{project}/branches/{branch} |
 | update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The timestamp when the view is updated in branch. |
 
 
