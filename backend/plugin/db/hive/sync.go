@@ -96,6 +96,7 @@ func (d *Driver) getVersion(ctx context.Context) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	defer d.connPool.Put(conn)
 	result, err := runSingleStatement(ctx, conn, "SELECT VERSION()")
 	if err != nil {
 		return "", errors.Wrap(err, "failed to get version from instance")
@@ -108,10 +109,10 @@ func (d *Driver) getVersion(ctx context.Context) (string, error) {
 func (d *Driver) getDatabaseNames(ctx context.Context) ([]string, error) {
 	var databaseNames []string
 	conn, err := d.connPool.Get("")
-	defer d.connPool.Put(conn)
 	if err != nil {
 		return nil, err
 	}
+	defer d.connPool.Put(conn)
 	result, err := runSingleStatement(ctx, conn, "SHOW DATABASES")
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get version from instance")
@@ -124,10 +125,10 @@ func (d *Driver) getDatabaseNames(ctx context.Context) ([]string, error) {
 
 func (d *Driver) listTablesNames(ctx context.Context, databaseName string) ([]string, error) {
 	conn, err := d.connPool.Get("")
-	defer d.connPool.Put(conn)
 	if err != nil {
 		return nil, err
 	}
+	defer d.connPool.Put(conn)
 	result, err := runSingleStatement(ctx, conn, fmt.Sprintf("SHOW TABLES FROM %s", databaseName))
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get version from instance")
@@ -213,6 +214,7 @@ func (d *Driver) getTables(ctx context.Context, databaseName string) (
 				})
 			}
 		}
+		d.connPool.Put(conn)
 
 		tableMetadata.Engine = "HDFS"
 		tableMetadata.Comment = tabInfo.comment
