@@ -75,7 +75,7 @@
           @update="$emit('update')"
         />
         <RawString
-          v-if="enableRawExpression && isRawStringExpr(operand)"
+          v-if="isRawStringExpr(operand)"
           :expr="operand"
           @remove="removeRawString(operand)"
           @update="$emit('update')"
@@ -144,6 +144,10 @@ import {
   isRawStringExpr,
   ExprType,
   type RawStringExpr,
+  isNumberFactor,
+  type Factor,
+  isStringFactor,
+  isTimestampFactor,
 } from "@/plugins/cel";
 import Condition from "./Condition.vue";
 import RawString from "./RawString.vue";
@@ -198,7 +202,7 @@ const addCondition = () => {
   args.value.push({
     type: ExprType.Condition,
     operator: operators[0] ?? "",
-    args: [factor, ""],
+    args: [factor, getDefaultValue(factor)],
   } as any);
   emit("update");
 };
@@ -242,5 +246,13 @@ const removeRawString = (rawString: RawStringExpr) => {
     args.value.splice(index, 1);
     emit("update");
   }
+};
+
+const getDefaultValue = (factor: Factor): any => {
+  if (isNumberFactor(factor)) return 0;
+  if (isStringFactor(factor)) return "";
+  if (isTimestampFactor(factor)) return new Date();
+  // Fall back to empty string.
+  return "";
 };
 </script>
