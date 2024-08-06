@@ -1617,6 +1617,10 @@
     },
     "activate": {
       "title": "Activate your {type} account"
+    },
+    "login-as-another": {
+      "title": "You have logged in as another user",
+      "content": "We will refirect you to the home page."
     }
   },
   "policy": {
