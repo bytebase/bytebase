@@ -21,9 +21,10 @@
 </template>
 
 <script setup lang="ts">
+import { computedAsync } from "@vueuse/core";
 import { first } from "lodash-es";
 import { storeToRefs } from "pinia";
-import { computed, watch } from "vue";
+import { watch } from "vue";
 import {
   useConnectionOfCurrentSQLEditorTab,
   useDBSchemaV1Store,
@@ -49,17 +50,22 @@ defineProps<{
 const { currentTab: tab } = storeToRefs(useSQLEditorTabStore());
 const { viewState, selectedSchemaName } = useEditorPanelContext();
 const { database } = useConnectionOfCurrentSQLEditorTab();
-const databaseMetadata = computed(() => {
-  return useDBSchemaV1Store().getDatabaseMetadata(
-    database.value.name,
-    DatabaseMetadataView.DATABASE_METADATA_VIEW_FULL
-  );
+const databaseMetadata = computedAsync(() => {
+  if (!isValidDatabaseName(database.value.name)) {
+    return undefined;
+  }
+  return useDBSchemaV1Store().getOrFetchDatabaseMetadata({
+    database: database.value.name,
+    view: DatabaseMetadataView.DATABASE_METADATA_VIEW_FULL,
+    silent: true,
+  });
 });
 
 watch(
   [() => tab.value?.id, databaseMetadata, selectedSchemaName],
   ([id, database, schema]) => {
     if (!id) return;
+    if (!database) return;
     if (
       !isValidDatabaseName(extractDatabaseResourceName(database.name).database)
     ) {
