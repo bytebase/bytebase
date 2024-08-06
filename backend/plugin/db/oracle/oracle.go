@@ -14,9 +14,12 @@ import (
 
 	// Import go-ora Oracle driver.
 
+	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
 	goora "github.com/sijms/go-ora/v2"
 	"google.golang.org/protobuf/types/known/durationpb"
+
+	plsql "github.com/bytebase/plsql-parser"
 
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
@@ -297,6 +300,9 @@ func (driver *Driver) getStatementWithResultLimit(stmt string, queryContext *db.
 		return "", err
 	}
 	if queryContext != nil {
+		if !needLimit(stmt) {
+			return stmt, nil
+		}
 		switch {
 		case versionNumber < dbVersion12:
 			return getStatementWithResultLimitFor11g(stmt, queryContext.Limit), nil
@@ -310,4 +316,133 @@ func (driver *Driver) getStatementWithResultLimit(stmt string, queryContext *db.
 	}
 
 	return stmt, nil
+}
+
+// needLimit checks if the statement needs a limit clause.
+// For Oracle, we think the statement like "SELECT xxx FROM DUAL" does not need a limit clause.
+// More details, xxx can not be a subquery.
+func needLimit(stmt string) bool {
+	tree, _, err := plsqlparser.ParsePLSQL(stmt)
+	if err != nil {
+		return true
+	}
+
+	sqlScript, ok := tree.(*plsql.Sql_scriptContext)
+	if !ok {
+		return true
+	}
+
+	if len(sqlScript.AllSql_plus_command()) > 0 {
+		return true
+	}
+
+	if len(sqlScript.AllUnit_statement()) > 1 {
+		return true
+	}
+
+	unitStatement := sqlScript.Unit_statement(0)
+	if unitStatement == nil {
+		return true
+	}
+
+	dml := unitStatement.Data_manipulation_language_statements()
+	if dml == nil {
+		return true
+	}
+
+	selectStatement := dml.Select_statement()
+	if selectStatement == nil {
+		return true
+	}
+
+	switch {
+	case len(selectStatement.AllFor_update_clause()) != 0:
+		return true
+	case len(selectStatement.AllOrder_by_clause()) != 0:
+		return true
+	case len(selectStatement.AllOffset_clause()) != 0:
+		return true
+	case len(selectStatement.AllFetch_clause()) != 0:
+		return true
+	}
+
+	selectOnly := selectStatement.Select_only_statement()
+	if selectOnly == nil {
+		return true
+	}
+
+	subquery := selectOnly.Subquery()
+	if subquery == nil {
+		return true
+	}
+
+	if len(subquery.AllSubquery_operation_part()) != 0 {
+		return true
+	}
+
+	subqueryBasicElements := subquery.Subquery_basic_elements()
+	if subqueryBasicElements == nil {
+		return true
+	}
+
+	if subqueryBasicElements.Subquery() != nil {
+		return true
+	}
+
+	queryBlock := subqueryBasicElements.Query_block()
+	if queryBlock == nil {
+		return true
+	}
+
+	switch {
+	case queryBlock.Subquery_factoring_clause() != nil,
+		queryBlock.DISTINCT() != nil,
+		queryBlock.ALL() != nil,
+		queryBlock.UNIQUE() != nil,
+		queryBlock.Into_clause() != nil,
+		queryBlock.Where_clause() != nil,
+		queryBlock.Hierarchical_query_clause() != nil,
+		queryBlock.Group_by_clause() != nil,
+		queryBlock.Model_clause() != nil,
+		queryBlock.Order_by_clause() != nil,
+		queryBlock.Fetch_clause() != nil:
+		return true
+	}
+
+	from := queryBlock.From_clause()
+	if !strings.EqualFold(from.GetText(), "FROMDUAL") {
+		return true
+	}
+
+	selectedList := queryBlock.Selected_list()
+	if selectedList == nil {
+		return true
+	}
+
+	if selectedList.ASTERISK() != nil {
+		return true
+	}
+
+	for _, selectedElement := range selectedList.AllSelect_list_elements() {
+		if selectedElement.Table_wild() != nil {
+			return true
+		}
+
+		l := subqueryListener{}
+		antlr.ParseTreeWalkerDefault.Walk(&l, selectedElement)
+		if l.hasSubquery {
+			return true
+		}
+	}
+
+	return false
+}
+
+type subqueryListener struct {
+	*plsql.BasePlSqlParserListener
+	hasSubquery bool
+}
+
+func (l *subqueryListener) EnterSubquery(ctx *plsql.SubqueryContext) {
+	l.hasSubquery = true
 }
