@@ -65,7 +65,6 @@ watch(
     ) {
       return;
     }
-    console.log(database.name, schema);
     if (!schema || database.schemas.findIndex((s) => s.name === schema) < 0) {
       selectedSchemaName.value = first(database.schemas)?.name;
     }
