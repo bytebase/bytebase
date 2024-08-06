@@ -965,7 +965,7 @@ message FunctionConfig {
   string updater = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The last change come from branch.
-  string source_branch = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string source_branch = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The timestamp when the function is updated in branch.
   google.protobuf.Timestamp update_time = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
