@@ -65,7 +65,7 @@ type PatchSheetMessage struct {
 
 // GetSheetStatementByID gets the statement of a sheet by ID.
 func (s *Store) GetSheetStatementByID(ctx context.Context, id int) (string, error) {
-	if v, ok := s.sheetCache.Get(id); ok {
+	if v, ok := s.sheetStatementCache.Get(id); ok {
 		return v, nil
 	}
 
@@ -78,13 +78,19 @@ func (s *Store) GetSheetStatementByID(ctx context.Context, id int) (string, erro
 	}
 
 	statement := sheet.Statement
-	s.sheetCache.Add(id, statement)
+	s.sheetStatementCache.Add(id, statement)
 	return statement, nil
 }
 
 // GetSheet gets a sheet.
 func (s *Store) GetSheet(ctx context.Context, find *FindSheetMessage) (*SheetMessage, error) {
-	// TODO(d): cache sheet.
+	shouldCache := !find.LoadFull && find.UID != nil
+	if shouldCache {
+		if v, ok := s.sheetCache.Get(*find.UID); ok {
+			return v, nil
+		}
+	}
+
 	sheets, err := s.listSheets(ctx, find)
 	if err != nil {
 		return nil, err
@@ -96,6 +102,10 @@ func (s *Store) GetSheet(ctx context.Context, find *FindSheetMessage) (*SheetMes
 		return nil, errors.Errorf("expected 1 sheet, got %d", len(sheets))
 	}
 	sheet := sheets[0]
+
+	if shouldCache {
+		s.sheetCache.Add(sheet.UID, sheet)
+	}
 
 	return sheet, nil
 }
@@ -270,8 +280,10 @@ func (s *Store) PatchSheet(ctx context.Context, patch *PatchSheetMessage) (*Shee
 		return nil, errors.Wrapf(err, "failed to commit transaction")
 	}
 	if v := patch.Statement; v != nil {
-		s.sheetCache.Add(patch.UID, *v)
+		s.sheetStatementCache.Add(patch.UID, *v)
 	}
+
+	s.sheetCache.Remove(patch.UID)
 	return sheet, nil
 }
 
