@@ -11951,10 +11951,6 @@ components:
         Project:
             type: object
             properties:
-                protectionRules:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/ProtectionRule'
                 issueLabels:
                     type: array
                     items:

@@ -1014,18 +1014,6 @@
                   <a href="#bytebase.store.Project"><span class="badge">M</span>Project</a>
                 </li>
               
-                <li>
-                  <a href="#bytebase.store.ProtectionRule"><span class="badge">M</span>ProtectionRule</a>
-                </li>
-              
-              
-                <li>
-                  <a href="#bytebase.store.ProtectionRule.BranchSource"><span class="badge">E</span>ProtectionRule.BranchSource</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.ProtectionRule.Target"><span class="badge">E</span>ProtectionRule.Target</a>
-                </li>
               
               
               
@@ -8447,13 +8435,6 @@ for example, the environment resource can have the sql review config tag, like &
             <tbody>
               
                 <tr>
-                  <td>protection_rules</td>
-                  <td><a href="#bytebase.store.ProtectionRule">ProtectionRule</a></td>
-                  <td>repeated</td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
                   <td>issue_labels</td>
                   <td><a href="#bytebase.store.Label">Label</a></td>
                   <td>repeated</td>
@@ -8488,112 +8469,7 @@ for example, the environment resource can have the sql review config tag, like &
 
         
       
-        <h3 id="bytebase.store.ProtectionRule">ProtectionRule</h3>
-        <p></p>
 
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>id</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>A unique identifier for a node in UUID format. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>target</td>
-                  <td><a href="#bytebase.store.ProtectionRule.Target">ProtectionRule.Target</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>name_filter</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The name of the branch/changelist or wildcard. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>allowed_roles</td>
-                  <td><a href="#string">string</a></td>
-                  <td>repeated</td>
-                  <td><p>The roles allowed to create branches or changelists, rebase branches, delete branches.
-Format: roles/projectOwner. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>branch_source</td>
-                  <td><a href="#bytebase.store.ProtectionRule.BranchSource">ProtectionRule.BranchSource</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-
-      
-        <h3 id="bytebase.store.ProtectionRule.BranchSource">ProtectionRule.BranchSource</h3>
-        <p></p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>BRANCH_SOURCE_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>DATABASE</td>
-                <td>1</td>
-                <td><p></p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-      
-        <h3 id="bytebase.store.ProtectionRule.Target">ProtectionRule.Target</h3>
-        <p>The type of target.</p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>PROTECTION_TARGET_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>BRANCH</td>
-                <td>1</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>CHANGELIST</td>
-                <td>2</td>
-                <td><p></p></td>
-              </tr>
-            
-          </tbody>
-        </table>
       
 
       
