@@ -84,7 +84,10 @@ func (e *StatementAdviseExecutor) Run(ctx context.Context, config *storepb.PlanC
 			},
 		}, nil
 	}
-	statement := sheet.Statement
+	statement, err := e.store.GetSheetStatementByID(ctx, sheetUID)
+	if err != nil {
+		return nil, err
+	}
 	changeType := config.ChangeDatabaseType
 	preUpdateBackupDetail := config.PreUpdateBackupDetail
 
