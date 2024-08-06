@@ -8998,6 +8998,11 @@ components:
             properties:
                 name:
                     type: string
+                ranges:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/Range'
+                    description: The ranges of sub-strings correspond to the statements on the sheet.
         ChangedResources:
             type: object
             properties:
@@ -12056,6 +12061,15 @@ components:
                     items:
                         $ref: '#/components/schemas/RowValue'
                     description: Row values of the query result.
+        Range:
+            type: object
+            properties:
+                start:
+                    type: integer
+                    format: int32
+                end:
+                    type: integer
+                    format: int32
         RangeMask_Slice:
             type: object
             properties:

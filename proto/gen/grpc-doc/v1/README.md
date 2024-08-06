@@ -36,6 +36,7 @@
   
 - [v1/common.proto](#v1_common-proto)
     - [Position](#bytebase-v1-Position)
+    - [Range](#bytebase-v1-Range)
   
     - [Engine](#bytebase-v1-Engine)
     - [ExportFormat](#bytebase-v1-ExportFormat)
@@ -1060,6 +1061,22 @@ DATABASE_CONNECTION is the anomaly type for database connection, e.g. the databa
 | ----- | ---- | ----- | ----------- |
 | line | [int32](#int32) |  |  |
 | column | [int32](#int32) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-Range"></a>
+
+### Range
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| start | [int32](#int32) |  |  |
+| end | [int32](#int32) |  |  |
 
 
 
@@ -2545,6 +2562,7 @@ AdviseIndexResponse is the response of advising index.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  |  |
+| ranges | [Range](#bytebase-v1-Range) | repeated | The ranges of sub-strings correspond to the statements on the sheet. |
 
 
 

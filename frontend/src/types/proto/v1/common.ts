@@ -494,6 +494,11 @@ export interface Position {
   column: number;
 }
 
+export interface Range {
+  start: number;
+  end: number;
+}
+
 function createBasePosition(): Position {
   return { line: 0, column: 0 };
 }
@@ -564,6 +569,80 @@ export const Position = {
     const message = createBasePosition();
     message.line = object.line ?? 0;
     message.column = object.column ?? 0;
+    return message;
+  },
+};
+
+function createBaseRange(): Range {
+  return { start: 0, end: 0 };
+}
+
+export const Range = {
+  encode(message: Range, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.start !== 0) {
+      writer.uint32(8).int32(message.start);
+    }
+    if (message.end !== 0) {
+      writer.uint32(16).int32(message.end);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): Range {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseRange();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 8) {
+            break;
+          }
+
+          message.start = reader.int32();
+          continue;
+        case 2:
+          if (tag !== 16) {
+            break;
+          }
+
+          message.end = reader.int32();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): Range {
+    return {
+      start: isSet(object.start) ? globalThis.Number(object.start) : 0,
+      end: isSet(object.end) ? globalThis.Number(object.end) : 0,
+    };
+  },
+
+  toJSON(message: Range): unknown {
+    const obj: any = {};
+    if (message.start !== 0) {
+      obj.start = Math.round(message.start);
+    }
+    if (message.end !== 0) {
+      obj.end = Math.round(message.end);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<Range>): Range {
+    return Range.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<Range>): Range {
+    const message = createBaseRange();
+    message.start = object.start ?? 0;
+    message.end = object.end ?? 0;
     return message;
   },
 };

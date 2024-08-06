@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package bytebase.store;
 
+import "store/common.proto";
+
 option go_package = "generated-go/store";
 
 message InstanceChangeHistoryPayload {
@@ -29,4 +31,7 @@ message ChangedResourceTable {
 
   // estimated row count of the table
   int64 table_rows = 2;
+
+  // The ranges of sub-strings correspond to the statements on the sheet.
+  repeated Range ranges = 3;
 }

@@ -299,6 +299,10 @@
                   <a href="#bytebase.v1.Position"><span class="badge">M</span>Position</a>
                 </li>
               
+                <li>
+                  <a href="#bytebase.v1.Range"><span class="badge">M</span>Range</a>
+                </li>
+              
               
                 <li>
                   <a href="#bytebase.v1.Engine"><span class="badge">E</span>Engine</a>
@@ -3720,6 +3724,37 @@ e.g. the database schema had been changed without bytebase migration.</p></td>
               
                 <tr>
                   <td>column</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.Range">Range</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>start</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>end</td>
                   <td><a href="#int32">int32</a></td>
                   <td></td>
                   <td><p> </p></td>
@@ -7754,6 +7789,13 @@ Format: projects/{project}/sheets/{sheet} </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>ranges</td>
+                  <td><a href="#bytebase.v1.Range">Range</a></td>
+                  <td>repeated</td>
+                  <td><p>The ranges of sub-strings correspond to the statements on the sheet. </p></td>
                 </tr>
               
             </tbody>

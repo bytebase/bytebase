@@ -10,6 +10,7 @@ import {
   maskingLevelFromJSON,
   maskingLevelToJSON,
   maskingLevelToNumber,
+  Range,
   State,
   stateFromJSON,
   stateToJSON,
@@ -1668,6 +1669,8 @@ export interface ChangedResourceSchema {
 
 export interface ChangedResourceTable {
   name: string;
+  /** The ranges of sub-strings correspond to the statements on the sheet. */
+  ranges: Range[];
 }
 
 export interface ListChangeHistoriesRequest {
@@ -8795,13 +8798,16 @@ export const ChangedResourceSchema = {
 };
 
 function createBaseChangedResourceTable(): ChangedResourceTable {
-  return { name: "" };
+  return { name: "", ranges: [] };
 }
 
 export const ChangedResourceTable = {
   encode(message: ChangedResourceTable, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
+    }
+    for (const v of message.ranges) {
+      Range.encode(v!, writer.uint32(26).fork()).ldelim();
     }
     return writer;
   },
@@ -8820,6 +8826,13 @@ export const ChangedResourceTable = {
 
           message.name = reader.string();
           continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.ranges.push(Range.decode(reader, reader.uint32()));
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -8830,13 +8843,19 @@ export const ChangedResourceTable = {
   },
 
   fromJSON(object: any): ChangedResourceTable {
-    return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
+    return {
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      ranges: globalThis.Array.isArray(object?.ranges) ? object.ranges.map((e: any) => Range.fromJSON(e)) : [],
+    };
   },
 
   toJSON(message: ChangedResourceTable): unknown {
     const obj: any = {};
     if (message.name !== "") {
       obj.name = message.name;
+    }
+    if (message.ranges?.length) {
+      obj.ranges = message.ranges.map((e) => Range.toJSON(e));
     }
     return obj;
   },
@@ -8847,6 +8866,7 @@ export const ChangedResourceTable = {
   fromPartial(object: DeepPartial<ChangedResourceTable>): ChangedResourceTable {
     const message = createBaseChangedResourceTable();
     message.name = object.name ?? "";
+    message.ranges = object.ranges?.map((e) => Range.fromPartial(e)) || [];
     return message;
   },
 };
