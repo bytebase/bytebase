@@ -141,7 +141,7 @@ const columns = computed(() => {
       },
     },
   ];
-  return columns;
+  return columns.filter((col) => !col.hide);
 });
 
 const rowProps = (table: TableMetadata) => {
