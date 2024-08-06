@@ -69,3 +69,8 @@ message Position {
   int32 line = 1;
   int32 column = 2;
 }
+
+message Range {
+  int32 start = 1;
+  int32 end = 2;
+}

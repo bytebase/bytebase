@@ -1,6 +1,7 @@
 /* eslint-disable */
 import Long from "long";
 import _m0 from "protobufjs/minimal";
+import { Range } from "./common";
 
 export const protobufPackage = "bytebase.store";
 
@@ -26,6 +27,8 @@ export interface ChangedResourceTable {
   name: string;
   /** estimated row count of the table */
   tableRows: Long;
+  /** The ranges of sub-strings correspond to the statements on the sheet. */
+  ranges: Range[];
 }
 
 function createBaseInstanceChangeHistoryPayload(): InstanceChangeHistoryPayload {
@@ -303,7 +306,7 @@ export const ChangedResourceSchema = {
 };
 
 function createBaseChangedResourceTable(): ChangedResourceTable {
-  return { name: "", tableRows: Long.ZERO };
+  return { name: "", tableRows: Long.ZERO, ranges: [] };
 }
 
 export const ChangedResourceTable = {
@@ -313,6 +316,9 @@ export const ChangedResourceTable = {
     }
     if (!message.tableRows.isZero()) {
       writer.uint32(16).int64(message.tableRows);
+    }
+    for (const v of message.ranges) {
+      Range.encode(v!, writer.uint32(26).fork()).ldelim();
     }
     return writer;
   },
@@ -338,6 +344,13 @@ export const ChangedResourceTable = {
 
           message.tableRows = reader.int64() as Long;
           continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.ranges.push(Range.decode(reader, reader.uint32()));
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -351,6 +364,7 @@ export const ChangedResourceTable = {
     return {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
       tableRows: isSet(object.tableRows) ? Long.fromValue(object.tableRows) : Long.ZERO,
+      ranges: globalThis.Array.isArray(object?.ranges) ? object.ranges.map((e: any) => Range.fromJSON(e)) : [],
     };
   },
 
@@ -361,6 +375,9 @@ export const ChangedResourceTable = {
     }
     if (!message.tableRows.isZero()) {
       obj.tableRows = (message.tableRows || Long.ZERO).toString();
+    }
+    if (message.ranges?.length) {
+      obj.ranges = message.ranges.map((e) => Range.toJSON(e));
     }
     return obj;
   },
@@ -374,6 +391,7 @@ export const ChangedResourceTable = {
     message.tableRows = (object.tableRows !== undefined && object.tableRows !== null)
       ? Long.fromValue(object.tableRows)
       : Long.ZERO;
+    message.ranges = object.ranges?.map((e) => Range.fromPartial(e)) || [];
     return message;
   },
 };
