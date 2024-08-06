@@ -21,15 +21,7 @@
 
     <div class="flex-1 flex flex-row overflow-hidden">
       <div class="h-full border-r shrink-0">
-        <GutterBar
-          :size="
-            containerWidth >= 320
-              ? 'large'
-              : containerWidth < 240
-                ? 'small'
-                : 'medium'
-          "
-        />
+        <GutterBar size="medium" />
       </div>
       <div class="h-full flex-1 flex flex-col pt-1 overflow-hidden">
         <WorksheetPane v-if="asidePanelTab === 'WORKSHEET'" />

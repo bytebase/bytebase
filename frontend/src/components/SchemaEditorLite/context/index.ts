@@ -24,6 +24,11 @@ export type SchemaEditorEvents = Emittery<{
   ["clear-tabs"]: undefined;
 }>;
 
+export type SchemaEditorOptions = {
+  forceShowIndexes: boolean;
+  forceShowPartitions: boolean;
+};
+
 export const provideSchemaEditorContext = (params: {
   resourceType: Ref<ResourceType>;
   readonly: Ref<boolean>;
@@ -32,6 +37,7 @@ export const provideSchemaEditorContext = (params: {
   selectedRolloutObjects: Ref<RolloutObject[] | undefined>;
   showLastUpdater: Ref<boolean>;
   disableDiffColoring: Ref<boolean>;
+  options?: Ref<SchemaEditorOptions>;
 }) => {
   const events = new Emittery() as SchemaEditorEvents;
   const showDatabaseConfigColumn = computed(

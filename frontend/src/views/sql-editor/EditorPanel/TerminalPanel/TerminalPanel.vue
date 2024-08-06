@@ -1,9 +1,7 @@
 <template>
   <div
-    class="flex h-full w-full flex-col justify-start items-start overflow-hidden bg-dark-bg"
+    class="flex h-full w-full flex-col justify-start items-stretch overflow-hidden bg-dark-bg"
   >
-    <ConnectionPathBar />
-
     <EditorAction @execute="handleExecute" @clear-screen="handleClearScreen" />
 
     <div
@@ -91,10 +89,9 @@ import {
 import type { SQLEditorQueryParams, WebTerminalQueryItemV1 } from "@/types";
 import {
   EditorAction,
-  ConnectionPathBar,
   ConnectionHolder,
   ResultViewV1,
-} from "../EditorCommon";
+} from "../../EditorCommon";
 import { useAttractFocus } from "./useAttractFocus";
 import { useHistory } from "./useHistory";
 

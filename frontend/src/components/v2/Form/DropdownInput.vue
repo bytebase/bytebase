@@ -18,6 +18,7 @@
       <template #suffix>
         <!-- use the same icon and style with NSelect -->
         <NElement
+          v-if="!$attrs.disabled"
           tag="button"
           style="color: var(--placeholder-color)"
           class="absolute top-1/2 right-[9px] -translate-y-1/2 cursor-pointer"

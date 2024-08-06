@@ -22,60 +22,7 @@
     </div>
 
     <!-- Description list -->
-    <dl
-      class="grid grid-cols-1 gap-x-4 gap-y-4 sm:grid-cols-2 pt-4"
-      data-label="bb-database-overview-description-list"
-    >
-      <template
-        v-if="
-          databaseEngine !== Engine.CLICKHOUSE &&
-          databaseEngine !== Engine.SNOWFLAKE &&
-          databaseEngine !== Engine.MONGODB
-        "
-      >
-        <div class="col-span-1 col-start-1">
-          <dt class="text-sm font-medium text-control-light">
-            {{
-              databaseEngine === Engine.POSTGRES
-                ? $t("db.encoding")
-                : $t("db.character-set")
-            }}
-          </dt>
-          <dd class="mt-1 text-sm text-main">
-            {{ databaseSchemaMetadata.characterSet }}
-          </dd>
-        </div>
-
-        <div class="col-span-1">
-          <dt class="text-sm font-medium text-control-light">
-            {{ $t("db.collation") }}
-          </dt>
-          <dd class="mt-1 text-sm text-main">
-            {{ databaseSchemaMetadata.collation }}
-          </dd>
-        </div>
-      </template>
-
-      <div class="col-span-1 col-start-1">
-        <dt class="text-sm font-medium text-control-light">
-          {{ $t("database.sync-status") }}
-        </dt>
-        <dd class="mt-1 text-sm text-main">
-          <span>
-            {{ database.syncState === State.ACTIVE ? "OK" : "NOT_FOUND" }}
-          </span>
-        </dd>
-      </div>
-
-      <div class="col-span-1">
-        <dt class="text-sm font-medium text-control-light">
-          {{ $t("database.last-successful-sync") }}
-        </dt>
-        <dd class="mt-1 text-sm text-main">
-          {{ humanizeDate(database.successfulSyncTime) }}
-        </dd>
-      </div>
-    </dl>
+    <DatabaseOverviewInfo :database="database" class="pt-4" />
 
     <div v-if="allowGetSchema" class="py-6">
       <div
@@ -209,10 +156,11 @@ import ViewDataTable from "@/components/ViewDataTable.vue";
 import { useDBSchemaV1Store } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import type { Anomaly } from "@/types/proto/v1/anomaly_service";
-import { Engine, State } from "@/types/proto/v1/common";
+import { Engine } from "@/types/proto/v1/common";
 import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
 import { hasSchemaProperty } from "@/utils";
 import { SearchBox } from "../v2";
+import DatabaseOverviewInfo from "./DatabaseOverviewInfo.vue";
 
 interface LocalState {
   selectedSchemaName: string;
@@ -311,10 +259,6 @@ const schemaNameOptions = computed(() => {
     value: schema.name,
     label: schema.name,
   }));
-});
-
-const databaseSchemaMetadata = computed(() => {
-  return dbSchemaStore.getDatabaseMetadata(props.database.name);
 });
 
 const tableList = computed(() => {

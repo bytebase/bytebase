@@ -1,5 +1,6 @@
 <template>
   <NInput
+    v-if="!disabled"
     :value="value"
     :style="style"
     v-bind="$attrs"
@@ -7,10 +8,17 @@
     @blur="focused = false"
     @update:value="$emit('update:value', $event)"
   />
+  <NPerformantEllipsis
+    v-else
+    style="padding: 0 var(--n-padding-right) 0 var(--n-padding-left)"
+    v-bind="$attrs"
+  >
+    {{ value }}
+  </NPerformantEllipsis>
 </template>
 
 <script setup lang="ts">
-import { NInput } from "naive-ui";
+import { NInput, NPerformantEllipsis } from "naive-ui";
 import type { CSSProperties } from "vue";
 import { computed, ref } from "vue";
 
@@ -20,6 +28,7 @@ defineOptions({
 
 defineProps<{
   value: string | undefined | null;
+  disabled?: boolean;
 }>();
 defineEmits<{
   (event: "update:value", value: string): void;
