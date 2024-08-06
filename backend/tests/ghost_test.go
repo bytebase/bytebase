@@ -334,22 +334,34 @@ func TestGhostTenant(t *testing.T) {
 	})
 	a.NoError(err)
 
-	// Create an issue that updates database schema using gh-ost.
-	step = &v1pb.Plan_Step{
-		Specs: []*v1pb.Plan_Spec{
-			{
-				Id: uuid.NewString(),
-				Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
-					ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
-						Target: fmt.Sprintf("%s/deploymentConfigs/default", project.Name),
-						Sheet:  sheet2.Name,
-						Type:   v1pb.Plan_ChangeDatabaseConfig_MIGRATE_GHOST,
-					},
+	testStep = &v1pb.Plan_Step{}
+	for _, db := range testDatabases {
+		testStep.Specs = append(testStep.Specs, &v1pb.Plan_Spec{
+			Id: uuid.NewString(),
+			Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
+				ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
+					Target: common.FormatDatabase(db.InstanceResource.Title, db.Name),
+					Sheet:  sheet1.Name,
+					Type:   v1pb.Plan_ChangeDatabaseConfig_MIGRATE_GHOST,
 				},
 			},
-		},
+		})
 	}
-	_, _, _, err = ctl.changeDatabaseWithConfig(ctx, project, []*v1pb.Plan_Step{step})
+	prodStep = &v1pb.Plan_Step{}
+	for _, db := range prodDatabases {
+		prodStep.Specs = append(prodStep.Specs, &v1pb.Plan_Spec{
+			Id: uuid.NewString(),
+			Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
+				ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
+					Target: common.FormatDatabase(db.InstanceResource.Title, db.Name),
+					Sheet:  sheet1.Name,
+					Type:   v1pb.Plan_ChangeDatabaseConfig_MIGRATE_GHOST,
+				},
+			},
+		})
+	}
+	// Create an issue that updates database schema using gh-ost.
+	_, _, _, err = ctl.changeDatabaseWithConfig(ctx, project, []*v1pb.Plan_Step{testStep, prodStep})
 	a.NoError(err)
 
 	// Query schema.
