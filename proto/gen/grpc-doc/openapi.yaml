@@ -10018,6 +10018,12 @@ components:
                     description: |-
                         The last updater of the function in branch.
                          Format: users/{userUID}.
+                sourceBranch:
+                    readOnly: true
+                    type: string
+                    description: |-
+                        The last change come from branch.
+                         Format: projcets/{project}/branches/{branch}
                 updateTime:
                     readOnly: true
                     type: string
@@ -11888,6 +11894,12 @@ components:
                     description: |-
                         The last updater of the procedure in branch.
                          Format: users/{userUID}.
+                sourceBranch:
+                    readOnly: true
+                    type: string
+                    description: |-
+                        The last change come from branch.
+                         Format: projcets/{project}/branches/{branch}
                 updateTime:
                     readOnly: true
                     type: string
@@ -13283,6 +13295,12 @@ components:
                     description: |-
                         The last updater of the table in branch.
                          Format: users/{userUID}.
+                sourceBranch:
+                    readOnly: true
+                    type: string
+                    description: |-
+                        The last change come from branch.
+                         Format: projcets/{project}/branches/{branch}
                 updateTime:
                     readOnly: true
                     type: string
@@ -14133,6 +14151,12 @@ components:
                     description: |-
                         The last updater of the view in branch.
                          Format: users/{userUID}.
+                sourceBranch:
+                    readOnly: true
+                    type: string
+                    description: |-
+                        The last change come from branch.
+                         Format: projcets/{project}/branches/{branch}
                 updateTime:
                     readOnly: true
                     type: string
