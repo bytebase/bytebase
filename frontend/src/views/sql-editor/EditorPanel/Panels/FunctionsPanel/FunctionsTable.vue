@@ -68,7 +68,7 @@ const columns = computed(() => {
       className: "truncate",
       render: (func) => {
         return (
-          <NPerformantEllipsis class="w-full cursor-pointer leading-6 hover:text-accent">
+          <NPerformantEllipsis class="w-full leading-6">
             {func.name}
           </NPerformantEllipsis>
         );

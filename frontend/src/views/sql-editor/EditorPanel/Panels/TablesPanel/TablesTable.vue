@@ -134,7 +134,7 @@ const columns = computed(() => {
       maxWidth: 320,
       render: (table) => {
         return (
-          <NPerformantEllipsis class="w-full cursor-pointer leading-6">
+          <NPerformantEllipsis class="w-full leading-6">
             {table.userComment}
           </NPerformantEllipsis>
         );

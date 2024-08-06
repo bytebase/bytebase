@@ -68,7 +68,7 @@ const columns = computed(() => {
       className: "truncate",
       render: (view) => {
         return (
-          <NPerformantEllipsis class="w-full cursor-pointer leading-6">
+          <NPerformantEllipsis class="w-full leading-6">
             {view.name}
           </NPerformantEllipsis>
         );
@@ -81,7 +81,7 @@ const columns = computed(() => {
       className: "truncate",
       render: (view) => {
         return (
-          <NPerformantEllipsis class="w-full cursor-pointer leading-6">
+          <NPerformantEllipsis class="w-full leading-6">
             {view.comment}
           </NPerformantEllipsis>
         );
