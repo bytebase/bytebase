@@ -81,23 +81,22 @@
 </template>
 
 <script lang="ts" setup>
+import { head } from "lodash-es";
 import { TrashIcon } from "lucide-vue-next";
 import type { SelectOption } from "naive-ui";
 import { NSelect, NPopconfirm, NInput, NButton } from "naive-ui";
 import { computed, reactive, onMounted, nextTick } from "vue";
 import { useI18n } from "vue-i18n";
 import ExprEditor from "@/components/ExprEditor";
-import type { ConditionGroupExpr, Factor } from "@/plugins/cel";
+import type { ConditionGroupExpr, Factor, SimpleExpr } from "@/plugins/cel";
 import {
   resolveCELExpr,
   wrapAsGroup,
   buildCELExpr,
   validateSimpleExpr,
+  emptySimpleExpr,
 } from "@/plugins/cel";
-import {
-  Expr as CELExpr,
-  ParsedExpr,
-} from "@/types/proto/google/api/expr/v1alpha1/syntax";
+import { ParsedExpr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
 import { Expr } from "@/types/proto/google/type/expr";
 import { MaskingLevel, maskingLevelToJSON } from "@/types/proto/v1/common";
 import type { MaskingRulePolicy_MaskingRule } from "@/types/proto/v1/org_policy_service";
@@ -133,23 +132,26 @@ type LocalState = {
 const { t } = useI18n();
 const state = reactive<LocalState>({
   title: "",
-  expr: wrapAsGroup(resolveCELExpr(CELExpr.fromJSON({}))),
+  expr: wrapAsGroup(emptySimpleExpr()),
   maskingLevel: MaskingLevel.FULL,
   dirty: false,
 });
 
 const resetLocalState = async (rule: MaskingRulePolicy_MaskingRule) => {
-  let expr = CELExpr.fromJSON({});
+  let expr: SimpleExpr = emptySimpleExpr();
   if (rule.condition?.expression) {
     const parsedExprs = await batchConvertCELStringToParsedExpr([
       rule.condition.expression,
     ]);
-    expr = parsedExprs[0].expr ?? CELExpr.fromJSON({});
+    const celExpr = head(parsedExprs)?.expr;
+    if (celExpr) {
+      expr = resolveCELExpr(celExpr);
+    }
   }
 
   state.dirty = false;
   state.title = rule.condition?.title ?? "";
-  state.expr = wrapAsGroup(resolveCELExpr(expr));
+  state.expr = wrapAsGroup(expr);
   state.maskingLevel = rule.maskingLevel;
 };
 
