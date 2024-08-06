@@ -857,16 +857,6 @@ func (s *ProjectService) TestWebhook(ctx context.Context, request *v1pb.TestWebh
 	return resp, nil
 }
 
-// GetProjectProtectionRules gets a project protection rules.
-func (*ProjectService) GetProjectProtectionRules(_ context.Context, _ *v1pb.GetProjectProtectionRulesRequest) (*v1pb.ProtectionRules, error) {
-	return &v1pb.ProtectionRules{}, nil
-}
-
-// UpdateProjectProtectionRules updates a project protection rules.
-func (*ProjectService) UpdateProjectProtectionRules(_ context.Context, _ *v1pb.UpdateProjectProtectionRulesRequest) (*v1pb.ProtectionRules, error) {
-	return &v1pb.ProtectionRules{}, nil
-}
-
 func convertToStoreProjectWebhookMessage(webhook *v1pb.Webhook) (*store.ProjectWebhookMessage, error) {
 	tp, err := convertToAPIWebhookTypeString(webhook.Type)
 	if err != nil {

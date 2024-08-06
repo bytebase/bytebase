@@ -439,7 +439,6 @@
     - [DeploymentConfig](#bytebase-v1-DeploymentConfig)
     - [DeploymentSpec](#bytebase-v1-DeploymentSpec)
     - [GetDeploymentConfigRequest](#bytebase-v1-GetDeploymentConfigRequest)
-    - [GetProjectProtectionRulesRequest](#bytebase-v1-GetProjectProtectionRulesRequest)
     - [GetProjectRequest](#bytebase-v1-GetProjectRequest)
     - [Label](#bytebase-v1-Label)
     - [LabelSelector](#bytebase-v1-LabelSelector)
@@ -447,8 +446,6 @@
     - [ListProjectsRequest](#bytebase-v1-ListProjectsRequest)
     - [ListProjectsResponse](#bytebase-v1-ListProjectsResponse)
     - [Project](#bytebase-v1-Project)
-    - [ProtectionRule](#bytebase-v1-ProtectionRule)
-    - [ProtectionRules](#bytebase-v1-ProtectionRules)
     - [RemoveWebhookRequest](#bytebase-v1-RemoveWebhookRequest)
     - [Schedule](#bytebase-v1-Schedule)
     - [ScheduleDeployment](#bytebase-v1-ScheduleDeployment)
@@ -458,15 +455,12 @@
     - [TestWebhookResponse](#bytebase-v1-TestWebhookResponse)
     - [UndeleteProjectRequest](#bytebase-v1-UndeleteProjectRequest)
     - [UpdateDeploymentConfigRequest](#bytebase-v1-UpdateDeploymentConfigRequest)
-    - [UpdateProjectProtectionRulesRequest](#bytebase-v1-UpdateProjectProtectionRulesRequest)
     - [UpdateProjectRequest](#bytebase-v1-UpdateProjectRequest)
     - [UpdateWebhookRequest](#bytebase-v1-UpdateWebhookRequest)
     - [Webhook](#bytebase-v1-Webhook)
   
     - [Activity.Type](#bytebase-v1-Activity-Type)
     - [OperatorType](#bytebase-v1-OperatorType)
-    - [ProtectionRule.BranchSource](#bytebase-v1-ProtectionRule-BranchSource)
-    - [ProtectionRule.Target](#bytebase-v1-ProtectionRule-Target)
     - [Webhook.Type](#bytebase-v1-Webhook-Type)
     - [Workflow](#bytebase-v1-Workflow)
   
@@ -7192,21 +7186,6 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 
 
 
-<a name="bytebase-v1-GetProjectProtectionRulesRequest"></a>
-
-### GetProjectProtectionRulesRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the protection rules. Format: projects/{project}/protectionRules |
-
-
-
-
-
-
 <a name="bytebase-v1-GetProjectRequest"></a>
 
 ### GetProjectRequest
@@ -7326,41 +7305,6 @@ When paginating, all other parameters provided to `ListProjects` must match the 
 | force_issue_labels | [bool](#bool) |  | Force issue labels to be used when creating an issue. |
 | allow_modify_statement | [bool](#bool) |  | Allow modifying statement after issue is created. |
 | auto_resolve_issue | [bool](#bool) |  | Enable auto resolve issue. |
-
-
-
-
-
-
-<a name="bytebase-v1-ProtectionRule"></a>
-
-### ProtectionRule
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| id | [string](#string) |  | A unique identifier for a node in UUID format. |
-| target | [ProtectionRule.Target](#bytebase-v1-ProtectionRule-Target) |  |  |
-| name_filter | [string](#string) |  | The name of the branch/changelist or wildcard. |
-| allowed_roles | [string](#string) | repeated | The roles allowed to create branches or changelists, rebase branches, delete branches. Format: roles/projectOwner. |
-| branch_source | [ProtectionRule.BranchSource](#bytebase-v1-ProtectionRule-BranchSource) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-ProtectionRules"></a>
-
-### ProtectionRules
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the protection rules. Format: projects/{project}/protectionRules |
-| rules | [ProtectionRule](#bytebase-v1-ProtectionRule) | repeated |  |
 
 
 
@@ -7504,21 +7448,6 @@ When paginating, all other parameters provided to `ListProjects` must match the 
 
 
 
-<a name="bytebase-v1-UpdateProjectProtectionRulesRequest"></a>
-
-### UpdateProjectProtectionRulesRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| protection_rules | [ProtectionRules](#bytebase-v1-ProtectionRules) |  |  |
-
-
-
-
-
-
 <a name="bytebase-v1-UpdateProjectRequest"></a>
 
 ### UpdateProjectRequest
@@ -7629,31 +7558,6 @@ TYPE_PROJECT_REPOSITORY_PUSH represents Bytebase receiving a push event from the
 
 
 
-<a name="bytebase-v1-ProtectionRule-BranchSource"></a>
-
-### ProtectionRule.BranchSource
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| BRANCH_SOURCE_UNSPECIFIED | 0 |  |
-| DATABASE | 1 |  |
-
-
-
-<a name="bytebase-v1-ProtectionRule-Target"></a>
-
-### ProtectionRule.Target
-The type of target.
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| PROTECTION_TARGET_UNSPECIFIED | 0 |  |
-| BRANCH | 1 |  |
-| CHANGELIST | 2 |  |
-
-
-
 <a name="bytebase-v1-Webhook-Type"></a>
 
 ### Webhook.Type
@@ -7712,8 +7616,6 @@ The type of target.
 | UpdateWebhook | [UpdateWebhookRequest](#bytebase-v1-UpdateWebhookRequest) | [Project](#bytebase-v1-Project) |  |
 | RemoveWebhook | [RemoveWebhookRequest](#bytebase-v1-RemoveWebhookRequest) | [Project](#bytebase-v1-Project) |  |
 | TestWebhook | [TestWebhookRequest](#bytebase-v1-TestWebhookRequest) | [TestWebhookResponse](#bytebase-v1-TestWebhookResponse) |  |
-| GetProjectProtectionRules | [GetProjectProtectionRulesRequest](#bytebase-v1-GetProjectProtectionRulesRequest) | [ProtectionRules](#bytebase-v1-ProtectionRules) |  |
-| UpdateProjectProtectionRules | [UpdateProjectProtectionRulesRequest](#bytebase-v1-UpdateProjectProtectionRulesRequest) | [ProtectionRules](#bytebase-v1-ProtectionRules) |  |
 
  
 

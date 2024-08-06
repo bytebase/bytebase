@@ -5517,61 +5517,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
-    /v1/projects/{project}/protectionRules:
-        get:
-            tags:
-                - ProjectService
-            operationId: ProjectService_GetProjectProtectionRules
-            parameters:
-                - name: project
-                  in: path
-                  description: The project id.
-                  required: true
-                  schema:
-                    type: string
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/ProtectionRules'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
-        patch:
-            tags:
-                - ProjectService
-            operationId: ProjectService_UpdateProjectProtectionRules
-            parameters:
-                - name: project
-                  in: path
-                  description: The project id.
-                  required: true
-                  schema:
-                    type: string
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/UpdateProjectProtectionRulesRequest'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/ProtectionRules'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
     /v1/projects/{project}/rollouts:
         post:
             tags:
@@ -11964,47 +11909,6 @@ components:
                 autoResolveIssue:
                     type: boolean
                     description: Enable auto resolve issue.
-        ProtectionRule:
-            type: object
-            properties:
-                id:
-                    type: string
-                    description: A unique identifier for a node in UUID format.
-                target:
-                    enum:
-                        - PROTECTION_TARGET_UNSPECIFIED
-                        - BRANCH
-                        - CHANGELIST
-                    type: string
-                    format: enum
-                nameFilter:
-                    type: string
-                    description: The name of the branch/changelist or wildcard.
-                allowedRoles:
-                    type: array
-                    items:
-                        type: string
-                    description: |-
-                        The roles allowed to create branches or changelists, rebase branches, delete branches.
-                         Format: roles/projectOwner.
-                branchSource:
-                    enum:
-                        - BRANCH_SOURCE_UNSPECIFIED
-                        - DATABASE
-                    type: string
-                    format: enum
-        ProtectionRules:
-            type: object
-            properties:
-                name:
-                    type: string
-                    description: |-
-                        The name of the protection rules.
-                         Format: projects/{project}/protectionRules
-                rules:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/ProtectionRule'
         QueryHistory:
             type: object
             properties:
@@ -14028,13 +13932,6 @@ components:
                     type: string
                     description: The list of fields to update.
                     format: field-mask
-        UpdateProjectProtectionRulesRequest:
-            required:
-                - protectionRules
-            type: object
-            properties:
-                protectionRules:
-                    $ref: '#/components/schemas/ProtectionRules'
         UpdateWebhookRequest:
             required:
                 - webhook
