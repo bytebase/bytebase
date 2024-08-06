@@ -366,7 +366,9 @@ watchEffect(async () => {
         "projects/101",
         true /* silent */
       );
-    } catch {}
+    } catch {
+      // nothing
+    }
   }
 });
 </script>
