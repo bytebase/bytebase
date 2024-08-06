@@ -555,6 +555,16 @@ func (s *BranchService) RebaseBranch(ctx context.Context, request *v1pb.RebaseBr
 	if !ok {
 		return nil, status.Errorf(codes.PermissionDenied, "permission denied to rebase branch")
 	}
+	// Main branch IAM admin check.
+	if baseBranch.Config.GetSourceBranch() == "" {
+		ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionBranchesAdmin, user, baseProject.ResourceID)
+		if err != nil {
+			return nil, err
+		}
+		if !ok {
+			return nil, status.Errorf(codes.InvalidArgument, "only users with %s permission can rebase a main branch", iam.PermissionBranchesAdmin)
+		}
+	}
 
 	filteredNewBaseMetadata, newBaseSchema, newBaseConfig, err := s.getFilteredNewBaseFromRebaseRequest(ctx, request)
 	if err != nil {
@@ -767,7 +777,7 @@ func (s *BranchService) DeleteBranch(ctx context.Context, request *v1pb.DeleteBr
 			return nil, err
 		}
 		if !ok {
-			return nil, status.Errorf(codes.InvalidArgument, "only users with %s permission can create a main branch", iam.PermissionBranchesAdmin)
+			return nil, status.Errorf(codes.InvalidArgument, "only users with %s permission can delete a main branch", iam.PermissionBranchesAdmin)
 		}
 	}
 
