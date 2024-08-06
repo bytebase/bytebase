@@ -61,7 +61,6 @@
                 {{ $t("branch.merge-rebase.rebase-branch") }}
               </NButton>
               <NButton
-                v-if="showApplyBranchButton"
                 type="primary"
                 @click="handleApplyBranchToDatabase"
                 >{{ $t("schema-designer.apply-to-database") }}</NButton
@@ -176,7 +175,6 @@ import {
   defer,
   extractProjectResourceName,
   hasProjectPermissionV2,
-  isOwnerOfProjectV1,
 } from "@/utils";
 import { getErrorCode } from "@/utils/grpcweb";
 import { provideSQLCheckContext } from "../SQLCheck";
@@ -277,18 +275,15 @@ const showMergeBranchButton = computed(() => {
 const showRebaseBranchButton = computed(() => {
   // For main branches: only project owners are allowed
   if (!parentBranch.value) {
-    return isOwnerOfProjectV1(props.project, currentUser.value);
+    return hasProjectPermissionV2(
+      props.project,
+      useCurrentUserV1().value,
+      "bb.branches.admin"
+    )
   }
 
   // For feature branches: project owners and branch creator
   return allowEdit.value;
-});
-
-// Only show apply to database button when the branch is main branch.
-const showApplyBranchButton = computed(() => {
-  return (
-    !parentBranch.value && isOwnerOfProjectV1(props.project, currentUser.value)
-  );
 });
 
 const rebuildMetadataEdit = () => {
