@@ -1319,6 +1319,9 @@ message ChangedResourceSchema {
 
 message ChangedResourceTable {
   string name = 1;
+
+  // The ranges of sub-strings correspond to the statements on the sheet.
+  repeated Range ranges = 3;
 }
 
 enum ChangeHistoryView {

@@ -7,6 +7,7 @@
     - [DatabaseLabel](#bytebase-store-DatabaseLabel)
     - [PageToken](#bytebase-store-PageToken)
     - [Position](#bytebase-store-Position)
+    - [Range](#bytebase-store-Range)
   
     - [Engine](#bytebase-store-Engine)
     - [ExportFormat](#bytebase-store-ExportFormat)
@@ -362,6 +363,22 @@ Used internally for obfuscating the page token.
 | ----- | ---- | ----- | ----------- |
 | line | [int32](#int32) |  |  |
 | column | [int32](#int32) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-Range"></a>
+
+### Range
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| start | [int32](#int32) |  |  |
+| end | [int32](#int32) |  |  |
 
 
 
@@ -2262,6 +2279,7 @@ InstanceRole is the API message for instance role.
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  |  |
 | table_rows | [int64](#int64) |  | estimated row count of the table |
+| ranges | [Range](#bytebase-store-Range) | repeated | The ranges of sub-strings correspond to the statements on the sheet. |
 
 
 
