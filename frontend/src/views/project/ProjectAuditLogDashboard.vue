@@ -28,17 +28,17 @@
     >
       <template #table="{ list }">
         <AuditLogDataTable
+          :key="`audit-log-table.${projectId}`"
           :audit-log-list="list"
           :show-project="false"
-          :key="`audit-log-table.${projectId}`"
         />
       </template>
     </PagedAuditLogTable>
     <template v-else>
       <AuditLogDataTable
+        :key="`audit-log-table.${projectId}`"
         :audit-log-list="[]"
         :show-project="false"
-        :key="`audit-log-table.${projectId}`"
       />
     </template>
   </div>

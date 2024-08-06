@@ -23,11 +23,11 @@
       :page-size="10"
     >
       <template #table="{ list }">
-        <AuditLogDataTable :audit-log-list="list" key="audit-log-table" />
+        <AuditLogDataTable key="audit-log-table" :audit-log-list="list" />
       </template>
     </PagedAuditLogTable>
     <template v-else>
-      <AuditLogDataTable :audit-log-list="[]" key="audit-log-table" />
+      <AuditLogDataTable key="audit-log-table" :audit-log-list="[]" />
     </template>
   </div>
 </template>
