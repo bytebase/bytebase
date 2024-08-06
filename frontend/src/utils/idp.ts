@@ -99,6 +99,28 @@ export const identityProviderTemplateList: IdentityProviderTemplate[] = [
     },
   },
   {
+    title: "Microsoft Entra",
+    name: "",
+    domain: "",
+    type: IdentityProviderType.OAUTH2,
+    config: {
+      clientId: "",
+      clientSecret: "",
+      authUrl: "https://login.microsoftonline.com/{uuid}/oauth2/v2.0/authorize",
+      tokenUrl: "https://login.microsoftonline.com/{uuid}/oauth2/v2.0/token",
+      userInfoUrl: "https://graph.microsoft.com/v1.0/me",
+      scopes: ["user.read"],
+      skipTlsVerify: false,
+      authStyle: OAuth2AuthStyle.IN_PARAMS,
+      fieldMapping: {
+        identifier: "userPrincipalName",
+        displayName: "displayName",
+        email: "",
+        phone: "",
+      },
+    },
+  },
+  {
     title: "Custom",
     name: "",
     domain: "",

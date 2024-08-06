@@ -64,7 +64,7 @@
           :value="selectedTemplate?.title"
         >
           <div
-            class="w-24 h-12 border rounded-md flex items-center justify-center"
+            class="w-auto px-3 py-2 border rounded-md flex items-center justify-center"
           >
             <NRadio
               :value="template.title"
@@ -1007,6 +1007,9 @@ const handleTemplateSelect = (template: IdentityProviderTemplate) => {
       ...configForOAuth2.value,
       ...template.config,
     };
+    state.fieldMapping = FieldMapping.fromPartial(
+      template.config.fieldMapping || {}
+    );
     scopesStringOfConfig.value = template.config.scopes.join(" ");
   }
 };
