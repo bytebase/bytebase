@@ -8,7 +8,11 @@
     @blur="focused = false"
     @update:value="$emit('update:value', $event)"
   />
-  <NPerformantEllipsis v-else style="padding: 0 var(--n-padding-right) 0 var(--n-padding-left)" v-bind="$attrs">
+  <NPerformantEllipsis
+    v-else
+    style="padding: 0 var(--n-padding-right) 0 var(--n-padding-left)"
+    v-bind="$attrs"
+  >
     {{ value }}
   </NPerformantEllipsis>
 </template>
