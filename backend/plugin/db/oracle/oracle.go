@@ -300,7 +300,7 @@ func (driver *Driver) getStatementWithResultLimit(stmt string, queryContext *db.
 		return "", err
 	}
 	if queryContext != nil {
-		if !needLimit(stmt) {
+		if ok, err := skipAddLimit(stmt); err != nil && ok {
 			return stmt, nil
 		}
 		switch {
@@ -318,80 +318,80 @@ func (driver *Driver) getStatementWithResultLimit(stmt string, queryContext *db.
 	return stmt, nil
 }
 
-// needLimit checks if the statement needs a limit clause.
+// skipAddLimit checks if the statement needs a limit clause.
 // For Oracle, we think the statement like "SELECT xxx FROM DUAL" does not need a limit clause.
 // More details, xxx can not be a subquery.
-func needLimit(stmt string) bool {
+func skipAddLimit(stmt string) (bool, error) {
 	tree, _, err := plsqlparser.ParsePLSQL(stmt)
 	if err != nil {
-		return true
+		return false, err
 	}
 
 	sqlScript, ok := tree.(*plsql.Sql_scriptContext)
 	if !ok {
-		return true
+		return false, nil
 	}
 
 	if len(sqlScript.AllSql_plus_command()) > 0 {
-		return true
+		return false, nil
 	}
 
 	if len(sqlScript.AllUnit_statement()) > 1 {
-		return true
+		return false, nil
 	}
 
 	unitStatement := sqlScript.Unit_statement(0)
 	if unitStatement == nil {
-		return true
+		return false, nil
 	}
 
 	dml := unitStatement.Data_manipulation_language_statements()
 	if dml == nil {
-		return true
+		return false, nil
 	}
 
 	selectStatement := dml.Select_statement()
 	if selectStatement == nil {
-		return true
+		return false, nil
 	}
 
 	switch {
 	case len(selectStatement.AllFor_update_clause()) != 0:
-		return true
+		return false, nil
 	case len(selectStatement.AllOrder_by_clause()) != 0:
-		return true
+		return false, nil
 	case len(selectStatement.AllOffset_clause()) != 0:
-		return true
+		return false, nil
 	case len(selectStatement.AllFetch_clause()) != 0:
-		return true
+		return false, nil
 	}
 
 	selectOnly := selectStatement.Select_only_statement()
 	if selectOnly == nil {
-		return true
+		return false, nil
 	}
 
 	subquery := selectOnly.Subquery()
 	if subquery == nil {
-		return true
+		return false, nil
 	}
 
 	if len(subquery.AllSubquery_operation_part()) != 0 {
-		return true
+		return false, nil
 	}
 
 	subqueryBasicElements := subquery.Subquery_basic_elements()
 	if subqueryBasicElements == nil {
-		return true
+		return false, nil
 	}
 
 	if subqueryBasicElements.Subquery() != nil {
-		return true
+		return false, nil
 	}
 
 	queryBlock := subqueryBasicElements.Query_block()
 	if queryBlock == nil {
-		return true
+		return false, nil
 	}
 
 	switch {
@@ -406,36 +406,36 @@ func needLimit(stmt string) bool {
 		queryBlock.Model_clause() != nil,
 		queryBlock.Order_by_clause() != nil,
 		queryBlock.Fetch_clause() != nil:
-		return true
+		return false, nil
 	}
 
 	from := queryBlock.From_clause()
 	if !strings.EqualFold(from.GetText(), "FROMDUAL") {
-		return true
+		return false, nil
 	}
 
 	selectedList := queryBlock.Selected_list()
 	if selectedList == nil {
-		return true
+		return false, nil
 	}
 
 	if selectedList.ASTERISK() != nil {
-		return true
+		return false, nil
 	}
 
 	for _, selectedElement := range selectedList.AllSelect_list_elements() {
 		if selectedElement.Table_wild() != nil {
-			return true
+			return false, nil
 		}
 
 		l := subqueryListener{}
 		antlr.ParseTreeWalkerDefault.Walk(&l, selectedElement)
 		if l.hasSubquery {
-			return true
+			return false, nil
 		}
 	}
 
-	return false
+	return true, nil
 }
 
 type subqueryListener struct {
