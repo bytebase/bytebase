@@ -904,14 +904,6 @@ func GetPipelineCreate(ctx context.Context, s *store.Store, sheetManager *sheet.
 	if len(specs) == 1 {
 		spec := specs[0]
 		if config := spec.GetChangeDatabaseConfig(); config != nil {
-			// TODO(steven): Remove me later.
-			if _, _, err := common.GetProjectIDDeploymentConfigID(config.Target); err == nil {
-				stepsFromDeploymentConfig, err := transformDeploymentConfigTargetToSteps(ctx, s, spec, config, project)
-				if err != nil {
-					return nil, errors.Wrap(err, "failed to transform deploymentConfig target to steps")
-				}
-				transformedSteps = stepsFromDeploymentConfig
-			}
 			if _, _, err := common.GetProjectIDDatabaseGroupID(config.Target); err == nil {
 				stepsFromDatabaseGroup, err := transformDatabaseGroupTargetToSteps(ctx, s, spec, config, project)
 				if err != nil {
