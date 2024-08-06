@@ -1,5 +1,6 @@
 <template>
   <NDataTable
+    key="database-table"
     size="small"
     :columns="columnList"
     :data="data"

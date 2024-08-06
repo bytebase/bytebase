@@ -11,6 +11,7 @@
       </div>
       <div class="hidden lg:block">
         <NDataTable
+          key="sql-review-rule-table"
           :size="size"
           :striped="true"
           :columns="columns"

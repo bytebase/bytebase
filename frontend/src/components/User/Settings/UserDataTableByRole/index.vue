@@ -1,5 +1,6 @@
 <template>
   <NDataTable
+    key="user-by-role-table"
     :columns="columns"
     :data="userListByRole"
     :row-key="(row) => row.name"

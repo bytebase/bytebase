@@ -6,6 +6,7 @@
     />
 
     <NDataTable
+      key="instance-table"
       size="small"
       :columns="columnList"
       :data="instanceList"
@@ -94,7 +95,7 @@ const columnList = computed((): InstanceDataTableColumn[] => {
   const ENVIRONMENT: InstanceDataTableColumn = {
     key: "environment",
     title: t("common.environment"),
-    className: 'whitespace-nowrap',
+    className: "whitespace-nowrap",
     resizable: true,
     render: (instance) => (
       <EnvironmentV1Name
