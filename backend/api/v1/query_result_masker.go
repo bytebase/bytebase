@@ -58,7 +58,7 @@ func (s *QueryResultMasker) MaskResults(ctx context.Context, spans []*base.Query
 	// We expect the len(spans) == len(results), but to avoid NPE, we use the min(len(spans), len(results)) here.
 	loopBoundary := min(len(spans), len(results))
 	for i := 0; i < loopBoundary; i++ {
-		if !strings.HasPrefix(strings.TrimSpace(results[i].Statement), "EXPLAIN") {
+		if strings.HasPrefix(strings.TrimSpace(results[i].Statement), "EXPLAIN") {
 			continue
 		}
 		maskers, err := s.getMaskersForQuerySpan(ctx, m, instance, spans[i], action)
