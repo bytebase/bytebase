@@ -20,24 +20,22 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	ProjectService_GetProject_FullMethodName                   = "/bytebase.v1.ProjectService/GetProject"
-	ProjectService_ListProjects_FullMethodName                 = "/bytebase.v1.ProjectService/ListProjects"
-	ProjectService_SearchProjects_FullMethodName               = "/bytebase.v1.ProjectService/SearchProjects"
-	ProjectService_CreateProject_FullMethodName                = "/bytebase.v1.ProjectService/CreateProject"
-	ProjectService_UpdateProject_FullMethodName                = "/bytebase.v1.ProjectService/UpdateProject"
-	ProjectService_DeleteProject_FullMethodName                = "/bytebase.v1.ProjectService/DeleteProject"
-	ProjectService_UndeleteProject_FullMethodName              = "/bytebase.v1.ProjectService/UndeleteProject"
-	ProjectService_GetIamPolicy_FullMethodName                 = "/bytebase.v1.ProjectService/GetIamPolicy"
-	ProjectService_BatchGetIamPolicy_FullMethodName            = "/bytebase.v1.ProjectService/BatchGetIamPolicy"
-	ProjectService_SetIamPolicy_FullMethodName                 = "/bytebase.v1.ProjectService/SetIamPolicy"
-	ProjectService_GetDeploymentConfig_FullMethodName          = "/bytebase.v1.ProjectService/GetDeploymentConfig"
-	ProjectService_UpdateDeploymentConfig_FullMethodName       = "/bytebase.v1.ProjectService/UpdateDeploymentConfig"
-	ProjectService_AddWebhook_FullMethodName                   = "/bytebase.v1.ProjectService/AddWebhook"
-	ProjectService_UpdateWebhook_FullMethodName                = "/bytebase.v1.ProjectService/UpdateWebhook"
-	ProjectService_RemoveWebhook_FullMethodName                = "/bytebase.v1.ProjectService/RemoveWebhook"
-	ProjectService_TestWebhook_FullMethodName                  = "/bytebase.v1.ProjectService/TestWebhook"
-	ProjectService_GetProjectProtectionRules_FullMethodName    = "/bytebase.v1.ProjectService/GetProjectProtectionRules"
-	ProjectService_UpdateProjectProtectionRules_FullMethodName = "/bytebase.v1.ProjectService/UpdateProjectProtectionRules"
+	ProjectService_GetProject_FullMethodName             = "/bytebase.v1.ProjectService/GetProject"
+	ProjectService_ListProjects_FullMethodName           = "/bytebase.v1.ProjectService/ListProjects"
+	ProjectService_SearchProjects_FullMethodName         = "/bytebase.v1.ProjectService/SearchProjects"
+	ProjectService_CreateProject_FullMethodName          = "/bytebase.v1.ProjectService/CreateProject"
+	ProjectService_UpdateProject_FullMethodName          = "/bytebase.v1.ProjectService/UpdateProject"
+	ProjectService_DeleteProject_FullMethodName          = "/bytebase.v1.ProjectService/DeleteProject"
+	ProjectService_UndeleteProject_FullMethodName        = "/bytebase.v1.ProjectService/UndeleteProject"
+	ProjectService_GetIamPolicy_FullMethodName           = "/bytebase.v1.ProjectService/GetIamPolicy"
+	ProjectService_BatchGetIamPolicy_FullMethodName      = "/bytebase.v1.ProjectService/BatchGetIamPolicy"
+	ProjectService_SetIamPolicy_FullMethodName           = "/bytebase.v1.ProjectService/SetIamPolicy"
+	ProjectService_GetDeploymentConfig_FullMethodName    = "/bytebase.v1.ProjectService/GetDeploymentConfig"
+	ProjectService_UpdateDeploymentConfig_FullMethodName = "/bytebase.v1.ProjectService/UpdateDeploymentConfig"
+	ProjectService_AddWebhook_FullMethodName             = "/bytebase.v1.ProjectService/AddWebhook"
+	ProjectService_UpdateWebhook_FullMethodName          = "/bytebase.v1.ProjectService/UpdateWebhook"
+	ProjectService_RemoveWebhook_FullMethodName          = "/bytebase.v1.ProjectService/RemoveWebhook"
+	ProjectService_TestWebhook_FullMethodName            = "/bytebase.v1.ProjectService/TestWebhook"
 )
 
 // ProjectServiceClient is the client API for ProjectService service.
@@ -61,8 +59,6 @@ type ProjectServiceClient interface {
 	UpdateWebhook(ctx context.Context, in *UpdateWebhookRequest, opts ...grpc.CallOption) (*Project, error)
 	RemoveWebhook(ctx context.Context, in *RemoveWebhookRequest, opts ...grpc.CallOption) (*Project, error)
 	TestWebhook(ctx context.Context, in *TestWebhookRequest, opts ...grpc.CallOption) (*TestWebhookResponse, error)
-	GetProjectProtectionRules(ctx context.Context, in *GetProjectProtectionRulesRequest, opts ...grpc.CallOption) (*ProtectionRules, error)
-	UpdateProjectProtectionRules(ctx context.Context, in *UpdateProjectProtectionRulesRequest, opts ...grpc.CallOption) (*ProtectionRules, error)
 }
 
 type projectServiceClient struct {
@@ -233,26 +229,6 @@ func (c *projectServiceClient) TestWebhook(ctx context.Context, in *TestWebhookR
 	return out, nil
 }
 
-func (c *projectServiceClient) GetProjectProtectionRules(ctx context.Context, in *GetProjectProtectionRulesRequest, opts ...grpc.CallOption) (*ProtectionRules, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ProtectionRules)
-	err := c.cc.Invoke(ctx, ProjectService_GetProjectProtectionRules_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *projectServiceClient) UpdateProjectProtectionRules(ctx context.Context, in *UpdateProjectProtectionRulesRequest, opts ...grpc.CallOption) (*ProtectionRules, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ProtectionRules)
-	err := c.cc.Invoke(ctx, ProjectService_UpdateProjectProtectionRules_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 // ProjectServiceServer is the server API for ProjectService service.
 // All implementations must embed UnimplementedProjectServiceServer
 // for forward compatibility.
@@ -274,8 +250,6 @@ type ProjectServiceServer interface {
 	UpdateWebhook(context.Context, *UpdateWebhookRequest) (*Project, error)
 	RemoveWebhook(context.Context, *RemoveWebhookRequest) (*Project, error)
 	TestWebhook(context.Context, *TestWebhookRequest) (*TestWebhookResponse, error)
-	GetProjectProtectionRules(context.Context, *GetProjectProtectionRulesRequest) (*ProtectionRules, error)
-	UpdateProjectProtectionRules(context.Context, *UpdateProjectProtectionRulesRequest) (*ProtectionRules, error)
 	mustEmbedUnimplementedProjectServiceServer()
 }
 
@@ -333,12 +307,6 @@ func (UnimplementedProjectServiceServer) RemoveWebhook(context.Context, *RemoveW
 }
 func (UnimplementedProjectServiceServer) TestWebhook(context.Context, *TestWebhookRequest) (*TestWebhookResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method TestWebhook not implemented")
-}
-func (UnimplementedProjectServiceServer) GetProjectProtectionRules(context.Context, *GetProjectProtectionRulesRequest) (*ProtectionRules, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetProjectProtectionRules not implemented")
-}
-func (UnimplementedProjectServiceServer) UpdateProjectProtectionRules(context.Context, *UpdateProjectProtectionRulesRequest) (*ProtectionRules, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method UpdateProjectProtectionRules not implemented")
 }
 func (UnimplementedProjectServiceServer) mustEmbedUnimplementedProjectServiceServer() {}
 func (UnimplementedProjectServiceServer) testEmbeddedByValue()                        {}
@@ -649,42 +617,6 @@ func _ProjectService_TestWebhook_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ProjectService_GetProjectProtectionRules_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetProjectProtectionRulesRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ProjectServiceServer).GetProjectProtectionRules(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ProjectService_GetProjectProtectionRules_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ProjectServiceServer).GetProjectProtectionRules(ctx, req.(*GetProjectProtectionRulesRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _ProjectService_UpdateProjectProtectionRules_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(UpdateProjectProtectionRulesRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ProjectServiceServer).UpdateProjectProtectionRules(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ProjectService_UpdateProjectProtectionRules_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ProjectServiceServer).UpdateProjectProtectionRules(ctx, req.(*UpdateProjectProtectionRulesRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 // ProjectService_ServiceDesc is the grpc.ServiceDesc for ProjectService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -755,14 +687,6 @@ var ProjectService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "TestWebhook",
 			Handler:    _ProjectService_TestWebhook_Handler,
-		},
-		{
-			MethodName: "GetProjectProtectionRules",
-			Handler:    _ProjectService_GetProjectProtectionRules_Handler,
-		},
-		{
-			MethodName: "UpdateProjectProtectionRules",
-			Handler:    _ProjectService_UpdateProjectProtectionRules_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
