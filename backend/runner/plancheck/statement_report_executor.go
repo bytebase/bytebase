@@ -62,7 +62,10 @@ func (e *StatementReportExecutor) Run(ctx context.Context, config *storepb.PlanC
 			},
 		}, nil
 	}
-	statement := sheet.Statement
+	statement, err := e.store.GetSheetStatementByID(ctx, sheetUID)
+	if err != nil {
+		return nil, err
+	}
 
 	isDML := config.ChangeDatabaseType == storepb.PlanCheckRunConfig_DML
 	instanceUID := int(config.InstanceUid)
