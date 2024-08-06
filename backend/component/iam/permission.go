@@ -5,6 +5,7 @@ type Permission = string
 const (
 	PermissionAuditLogsExport            Permission = "bb.auditLogs.export"
 	PermissionAuditLogsSearch            Permission = "bb.auditLogs.search"
+	PermissionBranchesAdmin              Permission = "bb.branches.admin"
 	PermissionBranchesCreate             Permission = "bb.branches.create"
 	PermissionBranchesDelete             Permission = "bb.branches.delete"
 	PermissionBranchesGet                Permission = "bb.branches.get"
@@ -128,6 +129,7 @@ const (
 var allPermissions = []Permission{
 	PermissionAuditLogsExport,
 	PermissionAuditLogsSearch,
+	PermissionBranchesAdmin,
 	PermissionBranchesCreate,
 	PermissionBranchesDelete,
 	PermissionBranchesGet,
