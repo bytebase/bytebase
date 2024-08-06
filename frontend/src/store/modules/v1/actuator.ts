@@ -24,6 +24,8 @@ const GITHUB_API_LIST_BYTEBASE_RELEASE =
   "https://api.github.com/repos/bytebase/bytebase/releases";
 
 interface ActuatorState {
+  // Whether the app is initialized or not.
+  initialized: boolean;
   serverInfo?: ActuatorInfo;
   resourcePackage?: ResourcePackage;
   releaseInfo: RemovableRef<ReleaseInfo>;
@@ -32,6 +34,7 @@ interface ActuatorState {
 
 export const useActuatorV1Store = defineStore("actuator_v1", {
   state: (): ActuatorState => ({
+    initialized: false,
     serverInfo: undefined,
     resourcePackage: undefined,
     releaseInfo: useLocalStorage("bytebase_release", {

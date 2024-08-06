@@ -39,11 +39,7 @@ export const useAuthStore = defineStore("auth_v1", () => {
       return mfaTempToken;
     }
 
-    currentUserId.value = getUserIdFromCookie();
-    if (currentUserId.value) {
-      await useUserStore().getOrFetchUserById(String(currentUserId.value));
-      await useWorkspaceV1Store().fetchIamPolicy();
-    }
+    await restoreUser();
   };
 
   const signup = async (request: Partial<User>) => {
