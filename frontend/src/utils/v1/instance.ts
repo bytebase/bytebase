@@ -312,6 +312,27 @@ export const hasSchemaProperty = (databaseEngine: Engine) => {
   );
 };
 
+export const hasTableEngineProperty = (
+  instanceOrEngine: Instance | InstanceResource | Engine
+) => {
+  const engine = engineOfInstanceV1(instanceOrEngine);
+  return ![Engine.POSTGRES, Engine.SNOWFLAKE].includes(engine);
+};
+export const hasIndexSizeProperty = (
+  instanceOrEngine: Instance | InstanceResource | Engine
+) => {
+  const engine = engineOfInstanceV1(instanceOrEngine);
+  return ![Engine.CLICKHOUSE, Engine.SNOWFLAKE].includes(engine);
+};
+export const hasCollationProperty = (
+  instanceOrEngine: Instance | InstanceResource | Engine
+) => {
+  const engine = engineOfInstanceV1(instanceOrEngine);
+  return ![Engine.POSTGRES, Engine.CLICKHOUSE, Engine.SNOWFLAKE].includes(
+    engine
+  );
+};
+
 export const useInstanceV1EditorLanguage = (
   instance: MaybeRef<Instance | InstanceResource | undefined>
 ) => {
