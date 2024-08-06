@@ -898,7 +898,7 @@ func GetPipelineCreate(ctx context.Context, s *store.Store, sheetManager *sheet.
 	}
 
 	// The following case should has only one spec.
-	// * ChangeDatabaseConfig with deploymentConfig/databaseGroup target;
+	// * ChangeDatabaseConfig with databaseGroup target;
 	// * CreateDatabaseConfig;
 	// * ExportDataConfig.
 	if len(specs) == 1 {
