@@ -11,7 +11,7 @@ message Label {
 }
 
 message Project {
-  repeated ProtectionRule protection_rules = 1;
+  reserved 1;
   repeated Label issue_labels = 2;
   // Force issue labels to be used when creating an issue.
   bool force_issue_labels = 3;
@@ -19,31 +19,4 @@ message Project {
   bool allow_modify_statement = 4;
   // Enable auto resolve issue.
   bool auto_resolve_issue = 5;
-}
-
-message ProtectionRule {
-  // A unique identifier for a node in UUID format.
-  string id = 1;
-
-  // The type of target.
-  enum Target {
-    PROTECTION_TARGET_UNSPECIFIED = 0;
-    BRANCH = 1;
-    CHANGELIST = 2;
-  }
-
-  Target target = 2;
-
-  // The name of the branch/changelist or wildcard.
-  string name_filter = 3;
-
-  // The roles allowed to create branches or changelists, rebase branches, delete branches.
-  // Format: roles/projectOwner.
-  repeated string allowed_roles = 4;
-
-  enum BranchSource {
-    BRANCH_SOURCE_UNSPECIFIED = 0;
-    DATABASE = 1;
-  }
-  BranchSource branch_source = 5;
 }

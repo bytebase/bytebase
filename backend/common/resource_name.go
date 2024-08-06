@@ -50,10 +50,9 @@ const (
 	GroupPrefix                = "groups/"
 	ReviewConfigPrefix         = "reviewConfigs/"
 
-	SchemaSuffix          = "/schema"
-	MetadataSuffix        = "/metadata"
-	GitOpsInfoSuffix      = "/gitOpsInfo"
-	ProtectionRulesSuffix = "/protectionRules"
+	SchemaSuffix     = "/schema"
+	MetadataSuffix   = "/metadata"
+	GitOpsInfoSuffix = "/gitOpsInfo"
 )
 
 // GetProjectID returns the project ID from a resource name.
