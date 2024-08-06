@@ -139,7 +139,7 @@ const metadata = computedAsync(
 const tree = computed(() => {
   if (isFetchingMetadata.value) return null;
   if (!metadata.value) return null;
-  return [buildDatabaseSchemaTree(database.value, metadata.value)];
+  return buildDatabaseSchemaTree(database.value, metadata.value);
 });
 const defaultExpandedKeys = computed(() => {
   if (!tree.value) return [];

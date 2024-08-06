@@ -8,7 +8,7 @@
         isValidInstanceName(instance.name) &&
         database.uid !== String(UNKNOWN_ID)
       "
-      class="flex justify-start items-center h-8 px-2 whitespace-nowrap shrink-0 gap-x-2"
+      class="flex justify-start items-center h-8 px-1 whitespace-nowrap shrink-0 gap-x-2"
     >
       <NButton
         :disabled="!projectContextReady"

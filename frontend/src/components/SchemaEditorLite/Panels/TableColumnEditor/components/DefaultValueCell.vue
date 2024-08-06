@@ -23,6 +23,7 @@
       <template #suffix>
         <!-- use the same icon and style with NSelect -->
         <NElement
+          v-if="!disabled"
           tag="button"
           class="absolute top-1/2 right-[3px] -translate-y-1/2"
           :class="[

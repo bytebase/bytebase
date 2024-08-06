@@ -1,7 +1,7 @@
 <template>
   <div class="relative h-full">
     <div
-      class="h-full bg-white overflow-hidden border-y border-gray-200 flex flex-col transition-all"
+      class="bb-schema-diagram--navigator--main h-full bg-white overflow-hidden border-y border-gray-200 flex flex-col transition-all"
       :class="[state.expand ? 'w-60 shadow border-l' : 'w-0']"
     >
       <div class="p-1">
