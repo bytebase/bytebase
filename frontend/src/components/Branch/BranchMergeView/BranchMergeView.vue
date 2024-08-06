@@ -6,7 +6,7 @@
       :project="project"
       :head-branch="headBranch"
       :target-branch="targetBranch"
-      :parent-branch-only="parentBranchOnly"
+      :parent-branch-only="true"
       @update:head-branch-name="handleUpdateHeadBranch"
       @update:target-branch-name="state.targetBranchName = $event || null"
     />
@@ -63,10 +63,9 @@ import { computed, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import MaskSpinner from "@/components/misc/MaskSpinner.vue";
 import { branchServiceClient } from "@/grpcweb";
-import { pushNotification, useBranchStore, useCurrentUserV1 } from "@/store";
+import { pushNotification, useBranchStore } from "@/store";
 import type { ComposedProject } from "@/types";
 import { Branch } from "@/types/proto/v1/branch_service";
-import { isOwnerOfProjectV1 } from "@/utils";
 import { extractGrpcErrorMessage, getErrorCode } from "@/utils/grpcweb";
 import BranchComparison from "../common/BranchComparison.vue";
 import MergeBranchButton from "./MergeBranchButton.vue";
@@ -100,7 +99,6 @@ const state = reactive<LocalState>({
 });
 const { t } = useI18n();
 const branchStore = useBranchStore();
-const me = useCurrentUserV1();
 const isLoadingHeadBranch = ref(false);
 const isLoadingTargetBranch = ref(false);
 const isValidating = ref(false);
@@ -136,20 +134,6 @@ const targetBranch = computedAsync(
     evaluating: isLoadingTargetBranch,
   }
 );
-
-const parentBranchOnly = computed(() => {
-  const head = headBranch.value;
-  if (!head) {
-    return false; // not ready yet
-  }
-  if (!head.parentBranch) {
-    return false; // parent-less (main) branches
-  }
-  if (isOwnerOfProjectV1(props.project, me.value)) {
-    return false; // project owners are not limited
-  }
-  return true;
-});
 
 const validationState = computedAsync(
   async (): Promise<MergeBranchValidationState | undefined> => {
