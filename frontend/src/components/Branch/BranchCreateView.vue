@@ -113,7 +113,7 @@ import type { ComposedProject } from "@/types";
 import { UNKNOWN_ID } from "@/types";
 import { Branch } from "@/types/proto/v1/branch_service";
 import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
-import { hasProjectPermissionV2, isOwnerOfProjectV1 } from "@/utils";
+import { hasProjectPermissionV2 } from "@/utils";
 import BaselineSchemaSelector from "./BaselineSchemaSelector.vue";
 import BranchSelector from "./BranchSelector.vue";
 import { validateBranchName } from "./utils";
@@ -135,7 +135,6 @@ const router = useRouter();
 const databaseStore = useDatabaseV1Store();
 const branchStore = useBranchStore();
 const dbSchemaStore = useDBSchemaV1Store();
-const me = useCurrentUserV1();
 const source = ref<Source>("PARENT");
 const databaseId = ref<string>();
 const parentBranchName = ref<string>();
@@ -146,7 +145,11 @@ const isPreparingBranch = ref(false);
 const EMPTY_BRANCH = Branch.fromPartial({});
 
 const allowCreateBranchFromDatabase = computed(() => {
-  return isOwnerOfProjectV1(props.project, me.value);
+  return hasProjectPermissionV2(
+      props.project,
+      useCurrentUserV1().value,
+      "bb.branches.admin"
+    )
 });
 
 const debouncedDatabaseId = useDebounce(databaseId, DEBOUNCE_RATE);
