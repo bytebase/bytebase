@@ -1,8 +1,9 @@
 <template>
   <div
-    class="w-full h-auto flex-grow flex flex-col items-center justify-center"
+    class="w-full flex-1 flex flex-col items-center justify-start gap-y-4"
+    style="padding-top: calc(clamp(40px, 15vh, 200px)"
   >
-    <BytebaseLogo v-if="!hideLogo" component="span" class="mb-4 -mt-[10vh]" />
+    <BytebaseLogo v-if="!hideLogo" component="span" />
 
     <div class="flex flex-col items-start gap-y-2 w-max">
       <NButton

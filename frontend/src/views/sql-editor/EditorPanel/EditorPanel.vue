@@ -1,102 +1,35 @@
 <template>
-  <div class="flex h-full w-full flex-col justify-start items-start">
-    <ConnectionPathBar class="border-b" />
+  <div class="w-full flex-1 flex flex-row items-stretch overflow-hidden">
+    <Panels>
+      <template #code-panel>
+        <StandardPanel
+          v-if="
+            !currentTab ||
+            currentTab.mode === 'READONLY' ||
+            currentTab.mode === 'STANDARD'
+          "
+        />
 
-    <template v-if="!tab || tab.editMode === 'SQL-EDITOR'">
-      <EditorAction @execute="handleExecute" />
-      <template v-if="tab">
-        <Suspense>
-          <SQLEditor @execute="handleExecute" />
-          <template #fallback>
-            <div
-              class="w-full h-auto flex-grow flex flex-col items-center justify-center"
-            >
-              <BBSpin />
-            </div>
-          </template>
-        </Suspense>
+        <TerminalPanel v-else-if="currentTab.mode === 'ADMIN'" />
+
+        <AccessDenied v-else />
       </template>
-      <template v-else>
-        <Welcome />
-      </template>
-    </template>
-
-    <Suspense>
-      <AIChatToSQL
-        v-if="tab && !isDisconnected && showAIChatBox"
-        @apply-statement="handleApplyStatement"
-      />
-    </Suspense>
-
-    <ExecutingHintModal />
-
-    <SaveSheetModal />
+    </Panels>
   </div>
 </template>
 
-<script lang="ts" setup>
+<script setup lang="ts">
 import { storeToRefs } from "pinia";
-import { defineAsyncComponent, watch } from "vue";
-import { BBSpin } from "@/bbkit";
-import { useExecuteSQL } from "@/composables/useExecuteSQL";
-import { AIChatToSQL } from "@/plugins/ai";
-import { useDatabaseV1Store, useSQLEditorTabStore } from "@/store";
-import type { SQLEditorConnection, SQLEditorQueryParams } from "@/types";
-import {
-  EditorAction,
-  ConnectionPathBar,
-  ExecutingHintModal,
-  SaveSheetModal,
-} from "../EditorCommon";
-import { useSQLEditorContext } from "../context";
-import Welcome from "./Welcome.vue";
-
-const SQLEditor = defineAsyncComponent(() => import("./SQLEditor.vue"));
+import { useSQLEditorTabStore } from "@/store";
+import AccessDenied from "./AccessDenied.vue";
+import Panels from "./Panels";
+import StandardPanel from "./StandardPanel";
+import TerminalPanel from "./TerminalPanel";
+import { provideEditorPanelContext } from "./context";
 
 const tabStore = useSQLEditorTabStore();
-const { currentTab: tab, isDisconnected } = storeToRefs(tabStore);
-const { showAIChatBox, standardModeEnabled } = useSQLEditorContext();
-
-const { execute } = useExecuteSQL();
-
-const handleExecute = (params: SQLEditorQueryParams) => {
-  execute(params);
-};
-
-const handleApplyStatement = async (
-  statement: string,
-  connection: SQLEditorConnection,
-  run: boolean
-) => {
-  if (!tab.value) {
-    return;
-  }
-  tab.value.statement = statement;
-  if (run) {
-    const database = useDatabaseV1Store().getDatabaseByName(
-      connection.database
-    );
-    handleExecute({
-      connection,
-      statement,
-      engine: database.instanceResource.engine,
-      explain: false,
-    });
-  }
-};
-
-watch(
-  [() => tab.value?.id, standardModeEnabled],
-  () => {
-    if (!tab.value) return;
-    // Fallback to READONLY mode if standard.value mode is not allowed.
-    if (!standardModeEnabled.value && tab.value.mode === "STANDARD") {
-      tab.value.mode = "READONLY";
-    }
-  },
-  {
-    immediate: true,
-    deep: false,
-  }
-);
+const { currentTab } = storeToRefs(tabStore);
+provideEditorPanelContext({
+  tab: currentTab,
+});
 </script>
