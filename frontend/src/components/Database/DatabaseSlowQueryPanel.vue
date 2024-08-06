@@ -1,6 +1,7 @@
 <template>
   <SlowQueryPanel
     v-if="database"
+    :key="`slow-query.${database.name}`"
     :show-project-column="false"
     :show-environment-column="false"
     :show-instance-column="false"
@@ -27,7 +28,7 @@ const props = defineProps<{
 
 const readonlyScopes = computed((): SearchScope[] => {
   return [
-  {
+    {
       id: "project",
       value: extractProjectResourceName(props.database.project),
     },
