@@ -16,8 +16,8 @@
 <script lang="tsx" setup>
 import type { SelectOption } from "naive-ui";
 import { NSelect } from "naive-ui";
-import { computed, watchEffect } from "vue";
-import { useEnvironmentV1Store, useProjectV1Store } from "@/store";
+import { computed } from "vue";
+import { useEnvironmentV1Store } from "@/store";
 import { State } from "@/types/proto/v1/common";
 import type { Environment } from "@/types/proto/v1/environment_service";
 import { EnvironmentV1Name } from "../Model";
@@ -52,13 +52,7 @@ const emit = defineEmits<{
   (event: "update:environment-name", name: string | undefined): void;
   (event: "update:environment-names", names: string[]): void;
 }>();
-
-const projectV1Store = useProjectV1Store();
 const environmentV1Store = useEnvironmentV1Store();
-
-const prepare = () => {
-  projectV1Store.fetchProjectList(true /* showDeleted */);
-};
 
 const combinedValue = computed(() => {
   if (props.multiple) {
@@ -145,6 +139,4 @@ const filterByName = (pattern: string, option: SelectOption) => {
     environment.title.toLowerCase().includes(pattern)
   );
 };
-
-watchEffect(prepare);
 </script>

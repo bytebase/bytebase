@@ -1,15 +1,16 @@
 import { defineStore } from "pinia";
-import { computed, reactive, ref, unref, watchEffect } from "vue";
+import { computed, reactive, unref, watchEffect } from "vue";
 import { instanceServiceClient } from "@/grpcweb";
 import type { ComposedInstance, MaybeRef } from "@/types";
 import { unknownEnvironment, unknownInstance } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import type { DataSource, Instance } from "@/types/proto/v1/instance_service";
 import { extractInstanceResourceName } from "@/utils";
+import { getResourceStoreCacheKey, type StoreCache } from "./cache";
 import { useEnvironmentV1Store } from "./environment";
 
 export const useInstanceV1Store = defineStore("instance_v1", () => {
-  const listInitialized = ref(false);
+  const listCache = reactive(new Map<string, StoreCache>());
   const instanceMapByName = reactive(new Map<string, ComposedInstance>());
 
   const reset = () => {
@@ -46,19 +47,25 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
     });
     return composedInstances;
   };
-  const listInstances = async (showDeleted = false, force?: boolean) => {
-    if (!force && listInitialized.value) {
-      return showDeleted
-        ? instanceList.value
-        : instanceList.value.filter(
-            (instance) => instance.state === State.ACTIVE
-          );
+  const listInstances = async (showDeleted = false) => {
+    const cacheKey = getResourceStoreCacheKey(
+      "instance",
+      showDeleted ? "" : "active"
+    );
+    if (!listCache.has(cacheKey)) {
+      listCache.set(cacheKey, {
+        timestamp: Date.now(),
+        isFetching: true,
+      });
     }
     const { instances } = await instanceServiceClient.listInstances({
       showDeleted,
     });
     const composed = await upsertInstances(instances);
-    listInitialized.value = true;
+    listCache.set(cacheKey, {
+      timestamp: Date.now(),
+      isFetching: false,
+    });
     return composed;
   };
   const createInstance = async (instance: Instance) => {
@@ -166,7 +173,7 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
 
   return {
     reset,
-    listInitialized,
+    listCache,
     instanceList,
     activeInstanceList,
     activateInstanceCount,
@@ -185,30 +192,36 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
   };
 });
 
-export const useInstanceV1List = (
-  showDeleted: MaybeRef<boolean> = false,
-  forceUpdate = false
-) => {
+export const useInstanceV1List = (showDeleted: MaybeRef<boolean> = false) => {
   const store = useInstanceV1Store();
-  const ready = ref(false);
+  const cacheKey = getResourceStoreCacheKey(
+    "instance",
+    showDeleted ? "" : "active"
+  );
+  const cache = computed(() => store.listCache.get(cacheKey));
+
   watchEffect(() => {
-    if (!unref(forceUpdate) && store.listInitialized) {
-      ready.value = true;
+    // If request is already in progress, do not send another request.
+    if (cache.value?.isFetching) {
       return;
     }
-
-    ready.value = false;
-    store.listInstances(unref(showDeleted)).then(() => {
-      ready.value = true;
-    });
+    // If cache is available and forceUpdate is false, do not send another request.
+    if (cache.value) {
+      return;
+    }
+    store.listInstances(unref(showDeleted));
   });
+
   const instanceList = computed(() => {
     if (unref(showDeleted)) {
       return store.instanceList;
     }
     return store.activeInstanceList;
   });
-  return { instanceList, ready };
+  return {
+    instanceList,
+    ready: computed(() => cache.value && !cache.value.isFetching),
+  };
 };
 
 const composeInstance = async (instance: Instance) => {

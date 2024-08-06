@@ -38,7 +38,6 @@ import {
   pushNotification,
   useEnvironmentV1List,
   useEnvironmentV1Store,
-  useInstanceV1List,
   useInstanceV1Store,
   useSlowQueryPolicyStore,
   useSlowQueryStore,
@@ -79,9 +78,7 @@ const policyList = computed(() => {
 });
 
 const instanceList = computed(() => {
-  return useInstanceV1List(false /* !showDeleted */).instanceList.value.filter(
-    instanceV1SupportSlowQuery
-  );
+  return instanceV1Store.activeInstanceList.filter(instanceV1SupportSlowQuery);
 });
 
 const composedSlowQueryPolicyList = computed(() => {
