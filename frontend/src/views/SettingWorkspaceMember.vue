@@ -163,7 +163,7 @@ import { PlusIcon } from "lucide-vue-next";
 import { NButton, NCheckbox, NTabs, NTabPane, NPopover } from "naive-ui";
 import { computed, onMounted, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { useRoute, useRouter, RouterLink } from "vue-router";
+import { useRoute, RouterLink } from "vue-router";
 import { FeatureAttention } from "@/components/FeatureGuard";
 import CreateGroupDrawer from "@/components/User/Settings/CreateGroupDrawer.vue";
 import CreateUserDrawer from "@/components/User/Settings/CreateUserDrawer.vue";
@@ -222,7 +222,6 @@ const state = reactive<LocalState>({
 
 const { t } = useI18n();
 const route = useRoute();
-const router = useRouter();
 const userStore = useUserStore();
 const groupStore = useGroupStore();
 const currentUserV1 = useCurrentUserV1();
