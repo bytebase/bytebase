@@ -1,7 +1,7 @@
 import { useLocalStorage, useDebounce } from "@vueuse/core";
 import { computed, ref, watch, nextTick } from "vue";
 import { useRoute } from "vue-router";
-import { useAuthStore } from "@/store";
+import { useCurrentUserV1 } from "@/store";
 import { WORKSPACE_ROOT_MODULE } from "./dashboard/workspaceRoutes";
 
 type RecentVisit = {
@@ -14,10 +14,20 @@ const MAX_HISTORY = 3;
 
 export function useRecentVisit() {
   const route = useRoute();
-  const authStore = useAuthStore();
-  const recentVisit = useLocalStorage(
-    `${STORAGE_KEY}.${authStore.currentUserId ?? 0}`,
+  const currentUser = useCurrentUserV1();
+  let recentVisit = useLocalStorage(
+    `${STORAGE_KEY}.${currentUser.value.name}`,
     [] as RecentVisit[]
+  );
+
+  watch(
+    () => currentUser.value,
+    () => {
+      recentVisit = useLocalStorage(
+        `${STORAGE_KEY}.${currentUser.value.name}`,
+        [] as RecentVisit[]
+      );
+    }
   );
 
   const lastVisit = computed(() => {

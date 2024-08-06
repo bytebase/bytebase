@@ -86,7 +86,7 @@ onMounted(async () => {
     useEnvironmentV1Store().fetchEnvironments(),
     useProjectV1Store().fetchProjectList(true /* showDeleted */),
   ]);
-  await Promise.all([useUIStateStore().restoreState()]);
+  useUIStateStore().restoreState();
   await fetchInstancesAndDatabases(route.params.projectId as string);
 
   isInitializing.value = false;
