@@ -20,7 +20,6 @@ export const issueNamePrefix = "issues/";
 export const secretNamePrefix = "secrets/";
 export const branchNamePrefix = "branches/";
 export const ssoNamePrefix = "idps/";
-export const protectionRulesSuffix = "/protectionRules";
 export const issueCommentNamePrefix = "issueComments/";
 export const groupNamePrefix = "groups/";
 export const reviewConfigNamePrefix = "reviewConfigs/";

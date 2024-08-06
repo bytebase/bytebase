@@ -146,21 +146,6 @@ service ProjectService {
     option (bytebase.v1.permission) = "bb.projects.update";
     option (bytebase.v1.auth_method) = IAM;
   }
-
-  rpc GetProjectProtectionRules(GetProjectProtectionRulesRequest) returns (ProtectionRules) {
-    option (google.api.http) = {get: "/v1/{name=projects/*/protectionRules}"};
-    option (bytebase.v1.permission) = "bb.projects.get";
-    option (bytebase.v1.auth_method) = IAM;
-  }
-
-  rpc UpdateProjectProtectionRules(UpdateProjectProtectionRulesRequest) returns (ProtectionRules) {
-    option (google.api.http) = {
-      patch: "/v1/{protection_rules.name=projects/*/protectionRules}"
-      body: "*"
-    };
-    option (bytebase.v1.permission) = "bb.projects.update";
-    option (bytebase.v1.auth_method) = IAM;
-  }
 }
 
 message GetProjectRequest {
@@ -529,57 +514,4 @@ message Activity {
     // TYPE_SQL_EDITOR_QUERY represents executing query in SQL Editor.
     TYPE_SQL_EDITOR_QUERY = 19;
   }
-}
-
-message GetProjectProtectionRulesRequest {
-  // The name of the protection rules.
-  // Format: projects/{project}/protectionRules
-  string name = 1 [
-    (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference) = {type: "bytebase.com/ProtectionRules"}
-  ];
-}
-
-message UpdateProjectProtectionRulesRequest {
-  ProtectionRules protection_rules = 2 [(google.api.field_behavior) = REQUIRED];
-}
-
-message ProtectionRules {
-  option (google.api.resource) = {
-    type: "bytebase.com/ProtectionRules"
-    pattern: "projects/{project}/protectionRules"
-  };
-
-  // The name of the protection rules.
-  // Format: projects/{project}/protectionRules
-  string name = 1;
-
-  repeated ProtectionRule rules = 2;
-}
-
-message ProtectionRule {
-  // A unique identifier for a node in UUID format.
-  string id = 1;
-
-  // The type of target.
-  enum Target {
-    PROTECTION_TARGET_UNSPECIFIED = 0;
-    BRANCH = 1;
-    CHANGELIST = 2;
-  }
-
-  Target target = 2;
-
-  // The name of the branch/changelist or wildcard.
-  string name_filter = 3;
-
-  // The roles allowed to create branches or changelists, rebase branches, delete branches.
-  // Format: roles/projectOwner.
-  repeated string allowed_roles = 4;
-
-  enum BranchSource {
-    BRANCH_SOURCE_UNSPECIFIED = 0;
-    DATABASE = 1;
-  }
-  BranchSource branch_source = 5;
 }
