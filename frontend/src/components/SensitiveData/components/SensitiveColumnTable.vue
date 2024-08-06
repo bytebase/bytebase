@@ -1,5 +1,6 @@
 <template>
   <NDataTable
+    key="sensitive-column-table"
     :columns="dataTableColumns"
     :data="columnList"
     :row-props="rowProps"

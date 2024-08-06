@@ -42,6 +42,7 @@
           <DatabaseOperations :databases="selectedDatabases" />
           <DatabaseV1Table
             mode="INSTANCE"
+            :key="`database-table.${instanceId}`"
             :show-selection="true"
             :database-list="databaseV1List"
             :custom-click="true"

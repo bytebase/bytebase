@@ -1,5 +1,6 @@
 <template>
   <NDataTable
+    key="user-table"
     :columns="columns"
     :data="userList"
     :striped="true"

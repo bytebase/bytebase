@@ -26,6 +26,7 @@
     </div>
 
     <NDataTable
+      key="sso-table"
       :data="identityProviderList"
       :columns="columnList"
       :striped="true"

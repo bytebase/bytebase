@@ -16,6 +16,7 @@
 
     <NDataTable
       v-if="vcsList.length > 0 || loading"
+      key="vcs-table"
       :data="vcsList"
       :columns="columnList"
       :striped="true"

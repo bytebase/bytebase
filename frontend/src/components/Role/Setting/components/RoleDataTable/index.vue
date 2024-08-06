@@ -1,5 +1,6 @@
 <template>
   <NDataTable
+    key="custom-role-table"
     :columns="columns"
     :data="roleList"
     :striped="true"

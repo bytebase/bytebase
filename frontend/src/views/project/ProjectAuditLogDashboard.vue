@@ -27,11 +27,19 @@
       :page-size="10"
     >
       <template #table="{ list }">
-        <AuditLogDataTable :audit-log-list="list" :show-project="false" />
+        <AuditLogDataTable
+          :audit-log-list="list"
+          :show-project="false"
+          :key="`audit-log-table.${projectId}`"
+        />
       </template>
     </PagedAuditLogTable>
     <template v-else>
-      <AuditLogDataTable :audit-log-list="[]" :show-project="false" />
+      <AuditLogDataTable
+        :audit-log-list="[]"
+        :show-project="false"
+        :key="`audit-log-table.${projectId}`"
+      />
     </template>
   </div>
 </template>
