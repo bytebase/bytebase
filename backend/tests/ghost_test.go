@@ -151,27 +151,3 @@ func TestGhostSchemaUpdate(t *testing.T) {
 
 	a.Equal(wantDBSchema2, deletedRegex.ReplaceAllString(dbMetadata.Schema, "xxx"))
 }
-
-func getMySQLInstanceForGhostTest(t *testing.T) (int, func(), error) {
-	mysqlPort := getTestPort()
-	stopInstance := mysql.SetupTestInstance(t, mysqlPort, mysqlBinDir)
-
-	mysqlDB, err := connectTestMySQL(mysqlPort, "")
-	if err != nil {
-		return 0, nil, err
-	}
-	defer mysqlDB.Close()
-
-	if _, err := mysqlDB.Exec("DROP USER IF EXISTS bytebase"); err != nil {
-		return 0, nil, err
-	}
-
-	if _, err = mysqlDB.Exec("CREATE USER 'bytebase' IDENTIFIED WITH mysql_native_password BY 'bytebase'"); err != nil {
-		return 0, nil, err
-	}
-
-	if _, err = mysqlDB.Exec("GRANT ALTER, ALTER ROUTINE, CREATE, CREATE ROUTINE, CREATE VIEW, DELETE, DROP, EVENT, EXECUTE, INDEX, INSERT, PROCESS, REFERENCES, SELECT, SHOW DATABASES, SHOW VIEW, TRIGGER, UPDATE, USAGE, REPLICATION CLIENT, REPLICATION SLAVE, LOCK TABLES, RELOAD ON *.* to bytebase"); err != nil {
-		return 0, nil, err
-	}
-	return mysqlPort, stopInstance, nil
-}
