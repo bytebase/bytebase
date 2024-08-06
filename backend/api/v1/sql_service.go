@@ -737,7 +737,7 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 	var durationNs int64
 	if adviceStatus != storepb.Advice_ERROR {
 		results, durationNs, queryErr = s.doQuery(ctx, request, instance, database)
-		if queryErr == nil && s.licenseService.IsFeatureEnabledForInstance(api.FeatureSensitiveData, instance) == nil {
+		if queryErr == nil && s.licenseService.IsFeatureEnabledForInstance(api.FeatureSensitiveData, instance) == nil && !request.Explain {
 			masker := NewQueryResultMasker(s.store)
 			if err := masker.MaskResults(ctx, spans, results, instance, storepb.MaskingExceptionPolicy_MaskingException_QUERY); err != nil {
 				return nil, status.Errorf(codes.Internal, err.Error())
