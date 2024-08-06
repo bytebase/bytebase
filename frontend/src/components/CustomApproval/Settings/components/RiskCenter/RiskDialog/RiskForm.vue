@@ -90,23 +90,21 @@
 </template>
 
 <script lang="ts" setup>
-import { cloneDeep } from "lodash-es";
+import { cloneDeep, head } from "lodash-es";
 import { NButton, NInput } from "naive-ui";
 import { computed, ref, watch } from "vue";
 import ExprEditor from "@/components/ExprEditor";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
-import type { ConditionGroupExpr } from "@/plugins/cel";
+import type { ConditionGroupExpr, SimpleExpr } from "@/plugins/cel";
 import {
   resolveCELExpr,
   buildCELExpr,
   wrapAsGroup,
   validateSimpleExpr,
+  emptySimpleExpr,
 } from "@/plugins/cel";
 import { useCurrentUserV1 } from "@/store";
-import {
-  Expr as CELExpr,
-  ParsedExpr,
-} from "@/types/proto/google/api/expr/v1alpha1/syntax";
+import { ParsedExpr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
 import { Expr } from "@/types/proto/google/type/expr";
 import { Risk } from "@/types/proto/v1/risk_service";
 import {
@@ -145,24 +143,27 @@ const currentUser = useCurrentUserV1();
 
 const state = ref<LocalState>({
   risk: Risk.fromPartial({}),
-  expr: wrapAsGroup(resolveCELExpr(CELExpr.fromPartial({}))),
+  expr: wrapAsGroup(emptySimpleExpr()),
 });
 const mode = computed(() => context.dialog.value?.mode ?? "CREATE");
 
 const resolveLocalState = async () => {
   const risk = cloneDeep(context.dialog.value!.risk);
 
-  let expr = CELExpr.fromPartial({});
+  let expr: SimpleExpr = emptySimpleExpr();
   if (risk.condition?.expression) {
     const parsedExprs = await batchConvertCELStringToParsedExpr([
       risk.condition.expression,
     ]);
-    expr = parsedExprs[0].expr ?? CELExpr.fromPartial({});
+    const celExpr = head(parsedExprs)?.expr;
+    if (celExpr) {
+      expr = resolveCELExpr(celExpr);
+    }
   }
 
   state.value = {
     risk,
-    expr: wrapAsGroup(resolveCELExpr(expr)),
+    expr: wrapAsGroup(expr),
   };
 };
 
