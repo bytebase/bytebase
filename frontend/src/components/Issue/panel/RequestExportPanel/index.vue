@@ -41,13 +41,8 @@
             {{ $t("issue.grant-request.export-rows") }}
             <RequiredStar />
           </span>
-          <NInputNumber
-            v-model:value="state.maxRowCount"
-            required
-            class="!w-60"
-            placeholder="Max row count"
-            :min="1"
-          />
+
+          <MaxRowCountSelect v-model:value="state.maxRowCount" />
         </div>
         <div class="w-full flex flex-col justify-start items-start">
           <span class="flex items-start textlabel mb-2">
@@ -91,7 +86,7 @@
 <script lang="ts" setup>
 import dayjs from "dayjs";
 import { isUndefined } from "lodash-es";
-import { NButton, NInput, NInputNumber } from "naive-ui";
+import { NButton, NInput } from "naive-ui";
 import { computed, onMounted, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
@@ -116,6 +111,7 @@ import {
 } from "@/types/proto/v1/issue_service";
 import { hasProjectPermissionV2 } from "@/utils";
 import DatabaseResourceForm from "../RequestQueryPanel/DatabaseResourceForm/index.vue";
+import MaxRowCountSelect from "./MaxRowCountSelect.vue";
 
 interface LocalState {
   projectName?: string;
