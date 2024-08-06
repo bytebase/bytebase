@@ -241,6 +241,9 @@ const allowEdit = computed(() => {
 });
 
 const allowDelete = computed(() => {
+  if (props.dirtyBranch.parentBranch === "") {
+    return checkPermission("bb.branches.admin");
+  }
   return checkPermission("bb.branches.delete");
 });
 
