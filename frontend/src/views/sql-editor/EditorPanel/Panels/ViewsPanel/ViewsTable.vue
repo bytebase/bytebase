@@ -68,8 +68,21 @@ const columns = computed(() => {
       className: "truncate",
       render: (view) => {
         return (
-          <NPerformantEllipsis class="w-full cursor-pointer leading-6 hover:text-accent">
+          <NPerformantEllipsis class="w-full cursor-pointer leading-6">
             {view.name}
+          </NPerformantEllipsis>
+        );
+      },
+    },
+    {
+      key: "comment",
+      title: t("common.comment"),
+      resizable: true,
+      className: "truncate",
+      render: (view) => {
+        return (
+          <NPerformantEllipsis class="w-full cursor-pointer leading-6">
+            {view.comment}
           </NPerformantEllipsis>
         );
       },
