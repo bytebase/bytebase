@@ -19,7 +19,7 @@ export interface PlanCheckRunConfig {
   changeDatabaseType: PlanCheckRunConfig_ChangeDatabaseType;
   instanceUid: number;
   databaseName: string;
-  /** database_group_uid is optional. If it's set, it means the database is part of a database group. */
+  /** @deprecated */
   databaseGroupUid?: Long | undefined;
   ghostFlags: { [key: string]: string };
   /** If set, a backup of the modified data will be created automatically before any changes are applied. */
