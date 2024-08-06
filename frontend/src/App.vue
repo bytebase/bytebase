@@ -15,13 +15,15 @@
         <OverlayStackManager>
           <KBarWrapper>
             <NotificationContext>
-              <router-view v-if="initialized" />
-              <div
-                v-else
-                class="fixed inset-0 bg-white flex flex-col items-center justify-center"
-              >
-                <NSpin />
-              </div>
+              <AuthContext>
+                <router-view v-if="actuatorStore.initialized" />
+                <div
+                  v-else
+                  class="fixed inset-0 bg-white flex flex-col items-center justify-center"
+                >
+                  <NSpin />
+                </div>
+              </AuthContext>
             </NotificationContext>
           </KBarWrapper>
         </OverlayStackManager>
@@ -33,24 +35,24 @@
 <script lang="ts" setup>
 import { cloneDeep, isEqual } from "lodash-es";
 import {
+  NSpin,
   NConfigProvider,
   NDialogProvider,
   NNotificationProvider,
 } from "naive-ui";
-import { NSpin } from "naive-ui";
 import { ServerError } from "nice-grpc-common";
 import { ClientError, Status } from "nice-grpc-web";
-import { onErrorCaptured, onMounted, ref } from "vue";
+import { onErrorCaptured, onMounted } from "vue";
 import { watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import Watermark from "@/components/misc/Watermark.vue";
 import { themeOverrides, dateLang, generalLang } from "../naive-ui.config";
 import { provideAppRootContext } from "./AppRootContext";
+import AuthContext from "./AuthContext.vue";
 import NotificationContext from "./NotificationContext.vue";
 import KBarWrapper from "./components/KBar/KBarWrapper.vue";
 import OverlayStackManager from "./components/misc/OverlayStackManager.vue";
 import { t } from "./plugins/i18n";
-import { AUTH_SIGNIN_MODULE } from "./router/auth";
 import {
   useActuatorV1Store,
   useAuthStore,
@@ -62,20 +64,16 @@ import { isDev } from "./utils";
 // Show at most 3 notifications to prevent excessive notification when shit hits the fan.
 const MAX_NOTIFICATION_DISPLAY_COUNT = 3;
 
-// Check expiration every 30 sec and logout if expired
-const CHECK_LOGGEDIN_STATE_DURATION = 30 * 1000;
-
 const route = useRoute();
 const router = useRouter();
 const { key } = provideAppRootContext();
 const authStore = useAuthStore();
 const notificationStore = useNotificationStore();
-const initialized = ref(false);
-const prevLoggedIn = ref(false);
+const actuatorStore = useActuatorV1Store();
 
 onMounted(async () => {
   const initActuator = async () => {
-    useActuatorV1Store().fetchServerInfo();
+    actuatorStore.fetchServerInfo();
   };
   const initSubscription = async () => {
     await useSubscriptionV1Store().fetchSubscription();
@@ -97,24 +95,7 @@ onMounted(async () => {
   };
 
   await initBasicModules();
-  initialized.value = true;
-  prevLoggedIn.value = authStore.isLoggedIn();
-
-  setInterval(() => {
-    if (!initialized.value) {
-      return;
-    }
-
-    const loggedIn = authStore.isLoggedIn();
-    if (prevLoggedIn.value != loggedIn) {
-      prevLoggedIn.value = loggedIn;
-      if (!loggedIn) {
-        authStore.logout().then(() => {
-          router.push({ name: AUTH_SIGNIN_MODULE });
-        });
-      }
-    }
-  }, CHECK_LOGGEDIN_STATE_DURATION);
+  actuatorStore.initialized = true;
 });
 
 onErrorCaptured((error: any /* , _, info */) => {
