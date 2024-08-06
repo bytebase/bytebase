@@ -44,53 +44,6 @@ type StatementReportExecutor struct {
 
 // Run runs the statement report executor.
 func (e *StatementReportExecutor) Run(ctx context.Context, config *storepb.PlanCheckRunConfig) ([]*storepb.PlanCheckRunResult_Result, error) {
-	if config.DatabaseGroupUid != nil {
-		return e.runForDatabaseGroupTarget(ctx, config, *config.DatabaseGroupUid)
-	}
-	return e.runForDatabaseTarget(ctx, config)
-}
-
-func (e *StatementReportExecutor) runForDatabaseTarget(ctx context.Context, config *storepb.PlanCheckRunConfig) ([]*storepb.PlanCheckRunResult_Result, error) {
-	isDML := config.ChangeDatabaseType == storepb.PlanCheckRunConfig_DML
-	instanceUID := int(config.InstanceUid)
-	instance, err := e.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &instanceUID})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get instance UID %v", instanceUID)
-	}
-	if instance == nil {
-		return nil, errors.Errorf("instance not found UID %v", instanceUID)
-	}
-
-	if !common.StatementReportEngines[instance.Engine] {
-		return []*storepb.PlanCheckRunResult_Result{
-			{
-				Status:  storepb.PlanCheckRunResult_Result_SUCCESS,
-				Code:    common.Ok.Int32(),
-				Title:   fmt.Sprintf("Statement report is not supported for %s", instance.Engine),
-				Content: "",
-			},
-		}, nil
-	}
-
-	database, err := e.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID, DatabaseName: &config.DatabaseName})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get database %q", config.DatabaseName)
-	}
-	if database == nil {
-		return nil, errors.Errorf("database not found %q", config.DatabaseName)
-	}
-
-	dbSchema, err := e.store.GetDBSchema(ctx, database.UID)
-	if err != nil {
-		return nil, err
-	}
-	if dbSchema == nil {
-		return nil, errors.Errorf("database schema not found: %d", database.UID)
-	}
-	if dbSchema.GetMetadata() == nil {
-		return nil, errors.Errorf("database schema metadata not found: %d", database.UID)
-	}
-
 	sheetUID := int(config.SheetUid)
 	sheet, err := e.store.GetSheet(ctx, &store.FindSheetMessage{UID: &sheetUID})
 	if err != nil {
@@ -109,10 +62,112 @@ func (e *StatementReportExecutor) runForDatabaseTarget(ctx context.Context, conf
 			},
 		}, nil
 	}
+	statement := sheet.Statement
 
-	statement, err := e.store.GetSheetStatementByID(ctx, sheetUID)
+	isDML := config.ChangeDatabaseType == storepb.PlanCheckRunConfig_DML
+	var databases []*store.DatabaseMessage
+	if config.DatabaseGroupUid != nil {
+		databaseGroup, err := e.store.GetDatabaseGroup(ctx, &store.FindDatabaseGroupMessage{
+			UID: config.DatabaseGroupUid,
+		})
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get database group %d", *config.DatabaseGroupUid)
+		}
+		if databaseGroup == nil {
+			return nil, errors.Errorf("database group not found %d", *config.DatabaseGroupUid)
+		}
+		project, err := e.store.GetProjectV2(ctx, &store.FindProjectMessage{
+			UID: &databaseGroup.ProjectUID,
+		})
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get project %d", databaseGroup.ProjectUID)
+		}
+		if project == nil {
+			return nil, errors.Errorf("project not found %d", databaseGroup.ProjectUID)
+		}
+
+		allDatabases, err := e.store.ListDatabases(ctx, &store.FindDatabaseMessage{ProjectID: &project.ResourceID})
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to list databases for project %q", project.ResourceID)
+		}
+		matchedDatabases, _, err := utils.GetMatchedAndUnmatchedDatabasesInDatabaseGroup(ctx, databaseGroup, allDatabases)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get matched and unmatched databases in database group %q", databaseGroup.ResourceID)
+		}
+		if len(matchedDatabases) == 0 {
+			return nil, errors.Errorf("no matched databases found in database group %q", databaseGroup.ResourceID)
+		}
+		databases = matchedDatabases
+	} else {
+		instanceUID := int(config.InstanceUid)
+		instance, err := e.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &instanceUID})
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get instance UID %v", instanceUID)
+		}
+		if instance == nil {
+			return nil, errors.Errorf("instance not found UID %v", instanceUID)
+		}
+		database, err := e.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID, DatabaseName: &config.DatabaseName})
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get database %q", config.DatabaseName)
+		}
+		if database == nil {
+			return nil, errors.Errorf("database not found %q", config.DatabaseName)
+		}
+		databases = append(databases, database)
+	}
+
+	var results []*storepb.PlanCheckRunResult_Result
+	for _, database := range databases {
+		instance, err := e.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get instance %q", database.InstanceID)
+		}
+		if instance == nil {
+			return nil, errors.Errorf("instance not found %q", database.InstanceID)
+		}
+		if !common.StatementReportEngines[instance.Engine] {
+			return []*storepb.PlanCheckRunResult_Result{
+				{
+					Status:  storepb.PlanCheckRunResult_Result_SUCCESS,
+					Code:    common.Ok.Int32(),
+					Title:   fmt.Sprintf("Statement report is not supported for %s", instance.Engine),
+					Content: "",
+				},
+			}, nil
+		}
+
+		r, err := e.runReport(ctx, instance, database, statement, isDML)
+		if err != nil {
+			return nil, err
+		}
+		results = append(results, r...)
+	}
+
+	if len(results) == 0 {
+		return []*storepb.PlanCheckRunResult_Result{
+			{
+				Status:  storepb.PlanCheckRunResult_Result_SUCCESS,
+				Title:   "OK",
+				Content: "",
+				Code:    common.Ok.Int32(),
+				Report:  nil,
+			},
+		}, nil
+	}
+	return results, nil
+}
+
+func (e *StatementReportExecutor) runReport(ctx context.Context, instance *store.InstanceMessage, database *store.DatabaseMessage, statement string, isDML bool) ([]*storepb.PlanCheckRunResult_Result, error) {
+	dbSchema, err := e.store.GetDBSchema(ctx, database.UID)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get sheet statement %d", sheetUID)
+		return nil, err
+	}
+	if dbSchema == nil {
+		return nil, errors.Errorf("database schema not found: %d", database.UID)
+	}
+	if dbSchema.GetMetadata() == nil {
+		return nil, errors.Errorf("database schema metadata not found: %d", database.UID)
 	}
 
 	materials := utils.GetSecretMapFromDatabaseMessage(database)
@@ -150,154 +205,6 @@ func (e *StatementReportExecutor) runForDatabaseTarget(ctx context.Context, conf
 			},
 		}, nil
 	}
-}
-
-func (e *StatementReportExecutor) runForDatabaseGroupTarget(ctx context.Context, config *storepb.PlanCheckRunConfig, databaseGroupUID int64) ([]*storepb.PlanCheckRunResult_Result, error) {
-	isDML := config.ChangeDatabaseType == storepb.PlanCheckRunConfig_DML
-	databaseGroup, err := e.store.GetDatabaseGroup(ctx, &store.FindDatabaseGroupMessage{
-		UID: &databaseGroupUID,
-	})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get database group %d", databaseGroupUID)
-	}
-	if databaseGroup == nil {
-		return nil, errors.Errorf("database group not found %d", databaseGroupUID)
-	}
-	project, err := e.store.GetProjectV2(ctx, &store.FindProjectMessage{
-		UID: &databaseGroup.ProjectUID,
-	})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get project %d", databaseGroup.ProjectUID)
-	}
-	if project == nil {
-		return nil, errors.Errorf("project not found %d", databaseGroup.ProjectUID)
-	}
-
-	allDatabases, err := e.store.ListDatabases(ctx, &store.FindDatabaseMessage{ProjectID: &project.ResourceID})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to list databases for project %q", project.ResourceID)
-	}
-
-	matchedDatabases, _, err := utils.GetMatchedAndUnmatchedDatabasesInDatabaseGroup(ctx, databaseGroup, allDatabases)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get matched and unmatched databases in database group %q", databaseGroup.ResourceID)
-	}
-	if len(matchedDatabases) == 0 {
-		return nil, errors.Errorf("no matched databases found in database group %q", databaseGroup.ResourceID)
-	}
-
-	sheetUID := int(config.SheetUid)
-	sheet, err := e.store.GetSheet(ctx, &store.FindSheetMessage{UID: &sheetUID})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get sheet %d", sheetUID)
-	}
-	if sheet == nil {
-		return nil, errors.Errorf("sheet %d not found", sheetUID)
-	}
-	if sheet.Size > common.MaxSheetCheckSize {
-		return []*storepb.PlanCheckRunResult_Result{
-			{
-				Status:  storepb.PlanCheckRunResult_Result_WARNING,
-				Code:    common.SizeExceeded.Int32(),
-				Title:   "Large SQL review policy is disabled",
-				Content: "",
-			},
-		}, nil
-	}
-	sheetStatement, err := e.store.GetSheetStatementByID(ctx, sheetUID)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get sheet statement %d", sheetUID)
-	}
-
-	var results []*storepb.PlanCheckRunResult_Result
-
-	for _, database := range matchedDatabases {
-		if database.DatabaseName != config.DatabaseName {
-			continue
-		}
-
-		instance, err := e.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get instance %q", database.InstanceID)
-		}
-		if instance == nil {
-			return nil, errors.Errorf("instance %q not found", database.InstanceID)
-		}
-		if instance.UID != int(config.InstanceUid) {
-			continue
-		}
-
-		environment, err := e.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{ResourceID: &database.EffectiveEnvironmentID})
-		if err != nil {
-			return nil, err
-		}
-		if environment == nil {
-			return nil, errors.Errorf("environment %q not found", database.EffectiveEnvironmentID)
-		}
-
-		dbSchema, err := e.store.GetDBSchema(ctx, database.UID)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get db schema %q", database.UID)
-		}
-		if dbSchema.GetMetadata() == nil {
-			return nil, errors.Errorf("database schema metadata not found: %d", database.UID)
-		}
-
-		materials := utils.GetSecretMapFromDatabaseMessage(database)
-		// To avoid leaking the rendered statement, the error message should use the original statement and not the rendered statement.
-		renderedStatement := utils.RenderStatement(sheetStatement, materials)
-		stmtResults, err := func() ([]*storepb.PlanCheckRunResult_Result, error) {
-			switch instance.Engine {
-			case storepb.Engine_POSTGRES:
-				driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{})
-				if err != nil {
-					return nil, err
-				}
-				defer driver.Close(ctx)
-				sqlDB := driver.GetDB()
-
-				return reportForPostgres(ctx, e.sheetManager, sqlDB, database.DatabaseName, renderedStatement, dbSchema)
-			case storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
-				driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{})
-				if err != nil {
-					return nil, err
-				}
-				defer driver.Close(ctx)
-				sqlDB := driver.GetDB()
-
-				return reportForMySQL(ctx, e.sheetManager, sqlDB, instance.Engine, database.DatabaseName, renderedStatement, dbSchema, isDML)
-			case storepb.Engine_ORACLE, storepb.Engine_DM, storepb.Engine_OCEANBASE_ORACLE:
-				return reportForOracle(e.sheetManager, database.DatabaseName, database.DatabaseName, renderedStatement, dbSchema)
-			default:
-				return nil, nil
-			}
-		}()
-		if err != nil {
-			results = append(results, &storepb.PlanCheckRunResult_Result{
-				Status:  storepb.PlanCheckRunResult_Result_ERROR,
-				Title:   "Failed to run report executor",
-				Content: err.Error(),
-				Code:    common.Internal.Int32(),
-				Report:  nil,
-			})
-		} else {
-			results = append(results, stmtResults...)
-		}
-	}
-
-	if len(results) == 0 {
-		return []*storepb.PlanCheckRunResult_Result{
-			{
-				Status:  storepb.PlanCheckRunResult_Result_SUCCESS,
-				Title:   "OK",
-				Content: "",
-				Code:    common.Ok.Int32(),
-				Report:  nil,
-			},
-		}, nil
-	}
-
-	return results, nil
 }
 
 func reportForOracle(sm *sheet.Manager, databaseName string, schemaName string, statement string, dbMetadata *model.DBSchema) ([]*storepb.PlanCheckRunResult_Result, error) {
