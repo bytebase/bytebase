@@ -4,7 +4,10 @@
     class="w-full flex flex-row justify-between items-center"
   >
     <div class="flex flex-row justify-start items-center text-sm gap-x-2">
-      <span>Schema:</span>
+      <div class="flex items-center gap-x-1">
+        <SchemaIcon class="w-4 h-4" />
+        <span>Schema:</span>
+      </div>
       <NSelect
         v-model:value="selectedSchemaName"
         :options="schemaSelectOptions"
@@ -18,6 +21,7 @@
 <script setup lang="ts">
 import { NSelect, type SelectOption } from "naive-ui";
 import { computed } from "vue";
+import { SchemaIcon } from "@/components/Icon";
 import {
   useConnectionOfCurrentSQLEditorTab,
   useDBSchemaV1Store,
