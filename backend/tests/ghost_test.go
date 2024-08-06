@@ -341,7 +341,7 @@ func TestGhostTenant(t *testing.T) {
 			Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
 				ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
 					Target: common.FormatDatabase(db.InstanceResource.Title, db.Name),
-					Sheet:  sheet1.Name,
+					Sheet:  sheet2.Name,
 					Type:   v1pb.Plan_ChangeDatabaseConfig_MIGRATE_GHOST,
 				},
 			},
@@ -354,7 +354,7 @@ func TestGhostTenant(t *testing.T) {
 			Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
 				ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
 					Target: common.FormatDatabase(db.InstanceResource.Title, db.Name),
-					Sheet:  sheet1.Name,
+					Sheet:  sheet2.Name,
 					Type:   v1pb.Plan_ChangeDatabaseConfig_MIGRATE_GHOST,
 				},
 			},
