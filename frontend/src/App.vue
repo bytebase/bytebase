@@ -62,8 +62,10 @@ import { isDev } from "./utils";
 // Show at most 3 notifications to prevent excessive notification when shit hits the fan.
 const MAX_NOTIFICATION_DISPLAY_COUNT = 3;
 
-// Check expiration every 30 sec and logout if expired
-const CHECK_LOGGEDIN_STATE_DURATION = 30 * 1000;
+// Check expiration every 15 sec and:
+// 1. logout if expired.
+// 2. refresh pages if login as another user.
+const CHECK_LOGGEDIN_STATE_DURATION = 15 * 1000;
 
 const route = useRoute();
 const router = useRouter();
@@ -113,6 +115,12 @@ onMounted(async () => {
           router.push({ name: AUTH_SIGNIN_MODULE });
         });
       }
+    }
+    if (
+      loggedIn &&
+      authStore.currentUserId !== authStore.getUserIdFromCookie()
+    ) {
+      window.location.reload();
     }
   }, CHECK_LOGGEDIN_STATE_DURATION);
 });

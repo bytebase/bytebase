@@ -24,7 +24,11 @@ export const useAuthStore = defineStore("auth_v1", () => {
   });
 
   const isLoggedIn = () => {
-    return getIntCookie("user") != undefined;
+    return getUserIdFromCookie() != undefined;
+  };
+
+  const getUserIdFromCookie = () => {
+    return getIntCookie("user");
   };
 
   const login = async (request: Partial<LoginRequest>) => {
@@ -35,7 +39,7 @@ export const useAuthStore = defineStore("auth_v1", () => {
       return mfaTempToken;
     }
 
-    currentUserId.value = getIntCookie("user");
+    currentUserId.value = getUserIdFromCookie();
     if (currentUserId.value) {
       await useUserStore().getOrFetchUserById(String(currentUserId.value));
       await useWorkspaceV1Store().fetchIamPolicy();
@@ -69,7 +73,7 @@ export const useAuthStore = defineStore("auth_v1", () => {
   };
 
   const restoreUser = async () => {
-    currentUserId.value = getIntCookie("user");
+    currentUserId.value = getUserIdFromCookie();
     if (currentUserId.value) {
       await useUserStore().getOrFetchUserById(
         String(currentUserId.value),
@@ -92,6 +96,7 @@ export const useAuthStore = defineStore("auth_v1", () => {
     currentUser,
     currentUserId,
     isLoggedIn,
+    getUserIdFromCookie,
     login,
     signup,
     logout,
