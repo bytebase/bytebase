@@ -36,6 +36,10 @@ type querySpanExtractor struct {
 
 	// tableSourceFrom is the table sources from the from clause.
 	tableSourceFrom []base.TableSource
+
+	// priorTableInFrom is the table sources from the from clause before the current table source.
+	// It's used to resolve the column name in JSON_TABLE functions.
+	priorTableInFrom []base.TableSource
 }
 
 // newQuerySpanExtractor creates a new query span extractor, the databaseMetadata and the ast are in the read guard.
@@ -325,6 +329,10 @@ func (q *querySpanExtractor) extractQuerySpecification(ctx mysql.IQuerySpecifica
 		defer func() {
 			q.tableSourceFrom = q.tableSourceFrom[:originalLength]
 		}()
+		originalPriorLength := len(q.priorTableInFrom)
+		defer func() {
+			q.priorTableInFrom = q.priorTableInFrom[:originalPriorLength]
+		}()
 		fromSources, err = q.extractTableSourcesFromFromClause(ctx.FromClause())
 		if err != nil {
 			return nil, err
@@ -512,6 +520,7 @@ func (q *querySpanExtractor) extractTableReferenceList(ctx mysql.ITableReference
 		if err != nil {
 			return nil, err
 		}
+		q.priorTableInFrom = append(q.priorTableInFrom, tableResource)
 		result = append(result, tableResource)
 	}
 
@@ -1195,7 +1204,7 @@ func (q *querySpanExtractor) getFieldColumnSource(databaseName, tableName, field
 			if databaseName != "" && databaseName != tableSource.GetDatabaseName() {
 				return nil, false
 			}
-			if databaseName != "" && tableName != tableSource.GetTableName() {
+			if tableName != "" && tableName != tableSource.GetTableName() {
 				return nil, false
 			}
 		}
@@ -1232,6 +1241,12 @@ func (q *querySpanExtractor) getFieldColumnSource(databaseName, tableName, field
 
 	for i := len(q.tableSourceFrom) - 1; i >= 0; i-- {
 		if sourceColumnSet, ok := findInTableSource(q.tableSourceFrom[i]); ok {
+			return sourceColumnSet, nil
+		}
+	}
+
+	for i := len(q.priorTableInFrom) - 1; i >= 0; i-- {
+		if sourceColumnSet, ok := findInTableSource(q.priorTableInFrom[i]); ok {
 			return sourceColumnSet, nil
 		}
 	}

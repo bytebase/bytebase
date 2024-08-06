@@ -1,5 +1,6 @@
 <template>
   <NDataTable
+    key="change-history-table"
     size="small"
     :columns="columnList"
     :data="changeHistories"

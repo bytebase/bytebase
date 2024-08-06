@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
+	"google.golang.org/genproto/googleapis/type/expr"
 
 	"github.com/bytebase/bytebase/backend/common"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
@@ -275,6 +276,16 @@ func TestGhostTenant(t *testing.T) {
 	a.Equal(testTenantNumber, len(testDatabases))
 	a.Equal(prodTenantNumber, len(prodDatabases))
 
+	databaseGroup, err := ctl.databaseGroupServiceClient.CreateDatabaseGroup(ctx, &v1pb.CreateDatabaseGroupRequest{
+		Parent:          project.Name,
+		DatabaseGroupId: "all",
+		DatabaseGroup: &v1pb.DatabaseGroup{
+			DatabasePlaceholder: "all",
+			DatabaseExpr:        &expr.Expr{Expression: "true"},
+		},
+	})
+	a.NoError(err)
+
 	sheet1, err := ctl.sheetServiceClient.CreateSheet(ctx, &v1pb.CreateSheetRequest{
 		Parent: project.Name,
 		Sheet: &v1pb.Sheet{
@@ -362,7 +373,6 @@ func TestGhostTenant(t *testing.T) {
 	}
 	// Create an issue that updates database schema using gh-ost.
 	_, _, _, err = ctl.changeDatabaseWithConfig(ctx, project, []*v1pb.Plan_Step{testStep, prodStep})
-	a.NoError(err)
 
 	// Query schema.
 	for _, testInstance := range testInstances {

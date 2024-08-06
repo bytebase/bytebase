@@ -18,7 +18,7 @@
           </h1>
         </div>
         <ChangeHistoryDataTable
-          :key="`${section.title}-${i}`"
+          :key="`change-history-table.${project.name}.${section.title}-${i}`"
           :change-histories="section.list"
         />
       </div>
@@ -37,12 +37,11 @@
 </template>
 
 <script lang="ts" setup>
-import type { PropType } from "vue";
 import { reactive, watchEffect } from "vue";
 import type { BBTableSectionDataSource } from "@/bbkit/types";
 import { ChangeHistoryDataTable } from "@/components/ChangeHistory";
 import { useChangeHistoryStore } from "@/store";
-import type { ComposedDatabase } from "@/types";
+import type { ComposedDatabase, ComposedProject } from "@/types";
 import type { ChangeHistory } from "@/types/proto/v1/database_service";
 import { databaseV1Url } from "@/utils";
 import NoDataPlaceholder from "./misc/NoDataPlaceholder.vue";
@@ -54,12 +53,10 @@ interface LocalState {
   changeHistorySectionList: BBTableSectionDataSource<ChangeHistory>[];
 }
 
-const props = defineProps({
-  databaseList: {
-    required: true,
-    type: Object as PropType<ComposedDatabase[]>,
-  },
-});
+const props = defineProps<{
+  databaseList: ComposedDatabase[];
+  project: ComposedProject;
+}>();
 
 const changeHistoryStore = useChangeHistoryStore();
 

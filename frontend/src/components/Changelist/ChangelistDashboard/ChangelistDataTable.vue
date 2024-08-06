@@ -1,5 +1,6 @@
 <template>
   <NDataTable
+    key="change-list-table"
     size="small"
     :columns="columnList"
     :data="changelists"

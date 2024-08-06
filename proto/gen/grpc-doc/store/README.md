@@ -210,10 +210,6 @@
 - [store/project.proto](#store_project-proto)
     - [Label](#bytebase-store-Label)
     - [Project](#bytebase-store-Project)
-    - [ProtectionRule](#bytebase-store-ProtectionRule)
-  
-    - [ProtectionRule.BranchSource](#bytebase-store-ProtectionRule-BranchSource)
-    - [ProtectionRule.Target](#bytebase-store-ProtectionRule-Target)
   
 - [store/project_webhook.proto](#store_project_webhook-proto)
     - [ProjectWebhookPayload](#bytebase-store-ProjectWebhookPayload)
@@ -1069,6 +1065,7 @@ ForeignKeyMetadata is the metadata for foreign keys.
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name is the name of a function. |
 | updater | [string](#string) |  | The last updater of the function in branch. Format: users/{userUID}. |
+| source_branch | [string](#string) |  | The last change come from branch. Format: projcets/{project}/branches/{branch} |
 | update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The timestamp when the function is updated in branch. |
 
 
@@ -1193,6 +1190,7 @@ MaterializedViewMetadata is the metadata for materialized views.
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name is the name of a procedure. |
 | updater | [string](#string) |  | The last updater of the procedure in branch. Format: users/{userUID}. |
+| source_branch | [string](#string) |  | The last change come from branch. Format: projcets/{project}/branches/{branch} |
 | update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The timestamp when the procedure is updated in branch. |
 
 
@@ -1342,6 +1340,7 @@ SequenceMetadata is the metadata for sequences.
 | column_configs | [ColumnConfig](#bytebase-store-ColumnConfig) | repeated | The column_configs is the ordered list of configs for columns in a table. |
 | classification_id | [string](#string) |  |  |
 | updater | [string](#string) |  | The last updater of the table in branch. Format: users/{userUID}. |
+| source_branch | [string](#string) |  | The last change come from branch. Format: projcets/{project}/branches/{branch} |
 | update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The timestamp when the table is updated in branch. |
 
 
@@ -1433,6 +1432,7 @@ TablePartitionMetadata is the metadata for table partitions.
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name is the name of a view. |
 | updater | [string](#string) |  | The last updater of the view in branch. Format: users/{userUID}. |
+| source_branch | [string](#string) |  | The last change come from branch. Format: projcets/{project}/branches/{branch} |
 | update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The timestamp when the view is updated in branch. |
 
 
@@ -3305,7 +3305,6 @@ SlowQueryPolicy is the policy configuration for slow query.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| protection_rules | [ProtectionRule](#bytebase-store-ProtectionRule) | repeated |  |
 | issue_labels | [Label](#bytebase-store-Label) | repeated |  |
 | force_issue_labels | [bool](#bool) |  | Force issue labels to be used when creating an issue. |
 | allow_modify_statement | [bool](#bool) |  | Allow modifying statement after issue is created. |
@@ -3315,51 +3314,7 @@ SlowQueryPolicy is the policy configuration for slow query.
 
 
 
-
-<a name="bytebase-store-ProtectionRule"></a>
-
-### ProtectionRule
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| id | [string](#string) |  | A unique identifier for a node in UUID format. |
-| target | [ProtectionRule.Target](#bytebase-store-ProtectionRule-Target) |  |  |
-| name_filter | [string](#string) |  | The name of the branch/changelist or wildcard. |
-| allowed_roles | [string](#string) | repeated | The roles allowed to create branches or changelists, rebase branches, delete branches. Format: roles/projectOwner. |
-| branch_source | [ProtectionRule.BranchSource](#bytebase-store-ProtectionRule-BranchSource) |  |  |
-
-
-
-
-
  
-
-
-<a name="bytebase-store-ProtectionRule-BranchSource"></a>
-
-### ProtectionRule.BranchSource
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| BRANCH_SOURCE_UNSPECIFIED | 0 |  |
-| DATABASE | 1 |  |
-
-
-
-<a name="bytebase-store-ProtectionRule-Target"></a>
-
-### ProtectionRule.Target
-The type of target.
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| PROTECTION_TARGET_UNSPECIFIED | 0 |  |
-| BRANCH | 1 |  |
-| CHANGELIST | 2 |  |
-
 
  
 
