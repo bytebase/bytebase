@@ -443,6 +443,6 @@ type subqueryListener struct {
 	hasSubquery bool
 }
 
-func (l *subqueryListener) EnterSubquery(ctx *plsql.SubqueryContext) {
+func (l *subqueryListener) EnterSubquery(*plsql.SubqueryContext) {
 	l.hasSubquery = true
 }
