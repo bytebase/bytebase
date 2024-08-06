@@ -44,11 +44,7 @@
               <p class="mb-2">
                 {{ $t("issue.grant-request.export-rows") }}
               </p>
-              <NInputNumber
-                v-model:value="state.maxRowCount"
-                required
-                placeholder="Max row count"
-              />
+              <MaxRowCountSelect v-model:value="state.maxRowCount" />
             </div>
           </template>
         </template>
@@ -122,10 +118,11 @@
 
 <script lang="ts" setup>
 import { cloneDeep, isEqual, uniq } from "lodash-es";
-import { NButton, NDatePicker, NInput, NInputNumber } from "naive-ui";
+import { NButton, NDatePicker, NInput } from "naive-ui";
 import { computed, reactive, ref, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBButtonConfirm } from "@/bbkit";
+import MaxRowCountSelect from "@/components/Issue/panel/RequestExportPanel/MaxRowCountSelect.vue";
 import QuerierDatabaseResourceForm from "@/components/Issue/panel/RequestQueryPanel/DatabaseResourceForm/index.vue";
 import {
   Drawer,

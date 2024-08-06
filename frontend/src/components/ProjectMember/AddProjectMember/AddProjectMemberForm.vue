@@ -75,11 +75,7 @@
         <span class="mb-2">
           {{ $t("issue.grant-request.export-rows") }}
         </span>
-        <NInputNumber
-          v-model:value="state.maxRowCount"
-          required
-          :placeholder="$t('issue.grant-request.export-rows')"
-        />
+        <MaxRowCountSelect v-model:value="state.maxRowCount" />
       </div>
     </template>
 
@@ -98,11 +94,16 @@
 /* eslint-disable vue/no-mutating-props */
 import dayjs from "dayjs";
 import { head } from "lodash-es";
-import { NInputNumber, NInput, NRadioGroup, NRadio, NButton } from "naive-ui";
+import { NInput, NRadioGroup, NRadio, NButton } from "naive-ui";
 import { computed, reactive, watch } from "vue";
 import ExpirationSelector from "@/components/ExpirationSelector.vue";
+import MaxRowCountSelect from "@/components/Issue/panel/RequestExportPanel/MaxRowCountSelect.vue";
 import QuerierDatabaseResourceForm from "@/components/Issue/panel/RequestQueryPanel/DatabaseResourceForm/index.vue";
-import { ProjectRoleSelect, GroupSelect, UserSelect } from "@/components/v2/Select";
+import {
+  ProjectRoleSelect,
+  GroupSelect,
+  UserSelect,
+} from "@/components/v2/Select";
 import {
   useUserStore,
   useGroupStore,
@@ -219,9 +220,7 @@ watch(
       !state.memberList.every((m) => !m.startsWith(groupNamePrefix))
     ) {
       state.memberList = [];
-    } else if (
-      !state.memberList.every((m) => m.startsWith(groupNamePrefix))
-    ) {
+    } else if (!state.memberList.every((m) => m.startsWith(groupNamePrefix))) {
       state.memberList = [];
     }
   }

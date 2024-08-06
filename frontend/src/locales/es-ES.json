@@ -280,7 +280,11 @@
     "options": "Opciones",
     "reset": "Reiniciar",
     "refresh": "Actualizar",
-    "rollback": "Retroceder"
+    "rollback": "Retroceder",
+    "rows": {
+      "self": "filas",
+      "n-rows": "{n} filas"
+    }
   },
   "error-page": {
     "go-back-home": "Volver al inicio"
