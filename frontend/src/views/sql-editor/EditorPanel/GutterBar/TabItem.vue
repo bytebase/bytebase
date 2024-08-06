@@ -7,36 +7,13 @@
         @click="handleClick"
       >
         <template #icon>
-          <CodeIcon
-            v-if="view === 'CODE'"
-            :class="active ? '!text-current' : 'text-main'"
-          />
-          <InfoIcon
-            v-if="view === 'INFO'"
-            :class="active ? '!text-current' : 'text-main'"
-          />
-          <TableIcon
-            v-if="view === 'TABLES'"
-            class="w-4 h-4"
-            :class="active ? '!text-current' : 'text-main'"
-          />
-          <ViewIcon
-            v-if="view === 'VIEWS'"
-            class="w-4 h-4"
-            :class="active ? '!text-current' : 'text-main'"
-          />
-          <FunctionIcon
-            v-if="view === 'FUNCTIONS'"
-            :class="active ? '!text-current' : 'text-main'"
-          />
-          <ProcedureIcon
-            v-if="view === 'PROCEDURES'"
-            :class="active ? '!text-current' : 'text-main'"
-          />
-          <SchemaDiagramIcon
-            v-if="view === 'DIAGRAM'"
-            :class="active ? '!text-current' : 'text-main'"
-          />
+          <CodeIcon v-if="view === 'CODE'" :class="iconClass" />
+          <InfoIcon v-if="view === 'INFO'" :class="iconClass" />
+          <TableIcon v-if="view === 'TABLES'" :class="iconClass" />
+          <ViewIcon v-if="view === 'VIEWS'" :class="iconClass" />
+          <FunctionIcon v-if="view === 'FUNCTIONS'" :class="iconClass" />
+          <ProcedureIcon v-if="view === 'PROCEDURES'" :class="iconClass" />
+          <SchemaDiagramIcon v-if="view === 'DIAGRAM'" :class="iconClass" />
         </template>
       </NButton>
     </template>
@@ -95,6 +72,16 @@ const text = computed(() => {
   }
   console.assert(false, "should never reach this line");
   return "";
+});
+
+const iconClass = computed(() => {
+  const classes = ["w-4", "h-4"];
+  if (active.value) {
+    classes.push("!text-current");
+  } else {
+    classes.push("text-main");
+  }
+  return classes;
 });
 
 const handleClick = () => {
