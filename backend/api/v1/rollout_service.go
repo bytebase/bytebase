@@ -284,6 +284,7 @@ func (s *RolloutService) GetTaskRunSession(ctx context.Context, request *v1pb.Ge
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get driver, error: %v", err)
 	}
+	defer driver.Close(ctx)
 
 	session, err := getSession(ctx, instance.Engine, driver.GetDB(), connID)
 	if err != nil {
