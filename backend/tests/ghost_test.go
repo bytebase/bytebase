@@ -290,7 +290,7 @@ func TestGhostTenant(t *testing.T) {
 			Id: uuid.NewString(),
 			Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
 				ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
-					Target: common.FormatDatabase(db.InstanceResource.Title, db.Name),
+					Target: db.Name,
 					Sheet:  sheet1.Name,
 					Type:   v1pb.Plan_ChangeDatabaseConfig_MIGRATE,
 				},
@@ -303,7 +303,7 @@ func TestGhostTenant(t *testing.T) {
 			Id: uuid.NewString(),
 			Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
 				ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
-					Target: common.FormatDatabase(db.InstanceResource.Title, db.Name),
+					Target: db.Name,
 					Sheet:  sheet1.Name,
 					Type:   v1pb.Plan_ChangeDatabaseConfig_MIGRATE,
 				},
@@ -340,7 +340,7 @@ func TestGhostTenant(t *testing.T) {
 			Id: uuid.NewString(),
 			Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
 				ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
-					Target: common.FormatDatabase(db.InstanceResource.Title, db.Name),
+					Target: db.Name,
 					Sheet:  sheet2.Name,
 					Type:   v1pb.Plan_ChangeDatabaseConfig_MIGRATE_GHOST,
 				},
@@ -353,7 +353,7 @@ func TestGhostTenant(t *testing.T) {
 			Id: uuid.NewString(),
 			Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
 				ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
-					Target: common.FormatDatabase(db.InstanceResource.Title, db.Name),
+					Target: db.Name,
 					Sheet:  sheet2.Name,
 					Type:   v1pb.Plan_ChangeDatabaseConfig_MIGRATE_GHOST,
 				},
