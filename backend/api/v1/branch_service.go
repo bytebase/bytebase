@@ -562,7 +562,7 @@ func (s *BranchService) RebaseBranch(ctx context.Context, request *v1pb.RebaseBr
 			return nil, err
 		}
 		if !ok {
-			return nil, status.Errorf(codes.InvalidArgument, "only users with %s permission can create a main branch", iam.PermissionBranchesAdmin)
+			return nil, status.Errorf(codes.InvalidArgument, "only users with %s permission can rebase a main branch", iam.PermissionBranchesAdmin)
 		}
 	}
 
@@ -777,7 +777,7 @@ func (s *BranchService) DeleteBranch(ctx context.Context, request *v1pb.DeleteBr
 			return nil, err
 		}
 		if !ok {
-			return nil, status.Errorf(codes.InvalidArgument, "only users with %s permission can create a main branch", iam.PermissionBranchesAdmin)
+			return nil, status.Errorf(codes.InvalidArgument, "only users with %s permission can delete a main branch", iam.PermissionBranchesAdmin)
 		}
 	}
 
