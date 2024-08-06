@@ -361,10 +361,12 @@ watchEffect(async () => {
   if (
     hasWorkspaceLevelProjectPermission(currentUserV1.value, "bb.projects.get")
   ) {
-    await projectStore.getOrFetchProjectByName(
-      "projects/101",
-      true /* silent */
-    );
+    try {
+      await projectStore.getOrFetchProjectByName(
+        "projects/101",
+        true /* silent */
+      );
+    } catch {}
   }
 });
 </script>
