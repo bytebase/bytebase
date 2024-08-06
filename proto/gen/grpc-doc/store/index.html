@@ -190,6 +190,10 @@
                   <a href="#bytebase.store.Position"><span class="badge">M</span>Position</a>
                 </li>
               
+                <li>
+                  <a href="#bytebase.store.Range"><span class="badge">M</span>Range</a>
+                </li>
+              
               
                 <li>
                   <a href="#bytebase.store.Engine"><span class="badge">E</span>Engine</a>
@@ -1533,6 +1537,37 @@
               
                 <tr>
                   <td>column</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.Range">Range</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>start</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>end</td>
                   <td><a href="#int32">int32</a></td>
                   <td></td>
                   <td><p> </p></td>
@@ -6153,6 +6188,13 @@ For MySQL, it&#39;s the global privileges as GRANT statements, which means it on
                   <td><a href="#int64">int64</a></td>
                   <td></td>
                   <td><p>estimated row count of the table </p></td>
+                </tr>
+              
+                <tr>
+                  <td>ranges</td>
+                  <td><a href="#bytebase.store.Range">Range</a></td>
+                  <td>repeated</td>
+                  <td><p>The ranges of sub-strings correspond to the statements on the sheet. </p></td>
                 </tr>
               
             </tbody>
