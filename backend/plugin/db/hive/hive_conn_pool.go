@@ -8,6 +8,7 @@ import (
 
 	"github.com/beltran/gohive"
 	"github.com/pkg/errors"
+	"go.uber.org/multierr"
 
 	"github.com/bytebase/bytebase/backend/plugin/db"
 )
@@ -136,7 +137,8 @@ func (pool *FixedConnPool) Get(dbName string) (*gohive.Connection, error) {
 		cursor := conn.Cursor()
 		cursor.Exec(context.Background(), fmt.Sprintf("use %s", dbName))
 		if cursor.Err != nil {
-			return nil, cursor.Err
+			closeErr := conn.Close()
+			return nil, multierr.Combine(closeErr, cursor.Err)
 		}
 	}
 
