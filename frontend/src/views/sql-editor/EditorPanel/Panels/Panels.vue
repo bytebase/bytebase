@@ -6,12 +6,15 @@
       <slot v-if="!viewState || viewState.view === 'CODE'" name="code-panel" />
 
       <template v-if="viewState">
-        <InfoPanel v-if="viewState.view === 'INFO'" />
-        <TablesPanel v-if="viewState.view === 'TABLES'" />
-        <ViewsPanel v-if="viewState.view === 'VIEWS'" />
-        <FunctionsPanel v-if="viewState.view === 'FUNCTIONS'" />
-        <ProceduresPanel v-if="viewState.view === 'PROCEDURES'" />
-        <DiagramPanel v-if="viewState.view === 'DIAGRAM'" />
+        <InfoPanel v-if="viewState.view === 'INFO'" :key="tab?.id" />
+        <TablesPanel v-if="viewState.view === 'TABLES'" :key="tab?.id" />
+        <ViewsPanel v-if="viewState.view === 'VIEWS'" :key="tab?.id" />
+        <FunctionsPanel v-if="viewState.view === 'FUNCTIONS'" :key="tab?.id" />
+        <ProceduresPanel
+          v-if="viewState.view === 'PROCEDURES'"
+          :key="tab?.id"
+        />
+        <DiagramPanel v-if="viewState.view === 'DIAGRAM'" :key="tab?.id" />
       </template>
     </div>
   </div>
@@ -19,13 +22,16 @@
 
 <script setup lang="ts">
 import { first } from "lodash-es";
+import { storeToRefs } from "pinia";
 import { computed, watch } from "vue";
 import {
   useConnectionOfCurrentSQLEditorTab,
   useDBSchemaV1Store,
+  useSQLEditorTabStore,
 } from "@/store";
+import { isValidDatabaseName } from "@/types";
 import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
-import type { VueClass } from "@/utils";
+import { extractDatabaseResourceName, type VueClass } from "@/utils";
 import GutterBar from "../GutterBar";
 import { useEditorPanelContext } from "../context";
 import DiagramPanel from "./DiagramPanel";
@@ -40,6 +46,7 @@ defineProps<{
   contentClass?: VueClass;
 }>();
 
+const { currentTab: tab } = storeToRefs(useSQLEditorTabStore());
 const { viewState, selectedSchemaName } = useEditorPanelContext();
 const { database } = useConnectionOfCurrentSQLEditorTab();
 const databaseMetadata = computed(() => {
@@ -50,12 +57,19 @@ const databaseMetadata = computed(() => {
 });
 
 watch(
-  [databaseMetadata, selectedSchemaName],
-  ([database, schema]) => {
-    if (database && schema === undefined) {
+  [() => tab.value?.id, databaseMetadata, selectedSchemaName],
+  ([id, database, schema]) => {
+    if (!id) return;
+    if (
+      !isValidDatabaseName(extractDatabaseResourceName(database.name).database)
+    ) {
+      return;
+    }
+    console.log(database.name, schema);
+    if (!schema || database.schemas.findIndex((s) => s.name === schema) < 0) {
       selectedSchemaName.value = first(database.schemas)?.name;
     }
   },
-  { immediate: true }
+  { immediate: true, flush: "post" }
 );
 </script>

@@ -31,6 +31,12 @@ import type {
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto/v1/database_service";
+import {
+  bytesToString,
+  hasCollationProperty,
+  hasIndexSizeProperty,
+  hasTableEngineProperty,
+} from "@/utils";
 import { useAutoHeightDataTable } from "../../common";
 
 const props = defineProps<{
@@ -54,6 +60,9 @@ const emit = defineEmits<{
 const { t } = useI18n();
 const { containerElRef, tableBodyHeight, layoutReady } =
   useAutoHeightDataTable();
+const instanceEngine = computed(() => {
+  return props.db.instanceResource.engine;
+});
 
 const columns = computed(() => {
   const columns: (DataTableColumn<TableMetadata> & { hide?: boolean })[] = [
@@ -68,6 +77,7 @@ const columns = computed(() => {
     {
       key: "engine",
       title: t("schema-editor.database.engine"),
+      hide: !hasTableEngineProperty(instanceEngine.value),
       resizable: true,
       minWidth: 120,
       maxWidth: 180,
@@ -78,11 +88,43 @@ const columns = computed(() => {
     {
       key: "collation",
       title: t("schema-editor.database.collation"),
+      hide: !hasCollationProperty(instanceEngine.value),
       resizable: true,
       minWidth: 120,
       maxWidth: 180,
       ellipsis: true,
       ellipsisComponent: "performant-ellipsis",
+    },
+    {
+      key: "rowCountEst",
+      title: t("database.row-count-est"),
+      resizable: true,
+      minWidth: 120,
+      maxWidth: 180,
+      render: (row) => {
+        return String(row.rowCount);
+      },
+    },
+    {
+      key: "dataSize",
+      title: t("database.data-size"),
+      resizable: true,
+      minWidth: 120,
+      maxWidth: 180,
+      render: (row) => {
+        return bytesToString(row.dataSize.toNumber());
+      },
+    },
+    {
+      key: "indexSize",
+      title: t("database.index-size"),
+      hide: !hasIndexSizeProperty(instanceEngine.value),
+      resizable: true,
+      minWidth: 120,
+      maxWidth: 180,
+      render: (row) => {
+        return bytesToString(row.indexSize.toNumber());
+      },
     },
     {
       key: "comment",
