@@ -8,11 +8,7 @@
         <slot v-if="state.mode === 'COLUMNS'" name="toolbar-prefix" />
 
         <template
-          v-if="
-            state.mode === 'OVERVIEW' ||
-            state.mode === 'INDEXES' ||
-            state.mode === 'PARTITIONS'
-          "
+          v-if="state.mode === 'INDEXES' || state.mode === 'PARTITIONS'"
         >
           <NButton size="small" @click="state.mode = 'COLUMNS'">
             <ArrowLeftIcon class="w-4 h-4" />
@@ -37,10 +33,6 @@
           </template>
         </template>
         <template v-if="state.mode === 'COLUMNS'">
-          <NButton size="small" @click="state.mode = 'OVERVIEW'">
-            <InfoIcon class="w-3.5 h-3.5 mr-1" />
-            {{ $t("common.overview") }}
-          </NButton>
           <template v-if="!readonly">
             <NButton
               size="small"
@@ -135,13 +127,6 @@
         @foreign-key-edit="handleEditColumnForeignKey"
         @foreign-key-click="gotoForeignKeyReferencedTable"
       />
-      <OverviewPanel
-        v-if="state.mode === 'OVERVIEW'"
-        :db="db"
-        :database="database"
-        :schema="schema"
-        :table="table"
-      />
       <IndexesEditor
         :show="state.mode === 'INDEXES'"
         :readonly="readonly"
@@ -197,7 +182,7 @@
 
 <script lang="ts" setup>
 import { cloneDeep, pull } from "lodash-es";
-import { InfoIcon, PlusIcon } from "lucide-vue-next";
+import { PlusIcon } from "lucide-vue-next";
 import { ArrowLeftIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { computed, reactive, ref } from "vue";
@@ -239,11 +224,10 @@ import {
 import type { EditStatus } from "../types";
 import ColumnSelectionSummary from "./ColumnSelectionSummary.vue";
 import IndexesEditor from "./IndexesEditor";
-import OverviewPanel from "./OverviewPanel.vue";
 import PartitionsEditor from "./PartitionsEditor";
 import TableColumnEditor from "./TableColumnEditor";
 
-type EditMode = "COLUMNS" | "OVERVIEW" | "INDEXES" | "PARTITIONS";
+type EditMode = "COLUMNS" | "INDEXES" | "PARTITIONS";
 
 const props = withDefaults(
   defineProps<{
