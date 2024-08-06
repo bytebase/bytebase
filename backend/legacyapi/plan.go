@@ -320,7 +320,7 @@ var FeatureMatrix = map[FeatureType][3]bool{
 	// Collaboration
 	FeatureSharedSQLScript: {false, true, true},
 	// Plugins
-	FeaturePluginOpenAI: {false, false, true},
+	FeaturePluginOpenAI: {true, true, true},
 }
 
 // InstanceLimitFeature is the map for instance feature. Only allowed to access these feature for activate instance.
