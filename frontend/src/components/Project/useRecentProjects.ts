@@ -1,8 +1,7 @@
-import { useLocalStorage } from "@vueuse/core";
 import { computed } from "vue";
 import { useProjectV1Store, useCurrentUserV1 } from "@/store";
 import { isValidProjectName } from "@/types";
-import { hasProjectPermissionV2 } from "@/utils";
+import { hasProjectPermissionV2, useDynamicLocalStorage } from "@/utils";
 
 const MAX_RECENT_PROJECT = 5;
 
@@ -10,8 +9,8 @@ export const useRecentProjects = () => {
   const projectV1Store = useProjectV1Store();
   const currentUser = useCurrentUserV1();
 
-  const recentViewProjectNames = useLocalStorage<string[]>(
-    `bb.project.recent-view.${currentUser.value.name}`,
+  const recentViewProjectNames = useDynamicLocalStorage<string[]>(
+    computed(() => `bb.project.recent-view.${currentUser.value.name}`),
     []
   );
 

@@ -2,10 +2,20 @@ import { useLocalStorage } from "@vueuse/core";
 import { createI18n } from "vue-i18n";
 import { mergedLocalMessage } from "./i18n-messages";
 
+export interface LanguageStorage {
+  appearance: {
+    language: string;
+  };
+}
+
 const validLocaleList = ["en-US", "zh-CN", "es-ES", "ja-JP"];
 
 const getValidLocale = () => {
-  const storage = useLocalStorage("bytebase_options", {}) as any;
+  const storage = useLocalStorage<LanguageStorage>("bytebase_options", {
+    appearance: {
+      language: "",
+    },
+  });
 
   const params = new URL(globalThis.location.href).searchParams;
   let locale = params.get("locale") || "";
