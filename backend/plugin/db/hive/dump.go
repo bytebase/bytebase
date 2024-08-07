@@ -67,9 +67,8 @@ func (d *Driver) Dump(ctx context.Context, out io.Writer) (string, error) {
 	schema := database.Schemas[0]
 
 	cursor := d.conn.Cursor()
-	cursor.Exec(ctx, fmt.Sprintf("use %s", databaseName))
-	if cursor.Err != nil {
-		return "", cursor.Err
+	if err := executeCursor(ctx, cursor, fmt.Sprintf("use %s", databaseName)); err != nil {
+		return "", err
 	}
 
 	// dump managed tables.
