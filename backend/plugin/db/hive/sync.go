@@ -65,12 +65,7 @@ func (*Driver) CheckSlowQueryLogEnabled(_ context.Context) error {
 }
 
 func (d *Driver) getVersion(ctx context.Context) (string, error) {
-	conn, err := d.connPool.Get()
-	if err != nil {
-		return "", err
-	}
-	defer d.connPool.Put(conn)
-	result, err := runSingleStatement(ctx, conn, "SELECT VERSION()")
+	result, err := runSingleStatement(ctx, d.conn, "SELECT VERSION()")
 	if err != nil {
 		return "", errors.Wrap(err, "failed to get version from instance")
 	}
@@ -89,12 +84,7 @@ func (d *Driver) getVersion(ctx context.Context) (string, error) {
 
 func (d *Driver) getDatabaseNames(ctx context.Context) ([]string, error) {
 	var databaseNames []string
-	conn, err := d.connPool.Get()
-	if err != nil {
-		return nil, err
-	}
-	defer d.connPool.Put(conn)
-	result, err := runSingleStatement(ctx, conn, "SHOW DATABASES")
+	result, err := runSingleStatement(ctx, d.conn, "SHOW DATABASES")
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get version from instance")
 	}
@@ -108,12 +98,7 @@ func (d *Driver) getDatabaseNames(ctx context.Context) ([]string, error) {
 }
 
 func (d *Driver) listTablesNames(ctx context.Context, databaseName string) ([]string, error) {
-	conn, err := d.connPool.Get()
-	if err != nil {
-		return nil, err
-	}
-	defer d.connPool.Put(conn)
-	result, err := runSingleStatement(ctx, conn, fmt.Sprintf("SHOW TABLES FROM %s", databaseName))
+	result, err := runSingleStatement(ctx, d.conn, fmt.Sprintf("SHOW TABLES FROM %s", databaseName))
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get version from instance")
 	}
@@ -204,12 +189,7 @@ func (d *Driver) getTables(ctx context.Context, databaseName string) (
 
 func (d *Driver) getPartitions(ctx context.Context, databaseName, tableName string) ([]*storepb.TablePartitionMetadata, error) {
 	// partitions.
-	conn, err := d.connPool.Get()
-	if err != nil {
-		return nil, err
-	}
-	defer d.connPool.Put(conn)
-	partitionResult, err := runSingleStatement(ctx, conn, fmt.Sprintf("SHOW PARTITIONS `%s`.`%s`", databaseName, tableName))
+	partitionResult, err := runSingleStatement(ctx, d.conn, fmt.Sprintf("SHOW PARTITIONS `%s`.`%s`", databaseName, tableName))
 	if err != nil {
 		slog.Debug("failed to get partitions", log.BBError(err))
 		return nil, nil
@@ -267,16 +247,8 @@ func (d *Driver) getTableInfo(ctx context.Context, tabName string, databaseName 
 		totalSize       int
 		numRows         int
 	)
-	conn, err := d.connPool.Get()
-	if err != nil {
-		return nil, err
-	}
-	cursor := conn.Cursor()
-	defer func() {
-		cursor.Close()
-		d.connPool.Put(conn)
-	}()
 
+	cursor := d.conn.Cursor()
 	cursor.Exec(ctx, fmt.Sprintf("DESCRIBE FORMATTED `%s`.`%s`", databaseName, tabName))
 	if cursor.Err != nil {
 		return nil, errors.Wrapf(cursor.Err, "failed to describe table %s", tabName)

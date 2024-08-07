@@ -66,13 +66,7 @@ func (d *Driver) Dump(ctx context.Context, out io.Writer) (string, error) {
 	}
 	schema := database.Schemas[0]
 
-	conn, err := d.connPool.Get()
-	if err != nil {
-		return "", err
-	}
-	defer d.connPool.Put(conn)
-
-	cursor := conn.Cursor()
+	cursor := d.conn.Cursor()
 	cursor.Exec(ctx, fmt.Sprintf("use %s", databaseName))
 	if cursor.Err != nil {
 		return "", cursor.Err
@@ -80,7 +74,7 @@ func (d *Driver) Dump(ctx context.Context, out io.Writer) (string, error) {
 
 	// dump managed tables.
 	for _, table := range schema.GetTables() {
-		tableDDL, err := showCreateDDL(ctx, conn, "TABLE", table.Name)
+		tableDDL, err := showCreateDDL(ctx, d.conn, "TABLE", table.Name)
 		if err != nil {
 			return "", errors.Wrapf(err, "failed to dump table %s", table.Name)
 		}
@@ -114,7 +108,7 @@ func (d *Driver) Dump(ctx context.Context, out io.Writer) (string, error) {
 
 	// dump external tables.
 	for _, extTable := range schema.GetExternalTables() {
-		tabDDL, err := showCreateDDL(ctx, conn, "TABLE", extTable.Name)
+		tabDDL, err := showCreateDDL(ctx, d.conn, "TABLE", extTable.Name)
 		if err != nil {
 			return "", errors.Wrapf(err, "failed to dump table %s", extTable.Name)
 		}
@@ -123,7 +117,7 @@ func (d *Driver) Dump(ctx context.Context, out io.Writer) (string, error) {
 
 	// dump views.
 	for _, view := range schema.GetViews() {
-		viewDDL, err := showCreateDDL(ctx, conn, "VIEW", view.Name)
+		viewDDL, err := showCreateDDL(ctx, d.conn, "VIEW", view.Name)
 		if err != nil {
 			return "", errors.Wrapf(err, "failed to dump view %s", view.Name)
 		}
