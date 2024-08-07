@@ -5160,6 +5160,11 @@ paths:
                      the call that provided the page token.
                   schema:
                     type: string
+                - name: latestOnly
+                  in: query
+                  description: If set to true, only the latest plan check run will be returned.
+                  schema:
+                    type: boolean
             responses:
                 "200":
                     description: OK
