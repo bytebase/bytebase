@@ -61,6 +61,7 @@ import {
   DataSourceQueryPolicy_Restriction,
   PolicyType,
 } from "@/types/proto/v1/org_policy_service";
+import { getAdminDataSourceRestrictionOfDatabase } from "@/utils";
 
 const { t } = useI18n();
 const tabStore = useSQLEditorTabStore();
@@ -75,27 +76,7 @@ const adminDataSourceRestriction = computed(() => {
       projectPolicy: DataSourceQueryPolicy_Restriction.RESTRICTION_UNSPECIFIED,
     };
   }
-
-  const projectLevelPolicy = policyStore.getPolicyByParentAndType({
-    parentPath: database.value.project,
-    policyType: PolicyType.DATA_SOURCE_QUERY,
-  });
-  const projectLevelAdminDSRestriction =
-    projectLevelPolicy?.dataSourceQueryPolicy?.adminDataSourceRestriction;
-  const envLevelPolicy = policyStore.getPolicyByParentAndType({
-    parentPath: database.value.effectiveEnvironment,
-    policyType: PolicyType.DATA_SOURCE_QUERY,
-  });
-  const envLevelAdminDSRestriction =
-    envLevelPolicy?.dataSourceQueryPolicy?.adminDataSourceRestriction;
-  return {
-    environmentPolicy:
-      envLevelAdminDSRestriction ??
-      DataSourceQueryPolicy_Restriction.RESTRICTION_UNSPECIFIED,
-    projectPolicy:
-      projectLevelAdminDSRestriction ??
-      DataSourceQueryPolicy_Restriction.RESTRICTION_UNSPECIFIED,
-  };
+  return getAdminDataSourceRestrictionOfDatabase(database.value);
 });
 
 const selectedDataSourceId = computed(() => {
