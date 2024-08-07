@@ -44,7 +44,7 @@ var (
 	_ db.Driver = (*Driver)(nil)
 )
 
-func (d *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
+func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
 	if config.Host == "" {
 		return nil, errors.Errorf("hostname not set")
 	}
@@ -82,9 +82,8 @@ func (d *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionC
 
 	if config.Database != "" {
 		cursor := d.conn.Cursor()
-		cursor.Exec(context.Background(), fmt.Sprintf("use %s", config.Database))
-		if cursor.Err != nil {
-			return nil, multierr.Combine(d.conn.Close(), cursor.Err)
+		if err := executeCursor(ctx, cursor, fmt.Sprintf("use %s", config.Database)); err != nil {
+			return nil, multierr.Combine(d.conn.Close(), err)
 		}
 	}
 	return d, nil
@@ -98,9 +97,8 @@ func (d *Driver) Ping(ctx context.Context) error {
 	cursor := d.conn.Cursor()
 	defer cursor.Close()
 
-	cursor.Exec(ctx, "SELECT 1")
-	if cursor.Err != nil {
-		return errors.Errorf("bad connection")
+	if err := executeCursor(ctx, cursor, "SELECT 1"); err != nil {
+		return errors.Wrapf(err, "bad connection")
 	}
 	return nil
 }
@@ -124,9 +122,9 @@ func (d *Driver) Execute(ctx context.Context, statementsStr string, _ db.Execute
 	}
 
 	for _, statement := range statements {
-		cursor.Execute(ctx, strings.TrimRight(statement.Text, ";"), false)
-		if cursor.Err != nil {
-			return 0, errors.Wrap(cursor.Err, "failed to execute statement")
+		query := strings.TrimRight(statement.Text, ";")
+		if err := executeCursor(ctx, cursor, query); err != nil {
+			return 0, err
 		}
 		operationStatus := cursor.Poll(false)
 		affectedRows += operationStatus.GetNumModifiedRows()
@@ -192,9 +190,8 @@ func runSingleStatement(ctx context.Context, conn *gohive.Connection, statement 
 	defer cursor.Close()
 
 	// run query.
-	cursor.Execute(ctx, statement, false)
-	if cursor.Err != nil {
-		return nil, errors.Wrap(cursor.Err, "failed to execute statement")
+	if err := executeCursor(ctx, cursor, statement); err != nil {
+		return nil, err
 	}
 
 	result := &v1pb.QueryResult{
@@ -233,4 +230,12 @@ func runSingleStatement(ctx context.Context, conn *gohive.Connection, statement 
 	}
 	result.Latency = durationpb.New(time.Since(startTime))
 	return result, nil
+}
+
+func executeCursor(ctx context.Context, cursor *gohive.Cursor, statement string) error {
+	cursor.Exec(ctx, statement)
+	if cursor.Err != nil {
+		return errors.Wrap(cursor.Err, "failed to execute statement")
+	}
+	return nil
 }
