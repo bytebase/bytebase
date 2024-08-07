@@ -35,15 +35,13 @@ func init() {
 }
 
 type Driver struct {
-	config   db.ConnectionConfig
-	ctx      db.ConnectionContext
-	connPool *FixedConnPool
-	conn     *gohive.Connection
+	config db.ConnectionConfig
+	ctx    db.ConnectionContext
+	conn   *gohive.Connection
 }
 
 var (
-	_          db.Driver = (*Driver)(nil)
-	numMaxConn           = 5
+	_ db.Driver = (*Driver)(nil)
 )
 
 func (d *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
@@ -54,49 +52,46 @@ func (d *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionC
 	d.config = config
 	d.ctx = config.ConnectionContext
 
-	if d.connPool == nil {
-		if config.SASLConfig == nil {
-			config.SASLConfig = &db.PlainSASLConfig{
-				Username: config.Username,
-				Password: config.Password,
-			}
-		}
-		if !config.SASLConfig.Check() {
-			return nil, errors.New("SASL settings error")
-		}
-		pool, err := createHiveConnPool(numMaxConn, &config)
-		if err != nil {
-			return nil, err
-		}
-		d.connPool = pool
+	port, err := strconv.Atoi(config.Port)
+	if err != nil {
+		return nil, errors.Errorf("conversion failure for 'port' [string -> int]")
 	}
 
-	newConn, err := d.connPool.Get()
-	if err != nil {
-		err = errors.Wrapf(err, "failed to get connection from pool")
-		// release resources.
-		if closeErr := d.connPool.Destroy(); closeErr != nil {
-			err = multierr.Combine(closeErr, err)
+	var authConnParam = "NONE"
+	hiveConfig := gohive.NewConnectConfiguration()
+	switch t := config.SASLConfig.(type) {
+	case *db.KerberosConfig:
+		hiveConfig.Hostname = t.Instance
+		hiveConfig.Service = t.Primary
+		db.KrbEnvLock()
+		defer db.KrbEnvUnlock()
+		if err := config.SASLConfig.InitEnv(); err != nil {
+			return nil, errors.Wrapf(err, "failed to init SASL environment")
 		}
+		authConnParam = "KERBEROS"
+	case *db.PlainSASLConfig:
+		hiveConfig.Username = t.Username
+		hiveConfig.Password = t.Password
+	}
+
+	conn, err := gohive.Connect(config.Host, port, authConnParam, hiveConfig)
+	if err != nil {
 		return nil, err
 	}
+	d.conn = conn
 
 	if config.Database != "" {
-		cursor := newConn.Cursor()
+		cursor := d.conn.Cursor()
 		cursor.Exec(context.Background(), fmt.Sprintf("use %s", config.Database))
 		if cursor.Err != nil {
-			return nil, multierr.Combine(newConn.Close(), cursor.Err)
+			return nil, multierr.Combine(d.conn.Close(), cursor.Err)
 		}
 	}
-
-	d.conn = newConn
-
 	return d, nil
 }
 
 func (d *Driver) Close(_ context.Context) error {
-	d.connPool.Put(d.conn)
-	return d.connPool.Destroy()
+	return d.conn.Close()
 }
 
 func (d *Driver) Ping(ctx context.Context) error {
@@ -146,12 +141,6 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 		return nil, errors.Wrapf(err, "failed to split statements")
 	}
 
-	conn, err := d.connPool.Get()
-	if err != nil {
-		return nil, err
-	}
-	defer d.connPool.Put(conn)
-
 	var results []*v1pb.QueryResult
 	for _, singleSQL := range singleSQLs {
 		statement := util.TrimStatement(singleSQL.Text)
@@ -159,7 +148,7 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 			statement = fmt.Sprintf("EXPLAIN %s", statement)
 		}
 
-		result, err := runSingleStatement(ctx, conn, statement)
+		result, err := runSingleStatement(ctx, d.conn, statement)
 		if err != nil {
 			return nil, err
 		}

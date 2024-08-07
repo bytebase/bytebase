@@ -29,11 +29,7 @@ func (*Driver) FindRole(_ context.Context, _ string) (*db.DatabaseRoleMessage, e
 }
 
 func (d *Driver) ListRole(ctx context.Context) ([]*db.DatabaseRoleMessage, error) {
-	conn, err := d.connPool.Get()
-	if err != nil {
-		return nil, err
-	}
-	roleResult, err := runSingleStatement(ctx, conn, "SHOW ROLES")
+	roleResult, err := runSingleStatement(ctx, d.conn, "SHOW ROLES")
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get roles")
 	}
@@ -56,11 +52,7 @@ func (d *Driver) DeleteRole(ctx context.Context, roleName string) error {
 }
 
 func (d *Driver) GetRoleGrant(ctx context.Context, roleName string) (string, error) {
-	conn, err := d.connPool.Get()
-	if err != nil {
-		return "", err
-	}
-	grantResult, err := runSingleStatement(ctx, conn, fmt.Sprintf("SHOW GRANT ROLE %s", roleName))
+	grantResult, err := runSingleStatement(ctx, d.conn, fmt.Sprintf("SHOW GRANT ROLE %s", roleName))
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get grant from %s", roleName)
 	}
