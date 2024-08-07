@@ -793,12 +793,10 @@ func (s *PlanService) ListPlanCheckRuns(ctx context.Context, request *v1pb.ListP
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
-	var planCheckRuns []*store.PlanCheckRunMessage
-	if !request.LatestOnly {
-		planCheckRuns, err = s.store.ListPlanCheckRuns(ctx, &store.FindPlanCheckRunMessage{PlanUID: &planUID})
-	} else {
-		planCheckRuns, err = s.store.ListLatestPlanCheckRunsForPlan(ctx, planUID)
-	}
+	planCheckRuns, err := s.store.ListPlanCheckRuns(ctx, &store.FindPlanCheckRunMessage{
+		PlanUID:    &planUID,
+		LatestOnly: request.LatestOnly,
+	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to list plan check runs, error: %v", err)
 	}

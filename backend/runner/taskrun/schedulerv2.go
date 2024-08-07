@@ -173,7 +173,10 @@ func (s *SchedulerV2) scheduleAutoRolloutTask(ctx context.Context, taskUID int) 
 		if plan == nil {
 			return true, nil
 		}
-		latestRuns, err := s.store.ListLatestPlanCheckRunsForPlan(ctx, plan.UID)
+		latestRuns, err := s.store.ListPlanCheckRuns(ctx, &store.FindPlanCheckRunMessage{
+			PlanUID:    &plan.UID,
+			LatestOnly: true,
+		})
 		if err != nil {
 			return false, errors.Wrapf(err, "failed to list latest plan check runs")
 		}
