@@ -235,7 +235,7 @@ type TableInfo struct {
 	comment      string
 }
 
-func (d *Driver) getTableInfo(ctx context.Context, tabName string, databaseName string) (
+func (d *Driver) getTableInfo(ctx context.Context, tableName string, databaseName string) (
 	*TableInfo,
 	error,
 ) {
@@ -249,9 +249,9 @@ func (d *Driver) getTableInfo(ctx context.Context, tabName string, databaseName 
 	)
 
 	cursor := d.conn.Cursor()
-	cursor.Exec(ctx, fmt.Sprintf("DESCRIBE FORMATTED `%s`.`%s`", databaseName, tabName))
-	if cursor.Err != nil {
-		return nil, errors.Wrapf(cursor.Err, "failed to describe table %s", tabName)
+	query := fmt.Sprintf("DESCRIBE FORMATTED `%s`.`%s`", databaseName, tableName)
+	if err := executeCursor(ctx, cursor, query); err != nil {
+		return nil, errors.Wrapf(err, "failed to describe table %s", tableName)
 	}
 	cnt := 0
 	for cursor.HasMore(ctx) {
