@@ -81,21 +81,6 @@ export const useDBGroupStore = defineStore("db-group", () => {
   const dbGroupMapByName = ref<Map<string, ComposedDatabaseGroup>>(new Map());
   const cachedProjectNameSet = ref<Set<string>>(new Set());
 
-  const fetchAllDatabaseGroupList = async () => {
-    const { databaseGroups } =
-      await databaseGroupServiceClient.listDatabaseGroups({
-        parent: `${projectNamePrefix}-`,
-      });
-    const composedList = [];
-    const composeDatabaseGroups =
-      await batchComposeDatabaseGroup(databaseGroups);
-    for (const composedData of composeDatabaseGroups) {
-      dbGroupMapByName.value.set(composedData.name, composedData);
-      composedList.push(composedData);
-    }
-    return composedList;
-  };
-
   const getAllDatabaseGroupList = () => {
     return Array.from(dbGroupMapByName.value.values());
   };
@@ -303,7 +288,6 @@ export const useDBGroupStore = defineStore("db-group", () => {
   };
 
   return {
-    fetchAllDatabaseGroupList,
     getAllDatabaseGroupList,
     getOrFetchDBGroupByName,
     getOrFetchDBGroupListByProjectName,
