@@ -158,7 +158,7 @@ type UpdateDataSourceMessage struct {
 	MasterObfuscatedPassword *string
 }
 
-func (*Store) listDataSourceV2(ctx context.Context, tx *Tx, find *FindDataSourceMessage) (map[string][]*DataSourceMessage, error) {
+func (*Store) listInstanceDataSourceMap(ctx context.Context, tx *Tx, find *FindDataSourceMessage) (map[string][]*DataSourceMessage, error) {
 	where, args := []string{"TRUE"}, []any{}
 	if find.ID != nil {
 		where, args = append(where, fmt.Sprintf("data_source.id = $%d", len(args)+1)), append(args, *find.ID)
@@ -256,51 +256,36 @@ func (*Store) listDataSourceV2(ctx context.Context, tx *Tx, find *FindDataSource
 	return instanceDataSourcesMap, nil
 }
 
-func (s *Store) ListDataSourcesV2(ctx context.Context, find *FindDataSourceMessage) (map[string][]*DataSourceMessage, error) {
+func (s *Store) ListDataSourcesV2(ctx context.Context, find *FindDataSourceMessage) ([]*DataSourceMessage, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, errors.New("Failed to begin transaction")
 	}
 	defer tx.Rollback()
 
-	dataSources, err := s.listDataSourceV2(ctx, tx, find)
+	dataSourceMap, err := s.listInstanceDataSourceMap(ctx, tx, find)
 	if err != nil {
 		return nil, err
 	}
-
+	dataSources := []*DataSourceMessage{}
+	for _, list := range dataSourceMap {
+		dataSources = append(dataSources, list...)
+	}
 	return dataSources, nil
 }
 
 func (s *Store) GetDataSource(ctx context.Context, find *FindDataSourceMessage) (*DataSourceMessage, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, errors.New("Failed to begin transaction")
-	}
-	defer tx.Rollback()
-
-	dataSources, err := s.listDataSourceV2(ctx, tx, find)
+	dataSources, err := s.ListDataSourcesV2(ctx, find)
 	if err != nil {
 		return nil, err
 	}
-
 	if len(dataSources) == 0 {
 		return nil, nil
 	}
 	if len(dataSources) > 1 {
 		return nil, errors.Errorf("found %d data sources, but expected 1", len(dataSources))
 	}
-
-	for _, dataSources := range dataSources {
-		if len(dataSources) == 0 {
-			return nil, nil
-		}
-		if len(dataSources) > 1 {
-			return nil, errors.Errorf("found %d data sources, but expected 1", len(dataSources))
-		}
-		return dataSources[0], nil
-	}
-
-	return nil, nil
+	return dataSources[0], nil
 }
 
 // AddDataSourceToInstanceV2 adds a RO data source to an instance and return the instance where the data source is added.
