@@ -196,7 +196,7 @@ func (s *Store) CreateInstanceV2(ctx context.Context, instanceCreate *InstanceMe
 		}
 	}
 
-	instanceDataSourcesMap, err := s.listDataSourceV2(ctx, tx, &FindDataSourceMessage{
+	instanceDataSourcesMap, err := s.listInstanceDataSourceMap(ctx, tx, &FindDataSourceMessage{
 		InstanceID: &instanceCreate.ResourceID,
 	})
 	if err != nil {
@@ -347,7 +347,7 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 		}
 	}
 	instance.Deleted = convertRowStatusToDeleted(rowStatus)
-	instanceDataSourcesMap, err := s.listDataSourceV2(ctx, tx, &FindDataSourceMessage{
+	instanceDataSourcesMap, err := s.listInstanceDataSourceMap(ctx, tx, &FindDataSourceMessage{
 		InstanceID: &patch.ResourceID,
 	})
 	if err != nil {
@@ -464,7 +464,7 @@ func (s *Store) listInstanceImplV2(ctx context.Context, tx *Tx, find *FindInstan
 	if len(instanceMessages) == 1 {
 		dataSourceFind.InstanceID = &instanceMessages[0].ResourceID
 	}
-	instanceDataSourcesMap, err := s.listDataSourceV2(ctx, tx, dataSourceFind)
+	instanceDataSourcesMap, err := s.listInstanceDataSourceMap(ctx, tx, dataSourceFind)
 	if err != nil {
 		return nil, err
 	}
