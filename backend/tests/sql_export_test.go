@@ -46,6 +46,15 @@ func TestSQLExport(t *testing.T) {
 			password:          "123",
 			queryResult: []*v1pb.QueryResult{
 				{
+					ColumnNames:     []string{"Affected Rows"},
+					ColumnTypeNames: []string{"INT"},
+					Rows: []*v1pb.QueryRow{
+						{
+							Values: []*v1pb.RowValue{
+								{Kind: &v1pb.RowValue_Int64Value{Int64Value: 1}},
+							},
+						},
+					},
 					Statement: "INSERT INTO Test1.tbl (id, name, gender, height) VALUES(1, 'Alice', B'0', B'01111111');",
 				},
 			},
