@@ -891,7 +891,7 @@ func validateSteps(steps []*v1pb.Plan_Step) error {
 
 // GetPipelineCreate gets a pipeline create message from a plan.
 func GetPipelineCreate(ctx context.Context, s *store.Store, sheetManager *sheet.Manager, licenseService enterprise.LicenseService, dbFactory *dbfactory.DBFactory, steps []*storepb.PlanConfig_Step, project *store.ProjectMessage) (*store.PipelineMessage, error) {
-	transformedSteps := steps
+
 	// Flatten all specs from steps.
 	var specs []*storepb.PlanConfig_Spec
 	for _, step := range steps {
@@ -913,7 +913,12 @@ func GetPipelineCreate(ctx context.Context, s *store.Store, sheetManager *sheet.
 				if err != nil {
 					return nil, errors.Wrapf(err, "failed to transform databaseGroup target to steps")
 				}
-				transformedSteps = stepsFromDatabaseGroup
+
+				var transformedSpecs []*storepb.PlanConfig_Spec
+				for _, step := range stepsFromDatabaseGroup {
+					transformedSpecs = append(transformedSpecs, step.Specs...)
+				}
+				specs = transformedSpecs
 			}
 		}
 	}
@@ -927,6 +932,8 @@ func GetPipelineCreate(ctx context.Context, s *store.Store, sheetManager *sheet.
 			break
 		}
 	}
+
+	transformedSteps := steps
 
 	// For ChangeDatabase specs, we will try to rebuild the steps based on the deployment config.
 	if filterByDeploymentConfig {
