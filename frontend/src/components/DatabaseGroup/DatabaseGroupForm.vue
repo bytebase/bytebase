@@ -101,7 +101,6 @@ import {
 } from "@/store/modules/v1/common";
 import type {
   ComposedDatabase,
-  ComposedDatabaseGroup,
   ComposedProject,
   ResourceId,
   ValidatedMessage,
@@ -117,7 +116,6 @@ import { FactorList } from "./utils";
 const props = defineProps<{
   project: ComposedProject;
   databaseGroup?: DatabaseGroup;
-  parentDatabaseGroup?: ComposedDatabaseGroup;
 }>();
 
 type LocalState = {

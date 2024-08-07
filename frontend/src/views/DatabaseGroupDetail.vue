@@ -1,6 +1,6 @@
 <template>
   <div
-    v-if="state.isLoaded"
+    v-if="databaseGroup"
     class="flex-1 overflow-auto focus:outline-none"
     tabindex="0"
     v-bind="$attrs"
@@ -67,7 +67,7 @@
             {{ $t("database-group.condition.self") }}
           </p>
           <ExprEditor
-            :expr="state.expr!"
+            :expr="databaseGroup.simpleExpr"
             :allow-admin="false"
             :enable-raw-expression="true"
             :factor-list="FactorList"
@@ -87,18 +87,16 @@
   </div>
 
   <DatabaseGroupPanel
-    :show="editState.showConfigurePanel"
+    :show="state.showEditPanel"
     :project="project"
-    :database-group="editState.databaseGroup"
-    :parent-database-group="editState.parentDatabaseGroup"
-    @close="editState.showConfigurePanel = false"
+    :database-group="databaseGroup"
+    @close="state.showEditPanel = false"
   />
 </template>
 
 <script lang="ts" setup>
-import { useDebounceFn } from "@vueuse/core";
 import { NButton, NDivider, NTag } from "naive-ui";
-import { onMounted, reactive, computed, watch, ref } from "vue";
+import { reactive, computed, watchEffect } from "vue";
 import { useRouter } from "vue-router";
 import DatabaseGroupPanel from "@/components/DatabaseGroup/DatabaseGroupPanel.vue";
 import MatchedDatabaseView from "@/components/DatabaseGroup/MatchedDatabaseView.vue";
@@ -110,7 +108,6 @@ import {
 import ExprEditor from "@/components/ExprEditor";
 import { FeatureAttentionForInstanceLicense } from "@/components/FeatureGuard";
 import TenantIcon from "@/components/TenantIcon.vue";
-import type { ConditionGroupExpr } from "@/plugins/cel";
 import {
   useCurrentUserV1,
   useDBGroupStore,
@@ -120,23 +117,12 @@ import {
 } from "@/store";
 import { databaseGroupNamePrefix } from "@/store/modules/v1/common";
 import { projectNamePrefix } from "@/store/modules/v1/common";
-import type { ComposedDatabase, ComposedDatabaseGroup } from "@/types";
-import {
-  DatabaseGroupView,
-  type DatabaseGroup,
-} from "@/types/proto/v1/database_group_service";
+import { DatabaseGroupView } from "@/types/proto/v1/database_group_service";
 import { hasPermissionToCreateChangeDatabaseIssueInProject } from "@/utils";
 import { generateDatabaseGroupIssueRoute } from "@/utils/databaseGroup/issue";
 
 interface LocalState {
-  isLoaded: boolean;
-  expr?: ConditionGroupExpr;
-}
-
-interface EditDatabaseGroupState {
-  showConfigurePanel: boolean;
-  databaseGroup?: DatabaseGroup;
-  parentDatabaseGroup?: ComposedDatabaseGroup;
+  showEditPanel: boolean;
 }
 
 const props = defineProps<{
@@ -146,104 +132,59 @@ const props = defineProps<{
 }>();
 
 const router = useRouter();
+const currentUser = useCurrentUserV1();
 const projectStore = useProjectV1Store();
 const dbGroupStore = useDBGroupStore();
 const databaseStore = useDatabaseV1Store();
 const subscriptionV1Store = useSubscriptionV1Store();
-const me = useCurrentUserV1();
-
 const state = reactive<LocalState>({
-  isLoaded: false,
+  showEditPanel: false,
 });
-const editState = reactive<EditDatabaseGroupState>({
-  showConfigurePanel: false,
-});
+
 const project = computed(() => {
   return projectStore.getProjectByName(
     `${projectNamePrefix}${props.projectId}`
   );
 });
+
 const databaseGroupResourceName = computed(() => {
   return `${project.value.name}/${databaseGroupNamePrefix}${props.databaseGroupName}`;
 });
+
 const databaseGroup = computed(() => {
-  return dbGroupStore.getDBGroupByName(
-    databaseGroupResourceName.value
-  ) as ComposedDatabaseGroup;
+  return dbGroupStore.getDBGroupByName(databaseGroupResourceName.value);
 });
+
 const hasPermissionToCreateIssue = computed(() => {
   return hasPermissionToCreateChangeDatabaseIssueInProject(
     project.value,
-    me.value
+    currentUser.value
   );
 });
 
-onMounted(async () => {
+watchEffect(async () => {
   await dbGroupStore.getOrFetchDBGroupByName(databaseGroupResourceName.value, {
     skipCache: true,
     view: DatabaseGroupView.DATABASE_GROUP_VIEW_FULL,
   });
 });
 
-const handleEditDatabaseGroup = () => {
-  editState.databaseGroup = databaseGroup.value;
-  editState.showConfigurePanel = true;
-};
-
-const previewDatabaseGroupIssue = (
-  type: "bb.issue.database.schema.update" | "bb.issue.database.data.update"
-) => {
-  const issueRoute = generateDatabaseGroupIssueRoute(type, databaseGroup.value);
-  router.push(issueRoute);
-};
-
-watch(
-  () => [databaseGroup.value],
-  async () => {
-    if (!databaseGroup.value) {
-      return;
-    }
-    state.expr = databaseGroup.value.simpleExpr;
-    state.isLoaded = true;
-  },
-  {
-    immediate: true,
-  }
+const matchedDatabaseList = computed(
+  () =>
+    databaseGroup.value?.matchedDatabases.map((db) =>
+      databaseStore.getDatabaseByName(db.name)
+    ) || []
 );
 
-const matchedDatabaseList = ref<ComposedDatabase[]>([]);
-const unmatchedDatabaseList = ref<ComposedDatabase[]>([]);
-
-const updateDatabaseMatchingState = useDebounceFn(async () => {
-  if (!state.isLoaded) {
-    return;
-  }
-
-  const matched = await Promise.all(
-    databaseGroup.value.matchedDatabases.map((db) =>
-      databaseStore.getOrFetchDatabaseByName(db.name)
-    )
-  );
-  const unmatched = await Promise.all(
-    databaseGroup.value.unmatchedDatabases.map((db) =>
-      databaseStore.getOrFetchDatabaseByName(db.name)
-    )
-  );
-  matchedDatabaseList.value = matched;
-  unmatchedDatabaseList.value = unmatched;
-}, 500);
-
-watch(
-  [() => state.isLoaded, () => project.value, () => databaseGroup.value],
-  updateDatabaseMatchingState,
-  {
-    immediate: true,
-    deep: true,
-  }
+const unmatchedDatabaseList = computed(
+  () =>
+    databaseGroup.value?.unmatchedDatabases.map((db) =>
+      databaseStore.getDatabaseByName(db.name)
+    ) || []
 );
 
 const existMatchedUnactivateInstance = computed(() => {
-  return matchedDatabaseList.value.some(
+  return matchedDatabaseList.value?.some(
     (database) =>
       !subscriptionV1Store.hasInstanceFeature(
         "bb.feature.database-grouping",
@@ -251,4 +192,18 @@ const existMatchedUnactivateInstance = computed(() => {
       )
   );
 });
+
+const handleEditDatabaseGroup = () => {
+  state.showEditPanel = true;
+};
+
+const previewDatabaseGroupIssue = (
+  type: "bb.issue.database.schema.update" | "bb.issue.database.data.update"
+) => {
+  if (!databaseGroup.value) {
+    return;
+  }
+  const issueRoute = generateDatabaseGroupIssueRoute(type, databaseGroup.value);
+  router.push(issueRoute);
+};
 </script>
