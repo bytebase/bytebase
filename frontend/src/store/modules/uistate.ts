@@ -1,8 +1,8 @@
-import { useLocalStorage } from "@vueuse/core";
 import { isUndefined } from "lodash-es";
 import { defineStore } from "pinia";
 import { computed, reactive } from "vue";
 import { useCurrentUserV1 } from "@/store";
+import { useDynamicLocalStorage } from "@/utils";
 
 export interface UIState {
   collapseStateByKey: Map<string, boolean>;
@@ -25,8 +25,8 @@ export const useUIStateStore = defineStore("uistate", () => {
   );
 
   // default to false
-  const editorFormatStatementOnSave = useLocalStorage(
-    EDITOR_FORMAT_MODULE_KEY.value,
+  const editorFormatStatementOnSave = useDynamicLocalStorage<boolean>(
+    EDITOR_FORMAT_MODULE_KEY,
     false
   );
 
