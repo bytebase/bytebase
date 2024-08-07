@@ -39,7 +39,6 @@ type IssueMessage struct {
 	Status          api.IssueStatus
 	Type            api.IssueType
 	Description     string
-	Assignee        *UserMessage
 	Payload         *storepb.IssuePayload
 	Subscribers     []*UserMessage
 	PipelineUID     *int
@@ -55,7 +54,6 @@ type IssueMessage struct {
 
 	// Internal fields.
 	projectUID     int
-	assigneeUID    *int
 	subscriberUIDs []int
 	creatorUID     int
 	createdTs      int64
@@ -65,11 +63,9 @@ type IssueMessage struct {
 
 // UpdateIssueMessage is the message for updating an issue.
 type UpdateIssueMessage struct {
-	Title          *string
-	Status         *api.IssueStatus
-	Description    *string
-	UpdateAssignee bool
-	Assignee       *UserMessage
+	Title       *string
+	Status      *api.IssueStatus
+	Description *string
 	// PayloadUpsert upserts the presented top-level keys.
 	PayloadUpsert *storepb.IssuePayload
 	RemoveLabels  bool
@@ -85,10 +81,9 @@ type FindIssueMessage struct {
 	ProjectIDs *[]string
 	PlanUID    *int64
 	PipelineID *int
-	// To support pagination, we add into creator, assignee and subscriber.
+	// To support pagination, we add into creator and subscriber.
 	// Only principleID or one of the following three fields can be set.
 	CreatorID       *int
-	AssigneeID      *int
 	SubscriberID    *int
 	CreatedTsBefore *int64
 	CreatedTsAfter  *int64
@@ -157,10 +152,6 @@ func (s *Store) CreateIssueV2(ctx context.Context, create *IssueMessage, creator
 	}
 
 	tsVector := getTsVector(fmt.Sprintf("%s %s", create.Title, create.Description))
-	var assigneeID *int
-	if create.Assignee != nil {
-		assigneeID = &create.Assignee.ID
-	}
 	query := `
 		INSERT INTO issue (
 			creator_id,
@@ -172,11 +163,10 @@ func (s *Store) CreateIssueV2(ctx context.Context, create *IssueMessage, creator
 			status,
 			type,
 			description,
-			assignee_id,
 			payload,
 			ts_vector
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
 		RETURNING id, created_ts, updated_ts
 	`
 
@@ -196,7 +186,6 @@ func (s *Store) CreateIssueV2(ctx context.Context, create *IssueMessage, creator
 		create.Status,
 		create.Type,
 		create.Description,
-		assigneeID,
 		payload,
 		tsVector,
 	).Scan(
@@ -244,13 +233,6 @@ func (s *Store) UpdateIssueV2(ctx context.Context, uid int, patch *UpdateIssueMe
 	}
 	if v := patch.Description; v != nil {
 		set, args = append(set, fmt.Sprintf("description = $%d", len(args)+1)), append(args, *v)
-	}
-	if patch.UpdateAssignee {
-		if v := patch.Assignee; v != nil {
-			set, args = append(set, fmt.Sprintf("assignee_id = $%d", len(args)+1)), append(args, v.ID)
-		} else {
-			set = append(set, "assignee_id = NULL")
-		}
 	}
 	if v := patch.PayloadUpsert; v != nil {
 		p, err := protojson.Marshal(v)
@@ -412,9 +394,6 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 	if v := find.CreatorID; v != nil {
 		where, args = append(where, fmt.Sprintf("issue.creator_id = $%d", len(args)+1)), append(args, *v)
 	}
-	if v := find.AssigneeID; v != nil {
-		where, args = append(where, fmt.Sprintf("issue.assignee_id = $%d", len(args)+1)), append(args, *v)
-	}
 	if v := find.CreatedTsBefore; v != nil {
 		where, args = append(where, fmt.Sprintf("issue.created_ts < $%d", len(args)+1)), append(args, *v)
 	}
@@ -484,7 +463,6 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 		issue.status,
 		issue.type,
 		issue.description,
-		issue.assignee_id,
 		issue.payload,
 		(SELECT ARRAY_AGG (issue_subscriber.subscriber_id) FROM issue_subscriber WHERE issue_subscriber.issue_id = issue.id) subscribers,
 		COALESCE(task_run_status_count.status_count, '{}'::jsonb)
@@ -543,7 +521,6 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 			&issue.Status,
 			&issue.Type,
 			&issue.Description,
-			&issue.assigneeUID,
 			&payload,
 			&subscriberUIDs,
 			&taskRunStatusCount,
@@ -576,13 +553,6 @@ func (s *Store) ListIssueV2(ctx context.Context, find *FindIssueMessage) ([]*Iss
 			return nil, err
 		}
 		issue.Project = project
-		if issue.assigneeUID != nil {
-			assignee, err := s.GetUserByID(ctx, *issue.assigneeUID)
-			if err != nil {
-				return nil, err
-			}
-			issue.Assignee = assignee
-		}
 		creator, err := s.GetUserByID(ctx, issue.creatorUID)
 		if err != nil {
 			return nil, err

@@ -208,7 +208,7 @@ const (
 	Activity_TYPE_ISSUE_CREATE Activity_Type = 1
 	// TYPE_ISSUE_COMMENT_CREATE represents commenting on an issue.
 	Activity_TYPE_ISSUE_COMMENT_CREATE Activity_Type = 2
-	// TYPE_ISSUE_FIELD_UPDATE represents updating the issue field, likes title, description, assignee, etc.
+	// TYPE_ISSUE_FIELD_UPDATE represents updating the issue field, likes title, description, etc.
 	Activity_TYPE_ISSUE_FIELD_UPDATE Activity_Type = 3
 	// TYPE_ISSUE_STATUS_UPDATE represents the issue status change, including OPEN, CLOSE, CANCEL fow now.
 	Activity_TYPE_ISSUE_STATUS_UPDATE Activity_Type = 4

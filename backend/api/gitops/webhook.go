@@ -334,7 +334,6 @@ func (s *Service) createIssueFromPRInfo(ctx context.Context, project *store.Proj
 			Title:       prInfo.title,
 			Description: prInfo.description,
 			Type:        v1pb.Issue_DATABASE_CHANGE,
-			Assignee:    common.FormatUserEmail(s.store.GetSystemBotUser(ctx).Email),
 			Plan:        plan.Name,
 		},
 	})

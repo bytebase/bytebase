@@ -136,15 +136,6 @@ func (s *IssueService) getIssueFind(ctx context.Context, filter string, query st
 				return nil, err
 			}
 			issueFind.CreatorID = &user.ID
-		case "assignee":
-			if spec.operator != comparatorTypeEqual {
-				return nil, status.Errorf(codes.InvalidArgument, `only support "=" operation for "assignee" filter`)
-			}
-			user, err := s.getUserByIdentifier(ctx, spec.value)
-			if err != nil {
-				return nil, err
-			}
-			issueFind.AssigneeID = &user.ID
 		case "subscriber":
 			if spec.operator != comparatorTypeEqual {
 				return nil, status.Errorf(codes.InvalidArgument, `only support "=" operation for "subscriber" filter`)
@@ -465,22 +456,6 @@ func (s *IssueService) createIssueDatabaseChange(ctx context.Context, request *v
 		rolloutUID = &pipeline.ID
 	}
 
-	var issueAssignee *store.UserMessage
-	if request.Issue.Assignee != "" {
-		assigneeEmail, err := common.GetUserEmail(request.Issue.Assignee)
-		if err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, err.Error())
-		}
-		assignee, err := s.store.GetUserByEmail(ctx, assigneeEmail)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to get user by email %q, error: %v", assigneeEmail, err)
-		}
-		if assignee == nil {
-			return nil, status.Errorf(codes.NotFound, "assignee not found for email: %q", assigneeEmail)
-		}
-		issueAssignee = assignee
-	}
-
 	issueCreateMessage := &store.IssueMessage{
 		Project:     project,
 		PlanUID:     planUID,
@@ -489,7 +464,6 @@ func (s *IssueService) createIssueDatabaseChange(ctx context.Context, request *v
 		Status:      api.IssueOpen,
 		Type:        api.IssueDatabaseGeneral,
 		Description: request.Issue.Description,
-		Assignee:    issueAssignee,
 	}
 
 	issueCreateMessage.Payload = &storepb.IssuePayload{
@@ -567,7 +541,6 @@ func (s *IssueService) createIssueGrantRequest(ctx context.Context, request *v1p
 		Status:      api.IssueOpen,
 		Type:        api.IssueGrantRequest,
 		Description: request.Issue.Description,
-		Assignee:    nil,
 	}
 
 	convertedGrantRequest, err := convertGrantRequest(ctx, s.store, request.Issue.GrantRequest)
@@ -667,22 +640,6 @@ func (s *IssueService) createIssueDatabaseDataExport(ctx context.Context, reques
 		rolloutUID = &pipeline.ID
 	}
 
-	var issueAssignee *store.UserMessage
-	if request.Issue.Assignee != "" {
-		assigneeEmail, err := common.GetUserEmail(request.Issue.Assignee)
-		if err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, err.Error())
-		}
-		assignee, err := s.store.GetUserByEmail(ctx, assigneeEmail)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to get user by email %q, error: %v", assigneeEmail, err)
-		}
-		if assignee == nil {
-			return nil, status.Errorf(codes.NotFound, "assignee not found for email: %q", assigneeEmail)
-		}
-		issueAssignee = assignee
-	}
-
 	issueCreateMessage := &store.IssueMessage{
 		Project:     project,
 		PlanUID:     planUID,
@@ -691,7 +648,6 @@ func (s *IssueService) createIssueDatabaseDataExport(ctx context.Context, reques
 		Status:      api.IssueOpen,
 		Type:        api.IssueDatabaseDataExport,
 		Description: request.Issue.Description,
-		Assignee:    issueAssignee,
 	}
 
 	issueCreateMessage.Payload = &storepb.IssuePayload{
