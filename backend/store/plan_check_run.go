@@ -63,10 +63,11 @@ type PlanCheckRunMessage struct {
 
 // FindPlanCheckRunMessage is the message for finding plan check runs.
 type FindPlanCheckRunMessage struct {
-	PlanUID *int64
-	UIDs    *[]int
-	Status  *[]PlanCheckRunStatus
-	Type    *[]PlanCheckRunType
+	PlanUID    *int64
+	UIDs       *[]int
+	Status     *[]PlanCheckRunStatus
+	Type       *[]PlanCheckRunType
+	LatestOnly bool
 }
 
 // CreatePlanCheckRuns creates new plan check runs.
@@ -141,21 +142,29 @@ func (s *Store) ListPlanCheckRuns(ctx context.Context, find *FindPlanCheckRunMes
 		where = append(where, fmt.Sprintf("plan_check_run.type = ANY($%d)", len(args)+1))
 		args = append(args, *v)
 	}
+	var distinctOn, orderBy string
+	if find.LatestOnly {
+		distinctOn = "DISTINCT ON (plan_check_run.type, plan_check_run.config->>'instanceUid', plan_check_run.config->>'databaseName') "
+		orderBy = "ORDER BY plan_check_run.type, plan_check_run.config->>'instanceUid', plan_check_run.config->>'databaseName', plan_check_run.id DESC"
+	} else {
+		orderBy = "ORDER BY plan_check_run.id DESC"
+	}
 	query := fmt.Sprintf(`
-		SELECT
-			plan_check_run.id,
-			plan_check_run.creator_id,
-			plan_check_run.created_ts,
-			plan_check_run.updater_id,
-			plan_check_run.updated_ts,
-			plan_check_run.plan_id,
-			plan_check_run.status,
-			plan_check_run.type,
-			plan_check_run.config,
-			plan_check_run.result
-		FROM plan_check_run
-		WHERE %s
-	`, strings.Join(where, " AND "))
+SELECT
+	%s
+	plan_check_run.id,
+	plan_check_run.creator_id,
+	plan_check_run.created_ts,
+	plan_check_run.updater_id,
+	plan_check_run.updated_ts,
+	plan_check_run.plan_id,
+	plan_check_run.status,
+	plan_check_run.type,
+	plan_check_run.config,
+	plan_check_run.result
+FROM plan_check_run
+WHERE %s
+%s`, distinctOn, strings.Join(where, " AND "), orderBy)
 	rows, err := s.db.db.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err

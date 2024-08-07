@@ -6541,6 +6541,7 @@ The policy&#39;s `name` field is used to identify the instance to update. Format
 | page_token | [string](#string) |  | A page token, received from a previous `ListPlanCheckRuns` call. Provide this to retrieve the subsequent page.
 
 When paginating, all other parameters provided to `ListPlanCheckRuns` must match the call that provided the page token. |
+| latest_only | [bool](#bool) |  | If set to true, only the latest plan check run will be returned. |
 
 
 
