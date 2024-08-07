@@ -150,7 +150,7 @@ func SchemaDiff(ctx base.DiffContext, oldStmt, newStmt string) (string, error) {
 		tableName := newTable.name
 		oldTable, exists := oldSchemaInfo.tableMap[tableName]
 		if !exists {
-			diff.createTable = append(diff.createTable, newTable.createTable.GetParser().GetTokenStream().GetTextFromRuleContext(newTable.createTable))
+			diff.createTable = append(diff.createTable, getCreateTableWithoutStoreOption(newTable.createTable))
 			continue
 		}
 		if err := diff.diffTable(oldTable, newTable); err != nil {
@@ -212,6 +212,16 @@ func SchemaDiff(ctx base.DiffContext, oldStmt, newStmt string) (string, error) {
 	}
 
 	return diff.String()
+}
+
+func getCreateTableWithoutStoreOption(createTable plsql.ICreate_tableContext) string {
+	if createTable.Relational_table() == nil {
+		return createTable.GetParser().GetTokenStream().GetTextFromRuleContext(createTable)
+	}
+	return createTable.GetParser().GetTokenStream().GetTextFromTokens(
+		createTable.GetStart(),
+		createTable.Relational_table().RIGHT_PAREN().GetSymbol(),
+	) + ";"
 }
 
 func (diff *diffNode) diffIndex(oldIndex, newIndex *indexInfo) error {
