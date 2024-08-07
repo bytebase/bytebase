@@ -48,7 +48,6 @@ func convertToIssue(ctx context.Context, s *store.Store, issue *store.IssueMessa
 		Description:          issue.Description,
 		Type:                 convertToIssueType(issue.Type),
 		Status:               convertToIssueStatus(issue.Status),
-		Assignee:             "",
 		Approvers:            nil,
 		ApprovalTemplates:    nil,
 		ApprovalFindingDone:  false,
@@ -71,9 +70,6 @@ func convertToIssue(ctx context.Context, s *store.Store, issue *store.IssueMessa
 	}
 	if issue.PipelineUID != nil {
 		issueV1.Rollout = fmt.Sprintf("%s%s/%s%d", common.ProjectNamePrefix, issue.Project.ResourceID, common.RolloutPrefix, *issue.PipelineUID)
-	}
-	if issue.Assignee != nil {
-		issueV1.Assignee = common.FormatUserEmail(issue.Assignee.Email)
 	}
 
 	for _, subscriber := range issue.Subscribers {

@@ -237,9 +237,6 @@ export interface Issue {
   description: string;
   type: Issue_Type;
   status: IssueStatus;
-  /** Format: users/hello@world.com */
-  assignee: string;
-  assigneeAttention: boolean;
   approvers: Issue_Approver[];
   approvalTemplates: ApprovalTemplate[];
   /**
@@ -1974,8 +1971,6 @@ function createBaseIssue(): Issue {
     description: "",
     type: Issue_Type.TYPE_UNSPECIFIED,
     status: IssueStatus.ISSUE_STATUS_UNSPECIFIED,
-    assignee: "",
-    assigneeAttention: false,
     approvers: [],
     approvalTemplates: [],
     approvalFindingDone: false,
@@ -2013,12 +2008,6 @@ export const Issue = {
     }
     if (message.status !== IssueStatus.ISSUE_STATUS_UNSPECIFIED) {
       writer.uint32(48).int32(issueStatusToNumber(message.status));
-    }
-    if (message.assignee !== "") {
-      writer.uint32(58).string(message.assignee);
-    }
-    if (message.assigneeAttention === true) {
-      writer.uint32(64).bool(message.assigneeAttention);
     }
     for (const v of message.approvers) {
       Issue_Approver.encode(v!, writer.uint32(74).fork()).ldelim();
@@ -2116,20 +2105,6 @@ export const Issue = {
           }
 
           message.status = issueStatusFromJSON(reader.int32());
-          continue;
-        case 7:
-          if (tag !== 58) {
-            break;
-          }
-
-          message.assignee = reader.string();
-          continue;
-        case 8:
-          if (tag !== 64) {
-            break;
-          }
-
-          message.assigneeAttention = reader.bool();
           continue;
         case 9:
           if (tag !== 74) {
@@ -2256,8 +2231,6 @@ export const Issue = {
       description: isSet(object.description) ? globalThis.String(object.description) : "",
       type: isSet(object.type) ? issue_TypeFromJSON(object.type) : Issue_Type.TYPE_UNSPECIFIED,
       status: isSet(object.status) ? issueStatusFromJSON(object.status) : IssueStatus.ISSUE_STATUS_UNSPECIFIED,
-      assignee: isSet(object.assignee) ? globalThis.String(object.assignee) : "",
-      assigneeAttention: isSet(object.assigneeAttention) ? globalThis.Boolean(object.assigneeAttention) : false,
       approvers: globalThis.Array.isArray(object?.approvers)
         ? object.approvers.map((e: any) => Issue_Approver.fromJSON(e))
         : [],
@@ -2312,12 +2285,6 @@ export const Issue = {
     }
     if (message.status !== IssueStatus.ISSUE_STATUS_UNSPECIFIED) {
       obj.status = issueStatusToJSON(message.status);
-    }
-    if (message.assignee !== "") {
-      obj.assignee = message.assignee;
-    }
-    if (message.assigneeAttention === true) {
-      obj.assigneeAttention = message.assigneeAttention;
     }
     if (message.approvers?.length) {
       obj.approvers = message.approvers.map((e) => Issue_Approver.toJSON(e));
@@ -2384,8 +2351,6 @@ export const Issue = {
     message.description = object.description ?? "";
     message.type = object.type ?? Issue_Type.TYPE_UNSPECIFIED;
     message.status = object.status ?? IssueStatus.ISSUE_STATUS_UNSPECIFIED;
-    message.assignee = object.assignee ?? "";
-    message.assigneeAttention = object.assigneeAttention ?? false;
     message.approvers = object.approvers?.map((e) => Issue_Approver.fromPartial(e)) || [];
     message.approvalTemplates = object.approvalTemplates?.map((e) => ApprovalTemplate.fromPartial(e)) || [];
     message.approvalFindingDone = object.approvalFindingDone ?? false;

@@ -12,7 +12,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/testing/protocmp"
 
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/resources/mysql"
 	"github.com/bytebase/bytebase/backend/resources/postgres"
 	"github.com/bytebase/bytebase/backend/tests/fake"
@@ -445,7 +444,6 @@ func TestMarkTaskAsDone(t *testing.T) {
 			Title:       fmt.Sprintf("change database %s", database.Name),
 			Description: fmt.Sprintf("change database %s", database.Name),
 			Plan:        plan.Name,
-			Assignee:    fmt.Sprintf("users/%s", api.SystemBotEmail),
 		},
 	})
 	a.NoError(err)

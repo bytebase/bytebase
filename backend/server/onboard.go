@@ -295,10 +295,9 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 			Description: `A sample issue to showcase how to review database schema change.
 
 				Click "Approve" button to apply the schema update.`,
-			Type:     v1pb.Issue_DATABASE_CHANGE,
-			Assignee: fmt.Sprintf("users/%s", user.Email),
-			Plan:     plan.Name,
-			Rollout:  rollout.Name,
+			Type:    v1pb.Issue_DATABASE_CHANGE,
+			Plan:    plan.Name,
+			Rollout: rollout.Name,
 		},
 	}); err != nil {
 		return errors.Wrapf(err, "failed to create issue for sample project")

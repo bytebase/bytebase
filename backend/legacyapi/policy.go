@@ -6,9 +6,6 @@ type PolicyType string
 // PipelineApprovalValue is value for approval policy.
 type PipelineApprovalValue string
 
-// AssigneeGroupValue is the value for assignee group policy.
-type AssigneeGroupValue string
-
 // EnvironmentTierValue is the value for environment tier policy.
 type EnvironmentTierValue string
 
@@ -49,11 +46,6 @@ const (
 	PipelineApprovalValueManualNever PipelineApprovalValue = "MANUAL_APPROVAL_NEVER"
 	// PipelineApprovalValueManualAlways means the pipeline should be manually approved by user to proceed.
 	PipelineApprovalValueManualAlways PipelineApprovalValue = "MANUAL_APPROVAL_ALWAYS"
-
-	// AssigneeGroupValueWorkspaceOwnerOrDBA means the assignee can be selected from the workspace owners and DBAs.
-	AssigneeGroupValueWorkspaceOwnerOrDBA AssigneeGroupValue = "WORKSPACE_OWNER_OR_DBA"
-	// AssigneeGroupValueProjectOwner means the assignee can be selected from the project owners.
-	AssigneeGroupValueProjectOwner AssigneeGroupValue = "PROJECT_OWNER"
 
 	// EnvironmentTierValueProtected is PROTECTED environment tier value.
 	EnvironmentTierValueProtected EnvironmentTierValue = "PROTECTED"

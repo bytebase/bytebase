@@ -520,7 +520,6 @@ func createIssueAndReturnSQLReviewResult(ctx context.Context, a *require.Asserti
 				Title:       fmt.Sprintf("change database %s", database.Name),
 				Description: fmt.Sprintf("change database %s", database.Name),
 				Plan:        plan.Name,
-				Assignee:    fmt.Sprintf("users/%s", api.SystemBotEmail),
 			},
 		})
 		a.NoError(err)
