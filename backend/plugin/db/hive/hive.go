@@ -13,6 +13,7 @@ import (
 	"go.uber.org/multierr"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/durationpb"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/db"
@@ -63,14 +64,14 @@ func (d *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionC
 		if !config.SASLConfig.Check() {
 			return nil, errors.New("SASL settings error")
 		}
-		pool, err := CreateHiveConnPool(numMaxConn, &config)
+		pool, err := createHiveConnPool(numMaxConn, &config)
 		if err != nil {
 			return nil, err
 		}
 		d.connPool = pool
 	}
 
-	newConn, err := d.connPool.Get(config.Database)
+	newConn, err := d.connPool.Get()
 	if err != nil {
 		err = errors.Wrapf(err, "failed to get connection from pool")
 		// release resources.
@@ -78,6 +79,14 @@ func (d *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionC
 			err = multierr.Combine(closeErr, err)
 		}
 		return nil, err
+	}
+
+	if config.Database != "" {
+		cursor := newConn.Cursor()
+		cursor.Exec(context.Background(), fmt.Sprintf("use %s", config.Database))
+		if cursor.Err != nil {
+			return nil, multierr.Combine(newConn.Close(), cursor.Err)
+		}
 	}
 
 	d.conn = newConn
@@ -91,9 +100,6 @@ func (d *Driver) Close(_ context.Context) error {
 }
 
 func (d *Driver) Ping(ctx context.Context) error {
-	if d.conn == nil {
-		return errors.Errorf("no database connection established")
-	}
 	cursor := d.conn.Cursor()
 	defer cursor.Close()
 
@@ -112,10 +118,6 @@ func (*Driver) GetDB() *sql.DB {
 // Even in Hive's bucketed transaction table, all the statements are committed automatically by
 // the Hive server.
 func (d *Driver) Execute(ctx context.Context, statementsStr string, _ db.ExecuteOptions) (int64, error) {
-	if d.connPool == nil {
-		return 0, errors.Errorf("no database connection established")
-	}
-
 	var affectedRows int64
 
 	cursor := d.conn.Cursor()
@@ -139,16 +141,12 @@ func (d *Driver) Execute(ctx context.Context, statementsStr string, _ db.Execute
 }
 
 func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, queryCtx *db.QueryContext) ([]*v1pb.QueryResult, error) {
-	if d.connPool == nil {
-		return nil, errors.Errorf("no database connection established")
-	}
-
 	singleSQLs, err := base.SplitMultiSQL(storepb.Engine_HIVE, statement)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to split statements")
 	}
 
-	conn, err := d.connPool.Get("")
+	conn, err := d.connPool.Get()
 	if err != nil {
 		return nil, err
 	}
@@ -162,8 +160,8 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 		}
 
 		result, err := runSingleStatement(ctx, conn, statement)
-		if err != nil && result == nil {
-			return results, err
+		if err != nil {
+			return nil, err
 		}
 
 		results = append(results, result)
@@ -173,35 +171,29 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 
 // This function converts basic types to types that have implemented isRowValue_Kind interface.
 func parseValueType(value any, gohiveType string) (*v1pb.RowValue, error) {
-	var rowValue v1pb.RowValue
 	if value == nil {
-		rowValue.Kind = &v1pb.RowValue_StringValue{StringValue: ""}
-	} else {
-		switch gohiveType {
-		case "BOOLEAN_TYPE":
-			rowValue.Kind = &v1pb.RowValue_BoolValue{BoolValue: value.(bool)}
-		case "TINYINT_TYPE":
-			rowValue.Kind = &v1pb.RowValue_Int32Value{Int32Value: int32(value.(int8))}
-		case "SMALLINT_TYPE":
-			rowValue.Kind = &v1pb.RowValue_Int32Value{Int32Value: int32(value.(int16))}
-		case "INT_TYPE":
-			rowValue.Kind = &v1pb.RowValue_Int32Value{Int32Value: value.(int32)}
-		case "BIGINT_TYPE":
-			rowValue.Kind = &v1pb.RowValue_Int64Value{Int64Value: value.(int64)}
-		// dangerous truncation: float64 -> float32.
-		case "FLOAT_TYPE":
-			rowValue.Kind = &v1pb.RowValue_FloatValue{FloatValue: float32(value.(float64))}
-		case "BINARY_TYPE":
-			rowValue.Kind = &v1pb.RowValue_BytesValue{BytesValue: value.([]byte)}
-		case "DOUBLE_TYPE":
-			// convert float64 to string to avoid trancation.
-			rowValue.Kind = &v1pb.RowValue_StringValue{StringValue: strconv.FormatFloat(value.(float64), 'f', 20, 64)}
-		default:
-			// convert all remaining types to string.
-			rowValue.Kind = &v1pb.RowValue_StringValue{StringValue: value.(string)}
-		}
+		return &v1pb.RowValue{Kind: &v1pb.RowValue_NullValue{NullValue: structpb.NullValue_NULL_VALUE}}, nil
 	}
-	return &rowValue, nil
+	switch gohiveType {
+	case "BOOLEAN_TYPE":
+		return &v1pb.RowValue{Kind: &v1pb.RowValue_BoolValue{BoolValue: value.(bool)}}, nil
+	case "TINYINT_TYPE":
+		return &v1pb.RowValue{Kind: &v1pb.RowValue_Int32Value{Int32Value: int32(value.(int8))}}, nil
+	case "SMALLINT_TYPE":
+		return &v1pb.RowValue{Kind: &v1pb.RowValue_Int32Value{Int32Value: int32(value.(int16))}}, nil
+	case "INT_TYPE":
+		return &v1pb.RowValue{Kind: &v1pb.RowValue_Int32Value{Int32Value: value.(int32)}}, nil
+	case "BIGINT_TYPE":
+		return &v1pb.RowValue{Kind: &v1pb.RowValue_Int64Value{Int64Value: value.(int64)}}, nil
+	case "DOUBLE_TYPE", "FLOAT_TYPE":
+		// convert float64 to string to avoid truncation, because our v1pb.RowValue_FloatValue is float32.
+		return &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: strconv.FormatFloat(value.(float64), 'f', 20, 64)}}, nil
+	case "BINARY_TYPE":
+		return &v1pb.RowValue{Kind: &v1pb.RowValue_BytesValue{BytesValue: value.([]byte)}}, nil
+	default:
+		// convert all remaining types to string.
+		return &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: value.(string)}}, nil
+	}
 }
 
 func runSingleStatement(ctx context.Context, conn *gohive.Connection, statement string) (*v1pb.QueryResult, error) {
@@ -223,6 +215,9 @@ func runSingleStatement(ctx context.Context, conn *gohive.Connection, statement 
 	// We will get an error when a certain statement doesn't need returned results.
 	columnNamesAndTypes := cursor.Description()
 	for _, row := range columnNamesAndTypes {
+		if len(row) == 0 {
+			return nil, errors.New("description row has zero length")
+		}
 		result.ColumnNames = append(result.ColumnNames, row[0])
 	}
 
@@ -234,7 +229,7 @@ func runSingleStatement(ctx context.Context, conn *gohive.Connection, statement 
 			gohiveTypeStr := columnNamesAndTypes[idx][1]
 			val, err := parseValueType(rowMap[columnName], gohiveTypeStr)
 			if err != nil {
-				return result, err
+				return nil, err
 			}
 			queryRow.Values = append(queryRow.Values, val)
 		}
