@@ -67,8 +67,11 @@ export const composeIssue = async (
       if (
         hasProjectPermissionV2(projectEntity, me.value, "bb.planCheckRuns.list")
       ) {
+        // Only show the latest plan check runs.
+        // TODO(steven): maybe we need to show all plan check runs on a separate page later.
         const { planCheckRuns } = await planServiceClient.listPlanCheckRuns({
           parent: issue.plan,
+          latestOnly: true,
         });
         issue.planCheckRunList = planCheckRuns;
       }

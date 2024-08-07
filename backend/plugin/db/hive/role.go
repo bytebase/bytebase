@@ -29,7 +29,7 @@ func (*Driver) FindRole(_ context.Context, _ string) (*db.DatabaseRoleMessage, e
 }
 
 func (d *Driver) ListRole(ctx context.Context) ([]*db.DatabaseRoleMessage, error) {
-	conn, err := d.connPool.Get("")
+	conn, err := d.connPool.Get()
 	if err != nil {
 		return nil, err
 	}
@@ -56,7 +56,7 @@ func (d *Driver) DeleteRole(ctx context.Context, roleName string) error {
 }
 
 func (d *Driver) GetRoleGrant(ctx context.Context, roleName string) (string, error) {
-	conn, err := d.connPool.Get("")
+	conn, err := d.connPool.Get()
 	if err != nil {
 		return "", err
 	}

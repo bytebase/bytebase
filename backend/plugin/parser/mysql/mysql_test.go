@@ -67,6 +67,10 @@ func TestMySQLParser(t *testing.T) {
 		total        int
 	}{
 		{
+			statement: "INSERT INTO tbl (id, name, gender, height) VALUES(1, 'Alice', B'0', B'01111111');",
+			total:     1,
+		},
+		{
 			statement:    "aaa",
 			errorMessage: "Syntax error at line 1:0 \nrelated text: aaa",
 		},
