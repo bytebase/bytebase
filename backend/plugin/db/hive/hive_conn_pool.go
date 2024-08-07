@@ -1,8 +1,6 @@
 package hive
 
 import (
-	"context"
-	"fmt"
 	"strconv"
 	"sync"
 
@@ -12,12 +10,6 @@ import (
 
 	"github.com/bytebase/bytebase/backend/plugin/db"
 )
-
-type ConnPool interface {
-	Get(dbName string) (*gohive.Connection, error)
-	Put(*gohive.Connection)
-	Destroy() error
-}
 
 type FixedConnPool struct {
 	BasicConfig *db.ConnectionConfig
@@ -29,9 +21,7 @@ type FixedConnPool struct {
 	NumMaxConns int
 }
 
-var _ ConnPool = &FixedConnPool{}
-
-func CreateHiveConnPool(
+func createHiveConnPool(
 	numMaxConn int,
 	config *db.ConnectionConfig,
 ) (
@@ -94,7 +84,7 @@ func CreateHiveConnPool(
 		nil
 }
 
-func (pool *FixedConnPool) Get(dbName string) (*gohive.Connection, error) {
+func (pool *FixedConnPool) Get() (*gohive.Connection, error) {
 	pool.RWMutex.RLock()
 	if !pool.IsActivated {
 		pool.RWMutex.RUnlock()
@@ -120,14 +110,6 @@ func (pool *FixedConnPool) Get(dbName string) (*gohive.Connection, error) {
 		conn, err = gohive.Connect(pool.BasicConfig.Host, pool.Port, string(saslTypName), pool.HiveConfig)
 		if err != nil || conn == nil {
 			return nil, errors.Wrapf(err, "failed to get Hive connection")
-		}
-	}
-
-	if dbName != "" {
-		cursor := conn.Cursor()
-		cursor.Exec(context.Background(), fmt.Sprintf("use %s", dbName))
-		if cursor.Err != nil {
-			return nil, multierr.Combine(conn.Close(), cursor.Err)
 		}
 	}
 
