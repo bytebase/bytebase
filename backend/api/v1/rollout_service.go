@@ -898,6 +898,8 @@ func GetPipelineCreate(ctx context.Context, s *store.Store, sheetManager *sheet.
 		specs = append(specs, step.Specs...)
 	}
 
+	// Step 1 - transform database group
+
 	// The following case should has only one spec.
 	// * ChangeDatabaseConfig with databaseGroup target;
 	// * CreateDatabaseConfig;
@@ -905,6 +907,7 @@ func GetPipelineCreate(ctx context.Context, s *store.Store, sheetManager *sheet.
 	if len(specs) == 1 {
 		spec := specs[0]
 		if config := spec.GetChangeDatabaseConfig(); config != nil {
+			// transform database group.
 			if _, _, err := common.GetProjectIDDatabaseGroupID(config.Target); err == nil {
 				stepsFromDatabaseGroup, err := transformDatabaseGroupTargetToSteps(ctx, s, spec, config, project)
 				if err != nil {
@@ -913,9 +916,20 @@ func GetPipelineCreate(ctx context.Context, s *store.Store, sheetManager *sheet.
 				transformedSteps = stepsFromDatabaseGroup
 			}
 		}
-		// Skip to transform the spec if it's CreateDatabaseConfig or ExportDataConfig.
-	} else {
-		// For multiple specs, we will try to rebuild the steps based on the deployment config.
+	}
+
+	// Step 2 - filter by deployment config for ChangeDatabase specs.
+
+	var filterByDeploymentConfig bool
+	for _, spec := range specs {
+		if spec.GetChangeDatabaseConfig() != nil {
+			filterByDeploymentConfig = true
+			break
+		}
+	}
+
+	// For ChangeDatabase specs, we will try to rebuild the steps based on the deployment config.
+	if filterByDeploymentConfig {
 		deploymentConfig, err := s.GetDeploymentConfigV2(ctx, project.UID)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get deployment config")
