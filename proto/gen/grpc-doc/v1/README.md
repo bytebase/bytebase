@@ -5466,8 +5466,6 @@ The identity provider&#39;s `name` field is used to identify the identity provid
 | description | [string](#string) |  |  |
 | type | [Issue.Type](#bytebase-v1-Issue-Type) |  |  |
 | status | [IssueStatus](#bytebase-v1-IssueStatus) |  |  |
-| assignee | [string](#string) |  | Format: users/hello@world.com |
-| assignee_attention | [bool](#bool) |  |  |
 | approvers | [Issue.Approver](#bytebase-v1-Issue-Approver) | repeated |  |
 | approval_templates | [ApprovalTemplate](#bytebase-v1-ApprovalTemplate) | repeated |  |
 | approval_finding_done | [bool](#bool) |  | If the value is `false`, it means that the backend is still finding matching approval templates. If `true`, approval_templates &amp; approvers &amp; approval_finding_error are available. |

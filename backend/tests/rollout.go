@@ -8,7 +8,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -51,7 +50,6 @@ func (ctl *controller) changeDatabaseWithConfig(ctx context.Context, project *v1
 			Title:       "change database",
 			Description: "change database",
 			Plan:        plan.Name,
-			Assignee:    fmt.Sprintf("users/%s", api.SystemBotEmail),
 		},
 	})
 	if err != nil {
