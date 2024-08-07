@@ -18,7 +18,7 @@ import { parse } from "qs";
 import { onMounted, reactive } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { AUTH_MFA_MODULE, AUTH_SIGNIN_MODULE } from "@/router/auth";
-import { useAuthStore, useWorkspaceV1Store } from "@/store";
+import { useAuthStore } from "@/store";
 import type { OAuthState, OAuthWindowEventPayload } from "../types";
 
 interface LocalState {
@@ -95,7 +95,6 @@ const triggerAuthCallback = async () => {
         },
         web: true,
       });
-      await useWorkspaceV1Store().fetchIamPolicy();
       if (mfaTempToken) {
         const route = router.resolve({
           name: AUTH_MFA_MODULE,
