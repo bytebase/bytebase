@@ -72,22 +72,12 @@ func CreateHiveConnPool(
 		conn, err := gohive.Connect(config.Host, port, string(saslTypName), hiveConfig)
 		// release resources if err.
 		if err != nil || conn == nil {
-			if err == nil {
-				err = errors.New("failed to create Hive connection pool")
-			} else {
-				err = errors.Wrapf(err, "failed to create Hive connection pool")
-			}
-			var errWhenClose error
+			errs := multierr.Combine(errors.New("failed to establish Hive connection"), err)
 			close(conns)
 			for conn := range conns {
-				if err := conn.Close(); err != nil {
-					errWhenClose = err
-				}
+				errs = multierr.Combine(conn.Close(), errs)
 			}
-			if errWhenClose != nil {
-				err = errors.Wrapf(err, "failed to release Hive connection")
-			}
-			return nil, err
+			return nil, errs
 		}
 		conns <- conn
 	}
@@ -128,7 +118,7 @@ func (pool *FixedConnPool) Get(dbName string) (*gohive.Connection, error) {
 		}
 		var err error
 		conn, err = gohive.Connect(pool.BasicConfig.Host, pool.Port, string(saslTypName), pool.HiveConfig)
-		if err != nil {
+		if err != nil || conn == nil {
 			return nil, errors.Wrapf(err, "failed to get Hive connection")
 		}
 	}
@@ -137,8 +127,7 @@ func (pool *FixedConnPool) Get(dbName string) (*gohive.Connection, error) {
 		cursor := conn.Cursor()
 		cursor.Exec(context.Background(), fmt.Sprintf("use %s", dbName))
 		if cursor.Err != nil {
-			closeErr := conn.Close()
-			return nil, multierr.Combine(closeErr, cursor.Err)
+			return nil, multierr.Combine(conn.Close(), cursor.Err)
 		}
 	}
 
@@ -163,7 +152,6 @@ func (pool *FixedConnPool) Put(conn *gohive.Connection) {
 
 func (pool *FixedConnPool) Destroy() error {
 	pool.RWMutex.Lock()
-
 	if pool.IsActivated {
 		pool.IsActivated = false
 		close(pool.Connections)
@@ -173,12 +161,11 @@ func (pool *FixedConnPool) Destroy() error {
 	}
 	pool.RWMutex.Unlock()
 
-	var errWhenClose error
+	var errs error
 	for conn := range pool.Connections {
 		if err := conn.Close(); err != nil {
-			errWhenClose = err
+			errs = multierr.Combine(err, errs)
 		}
 	}
-
-	return errWhenClose
+	return errs
 }
