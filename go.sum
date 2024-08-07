@@ -792,8 +792,8 @@ github.com/bytebase/gohive v0.0.0-20240422092929-d76993a958a4 h1:5o+GWOu+j68eAOD
 github.com/bytebase/gohive v0.0.0-20240422092929-d76993a958a4/go.mod h1:sV29Oj7v/xsXJjJwLRYimdnEX6aZOA1ofAlZ+D/snOo=
 github.com/bytebase/gosasl v0.0.0-20240422091407-6b7481e86f08 h1:S1GgjJLspz4E4z4CvomGvKgxyv0ATfZm27qHM418jWc=
 github.com/bytebase/gosasl v0.0.0-20240422091407-6b7481e86f08/go.mod h1:Qx8cW6jkI8riyzmklj80kAIkv+iezFUTBiGU0qHhHes=
-github.com/bytebase/mysql-parser v0.0.0-20240708171745-888dff8b5915 h1:2W7JSIzcEKoyYZxF/ob6u0ocC70IjMta3F+tFhRbeNc=
-github.com/bytebase/mysql-parser v0.0.0-20240708171745-888dff8b5915/go.mod h1:n22yoTeLcphIYQlV6nbufQbHMxNceOjeGDOrpaRIhiY=
+github.com/bytebase/mysql-parser v0.0.0-20240807032652-f13bb3f05afc h1:B6nmeqEW5RlRR30y0yoKuViYm6FVud9rSMzVj8QFkx8=
+github.com/bytebase/mysql-parser v0.0.0-20240807032652-f13bb3f05afc/go.mod h1:n22yoTeLcphIYQlV6nbufQbHMxNceOjeGDOrpaRIhiY=
 github.com/bytebase/partiql-parser v0.0.0-20240531101102-1962ff456f2c h1:TMANvCCN7gpqXHrzRWeWRkPTXmFvTSEyXTZ1Fz20EvM=
 github.com/bytebase/partiql-parser v0.0.0-20240531101102-1962ff456f2c/go.mod h1:hNMKtZBMCbNyhUFR47Ct9mqmpzZVtHgC0OsOIQhR27k=
 github.com/bytebase/pg_query_go2/v5 v5.0.0-20240429070353-41837024e3d6 h1:BzWyLTYLMT4H9fmqTQOD/hCvTNAxAJAIjQ8Q+KyOi2s=
