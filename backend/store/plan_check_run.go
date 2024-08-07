@@ -199,6 +199,35 @@ func (s *Store) ListPlanCheckRuns(ctx context.Context, find *FindPlanCheckRunMes
 	return planCheckRuns, nil
 }
 
+// ListLatestPlanCheckRunsForPlan returns the latest plan check runs for a plan.
+func (s *Store) ListLatestPlanCheckRunsForPlan(ctx context.Context, planUID int64) ([]*PlanCheckRunMessage, error) {
+	planCheckRuns, err := s.ListPlanCheckRuns(ctx, &FindPlanCheckRunMessage{PlanUID: &planUID})
+	if err != nil {
+		return nil, err
+	}
+	type key struct {
+		instanceUID  int
+		databaseName string
+		checkType    PlanCheckRunType
+	}
+	latestRunMap := map[key]*PlanCheckRunMessage{}
+	for _, run := range planCheckRuns {
+		k := key{
+			instanceUID:  int(run.Config.InstanceUid),
+			databaseName: run.Config.DatabaseName,
+			checkType:    run.Type,
+		}
+		if latest, ok := latestRunMap[k]; !ok || latest.UID < run.UID {
+			latestRunMap[k] = run
+		}
+	}
+	latestRuns := make([]*PlanCheckRunMessage, 0, len(latestRunMap))
+	for _, run := range latestRunMap {
+		latestRuns = append(latestRuns, run)
+	}
+	return latestRuns, nil
+}
+
 // UpdatePlanCheckRun updates a plan check run.
 func (s *Store) UpdatePlanCheckRun(ctx context.Context, updaterUID int, status PlanCheckRunStatus, result *storepb.PlanCheckRunResult, uid int) error {
 	resultBytes, err := protojson.Marshal(result)

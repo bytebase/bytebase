@@ -393,6 +393,8 @@ export interface ListPlanCheckRunsRequest {
    * the call that provided the page token.
    */
   pageToken: string;
+  /** If set to true, only the latest plan check run will be returned. */
+  latestOnly: boolean;
 }
 
 export interface ListPlanCheckRunsResponse {
@@ -2573,7 +2575,7 @@ export const Plan_VCSSource = {
 };
 
 function createBaseListPlanCheckRunsRequest(): ListPlanCheckRunsRequest {
-  return { parent: "", pageSize: 0, pageToken: "" };
+  return { parent: "", pageSize: 0, pageToken: "", latestOnly: false };
 }
 
 export const ListPlanCheckRunsRequest = {
@@ -2586,6 +2588,9 @@ export const ListPlanCheckRunsRequest = {
     }
     if (message.pageToken !== "") {
       writer.uint32(26).string(message.pageToken);
+    }
+    if (message.latestOnly === true) {
+      writer.uint32(32).bool(message.latestOnly);
     }
     return writer;
   },
@@ -2618,6 +2623,13 @@ export const ListPlanCheckRunsRequest = {
 
           message.pageToken = reader.string();
           continue;
+        case 4:
+          if (tag !== 32) {
+            break;
+          }
+
+          message.latestOnly = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2632,6 +2644,7 @@ export const ListPlanCheckRunsRequest = {
       parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
       pageSize: isSet(object.pageSize) ? globalThis.Number(object.pageSize) : 0,
       pageToken: isSet(object.pageToken) ? globalThis.String(object.pageToken) : "",
+      latestOnly: isSet(object.latestOnly) ? globalThis.Boolean(object.latestOnly) : false,
     };
   },
 
@@ -2646,6 +2659,9 @@ export const ListPlanCheckRunsRequest = {
     if (message.pageToken !== "") {
       obj.pageToken = message.pageToken;
     }
+    if (message.latestOnly === true) {
+      obj.latestOnly = message.latestOnly;
+    }
     return obj;
   },
 
@@ -2657,6 +2673,7 @@ export const ListPlanCheckRunsRequest = {
     message.parent = object.parent ?? "";
     message.pageSize = object.pageSize ?? 0;
     message.pageToken = object.pageToken ?? "";
+    message.latestOnly = object.latestOnly ?? false;
     return message;
   },
 };

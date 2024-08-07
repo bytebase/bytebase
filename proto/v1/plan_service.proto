@@ -352,6 +352,9 @@ message ListPlanCheckRunsRequest {
   // When paginating, all other parameters provided to `ListPlanCheckRuns` must match
   // the call that provided the page token.
   string page_token = 3;
+
+  // If set to true, only the latest plan check run will be returned.
+  bool latest_only = 4;
 }
 
 message ListPlanCheckRunsResponse {
