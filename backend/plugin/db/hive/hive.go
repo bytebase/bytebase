@@ -10,6 +10,7 @@ import (
 
 	"github.com/beltran/gohive"
 	"github.com/pkg/errors"
+	"go.uber.org/multierr"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/durationpb"
 
@@ -73,13 +74,8 @@ func (d *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionC
 	if err != nil {
 		err = errors.Wrapf(err, "failed to get connection from pool")
 		// release resources.
-		if errClose := func() error {
-			if err := newConn.Close(); err != nil {
-				return err
-			}
-			return d.connPool.Destroy()
-		}(); errClose != nil {
-			return nil, errors.Wrapf(err, "failed to release resources")
+		if closeErr := d.connPool.Destroy(); closeErr != nil {
+			err = multierr.Combine(closeErr, err)
 		}
 		return nil, err
 	}
