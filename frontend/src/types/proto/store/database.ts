@@ -733,6 +733,11 @@ export interface TableConfig {
    * Format: users/{userUID}.
    */
   updater: string;
+  /**
+   * The last change come from branch.
+   * Format: projcets/{project}/branches/{branch}
+   */
+  sourceBranch: string;
   /** The timestamp when the table is updated in branch. */
   updateTime: Date | undefined;
 }
@@ -745,6 +750,11 @@ export interface FunctionConfig {
    * Format: users/{userUID}.
    */
   updater: string;
+  /**
+   * The last change come from branch.
+   * Format: projcets/{project}/branches/{branch}
+   */
+  sourceBranch: string;
   /** The timestamp when the function is updated in branch. */
   updateTime: Date | undefined;
 }
@@ -757,6 +767,11 @@ export interface ProcedureConfig {
    * Format: users/{userUID}.
    */
   updater: string;
+  /**
+   * The last change come from branch.
+   * Format: projcets/{project}/branches/{branch}
+   */
+  sourceBranch: string;
   /** The timestamp when the procedure is updated in branch. */
   updateTime: Date | undefined;
 }
@@ -769,6 +784,11 @@ export interface ViewConfig {
    * Format: users/{userUID}.
    */
   updater: string;
+  /**
+   * The last change come from branch.
+   * Format: projcets/{project}/branches/{branch}
+   */
+  sourceBranch: string;
   /** The timestamp when the view is updated in branch. */
   updateTime: Date | undefined;
 }
@@ -4106,7 +4126,7 @@ export const SchemaConfig = {
 };
 
 function createBaseTableConfig(): TableConfig {
-  return { name: "", columnConfigs: [], classificationId: "", updater: "", updateTime: undefined };
+  return { name: "", columnConfigs: [], classificationId: "", updater: "", sourceBranch: "", updateTime: undefined };
 }
 
 export const TableConfig = {
@@ -4122,6 +4142,9 @@ export const TableConfig = {
     }
     if (message.updater !== "") {
       writer.uint32(34).string(message.updater);
+    }
+    if (message.sourceBranch !== "") {
+      writer.uint32(50).string(message.sourceBranch);
     }
     if (message.updateTime !== undefined) {
       Timestamp.encode(toTimestamp(message.updateTime), writer.uint32(42).fork()).ldelim();
@@ -4164,6 +4187,13 @@ export const TableConfig = {
 
           message.updater = reader.string();
           continue;
+        case 6:
+          if (tag !== 50) {
+            break;
+          }
+
+          message.sourceBranch = reader.string();
+          continue;
         case 5:
           if (tag !== 42) {
             break;
@@ -4188,6 +4218,7 @@ export const TableConfig = {
         : [],
       classificationId: isSet(object.classificationId) ? globalThis.String(object.classificationId) : "",
       updater: isSet(object.updater) ? globalThis.String(object.updater) : "",
+      sourceBranch: isSet(object.sourceBranch) ? globalThis.String(object.sourceBranch) : "",
       updateTime: isSet(object.updateTime) ? fromJsonTimestamp(object.updateTime) : undefined,
     };
   },
@@ -4206,6 +4237,9 @@ export const TableConfig = {
     if (message.updater !== "") {
       obj.updater = message.updater;
     }
+    if (message.sourceBranch !== "") {
+      obj.sourceBranch = message.sourceBranch;
+    }
     if (message.updateTime !== undefined) {
       obj.updateTime = message.updateTime.toISOString();
     }
@@ -4221,13 +4255,14 @@ export const TableConfig = {
     message.columnConfigs = object.columnConfigs?.map((e) => ColumnConfig.fromPartial(e)) || [];
     message.classificationId = object.classificationId ?? "";
     message.updater = object.updater ?? "";
+    message.sourceBranch = object.sourceBranch ?? "";
     message.updateTime = object.updateTime ?? undefined;
     return message;
   },
 };
 
 function createBaseFunctionConfig(): FunctionConfig {
-  return { name: "", updater: "", updateTime: undefined };
+  return { name: "", updater: "", sourceBranch: "", updateTime: undefined };
 }
 
 export const FunctionConfig = {
@@ -4237,6 +4272,9 @@ export const FunctionConfig = {
     }
     if (message.updater !== "") {
       writer.uint32(18).string(message.updater);
+    }
+    if (message.sourceBranch !== "") {
+      writer.uint32(34).string(message.sourceBranch);
     }
     if (message.updateTime !== undefined) {
       Timestamp.encode(toTimestamp(message.updateTime), writer.uint32(26).fork()).ldelim();
@@ -4265,6 +4303,13 @@ export const FunctionConfig = {
 
           message.updater = reader.string();
           continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.sourceBranch = reader.string();
+          continue;
         case 3:
           if (tag !== 26) {
             break;
@@ -4285,6 +4330,7 @@ export const FunctionConfig = {
     return {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
       updater: isSet(object.updater) ? globalThis.String(object.updater) : "",
+      sourceBranch: isSet(object.sourceBranch) ? globalThis.String(object.sourceBranch) : "",
       updateTime: isSet(object.updateTime) ? fromJsonTimestamp(object.updateTime) : undefined,
     };
   },
@@ -4296,6 +4342,9 @@ export const FunctionConfig = {
     }
     if (message.updater !== "") {
       obj.updater = message.updater;
+    }
+    if (message.sourceBranch !== "") {
+      obj.sourceBranch = message.sourceBranch;
     }
     if (message.updateTime !== undefined) {
       obj.updateTime = message.updateTime.toISOString();
@@ -4310,13 +4359,14 @@ export const FunctionConfig = {
     const message = createBaseFunctionConfig();
     message.name = object.name ?? "";
     message.updater = object.updater ?? "";
+    message.sourceBranch = object.sourceBranch ?? "";
     message.updateTime = object.updateTime ?? undefined;
     return message;
   },
 };
 
 function createBaseProcedureConfig(): ProcedureConfig {
-  return { name: "", updater: "", updateTime: undefined };
+  return { name: "", updater: "", sourceBranch: "", updateTime: undefined };
 }
 
 export const ProcedureConfig = {
@@ -4326,6 +4376,9 @@ export const ProcedureConfig = {
     }
     if (message.updater !== "") {
       writer.uint32(18).string(message.updater);
+    }
+    if (message.sourceBranch !== "") {
+      writer.uint32(34).string(message.sourceBranch);
     }
     if (message.updateTime !== undefined) {
       Timestamp.encode(toTimestamp(message.updateTime), writer.uint32(26).fork()).ldelim();
@@ -4354,6 +4407,13 @@ export const ProcedureConfig = {
 
           message.updater = reader.string();
           continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.sourceBranch = reader.string();
+          continue;
         case 3:
           if (tag !== 26) {
             break;
@@ -4374,6 +4434,7 @@ export const ProcedureConfig = {
     return {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
       updater: isSet(object.updater) ? globalThis.String(object.updater) : "",
+      sourceBranch: isSet(object.sourceBranch) ? globalThis.String(object.sourceBranch) : "",
       updateTime: isSet(object.updateTime) ? fromJsonTimestamp(object.updateTime) : undefined,
     };
   },
@@ -4385,6 +4446,9 @@ export const ProcedureConfig = {
     }
     if (message.updater !== "") {
       obj.updater = message.updater;
+    }
+    if (message.sourceBranch !== "") {
+      obj.sourceBranch = message.sourceBranch;
     }
     if (message.updateTime !== undefined) {
       obj.updateTime = message.updateTime.toISOString();
@@ -4399,13 +4463,14 @@ export const ProcedureConfig = {
     const message = createBaseProcedureConfig();
     message.name = object.name ?? "";
     message.updater = object.updater ?? "";
+    message.sourceBranch = object.sourceBranch ?? "";
     message.updateTime = object.updateTime ?? undefined;
     return message;
   },
 };
 
 function createBaseViewConfig(): ViewConfig {
-  return { name: "", updater: "", updateTime: undefined };
+  return { name: "", updater: "", sourceBranch: "", updateTime: undefined };
 }
 
 export const ViewConfig = {
@@ -4415,6 +4480,9 @@ export const ViewConfig = {
     }
     if (message.updater !== "") {
       writer.uint32(18).string(message.updater);
+    }
+    if (message.sourceBranch !== "") {
+      writer.uint32(34).string(message.sourceBranch);
     }
     if (message.updateTime !== undefined) {
       Timestamp.encode(toTimestamp(message.updateTime), writer.uint32(26).fork()).ldelim();
@@ -4443,6 +4511,13 @@ export const ViewConfig = {
 
           message.updater = reader.string();
           continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.sourceBranch = reader.string();
+          continue;
         case 3:
           if (tag !== 26) {
             break;
@@ -4463,6 +4538,7 @@ export const ViewConfig = {
     return {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
       updater: isSet(object.updater) ? globalThis.String(object.updater) : "",
+      sourceBranch: isSet(object.sourceBranch) ? globalThis.String(object.sourceBranch) : "",
       updateTime: isSet(object.updateTime) ? fromJsonTimestamp(object.updateTime) : undefined,
     };
   },
@@ -4474,6 +4550,9 @@ export const ViewConfig = {
     }
     if (message.updater !== "") {
       obj.updater = message.updater;
+    }
+    if (message.sourceBranch !== "") {
+      obj.sourceBranch = message.sourceBranch;
     }
     if (message.updateTime !== undefined) {
       obj.updateTime = message.updateTime.toISOString();
@@ -4488,6 +4567,7 @@ export const ViewConfig = {
     const message = createBaseViewConfig();
     message.name = object.name ?? "";
     message.updater = object.updater ?? "";
+    message.sourceBranch = object.sourceBranch ?? "";
     message.updateTime = object.updateTime ?? undefined;
     return message;
   },

@@ -77,13 +77,12 @@ import { branchServiceClient } from "@/grpcweb";
 import {
   pushNotification,
   useBranchStore,
-  useCurrentUserV1,
   useDatabaseV1Store,
 } from "@/store";
 import type { ComposedProject } from "@/types";
 import { isValidDatabaseName } from "@/types";
 import type { Branch } from "@/types/proto/v1/branch_service";
-import { defer, isOwnerOfProjectV1 } from "@/utils";
+import { defer } from "@/utils";
 import BranchComparison from "../common/BranchComparison.vue";
 import RebaseBranchSelect from "./RebaseBranchSelect.vue";
 import RebaseBranchValidationStateView from "./RebaseBranchValidationStateView.vue";
@@ -120,7 +119,6 @@ const route = useRoute();
 const $dialog = useDialog();
 const resolveConflictRef = ref<InstanceType<typeof ResolveConflict>>();
 const branchStore = useBranchStore();
-const me = useCurrentUserV1();
 const isLoadingHeadBranch = ref(false);
 const isLoadingSourceBranch = ref(false);
 const isValidating = ref(false);
@@ -183,9 +181,6 @@ const parentBranchOnly = computed(() => {
   }
   if (!head.parentBranch) {
     return false; // parent-less (main) branches
-  }
-  if (isOwnerOfProjectV1(props.project, me.value)) {
-    return false; // project owners are not limited
   }
   return true;
 });

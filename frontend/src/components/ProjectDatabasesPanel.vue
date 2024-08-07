@@ -22,6 +22,7 @@
         :databases="selectedDatabases"
       />
       <DatabaseV1Table
+        :key="`database-table.${project.name}`"
         mode="PROJECT"
         :database-list="filteredDatabaseList"
         :custom-click="true"

@@ -97,6 +97,7 @@
     "stage": "Etapa",
     "task": "Tarea",
     "tasks": "Tareas",
+    "blocking-task": "Tarea de bloqueo",
     "sql": "SQL",
     "unassigned": "No asignado",
     "new": "Nuevo",
@@ -280,7 +281,10 @@
     "reset": "Reiniciar",
     "refresh": "Actualizar",
     "rollback": "Retroceder",
-    "blocking-task": "Tarea de bloqueo"
+    "rows": {
+      "self": "filas",
+      "n-rows": "{n} filas"
+    }
   },
   "error-page": {
     "go-back-home": "Volver al inicio"
@@ -1617,6 +1621,10 @@
     },
     "activate": {
       "title": "Active su cuenta {type}"
+    },
+    "login-as-another": {
+      "title": "Has iniciado sesión como otro usuario",
+      "content": "Lo redirigiremos a la página de inicio."
     }
   },
   "policy": {

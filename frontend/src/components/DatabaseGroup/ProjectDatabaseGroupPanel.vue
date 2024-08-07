@@ -35,14 +35,13 @@ import DatabaseGroupDataTable from "@/components/DatabaseGroup/DatabaseGroupData
 import { PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL } from "@/router/dashboard/projectV1";
 import { useDBGroupStore, hasFeature } from "@/store";
 import type { ComposedDatabaseGroup, ComposedProject } from "@/types";
-import type { DatabaseGroup } from "@/types/proto/v1/database_group_service";
 import { FeatureAttention, FeatureModal } from "../FeatureGuard";
 import DatabaseGroupPanel from "./DatabaseGroupPanel.vue";
 
 interface LocalState {
   showDatabaseGroupPanel: boolean;
   showFeatureModal: boolean;
-  editingDatabaseGroup?: DatabaseGroup;
+  editingDatabaseGroup?: ComposedDatabaseGroup;
 }
 
 const props = defineProps<{

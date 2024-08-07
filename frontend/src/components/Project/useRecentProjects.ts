@@ -11,7 +11,7 @@ export const useRecentProjects = () => {
   const currentUser = useCurrentUserV1();
 
   const recentViewProjectNames = useLocalStorage<string[]>(
-    "bb.project.recent-view",
+    `bb.project.recent-view.${currentUser.value.name}`,
     []
   );
 

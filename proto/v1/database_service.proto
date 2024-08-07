@@ -949,6 +949,10 @@ message TableConfig {
   // Format: users/{email}
   string updater = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
 
+  // The last change come from branch.
+  // Format: projcets/{project}/branches/{branch}
+  string source_branch = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
+
   // The timestamp when the table is updated in branch.
   google.protobuf.Timestamp update_time = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
@@ -960,6 +964,10 @@ message FunctionConfig {
   // The last updater of the function in branch.
   // Format: users/{email}
   string updater = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The last change come from branch.
+  // Format: projcets/{project}/branches/{branch}
+  string source_branch = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The timestamp when the function is updated in branch.
   google.protobuf.Timestamp update_time = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -973,6 +981,10 @@ message ProcedureConfig {
   // Format: users/{email}
   string updater = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
 
+  // The last change come from branch.
+  // Format: projcets/{project}/branches/{branch}
+  string source_branch = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
+
   // The timestamp when the procedure is updated in branch.
   google.protobuf.Timestamp update_time = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
@@ -984,6 +996,10 @@ message ViewConfig {
   // The last updater of the view in branch.
   // Format: users/{email}
   string updater = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The last change come from branch.
+  // Format: projcets/{project}/branches/{branch}
+  string source_branch = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The timestamp when the view is updated in branch.
   google.protobuf.Timestamp update_time = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -1303,6 +1319,9 @@ message ChangedResourceSchema {
 
 message ChangedResourceTable {
   string name = 1;
+
+  // The ranges of sub-strings correspond to the statements on the sheet.
+  repeated Range ranges = 3;
 }
 
 enum ChangeHistoryView {

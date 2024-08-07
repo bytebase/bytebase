@@ -1,5 +1,6 @@
 <template>
   <SlowQueryPanel
+    :key="`slow-query.${project.name}`"
     :readonly-search-scopes="readonlyScopes"
     :support-option-id-list="['environment', 'database']"
     :show-project-column="false"

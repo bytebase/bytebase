@@ -47,7 +47,7 @@ import { computed, ref } from "vue";
 import { BBSpin } from "@/bbkit";
 import { useSQLEditorTabStore } from "@/store";
 import type { ComposedDatabase } from "@/types";
-import { ResultViewV1 } from "../EditorCommon/";
+import { ResultViewV1 } from "../../EditorCommon/";
 import BatchQuerySelect from "./BatchQuerySelect.vue";
 
 const tabStore = useSQLEditorTabStore();

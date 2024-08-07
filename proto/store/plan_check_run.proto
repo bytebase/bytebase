@@ -18,8 +18,7 @@ message PlanCheckRunConfig {
   ChangeDatabaseType change_database_type = 2;
   int32 instance_uid = 3;
   string database_name = 4;
-  // database_group_uid is optional. If it's set, it means the database is part of a database group.
-  optional int64 database_group_uid = 5;
+  optional int64 database_group_uid = 5 [deprecated = true];
 
   map<string, string> ghost_flags = 6;
 

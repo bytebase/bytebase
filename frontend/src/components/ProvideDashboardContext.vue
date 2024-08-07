@@ -97,8 +97,9 @@ onMounted(async () => {
     useEnvironmentV1Store().fetchEnvironments(),
     prepareProjects(),
   ]);
-  await Promise.all([useUIStateStore().restoreState()]);
+
   await prepareDatabases(route.params.projectId as string);
+  useUIStateStore().restoreState();
 
   isInitializing.value = false;
 

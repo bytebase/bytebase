@@ -189,8 +189,8 @@ import {
 } from "@/types";
 import { UserType } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
-import { WorkspaceProfileSetting } from "@/types/proto/v1/setting_service";
 import type { Group } from "@/types/proto/v1/group";
+import { WorkspaceProfileSetting } from "@/types/proto/v1/setting_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
 const tabList = ["members", "groups"] as const;

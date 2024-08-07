@@ -4,6 +4,7 @@ roles:
     permissions:
       - bb.auditLogs.export
       - bb.auditLogs.search
+      - bb.branches.admin
       - bb.branches.create
       - bb.branches.delete
       - bb.branches.get
@@ -127,6 +128,7 @@ roles:
     permissions:
       - bb.auditLogs.export
       - bb.auditLogs.search
+      - bb.branches.admin
       - bb.branches.create
       - bb.branches.delete
       - bb.branches.get
@@ -261,6 +263,7 @@ roles:
     permissions:
       - bb.auditLogs.export
       - bb.auditLogs.search
+      - bb.branches.admin
       - bb.branches.create
       - bb.branches.delete
       - bb.branches.get
@@ -321,8 +324,10 @@ roles:
     permissions:
       - bb.auditLogs.search
       - bb.branches.create
+      - bb.branches.delete
       - bb.branches.get
       - bb.branches.list
+      - bb.branches.update
       - bb.changeHistories.get
       - bb.changeHistories.list
       - bb.changelists.create

@@ -2,6 +2,7 @@
   <div
     ref="containerRef"
     class="w-full flex flex-wrap gap-y-2 justify-between sm:items-center p-2 border-b bg-white"
+    v-bind="$attrs"
   >
     <div
       class="action-left gap-x-2 flex overflow-x-auto sm:overflow-x-hidden items-center"
@@ -131,6 +132,10 @@ import SharePopover from "./SharePopover.vue";
 interface LocalState {
   requiredFeatureName?: FeatureType;
 }
+
+defineOptions({
+  inheritAttrs: false,
+});
 
 const emit = defineEmits<{
   (e: "execute", params: SQLEditorQueryParams): void;

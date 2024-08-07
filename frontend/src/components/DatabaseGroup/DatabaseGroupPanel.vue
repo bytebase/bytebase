@@ -13,7 +13,6 @@
         ref="formRef"
         :project="project"
         :database-group="props.databaseGroup"
-        :parent-database-group="props.parentDatabaseGroup"
       />
       <template #footer>
         <div class="w-full flex justify-between items-center">
@@ -45,7 +44,7 @@
 import { head } from "lodash-es";
 import { Trash2Icon } from "lucide-vue-next";
 import { NButton, useDialog } from "naive-ui";
-import { computed, onMounted, ref } from "vue";
+import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { Drawer, DrawerContent } from "@/components/v2";
@@ -68,8 +67,7 @@ import DatabaseGroupForm from "./DatabaseGroupForm.vue";
 const props = defineProps<{
   show: boolean;
   project: ComposedProject;
-  databaseGroup?: DatabaseGroup;
-  parentDatabaseGroup?: ComposedDatabaseGroup;
+  databaseGroup?: ComposedDatabaseGroup;
 }>();
 
 const emit = defineEmits<{
@@ -109,17 +107,6 @@ const allowConfirm = computed(() => {
 
 const showDeleteButton = computed(() => {
   return !isCreating.value;
-});
-
-onMounted(async () => {
-  const project = router.currentRoute.value.params.projectId as string;
-  if (project && typeof project === "string") {
-    await dbGroupStore.getOrFetchDBGroupListByProjectName(
-      `projects/${project}`
-    );
-  } else {
-    await dbGroupStore.fetchAllDatabaseGroupList();
-  }
 });
 
 const doDelete = () => {

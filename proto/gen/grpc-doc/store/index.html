@@ -190,6 +190,10 @@
                   <a href="#bytebase.store.Position"><span class="badge">M</span>Position</a>
                 </li>
               
+                <li>
+                  <a href="#bytebase.store.Range"><span class="badge">M</span>Range</a>
+                </li>
+              
               
                 <li>
                   <a href="#bytebase.store.Engine"><span class="badge">E</span>Engine</a>
@@ -1014,18 +1018,6 @@
                   <a href="#bytebase.store.Project"><span class="badge">M</span>Project</a>
                 </li>
               
-                <li>
-                  <a href="#bytebase.store.ProtectionRule"><span class="badge">M</span>ProtectionRule</a>
-                </li>
-              
-              
-                <li>
-                  <a href="#bytebase.store.ProtectionRule.BranchSource"><span class="badge">E</span>ProtectionRule.BranchSource</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.ProtectionRule.Target"><span class="badge">E</span>ProtectionRule.Target</a>
-                </li>
               
               
               
@@ -1545,6 +1537,37 @@
               
                 <tr>
                   <td>column</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.Range">Range</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>start</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>end</td>
                   <td><a href="#int32">int32</a></td>
                   <td></td>
                   <td><p> </p></td>
@@ -3262,6 +3285,14 @@ Format: users/{userUID}. </p></td>
                 </tr>
               
                 <tr>
+                  <td>source_branch</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The last change come from branch.
+Format: projcets/{project}/branches/{branch} </p></td>
+                </tr>
+              
+                <tr>
                   <td>update_time</td>
                   <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
                   <td></td>
@@ -3563,6 +3594,14 @@ If the key length is not specified, it&#39;s -1. </p></td>
                   <td></td>
                   <td><p>The last updater of the procedure in branch.
 Format: users/{userUID}. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>source_branch</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The last change come from branch.
+Format: projcets/{project}/branches/{branch} </p></td>
                 </tr>
               
                 <tr>
@@ -3957,6 +3996,14 @@ Format: users/{userUID}. </p></td>
                 </tr>
               
                 <tr>
+                  <td>source_branch</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The last change come from branch.
+Format: projcets/{project}/branches/{branch} </p></td>
+                </tr>
+              
+                <tr>
                   <td>update_time</td>
                   <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
                   <td></td>
@@ -4282,6 +4329,14 @@ Example: 01ad32a0-1bb6-5e93-0000-000000000001 </p></td>
                   <td></td>
                   <td><p>The last updater of the view in branch.
 Format: users/{userUID}. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>source_branch</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The last change come from branch.
+Format: projcets/{project}/branches/{branch} </p></td>
                 </tr>
               
                 <tr>
@@ -6135,6 +6190,13 @@ For MySQL, it&#39;s the global privileges as GRANT statements, which means it on
                   <td><p>estimated row count of the table </p></td>
                 </tr>
               
+                <tr>
+                  <td>ranges</td>
+                  <td><a href="#bytebase.store.Range">Range</a></td>
+                  <td>repeated</td>
+                  <td><p>The ranges of sub-strings correspond to the statements on the sheet. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -7318,7 +7380,7 @@ Format: projects/{project-ID}/vcsConnectors/{vcs-connector} </p></td>
                   <td>database_group_uid</td>
                   <td><a href="#int64">int64</a></td>
                   <td>optional</td>
-                  <td><p>database_group_uid is optional. If it&#39;s set, it means the database is part of a database group. </p></td>
+                  <td><p><strong>Deprecated.</strong>  </p></td>
                 </tr>
               
                 <tr>
@@ -7338,6 +7400,27 @@ Format: projects/{project-ID}/vcsConnectors/{vcs-connector} </p></td>
             </tbody>
           </table>
 
+          
+            
+            
+            <h4>Fields with deprecated option</h4>
+            <table>
+              <thead>
+                <tr>
+                  <td>Name</td>
+                  <td>Option</td>
+                </tr>
+              </thead>
+              <tbody>
+              
+                <tr>
+                  <td>database_group_uid</td>
+                  <td><p>true</p></td>
+                </tr>
+              
+              </tbody>
+            </table>
+            
           
 
         
@@ -8426,13 +8509,6 @@ for example, the environment resource can have the sql review config tag, like &
             <tbody>
               
                 <tr>
-                  <td>protection_rules</td>
-                  <td><a href="#bytebase.store.ProtectionRule">ProtectionRule</a></td>
-                  <td>repeated</td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
                   <td>issue_labels</td>
                   <td><a href="#bytebase.store.Label">Label</a></td>
                   <td>repeated</td>
@@ -8467,112 +8543,7 @@ for example, the environment resource can have the sql review config tag, like &
 
         
       
-        <h3 id="bytebase.store.ProtectionRule">ProtectionRule</h3>
-        <p></p>
 
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>id</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>A unique identifier for a node in UUID format. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>target</td>
-                  <td><a href="#bytebase.store.ProtectionRule.Target">ProtectionRule.Target</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>name_filter</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The name of the branch/changelist or wildcard. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>allowed_roles</td>
-                  <td><a href="#string">string</a></td>
-                  <td>repeated</td>
-                  <td><p>The roles allowed to create branches or changelists, rebase branches, delete branches.
-Format: roles/projectOwner. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>branch_source</td>
-                  <td><a href="#bytebase.store.ProtectionRule.BranchSource">ProtectionRule.BranchSource</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-
-      
-        <h3 id="bytebase.store.ProtectionRule.BranchSource">ProtectionRule.BranchSource</h3>
-        <p></p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>BRANCH_SOURCE_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>DATABASE</td>
-                <td>1</td>
-                <td><p></p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-      
-        <h3 id="bytebase.store.ProtectionRule.Target">ProtectionRule.Target</h3>
-        <p>The type of target.</p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>PROTECTION_TARGET_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>BRANCH</td>
-                <td>1</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>CHANGELIST</td>
-                <td>2</td>
-                <td><p></p></td>
-              </tr>
-            
-          </tbody>
-        </table>
       
 
       

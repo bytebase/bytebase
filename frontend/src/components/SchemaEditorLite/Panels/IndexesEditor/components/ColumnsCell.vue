@@ -9,6 +9,8 @@
     :max-tag-count="'responsive'"
     :placeholder="$t('schema-editor.columns')"
     :filterable="true"
+    :render-tag="renderTag"
+    :show-arrow="!readonly"
     suffix-style="right: 3px"
     class="bb-schema-editor--index-columns-select"
     @focus="focused = true"
@@ -19,9 +21,9 @@
 
 <script lang="ts" setup>
 import type { SelectOption } from "naive-ui";
-import { NSelect } from "naive-ui";
+import { NSelect, NTag } from "naive-ui";
 import type { CSSProperties } from "vue";
-import { computed, ref } from "vue";
+import { computed, h, ref } from "vue";
 import type { ComposedDatabase } from "@/types";
 import type {
   ColumnMetadata,
@@ -74,6 +76,19 @@ const style = computed(() => {
 
   return style;
 });
+
+const renderTag = (item: { option: SelectOption; handleClose: () => void }) => {
+  const { option, handleClose } = item;
+  const { column } = option as ColumnOption;
+  return h(
+    NTag,
+    {
+      closable: !props.readonly,
+      onClose: handleClose,
+    },
+    { default: () => column.name }
+  );
+};
 </script>
 
 <style lang="postcss" scoped>

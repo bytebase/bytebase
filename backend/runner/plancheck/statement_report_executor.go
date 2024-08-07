@@ -62,86 +62,42 @@ func (e *StatementReportExecutor) Run(ctx context.Context, config *storepb.PlanC
 			},
 		}, nil
 	}
-	statement := sheet.Statement
-
-	isDML := config.ChangeDatabaseType == storepb.PlanCheckRunConfig_DML
-	var databases []*store.DatabaseMessage
-	if config.DatabaseGroupUid != nil {
-		databaseGroup, err := e.store.GetDatabaseGroup(ctx, &store.FindDatabaseGroupMessage{
-			UID: config.DatabaseGroupUid,
-		})
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get database group %d", *config.DatabaseGroupUid)
-		}
-		if databaseGroup == nil {
-			return nil, errors.Errorf("database group not found %d", *config.DatabaseGroupUid)
-		}
-		project, err := e.store.GetProjectV2(ctx, &store.FindProjectMessage{
-			UID: &databaseGroup.ProjectUID,
-		})
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get project %d", databaseGroup.ProjectUID)
-		}
-		if project == nil {
-			return nil, errors.Errorf("project not found %d", databaseGroup.ProjectUID)
-		}
-
-		allDatabases, err := e.store.ListDatabases(ctx, &store.FindDatabaseMessage{ProjectID: &project.ResourceID})
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to list databases for project %q", project.ResourceID)
-		}
-		matchedDatabases, _, err := utils.GetMatchedAndUnmatchedDatabasesInDatabaseGroup(ctx, databaseGroup, allDatabases)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get matched and unmatched databases in database group %q", databaseGroup.ResourceID)
-		}
-		if len(matchedDatabases) == 0 {
-			return nil, errors.Errorf("no matched databases found in database group %q", databaseGroup.ResourceID)
-		}
-		databases = matchedDatabases
-	} else {
-		instanceUID := int(config.InstanceUid)
-		instance, err := e.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &instanceUID})
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get instance UID %v", instanceUID)
-		}
-		if instance == nil {
-			return nil, errors.Errorf("instance not found UID %v", instanceUID)
-		}
-		database, err := e.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID, DatabaseName: &config.DatabaseName})
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get database %q", config.DatabaseName)
-		}
-		if database == nil {
-			return nil, errors.Errorf("database not found %q", config.DatabaseName)
-		}
-		databases = append(databases, database)
+	statement, err := e.store.GetSheetStatementByID(ctx, sheetUID)
+	if err != nil {
+		return nil, err
 	}
 
-	var results []*storepb.PlanCheckRunResult_Result
-	for _, database := range databases {
-		instance, err := e.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get instance %q", database.InstanceID)
-		}
-		if instance == nil {
-			return nil, errors.Errorf("instance not found %q", database.InstanceID)
-		}
-		if !common.StatementReportEngines[instance.Engine] {
-			return []*storepb.PlanCheckRunResult_Result{
-				{
-					Status:  storepb.PlanCheckRunResult_Result_SUCCESS,
-					Code:    common.Ok.Int32(),
-					Title:   fmt.Sprintf("Statement report is not supported for %s", instance.Engine),
-					Content: "",
-				},
-			}, nil
-		}
+	isDML := config.ChangeDatabaseType == storepb.PlanCheckRunConfig_DML
+	instanceUID := int(config.InstanceUid)
+	instance, err := e.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &instanceUID})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get instance UID %v", instanceUID)
+	}
+	if instance == nil {
+		return nil, errors.Errorf("instance not found UID %v", instanceUID)
+	}
+	if !common.StatementReportEngines[instance.Engine] {
+		return []*storepb.PlanCheckRunResult_Result{
+			{
+				Status:  storepb.PlanCheckRunResult_Result_SUCCESS,
+				Code:    common.Ok.Int32(),
+				Title:   fmt.Sprintf("Statement report is not supported for %s", instance.Engine),
+				Content: "",
+			},
+		}, nil
+	}
 
-		r, err := e.runReport(ctx, instance, database, statement, isDML)
-		if err != nil {
-			return nil, err
-		}
-		results = append(results, r...)
+	database, err := e.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID, DatabaseName: &config.DatabaseName})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get database %q", config.DatabaseName)
+	}
+	if database == nil {
+		return nil, errors.Errorf("database not found %q", config.DatabaseName)
+	}
+
+	results, err := e.runReport(ctx, instance, database, statement, isDML)
+	if err != nil {
+		return nil, err
 	}
 
 	if len(results) == 0 {

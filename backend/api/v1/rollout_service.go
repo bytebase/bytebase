@@ -284,6 +284,7 @@ func (s *RolloutService) GetTaskRunSession(ctx context.Context, request *v1pb.Ge
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get driver, error: %v", err)
 	}
+	defer driver.Close(ctx)
 
 	session, err := getSession(ctx, instance.Engine, driver.GetDB(), connID)
 	if err != nil {
@@ -898,20 +899,12 @@ func GetPipelineCreate(ctx context.Context, s *store.Store, sheetManager *sheet.
 	}
 
 	// The following case should has only one spec.
-	// * ChangeDatabaseConfig with deploymentConfig/databaseGroup target;
+	// * ChangeDatabaseConfig with databaseGroup target;
 	// * CreateDatabaseConfig;
 	// * ExportDataConfig.
 	if len(specs) == 1 {
 		spec := specs[0]
 		if config := spec.GetChangeDatabaseConfig(); config != nil {
-			// TODO(steven): Remove me later.
-			if _, _, err := common.GetProjectIDDeploymentConfigID(config.Target); err == nil {
-				stepsFromDeploymentConfig, err := transformDeploymentConfigTargetToSteps(ctx, s, spec, config, project)
-				if err != nil {
-					return nil, errors.Wrap(err, "failed to transform deploymentConfig target to steps")
-				}
-				transformedSteps = stepsFromDeploymentConfig
-			}
 			if _, _, err := common.GetProjectIDDatabaseGroupID(config.Target); err == nil {
 				stepsFromDatabaseGroup, err := transformDatabaseGroupTargetToSteps(ctx, s, spec, config, project)
 				if err != nil {

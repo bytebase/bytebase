@@ -97,6 +97,7 @@
     "stage": "阶段",
     "task": "任务",
     "tasks": "任务",
+    "blocking-task": "阻塞任务",
     "sql": "SQL",
     "unassigned": "未指派",
     "new": "创建",
@@ -280,7 +281,10 @@
     "reset": "重置",
     "refresh": "刷新",
     "rollback": "回滚",
-    "blocking-task": "阻塞任务"
+    "rows": {
+      "self": "行",
+      "n-rows": "{n} 行"
+    }
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -1617,6 +1621,10 @@
     },
     "activate": {
       "title": "激活您的 {type} 账号"
+    },
+    "login-as-another": {
+      "title": "您已以其他用户身份登录",
+      "content": "我们将把您重定向到主页。"
     }
   },
   "policy": {

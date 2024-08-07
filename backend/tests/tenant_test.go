@@ -8,6 +8,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/genproto/googleapis/type/expr"
 
 	"github.com/bytebase/bytebase/backend/common"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
@@ -139,9 +140,18 @@ func TestTenant(t *testing.T) {
 			}
 		}
 	}
-
 	a.Equal(testTenantNumber, len(testDatabases))
 	a.Equal(prodTenantNumber, len(prodDatabases))
+
+	databaseGroup, err := ctl.databaseGroupServiceClient.CreateDatabaseGroup(ctx, &v1pb.CreateDatabaseGroupRequest{
+		Parent:          project.Name,
+		DatabaseGroupId: "all",
+		DatabaseGroup: &v1pb.DatabaseGroup{
+			DatabasePlaceholder: "all",
+			DatabaseExpr:        &expr.Expr{Expression: "true"},
+		},
+	})
+	a.NoError(err)
 
 	sheet, err := ctl.sheetServiceClient.CreateSheet(ctx, &v1pb.CreateSheetRequest{
 		Parent: project.Name,
@@ -159,7 +169,7 @@ func TestTenant(t *testing.T) {
 				Id: uuid.NewString(),
 				Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
 					ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
-						Target: fmt.Sprintf("%s/deploymentConfigs/default", project.Name),
+						Target: databaseGroup.Name,
 						Sheet:  sheet.Name,
 						Type:   v1pb.Plan_ChangeDatabaseConfig_MIGRATE,
 					},

@@ -41,6 +41,7 @@
         <div class="space-y-2">
           <DatabaseOperations :databases="selectedDatabases" />
           <DatabaseV1Table
+            :key="`database-table.${instanceId}`"
             mode="INSTANCE"
             :show-selection="true"
             :database-list="databaseV1List"

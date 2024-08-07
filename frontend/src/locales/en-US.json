@@ -280,7 +280,11 @@
     "options": "Options",
     "reset": "Reset",
     "refresh": "Refresh",
-    "rollback": "Rollback"
+    "rollback": "Rollback",
+    "rows": {
+      "self": "rows",
+      "n-rows": "{n} rows"
+    }
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -1617,6 +1621,10 @@
     },
     "activate": {
       "title": "Activate your {type} account"
+    },
+    "login-as-another": {
+      "title": "You have logged in as another user",
+      "content": "We will refirect you to the home page."
     }
   },
   "policy": {
