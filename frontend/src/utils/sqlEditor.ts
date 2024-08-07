@@ -3,6 +3,7 @@ import { v1 as uuidv1 } from "uuid";
 import {
   useDatabaseV1Store,
   useInstanceResourceByName,
+  usePolicyV1Store,
   useSQLEditorTabStore,
 } from "@/store";
 import type {
@@ -19,6 +20,10 @@ import {
 } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import type { InstanceResource } from "@/types/proto/v1/instance_service";
+import {
+  DataSourceQueryPolicy_Restriction,
+  PolicyType,
+} from "@/types/proto/v1/org_policy_service";
 import { instanceV1AllowsCrossDatabaseQuery } from "./v1/instance";
 
 export const defaultSQLEditorTab = (): SQLEditorTab => {
@@ -165,3 +170,29 @@ export const emptySQLEditorTabQueryContext = (): SQLEditorTabQueryContext => ({
     statement: "",
   },
 });
+
+export const getAdminDataSourceRestrictionOfDatabase = (
+  database: ComposedDatabase
+) => {
+  const policyStore = usePolicyV1Store();
+  const projectLevelPolicy = policyStore.getPolicyByParentAndType({
+    parentPath: database.project,
+    policyType: PolicyType.DATA_SOURCE_QUERY,
+  });
+  const projectLevelAdminDSRestriction =
+    projectLevelPolicy?.dataSourceQueryPolicy?.adminDataSourceRestriction;
+  const envLevelPolicy = policyStore.getPolicyByParentAndType({
+    parentPath: database.effectiveEnvironment,
+    policyType: PolicyType.DATA_SOURCE_QUERY,
+  });
+  const envLevelAdminDSRestriction =
+    envLevelPolicy?.dataSourceQueryPolicy?.adminDataSourceRestriction;
+  return {
+    environmentPolicy:
+      envLevelAdminDSRestriction ??
+      DataSourceQueryPolicy_Restriction.RESTRICTION_UNSPECIFIED,
+    projectPolicy:
+      projectLevelAdminDSRestriction ??
+      DataSourceQueryPolicy_Restriction.RESTRICTION_UNSPECIFIED,
+  };
+};
