@@ -67,7 +67,7 @@ const allowEdit = computed(() => {
   }
 
   if (extractUserResourceName(plan.value.creator) === currentUser.value.email) {
-    // Allowed if current user is the assignee or creator.
+    // Allowed if current user is the creator.
     return true;
   }
 

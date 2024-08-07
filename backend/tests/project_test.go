@@ -2,13 +2,11 @@ package tests
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/tests/fake"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
@@ -82,7 +80,6 @@ func TestArchiveProject(t *testing.T) {
 				Title:       "dummy issue",
 				Description: "dummy issue",
 				Type:        v1pb.Issue_DATABASE_CHANGE,
-				Assignee:    fmt.Sprintf("users/%s", api.SystemBotEmail),
 				Plan:        plan.Name,
 			},
 		})
