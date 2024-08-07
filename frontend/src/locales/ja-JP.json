@@ -24,7 +24,7 @@
     "activities": "活動",
     "sign-in": "ログイン",
     "sign-up": "登録する",
-    "email": "郵便",
+    "email": "メールアドレス",
     "username": "ユーザー名",
     "credentials": "資格",
     "password": "パスワード",
@@ -44,7 +44,7 @@
     "database": "データベース",
     "databases": "データベース",
     "description": "説明する",
-    "instance": "実例",
+    "instance": "インスタンス",
     "instances": "インスタンス",
     "environment": "環境",
     "environments": "環境",
@@ -54,7 +54,7 @@
     "archived": "アーカイブ済み",
     "no-license": "証明書がありません",
     "logout": "サインアウト",
-    "close": "閉鎖",
+    "close": "閉じる",
     "latest": "最新の",
     "error": "間違い",
     "canceled": "キャンセル",
@@ -66,7 +66,7 @@
     "retry": "リトライ",
     "skip": "飛び越える",
     "reopen": "再開",
-    "dismiss": "閉鎖",
+    "dismiss": "閉じる",
     "back": "戻る",
     "next": "次のステップ",
     "edit": "編集",
@@ -101,7 +101,7 @@
     "sql": "SQL",
     "unassigned": "割り当てられていない",
     "new": "作成する",
-    "add": "に追加",
+    "add": "を追加",
     "confirm-and-add": "確認して追加",
     "confirm-and-update": "確認して更新する",
     "query": "お問い合わせ",
@@ -143,8 +143,8 @@
     "updating": "更新中...",
     "address": "住所",
     "assigned": "割り当てられた",
-    "subscribed": "購読しました",
-    "created": "作成した",
+    "subscribed": "購読済",
+    "created": "作成済",
     "label": "ラベル",
     "labels": "ラベル",
     "mode": "モデル",
@@ -289,14 +289,14 @@
   "error-page": {
     "go-back-home": "ホームページに戻る"
   },
-  "anomaly-center": "異常な中心",
+  "anomaly-center": "異常の検出",
   "kbar": {
     "recently-visited": "最近の訪問",
     "navigation": "ナビゲーション",
     "help": {
       "navigate": "選ぶ",
       "perform": "埋め込む",
-      "close": "閉鎖",
+      "close": "閉じる",
       "back": "戻る"
     },
     "options": {
@@ -458,10 +458,10 @@
   "settings": {
     "sidebar": {
       "account": "アカウント",
-      "profile": "個人情報",
+      "profile": "プロフィール",
       "workspace": "ワークスペース",
-      "security-and-policy": "セキュリティ戦略",
-      "integration": "統合された",
+      "security-and-policy": "セキュリティポリシー",
+      "integration": "インテグレーション",
       "general": "ユニバーサル",
       "members-and-groups": "メンバーとグループ",
       "im-integration": "私は",
@@ -469,19 +469,19 @@
       "gitops": "GitOps",
       "subscription": "サブスクリプション",
       "labels": "ラベル",
-      "sensitive-data": "データの非感作化",
+      "sensitive-data": "データマスキング",
       "access-control": "データアクセス制御",
       "audit-log": "監査ログ",
       "custom-roles": "カスタムロール",
       "mail-delivery": "メール送信"
     },
     "profile": {
-      "email": "郵便",
+      "email": "メールアドレス",
       "role": "役割",
       "phone": "電話番号",
       "country-code": "国または地域コード",
       "password": "パスワード",
-      "password-confirm": "パスワードを認証する",
+      "password-confirm": "パスワードの確認",
       "password-confirm-placeholder": "新しいパスワードを確認します",
       "password-mismatch": "新しいパスワードが一致しません",
       "subscription": "(有料プランにアップグレードするとキャラクター管理が可能になります)"
@@ -987,9 +987,9 @@
     "restore": "復元する"
   },
   "issue": {
-    "my-issues": "私の仕事の命令",
+    "my-issues": "私のイシュー",
     "waiting-approval": "承認待ち",
-    "waiting-rollout": "リリースを待っています",
+    "waiting-rollout": "リリース待ち",
     "opened-by-at": "{id} は {creator} から {time} まで始まりました",
     "commit-by-at": "{id} {title} は {time} に {author} によって送信されました",
     "status-transition": {
@@ -1103,8 +1103,8 @@
       "hide": "詳細検索を非表示にする"
     },
     "table": {
-      "open": "オープニング",
-      "closed": "閉まっている",
+      "open": "オープン",
+      "closed": "クローズ　",
       "status": "州",
       "project": "プロジェクト",
       "name": "名前",
@@ -1179,7 +1179,7 @@
       "moderate": "適度",
       "high": "高い"
     },
-    "waiting-to-rollout": "リリースを待っています",
+    "waiting-to-rollout": "リリース待ち",
     "waiting-for-review": "モデレート済み",
     "issue-name": "作業指示書名",
     "grant-request": {
@@ -1298,10 +1298,10 @@
   "quick-action": {
     "create-db": "データベースの作成",
     "new-db": "データベースの作成",
-    "add-instance": "@:common.add@:common.instance",
+    "add-instance": "@:common.instance@:common.add",
     "create-instance": "@:common.create@:common.instance",
     "manage-user": "会員管理",
-    "add-environment": "@:common.add@:common.environment",
+    "add-environment": "@:common.environment@:common.add",
     "create-environment": "@:common.create@:common.environment",
     "new-project": "@:common.new@:common.project",
     "create-project": "@:common.create@:common.project",
@@ -1585,14 +1585,14 @@
   "auth": {
     "sign-up": {
       "title": "アカウントを登録してください",
-      "admin-title": "設定{account}",
+      "admin-title": "{account} の登録",
       "admin-account": "管理者アカウント",
-      "create-admin-account": "登録管理者",
-      "confirm-password": "パスワードを認証する",
+      "create-admin-account": "管理者アカウントを作成",
+      "confirm-password": "パスワードの確認",
       "confirm-password-placeholder": "あなたのパスワードを確認",
-      "password-mismatch": "ミスマッチ",
+      "password-mismatch": "パスワードが一致しません",
       "existing-user": "すでにアカウントをお持ちですか？",
-      "accept-terms-and-policy": "{terms} と {policy} のバイトベースを受け入れます",
+      "accept-terms-and-policy": "Bytebase の {terms} と {policy} に同意します",
       "terms-of-service": "利用規約",
       "privacy-policy": "プライバシーポリシー"
     },
@@ -2378,7 +2378,7 @@
       "unsaved": "保存されていません",
       "context-menu": {
         "actions": {
-          "close": "閉鎖",
+          "close": "閉じる",
           "close-others": "その他を閉じる",
           "close-to-the-right": "右側をすべて閉じます",
           "close-saved": "保存済みを閉じる",
@@ -3431,7 +3431,7 @@
     }
   },
   "export-center": {
-    "self": "輸出センター",
+    "self": "エクスポートセンター",
     "permission-denied": "この操作を実行する権限がありません"
   },
   "review-center": {
