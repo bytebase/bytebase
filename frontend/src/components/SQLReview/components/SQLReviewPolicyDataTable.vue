@@ -1,5 +1,6 @@
 <template>
   <NDataTable
+    key="sql-review-table"
     :size="size"
     :striped="true"
     :columns="columns"

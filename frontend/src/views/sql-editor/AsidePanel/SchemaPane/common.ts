@@ -521,7 +521,7 @@ export const buildDatabaseSchemaTree = (
   database: ComposedDatabase,
   metadata: DatabaseMetadata
 ) => {
-  const root = mapTreeNodeByType(
+  const dummyRoot = mapTreeNodeByType(
     "database",
     {
       db: database,
@@ -532,25 +532,24 @@ export const buildDatabaseSchemaTree = (
   const { schemas } = metadata;
   if (schemas.length === 0) {
     // Empty database, show "<Empty>"
-    root.children = [createDummyNode("table", root)];
-    return root;
+    return [createDummyNode("table", dummyRoot)];
   }
 
   if (schemas.length === 1 && schemas[0].name === "") {
     const schema = schemas[0];
     // A single schema database, should render tables as views directly as a database
     // node's children
-    root.children = buildSchemaNodeChildren(
-      { ...root.meta.target, schema },
-      root
+    return buildSchemaNodeChildren(
+      { ...dummyRoot.meta.target, schema },
+      dummyRoot
     );
   } else {
     // Multiple schema database
-    root.children = schemas.map((schema) => {
+    return schemas.map((schema) => {
       const schemaNode = mapTreeNodeByType(
         "schema",
-        { ...root.meta.target, schema },
-        root
+        { ...dummyRoot.meta.target, schema },
+        dummyRoot
       );
 
       schemaNode.children = buildSchemaNodeChildren(
@@ -560,5 +559,7 @@ export const buildDatabaseSchemaTree = (
       return schemaNode;
     });
   }
-  return root;
+
+  console.error("should never reach this line");
+  return [];
 };

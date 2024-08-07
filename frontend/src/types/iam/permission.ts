@@ -1,6 +1,7 @@
 export type Permission =
   | "bb.auditLogs.export"
   | "bb.auditLogs.search"
+  | "bb.branches.admin"
   | "bb.branches.create"
   | "bb.branches.delete"
   | "bb.branches.get"

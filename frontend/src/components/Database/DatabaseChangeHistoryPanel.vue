@@ -75,6 +75,7 @@
     >
       <template #table="{ list }">
         <ChangeHistoryDataTable
+          :key="`change-history-table.${database.name}`"
           v-model:selected-change-history-names="
             state.selectedChangeHistoryNameList
           "

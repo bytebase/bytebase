@@ -23,12 +23,19 @@ export const useFilterStore = defineStore("filter", () => {
 
   // Initial filter with route query immediately.
   // And it should not be updated when route changed later except the page is reloaded.
-  const route = router.currentRoute.value;
-  if (route.query.filter && typeof route.query.filter === "string") {
+  const { query } = router.currentRoute.value;
+  if (query.filter && typeof query.filter === "string") {
     try {
-      filter.value = JSON.parse(route.query.filter);
+      filter.value = JSON.parse(query.filter);
     } catch (error) {
-      console.error("Failed to parse filter", route.query.filter);
+      console.error("Failed to parse filter", query.filter);
+    }
+  } else {
+    if (typeof query.schema === "string" && query.schema) {
+      filter.value.schema = query.schema;
+    }
+    if (typeof query.table === "string" && query.table) {
+      filter.value.table = query.table;
     }
   }
 

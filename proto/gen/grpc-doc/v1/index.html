@@ -299,6 +299,10 @@
                   <a href="#bytebase.v1.Position"><span class="badge">M</span>Position</a>
                 </li>
               
+                <li>
+                  <a href="#bytebase.v1.Range"><span class="badge">M</span>Range</a>
+                </li>
+              
               
                 <li>
                   <a href="#bytebase.v1.Engine"><span class="badge">E</span>Engine</a>
@@ -1847,10 +1851,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.GetProjectProtectionRulesRequest"><span class="badge">M</span>GetProjectProtectionRulesRequest</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.GetProjectRequest"><span class="badge">M</span>GetProjectRequest</a>
                 </li>
               
@@ -1876,14 +1876,6 @@
               
                 <li>
                   <a href="#bytebase.v1.Project"><span class="badge">M</span>Project</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.ProtectionRule"><span class="badge">M</span>ProtectionRule</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.ProtectionRules"><span class="badge">M</span>ProtectionRules</a>
                 </li>
               
                 <li>
@@ -1923,10 +1915,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.UpdateProjectProtectionRulesRequest"><span class="badge">M</span>UpdateProjectProtectionRulesRequest</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.UpdateProjectRequest"><span class="badge">M</span>UpdateProjectRequest</a>
                 </li>
               
@@ -1945,14 +1933,6 @@
               
                 <li>
                   <a href="#bytebase.v1.OperatorType"><span class="badge">E</span>OperatorType</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.ProtectionRule.BranchSource"><span class="badge">E</span>ProtectionRule.BranchSource</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.ProtectionRule.Target"><span class="badge">E</span>ProtectionRule.Target</a>
                 </li>
               
                 <li>
@@ -3744,6 +3724,37 @@ e.g. the database schema had been changed without bytebase migration.</p></td>
               
                 <tr>
                   <td>column</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.Range">Range</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>start</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>end</td>
                   <td><a href="#int32">int32</a></td>
                   <td></td>
                   <td><p> </p></td>
@@ -7780,6 +7791,13 @@ Format: projects/{project}/sheets/{sheet} </p></td>
                   <td><p> </p></td>
                 </tr>
               
+                <tr>
+                  <td>ranges</td>
+                  <td><a href="#bytebase.v1.Range">Range</a></td>
+                  <td>repeated</td>
+                  <td><p>The ranges of sub-strings correspond to the statements on the sheet. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -8618,6 +8636,14 @@ Format: users/{email} </p></td>
                 </tr>
               
                 <tr>
+                  <td>source_branch</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The last change come from branch.
+Format: projcets/{project}/branches/{branch} </p></td>
+                </tr>
+              
+                <tr>
                   <td>update_time</td>
                   <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
                   <td></td>
@@ -9446,6 +9472,14 @@ Format: users/{email} </p></td>
                 </tr>
               
                 <tr>
+                  <td>source_branch</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The last change come from branch.
+Format: projcets/{project}/branches/{branch} </p></td>
+                </tr>
+              
+                <tr>
                   <td>update_time</td>
                   <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
                   <td></td>
@@ -10109,6 +10143,14 @@ Format: users/{email} </p></td>
                 </tr>
               
                 <tr>
+                  <td>source_branch</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The last change come from branch.
+Format: projcets/{project}/branches/{branch} </p></td>
+                </tr>
+              
+                <tr>
                   <td>update_time</td>
                   <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
                   <td></td>
@@ -10540,6 +10582,14 @@ Format: instances/{instance}/databases/{database} </p></td>
                   <td></td>
                   <td><p>The last updater of the view in branch.
 Format: users/{email} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>source_branch</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The last change come from branch.
+Format: projcets/{project}/branches/{branch} </p></td>
                 </tr>
               
                 <tr>
@@ -20190,31 +20240,6 @@ Format: projects/{project}/deploymentConfigs/default. </p></td>
 
         
       
-        <h3 id="bytebase.v1.GetProjectProtectionRulesRequest">GetProjectProtectionRulesRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The name of the protection rules.
-Format: projects/{project}/protectionRules </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.v1.GetProjectRequest">GetProjectRequest</h3>
         <p></p>
 
@@ -20519,91 +20544,6 @@ Format: projects/{project} </p></td>
 
         
       
-        <h3 id="bytebase.v1.ProtectionRule">ProtectionRule</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>id</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>A unique identifier for a node in UUID format. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>target</td>
-                  <td><a href="#bytebase.v1.ProtectionRule.Target">ProtectionRule.Target</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>name_filter</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The name of the branch/changelist or wildcard. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>allowed_roles</td>
-                  <td><a href="#string">string</a></td>
-                  <td>repeated</td>
-                  <td><p>The roles allowed to create branches or changelists, rebase branches, delete branches.
-Format: roles/projectOwner. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>branch_source</td>
-                  <td><a href="#bytebase.v1.ProtectionRule.BranchSource">ProtectionRule.BranchSource</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.ProtectionRules">ProtectionRules</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>name</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The name of the protection rules.
-Format: projects/{project}/protectionRules </p></td>
-                </tr>
-              
-                <tr>
-                  <td>rules</td>
-                  <td><a href="#bytebase.v1.ProtectionRule">ProtectionRule</a></td>
-                  <td>repeated</td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.v1.RemoveWebhookRequest">RemoveWebhookRequest</h3>
         <p></p>
 
@@ -20825,30 +20765,6 @@ Format: projects/{project} </p></td>
                 <tr>
                   <td>deployment_config</td>
                   <td><a href="#bytebase.v1.DeploymentConfig">DeploymentConfig</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.UpdateProjectProtectionRulesRequest">UpdateProjectProtectionRulesRequest</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>protection_rules</td>
-                  <td><a href="#bytebase.v1.ProtectionRules">ProtectionRules</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
@@ -21184,58 +21100,6 @@ TYPE_SQL_EDITOR_QUERY represents executing query in SQL Editor.</p></td>
           </tbody>
         </table>
       
-        <h3 id="bytebase.v1.ProtectionRule.BranchSource">ProtectionRule.BranchSource</h3>
-        <p></p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>BRANCH_SOURCE_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>DATABASE</td>
-                <td>1</td>
-                <td><p></p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-      
-        <h3 id="bytebase.v1.ProtectionRule.Target">ProtectionRule.Target</h3>
-        <p>The type of target.</p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>PROTECTION_TARGET_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>BRANCH</td>
-                <td>1</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>CHANGELIST</td>
-                <td>2</td>
-                <td><p></p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-      
         <h3 id="bytebase.v1.Webhook.Type">Webhook.Type</h3>
         <p></p>
         <table class="enum-table">
@@ -21448,20 +21312,6 @@ TYPE_SQL_EDITOR_QUERY represents executing query in SQL Editor.</p></td>
                 <td><p></p></td>
               </tr>
             
-              <tr>
-                <td>GetProjectProtectionRules</td>
-                <td><a href="#bytebase.v1.GetProjectProtectionRulesRequest">GetProjectProtectionRulesRequest</a></td>
-                <td><a href="#bytebase.v1.ProtectionRules">ProtectionRules</a></td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>UpdateProjectProtectionRules</td>
-                <td><a href="#bytebase.v1.UpdateProjectProtectionRulesRequest">UpdateProjectProtectionRulesRequest</a></td>
-                <td><a href="#bytebase.v1.ProtectionRules">ProtectionRules</a></td>
-                <td><p></p></td>
-              </tr>
-            
           </tbody>
         </table>
 
@@ -21636,26 +21486,6 @@ TYPE_SQL_EDITOR_QUERY represents executing query in SQL Editor.</p></td>
                 <td>TestWebhook</td>
                 <td>POST</td>
                 <td>/v1/{project=projects/*}:testWebhook</td>
-                <td>*</td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>GetProjectProtectionRules</td>
-                <td>GET</td>
-                <td>/v1/{name=projects/*/protectionRules}</td>
-                <td></td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>UpdateProjectProtectionRules</td>
-                <td>PATCH</td>
-                <td>/v1/{protection_rules.name=projects/*/protectionRules}</td>
                 <td>*</td>
               </tr>
               

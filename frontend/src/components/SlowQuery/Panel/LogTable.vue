@@ -1,5 +1,6 @@
 <template>
   <NDataTable
+    key="slow-query-table"
     v-model:expanded-row-keys="expandedRowKeys"
     class="min-w-[120rem]"
     :columns="dataTableColumns"

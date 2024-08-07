@@ -5517,61 +5517,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
-    /v1/projects/{project}/protectionRules:
-        get:
-            tags:
-                - ProjectService
-            operationId: ProjectService_GetProjectProtectionRules
-            parameters:
-                - name: project
-                  in: path
-                  description: The project id.
-                  required: true
-                  schema:
-                    type: string
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/ProtectionRules'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
-        patch:
-            tags:
-                - ProjectService
-            operationId: ProjectService_UpdateProjectProtectionRules
-            parameters:
-                - name: project
-                  in: path
-                  description: The project id.
-                  required: true
-                  schema:
-                    type: string
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/UpdateProjectProtectionRulesRequest'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/ProtectionRules'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
     /v1/projects/{project}/rollouts:
         post:
             tags:
@@ -9053,6 +8998,11 @@ components:
             properties:
                 name:
                     type: string
+                ranges:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/Range'
+                    description: The ranges of sub-strings correspond to the statements on the sheet.
         ChangedResources:
             type: object
             properties:
@@ -10073,6 +10023,12 @@ components:
                     description: |-
                         The last updater of the function in branch.
                          Format: users/{userUID}.
+                sourceBranch:
+                    readOnly: true
+                    type: string
+                    description: |-
+                        The last change come from branch.
+                         Format: projcets/{project}/branches/{branch}
                 updateTime:
                     readOnly: true
                     type: string
@@ -11943,6 +11899,12 @@ components:
                     description: |-
                         The last updater of the procedure in branch.
                          Format: users/{userUID}.
+                sourceBranch:
+                    readOnly: true
+                    type: string
+                    description: |-
+                        The last change come from branch.
+                         Format: projcets/{project}/branches/{branch}
                 updateTime:
                     readOnly: true
                     type: string
@@ -11951,10 +11913,6 @@ components:
         Project:
             type: object
             properties:
-                protectionRules:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/ProtectionRule'
                 issueLabels:
                     type: array
                     items:
@@ -11968,47 +11926,6 @@ components:
                 autoResolveIssue:
                     type: boolean
                     description: Enable auto resolve issue.
-        ProtectionRule:
-            type: object
-            properties:
-                id:
-                    type: string
-                    description: A unique identifier for a node in UUID format.
-                target:
-                    enum:
-                        - PROTECTION_TARGET_UNSPECIFIED
-                        - BRANCH
-                        - CHANGELIST
-                    type: string
-                    format: enum
-                nameFilter:
-                    type: string
-                    description: The name of the branch/changelist or wildcard.
-                allowedRoles:
-                    type: array
-                    items:
-                        type: string
-                    description: |-
-                        The roles allowed to create branches or changelists, rebase branches, delete branches.
-                         Format: roles/projectOwner.
-                branchSource:
-                    enum:
-                        - BRANCH_SOURCE_UNSPECIFIED
-                        - DATABASE
-                    type: string
-                    format: enum
-        ProtectionRules:
-            type: object
-            properties:
-                name:
-                    type: string
-                    description: |-
-                        The name of the protection rules.
-                         Format: projects/{project}/protectionRules
-                rules:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/ProtectionRule'
         QueryHistory:
             type: object
             properties:
@@ -12144,6 +12061,15 @@ components:
                     items:
                         $ref: '#/components/schemas/RowValue'
                     description: Row values of the query result.
+        Range:
+            type: object
+            properties:
+                start:
+                    type: integer
+                    format: int32
+                end:
+                    type: integer
+                    format: int32
         RangeMask_Slice:
             type: object
             properties:
@@ -13383,6 +13309,12 @@ components:
                     description: |-
                         The last updater of the table in branch.
                          Format: users/{userUID}.
+                sourceBranch:
+                    readOnly: true
+                    type: string
+                    description: |-
+                        The last change come from branch.
+                         Format: projcets/{project}/branches/{branch}
                 updateTime:
                     readOnly: true
                     type: string
@@ -14032,13 +13964,6 @@ components:
                     type: string
                     description: The list of fields to update.
                     format: field-mask
-        UpdateProjectProtectionRulesRequest:
-            required:
-                - protectionRules
-            type: object
-            properties:
-                protectionRules:
-                    $ref: '#/components/schemas/ProtectionRules'
         UpdateWebhookRequest:
             required:
                 - webhook
@@ -14240,6 +14165,12 @@ components:
                     description: |-
                         The last updater of the view in branch.
                          Format: users/{userUID}.
+                sourceBranch:
+                    readOnly: true
+                    type: string
+                    description: |-
+                        The last change come from branch.
+                         Format: projcets/{project}/branches/{branch}
                 updateTime:
                     readOnly: true
                     type: string

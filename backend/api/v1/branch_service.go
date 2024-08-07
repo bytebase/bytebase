@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
-	"path"
 	"slices"
 	"strconv"
 	"strings"
@@ -139,13 +138,19 @@ func (s *BranchService) CreateBranch(ctx context.Context, request *v1pb.CreateBr
 	if branch != nil {
 		return nil, status.Errorf(codes.FailedPrecondition, "branch %q has already existed", branchID)
 	}
-	// Branch protection check.
 	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
 	if !ok {
 		return nil, status.Errorf(codes.Internal, "user not found")
 	}
-	if err := s.checkProtectionRules(ctx, project, branchID, request.GetBranch().GetBaselineDatabase() != "", user); err != nil {
-		return nil, err
+	// Main branch IAM admin check.
+	if request.GetBranch().GetParentBranch() == "" {
+		ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionBranchesAdmin, user, project.ResourceID)
+		if err != nil {
+			return nil, err
+		}
+		if !ok {
+			return nil, status.Errorf(codes.InvalidArgument, "only users with %s permission can create a main branch", iam.PermissionBranchesAdmin)
+		}
 	}
 
 	var createdBranch *store.BranchMessage
@@ -550,8 +555,15 @@ func (s *BranchService) RebaseBranch(ctx context.Context, request *v1pb.RebaseBr
 	if !ok {
 		return nil, status.Errorf(codes.PermissionDenied, "permission denied to rebase branch")
 	}
-	if err := s.checkProtectionRules(ctx, baseProject, baseBranchID, baseBranch.Config.SourceDatabase != "", user); err != nil {
-		return nil, err
+	// Main branch IAM admin check.
+	if baseBranch.Config.GetSourceBranch() == "" {
+		ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionBranchesAdmin, user, baseProject.ResourceID)
+		if err != nil {
+			return nil, err
+		}
+		if !ok {
+			return nil, status.Errorf(codes.InvalidArgument, "only users with %s permission can rebase a main branch", iam.PermissionBranchesAdmin)
+		}
 	}
 
 	filteredNewBaseMetadata, newBaseSchema, newBaseConfig, err := s.getFilteredNewBaseFromRebaseRequest(ctx, request)
@@ -758,8 +770,15 @@ func (s *BranchService) DeleteBranch(ctx context.Context, request *v1pb.DeleteBr
 	if !ok {
 		return nil, status.Errorf(codes.PermissionDenied, "permission denied to delete branch")
 	}
-	if err := s.checkProtectionRules(ctx, project, branchID, branch.Config.SourceDatabase != "", user); err != nil {
-		return nil, err
+	// Main branch IAM admin check.
+	if branch.Config.GetSourceBranch() == "" {
+		ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionBranchesAdmin, user, project.ResourceID)
+		if err != nil {
+			return nil, err
+		}
+		if !ok {
+			return nil, status.Errorf(codes.InvalidArgument, "only users with %s permission can delete a main branch", iam.PermissionBranchesAdmin)
+		}
 	}
 
 	if !request.Force {
@@ -849,43 +868,6 @@ func (s *BranchService) getProject(ctx context.Context, projectID string) (*stor
 		return nil, status.Errorf(codes.NotFound, "project %q has been deleted", projectID)
 	}
 	return project, nil
-}
-
-func (s *BranchService) checkProtectionRules(ctx context.Context, project *store.ProjectMessage, branchID string, databaseSource bool, user *store.UserMessage) error {
-	if len(project.Setting.GetProtectionRules()) == 0 {
-		return nil
-	}
-
-	policy, err := s.store.GetProjectIamPolicy(ctx, project.UID)
-	if err != nil {
-		return err
-	}
-	roles := utils.GetUserFormattedRolesMap(ctx, s.store, user, policy.Policy)
-
-	for _, rule := range project.Setting.ProtectionRules {
-		if rule.Target != storepb.ProtectionRule_BRANCH {
-			continue
-		}
-		if rule.GetBranchSource() == storepb.ProtectionRule_DATABASE && !databaseSource {
-			continue
-		}
-		if rule.NameFilter != "" {
-			ok, err := path.Match(rule.NameFilter, branchID)
-			if err != nil {
-				return err
-			}
-			if !ok {
-				continue
-			}
-		}
-
-		for _, role := range rule.AllowedRoles {
-			if _, ok := roles[role]; ok {
-				return nil
-			}
-		}
-	}
-	return status.Errorf(codes.InvalidArgument, "not allowed to create branch by project protection rules")
 }
 
 func (s *BranchService) convertBranchToBranch(ctx context.Context, project *store.ProjectMessage, branch *store.BranchMessage, view v1pb.BranchView) (*v1pb.Branch, error) {
