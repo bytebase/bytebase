@@ -64,6 +64,7 @@ import {
   useSuggestOptionByLanguage,
   useLineHighlights,
   useLSPConnectionState,
+  useOverrideSuggestIcons,
 } from "./composables";
 import monaco, { createMonacoEditor } from "./editor";
 import type {
@@ -168,6 +169,7 @@ onMounted(async () => {
     useLineHighlights(monaco, editor, toRef(props, "lineHighlights"));
     useAutoHeight(monaco, editor, containerRef, toRef(props, "autoHeight"));
     useAutoComplete(monaco, editor, toRef(props, "autoCompleteContext"));
+    useOverrideSuggestIcons(monaco, editor);
 
     ready.value = true;
 

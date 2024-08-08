@@ -96,7 +96,7 @@ func (s *DatabaseGroupService) CreateDatabaseGroup(ctx context.Context, request 
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
-	return convertStoreToAPIDatabaseGroupBasic(databaseGroup, projectResourceID), nil
+	return s.convertStoreToAPIDatabaseGroupFull(ctx, databaseGroup, projectResourceID)
 }
 
 // UpdateDatabaseGroup updates a database group.
@@ -163,7 +163,7 @@ func (s *DatabaseGroupService) UpdateDatabaseGroup(ctx context.Context, request 
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
-	return convertStoreToAPIDatabaseGroupBasic(databaseGroup, projectResourceID), nil
+	return s.convertStoreToAPIDatabaseGroupFull(ctx, databaseGroup, projectResourceID)
 }
 
 // DeleteDatabaseGroup deletes a database group.
