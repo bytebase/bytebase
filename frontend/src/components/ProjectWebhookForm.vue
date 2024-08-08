@@ -203,7 +203,6 @@ import {
   NRadioGroup,
   NTooltip,
 } from "naive-ui";
-import type { PropType } from "vue";
 import { reactive, computed, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
@@ -215,18 +214,19 @@ import {
 import { WORKSPACE_ROUTE_IM } from "@/router/dashboard/workspaceRoutes";
 import {
   pushNotification,
+  useProjectV1Store,
   useProjectWebhookV1Store,
   useGracefulRequest,
   useSettingV1Store,
 } from "@/store";
 import {
+  type ComposedProject,
   projectWebhookV1ActivityItemList,
   projectWebhookV1TypeItemList,
 } from "@/types";
 import {
   Webhook_Type,
   type Activity_Type,
-  type Project,
   type Webhook,
 } from "@/types/proto/v1/project_service";
 import { projectWebhookV1Slug } from "../utils";
@@ -236,29 +236,23 @@ interface LocalState {
   webhook: Webhook;
 }
 
-const props = defineProps({
-  allowEdit: {
-    default: true,
-    type: Boolean,
-  },
-  create: {
-    type: Boolean,
-    default: false,
-  },
-  project: {
-    required: true,
-    type: Object as PropType<Project>,
-  },
-  webhook: {
-    required: true,
-    type: Object as PropType<Webhook>,
-  },
-});
+const props = withDefaults(
+  defineProps<{
+    allowEdit?: boolean;
+    create: boolean;
+    project: ComposedProject;
+    webhook: Webhook;
+  }>(),
+  {
+    allowEdit: true,
+  }
+);
 
 const router = useRouter();
 const { t } = useI18n();
 
 const settingStore = useSettingV1Store();
+const projectStore = useProjectV1Store();
 const projectWebhookV1Store = useProjectWebhookV1Store();
 
 const state = reactive<LocalState>({
@@ -360,9 +354,13 @@ const createWebhook = () => {
   useGracefulRequest(async () => {
     const { webhook } = state;
     const updatedProject = await projectWebhookV1Store.createProjectWebhook(
-      props.project,
+      props.project.name,
       webhook
     );
+    projectStore.updateProjectCache({
+      ...props.project,
+      ...updatedProject,
+    });
 
     pushNotification({
       module: "bytebase",
@@ -406,7 +404,14 @@ const updateWebhook = () => {
     ) {
       updateMask.push("notification_type");
     }
-    await projectWebhookV1Store.updateProjectWebhook(state.webhook, updateMask);
+    const updatedProject = await projectWebhookV1Store.updateProjectWebhook(
+      state.webhook,
+      updateMask
+    );
+    projectStore.updateProjectCache({
+      ...props.project,
+      ...updatedProject,
+    });
     pushNotification({
       module: "bytebase",
       style: "SUCCESS",
@@ -420,7 +425,13 @@ const updateWebhook = () => {
 const deleteWebhook = () => {
   useGracefulRequest(async () => {
     const name = state.webhook.title;
-    await projectWebhookV1Store.deleteProjectWebhook(state.webhook);
+    const updatedProject = await projectWebhookV1Store.deleteProjectWebhook(
+      state.webhook
+    );
+    projectStore.updateProjectCache({
+      ...props.project,
+      ...updatedProject,
+    });
     pushNotification({
       module: "bytebase",
       style: "SUCCESS",

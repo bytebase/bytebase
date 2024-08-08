@@ -1,3 +1,4 @@
+import { orderBy } from "lodash-es";
 import { defineStore } from "pinia";
 import { computed, reactive, ref, unref, watchEffect } from "vue";
 import { projectServiceClient } from "@/grpcweb";
@@ -30,7 +31,11 @@ export const useProjectV1Store = defineStore("project_v1", () => {
 
   // Getters
   const projectList = computed(() => {
-    return Array.from(projectMapByName.values());
+    return orderBy(
+      Array.from(projectMapByName.values()),
+      (project) => project.name,
+      "asc"
+    );
   });
 
   // Actions
@@ -145,7 +150,6 @@ export const useProjectV1Store = defineStore("project_v1", () => {
     projectMapByName,
     projectList,
     getProjectList,
-    upsertProjectMap,
     findProjectByUID,
     getProjectByName,
     listProjects,
