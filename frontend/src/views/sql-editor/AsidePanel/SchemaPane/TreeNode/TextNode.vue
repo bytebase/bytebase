@@ -3,32 +3,23 @@
     class="flex flex-row items-center gap-x-1"
     :data-mock-type="target.mockType"
   >
-    <TableIcon
-      v-if="type === 'table' || type === 'external-table'"
-      class="w-4"
-    />
-    <ViewIcon v-if="type === 'view'" class="w-4 h-4" />
-    <ProcedureIcon v-if="type === 'procedure'" class="w-4 h-4" />
-    <FunctionIcon v-if="type === 'function'" class="w-4 h-4" />
-    <TablePartitionIcon v-if="type === 'partition-table'" class="w-4 h-4" />
-
     <component :is="render" v-if="render" />
 
-    <span v-else>{{ text }}</span>
+    <template v-else>
+      <FolderIcon
+        v-if="isFolder"
+        class="w-4 h-4 stroke-accent fill-accent/10"
+      />
+      <span>{{ text }}</span>
+    </template>
   </div>
 </template>
 
 <script setup lang="ts">
 import { isFunction } from "lodash-es";
+import { FolderIcon } from "lucide-vue-next";
 import { computed } from "vue";
-import {
-  FunctionIcon,
-  ProcedureIcon,
-  TableIcon,
-  TablePartitionIcon,
-  ViewIcon,
-} from "@/components/Icon";
-import type { TreeNode } from "../common";
+import type { NodeType, TreeNode } from "../common";
 
 const props = defineProps<{
   node: TreeNode;
@@ -42,6 +33,20 @@ const target = computed(() => {
 const type = computed(() => {
   return target.value.mockType;
 });
+
+const isFolder = computed(() => {
+  if (!type.value) return false;
+  const types: NodeType[] = [
+    "table",
+    "external-table",
+    "view",
+    "procedure",
+    "function",
+    "partition-table",
+  ];
+  return types.includes(type.value);
+});
+
 const text = computed(() => {
   const { text } = target.value;
   return isFunction(text) ? text() : text;
