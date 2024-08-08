@@ -336,7 +336,7 @@ func (s *BranchService) UpdateBranch(ctx context.Context, request *v1pb.UpdateBr
 
 		reconcileMetadata(metadata, branch.Engine)
 		filteredMetadata := filterDatabaseMetadataByEngine(metadata, branch.Engine)
-		updateConfigBranchUpdateInfo(branch.Head.Metadata, filteredMetadata, config, nil, nil /* TODO(zp): fix me later */)
+		updateConfigBranchUpdateInfo(branch.Head.Metadata, filteredMetadata, config, common.FormatUserUID(user.ID), common.FormatBranchResourceID(projectID, branchID))
 		defaultSchema := extractDefaultSchemaForOracleBranch(storepb.Engine(branch.Engine), filteredMetadata)
 		schema, err := schema.GetDesignSchema(branch.Engine, defaultSchema, "", filteredMetadata)
 		if err != nil {
@@ -485,7 +485,7 @@ func (s *BranchService) MergeBranch(ctx context.Context, request *v1pb.MergeBran
 
 	reconcileMetadata(mergedMetadata, baseBranch.Engine)
 	filteredMergedMetadata := filterDatabaseMetadataByEngine(mergedMetadata, baseBranch.Engine)
-	updateConfigBranchUpdateInfo(baseBranch.Base.Metadata, filteredMergedMetadata, mergedConfig, nil, nil /* TODO(zp): fix me later */)
+	updateConfigBranchUpdateInfo(baseBranch.Base.Metadata, filteredMergedMetadata, mergedConfig, "", "" /* TODO(zp): fix me later */)
 	baseBranchNewHead := &storepb.BranchSnapshot{
 		Metadata:       filteredMergedMetadata,
 		DatabaseConfig: mergedConfig,
@@ -633,7 +633,7 @@ func (s *BranchService) RebaseBranch(ctx context.Context, request *v1pb.RebaseBr
 
 	newBaseSchemaBytes := []byte(newBaseSchema)
 	newHeadSchemaBytes := []byte(newHeadSchema)
-	updateConfigBranchUpdateInfo(filteredNewBaseMetadata, filteredNewHeadMetadata, newHeadConfig, nil, nil /* TODO(zp): fix me later */)
+	updateConfigBranchUpdateInfo(filteredNewBaseMetadata, filteredNewHeadMetadata, newHeadConfig, "", "" /* TODO(zp): fix me later */)
 	if request.ValidateOnly {
 		baseBranch.Base = &storepb.BranchSnapshot{
 			Metadata:       filteredNewBaseMetadata,
@@ -1197,49 +1197,167 @@ func reconcileMySQLPartitionMetadata(partitions []*storepb.TablePartitionMetadat
 	}
 }
 
+// type diffPartUpdaterProviderContext struct {
+// 	schemaName    string
+// 	tableName     *string
+// 	functionName  *string
+// 	viewName      *string
+// 	procedureName *string
+// }
+
+// // diffPartConfigProvider provides the updater and source branch of resource specified in context.
+// type diffPartConfigProvider func(ctx *diffPartUpdaterProviderContext) (string, string)
+
+// // buildDiffPartUpdaterProviderByConfig builds a diffPartConfigProvider, if the occurs in config,
+// // returns the corresponding config, otherwise, returns empty config with updater and branch resource id specify in
+// func buildDiffPartUpdaterProviderByConfig(config *storepb.DatabaseConfig, formattedUserUIDstring, branchResourceID string) diffPartConfigProvider {
+// 	if config == nil {
+// 		return func(*diffPartUpdaterProviderContext) (string, string) {
+// 			return "", branchResourceID
+// 		}
+// 	}
+
+// 	type objectKey struct {
+// 		schemaName string
+// 		objectName string
+// 	}
+
+// 	tableConfigMap := make(map[objectKey]*storepb.TableConfig)
+// 	functionConfigMap := make(map[objectKey]*storepb.FunctionConfig)
+// 	viewConfigMap := make(map[objectKey]*storepb.ViewConfig)
+// 	procedureConfigMap := make(map[objectKey]*storepb.ProcedureConfig)
+
+// 	for _, schema := range config.SchemaConfigs {
+// 		for _, table := range schema.TableConfigs {
+// 			if table.Name == "" {
+// 				continue
+// 			}
+// 			tableConfigMap[objectKey{
+// 				schemaName: schema.Name,
+// 				objectName: table.Name,
+// 			}] = table
+// 		}
+
+// 		for _, function := range schema.FunctionConfigs {
+// 			if function.Name == "" {
+// 				continue
+// 			}
+// 			functionConfigMap[objectKey{
+// 				schemaName: schema.Name,
+// 				objectName: function.Name,
+// 			}] = function
+// 		}
+
+// 		for _, procedure := range schema.ProcedureConfigs {
+// 			if procedure.Name == "" {
+// 				continue
+// 			}
+// 			procedureConfigMap[objectKey{
+// 				schemaName: schema.Name,
+// 				objectName: procedure.Name,
+// 			}] = procedure
+// 		}
+
+// 		for _, view := range schema.ViewConfigs {
+// 			if view.Name == "" {
+// 				continue
+// 			}
+// 			viewConfigMap[objectKey{
+// 				schemaName: schema.Name,
+// 				objectName: view.Name,
+// 			}] = view
+// 		}
+// 	}
+
+// 	return func(ctx *diffPartUpdaterProviderContext) (string, string) {
+// 		var k objectKey
+// 		k.schemaName = ctx.schemaName
+// 		if ctx.tableName != nil {
+// 			k.objectName = *ctx.tableName
+// 			if v, ok := tableConfigMap[k]; ok {
+// 				return v.Updater, branchResourceID
+// 			}
+// 			return "", branchResourceID
+// 		}
+// 		if ctx.procedureName != nil {
+// 			k.objectName = *ctx.procedureName
+// 			if v, ok := procedureConfigMap[k]; ok {
+// 				return v.Updater, branchResourceID
+// 			}
+// 			return "", branchResourceID
+// 		}
+// 		if ctx.viewName != nil {
+// 			k.objectName = *ctx.viewName
+// 			if v, ok := viewConfigMap[k]; ok {
+// 				return v.Updater, branchResourceID
+// 			}
+// 			return "", branchResourceID
+// 		}
+// 		if ctx.functionName != nil {
+// 			k.objectName = *ctx.functionName
+// 			if v, ok := functionConfigMap[k]; ok {
+// 				return v.Updater, branchResourceID
+// 			}
+// 			return "", branchResourceID
+// 		}
+
+// 		return "", branchResourceID
+// 	}
+// }
+
+// // updateConfigBranchUpdateInfoV2 compares the new metadata with the old one, updates the last updater and source branch in new config.
+// // For the diff part, we set the updater and source branch provided by provider.
+// func updateDatabaseConfigByProvider(old *storepb.DatabaseSchemaMetadata, new *storepb.DatabaseSchemaMetadata, oldConfig *storepb.DatabaseConfig, provider diffPartConfigProvider) {
+// 	time := timestamppb.Now()
+
+// 	oldModel := model.NewDatabaseMetadata(old)
+// 	schemaConfigMap := buildMap(oldConfig.SchemaConfigs, func(s *storepb.SchemaConfig) string {
+// 		return s.Name
+// 	})
+
+// 	var newSchemaConfigs []*storepb.SchemaConfig
+// 	for _, newSchema := range new.Schemas {
+// 		oldSchema := oldModel.GetSchema(newSchema.Name)
+// 		if oldSchema == nil {
+
+// 		}
+
+// 	}
+// }
+
 // updateConfigBranchUpdateInfo compare the proto of old and new metadata, and update the config branch update info.
 // NOTE: this function would not delete the config of deleted objects, and it's safe because the next time adding the object
 // back will trigger the update of the config branch update info.
-func updateConfigBranchUpdateInfo(old *storepb.DatabaseSchemaMetadata, new *storepb.DatabaseSchemaMetadata, config *storepb.DatabaseConfig, user *store.UserMessage, branch *store.BranchMessage) {
+func updateConfigBranchUpdateInfo(old *storepb.DatabaseSchemaMetadata, new *storepb.DatabaseSchemaMetadata, config *storepb.DatabaseConfig, formattedUserUID string, formattedBranchResourceID string) {
 	time := timestamppb.Now()
-
-	var formattedUserUID string
-	var formattedBranchResourceID string
-	if user != nil {
-		formattedUserUID = common.FormatUserUID(user.ID)
-	}
-	if branch != nil {
-		formattedBranchResourceID = common.FormatBranchResourceID(branch.ProjectID, branch.ResourceID)
-	}
 
 	oldModel := model.NewDatabaseMetadata(old)
 
-	schemaConfigMap := buildMap(config.SchemaConfigs, func(s *storepb.SchemaConfig) string {
+	newSchemaConfigMap := buildMap(config.SchemaConfigs, func(s *storepb.SchemaConfig) string {
 		return s.Name
 	})
-	var newSchemaConfig []*storepb.SchemaConfig
+	var newSchemaConfigs []*storepb.SchemaConfig
 	for _, schema := range new.Schemas {
-		schemaConfig, ok := schemaConfigMap[schema.Name]
+		newSchemaConfig, ok := newSchemaConfigMap[schema.Name]
 		if !ok {
-			newSchemaConfig = append(newSchemaConfig, initSchemaConfig(schema, formattedUserUID, formattedBranchResourceID, time))
+			newSchemaConfigs = append(newSchemaConfigs, initSchemaConfig(schema, formattedUserUID, formattedBranchResourceID, time))
 			continue
 		}
 		oldSchema := oldModel.GetSchema(schema.Name)
 		if oldSchema == nil {
-			// If users delete the schema first, and then add it back, we should update the config branch update info.
-			for _, tableConfig := range schemaConfig.TableConfigs {
+			for _, tableConfig := range newSchemaConfig.TableConfigs {
 				tableConfig.Updater = formattedUserUID
 				tableConfig.UpdateTime = time
 			}
-			for _, viewConfig := range schemaConfig.ViewConfigs {
+			for _, viewConfig := range newSchemaConfig.ViewConfigs {
 				viewConfig.Updater = formattedUserUID
 				viewConfig.UpdateTime = time
 			}
-			for _, functionConfig := range schemaConfig.FunctionConfigs {
+			for _, functionConfig := range newSchemaConfig.FunctionConfigs {
 				functionConfig.Updater = formattedUserUID
 				functionConfig.UpdateTime = time
 			}
-			for _, procedureConfig := range schemaConfig.ProcedureConfigs {
+			for _, procedureConfig := range newSchemaConfig.ProcedureConfigs {
 				procedureConfig.Updater = formattedUserUID
 				procedureConfig.UpdateTime = time
 			}
@@ -1247,7 +1365,7 @@ func updateConfigBranchUpdateInfo(old *storepb.DatabaseSchemaMetadata, new *stor
 		}
 
 		var newTableConfig []*storepb.TableConfig
-		tableConfigMap := buildMap(schemaConfig.TableConfigs, func(t *storepb.TableConfig) string {
+		tableConfigMap := buildMap(newSchemaConfig.TableConfigs, func(t *storepb.TableConfig) string {
 			return t.Name
 		})
 		for _, table := range schema.Tables {
@@ -1270,7 +1388,7 @@ func updateConfigBranchUpdateInfo(old *storepb.DatabaseSchemaMetadata, new *stor
 		}
 
 		var newViewConfig []*storepb.ViewConfig
-		viewConfigMap := buildMap(schemaConfig.ViewConfigs, func(v *storepb.ViewConfig) string {
+		viewConfigMap := buildMap(newSchemaConfig.ViewConfigs, func(v *storepb.ViewConfig) string {
 			return v.Name
 		})
 		for _, view := range schema.Views {
@@ -1293,7 +1411,7 @@ func updateConfigBranchUpdateInfo(old *storepb.DatabaseSchemaMetadata, new *stor
 		}
 
 		var newFunctionConfig []*storepb.FunctionConfig
-		functionConfigMap := buildMap(schemaConfig.FunctionConfigs, func(f *storepb.FunctionConfig) string {
+		functionConfigMap := buildMap(newSchemaConfig.FunctionConfigs, func(f *storepb.FunctionConfig) string {
 			return f.Name
 		})
 		for _, function := range schema.Functions {
@@ -1316,7 +1434,7 @@ func updateConfigBranchUpdateInfo(old *storepb.DatabaseSchemaMetadata, new *stor
 		}
 
 		var newProcedureConfig []*storepb.ProcedureConfig
-		procedureConfigMap := buildMap(schemaConfig.ProcedureConfigs, func(p *storepb.ProcedureConfig) string {
+		procedureConfigMap := buildMap(newSchemaConfig.ProcedureConfigs, func(p *storepb.ProcedureConfig) string {
 			return p.Name
 		})
 		for _, procedure := range schema.Procedures {
@@ -1338,12 +1456,12 @@ func updateConfigBranchUpdateInfo(old *storepb.DatabaseSchemaMetadata, new *stor
 			}
 		}
 
-		schemaConfig.TableConfigs = append(schemaConfig.TableConfigs, newTableConfig...)
-		schemaConfig.ViewConfigs = append(schemaConfig.ViewConfigs, newViewConfig...)
-		schemaConfig.FunctionConfigs = append(schemaConfig.FunctionConfigs, newFunctionConfig...)
-		schemaConfig.ProcedureConfigs = append(schemaConfig.ProcedureConfigs, newProcedureConfig...)
+		newSchemaConfig.TableConfigs = append(newSchemaConfig.TableConfigs, newTableConfig...)
+		newSchemaConfig.ViewConfigs = append(newSchemaConfig.ViewConfigs, newViewConfig...)
+		newSchemaConfig.FunctionConfigs = append(newSchemaConfig.FunctionConfigs, newFunctionConfig...)
+		newSchemaConfig.ProcedureConfigs = append(newSchemaConfig.ProcedureConfigs, newProcedureConfig...)
 	}
-	config.SchemaConfigs = append(config.SchemaConfigs, newSchemaConfig...)
+	config.SchemaConfigs = append(config.SchemaConfigs, newSchemaConfigs...)
 }
 
 func initSchemaConfig(schema *storepb.SchemaMetadata, formattedUserUID string, branchResourceID string, time *timestamppb.Timestamp) *storepb.SchemaConfig {
