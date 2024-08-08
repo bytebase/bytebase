@@ -5,13 +5,19 @@ import TableIconSVG from "lucide-static/icons/table.svg?raw";
 import type monaco from "monaco-editor";
 import type { MonacoModule } from "../types";
 
+// Base on heroicons-outline:circle-stack
 const DatabaseIconSVG = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
   <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 0v3.75m-16.5-3.75v3.75m16.5 0v3.75C20.25 16.153 16.556 18 12 18s-8.25-1.847-8.25-4.125v-3.75m16.5 0c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125" />
 </svg>
 `;
+
+// Based on lucide:columns-3 and removing the second gap line
 const ColumnIconSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-columns-3">
   <rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/>
 </svg>`;
+
+// Combine lucide:table and lucide:glasses
+// See <ViewIcon /> for more details
 const ViewIconSVG = {
   normal: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke-linecap="round" stroke-linejoin="round">
   <g stroke="#000" stroke-width="1.8" >
