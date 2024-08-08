@@ -79,6 +79,7 @@ jobs:
           file: scripts/Dockerfile.render-demo
           platforms: linux/amd64
           push: true
-          tags: dbytebase/chatgpt:release-ci
+          tags: |
+            bytebase/bytebase:${{ env.RELEASE_VERSION }}
       - name: Image digest
         run: echo "Successfully pushed bytebase/bytebase:${{ env.RELEASE_VERSION }} ${{ steps.bytebase_build.outputs.digest }}"
