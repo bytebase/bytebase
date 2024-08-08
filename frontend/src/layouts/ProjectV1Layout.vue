@@ -25,7 +25,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, onMounted, watchEffect } from "vue";
+import { computed, watchEffect } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { BBAttention } from "@/bbkit";
 import ArchiveBanner from "@/components/ArchiveBanner.vue";
@@ -36,7 +36,7 @@ import {
   PROJECT_V1_ROUTE_DATABASES,
   PROJECT_V1_ROUTE_DATABASE_GROUPS,
 } from "@/router/dashboard/projectV1";
-import { useProjectV1Store, useCurrentUserV1, useAppFeature } from "@/store";
+import { useCurrentUserV1, useAppFeature, useProjectByName } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import type { QuickActionType } from "@/types";
 import { DEFAULT_PROJECT_NAME, QuickActionProjectPermissionMap } from "@/types";
@@ -50,16 +50,12 @@ const props = defineProps<{
 const route = useRoute();
 const router = useRouter();
 const currentUserV1 = useCurrentUserV1();
-const projectV1Store = useProjectV1Store();
 const recentProjects = useRecentProjects();
 const hideQuickAction = useAppFeature("bb.feature.console.hide-quick-action");
 const hideDefaultProject = useAppFeature("bb.feature.project.hide-default");
-
-const project = computed(() => {
-  return projectV1Store.getProjectByName(
-    `${projectNamePrefix}${props.projectId}`
-  );
-});
+const { project } = useProjectByName(
+  computed(() => `${projectNamePrefix}${props.projectId}`)
+);
 
 watchEffect(() => {
   recentProjects.setRecentProject(project.value.name);
@@ -92,12 +88,6 @@ const allowEdit = computed(() => {
     project.value,
     currentUserV1.value,
     "bb.projects.update"
-  );
-});
-
-onMounted(async () => {
-  await projectV1Store.getOrFetchProjectByName(
-    `${projectNamePrefix}${props.projectId}`
   );
 });
 
