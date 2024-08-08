@@ -6,7 +6,6 @@ import (
 
 	"github.com/google/uuid"
 
-	api "github.com/bytebase/bytebase/backend/legacyapi"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -56,7 +55,6 @@ func (ctl *controller) createDatabaseV2(ctx context.Context, project *v1pb.Proje
 			Description: fmt.Sprintf("This creates a database %q.", databaseName),
 			Plan:        plan.Name,
 			Type:        v1pb.Issue_DATABASE_CHANGE,
-			Assignee:    fmt.Sprintf("users/%s", api.SystemBotEmail),
 		},
 	})
 	if err != nil {

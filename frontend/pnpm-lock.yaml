@@ -77,6 +77,9 @@ importers:
       lodash-es:
         specifier: 4.17.21
         version: 4.17.21
+      lucide-static:
+        specifier: ^0.424.0
+        version: 0.424.0
       lucide-vue-next:
         specifier: ^0.408.0
         version: 0.408.0(vue@3.4.31(typescript@5.5.4))
@@ -2755,6 +2758,9 @@ packages:
 
   ltgt@2.2.1:
     resolution: {integrity: sha512-AI2r85+4MquTw9ZYqabu4nMwy9Oftlfa/e/52t9IjtfG+mGBbTNdAoZ3RQKLHR6r0wQnwZnPIEh/Ya6XTWAKNA==}
+
+  lucide-static@0.424.0:
+    resolution: {integrity: sha512-KUsIoKeIZF/rc5dttI/bZmd3+zQ/V9YA/G/NsGALA3QWqVncuZsyJ+IrM+jI0BTHiARwVZfp7zOEhc7gqn5x7A==}
 
   lucide-vue-next@0.408.0:
     resolution: {integrity: sha512-X2w4IDKs6O/R+vPdyMl5VvXS0mhuTqXtw6/NQOOIfCHvMz6vWa1Q2XvYT3oQGzyU94uVZw16jcdC1LwI5XbOdg==}
@@ -6576,6 +6582,8 @@ snapshots:
       yallist: 3.1.1
 
   ltgt@2.2.1: {}
+
+  lucide-static@0.424.0: {}
 
   lucide-vue-next@0.408.0(vue@3.4.31(typescript@5.5.4)):
     dependencies:

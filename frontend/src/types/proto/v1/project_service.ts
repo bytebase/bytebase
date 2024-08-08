@@ -500,7 +500,7 @@ export enum Activity_Type {
   TYPE_ISSUE_CREATE = "TYPE_ISSUE_CREATE",
   /** TYPE_ISSUE_COMMENT_CREATE - TYPE_ISSUE_COMMENT_CREATE represents commenting on an issue. */
   TYPE_ISSUE_COMMENT_CREATE = "TYPE_ISSUE_COMMENT_CREATE",
-  /** TYPE_ISSUE_FIELD_UPDATE - TYPE_ISSUE_FIELD_UPDATE represents updating the issue field, likes title, description, assignee, etc. */
+  /** TYPE_ISSUE_FIELD_UPDATE - TYPE_ISSUE_FIELD_UPDATE represents updating the issue field, likes title, description, etc. */
   TYPE_ISSUE_FIELD_UPDATE = "TYPE_ISSUE_FIELD_UPDATE",
   /** TYPE_ISSUE_STATUS_UPDATE - TYPE_ISSUE_STATUS_UPDATE represents the issue status change, including OPEN, CLOSE, CANCEL fow now. */
   TYPE_ISSUE_STATUS_UPDATE = "TYPE_ISSUE_STATUS_UPDATE",
