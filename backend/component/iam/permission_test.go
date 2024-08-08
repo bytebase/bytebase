@@ -28,7 +28,7 @@ func TestPermissionExists(t *testing.T) {
 //go:embed permission.yaml
 var permissionYaml []byte
 
-// Test that permissions are equal in permission.yaml and allPermissions in permission.go
+// Test that permissions are equal in permission.yaml and allPermissions in permission.go.
 func TestPermissionEquals(t *testing.T) {
 	a := require.New(t)
 
