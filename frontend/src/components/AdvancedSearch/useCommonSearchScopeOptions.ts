@@ -14,8 +14,8 @@ import {
   useDatabaseV1Store,
   useDatabaseV1ListByProject,
   useEnvironmentV1List,
-  useProjectV1List,
   useEnvironmentV1Store,
+  useProjectV1Store,
 } from "@/store";
 import { UNKNOWN_ID, type MaybeRef } from "@/types";
 import { engineToJSON } from "@/types/proto/v1/common";
@@ -38,7 +38,7 @@ export const useCommonSearchScopeOptions = (
   const databaseV1Store = useDatabaseV1Store();
   const environmentStore = useEnvironmentV1Store();
   const environmentList = useEnvironmentV1List(false /* !showDeleted */);
-  const { projectList } = useProjectV1List();
+  const projectList = useProjectV1Store().projectList;
 
   const project = computed(() => {
     const { projectId } = route.params;
@@ -61,7 +61,7 @@ export const useCommonSearchScopeOptions = (
         id: "project",
         title: t("issue.advanced-search.scope.project.title"),
         description: t("issue.advanced-search.scope.project.description"),
-        options: projectList.value.map<ValueOption>((proj) => {
+        options: projectList.map<ValueOption>((proj) => {
           const name = extractProjectResourceName(proj.name);
           return {
             value: name,

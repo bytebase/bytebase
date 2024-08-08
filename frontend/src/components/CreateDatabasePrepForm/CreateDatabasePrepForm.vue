@@ -225,7 +225,8 @@ const emit = defineEmits<{
 const router = useRouter();
 const currentUserV1 = useCurrentUserV1();
 const projectV1Store = useProjectV1Store();
-useInstanceV1List(false /** showDeleted */);
+// Prepare instance list.
+useInstanceV1List();
 
 const state = reactive<LocalState>({
   databaseName: "",

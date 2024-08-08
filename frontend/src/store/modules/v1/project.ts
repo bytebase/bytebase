@@ -17,9 +17,11 @@ import { State } from "@/types/proto/v1/common";
 import type { Project } from "@/types/proto/v1/project_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import { useCurrentUserV1 } from "../auth";
+import { getResourceStoreCacheKey, type StoreCache } from "./cache";
 import { useProjectIamPolicyStore } from "./projectIamPolicy";
 
 export const useProjectV1Store = defineStore("project_v1", () => {
+  const listCache = reactive(new Map<string, StoreCache>());
   const currentUser = useCurrentUserV1();
   const projectMapByName = reactive(new Map<ResourceId, ComposedProject>());
 
@@ -40,14 +42,24 @@ export const useProjectV1Store = defineStore("project_v1", () => {
   const updateProjectCache = (project: ComposedProject) => {
     projectMapByName.set(project.name, project);
   };
-
   const upsertProjectMap = async (projectList: Project[]) => {
     const composedProjectList = await batchComposeProjectIamPolicy(projectList);
     composedProjectList.forEach((project) => {
       updateProjectCache(project);
     });
+    return composedProjectList;
   };
-  const fetchProjectList = async (showDeleted = false) => {
+  const listProjects = async (showDeleted = false) => {
+    const cacheKey = getResourceStoreCacheKey(
+      "project",
+      showDeleted ? "" : "active"
+    );
+    if (!listCache.has(cacheKey)) {
+      listCache.set(cacheKey, {
+        timestamp: Date.now(),
+        isFetching: true,
+      });
+    }
     const request = hasWorkspacePermissionV2(
       currentUser.value,
       "bb.projects.list"
@@ -55,8 +67,12 @@ export const useProjectV1Store = defineStore("project_v1", () => {
       ? projectServiceClient.listProjects
       : projectServiceClient.searchProjects;
     const { projects } = await request({ showDeleted });
-    await upsertProjectMap(projects);
-    return projects;
+    const composedProjects = await upsertProjectMap(projects);
+    listCache.set(cacheKey, {
+      timestamp: Date.now(),
+      isFetching: false,
+    });
+    return composedProjects;
   };
   const getProjectList = (showDeleted = false) => {
     if (unref(showDeleted)) {
@@ -130,11 +146,13 @@ export const useProjectV1Store = defineStore("project_v1", () => {
 
   return {
     reset,
+    listCache,
+    projectMapByName,
     projectList,
     getProjectList,
     findProjectByUID,
     getProjectByName,
-    fetchProjectList,
+    listProjects,
     getOrFetchProjectByName,
     createProject,
     updateProject,
@@ -144,26 +162,35 @@ export const useProjectV1Store = defineStore("project_v1", () => {
   };
 });
 
-export const useProjectV1List = (
-  showDeleted: MaybeRef<boolean> = false,
-  forceUpdate = false
-) => {
+export const useProjectV1List = (showDeleted: MaybeRef<boolean> = false) => {
   const store = useProjectV1Store();
-  const ready = ref(false);
+  const cacheKey = getResourceStoreCacheKey(
+    "project",
+    showDeleted ? "" : "active"
+  );
+  const cache = computed(() => store.listCache.get(cacheKey));
+  const requestPromise = ref<Promise<ComposedProject[]> | null>(null);
+
   watchEffect(() => {
-    if (!unref(forceUpdate)) {
-      ready.value = true;
+    // If request is already in progress, do not send another request.
+    if (cache.value?.isFetching) {
       return;
     }
-    ready.value = false;
-    store.fetchProjectList(unref(showDeleted)).then(() => {
-      ready.value = true;
-    });
+    // If cache is available, do not send another request.
+    if (cache.value) {
+      return;
+    }
+    requestPromise.value = store.listProjects(unref(showDeleted));
   });
+
   const projectList = computed(() => {
     return store.getProjectList(unref(showDeleted));
   });
-  return { projectList, ready };
+  return {
+    projectList,
+    ready: computed(() => cache.value && !cache.value.isFetching),
+    requestPromise,
+  };
 };
 
 export const useProjectByName = (name: MaybeRef<string>) => {

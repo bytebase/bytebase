@@ -106,9 +106,7 @@ const subscriptionStore = useSubscriptionV1Store();
 const instanceV1Store = useInstanceV1Store();
 const environmentList = useEnvironmentV1List();
 // Users are workspace admins in Bytebase Editor. So we don't need to check permission here.
-const { instanceList: rawInstanceV1List, ready } = useInstanceV1List(
-  /* showDeleted */ false
-);
+const { instanceList, ready } = useInstanceV1List();
 const hideAdvancedFeatures = useAppFeature(
   "bb.feature.sql-editor.hide-advance-instance-features"
 );
@@ -144,7 +142,7 @@ onMounted(() => {
   wrapRefAsPromise(ready, true).then(() => {
     const maybeInstanceName = route.hash.replace(/^#*/g, "");
     if (maybeInstanceName) {
-      const instance = rawInstanceV1List.value.find(
+      const instance = instanceList.value.find(
         (inst) => inst.name === maybeInstanceName
       );
       if (instance) {
@@ -167,7 +165,7 @@ onMounted(() => {
 });
 
 const filteredInstanceV1List = computed(() => {
-  let list = [...rawInstanceV1List.value];
+  let list = [...instanceList.value];
   if (selectedEnvironment.value !== `${UNKNOWN_ID}`) {
     list = list.filter(
       (instance) =>

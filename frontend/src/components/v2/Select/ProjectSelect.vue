@@ -19,12 +19,11 @@
 import { intersection } from "lodash-es";
 import type { SelectOption } from "naive-ui";
 import { NSelect } from "naive-ui";
-import { computed, watchEffect } from "vue";
+import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { ProjectNameCell } from "@/components/v2/Model/DatabaseV1Table/cells";
 import {
   useCurrentUserV1,
-  useProjectV1Store,
   useProjectV1List,
   usePermissionStore,
 } from "@/store";
@@ -81,12 +80,8 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 const currentUserV1 = useCurrentUserV1();
-const projectV1Store = useProjectV1Store();
 const permissionStore = usePermissionStore();
-
-const prepare = () => {
-  projectV1Store.fetchProjectList(true /* showDeleted */);
-};
+const { projectList } = useProjectV1List(true /* showDeleted */);
 
 const combinedValue = computed(() => {
   if (props.multiple) {
@@ -115,8 +110,6 @@ const handleValueUpdated = (value: string | string[]) => {
 const hasWorkspaceManageProjectPermission = computed(() =>
   hasWorkspacePermissionV2(currentUserV1.value, "bb.projects.list")
 );
-
-const { projectList } = useProjectV1List();
 
 const rawProjectList = computed(() => {
   return projectList.value.filter((project) => {
@@ -219,8 +212,6 @@ const filterByName = (pattern: string, option: SelectOption) => {
     project.key.toLowerCase().includes(pattern)
   );
 };
-
-watchEffect(prepare);
 
 const renderLabel = (option: SelectOption) => {
   const { project } = option as ProjectSelectOption;

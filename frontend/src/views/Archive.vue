@@ -54,7 +54,7 @@ import {
   useEnvironmentV1Store,
   useIdentityProviderStore,
   useInstanceV1Store,
-  useProjectV1List,
+  useProjectV1Store,
 } from "@/store";
 import { State } from "@/types/proto/v1/common";
 import type { IdentityProvider } from "@/types/proto/v1/idp_service";
@@ -69,23 +69,28 @@ interface LocalState {
 }
 
 const { t } = useI18n();
+const environmentStore = useEnvironmentV1Store();
+const projectStore = useProjectV1Store();
 const instanceStore = useInstanceV1Store();
-
+const currentUserV1 = useCurrentUserV1();
 const state = reactive<LocalState>({
   selectedTab: "PROJECT",
   searchText: "",
 });
 
-const currentUserV1 = useCurrentUserV1();
-
-const { projectList } = useProjectV1List(true /* showDeleted */);
-
 const prepareList = () => {
+  environmentStore.fetchEnvironments(true /* showDeleted */);
+  projectStore.listProjects(true /* showDeleted */);
   instanceStore.listInstances(true /* showDeleted */);
-  useEnvironmentV1Store().fetchEnvironments(true /* showDeleted */);
 };
 
 watchEffect(prepareList);
+
+const environmentList = computed(() => {
+  return environmentStore.environmentList.filter(
+    (env) => env.state === State.DELETED
+  );
+});
 
 const instanceList = computed(() => {
   return instanceStore.instanceList.filter(
@@ -93,9 +98,9 @@ const instanceList = computed(() => {
   );
 });
 
-const environmentList = computed(() => {
-  return useEnvironmentV1Store().environmentList.filter(
-    (env) => env.state === State.DELETED
+const projectList = computed(() => {
+  return projectStore.projectList.filter(
+    (project) => project.state === State.DELETED
   );
 });
 
