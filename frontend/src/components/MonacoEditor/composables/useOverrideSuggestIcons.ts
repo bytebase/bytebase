@@ -10,25 +10,25 @@ const DatabaseIconSVG = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" vie
 </svg>
 `;
 const ViewIconSVG = {
-  normal: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-table">
-  <g stroke="#000" >
+  normal: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <g stroke="#000" stroke-width="1.5" >
     <path d="M12 3v18"/>
     <rect width="18" height="18" x="3" y="3" rx="2"/>
     <path d="M3 9h18M3 15h18"/>
   </g>
-  <g transform="scale(.75)" transform-origin="100% 100%" stroke="rgb(79 70 229)">
+  <g transform="scale(.75)" transform-origin="100% 100%" stroke="rgb(79 70 229)" stroke-width="3.5">
     <circle cx="6" cy="15" r="4"/>
     <circle cx="18" cy="15" r="4"/>
     <path d="M14 15a2 2 0 0 0-2-2 2 2 0 0 0-2 2m-7.5-2L5 7c.7-1.3 1.4-2 3-2m13.5 8L19 7c-.7-1.3-1.5-2-3-2"/>
   </g>
 </svg>`,
-  active: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-table">
-  <g stroke="#fff" >
+  active: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <g stroke="#fff" stroke-width="1.5" >
     <path d="M12 3v18"/>
     <rect width="18" height="18" x="3" y="3" rx="2"/>
     <path d="M3 9h18M3 15h18"/>
   </g>
-  <g transform="scale(.75)" transform-origin="100% 100%" stroke="rgb(79 70 229)">
+  <g transform="scale(.75)" transform-origin="100% 100%" stroke="rgb(79 70 229)" stroke-width="3.5">
     <circle cx="6" cy="15" r="4"/>
     <circle cx="18" cy="15" r="4"/>
     <path d="M14 15a2 2 0 0 0-2-2 2 2 0 0 0-2 2m-7.5-2L5 7c.7-1.3 1.4-2 3-2m13.5 8L19 7c-.7-1.3-1.5-2-3-2"/>
