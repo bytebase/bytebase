@@ -53,11 +53,13 @@
 </template>
 
 <script lang="ts" setup>
+import { sortBy } from "lodash-es";
 import { NButton } from "naive-ui";
 import { computed, onMounted, reactive, ref } from "vue";
 import { BBSpin } from "@/bbkit";
 import { FeatureBadge, FeatureModal } from "@/components/FeatureGuard";
 import { featureToRef, useCurrentUserV1, useRoleStore } from "@/store";
+import { PRESET_ROLES } from "@/types";
 import { Role } from "@/types/proto/v1/role_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import { RoleDataTable, RolePanel } from "./components";
@@ -95,9 +97,14 @@ const allowCreateRole = computed(() => {
 });
 
 const filteredRoleList = computed(() => {
+  const sortedRoles = sortBy(roleStore.roleList, (role) => {
+    return PRESET_ROLES.includes(role.name)
+      ? PRESET_ROLES.indexOf(role.name)
+      : roleStore.roleList.length;
+  });
   const keyword = state.filter.keyword.trim().toLowerCase();
-  if (!keyword) return roleStore.roleList;
-  return roleStore.roleList.filter((role) => {
+  if (!keyword) return sortedRoles;
+  return sortedRoles.filter((role) => {
     return (
       role.name.toLowerCase().includes(keyword) ||
       role.description.toLowerCase().includes(keyword)
