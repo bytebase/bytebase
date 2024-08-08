@@ -80,6 +80,6 @@ jobs:
           platforms: linux/amd64
           push: true
           tags: |
-            bytebase/bytebase:${{ env.RELEASE_VERSION }}
+            dbytebase/chatgpt:${{ env.RELEASE_VERSION }}
       - name: Image digest
         run: echo "Successfully pushed bytebase/bytebase:${{ env.RELEASE_VERSION }} ${{ steps.bytebase_build.outputs.digest }}"
