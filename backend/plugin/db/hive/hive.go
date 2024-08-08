@@ -13,6 +13,7 @@ import (
 	"go.uber.org/multierr"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/durationpb"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/db"
@@ -34,18 +35,16 @@ func init() {
 }
 
 type Driver struct {
-	config   db.ConnectionConfig
-	ctx      db.ConnectionContext
-	connPool *FixedConnPool
-	conn     *gohive.Connection
+	config db.ConnectionConfig
+	ctx    db.ConnectionContext
+	conn   *gohive.Connection
 }
 
 var (
-	_          db.Driver = (*Driver)(nil)
-	numMaxConn           = 5
+	_ db.Driver = (*Driver)(nil)
 )
 
-func (d *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
+func (d *Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
 	if config.Host == "" {
 		return nil, errors.Errorf("hostname not set")
 	}
@@ -53,53 +52,53 @@ func (d *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionC
 	d.config = config
 	d.ctx = config.ConnectionContext
 
-	if d.connPool == nil {
-		if config.SASLConfig == nil {
-			config.SASLConfig = &db.PlainSASLConfig{
-				Username: config.Username,
-				Password: config.Password,
-			}
-		}
-		if !config.SASLConfig.Check() {
-			return nil, errors.New("SASL settings error")
-		}
-		pool, err := CreateHiveConnPool(numMaxConn, &config)
-		if err != nil {
-			return nil, err
-		}
-		d.connPool = pool
+	port, err := strconv.Atoi(config.Port)
+	if err != nil {
+		return nil, errors.Errorf("conversion failure for 'port' [string -> int]")
 	}
 
-	newConn, err := d.connPool.Get(config.Database)
-	if err != nil {
-		err = errors.Wrapf(err, "failed to get connection from pool")
-		// release resources.
-		if closeErr := d.connPool.Destroy(); closeErr != nil {
-			err = multierr.Combine(closeErr, err)
+	var authConnParam = "NONE"
+	hiveConfig := gohive.NewConnectConfiguration()
+	switch t := config.SASLConfig.(type) {
+	case *db.KerberosConfig:
+		hiveConfig.Hostname = t.Instance
+		hiveConfig.Service = t.Primary
+		db.KrbEnvLock()
+		defer db.KrbEnvUnlock()
+		if err := config.SASLConfig.InitEnv(); err != nil {
+			return nil, errors.Wrapf(err, "failed to init SASL environment")
 		}
+		authConnParam = "KERBEROS"
+	case *db.PlainSASLConfig:
+		hiveConfig.Username = t.Username
+		hiveConfig.Password = t.Password
+	}
+
+	conn, err := gohive.Connect(config.Host, port, authConnParam, hiveConfig)
+	if err != nil {
 		return nil, err
 	}
+	d.conn = conn
 
-	d.conn = newConn
-
+	if config.Database != "" {
+		cursor := d.conn.Cursor()
+		if err := executeCursor(ctx, cursor, fmt.Sprintf("use %s", config.Database)); err != nil {
+			return nil, multierr.Combine(d.conn.Close(), err)
+		}
+	}
 	return d, nil
 }
 
 func (d *Driver) Close(_ context.Context) error {
-	d.connPool.Put(d.conn)
-	return d.connPool.Destroy()
+	return d.conn.Close()
 }
 
 func (d *Driver) Ping(ctx context.Context) error {
-	if d.conn == nil {
-		return errors.Errorf("no database connection established")
-	}
 	cursor := d.conn.Cursor()
 	defer cursor.Close()
 
-	cursor.Exec(ctx, "SELECT 1")
-	if cursor.Err != nil {
-		return errors.Errorf("bad connection")
+	if err := executeCursor(ctx, cursor, "SELECT 1"); err != nil {
+		return errors.Wrapf(err, "bad connection")
 	}
 	return nil
 }
@@ -112,10 +111,6 @@ func (*Driver) GetDB() *sql.DB {
 // Even in Hive's bucketed transaction table, all the statements are committed automatically by
 // the Hive server.
 func (d *Driver) Execute(ctx context.Context, statementsStr string, _ db.ExecuteOptions) (int64, error) {
-	if d.connPool == nil {
-		return 0, errors.Errorf("no database connection established")
-	}
-
 	var affectedRows int64
 
 	cursor := d.conn.Cursor()
@@ -127,9 +122,9 @@ func (d *Driver) Execute(ctx context.Context, statementsStr string, _ db.Execute
 	}
 
 	for _, statement := range statements {
-		cursor.Execute(ctx, strings.TrimRight(statement.Text, ";"), false)
-		if cursor.Err != nil {
-			return 0, errors.Wrap(cursor.Err, "failed to execute statement")
+		query := strings.TrimRight(statement.Text, ";")
+		if err := executeCursor(ctx, cursor, query); err != nil {
+			return 0, err
 		}
 		operationStatus := cursor.Poll(false)
 		affectedRows += operationStatus.GetNumModifiedRows()
@@ -139,20 +134,10 @@ func (d *Driver) Execute(ctx context.Context, statementsStr string, _ db.Execute
 }
 
 func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, queryCtx *db.QueryContext) ([]*v1pb.QueryResult, error) {
-	if d.connPool == nil {
-		return nil, errors.Errorf("no database connection established")
-	}
-
 	singleSQLs, err := base.SplitMultiSQL(storepb.Engine_HIVE, statement)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to split statements")
 	}
-
-	conn, err := d.connPool.Get("")
-	if err != nil {
-		return nil, err
-	}
-	defer d.connPool.Put(conn)
 
 	var results []*v1pb.QueryResult
 	for _, singleSQL := range singleSQLs {
@@ -161,9 +146,9 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 			statement = fmt.Sprintf("EXPLAIN %s", statement)
 		}
 
-		result, err := runSingleStatement(ctx, conn, statement)
-		if err != nil && result == nil {
-			return results, err
+		result, err := runSingleStatement(ctx, d.conn, statement)
+		if err != nil {
+			return nil, err
 		}
 
 		results = append(results, result)
@@ -173,35 +158,29 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 
 // This function converts basic types to types that have implemented isRowValue_Kind interface.
 func parseValueType(value any, gohiveType string) (*v1pb.RowValue, error) {
-	var rowValue v1pb.RowValue
 	if value == nil {
-		rowValue.Kind = &v1pb.RowValue_StringValue{StringValue: ""}
-	} else {
-		switch gohiveType {
-		case "BOOLEAN_TYPE":
-			rowValue.Kind = &v1pb.RowValue_BoolValue{BoolValue: value.(bool)}
-		case "TINYINT_TYPE":
-			rowValue.Kind = &v1pb.RowValue_Int32Value{Int32Value: int32(value.(int8))}
-		case "SMALLINT_TYPE":
-			rowValue.Kind = &v1pb.RowValue_Int32Value{Int32Value: int32(value.(int16))}
-		case "INT_TYPE":
-			rowValue.Kind = &v1pb.RowValue_Int32Value{Int32Value: value.(int32)}
-		case "BIGINT_TYPE":
-			rowValue.Kind = &v1pb.RowValue_Int64Value{Int64Value: value.(int64)}
-		// dangerous truncation: float64 -> float32.
-		case "FLOAT_TYPE":
-			rowValue.Kind = &v1pb.RowValue_FloatValue{FloatValue: float32(value.(float64))}
-		case "BINARY_TYPE":
-			rowValue.Kind = &v1pb.RowValue_BytesValue{BytesValue: value.([]byte)}
-		case "DOUBLE_TYPE":
-			// convert float64 to string to avoid trancation.
-			rowValue.Kind = &v1pb.RowValue_StringValue{StringValue: strconv.FormatFloat(value.(float64), 'f', 20, 64)}
-		default:
-			// convert all remaining types to string.
-			rowValue.Kind = &v1pb.RowValue_StringValue{StringValue: value.(string)}
-		}
+		return &v1pb.RowValue{Kind: &v1pb.RowValue_NullValue{NullValue: structpb.NullValue_NULL_VALUE}}, nil
 	}
-	return &rowValue, nil
+	switch gohiveType {
+	case "BOOLEAN_TYPE":
+		return &v1pb.RowValue{Kind: &v1pb.RowValue_BoolValue{BoolValue: value.(bool)}}, nil
+	case "TINYINT_TYPE":
+		return &v1pb.RowValue{Kind: &v1pb.RowValue_Int32Value{Int32Value: int32(value.(int8))}}, nil
+	case "SMALLINT_TYPE":
+		return &v1pb.RowValue{Kind: &v1pb.RowValue_Int32Value{Int32Value: int32(value.(int16))}}, nil
+	case "INT_TYPE":
+		return &v1pb.RowValue{Kind: &v1pb.RowValue_Int32Value{Int32Value: value.(int32)}}, nil
+	case "BIGINT_TYPE":
+		return &v1pb.RowValue{Kind: &v1pb.RowValue_Int64Value{Int64Value: value.(int64)}}, nil
+	case "DOUBLE_TYPE", "FLOAT_TYPE":
+		// convert float64 to string to avoid truncation, because our v1pb.RowValue_FloatValue is float32.
+		return &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: strconv.FormatFloat(value.(float64), 'f', 20, 64)}}, nil
+	case "BINARY_TYPE":
+		return &v1pb.RowValue{Kind: &v1pb.RowValue_BytesValue{BytesValue: value.([]byte)}}, nil
+	default:
+		// convert all remaining types to string.
+		return &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: value.(string)}}, nil
+	}
 }
 
 func runSingleStatement(ctx context.Context, conn *gohive.Connection, statement string) (*v1pb.QueryResult, error) {
@@ -211,9 +190,8 @@ func runSingleStatement(ctx context.Context, conn *gohive.Connection, statement 
 	defer cursor.Close()
 
 	// run query.
-	cursor.Execute(ctx, statement, false)
-	if cursor.Err != nil {
-		return nil, errors.Wrap(cursor.Err, "failed to execute statement")
+	if err := executeCursor(ctx, cursor, statement); err != nil {
+		return nil, err
 	}
 
 	result := &v1pb.QueryResult{
@@ -223,6 +201,9 @@ func runSingleStatement(ctx context.Context, conn *gohive.Connection, statement 
 	// We will get an error when a certain statement doesn't need returned results.
 	columnNamesAndTypes := cursor.Description()
 	for _, row := range columnNamesAndTypes {
+		if len(row) == 0 {
+			return nil, errors.New("description row has zero length")
+		}
 		result.ColumnNames = append(result.ColumnNames, row[0])
 	}
 
@@ -234,7 +215,7 @@ func runSingleStatement(ctx context.Context, conn *gohive.Connection, statement 
 			gohiveTypeStr := columnNamesAndTypes[idx][1]
 			val, err := parseValueType(rowMap[columnName], gohiveTypeStr)
 			if err != nil {
-				return result, err
+				return nil, err
 			}
 			queryRow.Values = append(queryRow.Values, val)
 		}
@@ -249,4 +230,12 @@ func runSingleStatement(ctx context.Context, conn *gohive.Connection, statement 
 	}
 	result.Latency = durationpb.New(time.Since(startTime))
 	return result, nil
+}
+
+func executeCursor(ctx context.Context, cursor *gohive.Cursor, statement string) error {
+	cursor.Exec(ctx, statement)
+	if cursor.Err != nil {
+		return errors.Wrap(cursor.Err, "failed to execute statement")
+	}
+	return nil
 }

@@ -6,6 +6,7 @@ import (
 	"io"
 	"strings"
 
+	"github.com/beltran/gohive"
 	"github.com/pkg/errors"
 )
 
@@ -53,126 +54,116 @@ type MaterializedViewDDLOptions struct {
 }
 
 func (d *Driver) Dump(ctx context.Context, out io.Writer) (string, error) {
-	instanceMetadata, err := d.SyncInstance(ctx)
-	if err != nil {
-		return "", errors.Wrapf(err, "failed to sync instance")
-	}
 	var builder strings.Builder
 
-	for _, database := range instanceMetadata.Databases {
-		schema := database.Schemas[0]
+	databaseName := d.config.Database
+	database, err := d.SyncDBSchema(ctx)
+	if err != nil {
+		return "", err
+	}
+	if len(database.Schemas) == 0 {
+		return "", errors.New("database schemas is empty")
+	}
+	schema := database.Schemas[0]
 
-		// dump databases.
-		databaseDDL, err := d.showCreateSchemaDDL(ctx, "DATABASE", schema.Name, "")
-		if err != nil {
-			return "", errors.Wrapf(err, "failed to dump database %s", schema.Name)
-		}
-		_, _ = builder.WriteString(databaseDDL)
-
-		// dump managed tables.
-		for _, table := range schema.Tables {
-			tabDDL, err := d.showCreateSchemaDDL(ctx, "TABLE", table.Name, schema.Name)
-			if err != nil {
-				return "", errors.Wrapf(err, "failed to dump table %s", table.Name)
-			}
-
-			// dump indexes.
-			for _, index := range table.Indexes {
-				indexDDL, err := genIndexDDL(&IndexDDLOptions{
-					databaseName:          schema.Name,
-					indexName:             index.Name,
-					tableName:             table.Name,
-					indexType:             index.Type,
-					colNames:              index.Expressions,
-					isWithDeferredRebuild: true,
-					idxProperties:         nil,
-					indexTableName:        "",
-					rowFmt:                "",
-					storedAs:              "",
-					storedBy:              "",
-					location:              "",
-					tableProperties:       nil,
-					comment:               index.Comment,
-				})
-				if err != nil {
-					return "", errors.Wrapf(err, "failed to generate DDL for index %s", index.Name)
-				}
-
-				_, _ = builder.WriteString(fmt.Sprintf(schemaStmtFmt, "INDEX", fmt.Sprintf("`%s`", index.Name), indexDDL))
-			}
-			_, _ = builder.WriteString(tabDDL)
-		}
-
-		// dump external tables.
-		for _, extTable := range schema.ExternalTables {
-			tabDDL, err := d.showCreateSchemaDDL(ctx, "TABLE", extTable.Name, schema.Name)
-			if err != nil {
-				return "", errors.Wrapf(err, "failed to dump table %s", extTable.Name)
-			}
-			_, _ = builder.WriteString(tabDDL)
-		}
-
-		// dump views.
-		for _, view := range schema.Views {
-			viewDDL, err := d.showCreateSchemaDDL(ctx, "VIEW", view.Name, schema.Name)
-			if err != nil {
-				return "", errors.Wrapf(err, "failed to dump view %s", view.Name)
-			}
-			_, _ = builder.WriteString(viewDDL)
-		}
-
-		// dump materialized views.
-		for _, mtView := range schema.MaterializedViews {
-			mtViewDDL, err := genMaterializedViewDDL(&MaterializedViewDDLOptions{
-				databaseName:   schema.Name,
-				mtViewName:     mtView.Name,
-				disableRewrite: false,
-				comment:        mtView.Comment,
-				partitionedOn:  nil,
-				clusteredOn:    nil,
-				distributedOn:  nil,
-				sortedOn:       nil,
-				rowFmt:         "",
-				storedAs:       "",
-				storedBy:       "",
-				serdProperties: nil,
-				location:       "",
-				tblProperties:  nil,
-				as:             mtView.Definition,
-			})
-			if err != nil {
-				return "", errors.Wrapf(err, "failed to generate DDL for materialized view %s", mtView.Name)
-			}
-
-			_, _ = builder.WriteString(fmt.Sprintf(schemaStmtFmt, "MATERIALIZED VIEW", fmt.Sprintf("`%s`.`%s`", schema.Name, mtView.Name), mtViewDDL))
-		}
+	cursor := d.conn.Cursor()
+	if err := executeCursor(ctx, cursor, fmt.Sprintf("use %s", databaseName)); err != nil {
+		return "", err
 	}
 
-	_, _ = io.WriteString(out, builder.String())
+	// dump managed tables.
+	for _, table := range schema.GetTables() {
+		tableDDL, err := showCreateDDL(ctx, d.conn, "TABLE", table.Name)
+		if err != nil {
+			return "", errors.Wrapf(err, "failed to dump table %s", table.Name)
+		}
+
+		// dump indexes.
+		for _, index := range table.GetIndexes() {
+			indexDDL, err := genIndexDDL(&IndexDDLOptions{
+				databaseName:          databaseName,
+				indexName:             index.Name,
+				tableName:             table.Name,
+				indexType:             index.Type,
+				colNames:              index.Expressions,
+				isWithDeferredRebuild: true,
+				idxProperties:         nil,
+				indexTableName:        "",
+				rowFmt:                "",
+				storedAs:              "",
+				storedBy:              "",
+				location:              "",
+				tableProperties:       nil,
+				comment:               index.Comment,
+			})
+			if err != nil {
+				return "", errors.Wrapf(err, "failed to generate DDL for index %s", index.Name)
+			}
+
+			_, _ = builder.WriteString(fmt.Sprintf(schemaStmtFmt, "INDEX", fmt.Sprintf("`%s`", index.Name), indexDDL))
+		}
+		_, _ = builder.WriteString(tableDDL)
+	}
+
+	// dump external tables.
+	for _, extTable := range schema.GetExternalTables() {
+		tabDDL, err := showCreateDDL(ctx, d.conn, "TABLE", extTable.Name)
+		if err != nil {
+			return "", errors.Wrapf(err, "failed to dump table %s", extTable.Name)
+		}
+		_, _ = builder.WriteString(tabDDL)
+	}
+
+	// dump views.
+	for _, view := range schema.GetViews() {
+		viewDDL, err := showCreateDDL(ctx, d.conn, "VIEW", view.Name)
+		if err != nil {
+			return "", errors.Wrapf(err, "failed to dump view %s", view.Name)
+		}
+		_, _ = builder.WriteString(viewDDL)
+	}
+
+	// dump materialized views.
+	for _, mtView := range schema.GetMaterializedViews() {
+		mtViewDDL, err := genMaterializedViewDDL(&MaterializedViewDDLOptions{
+			databaseName:   databaseName,
+			mtViewName:     mtView.Name,
+			disableRewrite: false,
+			comment:        mtView.Comment,
+			partitionedOn:  nil,
+			clusteredOn:    nil,
+			distributedOn:  nil,
+			sortedOn:       nil,
+			rowFmt:         "",
+			storedAs:       "",
+			storedBy:       "",
+			serdProperties: nil,
+			location:       "",
+			tblProperties:  nil,
+			as:             mtView.Definition,
+		})
+		if err != nil {
+			return "", errors.Wrapf(err, "failed to generate DDL for materialized view %s", mtView.Name)
+		}
+
+		_, _ = builder.WriteString(fmt.Sprintf(schemaStmtFmt, "MATERIALIZED VIEW", fmt.Sprintf("`%s`.`%s`", databaseName, mtView.Name), mtViewDDL))
+	}
+
+	if _, err = io.WriteString(out, builder.String()); err != nil {
+		return "", err
+	}
 	return builder.String(), nil
 }
 
 // This function shows DDLs for creating certain type of schema [VIEW, DATABASE, TABLE].
-func (d *Driver) showCreateSchemaDDL(ctx context.Context, schemaType string, schemaName string, belongTo string) (string, error) {
-	schemaName = fmt.Sprintf("`%s`", schemaName)
-	originalTableName := schemaName
-	// rename table to format: [DatabaseName].[TableName].
-	if belongTo != "" {
-		belongTo = fmt.Sprintf("`%s`", belongTo)
-		schemaName = fmt.Sprintf("%s.%s", belongTo, schemaName)
-	}
+func showCreateDDL(ctx context.Context, conn *gohive.Connection, objectType string, objectName string) (string, error) {
+	objectName = fmt.Sprintf("`%s`", objectName)
 
 	// 'SHOW CREATE TABLE' can also be used for dumping views.
-	queryStatement := fmt.Sprintf("SHOW CREATE %s %s", schemaType, schemaName)
-	if schemaType == "VIEW" {
-		queryStatement = fmt.Sprintf("SHOW CREATE TABLE %s", schemaName)
+	queryStatement := fmt.Sprintf("SHOW CREATE %s %s", objectType, objectName)
+	if objectType == "VIEW" {
+		queryStatement = fmt.Sprintf("SHOW CREATE TABLE %s", objectName)
 	}
-
-	conn, err := d.connPool.Get("")
-	if err != nil {
-		return "", err
-	}
-	defer d.connPool.Put(conn)
 
 	schemaDDLResult, err := runSingleStatement(ctx, conn, queryStatement)
 	if err != nil {
@@ -181,14 +172,13 @@ func (d *Driver) showCreateSchemaDDL(ctx context.Context, schemaType string, sch
 
 	var schemaDDL string
 	for _, row := range schemaDDLResult.Rows {
+		if row == nil || len(row.Values) == 0 {
+			return "", errors.New("empty row")
+		}
 		schemaDDL += fmt.Sprintln(row.Values[0].GetStringValue())
 	}
 
-	if belongTo != "" {
-		schemaDDL = strings.Replace(schemaDDL, originalTableName, schemaName, 1)
-	}
-
-	return fmt.Sprintf(schemaStmtFmt, schemaType, schemaName, schemaDDL), nil
+	return fmt.Sprintf(schemaStmtFmt, objectType, objectName, schemaDDL), nil
 }
 
 func genIndexDDL(opts *IndexDDLOptions) (string, error) {
@@ -228,9 +218,11 @@ func genIndexDDL(opts *IndexDDLOptions) (string, error) {
 	// stored as or stored by.
 	if opts.storedAs != "" && opts.storedBy != "" {
 		return "", errors.New("keywords 'STORED AS' and 'STORED BY' cannot appear at the same time")
-	} else if opts.storedAs != "" {
+	}
+	if opts.storedAs != "" {
 		_, _ = builder.WriteString(fmt.Sprintf("STORED AS %s\n", opts.storedAs))
-	} else if opts.storedBy != "" {
+	}
+	if opts.storedBy != "" {
 		_, _ = builder.WriteString(fmt.Sprintf("STORED BY '%s'\n", opts.storedBy))
 	}
 
@@ -279,11 +271,9 @@ func genMaterializedViewDDL(opts *MaterializedViewDDLOptions) (string, error) {
 
 	if opts.clusteredOn != nil && opts.distributedOn != nil {
 		return "", errors.New("keywords 'CLUSTERED ON' and 'DISTRIBUTED ON' cannot appear at the same time")
-	} else if opts.clusteredOn != nil {
-		// clusteredOn
-		_, _ = builder.WriteString("CLUSTERED ON ")
-		formatColumn(&builder, opts.clusteredOn)
-	} else if opts.distributedOn != nil && opts.sortedOn != nil {
+	}
+	//   [CLUSTERED ON (col_name, ...) | DISTRIBUTED ON (col_name, ...) SORTED ON (col_name, ...)].
+	if opts.distributedOn != nil && opts.sortedOn != nil {
 		// distributed on.
 		_, _ = builder.WriteString("DISTRIBUTED ON ")
 		formatColumn(&builder, opts.distributedOn)
@@ -292,13 +282,20 @@ func genMaterializedViewDDL(opts *MaterializedViewDDLOptions) (string, error) {
 		_, _ = builder.WriteString("SORTED ON ")
 		formatColumn(&builder, opts.sortedOn)
 	}
+	if opts.clusteredOn != nil {
+		// clusteredOn
+		_, _ = builder.WriteString("CLUSTERED ON ")
+		formatColumn(&builder, opts.clusteredOn)
+	}
 
 	// stored as or stored by.
 	if opts.storedAs != "" && opts.storedBy != "" {
 		return "", errors.New("keywords 'STORED AS' and 'STORED BY' cannot appear at the same time")
-	} else if opts.storedAs != "" {
+	}
+	if opts.storedAs != "" {
 		_, _ = builder.WriteString(fmt.Sprintf("STORED AS %s\n", opts.storedAs))
-	} else if opts.storedBy != "" {
+	}
+	if opts.storedBy != "" {
 		_, _ = builder.WriteString(fmt.Sprintf("STORED BY '%s'\n", opts.storedBy))
 
 		// if with serde properties.
@@ -339,13 +336,13 @@ func formatColumn(builder *strings.Builder, columnNames []string) {
 
 func formatKVPair(builder *strings.Builder, kvMap map[string]string) {
 	_, _ = builder.WriteString("(\n")
-	index := 0
+	count := 0
 	for key, value := range kvMap {
+		count++
 		_, _ = builder.WriteString(fmt.Sprintf("  '%s' = '%s'", key, value))
-		if index != len(kvMap)-1 {
+		if count != len(kvMap) {
 			_, _ = builder.WriteString(",\n")
 		}
-		index++
 	}
 	_, _ = builder.WriteString(")\n")
 }

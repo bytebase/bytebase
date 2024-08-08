@@ -76,7 +76,7 @@ const columns = computed(() => {
     },
     {
       key: "comment",
-      title: t("common.comment"),
+      title: t("schema-editor.database.comment"),
       resizable: true,
       className: "truncate",
       render: (view) => {

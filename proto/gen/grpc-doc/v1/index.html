@@ -15560,20 +15560,6 @@ Format: projects/{project}/issues/{issue} </p></td>
                 </tr>
               
                 <tr>
-                  <td>assignee</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Format: users/hello@world.com </p></td>
-                </tr>
-              
-                <tr>
-                  <td>assignee_attention</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
                   <td>approvers</td>
                   <td><a href="#bytebase.v1.Issue.Approver">Issue.Approver</a></td>
                   <td>repeated</td>
@@ -18549,6 +18535,13 @@ When paginating, all other parameters provided to `ListPlanCheckRuns` must match
 the call that provided the page token. </p></td>
                 </tr>
               
+                <tr>
+                  <td>latest_only</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>If set to true, only the latest plan check run will be returned. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -20958,7 +20951,7 @@ TYPE_ISSUE_CREATE represents creating an issue.</p></td>
               <tr>
                 <td>TYPE_ISSUE_FIELD_UPDATE</td>
                 <td>3</td>
-                <td><p>TYPE_ISSUE_FIELD_UPDATE represents updating the issue field, likes title, description, assignee, etc.</p></td>
+                <td><p>TYPE_ISSUE_FIELD_UPDATE represents updating the issue field, likes title, description, etc.</p></td>
               </tr>
             
               <tr>

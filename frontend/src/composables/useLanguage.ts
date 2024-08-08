@@ -1,6 +1,7 @@
 import { useLocalStorage } from "@vueuse/core";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
+import { type LanguageStorage } from "@/plugins/i18n";
 import { emitStorageChangedEvent } from "@/utils";
 
 /**
@@ -10,7 +11,11 @@ import { emitStorageChangedEvent } from "@/utils";
 const useLanguage = () => {
   const { availableLocales, locale } = useI18n();
   const currentRoute = useRouter().currentRoute;
-  const storage = useLocalStorage("bytebase_options", {}) as any;
+  const storage = useLocalStorage<LanguageStorage>("bytebase_options", {
+    appearance: {
+      language: "",
+    },
+  });
 
   const setLocale = (lang: string) => {
     locale.value = lang;

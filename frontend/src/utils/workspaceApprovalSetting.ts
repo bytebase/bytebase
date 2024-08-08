@@ -293,7 +293,7 @@ const buildParsedExpression = async (parsed: ParsedApprovalRule[]) => {
       args: ["level", level],
     };
     return {
-      type: ExprType.Condition,
+      type: ExprType.ConditionGroup,
       operator: "_&&_",
       args: [sourceExpr, levelExpr],
     };

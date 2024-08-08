@@ -133,7 +133,7 @@
 </template>
 
 <script lang="ts" setup>
-import { useLocalStorage, type UseStorageOptions } from "@vueuse/core";
+import { type UseStorageOptions } from "@vueuse/core";
 import { cloneDeep } from "lodash-es";
 import { ChevronDownIcon, SearchIcon } from "lucide-vue-next";
 import { NButton, NTooltip } from "naive-ui";
@@ -162,6 +162,7 @@ import {
   getSemanticIssueStatusFromSearchParams,
   getValueFromSearchParams,
   upsertScope,
+  useDynamicLocalStorage,
 } from "@/utils";
 
 const TABS = [
@@ -190,9 +191,10 @@ const me = useCurrentUserV1();
 const route = useRoute();
 const router = useRouter();
 
-const storedStatus = useLocalStorage<SemanticIssueStatus>(
-  "bb.home.issue-list-status",
+const storedStatus = useDynamicLocalStorage<SemanticIssueStatus>(
+  computed(() => `bb.home.issue-list-status.${me.value.name}`),
   "OPEN",
+  window.localStorage,
   {
     serializer: {
       read(raw: SemanticIssueStatus) {
@@ -205,6 +207,7 @@ const storedStatus = useLocalStorage<SemanticIssueStatus>(
     },
   } as UseStorageOptions<SemanticIssueStatus>
 );
+
 const defaultSearchParams = () => {
   const params: SearchParams = {
     query: "",
@@ -232,9 +235,10 @@ const tabItemList = computed((): TabFilterItem<TabValue>[] => {
     { value: "ALL", label: t("common.all") },
   ];
 });
-const storedTab = useLocalStorage<TabValue>(
-  "bb.home.issue-list-tab",
+const storedTab = useDynamicLocalStorage<TabValue>(
+  computed(() => `bb.home.issue-list-tab.${me.value.name}`),
   tabItemList.value[0].value,
+  window.localStorage,
   {
     serializer: {
       read(raw: TabValue) {

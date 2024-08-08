@@ -672,9 +672,34 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 		return nil, err
 	}
 
+	dataSourceID := request.DataSourceId
+	if dataSourceID == "" {
+		dataSources, err := s.store.ListDataSourcesV2(ctx, &store.FindDataSourceMessage{
+			InstanceID: &database.InstanceID,
+		})
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to list data sources: %v", err)
+		}
+		if len(dataSources) == 0 {
+			return nil, status.Errorf(codes.NotFound, "no data source found")
+		}
+		readOnlyDataSources := make([]*store.DataSourceMessage, 0)
+		for _, dataSource := range dataSources {
+			if dataSource.Type == api.RO {
+				readOnlyDataSources = append(readOnlyDataSources, dataSource)
+			}
+		}
+		// First try to use read-only data source if available.
+		if len(readOnlyDataSources) > 0 {
+			dataSourceID = readOnlyDataSources[0].ID
+		} else {
+			dataSourceID = dataSources[0].ID
+		}
+	}
+
 	dataSource, err := s.store.GetDataSource(ctx, &store.FindDataSourceMessage{
 		InstanceID: &database.InstanceID,
-		Name:       &request.DataSourceId,
+		Name:       &dataSourceID,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get data source: %v", err)

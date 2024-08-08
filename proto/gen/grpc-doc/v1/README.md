@@ -5466,8 +5466,6 @@ The identity provider&#39;s `name` field is used to identify the identity provid
 | description | [string](#string) |  |  |
 | type | [Issue.Type](#bytebase-v1-Issue-Type) |  |  |
 | status | [IssueStatus](#bytebase-v1-IssueStatus) |  |  |
-| assignee | [string](#string) |  | Format: users/hello@world.com |
-| assignee_attention | [bool](#bool) |  |  |
 | approvers | [Issue.Approver](#bytebase-v1-Issue-Approver) | repeated |  |
 | approval_templates | [ApprovalTemplate](#bytebase-v1-ApprovalTemplate) | repeated |  |
 | approval_finding_done | [bool](#bool) |  | If the value is `false`, it means that the backend is still finding matching approval templates. If `true`, approval_templates &amp; approvers &amp; approval_finding_error are available. |
@@ -6541,6 +6539,7 @@ The policy&#39;s `name` field is used to identify the instance to update. Format
 | page_token | [string](#string) |  | A page token, received from a previous `ListPlanCheckRuns` call. Provide this to retrieve the subsequent page.
 
 When paginating, all other parameters provided to `ListPlanCheckRuns` must match the call that provided the page token. |
+| latest_only | [bool](#bool) |  | If set to true, only the latest plan check run will be returned. |
 
 
 
@@ -7542,7 +7541,7 @@ TYPE_NOTIFY_ISSUE_APPROVED represents the issue approved notification. |
 
 TYPE_ISSUE_CREATE represents creating an issue. |
 | TYPE_ISSUE_COMMENT_CREATE | 2 | TYPE_ISSUE_COMMENT_CREATE represents commenting on an issue. |
-| TYPE_ISSUE_FIELD_UPDATE | 3 | TYPE_ISSUE_FIELD_UPDATE represents updating the issue field, likes title, description, assignee, etc. |
+| TYPE_ISSUE_FIELD_UPDATE | 3 | TYPE_ISSUE_FIELD_UPDATE represents updating the issue field, likes title, description, etc. |
 | TYPE_ISSUE_STATUS_UPDATE | 4 | TYPE_ISSUE_STATUS_UPDATE represents the issue status change, including OPEN, CLOSE, CANCEL fow now. |
 | TYPE_ISSUE_APPROVAL_NOTIFY | 21 | TYPE_ISSUE_APPROVAL_NOTIFY is the type for notifying issue approval. |
 | TYPE_ISSUE_PIPELINE_STAGE_STATUS_UPDATE | 5 | TYPE_ISSUE_PIPELINE_STAGE_STATUS_UPDATE represents the pipeline stage status change, including BEGIN, END for now. |
