@@ -8,10 +8,10 @@
   />
 </template>
 
-<script lang="ts" setup>
+<script lang="tsx" setup>
 import type { DataTableColumn } from "naive-ui";
 import { NDataTable } from "naive-ui";
-import { computed, h } from "vue";
+import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import type { Role } from "@/types/proto/v1/role_service";
 import { displayRoleDescription } from "@/utils";
@@ -35,9 +35,7 @@ const columns = computed(() => {
       title: t("role.title"),
       width: "16rem",
       render: (role: Role) => {
-        return h(RoleTitleCell, {
-          role,
-        });
+        return <RoleTitleCell role={role} />;
       },
     },
     {
@@ -55,12 +53,12 @@ const columns = computed(() => {
       title: "",
       width: "10rem",
       render: (role: Role) => {
-        return h(RoleOperationsCell, {
-          role,
-          onEdit: () => {
-            emit("select-role", role);
-          },
-        });
+        return (
+          <RoleOperationsCell
+            role={role}
+            onEdit={() => emit("select-role", role)}
+          />
+        );
       },
     },
   ] as DataTableColumn<Role>[];
