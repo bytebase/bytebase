@@ -363,25 +363,28 @@ func convertStoreDatabaseConfig(ctx context.Context, config *storepb.DatabaseCon
 
 func convertStoreFunctionConfig(ctx context.Context, config *storepb.FunctionConfig, optionalStores *store.Store) *v1pb.FunctionConfig {
 	return &v1pb.FunctionConfig{
-		Name:       config.Name,
-		Updater:    getUpdaterFromUID(ctx, config.Updater, optionalStores),
-		UpdateTime: config.UpdateTime,
+		Name:         config.Name,
+		Updater:      getUpdaterFromUID(ctx, config.Updater, optionalStores),
+		SourceBranch: config.SourceBranch,
+		UpdateTime:   config.UpdateTime,
 	}
 }
 
 func convertStoreProcedureConfig(ctx context.Context, config *storepb.ProcedureConfig, optionalStores *store.Store) *v1pb.ProcedureConfig {
 	return &v1pb.ProcedureConfig{
-		Name:       config.Name,
-		Updater:    getUpdaterFromUID(ctx, config.Updater, optionalStores),
-		UpdateTime: config.UpdateTime,
+		Name:         config.Name,
+		Updater:      getUpdaterFromUID(ctx, config.Updater, optionalStores),
+		SourceBranch: config.SourceBranch,
+		UpdateTime:   config.UpdateTime,
 	}
 }
 
 func convertStoreViewConfig(ctx context.Context, config *storepb.ViewConfig, optionalStores *store.Store) *v1pb.ViewConfig {
 	return &v1pb.ViewConfig{
-		Name:       config.Name,
-		Updater:    getUpdaterFromUID(ctx, config.Updater, optionalStores),
-		UpdateTime: config.UpdateTime,
+		Name:         config.Name,
+		Updater:      getUpdaterFromUID(ctx, config.Updater, optionalStores),
+		SourceBranch: config.SourceBranch,
+		UpdateTime:   config.UpdateTime,
 	}
 }
 
@@ -390,6 +393,7 @@ func convertStoreTableConfig(ctx context.Context, table *storepb.TableConfig, op
 		Name:             table.Name,
 		ClassificationId: table.ClassificationId,
 		Updater:          getUpdaterFromUID(ctx, table.Updater, optionalStores),
+		SourceBranch:     table.SourceBranch,
 		UpdateTime:       table.UpdateTime,
 	}
 	for _, column := range table.ColumnConfigs {

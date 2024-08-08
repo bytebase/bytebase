@@ -620,3 +620,7 @@ func FormatIssue(projectID string, issueUID int) string {
 func FormatTask(projectID string, pipelineUID, stageUID, taskUID int) string {
 	return fmt.Sprintf("%s%s/%s%d/%s%d/%s%d", ProjectNamePrefix, projectID, RolloutPrefix, pipelineUID, StagePrefix, stageUID, TaskPrefix, taskUID)
 }
+
+func FormatBranchResourceID(projectID string, branchID string) string {
+	return fmt.Sprintf("%s%s/%s%s", ProjectNamePrefix, projectID, BranchPrefix, branchID)
+}
