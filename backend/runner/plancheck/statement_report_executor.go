@@ -166,16 +166,22 @@ func (e *StatementReportExecutor) runReport(ctx context.Context, instance *store
 func reportForOracle(sm *sheet.Manager, databaseName string, schemaName string, statement string, dbMetadata *model.DBSchema) ([]*storepb.PlanCheckRunResult_Result, error) {
 	asts, advices := sm.GetASTsForChecks(storepb.Engine_ORACLE, statement)
 	if len(advices) > 0 {
+		advice := advices[0]
 		// nolint:nilerr
 		return []*storepb.PlanCheckRunResult_Result{
 			{
 				Status:  storepb.PlanCheckRunResult_Result_ERROR,
-				Title:   "Syntax error",
-				Content: advices[0].Content,
+				Title:   advice.Title,
+				Content: advice.Content,
 				Code:    0,
-				Report: &storepb.PlanCheckRunResult_Result_SqlSummaryReport_{
-					SqlSummaryReport: &storepb.PlanCheckRunResult_Result_SqlSummaryReport{
-						Code: advisor.StatementSyntaxError.Int32(),
+				Report: &storepb.PlanCheckRunResult_Result_SqlReviewReport_{
+					SqlReviewReport: &storepb.PlanCheckRunResult_Result_SqlReviewReport{
+						Line:          advice.GetStartPosition().GetLine(),
+						Column:        advice.GetStartPosition().GetColumn(),
+						Code:          advice.Code,
+						Detail:        advice.Detail,
+						StartPosition: advice.StartPosition,
+						EndPosition:   advice.EndPosition,
 					},
 				},
 			},
@@ -213,16 +219,22 @@ func reportForOracle(sm *sheet.Manager, databaseName string, schemaName string, 
 func reportForMySQL(ctx context.Context, sm *sheet.Manager, sqlDB *sql.DB, engine storepb.Engine, databaseName string, statement string, dbMetadata *model.DBSchema, isDML bool) ([]*storepb.PlanCheckRunResult_Result, error) {
 	asts, advices := sm.GetASTsForChecks(storepb.Engine_MYSQL, statement)
 	if len(advices) > 0 {
+		advice := advices[0]
 		// nolint:nilerr
 		return []*storepb.PlanCheckRunResult_Result{
 			{
 				Status:  storepb.PlanCheckRunResult_Result_ERROR,
-				Title:   "Syntax error",
-				Content: advices[0].Content,
+				Title:   advice.Title,
+				Content: advice.Content,
 				Code:    0,
-				Report: &storepb.PlanCheckRunResult_Result_SqlSummaryReport_{
-					SqlSummaryReport: &storepb.PlanCheckRunResult_Result_SqlSummaryReport{
-						Code: advisor.StatementSyntaxError.Int32(),
+				Report: &storepb.PlanCheckRunResult_Result_SqlReviewReport_{
+					SqlReviewReport: &storepb.PlanCheckRunResult_Result_SqlReviewReport{
+						Line:          advice.GetStartPosition().GetLine(),
+						Column:        advice.GetStartPosition().GetColumn(),
+						Code:          advice.Code,
+						Detail:        advice.Detail,
+						StartPosition: advice.StartPosition,
+						EndPosition:   advice.EndPosition,
 					},
 				},
 			},
