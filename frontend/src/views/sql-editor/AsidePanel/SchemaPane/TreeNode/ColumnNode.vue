@@ -3,6 +3,7 @@
     <div class="w-4 h-4 inline-flex items-center justify-center">
       <PrimaryKeyIcon v-if="isPrimaryKey" class="w-4 h-4" />
       <IndexIcon v-else-if="isIndex" class="!w-4 !h-4 text-gray-500" />
+      <ColumnIcon v-else class="w-4 h-4" />
     </div>
     <HighlightLabelText
       :text="target.column.name"
@@ -14,7 +15,7 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
-import { IndexIcon, PrimaryKeyIcon } from "@/components/Icon";
+import { ColumnIcon, IndexIcon, PrimaryKeyIcon } from "@/components/Icon";
 import type { TreeNode } from "../common";
 import HighlightLabelText from "./HighlightLabelText.vue";
 
