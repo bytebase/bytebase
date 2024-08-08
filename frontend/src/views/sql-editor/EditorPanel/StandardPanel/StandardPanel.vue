@@ -5,14 +5,14 @@
     class="default-theme"
     :dbl-click-splitter="false"
   >
-    <Pane class="flex flex-row overflow-hidden">
+    <Pane class="flex flex-col overflow-hidden">
       <div
         v-if="isDisconnected || allowReadonlyMode"
-        class="flex h-full w-full flex-col justify-start items-stretch"
+        class="flex-1 h-full w-full flex flex-col justify-start items-stretch"
       >
         <template v-if="!tab || tab.editMode === 'SQL-EDITOR'">
           <EditorAction @execute="handleExecute" />
-          <div v-if="tab" class="w-full flex-1 flex flex-row items-stretch">
+          <div v-if="tab" class="w-full flex-1 flex flex-row items-stretch overflow-hidden">
             <Suspense>
               <SQLEditor @execute="handleExecute" />
               <template #fallback>
