@@ -158,6 +158,14 @@ func (s *RoleService) DeleteRole(ctx context.Context, request *v1pb.DeleteRoleRe
 		return nil, status.Errorf(codes.NotFound, "role not found: %s", roleID)
 	}
 
+	workspaceUsingRole, err := s.checkWorkspaceUsingRole(ctx, request.Name)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to check if the role is used: %v", err)
+	}
+	if workspaceUsingRole {
+		return nil, status.Errorf(codes.FailedPrecondition, "cannot delete because role %s is used in workspace member", common.FormatRole(roleID))
+	}
+
 	has, projectUID, err := s.getProjectUsingRole(ctx, request.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to check if the role is used: %v", err)
@@ -201,6 +209,20 @@ func (s *RoleService) getProjectUsingRole(ctx context.Context, role string) (boo
 	}
 
 	return false, 0, nil
+}
+
+func (s *RoleService) checkWorkspaceUsingRole(ctx context.Context, role string) (bool, error) {
+	policy, err := s.store.GetWorkspaceIamPolicy(ctx)
+	if err != nil {
+		return false, err
+	}
+
+	for _, binding := range policy.Policy.GetBindings() {
+		if binding.Role == role {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 func convertToRoles(roleMessages []*store.RoleMessage) []*v1pb.Role {
