@@ -908,16 +908,12 @@ func GetPipelineCreate(ctx context.Context, s *store.Store, sheetManager *sheet.
 		if config := spec.GetChangeDatabaseConfig(); config != nil {
 			// transform database group.
 			if _, _, err := common.GetProjectIDDatabaseGroupID(config.Target); err == nil {
-				stepsFromDatabaseGroup, err := transformDatabaseGroupTargetToSteps(ctx, s, spec, config, project)
+				specsFromDatabaseGroup, err := transformDatabaseGroupTargetToSteps(ctx, s, spec, config, project)
 				if err != nil {
 					return nil, errors.Wrapf(err, "failed to transform databaseGroup target to steps")
 				}
 
-				var transformedSpecs []*storepb.PlanConfig_Spec
-				for _, step := range stepsFromDatabaseGroup {
-					transformedSpecs = append(transformedSpecs, step.Specs...)
-				}
-				specs = transformedSpecs
+				specs = specsFromDatabaseGroup
 			}
 		}
 	}
@@ -970,7 +966,16 @@ func GetPipelineCreate(ctx context.Context, s *store.Store, sheetManager *sheet.
 			return nil, errors.Wrapf(err, "failed to get database matrix from deployment schedule")
 		}
 
-		seenSpecID := map[string]bool{}
+		specsByDatabase := map[string][]*storepb.PlanConfig_Spec{}
+		for _, s := range specs {
+			if s.GetChangeDatabaseConfig() == nil {
+				return nil, errors.Errorf("unexpected nil ChangeDatabaseConfig")
+			}
+			target := s.GetChangeDatabaseConfig().GetTarget()
+			specsByDatabase[target] = append(specsByDatabase[target], s)
+		}
+		databaseLoaded := map[string]bool{}
+
 		var steps []*storepb.PlanConfig_Step
 		for i, databases := range matrix {
 			if len(databases) == 0 {
@@ -981,17 +986,16 @@ func GetPipelineCreate(ctx context.Context, s *store.Store, sheetManager *sheet.
 				Title: deploymentConfig.Schedule.Deployments[i].Name,
 			}
 			for _, database := range databases {
-				for _, spec := range specs {
-					if seenSpecID[spec.Id] {
-						continue
-					}
-					if config := spec.GetChangeDatabaseConfig(); config != nil {
-						if common.FormatDatabase(database.InstanceID, database.DatabaseName) == config.Target {
-							seenSpecID[spec.Id] = true
-							step.Specs = append(step.Specs, spec)
-						}
-					}
+				name := common.FormatDatabase(database.InstanceID, database.DatabaseName)
+				if databaseLoaded[name] {
+					continue
 				}
+				specs, ok := specsByDatabase[name]
+				if !ok {
+					continue
+				}
+				step.Specs = append(step.Specs, specs...)
+				databaseLoaded[name] = true
 			}
 			steps = append(steps, step)
 		}
