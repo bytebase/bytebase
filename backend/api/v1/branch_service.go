@@ -232,7 +232,7 @@ func (s *BranchService) CreateBranch(ctx context.Context, request *v1pb.CreateBr
 
 		config := databaseSchema.GetConfig()
 		sanitizeCommentForSchemaMetadata(filteredBaseSchemaMetadata, model.NewDatabaseConfig(config), classificationConfig.ClassificationFromConfig)
-		initializeBranchUpdaterInfoConfig(filteredBaseSchemaMetadata, config, common.FormatUserUID(user.ID))
+		initBranchLastUpdateInfoConfig(filteredBaseSchemaMetadata, config, "" /* User ID */, common.FormatBranchResourceID(project.ResourceID, branchID))
 		created, err := s.store.CreateBranch(ctx, &store.BranchMessage{
 			ProjectID:  project.ResourceID,
 			ResourceID: branchID,
@@ -336,7 +336,7 @@ func (s *BranchService) UpdateBranch(ctx context.Context, request *v1pb.UpdateBr
 
 		reconcileMetadata(metadata, branch.Engine)
 		filteredMetadata := filterDatabaseMetadataByEngine(metadata, branch.Engine)
-		updateConfigBranchUpdateInfo(branch.Head.Metadata, filteredMetadata, config, common.FormatUserUID(user.ID))
+		updateConfigBranchUpdateInfo(branch.Head.Metadata, filteredMetadata, config, common.FormatUserUID(user.ID), common.FormatBranchResourceID(projectID, branchID))
 		defaultSchema := extractDefaultSchemaForOracleBranch(storepb.Engine(branch.Engine), filteredMetadata)
 		schema, err := schema.GetDesignSchema(branch.Engine, defaultSchema, "", filteredMetadata)
 		if err != nil {
@@ -485,7 +485,7 @@ func (s *BranchService) MergeBranch(ctx context.Context, request *v1pb.MergeBran
 
 	reconcileMetadata(mergedMetadata, baseBranch.Engine)
 	filteredMergedMetadata := filterDatabaseMetadataByEngine(mergedMetadata, baseBranch.Engine)
-	updateConfigBranchUpdateInfo(baseBranch.Base.Metadata, filteredMergedMetadata, mergedConfig, common.FormatUserUID(user.ID))
+	updateConfigBranchUpdateInfo(baseBranch.Base.Metadata, filteredMergedMetadata, mergedConfig, "", "" /* TODO(zp): fix me later */)
 	baseBranchNewHead := &storepb.BranchSnapshot{
 		Metadata:       filteredMergedMetadata,
 		DatabaseConfig: mergedConfig,
@@ -633,7 +633,7 @@ func (s *BranchService) RebaseBranch(ctx context.Context, request *v1pb.RebaseBr
 
 	newBaseSchemaBytes := []byte(newBaseSchema)
 	newHeadSchemaBytes := []byte(newHeadSchema)
-	updateConfigBranchUpdateInfo(filteredNewBaseMetadata, filteredNewHeadMetadata, newHeadConfig, common.FormatUserUID(user.ID))
+	updateConfigBranchUpdateInfo(filteredNewBaseMetadata, filteredNewHeadMetadata, newHeadConfig, "", "" /* TODO(zp): fix me later */)
 	if request.ValidateOnly {
 		baseBranch.Base = &storepb.BranchSnapshot{
 			Metadata:       filteredNewBaseMetadata,
@@ -1200,196 +1200,211 @@ func reconcileMySQLPartitionMetadata(partitions []*storepb.TablePartitionMetadat
 // updateConfigBranchUpdateInfo compare the proto of old and new metadata, and update the config branch update info.
 // NOTE: this function would not delete the config of deleted objects, and it's safe because the next time adding the object
 // back will trigger the update of the config branch update info.
-func updateConfigBranchUpdateInfo(old *storepb.DatabaseSchemaMetadata, new *storepb.DatabaseSchemaMetadata, config *storepb.DatabaseConfig, formattedUserEmail string) {
+func updateConfigBranchUpdateInfo(old *storepb.DatabaseSchemaMetadata, new *storepb.DatabaseSchemaMetadata, config *storepb.DatabaseConfig, formattedUserUID string, formattedBranchResourceID string) {
 	time := timestamppb.Now()
 
 	oldModel := model.NewDatabaseMetadata(old)
 
-	schemaConfigMap := buildMap(config.SchemaConfigs, func(s *storepb.SchemaConfig) string {
+	newSchemaConfigMap := buildMap(config.SchemaConfigs, func(s *storepb.SchemaConfig) string {
 		return s.Name
 	})
-	var newSchemaConfig []*storepb.SchemaConfig
+	var newSchemaConfigs []*storepb.SchemaConfig
 	for _, schema := range new.Schemas {
-		schemaConfig, ok := schemaConfigMap[schema.Name]
+		newSchemaConfig, ok := newSchemaConfigMap[schema.Name]
 		if !ok {
-			newSchemaConfig = append(newSchemaConfig, initializeSchemaConfig(schema, formattedUserEmail, time))
+			newSchemaConfigs = append(newSchemaConfigs, initSchemaConfig(schema, formattedUserUID, formattedBranchResourceID, time))
 			continue
 		}
 		oldSchema := oldModel.GetSchema(schema.Name)
 		if oldSchema == nil {
-			// If users delete the schema first, and then add it back, we should update the config branch update info.
-			for _, tableConfig := range schemaConfig.TableConfigs {
-				tableConfig.Updater = formattedUserEmail
+			for _, tableConfig := range newSchemaConfig.TableConfigs {
+				tableConfig.Updater = formattedUserUID
 				tableConfig.UpdateTime = time
+				tableConfig.SourceBranch = formattedBranchResourceID
 			}
-			for _, viewConfig := range schemaConfig.ViewConfigs {
-				viewConfig.Updater = formattedUserEmail
+			for _, viewConfig := range newSchemaConfig.ViewConfigs {
+				viewConfig.Updater = formattedUserUID
 				viewConfig.UpdateTime = time
+				viewConfig.SourceBranch = formattedBranchResourceID
 			}
-			for _, functionConfig := range schemaConfig.FunctionConfigs {
-				functionConfig.Updater = formattedUserEmail
+			for _, functionConfig := range newSchemaConfig.FunctionConfigs {
+				functionConfig.Updater = formattedUserUID
 				functionConfig.UpdateTime = time
+				functionConfig.SourceBranch = formattedBranchResourceID
 			}
-			for _, procedureConfig := range schemaConfig.ProcedureConfigs {
-				procedureConfig.Updater = formattedUserEmail
+			for _, procedureConfig := range newSchemaConfig.ProcedureConfigs {
+				procedureConfig.Updater = formattedUserUID
 				procedureConfig.UpdateTime = time
+				procedureConfig.SourceBranch = formattedBranchResourceID
 			}
 			continue
 		}
 
 		var newTableConfig []*storepb.TableConfig
-		tableConfigMap := buildMap(schemaConfig.TableConfigs, func(t *storepb.TableConfig) string {
+		tableConfigMap := buildMap(newSchemaConfig.TableConfigs, func(t *storepb.TableConfig) string {
 			return t.Name
 		})
 		for _, table := range schema.Tables {
 			tableConfig, ok := tableConfigMap[table.Name]
 			if !ok {
-				newTableConfig = append(newTableConfig, initializeTableConfig(table, formattedUserEmail, time))
+				newTableConfig = append(newTableConfig, initTableConfig(table, formattedUserUID, formattedBranchResourceID, time))
 				continue
 			}
 			oldTable := oldSchema.GetTable(table.Name)
 			if oldTable == nil {
 				// If users delete the table first, and then add it back, we should update the config branch update info.
-				tableConfig.Updater = formattedUserEmail
+				tableConfig.Updater = formattedUserUID
 				tableConfig.UpdateTime = time
+				tableConfig.SourceBranch = formattedBranchResourceID
 				continue
 			}
 			if !cmp.Equal(table, oldTable.GetProto(), protocmp.Transform()) {
-				tableConfig.Updater = formattedUserEmail
+				tableConfig.Updater = formattedUserUID
 				tableConfig.UpdateTime = time
+				tableConfig.SourceBranch = formattedBranchResourceID
 			}
 		}
 
 		var newViewConfig []*storepb.ViewConfig
-		viewConfigMap := buildMap(schemaConfig.ViewConfigs, func(v *storepb.ViewConfig) string {
+		viewConfigMap := buildMap(newSchemaConfig.ViewConfigs, func(v *storepb.ViewConfig) string {
 			return v.Name
 		})
 		for _, view := range schema.Views {
 			viewConfig, ok := viewConfigMap[view.Name]
 			if !ok {
-				newViewConfig = append(newViewConfig, initializeViewConfig(view, formattedUserEmail, time))
+				newViewConfig = append(newViewConfig, initViewConfig(view, formattedUserUID, formattedBranchResourceID, time))
 				continue
 			}
 			oldView := oldSchema.GetView(view.Name)
 			if oldView == nil {
 				// If users delete the view first, and then add it back, we should update the config branch update info.
-				viewConfig.Updater = formattedUserEmail
+				viewConfig.Updater = formattedUserUID
 				viewConfig.UpdateTime = time
+				viewConfig.SourceBranch = formattedBranchResourceID
 				continue
 			}
 			if !cmp.Equal(view, oldView.GetProto(), protocmp.Transform()) {
-				viewConfig.Updater = formattedUserEmail
+				viewConfig.Updater = formattedUserUID
 				viewConfig.UpdateTime = time
+				viewConfig.SourceBranch = formattedBranchResourceID
 			}
 		}
 
 		var newFunctionConfig []*storepb.FunctionConfig
-		functionConfigMap := buildMap(schemaConfig.FunctionConfigs, func(f *storepb.FunctionConfig) string {
+		functionConfigMap := buildMap(newSchemaConfig.FunctionConfigs, func(f *storepb.FunctionConfig) string {
 			return f.Name
 		})
 		for _, function := range schema.Functions {
 			functionConfig, ok := functionConfigMap[function.Name]
 			if !ok {
-				newFunctionConfig = append(newFunctionConfig, initializeFunctionConfig(function, formattedUserEmail, time))
+				newFunctionConfig = append(newFunctionConfig, initFunctionConfig(function, formattedUserUID, formattedBranchResourceID, time))
 				continue
 			}
 			oldFunction := oldSchema.GetFunction(function.Name)
 			if oldFunction == nil {
 				// If users delete the function first, and then add it back, we should update the config branch update info.
-				functionConfig.Updater = formattedUserEmail
+				functionConfig.Updater = formattedUserUID
 				functionConfig.UpdateTime = time
+				functionConfig.SourceBranch = formattedBranchResourceID
 				continue
 			}
 			if !cmp.Equal(function, oldFunction.GetProto(), protocmp.Transform()) {
-				functionConfig.Updater = formattedUserEmail
+				functionConfig.Updater = formattedUserUID
 				functionConfig.UpdateTime = time
+				functionConfig.SourceBranch = formattedBranchResourceID
 			}
 		}
 
 		var newProcedureConfig []*storepb.ProcedureConfig
-		procedureConfigMap := buildMap(schemaConfig.ProcedureConfigs, func(p *storepb.ProcedureConfig) string {
+		procedureConfigMap := buildMap(newSchemaConfig.ProcedureConfigs, func(p *storepb.ProcedureConfig) string {
 			return p.Name
 		})
 		for _, procedure := range schema.Procedures {
 			procedureConfig, ok := procedureConfigMap[procedure.Name]
 			if !ok {
-				newProcedureConfig = append(newProcedureConfig, initializeProcedureConfig(procedure, formattedUserEmail, time))
+				newProcedureConfig = append(newProcedureConfig, initProcedureConfig(procedure, formattedUserUID, formattedBranchResourceID, time))
 				continue
 			}
 			oldProcedure := oldSchema.GetProcedure(procedure.Name)
 			if oldProcedure == nil {
 				// If users delete the procedure first, and then add it back, we should update the config branch update info.
-				procedureConfig.Updater = formattedUserEmail
+				procedureConfig.Updater = formattedUserUID
 				procedureConfig.UpdateTime = time
+				procedureConfig.SourceBranch = formattedBranchResourceID
 				continue
 			}
 			if !cmp.Equal(procedure, oldProcedure.GetProto(), protocmp.Transform()) {
-				procedureConfig.Updater = formattedUserEmail
+				procedureConfig.Updater = formattedUserUID
 				procedureConfig.UpdateTime = time
+				procedureConfig.SourceBranch = formattedBranchResourceID
 			}
 		}
 
-		schemaConfig.TableConfigs = append(schemaConfig.TableConfigs, newTableConfig...)
-		schemaConfig.ViewConfigs = append(schemaConfig.ViewConfigs, newViewConfig...)
-		schemaConfig.FunctionConfigs = append(schemaConfig.FunctionConfigs, newFunctionConfig...)
-		schemaConfig.ProcedureConfigs = append(schemaConfig.ProcedureConfigs, newProcedureConfig...)
+		newSchemaConfig.TableConfigs = append(newSchemaConfig.TableConfigs, newTableConfig...)
+		newSchemaConfig.ViewConfigs = append(newSchemaConfig.ViewConfigs, newViewConfig...)
+		newSchemaConfig.FunctionConfigs = append(newSchemaConfig.FunctionConfigs, newFunctionConfig...)
+		newSchemaConfig.ProcedureConfigs = append(newSchemaConfig.ProcedureConfigs, newProcedureConfig...)
 	}
-	config.SchemaConfigs = append(config.SchemaConfigs, newSchemaConfig...)
+	config.SchemaConfigs = append(config.SchemaConfigs, newSchemaConfigs...)
 }
 
-func initializeSchemaConfig(schema *storepb.SchemaMetadata, formattedUserEmail string, time *timestamppb.Timestamp) *storepb.SchemaConfig {
+func initSchemaConfig(schema *storepb.SchemaMetadata, formattedUserUID string, branchResourceID string, time *timestamppb.Timestamp) *storepb.SchemaConfig {
 	s := &storepb.SchemaConfig{
 		Name: schema.Name,
 	}
 
 	for _, table := range schema.Tables {
-		s.TableConfigs = append(s.TableConfigs, initializeTableConfig(table, formattedUserEmail, time))
+		s.TableConfigs = append(s.TableConfigs, initTableConfig(table, formattedUserUID, branchResourceID, time))
 	}
 
 	for _, view := range schema.Views {
-		s.ViewConfigs = append(s.ViewConfigs, initializeViewConfig(view, formattedUserEmail, time))
+		s.ViewConfigs = append(s.ViewConfigs, initViewConfig(view, formattedUserUID, branchResourceID, time))
 	}
 
 	for _, function := range schema.Functions {
-		s.FunctionConfigs = append(s.FunctionConfigs, initializeFunctionConfig(function, formattedUserEmail, time))
+		s.FunctionConfigs = append(s.FunctionConfigs, initFunctionConfig(function, formattedUserUID, branchResourceID, time))
 	}
 
 	for _, procedure := range schema.Procedures {
-		s.ProcedureConfigs = append(s.ProcedureConfigs, initializeProcedureConfig(procedure, formattedUserEmail, time))
+		s.ProcedureConfigs = append(s.ProcedureConfigs, initProcedureConfig(procedure, formattedUserUID, branchResourceID, time))
 	}
 
 	return s
 }
 
-func initializeTableConfig(table *storepb.TableMetadata, formattedUserEmail string, time *timestamppb.Timestamp) *storepb.TableConfig {
+func initTableConfig(table *storepb.TableMetadata, formattedUserEmail string, branchResourceID string, time *timestamppb.Timestamp) *storepb.TableConfig {
 	return &storepb.TableConfig{
-		Name:       table.Name,
-		Updater:    formattedUserEmail,
-		UpdateTime: time,
+		Name:         table.Name,
+		Updater:      formattedUserEmail,
+		SourceBranch: branchResourceID,
+		UpdateTime:   time,
 	}
 }
 
-func initializeViewConfig(view *storepb.ViewMetadata, formattedUserEmail string, time *timestamppb.Timestamp) *storepb.ViewConfig {
+func initViewConfig(view *storepb.ViewMetadata, formattedUserEmail string, branchResourceID string, time *timestamppb.Timestamp) *storepb.ViewConfig {
 	return &storepb.ViewConfig{
-		Name:       view.Name,
-		Updater:    formattedUserEmail,
-		UpdateTime: time,
+		Name:         view.Name,
+		Updater:      formattedUserEmail,
+		SourceBranch: branchResourceID,
+		UpdateTime:   time,
 	}
 }
 
-func initializeFunctionConfig(function *storepb.FunctionMetadata, formattedUserEmail string, time *timestamppb.Timestamp) *storepb.FunctionConfig {
+func initFunctionConfig(function *storepb.FunctionMetadata, formattedUserEmail string, branchResourceID string, time *timestamppb.Timestamp) *storepb.FunctionConfig {
 	return &storepb.FunctionConfig{
-		Name:       function.Name,
-		Updater:    formattedUserEmail,
-		UpdateTime: time,
+		Name:         function.Name,
+		Updater:      formattedUserEmail,
+		SourceBranch: branchResourceID,
+		UpdateTime:   time,
 	}
 }
 
-func initializeProcedureConfig(procedure *storepb.ProcedureMetadata, formattedUserEmail string, time *timestamppb.Timestamp) *storepb.ProcedureConfig {
+func initProcedureConfig(procedure *storepb.ProcedureMetadata, formattedUserEmail string, branchResourceID string, time *timestamppb.Timestamp) *storepb.ProcedureConfig {
 	return &storepb.ProcedureConfig{
-		Name:       procedure.Name,
-		Updater:    formattedUserEmail,
-		UpdateTime: time,
+		Name:         procedure.Name,
+		Updater:      formattedUserEmail,
+		SourceBranch: branchResourceID,
+		UpdateTime:   time,
 	}
 }
 
@@ -1401,7 +1416,7 @@ func buildMap[T any](objects []T, getUniqueIdentifier func(T) string) map[string
 	return m
 }
 
-func initializeBranchUpdaterInfoConfig(metadata *storepb.DatabaseSchemaMetadata, config *storepb.DatabaseConfig, formattedUserEmail string) {
+func initBranchLastUpdateInfoConfig(metadata *storepb.DatabaseSchemaMetadata, config *storepb.DatabaseConfig, formattedUserUID, formattedBranchResourceID string) {
 	time := timestamppb.Now()
 	schemaConfigMap := buildMap(config.SchemaConfigs, func(s *storepb.SchemaConfig) string {
 		return s.Name
@@ -1409,7 +1424,7 @@ func initializeBranchUpdaterInfoConfig(metadata *storepb.DatabaseSchemaMetadata,
 	for _, schema := range metadata.Schemas {
 		schemaConfig, ok := schemaConfigMap[schema.Name]
 		if !ok {
-			config.SchemaConfigs = append(config.SchemaConfigs, initializeSchemaConfig(schema, formattedUserEmail, time))
+			config.SchemaConfigs = append(config.SchemaConfigs, initSchemaConfig(schema, formattedUserUID, formattedBranchResourceID, time))
 			continue
 		}
 		tableConfigMap := buildMap(schemaConfig.TableConfigs, func(t *storepb.TableConfig) string {
@@ -1418,10 +1433,11 @@ func initializeBranchUpdaterInfoConfig(metadata *storepb.DatabaseSchemaMetadata,
 		for _, table := range schema.Tables {
 			tableConfig, ok := tableConfigMap[table.Name]
 			if !ok {
-				schemaConfig.TableConfigs = append(schemaConfig.TableConfigs, initializeTableConfig(table, formattedUserEmail, time))
+				schemaConfig.TableConfigs = append(schemaConfig.TableConfigs, initTableConfig(table, formattedUserUID, formattedBranchResourceID, time))
 			} else {
-				tableConfig.Updater = formattedUserEmail
+				tableConfig.Updater = formattedUserUID
 				tableConfig.UpdateTime = time
+				tableConfig.SourceBranch = formattedBranchResourceID
 			}
 		}
 		viewConfigMap := buildMap(schemaConfig.ViewConfigs, func(v *storepb.ViewConfig) string {
@@ -1430,10 +1446,11 @@ func initializeBranchUpdaterInfoConfig(metadata *storepb.DatabaseSchemaMetadata,
 		for _, view := range schema.Views {
 			viewConfig, ok := viewConfigMap[view.Name]
 			if !ok {
-				schemaConfig.ViewConfigs = append(schemaConfig.ViewConfigs, initializeViewConfig(view, formattedUserEmail, time))
+				schemaConfig.ViewConfigs = append(schemaConfig.ViewConfigs, initViewConfig(view, formattedUserUID, formattedBranchResourceID, time))
 			} else {
-				viewConfig.Updater = formattedUserEmail
+				viewConfig.Updater = formattedUserUID
 				viewConfig.UpdateTime = time
+				viewConfig.SourceBranch = formattedBranchResourceID
 			}
 		}
 		functionConfigMap := buildMap(schemaConfig.FunctionConfigs, func(f *storepb.FunctionConfig) string {
@@ -1442,10 +1459,11 @@ func initializeBranchUpdaterInfoConfig(metadata *storepb.DatabaseSchemaMetadata,
 		for _, function := range schema.Functions {
 			functionConfig, ok := functionConfigMap[function.Name]
 			if !ok {
-				schemaConfig.FunctionConfigs = append(schemaConfig.FunctionConfigs, initializeFunctionConfig(function, formattedUserEmail, time))
+				schemaConfig.FunctionConfigs = append(schemaConfig.FunctionConfigs, initFunctionConfig(function, formattedUserUID, formattedBranchResourceID, time))
 			} else {
-				functionConfig.Updater = formattedUserEmail
+				functionConfig.Updater = formattedUserUID
 				functionConfig.UpdateTime = time
+				functionConfig.SourceBranch = formattedBranchResourceID
 			}
 		}
 		procedureConfigMap := buildMap(schemaConfig.ProcedureConfigs, func(p *storepb.ProcedureConfig) string {
@@ -1454,10 +1472,11 @@ func initializeBranchUpdaterInfoConfig(metadata *storepb.DatabaseSchemaMetadata,
 		for _, procedure := range schema.Procedures {
 			procedureConfig, ok := procedureConfigMap[procedure.Name]
 			if !ok {
-				schemaConfig.ProcedureConfigs = append(schemaConfig.ProcedureConfigs, initializeProcedureConfig(procedure, formattedUserEmail, time))
+				schemaConfig.ProcedureConfigs = append(schemaConfig.ProcedureConfigs, initProcedureConfig(procedure, formattedUserUID, formattedBranchResourceID, time))
 			} else {
-				procedureConfig.Updater = formattedUserEmail
+				procedureConfig.Updater = formattedUserUID
 				procedureConfig.UpdateTime = time
+				procedureConfig.SourceBranch = formattedBranchResourceID
 			}
 		}
 	}
