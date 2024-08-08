@@ -193,11 +193,11 @@ func reportForOracle(sm *sheet.Manager, databaseName string, schemaName string, 
 	}
 
 	var changedResources []base.SchemaResource
-	resources, err := base.ExtractChangedResources(storepb.Engine_ORACLE, databaseName, schemaName, nodes)
+	changeSummary, err := base.ExtractChangedResources(storepb.Engine_ORACLE, databaseName, schemaName, nodes)
 	if err != nil {
 		slog.Error("failed to extract changed resources", slog.String("statement", statement), log.BBError(err))
 	} else {
-		changedResources = append(changedResources, resources...)
+		changedResources = changeSummary.Resources
 	}
 
 	return []*storepb.PlanCheckRunResult_Result{
@@ -253,12 +253,12 @@ func reportForMySQL(ctx context.Context, sm *sheet.Manager, sqlDB *sql.DB, engin
 	for i, node := range nodes {
 		sqlType := mysqlparser.GetStatementType(node)
 		sqlTypeSet[sqlType] = struct{}{}
-		resources, err := base.ExtractChangedResources(storepb.Engine_MYSQL, databaseName, "" /* currentSchema */, node)
+		changeSummary, err := base.ExtractChangedResources(storepb.Engine_MYSQL, databaseName, "" /* currentSchema */, node)
 		if err != nil {
 			slog.Error("failed to extract changed resources", slog.String("statement", statement), log.BBError(err))
-		} else {
-			changedResources = append(changedResources, resources...)
+			continue
 		}
+		changedResources = append(changedResources, changeSummary.Resources...)
 
 		isExplained := false
 		affectedRows, err := base.GetAffectedRows(ctx, engine, node, buildGetRowsCountByQueryForMySQL(sqlDB, engine, &isExplained), buildGetTableDataSizeFuncForMySQL(dbMetadata))
