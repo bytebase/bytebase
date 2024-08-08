@@ -136,7 +136,7 @@ func mergeSchemaConfig(target, baseline, current *storepb.SchemaConfig) *storepb
 }
 
 func mergeFunctionConfig(target, baseline, current *storepb.FunctionConfig) *storepb.FunctionConfig {
-	lastUpdater, lastUpdateTime := getLastUpdater(target.Updater, target.UpdateTime, baseline.Updater, baseline.UpdateTime, current.Updater, current.UpdateTime)
+	lastUpdater, lastUpdateTime := getLastUpdater(target.Updater, target.UpdateTime, baseline.Updater, current.Updater, current.UpdateTime)
 	return &storepb.FunctionConfig{
 		Name:       current.Name,
 		Updater:    lastUpdater,
@@ -145,7 +145,7 @@ func mergeFunctionConfig(target, baseline, current *storepb.FunctionConfig) *sto
 }
 
 func mergeProcedureConfig(target, baseline, current *storepb.ProcedureConfig) *storepb.ProcedureConfig {
-	lastUpdater, lastUpdateTime := getLastUpdater(target.Updater, target.UpdateTime, baseline.Updater, baseline.UpdateTime, current.Updater, current.UpdateTime)
+	lastUpdater, lastUpdateTime := getLastUpdater(target.Updater, target.UpdateTime, baseline.Updater, current.Updater, current.UpdateTime)
 	return &storepb.ProcedureConfig{
 		Name:       current.Name,
 		Updater:    lastUpdater,
@@ -154,7 +154,7 @@ func mergeProcedureConfig(target, baseline, current *storepb.ProcedureConfig) *s
 }
 
 func mergeViewConfig(target, baseline, current *storepb.ViewConfig) *storepb.ViewConfig {
-	lastUpdater, lastUpdateTime := getLastUpdater(target.Updater, target.UpdateTime, baseline.Updater, baseline.UpdateTime, current.Updater, current.UpdateTime)
+	lastUpdater, lastUpdateTime := getLastUpdater(target.Updater, target.UpdateTime, baseline.Updater, current.Updater, current.UpdateTime)
 	return &storepb.ViewConfig{
 		Name:       current.Name,
 		Updater:    lastUpdater,
@@ -194,7 +194,7 @@ func mergeTableConfig(target, baseline, current *storepb.TableConfig) *storepb.T
 	}
 
 	result := &storepb.TableConfig{Name: current.Name, ClassificationId: current.ClassificationId}
-	lastUpdater, lastUpdateTime := getLastUpdater(target.Updater, target.UpdateTime, baseline.Updater, baseline.UpdateTime, current.Updater, current.UpdateTime)
+	lastUpdater, lastUpdateTime := getLastUpdater(target.Updater, target.UpdateTime, baseline.Updater, current.Updater, current.UpdateTime)
 	result.Updater = lastUpdater
 	result.UpdateTime = lastUpdateTime
 	for _, v := range currentMap {
@@ -279,7 +279,7 @@ func buildColumnMap(config *storepb.TableConfig) map[string]*storepb.ColumnConfi
 	return m
 }
 
-func getLastUpdater(target string, targetTime *timestamppb.Timestamp, baseline string, baselineTime *timestamppb.Timestamp, current string, currentTime *timestamppb.Timestamp) (string, *timestamppb.Timestamp) {
+func getLastUpdater(target string, targetTime *timestamppb.Timestamp, baseline string, current string, currentTime *timestamppb.Timestamp) (string, *timestamppb.Timestamp) {
 	if target == baseline {
 		return current, currentTime
 	}
