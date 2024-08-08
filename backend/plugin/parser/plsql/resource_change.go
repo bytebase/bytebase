@@ -17,7 +17,7 @@ func init() {
 	base.RegisterExtractChangedResourcesFunc(storepb.Engine_OCEANBASE_ORACLE, extractChangedResources)
 }
 
-func extractChangedResources(currentDatabase string, currentSchema string, ast any) ([]base.SchemaResource, error) {
+func extractChangedResources(currentDatabase string, currentSchema string, ast any) (*base.ChangeSummary, error) {
 	tree, ok := ast.(antlr.Tree)
 	if !ok {
 		return nil, errors.Errorf("failed to convert ast to antlr.Tree")
@@ -39,7 +39,9 @@ func extractChangedResources(currentDatabase string, currentSchema string, ast a
 		return result[i].String() < result[j].String()
 	})
 
-	return result, nil
+	return &base.ChangeSummary{
+		Resources: result,
+	}, nil
 }
 
 type plsqlChangedResourceExtractListener struct {

@@ -19,7 +19,7 @@ func init() {
 	base.RegisterExtractChangedResourcesFunc(storepb.Engine_DORIS, extractChangedResources)
 }
 
-func extractChangedResources(currentDatabase string, _ string, ast any) ([]base.SchemaResource, error) {
+func extractChangedResources(currentDatabase string, _ string, ast any) (*base.ChangeSummary, error) {
 	tree, ok := ast.(*ParseResult)
 	if !ok {
 		return nil, errors.Errorf("failed to convert ast %T to ParseResult", ast)
@@ -43,7 +43,9 @@ func extractChangedResources(currentDatabase string, _ string, ast any) ([]base.
 	sort.Slice(result, func(i, j int) bool {
 		return result[i].String() < result[j].String()
 	})
-	return result, nil
+	return &base.ChangeSummary{
+		Resources: result,
+	}, nil
 }
 
 type resourceChangedListener struct {
