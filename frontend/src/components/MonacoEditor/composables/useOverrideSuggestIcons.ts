@@ -20,7 +20,7 @@ const ColumnIconSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height
 // See <ViewIcon /> for more details
 const ViewIconSVG = {
   normal: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke-linecap="round" stroke-linejoin="round">
-  <g stroke="#000" stroke-width="1.8" >
+  <g stroke="rgb(156 163 175)" stroke-width="1.8" >
     <path d="M12 3v18"/>
     <rect width="18" height="18" x="3" y="3" rx="2"/>
     <path d="M3 9h18M3 15h18"/>
