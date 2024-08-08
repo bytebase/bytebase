@@ -101,7 +101,7 @@ const hideProjects = useAppFeature("bb.feature.sql-editor.hide-projects");
 const initializeProjects = async () => {
   const initProject = async (project: string) => {
     try {
-      await projectStore.getOrFetchProjectByName(project, /* !silent */ false);
+      await projectStore.getOrFetchProjectByName(project);
       editorStore.project = project;
       return true;
     } catch {
@@ -131,7 +131,7 @@ const initializeProjects = async () => {
       editorStore.strictProject = false;
       await initProject(DEFAULT_PROJECT_NAME);
     } else {
-      const projectList = await projectStore.fetchProjectList(false);
+      const projectList = await projectStore.listProjects();
       const lastView = editorStore.storedLastViewedProject;
       if (
         lastView &&
@@ -159,7 +159,7 @@ const handleProjectSwitched = async () => {
   if (project) {
     await projectStore.getOrFetchProjectByName(project, true /* silent */);
   } else {
-    await projectStore.fetchProjectList(false /* !showDeleted */);
+    await projectStore.listProjects();
   }
   tabStore.maybeInitProject(project);
 };

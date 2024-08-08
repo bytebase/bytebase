@@ -52,7 +52,8 @@ const state = reactive<LocalState>({
 });
 const subscriptionStore = useSubscriptionV1Store();
 const instanceV1Store = useInstanceV1Store();
-useInstanceV1List(/* showDeleted */ false, /* forceUpdate */ true);
+// Prepare instance list.
+useInstanceV1List();
 
 const { instanceLicenseCount } = storeToRefs(subscriptionStore);
 
