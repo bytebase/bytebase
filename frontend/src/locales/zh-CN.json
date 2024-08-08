@@ -3360,7 +3360,8 @@
       },
       "delete": "删除角色",
       "delete-warning": "角色“{name}”将被删除。此操作无法撤消。",
-      "delete-warning-with-resources": "角色“{name}”已分配给以下用户："
+      "delete-warning-with-resources": "角色“{name}”已分配给以下用户：",
+      "delete-warning-retry": "请从这些用户中删除角色然后重试。"
     },
     "select": "选择角色",
     "select-roles": "选择角色",

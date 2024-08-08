@@ -60,9 +60,12 @@
               >
                 {{ $t("branch.merge-rebase.rebase-branch") }}
               </NButton>
-              <NButton type="primary" @click="handleApplyBranchToDatabase">{{
-                $t("schema-designer.apply-to-database")
-              }}</NButton>
+              <NButton
+                v-if="showApplyBranchButton"
+                type="primary"
+                @click="handleApplyBranchToDatabase"
+                >{{ $t("schema-designer.apply-to-database") }}</NButton
+              >
             </template>
             <template v-else>
               <NButton :loading="state.isReverting" @click="handleCancelEdit">{{
@@ -288,6 +291,11 @@ const showRebaseBranchButton = computed(() => {
 
   // For feature branches: project owners and branch creator
   return allowEdit.value;
+});
+
+const showApplyBranchButton = computed(() => {
+  // only main branches can be applied to databases.
+  return !parentBranch.value;
 });
 
 const rebuildMetadataEdit = () => {

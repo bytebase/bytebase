@@ -33,6 +33,11 @@ permissions:
   - bb.environments.list
   - bb.environments.undelete
   - bb.environments.update
+  - bb.groups.create
+  - bb.groups.delete
+  - bb.groups.get
+  - bb.groups.list
+  - bb.groups.update
   - bb.identityProviders.create
   - bb.identityProviders.delete
   - bb.identityProviders.get
@@ -72,6 +77,11 @@ permissions:
   - bb.projects.setIamPolicy
   - bb.projects.undelete
   - bb.projects.update
+  - bb.reviewConfigs.create
+  - bb.reviewConfigs.delete
+  - bb.reviewConfigs.get
+  - bb.reviewConfigs.list
+  - bb.reviewConfigs.update
   - bb.risks.create
   - bb.risks.delete
   - bb.risks.list
@@ -86,14 +96,12 @@ permissions:
   - bb.settings.get
   - bb.settings.list
   - bb.settings.set
+  - bb.sheets.create
+  - bb.sheets.get
+  - bb.sheets.update
   - bb.slowQueries.list
   - bb.taskRuns.create
   - bb.taskRuns.list
-  - bb.groups.create
-  - bb.groups.delete
-  - bb.groups.get
-  - bb.groups.list
-  - bb.groups.update
   - bb.users.create
   - bb.users.delete
   - bb.users.undelete
