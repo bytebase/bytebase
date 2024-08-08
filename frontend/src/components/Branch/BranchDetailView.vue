@@ -61,6 +61,7 @@
                 {{ $t("branch.merge-rebase.rebase-branch") }}
               </NButton>
               <NButton
+                v-if="showApplyBranchButton"
                 type="primary"
                 @click="handleApplyBranchToDatabase"
                 >{{ $t("schema-designer.apply-to-database") }}</NButton
@@ -284,6 +285,11 @@ const showRebaseBranchButton = computed(() => {
 
   // For feature branches: project owners and branch creator
   return allowEdit.value;
+});
+
+const showApplyBranchButton = computed(() => {
+  // only main branches can be applied to databases.
+  return !parentBranch.value;
 });
 
 const rebuildMetadataEdit = () => {
