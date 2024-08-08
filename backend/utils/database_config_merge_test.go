@@ -356,7 +356,7 @@ func TestUpdateDatabaseConfig(t *testing.T) {
 
 	a := require.New(t)
 	for _, tc := range testCases {
-		got := MergeDatabaseConfig(tc.baseline, tc.head, tc.target)
+		got := MergeDatabaseConfig(tc.target, tc.baseline, tc.head)
 		equal := proto.Equal(got, tc.want)
 		a.True(equal, fmt.Sprintf("%s: \ngot:\t%%+v, \nexpected:\t%%+v", tc.description), got, tc.want)
 	}

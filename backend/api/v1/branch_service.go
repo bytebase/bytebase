@@ -480,13 +480,12 @@ func (s *BranchService) MergeBranch(ctx context.Context, request *v1pb.MergeBran
 	}
 	// XXX(zp): We only try to merge the schema config while the schema could be merged successfully. Otherwise, users manually merge the
 	// metadata in the frontend, and config would be ignored.
-	mergedConfig := utils.MergeDatabaseConfig(headBranch.Base.GetDatabaseConfig(), headBranch.Head.GetDatabaseConfig(), baseBranch.Head.GetDatabaseConfig())
+	mergedConfig := utils.MergeDatabaseConfig(baseBranch.Head.GetDatabaseConfig(), headBranch.Base.GetDatabaseConfig(), headBranch.Head.GetDatabaseConfig())
 
 	mergedSchemaBytes := []byte(mergedSchema)
 
 	reconcileMetadata(mergedMetadata, baseBranch.Engine)
 	filteredMergedMetadata := filterDatabaseMetadataByEngine(mergedMetadata, baseBranch.Engine)
-	updateConfigBranchUpdateInfoForUpdate(baseBranch.Base.Metadata, filteredMergedMetadata, mergedConfig, "", "" /* TODO(zp): fix me later */)
 	updateDatabaseConfigLastModifierForMerge(baseBranch.Head.Metadata, filteredMergedMetadata, baseBranch.Head.DatabaseConfig, mergedConfig)
 	baseBranchNewHead := &storepb.BranchSnapshot{
 		Metadata:       filteredMergedMetadata,
@@ -581,6 +580,8 @@ func (s *BranchService) RebaseBranch(ctx context.Context, request *v1pb.RebaseBr
 			return nil, status.Errorf(codes.InvalidArgument, "failed to convert merged schema to metadata, %v", err)
 		}
 		newHeadConfig = baseBranch.Head.GetDatabaseConfig()
+		updateDatabaseConfigLastModifierForMerge(baseBranch.Head.Metadata, newHeadMetadata, baseBranch.Head.DatabaseConfig, newHeadConfig)
+		newHeadConfig = baseBranch.Head.GetDatabaseConfig()
 		// String-based rebase operation do not include the structural information, such as classification, so we need to sanitize the user comment,
 		// trim the classification in user comment if the classification is not from the config.
 		modelNewHeadConfig := model.NewDatabaseConfig(newHeadConfig)
@@ -622,7 +623,7 @@ func (s *BranchService) RebaseBranch(ctx context.Context, request *v1pb.RebaseBr
 		}
 		// XXX(zp): We only try to merge the schema config while the schema could be merged successfully. Otherwise, users manually merge the
 		// metadata in the frontend, and config would be ignored.
-		newHeadConfig = utils.MergeDatabaseConfig(baseBranch.Base.GetDatabaseConfig(), baseBranch.Head.GetDatabaseConfig(), newBaseConfig)
+		newHeadConfig = utils.MergeDatabaseConfig(newBaseConfig, baseBranch.Base.GetDatabaseConfig(), baseBranch.Head.GetDatabaseConfig())
 	}
 
 	reconcileMetadata(newHeadMetadata, baseBranch.Engine)
@@ -635,7 +636,7 @@ func (s *BranchService) RebaseBranch(ctx context.Context, request *v1pb.RebaseBr
 
 	newBaseSchemaBytes := []byte(newBaseSchema)
 	newHeadSchemaBytes := []byte(newHeadSchema)
-	updateConfigBranchUpdateInfoForUpdate(filteredNewBaseMetadata, filteredNewHeadMetadata, newHeadConfig, "", "" /* TODO(zp): fix me later */)
+	updateDatabaseConfigLastModifierForMerge(filteredNewHeadMetadata, filteredNewBaseMetadata, newHeadConfig, newBaseConfig)
 	if request.ValidateOnly {
 		baseBranch.Base = &storepb.BranchSnapshot{
 			Metadata:       filteredNewBaseMetadata,
@@ -717,7 +718,9 @@ func (s *BranchService) getFilteredNewBaseFromRebaseRequest(ctx context.Context,
 			return nil, "", nil, status.Errorf(codes.Internal, err.Error())
 		}
 
-		return filteredNewBaseMetadata, sourceSchema, databaseSchema.GetConfig(), nil
+		alignedDatabaseConfig := databaseSchema.GetConfig()
+		alignDatabaseConfig(filteredNewBaseMetadata, alignedDatabaseConfig)
+		return filteredNewBaseMetadata, sourceSchema, alignedDatabaseConfig, nil
 	}
 
 	if request.SourceBranch != "" {
@@ -1528,12 +1531,16 @@ func updateDatabaseConfigLastModifierForMerge(baseMetadata *storepb.DatabaseSche
 
 		// Modified schema, set the last updater as head in base.
 		baseSchemaConfig := baseSchemaConfigMap[headSchema.Name]
+		// Rebase database, no schema config.
+		if baseSchemaConfig == nil {
+			baseSchemaConfig = initSchemaConfig(baseSchema.GetProto(), "", "", now)
+		}
 
 		// Tables
 		baseTableConfigMap := buildMap(baseSchemaConfig.TableConfigs, func(s *storepb.TableConfig) string {
 			return s.GetName()
 		})
-		headTableConfigMap := buildMap(baseSchemaConfig.TableConfigs, func(s *storepb.TableConfig) string {
+		headTableConfigMap := buildMap(headSchemaConfig.TableConfigs, func(s *storepb.TableConfig) string {
 			return s.GetName()
 		})
 		var newBaseTableConfigs []*storepb.TableConfig
@@ -1555,6 +1562,10 @@ func updateDatabaseConfigLastModifierForMerge(baseMetadata *storepb.DatabaseSche
 			}
 			// Modified table, set the last updater as head in base.
 			baseTableConfig := baseTableConfigMap[headTable.Name]
+			// Rebase database, no schema config.
+			if baseTableConfig == nil {
+				baseTableConfig = initTableConfig(baseTable.GetProto(), "", "", now)
+			}
 			if !cmp.Equal(headTable, baseTable.GetProto(), protocmp.Transform()) {
 				baseTableConfig.SourceBranch = ""
 				baseTableConfig.Updater = headTableConfig.Updater
@@ -1567,7 +1578,7 @@ func updateDatabaseConfigLastModifierForMerge(baseMetadata *storepb.DatabaseSche
 		baseFunctionConfigMap := buildMap(baseSchemaConfig.FunctionConfigs, func(s *storepb.FunctionConfig) string {
 			return s.GetName()
 		})
-		headFunctionConfigMap := buildMap(baseSchemaConfig.FunctionConfigs, func(s *storepb.FunctionConfig) string {
+		headFunctionConfigMap := buildMap(headSchemaConfig.FunctionConfigs, func(s *storepb.FunctionConfig) string {
 			return s.GetName()
 		})
 		var newBaseFunctionConfigs []*storepb.FunctionConfig
@@ -1589,6 +1600,10 @@ func updateDatabaseConfigLastModifierForMerge(baseMetadata *storepb.DatabaseSche
 			}
 			// Modified function, set the last updater as head in base.
 			baseFunctionConfig := baseFunctionConfigMap[headFunction.Name]
+			// Rebase database, no schema config.
+			if baseFunctionConfig == nil {
+				baseFunctionConfig = initFunctionConfig(baseFunction.GetProto(), "", "", now)
+			}
 			if !cmp.Equal(headFunction, baseFunction.GetProto(), protocmp.Transform()) {
 				baseFunctionConfig.SourceBranch = ""
 				baseFunctionConfig.Updater = headFunctionConfig.Updater
@@ -1601,7 +1616,7 @@ func updateDatabaseConfigLastModifierForMerge(baseMetadata *storepb.DatabaseSche
 		baseViewConfigMap := buildMap(baseSchemaConfig.ViewConfigs, func(s *storepb.ViewConfig) string {
 			return s.GetName()
 		})
-		headViewConfigMap := buildMap(baseSchemaConfig.ViewConfigs, func(s *storepb.ViewConfig) string {
+		headViewConfigMap := buildMap(headSchemaConfig.ViewConfigs, func(s *storepb.ViewConfig) string {
 			return s.GetName()
 		})
 		var newBaseViewConfigs []*storepb.ViewConfig
@@ -1623,6 +1638,10 @@ func updateDatabaseConfigLastModifierForMerge(baseMetadata *storepb.DatabaseSche
 			}
 			// Modified view, set the last updater as head in base.
 			baseViewConfig := baseViewConfigMap[headView.Name]
+			// Rebase database, no schema config.
+			if baseViewConfig == nil {
+				baseViewConfig = initViewConfig(baseView.GetProto(), "", "", now)
+			}
 			if !cmp.Equal(headView, baseView.GetProto(), protocmp.Transform()) {
 				baseViewConfig.SourceBranch = ""
 				baseViewConfig.Updater = headViewConfig.Updater
@@ -1635,7 +1654,7 @@ func updateDatabaseConfigLastModifierForMerge(baseMetadata *storepb.DatabaseSche
 		baseProcedureConfigMap := buildMap(baseSchemaConfig.ProcedureConfigs, func(s *storepb.ProcedureConfig) string {
 			return s.GetName()
 		})
-		headProcedureConfigMap := buildMap(baseSchemaConfig.ProcedureConfigs, func(s *storepb.ProcedureConfig) string {
+		headProcedureConfigMap := buildMap(headSchemaConfig.ProcedureConfigs, func(s *storepb.ProcedureConfig) string {
 			return s.GetName()
 		})
 		var newBaseProcedureConfigs []*storepb.ProcedureConfig
@@ -1667,4 +1686,79 @@ func updateDatabaseConfigLastModifierForMerge(baseMetadata *storepb.DatabaseSche
 	}
 
 	baseConfig.SchemaConfigs = append(baseConfig.SchemaConfigs, newBaseSchemaConfigs...)
+}
+
+func alignDatabaseConfig(metadata *storepb.DatabaseSchemaMetadata, config *storepb.DatabaseConfig) {
+	if config == nil {
+		config = &storepb.DatabaseConfig{
+			Name: metadata.Name,
+		}
+	}
+	now := timestamppb.Now()
+	dbModel := model.NewDatabaseMetadata(metadata)
+	schemaConfigMap := buildMap(config.SchemaConfigs, func(s *storepb.SchemaConfig) string {
+		return s.Name
+	})
+	var newSchemaConfigs []*storepb.SchemaConfig
+	for _, schemaName := range dbModel.ListSchemaNames() {
+		schemaModel := dbModel.GetSchema(schemaName)
+		schemaConfig, ok := schemaConfigMap[schemaName]
+		if !ok {
+			newSchemaConfigs = append(newSchemaConfigs, initSchemaConfig(schemaModel.GetProto(), "", "", now))
+			continue
+		}
+
+		var newTableConfigs []*storepb.TableConfig
+		tableConfigMap := buildMap(schemaConfig.TableConfigs, func(s *storepb.TableConfig) string {
+			return s.Name
+		})
+		for _, tableName := range schemaModel.ListTableNames() {
+			tableModel := schemaModel.GetTable(tableName)
+			if _, ok := tableConfigMap[tableName]; !ok {
+				newTableConfigs = append(newTableConfigs, initTableConfig(tableModel.GetProto(), "", "", now))
+				continue
+			}
+		}
+		schemaConfig.TableConfigs = append(schemaConfig.TableConfigs, newTableConfigs...)
+
+		var newViewConfigs []*storepb.ViewConfig
+		viewConfigMap := buildMap(schemaConfig.ViewConfigs, func(s *storepb.ViewConfig) string {
+			return s.Name
+		})
+		for _, viewName := range schemaModel.ListViewNames() {
+			viewModel := schemaModel.GetView(viewName)
+			if _, ok := viewConfigMap[viewName]; !ok {
+				newViewConfigs = append(newViewConfigs, initViewConfig(viewModel.GetProto(), "", "", now))
+				continue
+			}
+		}
+		schemaConfig.ViewConfigs = append(schemaConfig.ViewConfigs, newViewConfigs...)
+
+		var newProcedureConfigs []*storepb.ProcedureConfig
+		procedureConfigMap := buildMap(schemaConfig.ProcedureConfigs, func(s *storepb.ProcedureConfig) string {
+			return s.Name
+		})
+		for _, procedureName := range schemaModel.ListProcedureNames() {
+			procedureModel := schemaModel.GetProcedure(procedureName)
+			if _, ok := procedureConfigMap[procedureName]; !ok {
+				newProcedureConfigs = append(newProcedureConfigs, initProcedureConfig(procedureModel.GetProto(), "", "", now))
+				continue
+			}
+		}
+		schemaConfig.ProcedureConfigs = append(schemaConfig.ProcedureConfigs, newProcedureConfigs...)
+
+		var newFunctionConfigs []*storepb.FunctionConfig
+		functionConfigMap := buildMap(schemaConfig.FunctionConfigs, func(s *storepb.FunctionConfig) string {
+			return s.Name
+		})
+		for _, functionName := range schemaModel.ListFunctionNames() {
+			functionModel := schemaModel.GetFunction(functionName)
+			if _, ok := functionConfigMap[functionName]; !ok {
+				newFunctionConfigs = append(newFunctionConfigs, initFunctionConfig(functionModel.GetProto(), "", "", now))
+				continue
+			}
+		}
+		schemaConfig.FunctionConfigs = append(schemaConfig.FunctionConfigs, newFunctionConfigs...)
+	}
+	config.SchemaConfigs = append(config.SchemaConfigs, newSchemaConfigs...)
 }

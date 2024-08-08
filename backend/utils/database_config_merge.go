@@ -11,7 +11,7 @@ import (
 
 // MergeDatabaseConfig computes the migration from target and baseline, and applies the migration to current databaseConfig.
 // Return the merged databaseConfig.
-func MergeDatabaseConfig(baseline, head, target *storepb.DatabaseConfig) *storepb.DatabaseConfig {
+func MergeDatabaseConfig(target, baseline, current *storepb.DatabaseConfig) *storepb.DatabaseConfig {
 	// Avoid nil values.
 	if target == nil {
 		target = &storepb.DatabaseConfig{}
@@ -19,11 +19,11 @@ func MergeDatabaseConfig(baseline, head, target *storepb.DatabaseConfig) *storep
 	if baseline == nil {
 		baseline = &storepb.DatabaseConfig{}
 	}
-	if head == nil {
-		head = &storepb.DatabaseConfig{}
+	if current == nil {
+		current = &storepb.DatabaseConfig{}
 	}
 
-	targetMap, baselineMap, currentMap := buildSchemaMap(target), buildSchemaMap(baseline), buildSchemaMap(head)
+	targetMap, baselineMap, currentMap := buildSchemaMap(target), buildSchemaMap(baseline), buildSchemaMap(current)
 	for schemaName, targetSchema := range targetMap {
 		currentSchema, hasCurrent := currentMap[schemaName]
 		baselineSchema := baselineMap[schemaName]
@@ -38,11 +38,11 @@ func MergeDatabaseConfig(baseline, head, target *storepb.DatabaseConfig) *storep
 			// Already checked above.
 			continue
 		}
-		// Remove from the current since the change is to delete the schema..
+		// Remove from the current since the change is to delete the schema.
 		delete(currentMap, schemaName)
 	}
 
-	result := &storepb.DatabaseConfig{Name: head.Name}
+	result := &storepb.DatabaseConfig{Name: current.Name}
 	for _, v := range currentMap {
 		result.SchemaConfigs = append(result.SchemaConfigs, v)
 	}
@@ -209,6 +209,9 @@ func mergeTableConfig(target, baseline, current *storepb.TableConfig) *storepb.T
 func mergeColumnConfig(target, baseline, current *storepb.ColumnConfig) *storepb.ColumnConfig {
 	if baseline == nil {
 		// Baseline could be nil. When it's nil, we should set the current stale value to target value.
+		if target == nil {
+			return current
+		}
 		return target
 	}
 	// Current is never nil.
@@ -276,13 +279,9 @@ func buildColumnMap(config *storepb.TableConfig) map[string]*storepb.ColumnConfi
 	return m
 }
 
-func getLastUpdater(updaterA string, updateTimeA *timestamppb.Timestamp, updaterB string, updateTimeB *timestamppb.Timestamp, updaterC string, updateTimeC *timestamppb.Timestamp) (string, *timestamppb.Timestamp) {
-	lastUpdater, lastUpdateTime := updaterA, updateTimeA
-	if lastUpdateTime == nil || (updateTimeB != nil && updateTimeB.AsTime().After(lastUpdateTime.AsTime())) {
-		lastUpdater, lastUpdateTime = updaterB, updateTimeB
+func getLastUpdater(target string, targetTime *timestamppb.Timestamp, baseline string, baselineTime *timestamppb.Timestamp, current string, currentTime *timestamppb.Timestamp) (string, *timestamppb.Timestamp) {
+	if target == baseline {
+		return current, currentTime
 	}
-	if lastUpdateTime == nil || (updateTimeC != nil && updateTimeC.AsTime().After(lastUpdateTime.AsTime())) {
-		lastUpdater, lastUpdateTime = updaterC, updateTimeC
-	}
-	return lastUpdater, lastUpdateTime
+	return target, targetTime
 }
