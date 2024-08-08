@@ -3360,7 +3360,8 @@
       },
       "delete": "役割の削除",
       "delete-warning": "ロール「{name}」は削除されます。この操作は元に戻すことができません。",
-      "delete-warning-with-resources": "ロール「{name}」は次のユーザーに割り当てられています:"
+      "delete-warning-with-resources": "ロール「{name}」は次のユーザーに割り当てられています:",
+      "delete-warning-retry": "これらのユーザーからロールを削除して、もう一度お試しください。"
     },
     "select": "役割の選択",
     "select-roles": "役割の選択",
