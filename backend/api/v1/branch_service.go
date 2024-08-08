@@ -1348,18 +1348,22 @@ func updateConfigBranchUpdateInfo(old *storepb.DatabaseSchemaMetadata, new *stor
 			for _, tableConfig := range newSchemaConfig.TableConfigs {
 				tableConfig.Updater = formattedUserUID
 				tableConfig.UpdateTime = time
+				tableConfig.SourceBranch = formattedBranchResourceID
 			}
 			for _, viewConfig := range newSchemaConfig.ViewConfigs {
 				viewConfig.Updater = formattedUserUID
 				viewConfig.UpdateTime = time
+				viewConfig.SourceBranch = formattedBranchResourceID
 			}
 			for _, functionConfig := range newSchemaConfig.FunctionConfigs {
 				functionConfig.Updater = formattedUserUID
 				functionConfig.UpdateTime = time
+				functionConfig.SourceBranch = formattedBranchResourceID
 			}
 			for _, procedureConfig := range newSchemaConfig.ProcedureConfigs {
 				procedureConfig.Updater = formattedUserUID
 				procedureConfig.UpdateTime = time
+				procedureConfig.SourceBranch = formattedBranchResourceID
 			}
 			continue
 		}
@@ -1379,11 +1383,13 @@ func updateConfigBranchUpdateInfo(old *storepb.DatabaseSchemaMetadata, new *stor
 				// If users delete the table first, and then add it back, we should update the config branch update info.
 				tableConfig.Updater = formattedUserUID
 				tableConfig.UpdateTime = time
+				tableConfig.SourceBranch = formattedBranchResourceID
 				continue
 			}
 			if !cmp.Equal(table, oldTable.GetProto(), protocmp.Transform()) {
 				tableConfig.Updater = formattedUserUID
 				tableConfig.UpdateTime = time
+				tableConfig.SourceBranch = formattedBranchResourceID
 			}
 		}
 
@@ -1402,11 +1408,13 @@ func updateConfigBranchUpdateInfo(old *storepb.DatabaseSchemaMetadata, new *stor
 				// If users delete the view first, and then add it back, we should update the config branch update info.
 				viewConfig.Updater = formattedUserUID
 				viewConfig.UpdateTime = time
+				viewConfig.SourceBranch = formattedBranchResourceID
 				continue
 			}
 			if !cmp.Equal(view, oldView.GetProto(), protocmp.Transform()) {
 				viewConfig.Updater = formattedUserUID
 				viewConfig.UpdateTime = time
+				viewConfig.SourceBranch = formattedBranchResourceID
 			}
 		}
 
@@ -1425,11 +1433,13 @@ func updateConfigBranchUpdateInfo(old *storepb.DatabaseSchemaMetadata, new *stor
 				// If users delete the function first, and then add it back, we should update the config branch update info.
 				functionConfig.Updater = formattedUserUID
 				functionConfig.UpdateTime = time
+				functionConfig.SourceBranch = formattedBranchResourceID
 				continue
 			}
 			if !cmp.Equal(function, oldFunction.GetProto(), protocmp.Transform()) {
 				functionConfig.Updater = formattedUserUID
 				functionConfig.UpdateTime = time
+				functionConfig.SourceBranch = formattedBranchResourceID
 			}
 		}
 
@@ -1448,11 +1458,13 @@ func updateConfigBranchUpdateInfo(old *storepb.DatabaseSchemaMetadata, new *stor
 				// If users delete the procedure first, and then add it back, we should update the config branch update info.
 				procedureConfig.Updater = formattedUserUID
 				procedureConfig.UpdateTime = time
+				procedureConfig.SourceBranch = formattedBranchResourceID
 				continue
 			}
 			if !cmp.Equal(procedure, oldProcedure.GetProto(), protocmp.Transform()) {
 				procedureConfig.Updater = formattedUserUID
 				procedureConfig.UpdateTime = time
+				procedureConfig.SourceBranch = formattedBranchResourceID
 			}
 		}
 
@@ -1553,6 +1565,7 @@ func initBranchLastUpdateInfoConfig(metadata *storepb.DatabaseSchemaMetadata, co
 			} else {
 				tableConfig.Updater = formattedUserUID
 				tableConfig.UpdateTime = time
+				tableConfig.SourceBranch = formattedBranchResourceID
 			}
 		}
 		viewConfigMap := buildMap(schemaConfig.ViewConfigs, func(v *storepb.ViewConfig) string {
@@ -1565,6 +1578,7 @@ func initBranchLastUpdateInfoConfig(metadata *storepb.DatabaseSchemaMetadata, co
 			} else {
 				viewConfig.Updater = formattedUserUID
 				viewConfig.UpdateTime = time
+				viewConfig.SourceBranch = formattedBranchResourceID
 			}
 		}
 		functionConfigMap := buildMap(schemaConfig.FunctionConfigs, func(f *storepb.FunctionConfig) string {
@@ -1577,6 +1591,7 @@ func initBranchLastUpdateInfoConfig(metadata *storepb.DatabaseSchemaMetadata, co
 			} else {
 				functionConfig.Updater = formattedUserUID
 				functionConfig.UpdateTime = time
+				functionConfig.SourceBranch = formattedBranchResourceID
 			}
 		}
 		procedureConfigMap := buildMap(schemaConfig.ProcedureConfigs, func(p *storepb.ProcedureConfig) string {
@@ -1589,6 +1604,7 @@ func initBranchLastUpdateInfoConfig(metadata *storepb.DatabaseSchemaMetadata, co
 			} else {
 				procedureConfig.Updater = formattedUserUID
 				procedureConfig.UpdateTime = time
+				procedureConfig.SourceBranch = formattedBranchResourceID
 			}
 		}
 	}
