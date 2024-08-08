@@ -34,6 +34,21 @@ type UpdateRoleMessage struct {
 	Permissions *map[string]bool
 }
 
+func (s *Store) CheckRoleInUse(ctx context.Context, role string) (bool, error) {
+	query := `
+		SELECT EXISTS (
+			SELECT 1 FROM policy
+			CROSS JOIN LATERAL jsonb_array_elements(payload->'bindings') AS binding
+			WHERE type = 'bb.policy.iam' AND binding->>'role' = $1
+		);
+	`
+	var exist bool
+	if err := s.db.db.QueryRowContext(ctx, query, role).Scan(&exist); err != nil {
+		return false, err
+	}
+	return exist, nil
+}
+
 // CreateRole creates a new role.
 func (s *Store) CreateRole(ctx context.Context, create *RoleMessage, creatorID int) (*RoleMessage, error) {
 	query := `

@@ -3360,7 +3360,8 @@
       },
       "delete": "Eliminar rol",
       "delete-warning": "Se eliminará el rol \"{name}\". Esta acción no se puede deshacer.",
-      "delete-warning-with-resources": "El rol \"{name}\" está asignado a los siguientes usuarios:"
+      "delete-warning-with-resources": "El rol \"{name}\" está asignado a los siguientes usuarios:",
+      "delete-warning-retry": "Elimine la función de estos usuarios y vuelva a intentarlo."
     },
     "select": "Seleccionar rol",
     "select-roles": "Seleccionar roles",
