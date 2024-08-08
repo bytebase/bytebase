@@ -344,6 +344,7 @@ roles:
       - bb.issues.create
       - bb.issues.get
       - bb.issues.list
+      - bb.issues.update
       - bb.planCheckRuns.list
       - bb.planCheckRuns.run
       - bb.plans.create
