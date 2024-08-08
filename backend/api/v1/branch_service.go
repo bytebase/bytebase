@@ -12,6 +12,7 @@ import (
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/testing/protocmp"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -336,7 +337,7 @@ func (s *BranchService) UpdateBranch(ctx context.Context, request *v1pb.UpdateBr
 
 		reconcileMetadata(metadata, branch.Engine)
 		filteredMetadata := filterDatabaseMetadataByEngine(metadata, branch.Engine)
-		updateConfigBranchUpdateInfo(branch.Head.Metadata, filteredMetadata, config, common.FormatUserUID(user.ID), common.FormatBranchResourceID(projectID, branchID))
+		updateConfigBranchUpdateInfoForUpdate(branch.Head.Metadata, filteredMetadata, config, common.FormatUserUID(user.ID), common.FormatBranchResourceID(projectID, branchID))
 		defaultSchema := extractDefaultSchemaForOracleBranch(storepb.Engine(branch.Engine), filteredMetadata)
 		schema, err := schema.GetDesignSchema(branch.Engine, defaultSchema, "", filteredMetadata)
 		if err != nil {
@@ -485,10 +486,11 @@ func (s *BranchService) MergeBranch(ctx context.Context, request *v1pb.MergeBran
 
 	reconcileMetadata(mergedMetadata, baseBranch.Engine)
 	filteredMergedMetadata := filterDatabaseMetadataByEngine(mergedMetadata, baseBranch.Engine)
-	updateConfigBranchUpdateInfo(baseBranch.Base.Metadata, filteredMergedMetadata, mergedConfig, "", "" /* TODO(zp): fix me later */)
+	updateConfigBranchUpdateInfoForUpdate(baseBranch.Base.Metadata, filteredMergedMetadata, mergedConfig, "", "" /* TODO(zp): fix me later */)
+	updateDatabaseConfigLastModifierForMerge(baseBranch.Head.Metadata, filteredMergedMetadata, baseBranch.Head.DatabaseConfig, mergedConfig)
 	baseBranchNewHead := &storepb.BranchSnapshot{
 		Metadata:       filteredMergedMetadata,
-		DatabaseConfig: mergedConfig,
+		DatabaseConfig: baseBranch.Head.DatabaseConfig,
 	}
 	baseBranchNewHeadSchema := mergedSchemaBytes
 
@@ -633,7 +635,7 @@ func (s *BranchService) RebaseBranch(ctx context.Context, request *v1pb.RebaseBr
 
 	newBaseSchemaBytes := []byte(newBaseSchema)
 	newHeadSchemaBytes := []byte(newHeadSchema)
-	updateConfigBranchUpdateInfo(filteredNewBaseMetadata, filteredNewHeadMetadata, newHeadConfig, "", "" /* TODO(zp): fix me later */)
+	updateConfigBranchUpdateInfoForUpdate(filteredNewBaseMetadata, filteredNewHeadMetadata, newHeadConfig, "", "" /* TODO(zp): fix me later */)
 	if request.ValidateOnly {
 		baseBranch.Base = &storepb.BranchSnapshot{
 			Metadata:       filteredNewBaseMetadata,
@@ -1197,10 +1199,10 @@ func reconcileMySQLPartitionMetadata(partitions []*storepb.TablePartitionMetadat
 	}
 }
 
-// updateConfigBranchUpdateInfo compare the proto of old and new metadata, and update the config branch update info.
+// updateConfigBranchUpdateInfoForUpdate compare the proto of old and new metadata, and update the config branch update info.
 // NOTE: this function would not delete the config of deleted objects, and it's safe because the next time adding the object
 // back will trigger the update of the config branch update info.
-func updateConfigBranchUpdateInfo(old *storepb.DatabaseSchemaMetadata, new *storepb.DatabaseSchemaMetadata, config *storepb.DatabaseConfig, formattedUserUID string, formattedBranchResourceID string) {
+func updateConfigBranchUpdateInfoForUpdate(old *storepb.DatabaseSchemaMetadata, new *storepb.DatabaseSchemaMetadata, config *storepb.DatabaseConfig, formattedUserUID string, formattedBranchResourceID string) {
 	time := timestamppb.Now()
 
 	oldModel := model.NewDatabaseMetadata(old)
@@ -1498,4 +1500,171 @@ func trimClassificationIDFromCommentIfNeeded(dbSchema *storepb.DatabaseSchemaMet
 			}
 		}
 	}
+}
+
+func updateDatabaseConfigLastModifierForMerge(baseMetadata *storepb.DatabaseSchemaMetadata, headMetadata *storepb.DatabaseSchemaMetadata, baseConfig *storepb.DatabaseConfig, headConfig *storepb.DatabaseConfig) {
+	now := timestamppb.Now()
+	baseModel := model.NewDatabaseMetadata(baseMetadata)
+	baseSchemaConfigMap := buildMap(baseConfig.SchemaConfigs, func(s *storepb.SchemaConfig) string {
+		return s.GetName()
+	})
+	headSchemaConfigMap := buildMap(headConfig.SchemaConfigs, func(s *storepb.SchemaConfig) string {
+		return s.GetName()
+	})
+
+	var newBaseSchemaConfigs []*storepb.SchemaConfig
+	for _, headSchema := range headMetadata.Schemas {
+		headSchemaConfig := headSchemaConfigMap[headSchema.Name]
+		if headSchemaConfig == nil {
+			headSchemaConfig = initSchemaConfig(headSchema, "", "", now)
+		}
+		baseSchema := baseModel.GetSchema(headSchema.Name)
+		if baseSchema == nil {
+			//nolint
+			newBaseSchemaConfig := proto.Clone(headSchemaConfig).(*storepb.SchemaConfig)
+			newBaseSchemaConfigs = append(newBaseSchemaConfigs, newBaseSchemaConfig)
+			continue
+		}
+
+		// Modified schema, set the last updater as head in base.
+		baseSchemaConfig := baseSchemaConfigMap[headSchema.Name]
+
+		// Tables
+		baseTableConfigMap := buildMap(baseSchemaConfig.TableConfigs, func(s *storepb.TableConfig) string {
+			return s.GetName()
+		})
+		headTableConfigMap := buildMap(baseSchemaConfig.TableConfigs, func(s *storepb.TableConfig) string {
+			return s.GetName()
+		})
+		var newBaseTableConfigs []*storepb.TableConfig
+		for _, headTable := range headSchema.Tables {
+			headTableConfig := headTableConfigMap[headTable.Name]
+			if headTableConfig == nil {
+				headTableConfig = initTableConfig(headTable, "", "", now)
+			}
+			baseTable := baseSchema.GetTable(headTable.Name)
+			// New table, reset the source branch and last modifier because we do not remove the config while deleting the object.
+			if baseTable == nil {
+				//nolint
+				newBaseTableConfig := proto.Clone(headTableConfig).(*storepb.TableConfig)
+				newBaseTableConfig.SourceBranch = ""
+				newBaseTableConfig.Updater = headTableConfig.Updater
+				newBaseTableConfig.UpdateTime = now
+				newBaseTableConfigs = append(newBaseTableConfigs, newBaseTableConfig)
+				continue
+			}
+			// Modified table, set the last updater as head in base.
+			baseTableConfig := baseTableConfigMap[headTable.Name]
+			if !cmp.Equal(headTable, baseTable.GetProto(), protocmp.Transform()) {
+				baseTableConfig.SourceBranch = ""
+				baseTableConfig.Updater = headTableConfig.Updater
+				baseTableConfig.UpdateTime = now
+			}
+		}
+		baseSchemaConfig.TableConfigs = append(baseSchemaConfig.TableConfigs, newBaseTableConfigs...)
+
+		// Functions
+		baseFunctionConfigMap := buildMap(baseSchemaConfig.FunctionConfigs, func(s *storepb.FunctionConfig) string {
+			return s.GetName()
+		})
+		headFunctionConfigMap := buildMap(baseSchemaConfig.FunctionConfigs, func(s *storepb.FunctionConfig) string {
+			return s.GetName()
+		})
+		var newBaseFunctionConfigs []*storepb.FunctionConfig
+		for _, headFunction := range headSchema.Functions {
+			headFunctionConfig := headFunctionConfigMap[headFunction.Name]
+			if headFunctionConfig == nil {
+				headFunctionConfig = initFunctionConfig(headFunction, "", "", now)
+			}
+			baseFunction := baseSchema.GetFunction(headFunction.Name)
+			// New function, reset the source branch and last modifier because we do not remove the config while deleting the object.
+			if baseFunction == nil {
+				//nolint
+				newBaseFunctionConfig := proto.Clone(headFunctionConfig).(*storepb.FunctionConfig)
+				newBaseFunctionConfig.SourceBranch = ""
+				newBaseFunctionConfig.Updater = headFunctionConfig.Updater
+				newBaseFunctionConfig.UpdateTime = now
+				newBaseFunctionConfigs = append(newBaseFunctionConfigs, newBaseFunctionConfig)
+				continue
+			}
+			// Modified function, set the last updater as head in base.
+			baseFunctionConfig := baseFunctionConfigMap[headFunction.Name]
+			if !cmp.Equal(headFunction, baseFunction.GetProto(), protocmp.Transform()) {
+				baseFunctionConfig.SourceBranch = ""
+				baseFunctionConfig.Updater = headFunctionConfig.Updater
+				baseFunctionConfig.UpdateTime = now
+			}
+		}
+		baseSchemaConfig.FunctionConfigs = append(baseSchemaConfig.FunctionConfigs, newBaseFunctionConfigs...)
+
+		// Views
+		baseViewConfigMap := buildMap(baseSchemaConfig.ViewConfigs, func(s *storepb.ViewConfig) string {
+			return s.GetName()
+		})
+		headViewConfigMap := buildMap(baseSchemaConfig.ViewConfigs, func(s *storepb.ViewConfig) string {
+			return s.GetName()
+		})
+		var newBaseViewConfigs []*storepb.ViewConfig
+		for _, headView := range headSchema.Views {
+			headViewConfig := headViewConfigMap[headView.Name]
+			if headViewConfig == nil {
+				headViewConfig = initViewConfig(headView, "", "", now)
+			}
+			baseView := baseSchema.GetView(headView.Name)
+			// New view, reset the source branch and last modifier because we do not remove the config while deleting the object.
+			if baseView == nil {
+				//nolint
+				newBaseViewConfig := proto.Clone(headViewConfig).(*storepb.ViewConfig)
+				newBaseViewConfig.SourceBranch = ""
+				newBaseViewConfig.Updater = headViewConfig.Updater
+				newBaseViewConfig.UpdateTime = now
+				newBaseViewConfigs = append(newBaseViewConfigs, newBaseViewConfig)
+				continue
+			}
+			// Modified view, set the last updater as head in base.
+			baseViewConfig := baseViewConfigMap[headView.Name]
+			if !cmp.Equal(headView, baseView.GetProto(), protocmp.Transform()) {
+				baseViewConfig.SourceBranch = ""
+				baseViewConfig.Updater = headViewConfig.Updater
+				baseViewConfig.UpdateTime = now
+			}
+		}
+		baseSchemaConfig.ViewConfigs = append(baseSchemaConfig.ViewConfigs, newBaseViewConfigs...)
+
+		// Procedures
+		baseProcedureConfigMap := buildMap(baseSchemaConfig.ProcedureConfigs, func(s *storepb.ProcedureConfig) string {
+			return s.GetName()
+		})
+		headProcedureConfigMap := buildMap(baseSchemaConfig.ProcedureConfigs, func(s *storepb.ProcedureConfig) string {
+			return s.GetName()
+		})
+		var newBaseProcedureConfigs []*storepb.ProcedureConfig
+		for _, headProcedure := range headSchema.Procedures {
+			headProcedureConfig := headProcedureConfigMap[headProcedure.Name]
+			if headProcedureConfig == nil {
+				headProcedureConfig = initProcedureConfig(headProcedure, "", "", now)
+			}
+			baseProcedure := baseSchema.GetProcedure(headProcedure.Name)
+			// New procedure, reset the source branch and last modifier because we do not remove the config while deleting the object.
+			if baseProcedure == nil {
+				//nolint
+				newBaseProcedureConfig := proto.Clone(headProcedureConfig).(*storepb.ProcedureConfig)
+				newBaseProcedureConfig.SourceBranch = ""
+				newBaseProcedureConfig.Updater = headProcedureConfig.Updater
+				newBaseProcedureConfig.UpdateTime = now
+				newBaseProcedureConfigs = append(newBaseProcedureConfigs, newBaseProcedureConfig)
+				continue
+			}
+			// Modified procedure, set the last updater as head in base.
+			baseProcedureConfig := baseProcedureConfigMap[headProcedure.Name]
+			if !cmp.Equal(headProcedure, baseProcedure.GetProto(), protocmp.Transform()) {
+				baseProcedureConfig.SourceBranch = ""
+				baseProcedureConfig.Updater = headProcedureConfig.Updater
+				baseProcedureConfig.UpdateTime = now
+			}
+		}
+		baseSchemaConfig.ProcedureConfigs = append(baseSchemaConfig.ProcedureConfigs, newBaseProcedureConfigs...)
+	}
+
+	baseConfig.SchemaConfigs = append(baseConfig.SchemaConfigs, newBaseSchemaConfigs...)
 }
