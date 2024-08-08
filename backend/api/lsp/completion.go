@@ -147,6 +147,8 @@ func generateSortText(_ lsp.CompletionParams, engine storepb.Engine, candidate b
 
 func convertLSPCompletionItemKind(tp base.CandidateType) lsp.CompletionItemKind {
 	switch tp {
+	case base.CandidateTypeSchema:
+		return lsp.CIKModule
 	case base.CandidateTypeDatabase:
 		return lsp.CIKClass
 	case base.CandidateTypeTable, base.CandidateTypeForeignTable:
