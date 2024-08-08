@@ -321,6 +321,7 @@ func NewDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata) *DatabaseMeta
 			internalFunctions:        make(map[string]*FunctionMetadata),
 			internalProcedures:       make(map[string]*ProcedureMetadata),
 			internalSequences:        make(map[string]*SequenceMetadata),
+			proto:                    schema,
 		}
 		for _, table := range schema.Tables {
 			tables, names := buildTablesMetadata(table)
@@ -428,6 +429,8 @@ type SchemaMetadata struct {
 	internalFunctions        map[string]*FunctionMetadata
 	internalProcedures       map[string]*ProcedureMetadata
 	internalSequences        map[string]*SequenceMetadata
+
+	proto *storepb.SchemaMetadata
 }
 
 // GetTable gets the schema by name.
@@ -464,11 +467,38 @@ func (s *SchemaMetadata) GetSequence(name string) *SequenceMetadata {
 	return s.internalSequences[name]
 }
 
+// GetProto gets the proto of SchemaMetadata.
+func (s *SchemaMetadata) GetProto() *storepb.SchemaMetadata {
+	return s.proto
+}
+
 // ListTableNames lists the table names.
 func (s *SchemaMetadata) ListTableNames() []string {
 	var result []string
 	for tableName := range s.internalTables {
 		result = append(result, tableName)
+	}
+
+	sort.Strings(result)
+	return result
+}
+
+// ListProcedureNames lists the procedure names.
+func (s *SchemaMetadata) ListProcedureNames() []string {
+	var result []string
+	for procedureName := range s.internalProcedures {
+		result = append(result, procedureName)
+	}
+
+	sort.Strings(result)
+	return result
+}
+
+// ListFunctionNames lists the function names.
+func (s *SchemaMetadata) ListFunctionNames() []string {
+	var result []string
+	for functionName := range s.internalFunctions {
+		result = append(result, functionName)
 	}
 
 	sort.Strings(result)
