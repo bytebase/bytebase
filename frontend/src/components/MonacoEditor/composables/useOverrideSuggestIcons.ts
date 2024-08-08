@@ -14,7 +14,7 @@ const ColumnIconSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height
 </svg>`;
 const ViewIconSVG = {
   normal: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke-linecap="round" stroke-linejoin="round">
-  <g stroke="#000" stroke-width="1.5" >
+  <g stroke="#000" stroke-width="1.8" >
     <path d="M12 3v18"/>
     <rect width="18" height="18" x="3" y="3" rx="2"/>
     <path d="M3 9h18M3 15h18"/>
@@ -26,7 +26,7 @@ const ViewIconSVG = {
   </g>
 </svg>`,
   active: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke-linecap="round" stroke-linejoin="round">
-  <g stroke="#fff" stroke-width="1.5" >
+  <g stroke="#fff" stroke-width="1.8" >
     <path d="M12 3v18"/>
     <rect width="18" height="18" x="3" y="3" rx="2"/>
     <path d="M3 9h18M3 15h18"/>
