@@ -236,7 +236,13 @@ const checkPermission = (permission: Permission): boolean => {
 };
 
 const allowEdit = computed(() => {
-  return checkPermission("bb.branches.update");
+  if (!checkPermission("bb.branches.update")) {
+    return false;
+  }
+  if (props.dirtyBranch.parentBranch === "") {
+    return checkPermission("bb.branches.admin");
+  }
+  return true;
 });
 
 const allowDelete = computed(() => {
@@ -280,7 +286,7 @@ const showRebaseBranchButton = computed(() => {
       props.project,
       useCurrentUserV1().value,
       "bb.branches.admin"
-    )
+    );
   }
 
   // For feature branches: project owners and branch creator
