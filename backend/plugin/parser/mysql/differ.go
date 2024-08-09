@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"reflect"
-	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -1344,7 +1343,7 @@ func sortAndWriteAlterTablePartitionedByList(buf *strings.Builder, partitions ma
 	return nil
 }
 
-// Copy from backend/plugin/schema/mysql/state.go
+// Copy from backend/plugin/schema/mysql/state.go.
 func (p *partitionState) toString(buf io.StringWriter) error {
 	switch p.info.tp {
 	case storepb.TablePartitionMetadata_RANGE, storepb.TablePartitionMetadata_RANGE_COLUMNS:
@@ -1650,41 +1649,6 @@ func writePartitionOptions(buf io.StringWriter) error {
 	}
 
 	return nil
-}
-
-// getVersionSpecificComment is the go code equivalent of MySQL void partition_info::set_show_version_string(String *packet).
-// partitionClauseCtx is use to minimize the difference between the original one and the output, it is safe to pass nil.
-func (p *partitionState) getVersionSpecificComment(partitionClauseCtx mysql.IPartitionClauseContext) string {
-	if p.info.tp == storepb.TablePartitionMetadata_RANGE_COLUMNS || p.info.tp == storepb.TablePartitionMetadata_LIST_COLUMNS {
-		// MySQL introduce columns partitioning in 5.5+.
-		return "\n/*!50500"
-	} else if partitionClauseCtx != nil {
-		/*
-				if (part_expr)
-			      part_expr->walk(&Item::intro_version, enum_walk::POSTFIX,
-			                      (uchar *)&version);
-			    if (subpart_expr)
-			      subpart_expr->walk(&Item::intro_version, enum_walk::POSTFIX,
-			                         (uchar *)&version);
-		*/
-		tokenStream := partitionClauseCtx.GetParser().GetTokenStream()
-		startPos := partitionClauseCtx.GetStart().GetTokenIndex()
-		if tokenStream != nil {
-			if startPos-2 > 0 && tokenStream.Size() > startPos-2 {
-				regexp := regexp.MustCompile(`\/\*![0-9]+`)
-				for i := 0; i < 2; i++ {
-					if tokenStream.Get(startPos-i-1).GetChannel() == antlr.TokenHiddenChannel {
-						if regexp.MatchString(tokenStream.Get(startPos - i - 1).GetText()) {
-							return fmt.Sprintf("\n%s", tokenStream.Get(startPos-i-1).GetText())
-						}
-					}
-				}
-			}
-		}
-	}
-	// NOTE: Users can use function in partition expr or subpartition expr, and the intro version of function should be the infimum of the version.
-	// But sadly, it's a huge work for us to copy the intro version for each function in MySQL. So we use the original one.
-	return "\n/*!50100"
 }
 
 func getPrepositionByType(tp storepb.TablePartitionMetadata_Type) (string, error) {
@@ -2325,7 +2289,7 @@ func (t *mysqlTransformer) EnterTableConstraintDef(ctx *mysql.TableConstraintDef
 	}
 }
 
-// Copy from backend/plugin/schema/mysql/state.go
+// Copy from backend/plugin/schema/mysql/state.go.
 func (t *mysqlTransformer) EnterPartitionClause(ctx *mysql.PartitionClauseContext) {
 	if t.err != nil || t.currentTable == "" {
 		return
