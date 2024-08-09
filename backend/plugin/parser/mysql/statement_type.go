@@ -2,10 +2,28 @@ package mysql
 
 import (
 	mysql "github.com/bytebase/mysql-parser"
+	"github.com/pkg/errors"
 )
 
+func GetStatementTypes(asts any) ([]string, error) {
+	nodes, ok := asts.([]*ParseResult)
+	if !ok {
+		return nil, errors.Errorf("invalid ast type %T", asts)
+	}
+	sqlTypeSet := make(map[string]bool)
+	for _, node := range nodes {
+		t := getStatementType(node)
+		sqlTypeSet[t] = true
+	}
+	var sqlTypes []string
+	for sqlType := range sqlTypeSet {
+		sqlTypes = append(sqlTypes, sqlType)
+	}
+	return sqlTypes, nil
+}
+
 // GetStatementType return the type of statement.
-func GetStatementType(stmt *ParseResult) string {
+func getStatementType(stmt *ParseResult) string {
 	for _, child := range stmt.Tree.GetChildren() {
 		switch ctx := child.(type) {
 		case *mysql.QueryContext:

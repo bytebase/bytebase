@@ -17,7 +17,6 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	"github.com/bytebase/bytebase/backend/plugin/parser/pg"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 	"github.com/bytebase/bytebase/backend/store"
@@ -233,6 +232,11 @@ func reportForMySQL(ctx context.Context, sm *sheet.Manager, sqlDB *sql.DB, engin
 		}, nil
 	}
 
+	sqlTypes, err := pg.GetStatementTypes(asts)
+	if err != nil {
+		return nil, err
+	}
+
 	changeSummary, err := base.ExtractChangedResources(storepb.Engine_MYSQL, databaseName, "" /* currentSchema */, asts, statement)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to extract changed resources")
@@ -284,20 +288,6 @@ func reportForMySQL(ctx context.Context, sm *sheet.Manager, sqlDB *sql.DB, engin
 		totalAffectedRows += tableMeta.GetRowCount()
 	}
 
-	nodes, ok := asts.([]*mysqlparser.ParseResult)
-	if !ok {
-		return nil, errors.Errorf("invalid ast type %T", asts)
-	}
-	sqlTypeSet := map[string]struct{}{}
-	for _, node := range nodes {
-		sqlType := mysqlparser.GetStatementType(node)
-		sqlTypeSet[sqlType] = struct{}{}
-	}
-
-	var sqlTypes []string
-	for sqlType := range sqlTypeSet {
-		sqlTypes = append(sqlTypes, sqlType)
-	}
 	return []*storepb.PlanCheckRunResult_Result{
 		{
 			Status: storepb.PlanCheckRunResult_Result_SUCCESS,
