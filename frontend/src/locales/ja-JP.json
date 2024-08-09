@@ -668,6 +668,10 @@
           "days": "日々）",
           "never-expires": "期限切れなし"
         },
+        "maximum-sql-result": {
+          "self": "SQL出力サイズ制限",
+          "description": "出力される SQL クエリ結果のサイズを制限します。"
+        },
         "domain-restriction": {
           "self": "ワークスペースドメイン",
           "description": "ワークスペース メンバーの電子メール ドメインとして使用できるドメインを指定します。",

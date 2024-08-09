@@ -346,11 +346,11 @@ func (driver *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement stri
 	if err != nil {
 		return nil, err
 	}
-	if fileInfo.Size() > common.MaximumSQLResultSize {
+	if int64(fileInfo.Size()) > driver.connCfg.MaximumSQLResultSize {
 		return []*v1pb.QueryResult{{
 			Latency:   durationpb.New(time.Since(startTime)),
 			Statement: statement,
-			Error:     common.MaximumSQLResultSizeExceeded,
+			Error:     common.FormatMaximumSQLResultSizeMessage(driver.connCfg.MaximumSQLResultSize),
 		}}, nil
 	}
 

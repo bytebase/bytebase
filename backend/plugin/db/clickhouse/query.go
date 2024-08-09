@@ -28,7 +28,7 @@ import (
 )
 
 // QueryConn queries a SQL statement in a given connection.
-func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
+func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
 	singleSQLs, err := standard.SplitSQL(statement)
 	if err != nil {
 		return nil, err
@@ -56,7 +56,7 @@ func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, 
 				return nil, nil
 			}
 			defer rows.Close()
-			r, err := convertRowsToQueryResult(rows)
+			r, err := convertRowsToQueryResult(rows, driver.maximumSQLResultSize)
 			if err != nil {
 				return nil, err
 			}
@@ -87,7 +87,7 @@ func getStatementWithResultLimit(statement string, limit int) string {
 	return fmt.Sprintf("WITH result AS (%s) SELECT * FROM result LIMIT %d;", util.TrimStatement(statement), limit)
 }
 
-func convertRowsToQueryResult(rows *sql.Rows) (*v1pb.QueryResult, error) {
+func convertRowsToQueryResult(rows *sql.Rows, limit int64) (*v1pb.QueryResult, error) {
 	columnNames, err := rows.Columns()
 	if err != nil {
 		return nil, err
@@ -107,7 +107,7 @@ func convertRowsToQueryResult(rows *sql.Rows) (*v1pb.QueryResult, error) {
 		ColumnTypeNames: columnTypeNames,
 	}
 
-	if err := readRows(result, rows, columnTypes, columnTypeNames); err != nil {
+	if err := readRows(result, rows, columnTypes, columnTypeNames, limit); err != nil {
 		return nil, err
 	}
 
@@ -118,7 +118,7 @@ func convertRowsToQueryResult(rows *sql.Rows) (*v1pb.QueryResult, error) {
 	return result, nil
 }
 
-func readRows(result *v1pb.QueryResult, rows *sql.Rows, columnTypes []*sql.ColumnType, columnTypeNames []string) error {
+func readRows(result *v1pb.QueryResult, rows *sql.Rows, columnTypes []*sql.ColumnType, columnTypeNames []string, limit int64) error {
 	for rows.Next() {
 		cols := make([]any, len(columnTypes))
 		for i, name := range columnTypeNames {
@@ -320,8 +320,8 @@ func readRows(result *v1pb.QueryResult, rows *sql.Rows, columnTypes []*sql.Colum
 
 		result.Rows = append(result.Rows, &rowData)
 		n := len(result.Rows)
-		if (n&(n-1) == 0) && proto.Size(result) > common.MaximumSQLResultSize {
-			result.Error = common.MaximumSQLResultSizeExceeded
+		if (n&(n-1) == 0) && int64(proto.Size(result)) > limit {
+			result.Error = common.FormatMaximumSQLResultSizeMessage(limit)
 			return nil
 		}
 	}

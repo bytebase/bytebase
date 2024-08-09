@@ -89,6 +89,7 @@
       />
       <SignInFrequencySetting :allow-edit="allowEdit" />
       <MaximumRoleExpirationSetting :allow-edit="allowEdit" />
+      <MaximumSQLResultSizeSetting :allow-edit="allowEdit" />
       <DomainRestrictionSetting :allow-edit="allowEdit" />
     </div>
   </div>
@@ -111,6 +112,7 @@ import type { FeatureType } from "@/types";
 import { FeatureBadge, FeatureModal } from "../FeatureGuard";
 import DomainRestrictionSetting from "./DomainRestrictionSetting.vue";
 import MaximumRoleExpirationSetting from "./MaximumRoleExpirationSetting.vue";
+import MaximumSQLResultSizeSetting from "./MaximumSQLResultSizeSetting.vue";
 import RestrictIssueCreationConfigure from "./RestrictIssueCreationConfigure.vue";
 import SignInFrequencySetting from "./SignInFrequencySetting.vue";
 

@@ -6,6 +6,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 )
 
@@ -16,40 +17,44 @@ func TestBuildSnowflakeDSN(t *testing.T) {
 	}{
 		{
 			input: db.ConnectionConfig{
-				Host:     "nb47110.ap-southeast-1",
-				Port:     "443",
-				Username: "bytebase",
-				Password: "pwd",
+				Host:                 "nb47110.ap-southeast-1",
+				Port:                 "443",
+				Username:             "bytebase",
+				Password:             "pwd",
+				MaximumSQLResultSize: common.DefaultMaximumSQLResultSize,
 			},
 			want: "bytebase:pwd@nb47110.ap-southeast-1.snowflakecomputing.com:443?database=%22%22&ocspFailOpen=true&region=ap-southeast-1&validateDefaultParameters=true",
 		},
 		{
 			input: db.ConnectionConfig{
-				Host:     "nb47110.ap-southeast-1",
-				Port:     "443",
-				Username: "bytebase",
-				Password: "pwd",
-				Database: "SAMPLE_DB",
+				Host:                 "nb47110.ap-southeast-1",
+				Port:                 "443",
+				Username:             "bytebase",
+				Password:             "pwd",
+				Database:             "SAMPLE_DB",
+				MaximumSQLResultSize: common.DefaultMaximumSQLResultSize,
 			},
 			want: "bytebase:pwd@nb47110.ap-southeast-1.snowflakecomputing.com:443?database=%22SAMPLE_DB%22&ocspFailOpen=true&region=ap-southeast-1&validateDefaultParameters=true",
 		},
 		{
 			input: db.ConnectionConfig{
-				Host:     "nb47110.ap-southeast-1@10.0.0.1",
-				Port:     "4182",
-				Username: "bytebase",
-				Password: "pwd",
-				Database: "",
+				Host:                 "nb47110.ap-southeast-1@10.0.0.1",
+				Port:                 "4182",
+				Username:             "bytebase",
+				Password:             "pwd",
+				Database:             "",
+				MaximumSQLResultSize: common.DefaultMaximumSQLResultSize,
 			},
 			want: "bytebase:pwd@10.0.0.1:443?account=nb47110&database=%22%22&ocspFailOpen=true&region=ap-southeast-1&validateDefaultParameters=true",
 		},
 		{
 			input: db.ConnectionConfig{
-				Host:     "nb47110.ap-southeast-1@10.0.0.1",
-				Port:     "4182",
-				Username: "bytebase",
-				Password: "pwd",
-				Database: "SAMPLE_DB",
+				Host:                 "nb47110.ap-southeast-1@10.0.0.1",
+				Port:                 "4182",
+				Username:             "bytebase",
+				Password:             "pwd",
+				Database:             "SAMPLE_DB",
+				MaximumSQLResultSize: common.DefaultMaximumSQLResultSize,
 			},
 			want: "bytebase:pwd@10.0.0.1:443?account=nb47110&database=%22SAMPLE_DB%22&ocspFailOpen=true&region=ap-southeast-1&validateDefaultParameters=true",
 		},

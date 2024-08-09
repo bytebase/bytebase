@@ -340,3 +340,9 @@ enum DatabaseChangeMode {
   // A simple database change process in SQL editor. Users can execute SQL directly.
   EDITOR = 2;
 }
+
+message MaximumSQLResultSizeSetting {
+  // The limit is in bytes.
+  // The default value is 100MB, we will use the default value if the setting not exists, or the limit <= 0.
+  int64 limit = 1;
+}

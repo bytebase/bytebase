@@ -72,6 +72,7 @@ var whitelistSettings = []api.SettingName{
 	api.SettingDataClassification,
 	api.SettingSemanticTypes,
 	api.SettingMaskingAlgorithm,
+	api.SettingSQLResultSizeLimit,
 }
 
 var preservedMaskingAlgorithmIDMatcher = regexp.MustCompile("^[0]{8}-[0]{4}-[0]{4}-[0]{4}-[0]{9}[0-9a-fA-F]{3}$")
@@ -568,6 +569,19 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 			return nil, status.Errorf(codes.PermissionDenied, err.Error())
 		}
 		storeSettingValue = request.Setting.Value.GetStringValue()
+	case api.SettingSQLResultSizeLimit:
+		maximumSQLResultSizeSetting := new(storepb.MaximumSQLResultSizeSetting)
+		if err := convertV1PbToStorePb(request.Setting.Value.GetMaximumSqlResultSizeSetting(), maximumSQLResultSizeSetting); err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", apiSettingName, err)
+		}
+		if maximumSQLResultSizeSetting.Limit <= 0 {
+			return nil, status.Errorf(codes.InvalidArgument, "invalid maximum sql result size")
+		}
+		bytes, err := protojson.Marshal(maximumSQLResultSizeSetting)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to marshal setting for %s with error: %v", apiSettingName, err)
+		}
+		storeSettingValue = string(bytes)
 	default:
 		storeSettingValue = request.Setting.Value.GetStringValue()
 	}
@@ -796,7 +810,22 @@ func (s *SettingService) convertToSettingMessage(ctx context.Context, setting *s
 				},
 			},
 		}, nil
-
+	case api.SettingSQLResultSizeLimit:
+		v1Value := new(v1pb.MaximumSQLResultSizeSetting)
+		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), v1Value); err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", setting.Name, err)
+		}
+		if v1Value.GetLimit() <= 0 {
+			v1Value.Limit = common.DefaultMaximumSQLResultSize
+		}
+		return &v1pb.Setting{
+			Name: settingName,
+			Value: &v1pb.Value{
+				Value: &v1pb.Value_MaximumSqlResultSizeSetting{
+					MaximumSqlResultSizeSetting: v1Value,
+				},
+			},
+		}, nil
 	default:
 		return &v1pb.Setting{
 			Name: settingName,

@@ -668,6 +668,10 @@
           "days": "Day(s)",
           "never-expires": "Never expires"
         },
+        "maximum-sql-result": {
+          "self": "Maximum SQL result size",
+          "description": "Limit the output SQL query result size."
+        },
         "domain-restriction": {
           "self": "Workspace Domain",
           "description": "Specify the domain that could be used as the email domain for workspace members.",
