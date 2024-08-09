@@ -19,27 +19,24 @@ func init() {
 	base.RegisterExtractChangedResourcesFunc(storepb.Engine_DORIS, extractChangedResources)
 }
 
-func extractChangedResources(currentDatabase string, _ string, ast any) (*base.ChangeSummary, error) {
-	tree, ok := ast.(*ParseResult)
+func extractChangedResources(currentDatabase string, _ string, asts any) (*base.ChangeSummary, error) {
+	nodes, ok := asts.([]*ParseResult)
 	if !ok {
-		return nil, errors.Errorf("failed to convert ast %T to ParseResult", ast)
-	}
-	if tree.Tree == nil {
-		return nil, nil
+		return nil, errors.Errorf("invalid ast type %T", asts)
 	}
 
 	l := &resourceChangedListener{
 		currentDatabase: currentDatabase,
 		resourceMap:     make(map[string]base.SchemaResource),
 	}
+	for _, node := range nodes {
+		antlr.ParseTreeWalkerDefault.Walk(l, node.Tree)
+	}
 
 	var result []base.SchemaResource
-	antlr.ParseTreeWalkerDefault.Walk(l, tree.Tree)
-
 	for _, resource := range l.resourceMap {
 		result = append(result, resource)
 	}
-
 	sort.Slice(result, func(i, j int) bool {
 		return result[i].String() < result[j].String()
 	})
