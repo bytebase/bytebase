@@ -454,7 +454,10 @@ func (t *mysqlTransformer) EnterPartitionClause(ctx *mysql.PartitionClauseContex
 	}
 
 	partitionDefinitions := make(map[string]*partitionDefinition)
-	allPartDefs := ctx.PartitionDefinitions().AllPartitionDefinition()
+	var allPartDefs []mysql.IPartitionDefinitionContext
+	if v := ctx.PartitionDefinitions(); v != nil {
+		allPartDefs = ctx.PartitionDefinitions().AllPartitionDefinition()
+	}
 	for i, partDef := range allPartDefs {
 		pd := &partitionDefinition{
 			id:   i + 1,
