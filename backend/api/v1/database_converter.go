@@ -749,25 +749,28 @@ func convertV1DatabaseConfig(ctx context.Context, databaseConfig *v1pb.DatabaseC
 
 func convertV1ViewConfig(ctx context.Context, view *v1pb.ViewConfig, optionalStores *store.Store) *storepb.ViewConfig {
 	return &storepb.ViewConfig{
-		Name:       view.Name,
-		Updater:    getUpdaterFromEmail(ctx, view.Updater, optionalStores),
-		UpdateTime: view.UpdateTime,
+		Name:         view.Name,
+		Updater:      getUpdaterFromEmail(ctx, view.Updater, optionalStores),
+		UpdateTime:   view.UpdateTime,
+		SourceBranch: view.SourceBranch,
 	}
 }
 
 func convertV1FunctionConfig(ctx context.Context, function *v1pb.FunctionConfig, optionalStores *store.Store) *storepb.FunctionConfig {
 	return &storepb.FunctionConfig{
-		Name:       function.Name,
-		Updater:    getUpdaterFromEmail(ctx, function.Updater, optionalStores),
-		UpdateTime: function.UpdateTime,
+		Name:         function.Name,
+		Updater:      getUpdaterFromEmail(ctx, function.Updater, optionalStores),
+		UpdateTime:   function.UpdateTime,
+		SourceBranch: function.SourceBranch,
 	}
 }
 
 func convertV1ProcedureConfig(ctx context.Context, procedure *v1pb.ProcedureConfig, optionalStores *store.Store) *storepb.ProcedureConfig {
 	return &storepb.ProcedureConfig{
-		Name:       procedure.Name,
-		Updater:    getUpdaterFromEmail(ctx, procedure.Updater, optionalStores),
-		UpdateTime: procedure.UpdateTime,
+		Name:         procedure.Name,
+		Updater:      getUpdaterFromEmail(ctx, procedure.Updater, optionalStores),
+		UpdateTime:   procedure.UpdateTime,
+		SourceBranch: procedure.SourceBranch,
 	}
 }
 
@@ -777,6 +780,7 @@ func convertV1TableConfig(ctx context.Context, table *v1pb.TableConfig, optional
 		ClassificationId: table.ClassificationId,
 		Updater:          getUpdaterFromEmail(ctx, table.Updater, optionalStores),
 		UpdateTime:       table.UpdateTime,
+		SourceBranch:     table.SourceBranch,
 	}
 	for _, column := range table.ColumnConfigs {
 		if column == nil {
