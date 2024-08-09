@@ -1,11 +1,16 @@
 <template>
   <NPopover
-    v-if="updater"
+    v-if="updater || sourceBranch"
     :disabled="!updateTime"
     placement="right"
   >
     <template #trigger>
-      <UserAvatar :user="updater" size="MINI" />
+      <div class="flex items-center justify-end gap-1">
+        <NTag v-if="sourceBranch" size="small" round>{{
+          sourceBranch.branchId
+        }}</NTag>
+        <UserAvatar v-if="updater" :user="updater" size="MINI" />
+      </div>
     </template>
     <template #default>
       <div class="flex flex-col items-stretch gap-2 text-sm">
@@ -14,9 +19,18 @@
             {{ $t("branch.last-update.self") }}
           </div>
 
-          <div class="flex justify-end gap-1">
+          <div v-if="updater" class="flex justify-end gap-1">
             <UserAvatar :user="updater" size="TINY" />
             {{ updater?.title }}
+          </div>
+        </div>
+        <div v-if="sourceBranch" class="flex justify-between gap-4">
+          <div>
+            {{ $t("branch.source-branch.self") }}
+          </div>
+
+          <div v-if="sourceBranch" class="flex justify-end gap-1">
+            {{ sourceBranch.branchId }}
           </div>
         </div>
         <div v-if="updateTime" class="flex justify-end gap-1 text-xs">
@@ -28,10 +42,11 @@
 </template>
 
 <script setup lang="ts">
-import { NPopover } from "naive-ui";
+import { NPopover, NTag } from "naive-ui";
 import { computed } from "vue";
+import { watchEffect } from "vue";
 import UserAvatar from "@/components/User/UserAvatar.vue";
-import { extractUserEmail, useUserStore } from "@/store";
+import { extractUserEmail, useBranchStore, useUserStore } from "@/store";
 import type {
   TreeNodeForFunction,
   TreeNodeForProcedure,
@@ -46,6 +61,8 @@ const props = defineProps<{
     | TreeNodeForProcedure
     | TreeNodeForFunction;
 }>();
+
+const branchStore = useBranchStore();
 
 const config = computed(() => {
   const { type, metadata } = props.node;
@@ -85,7 +102,26 @@ const updater = computed(() => {
   return useUserStore().getUserByEmail(email);
 });
 
+const sourceBranch = computed(() => {
+  if (!config.value?.sourceBranch) return undefined;
+  return branchStore.getBranchByName(
+    config.value.sourceBranch,
+    /* view: any */ undefined
+  );
+});
+
 const updateTime = computed(() => {
   return config.value?.updateTime;
+});
+
+watchEffect(() => {
+  const source = config.value?.sourceBranch;
+  if (source) {
+    branchStore.fetchBranchByName(
+      source,
+      /* useCache */ true,
+      /* silent */ true
+    );
+  }
 });
 </script>
