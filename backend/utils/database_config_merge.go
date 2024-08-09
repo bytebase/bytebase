@@ -136,29 +136,32 @@ func mergeSchemaConfig(target, baseline, current *storepb.SchemaConfig) *storepb
 }
 
 func mergeFunctionConfig(target, baseline, current *storepb.FunctionConfig) *storepb.FunctionConfig {
-	lastUpdater, lastUpdateTime := getLastUpdater(target.Updater, target.UpdateTime, baseline.Updater, current.Updater, current.UpdateTime)
+	lastUpdater, lastUpdateTime, sourceBranch := getLastUpdaterAndSourceBranch(target.Updater, target.UpdateTime, target.SourceBranch, baseline.Updater, current.Updater, current.UpdateTime, current.SourceBranch)
 	return &storepb.FunctionConfig{
-		Name:       current.Name,
-		Updater:    lastUpdater,
-		UpdateTime: lastUpdateTime,
+		Name:         current.Name,
+		Updater:      lastUpdater,
+		UpdateTime:   lastUpdateTime,
+		SourceBranch: sourceBranch,
 	}
 }
 
 func mergeProcedureConfig(target, baseline, current *storepb.ProcedureConfig) *storepb.ProcedureConfig {
-	lastUpdater, lastUpdateTime := getLastUpdater(target.Updater, target.UpdateTime, baseline.Updater, current.Updater, current.UpdateTime)
+	lastUpdater, lastUpdateTime, sourceBranch := getLastUpdaterAndSourceBranch(target.Updater, target.UpdateTime, target.SourceBranch, baseline.Updater, current.Updater, current.UpdateTime, current.SourceBranch)
 	return &storepb.ProcedureConfig{
-		Name:       current.Name,
-		Updater:    lastUpdater,
-		UpdateTime: lastUpdateTime,
+		Name:         current.Name,
+		Updater:      lastUpdater,
+		UpdateTime:   lastUpdateTime,
+		SourceBranch: sourceBranch,
 	}
 }
 
 func mergeViewConfig(target, baseline, current *storepb.ViewConfig) *storepb.ViewConfig {
-	lastUpdater, lastUpdateTime := getLastUpdater(target.Updater, target.UpdateTime, baseline.Updater, current.Updater, current.UpdateTime)
+	lastUpdater, lastUpdateTime, sourceBranch := getLastUpdaterAndSourceBranch(target.Updater, target.UpdateTime, target.SourceBranch, baseline.Updater, current.Updater, current.UpdateTime, current.SourceBranch)
 	return &storepb.ViewConfig{
-		Name:       current.Name,
-		Updater:    lastUpdater,
-		UpdateTime: lastUpdateTime,
+		Name:         current.Name,
+		Updater:      lastUpdater,
+		UpdateTime:   lastUpdateTime,
+		SourceBranch: sourceBranch,
 	}
 }
 
@@ -194,9 +197,10 @@ func mergeTableConfig(target, baseline, current *storepb.TableConfig) *storepb.T
 	}
 
 	result := &storepb.TableConfig{Name: current.Name, ClassificationId: current.ClassificationId}
-	lastUpdater, lastUpdateTime := getLastUpdater(target.Updater, target.UpdateTime, baseline.Updater, current.Updater, current.UpdateTime)
+	lastUpdater, lastUpdateTime, sourceBranch := getLastUpdaterAndSourceBranch(target.Updater, target.UpdateTime, target.SourceBranch, baseline.Updater, current.Updater, current.UpdateTime, current.SourceBranch)
 	result.Updater = lastUpdater
 	result.UpdateTime = lastUpdateTime
+	result.SourceBranch = sourceBranch
 	for _, v := range currentMap {
 		result.ColumnConfigs = append(result.ColumnConfigs, v)
 	}
@@ -279,9 +283,9 @@ func buildColumnMap(config *storepb.TableConfig) map[string]*storepb.ColumnConfi
 	return m
 }
 
-func getLastUpdater(target string, targetTime *timestamppb.Timestamp, baseline string, current string, currentTime *timestamppb.Timestamp) (string, *timestamppb.Timestamp) {
+func getLastUpdaterAndSourceBranch(target string, targetTime *timestamppb.Timestamp, targetBranch string, baseline string, current string, currentTime *timestamppb.Timestamp, currentBranch string) (string, *timestamppb.Timestamp, string) {
 	if target == baseline {
-		return current, currentTime
+		return current, currentTime, currentBranch
 	}
-	return target, targetTime
+	return target, targetTime, targetBranch
 }
