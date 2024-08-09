@@ -18,6 +18,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
+	"github.com/bytebase/bytebase/backend/plugin/parser/pg"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/store/model"
@@ -364,30 +365,25 @@ func reportForPostgres(ctx context.Context, sm *sheet.Manager, sqlDB *sql.DB, da
 			},
 		}, nil
 	}
+
+	sqlTypes, err := pg.GetStatementTypes(asts)
+	if err != nil {
+		return nil, err
+	}
+
 	nodes, ok := asts.([]ast.Node)
 	if !ok {
 		return nil, errors.Errorf("invalid ast type %T", asts)
 	}
-
-	sqlTypeSet := map[string]struct{}{}
 	var totalAffectedRows int64
 	var resourceChanges []*base.ResourceChange
 
 	for _, node := range nodes {
-		var newChanges []*base.ResourceChange
-		sqlType, v := getStatementTypeAndResourcesFromAstNode(database, "public", node)
-		if sqlType == "COMMENT" {
-			v2, err := postgresExtractResourcesFromCommentStatement(database, "public", node.Text())
-			if err != nil {
-				slog.Error("failed to extract resources from comment statement", slog.String("statement", node.Text()), log.BBError(err))
-			} else {
-				newChanges = v2
-			}
-		} else {
-			newChanges = v
+		changes, err := getResourceChanges(database, "public", node)
+		if err != nil {
+			return nil, err
 		}
-		sqlTypeSet[sqlType] = struct{}{}
-		resourceChanges = append(resourceChanges, newChanges...)
+		resourceChanges = append(resourceChanges, changes...)
 
 		rowCount, err := getAffectedRowsForPostgres(ctx, sqlDB, dbMetadata.GetMetadata(), node)
 		if err != nil {
@@ -395,11 +391,6 @@ func reportForPostgres(ctx context.Context, sm *sheet.Manager, sqlDB *sql.DB, da
 		} else {
 			totalAffectedRows += rowCount
 		}
-	}
-
-	var sqlTypes []string
-	for sqlType := range sqlTypeSet {
-		sqlTypes = append(sqlTypes, sqlType)
 	}
 
 	return []*storepb.PlanCheckRunResult_Result{
@@ -550,18 +541,10 @@ func convertColumnName(node *pgquery.Node_List) (string, string, string, error) 
 	}
 }
 
-func getStatementTypeAndResourcesFromAstNode(database, schema string, node ast.Node) (string, []*base.ResourceChange) {
+func getResourceChanges(database, schema string, node ast.Node) ([]*base.ResourceChange, error) {
 	switch node := node.(type) {
-	// DDL
-
-	// CREATE
-	case *ast.CreateIndexStmt:
-		return "CREATE_INDEX", nil
 	case *ast.CreateTableStmt:
-		switch node.Name.Type {
-		case ast.TableTypeView:
-			return "CREATE_VIEW", nil
-		case ast.TableTypeBaseTable:
+		if node.Name.Type == ast.TableTypeBaseTable {
 			resource := base.SchemaResource{
 				Database: node.Name.Database,
 				Schema:   node.Name.Schema,
@@ -573,44 +556,8 @@ func getStatementTypeAndResourcesFromAstNode(database, schema string, node ast.N
 			if resource.Schema == "" {
 				resource.Schema = schema
 			}
-			return "CREATE_TABLE", []*base.ResourceChange{{Resource: resource}}
+			return []*base.ResourceChange{{Resource: resource}}, nil
 		}
-	case *ast.CreateSequenceStmt:
-		return "CREATE_SEQUENCE", nil
-	case *ast.CreateDatabaseStmt:
-		return "CREATE_DATABASE", nil
-	case *ast.CreateSchemaStmt:
-		return "CREATE_SCHEMA", nil
-	case *ast.CreateFunctionStmt:
-		return "CREATE_FUNCTION", nil
-	case *ast.CreateTriggerStmt:
-		return "CREATE_TRIGGER", nil
-	case *ast.CreateTypeStmt:
-		return "CREATE_TYPE", nil
-	case *ast.CreateExtensionStmt:
-		return "CREATE_EXTENSION", nil
-
-	// DROP
-	case *ast.DropColumnStmt:
-		return "DROP_COLUMN", nil
-	case *ast.DropConstraintStmt:
-		return "DROP_CONSTRAINT", nil
-	case *ast.DropDatabaseStmt:
-		return "DROP_DATABASE", nil
-	case *ast.DropDefaultStmt:
-		return "DROP_DEFAULT", nil
-	case *ast.DropExtensionStmt:
-		return "DROP_EXTENSION", nil
-	case *ast.DropFunctionStmt:
-		return "DROP_FUNCTION", nil
-	case *ast.DropIndexStmt:
-		return "DROP_INDEX", nil
-	case *ast.DropNotNullStmt:
-		return "DROP_NOT_NULL", nil
-	case *ast.DropSchemaStmt:
-		return "DROP_SCHEMA", nil
-	case *ast.DropSequenceStmt:
-		return "DROP_SEQUENCE", nil
 	case *ast.DropTableStmt:
 		var result []*base.ResourceChange
 		for _, table := range node.TableList {
@@ -627,23 +574,9 @@ func getStatementTypeAndResourcesFromAstNode(database, schema string, node ast.N
 			}
 			result = append(result, &base.ResourceChange{Resource: resource})
 		}
-		return "DROP_TABLE", result
-
-	case *ast.DropTriggerStmt:
-		return "DROP_TRIGGER", nil
-	case *ast.DropTypeStmt:
-		return "DROP_TYPE", nil
-
-	// ALTER
-	case *ast.AlterColumnTypeStmt:
-		return "ALTER_COLUMN_TYPE", nil
-	case *ast.AlterSequenceStmt:
-		return "ALTER_SEQUENCE", nil
+		return result, nil
 	case *ast.AlterTableStmt:
-		switch node.Table.Type {
-		case ast.TableTypeView:
-			return "ALTER_VIEW", nil
-		case ast.TableTypeBaseTable:
+		if node.Table.Type == ast.TableTypeBaseTable {
 			resource := base.SchemaResource{
 				Database: node.Table.Database,
 				Schema:   node.Table.Schema,
@@ -655,30 +588,10 @@ func getStatementTypeAndResourcesFromAstNode(database, schema string, node ast.N
 			if resource.Schema == "" {
 				resource.Schema = schema
 			}
-			return "ALTER_TABLE", []*base.ResourceChange{{Resource: resource}}
+			return []*base.ResourceChange{{Resource: resource}}, nil
 		}
-	case *ast.AlterTypeStmt:
-		return "ALTER_TYPE", nil
-
-	case *ast.AddColumnListStmt:
-		return "ALTER_TABLE_ADD_COLUMN_LIST", nil
-	case *ast.AddConstraintStmt:
-		return "ALTER_TABLE_ADD_CONSTRAINT", nil
-
-	// RENAME
-	case *ast.RenameColumnStmt:
-		return "RENAME_COLUMN", nil
-	case *ast.RenameConstraintStmt:
-		return "RENAME_CONSTRAINT", nil
-	case *ast.RenameIndexStmt:
-		return "RENAME_INDEX", nil
-	case *ast.RenameSchemaStmt:
-		return "RENAME_SCHEMA", nil
 	case *ast.RenameTableStmt:
-		switch node.Table.Type {
-		case ast.TableTypeView:
-			return "RENAME_VIEW", nil
-		case ast.TableTypeBaseTable:
+		if node.Table.Type == ast.TableTypeBaseTable {
 			resource := base.SchemaResource{
 				Database: node.Table.Database,
 				Schema:   node.Table.Schema,
@@ -696,24 +609,14 @@ func getStatementTypeAndResourcesFromAstNode(database, schema string, node ast.N
 				Schema:   resource.Schema,
 				Table:    node.NewName,
 			}
-			return "RENAME_TABLE", []*base.ResourceChange{
+			return []*base.ResourceChange{
 				{Resource: resource},
 				{Resource: newResource},
-			}
+			}, nil
 		}
-
 	case *ast.CommentStmt:
-		return "COMMENT", nil
-
-	// DML
-
-	case *ast.InsertStmt:
-		return "INSERT", nil
-	case *ast.UpdateStmt:
-		return "UPDATE", nil
-	case *ast.DeleteStmt:
-		return "DELETE", nil
+		return postgresExtractResourcesFromCommentStatement(database, "public", node.Text())
 	}
 
-	return "UNKNOWN", nil
+	return nil, nil
 }
