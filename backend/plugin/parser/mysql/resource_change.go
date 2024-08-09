@@ -27,39 +27,35 @@ func extractChangedResources(currentDatabase string, _ string, asts any) (*base.
 	}
 
 	l := &resourceChangedListener{
-		currentDatabase: currentDatabase,
-		resourceMap:     make(map[string]base.SchemaResource),
+		currentDatabase:   currentDatabase,
+		resourceChangeMap: make(map[string]*base.ResourceChange),
 	}
 	for _, node := range nodes {
 		l.reset()
 		antlr.ParseTreeWalkerDefault.Walk(l, node.Tree)
 	}
 
-	var resources []base.SchemaResource
-	for _, resource := range l.resourceMap {
-		resources = append(resources, resource)
+	var resourceChanges []*base.ResourceChange
+	for _, change := range l.resourceChangeMap {
+		resourceChanges = append(resourceChanges, change)
 	}
-	sort.Slice(resources, func(i, j int) bool {
-		return resources[i].String() < resources[j].String()
+	sort.Slice(resourceChanges, func(i, j int) bool {
+		return resourceChanges[i].String() < resourceChanges[j].String()
 	})
-	var resourceChanges []base.ResourceChange
-	for _, resource := range resources {
-		resourceChanges = append(resourceChanges, base.ResourceChange{
-			Resource: resource,
-		})
-	}
 	return &base.ChangeSummary{
 		ResourceChanges: resourceChanges,
-		DMLs:            l.dmls,
+		SampleDMLS:      l.sampleDMLs,
+		DMLCount:        l.dmlCount,
 	}, nil
 }
 
 type resourceChangedListener struct {
 	*parser.BaseMySQLParserListener
 
-	currentDatabase string
-	resourceMap     map[string]base.SchemaResource
-	dmls            []string
+	currentDatabase   string
+	resourceChangeMap map[string]*base.ResourceChange
+	sampleDMLs        []string
+	dmlCount          int
 
 	// Internal data structure used temporarily.
 	text string
@@ -83,7 +79,12 @@ func (l *resourceChangedListener) EnterCreateTable(ctx *parser.CreateTableContex
 		resource.Database = db
 	}
 	resource.Table = table
-	l.resourceMap[resource.String()] = resource
+
+	if _, ok := l.resourceChangeMap[resource.String()]; !ok {
+		l.resourceChangeMap[resource.String()] = &base.ResourceChange{
+			Resource: resource,
+		}
+	}
 }
 
 // EnterDropTable is called when production dropTable is entered.
@@ -97,7 +98,15 @@ func (l *resourceChangedListener) EnterDropTable(ctx *parser.DropTableContext) {
 			resource.Database = db
 		}
 		resource.Table = table
-		l.resourceMap[resource.String()] = resource
+
+		if v, ok := l.resourceChangeMap[resource.String()]; ok {
+			v.AffectTable = true
+		} else {
+			l.resourceChangeMap[resource.String()] = &base.ResourceChange{
+				Resource:    resource,
+				AffectTable: true,
+			}
+		}
 	}
 }
 
@@ -111,7 +120,15 @@ func (l *resourceChangedListener) EnterAlterTable(ctx *parser.AlterTableContext)
 		resource.Database = db
 	}
 	resource.Table = table
-	l.resourceMap[resource.String()] = resource
+
+	if v, ok := l.resourceChangeMap[resource.String()]; ok {
+		v.AffectTable = true
+	} else {
+		l.resourceChangeMap[resource.String()] = &base.ResourceChange{
+			Resource:    resource,
+			AffectTable: true,
+		}
+	}
 }
 
 // EnterRenameTableStatement is called when production renameTableStatement is entered.
@@ -126,7 +143,11 @@ func (l *resourceChangedListener) EnterRenameTableStatement(ctx *parser.RenameTa
 				resource.Database = db
 			}
 			resource.Table = table
-			l.resourceMap[resource.String()] = resource
+			if _, ok := l.resourceChangeMap[resource.String()]; !ok {
+				l.resourceChangeMap[resource.String()] = &base.ResourceChange{
+					Resource: resource,
+				}
+			}
 		}
 		{
 			resource := base.SchemaResource{
@@ -137,7 +158,11 @@ func (l *resourceChangedListener) EnterRenameTableStatement(ctx *parser.RenameTa
 				resource.Database = db
 			}
 			resource.Table = table
-			l.resourceMap[resource.String()] = resource
+			if _, ok := l.resourceChangeMap[resource.String()]; !ok {
+				l.resourceChangeMap[resource.String()] = &base.ResourceChange{
+					Resource: resource,
+				}
+			}
 		}
 	}
 }
@@ -157,11 +182,17 @@ func (l *resourceChangedListener) EnterInsertStatement(ctx *parser.InsertStateme
 		resource.Database = db
 	}
 	resource.Table = table
-	l.resourceMap[resource.String()] = resource
+
+	if _, ok := l.resourceChangeMap[resource.String()]; !ok {
+		l.resourceChangeMap[resource.String()] = &base.ResourceChange{
+			Resource: resource,
+		}
+	}
 
 	// Track DMLs.
-	if len(l.dmls) < common.MaximumLintExplainSize {
-		l.dmls = append(l.dmls, l.text)
+	l.dmlCount++
+	if len(l.sampleDMLs) < common.MaximumLintExplainSize {
+		l.sampleDMLs = append(l.sampleDMLs, l.text)
 	}
 }
 
@@ -172,13 +203,18 @@ func (l *resourceChangedListener) EnterUpdateStatement(ctx *parser.UpdateStateme
 	for _, tableRefCtx := range ctx.TableReferenceList().AllTableReference() {
 		resources := l.extractTableReference(tableRefCtx)
 		for _, resource := range resources {
-			l.resourceMap[resource.String()] = resource
+			if _, ok := l.resourceChangeMap[resource.String()]; !ok {
+				l.resourceChangeMap[resource.String()] = &base.ResourceChange{
+					Resource: resource,
+				}
+			}
 		}
 	}
 
 	// Track DMLs.
-	if len(l.dmls) < common.MaximumLintExplainSize {
-		l.dmls = append(l.dmls, l.text)
+	l.dmlCount++
+	if len(l.sampleDMLs) < common.MaximumLintExplainSize {
+		l.sampleDMLs = append(l.sampleDMLs, l.text)
 	}
 }
 
@@ -197,12 +233,17 @@ func (l *resourceChangedListener) EnterDeleteStatement(ctx *parser.DeleteStateme
 	}
 
 	for _, resource := range allResources {
-		l.resourceMap[resource.String()] = resource
+		if _, ok := l.resourceChangeMap[resource.String()]; !ok {
+			l.resourceChangeMap[resource.String()] = &base.ResourceChange{
+				Resource: resource,
+			}
+		}
 	}
 
 	// Track DMLs.
-	if len(l.dmls) < common.MaximumLintExplainSize {
-		l.dmls = append(l.dmls, l.text)
+	l.dmlCount++
+	if len(l.sampleDMLs) < common.MaximumLintExplainSize {
+		l.sampleDMLs = append(l.sampleDMLs, l.text)
 	}
 }
 
