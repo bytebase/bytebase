@@ -186,7 +186,7 @@ func reportForOracle(sm *sheet.Manager, databaseName string, schemaName string, 
 		}, nil
 	}
 
-	changeSummary, err := base.ExtractChangedResources(storepb.Engine_ORACLE, databaseName, schemaName, asts)
+	changeSummary, err := base.ExtractChangedResources(storepb.Engine_ORACLE, databaseName, schemaName, asts, statement)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to extract changed resources")
 	}
@@ -232,7 +232,7 @@ func reportForMySQL(ctx context.Context, sm *sheet.Manager, sqlDB *sql.DB, engin
 		}, nil
 	}
 
-	changeSummary, err := base.ExtractChangedResources(storepb.Engine_MYSQL, databaseName, "" /* currentSchema */, asts)
+	changeSummary, err := base.ExtractChangedResources(storepb.Engine_MYSQL, databaseName, "" /* currentSchema */, asts, statement)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to extract changed resources")
 	}
@@ -330,9 +330,17 @@ func convertToChangedResources(dbMetadata *model.DBSchema, resourceChanges []*ba
 		if dbMetadata != nil && dbMetadata.GetDatabaseMetadata() != nil && dbMetadata.GetDatabaseMetadata().GetSchema(resource.Schema) != nil && dbMetadata.GetDatabaseMetadata().GetSchema(resource.Schema).GetTable(resource.Table) != nil {
 			tableRows = dbMetadata.GetDatabaseMetadata().GetSchema(resource.Schema).GetTable(resource.Table).GetRowCount()
 		}
+		var ranges []*storepb.Range
+		for _, r := range resourceChange.Ranges {
+			ranges = append(ranges, &storepb.Range{
+				Start: int32(r.Start),
+				End:   int32(r.End),
+			})
+		}
 		schema.Tables = append(schema.Tables, &storepb.ChangedResourceTable{
 			Name:      resource.Table,
 			TableRows: tableRows,
+			Ranges:    ranges,
 		})
 	}
 	return meta

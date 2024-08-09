@@ -1198,17 +1198,23 @@ func convertToChangedResources(r *storepb.ChangedResources) *v1pb.ChangedResourc
 	result := &v1pb.ChangedResources{}
 	for _, database := range r.Databases {
 		v1Database := &v1pb.ChangedResourceDatabase{
-			Name:    database.Name,
-			Schemas: []*v1pb.ChangedResourceSchema{},
+			Name: database.Name,
 		}
 		for _, schema := range database.Schemas {
 			v1Schema := &v1pb.ChangedResourceSchema{
-				Name:   schema.Name,
-				Tables: []*v1pb.ChangedResourceTable{},
+				Name: schema.Name,
 			}
 			for _, table := range schema.Tables {
+				var ranges []*v1pb.Range
+				for _, r := range table.Ranges {
+					ranges = append(ranges, &v1pb.Range{
+						Start: r.Start,
+						End:   r.End,
+					})
+				}
 				v1Schema.Tables = append(v1Schema.Tables, &v1pb.ChangedResourceTable{
-					Name: table.Name,
+					Name:   table.Name,
+					Ranges: ranges,
 				})
 			}
 			sort.Slice(v1Schema.Tables, func(i, j int) bool {
