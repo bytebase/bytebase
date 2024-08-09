@@ -343,6 +343,6 @@ enum DatabaseChangeMode {
 
 message MaximumSQLResultSizeSetting {
   // The limit is in bytes.
-  // The default value is 100MB, we will use the default value if the setting not exists, or the limit <= 0. 
+  // The default value is 100MB, we will use the default value if the setting not exists, or the limit <= 0.
   int64 limit = 1;
 }
