@@ -1,9 +1,9 @@
 package base
 
 import (
+	"bytes"
 	"context"
 	"fmt"
-	"strings"
 	"sync"
 
 	"github.com/pkg/errors"
@@ -254,9 +254,11 @@ type Range struct {
 
 // NewRange creates a new Range with index range of singleSQL in statement.
 func NewRange(statement, singleSQL string) Range {
-	start := strings.Index(statement, singleSQL)
+	statementBytes := []byte(statement)
+	singleSQLBytes := []byte(singleSQL)
+	start := bytes.Index(statementBytes, singleSQLBytes)
 	return Range{
 		Start: int32(start),
-		End:   int32(start + len(singleSQL)),
+		End:   int32(start + len(singleSQLBytes)),
 	}
 }
