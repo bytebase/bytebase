@@ -47,6 +47,7 @@ func TestExtractChangedResources(t *testing.T) {
 								End:   121,
 							},
 						},
+						AffectTable: true,
 					},
 					{
 						Resource: base.SchemaResource{

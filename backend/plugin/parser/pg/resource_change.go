@@ -78,12 +78,10 @@ func getResourceChanges(database, schema string, node ast.Node, statement string
 				resource.Schema = schema
 			}
 
-			if _, ok := resourceChangeMap[resource.String()]; !ok {
-				resourceChangeMap[resource.String()] = &base.ResourceChange{
-					Resource: resource,
-				}
-			}
-			resourceChangeMap[resource.String()].Ranges = append(resourceChangeMap[resource.String()].Ranges, base.NewRange(statement, node.Text()))
+			putResourceChange(resourceChangeMap, &base.ResourceChange{
+				Resource: resource,
+				Ranges:   []base.Range{base.NewRange(statement, node.Text())},
+			})
 			return nil
 		}
 	case *ast.DropTableStmt:
@@ -100,12 +98,11 @@ func getResourceChanges(database, schema string, node ast.Node, statement string
 				resource.Schema = schema
 			}
 
-			if _, ok := resourceChangeMap[resource.String()]; !ok {
-				resourceChangeMap[resource.String()] = &base.ResourceChange{
-					Resource: resource,
-				}
-			}
-			resourceChangeMap[resource.String()].Ranges = append(resourceChangeMap[resource.String()].Ranges, base.NewRange(statement, node.Text()))
+			putResourceChange(resourceChangeMap, &base.ResourceChange{
+				Resource:    resource,
+				Ranges:      []base.Range{base.NewRange(statement, node.Text())},
+				AffectTable: true,
+			})
 		}
 		return nil
 	case *ast.AlterTableStmt:
@@ -122,38 +119,37 @@ func getResourceChanges(database, schema string, node ast.Node, statement string
 				resource.Schema = schema
 			}
 
-			if _, ok := resourceChangeMap[resource.String()]; !ok {
-				resourceChangeMap[resource.String()] = &base.ResourceChange{
-					Resource: resource,
-				}
-			}
-			resourceChangeMap[resource.String()].Ranges = append(resourceChangeMap[resource.String()].Ranges, base.NewRange(statement, node.Text()))
+			putResourceChange(resourceChangeMap, &base.ResourceChange{
+				Resource:    resource,
+				Ranges:      []base.Range{base.NewRange(statement, node.Text())},
+				AffectTable: true,
+			})
 
 			for _, item := range node.AlterItemList {
 				if v, ok := item.(*ast.RenameTableStmt); ok {
-					resource := base.SchemaResource{
+					newResource := base.SchemaResource{
 						Database: node.Table.Database,
 						Schema:   node.Table.Schema,
 						Table:    v.NewName,
 					}
-					if resource.Database == "" {
-						resource.Database = database
+					if newResource.Database == "" {
+						newResource.Database = database
 					}
-					if resource.Schema == "" {
-						resource.Schema = schema
+					if newResource.Schema == "" {
+						newResource.Schema = schema
 					}
 
-					if _, ok := resourceChangeMap[resource.String()]; !ok {
-						resourceChangeMap[resource.String()] = &base.ResourceChange{
-							Resource: resource,
-						}
-					}
-					resourceChangeMap[resource.String()].Ranges = append(resourceChangeMap[resource.String()].Ranges, base.NewRange(statement, node.Text()))
+					putResourceChange(resourceChangeMap, &base.ResourceChange{
+						Resource: newResource,
+						Ranges:   []base.Range{base.NewRange(statement, node.Text())},
+					})
+					break
 				}
 			}
 
 			return nil
 		}
+	// Is this used?
 	case *ast.RenameTableStmt:
 		if node.Table.Type == ast.TableTypeBaseTable {
 			resource := base.SchemaResource{
@@ -167,40 +163,46 @@ func getResourceChanges(database, schema string, node ast.Node, statement string
 			if resource.Schema == "" {
 				resource.Schema = schema
 			}
-
-			if _, ok := resourceChangeMap[resource.String()]; !ok {
-				resourceChangeMap[resource.String()] = &base.ResourceChange{
-					Resource: resource,
-				}
-			}
-			resourceChangeMap[resource.String()].Ranges = append(resourceChangeMap[resource.String()].Ranges, base.NewRange(statement, node.Text()))
-
 			newResource := base.SchemaResource{
 				Database: resource.Database,
 				Schema:   resource.Schema,
 				Table:    node.NewName,
 			}
-			if _, ok := resourceChangeMap[newResource.String()]; !ok {
-				resourceChangeMap[newResource.String()] = &base.ResourceChange{
-					Resource: newResource,
-				}
-			}
-			resourceChangeMap[newResource.String()].Ranges = append(resourceChangeMap[newResource.String()].Ranges, base.NewRange(statement, node.Text()))
+
+			putResourceChange(resourceChangeMap, &base.ResourceChange{
+				Resource: resource,
+				Ranges:   []base.Range{base.NewRange(statement, node.Text())},
+			})
+			putResourceChange(resourceChangeMap, &base.ResourceChange{
+				Resource: newResource,
+				Ranges:   []base.Range{base.NewRange(statement, node.Text())},
+			})
 			return nil
 		}
 	case *ast.CommentStmt:
-		resource, err := postgresExtractResourcesFromCommentStatement(database, schema, node.Text())
+		change, err := postgresExtractResourcesFromCommentStatement(database, schema, node.Text())
 		if err != nil {
 			return err
 		}
-		if _, ok := resourceChangeMap[resource.String()]; !ok {
-			resourceChangeMap[resource.String()] = resource
-		}
-		resourceChangeMap[resource.String()].Ranges = append(resourceChangeMap[resource.String()].Ranges, base.NewRange(statement, node.Text()))
+
+		putResourceChange(resourceChangeMap, change)
 		return nil
 	}
 
 	return nil
+}
+
+func putResourceChange(resourceChangeMap map[string]*base.ResourceChange, change *base.ResourceChange) {
+	v, ok := resourceChangeMap[change.String()]
+	if !ok {
+		resourceChangeMap[change.String()] = change
+		return
+	}
+
+	v.Ranges = append(v.Ranges, change.Ranges...)
+	if change.AffectTable {
+		v.AffectTable = true
+	}
 }
 
 func postgresExtractResourcesFromCommentStatement(database, defaultSchema, statement string) (*base.ResourceChange, error) {
