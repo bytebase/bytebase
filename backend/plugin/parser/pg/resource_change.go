@@ -1,6 +1,8 @@
 package pg
 
 import (
+	"sort"
+
 	"github.com/pkg/errors"
 
 	pgquery "github.com/pganalyze/pg_query_go/v5"
@@ -20,15 +22,25 @@ func extractChangedResources(database string, schema string, asts any, _ string)
 		return nil, errors.Errorf("invalid ast type %T", asts)
 	}
 
-	var resourceChanges []*base.ResourceChange
+	resourceChangeMap := make(map[string]*base.ResourceChange)
 	for _, node := range nodes {
 		// schema is "public" by default.
 		changes, err := getResourceChanges(database, schema, node)
 		if err != nil {
 			return nil, err
 		}
-		resourceChanges = append(resourceChanges, changes...)
+		for _, change := range changes {
+			resourceChangeMap[change.Resource.String()] = change
+		}
 	}
+
+	var resourceChanges []*base.ResourceChange
+	for _, change := range resourceChangeMap {
+		resourceChanges = append(resourceChanges, change)
+	}
+	sort.Slice(resourceChanges, func(i, j int) bool {
+		return resourceChanges[i].String() < resourceChanges[j].String()
+	})
 	return &base.ChangeSummary{
 		ResourceChanges: resourceChanges,
 	}, nil
@@ -81,7 +93,26 @@ func getResourceChanges(database, schema string, node ast.Node) ([]*base.Resourc
 			if resource.Schema == "" {
 				resource.Schema = schema
 			}
-			return []*base.ResourceChange{{Resource: resource}}, nil
+			result := []*base.ResourceChange{{Resource: resource}}
+
+			for _, item := range node.AlterItemList {
+				if v, ok := item.(*ast.RenameTableStmt); ok {
+					resource := base.SchemaResource{
+						Database: node.Table.Database,
+						Schema:   node.Table.Schema,
+						Table:    v.NewName,
+					}
+					if resource.Database == "" {
+						resource.Database = database
+					}
+					if resource.Schema == "" {
+						resource.Schema = schema
+					}
+					result = append(result, &base.ResourceChange{Resource: resource})
+				}
+			}
+
+			return result, nil
 		}
 	case *ast.RenameTableStmt:
 		if node.Table.Type == ast.TableTypeBaseTable {

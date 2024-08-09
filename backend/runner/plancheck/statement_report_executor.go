@@ -360,7 +360,7 @@ func reportForPostgres(ctx context.Context, sm *sheet.Manager, sqlDB *sql.DB, da
 		return nil, err
 	}
 
-	changeSummary, err := base.ExtractChangedResources(storepb.Engine_MYSQL, database, "public", asts, statement)
+	changeSummary, err := base.ExtractChangedResources(storepb.Engine_POSTGRES, database, "public", asts, statement)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to extract changed resources")
 	}
