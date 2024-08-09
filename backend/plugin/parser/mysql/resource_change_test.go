@@ -23,11 +23,35 @@ func TestExtractMySQLChangedResources(t *testing.T) {
 					Table:    "t1",
 				},
 				AffectTable: true,
+				Ranges: []base.Range{
+					{
+						Start: 0,
+						End:   25,
+					},
+					{
+						Start: 27,
+						End:   41,
+					},
+					{
+						Start: 43,
+						End:   76,
+					},
+					{
+						Start: 78,
+						End:   100,
+					},
+				},
 			},
 			{
 				Resource: base.SchemaResource{
 					Database: "db",
 					Table:    "t2",
+				},
+				Ranges: []base.Range{
+					{
+						Start: 78,
+						End:   100,
+					},
 				},
 			},
 		},
@@ -38,7 +62,7 @@ func TestExtractMySQLChangedResources(t *testing.T) {
 	}
 
 	asts, _ := ParseMySQL(statement)
-	got, err := extractChangedResources("db", "", asts)
+	got, err := extractChangedResources("db", "", asts, statement)
 	require.NoError(t, err)
 	require.Equal(t, want, got)
 }
