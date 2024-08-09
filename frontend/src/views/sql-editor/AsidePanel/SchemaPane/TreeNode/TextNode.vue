@@ -1,34 +1,21 @@
 <template>
-  <div
-    class="flex flex-row items-center gap-x-1"
-    :data-mock-type="target.mockType"
-  >
-    <TableIcon
-      v-if="type === 'table' || type === 'external-table'"
-      class="w-4"
-    />
-    <ViewIcon v-if="type === 'view'" class="w-4 h-4" />
-    <ProcedureIcon v-if="type === 'procedure'" class="w-4 h-4" />
-    <FunctionIcon v-if="type === 'function'" class="w-4 h-4" />
-    <TablePartitionIcon v-if="type === 'partition-table'" class="w-4 h-4" />
+  <CommonNode :text="text" :highlight="false" :data-mock-type="type">
+    <template v-if="render" #default>
+      <component :is="render" />
+    </template>
 
-    <component :is="render" v-if="render" />
-
-    <span v-else>{{ text }}</span>
-  </div>
+    <template #icon>
+      <FolderIcon class="w-4 h-4 stroke-accent fill-accent/10" />
+    </template>
+  </CommonNode>
 </template>
 
 <script setup lang="ts">
 import { isFunction } from "lodash-es";
+import { FolderIcon } from "lucide-vue-next";
 import { computed } from "vue";
-import {
-  FunctionIcon,
-  ProcedureIcon,
-  TableIcon,
-  TablePartitionIcon,
-  ViewIcon,
-} from "@/components/Icon";
 import type { TreeNode } from "../common";
+import CommonNode from "./CommonNode.vue";
 
 const props = defineProps<{
   node: TreeNode;
@@ -42,6 +29,7 @@ const target = computed(() => {
 const type = computed(() => {
   return target.value.mockType;
 });
+
 const text = computed(() => {
   const { text } = target.value;
   return isFunction(text) ? text() : text;
