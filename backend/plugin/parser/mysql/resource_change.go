@@ -47,6 +47,7 @@ func extractChangedResources(currentDatabase string, _ string, asts any, stateme
 		ResourceChanges: resourceChanges,
 		SampleDMLS:      l.sampleDMLs,
 		DMLCount:        l.dmlCount,
+		InsertCount:     l.insertCount,
 	}, nil
 }
 
@@ -59,6 +60,7 @@ type resourceChangedListener struct {
 	resourceChangeMap map[string]*base.ResourceChange
 	sampleDMLs        []string
 	dmlCount          int
+	insertCount       int
 
 	// Internal data structure used temporarily.
 	text string
@@ -182,6 +184,11 @@ func (l *resourceChangedListener) EnterInsertStatement(ctx *parser.InsertStateme
 	putResourceChange(l.resourceChangeMap, &base.ResourceChange{
 		Resource: resource,
 	})
+
+	if ctx.InsertFromConstructor() != nil && ctx.InsertFromConstructor().InsertValues() != nil && ctx.InsertFromConstructor().InsertValues().ValueList() != nil {
+		l.insertCount += len(ctx.InsertFromConstructor().InsertValues().ValueList().AllValues())
+		return
+	}
 
 	// Track DMLs.
 	l.dmlCount++

@@ -156,34 +156,69 @@ func (e *StatementReportExecutor) runReport(ctx context.Context, instance *store
 	}
 }
 
-func reportForOracle(sm *sheet.Manager, databaseName string, schemaName string, statement string, dbMetadata *model.DBSchema) ([]*storepb.PlanCheckRunResult_Result, error) {
-	asts, advices := sm.GetASTsForChecks(storepb.Engine_ORACLE, statement)
+func reportForPostgres(ctx context.Context, sm *sheet.Manager, sqlDB *sql.DB, database, statement string, dbMetadata *model.DBSchema) ([]*storepb.PlanCheckRunResult_Result, error) {
+	asts, advices := sm.GetASTsForChecks(storepb.Engine_POSTGRES, statement)
 	if len(advices) > 0 {
-		advice := advices[0]
 		// nolint:nilerr
 		return []*storepb.PlanCheckRunResult_Result{
 			{
 				Status:  storepb.PlanCheckRunResult_Result_ERROR,
-				Title:   advice.Title,
-				Content: advice.Content,
+				Title:   "Syntax error",
+				Content: advices[0].Content,
 				Code:    0,
-				Report: &storepb.PlanCheckRunResult_Result_SqlReviewReport_{
-					SqlReviewReport: &storepb.PlanCheckRunResult_Result_SqlReviewReport{
-						Line:          advice.GetStartPosition().GetLine(),
-						Column:        advice.GetStartPosition().GetColumn(),
-						Code:          advice.Code,
-						Detail:        advice.Detail,
-						StartPosition: advice.StartPosition,
-						EndPosition:   advice.EndPosition,
+				Report: &storepb.PlanCheckRunResult_Result_SqlSummaryReport_{
+					SqlSummaryReport: &storepb.PlanCheckRunResult_Result_SqlSummaryReport{
+						Code: advisor.StatementSyntaxError.Int32(),
 					},
 				},
 			},
 		}, nil
 	}
 
-	changeSummary, err := base.ExtractChangedResources(storepb.Engine_ORACLE, databaseName, schemaName, asts, statement)
+	sqlTypes, err := pg.GetStatementTypes(asts)
+	if err != nil {
+		return nil, err
+	}
+
+	changeSummary, err := base.ExtractChangedResources(storepb.Engine_POSTGRES, database, "public", asts, statement)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to extract changed resources")
+	}
+
+	var totalAffectedRows int64
+	// Count DMLs.
+	for _, dml := range changeSummary.SampleDMLS {
+		count, err := getAffectedRowsCount(ctx, sqlDB, fmt.Sprintf("EXPLAIN %s", dml), getAffectedRowsCountForPostgres)
+		if err != nil {
+			return nil, err
+		}
+		totalAffectedRows += count
+	}
+	if changeSummary.DMLCount > common.MaximumLintExplainSize {
+		totalAffectedRows = int64((float64(totalAffectedRows) / common.MaximumLintExplainSize) * float64(changeSummary.DMLCount))
+	}
+	totalAffectedRows += int64(changeSummary.InsertCount)
+	// Count affected rows by DDLs.
+	for _, change := range changeSummary.ResourceChanges {
+		if !change.AffectTable {
+			continue
+		}
+		if dbMetadata == nil {
+			continue
+		}
+		dbMeta := dbMetadata.GetDatabaseMetadata()
+		if dbMeta == nil {
+			continue
+		}
+		schemaMeta := dbMeta.GetSchema(change.Resource.Schema)
+		if schemaMeta == nil {
+			continue
+		}
+		tableMeta := schemaMeta.GetTable(change.Resource.Table)
+		if tableMeta == nil {
+			continue
+		}
+		totalAffectedRows += tableMeta.GetRowCount()
 	}
 
 	return []*storepb.PlanCheckRunResult_Result{
@@ -193,8 +228,8 @@ func reportForOracle(sm *sheet.Manager, databaseName string, schemaName string, 
 			Title:  "OK",
 			Report: &storepb.PlanCheckRunResult_Result_SqlSummaryReport_{
 				SqlSummaryReport: &storepb.PlanCheckRunResult_Result_SqlSummaryReport{
-					StatementTypes:   nil,
-					AffectedRows:     0,
+					StatementTypes:   sqlTypes,
+					AffectedRows:     int32(totalAffectedRows),
 					ChangedResources: convertToChangedResources(dbMetadata, changeSummary.ResourceChanges),
 				},
 			},
@@ -300,6 +335,52 @@ func reportForMySQL(ctx context.Context, sm *sheet.Manager, sqlDB *sql.DB, engin
 	}, nil
 }
 
+func reportForOracle(sm *sheet.Manager, databaseName string, schemaName string, statement string, dbMetadata *model.DBSchema) ([]*storepb.PlanCheckRunResult_Result, error) {
+	asts, advices := sm.GetASTsForChecks(storepb.Engine_ORACLE, statement)
+	if len(advices) > 0 {
+		advice := advices[0]
+		// nolint:nilerr
+		return []*storepb.PlanCheckRunResult_Result{
+			{
+				Status:  storepb.PlanCheckRunResult_Result_ERROR,
+				Title:   advice.Title,
+				Content: advice.Content,
+				Code:    0,
+				Report: &storepb.PlanCheckRunResult_Result_SqlReviewReport_{
+					SqlReviewReport: &storepb.PlanCheckRunResult_Result_SqlReviewReport{
+						Line:          advice.GetStartPosition().GetLine(),
+						Column:        advice.GetStartPosition().GetColumn(),
+						Code:          advice.Code,
+						Detail:        advice.Detail,
+						StartPosition: advice.StartPosition,
+						EndPosition:   advice.EndPosition,
+					},
+				},
+			},
+		}, nil
+	}
+
+	changeSummary, err := base.ExtractChangedResources(storepb.Engine_ORACLE, databaseName, schemaName, asts, statement)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to extract changed resources")
+	}
+
+	return []*storepb.PlanCheckRunResult_Result{
+		{
+			Status: storepb.PlanCheckRunResult_Result_SUCCESS,
+			Code:   common.Ok.Int32(),
+			Title:  "OK",
+			Report: &storepb.PlanCheckRunResult_Result_SqlSummaryReport_{
+				SqlSummaryReport: &storepb.PlanCheckRunResult_Result_SqlSummaryReport{
+					StatementTypes:   nil,
+					AffectedRows:     0,
+					ChangedResources: convertToChangedResources(dbMetadata, changeSummary.ResourceChanges),
+				},
+			},
+		},
+	}, nil
+}
+
 func convertToChangedResources(dbMetadata *model.DBSchema, resourceChanges []*base.ResourceChange) *storepb.ChangedResources {
 	meta := &storepb.ChangedResources{}
 	// resourceChange is ordered by (db, schema, table)
@@ -331,85 +412,4 @@ func convertToChangedResources(dbMetadata *model.DBSchema, resourceChanges []*ba
 		})
 	}
 	return meta
-}
-
-func reportForPostgres(ctx context.Context, sm *sheet.Manager, sqlDB *sql.DB, database, statement string, dbMetadata *model.DBSchema) ([]*storepb.PlanCheckRunResult_Result, error) {
-	asts, advices := sm.GetASTsForChecks(storepb.Engine_POSTGRES, statement)
-	if len(advices) > 0 {
-		// nolint:nilerr
-		return []*storepb.PlanCheckRunResult_Result{
-			{
-				Status:  storepb.PlanCheckRunResult_Result_ERROR,
-				Title:   "Syntax error",
-				Content: advices[0].Content,
-				Code:    0,
-				Report: &storepb.PlanCheckRunResult_Result_SqlSummaryReport_{
-					SqlSummaryReport: &storepb.PlanCheckRunResult_Result_SqlSummaryReport{
-						Code: advisor.StatementSyntaxError.Int32(),
-					},
-				},
-			},
-		}, nil
-	}
-
-	sqlTypes, err := pg.GetStatementTypes(asts)
-	if err != nil {
-		return nil, err
-	}
-
-	changeSummary, err := base.ExtractChangedResources(storepb.Engine_POSTGRES, database, "public", asts, statement)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to extract changed resources")
-	}
-
-	var totalAffectedRows int64
-	// Count DMLs.
-	for _, dml := range changeSummary.SampleDMLS {
-		count, err := getAffectedRowsCount(ctx, sqlDB, fmt.Sprintf("EXPLAIN %s", dml), getAffectedRowsCountForPostgres)
-		if err != nil {
-			return nil, err
-		}
-		totalAffectedRows += count
-	}
-	if changeSummary.DMLCount > common.MaximumLintExplainSize {
-		totalAffectedRows = int64((float64(totalAffectedRows) / common.MaximumLintExplainSize) * float64(changeSummary.DMLCount))
-	}
-	totalAffectedRows += int64(changeSummary.InsertCount)
-	// Count affected rows by DDLs.
-	for _, change := range changeSummary.ResourceChanges {
-		if !change.AffectTable {
-			continue
-		}
-		if dbMetadata == nil {
-			continue
-		}
-		dbMeta := dbMetadata.GetDatabaseMetadata()
-		if dbMeta == nil {
-			continue
-		}
-		schemaMeta := dbMeta.GetSchema(change.Resource.Schema)
-		if schemaMeta == nil {
-			continue
-		}
-		tableMeta := schemaMeta.GetTable(change.Resource.Table)
-		if tableMeta == nil {
-			continue
-		}
-		totalAffectedRows += tableMeta.GetRowCount()
-	}
-
-	return []*storepb.PlanCheckRunResult_Result{
-		{
-			Status: storepb.PlanCheckRunResult_Result_SUCCESS,
-			Code:   common.Ok.Int32(),
-			Title:  "OK",
-			Report: &storepb.PlanCheckRunResult_Result_SqlSummaryReport_{
-				SqlSummaryReport: &storepb.PlanCheckRunResult_Result_SqlSummaryReport{
-					StatementTypes:   sqlTypes,
-					AffectedRows:     int32(totalAffectedRows),
-					ChangedResources: convertToChangedResources(dbMetadata, changeSummary.ResourceChanges),
-				},
-			},
-		},
-	}, nil
 }
