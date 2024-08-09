@@ -38,9 +38,9 @@ func extractChangedResources(currentDatabase string, currentSchema string, asts 
 	sort.Slice(resources, func(i, j int) bool {
 		return resources[i].String() < resources[j].String()
 	})
-	var resourceChanges []base.ResourceChange
+	var resourceChanges []*base.ResourceChange
 	for _, resource := range resources {
-		resourceChanges = append(resourceChanges, base.ResourceChange{
+		resourceChanges = append(resourceChanges, &base.ResourceChange{
 			Resource: resource,
 		})
 	}
