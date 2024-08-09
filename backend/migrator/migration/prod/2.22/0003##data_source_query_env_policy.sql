@@ -1,7 +1,7 @@
 INSERT INTO policy (creator_id, updater_id, type, payload, resource_type, resource_id, inherit_from_parent)
 SELECT 
-  101, 
-  101, 
+  1, 
+  1, 
   'bb.policy.data-source-query', 
   '{"adminDataSourceRestriction": "FALLBACK"}', 
   'ENVIRONMENT', 
