@@ -19,7 +19,7 @@
 
   <RequestQueryPanel
     v-if="state.showRequestQueryPanel"
-    :project-name="database?.project"
+    :project-name="database.project"
     :database="database"
     :redirect-to-issue-page="!disallowNavigateToConsole"
     @close="state.showRequestQueryPanel = false"
@@ -53,7 +53,7 @@ interface LocalState {
 
 const props = withDefaults(
   defineProps<{
-    database?: ComposedDatabase;
+    database: ComposedDatabase;
     table?: string;
     schema?: string;
     label?: boolean;
@@ -62,7 +62,6 @@ const props = withDefaults(
     class?: VueClass;
   }>(),
   {
-    database: undefined,
     label: false,
     disabled: false,
     tooltip: false,

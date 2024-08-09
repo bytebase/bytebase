@@ -36,6 +36,7 @@ import {
 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { PolicyResourceType } from "@/types/proto/v1/org_policy_service";
+import { wrapRefAsPromise } from "@/utils";
 import MaskSpinner from "./misc/MaskSpinner.vue";
 
 const route = useRoute();
@@ -125,7 +126,8 @@ onMounted(async () => {
       if (toProject === undefined) {
         // Prepare projects if the project is not specified.
         // This is useful when the user navigates to the workspace dashboard from project detail.
-        await useProjectV1List().requestPromise.value;
+        const { ready } = useProjectV1List();
+        await wrapRefAsPromise(ready, true);
       }
       await prepareDatabases(toProject);
       isSwitchingProject.value = false;

@@ -20,12 +20,12 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
+import WebhookTypeIcon from "@/components/Project/WebhookTypeIcon.vue";
 import ProjectWebhookForm from "@/components/ProjectWebhookForm.vue";
-import { useProjectV1Store, useProjectWebhookV1Store } from "@/store";
+import { useProjectByName, useProjectWebhookV1Store } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { emptyProjectWebhook } from "@/types";
 import { idFromSlug } from "@/utils";
-import WebhookTypeIcon from "@/components/Project/WebhookTypeIcon.vue";
 
 const props = defineProps<{
   projectId: string;
@@ -33,14 +33,10 @@ const props = defineProps<{
   allowEdit: boolean;
 }>();
 
-const projectV1Store = useProjectV1Store();
 const projectWebhookV1Store = useProjectWebhookV1Store();
-
-const project = computed(() => {
-  return projectV1Store.getProjectByName(
-    `${projectNamePrefix}${props.projectId}`
-  );
-});
+const { project } = useProjectByName(
+  computed(() => `${projectNamePrefix}${props.projectId}`)
+);
 
 const projectWebhook = computed(() => {
   const id = idFromSlug(props.projectWebhookSlug);

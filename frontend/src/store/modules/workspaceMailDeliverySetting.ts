@@ -21,14 +21,15 @@ export const useWorkspaceMailDeliverySettingStore = defineStore(
     };
 
     const fetchMailDeliverySetting = async () => {
-      try {
-        const setting = await settingServiceClient.getSetting({
+      const setting = await settingServiceClient.getSetting(
+        {
           name: SETTING_NAME,
-        });
-        setMailDeliverySetting(setting);
-      } catch (ex) {
-        console.error(ex);
-      }
+        },
+        {
+          silent: true,
+        }
+      );
+      setMailDeliverySetting(setting);
     };
 
     const updateMailDeliverySetting = async (

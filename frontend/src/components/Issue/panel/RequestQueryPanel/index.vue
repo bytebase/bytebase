@@ -13,27 +13,11 @@
       <div class="w-full mx-auto space-y-4">
         <div class="w-full flex flex-col justify-start items-start">
           <span class="flex items-center textlabel mb-2">
-            {{ $t("common.project") }}
-            <RequiredStar />
-          </span>
-          <ProjectSelect
-            class="!w-60 shrink-0"
-            :project-name="state.projectName"
-            :allowed-project-role-list="[
-              PresetRoleType.PROJECT_OWNER,
-              PresetRoleType.PROJECT_DEVELOPER,
-              PresetRoleType.PROJECT_VIEWER,
-            ]"
-            @update:project-name="handleProjectSelect"
-          />
-        </div>
-        <div class="w-full flex flex-col justify-start items-start">
-          <span class="flex items-center textlabel mb-2">
             {{ $t("common.databases") }}
             <RequiredStar />
           </span>
           <DatabaseResourceForm
-            :project-name="state.projectName"
+            :project-name="props.projectName"
             :database-resources="state.databaseResources"
             @update:condition="state.databaseResourceCondition = $event"
             @update:database-resources="state.databaseResources = $event"
@@ -86,7 +70,7 @@ import { computed, reactive } from "vue";
 import { useRouter } from "vue-router";
 import ExpirationSelector from "@/components/ExpirationSelector.vue";
 import RequiredStar from "@/components/RequiredStar.vue";
-import { Drawer, DrawerContent, ProjectSelect } from "@/components/v2";
+import { Drawer, DrawerContent } from "@/components/v2";
 import { issueServiceClient } from "@/grpcweb";
 import {
   useCurrentUserV1,
@@ -105,7 +89,6 @@ import {
 import DatabaseResourceForm from "./DatabaseResourceForm/index.vue";
 
 interface LocalState {
-  projectName?: string;
   databaseResourceCondition?: string;
   databaseResources: DatabaseResource[];
   expireDays: number;
@@ -118,12 +101,11 @@ defineOptions({
 
 const props = withDefaults(
   defineProps<{
-    projectName?: string;
+    projectName: string;
     database?: ComposedDatabase;
     placement: "left" | "right";
   }>(),
   {
-    projectName: undefined,
     database: undefined,
     placement: "right",
   }
@@ -156,17 +138,12 @@ const router = useRouter();
 const databaseStore = useDatabaseV1Store();
 const currentUser = useCurrentUserV1();
 const state = reactive<LocalState>({
-  projectName: props.projectName,
   ...extractDatabaseResourcesFromProps(),
   expireDays: 1,
   description: "",
 });
 
 const allowCreate = computed(() => {
-  if (!state.projectName) {
-    return false;
-  }
-
   // If all database selected, the condition is an empty string.
   // If some databases selected, the condition is a string.
   // If no database selected, the condition is undefined.
@@ -175,10 +152,6 @@ const allowCreate = computed(() => {
   }
   return true;
 });
-
-const handleProjectSelect = async (name: string | undefined) => {
-  state.projectName = name;
-};
 
 const doCreateIssue = async () => {
   if (!allowCreate.value) {
@@ -193,7 +166,7 @@ const doCreateIssue = async () => {
   });
 
   const project = await useProjectV1Store().getOrFetchProjectByName(
-    state.projectName!
+    props.projectName
   );
   const expression: string[] = [];
   if (state.databaseResourceCondition) {

@@ -112,7 +112,7 @@ import {
   useCurrentUserV1,
   useDBGroupStore,
   useDatabaseV1Store,
-  useProjectV1Store,
+  useProjectByName,
   useSubscriptionV1Store,
 } from "@/store";
 import { databaseGroupNamePrefix } from "@/store/modules/v1/common";
@@ -133,18 +133,14 @@ const props = defineProps<{
 
 const router = useRouter();
 const currentUser = useCurrentUserV1();
-const projectStore = useProjectV1Store();
 const dbGroupStore = useDBGroupStore();
 const databaseStore = useDatabaseV1Store();
 const subscriptionV1Store = useSubscriptionV1Store();
+const { project } = useProjectByName(
+  computed(() => `${projectNamePrefix}${props.projectId}`)
+);
 const state = reactive<LocalState>({
   showEditPanel: false,
-});
-
-const project = computed(() => {
-  return projectStore.getProjectByName(
-    `${projectNamePrefix}${props.projectId}`
-  );
 });
 
 const databaseGroupResourceName = computed(() => {
