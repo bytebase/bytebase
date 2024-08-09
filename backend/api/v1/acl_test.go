@@ -104,6 +104,17 @@ func TestGetResourceFromRequest(t *testing.T) {
 			},
 		},
 		{
+			request: &v1pb.TestIdentityProviderRequest{
+				IdentityProvider: &v1pb.IdentityProvider{
+					Name: "idps/hello",
+				},
+			},
+			method: "/bytebase.v1.IdentityProviderService/TestIdentityProvider",
+			want: []*common.Resource{
+				{Name: "idps/hello"},
+			},
+		},
+		{
 			request: &v1pb.ListReviewConfigsRequest{},
 			method:  "/bytebase.v1.ReviewConfigService/ListReviewConfigs",
 			want: []*common.Resource{
