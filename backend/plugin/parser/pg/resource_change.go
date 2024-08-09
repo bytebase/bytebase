@@ -16,7 +16,7 @@ func init() {
 	base.RegisterExtractChangedResourcesFunc(storepb.Engine_POSTGRES, extractChangedResources)
 }
 
-func extractChangedResources(database string, schema string, asts any, _ string) (*base.ChangeSummary, error) {
+func extractChangedResources(database string, schema string, asts any, statement string) (*base.ChangeSummary, error) {
 	nodes, ok := asts.([]ast.Node)
 	if !ok {
 		return nil, errors.Errorf("invalid ast type %T", asts)
@@ -25,12 +25,9 @@ func extractChangedResources(database string, schema string, asts any, _ string)
 	resourceChangeMap := make(map[string]*base.ResourceChange)
 	for _, node := range nodes {
 		// schema is "public" by default.
-		changes, err := getResourceChanges(database, schema, node)
+		err := getResourceChanges(database, schema, node, statement, resourceChangeMap)
 		if err != nil {
 			return nil, err
-		}
-		for _, change := range changes {
-			resourceChangeMap[change.Resource.String()] = change
 		}
 	}
 
@@ -46,7 +43,7 @@ func extractChangedResources(database string, schema string, asts any, _ string)
 	}, nil
 }
 
-func getResourceChanges(database, schema string, node ast.Node) ([]*base.ResourceChange, error) {
+func getResourceChanges(database, schema string, node ast.Node, statement string, resourceChangeMap map[string]*base.ResourceChange) error {
 	switch node := node.(type) {
 	case *ast.CreateTableStmt:
 		if node.Name.Type == ast.TableTypeBaseTable {
@@ -61,10 +58,16 @@ func getResourceChanges(database, schema string, node ast.Node) ([]*base.Resourc
 			if resource.Schema == "" {
 				resource.Schema = schema
 			}
-			return []*base.ResourceChange{{Resource: resource}}, nil
+
+			if _, ok := resourceChangeMap[resource.String()]; !ok {
+				resourceChangeMap[resource.String()] = &base.ResourceChange{
+					Resource: resource,
+				}
+			}
+			resourceChangeMap[resource.String()].Ranges = append(resourceChangeMap[resource.String()].Ranges, base.NewRange(statement, node.Text()))
+			return nil
 		}
 	case *ast.DropTableStmt:
-		var result []*base.ResourceChange
 		for _, table := range node.TableList {
 			resource := base.SchemaResource{
 				Database: table.Database,
@@ -77,9 +80,15 @@ func getResourceChanges(database, schema string, node ast.Node) ([]*base.Resourc
 			if resource.Schema == "" {
 				resource.Schema = schema
 			}
-			result = append(result, &base.ResourceChange{Resource: resource})
+
+			if _, ok := resourceChangeMap[resource.String()]; !ok {
+				resourceChangeMap[resource.String()] = &base.ResourceChange{
+					Resource: resource,
+				}
+			}
+			resourceChangeMap[resource.String()].Ranges = append(resourceChangeMap[resource.String()].Ranges, base.NewRange(statement, node.Text()))
 		}
-		return result, nil
+		return nil
 	case *ast.AlterTableStmt:
 		if node.Table.Type == ast.TableTypeBaseTable {
 			resource := base.SchemaResource{
@@ -93,7 +102,13 @@ func getResourceChanges(database, schema string, node ast.Node) ([]*base.Resourc
 			if resource.Schema == "" {
 				resource.Schema = schema
 			}
-			result := []*base.ResourceChange{{Resource: resource}}
+
+			if _, ok := resourceChangeMap[resource.String()]; !ok {
+				resourceChangeMap[resource.String()] = &base.ResourceChange{
+					Resource: resource,
+				}
+			}
+			resourceChangeMap[resource.String()].Ranges = append(resourceChangeMap[resource.String()].Ranges, base.NewRange(statement, node.Text()))
 
 			for _, item := range node.AlterItemList {
 				if v, ok := item.(*ast.RenameTableStmt); ok {
@@ -108,11 +123,17 @@ func getResourceChanges(database, schema string, node ast.Node) ([]*base.Resourc
 					if resource.Schema == "" {
 						resource.Schema = schema
 					}
-					result = append(result, &base.ResourceChange{Resource: resource})
+
+					if _, ok := resourceChangeMap[resource.String()]; !ok {
+						resourceChangeMap[resource.String()] = &base.ResourceChange{
+							Resource: resource,
+						}
+					}
+					resourceChangeMap[resource.String()].Ranges = append(resourceChangeMap[resource.String()].Ranges, base.NewRange(statement, node.Text()))
 				}
 			}
 
-			return result, nil
+			return nil
 		}
 	case *ast.RenameTableStmt:
 		if node.Table.Type == ast.TableTypeBaseTable {
@@ -128,24 +149,42 @@ func getResourceChanges(database, schema string, node ast.Node) ([]*base.Resourc
 				resource.Schema = schema
 			}
 
+			if _, ok := resourceChangeMap[resource.String()]; !ok {
+				resourceChangeMap[resource.String()] = &base.ResourceChange{
+					Resource: resource,
+				}
+			}
+			resourceChangeMap[resource.String()].Ranges = append(resourceChangeMap[resource.String()].Ranges, base.NewRange(statement, node.Text()))
+
 			newResource := base.SchemaResource{
 				Database: resource.Database,
 				Schema:   resource.Schema,
 				Table:    node.NewName,
 			}
-			return []*base.ResourceChange{
-				{Resource: resource},
-				{Resource: newResource},
-			}, nil
+			if _, ok := resourceChangeMap[newResource.String()]; !ok {
+				resourceChangeMap[newResource.String()] = &base.ResourceChange{
+					Resource: newResource,
+				}
+			}
+			resourceChangeMap[newResource.String()].Ranges = append(resourceChangeMap[newResource.String()].Ranges, base.NewRange(statement, node.Text()))
+			return nil
 		}
 	case *ast.CommentStmt:
-		return postgresExtractResourcesFromCommentStatement(database, "public", node.Text())
+		resource, err := postgresExtractResourcesFromCommentStatement(database, schema, node.Text())
+		if err != nil {
+			return err
+		}
+		if _, ok := resourceChangeMap[resource.String()]; !ok {
+			resourceChangeMap[resource.String()] = resource
+		}
+		resourceChangeMap[resource.String()].Ranges = append(resourceChangeMap[resource.String()].Ranges, base.NewRange(statement, node.Text()))
+		return nil
 	}
 
-	return nil, nil
+	return nil
 }
 
-func postgresExtractResourcesFromCommentStatement(database, defaultSchema, statement string) ([]*base.ResourceChange, error) {
+func postgresExtractResourcesFromCommentStatement(database, defaultSchema, statement string) (*base.ResourceChange, error) {
 	res, err := pgquery.Parse(statement)
 	if err != nil {
 		return nil, err
@@ -171,7 +210,7 @@ func postgresExtractResourcesFromCommentStatement(database, defaultSchema, state
 					if resource.Schema == "" {
 						resource.Schema = defaultSchema
 					}
-					return []*base.ResourceChange{{Resource: resource}}, nil
+					return &base.ResourceChange{Resource: resource}, nil
 				default:
 					return nil, errors.Errorf("expect to get a list node but got %T", node)
 				}
@@ -190,7 +229,7 @@ func postgresExtractResourcesFromCommentStatement(database, defaultSchema, state
 						resource.Schema = schemaName
 					}
 					resource.Table = tableName
-					return []*base.ResourceChange{{Resource: resource}}, nil
+					return &base.ResourceChange{Resource: resource}, nil
 				default:
 					return nil, errors.Errorf("expect to get a list node but got %T", node)
 				}
@@ -209,7 +248,7 @@ func postgresExtractResourcesFromCommentStatement(database, defaultSchema, state
 						resource.Schema = schemaName
 					}
 					resource.Table = tableName
-					return []*base.ResourceChange{{Resource: resource}}, nil
+					return &base.ResourceChange{Resource: resource}, nil
 				default:
 					return nil, errors.Errorf("expect to get a list node but got %T", node)
 				}

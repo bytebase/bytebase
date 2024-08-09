@@ -29,12 +29,36 @@ func TestExtractChangedResources(t *testing.T) {
 							Schema:   "public",
 							Table:    "t1",
 						},
+						Ranges: []base.Range{
+							{
+								Start: 0,
+								End:   25,
+							},
+							{
+								Start: 32,
+								End:   46,
+							},
+							{
+								Start: 53,
+								End:   86,
+							},
+							{
+								Start: 93,
+								End:   121,
+							},
+						},
 					},
 					{
 						Resource: base.SchemaResource{
 							Database: "db",
 							Schema:   "public",
 							Table:    "t2",
+						},
+						Ranges: []base.Range{
+							{
+								Start: 93,
+								End:   121,
+							},
 						},
 					},
 				},
