@@ -38,6 +38,7 @@ import {
   pushNotification,
   useEnvironmentV1List,
   useEnvironmentV1Store,
+  useInstanceV1List,
   useInstanceV1Store,
   useSlowQueryPolicyStore,
   useSlowQueryStore,
@@ -47,7 +48,7 @@ import type { ComposedSlowQueryPolicy } from "@/types";
 import { isValidEnvironmentName } from "@/types";
 import type { Environment } from "@/types/proto/v1/environment_service";
 import type { InstanceResource } from "@/types/proto/v1/instance_service";
-import { instanceV1SupportSlowQuery } from "@/utils";
+import { instanceV1SupportSlowQuery, wrapRefAsPromise } from "@/utils";
 import { SlowQueryPolicyTable } from "./components";
 
 type LocalState = {
@@ -78,7 +79,7 @@ const policyList = computed(() => {
 });
 
 const instanceList = computed(() => {
-  return instanceV1Store.activeInstanceList.filter(instanceV1SupportSlowQuery);
+  return instanceV1Store.instanceList.filter(instanceV1SupportSlowQuery);
 });
 
 const composedSlowQueryPolicyList = computed(() => {
@@ -123,7 +124,7 @@ const filteredComposedSlowQueryPolicyList = computed(() => {
 const prepare = async () => {
   try {
     const prepareInstanceList = async () => {
-      await instanceV1Store.listInstances(false /* !showDeleted */);
+      await wrapRefAsPromise(useInstanceV1List().ready, true);
     };
     const preparePolicyList = async () => {
       await slowQueryPolicyStore.fetchPolicyList();

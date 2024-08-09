@@ -45,6 +45,7 @@ import {
   pushNotification,
   useFilterStore,
   useAppFeature,
+  useProjectV1List,
 } from "@/store";
 import type { SQLEditorConnection } from "@/types";
 import {
@@ -68,6 +69,7 @@ import {
   worksheetNameFromSlug,
   extractWorksheetUID,
   extractInstanceResourceName,
+  wrapRefAsPromise,
 } from "@/utils";
 import {
   extractWorksheetConnection,
@@ -131,20 +133,21 @@ const initializeProjects = async () => {
       editorStore.strictProject = false;
       await initProject(DEFAULT_PROJECT_NAME);
     } else {
-      const projectList = await projectStore.listProjects();
+      const { projectList, ready } = useProjectV1List();
+      await wrapRefAsPromise(ready, true);
       const lastView = editorStore.storedLastViewedProject;
       if (
         lastView &&
-        projectList.findIndex((proj) => proj.name === lastView) >= 0
+        projectList.value.findIndex((proj) => proj.name === lastView) >= 0
       ) {
         editorStore.project = lastView;
       } else {
-        const projectListWithoutDefaultProject = projectList.filter(
+        const projectListWithoutDefaultProject = projectList.value.filter(
           (proj) => proj.name !== DEFAULT_PROJECT_NAME
         );
         editorStore.project =
           head(projectListWithoutDefaultProject)?.name ??
-          head(projectList)?.name ??
+          head(projectList.value)?.name ??
           "";
       }
       editorStore.strictProject = false;
@@ -159,7 +162,7 @@ const handleProjectSwitched = async () => {
   if (project) {
     await projectStore.getOrFetchProjectByName(project, true /* silent */);
   } else {
-    await projectStore.listProjects();
+    await wrapRefAsPromise(useProjectV1List().ready, true);
   }
   tabStore.maybeInitProject(project);
 };
