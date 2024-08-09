@@ -1,6 +1,4 @@
 export type StoreCache = {
-  // The timestamp when the cache was last updated.
-  timestamp: number;
   // The flag indicating whether the cache is currently being fetched.
   isFetching: boolean;
 };

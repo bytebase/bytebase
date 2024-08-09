@@ -54,7 +54,6 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
     );
     if (!listCache.has(cacheKey)) {
       listCache.set(cacheKey, {
-        timestamp: Date.now(),
         isFetching: true,
       });
     }
@@ -63,7 +62,6 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
     });
     const composed = await upsertInstances(instances);
     listCache.set(cacheKey, {
-      timestamp: Date.now(),
       isFetching: false,
     });
     return composed;
