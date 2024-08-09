@@ -152,6 +152,7 @@ export interface Value {
   dataClassificationSettingValue?: DataClassificationSetting | undefined;
   semanticTypeSettingValue?: SemanticTypeSetting | undefined;
   maskingAlgorithmSettingValue?: MaskingAlgorithmSetting | undefined;
+  maximumSqlResultSizeSetting?: MaximumSQLResultSizeSetting | undefined;
 }
 
 export interface SMTPMailDeliverySettingValue {
@@ -704,6 +705,14 @@ export function maskingAlgorithmSetting_Algorithm_InnerOuterMask_MaskTypeToNumbe
   }
 }
 
+export interface MaximumSQLResultSizeSetting {
+  /**
+   * The limit is in bytes.
+   * The default value is 100MB, we will use the default value if the setting not exists, or the limit <= 0.
+   */
+  limit: Long;
+}
+
 function createBaseListSettingsRequest(): ListSettingsRequest {
   return { pageSize: 0, pageToken: "" };
 }
@@ -1162,6 +1171,7 @@ function createBaseValue(): Value {
     dataClassificationSettingValue: undefined,
     semanticTypeSettingValue: undefined,
     maskingAlgorithmSettingValue: undefined,
+    maximumSqlResultSizeSetting: undefined,
   };
 }
 
@@ -1202,6 +1212,9 @@ export const Value = {
     }
     if (message.maskingAlgorithmSettingValue !== undefined) {
       MaskingAlgorithmSetting.encode(message.maskingAlgorithmSettingValue, writer.uint32(98).fork()).ldelim();
+    }
+    if (message.maximumSqlResultSizeSetting !== undefined) {
+      MaximumSQLResultSizeSetting.encode(message.maximumSqlResultSizeSetting, writer.uint32(106).fork()).ldelim();
     }
     return writer;
   },
@@ -1297,6 +1310,13 @@ export const Value = {
 
           message.maskingAlgorithmSettingValue = MaskingAlgorithmSetting.decode(reader, reader.uint32());
           continue;
+        case 13:
+          if (tag !== 106) {
+            break;
+          }
+
+          message.maximumSqlResultSizeSetting = MaximumSQLResultSizeSetting.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1340,6 +1360,9 @@ export const Value = {
       maskingAlgorithmSettingValue: isSet(object.maskingAlgorithmSettingValue)
         ? MaskingAlgorithmSetting.fromJSON(object.maskingAlgorithmSettingValue)
         : undefined,
+      maximumSqlResultSizeSetting: isSet(object.maximumSqlResultSizeSetting)
+        ? MaximumSQLResultSizeSetting.fromJSON(object.maximumSqlResultSizeSetting)
+        : undefined,
     };
   },
 
@@ -1380,6 +1403,9 @@ export const Value = {
     }
     if (message.maskingAlgorithmSettingValue !== undefined) {
       obj.maskingAlgorithmSettingValue = MaskingAlgorithmSetting.toJSON(message.maskingAlgorithmSettingValue);
+    }
+    if (message.maximumSqlResultSizeSetting !== undefined) {
+      obj.maximumSqlResultSizeSetting = MaximumSQLResultSizeSetting.toJSON(message.maximumSqlResultSizeSetting);
     }
     return obj;
   },
@@ -1432,6 +1458,10 @@ export const Value = {
     message.maskingAlgorithmSettingValue =
       (object.maskingAlgorithmSettingValue !== undefined && object.maskingAlgorithmSettingValue !== null)
         ? MaskingAlgorithmSetting.fromPartial(object.maskingAlgorithmSettingValue)
+        : undefined;
+    message.maximumSqlResultSizeSetting =
+      (object.maximumSqlResultSizeSetting !== undefined && object.maximumSqlResultSizeSetting !== null)
+        ? MaximumSQLResultSizeSetting.fromPartial(object.maximumSqlResultSizeSetting)
         : undefined;
     return message;
   },
@@ -4636,6 +4666,63 @@ export const MaskingAlgorithmSetting_Algorithm_InnerOuterMask = {
     message.suffixLen = object.suffixLen ?? 0;
     message.type = object.type ?? MaskingAlgorithmSetting_Algorithm_InnerOuterMask_MaskType.MASK_TYPE_UNSPECIFIED;
     message.substitution = object.substitution ?? "";
+    return message;
+  },
+};
+
+function createBaseMaximumSQLResultSizeSetting(): MaximumSQLResultSizeSetting {
+  return { limit: Long.ZERO };
+}
+
+export const MaximumSQLResultSizeSetting = {
+  encode(message: MaximumSQLResultSizeSetting, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (!message.limit.isZero()) {
+      writer.uint32(8).int64(message.limit);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): MaximumSQLResultSizeSetting {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseMaximumSQLResultSizeSetting();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 8) {
+            break;
+          }
+
+          message.limit = reader.int64() as Long;
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): MaximumSQLResultSizeSetting {
+    return { limit: isSet(object.limit) ? Long.fromValue(object.limit) : Long.ZERO };
+  },
+
+  toJSON(message: MaximumSQLResultSizeSetting): unknown {
+    const obj: any = {};
+    if (!message.limit.isZero()) {
+      obj.limit = (message.limit || Long.ZERO).toString();
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<MaximumSQLResultSizeSetting>): MaximumSQLResultSizeSetting {
+    return MaximumSQLResultSizeSetting.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<MaximumSQLResultSizeSetting>): MaximumSQLResultSizeSetting {
+    const message = createBaseMaximumSQLResultSizeSetting();
+    message.limit = (object.limit !== undefined && object.limit !== null) ? Long.fromValue(object.limit) : Long.ZERO;
     return message;
   },
 };

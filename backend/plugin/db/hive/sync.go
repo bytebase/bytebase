@@ -65,7 +65,7 @@ func (*Driver) CheckSlowQueryLogEnabled(_ context.Context) error {
 }
 
 func (d *Driver) getVersion(ctx context.Context) (string, error) {
-	result, err := runSingleStatement(ctx, d.conn, "SELECT VERSION()")
+	result, err := runSingleStatement(ctx, d.conn, "SELECT VERSION()", d.config.MaximumSQLResultSize)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to get version from instance")
 	}
@@ -84,7 +84,7 @@ func (d *Driver) getVersion(ctx context.Context) (string, error) {
 
 func (d *Driver) getDatabaseNames(ctx context.Context) ([]string, error) {
 	var databaseNames []string
-	result, err := runSingleStatement(ctx, d.conn, "SHOW DATABASES")
+	result, err := runSingleStatement(ctx, d.conn, "SHOW DATABASES", d.config.MaximumSQLResultSize)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get version from instance")
 	}
@@ -98,7 +98,7 @@ func (d *Driver) getDatabaseNames(ctx context.Context) ([]string, error) {
 }
 
 func (d *Driver) listTablesNames(ctx context.Context, databaseName string) ([]string, error) {
-	result, err := runSingleStatement(ctx, d.conn, fmt.Sprintf("SHOW TABLES FROM %s", databaseName))
+	result, err := runSingleStatement(ctx, d.conn, fmt.Sprintf("SHOW TABLES FROM %s", databaseName), d.config.MaximumSQLResultSize)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get version from instance")
 	}
@@ -189,7 +189,7 @@ func (d *Driver) getTables(ctx context.Context, databaseName string) (
 
 func (d *Driver) getPartitions(ctx context.Context, databaseName, tableName string) ([]*storepb.TablePartitionMetadata, error) {
 	// partitions.
-	partitionResult, err := runSingleStatement(ctx, d.conn, fmt.Sprintf("SHOW PARTITIONS `%s`.`%s`", databaseName, tableName))
+	partitionResult, err := runSingleStatement(ctx, d.conn, fmt.Sprintf("SHOW PARTITIONS `%s`.`%s`", databaseName, tableName), d.config.MaximumSQLResultSize)
 	if err != nil {
 		slog.Debug("failed to get partitions", log.BBError(err))
 		return nil, nil

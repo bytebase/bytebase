@@ -1174,6 +1174,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.store.MaximumSQLResultSizeSetting"><span class="badge">M</span>MaximumSQLResultSizeSetting</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.store.SMTPMailDeliverySetting"><span class="badge">M</span>SMTPMailDeliverySetting</a>
                 </li>
               
@@ -9477,6 +9481,31 @@ But frontend can be started with a single rule easily. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>OriginalValue[start:end) would be replaced with replace_with. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.MaximumSQLResultSizeSetting">MaximumSQLResultSizeSetting</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>limit</td>
+                  <td><a href="#int64">int64</a></td>
+                  <td></td>
+                  <td><p>The limit is in bytes.
+The default value is 100MB, we will use the default value if the setting not exists, or the limit &lt;= 0. </p></td>
                 </tr>
               
             </tbody>
