@@ -53,8 +53,8 @@ import {
   useCurrentUserV1,
   useEnvironmentV1Store,
   useIdentityProviderStore,
-  useInstanceV1Store,
-  useProjectV1Store,
+  useInstanceV1List,
+  useProjectV1List,
 } from "@/store";
 import { State } from "@/types/proto/v1/common";
 import type { IdentityProvider } from "@/types/proto/v1/idp_service";
@@ -70,8 +70,6 @@ interface LocalState {
 
 const { t } = useI18n();
 const environmentStore = useEnvironmentV1Store();
-const projectStore = useProjectV1Store();
-const instanceStore = useInstanceV1Store();
 const currentUserV1 = useCurrentUserV1();
 const state = reactive<LocalState>({
   selectedTab: "PROJECT",
@@ -80,8 +78,6 @@ const state = reactive<LocalState>({
 
 const prepareList = () => {
   environmentStore.fetchEnvironments(true /* showDeleted */);
-  projectStore.listProjects(true /* showDeleted */);
-  instanceStore.listInstances(true /* showDeleted */);
 };
 
 watchEffect(prepareList);
@@ -93,13 +89,13 @@ const environmentList = computed(() => {
 });
 
 const instanceList = computed(() => {
-  return instanceStore.instanceList.filter(
+  return useInstanceV1List().instanceList.value.filter(
     (instance) => instance.state === State.DELETED
   );
 });
 
 const projectList = computed(() => {
-  return projectStore.projectList.filter(
+  return useProjectV1List().projectList.value.filter(
     (project) => project.state === State.DELETED
   );
 });
