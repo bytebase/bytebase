@@ -39,7 +39,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, reactive, watchEffect } from "vue";
+import { computed, onMounted, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import IdentityProviderTable from "@/components/SSO/IdentityProviderTable.vue";
 import {
@@ -84,7 +84,9 @@ const prepareList = () => {
   instanceStore.listInstances(true /* showDeleted */);
 };
 
-watchEffect(prepareList);
+onMounted(() => {
+  prepareList();
+});
 
 const environmentList = computed(() => {
   return environmentStore.environmentList.filter(
