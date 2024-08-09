@@ -198,11 +198,7 @@ func (e *StatementReportExecutor) runReport(ctx context.Context, instance *store
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to extract changed resources")
 	}
-
-	totalAffectedRows, err := calculateAffectedRows(ctx, changeSummary, dbSchema, sqlDB, explainCalculator)
-	if err != nil {
-		return nil, err
-	}
+	totalAffectedRows := calculateAffectedRows(ctx, changeSummary, dbSchema, sqlDB, explainCalculator)
 
 	return []*storepb.PlanCheckRunResult_Result{
 		{
@@ -222,7 +218,7 @@ func (e *StatementReportExecutor) runReport(ctx context.Context, instance *store
 
 type getAffectedRowsFromExplain func(context.Context, *sql.DB, string) (int64, error)
 
-func calculateAffectedRows(ctx context.Context, changeSummary *base.ChangeSummary, dbMetadata *model.DBSchema, sqlDB *sql.DB, explainCalculator getAffectedRowsFromExplain) (int64, error) {
+func calculateAffectedRows(ctx context.Context, changeSummary *base.ChangeSummary, dbMetadata *model.DBSchema, sqlDB *sql.DB, explainCalculator getAffectedRowsFromExplain) int64 {
 	var totalAffectedRows int64
 	// Count DMLs.
 	sampleCount := 0
@@ -262,7 +258,7 @@ func calculateAffectedRows(ctx context.Context, changeSummary *base.ChangeSummar
 		totalAffectedRows += tableMeta.GetRowCount()
 	}
 
-	return totalAffectedRows, nil
+	return totalAffectedRows
 }
 
 func convertToChangedResources(dbMetadata *model.DBSchema, resourceChanges []*base.ResourceChange) *storepb.ChangedResources {
