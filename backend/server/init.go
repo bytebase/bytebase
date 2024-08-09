@@ -91,6 +91,7 @@ func (s *Server) getInitSetting(ctx context.Context) (string, time.Duration, err
 	}, api.SystemBotID); err != nil {
 		return "", 0, err
 	}
+
 	if _, _, err := s.store.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
 		Name:        api.SettingPluginOpenAIEndpoint,
 		Value:       "",
@@ -148,6 +149,20 @@ func (s *Server) getInitSetting(ctx context.Context) (string, time.Duration, err
 		// Value is ""
 		Value:       string(approvalSettingValue),
 		Description: "The workspace approval setting",
+	}, api.SystemBotID); err != nil {
+		return "", 0, err
+	}
+
+	maximumSQLResultSizeSetting, err := protojson.Marshal(&storepb.MaximumSQLResultSizeSetting{
+		Limit: common.DefaultMaximumSQLResultSize,
+	})
+	if err != nil {
+		return "", 0, errors.Wrap(err, "failed to marshal initial sql limit setting value")
+	}
+	if _, _, err := s.store.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
+		Name:        api.SettingSQLResultSizeLimit,
+		Value:       string(maximumSQLResultSizeSetting),
+		Description: "The maximum number of bytes for sql results in response body.",
 	}, api.SystemBotID); err != nil {
 		return "", 0, err
 	}

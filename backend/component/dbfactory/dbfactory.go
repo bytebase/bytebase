@@ -20,16 +20,18 @@ type DBFactory struct {
 	mongoBinDir string
 	dataDir     string
 	secret      string
+	store       *store.Store
 }
 
 // New creates a new database driver factory.
-func New(mysqlBinDir, mongoBinDir, pgBinDir, dataDir, secret string) *DBFactory {
+func New(store *store.Store, mysqlBinDir, mongoBinDir, pgBinDir, dataDir, secret string) *DBFactory {
 	return &DBFactory{
 		mysqlBinDir: mysqlBinDir,
 		mongoBinDir: mongoBinDir,
 		pgBinDir:    pgBinDir,
 		dataDir:     dataDir,
 		secret:      secret,
+		store:       store,
 	}
 }
 
@@ -200,6 +202,8 @@ func (d *DBFactory) GetDataSourceDriver(ctx context.Context, instance *store.Ins
 	}
 	connectionContext.InstanceID = instance.ResourceID
 	connectionContext.EngineVersion = instance.EngineVersion
+
+	maximumSQLResultSize := d.store.GetMaximumSQLResultLimit(ctx)
 	driver, err := db.Open(
 		ctx,
 		instance.Engine,
@@ -239,6 +243,7 @@ func (d *DBFactory) GetDataSourceDriver(ctx context.Context, instance *store.Ins
 			MasterName:               dataSource.MasterName,
 			MasterUsername:           dataSource.MasterUsername,
 			MasterPassword:           masterPassword,
+			MaximumSQLResultSize:     maximumSQLResultSize,
 		},
 	)
 	if err != nil {

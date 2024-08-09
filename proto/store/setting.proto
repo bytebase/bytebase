@@ -340,3 +340,8 @@ enum DatabaseChangeMode {
   // A simple database change process in SQL editor. Users can execute SQL directly.
   EDITOR = 2;
 }
+
+message MaximumSQLResultSizeSetting {
+  // limit in Byte.
+  int64 limit = 1;
+}

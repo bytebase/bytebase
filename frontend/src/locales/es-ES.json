@@ -668,6 +668,10 @@
           "days": "Días)",
           "never-expires": "Nunca expira"
         },
+        "maximum-sql-result": {
+          "self": "Tamaño máximo del resultado SQL",
+          "description": "Limite el tamaño del resultado de la consulta SQL de salida."
+        },
         "domain-restriction": {
           "self": "Dominio de espacio de trabajo",
           "description": "Especifique el dominio que podría usarse como dominio de correo electrónico para los miembros del espacio de trabajo.",

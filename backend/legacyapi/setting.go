@@ -40,4 +40,6 @@ const (
 	SettingSemanticTypes SettingName = "bb.workspace.semantic-types"
 	// SettingMaskingAlgorithms is the setting name for masking algorithms.
 	SettingMaskingAlgorithm SettingName = "bb.workspace.masking-algorithm"
+	// SettingSQLResultSizeLimit is the setting name for SQL query result size limit.
+	SettingSQLResultSizeLimit SettingName = "bb.workspace.maximum-sql-result-size"
 )

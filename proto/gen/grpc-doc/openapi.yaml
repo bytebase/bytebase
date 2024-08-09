@@ -11313,6 +11313,12 @@ components:
                         - FULL
                     type: string
                     format: enum
+        MaximumSQLResultSizeSetting:
+            type: object
+            properties:
+                limit:
+                    type: string
+                    description: limit in Byte.
         OAuth2IdentityProviderConfig:
             type: object
             properties:
@@ -14152,6 +14158,8 @@ components:
                     $ref: '#/components/schemas/SemanticTypeSetting'
                 maskingAlgorithmSettingValue:
                     $ref: '#/components/schemas/MaskingAlgorithmSetting'
+                maximumSqlResultSizeSetting:
+                    $ref: '#/components/schemas/MaximumSQLResultSizeSetting'
             description: The data in setting value.
         ViewConfig:
             type: object

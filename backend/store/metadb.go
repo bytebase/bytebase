@@ -18,9 +18,10 @@ func GetEmbeddedConnectionConfig(datastorePort int, pgUser string) dbdriver.Conn
 		Username: pgUser,
 		Password: "",
 		// For embedded database, the database name is the same as the user name.
-		Database: pgUser,
-		Host:     common.GetPostgresSocketDir(),
-		Port:     fmt.Sprintf("%d", datastorePort),
+		Database:             pgUser,
+		Host:                 common.GetPostgresSocketDir(),
+		Port:                 fmt.Sprintf("%d", datastorePort),
+		MaximumSQLResultSize: common.DefaultMaximumSQLResultSize,
 	}
 }
 
@@ -39,7 +40,9 @@ func GetConnectionConfig(pgURL string) (dbdriver.ConnectionConfig, error) {
 		return dbdriver.ConnectionConfig{}, errors.Errorf("invalid connection protocol: %s", u.Scheme)
 	}
 
-	connCfg := dbdriver.ConnectionConfig{}
+	connCfg := dbdriver.ConnectionConfig{
+		MaximumSQLResultSize: common.DefaultMaximumSQLResultSize,
+	}
 
 	if u.User != nil {
 		connCfg.Username = u.User.Username()
