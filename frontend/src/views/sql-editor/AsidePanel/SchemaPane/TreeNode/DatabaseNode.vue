@@ -1,18 +1,20 @@
 <template>
-  <div class="flex items-center max-w-full overflow-hidden gap-x-1">
-    <InstanceV1EngineIcon :instance="database.instanceResource" />
-
-    <span class="flex-1 truncate">
-      <HighlightLabelText :text="database.databaseName" :keyword="keyword" />
-    </span>
-  </div>
+  <CommonNode
+    :text="database.databaseName"
+    :keyword="keyword"
+    :highlight="true"
+  >
+    <template #icon>
+      <InstanceV1EngineIcon :instance="database.instanceResource" />
+    </template>
+  </CommonNode>
 </template>
 
 <script setup lang="ts">
 import { computed } from "vue";
 import { InstanceV1EngineIcon } from "@/components/v2";
 import type { TreeNode } from "../common";
-import HighlightLabelText from "./HighlightLabelText.vue";
+import CommonNode from "./CommonNode.vue";
 
 const props = defineProps<{
   node: TreeNode;
