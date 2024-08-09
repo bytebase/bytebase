@@ -123,41 +123,7 @@ func (e *StatementReportExecutor) runReport(ctx context.Context, instance *store
 	// To avoid leaking the rendered statement, the error message should use the original statement and not the rendered statement.
 	renderedStatement := utils.RenderStatement(statement, materials)
 
-	switch instance.Engine {
-	case storepb.Engine_POSTGRES:
-		driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{})
-		if err != nil {
-			return nil, err
-		}
-		defer driver.Close(ctx)
-		sqlDB := driver.GetDB()
-
-		return reportForPostgres(ctx, e.sheetManager, sqlDB, database.DatabaseName, renderedStatement, dbSchema)
-	case storepb.Engine_MYSQL, storepb.Engine_OCEANBASE:
-		driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{})
-		if err != nil {
-			return nil, err
-		}
-		defer driver.Close(ctx)
-		sqlDB := driver.GetDB()
-
-		return reportForMySQL(ctx, e.sheetManager, sqlDB, instance.Engine, database.DatabaseName, renderedStatement, dbSchema)
-	case storepb.Engine_ORACLE, storepb.Engine_DM, storepb.Engine_OCEANBASE_ORACLE:
-		return reportForOracle(e.sheetManager, database.DatabaseName, database.DatabaseName, renderedStatement, dbSchema)
-	default:
-		return []*storepb.PlanCheckRunResult_Result{
-			{
-				Status:  storepb.PlanCheckRunResult_Result_SUCCESS,
-				Code:    common.Ok.Int32(),
-				Title:   "Not available",
-				Content: fmt.Sprintf("Report is not supported for %s", instance.Engine),
-			},
-		}, nil
-	}
-}
-
-func reportForPostgres(ctx context.Context, sm *sheet.Manager, sqlDB *sql.DB, database, statement string, dbMetadata *model.DBSchema) ([]*storepb.PlanCheckRunResult_Result, error) {
-	asts, advices := sm.GetASTsForChecks(storepb.Engine_POSTGRES, statement)
+	asts, advices := e.sheetManager.GetASTsForChecks(instance.Engine, statement)
 	if len(advices) > 0 {
 		// nolint:nilerr
 		return []*storepb.PlanCheckRunResult_Result{
@@ -175,6 +141,34 @@ func reportForPostgres(ctx context.Context, sm *sheet.Manager, sqlDB *sql.DB, da
 		}, nil
 	}
 
+	switch instance.Engine {
+	case storepb.Engine_POSTGRES:
+		driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{})
+		if err != nil {
+			return nil, err
+		}
+		defer driver.Close(ctx)
+		sqlDB := driver.GetDB()
+
+		return reportForPostgres(ctx, sqlDB, database.DatabaseName, asts, renderedStatement, dbSchema)
+	case storepb.Engine_MYSQL, storepb.Engine_OCEANBASE:
+		driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{})
+		if err != nil {
+			return nil, err
+		}
+		defer driver.Close(ctx)
+		sqlDB := driver.GetDB()
+
+		return reportForMySQL(ctx, sqlDB, instance.Engine, database.DatabaseName, asts, renderedStatement, dbSchema)
+	case storepb.Engine_ORACLE, storepb.Engine_DM, storepb.Engine_OCEANBASE_ORACLE:
+		return reportForOracle(database.DatabaseName, database.DatabaseName, asts, renderedStatement, dbSchema)
+	default:
+		// Already checked in the Run().
+		return nil, nil
+	}
+}
+
+func reportForPostgres(ctx context.Context, sqlDB *sql.DB, database string, asts any, statement string, dbMetadata *model.DBSchema) ([]*storepb.PlanCheckRunResult_Result, error) {
 	sqlTypes, err := pg.GetStatementTypes(asts)
 	if err != nil {
 		return nil, err
@@ -237,31 +231,7 @@ func reportForPostgres(ctx context.Context, sm *sheet.Manager, sqlDB *sql.DB, da
 	}, nil
 }
 
-func reportForMySQL(ctx context.Context, sm *sheet.Manager, sqlDB *sql.DB, engine storepb.Engine, databaseName string, statement string, dbMetadata *model.DBSchema) ([]*storepb.PlanCheckRunResult_Result, error) {
-	asts, advices := sm.GetASTsForChecks(storepb.Engine_MYSQL, statement)
-	if len(advices) > 0 {
-		advice := advices[0]
-		// nolint:nilerr
-		return []*storepb.PlanCheckRunResult_Result{
-			{
-				Status:  storepb.PlanCheckRunResult_Result_ERROR,
-				Title:   advice.Title,
-				Content: advice.Content,
-				Code:    0,
-				Report: &storepb.PlanCheckRunResult_Result_SqlReviewReport_{
-					SqlReviewReport: &storepb.PlanCheckRunResult_Result_SqlReviewReport{
-						Line:          advice.GetStartPosition().GetLine(),
-						Column:        advice.GetStartPosition().GetColumn(),
-						Code:          advice.Code,
-						Detail:        advice.Detail,
-						StartPosition: advice.StartPosition,
-						EndPosition:   advice.EndPosition,
-					},
-				},
-			},
-		}, nil
-	}
-
+func reportForMySQL(ctx context.Context, sqlDB *sql.DB, engine storepb.Engine, databaseName string, asts any, statement string, dbMetadata *model.DBSchema) ([]*storepb.PlanCheckRunResult_Result, error) {
 	sqlTypes, err := pg.GetStatementTypes(asts)
 	if err != nil {
 		return nil, err
@@ -335,31 +305,7 @@ func reportForMySQL(ctx context.Context, sm *sheet.Manager, sqlDB *sql.DB, engin
 	}, nil
 }
 
-func reportForOracle(sm *sheet.Manager, databaseName string, schemaName string, statement string, dbMetadata *model.DBSchema) ([]*storepb.PlanCheckRunResult_Result, error) {
-	asts, advices := sm.GetASTsForChecks(storepb.Engine_ORACLE, statement)
-	if len(advices) > 0 {
-		advice := advices[0]
-		// nolint:nilerr
-		return []*storepb.PlanCheckRunResult_Result{
-			{
-				Status:  storepb.PlanCheckRunResult_Result_ERROR,
-				Title:   advice.Title,
-				Content: advice.Content,
-				Code:    0,
-				Report: &storepb.PlanCheckRunResult_Result_SqlReviewReport_{
-					SqlReviewReport: &storepb.PlanCheckRunResult_Result_SqlReviewReport{
-						Line:          advice.GetStartPosition().GetLine(),
-						Column:        advice.GetStartPosition().GetColumn(),
-						Code:          advice.Code,
-						Detail:        advice.Detail,
-						StartPosition: advice.StartPosition,
-						EndPosition:   advice.EndPosition,
-					},
-				},
-			},
-		}, nil
-	}
-
+func reportForOracle(databaseName string, schemaName string, asts any, statement string, dbMetadata *model.DBSchema) ([]*storepb.PlanCheckRunResult_Result, error) {
 	changeSummary, err := base.ExtractChangedResources(storepb.Engine_ORACLE, databaseName, schemaName, asts, statement)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to extract changed resources")
