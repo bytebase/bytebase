@@ -4,10 +4,12 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log/slog"
 
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/sheet"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
@@ -218,15 +220,18 @@ type getAffectedRowsFromExplain func(context.Context, *sql.DB, string) (int64, e
 func calculateAffectedRows(ctx context.Context, changeSummary *base.ChangeSummary, dbMetadata *model.DBSchema, sqlDB *sql.DB, explainCalculator getAffectedRowsFromExplain) (int64, error) {
 	var totalAffectedRows int64
 	// Count DMLs.
+	sampleCount := 0
 	for _, dml := range changeSummary.SampleDMLS {
 		count, err := explainCalculator(ctx, sqlDB, dml)
 		if err != nil {
-			return 0, err
+			slog.Error("failed to calculate affected rows", log.BBError(err))
+			continue
 		}
+		sampleCount++
 		totalAffectedRows += count
 	}
-	if changeSummary.DMLCount > common.MaximumLintExplainSize {
-		totalAffectedRows = int64((float64(totalAffectedRows) / common.MaximumLintExplainSize) * float64(changeSummary.DMLCount))
+	if sampleCount > 0 {
+		totalAffectedRows = int64((float64(totalAffectedRows) / float64(sampleCount)) * float64(changeSummary.DMLCount))
 	}
 	totalAffectedRows += int64(changeSummary.InsertCount)
 	// Count affected rows by DDLs.
