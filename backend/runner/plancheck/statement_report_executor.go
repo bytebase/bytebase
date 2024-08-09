@@ -188,7 +188,7 @@ func reportForPostgres(ctx context.Context, sm *sheet.Manager, sqlDB *sql.DB, da
 	var totalAffectedRows int64
 	// Count DMLs.
 	for _, dml := range changeSummary.SampleDMLS {
-		count, err := getAffectedRowsCount(ctx, sqlDB, fmt.Sprintf("EXPLAIN %s", dml), getAffectedRowsCountForPostgres)
+		count, err := getAffectedRowsCountForPostgres(ctx, sqlDB, dml)
 		if err != nil {
 			return nil, err
 		}
@@ -277,13 +277,13 @@ func reportForMySQL(ctx context.Context, sm *sheet.Manager, sqlDB *sql.DB, engin
 	for _, dml := range changeSummary.SampleDMLS {
 		switch engine {
 		case storepb.Engine_OCEANBASE:
-			count, err := getAffectedRowsCount(ctx, sqlDB, fmt.Sprintf("EXPLAIN FORMAT=JSON %s", dml), getAffectedRowsCountForOceanBase)
+			count, err := getAffectedRowsCountForOceanBase(ctx, sqlDB, dml)
 			if err != nil {
 				return nil, err
 			}
 			totalAffectedRows += count
 		case storepb.Engine_MYSQL, storepb.Engine_MARIADB:
-			count, err := getAffectedRowsCount(ctx, sqlDB, fmt.Sprintf("EXPLAIN %s", dml), getAffectedRowsCountForMysql)
+			count, err := getAffectedRowsCountForMysql(ctx, sqlDB, dml)
 			if err != nil {
 				return nil, err
 			}

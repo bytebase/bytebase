@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
@@ -11,7 +12,13 @@ import (
 	"github.com/pkg/errors"
 )
 
-func getAffectedRowsCountForPostgres(res []any) (int64, error) {
+func getAffectedRowsCountForPostgres(ctx context.Context, sqlDB *sql.DB, dml string) (int64, error) {
+	explainSQL := fmt.Sprintf("EXPLAIN %s", dml)
+	res, err := query(ctx, sqlDB, explainSQL)
+	if err != nil {
+		return 0, err
+	}
+
 	// the res struct is []any{columnName, columnTable, rowDataList}
 	if len(res) != 3 {
 		return 0, errors.Errorf("expected 3 but got %d", len(res))
@@ -56,18 +63,151 @@ func getAffectedRowsCountForPostgres(res []any) (int64, error) {
 	return value, nil
 }
 
-type affectedRowsCountExtractor func(res []any) (int64, error)
-
-func getAffectedRowsCount(ctx context.Context, sqlDB *sql.DB, explainSQL string, extractor affectedRowsCountExtractor) (int64, error) {
+func getAffectedRowsCountForMysql(ctx context.Context, sqlDB *sql.DB, dml string) (int64, error) {
+	explainSQL := fmt.Sprintf("EXPLAIN %s", dml)
 	res, err := query(ctx, sqlDB, explainSQL)
 	if err != nil {
 		return 0, err
 	}
-	rowCount, err := extractor(res)
-	if err != nil {
-		return 0, errors.Wrapf(err, "failed to get affected rows count, res %+v", res)
+	// the res struct is []any{columnName, columnTable, rowDataList}
+	if len(res) != 3 {
+		return 0, errors.Errorf("expected 3 but got %d", len(res))
 	}
-	return rowCount, nil
+	rowList, ok := res[2].([]any)
+	if !ok {
+		return 0, errors.Errorf("expected []any but got %t", res[2])
+	}
+	if len(rowList) < 1 {
+		return 0, errors.Errorf("not found any data")
+	}
+
+	// MySQL EXPLAIN statement result has 12 columns.
+	// the column 9 is the data 'rows'.
+	// the first not-NULL value of column 9 is the affected rows count.
+	//
+	// mysql> explain delete from td;
+	// +----+-------------+-------+------------+------+---------------+------+---------+------+------+----------+-------+
+	// | id | select_type | table | partitions | type | possible_keys | key  | key_len | ref  | rows | filtered | Extra |
+	// +----+-------------+-------+------------+------+---------------+------+---------+------+------+----------+-------+
+	// |  1 | DELETE      | td    | NULL       | ALL  | NULL          | NULL | NULL    | NULL |    1 |   100.00 | NULL  |
+	// +----+-------------+-------+------------+------+---------------+------+---------+------+------+----------+-------+
+	//
+	// mysql> explain insert into td select * from td;
+	// +----+-------------+-------+------------+------+---------------+------+---------+------+------+----------+-----------------+
+	// | id | select_type | table | partitions | type | possible_keys | key  | key_len | ref  | rows | filtered | Extra           |
+	// +----+-------------+-------+------------+------+---------------+------+---------+------+------+----------+-----------------+
+	// |  1 | INSERT      | td    | NULL       | ALL  | NULL          | NULL | NULL    | NULL | NULL |     NULL | NULL            |
+	// |  1 | SIMPLE      | td    | NULL       | ALL  | NULL          | NULL | NULL    | NULL |    1 |   100.00 | Using temporary |
+	// +----+-------------+-------+------------+------+---------------+------+---------+------+------+----------+-----------------+
+
+	for _, rowAny := range rowList {
+		row, ok := rowAny.([]any)
+		if !ok {
+			return 0, errors.Errorf("expected []any but got %t", row)
+		}
+		if len(row) != 12 {
+			return 0, errors.Errorf("expected 12 but got %d", len(row))
+		}
+		switch col := row[9].(type) {
+		case int:
+			return int64(col), nil
+		case int32:
+			return int64(col), nil
+		case int64:
+			return col, nil
+		case string:
+			v, err := strconv.ParseInt(col, 10, 64)
+			if err != nil {
+				return 0, errors.Errorf("expected int or int64 but got string(%s)", col)
+			}
+			return v, nil
+		default:
+			continue
+		}
+	}
+
+	return 0, errors.Errorf("failed to extract rows from query plan")
+}
+
+// OceanBaseQueryPlan represents the query plan of OceanBase.
+type OceanBaseQueryPlan struct {
+	ID       int    `json:"ID"`
+	Operator string `json:"OPERATOR"`
+	Name     string `json:"NAME"`
+	EstRows  int64  `json:"EST.ROWS"`
+	Cost     int    `json:"COST"`
+	OutPut   any    `json:"output"`
+}
+
+// Unmarshal parses data and stores the result to current OceanBaseQueryPlan.
+func (plan *OceanBaseQueryPlan) Unmarshal(data any) error {
+	b, err := json.Marshal(data)
+	if err != nil {
+		return err
+	}
+	if b != nil {
+		return json.Unmarshal(b, &plan)
+	}
+	return nil
+}
+
+func getAffectedRowsCountForOceanBase(ctx context.Context, sqlDB *sql.DB, dml string) (int64, error) {
+	explainSQL := fmt.Sprintf("EXPLAIN FORMAT=JSON %s", dml)
+	res, err := query(ctx, sqlDB, explainSQL)
+	if err != nil {
+		return 0, err
+	}
+
+	// the res struct is []any{columnName, columnTable, rowDataList}
+	if len(res) != 3 {
+		return 0, errors.Errorf("expected 3 but got %d", len(res))
+	}
+	rowList, ok := res[2].([]any)
+	if !ok {
+		return 0, errors.Errorf("expected []any but got %t", res[2])
+	}
+	if len(rowList) < 1 {
+		return 0, errors.Errorf("not found any data")
+	}
+
+	plan, ok := rowList[0].([]any)
+	if !ok {
+		return 0, errors.Errorf("expected []any but got %t", rowList[0])
+	}
+	planString, ok := plan[0].(string)
+	if !ok {
+		return 0, errors.Errorf("expected string but got %t", plan[0])
+	}
+	var planValue map[string]json.RawMessage
+	if err := json.Unmarshal([]byte(planString), &planValue); err != nil {
+		return 0, errors.Wrapf(err, "failed to parse query plan from string: %+v", planString)
+	}
+	if len(planValue) > 0 {
+		queryPlan := OceanBaseQueryPlan{}
+		if err := queryPlan.Unmarshal(planValue); err != nil {
+			return 0, errors.Wrapf(err, "failed to parse query plan from map: %+v", planValue)
+		}
+		if queryPlan.Operator != "" {
+			return queryPlan.EstRows, nil
+		}
+		count := int64(-1)
+		for k, v := range planValue {
+			if !strings.HasPrefix(k, "CHILD_") {
+				continue
+			}
+			child := OceanBaseQueryPlan{}
+			if err := child.Unmarshal(v); err != nil {
+				return 0, errors.Wrapf(err, "failed to parse field '%s', value: %+v", k, v)
+			}
+			if child.Operator != "" && child.EstRows > count {
+				count = child.EstRows
+			}
+		}
+		if count >= 0 {
+			return count, nil
+		}
+	}
+	return 0, errors.Errorf("failed to extract 'EST.ROWS' from query plan")
 }
 
 // Query runs the EXPLAIN or SELECT statements for advisors.
@@ -159,140 +299,4 @@ func query(ctx context.Context, connection *sql.DB, statement string) ([]any, er
 	}
 
 	return []any{columnNames, columnTypeNames, data}, nil
-}
-
-// OceanBaseQueryPlan represents the query plan of OceanBase.
-type OceanBaseQueryPlan struct {
-	ID       int    `json:"ID"`
-	Operator string `json:"OPERATOR"`
-	Name     string `json:"NAME"`
-	EstRows  int64  `json:"EST.ROWS"`
-	Cost     int    `json:"COST"`
-	OutPut   any    `json:"output"`
-}
-
-// Unmarshal parses data and stores the result to current OceanBaseQueryPlan.
-func (plan *OceanBaseQueryPlan) Unmarshal(data any) error {
-	b, err := json.Marshal(data)
-	if err != nil {
-		return err
-	}
-	if b != nil {
-		return json.Unmarshal(b, &plan)
-	}
-	return nil
-}
-
-func getAffectedRowsCountForOceanBase(res []any) (int64, error) {
-	// the res struct is []any{columnName, columnTable, rowDataList}
-	if len(res) != 3 {
-		return 0, errors.Errorf("expected 3 but got %d", len(res))
-	}
-	rowList, ok := res[2].([]any)
-	if !ok {
-		return 0, errors.Errorf("expected []any but got %t", res[2])
-	}
-	if len(rowList) < 1 {
-		return 0, errors.Errorf("not found any data")
-	}
-
-	plan, ok := rowList[0].([]any)
-	if !ok {
-		return 0, errors.Errorf("expected []any but got %t", rowList[0])
-	}
-	planString, ok := plan[0].(string)
-	if !ok {
-		return 0, errors.Errorf("expected string but got %t", plan[0])
-	}
-	var planValue map[string]json.RawMessage
-	if err := json.Unmarshal([]byte(planString), &planValue); err != nil {
-		return 0, errors.Wrapf(err, "failed to parse query plan from string: %+v", planString)
-	}
-	if len(planValue) > 0 {
-		queryPlan := OceanBaseQueryPlan{}
-		if err := queryPlan.Unmarshal(planValue); err != nil {
-			return 0, errors.Wrapf(err, "failed to parse query plan from map: %+v", planValue)
-		}
-		if queryPlan.Operator != "" {
-			return queryPlan.EstRows, nil
-		}
-		count := int64(-1)
-		for k, v := range planValue {
-			if !strings.HasPrefix(k, "CHILD_") {
-				continue
-			}
-			child := OceanBaseQueryPlan{}
-			if err := child.Unmarshal(v); err != nil {
-				return 0, errors.Wrapf(err, "failed to parse field '%s', value: %+v", k, v)
-			}
-			if child.Operator != "" && child.EstRows > count {
-				count = child.EstRows
-			}
-		}
-		if count >= 0 {
-			return count, nil
-		}
-	}
-	return 0, errors.Errorf("failed to extract 'EST.ROWS' from query plan")
-}
-
-func getAffectedRowsCountForMysql(res []any) (int64, error) {
-	// the res struct is []any{columnName, columnTable, rowDataList}
-	if len(res) != 3 {
-		return 0, errors.Errorf("expected 3 but got %d", len(res))
-	}
-	rowList, ok := res[2].([]any)
-	if !ok {
-		return 0, errors.Errorf("expected []any but got %t", res[2])
-	}
-	if len(rowList) < 1 {
-		return 0, errors.Errorf("not found any data")
-	}
-
-	// MySQL EXPLAIN statement result has 12 columns.
-	// the column 9 is the data 'rows'.
-	// the first not-NULL value of column 9 is the affected rows count.
-	//
-	// mysql> explain delete from td;
-	// +----+-------------+-------+------------+------+---------------+------+---------+------+------+----------+-------+
-	// | id | select_type | table | partitions | type | possible_keys | key  | key_len | ref  | rows | filtered | Extra |
-	// +----+-------------+-------+------------+------+---------------+------+---------+------+------+----------+-------+
-	// |  1 | DELETE      | td    | NULL       | ALL  | NULL          | NULL | NULL    | NULL |    1 |   100.00 | NULL  |
-	// +----+-------------+-------+------------+------+---------------+------+---------+------+------+----------+-------+
-	//
-	// mysql> explain insert into td select * from td;
-	// +----+-------------+-------+------------+------+---------------+------+---------+------+------+----------+-----------------+
-	// | id | select_type | table | partitions | type | possible_keys | key  | key_len | ref  | rows | filtered | Extra           |
-	// +----+-------------+-------+------------+------+---------------+------+---------+------+------+----------+-----------------+
-	// |  1 | INSERT      | td    | NULL       | ALL  | NULL          | NULL | NULL    | NULL | NULL |     NULL | NULL            |
-	// |  1 | SIMPLE      | td    | NULL       | ALL  | NULL          | NULL | NULL    | NULL |    1 |   100.00 | Using temporary |
-	// +----+-------------+-------+------------+------+---------------+------+---------+------+------+----------+-----------------+
-
-	for _, rowAny := range rowList {
-		row, ok := rowAny.([]any)
-		if !ok {
-			return 0, errors.Errorf("expected []any but got %t", row)
-		}
-		if len(row) != 12 {
-			return 0, errors.Errorf("expected 12 but got %d", len(row))
-		}
-		switch col := row[9].(type) {
-		case int:
-			return int64(col), nil
-		case int32:
-			return int64(col), nil
-		case int64:
-			return col, nil
-		case string:
-			v, err := strconv.ParseInt(col, 10, 64)
-			if err != nil {
-				return 0, errors.Errorf("expected int or int64 but got string(%s)", col)
-			}
-			return v, nil
-		default:
-			continue
-		}
-	}
-
-	return 0, errors.Errorf("failed to extract rows from query plan")
 }
