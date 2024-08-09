@@ -67,28 +67,29 @@
     />
   </Drawer>
 
-  <DatabaseGroupPanel
-    v-if="project"
-    :show="
-      state.quickActionType === 'quickaction.bb.group.database-group.create'
-    "
-    :project="project"
-    @close="state.quickActionType = undefined"
-    @created="onDatabaseGroupCreated"
-  />
+  <template v-if="project">
+    <DatabaseGroupPanel
+      :show="
+        state.quickActionType === 'quickaction.bb.group.database-group.create'
+      "
+      :project="project"
+      @close="state.quickActionType = undefined"
+      @created="onDatabaseGroupCreated"
+    />
 
-  <RequestQueryPanel
-    v-if="state.showRequestQueryPanel"
-    :project-name="project?.name"
-    @close="state.showRequestQueryPanel = false"
-  />
+    <RequestQueryPanel
+      v-if="state.showRequestQueryPanel"
+      :project-name="project.name"
+      @close="state.showRequestQueryPanel = false"
+    />
 
-  <RequestExportPanel
-    v-if="state.showRequestExportPanel"
-    :redirect-to-issue-page="true"
-    :project-name="project?.name"
-    @close="state.showRequestExportPanel = false"
-  />
+    <RequestExportPanel
+      v-if="state.showRequestExportPanel"
+      :redirect-to-issue-page="true"
+      :project-name="project.name"
+      @close="state.showRequestExportPanel = false"
+    />
+  </template>
 
   <FeatureModal
     :open="!!state.feature"

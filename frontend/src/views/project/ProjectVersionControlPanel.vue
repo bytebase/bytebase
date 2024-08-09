@@ -34,9 +34,9 @@ import {
 } from "@/router/dashboard/projectV1";
 import {
   useVCSConnectorStore,
-  useProjectV1Store,
   useCurrentUserV1,
   useVCSProviderStore,
+  useProjectByName,
 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { getVCSConnectorId } from "@/store/modules/v1/common";
@@ -48,18 +48,14 @@ const props = defineProps<{
   projectId: string;
 }>();
 
-const projectV1Store = useProjectV1Store();
+const { t } = useI18n();
+const router = useRouter();
 const currentUser = useCurrentUserV1();
 const vcsV1Store = useVCSProviderStore();
 const vcsConnectorStore = useVCSConnectorStore();
-const router = useRouter();
-const { t } = useI18n();
-
-const project = computed(() => {
-  return projectV1Store.getProjectByName(
-    `${projectNamePrefix}${props.projectId}`
-  );
-});
+const { project } = useProjectByName(
+  computed(() => `${projectNamePrefix}${props.projectId}`)
+);
 
 const allowCreate = computed(() => {
   return hasProjectPermissionV2(

@@ -29,7 +29,7 @@ import BranchCreateView from "@/components/Branch/BranchCreateView.vue";
 import BranchDetailView from "@/components/Branch/BranchDetailView.vue";
 import MaskSpinner from "@/components/misc/MaskSpinner.vue";
 import { PROJECT_V1_ROUTE_BRANCH_DETAIL } from "@/router/dashboard/projectV1";
-import { useProjectV1Store } from "@/store";
+import { useProjectByName } from "@/store";
 import { useBranchStore } from "@/store/modules/branch";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import type { Branch } from "@/types/proto/v1/branch_service";
@@ -41,19 +41,16 @@ const props = defineProps<{
 
 const { t } = useI18n();
 const router = useRouter();
-const projectStore = useProjectV1Store();
 const branchStore = useBranchStore();
+const { project } = useProjectByName(
+  computed(() => `${projectNamePrefix}${props.projectId}`)
+);
 const branchFullName = ref<string>("");
 const ready = ref<boolean>(false);
 const detailViewKey = ref(uniqueId());
+const branch = ref<{ clean: Branch; dirty: Branch }>();
 
 const isCreating = computed(() => props.branchName === "new");
-const branch = ref<{ clean: Branch; dirty: Branch }>();
-const project = computed(() => {
-  return projectStore.getProjectByName(
-    `${projectNamePrefix}${props.projectId}`
-  );
-});
 
 const handleUpdateBranchId = (id: string) => {
   if (!branch.value) return;

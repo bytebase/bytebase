@@ -27,7 +27,7 @@ import { BBSpin } from "@/bbkit";
 import {
   useDatabaseV1Store,
   useDBSchemaV1Store,
-  useProjectV1Store,
+  useProjectByName,
 } from "@/store";
 import type { DatabaseResource } from "@/types";
 import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
@@ -51,6 +51,7 @@ const emit = defineEmits<{
 
 const databaseStore = useDatabaseV1Store();
 const dbSchemaStore = useDBSchemaV1Store();
+const { project } = useProjectByName(props.projectName);
 const selectedValueList = ref<string[]>(
   props.databaseResources.map((databaseResource) => {
     if (databaseResource.table !== undefined) {
@@ -95,9 +96,8 @@ onMounted(async () => {
 });
 
 const databaseList = computed(() => {
-  const project = useProjectV1Store().getProjectByName(props.projectName);
   const list = orderBy(
-    databaseStore.databaseListByProject(project.name),
+    databaseStore.databaseListByProject(project.value.name),
     [
       (db) => db.effectiveEnvironmentEntity.order,
       (db) => db.effectiveEnvironmentEntity.title,

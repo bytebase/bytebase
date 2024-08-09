@@ -1,13 +1,11 @@
 <template>
   <div class="w-full h-full relative">
     <BranchMergeView
-      v-if="project"
       :project="project"
       :head-branch-name="branchFullName"
       @update:head-branch-name="handleUpdateHeadBranchName"
       @merged="handleMerged"
     />
-    <MaskSpinner v-else />
   </div>
 </template>
 
@@ -15,12 +13,11 @@
 import { computed } from "vue";
 import { useRouter } from "vue-router";
 import BranchMergeView from "@/components/Branch/BranchMergeView";
-import MaskSpinner from "@/components/misc/MaskSpinner.vue";
 import {
   PROJECT_V1_ROUTE_BRANCH_MERGE,
   PROJECT_V1_ROUTE_BRANCH_DETAIL,
 } from "@/router/dashboard/projectV1";
-import { useProjectV1Store } from "@/store";
+import { useProjectByName } from "@/store";
 import { getProjectAndBranchId } from "@/store/modules/v1/common";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import type { Branch } from "@/types/proto/v1/branch_service";
@@ -31,15 +28,9 @@ const props = defineProps<{
 }>();
 
 const router = useRouter();
-
-const project = computed(() => {
-  if (props.projectId === "-") {
-    return;
-  }
-  return useProjectV1Store().getProjectByName(
-    `${projectNamePrefix}${props.projectId}`
-  );
-});
+const { project } = useProjectByName(
+  computed(() => `${projectNamePrefix}${props.projectId}`)
+);
 
 const branchFullName = computed(() => {
   if (!project.value) return null;
