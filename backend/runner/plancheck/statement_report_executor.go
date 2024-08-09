@@ -12,7 +12,6 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/sheet"
-	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
@@ -128,16 +127,22 @@ func (e *StatementReportExecutor) runReport(ctx context.Context, instance *store
 
 	asts, advices := e.sheetManager.GetASTsForChecks(instance.Engine, statement)
 	if len(advices) > 0 {
+		advice := advices[0]
 		// nolint:nilerr
 		return []*storepb.PlanCheckRunResult_Result{
 			{
 				Status:  storepb.PlanCheckRunResult_Result_ERROR,
-				Title:   "Syntax error",
-				Content: advices[0].Content,
+				Title:   advice.Title,
+				Content: advice.Content,
 				Code:    0,
-				Report: &storepb.PlanCheckRunResult_Result_SqlSummaryReport_{
-					SqlSummaryReport: &storepb.PlanCheckRunResult_Result_SqlSummaryReport{
-						Code: advisor.StatementSyntaxError.Int32(),
+				Report: &storepb.PlanCheckRunResult_Result_SqlReviewReport_{
+					SqlReviewReport: &storepb.PlanCheckRunResult_Result_SqlReviewReport{
+						Line:          advice.GetStartPosition().GetLine(),
+						Column:        advice.GetStartPosition().GetColumn(),
+						Code:          advice.Code,
+						Detail:        advice.Detail,
+						StartPosition: advice.StartPosition,
+						EndPosition:   advice.EndPosition,
 					},
 				},
 			},
