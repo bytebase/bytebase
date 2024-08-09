@@ -3,6 +3,7 @@ package base
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 
 	"github.com/pkg/errors"
@@ -25,7 +26,7 @@ var (
 )
 
 type ValidateSQLForEditorFunc func(string) (bool, bool, error)
-type ExtractChangedResourcesFunc func(string, string, any) (*ChangeSummary, error)
+type ExtractChangedResourcesFunc func(string, string, any, string) (*ChangeSummary, error)
 type ExtractResourceListFunc func(string, string, string) ([]SchemaResource, error)
 type SplitMultiSQLFunc func(string) ([]SingleSQL, error)
 type SchemaDiffFunc func(ctx DiffContext, oldStmt, newStmt string) (string, error)
@@ -89,12 +90,12 @@ func RegisterExtractChangedResourcesFunc(engine storepb.Engine, f ExtractChanged
 }
 
 // ExtractChangedResources extracts the changed resources from the SQL.
-func ExtractChangedResources(engine storepb.Engine, currentDatabase string, currentSchema string, ast any) (*ChangeSummary, error) {
+func ExtractChangedResources(engine storepb.Engine, currentDatabase string, currentSchema string, ast any, statement string) (*ChangeSummary, error) {
 	f, ok := changedResourcesGetters[engine]
 	if !ok {
 		return nil, errors.Errorf("engine %s is not supported", engine)
 	}
-	return f(currentDatabase, currentSchema, ast)
+	return f(currentDatabase, currentSchema, ast, statement)
 }
 
 func RegisterSplitterFunc(engine storepb.Engine, f SplitMultiSQLFunc) {
@@ -247,6 +248,15 @@ func (r ResourceChange) String() string {
 }
 
 type Range struct {
-	Start int
-	End   int
+	Start int32
+	End   int32
+}
+
+// NewRange creates a new Range with index range of singleSQL in statement.
+func NewRange(statement, singleSQL string) Range {
+	start := strings.Index(statement, singleSQL)
+	return Range{
+		Start: int32(start),
+		End:   int32(start + len(singleSQL)),
+	}
 }
