@@ -17,4 +17,6 @@
   </svg>
 </template>
 
-<script setup lang="ts"></script>
+<script setup lang="ts">
+// Based on lucide:columns-3 and removing the second gap line
+</script>
