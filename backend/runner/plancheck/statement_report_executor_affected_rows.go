@@ -11,8 +11,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/bytebase/bytebase/backend/store/model"
-
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -33,41 +31,6 @@ func getTableDataSize(metadata *storepb.DatabaseSchemaMetadata, schemaName, tabl
 		}
 	}
 	return 0
-}
-
-func buildGetTableDataSizeFuncForMySQL(metadata *model.DBSchema) func(schemaName, tableName string) int64 {
-	return func(schemaName, tableName string) int64 {
-		if metadata == nil {
-			return 0
-		}
-		dbMeta := metadata.GetDatabaseMetadata()
-		if dbMeta == nil {
-			return 0
-		}
-		schemaMeta := dbMeta.GetSchema(schemaName)
-		if schemaMeta == nil {
-			return 0
-		}
-		tableMeta := schemaMeta.GetTable(tableName)
-		if tableMeta == nil {
-			return 0
-		}
-		return tableMeta.GetRowCount()
-	}
-}
-
-func buildGetRowsCountByQueryForMySQL(sqlDB *sql.DB, engine storepb.Engine, isExplained *bool) func(ctx context.Context, statement string) (int64, error) {
-	return func(ctx context.Context, statement string) (int64, error) {
-		*isExplained = true
-		switch engine {
-		case storepb.Engine_OCEANBASE:
-			return getAffectedRowsCount(ctx, sqlDB, fmt.Sprintf("EXPLAIN FORMAT=JSON %s", statement), getAffectedRowsCountForOceanBase)
-		case storepb.Engine_MYSQL, storepb.Engine_MARIADB:
-			return getAffectedRowsCount(ctx, sqlDB, fmt.Sprintf("EXPLAIN %s", statement), getAffectedRowsCountForMysql)
-		default:
-			return 0, errors.Errorf("engine %v is not supported", engine)
-		}
-	}
 }
 
 func getAffectedRowsForPostgres(ctx context.Context, sqlDB *sql.DB, metadata *storepb.DatabaseSchemaMetadata, node ast.Node) (int64, error) {

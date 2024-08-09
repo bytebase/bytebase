@@ -20,7 +20,6 @@ var (
 	schemaDiffers           = make(map[storepb.Engine]SchemaDiffFunc)
 	completers              = make(map[storepb.Engine]CompletionFunc)
 	spans                   = make(map[storepb.Engine]GetQuerySpanFunc)
-	affectedRows            = make(map[storepb.Engine]GetAffectedRowsFunc)
 	transformDMLToSelect    = make(map[storepb.Engine]TransformDMLToSelectFunc)
 	generateRestoreSQL      = make(map[storepb.Engine]GenerateRestoreSQLFunc)
 )
@@ -34,9 +33,6 @@ type CompletionFunc func(ctx context.Context, cCtx CompletionContext, statement 
 
 // GetQuerySpanFunc is the interface of getting the query span for a query.
 type GetQuerySpanFunc func(ctx context.Context, gCtx GetQuerySpanContext, statement, database, schema string, ignoreCaseSensitive bool) (*QuerySpan, error)
-
-// GetAffectedRows is the interface of getting the affected rows for a statement.
-type GetAffectedRowsFunc func(ctx context.Context, stmt any, getAffectedRowsByQuery GetAffectedRowsCountByQueryFunc, getTableDataSizeFunc GetTableDataSizeFunc) (int64, error)
 
 // TransformDMLToSelectFunc is the interface of transforming DML statements to SELECT statements.
 type TransformDMLToSelectFunc func(ctx TransformContext, statement string, sourceDatabase string, targetDatabase string, tablePrefix string) ([]BackupStatement, error)
@@ -197,25 +193,6 @@ func GetQuerySpan(ctx context.Context, gCtx GetQuerySpanContext, engine storepb.
 	return results, nil
 }
 
-// RegisterGetAffectedRows registers the getAffectedRows function for the engine.
-func RegisterGetAffectedRows(engine storepb.Engine, f GetAffectedRowsFunc) {
-	mux.Lock()
-	defer mux.Unlock()
-	if _, dup := affectedRows[engine]; dup {
-		panic(fmt.Sprintf("Register called twice %s", engine))
-	}
-	affectedRows[engine] = f
-}
-
-// GetAffectedRows returns the affected rows for the parse result.
-func GetAffectedRows(ctx context.Context, engine storepb.Engine, stmt any, getAffectedRowsByQueryFunc GetAffectedRowsCountByQueryFunc, getTableDataSizeFunc GetTableDataSizeFunc) (int64, error) {
-	f, ok := affectedRows[engine]
-	if !ok {
-		return 0, errors.Errorf("engine %s is not supported", engine)
-	}
-	return f(ctx, stmt, getAffectedRowsByQueryFunc, getTableDataSizeFunc)
-}
-
 // RegisterTransformDMLToSelect registers the transformDMLToSelect function for the engine.
 func RegisterTransformDMLToSelect(engine storepb.Engine, f TransformDMLToSelectFunc) {
 	mux.Lock()
@@ -253,13 +230,20 @@ func GenerateRestoreSQL(engine storepb.Engine, statement string, backupDatabase 
 }
 
 type ChangeSummary struct {
-	ResourceChanges []ResourceChange
-	DMLs            []string
+	ResourceChanges []*ResourceChange
+	SampleDMLS      []string
+	DMLCount        int
 }
 
 type ResourceChange struct {
-	Resource SchemaResource
-	Ranges   []Range
+	Resource    SchemaResource
+	Ranges      []Range
+	AffectTable bool
+}
+
+// String implements fmt.Stringer interface.
+func (r ResourceChange) String() string {
+	return r.Resource.String()
 }
 
 type Range struct {
