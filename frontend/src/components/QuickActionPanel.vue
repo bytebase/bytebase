@@ -134,7 +134,6 @@ import {
   useCurrentUserIamPolicy,
   useSubscriptionV1Store,
   useProjectV1Store,
-  useProjectV1List,
   useInstanceResourceList,
 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
@@ -207,9 +206,8 @@ const project = computed(() => {
 
 // Only show alter schema and change data if the user has permission to alter schema of at least one project.
 const shouldShowAlterDatabaseEntries = computed(() => {
-  const { projectList } = useProjectV1List();
   const currentUserIamPolicy = useCurrentUserIamPolicy();
-  return projectList.value
+  return projectStore.projectList
     .map((project) => {
       return currentUserIamPolicy.allowToChangeDatabaseOfProject(project.name);
     })

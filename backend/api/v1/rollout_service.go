@@ -891,12 +891,13 @@ func validateSteps(steps []*v1pb.Plan_Step) error {
 
 // GetPipelineCreate gets a pipeline create message from a plan.
 func GetPipelineCreate(ctx context.Context, s *store.Store, sheetManager *sheet.Manager, licenseService enterprise.LicenseService, dbFactory *dbfactory.DBFactory, steps []*storepb.PlanConfig_Step, project *store.ProjectMessage) (*store.PipelineMessage, error) {
-	transformedSteps := steps
 	// Flatten all specs from steps.
 	var specs []*storepb.PlanConfig_Spec
 	for _, step := range steps {
 		specs = append(specs, step.Specs...)
 	}
+
+	// Step 1 - transform database group
 
 	// The following case should has only one spec.
 	// * ChangeDatabaseConfig with databaseGroup target;
@@ -905,17 +906,32 @@ func GetPipelineCreate(ctx context.Context, s *store.Store, sheetManager *sheet.
 	if len(specs) == 1 {
 		spec := specs[0]
 		if config := spec.GetChangeDatabaseConfig(); config != nil {
+			// transform database group.
 			if _, _, err := common.GetProjectIDDatabaseGroupID(config.Target); err == nil {
-				stepsFromDatabaseGroup, err := transformDatabaseGroupTargetToSteps(ctx, s, spec, config, project)
+				specsFromDatabaseGroup, err := transformDatabaseGroupTargetToSteps(ctx, s, spec, config, project)
 				if err != nil {
 					return nil, errors.Wrapf(err, "failed to transform databaseGroup target to steps")
 				}
-				transformedSteps = stepsFromDatabaseGroup
+
+				specs = specsFromDatabaseGroup
 			}
 		}
-		// Skip to transform the spec if it's CreateDatabaseConfig or ExportDataConfig.
-	} else {
-		// For multiple specs, we will try to rebuild the steps based on the deployment config.
+	}
+
+	// Step 2 - filter by deployment config for ChangeDatabase specs.
+
+	var filterByDeploymentConfig bool
+	for _, spec := range specs {
+		if spec.GetChangeDatabaseConfig() != nil {
+			filterByDeploymentConfig = true
+			break
+		}
+	}
+
+	transformedSteps := steps
+
+	// For ChangeDatabase specs, we will try to rebuild the steps based on the deployment config.
+	if filterByDeploymentConfig {
 		deploymentConfig, err := s.GetDeploymentConfigV2(ctx, project.UID)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get deployment config")
@@ -950,7 +966,16 @@ func GetPipelineCreate(ctx context.Context, s *store.Store, sheetManager *sheet.
 			return nil, errors.Wrapf(err, "failed to get database matrix from deployment schedule")
 		}
 
-		seenSpecID := map[string]bool{}
+		specsByDatabase := map[string][]*storepb.PlanConfig_Spec{}
+		for _, s := range specs {
+			if s.GetChangeDatabaseConfig() == nil {
+				return nil, errors.Errorf("unexpected nil ChangeDatabaseConfig")
+			}
+			target := s.GetChangeDatabaseConfig().GetTarget()
+			specsByDatabase[target] = append(specsByDatabase[target], s)
+		}
+		databaseLoaded := map[string]bool{}
+
 		var steps []*storepb.PlanConfig_Step
 		for i, databases := range matrix {
 			if len(databases) == 0 {
@@ -961,17 +986,16 @@ func GetPipelineCreate(ctx context.Context, s *store.Store, sheetManager *sheet.
 				Title: deploymentConfig.Schedule.Deployments[i].Name,
 			}
 			for _, database := range databases {
-				for _, spec := range specs {
-					if seenSpecID[spec.Id] {
-						continue
-					}
-					if config := spec.GetChangeDatabaseConfig(); config != nil {
-						if common.FormatDatabase(database.InstanceID, database.DatabaseName) == config.Target {
-							seenSpecID[spec.Id] = true
-							step.Specs = append(step.Specs, spec)
-						}
-					}
+				name := common.FormatDatabase(database.InstanceID, database.DatabaseName)
+				if databaseLoaded[name] {
+					continue
 				}
+				specs, ok := specsByDatabase[name]
+				if !ok {
+					continue
+				}
+				step.Specs = append(step.Specs, specs...)
+				databaseLoaded[name] = true
 			}
 			steps = append(steps, step)
 		}

@@ -8,14 +8,11 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
 
-	"github.com/pkg/errors"
-
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/iam"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -158,13 +155,14 @@ func (s *RoleService) DeleteRole(ctx context.Context, request *v1pb.DeleteRoleRe
 		return nil, status.Errorf(codes.NotFound, "role not found: %s", roleID)
 	}
 
-	has, projectUID, err := s.getProjectUsingRole(ctx, request.Name)
+	roleInUse, err := s.store.CheckRoleInUse(ctx, request.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to check if the role is used: %v", err)
 	}
-	if has {
-		return nil, status.Errorf(codes.FailedPrecondition, "cannot delete because role %s is used in project %v", common.FormatRole(roleID), projectUID)
+	if roleInUse {
+		return nil, status.Errorf(codes.FailedPrecondition, "cannot delete because role %s is used by workspace or project", common.FormatRole(roleID))
 	}
+
 	if err := s.store.DeleteRole(ctx, roleID); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to delete role: %v", err)
 	}
@@ -172,35 +170,6 @@ func (s *RoleService) DeleteRole(ctx context.Context, request *v1pb.DeleteRoleRe
 		return nil, err
 	}
 	return &emptypb.Empty{}, nil
-}
-
-// TODO(p0ny): consider using sql for better performance?
-func (s *RoleService) getProjectUsingRole(ctx context.Context, role string) (bool, int, error) {
-	resourceType := api.PolicyResourceTypeProject
-	policyType := api.PolicyTypeIAM
-
-	policies, err := s.store.ListPoliciesV2(ctx, &store.FindPolicyMessage{
-		ResourceType: &resourceType,
-		Type:         &policyType,
-	})
-	if err != nil {
-		return false, 0, err
-	}
-
-	for _, policy := range policies {
-		iamPolicy := &storepb.IamPolicy{}
-		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(policy.Payload), iamPolicy); err != nil {
-			return false, 0, errors.Wrapf(err, "failed to unmarshal iam policy")
-		}
-
-		for _, binding := range iamPolicy.Bindings {
-			if binding.Role == role {
-				return true, policy.ResourceUID, nil
-			}
-		}
-	}
-
-	return false, 0, nil
 }
 
 func convertToRoles(roleMessages []*store.RoleMessage) []*v1pb.Role {

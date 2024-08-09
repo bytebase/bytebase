@@ -3360,7 +3360,8 @@
       },
       "delete": "Delete role",
       "delete-warning": "The role \"{name}\" will be deleted. This action cannot be undone.",
-      "delete-warning-with-resources": "The role \"{name}\" is assigned to following users:"
+      "delete-warning-with-resources": "The role \"{name}\" is assigned to following users:",
+      "delete-warning-retry": "Please remove the role from these users then retry again."
     },
     "select": "Select role",
     "select-roles": "Select roles",

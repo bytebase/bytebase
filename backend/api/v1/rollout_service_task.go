@@ -25,7 +25,7 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-func transformDatabaseGroupTargetToSteps(ctx context.Context, s *store.Store, spec *storepb.PlanConfig_Spec, c *storepb.PlanConfig_ChangeDatabaseConfig, project *store.ProjectMessage) ([]*storepb.PlanConfig_Step, error) {
+func transformDatabaseGroupTargetToSteps(ctx context.Context, s *store.Store, spec *storepb.PlanConfig_Spec, c *storepb.PlanConfig_ChangeDatabaseConfig, project *store.ProjectMessage) ([]*storepb.PlanConfig_Spec, error) {
 	projectID, databaseGroupID, err := common.GetProjectIDDatabaseGroupID(c.Target)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get project and deployment id from target %q", c.Target)
@@ -54,45 +54,22 @@ func transformDatabaseGroupTargetToSteps(ctx context.Context, s *store.Store, sp
 		return nil, errors.Errorf("no matched databases found in database group %q", databaseGroupID)
 	}
 
-	deploymentConfig, err := s.GetDeploymentConfigV2(ctx, project.UID)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get deployment config")
-	}
-	if err := utils.ValidateDeploymentSchedule(deploymentConfig.Schedule); err != nil {
-		return nil, errors.Wrapf(err, "failed to validate and get deployment schedule")
-	}
-	// Calculate the matrix of databases based on the deployment schedule.
-	matrix, err := utils.GetDatabaseMatrixFromDeploymentSchedule(deploymentConfig.Schedule, matchedDatabases)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get database matrix from deployment schedule")
-	}
-
-	var steps []*storepb.PlanConfig_Step
-	for i, databases := range matrix {
-		if len(databases) == 0 {
-			continue
+	var specs []*storepb.PlanConfig_Spec
+	for _, database := range matchedDatabases {
+		s, ok := proto.Clone(spec).(*storepb.PlanConfig_Spec)
+		if !ok {
+			return nil, errors.Errorf("failed to clone, got %T", s)
 		}
-
-		step := &storepb.PlanConfig_Step{
-			Title: deploymentConfig.Schedule.Deployments[i].Name,
-		}
-		for _, database := range databases {
-			s, ok := proto.Clone(spec).(*storepb.PlanConfig_Spec)
-			if !ok {
-				return nil, errors.Errorf("failed to clone, got %T", s)
-			}
-			proto.Merge(s, &storepb.PlanConfig_Spec{
-				Config: &storepb.PlanConfig_Spec_ChangeDatabaseConfig{
-					ChangeDatabaseConfig: &storepb.PlanConfig_ChangeDatabaseConfig{
-						Target: common.FormatDatabase(database.InstanceID, database.DatabaseName),
-					},
+		proto.Merge(s, &storepb.PlanConfig_Spec{
+			Config: &storepb.PlanConfig_Spec_ChangeDatabaseConfig{
+				ChangeDatabaseConfig: &storepb.PlanConfig_ChangeDatabaseConfig{
+					Target: common.FormatDatabase(database.InstanceID, database.DatabaseName),
 				},
-			})
-			step.Specs = append(step.Specs, s)
-		}
-		steps = append(steps, step)
+			},
+		})
+		specs = append(specs, s)
 	}
-	return steps, nil
+	return specs, nil
 }
 
 func getTaskCreatesFromSpec(ctx context.Context, s *store.Store, sheetManager *sheet.Manager, licenseService enterprise.LicenseService, dbFactory *dbfactory.DBFactory, spec *storepb.PlanConfig_Spec, project *store.ProjectMessage, registerEnvironmentID func(string) error) ([]*store.TaskMessage, []store.TaskIndexDAG, error) {

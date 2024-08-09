@@ -159,10 +159,12 @@ const resourceId = computed({
 });
 
 const permissionOptions = computed(() => {
-  return PERMISSIONS.sort().map((p) => ({
-    label: displayPermissionTitle(p),
-    value: p,
-  }));
+  return PERMISSIONS.sort()
+    .filter((p) => !p.startsWith("bb.branches")) // Filter branch related permissions.
+    .map((p) => ({
+      label: displayPermissionTitle(p),
+      value: p,
+    }));
 });
 
 const allowSave = computed(() => {

@@ -88,10 +88,7 @@ const state = reactive<LocalState>({
     project: undefined,
   },
 });
-const { projectList, ready } = useProjectV1List(
-  /* showDeleted */ false,
-  /* forceUpdate */ true
-);
+const { projectList, ready } = useProjectV1List();
 
 const filteredProjectList = computed(() => {
   return filterProjectV1ListByKeyword(projectList.value, state.keyword);

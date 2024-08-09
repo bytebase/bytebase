@@ -209,7 +209,6 @@ import {
   useDatabaseSecretStore,
   useSubscriptionV1Store,
 } from "@/store";
-import { useGracefulRequest } from "@/store/modules/utils";
 import { type ComposedDatabase } from "@/types";
 import { Secret } from "@/types/proto/v1/database_service";
 
@@ -371,8 +370,10 @@ const handleSave = async () => {
       updateMask.push("value");
     }
 
-    const updated = await useGracefulRequest(() =>
-      store.upsertSecret(secret, updateMask, mode === "CREATE")
+    const updated = await store.upsertSecret(
+      secret,
+      updateMask,
+      mode === "CREATE"
     );
     upsertSecret(updated);
     detail.value = undefined;
@@ -395,7 +396,7 @@ const handleDelete = async (secret: Secret) => {
     return;
   }
   try {
-    await useGracefulRequest(() => store.deleteSecret(secret.name));
+    await store.deleteSecret(secret.name);
     const index = secretList.value.findIndex((s) => s.name === secret.name);
     if (index >= 0) {
       secretList.value.splice(index, 1);

@@ -52,9 +52,7 @@ const subscriptionStore = useSubscriptionV1Store();
 const instanceV1Store = useInstanceV1Store();
 const uiStateStore = useUIStateStore();
 const environmentList = useEnvironmentV1List();
-const { instanceList: rawInstanceV1List, ready } = useInstanceV1List(
-  false // showDeleted
-);
+const { instanceList, ready } = useInstanceV1List();
 
 const state = reactive<LocalState>({
   params: {
@@ -85,7 +83,7 @@ onMounted(() => {
 });
 
 const filteredInstanceV1List = computed(() => {
-  let list = [...rawInstanceV1List.value];
+  let list = [...instanceList.value];
   if (selectedEnvironment.value !== `${UNKNOWN_ID}`) {
     list = list.filter(
       (instance) =>
