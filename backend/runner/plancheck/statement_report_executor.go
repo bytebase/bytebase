@@ -66,7 +66,6 @@ func (e *StatementReportExecutor) Run(ctx context.Context, config *storepb.PlanC
 		return nil, err
 	}
 
-	isDML := config.ChangeDatabaseType == storepb.PlanCheckRunConfig_DML
 	instanceUID := int(config.InstanceUid)
 	instance, err := e.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &instanceUID})
 	if err != nil {
@@ -94,7 +93,7 @@ func (e *StatementReportExecutor) Run(ctx context.Context, config *storepb.PlanC
 		return nil, errors.Errorf("database not found %q", config.DatabaseName)
 	}
 
-	results, err := e.runReport(ctx, instance, database, statement, isDML)
+	results, err := e.runReport(ctx, instance, database, statement)
 	if err != nil {
 		return nil, err
 	}
@@ -113,7 +112,7 @@ func (e *StatementReportExecutor) Run(ctx context.Context, config *storepb.PlanC
 	return results, nil
 }
 
-func (e *StatementReportExecutor) runReport(ctx context.Context, instance *store.InstanceMessage, database *store.DatabaseMessage, statement string, isDML bool) ([]*storepb.PlanCheckRunResult_Result, error) {
+func (e *StatementReportExecutor) runReport(ctx context.Context, instance *store.InstanceMessage, database *store.DatabaseMessage, statement string) ([]*storepb.PlanCheckRunResult_Result, error) {
 	dbSchema, err := e.store.GetDBSchema(ctx, database.UID)
 	if err != nil {
 		return nil, err
@@ -147,7 +146,7 @@ func (e *StatementReportExecutor) runReport(ctx context.Context, instance *store
 		defer driver.Close(ctx)
 		sqlDB := driver.GetDB()
 
-		return reportForMySQL(ctx, e.sheetManager, sqlDB, instance.Engine, database.DatabaseName, renderedStatement, dbSchema, isDML)
+		return reportForMySQL(ctx, e.sheetManager, sqlDB, instance.Engine, database.DatabaseName, renderedStatement, dbSchema)
 	case storepb.Engine_ORACLE, storepb.Engine_DM, storepb.Engine_OCEANBASE_ORACLE:
 		return reportForOracle(e.sheetManager, database.DatabaseName, database.DatabaseName, renderedStatement, dbSchema)
 	default:
@@ -208,7 +207,7 @@ func reportForOracle(sm *sheet.Manager, databaseName string, schemaName string, 
 	}, nil
 }
 
-func reportForMySQL(ctx context.Context, sm *sheet.Manager, sqlDB *sql.DB, engine storepb.Engine, databaseName string, statement string, dbMetadata *model.DBSchema, isDML bool) ([]*storepb.PlanCheckRunResult_Result, error) {
+func reportForMySQL(ctx context.Context, sm *sheet.Manager, sqlDB *sql.DB, engine storepb.Engine, databaseName string, statement string, dbMetadata *model.DBSchema) ([]*storepb.PlanCheckRunResult_Result, error) {
 	asts, advices := sm.GetASTsForChecks(storepb.Engine_MYSQL, statement)
 	if len(advices) > 0 {
 		advice := advices[0]
@@ -238,30 +237,60 @@ func reportForMySQL(ctx context.Context, sm *sheet.Manager, sqlDB *sql.DB, engin
 		return nil, errors.Wrapf(err, "failed to extract changed resources")
 	}
 
-	explainCount := 0
+	var totalAffectedRows int64
+	// Count DMLs.
+	for _, dml := range changeSummary.SampleDMLS {
+		switch engine {
+		case storepb.Engine_OCEANBASE:
+			count, err := getAffectedRowsCount(ctx, sqlDB, fmt.Sprintf("EXPLAIN FORMAT=JSON %s", dml), getAffectedRowsCountForOceanBase)
+			if err != nil {
+				return nil, err
+			}
+			totalAffectedRows += count
+		case storepb.Engine_MYSQL, storepb.Engine_MARIADB:
+			count, err := getAffectedRowsCount(ctx, sqlDB, fmt.Sprintf("EXPLAIN %s", dml), getAffectedRowsCountForMysql)
+			if err != nil {
+				return nil, err
+			}
+			totalAffectedRows += count
+		default:
+			return nil, errors.Errorf("engine %v is not supported", engine)
+		}
+	}
+	if changeSummary.DMLCount > common.MaximumLintExplainSize {
+		totalAffectedRows = int64((float64(totalAffectedRows) / common.MaximumLintExplainSize) * float64(changeSummary.DMLCount))
+	}
+	// Count affected rows by DDLs.
+	for _, change := range changeSummary.ResourceChanges {
+		if !change.AffectTable {
+			continue
+		}
+		if dbMetadata == nil {
+			continue
+		}
+		dbMeta := dbMetadata.GetDatabaseMetadata()
+		if dbMeta == nil {
+			continue
+		}
+		schemaMeta := dbMeta.GetSchema(change.Resource.Schema)
+		if schemaMeta == nil {
+			continue
+		}
+		tableMeta := schemaMeta.GetTable(change.Resource.Table)
+		if tableMeta == nil {
+			continue
+		}
+		totalAffectedRows += tableMeta.GetRowCount()
+	}
+
 	nodes, ok := asts.([]*mysqlparser.ParseResult)
 	if !ok {
 		return nil, errors.Errorf("invalid ast type %T", asts)
 	}
 	sqlTypeSet := map[string]struct{}{}
-	var totalAffectedRows int64
-	for i, node := range nodes {
+	for _, node := range nodes {
 		sqlType := mysqlparser.GetStatementType(node)
 		sqlTypeSet[sqlType] = struct{}{}
-		isExplained := false
-		affectedRows, err := base.GetAffectedRows(ctx, engine, node, buildGetRowsCountByQueryForMySQL(sqlDB, engine, &isExplained), buildGetTableDataSizeFuncForMySQL(dbMetadata))
-		if err != nil {
-			slog.Error("failed to get affected rows for mysql", slog.String("database", databaseName), log.BBError(err))
-		} else {
-			totalAffectedRows += affectedRows
-		}
-		if isExplained {
-			explainCount++
-		}
-		if isDML && explainCount >= common.MaximumLintExplainSize {
-			totalAffectedRows = int64(len(nodes)) * (totalAffectedRows / int64(i+1))
-			break
-		}
 	}
 
 	var sqlTypes []string
@@ -284,7 +313,7 @@ func reportForMySQL(ctx context.Context, sm *sheet.Manager, sqlDB *sql.DB, engin
 	}, nil
 }
 
-func convertToChangedResources(dbMetadata *model.DBSchema, resourceChanges []base.ResourceChange) *storepb.ChangedResources {
+func convertToChangedResources(dbMetadata *model.DBSchema, resourceChanges []*base.ResourceChange) *storepb.ChangedResources {
 	meta := &storepb.ChangedResources{}
 	// resourceChange is ordered by (db, schema, table)
 	for _, resourceChange := range resourceChanges {
@@ -334,10 +363,10 @@ func reportForPostgres(ctx context.Context, sm *sheet.Manager, sqlDB *sql.DB, da
 
 	sqlTypeSet := map[string]struct{}{}
 	var totalAffectedRows int64
-	var resourceChanges []base.ResourceChange
+	var resourceChanges []*base.ResourceChange
 
 	for _, node := range nodes {
-		var newChanges []base.ResourceChange
+		var newChanges []*base.ResourceChange
 		sqlType, v := getStatementTypeAndResourcesFromAstNode(database, "public", node)
 		if sqlType == "COMMENT" {
 			v2, err := postgresExtractResourcesFromCommentStatement(database, "public", node.Text())
@@ -381,7 +410,7 @@ func reportForPostgres(ctx context.Context, sm *sheet.Manager, sqlDB *sql.DB, da
 	}, nil
 }
 
-func postgresExtractResourcesFromCommentStatement(database, defaultSchema, statement string) ([]base.ResourceChange, error) {
+func postgresExtractResourcesFromCommentStatement(database, defaultSchema, statement string) ([]*base.ResourceChange, error) {
 	res, err := pgquery.Parse(statement)
 	if err != nil {
 		return nil, err
@@ -407,7 +436,7 @@ func postgresExtractResourcesFromCommentStatement(database, defaultSchema, state
 					if resource.Schema == "" {
 						resource.Schema = defaultSchema
 					}
-					return []base.ResourceChange{{Resource: resource}}, nil
+					return []*base.ResourceChange{{Resource: resource}}, nil
 				default:
 					return nil, errors.Errorf("expect to get a list node but got %T", node)
 				}
@@ -426,7 +455,7 @@ func postgresExtractResourcesFromCommentStatement(database, defaultSchema, state
 						resource.Schema = schemaName
 					}
 					resource.Table = tableName
-					return []base.ResourceChange{{Resource: resource}}, nil
+					return []*base.ResourceChange{{Resource: resource}}, nil
 				default:
 					return nil, errors.Errorf("expect to get a list node but got %T", node)
 				}
@@ -445,7 +474,7 @@ func postgresExtractResourcesFromCommentStatement(database, defaultSchema, state
 						resource.Schema = schemaName
 					}
 					resource.Table = tableName
-					return []base.ResourceChange{{Resource: resource}}, nil
+					return []*base.ResourceChange{{Resource: resource}}, nil
 				default:
 					return nil, errors.Errorf("expect to get a list node but got %T", node)
 				}
@@ -513,18 +542,17 @@ func convertColumnName(node *pgquery.Node_List) (string, string, string, error) 
 	}
 }
 
-func getStatementTypeAndResourcesFromAstNode(database, schema string, node ast.Node) (string, []base.ResourceChange) {
-	result := []base.ResourceChange{}
+func getStatementTypeAndResourcesFromAstNode(database, schema string, node ast.Node) (string, []*base.ResourceChange) {
 	switch node := node.(type) {
 	// DDL
 
 	// CREATE
 	case *ast.CreateIndexStmt:
-		return "CREATE_INDEX", result
+		return "CREATE_INDEX", nil
 	case *ast.CreateTableStmt:
 		switch node.Name.Type {
 		case ast.TableTypeView:
-			return "CREATE_VIEW", result
+			return "CREATE_VIEW", nil
 		case ast.TableTypeBaseTable:
 			resource := base.SchemaResource{
 				Database: node.Name.Database,
@@ -537,46 +565,46 @@ func getStatementTypeAndResourcesFromAstNode(database, schema string, node ast.N
 			if resource.Schema == "" {
 				resource.Schema = schema
 			}
-			result = append(result, base.ResourceChange{Resource: resource})
-			return "CREATE_TABLE", result
+			return "CREATE_TABLE", []*base.ResourceChange{{Resource: resource}}
 		}
 	case *ast.CreateSequenceStmt:
-		return "CREATE_SEQUENCE", result
+		return "CREATE_SEQUENCE", nil
 	case *ast.CreateDatabaseStmt:
-		return "CREATE_DATABASE", result
+		return "CREATE_DATABASE", nil
 	case *ast.CreateSchemaStmt:
-		return "CREATE_SCHEMA", result
+		return "CREATE_SCHEMA", nil
 	case *ast.CreateFunctionStmt:
-		return "CREATE_FUNCTION", result
+		return "CREATE_FUNCTION", nil
 	case *ast.CreateTriggerStmt:
-		return "CREATE_TRIGGER", result
+		return "CREATE_TRIGGER", nil
 	case *ast.CreateTypeStmt:
-		return "CREATE_TYPE", result
+		return "CREATE_TYPE", nil
 	case *ast.CreateExtensionStmt:
-		return "CREATE_EXTENSION", result
+		return "CREATE_EXTENSION", nil
 
 	// DROP
 	case *ast.DropColumnStmt:
-		return "DROP_COLUMN", result
+		return "DROP_COLUMN", nil
 	case *ast.DropConstraintStmt:
-		return "DROP_CONSTRAINT", result
+		return "DROP_CONSTRAINT", nil
 	case *ast.DropDatabaseStmt:
-		return "DROP_DATABASE", result
+		return "DROP_DATABASE", nil
 	case *ast.DropDefaultStmt:
-		return "DROP_DEFAULT", result
+		return "DROP_DEFAULT", nil
 	case *ast.DropExtensionStmt:
-		return "DROP_EXTENSION", result
+		return "DROP_EXTENSION", nil
 	case *ast.DropFunctionStmt:
-		return "DROP_FUNCTION", result
+		return "DROP_FUNCTION", nil
 	case *ast.DropIndexStmt:
-		return "DROP_INDEX", result
+		return "DROP_INDEX", nil
 	case *ast.DropNotNullStmt:
-		return "DROP_NOT_NULL", result
+		return "DROP_NOT_NULL", nil
 	case *ast.DropSchemaStmt:
-		return "DROP_SCHEMA", result
+		return "DROP_SCHEMA", nil
 	case *ast.DropSequenceStmt:
-		return "DROP_SEQUENCE", result
+		return "DROP_SEQUENCE", nil
 	case *ast.DropTableStmt:
+		var result []*base.ResourceChange
 		for _, table := range node.TableList {
 			resource := base.SchemaResource{
 				Database: table.Database,
@@ -589,24 +617,24 @@ func getStatementTypeAndResourcesFromAstNode(database, schema string, node ast.N
 			if resource.Schema == "" {
 				resource.Schema = schema
 			}
-			result = append(result, base.ResourceChange{Resource: resource})
+			result = append(result, &base.ResourceChange{Resource: resource})
 		}
 		return "DROP_TABLE", result
 
 	case *ast.DropTriggerStmt:
-		return "DROP_TRIGGER", result
+		return "DROP_TRIGGER", nil
 	case *ast.DropTypeStmt:
-		return "DROP_TYPE", result
+		return "DROP_TYPE", nil
 
 	// ALTER
 	case *ast.AlterColumnTypeStmt:
-		return "ALTER_COLUMN_TYPE", result
+		return "ALTER_COLUMN_TYPE", nil
 	case *ast.AlterSequenceStmt:
-		return "ALTER_SEQUENCE", result
+		return "ALTER_SEQUENCE", nil
 	case *ast.AlterTableStmt:
 		switch node.Table.Type {
 		case ast.TableTypeView:
-			return "ALTER_VIEW", result
+			return "ALTER_VIEW", nil
 		case ast.TableTypeBaseTable:
 			resource := base.SchemaResource{
 				Database: node.Table.Database,
@@ -619,30 +647,29 @@ func getStatementTypeAndResourcesFromAstNode(database, schema string, node ast.N
 			if resource.Schema == "" {
 				resource.Schema = schema
 			}
-			result = append(result, base.ResourceChange{Resource: resource})
-			return "ALTER_TABLE", result
+			return "ALTER_TABLE", []*base.ResourceChange{{Resource: resource}}
 		}
 	case *ast.AlterTypeStmt:
-		return "ALTER_TYPE", result
+		return "ALTER_TYPE", nil
 
 	case *ast.AddColumnListStmt:
-		return "ALTER_TABLE_ADD_COLUMN_LIST", result
+		return "ALTER_TABLE_ADD_COLUMN_LIST", nil
 	case *ast.AddConstraintStmt:
-		return "ALTER_TABLE_ADD_CONSTRAINT", result
+		return "ALTER_TABLE_ADD_CONSTRAINT", nil
 
 	// RENAME
 	case *ast.RenameColumnStmt:
-		return "RENAME_COLUMN", result
+		return "RENAME_COLUMN", nil
 	case *ast.RenameConstraintStmt:
-		return "RENAME_CONSTRAINT", result
+		return "RENAME_CONSTRAINT", nil
 	case *ast.RenameIndexStmt:
-		return "RENAME_INDEX", result
+		return "RENAME_INDEX", nil
 	case *ast.RenameSchemaStmt:
-		return "RENAME_SCHEMA", result
+		return "RENAME_SCHEMA", nil
 	case *ast.RenameTableStmt:
 		switch node.Table.Type {
 		case ast.TableTypeView:
-			return "RENAME_VIEW", result
+			return "RENAME_VIEW", nil
 		case ast.TableTypeBaseTable:
 			resource := base.SchemaResource{
 				Database: node.Table.Database,
@@ -655,29 +682,30 @@ func getStatementTypeAndResourcesFromAstNode(database, schema string, node ast.N
 			if resource.Schema == "" {
 				resource.Schema = schema
 			}
-			result = append(result, base.ResourceChange{Resource: resource})
 
 			newResource := base.SchemaResource{
 				Database: resource.Database,
 				Schema:   resource.Schema,
 				Table:    node.NewName,
 			}
-			result = append(result, base.ResourceChange{Resource: newResource})
-			return "RENAME_TABLE", result
+			return "RENAME_TABLE", []*base.ResourceChange{
+				{Resource: resource},
+				{Resource: newResource},
+			}
 		}
 
 	case *ast.CommentStmt:
-		return "COMMENT", result
+		return "COMMENT", nil
 
 	// DML
 
 	case *ast.InsertStmt:
-		return "INSERT", result
+		return "INSERT", nil
 	case *ast.UpdateStmt:
-		return "UPDATE", result
+		return "UPDATE", nil
 	case *ast.DeleteStmt:
-		return "DELETE", result
+		return "DELETE", nil
 	}
 
-	return "UNKNOWN", result
+	return "UNKNOWN", nil
 }

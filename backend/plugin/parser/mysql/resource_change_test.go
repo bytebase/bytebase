@@ -16,12 +16,13 @@ func TestExtractMySQLChangedResources(t *testing.T) {
 	INSERT INTO t1 (c1) VALUES (1);
 	`
 	want := &base.ChangeSummary{
-		ResourceChanges: []base.ResourceChange{
+		ResourceChanges: []*base.ResourceChange{
 			{
 				Resource: base.SchemaResource{
 					Database: "db",
 					Table:    "t1",
 				},
+				AffectTable: true,
 			},
 			{
 				Resource: base.SchemaResource{
@@ -30,9 +31,10 @@ func TestExtractMySQLChangedResources(t *testing.T) {
 				},
 			},
 		},
-		DMLs: []string{
+		SampleDMLS: []string{
 			"INSERT INTO t1 (c1) VALUES (1);",
 		},
+		DMLCount: 1,
 	}
 
 	asts, _ := ParseMySQL(statement)
