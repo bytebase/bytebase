@@ -396,7 +396,10 @@ const workspaceRoutes: RouteRecordRaw[] = [
         name: WORKSPACE_ROUTE_MAIL_DELIVERY,
         meta: {
           title: () => t("settings.sidebar.mail-delivery"),
-          requiredWorkspacePermissionList: () => ["bb.settings.get"],
+          requiredWorkspacePermissionList: () => [
+            "bb.settings.get",
+            "bb.settings.set",
+          ],
         },
         component: () => import("@/views/SettingWorkspaceMailDelivery.vue"),
       },
@@ -425,7 +428,10 @@ const workspaceRoutes: RouteRecordRaw[] = [
         name: WORKSPACE_ROUTE_IM,
         meta: {
           title: () => t("settings.sidebar.im-integration"),
-          requiredWorkspacePermissionList: () => ["bb.settings.get"],
+          requiredWorkspacePermissionList: () => [
+            "bb.settings.get",
+            "bb.settings.set",
+          ],
         },
         component: () => import("@/views/SettingWorkspaceIM.vue"),
         props: true,

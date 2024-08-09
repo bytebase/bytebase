@@ -1,7 +1,7 @@
 <template>
   <NPopover :disabled="!error">
     <template #trigger>
-      <span class="text-control-placeholder">{{ text }}</span>
+      <span class="text-control-placeholder ml-[2px]">{{ text }}</span>
     </template>
     <template #default>
       <div class="text-error max-w-[20rem] break-words break-all">

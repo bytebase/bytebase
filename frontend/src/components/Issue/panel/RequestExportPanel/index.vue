@@ -10,27 +10,13 @@
       class="w-[50rem] max-w-[100vw] relative"
     >
       <div class="w-full mx-auto space-y-4">
-        <div class="w-full flex flex-row justify-start items-center gap-2">
-          <span class="flex items-center textlabel">
-            {{ $t("common.project") }}
-            <RequiredStar />
-          </span>
-          <ProjectSelect
-            class="!w-60 shrink-0"
-            :project-name="state.projectName"
-            :filter="filterProject"
-            :disabled="isValidProjectName(props.projectName)"
-            @update:project-name="handleProjectSelect"
-          />
-        </div>
-
         <div class="w-full flex flex-col justify-start items-start">
           <span class="flex items-center textlabel mb-2">
             {{ $t("common.databases") }}
             <RequiredStar />
           </span>
           <DatabaseResourceForm
-            :project-name="state.projectName"
+            :project-name="props.projectName"
             :database-resources="state.databaseResources"
             @update:condition="state.databaseResourceCondition = $event"
             @update:database-resources="state.databaseResources = $event"
@@ -92,7 +78,7 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import ExpirationSelector from "@/components/ExpirationSelector.vue";
 import RequiredStar from "@/components/RequiredStar.vue";
-import { ProjectSelect, DrawerContent, Drawer } from "@/components/v2";
+import { DrawerContent, Drawer } from "@/components/v2";
 import { issueServiceClient } from "@/grpcweb";
 import {
   useCurrentUserV1,
@@ -101,7 +87,7 @@ import {
   pushNotification,
 } from "@/store";
 import type { DatabaseResource, ComposedProject } from "@/types";
-import { UNKNOWN_ID, PresetRoleType, isValidProjectName } from "@/types";
+import { UNKNOWN_ID, PresetRoleType } from "@/types";
 import { Duration } from "@/types/proto/google/protobuf/duration";
 import { Expr } from "@/types/proto/google/type/expr";
 import {
@@ -109,12 +95,10 @@ import {
   Issue,
   Issue_Type,
 } from "@/types/proto/v1/issue_service";
-import { hasProjectPermissionV2 } from "@/utils";
 import DatabaseResourceForm from "../RequestQueryPanel/DatabaseResourceForm/index.vue";
 import MaxRowCountSelect from "./MaxRowCountSelect.vue";
 
 interface LocalState {
-  projectName?: string;
   environmentName?: string;
   databaseId?: string;
   databaseResourceCondition?: string;
@@ -129,7 +113,7 @@ defineOptions({
 });
 
 const props = defineProps<{
-  projectName?: string;
+  projectName: string;
   databaseId?: string;
   redirectToIssuePage?: boolean;
 }>();
@@ -151,9 +135,6 @@ const state = reactive<LocalState>({
 });
 
 const allowCreate = computed(() => {
-  if (!state.projectName) {
-    return false;
-  }
   if (isUndefined(state.databaseResourceCondition)) {
     return false;
   }
@@ -161,21 +142,10 @@ const allowCreate = computed(() => {
 });
 
 onMounted(async () => {
-  if (props.projectName) {
-    handleProjectSelect(props.projectName);
-  }
   if (props.databaseId) {
     handleDatabaseSelect(props.databaseId);
   }
 });
-
-const filterProject = (project: ComposedProject) => {
-  return hasProjectPermissionV2(project, currentUser.value, "bb.databases.get");
-};
-
-const handleProjectSelect = async (name: string | undefined) => {
-  state.projectName = name;
-};
 
 const handleEnvironmentSelect = (environmentName: string | undefined) => {
   state.environmentName = environmentName;
@@ -198,7 +168,6 @@ const handleDatabaseSelect = (databaseId: string | undefined) => {
     state.databaseId || String(UNKNOWN_ID)
   );
   if (database && database.uid !== String(UNKNOWN_ID)) {
-    handleProjectSelect(database.project);
     handleEnvironmentSelect(database.effectiveEnvironment);
   }
 };
@@ -208,9 +177,7 @@ const doCreateIssue = async () => {
     return;
   }
 
-  const project = await projectStore.getOrFetchProjectByName(
-    state.projectName!
-  );
+  const project = await projectStore.getOrFetchProjectByName(props.projectName);
   const newIssue = Issue.fromPartial({
     title: generateIssueName(project),
     description: state.description,

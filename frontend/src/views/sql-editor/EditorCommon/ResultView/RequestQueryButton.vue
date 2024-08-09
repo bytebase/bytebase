@@ -6,7 +6,7 @@
 
     <RequestQueryPanel
       :show="showPanel"
-      :project-name="database?.project"
+      :project-name="database.project"
       :database="database"
       :placement="panelPlacement"
       @close="showPanel = false"
