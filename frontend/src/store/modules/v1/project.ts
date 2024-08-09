@@ -17,12 +17,10 @@ import { State } from "@/types/proto/v1/common";
 import type { Project } from "@/types/proto/v1/project_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import { useCurrentUserV1 } from "../auth";
-import { getResourceStoreCacheKey, type StoreCache } from "./cache";
+import { useListCache } from "./cache";
 import { useProjectIamPolicyStore } from "./projectIamPolicy";
 
 export const useProjectV1Store = defineStore("project_v1", () => {
-  const listCache = reactive(new Map<string, StoreCache>());
-  const currentUser = useCurrentUserV1();
   const projectMapByName = reactive(new Map<ResourceId, ComposedProject>());
 
   const reset = () => {
@@ -49,33 +47,8 @@ export const useProjectV1Store = defineStore("project_v1", () => {
     });
     return composedProjectList;
   };
-  const listProjects = async (showDeleted = false) => {
-    const cacheKey = getResourceStoreCacheKey(
-      "project",
-      showDeleted ? "" : "active"
-    );
-    if (!listCache.has(cacheKey)) {
-      listCache.set(cacheKey, {
-        timestamp: Date.now(),
-        isFetching: true,
-      });
-    }
-    const request = hasWorkspacePermissionV2(
-      currentUser.value,
-      "bb.projects.list"
-    )
-      ? projectServiceClient.listProjects
-      : projectServiceClient.searchProjects;
-    const { projects } = await request({ showDeleted });
-    const composedProjects = await upsertProjectMap(projects);
-    listCache.set(cacheKey, {
-      timestamp: Date.now(),
-      isFetching: false,
-    });
-    return composedProjects;
-  };
   const getProjectList = (showDeleted = false) => {
-    if (unref(showDeleted)) {
+    if (showDeleted) {
       return projectList.value;
     }
     return projectList.value.filter(
@@ -146,12 +119,11 @@ export const useProjectV1Store = defineStore("project_v1", () => {
 
   return {
     reset,
-    listCache,
     projectList,
+    upsertProjectMap,
     getProjectList,
     findProjectByUID,
     getProjectByName,
-    listProjects,
     getOrFetchProjectByName,
     createProject,
     updateProject,
@@ -161,34 +133,45 @@ export const useProjectV1Store = defineStore("project_v1", () => {
   };
 });
 
-export const useProjectV1List = (showDeleted: MaybeRef<boolean> = false) => {
+export const useProjectV1List = (showDeleted: boolean = false) => {
+  const currentUser = useCurrentUserV1();
+  const listCache = useListCache("project");
   const store = useProjectV1Store();
-  const cacheKey = getResourceStoreCacheKey(
-    "project",
-    showDeleted ? "" : "active"
-  );
-  const cache = computed(() => store.listCache.get(cacheKey));
-  const requestPromise = ref<Promise<ComposedProject[]> | null>(null);
+  const cacheKey = listCache.getCacheKey(showDeleted ? "" : "active");
 
-  watchEffect(() => {
-    // If request is already in progress, do not send another request.
-    if (cache.value?.isFetching) {
+  const cache = computed(() => listCache.getCache(cacheKey));
+
+  watchEffect(async () => {
+    // Skip if request is already in progress or cache is available.
+    if (cache.value?.isFetching || cache.value) {
       return;
     }
-    // If cache is available, do not send another request.
-    if (cache.value) {
-      return;
-    }
-    requestPromise.value = store.listProjects(unref(showDeleted));
+
+    listCache.cacheMap.set(cacheKey, {
+      timestamp: Date.now(),
+      isFetching: true,
+    });
+    const request = hasWorkspacePermissionV2(
+      currentUser.value,
+      "bb.projects.list"
+    )
+      ? projectServiceClient.listProjects
+      : projectServiceClient.searchProjects;
+    const { projects } = await request({ showDeleted });
+    await store.upsertProjectMap(projects);
+    listCache.cacheMap.set(cacheKey, {
+      timestamp: Date.now(),
+      isFetching: false,
+    });
   });
 
   const projectList = computed(() => {
-    return store.getProjectList(unref(showDeleted));
+    return store.getProjectList(showDeleted);
   });
+
   return {
     projectList,
     ready: computed(() => cache.value && !cache.value.isFetching),
-    requestPromise,
   };
 };
 
