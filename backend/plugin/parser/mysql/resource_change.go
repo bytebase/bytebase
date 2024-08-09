@@ -35,16 +35,22 @@ func extractChangedResources(currentDatabase string, _ string, asts any) (*base.
 		antlr.ParseTreeWalkerDefault.Walk(l, node.Tree)
 	}
 
-	var result []base.SchemaResource
+	var resources []base.SchemaResource
 	for _, resource := range l.resourceMap {
-		result = append(result, resource)
+		resources = append(resources, resource)
 	}
-	sort.Slice(result, func(i, j int) bool {
-		return result[i].String() < result[j].String()
+	sort.Slice(resources, func(i, j int) bool {
+		return resources[i].String() < resources[j].String()
 	})
+	var resourceChanges []base.ResourceChange
+	for _, resource := range resources {
+		resourceChanges = append(resourceChanges, base.ResourceChange{
+			Resource: resource,
+		})
+	}
 	return &base.ChangeSummary{
-		Resources: result,
-		DMLs:      l.dmls,
+		ResourceChanges: resourceChanges,
+		DMLs:            l.dmls,
 	}, nil
 }
 
