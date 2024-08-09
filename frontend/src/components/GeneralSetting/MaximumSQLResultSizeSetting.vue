@@ -10,32 +10,44 @@
     </p>
     <div class="mt-3 w-full flex flex-row justify-start items-center gap-4">
       <NInputNumber
-        v-model:value="maximumSQLResultLimit"
+        :value="maximumSQLResultLimit"
         :disabled="!allowEdit"
         :min="1"
         :precision="0"
+        @update:value="handleInput"
       >
         <template #suffix> MB </template>
       </NInputNumber>
+    </div>
+
+    <div v-if="showUpdateButton" class="flex justify-end mt-2">
+      <NButton
+        type="primary"
+        :disabled="!allowEdit || !allowUpdate"
+        @click="handleClickUpdate"
+      >
+        {{ $t("common.update") }}
+      </NButton>
     </div>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { useDebounceFn } from "@vueuse/core";
 import Long from "long";
-import { NInputNumber } from "naive-ui";
-import { watch, ref } from "vue";
+import { NButton, NInputNumber } from "naive-ui";
+import { ref, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { pushNotification } from "@/store";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
 
-defineProps<{
+const props = defineProps<{
   allowEdit: boolean;
+  showUpdateButton?: boolean;
 }>();
 
 const { t } = useI18n();
 const settingV1Store = useSettingV1Store();
+const timing = ref<ReturnType<typeof setTimeout>>();
 
 const initialState = () => {
   const limit =
@@ -48,11 +60,15 @@ const initialState = () => {
 
 // limit in MB
 const maximumSQLResultLimit = ref<number>(initialState());
+const allowUpdate = computed(() => {
+  return maximumSQLResultLimit.value !== initialState();
+});
 
-const handleSettingChange = useDebounceFn(async () => {
+const updateChange = async () => {
   if (maximumSQLResultLimit.value <= 0) {
     return;
   }
+  clearTimeout(timing.value);
   await settingV1Store.upsertSetting({
     name: "bb.workspace.maximum-sql-result-size",
     value: {
@@ -66,12 +82,19 @@ const handleSettingChange = useDebounceFn(async () => {
     style: "SUCCESS",
     title: t("settings.general.workspace.config-updated"),
   });
-}, 2000);
+};
 
-watch(
-  () => maximumSQLResultLimit.value,
-  () => {
-    handleSettingChange();
+const handleInput = (value: number | null) => {
+  if (value === null) return;
+  if (value === undefined) return;
+  maximumSQLResultLimit.value = value;
+  if (props.showUpdateButton) {
+    return;
   }
-);
+  updateChange();
+};
+
+const handleClickUpdate = () => {
+  updateChange();
+};
 </script>
