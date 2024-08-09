@@ -7,7 +7,6 @@ import (
 
 	"log/slog"
 
-	"github.com/antlr4-go/antlr/v4"
 	pgquery "github.com/pganalyze/pg_query_go/v5"
 	"github.com/pkg/errors"
 
@@ -187,17 +186,10 @@ func reportForOracle(sm *sheet.Manager, databaseName string, schemaName string, 
 			},
 		}, nil
 	}
-	nodes, ok := asts.(antlr.Tree)
-	if !ok {
-		return nil, errors.Errorf("invalid ast type %T", asts)
-	}
 
-	var changedResources []base.SchemaResource
-	changeSummary, err := base.ExtractChangedResources(storepb.Engine_ORACLE, databaseName, schemaName, nodes)
+	changeSummary, err := base.ExtractChangedResources(storepb.Engine_ORACLE, databaseName, schemaName, asts)
 	if err != nil {
-		slog.Error("failed to extract changed resources", slog.String("statement", statement), log.BBError(err))
-	} else {
-		changedResources = changeSummary.Resources
+		return nil, errors.Wrapf(err, "failed to extract changed resources")
 	}
 
 	return []*storepb.PlanCheckRunResult_Result{
@@ -209,7 +201,7 @@ func reportForOracle(sm *sheet.Manager, databaseName string, schemaName string, 
 				SqlSummaryReport: &storepb.PlanCheckRunResult_Result_SqlSummaryReport{
 					StatementTypes:   nil,
 					AffectedRows:     0,
-					ChangedResources: convertToChangedResources(dbMetadata, changedResources),
+					ChangedResources: convertToChangedResources(dbMetadata, changeSummary.Resources),
 				},
 			},
 		},
@@ -240,26 +232,22 @@ func reportForMySQL(ctx context.Context, sm *sheet.Manager, sqlDB *sql.DB, engin
 			},
 		}, nil
 	}
+
+	changeSummary, err := base.ExtractChangedResources(storepb.Engine_MYSQL, databaseName, "" /* currentSchema */, asts)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to extract changed resources")
+	}
+
+	explainCount := 0
 	nodes, ok := asts.([]*mysqlparser.ParseResult)
 	if !ok {
 		return nil, errors.Errorf("invalid ast type %T", asts)
 	}
-
 	sqlTypeSet := map[string]struct{}{}
 	var totalAffectedRows int64
-	var changedResources []base.SchemaResource
-
-	explainCount := 0
 	for i, node := range nodes {
 		sqlType := mysqlparser.GetStatementType(node)
 		sqlTypeSet[sqlType] = struct{}{}
-		changeSummary, err := base.ExtractChangedResources(storepb.Engine_MYSQL, databaseName, "" /* currentSchema */, node)
-		if err != nil {
-			slog.Error("failed to extract changed resources", slog.String("statement", statement), log.BBError(err))
-			continue
-		}
-		changedResources = append(changedResources, changeSummary.Resources...)
-
 		isExplained := false
 		affectedRows, err := base.GetAffectedRows(ctx, engine, node, buildGetRowsCountByQueryForMySQL(sqlDB, engine, &isExplained), buildGetTableDataSizeFuncForMySQL(dbMetadata))
 		if err != nil {
@@ -289,7 +277,7 @@ func reportForMySQL(ctx context.Context, sm *sheet.Manager, sqlDB *sql.DB, engin
 				SqlSummaryReport: &storepb.PlanCheckRunResult_Result_SqlSummaryReport{
 					StatementTypes:   sqlTypes,
 					AffectedRows:     int32(totalAffectedRows),
-					ChangedResources: convertToChangedResources(dbMetadata, changedResources),
+					ChangedResources: convertToChangedResources(dbMetadata, changeSummary.Resources),
 				},
 			},
 		},
