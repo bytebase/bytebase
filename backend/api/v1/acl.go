@@ -366,7 +366,8 @@ func getResourceFromSingleRequest(mr protoreflect.Message, shortMethod string) *
 	isCreate := strings.HasPrefix(shortMethod, "Create")
 	isUpdate := strings.HasPrefix(shortMethod, "Update")
 	isRemove := strings.HasPrefix(shortMethod, "Remove")
-	if !isCreate && !isUpdate && !isRemove {
+	isTest := strings.HasPrefix(shortMethod, "Test")
+	if !isCreate && !isUpdate && !isRemove && !isTest {
 		return nil
 	}
 	var resourceName string
@@ -379,6 +380,9 @@ func getResourceFromSingleRequest(mr protoreflect.Message, shortMethod string) *
 	// RemoveWebhook.
 	if isRemove {
 		resourceName = strings.TrimPrefix(shortMethod, "Remove")
+	}
+	if isTest {
+		resourceName = strings.TrimPrefix(shortMethod, "Test")
 	}
 	resourceName = toSnakeCase(resourceName)
 	resourceDesc := mr.Descriptor().Fields().ByName(protoreflect.Name(resourceName))
