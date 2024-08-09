@@ -25,7 +25,6 @@ import { PROJECT_V1_ROUTE_DASHBOARD } from "@/router/dashboard/workspaceRoutes";
 import {
   useEnvironmentV1Store,
   usePolicyV1Store,
-  useProjectV1Store,
   useRoleStore,
   useSettingV1Store,
   useUserStore,
@@ -49,10 +48,8 @@ const databaseStore = useDatabaseV1Store();
 
 const prepareProjects = async () => {
   const routeName = route.name?.toString() || "";
-  if (!routeName.startsWith(PROJECT_V1_ROUTE_DASHBOARD)) {
-    await useProjectV1Store().listProjects();
-  } else {
-    // We will handle GetProject in `ProjectV1Layout.vue`.
+  if (!routeName.startsWith(`${PROJECT_V1_ROUTE_DASHBOARD}.`)) {
+    await wrapRefAsPromise(useProjectV1List().ready, true);
   }
 };
 
@@ -126,8 +123,7 @@ onMounted(async () => {
       if (toProject === undefined) {
         // Prepare projects if the project is not specified.
         // This is useful when the user navigates to the workspace dashboard from project detail.
-        const { ready } = useProjectV1List();
-        await wrapRefAsPromise(ready, true);
+        await wrapRefAsPromise(useProjectV1List().ready, true);
       }
       await prepareDatabases(toProject);
       isSwitchingProject.value = false;

@@ -186,8 +186,7 @@ const filteredInstanceV1List = computed(() => {
 const remainingInstanceCount = computed((): number => {
   return Math.max(
     0,
-    subscriptionStore.instanceCountLimit -
-      instanceV1Store.activeInstanceList.length
+    subscriptionStore.instanceCountLimit - instanceV1Store.instanceList.length
   );
 });
 

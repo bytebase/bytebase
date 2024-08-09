@@ -89,7 +89,7 @@ const environmentList = computed(() => {
 });
 
 const instanceList = computed(() => {
-  return useInstanceV1List().instanceList.value.filter(
+  return useInstanceV1List(true /** showDeleted */).instanceList.value.filter(
     (instance) => instance.state === State.DELETED
   );
 });
