@@ -37,7 +37,7 @@
 <script lang="ts" setup>
 import { NRadioGroup, NRadio, NTooltip } from "naive-ui";
 import { computed, onMounted, reactive, watch } from "vue";
-import { useProjectV1Store } from "@/store";
+import { useProjectByName } from "@/store";
 import type { DatabaseResource } from "@/types";
 import { stringifyDatabaseResources } from "@/utils/issue/cel";
 import DatabaseResourceSelector from "./DatabaseResourceSelector.vue";
@@ -48,7 +48,7 @@ interface LocalState {
 }
 
 const props = defineProps<{
-  projectName?: string;
+  projectName: string;
   databaseResources?: DatabaseResource[];
 }>();
 
@@ -60,17 +60,11 @@ const emit = defineEmits<{
   ): void;
 }>();
 
-const projectStore = useProjectV1Store();
 const state = reactive<LocalState>({
   allDatabases: (props.databaseResources || []).length === 0,
   databaseResources: props.databaseResources || [],
 });
-
-const project = computed(() => {
-  return props.projectName
-    ? projectStore.getProjectByName(props.projectName)
-    : undefined;
-});
+const { project } = useProjectByName(computed(() => props.projectName));
 
 const handleSelectedDatabaseResourceChanged = (
   databaseResourceList: DatabaseResource[]
