@@ -57,6 +57,9 @@ func (s *Store) GetMaximumSQLResultLimit(ctx context.Context) int64 {
 		slog.Error("failed to unmarshaler setting", slog.String("setting", string(settingName)), log.BBError(err))
 		return common.DefaultMaximumSQLResultSize
 	}
+	if payload.Limit <= 0 {
+		return common.DefaultMaximumSQLResultSize
+	}
 	return payload.Limit
 }
 

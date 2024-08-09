@@ -40,7 +40,8 @@ const settingV1Store = useSettingV1Store();
 const initialState = () => {
   const limit =
     settingV1Store.getSettingByName("bb.workspace.maximum-sql-result-size")
-      ?.value?.maximumSqlResultSizeSetting?.limit ?? Long.fromNumber(0);
+      ?.value?.maximumSqlResultSizeSetting?.limit ??
+    Long.fromNumber(100 * 1024 * 1024);
 
   return Math.round(limit.toNumber() / 1024 / 1024);
 };
@@ -49,6 +50,9 @@ const initialState = () => {
 const maximumSQLResultLimit = ref<number>(initialState());
 
 const handleSettingChange = useDebounceFn(async () => {
+  if (maximumSQLResultLimit.value <= 0) {
+    return;
+  }
   await settingV1Store.upsertSetting({
     name: "bb.workspace.maximum-sql-result-size",
     value: {

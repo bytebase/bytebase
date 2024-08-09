@@ -11318,7 +11318,9 @@ components:
             properties:
                 limit:
                     type: string
-                    description: limit in Byte.
+                    description: |-
+                        The limit is in bytes.
+                         The default value is 100MB, we will use the default value if the setting not exists, or the limit <= 0.
         OAuth2IdentityProviderConfig:
             type: object
             properties:

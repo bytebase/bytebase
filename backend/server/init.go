@@ -153,20 +153,6 @@ func (s *Server) getInitSetting(ctx context.Context) (string, time.Duration, err
 		return "", 0, err
 	}
 
-	maximumSQLResultSizeSetting, err := protojson.Marshal(&storepb.MaximumSQLResultSizeSetting{
-		Limit: common.DefaultMaximumSQLResultSize,
-	})
-	if err != nil {
-		return "", 0, errors.Wrap(err, "failed to marshal initial sql limit setting value")
-	}
-	if _, _, err := s.store.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
-		Name:        api.SettingSQLResultSizeLimit,
-		Value:       string(maximumSQLResultSizeSetting),
-		Description: "The maximum number of bytes for sql results in response body.",
-	}, api.SystemBotID); err != nil {
-		return "", 0, err
-	}
-
 	// initial workspace profile setting
 	settingName := api.SettingWorkspaceProfile
 	workspaceProfileSetting, err := s.store.GetSettingV2(ctx, &store.FindSettingMessage{

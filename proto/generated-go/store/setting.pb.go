@@ -1100,7 +1100,8 @@ type MaximumSQLResultSizeSetting struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// limit in Byte.
+	// The limit is in bytes.
+	// The default value is 100MB, we will use the default value if the setting not exists, or the limit <= 0.
 	Limit int64 `protobuf:"varint,1,opt,name=limit,proto3" json:"limit,omitempty"`
 }
 

@@ -9526,7 +9526,7 @@ When paginating, all other parameters provided to `ListSettings` must match the 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| limit | [int64](#int64) |  | limit in Byte. |
+| limit | [int64](#int64) |  | The limit is in bytes. The default value is 100MB, we will use the default value if the setting not exists, or the limit &lt;= 0. |
 
 
 
