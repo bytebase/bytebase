@@ -110,83 +110,97 @@ func configureGrpcRouters(
 		return nil, nil, nil, nil, err
 	}
 
-	if err := v1pb.RegisterAuthServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, nil, nil, nil, err
-	}
+	// Sort by service name, align with api.bytebase.com.
 	if err := v1pb.RegisterActuatorServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, nil, nil, nil, err
-	}
-	if err := v1pb.RegisterSubscriptionServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, nil, nil, nil, err
-	}
-	if err := v1pb.RegisterEnvironmentServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, nil, nil, nil, err
-	}
-	if err := v1pb.RegisterInstanceServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, nil, nil, nil, err
-	}
-	if err := v1pb.RegisterProjectServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, nil, nil, nil, err
-	}
-	if err := v1pb.RegisterDatabaseServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, nil, nil, nil, err
-	}
-	if err := v1pb.RegisterInstanceRoleServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, nil, nil, nil, err
-	}
-	if err := v1pb.RegisterOrgPolicyServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, nil, nil, nil, err
-	}
-	if err := v1pb.RegisterWorkspaceServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, nil, nil, nil, err
-	}
-	if err := v1pb.RegisterIdentityProviderServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, nil, nil, nil, err
-	}
-	if err := v1pb.RegisterSettingServiceHandler(ctx, mux, grpcConn); err != nil {
 		return nil, nil, nil, nil, err
 	}
 	if err := v1pb.RegisterAnomalyServiceHandler(ctx, mux, grpcConn); err != nil {
 		return nil, nil, nil, nil, err
 	}
-	if err := v1pb.RegisterSQLServiceHandler(ctx, mux, grpcConn); err != nil {
+	if err := v1pb.RegisterAuditLogServiceHandler(ctx, mux, grpcConn); err != nil {
 		return nil, nil, nil, nil, err
 	}
-	if err := v1pb.RegisterVCSProviderServiceHandler(ctx, mux, grpcConn); err != nil {
+	if err := v1pb.RegisterAuthServiceHandler(ctx, mux, grpcConn); err != nil {
 		return nil, nil, nil, nil, err
 	}
-	if err := v1pb.RegisterRoleServiceHandler(ctx, mux, grpcConn); err != nil {
+	if err := v1pb.RegisterBranchServiceHandler(ctx, mux, grpcConn); err != nil {
 		return nil, nil, nil, nil, err
 	}
-	if err := v1pb.RegisterSheetServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, nil, nil, nil, err
-	}
-	if err := v1pb.RegisterWorksheetServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, nil, nil, nil, err
-	}
-	if err := v1pb.RegisterPlanServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, nil, nil, nil, err
-	}
-	if err := v1pb.RegisterRolloutServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, nil, nil, nil, err
-	}
-	if err := v1pb.RegisterIssueServiceHandler(ctx, mux, grpcConn); err != nil {
-		return nil, nil, nil, nil, err
-	}
-	if err := v1pb.RegisterDatabaseGroupServiceHandler(ctx, mux, grpcConn); err != nil {
+	if err := v1pb.RegisterCelServiceHandler(ctx, mux, grpcConn); err != nil {
 		return nil, nil, nil, nil, err
 	}
 	if err := v1pb.RegisterChangelistServiceHandler(ctx, mux, grpcConn); err != nil {
 		return nil, nil, nil, nil, err
 	}
-	if err := v1pb.RegisterVCSConnectorServiceHandler(ctx, mux, grpcConn); err != nil {
+	if err := v1pb.RegisterDatabaseGroupServiceHandler(ctx, mux, grpcConn); err != nil {
+		return nil, nil, nil, nil, err
+	}
+	if err := v1pb.RegisterDatabaseServiceHandler(ctx, mux, grpcConn); err != nil {
+		return nil, nil, nil, nil, err
+	}
+	if err := v1pb.RegisterEnvironmentServiceHandler(ctx, mux, grpcConn); err != nil {
 		return nil, nil, nil, nil, err
 	}
 	if err := v1pb.RegisterGroupServiceHandler(ctx, mux, grpcConn); err != nil {
 		return nil, nil, nil, nil, err
 	}
+	if err := v1pb.RegisterIdentityProviderServiceHandler(ctx, mux, grpcConn); err != nil {
+		return nil, nil, nil, nil, err
+	}
+	if err := v1pb.RegisterInstanceRoleServiceHandler(ctx, mux, grpcConn); err != nil {
+		return nil, nil, nil, nil, err
+	}
+	if err := v1pb.RegisterInstanceServiceHandler(ctx, mux, grpcConn); err != nil {
+		return nil, nil, nil, nil, err
+	}
+	if err := v1pb.RegisterIssueServiceHandler(ctx, mux, grpcConn); err != nil {
+		return nil, nil, nil, nil, err
+	}
+	if err := v1pb.RegisterOrgPolicyServiceHandler(ctx, mux, grpcConn); err != nil {
+		return nil, nil, nil, nil, err
+	}
+	if err := v1pb.RegisterPlanServiceHandler(ctx, mux, grpcConn); err != nil {
+		return nil, nil, nil, nil, err
+	}
+	if err := v1pb.RegisterProjectServiceHandler(ctx, mux, grpcConn); err != nil {
+		return nil, nil, nil, nil, err
+	}
 	if err := v1pb.RegisterReviewConfigServiceHandler(ctx, mux, grpcConn); err != nil {
 		return nil, nil, nil, nil, err
 	}
+	if err := v1pb.RegisterRiskServiceHandler(ctx, mux, grpcConn); err != nil {
+		return nil, nil, nil, nil, err
+	}
+	if err := v1pb.RegisterRoleServiceHandler(ctx, mux, grpcConn); err != nil {
+		return nil, nil, nil, nil, err
+	}
+	if err := v1pb.RegisterRolloutServiceHandler(ctx, mux, grpcConn); err != nil {
+		return nil, nil, nil, nil, err
+	}
+	if err := v1pb.RegisterSQLServiceHandler(ctx, mux, grpcConn); err != nil {
+		return nil, nil, nil, nil, err
+	}
+	if err := v1pb.RegisterSettingServiceHandler(ctx, mux, grpcConn); err != nil {
+		return nil, nil, nil, nil, err
+	}
+	if err := v1pb.RegisterSheetServiceHandler(ctx, mux, grpcConn); err != nil {
+		return nil, nil, nil, nil, err
+	}
+	if err := v1pb.RegisterSubscriptionServiceHandler(ctx, mux, grpcConn); err != nil {
+		return nil, nil, nil, nil, err
+	}
+	if err := v1pb.RegisterVCSConnectorServiceHandler(ctx, mux, grpcConn); err != nil {
+		return nil, nil, nil, nil, err
+	}
+	if err := v1pb.RegisterVCSProviderServiceHandler(ctx, mux, grpcConn); err != nil {
+		return nil, nil, nil, nil, err
+	}
+	if err := v1pb.RegisterWorksheetServiceHandler(ctx, mux, grpcConn); err != nil {
+		return nil, nil, nil, nil, err
+	}
+	if err := v1pb.RegisterWorkspaceServiceHandler(ctx, mux, grpcConn); err != nil {
+		return nil, nil, nil, nil, err
+	}
+
 	return planService, rolloutService, issueService, sqlService, nil
 }
