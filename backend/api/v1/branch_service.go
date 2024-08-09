@@ -1554,7 +1554,7 @@ func updateDatabaseConfigLastModifierForMerge(baseMetadata *storepb.DatabaseSche
 			if baseTable == nil {
 				//nolint
 				newBaseTableConfig := proto.Clone(headTableConfig).(*storepb.TableConfig)
-				newBaseTableConfig.SourceBranch = ""
+				newBaseTableConfig.SourceBranch = headTableConfig.SourceBranch
 				newBaseTableConfig.Updater = headTableConfig.Updater
 				newBaseTableConfig.UpdateTime = now
 				newBaseTableConfigs = append(newBaseTableConfigs, newBaseTableConfig)
@@ -1567,7 +1567,7 @@ func updateDatabaseConfigLastModifierForMerge(baseMetadata *storepb.DatabaseSche
 				baseTableConfig = initTableConfig(baseTable.GetProto(), "", "", now)
 			}
 			if !cmp.Equal(headTable, baseTable.GetProto(), protocmp.Transform()) {
-				baseTableConfig.SourceBranch = ""
+				baseTableConfig.SourceBranch = headTableConfig.SourceBranch
 				baseTableConfig.Updater = headTableConfig.Updater
 				baseTableConfig.UpdateTime = now
 			}
@@ -1592,7 +1592,7 @@ func updateDatabaseConfigLastModifierForMerge(baseMetadata *storepb.DatabaseSche
 			if baseFunction == nil {
 				//nolint
 				newBaseFunctionConfig := proto.Clone(headFunctionConfig).(*storepb.FunctionConfig)
-				newBaseFunctionConfig.SourceBranch = ""
+				newBaseFunctionConfig.SourceBranch = headFunctionConfig.SourceBranch
 				newBaseFunctionConfig.Updater = headFunctionConfig.Updater
 				newBaseFunctionConfig.UpdateTime = now
 				newBaseFunctionConfigs = append(newBaseFunctionConfigs, newBaseFunctionConfig)
@@ -1605,7 +1605,7 @@ func updateDatabaseConfigLastModifierForMerge(baseMetadata *storepb.DatabaseSche
 				baseFunctionConfig = initFunctionConfig(baseFunction.GetProto(), "", "", now)
 			}
 			if !cmp.Equal(headFunction, baseFunction.GetProto(), protocmp.Transform()) {
-				baseFunctionConfig.SourceBranch = ""
+				baseFunctionConfig.SourceBranch = headFunctionConfig.SourceBranch
 				baseFunctionConfig.Updater = headFunctionConfig.Updater
 				baseFunctionConfig.UpdateTime = now
 			}
@@ -1630,7 +1630,7 @@ func updateDatabaseConfigLastModifierForMerge(baseMetadata *storepb.DatabaseSche
 			if baseView == nil {
 				//nolint
 				newBaseViewConfig := proto.Clone(headViewConfig).(*storepb.ViewConfig)
-				newBaseViewConfig.SourceBranch = ""
+				newBaseViewConfig.SourceBranch = headViewConfig.SourceBranch
 				newBaseViewConfig.Updater = headViewConfig.Updater
 				newBaseViewConfig.UpdateTime = now
 				newBaseViewConfigs = append(newBaseViewConfigs, newBaseViewConfig)
@@ -1643,7 +1643,7 @@ func updateDatabaseConfigLastModifierForMerge(baseMetadata *storepb.DatabaseSche
 				baseViewConfig = initViewConfig(baseView.GetProto(), "", "", now)
 			}
 			if !cmp.Equal(headView, baseView.GetProto(), protocmp.Transform()) {
-				baseViewConfig.SourceBranch = ""
+				baseViewConfig.SourceBranch = headViewConfig.SourceBranch
 				baseViewConfig.Updater = headViewConfig.Updater
 				baseViewConfig.UpdateTime = now
 			}
@@ -1668,7 +1668,7 @@ func updateDatabaseConfigLastModifierForMerge(baseMetadata *storepb.DatabaseSche
 			if baseProcedure == nil {
 				//nolint
 				newBaseProcedureConfig := proto.Clone(headProcedureConfig).(*storepb.ProcedureConfig)
-				newBaseProcedureConfig.SourceBranch = ""
+				newBaseProcedureConfig.SourceBranch = headProcedureConfig.SourceBranch
 				newBaseProcedureConfig.Updater = headProcedureConfig.Updater
 				newBaseProcedureConfig.UpdateTime = now
 				newBaseProcedureConfigs = append(newBaseProcedureConfigs, newBaseProcedureConfig)
@@ -1677,7 +1677,7 @@ func updateDatabaseConfigLastModifierForMerge(baseMetadata *storepb.DatabaseSche
 			// Modified procedure, set the last updater as head in base.
 			baseProcedureConfig := baseProcedureConfigMap[headProcedure.Name]
 			if !cmp.Equal(headProcedure, baseProcedure.GetProto(), protocmp.Transform()) {
-				baseProcedureConfig.SourceBranch = ""
+				baseProcedureConfig.SourceBranch = headProcedureConfig.SourceBranch
 				baseProcedureConfig.Updater = headProcedureConfig.Updater
 				baseProcedureConfig.UpdateTime = now
 			}
