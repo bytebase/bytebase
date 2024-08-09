@@ -4,70 +4,12 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
-	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
 
 	"github.com/pkg/errors"
-
-	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
-
-func getTableDataSize(metadata *storepb.DatabaseSchemaMetadata, schemaName, tableName string) int64 {
-	if metadata == nil {
-		return 0
-	}
-	for _, schema := range metadata.Schemas {
-		if schema.Name != schemaName {
-			continue
-		}
-		for _, table := range schema.Tables {
-			if table.Name != tableName {
-				continue
-			}
-			return table.RowCount
-		}
-	}
-	return 0
-}
-
-func getAffectedRowsForPostgres(ctx context.Context, sqlDB *sql.DB, metadata *storepb.DatabaseSchemaMetadata, node ast.Node) (int64, error) {
-	switch node := node.(type) {
-	case *ast.InsertStmt, *ast.UpdateStmt, *ast.DeleteStmt:
-		if node, ok := node.(*ast.InsertStmt); ok && len(node.ValueList) > 0 {
-			return int64(len(node.ValueList)), nil
-		}
-		return getAffectedRowsCount(ctx, sqlDB, fmt.Sprintf("EXPLAIN %s", node.Text()), getAffectedRowsCountForPostgres)
-	case *ast.AlterTableStmt:
-		if node.Table.Type == ast.TableTypeBaseTable {
-			schemaName := "public"
-			if node.Table.Schema != "" {
-				schemaName = node.Table.Schema
-			}
-			tableName := node.Table.Name
-
-			return getTableDataSize(metadata, schemaName, tableName), nil
-		}
-		return 0, nil
-	case *ast.DropTableStmt:
-		var total int64
-		for _, table := range node.TableList {
-			schemaName := "public"
-			if table.Schema != "" {
-				schemaName = table.Schema
-			}
-			tableName := table.Name
-
-			total += getTableDataSize(metadata, schemaName, tableName)
-		}
-		return total, nil
-
-	default:
-		return 0, nil
-	}
-}
 
 func getAffectedRowsCountForPostgres(res []any) (int64, error) {
 	// the res struct is []any{columnName, columnTable, rowDataList}

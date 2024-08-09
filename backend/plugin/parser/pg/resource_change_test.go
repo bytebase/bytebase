@@ -19,7 +19,7 @@ func TestExtractChangedResources(t *testing.T) {
 						DROP TABLE t1;
 						ALTER TABLE t1 ADD COLUMN c1 INT;
 						ALTER TABLE t1 RENAME TO t2;
-						INSERT INTO t1 (c1) VALUES (1);
+						INSERT INTO t1 (c1) VALUES (1),(5);
 			`,
 			want: &base.ChangeSummary{
 				ResourceChanges: []*base.ResourceChange{
@@ -62,6 +62,8 @@ func TestExtractChangedResources(t *testing.T) {
 						},
 					},
 				},
+				DMLCount:    0,
+				InsertCount: 2,
 			},
 		},
 		{
@@ -73,6 +75,12 @@ func TestExtractChangedResources(t *testing.T) {
 							Database: "db",
 							Schema:   "public",
 							Table:    "t1",
+						},
+						Ranges: []base.Range{
+							{
+								Start: 0,
+								End:   23,
+							},
 						},
 					},
 				},

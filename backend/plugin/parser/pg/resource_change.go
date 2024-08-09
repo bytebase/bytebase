@@ -7,6 +7,7 @@ import (
 
 	pgquery "github.com/pganalyze/pg_query_go/v5"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -23,11 +24,26 @@ func extractChangedResources(database string, schema string, asts any, statement
 	}
 
 	resourceChangeMap := make(map[string]*base.ResourceChange)
+	dmlCount := 0
+	insertCount := 0
+	var sampleDMLs []string
 	for _, node := range nodes {
 		// schema is "public" by default.
 		err := getResourceChanges(database, schema, node, statement, resourceChangeMap)
 		if err != nil {
 			return nil, err
+		}
+
+		switch node := node.(type) {
+		case *ast.InsertStmt, *ast.UpdateStmt, *ast.DeleteStmt:
+			if node, ok := node.(*ast.InsertStmt); ok && len(node.ValueList) > 0 {
+				insertCount += len(node.ValueList)
+				continue
+			}
+			dmlCount++
+			if len(sampleDMLs) < common.MaximumLintExplainSize {
+				sampleDMLs = append(sampleDMLs, node.Text())
+			}
 		}
 	}
 
@@ -40,6 +56,9 @@ func extractChangedResources(database string, schema string, asts any, statement
 	})
 	return &base.ChangeSummary{
 		ResourceChanges: resourceChanges,
+		DMLCount:        dmlCount,
+		SampleDMLS:      sampleDMLs,
+		InsertCount:     insertCount,
 	}, nil
 }
 

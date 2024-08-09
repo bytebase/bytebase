@@ -5,19 +5,15 @@ import (
 	"database/sql"
 	"fmt"
 
-	"log/slog"
-
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/sheet"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/plugin/parser/pg"
-	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/store/model"
 	"github.com/bytebase/bytebase/backend/utils"
@@ -264,6 +260,7 @@ func reportForMySQL(ctx context.Context, sm *sheet.Manager, sqlDB *sql.DB, engin
 	if changeSummary.DMLCount > common.MaximumLintExplainSize {
 		totalAffectedRows = int64((float64(totalAffectedRows) / common.MaximumLintExplainSize) * float64(changeSummary.DMLCount))
 	}
+	totalAffectedRows += int64(changeSummary.InsertCount)
 	// Count affected rows by DDLs.
 	for _, change := range changeSummary.ResourceChanges {
 		if !change.AffectTable {
@@ -365,18 +362,40 @@ func reportForPostgres(ctx context.Context, sm *sheet.Manager, sqlDB *sql.DB, da
 		return nil, errors.Wrapf(err, "failed to extract changed resources")
 	}
 
-	nodes, ok := asts.([]ast.Node)
-	if !ok {
-		return nil, errors.Errorf("invalid ast type %T", asts)
-	}
 	var totalAffectedRows int64
-	for _, node := range nodes {
-		rowCount, err := getAffectedRowsForPostgres(ctx, sqlDB, dbMetadata.GetMetadata(), node)
+	// Count DMLs.
+	for _, dml := range changeSummary.SampleDMLS {
+		count, err := getAffectedRowsCount(ctx, sqlDB, fmt.Sprintf("EXPLAIN %s", dml), getAffectedRowsCountForPostgres)
 		if err != nil {
-			slog.Error("failed to get affected rows for postgres", slog.String("database", database), log.BBError(err))
-		} else {
-			totalAffectedRows += rowCount
+			return nil, err
 		}
+		totalAffectedRows += count
+	}
+	if changeSummary.DMLCount > common.MaximumLintExplainSize {
+		totalAffectedRows = int64((float64(totalAffectedRows) / common.MaximumLintExplainSize) * float64(changeSummary.DMLCount))
+	}
+	totalAffectedRows += int64(changeSummary.InsertCount)
+	// Count affected rows by DDLs.
+	for _, change := range changeSummary.ResourceChanges {
+		if !change.AffectTable {
+			continue
+		}
+		if dbMetadata == nil {
+			continue
+		}
+		dbMeta := dbMetadata.GetDatabaseMetadata()
+		if dbMeta == nil {
+			continue
+		}
+		schemaMeta := dbMeta.GetSchema(change.Resource.Schema)
+		if schemaMeta == nil {
+			continue
+		}
+		tableMeta := schemaMeta.GetTable(change.Resource.Table)
+		if tableMeta == nil {
+			continue
+		}
+		totalAffectedRows += tableMeta.GetRowCount()
 	}
 
 	return []*storepb.PlanCheckRunResult_Result{
