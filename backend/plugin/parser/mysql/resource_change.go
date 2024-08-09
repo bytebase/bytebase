@@ -20,7 +20,7 @@ func init() {
 	base.RegisterExtractChangedResourcesFunc(storepb.Engine_DORIS, extractChangedResources)
 }
 
-func extractChangedResources(currentDatabase string, _ string, asts any) (*base.ChangeSummary, error) {
+func extractChangedResources(currentDatabase string, _ string, asts any, statement string) (*base.ChangeSummary, error) {
 	nodes, ok := asts.([]*ParseResult)
 	if !ok {
 		return nil, errors.Errorf("invalid ast type %T", asts)
@@ -28,6 +28,7 @@ func extractChangedResources(currentDatabase string, _ string, asts any) (*base.
 
 	l := &resourceChangedListener{
 		currentDatabase:   currentDatabase,
+		statement:         statement,
 		resourceChangeMap: make(map[string]*base.ResourceChange),
 	}
 	for _, node := range nodes {
@@ -52,7 +53,9 @@ func extractChangedResources(currentDatabase string, _ string, asts any) (*base.
 type resourceChangedListener struct {
 	*parser.BaseMySQLParserListener
 
-	currentDatabase   string
+	currentDatabase string
+	statement       string
+
 	resourceChangeMap map[string]*base.ResourceChange
 	sampleDMLs        []string
 	dmlCount          int
@@ -85,6 +88,7 @@ func (l *resourceChangedListener) EnterCreateTable(ctx *parser.CreateTableContex
 			Resource: resource,
 		}
 	}
+	l.resourceChangeMap[resource.String()].Ranges = append(l.resourceChangeMap[resource.String()].Ranges, base.NewRange(l.statement, l.text))
 }
 
 // EnterDropTable is called when production dropTable is entered.
@@ -107,6 +111,7 @@ func (l *resourceChangedListener) EnterDropTable(ctx *parser.DropTableContext) {
 				AffectTable: true,
 			}
 		}
+		l.resourceChangeMap[resource.String()].Ranges = append(l.resourceChangeMap[resource.String()].Ranges, base.NewRange(l.statement, l.text))
 	}
 }
 
@@ -129,6 +134,7 @@ func (l *resourceChangedListener) EnterAlterTable(ctx *parser.AlterTableContext)
 			AffectTable: true,
 		}
 	}
+	l.resourceChangeMap[resource.String()].Ranges = append(l.resourceChangeMap[resource.String()].Ranges, base.NewRange(l.statement, l.text))
 }
 
 // EnterRenameTableStatement is called when production renameTableStatement is entered.
@@ -148,6 +154,7 @@ func (l *resourceChangedListener) EnterRenameTableStatement(ctx *parser.RenameTa
 					Resource: resource,
 				}
 			}
+			l.resourceChangeMap[resource.String()].Ranges = append(l.resourceChangeMap[resource.String()].Ranges, base.NewRange(l.statement, l.text))
 		}
 		{
 			resource := base.SchemaResource{
@@ -163,6 +170,7 @@ func (l *resourceChangedListener) EnterRenameTableStatement(ctx *parser.RenameTa
 					Resource: resource,
 				}
 			}
+			l.resourceChangeMap[resource.String()].Ranges = append(l.resourceChangeMap[resource.String()].Ranges, base.NewRange(l.statement, l.text))
 		}
 	}
 }
