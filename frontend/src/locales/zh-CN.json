@@ -668,6 +668,10 @@
           "days": "天数",
           "never-expires": "永不过期"
         },
+        "maximum-sql-result": {
+          "self": "SQL 输出大小限制",
+          "description": "限制输出 SQL 查询结果的大小。"
+        },
         "domain-restriction": {
           "self": "工作空间域名",
           "description": "用于指定成员电子邮箱的域名。",

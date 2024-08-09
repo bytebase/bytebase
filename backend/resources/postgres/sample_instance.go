@@ -164,11 +164,12 @@ func needSetupSampleDatabase(ctx context.Context, pgUser, port, database string)
 		storepb.Engine_POSTGRES,
 		db.DriverConfig{},
 		db.ConnectionConfig{
-			Username: pgUser,
-			Password: "",
-			Host:     common.GetPostgresSocketDir(),
-			Port:     port,
-			Database: database,
+			Username:             pgUser,
+			Password:             "",
+			Host:                 common.GetPostgresSocketDir(),
+			Port:                 port,
+			Database:             database,
+			MaximumSQLResultSize: common.DefaultMaximumSQLResultSize,
 		},
 	)
 	if err != nil {
@@ -215,11 +216,12 @@ func prepareSampleDatabaseIfNeeded(ctx context.Context, pgUser, host, port, data
 		storepb.Engine_POSTGRES,
 		db.DriverConfig{},
 		db.ConnectionConfig{
-			Username: pgUser,
-			Password: "",
-			Host:     host,
-			Port:     port,
-			Database: database,
+			Username:             pgUser,
+			Password:             "",
+			Host:                 host,
+			Port:                 port,
+			Database:             database,
+			MaximumSQLResultSize: common.DefaultMaximumSQLResultSize,
 		},
 	)
 	if err != nil {
@@ -240,11 +242,12 @@ func prepareSampleDatabase(ctx context.Context, pgUser, host, port, database str
 		storepb.Engine_POSTGRES,
 		db.DriverConfig{},
 		db.ConnectionConfig{
-			Username: pgUser,
-			Password: "",
-			Host:     host,
-			Port:     port,
-			Database: "postgres",
+			Username:             pgUser,
+			Password:             "",
+			Host:                 host,
+			Port:                 port,
+			Database:             "postgres",
+			MaximumSQLResultSize: common.DefaultMaximumSQLResultSize,
 		},
 	)
 	if err != nil {
@@ -267,11 +270,12 @@ func createPGStatStatementsExtension(ctx context.Context, pgUser, host, port, da
 		storepb.Engine_POSTGRES,
 		db.DriverConfig{},
 		db.ConnectionConfig{
-			Username: pgUser,
-			Password: "",
-			Host:     host,
-			Port:     port,
-			Database: database,
+			Username:             pgUser,
+			Password:             "",
+			Host:                 host,
+			Port:                 port,
+			Database:             database,
+			MaximumSQLResultSize: common.DefaultMaximumSQLResultSize,
 		},
 	)
 	if err != nil {
@@ -292,11 +296,12 @@ func dropDefaultPostgresDatabase(ctx context.Context, pgUser, host, port, connec
 		storepb.Engine_POSTGRES,
 		db.DriverConfig{},
 		db.ConnectionConfig{
-			Username: pgUser,
-			Password: "",
-			Host:     host,
-			Port:     port,
-			Database: connectingDb,
+			Username:             pgUser,
+			Password:             "",
+			Host:                 host,
+			Port:                 port,
+			Database:             connectingDb,
+			MaximumSQLResultSize: common.DefaultMaximumSQLResultSize,
 		},
 	)
 	if err != nil {

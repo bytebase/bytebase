@@ -42,10 +42,11 @@ func init() {
 
 // Driver is the Oracle driver.
 type Driver struct {
-	db            *sql.DB
-	databaseName  string
-	serviceName   string
-	connectionCtx db.ConnectionContext
+	db                   *sql.DB
+	databaseName         string
+	serviceName          string
+	connectionCtx        db.ConnectionContext
+	maximumSQLResultSize int64
 }
 
 func newDriver(db.DriverConfig) db.Driver {
@@ -82,6 +83,7 @@ func (driver *Driver) Open(ctx context.Context, _ storepb.Engine, config db.Conn
 	driver.databaseName = config.Database
 	driver.serviceName = config.ServiceName
 	driver.connectionCtx = config.ConnectionContext
+	driver.maximumSQLResultSize = config.MaximumSQLResultSize
 	return driver, nil
 }
 
@@ -251,7 +253,7 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 					return nil, util.FormatErrorWithQuery(err, statement)
 				}
 				defer rows.Close()
-				r, err := util.RowsToQueryResult(rows)
+				r, err := util.RowsToQueryResult(rows, driver.maximumSQLResultSize)
 				if err != nil {
 					return nil, err
 				}

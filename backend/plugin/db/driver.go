@@ -221,6 +221,9 @@ type ConnectionConfig struct {
 	MasterName     string
 	MasterUsername string
 	MasterPassword string
+
+	// The maximum number of bytes for sql results in response body.
+	MaximumSQLResultSize int64
 }
 
 // SSHConfig is the configuration for connection over SSH.

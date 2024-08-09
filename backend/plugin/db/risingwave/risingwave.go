@@ -352,7 +352,7 @@ func getDatabaseInCreateDatabaseStatement(createDatabaseStatement string) (strin
 }
 
 // QueryConn queries a SQL statement in a given connection.
-func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
+func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
 	singleSQLs, err := pgparser.SplitSQL(statement)
 	if err != nil {
 		return nil, err
@@ -383,7 +383,7 @@ func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, 
 					return nil, util.FormatErrorWithQuery(err, statement)
 				}
 				defer rows.Close()
-				r, err := util.RowsToQueryResult(rows)
+				r, err := util.RowsToQueryResult(rows, driver.config.MaximumSQLResultSize)
 				if err != nil {
 					return nil, err
 				}

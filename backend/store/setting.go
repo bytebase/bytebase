@@ -4,12 +4,14 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log/slog"
 	"strings"
 	"time"
 
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/log"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -33,6 +35,32 @@ type SettingMessage struct {
 	Value       string
 	Description string
 	CreatedTs   int64
+}
+
+func (s *Store) GetMaximumSQLResultLimit(ctx context.Context) int64 {
+	settingName := api.SettingSQLResultSizeLimit
+	setting, err := s.GetSettingV2(ctx, &FindSettingMessage{
+		Name:    &settingName,
+		Enforce: true,
+	})
+	if err != nil {
+		slog.Error("failed to get setting", slog.String("setting", string(settingName)), log.BBError(err))
+		return common.DefaultMaximumSQLResultSize
+	}
+	if setting == nil {
+		slog.Warn("cannot find setting", slog.String("setting", string(settingName)))
+		return common.DefaultMaximumSQLResultSize
+	}
+
+	payload := new(storepb.MaximumSQLResultSizeSetting)
+	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), payload); err != nil {
+		slog.Error("failed to unmarshaler setting", slog.String("setting", string(settingName)), log.BBError(err))
+		return common.DefaultMaximumSQLResultSize
+	}
+	if payload.Limit <= 0 {
+		return common.DefaultMaximumSQLResultSize
+	}
+	return payload.Limit
 }
 
 // GetWorkspaceGeneralSetting gets the workspace general setting payload.

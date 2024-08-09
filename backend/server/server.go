@@ -238,7 +238,14 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 		return nil, errors.Wrapf(err, "failed to create iam manager")
 	}
 	s.webhookManager = webhook.NewManager(storeInstance, s.iamManager)
-	s.dbFactory = dbfactory.New(s.mysqlBinDir, s.mongoBinDir, s.pgBinDir, profile.DataDir, s.secret)
+	s.dbFactory = dbfactory.New(
+		s.store,
+		s.mysqlBinDir,
+		s.mongoBinDir,
+		s.pgBinDir,
+		profile.DataDir,
+		s.secret,
+	)
 
 	// Configure echo server.
 	s.echoServer = echo.New()

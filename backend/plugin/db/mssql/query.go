@@ -24,7 +24,7 @@ var nullRowValue = &v1pb.RowValue{
 	},
 }
 
-func rowsToQueryResult(rows *sql.Rows) (*v1pb.QueryResult, error) {
+func rowsToQueryResult(rows *sql.Rows, limit int64) (*v1pb.QueryResult, error) {
 	columnNames, err := rows.Columns()
 	if err != nil {
 		return nil, err
@@ -119,8 +119,8 @@ func rowsToQueryResult(rows *sql.Rows) (*v1pb.QueryResult, error) {
 
 			result.Rows = append(result.Rows, row)
 			n := len(result.Rows)
-			if (n&(n-1) == 0) && proto.Size(result) > common.MaximumSQLResultSize {
-				result.Error = common.MaximumSQLResultSizeExceeded
+			if (n&(n-1) == 0) && int64(proto.Size(result)) > limit {
+				result.Error = common.FormatMaximumSQLResultSizeMessage(limit)
 				break
 			}
 		}
