@@ -130,66 +130,6 @@ func (l *AffectedRowsListener) EnterDeleteStatement(ctx *mysql.DeleteStatementCo
 	l.affectedRows = affectedRows
 }
 
-// EnterAlterTable is called when production alterTable is entered.
-func (l *AffectedRowsListener) EnterAlterTable(ctx *mysql.AlterTableContext) {
-	if ctx.GetParent() == nil {
-		return
-	}
-	alertCtx, ok := ctx.GetParent().(*mysql.AlterStatementContext)
-	if !ok || alertCtx.GetParent() == nil {
-		return
-	}
-	simpleCtx, ok := alertCtx.GetParent().(*mysql.SimpleStatementContext)
-	if !ok || simpleCtx.GetParent() == nil {
-		return
-	}
-	if _, ok := simpleCtx.GetParent().(*mysql.QueryContext); !ok {
-		return
-	}
-
-	if ctx.TableRef() == nil {
-		return
-	}
-	databaseName, tableName := NormalizeMySQLTableRef(ctx.TableRef())
-	if l.getTableDataSizeFunc == nil {
-		return
-	}
-	l.affectedRows = l.getTableDataSizeFunc(databaseName, tableName)
-}
-
-// EnterDropTable is called when production dropTable is entered.
-func (l *AffectedRowsListener) EnterDropTable(ctx *mysql.DropTableContext) {
-	if ctx.GetParent() == nil {
-		return
-	}
-
-	dropCtx, ok := ctx.GetParent().(*mysql.DropStatementContext)
-	if !ok || dropCtx.GetParent() == nil {
-		return
-	}
-	simpleCtx, ok := dropCtx.GetParent().(*mysql.SimpleStatementContext)
-	if !ok || simpleCtx.GetParent() == nil {
-		return
-	}
-	if _, ok := simpleCtx.GetParent().(*mysql.QueryContext); !ok {
-		return
-	}
-
-	if ctx.TableRefList() == nil {
-		return
-	}
-	for _, tableRef := range ctx.TableRefList().AllTableRef() {
-		if tableRef == nil {
-			continue
-		}
-		databaseName, tableName := NormalizeMySQLTableRef(tableRef)
-		if l.getTableDataSizeFunc == nil {
-			return
-		}
-		l.affectedRows += l.getTableDataSizeFunc(databaseName, tableName)
-	}
-}
-
 // GetStatementType return the type of statement.
 func GetStatementType(stmt *ParseResult) string {
 	for _, child := range stmt.Tree.GetChildren() {
