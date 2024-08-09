@@ -1,22 +1,23 @@
 <template>
-  <div class="flex items-center max-w-full overflow-hidden gap-x-1">
-    <div class="w-4 h-4 inline-flex items-center justify-center">
+  <CommonNode
+    :text="target.column.name"
+    :keyword="keyword"
+    :highlight="true"
+    :indent="1"
+  >
+    <template #icon>
       <PrimaryKeyIcon v-if="isPrimaryKey" class="w-4 h-4" />
-      <IndexIcon v-else-if="isIndex" class="!w-4 !h-4 text-gray-500" />
-    </div>
-    <HighlightLabelText
-      :text="target.column.name"
-      :keyword="keyword"
-      class="flex-1 truncate"
-    />
-  </div>
+      <IndexIcon v-else-if="isIndex" class="!w-4 !h-4 text-accent/80" />
+      <ColumnIcon v-else class="w-4 h-4" />
+    </template>
+  </CommonNode>
 </template>
 
 <script setup lang="ts">
 import { computed } from "vue";
-import { IndexIcon, PrimaryKeyIcon } from "@/components/Icon";
+import { ColumnIcon, IndexIcon, PrimaryKeyIcon } from "@/components/Icon";
 import type { TreeNode } from "../common";
-import HighlightLabelText from "./HighlightLabelText.vue";
+import CommonNode from "./CommonNode.vue";
 
 const props = defineProps<{
   node: TreeNode;

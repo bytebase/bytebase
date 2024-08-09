@@ -282,6 +282,7 @@ watch(tree, () => {
 }
 .schema-tree :deep(.n-tree-node-indent) {
   width: 20px;
+  height: 20px;
 }
 .schema-tree :deep(.n-tree-node-switcher) {
   width: 20px !important;

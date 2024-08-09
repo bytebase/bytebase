@@ -1,19 +1,21 @@
 <template>
-  <div class="flex items-center max-w-full overflow-hidden gap-x-1">
-    <TablePartitionIcon class="w-4 h-4" />
-    <HighlightLabelText
-      :text="target.partition.name"
-      :keyword="keyword"
-      class="flex-1 truncate"
-    />
-  </div>
+  <CommonNode
+    :text="target.partition.name"
+    :keyword="keyword"
+    :highlight="true"
+    :indent="target.partition.subpartitions.length > 0 ? 0 : 1"
+  >
+    <template #icon>
+      <TablePartitionIcon class="w-4 h-4" />
+    </template>
+  </CommonNode>
 </template>
 
 <script setup lang="ts">
 import { computed } from "vue";
 import { TablePartitionIcon } from "@/components/Icon";
 import type { TreeNode } from "../common";
-import HighlightLabelText from "./HighlightLabelText.vue";
+import CommonNode from "./CommonNode.vue";
 
 const props = defineProps<{
   node: TreeNode;
