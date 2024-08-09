@@ -45,9 +45,10 @@ func init() {
 
 // Driver is the ClickHouse driver.
 type Driver struct {
-	connectionCtx db.ConnectionContext
-	dbType        storepb.Engine
-	databaseName  string
+	connectionCtx        db.ConnectionContext
+	dbType               storepb.Engine
+	databaseName         string
+	maximumSQLResultSize int64
 
 	db *sql.DB
 }
@@ -91,6 +92,7 @@ func (driver *Driver) Open(_ context.Context, dbType storepb.Engine, config db.C
 	driver.db = conn
 	driver.databaseName = config.Database
 	driver.connectionCtx = config.ConnectionContext
+	driver.maximumSQLResultSize = config.MaximumSQLResultSize
 
 	return driver, nil
 }

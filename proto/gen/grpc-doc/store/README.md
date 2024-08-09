@@ -246,6 +246,7 @@
     - [MaskingAlgorithmSetting.Algorithm.MD5Mask](#bytebase-store-MaskingAlgorithmSetting-Algorithm-MD5Mask)
     - [MaskingAlgorithmSetting.Algorithm.RangeMask](#bytebase-store-MaskingAlgorithmSetting-Algorithm-RangeMask)
     - [MaskingAlgorithmSetting.Algorithm.RangeMask.Slice](#bytebase-store-MaskingAlgorithmSetting-Algorithm-RangeMask-Slice)
+    - [MaximumSQLResultSizeSetting](#bytebase-store-MaximumSQLResultSizeSetting)
     - [SMTPMailDeliverySetting](#bytebase-store-SMTPMailDeliverySetting)
     - [SchemaTemplateSetting](#bytebase-store-SchemaTemplateSetting)
     - [SchemaTemplateSetting.ColumnType](#bytebase-store-SchemaTemplateSetting-ColumnType)
@@ -3819,6 +3820,21 @@ SlowQueryPolicy is the policy configuration for slow query.
 | start | [int32](#int32) |  | start is the start index of the original value, start from 0 and should be less than stop. |
 | end | [int32](#int32) |  | stop is the stop index of the original value, should be less than the length of the original value. |
 | substitution | [string](#string) |  | OriginalValue[start:end) would be replaced with replace_with. |
+
+
+
+
+
+
+<a name="bytebase-store-MaximumSQLResultSizeSetting"></a>
+
+### MaximumSQLResultSizeSetting
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| limit | [int64](#int64) |  | The limit is in bytes. The default value is 100MB, we will use the default value if the setting not exists, or the limit &lt;= 0. |
 
 
 

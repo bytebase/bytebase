@@ -8,6 +8,7 @@ import (
 	"google.golang.org/protobuf/testing/protocmp"
 	"google.golang.org/protobuf/types/known/durationpb"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -20,40 +21,44 @@ func TestGetMongoDBConnectionURL(t *testing.T) {
 	}{
 		{
 			connConfig: db.ConnectionConfig{
-				Host:     "localhost",
-				Port:     "27017",
-				Username: "",
-				Password: "",
+				Host:                 "localhost",
+				Port:                 "27017",
+				Username:             "",
+				Password:             "",
+				MaximumSQLResultSize: common.DefaultMaximumSQLResultSize,
 			},
 			want: "mongodb://localhost:27017/?appName=bytebase&authSource=admin",
 		},
 		{
 			connConfig: db.ConnectionConfig{
-				Host:             "localhost",
-				Port:             "27017",
-				Username:         "",
-				Password:         "",
-				DirectConnection: true,
+				Host:                 "localhost",
+				Port:                 "27017",
+				Username:             "",
+				Password:             "",
+				DirectConnection:     true,
+				MaximumSQLResultSize: common.DefaultMaximumSQLResultSize,
 			},
 			want: "mongodb://localhost:27017/?appName=bytebase&authSource=admin&directConnection=true",
 		},
 		{
 			connConfig: db.ConnectionConfig{
-				Host:     "localhost",
-				Port:     "27017",
-				Username: "",
-				Password: "",
-				Database: "sampleDB",
+				Host:                 "localhost",
+				Port:                 "27017",
+				Username:             "",
+				Password:             "",
+				Database:             "sampleDB",
+				MaximumSQLResultSize: common.DefaultMaximumSQLResultSize,
 			},
 			want: "mongodb://localhost:27017/sampleDB?appName=bytebase&authSource=admin",
 		},
 		{
 			connConfig: db.ConnectionConfig{
-				Host:     "cluster0.sample.mongodb.net",
-				Username: "bytebase",
-				Password: "passwd",
-				Database: "sampleDB",
-				SRV:      true,
+				Host:                 "cluster0.sample.mongodb.net",
+				Username:             "bytebase",
+				Password:             "passwd",
+				Database:             "sampleDB",
+				SRV:                  true,
+				MaximumSQLResultSize: common.DefaultMaximumSQLResultSize,
 			},
 			want: "mongodb+srv://bytebase:passwd@cluster0.sample.mongodb.net/sampleDB?appName=bytebase&authSource=admin",
 		},
@@ -65,6 +70,7 @@ func TestGetMongoDBConnectionURL(t *testing.T) {
 				Database:               "sampleDB",
 				AuthenticationDatabase: "",
 				SRV:                    true,
+				MaximumSQLResultSize:   common.DefaultMaximumSQLResultSize,
 			},
 			want: "mongodb+srv://bytebase:passwd@cluster0.sample.mongodb.net/sampleDB?appName=bytebase&authSource=admin",
 		},
@@ -76,6 +82,7 @@ func TestGetMongoDBConnectionURL(t *testing.T) {
 				Database:               "sampleDB",
 				AuthenticationDatabase: "admin",
 				SRV:                    true,
+				MaximumSQLResultSize:   common.DefaultMaximumSQLResultSize,
 			},
 			want: "mongodb+srv://bytebase:passwd@cluster0.sample.mongodb.net/sampleDB?appName=bytebase&authSource=admin",
 		},
@@ -92,7 +99,8 @@ func TestGetMongoDBConnectionURL(t *testing.T) {
 					{Host: "node2.cluster0.sample.mongodb.net", Port: "27017"},
 					{Host: "node3.cluster0.sample.mongodb.net", Port: "27017"},
 				},
-				ReplicaSet: "rs0",
+				ReplicaSet:           "rs0",
+				MaximumSQLResultSize: common.DefaultMaximumSQLResultSize,
 			},
 			want: "mongodb://bytebase:passwd@node1.cluster0.sample.mongodb.net:27017,node2.cluster0.sample.mongodb.net:27017,node3.cluster0.sample.mongodb.net:27017/sampleDB?appName=bytebase&authSource=admin&replicaSet=rs0",
 		},

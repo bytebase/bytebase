@@ -91,6 +91,7 @@ func (s *Server) getInitSetting(ctx context.Context) (string, time.Duration, err
 	}, api.SystemBotID); err != nil {
 		return "", 0, err
 	}
+
 	if _, _, err := s.store.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
 		Name:        api.SettingPluginOpenAIEndpoint,
 		Value:       "",

@@ -36,9 +36,10 @@ func init() {
 
 // Driver is the redis driver.
 type Driver struct {
-	rdb          redis.UniversalClient
-	sshClient    *ssh.Client
-	databaseName string
+	rdb                  redis.UniversalClient
+	sshClient            *ssh.Client
+	databaseName         string
+	maximumSQLResultSize int64
 }
 
 func newDriver(_ db.DriverConfig) db.Driver {
@@ -153,6 +154,8 @@ func (d *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionC
 	default:
 		return nil, errors.Errorf("unsupported redis type %s", config.RedisType.String())
 	}
+
+	d.maximumSQLResultSize = config.MaximumSQLResultSize
 
 	return d, nil
 }
@@ -277,7 +280,7 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 			ColumnTypeNames: []string{"INT", "TEXT"},
 			Statement:       lines[i],
 		}
-		setQueryResultRows(result, cmd)
+		setQueryResultRows(result, cmd, d.maximumSQLResultSize)
 		result.Latency = durationpb.New(time.Since(startTime))
 
 		queryResult = append(queryResult, result)
@@ -286,15 +289,15 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 	return queryResult, nil
 }
 
-func setQueryResultRows(result *v1pb.QueryResult, cmd *redis.Cmd) {
+func setQueryResultRows(result *v1pb.QueryResult, cmd *redis.Cmd, limit int64) {
 	val := cmd.Val()
 	l, ok := val.([]any)
 	if ok {
 		for i, v := range l {
 			result.Rows = append(result.Rows, getResultRow(i+1, v))
 			n := len(result.Rows)
-			if (n&(n-1) == 0) && proto.Size(result) > common.MaximumSQLResultSize {
-				result.Error = common.MaximumSQLResultSizeExceeded
+			if (n&(n-1) == 0) && int64(proto.Size(result)) > limit {
+				result.Error = common.FormatMaximumSQLResultSizeMessage(limit)
 				return
 			}
 		}

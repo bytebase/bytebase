@@ -7,6 +7,7 @@ import (
 	parser "github.com/bytebase/mysql-parser"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -19,32 +20,37 @@ func init() {
 	base.RegisterExtractChangedResourcesFunc(storepb.Engine_DORIS, extractChangedResources)
 }
 
-func extractChangedResources(currentDatabase string, _ string, ast any) (*base.ChangeSummary, error) {
-	tree, ok := ast.(*ParseResult)
+func extractChangedResources(currentDatabase string, _ string, asts any) (*base.ChangeSummary, error) {
+	nodes, ok := asts.([]*ParseResult)
 	if !ok {
-		return nil, errors.Errorf("failed to convert ast %T to ParseResult", ast)
-	}
-	if tree.Tree == nil {
-		return nil, nil
+		return nil, errors.Errorf("invalid ast type %T", asts)
 	}
 
 	l := &resourceChangedListener{
 		currentDatabase: currentDatabase,
 		resourceMap:     make(map[string]base.SchemaResource),
 	}
-
-	var result []base.SchemaResource
-	antlr.ParseTreeWalkerDefault.Walk(l, tree.Tree)
-
-	for _, resource := range l.resourceMap {
-		result = append(result, resource)
+	for _, node := range nodes {
+		l.reset()
+		antlr.ParseTreeWalkerDefault.Walk(l, node.Tree)
 	}
 
-	sort.Slice(result, func(i, j int) bool {
-		return result[i].String() < result[j].String()
+	var resources []base.SchemaResource
+	for _, resource := range l.resourceMap {
+		resources = append(resources, resource)
+	}
+	sort.Slice(resources, func(i, j int) bool {
+		return resources[i].String() < resources[j].String()
 	})
+	var resourceChanges []base.ResourceChange
+	for _, resource := range resources {
+		resourceChanges = append(resourceChanges, base.ResourceChange{
+			Resource: resource,
+		})
+	}
 	return &base.ChangeSummary{
-		Resources: result,
+		ResourceChanges: resourceChanges,
+		DMLs:            l.dmls,
 	}, nil
 }
 
@@ -53,6 +59,18 @@ type resourceChangedListener struct {
 
 	currentDatabase string
 	resourceMap     map[string]base.SchemaResource
+	dmls            []string
+
+	// Internal data structure used temporarily.
+	text string
+}
+
+func (l *resourceChangedListener) reset() {
+	l.text = ""
+}
+
+func (l *resourceChangedListener) EnterQuery(ctx *parser.QueryContext) {
+	l.text = ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
 }
 
 // EnterCreateTable is called when production createTable is entered.
@@ -140,6 +158,11 @@ func (l *resourceChangedListener) EnterInsertStatement(ctx *parser.InsertStateme
 	}
 	resource.Table = table
 	l.resourceMap[resource.String()] = resource
+
+	// Track DMLs.
+	if len(l.dmls) < common.MaximumLintExplainSize {
+		l.dmls = append(l.dmls, l.text)
+	}
 }
 
 func (l *resourceChangedListener) EnterUpdateStatement(ctx *parser.UpdateStatementContext) {
@@ -151,6 +174,11 @@ func (l *resourceChangedListener) EnterUpdateStatement(ctx *parser.UpdateStateme
 		for _, resource := range resources {
 			l.resourceMap[resource.String()] = resource
 		}
+	}
+
+	// Track DMLs.
+	if len(l.dmls) < common.MaximumLintExplainSize {
+		l.dmls = append(l.dmls, l.text)
 	}
 }
 
@@ -170,6 +198,11 @@ func (l *resourceChangedListener) EnterDeleteStatement(ctx *parser.DeleteStateme
 
 	for _, resource := range allResources {
 		l.resourceMap[resource.String()] = resource
+	}
+
+	// Track DMLs.
+	if len(l.dmls) < common.MaximumLintExplainSize {
+		l.dmls = append(l.dmls, l.text)
 	}
 }
 

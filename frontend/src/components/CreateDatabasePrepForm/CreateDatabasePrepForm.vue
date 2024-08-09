@@ -174,7 +174,7 @@ import {
   useCurrentUserV1,
   useInstanceResourceByName,
   useInstanceV1List,
-  useProjectV1Store,
+  useProjectByName,
 } from "@/store";
 import {
   defaultCharsetOfEngineV1,
@@ -224,7 +224,6 @@ const emit = defineEmits<{
 
 const router = useRouter();
 const currentUserV1 = useCurrentUserV1();
-const projectV1Store = useProjectV1Store();
 // Prepare instance list.
 useInstanceV1List();
 
@@ -241,12 +240,9 @@ const state = reactive<LocalState>({
   showFeatureModal: false,
   creating: false,
 });
-
-const project = computed(() => {
-  return projectV1Store.getProjectByName(
-    state.projectName ?? UNKNOWN_PROJECT_NAME
-  );
-});
+const { project } = useProjectByName(
+  computed(() => state.projectName ?? UNKNOWN_PROJECT_NAME)
+);
 
 const isReservedName = computed(() => {
   return state.databaseName.toLowerCase() == "bytebase";

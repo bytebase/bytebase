@@ -37,10 +37,11 @@ func init() {
 
 // Driver is the Snowflake driver.
 type Driver struct {
-	connectionCtx db.ConnectionContext
-	dbType        storepb.Engine
-	db            *sql.DB
-	databaseName  string
+	connectionCtx        db.ConnectionContext
+	dbType               storepb.Engine
+	db                   *sql.DB
+	databaseName         string
+	maximumSQLResultSize int64
 }
 
 func newDriver(db.DriverConfig) db.Driver {
@@ -67,6 +68,7 @@ func (driver *Driver) Open(_ context.Context, dbType storepb.Engine, config db.C
 	driver.db = db
 	driver.connectionCtx = config.ConnectionContext
 	driver.databaseName = config.Database
+	driver.maximumSQLResultSize = config.MaximumSQLResultSize
 
 	return driver, nil
 }
@@ -258,7 +260,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ db.Execut
 }
 
 // QueryConn queries a SQL statement in a given connection.
-func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
+func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
 	// TODO(rebelice): support multiple queries in a single statement.
 	singleSQLs := []base.SingleSQL{
 		{Text: statement},
@@ -291,7 +293,7 @@ func (*Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, 
 					return nil, util.FormatErrorWithQuery(err, statement)
 				}
 				defer rows.Close()
-				r, err := util.RowsToQueryResult(rows)
+				r, err := util.RowsToQueryResult(rows, driver.maximumSQLResultSize)
 				if err != nil {
 					return nil, err
 				}

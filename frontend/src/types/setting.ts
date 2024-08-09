@@ -12,6 +12,7 @@ export type SettingName =
   | "bb.workspace.schema-template"
   | "bb.workspace.data-classification"
   | "bb.workspace.semantic-types"
-  | "bb.workspace.masking-algorithm";
+  | "bb.workspace.masking-algorithm"
+  | "bb.workspace.maximum-sql-result-size";
 
 export const defaultTokenDurationInHours = 7 * 24;
