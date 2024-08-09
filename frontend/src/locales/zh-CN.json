@@ -3648,6 +3648,9 @@
     },
     "last-update": {
       "self": "最后更新"
+    },
+    "source-branch": {
+      "self": "源分支"
     }
   }
 }
