@@ -201,7 +201,7 @@ func reportForOracle(sm *sheet.Manager, databaseName string, schemaName string, 
 				SqlSummaryReport: &storepb.PlanCheckRunResult_Result_SqlSummaryReport{
 					StatementTypes:   nil,
 					AffectedRows:     0,
-					ChangedResources: convertToChangedResources(dbMetadata, changeSummary.Resources),
+					ChangedResources: convertToChangedResources(dbMetadata, changeSummary.ResourceChanges),
 				},
 			},
 		},
@@ -277,17 +277,18 @@ func reportForMySQL(ctx context.Context, sm *sheet.Manager, sqlDB *sql.DB, engin
 				SqlSummaryReport: &storepb.PlanCheckRunResult_Result_SqlSummaryReport{
 					StatementTypes:   sqlTypes,
 					AffectedRows:     int32(totalAffectedRows),
-					ChangedResources: convertToChangedResources(dbMetadata, changeSummary.Resources),
+					ChangedResources: convertToChangedResources(dbMetadata, changeSummary.ResourceChanges),
 				},
 			},
 		},
 	}, nil
 }
 
-func convertToChangedResources(dbMetadata *model.DBSchema, resources []base.SchemaResource) *storepb.ChangedResources {
+func convertToChangedResources(dbMetadata *model.DBSchema, resourceChanges []base.ResourceChange) *storepb.ChangedResources {
 	meta := &storepb.ChangedResources{}
-	// resources is ordered by (db, schema, table)
-	for _, resource := range resources {
+	// resourceChange is ordered by (db, schema, table)
+	for _, resourceChange := range resourceChanges {
+		resource := resourceChange.Resource
 		if len(meta.Databases) == 0 || meta.Databases[len(meta.Databases)-1].Name != resource.Database {
 			meta.Databases = append(meta.Databases, &storepb.ChangedResourceDatabase{Name: resource.Database})
 		}
@@ -333,23 +334,23 @@ func reportForPostgres(ctx context.Context, sm *sheet.Manager, sqlDB *sql.DB, da
 
 	sqlTypeSet := map[string]struct{}{}
 	var totalAffectedRows int64
-	var changedResources []base.SchemaResource
+	var resourceChanges []base.ResourceChange
 
 	for _, node := range nodes {
-		var resources []base.SchemaResource
+		var newChanges []base.ResourceChange
 		sqlType, v := getStatementTypeAndResourcesFromAstNode(database, "public", node)
 		if sqlType == "COMMENT" {
 			v2, err := postgresExtractResourcesFromCommentStatement(database, "public", node.Text())
 			if err != nil {
 				slog.Error("failed to extract resources from comment statement", slog.String("statement", node.Text()), log.BBError(err))
 			} else {
-				resources = v2
+				newChanges = v2
 			}
 		} else {
-			resources = v
+			newChanges = v
 		}
 		sqlTypeSet[sqlType] = struct{}{}
-		changedResources = append(changedResources, resources...)
+		resourceChanges = append(resourceChanges, newChanges...)
 
 		rowCount, err := getAffectedRowsForPostgres(ctx, sqlDB, dbMetadata.GetMetadata(), node)
 		if err != nil {
@@ -373,14 +374,14 @@ func reportForPostgres(ctx context.Context, sm *sheet.Manager, sqlDB *sql.DB, da
 				SqlSummaryReport: &storepb.PlanCheckRunResult_Result_SqlSummaryReport{
 					StatementTypes:   sqlTypes,
 					AffectedRows:     int32(totalAffectedRows),
-					ChangedResources: convertToChangedResources(dbMetadata, changedResources),
+					ChangedResources: convertToChangedResources(dbMetadata, resourceChanges),
 				},
 			},
 		},
 	}, nil
 }
 
-func postgresExtractResourcesFromCommentStatement(database, defaultSchema, statement string) ([]base.SchemaResource, error) {
+func postgresExtractResourcesFromCommentStatement(database, defaultSchema, statement string) ([]base.ResourceChange, error) {
 	res, err := pgquery.Parse(statement)
 	if err != nil {
 		return nil, err
@@ -406,7 +407,7 @@ func postgresExtractResourcesFromCommentStatement(database, defaultSchema, state
 					if resource.Schema == "" {
 						resource.Schema = defaultSchema
 					}
-					return []base.SchemaResource{resource}, nil
+					return []base.ResourceChange{{Resource: resource}}, nil
 				default:
 					return nil, errors.Errorf("expect to get a list node but got %T", node)
 				}
@@ -425,7 +426,7 @@ func postgresExtractResourcesFromCommentStatement(database, defaultSchema, state
 						resource.Schema = schemaName
 					}
 					resource.Table = tableName
-					return []base.SchemaResource{resource}, nil
+					return []base.ResourceChange{{Resource: resource}}, nil
 				default:
 					return nil, errors.Errorf("expect to get a list node but got %T", node)
 				}
@@ -444,7 +445,7 @@ func postgresExtractResourcesFromCommentStatement(database, defaultSchema, state
 						resource.Schema = schemaName
 					}
 					resource.Table = tableName
-					return []base.SchemaResource{resource}, nil
+					return []base.ResourceChange{{Resource: resource}}, nil
 				default:
 					return nil, errors.Errorf("expect to get a list node but got %T", node)
 				}
@@ -512,8 +513,8 @@ func convertColumnName(node *pgquery.Node_List) (string, string, string, error) 
 	}
 }
 
-func getStatementTypeAndResourcesFromAstNode(database, schema string, node ast.Node) (string, []base.SchemaResource) {
-	result := []base.SchemaResource{}
+func getStatementTypeAndResourcesFromAstNode(database, schema string, node ast.Node) (string, []base.ResourceChange) {
+	result := []base.ResourceChange{}
 	switch node := node.(type) {
 	// DDL
 
@@ -536,7 +537,7 @@ func getStatementTypeAndResourcesFromAstNode(database, schema string, node ast.N
 			if resource.Schema == "" {
 				resource.Schema = schema
 			}
-			result = append(result, resource)
+			result = append(result, base.ResourceChange{Resource: resource})
 			return "CREATE_TABLE", result
 		}
 	case *ast.CreateSequenceStmt:
@@ -588,7 +589,7 @@ func getStatementTypeAndResourcesFromAstNode(database, schema string, node ast.N
 			if resource.Schema == "" {
 				resource.Schema = schema
 			}
-			result = append(result, resource)
+			result = append(result, base.ResourceChange{Resource: resource})
 		}
 		return "DROP_TABLE", result
 
@@ -618,7 +619,7 @@ func getStatementTypeAndResourcesFromAstNode(database, schema string, node ast.N
 			if resource.Schema == "" {
 				resource.Schema = schema
 			}
-			result = append(result, resource)
+			result = append(result, base.ResourceChange{Resource: resource})
 			return "ALTER_TABLE", result
 		}
 	case *ast.AlterTypeStmt:
@@ -654,14 +655,14 @@ func getStatementTypeAndResourcesFromAstNode(database, schema string, node ast.N
 			if resource.Schema == "" {
 				resource.Schema = schema
 			}
-			result = append(result, resource)
+			result = append(result, base.ResourceChange{Resource: resource})
 
 			newResource := base.SchemaResource{
 				Database: resource.Database,
 				Schema:   resource.Schema,
 				Table:    node.NewName,
 			}
-			result = append(result, newResource)
+			result = append(result, base.ResourceChange{Resource: newResource})
 			return "RENAME_TABLE", result
 		}
 
