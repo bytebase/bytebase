@@ -11,7 +11,7 @@ import (
 
 type statementTypeTest struct {
 	Statement string
-	Want      string
+	Want      []string
 }
 
 func TestGetStatementType(t *testing.T) {
@@ -36,14 +36,11 @@ func TestGetStatementType(t *testing.T) {
 
 	for i, test := range tests {
 		t.Log(test.Statement)
-		stmts, err := ParseMySQL(test.Statement)
+		asts, err := ParseMySQL(test.Statement)
 		a.NoError(err)
 
-		if len(stmts) != 1 {
-			t.Fatalf("the length of parse result of stmt %v is not one", test.Statement)
-		}
-
-		sqlType := GetStatementType(stmts[0])
+		sqlType, err := GetStatementTypes(asts)
+		a.NoError(err)
 
 		if record {
 			tests[i].Want = sqlType
