@@ -22,6 +22,7 @@ import {
   useVCSProviderStore,
   useCurrentUserV1,
   pushNotification,
+  useProjectByName,
 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { Workflow } from "@/types/proto/v1/project_service";
@@ -33,18 +34,14 @@ const props = defineProps<{
   vcsConnectorId: string;
 }>();
 
+const { t } = useI18n();
+const router = useRouter();
 const vcsConnectorStore = useVCSConnectorStore();
 const vcsProviderStore = useVCSProviderStore();
-const projectV1Store = useProjectV1Store();
 const currentUser = useCurrentUserV1();
-const router = useRouter();
-const { t } = useI18n();
-
-const project = computed(() => {
-  return projectV1Store.getProjectByName(
-    `${projectNamePrefix}${props.projectId}`
-  );
-});
+const { project } = useProjectByName(
+  computed(() => `${projectNamePrefix}${props.projectId}`)
+);
 
 const vcsConnector = computed(
   () =>
@@ -88,7 +85,7 @@ const onCancel = () => {
 const onDelete = () => {
   if (vcsConnectorList.value.length === 0) {
     // Update workflow type in local cache.
-    projectV1Store.updateProjectCache({
+    useProjectV1Store().updateProjectCache({
       ...project.value,
       workflow: Workflow.UI,
     });
