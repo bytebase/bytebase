@@ -179,40 +179,9 @@ func reportForPostgres(ctx context.Context, sqlDB *sql.DB, database string, asts
 		return nil, errors.Wrapf(err, "failed to extract changed resources")
 	}
 
-	var totalAffectedRows int64
-	// Count DMLs.
-	for _, dml := range changeSummary.SampleDMLS {
-		count, err := getAffectedRowsCountForPostgres(ctx, sqlDB, dml)
-		if err != nil {
-			return nil, err
-		}
-		totalAffectedRows += count
-	}
-	if changeSummary.DMLCount > common.MaximumLintExplainSize {
-		totalAffectedRows = int64((float64(totalAffectedRows) / common.MaximumLintExplainSize) * float64(changeSummary.DMLCount))
-	}
-	totalAffectedRows += int64(changeSummary.InsertCount)
-	// Count affected rows by DDLs.
-	for _, change := range changeSummary.ResourceChanges {
-		if !change.AffectTable {
-			continue
-		}
-		if dbMetadata == nil {
-			continue
-		}
-		dbMeta := dbMetadata.GetDatabaseMetadata()
-		if dbMeta == nil {
-			continue
-		}
-		schemaMeta := dbMeta.GetSchema(change.Resource.Schema)
-		if schemaMeta == nil {
-			continue
-		}
-		tableMeta := schemaMeta.GetTable(change.Resource.Table)
-		if tableMeta == nil {
-			continue
-		}
-		totalAffectedRows += tableMeta.GetRowCount()
+	totalAffectedRows, err := calculateAffectedRows(ctx, changeSummary, dbMetadata, sqlDB, getAffectedRowsCountForPostgres)
+	if err != nil {
+		return nil, err
 	}
 
 	return []*storepb.PlanCheckRunResult_Result{
@@ -242,51 +211,16 @@ func reportForMySQL(ctx context.Context, sqlDB *sql.DB, engine storepb.Engine, d
 		return nil, errors.Wrapf(err, "failed to extract changed resources")
 	}
 
-	var totalAffectedRows int64
-	// Count DMLs.
-	for _, dml := range changeSummary.SampleDMLS {
-		switch engine {
-		case storepb.Engine_OCEANBASE:
-			count, err := getAffectedRowsCountForOceanBase(ctx, sqlDB, dml)
-			if err != nil {
-				return nil, err
-			}
-			totalAffectedRows += count
-		case storepb.Engine_MYSQL, storepb.Engine_MARIADB:
-			count, err := getAffectedRowsCountForMysql(ctx, sqlDB, dml)
-			if err != nil {
-				return nil, err
-			}
-			totalAffectedRows += count
-		default:
-			return nil, errors.Errorf("engine %v is not supported", engine)
-		}
+	var explainCalculator getAffectedRowsFromExplain
+	switch engine {
+	case storepb.Engine_OCEANBASE:
+		explainCalculator = getAffectedRowsCountForOceanBase
+	case storepb.Engine_MYSQL:
+		explainCalculator = getAffectedRowsCountForMysql
 	}
-	if changeSummary.DMLCount > common.MaximumLintExplainSize {
-		totalAffectedRows = int64((float64(totalAffectedRows) / common.MaximumLintExplainSize) * float64(changeSummary.DMLCount))
-	}
-	totalAffectedRows += int64(changeSummary.InsertCount)
-	// Count affected rows by DDLs.
-	for _, change := range changeSummary.ResourceChanges {
-		if !change.AffectTable {
-			continue
-		}
-		if dbMetadata == nil {
-			continue
-		}
-		dbMeta := dbMetadata.GetDatabaseMetadata()
-		if dbMeta == nil {
-			continue
-		}
-		schemaMeta := dbMeta.GetSchema(change.Resource.Schema)
-		if schemaMeta == nil {
-			continue
-		}
-		tableMeta := schemaMeta.GetTable(change.Resource.Table)
-		if tableMeta == nil {
-			continue
-		}
-		totalAffectedRows += tableMeta.GetRowCount()
+	totalAffectedRows, err := calculateAffectedRows(ctx, changeSummary, dbMetadata, sqlDB, explainCalculator)
+	if err != nil {
+		return nil, err
 	}
 
 	return []*storepb.PlanCheckRunResult_Result{
@@ -325,6 +259,48 @@ func reportForOracle(databaseName string, schemaName string, asts any, statement
 			},
 		},
 	}, nil
+}
+
+type getAffectedRowsFromExplain func(context.Context, *sql.DB, string) (int64, error)
+
+func calculateAffectedRows(ctx context.Context, changeSummary *base.ChangeSummary, dbMetadata *model.DBSchema, sqlDB *sql.DB, explainCalculator getAffectedRowsFromExplain) (int64, error) {
+	var totalAffectedRows int64
+	// Count DMLs.
+	for _, dml := range changeSummary.SampleDMLS {
+		count, err := explainCalculator(ctx, sqlDB, dml)
+		if err != nil {
+			return 0, err
+		}
+		totalAffectedRows += count
+	}
+	if changeSummary.DMLCount > common.MaximumLintExplainSize {
+		totalAffectedRows = int64((float64(totalAffectedRows) / common.MaximumLintExplainSize) * float64(changeSummary.DMLCount))
+	}
+	totalAffectedRows += int64(changeSummary.InsertCount)
+	// Count affected rows by DDLs.
+	for _, change := range changeSummary.ResourceChanges {
+		if !change.AffectTable {
+			continue
+		}
+		if dbMetadata == nil {
+			continue
+		}
+		dbMeta := dbMetadata.GetDatabaseMetadata()
+		if dbMeta == nil {
+			continue
+		}
+		schemaMeta := dbMeta.GetSchema(change.Resource.Schema)
+		if schemaMeta == nil {
+			continue
+		}
+		tableMeta := schemaMeta.GetTable(change.Resource.Table)
+		if tableMeta == nil {
+			continue
+		}
+		totalAffectedRows += tableMeta.GetRowCount()
+	}
+
+	return totalAffectedRows, nil
 }
 
 func convertToChangedResources(dbMetadata *model.DBSchema, resourceChanges []*base.ResourceChange) *storepb.ChangedResources {
