@@ -56,6 +56,7 @@ export const useProjectV1Store = defineStore("project_v1", () => {
     );
     if (!listCache.has(cacheKey)) {
       listCache.set(cacheKey, {
+        timestamp: Date.now(),
         isFetching: true,
       });
     }
@@ -68,6 +69,7 @@ export const useProjectV1Store = defineStore("project_v1", () => {
     const { projects } = await request({ showDeleted });
     const composedProjects = await upsertProjectMap(projects);
     listCache.set(cacheKey, {
+      timestamp: Date.now(),
       isFetching: false,
     });
     return composedProjects;
