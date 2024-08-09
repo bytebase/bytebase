@@ -210,6 +210,10 @@ func getAffectedRowsCountForOceanBase(ctx context.Context, sqlDB *sql.DB, dml st
 	return 0, errors.Errorf("failed to extract 'EST.ROWS' from query plan")
 }
 
+func getAffectedRowsCountForOracle(_ context.Context, _ *sql.DB, _ string) (int64, error) {
+	return 0, nil
+}
+
 // Query runs the EXPLAIN or SELECT statements for advisors.
 func query(ctx context.Context, connection *sql.DB, statement string) ([]any, error) {
 	tx, err := connection.BeginTx(ctx, &sql.TxOptions{})
