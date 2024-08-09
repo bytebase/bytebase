@@ -47,6 +47,7 @@ func extractChangedResources(currentDatabase string, _ string, asts any, stateme
 		ResourceChanges: resourceChanges,
 		SampleDMLS:      l.sampleDMLs,
 		DMLCount:        l.dmlCount,
+		InsertCount:     l.insertCount,
 	}, nil
 }
 
@@ -59,6 +60,7 @@ type resourceChangedListener struct {
 	resourceChangeMap map[string]*base.ResourceChange
 	sampleDMLs        []string
 	dmlCount          int
+	insertCount       int
 
 	// Internal data structure used temporarily.
 	text string
@@ -83,12 +85,10 @@ func (l *resourceChangedListener) EnterCreateTable(ctx *parser.CreateTableContex
 	}
 	resource.Table = table
 
-	if _, ok := l.resourceChangeMap[resource.String()]; !ok {
-		l.resourceChangeMap[resource.String()] = &base.ResourceChange{
-			Resource: resource,
-		}
-	}
-	l.resourceChangeMap[resource.String()].Ranges = append(l.resourceChangeMap[resource.String()].Ranges, base.NewRange(l.statement, l.text))
+	putResourceChange(l.resourceChangeMap, &base.ResourceChange{
+		Resource: resource,
+		Ranges:   []base.Range{base.NewRange(l.statement, l.text)},
+	})
 }
 
 // EnterDropTable is called when production dropTable is entered.
@@ -103,15 +103,11 @@ func (l *resourceChangedListener) EnterDropTable(ctx *parser.DropTableContext) {
 		}
 		resource.Table = table
 
-		if v, ok := l.resourceChangeMap[resource.String()]; ok {
-			v.AffectTable = true
-		} else {
-			l.resourceChangeMap[resource.String()] = &base.ResourceChange{
-				Resource:    resource,
-				AffectTable: true,
-			}
-		}
-		l.resourceChangeMap[resource.String()].Ranges = append(l.resourceChangeMap[resource.String()].Ranges, base.NewRange(l.statement, l.text))
+		putResourceChange(l.resourceChangeMap, &base.ResourceChange{
+			Resource:    resource,
+			Ranges:      []base.Range{base.NewRange(l.statement, l.text)},
+			AffectTable: true,
+		})
 	}
 }
 
@@ -126,15 +122,11 @@ func (l *resourceChangedListener) EnterAlterTable(ctx *parser.AlterTableContext)
 	}
 	resource.Table = table
 
-	if v, ok := l.resourceChangeMap[resource.String()]; ok {
-		v.AffectTable = true
-	} else {
-		l.resourceChangeMap[resource.String()] = &base.ResourceChange{
-			Resource:    resource,
-			AffectTable: true,
-		}
-	}
-	l.resourceChangeMap[resource.String()].Ranges = append(l.resourceChangeMap[resource.String()].Ranges, base.NewRange(l.statement, l.text))
+	putResourceChange(l.resourceChangeMap, &base.ResourceChange{
+		Resource:    resource,
+		Ranges:      []base.Range{base.NewRange(l.statement, l.text)},
+		AffectTable: true,
+	})
 }
 
 // EnterRenameTableStatement is called when production renameTableStatement is entered.
@@ -149,12 +141,11 @@ func (l *resourceChangedListener) EnterRenameTableStatement(ctx *parser.RenameTa
 				resource.Database = db
 			}
 			resource.Table = table
-			if _, ok := l.resourceChangeMap[resource.String()]; !ok {
-				l.resourceChangeMap[resource.String()] = &base.ResourceChange{
-					Resource: resource,
-				}
-			}
-			l.resourceChangeMap[resource.String()].Ranges = append(l.resourceChangeMap[resource.String()].Ranges, base.NewRange(l.statement, l.text))
+
+			putResourceChange(l.resourceChangeMap, &base.ResourceChange{
+				Resource: resource,
+				Ranges:   []base.Range{base.NewRange(l.statement, l.text)},
+			})
 		}
 		{
 			resource := base.SchemaResource{
@@ -165,12 +156,11 @@ func (l *resourceChangedListener) EnterRenameTableStatement(ctx *parser.RenameTa
 				resource.Database = db
 			}
 			resource.Table = table
-			if _, ok := l.resourceChangeMap[resource.String()]; !ok {
-				l.resourceChangeMap[resource.String()] = &base.ResourceChange{
-					Resource: resource,
-				}
-			}
-			l.resourceChangeMap[resource.String()].Ranges = append(l.resourceChangeMap[resource.String()].Ranges, base.NewRange(l.statement, l.text))
+
+			putResourceChange(l.resourceChangeMap, &base.ResourceChange{
+				Resource: resource,
+				Ranges:   []base.Range{base.NewRange(l.statement, l.text)},
+			})
 		}
 	}
 }
@@ -191,10 +181,13 @@ func (l *resourceChangedListener) EnterInsertStatement(ctx *parser.InsertStateme
 	}
 	resource.Table = table
 
-	if _, ok := l.resourceChangeMap[resource.String()]; !ok {
-		l.resourceChangeMap[resource.String()] = &base.ResourceChange{
-			Resource: resource,
-		}
+	putResourceChange(l.resourceChangeMap, &base.ResourceChange{
+		Resource: resource,
+	})
+
+	if ctx.InsertFromConstructor() != nil && ctx.InsertFromConstructor().InsertValues() != nil && ctx.InsertFromConstructor().InsertValues().ValueList() != nil {
+		l.insertCount += len(ctx.InsertFromConstructor().InsertValues().ValueList().AllValues())
+		return
 	}
 
 	// Track DMLs.
@@ -211,11 +204,9 @@ func (l *resourceChangedListener) EnterUpdateStatement(ctx *parser.UpdateStateme
 	for _, tableRefCtx := range ctx.TableReferenceList().AllTableReference() {
 		resources := l.extractTableReference(tableRefCtx)
 		for _, resource := range resources {
-			if _, ok := l.resourceChangeMap[resource.String()]; !ok {
-				l.resourceChangeMap[resource.String()] = &base.ResourceChange{
-					Resource: resource,
-				}
-			}
+			putResourceChange(l.resourceChangeMap, &base.ResourceChange{
+				Resource: resource,
+			})
 		}
 	}
 
@@ -241,17 +232,28 @@ func (l *resourceChangedListener) EnterDeleteStatement(ctx *parser.DeleteStateme
 	}
 
 	for _, resource := range allResources {
-		if _, ok := l.resourceChangeMap[resource.String()]; !ok {
-			l.resourceChangeMap[resource.String()] = &base.ResourceChange{
-				Resource: resource,
-			}
-		}
+		putResourceChange(l.resourceChangeMap, &base.ResourceChange{
+			Resource: resource,
+		})
 	}
 
 	// Track DMLs.
 	l.dmlCount++
 	if len(l.sampleDMLs) < common.MaximumLintExplainSize {
 		l.sampleDMLs = append(l.sampleDMLs, l.text)
+	}
+}
+
+func putResourceChange(resourceChangeMap map[string]*base.ResourceChange, change *base.ResourceChange) {
+	v, ok := resourceChangeMap[change.String()]
+	if !ok {
+		resourceChangeMap[change.String()] = change
+		return
+	}
+
+	v.Ranges = append(v.Ranges, change.Ranges...)
+	if change.AffectTable {
+		v.AffectTable = true
 	}
 }
 

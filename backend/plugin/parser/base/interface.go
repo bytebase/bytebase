@@ -234,6 +234,7 @@ type ChangeSummary struct {
 	ResourceChanges []*ResourceChange
 	SampleDMLS      []string
 	DMLCount        int
+	InsertCount     int
 }
 
 type ResourceChange struct {

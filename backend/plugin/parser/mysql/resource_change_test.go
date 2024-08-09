@@ -13,7 +13,8 @@ func TestExtractMySQLChangedResources(t *testing.T) {
 	DROP TABLE t1;
 	ALTER TABLE t1 ADD COLUMN c1 INT;
 	RENAME TABLE t1 TO t2;
-	INSERT INTO t1 (c1) VALUES (1);
+	INSERT INTO t1 (c1) VALUES (1), (5);
+	UPDATE t1 SET c1 = 5;
 	`
 	want := &base.ChangeSummary{
 		ResourceChanges: []*base.ResourceChange{
@@ -56,9 +57,10 @@ func TestExtractMySQLChangedResources(t *testing.T) {
 			},
 		},
 		SampleDMLS: []string{
-			"INSERT INTO t1 (c1) VALUES (1);",
+			"UPDATE t1 SET c1 = 5;",
 		},
-		DMLCount: 1,
+		DMLCount:    1,
+		InsertCount: 2,
 	}
 
 	asts, _ := ParseMySQL(statement)
