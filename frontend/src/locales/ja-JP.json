@@ -3648,6 +3648,9 @@
     },
     "last-update": {
       "self": "最後の更新"
+    },
+    "source-branch": {
+      "self": "ソースブランチ"
     }
   }
 }
