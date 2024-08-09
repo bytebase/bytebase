@@ -253,6 +253,16 @@ func GenerateRestoreSQL(engine storepb.Engine, statement string, backupDatabase 
 }
 
 type ChangeSummary struct {
-	Resources []SchemaResource
-	DMLs      []string
+	ResourceChanges []ResourceChange
+	DMLs            []string
+}
+
+type ResourceChange struct {
+	Resource SchemaResource
+	Ranges   []Range
+}
+
+type Range struct {
+	Start int
+	End   int
 }

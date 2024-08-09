@@ -16,14 +16,18 @@ func TestExtractMySQLChangedResources(t *testing.T) {
 	INSERT INTO t1 (c1) VALUES (1);
 	`
 	want := &base.ChangeSummary{
-		Resources: []base.SchemaResource{
+		ResourceChanges: []base.ResourceChange{
 			{
-				Database: "db",
-				Table:    "t1",
+				Resource: base.SchemaResource{
+					Database: "db",
+					Table:    "t1",
+				},
 			},
 			{
-				Database: "db",
-				Table:    "t2",
+				Resource: base.SchemaResource{
+					Database: "db",
+					Table:    "t2",
+				},
 			},
 		},
 		DMLs: []string{
