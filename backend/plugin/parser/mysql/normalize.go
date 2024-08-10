@@ -190,8 +190,24 @@ func NormalizeMySQLFunctionName(ctx parser.IFunctionNameContext) (string, string
 	return "", ""
 }
 
+// NormalizeMySQLFunctionRef normalizes the given function ref.
+func NormalizeMySQLFunctionRef(ctx parser.IFunctionRefContext) (string, string) {
+	if ctx.QualifiedIdentifier() != nil {
+		return normalizeMySQLQualifiedIdentifier(ctx.QualifiedIdentifier())
+	}
+	return "", ""
+}
+
 // NormalizeMySQLProcedureName normalizes the given procedure name.
 func NormalizeMySQLProcedureName(ctx parser.IProcedureNameContext) (string, string) {
+	if ctx.QualifiedIdentifier() != nil {
+		return normalizeMySQLQualifiedIdentifier(ctx.QualifiedIdentifier())
+	}
+	return "", ""
+}
+
+// NormalizeMySQLProcedureRef normalizes the given procedure ref.
+func NormalizeMySQLProcedureRef(ctx parser.IProcedureRefContext) (string, string) {
 	if ctx.QualifiedIdentifier() != nil {
 		return normalizeMySQLQualifiedIdentifier(ctx.QualifiedIdentifier())
 	}
