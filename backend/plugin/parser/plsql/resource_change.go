@@ -26,6 +26,7 @@ func extractChangedResources(currentDatabase string, _ string, dbSchema *model.D
 	changedResources := model.NewChangedResources(dbSchema)
 	l := &plsqlChangedResourceExtractListener{
 		currentSchema:    currentDatabase,
+		dbSchema:         dbSchema,
 		changedResources: changedResources,
 		statement:        statement,
 	}
@@ -41,6 +42,7 @@ type plsqlChangedResourceExtractListener struct {
 	*parser.BasePlSqlParserListener
 
 	currentSchema    string
+	dbSchema         *model.DBSchema
 	changedResources *model.ChangedResources
 	statement        string
 
@@ -183,6 +185,37 @@ func (l *plsqlChangedResourceExtractListener) EnterCreate_index(ctx *parser.Crea
 		false)
 }
 
+// EnterDrop_index is called when production drop_index is entered.
+func (l *plsqlChangedResourceExtractListener) EnterDrop_index(ctx *parser.Drop_indexContext) {
+	schema, index := NormalizeIndexName(ctx.Index_name())
+	if schema == "" {
+		schema = l.currentSchema
+	}
+	foundSchema := l.dbSchema.GetDatabaseMetadata().GetSchema(schema)
+	if foundSchema == nil {
+		return
+	}
+	var foundTable string
+	for _, table := range foundSchema.ListTableNames() {
+		if l.dbSchema.FindIndex(schema, table, index) != nil {
+			foundTable = table
+			break
+		}
+	}
+	if foundTable == "" {
+		return
+	}
+
+	l.changedResources.AddTable(
+		schema,
+		schema,
+		&storepb.ChangedResourceTable{
+			Name:   foundTable,
+			Ranges: []*storepb.Range{base.NewRange(l.statement, l.text)},
+		},
+		false)
+}
+
 // EnterCreate_view is called when production create_view is entered.
 func (l *plsqlChangedResourceExtractListener) EnterCreate_view(ctx *parser.Create_viewContext) {
 	var schema, view string
@@ -191,6 +224,29 @@ func (l *plsqlChangedResourceExtractListener) EnterCreate_view(ctx *parser.Creat
 	}
 	if len(ctx.AllId_expression()) > 0 {
 		view = NormalizeIDExpression(ctx.AllId_expression()[0])
+	}
+	if schema == "" {
+		schema = l.currentSchema
+	}
+
+	l.changedResources.AddView(
+		schema,
+		schema,
+		&storepb.ChangedResourceView{
+			Name:   view,
+			Ranges: []*storepb.Range{base.NewRange(l.statement, l.text)},
+		},
+	)
+}
+
+func (l *plsqlChangedResourceExtractListener) EnterDrop_view(ctx *parser.Drop_viewContext) {
+	var schema, view string
+	tableViewName := ctx.Tableview_name()
+	if tableViewName.Id_expression() == nil {
+		view = NormalizeIdentifierContext(tableViewName.Identifier())
+	} else {
+		schema = NormalizeIdentifierContext(tableViewName.Identifier())
+		view = NormalizeIDExpression(tableViewName.Id_expression())
 	}
 	if schema == "" {
 		schema = l.currentSchema
