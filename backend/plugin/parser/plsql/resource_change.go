@@ -1,13 +1,12 @@
 package plsql
 
 import (
-	"sort"
-
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/plsql-parser"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	"github.com/bytebase/bytebase/backend/store/model"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -17,59 +16,48 @@ func init() {
 	base.RegisterExtractChangedResourcesFunc(storepb.Engine_OCEANBASE_ORACLE, extractChangedResources)
 }
 
-func extractChangedResources(currentDatabase string, currentSchema string, asts any, _ string) (*base.ChangeSummary, error) {
+func extractChangedResources(currentDatabase string, currentSchema string, dbSchema *model.DBSchema, asts any, _ string) (*base.ChangeSummary, error) {
 	tree, ok := asts.(antlr.Tree)
 	if !ok {
 		return nil, errors.Errorf("failed to convert ast to antlr.Tree")
 	}
 
+	changedResources := model.NewChangedResources(dbSchema)
 	l := &plsqlChangedResourceExtractListener{
-		currentDatabase: currentDatabase,
-		currentSchema:   currentSchema,
-		resourceMap:     make(map[string]base.SchemaResource),
+		currentDatabase:  currentDatabase,
+		currentSchema:    currentSchema,
+		changedResources: changedResources,
 	}
 
 	antlr.ParseTreeWalkerDefault.Walk(l, tree)
 
-	var resources []base.SchemaResource
-	for _, resource := range l.resourceMap {
-		resources = append(resources, resource)
-	}
-	sort.Slice(resources, func(i, j int) bool {
-		return resources[i].String() < resources[j].String()
-	})
-	var resourceChanges []*base.ResourceChange
-	for _, resource := range resources {
-		resourceChanges = append(resourceChanges, &base.ResourceChange{
-			Resource: resource,
-		})
-	}
-
 	return &base.ChangeSummary{
-		ResourceChanges: resourceChanges,
+		ChangedResources: changedResources,
 	}, nil
 }
 
 type plsqlChangedResourceExtractListener struct {
 	*parser.BasePlSqlParserListener
 
-	currentDatabase string
-	currentSchema   string
-	resourceMap     map[string]base.SchemaResource
+	currentDatabase  string
+	currentSchema    string
+	changedResources *model.ChangedResources
 }
 
 // EnterCreate_table is called when production create_table is entered.
 func (l *plsqlChangedResourceExtractListener) EnterCreate_table(ctx *parser.Create_tableContext) {
-	resource := base.SchemaResource{
-		Database: l.currentDatabase,
-		Schema:   l.currentSchema,
-		Table:    NormalizeIdentifierContext(ctx.Table_name().Identifier()),
-	}
-
+	schemaName := l.currentSchema
 	if ctx.Schema_name() != nil {
-		resource.Schema = NormalizeIdentifierContext(ctx.Schema_name().Identifier())
+		schemaName = NormalizeIdentifierContext(ctx.Schema_name().Identifier())
 	}
-	l.resourceMap[resource.String()] = resource
+	tableName := NormalizeIdentifierContext(ctx.Table_name().Identifier())
+	l.changedResources.AddTable(
+		l.currentDatabase,
+		schemaName,
+		&storepb.ChangedResourceTable{
+			Name: tableName,
+		},
+		false)
 }
 
 // EnterDrop_table is called when production drop_table is entered.
@@ -82,12 +70,15 @@ func (l *plsqlChangedResourceExtractListener) EnterDrop_table(ctx *parser.Drop_t
 		result = []string{l.currentSchema, result[0]}
 	}
 
-	resource := base.SchemaResource{
-		Database: l.currentDatabase,
-		Schema:   result[0],
-		Table:    result[1],
-	}
-	l.resourceMap[resource.String()] = resource
+	schemaName := result[0]
+	tableName := result[1]
+	l.changedResources.AddTable(
+		l.currentDatabase,
+		schemaName,
+		&storepb.ChangedResourceTable{
+			Name: tableName,
+		},
+		false)
 }
 
 // EnterAlter_table is called when production alter_table is entered.
@@ -100,12 +91,15 @@ func (l *plsqlChangedResourceExtractListener) EnterAlter_table(ctx *parser.Alter
 		result = []string{l.currentSchema, result[0]}
 	}
 
-	resource := base.SchemaResource{
-		Database: l.currentDatabase,
-		Schema:   result[0],
-		Table:    result[1],
-	}
-	l.resourceMap[resource.String()] = resource
+	schemaName := result[0]
+	tableName := result[1]
+	l.changedResources.AddTable(
+		l.currentDatabase,
+		schemaName,
+		&storepb.ChangedResourceTable{
+			Name: tableName,
+		},
+		false)
 }
 
 // EnterAlter_table_properties is called when production alter_table_properties is entered.
@@ -121,10 +115,13 @@ func (l *plsqlChangedResourceExtractListener) EnterAlter_table_properties(ctx *p
 		result = []string{l.currentSchema, result[0]}
 	}
 
-	resource := base.SchemaResource{
-		Database: l.currentDatabase,
-		Schema:   result[0],
-		Table:    result[1],
-	}
-	l.resourceMap[resource.String()] = resource
+	schemaName := result[0]
+	tableName := result[1]
+	l.changedResources.AddTable(
+		l.currentDatabase,
+		schemaName,
+		&storepb.ChangedResourceTable{
+			Name: tableName,
+		},
+		false)
 }
