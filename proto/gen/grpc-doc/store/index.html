@@ -717,11 +717,23 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.store.ChangedResourceFunction"><span class="badge">M</span>ChangedResourceFunction</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.ChangedResourceProcedure"><span class="badge">M</span>ChangedResourceProcedure</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.store.ChangedResourceSchema"><span class="badge">M</span>ChangedResourceSchema</a>
                 </li>
               
                 <li>
                   <a href="#bytebase.store.ChangedResourceTable"><span class="badge">M</span>ChangedResourceTable</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.ChangedResourceView"><span class="badge">M</span>ChangedResourceView</a>
                 </li>
               
                 <li>
@@ -6139,6 +6151,68 @@ For MySQL, it&#39;s the global privileges as GRANT statements, which means it on
 
         
       
+        <h3 id="bytebase.store.ChangedResourceFunction">ChangedResourceFunction</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>ranges</td>
+                  <td><a href="#bytebase.store.Range">Range</a></td>
+                  <td>repeated</td>
+                  <td><p>The ranges of sub-strings correspond to the statements on the sheet. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.ChangedResourceProcedure">ChangedResourceProcedure</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>ranges</td>
+                  <td><a href="#bytebase.store.Range">Range</a></td>
+                  <td>repeated</td>
+                  <td><p>The ranges of sub-strings correspond to the statements on the sheet. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.store.ChangedResourceSchema">ChangedResourceSchema</h3>
         <p></p>
 
@@ -6159,6 +6233,27 @@ For MySQL, it&#39;s the global privileges as GRANT statements, which means it on
                 <tr>
                   <td>tables</td>
                   <td><a href="#bytebase.store.ChangedResourceTable">ChangedResourceTable</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>views</td>
+                  <td><a href="#bytebase.store.ChangedResourceView">ChangedResourceView</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>functions</td>
+                  <td><a href="#bytebase.store.ChangedResourceFunction">ChangedResourceFunction</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>procedures</td>
+                  <td><a href="#bytebase.store.ChangedResourceProcedure">ChangedResourceProcedure</a></td>
                   <td>repeated</td>
                   <td><p> </p></td>
                 </tr>
@@ -6192,6 +6287,37 @@ For MySQL, it&#39;s the global privileges as GRANT statements, which means it on
                   <td><a href="#int64">int64</a></td>
                   <td></td>
                   <td><p>estimated row count of the table </p></td>
+                </tr>
+              
+                <tr>
+                  <td>ranges</td>
+                  <td><a href="#bytebase.store.Range">Range</a></td>
+                  <td>repeated</td>
+                  <td><p>The ranges of sub-strings correspond to the statements on the sheet. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.ChangedResourceView">ChangedResourceView</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
                 </tr>
               
                 <tr>
