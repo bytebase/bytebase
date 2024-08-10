@@ -12,7 +12,6 @@ import { useRouter } from "vue-router";
 import TableIcon from "@/components/Icon/TableIcon.vue";
 import { useExecuteSQL } from "@/composables/useExecuteSQL";
 import { t } from "@/plugins/i18n";
-import { PROJECT_V1_ROUTE_DATABASE_DETAIL } from "@/router/dashboard/projectV1";
 import { SQL_EDITOR_DATABASE_MODULE } from "@/router/sqlEditor";
 import { pushNotification, useAppFeature, useSQLEditorTabStore } from "@/store";
 import {
@@ -33,6 +32,7 @@ import {
   suggestedTabTitleForSQLEditorConnection,
   toClipboard,
 } from "@/utils";
+import { useEditorPanelContext } from "../../EditorPanel/context";
 import { useSQLEditorContext } from "../../context";
 import type { NodeTarget, TreeNode } from "./common";
 
@@ -78,6 +78,8 @@ const confirmOverrideStatement = async (
 export const useDropdown = () => {
   const router = useRouter();
   const { events: editorEvents, schemaViewer } = useSQLEditorContext();
+  const { queuePendingScrollToTarget, updateViewState, typeToView } =
+    useEditorPanelContext();
   const disallowNavigateAwaySQLEditor = useAppFeature(
     "bb.feature.disallow-navigate-to-console"
   );
@@ -148,28 +150,6 @@ export const useDropdown = () => {
         }
 
         if (!disallowNavigateAwaySQLEditor.value) {
-          items.push({
-            key: "view-table-detail",
-            label: t("sql-editor.view-table-detail"),
-            icon: () => <ExternalLinkIcon class="w-4 h-4" />,
-            onSelect: () => {
-              const route = router.resolve({
-                name: PROJECT_V1_ROUTE_DATABASE_DETAIL,
-                params: {
-                  projectId: extractProjectResourceName(db.project),
-                  instanceId: extractInstanceResourceName(db.instance),
-                  databaseName: db.databaseName,
-                },
-                query: {
-                  schema: schema.name ? schema.name : undefined,
-                  table: table.name,
-                },
-              });
-              const url = route.href;
-              window.open(url, "_blank");
-            },
-          });
-
           if (instanceV1HasAlterSchema(db.instanceResource)) {
             items.push({
               key: "edit-schema",
@@ -248,13 +228,43 @@ export const useDropdown = () => {
         });
       }
     }
+    if (
+      type === "table" ||
+      type === "view" ||
+      type === "procedure" ||
+      type === "function"
+    ) {
+      items.push({
+        key: "view-detail",
+        label: t("sql-editor.view-detail"),
+        icon: () => <ExternalLinkIcon class="w-4 h-4" />,
+        onSelect: async () => {
+          const tar = target as NodeTarget<
+            "table" | "view" | "procedure" | "function"
+          >;
+          const { db, schema } = tar;
+          updateViewState({
+            view: typeToView(type),
+            schema: schema.name,
+          });
+          await nextTick();
+          queuePendingScrollToTarget({
+            db,
+            metadata: {
+              type,
+              ...tar,
+            } as any,
+          });
+        },
+      });
+    }
     const ORDERS = [
       "copy-name",
       "copy-all-column-names",
       "copy-select-statement",
       "preview-table-data",
       "view-schema-text",
-      "view-table-detail",
+      "view-detail",
       "edit-schema",
       "copy-url",
     ];

@@ -2442,7 +2442,8 @@
       "admin-data-source-is-disallowed-to-query": "Admin data source is disallowed to query.",
       "admin-data-source-is-disallowed-to-query-when-read-only-data-source-is-available": "Admin data source is disallowed to query when read-only data source is available."
     },
-    "manage-connections": "Manage connections"
+    "manage-connections": "Manage connections",
+    "view-detail": "View detail"
   },
   "schema-editor": {
     "self": "Schema Editor",
