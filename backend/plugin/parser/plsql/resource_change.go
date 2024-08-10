@@ -16,7 +16,7 @@ func init() {
 	base.RegisterExtractChangedResourcesFunc(storepb.Engine_OCEANBASE_ORACLE, extractChangedResources)
 }
 
-func extractChangedResources(currentDatabase string, _ string, dbSchema *model.DBSchema, asts any, _ string) (*base.ChangeSummary, error) {
+func extractChangedResources(currentDatabase string, _ string, dbSchema *model.DBSchema, asts any, statement string) (*base.ChangeSummary, error) {
 	// currentDatabase is the same as currentSchema for Oracle.
 	tree, ok := asts.(antlr.Tree)
 	if !ok {
@@ -27,6 +27,7 @@ func extractChangedResources(currentDatabase string, _ string, dbSchema *model.D
 	l := &plsqlChangedResourceExtractListener{
 		currentSchema:    currentDatabase,
 		changedResources: changedResources,
+		statement:        statement,
 	}
 
 	antlr.ParseTreeWalkerDefault.Walk(l, tree)
@@ -41,6 +42,14 @@ type plsqlChangedResourceExtractListener struct {
 
 	currentSchema    string
 	changedResources *model.ChangedResources
+	statement        string
+
+	// Internal data structure used temporarily.
+	text string
+}
+
+func (l *plsqlChangedResourceExtractListener) EnterUnit_statement(ctx *parser.Unit_statementContext) {
+	l.text = ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
 }
 
 // EnterCreate_table is called when production create_table is entered.
@@ -58,7 +67,8 @@ func (l *plsqlChangedResourceExtractListener) EnterCreate_table(ctx *parser.Crea
 		schema,
 		schema,
 		&storepb.ChangedResourceTable{
-			Name: tableName,
+			Name:   tableName,
+			Ranges: []*storepb.Range{base.NewRange(l.statement, l.text)},
 		},
 		false)
 }
@@ -84,7 +94,8 @@ func (l *plsqlChangedResourceExtractListener) EnterDrop_table(ctx *parser.Drop_t
 		schema,
 		schema,
 		&storepb.ChangedResourceTable{
-			Name: table,
+			Name:   table,
+			Ranges: []*storepb.Range{base.NewRange(l.statement, l.text)},
 		},
 		true)
 }
@@ -110,7 +121,8 @@ func (l *plsqlChangedResourceExtractListener) EnterAlter_table(ctx *parser.Alter
 		schema,
 		schema,
 		&storepb.ChangedResourceTable{
-			Name: table,
+			Name:   table,
+			Ranges: []*storepb.Range{base.NewRange(l.statement, l.text)},
 		},
 		true)
 }
@@ -137,18 +149,19 @@ func (l *plsqlChangedResourceExtractListener) EnterAlter_table_properties(ctx *p
 		schema,
 		schema,
 		&storepb.ChangedResourceTable{
-			Name: table,
+			Name:   table,
+			Ranges: []*storepb.Range{base.NewRange(l.statement, l.text)},
 		},
 		false)
 }
 
-// EnterAlter_table is called when production alter_table is entered.
+// EnterAlter_table is called when production create_index is entered.
 func (l *plsqlChangedResourceExtractListener) EnterCreate_index(ctx *parser.Create_indexContext) {
-	if ctx.Table_index_clause() == nil {
+	tableIndexClause := ctx.Table_index_clause()
+	if tableIndexClause == nil {
 		return
 	}
 
-	tableIndexClause := ctx.Table_index_clause()
 	var schema, table string
 	if tableIndexClause.Tableview_name().Id_expression() == nil {
 		table = NormalizeIdentifierContext(tableIndexClause.Tableview_name().Identifier())
@@ -164,7 +177,31 @@ func (l *plsqlChangedResourceExtractListener) EnterCreate_index(ctx *parser.Crea
 		schema,
 		schema,
 		&storepb.ChangedResourceTable{
-			Name: table,
+			Name:   table,
+			Ranges: []*storepb.Range{base.NewRange(l.statement, l.text)},
 		},
 		false)
+}
+
+// EnterCreate_view is called when production create_view is entered.
+func (l *plsqlChangedResourceExtractListener) EnterCreate_view(ctx *parser.Create_viewContext) {
+	var schema, view string
+	if ctx.Schema_name() != nil {
+		schema = NormalizeIdentifierContext(ctx.Schema_name().Identifier())
+	}
+	if len(ctx.AllId_expression()) > 0 {
+		view = NormalizeIDExpression(ctx.AllId_expression()[0])
+	}
+	if schema == "" {
+		schema = l.currentSchema
+	}
+
+	l.changedResources.AddView(
+		schema,
+		schema,
+		&storepb.ChangedResourceView{
+			Name:   view,
+			Ranges: []*storepb.Range{base.NewRange(l.statement, l.text)},
+		},
+	)
 }
