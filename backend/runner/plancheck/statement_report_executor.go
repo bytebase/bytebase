@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-
 	"log/slog"
 
 	"github.com/pkg/errors"
@@ -13,11 +12,10 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/sheet"
-	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	"github.com/bytebase/bytebase/backend/plugin/parser/pg"
-	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/store/model"
 	"github.com/bytebase/bytebase/backend/utils"
@@ -127,41 +125,7 @@ func (e *StatementReportExecutor) runReport(ctx context.Context, instance *store
 	// To avoid leaking the rendered statement, the error message should use the original statement and not the rendered statement.
 	renderedStatement := utils.RenderStatement(statement, materials)
 
-	switch instance.Engine {
-	case storepb.Engine_POSTGRES:
-		driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{})
-		if err != nil {
-			return nil, err
-		}
-		defer driver.Close(ctx)
-		sqlDB := driver.GetDB()
-
-		return reportForPostgres(ctx, e.sheetManager, sqlDB, database.DatabaseName, renderedStatement, dbSchema)
-	case storepb.Engine_MYSQL, storepb.Engine_OCEANBASE:
-		driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{})
-		if err != nil {
-			return nil, err
-		}
-		defer driver.Close(ctx)
-		sqlDB := driver.GetDB()
-
-		return reportForMySQL(ctx, e.sheetManager, sqlDB, instance.Engine, database.DatabaseName, renderedStatement, dbSchema)
-	case storepb.Engine_ORACLE, storepb.Engine_DM, storepb.Engine_OCEANBASE_ORACLE:
-		return reportForOracle(e.sheetManager, database.DatabaseName, database.DatabaseName, renderedStatement, dbSchema)
-	default:
-		return []*storepb.PlanCheckRunResult_Result{
-			{
-				Status:  storepb.PlanCheckRunResult_Result_SUCCESS,
-				Code:    common.Ok.Int32(),
-				Title:   "Not available",
-				Content: fmt.Sprintf("Report is not supported for %s", instance.Engine),
-			},
-		}, nil
-	}
-}
-
-func reportForOracle(sm *sheet.Manager, databaseName string, schemaName string, statement string, dbMetadata *model.DBSchema) ([]*storepb.PlanCheckRunResult_Result, error) {
-	asts, advices := sm.GetASTsForChecks(storepb.Engine_ORACLE, statement)
+	asts, advices := e.sheetManager.GetASTsForChecks(instance.Engine, statement)
 	if len(advices) > 0 {
 		advice := advices[0]
 		// nolint:nilerr
@@ -185,10 +149,57 @@ func reportForOracle(sm *sheet.Manager, databaseName string, schemaName string, 
 		}, nil
 	}
 
-	changeSummary, err := base.ExtractChangedResources(storepb.Engine_ORACLE, databaseName, schemaName, asts, statement)
+	var sqlDB *sql.DB
+	var explainCalculator getAffectedRowsFromExplain
+	var sqlTypes []string
+	var defaultSchema string
+	switch instance.Engine {
+	case storepb.Engine_POSTGRES:
+		driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{})
+		if err != nil {
+			return nil, err
+		}
+		defer driver.Close(ctx)
+		sqlDB = driver.GetDB()
+		explainCalculator = getAffectedRowsCountForPostgres
+
+		sqlTypes, err = pg.GetStatementTypes(asts)
+		if err != nil {
+			return nil, err
+		}
+		defaultSchema = "public"
+	case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_OCEANBASE:
+		driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{})
+		if err != nil {
+			return nil, err
+		}
+		defer driver.Close(ctx)
+		sqlDB = driver.GetDB()
+		if instance.Engine == storepb.Engine_OCEANBASE {
+			explainCalculator = getAffectedRowsCountForOceanBase
+		} else {
+			explainCalculator = getAffectedRowsCountForMysql
+
+			sqlTypes, err = mysqlparser.GetStatementTypes(asts)
+			if err != nil {
+				return nil, err
+			}
+		}
+		// TODO(d): implement TiDB sqlTypes.
+		defaultSchema = ""
+	case storepb.Engine_ORACLE, storepb.Engine_OCEANBASE_ORACLE:
+		explainCalculator = getAffectedRowsCountForOracle
+		defaultSchema = database.DatabaseName
+	default:
+		// Already checked in the Run().
+		return nil, nil
+	}
+
+	changeSummary, err := base.ExtractChangedResources(instance.Engine, database.DatabaseName, defaultSchema, asts, renderedStatement)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to extract changed resources")
 	}
+	totalAffectedRows := calculateAffectedRows(ctx, changeSummary, dbSchema, sqlDB, explainCalculator)
 
 	return []*storepb.PlanCheckRunResult_Result{
 		{
@@ -197,73 +208,34 @@ func reportForOracle(sm *sheet.Manager, databaseName string, schemaName string, 
 			Title:  "OK",
 			Report: &storepb.PlanCheckRunResult_Result_SqlSummaryReport_{
 				SqlSummaryReport: &storepb.PlanCheckRunResult_Result_SqlSummaryReport{
-					StatementTypes:   nil,
-					AffectedRows:     0,
-					ChangedResources: convertToChangedResources(dbMetadata, changeSummary.ResourceChanges),
+					StatementTypes:   sqlTypes,
+					AffectedRows:     int32(totalAffectedRows),
+					ChangedResources: convertToChangedResources(dbSchema, changeSummary.ResourceChanges),
 				},
 			},
 		},
 	}, nil
 }
 
-func reportForMySQL(ctx context.Context, sm *sheet.Manager, sqlDB *sql.DB, engine storepb.Engine, databaseName string, statement string, dbMetadata *model.DBSchema) ([]*storepb.PlanCheckRunResult_Result, error) {
-	asts, advices := sm.GetASTsForChecks(storepb.Engine_MYSQL, statement)
-	if len(advices) > 0 {
-		advice := advices[0]
-		// nolint:nilerr
-		return []*storepb.PlanCheckRunResult_Result{
-			{
-				Status:  storepb.PlanCheckRunResult_Result_ERROR,
-				Title:   advice.Title,
-				Content: advice.Content,
-				Code:    0,
-				Report: &storepb.PlanCheckRunResult_Result_SqlReviewReport_{
-					SqlReviewReport: &storepb.PlanCheckRunResult_Result_SqlReviewReport{
-						Line:          advice.GetStartPosition().GetLine(),
-						Column:        advice.GetStartPosition().GetColumn(),
-						Code:          advice.Code,
-						Detail:        advice.Detail,
-						StartPosition: advice.StartPosition,
-						EndPosition:   advice.EndPosition,
-					},
-				},
-			},
-		}, nil
-	}
+type getAffectedRowsFromExplain func(context.Context, *sql.DB, string) (int64, error)
 
-	sqlTypes, err := pg.GetStatementTypes(asts)
-	if err != nil {
-		return nil, err
-	}
-
-	changeSummary, err := base.ExtractChangedResources(storepb.Engine_MYSQL, databaseName, "" /* currentSchema */, asts, statement)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to extract changed resources")
-	}
-
+func calculateAffectedRows(ctx context.Context, changeSummary *base.ChangeSummary, dbMetadata *model.DBSchema, sqlDB *sql.DB, explainCalculator getAffectedRowsFromExplain) int64 {
 	var totalAffectedRows int64
 	// Count DMLs.
+	sampleCount := 0
 	for _, dml := range changeSummary.SampleDMLS {
-		switch engine {
-		case storepb.Engine_OCEANBASE:
-			count, err := getAffectedRowsCount(ctx, sqlDB, fmt.Sprintf("EXPLAIN FORMAT=JSON %s", dml), getAffectedRowsCountForOceanBase)
-			if err != nil {
-				return nil, err
-			}
-			totalAffectedRows += count
-		case storepb.Engine_MYSQL, storepb.Engine_MARIADB:
-			count, err := getAffectedRowsCount(ctx, sqlDB, fmt.Sprintf("EXPLAIN %s", dml), getAffectedRowsCountForMysql)
-			if err != nil {
-				return nil, err
-			}
-			totalAffectedRows += count
-		default:
-			return nil, errors.Errorf("engine %v is not supported", engine)
+		count, err := explainCalculator(ctx, sqlDB, dml)
+		if err != nil {
+			slog.Error("failed to calculate affected rows", log.BBError(err))
+			continue
 		}
+		sampleCount++
+		totalAffectedRows += count
 	}
-	if changeSummary.DMLCount > common.MaximumLintExplainSize {
-		totalAffectedRows = int64((float64(totalAffectedRows) / common.MaximumLintExplainSize) * float64(changeSummary.DMLCount))
+	if sampleCount > 0 {
+		totalAffectedRows = int64((float64(totalAffectedRows) / float64(sampleCount)) * float64(changeSummary.DMLCount))
 	}
+	totalAffectedRows += int64(changeSummary.InsertCount)
 	// Count affected rows by DDLs.
 	for _, change := range changeSummary.ResourceChanges {
 		if !change.AffectTable {
@@ -287,20 +259,7 @@ func reportForMySQL(ctx context.Context, sm *sheet.Manager, sqlDB *sql.DB, engin
 		totalAffectedRows += tableMeta.GetRowCount()
 	}
 
-	return []*storepb.PlanCheckRunResult_Result{
-		{
-			Status: storepb.PlanCheckRunResult_Result_SUCCESS,
-			Code:   common.Ok.Int32(),
-			Title:  "OK",
-			Report: &storepb.PlanCheckRunResult_Result_SqlSummaryReport_{
-				SqlSummaryReport: &storepb.PlanCheckRunResult_Result_SqlSummaryReport{
-					StatementTypes:   sqlTypes,
-					AffectedRows:     int32(totalAffectedRows),
-					ChangedResources: convertToChangedResources(dbMetadata, changeSummary.ResourceChanges),
-				},
-			},
-		},
-	}, nil
+	return totalAffectedRows
 }
 
 func convertToChangedResources(dbMetadata *model.DBSchema, resourceChanges []*base.ResourceChange) *storepb.ChangedResources {
@@ -334,63 +293,4 @@ func convertToChangedResources(dbMetadata *model.DBSchema, resourceChanges []*ba
 		})
 	}
 	return meta
-}
-
-func reportForPostgres(ctx context.Context, sm *sheet.Manager, sqlDB *sql.DB, database, statement string, dbMetadata *model.DBSchema) ([]*storepb.PlanCheckRunResult_Result, error) {
-	asts, advices := sm.GetASTsForChecks(storepb.Engine_POSTGRES, statement)
-	if len(advices) > 0 {
-		// nolint:nilerr
-		return []*storepb.PlanCheckRunResult_Result{
-			{
-				Status:  storepb.PlanCheckRunResult_Result_ERROR,
-				Title:   "Syntax error",
-				Content: advices[0].Content,
-				Code:    0,
-				Report: &storepb.PlanCheckRunResult_Result_SqlSummaryReport_{
-					SqlSummaryReport: &storepb.PlanCheckRunResult_Result_SqlSummaryReport{
-						Code: advisor.StatementSyntaxError.Int32(),
-					},
-				},
-			},
-		}, nil
-	}
-
-	sqlTypes, err := pg.GetStatementTypes(asts)
-	if err != nil {
-		return nil, err
-	}
-
-	changeSummary, err := base.ExtractChangedResources(storepb.Engine_POSTGRES, database, "public", asts, statement)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to extract changed resources")
-	}
-
-	nodes, ok := asts.([]ast.Node)
-	if !ok {
-		return nil, errors.Errorf("invalid ast type %T", asts)
-	}
-	var totalAffectedRows int64
-	for _, node := range nodes {
-		rowCount, err := getAffectedRowsForPostgres(ctx, sqlDB, dbMetadata.GetMetadata(), node)
-		if err != nil {
-			slog.Error("failed to get affected rows for postgres", slog.String("database", database), log.BBError(err))
-		} else {
-			totalAffectedRows += rowCount
-		}
-	}
-
-	return []*storepb.PlanCheckRunResult_Result{
-		{
-			Status: storepb.PlanCheckRunResult_Result_SUCCESS,
-			Code:   common.Ok.Int32(),
-			Title:  "OK",
-			Report: &storepb.PlanCheckRunResult_Result_SqlSummaryReport_{
-				SqlSummaryReport: &storepb.PlanCheckRunResult_Result_SqlSummaryReport{
-					StatementTypes:   sqlTypes,
-					AffectedRows:     int32(totalAffectedRows),
-					ChangedResources: convertToChangedResources(dbMetadata, changeSummary.ResourceChanges),
-				},
-			},
-		},
-	}, nil
 }
