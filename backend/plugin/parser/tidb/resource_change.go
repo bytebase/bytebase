@@ -165,6 +165,7 @@ func putResourceChange(resourceChangeMap map[string]*base.ResourceChange, change
 		v.AffectTable = true
 	}
 }
+
 func trimStatement(statement string) string {
 	return strings.TrimLeft(strings.TrimRight(statement, " \n\t;"), " \n\t")
 }
