@@ -44,7 +44,7 @@ func (s *WorkspaceService) SetIamPolicy(ctx context.Context, request *v1pb.SetIa
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to find workspace iam policy with error: %v", err.Error())
 	}
-	if request.Etag != policyMessage.Etag {
+	if request.Etag != "" && request.Etag != policyMessage.Etag {
 		return nil, status.Errorf(codes.Aborted, "there is concurrent update to the workspace iam policy, please refresh and try again.")
 	}
 
