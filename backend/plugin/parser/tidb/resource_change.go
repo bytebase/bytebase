@@ -7,6 +7,7 @@ import (
 	tidbast "github.com/pingcap/tidb/pkg/parser/ast"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -28,6 +29,24 @@ func extractChangedResources(database string, _ string, asts any, statement stri
 		err := getResourceChanges(database, node, statement, resourceChangeMap)
 		if err != nil {
 			return nil, err
+		}
+
+		switch node := node.(type) {
+		case *tidbast.InsertStmt:
+			if len(node.Lists) > 0 {
+				insertCount += len(node.Lists)
+				continue
+			}
+
+			dmlCount++
+			if len(sampleDMLs) < common.MaximumLintExplainSize {
+				sampleDMLs = append(sampleDMLs, trimStatement(node.Text()))
+			}
+		case *tidbast.UpdateStmt, *tidbast.DeleteStmt:
+			dmlCount++
+			if len(sampleDMLs) < common.MaximumLintExplainSize {
+				sampleDMLs = append(sampleDMLs, trimStatement(node.Text()))
+			}
 		}
 	}
 

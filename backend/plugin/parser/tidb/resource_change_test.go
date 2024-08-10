@@ -56,6 +56,11 @@ func TestExtractChangedResources(t *testing.T) {
 				},
 			},
 		},
+		SampleDMLS: []string{
+			"UPDATE t1 SET c1 = 5",
+		},
+		DMLCount:    1,
+		InsertCount: 2,
 	}
 
 	asts, _ := ParseTiDB(statement, "", "")
