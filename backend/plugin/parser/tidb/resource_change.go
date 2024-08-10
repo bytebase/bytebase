@@ -142,6 +142,33 @@ func getResourceChanges(database string, node tidbast.StmtNode, statement string
 				)
 			}
 		}
+	case *tidbast.CreateIndexStmt:
+		d, table := node.Table.Schema.O, node.Table.Name.O
+		if d == "" {
+			d = database
+		}
+		changedResources.AddTable(
+			d,
+			"",
+			&storepb.ChangedResourceTable{
+				Name:   table,
+				Ranges: []*storepb.Range{getRange(statement, node)},
+			},
+			false,
+		)
+	case *tidbast.CreateViewStmt:
+		d, view := node.ViewName.Schema.O, node.ViewName.Name.O
+		if d == "" {
+			d = database
+		}
+		changedResources.AddView(
+			d,
+			"",
+			&storepb.ChangedResourceView{
+				Name:   view,
+				Ranges: []*storepb.Range{getRange(statement, node)},
+			},
+		)
 	default:
 	}
 	return nil

@@ -16,7 +16,8 @@ func init() {
 	base.RegisterExtractChangedResourcesFunc(storepb.Engine_OCEANBASE_ORACLE, extractChangedResources)
 }
 
-func extractChangedResources(currentDatabase string, currentSchema string, dbSchema *model.DBSchema, asts any, _ string) (*base.ChangeSummary, error) {
+func extractChangedResources(currentDatabase string, _ string, dbSchema *model.DBSchema, asts any, _ string) (*base.ChangeSummary, error) {
+	// currentDatabase is the same as currentSchema for Oracle.
 	tree, ok := asts.(antlr.Tree)
 	if !ok {
 		return nil, errors.Errorf("failed to convert ast to antlr.Tree")
@@ -24,8 +25,7 @@ func extractChangedResources(currentDatabase string, currentSchema string, dbSch
 
 	changedResources := model.NewChangedResources(dbSchema)
 	l := &plsqlChangedResourceExtractListener{
-		currentDatabase:  currentDatabase,
-		currentSchema:    currentSchema,
+		currentSchema:    currentDatabase,
 		changedResources: changedResources,
 	}
 
@@ -39,21 +39,24 @@ func extractChangedResources(currentDatabase string, currentSchema string, dbSch
 type plsqlChangedResourceExtractListener struct {
 	*parser.BasePlSqlParserListener
 
-	currentDatabase  string
 	currentSchema    string
 	changedResources *model.ChangedResources
 }
 
 // EnterCreate_table is called when production create_table is entered.
 func (l *plsqlChangedResourceExtractListener) EnterCreate_table(ctx *parser.Create_tableContext) {
-	schemaName := l.currentSchema
+	var schema string
 	if ctx.Schema_name() != nil {
-		schemaName = NormalizeIdentifierContext(ctx.Schema_name().Identifier())
+		schema = NormalizeIdentifierContext(ctx.Schema_name().Identifier())
 	}
+	if schema == "" {
+		schema = l.currentSchema
+	}
+
 	tableName := NormalizeIdentifierContext(ctx.Table_name().Identifier())
 	l.changedResources.AddTable(
-		l.currentDatabase,
-		schemaName,
+		schema,
+		schema,
 		&storepb.ChangedResourceTable{
 			Name: tableName,
 		},
@@ -62,44 +65,54 @@ func (l *plsqlChangedResourceExtractListener) EnterCreate_table(ctx *parser.Crea
 
 // EnterDrop_table is called when production drop_table is entered.
 func (l *plsqlChangedResourceExtractListener) EnterDrop_table(ctx *parser.Drop_tableContext) {
-	result := []string{NormalizeIdentifierContext(ctx.Tableview_name().Identifier())}
-	if ctx.Tableview_name().Id_expression() != nil {
-		result = append(result, NormalizeIDExpression(ctx.Tableview_name().Id_expression()))
-	}
-	if len(result) == 1 {
-		result = []string{l.currentSchema, result[0]}
+	if ctx.Tableview_name() == nil {
+		return
 	}
 
-	schemaName := result[0]
-	tableName := result[1]
+	var schema, table string
+	if ctx.Tableview_name().Id_expression() == nil {
+		table = NormalizeIdentifierContext(ctx.Tableview_name().Identifier())
+	} else {
+		schema = NormalizeIdentifierContext(ctx.Tableview_name().Identifier())
+		table = NormalizeIDExpression(ctx.Tableview_name().Id_expression())
+	}
+	if schema == "" {
+		schema = l.currentSchema
+	}
+
 	l.changedResources.AddTable(
-		l.currentDatabase,
-		schemaName,
+		schema,
+		schema,
 		&storepb.ChangedResourceTable{
-			Name: tableName,
+			Name: table,
 		},
-		false)
+		true)
 }
 
 // EnterAlter_table is called when production alter_table is entered.
 func (l *plsqlChangedResourceExtractListener) EnterAlter_table(ctx *parser.Alter_tableContext) {
-	result := []string{NormalizeIdentifierContext(ctx.Tableview_name().Identifier())}
-	if ctx.Tableview_name().Id_expression() != nil {
-		result = append(result, NormalizeIDExpression(ctx.Tableview_name().Id_expression()))
-	}
-	if len(result) == 1 {
-		result = []string{l.currentSchema, result[0]}
+	if ctx.Tableview_name() == nil {
+		return
 	}
 
-	schemaName := result[0]
-	tableName := result[1]
+	var schema, table string
+	if ctx.Tableview_name().Id_expression() == nil {
+		table = NormalizeIdentifierContext(ctx.Tableview_name().Identifier())
+	} else {
+		schema = NormalizeIdentifierContext(ctx.Tableview_name().Identifier())
+		table = NormalizeIDExpression(ctx.Tableview_name().Id_expression())
+	}
+	if schema == "" {
+		schema = l.currentSchema
+	}
+
 	l.changedResources.AddTable(
-		l.currentDatabase,
-		schemaName,
+		schema,
+		schema,
 		&storepb.ChangedResourceTable{
-			Name: tableName,
+			Name: table,
 		},
-		false)
+		true)
 }
 
 // EnterAlter_table_properties is called when production alter_table_properties is entered.
@@ -107,21 +120,51 @@ func (l *plsqlChangedResourceExtractListener) EnterAlter_table_properties(ctx *p
 	if ctx.RENAME() == nil {
 		return
 	}
-	result := []string{NormalizeIdentifierContext(ctx.Tableview_name().Identifier())}
-	if ctx.Tableview_name().Id_expression() != nil {
-		result = append(result, NormalizeIDExpression(ctx.Tableview_name().Id_expression()))
+
+	// Rename table.
+	var schema, table string
+	if ctx.Tableview_name().Id_expression() == nil {
+		table = NormalizeIdentifierContext(ctx.Tableview_name().Identifier())
+	} else {
+		schema = NormalizeIdentifierContext(ctx.Tableview_name().Identifier())
+		table = NormalizeIDExpression(ctx.Tableview_name().Id_expression())
 	}
-	if len(result) == 1 {
-		result = []string{l.currentSchema, result[0]}
+	if schema == "" {
+		schema = l.currentSchema
 	}
 
-	schemaName := result[0]
-	tableName := result[1]
 	l.changedResources.AddTable(
-		l.currentDatabase,
-		schemaName,
+		schema,
+		schema,
 		&storepb.ChangedResourceTable{
-			Name: tableName,
+			Name: table,
+		},
+		false)
+}
+
+// EnterAlter_table is called when production alter_table is entered.
+func (l *plsqlChangedResourceExtractListener) EnterCreate_index(ctx *parser.Create_indexContext) {
+	if ctx.Table_index_clause() == nil {
+		return
+	}
+
+	tableIndexClause := ctx.Table_index_clause()
+	var schema, table string
+	if tableIndexClause.Tableview_name().Id_expression() == nil {
+		table = NormalizeIdentifierContext(tableIndexClause.Tableview_name().Identifier())
+	} else {
+		schema = NormalizeIdentifierContext(tableIndexClause.Tableview_name().Identifier())
+		table = NormalizeIDExpression(tableIndexClause.Tableview_name().Id_expression())
+	}
+	if schema == "" {
+		schema = l.currentSchema
+	}
+
+	l.changedResources.AddTable(
+		schema,
+		schema,
+		&storepb.ChangedResourceTable{
+			Name: table,
 		},
 		false)
 }
