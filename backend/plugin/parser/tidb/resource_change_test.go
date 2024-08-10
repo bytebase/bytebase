@@ -1,4 +1,4 @@
-package mysql
+package tidb
 
 import (
 	"testing"
@@ -8,7 +8,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
-func TestExtractMySQLChangedResources(t *testing.T) {
+func TestExtractChangedResources(t *testing.T) {
 	statement := `CREATE TABLE t1 (c1 INT);
 	DROP TABLE t1;
 	ALTER TABLE t1 ADD COLUMN c1 INT;
@@ -57,13 +57,13 @@ func TestExtractMySQLChangedResources(t *testing.T) {
 			},
 		},
 		SampleDMLS: []string{
-			"UPDATE t1 SET c1 = 5;",
+			"UPDATE t1 SET c1 = 5",
 		},
 		DMLCount:    1,
 		InsertCount: 2,
 	}
 
-	asts, _ := ParseMySQL(statement)
+	asts, _ := ParseTiDB(statement, "", "")
 	got, err := extractChangedResources("db", "", asts, statement)
 	require.NoError(t, err)
 	require.Equal(t, want, got)
