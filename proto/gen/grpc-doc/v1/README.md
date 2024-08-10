@@ -137,8 +137,11 @@
     - [BatchUpdateDatabasesResponse](#bytebase-v1-BatchUpdateDatabasesResponse)
     - [ChangeHistory](#bytebase-v1-ChangeHistory)
     - [ChangedResourceDatabase](#bytebase-v1-ChangedResourceDatabase)
+    - [ChangedResourceFunction](#bytebase-v1-ChangedResourceFunction)
+    - [ChangedResourceProcedure](#bytebase-v1-ChangedResourceProcedure)
     - [ChangedResourceSchema](#bytebase-v1-ChangedResourceSchema)
     - [ChangedResourceTable](#bytebase-v1-ChangedResourceTable)
+    - [ChangedResourceView](#bytebase-v1-ChangedResourceView)
     - [ChangedResources](#bytebase-v1-ChangedResources)
     - [CheckConstraintMetadata](#bytebase-v1-CheckConstraintMetadata)
     - [ColumnConfig](#bytebase-v1-ColumnConfig)
@@ -2538,6 +2541,38 @@ AdviseIndexResponse is the response of advising index.
 
 
 
+<a name="bytebase-v1-ChangedResourceFunction"></a>
+
+### ChangedResourceFunction
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  |  |
+| ranges | [Range](#bytebase-v1-Range) | repeated | The ranges of sub-strings correspond to the statements on the sheet. |
+
+
+
+
+
+
+<a name="bytebase-v1-ChangedResourceProcedure"></a>
+
+### ChangedResourceProcedure
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  |  |
+| ranges | [Range](#bytebase-v1-Range) | repeated | The ranges of sub-strings correspond to the statements on the sheet. |
+
+
+
+
+
+
 <a name="bytebase-v1-ChangedResourceSchema"></a>
 
 ### ChangedResourceSchema
@@ -2548,6 +2583,9 @@ AdviseIndexResponse is the response of advising index.
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  |  |
 | tables | [ChangedResourceTable](#bytebase-v1-ChangedResourceTable) | repeated |  |
+| views | [ChangedResourceView](#bytebase-v1-ChangedResourceView) | repeated |  |
+| functions | [ChangedResourceFunction](#bytebase-v1-ChangedResourceFunction) | repeated |  |
+| procedures | [ChangedResourceProcedure](#bytebase-v1-ChangedResourceProcedure) | repeated |  |
 
 
 
@@ -2557,6 +2595,22 @@ AdviseIndexResponse is the response of advising index.
 <a name="bytebase-v1-ChangedResourceTable"></a>
 
 ### ChangedResourceTable
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  |  |
+| ranges | [Range](#bytebase-v1-Range) | repeated | The ranges of sub-strings correspond to the statements on the sheet. |
+
+
+
+
+
+
+<a name="bytebase-v1-ChangedResourceView"></a>
+
+### ChangedResourceView
 
 
 

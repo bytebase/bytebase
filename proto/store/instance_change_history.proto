@@ -24,6 +24,12 @@ message ChangedResourceSchema {
   string name = 1;
 
   repeated ChangedResourceTable tables = 2;
+
+  repeated ChangedResourceView views = 3;
+
+  repeated ChangedResourceFunction functions = 4;
+
+  repeated ChangedResourceProcedure procedures = 5;
 }
 
 message ChangedResourceTable {
@@ -34,4 +40,25 @@ message ChangedResourceTable {
 
   // The ranges of sub-strings correspond to the statements on the sheet.
   repeated Range ranges = 3;
+}
+
+message ChangedResourceView {
+  string name = 1;
+
+  // The ranges of sub-strings correspond to the statements on the sheet.
+  repeated Range ranges = 2;
+}
+
+message ChangedResourceFunction {
+  string name = 1;
+
+  // The ranges of sub-strings correspond to the statements on the sheet.
+  repeated Range ranges = 2;
+}
+
+message ChangedResourceProcedure {
+  string name = 1;
+
+  // The ranges of sub-strings correspond to the statements on the sheet.
+  repeated Range ranges = 2;
 }

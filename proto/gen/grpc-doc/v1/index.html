@@ -686,11 +686,23 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.ChangedResourceFunction"><span class="badge">M</span>ChangedResourceFunction</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.ChangedResourceProcedure"><span class="badge">M</span>ChangedResourceProcedure</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.ChangedResourceSchema"><span class="badge">M</span>ChangedResourceSchema</a>
                 </li>
               
                 <li>
                   <a href="#bytebase.v1.ChangedResourceTable"><span class="badge">M</span>ChangedResourceTable</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.ChangedResourceView"><span class="badge">M</span>ChangedResourceView</a>
                 </li>
               
                 <li>
@@ -7747,6 +7759,68 @@ Format: projects/{project}/sheets/{sheet} </p></td>
 
         
       
+        <h3 id="bytebase.v1.ChangedResourceFunction">ChangedResourceFunction</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>ranges</td>
+                  <td><a href="#bytebase.v1.Range">Range</a></td>
+                  <td>repeated</td>
+                  <td><p>The ranges of sub-strings correspond to the statements on the sheet. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.ChangedResourceProcedure">ChangedResourceProcedure</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>ranges</td>
+                  <td><a href="#bytebase.v1.Range">Range</a></td>
+                  <td>repeated</td>
+                  <td><p>The ranges of sub-strings correspond to the statements on the sheet. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.ChangedResourceSchema">ChangedResourceSchema</h3>
         <p></p>
 
@@ -7771,6 +7845,27 @@ Format: projects/{project}/sheets/{sheet} </p></td>
                   <td><p> </p></td>
                 </tr>
               
+                <tr>
+                  <td>views</td>
+                  <td><a href="#bytebase.v1.ChangedResourceView">ChangedResourceView</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>functions</td>
+                  <td><a href="#bytebase.v1.ChangedResourceFunction">ChangedResourceFunction</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>procedures</td>
+                  <td><a href="#bytebase.v1.ChangedResourceProcedure">ChangedResourceProcedure</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -7779,6 +7874,37 @@ Format: projects/{project}/sheets/{sheet} </p></td>
         
       
         <h3 id="bytebase.v1.ChangedResourceTable">ChangedResourceTable</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>ranges</td>
+                  <td><a href="#bytebase.v1.Range">Range</a></td>
+                  <td>repeated</td>
+                  <td><p>The ranges of sub-strings correspond to the statements on the sheet. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.ChangedResourceView">ChangedResourceView</h3>
         <p></p>
 
         

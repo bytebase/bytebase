@@ -136,8 +136,11 @@
   
 - [store/instance_change_history.proto](#store_instance_change_history-proto)
     - [ChangedResourceDatabase](#bytebase-store-ChangedResourceDatabase)
+    - [ChangedResourceFunction](#bytebase-store-ChangedResourceFunction)
+    - [ChangedResourceProcedure](#bytebase-store-ChangedResourceProcedure)
     - [ChangedResourceSchema](#bytebase-store-ChangedResourceSchema)
     - [ChangedResourceTable](#bytebase-store-ChangedResourceTable)
+    - [ChangedResourceView](#bytebase-store-ChangedResourceView)
     - [ChangedResources](#bytebase-store-ChangedResources)
     - [InstanceChangeHistoryPayload](#bytebase-store-InstanceChangeHistoryPayload)
   
@@ -2254,6 +2257,38 @@ InstanceRole is the API message for instance role.
 
 
 
+<a name="bytebase-store-ChangedResourceFunction"></a>
+
+### ChangedResourceFunction
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  |  |
+| ranges | [Range](#bytebase-store-Range) | repeated | The ranges of sub-strings correspond to the statements on the sheet. |
+
+
+
+
+
+
+<a name="bytebase-store-ChangedResourceProcedure"></a>
+
+### ChangedResourceProcedure
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  |  |
+| ranges | [Range](#bytebase-store-Range) | repeated | The ranges of sub-strings correspond to the statements on the sheet. |
+
+
+
+
+
+
 <a name="bytebase-store-ChangedResourceSchema"></a>
 
 ### ChangedResourceSchema
@@ -2264,6 +2299,9 @@ InstanceRole is the API message for instance role.
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  |  |
 | tables | [ChangedResourceTable](#bytebase-store-ChangedResourceTable) | repeated |  |
+| views | [ChangedResourceView](#bytebase-store-ChangedResourceView) | repeated |  |
+| functions | [ChangedResourceFunction](#bytebase-store-ChangedResourceFunction) | repeated |  |
+| procedures | [ChangedResourceProcedure](#bytebase-store-ChangedResourceProcedure) | repeated |  |
 
 
 
@@ -2280,6 +2318,22 @@ InstanceRole is the API message for instance role.
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  |  |
 | table_rows | [int64](#int64) |  | estimated row count of the table |
+| ranges | [Range](#bytebase-store-Range) | repeated | The ranges of sub-strings correspond to the statements on the sheet. |
+
+
+
+
+
+
+<a name="bytebase-store-ChangedResourceView"></a>
+
+### ChangedResourceView
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  |  |
 | ranges | [Range](#bytebase-store-Range) | repeated | The ranges of sub-strings correspond to the statements on the sheet. |
 
 
