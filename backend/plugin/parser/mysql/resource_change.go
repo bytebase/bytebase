@@ -2,7 +2,6 @@ package mysql
 
 import (
 	"github.com/antlr4-go/antlr/v4"
-	mysql "github.com/bytebase/mysql-parser"
 	parser "github.com/bytebase/mysql-parser"
 	"github.com/pkg/errors"
 
@@ -166,7 +165,7 @@ func (l *resourceChangedListener) EnterRenameTableStatement(ctx *parser.RenameTa
 	}
 }
 
-func (l *resourceChangedListener) EnterCreateView(ctx *mysql.CreateViewContext) {
+func (l *resourceChangedListener) EnterCreateView(ctx *parser.CreateViewContext) {
 	database := l.currentDatabase
 	db, view := NormalizeMySQLViewName(ctx.ViewName())
 	if db != "" {
@@ -183,7 +182,7 @@ func (l *resourceChangedListener) EnterCreateView(ctx *mysql.CreateViewContext) 
 	)
 }
 
-func (l *resourceChangedListener) EnterAlterView(ctx *mysql.AlterViewContext) {
+func (l *resourceChangedListener) EnterAlterView(ctx *parser.AlterViewContext) {
 	database := l.currentDatabase
 	db, view := NormalizeMySQLViewRef(ctx.ViewRef())
 	if db != "" {
@@ -200,7 +199,7 @@ func (l *resourceChangedListener) EnterAlterView(ctx *mysql.AlterViewContext) {
 	)
 }
 
-func (l *resourceChangedListener) EnterDropView(ctx *mysql.DropViewContext) {
+func (l *resourceChangedListener) EnterDropView(ctx *parser.DropViewContext) {
 	database := l.currentDatabase
 	if ctx.ViewRefList() == nil {
 		return
@@ -223,7 +222,7 @@ func (l *resourceChangedListener) EnterDropView(ctx *mysql.DropViewContext) {
 	}
 }
 
-func (l *resourceChangedListener) EnterCreateFunction(ctx *mysql.CreateFunctionContext) {
+func (l *resourceChangedListener) EnterCreateFunction(ctx *parser.CreateFunctionContext) {
 	database := l.currentDatabase
 	db, function := NormalizeMySQLFunctionName(ctx.FunctionName())
 	if db != "" {
@@ -240,7 +239,7 @@ func (l *resourceChangedListener) EnterCreateFunction(ctx *mysql.CreateFunctionC
 	)
 }
 
-func (l *resourceChangedListener) EnterDropFunction(ctx *mysql.DropFunctionContext) {
+func (l *resourceChangedListener) EnterDropFunction(ctx *parser.DropFunctionContext) {
 	database := l.currentDatabase
 	db, function := NormalizeMySQLFunctionRef(ctx.FunctionRef())
 	if db != "" {
@@ -257,7 +256,7 @@ func (l *resourceChangedListener) EnterDropFunction(ctx *mysql.DropFunctionConte
 	)
 }
 
-func (l *resourceChangedListener) EnterCreateProcedure(ctx *mysql.CreateProcedureContext) {
+func (l *resourceChangedListener) EnterCreateProcedure(ctx *parser.CreateProcedureContext) {
 	database := l.currentDatabase
 	db, procedure := NormalizeMySQLProcedureName(ctx.ProcedureName())
 	if db != "" {
@@ -274,7 +273,7 @@ func (l *resourceChangedListener) EnterCreateProcedure(ctx *mysql.CreateProcedur
 	)
 }
 
-func (l *resourceChangedListener) EnterDropProcedure(ctx *mysql.DropProcedureContext) {
+func (l *resourceChangedListener) EnterDropProcedure(ctx *parser.DropProcedureContext) {
 	database := l.currentDatabase
 	db, procedure := NormalizeMySQLProcedureRef(ctx.ProcedureRef())
 	if db != "" {
