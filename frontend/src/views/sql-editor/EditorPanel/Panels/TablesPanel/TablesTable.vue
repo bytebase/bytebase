@@ -156,7 +156,7 @@ useConsumePendingScrollToTarget(
     }
     if (target.metadata.type === "table" || target.metadata.type === "column") {
       const metadata = target.metadata as RichTableMetadata;
-      return metadata.schema.name == props.schema.name;
+      return metadata.schema.name === props.schema.name;
     }
     return false;
   },
