@@ -2,6 +2,7 @@ package mysql
 
 import (
 	"github.com/antlr4-go/antlr/v4"
+	mysql "github.com/bytebase/mysql-parser"
 	parser "github.com/bytebase/mysql-parser"
 	"github.com/pkg/errors"
 
@@ -163,6 +164,131 @@ func (l *resourceChangedListener) EnterRenameTableStatement(ctx *parser.RenameTa
 			)
 		}
 	}
+}
+
+func (l *resourceChangedListener) EnterCreateView(ctx *mysql.CreateViewContext) {
+	database := l.currentDatabase
+	db, view := NormalizeMySQLViewName(ctx.ViewName())
+	if db != "" {
+		database = db
+	}
+
+	l.changedResources.AddView(
+		database,
+		"",
+		&storepb.ChangedResourceView{
+			Name:   view,
+			Ranges: []*storepb.Range{base.NewRange(l.statement, l.text)},
+		},
+	)
+}
+
+func (l *resourceChangedListener) EnterAlterView(ctx *mysql.AlterViewContext) {
+	database := l.currentDatabase
+	db, view := NormalizeMySQLViewRef(ctx.ViewRef())
+	if db != "" {
+		database = db
+	}
+
+	l.changedResources.AddView(
+		database,
+		"",
+		&storepb.ChangedResourceView{
+			Name:   view,
+			Ranges: []*storepb.Range{base.NewRange(l.statement, l.text)},
+		},
+	)
+}
+
+func (l *resourceChangedListener) EnterDropView(ctx *mysql.DropViewContext) {
+	database := l.currentDatabase
+	if ctx.ViewRefList() == nil {
+		return
+	}
+
+	for _, ref := range ctx.ViewRefList().AllViewRef() {
+		db, view := NormalizeMySQLViewRef(ref)
+		if db != "" {
+			database = db
+		}
+
+		l.changedResources.AddView(
+			database,
+			"",
+			&storepb.ChangedResourceView{
+				Name:   view,
+				Ranges: []*storepb.Range{base.NewRange(l.statement, l.text)},
+			},
+		)
+	}
+}
+
+func (l *resourceChangedListener) EnterCreateFunction(ctx *mysql.CreateFunctionContext) {
+	database := l.currentDatabase
+	db, function := NormalizeMySQLFunctionName(ctx.FunctionName())
+	if db != "" {
+		database = db
+	}
+
+	l.changedResources.AddFunction(
+		database,
+		"",
+		&storepb.ChangedResourceFunction{
+			Name:   function,
+			Ranges: []*storepb.Range{base.NewRange(l.statement, l.text)},
+		},
+	)
+}
+
+func (l *resourceChangedListener) EnterDropFunction(ctx *mysql.DropFunctionContext) {
+	database := l.currentDatabase
+	db, function := NormalizeMySQLFunctionRef(ctx.FunctionRef())
+	if db != "" {
+		database = db
+	}
+
+	l.changedResources.AddFunction(
+		database,
+		"",
+		&storepb.ChangedResourceFunction{
+			Name:   function,
+			Ranges: []*storepb.Range{base.NewRange(l.statement, l.text)},
+		},
+	)
+}
+
+func (l *resourceChangedListener) EnterCreateProcedure(ctx *mysql.CreateProcedureContext) {
+	database := l.currentDatabase
+	db, procedure := NormalizeMySQLProcedureName(ctx.ProcedureName())
+	if db != "" {
+		database = db
+	}
+
+	l.changedResources.AddProcedure(
+		database,
+		"",
+		&storepb.ChangedResourceProcedure{
+			Name:   procedure,
+			Ranges: []*storepb.Range{base.NewRange(l.statement, l.text)},
+		},
+	)
+}
+
+func (l *resourceChangedListener) EnterDropProcedure(ctx *mysql.DropProcedureContext) {
+	database := l.currentDatabase
+	db, procedure := NormalizeMySQLProcedureRef(ctx.ProcedureRef())
+	if db != "" {
+		database = db
+	}
+
+	l.changedResources.AddProcedure(
+		database,
+		"",
+		&storepb.ChangedResourceProcedure{
+			Name:   procedure,
+			Ranges: []*storepb.Range{base.NewRange(l.statement, l.text)},
+		},
+	)
 }
 
 func (l *resourceChangedListener) EnterInsertStatement(ctx *parser.InsertStatementContext) {
