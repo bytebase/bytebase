@@ -76,8 +76,21 @@ func getResourceChanges(database string, node tidbast.StmtNode, statement string
 			false,
 		)
 	case *tidbast.DropTableStmt:
-		// TODO(d): deal with DROP VIEW statement.
 		if node.IsView {
+			for _, name := range node.Tables {
+				d, view := name.Schema.O, name.Name.O
+				if d == "" {
+					d = database
+				}
+				changedResources.AddView(
+					d,
+					"",
+					&storepb.ChangedResourceView{
+						Name:   view,
+						Ranges: []*storepb.Range{getRange(statement, node)},
+					},
+				)
+			}
 			return nil
 		}
 		for _, name := range node.Tables {
@@ -142,6 +155,47 @@ func getResourceChanges(database string, node tidbast.StmtNode, statement string
 				)
 			}
 		}
+	case *tidbast.CreateIndexStmt:
+		d, table := node.Table.Schema.O, node.Table.Name.O
+		if d == "" {
+			d = database
+		}
+		changedResources.AddTable(
+			d,
+			"",
+			&storepb.ChangedResourceTable{
+				Name:   table,
+				Ranges: []*storepb.Range{getRange(statement, node)},
+			},
+			false,
+		)
+	case *tidbast.DropIndexStmt:
+		d, table := node.Table.Schema.O, node.Table.Name.O
+		if d == "" {
+			d = database
+		}
+		changedResources.AddTable(
+			d,
+			"",
+			&storepb.ChangedResourceTable{
+				Name:   table,
+				Ranges: []*storepb.Range{getRange(statement, node)},
+			},
+			false,
+		)
+	case *tidbast.CreateViewStmt:
+		d, view := node.ViewName.Schema.O, node.ViewName.Name.O
+		if d == "" {
+			d = database
+		}
+		changedResources.AddView(
+			d,
+			"",
+			&storepb.ChangedResourceView{
+				Name:   view,
+				Ranges: []*storepb.Range{getRange(statement, node)},
+			},
+		)
 	default:
 	}
 	return nil

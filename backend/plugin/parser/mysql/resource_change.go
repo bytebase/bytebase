@@ -180,6 +180,27 @@ func (l *resourceChangedListener) EnterCreateIndex(ctx *parser.CreateIndexContex
 	)
 }
 
+func (l *resourceChangedListener) EnterDropIndex(ctx *parser.DropIndexContext) {
+	if ctx.TableRef() == nil {
+		return
+	}
+
+	database, table := NormalizeMySQLTableRef(ctx.TableRef())
+	if database == "" {
+		database = l.currentDatabase
+	}
+
+	l.changedResources.AddTable(
+		database,
+		"",
+		&storepb.ChangedResourceTable{
+			Name:   table,
+			Ranges: []*storepb.Range{base.NewRange(l.statement, l.text)},
+		},
+		false,
+	)
+}
+
 func (l *resourceChangedListener) EnterCreateView(ctx *parser.CreateViewContext) {
 	database, view := NormalizeMySQLViewName(ctx.ViewName())
 	if database == "" {
