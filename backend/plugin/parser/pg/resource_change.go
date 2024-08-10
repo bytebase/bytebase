@@ -136,6 +136,88 @@ func getResourceChanges(database, schema string, node ast.Node, statement string
 				}
 			}
 		}
+	case *ast.CreateIndexStmt:
+		d, s, table := node.Index.Table.Database, node.Index.Table.Schema, node.Index.Table.Name
+		if d == "" {
+			d = database
+		}
+		if s == "" {
+			s = schema
+		}
+		changedResources.AddTable(
+			d,
+			s,
+			&storepb.ChangedResourceTable{
+				Name:   table,
+				Ranges: []*storepb.Range{base.NewRange(statement, node.Text())},
+			},
+			false,
+		)
+	case *ast.DropIndexStmt:
+		for _, index := range node.IndexList {
+			d, s, table := index.Table.Database, index.Table.Schema, index.Table.Name
+			if d == "" {
+				d = database
+			}
+			if s == "" {
+				s = schema
+			}
+			changedResources.AddTable(
+				d,
+				s,
+				&storepb.ChangedResourceTable{
+					Name:   table,
+					Ranges: []*storepb.Range{base.NewRange(statement, node.Text())},
+				},
+				false,
+			)
+		}
+	case *ast.CreateViewStmt:
+		d, s, view := node.Name.Database, node.Name.Schema, node.Name.Name
+		if d == "" {
+			d = database
+		}
+		if s == "" {
+			s = schema
+		}
+		changedResources.AddView(
+			d,
+			s,
+			&storepb.ChangedResourceView{
+				Name:   view,
+				Ranges: []*storepb.Range{base.NewRange(statement, node.Text())},
+			},
+		)
+		// TODO(d): drop view.
+		// TODO(d): alter view.
+	case *ast.CreateFunctionStmt:
+		s, f := node.Function.Schema, node.Function.Name
+		if s == "" {
+			s = schema
+		}
+		changedResources.AddFunction(
+			database,
+			s,
+			&storepb.ChangedResourceFunction{
+				Name:   f,
+				Ranges: []*storepb.Range{base.NewRange(statement, node.Text())},
+			},
+		)
+	case *ast.DropFunctionStmt:
+		for _, ref := range node.FunctionList {
+			s, f := ref.Schema, ref.Name
+			if s == "" {
+				s = schema
+			}
+			changedResources.AddFunction(
+				database,
+				s,
+				&storepb.ChangedResourceFunction{
+					Name:   f,
+					Ranges: []*storepb.Range{base.NewRange(statement, node.Text())},
+				},
+			)
+		}
 	case *ast.CommentStmt:
 		if len(node.ParseResult.Stmts) != 1 {
 			return errors.New("expect to get one node from comment statement result")
