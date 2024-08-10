@@ -239,6 +239,23 @@ func (l *resourceChangedListener) EnterCreateFunction(ctx *parser.CreateFunction
 	)
 }
 
+func (l *resourceChangedListener) EnterAlterFunction(ctx *parser.AlterFunctionContext) {
+	database := l.currentDatabase
+	db, function := NormalizeMySQLFunctionRef(ctx.FunctionRef())
+	if db != "" {
+		database = db
+	}
+
+	l.changedResources.AddFunction(
+		database,
+		"",
+		&storepb.ChangedResourceFunction{
+			Name:   function,
+			Ranges: []*storepb.Range{base.NewRange(l.statement, l.text)},
+		},
+	)
+}
+
 func (l *resourceChangedListener) EnterDropFunction(ctx *parser.DropFunctionContext) {
 	database := l.currentDatabase
 	db, function := NormalizeMySQLFunctionRef(ctx.FunctionRef())
@@ -259,6 +276,23 @@ func (l *resourceChangedListener) EnterDropFunction(ctx *parser.DropFunctionCont
 func (l *resourceChangedListener) EnterCreateProcedure(ctx *parser.CreateProcedureContext) {
 	database := l.currentDatabase
 	db, procedure := NormalizeMySQLProcedureName(ctx.ProcedureName())
+	if db != "" {
+		database = db
+	}
+
+	l.changedResources.AddProcedure(
+		database,
+		"",
+		&storepb.ChangedResourceProcedure{
+			Name:   procedure,
+			Ranges: []*storepb.Range{base.NewRange(l.statement, l.text)},
+		},
+	)
+}
+
+func (l *resourceChangedListener) EnterAlterProcedure(ctx *parser.AlterProcedureContext) {
+	database := l.currentDatabase
+	db, procedure := NormalizeMySQLProcedureRef(ctx.ProcedureRef())
 	if db != "" {
 		database = db
 	}
