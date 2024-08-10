@@ -168,7 +168,7 @@ func (e *StatementReportExecutor) runReport(ctx context.Context, instance *store
 			return nil, err
 		}
 		defaultSchema = "public"
-	case storepb.Engine_MYSQL, storepb.Engine_OCEANBASE:
+	case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_OCEANBASE:
 		driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{})
 		if err != nil {
 			return nil, err
@@ -179,14 +179,15 @@ func (e *StatementReportExecutor) runReport(ctx context.Context, instance *store
 			explainCalculator = getAffectedRowsCountForOceanBase
 		} else {
 			explainCalculator = getAffectedRowsCountForMysql
-		}
 
-		sqlTypes, err = mysqlparser.GetStatementTypes(asts)
-		if err != nil {
-			return nil, err
+			sqlTypes, err = mysqlparser.GetStatementTypes(asts)
+			if err != nil {
+				return nil, err
+			}
 		}
+		// TODO(d): implement TiDB sqlTypes.
 		defaultSchema = ""
-	case storepb.Engine_ORACLE, storepb.Engine_DM, storepb.Engine_OCEANBASE_ORACLE:
+	case storepb.Engine_ORACLE, storepb.Engine_OCEANBASE_ORACLE:
 		explainCalculator = getAffectedRowsCountForOracle
 		defaultSchema = database.DatabaseName
 	default:
