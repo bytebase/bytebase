@@ -68,10 +68,9 @@ func (l *resourceChangedListener) EnterQuery(ctx *parser.QueryContext) {
 
 // EnterCreateTable is called when production createTable is entered.
 func (l *resourceChangedListener) EnterCreateTable(ctx *parser.CreateTableContext) {
-	database := l.currentDatabase
-	db, table := NormalizeMySQLTableName(ctx.TableName())
-	if db != "" {
-		database = db
+	database, table := NormalizeMySQLTableName(ctx.TableName())
+	if database == "" {
+		database = l.currentDatabase
 	}
 
 	l.changedResources.AddTable(
@@ -88,10 +87,9 @@ func (l *resourceChangedListener) EnterCreateTable(ctx *parser.CreateTableContex
 // EnterDropTable is called when production dropTable is entered.
 func (l *resourceChangedListener) EnterDropTable(ctx *parser.DropTableContext) {
 	for _, table := range ctx.TableRefList().AllTableRef() {
-		database := l.currentDatabase
-		db, table := NormalizeMySQLTableRef(table)
-		if db != "" {
-			database = db
+		database, table := NormalizeMySQLTableRef(table)
+		if database == "" {
+			database = l.currentDatabase
 		}
 
 		l.changedResources.AddTable(
@@ -108,10 +106,9 @@ func (l *resourceChangedListener) EnterDropTable(ctx *parser.DropTableContext) {
 
 // EnterAlterTable is called when production alterTable is entered.
 func (l *resourceChangedListener) EnterAlterTable(ctx *parser.AlterTableContext) {
-	database := l.currentDatabase
-	db, table := NormalizeMySQLTableRef(ctx.TableRef())
-	if db != "" {
-		database = db
+	database, table := NormalizeMySQLTableRef(ctx.TableRef())
+	if database == "" {
+		database = l.currentDatabase
 	}
 
 	l.changedResources.AddTable(
@@ -129,10 +126,9 @@ func (l *resourceChangedListener) EnterAlterTable(ctx *parser.AlterTableContext)
 func (l *resourceChangedListener) EnterRenameTableStatement(ctx *parser.RenameTableStatementContext) {
 	for _, pair := range ctx.AllRenamePair() {
 		{
-			database := l.currentDatabase
-			db, table := NormalizeMySQLTableRef(pair.TableRef())
-			if db != "" {
-				database = db
+			database, table := NormalizeMySQLTableRef(pair.TableRef())
+			if database == "" {
+				database = l.currentDatabase
 			}
 
 			l.changedResources.AddTable(
@@ -146,10 +142,9 @@ func (l *resourceChangedListener) EnterRenameTableStatement(ctx *parser.RenameTa
 			)
 		}
 		{
-			database := l.currentDatabase
-			db, table := NormalizeMySQLTableName(pair.TableName())
-			if db != "" {
-				database = db
+			database, table := NormalizeMySQLTableName(pair.TableName())
+			if database == "" {
+				database = l.currentDatabase
 			}
 
 			l.changedResources.AddTable(
@@ -165,11 +160,30 @@ func (l *resourceChangedListener) EnterRenameTableStatement(ctx *parser.RenameTa
 	}
 }
 
+func (l *resourceChangedListener) EnterCreateIndex(ctx *parser.CreateIndexContext) {
+	if ctx.CreateIndexTarget() == nil || ctx.CreateIndexTarget().TableRef() == nil {
+		return
+	}
+	database, table := NormalizeMySQLTableRef(ctx.CreateIndexTarget().TableRef())
+	if database == "" {
+		database = l.currentDatabase
+	}
+
+	l.changedResources.AddTable(
+		database,
+		"",
+		&storepb.ChangedResourceTable{
+			Name:   table,
+			Ranges: []*storepb.Range{base.NewRange(l.statement, l.text)},
+		},
+		false,
+	)
+}
+
 func (l *resourceChangedListener) EnterCreateView(ctx *parser.CreateViewContext) {
-	database := l.currentDatabase
-	db, view := NormalizeMySQLViewName(ctx.ViewName())
-	if db != "" {
-		database = db
+	database, view := NormalizeMySQLViewName(ctx.ViewName())
+	if database == "" {
+		database = l.currentDatabase
 	}
 
 	l.changedResources.AddView(
@@ -183,10 +197,9 @@ func (l *resourceChangedListener) EnterCreateView(ctx *parser.CreateViewContext)
 }
 
 func (l *resourceChangedListener) EnterAlterView(ctx *parser.AlterViewContext) {
-	database := l.currentDatabase
-	db, view := NormalizeMySQLViewRef(ctx.ViewRef())
-	if db != "" {
-		database = db
+	database, view := NormalizeMySQLViewRef(ctx.ViewRef())
+	if database == "" {
+		database = l.currentDatabase
 	}
 
 	l.changedResources.AddView(
@@ -200,15 +213,14 @@ func (l *resourceChangedListener) EnterAlterView(ctx *parser.AlterViewContext) {
 }
 
 func (l *resourceChangedListener) EnterDropView(ctx *parser.DropViewContext) {
-	database := l.currentDatabase
 	if ctx.ViewRefList() == nil {
 		return
 	}
 
 	for _, ref := range ctx.ViewRefList().AllViewRef() {
-		db, view := NormalizeMySQLViewRef(ref)
-		if db != "" {
-			database = db
+		database, view := NormalizeMySQLViewRef(ref)
+		if database == "" {
+			database = l.currentDatabase
 		}
 
 		l.changedResources.AddView(
@@ -223,10 +235,9 @@ func (l *resourceChangedListener) EnterDropView(ctx *parser.DropViewContext) {
 }
 
 func (l *resourceChangedListener) EnterCreateFunction(ctx *parser.CreateFunctionContext) {
-	database := l.currentDatabase
-	db, function := NormalizeMySQLFunctionName(ctx.FunctionName())
-	if db != "" {
-		database = db
+	database, function := NormalizeMySQLFunctionName(ctx.FunctionName())
+	if database == "" {
+		database = l.currentDatabase
 	}
 
 	l.changedResources.AddFunction(
@@ -240,10 +251,9 @@ func (l *resourceChangedListener) EnterCreateFunction(ctx *parser.CreateFunction
 }
 
 func (l *resourceChangedListener) EnterAlterFunction(ctx *parser.AlterFunctionContext) {
-	database := l.currentDatabase
-	db, function := NormalizeMySQLFunctionRef(ctx.FunctionRef())
-	if db != "" {
-		database = db
+	database, function := NormalizeMySQLFunctionRef(ctx.FunctionRef())
+	if database == "" {
+		database = l.currentDatabase
 	}
 
 	l.changedResources.AddFunction(
@@ -257,10 +267,9 @@ func (l *resourceChangedListener) EnterAlterFunction(ctx *parser.AlterFunctionCo
 }
 
 func (l *resourceChangedListener) EnterDropFunction(ctx *parser.DropFunctionContext) {
-	database := l.currentDatabase
-	db, function := NormalizeMySQLFunctionRef(ctx.FunctionRef())
-	if db != "" {
-		database = db
+	database, function := NormalizeMySQLFunctionRef(ctx.FunctionRef())
+	if database == "" {
+		database = l.currentDatabase
 	}
 
 	l.changedResources.AddFunction(
@@ -274,10 +283,9 @@ func (l *resourceChangedListener) EnterDropFunction(ctx *parser.DropFunctionCont
 }
 
 func (l *resourceChangedListener) EnterCreateProcedure(ctx *parser.CreateProcedureContext) {
-	database := l.currentDatabase
-	db, procedure := NormalizeMySQLProcedureName(ctx.ProcedureName())
-	if db != "" {
-		database = db
+	database, procedure := NormalizeMySQLProcedureName(ctx.ProcedureName())
+	if database == "" {
+		database = l.currentDatabase
 	}
 
 	l.changedResources.AddProcedure(
@@ -291,10 +299,9 @@ func (l *resourceChangedListener) EnterCreateProcedure(ctx *parser.CreateProcedu
 }
 
 func (l *resourceChangedListener) EnterAlterProcedure(ctx *parser.AlterProcedureContext) {
-	database := l.currentDatabase
-	db, procedure := NormalizeMySQLProcedureRef(ctx.ProcedureRef())
-	if db != "" {
-		database = db
+	database, procedure := NormalizeMySQLProcedureRef(ctx.ProcedureRef())
+	if database == "" {
+		database = l.currentDatabase
 	}
 
 	l.changedResources.AddProcedure(
@@ -308,10 +315,9 @@ func (l *resourceChangedListener) EnterAlterProcedure(ctx *parser.AlterProcedure
 }
 
 func (l *resourceChangedListener) EnterDropProcedure(ctx *parser.DropProcedureContext) {
-	database := l.currentDatabase
-	db, procedure := NormalizeMySQLProcedureRef(ctx.ProcedureRef())
-	if db != "" {
-		database = db
+	database, procedure := NormalizeMySQLProcedureRef(ctx.ProcedureRef())
+	if database == "" {
+		database = l.currentDatabase
 	}
 
 	l.changedResources.AddProcedure(
@@ -332,10 +338,9 @@ func (l *resourceChangedListener) EnterInsertStatement(ctx *parser.InsertStateme
 		return
 	}
 
-	database := l.currentDatabase
-	db, table := NormalizeMySQLTableRef(ctx.TableRef())
-	if db != "" {
-		database = db
+	database, table := NormalizeMySQLTableRef(ctx.TableRef())
+	if database == "" {
+		database = l.currentDatabase
 	}
 
 	l.changedResources.AddTable(
