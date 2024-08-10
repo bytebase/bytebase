@@ -17,6 +17,7 @@ func TestExtractMySQLChangedResources(t *testing.T) {
 	RENAME TABLE t1 TO t2;
 	INSERT INTO t1 (c1) VALUES (1), (5);
 	UPDATE t1 SET c1 = 5;
+	CREATE PROCEDURE getUser(id INT) SELECT * FROM hello WHERE uid = id;
 	`
 	changedResources := model.NewChangedResources(nil /* dbSchema */)
 	changedResources.AddTable(
@@ -41,6 +42,14 @@ func TestExtractMySQLChangedResources(t *testing.T) {
 			Ranges: []*storepb.Range{{Start: 78, End: 100}},
 		},
 		false,
+	)
+	changedResources.AddProcedure(
+		"db",
+		"",
+		&storepb.ChangedResourceProcedure{
+			Name:   "getUser",
+			Ranges: []*storepb.Range{{Start: 163, End: 231}},
+		},
 	)
 	want := &base.ChangeSummary{
 		ChangedResources: changedResources,

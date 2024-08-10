@@ -17,7 +17,10 @@ type ChangedDatabase struct {
 }
 
 type ChangedSchema struct {
-	tables map[string]*ChangedTable
+	tables     map[string]*ChangedTable
+	views      map[string]*storepb.ChangedResourceView
+	functions  map[string]*storepb.ChangedResourceFunction
+	procedures map[string]*storepb.ChangedResourceProcedure
 }
 
 type ChangedTable struct {
@@ -81,10 +84,32 @@ func (s *ChangedSchema) build() *storepb.ChangedResourceSchema {
 	sort.Slice(changedResourceSchema.Tables, func(i, j int) bool {
 		return changedResourceSchema.Tables[i].GetName() < changedResourceSchema.Tables[j].GetName()
 	})
+
+	for _, view := range s.views {
+		changedResourceSchema.Views = append(changedResourceSchema.Views, view)
+	}
+	sort.Slice(changedResourceSchema.Views, func(i, j int) bool {
+		return changedResourceSchema.Views[i].GetName() < changedResourceSchema.Views[j].GetName()
+	})
+
+	for _, function := range s.functions {
+		changedResourceSchema.Functions = append(changedResourceSchema.Functions, function)
+	}
+	sort.Slice(changedResourceSchema.Functions, func(i, j int) bool {
+		return changedResourceSchema.Functions[i].GetName() < changedResourceSchema.Functions[j].GetName()
+	})
+
+	for _, procedure := range s.procedures {
+		changedResourceSchema.Procedures = append(changedResourceSchema.Procedures, procedure)
+	}
+	sort.Slice(changedResourceSchema.Procedures, func(i, j int) bool {
+		return changedResourceSchema.Procedures[i].GetName() < changedResourceSchema.Procedures[j].GetName()
+	})
+
 	return changedResourceSchema
 }
 
-func (r *ChangedResources) AddTable(database string, schema string, tableChange *storepb.ChangedResourceTable, affectedTable bool) {
+func (r *ChangedResources) AddTable(database string, schema string, change *storepb.ChangedResourceTable, affectedTable bool) {
 	if _, ok := r.databases[database]; !ok {
 		r.databases[database] = &ChangedDatabase{
 			schemas: make(map[string]*ChangedSchema),
@@ -95,10 +120,13 @@ func (r *ChangedResources) AddTable(database string, schema string, tableChange 
 			tables: make(map[string]*ChangedTable),
 		}
 	}
-	v, ok := r.databases[database].schemas[schema].tables[tableChange.GetName()]
+	if r.databases[database].schemas[schema].tables == nil {
+		r.databases[database].schemas[schema].tables = make(map[string]*ChangedTable)
+	}
+	v, ok := r.databases[database].schemas[schema].tables[change.GetName()]
 	if !ok {
-		r.databases[database].schemas[schema].tables[tableChange.GetName()] = &ChangedTable{
-			table:         tableChange,
+		r.databases[database].schemas[schema].tables[change.GetName()] = &ChangedTable{
+			table:         change,
 			affectedTable: affectedTable,
 		}
 		return
@@ -106,7 +134,73 @@ func (r *ChangedResources) AddTable(database string, schema string, tableChange 
 	if affectedTable {
 		v.affectedTable = true
 	}
-	v.table.Ranges = append(v.table.Ranges, tableChange.GetRanges()...)
+	v.table.Ranges = append(v.table.Ranges, change.GetRanges()...)
+}
+
+func (r *ChangedResources) AddView(database string, schema string, change *storepb.ChangedResourceView) {
+	if _, ok := r.databases[database]; !ok {
+		r.databases[database] = &ChangedDatabase{
+			schemas: make(map[string]*ChangedSchema),
+		}
+	}
+	if _, ok := r.databases[database].schemas[schema]; !ok {
+		r.databases[database].schemas[schema] = &ChangedSchema{
+			tables: make(map[string]*ChangedTable),
+		}
+	}
+	if r.databases[database].schemas[schema].views == nil {
+		r.databases[database].schemas[schema].views = make(map[string]*storepb.ChangedResourceView)
+	}
+	v, ok := r.databases[database].schemas[schema].views[change.GetName()]
+	if !ok {
+		r.databases[database].schemas[schema].views[change.GetName()] = change
+		return
+	}
+	v.Ranges = append(v.Ranges, change.GetRanges()...)
+}
+
+func (r *ChangedResources) AddFunction(database string, schema string, change *storepb.ChangedResourceFunction) {
+	if _, ok := r.databases[database]; !ok {
+		r.databases[database] = &ChangedDatabase{
+			schemas: make(map[string]*ChangedSchema),
+		}
+	}
+	if _, ok := r.databases[database].schemas[schema]; !ok {
+		r.databases[database].schemas[schema] = &ChangedSchema{
+			tables: make(map[string]*ChangedTable),
+		}
+	}
+	if r.databases[database].schemas[schema].functions == nil {
+		r.databases[database].schemas[schema].functions = make(map[string]*storepb.ChangedResourceFunction)
+	}
+	v, ok := r.databases[database].schemas[schema].functions[change.GetName()]
+	if !ok {
+		r.databases[database].schemas[schema].functions[change.GetName()] = change
+		return
+	}
+	v.Ranges = append(v.Ranges, change.GetRanges()...)
+}
+
+func (r *ChangedResources) AddProcedure(database string, schema string, change *storepb.ChangedResourceProcedure) {
+	if _, ok := r.databases[database]; !ok {
+		r.databases[database] = &ChangedDatabase{
+			schemas: make(map[string]*ChangedSchema),
+		}
+	}
+	if _, ok := r.databases[database].schemas[schema]; !ok {
+		r.databases[database].schemas[schema] = &ChangedSchema{
+			tables: make(map[string]*ChangedTable),
+		}
+	}
+	if r.databases[database].schemas[schema].procedures == nil {
+		r.databases[database].schemas[schema].procedures = make(map[string]*storepb.ChangedResourceProcedure)
+	}
+	v, ok := r.databases[database].schemas[schema].procedures[change.GetName()]
+	if !ok {
+		r.databases[database].schemas[schema].procedures[change.GetName()] = change
+		return
+	}
+	v.Ranges = append(v.Ranges, change.GetRanges()...)
 }
 
 func (r *ChangedResources) CountAffectedTableRows() int64 {
