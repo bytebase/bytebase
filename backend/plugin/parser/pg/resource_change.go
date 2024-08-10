@@ -77,22 +77,40 @@ func getResourceChanges(database, schema string, node ast.Node, statement string
 		}
 	case *ast.DropTableStmt:
 		for _, table := range node.TableList {
-			d, s, table := table.Database, table.Schema, table.Name
-			if d == "" {
-				d = database
+			if table.Type == ast.TableTypeView {
+				d, s, v := table.Database, table.Schema, table.Name
+				if d == "" {
+					d = database
+				}
+				if s == "" {
+					s = schema
+				}
+				changedResources.AddView(
+					database,
+					s,
+					&storepb.ChangedResourceView{
+						Name:   v,
+						Ranges: []*storepb.Range{base.NewRange(statement, node.Text())},
+					},
+				)
+			} else {
+				d, s, table := table.Database, table.Schema, table.Name
+				if d == "" {
+					d = database
+				}
+				if s == "" {
+					s = schema
+				}
+				changedResources.AddTable(
+					d,
+					s,
+					&storepb.ChangedResourceTable{
+						Name:   table,
+						Ranges: []*storepb.Range{base.NewRange(statement, node.Text())},
+					},
+					true,
+				)
 			}
-			if s == "" {
-				s = schema
-			}
-			changedResources.AddTable(
-				d,
-				s,
-				&storepb.ChangedResourceTable{
-					Name:   table,
-					Ranges: []*storepb.Range{base.NewRange(statement, node.Text())},
-				},
-				true,
-			)
 		}
 	case *ast.AlterTableStmt:
 		if node.Table.Type == ast.TableTypeBaseTable {
@@ -188,8 +206,6 @@ func getResourceChanges(database, schema string, node ast.Node, statement string
 				Ranges: []*storepb.Range{base.NewRange(statement, node.Text())},
 			},
 		)
-		// TODO(d): drop view.
-		// TODO(d): alter view.
 	case *ast.CreateFunctionStmt:
 		s, f := node.Function.Schema, node.Function.Name
 		if s == "" {
