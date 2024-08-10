@@ -262,6 +262,29 @@ func (l *plsqlChangedResourceExtractListener) EnterDrop_view(ctx *parser.Drop_vi
 	)
 }
 
+func (l *plsqlChangedResourceExtractListener) EnterAlter_view(ctx *parser.Alter_viewContext) {
+	var schema, view string
+	tableViewName := ctx.Tableview_name()
+	if tableViewName.Id_expression() == nil {
+		view = NormalizeIdentifierContext(tableViewName.Identifier())
+	} else {
+		schema = NormalizeIdentifierContext(tableViewName.Identifier())
+		view = NormalizeIDExpression(tableViewName.Id_expression())
+	}
+	if schema == "" {
+		schema = l.currentSchema
+	}
+
+	l.changedResources.AddView(
+		schema,
+		schema,
+		&storepb.ChangedResourceView{
+			Name:   view,
+			Ranges: []*storepb.Range{base.NewRange(l.statement, l.text)},
+		},
+	)
+}
+
 func (l *plsqlChangedResourceExtractListener) EnterCreate_procedure_body(ctx *parser.Create_procedure_bodyContext) {
 	var schema, procedure string
 	procedureName := ctx.Procedure_name()
