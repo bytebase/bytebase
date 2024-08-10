@@ -105,6 +105,7 @@ import { useSheetContext } from "./Sheet";
 import SheetPanel from "./SheetPanel";
 import TabList from "./TabList";
 import { useSQLEditorContext } from "./context";
+import { provideEditorPanelContext } from "./EditorPanel/context";
 
 type LocalState = {
   sidebarExpanded: boolean;
@@ -172,6 +173,10 @@ useEmitteryEventListener(
     }
   }
 );
+
+provideEditorPanelContext({
+  tab: currentTab,
+});
 </script>
 
 <style lang="postcss">

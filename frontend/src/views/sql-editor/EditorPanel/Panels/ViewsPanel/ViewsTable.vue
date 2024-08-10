@@ -18,11 +18,7 @@
 </template>
 
 <script setup lang="tsx">
-import {
-  NDataTable,
-  NPerformantEllipsis,
-  type DataTableColumn,
-} from "naive-ui";
+import { NDataTable, type DataTableColumn } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import type { ComposedDatabase } from "@/types";
@@ -66,26 +62,12 @@ const columns = computed(() => {
       title: t("schema-editor.database.name"),
       resizable: true,
       className: "truncate",
-      render: (view) => {
-        return (
-          <NPerformantEllipsis class="w-full leading-6">
-            {view.name}
-          </NPerformantEllipsis>
-        );
-      },
     },
     {
       key: "comment",
       title: t("schema-editor.database.comment"),
       resizable: true,
       className: "truncate",
-      render: (view) => {
-        return (
-          <NPerformantEllipsis class="w-full leading-6">
-            {view.comment}
-          </NPerformantEllipsis>
-        );
-      },
     },
   ];
   return columns;

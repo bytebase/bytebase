@@ -18,11 +18,7 @@
 </template>
 
 <script setup lang="tsx">
-import {
-  NDataTable,
-  NPerformantEllipsis,
-  type DataTableColumn,
-} from "naive-ui";
+import { NDataTable, type DataTableColumn } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import type { ComposedDatabase } from "@/types";
@@ -71,8 +67,6 @@ const columns = computed(() => {
       title: t("schema-editor.database.name"),
       resizable: true,
       className: "truncate",
-      ellipsis: true,
-      ellipsisComponent: "performant-ellipsis",
     },
     {
       key: "engine",
@@ -81,9 +75,6 @@ const columns = computed(() => {
       resizable: true,
       minWidth: 120,
       maxWidth: 180,
-      render: (table) => {
-        return table.engine;
-      },
     },
     {
       key: "collation",
@@ -92,8 +83,6 @@ const columns = computed(() => {
       resizable: true,
       minWidth: 120,
       maxWidth: 180,
-      ellipsis: true,
-      ellipsisComponent: "performant-ellipsis",
     },
     {
       key: "rowCountEst",
@@ -132,13 +121,8 @@ const columns = computed(() => {
       resizable: true,
       minWidth: 140,
       maxWidth: 320,
-      render: (table) => {
-        return (
-          <NPerformantEllipsis class="w-full leading-6">
-            {table.userComment}
-          </NPerformantEllipsis>
-        );
-      },
+      className: "truncate",
+      render: (table) => table.userComment,
     },
   ];
   return columns.filter((col) => !col.hide);
