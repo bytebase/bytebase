@@ -77,22 +77,40 @@ func getResourceChanges(database, schema string, node ast.Node, statement string
 		}
 	case *ast.DropTableStmt:
 		for _, table := range node.TableList {
-			d, s, table := table.Database, table.Schema, table.Name
-			if d == "" {
-				d = database
+			if table.Type == ast.TableTypeView {
+				d, s, v := table.Database, table.Schema, table.Name
+				if d == "" {
+					d = database
+				}
+				if s == "" {
+					s = schema
+				}
+				changedResources.AddView(
+					d,
+					s,
+					&storepb.ChangedResourceView{
+						Name:   v,
+						Ranges: []*storepb.Range{base.NewRange(statement, node.Text())},
+					},
+				)
+			} else {
+				d, s, table := table.Database, table.Schema, table.Name
+				if d == "" {
+					d = database
+				}
+				if s == "" {
+					s = schema
+				}
+				changedResources.AddTable(
+					d,
+					s,
+					&storepb.ChangedResourceTable{
+						Name:   table,
+						Ranges: []*storepb.Range{base.NewRange(statement, node.Text())},
+					},
+					true,
+				)
 			}
-			if s == "" {
-				s = schema
-			}
-			changedResources.AddTable(
-				d,
-				s,
-				&storepb.ChangedResourceTable{
-					Name:   table,
-					Ranges: []*storepb.Range{base.NewRange(statement, node.Text())},
-				},
-				true,
-			)
 		}
 	case *ast.AlterTableStmt:
 		if node.Table.Type == ast.TableTypeBaseTable {
@@ -135,6 +153,86 @@ func getResourceChanges(database, schema string, node ast.Node, statement string
 					break
 				}
 			}
+		}
+	case *ast.CreateIndexStmt:
+		d, s, table := node.Index.Table.Database, node.Index.Table.Schema, node.Index.Table.Name
+		if d == "" {
+			d = database
+		}
+		if s == "" {
+			s = schema
+		}
+		changedResources.AddTable(
+			d,
+			s,
+			&storepb.ChangedResourceTable{
+				Name:   table,
+				Ranges: []*storepb.Range{base.NewRange(statement, node.Text())},
+			},
+			false,
+		)
+	case *ast.DropIndexStmt:
+		for _, index := range node.IndexList {
+			d, s, table := index.Table.Database, index.Table.Schema, index.Table.Name
+			if d == "" {
+				d = database
+			}
+			if s == "" {
+				s = schema
+			}
+			changedResources.AddTable(
+				d,
+				s,
+				&storepb.ChangedResourceTable{
+					Name:   table,
+					Ranges: []*storepb.Range{base.NewRange(statement, node.Text())},
+				},
+				false,
+			)
+		}
+	case *ast.CreateViewStmt:
+		d, s, view := node.Name.Database, node.Name.Schema, node.Name.Name
+		if d == "" {
+			d = database
+		}
+		if s == "" {
+			s = schema
+		}
+		changedResources.AddView(
+			d,
+			s,
+			&storepb.ChangedResourceView{
+				Name:   view,
+				Ranges: []*storepb.Range{base.NewRange(statement, node.Text())},
+			},
+		)
+	case *ast.CreateFunctionStmt:
+		s, f := node.Function.Schema, node.Function.Name
+		if s == "" {
+			s = schema
+		}
+		changedResources.AddFunction(
+			database,
+			s,
+			&storepb.ChangedResourceFunction{
+				Name:   f,
+				Ranges: []*storepb.Range{base.NewRange(statement, node.Text())},
+			},
+		)
+	case *ast.DropFunctionStmt:
+		for _, ref := range node.FunctionList {
+			s, f := ref.Schema, ref.Name
+			if s == "" {
+				s = schema
+			}
+			changedResources.AddFunction(
+				database,
+				s,
+				&storepb.ChangedResourceFunction{
+					Name:   f,
+					Ranges: []*storepb.Range{base.NewRange(statement, node.Text())},
+				},
+			)
 		}
 	case *ast.CommentStmt:
 		if len(node.ParseResult.Stmts) != 1 {

@@ -10,7 +10,7 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-func TestExtractMySQLChangedResources(t *testing.T) {
+func TestExtractChangedResources(t *testing.T) {
 	statement := `CREATE TABLE t1 (c1 INT);
 	DROP TABLE t1;
 	ALTER TABLE t1 ADD COLUMN c1 INT;
