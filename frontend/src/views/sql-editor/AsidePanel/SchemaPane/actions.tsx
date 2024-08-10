@@ -239,21 +239,35 @@ export const useDropdown = () => {
         label: t("sql-editor.view-detail"),
         icon: () => <ExternalLinkIcon class="w-4 h-4" />,
         onSelect: async () => {
-          const tar = target as NodeTarget<
+          const { db, database, schema } = target as NodeTarget<
             "table" | "view" | "procedure" | "function"
           >;
-          const { db, schema } = tar;
           updateViewState({
             view: typeToView(type),
             schema: schema.name,
           });
           await nextTick();
+          const metadata: any = {
+            type,
+            db,
+            database,
+            schema,
+          };
+          if (type === "table") {
+            metadata.table = (target as NodeTarget<"table">).table;
+          }
+          if (type === "view") {
+            metadata.view = (target as NodeTarget<"view">).view;
+          }
+          if (type === "procedure") {
+            metadata.procedure = (target as NodeTarget<"procedure">).procedure;
+          }
+          if (type === "function") {
+            metadata.function = (target as NodeTarget<"function">).function;
+          }
           queuePendingScrollToTarget({
             db,
-            metadata: {
-              type,
-              ...tar,
-            } as any,
+            metadata: metadata as any,
           });
         },
       });

@@ -40,7 +40,7 @@ export type RichViewMetadata = BaseRichMetadata<"view"> & {
 };
 export type RichFunctionMetadata = BaseRichMetadata<"function"> & {
   schema: SchemaMetadata;
-  func: FunctionMetadata;
+  function: FunctionMetadata;
 };
 export type RichProcedureMetadata = BaseRichMetadata<"procedure"> & {
   schema: SchemaMetadata;
