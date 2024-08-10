@@ -86,7 +86,7 @@ func getResourceChanges(database, schema string, node ast.Node, statement string
 					s = schema
 				}
 				changedResources.AddView(
-					database,
+					d,
 					s,
 					&storepb.ChangedResourceView{
 						Name:   v,
