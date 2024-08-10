@@ -261,3 +261,49 @@ func (l *plsqlChangedResourceExtractListener) EnterDrop_view(ctx *parser.Drop_vi
 		},
 	)
 }
+
+func (l *plsqlChangedResourceExtractListener) EnterCreate_procedure_body(ctx *parser.Create_procedure_bodyContext) {
+	var schema, procedure string
+	procedureName := ctx.Procedure_name()
+	if procedureName.Id_expression() == nil {
+		procedure = NormalizeIdentifierContext(procedureName.Identifier())
+	} else {
+		schema = NormalizeIdentifierContext(procedureName.Identifier())
+		procedure = NormalizeIDExpression(procedureName.Id_expression())
+	}
+	if schema == "" {
+		schema = l.currentSchema
+	}
+
+	l.changedResources.AddProcedure(
+		schema,
+		schema,
+		&storepb.ChangedResourceProcedure{
+			Name:   procedure,
+			Ranges: []*storepb.Range{base.NewRange(l.statement, l.text)},
+		},
+	)
+}
+
+func (l *plsqlChangedResourceExtractListener) EnterCreate_function_body(ctx *parser.Create_function_bodyContext) {
+	var schema, function string
+	functionName := ctx.Function_name()
+	if functionName.Id_expression() == nil {
+		function = NormalizeIdentifierContext(functionName.Identifier())
+	} else {
+		schema = NormalizeIdentifierContext(functionName.Identifier())
+		function = NormalizeIDExpression(functionName.Id_expression())
+	}
+	if schema == "" {
+		schema = l.currentSchema
+	}
+
+	l.changedResources.AddFunction(
+		schema,
+		schema,
+		&storepb.ChangedResourceFunction{
+			Name:   function,
+			Ranges: []*storepb.Range{base.NewRange(l.statement, l.text)},
+		},
+	)
+}
