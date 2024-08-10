@@ -1,14 +1,13 @@
 package mysql
 
 import (
-	"sort"
-
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/mysql-parser"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	"github.com/bytebase/bytebase/backend/store/model"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -20,34 +19,27 @@ func init() {
 	base.RegisterExtractChangedResourcesFunc(storepb.Engine_DORIS, extractChangedResources)
 }
 
-func extractChangedResources(currentDatabase string, _ string, asts any, statement string) (*base.ChangeSummary, error) {
+func extractChangedResources(currentDatabase string, _ string, dbSchema *model.DBSchema, asts any, statement string) (*base.ChangeSummary, error) {
 	nodes, ok := asts.([]*ParseResult)
 	if !ok {
 		return nil, errors.Errorf("invalid ast type %T", asts)
 	}
-
+	changedResources := model.NewChangedResources(dbSchema)
 	l := &resourceChangedListener{
-		currentDatabase:   currentDatabase,
-		statement:         statement,
-		resourceChangeMap: make(map[string]*base.ResourceChange),
+		currentDatabase:  currentDatabase,
+		statement:        statement,
+		changedResources: changedResources,
 	}
 	for _, node := range nodes {
 		l.reset()
 		antlr.ParseTreeWalkerDefault.Walk(l, node.Tree)
 	}
 
-	var resourceChanges []*base.ResourceChange
-	for _, change := range l.resourceChangeMap {
-		resourceChanges = append(resourceChanges, change)
-	}
-	sort.Slice(resourceChanges, func(i, j int) bool {
-		return resourceChanges[i].String() < resourceChanges[j].String()
-	})
 	return &base.ChangeSummary{
-		ResourceChanges: resourceChanges,
-		SampleDMLS:      l.sampleDMLs,
-		DMLCount:        l.dmlCount,
-		InsertCount:     l.insertCount,
+		ChangedResources: changedResources,
+		SampleDMLS:       l.sampleDMLs,
+		DMLCount:         l.dmlCount,
+		InsertCount:      l.insertCount,
 	}, nil
 }
 
@@ -57,10 +49,10 @@ type resourceChangedListener struct {
 	currentDatabase string
 	statement       string
 
-	resourceChangeMap map[string]*base.ResourceChange
-	sampleDMLs        []string
-	dmlCount          int
-	insertCount       int
+	changedResources *model.ChangedResources
+	sampleDMLs       []string
+	dmlCount         int
+	insertCount      int
 
 	// Internal data structure used temporarily.
 	text string
@@ -76,91 +68,99 @@ func (l *resourceChangedListener) EnterQuery(ctx *parser.QueryContext) {
 
 // EnterCreateTable is called when production createTable is entered.
 func (l *resourceChangedListener) EnterCreateTable(ctx *parser.CreateTableContext) {
-	resource := base.SchemaResource{
-		Database: l.currentDatabase,
-	}
+	database := l.currentDatabase
 	db, table := NormalizeMySQLTableName(ctx.TableName())
 	if db != "" {
-		resource.Database = db
+		database = db
 	}
-	resource.Table = table
 
-	putResourceChange(l.resourceChangeMap, &base.ResourceChange{
-		Resource: resource,
-		Ranges:   []base.Range{base.NewRange(l.statement, l.text)},
-	})
+	l.changedResources.AddTable(
+		database,
+		"",
+		&storepb.ChangedResourceTable{
+			Name:   table,
+			Ranges: []*storepb.Range{base.NewRange(l.statement, l.text)},
+		},
+		false,
+	)
 }
 
 // EnterDropTable is called when production dropTable is entered.
 func (l *resourceChangedListener) EnterDropTable(ctx *parser.DropTableContext) {
 	for _, table := range ctx.TableRefList().AllTableRef() {
-		resource := base.SchemaResource{
-			Database: l.currentDatabase,
-		}
+		database := l.currentDatabase
 		db, table := NormalizeMySQLTableRef(table)
 		if db != "" {
-			resource.Database = db
+			database = db
 		}
-		resource.Table = table
 
-		putResourceChange(l.resourceChangeMap, &base.ResourceChange{
-			Resource:    resource,
-			Ranges:      []base.Range{base.NewRange(l.statement, l.text)},
-			AffectTable: true,
-		})
+		l.changedResources.AddTable(
+			database,
+			"",
+			&storepb.ChangedResourceTable{
+				Name:   table,
+				Ranges: []*storepb.Range{base.NewRange(l.statement, l.text)},
+			},
+			true,
+		)
 	}
 }
 
 // EnterAlterTable is called when production alterTable is entered.
 func (l *resourceChangedListener) EnterAlterTable(ctx *parser.AlterTableContext) {
-	resource := base.SchemaResource{
-		Database: l.currentDatabase,
-	}
+	database := l.currentDatabase
 	db, table := NormalizeMySQLTableRef(ctx.TableRef())
 	if db != "" {
-		resource.Database = db
+		database = db
 	}
-	resource.Table = table
 
-	putResourceChange(l.resourceChangeMap, &base.ResourceChange{
-		Resource:    resource,
-		Ranges:      []base.Range{base.NewRange(l.statement, l.text)},
-		AffectTable: true,
-	})
+	l.changedResources.AddTable(
+		database,
+		"",
+		&storepb.ChangedResourceTable{
+			Name:   table,
+			Ranges: []*storepb.Range{base.NewRange(l.statement, l.text)},
+		},
+		true,
+	)
 }
 
 // EnterRenameTableStatement is called when production renameTableStatement is entered.
 func (l *resourceChangedListener) EnterRenameTableStatement(ctx *parser.RenameTableStatementContext) {
 	for _, pair := range ctx.AllRenamePair() {
 		{
-			resource := base.SchemaResource{
-				Database: l.currentDatabase,
-			}
+			database := l.currentDatabase
 			db, table := NormalizeMySQLTableRef(pair.TableRef())
 			if db != "" {
-				resource.Database = db
+				database = db
 			}
-			resource.Table = table
 
-			putResourceChange(l.resourceChangeMap, &base.ResourceChange{
-				Resource: resource,
-				Ranges:   []base.Range{base.NewRange(l.statement, l.text)},
-			})
+			l.changedResources.AddTable(
+				database,
+				"",
+				&storepb.ChangedResourceTable{
+					Name:   table,
+					Ranges: []*storepb.Range{base.NewRange(l.statement, l.text)},
+				},
+				false,
+			)
 		}
 		{
-			resource := base.SchemaResource{
-				Database: l.currentDatabase,
-			}
+			database := l.currentDatabase
 			db, table := NormalizeMySQLTableName(pair.TableName())
 			if db != "" {
-				resource.Database = db
+				database = db
 			}
-			resource.Table = table
 
-			putResourceChange(l.resourceChangeMap, &base.ResourceChange{
-				Resource: resource,
-				Ranges:   []base.Range{base.NewRange(l.statement, l.text)},
-			})
+			l.changedResources.AddTable(
+				database,
+				"",
+				&storepb.ChangedResourceTable{
+					Name:   table,
+					Ranges: []*storepb.Range{base.NewRange(l.statement, l.text)},
+				},
+				false,
+			)
 		}
 	}
 }
@@ -172,18 +172,21 @@ func (l *resourceChangedListener) EnterInsertStatement(ctx *parser.InsertStateme
 	if ctx.TableRef() == nil {
 		return
 	}
-	resource := base.SchemaResource{
-		Database: l.currentDatabase,
-	}
+
+	database := l.currentDatabase
 	db, table := NormalizeMySQLTableRef(ctx.TableRef())
 	if db != "" {
-		resource.Database = db
+		database = db
 	}
-	resource.Table = table
 
-	putResourceChange(l.resourceChangeMap, &base.ResourceChange{
-		Resource: resource,
-	})
+	l.changedResources.AddTable(
+		database,
+		"",
+		&storepb.ChangedResourceTable{
+			Name: table,
+		},
+		false,
+	)
 
 	if ctx.InsertFromConstructor() != nil && ctx.InsertFromConstructor().InsertValues() != nil && ctx.InsertFromConstructor().InsertValues().ValueList() != nil {
 		l.insertCount += len(ctx.InsertFromConstructor().InsertValues().ValueList().AllValues())
@@ -204,9 +207,14 @@ func (l *resourceChangedListener) EnterUpdateStatement(ctx *parser.UpdateStateme
 	for _, tableRefCtx := range ctx.TableReferenceList().AllTableReference() {
 		resources := l.extractTableReference(tableRefCtx)
 		for _, resource := range resources {
-			putResourceChange(l.resourceChangeMap, &base.ResourceChange{
-				Resource: resource,
-			})
+			l.changedResources.AddTable(
+				resource.Database,
+				"",
+				&storepb.ChangedResourceTable{
+					Name: resource.Table,
+				},
+				false,
+			)
 		}
 	}
 
@@ -232,28 +240,20 @@ func (l *resourceChangedListener) EnterDeleteStatement(ctx *parser.DeleteStateme
 	}
 
 	for _, resource := range allResources {
-		putResourceChange(l.resourceChangeMap, &base.ResourceChange{
-			Resource: resource,
-		})
+		l.changedResources.AddTable(
+			resource.Database,
+			"",
+			&storepb.ChangedResourceTable{
+				Name: resource.Table,
+			},
+			false,
+		)
 	}
 
 	// Track DMLs.
 	l.dmlCount++
 	if len(l.sampleDMLs) < common.MaximumLintExplainSize {
 		l.sampleDMLs = append(l.sampleDMLs, l.text)
-	}
-}
-
-func putResourceChange(resourceChangeMap map[string]*base.ResourceChange, change *base.ResourceChange) {
-	v, ok := resourceChangeMap[change.String()]
-	if !ok {
-		resourceChangeMap[change.String()] = change
-		return
-	}
-
-	v.Ranges = append(v.Ranges, change.Ranges...)
-	if change.AffectTable {
-		v.AffectTable = true
 	}
 }
 
