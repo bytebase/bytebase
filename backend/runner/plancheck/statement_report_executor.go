@@ -17,7 +17,6 @@ import (
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	"github.com/bytebase/bytebase/backend/plugin/parser/pg"
 	"github.com/bytebase/bytebase/backend/store"
-	"github.com/bytebase/bytebase/backend/store/model"
 	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -110,14 +109,14 @@ func (e *StatementReportExecutor) Run(ctx context.Context, config *storepb.PlanC
 }
 
 func (e *StatementReportExecutor) runReport(ctx context.Context, instance *store.InstanceMessage, database *store.DatabaseMessage, statement string) ([]*storepb.PlanCheckRunResult_Result, error) {
-	dbSchema, err := e.store.GetDBSchema(ctx, database.UID)
+	databaseSchema, err := e.store.GetDBSchema(ctx, database.UID)
 	if err != nil {
 		return nil, err
 	}
-	if dbSchema == nil {
+	if databaseSchema == nil {
 		return nil, errors.Errorf("database schema not found: %d", database.UID)
 	}
-	if dbSchema.GetMetadata() == nil {
+	if databaseSchema.GetMetadata() == nil {
 		return nil, errors.Errorf("database schema metadata not found: %d", database.UID)
 	}
 
@@ -195,11 +194,11 @@ func (e *StatementReportExecutor) runReport(ctx context.Context, instance *store
 		return nil, nil
 	}
 
-	changeSummary, err := base.ExtractChangedResources(instance.Engine, database.DatabaseName, defaultSchema, asts, renderedStatement)
+	changeSummary, err := base.ExtractChangedResources(instance.Engine, database.DatabaseName, defaultSchema, databaseSchema, asts, renderedStatement)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to extract changed resources")
 	}
-	totalAffectedRows := calculateAffectedRows(ctx, changeSummary, dbSchema, sqlDB, explainCalculator)
+	totalAffectedRows := calculateAffectedRows(ctx, changeSummary, sqlDB, explainCalculator)
 
 	return []*storepb.PlanCheckRunResult_Result{
 		{
@@ -210,7 +209,7 @@ func (e *StatementReportExecutor) runReport(ctx context.Context, instance *store
 				SqlSummaryReport: &storepb.PlanCheckRunResult_Result_SqlSummaryReport{
 					StatementTypes:   sqlTypes,
 					AffectedRows:     int32(totalAffectedRows),
-					ChangedResources: convertToChangedResources(dbSchema, changeSummary.ResourceChanges),
+					ChangedResources: changeSummary.ChangedResources.Build(),
 				},
 			},
 		},
@@ -219,7 +218,7 @@ func (e *StatementReportExecutor) runReport(ctx context.Context, instance *store
 
 type getAffectedRowsFromExplain func(context.Context, *sql.DB, string) (int64, error)
 
-func calculateAffectedRows(ctx context.Context, changeSummary *base.ChangeSummary, dbMetadata *model.DBSchema, sqlDB *sql.DB, explainCalculator getAffectedRowsFromExplain) int64 {
+func calculateAffectedRows(ctx context.Context, changeSummary *base.ChangeSummary, sqlDB *sql.DB, explainCalculator getAffectedRowsFromExplain) int64 {
 	var totalAffectedRows int64
 	// Count DMLs.
 	sampleCount := 0
@@ -237,60 +236,7 @@ func calculateAffectedRows(ctx context.Context, changeSummary *base.ChangeSummar
 	}
 	totalAffectedRows += int64(changeSummary.InsertCount)
 	// Count affected rows by DDLs.
-	for _, change := range changeSummary.ResourceChanges {
-		if !change.AffectTable {
-			continue
-		}
-		if dbMetadata == nil {
-			continue
-		}
-		dbMeta := dbMetadata.GetDatabaseMetadata()
-		if dbMeta == nil {
-			continue
-		}
-		schemaMeta := dbMeta.GetSchema(change.Resource.Schema)
-		if schemaMeta == nil {
-			continue
-		}
-		tableMeta := schemaMeta.GetTable(change.Resource.Table)
-		if tableMeta == nil {
-			continue
-		}
-		totalAffectedRows += tableMeta.GetRowCount()
-	}
+	totalAffectedRows += changeSummary.ChangedResources.CountAffectedTableRows()
 
 	return totalAffectedRows
-}
-
-func convertToChangedResources(dbMetadata *model.DBSchema, resourceChanges []*base.ResourceChange) *storepb.ChangedResources {
-	meta := &storepb.ChangedResources{}
-	// resourceChange is ordered by (db, schema, table)
-	for _, resourceChange := range resourceChanges {
-		resource := resourceChange.Resource
-		if len(meta.Databases) == 0 || meta.Databases[len(meta.Databases)-1].Name != resource.Database {
-			meta.Databases = append(meta.Databases, &storepb.ChangedResourceDatabase{Name: resource.Database})
-		}
-		database := meta.Databases[len(meta.Databases)-1]
-		if len(database.Schemas) == 0 || database.Schemas[len(database.Schemas)-1].Name != resource.Schema {
-			database.Schemas = append(database.Schemas, &storepb.ChangedResourceSchema{Name: resource.Schema})
-		}
-		schema := database.Schemas[len(database.Schemas)-1]
-		var tableRows int64
-		if dbMetadata != nil && dbMetadata.GetDatabaseMetadata() != nil && dbMetadata.GetDatabaseMetadata().GetSchema(resource.Schema) != nil && dbMetadata.GetDatabaseMetadata().GetSchema(resource.Schema).GetTable(resource.Table) != nil {
-			tableRows = dbMetadata.GetDatabaseMetadata().GetSchema(resource.Schema).GetTable(resource.Table).GetRowCount()
-		}
-		var ranges []*storepb.Range
-		for _, r := range resourceChange.Ranges {
-			ranges = append(ranges, &storepb.Range{
-				Start: int32(r.Start),
-				End:   int32(r.End),
-			})
-		}
-		schema.Tables = append(schema.Tables, &storepb.ChangedResourceTable{
-			Name:      resource.Table,
-			TableRows: tableRows,
-			Ranges:    ranges,
-		})
-	}
-	return meta
 }

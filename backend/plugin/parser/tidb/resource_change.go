@@ -1,7 +1,6 @@
 package tidb
 
 import (
-	"sort"
 	"strings"
 
 	tidbast "github.com/pingcap/tidb/pkg/parser/ast"
@@ -9,6 +8,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	"github.com/bytebase/bytebase/backend/store/model"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -16,17 +16,18 @@ func init() {
 	base.RegisterExtractChangedResourcesFunc(storepb.Engine_TIDB, extractChangedResources)
 }
 
-func extractChangedResources(database string, _ string, asts any, statement string) (*base.ChangeSummary, error) {
+func extractChangedResources(database string, _ string, dbSchema *model.DBSchema, asts any, statement string) (*base.ChangeSummary, error) {
 	nodes, ok := asts.([]tidbast.StmtNode)
 	if !ok {
 		return nil, errors.Errorf("invalid ast type %T", asts)
 	}
-	resourceChangeMap := make(map[string]*base.ResourceChange)
+
+	changedResources := model.NewChangedResources(dbSchema)
 	dmlCount := 0
 	insertCount := 0
 	var sampleDMLs []string
 	for _, node := range nodes {
-		err := getResourceChanges(database, node, statement, resourceChangeMap)
+		err := getResourceChanges(database, node, statement, changedResources)
 		if err != nil {
 			return nil, err
 		}
@@ -50,95 +51,95 @@ func extractChangedResources(database string, _ string, asts any, statement stri
 		}
 	}
 
-	var resourceChanges []*base.ResourceChange
-	for _, change := range resourceChangeMap {
-		resourceChanges = append(resourceChanges, change)
-	}
-	sort.Slice(resourceChanges, func(i, j int) bool {
-		return resourceChanges[i].String() < resourceChanges[j].String()
-	})
 	return &base.ChangeSummary{
-		ResourceChanges: resourceChanges,
-		DMLCount:        dmlCount,
-		SampleDMLS:      sampleDMLs,
-		InsertCount:     insertCount,
+		ChangedResources: changedResources,
+		DMLCount:         dmlCount,
+		SampleDMLS:       sampleDMLs,
+		InsertCount:      insertCount,
 	}, nil
 }
 
-func getResourceChanges(database string, node tidbast.StmtNode, statement string, resourceChangeMap map[string]*base.ResourceChange) error {
+func getResourceChanges(database string, node tidbast.StmtNode, statement string, changedResources *model.ChangedResources) error {
 	switch node := node.(type) {
 	case *tidbast.CreateTableStmt:
-		resource := base.SchemaResource{
-			Database: database,
-			Table:    node.Table.Name.O,
+		d, table := node.Table.Schema.O, node.Table.Name.O
+		if d == "" {
+			d = database
 		}
-		if node.Table.Schema.O != "" {
-			resource.Database = node.Table.Schema.O
-		}
-		putResourceChange(resourceChangeMap, &base.ResourceChange{
-			Resource: resource,
-			Ranges:   []base.Range{getRange(statement, node)},
-		})
+		changedResources.AddTable(
+			d,
+			"",
+			&storepb.ChangedResourceTable{
+				Name:   table,
+				Ranges: []*storepb.Range{getRange(statement, node)},
+			},
+			false,
+		)
 	case *tidbast.DropTableStmt:
 		// TODO(d): deal with DROP VIEW statement.
 		if node.IsView {
 			return nil
 		}
 		for _, name := range node.Tables {
-			resource := base.SchemaResource{
-				Database: database,
-				Table:    name.Name.O,
+			d, table := name.Schema.O, name.Name.O
+			if d == "" {
+				d = database
 			}
-			if name.Schema.O != "" {
-				resource.Database = name.Schema.O
-			}
-
-			putResourceChange(resourceChangeMap, &base.ResourceChange{
-				Resource:    resource,
-				Ranges:      []base.Range{getRange(statement, node)},
-				AffectTable: true,
-			})
+			changedResources.AddTable(
+				d,
+				"",
+				&storepb.ChangedResourceTable{
+					Name:   table,
+					Ranges: []*storepb.Range{getRange(statement, node)},
+				},
+				true,
+			)
 		}
 	case *tidbast.AlterTableStmt:
-		resource := base.SchemaResource{
-			Database: database,
-			Table:    node.Table.Name.O,
+		d, table := node.Table.Schema.O, node.Table.Name.O
+		if d == "" {
+			d = database
 		}
-		if node.Table.Schema.O != "" {
-			resource.Database = node.Table.Schema.O
-		}
-		putResourceChange(resourceChangeMap, &base.ResourceChange{
-			Resource:    resource,
-			Ranges:      []base.Range{getRange(statement, node)},
-			AffectTable: true,
-		})
+		changedResources.AddTable(
+			d,
+			"",
+			&storepb.ChangedResourceTable{
+				Name:   table,
+				Ranges: []*storepb.Range{getRange(statement, node)},
+			},
+			true,
+		)
 	case *tidbast.RenameTableStmt:
 		for _, tableToTable := range node.TableToTables {
 			{
-				resource := base.SchemaResource{
-					Database: database,
-					Table:    tableToTable.OldTable.Name.O,
+				d, table := tableToTable.OldTable.Schema.O, tableToTable.OldTable.Name.O
+				if d == "" {
+					d = database
 				}
-				if tableToTable.OldTable.Schema.O != "" {
-					resource.Database = tableToTable.OldTable.Schema.O
-				}
-				putResourceChange(resourceChangeMap, &base.ResourceChange{
-					Resource: resource,
-					Ranges:   []base.Range{getRange(statement, node)},
-				})
+				changedResources.AddTable(
+					d,
+					"",
+					&storepb.ChangedResourceTable{
+						Name:   table,
+						Ranges: []*storepb.Range{getRange(statement, node)},
+					},
+					false,
+				)
 			}
 			{
-				resource := base.SchemaResource{
-					Database: database,
-					Table:    tableToTable.NewTable.Name.O,
+				d, table := tableToTable.NewTable.Schema.O, tableToTable.NewTable.Name.O
+				if d == "" {
+					d = database
 				}
-				if tableToTable.NewTable.Schema.O != "" {
-					resource.Database = tableToTable.NewTable.Schema.O
-				}
-				putResourceChange(resourceChangeMap, &base.ResourceChange{
-					Resource: resource,
-					Ranges:   []base.Range{getRange(statement, node)},
-				})
+				changedResources.AddTable(
+					d,
+					"",
+					&storepb.ChangedResourceTable{
+						Name:   table,
+						Ranges: []*storepb.Range{getRange(statement, node)},
+					},
+					false,
+				)
 			}
 		}
 	default:
@@ -146,24 +147,11 @@ func getResourceChanges(database string, node tidbast.StmtNode, statement string
 	return nil
 }
 
-func getRange(statement string, node tidbast.StmtNode) base.Range {
+func getRange(statement string, node tidbast.StmtNode) *storepb.Range {
 	r := base.NewRange(statement, trimStatement(node.OriginalText()))
 	// TiDB node text does not including the trailing semicolon.
 	r.End++
 	return r
-}
-
-func putResourceChange(resourceChangeMap map[string]*base.ResourceChange, change *base.ResourceChange) {
-	v, ok := resourceChangeMap[change.String()]
-	if !ok {
-		resourceChangeMap[change.String()] = change
-		return
-	}
-
-	v.Ranges = append(v.Ranges, change.Ranges...)
-	if change.AffectTable {
-		v.AffectTable = true
-	}
 }
 
 func trimStatement(statement string) string {
