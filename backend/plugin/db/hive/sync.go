@@ -235,104 +235,93 @@ type TableInfo struct {
 	comment      string
 }
 
+const (
+	columnSection = iota
+	tableInfoSection
+	storageSection
+	viewSection
+)
+
 func (d *Driver) getTableInfo(ctx context.Context, tableName string, databaseName string) (
 	*TableInfo,
 	error,
 ) {
-	var (
-		columnMetadatas []*storepb.ColumnMetadata
-		comment         string
-		tableType       string
-		viewDefination  string
-		totalSize       int
-		numRows         int
-	)
+	tableInfo := &TableInfo{}
 
 	cursor := d.conn.Cursor()
 	query := fmt.Sprintf("DESCRIBE FORMATTED `%s`.`%s`", databaseName, tableName)
 	if err := executeCursor(ctx, cursor, query); err != nil {
 		return nil, errors.Wrapf(err, "failed to describe table %s", tableName)
 	}
-	cnt := 0
+
+	section := columnSection
 	for cursor.HasMore(ctx) {
-		var (
-			dataTypeValue   string
-			commentValue    string
-			columnNameValue string
-		)
-		cnt++
-		// the first two rows contain the metadata of the rowMap.
-		if cnt <= 2 {
-			continue
-		}
-		// the rowMap contains the metadata for the table and its columns.
 		rowMap := cursor.RowMap(ctx)
-		if rowMap["data_type"] != nil {
-			v, ok := rowMap["data_type"].(string)
-			if !ok {
-				return nil, errors.New("type assertions fails: data_type")
-			}
-			dataTypeValue = v
+		var colName, dataType, comment string
+		colNameVal, dataTypeVal, commentVal := rowMap["col_name"], rowMap["data_type"], rowMap["comment"]
+		if v, ok := colNameVal.(string); ok {
+			colName = v
 		}
-		if rowMap["comment"] != nil {
-			v, ok := rowMap["comment"].(string)
-			if !ok {
-				return nil, errors.New("type assertion fails: comment")
-			}
-			commentValue = strings.TrimRight(v, " ")
+		if v, ok := dataTypeVal.(string); ok {
+			dataType = v
 		}
-		if rowMap["col_name"] != nil {
-			v, ok := rowMap["col_name"].(string)
-			if !ok {
-				return nil, errors.New("type assertions fails: col_name")
-			}
-			columnNameValue = v
+		if v, ok := commentVal.(string); ok {
+			comment = v
 		}
 
-		// process table type.
-		if strings.Contains(columnNameValue, "Table Type") {
-			tableType = strings.ReplaceAll(dataTypeValue, " ", "")
-		}
-
-		if columnNameValue != "" {
-			// process column.
-			columnMetadatas = append(columnMetadatas, &storepb.ColumnMetadata{
-				Name:    columnNameValue,
-				Type:    dataTypeValue,
-				Comment: commentValue,
-			})
-			continue
-		}
-
+		// The first rows are column metadata, followed by "# Detailed Table Information" and "# Storage Information"
 		switch {
-		case strings.Contains(dataTypeValue, "numRows"):
-			n, err := strconv.Atoi(commentValue)
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to parse row count")
-			}
-			numRows = n
-		case strings.Contains(dataTypeValue, "totalSize"):
-			size, err := strconv.Atoi(commentValue)
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to parse table size")
-			}
-			totalSize = size
-		case strings.Contains(dataTypeValue, "comment"):
-			comment = commentValue
+		case strings.HasPrefix(colName, "# Detailed Table Information"):
+			section = tableInfoSection
+		case strings.HasPrefix(colName, "# Storage Information"):
+			section = storageSection
+		case strings.HasPrefix(colName, "# View Information"):
+			section = viewSection
 		}
-
-		if strings.Contains(columnNameValue, "View Original Text") {
-			// get view definition if it exists.
-			viewDefination = dataTypeValue
+		switch section {
+		case columnSection:
+			if colNameVal != nil && dataTypeVal != nil && colName != "" && dataType != "" {
+				// Column metadata.
+				position := len(tableInfo.colMetadatas) + 1
+				tableInfo.colMetadatas = append(tableInfo.colMetadatas, &storepb.ColumnMetadata{
+					Name:     colName,
+					Type:     dataType,
+					Comment:  comment,
+					Position: int32(position),
+				})
+			}
+		case tableInfoSection:
+			switch {
+			case trimField(colName) == "Table Type:":
+				tableInfo.tableType = trimField(dataType)
+			case trimField(dataType) == "numRows":
+				n, err := strconv.Atoi(trimField(comment))
+				if err != nil {
+					return nil, errors.Wrapf(err, "failed to parse row count")
+				}
+				tableInfo.numRows = n
+			case trimField(dataType) == "totalSize":
+				n, err := strconv.Atoi(trimField(comment))
+				if err != nil {
+					return nil, errors.Wrapf(err, "failed to parse row count")
+				}
+				tableInfo.totalSize = n
+			case trimField(dataType) == "comment":
+				tableInfo.comment = trimField(comment)
+			}
+		case viewSection:
+			switch {
+			case strings.HasPrefix(colName, "View Original Text:"):
+				tableInfo.viewDef = trimField(dataType)
+			case strings.HasPrefix(colName, "Original Query:"):
+				tableInfo.viewDef = trimField(dataType)
+			}
 		}
 	}
 
-	return &TableInfo{
-		tableType,
-		columnMetadatas,
-		numRows,
-		viewDefination,
-		totalSize,
-		comment,
-	}, nil
+	return tableInfo, nil
+}
+
+func trimField(field string) string {
+	return strings.Trim(field, " ")
 }
