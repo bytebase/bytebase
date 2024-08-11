@@ -602,6 +602,7 @@ func (n *metadataDiffTableNode) applyDiffTo(target *storepb.SchemaMetadata) erro
 					Columns:     table.Columns,
 					ForeignKeys: table.ForeignKeys,
 					Indexes:     table.Indexes,
+					Partitions:  table.Partitions,
 				}
 				for _, columnName := range n.columnNames {
 					if columnNode, in := n.columnsMap[columnName]; in {
@@ -1761,37 +1762,44 @@ func diffTableMetadata(base, head *storepb.TableMetadata) (*metadataDiffTableNod
 		}
 	}
 
-	basePartitionMap := make(map[string]*storepb.TablePartitionMetadata)
-	if base != nil {
-		for _, partition := range base.Partitions {
-			basePartitionMap[partition.Name] = partition
-		}
-	}
-
-	headPartitionMap := make(map[string]*storepb.TablePartitionMetadata)
-	if head != nil {
-		for _, partition := range head.Partitions {
-			headPartitionMap[partition.Name] = partition
-		}
-	}
-
 	partitionNamesMap := make(map[string]bool)
-	var partitionNamesSlice []string
+	var partitionNameSlice []string
 
-	for partitionName := range basePartitionMap {
-		partitionNamesMap[partitionName] = true
-		partitionNamesSlice = append(partitionNamesSlice, partitionName)
-	}
-
-	for partitionName := range headPartitionMap {
-		if _, ok := partitionNamesMap[partitionName]; !ok {
-			partitionNamesSlice = append(partitionNamesSlice, partitionName)
+	basePartitionMap := make(map[string]int)
+	if base != nil {
+		for idx, partition := range base.Partitions {
+			basePartitionMap[partition.Name] = idx
+			if _, ok := partitionNamesMap[partition.Name]; !ok {
+				partitionNameSlice = append(partitionNameSlice, partition.Name)
+			}
+			partitionNamesMap[partition.Name] = true
 		}
-		partitionNamesMap[partitionName] = true
 	}
 
-	for _, partitionName := range partitionNamesSlice {
-		basePartition, headPartition := basePartitionMap[partitionName], headPartitionMap[partitionName]
+	headPartitionMap := make(map[string]int)
+	if head != nil {
+		for idx, partition := range head.Partitions {
+			headPartitionMap[partition.Name] = idx
+			if _, ok := partitionNamesMap[partition.Name]; !ok {
+				partitionNameSlice = append(partitionNameSlice, partition.Name)
+			}
+			partitionNamesMap[partition.Name] = true
+		}
+	}
+
+	for _, partitionName := range partitionNameSlice {
+		basePartitionIdx, basePartitionOk := basePartitionMap[partitionName]
+		headPartitionIdx, headPartitionOk := headPartitionMap[partitionName]
+		var basePartition, headPartition *storepb.TablePartitionMetadata
+		if basePartitionOk {
+			basePartition = base.Partitions[basePartitionIdx]
+		}
+		if headPartitionOk {
+			headPartition = head.Partitions[headPartitionIdx]
+		}
+		if basePartitionIdx != 0 {
+			basePartition = base.Partitions[basePartitionIdx]
+		}
 		diffNode, err := diffPartitionMetadata(basePartition, headPartition)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to diff partition %q", partitionName)
@@ -1803,7 +1811,7 @@ func diffTableMetadata(base, head *storepb.TableMetadata) (*metadataDiffTableNod
 	}
 
 	if action == diffActionUpdate {
-		if len(tableNode.columnsMap) == 0 && len(tableNode.foreignKeys) == 0 && len(tableNode.indexes) == 0 {
+		if len(tableNode.columnsMap) == 0 && len(tableNode.foreignKeys) == 0 && len(tableNode.indexes) == 0 && len(tableNode.partitionsMap) == 0 {
 			return nil, nil
 		}
 	}
