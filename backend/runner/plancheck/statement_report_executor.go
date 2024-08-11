@@ -204,6 +204,8 @@ func (e *StatementReportExecutor) runReport(ctx context.Context, instance *store
 		explainCalculator = od.CountAffectedRows
 
 		defaultSchema = database.DatabaseName
+	case storepb.Engine_MSSQL:
+		defaultSchema = "OBO"
 	default:
 		// Already checked in the Run().
 		return nil, nil
@@ -237,14 +239,16 @@ func calculateAffectedRows(ctx context.Context, changeSummary *base.ChangeSummar
 	var totalAffectedRows int64
 	// Count DMLs.
 	sampleCount := 0
-	for _, dml := range changeSummary.SampleDMLS {
-		count, err := explainCalculator(ctx, dml)
-		if err != nil {
-			slog.Error("failed to calculate affected rows", log.BBError(err))
-			continue
+	if explainCalculator != nil {
+		for _, dml := range changeSummary.SampleDMLS {
+			count, err := explainCalculator(ctx, dml)
+			if err != nil {
+				slog.Error("failed to calculate affected rows", log.BBError(err))
+				continue
+			}
+			sampleCount++
+			totalAffectedRows += count
 		}
-		sampleCount++
-		totalAffectedRows += count
 	}
 	if sampleCount > 0 {
 		totalAffectedRows = int64((float64(totalAffectedRows) / float64(sampleCount)) * float64(changeSummary.DMLCount))
