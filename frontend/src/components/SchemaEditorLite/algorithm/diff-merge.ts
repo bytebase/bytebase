@@ -4,6 +4,7 @@ import type {
   FunctionMetadata,
   ProcedureMetadata,
   TablePartitionMetadata,
+  ViewMetadata,
 } from "@/types/proto/v1/database_service";
 import {
   type ColumnMetadata,
@@ -59,6 +60,8 @@ export class DiffMerge {
   targetTableMap = new Map<string, TableMetadata>();
   sourceColumnMap = new Map<string, ColumnMetadata>();
   targetColumnMap = new Map<string, ColumnMetadata>();
+  sourceViewMap = new Map<string, ViewMetadata>();
+  targetViewMap = new Map<string, ViewMetadata>();
   sourceProcedureMap = new Map<string, ProcedureMetadata>();
   targetProcedureMap = new Map<string, ProcedureMetadata>();
   sourceFunctionMap = new Map<string, FunctionMetadata>();
@@ -76,6 +79,7 @@ export class DiffMerge {
     | "mergeColumns"
     | "mergeTablePartitions"
     | "diffColumn"
+    | "mergeViews"
     | "mergeProcedures"
     | "mergeFunctions"
     | "mergeSchemaConfigs"
@@ -140,6 +144,16 @@ export class DiffMerge {
         mergedSchemas.push(targetSchema);
         // merge tables for existed (maybe updated) schema
         this.mergeTables(
+          {
+            database: sourceMetadata,
+            schema: sourceSchema,
+          },
+          {
+            database: targetMetadata,
+            schema: targetSchema,
+          }
+        );
+        this.mergeViews(
           {
             database: sourceMetadata,
             schema: sourceSchema,
@@ -525,6 +539,57 @@ export class DiffMerge {
       this.context.markEditStatusByKey(key, "updated");
     }
     this.timer.end("diffColumn", 1);
+  }
+  mergeViews(source: RichSchemaMetadata, target: RichSchemaMetadata) {
+    const { context, database, sourceViewMap, targetViewMap } = this;
+    const { schema: sourceSchema } = source;
+    const { schema: targetSchema } = target;
+    const sourceViews = sourceSchema.views;
+    const targetViews = targetSchema.views;
+    this.timer.begin("mergeViews");
+    mapViews(database, sourceSchema, sourceViews, sourceViewMap);
+    mapViews(database, targetSchema, targetViews, targetViewMap);
+
+    const mergedViews: ViewMetadata[] = [];
+    for (let i = 0; i < sourceViews.length; i++) {
+      const sourceView = sourceViews[i];
+      const key = keyForResourceName({
+        database: database.name,
+        schema: sourceSchema.name,
+        view: sourceView.name,
+      });
+      let targetView = targetViewMap.get(key);
+      if (targetView) {
+        // existed view
+        mergedViews.push(targetView);
+        if (sourceView.definition !== targetView.definition) {
+          context.markEditStatusByKey(key, "updated");
+        }
+        continue;
+      }
+      // dropped view
+      // copy the source view to target and mark it as 'dropped'
+      targetView = cloneDeep(sourceView);
+      mergedViews.push(targetView);
+      context.markEditStatusByKey(key, "dropped");
+    }
+    for (let i = 0; i < targetViews.length; i++) {
+      const targetView = targetViews[i];
+      const key = keyForResourceName({
+        database: database.name,
+        schema: targetSchema.name,
+        view: targetView.name,
+      });
+      const sourceView = sourceViewMap.get(key);
+      if (!sourceView) {
+        // newly created view
+        // mark it as 'created'
+        mergedViews.push(targetView);
+        context.markEditStatusByKey(key, "created");
+      }
+    }
+    targetSchema.views = mergedViews;
+    this.timer.end("mergeViews", sourceViews.length + targetViews.length);
   }
   mergeProcedures(source: RichSchemaMetadata, target: RichSchemaMetadata) {
     const { context, database, sourceProcedureMap, targetProcedureMap } = this;
@@ -931,6 +996,21 @@ const mapTablePartitions = (
       partition: partition.name,
     });
     map.set(key, partition);
+  });
+};
+const mapViews = (
+  database: ComposedDatabase,
+  schema: SchemaMetadata,
+  views: ViewMetadata[],
+  map: Map<string, ViewMetadata>
+) => {
+  views.forEach((view) => {
+    const key = keyForResourceName({
+      database: database.name,
+      schema: schema.name,
+      view: view.name,
+    });
+    map.set(key, view);
   });
 };
 const mapProcedures = (

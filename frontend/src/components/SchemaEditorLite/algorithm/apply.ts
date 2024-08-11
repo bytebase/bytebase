@@ -8,6 +8,7 @@ export const useApplyMetadataEdit = (context: SchemaEditorContext) => {
     getSchemaStatus,
     getTableStatus,
     getColumnStatus,
+    getViewStatus,
     getProcedureStatus,
     getFunctionStatus,
   } = context;
@@ -24,13 +25,21 @@ export const useApplyMetadataEdit = (context: SchemaEditorContext) => {
       });
       return status !== "dropped";
     });
-    // Drop tables, procedures and functions
+    // Drop tables, views, procedures and functions
     metadata.schemas.forEach((schema) => {
       schema.tables = schema.tables.filter((table) => {
         const status = getTableStatus(database, {
           database: metadata,
           schema,
           table,
+        });
+        return status !== "dropped";
+      });
+      schema.views = schema.views.filter((view) => {
+        const status = getViewStatus(database, {
+          database: metadata,
+          schema,
+          view,
         });
         return status !== "dropped";
       });

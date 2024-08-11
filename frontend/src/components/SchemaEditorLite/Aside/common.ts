@@ -15,6 +15,7 @@ import { keyForResource } from "../context/common";
 import {
   engineSupportsEditFunctions,
   engineSupportsEditProcedures,
+  engineSupportsEditViews,
 } from "../spec";
 import type { EditTarget } from "../types";
 
@@ -289,6 +290,32 @@ const buildSchemaNodeList = (
     groups.push(tableGroupNode);
     map.set(tableGroupNode.key, tableGroupNode);
 
+    // Views
+    if (engineSupportsEditViews(db.instanceResource.engine)) {
+      const viewGroupNode: TreeNodeForGroup<"view"> = {
+        type: "group",
+        group: "view",
+        key: keyForResource(db, metadata, "view-group"),
+        parent,
+        db,
+        metadata,
+        label: "Views",
+        children: [],
+        isLeaf: false,
+      };
+      viewGroupNode.children = buildViewNodeList(
+        schema.views,
+        map,
+        viewGroupNode
+      );
+      if (viewGroupNode.children.length === 0) {
+        viewGroupNode.children = [
+          buildPlaceholderNode("view", viewGroupNode, map),
+        ];
+      }
+      groups.push(viewGroupNode);
+      map.set(viewGroupNode.key, viewGroupNode);
+    }
     // Procedures
     if (engineSupportsEditProcedures(db.instanceResource.engine)) {
       const procedureGroupNode: TreeNodeForGroup<"procedure"> = {
@@ -398,6 +425,32 @@ const buildTableNodeList = (
       tableNode.children = [buildPlaceholderNode("column", tableNode, map)];
     }
     return tableNode;
+  });
+};
+
+const buildViewNodeList = (
+  views: ViewMetadata[],
+  map: Map<string, TreeNode>,
+  parent: TreeNodeForGroup<"view">
+) => {
+  return views.map((view) => {
+    const { db } = parent;
+    const metadata = {
+      ...parent.metadata,
+      view,
+    };
+    const viewNode: TreeNodeForView = {
+      type: "view",
+      parent,
+      key: keyForResource(db, metadata),
+      label: view.name,
+      isLeaf: true,
+      db,
+      metadata,
+      children: undefined,
+    };
+    map.set(viewNode.key, viewNode);
+    return viewNode;
   });
 };
 
