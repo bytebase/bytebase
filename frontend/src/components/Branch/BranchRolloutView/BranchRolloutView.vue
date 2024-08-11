@@ -22,7 +22,7 @@
             :database-name="database?.name"
             :project-name="project.name"
             :environment-name="environment?.name"
-            :filter="databaseFilter"
+            :filter="filterDatabase"
             :loading="isPreparingDatabaseGroups"
             style="width: 16rem"
             @update:database-name="handleSelectDatabase"
@@ -195,10 +195,8 @@ const referencedDatabase = computed(() => {
   if (!name) return undefined;
   return useDatabaseV1Store().getDatabaseByName(name);
 });
-const { isPreparingDatabaseGroups, databaseFilter } = useDatabaseInGroupFilter(
-  toRef(props, "project"),
-  referencedDatabase
-);
+const { isPreparingDatabaseGroups, databaseFilter: filterDatabaseByGroup } =
+  useDatabaseInGroupFilter(toRef(props, "project"), referencedDatabase);
 const selectedRolloutObjects = ref<RolloutObject[]>([]);
 const emptyBranch = Branch.fromJSON({});
 const isGeneratingDDL = ref(false);
@@ -228,6 +226,12 @@ const handleSelectDatabase = (name: string | undefined) => {
     // Auto select environment if it's not selected
     environment.value = database.value.effectiveEnvironmentEntity;
   }
+};
+const filterDatabase = (db: ComposedDatabase) => {
+  return (
+    db.instanceResource.engine === props.branch.engine &&
+    filterDatabaseByGroup(db)
+  );
 };
 
 const allowPreviewIssue = computed(() => {
