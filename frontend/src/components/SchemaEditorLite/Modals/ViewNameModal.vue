@@ -2,7 +2,7 @@
   <BBModal
     :title="
       mode === 'create'
-        ? $t('schema-editor.actions.create-function')
+        ? $t('schema-editor.actions.create-view')
         : $t('schema-editor.actions.rename')
     "
     class="shadow-inner outline outline-gray-200"
@@ -12,7 +12,7 @@
       <p>{{ $t("common.name") }}</p>
       <NInput
         ref="inputRef"
-        v-model:value="state.functionName"
+        v-model:value="state.viewName"
         class="my-2"
         :autofocus="true"
       />
@@ -40,21 +40,21 @@ import type {
   DatabaseMetadata,
   SchemaMetadata,
 } from "@/types/proto/v1/database_service";
-import { FunctionMetadata } from "@/types/proto/v1/database_service";
+import { ViewMetadata } from "@/types/proto/v1/database_service";
 import { useSchemaEditorContext } from "../context";
 
-// Function name must start with a non-space character, end with a non-space character.
-const functionNameFieldRegexp = /^\S\S*\S?$/;
+// View name must start with a non-space character, end with a non-space character.
+const viewNameFieldRegexp = /^\S\S*\S?$/;
 
 interface LocalState {
-  functionName: string;
+  viewName: string;
 }
 
 const props = defineProps<{
   database: ComposedDatabase;
   metadata: DatabaseMetadata;
   schema: SchemaMetadata;
-  func?: FunctionMetadata;
+  view?: ViewMetadata;
 }>();
 
 const emit = defineEmits<{
@@ -66,63 +66,55 @@ const { events, addTab, markEditStatus } = useSchemaEditorContext();
 const inputRef = ref<InputInst>();
 const notificationStore = useNotificationStore();
 const mode = computed(() => {
-  return props.func ? "edit" : "create";
+  return props.view ? "edit" : "create";
 });
 const state = reactive<LocalState>({
-  functionName: props.func?.name ?? "",
+  viewName: props.view?.name ?? "",
 });
 
 const handleConfirmButtonClick = async () => {
-  if (!functionNameFieldRegexp.test(state.functionName)) {
+  if (!viewNameFieldRegexp.test(state.viewName)) {
     notificationStore.pushNotification({
       module: "bytebase",
       style: "CRITICAL",
-      title: t("schema-editor.message.invalid-function-name"),
+      title: t("schema-editor.message.invalid-view-name"),
     });
     return;
   }
   const { schema } = props;
-  const existed = schema.functions.find(
-    (func) => func.name === state.functionName
-  );
+  const existed = schema.views.find((view) => view.name === state.viewName);
   if (existed) {
     notificationStore.pushNotification({
       module: "bytebase",
       style: "CRITICAL",
-      title: t("schema-editor.message.duplicated-function-name"),
+      title: t("schema-editor.message.duplicated-view-name"),
     });
     return;
   }
 
-  if (!props.func) {
-    const func = FunctionMetadata.fromPartial({
-      name: state.functionName,
-      definition: [
-        "CREATE FUNCTION `" + state.functionName + "`(...) RETURNS ...",
-        "    DETERMINISTIC",
-        "BEGIN",
-        "  ...",
-        "END",
-      ].join("\n"),
+  if (!props.view) {
+    const view = ViewMetadata.fromPartial({
+      name: state.viewName,
+      definition: "",
     });
-    schema.functions.push(func);
+    schema.views.push(view);
     markEditStatus(
       props.database,
       {
         database: props.metadata,
         schema,
-        function: func,
+        view,
       },
       "created"
     );
 
     addTab({
-      type: "function",
+      type: "view",
       database: props.database,
       metadata: {
         database: props.metadata,
         schema: props.schema,
-        function: func,
+        view,
       },
     });
 
@@ -130,8 +122,8 @@ const handleConfirmButtonClick = async () => {
       openFirstChild: false,
     });
   } else {
-    const { func } = props;
-    func.name = state.functionName;
+    const { view } = props;
+    view.name = state.viewName;
     events.emit("rebuild-edit-status", {
       resets: ["tree"],
     });

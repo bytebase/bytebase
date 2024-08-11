@@ -9,6 +9,7 @@ import type {
   ProcedureMetadata,
   SchemaMetadata,
   TableMetadata,
+  ViewMetadata,
 } from "@/types/proto/v1/database_service";
 import type { SchemaEditorEvents } from ".";
 import type { RolloutObject } from "../types";
@@ -88,6 +89,28 @@ export const useSelection = (
     } else {
       // de-select the column
       map.delete(keyForResource(db, metadata));
+    }
+  };
+  const updateViewSelectionImpl = (
+    map: Map<string, RolloutObject>,
+    db: ComposedDatabase,
+    metadata: {
+      database: DatabaseMetadata;
+      schema: SchemaMetadata;
+      view: ViewMetadata;
+    },
+    on: boolean
+  ) => {
+    const key = keyForResource(db, metadata);
+    if (on) {
+      // select the view
+      map.set(key, {
+        db,
+        metadata,
+      });
+    } else {
+      // de-select the view
+      map.delete(key);
     }
   };
   const updateProcedureSelectionImpl = (
@@ -330,6 +353,89 @@ export const useSelection = (
     emit(updatedMap);
   };
 
+  const getViewSelectionState = (
+    db: ComposedDatabase,
+    metadata: {
+      database: DatabaseMetadata;
+      schema: SchemaMetadata;
+      view: ViewMetadata;
+    }
+  ) => {
+    if (!selectionEnabled.value) {
+      return { checked: false, indeterminate: false };
+    }
+
+    const checked = selectedRolloutObjectMap.value.has(
+      keyForResource(db, metadata)
+    );
+    return {
+      checked,
+      indeterminate: false,
+    };
+  };
+  const updateViewSelection = (
+    db: ComposedDatabase,
+    metadata: {
+      database: DatabaseMetadata;
+      schema: SchemaMetadata;
+      view: ViewMetadata;
+    },
+    on: boolean
+  ) => {
+    if (!selectionEnabled.value) return;
+    const updatedMap = new Map(selectedRolloutObjectMap.value.entries());
+    updateViewSelectionImpl(updatedMap, db, metadata, on);
+    emit(updatedMap);
+  };
+  const getAllViewsSelectionState = (
+    db: ComposedDatabase,
+    metadata: {
+      database: DatabaseMetadata;
+      schema: SchemaMetadata;
+    },
+    views: ViewMetadata[]
+  ) => {
+    if (!selectionEnabled.value || views.length === 0) {
+      return { checked: false, indeterminate: false };
+    }
+    const selected = views.filter((view) => {
+      return selectedRolloutObjectMap.value.has(
+        keyForResource(db, {
+          ...metadata,
+          view,
+        })
+      );
+    });
+    return {
+      checked: selected.length === views.length,
+      indeterminate: selected.length > 0 && selected.length < views.length,
+    };
+  };
+  const updateAllViewsSelection = (
+    db: ComposedDatabase,
+    metadata: {
+      database: DatabaseMetadata;
+      schema: SchemaMetadata;
+    },
+    views: ViewMetadata[],
+    on: boolean
+  ) => {
+    const updatedMap = new Map(selectedRolloutObjectMap.value.entries());
+    views.forEach((view) => {
+      updateViewSelectionImpl(
+        updatedMap,
+        db,
+        {
+          ...metadata,
+          view,
+        },
+        on
+      );
+    });
+
+    emit(updatedMap);
+  };
+
   const getProcedureSelectionState = (
     db: ComposedDatabase,
     metadata: {
@@ -506,6 +612,10 @@ export const useSelection = (
     updateColumnSelection,
     getAllColumnsSelectionState,
     updateAllColumnsSelection,
+    getViewSelectionState,
+    updateViewSelection,
+    getAllViewsSelectionState,
+    updateAllViewsSelection,
     getProcedureSelectionState,
     updateProcedureSelection,
     getAllProceduresSelectionState,

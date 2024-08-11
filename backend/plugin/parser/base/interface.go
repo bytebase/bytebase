@@ -9,6 +9,7 @@ import (
 	"github.com/pkg/errors"
 
 	parsererror "github.com/bytebase/bytebase/backend/plugin/parser/errors"
+	"github.com/bytebase/bytebase/backend/store/model"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -26,7 +27,7 @@ var (
 )
 
 type ValidateSQLForEditorFunc func(string) (bool, bool, error)
-type ExtractChangedResourcesFunc func(string, string, any, string) (*ChangeSummary, error)
+type ExtractChangedResourcesFunc func(string, string, *model.DBSchema, any, string) (*ChangeSummary, error)
 type ExtractResourceListFunc func(string, string, string) ([]SchemaResource, error)
 type SplitMultiSQLFunc func(string) ([]SingleSQL, error)
 type SchemaDiffFunc func(ctx DiffContext, oldStmt, newStmt string) (string, error)
@@ -90,12 +91,12 @@ func RegisterExtractChangedResourcesFunc(engine storepb.Engine, f ExtractChanged
 }
 
 // ExtractChangedResources extracts the changed resources from the SQL.
-func ExtractChangedResources(engine storepb.Engine, currentDatabase string, currentSchema string, ast any, statement string) (*ChangeSummary, error) {
+func ExtractChangedResources(engine storepb.Engine, currentDatabase string, currentSchema string, dbSchema *model.DBSchema, ast any, statement string) (*ChangeSummary, error) {
 	f, ok := changedResourcesGetters[engine]
 	if !ok {
 		return nil, errors.Errorf("engine %s is not supported", engine)
 	}
-	return f(currentDatabase, currentSchema, ast, statement)
+	return f(currentDatabase, currentSchema, dbSchema, ast, statement)
 }
 
 func RegisterSplitterFunc(engine storepb.Engine, f SplitMultiSQLFunc) {
@@ -231,20 +232,10 @@ func GenerateRestoreSQL(engine storepb.Engine, statement string, backupDatabase 
 }
 
 type ChangeSummary struct {
-	ResourceChanges []*ResourceChange
-	SampleDMLS      []string
-	DMLCount        int
-}
-
-type ResourceChange struct {
-	Resource    SchemaResource
-	Ranges      []Range
-	AffectTable bool
-}
-
-// String implements fmt.Stringer interface.
-func (r ResourceChange) String() string {
-	return r.Resource.String()
+	ChangedResources *model.ChangedResources
+	SampleDMLS       []string
+	DMLCount         int
+	InsertCount      int
 }
 
 type Range struct {
@@ -253,11 +244,11 @@ type Range struct {
 }
 
 // NewRange creates a new Range with index range of singleSQL in statement.
-func NewRange(statement, singleSQL string) Range {
+func NewRange(statement, singleSQL string) *storepb.Range {
 	statementBytes := []byte(statement)
 	singleSQLBytes := []byte(singleSQL)
 	start := bytes.Index(statementBytes, singleSQLBytes)
-	return Range{
+	return &storepb.Range{
 		Start: int32(start),
 		End:   int32(start + len(singleSQLBytes)),
 	}

@@ -23,55 +23,61 @@ var (
 	nowRegexp              = regexp.MustCompile(`(?mi)NOW(\((?P<fsp>(\d+))?\))?`)
 )
 
+type timestampDefaultValue interface {
+	isTimeStampDefaultValue()
+	getFsp() int
+}
 type currentTimestamp struct {
 	// fsp is the fractional seconds precision.
 	fsp int
 }
 
+func (*currentTimestamp) isTimeStampDefaultValue() {}
+
+func (c *currentTimestamp) getFsp() int { return c.fsp }
+
 type now struct {
 	fsp int
 }
 
-func buildNow(input string) *now {
-	matches := nowRegexp.FindStringSubmatch(input)
-	if matches == nil {
-		return nil
-	}
+func (*now) isTimeStampDefaultValue() {}
 
-	for i, name := range nowRegexp.SubexpNames() {
-		if name == "fsp" {
-			if matches[i] != "" {
-				fsp, err := strconv.ParseInt(matches[i], 10, 64)
-				if err != nil {
-					return nil
-				}
-				return &now{int(fsp)}
-			}
-		}
-	}
+func (n *now) getFsp() int { return n.fsp }
 
-	return &now{}
-}
-
-func buildCurrentTimestamp(input string) *currentTimestamp {
+func buildTimestampDefaultValue(input string) timestampDefaultValue {
 	matches := currentTimestampRegexp.FindStringSubmatch(input)
-	if matches == nil {
-		return nil
-	}
-
-	for i, name := range currentTimestampRegexp.SubexpNames() {
-		if name == "fsp" {
-			if matches[i] != "" {
-				fsp, err := strconv.ParseInt(matches[i], 10, 64)
-				if err != nil {
-					return nil
+	if matches != nil {
+		for i, name := range currentTimestampRegexp.SubexpNames() {
+			if name == "fsp" {
+				if matches[i] != "" {
+					fsp, err := strconv.ParseInt(matches[i], 10, 64)
+					if err != nil {
+						return nil
+					}
+					return &currentTimestamp{int(fsp)}
 				}
-				return &currentTimestamp{int(fsp)}
 			}
 		}
+		return &currentTimestamp{}
 	}
 
-	return &currentTimestamp{}
+	matches = nowRegexp.FindStringSubmatch(input)
+	if matches != nil {
+		for i, name := range nowRegexp.SubexpNames() {
+			if name == "fsp" {
+				if matches[i] != "" {
+					fsp, err := strconv.ParseInt(matches[i], 10, 64)
+					if err != nil {
+						return nil
+					}
+					return &now{int(fsp)}
+				}
+			}
+		}
+		return &now{}
+	}
+
+	return nil
 }
 
 type diffAction string
@@ -602,6 +608,7 @@ func (n *metadataDiffTableNode) applyDiffTo(target *storepb.SchemaMetadata) erro
 					Columns:     table.Columns,
 					ForeignKeys: table.ForeignKeys,
 					Indexes:     table.Indexes,
+					Partitions:  table.Partitions,
 				}
 				for _, columnName := range n.columnNames {
 					if columnNode, in := n.columnsMap[columnName]; in {
@@ -750,15 +757,10 @@ func compareColumnDefaultValue(a, b any) bool {
 		if strings.EqualFold(aExpr.DefaultExpression, "AUTO_INCREMENT") {
 			return strings.EqualFold(bExpr.DefaultExpression, "AUTO_INCREMENT")
 		}
-		aCurrentTimestamp := buildCurrentTimestamp(aExpr.DefaultExpression)
-		bCurrentTimestamp := buildCurrentTimestamp(bExpr.DefaultExpression)
-		if aCurrentTimestamp != nil && bCurrentTimestamp != nil {
-			return aCurrentTimestamp.fsp == bCurrentTimestamp.fsp
-		}
-		aNow := buildNow(aExpr.DefaultExpression)
-		bNow := buildNow(bExpr.DefaultExpression)
-		if aNow != nil && bNow != nil {
-			return aNow.fsp == bNow.fsp
+		aTimestampDefaultValue := buildTimestampDefaultValue(aExpr.DefaultExpression)
+		bTimestampDefaultValue := buildTimestampDefaultValue(bExpr.DefaultExpression)
+		if aTimestampDefaultValue != nil && bTimestampDefaultValue != nil {
+			return aTimestampDefaultValue.getFsp() == bTimestampDefaultValue.getFsp()
 		}
 	}
 
@@ -1030,16 +1032,22 @@ func (n *metadataDiffFunctioNnode) tryMerge(other *metadataDiffFunctioNnode) (bo
 		return false, ""
 	}
 	if n.action == diffActionCreate {
-		if n.head.Definition != other.head.Definition {
-			return true, fmt.Sprintf("conflict function definition, one is %s, the other is %s", n.head.Definition, other.head.Definition)
+		nHeadDefinition := strings.TrimRight(n.head.Definition, ";")
+		otherHeadDefinition := strings.TrimRight(other.head.Definition, ";")
+		if nHeadDefinition != otherHeadDefinition {
+			return true, fmt.Sprintf("conflict function definition, one is %s, the other is %s", nHeadDefinition, otherHeadDefinition)
 		}
 	}
 
 	if n.action == diffActionUpdate {
-		if other.base.Definition != other.head.Definition {
-			if n.base.Definition != n.head.Definition {
-				if n.head.Definition != other.head.Definition {
-					return true, fmt.Sprintf("conflict function definition, one is %s, the other is %s", n.head.Definition, other.head.Definition)
+		otherBaseDefinition := strings.TrimRight(other.base.Definition, ";")
+		otherHeadDefinition := strings.TrimRight(other.head.Definition, ";")
+		if otherBaseDefinition != otherHeadDefinition {
+			nHeadDefinition := strings.TrimRight(n.head.Definition, ";")
+			nBaseDefinition := strings.TrimRight(n.base.Definition, ";")
+			if nHeadDefinition != nBaseDefinition {
+				if nHeadDefinition != otherHeadDefinition {
+					return true, fmt.Sprintf("conflict function definition, one is %s, the other is %s", nHeadDefinition, otherHeadDefinition)
 				}
 			} else {
 				n.head.Definition = other.head.Definition
@@ -1761,37 +1769,44 @@ func diffTableMetadata(base, head *storepb.TableMetadata) (*metadataDiffTableNod
 		}
 	}
 
-	basePartitionMap := make(map[string]*storepb.TablePartitionMetadata)
-	if base != nil {
-		for _, partition := range base.Partitions {
-			basePartitionMap[partition.Name] = partition
-		}
-	}
-
-	headPartitionMap := make(map[string]*storepb.TablePartitionMetadata)
-	if head != nil {
-		for _, partition := range head.Partitions {
-			headPartitionMap[partition.Name] = partition
-		}
-	}
-
 	partitionNamesMap := make(map[string]bool)
-	var partitionNamesSlice []string
+	var partitionNameSlice []string
 
-	for partitionName := range basePartitionMap {
-		partitionNamesMap[partitionName] = true
-		partitionNamesSlice = append(partitionNamesSlice, partitionName)
-	}
-
-	for partitionName := range headPartitionMap {
-		if _, ok := partitionNamesMap[partitionName]; !ok {
-			partitionNamesSlice = append(partitionNamesSlice, partitionName)
+	basePartitionMap := make(map[string]int)
+	if base != nil {
+		for idx, partition := range base.Partitions {
+			basePartitionMap[partition.Name] = idx
+			if _, ok := partitionNamesMap[partition.Name]; !ok {
+				partitionNameSlice = append(partitionNameSlice, partition.Name)
+			}
+			partitionNamesMap[partition.Name] = true
 		}
-		partitionNamesMap[partitionName] = true
 	}
 
-	for _, partitionName := range partitionNamesSlice {
-		basePartition, headPartition := basePartitionMap[partitionName], headPartitionMap[partitionName]
+	headPartitionMap := make(map[string]int)
+	if head != nil {
+		for idx, partition := range head.Partitions {
+			headPartitionMap[partition.Name] = idx
+			if _, ok := partitionNamesMap[partition.Name]; !ok {
+				partitionNameSlice = append(partitionNameSlice, partition.Name)
+			}
+			partitionNamesMap[partition.Name] = true
+		}
+	}
+
+	for _, partitionName := range partitionNameSlice {
+		basePartitionIdx, basePartitionOk := basePartitionMap[partitionName]
+		headPartitionIdx, headPartitionOk := headPartitionMap[partitionName]
+		var basePartition, headPartition *storepb.TablePartitionMetadata
+		if basePartitionOk {
+			basePartition = base.Partitions[basePartitionIdx]
+		}
+		if headPartitionOk {
+			headPartition = head.Partitions[headPartitionIdx]
+		}
+		if basePartitionIdx != 0 {
+			basePartition = base.Partitions[basePartitionIdx]
+		}
 		diffNode, err := diffPartitionMetadata(basePartition, headPartition)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to diff partition %q", partitionName)
@@ -1803,7 +1818,7 @@ func diffTableMetadata(base, head *storepb.TableMetadata) (*metadataDiffTableNod
 	}
 
 	if action == diffActionUpdate {
-		if len(tableNode.columnsMap) == 0 && len(tableNode.foreignKeys) == 0 && len(tableNode.indexes) == 0 {
+		if len(tableNode.columnsMap) == 0 && len(tableNode.foreignKeys) == 0 && len(tableNode.indexes) == 0 && len(tableNode.partitionsMap) == 0 {
 			return nil, nil
 		}
 	}

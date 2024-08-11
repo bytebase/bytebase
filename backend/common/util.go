@@ -53,9 +53,11 @@ var (
 	StatementReportEngines = map[storepb.Engine]bool{
 		storepb.Engine_POSTGRES:         true,
 		storepb.Engine_MYSQL:            true,
+		storepb.Engine_TIDB:             true,
 		storepb.Engine_OCEANBASE:        true,
 		storepb.Engine_ORACLE:           true,
 		storepb.Engine_OCEANBASE_ORACLE: true,
+		storepb.Engine_MSSQL:            true,
 	}
 )
 

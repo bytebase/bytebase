@@ -178,3 +178,12 @@ func ConvertYesNo(s string) (bool, error) {
 		return false, errors.Errorf("unrecognized isNullable type %q", s)
 	}
 }
+
+func GetColumnIndex(columns []string, name string) (int, bool) {
+	for i, c := range columns {
+		if c == name {
+			return i, true
+		}
+	}
+	return 0, false
+}

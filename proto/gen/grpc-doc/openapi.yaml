@@ -8989,6 +8989,26 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/ChangedResourceSchema'
+        ChangedResourceFunction:
+            type: object
+            properties:
+                name:
+                    type: string
+                ranges:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/Range'
+                    description: The ranges of sub-strings correspond to the statements on the sheet.
+        ChangedResourceProcedure:
+            type: object
+            properties:
+                name:
+                    type: string
+                ranges:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/Range'
+                    description: The ranges of sub-strings correspond to the statements on the sheet.
         ChangedResourceSchema:
             type: object
             properties:
@@ -8998,7 +9018,29 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/ChangedResourceTable'
+                views:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/ChangedResourceView'
+                functions:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/ChangedResourceFunction'
+                procedures:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/ChangedResourceProcedure'
         ChangedResourceTable:
+            type: object
+            properties:
+                name:
+                    type: string
+                ranges:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/Range'
+                    description: The ranges of sub-strings correspond to the statements on the sheet.
+        ChangedResourceView:
             type: object
             properties:
                 name:

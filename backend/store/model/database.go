@@ -557,7 +557,7 @@ func buildTablesMetadata(table *storepb.TableMetadata) ([]*TableMetadata, []stri
 	name = append(name, table.Name)
 
 	if table.Partitions != nil {
-		partitionTables, partitionNames := buildTablesMetadataRecursive(table.Columns, table.Partitions, tableMetadata)
+		partitionTables, partitionNames := buildTablesMetadataRecursive(table.Columns, table.Partitions, tableMetadata, table)
 		result = append(result, partitionTables...)
 		name = append(name, partitionNames...)
 	}
@@ -566,7 +566,7 @@ func buildTablesMetadata(table *storepb.TableMetadata) ([]*TableMetadata, []stri
 
 // buildTablesMetadataRecursive builds the partition tables recursively,
 // returns the table metadata and the partition names, the length of them must be the same.
-func buildTablesMetadataRecursive(originalColumn []*storepb.ColumnMetadata, partitions []*storepb.TablePartitionMetadata, root *TableMetadata) ([]*TableMetadata, []string) {
+func buildTablesMetadataRecursive(originalColumn []*storepb.ColumnMetadata, partitions []*storepb.TablePartitionMetadata, root *TableMetadata, proto *storepb.TableMetadata) ([]*TableMetadata, []string) {
 	if partitions == nil {
 		return nil, nil
 	}
@@ -578,6 +578,7 @@ func buildTablesMetadataRecursive(originalColumn []*storepb.ColumnMetadata, part
 		partitionMetadata := &TableMetadata{
 			partitionOf: root,
 			internal:    make(map[string]*storepb.ColumnMetadata),
+			proto:       proto,
 		}
 		for _, column := range originalColumn {
 			partitionMetadata.internal[column.Name] = column
@@ -586,7 +587,7 @@ func buildTablesMetadataRecursive(originalColumn []*storepb.ColumnMetadata, part
 		tables = append(tables, partitionMetadata)
 		names = append(names, partition.Name)
 		if partition.Subpartitions != nil {
-			subTables, subNames := buildTablesMetadataRecursive(originalColumn, partition.Subpartitions, partitionMetadata)
+			subTables, subNames := buildTablesMetadataRecursive(originalColumn, partition.Subpartitions, partitionMetadata, proto)
 			tables = append(tables, subTables...)
 			names = append(names, subNames...)
 		}

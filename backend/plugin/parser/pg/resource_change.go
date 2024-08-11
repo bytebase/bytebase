@@ -1,14 +1,14 @@
 package pg
 
 import (
-	"sort"
-
 	"github.com/pkg/errors"
 
 	pgquery "github.com/pganalyze/pg_query_go/v5"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
+	"github.com/bytebase/bytebase/backend/store/model"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -16,220 +16,305 @@ func init() {
 	base.RegisterExtractChangedResourcesFunc(storepb.Engine_POSTGRES, extractChangedResources)
 }
 
-func extractChangedResources(database string, schema string, asts any, _ string) (*base.ChangeSummary, error) {
+func extractChangedResources(database string, schema string, dbSchema *model.DBSchema, asts any, statement string) (*base.ChangeSummary, error) {
 	nodes, ok := asts.([]ast.Node)
 	if !ok {
 		return nil, errors.Errorf("invalid ast type %T", asts)
 	}
 
-	resourceChangeMap := make(map[string]*base.ResourceChange)
+	changedResources := model.NewChangedResources(dbSchema)
+	dmlCount := 0
+	insertCount := 0
+	var sampleDMLs []string
 	for _, node := range nodes {
 		// schema is "public" by default.
-		changes, err := getResourceChanges(database, schema, node)
+		err := getResourceChanges(database, schema, node, statement, changedResources)
 		if err != nil {
 			return nil, err
 		}
-		for _, change := range changes {
-			resourceChangeMap[change.Resource.String()] = change
+
+		switch node := node.(type) {
+		case *ast.InsertStmt, *ast.UpdateStmt, *ast.DeleteStmt:
+			if node, ok := node.(*ast.InsertStmt); ok && len(node.ValueList) > 0 {
+				insertCount += len(node.ValueList)
+				continue
+			}
+			dmlCount++
+			if len(sampleDMLs) < common.MaximumLintExplainSize {
+				sampleDMLs = append(sampleDMLs, node.Text())
+			}
 		}
 	}
 
-	var resourceChanges []*base.ResourceChange
-	for _, change := range resourceChangeMap {
-		resourceChanges = append(resourceChanges, change)
-	}
-	sort.Slice(resourceChanges, func(i, j int) bool {
-		return resourceChanges[i].String() < resourceChanges[j].String()
-	})
 	return &base.ChangeSummary{
-		ResourceChanges: resourceChanges,
+		ChangedResources: changedResources,
+		DMLCount:         dmlCount,
+		SampleDMLS:       sampleDMLs,
+		InsertCount:      insertCount,
 	}, nil
 }
 
-func getResourceChanges(database, schema string, node ast.Node) ([]*base.ResourceChange, error) {
+func getResourceChanges(database, schema string, node ast.Node, statement string, changedResources *model.ChangedResources) error {
 	switch node := node.(type) {
 	case *ast.CreateTableStmt:
 		if node.Name.Type == ast.TableTypeBaseTable {
-			resource := base.SchemaResource{
-				Database: node.Name.Database,
-				Schema:   node.Name.Schema,
-				Table:    node.Name.Name,
+			d, s, table := node.Name.Database, node.Name.Schema, node.Name.Name
+			if d == "" {
+				d = database
 			}
-			if resource.Database == "" {
-				resource.Database = database
+			if s == "" {
+				s = schema
 			}
-			if resource.Schema == "" {
-				resource.Schema = schema
-			}
-			return []*base.ResourceChange{{Resource: resource}}, nil
+			changedResources.AddTable(
+				d,
+				s,
+				&storepb.ChangedResourceTable{
+					Name:   table,
+					Ranges: []*storepb.Range{base.NewRange(statement, node.Text())},
+				},
+				false,
+			)
 		}
 	case *ast.DropTableStmt:
-		var result []*base.ResourceChange
 		for _, table := range node.TableList {
-			resource := base.SchemaResource{
-				Database: table.Database,
-				Schema:   table.Schema,
-				Table:    table.Name,
+			if table.Type == ast.TableTypeView {
+				d, s, v := table.Database, table.Schema, table.Name
+				if d == "" {
+					d = database
+				}
+				if s == "" {
+					s = schema
+				}
+				changedResources.AddView(
+					d,
+					s,
+					&storepb.ChangedResourceView{
+						Name:   v,
+						Ranges: []*storepb.Range{base.NewRange(statement, node.Text())},
+					},
+				)
+			} else {
+				d, s, table := table.Database, table.Schema, table.Name
+				if d == "" {
+					d = database
+				}
+				if s == "" {
+					s = schema
+				}
+				changedResources.AddTable(
+					d,
+					s,
+					&storepb.ChangedResourceTable{
+						Name:   table,
+						Ranges: []*storepb.Range{base.NewRange(statement, node.Text())},
+					},
+					true,
+				)
 			}
-			if resource.Database == "" {
-				resource.Database = database
-			}
-			if resource.Schema == "" {
-				resource.Schema = schema
-			}
-			result = append(result, &base.ResourceChange{Resource: resource})
 		}
-		return result, nil
 	case *ast.AlterTableStmt:
 		if node.Table.Type == ast.TableTypeBaseTable {
-			resource := base.SchemaResource{
-				Database: node.Table.Database,
-				Schema:   node.Table.Schema,
-				Table:    node.Table.Name,
+			d, s, table := node.Table.Database, node.Table.Schema, node.Table.Name
+			if d == "" {
+				d = database
 			}
-			if resource.Database == "" {
-				resource.Database = database
+			if s == "" {
+				s = schema
 			}
-			if resource.Schema == "" {
-				resource.Schema = schema
-			}
-			result := []*base.ResourceChange{{Resource: resource}}
+			changedResources.AddTable(
+				d,
+				s,
+				&storepb.ChangedResourceTable{
+					Name:   table,
+					Ranges: []*storepb.Range{base.NewRange(statement, node.Text())},
+				},
+				true,
+			)
 
 			for _, item := range node.AlterItemList {
 				if v, ok := item.(*ast.RenameTableStmt); ok {
-					resource := base.SchemaResource{
-						Database: node.Table.Database,
-						Schema:   node.Table.Schema,
-						Table:    v.NewName,
+					d, s, table := node.Table.Database, node.Table.Schema, v.NewName
+					if d == "" {
+						d = database
 					}
-					if resource.Database == "" {
-						resource.Database = database
+					if s == "" {
+						s = schema
 					}
-					if resource.Schema == "" {
-						resource.Schema = schema
-					}
-					result = append(result, &base.ResourceChange{Resource: resource})
+					changedResources.AddTable(
+						d,
+						s,
+						&storepb.ChangedResourceTable{
+							Name:   table,
+							Ranges: []*storepb.Range{base.NewRange(statement, node.Text())},
+						},
+						false,
+					)
+					// Only one rename table statement is allowed in a single alter table statement.
+					break
 				}
 			}
-
-			return result, nil
 		}
-	case *ast.RenameTableStmt:
-		if node.Table.Type == ast.TableTypeBaseTable {
-			resource := base.SchemaResource{
-				Database: node.Table.Database,
-				Schema:   node.Table.Schema,
-				Table:    node.Table.Name,
+	case *ast.CreateIndexStmt:
+		d, s, table := node.Index.Table.Database, node.Index.Table.Schema, node.Index.Table.Name
+		if d == "" {
+			d = database
+		}
+		if s == "" {
+			s = schema
+		}
+		changedResources.AddTable(
+			d,
+			s,
+			&storepb.ChangedResourceTable{
+				Name:   table,
+				Ranges: []*storepb.Range{base.NewRange(statement, node.Text())},
+			},
+			false,
+		)
+	case *ast.DropIndexStmt:
+		for _, index := range node.IndexList {
+			d, s, table := index.Table.Database, index.Table.Schema, index.Table.Name
+			if d == "" {
+				d = database
 			}
-			if resource.Database == "" {
-				resource.Database = database
+			if s == "" {
+				s = schema
 			}
-			if resource.Schema == "" {
-				resource.Schema = schema
+			changedResources.AddTable(
+				d,
+				s,
+				&storepb.ChangedResourceTable{
+					Name:   table,
+					Ranges: []*storepb.Range{base.NewRange(statement, node.Text())},
+				},
+				false,
+			)
+		}
+	case *ast.CreateViewStmt:
+		d, s, view := node.Name.Database, node.Name.Schema, node.Name.Name
+		if d == "" {
+			d = database
+		}
+		if s == "" {
+			s = schema
+		}
+		changedResources.AddView(
+			d,
+			s,
+			&storepb.ChangedResourceView{
+				Name:   view,
+				Ranges: []*storepb.Range{base.NewRange(statement, node.Text())},
+			},
+		)
+	case *ast.CreateFunctionStmt:
+		s, f := node.Function.Schema, node.Function.Name
+		if s == "" {
+			s = schema
+		}
+		changedResources.AddFunction(
+			database,
+			s,
+			&storepb.ChangedResourceFunction{
+				Name:   f,
+				Ranges: []*storepb.Range{base.NewRange(statement, node.Text())},
+			},
+		)
+	case *ast.DropFunctionStmt:
+		for _, ref := range node.FunctionList {
+			s, f := ref.Schema, ref.Name
+			if s == "" {
+				s = schema
 			}
-
-			newResource := base.SchemaResource{
-				Database: resource.Database,
-				Schema:   resource.Schema,
-				Table:    node.NewName,
-			}
-			return []*base.ResourceChange{
-				{Resource: resource},
-				{Resource: newResource},
-			}, nil
+			changedResources.AddFunction(
+				database,
+				s,
+				&storepb.ChangedResourceFunction{
+					Name:   f,
+					Ranges: []*storepb.Range{base.NewRange(statement, node.Text())},
+				},
+			)
 		}
 	case *ast.CommentStmt:
-		return postgresExtractResourcesFromCommentStatement(database, "public", node.Text())
-	}
+		if len(node.ParseResult.Stmts) != 1 {
+			return errors.New("expect to get one node from comment statement result")
+		}
+		stmt := node.ParseResult.Stmts[0]
+		comment, ok := stmt.Stmt.Node.(*pgquery.Node_CommentStmt)
+		if !ok {
+			return errors.New("expect to get comment node from comment statement result")
+		}
 
-	return nil, nil
-}
-
-func postgresExtractResourcesFromCommentStatement(database, defaultSchema, statement string) ([]*base.ResourceChange, error) {
-	res, err := pgquery.Parse(statement)
-	if err != nil {
-		return nil, err
-	}
-	if len(res.Stmts) != 1 {
-		return nil, errors.New("expect to get one node from parser")
-	}
-	for _, stmt := range res.Stmts {
-		if comment, ok := stmt.Stmt.Node.(*pgquery.Node_CommentStmt); ok {
-			switch comment.CommentStmt.Objtype {
-			case pgquery.ObjectType_OBJECT_COLUMN:
-				switch node := comment.CommentStmt.Object.Node.(type) {
-				case *pgquery.Node_List:
-					schemaName, tableName, _, err := convertColumnName(node)
-					if err != nil {
-						return nil, err
-					}
-					resource := base.SchemaResource{
-						Database: database,
-						Schema:   schemaName,
-						Table:    tableName,
-					}
-					if resource.Schema == "" {
-						resource.Schema = defaultSchema
-					}
-					return []*base.ResourceChange{{Resource: resource}}, nil
-				default:
-					return nil, errors.Errorf("expect to get a list node but got %T", node)
+		switch comment.CommentStmt.Objtype {
+		case pgquery.ObjectType_OBJECT_COLUMN:
+			switch n := comment.CommentStmt.Object.Node.(type) {
+			case *pgquery.Node_List:
+				s, table, _, err := convertColumnName(n)
+				if err != nil {
+					return err
 				}
-			case pgquery.ObjectType_OBJECT_TABCONSTRAINT:
-				resource := base.SchemaResource{
-					Database: database,
-					Schema:   defaultSchema,
+				if s == "" {
+					s = schema
 				}
-				switch node := comment.CommentStmt.Object.Node.(type) {
-				case *pgquery.Node_List:
-					schemaName, tableName, _, err := convertConstraintName(node)
-					if err != nil {
-						return nil, err
-					}
-					if schemaName != "" {
-						resource.Schema = schemaName
-					}
-					resource.Table = tableName
-					return []*base.ResourceChange{{Resource: resource}}, nil
-				default:
-					return nil, errors.Errorf("expect to get a list node but got %T", node)
+				changedResources.AddTable(
+					database,
+					s,
+					&storepb.ChangedResourceTable{
+						Name:   table,
+						Ranges: []*storepb.Range{base.NewRange(statement, node.Text())},
+					},
+					false,
+				)
+			default:
+				return errors.Errorf("expect to get a list node but got %T", node)
+			}
+		case pgquery.ObjectType_OBJECT_TABCONSTRAINT:
+			switch n := comment.CommentStmt.Object.Node.(type) {
+			case *pgquery.Node_List:
+				s, table, _, err := convertConstraintName(n)
+				if err != nil {
+					return err
 				}
-			case pgquery.ObjectType_OBJECT_TABLE:
-				resource := base.SchemaResource{
-					Database: database,
-					Schema:   defaultSchema,
+				if s == "" {
+					s = schema
 				}
-				switch node := comment.CommentStmt.Object.Node.(type) {
-				case *pgquery.Node_List:
-					schemaName, tableName, err := convertTableName(node)
-					if err != nil {
-						return nil, err
-					}
-					if schemaName != "" {
-						resource.Schema = schemaName
-					}
-					resource.Table = tableName
-					return []*base.ResourceChange{{Resource: resource}}, nil
-				default:
-					return nil, errors.Errorf("expect to get a list node but got %T", node)
+				changedResources.AddTable(
+					database,
+					s,
+					&storepb.ChangedResourceTable{
+						Name:   table,
+						Ranges: []*storepb.Range{base.NewRange(statement, node.Text())},
+					},
+					false,
+				)
+			default:
+				return errors.Errorf("expect to get a list node but got %T", node)
+			}
+		case pgquery.ObjectType_OBJECT_TABLE:
+			switch n := comment.CommentStmt.Object.Node.(type) {
+			case *pgquery.Node_List:
+				s, table, err := convertTableName(n)
+				if err != nil {
+					return err
 				}
+				if s == "" {
+					s = schema
+				}
+				changedResources.AddTable(
+					database,
+					s,
+					&storepb.ChangedResourceTable{
+						Name:   table,
+						Ranges: []*storepb.Range{base.NewRange(statement, node.Text())},
+					},
+					false,
+				)
+			default:
+				return errors.Errorf("expect to get a list node but got %T", node)
 			}
 		}
 	}
-	return nil, nil
-}
 
-func convertNodeList(node *pgquery.Node_List) ([]string, error) {
-	var list []string
-	for _, item := range node.List.Items {
-		switch s := item.Node.(type) {
-		case *pgquery.Node_String_:
-			list = append(list, s.String_.Sval)
-		default:
-			return nil, errors.Errorf("expect to get a string node but got %T", s)
-		}
-	}
-	return list, nil
+	return nil
 }
 
 func convertTableName(node *pgquery.Node_List) (string, string, error) {
@@ -275,4 +360,17 @@ func convertColumnName(node *pgquery.Node_List) (string, string, string, error) 
 	default:
 		return "", "", "", errors.Errorf("expect to get 2 or 3 items but got %d", len(list))
 	}
+}
+
+func convertNodeList(node *pgquery.Node_List) ([]string, error) {
+	var list []string
+	for _, item := range node.List.Items {
+		switch s := item.Node.(type) {
+		case *pgquery.Node_String_:
+			list = append(list, s.String_.Sval)
+		default:
+			return nil, errors.Errorf("expect to get a string node but got %T", s)
+		}
+	}
+	return list, nil
 }

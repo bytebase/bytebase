@@ -54,6 +54,22 @@ func ParseTSQL(statement string) (*ParseResult, error) {
 	return result, nil
 }
 
+func normalizeSimpleNameSeparated(ctx parser.ISimple_nameContext, fallbackSchemaName string, _ bool) (string, string) {
+	schema := fallbackSchemaName
+	name := ""
+	if s := ctx.GetSchema(); s != nil {
+		if id, _ := NormalizeTSQLIdentifier(s); id != "" {
+			schema = id
+		}
+	}
+	if t := ctx.GetName(); t != nil {
+		if id, _ := NormalizeTSQLIdentifier(t); id != "" {
+			name = id
+		}
+	}
+	return schema, name
+}
+
 func normalizeTableNameSeparated(ctx parser.ITable_nameContext, fallbackDatabaseName, fallbackSchemaName string, _ bool) (string, string, string) {
 	database := fallbackDatabaseName
 	schema := fallbackSchemaName
@@ -90,6 +106,22 @@ func NormalizeTSQLTableName(ctx parser.ITable_nameContext, fallbackDatabaseName,
 		tableNameParts = append(tableNameParts, table)
 	}
 	return strings.Join(tableNameParts, ".")
+}
+
+func normalizeProcedureSeparated(ctx parser.IFunc_proc_name_schemaContext, fallbackSchemaName string, _ bool) (string, string) {
+	schema := fallbackSchemaName
+	name := ""
+	if s := ctx.GetSchema(); s != nil {
+		if id, _ := NormalizeTSQLIdentifier(s); id != "" {
+			schema = id
+		}
+	}
+	if t := ctx.GetProcedure(); t != nil {
+		if id, _ := NormalizeTSQLIdentifier(t); id != "" {
+			name = id
+		}
+	}
+	return schema, name
 }
 
 // NormalizeTSQLIdentifier returns the normalized identifier.
