@@ -284,7 +284,7 @@ Below diagram describes a typical mapping between an engineering org and the cor
 1. Start backend using air (with live reload).
 
    ```bash
-   PG_URL=postgresql://bbdev@localhost/bbdev air -c scripts/.air.toml
+   PG_URL=postgresql://bbdev@localhost/bbdev $(go env GOPATH)/bin/air -c scripts/.air.toml
    ```
 
    Change the open file limit if you encounter "error: too many open files".
