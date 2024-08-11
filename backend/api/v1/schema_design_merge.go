@@ -1172,15 +1172,15 @@ func (n *metadataDiffViewNode) tryMerge(other *metadataDiffViewNode) (bool, stri
 		return false, ""
 	}
 	if n.action == diffActionCreate {
-		if n.head.Definition != other.head.Definition {
+		if !equalViewDefinition(n.head.Definition, other.head.Definition) {
 			return true, fmt.Sprintf("conflict view definition, one is %s, the other is %s", n.head.Definition, other.head.Definition)
 		}
 	}
 
 	if n.action == diffActionUpdate {
-		if other.base.Definition != other.head.Definition {
-			if n.base.Definition != n.head.Definition {
-				if n.head.Definition != other.head.Definition {
+		if !equalViewDefinition(other.base.Definition, other.head.Definition) {
+			if !equalViewDefinition(n.base.Definition, n.head.Definition) {
+				if !equalViewDefinition(n.head.Definition, other.head.Definition) {
 					return true, fmt.Sprintf("conflict view definition, one is %s, the other is %s", n.head.Definition, other.head.Definition)
 				}
 			} else {
@@ -1190,6 +1190,17 @@ func (n *metadataDiffViewNode) tryMerge(other *metadataDiffViewNode) (bool, stri
 	}
 
 	return false, ""
+}
+
+func equalViewDefinition(a, b string) bool {
+	ignoreTokens := []string{
+		"`", " ", "(", ")", "\t", "\n", "\r",
+	}
+	for _, token := range ignoreTokens {
+		a = strings.ReplaceAll(a, token, "")
+		b = strings.ReplaceAll(b, token, "")
+	}
+	return a == b
 }
 
 func (n *metadataDiffViewNode) applyDiffTo(target *storepb.SchemaMetadata) error {

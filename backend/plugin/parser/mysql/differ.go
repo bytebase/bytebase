@@ -375,13 +375,16 @@ func (diff *diffNode) diffView(oldDatabase, newDatabase *databaseDef) error {
 			// We should delete the view in the oldViewMap, because we will drop the all views in the oldViewMap explicitly at last.
 			delete(oldDatabase.schemas[""].views, viewName)
 		} else {
-			// We should create the view.
-			// We create the temporary view first and replace it to avoid break the dependency like mysqldump does.
-			tempView, err := getTempView(view)
-			if err != nil {
-				return errors.Wrapf(err, "failed to get temporary view for view %s", view.name)
+			// In branch feature, frontend send DiffMetadata request without table metadata, hence there is no dependency column info.
+			if len(view.columns) > 0 {
+				// We should create the view.
+				// We create the temporary view first and replace it to avoid break the dependency like mysqldump does.
+				tempView, err := getTempView(view)
+				if err != nil {
+					return errors.Wrapf(err, "failed to get temporary view for view %s", view.name)
+				}
+				tempViewList = append(tempViewList, tempView)
 			}
-			tempViewList = append(tempViewList, tempView)
 			diff.createViewList = append(diff.createViewList, view)
 		}
 	}
