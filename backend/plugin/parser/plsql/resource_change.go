@@ -5,6 +5,7 @@ import (
 	parser "github.com/bytebase/plsql-parser"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store/model"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -35,6 +36,9 @@ func extractChangedResources(currentDatabase string, _ string, dbSchema *model.D
 
 	return &base.ChangeSummary{
 		ChangedResources: changedResources,
+		SampleDMLS:       l.sampleDMLs,
+		DMLCount:         l.dmlCount,
+		InsertCount:      l.insertCount,
 	}, nil
 }
 
@@ -45,6 +49,9 @@ type plsqlChangedResourceExtractListener struct {
 	dbSchema         *model.DBSchema
 	changedResources *model.ChangedResources
 	statement        string
+	sampleDMLs       []string
+	dmlCount         int
+	insertCount      int
 
 	// Internal data structure used temporarily.
 	text string
@@ -421,4 +428,34 @@ func (l *plsqlChangedResourceExtractListener) EnterAlter_function(ctx *parser.Al
 			Ranges: []*storepb.Range{base.NewRange(l.statement, l.text)},
 		},
 	)
+}
+
+func (l *plsqlChangedResourceExtractListener) EnterInsert_statement(ctx *parser.Insert_statementContext) {
+	if ctx.Single_table_insert() != nil && ctx.Single_table_insert().Values_clause() != nil {
+		// Oracle allows only one value.
+		// https://docs.oracle.com/en/database/other-databases/nosql-database/22.1/sqlreferencefornosql/insert-statement.html
+		l.insertCount++
+		return
+	}
+	// Track DMLs.
+	l.dmlCount++
+	if len(l.sampleDMLs) < common.MaximumLintExplainSize {
+		l.sampleDMLs = append(l.sampleDMLs, l.text)
+	}
+}
+
+func (l *plsqlChangedResourceExtractListener) EnterUpdate_statement(_ *parser.Update_statementContext) {
+	// Track DMLs.
+	l.dmlCount++
+	if len(l.sampleDMLs) < common.MaximumLintExplainSize {
+		l.sampleDMLs = append(l.sampleDMLs, l.text)
+	}
+}
+
+func (l *plsqlChangedResourceExtractListener) EnterDelete_statement(_ *parser.Delete_statementContext) {
+	// Track DMLs.
+	l.dmlCount++
+	if len(l.sampleDMLs) < common.MaximumLintExplainSize {
+		l.sampleDMLs = append(l.sampleDMLs, l.text)
+	}
 }
