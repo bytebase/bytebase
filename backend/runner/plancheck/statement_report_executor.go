@@ -13,6 +13,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/sheet"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	mysqldriver "github.com/bytebase/bytebase/backend/plugin/db/mysql"
+	oracledriver "github.com/bytebase/bytebase/backend/plugin/db/oracle"
 	pgdriver "github.com/bytebase/bytebase/backend/plugin/db/pg"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
@@ -191,7 +192,17 @@ func (e *StatementReportExecutor) runReport(ctx context.Context, instance *store
 		// TODO(d): implement TiDB sqlTypes.
 		defaultSchema = ""
 	case storepb.Engine_ORACLE, storepb.Engine_OCEANBASE_ORACLE:
-		explainCalculator = getAffectedRowsCountNoop
+		driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{})
+		if err != nil {
+			return nil, err
+		}
+		defer driver.Close(ctx)
+		od, ok := driver.(*oracledriver.Driver)
+		if !ok {
+			return nil, errors.Errorf("invalid pg driver type")
+		}
+		explainCalculator = od.CountAffectedRows
+
 		defaultSchema = database.DatabaseName
 	default:
 		// Already checked in the Run().
@@ -221,10 +232,6 @@ func (e *StatementReportExecutor) runReport(ctx context.Context, instance *store
 }
 
 type getAffectedRowsFromExplain func(context.Context, string) (int64, error)
-
-func getAffectedRowsCountNoop(_ context.Context, _ string) (int64, error) {
-	return 0, nil
-}
 
 func calculateAffectedRows(ctx context.Context, changeSummary *base.ChangeSummary, explainCalculator getAffectedRowsFromExplain) int64 {
 	var totalAffectedRows int64
