@@ -98,7 +98,7 @@ const handleConfirmButtonClick = async () => {
     const procedure = ProcedureMetadata.fromPartial({
       name: state.procedureName,
       definition: [
-        "CREATE PROCEDURE `" + state.procedureName + "` ( ... )",
+        "CREATE PROCEDURE `" + state.procedureName + "`(...)",
         "BEGIN",
         "  ...",
         "END",

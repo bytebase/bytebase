@@ -98,9 +98,8 @@ const handleConfirmButtonClick = async () => {
     const func = FunctionMetadata.fromPartial({
       name: state.functionName,
       definition: [
-        "CREATE FUNCTION `" +
-          state.functionName +
-          "` ( ... ) RETURNS ... DETERMINISTIC",
+        "CREATE FUNCTION `" + state.functionName + "`(...) RETURNS ...",
+        "    DETERMINISTIC",
         "BEGIN",
         "  ...",
         "END",
