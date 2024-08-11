@@ -2468,7 +2468,8 @@
       "save": "Guardar",
       "create-procedure": "Crear procedimiento",
       "create-function": "Crear función",
-      "drop": "Gota"
+      "drop": "Gota",
+      "create-view": "Crear vista"
     },
     "database": {
       "name": "Nombre",
@@ -2528,7 +2529,9 @@
       "duplicated-procedure-name": "Nombre del procedimiento duplicado",
       "invalid-procedure-name": "Nombre de procedimiento no válido",
       "duplicated-function-name": "Nombre de función duplicado",
-      "invalid-function-name": "Nombre de función no válido"
+      "invalid-function-name": "Nombre de función no válido",
+      "invalid-view-name": "Nombre de vista no válido",
+      "duplicated-view-name": "Nombre de vista duplicado"
     },
     "confirm-to-close": {
       "title": "Confirmar para cerrar",

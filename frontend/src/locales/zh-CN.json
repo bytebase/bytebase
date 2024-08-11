@@ -2468,7 +2468,8 @@
       "save": "保存",
       "create-procedure": "新建存储过程",
       "create-function": "新建函数",
-      "drop": "删除"
+      "drop": "删除",
+      "create-view": "创建视图"
     },
     "database": {
       "name": "名称",
@@ -2528,7 +2529,9 @@
       "duplicated-procedure-name": "重复的存储过程名称",
       "invalid-procedure-name": "无效的存储过程名称",
       "duplicated-function-name": "重复的函数名称",
-      "invalid-function-name": "无效的函数名称"
+      "invalid-function-name": "无效的函数名称",
+      "invalid-view-name": "无效的视图名称",
+      "duplicated-view-name": "重复的视图名称"
     },
     "confirm-to-close": {
       "title": "确定关闭？",

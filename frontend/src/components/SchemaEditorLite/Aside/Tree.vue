@@ -81,6 +81,15 @@
     @close="state.procedureNameModalContext = undefined"
   />
 
+  <ViewNameModal
+    v-if="state.viewNameModalContext !== undefined"
+    :database="state.viewNameModalContext.db"
+    :metadata="state.viewNameModalContext.database"
+    :schema="state.viewNameModalContext.schema"
+    :view="state.viewNameModalContext.view"
+    @close="state.viewNameModalContext = undefined"
+  />
+
   <FunctionNameModal
     v-if="state.functionNameModalContext !== undefined"
     :database="state.functionNameModalContext.db"
@@ -116,12 +125,14 @@ import type {
   ProcedureMetadata,
   SchemaMetadata,
   TableMetadata,
+  ViewMetadata,
 } from "@/types/proto/v1/database_service";
 import { getHighlightHTMLByKeyWords, isDescendantOf } from "@/utils";
 import FunctionNameModal from "../Modals/FunctionNameModal.vue";
 import ProcedureNameModal from "../Modals/ProcedureNameModal.vue";
 import SchemaNameModal from "../Modals/SchemaNameModal.vue";
 import TableNameModal from "../Modals/TableNameModal.vue";
+import ViewNameModal from "../Modals/ViewNameModal.vue";
 import { useSchemaEditorContext } from "../context";
 import { keyForResource, keyForResourceName } from "../context/common";
 import { engineSupportsMultiSchema } from "../spec";
@@ -156,6 +167,12 @@ interface LocalState {
     schema: SchemaMetadata;
     procedure?: ProcedureMetadata;
   };
+  viewNameModalContext?: {
+    db: ComposedDatabase;
+    database: DatabaseMetadata;
+    schema: SchemaMetadata;
+    view?: ViewMetadata;
+  };
   functionNameModalContext?: {
     db: ComposedDatabase;
     database: DatabaseMetadata;
@@ -178,6 +195,7 @@ const {
   getSchemaStatus,
   getTableStatus,
   getColumnStatus,
+  getViewStatus,
   getProcedureStatus,
   getFunctionStatus,
   upsertTableConfig,
@@ -397,6 +415,14 @@ const openTabForTreeNode = (node: TreeNode) => {
       selectedSchema: node.metadata.schema.name,
     });
   }
+  if (node.type === "view") {
+    expandNodeRecursively(node);
+    addTab({
+      type: "view",
+      database: node.db,
+      metadata: node.metadata,
+    });
+  }
   if (node.type === "procedure") {
     expandNodeRecursively(node);
     addTab({
@@ -476,6 +502,11 @@ const renderLabel = ({ option }: { option: TreeOption }) => {
       label = `<${t("common.untitled")}>`;
       additionalClassList.push("text-control-placeholder italic");
     }
+  }
+  if (node.type === "view") {
+    const { db, metadata } = node;
+    additionalClassList.push(getViewStatus(db, metadata));
+    label = metadata.view.name;
   }
   if (node.type === "procedure") {
     const { db, metadata } = node;
@@ -753,6 +784,22 @@ useEmitteryEventListener(contextMenuEvents, "rename-table", (node) => {
     schema: node.metadata.schema,
     table: node.metadata.table,
   };
+});
+
+useEmitteryEventListener(contextMenuEvents, "create-view", (node) => {
+  state.viewNameModalContext = {
+    db: node.db,
+    database: node.metadata.database,
+    schema: node.metadata.schema,
+    view: undefined,
+  };
+  expandNodeRecursively(node);
+});
+useEmitteryEventListener(contextMenuEvents, "drop-view", (node) => {
+  markEditStatus(node.db, node.metadata, "dropped");
+});
+useEmitteryEventListener(contextMenuEvents, "restore-view", (node) => {
+  removeEditStatus(node.db, node.metadata, /* recursive */ false);
 });
 
 useEmitteryEventListener(contextMenuEvents, "create-procedure", (node) => {

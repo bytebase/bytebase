@@ -20,6 +20,7 @@
         v-if="node.group === 'table'"
         class="w-4 h-auto text-gray-400"
       />
+      <ViewIcon v-if="node.group === 'view'" class="w-4 h-auto text-gray-400" />
       <ProcedureIcon
         v-if="node.group === 'procedure'"
         class="w-4 h-auto text-gray-400"
@@ -43,6 +44,7 @@
       class="w-4 h-auto text-gray-400"
     />
     <TableIcon v-if="node.type === 'table'" class="w-4 h-auto text-gray-400" />
+    <ViewIcon v-if="node.type === 'view'" class="w-4 h-auto text-gray-400" />
     <ProcedureIcon
       v-if="node.type === 'procedure'"
       class="w-4 h-auto text-gray-400"
@@ -64,6 +66,7 @@ import {
   ProcedureIcon,
   SchemaIcon,
   TableIcon,
+  ViewIcon,
 } from "@/components/Icon";
 import { InstanceV1EngineIcon } from "@/components/v2";
 import { useEnvironmentV1Store } from "@/store";

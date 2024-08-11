@@ -8,6 +8,10 @@ export const engineSupportsEditTablePartitions = (engine: Engine) => {
   return [Engine.MYSQL, Engine.TIDB].includes(engine);
 };
 
+export const engineSupportsEditViews = (engine: Engine) => {
+  return [Engine.MYSQL, Engine.TIDB].includes(engine);
+};
+
 export const engineSupportsEditProcedures = (engine: Engine) => {
   return [Engine.MYSQL, Engine.TIDB].includes(engine);
 };
