@@ -4,6 +4,10 @@ import {
   CopyIcon,
   ExternalLinkIcon,
   FileCodeIcon,
+  FileDiffIcon,
+  FileMinusIcon,
+  FilePlusIcon,
+  FileSearch2Icon,
   LinkIcon,
   SquarePenIcon,
 } from "lucide-vue-next";
@@ -245,7 +249,7 @@ export const useDropdown = () => {
         generateSQLChildren.push({
           key: "generate-sql--select",
           label: "SELECT",
-          icon: () => <FileCodeIcon class="w-4 h-4" />,
+          icon: () => <FileSearch2Icon class="w-4 h-4" />,
           onSelect: async () => {
             const statement = await formatCode(
               generateSimpleSelectAllStatement(
@@ -265,7 +269,7 @@ export const useDropdown = () => {
           generateSQLChildren.push({
             key: "generate-sql--insert",
             label: "INSERT",
-            icon: () => <FileCodeIcon class="w-4 h-4" />,
+            icon: () => <FilePlusIcon class="w-4 h-4" />,
             onSelect: async () => {
               const statement = await formatCode(
                 generateSimpleInsertStatement(
@@ -282,7 +286,7 @@ export const useDropdown = () => {
           generateSQLChildren.push({
             key: "generate-sql--update",
             label: "UPDATE",
-            icon: () => <FileCodeIcon class="w-4 h-4" />,
+            icon: () => <FileDiffIcon class="w-4 h-4" />,
             onSelect: async () => {
               const statement = await formatCode(
                 generateSimpleUpdateStatement(
@@ -299,7 +303,7 @@ export const useDropdown = () => {
           generateSQLChildren.push({
             key: "generate-sql--delete",
             label: "DELETE",
-            icon: () => <FileCodeIcon class="w-4 h-4" />,
+            icon: () => <FileMinusIcon class="w-4 h-4" />,
             onSelect: async () => {
               const statement = await formatCode(
                 generateSimpleDeleteStatement(engine, schema.name, table.name),
