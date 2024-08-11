@@ -666,6 +666,17 @@ func (driver *Driver) getCreateFunctionStmt(ctx context.Context, databaseName, f
 		return "", err
 	}
 
+	functionSymbolIdx := strings.Index(resultRow.CreateFunction, " FUNCTION ")
+	if functionSymbolIdx >= 0 {
+		resultRow.CreateFunction = fmt.Sprintf("CREATE%s", resultRow.CreateFunction[functionSymbolIdx:])
+	}
+
+	if charsetIdx := strings.Index(resultRow.CreateFunction, " CHARSET "); charsetIdx != -1 {
+		if newLineIdx := strings.Index(resultRow.CreateFunction, "\n"); newLineIdx != -1 {
+			resultRow.CreateFunction = resultRow.CreateFunction[:charsetIdx] + resultRow.CreateFunction[newLineIdx:]
+		}
+	}
+
 	return resultRow.CreateFunction, nil
 }
 
@@ -715,6 +726,11 @@ func (driver *Driver) getCreateProcedureStmt(ctx context.Context, databaseName, 
 
 	if err := rows.Err(); err != nil {
 		return "", err
+	}
+
+	procedureSymbolIdx := strings.Index(resultRow.CreateProcedure, " PROCEDURE ")
+	if procedureSymbolIdx >= 0 {
+		resultRow.CreateProcedure = fmt.Sprintf("CREATE%s", resultRow.CreateProcedure[procedureSymbolIdx:])
 	}
 
 	return resultRow.CreateProcedure, nil

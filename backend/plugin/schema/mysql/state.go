@@ -503,6 +503,7 @@ func convertToProcedureState(id int, procedure *storepb.ProcedureMetadata) *proc
 func (f *procedureState) toString(buf io.StringWriter) error {
 	def := f.definition
 	if !strings.HasSuffix(def, " ;;") {
+		def = strings.TrimRight(def, ";")
 		def += " ;;"
 	}
 
@@ -537,6 +538,7 @@ func convertToFunctionState(id int, function *storepb.FunctionMetadata) *functio
 func (f *functionState) toString(buf io.StringWriter) error {
 	def := f.definition
 	if !strings.HasSuffix(def, " ;;") {
+		def = strings.TrimRight(def, ";")
 		def += " ;;"
 	}
 
