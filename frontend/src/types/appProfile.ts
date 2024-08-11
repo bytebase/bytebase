@@ -33,6 +33,7 @@ export type AppFeatures = {
   "bb.feature.sql-editor.disallow-export-query-data": boolean;
   "bb.feature.sql-editor.disallow-request-query": boolean;
   "bb.feature.sql-editor.disallow-sync-schema": boolean;
+  "bb.feature.sql-editor.disallow-edit-schema": boolean;
   "bb.feature.sql-editor.hide-bytebase-logo": boolean;
   "bb.feature.sql-editor.hide-profile": boolean;
   "bb.feature.sql-editor.hide-readonly-datasource-hint": boolean;
@@ -82,6 +83,7 @@ export const defaultAppProfile = (): AppProfile => ({
     "bb.feature.sql-editor.disallow-export-query-data": false,
     "bb.feature.sql-editor.disallow-request-query": false,
     "bb.feature.sql-editor.disallow-sync-schema": false,
+    "bb.feature.sql-editor.disallow-edit-schema": false,
     "bb.feature.sql-editor.hide-bytebase-logo": false,
     "bb.feature.sql-editor.hide-profile": false,
     "bb.feature.sql-editor.hide-readonly-datasource-hint": false,

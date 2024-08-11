@@ -284,7 +284,8 @@
     "rows": {
       "self": "rows",
       "n-rows": "{n} rows"
-    }
+    },
+    "override": "Override"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -2443,7 +2444,9 @@
       "admin-data-source-is-disallowed-to-query-when-read-only-data-source-is-available": "Admin data source is disallowed to query when read-only data source is available."
     },
     "manage-connections": "Manage connections",
-    "view-detail": "View detail"
+    "view-detail": "View detail",
+    "generate-sql": "Generate SQL",
+    "current-editing-statement-is-not-empty": "Current editing statement is not empty."
   },
   "schema-editor": {
     "self": "Schema Editor",
