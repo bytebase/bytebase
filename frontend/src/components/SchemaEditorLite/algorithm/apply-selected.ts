@@ -8,6 +8,7 @@ import type {
   ProcedureMetadata,
   SchemaMetadata,
   TableMetadata,
+  ViewMetadata,
 } from "@/types/proto/v1/database_service";
 import { SchemaConfig, TableConfig } from "@/types/proto/v1/database_service";
 import { filterColumnMetadata, filterTableMetadata } from "@/utils";
@@ -24,6 +25,7 @@ export const useApplySelectedMetadataEdit = (context: SchemaEditorContext) => {
   const {
     getTableStatus,
     getColumnStatus,
+    getViewStatus,
     getProcedureStatus,
     getFunctionStatus,
   } = context;
@@ -45,6 +47,17 @@ export const useApplySelectedMetadataEdit = (context: SchemaEditorContext) => {
             table,
           });
           return [key, { schema, table }];
+        });
+      })
+    );
+    const sourceViewMap = new Map(
+      source.schemas.flatMap((schema) => {
+        return schema.views.map((view) => {
+          const key = keyForResource(db, {
+            schema,
+            view,
+          });
+          return [key, { schema, view }];
         });
       })
     );
@@ -201,6 +214,35 @@ export const useApplySelectedMetadataEdit = (context: SchemaEditorContext) => {
       if (schemaConfig.tableConfigs.length > 0) {
         schemaConfigs.push(schemaConfig);
       }
+
+      const views: ViewMetadata[] = [];
+      for (let j = 0; j < schema.views.length; j++) {
+        const view = schema.views[j];
+        const key = keyForResource(db, { schema, view });
+        const picked = selectedObjectKeys.has(key);
+        if (picked) {
+          const status = getViewStatus(db, {
+            database: target,
+            schema,
+            view,
+          });
+          if (status === "dropped") {
+            // Drop view
+            // Don't collect the dropped view
+            continue;
+          } else {
+            // Collect the edited view
+            views.push(view);
+          }
+        } else {
+          const sourceView = sourceViewMap.get(key);
+          if (sourceView) {
+            // Collect the original view
+            views.push(cloneDeep(sourceView.view));
+          }
+        }
+      }
+      schema.views = views;
 
       const procedures: ProcedureMetadata[] = [];
       for (let j = 0; j < schema.procedures.length; j++) {

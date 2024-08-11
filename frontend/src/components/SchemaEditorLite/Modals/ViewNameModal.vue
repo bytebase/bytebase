@@ -95,9 +95,7 @@ const handleConfirmButtonClick = async () => {
   if (!props.view) {
     const view = ViewMetadata.fromPartial({
       name: state.viewName,
-      definition: ["CREATE VIEW `" + state.viewName + "` AS", "  ..."].join(
-        "\n"
-      ),
+      definition: "",
     });
     schema.views.push(view);
     markEditStatus(
