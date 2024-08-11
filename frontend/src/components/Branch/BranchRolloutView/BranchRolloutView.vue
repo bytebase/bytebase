@@ -22,7 +22,8 @@
             :database-name="database?.name"
             :project-name="project.name"
             :environment-name="environment?.name"
-            :filter="filterDatabase"
+            :filter="databaseFilter"
+            :loading="isPreparingDatabaseGroups"
             style="width: 16rem"
             @update:database-name="handleSelectDatabase"
           />
@@ -137,6 +138,7 @@ import { DatabaseSelect, EnvironmentSelect } from "@/components/v2";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
   pushNotification,
+  useDatabaseInGroupFilter,
   useDatabaseV1Store,
   useEnvironmentV1Store,
   useSheetV1Store,
@@ -188,6 +190,15 @@ const {
   ready: virtualBranchReady,
   branch: virtualBranch,
 } = useVirtualBranch(toRef(props, "project"), toRef(props, "branch"), database);
+const referencedDatabase = computed(() => {
+  const name = props.branch.baselineDatabase;
+  if (!name) return undefined;
+  return useDatabaseV1Store().getDatabaseByName(name);
+});
+const { isPreparingDatabaseGroups, databaseFilter } = useDatabaseInGroupFilter(
+  toRef(props, "project"),
+  referencedDatabase
+);
 const selectedRolloutObjects = ref<RolloutObject[]>([]);
 const emptyBranch = Branch.fromJSON({});
 const isGeneratingDDL = ref(false);
@@ -217,9 +228,6 @@ const handleSelectDatabase = (name: string | undefined) => {
     // Auto select environment if it's not selected
     environment.value = database.value.effectiveEnvironmentEntity;
   }
-};
-const filterDatabase = (db: ComposedDatabase) => {
-  return db.instanceResource.engine === props.branch.engine;
 };
 
 const allowPreviewIssue = computed(() => {
