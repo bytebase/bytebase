@@ -28,6 +28,10 @@
                 v-if="tab.type === 'table'"
                 class="w-4 h-4 text-gray-400"
               />
+              <ViewIcon
+                v-if="tab.type === 'view'"
+                class="w-4 h-4 text-gray-400"
+              />
               <ProcedureIcon
                 v-if="tab.type === 'procedure'"
                 class="w-4 h-4 text-gray-400"
@@ -73,7 +77,13 @@ import { NEllipsis, NInput } from "naive-ui";
 import scrollIntoView from "scroll-into-view-if-needed";
 import { computed, nextTick, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { DatabaseIcon, FunctionIcon, ProcedureIcon, TableIcon } from "../Icon";
+import {
+  DatabaseIcon,
+  FunctionIcon,
+  ProcedureIcon,
+  TableIcon,
+  ViewIcon,
+} from "../Icon";
 import { useSchemaEditorContext } from "./context";
 import type { TabContext } from "./types";
 
@@ -163,6 +173,16 @@ const getTabName = (tab: TabContext) => {
       metadata: { schema, table },
     } = tab;
     const parts = [table.name];
+    if (schema.name) {
+      parts.unshift(schema.name);
+    }
+    return parts.join(".");
+  }
+  if (tab.type === "view") {
+    const {
+      metadata: { schema, view },
+    } = tab;
+    const parts = [view.name];
     if (schema.name) {
       parts.unshift(schema.name);
     }

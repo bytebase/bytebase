@@ -2468,7 +2468,8 @@
       "save": "保存",
       "create-procedure": "プロシージャの作成",
       "create-function": "関数の作成",
-      "drop": "落とす"
+      "drop": "落とす",
+      "create-view": "ビューの作成"
     },
     "database": {
       "name": "名前",
@@ -2528,7 +2529,9 @@
       "duplicated-procedure-name": "重複したプロシージャ名",
       "invalid-procedure-name": "無効なプロシージャ名です",
       "duplicated-function-name": "関数名が重複しています",
-      "invalid-function-name": "無効な関数名です"
+      "invalid-function-name": "無効な関数名です",
+      "invalid-view-name": "無効なビュー名です",
+      "duplicated-view-name": "重複したビュー名"
     },
     "confirm-to-close": {
       "title": "閉じることを確認しますか？",

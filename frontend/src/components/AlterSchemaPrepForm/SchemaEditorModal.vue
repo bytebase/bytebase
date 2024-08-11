@@ -38,7 +38,7 @@
           :targets="state.targets"
           :loading="state.isPreparingMetadata"
           :diff-when-ready="false"
-          :hide-last-updater="true"
+          :show-last-updater="false"
         />
       </NTabPane>
       <NTabPane
@@ -133,6 +133,7 @@ import type { PropType } from "vue";
 import { computed, onMounted, h, reactive, ref, watch } from "vue";
 import { I18nT, useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
+import { BBModal } from "@/bbkit";
 import { ActionConfirmModal } from "@/components/SchemaEditorLite";
 import SQLUploadButton from "@/components/misc/SQLUploadButton.vue";
 import {
@@ -160,7 +161,6 @@ import SchemaEditorLite, {
 } from "../SchemaEditorLite";
 import MaskSpinner from "../misc/MaskSpinner.vue";
 import SchemaEditorSQLCheckButton from "./SchemaEditorSQLCheckButton/SchemaEditorSQLCheckButton.vue";
-import { BBModal } from "@/bbkit";
 
 type TabType = "raw-sql" | "schema-editor";
 
