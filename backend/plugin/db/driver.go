@@ -308,7 +308,6 @@ type Driver interface {
 	SyncSlowQuery(ctx context.Context, logDateTs time.Time) (map[string]*storepb.SlowQueryStatistics, error)
 	// CheckSlowQueryLogEnabled checks if the slow query log is enabled.
 	CheckSlowQueryLogEnabled(ctx context.Context) error
-
 	// Dump dumps the schema of database.
 	Dump(ctx context.Context, out io.Writer) (string, error)
 }
