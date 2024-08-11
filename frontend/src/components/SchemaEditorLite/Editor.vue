@@ -42,6 +42,14 @@
           :schema="currentTab.metadata.schema"
           :func="currentTab.metadata.function"
         />
+        <ViewEditor
+          v-if="currentTab.type === 'view'"
+          :key="currentTab.id"
+          :db="currentTab.database"
+          :database="currentTab.metadata.database"
+          :schema="currentTab.metadata.schema"
+          :view="currentTab.metadata.view"
+        />
       </div>
     </template>
     <EmptyTips v-else />
@@ -55,6 +63,7 @@ import DatabaseEditor from "./Panels/DatabaseEditor.vue";
 import FunctionEditor from "./Panels/FunctionEditor.vue";
 import ProcedureEditor from "./Panels/ProcedureEditor.vue";
 import TableEditor from "./Panels/TableEditor.vue";
+import ViewEditor from "./Panels/ViewEditor.vue";
 import TabsContainer from "./TabsContainer.vue";
 import { useSchemaEditorContext } from "./context";
 

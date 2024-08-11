@@ -1,3 +1,4 @@
+import { cloneDeep } from "lodash-es";
 import {
   ColumnMetadata,
   DatabaseMetadata,
@@ -8,6 +9,7 @@ import {
   SchemaMetadata,
   TableMetadata,
   TablePartitionMetadata,
+  ViewMetadata,
 } from "@/types/proto/v1/database_service";
 
 // filterDatabaseMetadata filter out the objects/attributes we do not support.
@@ -21,6 +23,7 @@ export const filterDatabaseMetadata = (metadata: DatabaseMetadata) => {
       return SchemaMetadata.fromPartial({
         name: schema.name,
         tables: schema.tables.map((table) => filterTableMetadata(table)),
+        views: schema.views.map((view) => filterViewMetadata(view)),
         procedures: schema.procedures.map((procedure) =>
           filterProcedureMetadata(procedure)
         ),
@@ -95,6 +98,15 @@ export const filterTableMetadata = (table: TableMetadata) => {
     partitions: table.partitions.map((partition) =>
       filterTablePartitionMetadata(partition)
     ),
+  });
+};
+
+export const filterViewMetadata = (view: ViewMetadata) => {
+  return ViewMetadata.fromPartial({
+    name: view.name,
+    comment: view.comment,
+    definition: view.definition,
+    dependentColumns: cloneDeep(view.dependentColumns),
   });
 };
 
