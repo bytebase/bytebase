@@ -1028,6 +1028,14 @@ func filterDatabaseMetadataByEngine(metadata *storepb.DatabaseSchemaMetadata, en
 				}
 				filteredSchema.Procedures = append(filteredSchema.Procedures, filteredProcedure)
 			}
+			for _, view := range schema.Views {
+				filteredView := &storepb.ViewMetadata{
+					Name:       view.Name,
+					Comment:    view.Comment,
+					Definition: view.Definition,
+				}
+				filteredSchema.Views = append(filteredSchema.Procedures, filteredView)
+			}
 		}
 		filteredDatabase.Schemas = append(filteredDatabase.Schemas, filteredSchema)
 	}
