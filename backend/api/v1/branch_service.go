@@ -1185,6 +1185,11 @@ func reconcileMetadata(metadata *storepb.DatabaseSchemaMetadata, engine storepb.
 				}
 			}
 		}
+		for _, view := range schema.Views {
+			if engine == storepb.Engine_MYSQL || engine == storepb.Engine_TIDB {
+				view.Definition = formatViewDef(view.Definition)
+			}
+		}
 	}
 }
 
@@ -1784,4 +1789,8 @@ func alignDatabaseConfig(metadata *storepb.DatabaseSchemaMetadata, config *store
 		schemaConfig.FunctionConfigs = append(schemaConfig.FunctionConfigs, newFunctionConfigs...)
 	}
 	config.SchemaConfigs = append(config.SchemaConfigs, newSchemaConfigs...)
+}
+
+func formatViewDef(def string) string {
+	return strings.TrimRight(def, "; \n\r\t")
 }
