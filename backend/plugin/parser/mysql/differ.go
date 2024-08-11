@@ -218,8 +218,8 @@ func (diff *diffNode) diffTablePartition(oldTable, newTable *tableDef) {
 	// 4. Create a new partition table.
 
 	// Skip for some unsupported cases.
-	oldHasPartition := oldTable.partition.info.tp != storepb.TablePartitionMetadata_TYPE_UNSPECIFIED
-	newHasPartition := newTable.partition.info.tp != storepb.TablePartitionMetadata_TYPE_UNSPECIFIED
+	oldHasPartition := oldTable.partition != nil && oldTable.partition.info.tp != storepb.TablePartitionMetadata_TYPE_UNSPECIFIED
+	newHasPartition := newTable.partition != nil && newTable.partition.info.tp != storepb.TablePartitionMetadata_TYPE_UNSPECIFIED
 	// Turn a partitioned table un-partitioned.
 	if oldHasPartition && !newHasPartition {
 		return
