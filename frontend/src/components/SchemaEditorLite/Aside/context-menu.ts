@@ -15,6 +15,7 @@ import type {
   TreeNodeForFunction,
   TreeNodeForSchema,
   TreeNodeForTable,
+  TreeNodeForView,
 } from "./common";
 
 interface TreeContextMenu {
@@ -35,6 +36,9 @@ type TreeContextMenuEvents = Emittery<{
   "create-procedure": TreeNodeForGroup<"procedure">;
   "restore-procedure": TreeNodeForProcedure;
   "drop-procedure": TreeNodeForProcedure;
+  "create-view": TreeNodeForGroup<"view">;
+  "restore-view": TreeNodeForView;
+  "drop-view": TreeNodeForView;
   "create-function": TreeNodeForGroup<"function">;
   "restore-function": TreeNodeForFunction;
   "drop-function": TreeNodeForFunction;
@@ -57,6 +61,7 @@ export const useContextMenu = () => {
   const {
     getSchemaStatus,
     getTableStatus,
+    getViewStatus,
     getProcedureStatus,
     getFunctionStatus,
   } = useSchemaEditorContext();
@@ -105,6 +110,14 @@ export const useContextMenu = () => {
           },
         ];
       }
+      if (node.group === "view") {
+        return [
+          {
+            key: "create-view",
+            label: t("schema-editor.actions.create-view"),
+          },
+        ];
+      }
       if (node.group === "procedure") {
         return [
           {
@@ -140,6 +153,22 @@ export const useContextMenu = () => {
         options.push({
           key: "drop-table",
           label: t("schema-editor.actions.drop-table"),
+        });
+      }
+      return options;
+    }
+    if (node.type === "view") {
+      const options: DropdownOption[] = [];
+      const status = getViewStatus(node.db, node.metadata);
+      if (status === "dropped") {
+        options.push({
+          key: "restore-view",
+          label: t("schema-editor.actions.restore"),
+        });
+      } else {
+        options.push({
+          key: "drop-view",
+          label: t("schema-editor.actions.drop"),
         });
       }
       return options;

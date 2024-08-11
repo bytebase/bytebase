@@ -2468,7 +2468,8 @@
       "save": "Save",
       "create-procedure": "Create procedure",
       "create-function": "Create function",
-      "drop": "Drop"
+      "drop": "Drop",
+      "create-view": "Create view"
     },
     "database": {
       "name": "Name",
@@ -2528,7 +2529,9 @@
       "duplicated-procedure-name": "Duplicated procedure name",
       "invalid-procedure-name": "Invalid procedure name",
       "duplicated-function-name": "Duplicated function name",
-      "invalid-function-name": "Invalid function name"
+      "invalid-function-name": "Invalid function name",
+      "invalid-view-name": "Invalid view name",
+      "duplicated-view-name": "Duplicated view name"
     },
     "confirm-to-close": {
       "title": "Confirm to close",
