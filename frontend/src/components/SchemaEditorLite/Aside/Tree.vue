@@ -188,6 +188,7 @@ const {
   targets,
   readonly,
   currentTab,
+  showLastUpdater,
   disableDiffColoring,
   addTab,
   markEditStatus,
@@ -550,7 +551,9 @@ const renderSuffix = ({ option }: { option: TreeOption }) => {
     node.type === "procedure" ||
     node.type === "function"
   ) {
-    icons.push(h(LastUpdate, { node }));
+    if (showLastUpdater.value) {
+      icons.push(h(LastUpdate, { node }));
+    }
   }
 
   if (readonly.value) {
