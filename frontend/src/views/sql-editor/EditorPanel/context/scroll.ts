@@ -2,17 +2,9 @@ import { useMounted } from "@vueuse/core";
 import type { Ref } from "vue";
 import { computed, watch } from "vue";
 import {
-  type RichMetadataWithDB, // type EditorPanelView as View,
+  type RichMetadataWithDB,
   type EditorPanelViewState as ViewState,
 } from "../types";
-
-// const typeMapping: Record<string, View> = {
-//   table: "TABLES",
-//   column: "TABLES",
-//   view: "VIEWS",
-//   procedure: "PROCEDURES",
-//   function: "FUNCTIONS",
-// };
 
 export const useScroll = (viewState: Ref<ViewState | undefined>) => {
   const useConsumePendingScrollToTarget = <TTarget, TContext>(
