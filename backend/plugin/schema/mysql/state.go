@@ -882,7 +882,9 @@ func (p *partitionState) toString(buf io.StringWriter, partitionClauseCtx mysql.
 		if p.info.tp == storepb.TablePartitionMetadata_RANGE {
 			fields := splitPartitionExprIntoFields(p.info.expr)
 			for i, field := range fields {
-				fields[i] = fmt.Sprintf("`%s`", field)
+				if !strings.Contains(field, "(") {
+					fields[i] = fmt.Sprintf("`%s`", field)
+				}
 			}
 			if _, err := buf.WriteString(fmt.Sprintf("(%s)", strings.Join(fields, ","))); err != nil {
 				return err
@@ -904,7 +906,9 @@ func (p *partitionState) toString(buf io.StringWriter, partitionClauseCtx mysql.
 		if p.info.tp == storepb.TablePartitionMetadata_LIST {
 			fields := splitPartitionExprIntoFields(p.info.expr)
 			for i, field := range fields {
-				fields[i] = fmt.Sprintf("`%s`", field)
+				if !strings.Contains(field, "(") {
+					fields[i] = fmt.Sprintf("`%s`", field)
+				}
 			}
 			if _, err := buf.WriteString(fmt.Sprintf("(%s)", strings.Join(fields, ","))); err != nil {
 				return err
@@ -995,7 +999,9 @@ func (p *partitionState) toString(buf io.StringWriter, partitionClauseCtx mysql.
 			}
 			fields := splitPartitionExprIntoFields(p.info.expr)
 			for i, field := range fields {
-				fields[i] = fmt.Sprintf("`%s`", field)
+				if !strings.Contains(field, "(") {
+					fields[i] = fmt.Sprintf("`%s`", field)
+				}
 			}
 			if _, err := buf.WriteString(fmt.Sprintf("(%s)", strings.Join(fields, ","))); err != nil {
 				return err
@@ -1042,7 +1048,9 @@ func (p *partitionState) toString(buf io.StringWriter, partitionClauseCtx mysql.
 			}
 			fields := splitPartitionExprIntoFields(p.subInfo.expr)
 			for i, field := range fields {
-				fields[i] = fmt.Sprintf("`%s`", field)
+				if !strings.Contains(field, "(") {
+					fields[i] = fmt.Sprintf("`%s`", field)
+				}
 			}
 			if _, err := buf.WriteString(fmt.Sprintf("(%s)", strings.Join(fields, ","))); err != nil {
 				return err
