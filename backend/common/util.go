@@ -57,6 +57,7 @@ var (
 		storepb.Engine_OCEANBASE:        true,
 		storepb.Engine_ORACLE:           true,
 		storepb.Engine_OCEANBASE_ORACLE: true,
+		storepb.Engine_MSSQL:            true,
 	}
 )
 
