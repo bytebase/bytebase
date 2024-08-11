@@ -23,55 +23,61 @@ var (
 	nowRegexp              = regexp.MustCompile(`(?mi)NOW(\((?P<fsp>(\d+))?\))?`)
 )
 
+type timestampDefaultValue interface {
+	isTimeStampDefaultValue()
+	getFsp() int
+}
 type currentTimestamp struct {
 	// fsp is the fractional seconds precision.
 	fsp int
 }
 
+func (*currentTimestamp) isTimeStampDefaultValue() {}
+
+func (c *currentTimestamp) getFsp() int { return c.fsp }
+
 type now struct {
 	fsp int
 }
 
-func buildNow(input string) *now {
-	matches := nowRegexp.FindStringSubmatch(input)
-	if matches == nil {
-		return nil
-	}
+func (*now) isTimeStampDefaultValue() {}
 
-	for i, name := range nowRegexp.SubexpNames() {
-		if name == "fsp" {
-			if matches[i] != "" {
-				fsp, err := strconv.ParseInt(matches[i], 10, 64)
-				if err != nil {
-					return nil
-				}
-				return &now{int(fsp)}
-			}
-		}
-	}
+func (n *now) getFsp() int { return n.fsp }
 
-	return &now{}
-}
-
-func buildCurrentTimestamp(input string) *currentTimestamp {
+func buildTimestampDefaultValue(input string) timestampDefaultValue {
 	matches := currentTimestampRegexp.FindStringSubmatch(input)
-	if matches == nil {
-		return nil
-	}
-
-	for i, name := range currentTimestampRegexp.SubexpNames() {
-		if name == "fsp" {
-			if matches[i] != "" {
-				fsp, err := strconv.ParseInt(matches[i], 10, 64)
-				if err != nil {
-					return nil
+	if matches != nil {
+		for i, name := range currentTimestampRegexp.SubexpNames() {
+			if name == "fsp" {
+				if matches[i] != "" {
+					fsp, err := strconv.ParseInt(matches[i], 10, 64)
+					if err != nil {
+						return nil
+					}
+					return &currentTimestamp{int(fsp)}
 				}
-				return &currentTimestamp{int(fsp)}
 			}
 		}
+		return &currentTimestamp{}
 	}
 
-	return &currentTimestamp{}
+	matches = nowRegexp.FindStringSubmatch(input)
+	if matches != nil {
+		for i, name := range nowRegexp.SubexpNames() {
+			if name == "fsp" {
+				if matches[i] != "" {
+					fsp, err := strconv.ParseInt(matches[i], 10, 64)
+					if err != nil {
+						return nil
+					}
+					return &now{int(fsp)}
+				}
+			}
+		}
+		return &now{}
+	}
+
+	return nil
 }
 
 type diffAction string
@@ -751,15 +757,10 @@ func compareColumnDefaultValue(a, b any) bool {
 		if strings.EqualFold(aExpr.DefaultExpression, "AUTO_INCREMENT") {
 			return strings.EqualFold(bExpr.DefaultExpression, "AUTO_INCREMENT")
 		}
-		aCurrentTimestamp := buildCurrentTimestamp(aExpr.DefaultExpression)
-		bCurrentTimestamp := buildCurrentTimestamp(bExpr.DefaultExpression)
-		if aCurrentTimestamp != nil && bCurrentTimestamp != nil {
-			return aCurrentTimestamp.fsp == bCurrentTimestamp.fsp
-		}
-		aNow := buildNow(aExpr.DefaultExpression)
-		bNow := buildNow(bExpr.DefaultExpression)
-		if aNow != nil && bNow != nil {
-			return aNow.fsp == bNow.fsp
+		aTimestampDefaultValue := buildTimestampDefaultValue(aExpr.DefaultExpression)
+		bTimestampDefaultValue := buildTimestampDefaultValue(bExpr.DefaultExpression)
+		if aTimestampDefaultValue != nil && bTimestampDefaultValue != nil {
+			return aTimestampDefaultValue.getFsp() == bTimestampDefaultValue.getFsp()
 		}
 	}
 
