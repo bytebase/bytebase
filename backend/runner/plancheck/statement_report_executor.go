@@ -2,7 +2,6 @@ package plancheck
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"log/slog"
 
@@ -13,6 +12,8 @@ import (
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/sheet"
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	mysqldriver "github.com/bytebase/bytebase/backend/plugin/db/mysql"
+	pgdriver "github.com/bytebase/bytebase/backend/plugin/db/pg"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	"github.com/bytebase/bytebase/backend/plugin/parser/pg"
@@ -148,7 +149,6 @@ func (e *StatementReportExecutor) runReport(ctx context.Context, instance *store
 		}, nil
 	}
 
-	var sqlDB *sql.DB
 	var explainCalculator getAffectedRowsFromExplain
 	var sqlTypes []string
 	var defaultSchema string
@@ -159,8 +159,11 @@ func (e *StatementReportExecutor) runReport(ctx context.Context, instance *store
 			return nil, err
 		}
 		defer driver.Close(ctx)
-		sqlDB = driver.GetDB()
-		explainCalculator = getAffectedRowsCountForPostgres
+		pd, ok := driver.(*pgdriver.Driver)
+		if !ok {
+			return nil, errors.Errorf("invalid pg driver type")
+		}
+		explainCalculator = pd.CountAffectedRows
 
 		sqlTypes, err = pg.GetStatementTypes(asts)
 		if err != nil {
@@ -173,12 +176,13 @@ func (e *StatementReportExecutor) runReport(ctx context.Context, instance *store
 			return nil, err
 		}
 		defer driver.Close(ctx)
-		sqlDB = driver.GetDB()
-		if instance.Engine == storepb.Engine_OCEANBASE {
-			explainCalculator = getAffectedRowsCountForOceanBase
-		} else {
-			explainCalculator = getAffectedRowsCountForMysql
+		md, ok := driver.(*mysqldriver.Driver)
+		if !ok {
+			return nil, errors.Errorf("invalid pg driver type")
+		}
+		explainCalculator = md.CountAffectedRows
 
+		if instance.Engine != storepb.Engine_OCEANBASE {
 			sqlTypes, err = mysqlparser.GetStatementTypes(asts)
 			if err != nil {
 				return nil, err
@@ -187,7 +191,7 @@ func (e *StatementReportExecutor) runReport(ctx context.Context, instance *store
 		// TODO(d): implement TiDB sqlTypes.
 		defaultSchema = ""
 	case storepb.Engine_ORACLE, storepb.Engine_OCEANBASE_ORACLE:
-		explainCalculator = getAffectedRowsCountForOracle
+		explainCalculator = getAffectedRowsCountNoop
 		defaultSchema = database.DatabaseName
 	default:
 		// Already checked in the Run().
@@ -198,7 +202,7 @@ func (e *StatementReportExecutor) runReport(ctx context.Context, instance *store
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to extract changed resources")
 	}
-	totalAffectedRows := calculateAffectedRows(ctx, changeSummary, sqlDB, explainCalculator)
+	totalAffectedRows := calculateAffectedRows(ctx, changeSummary, explainCalculator)
 
 	return []*storepb.PlanCheckRunResult_Result{
 		{
@@ -216,14 +220,18 @@ func (e *StatementReportExecutor) runReport(ctx context.Context, instance *store
 	}, nil
 }
 
-type getAffectedRowsFromExplain func(context.Context, *sql.DB, string) (int64, error)
+type getAffectedRowsFromExplain func(context.Context, string) (int64, error)
 
-func calculateAffectedRows(ctx context.Context, changeSummary *base.ChangeSummary, sqlDB *sql.DB, explainCalculator getAffectedRowsFromExplain) int64 {
+func getAffectedRowsCountNoop(_ context.Context, _ string) (int64, error) {
+	return 0, nil
+}
+
+func calculateAffectedRows(ctx context.Context, changeSummary *base.ChangeSummary, explainCalculator getAffectedRowsFromExplain) int64 {
 	var totalAffectedRows int64
 	// Count DMLs.
 	sampleCount := 0
 	for _, dml := range changeSummary.SampleDMLS {
-		count, err := explainCalculator(ctx, sqlDB, dml)
+		count, err := explainCalculator(ctx, dml)
 		if err != nil {
 			slog.Error("failed to calculate affected rows", log.BBError(err))
 			continue
