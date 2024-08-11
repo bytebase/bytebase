@@ -53,11 +53,6 @@ const { containerElRef, tableBodyHeight, layoutReady } =
 const dataTableRef = ref<DataTableInst>();
 const { t } = useI18n();
 
-// const vlRef = computed(() => {
-//   return (dataTableRef.value as any)?.$refs?.mainTableInstRef?.bodyInstRef
-//     ?.virtualListRef;
-// });
-
 const primaryKey = computed(() => {
   return props.table.indexes.find((idx) => idx.primary);
 });
@@ -175,31 +170,6 @@ const isColumnPrimaryKey = (column: ColumnMetadata): boolean => {
   if (!pk) return false;
   return pk.expressions.includes(column.name);
 };
-
-// useConsumePendingScrollToColumn(
-//   computed(() => ({
-//     db: props.db,
-//     metadata: {
-//       database: props.database,
-//       schema: props.schema,
-//       table: props.table,
-//     },
-//   })),
-//   vlRef,
-//   (params, vl) => {
-//     const key = params.metadata.column.name;
-//     if (!key) return;
-//     requestAnimationFrame(() => {
-//       try {
-//         console.debug("scroll-to-column", vl, params, key);
-//         vl.scrollTo({ key });
-//         // TODO: focus name or type input element
-//       } catch {
-//         // Do nothing
-//       }
-//     });
-//   }
-// );
 </script>
 
 <style lang="postcss" scoped>
