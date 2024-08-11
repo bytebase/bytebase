@@ -11,12 +11,15 @@ import { NButton, useDialog, type DropdownOption } from "naive-ui";
 import { computed, h, nextTick, ref } from "vue";
 import { useRouter } from "vue-router";
 import TableIcon from "@/components/Icon/TableIcon.vue";
+import formatSQL from "@/components/MonacoEditor/sqlFormatter";
 import { useExecuteSQL } from "@/composables/useExecuteSQL";
 import { t } from "@/plugins/i18n";
 import { SQL_EDITOR_DATABASE_MODULE } from "@/router/sqlEditor";
 import { pushNotification, useAppFeature, useSQLEditorTabStore } from "@/store";
 import {
   DEFAULT_SQL_EDITOR_TAB_MODE,
+  dialectOfEngineV1,
+  languageOfEngineV1,
   type ComposedDatabase,
   type CoreSQLEditorTab,
   type Position,
@@ -225,7 +228,7 @@ export const useDropdown = () => {
           });
         }
       }
-      if (targetSupportsSelectAll(target)) {
+      if (targetSupportsGenerateSQL(target)) {
         items.push({
           key: "preview-table-data",
           label: t("sql-editor.preview-table-data"),
@@ -237,17 +240,21 @@ export const useDropdown = () => {
       }
       const generateSQLChildren: DropdownOptionWithTreeNode[] = [];
 
-      if (targetSupportsSelectAll(target)) {
+      if (targetSupportsGenerateSQL(target)) {
+        const engine = engineForTarget(target);
         generateSQLChildren.push({
           key: "generate-sql--select",
           label: "SELECT",
           icon: () => <FileCodeIcon class="w-4 h-4" />,
-          onSelect: () => {
-            const statement = generateSimpleSelectAllStatement(
-              engineForTarget(target),
-              schema,
-              tableOrView,
-              SELECT_ALL_LIMIT
+          onSelect: async () => {
+            const statement = await formatCode(
+              generateSimpleSelectAllStatement(
+                engine,
+                schema,
+                tableOrView,
+                SELECT_ALL_LIMIT
+              ),
+              engine
             );
             applyContentToCurrentTabOrCopyToClipboard(statement, $d);
           },
@@ -259,12 +266,15 @@ export const useDropdown = () => {
             key: "generate-sql--insert",
             label: "INSERT",
             icon: () => <FileCodeIcon class="w-4 h-4" />,
-            onSelect: () => {
-              const statement = generateSimpleInsertStatement(
-                engineForTarget(target),
-                schema.name,
-                table.name,
-                columns
+            onSelect: async () => {
+              const statement = await formatCode(
+                generateSimpleInsertStatement(
+                  engine,
+                  schema.name,
+                  table.name,
+                  columns
+                ),
+                engine
               );
               applyContentToCurrentTabOrCopyToClipboard(statement, $d);
             },
@@ -273,12 +283,15 @@ export const useDropdown = () => {
             key: "generate-sql--update",
             label: "UPDATE",
             icon: () => <FileCodeIcon class="w-4 h-4" />,
-            onSelect: () => {
-              const statement = generateSimpleUpdateStatement(
-                engineForTarget(target),
-                schema.name,
-                table.name,
-                columns
+            onSelect: async () => {
+              const statement = await formatCode(
+                generateSimpleUpdateStatement(
+                  engine,
+                  schema.name,
+                  table.name,
+                  columns
+                ),
+                engine
               );
               applyContentToCurrentTabOrCopyToClipboard(statement, $d);
             },
@@ -287,11 +300,10 @@ export const useDropdown = () => {
             key: "generate-sql--delete",
             label: "DELETE",
             icon: () => <FileCodeIcon class="w-4 h-4" />,
-            onSelect: () => {
-              const statement = generateSimpleDeleteStatement(
-                engineForTarget(target),
-                schema.name,
-                table.name
+            onSelect: async () => {
+              const statement = await formatCode(
+                generateSimpleDeleteStatement(engine, schema.name, table.name),
+                engine
               );
               applyContentToCurrentTabOrCopyToClipboard(statement, $d);
             },
@@ -406,7 +418,7 @@ const engineForTarget = (target: NodeTarget) => {
   return (target as NodeTarget<"database">).db.instanceResource.engine;
 };
 
-const targetSupportsSelectAll = (target: NodeTarget) => {
+const targetSupportsGenerateSQL = (target: NodeTarget) => {
   const engine = engineForTarget(target);
   if (engine === Engine.REDIS) {
     return false;
@@ -467,7 +479,7 @@ const runQuery = async (
       database: database.name,
       schema,
       table: tableOrViewName,
-      dataSourceId: getDefaultQueriableDataSourceOfDatabase(database).id,
+      dataSourceId: getDefaultQueryableDataSourceOfDatabase(database).id,
     },
     mode: DEFAULT_SQL_EDITOR_TAB_MODE,
     worksheet: "",
@@ -509,7 +521,7 @@ export const selectAllFromTableOrView = async (
   node: TreeNode
 ) => {
   const { target } = (node as TreeNode<"table" | "view">).meta;
-  if (!targetSupportsSelectAll(target)) {
+  if (!targetSupportsGenerateSQL(target)) {
     return;
   }
 
@@ -522,11 +534,14 @@ export const selectAllFromTableOrView = async (
   const { db } = target;
   const { engine } = db.instanceResource;
 
-  const query = generateSimpleSelectAllStatement(
-    engine,
-    schema,
-    tableOrViewName,
-    SELECT_ALL_LIMIT
+  const query = await formatCode(
+    generateSimpleSelectAllStatement(
+      engine,
+      schema,
+      tableOrViewName,
+      SELECT_ALL_LIMIT
+    ),
+    engine
   );
   const choice = await confirmOverrideStatement($d, query);
   if (choice === "CANCEL") {
@@ -538,7 +553,7 @@ export const selectAllFromTableOrView = async (
   runQuery(db, schema, tableOrViewName, query);
 };
 
-const getDefaultQueriableDataSourceOfDatabase = (
+const getDefaultQueryableDataSourceOfDatabase = (
   database: ComposedDatabase
 ) => {
   const dataSources = database.instanceResource.dataSources;
@@ -547,4 +562,20 @@ const getDefaultQueriableDataSourceOfDatabase = (
   );
   // First try to use readonly data source if available.
   return (head(readonlyDataSources) || head(dataSources)) as DataSource;
+};
+
+const formatCode = async (code: string, engine: Engine) => {
+  const lang = languageOfEngineV1(engine);
+  if (lang !== "sql") {
+    return code;
+  }
+  try {
+    const result = await formatSQL(code, dialectOfEngineV1(engine));
+    if (!result.error) {
+      return result.data;
+    }
+    return code; // fallback;
+  } catch (err) {
+    return code; // fallback
+  }
 };
