@@ -1,6 +1,7 @@
 package pg
 
 import (
+	"context"
 	"io"
 	"os"
 	"sort"
@@ -37,7 +38,7 @@ func TestBackup(t *testing.T) {
 	a.NoError(yaml.Unmarshal(byteValue, &tests))
 
 	for i, t := range tests {
-		result, err := TransformDMLToSelect(base.TransformContext{}, t.Input, "", "backupSchema", "rollback")
+		result, err := TransformDMLToSelect(context.Background(), base.TransformContext{}, t.Input, "", "backupSchema", "rollback")
 		a.NoError(err)
 		sort.Slice(result, func(i, j int) bool {
 			if result[i].TargetTableName == result[j].TargetTableName {

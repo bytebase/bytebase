@@ -1,6 +1,7 @@
 package mysql
 
 import (
+	"context"
 	"io"
 	"os"
 	"sort"
@@ -10,6 +11,8 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	"github.com/bytebase/bytebase/backend/store/model"
+	"github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 type rollbackCase struct {
@@ -37,7 +40,9 @@ func TestBackup(t *testing.T) {
 	a.NoError(yaml.Unmarshal(byteValue, &tests))
 
 	for i, t := range tests {
-		result, err := TransformDMLToSelect(base.TransformContext{}, t.Input, "db", "backupDB", "_rollback")
+		result, err := TransformDMLToSelect(context.Background(), base.TransformContext{
+			GetDatabaseMetadataFunc: fixedMockDatabaseMetadataGetter,
+		}, t.Input, "db", "backupDB", "_rollback")
 		a.NoError(err)
 		sort.Slice(result, func(i, j int) bool {
 			if result[i].TargetTableName == result[j].TargetTableName {
@@ -58,4 +63,90 @@ func TestBackup(t *testing.T) {
 		err = os.WriteFile(filepath, byteValue, 0644)
 		a.NoError(err)
 	}
+}
+
+func fixedMockDatabaseMetadataGetter(_ context.Context, _ string, database string) (string, *model.DatabaseMetadata, error) {
+	return database, model.NewDatabaseMetadata(&store.DatabaseSchemaMetadata{
+		Name: database,
+		Schemas: []*store.SchemaMetadata{
+			{
+				Name: "",
+				Tables: []*store.TableMetadata{
+					{
+						Name: "t_generated",
+						Columns: []*store.ColumnMetadata{
+							{
+								Name: "a",
+							},
+							{
+								Name: "b",
+							},
+							{
+								Name: "c_generated",
+								Generation: &store.GenerationMetadata{
+									Expression: "a + b",
+								},
+							},
+						},
+					},
+					{
+						Name: "t1",
+						Columns: []*store.ColumnMetadata{
+							{
+								Name: "a",
+							},
+							{
+								Name: "b",
+							},
+							{
+								Name: "c",
+							},
+						},
+					},
+					{
+						Name: "t2",
+						Columns: []*store.ColumnMetadata{
+							{
+								Name: "a",
+							},
+							{
+								Name: "b",
+							},
+							{
+								Name: "c",
+							},
+						},
+					},
+					{
+						Name: "test",
+						Columns: []*store.ColumnMetadata{
+							{
+								Name: "a",
+							},
+							{
+								Name: "b",
+							},
+							{
+								Name: "c",
+							},
+						},
+					},
+					{
+						Name: "test2",
+						Columns: []*store.ColumnMetadata{
+							{
+								Name: "a",
+							},
+							{
+								Name: "b",
+							},
+							{
+								Name: "c",
+							},
+						},
+					},
+				},
+			},
+		},
+	}), nil
 }
