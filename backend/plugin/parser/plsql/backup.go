@@ -1,6 +1,7 @@
 package plsql
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -50,13 +51,13 @@ type statementInfo struct {
 
 // TransformDMLToSelect transforms DML statement to SELECT statement.
 // For Oracle, we only consider the managed on schema mode.
-func TransformDMLToSelect(ctx base.TransformContext, statement string, sourceDatabase string, targetDatabase string, tablePrefix string) ([]base.BackupStatement, error) {
+func TransformDMLToSelect(_ context.Context, tCtx base.TransformContext, statement string, sourceDatabase string, targetDatabase string, tablePrefix string) ([]base.BackupStatement, error) {
 	statementInfoList, err := prepareTransformation(sourceDatabase, statement)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to prepare transformation")
 	}
 
-	return generateSQL(ctx, statementInfoList, targetDatabase, tablePrefix)
+	return generateSQL(tCtx, statementInfoList, targetDatabase, tablePrefix)
 }
 
 func generateSQL(ctx base.TransformContext, statementInfoList []statementInfo, targetDatabase string, tablePrefix string) ([]base.BackupStatement, error) {
