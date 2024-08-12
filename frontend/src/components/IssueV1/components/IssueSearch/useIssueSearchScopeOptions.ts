@@ -217,8 +217,7 @@ export const useIssueSearchScopeOptions = (
           return true;
         }
 
-        const uid = option.value.split("-").slice(-1)[0];
-        const db = databaseV1Store.getDatabaseByUID(uid);
+        const db = databaseV1Store.getDatabaseByName(option.value);
         const project = db.project;
         const instance = db.instance;
 

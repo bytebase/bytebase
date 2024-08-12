@@ -63,13 +63,13 @@
                 <NCheckbox
                   :checked="
                     isDatabaseSelectedForEnvironment(
-                      database.uid,
+                      database.name,
                       environment.name
                     )
                   "
                   @update:checked="
-                    toggleDatabaseIdForEnvironment(
-                      database.uid,
+                    toggleDatabaseNameForEnvironment(
+                      database.name,
                       environment.name,
                       $event
                     )
@@ -116,71 +116,75 @@ import { InstanceV1Name, ProductionEnvironmentV1Icon } from "../v2";
 import type { TransferSource } from "./utils";
 
 type LocalState = {
-  selectedDatabaseUidListForEnvironment: Map<string, Set<string>>;
+  selectedDatabaseNameListForEnvironment: Map<string, Set<string>>;
 };
 
 const props = withDefaults(
   defineProps<{
     transferSource: TransferSource;
     databaseList: ComposedDatabase[];
-    selectedUidList?: string[];
+    selectedDatabaseNameList?: string[];
   }>(),
   {
-    selectedUidList: () => [],
+    selectedDatabaseNameList: () => [],
   }
 );
 
 const emit = defineEmits<{
-  (e: "update:selectedUidList", uidList: string[]): void;
+  (e: "update:selectedDatabaseNameList", databaseNameList: string[]): void;
 }>();
 
 const environmentList = useEnvironmentV1List();
 
 const state = reactive<LocalState>({
-  selectedDatabaseUidListForEnvironment: new Map(),
+  selectedDatabaseNameListForEnvironment: new Map(),
 });
 
-const toggleDatabaseIdForEnvironment = (
-  databaseId: string,
+const toggleDatabaseNameForEnvironment = (
+  databaseName: string,
   environmentName: string,
   selected: boolean
 ) => {
-  const map = state.selectedDatabaseUidListForEnvironment;
+  const map = state.selectedDatabaseNameListForEnvironment;
   const set = map.get(environmentName) || new Set();
   if (selected) {
-    set.add(databaseId);
+    set.add(databaseName);
   } else {
-    set.delete(databaseId);
+    set.delete(databaseName);
   }
   map.set(environmentName, set);
 };
 
 watch(
-  () => [props.databaseList, props.selectedUidList],
+  () => [props.databaseList, props.selectedDatabaseNameList],
   (args) => {
-    const [databaseList, selectedUidList] = args as [
+    const [databaseList, selectedDatabaseNameList] = args as [
       ComposedDatabase[],
       string[],
     ];
-    for (const uid of selectedUidList) {
-      const database = databaseList.find((db) => db.uid === uid);
+    for (const name of selectedDatabaseNameList) {
+      const database = databaseList.find((db) => db.name === name);
       if (!database) {
         continue;
       }
-      toggleDatabaseIdForEnvironment(uid, database.effectiveEnvironment, true);
+      toggleDatabaseNameForEnvironment(
+        name,
+        database.effectiveEnvironment,
+        true
+      );
     }
   },
   { immediate: true }
 );
 
 watch(
-  () => state.selectedDatabaseUidListForEnvironment,
+  () => state.selectedDatabaseNameListForEnvironment,
   (map) => {
     const list: string[] = [];
     for (const listForEnv of map.values()) {
       list.push(...listForEnv);
     }
-    emit("update:selectedUidList", list);
+    emit("update:selectedDatabaseNameList", list);
   },
   { deep: true }
 );
@@ -224,18 +228,18 @@ const databaseListGroupByEnvironment = computed(() => {
 watch(
   () => props.transferSource,
   () => {
-    // Clear selected database ID list when transferSource changed.
-    state.selectedDatabaseUidListForEnvironment.clear();
+    // Clear selected database name list when transferSource changed.
+    state.selectedDatabaseNameListForEnvironment.clear();
   }
 );
 
 const isDatabaseSelectedForEnvironment = (
-  databaseId: string,
+  databaseName: string,
   environmentName: string
 ) => {
-  const map = state.selectedDatabaseUidListForEnvironment;
+  const map = state.selectedDatabaseNameListForEnvironment;
   const set = map.get(environmentName) || new Set();
-  return set.has(databaseId);
+  return set.has(databaseName);
 };
 
 const getAllSelectionStateForEnvironment = (
@@ -243,10 +247,10 @@ const getAllSelectionStateForEnvironment = (
   databaseList: ComposedDatabase[]
 ): { checked: boolean; indeterminate: boolean } => {
   const set =
-    state.selectedDatabaseUidListForEnvironment.get(environment.name) ??
+    state.selectedDatabaseNameListForEnvironment.get(environment.name) ??
     new Set();
-  const checked = set.size > 0 && databaseList.every((db) => set.has(db.uid));
-  const indeterminate = !checked && databaseList.some((db) => set.has(db.uid));
+  const checked = set.size > 0 && databaseList.every((db) => set.has(db.name));
+  const indeterminate = !checked && databaseList.some((db) => set.has(db.name));
 
   return {
     checked,
@@ -260,7 +264,7 @@ const toggleAllDatabasesSelectionForEnvironment = (
   on: boolean
 ) => {
   databaseList.forEach((db) =>
-    toggleDatabaseIdForEnvironment(db.uid, environment.name, on)
+    toggleDatabaseNameForEnvironment(db.name, environment.name, on)
   );
 };
 
@@ -269,20 +273,19 @@ const getSelectionStateSummaryForEnvironment = (
   databaseList: ComposedDatabase[]
 ) => {
   const set =
-    state.selectedDatabaseUidListForEnvironment.get(environment.name) ||
+    state.selectedDatabaseNameListForEnvironment.get(environment.name) ||
     new Set();
-  const selected = databaseList.filter((db) => set.has(db.uid)).length;
+  const selected = databaseList.filter((db) => set.has(db.name)).length;
   const total = databaseList.length;
-
   return { selected, total };
 };
 
 const handleClickRow = (db: ComposedDatabase) => {
   const environmentName = db.effectiveEnvironment;
-  toggleDatabaseIdForEnvironment(
-    db.uid,
+  toggleDatabaseNameForEnvironment(
+    db.name,
     environmentName,
-    !isDatabaseSelectedForEnvironment(db.uid, environmentName)
+    !isDatabaseSelectedForEnvironment(db.name, environmentName)
   );
 };
 </script>

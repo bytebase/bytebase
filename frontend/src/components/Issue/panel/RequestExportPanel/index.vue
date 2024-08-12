@@ -73,21 +73,16 @@
 import dayjs from "dayjs";
 import { isUndefined } from "lodash-es";
 import { NButton, NInput } from "naive-ui";
-import { computed, onMounted, reactive } from "vue";
+import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import ExpirationSelector from "@/components/ExpirationSelector.vue";
 import RequiredStar from "@/components/RequiredStar.vue";
 import { DrawerContent, Drawer } from "@/components/v2";
 import { issueServiceClient } from "@/grpcweb";
-import {
-  useCurrentUserV1,
-  useDatabaseV1Store,
-  useProjectV1Store,
-  pushNotification,
-} from "@/store";
+import { useCurrentUserV1, useProjectV1Store, pushNotification } from "@/store";
 import type { DatabaseResource, ComposedProject } from "@/types";
-import { UNKNOWN_ID, PresetRoleType } from "@/types";
+import { PresetRoleType } from "@/types";
 import { Duration } from "@/types/proto/google/protobuf/duration";
 import { Expr } from "@/types/proto/google/type/expr";
 import {
@@ -100,7 +95,6 @@ import MaxRowCountSelect from "./MaxRowCountSelect.vue";
 
 interface LocalState {
   environmentName?: string;
-  databaseId?: string;
   databaseResourceCondition?: string;
   databaseResources: DatabaseResource[];
   expireDays: number;
@@ -108,13 +102,8 @@ interface LocalState {
   description: string;
 }
 
-defineOptions({
-  name: "RequestExportPanel",
-});
-
 const props = defineProps<{
   projectName: string;
-  databaseId?: string;
   redirectToIssuePage?: boolean;
 }>();
 
@@ -125,7 +114,6 @@ const emit = defineEmits<{
 const { t } = useI18n();
 const router = useRouter();
 const currentUser = useCurrentUserV1();
-const databaseStore = useDatabaseV1Store();
 const projectStore = useProjectV1Store();
 const state = reactive<LocalState>({
   databaseResources: [],
@@ -140,37 +128,6 @@ const allowCreate = computed(() => {
   }
   return true;
 });
-
-onMounted(async () => {
-  if (props.databaseId) {
-    handleDatabaseSelect(props.databaseId);
-  }
-});
-
-const handleEnvironmentSelect = (environmentName: string | undefined) => {
-  state.environmentName = environmentName;
-  const database = databaseStore.getDatabaseByUID(
-    state.databaseId || String(UNKNOWN_ID)
-  );
-  // Unselect database if it doesn't belong to the newly selected environment.
-  if (
-    database &&
-    database.uid !== String(UNKNOWN_ID) &&
-    database.effectiveEnvironment !== state.environmentName
-  ) {
-    state.databaseId = undefined;
-  }
-};
-
-const handleDatabaseSelect = (databaseId: string | undefined) => {
-  state.databaseId = databaseId;
-  const database = databaseStore.getDatabaseByUID(
-    state.databaseId || String(UNKNOWN_ID)
-  );
-  if (database && database.uid !== String(UNKNOWN_ID)) {
-    handleEnvironmentSelect(database.effectiveEnvironment);
-  }
-};
 
 const doCreateIssue = async () => {
   if (!allowCreate.value) {

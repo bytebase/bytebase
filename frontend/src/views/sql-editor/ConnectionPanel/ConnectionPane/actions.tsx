@@ -143,7 +143,7 @@ export const useDropdown = () => {
               onSelect: () => {
                 const db = node.meta.target as ComposedDatabase;
                 editorEvents.emit("alter-schema", {
-                  databaseUID: db.uid,
+                  databaseName: db.name,
                   schema: "",
                   table: "",
                 });

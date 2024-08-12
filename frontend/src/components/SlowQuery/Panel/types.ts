@@ -1,6 +1,6 @@
 import dayjs from "dayjs";
 import { useDatabaseV1Store } from "@/store";
-import { UNKNOWN_ID } from "@/types";
+import { unknownDatabase } from "@/types";
 import { ListSlowQueriesRequest } from "@/types/proto/v1/database_service";
 import type { SearchScope } from "@/utils";
 
@@ -18,9 +18,8 @@ export const buildListSlowQueriesRequest = (
   const query: string[] = [];
   request.parent = `projects/${project}`;
   if (database) {
-    const uid = database.split("-").slice(-1)[0];
-    const db = useDatabaseV1Store().getDatabaseByUID(uid);
-    if (db.uid !== `${UNKNOWN_ID}`) {
+    const db = useDatabaseV1Store().getDatabaseByName(database);
+    if (db.name !== unknownDatabase().name) {
       query.push(`database = "${db.name}"`);
     }
   } else if (environment) {
