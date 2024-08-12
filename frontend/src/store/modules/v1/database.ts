@@ -9,11 +9,8 @@ import type {
   ComposedUser,
 } from "@/types";
 import {
-  emptyDatabase,
-  EMPTY_ID,
   unknownDatabase,
   unknownEnvironment,
-  UNKNOWN_ID,
   unknownInstanceResource,
 } from "@/types";
 import { DEFAULT_PROJECT_NAME } from "@/types";
@@ -34,7 +31,6 @@ export const DEFAULT_DATABASE_PAGE_SIZE = 1000000;
 
 export const useDatabaseV1Store = defineStore("database_v1", () => {
   const databaseMapByName = reactive(new Map<string, ComposedDatabase>());
-  const databaseMapByUID = reactive(new Map<string, ComposedDatabase>());
 
   // Getters
   const databaseList = computed(() => {
@@ -44,14 +40,12 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
   // Actions
   const reset = () => {
     databaseMapByName.clear();
-    databaseMapByUID.clear();
   };
 
   const removeCacheByInstance = (instance: string) => {
     for (const db of databaseList.value) {
       if (db.instance === instance) {
         databaseMapByName.delete(db.name);
-        databaseMapByUID.delete(db.uid);
       }
     }
   };
@@ -60,7 +54,6 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
     const composedDatabaseList = await batchComposeDatabase(databaseList);
     composedDatabaseList.forEach((database) => {
       databaseMapByName.set(database.name, database);
-      databaseMapByUID.set(database.uid, database);
     });
     return composedDatabaseList;
   };
@@ -75,15 +68,9 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
           db.instanceResource.activation = instance.activation;
         }
       }
-      if (databaseMapByUID.has(database.uid)) {
-        const db = databaseMapByUID.get(database.uid);
-        if (db) {
-          db.instanceResource.activation = instance.activation;
-        }
-      }
     }
   };
-  const listDatabases = async (parent : string) => {
+  const listDatabases = async (parent: string) => {
     const { databases } = await databaseServiceClient.listDatabases({
       parent: parent,
       pageSize: DEFAULT_DATABASE_PAGE_SIZE,
@@ -151,36 +138,6 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
     await fetchDatabaseByName(name, silent);
     return getDatabaseByName(name);
   };
-  const getDatabaseByUID = (uid: string) => {
-    if (uid === String(EMPTY_ID)) return emptyDatabase();
-    if (uid === String(UNKNOWN_ID)) return unknownDatabase();
-
-    return databaseMapByUID.get(uid) ?? unknownDatabase();
-  };
-  const fetchDatabaseByUID = async (uid: string, silent = false) => {
-    const database = await databaseServiceClient.getDatabase(
-      {
-        name: `instances/-/databases/${uid}`,
-      },
-      {
-        silent,
-      }
-    );
-    const [composed] = await upsertDatabaseMap([database]);
-
-    return composed;
-  };
-  const getOrFetchDatabaseByUID = async (uid: string, silent = false) => {
-    if (uid === String(EMPTY_ID)) return emptyDatabase();
-    if (uid === String(UNKNOWN_ID)) return unknownDatabase();
-
-    const existed = databaseList.value.find((db) => db.uid === uid);
-    if (existed) {
-      return existed;
-    }
-    await fetchDatabaseByUID(uid, silent);
-    return getDatabaseByUID(uid);
-  };
   const batchUpdateDatabases = async (params: BatchUpdateDatabasesRequest) => {
     const updated = await databaseServiceClient.batchUpdateDatabases(params);
     const composed = await upsertDatabaseMap(updated.databases);
@@ -245,8 +202,6 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
     getDatabaseByName,
     fetchDatabaseByName,
     getOrFetchDatabaseByName,
-    getDatabaseByUID,
-    getOrFetchDatabaseByUID,
     batchUpdateDatabases,
     updateDatabase,
     fetchDatabaseSchema,
@@ -299,7 +254,7 @@ export const useDatabaseV1ByName = (name: MaybeRef<string>) => {
   watch(
     () => unref(name),
     (name) => {
-      if (store.getDatabaseByName(name).uid === String(UNKNOWN_ID)) {
+      if (store.getDatabaseByName(name).name === unknownDatabase().name) {
         ready.value = false;
         store.fetchDatabaseByName(name).then(() => {
           ready.value = true;
