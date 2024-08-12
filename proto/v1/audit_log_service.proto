@@ -18,6 +18,7 @@ service AuditLogService {
   rpc SearchAuditLogs(SearchAuditLogsRequest) returns (SearchAuditLogsResponse) {
     option (google.api.http) = {
       post: "/v1/{parent=projects/*}/auditLogs:search"
+      body: "*"
       additional_bindings: {
         post: "/v1/auditLogs:search"
         body: "*"

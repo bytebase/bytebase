@@ -968,7 +968,10 @@ export const AuditLogServiceDefinition = {
           800016: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
-              69,
+              72,
+              58,
+              1,
+              42,
               90,
               25,
               58,
