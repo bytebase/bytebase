@@ -240,7 +240,7 @@ func local_request_AuditLogService_ExportAuditLogs_1(ctx context.Context, marsha
 // GRPC interceptors will not work for this type of registration. To use interceptors, you must use the "runtime.WithMiddlewares" option in the "runtime.NewServeMux" call.
 func RegisterAuditLogServiceHandlerServer(ctx context.Context, mux *runtime.ServeMux, server AuditLogServiceServer) error {
 
-	mux.Handle("GET", pattern_AuditLogService_SearchAuditLogs_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("POST", pattern_AuditLogService_SearchAuditLogs_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
@@ -265,7 +265,7 @@ func RegisterAuditLogServiceHandlerServer(ctx context.Context, mux *runtime.Serv
 
 	})
 
-	mux.Handle("GET", pattern_AuditLogService_SearchAuditLogs_1, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("POST", pattern_AuditLogService_SearchAuditLogs_1, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
@@ -381,7 +381,7 @@ func RegisterAuditLogServiceHandler(ctx context.Context, mux *runtime.ServeMux, 
 // "AuditLogServiceClient" to call the correct interceptors. This client ignores the HTTP middlewares.
 func RegisterAuditLogServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux, client AuditLogServiceClient) error {
 
-	mux.Handle("GET", pattern_AuditLogService_SearchAuditLogs_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("POST", pattern_AuditLogService_SearchAuditLogs_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
@@ -403,7 +403,7 @@ func RegisterAuditLogServiceHandlerClient(ctx context.Context, mux *runtime.Serv
 
 	})
 
-	mux.Handle("GET", pattern_AuditLogService_SearchAuditLogs_1, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("POST", pattern_AuditLogService_SearchAuditLogs_1, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
