@@ -101,7 +101,7 @@ useConsumePendingScrollToTarget(
     if (!key) return false;
     await nextAnimationFrame();
     try {
-      console.debug("scroll-to-procedure", vl, target, key);
+      console.debug("scroll-to-function", vl, target, key);
       vl.scrollTo({ key });
     } catch {
       // Do nothing
