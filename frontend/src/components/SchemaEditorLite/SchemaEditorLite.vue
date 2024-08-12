@@ -8,7 +8,10 @@
       class="default-theme w-full flex-1 flex flex-row overflow-hidden relative"
     >
       <Pane min-size="15" size="25">
-        <Aside v-if="ready" />
+        <Aside
+          v-if="ready"
+          @update-is-editing="$emit('update-is-editing', $event)"
+        />
       </Pane>
       <Pane min-size="60" size="75">
         <Editor v-if="ready" />
@@ -48,6 +51,7 @@ const props = defineProps<{
 }>();
 const emit = defineEmits<{
   (event: "update:selected-rollout-objects", objects: RolloutObject[]): void;
+  (event: "update-is-editing", objects: RolloutObject[]): void;
 }>();
 
 interface LocalState {

@@ -744,6 +744,8 @@ const nodeProps = ({ option }: { option: TreeOption }) => {
   };
 };
 
+const emit = defineEmits(["update-is-editing"]);
+
 // Handle context menu actions
 useEmitteryEventListener(contextMenuEvents, "show", ({ node }) => {
   selectedKeysRef.value = [node.key];
@@ -758,12 +760,15 @@ useEmitteryEventListener(contextMenuEvents, "create-schema", (node) => {
     database: node.metadata.database,
     schema: undefined,
   };
+  emit("update-is-editing", true);
 });
 useEmitteryEventListener(contextMenuEvents, "drop-schema", (node) => {
   markEditStatus(node.db, node.metadata, "dropped");
+  emit("update-is-editing", true);
 });
 useEmitteryEventListener(contextMenuEvents, "restore-schema", (node) => {
   removeEditStatus(node.db, node.metadata, /* recursive */ false);
+  emit("update-is-editing", true);
 });
 
 useEmitteryEventListener(contextMenuEvents, "create-table", (node) => {
@@ -773,12 +778,15 @@ useEmitteryEventListener(contextMenuEvents, "create-table", (node) => {
     schema: node.metadata.schema,
     table: undefined,
   };
+  emit("update-is-editing", true);
 });
 useEmitteryEventListener(contextMenuEvents, "drop-table", (node) => {
   markEditStatus(node.db, node.metadata, "dropped");
+  emit("update-is-editing", true);
 });
 useEmitteryEventListener(contextMenuEvents, "restore-table", (node) => {
   removeEditStatus(node.db, node.metadata, /* recursive */ false);
+  emit("update-is-editing", true);
 });
 useEmitteryEventListener(contextMenuEvents, "rename-table", (node) => {
   state.tableNameModalContext = {
@@ -787,6 +795,7 @@ useEmitteryEventListener(contextMenuEvents, "rename-table", (node) => {
     schema: node.metadata.schema,
     table: node.metadata.table,
   };
+  emit("update-is-editing", true);
 });
 
 useEmitteryEventListener(contextMenuEvents, "create-view", (node) => {
@@ -797,12 +806,15 @@ useEmitteryEventListener(contextMenuEvents, "create-view", (node) => {
     view: undefined,
   };
   expandNodeRecursively(node);
+  emit("update-is-editing", true);
 });
 useEmitteryEventListener(contextMenuEvents, "drop-view", (node) => {
   markEditStatus(node.db, node.metadata, "dropped");
+  emit("update-is-editing", true);
 });
 useEmitteryEventListener(contextMenuEvents, "restore-view", (node) => {
   removeEditStatus(node.db, node.metadata, /* recursive */ false);
+  emit("update-is-editing", true);
 });
 
 useEmitteryEventListener(contextMenuEvents, "create-procedure", (node) => {
@@ -813,12 +825,15 @@ useEmitteryEventListener(contextMenuEvents, "create-procedure", (node) => {
     procedure: undefined,
   };
   expandNodeRecursively(node);
+  emit("update-is-editing", true);
 });
 useEmitteryEventListener(contextMenuEvents, "drop-procedure", (node) => {
   markEditStatus(node.db, node.metadata, "dropped");
+  emit("update-is-editing", true);
 });
 useEmitteryEventListener(contextMenuEvents, "restore-procedure", (node) => {
   removeEditStatus(node.db, node.metadata, /* recursive */ false);
+  emit("update-is-editing", true);
 });
 
 useEmitteryEventListener(contextMenuEvents, "create-function", (node) => {
@@ -829,12 +844,15 @@ useEmitteryEventListener(contextMenuEvents, "create-function", (node) => {
     function: undefined,
   };
   expandNodeRecursively(node);
+  emit("update-is-editing", true);
 });
 useEmitteryEventListener(contextMenuEvents, "drop-function", (node) => {
   markEditStatus(node.db, node.metadata, "dropped");
+  emit("update-is-editing", true);
 });
 useEmitteryEventListener(contextMenuEvents, "restore-function", (node) => {
   removeEditStatus(node.db, node.metadata, /* recursive */ false);
+  emit("update-is-editing", true);
 });
 
 const handleExpandedKeysChange = (expandedKeys: string[]) => {

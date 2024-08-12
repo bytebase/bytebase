@@ -13,9 +13,7 @@
 
     <div class="w-full flex flex-row justify-between items-center">
       <div class="w-full flex flex-row justify-start items-center gap-x-2">
-        <span class="text-xl leading-[34px]">{{
-          cleanBranch.branchId
-        }}</span>
+        <span class="text-xl leading-[34px]">{{ cleanBranch.branchId }}</span>
         <span
           v-if="parentBranch"
           class="group text-sm border rounded-full px-2 py-1 cursor-pointer hover:bg-gray-100"
@@ -32,7 +30,9 @@
       <div>
         <div class="w-full flex flex-row justify-between items-center">
           <template v-if="!state.isEditing">
-            <NButton v-if="showEditButton" @click="handleEdit">{{ $t("common.edit") }}</NButton>
+            <NButton v-if="showEditButton" @click="handleEdit">{{
+              $t("common.edit")
+            }}</NButton>
             <NButton
               v-if="showMergeBranchButton"
               @click="handleGotoMergeBranch"
@@ -95,6 +95,7 @@
         :readonly="!state.isEditing"
         :branch="dirtyBranch"
         :disable-diff-coloring="!state.isEditing && !state.showDiff"
+        @update-is-editing="updateIsEditing"
       />
     </div>
     <!-- Don't show delete button in view mode. -->
@@ -238,7 +239,6 @@ const database = computedAsync(() => {
     props.dirtyBranch.baselineDatabase
   );
 }, unknownDatabase());
-
 
 const showEditButton = computed(() => {
   if (checkPermission("bb.branches.admin")) {
@@ -528,5 +528,9 @@ const deleteBranch = async (force: boolean) => {
       }
     }
   }
+};
+
+const updateIsEditing = (newValue: boolean) => {
+  state.isEditing = newValue;
 };
 </script>
