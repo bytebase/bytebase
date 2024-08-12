@@ -120,7 +120,7 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/Status'
     /v1/anomalies:search:
-        get:
+        post:
             tags:
                 - AnomalyService
             operationId: AnomalyService_SearchAnomalies
@@ -4916,7 +4916,7 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/Status'
     /v1/projects/{project}/issues:search:
-        get:
+        post:
             tags:
                 - IssueService
             description: Search for issues that the caller has the bb.issues.get permission on and also satisfy the specified filter & query.
@@ -5253,7 +5253,7 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/Status'
     /v1/projects/{project}/plans:search:
-        get:
+        post:
             tags:
                 - PlanService
             description: Search for plans that the caller has the bb.plans.get permission on and also satisfy the specified filter & query.
@@ -6526,7 +6526,7 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/Status'
     /v1/projects:search:
-        get:
+        post:
             tags:
                 - ProjectService
             operationId: ProjectService_SearchProjects
@@ -6550,7 +6550,7 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/Status'
     /v1/queryHistories:search:
-        get:
+        post:
             tags:
                 - SQLService
             description: SearchQueryHistories searches query histories for the caller.
@@ -7882,7 +7882,7 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/Status'
     /v1/worksheets:search:
-        get:
+        post:
             tags:
                 - WorksheetService
             description: |-
