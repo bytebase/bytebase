@@ -47,6 +47,7 @@
           :diff-when-ready="true"
           :show-last-updater="true"
           :disable-diff-coloring="disableDiffColoring"
+          @update-is-editing="$emit('update-is-editing', $event)"
         />
       </div>
       <div
@@ -175,4 +176,6 @@ const fetchRawSQLPreview = async () => {
 defineExpose({
   schemaEditor: schemaEditorRef,
 });
+
+defineEmits(["update-is-editing"]);
 </script>
