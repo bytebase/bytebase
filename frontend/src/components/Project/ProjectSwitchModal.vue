@@ -9,7 +9,7 @@
     @close="$emit('dismiss')"
   >
     <div class="h-full overflow-y-auto relative">
-      <div v-if="project" class="mb-2">
+      <div v-if="currentProject" class="mb-2">
         <NButton text @click="gotoWorkspace">
           <template #icon>
             <ChevronLeftIcon class="w-4" />
