@@ -72,7 +72,7 @@ const validValue = computed(() => {
   if (options.value.findIndex((o) => o.value === props.value) >= 0) {
     return props.value;
   }
-  return;
+  return undefined;
 });
 
 const filterByTitle = (pattern: string, option: SelectOption) => {
