@@ -1260,10 +1260,7 @@ var qualifiedRe = regexp.MustCompile("`" + `[^` + "`" + `]` + "`" + `\.` + "`")
 
 func normalizeMySQLViewDefinition(query string) string {
 	query = strings.TrimSpace(query)
-	if query == "" {
-		return ""
-	}
-	if query[len(query)-1] != ';' {
+	if !strings.HasSuffix(query, ";") {
 		query += ";"
 	}
 	trailSymbols := []string{"` ", "`,", "`;"}
