@@ -13,18 +13,7 @@
 
     <div class="w-full flex flex-row justify-between items-center">
       <div class="w-full flex flex-row justify-start items-center gap-x-2">
-        <NInput
-          v-if="allowEdit"
-          v-model:value="state.branchId"
-          class="!w-auto"
-          :passively-activated="true"
-          :style="branchIdInputStyle"
-          :readonly="!allowEdit || !state.isEditingBranchId"
-          :placeholder="'feature/add-billing'"
-          @focus="state.isEditingBranchId = true"
-          @blur="handleBranchIdInputBlur"
-        />
-        <span v-else class="text-xl leading-[34px]">{{
+        <span class="text-xl leading-[34px]">{{
           cleanBranch.branchId
         }}</span>
         <span
@@ -134,9 +123,8 @@
 import { asyncComputed, computedAsync } from "@vueuse/core";
 import dayjs from "dayjs";
 import { cloneDeep } from "lodash-es";
-import { NButton, NCheckbox, NDivider, NInput, useDialog } from "naive-ui";
+import { NButton, NCheckbox, NDivider, useDialog } from "naive-ui";
 import { Status } from "nice-grpc-common";
-import type { CSSProperties } from "vue";
 import { computed, nextTick, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
@@ -177,7 +165,6 @@ import { provideSQLCheckContext } from "../SQLCheck";
 import { generateDiffDDL } from "../SchemaEditorLite";
 import MaskSpinner from "../misc/MaskSpinner.vue";
 import SchemaDesignEditorLite from "./SchemaDesignEditorLite.vue";
-import { validateBranchName } from "./utils";
 
 interface LocalState {
   branchId: string;
@@ -193,9 +180,6 @@ const props = defineProps<{
   project: ComposedProject;
   cleanBranch: Branch;
   dirtyBranch: Branch;
-}>();
-const emit = defineEmits<{
-  (event: "update:branch-id", id: string): void;
 }>();
 
 const { t } = useI18n();
@@ -229,10 +213,6 @@ const checkPermission = (permission: Permission): boolean => {
     extractUserEmail(props.cleanBranch.creator) === currentUser.value.email
   );
 };
-
-const allowEdit = computed(() => {
-  return checkPermission("bb.branches.update");
-});
 
 const allowDelete = computed(() => {
   if (props.dirtyBranch.parentBranch === "") {
@@ -299,22 +279,6 @@ const rebuildMetadataEdit = () => {
   );
 };
 
-const branchIdInputStyle = computed(() => {
-  const style: CSSProperties = {
-    cursor: "default",
-    minWidth: "10rem",
-    "--n-color-disabled": "transparent",
-    "--n-font-size": "20px",
-  };
-  const border = state.isEditingBranchId
-    ? "1px solid rgb(var(--color-control-border))"
-    : "none";
-  style["--n-border"] = border;
-  style["--n-border-disabled"] = border;
-
-  return style;
-});
-
 watch(
   () => props.dirtyBranch.branchId,
   (title) => {
@@ -324,48 +288,6 @@ watch(
     immediate: true,
   }
 );
-
-const handleBranchIdInputBlur = async () => {
-  if (state.branchId === "") {
-    pushNotification({
-      module: "bytebase",
-      style: "WARN",
-      title: "Branch name cannot be empty.",
-    });
-    return;
-  }
-  if (!validateBranchName(state.branchId)) {
-    pushNotification({
-      module: "bytebase",
-      style: "CRITICAL",
-      title: "Branch name valid characters: /^[a-zA-Z][a-zA-Z0-9-_/]+$/",
-    });
-    return;
-  }
-
-  const branch = props.dirtyBranch;
-  const updateMask = [];
-  if (branch.branchId !== state.branchId) {
-    updateMask.push("branch_id");
-  }
-  if (updateMask.length !== 0) {
-    await branchStore.updateBranch(
-      Branch.fromPartial({
-        name: branch.name,
-        branchId: state.branchId,
-        baselineDatabase: branch.baselineDatabase,
-      }),
-      updateMask
-    );
-    pushNotification({
-      module: "bytebase",
-      style: "SUCCESS",
-      title: t("schema-designer.message.updated-succeed"),
-    });
-  }
-  emit("update:branch-id", state.branchId);
-  state.isEditingBranchId = false;
-};
 
 const handleParentBranchClick = async () => {
   if (!parentBranch.value) {
