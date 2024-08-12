@@ -32,7 +32,7 @@
       <div>
         <div class="w-full flex flex-row justify-between items-center">
           <template v-if="!state.isEditing">
-            <NButton @click="handleEdit">{{ $t("common.edit") }}</NButton>
+            <NButton v-if="showEditButton" @click="handleEdit">{{ $t("common.edit") }}</NButton>
             <NButton
               v-if="showMergeBranchButton"
               @click="handleGotoMergeBranch"
@@ -238,6 +238,18 @@ const database = computedAsync(() => {
     props.dirtyBranch.baselineDatabase
   );
 }, unknownDatabase());
+
+
+const showEditButton = computed(() => {
+  if (checkPermission("bb.branches.admin")) {
+    return true;
+  }
+  // main branches (parent-less branches) cannot be updated.
+  if (!parentBranch.value) {
+    return false;
+  }
+  return true;
+});
 
 const showMergeBranchButton = computed(() => {
   // main branches (parent-less branches) cannot be merged.
