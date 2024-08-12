@@ -127,8 +127,19 @@ func getDBLinks(txn *sql.Tx) ([]*storepb.LinkedDatabaseMetadata, error) {
 	var result []*storepb.LinkedDatabaseMetadata
 	for rows.Next() {
 		dbLink := &storepb.LinkedDatabaseMetadata{}
-		if err := rows.Scan(&dbLink.Name, &dbLink.Host, &dbLink.Username); err != nil {
+		var name, host, username sql.NullString
+		if err := rows.Scan(&name, &host, &username); err != nil {
 			return nil, err
+		}
+		if !name.Valid {
+			continue
+		}
+		dbLink.Name = name.String
+		if host.Valid {
+			dbLink.Host = host.String
+		}
+		if username.Valid {
+			dbLink.Username = username.String
 		}
 		result = append(result, dbLink)
 	}
