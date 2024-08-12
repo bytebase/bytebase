@@ -284,7 +284,9 @@
     "rows": {
       "self": "行",
       "n-rows": "{n} 行"
-    }
+    },
+    "back-to-workspace": "返回工作空间",
+    "override": "覆盖"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -2442,7 +2444,10 @@
       "admin-data-source-is-disallowed-to-query": "禁止查询管理员数据源。",
       "admin-data-source-is-disallowed-to-query-when-read-only-data-source-is-available": "当只读数据源可用时，不允许查询管理员数据源。"
     },
-    "manage-connections": "管理连接"
+    "manage-connections": "管理连接",
+    "view-detail": "查看详情",
+    "generate-sql": "生成 SQL",
+    "current-editing-statement-is-not-empty": "当前编辑中的语句不为空。"
   },
   "schema-editor": {
     "self": "Schema 编辑器",

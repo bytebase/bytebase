@@ -19,7 +19,7 @@ import { NButton } from "naive-ui";
 import { computed, ref } from "vue";
 import RequestQueryPanel from "@/components/Issue/panel/RequestQueryPanel/index.vue";
 import { useCurrentUserV1 } from "@/store";
-import { UNKNOWN_ID, type ComposedDatabase } from "@/types";
+import { unknownDatabase, type ComposedDatabase } from "@/types";
 import { hasPermissionToCreateRequestGrantIssue } from "@/utils";
 
 const props = withDefaults(
@@ -38,7 +38,7 @@ const me = useCurrentUserV1();
 const showPanel = ref(false);
 
 const available = computed(() => {
-  if (props.database.uid === String(UNKNOWN_ID)) {
+  if (props.database.name === unknownDatabase().name) {
     return false;
   }
 

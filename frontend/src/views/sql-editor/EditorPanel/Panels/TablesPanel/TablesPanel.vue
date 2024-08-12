@@ -16,20 +16,18 @@
     </template>
 
     <template v-if="metadata.table">
-      <TableEditor
+      <div class="w-full flex flex-row gap-x-2 justify-start items-center">
+        <NButton size="small" @click="deselect">
+          <ArrowLeftIcon class="w-4 h-4" />
+        </NButton>
+      </div>
+      <ColumnsTable
         v-if="metadata.table"
         :db="database"
         :database="metadata.database"
         :schema="metadata.schema"
         :table="metadata.table"
-        class="!pt-0"
-      >
-        <template #toolbar-prefix>
-          <NButton size="small" @click="deselect">
-            <ArrowLeftIcon class="w-4 h-4" />
-          </NButton>
-        </template>
-      </TableEditor>
+      />
     </template>
   </div>
 </template>
@@ -39,7 +37,6 @@ import { ArrowLeftIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { computed, ref, watch } from "vue";
 import { provideSchemaEditorContext } from "@/components/SchemaEditorLite";
-import TableEditor from "@/components/SchemaEditorLite/Panels/TableEditor.vue";
 import {
   useConnectionOfCurrentSQLEditorTab,
   useDBSchemaV1Store,
@@ -54,6 +51,7 @@ import {
 } from "@/types/proto/v1/database_service";
 import { useEditorPanelContext } from "../../context";
 import { SchemaSelectToolbar } from "../common";
+import ColumnsTable from "./ColumnsTable.vue";
 import TablesTable from "./TablesTable.vue";
 
 const editorStore = useSQLEditorStore();

@@ -78,3 +78,10 @@ func TestTryMerge(t *testing.T) {
 		a.NoError(err)
 	}
 }
+
+func TestNormalizeMySQLViewDefinition(t *testing.T) {
+	query := "select `p`.`id` AS `id`,extract(year_month from `p`.`yyy`) AS `extract(year_month from ``yyy``)` from `p` order by `p`.`id` limit 1000000000000"
+	want := "select `id`,extract(year_month from `yyy`) from `p` order by `id` limit 1000000000000"
+	got := normalizeMySQLViewDefinition(query)
+	require.Equal(t, want, got)
+}

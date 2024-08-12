@@ -31,7 +31,10 @@ service PlanService {
 
   // Search for plans that the caller has the bb.plans.get permission on and also satisfy the specified filter & query.
   rpc SearchPlans(SearchPlansRequest) returns (SearchPlansResponse) {
-    option (google.api.http) = {get: "/v1/{parent=projects/*}/plans:search"};
+    option (google.api.http) = {
+      post: "/v1/{parent=projects/*}/plans:search"
+      body: "*"
+    };
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.permission) = "bb.plans.get";
     option (bytebase.v1.auth_method) = CUSTOM;

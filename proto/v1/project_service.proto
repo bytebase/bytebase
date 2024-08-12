@@ -30,7 +30,10 @@ service ProjectService {
   }
 
   rpc SearchProjects(SearchProjectsRequest) returns (SearchProjectsResponse) {
-    option (google.api.http) = {get: "/v1/projects:search"};
+    option (google.api.http) = {
+      post: "/v1/projects:search"
+      body: "*"
+    };
     option (google.api.method_signature) = "";
     option (bytebase.v1.auth_method) = CUSTOM;
     // TODO(d): secure it.

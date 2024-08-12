@@ -141,6 +141,7 @@ import {
   useSubscriptionV1Store,
   useInstanceResourceByName,
 } from "@/store";
+import { getPolicyResourceNameAndType } from "@/store/modules/v1/common";
 import {
   UNKNOWN_ENVIRONMENT_NAME,
   UNKNOWN_INSTANCE_NAME,
@@ -217,13 +218,16 @@ const hasPermission = computed(() => {
 
 const updateList = async () => {
   state.isLoading = true;
-  const distinctDatabaseIdList = uniq(
-    policyList.value.map((policy) => policy.resourceUid)
+  const distinctDatabaseNameList = uniq(
+    policyList.value.map((policy) => {
+      const [databaseName] = getPolicyResourceNameAndType(policy.name);
+      return databaseName;
+    })
   );
   // Fetch or get all needed databases
   await Promise.all(
-    distinctDatabaseIdList.map((databaseId) =>
-      databaseStore.getOrFetchDatabaseByUID(databaseId)
+    distinctDatabaseNameList.map((name) =>
+      databaseStore.getOrFetchDatabaseByName(name)
     )
   );
 
@@ -234,8 +238,8 @@ const updateList = async () => {
       continue;
     }
 
-    const databaseId = policy.resourceUid;
-    const database = await databaseStore.getOrFetchDatabaseByUID(databaseId);
+    const [databaseName] = getPolicyResourceNameAndType(policy.name);
+    const database = await databaseStore.getOrFetchDatabaseByName(databaseName);
 
     for (const maskData of policy.maskingPolicy.maskData) {
       sensitiveColumnList.push({ database, maskData });

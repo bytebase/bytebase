@@ -284,7 +284,9 @@
     "rows": {
       "self": "行",
       "n-rows": "{n} 行"
-    }
+    },
+    "back-to-workspace": "ワークスペースに戻る",
+    "override": "オーバーライド"
   },
   "error-page": {
     "go-back-home": "ホームページに戻る"
@@ -2442,7 +2444,10 @@
       "admin-data-source-is-disallowed-to-query": "管理者データ ソースはクエリできません。",
       "admin-data-source-is-disallowed-to-query-when-read-only-data-source-is-available": "読み取り専用データ ソースが使用可能な場合、管理データ ソースはクエリを実行できません。"
     },
-    "manage-connections": "接続を管理する"
+    "manage-connections": "接続を管理する",
+    "view-detail": "詳細を見る",
+    "generate-sql": "SQLの生成",
+    "current-editing-statement-is-not-empty": "現在編集中のステートメントは空ではありません。"
   },
   "schema-editor": {
     "self": "スキーマエディタ",

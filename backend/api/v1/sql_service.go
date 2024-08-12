@@ -722,8 +722,10 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 	}
 
 	// Validate the request.
-	if err := validateQueryRequest(instance, statement); err != nil {
-		return nil, err
+	if !request.Explain {
+		if err := validateQueryRequest(instance, statement); err != nil {
+			return nil, err
+		}
 	}
 
 	// Get query span.
@@ -1610,7 +1612,10 @@ func (s *SQLService) GenerateRestoreSQL(ctx context.Context, request *v1pb.Gener
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
-	result, err := base.GenerateRestoreSQL(storepb.Engine_MYSQL, list[offset].Text, backupDatabase, request.BackupTable, databaseName, originTable)
+	result, err := base.GenerateRestoreSQL(ctx, storepb.Engine_MYSQL, base.RestoreContext{
+		InstanceID:              instanceID,
+		GetDatabaseMetadataFunc: BuildGetDatabaseMetadataFunc(s.store),
+	}, list[offset].Text, backupDatabase, request.BackupTable, databaseName, originTable)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to generate restore SQL: %v", err)
 	}

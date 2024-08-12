@@ -81,5 +81,10 @@ jobs:
           push: true
           tags: |
             dbytebase/chatgpt:${{ env.RELEASE_VERSION }}
+          build-args: |
+            VERSION=${{ env.RELEASE_VERSION }}
+            GIT_COMMIT=${{ env.GIT_COMMIT }}
+            BUILD_TIME=${{ env.BUILD_TIME }}
+            BUILD_USER=${{ env.BUILD_USER }}
       - name: Image digest
         run: echo "Successfully pushed bytebase/bytebase:${{ env.RELEASE_VERSION }} ${{ steps.bytebase_build.outputs.digest }}"

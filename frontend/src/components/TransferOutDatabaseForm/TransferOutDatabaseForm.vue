@@ -16,7 +16,7 @@
             <span class="text-red-500">*</span>
           </span>
           <MultipleDatabaseSelector
-            v-model:selected-uid-list="selectedUidList"
+            v-model:selected-database-name-list="selectedDatabaseNameList"
             :transfer-source="'OTHER'"
             :database-list="[...databaseList]"
           />
@@ -91,7 +91,7 @@ import { MultipleDatabaseSelector } from "../TransferDatabaseForm";
 
 const props = defineProps<{
   databaseList: ComposedDatabase[];
-  selectedDatabaseUidList?: string[];
+  selectedDatabaseNames?: string[];
 }>();
 
 const emit = defineEmits<{
@@ -105,17 +105,19 @@ const loading = ref(false);
 const transfer = ref<"project" | "unassign">("project");
 const router = useRouter();
 
-const selectedUidList = ref<string[]>(props.selectedDatabaseUidList ?? []);
+const selectedDatabaseNameList = ref<string[]>(
+  props.selectedDatabaseNames ?? []
+);
 
 watch(
-  () => props.selectedDatabaseUidList ?? [],
-  (list) => (selectedUidList.value = list),
+  () => props.selectedDatabaseNames ?? [],
+  (list) => (selectedDatabaseNameList.value = list),
   { immediate: true }
 );
 
 const selectedDatabaseList = computed(() => {
-  return selectedUidList.value.map((uid) => {
-    return databaseStore.getDatabaseByUID(uid);
+  return selectedDatabaseNameList.value.map((name) => {
+    return databaseStore.getDatabaseByName(name);
   });
 });
 
@@ -149,7 +151,7 @@ const validationErrors = computed(() => {
   if (!targetProject.value) {
     errors.push(t("database.transfer.errors.select-target-project"));
   }
-  if (selectedUidList.value.length === 0) {
+  if (selectedDatabaseNameList.value.length === 0) {
     errors.push(t("database.transfer.errors.select-at-least-one-database"));
   }
   return errors;

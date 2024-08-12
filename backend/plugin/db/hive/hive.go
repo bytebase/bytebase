@@ -199,21 +199,21 @@ func runSingleStatement(ctx context.Context, conn *gohive.Connection, statement 
 	}
 
 	// We will get an error when a certain statement doesn't need returned results.
-	columnNamesAndTypes := cursor.Description()
-	for _, row := range columnNamesAndTypes {
+	for _, row := range cursor.Description() {
 		if len(row) == 0 {
 			return nil, errors.New("description row has zero length")
 		}
 		result.ColumnNames = append(result.ColumnNames, row[0])
+		result.ColumnTypeNames = append(result.ColumnTypeNames, row[1])
 	}
 
 	// process query results.
 	for cursor.HasMore(ctx) {
-		var queryRow v1pb.QueryRow
+		queryRow := &v1pb.QueryRow{}
 		rowMap := cursor.RowMap(ctx)
-		for idx, columnName := range result.ColumnNames {
-			gohiveTypeStr := columnNamesAndTypes[idx][1]
-			val, err := parseValueType(rowMap[columnName], gohiveTypeStr)
+		for i, columnName := range result.ColumnNames {
+			columnType := result.ColumnTypeNames[i]
+			val, err := parseValueType(rowMap[columnName], columnType)
 			if err != nil {
 				return nil, err
 			}
@@ -221,7 +221,7 @@ func runSingleStatement(ctx context.Context, conn *gohive.Connection, statement 
 		}
 
 		// Rows.
-		result.Rows = append(result.Rows, &queryRow)
+		result.Rows = append(result.Rows, queryRow)
 		n := len(result.Rows)
 		if (n&(n-1) == 0) && int64(proto.Size(result)) > limit {
 			result.Error = common.FormatMaximumSQLResultSizeMessage(limit)

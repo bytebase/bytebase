@@ -25,6 +25,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/iam"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
+	mysqldb "github.com/bytebase/bytebase/backend/plugin/db/mysql"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
@@ -1182,7 +1183,13 @@ func reconcileMetadata(metadata *storepb.DatabaseSchemaMetadata, engine storepb.
 							DefaultNull: true,
 						}
 					}
+					column.Type = mysqldb.GetColumnTypeCanonicalSynonym(column.Type)
 				}
+			}
+		}
+		for _, view := range schema.Views {
+			if engine == storepb.Engine_MYSQL || engine == storepb.Engine_TIDB {
+				view.Definition = formatViewDef(view.Definition)
 			}
 		}
 	}
@@ -1784,4 +1791,8 @@ func alignDatabaseConfig(metadata *storepb.DatabaseSchemaMetadata, config *store
 		schemaConfig.FunctionConfigs = append(schemaConfig.FunctionConfigs, newFunctionConfigs...)
 	}
 	config.SchemaConfigs = append(config.SchemaConfigs, newSchemaConfigs...)
+}
+
+func formatViewDef(def string) string {
+	return strings.TrimRight(def, "; \n\r\t")
 }

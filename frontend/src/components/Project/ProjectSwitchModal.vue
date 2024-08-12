@@ -3,11 +3,20 @@
     :close-on-esc="true"
     :mask-closable="true"
     :trap-focus="false"
+    :show="show"
     :title="$t('project.select')"
     class="w-[48rem] max-w-full h-128 max-h-full"
     @close="$emit('dismiss')"
   >
     <div class="h-full overflow-y-auto relative">
+      <div v-if="currentProject" class="mb-2">
+        <NButton text @click="gotoWorkspace">
+          <template #icon>
+            <ChevronLeftIcon class="w-4" />
+          </template>
+          {{ $t("common.back-to-workspace") }}
+        </NButton>
+      </div>
       <div class="w-full bg-white sticky top-0 z-50">
         <div class="flex items-center justify-between space-x-2">
           <SearchBox
@@ -42,7 +51,7 @@
             :current-project="currentProject"
             :pagination="false"
             :keyword="state.searchText"
-            @row-click="$emit('dismiss')"
+            @row-click="onProjectSelect"
           />
         </NTabPane>
       </NTabs>
@@ -59,14 +68,20 @@
 </template>
 
 <script lang="ts" setup>
+import { ChevronLeftIcon } from "lucide-vue-next";
 import { NButton, NTabPane, NTabs } from "naive-ui";
 import { computed, reactive, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
+import { useRouter } from "vue-router";
 import { BBModal } from "@/bbkit";
 import { useRecentProjects } from "@/components/Project/useRecentProjects";
 import { SearchBox, ProjectV1Table } from "@/components/v2";
 import { Drawer } from "@/components/v2";
+import { PROJECT_V1_ROUTE_DETAIL } from "@/router/dashboard/projectV1";
+import { WORKSPACE_ROUTE_MY_ISSUES } from "@/router/dashboard/workspaceRoutes";
+import { useRecentVisit } from "@/router/useRecentVisit";
 import { useProjectV1List } from "@/store";
+import { getProjectName } from "@/store/modules/v1/common";
 import type { ComposedProject } from "@/types";
 import { isValidProjectName, DEFAULT_PROJECT_NAME } from "@/types";
 import { filterProjectV1ListByKeyword } from "@/utils";
@@ -79,6 +94,7 @@ interface LocalState {
 }
 
 const props = defineProps<{
+  show: boolean;
   project?: ComposedProject;
 }>();
 
@@ -94,6 +110,8 @@ const state = reactive<LocalState>({
 });
 const { projectList } = useProjectV1List();
 const { recentViewProjects } = useRecentProjects();
+const router = useRouter();
+const { record } = useRecentVisit();
 
 onMounted(() => {
   state.selectedTab = recentViewProjects.value.length < 1 ? "all" : "recent";
@@ -148,6 +166,22 @@ const currentProject = computed(() => {
 
 const onCreate = () => {
   state.showCreateDrawer = false;
+  emit("dismiss");
+};
+
+const onProjectSelect = (project: ComposedProject) => {
+  const route = router.resolve({
+    name: PROJECT_V1_ROUTE_DETAIL,
+    params: {
+      projectId: getProjectName(project.name),
+    },
+  });
+  record(route.fullPath);
+  emit("dismiss");
+};
+
+const gotoWorkspace = () => {
+  router.push({ name: WORKSPACE_ROUTE_MY_ISSUES });
   emit("dismiss");
 };
 </script>

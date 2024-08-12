@@ -93,6 +93,65 @@ export const generateSimpleSelectAllStatement = (
   return `SELECT * FROM ${schemaAndTable} LIMIT ${limit};`;
 };
 
+export const generateSimpleInsertStatement = (
+  engine: Engine,
+  schema: string,
+  table: string,
+  columns: string[]
+) => {
+  if (engine === Engine.MONGODB) {
+    const kvPairs = columns
+      .map((column, i) => `"${column}": <value${i + 1}>`)
+      .join(", ");
+    return `db.${table}.insert({ ${kvPairs} });`;
+  }
+
+  const schemaAndTable = generateSchemaAndTableNameInSQL(engine, schema, table);
+
+  const columnNames = columns
+    .map((column) => wrapSQLIdentifier(column, engine))
+    .join(", ");
+  const placeholders = columns.map((_) => "?").join(", ");
+
+  return `INSERT INTO ${schemaAndTable} (${columnNames}) VALUES (${placeholders});`;
+};
+
+export const generateSimpleUpdateStatement = (
+  engine: Engine,
+  schema: string,
+  table: string,
+  columns: string[]
+) => {
+  if (engine === Engine.MONGODB) {
+    const kvPairs = columns
+      .map((column, i) => `"${column}": <value${i + 1}>`)
+      .join(", ");
+    return `db.${table}.updateOne({ /* <query> */ }, { $set: { /* ${kvPairs} */} });`;
+  }
+
+  const schemaAndTable = generateSchemaAndTableNameInSQL(engine, schema, table);
+
+  const sets = columns
+    .map((column) => `${wrapSQLIdentifier(column, engine)}=?`)
+    .join(", ");
+
+  return `UPDATE ${schemaAndTable} SET ${sets} WHERE 1=2 /* your condition here */;`;
+};
+
+export const generateSimpleDeleteStatement = (
+  engine: Engine,
+  schema: string,
+  table: string
+) => {
+  if (engine === Engine.MONGODB) {
+    return `db.${table}.deleteOne({ /* query */ });`;
+  }
+
+  const schemaAndTable = generateSchemaAndTableNameInSQL(engine, schema, table);
+
+  return `DELETE FROM ${schemaAndTable} WHERE 1=2 /* your condition here */;`;
+};
+
 export const compareQueryRowValues = (
   type: string,
   a: RowValue,

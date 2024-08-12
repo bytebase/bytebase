@@ -139,7 +139,10 @@ func (exec *DataUpdateExecutor) backupData(
 	}
 	defer driver.Close(driverCtx)
 
-	tc := base.TransformContext{}
+	tc := base.TransformContext{
+		InstanceID:              instance.ResourceID,
+		GetDatabaseMetadataFunc: BuildGetDatabaseMetadataFunc(exec.store),
+	}
 	if instance.Engine == storepb.Engine_ORACLE {
 		oracleDriver, ok := driver.(*oracle.Driver)
 		if ok {
@@ -150,7 +153,7 @@ func (exec *DataUpdateExecutor) backupData(
 	}
 
 	prefix := "_" + time.Now().Format("20060102150405")
-	statements, err := base.TransformDMLToSelect(instance.Engine, tc, statement, database.DatabaseName, backupDatabaseName, prefix)
+	statements, err := base.TransformDMLToSelect(ctx, instance.Engine, tc, statement, database.DatabaseName, backupDatabaseName, prefix)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to transform DML to select")
 	}
@@ -235,4 +238,27 @@ func (exec *DataUpdateExecutor) backupData(
 	}
 
 	return priorBackupDetail, nil
+}
+
+func BuildGetDatabaseMetadataFunc(storeInstance *store.Store) base.GetDatabaseMetadataFunc {
+	return func(ctx context.Context, instanceID, databaseName string) (string, *model.DatabaseMetadata, error) {
+		database, err := storeInstance.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+			InstanceID:   &instanceID,
+			DatabaseName: &databaseName,
+		})
+		if err != nil {
+			return "", nil, err
+		}
+		if database == nil {
+			return "", nil, nil
+		}
+		databaseMetadata, err := storeInstance.GetDBSchema(ctx, database.UID)
+		if err != nil {
+			return "", nil, err
+		}
+		if databaseMetadata == nil {
+			return "", nil, nil
+		}
+		return databaseName, databaseMetadata.GetDatabaseMetadata(), nil
+	}
 }

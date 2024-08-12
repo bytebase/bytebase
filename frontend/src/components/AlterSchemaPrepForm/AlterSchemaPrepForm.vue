@@ -54,12 +54,12 @@
     <template #footer>
       <div class="flex-1 flex items-center justify-between">
         <div>
-          <NTooltip v-if="flattenSelectedDatabaseUidList.length > 0">
+          <NTooltip v-if="flattenSelectedDatabaseNameList.length > 0">
             <template #trigger>
               <div class="textinfolabel">
                 {{
                   $t("database.selected-n-databases", {
-                    n: flattenSelectedDatabaseUidList.length,
+                    n: flattenSelectedDatabaseNameList.length,
                   })
                 }}
               </div>
@@ -108,7 +108,7 @@
 
   <SchemaEditorModal
     v-if="state.showSchemaEditorModal"
-    :database-id-list="schemaEditorContext.databaseIdList"
+    :database-names="schemaEditorContext.databaseNameList"
     :alter-type="'MULTI_DB'"
     :plan-only="state.planOnly"
     @close="state.showSchemaEditorModal = false"
@@ -159,7 +159,7 @@ type LocalState = {
   label: string;
   showSchemaLessDatabaseList: boolean;
   selectedLabels: { key: string; value: string }[];
-  selectedDatabaseUidList: Set<string>;
+  selectedDatabaseNames: Set<string>;
   showSchemaEditorModal: boolean;
   params: SearchParams;
   // planOnly is used to indicate whether only to create plan.
@@ -198,13 +198,13 @@ const featureModalContext = ref<{
 }>({});
 
 const schemaEditorContext = ref<{
-  databaseIdList: string[];
+  databaseNameList: string[];
 }>({
-  databaseIdList: [],
+  databaseNameList: [],
 });
 
 const state = reactive<LocalState>({
-  selectedDatabaseUidList: new Set<string>(),
+  selectedDatabaseNames: new Set<string>(),
   label: "environment",
   showSchemaLessDatabaseList: false,
   showSchemaEditorModal: false,
@@ -330,13 +330,13 @@ const schemalessDatabaseList = computed(() => {
   );
 });
 
-const flattenSelectedDatabaseUidList = computed(() => {
-  return [...state.selectedDatabaseUidList];
+const flattenSelectedDatabaseNameList = computed(() => {
+  return [...state.selectedDatabaseNames];
 });
 
 const flattenSelectedProjectList = computed(() => {
-  const projects = flattenSelectedDatabaseUidList.value.map((uid) => {
-    return databaseV1Store.getDatabaseByUID(uid).projectEntity;
+  const projects = flattenSelectedDatabaseNameList.value.map((name) => {
+    return databaseV1Store.getDatabaseByName(name).projectEntity;
   });
   return uniqBy(projects, (project) => project.name);
 });
@@ -344,13 +344,13 @@ const flattenSelectedProjectList = computed(() => {
 const allowGenerateMultiDb = computed(() => {
   return (
     flattenSelectedProjectList.value.length === 1 &&
-    flattenSelectedDatabaseUidList.value.length > 0
+    flattenSelectedDatabaseNameList.value.length > 0
   );
 });
 
 const flattenSelectedDatabaseList = computed(() =>
-  flattenSelectedDatabaseUidList.value.map(
-    (id) => selectableDatabaseList.value.find((db) => db.uid === id)!
+  flattenSelectedDatabaseNameList.value.map(
+    (name) => selectableDatabaseList.value.find((db) => db.name === name)!
   )
 );
 
@@ -362,8 +362,8 @@ const generateMultiDb = async () => {
     allowUsingSchemaEditor(flattenSelectedDatabaseList.value) &&
     !disableSchemaEditor.value
   ) {
-    schemaEditorContext.value.databaseIdList = [
-      ...flattenSelectedDatabaseUidList.value,
+    schemaEditorContext.value.databaseNameList = [
+      ...flattenSelectedDatabaseNameList.value,
     ];
     state.showSchemaEditorModal = true;
     return;
@@ -401,11 +401,7 @@ const generateMultiDb = async () => {
 const handleDatabasesSelectionChanged = (
   selectedDatabaseNameList: Set<string>
 ) => {
-  state.selectedDatabaseUidList = new Set(
-    Array.from(selectedDatabaseNameList).map(
-      (name) => databaseV1Store.getDatabaseByName(name)?.uid
-    )
-  );
+  state.selectedDatabaseNames = selectedDatabaseNameList;
 };
 
 const cancel = () => {

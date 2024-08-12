@@ -711,6 +711,16 @@ func (n *metadataDiffColumnNode) tryMerge(other *metadataDiffColumnNode, engine 
 			}
 		}
 
+		if !compareColumnOnUpdateValue(n.head.OnUpdate, other.head.OnUpdate) {
+			if !compareColumnOnUpdateValue(n.base.OnUpdate, n.head.OnUpdate) {
+				if !compareColumnOnUpdateValue(n.head.OnUpdate, other.head.OnUpdate) {
+					return true, fmt.Sprintf("conflict column onUpdate value, one is %+v, the other is %+v", n.head.OnUpdate, other.head.OnUpdate)
+				}
+			} else {
+				n.head.OnUpdate = other.head.OnUpdate
+			}
+		}
+
 		if other.base.Nullable != other.head.Nullable {
 			if n.base.Nullable != n.head.Nullable {
 				if n.head.Nullable != other.head.Nullable {
@@ -743,6 +753,16 @@ func (n *metadataDiffColumnNode) tryMerge(other *metadataDiffColumnNode, engine 
 	}
 
 	return false, ""
+}
+
+func compareColumnOnUpdateValue(a, b string) bool {
+	// TODO(zp): The special case should be assosiacted with the engine type.
+	aTimestampDefaultValue := buildTimestampDefaultValue(a)
+	bTimestampDefaultValue := buildTimestampDefaultValue(b)
+	if aTimestampDefaultValue != nil && bTimestampDefaultValue != nil {
+		return aTimestampDefaultValue.getFsp() == bTimestampDefaultValue.getFsp()
+	}
+	return a == b
 }
 
 // To avoid getting caught up in the case struggle, we handle some special cases first.
@@ -1034,7 +1054,7 @@ func (n *metadataDiffFunctioNnode) tryMerge(other *metadataDiffFunctioNnode) (bo
 	if n.action == diffActionCreate {
 		nHeadDefinition := strings.TrimRight(n.head.Definition, ";")
 		otherHeadDefinition := strings.TrimRight(other.head.Definition, ";")
-		if nHeadDefinition != otherHeadDefinition {
+		if !equalRoutineDefinition(nHeadDefinition, otherHeadDefinition) {
 			return true, fmt.Sprintf("conflict function definition, one is %s, the other is %s", nHeadDefinition, otherHeadDefinition)
 		}
 	}
@@ -1042,11 +1062,11 @@ func (n *metadataDiffFunctioNnode) tryMerge(other *metadataDiffFunctioNnode) (bo
 	if n.action == diffActionUpdate {
 		otherBaseDefinition := strings.TrimRight(other.base.Definition, ";")
 		otherHeadDefinition := strings.TrimRight(other.head.Definition, ";")
-		if otherBaseDefinition != otherHeadDefinition {
+		if !equalRoutineDefinition(otherBaseDefinition, otherHeadDefinition) {
 			nHeadDefinition := strings.TrimRight(n.head.Definition, ";")
 			nBaseDefinition := strings.TrimRight(n.base.Definition, ";")
-			if nHeadDefinition != nBaseDefinition {
-				if nHeadDefinition != otherHeadDefinition {
+			if !equalRoutineDefinition(nHeadDefinition, nBaseDefinition) {
+				if !equalRoutineDefinition(nHeadDefinition, otherHeadDefinition) {
 					return true, fmt.Sprintf("conflict function definition, one is %s, the other is %s", nHeadDefinition, otherHeadDefinition)
 				}
 			} else {
@@ -1070,9 +1090,16 @@ func (n *metadataDiffFunctioNnode) applyDiffTo(target *storepb.SchemaMetadata) e
 			Definition: n.head.Definition,
 		}
 		target.Functions = append(target.Functions, newFunction)
+	case diffActionUpdate:
+		for i, function := range target.Functions {
+			if function.Name == n.name {
+				target.Functions[i] = n.head
+				break
+			}
+		}
 	case diffActionDrop:
-		for i, view := range target.Functions {
-			if view.Name == n.name {
+		for i, function := range target.Functions {
+			if function.Name == n.name {
 				target.Functions = append(target.Functions[:i], target.Functions[i+1:]...)
 				break
 			}
@@ -1105,16 +1132,22 @@ func (n *metadataDiffProcedureNode) tryMerge(other *metadataDiffProcedureNode) (
 		return false, ""
 	}
 	if n.action == diffActionCreate {
-		if n.head.Definition != other.head.Definition {
-			return true, fmt.Sprintf("conflict procedure definition, one is %s, the other is %s", n.head.Definition, other.head.Definition)
+		nHeadDefinition := strings.TrimRight(n.head.Definition, ";")
+		otherHeadDefinition := strings.TrimRight(other.head.Definition, ";")
+		if !equalRoutineDefinition(nHeadDefinition, otherHeadDefinition) {
+			return true, fmt.Sprintf("conflict procedure definition, one is %s, the other is %s", nHeadDefinition, otherHeadDefinition)
 		}
 	}
 
 	if n.action == diffActionUpdate {
-		if other.base.Definition != other.head.Definition {
-			if n.base.Definition != n.head.Definition {
-				if n.head.Definition != other.head.Definition {
-					return true, fmt.Sprintf("conflict procedure definition, one is %s, the other is %s", n.head.Definition, other.head.Definition)
+		otherBaseDefinition := strings.TrimRight(other.base.Definition, ";")
+		otherHeadDefinition := strings.TrimRight(other.head.Definition, ";")
+		if !equalRoutineDefinition(otherBaseDefinition, otherHeadDefinition) {
+			nHeadDefinition := strings.TrimRight(n.head.Definition, ";")
+			nBaseDefinition := strings.TrimRight(n.base.Definition, ";")
+			if !equalRoutineDefinition(nHeadDefinition, nBaseDefinition) {
+				if !equalRoutineDefinition(nHeadDefinition, otherHeadDefinition) {
+					return true, fmt.Sprintf("conflict procedure definition, one is %s, the other is %s", nHeadDefinition, otherHeadDefinition)
 				}
 			} else {
 				n.head.Definition = other.head.Definition
@@ -1145,6 +1178,13 @@ func (n *metadataDiffProcedureNode) applyDiffTo(target *storepb.SchemaMetadata) 
 			}
 		}
 		return nil
+	case diffActionUpdate:
+		for i, procedure := range target.Procedures {
+			if procedure.Name == n.name {
+				target.Procedures[i] = n.head
+				break
+			}
+		}
 	}
 	return nil
 }
@@ -1172,15 +1212,15 @@ func (n *metadataDiffViewNode) tryMerge(other *metadataDiffViewNode) (bool, stri
 		return false, ""
 	}
 	if n.action == diffActionCreate {
-		if n.head.Definition != other.head.Definition {
+		if !equalViewDefinition(n.head.Definition, other.head.Definition) {
 			return true, fmt.Sprintf("conflict view definition, one is %s, the other is %s", n.head.Definition, other.head.Definition)
 		}
 	}
 
 	if n.action == diffActionUpdate {
-		if other.base.Definition != other.head.Definition {
-			if n.base.Definition != n.head.Definition {
-				if n.head.Definition != other.head.Definition {
+		if !equalViewDefinition(other.base.Definition, other.head.Definition) {
+			if !equalViewDefinition(n.base.Definition, n.head.Definition) {
+				if !equalViewDefinition(n.head.Definition, other.head.Definition) {
 					return true, fmt.Sprintf("conflict view definition, one is %s, the other is %s", n.head.Definition, other.head.Definition)
 				}
 			} else {
@@ -1190,6 +1230,55 @@ func (n *metadataDiffViewNode) tryMerge(other *metadataDiffViewNode) (bool, stri
 	}
 
 	return false, ""
+}
+
+func equalRoutineDefinition(a, b string) bool {
+	ignoreTokens := []string{
+		"`", " ", "\t", "\n", "\r",
+	}
+	for _, token := range ignoreTokens {
+		a = strings.ReplaceAll(a, token, "")
+		b = strings.ReplaceAll(b, token, "")
+	}
+	return strings.EqualFold(a, b)
+}
+
+func equalViewDefinition(a, b string) bool {
+	a = normalizeMySQLViewDefinition(a)
+	b = normalizeMySQLViewDefinition(b)
+	ignoreTokens := []string{
+		"`", " ", "(", ")", "\t", "\n", "\r",
+	}
+	for _, token := range ignoreTokens {
+		a = strings.ReplaceAll(a, token, "")
+		b = strings.ReplaceAll(b, token, "")
+	}
+	return strings.EqualFold(a, b)
+}
+
+var qualifiedRe = regexp.MustCompile("`" + `[^` + "`" + `]` + "`" + `\.` + "`")
+
+func normalizeMySQLViewDefinition(query string) string {
+	for {
+		asIdx := strings.Index(query, " AS ")
+		if asIdx == -1 {
+			break
+		}
+		endIdx1 := strings.Index(query[asIdx:], "` ")
+		endIdx2 := strings.Index(query[asIdx:], "`,")
+		if endIdx1 == -1 && endIdx2 == -1 {
+			break
+		}
+		endIdx := -1
+		if endIdx1 >= 0 {
+			endIdx = endIdx1
+		}
+		if endIdx2 >= 0 && endIdx2 < endIdx {
+			endIdx = endIdx2
+		}
+		query = query[:asIdx] + query[(asIdx+endIdx+1):]
+	}
+	return qualifiedRe.ReplaceAllString(query, "`")
 }
 
 func (n *metadataDiffViewNode) applyDiffTo(target *storepb.SchemaMetadata) error {
@@ -1204,6 +1293,13 @@ func (n *metadataDiffViewNode) applyDiffTo(target *storepb.SchemaMetadata) error
 			Definition: n.head.Definition,
 		}
 		target.Views = append(target.Views, newView)
+	case diffActionUpdate:
+		for i, view := range target.Views {
+			if view.Name == n.name {
+				target.Views[i] = n.head
+				break
+			}
+		}
 	case diffActionDrop:
 		for i, view := range target.Views {
 			if view.Name == n.name {

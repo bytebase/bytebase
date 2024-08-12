@@ -3,20 +3,27 @@ import {
   CodeIcon,
   CopyIcon,
   ExternalLinkIcon,
+  FileCodeIcon,
+  FileDiffIcon,
+  FileMinusIcon,
+  FilePlusIcon,
+  FileSearch2Icon,
   LinkIcon,
   SquarePenIcon,
 } from "lucide-vue-next";
-import { useDialog, type DropdownOption } from "naive-ui";
-import { computed, nextTick, ref } from "vue";
+import { NButton, useDialog, type DropdownOption } from "naive-ui";
+import { computed, h, nextTick, ref } from "vue";
 import { useRouter } from "vue-router";
 import TableIcon from "@/components/Icon/TableIcon.vue";
+import formatSQL from "@/components/MonacoEditor/sqlFormatter";
 import { useExecuteSQL } from "@/composables/useExecuteSQL";
 import { t } from "@/plugins/i18n";
-import { PROJECT_V1_ROUTE_DATABASE_DETAIL } from "@/router/dashboard/projectV1";
 import { SQL_EDITOR_DATABASE_MODULE } from "@/router/sqlEditor";
 import { pushNotification, useAppFeature, useSQLEditorTabStore } from "@/store";
 import {
   DEFAULT_SQL_EDITOR_TAB_MODE,
+  dialectOfEngineV1,
+  languageOfEngineV1,
   type ComposedDatabase,
   type CoreSQLEditorTab,
   type Position,
@@ -27,17 +34,21 @@ import {
   defer,
   extractInstanceResourceName,
   extractProjectResourceName,
+  generateSimpleDeleteStatement,
+  generateSimpleInsertStatement,
   generateSimpleSelectAllStatement,
+  generateSimpleUpdateStatement,
   instanceV1HasAlterSchema,
   sortByDictionary,
   suggestedTabTitleForSQLEditorConnection,
   toClipboard,
 } from "@/utils";
+import { useEditorPanelContext } from "../../EditorPanel/context";
 import { useSQLEditorContext } from "../../context";
 import type { NodeTarget, TreeNode } from "./common";
 
 type DropdownOptionWithTreeNode = DropdownOption & {
-  onSelect: () => void;
+  onSelect?: () => void;
 };
 const SELECT_ALL_LIMIT = 50; // default pagesize of SQL Editor
 const VIEW_SCHEMA_ACTION_ENABLED_ENGINES = [
@@ -50,35 +61,70 @@ const VIEW_SCHEMA_ACTION_ENABLED_ENGINES = [
 const confirmOverrideStatement = async (
   $d: ReturnType<typeof useDialog>,
   statement: string
-) => {
+): Promise<"CANCEL" | "OVERRIDE" | "COPY"> => {
   const { currentTab } = useSQLEditorTabStore();
-  if (currentTab && currentTab.statement.trim().length > 0) {
-    const d = defer<boolean>();
-
-    $d.warning({
-      title: t("common.warning"),
-      content: t("sql-editor.will-override-current-editing-statement"),
-      contentClass: "whitespace-pre-wrap",
-      style: "z-index: 100000",
-      negativeText: t("common.cancel"),
-      positiveText: t("common.confirm"),
-      onNegativeClick: () => {
-        d.resolve(false);
-      },
-      onPositiveClick: () => {
-        d.resolve(true);
-      },
-    });
-    return d.promise;
+  if (!currentTab) {
+    return Promise.resolve("CANCEL");
+  }
+  if (currentTab.statement.trim().length === 0) {
+    return Promise.resolve("OVERRIDE");
   }
 
-  return Promise.resolve(true);
+  const d = defer<"CANCEL" | "OVERRIDE" | "COPY">();
+  const dialog = $d.warning({
+    title: t("common.warning"),
+    content: t("sql-editor.current-editing-statement-is-not-empty"),
+    contentClass: "whitespace-pre-wrap",
+    style: "z-index: 100000",
+    closable: false,
+    closeOnEsc: false,
+    maskClosable: false,
+    action: () => {
+      const buttons = [
+        h(
+          NButton,
+          { size: "small", onClick: () => d.resolve("CANCEL") },
+          { default: () => t("common.cancel") }
+        ),
+        h(
+          NButton,
+          {
+            size: "small",
+            type: "warning",
+            onClick: () => d.resolve("OVERRIDE"),
+          },
+          { default: () => t("common.override") }
+        ),
+        h(
+          NButton,
+          {
+            size: "small",
+            type: "primary",
+            onClick: () => d.resolve("COPY"),
+          },
+          { default: () => t("common.copy") }
+        ),
+      ];
+      return h(
+        "div",
+        { class: "flex items-center justify-end gap-2" },
+        buttons
+      );
+    },
+  });
+  d.promise.then(() => dialog.destroy());
+  return d.promise;
 };
 
 export const useDropdown = () => {
   const router = useRouter();
   const { events: editorEvents, schemaViewer } = useSQLEditorContext();
-  const disallowNavigateAwaySQLEditor = useAppFeature(
+  const { queuePendingScrollToTarget, updateViewState, typeToView } =
+    useEditorPanelContext();
+  const disallowEditSchema = useAppFeature(
+    "bb.feature.sql-editor.disallow-edit-schema"
+  );
+  const disallowNavigateToConsole = useAppFeature(
     "bb.feature.disallow-navigate-to-console"
   );
   const $d = useDialog();
@@ -147,29 +193,7 @@ export const useDropdown = () => {
           });
         }
 
-        if (!disallowNavigateAwaySQLEditor.value) {
-          items.push({
-            key: "view-table-detail",
-            label: t("sql-editor.view-table-detail"),
-            icon: () => <ExternalLinkIcon class="w-4 h-4" />,
-            onSelect: () => {
-              const route = router.resolve({
-                name: PROJECT_V1_ROUTE_DATABASE_DETAIL,
-                params: {
-                  projectId: extractProjectResourceName(db.project),
-                  instanceId: extractInstanceResourceName(db.instance),
-                  databaseName: db.databaseName,
-                },
-                query: {
-                  schema: schema.name ? schema.name : undefined,
-                  table: table.name,
-                },
-              });
-              const url = route.href;
-              window.open(url, "_blank");
-            },
-          });
-
+        if (!disallowEditSchema.value && !disallowNavigateToConsole.value) {
           if (instanceV1HasAlterSchema(db.instanceResource)) {
             items.push({
               key: "edit-schema",
@@ -177,7 +201,7 @@ export const useDropdown = () => {
               icon: () => <SquarePenIcon class="w-4 h-4" />,
               onSelect: () => {
                 editorEvents.emit("alter-schema", {
-                  databaseUID: db.uid,
+                  databaseName: db.name,
                   schema: schema.name,
                   table: table.name,
                 });
@@ -208,53 +232,149 @@ export const useDropdown = () => {
           });
         }
       }
-      if (targetSupportsSelectAll(target)) {
-        items.push({
-          key: "copy-select-statement",
-          label: t("sql-editor.copy-select-statement"),
-          icon: () => <CopyIcon class="w-4 h-4" />,
-          onSelect: () => {
-            const statement = generateSimpleSelectAllStatement(
-              engineForTarget(target),
-              schema,
-              tableOrView,
-              SELECT_ALL_LIMIT
-            );
-            copyToClipboard(statement);
-          },
-        });
+      if (targetSupportsGenerateSQL(target)) {
         items.push({
           key: "preview-table-data",
           label: t("sql-editor.preview-table-data"),
           icon: () => <TableIcon class="w-4 h-4" />,
           onSelect: async () => {
-            const statement = generateSimpleSelectAllStatement(
-              engineForTarget(target),
-              schema,
-              tableOrView,
-              SELECT_ALL_LIMIT
-            );
-            const confirmed = await confirmOverrideStatement($d, statement);
-            if (!confirmed) {
-              return;
-            }
-            runQuery(
-              (target as NodeTarget<"database">).db,
-              schema,
-              tableOrView,
-              statement
-            );
+            selectAllFromTableOrView($d, node);
           },
         });
       }
+      const generateSQLChildren: DropdownOptionWithTreeNode[] = [];
+
+      if (targetSupportsGenerateSQL(target)) {
+        const engine = engineForTarget(target);
+        generateSQLChildren.push({
+          key: "generate-sql--select",
+          label: "SELECT",
+          icon: () => <FileSearch2Icon class="w-4 h-4" />,
+          onSelect: async () => {
+            const statement = await formatCode(
+              generateSimpleSelectAllStatement(
+                engine,
+                schema,
+                tableOrView,
+                SELECT_ALL_LIMIT
+              ),
+              engine
+            );
+            applyContentToCurrentTabOrCopyToClipboard(statement, $d);
+          },
+        });
+        if (type === "table") {
+          const { schema, table } = target as NodeTarget<"table">;
+          const columns = table.columns.map((column) => column.name);
+          generateSQLChildren.push({
+            key: "generate-sql--insert",
+            label: "INSERT",
+            icon: () => <FilePlusIcon class="w-4 h-4" />,
+            onSelect: async () => {
+              const statement = await formatCode(
+                generateSimpleInsertStatement(
+                  engine,
+                  schema.name,
+                  table.name,
+                  columns
+                ),
+                engine
+              );
+              applyContentToCurrentTabOrCopyToClipboard(statement, $d);
+            },
+          });
+          generateSQLChildren.push({
+            key: "generate-sql--update",
+            label: "UPDATE",
+            icon: () => <FileDiffIcon class="w-4 h-4" />,
+            onSelect: async () => {
+              const statement = await formatCode(
+                generateSimpleUpdateStatement(
+                  engine,
+                  schema.name,
+                  table.name,
+                  columns
+                ),
+                engine
+              );
+              applyContentToCurrentTabOrCopyToClipboard(statement, $d);
+            },
+          });
+          generateSQLChildren.push({
+            key: "generate-sql--delete",
+            label: "DELETE",
+            icon: () => <FileMinusIcon class="w-4 h-4" />,
+            onSelect: async () => {
+              const statement = await formatCode(
+                generateSimpleDeleteStatement(engine, schema.name, table.name),
+                engine
+              );
+              applyContentToCurrentTabOrCopyToClipboard(statement, $d);
+            },
+          });
+        }
+      }
+      if (generateSQLChildren.length > 0) {
+        items.push({
+          key: "generate-sql",
+          label: t("sql-editor.generate-sql"),
+          icon: () => <FileCodeIcon class="w-4 h-4" />,
+          children: generateSQLChildren,
+        });
+      }
+    }
+    if (
+      type === "table" ||
+      type === "view" ||
+      type === "procedure" ||
+      type === "function"
+    ) {
+      items.push({
+        key: "view-detail",
+        label: t("sql-editor.view-detail"),
+        icon: () => <ExternalLinkIcon class="w-4 h-4" />,
+        onSelect: async () => {
+          const { db, database, schema } = target as NodeTarget<
+            "table" | "view" | "procedure" | "function"
+          >;
+          updateViewState({
+            view: typeToView(type),
+            schema: schema.name,
+          });
+          await nextTick();
+          const metadata: any = {
+            type,
+            db,
+            database,
+            schema,
+          };
+          if (type === "table") {
+            metadata.table = (target as NodeTarget<"table">).table;
+          }
+          if (type === "view") {
+            metadata.view = (target as NodeTarget<"view">).view;
+          }
+          if (type === "procedure") {
+            metadata.procedure = (target as NodeTarget<"procedure">).procedure;
+          }
+          if (type === "function") {
+            metadata.function = (target as NodeTarget<"function">).function;
+          }
+          queuePendingScrollToTarget({
+            db,
+            metadata: metadata as any,
+          });
+        },
+      });
     }
     const ORDERS = [
       "copy-name",
       "copy-all-column-names",
       "copy-select-statement",
       "preview-table-data",
+      "generate-sql",
       "view-schema-text",
-      "view-table-detail",
+      "view-detail",
       "edit-schema",
       "copy-url",
     ];
@@ -262,12 +382,23 @@ export const useDropdown = () => {
     return items;
   });
 
+  const flattenOptions = computed(() => {
+    return options.value.flatMap<DropdownOptionWithTreeNode>((item) => {
+      if (item.children) {
+        return [item, ...item.children] as DropdownOptionWithTreeNode[];
+      }
+      return item;
+    });
+  });
+
   const handleSelect = (key: string) => {
-    const option = options.value.find((item) => item.key === key);
+    const option = flattenOptions.value.find((item) => item.key === key);
     if (!option) {
       return;
     }
-    option.onSelect();
+    if (typeof option.onSelect === "function") {
+      option.onSelect();
+    }
     show.value = false;
   };
 
@@ -291,12 +422,41 @@ const engineForTarget = (target: NodeTarget) => {
   return (target as NodeTarget<"database">).db.instanceResource.engine;
 };
 
-const targetSupportsSelectAll = (target: NodeTarget) => {
+const targetSupportsGenerateSQL = (target: NodeTarget) => {
   const engine = engineForTarget(target);
   if (engine === Engine.REDIS) {
     return false;
   }
   return true;
+};
+
+const applyContentToCurrentTabOrCopyToClipboard = async (
+  content: string,
+  $d: ReturnType<typeof useDialog>
+) => {
+  const tabStore = useSQLEditorTabStore();
+  const tab = tabStore.currentTab;
+  if (!tab) {
+    copyToClipboard(content);
+    return;
+  }
+  if (tab.statement.trim().length === 0) {
+    tabStore.updateCurrentTab({
+      statement: content,
+    });
+    return;
+  }
+  const choice = await confirmOverrideStatement($d, content);
+  if (choice === "CANCEL") {
+    return;
+  }
+  if (choice === "OVERRIDE") {
+    tabStore.updateCurrentTab({
+      statement: content,
+    });
+    return;
+  }
+  copyToClipboard(content);
 };
 
 const copyToClipboard = (content: string) => {
@@ -323,7 +483,7 @@ const runQuery = async (
       database: database.name,
       schema,
       table: tableOrViewName,
-      dataSourceId: getDefaultQueriableDataSourceOfDatabase(database).id,
+      dataSourceId: getDefaultQueryableDataSourceOfDatabase(database).id,
     },
     mode: DEFAULT_SQL_EDITOR_TAB_MODE,
     worksheet: "",
@@ -365,7 +525,7 @@ export const selectAllFromTableOrView = async (
   node: TreeNode
 ) => {
   const { target } = (node as TreeNode<"table" | "view">).meta;
-  if (!targetSupportsSelectAll(target)) {
+  if (!targetSupportsGenerateSQL(target)) {
     return;
   }
 
@@ -378,20 +538,26 @@ export const selectAllFromTableOrView = async (
   const { db } = target;
   const { engine } = db.instanceResource;
 
-  const query = generateSimpleSelectAllStatement(
-    engine,
-    schema,
-    tableOrViewName,
-    SELECT_ALL_LIMIT
+  const query = await formatCode(
+    generateSimpleSelectAllStatement(
+      engine,
+      schema,
+      tableOrViewName,
+      SELECT_ALL_LIMIT
+    ),
+    engine
   );
-  const confirmed = await confirmOverrideStatement($d, query);
-  if (!confirmed) {
+  const choice = await confirmOverrideStatement($d, query);
+  if (choice === "CANCEL") {
     return;
+  }
+  if (choice === "COPY") {
+    return copyToClipboard(query);
   }
   runQuery(db, schema, tableOrViewName, query);
 };
 
-const getDefaultQueriableDataSourceOfDatabase = (
+const getDefaultQueryableDataSourceOfDatabase = (
   database: ComposedDatabase
 ) => {
   const dataSources = database.instanceResource.dataSources;
@@ -400,4 +566,20 @@ const getDefaultQueriableDataSourceOfDatabase = (
   );
   // First try to use readonly data source if available.
   return (head(readonlyDataSources) || head(dataSources)) as DataSource;
+};
+
+const formatCode = async (code: string, engine: Engine) => {
+  const lang = languageOfEngineV1(engine);
+  if (lang !== "sql") {
+    return code;
+  }
+  try {
+    const result = await formatSQL(code, dialectOfEngineV1(engine));
+    if (!result.error) {
+      return result.data;
+    }
+    return code; // fallback;
+  } catch (err) {
+    return code; // fallback
+  }
 };

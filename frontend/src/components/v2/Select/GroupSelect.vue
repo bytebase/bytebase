@@ -1,7 +1,7 @@
 <template>
   <NSelect
     :filterable="true"
-    :value="value"
+    :value="validValue"
     :options="options"
     :disabled="disabled"
     :clearable="clearable"
@@ -9,7 +9,7 @@
     :filter="filterByTitle"
     :render-label="renderLabel"
     :render-tag="renderTag"
-    :placeholder="'Select group'"
+    :placeholder="$t('project.members.select-groups')"
     @update:value="$emit('update:value', $event)"
   />
 </template>
@@ -57,6 +57,22 @@ const options = computed(() => {
     label: group.title,
     group,
   }));
+});
+
+const validValue = computed(() => {
+  if (!props.value) {
+    return props.value;
+  }
+  if (props.multiple) {
+    return (props.value as string[]).filter((v) => {
+      return options.value.findIndex((o) => o.value === v) >= 0;
+    });
+  }
+
+  if (options.value.findIndex((o) => o.value === props.value) >= 0) {
+    return props.value;
+  }
+  return undefined;
 });
 
 const filterByTitle = (pattern: string, option: SelectOption) => {

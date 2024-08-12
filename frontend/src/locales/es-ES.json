@@ -284,7 +284,9 @@
     "rows": {
       "self": "filas",
       "n-rows": "{n} filas"
-    }
+    },
+    "back-to-workspace": "Volver al espacio de trabajo",
+    "override": "Anular"
   },
   "error-page": {
     "go-back-home": "Volver al inicio"
@@ -2442,7 +2444,10 @@
       "admin-data-source-is-disallowed-to-query": "No se permite realizar consultas a la fuente de datos del administrador.",
       "admin-data-source-is-disallowed-to-query-when-read-only-data-source-is-available": "No se permite realizar consultas a la fuente de datos del administrador cuando la fuente de datos de solo lectura está disponible."
     },
-    "manage-connections": "Gestionar las conexiones"
+    "manage-connections": "Gestionar las conexiones",
+    "view-detail": "Ver detalle",
+    "generate-sql": "Generar SQL",
+    "current-editing-statement-is-not-empty": "La declaración de edición actual no está vacía."
   },
   "schema-editor": {
     "self": "Editor de esquema",

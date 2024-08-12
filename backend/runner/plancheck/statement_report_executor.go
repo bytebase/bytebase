@@ -12,6 +12,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/sheet"
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	mssqldriver "github.com/bytebase/bytebase/backend/plugin/db/mssql"
 	mysqldriver "github.com/bytebase/bytebase/backend/plugin/db/mysql"
 	oracledriver "github.com/bytebase/bytebase/backend/plugin/db/oracle"
 	pgdriver "github.com/bytebase/bytebase/backend/plugin/db/pg"
@@ -153,13 +154,14 @@ func (e *StatementReportExecutor) runReport(ctx context.Context, instance *store
 	var explainCalculator getAffectedRowsFromExplain
 	var sqlTypes []string
 	var defaultSchema string
+	driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{})
+	if err != nil {
+		return nil, err
+	}
+	defer driver.Close(ctx)
+
 	switch instance.Engine {
 	case storepb.Engine_POSTGRES:
-		driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{})
-		if err != nil {
-			return nil, err
-		}
-		defer driver.Close(ctx)
 		pd, ok := driver.(*pgdriver.Driver)
 		if !ok {
 			return nil, errors.Errorf("invalid pg driver type")
@@ -172,14 +174,9 @@ func (e *StatementReportExecutor) runReport(ctx context.Context, instance *store
 		}
 		defaultSchema = "public"
 	case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_OCEANBASE:
-		driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{})
-		if err != nil {
-			return nil, err
-		}
-		defer driver.Close(ctx)
 		md, ok := driver.(*mysqldriver.Driver)
 		if !ok {
-			return nil, errors.Errorf("invalid pg driver type")
+			return nil, errors.Errorf("invalid mysql driver type")
 		}
 		explainCalculator = md.CountAffectedRows
 
@@ -192,20 +189,21 @@ func (e *StatementReportExecutor) runReport(ctx context.Context, instance *store
 		// TODO(d): implement TiDB sqlTypes.
 		defaultSchema = ""
 	case storepb.Engine_ORACLE, storepb.Engine_OCEANBASE_ORACLE:
-		driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{})
-		if err != nil {
-			return nil, err
-		}
-		defer driver.Close(ctx)
 		od, ok := driver.(*oracledriver.Driver)
 		if !ok {
-			return nil, errors.Errorf("invalid pg driver type")
+			return nil, errors.Errorf("invalid oracle driver type")
 		}
 		explainCalculator = od.CountAffectedRows
 
 		defaultSchema = database.DatabaseName
 	case storepb.Engine_MSSQL:
-		defaultSchema = "OBO"
+		md, ok := driver.(*mssqldriver.Driver)
+		if !ok {
+			return nil, errors.Errorf("invalid mssql driver type")
+		}
+		explainCalculator = md.CountAffectedRows
+
+		defaultSchema = "DBO"
 	default:
 		// Already checked in the Run().
 		return nil, nil

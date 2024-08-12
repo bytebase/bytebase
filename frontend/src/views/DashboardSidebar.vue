@@ -4,6 +4,7 @@
     :key="'dashboard'"
     :item-list="dashboardSidebarItemList"
     :get-item-class="getItemClass"
+    :logo-redirect="WORKSPACE_ROUTE_MY_ISSUES"
   />
 </template>
 

@@ -1,4 +1,4 @@
-import { cloneDeep, groupBy, isNaN, isNumber, orderBy } from "lodash-es";
+import { cloneDeep, groupBy, orderBy } from "lodash-es";
 import { v4 as uuidv4 } from "uuid";
 import { reactive } from "vue";
 import { useRoute } from "vue-router";
@@ -19,7 +19,6 @@ import {
   emptyIssue,
   isValidProjectName,
   TaskTypeListWithStatement,
-  UNKNOWN_ID,
 } from "@/types";
 import { DatabaseConfig } from "@/types/proto/v1/database_service";
 import { IssueStatus, Issue_Type } from "@/types/proto/v1/issue_service";
@@ -53,7 +52,7 @@ export type InitialSQL = {
 };
 
 type CreateIssueParams = {
-  databaseUIDList: string[];
+  databaseNameList: string[];
   project: ComposedProject;
   query: Record<string, string>;
   initialSQL: InitialSQL;
@@ -68,12 +67,11 @@ export const createIssueSkeleton = async (
   const project = await useProjectV1Store().getOrFetchProjectByName(
     `${projectNamePrefix}${projectName}`
   );
-  const databaseIdList = (query.databaseList ?? "").split(",");
-  const databaseUIDList = await prepareDatabaseUIDList(databaseIdList);
-  await prepareDatabaseList(databaseUIDList, project.name);
+  const databaseNameList = (query.databaseList ?? "").split(",");
+  await prepareDatabaseList(databaseNameList, project.name);
 
   const params: CreateIssueParams = {
-    databaseUIDList,
+    databaseNameList,
     project,
     query,
     initialSQL: extractInitialSQLFromQuery(query),
@@ -131,7 +129,7 @@ const buildIssue = async (params: CreateIssueParams) => {
 };
 
 export const buildPlan = async (params: CreateIssueParams) => {
-  const { databaseUIDList, project, query } = params;
+  const { databaseNameList, project, query } = params;
 
   const plan = Plan.fromJSON({
     uid: nextUID(),
@@ -140,7 +138,7 @@ export const buildPlan = async (params: CreateIssueParams) => {
   if (query.changelist) {
     // build plan for changelist
     plan.steps = await buildStepsViaChangelist(
-      databaseUIDList,
+      databaseNameList,
       query.changelist,
       params
     );
@@ -154,18 +152,18 @@ export const buildPlan = async (params: CreateIssueParams) => {
     // Use dedicated sheets if sqlMap is specified.
     // Share ONE sheet if otherwise.
     const sheetUID = hasInitialSQL(params.initialSQL) ? undefined : nextUID();
-    plan.steps = await buildSteps(databaseUIDList, params, sheetUID);
+    plan.steps = await buildSteps(databaseNameList, params, sheetUID);
   }
   return plan;
 };
 
 export const buildSteps = async (
-  databaseUIDList: string[],
+  databaseNameList: string[],
   params: CreateIssueParams,
   sheetUID?: string // if specified, all tasks will share the same sheet
 ) => {
-  const databaseList = databaseUIDList.map((uid) =>
-    useDatabaseV1Store().getDatabaseByUID(uid)
+  const databaseList = databaseNameList.map((name) =>
+    useDatabaseV1Store().getDatabaseByName(name)
   );
 
   const databaseListGroupByEnvironment = groupBy(
@@ -226,7 +224,7 @@ export const buildStepsForDatabaseGroup = async (
 };
 
 export const buildStepsViaChangelist = async (
-  databaseUIDList: string[],
+  databaseNameList: string[],
   changelistResourceName: string,
   params: CreateIssueParams
 ) => {
@@ -235,8 +233,8 @@ export const buildStepsViaChangelist = async (
   );
   const { changes } = changelist;
 
-  const databaseList = databaseUIDList.map((uid) =>
-    useDatabaseV1Store().getDatabaseByUID(uid)
+  const databaseList = databaseNameList.map((name) =>
+    useDatabaseV1Store().getDatabaseByName(name)
   );
 
   const databaseListGroupByEnvironment = groupBy(
@@ -486,27 +484,27 @@ const hasInitialSQL = (initialSQL?: InitialSQL) => {
 };
 
 export const prepareDatabaseList = async (
-  databaseUIDList: string[],
+  databaseNameList: string[],
   projectName: string
 ) => {
   const databaseStore = useDatabaseV1Store();
   if (isValidProjectName(projectName)) {
     // For preparing the database if user visits creating issue url directly.
-    // It's horrible to fetchDatabaseByUID one-by-one when query.databaseList
+    // It's horrible to fetchDatabaseByName one-by-one when query.databaseList
     // is big (100+ sometimes)
     // So we are fetching databaseList by project since that's better cached.
     const project =
       await useProjectV1Store().getOrFetchProjectByName(projectName);
     await prepareDatabaseListByProject(project.name);
   } else {
-    // Otherwise, we don't have the projectUID (very rare to see, theoretically)
+    // Otherwise, we don't have the projectName (very rare to see, theoretically)
     // so we need to fetch the first database in databaseList by id,
     // and see what project it belongs.
-    if (databaseUIDList.length > 0) {
-      const firstDB = await databaseStore.getOrFetchDatabaseByUID(
-        databaseUIDList[0]
+    if (databaseNameList.length > 0) {
+      const firstDB = await databaseStore.getOrFetchDatabaseByName(
+        databaseNameList[0]
       );
-      if (databaseUIDList.length > 1) {
+      if (databaseNameList.length > 1) {
         await prepareDatabaseListByProject(firstDB.project);
       }
     }
@@ -568,29 +566,4 @@ export const isValidSpec = (spec: Plan_Spec): boolean => {
     }
   }
   return true;
-};
-
-const prepareDatabaseUIDList = async (
-  // databaseIdList is a list of database identifiers. Including UID and resource id.
-  // e.g. ["103", "205", "instances/mysql/databases/employee"]
-  databaseIdList: string[]
-) => {
-  const databaseStore = useDatabaseV1Store();
-  const databaseUIDList = [];
-  for (const maybeUID of databaseIdList) {
-    if (!maybeUID || maybeUID === String(UNKNOWN_ID)) {
-      continue;
-    }
-    const uid = Number(maybeUID);
-    if (isNumber(uid) && !isNaN(uid)) {
-      databaseUIDList.push(maybeUID);
-      continue;
-    }
-    const database = await databaseStore.getOrFetchDatabaseByName(
-      maybeUID,
-      true // silent
-    );
-    databaseUIDList.push(database.uid);
-  }
-  return databaseUIDList.filter((id) => id && id !== String(UNKNOWN_ID));
 };

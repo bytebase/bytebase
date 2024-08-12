@@ -8,7 +8,7 @@ import { defineAction, useRegisterActions } from "@bytebase/vue-kbar";
 import { watch, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
-import { useRecentVisit } from "@/router/useRecentVisit";
+import { useRecentVisit } from "./useRecentVisit";
 
 const handler = useKBarHandler();
 const route = useRoute();

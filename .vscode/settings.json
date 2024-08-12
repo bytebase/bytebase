@@ -39,7 +39,7 @@
   "i18n-ally.enabledFrameworks": ["vue"],
   "i18n-ally.parserOptions": {},
   "go.lintOnSave": "workspace",
-  "go.lintTool": "golangci-lint",
+  "go.lintTool": "staticcheck",
   "go.buildTags": "mysql",
   "gopls": {
     "formatting.local": "github.com/bytebase/bytebase"

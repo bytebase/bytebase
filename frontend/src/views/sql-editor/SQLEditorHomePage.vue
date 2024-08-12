@@ -61,14 +61,6 @@
       </DrawerContent>
     </Drawer>
 
-    <SchemaEditorModal
-      v-if="alterSchemaState.showModal"
-      :database-id-list="alterSchemaState.databaseIdList"
-      :new-window="true"
-      alter-type="SINGLE_DB"
-      @close="alterSchemaState.showModal = false"
-    />
-
     <teleport to="#sql-editor-debug">
       <li>[Page]isDisconnected: {{ isDisconnected }}</li>
       <li>[Page]currentTab.id: {{ currentTab?.id }}</li>
@@ -86,7 +78,6 @@ import { Splitpanes, Pane } from "splitpanes";
 import { computed, reactive } from "vue";
 import { useRouter } from "vue-router";
 import { BBSpin } from "@/bbkit";
-import SchemaEditorModal from "@/components/AlterSchemaPrepForm/SchemaEditorModal.vue";
 import Quickstart from "@/components/Quickstart.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
@@ -96,7 +87,7 @@ import {
   useDatabaseV1Store,
   useSQLEditorTabStore,
 } from "@/store";
-import { allowUsingSchemaEditor, extractProjectResourceName } from "@/utils";
+import { extractProjectResourceName } from "@/utils";
 import AsidePanel from "./AsidePanel";
 import ConnectionPanel from "./ConnectionPanel";
 import { ConnectionPathBar } from "./EditorCommon";
@@ -105,14 +96,10 @@ import { useSheetContext } from "./Sheet";
 import SheetPanel from "./SheetPanel";
 import TabList from "./TabList";
 import { useSQLEditorContext } from "./context";
+import { provideEditorPanelContext } from "./EditorPanel/context";
 
 type LocalState = {
   sidebarExpanded: boolean;
-};
-
-type AlterSchemaState = {
-  showModal: boolean;
-  databaseIdList: string[];
 };
 
 const state = reactive<LocalState>({
@@ -131,47 +118,40 @@ const isFetchingSheet = computed(() => false /* editorStore.isFetchingSheet */);
 
 const { width: windowWidth } = useWindowSize();
 
-const alterSchemaState = reactive<AlterSchemaState>({
-  showModal: false,
-  databaseIdList: [],
-});
-
 useEmitteryEventListener(
   editorEvents,
   "alter-schema",
-  ({ databaseUID, schema, table }) => {
-    const database = databaseStore.getDatabaseByUID(databaseUID);
-    if (allowUsingSchemaEditor([database])) {
-      // TODO: support open selected database tab directly in Schema Editor.
-      alterSchemaState.databaseIdList = [databaseUID];
-      alterSchemaState.showModal = true;
-    } else {
-      const exampleSQL = ["ALTER TABLE"];
-      if (table) {
-        if (schema) {
-          exampleSQL.push(`${schema}.${table}`);
-        } else {
-          exampleSQL.push(`${table}`);
-        }
+  ({ databaseName, schema, table }) => {
+    const database = databaseStore.getDatabaseByName(databaseName);
+    const exampleSQL = ["ALTER TABLE"];
+    if (table) {
+      if (schema) {
+        exampleSQL.push(`${schema}.${table}`);
+      } else {
+        exampleSQL.push(`${table}`);
       }
-      const query = {
-        template: "bb.issue.database.schema.update",
-        name: `[${database.databaseName}] Edit schema`,
-        databaseList: database.name,
-        sql: exampleSQL.join(" "),
-      };
-      const route = router.resolve({
-        name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
-        params: {
-          projectId: extractProjectResourceName(database.project),
-          issueSlug: "create",
-        },
-        query,
-      });
-      window.open(route.fullPath, "_blank");
     }
+    const query = {
+      template: "bb.issue.database.schema.update",
+      name: `[${database.databaseName}] Edit schema`,
+      databaseList: database.name,
+      sql: exampleSQL.join(" "),
+    };
+    const route = router.resolve({
+      name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
+      params: {
+        projectId: extractProjectResourceName(database.project),
+        issueSlug: "create",
+      },
+      query,
+    });
+    window.open(route.fullPath, "_blank");
   }
 );
+
+provideEditorPanelContext({
+  tab: currentTab,
+});
 </script>
 
 <style lang="postcss">

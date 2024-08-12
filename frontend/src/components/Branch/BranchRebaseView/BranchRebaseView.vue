@@ -29,7 +29,7 @@
 
     <div class="flex-1 flex flex-col overflow-y-hidden">
       <BranchComparison
-        v-if="validationState?.branch"
+        v-if="validationState?.branch && hasConflict"
         :project="project"
         :base="headBranch"
         :head="validationState?.branch"
@@ -46,7 +46,7 @@
         </template>
       </BranchComparison>
       <ResolveConflict
-        v-else-if="validationState"
+        v-else-if="validationState && hasConflict"
         ref="resolveConflictRef"
         :project="project"
         :validation-state="validationState"
@@ -183,6 +183,13 @@ const parentBranchOnly = computed(() => {
     return false; // parent-less (main) branches
   }
   return true;
+});
+
+const hasConflict = computed(() => {
+  if (sourceDatabase.value?.databaseName == "bytebase-conflict") {
+    return true;
+  }
+  return !!validationState.value?.conflictSchema;
 });
 
 const validationState = computedAsync(
