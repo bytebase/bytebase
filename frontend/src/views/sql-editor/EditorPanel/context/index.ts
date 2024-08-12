@@ -9,8 +9,10 @@ import {
 import type { SQLEditorTab } from "@/types";
 import {
   defaultViewState,
+  typeToView,
   type EditorPanelViewState as ViewState,
-} from "./types";
+} from "../types";
+import { useScroll } from "./scroll";
 
 const KEY = Symbol(
   "bb.sql-editor.editor-panel"
@@ -51,9 +53,11 @@ export const provideEditorPanelContext = (base: {
 
   const context = {
     ...base,
+    ...useScroll(viewState),
     viewState,
     selectedSchemaName,
     updateViewState,
+    typeToView,
   };
 
   provide(KEY, context);

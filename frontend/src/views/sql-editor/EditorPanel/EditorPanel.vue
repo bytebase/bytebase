@@ -25,11 +25,7 @@ import AccessDenied from "./AccessDenied.vue";
 import Panels from "./Panels";
 import StandardPanel from "./StandardPanel";
 import TerminalPanel from "./TerminalPanel";
-import { provideEditorPanelContext } from "./context";
 
 const tabStore = useSQLEditorTabStore();
 const { currentTab } = storeToRefs(tabStore);
-provideEditorPanelContext({
-  tab: currentTab,
-});
 </script>

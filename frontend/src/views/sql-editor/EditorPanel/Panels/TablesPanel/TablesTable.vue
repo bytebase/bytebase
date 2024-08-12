@@ -18,12 +18,8 @@
 </template>
 
 <script setup lang="tsx">
-import {
-  NDataTable,
-  NPerformantEllipsis,
-  type DataTableColumn,
-} from "naive-ui";
-import { computed } from "vue";
+import { NDataTable, type DataTableColumn, type DataTableInst } from "naive-ui";
+import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import type { ComposedDatabase } from "@/types";
 import type {
@@ -36,8 +32,11 @@ import {
   hasCollationProperty,
   hasIndexSizeProperty,
   hasTableEngineProperty,
+  nextAnimationFrame,
 } from "@/utils";
 import { useAutoHeightDataTable } from "../../common";
+import { useEditorPanelContext } from "../../context";
+import type { RichMetadataWithDB, RichTableMetadata } from "../../types";
 
 const props = defineProps<{
   db: ComposedDatabase;
@@ -57,9 +56,15 @@ const emit = defineEmits<{
   ): void;
 }>();
 
+const { useConsumePendingScrollToTarget } = useEditorPanelContext();
 const { t } = useI18n();
 const { containerElRef, tableBodyHeight, layoutReady } =
   useAutoHeightDataTable();
+const dataTableRef = ref<DataTableInst>();
+const vlRef = computed(() => {
+  return (dataTableRef.value as any)?.$refs?.mainTableInstRef?.bodyInstRef
+    ?.virtualListRef;
+});
 const instanceEngine = computed(() => {
   return props.db.instanceResource.engine;
 });
@@ -71,8 +76,6 @@ const columns = computed(() => {
       title: t("schema-editor.database.name"),
       resizable: true,
       className: "truncate",
-      ellipsis: true,
-      ellipsisComponent: "performant-ellipsis",
     },
     {
       key: "engine",
@@ -81,9 +84,6 @@ const columns = computed(() => {
       resizable: true,
       minWidth: 120,
       maxWidth: 180,
-      render: (table) => {
-        return table.engine;
-      },
     },
     {
       key: "collation",
@@ -92,8 +92,6 @@ const columns = computed(() => {
       resizable: true,
       minWidth: 120,
       maxWidth: 180,
-      ellipsis: true,
-      ellipsisComponent: "performant-ellipsis",
     },
     {
       key: "rowCountEst",
@@ -132,13 +130,8 @@ const columns = computed(() => {
       resizable: true,
       minWidth: 140,
       maxWidth: 320,
-      render: (table) => {
-        return (
-          <NPerformantEllipsis class="w-full leading-6">
-            {table.userComment}
-          </NPerformantEllipsis>
-        );
-      },
+      className: "truncate",
+      render: (table) => table.userComment,
     },
   ];
   return columns.filter((col) => !col.hide);
@@ -155,6 +148,32 @@ const rowProps = (table: TableMetadata) => {
     },
   };
 };
+
+useConsumePendingScrollToTarget(
+  (target: RichMetadataWithDB<"table" | "column">) => {
+    if (target.db.name !== props.db.name) {
+      return false;
+    }
+    if (target.metadata.type === "table" || target.metadata.type === "column") {
+      const metadata = target.metadata as RichTableMetadata;
+      return metadata.schema.name === props.schema.name;
+    }
+    return false;
+  },
+  vlRef,
+  async (target, vl) => {
+    const key = target.metadata.table.name;
+    if (!key) return false;
+    await nextAnimationFrame();
+    try {
+      console.debug("scroll-to-table", vl, target, key);
+      vl.scrollTo({ key });
+    } catch {
+      // Do nothing
+    }
+    return true;
+  }
+);
 </script>
 
 <style lang="postcss" scoped>
