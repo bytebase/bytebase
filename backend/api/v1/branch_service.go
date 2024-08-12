@@ -25,6 +25,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/iam"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
+	mysqldb "github.com/bytebase/bytebase/backend/plugin/db/mysql"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
@@ -1182,6 +1183,7 @@ func reconcileMetadata(metadata *storepb.DatabaseSchemaMetadata, engine storepb.
 							DefaultNull: true,
 						}
 					}
+					column.Type = mysqldb.GetColumnTypeCanonicalSynonym(column.Type)
 				}
 			}
 		}
