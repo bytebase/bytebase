@@ -1604,6 +1604,44 @@ func updateDatabaseConfigLastModifierForMerge(baseMetadata *storepb.DatabaseSche
 		}
 		baseSchemaConfig.TableConfigs = append(baseSchemaConfig.TableConfigs, newBaseTableConfigs...)
 
+		// Views
+		baseViewConfigMap := buildMap(baseSchemaConfig.ViewConfigs, func(s *storepb.ViewConfig) string {
+			return s.GetName()
+		})
+		headViewConfigMap := buildMap(headSchemaConfig.ViewConfigs, func(s *storepb.ViewConfig) string {
+			return s.GetName()
+		})
+		var newBaseViewConfigs []*storepb.ViewConfig
+		for _, headView := range headSchema.Views {
+			headViewConfig := headViewConfigMap[headView.Name]
+			if headViewConfig == nil {
+				headViewConfig = initViewConfig(headView, "", "", now)
+			}
+			baseView := baseSchema.GetView(headView.Name)
+			// New view, reset the source branch and last modifier because we do not remove the config while deleting the object.
+			if baseView == nil {
+				//nolint
+				newBaseViewConfig := proto.Clone(headViewConfig).(*storepb.ViewConfig)
+				newBaseViewConfig.SourceBranch = headViewConfig.SourceBranch
+				newBaseViewConfig.Updater = headViewConfig.Updater
+				newBaseViewConfig.UpdateTime = now
+				newBaseViewConfigs = append(newBaseViewConfigs, newBaseViewConfig)
+				continue
+			}
+			// Modified view, set the last updater as head in base.
+			baseViewConfig := baseViewConfigMap[headView.Name]
+			// Rebase database, no schema config.
+			if baseViewConfig == nil {
+				baseViewConfig = initViewConfig(baseView.GetProto(), "", "", now)
+			}
+			if !equalView(headView, baseView.GetProto()) {
+				baseViewConfig.SourceBranch = headViewConfig.SourceBranch
+				baseViewConfig.Updater = headViewConfig.Updater
+				baseViewConfig.UpdateTime = now
+			}
+		}
+		baseSchemaConfig.ViewConfigs = append(baseSchemaConfig.ViewConfigs, newBaseViewConfigs...)
+
 		// Functions
 		baseFunctionConfigMap := buildMap(baseSchemaConfig.FunctionConfigs, func(s *storepb.FunctionConfig) string {
 			return s.GetName()
@@ -1641,44 +1679,6 @@ func updateDatabaseConfigLastModifierForMerge(baseMetadata *storepb.DatabaseSche
 			}
 		}
 		baseSchemaConfig.FunctionConfigs = append(baseSchemaConfig.FunctionConfigs, newBaseFunctionConfigs...)
-
-		// Views
-		baseViewConfigMap := buildMap(baseSchemaConfig.ViewConfigs, func(s *storepb.ViewConfig) string {
-			return s.GetName()
-		})
-		headViewConfigMap := buildMap(headSchemaConfig.ViewConfigs, func(s *storepb.ViewConfig) string {
-			return s.GetName()
-		})
-		var newBaseViewConfigs []*storepb.ViewConfig
-		for _, headView := range headSchema.Views {
-			headViewConfig := headViewConfigMap[headView.Name]
-			if headViewConfig == nil {
-				headViewConfig = initViewConfig(headView, "", "", now)
-			}
-			baseView := baseSchema.GetView(headView.Name)
-			// New view, reset the source branch and last modifier because we do not remove the config while deleting the object.
-			if baseView == nil {
-				//nolint
-				newBaseViewConfig := proto.Clone(headViewConfig).(*storepb.ViewConfig)
-				newBaseViewConfig.SourceBranch = headViewConfig.SourceBranch
-				newBaseViewConfig.Updater = headViewConfig.Updater
-				newBaseViewConfig.UpdateTime = now
-				newBaseViewConfigs = append(newBaseViewConfigs, newBaseViewConfig)
-				continue
-			}
-			// Modified view, set the last updater as head in base.
-			baseViewConfig := baseViewConfigMap[headView.Name]
-			// Rebase database, no schema config.
-			if baseViewConfig == nil {
-				baseViewConfig = initViewConfig(baseView.GetProto(), "", "", now)
-			}
-			if !cmp.Equal(headView, baseView.GetProto(), protocmp.Transform()) {
-				baseViewConfig.SourceBranch = headViewConfig.SourceBranch
-				baseViewConfig.Updater = headViewConfig.Updater
-				baseViewConfig.UpdateTime = now
-			}
-		}
-		baseSchemaConfig.ViewConfigs = append(baseSchemaConfig.ViewConfigs, newBaseViewConfigs...)
 
 		// Procedures
 		baseProcedureConfigMap := buildMap(baseSchemaConfig.ProcedureConfigs, func(s *storepb.ProcedureConfig) string {
@@ -1795,4 +1795,30 @@ func alignDatabaseConfig(metadata *storepb.DatabaseSchemaMetadata, config *store
 
 func formatViewDef(def string) string {
 	return strings.TrimRight(def, "; \n\r\t")
+}
+
+func equalView(a, b *storepb.ViewMetadata) bool {
+	if a.GetName() != b.GetName() {
+		return false
+	}
+	if a.GetComment() != b.GetComment() {
+		return false
+	}
+	return equalViewDefinition(a.GetDefinition(), b.GetDefinition())
+}
+
+func equalFunction(a, b *storepb.FunctionMetadata) bool {
+	if a.GetName() != b.GetName() {
+		return false
+	}
+
+	return equalRoutineDefinition(a.GetDefinition(), b.GetDefinition())
+}
+
+func equalProcedure(a, b *storepb.ProcedureMetadata) bool {
+	if a.GetName() != b.GetName() {
+		return false
+	}
+
+	return equalRoutineDefinition(a.GetDefinition(), b.GetDefinition())
 }
