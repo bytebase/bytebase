@@ -80,8 +80,24 @@ func TestTryMerge(t *testing.T) {
 }
 
 func TestNormalizeMySQLViewDefinition(t *testing.T) {
-	query := "select `p`.`id` AS `id`,extract(year_month from `p`.`yyy`) AS `extract(year_month from ``yyy``)` from `p` order by `p`.`id` limit 1000000000000"
-	want := "select `id`,extract(year_month from `yyy`) from `p` order by `id` limit 1000000000000"
-	got := normalizeMySQLViewDefinition(query)
-	require.Equal(t, want, got)
+	for i, test := range []struct {
+		query string
+		want  string
+	}{
+		{
+			query: "select `p`.`id` AS `id`,extract(year_month from `p`.`yyy`) AS `extract(year_month from ``yyy``)` from `p` order by `p`.`id` limit 1000000000000",
+			want:  "select `id`,extract(year_month from `yyy`) from `p` order by `id` limit 1000000000000;",
+		},
+		{
+			query: "select 12 AS `12`",
+			want:  "select 12;",
+		},
+		{
+			query: "select 12 AS `12`;   ",
+			want:  "select 12;",
+		},
+	} {
+		got := normalizeMySQLViewDefinition(test.query)
+		require.Equal(t, test.want, got, i)
+	}
 }
