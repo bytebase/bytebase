@@ -31,18 +31,11 @@ var _ = runtime.String
 var _ = utilities.NewDoubleArray
 var _ = metadata.Join
 
-var (
-	filter_AnomalyService_SearchAnomalies_0 = &utilities.DoubleArray{Encoding: map[string]int{}, Base: []int(nil), Check: []int(nil)}
-)
-
 func request_AnomalyService_SearchAnomalies_0(ctx context.Context, marshaler runtime.Marshaler, client AnomalyServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq SearchAnomaliesRequest
 	var metadata runtime.ServerMetadata
 
-	if err := req.ParseForm(); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_AnomalyService_SearchAnomalies_0); err != nil {
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && err != io.EOF {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -55,10 +48,7 @@ func local_request_AnomalyService_SearchAnomalies_0(ctx context.Context, marshal
 	var protoReq SearchAnomaliesRequest
 	var metadata runtime.ServerMetadata
 
-	if err := req.ParseForm(); err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_AnomalyService_SearchAnomalies_0); err != nil {
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && err != io.EOF {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
@@ -74,7 +64,7 @@ func local_request_AnomalyService_SearchAnomalies_0(ctx context.Context, marshal
 // GRPC interceptors will not work for this type of registration. To use interceptors, you must use the "runtime.WithMiddlewares" option in the "runtime.NewServeMux" call.
 func RegisterAnomalyServiceHandlerServer(ctx context.Context, mux *runtime.ServeMux, server AnomalyServiceServer) error {
 
-	mux.Handle("GET", pattern_AnomalyService_SearchAnomalies_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("POST", pattern_AnomalyService_SearchAnomalies_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
@@ -140,7 +130,7 @@ func RegisterAnomalyServiceHandler(ctx context.Context, mux *runtime.ServeMux, c
 // "AnomalyServiceClient" to call the correct interceptors. This client ignores the HTTP middlewares.
 func RegisterAnomalyServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux, client AnomalyServiceClient) error {
 
-	mux.Handle("GET", pattern_AnomalyService_SearchAnomalies_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("POST", pattern_AnomalyService_SearchAnomalies_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)

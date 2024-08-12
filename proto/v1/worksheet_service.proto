@@ -38,7 +38,10 @@ service WorksheetService {
   // This is used for finding my worksheets or worksheets shared by other people.
   // The sheet accessibility is the same as GetWorksheet().
   rpc SearchWorksheets(SearchWorksheetsRequest) returns (SearchWorksheetsResponse) {
-    option (google.api.http) = {get: "/v1/worksheets:search"};
+    option (google.api.http) = {
+      post: "/v1/worksheets:search"
+      body: "*"
+    };
     option (bytebase.v1.auth_method) = CUSTOM;
   }
 

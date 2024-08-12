@@ -11,8 +11,8 @@
               :database-list="schemaDatabaseList"
               :environment-list="environmentList"
               @select-databases="
-                (...dbUidList) =>
-                  (state.selectedDatabaseUidList = new Set(dbUidList))
+                (...dbNameList) =>
+                  (state.selectedDatabaseNameList = new Set(dbNameList))
               "
             >
               <template #header>
@@ -46,12 +46,12 @@
         <div class="flex-1 flex items-center justify-between">
           <div>
             <div
-              v-if="flattenSelectedDatabaseUidList.length > 0"
+              v-if="flattenSelectedDatabaseNameList.length > 0"
               class="textinfolabel"
             >
               {{
                 $t("database.selected-n-databases", {
-                  n: flattenSelectedDatabaseUidList.length,
+                  n: flattenSelectedDatabaseNameList.length,
                 })
               }}
             </div>
@@ -116,7 +116,7 @@ import { useChangelistDetailContext } from "../context";
 type LocalState = {
   keyword: string;
   isGenerating: boolean;
-  selectedDatabaseUidList: Set<string>;
+  selectedDatabaseNameList: Set<string>;
 };
 
 const { t } = useI18n();
@@ -129,7 +129,7 @@ const {
 } = useChangelistDetailContext();
 
 const state = reactive<LocalState>({
-  selectedDatabaseUidList: new Set<string>(),
+  selectedDatabaseNameList: new Set<string>(),
   keyword: "",
   isGenerating: false,
 });
@@ -190,14 +190,14 @@ const schemalessDatabaseList = computed(() => {
   );
 });
 
-const flattenSelectedDatabaseUidList = computed(() => {
-  return [...state.selectedDatabaseUidList];
+const flattenSelectedDatabaseNameList = computed(() => {
+  return [...state.selectedDatabaseNameList];
 });
 
 const nextButtonErrors = computed(() => {
   const errors: string[] = [];
 
-  if (flattenSelectedDatabaseUidList.value.length === 0) {
+  if (flattenSelectedDatabaseNameList.value.length === 0) {
     errors.push(t("changelist.error.select-at-least-one-database"));
   }
   return errors;
@@ -206,8 +206,8 @@ const nextButtonErrors = computed(() => {
 const handleClickNext = async () => {
   state.isGenerating = true;
   try {
-    const databaseList = flattenSelectedDatabaseUidList.value.map((uid) =>
-      databaseStore.getDatabaseByUID(uid)
+    const databaseList = flattenSelectedDatabaseNameList.value.map((name) =>
+      databaseStore.getDatabaseByName(name)
     );
 
     const query: Record<string, any> = {
@@ -237,7 +237,7 @@ const handleClickNext = async () => {
 };
 
 const reset = () => {
-  state.selectedDatabaseUidList = new Set();
+  state.selectedDatabaseNameList = new Set();
   state.keyword = "";
 };
 

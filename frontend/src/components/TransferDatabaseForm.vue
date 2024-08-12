@@ -25,7 +25,7 @@
         />
         <MultipleDatabaseSelector
           v-if="filteredDatabaseList.length > 0"
-          v-model:selected-uid-list="state.selectedDatabaseUidList"
+          v-model:selected-database-name-list="state.selectedDatabaseNameList"
           :transfer-source="state.transferSource"
           :database-list="filteredDatabaseList"
         />
@@ -35,12 +35,12 @@
 
     <template #footer>
       <div class="flex-1 flex items-center justify-between">
-        <NTooltip :disabled="state.selectedDatabaseUidList.length === 0">
+        <NTooltip :disabled="state.selectedDatabaseNameList.length === 0">
           <template #trigger>
             <div class="textinfolabel">
               {{
                 $t("database.selected-n-databases", {
-                  n: state.selectedDatabaseUidList.length,
+                  n: state.selectedDatabaseNameList.length,
                 })
               }}
             </div>
@@ -110,7 +110,7 @@ interface LocalState {
   projectFilter: Project | undefined;
   searchText: string;
   loading: boolean;
-  selectedDatabaseUidList: string[];
+  selectedDatabaseNameList: string[];
 }
 
 const props = defineProps<{
@@ -143,7 +143,7 @@ const state = reactive<LocalState>({
   projectFilter: undefined,
   searchText: "",
   loading: false,
-  selectedDatabaseUidList: [],
+  selectedDatabaseNameList: [],
 });
 const { project } = useProjectByName(toRef(props, "projectName"));
 
@@ -211,11 +211,11 @@ const filteredDatabaseList = computed(() => {
   return sortDatabaseV1List(list);
 });
 
-const allowTransfer = computed(() => state.selectedDatabaseUidList.length > 0);
+const allowTransfer = computed(() => state.selectedDatabaseNameList.length > 0);
 
 const selectedDatabaseList = computed(() =>
-  state.selectedDatabaseUidList.map((uid) =>
-    databaseStore.getDatabaseByUID(uid)
+  state.selectedDatabaseNameList.map((name) =>
+    databaseStore.getDatabaseByName(name)
   )
 );
 

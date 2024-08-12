@@ -172,14 +172,14 @@
   >
     <TransferOutDatabaseForm
       :database-list="[database]"
-      :selected-database-uid-list="[database.uid]"
+      :selected-database-names="[database.name]"
       @dismiss="state.showTransferDatabaseModal = false"
     />
   </Drawer>
 
   <SchemaEditorModal
     v-if="state.showSchemaEditorModal"
-    :database-id-list="[database.uid]"
+    :database-names="[database.name]"
     alter-type="SINGLE_DB"
     @close="state.showSchemaEditorModal = false"
   />
@@ -283,7 +283,9 @@ const {
   allowListChangeHistories,
   allowListSlowQueries,
 } = useDatabaseDetailContext();
-const disableSchemaEditor = useAppFeature("bb.feature.issue.disable-schema-editor");
+const disableSchemaEditor = useAppFeature(
+  "bb.feature.issue.disable-schema-editor"
+);
 
 onMounted(async () => {
   anomalyList.value = await useAnomalyV1Store().fetchAnomalyList({

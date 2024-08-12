@@ -35,7 +35,7 @@
 
   <SchemaEditorModal
     v-if="state.showSchemaEditorModal"
-    :database-id-list="schemaEditorContext.databaseIdList"
+    :database-names="selectedDatabaseNameList"
     :alter-type="'MULTI_DB'"
     @close="state.showSchemaEditorModal = false"
   />
@@ -60,7 +60,7 @@
   >
     <TransferOutDatabaseForm
       :database-list="props.databases"
-      :selected-database-uid-list="selectedDatabaseUidList"
+      :selected-database-names="selectedDatabaseNameList"
       @dismiss="state.showTransferOutDatabaseForm = false"
     />
   </Drawer>
@@ -93,7 +93,7 @@ import {
 } from "lucide-vue-next";
 import { NButton, NTooltip } from "naive-ui";
 import type { VNode } from "vue";
-import { computed, h, reactive, ref } from "vue";
+import { computed, h, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBAlert } from "@/bbkit";
@@ -159,11 +159,6 @@ const state = reactive<LocalState>({
   showUnassignAlert: false,
   showLabelEditorDrawer: false,
   showTransferOutDatabaseForm: false,
-});
-const schemaEditorContext = ref<{
-  databaseIdList: string[];
-}>({
-  databaseIdList: [],
 });
 
 const { t } = useI18n();
@@ -287,8 +282,8 @@ const allowSyncDatabases = computed(() => {
   });
 });
 
-const selectedDatabaseUidList = computed(() => {
-  return props.databases.map((db) => db.uid);
+const selectedDatabaseNameList = computed(() => {
+  return props.databases.map((db) => db.name);
 });
 
 const generateMultiDb = async (
@@ -303,9 +298,6 @@ const generateMultiDb = async (
     allowUsingSchemaEditor(props.databases) &&
     !disableSchemaEditor.value
   ) {
-    schemaEditorContext.value.databaseIdList = [
-      ...selectedDatabaseUidList.value,
-    ];
     state.showSchemaEditorModal = true;
     return;
   }

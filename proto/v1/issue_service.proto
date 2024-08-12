@@ -42,7 +42,10 @@ service IssueService {
 
   // Search for issues that the caller has the bb.issues.get permission on and also satisfy the specified filter & query.
   rpc SearchIssues(SearchIssuesRequest) returns (SearchIssuesResponse) {
-    option (google.api.http) = {get: "/v1/{parent=projects/*}/issues:search"};
+    option (google.api.http) = {
+      post: "/v1/{parent=projects/*}/issues:search"
+      body: "*"
+    };
     option (bytebase.v1.permission) = "bb.issues.get";
     option (bytebase.v1.auth_method) = CUSTOM;
   }

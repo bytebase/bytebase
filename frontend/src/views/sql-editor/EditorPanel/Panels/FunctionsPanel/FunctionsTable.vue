@@ -4,7 +4,7 @@
       v-bind="$attrs"
       ref="dataTableRef"
       size="small"
-      :row-key="getFunctionKey"
+      :row-key="(func) => func.name"
       :columns="columns"
       :data="layoutReady ? funcs : []"
       :row-props="rowProps"
@@ -18,12 +18,8 @@
 </template>
 
 <script setup lang="tsx">
-import {
-  NDataTable,
-  NPerformantEllipsis,
-  type DataTableColumn,
-} from "naive-ui";
-import { computed } from "vue";
+import { NDataTable, type DataTableColumn, type DataTableInst } from "naive-ui";
+import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import type { ComposedDatabase } from "@/types";
 import type {
@@ -31,7 +27,10 @@ import type {
   FunctionMetadata,
   SchemaMetadata,
 } from "@/types/proto/v1/database_service";
+import { nextAnimationFrame } from "@/utils";
 import { useAutoHeightDataTable } from "../../common";
+import { useEditorPanelContext } from "../../context";
+import type { RichFunctionMetadata, RichMetadataWithDB } from "../../types";
 
 const props = defineProps<{
   db: ComposedDatabase;
@@ -54,10 +53,12 @@ const emit = defineEmits<{
 const { t } = useI18n();
 const { containerElRef, tableBodyHeight, layoutReady } =
   useAutoHeightDataTable();
-
-const getFunctionKey = (func: FunctionMetadata) => {
-  return func.name;
-};
+const dataTableRef = ref<DataTableInst>();
+const vlRef = computed(() => {
+  return (dataTableRef.value as any)?.$refs?.mainTableInstRef?.bodyInstRef
+    ?.virtualListRef;
+});
+const { useConsumePendingScrollToTarget } = useEditorPanelContext();
 
 const columns = computed(() => {
   const columns: (DataTableColumn<FunctionMetadata> & { hide?: boolean })[] = [
@@ -66,13 +67,6 @@ const columns = computed(() => {
       title: t("schema-editor.database.name"),
       resizable: true,
       className: "truncate",
-      render: (func) => {
-        return (
-          <NPerformantEllipsis class="w-full leading-6">
-            {func.name}
-          </NPerformantEllipsis>
-        );
-      },
     },
   ];
   return columns;
@@ -89,6 +83,32 @@ const rowProps = (func: FunctionMetadata) => {
     },
   };
 };
+
+useConsumePendingScrollToTarget(
+  (target: RichMetadataWithDB<"function">) => {
+    if (target.db.name !== props.db.name) {
+      return false;
+    }
+    if (target.metadata.type === "function") {
+      const metadata = target.metadata as RichFunctionMetadata;
+      return metadata.schema.name === props.schema.name;
+    }
+    return false;
+  },
+  vlRef,
+  async (target, vl) => {
+    const key = target.metadata.function.name;
+    if (!key) return false;
+    await nextAnimationFrame();
+    try {
+      console.debug("scroll-to-function", vl, target, key);
+      vl.scrollTo({ key });
+    } catch {
+      // Do nothing
+    }
+    return true;
+  }
+);
 </script>
 
 <style lang="postcss" scoped>

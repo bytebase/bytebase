@@ -120,42 +120,16 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/Status'
     /v1/anomalies:search:
-        get:
+        post:
             tags:
                 - AnomalyService
             operationId: AnomalyService_SearchAnomalies
-            parameters:
-                - name: filter
-                  in: query
-                  description: |-
-                    filter is the filter to apply on the search anomaly request,
-                     follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax.
-                     Only support filter by resource and type for now.
-                     For example:
-                     Search the anomalies of a specific resource: 'resource="instances/{instance}".'
-                     Search the specified types of anomalies: 'type="MIGRATION_SCHEMA".'
-                  schema:
-                    type: string
-                - name: pageSize
-                  in: query
-                  description: |-
-                    Not used. The maximum number of anomalies to return. The service may return fewer than
-                     this value.
-                     If unspecified, at most 50 anomalies will be returned.
-                     The maximum value is 1000; values above 1000 will be coerced to 1000.
-                  schema:
-                    type: integer
-                    format: int32
-                - name: pageToken
-                  in: query
-                  description: |-
-                    Not used. A page token, received from a previous `SearchAnomalies` call.
-                     Provide this to retrieve the subsequent page.
-
-                     When paginating, all other parameters provided to `SearchAnomalies` must match
-                     the call that provided the page token.
-                  schema:
-                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/SearchAnomaliesRequest'
+                required: true
             responses:
                 "200":
                     description: OK
@@ -174,44 +148,12 @@ paths:
             tags:
                 - AuditLogService
             operationId: AuditLogService_ExportAuditLogs
-            parameters:
-                - name: parent
-                  in: query
-                  schema:
-                    type: string
-                - name: filter
-                  in: query
-                  description: |-
-                    The filter of the log. It should be a valid CEL expression.
-                     For example:
-                      - filter = "method == '/bytebase.v1.SQLService/Query'"
-                      - filter = "method == '/bytebase.v1.SQLService/Query' && severity == 'ERROR'"
-                      - filter = "method == '/bytebase.v1.SQLService/Query' && severity == 'ERROR' && user == 'users/bb@bytebase.com'"
-                      - filter = "method == '/bytebase.v1.SQLService/Query' && severity == 'ERROR' && create_time <= '2021-01-01T00:00:00Z' && create_time >= '2020-01-01T00:00:00Z'"
-                  schema:
-                    type: string
-                - name: orderBy
-                  in: query
-                  description: |-
-                    The order by of the log.
-                     Only support order by create_time.
-                     For example:
-                      - order_by = "create_time asc"
-                      - order_by = "create_time desc"
-                  schema:
-                    type: string
-                - name: format
-                  in: query
-                  description: The export format.
-                  schema:
-                    enum:
-                        - FORMAT_UNSPECIFIED
-                        - CSV
-                        - JSON
-                        - SQL
-                        - XLSX
-                    type: string
-                    format: enum
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/ExportAuditLogsRequest'
+                required: true
             responses:
                 "200":
                     description: OK
@@ -226,53 +168,16 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/Status'
     /v1/auditLogs:search:
-        get:
+        post:
             tags:
                 - AuditLogService
             operationId: AuditLogService_SearchAuditLogs
-            parameters:
-                - name: parent
-                  in: query
-                  schema:
-                    type: string
-                - name: filter
-                  in: query
-                  description: |-
-                    The filter of the log. It should be a valid CEL expression.
-                     For example:
-                      - filter = "method == '/bytebase.v1.SQLService/Query'"
-                      - filter = "method == '/bytebase.v1.SQLService/Query' && severity == 'ERROR'"
-                      - filter = "method == '/bytebase.v1.SQLService/Query' && severity == 'ERROR' && user == 'users/bb@bytebase.com'"
-                      - filter = "method == '/bytebase.v1.SQLService/Query' && severity == 'ERROR' && create_time <= '2021-01-01T00:00:00Z' && create_time >= '2020-01-01T00:00:00Z'"
-                  schema:
-                    type: string
-                - name: orderBy
-                  in: query
-                  description: |-
-                    The order by of the log.
-                     Only support order by create_time.
-                     For example:
-                      - order_by = "create_time asc"
-                      - order_by = "create_time desc"
-                  schema:
-                    type: string
-                - name: pageSize
-                  in: query
-                  description: |-
-                    The maximum number of logs to return.
-                     The service may return fewer than this value.
-                     If unspecified, at most 100 log entries will be returned.
-                     The maximum value is 1000; values above 1000 will be coerced to 1000.
-                  schema:
-                    type: integer
-                    format: int32
-                - name: pageToken
-                  in: query
-                  description: |-
-                    A page token, received from a previous `SearchLogs` call.
-                     Provide this to retrieve the subsequent page.
-                  schema:
-                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/SearchAuditLogsRequest'
+                required: true
             responses:
                 "200":
                     description: OK
@@ -3498,7 +3403,7 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/Status'
     /v1/projects/{project}/auditLogs:search:
-        get:
+        post:
             tags:
                 - AuditLogService
             operationId: AuditLogService_SearchAuditLogs
@@ -3509,44 +3414,12 @@ paths:
                   required: true
                   schema:
                     type: string
-                - name: filter
-                  in: query
-                  description: |-
-                    The filter of the log. It should be a valid CEL expression.
-                     For example:
-                      - filter = "method == '/bytebase.v1.SQLService/Query'"
-                      - filter = "method == '/bytebase.v1.SQLService/Query' && severity == 'ERROR'"
-                      - filter = "method == '/bytebase.v1.SQLService/Query' && severity == 'ERROR' && user == 'users/bb@bytebase.com'"
-                      - filter = "method == '/bytebase.v1.SQLService/Query' && severity == 'ERROR' && create_time <= '2021-01-01T00:00:00Z' && create_time >= '2020-01-01T00:00:00Z'"
-                  schema:
-                    type: string
-                - name: orderBy
-                  in: query
-                  description: |-
-                    The order by of the log.
-                     Only support order by create_time.
-                     For example:
-                      - order_by = "create_time asc"
-                      - order_by = "create_time desc"
-                  schema:
-                    type: string
-                - name: pageSize
-                  in: query
-                  description: |-
-                    The maximum number of logs to return.
-                     The service may return fewer than this value.
-                     If unspecified, at most 100 log entries will be returned.
-                     The maximum value is 1000; values above 1000 will be coerced to 1000.
-                  schema:
-                    type: integer
-                    format: int32
-                - name: pageToken
-                  in: query
-                  description: |-
-                    A page token, received from a previous `SearchLogs` call.
-                     Provide this to retrieve the subsequent page.
-                  schema:
-                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/SearchAuditLogsRequest'
+                required: true
             responses:
                 "200":
                     description: OK
@@ -4916,7 +4789,7 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/Status'
     /v1/projects/{project}/issues:search:
-        get:
+        post:
             tags:
                 - IssueService
             description: Search for issues that the caller has the bb.issues.get permission on and also satisfy the specified filter & query.
@@ -4928,36 +4801,12 @@ paths:
                   required: true
                   schema:
                     type: string
-                - name: pageSize
-                  in: query
-                  description: |-
-                    The maximum number of issues to return. The service may return fewer than
-                     this value.
-                     If unspecified, at most 50 issues will be returned.
-                     The maximum value is 1000; values above 1000 will be coerced to 1000.
-                  schema:
-                    type: integer
-                    format: int32
-                - name: pageToken
-                  in: query
-                  description: |-
-                    A page token, received from a previous `ListIssues` call.
-                     Provide this to retrieve the subsequent page.
-
-                     When paginating, all other parameters provided to `ListIssues` must match
-                     the call that provided the page token.
-                  schema:
-                    type: string
-                - name: filter
-                  in: query
-                  description: Filter is used to filter issues returned in the list.
-                  schema:
-                    type: string
-                - name: query
-                  in: query
-                  description: Query is the query statement.
-                  schema:
-                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/SearchIssuesRequest'
+                required: true
             responses:
                 "200":
                     description: OK
@@ -5253,7 +5102,7 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/Status'
     /v1/projects/{project}/plans:search:
-        get:
+        post:
             tags:
                 - PlanService
             description: Search for plans that the caller has the bb.plans.get permission on and also satisfy the specified filter & query.
@@ -5265,31 +5114,12 @@ paths:
                   required: true
                   schema:
                     type: string
-                - name: pageSize
-                  in: query
-                  description: |-
-                    The maximum number of plans to return. The service may return fewer than
-                     this value.
-                     If unspecified, at most 50 plans will be returned.
-                     The maximum value is 1000; values above 1000 will be coerced to 1000.
-                  schema:
-                    type: integer
-                    format: int32
-                - name: pageToken
-                  in: query
-                  description: |-
-                    A page token, received from a previous `ListPlans` call.
-                     Provide this to retrieve the subsequent page.
-
-                     When paginating, all other parameters provided to `ListPlans` must match
-                     the call that provided the page token.
-                  schema:
-                    type: string
-                - name: filter
-                  in: query
-                  description: Filter is used to filter plans returned in the list.
-                  schema:
-                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/SearchPlansRequest'
+                required: true
             responses:
                 "200":
                     description: OK
@@ -6526,16 +6356,16 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/Status'
     /v1/projects:search:
-        get:
+        post:
             tags:
                 - ProjectService
             operationId: ProjectService_SearchProjects
-            parameters:
-                - name: showDeleted
-                  in: query
-                  description: Show deleted projects if specified.
-                  schema:
-                    type: boolean
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/SearchProjectsRequest'
+                required: true
             responses:
                 "200":
                     description: OK
@@ -6550,43 +6380,17 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/Status'
     /v1/queryHistories:search:
-        get:
+        post:
             tags:
                 - SQLService
             description: SearchQueryHistories searches query histories for the caller.
             operationId: SQLService_SearchQueryHistories
-            parameters:
-                - name: pageSize
-                  in: query
-                  description: |-
-                    Not used. The maximum number of histories to return.
-                     The service may return fewer than this value.
-                     If unspecified, at most 100 history entries will be returned.
-                     The maximum value is 1000; values above 1000 will be coerced to 1000.
-                  schema:
-                    type: integer
-                    format: int32
-                - name: pageToken
-                  in: query
-                  description: |-
-                    Not used. A page token, received from a previous `ListQueryHistory` call.
-                     Provide this to retrieve the subsequent page.
-                  schema:
-                    type: string
-                - name: filter
-                  in: query
-                  description: |-
-                    filter is the filter to apply on the search query history,
-                     follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax.
-                     Support filter by:
-                     - database, for example:
-                        database = "instances/{instance}/databases/{database}"
-                     - instance, for example:
-                        instance = "instance/{instance}"
-                     - type, for example:
-                        type = "QUERY"
-                  schema:
-                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/SearchQueryHistoriesRequest'
+                required: true
             responses:
                 "200":
                     description: OK
@@ -7882,7 +7686,7 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/Status'
     /v1/worksheets:search:
-        get:
+        post:
             tags:
                 - WorksheetService
             description: |-
@@ -7890,38 +7694,12 @@ paths:
                  This is used for finding my worksheets or worksheets shared by other people.
                  The sheet accessibility is the same as GetWorksheet().
             operationId: WorksheetService_SearchWorksheets
-            parameters:
-                - name: filter
-                  in: query
-                  description: |-
-                    To filter the search result.
-                     Format: only support the following spec for now:
-                     - `creator = users/{email}`, `creator != users/{email}`
-                     - `starred = true`, `starred = false`.
-                     - `visibility = "VISIBILITY_PRIVATE"`, `visibility = "VISIBILITY_PROJECT_READ | VISIBILITY_PROJECT_WRITE"`, etc.
-                     Not support empty filter for now.
-                  schema:
-                    type: string
-                - name: pageSize
-                  in: query
-                  description: |-
-                    Not used. The maximum number of worksheets to return. The service may return fewer than
-                     this value.
-                     If unspecified, at most 50 worksheets will be returned.
-                     The maximum value is 1000; values above 1000 will be coerced to 1000.
-                  schema:
-                    type: integer
-                    format: int32
-                - name: pageToken
-                  in: query
-                  description: |-
-                    Not used. A page token, received from a previous `SearchWorksheets` call.
-                     Provide this to retrieve the subsequent page.
-
-                     When paginating, all other parameters provided to `SearchWorksheets` must match
-                     the call that provided the page token.
-                  schema:
-                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/SearchWorksheetsRequest'
+                required: true
             responses:
                 "200":
                     description: OK
@@ -12717,6 +12495,34 @@ components:
                     $ref: '#/components/schemas/TableMetadata'
                 config:
                     $ref: '#/components/schemas/TableConfig'
+        SearchAnomaliesRequest:
+            type: object
+            properties:
+                filter:
+                    type: string
+                    description: |-
+                        filter is the filter to apply on the search anomaly request,
+                         follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax.
+                         Only support filter by resource and type for now.
+                         For example:
+                         Search the anomalies of a specific resource: 'resource="instances/{instance}".'
+                         Search the specified types of anomalies: 'type="MIGRATION_SCHEMA".'
+                pageSize:
+                    type: integer
+                    description: |-
+                        Not used. The maximum number of anomalies to return. The service may return fewer than
+                         this value.
+                         If unspecified, at most 50 anomalies will be returned.
+                         The maximum value is 1000; values above 1000 will be coerced to 1000.
+                    format: int32
+                pageToken:
+                    type: string
+                    description: |-
+                        Not used. A page token, received from a previous `SearchAnomalies` call.
+                         Provide this to retrieve the subsequent page.
+
+                         When paginating, all other parameters provided to `SearchAnomalies` must match
+                         the call that provided the page token.
         SearchAnomaliesResponse:
             type: object
             properties:
@@ -12730,6 +12536,43 @@ components:
                     description: |-
                         Not used. A token, which can be sent as `page_token` to retrieve the next page.
                          If this field is omitted, there are no subsequent pages.
+        SearchAuditLogsRequest:
+            required:
+                - parent
+            type: object
+            properties:
+                parent:
+                    type: string
+                filter:
+                    type: string
+                    description: |-
+                        The filter of the log. It should be a valid CEL expression.
+                         For example:
+                          - filter = "method == '/bytebase.v1.SQLService/Query'"
+                          - filter = "method == '/bytebase.v1.SQLService/Query' && severity == 'ERROR'"
+                          - filter = "method == '/bytebase.v1.SQLService/Query' && severity == 'ERROR' && user == 'users/bb@bytebase.com'"
+                          - filter = "method == '/bytebase.v1.SQLService/Query' && severity == 'ERROR' && create_time <= '2021-01-01T00:00:00Z' && create_time >= '2020-01-01T00:00:00Z'"
+                orderBy:
+                    type: string
+                    description: |-
+                        The order by of the log.
+                         Only support order by create_time.
+                         For example:
+                          - order_by = "create_time asc"
+                          - order_by = "create_time desc"
+                pageSize:
+                    type: integer
+                    description: |-
+                        The maximum number of logs to return.
+                         The service may return fewer than this value.
+                         If unspecified, at most 100 log entries will be returned.
+                         The maximum value is 1000; values above 1000 will be coerced to 1000.
+                    format: int32
+                pageToken:
+                    type: string
+                    description: |-
+                        A page token, received from a previous `SearchLogs` call.
+                         Provide this to retrieve the subsequent page.
         SearchAuditLogsResponse:
             type: object
             properties:
@@ -12757,6 +12600,39 @@ components:
                         A token, which can be sent as `page_token` to retrieve the next page.
                          If this field is omitted, there are no subsequent pages.
             description: Deprecated.
+        SearchIssuesRequest:
+            required:
+                - parent
+            type: object
+            properties:
+                parent:
+                    type: string
+                    description: |-
+                        The parent, which owns this collection of issues.
+                         Format: projects/{project}
+                         Use "projects/-" to list all issues from all projects.
+                pageSize:
+                    type: integer
+                    description: |-
+                        The maximum number of issues to return. The service may return fewer than
+                         this value.
+                         If unspecified, at most 50 issues will be returned.
+                         The maximum value is 1000; values above 1000 will be coerced to 1000.
+                    format: int32
+                pageToken:
+                    type: string
+                    description: |-
+                        A page token, received from a previous `ListIssues` call.
+                         Provide this to retrieve the subsequent page.
+
+                         When paginating, all other parameters provided to `ListIssues` must match
+                         the call that provided the page token.
+                filter:
+                    type: string
+                    description: Filter is used to filter issues returned in the list.
+                query:
+                    type: string
+                    description: Query is the query statement.
         SearchIssuesResponse:
             type: object
             properties:
@@ -12770,6 +12646,36 @@ components:
                     description: |-
                         A token, which can be sent as `page_token` to retrieve the next page.
                          If this field is omitted, there are no subsequent pages.
+        SearchPlansRequest:
+            required:
+                - parent
+            type: object
+            properties:
+                parent:
+                    type: string
+                    description: |-
+                        The parent, which owns this collection of plans.
+                         Format: projects/{project}
+                         Use "projects/-" to list all plans from all projects.
+                pageSize:
+                    type: integer
+                    description: |-
+                        The maximum number of plans to return. The service may return fewer than
+                         this value.
+                         If unspecified, at most 50 plans will be returned.
+                         The maximum value is 1000; values above 1000 will be coerced to 1000.
+                    format: int32
+                pageToken:
+                    type: string
+                    description: |-
+                        A page token, received from a previous `ListPlans` call.
+                         Provide this to retrieve the subsequent page.
+
+                         When paginating, all other parameters provided to `ListPlans` must match
+                         the call that provided the page token.
+                filter:
+                    type: string
+                    description: Filter is used to filter plans returned in the list.
         SearchPlansResponse:
             type: object
             properties:
@@ -12783,6 +12689,12 @@ components:
                     description: |-
                         A token, which can be sent as `page_token` to retrieve the next page.
                          If this field is omitted, there are no subsequent pages.
+        SearchProjectsRequest:
+            type: object
+            properties:
+                showDeleted:
+                    type: boolean
+                    description: Show deleted projects if specified.
         SearchProjectsResponse:
             type: object
             properties:
@@ -12791,6 +12703,34 @@ components:
                     items:
                         $ref: '#/components/schemas/Project'
                     description: The projects from the specified request.
+        SearchQueryHistoriesRequest:
+            type: object
+            properties:
+                pageSize:
+                    type: integer
+                    description: |-
+                        Not used. The maximum number of histories to return.
+                         The service may return fewer than this value.
+                         If unspecified, at most 100 history entries will be returned.
+                         The maximum value is 1000; values above 1000 will be coerced to 1000.
+                    format: int32
+                pageToken:
+                    type: string
+                    description: |-
+                        Not used. A page token, received from a previous `ListQueryHistory` call.
+                         Provide this to retrieve the subsequent page.
+                filter:
+                    type: string
+                    description: |-
+                        filter is the filter to apply on the search query history,
+                         follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax.
+                         Support filter by:
+                         - database, for example:
+                            database = "instances/{instance}/databases/{database}"
+                         - instance, for example:
+                            instance = "instance/{instance}"
+                         - type, for example:
+                            type = "QUERY"
         SearchQueryHistoriesResponse:
             type: object
             properties:
@@ -12824,6 +12764,34 @@ components:
                     items:
                         $ref: '#/components/schemas/VCSRepository'
                     description: The list of repositories in vcs provider.
+        SearchWorksheetsRequest:
+            type: object
+            properties:
+                filter:
+                    type: string
+                    description: |-
+                        To filter the search result.
+                         Format: only support the following spec for now:
+                         - `creator = users/{email}`, `creator != users/{email}`
+                         - `starred = true`, `starred = false`.
+                         - `visibility = "VISIBILITY_PRIVATE"`, `visibility = "VISIBILITY_PROJECT_READ | VISIBILITY_PROJECT_WRITE"`, etc.
+                         Not support empty filter for now.
+                pageSize:
+                    type: integer
+                    description: |-
+                        Not used. The maximum number of worksheets to return. The service may return fewer than
+                         this value.
+                         If unspecified, at most 50 worksheets will be returned.
+                         The maximum value is 1000; values above 1000 will be coerced to 1000.
+                    format: int32
+                pageToken:
+                    type: string
+                    description: |-
+                        Not used. A page token, received from a previous `SearchWorksheets` call.
+                         Provide this to retrieve the subsequent page.
+
+                         When paginating, all other parameters provided to `SearchWorksheets` must match
+                         the call that provided the page token.
         SearchWorksheetsResponse:
             type: object
             properties:

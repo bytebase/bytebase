@@ -15,7 +15,8 @@ type SQLEditorEvents = Emittery<{
     mask?: Array<keyof Worksheet>;
   };
   "alter-schema": {
-    databaseUID: string;
+    // Format: instances/{instance}/databases/{database}
+    databaseName: string;
     schema: string;
     table: string;
   };

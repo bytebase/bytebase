@@ -179,7 +179,7 @@ interface LocalState {
 }
 
 const props = defineProps({
-  databaseIdList: {
+  databaseNames: {
     type: Array as PropType<string[]>,
     required: true,
   },
@@ -232,8 +232,8 @@ const allowPreviewIssue = computed(() => {
 });
 
 const databaseList = computed(() => {
-  return props.databaseIdList.map((databaseId) => {
-    return databaseV1Store.getDatabaseByUID(databaseId);
+  return props.databaseNames.map((database) => {
+    return databaseV1Store.getDatabaseByName(database);
   });
 });
 // Returns the type if it's uniq.
@@ -251,7 +251,7 @@ const project = computed(
 );
 const editTargetsKey = computed(() => {
   return JSON.stringify({
-    databaseIdList: props.databaseIdList,
+    databaseNameList: props.databaseNames,
     alterType: props.alterType,
   });
 });

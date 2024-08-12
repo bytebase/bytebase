@@ -17,8 +17,12 @@ option go_package = "generated-go/v1";
 service AuditLogService {
   rpc SearchAuditLogs(SearchAuditLogsRequest) returns (SearchAuditLogsResponse) {
     option (google.api.http) = {
-      get: "/v1/{parent=projects/*}/auditLogs:search"
-      additional_bindings: {get: "/v1/auditLogs:search"}
+      post: "/v1/{parent=projects/*}/auditLogs:search"
+      body: "*"
+      additional_bindings: {
+        post: "/v1/auditLogs:search"
+        body: "*"
+      }
     };
     option (bytebase.v1.permission) = "bb.auditLogs.search";
     option (bytebase.v1.auth_method) = IAM;
@@ -26,8 +30,11 @@ service AuditLogService {
   rpc ExportAuditLogs(ExportAuditLogsRequest) returns (ExportAuditLogsResponse) {
     option (google.api.http) = {
       post: "/v1/{parent=projects/*}/auditLogs:export"
-      additional_bindings: {post: "/v1/auditLogs:export"}
       body: "*"
+      additional_bindings: {
+        post: "/v1/auditLogs:export"
+        body: "*"
+      }
     };
     option (bytebase.v1.permission) = "bb.auditLogs.export";
     option (bytebase.v1.auth_method) = IAM;
