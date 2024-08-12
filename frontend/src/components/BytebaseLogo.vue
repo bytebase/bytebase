@@ -20,7 +20,7 @@
       <img
         v-else
         class="h-8 md:h-10 w-auto"
-        src="../assets/logo-full.svg"
+        src="@/assets/logo-full.svg"
         alt="Bytebase"
       />
     </component>

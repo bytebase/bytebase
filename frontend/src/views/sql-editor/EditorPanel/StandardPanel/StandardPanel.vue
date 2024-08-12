@@ -12,7 +12,10 @@
       >
         <template v-if="!tab || tab.editMode === 'SQL-EDITOR'">
           <EditorAction @execute="handleExecute" />
-          <div v-if="tab" class="w-full flex-1 flex flex-row items-stretch overflow-hidden">
+          <div
+            v-if="tab"
+            class="w-full flex-1 flex flex-row items-stretch overflow-hidden"
+          >
             <Suspense>
               <SQLEditor @execute="handleExecute" />
               <template #fallback>
@@ -75,7 +78,7 @@ import {
 import { useSQLEditorContext } from "../../context";
 import ReadonlyModeNotSupported from "../ReadonlyModeNotSupported.vue";
 import ResultPanel from "../ResultPanel";
-import Welcome from "../Welcome.vue";
+import Welcome from "../Welcome";
 
 const SQLEditor = defineAsyncComponent(() => import("./SQLEditor.vue"));
 
