@@ -1,6 +1,6 @@
 import { useDatabaseV1Store } from "@/store";
 import type { IssueFilter } from "@/types";
-import { UNKNOWN_ID } from "@/types";
+import { unknownDatabase } from "@/types";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
 import type { SearchParams, SemanticIssueStatus } from "../common";
 import {
@@ -19,9 +19,8 @@ export const buildIssueFilterBySearchParams = (
 
   let database = "";
   if (databaseScope) {
-    const uid = databaseScope.value.split("-").slice(-1)[0];
-    const db = useDatabaseV1Store().getDatabaseByUID(uid);
-    if (db.uid !== `${UNKNOWN_ID}`) {
+    const db = useDatabaseV1Store().getDatabaseByName(databaseScope.value);
+    if (db.name !== unknownDatabase().name) {
       database = db.name;
     }
   }

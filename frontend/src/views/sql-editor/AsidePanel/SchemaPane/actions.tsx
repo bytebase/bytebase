@@ -201,7 +201,7 @@ export const useDropdown = () => {
               icon: () => <SquarePenIcon class="w-4 h-4" />,
               onSelect: () => {
                 editorEvents.emit("alter-schema", {
-                  databaseUID: db.uid,
+                  databaseName: db.name,
                   schema: schema.name,
                   table: table.name,
                 });

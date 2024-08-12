@@ -61,7 +61,7 @@
       </div>
       <BaselineSchemaSelector
         v-if="source === 'BASELINE'"
-        v-model:database-id="databaseId"
+        v-model:database-name="databaseName"
         :project-name="project.name"
         :loading="isPreparingBranch"
       />
@@ -110,7 +110,7 @@ import {
 } from "@/store";
 import { useBranchStore } from "@/store/modules/branch";
 import type { ComposedProject } from "@/types";
-import { UNKNOWN_ID } from "@/types";
+import { unknownDatabase } from "@/types";
 import { Branch } from "@/types/proto/v1/branch_service";
 import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
 import { hasProjectPermissionV2 } from "@/utils";
@@ -136,7 +136,7 @@ const databaseStore = useDatabaseV1Store();
 const branchStore = useBranchStore();
 const dbSchemaStore = useDBSchemaV1Store();
 const source = ref<Source>("PARENT");
-const databaseId = ref<string>();
+const databaseName = ref<string>();
 const parentBranchName = ref<string>();
 const isCreating = ref(false);
 const branchId = ref<string>("");
@@ -146,13 +146,13 @@ const EMPTY_BRANCH = Branch.fromPartial({});
 
 const allowCreateBranchFromDatabase = computed(() => {
   return hasProjectPermissionV2(
-      props.project,
-      useCurrentUserV1().value,
-      "bb.branches.admin"
-    )
+    props.project,
+    useCurrentUserV1().value,
+    "bb.branches.admin"
+  );
 });
 
-const debouncedDatabaseId = useDebounce(databaseId, DEBOUNCE_RATE);
+const debouncedDatabaseName = useDebounce(databaseName, DEBOUNCE_RATE);
 const debouncedParentBranchName = useDebounce(parentBranchName, DEBOUNCE_RATE);
 
 const filterParentBranch = (branch: Branch) => {
@@ -176,12 +176,12 @@ const prepareBranchFromParentBranch = async (parent: string) => {
   console.timeEnd(tag);
   return branch;
 };
-const prepareBranchFromDatabaseHead = async (uid: string) => {
-  const tag = `prepareBranchFromDatabaseHead(${uid})`;
+const prepareBranchFromDatabaseHead = async (databaseName: string) => {
+  const tag = `prepareBranchFromDatabaseHead(${databaseName})`;
   console.time(tag);
 
   console.time("--fetch metadata");
-  const database = databaseStore.getDatabaseByUID(uid);
+  const database = databaseStore.getDatabaseByName(databaseName);
   const metadata = await dbSchemaStore.getOrFetchDatabaseMetadata({
     database: database.name,
     view: DatabaseMetadataView.DATABASE_METADATA_VIEW_FULL,
@@ -209,14 +209,14 @@ const branchData = shallowRef<BranchData>();
 
 const prepareBranch = async (
   _parentBranchName: string | undefined,
-  _databaseId: string | undefined
+  _databaseName: string | undefined
 ) => {
   isPreparingBranch.value = true;
 
   const finish = (s: BranchData | undefined) => {
     const isOutdated =
       _parentBranchName !== parentBranchName.value ||
-      _databaseId !== databaseId.value;
+      _databaseName !== databaseName.value;
     if (isOutdated) {
       return;
     }
@@ -232,8 +232,8 @@ const prepareBranch = async (
       parent: _parentBranchName,
     });
   }
-  if (_databaseId && _databaseId !== String(UNKNOWN_ID)) {
-    const branch = await prepareBranchFromDatabaseHead(_databaseId);
+  if (_databaseName && _databaseName !== unknownDatabase().name) {
+    const branch = await prepareBranchFromDatabaseHead(_databaseName);
     return finish({
       branch,
       parent: undefined,
@@ -245,16 +245,16 @@ const prepareBranch = async (
 const handleSwitchSource = (src: Source) => {
   source.value = src;
   if (src === "PARENT") {
-    databaseId.value = undefined;
+    databaseName.value = undefined;
   } else {
     parentBranchName.value = undefined;
   }
 };
 
 watch(
-  [debouncedParentBranchName, debouncedDatabaseId],
-  ([parentBranchName, databaseId]) => {
-    prepareBranch(parentBranchName, databaseId);
+  [debouncedParentBranchName, debouncedDatabaseName],
+  ([parentBranchName, databaseName]) => {
+    prepareBranch(parentBranchName, databaseName);
   }
 );
 

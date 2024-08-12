@@ -6,7 +6,7 @@
       v-if="
         currentTab &&
         isValidInstanceName(instance.name) &&
-        database.uid !== String(UNKNOWN_ID)
+        database.name !== unknownDatabase().name
       "
       class="flex justify-start items-center h-8 px-1 whitespace-nowrap shrink-0 gap-x-2"
     >
@@ -108,7 +108,7 @@ import {
   useSQLEditorStore,
   useSQLEditorTabStore,
 } from "@/store";
-import { UNKNOWN_ID, isValidInstanceName } from "@/types";
+import { isValidInstanceName, unknownDatabase } from "@/types";
 import { EnvironmentTier } from "@/types/proto/v1/environment_service";
 import { useSQLEditorContext } from "../context";
 import BatchQueryDatabasesSelector from "./BatchQueryDatabasesSelector.vue";
@@ -150,8 +150,7 @@ const showBatchQuerySelector = computed(() => {
   return (
     tab &&
     // Only show entry when user selected a database.
-    database.value.uid !== String(UNKNOWN_ID) &&
-    // TODO(steven): implement batch query in admin mode.
+    database.value.name !== unknownDatabase().name &&
     tab.mode !== "ADMIN"
   );
 });
