@@ -33,7 +33,6 @@ func (driver *Driver) CountAffectedRows(ctx context.Context, statement string) (
 		return 0, nil
 	}
 
-	var count int64
 	for rows.Next() {
 		scanArgs := make([]any, len(columns))
 		for i := range scanArgs {
@@ -47,11 +46,11 @@ func (driver *Driver) CountAffectedRows(ctx context.Context, statement string) (
 		}
 
 		if rowsColumn.Valid {
-			count = rowsColumn.Int64
+			return rowsColumn.Int64, nil
 		}
 	}
 	if err := rows.Err(); err != nil {
 		return 0, err
 	}
-	return count, nil
+	return 0, nil
 }
