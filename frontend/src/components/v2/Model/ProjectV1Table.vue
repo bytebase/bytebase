@@ -61,7 +61,7 @@ const props = withDefaults(
 );
 
 const emit = defineEmits<{
-  (event: "row-click"): void;
+  (event: "row-click", project: ComposedProject): void;
 }>();
 
 const router = useRouter();
@@ -158,7 +158,7 @@ const rowProps = (project: ComposedProject) => {
       } else {
         router.push(route);
       }
-      emit("row-click");
+      emit("row-click", project);
     },
   };
 };

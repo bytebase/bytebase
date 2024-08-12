@@ -1,7 +1,7 @@
 <template>
   <template v-if="initialized">
     <div class="mx-auto w-full max-w-sm">
-      <BytebaseLogo component="span" class="mx-auto" />
+      <BytebaseLogo class="mx-auto" />
 
       <div class="mt-8">
         <NCard>

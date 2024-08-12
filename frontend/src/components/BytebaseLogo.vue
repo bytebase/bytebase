@@ -5,7 +5,7 @@
     <component
       :is="component"
       :to="{
-        name: WORKSPACE_ROUTE_MY_ISSUES,
+        name: redirect,
       }"
       class="w-full select-none flex flex-row justify-center items-center"
       active-class=""
@@ -29,17 +29,18 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
-import { WORKSPACE_ROUTE_MY_ISSUES } from "@/router/dashboard/workspaceRoutes";
 import { useActuatorV1Store } from "@/store/modules/v1/actuator";
 
-withDefaults(
+const props = withDefaults(
   defineProps<{
-    component?: "router-link" | "span";
+    redirect?: string;
   }>(),
   {
-    component: "router-link",
+    redirect: "",
   }
 );
+
+const component = computed(() => (props.redirect ? "router-link" : "span"));
 
 const customBrandingLogo = computed((): string => {
   return useActuatorV1Store().brandingLogo;

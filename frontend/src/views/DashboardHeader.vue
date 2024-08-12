@@ -1,7 +1,10 @@
 <template>
   <div class="flex items-center justify-between h-10 px-4 my-1 space-x-3">
     <div class="flex items-center">
-      <BytebaseLogo class="block md:hidden" />
+      <BytebaseLogo
+        class="block md:hidden"
+        :redirect="WORKSPACE_ROUTE_MY_ISSUES"
+      />
 
       <NButton
         class="hidden sm:inline"
@@ -84,7 +87,7 @@
   />
 
   <ProjectSwitchModal
-    v-if="state.showProjectModal"
+    :show="state.showProjectModal"
     :project="project"
     @dismiss="state.showProjectModal = false"
   />
@@ -103,6 +106,7 @@ import ProjectSwitchModal from "@/components/Project/ProjectSwitchModal.vue";
 import { useCurrentProject } from "@/components/Project/useCurrentProject";
 import WeChatQRModal from "@/components/WeChatQRModal.vue";
 import { ProjectNameCell } from "@/components/v2/Model/DatabaseV1Table/cells";
+import { WORKSPACE_ROUTE_MY_ISSUES } from "@/router/dashboard/workspaceRoutes";
 import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/router/dashboard/workspaceSetting";
 import {
   SQL_EDITOR_HOME_MODULE,

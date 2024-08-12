@@ -285,6 +285,7 @@
       "self": "rows",
       "n-rows": "{n} rows"
     },
+    "back-to-workspace": "Back to workspace",
     "override": "Override"
   },
   "error-page": {
