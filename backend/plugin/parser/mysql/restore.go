@@ -1,6 +1,7 @@
 package mysql
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -16,7 +17,7 @@ func init() {
 	base.RegisterGenerateRestoreSQL(storepb.Engine_MYSQL, GenerateRestoreSQL)
 }
 
-func GenerateRestoreSQL(statement string, backupDatabase string, backupTable string, originalDatabase string, originalTable string) (string, error) {
+func GenerateRestoreSQL(ctx context.Context, rCtx base.RestoreContext, statement string, backupDatabase string, backupTable string, originalDatabase string, originalTable string) (string, error) {
 	parseResult, err := ParseMySQL(statement)
 	if err != nil {
 		return "", err
@@ -26,11 +27,24 @@ func GenerateRestoreSQL(statement string, backupDatabase string, backupTable str
 		return "", errors.Errorf("expected 1 statement, but got %d", len(parseResult))
 	}
 
+	generatedColumns, normalColumns, err := classifyColumns(ctx, rCtx.GetDatabaseMetadataFunc, rCtx.InstanceID, &TableReference{
+		Database: originalDatabase,
+		Table:    originalTable,
+	})
+
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to classify columns for %s.%s", originalDatabase, originalTable)
+	}
+
 	g := &generator{
+		ctx:              ctx,
+		rCtx:             rCtx,
 		backupDatabase:   backupDatabase,
 		backupTable:      backupTable,
 		originalDatabase: originalDatabase,
 		originalTable:    originalTable,
+		generatedColumns: generatedColumns,
+		normalColumns:    normalColumns,
 	}
 	var buf strings.Builder
 	antlr.ParseTreeWalkerDefault.Walk(g, parseResult[0].Tree)
@@ -47,10 +61,15 @@ func GenerateRestoreSQL(statement string, backupDatabase string, backupTable str
 type generator struct {
 	*parser.BaseMySQLParserListener
 
+	ctx  context.Context
+	rCtx base.RestoreContext
+
 	backupDatabase   string
 	backupTable      string
 	originalDatabase string
 	originalTable    string
+	generatedColumns []string
+	normalColumns    []string
 	result           string
 	err              error
 }
@@ -60,7 +79,16 @@ func (g *generator) EnterDeleteStatement(ctx *parser.DeleteStatementContext) {
 		return
 	}
 
-	g.result = fmt.Sprintf("INSERT INTO `%s`.`%s` SELECT * FROM `%s`.`%s`;", g.originalDatabase, g.originalTable, g.backupDatabase, g.backupTable)
+	if len(g.generatedColumns) == 0 {
+		g.result = fmt.Sprintf("INSERT INTO `%s`.`%s` SELECT * FROM `%s`.`%s`;", g.originalDatabase, g.originalTable, g.backupDatabase, g.backupTable)
+	} else {
+		var quotedColumns []string
+		for _, column := range g.normalColumns {
+			quotedColumns = append(quotedColumns, fmt.Sprintf("`%s`", column))
+		}
+		quotedColumnList := strings.Join(quotedColumns, ", ")
+		g.result = fmt.Sprintf("INSERT INTO `%s`.`%s` (%s) SELECT %s FROM `%s`.`%s`;", g.originalDatabase, g.originalTable, quotedColumnList, quotedColumnList, g.backupDatabase, g.backupTable)
+	}
 }
 
 func (g *generator) EnterUpdateStatement(ctx *parser.UpdateStatementContext) {
@@ -90,9 +118,21 @@ func (g *generator) EnterUpdateStatement(ctx *parser.UpdateStatementContext) {
 	antlr.ParseTreeWalkerDefault.Walk(setFields, ctx.UpdateList())
 
 	var buf strings.Builder
-	if _, err := fmt.Fprintf(&buf, "INSERT INTO `%s`.`%s` SELECT * FROM `%s`.`%s` ON DUPLICATE KEY UPDATE ", g.originalDatabase, g.originalTable, g.backupDatabase, g.backupTable); err != nil {
-		g.err = err
-		return
+	if len(g.generatedColumns) == 0 {
+		if _, err := fmt.Fprintf(&buf, "INSERT INTO `%s`.`%s` SELECT * FROM `%s`.`%s` ON DUPLICATE KEY UPDATE ", g.originalDatabase, g.originalTable, g.backupDatabase, g.backupTable); err != nil {
+			g.err = err
+			return
+		}
+	} else {
+		var quotedColumns []string
+		for _, column := range g.normalColumns {
+			quotedColumns = append(quotedColumns, fmt.Sprintf("`%s`", column))
+		}
+		quotedColumnList := strings.Join(quotedColumns, ", ")
+		if _, err := fmt.Fprintf(&buf, "INSERT INTO `%s`.`%s` (%s) SELECT %s FROM `%s`.`%s` ON DUPLICATE KEY UPDATE ", g.originalDatabase, g.originalTable, quotedColumnList, quotedColumnList, g.backupDatabase, g.backupTable); err != nil {
+			g.err = err
+			return
+		}
 	}
 
 	for i, field := range setFields.result {
