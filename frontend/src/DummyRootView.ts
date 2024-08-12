@@ -19,7 +19,7 @@ export default defineComponent({
     });
 
     watch(
-      () => mode,
+      mode,
       () => {
         const fallback = () => {
           router.replace({
