@@ -1,3 +1,17 @@
+- input: UPDATE t_generated SET a = 1 WHERE a = 2;
+  result:
+    - statement: |-
+        CREATE TABLE `backupDB`.`_rollback_0_t_generated` LIKE `db`.`t_generated`;
+        INSERT INTO `backupDB`.`_rollback_0_t_generated` (`a`,`b`) SELECT `t_generated`.`a`,`t_generated`.`b` FROM t_generated WHERE a = 2;
+      sourceschema: ""
+      sourcetablename: t_generated
+      targettablename: _rollback_0_t_generated
+      startposition:
+        line: 1
+        column: 0
+      endposition:
+        line: 1
+        column: 39
 - input: |-
     UPDATE db1.t1 SET c1 = 1 WHERE c1 = 2;
     UPDATE db2.t2 SET c1 = 1 WHERE c1 = 2;
