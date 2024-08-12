@@ -18,7 +18,7 @@ func init() {
 }
 
 func extractChangedResources(currentDatabase string, currentSchema string, dbSchema *model.DBSchema, asts any, statement string) (*base.ChangeSummary, error) {
-	parseResult, ok := asts.(*ParseResult)
+	tree, ok := asts.(antlr.Tree)
 	if !ok {
 		return nil, errors.Errorf("failed to convert ast to antlr.Tree")
 	}
@@ -32,7 +32,7 @@ func extractChangedResources(currentDatabase string, currentSchema string, dbSch
 		statement:        statement,
 	}
 
-	antlr.ParseTreeWalkerDefault.Walk(l, parseResult.Tree)
+	antlr.ParseTreeWalkerDefault.Walk(l, tree)
 
 	return &base.ChangeSummary{
 		ChangedResources: changedResources,
