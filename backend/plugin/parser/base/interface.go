@@ -206,7 +206,7 @@ func RegisterTransformDMLToSelect(engine storepb.Engine, f TransformDMLToSelectF
 }
 
 // TransformDMLToSelect transforms the DML statement to SELECT statement.
-func TransformDMLToSelect(engine storepb.Engine, ctx context.Context, tCtx TransformContext, statement string, sourceDatabase string, targetDatabase string, tablePrefix string) ([]BackupStatement, error) {
+func TransformDMLToSelect(ctx context.Context, engine storepb.Engine, tCtx TransformContext, statement string, sourceDatabase string, targetDatabase string, tablePrefix string) ([]BackupStatement, error) {
 	f, ok := transformDMLToSelect[engine]
 	if !ok {
 		return nil, errors.Errorf("engine %s is not supported", engine)

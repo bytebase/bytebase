@@ -153,7 +153,7 @@ func (exec *DataUpdateExecutor) backupData(
 	}
 
 	prefix := "_" + time.Now().Format("20060102150405")
-	statements, err := base.TransformDMLToSelect(instance.Engine, ctx, tc, statement, database.DatabaseName, backupDatabaseName, prefix)
+	statements, err := base.TransformDMLToSelect(ctx, instance.Engine, tc, statement, database.DatabaseName, backupDatabaseName, prefix)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to transform DML to select")
 	}
