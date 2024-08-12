@@ -1672,7 +1672,7 @@ func updateDatabaseConfigLastModifierForMerge(baseMetadata *storepb.DatabaseSche
 			if baseFunctionConfig == nil {
 				baseFunctionConfig = initFunctionConfig(baseFunction.GetProto(), "", "", now)
 			}
-			if !cmp.Equal(headFunction, baseFunction.GetProto(), protocmp.Transform()) {
+			if !equalFunction(headFunction, baseFunction.GetProto()) {
 				baseFunctionConfig.SourceBranch = headFunctionConfig.SourceBranch
 				baseFunctionConfig.Updater = headFunctionConfig.Updater
 				baseFunctionConfig.UpdateTime = now
@@ -1706,7 +1706,7 @@ func updateDatabaseConfigLastModifierForMerge(baseMetadata *storepb.DatabaseSche
 			}
 			// Modified procedure, set the last updater as head in base.
 			baseProcedureConfig := baseProcedureConfigMap[headProcedure.Name]
-			if !cmp.Equal(headProcedure, baseProcedure.GetProto(), protocmp.Transform()) {
+			if !equalProcedure(headProcedure, baseProcedure.GetProto()) {
 				baseProcedureConfig.SourceBranch = headProcedureConfig.SourceBranch
 				baseProcedureConfig.Updater = headProcedureConfig.Updater
 				baseProcedureConfig.UpdateTime = now
