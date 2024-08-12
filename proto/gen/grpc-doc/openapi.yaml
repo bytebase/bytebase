@@ -174,44 +174,12 @@ paths:
             tags:
                 - AuditLogService
             operationId: AuditLogService_ExportAuditLogs
-            parameters:
-                - name: parent
-                  in: query
-                  schema:
-                    type: string
-                - name: filter
-                  in: query
-                  description: |-
-                    The filter of the log. It should be a valid CEL expression.
-                     For example:
-                      - filter = "method == '/bytebase.v1.SQLService/Query'"
-                      - filter = "method == '/bytebase.v1.SQLService/Query' && severity == 'ERROR'"
-                      - filter = "method == '/bytebase.v1.SQLService/Query' && severity == 'ERROR' && user == 'users/bb@bytebase.com'"
-                      - filter = "method == '/bytebase.v1.SQLService/Query' && severity == 'ERROR' && create_time <= '2021-01-01T00:00:00Z' && create_time >= '2020-01-01T00:00:00Z'"
-                  schema:
-                    type: string
-                - name: orderBy
-                  in: query
-                  description: |-
-                    The order by of the log.
-                     Only support order by create_time.
-                     For example:
-                      - order_by = "create_time asc"
-                      - order_by = "create_time desc"
-                  schema:
-                    type: string
-                - name: format
-                  in: query
-                  description: The export format.
-                  schema:
-                    enum:
-                        - FORMAT_UNSPECIFIED
-                        - CSV
-                        - JSON
-                        - SQL
-                        - XLSX
-                    type: string
-                    format: enum
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/ExportAuditLogsRequest'
+                required: true
             responses:
                 "200":
                     description: OK
