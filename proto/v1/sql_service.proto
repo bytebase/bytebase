@@ -50,7 +50,10 @@ service SQLService {
 
   // SearchQueryHistories searches query histories for the caller.
   rpc SearchQueryHistories(SearchQueryHistoriesRequest) returns (SearchQueryHistoriesResponse) {
-    option (google.api.http) = {post: "/v1/queryHistories:search"};
+    option (google.api.http) = {
+      post: "/v1/queryHistories:search"
+      body: "*"
+    };
     option (bytebase.v1.auth_method) = CUSTOM;
   }
 
