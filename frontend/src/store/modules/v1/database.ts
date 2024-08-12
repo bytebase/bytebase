@@ -9,8 +9,6 @@ import type {
   ComposedUser,
 } from "@/types";
 import {
-  emptyDatabase,
-  EMPTY_ID,
   unknownDatabase,
   unknownEnvironment,
   UNKNOWN_ID,
@@ -83,7 +81,7 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
       }
     }
   };
-  const listDatabases = async (parent : string) => {
+  const listDatabases = async (parent: string) => {
     const { databases } = await databaseServiceClient.listDatabases({
       parent: parent,
       pageSize: DEFAULT_DATABASE_PAGE_SIZE,
@@ -151,36 +149,6 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
     await fetchDatabaseByName(name, silent);
     return getDatabaseByName(name);
   };
-  const getDatabaseByUID = (uid: string) => {
-    if (uid === String(EMPTY_ID)) return emptyDatabase();
-    if (uid === String(UNKNOWN_ID)) return unknownDatabase();
-
-    return databaseMapByUID.get(uid) ?? unknownDatabase();
-  };
-  const fetchDatabaseByUID = async (uid: string, silent = false) => {
-    const database = await databaseServiceClient.getDatabase(
-      {
-        name: `instances/-/databases/${uid}`,
-      },
-      {
-        silent,
-      }
-    );
-    const [composed] = await upsertDatabaseMap([database]);
-
-    return composed;
-  };
-  const getOrFetchDatabaseByUID = async (uid: string, silent = false) => {
-    if (uid === String(EMPTY_ID)) return emptyDatabase();
-    if (uid === String(UNKNOWN_ID)) return unknownDatabase();
-
-    const existed = databaseList.value.find((db) => db.uid === uid);
-    if (existed) {
-      return existed;
-    }
-    await fetchDatabaseByUID(uid, silent);
-    return getDatabaseByUID(uid);
-  };
   const batchUpdateDatabases = async (params: BatchUpdateDatabasesRequest) => {
     const updated = await databaseServiceClient.batchUpdateDatabases(params);
     const composed = await upsertDatabaseMap(updated.databases);
@@ -245,8 +213,6 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
     getDatabaseByName,
     fetchDatabaseByName,
     getOrFetchDatabaseByName,
-    getDatabaseByUID,
-    getOrFetchDatabaseByUID,
     batchUpdateDatabases,
     updateDatabase,
     fetchDatabaseSchema,

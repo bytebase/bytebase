@@ -85,7 +85,9 @@ export const getProjectNamePlanIdPlanCheckRunId = (name: string): string[] => {
   return [tokens[0], tokens[1], tokens[2]];
 };
 
-export const getProjectIdRolloutUidStageUidTaskUid = (name: string): string[] => {
+export const getProjectIdRolloutUidStageUidTaskUid = (
+  name: string
+): string[] => {
   const tokens = getNameParentTokens(name, [
     projectNamePrefix,
     rolloutNamePrefix,
@@ -93,7 +95,7 @@ export const getProjectIdRolloutUidStageUidTaskUid = (name: string): string[] =>
     taskNamePrefix,
   ]);
   return [tokens[0], tokens[1], tokens[2], tokens[3]];
-}
+};
 
 export const getWorksheetId = (name: string): string => {
   const tokens = getNameParentTokens(name, [worksheetNamePrefix]);
@@ -187,6 +189,20 @@ export const getIssueCommentId = (name: string) => {
 export const getReviewConfigId = (name: string) => {
   const tokens = getNameParentTokens(name, [reviewConfigNamePrefix]);
   return tokens[0];
+};
+
+// The name of the policy.
+// Format: {resource name}/policies/{policy type}
+// Workspace resource name: "".
+// Environment resource name: environments/environment-id.
+// Instance resource name: instances/instance-id.
+// Database resource name: instances/instance-id/databases/database-name.
+export const getPolicyResourceNameAndType = (name: string): string[] => {
+  const tokens = getNameParentTokens(name, [policyNamePrefix]);
+  if (tokens.length !== 2) {
+    return ["", ""];
+  }
+  return tokens;
 };
 
 export const isDatabaseName = (name: string): boolean => {
