@@ -3525,7 +3525,10 @@ export const SQLServiceDefinition = {
           800016: [new Uint8Array([2])],
           578365826: [
             new Uint8Array([
-              27,
+              30,
+              58,
+              1,
+              42,
               34,
               25,
               47,
