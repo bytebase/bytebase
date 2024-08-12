@@ -284,7 +284,8 @@
     "rows": {
       "self": "rows",
       "n-rows": "{n} rows"
-    }
+    },
+    "back-to-workspace": "Back to workspace"
   },
   "error-page": {
     "go-back-home": "Go back home"

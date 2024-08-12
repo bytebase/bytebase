@@ -284,7 +284,8 @@
     "rows": {
       "self": "filas",
       "n-rows": "{n} filas"
-    }
+    },
+    "back-to-workspace": "Volver al espacio de trabajo"
   },
   "error-page": {
     "go-back-home": "Volver al inicio"

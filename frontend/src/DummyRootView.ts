@@ -10,19 +10,23 @@ export default defineComponent({
   name: "DummyRootView",
   setup() {
     const { lastVisit } = useRecentVisit();
+
     const router = useRouter();
     const actuatorStore = useActuatorV1Store();
+
     const mode = computed(() => {
       return actuatorStore.appProfile.mode;
     });
+
     watch(
-      mode,
+      () => mode,
       () => {
         const fallback = () => {
           router.replace({
             name: WORKSPACE_ROUTE_MY_ISSUES,
           });
         };
+
         // Redirect to
         // - /sql-editor if mode == 'EDITOR'
         // - lastVisit.path if not empty
@@ -42,7 +46,8 @@ export default defineComponent({
         if (!lastVisit.value) {
           return fallback();
         }
-        const { path } = lastVisit.value;
+        const path = lastVisit.value;
+
         // Ignore all possible root path records
         if (
           path === "" ||
