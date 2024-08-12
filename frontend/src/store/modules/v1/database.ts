@@ -11,7 +11,6 @@ import type {
 import {
   unknownDatabase,
   unknownEnvironment,
-  UNKNOWN_ID,
   unknownInstanceResource,
 } from "@/types";
 import { DEFAULT_PROJECT_NAME } from "@/types";
@@ -32,7 +31,6 @@ export const DEFAULT_DATABASE_PAGE_SIZE = 1000000;
 
 export const useDatabaseV1Store = defineStore("database_v1", () => {
   const databaseMapByName = reactive(new Map<string, ComposedDatabase>());
-  const databaseMapByUID = reactive(new Map<string, ComposedDatabase>());
 
   // Getters
   const databaseList = computed(() => {
@@ -42,14 +40,12 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
   // Actions
   const reset = () => {
     databaseMapByName.clear();
-    databaseMapByUID.clear();
   };
 
   const removeCacheByInstance = (instance: string) => {
     for (const db of databaseList.value) {
       if (db.instance === instance) {
         databaseMapByName.delete(db.name);
-        databaseMapByUID.delete(db.uid);
       }
     }
   };
@@ -58,7 +54,6 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
     const composedDatabaseList = await batchComposeDatabase(databaseList);
     composedDatabaseList.forEach((database) => {
       databaseMapByName.set(database.name, database);
-      databaseMapByUID.set(database.uid, database);
     });
     return composedDatabaseList;
   };
@@ -69,12 +64,6 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
       }
       if (databaseMapByName.has(database.name)) {
         const db = databaseMapByName.get(database.name);
-        if (db) {
-          db.instanceResource.activation = instance.activation;
-        }
-      }
-      if (databaseMapByUID.has(database.uid)) {
-        const db = databaseMapByUID.get(database.uid);
         if (db) {
           db.instanceResource.activation = instance.activation;
         }
@@ -265,7 +254,7 @@ export const useDatabaseV1ByName = (name: MaybeRef<string>) => {
   watch(
     () => unref(name),
     (name) => {
-      if (store.getDatabaseByName(name).uid === String(UNKNOWN_ID)) {
+      if (store.getDatabaseByName(name).name === unknownDatabase().name) {
         ready.value = false;
         store.fetchDatabaseByName(name).then(() => {
           ready.value = true;
