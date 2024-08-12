@@ -38,7 +38,7 @@
   "i18n-ally.editor.preferEditor": true,
   "i18n-ally.enabledFrameworks": ["vue"],
   "i18n-ally.parserOptions": {},
-  "go.lintOnSave": "file",
+  "go.lintOnSave": "workspace",
   "go.lintTool": "staticcheck",
   "go.buildTags": "mysql",
   "gopls": {
