@@ -711,6 +711,16 @@ func (n *metadataDiffColumnNode) tryMerge(other *metadataDiffColumnNode, engine 
 			}
 		}
 
+		if !compareColumnOnUpdateValue(n.head.OnUpdate, other.head.OnUpdate) {
+			if !compareColumnOnUpdateValue(n.base.OnUpdate, n.head.OnUpdate) {
+				if !compareColumnOnUpdateValue(n.head.OnUpdate, other.head.OnUpdate) {
+					return true, fmt.Sprintf("conflict column onUpdate value, one is %+v, the other is %+v", n.head.OnUpdate, other.head.OnUpdate)
+				}
+			} else {
+				n.head.OnUpdate = other.head.OnUpdate
+			}
+		}
+
 		if other.base.Nullable != other.head.Nullable {
 			if n.base.Nullable != n.head.Nullable {
 				if n.head.Nullable != other.head.Nullable {
@@ -743,6 +753,16 @@ func (n *metadataDiffColumnNode) tryMerge(other *metadataDiffColumnNode, engine 
 	}
 
 	return false, ""
+}
+
+func compareColumnOnUpdateValue(a, b string) bool {
+	// TODO(zp): The special case should be assosiacted with the engine type.
+	aTimestampDefaultValue := buildTimestampDefaultValue(a)
+	bTimestampDefaultValue := buildTimestampDefaultValue(b)
+	if aTimestampDefaultValue != nil && bTimestampDefaultValue != nil {
+		return aTimestampDefaultValue.getFsp() == bTimestampDefaultValue.getFsp()
+	}
+	return a == b
 }
 
 // To avoid getting caught up in the case struggle, we handle some special cases first.
