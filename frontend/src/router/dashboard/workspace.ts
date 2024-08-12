@@ -31,6 +31,7 @@ import {
   WORKSPACE_ROUTE_MEMBERS,
   WORKSPACE_ROUTE_ROLES,
   WORKSPACE_ROUTE_IM,
+  DATABASE_ROUTE_DASHBOARD,
 } from "./workspaceRoutes";
 
 const rootRoute: RouteRecordRaw = {
@@ -94,6 +95,22 @@ const workspaceRoutes: RouteRecordRaw[] = [
     },
     components: {
       content: () => import("@/views/InstanceDashboard.vue"),
+      leftSidebar: () => import("@/views/DashboardSidebar.vue"),
+    },
+    props: { content: true, leftSidebar: true },
+  },
+  {
+    path: "databases",
+    name: DATABASE_ROUTE_DASHBOARD,
+    meta: {
+      title: () => t("common.databases"),
+      getQuickActionList: () => {
+        return ["quickaction.bb.database.create"];
+      },
+      requiredWorkspacePermissionList: () => ["bb.databases.list"],
+    },
+    components: {
+      content: () => import("@/views/DatabaseDashboard.vue"),
       leftSidebar: () => import("@/views/DashboardSidebar.vue"),
     },
     props: { content: true, leftSidebar: true },
