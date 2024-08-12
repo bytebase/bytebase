@@ -533,7 +533,6 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 			schemaMetadata.Tables = append(schemaMetadata.Tables, tableMetadata)
 		case viewTableType:
 			if view, ok := viewMap[key]; ok {
-				view.Comment = comment
 				schemaMetadata.Views = append(schemaMetadata.Views, view)
 			}
 		}
