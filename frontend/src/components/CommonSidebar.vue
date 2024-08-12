@@ -109,6 +109,7 @@ const props = withDefaults(
   }>(),
   {
     showLogo: true,
+    logoRedirect: "",
     getItemClass: (_: SidebarItem) => [],
   }
 );

@@ -35,7 +35,9 @@ const props = withDefaults(
   defineProps<{
     redirect?: string;
   }>(),
-  {}
+  {
+    redirect: "",
+  }
 );
 
 const component = computed(() => (props.redirect ? "router-link" : "span"));
