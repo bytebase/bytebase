@@ -104,7 +104,7 @@ func generateSQL(ctx context.Context, tCtx base.TransformContext, statementInfoL
 		if _, err := buf.WriteString(fmt.Sprintf("CREATE TABLE `%s`.`%s` LIKE `%s`.`%s`;\n", databaseName, targetTable, table.Database, table.Table)); err != nil {
 			return nil, errors.Wrap(err, "failed to write create table statement")
 		}
-		generatedColumns, normalColumns, err := classifyColumns(ctx, tCtx, table)
+		generatedColumns, normalColumns, err := classifyColumns(ctx, tCtx.GetDatabaseMetadataFunc, tCtx.InstanceID, table)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to classify columns")
 		}
@@ -170,14 +170,14 @@ func generateSQL(ctx context.Context, tCtx base.TransformContext, statementInfoL
 	return result, nil
 }
 
-func classifyColumns(ctx context.Context, tCtx base.TransformContext, table *TableReference) ([]string, []string, error) {
-	if tCtx.GetDatabaseMetadataFunc == nil {
+func classifyColumns(ctx context.Context, getDatabaseMetadataFunc base.GetDatabaseMetadataFunc, instanceID string, table *TableReference) ([]string, []string, error) {
+	if getDatabaseMetadataFunc == nil {
 		return nil, nil, errors.New("GetDatabaseMetadataFunc is not set")
 	}
 
-	_, metadata, err := tCtx.GetDatabaseMetadataFunc(ctx, tCtx.InstanceID, table.Database)
+	_, metadata, err := getDatabaseMetadataFunc(ctx, instanceID, table.Database)
 	if err != nil {
-		return nil, nil, errors.Wrapf(err, "failed to get database metadata for InstanceID %q, Database %q", tCtx.InstanceID, table.Database)
+		return nil, nil, errors.Wrapf(err, "failed to get database metadata for InstanceID %q, Database %q", instanceID, table.Database)
 	}
 
 	schemaMetadata := metadata.GetSchema("")
