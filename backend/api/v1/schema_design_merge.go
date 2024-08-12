@@ -1259,22 +1259,34 @@ func equalViewDefinition(a, b string) bool {
 var qualifiedRe = regexp.MustCompile("`" + `[^` + "`" + `]` + "`" + `\.` + "`")
 
 func normalizeMySQLViewDefinition(query string) string {
+	query = strings.TrimSpace(query)
+	if query == "" {
+		return ""
+	}
+	if query[len(query)-1] != ';' {
+		query += ";"
+	}
+	trailSymbols := []string{"` ", "`,", "`;"}
 	for {
 		asIdx := strings.Index(query, " AS ")
 		if asIdx == -1 {
 			break
 		}
-		endIdx1 := strings.Index(query[asIdx:], "` ")
-		endIdx2 := strings.Index(query[asIdx:], "`,")
-		if endIdx1 == -1 && endIdx2 == -1 {
+		var endCandidates []int
+		for _, symbol := range trailSymbols {
+			i := strings.Index(query[asIdx:], symbol)
+			if i >= 0 {
+				endCandidates = append(endCandidates, i)
+			}
+		}
+		if len(endCandidates) == 0 {
 			break
 		}
-		endIdx := -1
-		if endIdx1 >= 0 {
-			endIdx = endIdx1
-		}
-		if endIdx2 >= 0 && endIdx2 < endIdx {
-			endIdx = endIdx2
+		endIdx := endCandidates[0]
+		for _, v := range endCandidates {
+			if v < endIdx {
+				endIdx = v
+			}
 		}
 		query = query[:asIdx] + query[(asIdx+endIdx+1):]
 	}
