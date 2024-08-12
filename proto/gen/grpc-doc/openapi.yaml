@@ -226,7 +226,7 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/Status'
     /v1/auditLogs:search:
-        get:
+        post:
             tags:
                 - AuditLogService
             operationId: AuditLogService_SearchAuditLogs
@@ -3498,7 +3498,7 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/Status'
     /v1/projects/{project}/auditLogs:search:
-        get:
+        post:
             tags:
                 - AuditLogService
             operationId: AuditLogService_SearchAuditLogs

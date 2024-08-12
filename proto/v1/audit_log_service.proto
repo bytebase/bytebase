@@ -17,8 +17,8 @@ option go_package = "generated-go/v1";
 service AuditLogService {
   rpc SearchAuditLogs(SearchAuditLogsRequest) returns (SearchAuditLogsResponse) {
     option (google.api.http) = {
-      get: "/v1/{parent=projects/*}/auditLogs:search"
-      additional_bindings: {get: "/v1/auditLogs:search"}
+      post: "/v1/{parent=projects/*}/auditLogs:search"
+      additional_bindings: {post: "/v1/auditLogs:search"}
     };
     option (bytebase.v1.permission) = "bb.auditLogs.search";
     option (bytebase.v1.auth_method) = IAM;
