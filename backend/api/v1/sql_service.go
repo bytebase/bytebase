@@ -722,8 +722,10 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 	}
 
 	// Validate the request.
-	if err := validateQueryRequest(instance, statement); err != nil {
-		return nil, err
+	if !request.Explain {
+		if err := validateQueryRequest(instance, statement); err != nil {
+			return nil, err
+		}
 	}
 
 	// Get query span.
