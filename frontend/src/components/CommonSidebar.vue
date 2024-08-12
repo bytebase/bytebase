@@ -1,6 +1,10 @@
 <template>
   <nav class="flex-1 flex flex-col overflow-y-hidden">
-    <BytebaseLogo v-if="showLogo" class="w-full px-4 shrink-0" />
+    <BytebaseLogo
+      v-if="showLogo"
+      class="w-full px-4 shrink-0"
+      :redirect="logoRedirect"
+    />
     <div class="flex-1 overflow-y-auto px-2.5 space-y-1">
       <div v-for="(item, i) in filteredSidebarList" :key="i">
         <router-link
@@ -100,10 +104,12 @@ const props = withDefaults(
   defineProps<{
     itemList: SidebarItem[];
     showLogo?: boolean;
+    logoRedirect?: string;
     getItemClass?: (item: SidebarItem) => string[];
   }>(),
   {
     showLogo: true,
+    logoRedirect: "",
     getItemClass: (_: SidebarItem) => [],
   }
 );
