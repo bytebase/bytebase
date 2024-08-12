@@ -217,12 +217,12 @@ const hasPermission = computed(() => {
 
 const updateList = async () => {
   state.isLoading = true;
-  const distinctDatabaseIdList = uniq(
+  const distinctDatabaseUIDList = uniq(
     policyList.value.map((policy) => policy.resourceUid)
   );
   // Fetch or get all needed databases
   await Promise.all(
-    distinctDatabaseIdList.map((databaseId) =>
+    distinctDatabaseUIDList.map((databaseId) =>
       databaseStore.getOrFetchDatabaseByUID(databaseId)
     )
   );

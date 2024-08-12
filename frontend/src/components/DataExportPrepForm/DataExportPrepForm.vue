@@ -51,7 +51,7 @@
           </NButton>
           <NButton
             type="primary"
-            :disabled="!state.selectedDatabaseUid"
+            :disabled="!state.selectedDatabaseName"
             @click="navigateToIssuePage"
           >
             {{ $t("common.next") }}
@@ -93,7 +93,7 @@ import { DatabaseLabelFilter, DrawerContent } from "../v2";
 
 type LocalState = {
   label: string;
-  selectedDatabaseUid?: string;
+  selectedDatabaseName?: string;
   selectedLabels: { key: string; value: string }[];
   params: SearchParams;
 };
@@ -209,18 +209,16 @@ const handleDatabasesSelectionChanged = (
   if (selectedDatabaseNameList.size !== 1) {
     return;
   }
-  state.selectedDatabaseUid = databaseV1Store.getDatabaseByName(
-    Array.from(selectedDatabaseNameList)[0]
-  )?.uid;
+  state.selectedDatabaseName = Array.from(selectedDatabaseNameList)[0];
 };
 
 const navigateToIssuePage = async () => {
-  if (!state.selectedDatabaseUid) {
+  if (!state.selectedDatabaseName) {
     return;
   }
 
   const selectedDatabase = filteredDatabaseList.value.find(
-    (db) => db.uid === state.selectedDatabaseUid
+    (db) => db.name === state.selectedDatabaseName
   ) as ComposedDatabase;
 
   const project = selectedDatabase?.projectEntity;

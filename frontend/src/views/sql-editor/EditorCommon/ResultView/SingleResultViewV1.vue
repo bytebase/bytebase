@@ -204,7 +204,7 @@ import type {
   SQLEditorQueryParams,
   SQLResultSetV1,
 } from "@/types";
-import { UNKNOWN_ID, isValidInstanceName } from "@/types";
+import { isValidInstanceName, unknownDatabase } from "@/types";
 import { ExportFormat } from "@/types/proto/v1/common";
 import { Engine } from "@/types/proto/v1/common";
 import type {
@@ -308,7 +308,7 @@ const allowToRequestExportData = computed(() => {
   if (!database) {
     return false;
   }
-  if (database.uid === String(UNKNOWN_ID)) {
+  if (database.name === unknownDatabase().name) {
     return false;
   }
 
@@ -415,11 +415,11 @@ const handleExportBtnClick = async (
   // otherwise the query is executed on instance level, we should use the
   // `instanceId` from the tab's connection attributes
   const database =
-    props.database && props.database.uid !== String(UNKNOWN_ID)
+    props.database && props.database.name !== unknownDatabase().name
       ? props.database.name
       : "";
   const instance =
-    props.database && props.database.uid !== String(UNKNOWN_ID)
+    props.database && props.database.name !== unknownDatabase().name
       ? props.database.instance
       : connectedInstance.value.name;
   const statement = props.result.statement;

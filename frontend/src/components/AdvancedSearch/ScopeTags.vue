@@ -26,7 +26,7 @@ import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { UNKNOWN_ID } from "@/types";
 import type { SearchParams, SearchScope, SearchScopeId } from "@/utils";
-import { callCssVariable } from "@/utils";
+import { callCssVariable, extractDatabaseResourceName } from "@/utils";
 
 const props = defineProps<{
   params: SearchParams;
@@ -65,6 +65,9 @@ const renderValue = (scope: SearchScope, index: number) => {
   if (scope.id === "created") {
     const [begin, end] = scope.value.split(",").map((ts) => parseInt(ts, 10));
     return [dayjs(begin).format("L"), dayjs(end).format("L")].join("-");
+  } else if (scope.id === "database") {
+    const { databaseName } = extractDatabaseResourceName(scope.value);
+    return <span>{databaseName}</span>;
   }
   if (scope.value === `${UNKNOWN_ID}`) {
     return <span>{t("common.all").toLocaleLowerCase()}</span>;

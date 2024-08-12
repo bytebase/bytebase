@@ -506,7 +506,7 @@ const handleApplyBranchToDatabase = () => {
   });
 };
 
-const handleApplyToDatabase = async (databaseIdList: string[]) => {
+const handleApplyToDatabase = async (databaseNameList: string[]) => {
   const cleanup = () => {
     state.applyingToDatabaseStatus = false;
   };
@@ -535,8 +535,8 @@ const handleApplyToDatabase = async (databaseIdList: string[]) => {
     return cleanup();
   }
 
-  const targetDatabaseList = databaseIdList.map((id) =>
-    databaseStore.getDatabaseByUID(id)
+  const targetDatabaseList = databaseNameList.map((name) =>
+    databaseStore.getDatabaseByName(name)
   );
   const query: Record<string, any> = {
     template: "bb.issue.database.schema.update",
