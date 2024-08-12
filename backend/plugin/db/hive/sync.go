@@ -168,7 +168,9 @@ func (d *Driver) getTables(ctx context.Context, databaseName string) (
 		case "MANAGED_TABLE":
 			partitions, err := d.getPartitions(ctx, databaseName, tableName)
 			if err != nil {
-				return nil, nil, nil, nil, err
+				// Ignore partitions error as some tables aren't partitioned.
+				slog.Debug("failed to get partitions", log.BBError(err))
+				continue
 			}
 			tableMetadatas = append(tableMetadatas, &storepb.TableMetadata{
 				Engine:     "HDFS",
@@ -271,6 +273,8 @@ func (d *Driver) getTableInfo(ctx context.Context, tableName string, databaseNam
 
 		// The first rows are column metadata, followed by "# Detailed Table Information" and "# Storage Information"
 		switch {
+		case strings.HasPrefix(colName, "# col_name"):
+			continue
 		case strings.HasPrefix(colName, "# Detailed Table Information"):
 			section = tableInfoSection
 		case strings.HasPrefix(colName, "# Storage Information"):
