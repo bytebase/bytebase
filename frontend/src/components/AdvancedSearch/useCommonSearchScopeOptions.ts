@@ -113,7 +113,7 @@ export const useCommonSearchScopeOptions = (
         description: t("issue.advanced-search.scope.database.description"),
         options: databaseList.value.map((db) => {
           return {
-            value: `${db.databaseName}-${db.uid}`,
+            value: db.name,
             keywords: [
               db.databaseName,
               extractInstanceResourceName(db.instance),
@@ -209,8 +209,7 @@ export const useCommonSearchScopeOptions = (
           return true;
         }
 
-        const uid = option.value.split("-").slice(-1)[0];
-        const db = databaseV1Store.getDatabaseByUID(uid);
+        const db = databaseV1Store.getDatabaseByName(option.value);
         const project = db.project;
         const instance = db.instance;
 

@@ -29,13 +29,13 @@ import { Engine } from "@/types/proto/v1/common";
 
 const props = defineProps<{
   projectName?: string;
-  databaseId?: string;
+  databaseName?: string;
   readonly?: boolean;
   loading?: boolean;
 }>();
 
 const emit = defineEmits<{
-  (event: "update:database-id", databaseId: string | undefined): void;
+  (event: "update:database-name", databaseName: string | undefined): void;
 }>();
 
 interface LocalState {
@@ -76,7 +76,7 @@ watch(
     } catch (error) {
       // do nothing.
     }
-    emit("update:database-id", database?.uid);
+    emit("update:database-name", database?.name);
   }
 );
 

@@ -40,7 +40,7 @@ const readonlyScopes = computed((): SearchScope[] => {
     },
     {
       id: "database",
-      value: `${props.database.databaseName}-${props.database.uid}`,
+      value: props.database.name,
     },
   ];
 });
