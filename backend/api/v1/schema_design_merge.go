@@ -1034,7 +1034,7 @@ func (n *metadataDiffFunctioNnode) tryMerge(other *metadataDiffFunctioNnode) (bo
 	if n.action == diffActionCreate {
 		nHeadDefinition := strings.TrimRight(n.head.Definition, ";")
 		otherHeadDefinition := strings.TrimRight(other.head.Definition, ";")
-		if nHeadDefinition != otherHeadDefinition {
+		if !equalRoutineDefinition(nHeadDefinition, otherHeadDefinition) {
 			return true, fmt.Sprintf("conflict function definition, one is %s, the other is %s", nHeadDefinition, otherHeadDefinition)
 		}
 	}
@@ -1042,11 +1042,11 @@ func (n *metadataDiffFunctioNnode) tryMerge(other *metadataDiffFunctioNnode) (bo
 	if n.action == diffActionUpdate {
 		otherBaseDefinition := strings.TrimRight(other.base.Definition, ";")
 		otherHeadDefinition := strings.TrimRight(other.head.Definition, ";")
-		if otherBaseDefinition != otherHeadDefinition {
+		if !equalRoutineDefinition(otherBaseDefinition, otherHeadDefinition) {
 			nHeadDefinition := strings.TrimRight(n.head.Definition, ";")
 			nBaseDefinition := strings.TrimRight(n.base.Definition, ";")
-			if nHeadDefinition != nBaseDefinition {
-				if nHeadDefinition != otherHeadDefinition {
+			if !equalRoutineDefinition(nHeadDefinition, nBaseDefinition) {
+				if !equalRoutineDefinition(nHeadDefinition, otherHeadDefinition) {
 					return true, fmt.Sprintf("conflict function definition, one is %s, the other is %s", nHeadDefinition, otherHeadDefinition)
 				}
 			} else {
@@ -1105,16 +1105,22 @@ func (n *metadataDiffProcedureNode) tryMerge(other *metadataDiffProcedureNode) (
 		return false, ""
 	}
 	if n.action == diffActionCreate {
-		if n.head.Definition != other.head.Definition {
-			return true, fmt.Sprintf("conflict procedure definition, one is %s, the other is %s", n.head.Definition, other.head.Definition)
+		nHeadDefinition := strings.TrimRight(n.head.Definition, ";")
+		otherHeadDefinition := strings.TrimRight(other.head.Definition, ";")
+		if !equalRoutineDefinition(nHeadDefinition, otherHeadDefinition) {
+			return true, fmt.Sprintf("conflict procedure definition, one is %s, the other is %s", nHeadDefinition, otherHeadDefinition)
 		}
 	}
 
 	if n.action == diffActionUpdate {
-		if other.base.Definition != other.head.Definition {
-			if n.base.Definition != n.head.Definition {
-				if n.head.Definition != other.head.Definition {
-					return true, fmt.Sprintf("conflict procedure definition, one is %s, the other is %s", n.head.Definition, other.head.Definition)
+		otherBaseDefinition := strings.TrimRight(other.base.Definition, ";")
+		otherHeadDefinition := strings.TrimRight(other.head.Definition, ";")
+		if !equalRoutineDefinition(otherBaseDefinition, otherHeadDefinition) {
+			nHeadDefinition := strings.TrimRight(n.head.Definition, ";")
+			nBaseDefinition := strings.TrimRight(n.base.Definition, ";")
+			if !equalRoutineDefinition(nHeadDefinition, nBaseDefinition) {
+				if !equalRoutineDefinition(nHeadDefinition, otherHeadDefinition) {
+					return true, fmt.Sprintf("conflict procedure definition, one is %s, the other is %s", nHeadDefinition, otherHeadDefinition)
 				}
 			} else {
 				n.head.Definition = other.head.Definition
@@ -1192,6 +1198,17 @@ func (n *metadataDiffViewNode) tryMerge(other *metadataDiffViewNode) (bool, stri
 	return false, ""
 }
 
+func equalRoutineDefinition(a, b string) bool {
+	ignoreTokens := []string{
+		"`", " ", "\t", "\n", "\r",
+	}
+	for _, token := range ignoreTokens {
+		a = strings.ReplaceAll(a, token, "")
+		b = strings.ReplaceAll(b, token, "")
+	}
+	return strings.EqualFold(a, b)
+}
+
 func equalViewDefinition(a, b string) bool {
 	ignoreTokens := []string{
 		"`", " ", "(", ")", "\t", "\n", "\r",
@@ -1200,7 +1217,7 @@ func equalViewDefinition(a, b string) bool {
 		a = strings.ReplaceAll(a, token, "")
 		b = strings.ReplaceAll(b, token, "")
 	}
-	return a == b
+	return strings.EqualFold(a, b)
 }
 
 func (n *metadataDiffViewNode) applyDiffTo(target *storepb.SchemaMetadata) error {
