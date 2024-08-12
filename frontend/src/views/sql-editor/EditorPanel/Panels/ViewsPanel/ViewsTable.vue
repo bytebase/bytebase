@@ -4,7 +4,7 @@
       v-bind="$attrs"
       ref="dataTableRef"
       size="small"
-      :row-key="getViewKey"
+      :row-key="(view) => view.name"
       :columns="columns"
       :data="layoutReady ? views : []"
       :row-props="rowProps"
@@ -18,12 +18,8 @@
 </template>
 
 <script setup lang="tsx">
-import {
-  NDataTable,
-  NPerformantEllipsis,
-  type DataTableColumn,
-} from "naive-ui";
-import { computed } from "vue";
+import { NDataTable, type DataTableColumn, type DataTableInst } from "naive-ui";
+import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import type { ComposedDatabase } from "@/types";
 import type {
@@ -31,7 +27,10 @@ import type {
   ViewMetadata,
   SchemaMetadata,
 } from "@/types/proto/v1/database_service";
+import { nextAnimationFrame } from "@/utils";
 import { useAutoHeightDataTable } from "../../common";
+import { useEditorPanelContext } from "../../context";
+import type { RichMetadataWithDB } from "../../types";
 
 const props = defineProps<{
   db: ComposedDatabase;
@@ -54,10 +53,12 @@ const emit = defineEmits<{
 const { t } = useI18n();
 const { containerElRef, tableBodyHeight, layoutReady } =
   useAutoHeightDataTable();
-
-const getViewKey = (view: ViewMetadata) => {
-  return view.name;
-};
+const dataTableRef = ref<DataTableInst>();
+const vlRef = computed(() => {
+  return (dataTableRef.value as any)?.$refs?.mainTableInstRef?.bodyInstRef
+    ?.virtualListRef;
+});
+const { useConsumePendingScrollToTarget } = useEditorPanelContext();
 
 const columns = computed(() => {
   const columns: (DataTableColumn<ViewMetadata> & { hide?: boolean })[] = [
@@ -66,26 +67,12 @@ const columns = computed(() => {
       title: t("schema-editor.database.name"),
       resizable: true,
       className: "truncate",
-      render: (view) => {
-        return (
-          <NPerformantEllipsis class="w-full leading-6">
-            {view.name}
-          </NPerformantEllipsis>
-        );
-      },
     },
     {
       key: "comment",
       title: t("schema-editor.database.comment"),
       resizable: true,
       className: "truncate",
-      render: (view) => {
-        return (
-          <NPerformantEllipsis class="w-full leading-6">
-            {view.comment}
-          </NPerformantEllipsis>
-        );
-      },
     },
   ];
   return columns;
@@ -102,6 +89,31 @@ const rowProps = (view: ViewMetadata) => {
     },
   };
 };
+
+useConsumePendingScrollToTarget(
+  (target: RichMetadataWithDB<"view">) => {
+    if (target.db.name !== props.db.name) {
+      return false;
+    }
+    return (
+      target.metadata.type === "view" &&
+      target.metadata.schema.name === props.schema.name
+    );
+  },
+  vlRef,
+  async (target, vl) => {
+    const key = target.metadata.view.name;
+    if (!key) return false;
+    await nextAnimationFrame();
+    try {
+      console.debug("scroll-to-view", vl, target, key);
+      vl.scrollTo({ key });
+    } catch {
+      // Do nothing
+    }
+    return true;
+  }
+);
 </script>
 
 <style lang="postcss" scoped>

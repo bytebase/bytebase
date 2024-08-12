@@ -5,7 +5,34 @@
   >
     <BytebaseLogo v-if="!hideLogo" component="span" />
 
-    <div class="flex flex-col items-start gap-y-2 w-max">
+    <div
+      class="hidden lg:grid items-center gap-4"
+      style="grid-template-columns: 1fr 1fr 1fr"
+    >
+      <Button
+        v-if="showCreateInstanceButton"
+        type="default"
+        @click="gotoInstanceCreatePage"
+      >
+        <template #icon>
+          <LayersIcon :stroke-width="1.5" class="w-8 h-8" />
+        </template>
+        {{ $t("sql-editor.add-a-new-instance") }}
+      </Button>
+      <Button type="primary" secondary @click="changeConnection">
+        <template #icon>
+          <LinkIcon :stroke-width="1.5" class="w-8 h-8" />
+        </template>
+        {{ $t("sql-editor.connect-to-a-database") }}
+      </Button>
+      <Button type="default" @click="createNewWorksheet">
+        <template #icon>
+          <SquarePenIcon :stroke-width="1.5" class="w-8 h-8" />
+        </template>
+        {{ $t("sql-editor.create-a-worksheet") }}
+      </Button>
+    </div>
+    <div class="flex lg:hidden flex-col items-start gap-y-2 w-max">
       <NButton
         type="primary"
         class="!w-full !justify-start"
@@ -49,8 +76,9 @@ import { useRouter } from "vue-router";
 import BytebaseLogo from "@/components/BytebaseLogo.vue";
 import { SQL_EDITOR_SETTING_INSTANCE_MODULE } from "@/router/sqlEditor";
 import { useAppFeature, useSQLEditorTabStore } from "@/store";
-import { useSidebarItems as useSettingItems } from "../Setting/Sidebar";
-import { useSQLEditorContext } from "../context";
+import { useSidebarItems as useSettingItems } from "../../Setting/Sidebar";
+import { useSQLEditorContext } from "../../context";
+import Button from "./Button.vue";
 
 const { showConnectionPanel } = useSQLEditorContext();
 const { itemList: settingItemList } = useSettingItems();
