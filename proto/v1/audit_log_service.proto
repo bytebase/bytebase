@@ -18,7 +18,11 @@ service AuditLogService {
   rpc SearchAuditLogs(SearchAuditLogsRequest) returns (SearchAuditLogsResponse) {
     option (google.api.http) = {
       post: "/v1/{parent=projects/*}/auditLogs:search"
-      additional_bindings: {post: "/v1/auditLogs:search"}
+      body: "*"
+      additional_bindings: {
+        post: "/v1/auditLogs:search"
+        body: "*"
+      }
     };
     option (bytebase.v1.permission) = "bb.auditLogs.search";
     option (bytebase.v1.auth_method) = IAM;
