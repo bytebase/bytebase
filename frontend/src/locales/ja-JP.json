@@ -285,6 +285,7 @@
       "self": "行",
       "n-rows": "{n} 行"
     },
+    "back-to-workspace": "ワークスペースに戻る",
     "override": "オーバーライド"
   },
   "error-page": {

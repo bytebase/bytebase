@@ -3,6 +3,7 @@
     :key="'setting'"
     :item-list="settingSidebarItemList"
     :get-item-class="getItemClass"
+    :logo-redirect="WORKSPACE_ROUTE_MY_ISSUES"
     @select="onSelect"
   />
 </template>
@@ -15,6 +16,7 @@ import type { RouteRecordRaw } from "vue-router";
 import { useRoute, useRouter } from "vue-router";
 import type { SidebarItem } from "@/components/CommonSidebar.vue";
 import CommonSidebar from "@/components/CommonSidebar.vue";
+import { WORKSPACE_ROUTE_MY_ISSUES } from "@/router/dashboard/workspaceRoutes";
 import workspaceSettingRoutes, {
   SETTING_ROUTE_PROFILE,
   SETTING_ROUTE_PROFILE_TWO_FACTOR,

@@ -285,6 +285,7 @@
       "self": "filas",
       "n-rows": "{n} filas"
     },
+    "back-to-workspace": "Volver al espacio de trabajo",
     "override": "Anular"
   },
   "error-page": {

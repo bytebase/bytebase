@@ -3,7 +3,7 @@
     class="w-full flex-1 flex flex-col items-center justify-start gap-y-4"
     style="padding-top: calc(clamp(40px, 15vh, 200px)"
   >
-    <BytebaseLogo v-if="!hideLogo" component="span" />
+    <BytebaseLogo v-if="!hideLogo" />
 
     <div
       class="hidden lg:grid items-center gap-4"
