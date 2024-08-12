@@ -247,12 +247,17 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 		return nil, nil
 	}
 
+	isExplain := queryContext != nil && queryContext.Explain
+	if isExplain {
+		if _, err := conn.ExecContext(ctx, "SET SHOWPLAN_ALL ON;"); err != nil {
+			return nil, err
+		}
+	}
+
 	var results []*v1pb.QueryResult
 	for _, singleSQL := range singleSQLs {
 		statement := singleSQL.Text
-		if queryContext != nil && queryContext.Explain {
-			statement = fmt.Sprintf("EXPLAIN %s", statement)
-		} else if queryContext != nil && queryContext.Limit > 0 {
+		if !isExplain && queryContext != nil && queryContext.Limit > 0 {
 			stmt, err := getMSSQLStatementWithResultLimit(statement, queryContext.Limit)
 			if err != nil {
 				slog.Error("fail to add limit clause", "statement", statement, log.BBError(err))
@@ -261,9 +266,15 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 			statement = stmt
 		}
 
-		_, allQuery, err := base.ValidateSQLForEditor(storepb.Engine_MSSQL, statement)
-		if err != nil {
-			return nil, err
+		var allQuery bool
+		if isExplain {
+			allQuery = true
+		} else {
+			_, q, err := base.ValidateSQLForEditor(storepb.Engine_MSSQL, statement)
+			if err != nil {
+				return nil, err
+			}
+			allQuery = q
 		}
 		startTime := time.Now()
 		queryResult, err := func() (*v1pb.QueryResult, error) {
