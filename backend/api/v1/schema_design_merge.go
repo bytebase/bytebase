@@ -1070,9 +1070,16 @@ func (n *metadataDiffFunctioNnode) applyDiffTo(target *storepb.SchemaMetadata) e
 			Definition: n.head.Definition,
 		}
 		target.Functions = append(target.Functions, newFunction)
+	case diffActionUpdate:
+		for i, function := range target.Functions {
+			if function.Name == n.name {
+				target.Functions[i] = n.head
+				break
+			}
+		}
 	case diffActionDrop:
-		for i, view := range target.Functions {
-			if view.Name == n.name {
+		for i, function := range target.Functions {
+			if function.Name == n.name {
 				target.Functions = append(target.Functions[:i], target.Functions[i+1:]...)
 				break
 			}
@@ -1151,6 +1158,13 @@ func (n *metadataDiffProcedureNode) applyDiffTo(target *storepb.SchemaMetadata) 
 			}
 		}
 		return nil
+	case diffActionUpdate:
+		for i, procedure := range target.Procedures {
+			if procedure.Name == n.name {
+				target.Procedures[i] = n.head
+				break
+			}
+		}
 	}
 	return nil
 }
@@ -1232,6 +1246,13 @@ func (n *metadataDiffViewNode) applyDiffTo(target *storepb.SchemaMetadata) error
 			Definition: n.head.Definition,
 		}
 		target.Views = append(target.Views, newView)
+	case diffActionUpdate:
+		for i, view := range target.Views {
+			if view.Name == n.name {
+				target.Views[i] = n.head
+				break
+			}
+		}
 	case diffActionDrop:
 		for i, view := range target.Views {
 			if view.Name == n.name {
