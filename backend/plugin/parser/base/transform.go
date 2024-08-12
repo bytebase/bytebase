@@ -1,5 +1,7 @@
 package base
 
 type TransformContext struct {
-	Version any
+	Version                 any
+	InstanceID              string
+	GetDatabaseMetadataFunc GetDatabaseMetadataFunc
 }
