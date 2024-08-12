@@ -203,7 +203,7 @@ func (e *StatementReportExecutor) runReport(ctx context.Context, instance *store
 		}
 		explainCalculator = md.CountAffectedRows
 
-		defaultSchema = "OBO"
+		defaultSchema = "DBO"
 	default:
 		// Already checked in the Run().
 		return nil, nil
