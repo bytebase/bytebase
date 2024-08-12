@@ -42,43 +42,38 @@
       </div>
       <div>
         <div class="w-full flex flex-row justify-between items-center">
-          <div
-            v-if="allowEdit"
-            class="flex flex-row justify-end items-center space-x-2"
-          >
-            <template v-if="!state.isEditing">
-              <NButton @click="handleEdit">{{ $t("common.edit") }}</NButton>
-              <NButton
-                v-if="showMergeBranchButton"
-                @click="handleGotoMergeBranch"
-              >
-                {{ $t("branch.merge-rebase.merge-branch") }}
-              </NButton>
-              <NButton
-                v-if="showRebaseBranchButton"
-                @click="handleGotoRebaseBranch"
-              >
-                {{ $t("branch.merge-rebase.rebase-branch") }}
-              </NButton>
-              <NButton
-                v-if="showApplyBranchButton"
-                type="primary"
-                @click="handleApplyBranchToDatabase"
-                >{{ $t("schema-designer.apply-to-database") }}</NButton
-              >
-            </template>
-            <template v-else>
-              <NButton :loading="state.isReverting" @click="handleCancelEdit">{{
-                $t("common.cancel")
-              }}</NButton>
-              <NButton
-                type="primary"
-                :loading="!!state.savingStatus"
-                @click="handleSaveBranch"
-                >{{ $t("common.save") }}</NButton
-              >
-            </template>
-          </div>
+          <template v-if="!state.isEditing">
+            <NButton @click="handleEdit">{{ $t("common.edit") }}</NButton>
+            <NButton
+              v-if="showMergeBranchButton"
+              @click="handleGotoMergeBranch"
+            >
+              {{ $t("branch.merge-rebase.merge-branch") }}
+            </NButton>
+            <NButton
+              v-if="showRebaseBranchButton"
+              @click="handleGotoRebaseBranch"
+            >
+              {{ $t("branch.merge-rebase.rebase-branch") }}
+            </NButton>
+            <NButton
+              v-if="showApplyBranchButton"
+              type="primary"
+              @click="handleApplyBranchToDatabase"
+              >{{ $t("schema-designer.apply-to-database") }}</NButton
+            >
+          </template>
+          <template v-else>
+            <NButton :loading="state.isReverting" @click="handleCancelEdit">{{
+              $t("common.cancel")
+            }}</NButton>
+            <NButton
+              type="primary"
+              :loading="!!state.savingStatus"
+              @click="handleSaveBranch"
+              >{{ $t("common.save") }}</NButton
+            >
+          </template>
         </div>
       </div>
     </div>
@@ -236,13 +231,7 @@ const checkPermission = (permission: Permission): boolean => {
 };
 
 const allowEdit = computed(() => {
-  if (!checkPermission("bb.branches.update")) {
-    return false;
-  }
-  if (props.dirtyBranch.parentBranch === "") {
-    return checkPermission("bb.branches.admin");
-  }
-  return true;
+  return checkPermission("bb.branches.update");
 });
 
 const allowDelete = computed(() => {
@@ -275,8 +264,7 @@ const showMergeBranchButton = computed(() => {
   if (!parentBranch.value) {
     return false;
   }
-  // The branch's creator and project owners can merge feature branches into main branches.
-  return allowEdit.value;
+  return checkPermission("bb.branches.update");
 });
 
 const showRebaseBranchButton = computed(() => {
@@ -289,8 +277,7 @@ const showRebaseBranchButton = computed(() => {
     );
   }
 
-  // For feature branches: project owners and branch creator
-  return allowEdit.value;
+  return checkPermission("bb.branches.update");
 });
 
 const showApplyBranchButton = computed(() => {
