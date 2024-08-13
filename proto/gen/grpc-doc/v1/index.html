@@ -866,14 +866,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.SearchDatabasesRequest"><span class="badge">M</span>SearchDatabasesRequest</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.SearchDatabasesResponse"><span class="badge">M</span>SearchDatabasesResponse</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.Secret"><span class="badge">M</span>Secret</a>
                 </li>
               
@@ -9781,92 +9773,6 @@ It is an empty string for databases without such concept such as MySQL. </p></td
 
         
       
-        <h3 id="bytebase.v1.SearchDatabasesRequest">SearchDatabasesRequest</h3>
-        <p>Deprecated.</p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>page_size</td>
-                  <td><a href="#int32">int32</a></td>
-                  <td></td>
-                  <td><p>The maximum number of databases to return. The service may return fewer than
-this value.
-If unspecified, at most 50 databases will be returned.
-The maximum value is 1000; values above 1000 will be coerced to 1000. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>page_token</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>A page token, received from a previous `ListDatabases` call.
-Provide this to retrieve the subsequent page.
-
-When paginating, all other parameters provided to `ListDatabases` must match
-the call that provided the page token. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>filter</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Filter is used to filter databases returned in the list.
-follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax.
-The field only support in filter:
-- project with &#34;=&#34; operator, for example:
- - project = &#34;projects/sample-project&#34;
- - project = &#34;projects/-&#34;
-- instance with &#34;=&#34; operator, for example:
- - instance = &#34;instances/mysql&#34;
- - instance = &#34;instances/-&#34;
-for example, we can use project = &#34;projects/sample&#34; &amp;&amp; instance = &#34;instances/-&#34; to list all databases in the sample project. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.SearchDatabasesResponse">SearchDatabasesResponse</h3>
-        <p>Deprecated.</p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>databases</td>
-                  <td><a href="#bytebase.v1.Database">Database</a></td>
-                  <td>repeated</td>
-                  <td><p>The databases from the specified request. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>next_page_token</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>A token, which can be sent as `page_token` to retrieve the next page.
-If this field is omitted, there are no subsequent pages. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.v1.Secret">Secret</h3>
         <p>Secret is the secret of the database now.</p>
 
@@ -11174,14 +11080,6 @@ The API will default to the BASIC view.</p></td>
               </tr>
             
               <tr>
-                <td>SearchDatabases</td>
-                <td><a href="#bytebase.v1.SearchDatabasesRequest">SearchDatabasesRequest</a></td>
-                <td><a href="#bytebase.v1.SearchDatabasesResponse">SearchDatabasesResponse</a></td>
-                <td><p>Deprecated. This will be removed in the next release.
-Search for databases that the caller has the bb.databases.get permission on, and also satisfy the specified query.</p></td>
-              </tr>
-            
-              <tr>
                 <td>UpdateDatabase</td>
                 <td><a href="#bytebase.v1.UpdateDatabaseRequest">UpdateDatabaseRequest</a></td>
                 <td><a href="#bytebase.v1.Database">Database</a></td>
@@ -11330,16 +11228,6 @@ Search for databases that the caller has the bb.databases.get permission on, and
                 <td>ListDatabases</td>
                 <td>GET</td>
                 <td>/v1/{parent=workspaces/*}/databases</td>
-                <td></td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>SearchDatabases</td>
-                <td>GET</td>
-                <td>/v1/databases:search</td>
                 <td></td>
               </tr>
               
