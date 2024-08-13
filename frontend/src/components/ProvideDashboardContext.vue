@@ -4,7 +4,7 @@
 
   <div
     v-if="!isInitializing && isSwitchingProject"
-    class="fixed inset-0 z-[1000000] bg-white/50 flex flex-col items-center justify-center"
+    class="fixed inset-0 z-[1000000] bg-white flex flex-col items-center justify-center"
   >
     <NSpin />
   </div>

@@ -19,7 +19,7 @@
                 <router-view v-if="actuatorStore.initialized" />
                 <div
                   v-else
-                  class="fixed inset-0 bg-white flex flex-col items-center justify-center"
+                  class="fixed inset-0 z-[1000000] bg-white flex flex-col items-center justify-center"
                 >
                   <NSpin />
                 </div>

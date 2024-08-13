@@ -1,7 +1,7 @@
 <template>
   <template v-if="initialized">
     <ArchiveBanner v-if="project.state === State.DELETED" class="py-2" />
-    <div class="px-4 h-full overflow-auto">
+    <div class="px-4 h-auto flex-1 overflow-auto">
       <template v-if="!hideDefaultProject && isDefaultProject">
         <h1 class="mb-4 text-xl font-bold leading-6 text-main truncate">
           {{ $t("database.unassigned-databases") }}
@@ -26,7 +26,7 @@
   </template>
   <div
     v-else
-    class="fixed inset-0 bg-white flex flex-col items-center justify-center"
+    class="fixed inset-0 z-[1000000] bg-white flex flex-col items-center justify-center"
   >
     <NSpin />
   </div>

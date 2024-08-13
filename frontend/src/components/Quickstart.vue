@@ -11,7 +11,7 @@
       >
 
       <button class="btn-icon" @click.prevent="() => hideQuickstart()">
-        <heroicons-solid:x class="w-4 h-4" />
+        <XIcon class="w-4 h-4" />
       </button>
     </p>
     <div class="mt-2" aria-hidden="true">
@@ -50,9 +50,8 @@
             class="relative h-5 w-5 inline-flex items-center justify-center"
           >
             <template v-if="intro.done.value">
-              <!-- Heroicon name: solid/check-circle -->
-              <heroicons-solid:check-circle
-                class="h-full w-full text-success group-hover:text-success-hover"
+              <CheckCircleIcon
+                class="w-4 h-auto text-success group-hover:text-success-hover"
               />
             </template>
             <template v-else-if="isTaskActive(index)">
@@ -98,11 +97,10 @@
       <button
         type="button"
         class="flex rounded-md hover:bg-accent-hover focus:outline-none focus:ring-2 focus:ring-white"
-        @click.prevent="() => hideQuickstart()"
+        @click.prevent="() => hideQuickstart(true)"
       >
         <span class="sr-only">{{ $t("common.dismiss") }}</span>
-        <!-- Heroicon name: outline/x -->
-        <heroicons-outline:x class="h-4 w-4 text-white" />
+        <XIcon class="h-4 w-4 text-white" />
       </button>
     </div>
   </div>
@@ -110,6 +108,7 @@
 
 <script setup lang="ts">
 import { useKBarHandler, useKBarEventOnce } from "@bytebase/vue-kbar";
+import { XIcon, CheckCircleIcon } from "lucide-vue-next";
 import type { Ref } from "vue";
 import { computed, unref, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
@@ -129,6 +128,7 @@ import {
   useUIStateStore,
   useProjectV1Store,
 } from "@/store";
+import { projectNamePrefix } from "@/store/modules/v1/common";
 import type { Permission } from "@/types";
 import {
   PresetRoleType,
@@ -141,6 +141,9 @@ import {
   hasWorkspaceLevelProjectPermission,
   extractProjectResourceName,
 } from "@/utils";
+
+// The name of the sample project.
+const SAMPLE_PROJECT_NAME = "project-sample";
 
 type IntroItem = {
   name: string | Ref<string>;
@@ -158,11 +161,13 @@ const kbarHandler = useKBarHandler();
 const currentUserV1 = useCurrentUserV1();
 
 const show = computed(() => {
-  return !uiStateStore.getIntroStateByKey("hidden");
+  return true;
 });
 
 const sampleProject = computed(() => {
-  const project = projectStore.findProjectByUID("101");
+  const project = projectStore.getProjectByName(
+    `${projectNamePrefix}${SAMPLE_PROJECT_NAME}`
+  );
   if (!isValidProjectName(project.name)) {
     return;
   }
@@ -207,7 +212,7 @@ const introList = computed(() => {
       link: {
         name: SQL_EDITOR_WORKSHEET_MODULE,
         params: {
-          project: "project-sample",
+          project: SAMPLE_PROJECT_NAME,
           sheet: "101",
         },
       },

@@ -24,7 +24,6 @@ export const generateDatabaseGroupIssueRoute = (
   const query: Record<string, any> = {
     template: type,
     name: issueNameParts.join(" "),
-    project: databaseGroup.projectEntity.uid,
     databaseGroupName: databaseGroup.name,
     sql,
   };
