@@ -74,6 +74,7 @@
               {{ $t("project.members.select-users") }}
             </div>
             <UserSelect
+              key="user-select"
               v-model:users="state.memberList"
               class="mt-2"
               :multiple="true"
@@ -86,6 +87,7 @@
               {{ $t("project.members.select-groups") }}
             </div>
             <GroupSelect
+              key="group-select"
               v-model:value="state.memberList"
               class="mt-2"
               :multiple="true"
