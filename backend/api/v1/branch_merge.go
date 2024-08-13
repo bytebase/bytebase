@@ -560,12 +560,6 @@ func (n *metadataDiffTableNode) applyDiffTo(target *storepb.SchemaMetadata) erro
 			}
 		}
 
-		// XXX(zp): We need to find a better way to solve the problem of column position.
-		// We need to sort the columns by position after applying the diff.
-		for idx := range newTable.Columns {
-			newTable.Columns[idx].Position = int32(idx + 1)
-		}
-
 		for _, foreignKeyName := range sortedForeignKeyName {
 			foreignKey := n.foreignKeys[foreignKeyName]
 			if err := foreignKey.applyDiffTo(newTable); err != nil {
@@ -629,12 +623,6 @@ func (n *metadataDiffTableNode) applyDiffTo(target *storepb.SchemaMetadata) erro
 						return errors.Wrapf(err, "failed to apply diff to index %q", index.name)
 					}
 				}
-				// XXX(zp): We need to find a better way to solve the problem of column position.
-				// We need to sort the columns by position after applying the diff.
-				for idx := range newTable.Columns {
-					newTable.Columns[idx].Position = int32(idx + 1)
-				}
-
 				for _, partitionName := range n.partitionNames {
 					partition := n.partitionsMap[partitionName]
 					if err := partition.applyDiffTo(newTable); err != nil {

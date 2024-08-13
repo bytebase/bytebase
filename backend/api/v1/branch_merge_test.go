@@ -33,7 +33,7 @@ func TestTryMerge(t *testing.T) {
 
 	a := require.New(t)
 
-	testFilepath := "testdata/schema_design_merge/try_merge.yaml"
+	testFilepath := "testdata/branch_merge/try_merge.yaml"
 	content, err := os.ReadFile(testFilepath)
 	a.NoError(err)
 	var testCases []testCase
