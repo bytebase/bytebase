@@ -277,8 +277,6 @@ message Label {
 }
 
 message Project {
-  reserved 2;
-
   option (google.api.resource) = {
     type: "bytebase.com/Project"
     pattern: "projects/{project}"
@@ -287,6 +285,9 @@ message Project {
   // The name of the project.
   // Format: projects/{project}
   string name = 1;
+
+  // The system-assigned, unique identifier for a resource.
+  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   State state = 3;
 
