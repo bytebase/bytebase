@@ -235,8 +235,8 @@ func getBasicMongoDBConnectionURI(connConfig db.ConnectionConfig) string {
 }
 
 // QueryConn queries a SQL statement in a given connection.
-func (driver *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
-	if queryContext != nil && queryContext.Explain {
+func (driver *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
+	if queryContext.Explain {
 		return nil, errors.New("MongoDB does not support EXPLAIN")
 	}
 
@@ -251,7 +251,7 @@ func (driver *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement stri
 	evalArg := statement
 	if simpleStatement {
 		limit := ""
-		if queryContext != nil && queryContext.Limit > 0 {
+		if queryContext.Limit > 0 {
 			limit = fmt.Sprintf(".slice(0, %d)", queryContext.Limit)
 		}
 		evalArg = fmt.Sprintf(`a = %s; if (typeof a.toArray === 'function') {print(EJSON.stringify(a.toArray()%s));} else {print(EJSON.stringify(a));}`, statement, limit)
