@@ -1256,7 +1256,7 @@ func equalViewDefinition(a, b string) bool {
 	return strings.EqualFold(a, b)
 }
 
-var qualifiedRe = regexp.MustCompile("`" + `[^` + "`" + `]` + "`" + `\.` + "`")
+var qualifiedRe = regexp.MustCompile("`" + `[^` + "`" + `]+` + "`" + `\.` + "`")
 
 func normalizeMySQLViewDefinition(query string) string {
 	query = strings.TrimSpace(query)

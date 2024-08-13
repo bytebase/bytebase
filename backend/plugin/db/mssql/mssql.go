@@ -44,6 +44,7 @@ type Driver struct {
 	// certificate file path should be deleted if calling closed.
 	certFilePath         string
 	maximumSQLResultSize int64
+	isShowPlanAll        bool
 }
 
 func newDriver(db.DriverConfig) db.Driver {
@@ -238,6 +239,9 @@ func execute(ctx context.Context, tx *sql.Tx, statement string) (int64, error) {
 
 // QueryConn queries a SQL statement in a given connection.
 func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
+	if !queryContext.AdminSession {
+		defer func() { driver.isShowPlanAll = false }()
+	}
 	singleSQLs, err := tsqlparser.SplitSQL(statement)
 	if err != nil {
 		return nil, err
@@ -276,6 +280,10 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 			}
 			allQuery = q
 		}
+		if driver.isShowPlanAll {
+			allQuery = true
+		}
+
 		startTime := time.Now()
 		queryResult, err := func() (*v1pb.QueryResult, error) {
 			if allQuery {
@@ -313,6 +321,10 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 		}
 		queryResult.Statement = statement
 		queryResult.Latency = durationpb.New(time.Since(startTime))
+		// Check SHOWPLAN_ALL.
+		if isOn, ok := getShowPlanAll(statement); ok {
+			driver.isShowPlanAll = isOn
+		}
 		results = append(results, queryResult)
 		if stop {
 			break
@@ -334,4 +346,35 @@ func NewBatch(statement string) *tsqlbatch.Batch {
 		return "", io.EOF
 	}
 	return tsqlbatch.NewBatch(scanner)
+}
+
+// getShowPlanAll returns on/off and ok for the statement.
+func getShowPlanAll(s string) (bool, bool) {
+	if len(s) > 30 {
+		return false, false
+	}
+	s = strings.ToLower(s)
+	if !strings.Contains(s, "showplan_all") {
+		return false, false
+	}
+	s = strings.TrimSpace(s)
+	s = strings.TrimRight(s, ";")
+	s = strings.TrimSpace(s)
+	tokens := strings.Fields(s)
+	if len(tokens) != 3 {
+		return false, false
+	}
+	if tokens[0] != "set" {
+		return false, false
+	}
+	if tokens[1] != "showplan_all" {
+		return false, false
+	}
+	switch tokens[2] {
+	case "on":
+		return true, true
+	case "off":
+		return false, true
+	}
+	return false, false
 }
