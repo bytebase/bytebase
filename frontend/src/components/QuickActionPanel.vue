@@ -45,18 +45,6 @@
       :project-name="project?.name"
       @dismiss="state.quickActionType = undefined"
     />
-    <AlterSchemaPrepForm
-      v-if="state.quickActionType === 'quickaction.bb.database.schema.update'"
-      :project-name="project?.name"
-      :type="'bb.issue.database.schema.update'"
-      @dismiss="state.quickActionType = undefined"
-    />
-    <AlterSchemaPrepForm
-      v-if="state.quickActionType === 'quickaction.bb.database.data.update'"
-      :project-name="project?.name"
-      :type="'bb.issue.database.data.update'"
-      @dismiss="state.quickActionType = undefined"
-    />
     <TransferDatabaseForm
       v-if="
         project &&
@@ -103,8 +91,6 @@ import { defineAction, useRegisterActions } from "@bytebase/vue-kbar";
 import {
   PlusIcon,
   DatabaseIcon,
-  PencilIcon,
-  PenSquareIcon,
   ListOrderedIcon,
   GalleryHorizontalEndIcon,
   ChevronsDownIcon,
@@ -116,7 +102,6 @@ import type { PropType, VNode } from "vue";
 import { reactive, computed, watch, h } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
-import AlterSchemaPrepForm from "@/components/AlterSchemaPrepForm/";
 import { CreateDatabasePrepPanel } from "@/components/CreateDatabasePrepForm";
 import {
   InstanceForm,
@@ -236,14 +221,6 @@ const createInstance = () => {
   state.quickActionType = "quickaction.bb.instance.create";
 };
 
-const alterSchema = () => {
-  state.quickActionType = "quickaction.bb.database.schema.update";
-};
-
-const changeData = () => {
-  state.quickActionType = "quickaction.bb.database.data.update";
-};
-
 const createDatabase = () => {
   state.quickActionType = "quickaction.bb.database.create";
 };
@@ -294,20 +271,6 @@ const availableQuickActionList = computed((): QuickAction[] => {
       action: () =>
         openDatabaseGroupDrawer("quickaction.bb.group.database-group.create"),
       icon: h(PlusIcon),
-    },
-    {
-      type: "quickaction.bb.database.schema.update",
-      title: t("database.edit-schema"),
-      hide: !shouldShowAlterDatabaseEntries.value,
-      action: alterSchema,
-      icon: h(PenSquareIcon),
-    },
-    {
-      type: "quickaction.bb.database.data.update",
-      title: t("database.change-data"),
-      hide: !shouldShowAlterDatabaseEntries.value,
-      action: changeData,
-      icon: h(PencilIcon),
     },
     {
       type: "quickaction.bb.environment.create",

@@ -9,7 +9,6 @@ import {
   ENVIRONMENT_V1_ROUTE_DASHBOARD,
   WORKSPACE_ROOT_MODULE,
   WORKSPACE_ROUTE_MY_ISSUES,
-  WORKSPACE_ROUTE_EXPORT_CENTER,
   WORKSPACE_ROUTE_ANOMALY_CENTER,
   WORKSPACE_ROUTE_USER_PROFILE,
   WORKSPACE_ROUTE_SQL_REVIEW,
@@ -27,7 +26,6 @@ import {
   WORKSPACE_ROUTE_SSO_CREATE,
   WORKSPACE_ROUTE_SSO_DETAIL,
   WORKSPACE_ROUTE_MAIL_DELIVERY,
-  WORKSPACE_ROUTE_REVIEW_CENTER,
   WORKSPACE_ROUTE_MEMBERS,
   WORKSPACE_ROUTE_ROLES,
   WORKSPACE_ROUTE_IM,
@@ -50,10 +48,6 @@ const workspaceRoutes: RouteRecordRaw[] = [
     meta: {
       getQuickActionList: () => {
         return [
-          "quickaction.bb.database.schema.update",
-          "quickaction.bb.database.data.update",
-          "quickaction.bb.database.create",
-          "quickaction.bb.instance.create",
           "quickaction.bb.issue.grant.request.querier",
           "quickaction.bb.issue.grant.request.exporter",
         ];
@@ -133,36 +127,6 @@ const workspaceRoutes: RouteRecordRaw[] = [
       leftSidebar: () => import("@/views/DashboardSidebar.vue"),
     },
     props: { content: true, leftSidebar: true },
-  },
-  {
-    path: "review-center",
-    name: WORKSPACE_ROUTE_REVIEW_CENTER,
-    meta: {
-      title: () => startCase(t("review-center.self")),
-    },
-    components: {
-      content: () => import("@/views/ReviewCenter/index.vue"),
-      leftSidebar: () => import("@/views/DashboardSidebar.vue"),
-    },
-    props: {
-      content: true,
-      leftSidebar: true,
-    },
-  },
-  {
-    path: "export-center",
-    name: WORKSPACE_ROUTE_EXPORT_CENTER,
-    meta: {
-      title: () => startCase(t("export-center.self")),
-    },
-    components: {
-      content: () => import("@/views/ExportCenter/index.vue"),
-      leftSidebar: () => import("@/views/DashboardSidebar.vue"),
-    },
-    props: {
-      content: true,
-      leftSidebar: true,
-    },
   },
   {
     path: "anomaly-center",

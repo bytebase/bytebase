@@ -1,30 +1,39 @@
 <template>
-  <ArchiveBanner v-if="project.state === State.DELETED" class="py-2" />
-  <div class="px-4 h-full overflow-auto">
-    <template v-if="!hideDefaultProject && isDefaultProject">
-      <h1 class="mb-4 text-xl font-bold leading-6 text-main truncate">
-        {{ $t("database.unassigned-databases") }}
-      </h1>
-      <BBAttention class="mb-4" type="info">
-        {{ $t("project.overview.info-slot-content") }}
-      </BBAttention>
-    </template>
-    <QuickActionPanel
-      v-if="!hideQuickActionPanel"
-      :quick-action-list="quickActionList"
-      class="mb-4"
-    />
-    <router-view
-      v-if="hasPermission"
-      :project-id="projectId"
-      :allow-edit="allowEdit"
-      v-bind="$attrs"
-    />
-    <NoPermissionPlaceholder v-else />
+  <template v-if="initialized">
+    <ArchiveBanner v-if="project.state === State.DELETED" class="py-2" />
+    <div class="px-4 h-full overflow-auto">
+      <template v-if="!hideDefaultProject && isDefaultProject">
+        <h1 class="mb-4 text-xl font-bold leading-6 text-main truncate">
+          {{ $t("database.unassigned-databases") }}
+        </h1>
+        <BBAttention class="mb-4" type="info">
+          {{ $t("project.overview.info-slot-content") }}
+        </BBAttention>
+      </template>
+      <QuickActionPanel
+        v-if="!hideQuickActionPanel"
+        :quick-action-list="quickActionList"
+        class="mb-4"
+      />
+      <router-view
+        v-if="hasPermission"
+        :project-id="projectId"
+        :allow-edit="allowEdit"
+        v-bind="$attrs"
+      />
+      <NoPermissionPlaceholder v-else />
+    </div>
+  </template>
+  <div
+    v-else
+    class="fixed inset-0 bg-white flex flex-col items-center justify-center"
+  >
+    <NSpin />
   </div>
 </template>
 
 <script lang="ts" setup>
+import { NSpin } from "naive-ui";
 import { computed, watchEffect } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { BBAttention } from "@/bbkit";
@@ -38,6 +47,7 @@ import {
 } from "@/router/dashboard/projectV1";
 import { useCurrentUserV1, useAppFeature, useProjectByName } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
+import { useDatabaseV1List } from "@/store/modules/v1/databaseList";
 import type { QuickActionType } from "@/types";
 import { DEFAULT_PROJECT_NAME, QuickActionProjectPermissionMap } from "@/types";
 import { State } from "@/types/proto/v1/common";
@@ -53,8 +63,13 @@ const currentUserV1 = useCurrentUserV1();
 const recentProjects = useRecentProjects();
 const hideQuickAction = useAppFeature("bb.feature.console.hide-quick-action");
 const hideDefaultProject = useAppFeature("bb.feature.project.hide-default");
-const { project } = useProjectByName(
-  computed(() => `${projectNamePrefix}${props.projectId}`)
+const projectName = computed(() => `${projectNamePrefix}${props.projectId}`);
+const { project, ready: projectReady } = useProjectByName(projectName);
+// Prepare database list of the project.
+const { ready: databaseListReady } = useDatabaseV1List(projectName);
+
+const initialized = computed(
+  () => projectReady.value && databaseListReady.value
 );
 
 watchEffect(() => {
