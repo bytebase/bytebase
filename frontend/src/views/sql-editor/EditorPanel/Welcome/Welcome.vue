@@ -1,7 +1,7 @@
 <template>
   <div
     class="w-full flex-1 flex flex-col items-center justify-start gap-y-4"
-    style="padding-top: calc(clamp(40px, 15vh, 200px)"
+    style="padding-top: calc(clamp(40px, 15vh, 200px))"
   >
     <BytebaseLogo v-if="!hideLogo" />
 
