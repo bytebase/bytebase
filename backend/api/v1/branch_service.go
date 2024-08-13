@@ -234,6 +234,7 @@ func (s *BranchService) CreateBranch(ctx context.Context, request *v1pb.CreateBr
 
 		config := databaseSchema.GetConfig()
 		sanitizeCommentForSchemaMetadata(filteredBaseSchemaMetadata, model.NewDatabaseConfig(config), classificationConfig.ClassificationFromConfig)
+		initBranchDatabaseConfig(filteredBaseSchemaMetadata, config)
 		created, err := s.store.CreateBranch(ctx, &store.BranchMessage{
 			ProjectID:  project.ResourceID,
 			ResourceID: branchID,
@@ -1448,6 +1449,12 @@ func buildMap[T any](objects []T, getUniqueIdentifier func(T) string) map[string
 		m[getUniqueIdentifier(obj)] = obj
 	}
 	return m
+}
+
+func initBranchDatabaseConfig(metadata *storepb.DatabaseSchemaMetadata, config *storepb.DatabaseConfig) {
+	for _, schema := range metadata.Schemas {
+		config.SchemaConfigs = append(config.SchemaConfigs, initSchemaConfig(schema, "", "", nil))
+	}
 }
 
 func trimClassificationIDFromCommentIfNeeded(dbSchema *storepb.DatabaseSchemaMetadata, classificationFromConfig bool) {
