@@ -1,6 +1,7 @@
 import type { ResourceId } from "@/types";
 import { UNKNOWN_ID } from "@/types";
 
+export const workspaceNamePrefix = "workspaces/";
 export const userNamePrefix = "users/";
 export const roleNamePrefix = "roles/";
 export const environmentNamePrefix = "environments/";

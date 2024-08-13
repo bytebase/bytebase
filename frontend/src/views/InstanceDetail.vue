@@ -44,7 +44,7 @@
             :key="`database-table.${instanceId}`"
             mode="INSTANCE"
             :show-selection="true"
-            :database-list="databaseV1List"
+            :database-list="databaseList"
             :custom-click="true"
             @row-click="handleDatabaseClick"
             @update:selected-databases="handleDatabasesSelectionChanged"
@@ -98,6 +98,7 @@ import {
   useDatabaseV1Store,
 } from "@/store";
 import { instanceNamePrefix } from "@/store/modules/v1/common";
+import { useDatabaseV1List } from "@/store/modules/v1/databaseList";
 import type { ComposedDatabase } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import {
@@ -106,6 +107,7 @@ import {
   hasWorkspacePermissionV2,
   hasWorkspaceLevelProjectPermissionInAnyProject,
   databaseV1Url,
+  wrapRefAsPromise,
 } from "@/utils";
 
 interface LocalState {
@@ -121,10 +123,10 @@ const props = defineProps<{
 const { overrideMainContainerClass } = useBodyLayoutContext();
 overrideMainContainerClass("!pb-0");
 
-const instanceV1Store = useInstanceV1Store();
-const databaseStore = useDatabaseV1Store();
 const { t } = useI18n();
 const router = useRouter();
+const instanceV1Store = useInstanceV1Store();
+const databaseStore = useDatabaseV1Store();
 
 const currentUser = useCurrentUserV1();
 
@@ -145,9 +147,9 @@ const environment = computed(() => {
   );
 });
 
-const databaseV1List = computed(() => {
-  return databaseStore.databaseListByInstance(instance.value.name);
-});
+const { databaseList, listCache, ready } = useDatabaseV1List(
+  instance.value.name
+);
 
 const instanceRoleList = computed(() => {
   return instance.value.roles;
@@ -174,19 +176,14 @@ const allowCreateDatabase = computed(() => {
 const syncSchema = async () => {
   state.syncingSchema = true;
   try {
-    await instanceV1Store.syncInstance(instance.value).then(() => {
-      databaseStore.removeCacheByInstance(instance.value.name);
-      databaseStore.searchDatabases({
-        filter: `instance = "${instance.value.name}"`,
-      });
-    });
+    await instanceV1Store.syncInstance(instance.value);
+    // Remove the database list cache for the instance.
+    listCache.cacheMap.delete(listCache.getCacheKey(instance.value.name));
+    await wrapRefAsPromise(ready, true);
     // Clear the db schema metadata cache entities.
     // So we will re-fetch new values when needed.
     const dbSchemaStore = useDBSchemaV1Store();
-    const databaseList = useDatabaseV1Store().databaseListByInstance(
-      instance.value.name
-    );
-    databaseList.forEach((database) =>
+    databaseList.value.forEach((database) =>
       dbSchemaStore.removeCache(database.name)
     );
     pushNotification({
@@ -238,7 +235,7 @@ const handleDatabasesSelectionChanged = (
 };
 
 const selectedDatabases = computed((): ComposedDatabase[] => {
-  return databaseV1List.value.filter((db) =>
+  return databaseList.value.filter((db) =>
     state.selectedDatabaseIds.has(db.uid)
   );
 });

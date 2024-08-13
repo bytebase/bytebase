@@ -26,7 +26,7 @@
         :row-clickable="false"
       />
     </div>
-    <MaskSpinner v-if="!ready || refreshing" />
+    <MaskSpinner v-if="!ready" />
 
     <Drawer v-model:show="showTransfer">
       <TransferDatabaseForm
@@ -41,42 +41,20 @@
 <script setup lang="ts">
 import { ChevronsDownIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
-import { ref, watch } from "vue";
+import { ref } from "vue";
 import TransferDatabaseForm from "@/components/TransferDatabaseForm.vue";
 import MaskSpinner from "@/components/misc/MaskSpinner.vue";
 import { Drawer } from "@/components/v2";
 import DatabaseV1Table from "@/components/v2/Model/DatabaseV1Table";
-import { databaseServiceClient } from "@/grpcweb";
-import { DEFAULT_DATABASE_PAGE_SIZE, batchComposeDatabase } from "@/store";
-import type { ComposedDatabase } from "@/types";
+import { useDatabaseV1List } from "@/store/modules/v1/databaseList";
 import type { Project } from "@/types/proto/v1/project_service";
 
 const props = defineProps<{
   project: Project;
 }>();
 
-const ready = ref(false);
-const refreshing = ref(false);
-const databaseList = ref<ComposedDatabase[]>([]);
+const { databaseList, ready } = useDatabaseV1List(props.project.name);
 const showTransfer = ref(false);
-
-const fetchDatabaseList = async (force: boolean) => {
-  refreshing.value = true;
-  if (force) {
-    ready.value = false;
-  }
-  const response = await databaseServiceClient.listDatabases({
-    parent: props.project.name,
-    pageSize: DEFAULT_DATABASE_PAGE_SIZE,
-  });
-
-  const list = await batchComposeDatabase(response.databases);
-
-  databaseList.value = list;
-
-  refreshing.value = false;
-  ready.value = true;
-};
 
 const handleClickTransfer = () => {
   showTransfer.value = true;
@@ -84,12 +62,5 @@ const handleClickTransfer = () => {
 
 const handleTransferSuccess = () => {
   showTransfer.value = false;
-  fetchDatabaseList(/* !force */ false);
 };
-
-watch(
-  () => props.project.name,
-  () => fetchDatabaseList(/* force */ true),
-  { immediate: true }
-);
 </script>

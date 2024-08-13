@@ -14,6 +14,7 @@ import {
   useSheetV1Store,
 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
+import { useDatabaseV1List } from "@/store/modules/v1/databaseList";
 import type { ComposedProject } from "@/types";
 import {
   emptyIssue,
@@ -41,6 +42,7 @@ import {
   hasProjectPermissionV2,
   setSheetStatement,
   sheetNameOfTaskV1,
+  wrapRefAsPromise,
 } from "@/utils";
 import { nextUID } from "../base";
 import { databaseEngineForSpec, sheetNameForSpec } from "../plan";
@@ -512,7 +514,7 @@ export const prepareDatabaseList = async (
 };
 
 const prepareDatabaseListByProject = async (project: string) => {
-  await useDatabaseV1Store().listDatabases(project);
+  await wrapRefAsPromise(useDatabaseV1List(project).ready, true);
 };
 
 export const isValidStage = (stage: Stage): boolean => {

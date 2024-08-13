@@ -34,6 +34,9 @@ const (
 	MaximumAdvicePerStatus = 50
 	MaximumLintExplainSize = 10
 
+	// MinimumCompletedPlanCheckRun is the minimum number required to generate approval flow.
+	MinimumCompletedPlanCheckRun = 5
+
 	// ExternalURLPlaceholder is the docs link to configure --external-url.
 	ExternalURLPlaceholder = "https://www.bytebase.com/docs/get-started/install/external-url"
 )

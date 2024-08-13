@@ -51,7 +51,7 @@
       <template #1>
         <SelectTargetDatabasesView
           ref="targetDatabaseViewRef"
-          :project-name="projectName!"
+          :project-name="projectName"
           :source-schema-type="state.sourceSchemaType"
           :database-source-schema="changeHistorySourceSchemaState as any"
           :raw-sql-state="rawSQLState"
@@ -91,10 +91,6 @@ import type {
   SourceSchemaType,
 } from "./types";
 
-defineOptions({
-  name: "SyncDatabaseSchema",
-});
-
 const SELECT_SOURCE_SCHEMA = 0;
 const SELECT_TARGET_DATABASE_LIST = 1;
 
@@ -106,7 +102,7 @@ interface LocalState {
 }
 
 const props = defineProps<{
-  project?: ComposedProject;
+  project: ComposedProject;
   sourceSchemaType?: SourceSchemaType;
 }>();
 
@@ -121,23 +117,16 @@ const state = reactive<LocalState>({
   currentStep: SELECT_SOURCE_SCHEMA,
 });
 const changeHistorySourceSchemaState = reactive<ChangeHistorySourceSchema>({
-  projectName: props.project?.name,
+  projectName: props.project.name,
 });
 const rawSQLState = reactive<RawSQLState>({
-  projectName: props.project?.name,
+  projectName: props.project.name,
   engine: Engine.MYSQL,
   statement: "",
 });
 
 const projectName = computed(() => {
-  if (props.project) {
-    return props.project.name;
-  }
-  if (state.sourceSchemaType === "SCHEMA_HISTORY_VERSION") {
-    return changeHistorySourceSchemaState.projectName;
-  } else {
-    return rawSQLState.projectName;
-  }
+  return props.project.name;
 });
 
 const handleChangeHistorySchemaVersionChanges = (
@@ -237,9 +226,7 @@ const tryFinishSetup = async () => {
   }
 
   const targetDatabaseList = targetDatabaseViewRef.value.targetDatabaseList;
-  const project = await projectStore.getOrFetchProjectByName(
-    projectName.value!
-  );
+  const project = await projectStore.getOrFetchProjectByName(projectName.value);
 
   const query: Record<string, any> = {
     template: "bb.issue.database.schema.update",

@@ -11,6 +11,7 @@ import {
   useSheetV1Store,
 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
+import { useDatabaseV1List } from "@/store/modules/v1/databaseList";
 import { composePlan } from "@/store/modules/v1/plan";
 import type { ComposedProject } from "@/types";
 import { isValidProjectName } from "@/types";
@@ -28,6 +29,7 @@ import {
   generateSQLForChangeToDatabase,
   getSheetStatement,
   setSheetStatement,
+  wrapRefAsPromise,
 } from "@/utils";
 import { databaseEngineForSpec, sheetNameForSpec } from "../plan";
 import { createEmptyLocalSheet, getLocalSheetByName } from "../sheet";
@@ -436,7 +438,7 @@ export const prepareDatabaseList = async (
 };
 
 const prepareDatabaseListByProject = async (project: string) => {
-  await useDatabaseV1Store().listDatabases(project);
+  await wrapRefAsPromise(useDatabaseV1List(project).ready, true);
 };
 
 export const isValidSpec = (spec: Plan_Spec): boolean => {
