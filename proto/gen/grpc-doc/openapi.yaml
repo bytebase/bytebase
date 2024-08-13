@@ -10084,10 +10084,6 @@ components:
                     description: |-
                         The name of the instance.
                          Format: instances/{instance}
-                uid:
-                    readOnly: true
-                    type: string
-                    description: The system-assigned, unique identifier for a resource.
                 state:
                     enum:
                         - STATE_UNSPECIFIED

@@ -4,7 +4,6 @@ import { useInstanceV1Store, useSubscriptionV1Store } from "@/store";
 import {
   emptyDataSource,
   UNKNOWN_ENVIRONMENT_NAME,
-  UNKNOWN_ID,
   UNKNOWN_INSTANCE_NAME,
 } from "@/types";
 import { Engine, State } from "@/types/proto/v1/common";
@@ -65,7 +64,6 @@ export const extractBasicInfo = (instance: Instance | undefined): BasicInfo => {
   );
 
   return {
-    uid: instance?.uid ?? String(UNKNOWN_ID),
     name: instance?.name ?? UNKNOWN_INSTANCE_NAME,
     state: instance?.state ?? State.ACTIVE,
     title: instance?.title ?? t("instance.new-instance"),

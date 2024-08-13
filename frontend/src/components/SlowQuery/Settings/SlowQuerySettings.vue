@@ -30,7 +30,7 @@
 </template>
 
 <script lang="ts" setup>
-import { orderBy } from "lodash-es";
+import { orderBy, head } from "lodash-es";
 import { computed, onMounted, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { EnvironmentTabFilter, SearchBox } from "@/components/v2";
@@ -44,6 +44,7 @@ import {
   useSlowQueryStore,
 } from "@/store";
 import { useGracefulRequest } from "@/store/modules/utils";
+import { getPolicyResourceNameAndType } from "@/store/modules/v1/common";
 import type { ComposedSlowQueryPolicy } from "@/types";
 import { isValidEnvironmentName } from "@/types";
 import type { Environment } from "@/types/proto/v1/environment_service";
@@ -84,7 +85,9 @@ const instanceList = computed(() => {
 
 const composedSlowQueryPolicyList = computed(() => {
   const list = instanceList.value.map<ComposedSlowQueryPolicy>((instance) => {
-    const policy = policyList.value.find((p) => p.resourceUid == instance.uid);
+    const policy = policyList.value.find(
+      (p) => head(getPolicyResourceNameAndType(p.name)) == instance.name
+    );
     return {
       instance,
       active: policy?.slowQueryPolicy?.active ?? false,
