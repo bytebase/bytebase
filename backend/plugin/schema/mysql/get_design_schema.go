@@ -472,7 +472,7 @@ func (g *mysqlDesignSchemaGenerator) ExitCreateTable(ctx *mysql.CreateTableConte
 		}
 
 		if g.currentTable.comment != "" {
-			if _, err := g.result.WriteString(fmt.Sprintf(" COMMENT '%s'", strings.ReplaceAll(g.currentTable.comment, "'", "''"))); err != nil {
+			if _, err := g.result.WriteString(fmt.Sprintf(" COMMENT '%s'", g.currentTable.comment)); err != nil {
 				g.err = err
 				return
 			}
@@ -487,7 +487,7 @@ func (g *mysqlDesignSchemaGenerator) ExitCreateTable(ctx *mysql.CreateTableConte
 			return
 		}
 		if g.currentTable.comment != "" {
-			if _, err := g.result.WriteString(fmt.Sprintf(" COMMENT '%s' ", strings.ReplaceAll(g.currentTable.comment, "'", "''"))); err != nil {
+			if _, err := g.result.WriteString(fmt.Sprintf(" COMMENT '%s' ", g.currentTable.comment)); err != nil {
 				g.err = err
 				return
 			}
@@ -598,7 +598,7 @@ func (g *mysqlDesignSchemaGenerator) EnterCreateTableOption(ctx *mysql.CreateTab
 				return
 			}
 
-			if _, err := g.tableOptions.WriteString(fmt.Sprintf("'%s'", strings.ReplaceAll(g.currentTable.comment, "'", "''"))); err != nil {
+			if _, err := g.tableOptions.WriteString(fmt.Sprintf("'%s'", g.currentTable.comment)); err != nil {
 				g.err = err
 				return
 			}
