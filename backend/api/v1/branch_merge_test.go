@@ -96,6 +96,10 @@ func TestNormalizeMySQLViewDefinition(t *testing.T) {
 			query: "select 12 AS `12`;   ",
 			want:  "select 12;",
 		},
+		{
+			query: "select `t1`.`id` AS `id` from `t1`;",
+			want:  "select `id` from `t1`;",
+		},
 	} {
 		got := normalizeMySQLViewDefinition(test.query)
 		require.Equal(t, test.want, got, i)
