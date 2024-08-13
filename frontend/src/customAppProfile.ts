@@ -95,7 +95,9 @@ const overrideAppFeatures = (
     actuatorStore.overrideAppFeatures({
       "bb.feature.hide-quick-start": true,
       "bb.feature.hide-help": true,
-
+      "bb.feature.members.hide-groups": true,
+      "bb.feature.members.hide-project-roles": true,
+      "bb.feature.members.hide-service-account": true,
       "bb.feature.sql-editor.hide-projects": true,
       "bb.feature.sql-editor.hide-environments": true,
       "bb.feature.sql-editor.disallow-batch-query": true,
