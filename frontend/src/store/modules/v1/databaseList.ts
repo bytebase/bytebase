@@ -27,7 +27,6 @@ export const useDatabaseV1List = (
   // * `instances/{instance}` to list all databases in the instance.
   parent?: MaybeRef<string>
 ) => {
-  console.trace("1111111");
   const listCache = useListCache("database");
   const store = useDatabaseV1Store();
   const formatParent = computed(() =>
