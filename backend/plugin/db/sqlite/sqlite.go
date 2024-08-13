@@ -151,7 +151,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 }
 
 // QueryConn queries a SQL statement in a given connection.
-func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, _ *db.QueryContext) ([]*v1pb.QueryResult, error) {
+func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, _ db.QueryContext) ([]*v1pb.QueryResult, error) {
 	startTime := time.Now()
 	rows, err := conn.QueryContext(ctx, statement)
 	if err != nil {

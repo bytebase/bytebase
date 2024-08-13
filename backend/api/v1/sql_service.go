@@ -157,7 +157,7 @@ func (*SQLService) doAdminExecute(ctx context.Context, driver db.Driver, conn *s
 	}
 	ctx, cancelCtx := context.WithTimeout(ctx, timeout)
 	defer cancelCtx()
-	result, err := driver.QueryConn(ctx, conn, request.Statement, nil)
+	result, err := driver.QueryConn(ctx, conn, request.Statement, db.QueryContext{AdminSession: true})
 	select {
 	case <-ctx.Done():
 		// canceled or timed out
@@ -274,7 +274,7 @@ func (s *SQLService) doExecute(ctx context.Context, instance *store.InstanceMess
 	}
 	ctx, cancelCtx := context.WithTimeout(ctx, timeout)
 	defer cancelCtx()
-	result, err := driver.QueryConn(ctx, conn, request.Statement, nil)
+	result, err := driver.QueryConn(ctx, conn, request.Statement, db.QueryContext{})
 	select {
 	case <-ctx.Done():
 		// canceled or timed out
@@ -434,11 +434,10 @@ func DoExport(ctx context.Context, storeInstance *store.Store, dbFactory *dbfact
 		defer conn.Close()
 	}
 
-	queryContext := &db.QueryContext{
-		Limit: int(request.Limit),
-	}
 	start := time.Now().UnixNano()
-	result, err := driver.QueryConn(ctx, conn, request.Statement, queryContext)
+	result, err := driver.QueryConn(ctx, conn, request.Statement, db.QueryContext{
+		Limit: int(request.Limit),
+	})
 	durationNs := time.Now().UnixNano() - start
 	if err != nil {
 		return nil, durationNs, err
@@ -819,7 +818,7 @@ func (s *SQLService) doQuery(ctx context.Context, request *v1pb.QueryRequest, in
 	defer cancelCtx()
 
 	start := time.Now().UnixNano()
-	results, err := driver.QueryConn(ctx, conn, request.Statement, &db.QueryContext{
+	results, err := driver.QueryConn(ctx, conn, request.Statement, db.QueryContext{
 		Limit:   int(request.Limit),
 		Explain: request.Explain,
 	})

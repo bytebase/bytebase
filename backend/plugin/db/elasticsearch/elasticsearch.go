@@ -156,14 +156,14 @@ func (d *Driver) Ping(ctx context.Context) error {
 }
 
 func (d *Driver) Execute(ctx context.Context, statement string, _ db.ExecuteOptions) (int64, error) {
-	_, err := d.QueryConn(ctx, nil, statement, nil)
+	_, err := d.QueryConn(ctx, nil, statement, db.QueryContext{})
 	if err != nil {
 		return 0, err
 	}
 	return 0, nil
 }
 
-func (d *Driver) QueryConn(_ context.Context, _ *sql.Conn, statement string, _ *db.QueryContext) ([]*v1pb.QueryResult, error) {
+func (d *Driver) QueryConn(_ context.Context, _ *sql.Conn, statement string, _ db.QueryContext) ([]*v1pb.QueryResult, error) {
 	statements, err := SplitElasticsearchStatements(statement)
 	if err != nil {
 		return nil, err

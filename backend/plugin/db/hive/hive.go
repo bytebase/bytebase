@@ -133,7 +133,7 @@ func (d *Driver) Execute(ctx context.Context, statementsStr string, _ db.Execute
 	return affectedRows, nil
 }
 
-func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, queryCtx *db.QueryContext) ([]*v1pb.QueryResult, error) {
+func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, queryCtx db.QueryContext) ([]*v1pb.QueryResult, error) {
 	singleSQLs, err := base.SplitMultiSQL(storepb.Engine_HIVE, statement)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to split statements")
@@ -142,7 +142,7 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 	var results []*v1pb.QueryResult
 	for _, singleSQL := range singleSQLs {
 		statement := util.TrimStatement(singleSQL.Text)
-		if queryCtx != nil && queryCtx.Explain {
+		if queryCtx.Explain {
 			statement = fmt.Sprintf("EXPLAIN %s", statement)
 		}
 
