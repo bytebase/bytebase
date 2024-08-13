@@ -260,7 +260,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ db.Execut
 }
 
 // QueryConn queries a SQL statement in a given connection.
-func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
+func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
 	// TODO(rebelice): support multiple queries in a single statement.
 	singleSQLs := []base.SingleSQL{
 		{Text: statement},
@@ -269,9 +269,9 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 	var results []*v1pb.QueryResult
 	for _, singleSQL := range singleSQLs {
 		statement := singleSQL.Text
-		if queryContext != nil && queryContext.Explain {
+		if queryContext.Explain {
 			statement = fmt.Sprintf("EXPLAIN %s", statement)
-		} else if queryContext != nil && queryContext.Limit > 0 {
+		} else if queryContext.Limit > 0 {
 			stmt, err := getStatementWithResultLimit(statement, queryContext.Limit)
 			if err != nil {
 				slog.Error("fail to add limit clause", "statement", statement, log.BBError(err))

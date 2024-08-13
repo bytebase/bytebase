@@ -430,7 +430,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 }
 
 // QueryConn queries a SQL statement in a given connection.
-func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
+func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
 	singleSQLs, err := base.SplitMultiSQL(storepb.Engine_MYSQL, statement)
 	if err != nil {
 		return nil, err
@@ -449,9 +449,9 @@ func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string
 	var results []*v1pb.QueryResult
 	for _, singleSQL := range singleSQLs {
 		statement := singleSQL.Text
-		if queryContext != nil && queryContext.Explain {
+		if queryContext.Explain {
 			statement = fmt.Sprintf("EXPLAIN %s", statement)
-		} else if queryContext != nil && queryContext.Limit > 0 {
+		} else if queryContext.Limit > 0 {
 			statement = getStatementWithResultLimit(statement, queryContext.Limit)
 		}
 		sqlWithBytebaseAppComment := util.MySQLPrependBytebaseAppComment(statement)

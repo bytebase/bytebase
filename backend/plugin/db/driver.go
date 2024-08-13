@@ -247,8 +247,9 @@ type ConnectionContext struct {
 // QueryContext is the context to query.
 type QueryContext struct {
 	// Limit is the maximum row count returned. No limit enforced if limit <= 0
-	Limit   int
-	Explain bool
+	Limit        int
+	Explain      bool
+	AdminSession bool
 }
 
 // DatabaseRoleMessage is the API message for database role.
@@ -290,7 +291,7 @@ type Driver interface {
 	// Execute will execute the statement.
 	Execute(ctx context.Context, statement string, opts ExecuteOptions) (int64, error)
 	// Used for execute readonly SELECT statement
-	QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *QueryContext) ([]*v1pb.QueryResult, error)
+	QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext QueryContext) ([]*v1pb.QueryResult, error)
 
 	// Sync schema
 	// SyncInstance syncs the instance metadata.
