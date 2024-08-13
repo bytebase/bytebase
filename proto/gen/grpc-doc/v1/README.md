@@ -5026,7 +5026,6 @@ reference: https://docs.github.com/en/rest/users/users?apiVersion=2022-11-28#get
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name of the identity provider. Format: idps/{idp} |
-| uid | [string](#string) |  | The system-assigned, unique identifier for a resource. |
 | state | [State](#bytebase-v1-State) |  |  |
 | title | [string](#string) |  |  |
 | domain | [string](#string) |  |  |
@@ -6240,7 +6239,6 @@ MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name of the policy. Format: {resource name}/policies/{policy type} Workspace resource name: &#34;&#34;. Environment resource name: environments/environment-id. Instance resource name: instances/instance-id. Database resource name: instances/instance-id/databases/database-name. |
-| uid | [string](#string) |  | The system-assigned, unique identifier for a resource. |
 | inherit_from_parent | [bool](#bool) |  |  |
 | type | [PolicyType](#bytebase-v1-PolicyType) |  |  |
 | rollout_policy | [RolloutPolicy](#bytebase-v1-RolloutPolicy) |  |  |
@@ -7885,7 +7883,6 @@ When paginating, all other parameters provided to `LiskRisks` must match the cal
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | Format: risks/{risk} |
-| uid | [string](#string) |  | system-generated unique identifier. |
 | source | [Risk.Source](#bytebase-v1-Risk-Source) |  |  |
 | title | [string](#string) |  |  |
 | level | [int32](#int32) |  |  |

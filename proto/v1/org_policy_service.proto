@@ -210,6 +210,8 @@ message ListPoliciesResponse {
 }
 
 message Policy {
+  reserved 2;
+
   option (google.api.resource) = {
     type: "bytebase.com/Policy"
     pattern: "policies/{policy}"
@@ -226,9 +228,6 @@ message Policy {
   // Instance resource name: instances/instance-id.
   // Database resource name: instances/instance-id/databases/database-name.
   string name = 1;
-
-  // The system-assigned, unique identifier for a resource.
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   bool inherit_from_parent = 4;
 
