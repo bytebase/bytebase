@@ -259,7 +259,7 @@ func (t *tableState) toString(buf io.StringWriter) error {
 	}
 
 	if t.comment != "" {
-		if _, err := buf.WriteString(fmt.Sprintf(" COMMENT '%s'", strings.ReplaceAll(t.comment, "'", "''"))); err != nil {
+		if _, err := buf.WriteString(fmt.Sprintf(" COMMENT '%s'", t.comment)); err != nil {
 			return err
 		}
 	}
@@ -1307,7 +1307,7 @@ type defaultValueString struct {
 }
 
 func (d *defaultValueString) toString() string {
-	return fmt.Sprintf("'%s'", strings.ReplaceAll(d.value, "'", "''"))
+	return fmt.Sprintf("'%s'", d.value)
 }
 
 type defaultValueExpression struct {
