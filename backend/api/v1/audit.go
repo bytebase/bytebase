@@ -7,6 +7,8 @@ import (
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/peer"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
@@ -62,6 +64,11 @@ func createAuditLog(ctx context.Context, request, response any, method string, s
 		return status.Errorf(codes.Internal, "auth context not found")
 	}
 
+	requestMetadata, err := getRequestMetadataFromCtx(ctx)
+	if err != nil {
+		return err
+	}
+
 	var parents []string
 	if authContext.HasWorkspaceResource() {
 		workspaceID, err := storage.GetWorkspaceID(ctx)
@@ -78,15 +85,16 @@ func createAuditLog(ctx context.Context, request, response any, method string, s
 	createAuditLogCtx := context.WithoutCancel(ctx)
 	for _, parent := range parents {
 		p := &storepb.AuditLog{
-			Parent:      parent,
-			Method:      method,
-			Resource:    getRequestResource(request),
-			Severity:    storepb.AuditLog_INFO,
-			User:        user,
-			Request:     requestString,
-			Response:    responseString,
-			Status:      st.Proto(),
-			ServiceData: serviceData,
+			Parent:          parent,
+			Method:          method,
+			Resource:        getRequestResource(request),
+			Severity:        storepb.AuditLog_INFO,
+			User:            user,
+			Request:         requestString,
+			Response:        responseString,
+			Status:          st.Proto(),
+			ServiceData:     serviceData,
+			RequestMetadata: requestMetadata,
 		}
 		if err := storage.CreateAuditLog(createAuditLogCtx, p); err != nil {
 			return errors.Wrapf(err, "failed to create audit log")
@@ -498,4 +506,23 @@ func needAudit(ctx context.Context) bool {
 		return false
 	}
 	return authCtx.Audit
+}
+
+func getRequestMetadataFromCtx(ctx context.Context) (*storepb.RequestMetadata, error) {
+	var userAgent, callerIP string
+	if p, ok := peer.FromContext(ctx); ok && p.Addr != nil {
+		callerIP = p.Addr.String()
+	}
+	md, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		return nil, errors.New("failed to get grpc metadata")
+	}
+	// It only takes effect when using a browser.
+	if userAgents := md["user-agent"]; len(userAgents) != 0 {
+		userAgent = userAgents[0]
+	}
+	return &storepb.RequestMetadata{
+		CallerIp:                callerIP,
+		CallerSuppliedUserAgent: userAgent,
+	}, nil
 }
