@@ -411,12 +411,12 @@ func getDatabaseGeneralIssueRisk(ctx context.Context, s *store.Store, sheetManag
 	planCheckRunCount := len(latestPlanCheckRun)
 	// We have less than 5 planCheckRuns in total.
 	// We wait for all of them to finish.
-	if planCheckRunCount < 5 && planCheckRunCount != planCheckRunDone {
+	if planCheckRunCount < common.MinimumCompletedPlanCheckRun && planCheckRunCount != planCheckRunDone {
 		return 0, store.RiskSourceUnknown, false, nil
 	}
 	// We have not less than 5 planCheckRuns in total.
-	// We need 5 completed plan check run.
-	if planCheckRunCount >= 5 && planCheckRunDone < 5 {
+	// We need at least 5 completed plan check run.
+	if planCheckRunCount >= common.MinimumCompletedPlanCheckRun && planCheckRunDone < common.MinimumCompletedPlanCheckRun {
 		return 0, store.RiskSourceUnknown, false, nil
 	}
 
