@@ -6,14 +6,13 @@ var sqlEditorAllowlist = map[SQLReviewRuleType]bool{
 	SchemaRuleStatementRequireWhere: true,
 }
 
-// skipRuleInSQLEditor will skip the sql review check in SQL Editor.
-func skipRuleInSQLEditor(rule SQLReviewRuleType, changeType storepb.PlanCheckRunConfig_ChangeDatabaseType) bool {
+func isRuleAllowed(rule SQLReviewRuleType, changeType storepb.PlanCheckRunConfig_ChangeDatabaseType) bool {
 	if changeType != storepb.PlanCheckRunConfig_CHANGE_DATABASE_TYPE_UNSPECIFIED {
-		return false
+		return true
 	}
 
 	if _, ok := sqlEditorAllowlist[rule]; ok {
-		return false
+		return true
 	}
-	return true
+	return false
 }
