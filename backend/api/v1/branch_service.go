@@ -234,7 +234,6 @@ func (s *BranchService) CreateBranch(ctx context.Context, request *v1pb.CreateBr
 
 		config := databaseSchema.GetConfig()
 		sanitizeCommentForSchemaMetadata(filteredBaseSchemaMetadata, model.NewDatabaseConfig(config), classificationConfig.ClassificationFromConfig)
-		initBranchLastUpdateInfoConfig(filteredBaseSchemaMetadata, config, "" /* User ID */, common.FormatBranchResourceID(project.ResourceID, branchID))
 		created, err := s.store.CreateBranch(ctx, &store.BranchMessage{
 			ProjectID:  project.ResourceID,
 			ResourceID: branchID,
@@ -1449,72 +1448,6 @@ func buildMap[T any](objects []T, getUniqueIdentifier func(T) string) map[string
 		m[getUniqueIdentifier(obj)] = obj
 	}
 	return m
-}
-
-func initBranchLastUpdateInfoConfig(metadata *storepb.DatabaseSchemaMetadata, config *storepb.DatabaseConfig, formattedUserUID, formattedBranchResourceID string) {
-	time := timestamppb.Now()
-	schemaConfigMap := buildMap(config.SchemaConfigs, func(s *storepb.SchemaConfig) string {
-		return s.Name
-	})
-	for _, schema := range metadata.Schemas {
-		schemaConfig, ok := schemaConfigMap[schema.Name]
-		if !ok {
-			config.SchemaConfigs = append(config.SchemaConfigs, initSchemaConfig(schema, formattedUserUID, formattedBranchResourceID, time))
-			continue
-		}
-		tableConfigMap := buildMap(schemaConfig.TableConfigs, func(t *storepb.TableConfig) string {
-			return t.Name
-		})
-		for _, table := range schema.Tables {
-			tableConfig, ok := tableConfigMap[table.Name]
-			if !ok {
-				schemaConfig.TableConfigs = append(schemaConfig.TableConfigs, initTableConfig(table, formattedUserUID, formattedBranchResourceID, time))
-			} else {
-				tableConfig.Updater = formattedUserUID
-				tableConfig.UpdateTime = time
-				tableConfig.SourceBranch = formattedBranchResourceID
-			}
-		}
-		viewConfigMap := buildMap(schemaConfig.ViewConfigs, func(v *storepb.ViewConfig) string {
-			return v.Name
-		})
-		for _, view := range schema.Views {
-			viewConfig, ok := viewConfigMap[view.Name]
-			if !ok {
-				schemaConfig.ViewConfigs = append(schemaConfig.ViewConfigs, initViewConfig(view, formattedUserUID, formattedBranchResourceID, time))
-			} else {
-				viewConfig.Updater = formattedUserUID
-				viewConfig.UpdateTime = time
-				viewConfig.SourceBranch = formattedBranchResourceID
-			}
-		}
-		functionConfigMap := buildMap(schemaConfig.FunctionConfigs, func(f *storepb.FunctionConfig) string {
-			return f.Name
-		})
-		for _, function := range schema.Functions {
-			functionConfig, ok := functionConfigMap[function.Name]
-			if !ok {
-				schemaConfig.FunctionConfigs = append(schemaConfig.FunctionConfigs, initFunctionConfig(function, formattedUserUID, formattedBranchResourceID, time))
-			} else {
-				functionConfig.Updater = formattedUserUID
-				functionConfig.UpdateTime = time
-				functionConfig.SourceBranch = formattedBranchResourceID
-			}
-		}
-		procedureConfigMap := buildMap(schemaConfig.ProcedureConfigs, func(p *storepb.ProcedureConfig) string {
-			return p.Name
-		})
-		for _, procedure := range schema.Procedures {
-			procedureConfig, ok := procedureConfigMap[procedure.Name]
-			if !ok {
-				schemaConfig.ProcedureConfigs = append(schemaConfig.ProcedureConfigs, initProcedureConfig(procedure, formattedUserUID, formattedBranchResourceID, time))
-			} else {
-				procedureConfig.Updater = formattedUserUID
-				procedureConfig.UpdateTime = time
-				procedureConfig.SourceBranch = formattedBranchResourceID
-			}
-		}
-	}
 }
 
 func trimClassificationIDFromCommentIfNeeded(dbSchema *storepb.DatabaseSchemaMetadata, classificationFromConfig bool) {
