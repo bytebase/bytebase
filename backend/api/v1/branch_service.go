@@ -234,7 +234,7 @@ func (s *BranchService) CreateBranch(ctx context.Context, request *v1pb.CreateBr
 
 		config := databaseSchema.GetConfig()
 		sanitizeCommentForSchemaMetadata(filteredBaseSchemaMetadata, model.NewDatabaseConfig(config), classificationConfig.ClassificationFromConfig)
-		initBranchLastUpdateInfoConfig(filteredBaseSchemaMetadata, config, "" /* User ID */, common.FormatBranchResourceID(project.ResourceID, branchID))
+		initBranchLastUpdateInfoConfig(filteredBaseSchemaMetadata, config)
 		created, err := s.store.CreateBranch(ctx, &store.BranchMessage{
 			ProjectID:  project.ResourceID,
 			ResourceID: branchID,
@@ -1451,15 +1451,14 @@ func buildMap[T any](objects []T, getUniqueIdentifier func(T) string) map[string
 	return m
 }
 
-func initBranchLastUpdateInfoConfig(metadata *storepb.DatabaseSchemaMetadata, config *storepb.DatabaseConfig, formattedUserUID, formattedBranchResourceID string) {
-	time := timestamppb.Now()
+func initBranchLastUpdateInfoConfig(metadata *storepb.DatabaseSchemaMetadata, config *storepb.DatabaseConfig) {
 	schemaConfigMap := buildMap(config.SchemaConfigs, func(s *storepb.SchemaConfig) string {
 		return s.Name
 	})
 	for _, schema := range metadata.Schemas {
 		schemaConfig, ok := schemaConfigMap[schema.Name]
 		if !ok {
-			config.SchemaConfigs = append(config.SchemaConfigs, initSchemaConfig(schema, formattedUserUID, formattedBranchResourceID, time))
+			config.SchemaConfigs = append(config.SchemaConfigs, initSchemaConfig(schema, "", "", nil))
 			continue
 		}
 		tableConfigMap := buildMap(schemaConfig.TableConfigs, func(t *storepb.TableConfig) string {
@@ -1468,11 +1467,11 @@ func initBranchLastUpdateInfoConfig(metadata *storepb.DatabaseSchemaMetadata, co
 		for _, table := range schema.Tables {
 			tableConfig, ok := tableConfigMap[table.Name]
 			if !ok {
-				schemaConfig.TableConfigs = append(schemaConfig.TableConfigs, initTableConfig(table, formattedUserUID, formattedBranchResourceID, time))
+				schemaConfig.TableConfigs = append(schemaConfig.TableConfigs, initTableConfig(table, "", "", nil))
 			} else {
-				tableConfig.Updater = formattedUserUID
-				tableConfig.UpdateTime = time
-				tableConfig.SourceBranch = formattedBranchResourceID
+				tableConfig.Updater = ""
+				tableConfig.UpdateTime = nil
+				tableConfig.SourceBranch = ""
 			}
 		}
 		viewConfigMap := buildMap(schemaConfig.ViewConfigs, func(v *storepb.ViewConfig) string {
@@ -1481,11 +1480,11 @@ func initBranchLastUpdateInfoConfig(metadata *storepb.DatabaseSchemaMetadata, co
 		for _, view := range schema.Views {
 			viewConfig, ok := viewConfigMap[view.Name]
 			if !ok {
-				schemaConfig.ViewConfigs = append(schemaConfig.ViewConfigs, initViewConfig(view, formattedUserUID, formattedBranchResourceID, time))
+				schemaConfig.ViewConfigs = append(schemaConfig.ViewConfigs, initViewConfig(view, "", "", nil))
 			} else {
-				viewConfig.Updater = formattedUserUID
-				viewConfig.UpdateTime = time
-				viewConfig.SourceBranch = formattedBranchResourceID
+				viewConfig.Updater = ""
+				viewConfig.UpdateTime = nil
+				viewConfig.SourceBranch = ""
 			}
 		}
 		functionConfigMap := buildMap(schemaConfig.FunctionConfigs, func(f *storepb.FunctionConfig) string {
@@ -1494,11 +1493,11 @@ func initBranchLastUpdateInfoConfig(metadata *storepb.DatabaseSchemaMetadata, co
 		for _, function := range schema.Functions {
 			functionConfig, ok := functionConfigMap[function.Name]
 			if !ok {
-				schemaConfig.FunctionConfigs = append(schemaConfig.FunctionConfigs, initFunctionConfig(function, formattedUserUID, formattedBranchResourceID, time))
+				schemaConfig.FunctionConfigs = append(schemaConfig.FunctionConfigs, initFunctionConfig(function, "", "", nil))
 			} else {
-				functionConfig.Updater = formattedUserUID
-				functionConfig.UpdateTime = time
-				functionConfig.SourceBranch = formattedBranchResourceID
+				functionConfig.Updater = ""
+				functionConfig.UpdateTime = nil
+				functionConfig.SourceBranch = ""
 			}
 		}
 		procedureConfigMap := buildMap(schemaConfig.ProcedureConfigs, func(p *storepb.ProcedureConfig) string {
@@ -1507,11 +1506,11 @@ func initBranchLastUpdateInfoConfig(metadata *storepb.DatabaseSchemaMetadata, co
 		for _, procedure := range schema.Procedures {
 			procedureConfig, ok := procedureConfigMap[procedure.Name]
 			if !ok {
-				schemaConfig.ProcedureConfigs = append(schemaConfig.ProcedureConfigs, initProcedureConfig(procedure, formattedUserUID, formattedBranchResourceID, time))
+				schemaConfig.ProcedureConfigs = append(schemaConfig.ProcedureConfigs, initProcedureConfig(procedure, "", "", nil))
 			} else {
-				procedureConfig.Updater = formattedUserUID
-				procedureConfig.UpdateTime = time
-				procedureConfig.SourceBranch = formattedBranchResourceID
+				procedureConfig.Updater = ""
+				procedureConfig.UpdateTime = nil
+				procedureConfig.SourceBranch = ""
 			}
 		}
 	}
