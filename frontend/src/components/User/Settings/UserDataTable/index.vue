@@ -26,7 +26,7 @@ import { NDataTable } from "naive-ui";
 import { computed, reactive, h } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBAlert } from "@/bbkit";
-import { useUserStore } from "@/store";
+import { useAppFeature, useUserStore } from "@/store";
 import { type ComposedUser } from "@/types";
 import type { Group } from "@/types/proto/v1/group";
 import { copyServiceKeyToClipboardIfNeeded } from "../common";
@@ -58,15 +58,16 @@ const userStore = useUserStore();
 const state = reactive<LocalState>({
   showResetKeyAlert: false,
 });
+const hideGroups = useAppFeature("bb.feature.members.hide-groups");
 
 const columns = computed(() => {
-  return [
+  const columns: (DataTableColumn<ComposedUser> & { hide?: boolean })[] = [
     {
       key: "account",
       title: t("settings.members.table.account"),
       width: "32rem",
       resizable: true,
-      render: (user: ComposedUser) => {
+      render: (user) => {
         return h(UserNameCell, {
           user,
           "onReset-service-key": tryResetServiceKey,
@@ -86,6 +87,7 @@ const columns = computed(() => {
     {
       key: "groups",
       title: t("settings.members.table.groups"),
+      hide: hideGroups.value,
       resizable: true,
       render: (user: ComposedUser) => {
         return h(GroupsCell, {
@@ -107,7 +109,8 @@ const columns = computed(() => {
         });
       },
     },
-  ] as DataTableColumn<ComposedUser>[];
+  ];
+  return columns.filter((column) => !column.hide);
 });
 
 const tryResetServiceKey = (user: ComposedUser) => {
