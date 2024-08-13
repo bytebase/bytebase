@@ -500,8 +500,7 @@
                   ],
                   "visible": true
                 }
-              ],
-              "comment": "this is comment with ' escaped"
+              ]
             }
           ]
         }
@@ -559,7 +558,7 @@
       UNIQUE KEY `t_c_plus_5_uniq_idx` (((`c` + 5))),
       UNIQUE KEY `t_c_uniq_idx` (`c`),
       KEY `t_d_fulltext_idx` (`d`)
-    ) COMMENT 'this is comment with '' escaped';
+    );
 
     SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
     SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
@@ -594,7 +593,7 @@
 - description: ""
   baseline: |-
     CREATE TABLE `t1` (
-      `a` int primary key
+      `a` varchar(255)
     );
     CREATE TABLE `t2` (
       `a` int AUTO_INCREMENT primary key
@@ -617,7 +616,7 @@
                   "name":  "a",
                   "nullable":  true,
                   "type":  "int",
-                  "defaultExpression": "AUTO_INCREMENT"
+                  "default": "\\'escaped"
                 },
                 {
                   "name":  "b",
@@ -658,6 +657,17 @@
                   "defaultExpression": "1"
                 }
               ]
+            },
+            {
+              "name":  "t4",
+              "columns":  [
+                {
+                  "name":  "a",
+                  "nullable":  true,
+                  "type":  "int",
+                  "default": "\\'a\\'"
+                }
+              ]
             }
           ]
         }
@@ -665,7 +675,7 @@
     }
   result: |
     CREATE TABLE `t1` (
-      `a` int primary key AUTO_INCREMENT,
+      `a` int DEFAULT '\'escaped',
       `b` int
     );
     CREATE TABLE `t2` (
@@ -675,7 +685,7 @@
       `a` int AUTO_INCREMENT primary key
     );
     CREATE TABLE `t4` (
-      `a` int DEFAULT 1 primary key
+      `a` int DEFAULT '\'a\'' primary key
     );
 - description: ""
   baseline: |-
