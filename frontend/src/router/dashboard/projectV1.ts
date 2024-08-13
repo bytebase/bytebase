@@ -472,6 +472,7 @@ const projectV1Routes: RouteRecordRaw[] = [
           requiredProjectPermissionList: () => [
             "bb.projects.get",
             "bb.issues.list",
+            "bb.databases.list",
           ],
         },
         component: () => import("@/views/ExportCenter/index.vue"),
@@ -485,6 +486,7 @@ const projectV1Routes: RouteRecordRaw[] = [
           requiredProjectPermissionList: () => [
             "bb.projects.get",
             "bb.issues.list",
+            "bb.databases.list",
           ],
         },
         component: () => import("@/views/ReviewCenter/index.vue"),

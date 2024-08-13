@@ -7,11 +7,7 @@ export type ProjectQuickActionType =
   | "quickaction.bb.project.create"
   | "quickaction.bb.project.database.transfer";
 export type InstanceQuickActionType = "quickaction.bb.instance.create";
-export type DatabaseQuickActionType =
-  | "quickaction.bb.database.create" // Used by DBA and Owner
-  | "quickaction.bb.database.request" // Used by Developer (not yet)
-  | "quickaction.bb.database.schema.update"
-  | "quickaction.bb.database.data.update";
+export type DatabaseQuickActionType = "quickaction.bb.database.create";
 export type DatabaseGroupQuickActionType =
   "quickaction.bb.group.database-group.create";
 export type IssueQuickActionType =
@@ -40,9 +36,6 @@ export const QuickActionPermissionMap: Map<QuickActionType, Permission[]> =
       "quickaction.bb.database.create",
       ["bb.instances.list", "bb.issues.create"],
     ],
-    ["quickaction.bb.database.request", []],
-    ["quickaction.bb.database.schema.update", []],
-    ["quickaction.bb.database.data.update", []],
   ]);
 
 // Permission check for project level quick actions.
@@ -52,9 +45,6 @@ export const QuickActionProjectPermissionMap: Map<
 > = new Map([
   ["quickaction.bb.project.database.transfer", ["bb.projects.update"]],
   ["quickaction.bb.database.create", ["bb.instances.list", "bb.issues.create"]],
-  ["quickaction.bb.database.request", []],
-  ["quickaction.bb.database.schema.update", ["bb.issues.create"]],
-  ["quickaction.bb.database.data.update", ["bb.issues.create"]],
   ["quickaction.bb.group.database-group.create", ["bb.projects.update"]],
   ["quickaction.bb.issue.grant.request.querier", ["bb.issues.create"]],
   ["quickaction.bb.issue.grant.request.exporter", ["bb.issues.create"]],

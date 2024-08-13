@@ -130,11 +130,11 @@ import {
 } from "@/router/dashboard/projectV1";
 import {
   useCurrentUserV1,
-  useSearchDatabaseV1List,
   useDatabaseV1Store,
   useProjectV1Store,
   useAppFeature,
 } from "@/store";
+import { useDatabaseV1List } from "@/store/modules/v1/databaseList";
 import type { ComposedDatabase, FeatureType } from "@/types";
 import { UNKNOWN_ID, DEFAULT_PROJECT_NAME } from "@/types";
 import { State } from "@/types/proto/v1/common";
@@ -169,7 +169,7 @@ type LocalState = {
 const props = defineProps({
   projectName: {
     type: String,
-    default: undefined,
+    required: true,
   },
   type: {
     type: String as PropType<
@@ -222,16 +222,7 @@ const scopeOptions = useCommonSearchScopeOptions(
 );
 
 const selectedProject = computed(() => {
-  if (props.projectName) {
-    return projectV1Store.getProjectByName(props.projectName);
-  }
-  const filter = state.params.scopes.find(
-    (scope) => scope.id === "project"
-  )?.value;
-  if (filter) {
-    return projectV1Store.getProjectByName(`projects/${filter}`);
-  }
-  return undefined;
+  return projectV1Store.getProjectByName(props.projectName);
 });
 
 const selectedInstance = computed(() => {
@@ -253,18 +244,7 @@ const isEditSchema = computed((): boolean => {
   return props.type === "bb.issue.database.schema.update";
 });
 
-const { ready } = useSearchDatabaseV1List(
-  computed(() => {
-    const filters = ["instance = instances/-"];
-    const project = selectedProject.value;
-    if (project) {
-      filters.push(`project = ${project.name}`);
-    }
-    return {
-      filter: filters.join(" && "),
-    };
-  })
-);
+const { ready } = useDatabaseV1List(props.projectName);
 
 const rawDatabaseList = computed(() => {
   let list: ComposedDatabase[] = [];

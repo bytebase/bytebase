@@ -11,33 +11,25 @@
     <div
       class="space-y-4 h-full w-[calc(100vw-8rem)] lg:w-[60rem] max-w-[calc(100vw-8rem)] overflow-x-auto"
     >
-      <div v-if="ready">
-        <div class="space-y-3">
-          <div class="w-full flex items-center space-x-2">
-            <AdvancedSearch
-              v-model:params="state.params"
-              :placeholder="$t('database.filter-database')"
-              :scope-options="scopeOptions"
-            />
-            <DatabaseLabelFilter
-              v-model:selected="state.selectedLabels"
-              :database-list="rawDatabaseList"
-              :placement="'left-start'"
-            />
-          </div>
-          <DatabaseV1Table
-            mode="ALL_SHORT"
-            :database-list="filteredDatabaseList"
-            :single-selection="true"
-            @update:selected-databases="handleDatabasesSelectionChanged"
+      <div class="space-y-3">
+        <div class="w-full flex items-center space-x-2">
+          <AdvancedSearch
+            v-model:params="state.params"
+            :placeholder="$t('database.filter-database')"
+            :scope-options="scopeOptions"
+          />
+          <DatabaseLabelFilter
+            v-model:selected="state.selectedLabels"
+            :database-list="rawDatabaseList"
+            :placement="'left-start'"
           />
         </div>
-      </div>
-      <div
-        v-if="!ready"
-        class="w-full h-[20rem] flex items-center justify-center"
-      >
-        <BBSpin />
+        <DatabaseV1Table
+          mode="ALL_SHORT"
+          :database-list="filteredDatabaseList"
+          :single-selection="true"
+          @update:selected-databases="handleDatabasesSelectionChanged"
+        />
       </div>
     </div>
 
@@ -66,13 +58,11 @@
 import { NButton } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useRouter } from "vue-router";
-import { BBSpin } from "@/bbkit";
 import AdvancedSearch from "@/components/AdvancedSearch";
 import DatabaseV1Table from "@/components/v2/Model/DatabaseV1Table";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
   useCurrentUserV1,
-  useSearchDatabaseV1List,
   useDatabaseV1Store,
   useProjectV1Store,
 } from "@/store";
@@ -101,7 +91,7 @@ type LocalState = {
 const props = defineProps({
   projectName: {
     type: String,
-    default: undefined,
+    required: true,
   },
 });
 
@@ -123,20 +113,11 @@ const state = reactive<LocalState>({
 
 const scopeOptions = useCommonSearchScopeOptions(
   computed(() => state.params),
-  ["project", "instance", "environment"]
+  ["environment", "instance"]
 );
 
 const selectedProject = computed(() => {
-  if (props.projectName) {
-    return projectV1Store.getProjectByName(props.projectName);
-  }
-  const filter = state.params.scopes.find(
-    (scope) => scope.id === "project"
-  )?.value;
-  if (filter) {
-    return projectV1Store.getProjectByName(`projects/${filter}`);
-  }
-  return undefined;
+  return projectV1Store.getProjectByName(props.projectName);
 });
 
 const selectedInstance = computed(() => {
@@ -151,10 +132,6 @@ const selectedEnvironment = computed(() => {
     state.params.scopes.find((scope) => scope.id === "environment")?.value ??
     `${UNKNOWN_ID}`
   );
-});
-
-const { ready } = useSearchDatabaseV1List({
-  filter: "instance = instances/-",
 });
 
 const rawDatabaseList = computed(() => {
@@ -189,7 +166,6 @@ const filteredDatabaseList = computed(() => {
       "name",
       "environment",
       "instance",
-      "project",
     ]);
   });
 

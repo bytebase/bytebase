@@ -47,6 +47,7 @@ import {
   useAppFeature,
   useProjectV1List,
 } from "@/store";
+import { useDatabaseV1List } from "@/store/modules/v1/databaseList";
 import type { SQLEditorConnection } from "@/types";
 import {
   DEFAULT_PROJECT_NAME,
@@ -55,7 +56,6 @@ import {
   UNKNOWN_USER_NAME,
   isValidInstanceName,
 } from "@/types";
-import { State } from "@/types/proto/v1/common";
 import { PolicyResourceType } from "@/types/proto/v1/org_policy_service";
 import {
   emptySQLEditorConnection,
@@ -174,11 +174,9 @@ const prepareDatabases = async () => {
   }
   const { project } = editorStore;
   // `databaseList` is the database list in the project.
-  const databaseList = (await databaseStore.listDatabases(project)).filter(
-    (db) => db.syncState === State.ACTIVE
-  );
-
-  editorStore.databaseList = databaseList;
+  const { databaseList, ready } = useDatabaseV1List(project);
+  await wrapRefAsPromise(ready, true);
+  editorStore.databaseList = databaseList.value;
 };
 
 const connect = (connection: SQLEditorConnection) => {

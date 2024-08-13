@@ -1,7 +1,8 @@
 import { uniq } from "lodash-es";
 import type { SelectOption } from "naive-ui";
 import type { Factor } from "@/plugins/cel";
-import { useDatabaseV1ListByProject, useEnvironmentV1Store } from "@/store";
+import { useEnvironmentV1Store } from "@/store";
+import { useDatabaseV1List } from "@/store/modules/v1/databaseList";
 import type { ComposedProject } from "@/types";
 import {
   extractEnvironmentResourceName,
@@ -47,7 +48,7 @@ const getEnvironmentOptions = () => {
 };
 
 const getInstanceIdOptions = (project: ComposedProject) => {
-  const { databaseList } = useDatabaseV1ListByProject(project.name);
+  const { databaseList } = useDatabaseV1List(project.name);
   return uniq(
     databaseList.value.map((d) => d.instanceResource.name)
   ).map<SelectOption>((instanceName) => {

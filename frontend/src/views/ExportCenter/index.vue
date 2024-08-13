@@ -55,7 +55,7 @@
     @close="state.showRequestExportPanel = false"
   >
     <DataExportPrepForm
-      :project-name="specificProject?.name"
+      :project-name="specificProject.name"
       @dismiss="state.showRequestExportPanel = false"
     />
   </Drawer>
@@ -82,7 +82,7 @@ import {
 import DataExportIssueDataTable from "./DataExportIssueDataTable";
 
 const props = defineProps<{
-  projectId?: string;
+  projectId: string;
 }>();
 
 interface LocalState {
@@ -93,15 +93,12 @@ interface LocalState {
 }
 
 const specificProject = computed(() => {
-  return props.projectId
-    ? projectV1Store.getProjectByName(`${projectNamePrefix}${props.projectId}`)
-    : undefined;
+  return projectV1Store.getProjectByName(
+    `${projectNamePrefix}${props.projectId}`
+  );
 });
 
 const readonlyScopes = computed((): SearchScope[] => {
-  if (!specificProject.value) {
-    return [];
-  }
   return [
     {
       id: "project",
@@ -155,9 +152,6 @@ const overideSearchScopeIdList = computed(() => {
     "database",
     "label",
   ];
-  if (!specificProject.value) {
-    defaultScopeIdList.push("project");
-  }
   return defaultScopeIdList;
 });
 
