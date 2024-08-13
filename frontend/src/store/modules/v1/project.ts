@@ -180,7 +180,7 @@ export const useProjectByName = (name: MaybeRef<string>) => {
   const ready = ref(false);
   watchEffect(() => {
     ready.value = false;
-    store.getOrFetchProjectByName(unref(name)).then(() => {
+    store.getOrFetchProjectByName(unref(name), /* silent */ true).then(() => {
       ready.value = true;
     });
   });
