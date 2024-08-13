@@ -104,8 +104,8 @@ func (d *Driver) Execute(ctx context.Context, statement string, _ db.ExecuteOpti
 }
 
 // QueryConn queries a SQL statement in a given connection.
-func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
-	if queryContext != nil && queryContext.Explain {
+func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
+	if queryContext.Explain {
 		return nil, errors.New("BigQuery does not support EXPLAIN")
 	}
 
@@ -116,7 +116,7 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 
 	var results []*v1pb.QueryResult
 	for _, statement := range statements {
-		if queryContext != nil && queryContext.Limit > 0 {
+		if queryContext.Limit > 0 {
 			statement = getStatementWithResultLimit(statement, queryContext.Limit)
 		}
 

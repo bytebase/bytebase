@@ -205,7 +205,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 }
 
 // QueryConn queries a SQL statement in a given connection.
-func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
+func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
 	singleSQLs, err := plsqlparser.SplitSQL(statement)
 	if err != nil {
 		return nil, err
@@ -218,7 +218,7 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 	var results []*v1pb.QueryResult
 	for _, singleSQL := range singleSQLs {
 		statement := singleSQL.Text
-		if queryContext != nil && queryContext.Explain {
+		if queryContext.Explain {
 			startTime := time.Now()
 			randNum, err := rand.Int(rand.Reader, big.NewInt(999))
 			if err != nil {
@@ -232,7 +232,7 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 			statement = fmt.Sprintf(`SELECT LPAD(' ', LEVEL-1) || OPERATION || ' (' || OPTIONS || ')' "Operation", OBJECT_NAME "Object", OPTIMIZER "Optimizer", COST "Cost", CARDINALITY "Cardinality", BYTES "Bytes", PARTITION_START "Partition Start", PARTITION_ID "Partition ID", ACCESS_PREDICATES "Access Predicates",FILTER_PREDICATES "Filter Predicates" FROM PLAN_TABLE START WITH ID = 0 AND statement_id = '%s' CONNECT BY PRIOR ID=PARENT_ID AND statement_id = '%s' ORDER BY id`, randomID, randomID)
 		}
 
-		if queryContext != nil && !queryContext.Explain && queryContext.Limit > 0 {
+		if !queryContext.Explain && queryContext.Limit > 0 {
 			stmt, err := driver.getStatementWithResultLimit(statement, queryContext)
 			if err != nil {
 				slog.Error("fail to add limit clause", "statement", statement, log.BBError(err))
@@ -291,7 +291,7 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 	return results, nil
 }
 
-func (driver *Driver) getStatementWithResultLimit(stmt string, queryContext *db.QueryContext) (string, error) {
+func (driver *Driver) getStatementWithResultLimit(stmt string, queryContext db.QueryContext) (string, error) {
 	engineVersion := driver.connectionCtx.EngineVersion
 	versionIdx := strings.Index(engineVersion, ".")
 	if versionIdx < 0 {
@@ -301,23 +301,19 @@ func (driver *Driver) getStatementWithResultLimit(stmt string, queryContext *db.
 	if err != nil {
 		return "", err
 	}
-	if queryContext != nil {
-		if ok, err := skipAddLimit(stmt); err != nil && ok {
-			return stmt, nil
-		}
-		switch {
-		case versionNumber < dbVersion12:
-			return getStatementWithResultLimitFor11g(stmt, queryContext.Limit), nil
-		default:
-			res, err := getStatementWithResultLimitFor12c(stmt, queryContext.Limit)
-			if err != nil {
-				return "", err
-			}
-			return res, nil
-		}
+	if ok, err := skipAddLimit(stmt); err != nil && ok {
+		return stmt, nil
 	}
-
-	return stmt, nil
+	switch {
+	case versionNumber < dbVersion12:
+		return getStatementWithResultLimitFor11g(stmt, queryContext.Limit), nil
+	default:
+		res, err := getStatementWithResultLimitFor12c(stmt, queryContext.Limit)
+		if err != nil {
+			return "", err
+		}
+		return res, nil
+	}
 }
 
 // skipAddLimit checks if the statement needs a limit clause.

@@ -237,7 +237,7 @@ func execute(ctx context.Context, tx *sql.Tx, statement string) (int64, error) {
 }
 
 // QueryConn queries a SQL statement in a given connection.
-func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
+func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
 	singleSQLs, err := tsqlparser.SplitSQL(statement)
 	if err != nil {
 		return nil, err
@@ -247,7 +247,7 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 		return nil, nil
 	}
 
-	isExplain := queryContext != nil && queryContext.Explain
+	isExplain := queryContext.Explain
 	if isExplain {
 		if _, err := conn.ExecContext(ctx, "SET SHOWPLAN_ALL ON;"); err != nil {
 			return nil, err
@@ -257,7 +257,7 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 	var results []*v1pb.QueryResult
 	for _, singleSQL := range singleSQLs {
 		statement := singleSQL.Text
-		if !isExplain && queryContext != nil && queryContext.Limit > 0 {
+		if !isExplain && queryContext.Limit > 0 {
 			stmt, err := getMSSQLStatementWithResultLimit(statement, queryContext.Limit)
 			if err != nil {
 				slog.Error("fail to add limit clause", "statement", statement, log.BBError(err))

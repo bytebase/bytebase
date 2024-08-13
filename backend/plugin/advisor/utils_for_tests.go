@@ -286,7 +286,7 @@ func (*MockDriver) Execute(_ context.Context, _ string, _ database.ExecuteOption
 }
 
 // QueryConn queries a SQL statement in a given connection.
-func (*MockDriver) QueryConn(_ context.Context, _ *sql.Conn, _ string, _ *database.QueryContext) ([]*v1pb.QueryResult, error) {
+func (*MockDriver) QueryConn(_ context.Context, _ *sql.Conn, _ string, _ database.QueryContext) ([]*v1pb.QueryResult, error) {
 	return nil, nil
 }
 
