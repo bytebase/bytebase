@@ -44,7 +44,6 @@ type Driver struct {
 	// certificate file path should be deleted if calling closed.
 	certFilePath         string
 	maximumSQLResultSize int64
-	showPlanAllOn        bool
 }
 
 func newDriver(db.DriverConfig) db.Driver {
@@ -239,8 +238,6 @@ func execute(ctx context.Context, tx *sql.Tx, statement string) (int64, error) {
 
 // QueryConn queries a SQL statement in a given connection.
 func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
-	if queryContext.Explain {
-	}
 	singleSQLs, err := tsqlparser.SplitSQL(statement)
 	if err != nil {
 		return nil, err

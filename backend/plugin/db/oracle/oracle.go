@@ -314,8 +314,6 @@ func (driver *Driver) getStatementWithResultLimit(stmt string, queryContext db.Q
 		}
 		return res, nil
 	}
-
-	return stmt, nil
 }
 
 // skipAddLimit checks if the statement needs a limit clause.
