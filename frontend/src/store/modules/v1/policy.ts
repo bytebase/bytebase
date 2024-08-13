@@ -268,7 +268,6 @@ export const getEmptyRolloutPolicy = (
   );
   return {
     name,
-    uid: "",
     resourceUid: "",
     inheritFromParent: false,
     type: PolicyType.ROLLOUT_POLICY,

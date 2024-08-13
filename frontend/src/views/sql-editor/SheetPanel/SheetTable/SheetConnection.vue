@@ -35,7 +35,7 @@ import {
   EnvironmentV1Name,
 } from "@/components/v2";
 import { useDatabaseV1Store, useEnvironmentV1Store } from "@/store";
-import { unknownDatabase, unknownEnvironment } from "@/types";
+import { isValidDatabaseName, unknownEnvironment } from "@/types";
 import type { Worksheet } from "@/types/proto/v1/worksheet_service";
 
 const props = defineProps<{
@@ -47,7 +47,7 @@ const database = computed(() => {
   const { sheet } = props;
   if (!props.sheet.database) return undefined;
   const db = databaseStore.getDatabaseByName(sheet.database);
-  if (db.name === unknownDatabase().name) return undefined;
+  if (!isValidDatabaseName(db.name)) return undefined;
   return db;
 });
 

@@ -110,7 +110,7 @@ import {
 } from "@/store";
 import { useBranchStore } from "@/store/modules/branch";
 import type { ComposedProject } from "@/types";
-import { unknownDatabase } from "@/types";
+import { isValidDatabaseName } from "@/types";
 import { Branch } from "@/types/proto/v1/branch_service";
 import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
 import { hasProjectPermissionV2 } from "@/utils";
@@ -232,7 +232,7 @@ const prepareBranch = async (
       parent: _parentBranchName,
     });
   }
-  if (_databaseName && _databaseName !== unknownDatabase().name) {
+  if (isValidDatabaseName(_databaseName)) {
     const branch = await prepareBranchFromDatabaseHead(_databaseName);
     return finish({
       branch,

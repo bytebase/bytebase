@@ -9931,10 +9931,6 @@ components:
                     description: |-
                         The name of the identity provider.
                          Format: idps/{idp}
-                uid:
-                    readOnly: true
-                    type: string
-                    description: The system-assigned, unique identifier for a resource.
                 state:
                     enum:
                         - STATE_UNSPECIFIED
@@ -11464,10 +11460,6 @@ components:
                          Environment resource name: environments/environment-id.
                          Instance resource name: instances/instance-id.
                          Database resource name: instances/instance-id/databases/database-name.
-                uid:
-                    readOnly: true
-                    type: string
-                    description: The system-assigned, unique identifier for a resource.
                 inheritFromParent:
                     type: boolean
                 type:
@@ -12019,10 +12011,6 @@ components:
                 name:
                     type: string
                     description: 'Format: risks/{risk}'
-                uid:
-                    readOnly: true
-                    type: string
-                    description: system-generated unique identifier.
                 source:
                     enum:
                         - SOURCE_UNSPECIFIED
