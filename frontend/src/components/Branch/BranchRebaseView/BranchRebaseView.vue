@@ -74,11 +74,7 @@ import { useI18n } from "vue-i18n";
 import { useRoute } from "vue-router";
 import MaskSpinner from "@/components/misc/MaskSpinner.vue";
 import { branchServiceClient } from "@/grpcweb";
-import {
-  pushNotification,
-  useBranchStore,
-  useDatabaseV1Store,
-} from "@/store";
+import { pushNotification, useBranchStore, useDatabaseV1Store } from "@/store";
 import type { ComposedProject } from "@/types";
 import { isValidDatabaseName } from "@/types";
 import type { Branch } from "@/types/proto/v1/branch_service";

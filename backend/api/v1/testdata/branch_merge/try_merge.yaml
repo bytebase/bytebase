@@ -12,7 +12,6 @@
                   "name": "id",
                   "type": "int",
                   "nullable": true,
-                  "position": 1,
                   "defaultNull": true
                 }
               ],
@@ -53,7 +52,6 @@
                   "name": "id",
                   "type": "int",
                   "nullable": true,
-                  "position": 1,
                   "defaultNull": true
                 }
               ],
@@ -87,7 +85,6 @@
                   "name": "id",
                   "type": "int",
                   "nullable": true,
-                  "position": 1,
                   "defaultNull": true
                 }
               ],
@@ -124,7 +121,6 @@
               "columns": [
                 {
                   "name": "id",
-                  "position": 1,
                   "defaultNull": true,
                   "nullable": true,
                   "type": "int"
@@ -189,7 +185,6 @@
               "columns": [
                 {
                   "name": "id",
-                  "position": 1,
                   "defaultNull": true,
                   "nullable": true,
                   "type": "INT"
@@ -232,7 +227,6 @@
               "columns": [
                 {
                   "name": "id",
-                  "position": 1,
                   "defaultNull": true,
                   "nullable": true,
                   "type": "INT"
@@ -293,8 +287,7 @@
                "columns": [
                  {
                    "name": "id",
-                   "position": 1,
-                   "defaultNull": true,
+                    "defaultNull": true,
                    "nullable": true,
                    "type": "INT"
                  }
@@ -360,7 +353,6 @@
               "columns": [
                 {
                   "name": "id",
-                  "position": 1,
                   "defaultNull": true,
                   "nullable": true,
                   "type": "INT"
@@ -467,17 +459,14 @@
               "columns":  [
                 {
                   "name":  "id",
-                  "position":  1,
                   "type":  "integer"
                 },
                 {
                   "name":  "name",
-                  "position":  2,
                   "type":  "varchar(255)"
                 },
                 {
                   "name": "c",
-                  "position": 2,
                   "type": "int"
                 }
               ],
@@ -514,7 +503,6 @@
               "columns":  [
                 {
                   "name":  "id",
-                  "position":  1,
                   "type":  "integer"
                 }
               ]
@@ -536,22 +524,18 @@
               "columns":  [
                 {
                   "name":  "id",
-                  "position":  1,
                   "type":  "integer"
                 },
                 {
                   "name": "c",
-                  "position": 2,
                   "type": "int"
                 },
                 {
                   "name": "gender",
-                  "position": 3,
                   "type": "char(1)"
                 },
                 {
                   "name": "credit_card_number",
-                  "position": 4,
                   "type": "varchar(255)"
                 }
               ],
@@ -580,12 +564,10 @@
               "columns":  [
                 {
                   "name":  "id",
-                  "position":  1,
                   "type":  "integer"
                 },
                 {
                   "name":  "employee_id",
-                  "position":  2,
                   "type":  "integer"
                 }
               ],
@@ -629,27 +611,22 @@
               "columns":  [
                 {
                   "name":  "id",
-                  "position":  1,
                   "type":  "integer"
                 },
                 {
                   "name":  "name",
-                  "position":  2,
                   "type":  "varchar(255)"
                 },
                 {
                   "name": "c",
-                  "position": 3,
                   "type": "int"
                 },
                 {
                   "name": "gender",
-                  "position": 4,
                   "type": "char(1)"
                 },
                 {
                   "name": "debit_card_number",
-                  "position": 5,
                   "type": "varchar(255)"
                 }
               ],
@@ -679,7 +656,6 @@
               "columns":  [
                 {
                   "name":  "id",
-                  "position":  1,
                   "type":  "integer"
                 }
               ]
@@ -689,12 +665,10 @@
               "columns":  [
                 {
                   "name":  "id",
-                  "position":  1,
                   "type":  "integer"
                 },
                 {
                   "name":  "employee_id",
-                  "position":  2,
                   "type":  "integer"
                 }
               ]
@@ -704,17 +678,14 @@
               "columns":  [
                 {
                   "name":  "id",
-                  "position":  1,
                   "type":  "integer"
                 },
                 {
                   "name":  "address",
-                  "position":  2,
                   "type":  "varchar(255)"
                 },
                 {
                   "name":  "employee_id",
-                  "position":  3,
                   "type":  "integer"
                 }
               ],
@@ -758,27 +729,22 @@
               "columns": [
                 {
                   "name": "id",
-                  "position": 1,
                   "type": "integer"
                 },
                 {
                   "name": "c",
-                  "position": 2,
                   "type": "int"
                 },
                 {
                   "name": "gender",
-                  "position": 3,
                   "type": "char(1)"
                 },
                 {
                   "name": "debit_card_number",
-                  "position": 4,
                   "type": "varchar(255)"
                 },
                 {
                   "name": "credit_card_number",
-                  "position": 5,
                   "type": "varchar(255)"
                 }
               ],
@@ -807,17 +773,14 @@
               "columns": [
                 {
                   "name": "id",
-                  "position": 1,
                   "type": "integer"
                 },
                 {
                   "name": "address",
-                  "position": 2,
                   "type": "varchar(255)"
                 },
                 {
                   "name": "employee_id",
-                  "position": 3,
                   "type": "integer"
                 }
               ],
@@ -849,12 +812,10 @@
               "columns": [
                 {
                   "name": "id",
-                  "position": 1,
                   "type": "integer"
                 },
                 {
                   "name": "employee_id",
-                  "position": 2,
                   "type": "integer"
                 }
               ]
@@ -877,7 +838,6 @@
               "columns":  [
                 {
                   "name":  "id",
-                  "position":  1,
                   "type":  "integer"
                 }
               ]
@@ -899,12 +859,10 @@
               "columns":  [
                 {
                   "name":  "id",
-                  "position":  1,
                   "type":  "integer"
                 },
                 {
                   "name":  "name",
-                  "position":  2,
                   "type":  "varchar(255)"
                 }
               ]
@@ -926,12 +884,10 @@
               "columns":  [
                 {
                   "name":  "id",
-                  "position":  1,
                   "type":  "integer"
                 },
                 {
                   "name":  "gender",
-                  "position":  2,
                   "type":  "char(1)"
                 }
               ]
@@ -953,17 +909,14 @@
               "columns": [
                 {
                   "name": "id",
-                  "position": 1,
                   "type": "integer"
                 },
                 {
                   "name": "gender",
-                  "position": 2,
                   "type": "char(1)"
                 },
                 {
                   "name": "name",
-                  "position": 3,
                   "type": "varchar(255)"
                 }
               ]
@@ -986,12 +939,10 @@
               "columns":  [
                 {
                   "name":  "id",
-                  "position":  1,
                   "type":  "integer"
                 },
                 {
                   "name":  "name",
-                  "position":  2,
                   "type":  "text"
                 }
               ]
@@ -1013,12 +964,10 @@
               "columns":  [
                 {
                   "name":  "id",
-                  "position":  1,
                   "type":  "integer"
                 },
                 {
                   "name":  "name",
-                  "position":  2,
                   "type":  "text"
                 }
               ]
@@ -1040,12 +989,10 @@
               "columns":  [
                 {
                   "name":  "id",
-                  "position":  1,
                   "type":  "integer"
                 },
                 {
                   "name": "name",
-                  "position": 2,
                   "type": "text"
                 }
               ],
@@ -1076,12 +1023,10 @@
               "columns": [
                 {
                   "name": "id",
-                  "position": 1,
                   "type": "integer"
                 },
                 {
                   "name": "name",
-                  "position": 2,
                   "type": "text"
                 }
               ],
@@ -1113,7 +1058,6 @@
               "columns":  [
                 {
                   "name":  "id",
-                  "position":  1,
                   "type":  "integer"
                 }
               ]
@@ -1135,7 +1079,6 @@
               "columns":  [
                 {
                   "name":  "id",
-                  "position":  1,
                   "type":  "integer"
                 }
               ]
@@ -1166,7 +1109,6 @@
               "columns":  [
                 {
                   "name":  "id",
-                  "position":  1,
                   "type":  "integer"
                 }
               ]
@@ -1197,7 +1139,6 @@
               "columns": [
                 {
                   "name": "id",
-                  "position": 1,
                   "type": "integer"
                 }
               ]
@@ -1207,7 +1148,6 @@
               "columns": [
                 {
                   "name": "id",
-                  "position": 1,
                   "type": "integer"
                 }
               ]
@@ -1217,7 +1157,6 @@
               "columns": [
                 {
                   "name": "id",
-                  "position": 1,
                   "type": "integer"
                 }
               ]
@@ -1240,7 +1179,6 @@
               "columns":  [
                 {
                   "name":  "id",
-                  "position":  1,
                   "type":  "integer"
                 }
               ]
@@ -1262,7 +1200,6 @@
               "columns":  [
                 {
                   "name":  "id",
-                  "position":  1,
                   "type":  "integer"
                 }
               ]
@@ -1284,7 +1221,6 @@
               "columns":  [
                 {
                   "name":  "id",
-                  "position":  1,
                   "type":  "integer"
                 }
               ]
@@ -1306,7 +1242,6 @@
               "columns": [
                 {
                   "name": "id",
-                  "position": 1,
                   "type": "integer"
                 }
               ]
@@ -1329,7 +1264,6 @@
               "columns":  [
                 {
                   "name":  "id",
-                  "position":  1,
                   "type":  "int"
                 }
               ]
@@ -1351,7 +1285,6 @@
               "columns":  [
                 {
                   "name":  "id",
-                  "position":  1,
                   "type":  "int"
                 }
               ]
@@ -1373,7 +1306,6 @@
               "columns":  [
                 {
                   "name":  "id",
-                  "position":  1,
                   "type":  "int(11)"
                 }
               ]
@@ -1395,7 +1327,6 @@
               "columns": [
                 {
                   "name": "id",
-                  "position": 1,
                   "type": "int(11)"
                 }
               ]
