@@ -256,8 +256,6 @@ export interface Instance {
    * Format: instances/{instance}
    */
   name: string;
-  /** The system-assigned, unique identifier for a resource. */
-  uid: string;
   state: State;
   title: string;
   engine: Engine;
@@ -1839,7 +1837,6 @@ export const InstanceOptions = {
 function createBaseInstance(): Instance {
   return {
     name: "",
-    uid: "",
     state: State.STATE_UNSPECIFIED,
     title: "",
     engine: Engine.ENGINE_UNSPECIFIED,
@@ -1857,9 +1854,6 @@ export const Instance = {
   encode(message: Instance, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
-    }
-    if (message.uid !== "") {
-      writer.uint32(18).string(message.uid);
     }
     if (message.state !== State.STATE_UNSPECIFIED) {
       writer.uint32(24).int32(stateToNumber(message.state));
@@ -1907,13 +1901,6 @@ export const Instance = {
           }
 
           message.name = reader.string();
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.uid = reader.string();
           continue;
         case 3:
           if (tag !== 24) {
@@ -1997,7 +1984,6 @@ export const Instance = {
   fromJSON(object: any): Instance {
     return {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
-      uid: isSet(object.uid) ? globalThis.String(object.uid) : "",
       state: isSet(object.state) ? stateFromJSON(object.state) : State.STATE_UNSPECIFIED,
       title: isSet(object.title) ? globalThis.String(object.title) : "",
       engine: isSet(object.engine) ? engineFromJSON(object.engine) : Engine.ENGINE_UNSPECIFIED,
@@ -2017,9 +2003,6 @@ export const Instance = {
     const obj: any = {};
     if (message.name !== "") {
       obj.name = message.name;
-    }
-    if (message.uid !== "") {
-      obj.uid = message.uid;
     }
     if (message.state !== State.STATE_UNSPECIFIED) {
       obj.state = stateToJSON(message.state);
@@ -2060,7 +2043,6 @@ export const Instance = {
   fromPartial(object: DeepPartial<Instance>): Instance {
     const message = createBaseInstance();
     message.name = object.name ?? "";
-    message.uid = object.uid ?? "";
     message.state = object.state ?? State.STATE_UNSPECIFIED;
     message.title = object.title ?? "";
     message.engine = object.engine ?? Engine.ENGINE_UNSPECIFIED;
