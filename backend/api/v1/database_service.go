@@ -1819,6 +1819,9 @@ func (s *DatabaseService) isBackupAvailable(ctx context.Context, instance *store
 			slog.Debug("Failed to get db schema for checking backup availability", "err", err)
 			return false
 		}
+		if dbSchema == nil {
+			return false
+		}
 		for _, schema := range dbSchema.GetMetadata().GetSchemas() {
 			if schema.GetName() == backupDatabaseName {
 				return true
