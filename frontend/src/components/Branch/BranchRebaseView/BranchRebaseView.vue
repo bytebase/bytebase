@@ -182,7 +182,6 @@ const parentBranchOnly = computed(() => {
 });
 
 const hasConflict = computed(() => {
-  return true;
   if (sourceDatabase.value?.databaseName == "bytebase-conflict") {
     return true;
   }
