@@ -1,7 +1,10 @@
 <template>
   <div class="h-full flex flex-col overflow-y-auto bg-control-bg">
     <nav class="flex-1 flex flex-col overflow-y-hidden">
-      <BytebaseLogo class="w-full px-4 shrink-0" />
+      <BytebaseLogo
+        class="w-full px-4 shrink-0"
+        :redirect="SQL_EDITOR_HOME_MODULE"
+      />
 
       <div class="flex-1 overflow-y-auto px-2.5 space-y-1">
         <div v-for="item in itemList" :key="item.name">

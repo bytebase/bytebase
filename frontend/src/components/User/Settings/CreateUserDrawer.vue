@@ -11,7 +11,7 @@
       <template #default>
         <NForm>
           <div
-            v-if="isCreating"
+            v-if="isCreating && !hideServiceAccount"
             class="w-full mb-4 flex flex-row justify-start items-center"
           >
             <span class="mr-2 text-sm">{{ $t("common.type") }}</span>
@@ -189,6 +189,7 @@ import { Drawer, DrawerContent } from "@/components/v2";
 import {
   getUpdateMaskFromUsers,
   pushNotification,
+  useAppFeature,
   useRoleStore,
   useSettingV1Store,
   useUserStore,
@@ -232,6 +233,10 @@ const initUser = () => {
 const { t } = useI18n();
 const settingV1Store = useSettingV1Store();
 const userStore = useUserStore();
+const hideServiceAccount = useAppFeature(
+  "bb.feature.members.hide-service-account"
+);
+const hideProjectRoles = useAppFeature("bb.feature.members.hide-project-roles");
 
 const state = reactive<LocalState>({
   isRequesting: false,
@@ -265,6 +270,9 @@ const availableRoleOptions = computed(
         })),
       },
     ];
+    if (hideProjectRoles.value) {
+      return roleGroups[0].children;
+    }
     const customRoles = useRoleStore()
       .roleList.map((role) => role.name)
       .filter((role) => !PRESET_ROLES.includes(role));

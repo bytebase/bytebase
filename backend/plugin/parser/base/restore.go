@@ -1,7 +1,6 @@
 package base
 
-type TransformContext struct {
-	Version                 any
+type RestoreContext struct {
 	InstanceID              string
 	GetDatabaseMetadataFunc GetDatabaseMetadataFunc
 }

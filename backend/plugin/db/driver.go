@@ -179,10 +179,9 @@ type ConnectionConfig struct {
 	Username   string
 	Password   string
 	Database   string
-	// The database used to connect.
 	// It's only set for Redshift datashare database.
-	ConnectionDatabase string
-	TLSConfig          TLSConfig
+	DataShare bool
+	TLSConfig TLSConfig
 	// Only used for Hive.
 	SASLConfig SASLConfig
 	// ReadOnly is only supported for Postgres at the moment.
@@ -248,11 +247,9 @@ type ConnectionContext struct {
 // QueryContext is the context to query.
 type QueryContext struct {
 	// Limit is the maximum row count returned. No limit enforced if limit <= 0
-	Limit   int
-	Explain bool
-
-	// CurrentDatabase is for MySQL
-	CurrentDatabase string
+	Limit        int
+	Explain      bool
+	AdminSession bool
 }
 
 // DatabaseRoleMessage is the API message for database role.
@@ -294,7 +291,7 @@ type Driver interface {
 	// Execute will execute the statement.
 	Execute(ctx context.Context, statement string, opts ExecuteOptions) (int64, error)
 	// Used for execute readonly SELECT statement
-	QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *QueryContext) ([]*v1pb.QueryResult, error)
+	QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext QueryContext) ([]*v1pb.QueryResult, error)
 
 	// Sync schema
 	// SyncInstance syncs the instance metadata.

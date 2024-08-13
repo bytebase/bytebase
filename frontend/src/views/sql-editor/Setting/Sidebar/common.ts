@@ -1,4 +1,4 @@
-import { BuildingIcon, LayersIcon } from "lucide-vue-next";
+import { BuildingIcon, LayersIcon, UsersIcon } from "lucide-vue-next";
 import { computed, h } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, type RouteRecordRaw } from "vue-router";
@@ -6,6 +6,7 @@ import type { SidebarItem } from "@/components/CommonSidebar.vue";
 import sqlEditorRoutes, {
   SQL_EDITOR_SETTING_GENERAL_MODULE,
   SQL_EDITOR_SETTING_INSTANCE_MODULE,
+  SQL_EDITOR_SETTING_MEMBERS_MODULE,
 } from "@/router/sqlEditor";
 import { useCurrentUserV1, useAppFeature } from "@/store";
 import type { Permission } from "@/types";
@@ -104,6 +105,12 @@ export const useSidebarItems = () => {
         title: t("common.instances"),
         icon: () => h(LayersIcon),
         name: SQL_EDITOR_SETTING_INSTANCE_MODULE,
+        type: "route",
+      },
+      {
+        title: t("common.members"),
+        icon: () => h(UsersIcon),
+        name: SQL_EDITOR_SETTING_MEMBERS_MODULE,
         type: "route",
       },
     ];

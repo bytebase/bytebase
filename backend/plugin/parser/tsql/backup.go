@@ -1,6 +1,7 @@
 package tsql
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -50,7 +51,7 @@ type statementInfo struct {
 	table     *TableReference
 }
 
-func TransformDMLToSelect(_ base.TransformContext, statement string, sourceDatabase string, targetDatabase string, tablePrefix string) ([]base.BackupStatement, error) {
+func TransformDMLToSelect(_ context.Context, _ base.TransformContext, statement string, sourceDatabase string, targetDatabase string, tablePrefix string) ([]base.BackupStatement, error) {
 	statementInfoList, err := prepareTransformation(sourceDatabase, statement)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to prepare transformation")

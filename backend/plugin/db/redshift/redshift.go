@@ -77,22 +77,20 @@ func (driver *Driver) Open(_ context.Context, _ storepb.Engine, config db.Connec
 		return nil, errors.Errorf("ssl-cert and ssl-key must be both set or unset")
 	}
 
-	connConfig, err := pgx.ParseConfig(fmt.Sprintf("host=%s port=%s", config.Host, config.Port))
+	pgxConnConfig, err := pgx.ParseConfig(fmt.Sprintf("host=%s port=%s", config.Host, config.Port))
 	if err != nil {
 		return nil, err
 	}
-	connConfig.Config.User = config.Username
-	connConfig.Config.Password = config.Password
-	connConfig.Config.Database = config.Database
-	if config.ConnectionDatabase != "" {
-		connConfig.Config.Database = config.ConnectionDatabase
-	}
+	pgxConnConfig.Config.User = config.Username
+	pgxConnConfig.Config.Password = config.Password
+	pgxConnConfig.Config.Database = config.Database
+
 	if config.TLSConfig.SslCert != "" {
 		cfg, err := config.TLSConfig.GetSslConfig()
 		if err != nil {
 			return nil, err
 		}
-		connConfig.TLSConfig = cfg
+		pgxConnConfig.TLSConfig = cfg
 	}
 	if config.SSHConfig.Host != "" {
 		sshClient, err := util.GetSSHClient(config.SSHConfig)
@@ -101,7 +99,7 @@ func (driver *Driver) Open(_ context.Context, _ storepb.Engine, config db.Connec
 		}
 		driver.sshClient = sshClient
 
-		connConfig.Config.DialFunc = func(_ context.Context, network, addr string) (net.Conn, error) {
+		pgxConnConfig.Config.DialFunc = func(_ context.Context, network, addr string) (net.Conn, error) {
 			conn, err := sshClient.Dial(network, addr)
 			if err != nil {
 				return nil, err
@@ -110,15 +108,15 @@ func (driver *Driver) Open(_ context.Context, _ storepb.Engine, config db.Connec
 		}
 	}
 	driver.databaseName = config.Database
-	driver.datashare = config.ConnectionDatabase != ""
+	driver.datashare = config.DataShare
 	driver.config = config
 
 	// Datashare doesn't support read-only transactions.
 	if config.ReadOnly && !driver.datashare {
-		connConfig.RuntimeParams["default_transaction_read_only"] = "true"
+		pgxConnConfig.RuntimeParams["default_transaction_read_only"] = "true"
 	}
 
-	driver.connectionString = stdlib.RegisterConnConfig(connConfig)
+	driver.connectionString = stdlib.RegisterConnConfig(pgxConnConfig)
 	db, err := sql.Open(driverName, driver.connectionString)
 	if err != nil {
 		return nil, err
@@ -330,7 +328,7 @@ func (driver *Driver) GetCurrentDatabaseOwner() (string, error) {
 }
 
 // QueryConn queries a SQL statement in a given connection.
-func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
+func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
 	singleSQLs, err := pgparser.SplitSQL(statement)
 	if err != nil {
 		return nil, err
@@ -344,11 +342,11 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 	for _, singleSQL := range singleSQLs {
 		statement := singleSQL.Text
 		if driver.datashare {
-			statement = strings.ReplaceAll(statement, fmt.Sprintf("%s.", queryContext.CurrentDatabase), "")
+			statement = strings.ReplaceAll(statement, fmt.Sprintf("%s.", driver.databaseName), "")
 		}
-		if queryContext != nil && queryContext.Explain {
+		if queryContext.Explain {
 			statement = fmt.Sprintf("EXPLAIN %s", statement)
-		} else if queryContext != nil && queryContext.Limit > 0 {
+		} else if queryContext.Limit > 0 {
 			statement = getStatementWithResultLimit(statement, queryContext.Limit)
 		}
 

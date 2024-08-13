@@ -37,9 +37,9 @@ type CompletionFunc func(ctx context.Context, cCtx CompletionContext, statement 
 type GetQuerySpanFunc func(ctx context.Context, gCtx GetQuerySpanContext, statement, database, schema string, ignoreCaseSensitive bool) (*QuerySpan, error)
 
 // TransformDMLToSelectFunc is the interface of transforming DML statements to SELECT statements.
-type TransformDMLToSelectFunc func(ctx TransformContext, statement string, sourceDatabase string, targetDatabase string, tablePrefix string) ([]BackupStatement, error)
+type TransformDMLToSelectFunc func(ctx context.Context, tCtx TransformContext, statement string, sourceDatabase string, targetDatabase string, tablePrefix string) ([]BackupStatement, error)
 
-type GenerateRestoreSQLFunc func(statement string, backupDatabase string, backupTable string, originalDatabase string, originalTable string) (string, error)
+type GenerateRestoreSQLFunc func(ctx context.Context, rCtx RestoreContext, statement string, backupDatabase string, backupTable string, originalDatabase string, originalTable string) (string, error)
 
 func RegisterQueryValidator(engine storepb.Engine, f ValidateSQLForEditorFunc) {
 	mux.Lock()
@@ -206,12 +206,12 @@ func RegisterTransformDMLToSelect(engine storepb.Engine, f TransformDMLToSelectF
 }
 
 // TransformDMLToSelect transforms the DML statement to SELECT statement.
-func TransformDMLToSelect(engine storepb.Engine, ctx TransformContext, statement string, sourceDatabase string, targetDatabase string, tablePrefix string) ([]BackupStatement, error) {
+func TransformDMLToSelect(ctx context.Context, engine storepb.Engine, tCtx TransformContext, statement string, sourceDatabase string, targetDatabase string, tablePrefix string) ([]BackupStatement, error) {
 	f, ok := transformDMLToSelect[engine]
 	if !ok {
 		return nil, errors.Errorf("engine %s is not supported", engine)
 	}
-	return f(ctx, statement, sourceDatabase, targetDatabase, tablePrefix)
+	return f(ctx, tCtx, statement, sourceDatabase, targetDatabase, tablePrefix)
 }
 
 func RegisterGenerateRestoreSQL(engine storepb.Engine, f GenerateRestoreSQLFunc) {
@@ -223,12 +223,12 @@ func RegisterGenerateRestoreSQL(engine storepb.Engine, f GenerateRestoreSQLFunc)
 	generateRestoreSQL[engine] = f
 }
 
-func GenerateRestoreSQL(engine storepb.Engine, statement string, backupDatabase string, backupTable string, originalDatabase string, originalTable string) (string, error) {
+func GenerateRestoreSQL(ctx context.Context, engine storepb.Engine, rCtx RestoreContext, statement string, backupDatabase string, backupTable string, originalDatabase string, originalTable string) (string, error) {
 	f, ok := generateRestoreSQL[engine]
 	if !ok {
 		return "", errors.Errorf("engine %s is not supported", engine)
 	}
-	return f(statement, backupDatabase, backupTable, originalDatabase, originalTable)
+	return f(ctx, rCtx, statement, backupDatabase, backupTable, originalDatabase, originalTable)
 }
 
 type ChangeSummary struct {

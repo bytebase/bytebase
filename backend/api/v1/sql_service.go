@@ -157,7 +157,7 @@ func (*SQLService) doAdminExecute(ctx context.Context, driver db.Driver, conn *s
 	}
 	ctx, cancelCtx := context.WithTimeout(ctx, timeout)
 	defer cancelCtx()
-	result, err := driver.QueryConn(ctx, conn, request.Statement, nil)
+	result, err := driver.QueryConn(ctx, conn, request.Statement, db.QueryContext{AdminSession: true})
 	select {
 	case <-ctx.Done():
 		// canceled or timed out
@@ -274,7 +274,7 @@ func (s *SQLService) doExecute(ctx context.Context, instance *store.InstanceMess
 	}
 	ctx, cancelCtx := context.WithTimeout(ctx, timeout)
 	defer cancelCtx()
-	result, err := driver.QueryConn(ctx, conn, request.Statement, nil)
+	result, err := driver.QueryConn(ctx, conn, request.Statement, db.QueryContext{})
 	select {
 	case <-ctx.Done():
 		// canceled or timed out
@@ -434,14 +434,10 @@ func DoExport(ctx context.Context, storeInstance *store.Store, dbFactory *dbfact
 		defer conn.Close()
 	}
 
-	queryContext := &db.QueryContext{
-		CurrentDatabase: database.DatabaseName,
-	}
-	if request.Limit != 0 {
-		queryContext.Limit = int(request.Limit)
-	}
 	start := time.Now().UnixNano()
-	result, err := driver.QueryConn(ctx, conn, request.Statement, queryContext)
+	result, err := driver.QueryConn(ctx, conn, request.Statement, db.QueryContext{
+		Limit: int(request.Limit),
+	})
 	durationNs := time.Now().UnixNano() - start
 	if err != nil {
 		return nil, durationNs, err
@@ -822,10 +818,9 @@ func (s *SQLService) doQuery(ctx context.Context, request *v1pb.QueryRequest, in
 	defer cancelCtx()
 
 	start := time.Now().UnixNano()
-	results, err := driver.QueryConn(ctx, conn, request.Statement, &db.QueryContext{
-		Limit:           int(request.Limit),
-		Explain:         request.Explain,
-		CurrentDatabase: database.DatabaseName,
+	results, err := driver.QueryConn(ctx, conn, request.Statement, db.QueryContext{
+		Limit:   int(request.Limit),
+		Explain: request.Explain,
 	})
 	select {
 	case <-ctx.Done():
@@ -1612,7 +1607,10 @@ func (s *SQLService) GenerateRestoreSQL(ctx context.Context, request *v1pb.Gener
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
-	result, err := base.GenerateRestoreSQL(storepb.Engine_MYSQL, list[offset].Text, backupDatabase, request.BackupTable, databaseName, originTable)
+	result, err := base.GenerateRestoreSQL(ctx, storepb.Engine_MYSQL, base.RestoreContext{
+		InstanceID:              instanceID,
+		GetDatabaseMetadataFunc: BuildGetDatabaseMetadataFunc(s.store),
+	}, list[offset].Text, backupDatabase, request.BackupTable, databaseName, originTable)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to generate restore SQL: %v", err)
 	}

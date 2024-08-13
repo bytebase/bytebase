@@ -67,16 +67,16 @@ func newDriver(config db.DriverConfig) db.Driver {
 
 // Open opens a Postgres driver.
 func (driver *Driver) Open(ctx context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
-	var connConfig *pgx.ConnConfig
+	var pgxConnConfig *pgx.ConnConfig
 	var err error
 
 	switch config.AuthenticationType {
 	case storepb.DataSourceOptions_GOOGLE_CLOUD_SQL_IAM:
-		connConfig, err = getCloudSQLConnectionConfig(ctx, config)
+		pgxConnConfig, err = getCloudSQLConnectionConfig(ctx, config)
 	case storepb.DataSourceOptions_AWS_RDS_IAM:
-		connConfig, err = getRDSConnectionConfig(ctx, config)
+		pgxConnConfig, err = getRDSConnectionConfig(ctx, config)
 	default:
-		connConfig, err = getPGConnectionConfig(config)
+		pgxConnConfig, err = getPGConnectionConfig(config)
 	}
 	if err != nil {
 		return nil, err
@@ -89,7 +89,7 @@ func (driver *Driver) Open(ctx context.Context, _ storepb.Engine, config db.Conn
 		}
 		driver.sshClient = sshClient
 
-		connConfig.Config.DialFunc = func(_ context.Context, network, addr string) (net.Conn, error) {
+		pgxConnConfig.Config.DialFunc = func(_ context.Context, network, addr string) (net.Conn, error) {
 			conn, err := sshClient.Dial(network, addr)
 			if err != nil {
 				return nil, err
@@ -100,16 +100,16 @@ func (driver *Driver) Open(ctx context.Context, _ storepb.Engine, config db.Conn
 
 	driver.databaseName = config.Database
 	if config.Database == "" {
-		databaseName, cfg, err := guessDSN(connConfig, config.Username)
+		databaseName, cfg, err := guessDSN(pgxConnConfig, config.Username)
 		if err != nil {
 			return nil, err
 		}
-		connConfig = cfg
+		pgxConnConfig = cfg
 		driver.databaseName = databaseName
 	}
 	driver.config = config
 
-	driver.connectionString = stdlib.RegisterConnConfig(connConfig)
+	driver.connectionString = stdlib.RegisterConnConfig(pgxConnConfig)
 	db, err := sql.Open(driverName, driver.connectionString)
 	if err != nil {
 		return nil, err
@@ -659,7 +659,7 @@ func (driver *Driver) GetCurrentDatabaseOwner(ctx context.Context) (string, erro
 }
 
 // QueryConn queries a SQL statement in a given connection.
-func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext *db.QueryContext) ([]*v1pb.QueryResult, error) {
+func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
 	singleSQLs, err := pgparser.SplitSQL(statement)
 	if err != nil {
 		return nil, err
@@ -672,9 +672,9 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 	var results []*v1pb.QueryResult
 	for _, singleSQL := range singleSQLs {
 		statement := singleSQL.Text
-		if queryContext != nil && queryContext.Explain {
+		if queryContext.Explain {
 			statement = fmt.Sprintf("EXPLAIN %s", statement)
-		} else if queryContext != nil && queryContext.Limit > 0 {
+		} else if queryContext.Limit > 0 {
 			statement = getStatementWithResultLimit(statement, queryContext.Limit)
 		}
 

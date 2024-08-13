@@ -1,7 +1,7 @@
 <template>
   <div class="mx-auto w-full max-w-sm">
     <div>
-      <BytebaseLogo component="span" class="mx-auto mb-8" />
+      <BytebaseLogo class="mx-auto mb-8" />
 
       <h2 class="text-2xl leading-9 font-medium text-main">
         <template v-if="needAdminSetup">

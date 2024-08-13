@@ -25,6 +25,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/iam"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
+	mysqldb "github.com/bytebase/bytebase/backend/plugin/db/mysql"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
@@ -1182,6 +1183,7 @@ func reconcileMetadata(metadata *storepb.DatabaseSchemaMetadata, engine storepb.
 							DefaultNull: true,
 						}
 					}
+					column.Type = mysqldb.GetColumnTypeCanonicalSynonym(column.Type)
 				}
 			}
 		}
@@ -1602,44 +1604,6 @@ func updateDatabaseConfigLastModifierForMerge(baseMetadata *storepb.DatabaseSche
 		}
 		baseSchemaConfig.TableConfigs = append(baseSchemaConfig.TableConfigs, newBaseTableConfigs...)
 
-		// Functions
-		baseFunctionConfigMap := buildMap(baseSchemaConfig.FunctionConfigs, func(s *storepb.FunctionConfig) string {
-			return s.GetName()
-		})
-		headFunctionConfigMap := buildMap(headSchemaConfig.FunctionConfigs, func(s *storepb.FunctionConfig) string {
-			return s.GetName()
-		})
-		var newBaseFunctionConfigs []*storepb.FunctionConfig
-		for _, headFunction := range headSchema.Functions {
-			headFunctionConfig := headFunctionConfigMap[headFunction.Name]
-			if headFunctionConfig == nil {
-				headFunctionConfig = initFunctionConfig(headFunction, "", "", now)
-			}
-			baseFunction := baseSchema.GetFunction(headFunction.Name)
-			// New function, reset the source branch and last modifier because we do not remove the config while deleting the object.
-			if baseFunction == nil {
-				//nolint
-				newBaseFunctionConfig := proto.Clone(headFunctionConfig).(*storepb.FunctionConfig)
-				newBaseFunctionConfig.SourceBranch = headFunctionConfig.SourceBranch
-				newBaseFunctionConfig.Updater = headFunctionConfig.Updater
-				newBaseFunctionConfig.UpdateTime = now
-				newBaseFunctionConfigs = append(newBaseFunctionConfigs, newBaseFunctionConfig)
-				continue
-			}
-			// Modified function, set the last updater as head in base.
-			baseFunctionConfig := baseFunctionConfigMap[headFunction.Name]
-			// Rebase database, no schema config.
-			if baseFunctionConfig == nil {
-				baseFunctionConfig = initFunctionConfig(baseFunction.GetProto(), "", "", now)
-			}
-			if !cmp.Equal(headFunction, baseFunction.GetProto(), protocmp.Transform()) {
-				baseFunctionConfig.SourceBranch = headFunctionConfig.SourceBranch
-				baseFunctionConfig.Updater = headFunctionConfig.Updater
-				baseFunctionConfig.UpdateTime = now
-			}
-		}
-		baseSchemaConfig.FunctionConfigs = append(baseSchemaConfig.FunctionConfigs, newBaseFunctionConfigs...)
-
 		// Views
 		baseViewConfigMap := buildMap(baseSchemaConfig.ViewConfigs, func(s *storepb.ViewConfig) string {
 			return s.GetName()
@@ -1670,13 +1634,51 @@ func updateDatabaseConfigLastModifierForMerge(baseMetadata *storepb.DatabaseSche
 			if baseViewConfig == nil {
 				baseViewConfig = initViewConfig(baseView.GetProto(), "", "", now)
 			}
-			if !cmp.Equal(headView, baseView.GetProto(), protocmp.Transform()) {
+			if !equalView(headView, baseView.GetProto()) {
 				baseViewConfig.SourceBranch = headViewConfig.SourceBranch
 				baseViewConfig.Updater = headViewConfig.Updater
 				baseViewConfig.UpdateTime = now
 			}
 		}
 		baseSchemaConfig.ViewConfigs = append(baseSchemaConfig.ViewConfigs, newBaseViewConfigs...)
+
+		// Functions
+		baseFunctionConfigMap := buildMap(baseSchemaConfig.FunctionConfigs, func(s *storepb.FunctionConfig) string {
+			return s.GetName()
+		})
+		headFunctionConfigMap := buildMap(headSchemaConfig.FunctionConfigs, func(s *storepb.FunctionConfig) string {
+			return s.GetName()
+		})
+		var newBaseFunctionConfigs []*storepb.FunctionConfig
+		for _, headFunction := range headSchema.Functions {
+			headFunctionConfig := headFunctionConfigMap[headFunction.Name]
+			if headFunctionConfig == nil {
+				headFunctionConfig = initFunctionConfig(headFunction, "", "", now)
+			}
+			baseFunction := baseSchema.GetFunction(headFunction.Name)
+			// New function, reset the source branch and last modifier because we do not remove the config while deleting the object.
+			if baseFunction == nil {
+				//nolint
+				newBaseFunctionConfig := proto.Clone(headFunctionConfig).(*storepb.FunctionConfig)
+				newBaseFunctionConfig.SourceBranch = headFunctionConfig.SourceBranch
+				newBaseFunctionConfig.Updater = headFunctionConfig.Updater
+				newBaseFunctionConfig.UpdateTime = now
+				newBaseFunctionConfigs = append(newBaseFunctionConfigs, newBaseFunctionConfig)
+				continue
+			}
+			// Modified function, set the last updater as head in base.
+			baseFunctionConfig := baseFunctionConfigMap[headFunction.Name]
+			// Rebase database, no schema config.
+			if baseFunctionConfig == nil {
+				baseFunctionConfig = initFunctionConfig(baseFunction.GetProto(), "", "", now)
+			}
+			if !equalFunction(headFunction, baseFunction.GetProto()) {
+				baseFunctionConfig.SourceBranch = headFunctionConfig.SourceBranch
+				baseFunctionConfig.Updater = headFunctionConfig.Updater
+				baseFunctionConfig.UpdateTime = now
+			}
+		}
+		baseSchemaConfig.FunctionConfigs = append(baseSchemaConfig.FunctionConfigs, newBaseFunctionConfigs...)
 
 		// Procedures
 		baseProcedureConfigMap := buildMap(baseSchemaConfig.ProcedureConfigs, func(s *storepb.ProcedureConfig) string {
@@ -1704,7 +1706,7 @@ func updateDatabaseConfigLastModifierForMerge(baseMetadata *storepb.DatabaseSche
 			}
 			// Modified procedure, set the last updater as head in base.
 			baseProcedureConfig := baseProcedureConfigMap[headProcedure.Name]
-			if !cmp.Equal(headProcedure, baseProcedure.GetProto(), protocmp.Transform()) {
+			if !equalProcedure(headProcedure, baseProcedure.GetProto()) {
 				baseProcedureConfig.SourceBranch = headProcedureConfig.SourceBranch
 				baseProcedureConfig.Updater = headProcedureConfig.Updater
 				baseProcedureConfig.UpdateTime = now
@@ -1793,4 +1795,30 @@ func alignDatabaseConfig(metadata *storepb.DatabaseSchemaMetadata, config *store
 
 func formatViewDef(def string) string {
 	return strings.TrimRight(def, "; \n\r\t")
+}
+
+func equalView(a, b *storepb.ViewMetadata) bool {
+	if a.GetName() != b.GetName() {
+		return false
+	}
+	if a.GetComment() != b.GetComment() {
+		return false
+	}
+	return equalViewDefinition(a.GetDefinition(), b.GetDefinition())
+}
+
+func equalFunction(a, b *storepb.FunctionMetadata) bool {
+	if a.GetName() != b.GetName() {
+		return false
+	}
+
+	return equalRoutineDefinition(a.GetDefinition(), b.GetDefinition())
+}
+
+func equalProcedure(a, b *storepb.ProcedureMetadata) bool {
+	if a.GetName() != b.GetName() {
+		return false
+	}
+
+	return equalRoutineDefinition(a.GetDefinition(), b.GetDefinition())
 }

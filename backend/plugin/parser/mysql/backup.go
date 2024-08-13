@@ -1,6 +1,7 @@
 package mysql
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -22,13 +23,13 @@ const (
 	maxTableNameLength = 64
 )
 
-func TransformDMLToSelect(_ base.TransformContext, statement string, sourceDatabase string, targetDatabase string, tablePrefix string) ([]base.BackupStatement, error) {
+func TransformDMLToSelect(ctx context.Context, tCtx base.TransformContext, statement string, sourceDatabase string, targetDatabase string, tablePrefix string) ([]base.BackupStatement, error) {
 	statementInfoList, err := prepareTransformation(sourceDatabase, statement)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to prepare transformation")
 	}
 
-	return generateSQL(statementInfoList, targetDatabase, tablePrefix)
+	return generateSQL(ctx, tCtx, statementInfoList, targetDatabase, tablePrefix)
 }
 
 type StatementType int
@@ -86,7 +87,7 @@ func prepareTransformation(databaseName, statement string) ([]statementInfo, err
 	return result, nil
 }
 
-func generateSQL(statementInfoList []statementInfo, databaseName string, tablePrefix string) ([]base.BackupStatement, error) {
+func generateSQL(ctx context.Context, tCtx base.TransformContext, statementInfoList []statementInfo, databaseName string, tablePrefix string) ([]base.BackupStatement, error) {
 	var result []base.BackupStatement
 	offsetLength := 1
 	if len(statementInfoList) > 1 {
@@ -103,12 +104,48 @@ func generateSQL(statementInfoList []statementInfo, databaseName string, tablePr
 		if _, err := buf.WriteString(fmt.Sprintf("CREATE TABLE `%s`.`%s` LIKE `%s`.`%s`;\n", databaseName, targetTable, table.Database, table.Table)); err != nil {
 			return nil, errors.Wrap(err, "failed to write create table statement")
 		}
+		generatedColumns, normalColumns, err := classifyColumns(ctx, tCtx.GetDatabaseMetadataFunc, tCtx.InstanceID, table)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to classify columns")
+		}
 		tableNameOrAlias := table.Table
 		if len(table.Alias) > 0 {
 			tableNameOrAlias = table.Alias
 		}
-		if _, err := buf.WriteString(fmt.Sprintf("INSERT INTO `%s`.`%s` SELECT `%s`.* FROM ", databaseName, targetTable, tableNameOrAlias)); err != nil {
-			return nil, errors.Wrap(err, "failed to write insert into statement")
+		if len(generatedColumns) == 0 {
+			if _, err := buf.WriteString(fmt.Sprintf("INSERT INTO `%s`.`%s` SELECT `%s`.* FROM ", databaseName, targetTable, tableNameOrAlias)); err != nil {
+				return nil, errors.Wrap(err, "failed to write insert into statement")
+			}
+		} else {
+			if _, err := buf.WriteString(fmt.Sprintf("INSERT INTO `%s`.`%s` (", databaseName, targetTable)); err != nil {
+				return nil, errors.Wrap(err, "failed to write insert into statement")
+			}
+			for i, column := range normalColumns {
+				if i > 0 {
+					if err := buf.WriteByte(','); err != nil {
+						return nil, errors.Wrap(err, "failed to write comma")
+					}
+				}
+				if _, err := buf.WriteString(fmt.Sprintf("`%s`", column)); err != nil {
+					return nil, errors.Wrap(err, "failed to write column")
+				}
+			}
+			if _, err := buf.WriteString(") SELECT "); err != nil {
+				return nil, errors.Wrap(err, "failed to write select")
+			}
+			for i, column := range normalColumns {
+				if i > 0 {
+					if err := buf.WriteByte(','); err != nil {
+						return nil, errors.Wrap(err, "failed to write comma")
+					}
+				}
+				if _, err := buf.WriteString(fmt.Sprintf("`%s`.`%s`", tableNameOrAlias, column)); err != nil {
+					return nil, errors.Wrap(err, "failed to write column")
+				}
+			}
+			if _, err := buf.WriteString(" FROM "); err != nil {
+				return nil, errors.Wrap(err, "failed to write from")
+			}
 		}
 		if err := extractSuffixSelectStatement(statementInfo.tree, &buf); err != nil {
 			return nil, errors.Wrap(err, "failed to extract suffix select statement")
@@ -131,6 +168,38 @@ func generateSQL(statementInfoList []statementInfo, databaseName string, tablePr
 		})
 	}
 	return result, nil
+}
+
+func classifyColumns(ctx context.Context, getDatabaseMetadataFunc base.GetDatabaseMetadataFunc, instanceID string, table *TableReference) ([]string, []string, error) {
+	if getDatabaseMetadataFunc == nil {
+		return nil, nil, errors.New("GetDatabaseMetadataFunc is not set")
+	}
+
+	_, metadata, err := getDatabaseMetadataFunc(ctx, instanceID, table.Database)
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "failed to get database metadata for InstanceID %q, Database %q", instanceID, table.Database)
+	}
+
+	schemaMetadata := metadata.GetSchema("")
+	if schemaMetadata == nil {
+		return nil, nil, errors.New("failed to get schema metadata")
+	}
+
+	tableMetadata := schemaMetadata.GetTable(table.Table)
+	if tableMetadata == nil {
+		return nil, nil, errors.New("failed to get table metadata for table " + table.Table)
+	}
+
+	var generatedColumns, normalColumns []string
+	for _, column := range tableMetadata.GetColumns() {
+		if column.GetGeneration() != nil {
+			generatedColumns = append(generatedColumns, column.GetName())
+		} else {
+			normalColumns = append(normalColumns, column.GetName())
+		}
+	}
+
+	return generatedColumns, normalColumns, nil
 }
 
 func extractSuffixSelectStatement(tree antlr.Tree, buf *strings.Builder) error {

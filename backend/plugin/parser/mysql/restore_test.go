@@ -1,12 +1,15 @@
 package mysql
 
 import (
+	"context"
 	"io"
 	"os"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
+
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
 type restoreCase struct {
@@ -38,7 +41,9 @@ func TestRestore(t *testing.T) {
 	a.NoError(yaml.Unmarshal(byteValue, &tests))
 
 	for i, t := range tests {
-		result, err := GenerateRestoreSQL(t.Input, t.BackupDatabase, t.BackupTable, t.OriginalDatabase, t.OriginalTable)
+		result, err := GenerateRestoreSQL(context.Background(), base.RestoreContext{
+			GetDatabaseMetadataFunc: fixedMockDatabaseMetadataGetter,
+		}, t.Input, t.BackupDatabase, t.BackupTable, t.OriginalDatabase, t.OriginalTable)
 		a.NoError(err)
 
 		if record {

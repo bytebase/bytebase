@@ -69,7 +69,7 @@
           :view-list="viewList"
         />
 
-        <template v-if="databaseEngine === Engine.POSTGRES">
+        <template v-if="databaseEngine === Engine.POSTGRES || databaseEngine === Engine.HIVE">
           <div
             class="mt-6 w-full flex flex-row justify-between items-center mb-4"
           >

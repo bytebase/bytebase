@@ -1244,6 +1244,8 @@ func equalRoutineDefinition(a, b string) bool {
 }
 
 func equalViewDefinition(a, b string) bool {
+	a = normalizeMySQLViewDefinition(a)
+	b = normalizeMySQLViewDefinition(b)
 	ignoreTokens := []string{
 		"`", " ", "(", ")", "\t", "\n", "\r",
 	}
@@ -1252,6 +1254,40 @@ func equalViewDefinition(a, b string) bool {
 		b = strings.ReplaceAll(b, token, "")
 	}
 	return strings.EqualFold(a, b)
+}
+
+var qualifiedRe = regexp.MustCompile("`" + `[^` + "`" + `]` + "`" + `\.` + "`")
+
+func normalizeMySQLViewDefinition(query string) string {
+	query = strings.TrimSpace(query)
+	if !strings.HasSuffix(query, ";") {
+		query += ";"
+	}
+	trailSymbols := []string{"` ", "`,", "`;"}
+	for {
+		asIdx := strings.Index(query, " AS ")
+		if asIdx == -1 {
+			break
+		}
+		var endCandidates []int
+		for _, symbol := range trailSymbols {
+			i := strings.Index(query[asIdx:], symbol)
+			if i >= 0 {
+				endCandidates = append(endCandidates, i)
+			}
+		}
+		if len(endCandidates) == 0 {
+			break
+		}
+		endIdx := endCandidates[0]
+		for _, v := range endCandidates {
+			if v < endIdx {
+				endIdx = v
+			}
+		}
+		query = query[:asIdx] + query[(asIdx+endIdx+1):]
+	}
+	return qualifiedRe.ReplaceAllString(query, "`")
 }
 
 func (n *metadataDiffViewNode) applyDiffTo(target *storepb.SchemaMetadata) error {
