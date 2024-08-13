@@ -374,10 +374,7 @@ func getDatabaseGeneralIssueRisk(ctx context.Context, s *store.Store, sheetManag
 			InstanceUID:  int(run.Config.InstanceUid),
 			DatabaseName: run.Config.DatabaseName,
 		}
-		oldValue, ok := latestPlanCheckRun[key]
-		if !ok || oldValue.UID < run.UID {
-			latestPlanCheckRun[key] = run
-		}
+		latestPlanCheckRun[key] = run
 	}
 
 	// Get the max risk level of the same risk source.
