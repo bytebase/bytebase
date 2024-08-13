@@ -509,9 +509,9 @@ func needAudit(ctx context.Context) bool {
 }
 
 func getRequestMetadataFromCtx(ctx context.Context) (*storepb.RequestMetadata, error) {
-	var userAgent, callerIp string
+	var userAgent, callerIP string
 	if p, ok := peer.FromContext(ctx); ok && p.Addr != nil {
-		callerIp = p.Addr.String()
+		callerIP = p.Addr.String()
 	}
 	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
@@ -522,7 +522,7 @@ func getRequestMetadataFromCtx(ctx context.Context) (*storepb.RequestMetadata, e
 		userAgent = userAgents[0]
 	}
 	return &storepb.RequestMetadata{
-		CallerIp:                callerIp,
+		CallerIp:                callerIP,
 		CallerSuppliedUserAgent: userAgent,
 	}, nil
 }
