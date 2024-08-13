@@ -14,7 +14,7 @@ import {
   useDatabaseV1Store,
   useProjectV1Store,
 } from "@/store";
-import { UNKNOWN_ID } from "@/types";
+import { UNKNOWN_ID, unknownProject } from "@/types";
 import { useReviewConfigAttachedResource } from "./useReviewConfigAttachedResource";
 
 const props = defineProps<{
@@ -57,7 +57,7 @@ const reviewPolicyResourceComponent = computed(() => {
     }
     case "project": {
       const project = projectStore.getProjectByName(props.resource);
-      if (project.uid === `${UNKNOWN_ID}`) {
+      if (project.name === unknownProject().name) {
         return <div>{props.resource}</div>;
       }
       return (

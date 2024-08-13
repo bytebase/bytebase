@@ -6,14 +6,11 @@
     @click="toTop"
   >
     <span>{{ task.title }}</span>
-    <template v-if="schemaVersion">
-      <span class="ml-1 text-control-placeholder">(</span>
-      <span class="lowercase text-control-placeholder">{{
-        $t("common.schema-version")
-      }}</span>
-      <span class="ml-1 text-control-placeholder">{{ schemaVersion }}</span>
-      <span class="text-control-placeholder">)</span>
-    </template>
+    <span v-if="schemaVersion" class="ml-1 text-control-placeholder">
+      (<span class="lowercase">{{ $t("common.schema-version") }}</span>
+      <span class="ml-1">{{ schemaVersion }}</span
+      >)
+    </span>
   </router-link>
 </template>
 
