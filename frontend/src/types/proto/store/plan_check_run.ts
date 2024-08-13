@@ -32,6 +32,7 @@ export enum PlanCheckRunConfig_ChangeDatabaseType {
   DML = "DML",
   SDL = "SDL",
   DDL_GHOST = "DDL_GHOST",
+  SQL_EDITOR = "SQL_EDITOR",
   UNRECOGNIZED = "UNRECOGNIZED",
 }
 
@@ -52,6 +53,9 @@ export function planCheckRunConfig_ChangeDatabaseTypeFromJSON(object: any): Plan
     case 4:
     case "DDL_GHOST":
       return PlanCheckRunConfig_ChangeDatabaseType.DDL_GHOST;
+    case 5:
+    case "SQL_EDITOR":
+      return PlanCheckRunConfig_ChangeDatabaseType.SQL_EDITOR;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -71,6 +75,8 @@ export function planCheckRunConfig_ChangeDatabaseTypeToJSON(object: PlanCheckRun
       return "SDL";
     case PlanCheckRunConfig_ChangeDatabaseType.DDL_GHOST:
       return "DDL_GHOST";
+    case PlanCheckRunConfig_ChangeDatabaseType.SQL_EDITOR:
+      return "SQL_EDITOR";
     case PlanCheckRunConfig_ChangeDatabaseType.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
@@ -89,6 +95,8 @@ export function planCheckRunConfig_ChangeDatabaseTypeToNumber(object: PlanCheckR
       return 3;
     case PlanCheckRunConfig_ChangeDatabaseType.DDL_GHOST:
       return 4;
+    case PlanCheckRunConfig_ChangeDatabaseType.SQL_EDITOR:
+      return 5;
     case PlanCheckRunConfig_ChangeDatabaseType.UNRECOGNIZED:
     default:
       return -1;
