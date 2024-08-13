@@ -16,7 +16,6 @@ import {
 } from "@/store";
 import {
   isValidEnvironmentName,
-  isValidProjectName,
   UNKNOWN_ID,
 } from "@/types";
 import { useReviewConfigAttachedResource } from "./useReviewConfigAttachedResource";
