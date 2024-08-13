@@ -2976,6 +2976,7 @@ Type is the database change type.
 | DML | 2 |  |
 | SDL | 3 |  |
 | DDL_GHOST | 4 |  |
+| SQL_EDITOR | 5 |  |
 
 
 

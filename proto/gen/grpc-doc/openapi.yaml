@@ -8837,6 +8837,7 @@ components:
                         - DDL
                         - DDL_GHOST
                         - DML
+                        - SQL_EDITOR
                     type: string
                     format: enum
         CheckResponse:

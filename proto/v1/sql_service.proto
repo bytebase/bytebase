@@ -384,6 +384,7 @@ message CheckRequest {
     DDL = 1;
     DDL_GHOST = 2;
     DML = 3;
+    SQL_EDITOR = 4;
   }
   ChangeType change_type = 4;
 }

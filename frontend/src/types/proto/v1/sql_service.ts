@@ -304,6 +304,7 @@ export enum CheckRequest_ChangeType {
   DDL = "DDL",
   DDL_GHOST = "DDL_GHOST",
   DML = "DML",
+  SQL_EDITOR = "SQL_EDITOR",
   UNRECOGNIZED = "UNRECOGNIZED",
 }
 
@@ -321,6 +322,9 @@ export function checkRequest_ChangeTypeFromJSON(object: any): CheckRequest_Chang
     case 3:
     case "DML":
       return CheckRequest_ChangeType.DML;
+    case 4:
+    case "SQL_EDITOR":
+      return CheckRequest_ChangeType.SQL_EDITOR;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -338,6 +342,8 @@ export function checkRequest_ChangeTypeToJSON(object: CheckRequest_ChangeType): 
       return "DDL_GHOST";
     case CheckRequest_ChangeType.DML:
       return "DML";
+    case CheckRequest_ChangeType.SQL_EDITOR:
+      return "SQL_EDITOR";
     case CheckRequest_ChangeType.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
@@ -354,6 +360,8 @@ export function checkRequest_ChangeTypeToNumber(object: CheckRequest_ChangeType)
       return 2;
     case CheckRequest_ChangeType.DML:
       return 3;
+    case CheckRequest_ChangeType.SQL_EDITOR:
+      return 4;
     case CheckRequest_ChangeType.UNRECOGNIZED:
     default:
       return -1;
