@@ -982,7 +982,6 @@ func filterDatabaseMetadataByEngine(metadata *storepb.DatabaseSchemaMetadata, en
 					Type:         column.Type,
 					DefaultValue: column.DefaultValue,
 					Nullable:     column.Nullable,
-					Position:     column.Position,
 				}
 				filteredTable.Columns = append(filteredTable.Columns, filteredColumn)
 			}
