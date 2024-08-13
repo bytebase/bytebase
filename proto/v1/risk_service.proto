@@ -100,6 +100,8 @@ message DeleteRiskRequest {
 }
 
 message Risk {
+  reserved 2;
+
   option (google.api.resource) = {
     type: "bytebase.com/Risk"
     pattern: "risks/{risk}"
@@ -107,9 +109,6 @@ message Risk {
 
   // Format: risks/{risk}
   string name = 1;
-
-  // system-generated unique identifier.
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   enum Source {
     SOURCE_UNSPECIFIED = 0;

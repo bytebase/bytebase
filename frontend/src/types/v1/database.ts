@@ -6,7 +6,6 @@ import type { Environment } from "../proto/v1/environment_service";
 import type { InstanceResource } from "../proto/v1/instance_service";
 import { emptyEnvironment, unknownEnvironment } from "./environment";
 import {
-  emptyInstance,
   emptyInstanceResource,
   unknownInstance,
   unknownInstanceResource,
@@ -27,7 +26,6 @@ export interface ComposedDatabase extends Database {
   instanceResource: InstanceResource;
 }
 
-export const EMPTY_DATABASE_NAME = `${emptyInstance().name}/databases/${EMPTY_ID}`;
 export const UNKNOWN_DATABASE_NAME = `${unknownInstance().name}/databases/${UNKNOWN_ID}`;
 
 export const emptyDatabase = (): ComposedDatabase => {

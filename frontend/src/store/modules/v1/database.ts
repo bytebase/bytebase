@@ -9,6 +9,7 @@ import type {
   ComposedUser,
 } from "@/types";
 import {
+  isValidDatabaseName,
   unknownDatabase,
   unknownEnvironment,
   unknownInstanceResource,
@@ -198,7 +199,7 @@ export const useDatabaseV1ByName = (name: MaybeRef<string>) => {
   watch(
     () => unref(name),
     (name) => {
-      if (store.getDatabaseByName(name).name === unknownDatabase().name) {
+      if (!isValidDatabaseName(store.getDatabaseByName(name).name)) {
         ready.value = false;
         store.fetchDatabaseByName(name).then(() => {
           ready.value = true;

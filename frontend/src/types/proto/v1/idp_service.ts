@@ -228,8 +228,6 @@ export interface IdentityProvider {
    * Format: idps/{idp}
    */
   name: string;
-  /** The system-assigned, unique identifier for a resource. */
-  uid: string;
   state: State;
   title: string;
   domain: string;
@@ -998,7 +996,6 @@ export const TestIdentityProviderResponse = {
 function createBaseIdentityProvider(): IdentityProvider {
   return {
     name: "",
-    uid: "",
     state: State.STATE_UNSPECIFIED,
     title: "",
     domain: "",
@@ -1011,9 +1008,6 @@ export const IdentityProvider = {
   encode(message: IdentityProvider, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
-    }
-    if (message.uid !== "") {
-      writer.uint32(18).string(message.uid);
     }
     if (message.state !== State.STATE_UNSPECIFIED) {
       writer.uint32(24).int32(stateToNumber(message.state));
@@ -1046,13 +1040,6 @@ export const IdentityProvider = {
           }
 
           message.name = reader.string();
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.uid = reader.string();
           continue;
         case 3:
           if (tag !== 24) {
@@ -1101,7 +1088,6 @@ export const IdentityProvider = {
   fromJSON(object: any): IdentityProvider {
     return {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
-      uid: isSet(object.uid) ? globalThis.String(object.uid) : "",
       state: isSet(object.state) ? stateFromJSON(object.state) : State.STATE_UNSPECIFIED,
       title: isSet(object.title) ? globalThis.String(object.title) : "",
       domain: isSet(object.domain) ? globalThis.String(object.domain) : "",
@@ -1116,9 +1102,6 @@ export const IdentityProvider = {
     const obj: any = {};
     if (message.name !== "") {
       obj.name = message.name;
-    }
-    if (message.uid !== "") {
-      obj.uid = message.uid;
     }
     if (message.state !== State.STATE_UNSPECIFIED) {
       obj.state = stateToJSON(message.state);
@@ -1144,7 +1127,6 @@ export const IdentityProvider = {
   fromPartial(object: DeepPartial<IdentityProvider>): IdentityProvider {
     const message = createBaseIdentityProvider();
     message.name = object.name ?? "";
-    message.uid = object.uid ?? "";
     message.state = object.state ?? State.STATE_UNSPECIFIED;
     message.title = object.title ?? "";
     message.domain = object.domain ?? "";

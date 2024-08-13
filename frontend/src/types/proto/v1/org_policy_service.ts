@@ -371,8 +371,6 @@ export interface Policy {
    * Database resource name: instances/instance-id/databases/database-name.
    */
   name: string;
-  /** The system-assigned, unique identifier for a resource. */
-  uid: string;
   inheritFromParent: boolean;
   type: PolicyType;
   rolloutPolicy?: RolloutPolicy | undefined;
@@ -1090,7 +1088,6 @@ export const ListPoliciesResponse = {
 function createBasePolicy(): Policy {
   return {
     name: "",
-    uid: "",
     inheritFromParent: false,
     type: PolicyType.POLICY_TYPE_UNSPECIFIED,
     rolloutPolicy: undefined,
@@ -1112,9 +1109,6 @@ export const Policy = {
   encode(message: Policy, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
-    }
-    if (message.uid !== "") {
-      writer.uint32(18).string(message.uid);
     }
     if (message.inheritFromParent === true) {
       writer.uint32(32).bool(message.inheritFromParent);
@@ -1177,13 +1171,6 @@ export const Policy = {
           }
 
           message.name = reader.string();
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.uid = reader.string();
           continue;
         case 4:
           if (tag !== 32) {
@@ -1298,7 +1285,6 @@ export const Policy = {
   fromJSON(object: any): Policy {
     return {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
-      uid: isSet(object.uid) ? globalThis.String(object.uid) : "",
       inheritFromParent: isSet(object.inheritFromParent) ? globalThis.Boolean(object.inheritFromParent) : false,
       type: isSet(object.type) ? policyTypeFromJSON(object.type) : PolicyType.POLICY_TYPE_UNSPECIFIED,
       rolloutPolicy: isSet(object.rolloutPolicy) ? RolloutPolicy.fromJSON(object.rolloutPolicy) : undefined,
@@ -1332,9 +1318,6 @@ export const Policy = {
     const obj: any = {};
     if (message.name !== "") {
       obj.name = message.name;
-    }
-    if (message.uid !== "") {
-      obj.uid = message.uid;
     }
     if (message.inheritFromParent === true) {
       obj.inheritFromParent = message.inheritFromParent;
@@ -1389,7 +1372,6 @@ export const Policy = {
   fromPartial(object: DeepPartial<Policy>): Policy {
     const message = createBasePolicy();
     message.name = object.name ?? "";
-    message.uid = object.uid ?? "";
     message.inheritFromParent = object.inheritFromParent ?? false;
     message.type = object.type ?? PolicyType.POLICY_TYPE_UNSPECIFIED;
     message.rolloutPolicy = (object.rolloutPolicy !== undefined && object.rolloutPolicy !== null)

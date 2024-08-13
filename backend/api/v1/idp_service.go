@@ -355,7 +355,6 @@ func convertToIdentityProvider(identityProvider *store.IdentityProviderMessage) 
 	config := convertIdentityProviderConfigFromStore(identityProvider.Config)
 	return &v1pb.IdentityProvider{
 		Name:   fmt.Sprintf("%s%s", common.IdentityProviderNamePrefix, identityProvider.ResourceID),
-		Uid:    fmt.Sprintf("%d", identityProvider.UID),
 		State:  convertDeletedToState(identityProvider.Deleted),
 		Title:  identityProvider.Title,
 		Domain: identityProvider.Domain,
