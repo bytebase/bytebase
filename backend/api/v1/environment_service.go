@@ -2,7 +2,6 @@ package v1
 
 import (
 	"context"
-	"fmt"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -232,7 +231,6 @@ func convertToEnvironment(environment *store.EnvironmentMessage) *v1pb.Environme
 	}
 	return &v1pb.Environment{
 		Name:  common.FormatEnvironment(environment.ResourceID),
-		Uid:   fmt.Sprintf("%d", environment.UID),
 		State: convertDeletedToState(environment.Deleted),
 		Title: environment.Title,
 		Order: environment.Order,

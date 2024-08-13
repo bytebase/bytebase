@@ -14,7 +14,7 @@ import {
   useDatabaseV1Store,
   useProjectV1Store,
 } from "@/store";
-import { UNKNOWN_ID } from "@/types";
+import { UNKNOWN_ID, unknownEnvironment } from "@/types";
 import { useReviewConfigAttachedResource } from "./useReviewConfigAttachedResource";
 
 const props = defineProps<{
@@ -37,7 +37,7 @@ const reviewPolicyResourceComponent = computed(() => {
       const environment = environmentV1Store.getEnvironmentByName(
         props.resource
       );
-      if (environment.uid === `${UNKNOWN_ID}`) {
+      if (environment.name === unknownEnvironment().name) {
         return <div>{props.resource}</div>;
       }
       return <EnvironmentV1Name environment={environment} link={props.link} />;
