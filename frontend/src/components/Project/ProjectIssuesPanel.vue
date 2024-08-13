@@ -6,7 +6,7 @@
       :components="
         state.advanced ? ['searchbox', 'time-range', 'status'] : ['status']
       "
-      :component-props="{ status: { disabled: statusTabDisabled } }"
+      :component-props="{ status: { hidden: statusTabDisabled } }"
     >
       <template v-if="!state.advanced" #default>
         <div class="h-[34px] flex items-center gap-x-2">
@@ -107,7 +107,13 @@ import {
 } from "@/utils";
 import { IssueSearch } from "../IssueV1/components";
 
-const TABS = ["WAITING_APPROVAL", "WAITING_ROLLOUT", "ALL", ""] as const;
+const TABS = [
+  "CREATED",
+  "WAITING_APPROVAL",
+  "WAITING_ROLLOUT",
+  "ALL",
+  "",
+] as const;
 
 type TabValue = (typeof TABS)[number];
 
@@ -133,6 +139,7 @@ const readonlyScopes = computed((): SearchScope[] => {
 });
 const tabItemList = computed((): TabFilterItem<TabValue>[] => {
   const items: TabFilterItem<TabValue>[] = [
+    { value: "CREATED", label: t("common.created") },
     {
       value: "WAITING_APPROVAL",
       label: t("issue.waiting-approval"),
@@ -177,6 +184,7 @@ const storedStatus = useDynamicLocalStorage<SemanticIssueStatus>(
 );
 
 const keyForTab = (tab: TabValue) => {
+  if (tab === "CREATED") return "project-issues-created";
   if (tab === "WAITING_APPROVAL") return "project-issues-waiting-approval";
   if (tab === "WAITING_ROLLOUT") return "project-issues-waiting-rollout";
   if (tab === "ALL") return "project-issues-all";
@@ -201,6 +209,12 @@ const mergeSearchParamsByTab = (params: SearchParams, tab: TabValue) => {
   const common = cloneDeep(params);
   if (tab === "" || tab === "ALL") {
     return common;
+  }
+  if (tab === "CREATED") {
+    return upsertScope(common, {
+      id: "creator",
+      value: me.value.email,
+    });
   }
   if (tab === "WAITING_APPROVAL") {
     return upsertScope(common, [
@@ -236,6 +250,13 @@ const guessTabValueFromSearchParams = (params: SearchParams): TabValue => {
       (s) => allowed.has(s.id) || defaultScopeIds.value.has(s.id)
     );
   };
+
+  if (
+    verifyScopes(["creator"]) &&
+    getValueFromSearchParams(params, "creator") === me.value.email
+  ) {
+    return "CREATED";
+  }
 
   if (
     verifyScopes(["approval"]) &&
