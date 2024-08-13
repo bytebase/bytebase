@@ -7,7 +7,7 @@ var sqlEditorAllowlist = map[SQLReviewRuleType]bool{
 }
 
 func isRuleAllowed(rule SQLReviewRuleType, changeType storepb.PlanCheckRunConfig_ChangeDatabaseType) bool {
-	if changeType != storepb.PlanCheckRunConfig_CHANGE_DATABASE_TYPE_UNSPECIFIED {
+	if changeType != storepb.PlanCheckRunConfig_SQL_EDITOR {
 		return true
 	}
 

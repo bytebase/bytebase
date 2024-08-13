@@ -10567,6 +10567,7 @@ Type of the SheetPayload.
 | DDL | 1 |  |
 | DDL_GHOST | 2 |  |
 | DML | 3 |  |
+| SQL_EDITOR | 4 |  |
 
 
 
