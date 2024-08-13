@@ -5,7 +5,7 @@
       :components="
         state.advanced ? ['searchbox', 'time-range', 'status'] : ['status']
       "
-      :component-props="{ status: { disabled: statusTabDisabled } }"
+      :component-props="{ status: { hidden: statusTabHidden } }"
       class="px-4 pb-2"
     >
       <template v-if="!state.advanced" #default>
@@ -405,7 +405,7 @@ const planImage = computed(() => {
   ).href;
 });
 
-const statusTabDisabled = computed(() => {
+const statusTabHidden = computed(() => {
   if (state.advanced) return false;
   return ["APPROVAL_REQUESTED", "WAITING_ROLLOUT"].includes(tab.value);
 });
