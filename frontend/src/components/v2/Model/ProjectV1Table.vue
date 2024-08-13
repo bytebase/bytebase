@@ -49,14 +49,14 @@ const props = withDefaults(
     loading?: boolean;
     pagination?: false | PaginationProps;
     keyword?: string;
-    onClick?: (project: ComposedProject, e: MouseEvent) => void;
+    // If true, the default behavior of the row click event will be prevented.
+    preventDefault?: boolean;
   }>(),
   {
     bordered: true,
     currentProject: undefined,
     keyword: undefined,
     pagination: () => ({ pageSize: 20 }) as PaginationProps,
-    onClick: undefined,
   }
 );
 
@@ -64,8 +64,8 @@ const emit = defineEmits<{
   (event: "row-click", project: ComposedProject): void;
 }>();
 
-const router = useRouter();
 const { t } = useI18n();
+const router = useRouter();
 
 const { project } = useCurrentProject(
   computed(() => ({
@@ -123,41 +123,39 @@ const rowProps = (project: ComposedProject) => {
   return {
     style: "cursor: pointer;",
     onClick: (e: MouseEvent) => {
-      if (props.onClick) {
-        props.onClick(project, e);
-        return;
-      }
+      if (!props.preventDefault) {
+        let routeName = PROJECT_V1_ROUTE_DETAIL;
+        const currentRouteName = router.currentRoute.value.name?.toString();
+        if (currentRouteName?.startsWith(PROJECT_V1_ROUTE_DASHBOARD)) {
+          routeName = activeSidebar.value?.path ?? routeName;
 
-      let routeName = PROJECT_V1_ROUTE_DETAIL;
-      const currentRouteName = router.currentRoute.value.name?.toString();
-      if (currentRouteName?.startsWith(PROJECT_V1_ROUTE_DASHBOARD)) {
-        routeName = activeSidebar.value?.path ?? routeName;
+          const { flattenNavigationItems } = useProjectSidebar(
+            project,
+            router.currentRoute.value
+          );
+          // Otherwise, redirect to the project detail page.
+          if (
+            !flattenNavigationItems.value.find(
+              (item) => !item.hide && item.path === routeName
+            )
+          ) {
+            routeName = PROJECT_V1_ROUTE_DETAIL;
+          }
+        }
 
-        const { flattenNavigationItems } = useProjectSidebar(
-          project,
-          router.currentRoute.value
-        );
-        if (
-          !flattenNavigationItems.value.find(
-            (item) => !item.hide && item.path === routeName
-          )
-        ) {
-          routeName = PROJECT_V1_ROUTE_DETAIL;
+        const route = router.resolve({
+          name: routeName,
+          params: {
+            projectId: getProjectName(project.name),
+          },
+        });
+        if (e.ctrlKey || e.metaKey) {
+          window.open(route.fullPath, "_blank");
+        } else {
+          router.push(route);
         }
       }
 
-      const route = router.resolve({
-        name: routeName,
-        params: {
-          projectId: getProjectName(project.name),
-        },
-      });
-
-      if (e.ctrlKey || e.metaKey) {
-        window.open(route.fullPath, "_blank");
-      } else {
-        router.push(route);
-      }
       emit("row-click", project);
     },
   };

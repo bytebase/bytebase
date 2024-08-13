@@ -95,11 +95,8 @@ import {
   SearchBox,
 } from "@/components/v2";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
-import {
-  useDatabaseV1Store,
-  useEnvironmentV1List,
-  useSearchDatabaseV1List,
-} from "@/store";
+import { useDatabaseV1Store, useEnvironmentV1List } from "@/store";
+import { useDatabaseV1List } from "@/store/modules/v1/databaseList";
 import type { ComposedDatabase } from "@/types";
 import { DEFAULT_PROJECT_NAME } from "@/types";
 import { State } from "@/types/proto/v1/common";
@@ -134,11 +131,7 @@ const state = reactive<LocalState>({
   isGenerating: false,
 });
 
-const { ready } = useSearchDatabaseV1List(
-  computed(() => ({
-    filter: `project = "${project.value.name}" && instance = instances/-`,
-  }))
-);
+const { ready } = useDatabaseV1List(project.value.name);
 
 const environmentList = useEnvironmentV1List(false /* !showDeleted */);
 

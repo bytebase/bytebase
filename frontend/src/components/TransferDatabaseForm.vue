@@ -87,6 +87,7 @@ import {
   useDatabaseV1Store,
   useProjectByName,
 } from "@/store";
+import { useDatabaseV1List } from "@/store/modules/v1/databaseList";
 import type { ComposedDatabase } from "@/types";
 import {
   DEFAULT_PROJECT_NAME,
@@ -100,6 +101,7 @@ import {
   filterDatabaseV1ByKeyword,
   hasProjectPermissionV2,
   sortDatabaseV1List,
+  wrapRefAsPromise,
 } from "@/utils";
 import NoDataPlaceholder from "./misc/NoDataPlaceholder.vue";
 import { DrawerContent } from "./v2";
@@ -150,7 +152,7 @@ const { project } = useProjectByName(toRef(props, "projectName"));
 onMounted(async () => {
   state.loading = true;
   // Prepare all databases for transfer.
-  await databaseStore.searchDatabases({});
+  await wrapRefAsPromise(useDatabaseV1List().ready, true);
   state.loading = false;
 });
 

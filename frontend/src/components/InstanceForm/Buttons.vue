@@ -58,9 +58,9 @@ import {
   useInstanceV1Store,
   useSubscriptionV1Store,
   useGracefulRequest,
-  useDatabaseV1Store,
   pushNotification,
 } from "@/store";
+import { useDatabaseV1List } from "@/store/modules/v1/databaseList";
 import { Engine } from "@/types/proto/v1/common";
 import {
   DataSource,
@@ -281,10 +281,8 @@ const doCreate = async () => {
     await useGracefulRequest(async () => {
       const createdInstance =
         await instanceV1Store.createInstance(instanceCreate);
-      useDatabaseV1Store().searchDatabases({
-        filter: `instance = "${createdInstance.name}"`,
-      });
-
+      // Sync the database list after instance is created.
+      useDatabaseV1List(createdInstance.name);
       if (props.onCreated) {
         props.onCreated(createdInstance);
       } else {

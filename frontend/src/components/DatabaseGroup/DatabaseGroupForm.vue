@@ -90,15 +90,12 @@ import {
   validateSimpleExpr,
   wrapAsGroup,
 } from "@/plugins/cel";
-import {
-  useDatabaseV1ListByProject,
-  useDBGroupStore,
-  useSubscriptionV1Store,
-} from "@/store";
+import { useDBGroupStore, useSubscriptionV1Store } from "@/store";
 import {
   databaseGroupNamePrefix,
   getProjectNameAndDatabaseGroupName,
 } from "@/store/modules/v1/common";
+import { useDatabaseV1List } from "@/store/modules/v1/databaseList";
 import type {
   ComposedDatabase,
   ComposedProject,
@@ -137,7 +134,7 @@ const state = reactive<LocalState>({
   expr: wrapAsGroup(emptySimpleExpr()),
   multitenancy: false,
 });
-const { databaseList } = useDatabaseV1ListByProject(props.project.name);
+const { databaseList } = useDatabaseV1List(props.project.name);
 const resourceIdField = ref<InstanceType<typeof ResourceIdField>>();
 
 const isCreating = computed(() => props.databaseGroup === undefined);

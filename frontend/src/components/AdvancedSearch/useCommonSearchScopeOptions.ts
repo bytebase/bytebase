@@ -1,4 +1,3 @@
-import { uniqBy } from "lodash-es";
 import type { Ref, VNode } from "vue";
 import { computed, h, unref } from "vue";
 import { useI18n } from "vue-i18n";
@@ -12,11 +11,12 @@ import {
 } from "@/components/v2";
 import {
   useDatabaseV1Store,
-  useDatabaseV1ListByProject,
   useEnvironmentV1List,
   useEnvironmentV1Store,
+  useInstanceResourceList,
   useProjectV1Store,
 } from "@/store";
+import { useDatabaseV1List } from "@/store/modules/v1/databaseList";
 import { UNKNOWN_ID, type MaybeRef } from "@/types";
 import { engineToJSON } from "@/types/proto/v1/common";
 import { Workflow } from "@/types/proto/v1/project_service";
@@ -37,7 +37,7 @@ export const useCommonSearchScopeOptions = (
   const route = useRoute();
   const databaseV1Store = useDatabaseV1Store();
   const environmentStore = useEnvironmentV1Store();
-  const environmentList = useEnvironmentV1List(false /* !showDeleted */);
+  const environmentList = useEnvironmentV1List();
   const projectList = useProjectV1Store().projectList;
 
   const project = computed(() => {
@@ -45,12 +45,22 @@ export const useCommonSearchScopeOptions = (
     if (projectId && typeof projectId === "string") {
       return `projects/${projectId}`;
     }
+    const projectScope = params.value.scopes.find(
+      (scope) => scope.id === "project"
+    );
+    if (projectScope) {
+      return `projects/${projectScope.value}`;
+    }
     return undefined;
   });
-  const { databaseList } = useDatabaseV1ListByProject(project);
-  const instanceList = uniqBy(
-    databaseList.value.map((db) => db.instanceResource),
-    (i) => i.name
+
+  const databaseList = computed(() =>
+    // Only use the database list from the store if the project is set.
+    project.value ? useDatabaseV1List(project.value).databaseList.value : []
+  );
+
+  const instanceList = computed(() =>
+    databaseList.value.length > 0 ? useInstanceResourceList().value : []
   );
 
   // fullScopeOptions provides full search scopes and options.
@@ -82,7 +92,7 @@ export const useCommonSearchScopeOptions = (
         id: "instance",
         title: t("issue.advanced-search.scope.instance.title"),
         description: t("issue.advanced-search.scope.instance.description"),
-        options: instanceList.map((ins) => {
+        options: instanceList.value.map((ins) => {
           const name = extractInstanceResourceName(ins.name);
           return {
             value: name,
