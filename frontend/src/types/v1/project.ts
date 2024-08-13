@@ -2,10 +2,7 @@ import { EMPTY_ID, UNKNOWN_ID } from "../const";
 import { State } from "../proto/v1/common";
 import { IamPolicy } from "../proto/v1/iam_policy";
 import { Project, Workflow } from "../proto/v1/project_service";
-import type {
-  VCSProvider,
-  VCSRepository,
-} from "../proto/v1/vcs_provider_service";
+import type { VCSProvider, VCSRepository } from "../proto/v1/vcs_provider_service";
 
 export const DEFAULT_PROJECT_UID = 1;
 export const EMPTY_PROJECT_NAME = `projects/${EMPTY_ID}`;
@@ -34,6 +31,7 @@ export const unknownProject = (): ComposedProject => {
   return {
     ...emptyProject(),
     name: UNKNOWN_PROJECT_NAME,
+    uid: String(UNKNOWN_ID),
     title: "<<Unknown project>>",
   };
 };
@@ -42,6 +40,7 @@ export const defaultProject = (): ComposedProject => {
   return {
     ...unknownProject(),
     name: DEFAULT_PROJECT_NAME,
+    uid: String(DEFAULT_PROJECT_UID),
     title: "Default project",
   };
 };

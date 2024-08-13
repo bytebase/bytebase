@@ -5,10 +5,7 @@
       <DataExportIssueDetailPage v-else-if="isDatabaseDataExportIssue(issue)" />
       <IssueDetailPage v-else />
     </template>
-    <div
-      v-else
-      class="fixed inset-0 z-[1000000] bg-white flex flex-col items-center justify-center"
-    >
+    <div v-else class="w-full h-full flex flex-col items-center justify-center">
       <NSpin />
     </div>
   </div>
