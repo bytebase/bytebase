@@ -69,7 +69,7 @@
             </NRadioGroup>
           </div>
 
-          <div v-if="state.type === 'MEMBER'" class="w-full">
+          <div :class="['w-full', state.type !== 'MEMBER' ? 'hidden' : '']">
             <div class="flex items-center justify-between">
               {{ $t("project.members.select-users") }}
             </div>
@@ -82,7 +82,7 @@
               :include-service-account="false"
             />
           </div>
-          <div v-else class="w-full">
+          <div :class="['w-full', state.type !== 'GROUP' ? 'hidden' : '']">
             <div class="flex items-center justify-between">
               {{ $t("project.members.select-groups") }}
             </div>
