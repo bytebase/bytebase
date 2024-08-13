@@ -135,6 +135,6 @@ export const useSettingV1Store = defineStore("setting_v1", {
 export const useSettingByName = (name: SettingName) => {
   const store = useSettingV1Store();
   const setting = computed(() => store.getSettingByName(name));
-  store.getOrFetchSettingByName(name);
+  store.getOrFetchSettingByName(name, /* silent */ true);
   return setting;
 };
