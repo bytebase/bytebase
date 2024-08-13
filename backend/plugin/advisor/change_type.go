@@ -2,21 +2,18 @@ package advisor
 
 import storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 
-var ChangeTypeWhiteListForRules = map[SQLReviewRuleType][]storepb.PlanCheckRunConfig_ChangeDatabaseType{
-	SchemaRuleStatementCheckSetRoleVariable: {storepb.PlanCheckRunConfig_CHANGE_DATABASE_TYPE_UNSPECIFIED},
+var sqlEditorAllowlist = map[SQLReviewRuleType]bool{
+	SchemaRuleStatementRequireWhere: true,
 }
 
-// SkipRuleInChangeType will skip the sql review check for rule with specific change type.
-func SkipRuleInChangeType(rule SQLReviewRuleType, changeType storepb.PlanCheckRunConfig_ChangeDatabaseType) bool {
-	whitelist, ok := ChangeTypeWhiteListForRules[rule]
-	if !ok {
+// skipRuleInSQLEditor will skip the sql review check in SQL Editor.
+func skipRuleInSQLEditor(rule SQLReviewRuleType, changeType storepb.PlanCheckRunConfig_ChangeDatabaseType) bool {
+	if changeType != storepb.PlanCheckRunConfig_CHANGE_DATABASE_TYPE_UNSPECIFIED {
 		return false
 	}
 
-	for _, w := range whitelist {
-		if w == changeType {
-			return true
-		}
+	if _, ok := sqlEditorAllowlist[rule]; ok {
+		return false
 	}
-	return false
+	return true
 }
