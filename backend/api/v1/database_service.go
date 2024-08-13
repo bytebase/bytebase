@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"log/slog"
 	"regexp"
 	"sort"
 	"strings"
@@ -54,6 +55,8 @@ const (
 	orderByKeyMaximumRowsSent     = "maximum_rows_sent"
 	orderByKeyAverageRowsExamined = "average_rows_examined"
 	orderByKeyMaximumRowsExamined = "maximum_rows_examined"
+
+	backupDatabaseName = "bbdataarchive"
 )
 
 // DatabaseService implements the database service.
@@ -1804,7 +1807,36 @@ func (s *DatabaseService) convertToDatabase(ctx context.Context, database *store
 		SchemaVersion:        database.SchemaVersion.Version,
 		Labels:               database.Metadata.Labels,
 		InstanceResource:     instanceResource,
+		BackupAvailable:      s.isBackupAvailable(ctx, instance, database),
 	}, nil
+}
+
+func (s *DatabaseService) isBackupAvailable(ctx context.Context, instance *store.InstanceMessage, database *store.DatabaseMessage) bool {
+	switch instance.Engine {
+	case storepb.Engine_POSTGRES:
+		dbSchema, err := s.store.GetDBSchema(ctx, database.UID)
+		if err != nil {
+			slog.Debug("Failed to get db schema for checking backup availability", "err", err)
+			return false
+		}
+		for _, schema := range dbSchema.GetMetadata().GetSchemas() {
+			if schema.GetName() == backupDatabaseName {
+				return true
+			}
+		}
+	case storepb.Engine_MYSQL, storepb.Engine_ORACLE, storepb.Engine_MSSQL, storepb.Engine_TIDB:
+		dbName := backupDatabaseName
+		backupDB, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+			InstanceID:   &instance.ResourceID,
+			DatabaseName: &dbName,
+		})
+		if err != nil {
+			slog.Debug("Failed to get backup database", "err", err)
+			return false
+		}
+		return backupDB != nil
+	}
+	return false
 }
 
 type metadataFilter struct {
