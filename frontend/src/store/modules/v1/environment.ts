@@ -123,12 +123,6 @@ export const useEnvironmentV1Store = defineStore("environment_v1", {
     getEnvironmentByName(name: string) {
       return this.environmentMapByName.get(name) ?? unknownEnvironment();
     },
-    getEnvironmentByUID(uid: string) {
-      return (
-        this.environmentList.find((env) => env.uid == uid) ??
-        unknownEnvironment()
-      );
-    },
   },
 });
 

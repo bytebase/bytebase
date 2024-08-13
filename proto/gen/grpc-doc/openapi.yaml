@@ -9470,10 +9470,6 @@ components:
                     description: |-
                         The name of the environment.
                          Format: environments/{environment}
-                uid:
-                    readOnly: true
-                    type: string
-                    description: The system-assigned, unique identifier for a resource.
                 state:
                     enum:
                         - STATE_UNSPECIFIED
