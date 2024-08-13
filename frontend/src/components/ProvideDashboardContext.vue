@@ -29,11 +29,9 @@ import {
   useSettingV1Store,
   useUserStore,
   useUIStateStore,
-  useDatabaseV1Store,
   useGroupStore,
   useProjectV1List,
 } from "@/store";
-import { projectNamePrefix } from "@/store/modules/v1/common";
 import { PolicyResourceType } from "@/types/proto/v1/org_policy_service";
 import { wrapRefAsPromise } from "@/utils";
 import MaskSpinner from "./misc/MaskSpinner.vue";
@@ -44,34 +42,11 @@ const isInitializing = ref<boolean>(true);
 const isSwitchingProject = ref(false);
 
 const policyStore = usePolicyV1Store();
-const databaseStore = useDatabaseV1Store();
 
 const prepareProjects = async () => {
   const routeName = route.name?.toString() || "";
   if (!routeName.startsWith(`${PROJECT_V1_ROUTE_DASHBOARD}.`)) {
     await wrapRefAsPromise(useProjectV1List().ready, true);
-  }
-};
-
-const fetchDatabases = async (optionalProject: string) => {
-  const filters = [`instance = "instances/-"`];
-  // If `projectId` is provided in the route, filter the database list by the project.
-  if (optionalProject) {
-    filters.push(`project = "${projectNamePrefix}${optionalProject}"`);
-  }
-  await databaseStore.searchDatabases({
-    filter: filters.join(" && "),
-  });
-};
-
-const databaseInitialized = new Set<string /* project */>();
-const prepareDatabases = async (optionalProject: string) => {
-  if (databaseInitialized.has(optionalProject || "")) return;
-  try {
-    await Promise.all([fetchDatabases(optionalProject)]);
-    databaseInitialized.add(optionalProject || "");
-  } catch {
-    // nothing
   }
 };
 
@@ -96,7 +71,6 @@ onMounted(async () => {
     prepareProjects(),
   ]);
 
-  await prepareDatabases(route.params.projectId as string);
   useUIStateStore().restoreState();
 
   isInitializing.value = false;
@@ -108,7 +82,6 @@ onMounted(async () => {
       to.name === AUTH_MFA_MODULE ||
       to.name === AUTH_PASSWORD_FORGOT_MODULE
     ) {
-      databaseInitialized.clear();
       next();
       return;
     }
@@ -125,7 +98,6 @@ onMounted(async () => {
         // This is useful when the user navigates to the workspace dashboard from project detail.
         await wrapRefAsPromise(useProjectV1List().ready, true);
       }
-      await prepareDatabases(toProject);
       isSwitchingProject.value = false;
       next();
     }

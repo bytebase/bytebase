@@ -49,7 +49,7 @@
     @close="state.selectedPlanOnlyType = undefined"
   >
     <AlterSchemaPrepForm
-      :project-name="specificProject?.name"
+      :project-name="specificProject.name"
       :type="state.selectedPlanOnlyType!"
       :plan-only="true"
       @dismiss="state.selectedPlanOnlyType = undefined"
@@ -79,7 +79,7 @@ import {
 } from "@/utils";
 
 const props = defineProps<{
-  projectId?: string;
+  projectId: string;
 }>();
 
 interface LocalState {
@@ -92,15 +92,12 @@ interface LocalState {
 }
 
 const specificProject = computed(() => {
-  return props.projectId
-    ? projectV1Store.getProjectByName(`${projectNamePrefix}${props.projectId}`)
-    : undefined;
+  return projectV1Store.getProjectByName(
+    `${projectNamePrefix}${props.projectId}`
+  );
 });
 
 const readonlyScopes = computed((): SearchScope[] => {
-  if (!specificProject.value) {
-    return [];
-  }
   return [
     {
       id: "project",
@@ -142,9 +139,6 @@ const planCreationButtonOptions = computed((): DropdownOption[] => {
 const supportedScopes = computed(() => {
   // TODO(steven): support more scopes in backend and frontend: instance, database, planCheckRunStatus
   const supportedScopes: SearchScopeId[] = [];
-  if (!specificProject.value) {
-    supportedScopes.unshift("project");
-  }
   return supportedScopes;
 });
 

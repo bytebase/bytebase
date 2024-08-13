@@ -26,7 +26,8 @@
 
     <ProjectV1Table
       :project-list="filteredProjectList"
-      :on-click="showProjectDetail"
+      :prevent-default="true"
+      @row-click="showProjectDetail"
     />
 
     <Drawer
@@ -65,7 +66,8 @@ import {
   ProjectV1Table,
   SearchBox,
 } from "@/components/v2";
-import { useDatabaseV1Store, useProjectV1List } from "@/store";
+import { useProjectV1List } from "@/store";
+import { useDatabaseV1List } from "@/store/modules/v1/databaseList";
 import type { Project } from "@/types/proto/v1/project_service";
 import { filterProjectV1ListByKeyword, wrapRefAsPromise } from "@/utils";
 import Detail from "./Detail.vue";
@@ -109,8 +111,8 @@ const hideDrawer = () => {
 };
 
 onMounted(() => {
-  // prepare for transferring databases
-  useDatabaseV1Store().searchDatabases({});
+  // prepare for transferring databases.
+  useDatabaseV1List();
 
   if (route.hash === "#add") {
     state.detail.show = true;

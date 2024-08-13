@@ -43,15 +43,6 @@ service DatabaseService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
-  // Deprecated. This will be removed in the next release.
-  // Search for databases that the caller has the bb.databases.get permission on, and also satisfy the specified query.
-  rpc SearchDatabases(SearchDatabasesRequest) returns (SearchDatabasesResponse) {
-    option (google.api.http) = {get: "/v1/databases:search"};
-    option (google.api.method_signature) = "";
-    option (bytebase.v1.permission) = "bb.databases.get";
-    option (bytebase.v1.auth_method) = CUSTOM;
-  }
-
   rpc UpdateDatabase(UpdateDatabaseRequest) returns (Database) {
     option (google.api.http) = {
       patch: "/v1/{database.name=instances/*/databases/*}"
@@ -241,44 +232,6 @@ message ListDatabasesRequest {
 }
 
 message ListDatabasesResponse {
-  // The databases from the specified request.
-  repeated Database databases = 1;
-
-  // A token, which can be sent as `page_token` to retrieve the next page.
-  // If this field is omitted, there are no subsequent pages.
-  string next_page_token = 2;
-}
-
-// Deprecated.
-message SearchDatabasesRequest {
-  // The maximum number of databases to return. The service may return fewer than
-  // this value.
-  // If unspecified, at most 50 databases will be returned.
-  // The maximum value is 1000; values above 1000 will be coerced to 1000.
-  int32 page_size = 1;
-
-  // A page token, received from a previous `ListDatabases` call.
-  // Provide this to retrieve the subsequent page.
-  //
-  // When paginating, all other parameters provided to `ListDatabases` must match
-  // the call that provided the page token.
-  string page_token = 2;
-
-  // Filter is used to filter databases returned in the list.
-  // follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax.
-  // The field only support in filter:
-  // - project with "=" operator, for example:
-  //  - project = "projects/sample-project"
-  //  - project = "projects/-"
-  // - instance with "=" operator, for example:
-  //  - instance = "instances/mysql"
-  //  - instance = "instances/-"
-  // for example, we can use project = "projects/sample" && instance = "instances/-" to list all databases in the sample project.
-  string filter = 3;
-}
-
-// Deprecated.
-message SearchDatabasesResponse {
   // The databases from the specified request.
   repeated Database databases = 1;
 

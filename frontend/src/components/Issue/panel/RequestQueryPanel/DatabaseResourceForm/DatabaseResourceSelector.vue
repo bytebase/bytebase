@@ -29,8 +29,10 @@ import {
   useDBSchemaV1Store,
   useProjectByName,
 } from "@/store";
+import { useDatabaseV1List } from "@/store/modules/v1/databaseList";
 import type { DatabaseResource } from "@/types";
 import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
+import { wrapRefAsPromise } from "@/utils";
 import Label from "./Label.vue";
 import type { DatabaseTreeOption } from "./common";
 import {
@@ -67,7 +69,7 @@ const defaultExpandedKeys = ref<string[]>([]);
 const loading = ref(true);
 
 onMounted(async () => {
-  await databaseStore.listDatabases(props.projectName);
+  await wrapRefAsPromise(useDatabaseV1List(props.projectName).ready, true);
 
   await Promise.all(
     selectedValueList.value.map(async (key) => {
