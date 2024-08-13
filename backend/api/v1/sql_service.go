@@ -185,7 +185,7 @@ func (s *SQLService) Execute(ctx context.Context, request *v1pb.ExecuteRequest) 
 
 	statement := request.Statement
 	// Run SQL review.
-	adviceStatus, advices, err := s.SQLReviewCheck(ctx, statement, v1pb.CheckRequest_CHANGE_TYPE_UNSPECIFIED, instance, database, nil /* Override Metadata */)
+	adviceStatus, advices, err := s.SQLReviewCheck(ctx, statement, v1pb.CheckRequest_SQL_EDITOR, instance, database, nil /* Override Metadata */)
 	if err != nil {
 		return nil, err
 	}
@@ -333,7 +333,7 @@ func (s *SQLService) Export(ctx context.Context, request *v1pb.ExportRequest) (*
 	}
 
 	// Run SQL review.
-	if _, _, err = s.SQLReviewCheck(ctx, statement, v1pb.CheckRequest_CHANGE_TYPE_UNSPECIFIED, instance, database, nil /* Override Metadata */); err != nil {
+	if _, _, err = s.SQLReviewCheck(ctx, statement, v1pb.CheckRequest_SQL_EDITOR, instance, database, nil /* Override Metadata */); err != nil {
 		return nil, err
 	}
 
@@ -750,7 +750,7 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 	}
 
 	// Run SQL review.
-	adviceStatus, advices, err := s.SQLReviewCheck(ctx, statement, v1pb.CheckRequest_CHANGE_TYPE_UNSPECIFIED, instance, database, nil /* Override Metadata */)
+	adviceStatus, advices, err := s.SQLReviewCheck(ctx, statement, v1pb.CheckRequest_SQL_EDITOR, instance, database, nil /* Override Metadata */)
 	if err != nil {
 		return nil, err
 	}
