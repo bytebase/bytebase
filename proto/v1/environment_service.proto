@@ -147,6 +147,8 @@ message UndeleteEnvironmentRequest {
 }
 
 message Environment {
+  reserved 2;
+
   option (google.api.resource) = {
     type: "bytebase.com/Environment"
     pattern: "environments/{environment}"
@@ -155,9 +157,6 @@ message Environment {
   // The name of the environment.
   // Format: environments/{environment}
   string name = 1;
-
-  // The system-assigned, unique identifier for a resource.
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   State state = 3;
 
