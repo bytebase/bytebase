@@ -516,7 +516,7 @@ func SQLReviewCheck(
 		}
 
 		ruleType := SQLReviewRuleType(rule.Type)
-		if SkipRuleInChangeType(ruleType, checkContext.ChangeType) {
+		if !isRuleAllowed(ruleType, checkContext.ChangeType) {
 			continue
 		}
 

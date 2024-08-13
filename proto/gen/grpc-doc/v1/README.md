@@ -7330,7 +7330,6 @@ When paginating, all other parameters provided to `ListProjects` must match the 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name of the project. Format: projects/{project} |
-| uid | [string](#string) |  | The system-assigned, unique identifier for a resource. |
 | state | [State](#bytebase-v1-State) |  |  |
 | title | [string](#string) |  | The title or name of a project. It&#39;s not unique within the workspace. |
 | key | [string](#string) |  | The key is a short and upper-case identifier for a project. It&#39;s unique within the workspace. |
@@ -10566,6 +10565,7 @@ Type of the SheetPayload.
 | DDL | 1 |  |
 | DDL_GHOST | 2 |  |
 | DML | 3 |  |
+| SQL_EDITOR | 4 |  |
 
 
 
