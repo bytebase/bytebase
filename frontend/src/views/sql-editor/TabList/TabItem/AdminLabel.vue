@@ -8,7 +8,7 @@
       <heroicons-solid:chevron-right class="flex-shrink-0 h-4 w-4 opacity-70" />
       <span>{{ instance.title }}</span>
     </template>
-    <template v-if="database.name !== unknownDatabase().name">
+    <template v-if="isValidDatabaseName(database.name)">
       <heroicons-solid:chevron-right class="flex-shrink-0 h-4 w-4 opacity-70" />
       <span>{{ database.databaseName }}</span>
     </template>
@@ -21,7 +21,7 @@ import { computed } from "vue";
 import { EnvironmentV1Name } from "@/components/v2";
 import { useDatabaseV1Store } from "@/store";
 import type { SQLEditorTab } from "@/types";
-import { isValidInstanceName, unknownDatabase } from "@/types";
+import { isValidInstanceName, isValidDatabaseName } from "@/types";
 
 const props = defineProps({
   tab: {

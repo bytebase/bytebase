@@ -14,7 +14,11 @@ import {
   useDatabaseV1Store,
   useProjectV1Store,
 } from "@/store";
-import { UNKNOWN_ID, unknownEnvironment, unknownProject } from "@/types";
+import {
+  isValidEnvironmentName,
+  isValidProjectName,
+  UNKNOWN_ID,
+} from "@/types";
 import { useReviewConfigAttachedResource } from "./useReviewConfigAttachedResource";
 
 const props = defineProps<{
@@ -37,7 +41,7 @@ const reviewPolicyResourceComponent = computed(() => {
       const environment = environmentV1Store.getEnvironmentByName(
         props.resource
       );
-      if (environment.name === unknownEnvironment().name) {
+      if (!isValidEnvironmentName(environment.name)) {
         return <div>{props.resource}</div>;
       }
       return <EnvironmentV1Name environment={environment} link={props.link} />;
@@ -57,7 +61,7 @@ const reviewPolicyResourceComponent = computed(() => {
     }
     case "project": {
       const project = projectStore.getProjectByName(props.resource);
-      if (project.name === unknownProject().name) {
+      if (!isValidProjectName(project.name)) {
         return <div>{props.resource}</div>;
       }
       return (
