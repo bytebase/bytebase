@@ -2074,7 +2074,6 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name of the instance. Format: instances/{instance} |
-| uid | [string](#string) |  | The system-assigned, unique identifier for a resource. |
 | state | [State](#bytebase-v1-State) |  |  |
 | title | [string](#string) |  |  |
 | engine | [Engine](#bytebase-v1-Engine) |  |  |
