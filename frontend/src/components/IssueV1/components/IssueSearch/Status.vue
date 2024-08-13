@@ -1,17 +1,20 @@
 <template>
-  <TabFilter
+  <NTabs
     :value="tab"
-    :items="tabItemList"
-    :responsive="false"
+    :type="'line'"
+    :size="'small'"
     @update:value="updateStatus"
-  />
+  >
+    <NTab v-for="item in tabItemList" :key="item.value" :name="item.value">
+      {{ item.label }}
+    </NTab>
+  </NTabs>
 </template>
 
 <script lang="ts" setup>
+import { NTabs, NTab } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import type { TabFilterItem } from "@/components/v2";
-import { TabFilter } from "@/components/v2";
 import type { SearchParams, SemanticIssueStatus } from "@/utils";
 import { getSemanticIssueStatusFromSearchParams, upsertScope } from "@/utils";
 
@@ -26,28 +29,31 @@ const emit = defineEmits<{
 const { t } = useI18n();
 
 const tabItemList = computed(() => {
-  const OPEN: TabFilterItem<SemanticIssueStatus> = {
-    value: "OPEN",
-    label: t("issue.table.open"),
-  };
-  const CLOSED: TabFilterItem<SemanticIssueStatus> = {
-    value: "CLOSED",
-    label: t("issue.table.closed"),
-  };
-  return [OPEN, CLOSED];
+  return [
+    {
+      value: "OPEN",
+      label: t("issue.table.open"),
+    },
+    {
+      value: "CLOSED",
+      label: t("issue.table.closed"),
+    },
+  ] as {
+    value: SemanticIssueStatus;
+    label: string;
+  }[];
 });
 
 const tab = computed(() => {
   return getSemanticIssueStatusFromSearchParams(props.params);
 });
 
-const updateStatus = (value: string | number | undefined) => {
-  const status = value as SemanticIssueStatus;
-  if (!["OPEN", "CLOSED"].includes(status)) return;
+const updateStatus = (value: SemanticIssueStatus) => {
+  if (!["OPEN", "CLOSED"].includes(value)) return;
 
   const updated = upsertScope(props.params, {
     id: "status",
-    value: status,
+    value: value,
   });
   emit("update:params", updated);
 };

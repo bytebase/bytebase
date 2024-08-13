@@ -181,7 +181,11 @@ const onProjectSelect = (project: ComposedProject) => {
 };
 
 const gotoWorkspace = () => {
-  router.push({ name: WORKSPACE_ROUTE_MY_ISSUES });
+  const route = router.resolve({
+    name: WORKSPACE_ROUTE_MY_ISSUES,
+  });
+  record(route.fullPath);
+  router.push(route.fullPath);
   emit("dismiss");
 };
 </script>
