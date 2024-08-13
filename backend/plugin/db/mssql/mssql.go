@@ -348,7 +348,7 @@ func NewBatch(statement string) *tsqlbatch.Batch {
 	return tsqlbatch.NewBatch(scanner)
 }
 
-// getShowPlanAll returns on/off and ok for the statement
+// getShowPlanAll returns on/off and ok for the statement.
 func getShowPlanAll(s string) (bool, bool) {
 	if len(s) > 30 {
 		return false, false
