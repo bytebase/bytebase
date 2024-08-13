@@ -61,7 +61,7 @@ const reviewPolicyResourceComponent = computed(() => {
     }
     case "project": {
       const project = projectStore.getProjectByName(props.resource);
-      if (!isValidProjectName(project.name)) {
+      if (project.uid === `${UNKNOWN_ID}`) {
         return <div>{props.resource}</div>;
       }
       return (
