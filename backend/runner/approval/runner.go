@@ -357,8 +357,9 @@ func getDatabaseGeneralIssueRisk(ctx context.Context, s *store.Store, sheetManag
 	}
 
 	planCheckRuns, err := s.ListPlanCheckRuns(ctx, &store.FindPlanCheckRunMessage{
-		PlanUID: &plan.UID,
-		Type:    &[]store.PlanCheckRunType{store.PlanCheckDatabaseStatementSummaryReport},
+		PlanUID:    &plan.UID,
+		Type:       &[]store.PlanCheckRunType{store.PlanCheckDatabaseStatementSummaryReport},
+		LatestOnly: true,
 	})
 	if err != nil {
 		return 0, store.RiskSourceUnknown, false, errors.Wrapf(err, "failed to list plan check runs for plan %v", plan.UID)
@@ -379,31 +380,47 @@ func getDatabaseGeneralIssueRisk(ctx context.Context, s *store.Store, sheetManag
 		}
 	}
 
+	// Get the max risk level of the same risk source.
+	// risks is sorted by level DESC, so we just need to return the 1st matched risk.
+	var maxRiskSourceRiskLevel int32
+	for _, risk := range risks {
+		if !risk.Active {
+			continue
+		}
+		if risk.Source != riskSource {
+			continue
+		}
+		maxRiskSourceRiskLevel = risk.Level
+		break
+	}
+
 	// If any plan check run is skipped because of large SQL,
 	// return the max risk level in the risks of the same risk source.
 	for _, run := range latestPlanCheckRun {
 		for _, result := range run.Result.GetResults() {
 			if result.GetCode() == common.SizeExceeded.Int32() {
-				// risks is sorted by level DESC, so we just need to return the 1st matched risk.
-				for _, risk := range risks {
-					if !risk.Active {
-						continue
-					}
-					if risk.Source != riskSource {
-						continue
-					}
-					return risk.Level, riskSource, true, nil
-				}
-				return 0, riskSource, true, nil
+				return maxRiskSourceRiskLevel, riskSource, true, nil
 			}
 		}
 	}
 
+	var planCheckRunDone int
 	// the latest plan check run is not done yet, return done=false
 	for _, run := range latestPlanCheckRun {
-		if run.Status != store.PlanCheckRunStatusDone {
-			return 0, store.RiskSourceUnknown, false, nil
+		if run.Status == store.PlanCheckRunStatusDone {
+			planCheckRunDone++
 		}
+	}
+	planCheckRunCount := len(latestPlanCheckRun)
+	// We have less than 5 planCheckRuns in total.
+	// We wait for all of them to finish.
+	if planCheckRunCount < 5 && planCheckRunCount != planCheckRunDone {
+		return 0, store.RiskSourceUnknown, false, nil
+	}
+	// We have not less than 5 planCheckRuns in total.
+	// We need 5 completed plan check run.
+	if planCheckRunCount >= 5 && planCheckRunDone < 5 {
+		return 0, store.RiskSourceUnknown, false, nil
 	}
 
 	pipelineCreate, err := apiv1.GetPipelineCreate(ctx, s, sheetManager, licenseService, dbFactory, plan.Config.Steps, issue.Project)
@@ -543,7 +560,7 @@ func getDatabaseGeneralIssueRisk(ctx context.Context, s *store.Store, sheetManag
 			if maxRiskLevel < risk {
 				maxRiskLevel = risk
 			}
-			if level, _ := convertRiskLevel(maxRiskLevel); level == storepb.IssuePayloadApproval_HIGH {
+			if maxRiskLevel == maxRiskSourceRiskLevel {
 				return maxRiskLevel, riskSource, true, nil
 			}
 		}
