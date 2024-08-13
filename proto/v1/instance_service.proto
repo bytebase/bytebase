@@ -306,6 +306,8 @@ message InstanceOptions {
 }
 
 message Instance {
+  reserved 2;
+
   option (google.api.resource) = {
     type: "bytebase.com/Instance"
     pattern: "instances/{instance}"
@@ -314,9 +316,6 @@ message Instance {
   // The name of the instance.
   // Format: instances/{instance}
   string name = 1;
-
-  // The system-assigned, unique identifier for a resource.
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   State state = 3;
 

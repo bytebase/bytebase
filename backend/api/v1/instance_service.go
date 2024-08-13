@@ -973,7 +973,6 @@ func convertToInstance(instance *store.InstanceMessage) (*v1pb.Instance, error) 
 
 	return &v1pb.Instance{
 		Name:          fmt.Sprintf("%s%s", common.InstanceNamePrefix, instance.ResourceID),
-		Uid:           fmt.Sprintf("%d", instance.UID),
 		Title:         instance.Title,
 		Engine:        engine,
 		EngineVersion: instance.EngineVersion,
