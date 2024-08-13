@@ -435,10 +435,7 @@ func DoExport(ctx context.Context, storeInstance *store.Store, dbFactory *dbfact
 	}
 
 	queryContext := &db.QueryContext{
-		CurrentDatabase: database.DatabaseName,
-	}
-	if request.Limit != 0 {
-		queryContext.Limit = int(request.Limit)
+		Limit: int(request.Limit),
 	}
 	start := time.Now().UnixNano()
 	result, err := driver.QueryConn(ctx, conn, request.Statement, queryContext)
@@ -823,9 +820,8 @@ func (s *SQLService) doQuery(ctx context.Context, request *v1pb.QueryRequest, in
 
 	start := time.Now().UnixNano()
 	results, err := driver.QueryConn(ctx, conn, request.Statement, &db.QueryContext{
-		Limit:           int(request.Limit),
-		Explain:         request.Explain,
-		CurrentDatabase: database.DatabaseName,
+		Limit:   int(request.Limit),
+		Explain: request.Explain,
 	})
 	select {
 	case <-ctx.Done():

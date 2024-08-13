@@ -134,10 +134,6 @@ func (d *DBFactory) GetDataSourceDriver(ctx context.Context, instance *store.Ins
 	if databaseName == "" {
 		databaseName = dataSource.Database
 	}
-	connectionDatabase := ""
-	if datashare {
-		connectionDatabase = dataSource.Database
-	}
 	password, err := common.Unobfuscate(dataSource.ObfuscatedPassword, d.secret)
 	if err != nil {
 		return nil, err
@@ -222,7 +218,7 @@ func (d *DBFactory) GetDataSourceDriver(ctx context.Context, instance *store.Ins
 			Host:                     dataSource.Host,
 			Port:                     dataSource.Port,
 			Database:                 databaseName,
-			ConnectionDatabase:       connectionDatabase,
+			DataShare:                datashare,
 			SRV:                      dataSource.SRV,
 			AuthenticationDatabase:   dataSource.AuthenticationDatabase,
 			SID:                      dataSource.SID,
