@@ -1335,8 +1335,9 @@ func (s *SQLService) sqlCheck(
 		if e, ok := err.(*common.Error); ok && e.Code == common.NotFound {
 			// Continue to check the builtin rules.
 			reviewConfig = &storepb.ReviewConfigPayload{}
+		} else {
+			return storepb.Advice_ERROR, nil, status.Errorf(codes.Internal, "failed to get SQL review policy with error: %v", err)
 		}
-		return storepb.Advice_ERROR, nil, status.Errorf(codes.Internal, "failed to get SQL review policy with error: %v", err)
 	}
 
 	res, err := advisor.SQLReviewCheck(s.sheetManager, statement, reviewConfig.SqlReviewRules, context)
