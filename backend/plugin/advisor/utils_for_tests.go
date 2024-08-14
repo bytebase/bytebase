@@ -117,6 +117,9 @@ var (
 					},
 				},
 			},
+			{
+				Name: "bbdataarchive",
+			},
 		},
 	}
 	MockMSSQLDatabase = &storepb.DatabaseSchemaMetadata{
@@ -217,6 +220,10 @@ func RunSQLReviewRuleTest(t *testing.T, rule SQLReviewRuleType, dbType storepb.E
 			},
 		}
 
+		if isBuiltinRule(rule) {
+			ruleList = []*storepb.SQLReviewRule{}
+		}
+
 		ctx := SQLReviewCheckContext{
 			Charset:         "",
 			Collation:       "",
@@ -227,6 +234,9 @@ func RunSQLReviewRuleTest(t *testing.T, rule SQLReviewRuleType, dbType storepb.E
 			CurrentDatabase: curDB,
 			DBSchema:        schemaMetadata,
 			ChangeType:      tc.ChangeType,
+			PreUpdateBackupDetail: &storepb.PreUpdateBackupDetail{
+				Database: "instances/instanceName/databases/bbdataarchive",
+			},
 		}
 
 		adviceList, err := SQLReviewCheck(sm, tc.Statement, ruleList, ctx)
@@ -253,6 +263,15 @@ func RunSQLReviewRuleTest(t *testing.T, rule SQLReviewRuleType, dbType storepb.E
 		require.NoError(t, err)
 		err = os.WriteFile(filepath, byteValue, 0644)
 		require.NoError(t, err)
+	}
+}
+
+func isBuiltinRule(rule SQLReviewRuleType) bool {
+	switch rule {
+	case BuiltinRulePriorBackupCheck:
+		return true
+	default:
+		return false
 	}
 }
 
@@ -346,6 +365,7 @@ func SetDefaultSQLReviewRulePayload(ruleTp SQLReviewRuleType, dbType storepb.Eng
 	var err error
 	switch ruleTp {
 	case SchemaRuleMySQLEngine,
+		BuiltinRulePriorBackupCheck,
 		SchemaRuleFullyQualifiedObjectName,
 		SchemaRuleStatementNoSelectAll,
 		SchemaRuleStatementRequireWhere,

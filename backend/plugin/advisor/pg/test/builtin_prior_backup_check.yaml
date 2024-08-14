@@ -1,0 +1,28 @@
+- statement: DELETE FROM tech_book WHERE a > 1;
+  changeType: 2
+- statement: UPDATE tech_book SET id = 1;
+  changeType: 2
+- statement: CREATE TABLE t_test_backup(a int);DELETE FROM tech_book WHERE a > 1;
+  changeType: 2
+  want:
+    - status: 3
+      code: 2001
+      title: builtin.prior-backup-check
+      content: Data change can only run DML, "CREATE TABLE t_test_backup(a int);" is not DML
+      detail: ""
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: SET ROLE role1;DELETE FROM tech_book WHERE a > 1;
+  changeType: 2
+  want:
+    - status: 3
+      code: 2001
+      title: builtin.prior-backup-check
+      content: Backup cannot deal with SET ROLE statement
+      detail: ""
+      startposition:
+        line: 1
+        column: 0
+      endposition: null

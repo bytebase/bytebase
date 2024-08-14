@@ -9,6 +9,7 @@ import (
 
 func TestPostgreSQLRules(t *testing.T) {
 	pgRules := []advisor.SQLReviewRuleType{
+		advisor.BuiltinRulePriorBackupCheck,
 		advisor.SchemaRuleColumnNotNull,
 		advisor.SchemaRuleRequiredColumn,
 		advisor.SchemaRuleColumnTypeDisallowList,
@@ -66,4 +67,5 @@ func TestPostgreSQLRules(t *testing.T) {
 // Add SQL review type here if you need metadata for test.
 var advisorNeedMockData = map[advisor.SQLReviewRuleType]bool{
 	advisor.SchemaRuleFullyQualifiedObjectName: true,
+	advisor.BuiltinRulePriorBackupCheck:        true,
 }
