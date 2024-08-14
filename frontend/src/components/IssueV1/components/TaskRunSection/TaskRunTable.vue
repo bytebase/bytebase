@@ -1,39 +1,10 @@
 <template>
-  <BBGrid
-    :column-list="columnList"
-    :data-source="taskRunList"
-    :row-clickable="false"
-    row-key="uid"
-    class="border"
-    v-bind="$attrs"
-  >
-    <template #item="{ item: taskRun }: TaskRunGridRow">
-      <div class="bb-grid-cell">
-        <TaskRunStatusIcon :status="taskRun.status" />
-      </div>
-      <div class="bb-grid-cell">
-        <TaskRunComment :task-run="taskRun" />
-      </div>
-      <div class="bb-grid-cell">
-        <HumanizeDate :date="taskRun.createTime" />
-      </div>
-      <div class="bb-grid-cell">
-        <HumanizeDate :date="taskRun.startTime" />
-      </div>
-      <div class="bb-grid-cell">
-        {{ humanizeDurationV1(executionDurationOfTaskRun(taskRun)) }}
-      </div>
-      <div class="bb-grid-cell">
-        <NButton
-          v-if="shouldShowDetailButton(taskRun)"
-          size="tiny"
-          @click="showDetail(taskRun)"
-        >
-          {{ $t("common.detail") }}
-        </NButton>
-      </div>
-    </template>
-  </BBGrid>
+  <NDataTable
+    size="small"
+    :row-key="rowKey"
+    :columns="columnList"
+    :data="taskRunList"
+  />
 
   <Drawer v-model:show="taskRunDetailContext.show">
     <DrawerContent
@@ -49,69 +20,152 @@
   </Drawer>
 </template>
 
-<script lang="ts" setup>
-import { NButton } from "naive-ui";
+<script lang="tsx" setup>
+import { computedAsync } from "@vueuse/core";
+import { last } from "lodash-es";
+import { NButton, type DataTableColumn, NDataTable } from "naive-ui";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
-import type { BBGridColumn, BBGridRow } from "@/bbkit";
-import { BBGrid } from "@/bbkit";
+import type { BBGridRow } from "@/bbkit";
 import HumanizeDate from "@/components/misc/HumanizeDate.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
+import { useSheetV1Store } from "@/store";
+import type { ComposedTaskRun } from "@/types";
 import { Duration } from "@/types/proto/google/protobuf/duration";
-import type { TaskRun } from "@/types/proto/v1/rollout_service";
 import { TaskRun_Status } from "@/types/proto/v1/rollout_service";
+import { humanizeDurationV1, sheetNameOfTaskV1 } from "@/utils";
+import { useIssueContext } from "../../logic";
 import TaskRunComment from "./TaskRunComment.vue";
 import TaskRunDetail from "./TaskRunDetail.vue";
+import DetailCell from "./TaskRunLogTable/DetailCell";
+import StatementCell from "./TaskRunLogTable/StatementCell.vue";
+import { convertTaskRunLogEntryToFlattenLogEntries } from "./TaskRunLogTable/common";
 import TaskRunStatusIcon from "./TaskRunStatusIcon.vue";
 
 defineOptions({
   inheritAttrs: false,
 });
 
-export type TaskRunGridRow = BBGridRow<TaskRun>;
+export type TaskRunGridRow = BBGridRow<ComposedTaskRun>;
 
 defineProps<{
-  taskRunList: TaskRun[];
+  taskRunList: ComposedTaskRun[];
 }>();
 
 const { t } = useI18n();
+const { selectedTask } = useIssueContext();
+
+const sheet = computedAsync(async () => {
+  return useSheetV1Store().getOrFetchSheetByName(
+    sheetNameOfTaskV1(selectedTask.value),
+    "FULL"
+  );
+});
+
 const taskRunDetailContext = ref<{
   show: boolean;
-  taskRun?: TaskRun;
+  taskRun?: ComposedTaskRun;
 }>({
   show: false,
 });
 
-const columnList = computed((): BBGridColumn[] => {
+const rowKey = (taskRun: ComposedTaskRun) => {
+  return taskRun.name;
+};
+
+const columnList = computed((): DataTableColumn<ComposedTaskRun>[] => {
   return [
     {
+      key: "status",
       title: "",
-      width: "auto",
+      width: 30,
+      render: (taskRun: ComposedTaskRun) => {
+        return <TaskRunStatusIcon status={taskRun.status} />;
+      },
     },
     {
+      key: "comment",
       title: t("task.comment"),
-      width: "1fr",
+      width: "30%",
+      className: "flex flex-row items-center",
+      minWidth: 140,
+      resizable: true,
+      render: (taskRun: ComposedTaskRun) => {
+        return <TaskRunComment taskRun={taskRun} />;
+      },
     },
     {
+      key: "detail",
+      title: () => t("common.detail"),
+      width: "30%",
+      minWidth: 100,
+      resizable: true,
+      render: (taskRun) => {
+        const entry = getFlattenLogEntry(taskRun);
+        return entry ? <DetailCell entry={entry} sheet={sheet.value} /> : "-";
+      },
+    },
+    {
+      key: "statement",
+      title: () => t("common.statement"),
+      width: "40%",
+      resizable: true,
+      minWidth: 140,
+      render: (taskRun) => {
+        const entry = getFlattenLogEntry(taskRun);
+        return entry ? (
+          <StatementCell entry={entry} sheet={sheet.value} />
+        ) : (
+          "-"
+        );
+      },
+    },
+    {
+      key: "createTime",
       title: t("task.created"),
-      width: "auto",
+      width: 100,
+      render: (taskRun: ComposedTaskRun) => {
+        return <HumanizeDate date={taskRun.createTime} />;
+      },
     },
     {
+      key: "startTime",
       title: t("task.started"),
-      width: "auto",
+      width: 100,
+      render: (taskRun: ComposedTaskRun) => {
+        return <HumanizeDate date={taskRun.startTime} />;
+      },
     },
     {
+      key: "executionDuration",
       title: t("task.execution-time"),
-      width: "auto",
+      width: 120,
+      render: (taskRun: ComposedTaskRun) => {
+        return humanizeDurationV1(executionDurationOfTaskRun(taskRun));
+      },
     },
     {
+      key: "actions",
       title: "",
-      width: "auto",
+      width: 60,
+      render: (taskRun: ComposedTaskRun) => {
+        return (
+          <NButton
+            v-if={shouldShowDetailButton(taskRun)}
+            size="tiny"
+            onClick={() => showDetail(taskRun)}
+          >
+            {t("common.detail")}
+          </NButton>
+        );
+      },
     },
   ];
 });
 
-const executionDurationOfTaskRun = (taskRun: TaskRun): Duration | undefined => {
+const executionDurationOfTaskRun = (
+  taskRun: ComposedTaskRun
+): Duration | undefined => {
   const { startTime, updateTime } = taskRun;
   if (!startTime || !updateTime) {
     return undefined;
@@ -135,7 +189,7 @@ const executionDurationOfTaskRun = (taskRun: TaskRun): Duration | undefined => {
   });
 };
 
-const shouldShowDetailButton = (taskRun: TaskRun) => {
+const shouldShowDetailButton = (taskRun: ComposedTaskRun) => {
   return [
     TaskRun_Status.RUNNING,
     TaskRun_Status.DONE,
@@ -144,10 +198,19 @@ const shouldShowDetailButton = (taskRun: TaskRun) => {
   ].includes(taskRun.status);
 };
 
-const showDetail = (taskRun: TaskRun) => {
+const showDetail = (taskRun: ComposedTaskRun) => {
   taskRunDetailContext.value = {
     show: true,
     taskRun,
   };
+};
+
+const getFlattenLogEntry = (taskRun: ComposedTaskRun) => {
+  const entry = last(taskRun.taskRunLog.entries);
+  if (!entry) {
+    return undefined;
+  }
+  const flattenEntry = convertTaskRunLogEntryToFlattenLogEntries(entry, 0);
+  return last(flattenEntry);
 };
 </script>
