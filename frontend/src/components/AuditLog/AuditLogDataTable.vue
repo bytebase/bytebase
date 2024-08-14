@@ -17,6 +17,7 @@ import BBAvatar from "@/bbkit/BBAvatar.vue";
 import { extractUserEmail, useProjectV1Store, useUserStore } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { AuditData, type AuditLog } from "@/types/proto/v1/audit_log_service";
+import { Setting } from "@/types/proto/v1/setting_service";
 import { extractProjectResourceName } from "@/utils";
 import JSONStringView from "./JSONStringView.vue";
 
@@ -146,7 +147,10 @@ const columnList = computed((): ProjectDataTableColumn[] => {
             <JSONStringView
               jsonString={JSON.stringify({
                 "@type": auditLog.serviceData.typeUrl,
-                ...AuditData.decode(auditLog.serviceData.value),
+                ...getServiceDataValue(
+                  auditLog.serviceData.typeUrl,
+                  auditLog.serviceData.value
+                ),
               })}
             />
           ) : (
@@ -156,4 +160,15 @@ const columnList = computed((): ProjectDataTableColumn[] => {
     ] as ProjectDataTableColumn[]
   ).filter((column) => !column.hide);
 });
+
+function getServiceDataValue(typeUrl: string, value: Uint8Array): any {
+  switch (typeUrl) {
+    case "type.googleapis.com/bytebase.v1.AuditData":
+      return AuditData.decode(value);
+    case "type.googleapis.com/bytebase.v1.Setting":
+      return Setting.decode(value);
+    default:
+      return null;
+  }
+}
 </script>
