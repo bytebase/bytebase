@@ -53,6 +53,9 @@ const (
 	SchemaSuffix     = "/schema"
 	MetadataSuffix   = "/metadata"
 	GitOpsInfoSuffix = "/gitOpsInfo"
+
+	UserBindingPrefix  = "user:"
+	GroupBindingPrefix = "group:"
 )
 
 // GetProjectID returns the project ID from a resource name.

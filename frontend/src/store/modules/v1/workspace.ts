@@ -2,7 +2,11 @@ import { cloneDeep } from "lodash-es";
 import { defineStore } from "pinia";
 import { ref } from "vue";
 import { workspaceServiceClient } from "@/grpcweb";
+import { groupBindingPrefix } from "@/types";
 import { IamPolicy, Binding } from "@/types/proto/v1/iam_policy";
+import { roleListInIAM } from "@/utils";
+import { extractUserEmail } from "../user";
+import { extractGroupEmail } from "./group";
 
 export const useWorkspaceV1Store = defineStore("workspace_v1", () => {
   const workspaceIamPolicy = ref<IamPolicy>(IamPolicy.fromPartial({}));
@@ -79,18 +83,13 @@ export const useWorkspaceV1Store = defineStore("workspace_v1", () => {
   };
 
   const findRolesByMember = (member: string): string[] => {
-    const roles: string[] = [];
-
-    for (const binding of workspaceIamPolicy.value.bindings) {
-      for (const m of binding.members) {
-        if (m === member) {
-          roles.push(binding.role);
-          break;
-        }
-      }
+    let email = member;
+    if (member.startsWith(groupBindingPrefix)) {
+      email = extractGroupEmail(member);
+    } else {
+      email = extractUserEmail(member);
     }
-
-    return roles;
+    return roleListInIAM(workspaceIamPolicy.value, email);
   };
 
   return {
