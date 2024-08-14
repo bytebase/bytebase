@@ -52,7 +52,7 @@ const (
 	StatementWhereMaximumLogicalOperatorCount Code = 225
 	StatementJoinColumnAttrsNotMatch          Code = 226
 	StatementDisallowMixDDLDML                Code = 227
-	StatementPriorBackupCheck                 Code = 228
+	// 228 is deprecated.
 	StatementAddFKWithValidation              Code = 229
 	StatementNonTransactional                 Code = 230
 	StatementAddColumnWithPosition            Code = 231
@@ -196,6 +196,9 @@ const (
 
 	// 1901 ~ 1999 schema error code.
 	SchemaNotExists Code = 1901
+
+	// 2001 ~ 2099 builtin error code.
+	BuiltinPriorBackupCheck Code = 2001
 )
 
 // Int returns the int type of code.
@@ -434,8 +437,8 @@ const (
 	// MySQLStatementDisallowMixDDLDML is an advisor type for MySQL disallow mix DDL and DML.
 	MySQLStatementDisallowMixDDLDML Type = "bb.plugin.advisor.mysql.statement.disallow-mix-ddl-dml"
 
-	// MySQLStatementPriorBackupCheck is an advisor type for MySQL prior backup check.
-	MySQLStatementPriorBackupCheck Type = "bb.plugin.advisor.mysql.statement.prior-backup-check"
+	// MySQLBuiltinPriorBackupCheck is an advisor type for MySQL prior backup check.
+	MySQLBuiltinPriorBackupCheck Type = "bb.plugin.advisor.mysql.builtin.prior-backup-check"
 
 	// MySQLStatementAddColumnWithoutPosition is an advisor type for MySQL checking no position in ADD COLUMN clause.
 	MySQLStatementAddColumnWithoutPosition Type = "bb.plugin.advisor.mysql.statement.add-column-without-position"
@@ -601,8 +604,8 @@ const (
 	// PostgreSQLStatementDisallowMixDDLDML is an advisor type for PostgreSQL disallow mix DDL and DML.
 	PostgreSQLStatementDisallowMixDDLDML Type = "bb.plugin.advisor.postgresql.statement.disallow-mix-ddl-dml"
 
-	// PostgreSQLStatementPriorBackupCheck is an advisor type for PostgreSQL do prior backup check.
-	PostgreSQLStatementPriorBackupCheck Type = "bb.plugin.advisor.postgresql.statement.prior-backup-check"
+	// PostgreSQLBuiltinPriorBackupCheck is an advisor type for PostgreSQL do prior backup check.
+	PostgreSQLBuiltinPriorBackupCheck Type = "bb.plugin.advisor.postgresql.builtin.prior-backup-check"
 
 	// PostgreSQLStatementMaximumLimitValue is an advisor type for PostgreSQL statement maximum limit value.
 	PostgreSQLStatementMaximumLimitValue Type = "bb.plugin.advisor.postgresql.statement.maximum-limit-value"

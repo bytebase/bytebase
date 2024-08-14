@@ -159,6 +159,7 @@ func (e *StatementAdviseExecutor) runReview(
 	reviewConfig, err := e.store.GetReviewConfigForDatabase(ctx, database)
 	if err != nil {
 		if e, ok := err.(*common.Error); ok && e.Code == common.NotFound {
+			// Continue to check the builtin rules.
 			reviewConfig = &storepb.ReviewConfigPayload{}
 		} else {
 			return nil, common.Wrapf(err, common.Internal, "failed to get SQL review config")
