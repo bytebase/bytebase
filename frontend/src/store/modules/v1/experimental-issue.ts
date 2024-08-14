@@ -11,10 +11,8 @@ import {
   emptyRollout,
   unknownUser,
   EMPTY_ID,
-  EMPTY_ISSUE_NAME,
   unknownIssue,
   UNKNOWN_ID,
-  UNKNOWN_ISSUE_NAME,
 } from "@/types";
 import type { Issue } from "@/types/proto/v1/issue_service";
 import type { Plan } from "@/types/proto/v1/plan_service";
@@ -120,17 +118,6 @@ export const experimentalFetchIssueByUID = async (
 
   const rawIssue = await issueServiceClient.getIssue({
     name: `projects/${project}/issues/${uid}`,
-  });
-
-  return composeIssue(rawIssue);
-};
-
-export const experimentalFetchIssueByName = async (name: string) => {
-  if (name === EMPTY_ISSUE_NAME) return emptyIssue();
-  if (name === UNKNOWN_ISSUE_NAME) return unknownIssue();
-
-  const rawIssue = await issueServiceClient.getIssue({
-    name,
   });
 
   return composeIssue(rawIssue);

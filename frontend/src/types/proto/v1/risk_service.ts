@@ -64,8 +64,6 @@ export interface DeleteRiskRequest {
 export interface Risk {
   /** Format: risks/{risk} */
   name: string;
-  /** system-generated unique identifier. */
-  uid: string;
   source: Risk_Source;
   title: string;
   level: number;
@@ -495,24 +493,13 @@ export const DeleteRiskRequest = {
 };
 
 function createBaseRisk(): Risk {
-  return {
-    name: "",
-    uid: "",
-    source: Risk_Source.SOURCE_UNSPECIFIED,
-    title: "",
-    level: 0,
-    active: false,
-    condition: undefined,
-  };
+  return { name: "", source: Risk_Source.SOURCE_UNSPECIFIED, title: "", level: 0, active: false, condition: undefined };
 }
 
 export const Risk = {
   encode(message: Risk, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
-    }
-    if (message.uid !== "") {
-      writer.uint32(18).string(message.uid);
     }
     if (message.source !== Risk_Source.SOURCE_UNSPECIFIED) {
       writer.uint32(24).int32(risk_SourceToNumber(message.source));
@@ -545,13 +532,6 @@ export const Risk = {
           }
 
           message.name = reader.string();
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.uid = reader.string();
           continue;
         case 3:
           if (tag !== 24) {
@@ -600,7 +580,6 @@ export const Risk = {
   fromJSON(object: any): Risk {
     return {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
-      uid: isSet(object.uid) ? globalThis.String(object.uid) : "",
       source: isSet(object.source) ? risk_SourceFromJSON(object.source) : Risk_Source.SOURCE_UNSPECIFIED,
       title: isSet(object.title) ? globalThis.String(object.title) : "",
       level: isSet(object.level) ? globalThis.Number(object.level) : 0,
@@ -613,9 +592,6 @@ export const Risk = {
     const obj: any = {};
     if (message.name !== "") {
       obj.name = message.name;
-    }
-    if (message.uid !== "") {
-      obj.uid = message.uid;
     }
     if (message.source !== Risk_Source.SOURCE_UNSPECIFIED) {
       obj.source = risk_SourceToJSON(message.source);
@@ -641,7 +617,6 @@ export const Risk = {
   fromPartial(object: DeepPartial<Risk>): Risk {
     const message = createBaseRisk();
     message.name = object.name ?? "";
-    message.uid = object.uid ?? "";
     message.source = object.source ?? Risk_Source.SOURCE_UNSPECIFIED;
     message.title = object.title ?? "";
     message.level = object.level ?? 0;

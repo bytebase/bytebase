@@ -46,8 +46,6 @@ export interface AdminExecuteRequest {
    * Format: instances/{instance}/databases/{databaseName}
    */
   name: string;
-  /** @deprecated */
-  connectionDatabase: string;
   /** The SQL statement to execute. */
   statement: string;
   /** The maximum number of rows to return. */
@@ -67,8 +65,6 @@ export interface QueryRequest {
    * Format: instances/{instance}/databases/{databaseName}
    */
   name: string;
-  /** @deprecated */
-  connectionDatabase: string;
   /** The SQL statement to execute. */
   statement: string;
   /** The maximum number of rows to return. */
@@ -234,8 +230,6 @@ export interface ExportRequest {
    * Format: projects/{project}/issues/{issue} for data export issue.
    */
   name: string;
-  /** @deprecated */
-  connectionDatabase: string;
   /** The SQL statement to execute. */
   statement: string;
   /** The maximum number of rows to return. */
@@ -304,6 +298,7 @@ export enum CheckRequest_ChangeType {
   DDL = "DDL",
   DDL_GHOST = "DDL_GHOST",
   DML = "DML",
+  SQL_EDITOR = "SQL_EDITOR",
   UNRECOGNIZED = "UNRECOGNIZED",
 }
 
@@ -321,6 +316,9 @@ export function checkRequest_ChangeTypeFromJSON(object: any): CheckRequest_Chang
     case 3:
     case "DML":
       return CheckRequest_ChangeType.DML;
+    case 4:
+    case "SQL_EDITOR":
+      return CheckRequest_ChangeType.SQL_EDITOR;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -338,6 +336,8 @@ export function checkRequest_ChangeTypeToJSON(object: CheckRequest_ChangeType): 
       return "DDL_GHOST";
     case CheckRequest_ChangeType.DML:
       return "DML";
+    case CheckRequest_ChangeType.SQL_EDITOR:
+      return "SQL_EDITOR";
     case CheckRequest_ChangeType.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
@@ -354,6 +354,8 @@ export function checkRequest_ChangeTypeToNumber(object: CheckRequest_ChangeType)
       return 2;
     case CheckRequest_ChangeType.DML:
       return 3;
+    case CheckRequest_ChangeType.SQL_EDITOR:
+      return 4;
     case CheckRequest_ChangeType.UNRECOGNIZED:
     default:
       return -1;
@@ -703,16 +705,13 @@ export const ExecuteResponse = {
 };
 
 function createBaseAdminExecuteRequest(): AdminExecuteRequest {
-  return { name: "", connectionDatabase: "", statement: "", limit: 0, timeout: undefined };
+  return { name: "", statement: "", limit: 0, timeout: undefined };
 }
 
 export const AdminExecuteRequest = {
   encode(message: AdminExecuteRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
-    }
-    if (message.connectionDatabase !== "") {
-      writer.uint32(18).string(message.connectionDatabase);
     }
     if (message.statement !== "") {
       writer.uint32(26).string(message.statement);
@@ -739,13 +738,6 @@ export const AdminExecuteRequest = {
           }
 
           message.name = reader.string();
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.connectionDatabase = reader.string();
           continue;
         case 3:
           if (tag !== 26) {
@@ -780,7 +772,6 @@ export const AdminExecuteRequest = {
   fromJSON(object: any): AdminExecuteRequest {
     return {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
-      connectionDatabase: isSet(object.connectionDatabase) ? globalThis.String(object.connectionDatabase) : "",
       statement: isSet(object.statement) ? globalThis.String(object.statement) : "",
       limit: isSet(object.limit) ? globalThis.Number(object.limit) : 0,
       timeout: isSet(object.timeout) ? Duration.fromJSON(object.timeout) : undefined,
@@ -791,9 +782,6 @@ export const AdminExecuteRequest = {
     const obj: any = {};
     if (message.name !== "") {
       obj.name = message.name;
-    }
-    if (message.connectionDatabase !== "") {
-      obj.connectionDatabase = message.connectionDatabase;
     }
     if (message.statement !== "") {
       obj.statement = message.statement;
@@ -813,7 +801,6 @@ export const AdminExecuteRequest = {
   fromPartial(object: DeepPartial<AdminExecuteRequest>): AdminExecuteRequest {
     const message = createBaseAdminExecuteRequest();
     message.name = object.name ?? "";
-    message.connectionDatabase = object.connectionDatabase ?? "";
     message.statement = object.statement ?? "";
     message.limit = object.limit ?? 0;
     message.timeout = (object.timeout !== undefined && object.timeout !== null)
@@ -883,24 +870,13 @@ export const AdminExecuteResponse = {
 };
 
 function createBaseQueryRequest(): QueryRequest {
-  return {
-    name: "",
-    connectionDatabase: "",
-    statement: "",
-    limit: 0,
-    timeout: undefined,
-    dataSourceId: "",
-    explain: false,
-  };
+  return { name: "", statement: "", limit: 0, timeout: undefined, dataSourceId: "", explain: false };
 }
 
 export const QueryRequest = {
   encode(message: QueryRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
-    }
-    if (message.connectionDatabase !== "") {
-      writer.uint32(18).string(message.connectionDatabase);
     }
     if (message.statement !== "") {
       writer.uint32(26).string(message.statement);
@@ -933,13 +909,6 @@ export const QueryRequest = {
           }
 
           message.name = reader.string();
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.connectionDatabase = reader.string();
           continue;
         case 3:
           if (tag !== 26) {
@@ -988,7 +957,6 @@ export const QueryRequest = {
   fromJSON(object: any): QueryRequest {
     return {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
-      connectionDatabase: isSet(object.connectionDatabase) ? globalThis.String(object.connectionDatabase) : "",
       statement: isSet(object.statement) ? globalThis.String(object.statement) : "",
       limit: isSet(object.limit) ? globalThis.Number(object.limit) : 0,
       timeout: isSet(object.timeout) ? Duration.fromJSON(object.timeout) : undefined,
@@ -1001,9 +969,6 @@ export const QueryRequest = {
     const obj: any = {};
     if (message.name !== "") {
       obj.name = message.name;
-    }
-    if (message.connectionDatabase !== "") {
-      obj.connectionDatabase = message.connectionDatabase;
     }
     if (message.statement !== "") {
       obj.statement = message.statement;
@@ -1029,7 +994,6 @@ export const QueryRequest = {
   fromPartial(object: DeepPartial<QueryRequest>): QueryRequest {
     const message = createBaseQueryRequest();
     message.name = object.name ?? "";
-    message.connectionDatabase = object.connectionDatabase ?? "";
     message.statement = object.statement ?? "";
     message.limit = object.limit ?? 0;
     message.timeout = (object.timeout !== undefined && object.timeout !== null)
@@ -1813,24 +1777,13 @@ export const Advice = {
 };
 
 function createBaseExportRequest(): ExportRequest {
-  return {
-    name: "",
-    connectionDatabase: "",
-    statement: "",
-    limit: 0,
-    format: ExportFormat.FORMAT_UNSPECIFIED,
-    admin: false,
-    password: "",
-  };
+  return { name: "", statement: "", limit: 0, format: ExportFormat.FORMAT_UNSPECIFIED, admin: false, password: "" };
 }
 
 export const ExportRequest = {
   encode(message: ExportRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
-    }
-    if (message.connectionDatabase !== "") {
-      writer.uint32(18).string(message.connectionDatabase);
     }
     if (message.statement !== "") {
       writer.uint32(26).string(message.statement);
@@ -1863,13 +1816,6 @@ export const ExportRequest = {
           }
 
           message.name = reader.string();
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.connectionDatabase = reader.string();
           continue;
         case 3:
           if (tag !== 26) {
@@ -1918,7 +1864,6 @@ export const ExportRequest = {
   fromJSON(object: any): ExportRequest {
     return {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
-      connectionDatabase: isSet(object.connectionDatabase) ? globalThis.String(object.connectionDatabase) : "",
       statement: isSet(object.statement) ? globalThis.String(object.statement) : "",
       limit: isSet(object.limit) ? globalThis.Number(object.limit) : 0,
       format: isSet(object.format) ? exportFormatFromJSON(object.format) : ExportFormat.FORMAT_UNSPECIFIED,
@@ -1931,9 +1876,6 @@ export const ExportRequest = {
     const obj: any = {};
     if (message.name !== "") {
       obj.name = message.name;
-    }
-    if (message.connectionDatabase !== "") {
-      obj.connectionDatabase = message.connectionDatabase;
     }
     if (message.statement !== "") {
       obj.statement = message.statement;
@@ -1959,7 +1901,6 @@ export const ExportRequest = {
   fromPartial(object: DeepPartial<ExportRequest>): ExportRequest {
     const message = createBaseExportRequest();
     message.name = object.name ?? "";
-    message.connectionDatabase = object.connectionDatabase ?? "";
     message.statement = object.statement ?? "";
     message.limit = object.limit ?? 0;
     message.format = object.format ?? ExportFormat.FORMAT_UNSPECIFIED;

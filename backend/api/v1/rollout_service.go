@@ -519,7 +519,7 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, request *v1pb.BatchR
 		return nil, status.Errorf(codes.Internal, "failed to create pending task runs, error %v", err)
 	}
 
-	if err := s.store.CreateIssueCommentTaskUpdateStatus(ctx, issue.UID, request.Tasks, storepb.IssueCommentPayload_TaskUpdate_PENDING, user.ID); err != nil {
+	if err := s.store.CreateIssueCommentTaskUpdateStatus(ctx, issue.UID, request.Tasks, storepb.IssueCommentPayload_TaskUpdate_PENDING, user.ID, request.Reason); err != nil {
 		slog.Warn("failed to create issue comment", "issueUID", issue.UID, log.BBError(err))
 	}
 
@@ -634,7 +634,7 @@ func (s *RolloutService) BatchSkipTasks(ctx context.Context, request *v1pb.Batch
 		s.stateCfg.TaskSkippedOrDoneChan <- task.ID
 	}
 
-	if err := s.store.CreateIssueCommentTaskUpdateStatus(ctx, issue.UID, request.Tasks, storepb.IssueCommentPayload_TaskUpdate_SKIPPED, user.ID); err != nil {
+	if err := s.store.CreateIssueCommentTaskUpdateStatus(ctx, issue.UID, request.Tasks, storepb.IssueCommentPayload_TaskUpdate_SKIPPED, user.ID, request.Reason); err != nil {
 		slog.Warn("failed to create issue comment", "issueUID", issue.UID, log.BBError(err))
 	}
 
@@ -769,7 +769,7 @@ func (s *RolloutService) BatchCancelTaskRuns(ctx context.Context, request *v1pb.
 		return nil, status.Errorf(codes.Internal, "failed to batch patch task run status to canceled, error: %v", err)
 	}
 
-	if err := s.store.CreateIssueCommentTaskUpdateStatus(ctx, issue.UID, taskNames, storepb.IssueCommentPayload_TaskUpdate_CANCELED, user.ID); err != nil {
+	if err := s.store.CreateIssueCommentTaskUpdateStatus(ctx, issue.UID, taskNames, storepb.IssueCommentPayload_TaskUpdate_CANCELED, user.ID, request.Reason); err != nil {
 		slog.Warn("failed to create issue comment", "issueUID", issue.UID, log.BBError(err))
 	}
 

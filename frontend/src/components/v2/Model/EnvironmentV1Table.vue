@@ -8,9 +8,6 @@
     @click-row="clickEnvironment"
   >
     <template #item="{ item: environment }: EnvironmentRow">
-      <div class="bb-grid-cell text-gray-500">
-        <span class="">#{{ environment.uid }}</span>
-      </div>
       <div class="bb-grid-cell">
         <EnvironmentV1Name :environment="environment" :link="false" />
       </div>
@@ -38,10 +35,6 @@ const router = useRouter();
 const { t } = useI18n();
 
 const columnList = computed((): BBGridColumn[] => [
-  {
-    title: t("common.id"),
-    width: "minmax(auto, 10rem)",
-  },
   {
     title: t("common.name"),
     width: "1fr",

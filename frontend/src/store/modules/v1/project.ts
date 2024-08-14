@@ -5,13 +5,11 @@ import { projectServiceClient } from "@/grpcweb";
 import type { ComposedProject, MaybeRef, ResourceId } from "@/types";
 import {
   emptyProject,
-  EMPTY_ID,
   EMPTY_PROJECT_NAME,
   unknownProject,
   defaultProject,
   UNKNOWN_PROJECT_NAME,
   DEFAULT_PROJECT_NAME,
-  UNKNOWN_ID,
 } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import type { Project } from "@/types/proto/v1/project_service";
@@ -60,18 +58,6 @@ export const useProjectV1Store = defineStore("project_v1", () => {
     if (name === UNKNOWN_PROJECT_NAME) return unknownProject();
     if (name === DEFAULT_PROJECT_NAME) return defaultProject();
     return projectMapByName.get(name) ?? unknownProject();
-  };
-  const findProjectByUID = (uid: string) => {
-    if (uid === String(EMPTY_ID)) {
-      return emptyProject();
-    }
-    if (uid === String(UNKNOWN_ID)) {
-      return unknownProject();
-    }
-    return (
-      projectList.value.find((project) => project.uid === uid) ??
-      unknownProject()
-    );
   };
   const fetchProjectByName = async (name: string, silent = false) => {
     const project = await projectServiceClient.getProject({ name }, { silent });
@@ -122,7 +108,6 @@ export const useProjectV1Store = defineStore("project_v1", () => {
     projectList,
     upsertProjectMap,
     getProjectList,
-    findProjectByUID,
     getProjectByName,
     getOrFetchProjectByName,
     createProject,

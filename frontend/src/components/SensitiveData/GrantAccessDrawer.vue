@@ -232,7 +232,7 @@ const getPendingUpdatePolicy = async (
   return {
     type: PolicyType.MASKING_EXCEPTION,
     resourceType: PolicyResourceType.PROJECT,
-    resourceUid: project.uid,
+    resourceUid: policy?.resourceUid,
     maskingExceptionPolicy: {
       maskingExceptions: [...existed, ...maskingExceptions],
     },

@@ -106,10 +106,10 @@ import {
   instanceV1SupportsConciseSchema,
   mockLatestSchemaChangeHistory,
 } from "@/utils";
+import { FeatureModal } from "../FeatureGuard";
 import FeatureBadge from "../FeatureGuard/FeatureBadge.vue";
 import HumanizeDate from "../misc/HumanizeDate.vue";
 import type { ChangeHistorySourceSchema } from "./types";
-import { FeatureModal } from "../FeatureGuard";
 
 const props = defineProps<{
   selectState?: ChangeHistorySourceSchema;
@@ -316,7 +316,7 @@ const handleSchemaVersionSelect = async (
   const changeHistory = option.changeHistory as ChangeHistory;
   const index = databaseChangeHistoryList(
     state.databaseName as string
-  ).findIndex((history) => history.uid === changeHistory.uid);
+  ).findIndex((history) => history.name === changeHistory.name);
   if (index > 0 && !hasSyncSchemaFeature.value) {
     state.showFeatureModal = true;
     return;

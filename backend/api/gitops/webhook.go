@@ -231,10 +231,17 @@ func (s *Service) sqlReviewWithPRInfo(ctx context.Context, project *store.Projec
 	warnCount := 0
 
 	for _, change := range prInfo.changes {
+		changeType := v1pb.CheckRequest_DDL
+		switch change.changeType {
+		case v1pb.Plan_ChangeDatabaseConfig_DATA:
+			changeType = v1pb.CheckRequest_DML
+		case v1pb.Plan_ChangeDatabaseConfig_MIGRATE_GHOST:
+			changeType = v1pb.CheckRequest_DDL_GHOST
+		}
 		adviceStatus, advices, err := s.sqlService.SQLReviewCheck(
 			ctx,
 			change.content,
-			v1pb.CheckRequest_CHANGE_TYPE_UNSPECIFIED,
+			changeType,
 			instance,
 			database,
 			nil, /* Override Metadata */

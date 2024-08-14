@@ -9,6 +9,7 @@ import type {
   ComposedUser,
 } from "@/types";
 import {
+  isValidDatabaseName,
   unknownDatabase,
   unknownEnvironment,
   unknownInstanceResource,
@@ -18,7 +19,6 @@ import type {
   Database,
   UpdateDatabaseRequest,
   DiffSchemaRequest,
-  SearchDatabasesRequest,
   BatchUpdateDatabasesRequest,
 } from "@/types/proto/v1/database_service";
 import type { InstanceResource } from "@/types/proto/v1/instance_service";
@@ -69,23 +69,6 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
         }
       }
     }
-  };
-  const listDatabases = async (parent: string) => {
-    const { databases } = await databaseServiceClient.listDatabases({
-      parent: parent,
-      pageSize: DEFAULT_DATABASE_PAGE_SIZE,
-    });
-    const composedDatabaseList = await upsertDatabaseMap(databases);
-    return composedDatabaseList;
-  };
-  // Deprecated.
-  const searchDatabases = async (args: Partial<SearchDatabasesRequest>) => {
-    const { databases } = await databaseServiceClient.searchDatabases({
-      pageSize: DEFAULT_DATABASE_PAGE_SIZE,
-      ...args,
-    });
-    const composedDatabaseList = await upsertDatabaseMap(databases);
-    return composedDatabaseList;
   };
   const syncDatabase = async (database: string, refresh = false) => {
     await databaseServiceClient.syncDatabase({
@@ -192,8 +175,7 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
     reset,
     removeCacheByInstance,
     databaseList,
-    listDatabases,
-    searchDatabases,
+    upsertDatabaseMap,
     syncDatabase,
     databaseListByUser,
     databaseListByProject,
@@ -211,50 +193,13 @@ export const useDatabaseV1Store = defineStore("database_v1", () => {
   };
 });
 
-export const useSearchDatabaseV1List = (
-  args: MaybeRef<Partial<SearchDatabasesRequest>>
-) => {
-  const store = useDatabaseV1Store();
-  const ready = ref(false);
-  const databaseList = ref<ComposedDatabase[]>([]);
-  watch(
-    () => JSON.stringify(unref(args)),
-    () => {
-      ready.value = false;
-      store.searchDatabases(unref(args)).then((list) => {
-        databaseList.value = list;
-        ready.value = true;
-      });
-    },
-    { immediate: true }
-  );
-
-  return { databaseList, ready };
-};
-
-export const useDatabaseV1ListByProject = (
-  project: MaybeRef<string | undefined>
-) => {
-  const store = useDatabaseV1Store();
-
-  const databaseList = computed(() => {
-    const proj = unref(project);
-    if (proj) {
-      return store.databaseListByProject(proj);
-    }
-    return store.databaseList;
-  });
-
-  return { databaseList };
-};
-
 export const useDatabaseV1ByName = (name: MaybeRef<string>) => {
   const store = useDatabaseV1Store();
   const ready = ref(true);
   watch(
     () => unref(name),
     (name) => {
-      if (store.getDatabaseByName(name).name === unknownDatabase().name) {
+      if (!isValidDatabaseName(store.getDatabaseByName(name).name)) {
         ready.value = false;
         store.fetchDatabaseByName(name).then(() => {
           ready.value = true;

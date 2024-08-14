@@ -21,7 +21,7 @@
 
       <DatabaseV1Table
         mode="ALL"
-        :loading="state.loading"
+        :loading="!ready"
         :bordered="false"
         :database-list="filteredDatabaseList"
         :custom-click="true"
@@ -47,6 +47,7 @@ import {
   useProjectV1List,
   useUIStateStore,
 } from "@/store";
+import { useDatabaseV1List } from "@/store/modules/v1/databaseList";
 import type { ComposedDatabase } from "@/types";
 import { UNKNOWN_ID, DEFAULT_PROJECT_NAME } from "@/types";
 import type { SearchParams } from "@/utils";
@@ -63,7 +64,6 @@ import {
 } from "@/utils";
 
 interface LocalState {
-  loading: boolean;
   selectedDatabaseIds: Set<string>;
   params: SearchParams;
   selectedLabels: { key: string; value: string }[];
@@ -94,7 +94,6 @@ const initializeSearchParamsFromQuery = () => {
 };
 
 const state = reactive<LocalState>({
-  loading: false,
   selectedDatabaseIds: new Set(),
   params: initializeSearchParamsFromQuery(),
   selectedLabels: [],
@@ -159,9 +158,11 @@ onMounted(() => {
   }
 });
 
+const { databaseList, ready } = useDatabaseV1List();
+
 const databaseV1List = computed(() => {
   const projects = new Set(projectList.value.map((project) => project.name));
-  return sortDatabaseV1List(databaseV1Store.databaseList).filter((db) =>
+  return sortDatabaseV1List(databaseList.value).filter((db) =>
     projects.has(db.project)
   );
 });

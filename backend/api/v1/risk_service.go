@@ -33,7 +33,6 @@ func NewRiskService(store *store.Store, licenseService enterprise.LicenseService
 func convertToRisk(risk *store.RiskMessage) (*v1pb.Risk, error) {
 	return &v1pb.Risk{
 		Name:      fmt.Sprintf("%s%v", common.RiskPrefix, risk.ID),
-		Uid:       fmt.Sprintf("%v", risk.ID),
 		Source:    convertToSource(risk.Source),
 		Title:     risk.Name,
 		Level:     risk.Level,

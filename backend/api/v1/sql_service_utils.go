@@ -23,6 +23,8 @@ func convertChangeType(t v1pb.CheckRequest_ChangeType) storepb.PlanCheckRunConfi
 		return storepb.PlanCheckRunConfig_DDL_GHOST
 	case v1pb.CheckRequest_DML:
 		return storepb.PlanCheckRunConfig_DML
+	case v1pb.CheckRequest_SQL_EDITOR:
+		return storepb.PlanCheckRunConfig_SQL_EDITOR
 	default:
 		return storepb.PlanCheckRunConfig_CHANGE_DATABASE_TYPE_UNSPECIFIED
 	}
