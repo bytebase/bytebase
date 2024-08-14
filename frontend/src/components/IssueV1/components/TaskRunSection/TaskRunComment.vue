@@ -1,5 +1,5 @@
 <template>
-  <NPerformantEllipsis expand-trigger="click" line-clamp="1" :tooltip="false">
+  <NPerformantEllipsis expand-trigger="click" line-clamp="3" :tooltip="false">
     {{ comment }}
   </NPerformantEllipsis>
 
