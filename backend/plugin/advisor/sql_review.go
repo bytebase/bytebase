@@ -494,15 +494,23 @@ func SQLReviewCheck(
 	checkContext SQLReviewCheckContext,
 ) ([]*storepb.Advice, error) {
 	asts, parseResult := sm.GetASTsForChecks(checkContext.DbType, statements)
+
+	builtinOnly := len(ruleList) == 0
+
+	// Append builtin rules to the rule list.
+	ruleList = append(ruleList, GetBuiltinRules(checkContext.DbType)...)
+
 	if asts == nil || len(ruleList) == 0 {
 		return parseResult, nil
 	}
 
 	finder := checkContext.Catalog.GetFinder()
-	switch checkContext.DbType {
-	case storepb.Engine_TIDB, storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_POSTGRES, storepb.Engine_OCEANBASE:
-		if err := finder.WalkThrough(asts); err != nil {
-			return convertWalkThroughErrorToAdvice(checkContext, err)
+	if !builtinOnly {
+		switch checkContext.DbType {
+		case storepb.Engine_TIDB, storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_POSTGRES, storepb.Engine_OCEANBASE:
+			if err := finder.WalkThrough(asts); err != nil {
+				return convertWalkThroughErrorToAdvice(checkContext, err)
+			}
 		}
 	}
 
@@ -1275,13 +1283,6 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 		case storepb.Engine_MSSQL:
 			return MSSQLStatementDisallowMixDDLDML, nil
 		}
-	case SchemaRuleStatementPriorBackupCheck:
-		switch engine {
-		case storepb.Engine_MYSQL, storepb.Engine_TIDB:
-			return MySQLStatementPriorBackupCheck, nil
-		case storepb.Engine_POSTGRES:
-			return PostgreSQLStatementPriorBackupCheck, nil
-		}
 	case SchemaRuleStatementAddColumnWithoutPosition:
 		if engine == storepb.Engine_OCEANBASE {
 			return MySQLStatementAddColumnWithoutPosition, nil
@@ -1496,6 +1497,14 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 	case SchemaRuleStatementDisallowOfflineDDL:
 		if engine == storepb.Engine_OCEANBASE {
 			return MySQLDisallowOfflineDDL, nil
+		}
+	// ----------------- Builtin Rules -----------------------
+	case BuiltinRulePriorBackupCheck:
+		switch engine {
+		case storepb.Engine_MYSQL, storepb.Engine_TIDB:
+			return MySQLBuiltinPriorBackupCheck, nil
+		case storepb.Engine_POSTGRES:
+			return PostgreSQLBuiltinPriorBackupCheck, nil
 		}
 	}
 	return "", errors.Errorf("unknown SQL review rule type %v for %v", ruleType, engine)

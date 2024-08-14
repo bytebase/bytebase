@@ -474,15 +474,6 @@ ruleList:
   - type: statement.disallow-mix-ddl-dml
     level: WARNING
     engine: MSSQL
-  - type: statement.prior-backup-check
-    level: ERROR
-    engine: MYSQL
-  - type: statement.prior-backup-check
-    level: ERROR
-    engine: POSTGRES
-  - type: statement.prior-backup-check
-    level: ERROR
-    engine: TIDB
   - type: statement.disallow-cross-db-queries
     level: WARNING
     engine: MSSQL
