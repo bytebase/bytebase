@@ -95,7 +95,7 @@ func RowsToQueryResult(rows *sql.Rows, limit int64) (*v1pb.QueryResult, error) {
 							},
 						}
 					}
-				case *sql.RawBytes:
+				case *[]byte:
 					if len(*raw) > 0 {
 						rowValue = &v1pb.RowValue{
 							Kind: &v1pb.RowValue_BytesValue{
@@ -151,7 +151,7 @@ func makeValueByTypeName(typeName string) any {
 	case "FLOAT", "DOUBLE":
 		return new(sql.NullFloat64)
 	case "BIT", "VARBIT":
-		return new(sql.RawBytes)
+		return new([]byte)
 	default:
 		return new(sql.NullString)
 	}

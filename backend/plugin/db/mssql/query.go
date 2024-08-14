@@ -76,7 +76,7 @@ func rowsToQueryResult(rows *sql.Rows, limit int64) (*v1pb.QueryResult, error) {
 							},
 						}
 					}
-				case *sql.RawBytes:
+				case *[]byte:
 					if len(*raw) > 0 {
 						rowValue = &v1pb.RowValue{
 							Kind: &v1pb.RowValue_BytesValue{
@@ -143,7 +143,7 @@ func makeValueByTypeName(typeName string) any {
 	case "REAL", "FLOAT":
 		return new(sql.NullFloat64)
 	case "VARBINARY":
-		return new(sql.RawBytes)
+		return new([]byte)
 	// BIT type must use sql.NullBool. All SQL Editors show 0/1 for BIT type instead of true/false.
 	// So we have to do extra conversion from bool to int.
 	case "BIT":
@@ -161,11 +161,11 @@ func makeValueByTypeName(typeName string) any {
 	case "SMALLDATETIME", "DATETIME", "DATETIME2", "DATE", "TIME", "DATETIMEOFFSET":
 		return new(sql.NullString)
 	case "IMAGE":
-		return new(sql.RawBytes)
+		return new([]byte)
 	case "BINARY":
-		return new(sql.RawBytes)
+		return new([]byte)
 	case "SQL_VARIANT":
-		return new(sql.RawBytes)
+		return new([]byte)
 	}
 	return new(sql.NullString)
 }
