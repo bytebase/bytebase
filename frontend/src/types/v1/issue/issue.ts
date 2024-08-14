@@ -1,4 +1,4 @@
-import type { ComposedProject, ComposedUser } from "@/types";
+import type { ComposedProject, ComposedTaskRun, ComposedUser } from "@/types";
 import {
   EMPTY_PROJECT_NAME,
   UNKNOWN_PROJECT_NAME,
@@ -7,7 +7,7 @@ import {
   emptyUser,
   unknownUser,
 } from "@/types";
-import type { Rollout, TaskRun } from "@/types//proto/v1/rollout_service";
+import type { Rollout } from "@/types//proto/v1/rollout_service";
 import { Issue, IssueStatus, Issue_Type } from "@/types/proto/v1/issue_service";
 import type { Plan, PlanCheckRun } from "@/types/proto/v1/plan_service";
 import { EMPTY_ID, UNKNOWN_ID } from "../../const";
@@ -19,7 +19,7 @@ export interface ComposedIssue extends Issue {
   planEntity: Plan | undefined;
   planCheckRunList: PlanCheckRun[];
   rolloutEntity: Rollout | undefined;
-  rolloutTaskRunList: TaskRun[];
+  rolloutTaskRunList: ComposedTaskRun[];
   project: string;
   projectEntity: ComposedProject;
   creatorEntity: ComposedUser;

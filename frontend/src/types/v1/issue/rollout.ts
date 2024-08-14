@@ -4,6 +4,8 @@ import {
   Stage,
   Task,
   Task_Type,
+  TaskRun,
+  TaskRunLog,
 } from "@/types/proto/v1/rollout_service";
 import {
   EMPTY_ENVIRONMENT_NAME,
@@ -75,3 +77,7 @@ export const TaskTypeListWithStatement: Task_Type[] = [
 export const TaskTypeListWithProgress: Task_Type[] = [
   Task_Type.DATABASE_SCHEMA_UPDATE_GHOST_SYNC,
 ];
+
+export interface ComposedTaskRun extends TaskRun {
+  taskRunLog: TaskRunLog;
+}
