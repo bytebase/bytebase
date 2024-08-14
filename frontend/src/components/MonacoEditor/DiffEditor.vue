@@ -65,6 +65,7 @@ const emit = defineEmits<{
 const containerRef = ref<HTMLDivElement>();
 // use shallowRef to avoid deep conversion which will cause page crash.
 const editorRef = shallowRef<IStandaloneDiffEditor>();
+const disposed = ref(false);
 
 const isEditorLoaded = ref(false);
 
@@ -82,13 +83,14 @@ const useDiffModels = (monaco: MonacoModule, editor: IStandaloneDiffEditor) => {
   );
 
   watch(
-    [original, modified],
-    () => {
-      if (!original.value) return;
-      if (!modified.value) return;
+    [original, modified, disposed],
+    ([original, modified, disposed]) => {
+      if (disposed) return;
+      if (!original) return;
+      if (!modified) return;
       editor.setModel({
-        original: original.value,
-        modified: modified.value,
+        original: original,
+        modified: modified,
       });
     },
     {
@@ -160,6 +162,7 @@ onMounted(async () => {
 });
 
 onBeforeUnmount(() => {
+  disposed.value = true;
   editorRef.value?.dispose();
 });
 
