@@ -695,19 +695,18 @@
           }
         },
         "config-updated": "La configuración se ha actualizado.",
-        "plugin": {
-          "openai": {
-            "ai-augmentation": "Mejora IA",
-            "openai-key": {
-              "self": "Clave de API de OpenAI",
-              "description": "Proporcione una clave de API de OpenAI para habilitar la capacidad ChatSQL en el Editor de SQL. {viewDoc}",
-              "find-my-key": "Encuentra mi llave",
-              "placeholder": "Una clave de API de OpenAI generalmente comienza con sk-*****"
-            },
-            "openai-endpoint": {
-              "self": "Punto de conexión de API de OpenAI",
-              "description": "Proporcione una implementación privada del Punto de conexión de API de OpenAI."
-            }
+        "ai-assistant": {
+          "self": "Asistente de AI",
+          "description": "Utilice OpenAPI para ayudar en las tareas de desarrollo de bases de datos.",
+          "openai-key": {
+            "self": "Clave de API de OpenAI",
+            "description": "Proporcione una clave de API de OpenAI para habilitar la capacidad Text2SQL en el Editor de SQL. {viewDoc}",
+            "find-my-key": "Encuentra mi llave",
+            "placeholder": "Una clave de API de OpenAI generalmente comienza con sk-*****"
+          },
+          "openai-endpoint": {
+            "self": "Punto de conexión de API de OpenAI",
+            "description": "Proporcione una implementación privada del Punto de conexión de API de OpenAI."
           }
         },
         "announcement": {
@@ -3096,7 +3095,7 @@
     "ai": {
       "examples": "Ejemplos",
       "text-to-sql-placeholder": "Utilice lenguaje natural y Bytebase lo convertirá en SQL",
-      "text-to-sql-disabled-placeholder": "Habilite la capacidad de ChatSQL suministrando una clave de API de OpenAI.",
+      "text-to-sql-disabled-placeholder": "Habilite la capacidad de Text2SQL suministrando una clave de API de OpenAI.",
       "run-automatically": "Ejecutar automáticamente",
       "conversation": {
         "conversations": "Conversaciones",
@@ -3122,9 +3121,9 @@
       },
       "statement-copied": "Declaración copiada al portapapeles",
       "dont-show-again": "No mostrar de nuevo",
-      "chat-sql": "ChatSQL",
-      "disable-chat-sql": "Deshabilitar ChatSQL",
-      "enable-chat-sql": "Habilitar ChatSQL"
+      "text2sql": "Text2SQL",
+      "disable-text2sql": "Deshabilitar Text2SQL",
+      "enable-text2sql": "Habilitar Text2SQL"
     }
   },
   "custom-approval": {
