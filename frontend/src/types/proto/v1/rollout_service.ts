@@ -475,7 +475,9 @@ export interface TaskRun {
    */
   changeHistory: string;
   schemaVersion: string;
+  /** @deprecated */
   executionStatus: TaskRun_ExecutionStatus;
+  /** @deprecated */
   executionDetail: TaskRun_ExecutionDetail | undefined;
   startTime: Date | undefined;
   exportArchiveStatus: TaskRun_ExportArchiveStatus;

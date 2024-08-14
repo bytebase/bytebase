@@ -5,7 +5,7 @@ import {
   rolloutServiceClient,
 } from "@/grpcweb";
 import { useCurrentUserV1, useProjectV1Store, useUserStore } from "@/store";
-import type { ComposedIssue, ComposedProject } from "@/types";
+import type { ComposedIssue, ComposedProject, ComposedTaskRun } from "@/types";
 import {
   emptyIssue,
   emptyRollout,
@@ -16,7 +16,11 @@ import {
 } from "@/types";
 import type { Issue } from "@/types/proto/v1/issue_service";
 import type { Plan } from "@/types/proto/v1/plan_service";
-import type { Rollout } from "@/types/proto/v1/rollout_service";
+import {
+  TaskRun_Status,
+  TaskRunLog,
+  type Rollout,
+} from "@/types/proto/v1/rollout_service";
 import {
   extractProjectResourceName,
   extractUserResourceName,
@@ -55,24 +59,22 @@ export const composeIssue = async (
   };
 
   if (config.withPlan && issue.plan) {
-    if (issue.plan) {
-      if (hasProjectPermissionV2(projectEntity, me.value, "bb.plans.get")) {
-        const plan = await planServiceClient.getPlan({
-          name: issue.plan,
-        });
-        issue.planEntity = plan;
-      }
-      if (
-        hasProjectPermissionV2(projectEntity, me.value, "bb.planCheckRuns.list")
-      ) {
-        // Only show the latest plan check runs.
-        // TODO(steven): maybe we need to show all plan check runs on a separate page later.
-        const { planCheckRuns } = await planServiceClient.listPlanCheckRuns({
-          parent: issue.plan,
-          latestOnly: true,
-        });
-        issue.planCheckRunList = planCheckRuns;
-      }
+    if (hasProjectPermissionV2(projectEntity, me.value, "bb.plans.get")) {
+      const plan = await planServiceClient.getPlan({
+        name: issue.plan,
+      });
+      issue.planEntity = plan;
+    }
+    if (
+      hasProjectPermissionV2(projectEntity, me.value, "bb.planCheckRuns.list")
+    ) {
+      // Only show the latest plan check runs.
+      // TODO(steven): maybe we need to show all plan check runs on a separate page later.
+      const { planCheckRuns } = await planServiceClient.listPlanCheckRuns({
+        parent: issue.plan,
+        latestOnly: true,
+      });
+      issue.planCheckRunList = planCheckRuns;
     }
   }
   if (config.withRollout && issue.rollout) {
@@ -81,13 +83,27 @@ export const composeIssue = async (
         name: issue.rollout,
       });
     }
-
     if (hasProjectPermissionV2(projectEntity, me.value, "bb.taskRuns.list")) {
       const { taskRuns } = await rolloutServiceClient.listTaskRuns({
         parent: `${issue.rollout}/stages/-/tasks/-`,
         pageSize: 1000, // MAX
       });
-      issue.rolloutTaskRunList = taskRuns;
+      const composedTaskRuns: ComposedTaskRun[] = [];
+      for (const taskRun of taskRuns) {
+        const composed: ComposedTaskRun = {
+          ...taskRun,
+          taskRunLog: TaskRunLog.fromPartial({}),
+        };
+        // Fetching task run log for running task runs.
+        if (composed.status === TaskRun_Status.RUNNING) {
+          const taskRunLog = await rolloutServiceClient.getTaskRunLog({
+            parent: taskRun.name,
+          });
+          composed.taskRunLog = taskRunLog;
+        }
+        composedTaskRuns.push(composed);
+      }
+      issue.rolloutTaskRunList = composedTaskRuns;
     }
   }
 
