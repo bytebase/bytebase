@@ -1,6 +1,5 @@
 export const WORKSPACE_ROOT_MODULE = "workspace.root";
 export const WORKSPACE_ROUTE_MY_ISSUES = "workspace.my-issues";
-export const WORKSPACE_ROUTE_REVIEW_CENTER = "workspace.review-center";
 export const WORKSPACE_ROUTE_EXPORT_CENTER = "workspace.export-center";
 export const WORKSPACE_ROUTE_ANOMALY_CENTER = "workspace.anomaly-center";
 export const WORKSPACE_ROUTE_USER_PROFILE = "workspace.user-profile";
@@ -20,6 +19,7 @@ export const WORKSPACE_ROUTE_RISK_CENTER = "workspace.risk-center";
 export const WORKSPACE_ROUTE_SENSITIVE_DATA = "workspace.sensitive-data";
 export const WORKSPACE_ROUTE_AUDIT_LOG = "workspace.audit-log";
 export const WORKSPACE_ROUTE_MAIL_DELIVERY = "workspace.mail-delivery";
+export const WORKSPACE_ROUTE_USERS = "workspace.users";
 export const WORKSPACE_ROUTE_MEMBERS = "workspace.members";
 export const WORKSPACE_ROUTE_ROLES = "workspace.roles";
 

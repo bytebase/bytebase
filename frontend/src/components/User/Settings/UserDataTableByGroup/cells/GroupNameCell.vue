@@ -6,7 +6,7 @@
         <router-link
           v-if="allowGetGroup && link"
           :to="{
-            name: WORKSPACE_ROUTE_MEMBERS,
+            name: WORKSPACE_ROUTE_USERS,
             query: {
               name: group.name,
             },
@@ -33,9 +33,9 @@
 <script lang="ts" setup>
 import { UsersIcon } from "lucide-vue-next";
 import { computed } from "vue";
-import UserRolesCell from "@/components/ProjectMember/ProjectMemberDataTable/cells/UserRolesCell.vue";
-import type { ProjectRole } from "@/components/ProjectMember/types";
-import { WORKSPACE_ROUTE_MEMBERS } from "@/router/dashboard/workspaceRoutes";
+import UserRolesCell from "@/components/Member/MemberDataTable/cells/UserRolesCell.vue";
+import type { MemberRole } from "@/components/Member/types";
+import { WORKSPACE_ROUTE_USERS } from "@/router/dashboard/workspaceRoutes";
 import { extractGroupEmail, extractUserEmail, useCurrentUserV1 } from "@/store";
 import { Group } from "@/types/proto/v1/group";
 import { hasWorkspacePermissionV2 } from "@/utils";
@@ -43,7 +43,7 @@ import { hasWorkspacePermissionV2 } from "@/utils";
 const props = withDefaults(
   defineProps<{
     group: Group;
-    role?: ProjectRole;
+    role?: MemberRole;
     showIcon?: boolean;
     showEmail?: boolean;
     link?: boolean;

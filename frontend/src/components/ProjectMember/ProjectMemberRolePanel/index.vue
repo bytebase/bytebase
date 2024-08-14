@@ -11,7 +11,7 @@
     >
       <div class="w-full flex flex-row justify-end items-center">
         <NButton type="primary" @click="state.showAddMemberPanel = true">
-          {{ $t("project.members.grant-access") }}
+          {{ $t("settings.members.grant-access") }}
         </NButton>
       </div>
       <div v-if="binding.type === 'groups'" class="mb-6">
@@ -24,12 +24,12 @@
           </div>
         </div>
       </div>
-      <template v-if="binding.workspaceLevelProjectRoles.length > 0">
+      <template v-if="binding.workspaceLevelRoles.length > 0">
         <p class="text-lg px-1 pb-1 w-full border-b mb-3">
           {{ $t("project.members.workspace-level-roles") }}
         </p>
         <div class="flex flex-row items-center flex-wrap gap-2">
-          <NTag v-for="role in binding.workspaceLevelProjectRoles" :key="role">
+          <NTag v-for="role in binding.workspaceLevelRoles" :key="role">
             <template #avatar>
               <NTooltip>
                 <template #trigger>
@@ -44,7 +44,7 @@
       </template>
       <template v-if="roleList.length > 0">
         <p
-          v-if="binding.workspaceLevelProjectRoles.length > 0"
+          v-if="binding.workspaceLevelRoles.length > 0"
           class="text-lg px-1 pb-1 w-full border-b mt-4 mb-3"
         >
           {{ $t("project.members.project-level-roles") }}
@@ -166,7 +166,7 @@
             <BBButtonConfirm
               :disabled="!allowRevokeMember"
               :style="'DELETE'"
-              :button-text="$t('project.members.revoke-member')"
+              :button-text="$t('settings.members.revoke-access')"
               :require-confirm="true"
               @confirm="handleDeleteMember"
             />
@@ -185,7 +185,6 @@
   <EditProjectRolePanel
     v-if="editingBinding"
     :project="project"
-    :type="binding.type"
     :binding="editingBinding"
     @close="editingBinding = null"
   />
@@ -210,6 +209,7 @@ import { computed, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import type { BBGridRow } from "@/bbkit";
 import { BBButtonConfirm, BBGrid } from "@/bbkit";
+import type { MemberBinding } from "@/components/Member/types";
 import GroupMemberNameCell from "@/components/User/Settings/UserDataTableByGroup/cells/GroupMemberNameCell.vue";
 import GroupNameCell from "@/components/User/Settings/UserDataTableByGroup/cells/GroupNameCell.vue";
 import { Drawer, DrawerContent, InstanceV1Name } from "@/components/v2";
@@ -234,7 +234,6 @@ import {
   stringifyConditionExpression,
 } from "@/utils/issue/cel";
 import AddProjectMembersPanel from "../AddProjectMember/AddProjectMembersPanel.vue";
-import type { ProjectBinding } from "../types";
 import EditProjectRolePanel from "./EditProjectRolePanel.vue";
 import RoleDescription from "./RoleDescription.vue";
 import RoleExpiredTip from "./RoleExpiredTip.vue";
@@ -254,7 +253,7 @@ interface LocalState {
 
 const props = defineProps<{
   project: ComposedProject;
-  binding: ProjectBinding;
+  binding: MemberBinding;
 }>();
 
 const emit = defineEmits<{

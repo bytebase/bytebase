@@ -46,6 +46,7 @@ import {
   WORKSPACE_ROUTE_GITOPS,
   WORKSPACE_ROUTE_SSO,
   WORKSPACE_ROUTE_MAIL_DELIVERY,
+  WORKSPACE_ROUTE_USERS,
   WORKSPACE_ROUTE_MEMBERS,
   WORKSPACE_ROUTE_ROLES,
   WORKSPACE_ROUTE_USER_PROFILE,
@@ -77,7 +78,7 @@ const getItemClass = (item: SidebarItem): string[] => {
     return classes;
   }
   if (
-    item.name === WORKSPACE_ROUTE_MEMBERS &&
+    item.name === WORKSPACE_ROUTE_USERS &&
     current?.toString() === WORKSPACE_ROUTE_USER_PROFILE
   ) {
     classes.push("router-link-active", "bg-link-hover");
@@ -211,7 +212,12 @@ const dashboardSidebarItemList = computed((): DashboardSidebarItem[] => {
       type: "div",
       children: [
         {
-          title: t("settings.sidebar.members-and-groups"),
+          title: t("settings.sidebar.users-and-groups"),
+          name: WORKSPACE_ROUTE_USERS,
+          type: "route",
+        },
+        {
+          title: t("settings.sidebar.members"),
           name: WORKSPACE_ROUTE_MEMBERS,
           type: "route",
         },

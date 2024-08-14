@@ -26,6 +26,7 @@ import {
   WORKSPACE_ROUTE_SSO_CREATE,
   WORKSPACE_ROUTE_SSO_DETAIL,
   WORKSPACE_ROUTE_MAIL_DELIVERY,
+  WORKSPACE_ROUTE_USERS,
   WORKSPACE_ROUTE_MEMBERS,
   WORKSPACE_ROUTE_ROLES,
   WORKSPACE_ROUTE_IM,
@@ -385,13 +386,22 @@ const workspaceRoutes: RouteRecordRaw[] = [
         component: () => import("@/views/SettingWorkspaceMailDelivery.vue"),
       },
       {
+        path: "users",
+        name: WORKSPACE_ROUTE_USERS,
+        meta: {
+          title: () => t("settings.sidebar.users-and-groups"),
+        },
+        component: () => import("@/views/SettingWorkspaceUsers.vue"),
+        props: true,
+      },
+      {
         path: "members",
         name: WORKSPACE_ROUTE_MEMBERS,
         meta: {
-          title: () => t("settings.sidebar.members-and-groups"),
+          title: () => t("settings.sidebar.members"),
           requiredWorkspacePermissionList: () => ["bb.policies.get"],
         },
-        component: () => import("@/views/SettingWorkspaceMember.vue"),
+        component: () => import("@/views/SettingWorkspaceMembers.vue"),
         props: true,
       },
       {
