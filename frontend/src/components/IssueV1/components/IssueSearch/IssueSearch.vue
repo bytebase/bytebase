@@ -26,7 +26,7 @@
       v-if="!componentProps?.status?.hidden"
       class="flex flex-col md:flex-row md:items-center gap-y-1"
     >
-      <div class="flex-1 flex items-start ml-4">
+      <div class="flex-1 flex items-start w-full">
         <Status
           v-if="components.includes('status')"
           :params="params"
