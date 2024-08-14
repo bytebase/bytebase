@@ -528,8 +528,8 @@ func validatePolicyPayload(policyType api.PolicyType, policy *v1pb.Policy) error
 			if _, err := common.ValidateMaskingExceptionCELExpr(exception.Condition.Expression); err != nil {
 				return status.Error(codes.InvalidArgument, fmt.Sprintf("invalid masking exception expression: %v", err))
 			}
-			if !strings.HasPrefix(exception.Member, "user:") && !strings.HasPrefix(exception.Member, "group:") {
-				return status.Errorf(codes.InvalidArgument, "invalid masking exception member %s", exception.Member)
+			if err := validateMember(exception.Member); err != nil {
+				return err
 			}
 		}
 	default:
@@ -1010,22 +1010,9 @@ func convertToV1PBMaskingRulePolicy(policy *storepb.MaskingRulePolicy) (*v1pb.Ma
 func (s *OrgPolicyService) convertToStorePBMaskingExceptionPolicyPayload(ctx context.Context, policy *v1pb.MaskingExceptionPolicy) (*storepb.MaskingExceptionPolicy, error) {
 	var exceptions []*storepb.MaskingExceptionPolicy_MaskingException
 	for _, exception := range policy.MaskingExceptions {
-		member := exception.Member
-		if strings.HasPrefix(exception.Member, "user:") {
-			memberEmail := strings.TrimPrefix(exception.Member, "user:")
-			user, err := s.store.GetUserByEmail(ctx, memberEmail)
-			if err != nil {
-				return nil, err
-			}
-			if user == nil {
-				return nil, status.Errorf(codes.NotFound, "user %q not found", member)
-			}
-			member = common.FormatUserUID(user.ID)
-		} else if strings.HasPrefix(exception.Member, "group:") {
-			email := strings.TrimPrefix(member, "group:")
-			member = common.FormatGroupEmail(email)
-		} else {
-			return nil, status.Errorf(codes.InvalidArgument, "invalid member %s", exception.Member)
+		member, err := convertToStoreIamPolicyMember(ctx, s.store, exception.Member)
+		if err != nil {
+			return nil, err
 		}
 		exceptions = append(exceptions, &storepb.MaskingExceptionPolicy_MaskingException{
 			Action:       convertToStorePBAction(exception.Action),
@@ -1048,29 +1035,15 @@ func (s *OrgPolicyService) convertToStorePBMaskingExceptionPolicyPayload(ctx con
 func (s *OrgPolicyService) convertToV1PBMaskingExceptionPolicyPayload(ctx context.Context, policy *storepb.MaskingExceptionPolicy) (*v1pb.MaskingExceptionPolicy, error) {
 	var exceptions []*v1pb.MaskingExceptionPolicy_MaskingException
 	for _, exception := range policy.MaskingExceptions {
-		member := exception.Member
-		if strings.HasPrefix(exception.Member, common.UserNamePrefix) {
-			uid, err := common.GetUserID(exception.Member)
-			if err != nil {
-				return nil, err
-			}
-			user, err := s.store.GetUserByID(ctx, uid)
-			if err != nil {
-				return nil, err
-			}
-			member = fmt.Sprintf("user:%s", user.Email)
-		} else {
-			email, err := common.GetGroupEmail(member)
-			if err != nil {
-				slog.Error("failed to parse group email from member", slog.String("member", member), log.BBError(err))
-				continue
-			}
-			member = fmt.Sprintf("group:%s", email)
+		memberInBinding := convertToV1MemberInBinding(ctx, s.store, exception.Member)
+		if memberInBinding == "" {
+			continue
 		}
+
 		exceptions = append(exceptions, &v1pb.MaskingExceptionPolicy_MaskingException{
 			Action:       convertToV1PBAction(exception.Action),
 			MaskingLevel: convertToV1PBMaskingLevel(exception.MaskingLevel),
-			Member:       member,
+			Member:       memberInBinding,
 			Condition: &expr.Expr{
 				Title:       exception.Condition.Title,
 				Expression:  exception.Condition.Expression,

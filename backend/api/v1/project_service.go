@@ -29,6 +29,7 @@ import (
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	webhookplugin "github.com/bytebase/bytebase/backend/plugin/webhook"
 	"github.com/bytebase/bytebase/backend/store"
+	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
@@ -1093,36 +1094,46 @@ func (s *ProjectService) getProjectMessage(ctx context.Context, name string) (*s
 	return project, nil
 }
 
+func convertToV1MemberInBinding(ctx context.Context, stores *store.Store, member string) string {
+	if strings.HasPrefix(member, common.UserNamePrefix) {
+		userUID, err := common.GetUserID(member)
+		if err != nil {
+			slog.Error("failed to user id from member", slog.String("member", member), log.BBError(err))
+			return ""
+		}
+		user, err := stores.GetUserByID(ctx, userUID)
+		if err != nil {
+			slog.Error("failed to get user", slog.String("member", member), log.BBError(err))
+			return ""
+		}
+		if user == nil {
+			return ""
+		}
+		return fmt.Sprintf("%s%s", common.UserBindingPrefix, user.Email)
+	} else if strings.HasPrefix(member, common.GroupPrefix) {
+		email, err := common.GetGroupEmail(member)
+		if err != nil {
+			slog.Error("failed to parse group email from member", slog.String("member", member), log.BBError(err))
+			return ""
+		}
+		return fmt.Sprintf("%s%s", common.GroupBindingPrefix, email)
+	} else {
+		// handle allUsers.
+		return member
+	}
+}
+
 func convertToV1IamPolicy(ctx context.Context, stores *store.Store, iamPolicy *store.IamPolicyMessage) (*v1pb.IamPolicy, error) {
 	var bindings []*v1pb.Binding
 
 	for _, binding := range iamPolicy.Policy.Bindings {
 		var members []string
 		for _, member := range binding.Members {
-			if strings.HasPrefix(member, common.UserNamePrefix) {
-				userUID, err := common.GetUserID(member)
-				if err != nil {
-					return nil, status.Errorf(codes.Internal, "failed to parse user id from member %s with error: %v", member, err)
-				}
-				user, err := stores.GetUserByID(ctx, userUID)
-				if err != nil {
-					return nil, status.Errorf(codes.Internal, "failed to get user %s with error: %v", member, err)
-				}
-				if user == nil {
-					continue
-				}
-				members = append(members, fmt.Sprintf("user:%s", user.Email))
-			} else if strings.HasPrefix(member, common.GroupPrefix) {
-				email, err := common.GetGroupEmail(member)
-				if err != nil {
-					slog.Error("failed to parse group email from member", slog.String("member", member), log.BBError(err))
-					continue
-				}
-				members = append(members, fmt.Sprintf("group:%s", email))
-			} else {
-				// handle allUsers.
-				members = append(members, member)
+			memberInBinding := convertToV1MemberInBinding(ctx, stores, member)
+			if memberInBinding == "" {
+				continue
 			}
+			members = append(members, memberInBinding)
 		}
 		v1pbBinding := &v1pb.Binding{
 			Role:      binding.Role,
@@ -1186,8 +1197,8 @@ func convertToStoreIamPolicy(ctx context.Context, stores *store.Store, iamPolicy
 }
 
 func convertToStoreIamPolicyMember(ctx context.Context, stores *store.Store, member string) (string, error) {
-	if strings.HasPrefix(member, "user:") {
-		email := strings.TrimPrefix(member, "user:")
+	if strings.HasPrefix(member, common.UserBindingPrefix) {
+		email := strings.TrimPrefix(member, common.UserBindingPrefix)
 		user, err := stores.GetUserByEmail(ctx, email)
 		if err != nil {
 			return "", status.Errorf(codes.Internal, err.Error())
@@ -1196,8 +1207,8 @@ func convertToStoreIamPolicyMember(ctx context.Context, stores *store.Store, mem
 			return "", status.Errorf(codes.NotFound, "user %q not found", member)
 		}
 		return common.FormatUserUID(user.ID), nil
-	} else if strings.HasPrefix(member, "group:") {
-		email := strings.TrimPrefix(member, "group:")
+	} else if strings.HasPrefix(member, common.GroupBindingPrefix) {
+		email := strings.TrimPrefix(member, common.GroupBindingPrefix)
 		return common.FormatGroupEmail(email), nil
 	} else if member == api.AllUsers {
 		return member, nil
@@ -1455,7 +1466,7 @@ func (*ProjectService) validateBindings(bindings []*v1pb.Binding, roles []*v1pb.
 		}
 
 		// Users within each binding must be unique.
-		binding.Members = uniqueBindingMembers(binding.Members)
+		binding.Members = utils.Uniq(binding.Members)
 		for _, member := range binding.Members {
 			if err := validateMember(member); err != nil {
 				return err
@@ -1576,26 +1587,14 @@ func validateIAMPolicyExpression(expr string, maximumRoleExpiration *durationpb.
 	return validator(ast.NativeRep().Expr())
 }
 
-func uniqueBindingMembers(members []string) []string {
-	temp := []string{}
-	flag := make(map[string]bool)
-	for _, member := range members {
-		if !flag[member] {
-			temp = append(temp, member)
-			flag[member] = true
-		}
-	}
-	return temp
-}
-
 func validateMember(member string) error {
 	if member == api.AllUsers {
 		return nil
 	}
 
 	userIdentifierMap := map[string]bool{
-		"user:":  true,
-		"group:": true,
+		common.UserBindingPrefix:  true,
+		common.GroupBindingPrefix: true,
 	}
 	for prefix := range userIdentifierMap {
 		if strings.HasPrefix(member, prefix) && len(member[len(prefix):]) > 0 {

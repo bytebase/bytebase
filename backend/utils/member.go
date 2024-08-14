@@ -147,6 +147,9 @@ func GetUserIAMPolicyBindings(ctx context.Context, stores *store.Store, user *st
 						break
 					}
 				}
+				if hasUser {
+					break
+				}
 			}
 		}
 		if hasUser {
