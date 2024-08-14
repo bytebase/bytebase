@@ -11,8 +11,8 @@
       </div>
     </MaskSpinner>
 
-    <div class="w-full flex flex-row justify-between items-center">
-      <div class="w-full flex flex-row justify-start items-center gap-x-2">
+    <div class="w-full flex flex-row justify-between items-center gap-2">
+      <div class="flex flex-row justify-start items-center gap-x-2">
         <span class="text-xl leading-[34px]">{{ cleanBranch.branchId }}</span>
         <span
           v-if="parentBranch"
@@ -27,43 +27,38 @@
           }}</span>
         </span>
       </div>
-      <div>
-        <div class="w-full flex flex-row justify-between items-center">
-          <template v-if="!state.isEditing">
-            <NButton v-if="showEditButton" @click="handleEdit">{{
-              $t("common.edit")
-            }}</NButton>
-            <NButton
-              v-if="showMergeBranchButton"
-              @click="handleGotoMergeBranch"
-            >
-              {{ $t("branch.merge-rebase.merge-branch") }}
-            </NButton>
-            <NButton
-              v-if="showRebaseBranchButton"
-              @click="handleGotoRebaseBranch"
-            >
-              {{ $t("branch.merge-rebase.rebase-branch") }}
-            </NButton>
-            <NButton
-              v-if="showApplyBranchButton"
-              type="primary"
-              @click="handleApplyBranchToDatabase"
-              >{{ $t("schema-designer.apply-to-database") }}</NButton
-            >
-          </template>
-          <template v-else>
-            <NButton :loading="state.isReverting" @click="handleCancelEdit">{{
-              $t("common.cancel")
-            }}</NButton>
-            <NButton
-              type="primary"
-              :loading="!!state.savingStatus"
-              @click="handleSaveBranch"
-              >{{ $t("common.save") }}</NButton
-            >
-          </template>
-        </div>
+      <div class="shrink-0 flex flex-row justify-between items-center gap-2">
+        <template v-if="!state.isEditing">
+          <NButton v-if="showEditButton" @click="handleEdit">{{
+            $t("common.edit")
+          }}</NButton>
+          <NButton v-if="showMergeBranchButton" @click="handleGotoMergeBranch">
+            {{ $t("branch.merge-rebase.merge-branch") }}
+          </NButton>
+          <NButton
+            v-if="showRebaseBranchButton"
+            @click="handleGotoRebaseBranch"
+          >
+            {{ $t("branch.merge-rebase.rebase-branch") }}
+          </NButton>
+          <NButton
+            v-if="showApplyBranchButton"
+            type="primary"
+            @click="handleApplyBranchToDatabase"
+            >{{ $t("schema-designer.apply-to-database") }}</NButton
+          >
+        </template>
+        <template v-else>
+          <NButton :loading="state.isReverting" @click="handleCancelEdit">{{
+            $t("common.cancel")
+          }}</NButton>
+          <NButton
+            type="primary"
+            :loading="!!state.savingStatus"
+            @click="handleSaveBranch"
+            >{{ $t("common.save") }}</NButton
+          >
+        </template>
       </div>
     </div>
 

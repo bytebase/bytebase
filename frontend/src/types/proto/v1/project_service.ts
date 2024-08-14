@@ -260,8 +260,6 @@ export interface Project {
    * Format: projects/{project}
    */
   name: string;
-  /** The system-assigned, unique identifier for a resource. */
-  uid: string;
   state: State;
   /** The title or name of a project. It's not unique within the workspace. */
   title: string;
@@ -1768,7 +1766,6 @@ export const Label = {
 function createBaseProject(): Project {
   return {
     name: "",
-    uid: "",
     state: State.STATE_UNSPECIFIED,
     title: "",
     key: "",
@@ -1786,9 +1783,6 @@ export const Project = {
   encode(message: Project, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
-    }
-    if (message.uid !== "") {
-      writer.uint32(18).string(message.uid);
     }
     if (message.state !== State.STATE_UNSPECIFIED) {
       writer.uint32(24).int32(stateToNumber(message.state));
@@ -1836,13 +1830,6 @@ export const Project = {
           }
 
           message.name = reader.string();
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.uid = reader.string();
           continue;
         case 3:
           if (tag !== 24) {
@@ -1926,7 +1913,6 @@ export const Project = {
   fromJSON(object: any): Project {
     return {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
-      uid: isSet(object.uid) ? globalThis.String(object.uid) : "",
       state: isSet(object.state) ? stateFromJSON(object.state) : State.STATE_UNSPECIFIED,
       title: isSet(object.title) ? globalThis.String(object.title) : "",
       key: isSet(object.key) ? globalThis.String(object.key) : "",
@@ -1950,9 +1936,6 @@ export const Project = {
     const obj: any = {};
     if (message.name !== "") {
       obj.name = message.name;
-    }
-    if (message.uid !== "") {
-      obj.uid = message.uid;
     }
     if (message.state !== State.STATE_UNSPECIFIED) {
       obj.state = stateToJSON(message.state);
@@ -1993,7 +1976,6 @@ export const Project = {
   fromPartial(object: DeepPartial<Project>): Project {
     const message = createBaseProject();
     message.name = object.name ?? "";
-    message.uid = object.uid ?? "";
     message.state = object.state ?? State.STATE_UNSPECIFIED;
     message.title = object.title ?? "";
     message.key = object.key ?? "";
