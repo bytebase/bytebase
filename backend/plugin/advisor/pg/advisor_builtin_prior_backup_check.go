@@ -14,19 +14,19 @@ import (
 )
 
 var (
-	_ advisor.Advisor = (*StatementPriorBackupCheckAdvisor)(nil)
+	_ advisor.Advisor = (*BuiltinPriorBackupCheckAdvisor)(nil)
 )
 
 func init() {
-	advisor.Register(storepb.Engine_POSTGRES, advisor.PostgreSQLBuiltinPriorBackupCheck, &StatementPriorBackupCheckAdvisor{})
+	advisor.Register(storepb.Engine_POSTGRES, advisor.PostgreSQLBuiltinPriorBackupCheck, &BuiltinPriorBackupCheckAdvisor{})
 }
 
-// StatementPriorBackupCheckAdvisor is the advisor checking for disallow mix DDL and DML.
-type StatementPriorBackupCheckAdvisor struct {
+// BuiltinPriorBackupCheckAdvisor is the advisor checking for disallow mix DDL and DML.
+type BuiltinPriorBackupCheckAdvisor struct {
 }
 
 // Check checks for disallow mix DDL and DML.
-func (*StatementPriorBackupCheckAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
+func (*BuiltinPriorBackupCheckAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	if ctx.PreUpdateBackupDetail == nil || ctx.ChangeType != storepb.PlanCheckRunConfig_DML {
 		return nil, nil
 	}
@@ -57,6 +57,19 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx advisor.Context, _ string) ([
 					Line: int32(stmt.LastLine()),
 				},
 			})
+		}
+		if n, ok := stmt.(*ast.VariableSetStmt); ok {
+			if n.Name == "role" {
+				adviceList = append(adviceList, &storepb.Advice{
+					Status:  level,
+					Title:   title,
+					Content: "Backup cannot deal with SET ROLE statement",
+					Code:    int32(advisor.BuiltinPriorBackupCheck.Int32()),
+					StartPosition: &storepb.Position{
+						Line: int32(stmt.LastLine()),
+					},
+				})
+			}
 		}
 	}
 
