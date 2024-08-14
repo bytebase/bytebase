@@ -5,6 +5,7 @@ import (
 	"context"
 	"embed"
 	"fmt"
+	"log/slog"
 	"regexp"
 	"strings"
 	"time"
@@ -16,8 +17,10 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/testing/protocmp"
+	"google.golang.org/protobuf/types/known/anypb"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/state"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
@@ -161,6 +164,18 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 	}
 	if existedSetting == nil && !request.AllowMissing {
 		return nil, status.Errorf(codes.NotFound, "setting %s not found", settingName)
+	}
+	// audit log.
+	if setServiceData, ok := common.GetSetServiceDataFromContext(ctx); ok {
+		v1pbSetting, err := s.convertToSettingMessage(ctx, existedSetting)
+		if err != nil {
+			slog.Warn("audit: failed to convert to v1.Setting", log.BBError(err))
+		}
+		p, err := anypb.New(v1pbSetting)
+		if err != nil {
+			slog.Warn("audit: failed to convert to anypb.Any", log.BBError(err))
+		}
+		setServiceData(p)
 	}
 
 	var storeSettingValue string
