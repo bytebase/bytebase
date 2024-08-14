@@ -1062,7 +1062,8 @@ func (s *OrgPolicyService) convertToV1PBMaskingExceptionPolicyPayload(ctx contex
 		} else {
 			email, err := common.GetGroupEmail(member)
 			if err != nil {
-				return nil, status.Errorf(codes.Internal, "failed to parse group email from member %s with error: %v", member, err)
+				slog.Error("failed to parse group email from member", slog.String("member", member), log.BBError(err))
+				continue
 			}
 			member = fmt.Sprintf("group:%s", email)
 		}

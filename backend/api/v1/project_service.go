@@ -1115,7 +1115,8 @@ func convertToV1IamPolicy(ctx context.Context, stores *store.Store, iamPolicy *s
 			} else if strings.HasPrefix(member, common.GroupPrefix) {
 				email, err := common.GetGroupEmail(member)
 				if err != nil {
-					return nil, status.Errorf(codes.Internal, "failed to parse group email from member %s with error: %v", member, err)
+					slog.Error("failed to parse group email from member", slog.String("member", member), log.BBError(err))
+					continue
 				}
 				members = append(members, fmt.Sprintf("group:%s", email))
 			} else {

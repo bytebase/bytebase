@@ -55,45 +55,12 @@
           }}</span>
         </div>
 
-        <div class="space-y-2">
-          <div class="w-full">
-            <NRadioGroup
-              :value="state.type"
-              class="space-x-2"
-              @update:value="onTypeChange"
-            >
-              <NRadio value="MEMBER">{{ $t("project.members.users") }}</NRadio>
-              <NRadio value="GROUP">
-                {{ $t("settings.members.groups.self") }}
-              </NRadio>
-            </NRadioGroup>
-          </div>
-
-          <div :class="['w-full', state.type !== 'MEMBER' ? 'hidden' : '']">
-            <div class="flex items-center justify-between">
-              {{ $t("project.members.select-users") }}
-            </div>
-            <UserSelect
-              key="user-select"
-              v-model:users="state.memberList"
-              class="mt-2"
-              :multiple="true"
-              :include-all-users="false"
-              :include-service-account="false"
-            />
-          </div>
-          <div :class="['w-full', state.type !== 'GROUP' ? 'hidden' : '']">
-            <div class="flex items-center justify-between">
-              {{ $t("project.members.select-groups") }}
-            </div>
-            <GroupSelect
-              key="group-select"
-              v-model:value="state.memberList"
-              class="mt-2"
-              :multiple="true"
-            />
-          </div>
-        </div>
+        <MembersBindingSelect
+          v-model:value="state.memberList"
+          :required="true"
+          :include-all-users="false"
+          :include-service-account="false"
+        />
       </div>
 
       <template #footer>
@@ -117,24 +84,14 @@
 </template>
 
 <script lang="ts" setup>
-import { groupBy, uniq } from "lodash-es";
-import { NButton, NCheckbox, NDatePicker, NRadio, NRadioGroup } from "naive-ui";
+import { groupBy } from "lodash-es";
+import { NButton, NCheckbox, NDatePicker } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
-import {
-  Drawer,
-  DrawerContent,
-  GroupSelect,
-  UserSelect,
-} from "@/components/v2";
-import {
-  usePolicyV1Store,
-  useUserStore,
-  pushNotification,
-  extractGroupEmail,
-} from "@/store";
+import MembersBindingSelect from "@/components/Member/MembersBindingSelect.vue";
+import { Drawer, DrawerContent } from "@/components/v2";
+import { usePolicyV1Store, pushNotification } from "@/store";
 import type { ComposedProject } from "@/types";
-import { getUserEmailInBinding, getGroupEmailInBinding } from "@/types";
 import { Expr } from "@/types/proto/google/type/expr";
 import { MaskingLevel } from "@/types/proto/v1/common";
 import type {
@@ -159,7 +116,6 @@ const props = defineProps<{
 const emit = defineEmits(["dismiss"]);
 
 interface LocalState {
-  type: "MEMBER" | "GROUP";
   memberList: string[];
   expirationTimestamp?: number;
   maskingLevel: MaskingLevel;
@@ -174,7 +130,6 @@ const ACTIONS = [
 const MASKING_LEVELS = [MaskingLevel.PARTIAL, MaskingLevel.NONE];
 
 const state = reactive<LocalState>({
-  type: "MEMBER",
   memberList: [],
   maskingLevel: MaskingLevel.PARTIAL,
   processing: false,
@@ -182,7 +137,6 @@ const state = reactive<LocalState>({
 });
 
 const policyStore = usePolicyV1Store();
-const userStore = useUserStore();
 const { t } = useI18n();
 
 const resetState = () => {
@@ -190,12 +144,6 @@ const resetState = () => {
   state.maskingLevel = MaskingLevel.PARTIAL;
   state.supportActions = new Set(ACTIONS);
   state.memberList = [];
-  state.type = "MEMBER";
-};
-
-const onTypeChange = (type: "MEMBER" | "GROUP") => {
-  state.memberList = [];
-  state.type = type;
 };
 
 const onDismiss = () => {
@@ -252,23 +200,6 @@ const getPendingUpdatePolicy = async (
 ): Promise<Partial<Policy>> => {
   const maskingExceptions: MaskingExceptionPolicy_MaskingException[] = [];
 
-  let members: string[] = [];
-  if (state.type === "MEMBER") {
-    members = uniq(
-      state.memberList
-        .map((id) => userStore.getUserById(id))
-        .filter((u) => u)
-        .map((user) => getUserEmailInBinding(user!.email))
-    );
-  } else {
-    members = uniq(
-      state.memberList.map((group) => {
-        const email = extractGroupEmail(group);
-        return getGroupEmailInBinding(email);
-      })
-    );
-  }
-
   for (const column of columnList) {
     const expressions = getExpressionsForSensitiveColumn(column);
     if (state.expirationTimestamp) {
@@ -280,7 +211,7 @@ const getPendingUpdatePolicy = async (
     }
 
     for (const action of state.supportActions.values()) {
-      for (const member of members) {
+      for (const member of state.memberList) {
         maskingExceptions.push({
           member,
           action,

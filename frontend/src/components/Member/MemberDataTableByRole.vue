@@ -17,12 +17,10 @@ import { computed, h } from "vue";
 import { useI18n } from "vue-i18n";
 import GroupNameCell from "@/components/User/Settings/UserDataTableByGroup/cells/GroupNameCell.vue";
 import { useRoleStore } from "@/store";
-import type { ComposedProject } from "@/types";
-import { PRESET_WORKSPACE_ROLES } from "@/types";
 import { displayRoleTitle, sortRoles } from "@/utils";
-import UserNameCell from "../ProjectMemberDataTable/cells/UserNameCell.vue";
-import UserOperationsCell from "../ProjectMemberDataTable/cells/UserOperationsCell.vue";
-import type { ProjectBinding } from "../types";
+import UserNameCell from "./MemberDataTable/cells/UserNameCell.vue";
+import UserOperationsCell from "./MemberDataTable/cells/UserOperationsCell.vue";
+import type { MemberBinding } from "./types";
 
 interface RoleRowData {
   type: "role";
@@ -33,16 +31,16 @@ interface RoleRowData {
 interface BindingRowData {
   type: "binding";
   name: string;
-  member: ProjectBinding;
+  member: MemberBinding;
 }
 
 const props = defineProps<{
-  project: ComposedProject;
-  bindings: ProjectBinding[];
+  allowEdit: boolean;
+  bindings: MemberBinding[];
 }>();
 
 const emit = defineEmits<{
-  (event: "update-binding", binding: ProjectBinding): void;
+  (event: "update-binding", binding: MemberBinding): void;
 }>();
 
 const { t } = useI18n();
@@ -96,7 +94,7 @@ const columns = computed(() => {
           return "";
         } else {
           return h(UserOperationsCell, {
-            project: props.project,
+            allowEdit: props.allowEdit,
             projectMember: row.member,
             "onUpdate-binding": () => {
               emit("update-binding", row.member);
@@ -109,17 +107,13 @@ const columns = computed(() => {
 });
 
 const userListByRole = computed(() => {
-  const roles = sortRoles(
-    roleStore.roleList
-      .map((role) => role.name)
-      .filter((role) => !PRESET_WORKSPACE_ROLES.includes(role))
-  );
+  const roles = sortRoles(roleStore.roleList.map((role) => role.name));
   const rowDataList: RoleRowData[] = [];
 
   for (const role of roles) {
     const members = props.bindings.filter((member) => {
       return (
-        member.workspaceLevelProjectRoles.includes(role) ||
+        member.workspaceLevelRoles.includes(role) ||
         member.projectRoleBindings.find((binding) => binding.role === role)
       );
     });

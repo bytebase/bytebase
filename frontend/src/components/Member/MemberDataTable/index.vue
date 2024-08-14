@@ -3,7 +3,7 @@
     key="project-members"
     :columns="columns"
     :data="bindings"
-    :row-key="(row: ProjectBinding) => row.binding"
+    :row-key="(row: MemberBinding) => row.binding"
     :bordered="true"
     :checked-row-keys="selectedBindings"
     @update:checked-row-keys="handleMemberSelection"
@@ -18,20 +18,21 @@ import { useI18n } from "vue-i18n";
 import GroupMemberNameCell from "@/components/User/Settings/UserDataTableByGroup/cells/GroupMemberNameCell.vue";
 import GroupNameCell from "@/components/User/Settings/UserDataTableByGroup/cells/GroupNameCell.vue";
 import { useUserStore } from "@/store";
-import { type ComposedProject, unknownUser } from "@/types";
-import type { ProjectBinding } from "../types";
+import { unknownUser } from "@/types";
+import type { MemberBinding } from "../types";
 import UserNameCell from "./cells/UserNameCell.vue";
 import UserOperationsCell from "./cells/UserOperationsCell.vue";
 import UserRolesCell from "./cells/UserRolesCell.vue";
 
 const props = defineProps<{
-  project: ComposedProject;
-  bindings: ProjectBinding[];
+  allowEdit: boolean;
+  bindings: MemberBinding[];
   selectedBindings: string[];
+  selectDisabled: (projectMember: MemberBinding) => boolean;
 }>();
 
 const emit = defineEmits<{
-  (event: "update-binding", binding: ProjectBinding): void;
+  (event: "update-binding", binding: MemberBinding): void;
   (event: "update-selected-bindings", bindings: string[]): void;
 }>();
 
@@ -39,20 +40,20 @@ const { t } = useI18n();
 const userStore = useUserStore();
 
 const columns = computed(
-  (): DataTableColumn<ProjectBinding & { hide?: boolean }>[] => {
+  (): DataTableColumn<MemberBinding & { hide?: boolean }>[] => {
     return [
       {
         type: "selection",
-        disabled: (projectMember: ProjectBinding) => {
-          return projectMember.projectRoleBindings.length === 0;
+        disabled: (projectMember: MemberBinding) => {
+          return props.selectDisabled(projectMember);
         },
       },
       {
         type: "expand",
         hide: !props.bindings.some((binding) => binding.type === "groups"),
-        expandable: (projectMember: ProjectBinding) =>
+        expandable: (projectMember: MemberBinding) =>
           projectMember.type === "groups",
-        renderExpand: (projectMember: ProjectBinding) => {
+        renderExpand: (projectMember: MemberBinding) => {
           return (
             <div class="pl-20">
               {projectMember.group!.members.map((member) => {
@@ -74,7 +75,7 @@ const columns = computed(
         title: t("settings.members.table.account"),
         width: "32rem",
         resizable: true,
-        render: (projectMember: ProjectBinding) => {
+        render: (projectMember: MemberBinding) => {
           if (projectMember.type === "groups") {
             return <GroupNameCell group={projectMember.group!} />;
           }
@@ -85,7 +86,7 @@ const columns = computed(
         key: "roles",
         title: t("settings.members.table.role"),
         resizable: true,
-        render: (projectMember: ProjectBinding) => {
+        render: (projectMember: MemberBinding) => {
           return h(UserRolesCell, {
             projectRole: projectMember,
           });
@@ -95,9 +96,9 @@ const columns = computed(
         key: "operations",
         title: "",
         width: "4rem",
-        render: (projectMember: ProjectBinding) => {
+        render: (projectMember: MemberBinding) => {
           return h(UserOperationsCell, {
-            project: props.project,
+            allowEdit: props.allowEdit,
             projectMember,
             "onUpdate-binding": () => {
               emit("update-binding", projectMember);
@@ -105,7 +106,7 @@ const columns = computed(
           });
         },
       },
-    ].filter((column) => !column.hide) as DataTableColumn<ProjectBinding>[];
+    ].filter((column) => !column.hide) as DataTableColumn<MemberBinding>[];
   }
 );
 

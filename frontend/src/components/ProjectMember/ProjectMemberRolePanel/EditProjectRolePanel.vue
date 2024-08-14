@@ -72,22 +72,13 @@
           }}</span>
         </div>
 
-        <div v-if="type === 'users'" class="w-full">
-          <p class="mb-2">
-            {{ $t("common.user") }}
-          </p>
-          <UserSelect
-            v-model:users="state.memberList"
-            :multiple="true"
-            :include-all="false"
-          />
-        </div>
-        <div v-else class="w-full">
-          <p class="mb-2">
-            {{ $t("settings.members.groups.self") }}
-          </p>
-          <GroupSelect v-model:value="state.memberList" :multiple="true" />
-        </div>
+        <MembersBindingSelect
+          v-model:value="state.memberList"
+          :required="true"
+          :allow-change-type="false"
+          :include-all-users="true"
+          :include-service-account="true"
+        />
       </div>
       <template #footer>
         <div class="w-full flex flex-row justify-between items-center">
@@ -117,45 +108,32 @@
 </template>
 
 <script lang="ts" setup>
-import { cloneDeep, isEqual, uniq } from "lodash-es";
+import { cloneDeep, isEqual } from "lodash-es";
 import { NButton, NDatePicker, NInput } from "naive-ui";
 import { computed, reactive, ref, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBButtonConfirm } from "@/bbkit";
 import MaxRowCountSelect from "@/components/Issue/panel/RequestExportPanel/MaxRowCountSelect.vue";
 import QuerierDatabaseResourceForm from "@/components/Issue/panel/RequestQueryPanel/DatabaseResourceForm/index.vue";
+import MembersBindingSelect from "@/components/Member/MembersBindingSelect.vue";
+import { Drawer, DrawerContent } from "@/components/v2";
 import {
-  Drawer,
-  DrawerContent,
-  GroupSelect,
-  UserSelect,
-} from "@/components/v2";
-import {
-  extractGroupEmail,
   useDatabaseV1Store,
   useProjectIamPolicy,
   useProjectIamPolicyStore,
-  useUserStore,
-  useGroupStore,
   pushNotification,
 } from "@/store";
 import type { ComposedProject, DatabaseResource } from "@/types";
-import {
-  getUserEmailInBinding,
-  getGroupEmailInBinding,
-  PresetRoleType,
-  groupBindingPrefix,
-} from "@/types";
+import { PresetRoleType } from "@/types";
 import { Expr } from "@/types/proto/google/type/expr";
 import { State } from "@/types/proto/v1/common";
 import type { Binding } from "@/types/proto/v1/iam_policy";
-import { displayRoleTitle, extractUserUID } from "@/utils";
+import { displayRoleTitle } from "@/utils";
 import { convertFromExpr } from "@/utils/issue/cel";
 
 const props = defineProps<{
   project: ComposedProject;
   binding: Binding;
-  type: "users" | "groups";
 }>();
 
 const emit = defineEmits<{
@@ -177,13 +155,11 @@ interface LocalState {
 
 const { t } = useI18n();
 const databaseStore = useDatabaseV1Store();
-const userStore = useUserStore();
-const groupStore = useGroupStore();
 
 const state = reactive<LocalState>({
   title: "",
   description: "",
-  memberList: [],
+  memberList: props.binding.members,
   maxRowCount: 1000,
 });
 const isLoading = ref(true);
@@ -242,34 +218,6 @@ onMounted(() => {
     }
   }
 
-  // Extract user list from members.
-  if (props.type === "users") {
-    const userList = [];
-    for (const member of binding.members) {
-      if (member.startsWith(groupBindingPrefix)) {
-        continue;
-      }
-      const user = userStore.getUserByIdentifier(member);
-      if (user && user.state === State.ACTIVE) {
-        userList.push(user);
-      }
-    }
-    state.memberList = userList.map((user) => extractUserUID(user.name));
-  } else {
-    const groupNameList = [];
-    for (const member of props.binding.members) {
-      if (!member.startsWith(groupBindingPrefix)) {
-        continue;
-      }
-      const group = groupStore.getGroupByIdentifier(member);
-      if (!group) {
-        continue;
-      }
-      groupNameList.push(group.name);
-    }
-    state.memberList = groupNameList;
-  }
-
   isLoading.value = false;
 });
 
@@ -292,22 +240,7 @@ const handleUpdateRole = async () => {
   }
   newBinding.condition.title = state.title;
   newBinding.condition.description = state.description;
-
-  if (props.type === "users") {
-    newBinding.members = uniq(
-      state.memberList.map((uid) => {
-        const user = userStore.getUserById(uid);
-        return getUserEmailInBinding(user!.email);
-      })
-    );
-  } else {
-    newBinding.members = uniq(
-      state.memberList.map((group) => {
-        const email = extractGroupEmail(group);
-        return getGroupEmailInBinding(email);
-      })
-    );
-  }
+  newBinding.members = state.memberList;
 
   const expression: string[] = [];
   if (state.expirationTimestamp) {

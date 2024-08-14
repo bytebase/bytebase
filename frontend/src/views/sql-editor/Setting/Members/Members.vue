@@ -30,6 +30,7 @@
       </div>
 
       <UserDataTable
+        :show-roles="true"
         :user-list="filteredUserList"
         @update-user="handleUpdateUser"
       />
@@ -61,7 +62,7 @@
           </div>
         </div>
 
-        <UserDataTable :user-list="inactiveUserList" />
+        <UserDataTable :show-roles="true" :user-list="inactiveUserList" />
       </template>
     </div>
   </div>

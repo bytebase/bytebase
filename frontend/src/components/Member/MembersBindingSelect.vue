@@ -1,0 +1,141 @@
+<template>
+  <div class="w-full space-y-2">
+    <div
+      v-if="allowChangeType"
+      class="w-full flex items-center justify-between"
+    >
+      <NRadioGroup
+        :value="memberType"
+        class="space-x-2"
+        @update:value="onTypeChange"
+      >
+        <NRadio value="USERS">{{ $t("common.users") }}</NRadio>
+        <NRadio value="GROUPS">
+          {{ $t("common.groups") }}
+        </NRadio>
+      </NRadioGroup>
+      <slot name="suffix" />
+    </div>
+    <div :class="['w-full space-y-2', memberType !== 'USERS' ? 'hidden' : '']">
+      <div class="flex items-center gap-x-1">
+        {{ $t("settings.members.select-users") }}
+        <span v-if="required" class="text-red-600">*</span>
+      </div>
+      <UserSelect
+        key="user-select"
+        :users="memberList"
+        :multiple="true"
+        :include-all-users="includeAllUsers"
+        :include-service-account="includeServiceAccount"
+        @update:users="onMemberListUpdate"
+      />
+    </div>
+    <div :class="['w-full space-y-2', memberType !== 'GROUPS' ? 'hidden' : '']">
+      <div class="flex items-center gap-x-1">
+        {{ $t("settings.members.select-groups") }}
+        <span v-if="required" class="text-red-600">*</span>
+      </div>
+
+      <GroupSelect
+        key="group-select"
+        :value="memberList"
+        :multiple="true"
+        @update:value="onMemberListUpdate($event as string[])"
+      />
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { uniq } from "lodash-es";
+import { NRadio, NRadioGroup } from "naive-ui";
+import { computed, ref, onMounted } from "vue";
+import { GroupSelect, UserSelect } from "@/components/v2";
+import { extractGroupEmail, useUserStore, useGroupStore } from "@/store";
+import { groupNamePrefix } from "@/store/modules/v1/common";
+import {
+  getUserEmailInBinding,
+  getGroupEmailInBinding,
+  groupBindingPrefix,
+} from "@/types";
+import { extractUserUID } from "@/utils";
+
+type MemberType = "USERS" | "GROUPS";
+
+const props = withDefaults(
+  defineProps<{
+    // member binding list, for users, should be user:{email}, for groups, shoud be groups:{email}
+    // We don't support mixed data.
+    value: string[];
+    required: boolean;
+    allowChangeType?: boolean;
+    includeAllUsers?: boolean;
+    includeServiceAccount?: boolean;
+  }>(),
+  {
+    allowChangeType: true,
+    includeAllUsers: false,
+    includeServiceAccount: false,
+  }
+);
+
+const emit = defineEmits<{
+  (event: "update:value", memberList: string[]): void;
+}>();
+
+const memberType = ref<MemberType>("USERS");
+const userStore = useUserStore();
+const groupStore = useGroupStore();
+
+onMounted(() => {
+  const isGroupType =
+    props.value.length > 0 &&
+    props.value.every((member) => member.startsWith(groupBindingPrefix));
+  memberType.value = isGroupType ? "GROUPS" : "USERS";
+});
+
+const onTypeChange = (type: MemberType) => {
+  emit("update:value", []);
+  memberType.value = type;
+};
+
+const memberList = computed(() => {
+  const list = [];
+
+  for (const binding of props.value) {
+    if (binding.startsWith(groupBindingPrefix)) {
+      const group = groupStore.getGroupByIdentifier(binding);
+      if (!group) {
+        continue;
+      }
+      list.push(group.name);
+    } else {
+      const user = userStore.getUserByIdentifier(binding);
+      if (!user) {
+        continue;
+      }
+      list.push(extractUserUID(user.name));
+    }
+  }
+
+  return list;
+});
+
+const onMemberListUpdate = (memberList: string[]) => {
+  const memberListInBinding = uniq(memberList)
+    .map((member) => {
+      if (member.startsWith(groupNamePrefix)) {
+        const email = extractGroupEmail(member);
+        return getGroupEmailInBinding(email);
+      }
+      const user = userStore.getUserById(member);
+      if (!user) {
+        return "";
+      }
+      return getUserEmailInBinding(user.email);
+    })
+    .filter((binding) => binding);
+
+  emit("update:value", memberListInBinding);
+};
+</script>
