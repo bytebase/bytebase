@@ -207,7 +207,7 @@ func (d *Driver) querySinglePartiQL(ctx context.Context, statement string, query
 		input.NextToken = nextToken
 		output, err := d.client.ExecuteStatement(ctx, input)
 		if err != nil {
-			return nil, errors.Wrap(err, "failed to execute statement")
+			return nil, err
 		}
 		for _, item := range output.Items {
 			totalRowCount++
