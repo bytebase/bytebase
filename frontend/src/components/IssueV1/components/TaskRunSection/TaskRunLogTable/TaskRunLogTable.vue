@@ -10,7 +10,7 @@
 
 <script setup lang="tsx">
 import { computedAsync } from "@vueuse/core";
-import { head } from "lodash-es";
+import { last } from "lodash-es";
 import { CircleAlertIcon } from "lucide-vue-next";
 import { NTooltip, NDataTable, type DataTableColumn } from "naive-ui";
 import { computed, ref } from "vue";
@@ -160,7 +160,7 @@ const flattenLogEntries = computed(() => {
   });
   return flattenEntries;
 });
-const headDeployId = computed(() => head(logEntries.value)?.deployId);
+const lastDeployId = computed(() => last(logEntries.value)?.deployId);
 
 const rowKey = (entry: FlattenLogEntry) => {
   return `${entry.batch}-${entry.serial}`;
@@ -208,7 +208,7 @@ const columns = computed(() => {
         return (
           <div class="flex flex-row items-center gap-1">
             <span>{String(entry.batch + 1)}</span>
-            {headDeployId.value !== entry.deployId && (
+            {lastDeployId.value !== entry.deployId && (
               <NTooltip>
                 {{
                   trigger: () => (
