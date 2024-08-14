@@ -18,7 +18,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLStatementPriorBackupCheck, &StatementPriorBackupCheckAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, advisor.MySQLBuiltinPriorBackupCheck, &StatementPriorBackupCheckAdvisor{})
 }
 
 // StatementPriorBackupCheckAdvisor is the advisor checking for no mixed DDL and DML.
@@ -54,7 +54,7 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx advisor.Context, _ string) ([
 				Status:  level,
 				Title:   title,
 				Content: "Prior backup cannot deal with mixed DDL and DML statements",
-				Code:    advisor.StatementPriorBackupCheck.Int32(),
+				Code:    advisor.BuiltinPriorBackupCheck.Int32(),
 				StartPosition: &storepb.Position{
 					Line: int32(stmtNode.OriginTextPosition()),
 				},
@@ -108,7 +108,7 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx advisor.Context, _ string) ([
 			content += fmt.Sprintf(" on table `%s`.`%s`, disallow mixing different types of DML statements", table.database, table.table)
 			adviceList = append(adviceList, &storepb.Advice{
 				Status:  checker.level,
-				Code:    advisor.StatementPriorBackupCheck.Int32(),
+				Code:    advisor.BuiltinPriorBackupCheck.Int32(),
 				Title:   checker.title,
 				Content: content,
 			})
