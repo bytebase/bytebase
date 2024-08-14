@@ -166,10 +166,10 @@ const (
 	// FeatureSharedSQLScript enables sharing sql script.
 	FeatureSharedSQLScript FeatureType = "bb.feature.shared-sql-script"
 
-	// Plugins.
+	// AI Assistant.
 
-	// FeaturePluginOpenAI enables AI features powered by OpenAI.
-	FeaturePluginOpenAI FeatureType = "bb.feature.plugin.openai"
+	// FeatureAIAssistant enables AI features powered by OpenAI.
+	FeatureAIAssistant FeatureType = "bb.feature.ai-assistant"
 )
 
 func (e FeatureType) String() string {
@@ -253,7 +253,7 @@ func (e FeatureType) Name() string {
 	case FeatureSharedSQLScript:
 		return "Shared SQL script"
 	// Plugins
-	case FeaturePluginOpenAI:
+	case FeatureAIAssistant:
 		return "OpenAI"
 	}
 	return ""
@@ -320,7 +320,7 @@ var FeatureMatrix = map[FeatureType][3]bool{
 	// Collaboration
 	FeatureSharedSQLScript: {false, true, true},
 	// Plugins
-	FeaturePluginOpenAI: {true, true, true},
+	FeatureAIAssistant: {true, true, true},
 }
 
 // InstanceLimitFeature is the map for instance feature. Only allowed to access these feature for activate instance.

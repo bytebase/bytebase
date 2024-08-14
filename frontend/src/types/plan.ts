@@ -49,7 +49,7 @@ export type FeatureType =
   // Collaboration
   | "bb.feature.shared-sql-script"
   // Plugins
-  | "bb.feature.plugin.openai"
+  | "bb.feature.ai-assistant"
   // Instance count limit
   | "bb.feature.instance-count"
   // User count limit
