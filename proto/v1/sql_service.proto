@@ -154,14 +154,14 @@ message ExecuteResponse {
 }
 
 message AdminExecuteRequest {
+  reserved 2;
+
   // The name is the instance name to execute the query against.
   // Format: instances/{instance}/databases/{databaseName}
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference) = {type: "bytebase.com/Database"}
   ];
-
-  string connection_database = 2 [deprecated = true];
 
   // The SQL statement to execute.
   string statement = 3;
@@ -179,14 +179,14 @@ message AdminExecuteResponse {
 }
 
 message QueryRequest {
+  reserved 2;
+
   // The name is the instance name to execute the query against.
   // Format: instances/{instance}/databases/{databaseName}
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference) = {type: "bytebase.com/Database"}
   ];
-
-  string connection_database = 2 [deprecated = true];
 
   // The SQL statement to execute.
   string statement = 3;
@@ -302,6 +302,8 @@ message Advice {
 }
 
 message ExportRequest {
+  reserved 2;
+
   // The name is the instance name to execute the query against.
   // Format: instances/{instance}/databases/{databaseName}
   // Format: projects/{project}/issues/{issue} for data export issue.
@@ -309,8 +311,6 @@ message ExportRequest {
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference) = {type: "bytebase.com/Database"}
   ];
-
-  string connection_database = 2 [deprecated = true];
 
   // The SQL statement to execute.
   string statement = 3;
