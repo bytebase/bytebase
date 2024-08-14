@@ -1117,10 +1117,9 @@ func convertToV1MemberInBinding(ctx context.Context, stores *store.Store, member
 			return ""
 		}
 		return fmt.Sprintf("%s%s", common.GroupBindingPrefix, email)
-	} else {
-		// handle allUsers.
-		return member
 	}
+	// handle allUsers.
+	return member
 }
 
 func convertToV1IamPolicy(ctx context.Context, stores *store.Store, iamPolicy *store.IamPolicyMessage) (*v1pb.IamPolicy, error) {
