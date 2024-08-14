@@ -169,7 +169,7 @@ func (*SQLService) doAdminExecute(ctx context.Context, driver db.Driver, conn *s
 }
 
 func (s *SQLService) preAdminExecute(ctx context.Context, request *v1pb.AdminExecuteRequest) (*store.InstanceMessage, *store.DatabaseMessage, *store.UserMessage, error) {
-	user, instance, database, err := s.prepareRelatedMessage(ctx, request.Name, request.ConnectionDatabase)
+	user, instance, database, err := s.prepareRelatedMessage(ctx, request.Name)
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -292,7 +292,7 @@ func (s *SQLService) Export(ctx context.Context, request *v1pb.ExportRequest) (*
 		return s.doExportFromIssue(ctx, request.Name)
 	}
 	// Prepare related message.
-	user, instance, database, err := s.prepareRelatedMessage(ctx, request.Name, request.ConnectionDatabase)
+	user, instance, database, err := s.prepareRelatedMessage(ctx, request.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -663,7 +663,7 @@ func (s *SQLService) convertToV1QueryHistory(ctx context.Context, history *store
 //  3. post-query
 func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1pb.QueryResponse, error) {
 	// Prepare related message.
-	user, instance, database, err := s.prepareRelatedMessage(ctx, request.Name, request.ConnectionDatabase)
+	user, instance, database, err := s.prepareRelatedMessage(ctx, request.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -1043,24 +1043,15 @@ func sanitizeResults(results []*v1pb.QueryResult) {
 	}
 }
 
-func (s *SQLService) prepareRelatedMessage(ctx context.Context, requestName string, requestDatabaseName string) (*store.UserMessage, *store.InstanceMessage, *store.DatabaseMessage, error) {
+func (s *SQLService) prepareRelatedMessage(ctx context.Context, requestName string) (*store.UserMessage, *store.InstanceMessage, *store.DatabaseMessage, error) {
 	user, err := s.getUser(ctx)
 	if err != nil {
 		return nil, nil, nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	var instanceID, databaseName string
-	if strings.Contains(requestName, "/databases/") {
-		instanceID, databaseName, err = common.GetInstanceDatabaseID(requestName)
-		if err != nil {
-			return nil, nil, nil, status.Error(codes.InvalidArgument, err.Error())
-		}
-	} else {
-		instanceID, err = common.GetInstanceID(requestName)
-		if err != nil {
-			return nil, nil, nil, status.Error(codes.InvalidArgument, err.Error())
-		}
-		databaseName = requestDatabaseName
+	instanceID, databaseName, err := common.GetInstanceDatabaseID(requestName)
+	if err != nil {
+		return nil, nil, nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	find := &store.FindInstanceMessage{
