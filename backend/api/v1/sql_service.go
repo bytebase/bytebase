@@ -1333,7 +1333,8 @@ func (s *SQLService) sqlCheck(
 	reviewConfig, err := s.store.GetReviewConfigForDatabase(ctx, database)
 	if err != nil {
 		if e, ok := err.(*common.Error); ok && e.Code == common.NotFound {
-			return storepb.Advice_SUCCESS, nil, nil
+			// Continue to check the builtin rules.
+			reviewConfig = &storepb.ReviewConfigPayload{}
 		}
 		return storepb.Advice_ERROR, nil, status.Errorf(codes.Internal, "failed to get SQL review policy with error: %v", err)
 	}

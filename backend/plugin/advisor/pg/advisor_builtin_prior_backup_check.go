@@ -18,7 +18,7 @@ var (
 )
 
 func init() {
-	advisor.Register(storepb.Engine_POSTGRES, advisor.PostgreSQLStatementPriorBackupCheck, &StatementPriorBackupCheckAdvisor{})
+	advisor.Register(storepb.Engine_POSTGRES, advisor.PostgreSQLBuiltinPriorBackupCheck, &StatementPriorBackupCheckAdvisor{})
 }
 
 // StatementPriorBackupCheckAdvisor is the advisor checking for disallow mix DDL and DML.
@@ -52,7 +52,7 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx advisor.Context, _ string) ([
 				Status:  level,
 				Title:   title,
 				Content: fmt.Sprintf("Data change can only run DML, \"%s\" is not DML", stmt.Text()),
-				Code:    advisor.StatementPriorBackupCheck.Int32(),
+				Code:    advisor.BuiltinPriorBackupCheck.Int32(),
 				StartPosition: &storepb.Position{
 					Line: int32(stmt.LastLine()),
 				},
