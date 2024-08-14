@@ -181,7 +181,6 @@ const useExecuteSQL = () => {
           resultSet = await sqlStore.queryReadonly(
             {
               name: database.name,
-              connectionDatabase: database.databaseName, // deprecated field, remove me later
               dataSourceId: dataSourceId,
               statement: params.statement,
               limit: sqlEditorStore.resultRowsLimit,
