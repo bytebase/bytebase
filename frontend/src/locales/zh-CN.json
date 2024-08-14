@@ -695,19 +695,18 @@
           }
         },
         "config-updated": "配置已更新。",
-        "plugin": {
-          "openai": {
-            "ai-augmentation": "AI 增强",
-            "openai-key": {
-              "self": "OpenAI API Key",
-              "description": "提供 OpenAI API Key 以在 SQL 编辑器中开启 ChatSQL 的能力。{viewDoc}",
-              "find-my-key": "找到我的 Key",
-              "placeholder": "OpenAI API Key 通常以 sk-***** 开头"
-            },
-            "openai-endpoint": {
-              "self": "OpenAI API Endpoint",
-              "description": "提供私有化部署的 OpenAI API Endpoint。"
-            }
+        "ai-assistant": {
+          "self": "AI 助手",
+          "description": "使用 OpenAPI 来辅助数据库开发任务。",
+          "openai-key": {
+            "self": "OpenAI API Key",
+            "description": "提供 OpenAI API Key 以开启 AI 助手。{viewDoc}",
+            "find-my-key": "找到我的 Key",
+            "placeholder": "OpenAI API Key 通常以 sk-***** 开头"
+          },
+          "openai-endpoint": {
+            "self": "OpenAI API Endpoint",
+            "description": "提供私有化部署的 OpenAI API Endpoint。"
           }
         },
         "announcement": {
@@ -3096,7 +3095,7 @@
     "ai": {
       "examples": "例子",
       "text-to-sql-placeholder": "在此输入自然语言后，Bytebase 会马上转换成 SQL 语句",
-      "text-to-sql-disabled-placeholder": "提供 OpenAI API 密钥以开启 ChatSQL 能力。",
+      "text-to-sql-disabled-placeholder": "提供 OpenAI API 密钥以开启 Text2SQL 能力。",
       "run-automatically": "自动运行",
       "conversation": {
         "conversations": "会话",
@@ -3122,9 +3121,9 @@
       },
       "statement-copied": "语句已复制到剪贴板",
       "dont-show-again": "不再显示",
-      "chat-sql": "ChatSQL",
-      "disable-chat-sql": "关闭 ChatSQL",
-      "enable-chat-sql": "开启 ChatSQL"
+      "text2sql": "Text2SQL",
+      "disable-text2sql": "关闭 Text2SQL",
+      "enable-text2sql": "开启 Text2SQL"
     }
   },
   "custom-approval": {

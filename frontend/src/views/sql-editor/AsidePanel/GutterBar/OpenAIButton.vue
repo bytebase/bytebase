@@ -24,8 +24,8 @@
     <template #default>
       {{
         showAIChatBox
-          ? $t("plugin.ai.disable-chat-sql")
-          : $t("plugin.ai.enable-chat-sql")
+          ? $t("plugin.ai.disable-text2sql")
+          : $t("plugin.ai.enable-text2sql")
       }}
     </template>
   </NTooltip>

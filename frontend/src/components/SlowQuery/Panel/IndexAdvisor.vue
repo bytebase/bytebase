@@ -147,7 +147,7 @@ const generateIssueName = () => {
 watch(
   () => props.slowQueryLog,
   async () => {
-    if (hasFeature("bb.feature.plugin.openai") && hasOpenAIKeySetup.value) {
+    if (hasFeature("bb.feature.ai-assistant") && hasOpenAIKeySetup.value) {
       state.isLoading = true;
       try {
         const response = await databaseServiceClient.adviseIndex({

@@ -695,19 +695,18 @@
           }
         },
         "config-updated": "構成が更新されました。",
-        "plugin": {
-          "openai": {
-            "ai-augmentation": "AIの強化",
-            "openai-key": {
-              "self": "OpenAI APIキー",
-              "description": "SQL エディターで ChatSQL を開く機能を有効にする OpenAI API キーを提供します。 {viewDoc}",
-              "find-my-key": "鍵を探す",
-              "placeholder": "OpenAI API キーは通常 sk-***** で始まります"
-            },
-            "openai-endpoint": {
-              "self": "OpenAI API エンドポイント",
-              "description": "プライベート展開用の OpenAI API エンドポイントを提供します。"
-            }
+        "ai-assistant": {
+          "self": "AI助手",
+          "description": "OpenAPI を使用してデータベース開発タスクを支援します。",
+          "openai-key": {
+            "self": "OpenAI APIキー",
+            "description": "SQL エディターで Text2SQL を開く機能を有効にする OpenAI API キーを提供します。 {viewDoc}",
+            "find-my-key": "鍵を探す",
+            "placeholder": "OpenAI API キーは通常 sk-***** で始まります"
+          },
+          "openai-endpoint": {
+            "self": "OpenAI API エンドポイント",
+            "description": "プライベート展開用の OpenAI API エンドポイントを提供します。"
           }
         },
         "announcement": {
@@ -3096,7 +3095,7 @@
     "ai": {
       "examples": "例",
       "text-to-sql-placeholder": "ここに自然言語を入力すると、Bytebase はすぐにそれを SQL ステートメントに変換します。",
-      "text-to-sql-disabled-placeholder": "OpenAI API キーを指定して、ChatSQL 機能を有効にします。",
+      "text-to-sql-disabled-placeholder": "OpenAI API キーを指定して、Text2SQL 機能を有効にします。",
       "run-automatically": "自動運転",
       "conversation": {
         "conversations": "セッション",
@@ -3122,9 +3121,9 @@
       },
       "statement-copied": "ステートメントがクリップボードにコピーされました",
       "dont-show-again": "再び表示しない",
-      "chat-sql": "チャットSQL",
-      "disable-chat-sql": "ChatSQLを閉じる",
-      "enable-chat-sql": "ChatSQLを開く"
+      "text2sql": "Text2SQL",
+      "disable-text2sql": "Text2SQLを閉じる",
+      "enable-text2sql": "Text2SQLを開く"
     }
   },
   "custom-approval": {
