@@ -17,6 +17,7 @@ import {
 import {
   isValidEnvironmentName,
   UNKNOWN_ID,
+  isValidProjectName,
 } from "@/types";
 import { useReviewConfigAttachedResource } from "./useReviewConfigAttachedResource";
 
@@ -60,7 +61,7 @@ const reviewPolicyResourceComponent = computed(() => {
     }
     case "project": {
       const project = projectStore.getProjectByName(props.resource);
-      if (project.uid === `${UNKNOWN_ID}`) {
+      if (!isValidProjectName(project.name)) {
         return <div>{props.resource}</div>;
       }
       return (
