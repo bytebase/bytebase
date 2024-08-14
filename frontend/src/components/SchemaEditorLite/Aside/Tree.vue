@@ -145,7 +145,7 @@ import type {
   TreeNodeForTable,
   TreeNodeForGroup,
 } from "./common";
-import { buildTree } from "./common";
+import { useBuildTree } from "./common";
 import { useContextMenu } from "./context-menu";
 
 interface LocalState {
@@ -203,6 +203,7 @@ const {
   queuePendingScrollToTable,
   queuePendingScrollToColumn,
 } = useSchemaEditorContext();
+const buildTree = useBuildTree();
 const state = reactive<LocalState>({
   shouldRelocateTreeNode: false,
 });
@@ -300,6 +301,9 @@ const debouncedBuildDatabaseTreeData = debounce(buildDatabaseTreeData, 100);
 useEmitteryEventListener(events, "rebuild-tree", (params) => {
   debouncedBuildDatabaseTreeData(params.openFirstChild);
 });
+watch(disableDiffColoring, () =>
+  buildDatabaseTreeData(/* openFirstChild */ true)
+);
 
 const tabWatchKey = computed(() => {
   const tab = currentTab.value;

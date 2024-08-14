@@ -135,9 +135,17 @@ const state = reactive<LocalState>({
   showSchemaTemplateDrawer: false,
 });
 const filteredTables = computed(() => {
+  const tables = disableDiffColoring.value
+    ? props.tables.filter((table) => {
+        const status = statusForTable(table);
+        return status !== "dropped";
+      })
+    : props.tables;
   const keyword = props.searchPattern?.trim();
-  if (!keyword) return props.tables;
-  return props.tables.filter((table) => table.name.includes(keyword));
+  if (!keyword) {
+    return tables;
+  }
+  return tables.filter((table) => table.name.includes(keyword));
 });
 
 const engine = computed(() => {
