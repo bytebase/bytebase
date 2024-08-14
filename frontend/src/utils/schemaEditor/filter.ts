@@ -45,7 +45,6 @@ export const filterColumnMetadata = (column: ColumnMetadata) => {
     defaultString: column.defaultString,
     onUpdate: column.onUpdate,
     nullable: column.nullable,
-    position: column.position,
   });
 };
 
@@ -159,5 +158,4 @@ export const ComparableColumnFields: (keyof ColumnMetadata)[] = [
   "defaultString",
   "onUpdate",
   "nullable",
-  "position",
 ];
