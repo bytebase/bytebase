@@ -44,7 +44,7 @@ const router = useRouter();
 const handleClick = () => {
   router.push({
     name: SETTING_ROUTE_WORKSPACE_GENERAL,
-    hash: "#ai-augmentation",
+    hash: "#ai-assistant",
   });
 };
 

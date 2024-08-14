@@ -84,7 +84,7 @@
             </NButton>
           </template>
           <template #default>
-            {{ $t("plugin.ai.chat-sql") }}
+            {{ $t("plugin.ai.text2sql") }}
           </template>
         </NTooltip>
         <template v-if="!disallowExportQueryData">
