@@ -495,6 +495,8 @@ func SQLReviewCheck(
 ) ([]*storepb.Advice, error) {
 	asts, parseResult := sm.GetASTsForChecks(checkContext.DbType, statements)
 
+	builtinOnly := len(ruleList) == 0
+
 	// Append builtin rules to the rule list.
 	ruleList = append(ruleList, GetBuiltinRules(checkContext.DbType)...)
 
@@ -503,10 +505,12 @@ func SQLReviewCheck(
 	}
 
 	finder := checkContext.Catalog.GetFinder()
-	switch checkContext.DbType {
-	case storepb.Engine_TIDB, storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_POSTGRES, storepb.Engine_OCEANBASE:
-		if err := finder.WalkThrough(asts); err != nil {
-			return convertWalkThroughErrorToAdvice(checkContext, err)
+	if !builtinOnly {
+		switch checkContext.DbType {
+		case storepb.Engine_TIDB, storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_POSTGRES, storepb.Engine_OCEANBASE:
+			if err := finder.WalkThrough(asts); err != nil {
+				return convertWalkThroughErrorToAdvice(checkContext, err)
+			}
 		}
 	}
 
