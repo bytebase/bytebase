@@ -120,7 +120,7 @@ import {
   INSTANCE_ROUTE_DASHBOARD,
   PROJECT_V1_ROUTE_DASHBOARD,
   ENVIRONMENT_V1_ROUTE_DASHBOARD,
-  WORKSPACE_ROUTE_MEMBERS,
+  WORKSPACE_ROUTE_USERS,
 } from "@/router/dashboard/workspaceRoutes";
 import { SQL_EDITOR_WORKSHEET_MODULE } from "@/router/sqlEditor";
 import {
@@ -254,7 +254,7 @@ const introList = computed(() => {
     {
       name: computed(() => t("quick-start.visit-member")),
       link: {
-        name: WORKSPACE_ROUTE_MEMBERS,
+        name: WORKSPACE_ROUTE_USERS,
       },
       done: computed(() => uiStateStore.getIntroStateByKey("member.visit")),
       requiredPermissions: ["bb.policies.get"],

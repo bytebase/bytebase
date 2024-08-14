@@ -8,13 +8,13 @@
         :disabled="state.selectedMembers.length === 0"
         @click="handleRevokeSelectedMembers"
       >
-        {{ $t("project.members.revoke-access") }}
+        {{ $t("settings.members.revoke-access") }}
       </NButton>
       <NButton type="primary" @click="state.showAddMemberPanel = true">
         <template #icon>
           <heroicons-outline:user-add class="w-4 h-4" />
         </template>
-        {{ $t("project.members.grant-access") }}
+        {{ $t("settings.members.grant-access") }}
       </NButton>
     </div>
 
@@ -34,21 +34,24 @@
       <template #suffix>
         <SearchBox
           v-model:value="state.searchText"
-          :placeholder="$t('project.members.search-member')"
+          :placeholder="$t('settings.members.search-member')"
         />
       </template>
       <NTabPane name="users" :tab="$t('project.members.view-by-members')">
-        <ProjectMemberDataTable
-          :project="project"
+        <MemberDataTable
+          :allow-edit="allowEdit"
           :bindings="projectBindings"
           :selected-bindings="state.selectedMembers"
+          :select-disabled="
+            (member: MemberBinding) => member.projectRoleBindings.length === 0
+          "
           @update-binding="selectMember"
           @update-selected-bindings="state.selectedMembers = $event"
         />
       </NTabPane>
       <NTabPane name="roles" :tab="$t('project.members.view-by-roles')">
-        <ProjectMemberDataTableByRole
-          :project="project"
+        <MemberDataTableByRole
+          :allow-edit="allowEdit"
           :bindings="projectBindings"
           @update-binding="selectMember"
         />
@@ -75,6 +78,9 @@ import { cloneDeep, uniq, uniqBy } from "lodash-es";
 import { NButton, NTabs, NTabPane, useDialog } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
+import MemberDataTable from "@/components/Member/MemberDataTable/index.vue";
+import MemberDataTableByRole from "@/components/Member/MemberDataTableByRole.vue";
+import type { MemberRole, MemberBinding } from "@/components/Member/types";
 import {
   extractGroupEmail,
   extractUserEmail,
@@ -95,13 +101,11 @@ import {
 } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import type { Group } from "@/types/proto/v1/group";
+import { hasProjectPermissionV2 } from "@/utils";
 import { FeatureAttention } from "../FeatureGuard";
 import { SearchBox } from "../v2";
 import AddProjectMembersPanel from "./AddProjectMember/AddProjectMembersPanel.vue";
-import ProjectMemberDataTable from "./ProjectMemberDataTable/index.vue";
-import ProjectMemberDataTableByRole from "./ProjectMemberDataTableByRole/index.vue";
 import ProjectMemberRolePanel from "./ProjectMemberRolePanel/index.vue";
-import type { ProjectRole, ProjectBinding } from "./types";
 
 interface LocalState {
   searchText: string;
@@ -110,7 +114,7 @@ interface LocalState {
   selectedMembers: string[];
   showInactiveMemberList: boolean;
   showAddMemberPanel: boolean;
-  editingMember?: ProjectBinding;
+  editingMember?: MemberBinding;
 }
 
 const props = defineProps<{
@@ -137,6 +141,14 @@ const userStore = useUserStore();
 
 const projectIAMPolicyBindings = computed(() => {
   return iamPolicy.value.bindings;
+});
+
+const allowEdit = computed(() => {
+  return hasProjectPermissionV2(
+    props.project,
+    currentUserV1.value,
+    "bb.projects.setIamPolicy"
+  );
 });
 
 const activeUserList = computed(() => {
@@ -175,7 +187,7 @@ const activeGroupList = computed(() => {
 });
 
 const groupRoleMap = computed(() => {
-  const map = new Map<string, ProjectRole>();
+  const map = new Map<string, MemberRole>();
   for (const group of activeGroupList.value) {
     if (!group) {
       continue;
@@ -186,7 +198,7 @@ const groupRoleMap = computed(() => {
       )
     );
     map.set(group.name, {
-      workspaceLevelProjectRoles: [],
+      workspaceLevelRoles: [],
       projectRoleBindings: bindings,
     });
   }
@@ -212,17 +224,17 @@ const projectMembers = computed(() => {
         title: user.title,
         user,
         binding: getUserEmailInBinding(user.email),
-        workspaceLevelProjectRoles: roles,
+        workspaceLevelRoles: roles,
         projectRoleBindings: bindings,
-      } as ProjectBinding;
+      } as MemberBinding;
     })
-    .filter(Boolean) as ProjectBinding[];
+    .filter(Boolean) as MemberBinding[];
 });
 
-const projectGroups = computed((): ProjectBinding[] => {
+const projectGroups = computed((): MemberBinding[] => {
   return activeGroupList.value.map((group) => {
-    const roleBinding: ProjectRole = groupRoleMap.value.get(group.name) ?? {
-      workspaceLevelProjectRoles: [],
+    const roleBinding: MemberRole = groupRoleMap.value.get(group.name) ?? {
+      workspaceLevelRoles: [],
       projectRoleBindings: [],
     };
     const email = extractGroupEmail(group.name);
@@ -250,7 +262,7 @@ const projectBindings = computed(() => {
   );
 });
 
-const selectMember = (binding: ProjectBinding) => {
+const selectMember = (binding: MemberBinding) => {
   state.editingMember = binding;
 };
 
@@ -274,7 +286,7 @@ const handleRevokeSelectedMembers = () => {
   }
 
   dialog.create({
-    title: t("project.members.revoke-members"),
+    title: t("settings.members.revoke-access"),
     negativeText: t("common.cancel"),
     positiveText: t("common.confirm"),
     onPositiveClick: async () => {

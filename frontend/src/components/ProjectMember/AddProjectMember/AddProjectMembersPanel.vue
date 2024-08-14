@@ -5,7 +5,7 @@
     @update:show="(show: boolean) => !show && $emit('close')"
   >
     <DrawerContent
-      :title="$t('project.members.grant-access')"
+      :title="$t('settings.members.grant-access')"
       :closable="true"
       class="w-[50rem] max-w-[100vw] relative"
     >

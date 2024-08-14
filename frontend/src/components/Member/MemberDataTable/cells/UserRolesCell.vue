@@ -27,14 +27,14 @@ import { Building2Icon } from "lucide-vue-next";
 import { NTag, NTooltip } from "naive-ui";
 import { computed } from "vue";
 import { displayRoleTitle, sortRoles, isBindingPolicyExpired } from "@/utils";
-import type { ProjectRole } from "../../types";
+import type { MemberRole } from "../../types";
 
 const props = defineProps<{
-  projectRole: ProjectRole;
+  projectRole: MemberRole;
 }>();
 
 const workspaceLevelRoles = computed(() => {
-  return sortRoles(props.projectRole.workspaceLevelProjectRoles);
+  return sortRoles(props.projectRole.workspaceLevelRoles);
 });
 
 const projectRoleBindings = computed(() => {

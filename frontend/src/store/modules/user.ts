@@ -104,10 +104,12 @@ export const useUserStore = defineStore("user", () => {
     const createdUser = await authServiceClient.createUser({
       user,
     });
-    await workspaceStore.patchIamPolicy({
-      member: `user:${createdUser.email}`,
-      roles: user.roles,
-    });
+    await workspaceStore.patchIamPolicy([
+      {
+        member: `user:${createdUser.email}`,
+        roles: user.roles,
+      },
+    ]);
 
     return setUser(createdUser);
   };
@@ -121,10 +123,12 @@ export const useUserStore = defineStore("user", () => {
     return setUser(user);
   };
   const updateUserRoles = async (user: ComposedUser) => {
-    await workspaceStore.patchIamPolicy({
-      member: `user:${user.email}`,
-      roles: user.roles,
-    });
+    await workspaceStore.patchIamPolicy([
+      {
+        member: `user:${user.email}`,
+        roles: user.roles,
+      },
+    ]);
     return setUser(user);
   };
   const getOrFetchUserByName = async (name: string, silent = false) => {

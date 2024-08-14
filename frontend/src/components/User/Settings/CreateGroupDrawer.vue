@@ -81,7 +81,7 @@
             </div>
             <div>
               <NButton :disabled="!allowEdit" @click="addMember">
-                {{ $t("settings.members.groups.form.add-member") }}
+                {{ $t("settings.members.add-member") }}
               </NButton>
             </div>
           </div>
@@ -146,11 +146,7 @@ import {
 } from "@/store";
 import { userNamePrefix, groupNamePrefix } from "@/store/modules/v1/common";
 import { getUserEmailFromIdentifier } from "@/store/modules/v1/common";
-import {
-  Group,
-  GroupMember,
-  GroupMember_Role,
-} from "@/types/proto/v1/group";
+import { Group, GroupMember, GroupMember_Role } from "@/types/proto/v1/group";
 import {
   isValidEmail,
   extractUserUID,

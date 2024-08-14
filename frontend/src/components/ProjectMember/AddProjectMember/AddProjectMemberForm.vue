@@ -1,48 +1,25 @@
 <template>
   <div class="w-full flex flex-col justify-start items-start gap-y-4">
-    <div class="w-full">
-      <NRadioGroup v-model:value="state.type" class="space-x-2">
-        <NRadio value="MEMBER">{{ $t("project.members.users") }}</NRadio>
-        <NRadio value="GROUP">
-          {{ $t("settings.members.groups.self") }}
-        </NRadio>
-      </NRadioGroup>
-    </div>
-    <div v-if="state.type === 'MEMBER'" class="w-full">
-      <div class="flex items-center justify-between">
-        {{ $t("project.members.select-users") }}
+    <MembersBindingSelect
+      v-model:value="state.memberList"
+      :required="true"
+      :include-all-users="true"
+      :include-service-account="true"
+    >
+      <template #suffix>
+        <NButton v-if="allowRemove" text @click="$emit('remove')">
+          <template #icon>
+            <heroicons:trash class="w-4 h-4" />
+          </template>
+        </NButton>
+      </template>
+    </MembersBindingSelect>
 
-        <NButton v-if="allowRemove" text @click="$emit('remove')">
-          <template #icon>
-            <heroicons:trash class="w-4 h-4" />
-          </template>
-        </NButton>
-      </div>
-      <UserSelect
-        v-model:users="state.memberList"
-        class="mt-2"
-        :multiple="true"
-        :include-all-users="true"
-        :include-service-account="true"
-      />
-    </div>
-    <div v-else class="w-full">
-      <div class="flex items-center justify-between">
-        {{ $t("project.members.select-groups") }}
-        <NButton v-if="allowRemove" text @click="$emit('remove')">
-          <template #icon>
-            <heroicons:trash class="w-4 h-4" />
-          </template>
-        </NButton>
-      </div>
-      <GroupSelect
-        v-model:value="state.memberList"
-        class="mt-2"
-        :multiple="true"
-      />
-    </div>
     <div class="w-full">
-      <span>{{ $t("project.members.assign-role") }}</span>
+      <div class="flex items-center gap-x-1">
+        <span>{{ $t("settings.members.assign-role") }}</span>
+        <span class="text-red-600">*</span>
+      </div>
       <ProjectRoleSelect v-model:role="state.role" class="mt-2" />
     </div>
     <div class="w-full">
@@ -94,38 +71,19 @@
 /* eslint-disable vue/no-mutating-props */
 import dayjs from "dayjs";
 import { head } from "lodash-es";
-import { NInput, NRadioGroup, NRadio, NButton } from "naive-ui";
+import { NInput, NButton } from "naive-ui";
 import { computed, reactive, watch } from "vue";
 import ExpirationSelector from "@/components/ExpirationSelector.vue";
 import MaxRowCountSelect from "@/components/Issue/panel/RequestExportPanel/MaxRowCountSelect.vue";
 import QuerierDatabaseResourceForm from "@/components/Issue/panel/RequestQueryPanel/DatabaseResourceForm/index.vue";
-import {
-  ProjectRoleSelect,
-  GroupSelect,
-  UserSelect,
-} from "@/components/v2/Select";
-import {
-  useUserStore,
-  useGroupStore,
-  extractGroupEmail,
-  useSettingV1Store,
-} from "@/store";
-import { groupNamePrefix } from "@/store/modules/v1/common";
+import MembersBindingSelect from "@/components/Member/MembersBindingSelect.vue";
+import { ProjectRoleSelect } from "@/components/v2/Select";
+import { useSettingV1Store } from "@/store";
 import type { ComposedProject, DatabaseResource } from "@/types";
-import {
-  getUserEmailInBinding,
-  getGroupEmailInBinding,
-  groupBindingPrefix,
-  userBindingPrefix,
-  PresetRoleType,
-} from "@/types";
+import { PresetRoleType } from "@/types";
 import { Expr } from "@/types/proto/google/type/expr";
 import type { Binding } from "@/types/proto/v1/iam_policy";
-import {
-  displayRoleTitle,
-  extractDatabaseResourceName,
-  extractUserUID,
-} from "@/utils";
+import { displayRoleTitle, extractDatabaseResourceName } from "@/utils";
 
 const props = defineProps<{
   project: ComposedProject;
@@ -138,7 +96,6 @@ defineEmits<{
 }>();
 
 interface LocalState {
-  type: "MEMBER" | "GROUP";
   memberList: string[];
   role?: string;
   reason: string;
@@ -153,44 +110,12 @@ interface LocalState {
 
 const getInitialState = (): LocalState => {
   const defaultState: LocalState = {
-    type: "MEMBER",
-    memberList: [],
+    memberList: props.binding.members,
     reason: "",
     // Default to never expire.
     expireDays: 0,
     maxRowCount: 1000,
   };
-  const isMember = props.binding.members.some((member) =>
-    member.startsWith(userBindingPrefix)
-  );
-  if (isMember || props.binding.members.length === 0) {
-    defaultState.type = "MEMBER";
-    const userUidList = [];
-    for (const member of props.binding.members) {
-      if (member.startsWith(groupBindingPrefix)) {
-        continue;
-      }
-      const user = userStore.getUserByIdentifier(member);
-      if (user) {
-        userUidList.push(extractUserUID(user.name));
-      }
-    }
-    defaultState.memberList = userUidList;
-  } else {
-    defaultState.type = "GROUP";
-    const groupNameList = [];
-    for (const member of props.binding.members) {
-      if (!member.startsWith(groupBindingPrefix)) {
-        continue;
-      }
-      const group = groupStore.getGroupByIdentifier(member);
-      if (!group) {
-        continue;
-      }
-      groupNameList.push(group.name);
-    }
-    defaultState.memberList = groupNameList;
-  }
 
   if (maximumRoleExpiration.value) {
     defaultState.expireDays = maximumRoleExpiration.value;
@@ -207,24 +132,8 @@ const maximumRoleExpiration = computed(() => {
   return Math.floor(seconds / (60 * 60 * 24));
 });
 
-const userStore = useUserStore();
-const groupStore = useGroupStore();
 const settingV1Store = useSettingV1Store();
 const state = reactive<LocalState>(getInitialState());
-
-watch(
-  () => state.type,
-  (type) => {
-    if (
-      type === "MEMBER" &&
-      !state.memberList.every((m) => !m.startsWith(groupNamePrefix))
-    ) {
-      state.memberList = [];
-    } else if (!state.memberList.every((m) => m.startsWith(groupNamePrefix))) {
-      state.memberList = [];
-    }
-  }
-);
 
 watch(
   () => state.role,
@@ -241,17 +150,7 @@ watch(
   () => state,
   () => {
     const conditionName = generateConditionTitle();
-    if (state.type === "MEMBER") {
-      props.binding.members = state.memberList.map((uid) => {
-        const user = userStore.getUserById(uid);
-        return getUserEmailInBinding(user!.email);
-      });
-    } else {
-      props.binding.members = state.memberList.map((group) => {
-        const email = extractGroupEmail(group);
-        return getGroupEmailInBinding(email);
-      });
-    }
+    props.binding.members = state.memberList;
     if (state.role) {
       props.binding.role = state.role;
     }

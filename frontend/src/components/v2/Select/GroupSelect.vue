@@ -9,7 +9,7 @@
     :filter="filterByTitle"
     :render-label="renderLabel"
     :render-tag="renderTag"
-    :placeholder="$t('project.members.select-groups')"
+    :placeholder="$t('settings.members.select-groups')"
     @update:value="$emit('update:value', $event)"
   />
 </template>

@@ -5,35 +5,29 @@
       feature="bb.feature.user-count"
       :description="userCountAttention"
     />
-    <FeatureAttention feature="bb.feature.rbac" />
 
     <NTabs v-model:value="state.typeTab" type="line" animated>
-      <NTabPane name="members">
+      <NTabPane name="USERS">
         <template #tab>
           <div class="flex-1 flex space-x-2">
             <p class="text-lg font-medium leading-7 text-main">
-              <span>{{ $t("common.members") }}</span>
+              <span>{{ $t("common.users") }}</span>
               <span class="ml-1 font-normal text-control-light">
                 ({{ userStore.activeUserList.length }})
               </span>
             </p>
-            <div
-              v-if="showUpgradeInfo"
-              class="flex flex-row items-center space-x-1"
-            >
-              <heroicons-solid:sparkles class="w-6 h-6 text-accent" />
-              <router-link
-                :to="{ name: SETTING_ROUTE_WORKSPACE_SUBSCRIPTION }"
-                class="text-lg accent-link"
-              >
-                {{ $t("settings.members.upgrade") }}
-              </router-link>
-            </div>
           </div>
         </template>
+
+        <UserDataTable
+          :show-roles="false"
+          :user-list="filteredUserList"
+          @update-user="handleUpdateUser"
+          @select-group="handleUpdateGroup"
+        />
       </NTabPane>
 
-      <NTabPane name="groups">
+      <NTabPane name="GROUPS">
         <template #tab>
           <div>
             <p class="text-lg font-medium leading-7 text-main">
@@ -44,6 +38,12 @@
             </p>
           </div>
         </template>
+
+        <UserDataTableByGroup
+          :groups="filteredGroupList"
+          :allow-edit="allowEditGroup"
+          @update-group="handleUpdateGroup"
+        />
       </NTabPane>
 
       <template #suffix>
@@ -84,41 +84,14 @@
             <template #icon>
               <PlusIcon class="h-5 w-5" />
             </template>
-            {{ $t(`settings.members.add-member`) }}
+            {{ $t(`settings.members.add-user`) }}
           </NButton>
         </div>
       </template>
     </NTabs>
 
-    <NTabs
-      v-if="state.typeTab === 'members'"
-      v-model:value="state.tab"
-      class="!mt-2"
-      type="bar"
-    >
-      <NTabPane name="users" :tab="$t('settings.members.view-by-principals')">
-        <UserDataTable
-          :user-list="filteredUserList"
-          @update-user="handleUpdateUser"
-          @select-group="handleUpdateGroup"
-        />
-      </NTabPane>
-      <NTabPane name="roles" :tab="$t('settings.members.view-by-roles')">
-        <UserDataTableByRole
-          :user-list="filteredUserList"
-          @update-user="handleUpdateUser"
-        />
-      </NTabPane>
-    </NTabs>
-    <UserDataTableByGroup
-      v-else
-      :groups="filteredGroupList"
-      :allow-edit="allowEditGroup"
-      @update-group="handleUpdateGroup"
-    />
-
-    <div v-if="inactiveUserList.length > 0 || state.inactiveUserFilterText">
-      <div>
+    <div>
+      <div v-if="inactiveUserList.length > 0 && state.typeTab === 'USERS'">
         <NCheckbox v-model:checked="state.showInactiveUserList">
           <span class="textinfolabel">
             {{ $t("settings.members.show-inactive") }}
@@ -140,7 +113,7 @@
           </div>
         </div>
 
-        <UserDataTable :user-list="inactiveUserList" />
+        <UserDataTable :show-roles="false" :user-list="inactiveUserList" />
       </template>
     </div>
   </div>
@@ -157,10 +130,10 @@
   />
 </template>
 
-<script lang="tsx" setup>
+<script setup lang="ts">
 import { orderBy } from "lodash-es";
 import { PlusIcon } from "lucide-vue-next";
-import { NButton, NCheckbox, NTabs, NTabPane, NPopover } from "naive-ui";
+import { NButton, NTabs, NTabPane, NPopover, NCheckbox } from "naive-ui";
 import { computed, onMounted, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter, RouterLink } from "vue-router";
@@ -169,9 +142,7 @@ import CreateGroupDrawer from "@/components/User/Settings/CreateGroupDrawer.vue"
 import CreateUserDrawer from "@/components/User/Settings/CreateUserDrawer.vue";
 import UserDataTable from "@/components/User/Settings/UserDataTable/index.vue";
 import UserDataTableByGroup from "@/components/User/Settings/UserDataTableByGroup/index.vue";
-import UserDataTableByRole from "@/components/User/Settings/UserDataTableByRole/index.vue";
 import { SearchBox } from "@/components/v2";
-import { SETTING_ROUTE_WORKSPACE_SUBSCRIPTION } from "@/router/dashboard/workspaceSetting";
 import {
   useSubscriptionV1Store,
   useCurrentUserV1,
@@ -193,14 +164,13 @@ import type { Group } from "@/types/proto/v1/group";
 import { WorkspaceProfileSetting } from "@/types/proto/v1/setting_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
-const tabList = ["members", "groups"] as const;
+const tabList = ["USERS", "GROUPS"] as const;
 type MemberTab = (typeof tabList)[number];
 const isMemberTab = (tab: any): tab is MemberTab => tabList.includes(tab);
-const defaultTab: MemberTab = "members";
+const defaultTab: MemberTab = "USERS";
 
 type LocalState = {
   typeTab: MemberTab;
-  tab: "users" | "roles";
   activeUserFilterText: string;
   inactiveUserFilterText: string;
   showInactiveUserList: boolean;
@@ -212,7 +182,6 @@ type LocalState = {
 
 const state = reactive<LocalState>({
   typeTab: defaultTab,
-  tab: "users",
   activeUserFilterText: "",
   inactiveUserFilterText: "",
   showInactiveUserList: false,
@@ -258,10 +227,6 @@ const workspaceProfileSetting = computed(() =>
   )
 );
 
-const hasRBACFeature = computed(() =>
-  subscriptionV1Store.hasFeature("bb.feature.rbac")
-);
-
 const allowCreateGroup = computed(() =>
   hasWorkspacePermissionV2(currentUserV1.value, "bb.groups.create")
 );
@@ -284,7 +249,7 @@ onMounted(() => {
 
   const name = route.query.name as string;
   if (name?.startsWith(groupNamePrefix)) {
-    state.typeTab = "groups";
+    state.typeTab = "GROUPS";
     state.editingGroup = groupStore.groupList.find(
       (group) => group.name === name
     );
@@ -328,13 +293,6 @@ const inactiveUserList = computed(() => {
       (user) => user.roles.includes(PresetRoleType.WORKSPACE_DBA),
     ],
     ["desc", "desc"]
-  );
-});
-
-const showUpgradeInfo = computed(() => {
-  return (
-    !hasRBACFeature.value &&
-    hasWorkspacePermissionV2(currentUserV1.value, "bb.policies.update")
   );
 });
 
