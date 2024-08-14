@@ -161,7 +161,7 @@ const kbarHandler = useKBarHandler();
 const currentUserV1 = useCurrentUserV1();
 
 const show = computed(() => {
-  return true;
+  return !uiStateStore.getIntroStateByKey("hidden");
 });
 
 const sampleProject = computed(() => {
