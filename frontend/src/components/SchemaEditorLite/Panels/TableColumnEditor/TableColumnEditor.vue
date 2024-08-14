@@ -580,7 +580,14 @@ const columns = computed(() => {
 });
 
 const shownColumnList = computed(() => {
-  return props.table.columns.filter(props.filterColumn);
+  const filtered = props.table.columns.filter(props.filterColumn);
+  if (disableDiffColoring.value) {
+    return filtered.filter((column) => {
+      const status = statusForColumn(column);
+      return status !== "dropped";
+    });
+  }
+  return filtered;
 });
 
 const isColumnPrimaryKey = (column: ColumnMetadata): boolean => {

@@ -149,6 +149,11 @@ const flattenItemList = computed(() => {
     partition: TablePartitionMetadata,
     parent?: TablePartitionMetadata
   ) => {
+    if (disableDiffColoring.value) {
+      if (statusForPartition(partition) === "dropped") {
+        return;
+      }
+    }
     list.push({
       partition,
       parent,
