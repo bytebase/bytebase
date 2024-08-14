@@ -44,7 +44,8 @@ defineOptions({
   name: "UserDataTable",
 });
 
-defineProps<{
+const props = defineProps<{
+  showRoles: boolean;
   userList: ComposedUser[];
 }>();
 
@@ -78,6 +79,7 @@ const columns = computed(() => {
       key: "roles",
       title: t("settings.members.table.role"),
       resizable: true,
+      hide: !props.showRoles,
       render: (user: ComposedUser) => {
         return h(UserRolesCell, {
           roles: user.roles,

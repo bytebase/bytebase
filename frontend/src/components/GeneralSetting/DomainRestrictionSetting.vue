@@ -43,14 +43,16 @@
             }}
           </p>
         </NCheckbox>
-        <NButton
-          type="primary"
-          :disabled="!allowSaveUpdates"
-          @click="saveDomainRestrictionSettings"
-        >
-          {{ $t("common.update") }}
-        </NButton>
       </div>
+    </div>
+    <div class="flex justify-end mt-2">
+      <NButton
+        type="primary"
+        :disabled="!allowSaveUpdates"
+        @click="saveDomainRestrictionSettings"
+      >
+        {{ $t("common.update") }}
+      </NButton>
     </div>
   </div>
 </template>

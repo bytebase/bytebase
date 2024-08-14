@@ -35,10 +35,10 @@ import { useCurrentUserV1 } from "@/store";
 import { SYSTEM_BOT_USER_NAME } from "@/types";
 import { unknownUser } from "@/types";
 import { UserType } from "@/types/proto/v1/auth_service";
-import type { ProjectBinding } from "../../types";
+import type { MemberBinding } from "../../types";
 
 const props = defineProps<{
-  projectMember: ProjectBinding;
+  projectMember: MemberBinding;
 }>();
 
 const currentUserV1 = useCurrentUserV1();

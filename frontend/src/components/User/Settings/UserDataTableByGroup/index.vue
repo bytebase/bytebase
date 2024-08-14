@@ -62,7 +62,7 @@ const columns = computed(() => {
   return [
     {
       key: "group-members",
-      title: `${t("settings.members.groups.self")} / ${t("common.members")}`,
+      title: `${t("settings.members.groups.self")} / ${t("common.users")}`,
       className: "flex items-center",
       render: (row: GroupRowData | UserRowData) => {
         if (row.type === "group") {

@@ -4,8 +4,8 @@
       class="w-[40rem] max-w-[100vw]"
       :title="
         isCreating
-          ? $t('settings.members.add-member')
-          : $t('settings.members.update-member')
+          ? $t('settings.members.add-user')
+          : $t('settings.members.update-user')
       "
     >
       <template #default>
@@ -45,19 +45,13 @@
           </NFormItem>
           <NFormItem :label="$t('common.email')" required>
             <div
-              v-if="
-                isCreating && state.user.userType === UserType.SERVICE_ACCOUNT
-              "
+              v-if="state.user.userType === UserType.SERVICE_ACCOUNT"
               class="w-full flex flex-col items-start"
             >
-              <NInput
+              <EmailInput
                 v-model:value="state.user.email"
-                :input-props="{ type: 'text', autocomplete: 'new-password' }"
-                placeholder="foo"
+                :domain="serviceAccountEmailSuffix"
               />
-              <span class="mt-1 textinfolabel">
-                {{ serviceAccountEmailSuffix }}
-              </span>
             </div>
             <EmailInput
               v-else
@@ -212,7 +206,7 @@ interface LocalState {
   passwordConfirm: string;
 }
 
-const serviceAccountEmailSuffix = "@service.bytebase.com";
+const serviceAccountEmailSuffix = "service.bytebase.com";
 
 const props = defineProps<{
   user?: ComposedUser;
@@ -380,10 +374,6 @@ const handleArchiveUser = async () => {
 
 const tryCreateOrUpdateUser = async () => {
   if (isCreating.value) {
-    if (state.user.userType === UserType.SERVICE_ACCOUNT) {
-      state.user.email += serviceAccountEmailSuffix;
-    }
-
     await userStore.createUser({
       ...state.user,
       title: state.user.title || extractUserTitle(state.user.email),
