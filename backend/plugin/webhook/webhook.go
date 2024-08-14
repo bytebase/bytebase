@@ -71,22 +71,23 @@ type Project struct {
 
 // Context is the context of webhook.
 type Context struct {
-	URL                 string
-	Level               Level
-	ActivityType        string
-	Title               string
-	TitleZh             string
-	Description         string
-	Link                string
-	CreatorID           int
-	CreatorName         string
-	CreatorEmail        string
-	CreatedTs           int64
-	Issue               *Issue
-	Stage               *Stage
-	Project             *Project
-	TaskResult          *TaskResult
-	MentionUsers        []*store.UserMessage
+	URL          string
+	Level        Level
+	ActivityType string
+	Title        string
+	TitleZh      string
+	Description  string
+	Link         string
+	CreatorID    int
+	CreatorName  string
+	CreatorEmail string
+	CreatedTs    int64
+	Issue        *Issue
+	Stage        *Stage
+	Project      *Project
+	TaskResult   *TaskResult
+	// End users that should be mentioned.
+	MentionEndUsers     []*store.UserMessage
 	MentionUsersByPhone []string
 
 	DirectMessage bool
