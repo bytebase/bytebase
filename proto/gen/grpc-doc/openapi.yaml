@@ -7770,10 +7770,6 @@ paths:
                      Format: instances/{instance}/databases/{databaseName}
                   schema:
                     type: string
-                - name: connectionDatabase
-                  in: query
-                  schema:
-                    type: string
                 - name: statement
                   in: query
                   description: The SQL statement to execute.
@@ -9585,8 +9581,6 @@ components:
                         The name is the instance name to execute the query against.
                          Format: instances/{instance}/databases/{databaseName}
                          Format: projects/{project}/issues/{issue} for data export issue.
-                connectionDatabase:
-                    type: string
                 statement:
                     type: string
                     description: The SQL statement to execute.
@@ -11731,8 +11725,6 @@ components:
                     description: |-
                         The name is the instance name to execute the query against.
                          Format: instances/{instance}/databases/{databaseName}
-                connectionDatabase:
-                    type: string
                 statement:
                     type: string
                     description: The SQL statement to execute.
