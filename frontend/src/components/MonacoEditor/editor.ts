@@ -19,11 +19,7 @@ const state = {
   themeInitialized: false,
 };
 
-buildWorkerDefinition(
-  new URL("@public/monaco-workers", import.meta.url).href,
-  import.meta.url,
-  true
-);
+buildWorkerDefinition("/monaco-workers", import.meta.url, true);
 
 const MonacoEditorReadyDefer = defer<void>();
 

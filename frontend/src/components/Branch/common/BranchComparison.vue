@@ -31,8 +31,8 @@
       <div class="flex-1 w-full relative text-sm border rounded overflow-clip">
         <DiffEditor
           :readonly="true"
-          :original="virtualBranch?.baselineSchema ?? ''"
-          :modified="virtualBranch?.schema ?? ''"
+          :original="ready ? (virtualBranch?.baselineSchema ?? '') : ''"
+          :modified="ready ? (virtualBranch?.schema ?? '') : ''"
           class="h-full"
         />
       </div>
@@ -57,6 +57,7 @@
 </template>
 
 <script lang="ts" setup>
+import { computedAsync } from "@vueuse/core";
 import { cloneDeep } from "lodash-es";
 import { NTab, NTabs } from "naive-ui";
 import { v1 as uuidv1 } from "uuid";
@@ -68,6 +69,7 @@ import { useDatabaseV1Store } from "@/store";
 import type { ComposedProject } from "@/types";
 import { Branch } from "@/types/proto/v1/branch_service";
 import { DatabaseMetadata } from "@/types/proto/v1/database_service";
+import { nextAnimationFrame } from "@/utils";
 
 type TabValue = "schema-text" | "visualized-schema";
 
@@ -84,6 +86,12 @@ const schemaEditorRef = ref<InstanceType<typeof SchemaEditorLite>>();
 const combinedLoading = computed(() => {
   return props.isBaseLoading || props.isHeadLoading;
 });
+const ready = computedAsync(async () => {
+  const loading = combinedLoading.value;
+  if (loading) return false;
+  await nextAnimationFrame();
+  return true;
+}, false);
 
 const emptyBranch = () => {
   return Branch.fromPartial({});
