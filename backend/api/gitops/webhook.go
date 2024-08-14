@@ -181,7 +181,9 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 			if err != nil {
 				return c.String(http.StatusOK, fmt.Sprintf("failed to exec sql review for pull request %s, error %v", prInfo.url, err))
 			}
-			comment = fmt.Sprintf("%s\n\n---\n\nClick [here](%s) to check the SQL review config", comment, fmt.Sprintf("%s/sql-review", setting.ExternalUrl))
+			if comment != "" {
+				comment = fmt.Sprintf("%s\n\n---\n\nClick [here](%s) to check the SQL review config", comment, fmt.Sprintf("%s/sql-review", setting.ExternalUrl))
+			}
 			commentPrefix = commentPrefixSQLReview
 		default:
 		}
