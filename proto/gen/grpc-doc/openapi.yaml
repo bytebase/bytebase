@@ -9587,11 +9587,6 @@ components:
                     type: string
                     description: The export format.
                     format: enum
-                admin:
-                    type: boolean
-                    description: |-
-                        The admin is used for workspace owner and DBA for exporting data from SQL Editor Admin mode.
-                         The exported data is not masked.
                 password:
                     type: string
                     description: The zip password provide by users.
