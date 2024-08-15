@@ -215,7 +215,10 @@ const memberListInBinding = computed(() => {
 const updateRoleBinding = async () => {
   const batchPatch = [];
   for (const member of memberListInBinding.value) {
-    const existedRoles = workspaceStore.findRolesByMember(member);
+    const existedRoles = workspaceStore.findRolesByMember({
+      member,
+      ignoreGroup: true,
+    });
     batchPatch.push({
       member,
       roles: [...new Set([...state.roles, ...existedRoles])],

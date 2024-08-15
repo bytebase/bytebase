@@ -30,12 +30,9 @@ import {
   DatabaseChangeModeSetting,
   MaximumSQLResultSizeSetting,
 } from "@/components/GeneralSetting";
-import { useCurrentUserV1 } from "@/store";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
-const me = useCurrentUserV1();
-
 const allowEdit = computed((): boolean => {
-  return hasWorkspacePermissionV2(me.value, "bb.settings.set");
+  return hasWorkspacePermissionV2("bb.settings.set");
 });
 </script>

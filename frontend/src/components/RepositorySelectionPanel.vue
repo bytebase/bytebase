@@ -48,11 +48,7 @@ import { reactive, computed, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBAttention } from "@/bbkit";
 import BBSpin from "@/bbkit/BBSpin.vue";
-import {
-  pushNotification,
-  useCurrentUserV1,
-  useVCSProviderStore,
-} from "@/store";
+import { pushNotification, useVCSProviderStore } from "@/store";
 import type { ProjectRepositoryConfig } from "@/types";
 import { VCSType } from "@/types/proto/v1/common";
 import type { VCSRepository } from "@/types/proto/v1/vcs_provider_service";
@@ -73,7 +69,6 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const currentUser = useCurrentUserV1();
 const vcsV1Store = useVCSProviderStore();
 const state = reactive<LocalState>({
   repositoryList: [],
@@ -86,12 +81,7 @@ onMounted(() => {
 });
 
 const refreshRepositoryList = async () => {
-  if (
-    !hasWorkspacePermissionV2(
-      currentUser.value,
-      "bb.vcsProviders.searchProjects"
-    )
-  ) {
+  if (!hasWorkspacePermissionV2("bb.vcsProviders.searchProjects")) {
     pushNotification({
       module: "bytebase",
       style: "CRITICAL",

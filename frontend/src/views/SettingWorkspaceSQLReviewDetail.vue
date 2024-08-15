@@ -173,7 +173,6 @@ import { rulesToTemplate } from "@/components/SQLReview/components/utils";
 import { WORKSPACE_ROUTE_SQL_REVIEW } from "@/router/dashboard/workspaceRoutes";
 import {
   pushNotification,
-  useCurrentUserV1,
   useSQLReviewStore,
   useSubscriptionV1Store,
 } from "@/store";
@@ -208,7 +207,6 @@ const { t } = useI18n();
 const store = useSQLReviewStore();
 const router = useRouter();
 const route = useRoute();
-const currentUserV1 = useCurrentUserV1();
 const subscriptionStore = useSubscriptionV1Store();
 
 const state = reactive<LocalState>({
@@ -223,7 +221,7 @@ const state = reactive<LocalState>({
 });
 
 const hasPermission = computed(() => {
-  return hasWorkspacePermissionV2(currentUserV1.value, "bb.policies.update");
+  return hasWorkspacePermissionV2("bb.policies.update");
 });
 
 const sqlReviewName = computed(() =>

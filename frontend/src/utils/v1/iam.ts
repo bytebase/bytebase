@@ -111,7 +111,11 @@ export const memberListInIAM = (iamPolicy: IamPolicy) => {
   );
 };
 
-export const roleListInIAM = (iamPolicy: IamPolicy, email: string) => {
+export const roleListInIAM = (
+  iamPolicy: IamPolicy,
+  email: string,
+  ignoreGroup: boolean = false
+) => {
   const groupStore = useGroupStore();
   const userInBinding = getUserEmailInBinding(email);
 
@@ -131,7 +135,7 @@ export const roleListInIAM = (iamPolicy: IamPolicy, email: string) => {
           return true;
         }
 
-        if (member.startsWith(groupBindingPrefix)) {
+        if (!ignoreGroup && member.startsWith(groupBindingPrefix)) {
           const group = groupStore.getGroupByIdentifier(member);
           if (!group) {
             continue;

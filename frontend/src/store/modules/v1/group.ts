@@ -2,7 +2,6 @@ import { orderBy } from "lodash-es";
 import { defineStore } from "pinia";
 import { computed, reactive } from "vue";
 import { groupServiceClient } from "@/grpcweb";
-import { useCurrentUserV1 } from "@/store";
 import type { Group } from "@/types/proto/v1/group";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import { groupNamePrefix } from "./common";
@@ -13,7 +12,6 @@ export const extractGroupEmail = (emailResource: string) => {
 };
 
 export const useGroupStore = defineStore("group", () => {
-  const currentUser = useCurrentUserV1();
   const groupMapByName = reactive(new Map<string, Group>());
   const resetCache = () => {
     groupMapByName.clear();
@@ -40,7 +38,7 @@ export const useGroupStore = defineStore("group", () => {
   };
 
   const fetchGroupList = async () => {
-    if (!hasWorkspacePermissionV2(currentUser.value, "bb.groups.list")) {
+    if (!hasWorkspacePermissionV2("bb.groups.list")) {
       return [];
     }
 
@@ -53,7 +51,7 @@ export const useGroupStore = defineStore("group", () => {
   };
 
   const getOrFetchGroupByEmail = async (email: string) => {
-    if (!hasWorkspacePermissionV2(currentUser.value, "bb.groups.get")) {
+    if (!hasWorkspacePermissionV2("bb.groups.get")) {
       return;
     }
 

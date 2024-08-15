@@ -39,7 +39,7 @@ import {
   EnvironmentV1Name,
   SpinnerSwitch,
 } from "@/components/v2";
-import { useCurrentUserV1, useEnvironmentV1Store } from "@/store";
+import { useEnvironmentV1Store } from "@/store";
 import type { ComposedSlowQueryPolicy } from "@/types";
 import type { InstanceResource } from "@/types/proto/v1/instance_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
@@ -51,7 +51,6 @@ defineProps<{
 
 const { t } = useI18n();
 const environmentStore = useEnvironmentV1Store();
-const currentUserV1 = useCurrentUserV1();
 
 const COLUMNS = computed((): BBGridColumn[] => {
   return [
@@ -71,6 +70,6 @@ const COLUMNS = computed((): BBGridColumn[] => {
 });
 
 const allowAdmin = computed(() => {
-  return hasWorkspacePermissionV2(currentUserV1.value, "bb.policies.update");
+  return hasWorkspacePermissionV2("bb.policies.update");
 });
 </script>

@@ -138,7 +138,6 @@ import {
 import {
   hasWorkspacePermissionV2,
   hasProjectPermissionV2,
-  hasWorkspaceLevelProjectPermission,
   extractProjectResourceName,
 } from "@/utils";
 
@@ -201,11 +200,7 @@ const introList = computed(() => {
       done: computed(() => uiStateStore.getIntroStateByKey("issue.visit")),
       hide:
         !sampleProject.value ||
-        !hasProjectPermissionV2(
-          sampleProject.value,
-          currentUserV1.value,
-          "bb.issues.get"
-        ),
+        !hasProjectPermissionV2(sampleProject.value, "bb.issues.get"),
     },
     {
       name: computed(() => t("quick-start.query-data")),
@@ -219,11 +214,7 @@ const introList = computed(() => {
       done: computed(() => uiStateStore.getIntroStateByKey("data.query")),
       hide:
         !sampleProject.value ||
-        !hasProjectPermissionV2(
-          sampleProject.value,
-          currentUserV1.value,
-          "bb.databases.query"
-        ),
+        !hasProjectPermissionV2(sampleProject.value, "bb.databases.query"),
     },
     {
       name: computed(() => t("quick-start.visit-project")),
@@ -270,7 +261,7 @@ const introList = computed(() => {
     (item) =>
       !item.hide &&
       (item.requiredPermissions ?? []).every((permission) =>
-        hasWorkspacePermissionV2(currentUserV1.value, permission)
+        hasWorkspacePermissionV2(permission)
       )
   );
 });
@@ -363,9 +354,7 @@ watchEffect(async () => {
     return;
   }
 
-  if (
-    hasWorkspaceLevelProjectPermission(currentUserV1.value, "bb.projects.get")
-  ) {
+  if (hasWorkspacePermissionV2("bb.projects.get")) {
     try {
       await projectStore.getOrFetchProjectByName(
         "projects/101",

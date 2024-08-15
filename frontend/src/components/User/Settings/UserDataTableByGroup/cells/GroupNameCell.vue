@@ -66,6 +66,6 @@ const allowGetGroup = computed(() => {
   ) {
     return true;
   }
-  return hasWorkspacePermissionV2(currentUser.value, "bb.groups.get");
+  return hasWorkspacePermissionV2("bb.groups.get");
 });
 </script>

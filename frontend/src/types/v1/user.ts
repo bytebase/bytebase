@@ -7,6 +7,7 @@ export const UNKNOWN_USER_NAME = `users/${UNKNOWN_ID}`;
 export const SYSTEM_BOT_USER_NAME = `users/${SYSTEM_BOT_ID}`;
 
 export interface ComposedUser extends User {
+  // TODO(ed): deprecate.
   roles: string[];
 }
 

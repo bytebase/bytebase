@@ -17,7 +17,7 @@ import type { DataTableColumn } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBButtonConfirm } from "@/bbkit";
-import { pushNotification, useCurrentUserV1, useSQLReviewStore } from "@/store";
+import { pushNotification, useSQLReviewStore } from "@/store";
 import type { SQLReviewPolicy } from "@/types";
 import { SQLReviewRuleLevel } from "@/types/proto/v1/org_policy_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
@@ -46,7 +46,6 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const currentUserV1 = useCurrentUserV1();
 const sqlReviewStore = useSQLReviewStore();
 
 const columns = computed(
@@ -172,11 +171,11 @@ const rowProps = (review: SQLReviewPolicy) => {
 };
 
 const hasUpdatePolicyPermission = computed(() => {
-  return hasWorkspacePermissionV2(currentUserV1.value, "bb.policies.update");
+  return hasWorkspacePermissionV2("bb.policies.update");
 });
 
 const hasDeletePolicyPermission = computed(() => {
-  return hasWorkspacePermissionV2(currentUserV1.value, "bb.policies.delete");
+  return hasWorkspacePermissionV2("bb.policies.delete");
 });
 
 const toggleReviewEnabled = async (review: SQLReviewPolicy, on: boolean) => {

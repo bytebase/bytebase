@@ -53,7 +53,7 @@ const hideHelp = useAppFeature("bb.feature.hide-help");
 // For now, debug mode is a global setting and will affect all users.
 // So we only allow DBA and Owner to toggle it.
 const allowToggleDebug = computed(() => {
-  return hasWorkspacePermissionV2(currentUserV1.value, "bb.settings.set");
+  return hasWorkspacePermissionV2("bb.settings.set");
 });
 const { currentPlan } = storeToRefs(subscriptionStore);
 

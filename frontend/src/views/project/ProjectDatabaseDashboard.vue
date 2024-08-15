@@ -5,12 +5,7 @@
 <script lang="ts" setup>
 import { computed } from "vue";
 import ProjectDatabasesPanel from "@/components/ProjectDatabasesPanel.vue";
-import {
-  useDatabaseV1Store,
-  useCurrentUserV1,
-  useAppFeature,
-  useProjectByName,
-} from "@/store";
+import { useDatabaseV1Store, useAppFeature, useProjectByName } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { sortDatabaseV1List, isDatabaseV1Alterable } from "@/utils";
 
@@ -18,7 +13,6 @@ const props = defineProps<{
   projectId: string;
 }>();
 
-const currentUser = useCurrentUserV1();
 const { project } = useProjectByName(
   computed(() => `${projectNamePrefix}${props.projectId}`)
 );
@@ -31,7 +25,7 @@ const databaseV1List = computed(() => {
   list = sortDatabaseV1List(list);
   // If embedded in iframe, only show alterable databases.
   if (hideInalterableDatabases.value) {
-    list = list.filter((db) => isDatabaseV1Alterable(db, currentUser.value));
+    list = list.filter((db) => isDatabaseV1Alterable(db));
   }
   return list;
 });

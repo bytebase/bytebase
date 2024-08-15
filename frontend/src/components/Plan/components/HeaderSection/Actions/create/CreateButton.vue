@@ -44,7 +44,7 @@ import { usePlanContext } from "@/components/Plan/logic";
 import { useSQLCheckContext } from "@/components/SQLCheck";
 import { planServiceClient } from "@/grpcweb";
 import { PROJECT_V1_ROUTE_PLAN_DETAIL } from "@/router/dashboard/projectV1";
-import { useCurrentUserV1, useDatabaseV1Store, useSheetV1Store } from "@/store";
+import { useDatabaseV1Store, useSheetV1Store } from "@/store";
 import { dialectOfEngineV1, languageOfEngineV1 } from "@/types";
 import { type Plan_ChangeDatabaseConfig } from "@/types/proto/v1/plan_service";
 import type { Sheet } from "@/types/proto/v1/sheet_service";
@@ -66,18 +66,11 @@ const router = useRouter();
 const { plan, formatOnSave } = usePlanContext();
 const { runSQLCheck } = useSQLCheckContext();
 const sheetStore = useSheetV1Store();
-const me = useCurrentUserV1();
 const loading = ref(false);
 
 const planCreateErrorList = computed(() => {
   const errorList: string[] = [];
-  if (
-    !hasProjectPermissionV2(
-      plan.value.projectEntity,
-      me.value,
-      "bb.plans.create"
-    )
-  ) {
+  if (!hasProjectPermissionV2(plan.value.projectEntity, "bb.plans.create")) {
     errorList.push(t("common.missing-permission"));
   }
   if (!plan.value.title.trim()) {

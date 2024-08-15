@@ -1,6 +1,6 @@
 import type { InjectionKey, Ref } from "vue";
 import { computed, inject, provide } from "vue";
-import { useDatabaseV1Store, useCurrentUserV1 } from "@/store";
+import { useDatabaseV1Store } from "@/store";
 import {
   databaseNamePrefix,
   instanceNamePrefix,
@@ -43,7 +43,6 @@ export const provideDatabaseDetailContext = (
   instanceId: Ref<string>,
   databaseName: Ref<string>
 ) => {
-  const me = useCurrentUserV1();
   const databaseV1Store = useDatabaseV1Store();
 
   const database: Ref<ComposedDatabase> = computed(() => {
@@ -53,11 +52,7 @@ export const provideDatabaseDetailContext = (
   });
 
   const checkPermission = (permission: Permission): boolean => {
-    return hasProjectPermissionV2(
-      database.value.projectEntity,
-      me.value,
-      permission
-    );
+    return hasProjectPermissionV2(database.value.projectEntity, permission);
   };
 
   const allowGetDatabase = computed(() => checkPermission("bb.databases.get"));
@@ -83,13 +78,13 @@ export const provideDatabaseDetailContext = (
   const allowChangeData = computed(() => {
     return (
       database.value.project !== DEFAULT_PROJECT_NAME &&
-      hasPermissionToCreateChangeDatabaseIssue(database.value, me.value)
+      hasPermissionToCreateChangeDatabaseIssue(database.value)
     );
   });
   const allowAlterSchema = computed(() => {
     return (
       database.value.project !== DEFAULT_PROJECT_NAME &&
-      hasPermissionToCreateChangeDatabaseIssue(database.value, me.value) &&
+      hasPermissionToCreateChangeDatabaseIssue(database.value) &&
       instanceV1HasAlterSchema(database.value.instanceResource)
     );
   });

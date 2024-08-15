@@ -103,7 +103,6 @@ import TransferOutDatabaseForm from "@/components/TransferOutDatabaseForm";
 import { Drawer } from "@/components/v2";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
-  useCurrentUserV1,
   useCurrentUserIamPolicy,
   useProjectV1Store,
   useDatabaseV1Store,
@@ -166,7 +165,6 @@ const router = useRouter();
 const databaseStore = useDatabaseV1Store();
 const projectStore = useProjectV1Store();
 const dbSchemaStore = useDBSchemaV1Store();
-const currentUserV1 = useCurrentUserV1();
 const currentUserIamPolicy = useCurrentUserIamPolicy();
 const disableSchemaEditor = useAppFeature(
   "bb.feature.issue.disable-schema-editor"
@@ -217,13 +215,7 @@ const canEditDatabase = (
     return true;
   }
 
-  if (
-    hasProjectPermissionV2(
-      db.projectEntity,
-      currentUserV1.value,
-      requiredProjectPermission
-    )
-  ) {
+  if (hasProjectPermissionV2(db.projectEntity, requiredProjectPermission)) {
     return true;
   }
 
@@ -238,13 +230,13 @@ const databaseSupportAlterSchema = computed(() => {
 
 const allowEditSchema = computed(() => {
   return props.databases.every((db) => {
-    return hasPermissionToCreateChangeDatabaseIssue(db, currentUserV1.value);
+    return hasPermissionToCreateChangeDatabaseIssue(db);
   });
 });
 
 const allowChangeData = computed(() => {
   return props.databases.every((db) =>
-    hasPermissionToCreateChangeDatabaseIssue(db, currentUserV1.value)
+    hasPermissionToCreateChangeDatabaseIssue(db)
   );
 });
 
@@ -256,29 +248,21 @@ const allowTransferProject = computed(() => {
 
 const allowExportData = computed(() => {
   return props.databases.every((db) => {
-    return hasPermissionToCreateDataExportIssue(db, currentUserV1.value);
+    return hasPermissionToCreateDataExportIssue(db);
   });
 });
 
 const allowEditLabels = computed(() => {
   return props.databases.every((db) => {
     const project = db.projectEntity;
-    return hasProjectPermissionV2(
-      project,
-      currentUserV1.value,
-      "bb.databases.update"
-    );
+    return hasProjectPermissionV2(project, "bb.databases.update");
   });
 });
 
 const allowSyncDatabases = computed(() => {
   return props.databases.every((db) => {
     const project = db.projectEntity;
-    return hasProjectPermissionV2(
-      project,
-      currentUserV1.value,
-      "bb.databases.sync"
-    );
+    return hasProjectPermissionV2(project, "bb.databases.sync");
   });
 });
 

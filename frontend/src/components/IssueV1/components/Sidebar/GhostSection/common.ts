@@ -79,11 +79,7 @@ export const provideIssueGhostContext = () => {
 
     if (extractUserResourceName(issue.value.creator) !== me.value.email) {
       if (
-        !hasProjectPermissionV2(
-          issue.value.projectEntity,
-          me.value,
-          "bb.plans.update"
-        )
+        !hasProjectPermissionV2(issue.value.projectEntity, "bb.plans.update")
       ) {
         return [t("issue.error.you-don-have-privilege-to-edit-this-issue")];
       }

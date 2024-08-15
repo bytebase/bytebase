@@ -27,7 +27,7 @@ import { useRouter } from "vue-router";
 import { BBAttention } from "@/bbkit";
 import { useLanguage } from "@/composables/useLanguage";
 import { SETTING_ROUTE_WORKSPACE_SUBSCRIPTION } from "@/router/dashboard/workspaceSetting";
-import { useSubscriptionV1Store, useCurrentUserV1 } from "@/store";
+import { useSubscriptionV1Store } from "@/store";
 import type { FeatureType } from "@/types";
 import { planTypeToString, ENTERPRISE_INQUIRE_LINK } from "@/types";
 import type {
@@ -75,14 +75,11 @@ const state = reactive<LocalState>({
 });
 
 const hasPermission = computed(() =>
-  hasWorkspacePermissionV2(useCurrentUserV1().value, "bb.settings.set")
+  hasWorkspacePermissionV2("bb.settings.set")
 );
 
 const canManageInstanceLicense = computed((): boolean => {
-  return hasWorkspacePermissionV2(
-    useCurrentUserV1().value,
-    "bb.instances.update"
-  );
+  return hasWorkspacePermissionV2("bb.instances.update");
 });
 
 const hasFeature = computed(() => {

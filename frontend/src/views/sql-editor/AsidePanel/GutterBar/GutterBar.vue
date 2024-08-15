@@ -35,7 +35,6 @@ import { storeToRefs } from "pinia";
 import { computed, toRef, watch } from "vue";
 import {
   useConnectionOfCurrentSQLEditorTab,
-  useCurrentUserV1,
   useAppFeature,
   useSQLEditorStore,
   useSQLEditorTabStore,
@@ -57,7 +56,6 @@ const props = withDefaults(
   }
 );
 
-const me = useCurrentUserV1();
 const { currentTab, isDisconnected } = storeToRefs(useSQLEditorTabStore());
 const { asidePanelTab } = useSQLEditorContext();
 const { strictProject } = storeToRefs(useSQLEditorStore());
@@ -95,7 +93,6 @@ const showSchemaPane = computed(() => {
 
   return hasProjectPermissionV2(
     database.value.projectEntity,
-    me.value,
     "bb.databases.getSchema"
   );
 });

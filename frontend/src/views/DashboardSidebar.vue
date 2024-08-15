@@ -52,7 +52,6 @@ import {
   WORKSPACE_ROUTE_USER_PROFILE,
   WORKSPACE_ROUTE_IM,
 } from "@/router/dashboard/workspaceRoutes";
-import { useCurrentUserV1 } from "@/store";
 import type { Permission } from "@/types";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
@@ -63,7 +62,6 @@ interface DashboardSidebarItem extends SidebarItem {
 }
 
 const { t } = useI18n();
-const currentUserV1 = useCurrentUserV1();
 const route = useRoute();
 const router = useRouter();
 
@@ -135,7 +133,7 @@ const filterSidebarByPermissions = (
         (workspaceRoute) => workspaceRoute.name === item.name
       );
       return (routeConfig?.permissions ?? []).every((permission) =>
-        hasWorkspacePermissionV2(currentUserV1.value, permission)
+        hasWorkspacePermissionV2(permission)
       );
     })
     .map((item) => ({

@@ -68,7 +68,6 @@ import { onMounted } from "vue";
 import MaskSpinner from "@/components/misc/MaskSpinner.vue";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import {
-  useCurrentUserV1,
   useDatabaseV1Store,
   useIsLoggedIn,
   useSQLEditorTabStore,
@@ -106,7 +105,6 @@ const treeStore = useSQLEditorTreeStore();
 const tabStore = useSQLEditorTabStore();
 const databaseStore = useDatabaseV1Store();
 const isLoggedIn = useIsLoggedIn();
-const me = useCurrentUserV1();
 
 const editorContext = useSQLEditorContext();
 const { events: editorEvents, showConnectionPanel } = editorContext;
@@ -206,7 +204,7 @@ const expandNodesByType = <T extends SQLEditorTreeNodeType>(
 };
 
 const canQueryDatabase = (database: ComposedDatabase): boolean => {
-  return isDatabaseV1Queryable(database, me.value);
+  return isDatabaseV1Queryable(database);
 };
 
 // dynamic render the highlight keywords

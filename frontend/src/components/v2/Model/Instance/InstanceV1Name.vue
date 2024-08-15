@@ -29,7 +29,6 @@
 <script lang="ts" setup>
 import { NEllipsis } from "naive-ui";
 import { computed } from "vue";
-import { useCurrentUserV1 } from "@/store";
 import type {
   Instance,
   InstanceResource,
@@ -59,8 +58,6 @@ const props = withDefaults(
   }
 );
 
-const currentUser = useCurrentUserV1();
-
 const bindings = computed(() => {
   if (props.link) {
     return {
@@ -77,8 +74,6 @@ const bindings = computed(() => {
 
 // Only show the link if the user has permission to view the instance.
 const showLink = computed(
-  () =>
-    props.link &&
-    hasWorkspacePermissionV2(currentUser.value, "bb.instances.get")
+  () => props.link && hasWorkspacePermissionV2("bb.instances.get")
 );
 </script>

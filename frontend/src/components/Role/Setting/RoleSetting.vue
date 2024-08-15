@@ -58,7 +58,7 @@ import { NButton } from "naive-ui";
 import { computed, onMounted, reactive, ref } from "vue";
 import { BBSpin } from "@/bbkit";
 import { FeatureBadge, FeatureModal } from "@/components/FeatureGuard";
-import { featureToRef, useCurrentUserV1, useRoleStore } from "@/store";
+import { featureToRef, useRoleStore } from "@/store";
 import { PRESET_ROLES } from "@/types";
 import { Role } from "@/types/proto/v1/role_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
@@ -88,12 +88,11 @@ const state = reactive<LocalState>({
   },
 });
 
-const currentUser = useCurrentUserV1();
 const hasCustomRoleFeature = featureToRef("bb.feature.custom-role");
 const showFeatureModal = ref(false);
 
 const allowCreateRole = computed(() => {
-  return hasWorkspacePermissionV2(currentUser.value, "bb.roles.create");
+  return hasWorkspacePermissionV2("bb.roles.create");
 });
 
 const filteredRoleList = computed(() => {

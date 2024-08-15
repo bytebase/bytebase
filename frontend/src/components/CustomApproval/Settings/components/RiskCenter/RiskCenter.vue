@@ -23,7 +23,7 @@
 import { groupBy } from "lodash-es";
 import { NButton } from "naive-ui";
 import { computed, watch } from "vue";
-import { useCurrentUserV1, useRiskStore } from "@/store";
+import { useRiskStore } from "@/store";
 import { PresetRiskLevelList, SupportedSourceList } from "@/types";
 import { Risk, Risk_Source } from "@/types/proto/v1/risk_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
@@ -32,13 +32,12 @@ import RiskSection from "./RiskSection.vue";
 import { useRiskCenterContext } from "./context";
 
 const context = useRiskCenterContext();
-const currentUser = useCurrentUserV1();
 const riskStore = useRiskStore();
 const filter = useRiskFilter();
 const { hasFeature, showFeatureModal } = context;
 
 const allowCreateRisk = computed(() => {
-  return hasWorkspacePermissionV2(currentUser.value, "bb.risks.create");
+  return hasWorkspacePermissionV2("bb.risks.create");
 });
 
 const filteredRiskList = computed(() => {

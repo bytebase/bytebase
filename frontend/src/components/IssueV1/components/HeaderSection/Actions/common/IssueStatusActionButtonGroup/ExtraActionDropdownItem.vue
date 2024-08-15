@@ -18,7 +18,6 @@ import {
   allowUserToApplyIssueStatusAction,
   useIssueContext,
 } from "@/components/IssueV1/logic";
-import { useCurrentUserV1 } from "@/store";
 import type { ExtraActionOption } from "../types";
 
 const props = defineProps<{
@@ -26,7 +25,6 @@ const props = defineProps<{
 }>();
 
 const { issue } = useIssueContext();
-const currentUser = useCurrentUserV1();
 
 const errors = computed(() => {
   const errors: string[] = [];
@@ -34,7 +32,6 @@ const errors = computed(() => {
   if (type === "ISSUE") {
     const [ok, reason] = allowUserToApplyIssueStatusAction(
       issue.value,
-      currentUser.value,
       action as IssueStatusAction
     );
     if (!ok) {

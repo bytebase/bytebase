@@ -3,7 +3,6 @@ import {
   DEFAULT_PROJECT_NAME,
   PresetRoleType,
   type ComposedProject,
-  type ComposedUser,
 } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import type { Project } from "@/types/proto/v1/project_service";
@@ -14,37 +13,25 @@ export const extractProjectResourceName = (name: string) => {
   return matches?.[1] ?? "";
 };
 
-export const isMemberOfProjectV1 = (
-  project: ComposedProject,
-  user: ComposedUser
-) => {
-  return usePermissionStore().roleListInProjectV1(project, user).length > 0;
+export const isMemberOfProjectV1 = (project: ComposedProject) => {
+  return usePermissionStore().currentRoleListInProjectV1(project).length > 0;
 };
 
-export const isOwnerOfProjectV1 = (
-  project: ComposedProject,
-  user: ComposedUser
-) => {
+export const isOwnerOfProjectV1 = (project: ComposedProject) => {
   return usePermissionStore()
-    .roleListInProjectV1(project, user)
+    .currentRoleListInProjectV1(project)
     .includes(PresetRoleType.PROJECT_OWNER);
 };
 
-export const isDeveloperOfProjectV1 = (
-  project: ComposedProject,
-  user: ComposedUser
-) => {
+export const isDeveloperOfProjectV1 = (project: ComposedProject) => {
   return usePermissionStore()
-    .roleListInProjectV1(project, user)
+    .currentRoleListInProjectV1(project)
     .includes(PresetRoleType.PROJECT_DEVELOPER);
 };
 
-export const isViewerOfProjectV1 = (
-  project: ComposedProject,
-  user: ComposedUser
-) => {
+export const isViewerOfProjectV1 = (project: ComposedProject) => {
   return usePermissionStore()
-    .roleListInProjectV1(project, user)
+    .currentRoleListInProjectV1(project)
     .includes(PresetRoleType.PROJECT_VIEWER);
 };
 

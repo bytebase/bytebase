@@ -34,7 +34,6 @@ import {
 } from "@/router/dashboard/projectV1";
 import {
   useVCSConnectorStore,
-  useCurrentUserV1,
   useVCSProviderStore,
   useProjectByName,
 } from "@/store";
@@ -50,7 +49,6 @@ const props = defineProps<{
 
 const { t } = useI18n();
 const router = useRouter();
-const currentUser = useCurrentUserV1();
 const vcsV1Store = useVCSProviderStore();
 const vcsConnectorStore = useVCSConnectorStore();
 const { project } = useProjectByName(
@@ -58,19 +56,11 @@ const { project } = useProjectByName(
 );
 
 const allowCreate = computed(() => {
-  return hasProjectPermissionV2(
-    project.value,
-    currentUser.value,
-    "bb.vcsConnectors.create"
-  );
+  return hasProjectPermissionV2(project.value, "bb.vcsConnectors.create");
 });
 
 const allowView = computed(() => {
-  return hasProjectPermissionV2(
-    project.value,
-    currentUser.value,
-    "bb.vcsConnectors.get"
-  );
+  return hasProjectPermissionV2(project.value, "bb.vcsConnectors.get");
 });
 
 const createConnector = () => {

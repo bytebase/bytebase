@@ -2,7 +2,6 @@ import { useLocalStorage } from "@vueuse/core";
 import { cloneDeep, orderBy, pullAt, uniq } from "lodash-es";
 import { defineStore, storeToRefs } from "pinia";
 import { computed, reactive, ref, watch } from "vue";
-import { useCurrentUserV1 } from "@/store";
 import type {
   ComposedDatabase,
   ComposedProject,
@@ -43,7 +42,6 @@ const defaultInstanceFactor: StatefulFactor = {
 
 export const useSQLEditorTreeStore = defineStore("sqlEditorTree", () => {
   const { filter } = useFilterStore();
-  const me = useCurrentUserV1();
   const hideEnvironments = useAppFeature(
     "bb.feature.sql-editor.hide-environments"
   );
@@ -97,19 +95,15 @@ export const useSQLEditorTreeStore = defineStore("sqlEditorTree", () => {
   );
 
   const hasMissingQueryDatabases = computed(() => {
-    return databaseList.value.some(
-      (db) => !isDatabaseV1Queryable(db, me.value)
-    );
+    return databaseList.value.some((db) => !isDatabaseV1Queryable(db));
   });
   const sortedDatabaseList = computed(() => {
     if (!showMissingQueryDatabases.value) {
-      return databaseList.value.filter((db) =>
-        isDatabaseV1Queryable(db, me.value)
-      );
+      return databaseList.value.filter((db) => isDatabaseV1Queryable(db));
     }
     return orderBy(
       databaseList.value,
-      [(db) => (isDatabaseV1Queryable(db, me.value) ? 1 : 0)],
+      [(db) => (isDatabaseV1Queryable(db) ? 1 : 0)],
       ["desc"]
     );
   });
