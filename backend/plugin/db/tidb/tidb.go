@@ -361,7 +361,7 @@ func (d *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string
 			if allQuery {
 				rows, err := conn.QueryContext(ctx, sqlWithBytebaseAppComment)
 				if err != nil {
-					return nil, util.FormatErrorWithQuery(err, statement)
+					return nil, err
 				}
 				defer rows.Close()
 				r, err := util.RowsToQueryResult(rows, d.connCfg.MaximumSQLResultSize)
