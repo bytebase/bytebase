@@ -71,7 +71,6 @@ import { useI18n } from "vue-i18n";
 import {
   isTaskFinished,
   isValidStage,
-  planCheckRunListForTask,
   useIssueContext,
 } from "@/components/IssueV1/logic";
 import { planCheckRunSummaryForCheckRunList } from "@/components/PlanCheckRun/common";
@@ -88,8 +87,13 @@ const props = defineProps<{
 }>();
 
 const { t } = useI18n();
-const { isCreating, issue, activeTask, selectedStage, events } =
-  useIssueContext();
+const {
+  isCreating,
+  activeTask,
+  selectedStage,
+  events,
+  getPlanCheckRunsForTask,
+} = useIssueContext();
 
 const activeTaskInStage = computed(() => {
   return activeTaskInStageV1(props.stage);
@@ -146,9 +150,7 @@ const stageTitle = computed(() => {
 const planCheckStatus = computed((): PlanCheckRun_Result_Status => {
   if (isCreating.value) return PlanCheckRun_Result_Status.UNRECOGNIZED;
   const planCheckList = uniqBy(
-    props.stage.tasks.flatMap((task) =>
-      planCheckRunListForTask(issue.value, task)
-    ),
+    props.stage.tasks.flatMap(getPlanCheckRunsForTask),
     (checkRun) => checkRun.uid
   );
   const summary = planCheckRunSummaryForCheckRunList(planCheckList);

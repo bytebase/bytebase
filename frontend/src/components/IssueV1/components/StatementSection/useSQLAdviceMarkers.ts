@@ -7,7 +7,7 @@ import {
   PlanCheckRun_Type,
 } from "@/types/proto/v1/plan_service";
 import { Advice_Status, type Advice } from "@/types/proto/v1/sql_service";
-import { planCheckRunListForTask, type IssueContext } from "../../logic";
+import { type IssueContext } from "../../logic";
 
 export const useSQLAdviceMarkers = (
   context: IssueContext,
@@ -33,12 +33,8 @@ export const useSQLAdviceMarkers = (
         };
       });
     } else {
-      const { issue, selectedTask } = context;
-
-      const planCheckRunList = planCheckRunListForTask(
-        issue.value,
-        selectedTask.value
-      );
+      const { selectedTask, getPlanCheckRunsForTask } = context;
+      const planCheckRunList = getPlanCheckRunsForTask(selectedTask.value);
 
       const types: PlanCheckRun_Type[] = [
         PlanCheckRun_Type.DATABASE_STATEMENT_ADVISE,
