@@ -9519,17 +9519,6 @@ components:
                     items:
                         $ref: '#/components/schemas/Advice'
                     description: The execute advices.
-        ExecutionDetail_Position:
-            type: object
-            properties:
-                line:
-                    type: integer
-                    description: The line number, starting from 0.
-                    format: int32
-                column:
-                    type: integer
-                    description: The column number, starting from 0.
-                    format: int32
         ExportAuditLogsRequest:
             required:
                 - parent
@@ -13483,16 +13472,6 @@ components:
                          Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory}
                 schemaVersion:
                     type: string
-                executionStatus:
-                    enum:
-                        - EXECUTION_STATUS_UNSPECIFIED
-                        - PRE_EXECUTING
-                        - EXECUTING
-                        - POST_EXECUTING
-                    type: string
-                    format: enum
-                executionDetail:
-                    $ref: '#/components/schemas/TaskRun_ExecutionDetail'
                 startTime:
                     readOnly: true
                     type: string
@@ -13657,20 +13636,6 @@ components:
                     items:
                         $ref: '#/components/schemas/Postgres_Session'
                     description: '`blocked_sessions` are blocked by `session`.'
-        TaskRun_ExecutionDetail:
-            type: object
-            properties:
-                commandsTotal:
-                    type: integer
-                    description: Currently, the following fields are only used for EXECUTING status.
-                    format: int32
-                commandsCompleted:
-                    type: integer
-                    format: int32
-                commandStartPosition:
-                    $ref: '#/components/schemas/ExecutionDetail_Position'
-                commandEndPosition:
-                    $ref: '#/components/schemas/ExecutionDetail_Position'
         TaskRun_PriorBackupDetail:
             type: object
             properties:

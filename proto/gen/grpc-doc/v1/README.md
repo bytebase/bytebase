@@ -525,8 +525,6 @@
     - [Task.DatabaseSchemaBaseline](#bytebase-v1-Task-DatabaseSchemaBaseline)
     - [Task.DatabaseSchemaUpdate](#bytebase-v1-Task-DatabaseSchemaUpdate)
     - [TaskRun](#bytebase-v1-TaskRun)
-    - [TaskRun.ExecutionDetail](#bytebase-v1-TaskRun-ExecutionDetail)
-    - [TaskRun.ExecutionDetail.Position](#bytebase-v1-TaskRun-ExecutionDetail-Position)
     - [TaskRun.PriorBackupDetail](#bytebase-v1-TaskRun-PriorBackupDetail)
     - [TaskRun.PriorBackupDetail.Item](#bytebase-v1-TaskRun-PriorBackupDetail-Item)
     - [TaskRun.PriorBackupDetail.Item.Table](#bytebase-v1-TaskRun-PriorBackupDetail-Item-Table)
@@ -547,7 +545,6 @@
   
     - [Task.Status](#bytebase-v1-Task-Status)
     - [Task.Type](#bytebase-v1-Task-Type)
-    - [TaskRun.ExecutionStatus](#bytebase-v1-TaskRun-ExecutionStatus)
     - [TaskRun.ExportArchiveStatus](#bytebase-v1-TaskRun-ExportArchiveStatus)
     - [TaskRun.Status](#bytebase-v1-TaskRun-Status)
     - [TaskRunLogEntry.TaskRunStatusUpdate.Status](#bytebase-v1-TaskRunLogEntry-TaskRunStatusUpdate-Status)
@@ -8468,46 +8465,10 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 | detail | [string](#string) |  | Below are the results of a task run. |
 | change_history | [string](#string) |  | The resource name of the change history Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory} |
 | schema_version | [string](#string) |  |  |
-| execution_status | [TaskRun.ExecutionStatus](#bytebase-v1-TaskRun-ExecutionStatus) |  | **Deprecated.**  |
-| execution_detail | [TaskRun.ExecutionDetail](#bytebase-v1-TaskRun-ExecutionDetail) |  | **Deprecated.**  |
 | start_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | export_archive_status | [TaskRun.ExportArchiveStatus](#bytebase-v1-TaskRun-ExportArchiveStatus) |  |  |
 | prior_backup_detail | [TaskRun.PriorBackupDetail](#bytebase-v1-TaskRun-PriorBackupDetail) |  | The prior backup detail that will be used to rollback the task run. |
 | scheduler_info | [TaskRun.SchedulerInfo](#bytebase-v1-TaskRun-SchedulerInfo) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-TaskRun-ExecutionDetail"></a>
-
-### TaskRun.ExecutionDetail
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| commands_total | [int32](#int32) |  | Currently, the following fields are only used for EXECUTING status. |
-| commands_completed | [int32](#int32) |  |  |
-| command_start_position | [TaskRun.ExecutionDetail.Position](#bytebase-v1-TaskRun-ExecutionDetail-Position) |  |  |
-| command_end_position | [TaskRun.ExecutionDetail.Position](#bytebase-v1-TaskRun-ExecutionDetail-Position) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-TaskRun-ExecutionDetail-Position"></a>
-
-### TaskRun.ExecutionDetail.Position
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| line | [int32](#int32) |  | The line number, starting from 0. |
-| column | [int32](#int32) |  | The column number, starting from 0. |
 
 
 
@@ -8848,20 +8809,6 @@ Read from `pg_stat_activity`
 | DATABASE_SCHEMA_UPDATE_GHOST_CUTOVER | 7 | use payload nil |
 | DATABASE_DATA_UPDATE | 8 | use payload DatabaseDataUpdate |
 | DATABASE_DATA_EXPORT | 12 | use payload DatabaseDataExport |
-
-
-
-<a name="bytebase-v1-TaskRun-ExecutionStatus"></a>
-
-### TaskRun.ExecutionStatus
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| EXECUTION_STATUS_UNSPECIFIED | 0 |  |
-| PRE_EXECUTING | 1 |  |
-| EXECUTING | 2 |  |
-| POST_EXECUTING | 3 |  |
 
 
 
