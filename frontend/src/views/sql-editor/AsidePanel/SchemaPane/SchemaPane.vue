@@ -13,7 +13,6 @@
     <div class="px-1 flex flex-row gap-1">
       <SearchBox
         v-model:value="searchPattern"
-        size="small"
         style="width: 100%; max-width: 100%"
       />
     </div>

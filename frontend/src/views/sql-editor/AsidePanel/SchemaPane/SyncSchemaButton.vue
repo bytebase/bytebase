@@ -2,8 +2,7 @@
   <NPopover :disabled="disabled" placement="bottom-start">
     <template #trigger>
       <NButton
-        size="small"
-        style="--n-padding: 0 5px"
+        style="--n-padding: 0 8px"
         :disabled="disabled || isSyncing"
         @click="syncNow"
       >
