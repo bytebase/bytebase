@@ -124,7 +124,7 @@ func GetBlocks(context webhook.Context) []Block {
 }
 
 func (*Receiver) Post(context webhook.Context) error {
-	if context.DirectMessage && len(context.MentionUsers) > 0 {
+	if context.DirectMessage && len(context.MentionEndUsers) > 0 {
 		postDirectMessage(context)
 		return nil
 	}
@@ -184,7 +184,7 @@ func postDirectMessage(webhookCtx webhook.Context) {
 	sent := map[string]bool{}
 	if err := common.Retry(ctx, func() error {
 		var errs error
-		for _, u := range webhookCtx.MentionUsers {
+		for _, u := range webhookCtx.MentionEndUsers {
 			if sent[u.Email] {
 				continue
 			}

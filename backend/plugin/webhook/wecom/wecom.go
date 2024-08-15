@@ -70,12 +70,16 @@ func getMessageCard(context webhook.Context) *WebhookMarkdown {
 }
 
 func (r *Receiver) Post(context webhook.Context) error {
-	if context.DirectMessage && len(context.MentionUsers) > 0 {
+	if context.DirectMessage && len(context.MentionEndUsers) > 0 {
 		if r.sendDirectMessage(context) {
 			return nil
 		}
 	}
-	return r.sendMessage(context)
+	err := r.sendMessage(context)
+	if err != nil {
+		return backoff.Permanent(err)
+	}
+	return nil
 }
 
 func (*Receiver) sendMessage(context webhook.Context) error {
@@ -145,7 +149,7 @@ func (*Receiver) sendDirectMessage(webhookCtx webhook.Context) bool {
 		var errs error
 		var users, userEmails []string
 
-		for _, u := range webhookCtx.MentionUsers {
+		for _, u := range webhookCtx.MentionEndUsers {
 			if sent[u.Email] || notFound[u.Email] {
 				continue
 			}
@@ -186,5 +190,5 @@ func (*Receiver) sendDirectMessage(webhookCtx webhook.Context) bool {
 		slog.Warn("failed to send direct message to wecom users", log.BBError(err))
 	}
 
-	return len(sent) == len(webhookCtx.MentionUsers)
+	return len(sent) == len(webhookCtx.MentionEndUsers)
 }
