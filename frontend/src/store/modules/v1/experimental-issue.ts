@@ -16,11 +16,7 @@ import {
 } from "@/types";
 import type { Issue } from "@/types/proto/v1/issue_service";
 import type { Plan } from "@/types/proto/v1/plan_service";
-import {
-  TaskRun_Status,
-  TaskRunLog,
-  type Rollout,
-} from "@/types/proto/v1/rollout_service";
+import { TaskRunLog, type Rollout } from "@/types/proto/v1/rollout_service";
 import {
   extractProjectResourceName,
   extractUserResourceName,
@@ -91,13 +87,6 @@ export const composeIssue = async (
           ...taskRun,
           taskRunLog: TaskRunLog.fromPartial({}),
         };
-        // Fetching task run log for running task runs.
-        if (composed.status === TaskRun_Status.RUNNING) {
-          const taskRunLog = await rolloutServiceClient.getTaskRunLog({
-            parent: taskRun.name,
-          });
-          composed.taskRunLog = taskRunLog;
-        }
         composedTaskRuns.push(composed);
       }
       issue.rolloutTaskRunList = composedTaskRuns;
