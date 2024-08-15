@@ -1,7 +1,7 @@
 <template>
   <NTabs v-model:value="state.currentTab" type="line">
     <NTabPane name="LOG" :tab="$t('issue.task-run.logs')">
-      <TaskRunLogTable :task-run="taskRun" />
+      <TaskRunLogTable :key="componentId" :task-run="taskRun" />
     </NTabPane>
     <NTabPane
       v-if="showTaskRunSessionTab"
@@ -58,9 +58,7 @@ const showTaskRunSessionTab = computed(() =>
 );
 
 const showRefreshButton = computed(
-  () =>
-    state.currentTab === "SESSION" &&
-    props.taskRun.status === TaskRun_Status.RUNNING
+  () => props.taskRun.status === TaskRun_Status.RUNNING
 );
 
 const database = computed(() =>
