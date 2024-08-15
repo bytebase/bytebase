@@ -1,9 +1,13 @@
-import { useCurrentUserV1, useProjectV1Store } from "@/store";
+import { useAuthStore, useProjectV1Store } from "@/store";
 import { getUserEmailFromIdentifier } from "@/store/modules/v1/common";
 import { PresetRoleType } from "@/types";
 import type { Worksheet } from "@/types/proto/v1/worksheet_service";
 import { Worksheet_Visibility } from "@/types/proto/v1/worksheet_service";
-import { isMemberOfProjectV1, isOwnerOfProjectV1 } from "@/utils";
+import {
+  isMemberOfProjectV1,
+  isOwnerOfProjectV1,
+  hasWorkspaceLevelRole,
+} from "@/utils";
 
 export const extractWorksheetUID = (name: string) => {
   const pattern = /(?:^|\/)worksheets\/([^/]+)(?:$|\/)/;
@@ -16,16 +20,18 @@ export const extractWorksheetUID = (name: string) => {
 // PROJECT_WRITE: workspace Owner/DBA and all members in the project.
 // PROJECT_READ: workspace Owner/DBA and all members in the project.
 export const isWorksheetReadableV1 = (sheet: Worksheet) => {
-  const currentUserV1 = useCurrentUserV1();
+  const authStore = useAuthStore();
 
-  if (getUserEmailFromIdentifier(sheet.creator) === currentUserV1.value.email) {
+  if (
+    getUserEmailFromIdentifier(sheet.creator) === authStore.currentUser.email
+  ) {
     // Always readable to the creator
     return true;
   }
 
   if (
-    currentUserV1.value.roles.includes(PresetRoleType.WORKSPACE_ADMIN) ||
-    currentUserV1.value.roles.includes(PresetRoleType.WORKSPACE_DBA)
+    hasWorkspaceLevelRole(PresetRoleType.WORKSPACE_ADMIN) ||
+    hasWorkspaceLevelRole(PresetRoleType.WORKSPACE_DBA)
   ) {
     return true;
   }
@@ -47,15 +53,17 @@ export const isWorksheetReadableV1 = (sheet: Worksheet) => {
 // PROJECT_WRITE: workspace Owner/DBA and all members in the project.
 // PROJECT_READ: workspace Owner/DBA and project owner.
 export const isWorksheetWritableV1 = (sheet: Worksheet) => {
-  const currentUserV1 = useCurrentUserV1();
+  const authStore = useAuthStore();
 
-  if (getUserEmailFromIdentifier(sheet.creator) === currentUserV1.value.email) {
+  if (
+    getUserEmailFromIdentifier(sheet.creator) === authStore.currentUser.email
+  ) {
     // Always writable to the creator
     return true;
   }
   if (
-    currentUserV1.value.roles.includes(PresetRoleType.WORKSPACE_ADMIN) ||
-    currentUserV1.value.roles.includes(PresetRoleType.WORKSPACE_DBA)
+    hasWorkspaceLevelRole(PresetRoleType.WORKSPACE_ADMIN) ||
+    hasWorkspaceLevelRole(PresetRoleType.WORKSPACE_DBA)
   ) {
     return true;
   }

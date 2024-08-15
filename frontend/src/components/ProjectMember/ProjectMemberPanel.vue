@@ -74,7 +74,7 @@
 </template>
 
 <script lang="ts" setup>
-import { cloneDeep, uniq, uniqBy } from "lodash-es";
+import { cloneDeep, uniq } from "lodash-es";
 import { NButton, NTabs, NTabPane, useDialog } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
@@ -88,20 +88,19 @@ import {
   useCurrentUserV1,
   useProjectIamPolicy,
   useProjectIamPolicyStore,
-  useUserStore,
   useGroupStore,
+  useWorkspaceV1Store,
 } from "@/store";
-import type { ComposedProject, ComposedUser } from "@/types";
+import type { ComposedProject } from "@/types";
 import {
   getUserEmailInBinding,
   getGroupEmailInBinding,
-  unknownUser,
   PRESET_WORKSPACE_ROLES,
   groupBindingPrefix,
+  PresetRoleType,
 } from "@/types";
-import { State } from "@/types/proto/v1/common";
 import type { Group } from "@/types/proto/v1/group";
-import { hasProjectPermissionV2 } from "@/utils";
+import { hasProjectPermissionV2, memberListInIAM } from "@/utils";
 import { FeatureAttention } from "../FeatureGuard";
 import { SearchBox } from "../v2";
 import AddProjectMembersPanel from "./AddProjectMember/AddProjectMembersPanel.vue";
@@ -137,7 +136,7 @@ const state = reactive<LocalState>({
   showAddMemberPanel: false,
 });
 
-const userStore = useUserStore();
+const workspaceStore = useWorkspaceV1Store();
 
 const projectIAMPolicyBindings = computed(() => {
   return iamPolicy.value.bindings;
@@ -145,30 +144,6 @@ const projectIAMPolicyBindings = computed(() => {
 
 const allowEdit = computed(() => {
   return hasProjectPermissionV2(props.project, "bb.projects.setIamPolicy");
-});
-
-const activeUserList = computed(() => {
-  const projectMembers = uniq(
-    projectIAMPolicyBindings.value.flatMap((binding) => binding.members)
-  )
-    .filter((user) => !user.startsWith(groupBindingPrefix))
-    .map((user) => {
-      const email = extractUserEmail(user);
-      return (
-        userStore.getUserByEmail(email) ??
-        ({
-          ...unknownUser(),
-          email,
-        } as ComposedUser)
-      );
-    });
-
-  const combinedMembers = uniqBy(
-    [...userStore.workspaceLevelProjectMembers, ...projectMembers],
-    "email"
-  ).filter((user) => user.state === State.ACTIVE);
-
-  return combinedMembers;
 });
 
 const activeGroupList = computed(() => {
@@ -202,29 +177,24 @@ const groupRoleMap = computed(() => {
 });
 
 const projectMembers = computed(() => {
-  return activeUserList.value
-    .map((user) => {
-      const roles = user.roles.filter(
-        (role) => !PRESET_WORKSPACE_ROLES.includes(role)
-      );
-      const bindings = projectIAMPolicyBindings.value.filter((binding) =>
-        binding.members.some(
-          (member) => extractUserEmail(member) === user.email
-        )
-      );
-      if (roles.length === 0 && bindings.length === 0) {
-        return null;
-      }
-      return {
-        type: "users",
-        title: user.title,
-        user,
-        binding: getUserEmailInBinding(user.email),
-        workspaceLevelRoles: roles,
-        projectRoleBindings: bindings,
-      } as MemberBinding;
-    })
-    .filter(Boolean) as MemberBinding[];
+  return memberListInIAM(iamPolicy.value).map((member) => {
+    const bindings = projectIAMPolicyBindings.value.filter((binding) =>
+      binding.members.some((m) => extractUserEmail(m) === member.user.email)
+    );
+
+    const workspaceLevelRoles = [
+      ...workspaceStore.getWorkspaceRolesByEmail(member.user.email),
+    ].filter((role) => !PRESET_WORKSPACE_ROLES.includes(role));
+
+    return {
+      type: "users",
+      title: member.user.title,
+      user: member.user,
+      binding: getUserEmailInBinding(member.user.email),
+      workspaceLevelRoles,
+      projectRoleBindings: bindings,
+    } as MemberBinding;
+  });
 });
 
 const projectGroups = computed((): MemberBinding[] => {
@@ -303,8 +273,8 @@ const handleRevokeSelectedMembers = () => {
 
       pushNotification({
         module: "bytebase",
-        style: "SUCCESS",
-        title: "Revoke succeed",
+        style: "INFO",
+        title: t("settings.members.revoked"),
       });
       state.selectedMembers = [];
     },

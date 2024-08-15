@@ -223,8 +223,9 @@ import {
   pushNotification,
 } from "@/store";
 import { groupNamePrefix } from "@/store/modules/v1/common";
-import type { ComposedProject, DatabaseResource, ComposedUser } from "@/types";
+import type { ComposedProject, DatabaseResource } from "@/types";
 import { PresetRoleType, PRESET_ROLES } from "@/types";
+import { type User } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
 import { Binding } from "@/types/proto/v1/iam_policy";
 import { displayRoleTitle, hasProjectPermissionV2 } from "@/utils";
@@ -363,7 +364,7 @@ const allowRemoveRole = (role: string) => {
     const ownerBindings = iamPolicy.value.bindings.filter(
       (binding) => binding.role === PresetRoleType.PROJECT_OWNER
     );
-    const members: ComposedUser[] = [];
+    const members: User[] = [];
     // Find those never expires owner members.
     for (const binding of ownerBindings) {
       if (binding.condition?.expression !== "") {
@@ -375,9 +376,7 @@ const allowRemoveRole = (role: string) => {
           .map((userIdentifier) => {
             return userStore.getUserByIdentifier(userIdentifier);
           })
-          .filter(
-            (user) => user && user.state === State.ACTIVE
-          ) as ComposedUser[])
+          .filter((user) => user && user.state === State.ACTIVE) as User[])
       );
     }
     // If there is only one owner, disallow removing.

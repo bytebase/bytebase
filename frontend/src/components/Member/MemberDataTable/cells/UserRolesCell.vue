@@ -30,14 +30,14 @@ import { displayRoleTitle, sortRoles, isBindingPolicyExpired } from "@/utils";
 import type { MemberRole } from "../../types";
 
 const props = defineProps<{
-  projectRole: MemberRole;
+  role: MemberRole;
 }>();
 
 const workspaceLevelRoles = computed(() => {
-  return sortRoles(props.projectRole.workspaceLevelRoles);
+  return sortRoles(props.role.workspaceLevelRoles);
 });
 
 const projectRoleBindings = computed(() => {
-  return orderBy(props.projectRole.projectRoleBindings, ["role"]);
+  return orderBy(props.role.projectRoleBindings, ["role"]);
 });
 </script>

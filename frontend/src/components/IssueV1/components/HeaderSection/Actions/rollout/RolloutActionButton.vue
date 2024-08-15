@@ -33,7 +33,7 @@ import {
 import type { ErrorItem } from "@/components/misc/ErrorList.vue";
 import ErrorList from "@/components/misc/ErrorList.vue";
 import { ContextMenuButton } from "@/components/v2";
-import { useCurrentUserV1, useUserStore } from "@/store";
+import { useUserStore } from "@/store";
 import { userNamePrefix, roleNamePrefix } from "@/store/modules/v1/common";
 import { displayRoleTitle, extractUserResourceName } from "@/utils";
 import type { RolloutAction, RolloutButtonAction } from "./common";
@@ -48,7 +48,6 @@ defineEmits<{
 }>();
 
 const { t } = useI18n();
-const currentUser = useCurrentUserV1();
 const { issue, activeTask, releaserCandidates } = useIssueContext();
 
 const errors = asyncComputed(async () => {
@@ -57,7 +56,6 @@ const errors = asyncComputed(async () => {
     !(await allowUserToApplyTaskRolloutAction(
       issue.value,
       activeTask.value,
-      currentUser.value,
       props.action,
       releaserCandidates.value
     ))

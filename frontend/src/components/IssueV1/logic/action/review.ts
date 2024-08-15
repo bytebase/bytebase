@@ -1,7 +1,7 @@
 import type { ButtonProps } from "naive-ui";
 import { t } from "@/plugins/i18n";
-import { candidatesOfApprovalStepV1 } from "@/store";
-import type { ComposedIssue, ComposedUser } from "@/types";
+import { candidatesOfApprovalStepV1, useCurrentUserV1 } from "@/store";
+import type { ComposedIssue } from "@/types";
 import {
   IssueStatus,
   Issue_Approver_Status,
@@ -57,7 +57,6 @@ export const issueReviewActionButtonProps = (
 export const allowUserToApplyReviewAction = (
   issue: ComposedIssue,
   context: ReviewContext,
-  user: ComposedUser,
   action: IssueReviewAction
 ) => {
   const { ready, done, flow } = context;
@@ -72,15 +71,17 @@ export const allowUserToApplyReviewAction = (
   if (!ready.value) return false;
   if (done.value) return false;
 
+  const me = useCurrentUserV1();
+
   if (action === "APPROVE" || action === "SEND_BACK") {
     const index = flow.value.currentStepIndex;
     const steps = flow.value.template.flow?.steps ?? [];
     const step = steps[index];
     if (!step) return false;
     const candidates = candidatesOfApprovalStepV1(issue, step);
-    return candidates.includes(user.name);
+    return candidates.includes(me.value.name);
   }
 
   // action === 'RE_REQUEST'
-  return user.email === extractUserResourceName(issue.creator);
+  return me.value.email === extractUserResourceName(issue.creator);
 };

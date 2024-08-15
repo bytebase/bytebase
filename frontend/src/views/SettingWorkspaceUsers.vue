@@ -131,7 +131,6 @@
 </template>
 
 <script setup lang="ts">
-import { orderBy } from "lodash-es";
 import { PlusIcon } from "lucide-vue-next";
 import { NButton, NTabs, NTabPane, NPopover, NCheckbox } from "naive-ui";
 import { computed, onMounted, reactive, watch } from "vue";
@@ -145,7 +144,6 @@ import UserDataTableByGroup from "@/components/User/Settings/UserDataTableByGrou
 import { SearchBox } from "@/components/v2";
 import {
   useSubscriptionV1Store,
-  useCurrentUserV1,
   useUserStore,
   useUIStateStore,
   useGroupStore,
@@ -156,13 +154,12 @@ import {
   ALL_USERS_USER_EMAIL,
   PresetRoleType,
   filterUserListByKeyword,
-  type ComposedUser,
 } from "@/types";
-import { UserType } from "@/types/proto/v1/auth_service";
+import { UserType, type User } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
 import type { Group } from "@/types/proto/v1/group";
 import { WorkspaceProfileSetting } from "@/types/proto/v1/setting_service";
-import { hasWorkspacePermissionV2 } from "@/utils";
+import { hasWorkspacePermissionV2, hasWorkspaceLevelRole } from "@/utils";
 
 const tabList = ["USERS", "GROUPS"] as const;
 type MemberTab = (typeof tabList)[number];
@@ -176,7 +173,7 @@ type LocalState = {
   showInactiveUserList: boolean;
   showCreateUserDrawer: boolean;
   showCreateGroupDrawer: boolean;
-  editingUser?: ComposedUser;
+  editingUser?: User;
   editingGroup?: Group;
 };
 
@@ -194,7 +191,6 @@ const route = useRoute();
 const router = useRouter();
 const userStore = useUserStore();
 const groupStore = useGroupStore();
-const currentUserV1 = useCurrentUserV1();
 const uiStateStore = useUIStateStore();
 const subscriptionV1Store = useSubscriptionV1Store();
 const settingV1Store = useSettingV1Store();
@@ -232,7 +228,7 @@ const allowCreateGroup = computed(() =>
 );
 
 const allowCreateUser = computed(() => {
-  return currentUserV1.value.roles.includes(PresetRoleType.WORKSPACE_ADMIN);
+  return hasWorkspaceLevelRole(PresetRoleType.WORKSPACE_ADMIN);
 });
 
 const allowEditGroup = computed(() => {
@@ -286,14 +282,7 @@ const inactiveUserList = computed(() => {
     (user) =>
       user.state === State.DELETED && user.userType !== UserType.SYSTEM_BOT
   );
-  return orderBy(
-    filterUserListByKeyword(list, state.inactiveUserFilterText),
-    [
-      (user) => user.roles.includes(PresetRoleType.WORKSPACE_ADMIN),
-      (user) => user.roles.includes(PresetRoleType.WORKSPACE_DBA),
-    ],
-    ["desc", "desc"]
-  );
+  return filterUserListByKeyword(list, state.inactiveUserFilterText);
 });
 
 const endUserList = computed(() => {
@@ -344,7 +333,7 @@ const handleCreateUser = () => {
   state.showCreateUserDrawer = true;
 };
 
-const handleUpdateUser = (user: ComposedUser) => {
+const handleUpdateUser = (user: User) => {
   state.editingUser = user;
   state.showCreateUserDrawer = true;
 };

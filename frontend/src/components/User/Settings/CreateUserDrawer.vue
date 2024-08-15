@@ -187,6 +187,7 @@ import {
   useRoleStore,
   useSettingV1Store,
   useUserStore,
+  useWorkspaceV1Store,
 } from "@/store";
 import {
   PRESET_PROJECT_ROLES,
@@ -194,11 +195,18 @@ import {
   PRESET_WORKSPACE_ROLES,
   PresetRoleType,
   emptyUser,
-  type ComposedUser,
 } from "@/types";
-import { UpdateUserRequest, UserType } from "@/types/proto/v1/auth_service";
+import {
+  UpdateUserRequest,
+  UserType,
+  User,
+} from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
 import { displayRoleTitle, randomString } from "@/utils";
+
+interface ComposedUser extends User {
+  roles: string[];
+}
 
 interface LocalState {
   isRequesting: boolean;
@@ -209,24 +217,33 @@ interface LocalState {
 const serviceAccountEmailSuffix = "service.bytebase.com";
 
 const props = defineProps<{
-  user?: ComposedUser;
+  user?: User;
 }>();
 
 const emit = defineEmits<{
   (event: "close"): void;
 }>();
 
-const initUser = () => {
+const workspaceStore = useWorkspaceV1Store();
+
+const userRolesFromProps = computed(() => {
+  return workspaceStore.getWorkspaceRolesByEmail(props.user?.email ?? "");
+});
+
+const initUser = (): ComposedUser => {
   const user = props.user ? cloneDeep(props.user) : emptyUser();
   return {
     ...user,
-    roles: user.roles.filter((r) => r !== PresetRoleType.WORKSPACE_MEMBER),
+    roles: [...userRolesFromProps.value].filter(
+      (r) => r !== PresetRoleType.WORKSPACE_MEMBER
+    ),
   };
 };
 
 const { t } = useI18n();
 const settingV1Store = useSettingV1Store();
 const userStore = useUserStore();
+
 const hideServiceAccount = useAppFeature(
   "bb.feature.members.hide-service-account"
 );
@@ -318,6 +335,7 @@ const allowConfirm = computed(() => {
   if (!state.user.email) {
     return false;
   }
+
   if (
     !isCreating.value &&
     (passwordMismatch.value ||
@@ -344,11 +362,12 @@ const allowDeactivate = computed(() => {
 
 const hasMoreThanOneOwner = computed(() => {
   return (
-    userStore.userList.filter(
+    userStore.activeUserList.filter(
       (user) =>
         user.userType === UserType.USER &&
-        user.state === State.ACTIVE &&
-        user.roles.includes(PresetRoleType.WORKSPACE_ADMIN)
+        workspaceStore.emailMapToRoles
+          .get(user.email)
+          ?.has(PresetRoleType.WORKSPACE_ADMIN)
     ).length > 1
   );
 });
@@ -374,11 +393,17 @@ const handleArchiveUser = async () => {
 
 const tryCreateOrUpdateUser = async () => {
   if (isCreating.value) {
-    await userStore.createUser({
+    const createdUser = await userStore.createUser({
       ...state.user,
       title: state.user.title || extractUserTitle(state.user.email),
       password: state.user.password || randomString(20),
     });
+    await workspaceStore.patchIamPolicy([
+      {
+        member: `user:${createdUser.email}`,
+        roles: state.user.roles,
+      },
+    ]);
     pushNotification({
       module: "bytebase",
       style: "INFO",
@@ -387,7 +412,7 @@ const tryCreateOrUpdateUser = async () => {
   } else {
     // If the user is the only workspace admin, we need to make sure the user is not removing the
     // workspace admin role.
-    if (props.user?.roles.includes(PresetRoleType.WORKSPACE_ADMIN)) {
+    if (userRolesFromProps.value.has(PresetRoleType.WORKSPACE_ADMIN)) {
       if (
         !state.user.roles.includes(PresetRoleType.WORKSPACE_ADMIN) &&
         !hasMoreThanOneOwner.value
@@ -408,7 +433,12 @@ const tryCreateOrUpdateUser = async () => {
       })
     );
     if (rolesChanged.value) {
-      await userStore.updateUserRoles(state.user);
+      await workspaceStore.patchIamPolicy([
+        {
+          member: `user:${state.user.email}`,
+          roles: state.user.roles,
+        },
+      ]);
     }
     pushNotification({
       module: "bytebase",

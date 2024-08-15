@@ -88,7 +88,7 @@ const columns = computed(
         resizable: true,
         render: (projectMember: MemberBinding) => {
           return h(UserRolesCell, {
-            projectRole: projectMember,
+            role: projectMember,
           });
         },
       },

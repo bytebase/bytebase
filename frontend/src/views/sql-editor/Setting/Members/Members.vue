@@ -75,30 +75,28 @@
 </template>
 
 <script lang="ts" setup>
-import { orderBy } from "lodash-es";
 import { PlusIcon } from "lucide-vue-next";
 import { NButton, NCheckbox } from "naive-ui";
 import { computed, onMounted, reactive } from "vue";
 import CreateUserDrawer from "@/components/User/Settings/CreateUserDrawer.vue";
 import UserDataTable from "@/components/User/Settings/UserDataTable/index.vue";
 import { SearchBox } from "@/components/v2";
-import { useCurrentUserV1, useUserStore } from "@/store";
+import { useUserStore } from "@/store";
 import {
   ALL_USERS_USER_EMAIL,
   PresetRoleType,
   filterUserListByKeyword,
-  type ComposedUser,
 } from "@/types";
-import { UserType } from "@/types/proto/v1/auth_service";
+import { UserType, type User } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
+import { hasWorkspaceLevelRole } from "@/utils";
 
-const me = useCurrentUserV1();
 type LocalState = {
   activeUserFilterText: string;
   inactiveUserFilterText: string;
   showInactiveUserList: boolean;
   showCreateUserDrawer: boolean;
-  editingUser?: ComposedUser;
+  editingUser?: User;
 };
 
 const state = reactive<LocalState>({
@@ -112,7 +110,7 @@ const state = reactive<LocalState>({
 const userStore = useUserStore();
 
 const allowCreateUser = computed(() => {
-  return me.value.roles.includes(PresetRoleType.WORKSPACE_ADMIN);
+  return hasWorkspaceLevelRole(PresetRoleType.WORKSPACE_ADMIN);
 });
 
 const userList = computed(() => {
@@ -133,14 +131,7 @@ const inactiveUserList = computed(() => {
     (user) =>
       user.state === State.DELETED && user.userType !== UserType.SYSTEM_BOT
   );
-  return orderBy(
-    filterUserListByKeyword(list, state.inactiveUserFilterText),
-    [
-      (user) => user.roles.includes(PresetRoleType.WORKSPACE_ADMIN),
-      (user) => user.roles.includes(PresetRoleType.WORKSPACE_DBA),
-    ],
-    ["desc", "desc"]
-  );
+  return filterUserListByKeyword(list, state.inactiveUserFilterText);
 });
 
 const handleCreateUser = () => {
@@ -148,7 +139,7 @@ const handleCreateUser = () => {
   state.showCreateUserDrawer = true;
 };
 
-const handleUpdateUser = (user: ComposedUser) => {
+const handleUpdateUser = (user: User) => {
   state.editingUser = user;
   state.showCreateUserDrawer = true;
 };

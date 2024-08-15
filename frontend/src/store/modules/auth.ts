@@ -4,7 +4,6 @@ import { computed, ref } from "vue";
 import { restartAppRoot } from "@/AppRootContext";
 import { authServiceClient } from "@/grpcweb";
 import { unknownUser } from "@/types";
-import { userBindingPrefix } from "@/types";
 import type {
   LoginRequest,
   LoginResponse,
@@ -24,13 +23,6 @@ export const useAuthStore = defineStore("auth_v1", () => {
       return userStore.getUserById(`${currentUserId.value}`) ?? unknownUser();
     }
     return unknownUser();
-  });
-
-  const currentRolesInWorkspace = computed(() => {
-    return workspaceStore.findRolesByMember({
-      member: `${userBindingPrefix}${currentUser.value.email}`,
-      ignoreGroup: false,
-    });
   });
 
   const isLoggedIn = () => {
@@ -66,6 +58,7 @@ export const useAuthStore = defineStore("auth_v1", () => {
       password: request.password,
       web: true,
     });
+    // TODO(ed): fetch iam.
     await workspaceStore.fetchIamPolicy();
   };
 
@@ -102,7 +95,6 @@ export const useAuthStore = defineStore("auth_v1", () => {
   return {
     currentUser,
     currentUserId,
-    currentRolesInWorkspace,
     isLoggedIn,
     getUserIdFromCookie,
     login,
@@ -112,11 +104,6 @@ export const useAuthStore = defineStore("auth_v1", () => {
     refreshUserIfNeeded,
   };
 });
-
-export const useCurrentRoles = () => {
-  const authStore = useAuthStore();
-  return computed(() => authStore.currentRolesInWorkspace);
-};
 
 export const useCurrentUserV1 = () => {
   const authStore = useAuthStore();

@@ -31,7 +31,6 @@ import {
 } from "@/components/IssueV1/logic";
 import type { ErrorItem } from "@/components/misc/ErrorList.vue";
 import ErrorList from "@/components/misc/ErrorList.vue";
-import { useCurrentUserV1 } from "@/store";
 
 const props = defineProps<{
   action: IssueReviewAction;
@@ -43,19 +42,11 @@ defineEmits<{
 
 const { t } = useI18n();
 const { issue, reviewContext } = useIssueContext();
-const currentUser = useCurrentUserV1();
 
 const errors = computed(() => {
   const errors: ErrorItem[] = [];
 
-  if (
-    !allowUserToApplyReviewAction(
-      issue.value,
-      reviewContext,
-      currentUser.value,
-      props.action
-    )
-  ) {
+  if (!allowUserToApplyReviewAction(issue.value, reviewContext, props.action)) {
     errors.push(t("issue.error.you-are-not-allowed-to-perform-this-action"));
     const flow = reviewContext.flow.value;
     const index = flow.currentStepIndex;

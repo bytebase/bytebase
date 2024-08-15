@@ -122,12 +122,7 @@ import {
   WORKSPACE_ROUTE_USERS,
 } from "@/router/dashboard/workspaceRoutes";
 import { SQL_EDITOR_WORKSHEET_MODULE } from "@/router/sqlEditor";
-import {
-  pushNotification,
-  useCurrentUserV1,
-  useUIStateStore,
-  useProjectV1Store,
-} from "@/store";
+import { pushNotification, useUIStateStore, useProjectV1Store } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import type { Permission } from "@/types";
 import {
@@ -136,6 +131,7 @@ import {
   isValidProjectName,
 } from "@/types";
 import {
+  hasWorkspaceLevelRole,
   hasWorkspacePermissionV2,
   hasProjectPermissionV2,
   extractProjectResourceName,
@@ -157,7 +153,6 @@ const { t } = useI18n();
 const projectStore = useProjectV1Store();
 const uiStateStore = useUIStateStore();
 const kbarHandler = useKBarHandler();
-const currentUserV1 = useCurrentUserV1();
 
 const show = computed(() => {
   return !uiStateStore.getIntroStateByKey("hidden");
@@ -268,7 +263,7 @@ const introList = computed(() => {
 
 const showQuickstart = computed(() => {
   // Only show quickstart for those who have workspace admin role.
-  if (!currentUserV1.value.roles.includes(PresetRoleType.WORKSPACE_ADMIN)) {
+  if (!hasWorkspaceLevelRole(PresetRoleType.WORKSPACE_ADMIN)) {
     return false;
   }
   if (!show.value) return false;

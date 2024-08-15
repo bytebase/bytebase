@@ -1,6 +1,10 @@
 import { usePermissionStore, useProjectV1List } from "@/store";
 import type { ComposedProject, Permission } from "@/types";
 
+export const hasWorkspaceLevelRole = (role: string): boolean => {
+  return usePermissionStore().currentRolesInWorkspace.has(role);
+};
+
 export const hasWorkspacePermissionV2 = (permission: Permission): boolean => {
   return usePermissionStore().currentPermissions.has(permission);
 };

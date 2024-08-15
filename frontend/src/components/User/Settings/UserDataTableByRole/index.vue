@@ -17,8 +17,9 @@ import type { DataTableColumn } from "naive-ui";
 import { NDataTable } from "naive-ui";
 import { computed, h } from "vue";
 import { useI18n } from "vue-i18n";
-import { useRoleStore } from "@/store";
-import { PRESET_WORKSPACE_ROLES, type ComposedUser } from "@/types";
+import { useRoleStore, useWorkspaceV1Store } from "@/store";
+import { PRESET_WORKSPACE_ROLES } from "@/types";
+import { type User } from "@/types/proto/v1/auth_service";
 import { displayRoleTitle, sortRoles } from "@/utils";
 import UserNameCell from "./cells/UserNameCell.vue";
 import UserOperationsCell from "./cells/UserOperationsCell.vue";
@@ -32,19 +33,20 @@ interface RoleRowData {
 interface UserRowData {
   type: "user";
   name: string;
-  user: ComposedUser;
+  user: User;
 }
 
 const props = defineProps<{
-  userList: ComposedUser[];
+  userList: User[];
 }>();
 
 const emit = defineEmits<{
-  (event: "update-user", user: ComposedUser): void;
+  (event: "update-user", user: User): void;
 }>();
 
 const { t } = useI18n();
 const roleStore = useRoleStore();
+const workspaceStore = useWorkspaceV1Store();
 
 const columns = computed(() => {
   return [
@@ -118,7 +120,7 @@ const userListByRole = computed(() => {
 
   for (const role of roles) {
     const users = props.userList.filter((user) => {
-      return user.roles.includes(role);
+      return workspaceStore.emailMapToRoles.get(user.email)?.has(role);
     });
 
     if (users.length > 0) {

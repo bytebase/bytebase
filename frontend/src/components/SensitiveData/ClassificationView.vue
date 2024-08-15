@@ -104,18 +104,14 @@ import { NSwitch, useDialog, NDivider, NButton } from "naive-ui";
 import { v4 as uuidv4 } from "uuid";
 import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
-import {
-  featureToRef,
-  useCurrentUserV1,
-  useSettingV1Store,
-  pushNotification,
-} from "@/store";
+import { featureToRef, useSettingV1Store, pushNotification } from "@/store";
 import { PresetRoleType } from "@/types";
 import type {
   DataClassificationSetting_DataClassificationConfig_Level as ClassificationLevel,
   DataClassificationSetting_DataClassificationConfig_DataClassification as DataClassification,
 } from "@/types/proto/v1/setting_service";
 import { DataClassificationSetting_DataClassificationConfig } from "@/types/proto/v1/setting_service";
+import { hasWorkspaceLevelRole } from "@/utils";
 import LearnMoreLink from "../LearnMoreLink.vue";
 import ClassificationTree from "../SchemaTemplate/ClassificationTree.vue";
 import SingleFileSelector from "../SingleFileSelector.vue";
@@ -139,7 +135,6 @@ interface LocalState {
 const { t } = useI18n();
 const $dialog = useDialog();
 const settingStore = useSettingV1Store();
-const currentUser = useCurrentUserV1();
 const state = reactive<LocalState>({
   showExampleModal: false,
   classification:
@@ -191,7 +186,7 @@ const upsertSetting = async () => {
 
 const allowEdit = computed(() => {
   // Only allow workspace admin to manage user.
-  return currentUser.value.roles.includes(PresetRoleType.WORKSPACE_ADMIN);
+  return hasWorkspaceLevelRole(PresetRoleType.WORKSPACE_ADMIN);
 });
 
 const hasSensitiveDataFeature = featureToRef("bb.feature.sensitive-data");

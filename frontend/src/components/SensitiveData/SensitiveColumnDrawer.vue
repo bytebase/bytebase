@@ -290,9 +290,9 @@ import {
   getUserEmailInBinding,
   getGroupEmailInBinding,
   groupBindingPrefix,
-  type ComposedUser,
 } from "@/types";
 import { Expr } from "@/types/proto/google/type/expr";
+import { type User } from "@/types/proto/v1/auth_service";
 import { MaskingLevel, maskingLevelToJSON } from "@/types/proto/v1/common";
 import type { Group } from "@/types/proto/v1/group";
 import type {
@@ -316,7 +316,7 @@ import { getMaskDataIdentifier, isCurrentColumnException } from "./utils";
 interface AccessUser {
   type: "user" | "group";
   group?: Group;
-  user?: ComposedUser;
+  user?: User;
   supportActions: Set<MaskingExceptionPolicy_MaskingException_Action>;
   maskingLevel: MaskingLevel;
   expirationTimestamp?: number;

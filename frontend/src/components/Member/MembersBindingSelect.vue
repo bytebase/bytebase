@@ -27,6 +27,7 @@
         :multiple="true"
         :include-all-users="includeAllUsers"
         :include-service-account="includeServiceAccount"
+        :allowed-workspace-roleList="[]"
         @update:users="onMemberListUpdate"
       />
     </div>

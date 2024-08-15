@@ -62,9 +62,7 @@
               :step="step"
               class="inline"
             >
-              <template
-                #title="{ approver }: { approver: ComposedUser | undefined }"
-              >
+              <template #title="{ approver }: { approver: User | undefined }">
                 <span>{{ approver?.title }}</span>
               </template>
             </Approver>
@@ -82,7 +80,8 @@ import {
   NPopover,
   NPerformantEllipsis,
 } from "naive-ui";
-import type { WrappedReviewStep, ComposedUser } from "@/types";
+import type { WrappedReviewStep } from "@/types";
+import { type User } from "@/types/proto/v1/auth_service";
 import type { ApprovalStep } from "@/types/proto/v1/issue_service";
 import { approvalNodeText } from "@/utils";
 import Approver from "./Approver.vue";
