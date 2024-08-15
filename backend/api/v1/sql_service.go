@@ -124,7 +124,7 @@ func (s *SQLService) AdminExecute(server v1pb.SQLService_AdminExecuteServer) err
 			}
 		}
 
-		result, durationNs, queryErr := s.executeWithTimeout(ctx, driver, conn, request.Statement, request.Timeout, db.QueryContext{})
+		result, durationNs, queryErr := executeWithTimeout(ctx, driver, conn, request.Statement, request.Timeout, db.QueryContext{})
 
 		if err := s.createQueryHistory(ctx, database, store.QueryHistoryTypeQuery, request.Statement, user.ID, durationNs, queryErr); err != nil {
 			slog.Error("failed to post admin execute activity", log.BBError(err))
@@ -170,7 +170,7 @@ func (s *SQLService) Execute(ctx context.Context, request *v1pb.ExecuteRequest) 
 		defer conn.Close()
 	}
 
-	results, durationNs, queryErr := s.executeWithTimeout(ctx, driver, conn, request.Name, request.Timeout, db.QueryContext{})
+	results, durationNs, queryErr := executeWithTimeout(ctx, driver, conn, request.Name, request.Timeout, db.QueryContext{})
 
 	if err := s.createQueryHistory(ctx, database, store.QueryHistoryTypeQuery, request.Statement, user.ID, durationNs, queryErr); err != nil {
 		slog.Error("failed to post admin execute activity", log.BBError(err))
@@ -293,7 +293,7 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 		defer conn.Close()
 	}
 
-	results, durationNs, queryErr := s.executeWithTimeout(ctx, driver, conn, request.Statement, request.Timeout, db.QueryContext{})
+	results, durationNs, queryErr := executeWithTimeout(ctx, driver, conn, request.Statement, request.Timeout, db.QueryContext{})
 	if queryErr == nil && s.licenseService.IsFeatureEnabledForInstance(api.FeatureSensitiveData, instance) == nil && !request.Explain {
 		masker := NewQueryResultMasker(s.store)
 		if err := masker.MaskResults(ctx, spans, results, instance, storepb.MaskingExceptionPolicy_MaskingException_QUERY); err != nil {
@@ -324,7 +324,7 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 	return response, nil
 }
 
-func (*SQLService) executeWithTimeout(ctx context.Context, driver db.Driver, conn *sql.Conn, statement string, timeout *durationpb.Duration, queryContext db.QueryContext) ([]*v1pb.QueryResult, int64, error) {
+func executeWithTimeout(ctx context.Context, driver db.Driver, conn *sql.Conn, statement string, timeout *durationpb.Duration, queryContext db.QueryContext) ([]*v1pb.QueryResult, int64, error) {
 	ctxTimeout := defaultTimeout
 	if timeout != nil {
 		ctxTimeout = timeout.AsDuration()
@@ -483,38 +483,35 @@ func DoExport(ctx context.Context, storeInstance *store.Store, dbFactory *dbfact
 		defer conn.Close()
 	}
 
-	start := time.Now().UnixNano()
-	result, err := driver.QueryConn(ctx, conn, request.Statement, db.QueryContext{
-		Limit: int(request.Limit),
-	})
-	durationNs := time.Now().UnixNano() - start
-	if err != nil {
+	results, durationNs, queryErr := executeWithTimeout(ctx, driver, conn, request.Statement, nil, db.QueryContext{})
+	if queryErr != nil {
 		return nil, durationNs, err
 	}
 	// only return the last result
-	if len(result) > 1 {
-		result = result[len(result)-1:]
+	if len(results) > 1 {
+		results = results[len(results)-1:]
 	}
-	if result[0].GetError() != "" {
-		return nil, durationNs, errors.Errorf(result[0].GetError())
+	if results[0].GetError() != "" {
+		return nil, durationNs, errors.Errorf(results[0].GetError())
 	}
 
 	if licenseService.IsFeatureEnabledForInstance(api.FeatureSensitiveData, instance) == nil {
 		masker := NewQueryResultMasker(storeInstance)
-		if err := masker.MaskResults(ctx, spans, result, instance, storepb.MaskingExceptionPolicy_MaskingException_EXPORT); err != nil {
+		if err := masker.MaskResults(ctx, spans, results, instance, storepb.MaskingExceptionPolicy_MaskingException_EXPORT); err != nil {
 			return nil, durationNs, err
 		}
 	}
 
+	result := results[0]
 	var content []byte
 	switch request.Format {
 	case v1pb.ExportFormat_CSV:
-		content, err = exportCSV(result[0])
+		content, err = exportCSV(result)
 		if err != nil {
 			return nil, durationNs, err
 		}
 	case v1pb.ExportFormat_JSON:
-		content, err = exportJSON(result[0])
+		content, err = exportJSON(result)
 		if err != nil {
 			return nil, durationNs, err
 		}
@@ -523,16 +520,16 @@ func DoExport(ctx context.Context, storeInstance *store.Store, dbFactory *dbfact
 		if err != nil {
 			return nil, 0, status.Errorf(codes.InvalidArgument, "failed to extract resource list: %v", err)
 		}
-		statementPrefix, err := getSQLStatementPrefix(instance.Engine, resourceList, result[0].ColumnNames)
+		statementPrefix, err := getSQLStatementPrefix(instance.Engine, resourceList, result.ColumnNames)
 		if err != nil {
 			return nil, 0, err
 		}
-		content, err = exportSQL(instance.Engine, statementPrefix, result[0])
+		content, err = exportSQL(instance.Engine, statementPrefix, result)
 		if err != nil {
 			return nil, durationNs, err
 		}
 	case v1pb.ExportFormat_XLSX:
-		content, err = exportXLSX(result[0])
+		content, err = exportXLSX(result)
 		if err != nil {
 			return nil, durationNs, err
 		}
