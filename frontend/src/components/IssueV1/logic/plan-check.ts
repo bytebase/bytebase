@@ -9,8 +9,8 @@ import { Task_Status } from "@/types/proto/v1/rollout_service";
 import {
   databaseForTask,
   sheetNameForSpec,
-  databaseForSpec,
   specForTask,
+  useIssueContext,
 } from ".";
 
 export const planSpecHasPlanChecks = (spec: Plan_Spec) => {
@@ -41,29 +41,15 @@ export const planCheckRunListForTask = (issue: ComposedIssue, task: Task) => {
   });
 };
 
-export const planCheckRunListForSpec = (
-  issue: ComposedIssue,
-  spec: Plan_Spec
-) => {
-  const target = databaseForSpec(issue, spec).name;
-  const sheet = spec ? sheetNameForSpec(spec) : "";
-  return issue.planCheckRunList.filter((check) => {
-    if (sheet && check.sheet) {
-      // If both the task spec and the planCheckRun have `sheet`
-      // filter by sheet and target combination
-      return check.sheet === sheet && check.target === target;
-    }
-    // Otherwise filter by target only
-    return check.target === target;
-  });
-};
-
-export const planCheckStatusForTask = (issue: ComposedIssue, task: Task) => {
+export const planCheckStatusForTask = (task: Task) => {
+  const { getPlanCheckRunsForTask } = useIssueContext();
   if (
     task.status === Task_Status.PENDING ||
     task.status === Task_Status.NOT_STARTED
   ) {
-    const summary = planCheckRunSummaryForTask(issue, task);
+    const summary = planCheckRunSummaryForCheckRunList(
+      getPlanCheckRunsForTask(task)
+    );
     if (summary.errorCount > 0) return PlanCheckRun_Result_Status.ERROR;
     if (summary.warnCount > 0) return PlanCheckRun_Result_Status.WARNING;
   }
@@ -83,13 +69,5 @@ export const planCheckRunSummaryForIssue = (issue: ComposedIssue) => {
     return sheets?.has(check.sheet);
   });
 
-  return planCheckRunSummaryForCheckRunList(planCheckRunList);
-};
-
-export const planCheckRunSummaryForTask = (
-  issue: ComposedIssue,
-  task: Task
-) => {
-  const planCheckRunList = planCheckRunListForTask(issue, task);
   return planCheckRunSummaryForCheckRunList(planCheckRunList);
 };
