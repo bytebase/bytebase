@@ -240,7 +240,6 @@ func (*Store) listInstanceDataSourceMap(ctx context.Context, tx *Tx, find *FindD
 		dataSourceMessage.ReplicaSet = dataSourceOptions.ReplicaSet
 		dataSourceMessage.DirectConnection = dataSourceOptions.DirectConnection
 		dataSourceMessage.Region = dataSourceOptions.Region
-		dataSourceMessage.AccountID = dataSourceOptions.AccountId
 		dataSourceMessage.WarehouseID = dataSourceOptions.WarehouseId
 		dataSourceMessage.UseSSL = dataSourceOptions.UseSsl
 		dataSourceMessage.RedisType = dataSourceOptions.RedisType
@@ -521,7 +520,6 @@ func (*Store) addDataSourceToInstanceImplV2(ctx context.Context, tx *Tx, instanc
 		DirectConnection:                   dataSource.DirectConnection,
 		Region:                             dataSource.Region,
 		WarehouseId:                        dataSource.WarehouseID,
-		AccountId:                          dataSource.AccountID,
 		UseSsl:                             dataSource.UseSSL,
 		RedisType:                          dataSource.RedisType,
 		MasterName:                         dataSource.MasterName,

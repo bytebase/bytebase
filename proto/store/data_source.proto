@@ -109,8 +109,7 @@ message DataSourceOptions {
 
   // region is the location of where the DB is, works for AWS RDS. For example, us-east-1.
   string region = 17;
-  // account_id is used by Databricks.
-  string account_id = 18;
+
   // warehouse_id is used by Databricks.
   string warehouse_id = 19;
 

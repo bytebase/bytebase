@@ -210,9 +210,6 @@ type ConnectionConfig struct {
 	// Region is the location of where the DB is, works for AWS RDS.
 	Region string
 
-	// AccountID is used by Databricks.
-	AccountID string
-
 	// WarehouseID is used by Databricks.
 	WarehouseID string
 
