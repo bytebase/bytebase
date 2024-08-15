@@ -29,7 +29,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { computed } from "vue";
 import { FunctionIcon } from "@/components/Icon";
 import {
   useConnectionOfCurrentSQLEditorTab,
@@ -46,7 +46,7 @@ import { SchemaSelectToolbar, CodeViewer } from "../common";
 import FunctionsTable from "./FunctionsTable.vue";
 
 const { database } = useConnectionOfCurrentSQLEditorTab();
-const { selectedSchemaName } = useEditorPanelContext();
+const { viewState, updateViewState } = useEditorPanelContext();
 const databaseMetadata = computed(() => {
   return useDBSchemaV1Store().getDatabaseMetadata(
     database.value.name,
@@ -54,34 +54,30 @@ const databaseMetadata = computed(() => {
   );
 });
 
-const metadata = ref<{
-  database: DatabaseMetadata;
-  schema?: SchemaMetadata;
-  func?: FunctionMetadata;
-}>();
+const metadata = computed(() => {
+  const database = databaseMetadata.value;
+  const schema = database.schemas.find(
+    (s) => s.name === viewState.value?.schema
+  );
+  const func = schema?.functions.find(
+    (f) => f.name === viewState.value?.detail?.func
+  );
+  return { database, schema, func };
+});
 
 const select = (selected: {
   database: DatabaseMetadata;
   schema: SchemaMetadata;
   func: FunctionMetadata;
 }) => {
-  metadata.value = selected;
+  updateViewState({
+    detail: { func: selected.func.name },
+  });
 };
 
 const deselect = () => {
-  if (!metadata.value) return;
-  metadata.value.func = undefined;
+  updateViewState({
+    detail: {},
+  });
 };
-
-watch(
-  [databaseMetadata, selectedSchemaName],
-  ([database, schema]) => {
-    metadata.value = {
-      database,
-      schema: database.schemas.find((s) => s.name === schema),
-      func: undefined,
-    };
-  },
-  { immediate: true }
-);
 </script>

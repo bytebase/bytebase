@@ -162,8 +162,11 @@ export const useActions = () => {
   const viewDetail = async (node: TreeNode) => {
     const { type, target } = node.meta;
     const SUPPORTED_TYPES: NodeType[] = [
+      "schema",
+      "expandable-text",
       "table",
       "column",
+      // "external-table", // todo
       "view",
       "procedure",
       "function",
@@ -171,6 +174,39 @@ export const useActions = () => {
     if (!SUPPORTED_TYPES.includes(type)) {
       return;
     }
+    if (type === "schema") {
+      const schema = (node.meta.target as NodeTarget<"schema">).schema.name;
+      updateViewState({
+        schema,
+      });
+      return;
+    }
+    if (type === "expandable-text") {
+      const { mockType } = target as NodeTarget<"expandable-text">;
+      if (!mockType) return;
+      try {
+        const view = typeToView(mockType);
+        const walk = (node: TreeNode | undefined) => {
+          if (!node) return undefined;
+          if (node.meta.type === "schema") {
+            return (node.meta.target as NodeTarget<"schema">).schema.name;
+          }
+          return walk(node.parent);
+        };
+        const schema = walk(node);
+        const vs: Partial<EditorPanelViewState> = {
+          view,
+        };
+        if (typeof schema === "string") {
+          vs.schema = schema;
+        }
+        updateViewState(vs);
+      } catch {
+        // nothing
+      }
+      return;
+    }
+
     const { schema } = target as NodeTarget<
       "table" | "column" | "view" | "procedure" | "function"
     >;

@@ -20,15 +20,16 @@
         :code="metadata.view.definition"
         @back="deselect"
       >
-        <template #title-icon> </template>
-        <ViewIcon class="w-4 h-4" />
+        <template #title-icon>
+          <ViewIcon class="w-4 h-4" />
+        </template>
       </CodeViewer>
     </template>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { computed } from "vue";
 import { ViewIcon } from "@/components/Icon";
 import {
   useConnectionOfCurrentSQLEditorTab,
@@ -45,7 +46,7 @@ import { SchemaSelectToolbar, CodeViewer } from "../common";
 import ViewsTable from "./ViewsTable.vue";
 
 const { database } = useConnectionOfCurrentSQLEditorTab();
-const { selectedSchemaName } = useEditorPanelContext();
+const { viewState, updateViewState } = useEditorPanelContext();
 const databaseMetadata = computed(() => {
   return useDBSchemaV1Store().getDatabaseMetadata(
     database.value.name,
@@ -53,34 +54,30 @@ const databaseMetadata = computed(() => {
   );
 });
 
-const metadata = ref<{
-  database: DatabaseMetadata;
-  schema?: SchemaMetadata;
-  view?: ViewMetadata;
-}>();
+const metadata = computed(() => {
+  const database = databaseMetadata.value;
+  const schema = database.schemas.find(
+    (s) => s.name === viewState.value?.schema
+  );
+  const view = schema?.views.find(
+    (v) => v.name === viewState.value?.detail?.view
+  );
+  return { database, schema, view };
+});
 
 const select = (selected: {
   database: DatabaseMetadata;
   schema: SchemaMetadata;
   view: ViewMetadata;
 }) => {
-  metadata.value = selected;
+  updateViewState({
+    detail: { view: selected.view.name },
+  });
 };
 
 const deselect = () => {
-  if (!metadata.value) return;
-  metadata.value.view = undefined;
+  updateViewState({
+    detail: {},
+  });
 };
-
-watch(
-  [databaseMetadata, selectedSchemaName],
-  ([database, schema]) => {
-    metadata.value = {
-      database,
-      schema: database.schemas.find((s) => s.name === schema),
-      view: undefined,
-    };
-  },
-  { immediate: true }
-);
 </script>

@@ -29,7 +29,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { computed } from "vue";
 import { ProcedureIcon } from "@/components/Icon";
 import {
   useConnectionOfCurrentSQLEditorTab,
@@ -46,7 +46,7 @@ import { SchemaSelectToolbar, CodeViewer } from "../common";
 import ProceduresTable from "./ProceduresTable.vue";
 
 const { database } = useConnectionOfCurrentSQLEditorTab();
-const { selectedSchemaName } = useEditorPanelContext();
+const { viewState, updateViewState } = useEditorPanelContext();
 const databaseMetadata = computed(() => {
   return useDBSchemaV1Store().getDatabaseMetadata(
     database.value.name,
@@ -54,34 +54,30 @@ const databaseMetadata = computed(() => {
   );
 });
 
-const metadata = ref<{
-  database: DatabaseMetadata;
-  schema?: SchemaMetadata;
-  procedure?: ProcedureMetadata;
-}>();
+const metadata = computed(() => {
+  const database = databaseMetadata.value;
+  const schema = database.schemas.find(
+    (s) => s.name === viewState.value?.schema
+  );
+  const procedure = schema?.procedures.find(
+    (p) => p.name === viewState.value?.detail?.procedure
+  );
+  return { database, schema, procedure };
+});
 
 const select = (selected: {
   database: DatabaseMetadata;
   schema: SchemaMetadata;
   procedure: ProcedureMetadata;
 }) => {
-  metadata.value = selected;
+  updateViewState({
+    detail: { procedure: selected.procedure.name },
+  });
 };
 
 const deselect = () => {
-  if (!metadata.value) return;
-  metadata.value.procedure = undefined;
+  updateViewState({
+    detail: {},
+  });
 };
-
-watch(
-  [databaseMetadata, selectedSchemaName],
-  ([database, schema]) => {
-    metadata.value = {
-      database,
-      schema: database.schemas.find((s) => s.name === schema),
-      procedure: undefined,
-    };
-  },
-  { immediate: true }
-);
 </script>
