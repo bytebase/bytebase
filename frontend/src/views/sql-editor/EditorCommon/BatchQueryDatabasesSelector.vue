@@ -5,20 +5,27 @@
     trigger="click"
   >
     <template #trigger>
-      <NButton
-        size="small"
-        :type="
-          selectedDatabaseNames.length > 0 && hasBatchQueryFeature
-            ? 'primary'
-            : 'default'
-        "
-        style="--n-padding: 0 5px"
-        @click="handleTriggerClick"
-      >
-        <template #icon>
-          <SquareStackIcon class="w-4 h-4" />
+      <NPopover placement="bottom">
+        <template #trigger>
+          <NButton
+            size="small"
+            :type="
+              selectedDatabaseNames.length > 0 && hasBatchQueryFeature
+                ? 'primary'
+                : 'default'
+            "
+            style="--n-padding: 0 5px"
+            @click="handleTriggerClick"
+          >
+            <template #icon>
+              <SquareStackIcon class="w-4 h-4" />
+            </template>
+          </NButton>
         </template>
-      </NButton>
+        <template #default>
+          {{ $t("sql-editor.batch-query.batch") }}
+        </template>
+      </NPopover>
     </template>
     <div class="w-128 max-h-128 overflow-y-auto p-1 pb-2">
       <p class="text-gray-500 mb-1 w-full leading-4">
