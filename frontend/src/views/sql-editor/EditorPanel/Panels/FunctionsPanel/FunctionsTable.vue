@@ -19,7 +19,7 @@
 
 <script setup lang="tsx">
 import { NDataTable, type DataTableColumn, type DataTableInst } from "naive-ui";
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import type { ComposedDatabase } from "@/types";
 import type {
@@ -27,10 +27,8 @@ import type {
   FunctionMetadata,
   SchemaMetadata,
 } from "@/types/proto/v1/database_service";
-import { nextAnimationFrame } from "@/utils";
 import { useAutoHeightDataTable } from "../../common";
 import { useEditorPanelContext } from "../../context";
-import type { RichFunctionMetadata, RichMetadataWithDB } from "../../types";
 
 const props = defineProps<{
   db: ComposedDatabase;
@@ -58,7 +56,7 @@ const vlRef = computed(() => {
   return (dataTableRef.value as any)?.$refs?.mainTableInstRef?.bodyInstRef
     ?.virtualListRef;
 });
-const { useConsumePendingScrollToTarget } = useEditorPanelContext();
+const { viewState } = useEditorPanelContext();
 
 const columns = computed(() => {
   const columns: (DataTableColumn<FunctionMetadata> & { hide?: boolean })[] = [
@@ -84,30 +82,14 @@ const rowProps = (func: FunctionMetadata) => {
   };
 };
 
-useConsumePendingScrollToTarget(
-  (target: RichMetadataWithDB<"function">) => {
-    if (target.db.name !== props.db.name) {
-      return false;
+watch(
+  [() => viewState.value?.detail.func, vlRef],
+  ([func, vl]) => {
+    if (func && vl) {
+      vl.scrollTo({ key: func });
     }
-    if (target.metadata.type === "function") {
-      const metadata = target.metadata as RichFunctionMetadata;
-      return metadata.schema.name === props.schema.name;
-    }
-    return false;
   },
-  vlRef,
-  async (target, vl) => {
-    const key = target.metadata.function.name;
-    if (!key) return false;
-    await nextAnimationFrame();
-    try {
-      console.debug("scroll-to-function", vl, target, key);
-      vl.scrollTo({ key });
-    } catch {
-      // Do nothing
-    }
-    return true;
-  }
+  { immediate: true }
 );
 </script>
 

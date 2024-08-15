@@ -19,7 +19,7 @@
 <script lang="ts" setup>
 import type { DataTableColumn, DataTableInst } from "naive-ui";
 import { NCheckbox, NDataTable } from "naive-ui";
-import { computed, h, ref } from "vue";
+import { computed, h, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import {
   DefaultValueCell,
@@ -34,6 +34,7 @@ import type {
   TableMetadata,
 } from "@/types/proto/v1/database_service";
 import { useAutoHeightDataTable } from "../../common";
+import { useEditorPanelContext } from "../../context";
 
 const props = withDefaults(
   defineProps<{
@@ -48,9 +49,14 @@ const props = withDefaults(
   }
 );
 
+const { viewState } = useEditorPanelContext();
 const { containerElRef, tableBodyHeight, layoutReady } =
   useAutoHeightDataTable();
 const dataTableRef = ref<DataTableInst>();
+const vlRef = computed(() => {
+  return (dataTableRef.value as any)?.$refs?.mainTableInstRef?.bodyInstRef
+    ?.virtualListRef;
+});
 const { t } = useI18n();
 
 const primaryKey = computed(() => {
@@ -66,7 +72,7 @@ const columns = computed(() => {
       resizable: true,
       minWidth: 140,
       className: "truncate",
-      render: (col) => col.name.repeat(10),
+      render: (col) => col.name,
     },
     {
       key: "type",
@@ -170,6 +176,18 @@ const isColumnPrimaryKey = (column: ColumnMetadata): boolean => {
   if (!pk) return false;
   return pk.expressions.includes(column.name);
 };
+
+watch(
+  [() => viewState.value?.detail.column, vlRef],
+  ([column, vl]) => {
+    if (column && vl) {
+      requestAnimationFrame(() => {
+        vl.scrollTo({ key: column });
+      });
+    }
+  },
+  { immediate: true }
+);
 </script>
 
 <style lang="postcss" scoped>

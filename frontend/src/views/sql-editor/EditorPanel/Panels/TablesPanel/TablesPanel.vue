@@ -3,17 +3,15 @@
     v-if="metadata?.schema"
     class="px-2 py-2 gap-y-2 h-full overflow-hidden flex flex-col"
   >
-    <template v-if="!metadata.table">
-      <SchemaSelectToolbar />
-      <TablesTable
-        v-if="!metadata.table"
-        :db="database"
-        :database="metadata.database"
-        :schema="metadata.schema"
-        :tables="metadata.schema.tables"
-        @click="select"
-      />
-    </template>
+    <SchemaSelectToolbar v-show="!metadata.table" />
+    <TablesTable
+      v-show="!metadata.table"
+      :db="database"
+      :database="metadata.database"
+      :schema="metadata.schema"
+      :tables="metadata.schema.tables"
+      @click="select"
+    />
 
     <template v-if="metadata.table">
       <div class="w-full flex flex-row gap-x-2 justify-start items-center">
@@ -35,13 +33,10 @@
 <script setup lang="ts">
 import { ArrowLeftIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
-import { computed, ref, watch } from "vue";
-import { provideSchemaEditorContext } from "@/components/SchemaEditorLite";
+import { computed } from "vue";
 import {
   useConnectionOfCurrentSQLEditorTab,
   useDBSchemaV1Store,
-  useProjectV1Store,
-  useSQLEditorStore,
 } from "@/store";
 import {
   DatabaseMetadata,
@@ -54,9 +49,8 @@ import { SchemaSelectToolbar } from "../common";
 import ColumnsTable from "./ColumnsTable.vue";
 import TablesTable from "./TablesTable.vue";
 
-const editorStore = useSQLEditorStore();
 const { database } = useConnectionOfCurrentSQLEditorTab();
-const { selectedSchemaName } = useEditorPanelContext();
+const { viewState, updateViewState } = useEditorPanelContext();
 const databaseMetadata = computed(() => {
   return useDBSchemaV1Store().getDatabaseMetadata(
     database.value.name,
@@ -64,56 +58,30 @@ const databaseMetadata = computed(() => {
   );
 });
 
-const metadata = ref<{
-  database: DatabaseMetadata;
-  schema?: SchemaMetadata;
-  table?: TableMetadata;
-}>();
+const metadata = computed(() => {
+  const database = databaseMetadata.value;
+  const schema = database.schemas.find(
+    (s) => s.name === viewState.value?.schema
+  );
+  const table = schema?.tables.find(
+    (t) => t.name === viewState.value?.detail?.table
+  );
+  return { database, schema, table };
+});
 
 const select = (selected: {
   database: DatabaseMetadata;
   schema: SchemaMetadata;
   table: TableMetadata;
 }) => {
-  metadata.value = selected;
+  updateViewState({
+    detail: { table: selected.table.name },
+  });
 };
 
 const deselect = () => {
-  if (!metadata.value) return;
-  metadata.value.table = undefined;
+  updateViewState({
+    detail: {},
+  });
 };
-
-watch(
-  [databaseMetadata, selectedSchemaName],
-  ([database, schema]) => {
-    metadata.value = {
-      database,
-      schema: database.schemas.find((s) => s.name === schema),
-      table: undefined,
-    };
-  },
-  { immediate: true }
-);
-
-provideSchemaEditorContext({
-  targets: computed(() => [
-    {
-      database: database.value,
-      metadata: databaseMetadata.value,
-      baselineMetadata: databaseMetadata.value,
-    },
-  ]),
-  project: computed(() =>
-    useProjectV1Store().getProjectByName(editorStore.project)
-  ),
-  resourceType: ref("branch"),
-  readonly: ref(true),
-  selectedRolloutObjects: ref(undefined),
-  showLastUpdater: ref(false),
-  disableDiffColoring: ref(true),
-  options: ref({
-    forceShowIndexes: true,
-    forceShowPartitions: true,
-  }),
-});
 </script>

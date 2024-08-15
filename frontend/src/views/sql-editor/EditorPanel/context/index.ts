@@ -12,7 +12,6 @@ import {
   typeToView,
   type EditorPanelViewState as ViewState,
 } from "../types";
-import { useScroll } from "./scroll";
 
 const KEY = Symbol(
   "bb.sql-editor.editor-panel"
@@ -53,7 +52,6 @@ export const provideEditorPanelContext = (base: {
 
   const context = {
     ...base,
-    ...useScroll(viewState),
     viewState,
     selectedSchemaName,
     updateViewState,

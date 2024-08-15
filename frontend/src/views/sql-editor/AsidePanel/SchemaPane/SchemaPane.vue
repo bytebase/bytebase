@@ -27,7 +27,7 @@
       <NTree
         v-if="tree"
         ref="treeRef"
-        :expanded-keys="expandedKeys"
+        v-model:expanded-keys="expandedKeys"
         :selected-keys="selectedKeys"
         :block-line="true"
         :data="tree"
@@ -55,8 +55,6 @@
 
     <MaskSpinner v-if="isFetchingMetadata" class="!bg-white/75" />
 
-    <HoverPanel :offset-x="4" :offset-y="0" :margin="4" />
-
     <BBModal :show="!!schemaViewer" @close="schemaViewer = undefined">
       <template v-if="schemaViewer" #title>
         <RichDatabaseName :database="schemaViewer.database" />
@@ -72,8 +70,8 @@
 
 <script setup lang="ts">
 import { computedAsync, useElementSize, useMounted } from "@vueuse/core";
-import { uniq } from "lodash-es";
-import { NDropdown, NEmpty, NTree, useDialog, type TreeOption } from "naive-ui";
+import { uniq, without } from "lodash-es";
+import { NDropdown, NEmpty, NTree, type TreeOption } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { computed, h, nextTick, ref, watch } from "vue";
 import { BBModal } from "@/bbkit";
@@ -88,17 +86,11 @@ import {
 } from "@/store";
 import { UNKNOWN_ID } from "@/types";
 import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
-import {
-  extractDatabaseResourceName,
-  findAncestor,
-  isDescendantOf,
-} from "@/utils";
+import { extractDatabaseResourceName, isDescendantOf } from "@/utils";
 import { useSQLEditorContext } from "../../context";
-import { provideHoverStateContext } from "./HoverPanel";
-import HoverPanel from "./HoverPanel";
 import SyncSchemaButton from "./SyncSchemaButton.vue";
 import { Label } from "./TreeNode";
-import { selectAllFromTableOrView, useDropdown } from "./actions";
+import { useDropdown, useActions } from "./actions";
 import {
   type NodeTarget,
   type TreeNode,
@@ -119,12 +111,6 @@ const { height: treeContainerHeight } = useElementSize(
 const searchPattern = ref("");
 const { schemaViewer } = useSQLEditorContext();
 const {
-  state: hoverState,
-  position: hoverPosition,
-  update: updateHoverState,
-} = provideHoverStateContext();
-const $d = useDialog();
-const {
   show: showDropdown,
   context: dropdownContext,
   position: dropdownPosition,
@@ -132,6 +118,7 @@ const {
   handleSelect: handleDropdownSelect,
   handleClickoutside: handleDropdownClickoutside,
 } = useDropdown();
+const { selectAllFromTableOrView, viewDetail } = useActions();
 const { events: clickEvents, handleClick } = useClickNode();
 const { currentTab } = storeToRefs(useSQLEditorTabStore());
 const { connection, database } = useConnectionOfCurrentSQLEditorTab();
@@ -178,6 +165,11 @@ const upsertExpandedKeys = (keys: string[]) => {
   if (!curr) return;
   expandedKeys.value = uniq([...curr, ...keys]);
 };
+const removeExpandedKeys = (keys: string[]) => {
+  const curr = expandedKeys.value;
+  if (!curr) return;
+  expandedKeys.value = without(curr, ...keys);
+};
 
 const defaultExpandedKeys = () => {
   if (!tree.value) return [];
@@ -206,6 +198,11 @@ const nodeProps = ({ option }: { option: TreeOption }) => {
     onClick(e: MouseEvent) {
       if (node.disabled) return;
 
+      if (isDescendantOf(e.target as Element, ".n-tree-node-switcher")) {
+        toggleExpanded(node);
+        return;
+      }
+
       if (isDescendantOf(e.target as Element, ".n-tree-node-content")) {
         handleClick(node);
         // const { type, target } = node.meta;
@@ -222,53 +219,6 @@ const nodeProps = ({ option }: { option: TreeOption }) => {
         //   }
         // }
       }
-    },
-    // ondblclick() {
-    //   if (node.meta.type === "table" || node.meta.type === "view") {
-    //     selectAllFromTableOrView($d, node);
-    //   }
-    // },
-    onmouseenter(e: MouseEvent) {
-      const { type } = node.meta;
-      if (
-        type === "table" ||
-        type === "external-table" ||
-        type === "column" ||
-        type === "view" ||
-        type === "partition-table" ||
-        type === "procedure" ||
-        type === "function"
-      ) {
-        const target = node.meta.target as NodeTarget<
-          | "table"
-          | "external-table"
-          | "column"
-          | "view"
-          | "partition-table"
-          | "procedure"
-          | "function"
-        >;
-        if (hoverState.value) {
-          updateHoverState(target, "before", 0 /* overrideDelay */);
-        } else {
-          updateHoverState(target, "before");
-        }
-        nextTick().then(() => {
-          // Find the node element and put the database panel to the right corner
-          // of the node
-          const wrapper = findAncestor(e.target as HTMLElement, ".n-tree-node");
-          if (!wrapper) {
-            updateHoverState(undefined, "after", 0 /* overrideDelay */);
-            return;
-          }
-          const bounding = wrapper.getBoundingClientRect();
-          hoverPosition.value.x = bounding.right;
-          hoverPosition.value.y = bounding.top;
-        });
-      }
-    },
-    onmouseleave() {
-      updateHoverState(undefined, "after");
     },
     oncontextmenu(e: MouseEvent) {
       e.preventDefault();
@@ -304,7 +254,8 @@ const selectedKeys = computed(() => {
   return [`${db.name}/schemas/${schema}/tables/${table}`];
 });
 
-const expandNodeRecursively = (node: TreeNode) => {
+// bottom-up recursively
+const expandNode = (node: TreeNode) => {
   const keysToExpand: string[] = [];
   const walk = (node: TreeNode | undefined) => {
     if (!node) return;
@@ -316,13 +267,36 @@ const expandNodeRecursively = (node: TreeNode) => {
   walk(node);
   upsertExpandedKeys(keysToExpand);
 };
+// top-down recursively
+const collapseNode = (node: TreeNode) => {
+  const keysToCollapse: string[] = [];
+  const walk = (node: TreeNode) => {
+    if (!ExpandableNodeTypes.includes(node.meta.type)) return;
+    keysToCollapse.push(node.key);
+    node.children?.forEach((child: TreeNode) => {
+      walk(child);
+    });
+  };
+  walk(node);
+  removeExpandedKeys(keysToCollapse);
+};
+
+const toggleExpanded = (node: TreeNode) => {
+  if (expandedKeys.value.includes(node.key)) {
+    collapseNode(node);
+  } else {
+    expandNode(node);
+  }
+};
 
 useEmitteryEventListener(clickEvents, "click", ({ node }) => {
-  console.log("click", node);
-  expandNodeRecursively(node);
+  expandNode(node);
+  viewDetail(node);
 });
 useEmitteryEventListener(clickEvents, "double-click", ({ node }) => {
-  console.log("double-click", node);
+  if (node.meta.type === "table" || node.meta.type === "view") {
+    selectAllFromTableOrView(node);
+  }
 });
 
 watch(
@@ -338,7 +312,6 @@ watch(
     if (tab) {
       const { database } = extractDatabaseResourceName(metadata.name);
       if (database !== tab.treeState.database) {
-        console.log("override default expanded keys");
         tab.treeState.database = database;
         tab.treeState.keys = defaultExpandedKeys();
       }
