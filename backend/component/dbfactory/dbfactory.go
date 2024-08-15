@@ -50,72 +50,7 @@ func (d *DBFactory) GetAdminDatabaseDriver(ctx context.Context, instance *store.
 	if database != nil && database.DataShare {
 		datashare = true
 	}
-	if instance.Engine == storepb.Engine_ORACLE && database != nil && database.ServiceName != "" {
-		// For Oracle, we map CDB as instance and PDB as database.
-		// The instance data source is the data source for CDB.
-		// So, if the database is not nil, which means we want to connect the PDB, we need to override the database name, service name, and sid.
-		dataSource = dataSource.Copy()
-		dataSource.Database = database.DatabaseName
-		dataSource.ServiceName = database.ServiceName
-		dataSource.SID = ""
-		databaseName = database.DatabaseName
-	}
 	return d.GetDataSourceDriver(ctx, instance, dataSource, databaseName, datashare, false /* readOnly */, connectionContext)
-}
-
-// GetReadOnlyDatabaseDriver gets the read-only database driver using the instance's read-only data source.
-// If the read-only data source is not defined, we will fallback to admin data source.
-// Upon successful return, caller must call driver.Close(). Otherwise, it will leak the database connection.
-func (d *DBFactory) GetReadOnlyDatabaseDriver(ctx context.Context, instance *store.InstanceMessage, database *store.DatabaseMessage, dataSourceID string) (db.Driver, error) {
-	dataSource, databaseName, err := d.GetReadOnlyDatabaseSource(instance, database, dataSourceID)
-	if err != nil {
-		return nil, err
-	}
-	dataShare := false
-	if database != nil {
-		dataShare = database.DataShare
-	}
-	return d.GetDataSourceDriver(ctx, instance, dataSource, databaseName, dataShare, true /* readOnly */, db.ConnectionContext{})
-}
-
-// GetReadOnlyDatabaseSource returns the read-only data source for the given instance and database.
-func (*DBFactory) GetReadOnlyDatabaseSource(instance *store.InstanceMessage, database *store.DatabaseMessage, dataSourceID string) (*store.DataSourceMessage, string, error) {
-	var dataSource *store.DataSourceMessage
-	if dataSourceID == "" {
-		dataSource = utils.DataSourceFromInstanceWithType(instance, api.RO)
-		adminDataSource := utils.DataSourceFromInstanceWithType(instance, api.Admin)
-		// If there are no read-only data source, fall back to admin data source.
-		if dataSource == nil {
-			dataSource = adminDataSource
-		}
-	} else {
-		for _, ds := range instance.DataSources {
-			if ds.ID == dataSourceID {
-				dataSource = ds
-				break
-			}
-		}
-	}
-	if dataSource == nil {
-		return nil, "", common.Errorf(common.Internal, "data source not found for instance %q", instance.Title)
-	}
-
-	databaseName := ""
-	if database != nil {
-		databaseName = database.DatabaseName
-	}
-	if instance.Engine == storepb.Engine_ORACLE && database != nil && database.ServiceName != "" {
-		// For Oracle, we map CDB as instance and PDB as database.
-		// The instance data source is the data source for CDB.
-		// So, if the database is not nil, which means we want to connect the PDB, we need to override the database name, service name, and sid.
-		dataSource = dataSource.Copy()
-		dataSource.Database = database.DatabaseName
-		dataSource.ServiceName = database.ServiceName
-		dataSource.SID = ""
-		databaseName = database.DatabaseName
-	}
-
-	return dataSource, databaseName, nil
 }
 
 // GetDataSourceDriver returns the database driver for a data source.
