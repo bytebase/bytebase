@@ -80,14 +80,14 @@ const props = defineProps<{
   ignorePlanCheckStatus?: boolean;
 }>();
 
-const { isCreating, issue } = useIssueContext();
+const { isCreating } = useIssueContext();
 
 const planCheckStatus = computed(() => {
   if (props.ignorePlanCheckStatus) return undefined;
   if (isCreating.value) return undefined;
   if (!props.task) return undefined;
 
-  return planCheckStatusForTask(issue.value, props.task);
+  return planCheckStatusForTask(props.task);
 });
 
 const classes = computed((): string => {

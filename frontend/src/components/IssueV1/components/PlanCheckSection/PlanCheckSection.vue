@@ -13,7 +13,6 @@
 import { computed } from "vue";
 import {
   databaseForTask,
-  planCheckRunListForTask,
   planSpecHasPlanChecks,
   specForTask,
   useIssueContext,
@@ -24,7 +23,7 @@ import { EMPTY_ID } from "@/types";
 import { extractUserResourceName, hasProjectPermissionV2 } from "@/utils";
 
 const currentUser = useCurrentUserV1();
-const { issue, selectedTask } = useIssueContext();
+const { issue, selectedTask, getPlanCheckRunsForTask } = useIssueContext();
 
 const show = computed(() => {
   const spec = specForTask(issue.value.planEntity, selectedTask.value);
@@ -57,7 +56,7 @@ const allowRunChecks = computed(() => {
 const planCheckRunList = computed(() => {
   // If a task is selected, show plan checks for the task.
   if (selectedTask.value && selectedTask.value.uid !== String(EMPTY_ID)) {
-    return planCheckRunListForTask(issue.value, selectedTask.value);
+    return getPlanCheckRunsForTask(selectedTask.value);
   }
   // Otherwise, show plan checks for the issue.
   return issue.value.planCheckRunList;
