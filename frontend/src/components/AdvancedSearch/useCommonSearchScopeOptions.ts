@@ -59,9 +59,7 @@ export const useCommonSearchScopeOptions = (
     project.value ? useDatabaseV1List(project.value).databaseList.value : []
   );
 
-  const instanceList = computed(() =>
-    databaseList.value.length > 0 ? useInstanceResourceList().value : []
-  );
+  const instanceList = computed(() => useInstanceResourceList().value);
 
   // fullScopeOptions provides full search scopes and options.
   // we need this as the source of truth.
@@ -162,35 +160,22 @@ export const useCommonSearchScopeOptions = (
           };
         }),
       }),
-      ["project-assigned"]: () => ({
-        id: "project-assigned",
-        title: t("issue.advanced-search.scope.project-assigned.title"),
-        description: t(
-          "issue.advanced-search.scope.project-assigned.description"
-        ),
-        options: [
-          {
-            value: "yes",
-            keywords: ["yes"],
-            render: () =>
-              renderSpan(
-                t("issue.advanced-search.scope.project-assigned.value.yes")
-              ),
-          },
-          {
-            value: "no",
-            keywords: ["no"],
-            render: () =>
-              renderSpan(
-                t("issue.advanced-search.scope.project-assigned.value.no")
-              ),
-          },
-        ],
-      }),
     } as Record<SearchScopeId, () => ScopeOption>;
 
     const scopes: ScopeOption[] = [];
     unref(supportOptionIdList).forEach((id) => {
+      // Do not show database scope if there are no databases.
+      if (databaseList.value.length === 0) {
+        if (id === "database") {
+          return;
+        }
+        // Do not show instance scope if there are no instances.
+        if (instanceList.value.length === 0) {
+          if (id === "instance") {
+            return;
+          }
+        }
+      }
       const create = scopeCreators[id];
       if (create) {
         scopes.push(create());

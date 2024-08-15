@@ -1103,14 +1103,6 @@
           "description": "作業指示書の承認ステータスで検索する",
           "title": "承認状況"
         },
-        "project-assigned": {
-          "title": "割り当てられたプロジェクト",
-          "description": "データベースのプロジェクト割り当て状況から検索",
-          "value": {
-            "yes": "はい",
-            "no": "いいえ"
-          }
-        },
         "label": {
           "title": "ラベル",
           "description": "チケットタグで絞り込む"
