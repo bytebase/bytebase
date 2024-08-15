@@ -260,31 +260,13 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 	}
 	totalRowsAffected := int64(0)
 	if len(commands) != 0 {
-		totalCommands := len(commands)
 		tx, err := driver.db.BeginTx(ctx, nil)
 		if err != nil {
 			return 0, err
 		}
 		defer tx.Rollback()
 
-		for i, command := range commands {
-			// Start the current chunk.
-			// Set the progress information for the current chunk.
-			if opts.UpdateExecutionStatus != nil {
-				opts.UpdateExecutionStatus(&v1pb.TaskRun_ExecutionDetail{
-					CommandsTotal:     int32(totalCommands),
-					CommandsCompleted: int32(i),
-					CommandStartPosition: &v1pb.TaskRun_ExecutionDetail_Position{
-						Line:   int32(command.FirstStatementLine),
-						Column: int32(command.FirstStatementColumn),
-					},
-					CommandEndPosition: &v1pb.TaskRun_ExecutionDetail_Position{
-						Line:   int32(command.LastLine),
-						Column: int32(command.LastColumn),
-					},
-				})
-			}
-
+		for _, command := range commands {
 			sqlResult, err := tx.ExecContext(ctx, command.Text)
 			if err != nil {
 				return 0, &db.ErrorWithPosition{

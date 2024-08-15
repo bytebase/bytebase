@@ -2179,14 +2179,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.TaskRun.ExecutionDetail"><span class="badge">M</span>TaskRun.ExecutionDetail</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.TaskRun.ExecutionDetail.Position"><span class="badge">M</span>TaskRun.ExecutionDetail.Position</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.TaskRun.PriorBackupDetail"><span class="badge">M</span>TaskRun.PriorBackupDetail</a>
                 </li>
               
@@ -2261,10 +2253,6 @@
               
                 <li>
                   <a href="#bytebase.v1.Task.Type"><span class="badge">E</span>Task.Type</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.TaskRun.ExecutionStatus"><span class="badge">E</span>TaskRun.ExecutionStatus</a>
                 </li>
               
                 <li>
@@ -23455,20 +23443,6 @@ Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory
                 </tr>
               
                 <tr>
-                  <td>execution_status</td>
-                  <td><a href="#bytebase.v1.TaskRun.ExecutionStatus">TaskRun.ExecutionStatus</a></td>
-                  <td></td>
-                  <td><p><strong>Deprecated.</strong>  </p></td>
-                </tr>
-              
-                <tr>
-                  <td>execution_detail</td>
-                  <td><a href="#bytebase.v1.TaskRun.ExecutionDetail">TaskRun.ExecutionDetail</a></td>
-                  <td></td>
-                  <td><p><strong>Deprecated.</strong>  </p></td>
-                </tr>
-              
-                <tr>
                   <td>start_time</td>
                   <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
                   <td></td>
@@ -23494,108 +23468,6 @@ Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory
                   <td><a href="#bytebase.v1.TaskRun.SchedulerInfo">TaskRun.SchedulerInfo</a></td>
                   <td></td>
                   <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-            
-            
-            <h4>Fields with deprecated option</h4>
-            <table>
-              <thead>
-                <tr>
-                  <td>Name</td>
-                  <td>Option</td>
-                </tr>
-              </thead>
-              <tbody>
-              
-                <tr>
-                  <td>execution_status</td>
-                  <td><p>true</p></td>
-                </tr>
-              
-                <tr>
-                  <td>execution_detail</td>
-                  <td><p>true</p></td>
-                </tr>
-              
-              </tbody>
-            </table>
-            
-          
-
-        
-      
-        <h3 id="bytebase.v1.TaskRun.ExecutionDetail">TaskRun.ExecutionDetail</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>commands_total</td>
-                  <td><a href="#int32">int32</a></td>
-                  <td></td>
-                  <td><p>Currently, the following fields are only used for EXECUTING status. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>commands_completed</td>
-                  <td><a href="#int32">int32</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>command_start_position</td>
-                  <td><a href="#bytebase.v1.TaskRun.ExecutionDetail.Position">TaskRun.ExecutionDetail.Position</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>command_end_position</td>
-                  <td><a href="#bytebase.v1.TaskRun.ExecutionDetail.Position">TaskRun.ExecutionDetail.Position</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.TaskRun.ExecutionDetail.Position">TaskRun.ExecutionDetail.Position</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>line</td>
-                  <td><a href="#int32">int32</a></td>
-                  <td></td>
-                  <td><p>The line number, starting from 0. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>column</td>
-                  <td><a href="#int32">int32</a></td>
-                  <td></td>
-                  <td><p>The column number, starting from 0. </p></td>
                 </tr>
               
             </tbody>
@@ -24436,41 +24308,6 @@ Format: instances/{instance}/databases/{database} </p></td>
                 <td>DATABASE_DATA_EXPORT</td>
                 <td>12</td>
                 <td><p>use payload DatabaseDataExport</p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-      
-        <h3 id="bytebase.v1.TaskRun.ExecutionStatus">TaskRun.ExecutionStatus</h3>
-        <p></p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>EXECUTION_STATUS_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>PRE_EXECUTING</td>
-                <td>1</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>EXECUTING</td>
-                <td>2</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>POST_EXECUTING</td>
-                <td>3</td>
-                <td><p></p></td>
               </tr>
             
           </tbody>
