@@ -18,7 +18,6 @@ export const PROJECT_V1_ROUTE_BRANCH_REBASE = `${PROJECT_V1_ROUTE_DASHBOARD}.bra
 export const PROJECT_V1_ROUTE_ISSUES = `${PROJECT_V1_ROUTE_DASHBOARD}.issue`;
 export const PROJECT_V1_ROUTE_ISSUE_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.issue.detail`;
 export const PROJECT_V1_ROUTE_PLAN_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.plan.detail`;
-export const PROJECT_V1_ROUTE_CHANGE_HISTORIES = `${PROJECT_V1_ROUTE_DASHBOARD}.change-histories`;
 export const PROJECT_V1_ROUTE_CHANGELISTS = `${PROJECT_V1_ROUTE_DASHBOARD}.changelist`;
 export const PROJECT_V1_ROUTE_CHANGELIST_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.changelist.detail`;
 export const PROJECT_V1_ROUTE_SYNC_SCHEMA = `${PROJECT_V1_ROUTE_DASHBOARD}.sync-schema`;
@@ -175,20 +174,6 @@ const projectV1Routes: RouteRecordRaw[] = [
             props: true,
           },
         ],
-      },
-      {
-        path: "change-histories",
-        name: PROJECT_V1_ROUTE_CHANGE_HISTORIES,
-        meta: {
-          overrideTitle: true,
-          requiredProjectPermissionList: () => [
-            "bb.projects.get",
-            "bb.changeHistories.list",
-          ],
-        },
-        component: () =>
-          import("@/views/project/ProjectChangeHistoryDashboard.vue"),
-        props: true,
       },
       {
         path: "issues",
