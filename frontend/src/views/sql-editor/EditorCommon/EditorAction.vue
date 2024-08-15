@@ -51,7 +51,6 @@
       </NButton>
       <ResultLimitSelect />
       <QueryModeSelect v-if="showQueryModeSelect" :disabled="isExecutingSQL" />
-      <BatchQueryDatabasesSelector v-if="showBatchQuerySelector" />
     </div>
     <div
       class="action-right gap-x-2 flex overflow-x-auto sm:overflow-x-hidden sm:justify-end items-center"
@@ -121,15 +120,10 @@ import {
   useWorkSheetStore,
   useAppFeature,
 } from "@/store";
-import {
-  isValidDatabaseName,
-  type FeatureType,
-  type SQLEditorQueryParams,
-} from "@/types";
+import { type FeatureType, type SQLEditorQueryParams } from "@/types";
 import { keyboardShortcutStr } from "@/utils";
 import { useSQLEditorContext } from "../context";
 import AdminModeButton from "./AdminModeButton.vue";
-import BatchQueryDatabasesSelector from "./BatchQueryDatabasesSelector.vue";
 import QueryContextSettingPopover from "./QueryContextSettingPopover.vue";
 import QueryModeSelect from "./QueryModeSelect.vue";
 import ResultLimitSelect from "./ResultLimitSelect.vue";
@@ -158,9 +152,6 @@ const hasSharedSQLScriptFeature = featureToRef("bb.feature.shared-sql-script");
 const disallowShareWorksheet = useAppFeature(
   "bb.feature.sql-editor.disallow-share-worksheet"
 );
-const disallowBatchQuery = useAppFeature(
-  "bb.feature.sql-editor.disallow-batch-query"
-);
 
 const { currentTab, isDisconnected } = storeToRefs(tabStore);
 
@@ -174,7 +165,7 @@ const isEmptyStatement = computed(() => {
 const isExecutingSQL = computed(
   () => currentTab.value?.queryContext?.status === "EXECUTING"
 );
-const { instance, database } = useConnectionOfCurrentSQLEditorTab();
+const { instance } = useConnectionOfCurrentSQLEditorTab();
 
 const showSheetsFeature = computed(() => {
   const mode = currentTab.value?.mode;
@@ -197,20 +188,6 @@ const allowQuery = computed(() => {
   if (isEmptyStatement.value) return false;
   if (isExecutingSQL.value) return false;
   return true;
-});
-
-const showBatchQuerySelector = computed(() => {
-  if (disallowBatchQuery.value) {
-    return false;
-  }
-
-  const tab = currentTab.value;
-  return (
-    tab &&
-    // Only show entry when user selected a database.
-    isValidDatabaseName(database.value.name) &&
-    tab.mode !== "ADMIN"
-  );
 });
 
 const allowSave = computed(() => {
