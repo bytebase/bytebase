@@ -3661,5 +3661,8 @@
     "source-branch": {
       "self": "源分支"
     }
+  },
+  "worksheet": {
+    "self": "工作表"
   }
 }

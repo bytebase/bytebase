@@ -41,10 +41,10 @@ const { props: buttonProps, style: buttonStyle } = useButton({
 
 const text = computed(() => {
   switch (props.tab) {
-    case "WORKSHEET":
-      return t("sheet.sheet");
     case "SCHEMA":
       return t("common.schema");
+    case "WORKSHEET":
+      return t("worksheet.self");
     case "HISTORY":
       return t("common.history");
   }

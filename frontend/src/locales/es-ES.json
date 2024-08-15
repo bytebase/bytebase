@@ -3661,5 +3661,8 @@
     "source-branch": {
       "self": "Rama fuente"
     }
+  },
+  "worksheet": {
+    "self": "Hoja de trabajo"
   }
 }

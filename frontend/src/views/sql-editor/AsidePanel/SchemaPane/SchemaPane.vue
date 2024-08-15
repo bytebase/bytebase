@@ -4,17 +4,19 @@
   >
     <div class="px-1 flex flex-row gap-1">
       <div class="flex-1 overflow-hidden">
-        <DatabaseSelect />
+        <SearchBox
+          v-model:value="searchPattern"
+          size="small"
+          style="width: 100%; max-width: 100%"
+        />
       </div>
       <div class="shrink-0 flex items-center">
-        <SyncSchemaButton :database="database" :metadata="metadata" />
+        <SyncSchemaButton
+          :database="database"
+          :metadata="metadata"
+          size="small"
+        />
       </div>
-    </div>
-    <div class="px-1 flex flex-row gap-1">
-      <SearchBox
-        v-model:value="searchPattern"
-        style="width: 100%; max-width: 100%"
-      />
     </div>
 
     <div
@@ -25,13 +27,11 @@
       <NTree
         v-if="tree"
         ref="treeRef"
-        :default-expanded-keys="defaultExpandedKeys"
         :selected-keys="selectedKeys"
         :block-line="true"
         :data="tree"
         :show-irrelevant-nodes="false"
         :pattern="mounted ? searchPattern : ''"
-        :expand-on-click="true"
         :virtual-scroll="true"
         :node-props="nodeProps"
         :theme-overrides="{ nodeHeight: '21px' }"
@@ -78,6 +78,7 @@ import { BBModal } from "@/bbkit";
 import TableSchemaViewer from "@/components/TableSchemaViewer.vue";
 import MaskSpinner from "@/components/misc/MaskSpinner.vue";
 import { RichDatabaseName, SearchBox } from "@/components/v2";
+import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import {
   useConnectionOfCurrentSQLEditorTab,
   useDBSchemaV1Store,
@@ -87,7 +88,6 @@ import { UNKNOWN_ID } from "@/types";
 import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
 import { findAncestor, isDescendantOf } from "@/utils";
 import { useSQLEditorContext } from "../../context";
-import DatabaseSelect from "./DatabaseSelect.vue";
 import { provideHoverStateContext } from "./HoverPanel";
 import HoverPanel from "./HoverPanel";
 import SyncSchemaButton from "./SyncSchemaButton.vue";
@@ -97,6 +97,7 @@ import {
   type NodeTarget,
   type TreeNode,
   buildDatabaseSchemaTree,
+  useClickNode,
 } from "./common";
 
 const mounted = useMounted();
@@ -124,6 +125,7 @@ const {
   handleSelect: handleDropdownSelect,
   handleClickoutside: handleDropdownClickoutside,
 } = useDropdown();
+const { events: clickEvents, handleClick } = useClickNode();
 const { currentTab } = storeToRefs(useSQLEditorTabStore());
 const { connection, database } = useConnectionOfCurrentSQLEditorTab();
 const isFetchingMetadata = ref(false);
@@ -175,26 +177,27 @@ const nodeProps = ({ option }: { option: TreeOption }) => {
       if (node.disabled) return;
 
       if (isDescendantOf(e.target as Element, ".n-tree-node-content")) {
-        const { type, target } = node.meta;
-        // Check if clicked on the content part.
-        // And ignore the fold/unfold arrow.
-        const tab = currentTab.value;
-        if (tab) {
-          if (type === "table" || type === "column") {
-            if ("table" in target) {
-              const { schema, table } = target as NodeTarget<"table">;
-              tab.connection.schema = schema.name;
-              tab.connection.table = table.name;
-            }
-          }
-        }
+        handleClick(node);
+        // const { type, target } = node.meta;
+        // // Check if clicked on the content part.
+        // // And ignore the fold/unfold arrow.
+        // const tab = currentTab.value;
+        // if (tab) {
+        //   if (type === "table" || type === "column") {
+        //     if ("table" in target) {
+        //       const { schema, table } = target as NodeTarget<"table">;
+        //       tab.connection.schema = schema.name;
+        //       tab.connection.table = table.name;
+        //     }
+        //   }
+        // }
       }
     },
-    ondblclick() {
-      if (node.meta.type === "table" || node.meta.type === "view") {
-        selectAllFromTableOrView($d, node);
-      }
-    },
+    // ondblclick() {
+    //   if (node.meta.type === "table" || node.meta.type === "view") {
+    //     selectAllFromTableOrView($d, node);
+    //   }
+    // },
     onmouseenter(e: MouseEvent) {
       const { type } = node.meta;
       if (
@@ -269,6 +272,13 @@ const selectedKeys = computed(() => {
   const { schema, table } = connection.value;
   if (!table) return [];
   return [`${db.name}/schemas/${schema}/tables/${table}`];
+});
+
+useEmitteryEventListener(clickEvents, "click", ({ node }) => {
+  console.log("click", node);
+});
+useEmitteryEventListener(clickEvents, "double-click", ({ node }) => {
+  console.log("double-click", node);
 });
 
 watch(tree, () => {
