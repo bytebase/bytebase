@@ -13,6 +13,7 @@ import (
 	"time"
 
 	lru "github.com/hashicorp/golang-lru/v2"
+	"github.com/hashicorp/golang-lru/v2/expirable"
 	"github.com/pkg/errors"
 )
 
@@ -120,10 +121,22 @@ func (p *provider) refreshToken(ctx context.Context) error {
 	return nil
 }
 
-func (p *provider) getUserIDByEmail(ctx context.Context, email string) (string, error) {
+func (p *provider) getUserIDByEmail(ctx context.Context, email string) (id string, rerr error) {
 	if id, ok := userIDCache.Get(email); ok {
 		return id, nil
 	}
+	if t, ok := notFoundUserCache.Peek(email); ok {
+		return "", errors.Errorf("user wasn't found at %v with errcode 46004", t)
+	}
+
+	defer func() {
+		// errcode 46004 means user not found.
+		// we consider the error to be permanent and won't retry
+		// for the email for the next 12 hours.
+		if rerr != nil && strings.Contains(rerr.Error(), "errcode 46004") {
+			notFoundUserCache.Add(email, time.Now())
+		}
+	}()
 
 	url, err := url.Parse("https://qyapi.weixin.qq.com/cgi-bin/user/get_userid_by_email")
 	if err != nil {
@@ -277,6 +290,8 @@ var userIDCache = func() *lru.Cache[string, string] {
 	}
 	return cache
 }()
+
+var notFoundUserCache = expirable.NewLRU[string, time.Time](100, nil, time.Hour*12)
 
 func getTokenCached(ctx context.Context, c *http.Client, corpID, secret string) (string, error) {
 	tokenCacheLock.Lock()
