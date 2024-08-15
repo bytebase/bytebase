@@ -143,7 +143,6 @@ import { useI18n } from "vue-i18n";
 import type { TaskRolloutAction } from "@/components/IssueV1/logic";
 import {
   databaseForTask,
-  planCheckRunListForTask,
   semanticTaskType,
   stageForTask,
   taskRolloutActionButtonProps,
@@ -178,7 +177,8 @@ const { t } = useI18n();
 const state = reactive<LocalState>({
   loading: false,
 });
-const { issue, activeTask, events } = useIssueContext();
+const { issue, activeTask, events, getPlanCheckRunsForTask } =
+  useIssueContext();
 const comment = ref("");
 const performActionAnyway = ref(false);
 
@@ -201,9 +201,7 @@ const stage = computed(() => {
 });
 
 const planCheckRunList = computed(() => {
-  const list = props.taskList.flatMap((task) =>
-    planCheckRunListForTask(issue.value, task)
-  );
+  const list = props.taskList.flatMap(getPlanCheckRunsForTask);
   return uniqBy(list, (checkRun) => checkRun.uid);
 });
 

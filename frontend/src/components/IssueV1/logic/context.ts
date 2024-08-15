@@ -5,7 +5,7 @@ import type { InjectionKey, Ref, ComputedRef } from "vue";
 import { inject, provide } from "vue";
 import type { ComposedIssue, ComposedUser, ReviewFlow } from "@/types";
 import type { Issue_Approver_Status } from "@/types/proto/v1/issue_service";
-import type { Plan_Spec } from "@/types/proto/v1/plan_service";
+import type { Plan_Spec, PlanCheckRun } from "@/types/proto/v1/plan_service";
 import type { Stage, Task } from "@/types/proto/v1/rollout_service";
 import type {
   IssueReviewAction,
@@ -69,6 +69,9 @@ export type IssueContext = {
   // misc
   dialog: ReturnType<typeof useDialog>;
   reInitialize: (overrides?: Record<string, string>) => Promise<void>;
+
+  // utility functions
+  getPlanCheckRunsForTask: (task: Task) => PlanCheckRun[];
 };
 
 const KEY = Symbol(
