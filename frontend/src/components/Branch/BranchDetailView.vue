@@ -205,7 +205,7 @@ const currentUser = useCurrentUserV1();
 
 const checkPermission = (permission: Permission): boolean => {
   return (
-    hasProjectPermissionV2(props.project, currentUser.value, permission) ||
+    hasProjectPermissionV2(props.project, permission) ||
     extractUserEmail(props.cleanBranch.creator) === currentUser.value.email
   );
 };
@@ -257,11 +257,7 @@ const showMergeBranchButton = computed(() => {
 const showRebaseBranchButton = computed(() => {
   // For main branches: only project owners are allowed
   if (!parentBranch.value) {
-    return hasProjectPermissionV2(
-      props.project,
-      useCurrentUserV1().value,
-      "bb.branches.admin"
-    );
+    return hasProjectPermissionV2(props.project, "bb.branches.admin");
   }
 
   return checkPermission("bb.branches.update");

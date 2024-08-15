@@ -218,7 +218,6 @@ import {
   useAnomalyV1Store,
   useAppFeature,
   useCurrentUserIamPolicy,
-  useCurrentUserV1,
   useDatabaseV1Store,
   useEnvironmentV1Store,
 } from "@/store";
@@ -273,7 +272,6 @@ const state = reactive<LocalState>({
   selectedTab: "overview",
 });
 const route = useRoute();
-const currentUserV1 = useCurrentUserV1();
 const currentUserIamPolicy = useCurrentUserIamPolicy();
 const anomalyList = ref<Anomaly[]>([]);
 const {
@@ -333,7 +331,7 @@ const hasSchemaDiagramFeature = computed((): boolean => {
 });
 
 const allowQuery = computed(() => {
-  return isDatabaseV1Queryable(database.value, currentUserV1.value);
+  return isDatabaseV1Queryable(database.value);
 });
 
 const tryTransferProject = () => {

@@ -30,7 +30,7 @@ import {
   taskRolloutActionDisplayName,
   useIssueContext,
 } from "@/components/IssueV1";
-import { useCurrentUserV1, useAppFeature } from "@/store";
+import { useCurrentUserV1, useCurrentRoles, useAppFeature } from "@/store";
 import { PresetRoleType } from "@/types";
 import {
   IssueStatus,
@@ -43,6 +43,7 @@ import ReviewActionButton from "./ReviewActionButton.vue";
 
 const { t } = useI18n();
 const currentUser = useCurrentUserV1();
+const currentRoles = useCurrentRoles();
 const hideIssueReviewActions = useAppFeature(
   "bb.feature.issue.hide-review-actions"
 );
@@ -110,8 +111,8 @@ const forceRolloutActionList = computed((): ExtraActionOption[] => {
 
   // Still using role based permission checks
   if (
-    !currentUser.value.roles.includes(PresetRoleType.WORKSPACE_ADMIN) &&
-    !currentUser.value.roles.includes(PresetRoleType.WORKSPACE_DBA)
+    !currentRoles.value.includes(PresetRoleType.WORKSPACE_ADMIN) &&
+    !currentRoles.value.includes(PresetRoleType.WORKSPACE_DBA)
   ) {
     // Only for workspace admins and DBAs.
     return [];

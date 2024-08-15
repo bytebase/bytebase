@@ -46,7 +46,7 @@ const allowRunChecks = computed(() => {
     return true;
   }
   if (
-    hasProjectPermissionV2(plan.value.projectEntity, me, "bb.planCheckRuns.run")
+    hasProjectPermissionV2(plan.value.projectEntity, "bb.planCheckRuns.run")
   ) {
     return true;
   }

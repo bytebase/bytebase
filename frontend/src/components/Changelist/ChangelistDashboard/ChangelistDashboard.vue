@@ -16,7 +16,7 @@
 <script lang="ts" setup>
 import { computed, onMounted, ref } from "vue";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
-import { useChangelistStore, useCurrentUserV1 } from "@/store";
+import { useChangelistStore } from "@/store";
 import type { ComposedProject } from "@/types";
 import type { Changelist } from "@/types/proto/v1/changelist_service";
 import { hasProjectPermissionV2 } from "@/utils";
@@ -66,10 +66,6 @@ useEmitteryEventListener(events, "refresh", fetchChangelists);
 onMounted(fetchChangelists);
 
 const allowCreate = computed(() => {
-  return hasProjectPermissionV2(
-    props.project,
-    useCurrentUserV1().value,
-    "bb.changelists.create"
-  );
+  return hasProjectPermissionV2(props.project, "bb.changelists.create");
 });
 </script>

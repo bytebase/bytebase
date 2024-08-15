@@ -50,7 +50,6 @@ import type { SelectOption } from "naive-ui";
 import type { SelectBaseOption } from "naive-ui/lib/select/src/interface";
 import { computed, h } from "vue";
 import { PROJECT_V1_ROUTE_SETTINGS } from "@/router/dashboard/projectV1";
-import { useCurrentUserV1 } from "@/store";
 import { getProjectName } from "@/store/modules/v1/common";
 import type { ComposedProject } from "@/types";
 import { Label } from "@/types/proto/v1/project_service";
@@ -80,13 +79,8 @@ const emit = defineEmits<{
   (event: "update:selected", selected: string[]): void;
 }>();
 
-const currentUser = useCurrentUserV1();
 const hasPermission = computed(() => {
-  return hasProjectPermissionV2(
-    props.project,
-    currentUser.value,
-    "bb.projects.update"
-  );
+  return hasProjectPermissionV2(props.project, "bb.projects.update");
 });
 
 const issueLabels = computed(() => {

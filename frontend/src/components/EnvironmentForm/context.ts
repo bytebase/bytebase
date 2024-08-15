@@ -4,8 +4,7 @@ import { useDialog } from "naive-ui";
 import type { InjectionKey, Ref } from "vue";
 import { provide, inject, computed, ref, watch } from "vue";
 import type { ResourceIdField } from "@/components/v2";
-import { useCurrentUserV1 } from "@/store";
-import type { FeatureType, Permission } from "@/types";
+import type { FeatureType } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import type {
   Environment,
@@ -32,7 +31,6 @@ export const provideEnvironmentFormContext = (baseContext: {
   environmentTier: Ref<EnvironmentTier>;
 }) => {
   const $d = useDialog();
-  const me = useCurrentUserV1();
   const events = new Emittery<{
     create: {
       environment: Partial<Environment>;
@@ -82,10 +80,6 @@ export const provideEnvironmentFormContext = (baseContext: {
     }
   };
 
-  const hasPermission = (permission: Permission) => {
-    return hasWorkspacePermissionV2(me.value, permission);
-  };
-
   const allowCreate = computed(() => {
     return (
       !isEmpty(state.value.environment.title) &&
@@ -98,7 +92,7 @@ export const provideEnvironmentFormContext = (baseContext: {
     return (
       create.value ||
       (state.value.environment.state === State.ACTIVE &&
-        hasPermission("bb.environments.update"))
+        hasWorkspacePermissionV2("bb.environments.update"))
     );
   });
 
@@ -121,7 +115,7 @@ export const provideEnvironmentFormContext = (baseContext: {
     resourceIdField,
     allowCreate,
     allowEdit,
-    hasPermission,
+    hasPermission: hasWorkspacePermissionV2,
     valueChanged,
   };
   provide(KEY, context);

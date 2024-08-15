@@ -5,7 +5,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import ProjectMemberPanel from "@/components/ProjectMember/ProjectMemberPanel.vue";
-import { useCurrentUserV1, useProjectByName } from "@/store";
+import { useProjectByName } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { DEFAULT_PROJECT_NAME } from "@/types";
 import { State } from "@/types/proto/v1/common";
@@ -28,10 +28,6 @@ const allowEdit = computed(() => {
     return false;
   }
 
-  return hasProjectPermissionV2(
-    project.value,
-    useCurrentUserV1().value,
-    "bb.projects.setIamPolicy"
-  );
+  return hasProjectPermissionV2(project.value, "bb.projects.setIamPolicy");
 });
 </script>

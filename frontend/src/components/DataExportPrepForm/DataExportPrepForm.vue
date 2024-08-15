@@ -61,11 +61,7 @@ import { useRouter } from "vue-router";
 import AdvancedSearch from "@/components/AdvancedSearch";
 import DatabaseV1Table from "@/components/v2/Model/DatabaseV1Table";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
-import {
-  useCurrentUserV1,
-  useDatabaseV1Store,
-  useProjectV1Store,
-} from "@/store";
+import { useDatabaseV1Store, useProjectV1Store } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import { UNKNOWN_ID, DEFAULT_PROJECT_NAME } from "@/types";
 import { State } from "@/types/proto/v1/common";
@@ -98,7 +94,6 @@ const props = defineProps({
 const emit = defineEmits(["dismiss"]);
 
 const router = useRouter();
-const currentUserV1 = useCurrentUserV1();
 const projectV1Store = useProjectV1Store();
 const databaseV1Store = useDatabaseV1Store();
 
@@ -139,7 +134,7 @@ const rawDatabaseList = computed(() => {
   if (selectedProject.value) {
     list = databaseV1Store.databaseListByProject(selectedProject.value.name);
   } else {
-    list = databaseV1Store.databaseListByUser(currentUserV1.value);
+    list = databaseV1Store.databaseListByUser;
   }
   list = list.filter(
     (db) => db.syncState == State.ACTIVE && db.project !== DEFAULT_PROJECT_NAME

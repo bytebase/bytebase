@@ -365,7 +365,7 @@ const allowEdit = computed(() => {
   }
   return (
     currentUserV1.value.name === user.value.name ||
-    hasWorkspacePermissionV2(currentUserV1.value, "bb.policies.update")
+    hasWorkspacePermissionV2("bb.policies.update")
   );
 });
 
@@ -464,7 +464,7 @@ const enable2FA = () => {
 const disable2FA = () => {
   if (
     actuatorStore.serverInfo?.require2fa &&
-    !hasWorkspacePermissionV2(currentUserV1.value, "bb.policies.update")
+    !hasWorkspacePermissionV2("bb.policies.update")
   ) {
     pushNotification({
       module: "bytebase",

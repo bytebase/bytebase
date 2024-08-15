@@ -259,7 +259,6 @@ import { WORKSPACE_ROOT_MODULE } from "@/router/dashboard/workspaceRoutes";
 import { SETTING_ROUTE_WORKSPACE_SUBSCRIPTION } from "@/router/dashboard/workspaceSetting";
 import {
   useActuatorV1Store,
-  useCurrentUserV1,
   useAppFeature,
   useSubscriptionV1Store,
 } from "@/store";
@@ -289,7 +288,6 @@ const state = reactive<LocalState>({
   showReleaseModal: false,
 });
 
-const currentUserV1 = useCurrentUserV1();
 const mainContainerRef = ref<HTMLDivElement>();
 const { width: windowWidth } = useWindowSize();
 
@@ -302,7 +300,7 @@ const sidebarView = computed(() => {
 });
 
 const hasPermission = computed(() =>
-  hasWorkspacePermissionV2(currentUserV1.value, "bb.settings.set")
+  hasWorkspacePermissionV2("bb.settings.set")
 );
 
 const { isDemo } = storeToRefs(actuatorStore);
@@ -326,7 +324,7 @@ const getQuickActionList = (list: QuickActionType[]): QuickActionType[] => {
       return false;
     }
     return QuickActionPermissionMap.get(action)?.every((permission) =>
-      hasWorkspacePermissionV2(currentUserV1.value, permission)
+      hasWorkspacePermissionV2(permission)
     );
   });
 };

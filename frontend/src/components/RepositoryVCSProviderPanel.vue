@@ -38,7 +38,7 @@ export default { name: "RepositoryVCSProviderPanel" };
 <script setup lang="ts">
 import { reactive, computed, watchEffect } from "vue";
 import { hasWorkspacePermissionV2 } from "@/utils";
-import { useCurrentUserV1, useVCSProviderStore } from "@/store";
+import { useVCSProviderStore } from "@/store";
 import type { VCSProvider } from "@/types/proto/v1/vcs_provider_service";
 import { WORKSPACE_ROUTE_GITOPS } from "@/router/dashboard/workspaceRoutes";
 import { NButton } from "naive-ui";
@@ -56,8 +56,6 @@ const emit = defineEmits<{
 const vcsV1Store = useVCSProviderStore();
 const state = reactive<LocalState>({});
 
-const currentUserV1 = useCurrentUserV1();
-
 const prepareVCSList = () => {
   vcsV1Store.getOrFetchVCSList();
 };
@@ -69,7 +67,7 @@ const vcsList = computed(() => {
 });
 
 const canManageVCSProvider = computed(() => {
-  return hasWorkspacePermissionV2(currentUserV1.value, "bb.vcsProviders.list");
+  return hasWorkspacePermissionV2("bb.vcsProviders.list");
 });
 
 const selectVCS = (vcs: VCSProvider) => {

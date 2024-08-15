@@ -71,7 +71,6 @@ import { BBSpin } from "@/bbkit";
 import { Drawer, DrawerContent } from "@/components/v2";
 import {
   pushNotification,
-  useCurrentUserV1,
   useGracefulRequest,
   useSlowQueryPolicyList,
   useSlowQueryPolicyStore,
@@ -138,7 +137,6 @@ const state = reactive<LocalState>({
 });
 
 const { t } = useI18n();
-const currentUser = useCurrentUserV1();
 const slowQueryStore = useSlowQueryStore();
 const loading = shallowRef(false);
 const slowQueryLogList = shallowRef<ComposedSlowQueryLog[]>([]);
@@ -146,7 +144,7 @@ const selectedSlowQueryLog = shallowRef<ComposedSlowQueryLog>();
 const syncing = shallowRef(false);
 
 const hasSyncPermission = computed(() =>
-  hasWorkspacePermissionV2(currentUser.value, "bb.instances.sync")
+  hasWorkspacePermissionV2("bb.instances.sync")
 );
 
 const searchScopes = computed(() => {
@@ -180,7 +178,7 @@ const allowAdmin = computed(() => {
     "bb.policies.update",
   ];
   return neededWorkspacePermissions.every((permission) =>
-    hasWorkspacePermissionV2(currentUser.value, permission)
+    hasWorkspacePermissionV2(permission)
   );
 });
 

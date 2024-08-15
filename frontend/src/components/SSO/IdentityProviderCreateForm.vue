@@ -636,11 +636,7 @@ import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
 import { identityProviderClient } from "@/grpcweb";
 import { WORKSPACE_ROUTE_SSO } from "@/router/dashboard/workspaceRoutes";
 import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/router/dashboard/workspaceSetting";
-import {
-  pushNotification,
-  useActuatorV1Store,
-  useCurrentUserV1,
-} from "@/store";
+import { pushNotification, useActuatorV1Store } from "@/store";
 import { useIdentityProviderStore } from "@/store/modules/idp";
 import {
   getIdentityProviderResourceId,
@@ -683,7 +679,6 @@ const props = defineProps<{
 
 const { t } = useI18n();
 const router = useRouter();
-const currentUser = useCurrentUserV1();
 const identityProviderStore = useIdentityProviderStore();
 
 const state = reactive<LocalState>({
@@ -821,15 +816,9 @@ const isFormCompleted = computed(() => {
 
 const allowEdit = computed(() => {
   if (isCreating.value) {
-    return hasWorkspacePermissionV2(
-      currentUser.value,
-      "bb.identityProviders.create"
-    );
+    return hasWorkspacePermissionV2("bb.identityProviders.create");
   } else if (!isDeleted.value) {
-    return hasWorkspacePermissionV2(
-      currentUser.value,
-      "bb.identityProviders.update"
-    );
+    return hasWorkspacePermissionV2("bb.identityProviders.update");
   } else {
     return false;
   }
@@ -1018,9 +1007,7 @@ const handleDeleteButtonClick = async () => {
   if (!currentIdentityProvider.value) {
     return;
   }
-  if (
-    !hasWorkspacePermissionV2(currentUser.value, "bb.identityProviders.delete")
-  ) {
+  if (!hasWorkspacePermissionV2("bb.identityProviders.delete")) {
     pushNotification({
       module: "bytebase",
       style: "WARN",
@@ -1046,12 +1033,7 @@ const handleRestoreButtonClick = async () => {
   if (!currentIdentityProvider.value) {
     return;
   }
-  if (
-    !hasWorkspacePermissionV2(
-      currentUser.value,
-      "bb.identityProviders.undelete"
-    )
-  ) {
+  if (!hasWorkspacePermissionV2("bb.identityProviders.undelete")) {
     pushNotification({
       module: "bytebase",
       style: "WARN",

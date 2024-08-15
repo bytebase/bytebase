@@ -22,11 +22,7 @@ import { NSelect } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { ProjectNameCell } from "@/components/v2/Model/DatabaseV1Table/cells";
-import {
-  useCurrentUserV1,
-  useProjectV1List,
-  usePermissionStore,
-} from "@/store";
+import { useProjectV1List, usePermissionStore } from "@/store";
 import type { ComposedProject } from "@/types";
 import {
   unknownProject,
@@ -79,7 +75,6 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const currentUserV1 = useCurrentUserV1();
 const permissionStore = usePermissionStore();
 const { projectList } = useProjectV1List(true /* showDeleted */);
 
@@ -108,7 +103,7 @@ const handleValueUpdated = (value: string | string[]) => {
 };
 
 const hasWorkspaceManageProjectPermission = computed(() =>
-  hasWorkspacePermissionV2(currentUserV1.value, "bb.projects.list")
+  hasWorkspacePermissionV2("bb.projects.list")
 );
 
 const rawProjectList = computed(() => {
@@ -141,10 +136,7 @@ const combinedProjectList = computed(() => {
     props.allowedProjectRoleList.length > 0
   ) {
     list = list.filter((project) => {
-      const roles = permissionStore.roleListInProjectV1(
-        project,
-        currentUserV1.value
-      );
+      const roles = permissionStore.currentRoleListInProjectV1(project);
       return intersection(props.allowedProjectRoleList, roles).length > 0;
     });
   }

@@ -39,13 +39,11 @@
 import { NButton } from "naive-ui";
 import { ref, computed } from "vue";
 import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/router/dashboard/workspaceSetting";
-import { useCurrentUserV1 } from "@/store";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
 const show = ref(true);
-const currentUserV1 = useCurrentUserV1();
 
 const hasPermission = computed(() =>
-  hasWorkspacePermissionV2(currentUserV1.value, "bb.settings.set")
+  hasWorkspacePermissionV2("bb.settings.set")
 );
 </script>

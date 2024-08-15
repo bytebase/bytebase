@@ -4,7 +4,6 @@ import {
   useEnvironmentV1Store,
   useDatabaseV1Store,
   useProjectV1Store,
-  useCurrentUserV1,
 } from "@/store";
 import {
   environmentNamePrefix,
@@ -19,7 +18,6 @@ export const useReviewConfigAttachedResource = (resource: Ref<string>) => {
   const environmentV1Store = useEnvironmentV1Store();
   const databaseStore = useDatabaseV1Store();
   const projectStore = useProjectV1Store();
-  const me = useCurrentUserV1();
 
   const resourceType = computed((): ResourceType | undefined => {
     if (resource.value.startsWith(environmentNamePrefix)) {
@@ -46,17 +44,17 @@ export const useReviewConfigAttachedResource = (resource: Ref<string>) => {
   watchEffect(async () => {
     switch (resourceType.value) {
       case "database":
-        if (hasWorkspacePermissionV2(me.value, "bb.databases.get")) {
+        if (hasWorkspacePermissionV2("bb.databases.get")) {
           await databaseStore.getOrFetchDatabaseByName(resource.value);
         }
         return;
       case "environment":
-        if (hasWorkspacePermissionV2(me.value, "bb.environments.get")) {
+        if (hasWorkspacePermissionV2("bb.environments.get")) {
           await environmentV1Store.getOrFetchEnvironmentByName(resource.value);
         }
         return;
       case "project":
-        if (hasWorkspacePermissionV2(me.value, "bb.projects.get")) {
+        if (hasWorkspacePermissionV2("bb.projects.get")) {
           await projectStore.getOrFetchProjectByName(resource.value);
         }
         return;

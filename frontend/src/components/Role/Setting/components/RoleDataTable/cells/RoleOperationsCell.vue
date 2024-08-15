@@ -1,18 +1,10 @@
 <template>
   <div v-if="isCustomRole(role.name)" class="w-full flex justify-end space-x-2">
-    <NButton
-      size="tiny"
-      :disabled="!hasPermission('bb.roles.update')"
-      @click="$emit('edit', role)"
-    >
+    <NButton size="tiny" :disabled="!allowUpdate" @click="$emit('edit', role)">
       {{ $t("common.edit") }}
     </NButton>
 
-    <NButton
-      v-if="hasPermission('bb.roles.delete')"
-      size="tiny"
-      @click="handleDeleteRole"
-    >
+    <NButton v-if="allowDelete" size="tiny" @click="handleDeleteRole">
       {{ $t("common.delete") }}
     </NButton>
   </div>
@@ -22,13 +14,7 @@
 import { NButton, useDialog } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import {
-  useCurrentUserV1,
-  useRoleStore,
-  useUserStore,
-  pushNotification,
-} from "@/store";
-import type { Permission } from "@/types";
+import { useRoleStore, useUserStore, pushNotification } from "@/store";
 import type { Role } from "@/types/proto/v1/role_service";
 import { hasWorkspacePermissionV2, isCustomRole } from "@/utils";
 import { useCustomRoleSettingContext } from "../../../context";
@@ -43,14 +29,12 @@ defineEmits<{
 
 const { hasCustomRoleFeature, showFeatureModal } =
   useCustomRoleSettingContext();
-const currentUser = useCurrentUserV1();
 const userStore = useUserStore();
 const $dialog = useDialog();
 const { t } = useI18n();
 
-const hasPermission = (permission: Permission) => {
-  return hasWorkspacePermissionV2(currentUser.value, permission);
-};
+const allowUpdate = computed(() => hasWorkspacePermissionV2("bb.roles.update"));
+const allowDelete = computed(() => hasWorkspacePermissionV2("bb.roles.delete"));
 
 const usersWithRole = computed(() => {
   return userStore.activeUserList.filter((user) => {

@@ -55,20 +55,19 @@ import SQLReviewPolicyTable from "@/components/SQLReview/components/SQLReviewPol
 import NoDataPlaceholder from "@/components/misc/NoDataPlaceholder.vue";
 import { SearchBox } from "@/components/v2";
 import { WORKSPACE_ROUTE_SQL_REVIEW_CREATE } from "@/router/dashboard/workspaceRoutes";
-import { useSQLReviewStore, useCurrentUserV1 } from "@/store";
+import { useSQLReviewStore } from "@/store";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
 const router = useRouter();
 const sqlReviewStore = useSQLReviewStore();
 const searchText = ref("");
-const currentUserV1 = useCurrentUserV1();
 
 watchEffect(() => {
   sqlReviewStore.fetchReviewPolicyList();
 });
 
 const hasCreatePolicyPermission = computed(() => {
-  return hasWorkspacePermissionV2(currentUserV1.value, "bb.policies.create");
+  return hasWorkspacePermissionV2("bb.policies.create");
 });
 
 const createSQLReview = () => {

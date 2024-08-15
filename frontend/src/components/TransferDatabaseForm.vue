@@ -83,7 +83,6 @@ import {
 } from "@/components/TransferDatabaseForm";
 import {
   pushNotification,
-  useCurrentUserV1,
   useDatabaseV1Store,
   useProjectByName,
 } from "@/store";
@@ -124,15 +123,10 @@ const emit = defineEmits<{
   (e: "dismiss"): void;
 }>();
 
-const currentUserV1 = useCurrentUserV1();
 const databaseStore = useDatabaseV1Store();
 
 const hasPermissionForDefaultProject = computed(() => {
-  return hasProjectPermissionV2(
-    defaultProject(),
-    currentUserV1.value,
-    "bb.projects.update"
-  );
+  return hasProjectPermissionV2(defaultProject(), "bb.projects.update");
 });
 
 const state = reactive<LocalState>({
@@ -164,11 +158,7 @@ const rawDatabaseList = computed(() => {
       return (
         db.project !== props.projectName &&
         db.project !== DEFAULT_PROJECT_NAME &&
-        hasProjectPermissionV2(
-          db.projectEntity,
-          currentUserV1.value,
-          "bb.projects.update"
-        )
+        hasProjectPermissionV2(db.projectEntity, "bb.projects.update")
       );
     });
   }

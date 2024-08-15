@@ -204,7 +204,6 @@ const issueComments = computed((): DistinctIssueComment[] => {
 const allowCreateComment = computed(() => {
   return hasProjectPermissionV2(
     issue.value.projectEntity,
-    currentUser.value,
     "bb.issueComments.create"
   );
 });
@@ -233,7 +232,6 @@ const allowEditIssueComment = (comment: ComposedIssueComment) => {
   }
   return hasProjectPermissionV2(
     issue.value.projectEntity,
-    currentUser.value,
     "bb.issueComments.update"
   );
 };

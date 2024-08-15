@@ -129,7 +129,6 @@ import type { BBTableSectionDataSource } from "@/bbkit/types";
 import {
   featureToRef,
   useAnomalyV1List,
-  useCurrentUserV1,
   useDatabaseV1Store,
   useEnvironmentV1List,
   useEnvironmentV1Store,
@@ -168,7 +167,6 @@ const props = defineProps<{
 const { t } = useI18n();
 const databaseStore = useDatabaseV1Store();
 const environmentStore = useEnvironmentV1Store();
-const currentUserV1 = useCurrentUserV1();
 const allAnomalyList = useAnomalyV1List();
 const instanceList = useInstanceResourceList();
 const environmentList = useEnvironmentV1List(false /* !showDeleted */);
@@ -179,7 +177,7 @@ const state = reactive<LocalState>({
 });
 
 const databaseList = computed(() => {
-  return databaseStore.databaseListByUser(currentUserV1.value);
+  return databaseStore.databaseListByUser;
 });
 
 const databaseListByProject = computed(() => {

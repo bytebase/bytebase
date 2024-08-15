@@ -110,13 +110,7 @@ const allowEdit = computed(() => {
     return true;
   }
 
-  if (
-    hasProjectPermissionV2(
-      plan.value.projectEntity,
-      currentUser.value,
-      "bb.plans.update"
-    )
-  ) {
+  if (hasProjectPermissionV2(plan.value.projectEntity, "bb.plans.update")) {
     // Allowed if current has plan update permission in the project
     return true;
   }

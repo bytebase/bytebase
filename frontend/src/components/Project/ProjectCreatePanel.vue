@@ -84,6 +84,7 @@
 
 <script lang="ts" setup>
 import { isEmpty } from "lodash-es";
+import { InfoIcon } from "lucide-vue-next";
 import { NButton, NTooltip } from "naive-ui";
 import { Status } from "nice-grpc-common";
 import { computed, reactive, ref } from "vue";
@@ -92,7 +93,7 @@ import { useRouter } from "vue-router";
 import { BBSpin, BBTextField } from "@/bbkit";
 import { DrawerContent } from "@/components/v2";
 import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
-import { pushNotification, useUIStateStore, useCurrentUserV1 } from "@/store";
+import { pushNotification, useUIStateStore } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { useProjectV1Store } from "@/store/modules/v1/project";
 import type { ResourceId, ValidatedMessage } from "@/types";
@@ -101,7 +102,6 @@ import type { Project } from "@/types/proto/v1/project_service";
 import { randomString } from "@/utils";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import { getErrorCode } from "@/utils/grpcweb";
-import { InfoIcon } from "lucide-vue-next";
 import { FeatureModal } from "../FeatureGuard";
 
 interface LocalState {
@@ -173,9 +173,7 @@ const validateResourceId = async (
 const allowCreate = computed(() => {
   if (isEmpty(state.project.title)) return false;
   if (!resourceIdField.value?.isValidated) return false;
-  if (
-    !hasWorkspacePermissionV2(useCurrentUserV1().value, "bb.projects.create")
-  ) {
+  if (!hasWorkspacePermissionV2("bb.projects.create")) {
     return false;
   }
   return true;

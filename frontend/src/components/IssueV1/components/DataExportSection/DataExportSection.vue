@@ -25,12 +25,10 @@ import DatabaseInfo from "@/components/DatabaseInfo.vue";
 import { databaseForTask, useIssueContext } from "@/components/IssueV1/logic";
 import NoDataPlaceholder from "@/components/misc/NoDataPlaceholder.vue";
 import NoPermissionPlaceholder from "@/components/misc/NoPermissionPlaceholder.vue";
-import { useCurrentUserV1 } from "@/store";
 import { hasProjectPermissionV2 } from "@/utils";
 import ExportOptionSection from "./ExportOptionSection";
 
 const { isCreating, issue, selectedTask } = useIssueContext();
-const me = useCurrentUserV1();
 
 // For database data export issue, the stageList should always be only 1 stage.
 const stageList = computed(() => {
@@ -44,11 +42,7 @@ const database = computed(() => {
 const placeholder = computed(() => {
   if (
     isCreating.value &&
-    !hasProjectPermissionV2(
-      issue.value.projectEntity,
-      me.value,
-      "bb.rollouts.preview"
-    )
+    !hasProjectPermissionV2(issue.value.projectEntity, "bb.rollouts.preview")
   ) {
     return "PERMISSION_DENIED";
   }

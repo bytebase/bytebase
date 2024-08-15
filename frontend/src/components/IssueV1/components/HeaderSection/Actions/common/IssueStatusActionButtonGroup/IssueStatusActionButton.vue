@@ -29,7 +29,6 @@ import {
   issueStatusActionDisplayName,
   useIssueContext,
 } from "@/components/IssueV1/logic";
-import { useCurrentUserV1 } from "@/store";
 
 const props = defineProps<{
   action: IssueStatusAction;
@@ -40,13 +39,11 @@ defineEmits<{
 }>();
 
 const { issue } = useIssueContext();
-const currentUser = useCurrentUserV1();
 
 const errors = computed(() => {
   const errors: string[] = [];
   const [ok, reason] = allowUserToApplyIssueStatusAction(
     issue.value,
-    currentUser.value,
     props.action
   );
   if (!ok) {

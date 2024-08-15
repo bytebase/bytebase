@@ -151,10 +151,8 @@ export const useCurrentUserIamPolicy = () => {
   });
 
   // hasWorkspaceSuperPrivilege checks whether the current user has the super privilege to access all databases. AKA. Owners and DBAs
-  const hasWorkspaceSuperPrivilege = hasWorkspacePermissionV2(
-    currentUser.value,
-    "bb.projects.list"
-  );
+  const hasWorkspaceSuperPrivilege =
+    hasWorkspacePermissionV2("bb.projects.list");
 
   const isProjectOwnerOrDeveloper = (projectName: string): boolean => {
     if (hasWorkspaceSuperPrivilege) {
@@ -169,10 +167,7 @@ export const useCurrentUserIamPolicy = () => {
     if (!policy) {
       return false;
     }
-    return (
-      isOwnerOfProjectV1(project, currentUser.value) ||
-      isDeveloperOfProjectV1(project, currentUser.value)
-    );
+    return isOwnerOfProjectV1(project) || isDeveloperOfProjectV1(project);
   };
 
   const isProjectOwnerOrDeveloperOrViewer = (projectName: string): boolean => {
@@ -189,8 +184,7 @@ export const useCurrentUserIamPolicy = () => {
       return false;
     }
     return (
-      isProjectOwnerOrDeveloper(projectName) ||
-      isViewerOfProjectV1(project, currentUser.value)
+      isProjectOwnerOrDeveloper(projectName) || isViewerOfProjectV1(project)
     );
   };
 

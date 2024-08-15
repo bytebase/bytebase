@@ -134,7 +134,6 @@ import {
   usePolicyListByResourceTypeAndPolicyType,
   featureToRef,
   useDatabaseV1Store,
-  useCurrentUserV1,
   useEnvironmentV1Store,
   pushNotification,
   usePolicyV1Store,
@@ -187,7 +186,6 @@ interface LocalState {
 
 const { t } = useI18n();
 const router = useRouter();
-const currentUser = useCurrentUserV1();
 const databaseStore = useDatabaseV1Store();
 const policyStore = usePolicyV1Store();
 const environmentStore = useEnvironmentV1Store();
@@ -213,7 +211,7 @@ const state = reactive<LocalState>({
 });
 
 const hasPermission = computed(() => {
-  return hasWorkspacePermissionV2(currentUser.value, "bb.policies.update");
+  return hasWorkspacePermissionV2("bb.policies.update");
 });
 
 const updateList = async () => {

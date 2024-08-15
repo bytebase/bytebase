@@ -29,7 +29,7 @@ import { NPopover } from "naive-ui";
 import { computed } from "vue";
 import { useRouter } from "vue-router";
 import { SQL_EDITOR_SETTING_INSTANCE_MODULE } from "@/router/sqlEditor";
-import { useCurrentUserV1, useSQLEditorTabStore } from "@/store";
+import { useSQLEditorTabStore } from "@/store";
 import { isValidInstanceName } from "@/types";
 import {
   DataSourceType,
@@ -43,12 +43,11 @@ const props = defineProps<{
 }>();
 
 const tabStore = useSQLEditorTabStore();
-const me = useCurrentUserV1();
 const router = useRouter();
 const { itemList: settingItemList } = useSettingItems();
 
 const allowManageInstance = computed(() => {
-  return hasWorkspacePermissionV2(me.value, "bb.instances.update");
+  return hasWorkspacePermissionV2("bb.instances.update");
 });
 
 const hasReadonlyDataSource = computed(() => {

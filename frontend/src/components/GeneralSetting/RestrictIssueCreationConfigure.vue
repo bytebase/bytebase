@@ -29,12 +29,7 @@
 <script setup lang="ts">
 import { computed, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
-import {
-  hasFeature,
-  pushNotification,
-  useCurrentUserV1,
-  usePolicyV1Store,
-} from "@/store";
+import { hasFeature, pushNotification, usePolicyV1Store } from "@/store";
 import {
   PolicyResourceType,
   PolicyType,
@@ -49,13 +44,12 @@ const props = defineProps<{
 }>();
 
 const { t } = useI18n();
-const me = useCurrentUserV1();
 const policyV1Store = usePolicyV1Store();
 
 const allowEdit = computed(() => {
   return (
     props.allowEdit &&
-    hasWorkspacePermissionV2(me.value, "bb.policies.update") &&
+    hasWorkspacePermissionV2("bb.policies.update") &&
     hasFeature("bb.feature.access-control")
   );
 });

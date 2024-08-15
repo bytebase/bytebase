@@ -38,19 +38,18 @@ import {
   WORKSPACE_ROUTE_GITOPS_CREATE,
   WORKSPACE_ROUTE_GITOPS_DETAIL,
 } from "@/router/dashboard/workspaceRoutes";
-import { useCurrentUserV1, useVCSProviderStore } from "@/store";
+import { useVCSProviderStore } from "@/store";
 import { getVCSProviderId } from "@/store/modules/v1/common";
 import type { VCSProvider } from "@/types/proto/v1/vcs_provider_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
-const currentUser = useCurrentUserV1();
 const vcsV1Store = useVCSProviderStore();
 const router = useRouter();
 const { t } = useI18n();
 const loading = ref<boolean>(true);
 
 const hasCreateVCSPermission = computed(() => {
-  return hasWorkspacePermissionV2(currentUser.value, "bb.vcsProviders.create");
+  return hasWorkspacePermissionV2("bb.vcsProviders.create");
 });
 
 const prepareVCSList = async () => {

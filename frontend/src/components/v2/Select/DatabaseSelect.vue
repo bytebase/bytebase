@@ -21,7 +21,7 @@ import { NSelect } from "naive-ui";
 import { computed, h, watch } from "vue";
 import { useSlots } from "vue";
 import { useI18n } from "vue-i18n";
-import { useCurrentUserV1, useDatabaseV1Store } from "@/store";
+import { useDatabaseV1Store } from "@/store";
 import { useDatabaseV1List } from "@/store/modules/v1/databaseList";
 import type { ComposedDatabase } from "@/types";
 import {
@@ -76,7 +76,6 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const currentUserV1 = useCurrentUserV1();
 const { ready } = useDatabaseV1List(props.projectName || props.instanceName);
 
 const combinedValue = computed(() => {
@@ -104,7 +103,7 @@ const handleValueUpdated = (value: string | string[]) => {
 };
 
 const rawDatabaseList = computed(() => {
-  const list = useDatabaseV1Store().databaseListByUser(currentUserV1.value);
+  const list = useDatabaseV1Store().databaseListByUser;
 
   return list.filter((db) => {
     if (

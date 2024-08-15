@@ -45,7 +45,6 @@ import { useRouter } from "vue-router";
 import { Switch } from "@/components/v2";
 import { WORKSPACE_ROUTE_SQL_REVIEW_DETAIL } from "@/router/dashboard/workspaceRoutes";
 import {
-  useCurrentUserV1,
   pushNotification,
   useSQLReviewStore,
   useReviewPolicyByResource,
@@ -60,14 +59,11 @@ const props = defineProps<{
 
 const { t } = useI18n();
 const router = useRouter();
-const me = useCurrentUserV1();
 const reviewStore = useSQLReviewStore();
 const showReviewSelectPanel = ref<boolean>(false);
 
 const allowEditSQLReviewPolicy = computed(() => {
-  return (
-    props.allowEdit && hasWorkspacePermissionV2(me.value, "bb.policies.update")
-  );
+  return props.allowEdit && hasWorkspacePermissionV2("bb.policies.update");
 });
 
 const toggleSQLReviewPolicy = async (on: boolean) => {

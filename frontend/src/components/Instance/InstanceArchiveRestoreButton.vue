@@ -55,7 +55,6 @@ import { useI18n } from "vue-i18n";
 import { restartAppRoot } from "@/AppRootContext";
 import { BBButtonConfirm } from "@/bbkit";
 import {
-  useCurrentUserV1,
   useInstanceV1Store,
   pushNotification,
   useSubscriptionV1Store,
@@ -78,7 +77,6 @@ const state = reactive<LocalState>({
 });
 
 const { t } = useI18n();
-const currentUserV1 = useCurrentUserV1();
 const instanceStore = useInstanceV1Store();
 const subscriptionStore = useSubscriptionV1Store();
 
@@ -86,8 +84,8 @@ const force = ref(false);
 
 const allowArchiveOrRestore = computed(() => {
   return (
-    hasWorkspacePermissionV2(currentUserV1.value, "bb.instances.delete") ||
-    hasWorkspacePermissionV2(currentUserV1.value, "bb.instances.undelete")
+    hasWorkspacePermissionV2("bb.instances.delete") ||
+    hasWorkspacePermissionV2("bb.instances.undelete")
   );
 });
 

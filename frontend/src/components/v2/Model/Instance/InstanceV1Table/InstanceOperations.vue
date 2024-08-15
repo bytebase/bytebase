@@ -39,11 +39,7 @@ import type { VNode } from "vue";
 import { computed, h, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import InstanceAssignment from "@/components/InstanceAssignment.vue";
-import {
-  useInstanceV1Store,
-  pushNotification,
-  useCurrentUserV1,
-} from "@/store";
+import { useInstanceV1Store, pushNotification } from "@/store";
 import type { ComposedInstance } from "@/types";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
@@ -64,7 +60,6 @@ const props = defineProps<{
 }>();
 
 const { t } = useI18n();
-const currentUser = useCurrentUserV1();
 const instanceStore = useInstanceV1Store();
 const state = reactive<LocalState>({
   loading: false,
@@ -81,12 +76,12 @@ const actions = computed((): Action[] => {
       disabled:
         props.instanceList.length < 1 ||
         state.loading ||
-        !hasWorkspacePermissionV2(currentUser.value, "bb.instances.sync"),
+        !hasWorkspacePermissionV2("bb.instances.sync"),
       click: syncSchema,
     },
   ];
 
-  if (hasWorkspacePermissionV2(currentUser.value, "bb.instances.update")) {
+  if (hasWorkspacePermissionV2("bb.instances.update")) {
     list.push({
       icon: h(GraduationCapIcon),
       text: t("subscription.instance-assignment.assign-license"),

@@ -33,12 +33,9 @@ import {
 import { getProjectName } from "@/store/modules/v1/common";
 import { getUserEmailFromIdentifier } from "@/store/modules/v1/common";
 import { getGroupEmailInBinding } from "@/types";
+import { type Group, GroupMember_Role } from "@/types/proto/v1/group";
 import { PolicyType } from "@/types/proto/v1/org_policy_service";
 import type { Project } from "@/types/proto/v1/project_service";
-import {
-  type Group,
-  GroupMember_Role,
-} from "@/types/proto/v1/group";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
 const props = defineProps<{
@@ -67,7 +64,7 @@ const allowDelete = computed(() => {
   if (selfMemberInGroup.value?.role === GroupMember_Role.OWNER) {
     return true;
   }
-  return hasWorkspacePermissionV2(currentUserV1.value, "bb.groups.delete");
+  return hasWorkspacePermissionV2("bb.groups.delete");
 });
 
 const getProjectsBindingGroup = async (group: Group) => {
