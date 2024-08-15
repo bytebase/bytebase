@@ -576,13 +576,14 @@ func (s *BranchService) RebaseBranch(ctx context.Context, request *v1pb.RebaseBr
 	var newHeadMetadata *storepb.DatabaseSchemaMetadata
 	var newHeadConfig *storepb.DatabaseConfig
 	if request.MergedSchema != "" {
-		newHeadMetadata, err = schema.ParseToMetadata(storepb.Engine(baseBranch.Engine), "" /* defaultSchemaName */, request.MergedSchema)
+		newHeadMetadata, err = schema.ParseToMetadata(baseBranch.Engine, "" /* defaultSchemaName */, request.MergedSchema)
 		if err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "failed to convert merged schema to metadata, %v", err)
 		}
+		newHeadMetadata = filterDatabaseMetadataByEngine(newHeadMetadata, baseBranch.Engine)
 		newHeadConfig = baseBranch.Head.GetDatabaseConfig()
-		updateDatabaseConfigLastModifierForMerge(baseBranch.Head.Metadata, newHeadMetadata, baseBranch.Head.DatabaseConfig, newHeadConfig)
-		newHeadConfig = baseBranch.Head.GetDatabaseConfig()
+		// If users solve the conflict manually, it is equivalent to them updating HEAD on the branch first.
+		updateConfigBranchUpdateInfoForUpdate(baseBranch.Head.Metadata, newHeadMetadata, newHeadConfig, common.FormatUserUID(user.ID), common.FormatBranchResourceID(baseProjectID, baseBranchID))
 		// String-based rebase operation do not include the structural information, such as classification, so we need to sanitize the user comment,
 		// trim the classification in user comment if the classification is not from the config.
 		modelNewHeadConfig := model.NewDatabaseConfig(newHeadConfig)
@@ -993,7 +994,6 @@ func filterDatabaseMetadataByEngine(metadata *storepb.DatabaseSchemaMetadata, en
 					Unique:      index.Unique,
 					Comment:     index.Comment,
 					Expressions: index.Expressions,
-					KeyLength:   index.KeyLength,
 				}
 				filteredTable.Indexes = append(filteredTable.Indexes, filteredIndex)
 			}
@@ -1175,7 +1175,7 @@ func reconcileMetadata(metadata *storepb.DatabaseSchemaMetadata, engine storepb.
 				reconcileMySQLPartitionMetadata(table.Partitions, "")
 			}
 			if engine == storepb.Engine_MYSQL || engine == storepb.Engine_TIDB {
-				for _, column := range table.Columns {
+				for _, column := range table.GetColumns() {
 					// If the column can take NULL as a value, the column is defined with an explicit DEFAULT NULL clause.
 					if column.Nullable && column.DefaultValue == nil {
 						column.DefaultValue = &storepb.ColumnMetadata_DefaultNull{
@@ -1292,7 +1292,7 @@ func updateConfigBranchUpdateInfoForUpdate(old *storepb.DatabaseSchemaMetadata, 
 				tableConfig.SourceBranch = formattedBranchResourceID
 				continue
 			}
-			if !cmp.Equal(table, oldTable.GetProto(), protocmp.Transform()) {
+			if diff := cmp.Diff(table, oldTable.GetProto(), protocmp.Transform()); diff != "" {
 				tableConfig.Updater = formattedUserUID
 				tableConfig.UpdateTime = time
 				tableConfig.SourceBranch = formattedBranchResourceID
@@ -1317,7 +1317,7 @@ func updateConfigBranchUpdateInfoForUpdate(old *storepb.DatabaseSchemaMetadata, 
 				viewConfig.SourceBranch = formattedBranchResourceID
 				continue
 			}
-			if !cmp.Equal(view, oldView.GetProto(), protocmp.Transform()) {
+			if diff := cmp.Diff(view, oldView.GetProto(), protocmp.Transform()); diff != "" {
 				viewConfig.Updater = formattedUserUID
 				viewConfig.UpdateTime = time
 				viewConfig.SourceBranch = formattedBranchResourceID
@@ -1342,7 +1342,7 @@ func updateConfigBranchUpdateInfoForUpdate(old *storepb.DatabaseSchemaMetadata, 
 				functionConfig.SourceBranch = formattedBranchResourceID
 				continue
 			}
-			if !cmp.Equal(function, oldFunction.GetProto(), protocmp.Transform()) {
+			if diff := cmp.Diff(function, oldFunction.GetProto(), protocmp.Transform()); diff != "" {
 				functionConfig.Updater = formattedUserUID
 				functionConfig.UpdateTime = time
 				functionConfig.SourceBranch = formattedBranchResourceID
@@ -1367,7 +1367,7 @@ func updateConfigBranchUpdateInfoForUpdate(old *storepb.DatabaseSchemaMetadata, 
 				procedureConfig.SourceBranch = formattedBranchResourceID
 				continue
 			}
-			if !cmp.Equal(procedure, oldProcedure.GetProto(), protocmp.Transform()) {
+			if diff := cmp.Diff(procedure, oldProcedure.GetProto(), protocmp.Transform()); diff != "" {
 				procedureConfig.Updater = formattedUserUID
 				procedureConfig.UpdateTime = time
 				procedureConfig.SourceBranch = formattedBranchResourceID
@@ -1594,7 +1594,7 @@ func updateDatabaseConfigLastModifierForMerge(baseMetadata *storepb.DatabaseSche
 			if baseTableConfig == nil {
 				baseTableConfig = initTableConfig(baseTable.GetProto(), "", "", now)
 			}
-			if !cmp.Equal(headTable, baseTable.GetProto(), protocmp.Transform()) {
+			if diff := cmp.Diff(baseTable.GetProto(), baseTable, protocmp.Transform()); diff != "" {
 				baseTableConfig.SourceBranch = headTableConfig.SourceBranch
 				baseTableConfig.Updater = headTableConfig.Updater
 				baseTableConfig.UpdateTime = now
