@@ -100,13 +100,8 @@ func (exec *DataExportExecutor) RunOnce(ctx context.Context, _ context.Context, 
 		return true, nil, errors.Wrap(exportErr, "failed to export data")
 	}
 
-	encryptedBytes, err := apiv1.DoEncrypt(bytes, exportRequest)
-	if err != nil {
-		return true, nil, errors.Wrap(err, "failed to encrypt data")
-	}
-
 	exportArchive, err := exec.store.CreateExportArchive(ctx, &store.ExportArchiveMessage{
-		Bytes: encryptedBytes,
+		Bytes: bytes,
 		Payload: &storepb.ExportArchivePayload{
 			FileFormat: payload.Format,
 		},
