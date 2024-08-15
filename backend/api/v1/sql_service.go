@@ -183,26 +183,14 @@ func (s *SQLService) Execute(ctx context.Context, request *v1pb.ExecuteRequest) 
 		return nil, status.Errorf(codes.Internal, "failed to prepare execute: %v", err)
 	}
 
-	statement := request.Statement
-	// Run SQL review.
-	adviceStatus, advices, err := s.SQLReviewCheck(ctx, statement, v1pb.CheckRequest_SQL_EDITOR, instance, database, nil /* Override Metadata */)
-	if err != nil {
-		return nil, err
+	results, _, queryErr := s.doExecute(ctx, instance, database, request)
+	if queryErr != nil {
+		return nil, status.Errorf(codes.Internal, queryErr.Error())
 	}
-
-	var results []*v1pb.QueryResult
-	if adviceStatus != storepb.Advice_ERROR {
-		var queryErr error
-		results, _, queryErr = s.doExecute(ctx, instance, database, request)
-		if queryErr != nil {
-			return nil, status.Errorf(codes.Internal, queryErr.Error())
-		}
-		sanitizeResults(results)
-	}
+	sanitizeResults(results)
 
 	response := &v1pb.ExecuteResponse{
 		Results: results,
-		Advices: advices,
 	}
 	return response, nil
 }
@@ -330,11 +318,6 @@ func (s *SQLService) Export(ctx context.Context, request *v1pb.ExportRequest) (*
 		if err := s.accessCheck(ctx, instance, user, spans, request.Limit, false /* isAdmin */, true /* isExport */); err != nil {
 			return nil, err
 		}
-	}
-
-	// Run SQL review.
-	if _, _, err = s.SQLReviewCheck(ctx, statement, v1pb.CheckRequest_SQL_EDITOR, instance, database, nil /* Override Metadata */); err != nil {
-		return nil, err
 	}
 
 	bytes, durationNs, exportErr := DoExport(ctx, s.store, s.dbFactory, s.licenseService, request, instance, database, spans)
@@ -749,22 +732,11 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 		}
 	}
 
-	// Run SQL review.
-	adviceStatus, advices, err := s.SQLReviewCheck(ctx, statement, v1pb.CheckRequest_SQL_EDITOR, instance, database, nil /* Override Metadata */)
-	if err != nil {
-		return nil, err
-	}
-
-	var results []*v1pb.QueryResult
-	var queryErr error
-	var durationNs int64
-	if adviceStatus != storepb.Advice_ERROR {
-		results, durationNs, queryErr = s.doQuery(ctx, request, instance, database)
-		if queryErr == nil && s.licenseService.IsFeatureEnabledForInstance(api.FeatureSensitiveData, instance) == nil && !request.Explain {
-			masker := NewQueryResultMasker(s.store)
-			if err := masker.MaskResults(ctx, spans, results, instance, storepb.MaskingExceptionPolicy_MaskingException_QUERY); err != nil {
-				return nil, status.Errorf(codes.Internal, err.Error())
-			}
+	results, durationNs, queryErr := s.doQuery(ctx, request, instance, database)
+	if queryErr == nil && s.licenseService.IsFeatureEnabledForInstance(api.FeatureSensitiveData, instance) == nil && !request.Explain {
+		masker := NewQueryResultMasker(s.store)
+		if err := masker.MaskResults(ctx, spans, results, instance, storepb.MaskingExceptionPolicy_MaskingException_QUERY); err != nil {
+			return nil, status.Errorf(codes.Internal, err.Error())
 		}
 	}
 
@@ -785,7 +757,6 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 
 	response := &v1pb.QueryResponse{
 		Results:     results,
-		Advices:     advices,
 		AllowExport: allowExport,
 	}
 
