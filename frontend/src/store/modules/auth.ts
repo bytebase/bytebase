@@ -1,6 +1,7 @@
 import axios from "axios";
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
+import { restartAppRoot } from "@/AppRootContext";
 import { authServiceClient } from "@/grpcweb";
 import { unknownUser } from "@/types";
 import { userBindingPrefix } from "@/types";
@@ -72,6 +73,7 @@ export const useAuthStore = defineStore("auth_v1", () => {
     try {
       await axios.post("/v1/auth/logout");
       currentUserId.value = undefined;
+      restartAppRoot();
     } catch {
       // nothing
     }
