@@ -726,7 +726,7 @@ func (s *SQLService) postQuery(ctx context.Context, database *store.DatabaseMess
 		ProjectID:  database.ProjectID,
 		Database:   common.FormatDatabase(database.InstanceID, database.DatabaseName),
 		Statement:  statement,
-		Type:       store.QueryHistoryTypeQuery,
+		Type:       queryType,
 		Payload: &storepb.QueryHistoryPayload{
 			Error:    nil,
 			Duration: durationpb.New(time.Duration(durationNs)),
