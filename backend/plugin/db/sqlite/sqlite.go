@@ -155,7 +155,7 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 	startTime := time.Now()
 	rows, err := conn.QueryContext(ctx, statement)
 	if err != nil {
-		return nil, util.FormatErrorWithQuery(err, statement)
+		return nil, err
 	}
 	defer rows.Close()
 

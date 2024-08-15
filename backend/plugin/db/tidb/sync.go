@@ -562,7 +562,7 @@ func (driver *Driver) listPartitionTables(ctx context.Context, databaseName stri
 	defer stmt.Close()
 	rows, err := stmt.QueryContext(ctx, databaseName)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to execute query: %s", query)
+		return nil, util.FormatErrorWithQuery(err, query)
 	}
 	defer rows.Close()
 
