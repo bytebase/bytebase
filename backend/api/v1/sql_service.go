@@ -165,6 +165,7 @@ func (s *SQLService) Execute(ctx context.Context, request *v1pb.ExecuteRequest) 
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get database driver: %v", err)
 	}
+	defer driver.Close(ctx)
 
 	var conn *sql.Conn
 	sqlDB := driver.GetDB()
@@ -173,6 +174,7 @@ func (s *SQLService) Execute(ctx context.Context, request *v1pb.ExecuteRequest) 
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to get database connection: %v", err)
 		}
+		defer conn.Close()
 	}
 
 	results, durationNs, queryErr := s.doExecute(ctx, driver, conn, request.Name, defaultTimeout)
