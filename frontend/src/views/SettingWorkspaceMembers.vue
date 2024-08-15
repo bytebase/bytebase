@@ -117,7 +117,7 @@ const state = reactive<LocalState>({
 });
 
 const allowEdit = computed(() => {
-  return hasWorkspacePermissionV2(currentUserV1.value, "bb.policies.update");
+  return hasWorkspacePermissionV2("bb.policies.update");
 });
 
 const handleRevokeSelectedMembers = () => {

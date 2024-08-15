@@ -112,12 +112,7 @@ import { computed, reactive, nextTick, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { useBodyLayoutContext } from "@/layouts/common";
 import type { Factor } from "@/plugins/cel";
-import {
-  featureToRef,
-  pushNotification,
-  useCurrentUserV1,
-  usePolicyV1Store,
-} from "@/store";
+import { featureToRef, pushNotification, usePolicyV1Store } from "@/store";
 import { MaskingLevel } from "@/types/proto/v1/common";
 import type { Policy } from "@/types/proto/v1/org_policy_service";
 import {
@@ -158,9 +153,8 @@ const state = reactive<LocalState>({
 });
 
 const policyStore = usePolicyV1Store();
-const currentUser = useCurrentUserV1();
 const hasPermission = computed(() => {
-  return hasWorkspacePermissionV2(currentUser.value, "bb.policies.update");
+  return hasWorkspacePermissionV2("bb.policies.update");
 });
 const hasSensitiveDataFeature = featureToRef("bb.feature.sensitive-data");
 const { mainContainerRef } = useBodyLayoutContext();

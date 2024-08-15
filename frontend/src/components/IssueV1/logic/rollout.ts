@@ -1,5 +1,6 @@
 import { t } from "@/plugins/i18n";
-import type { ComposedIssue, ComposedUser } from "@/types";
+import { useCurrentUserV1 } from "@/store";
+import type { ComposedIssue } from "@/types";
 import { IssueStatus, Issue_Type } from "@/types/proto/v1/issue_service";
 import type { Task } from "@/types/proto/v1/rollout_service";
 import {
@@ -27,9 +28,9 @@ export const isGroupingChangeTaskV1 = (issue: ComposedIssue, task: Task) => {
 
 export const allowUserToEditStatementForTask = (
   issue: ComposedIssue,
-  task: Task,
-  user: ComposedUser
+  task: Task
 ): string[] => {
+  const user = useCurrentUserV1();
   const denyReasons: string[] = [];
 
   if (isTaskV1TriggeredByVCS(issue, task)) {
@@ -63,8 +64,8 @@ export const allowUserToEditStatementForTask = (
 
   denyReasons.push(...isTaskEditable(issue, task));
 
-  if (extractUserResourceName(issue.creator) !== user.email) {
-    if (!hasProjectPermissionV2(issue.projectEntity, user, "bb.plans.update")) {
+  if (extractUserResourceName(issue.creator) !== user.value.email) {
+    if (!hasProjectPermissionV2(issue.projectEntity, "bb.plans.update")) {
       denyReasons.push(
         t("issue.error.you-don-have-privilege-to-edit-this-issue")
       );

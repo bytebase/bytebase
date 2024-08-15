@@ -140,7 +140,6 @@ import {
   useInstanceV1Store,
   useSubscriptionV1Store,
   useDatabaseV1Store,
-  useCurrentUserV1,
   useInstanceResourceList,
   useEnvironmentV1Store,
 } from "@/store";
@@ -182,7 +181,6 @@ const instanceV1Store = useInstanceV1Store();
 const databaseV1Store = useDatabaseV1Store();
 const subscriptionStore = useSubscriptionV1Store();
 const { t } = useI18n();
-const currentUserV1 = useCurrentUserV1();
 
 const instanceList = useInstanceResourceList();
 const { instanceLicenseCount } = storeToRefs(subscriptionStore);
@@ -213,7 +211,7 @@ const columnList = computed(() => {
 });
 
 const canManageSubscription = computed((): boolean => {
-  return hasWorkspacePermissionV2(currentUserV1.value, "bb.instances.update");
+  return hasWorkspacePermissionV2("bb.instances.update");
 });
 
 watchEffect(() => {

@@ -214,7 +214,6 @@ const allowEdit = computed(() => {
     return true;
   }
   return hasWorkspacePermissionV2(
-    currentUserV1.value,
     isCreating.value ? "bb.groups.create" : "bb.groups.update"
   );
 });

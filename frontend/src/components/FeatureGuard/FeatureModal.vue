@@ -123,7 +123,7 @@ import { useRouter } from "vue-router";
 import { BBModal } from "@/bbkit";
 import { useLanguage } from "@/composables/useLanguage";
 import { SETTING_ROUTE_WORKSPACE_SUBSCRIPTION } from "@/router/dashboard/workspaceSetting";
-import { useSubscriptionV1Store, useCurrentUserV1 } from "@/store";
+import { useSubscriptionV1Store } from "@/store";
 import type { FeatureType } from "@/types";
 import { planTypeToString, ENTERPRISE_INQUIRE_LINK } from "@/types";
 import type {
@@ -167,10 +167,7 @@ const router = useRouter();
 const { locale } = useLanguage();
 
 const subscriptionStore = useSubscriptionV1Store();
-const hasPermission = hasWorkspacePermissionV2(
-  useCurrentUserV1().value,
-  "bb.settings.set"
-);
+const hasPermission = hasWorkspacePermissionV2("bb.settings.set");
 
 const instanceMissingLicense = computed(() => {
   return subscriptionStore.instanceMissingLicense(

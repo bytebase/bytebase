@@ -105,7 +105,6 @@ import { PROJECT_V1_ROUTE_BRANCH_DETAIL } from "@/router/dashboard/projectV1";
 import {
   pushNotification,
   useDatabaseV1Store,
-  useCurrentUserV1,
   useDBSchemaV1Store,
 } from "@/store";
 import { useBranchStore } from "@/store/modules/branch";
@@ -145,11 +144,7 @@ const isPreparingBranch = ref(false);
 const EMPTY_BRANCH = Branch.fromPartial({});
 
 const allowCreateBranchFromDatabase = computed(() => {
-  return hasProjectPermissionV2(
-    props.project,
-    useCurrentUserV1().value,
-    "bb.branches.admin"
-  );
+  return hasProjectPermissionV2(props.project, "bb.branches.admin");
 });
 
 const debouncedDatabaseName = useDebounce(databaseName, DEBOUNCE_RATE);
@@ -259,13 +254,7 @@ watch(
 );
 
 const allowConfirm = computed(() => {
-  if (
-    !hasProjectPermissionV2(
-      props.project,
-      useCurrentUserV1().value,
-      "bb.branches.create"
-    )
-  ) {
+  if (!hasProjectPermissionV2(props.project, "bb.branches.create")) {
     return false;
   }
   return branchId.value && branchData.value && !isCreating.value;

@@ -20,7 +20,6 @@ import {
   useVCSConnectorStore,
   useProjectV1Store,
   useVCSProviderStore,
-  useCurrentUserV1,
   pushNotification,
   useProjectByName,
 } from "@/store";
@@ -38,7 +37,6 @@ const { t } = useI18n();
 const router = useRouter();
 const vcsConnectorStore = useVCSConnectorStore();
 const vcsProviderStore = useVCSProviderStore();
-const currentUser = useCurrentUserV1();
 const { project } = useProjectByName(
   computed(() => `${projectNamePrefix}${props.projectId}`)
 );
@@ -54,19 +52,11 @@ const vcsConnectorList = computed(() =>
 );
 
 const allowEdit = computed(() => {
-  return hasProjectPermissionV2(
-    project.value,
-    currentUser.value,
-    "bb.vcsConnectors.update"
-  );
+  return hasProjectPermissionV2(project.value, "bb.vcsConnectors.update");
 });
 
 const allowDelete = computed(() => {
-  return hasProjectPermissionV2(
-    project.value,
-    currentUser.value,
-    "bb.vcsConnectors.delete"
-  );
+  return hasProjectPermissionV2(project.value, "bb.vcsConnectors.delete");
 });
 
 watchEffect(async () => {

@@ -216,7 +216,6 @@ import { Drawer, DrawerContent, InstanceV1Name } from "@/components/v2";
 import {
   extractGroupEmail,
   extractUserEmail,
-  useCurrentUserV1,
   useDatabaseV1Store,
   useProjectIamPolicy,
   useProjectIamPolicyStore,
@@ -263,7 +262,6 @@ const emit = defineEmits<{
 const { t } = useI18n();
 const dialog = useDialog();
 const userStore = useUserStore();
-const currentUser = useCurrentUserV1();
 const databaseStore = useDatabaseV1Store();
 const projectIamPolicyStore = useProjectIamPolicyStore();
 const projectResourceName = computed(() => props.project.name);
@@ -296,11 +294,7 @@ const allowRevokeMember = computed(() => {
     return false;
   }
 
-  return hasProjectPermissionV2(
-    props.project,
-    currentUser.value,
-    "bb.projects.setIamPolicy"
-  );
+  return hasProjectPermissionV2(props.project, "bb.projects.setIamPolicy");
 });
 
 const isRoleShouldShowDatabaseRelatedColumns = (role: string) => {

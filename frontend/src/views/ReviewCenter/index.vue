@@ -177,15 +177,12 @@ const mergedPlanFind = computed(() => {
 const allowToCreatePlan = computed(() => {
   // Check if user has permission to create plan in specific project.
   if (specificProject.value) {
-    return hasPermissionToCreatePlanInProject(
-      specificProject.value,
-      currentUser.value
-    );
+    return hasPermissionToCreatePlanInProject(specificProject.value);
   }
   // Otherwise, check if user has permission to create plan in any project.
   // Mainly using in workspace dashboard.
   return projectV1Store.projectList.some((project) =>
-    hasPermissionToCreatePlanInProject(project, currentUser.value)
+    hasPermissionToCreatePlanInProject(project)
   );
 });
 </script>

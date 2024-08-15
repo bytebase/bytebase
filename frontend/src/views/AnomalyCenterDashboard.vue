@@ -8,12 +8,10 @@
 import { computed } from "vue";
 import type { AnomalyTabId } from "@/components/AnomalyCenter/AnomalyCenterDashboard.vue";
 import AnomalyCenterDashboard from "@/components/AnomalyCenter/AnomalyCenterDashboard.vue";
-import { useCurrentUserV1 } from "@/store";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
-const currentUserV1 = useCurrentUserV1();
 const selectedTab = computed((): AnomalyTabId => {
-  return hasWorkspacePermissionV2(currentUserV1.value, "bb.instances.update")
+  return hasWorkspacePermissionV2("bb.instances.update")
     ? "instance"
     : "database";
 });

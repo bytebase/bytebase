@@ -51,7 +51,7 @@ import {
   FeatureAttentionForInstanceLicense,
   FeatureModal,
 } from "@/components/FeatureGuard";
-import { featureToRef, useCurrentUserV1, useRiskStore } from "@/store";
+import { featureToRef, useRiskStore } from "@/store";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
 interface LocalState {
@@ -65,9 +65,8 @@ const state = reactive<LocalState>({
 });
 const hasCustomApprovalFeature = featureToRef("bb.feature.custom-approval");
 
-const currentUser = useCurrentUserV1();
 const allowAdmin = computed(() => {
-  return hasWorkspacePermissionV2(currentUser.value, "bb.risks.update");
+  return hasWorkspacePermissionV2("bb.risks.update");
 });
 
 provideRiskFilter();

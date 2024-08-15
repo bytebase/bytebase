@@ -50,7 +50,6 @@ import {
   TabFilter,
 } from "@/components/v2";
 import {
-  useCurrentUserV1,
   useEnvironmentV1Store,
   useIdentityProviderStore,
   useInstanceV1List,
@@ -70,7 +69,6 @@ interface LocalState {
 
 const { t } = useI18n();
 const environmentStore = useEnvironmentV1Store();
-const currentUserV1 = useCurrentUserV1();
 const state = reactive<LocalState>({
   selectedTab: "PROJECT",
   searchText: "",
@@ -107,22 +105,15 @@ const deletedSSOList = computed(() => {
 const tabItemList = computed(() => {
   const list = [{ value: "PROJECT", label: t("common.project") }];
 
-  if (hasWorkspacePermissionV2(currentUserV1.value, "bb.instances.undelete")) {
+  if (hasWorkspacePermissionV2("bb.instances.undelete")) {
     list.push({ value: "INSTANCE", label: t("common.instance") });
   }
 
-  if (
-    hasWorkspacePermissionV2(currentUserV1.value, "bb.environments.undelete")
-  ) {
+  if (hasWorkspacePermissionV2("bb.environments.undelete")) {
     list.push({ value: "ENVIRONMENT", label: t("common.environment") });
   }
 
-  if (
-    hasWorkspacePermissionV2(
-      currentUserV1.value,
-      "bb.identityProviders.undelete"
-    )
-  ) {
+  if (hasWorkspacePermissionV2("bb.identityProviders.undelete")) {
     list.push({ value: "SSO", label: t("settings.sidebar.sso") });
   }
 

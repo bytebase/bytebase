@@ -82,14 +82,20 @@ export const useWorkspaceV1Store = defineStore("workspace_v1", () => {
     workspaceIamPolicy.value = policy;
   };
 
-  const findRolesByMember = (member: string): string[] => {
+  const findRolesByMember = ({
+    member,
+    ignoreGroup,
+  }: {
+    member: string;
+    ignoreGroup: boolean;
+  }): string[] => {
     let email = member;
     if (member.startsWith(groupBindingPrefix)) {
       email = extractGroupEmail(member);
     } else {
       email = extractUserEmail(member);
     }
-    return roleListInIAM(workspaceIamPolicy.value, email);
+    return roleListInIAM(workspaceIamPolicy.value, email, ignoreGroup);
   };
 
   return {

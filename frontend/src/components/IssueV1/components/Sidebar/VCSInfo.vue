@@ -27,30 +27,20 @@ import { watchEffect } from "vue";
 import EllipsisText from "@/components/EllipsisText.vue";
 import { useIssueContext } from "@/components/IssueV1";
 import { VCSIcon } from "@/components/VCS";
-import {
-  useCurrentUserV1,
-  useVCSConnectorStore,
-  useVCSProviderStore,
-} from "@/store";
+import { useVCSConnectorStore, useVCSProviderStore } from "@/store";
 import type { Plan_VCSSource } from "@/types/proto/v1/plan_service";
 import { hasWorkspacePermissionV2, hasProjectPermissionV2 } from "@/utils";
 
 const { issue } = useIssueContext();
-
-const currentUser = useCurrentUserV1();
 const vcsConnectorStore = useVCSConnectorStore();
 const vcsProviderStore = useVCSProviderStore();
 
 const hasGetVCSConnectorPermission = computed(() =>
-  hasProjectPermissionV2(
-    issue.value.projectEntity,
-    currentUser.value,
-    "bb.vcsConnectors.get"
-  )
+  hasProjectPermissionV2(issue.value.projectEntity, "bb.vcsConnectors.get")
 );
 
 const hasGetVCSProviderPermission = computed(() =>
-  hasWorkspacePermissionV2(currentUser.value, "bb.vcsProviders.get")
+  hasWorkspacePermissionV2("bb.vcsProviders.get")
 );
 
 watchEffect(async () => {

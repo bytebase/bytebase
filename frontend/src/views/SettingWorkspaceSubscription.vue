@@ -127,11 +127,7 @@ import TrialModal from "@/components/TrialModal.vue";
 import WeChatQRModal from "@/components/WeChatQRModal.vue";
 import WorkspaceInstanceLicenseStats from "@/components/WorkspaceInstanceLicenseStats.vue";
 import { useLanguage } from "@/composables/useLanguage";
-import {
-  pushNotification,
-  useCurrentUserV1,
-  useSubscriptionV1Store,
-} from "@/store";
+import { pushNotification, useSubscriptionV1Store } from "@/store";
 import { ENTERPRISE_INQUIRE_LINK } from "@/types";
 import { PlanType } from "@/types/proto/v1/subscription_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
@@ -150,7 +146,6 @@ const props = defineProps<{
 
 const { t } = useI18n();
 const { locale } = useLanguage();
-const currentUser = useCurrentUserV1();
 const subscriptionStore = useSubscriptionV1Store();
 
 const state = reactive<LocalState>({
@@ -192,10 +187,7 @@ const uploadLicense = async () => {
 const { expireAt, isTrialing, isExpired } = storeToRefs(subscriptionStore);
 
 const allowManageInstanceLicenses = computed(() => {
-  return (
-    props.allowEdit &&
-    hasWorkspacePermissionV2(currentUser.value, "bb.instances.list")
-  );
+  return props.allowEdit && hasWorkspacePermissionV2("bb.instances.list");
 });
 
 const currentPlan = computed((): string => {

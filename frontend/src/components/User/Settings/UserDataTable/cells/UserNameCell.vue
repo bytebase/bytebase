@@ -83,7 +83,7 @@ const { t } = useI18n();
 const currentUserV1 = useCurrentUserV1();
 
 const allowEdit = computed(() => {
-  return hasWorkspacePermissionV2(currentUserV1.value, "bb.policies.update");
+  return hasWorkspacePermissionV2("bb.policies.update");
 });
 
 const copyServiceKey = (serviceKey: string) => {

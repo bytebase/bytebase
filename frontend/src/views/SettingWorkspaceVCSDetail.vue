@@ -67,7 +67,6 @@ import NoPermissionPlaceholder from "@/components/misc/NoPermissionPlaceholder.v
 import { WORKSPACE_ROUTE_GITOPS } from "@/router/dashboard/workspaceRoutes";
 import {
   pushNotification,
-  useCurrentUserV1,
   useVCSConnectorStore,
   useVCSProviderStore,
 } from "@/store";
@@ -86,7 +85,6 @@ const props = defineProps<{
 }>();
 
 const router = useRouter();
-const currentUser = useCurrentUserV1();
 const vcsV1Store = useVCSProviderStore();
 const vcsConnectorStore = useVCSConnectorStore();
 
@@ -116,18 +114,15 @@ const state = reactive<LocalState>({
 });
 
 const hasUpdateVCSPermission = computed(() => {
-  return hasWorkspacePermissionV2(currentUser.value, "bb.vcsProviders.update");
+  return hasWorkspacePermissionV2("bb.vcsProviders.update");
 });
 
 const hasDeleteVCSPermission = computed(() => {
-  return hasWorkspacePermissionV2(currentUser.value, "bb.vcsProviders.delete");
+  return hasWorkspacePermissionV2("bb.vcsProviders.delete");
 });
 
 const hasListRepoPermission = computed(() => {
-  return hasWorkspacePermissionV2(
-    currentUser.value,
-    "bb.vcsProviders.listProjects"
-  );
+  return hasWorkspacePermissionV2("bb.vcsProviders.listProjects");
 });
 
 watchEffect(async () => {

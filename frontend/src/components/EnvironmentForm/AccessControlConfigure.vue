@@ -67,12 +67,7 @@
 import { NRadioGroup, NRadio } from "naive-ui";
 import { computed, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
-import {
-  hasFeature,
-  pushNotification,
-  usePolicyV1Store,
-  useCurrentUserV1,
-} from "@/store";
+import { hasFeature, pushNotification, usePolicyV1Store } from "@/store";
 import {
   DataSourceQueryPolicy_Restriction,
   PolicyType,
@@ -87,7 +82,6 @@ const props = defineProps<{
 }>();
 
 const policyStore = usePolicyV1Store();
-const me = useCurrentUserV1();
 const { t } = useI18n();
 
 watchEffect(async () => {
@@ -134,7 +128,7 @@ const adminDataSourceQueruRestrictionEnabled = computed(() => {
 const allowUpdatePolicy = computed(() => {
   return (
     props.allowEdit &&
-    hasWorkspacePermissionV2(me.value, "bb.policies.update") &&
+    hasWorkspacePermissionV2("bb.policies.update") &&
     hasFeature("bb.feature.access-control")
   );
 });

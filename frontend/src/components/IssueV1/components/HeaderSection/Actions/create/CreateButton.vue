@@ -53,7 +53,7 @@ import {
 } from "@/grpcweb";
 import { emitWindowEvent } from "@/plugins";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
-import { useCurrentUserV1, useDatabaseV1Store, useSheetV1Store } from "@/store";
+import { useDatabaseV1Store, useSheetV1Store } from "@/store";
 import type { ComposedIssue } from "@/types";
 import { dialectOfEngineV1, languageOfEngineV1 } from "@/types";
 import { Issue } from "@/types/proto/v1/issue_service";
@@ -79,15 +79,13 @@ const router = useRouter();
 const { issue, formatOnSave } = useIssueContext();
 const { runSQLCheck } = useSQLCheckContext();
 const sheetStore = useSheetV1Store();
-const me = useCurrentUserV1();
 const loading = ref(false);
 
 const issueCreateErrorList = computed(() => {
   const errorList: string[] = [];
   if (
     !hasPermissionToCreateChangeDatabaseIssueInProject(
-      issue.value.projectEntity,
-      me.value
+      issue.value.projectEntity
     )
   ) {
     errorList.push(t("common.missing-permission"));

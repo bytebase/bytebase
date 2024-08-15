@@ -40,12 +40,7 @@ import { NButton } from "naive-ui";
 import { v4 as uuidv4 } from "uuid";
 import { computed, reactive, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
-import {
-  featureToRef,
-  pushNotification,
-  useCurrentUserV1,
-  useSettingV1Store,
-} from "@/store";
+import { featureToRef, pushNotification, useSettingV1Store } from "@/store";
 import { SemanticTypeSetting_SemanticType } from "@/types/proto/v1/setting_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import NoDataPlaceholder from "../misc/NoDataPlaceholder.vue";
@@ -67,9 +62,8 @@ const state = reactive<LocalState>({
 });
 
 const settingStore = useSettingV1Store();
-const currentUser = useCurrentUserV1();
 const hasPermission = computed(() => {
-  return hasWorkspacePermissionV2(currentUser.value, "bb.policies.update");
+  return hasWorkspacePermissionV2("bb.policies.update");
 });
 const hasSensitiveDataFeature = featureToRef("bb.feature.sensitive-data");
 

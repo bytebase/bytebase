@@ -128,12 +128,7 @@ import {
   PROJECT_V1_ROUTE_ISSUE_DETAIL,
   PROJECT_V1_ROUTE_PLAN_DETAIL,
 } from "@/router/dashboard/projectV1";
-import {
-  useCurrentUserV1,
-  useDatabaseV1Store,
-  useProjectV1Store,
-  useAppFeature,
-} from "@/store";
+import { useDatabaseV1Store, useProjectV1Store, useAppFeature } from "@/store";
 import { useDatabaseV1List } from "@/store/modules/v1/databaseList";
 import type { ComposedDatabase, FeatureType } from "@/types";
 import { UNKNOWN_ID, DEFAULT_PROJECT_NAME } from "@/types";
@@ -186,7 +181,6 @@ const props = defineProps({
 const emit = defineEmits(["dismiss"]);
 
 const router = useRouter();
-const currentUserV1 = useCurrentUserV1();
 const projectV1Store = useProjectV1Store();
 const databaseV1Store = useDatabaseV1Store();
 const disableSchemaEditor = useAppFeature(
@@ -251,7 +245,7 @@ const rawDatabaseList = computed(() => {
   if (selectedProject.value) {
     list = databaseV1Store.databaseListByProject(selectedProject.value.name);
   } else {
-    list = databaseV1Store.databaseListByUser(currentUserV1.value);
+    list = databaseV1Store.databaseListByUser;
   }
   list = list.filter(
     (db) => db.syncState == State.ACTIVE && db.project !== DEFAULT_PROJECT_NAME

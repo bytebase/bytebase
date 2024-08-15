@@ -104,7 +104,6 @@ import { Drawer } from "@/components/v2";
 import {
   useAppFeature,
   useConnectionOfCurrentSQLEditorTab,
-  useCurrentUserV1,
   usePolicyV1Store,
 } from "@/store";
 import type {
@@ -149,7 +148,6 @@ const props = defineProps({
 });
 
 const { t } = useI18n();
-const currentUser = useCurrentUserV1();
 const policyStore = usePolicyV1Store();
 const { instance, database: connectedDb } =
   useConnectionOfCurrentSQLEditorTab();
@@ -205,9 +203,7 @@ const tabName = (result: QueryResult, index: number) => {
 };
 
 const disallowCopyingData = computed(() => {
-  if (
-    hasWorkspacePermissionV2(currentUser.value, "bb.instances.adminExecute")
-  ) {
+  if (hasWorkspacePermissionV2("bb.instances.adminExecute")) {
     // `disableCopyDataPolicy` is only applicable to workspace developers.
     return false;
   }

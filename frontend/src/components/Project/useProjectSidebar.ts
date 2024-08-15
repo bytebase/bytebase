@@ -35,7 +35,6 @@ import projectV1Routes, {
   PROJECT_V1_ROUTE_AUDIT_LOGS,
   PROJECT_V1_ROUTE_REVIEW_CENTER,
 } from "@/router/dashboard/projectV1";
-import { useCurrentUserV1 } from "@/store";
 import type { ComposedProject, MaybeRef, Permission } from "@/types";
 import { DEFAULT_PROJECT_NAME } from "@/types";
 import { hasProjectPermissionV2 } from "@/utils";
@@ -51,7 +50,6 @@ export const useProjectSidebar = (
   project: MaybeRef<ComposedProject>,
   _route?: RouteLocationNormalizedLoaded
 ) => {
-  const currentUser = useCurrentUserV1();
   const route = _route ?? useRoute();
 
   const isDefaultProject = computed((): boolean => {
@@ -109,7 +107,7 @@ export const useProjectSidebar = (
           (projectV1Route) => projectV1Route.name === item.path
         );
         return (routeConfig?.permissions ?? []).every((permission) =>
-          hasProjectPermissionV2(unref(project), currentUser.value, permission)
+          hasProjectPermissionV2(unref(project), permission)
         );
       })
       .map((item) => ({

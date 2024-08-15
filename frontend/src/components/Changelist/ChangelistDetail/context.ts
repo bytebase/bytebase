@@ -79,7 +79,7 @@ export const provideChangelistDetailContext = () => {
 
   const checkPermission = (permission: Permission): boolean => {
     return (
-      hasProjectPermissionV2(project.value, me.value, permission) ||
+      hasProjectPermissionV2(project.value, permission) ||
       extractUserResourceName(changelist.value.creator) === me.value.email
     );
   };
@@ -88,10 +88,7 @@ export const provideChangelistDetailContext = () => {
     return checkPermission("bb.changelists.delete");
   });
   const allowApply = computed(() => {
-    return hasPermissionToCreateChangeDatabaseIssueInProject(
-      project.value,
-      me.value
-    );
+    return hasPermissionToCreateChangeDatabaseIssueInProject(project.value);
   });
   const allowEdit = computed(() => {
     return checkPermission("bb.changelists.update");

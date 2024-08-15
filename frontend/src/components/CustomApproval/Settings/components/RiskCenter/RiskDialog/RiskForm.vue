@@ -103,7 +103,6 @@ import {
   validateSimpleExpr,
   emptySimpleExpr,
 } from "@/plugins/cel";
-import { useCurrentUserV1 } from "@/store";
 import { ParsedExpr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
 import { Expr } from "@/types/proto/google/type/expr";
 import { Risk } from "@/types/proto/v1/risk_service";
@@ -139,7 +138,6 @@ const emit = defineEmits<{
 
 const context = useRiskCenterContext();
 const { allowAdmin } = context;
-const currentUser = useCurrentUserV1();
 
 const state = ref<LocalState>({
   risk: Risk.fromPartial({}),
@@ -170,11 +168,11 @@ const resolveLocalState = async () => {
 const allowCreateOrUpdate = computed(() => {
   // Check create or update permission.
   if (mode.value === "CREATE") {
-    if (!hasWorkspacePermissionV2(currentUser.value, "bb.risks.create")) {
+    if (!hasWorkspacePermissionV2("bb.risks.create")) {
       return false;
     }
   } else if (mode.value === "EDIT") {
-    if (!hasWorkspacePermissionV2(currentUser.value, "bb.risks.update")) {
+    if (!hasWorkspacePermissionV2("bb.risks.update")) {
       return false;
     }
     if (!props.dirty) return false;

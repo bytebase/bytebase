@@ -132,13 +132,7 @@ const disallowEditReasons = computed(() => {
   ) {
     allow = true;
   }
-  if (
-    hasProjectPermissionV2(
-      issue.value.projectEntity,
-      currentUser.value,
-      "bb.plans.update"
-    )
-  ) {
+  if (hasProjectPermissionV2(issue.value.projectEntity, "bb.plans.update")) {
     allow = true;
   }
   if (!allow) {

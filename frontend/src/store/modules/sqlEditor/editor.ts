@@ -3,7 +3,6 @@ import { defineStore } from "pinia";
 import { computed, ref, watch } from "vue";
 import type { ComposedDatabase } from "@/types";
 import { hasWorkspacePermissionV2 } from "@/utils";
-import { useCurrentUserV1 } from "../auth";
 import { useProjectV1Store } from "../v1";
 
 export const useSQLEditorStore = defineStore("sqlEditor", () => {
@@ -31,8 +30,7 @@ export const useSQLEditorStore = defineStore("sqlEditor", () => {
     return undefined;
   });
   const allowViewALLProjects = computed(() => {
-    const me = useCurrentUserV1();
-    return hasWorkspacePermissionV2(me.value, "bb.projects.list");
+    return hasWorkspacePermissionV2("bb.projects.list");
   });
 
   // `databaseList` is query-able databases scoped by `project`

@@ -50,7 +50,7 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { WORKSPACE_ROUTE_SQL_REVIEW_CREATE } from "@/router/dashboard/workspaceRoutes";
-import { useSQLReviewStore, useCurrentUserV1, pushNotification } from "@/store";
+import { useSQLReviewStore, pushNotification } from "@/store";
 import type { SQLReviewPolicy } from "@/types";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import SQLReviewPolicyDataTable from "./SQLReviewPolicyDataTable.vue";
@@ -67,14 +67,13 @@ const emit = defineEmits<{
 const sqlReviewStore = useSQLReviewStore();
 const router = useRouter();
 const { t } = useI18n();
-const me = useCurrentUserV1();
 
 watchEffect(() => {
   sqlReviewStore.fetchReviewPolicyList();
 });
 
 const allowCreateSQLReviewPolicy = computed(() => {
-  return hasWorkspacePermissionV2(me.value, "bb.policies.create");
+  return hasWorkspacePermissionV2("bb.policies.create");
 });
 
 const createPolicy = () => {

@@ -70,11 +70,7 @@ const state = reactive<LocalState>({
   searchKeyword: "",
 });
 const allowCreate = computed(() => {
-  return hasProjectPermissionV2(
-    props.project,
-    currentUser.value,
-    "bb.branches.create"
-  );
+  return hasProjectPermissionV2(props.project, "bb.branches.create");
 });
 
 const filteredBranches = computed(() => {
