@@ -50,9 +50,18 @@ export const useListCache = (namespace: string) => {
     return undefined;
   };
 
+  const clearCache = () => {
+    LIST_CACHE.delete(namespace);
+  };
+
   return {
     cacheMap: listCache,
     getCacheKey,
     getCache,
+    clearCache,
   };
+};
+
+export const clearListCache = () => {
+  LIST_CACHE.clear();
 };

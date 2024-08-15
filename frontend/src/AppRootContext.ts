@@ -5,6 +5,7 @@ import {
   useInstanceV1Store,
   useProjectV1Store,
 } from "./store";
+import { clearListCache } from "./store/modules/v1/cache";
 
 export type AppRootContext = {
   key: Ref<number>;
@@ -33,4 +34,6 @@ export const restartAppRoot = () => {
   useDatabaseV1Store().reset();
   useProjectV1Store().reset();
   useInstanceV1Store().reset();
+
+  clearListCache();
 };
