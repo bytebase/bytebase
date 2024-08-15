@@ -835,7 +835,7 @@ import {
   type UploadFileInfo,
   NSwitch,
 } from "naive-ui";
-import { watch, reactive, computed, ref } from "vue";
+import { watch, reactive, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBTextField } from "@/bbkit";
 import { FeatureBadge } from "@/components/FeatureGuard";
