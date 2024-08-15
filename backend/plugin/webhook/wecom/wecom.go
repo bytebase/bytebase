@@ -75,7 +75,11 @@ func (r *Receiver) Post(context webhook.Context) error {
 			return nil
 		}
 	}
-	return r.sendMessage(context)
+	err := r.sendMessage(context)
+	if err != nil {
+		return backoff.Permanent(err)
+	}
+	return nil
 }
 
 func (*Receiver) sendMessage(context webhook.Context) error {
