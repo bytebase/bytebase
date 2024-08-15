@@ -9,11 +9,9 @@
 import { computed } from "vue";
 import { useRouter } from "vue-router";
 import NoPermissionPlaceholder from "@/components/misc/NoPermissionPlaceholder.vue";
-import { useCurrentUserV1 } from "@/store";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
 const router = useRouter();
-const currentUser = useCurrentUserV1();
 
 const requiredPermissions = computed(() => {
   const getPermissionListFunc =
@@ -23,11 +21,11 @@ const requiredPermissions = computed(() => {
 
 const hasPermission = computed(() => {
   return requiredPermissions.value.every((permission) =>
-    hasWorkspacePermissionV2(currentUser.value, permission)
+    hasWorkspacePermissionV2(permission)
   );
 });
 
 const allowEdit = computed((): boolean => {
-  return hasWorkspacePermissionV2(currentUser.value, "bb.settings.set");
+  return hasWorkspacePermissionV2("bb.settings.set");
 });
 </script>

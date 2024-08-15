@@ -45,7 +45,7 @@ import {
   PROJECT_V1_ROUTE_DATABASES,
   PROJECT_V1_ROUTE_DATABASE_GROUPS,
 } from "@/router/dashboard/projectV1";
-import { useCurrentUserV1, useAppFeature, useProjectByName } from "@/store";
+import { useAppFeature, useProjectByName } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { useDatabaseV1List } from "@/store/modules/v1/databaseList";
 import type { QuickActionType } from "@/types";
@@ -59,7 +59,6 @@ const props = defineProps<{
 
 const route = useRoute();
 const router = useRouter();
-const currentUserV1 = useCurrentUserV1();
 const recentProjects = useRecentProjects();
 const hideQuickAction = useAppFeature("bb.feature.console.hide-quick-action");
 const hideDefaultProject = useAppFeature("bb.feature.project.hide-default");
@@ -80,8 +79,6 @@ const isDefaultProject = computed((): boolean => {
   return project.value.name === DEFAULT_PROJECT_NAME;
 });
 
-const currentUser = useCurrentUserV1();
-
 const requiredPermissions = computed(() => {
   const getPermissionListFunc =
     router.currentRoute.value.meta.requiredProjectPermissionList;
@@ -90,7 +87,7 @@ const requiredPermissions = computed(() => {
 
 const hasPermission = computed(() => {
   return requiredPermissions.value.every((permission) =>
-    hasProjectPermissionV2(project.value, currentUser.value, permission)
+    hasProjectPermissionV2(project.value, permission)
   );
 });
 
@@ -99,11 +96,7 @@ const allowEdit = computed(() => {
     return false;
   }
 
-  return hasProjectPermissionV2(
-    project.value,
-    currentUserV1.value,
-    "bb.projects.update"
-  );
+  return hasProjectPermissionV2(project.value, "bb.projects.update");
 });
 
 const getQuickActionList = (list: QuickActionType[]): QuickActionType[] => {
@@ -112,8 +105,7 @@ const getQuickActionList = (list: QuickActionType[]): QuickActionType[] => {
       return false;
     }
     const hasPermission = QuickActionProjectPermissionMap.get(action)?.every(
-      (permission) =>
-        hasProjectPermissionV2(project.value, currentUserV1.value, permission)
+      (permission) => hasProjectPermissionV2(project.value, permission)
     );
     return hasPermission;
   });
