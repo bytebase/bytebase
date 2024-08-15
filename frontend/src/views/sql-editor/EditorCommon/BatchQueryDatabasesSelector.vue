@@ -7,21 +7,17 @@
     <template #trigger>
       <NButton
         size="small"
-        ghost
         :type="
           selectedDatabaseNames.length > 0 && hasBatchQueryFeature
             ? 'primary'
             : 'default'
         "
+        style="--n-padding: 0 5px"
         @click="handleTriggerClick"
       >
-        <div class="flex flex-row justify-center items-center gap-1">
-          <span>{{ $t("sql-editor.batch-query.batch") }}</span>
-          <span v-if="selectedDatabaseNames.length > 0">
-            ({{ selectedDatabaseNames.length }})
-          </span>
-          <FeatureBadge feature="bb.feature.batch-query" />
-        </div>
+        <template #icon>
+          <SquareStackIcon class="w-4 h-4" />
+        </template>
       </NButton>
     </template>
     <div class="w-128 max-h-128 overflow-y-auto p-1 pb-2">
@@ -95,6 +91,7 @@
 </template>
 
 <script lang="ts" setup>
+import { SquareStackIcon } from "lucide-vue-next";
 import type { DataTableRowKey, DataTableColumn } from "naive-ui";
 import {
   NPopover,
@@ -107,7 +104,7 @@ import {
 import { computed, reactive, ref, watch } from "vue";
 import { h } from "vue";
 import { useI18n } from "vue-i18n";
-import { FeatureBadge, FeatureModal } from "@/components/FeatureGuard";
+import { FeatureModal } from "@/components/FeatureGuard";
 import { InstanceV1EngineIcon, SearchBox } from "@/components/v2";
 import { DatabaseLabelsCell } from "@/components/v2/Model/DatabaseV1Table/cells";
 import {
