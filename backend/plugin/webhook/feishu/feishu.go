@@ -103,7 +103,7 @@ type feishuReceiver struct {
 }
 
 func (*feishuReceiver) Post(context webhook.Context) error {
-	if context.DirectMessage && len(context.MentionUsers) > 0 {
+	if context.DirectMessage && len(context.MentionEndUsers) > 0 {
 		postDirectMessage(context)
 		return nil
 	}
@@ -125,7 +125,7 @@ func postDirectMessage(webhookCtx webhook.Context) {
 		var errs error
 
 		var emails []string
-		for _, u := range webhookCtx.MentionUsers {
+		for _, u := range webhookCtx.MentionEndUsers {
 			if sent[u.Email] {
 				continue
 			}
@@ -137,7 +137,7 @@ func postDirectMessage(webhookCtx webhook.Context) {
 			return errors.Wrapf(err, "failed to get id by email")
 		}
 
-		for _, u := range webhookCtx.MentionUsers {
+		for _, u := range webhookCtx.MentionEndUsers {
 			if sent[u.Email] {
 				continue
 			}
