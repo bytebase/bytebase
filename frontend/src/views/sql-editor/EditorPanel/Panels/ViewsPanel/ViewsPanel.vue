@@ -3,30 +3,33 @@
     v-if="metadata?.schema"
     class="px-2 py-2 gap-y-2 h-full overflow-hidden flex flex-col"
   >
-    <template v-if="!metadata.view">
-      <SchemaSelectToolbar />
-      <ViewsTable
-        v-if="!metadata.view"
-        :db="database"
-        :database="metadata.database"
-        :schema="metadata.schema"
-        :views="metadata.schema.views"
-        @click="select"
-      />
-    </template>
+    <SchemaSelectToolbar v-show="!metadata.view" />
+    <ViewsTable
+      v-show="!metadata.view"
+      :db="database"
+      :database="metadata.database"
+      :schema="metadata.schema"
+      :views="metadata.schema.views"
+      @click="select"
+    />
 
     <template v-if="metadata.view">
       <CodeViewer
         :db="database"
+        :title="metadata.view.name"
         :code="metadata.view.definition"
         @back="deselect"
-      />
+      >
+        <template #title-icon> </template>
+        <ViewIcon class="w-4 h-4" />
+      </CodeViewer>
     </template>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
+import { ViewIcon } from "@/components/Icon";
 import {
   useConnectionOfCurrentSQLEditorTab,
   useDBSchemaV1Store,

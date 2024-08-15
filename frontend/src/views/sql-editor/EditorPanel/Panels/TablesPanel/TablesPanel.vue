@@ -15,8 +15,12 @@
 
     <template v-if="metadata.table">
       <div class="w-full flex flex-row gap-x-2 justify-start items-center">
-        <NButton size="small" @click="deselect">
-          <ArrowLeftIcon class="w-4 h-4" />
+        <NButton text @click="deselect">
+          <ChevronLeftIcon class="w-5 h-5" />
+          <div class="flex items-center gap-1">
+            <TableIcon class="w-4 h-4" />
+            <span>{{ metadata.table.name }}</span>
+          </div>
         </NButton>
       </div>
       <ColumnsTable
@@ -31,9 +35,10 @@
 </template>
 
 <script setup lang="ts">
-import { ArrowLeftIcon } from "lucide-vue-next";
+import { ChevronLeftIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { computed } from "vue";
+import { TableIcon } from "@/components/Icon";
 import {
   useConnectionOfCurrentSQLEditorTab,
   useDBSchemaV1Store,

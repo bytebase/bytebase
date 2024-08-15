@@ -3,30 +3,34 @@
     v-if="metadata?.schema"
     class="px-2 py-2 gap-y-2 h-full overflow-hidden flex flex-col"
   >
-    <template v-if="!metadata.procedure">
-      <SchemaSelectToolbar />
-      <ProceduresTable
-        v-if="!metadata.procedure"
-        :db="database"
-        :database="metadata.database"
-        :schema="metadata.schema"
-        :procedures="metadata.schema.procedures"
-        @click="select"
-      />
-    </template>
+    <SchemaSelectToolbar v-show="!metadata.procedure" />
+    <ProceduresTable
+      v-show="!metadata.procedure"
+      :db="database"
+      :database="metadata.database"
+      :schema="metadata.schema"
+      :procedures="metadata.schema.procedures"
+      @click="select"
+    />
 
     <template v-if="metadata.procedure">
       <CodeViewer
         :db="database"
+        :title="metadata.procedure.name"
         :code="metadata.procedure.definition"
         @back="deselect"
-      />
+      >
+        <template #title-icon>
+          <ProcedureIcon class="w-4 h-4 text-main" />
+        </template>
+      </CodeViewer>
     </template>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
+import { ProcedureIcon } from "@/components/Icon";
 import {
   useConnectionOfCurrentSQLEditorTab,
   useDBSchemaV1Store,
