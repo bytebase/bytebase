@@ -109,7 +109,6 @@ import ExprEditor from "@/components/ExprEditor";
 import { FeatureAttentionForInstanceLicense } from "@/components/FeatureGuard";
 import TenantIcon from "@/components/TenantIcon.vue";
 import {
-  useCurrentUserV1,
   useDBGroupStore,
   useDatabaseV1Store,
   useProjectByName,
@@ -132,7 +131,6 @@ const props = defineProps<{
 }>();
 
 const router = useRouter();
-const currentUser = useCurrentUserV1();
 const dbGroupStore = useDBGroupStore();
 const databaseStore = useDatabaseV1Store();
 const subscriptionV1Store = useSubscriptionV1Store();
@@ -152,10 +150,7 @@ const databaseGroup = computed(() => {
 });
 
 const hasPermissionToCreateIssue = computed(() => {
-  return hasPermissionToCreateChangeDatabaseIssueInProject(
-    project.value,
-    currentUser.value
-  );
+  return hasPermissionToCreateChangeDatabaseIssueInProject(project.value);
 });
 
 watchEffect(async () => {

@@ -24,13 +24,7 @@ const allowSubscribe = computed(() => {
     return true;
   }
 
-  if (
-    hasProjectPermissionV2(
-      issue.value.projectEntity,
-      currentUser.value,
-      "bb.issues.update"
-    )
-  ) {
+  if (hasProjectPermissionV2(issue.value.projectEntity, "bb.issues.update")) {
     return true;
   }
 

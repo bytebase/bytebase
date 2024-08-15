@@ -7,7 +7,6 @@ import { useI18n } from "vue-i18n";
 import { instanceServiceClient } from "@/grpcweb";
 import {
   pushNotification,
-  useCurrentUserV1,
   useEnvironmentV1Store,
   useSubscriptionV1Store,
 } from "@/store";
@@ -56,7 +55,6 @@ export const provideInstanceFormContext = (baseContext: {
 }) => {
   const $d = useDialog();
   const { t } = useI18n();
-  const me = useCurrentUserV1();
   const events = new Emittery<{
     dismiss: undefined;
   }>();
@@ -75,7 +73,7 @@ export const provideInstanceFormContext = (baseContext: {
 
     return (
       instance.value?.state === State.ACTIVE &&
-      hasWorkspacePermissionV2(me.value, "bb.instances.update")
+      hasWorkspacePermissionV2("bb.instances.update")
     );
   });
   const basicInfo = ref(extractBasicInfo(instance.value));
@@ -202,7 +200,7 @@ export const provideInstanceFormContext = (baseContext: {
   };
 
   const allowCreate = computed(() => {
-    if (!hasWorkspacePermissionV2(me.value, "bb.instances.create")) {
+    if (!hasWorkspacePermissionV2("bb.instances.create")) {
       return false;
     }
     if (!isValidEnvironmentName(environment.value.name)) {

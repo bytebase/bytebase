@@ -193,7 +193,6 @@ import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
   useSQLEditorTabStore,
   featureToRef,
-  useCurrentUserV1,
   useConnectionOfCurrentSQLEditorTab,
   useSQLEditorStore,
   useAppFeature,
@@ -259,7 +258,6 @@ const router = useRouter();
 const { dark, keyword } = useSQLResultViewContext();
 const tabStore = useSQLEditorTabStore();
 const editorStore = useSQLEditorStore();
-const currentUserV1 = useCurrentUserV1();
 const { exportData } = useExportData();
 const currentTab = computed(() => tabStore.currentTab);
 const { instance: connectedInstance } = useConnectionOfCurrentSQLEditorTab();
@@ -296,7 +294,7 @@ const allowToExportData = computed(() => {
     return true;
   }
 
-  if (hasWorkspacePermissionV2(currentUserV1.value, "bb.policies.update")) {
+  if (hasWorkspacePermissionV2("bb.policies.update")) {
     return true;
   }
 
@@ -312,7 +310,7 @@ const allowToRequestExportData = computed(() => {
     return false;
   }
 
-  return hasPermissionToCreateRequestGrantIssue(database, currentUserV1.value);
+  return hasPermissionToCreateRequestGrantIssue(database);
 });
 
 // use a debounced value to improve performance when typing rapidly

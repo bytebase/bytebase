@@ -80,14 +80,14 @@ export const usePreBackupContext = () => {
       return false;
     }
 
-    const user = currentUserV1.value;
-
     // Allowed to the issue creator.
-    if (user.email === extractUserResourceName(issue.value.creator)) {
+    if (
+      currentUserV1.value.email === extractUserResourceName(issue.value.creator)
+    ) {
       return true;
     }
 
-    if (hasProjectPermissionV2(project.value, user, "bb.plans.update")) {
+    if (hasProjectPermissionV2(project.value, "bb.plans.update")) {
       return true;
     }
 
@@ -193,11 +193,7 @@ export const usePreBackupContext = () => {
   });
 
   const allowRollback = computed((): boolean => {
-    return hasProjectPermissionV2(
-      project.value,
-      currentUserV1.value,
-      "bb.issues.create"
-    );
+    return hasProjectPermissionV2(project.value, "bb.issues.create");
   });
 
   return {

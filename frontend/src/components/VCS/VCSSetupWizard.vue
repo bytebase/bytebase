@@ -22,11 +22,7 @@ import { reactive, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { WORKSPACE_ROUTE_GITOPS } from "@/router/dashboard/workspaceRoutes";
-import {
-  pushNotification,
-  useVCSProviderStore,
-  useCurrentUserV1,
-} from "@/store";
+import { pushNotification, useVCSProviderStore } from "@/store";
 import type { VCSConfig } from "@/types";
 import { VCSType } from "@/types/proto/v1/common";
 import type { VCSProvider } from "@/types/proto/v1/vcs_provider_service";
@@ -49,7 +45,6 @@ interface LocalState {
 const { t } = useI18n();
 const router = useRouter();
 const vcsV1Store = useVCSProviderStore();
-const currentUser = useCurrentUserV1();
 
 const state = reactive<LocalState>({
   config: {
@@ -64,7 +59,7 @@ const state = reactive<LocalState>({
 
 const allowCreate = computed(() => {
   return (
-    hasWorkspacePermissionV2(currentUser.value, "bb.vcsProviders.create") &&
+    hasWorkspacePermissionV2("bb.vcsProviders.create") &&
     state.config.instanceUrl &&
     state.config.accessToken &&
     state.config.name

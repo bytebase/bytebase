@@ -3,6 +3,7 @@ import { defineStore } from "pinia";
 import { computed, ref } from "vue";
 import { authServiceClient } from "@/grpcweb";
 import { unknownUser } from "@/types";
+import { userBindingPrefix } from "@/types";
 import type {
   LoginRequest,
   LoginResponse,
@@ -14,6 +15,7 @@ import { useUserStore, useWorkspaceV1Store } from ".";
 
 export const useAuthStore = defineStore("auth_v1", () => {
   const userStore = useUserStore();
+  const workspaceStore = useWorkspaceV1Store();
   const currentUserId = ref<number | undefined>();
 
   const currentUser = computed(() => {
@@ -21,6 +23,13 @@ export const useAuthStore = defineStore("auth_v1", () => {
       return userStore.getUserById(`${currentUserId.value}`) ?? unknownUser();
     }
     return unknownUser();
+  });
+
+  const currentRolesInWorkspace = computed(() => {
+    return workspaceStore.findRolesByMember({
+      member: `${userBindingPrefix}${currentUser.value.email}`,
+      ignoreGroup: false,
+    });
   });
 
   const isLoggedIn = () => {
@@ -56,7 +65,7 @@ export const useAuthStore = defineStore("auth_v1", () => {
       password: request.password,
       web: true,
     });
-    await useWorkspaceV1Store().fetchIamPolicy();
+    await workspaceStore.fetchIamPolicy();
   };
 
   const logout = async () => {
@@ -75,7 +84,7 @@ export const useAuthStore = defineStore("auth_v1", () => {
         String(currentUserId.value),
         true // silent
       );
-      await useWorkspaceV1Store().fetchIamPolicy();
+      await workspaceStore.fetchIamPolicy();
     }
   };
 
@@ -91,6 +100,7 @@ export const useAuthStore = defineStore("auth_v1", () => {
   return {
     currentUser,
     currentUserId,
+    currentRolesInWorkspace,
     isLoggedIn,
     getUserIdFromCookie,
     login,
@@ -100,6 +110,11 @@ export const useAuthStore = defineStore("auth_v1", () => {
     refreshUserIfNeeded,
   };
 });
+
+export const useCurrentRoles = () => {
+  const authStore = useAuthStore();
+  return computed(() => authStore.currentRolesInWorkspace);
+};
 
 export const useCurrentUserV1 = () => {
   const authStore = useAuthStore();

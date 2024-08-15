@@ -42,7 +42,7 @@ import { NCheckbox } from "naive-ui";
 import { computed, ref } from "vue";
 import { restartAppRoot } from "@/AppRootContext";
 import { BBButtonConfirm } from "@/bbkit";
-import { useCurrentUserV1, useProjectV1Store } from "@/store";
+import { useProjectV1Store } from "@/store";
 import type { ComposedProject } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import { hasWorkspacePermissionV2 } from "@/utils";
@@ -51,16 +51,15 @@ const props = defineProps<{
   project: ComposedProject;
 }>();
 
-const currentUserV1 = useCurrentUserV1();
 const projectV1Store = useProjectV1Store();
 
 const force = ref(false);
 
 const allowArchiveOrRestore = computed(() => {
   if (props.project.state === State.ACTIVE) {
-    return hasWorkspacePermissionV2(currentUserV1.value, "bb.projects.delete");
+    return hasWorkspacePermissionV2("bb.projects.delete");
   }
-  return hasWorkspacePermissionV2(currentUserV1.value, "bb.projects.undelete");
+  return hasWorkspacePermissionV2("bb.projects.undelete");
 });
 
 const archiveOrRestoreProject = async (archive: boolean) => {

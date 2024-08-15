@@ -19,7 +19,6 @@ import { useI18n } from "vue-i18n";
 import { getColumnDefaultValuePlaceholder } from "@/components/SchemaEditorLite";
 import {
   useSettingV1Store,
-  useCurrentUserV1,
   useSubscriptionV1Store,
   useDBSchemaV1Store,
 } from "@/store";
@@ -92,7 +91,6 @@ const { t } = useI18n();
 const engine = computed(() => {
   return props.database.instanceResource.engine;
 });
-const currentUserV1 = useCurrentUserV1();
 const subscriptionV1Store = useSubscriptionV1Store();
 const dbSchemaStore = useDBSchemaV1Store();
 const settingStore = useSettingV1Store();
@@ -144,7 +142,7 @@ const showCollationColumn = computed(() => {
 });
 
 const hasSensitiveDataPermission = computed(() => {
-  if (hasWorkspacePermissionV2(currentUserV1.value, "bb.policies.update")) {
+  if (hasWorkspacePermissionV2("bb.policies.update")) {
     // True if the currentUser has workspace level sensitive data
     // R+W privileges. AKA DBA or Workspace owner
     return true;

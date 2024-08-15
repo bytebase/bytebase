@@ -25,7 +25,6 @@ import workspaceSettingRoutes, {
   SETTING_ROUTE_WORKSPACE_ARCHIVE,
   SETTING_ROUTE_WORKSPACE,
 } from "@/router/dashboard/workspaceSetting";
-import { useCurrentUserV1 } from "@/store";
 import {
   hasWorkspaceLevelProjectPermissionInAnyProject,
   hasWorkspacePermissionV2,
@@ -34,7 +33,6 @@ import {
 const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
-const currentUser = useCurrentUserV1();
 
 const getItemClass = (item: SidebarItem) => {
   const list = [];
@@ -139,15 +137,12 @@ const hasRoutePermission = (routeName: string) => {
   if (route.meta?.requiredWorkspacePermissionList) {
     const requiredPermissions = route.meta.requiredWorkspacePermissionList();
     return requiredPermissions.every((permission) =>
-      hasWorkspacePermissionV2(currentUser.value, permission)
+      hasWorkspacePermissionV2(permission)
     );
   } else if (route.meta?.requiredProjectPermissionList) {
     const requiredPermissions = route.meta.requiredProjectPermissionList();
     return requiredPermissions.every((permission) =>
-      hasWorkspaceLevelProjectPermissionInAnyProject(
-        currentUser.value,
-        permission
-      )
+      hasWorkspaceLevelProjectPermissionInAnyProject(permission)
     );
   }
 

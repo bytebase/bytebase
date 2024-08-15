@@ -18,7 +18,6 @@ import {
   hasProjectPermissionV2,
   type SearchParams,
 } from "@/utils";
-import { useCurrentUserV1 } from "../auth";
 import { useProjectV1Store } from "./project";
 
 export interface PlanFind {
@@ -75,7 +74,6 @@ export const buildPlanFindBySearchParams = (
 
 export const composePlan = async (rawPlan: Plan): Promise<ComposedPlan> => {
   const userStore = useUserStore();
-  const me = useCurrentUserV1();
   const project = `projects/${extractProjectResourceName(rawPlan.name)}`;
   const projectEntity =
     await useProjectV1Store().getOrFetchProjectByName(project);
@@ -92,9 +90,7 @@ export const composePlan = async (rawPlan: Plan): Promise<ComposedPlan> => {
     creatorEntity,
   };
 
-  if (
-    hasProjectPermissionV2(projectEntity, me.value, "bb.planCheckRuns.list")
-  ) {
+  if (hasProjectPermissionV2(projectEntity, "bb.planCheckRuns.list")) {
     // Only show the latest plan check runs.
     // TODO(steven): maybe we need to show all plan check runs on a separate page later.
     const { planCheckRuns } = await planServiceClient.listPlanCheckRuns({

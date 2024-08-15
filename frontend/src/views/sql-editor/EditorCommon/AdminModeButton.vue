@@ -19,11 +19,7 @@ import { NButton, type ButtonProps } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { computed, nextTick, unref } from "vue";
 import type { PropType } from "vue";
-import {
-  useCurrentUserV1,
-  useSQLEditorTabStore,
-  useWebTerminalStore,
-} from "@/store";
+import { useSQLEditorTabStore, useWebTerminalStore } from "@/store";
 import type { CoreSQLEditorTab } from "@/types";
 import {
   hasWorkspacePermissionV2,
@@ -41,10 +37,8 @@ const props = defineProps({
   },
 });
 
-const currentUserV1 = useCurrentUserV1();
-
 const allowAdmin = computed(() =>
-  hasWorkspacePermissionV2(currentUserV1.value, "bb.instances.adminExecute")
+  hasWorkspacePermissionV2("bb.instances.adminExecute")
 );
 
 const tabStore = useSQLEditorTabStore();

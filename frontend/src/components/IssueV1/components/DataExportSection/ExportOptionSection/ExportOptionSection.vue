@@ -69,7 +69,7 @@ import {
 } from "@/components/IssueV1/logic";
 import ErrorList from "@/components/misc/ErrorList.vue";
 import { planServiceClient } from "@/grpcweb";
-import { pushNotification, useCurrentUserV1 } from "@/store";
+import { pushNotification } from "@/store";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
 import {
   Plan_Spec,
@@ -85,7 +85,6 @@ interface LocalState {
 
 const { t } = useI18n();
 const { issue, isCreating, selectedTask, events } = useIssueContext();
-const currentUser = useCurrentUserV1();
 const refreshKey = ref(0);
 
 const spec = computed(
@@ -108,11 +107,7 @@ const optionsEditable = computed(() => {
 });
 
 const denyEditTaskReasons = computed(() => {
-  return allowUserToEditStatementForTask(
-    issue.value,
-    selectedTask.value,
-    currentUser.value
-  );
+  return allowUserToEditStatementForTask(issue.value, selectedTask.value);
 });
 
 const handleCancelEdit = () => {

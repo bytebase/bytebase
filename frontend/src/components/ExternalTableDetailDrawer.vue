@@ -137,11 +137,7 @@ import {
   ProjectV1Name,
   SearchBox,
 } from "@/components/v2";
-import {
-  useCurrentUserV1,
-  useDatabaseV1Store,
-  useDBSchemaV1Store,
-} from "@/store";
+import { useDatabaseV1Store, useDBSchemaV1Store } from "@/store";
 import { DEFAULT_PROJECT_NAME, defaultProject } from "@/types";
 import { TableMetadata } from "@/types/proto/v1/database_service";
 import {
@@ -169,7 +165,6 @@ defineEmits(["dismiss"]);
 
 const dbSchemaStore = useDBSchemaV1Store();
 const databaseV1Store = useDatabaseV1Store();
-const currentUserV1 = useCurrentUserV1();
 const state = reactive<LocalState>({
   columnNameSearchKeyword: "",
   partitionTableNameSearchKeyword: "",
@@ -204,13 +199,9 @@ const instanceEngine = computed(() => {
 
 const allowQuery = computed(() => {
   if (database.value.project === DEFAULT_PROJECT_NAME) {
-    return hasProjectPermissionV2(
-      defaultProject(),
-      currentUserV1.value,
-      "bb.databases.query"
-    );
+    return hasProjectPermissionV2(defaultProject(), "bb.databases.query");
   }
-  return isDatabaseV1Queryable(database.value, currentUserV1.value);
+  return isDatabaseV1Queryable(database.value);
 });
 
 const getTableName = (tableName: string) => {

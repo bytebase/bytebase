@@ -71,7 +71,7 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBBadge, BBButtonConfirm } from "@/bbkit";
 import { WORKSPACE_ROUTE_SQL_REVIEW_DETAIL } from "@/router/dashboard/workspaceRoutes";
-import { pushNotification, useCurrentUserV1, useSQLReviewStore } from "@/store";
+import { pushNotification, useSQLReviewStore } from "@/store";
 import type { SQLReviewPolicy } from "@/types";
 import { hasWorkspacePermissionV2, sqlReviewPolicySlug } from "@/utils";
 import SQLReviewAttachedResource from "./SQLReviewAttachedResource.vue";
@@ -84,15 +84,14 @@ defineProps<{
 
 const { t } = useI18n();
 const router = useRouter();
-const currentUserV1 = useCurrentUserV1();
 const sqlReviewStore = useSQLReviewStore();
 
 const hasUpdatePolicyPermission = computed(() => {
-  return hasWorkspacePermissionV2(currentUserV1.value, "bb.policies.update");
+  return hasWorkspacePermissionV2("bb.policies.update");
 });
 
 const hasDeletePolicyPermission = computed(() => {
-  return hasWorkspacePermissionV2(currentUserV1.value, "bb.policies.delete");
+  return hasWorkspacePermissionV2("bb.policies.delete");
 });
 
 const handleClickEdit = (review: SQLReviewPolicy) => {

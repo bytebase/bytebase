@@ -54,7 +54,6 @@ import {
   WORKSPACE_ROUTE_SQL_REVIEW_DETAIL,
 } from "@/router/dashboard/workspaceRoutes";
 import {
-  useCurrentUserV1,
   pushNotification,
   useSQLReviewStore,
   useSubscriptionV1Store,
@@ -113,7 +112,6 @@ const dialog = useDialog();
 const { t } = useI18n();
 const router = useRouter();
 const store = useSQLReviewStore();
-const currentUserV1 = useCurrentUserV1();
 const subscriptionStore = useSubscriptionV1Store();
 
 const BASIC_INFO_STEP = 0;
@@ -215,7 +213,7 @@ const changeStepIndex = (nextIndex: number) => {
 };
 
 const tryFinishSetup = async () => {
-  if (!hasWorkspacePermissionV2(currentUserV1.value, "bb.policies.update")) {
+  if (!hasWorkspacePermissionV2("bb.policies.update")) {
     pushNotification({
       module: "bytebase",
       style: "CRITICAL",

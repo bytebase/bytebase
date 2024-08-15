@@ -144,11 +144,7 @@ const projectIAMPolicyBindings = computed(() => {
 });
 
 const allowEdit = computed(() => {
-  return hasProjectPermissionV2(
-    props.project,
-    currentUserV1.value,
-    "bb.projects.setIamPolicy"
-  );
+  return hasProjectPermissionV2(props.project, "bb.projects.setIamPolicy");
 });
 
 const activeUserList = computed(() => {

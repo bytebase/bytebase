@@ -294,7 +294,6 @@ import {
   useDBSchemaV1Store,
   useDatabaseV1Store,
   useUserStore,
-  useCurrentUserV1,
   useSettingV1Store,
 } from "@/store";
 import type { AffectedTable } from "@/types/changeHistory";
@@ -348,11 +347,7 @@ const database = computed(() => {
 });
 
 const hasPermission = computed(() =>
-  hasProjectPermissionV2(
-    database.value.projectEntity,
-    useCurrentUserV1().value,
-    "bb.changeHistories.get"
-  )
+  hasProjectPermissionV2(database.value.projectEntity, "bb.changeHistories.get")
 );
 
 const classificationConfig = computed(() => {

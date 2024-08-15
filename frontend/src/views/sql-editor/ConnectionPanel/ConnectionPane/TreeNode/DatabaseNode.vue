@@ -37,7 +37,7 @@
 import { computed } from "vue";
 import DatabaseIcon from "~icons/heroicons-outline/circle-stack";
 import { EnvironmentV1Name, InstanceV1EngineIcon } from "@/components/v2";
-import { useAppFeature, useCurrentUserV1 } from "@/store";
+import { useAppFeature } from "@/store";
 import type {
   SQLEditorTreeNode as TreeNode,
   SQLEditorTreeFactor as Factor,
@@ -52,7 +52,6 @@ const props = defineProps<{
   keyword: string;
 }>();
 
-const me = useCurrentUserV1();
 const disallowRequestQuery = useAppFeature(
   "bb.feature.sql-editor.disallow-request-query"
 );
@@ -64,9 +63,7 @@ const database = computed(
   () => (props.node as TreeNode<"database">).meta.target
 );
 
-const canQuery = computed(() =>
-  isDatabaseV1Queryable(database.value, me.value)
-);
+const canQuery = computed(() => isDatabaseV1Queryable(database.value));
 
 const hasInstanceContext = computed(() => {
   return props.factors.includes("instance");

@@ -48,11 +48,7 @@ import { reactive, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBAttention } from "@/bbkit";
 import { StepTab } from "@/components/v2";
-import {
-  pushNotification,
-  useVCSConnectorStore,
-  useCurrentUserV1,
-} from "@/store";
+import { pushNotification, useVCSConnectorStore } from "@/store";
 import type { ComposedProject } from "@/types";
 import { VCSType } from "@/types/proto/v1/common";
 import { VCSProvider } from "@/types/proto/v1/vcs_provider_service";
@@ -85,7 +81,6 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 const vcsConnectorStore = useVCSConnectorStore();
-const currentUser = useCurrentUserV1();
 
 const stepList = [
   { title: t("repository.choose-git-provider"), hideNext: true },
@@ -110,11 +105,7 @@ const state = reactive<LocalState>({
 });
 
 const hasPermission = computed(() => {
-  return hasProjectPermissionV2(
-    props.project,
-    currentUser.value,
-    "bb.vcsConnectors.create"
-  );
+  return hasProjectPermissionV2(props.project, "bb.vcsConnectors.create");
 });
 
 const allowNext = computed((): boolean => {

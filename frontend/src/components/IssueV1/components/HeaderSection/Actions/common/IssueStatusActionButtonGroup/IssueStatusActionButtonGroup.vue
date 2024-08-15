@@ -52,7 +52,6 @@ import {
   issueStatusActionDisplayName,
   useIssueContext,
 } from "@/components/IssueV1/logic";
-import { useCurrentUserV1 } from "@/store";
 import type { Task } from "@/types/proto/v1/rollout_service";
 import type { ExtraActionOption } from "../types";
 import IssueStatusActionButton from "./IssueStatusActionButton.vue";
@@ -69,14 +68,12 @@ const props = defineProps<{
 
 const { t } = useI18n();
 const { issue, events } = useIssueContext();
-const currentUser = useCurrentUserV1();
 
 const issueStatusActionDropdownOptions = computed(() => {
   return props.issueStatusActionList.map<IssueActionDropdownOption>(
     (action) => {
       const [ok, reason] = allowUserToApplyIssueStatusAction(
         issue.value,
-        currentUser.value,
         action
       );
       return {

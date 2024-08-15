@@ -1,71 +1,56 @@
-import type { ComposedDatabase, ComposedProject, ComposedUser } from "@/types";
+import type { ComposedDatabase, ComposedProject } from "@/types";
 import { hasProjectPermissionV2 } from "./permission";
 
-export const hasPermissionToCreateRequestGrantIssueInProject = (
-  project: ComposedProject,
-  user: ComposedUser
+const hasPermissionToCreateRequestGrantIssueInProject = (
+  project: ComposedProject
 ) => {
-  return hasProjectPermissionV2(project, user, "bb.issues.create");
+  return hasProjectPermissionV2(project, "bb.issues.create");
 };
+
 export const hasPermissionToCreateRequestGrantIssue = (
-  database: ComposedDatabase,
-  user: ComposedUser
+  database: ComposedDatabase
 ) => {
   return hasPermissionToCreateRequestGrantIssueInProject(
-    database.projectEntity,
-    user
+    database.projectEntity
   );
 };
 
 export const hasPermissionToCreateChangeDatabaseIssueInProject = (
-  project: ComposedProject,
-  user: ComposedUser
+  project: ComposedProject
 ) => {
   return (
-    hasProjectPermissionV2(project, user, "bb.issues.create") &&
-    hasProjectPermissionV2(project, user, "bb.plans.create") &&
-    hasProjectPermissionV2(project, user, "bb.rollouts.create")
+    hasProjectPermissionV2(project, "bb.issues.create") &&
+    hasProjectPermissionV2(project, "bb.plans.create") &&
+    hasProjectPermissionV2(project, "bb.rollouts.create")
   );
 };
+
 export const hasPermissionToCreateChangeDatabaseIssue = (
-  database: ComposedDatabase,
-  user: ComposedUser
+  database: ComposedDatabase
 ) => {
   return hasPermissionToCreateChangeDatabaseIssueInProject(
-    database.projectEntity,
-    user
+    database.projectEntity
   );
 };
 
 export const hasPermissionToCreateDataExportIssueInProject = (
-  project: ComposedProject,
-  user: ComposedUser
+  project: ComposedProject
 ) => {
   return (
-    hasProjectPermissionV2(project, user, "bb.issues.create") &&
-    hasProjectPermissionV2(project, user, "bb.plans.create") &&
-    hasProjectPermissionV2(project, user, "bb.rollouts.create")
-  );
-};
-export const hasPermissionToCreateDataExportIssue = (
-  database: ComposedDatabase,
-  user: ComposedUser
-) => {
-  return hasPermissionToCreateDataExportIssueInProject(
-    database.projectEntity,
-    user
+    hasProjectPermissionV2(project, "bb.issues.create") &&
+    hasProjectPermissionV2(project, "bb.plans.create") &&
+    hasProjectPermissionV2(project, "bb.rollouts.create")
   );
 };
 
-export const hasPermissionToCreatePlanInProject = (
-  project: ComposedProject,
-  user: ComposedUser
+export const hasPermissionToCreateDataExportIssue = (
+  database: ComposedDatabase
 ) => {
-  return hasProjectPermissionV2(project, user, "bb.plans.create");
+  return hasPermissionToCreateDataExportIssueInProject(database.projectEntity);
 };
-export const hasPermissionToCreateReviewIssueIssue = (
-  database: ComposedDatabase,
-  user: ComposedUser
+
+export const hasPermissionToCreatePlanInProject = (
+  project: ComposedProject
 ) => {
-  return hasPermissionToCreatePlanInProject(database.projectEntity, user);
+  return hasProjectPermissionV2(project, "bb.plans.create");
 };

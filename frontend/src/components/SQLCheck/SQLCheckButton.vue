@@ -80,7 +80,7 @@ import { useI18n } from "vue-i18n";
 import { BBSpin } from "@/bbkit";
 import { sqlServiceClient } from "@/grpcweb";
 import { WORKSPACE_ROUTE_SQL_REVIEW } from "@/router/dashboard/workspaceRoutes";
-import { useCurrentUserV1, useReviewPolicyForDatabase } from "@/store";
+import { useReviewPolicyForDatabase } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import type { DatabaseMetadata } from "@/types/proto/v1/database_service";
 import type { CheckRequest_ChangeType } from "@/types/proto/v1/sql_service";
@@ -121,7 +121,6 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const currentUser = useCurrentUserV1();
 // SKIP_CHECK_THRESHOLD is the MaxSheetCheckSize in the backend.
 const SKIP_CHECK_THRESHOLD = 1024 * 1024;
 const isRunning = ref(false);
@@ -145,7 +144,7 @@ const reviewPolicy = useReviewPolicyForDatabase(
 );
 
 const hasManageSQLReviewPolicyPermission = computed(() => {
-  return hasWorkspacePermissionV2(currentUser.value, "bb.policies.update");
+  return hasWorkspacePermissionV2("bb.policies.update");
 });
 
 const noReviewPolicyTips = computed(() => {

@@ -283,7 +283,6 @@ import {
   useUserStore,
   useGroupStore,
   pushNotification,
-  useCurrentUserV1,
   useDBSchemaV1Store,
   extractGroupEmail,
 } from "@/store";
@@ -361,7 +360,6 @@ const MASKING_LEVELS = [
 const { t } = useI18n();
 const userStore = useUserStore();
 const groupStore = useGroupStore();
-const currentUserV1 = useCurrentUserV1();
 const accessUserList = ref<AccessUser[]>([]);
 const policyStore = usePolicyV1Store();
 const dbSchemaStore = useDBSchemaV1Store();
@@ -388,7 +386,7 @@ const policy = usePolicyByParentAndType(
 );
 
 const hasPermission = computed(() => {
-  return hasWorkspacePermissionV2(currentUserV1.value, "bb.policies.update");
+  return hasWorkspacePermissionV2("bb.policies.update");
 });
 
 const expirationTimeRegex = /request.time < timestamp\("(.+)?"\)/;

@@ -27,11 +27,7 @@
 <script lang="ts" setup>
 import { reactive, computed } from "vue";
 import { BBAttention } from "@/bbkit";
-import {
-  useSubscriptionV1Store,
-  useCurrentUserV1,
-  useInstanceResourceList,
-} from "@/store";
+import { useSubscriptionV1Store, useInstanceResourceList } from "@/store";
 import type { FeatureType } from "@/types";
 import { instanceLimitFeature } from "@/types";
 import { PlanType } from "@/types/proto/v1/subscription_service";
@@ -54,7 +50,6 @@ const state = reactive<LocalState>({
 
 const subscriptionV1Store = useSubscriptionV1Store();
 const featureKey = props.feature.split(".").join("-");
-const currentUserV1 = useCurrentUserV1();
 const instanceList = useInstanceResourceList();
 
 const onClick = () => {
@@ -62,7 +57,7 @@ const onClick = () => {
 };
 
 const canManageSubscription = computed((): boolean => {
-  return hasWorkspacePermissionV2(currentUserV1.value, "bb.instances.update");
+  return hasWorkspacePermissionV2("bb.instances.update");
 });
 
 const existInstanceWithoutLicense = computed(() => {

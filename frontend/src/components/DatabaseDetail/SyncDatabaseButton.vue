@@ -18,7 +18,6 @@ import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import {
   pushNotification,
-  useCurrentUserV1,
   useDatabaseV1Store,
   useDBSchemaV1Store,
 } from "@/store";
@@ -36,7 +35,6 @@ const emit = defineEmits<{
   (event: "finish"): void;
 }>();
 
-const me = useCurrentUserV1();
 const syncingSchema = ref(false);
 const { t } = useI18n();
 const databaseV1Store = useDatabaseV1Store();
@@ -49,7 +47,6 @@ const available = computed(() => {
 
   return hasProjectPermissionV2(
     props.database.projectEntity,
-    me.value,
     "bb.databases.sync"
   );
 });

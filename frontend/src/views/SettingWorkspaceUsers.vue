@@ -228,7 +228,7 @@ const workspaceProfileSetting = computed(() =>
 );
 
 const allowCreateGroup = computed(() =>
-  hasWorkspacePermissionV2(currentUserV1.value, "bb.groups.create")
+  hasWorkspacePermissionV2("bb.groups.create")
 );
 
 const allowCreateUser = computed(() => {
@@ -236,7 +236,7 @@ const allowCreateUser = computed(() => {
 });
 
 const allowEditGroup = computed(() => {
-  return hasWorkspacePermissionV2(currentUserV1.value, "bb.groups.update");
+  return hasWorkspacePermissionV2("bb.groups.update");
 });
 
 onMounted(() => {

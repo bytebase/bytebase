@@ -4,6 +4,7 @@
       v-model:value="state.shortValue"
       :size="size"
       :readonly="readonly"
+      :disabled="readonly"
     />
     <NInputGroupLabel :size="size"> @{{ domain }} </NInputGroupLabel>
   </NInputGroup>
@@ -12,6 +13,7 @@
     v-model:value="state.value"
     :size="size"
     :readonly="readonly"
+    :disabled="readonly"
   />
 </template>
 

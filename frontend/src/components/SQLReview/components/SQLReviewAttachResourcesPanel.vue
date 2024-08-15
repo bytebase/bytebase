@@ -77,7 +77,7 @@ import {
   EnvironmentSelect,
   ProjectSelect,
 } from "@/components/v2";
-import { useSQLReviewStore, pushNotification, useCurrentUserV1 } from "@/store";
+import { useSQLReviewStore, pushNotification } from "@/store";
 import {
   environmentNamePrefix,
   projectNamePrefix,
@@ -95,7 +95,6 @@ const emit = defineEmits<{
   (event: "close"): void;
 }>();
 
-const me = useCurrentUserV1();
 const resources = ref<string[]>([]);
 const sqlReviewStore = useSQLReviewStore();
 const { t } = useI18n();
@@ -110,7 +109,7 @@ watch(
 );
 
 const hasPermission = computed(() => {
-  return hasWorkspacePermissionV2(me.value, "bb.policies.update");
+  return hasWorkspacePermissionV2("bb.policies.update");
 });
 
 const environmentNames = computed(() =>

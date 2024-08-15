@@ -67,7 +67,6 @@ import { parseSQL, isDDLStatement } from "@/components/MonacoEditor/sqlParser";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
   pushNotification,
-  useCurrentUserV1,
   useAppFeature,
   useDatabaseV1Store,
   useSQLEditorTabStore,
@@ -85,7 +84,6 @@ const DMLIssueTemplate = "bb.issue.database.data.update";
 
 const router = useRouter();
 const { t } = useI18n();
-const me = useCurrentUserV1();
 const tabStore = useSQLEditorTabStore();
 const { standardModeEnabled } = useSQLEditorContext();
 const disallowNavigateToConsole = useAppFeature(
@@ -111,7 +109,7 @@ const actions = computed(() => {
     admin: false,
     action: undefined,
   };
-  if (hasWorkspacePermissionV2(me.value, "bb.instances.adminExecute")) {
+  if (hasWorkspacePermissionV2("bb.instances.adminExecute")) {
     actions.admin = true;
   }
   if (standardModeEnabled.value) {

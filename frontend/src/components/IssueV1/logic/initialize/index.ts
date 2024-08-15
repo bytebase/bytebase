@@ -94,7 +94,6 @@ export function useInitializeIssue(
     if (isCreating.value) {
       return hasProjectPermissionV2(
         issue.value.projectEntity,
-        currentUser.value,
         "bb.issues.create"
       );
     }
@@ -112,7 +111,6 @@ export function useInitializeIssue(
 
     return hasProjectPermissionV2(
       issue.value.projectEntity,
-      currentUser.value,
       "bb.issues.update"
     );
   });

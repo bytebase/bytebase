@@ -27,7 +27,7 @@ import { useRouter } from "vue-router";
 import { BBSpin } from "@/bbkit";
 import ProvideInstanceContext from "@/components/ProvideInstanceContext.vue";
 import NoPermissionPlaceholder from "@/components/misc/NoPermissionPlaceholder.vue";
-import { useCurrentUserV1, useInstanceV1Store } from "@/store";
+import { useInstanceV1Store } from "@/store";
 import { instanceNamePrefix } from "@/store/modules/v1/common";
 import { isValidInstanceName } from "@/types";
 import { hasWorkspacePermissionV2 } from "@/utils";
@@ -37,7 +37,6 @@ const props = defineProps<{
 }>();
 
 const router = useRouter();
-const currentUser = useCurrentUserV1();
 const instanceStore = useInstanceV1Store();
 
 const requiredPermissions = computed(() => {
@@ -48,7 +47,7 @@ const requiredPermissions = computed(() => {
 
 const hasPermission = computed(() => {
   return requiredPermissions.value.every((permission) =>
-    hasWorkspacePermissionV2(currentUser.value, permission)
+    hasWorkspacePermissionV2(permission)
   );
 });
 

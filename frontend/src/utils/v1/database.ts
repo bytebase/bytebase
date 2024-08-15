@@ -9,15 +9,13 @@ import {
   instanceNamePrefix,
 } from "@/store/modules/v1/common";
 import { UNKNOWN_ID } from "@/types";
-import type { ComposedDatabase, ComposedUser } from "@/types";
+import type { ComposedDatabase } from "@/types";
 import { Engine, State } from "@/types/proto/v1/common";
-import { DataSourceType } from "@/types/proto/v1/instance_service";
 import {
   hasPermissionToCreateChangeDatabaseIssue,
-  hasProjectPermissionV2,
-  hasWorkspaceLevelProjectPermission,
+  hasWorkspacePermissionV2,
 } from "../iam";
-import { isDev, semverCompare } from "../util";
+import { semverCompare } from "../util";
 import {
   extractProjectResourceName,
   isDeveloperOfProjectV1,
@@ -79,24 +77,21 @@ export const isArchivedDatabaseV1 = (db: ComposedDatabase): boolean => {
 };
 
 // isDatabaseV1Alterable checks if database alterable for user.
-export const isDatabaseV1Alterable = (
-  database: ComposedDatabase,
-  user: ComposedUser
-): boolean => {
+export const isDatabaseV1Alterable = (database: ComposedDatabase): boolean => {
   if (!hasFeature("bb.feature.access-control")) {
     // The current plan doesn't have access control feature.
     // Fallback to true.
     return true;
   }
 
-  if (hasPermissionToCreateChangeDatabaseIssue(database, user)) {
+  if (hasPermissionToCreateChangeDatabaseIssue(database)) {
     return true;
   }
 
   // If user is owner or developer of its projects, we will show the database in the UI.
   if (
-    isOwnerOfProjectV1(database.projectEntity, user) ||
-    isDeveloperOfProjectV1(database.projectEntity, user)
+    isOwnerOfProjectV1(database.projectEntity) ||
+    isDeveloperOfProjectV1(database.projectEntity)
   ) {
     return true;
   }
@@ -105,44 +100,19 @@ export const isDatabaseV1Alterable = (
 };
 
 // isDatabaseV1Queryable checks if database allowed to query in SQL Editor.
-export const isDatabaseV1Queryable = (
-  database: ComposedDatabase,
-  user: ComposedUser
-): boolean => {
+export const isDatabaseV1Queryable = (database: ComposedDatabase): boolean => {
   if (!hasFeature("bb.feature.access-control")) {
     // The current plan doesn't have access control feature.
     // Fallback to true.
     return true;
   }
 
-  if (hasWorkspaceLevelProjectPermission(user, "bb.databases.query")) {
+  if (hasWorkspacePermissionV2("bb.databases.query")) {
     return true;
   }
 
   const currentUserIamPolicy = useCurrentUserIamPolicy();
   if (currentUserIamPolicy.allowToQueryDatabaseV1(database)) {
-    return true;
-  }
-
-  // denied otherwise
-  return false;
-};
-
-// isTableQueryable checks if table allowed to query in SQL Editor.
-export const isTableQueryable = (
-  database: ComposedDatabase,
-  schema: string,
-  table: string,
-  user: ComposedUser
-): boolean => {
-  if (hasWorkspaceLevelProjectPermission(user, "bb.databases.query")) {
-    // The current user has the super privilege to access all databases.
-    // AKA. Owners and DBAs
-    return true;
-  }
-
-  const currentUserIamPolicy = useCurrentUserIamPolicy();
-  if (currentUserIamPolicy.allowToQueryDatabaseV1(database, schema, table)) {
     return true;
   }
 
@@ -213,32 +183,4 @@ export function allowGhostMigrationV1(
       )
     );
   });
-}
-
-export function allowDatabaseV1Access(
-  database: ComposedDatabase,
-  user: ComposedUser,
-  type: DataSourceType
-): boolean {
-  // "ADMIN" data source should only be used by the system, thus it shouldn't
-  // touch this method at all. If it touches somehow, we will reject it and
-  // log a warning
-  if (type === DataSourceType.ADMIN) {
-    if (isDev()) {
-      console.trace(
-        "Should not check database access against ADMIN connection"
-      );
-    } else {
-      console.warn("Should not check database access against ADMIN connection");
-    }
-    return false;
-  }
-
-  if (
-    hasProjectPermissionV2(database.projectEntity, user, "bb.databases.get")
-  ) {
-    return true;
-  }
-
-  return false;
 }
