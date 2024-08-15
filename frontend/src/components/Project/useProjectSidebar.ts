@@ -19,8 +19,6 @@ import { t } from "@/plugins/i18n";
 import projectV1Routes, {
   PROJECT_V1_ROUTE_DATABASES,
   PROJECT_V1_ROUTE_ISSUES,
-  PROJECT_V1_ROUTE_CHANGE_HISTORIES,
-  PROJECT_V1_ROUTE_DATABASE_CHANGE_HISTORY_DETAIL,
   PROJECT_V1_ROUTE_SYNC_SCHEMA,
   PROJECT_V1_ROUTE_SLOW_QUERIES,
   PROJECT_V1_ROUTE_ANOMALIES,
@@ -132,11 +130,6 @@ export const useProjectSidebar = (
           {
             title: t("common.groups"),
             path: PROJECT_V1_ROUTE_DATABASE_GROUPS,
-            type: "div",
-          },
-          {
-            title: t("common.change-history"),
-            path: PROJECT_V1_ROUTE_CHANGE_HISTORIES,
             type: "div",
           },
           {
@@ -257,15 +250,6 @@ export const useProjectSidebar = (
 
   const checkIsActive = (item: SidebarItem) => {
     const { name: current } = route;
-
-    if (
-      current?.toString() === PROJECT_V1_ROUTE_DATABASE_CHANGE_HISTORY_DETAIL
-    ) {
-      if (item.path === PROJECT_V1_ROUTE_CHANGE_HISTORIES) {
-        return true;
-      }
-      return false;
-    }
 
     const isActiveRoute =
       item.path === current?.toString() ||
