@@ -1208,11 +1208,23 @@ func (s *SQLService) SQLReviewCheck(
 
 	dbMetadata := overrideMetadata
 	if dbMetadata == nil {
-		metadata, err := getDatabaseMetadata(ctx, s.store, s.schemaSyncer, database)
+		dbSchema, err := s.store.GetDBSchema(ctx, database.UID)
 		if err != nil {
-			return storepb.Advice_ERROR, nil, status.Errorf(codes.Internal, err.Error())
+			return storepb.Advice_ERROR, nil, errors.Wrapf(err, "failed to fetch database schema for database %v", database.UID)
 		}
-		dbMetadata = metadata
+		if dbSchema == nil {
+			if err := s.schemaSyncer.SyncDatabaseSchema(ctx, database, true /* force */); err != nil {
+				return storepb.Advice_ERROR, nil, errors.Wrapf(err, "failed to sync database schema for database %v", database.UID)
+			}
+			dbSchema, err = s.store.GetDBSchema(ctx, database.UID)
+			if err != nil {
+				return storepb.Advice_ERROR, nil, errors.Wrapf(err, "failed to fetch database schema for database %v", database.UID)
+			}
+			if dbSchema == nil {
+				return storepb.Advice_ERROR, nil, errors.Wrapf(err, "cannot found schema for database %v", database.UID)
+			}
+		}
+		dbMetadata = dbSchema.GetMetadata()
 	}
 
 	catalog, err := catalog.NewCatalog(ctx, s.store, database.UID, instance.Engine, store.IgnoreDatabaseAndTableCaseSensitive(instance), overrideMetadata)
@@ -1239,32 +1251,39 @@ func (s *SQLService) SQLReviewCheck(
 		CurrentDatabase: database.DatabaseName,
 	}
 
-	return s.sqlCheck(
-		ctx,
-		statement,
-		database,
-		context,
-	)
-}
-
-func getDatabaseMetadata(ctx context.Context, stores *store.Store, schemaSyncer *schemasync.Syncer, database *store.DatabaseMessage) (*storepb.DatabaseSchemaMetadata, error) {
-	dbSchema, err := stores.GetDBSchema(ctx, database.UID)
+	reviewConfig, err := s.store.GetReviewConfigForDatabase(ctx, database)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to fetch database schema for database %v", database.UID)
-	}
-	if dbSchema == nil {
-		if err := schemaSyncer.SyncDatabaseSchema(ctx, database, true /* force */); err != nil {
-			return nil, errors.Wrapf(err, "failed to sync database schema for database %v", database.UID)
-		}
-		dbSchema, err = stores.GetDBSchema(ctx, database.UID)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to fetch database schema for database %v", database.UID)
-		}
-		if dbSchema == nil {
-			return nil, errors.Wrapf(err, "cannot found schema for database %v", database.UID)
+		if e, ok := err.(*common.Error); ok && e.Code == common.NotFound {
+			// Continue to check the builtin rules.
+			reviewConfig = &storepb.ReviewConfigPayload{}
+		} else {
+			return storepb.Advice_ERROR, nil, status.Errorf(codes.Internal, "failed to get SQL review policy with error: %v", err)
 		}
 	}
-	return dbSchema.GetMetadata(), nil
+
+	res, err := advisor.SQLReviewCheck(s.sheetManager, statement, reviewConfig.SqlReviewRules, context)
+	if err != nil {
+		return storepb.Advice_ERROR, nil, status.Errorf(codes.Internal, "failed to exec SQL review with error: %v", err)
+	}
+
+	adviceLevel := storepb.Advice_SUCCESS
+	var advices []*v1pb.Advice
+	for _, advice := range res {
+		switch advice.Status {
+		case storepb.Advice_WARNING:
+			if adviceLevel != storepb.Advice_ERROR {
+				adviceLevel = storepb.Advice_WARNING
+			}
+		case storepb.Advice_ERROR:
+			adviceLevel = storepb.Advice_ERROR
+		case storepb.Advice_SUCCESS, storepb.Advice_STATUS_UNSPECIFIED:
+			continue
+		}
+
+		advices = append(advices, convertToV1Advice(advice))
+	}
+
+	return adviceLevel, advices, nil
 }
 
 func convertToV1Advice(advice *storepb.Advice) *v1pb.Advice {
@@ -1292,47 +1311,6 @@ func convertAdviceStatus(status storepb.Advice_Status) v1pb.Advice_Status {
 	default:
 		return v1pb.Advice_STATUS_UNSPECIFIED
 	}
-}
-
-func (s *SQLService) sqlCheck(
-	ctx context.Context,
-	statement string,
-	database *store.DatabaseMessage,
-	context advisor.SQLReviewCheckContext,
-) (storepb.Advice_Status, []*v1pb.Advice, error) {
-	var adviceList []*v1pb.Advice
-	reviewConfig, err := s.store.GetReviewConfigForDatabase(ctx, database)
-	if err != nil {
-		if e, ok := err.(*common.Error); ok && e.Code == common.NotFound {
-			// Continue to check the builtin rules.
-			reviewConfig = &storepb.ReviewConfigPayload{}
-		} else {
-			return storepb.Advice_ERROR, nil, status.Errorf(codes.Internal, "failed to get SQL review policy with error: %v", err)
-		}
-	}
-
-	res, err := advisor.SQLReviewCheck(s.sheetManager, statement, reviewConfig.SqlReviewRules, context)
-	if err != nil {
-		return storepb.Advice_ERROR, nil, status.Errorf(codes.Internal, "failed to exec SQL review with error: %v", err)
-	}
-
-	adviceLevel := storepb.Advice_SUCCESS
-	for _, advice := range res {
-		switch advice.Status {
-		case storepb.Advice_WARNING:
-			if adviceLevel != storepb.Advice_ERROR {
-				adviceLevel = storepb.Advice_WARNING
-			}
-		case storepb.Advice_ERROR:
-			adviceLevel = storepb.Advice_ERROR
-		case storepb.Advice_SUCCESS, storepb.Advice_STATUS_UNSPECIFIED:
-			continue
-		}
-
-		adviceList = append(adviceList, convertToV1Advice(advice))
-	}
-
-	return adviceLevel, adviceList, nil
 }
 
 // ParseMyBatisMapper parses a MyBatis mapper XML file and returns the multi-SQL statements.
