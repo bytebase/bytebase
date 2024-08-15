@@ -1415,10 +1415,8 @@ func getOffsetAndOriginTable(backupTable string) (int, string, error) {
 
 func checkAndGetDataSourceQueriable(ctx context.Context, storeInstance *store.Store, database *store.DatabaseMessage, dataSourceID string) (*store.DataSourceMessage, error) {
 	if dataSourceID == "" {
-		readOnlyDataSourceType := api.RO
 		readOnlyDataSources, err := storeInstance.ListDataSourcesV2(ctx, &store.FindDataSourceMessage{
 			InstanceID: &database.InstanceID,
-			Type:       &readOnlyDataSourceType,
 		})
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to list data sources: %v", err)
