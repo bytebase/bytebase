@@ -10,11 +10,13 @@
 </template>
 
 <script lang="ts" setup>
-import { computed } from "vue";
+import { computed, watchEffect } from "vue";
 import {
   useIssueContext,
   taskRunListForTask,
 } from "@/components/IssueV1/logic";
+import { rolloutServiceClient } from "@/grpcweb";
+import { TaskRun_Status } from "@/types/proto/v1/rollout_service";
 import TaskRunTable from "./TaskRunTable.vue";
 
 type ViewMode = "SINGLE" | "MERGED";
@@ -38,5 +40,17 @@ const flattenTaskRunList = computed(() => {
     return issue.value.rolloutTaskRunList;
   }
   return [];
+});
+
+watchEffect(async () => {
+  // Fetching the latest task run log for running task runs of selected task.
+  for (const taskRun of flattenTaskRunList.value) {
+    if (taskRun.status === TaskRun_Status.RUNNING) {
+      const taskRunLog = await rolloutServiceClient.getTaskRunLog({
+        parent: taskRun.name,
+      });
+      taskRun.taskRunLog = taskRunLog;
+    }
+  }
 });
 </script>
