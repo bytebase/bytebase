@@ -233,7 +233,6 @@ func (d *DBFactory) GetDataSourceDriver(ctx context.Context, instance *store.Ins
 			ReplicaSet:               dataSource.ReplicaSet,
 			DirectConnection:         dataSource.DirectConnection,
 			Region:                   dataSource.Region,
-			AccountID:                dataSource.AccountID,
 			WarehouseID:              dataSource.WarehouseID,
 			RedisType:                dataSource.RedisType,
 			MasterName:               dataSource.MasterName,
