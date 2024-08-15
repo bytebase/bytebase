@@ -31,24 +31,46 @@
           v-if="showQueryContextSettingPopover && allowQuery"
         />
       </NButtonGroup>
-      <NButton size="small" :disabled="!allowQuery" @click="handleExplainQuery">
-        <mdi:play class="-ml-1.5" />
-        <span>Explain</span>
-        <span v-show="showShortcutText" class="ml-1">
-          ({{ keyboardShortcutStr("cmd_or_ctrl+E") }})
-        </span>
-      </NButton>
-      <NButton
-        v-if="showClearScreen"
-        size="small"
-        :disabled="queryList.length <= 1 || isExecutingSQL"
-        @click="handleClearScreen"
-      >
-        <span>{{ $t("sql-editor.clear-screen") }}</span>
-        <span v-show="showShortcutText" class="ml-1">
-          ({{ keyboardShortcutStr("shift+opt_or_alt+C") }})
-        </span>
-      </NButton>
+      <NPopover placement="bottom">
+        <template #trigger>
+          <NButton
+            size="small"
+            :disabled="!allowQuery"
+            style="--n-padding: 0 5px"
+            @click="handleExplainQuery"
+          >
+            <template #icon>
+              <PlayIcon class="w-4 h-4 !fill-current" />
+            </template>
+          </NButton>
+        </template>
+        <template #default>
+          <div class="flex items-center gap-1">
+            <span>Explain</span>
+            <span>({{ keyboardShortcutStr("cmd_or_ctrl+E") }})</span>
+          </div>
+        </template>
+      </NPopover>
+      <NPopover v-if="showClearScreen" placement="bottom">
+        <template #trigger>
+          <NButton
+            size="small"
+            :disabled="queryList.length <= 1 || isExecutingSQL"
+            style="--n-padding: 0 5px"
+            @click="handleClearScreen"
+          >
+            <template #icon>
+              <FileXIcon class="w-4 h-4" />
+            </template>
+          </NButton>
+        </template>
+        <template #default>
+          <div class="flex items-center gap-1">
+            <span>{{ $t("sql-editor.clear-screen") }}</span>
+            <span>({{ keyboardShortcutStr("shift+opt_or_alt+C") }})</span>
+          </div>
+        </template>
+      </NPopover>
       <ResultLimitSelect />
       <QueryModeSelect v-if="showQueryModeSelect" :disabled="isExecutingSQL" />
     </div>
@@ -108,6 +130,7 @@
 
 <script lang="ts" setup>
 import { useElementSize } from "@vueuse/core";
+import { FileXIcon, PlayIcon } from "lucide-vue-next";
 import { NButtonGroup, NButton, NPopover } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { computed, reactive, ref } from "vue";
@@ -225,7 +248,8 @@ const allowShare = computed(() => {
 });
 
 const showClearScreen = computed(() => {
-  return currentTab.value?.mode === "ADMIN";
+  return false; // buggy, hide by now
+  // return currentTab.value?.mode === "ADMIN";
 });
 
 const queryList = computed(() => {

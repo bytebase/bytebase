@@ -1,5 +1,5 @@
 <template>
-  <NPopover placement="bottom" trigger="click">
+  <NPopover placement="bottom-end" trigger="click">
     <template #trigger>
       <NButton type="primary" class="!px-1" size="small">
         <template #icon>
