@@ -468,6 +468,13 @@ const extractInitialSQLFromQuery = (
       sql,
     };
   }
+  const sqlStorageKey = query.sqlStorageKey;
+  if (sqlStorageKey && typeof sqlStorageKey === "string") {
+    const sql = localStorage.getItem(sqlStorageKey) ?? "";
+    return {
+      sql,
+    };
+  }
   return {};
 };
 
