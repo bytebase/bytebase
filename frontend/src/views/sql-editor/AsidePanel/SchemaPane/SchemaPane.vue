@@ -1,16 +1,21 @@
 <template>
-  <div class="gap-y-1 h-full flex flex-col relative">
+  <div
+    class="gap-y-1 h-full flex flex-col items-stretch relative overflow-hidden"
+  >
     <div class="px-1 flex flex-row gap-1">
-      <div class="flex-1">
-        <SearchBox
-          v-model:value="searchPattern"
-          size="small"
-          style="width: 100%; max-width: 100%"
-        />
+      <div class="flex-1 overflow-hidden">
+        <DatabaseSelect />
       </div>
       <div class="shrink-0 flex items-center">
         <SyncSchemaButton :database="database" :metadata="metadata" />
       </div>
+    </div>
+    <div class="px-1 flex flex-row gap-1">
+      <SearchBox
+        v-model:value="searchPattern"
+        size="small"
+        style="width: 100%; max-width: 100%"
+      />
     </div>
 
     <div
@@ -33,6 +38,7 @@
         :theme-overrides="{ nodeHeight: '21px' }"
         :render-label="renderLabel"
       />
+      <NEmpty v-else class="mt-[4rem]" />
     </div>
 
     <NDropdown
@@ -64,11 +70,11 @@
   </div>
 </template>
 
-<script setup lang="tsx">
+<script setup lang="ts">
 import { computedAsync, useElementSize, useMounted } from "@vueuse/core";
-import { NDropdown, NTree, useDialog, type TreeOption } from "naive-ui";
+import { NDropdown, NEmpty, NTree, useDialog, type TreeOption } from "naive-ui";
 import { storeToRefs } from "pinia";
-import { computed, nextTick, ref, watch } from "vue";
+import { computed, h, nextTick, ref, watch } from "vue";
 import { BBModal } from "@/bbkit";
 import TableSchemaViewer from "@/components/TableSchemaViewer.vue";
 import MaskSpinner from "@/components/misc/MaskSpinner.vue";
@@ -82,6 +88,7 @@ import { UNKNOWN_ID } from "@/types";
 import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
 import { findAncestor, isDescendantOf } from "@/utils";
 import { useSQLEditorContext } from "../../context";
+import DatabaseSelect from "./DatabaseSelect.vue";
 import { provideHoverStateContext } from "./HoverPanel";
 import HoverPanel from "./HoverPanel";
 import SyncSchemaButton from "./SyncSchemaButton.vue";
@@ -253,7 +260,8 @@ const nodeProps = ({ option }: { option: TreeOption }) => {
 // dynamic render the highlight keywords
 const renderLabel = ({ option }: { option: TreeOption }) => {
   const node = option as any as TreeNode;
-  return <Label node={node} keyword={searchPattern.value} />;
+  const keyword = searchPattern.value;
+  return h(Label, { node, keyword });
 };
 
 const selectedKeys = computed(() => {
