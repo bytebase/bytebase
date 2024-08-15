@@ -147,26 +147,8 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 		opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_ROLLBACK, rerr)
 	}()
 
-	totalCommands := len(singleSQLs)
 	totalRowsAffected := int64(0)
 	for i, singleSQL := range singleSQLs {
-		// Start the current chunk.
-		// Set the progress information for the current chunk.
-		if opts.UpdateExecutionStatus != nil {
-			opts.UpdateExecutionStatus(&v1pb.TaskRun_ExecutionDetail{
-				CommandsTotal:     int32(totalCommands),
-				CommandsCompleted: int32(i),
-				CommandStartPosition: &v1pb.TaskRun_ExecutionDetail_Position{
-					Line:   int32(singleSQL.FirstStatementLine),
-					Column: int32(singleSQL.FirstStatementColumn),
-				},
-				CommandEndPosition: &v1pb.TaskRun_ExecutionDetail_Position{
-					Line:   int32(singleSQL.LastLine),
-					Column: int32(singleSQL.LastColumn),
-				},
-			})
-		}
-
 		indexes := []int32{int32(i)}
 		opts.LogCommandExecute(indexes)
 

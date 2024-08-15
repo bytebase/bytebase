@@ -102,23 +102,8 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 		return 0, errors.Wrapf(err, "failed to split multi statement")
 	}
 	nonEmptyStatements, idxMap := base.FilterEmptySQLWithIndexes(statements)
-	commandsTotal := len(nonEmptyStatements)
 
 	for currentIndex, statement := range nonEmptyStatements {
-		if opts.UpdateExecutionStatus != nil {
-			opts.UpdateExecutionStatus(&v1pb.TaskRun_ExecutionDetail{
-				CommandsTotal:     int32(commandsTotal),
-				CommandsCompleted: int32(idxMap[currentIndex]),
-				CommandStartPosition: &v1pb.TaskRun_ExecutionDetail_Position{
-					Line:   int32(statement.FirstStatementLine),
-					Column: int32(statement.FirstStatementColumn),
-				},
-				CommandEndPosition: &v1pb.TaskRun_ExecutionDetail_Position{
-					Line:   int32(statement.LastLine),
-					Column: int32(statement.LastColumn),
-				},
-			})
-		}
 		opts.LogCommandExecute([]int32{int32(idxMap[currentIndex])})
 		_, err := d.client.ExecuteTransaction(ctx, &dynamodb.ExecuteTransactionInput{
 			TransactStatements: []types.ParameterizedStatement{
