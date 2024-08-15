@@ -269,13 +269,8 @@ func (s *SQLService) Export(ctx context.Context, request *v1pb.ExportRequest) (*
 		return nil, status.Errorf(codes.Internal, exportErr.Error())
 	}
 
-	content, err := DoEncrypt(bytes, request)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
-	}
-
 	return &v1pb.ExportResponse{
-		Content: content,
+		Content: bytes,
 	}, nil
 }
 
@@ -382,11 +377,13 @@ func DoExport(ctx context.Context, storeInstance *store.Store, dbFactory *dbfact
 	var content []byte
 	switch request.Format {
 	case v1pb.ExportFormat_CSV:
-		if content, err = exportCSV(result[0]); err != nil {
+		content, err = exportCSV(result[0])
+		if err != nil {
 			return nil, durationNs, err
 		}
 	case v1pb.ExportFormat_JSON:
-		if content, err = exportJSON(result[0]); err != nil {
+		content, err = exportJSON(result[0])
+		if err != nil {
 			return nil, durationNs, err
 		}
 	case v1pb.ExportFormat_SQL:
@@ -398,20 +395,27 @@ func DoExport(ctx context.Context, storeInstance *store.Store, dbFactory *dbfact
 		if err != nil {
 			return nil, 0, err
 		}
-		if content, err = exportSQL(instance.Engine, statementPrefix, result[0]); err != nil {
+		content, err = exportSQL(instance.Engine, statementPrefix, result[0])
+		if err != nil {
 			return nil, durationNs, err
 		}
 	case v1pb.ExportFormat_XLSX:
-		if content, err = exportXLSX(result[0]); err != nil {
+		content, err = exportXLSX(result[0])
+		if err != nil {
 			return nil, durationNs, err
 		}
 	default:
 		return nil, durationNs, status.Errorf(codes.InvalidArgument, "unsupported export format: %s", request.Format.String())
 	}
-	return content, durationNs, nil
+
+	encryptedBytes, err := doEncrypt(content, request)
+	if err != nil {
+		return nil, 0, errors.Wrap(err, "failed to encrypt data")
+	}
+	return encryptedBytes, durationNs, nil
 }
 
-func DoEncrypt(data []byte, request *v1pb.ExportRequest) ([]byte, error) {
+func doEncrypt(data []byte, request *v1pb.ExportRequest) ([]byte, error) {
 	if request.Password == "" {
 		return data, nil
 	}
