@@ -104,7 +104,7 @@ func (s *SQLService) AdminExecute(server v1pb.SQLService_AdminExecuteServer) err
 			return status.Errorf(codes.Internal, "failed to receive request: %v", err)
 		}
 
-		instance, database, user, err := s.preAdminExecute(ctx, request)
+		user, instance, database, err := s.prepareRelatedMessage(ctx, request.Name)
 		if err != nil {
 			return err
 		}
@@ -125,10 +125,14 @@ func (s *SQLService) AdminExecute(server v1pb.SQLService_AdminExecuteServer) err
 			}
 		}
 
-		result, durationNs, queryErr := s.doAdminExecute(ctx, driver, conn, request)
+		timeout := defaultTimeout
+		if request.Timeout != nil {
+			timeout = request.Timeout.AsDuration()
+		}
+		result, durationNs, queryErr := s.doExecute(ctx, driver, conn, request.Statement, timeout)
 		sanitizeResults(result)
 
-		if err := s.postQuery(ctx, database, request.Statement, user.ID, durationNs, queryErr); err != nil {
+		if err := s.postQuery(ctx, database, store.QueryHistoryTypeQuery, request.Statement, user.ID, durationNs, queryErr); err != nil {
 			slog.Error("failed to post admin execute activity", log.BBError(err))
 		}
 
@@ -149,101 +153,17 @@ func (s *SQLService) AdminExecute(server v1pb.SQLService_AdminExecuteServer) err
 	}
 }
 
-func (*SQLService) doAdminExecute(ctx context.Context, driver db.Driver, conn *sql.Conn, request *v1pb.AdminExecuteRequest) ([]*v1pb.QueryResult, int64, error) {
-	start := time.Now().UnixNano()
-	timeout := defaultTimeout
-	if request.Timeout != nil {
-		timeout = request.Timeout.AsDuration()
-	}
-	ctx, cancelCtx := context.WithTimeout(ctx, timeout)
-	defer cancelCtx()
-	result, err := driver.QueryConn(ctx, conn, request.Statement, db.QueryContext{AdminSession: true})
-	select {
-	case <-ctx.Done():
-		// canceled or timed out
-		return nil, time.Now().UnixNano() - start, errors.Errorf("timeout reached: %v", timeout)
-	default:
-		// So the select will not block
-	}
-	return result, time.Now().UnixNano() - start, err
-}
-
-func (s *SQLService) preAdminExecute(ctx context.Context, request *v1pb.AdminExecuteRequest) (*store.InstanceMessage, *store.DatabaseMessage, *store.UserMessage, error) {
-	user, instance, database, err := s.prepareRelatedMessage(ctx, request.Name)
-	if err != nil {
-		return nil, nil, nil, err
-	}
-	return instance, database, user, nil
-}
-
 // Execute executes the SQL statement.
 func (s *SQLService) Execute(ctx context.Context, request *v1pb.ExecuteRequest) (*v1pb.ExecuteResponse, error) {
-	instance, database, err := s.preExecute(ctx, request)
+	// Prepare related message.
+	user, instance, database, err := s.prepareRelatedMessage(ctx, request.Name)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to prepare execute: %v", err)
+		return nil, err
 	}
 
-	results, _, queryErr := s.doExecute(ctx, instance, database, request)
-	if queryErr != nil {
-		return nil, status.Errorf(codes.Internal, queryErr.Error())
-	}
-	sanitizeResults(results)
-
-	response := &v1pb.ExecuteResponse{
-		Results: results,
-	}
-	return response, nil
-}
-
-func (s *SQLService) preExecute(ctx context.Context, request *v1pb.ExecuteRequest) (*store.InstanceMessage, *store.DatabaseMessage, error) {
-	hasDatabase := strings.Contains(request.Name, "/databases/")
-	var err error
-	var instanceID, databaseName string
-	if hasDatabase {
-		instanceID, databaseName, err = common.GetInstanceDatabaseID(request.Name)
-		if err != nil {
-			return nil, nil, status.Error(codes.InvalidArgument, err.Error())
-		}
-	} else {
-		instanceID, err = common.GetInstanceID(request.Name)
-		if err != nil {
-			return nil, nil, status.Error(codes.InvalidArgument, err.Error())
-		}
-	}
-
-	find := &store.FindInstanceMessage{
-		ResourceID: &instanceID,
-	}
-	instance, err := s.store.GetInstanceV2(ctx, find)
-	if err != nil {
-		return nil, nil, status.Errorf(codes.Internal, err.Error())
-	}
-	if instance == nil {
-		return nil, nil, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
-	}
-
-	var database *store.DatabaseMessage
-	if hasDatabase {
-		database, err = s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-			InstanceID:          &instance.ResourceID,
-			DatabaseName:        &databaseName,
-			IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
-		})
-		if err != nil {
-			return nil, nil, status.Errorf(codes.Internal, "failed to fetch database: %v", err)
-		}
-		if database == nil {
-			return nil, nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
-		}
-	}
-
-	return instance, database, nil
-}
-
-func (s *SQLService) doExecute(ctx context.Context, instance *store.InstanceMessage, database *store.DatabaseMessage, request *v1pb.ExecuteRequest) ([]*v1pb.QueryResult, int64, error) {
 	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{})
 	if err != nil {
-		return nil, 0, errors.Wrap(err, "failed to get database driver")
+		return nil, status.Errorf(codes.Internal, "failed to get database driver: %v", err)
 	}
 
 	var conn *sql.Conn
@@ -251,18 +171,35 @@ func (s *SQLService) doExecute(ctx context.Context, instance *store.InstanceMess
 	if sqlDB != nil {
 		conn, err = sqlDB.Conn(ctx)
 		if err != nil {
-			return nil, 0, errors.Wrap(err, "failed to get database connection")
+			return nil, status.Errorf(codes.Internal, "failed to get database connection: %v", err)
 		}
 	}
 
-	start := time.Now().UnixNano()
-	timeout := defaultTimeout
-	if request.Timeout != nil {
-		timeout = request.Timeout.AsDuration()
+	results, durationNs, queryErr := s.doExecute(ctx, driver, conn, request.Name, defaultTimeout)
+	sanitizeResults(results)
+
+	if err := s.postQuery(ctx, database, store.QueryHistoryTypeQuery, request.Statement, user.ID, durationNs, queryErr); err != nil {
+		slog.Error("failed to post admin execute activity", log.BBError(err))
 	}
+
+	response := &v1pb.ExecuteResponse{}
+	if queryErr != nil {
+		response.Results = []*v1pb.QueryResult{
+			{
+				Error: queryErr.Error(),
+			},
+		}
+	} else {
+		response.Results = results
+	}
+	return response, nil
+}
+
+func (*SQLService) doExecute(ctx context.Context, driver db.Driver, conn *sql.Conn, statement string, timeout time.Duration) ([]*v1pb.QueryResult, int64, error) {
+	start := time.Now().UnixNano()
 	ctx, cancelCtx := context.WithTimeout(ctx, timeout)
 	defer cancelCtx()
-	result, err := driver.QueryConn(ctx, conn, request.Statement, db.QueryContext{})
+	result, err := driver.QueryConn(ctx, conn, statement, db.QueryContext{AdminSession: true})
 	select {
 	case <-ctx.Done():
 		// canceled or timed out
@@ -322,7 +259,7 @@ func (s *SQLService) Export(ctx context.Context, request *v1pb.ExportRequest) (*
 
 	bytes, durationNs, exportErr := DoExport(ctx, s.store, s.dbFactory, s.licenseService, request, instance, database, spans)
 
-	if err := s.postExport(ctx, database, statement, user.ID, durationNs, exportErr); err != nil {
+	if err := s.postQuery(ctx, database, store.QueryHistoryTypeExport, statement, user.ID, durationNs, exportErr); err != nil {
 		return nil, err
 	}
 
@@ -470,29 +407,6 @@ func DoExport(ctx context.Context, storeInstance *store.Store, dbFactory *dbfact
 		return nil, durationNs, status.Errorf(codes.InvalidArgument, "unsupported export format: %s", request.Format.String())
 	}
 	return content, durationNs, nil
-}
-
-func (s *SQLService) postExport(ctx context.Context, database *store.DatabaseMessage, statement string, userUID int, durationNs int64, queryErr error) error {
-	qh := &store.QueryHistoryMessage{
-		CreatorUID: userUID,
-		ProjectID:  database.ProjectID,
-		Database:   common.FormatDatabase(database.InstanceID, database.DatabaseName),
-		Statement:  statement,
-		Type:       store.QueryHistoryTypeExport,
-		Payload: &storepb.QueryHistoryPayload{
-			Error:    nil,
-			Duration: durationpb.New(time.Duration(durationNs)),
-		},
-	}
-	if queryErr != nil {
-		queryErrString := queryErr.Error()
-		qh.Payload.Error = &queryErrString
-	}
-
-	if _, err := s.store.CreateQueryHistory(ctx, qh); err != nil {
-		return status.Errorf(codes.Internal, "Failed to create export history with error: %v", err)
-	}
-	return nil
 }
 
 func DoEncrypt(data []byte, request *v1pb.ExportRequest) ([]byte, error) {
@@ -741,7 +655,7 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 	}
 
 	// Update activity.
-	if err = s.postQuery(ctx, database, statement, user.ID, durationNs, queryErr); err != nil {
+	if err = s.postQuery(ctx, database, store.QueryHistoryTypeQuery, statement, user.ID, durationNs, queryErr); err != nil {
 		return nil, err
 	}
 	if queryErr != nil {
@@ -806,7 +720,7 @@ func (s *SQLService) doQuery(ctx context.Context, request *v1pb.QueryRequest, in
 	return results, time.Now().UnixNano() - start, err
 }
 
-func (s *SQLService) postQuery(ctx context.Context, database *store.DatabaseMessage, statement string, userUID int, durationNs int64, queryErr error) error {
+func (s *SQLService) postQuery(ctx context.Context, database *store.DatabaseMessage, queryType store.QueryHistoryType, statement string, userUID int, durationNs int64, queryErr error) error {
 	qh := &store.QueryHistoryMessage{
 		CreatorUID: userUID,
 		ProjectID:  database.ProjectID,
