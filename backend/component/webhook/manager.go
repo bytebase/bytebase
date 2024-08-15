@@ -305,6 +305,13 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, acti
 		}
 	}
 
+	var mentionEndUsers []*store.UserMessage
+	for _, u := range mentionUsers {
+		if u.Type == api.EndUser {
+			mentionEndUsers = append(mentionEndUsers, u)
+		}
+	}
+
 	webhookCtx = webhook.Context{
 		Level:        level,
 		ActivityType: string(activityType),
@@ -328,7 +335,7 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, acti
 		CreatorID:           e.Actor.ID,
 		CreatorName:         e.Actor.Name,
 		CreatorEmail:        e.Actor.Email,
-		MentionUsers:        mentionUsers,
+		MentionEndUsers:     mentionEndUsers,
 		MentionUsersByPhone: mentions,
 	}
 	if u := e.TaskRunStatusUpdate; u != nil {
