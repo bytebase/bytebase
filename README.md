@@ -53,7 +53,7 @@
 <br />
 
 <p align="center" >
-  <img src="https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/docs/assets/your-dev-vs-competitor-hitman.webp" />
+  <img src="https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/your-dev-vs-competitor-hitman.webp" />
 </p>
 
 <br />
