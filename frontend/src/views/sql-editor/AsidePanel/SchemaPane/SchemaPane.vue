@@ -27,6 +27,7 @@
       <NTree
         v-if="tree"
         ref="treeRef"
+        :expanded-keys="expandedKeys"
         :selected-keys="selectedKeys"
         :block-line="true"
         :data="tree"
@@ -71,6 +72,7 @@
 
 <script setup lang="ts">
 import { computedAsync, useElementSize, useMounted } from "@vueuse/core";
+import { uniq } from "lodash-es";
 import { NDropdown, NEmpty, NTree, useDialog, type TreeOption } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { computed, h, nextTick, ref, watch } from "vue";
@@ -86,7 +88,11 @@ import {
 } from "@/store";
 import { UNKNOWN_ID } from "@/types";
 import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
-import { findAncestor, isDescendantOf } from "@/utils";
+import {
+  extractDatabaseResourceName,
+  findAncestor,
+  isDescendantOf,
+} from "@/utils";
 import { useSQLEditorContext } from "../../context";
 import { provideHoverStateContext } from "./HoverPanel";
 import HoverPanel from "./HoverPanel";
@@ -98,6 +104,7 @@ import {
   type TreeNode,
   buildDatabaseSchemaTree,
   useClickNode,
+  ExpandableNodeTypes,
 } from "./common";
 
 const mounted = useMounted();
@@ -144,12 +151,35 @@ const metadata = computedAsync(
     evaluating: isFetchingMetadata,
   }
 );
-const tree = computed(() => {
-  if (isFetchingMetadata.value) return null;
-  if (!metadata.value) return null;
-  return buildDatabaseSchemaTree(database.value, metadata.value);
+// const tree = computed(() => {
+//   if (isFetchingMetadata.value) return null;
+//   if (!metadata.value) return null;
+//   return buildDatabaseSchemaTree(database.value, metadata.value);
+// });
+const tree = ref<TreeNode[]>();
+
+const expandedKeys = computed({
+  get() {
+    const treeState = currentTab.value?.treeState;
+    if (!treeState) return [];
+    if (treeState.database !== database.value.name) return [];
+    return treeState.keys;
+  },
+  set(keys) {
+    if (!currentTab.value) return;
+    const treeState = currentTab.value.treeState;
+    if (treeState.database !== database.value.name) return;
+    treeState.keys = keys;
+  },
 });
-const defaultExpandedKeys = computed(() => {
+
+const upsertExpandedKeys = (keys: string[]) => {
+  const curr = expandedKeys.value;
+  if (!curr) return;
+  expandedKeys.value = uniq([...curr, ...keys]);
+};
+
+const defaultExpandedKeys = () => {
   if (!tree.value) return [];
   const keys: string[] = [];
   const collect = (node: TreeNode) => {
@@ -169,7 +199,7 @@ const defaultExpandedKeys = computed(() => {
   };
   walk(tree.value[0]);
   return keys;
-});
+};
 const nodeProps = ({ option }: { option: TreeOption }) => {
   const node = option as any as TreeNode;
   return {
@@ -274,17 +304,50 @@ const selectedKeys = computed(() => {
   return [`${db.name}/schemas/${schema}/tables/${table}`];
 });
 
+const expandNodeRecursively = (node: TreeNode) => {
+  const keysToExpand: string[] = [];
+  const walk = (node: TreeNode | undefined) => {
+    if (!node) return;
+    if (ExpandableNodeTypes.includes(node.meta.type)) {
+      keysToExpand.push(node.key);
+    }
+    walk(node.parent);
+  };
+  walk(node);
+  upsertExpandedKeys(keysToExpand);
+};
+
 useEmitteryEventListener(clickEvents, "click", ({ node }) => {
   console.log("click", node);
+  expandNodeRecursively(node);
 });
 useEmitteryEventListener(clickEvents, "double-click", ({ node }) => {
   console.log("double-click", node);
 });
 
-watch(tree, () => {
-  showDropdown.value = false;
-  dropdownContext.value = undefined;
-});
+watch(
+  [isFetchingMetadata, metadata],
+  ([isFetchingMetadata, metadata]) => {
+    if (isFetchingMetadata || !metadata) {
+      tree.value = undefined;
+      return;
+    }
+    tree.value = buildDatabaseSchemaTree(database.value, metadata);
+
+    const tab = currentTab.value;
+    if (tab) {
+      const { database } = extractDatabaseResourceName(metadata.name);
+      if (database !== tab.treeState.database) {
+        console.log("override default expanded keys");
+        tab.treeState.database = database;
+        tab.treeState.keys = defaultExpandedKeys();
+      }
+    }
+  },
+  {
+    immediate: true,
+  }
+);
 </script>
 
 <style lang="postcss" scoped>

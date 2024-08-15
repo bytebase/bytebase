@@ -24,6 +24,7 @@
 
 <script lang="ts" setup>
 import type { editor as Editor } from "monaco-editor";
+import { storeToRefs } from "pinia";
 import { computed, nextTick, ref, toRef, watch } from "vue";
 import type {
   IStandaloneCodeEditor,
@@ -76,19 +77,11 @@ const tabStore = useSQLEditorTabStore();
 const { events: editorEvents } = useSQLEditorContext();
 const { connection, instance } = useConnectionOfCurrentSQLEditorTab();
 const language = useInstanceV1EditorLanguage(instance);
+const { isSwitchingTab } = storeToRefs(tabStore);
 const pendingFormatContentCommand = ref(false);
 const dialect = computed((): SQLDialect => {
   const engine = instance.value.engine;
   return dialectOfEngineV1(engine);
-});
-const currentTabId = computed(() => tabStore.currentTabId);
-const isSwitchingTab = ref(false);
-
-watch(currentTabId, () => {
-  isSwitchingTab.value = true;
-  nextTick(() => {
-    isSwitchingTab.value = false;
-  });
 });
 
 const firstLinePrompt = computed(() => {
