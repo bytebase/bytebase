@@ -236,6 +236,11 @@ export interface ExportRequest {
   limit: number;
   /** The export format. */
   format: ExportFormat;
+  /**
+   * The admin is used for workspace owner and DBA for exporting data from SQL Editor Admin mode.
+   * The exported data is not masked.
+   */
+  admin: boolean;
   /** The zip password provide by users. */
   password: string;
   /**
@@ -1778,7 +1783,15 @@ export const Advice = {
 };
 
 function createBaseExportRequest(): ExportRequest {
-  return { name: "", statement: "", limit: 0, format: ExportFormat.FORMAT_UNSPECIFIED, password: "", dataSourceId: "" };
+  return {
+    name: "",
+    statement: "",
+    limit: 0,
+    format: ExportFormat.FORMAT_UNSPECIFIED,
+    admin: false,
+    password: "",
+    dataSourceId: "",
+  };
 }
 
 export const ExportRequest = {
@@ -1794,6 +1807,9 @@ export const ExportRequest = {
     }
     if (message.format !== ExportFormat.FORMAT_UNSPECIFIED) {
       writer.uint32(40).int32(exportFormatToNumber(message.format));
+    }
+    if (message.admin === true) {
+      writer.uint32(48).bool(message.admin);
     }
     if (message.password !== "") {
       writer.uint32(58).string(message.password);
@@ -1839,6 +1855,13 @@ export const ExportRequest = {
 
           message.format = exportFormatFromJSON(reader.int32());
           continue;
+        case 6:
+          if (tag !== 48) {
+            break;
+          }
+
+          message.admin = reader.bool();
+          continue;
         case 7:
           if (tag !== 58) {
             break;
@@ -1868,6 +1891,7 @@ export const ExportRequest = {
       statement: isSet(object.statement) ? globalThis.String(object.statement) : "",
       limit: isSet(object.limit) ? globalThis.Number(object.limit) : 0,
       format: isSet(object.format) ? exportFormatFromJSON(object.format) : ExportFormat.FORMAT_UNSPECIFIED,
+      admin: isSet(object.admin) ? globalThis.Boolean(object.admin) : false,
       password: isSet(object.password) ? globalThis.String(object.password) : "",
       dataSourceId: isSet(object.dataSourceId) ? globalThis.String(object.dataSourceId) : "",
     };
@@ -1887,6 +1911,9 @@ export const ExportRequest = {
     if (message.format !== ExportFormat.FORMAT_UNSPECIFIED) {
       obj.format = exportFormatToJSON(message.format);
     }
+    if (message.admin === true) {
+      obj.admin = message.admin;
+    }
     if (message.password !== "") {
       obj.password = message.password;
     }
@@ -1905,6 +1932,7 @@ export const ExportRequest = {
     message.statement = object.statement ?? "";
     message.limit = object.limit ?? 0;
     message.format = object.format ?? ExportFormat.FORMAT_UNSPECIFIED;
+    message.admin = object.admin ?? false;
     message.password = object.password ?? "";
     message.dataSourceId = object.dataSourceId ?? "";
     return message;

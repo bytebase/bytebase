@@ -302,7 +302,7 @@ message Advice {
 }
 
 message ExportRequest {
-  reserved 2, 6;
+  reserved 2;
 
   // The name is the instance name to execute the query against.
   // Format: instances/{instance}/databases/{databaseName}
@@ -320,6 +320,10 @@ message ExportRequest {
 
   // The export format.
   ExportFormat format = 5;
+
+  // The admin is used for workspace owner and DBA for exporting data from SQL Editor Admin mode.
+  // The exported data is not masked.
+  bool admin = 6;
 
   // The zip password provide by users.
   string password = 7;
