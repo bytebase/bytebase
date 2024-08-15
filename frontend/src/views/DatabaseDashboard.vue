@@ -118,7 +118,7 @@ const databaseV1Store = useDatabaseV1Store();
 
 const scopeOptions = useCommonSearchScopeOptions(
   computed(() => state.params),
-  [...CommonFilterScopeIdList, "project", "project-assigned"]
+  [...CommonFilterScopeIdList, "project"]
 );
 
 const selectedInstance = computed(() => {
@@ -132,13 +132,6 @@ const selectedEnvironment = computed(() => {
   return (
     state.params.scopes.find((scope) => scope.id === "environment")?.value ??
     `${UNKNOWN_ID}`
-  );
-});
-
-const selectedProjectAssigned = computed(() => {
-  return (
-    state.params.scopes.find((scope) => scope.id === "project-assigned")
-      ?.value ?? `${UNKNOWN_ID}`
   );
 });
 
@@ -175,15 +168,6 @@ const filteredDatabaseList = computed(() => {
         extractEnvironmentResourceName(db.effectiveEnvironment) ===
         selectedEnvironment.value
     );
-  }
-  if (selectedProjectAssigned.value !== `${UNKNOWN_ID}`) {
-    list = list.filter((db) => {
-      if (selectedProjectAssigned.value == "yes") {
-        return db.project !== DEFAULT_PROJECT_NAME;
-      } else {
-        return db.project === DEFAULT_PROJECT_NAME;
-      }
-    });
   }
   if (selectedInstance.value !== `${UNKNOWN_ID}`) {
     list = list.filter(
