@@ -1784,7 +1784,7 @@ func isUpperCaseLetter(c rune) bool {
 
 // AdviseIndex advises the index of a table.
 func (s *DatabaseService) AdviseIndex(ctx context.Context, request *v1pb.AdviseIndexRequest) (*v1pb.AdviseIndexResponse, error) {
-	if err := s.licenseService.IsFeatureEnabled(api.FeaturePluginOpenAI); err != nil {
+	if err := s.licenseService.IsFeatureEnabled(api.FeatureAIAssistant); err != nil {
 		return nil, status.Errorf(codes.PermissionDenied, err.Error())
 	}
 	instanceID, databaseName, err := common.GetInstanceDatabaseID(request.Parent)

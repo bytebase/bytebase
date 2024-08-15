@@ -695,19 +695,18 @@
           }
         },
         "config-updated": "Configuration is updated.",
-        "plugin": {
-          "openai": {
-            "ai-augmentation": "AI Augmentation",
-            "openai-key": {
-              "self": "OpenAI API Key",
-              "description": "Supply OpenAI API Key to enable ChatSQL capability in SQL Editor. {viewDoc}",
-              "find-my-key": "Find my key",
-              "placeholder": "An OpenAI API Key usually starts with sk-*****"
-            },
-            "openai-endpoint": {
-              "self": "OpenAI API Endpoint",
-              "description": "Supply private deployment of OpenAI API Endpoint."
-            }
+        "ai-assistant": {
+          "self": "AI Assistant",
+          "description": "Use OpenAPI to assist the database development tasks.",
+          "openai-key": {
+            "self": "OpenAI API Key",
+            "description": "Supply OpenAI API Key. {viewDoc}",
+            "find-my-key": "Find my key",
+            "placeholder": "An OpenAI API Key usually starts with sk-*****"
+          },
+          "openai-endpoint": {
+            "self": "OpenAI API Endpoint",
+            "description": "Supply private deployment of OpenAI API Endpoint."
           }
         },
         "announcement": {
@@ -3096,7 +3095,7 @@
     "ai": {
       "examples": "Examples",
       "text-to-sql-placeholder": "Use natural language and Bytebase will convert it into SQL",
-      "text-to-sql-disabled-placeholder": "Enable ChatSQL capability by supplying an OpenAI API Key.",
+      "text-to-sql-disabled-placeholder": "Enable AI Assistant by supplying an OpenAI API Key.",
       "run-automatically": "Run automatically",
       "conversation": {
         "conversations": "Conversations",
@@ -3122,9 +3121,9 @@
       },
       "statement-copied": "Statement copied to clipboard",
       "dont-show-again": "Don't show again",
-      "chat-sql": "ChatSQL",
-      "disable-chat-sql": "Disable ChatSQL",
-      "enable-chat-sql": "Enable ChatSQL"
+      "text2sql": "Text2SQL",
+      "disable-text2sql": "Disable Text2SQL",
+      "enable-text2sql": "Enable Text2SQL"
     }
   },
   "custom-approval": {

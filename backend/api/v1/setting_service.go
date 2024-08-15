@@ -580,7 +580,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 		}
 		storeSettingValue = request.Setting.Value.GetStringValue()
 	case api.SettingPluginOpenAIKey:
-		if err := s.licenseService.IsFeatureEnabled(api.FeaturePluginOpenAI); err != nil {
+		if err := s.licenseService.IsFeatureEnabled(api.FeatureAIAssistant); err != nil {
 			return nil, status.Errorf(codes.PermissionDenied, err.Error())
 		}
 		storeSettingValue = request.Setting.Value.GetStringValue()
