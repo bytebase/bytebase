@@ -481,23 +481,6 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 			}
 
 			for i, command := range commands {
-				// Start the current chunk.
-				// Set the progress information for the current chunk.
-				if opts.UpdateExecutionStatus != nil {
-					opts.UpdateExecutionStatus(&v1pb.TaskRun_ExecutionDetail{
-						CommandsTotal:     int32(totalCommands),
-						CommandsCompleted: int32(i),
-						CommandStartPosition: &v1pb.TaskRun_ExecutionDetail_Position{
-							Line:   int32(command.FirstStatementLine),
-							Column: int32(command.FirstStatementColumn),
-						},
-						CommandEndPosition: &v1pb.TaskRun_ExecutionDetail_Position{
-							Line:   int32(command.LastLine),
-							Column: int32(command.LastColumn),
-						},
-					})
-				}
-
 				indexes := []int32{originalIndex[i]}
 				opts.LogCommandExecute(indexes)
 
