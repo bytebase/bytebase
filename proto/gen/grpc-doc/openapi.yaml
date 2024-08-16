@@ -9595,6 +9595,12 @@ components:
                 password:
                     type: string
                     description: The zip password provide by users.
+                dataSourceId:
+                    type: string
+                    description: |-
+                        The id of data source.
+                         It is used for querying admin data source even if the instance has read-only data sources.
+                         Or it can be used to query a specific read-only data source.
         ExportResponse:
             type: object
             properties:
