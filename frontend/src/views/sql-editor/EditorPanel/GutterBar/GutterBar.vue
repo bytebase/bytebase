@@ -11,32 +11,12 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
-import { useConnectionOfCurrentSQLEditorTab } from "@/store";
-import { instanceV1SupportsExternalTable } from "@/utils";
 import { useEditorPanelContext } from "../context";
-import type { EditorPanelView } from "../types";
 import TabItem from "./TabItem.vue";
 
-const { instance } = useConnectionOfCurrentSQLEditorTab();
-const { viewState } = useEditorPanelContext();
+const { viewState, availableViews } = useEditorPanelContext();
 
 const show = computed(() => {
   return viewState.value?.view !== undefined;
-});
-
-const availableViews = computed(() => {
-  const views: EditorPanelView[] = [
-    "CODE",
-    "INFO",
-    "TABLES",
-    "VIEWS",
-    "FUNCTIONS",
-    "PROCEDURES",
-  ];
-  if (instanceV1SupportsExternalTable(instance.value)) {
-    views.push("EXTERNAL_TABLES");
-  }
-  views.push("DIAGRAM");
-  return views;
 });
 </script>
