@@ -2,6 +2,7 @@
   <NDataTable
     key="project-table"
     size="small"
+    v-bind="$attrs"
     :columns="columnList"
     :data="projectList"
     :striped="true"
