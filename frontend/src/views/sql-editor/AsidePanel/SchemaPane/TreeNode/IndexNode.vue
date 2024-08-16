@@ -1,19 +1,20 @@
 <template>
   <CommonNode
-    :text="target.function.name"
+    :text="target.index.name"
     :keyword="keyword"
     :highlight="true"
     :indent="0"
   >
     <template #icon>
-      <FunctionIcon class="w-4 h-4" />
+      <PrimaryKeyIcon v-if="isPrimaryKey" class="w-4 h-4" />
+      <IndexIcon v-else class="!w-4 !h-4 text-accent/80" />
     </template>
   </CommonNode>
 </template>
 
 <script setup lang="ts">
 import { computed } from "vue";
-import { FunctionIcon } from "@/components/Icon";
+import { IndexIcon, PrimaryKeyIcon } from "@/components/Icon";
 import type { TreeNode } from "../common";
 import CommonNode from "./CommonNode.vue";
 
@@ -22,5 +23,8 @@ const props = defineProps<{
   keyword: string;
 }>();
 
-const target = computed(() => (props.node as TreeNode<"function">).meta.target);
+const target = computed(() => (props.node as TreeNode<"index">).meta.target);
+const isPrimaryKey = computed(() => {
+  return target.value.index.primary;
+});
 </script>

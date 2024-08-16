@@ -4,7 +4,7 @@
     class="px-2 py-2 gap-y-2 h-full overflow-hidden flex flex-col"
   >
     <div
-      v-show="!metadata.table"
+      v-show="!metadata.externalTable"
       class="w-full flex flex-row gap-x-2 justify-between items-center"
     >
       <div class="flex items-center justify-start gap-2">
@@ -19,17 +19,17 @@
         />
       </div>
     </div>
-    <TablesTable
-      v-show="!metadata.table"
+    <ExternalTablesTable
+      v-show="!metadata.externalTable"
       :db="database"
       :database="metadata.database"
       :schema="metadata.schema"
-      :tables="metadata.schema.tables"
+      :external-tables="metadata.schema.externalTables"
       :keyword="state.keywords.table"
       @click="select"
     />
 
-    <template v-if="metadata.table">
+    <template v-if="metadata.externalTable">
       <div
         class="w-full h-[28px] flex flex-row gap-x-2 justify-between items-center"
       >
@@ -38,7 +38,7 @@
             <ChevronLeftIcon class="w-5 h-5" />
             <div class="flex items-center gap-1">
               <TableIcon class="w-4 h-4" />
-              <span>{{ metadata.table.name }}</span>
+              <span>{{ metadata.externalTable.name }}</span>
             </div>
           </NButton>
         </div>
@@ -50,11 +50,11 @@
           />
         </div>
       </div>
-      <ColumnsTable
+      <ExternalTableColumnsTable
         :db="database"
         :database="metadata.database"
         :schema="metadata.schema"
-        :table="metadata.table"
+        :external-table="metadata.externalTable"
         :keyword="state.keywords.column"
       />
     </template>
@@ -75,13 +75,13 @@ import {
   DatabaseMetadata,
   DatabaseMetadataView,
   SchemaMetadata,
-  TableMetadata,
+  ExternalTableMetadata,
 } from "@/types/proto/v1/database_service";
 import DatabaseChooser from "@/views/sql-editor/EditorCommon/DatabaseChooser.vue";
 import { useEditorPanelContext } from "../../context";
 import { SchemaSelectToolbar } from "../common";
-import ColumnsTable from "./ColumnsTable.vue";
-import TablesTable from "./TablesTable.vue";
+import ExternalTableColumnsTable from "./ExternalTableColumnsTable.vue";
+import ExternalTablesTable from "./ExternalTablesTable.vue";
 
 const { database } = useConnectionOfCurrentSQLEditorTab();
 const { viewState, updateViewState } = useEditorPanelContext();
@@ -103,19 +103,19 @@ const metadata = computed(() => {
   const schema = database.schemas.find(
     (s) => s.name === viewState.value?.schema
   );
-  const table = schema?.tables.find(
-    (t) => t.name === viewState.value?.detail?.table
+  const externalTable = schema?.externalTables.find(
+    (t) => t.name === viewState.value?.detail?.externalTable
   );
-  return { database, schema, table };
+  return { database, schema, externalTable };
 });
 
 const select = (selected: {
   database: DatabaseMetadata;
   schema: SchemaMetadata;
-  table: TableMetadata;
+  externalTable: ExternalTableMetadata;
 }) => {
   updateViewState({
-    detail: { table: selected.table.name },
+    detail: { externalTable: selected.externalTable.name },
   });
 };
 

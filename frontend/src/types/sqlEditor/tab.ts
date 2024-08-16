@@ -43,6 +43,12 @@ export type SQLEditorTab = {
   // won't be saved to localStorage
   queryContext?: SQLEditorTabQueryContext;
   batchQueryContext?: BatchQueryContext;
+
+  // extended fields
+  treeState: {
+    database: string;
+    keys: string[];
+  };
 };
 
 export type CoreSQLEditorTab = Pick<

@@ -1,7 +1,11 @@
 <template>
-  <div class="w-full flex flex-row gap-x-2 justify-start items-center">
-    <NButton size="small" @click="$emit('back')">
-      <ArrowLeftIcon class="w-4 h-4" />
+  <div class="w-full h-[28px] flex flex-row gap-4 justify-between items-center">
+    <NButton text @click="$emit('back')">
+      <ChevronLeftIcon class="w-5 h-5" />
+      <div class="flex items-center gap-1">
+        <slot name="title-icon" />
+        <span>{{ title }}</span>
+      </div>
     </NButton>
     <NCheckbox v-if="!formatted.error" v-model:checked="format">
       {{ $t("sql-editor.format") }}
@@ -17,7 +21,7 @@
 
 <script setup lang="ts">
 import { computedAsync, useLocalStorage } from "@vueuse/core";
-import { ArrowLeftIcon } from "lucide-vue-next";
+import { ChevronLeftIcon } from "lucide-vue-next";
 import { NButton, NCheckbox } from "naive-ui";
 import { computed } from "vue";
 import { MonacoEditor } from "@/components/MonacoEditor";
@@ -27,6 +31,7 @@ import { dialectOfEngineV1 } from "@/types";
 
 const props = defineProps<{
   db: ComposedDatabase;
+  title: string;
   code: string;
 }>();
 

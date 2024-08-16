@@ -43,9 +43,12 @@ import {
   suggestedTabTitleForSQLEditorConnection,
   toClipboard,
 } from "@/utils";
-import { useEditorPanelContext } from "../../EditorPanel/context";
+import {
+  useEditorPanelContext,
+  type EditorPanelViewState,
+} from "../../EditorPanel";
 import { useSQLEditorContext } from "../../context";
-import type { NodeTarget, TreeNode } from "./common";
+import type { NodeTarget, NodeType, TreeNode } from "./common";
 
 type DropdownOptionWithTreeNode = DropdownOption & {
   onSelect?: () => void;
@@ -116,11 +119,145 @@ const confirmOverrideStatement = async (
   return d.promise;
 };
 
+export const useActions = () => {
+  const $d = useDialog();
+  const { updateViewState, typeToView } = useEditorPanelContext();
+
+  const selectAllFromTableOrView = async (node: TreeNode) => {
+    const { target } = (node as TreeNode<"table" | "view">).meta;
+    if (!targetSupportsGenerateSQL(target)) {
+      return;
+    }
+
+    const schema = target.schema.name;
+    const tableOrViewName = tableOrViewNameForNode(node);
+    if (!tableOrViewName) {
+      return;
+    }
+
+    const { db } = target;
+    const { engine } = db.instanceResource;
+
+    const query = await formatCode(
+      generateSimpleSelectAllStatement(
+        engine,
+        schema,
+        tableOrViewName,
+        SELECT_ALL_LIMIT
+      ),
+      engine
+    );
+    const choice = await confirmOverrideStatement($d, query);
+    if (choice === "CANCEL") {
+      return;
+    }
+    if (choice === "COPY") {
+      return copyToClipboard(query);
+    }
+    updateViewState({
+      view: "CODE",
+    });
+    runQuery(db, schema, tableOrViewName, query);
+  };
+  const viewDetail = async (node: TreeNode) => {
+    const { type, target } = node.meta;
+    const SUPPORTED_TYPES: NodeType[] = [
+      "schema",
+      "expandable-text",
+      "table",
+      "column",
+      "external-table",
+      "view",
+      "procedure",
+      "function",
+    ] as const;
+    if (!SUPPORTED_TYPES.includes(type)) {
+      return;
+    }
+    if (type === "schema") {
+      const schema = (node.meta.target as NodeTarget<"schema">).schema.name;
+      updateViewState({
+        schema,
+      });
+      return;
+    }
+    if (type === "expandable-text") {
+      const { mockType } = target as NodeTarget<"expandable-text">;
+      if (!mockType) return;
+      try {
+        const view = typeToView(mockType);
+        const walk = (node: TreeNode | undefined): string | undefined => {
+          if (!node) return undefined;
+          if (node.meta.type === "schema") {
+            return (node.meta.target as NodeTarget<"schema">).schema.name;
+          }
+          return walk(node.parent);
+        };
+        const schema = walk(node);
+        const vs: Partial<EditorPanelViewState> = {
+          view,
+        };
+        if (typeof schema === "string") {
+          vs.schema = schema;
+        }
+        updateViewState(vs);
+      } catch {
+        // nothing
+      }
+      return;
+    }
+
+    const { schema } = target as NodeTarget<
+      "table" | "column" | "view" | "procedure" | "function" | "external-table"
+    >;
+    updateViewState({
+      view: typeToView(type),
+      schema: schema.name,
+    });
+    await nextTick();
+    const detail: EditorPanelViewState["detail"] = {};
+    if (type === "table") {
+      detail.table = (target as NodeTarget<"table">).table.name;
+    }
+    if (type === "column" && node.parent?.meta.type === "table") {
+      detail.table = (target as NodeTarget<"table">).table.name;
+      detail.column = (target as NodeTarget<"column">).column.name;
+    }
+    if (type === "column" && node.parent?.meta.type === "external-table") {
+      detail.externalTable = (
+        target as NodeTarget<"external-table">
+      ).externalTable.name;
+      detail.column = (target as NodeTarget<"column">).column.name;
+      updateViewState({
+        view: "EXTERNAL_TABLES",
+      });
+    }
+    if (type === "view") {
+      detail.view = (target as NodeTarget<"view">).view.name;
+    }
+    if (type === "procedure") {
+      detail.procedure = (target as NodeTarget<"procedure">).procedure.name;
+    }
+    if (type === "function") {
+      detail.func = (target as NodeTarget<"function">).function.name;
+    }
+    if (type === "external-table") {
+      detail.externalTable = (
+        target as NodeTarget<"external-table">
+      ).externalTable.name;
+    }
+    updateViewState({
+      detail,
+    });
+  };
+
+  return { selectAllFromTableOrView, viewDetail };
+};
+
 export const useDropdown = () => {
   const router = useRouter();
   const { events: editorEvents, schemaViewer } = useSQLEditorContext();
-  const { queuePendingScrollToTarget, updateViewState, typeToView } =
-    useEditorPanelContext();
+  const { selectAllFromTableOrView, viewDetail } = useActions();
   const disallowEditSchema = useAppFeature(
     "bb.feature.sql-editor.disallow-edit-schema"
   );
@@ -238,7 +375,7 @@ export const useDropdown = () => {
           label: t("sql-editor.preview-table-data"),
           icon: () => <TableIcon class="w-4 h-4" />,
           onSelect: async () => {
-            selectAllFromTableOrView($d, node);
+            selectAllFromTableOrView(node);
           },
         });
       }
@@ -333,37 +470,8 @@ export const useDropdown = () => {
         key: "view-detail",
         label: t("sql-editor.view-detail"),
         icon: () => <ExternalLinkIcon class="w-4 h-4" />,
-        onSelect: async () => {
-          const { db, database, schema } = target as NodeTarget<
-            "table" | "view" | "procedure" | "function"
-          >;
-          updateViewState({
-            view: typeToView(type),
-            schema: schema.name,
-          });
-          await nextTick();
-          const metadata: any = {
-            type,
-            db,
-            database,
-            schema,
-          };
-          if (type === "table") {
-            metadata.table = (target as NodeTarget<"table">).table;
-          }
-          if (type === "view") {
-            metadata.view = (target as NodeTarget<"view">).view;
-          }
-          if (type === "procedure") {
-            metadata.procedure = (target as NodeTarget<"procedure">).procedure;
-          }
-          if (type === "function") {
-            metadata.function = (target as NodeTarget<"function">).function;
-          }
-          queuePendingScrollToTarget({
-            db,
-            metadata: metadata as any,
-          });
+        onSelect: () => {
+          viewDetail(node);
         },
       });
     }
@@ -406,7 +514,15 @@ export const useDropdown = () => {
     show.value = false;
   };
 
-  return { show, position, context, options, handleSelect, handleClickoutside };
+  return {
+    show,
+    position,
+    context,
+    options,
+    handleSelect,
+    handleClickoutside,
+    selectAllFromTableOrView,
+  };
 };
 
 const tableOrViewNameForNode = (node: TreeNode) => {
@@ -518,43 +634,6 @@ const runQuery = async (
     explain: false,
     engine: database.instanceResource.engine,
   });
-};
-
-export const selectAllFromTableOrView = async (
-  $d: ReturnType<typeof useDialog>,
-  node: TreeNode
-) => {
-  const { target } = (node as TreeNode<"table" | "view">).meta;
-  if (!targetSupportsGenerateSQL(target)) {
-    return;
-  }
-
-  const schema = target.schema.name;
-  const tableOrViewName = tableOrViewNameForNode(node);
-  if (!tableOrViewName) {
-    return;
-  }
-
-  const { db } = target;
-  const { engine } = db.instanceResource;
-
-  const query = await formatCode(
-    generateSimpleSelectAllStatement(
-      engine,
-      schema,
-      tableOrViewName,
-      SELECT_ALL_LIMIT
-    ),
-    engine
-  );
-  const choice = await confirmOverrideStatement($d, query);
-  if (choice === "CANCEL") {
-    return;
-  }
-  if (choice === "COPY") {
-    return copyToClipboard(query);
-  }
-  runQuery(db, schema, tableOrViewName, query);
 };
 
 const getDefaultQueryableDataSourceOfDatabase = (

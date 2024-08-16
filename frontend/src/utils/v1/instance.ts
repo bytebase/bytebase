@@ -240,6 +240,13 @@ export const instanceV1SupportsTablePartition = (
   return [Engine.MYSQL, Engine.TIDB].includes(engine);
 };
 
+export const instanceV1SupportsExternalTable = (
+  instanceOrEngine: Instance | InstanceResource | Engine
+) => {
+  const engine = engineOfInstanceV1(instanceOrEngine);
+  return [Engine.POSTGRES, Engine.HIVE].includes(engine);
+};
+
 export const engineOfInstanceV1 = (
   instanceOrEngine: Instance | InstanceResource | Engine
 ) => {

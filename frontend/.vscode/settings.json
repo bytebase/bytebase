@@ -44,5 +44,5 @@
     "editor.formatOnSaveMode": "file"
   },
   "typescript.tsdk": "node_modules/typescript/lib",
-  "typescript.tsserver.experimental.useVsCodeWatcher": false
+  "typescript.tsserver.experimental.useVsCodeWatcher": true
 }

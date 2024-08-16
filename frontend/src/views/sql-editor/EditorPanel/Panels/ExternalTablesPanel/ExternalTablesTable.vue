@@ -4,9 +4,9 @@
       v-bind="$attrs"
       ref="dataTableRef"
       size="small"
-      :row-key="(view) => view.name"
+      :row-key="(table) => table.name"
       :columns="columns"
-      :data="layoutReady ? filteredViews : []"
+      :data="layoutReady ? filteredExternalTables : []"
       :row-props="rowProps"
       :max-height="tableBodyHeight"
       :virtual-scroll="true"
@@ -24,8 +24,8 @@ import { useI18n } from "vue-i18n";
 import type { ComposedDatabase } from "@/types";
 import type {
   DatabaseMetadata,
-  ViewMetadata,
   SchemaMetadata,
+  ExternalTableMetadata,
 } from "@/types/proto/v1/database_service";
 import { getHighlightHTMLByRegExp } from "@/utils";
 import { useAutoHeightDataTable } from "../../common";
@@ -35,7 +35,7 @@ const props = defineProps<{
   db: ComposedDatabase;
   database: DatabaseMetadata;
   schema: SchemaMetadata;
-  views: ViewMetadata[];
+  externalTables: ExternalTableMetadata[];
   keyword?: string;
 }>();
 
@@ -45,11 +45,12 @@ const emit = defineEmits<{
     metadata: {
       database: DatabaseMetadata;
       schema: SchemaMetadata;
-      view: ViewMetadata;
+      externalTable: ExternalTableMetadata;
     }
   ): void;
 }>();
 
+const { viewState } = useEditorPanelContext();
 const { t } = useI18n();
 const { containerElRef, tableBodyHeight, layoutReady } =
   useAutoHeightDataTable();
@@ -58,56 +59,67 @@ const vlRef = computed(() => {
   return (dataTableRef.value as any)?.$refs?.mainTableInstRef?.bodyInstRef
     ?.virtualListRef;
 });
-const { viewState } = useEditorPanelContext();
-
-const filteredViews = computed(() => {
+const filteredExternalTables = computed(() => {
   const keyword = props.keyword?.trim().toLowerCase();
   if (keyword) {
-    return props.views.filter((view) => view.name.includes(keyword));
+    return props.externalTables.filter((externalTable) =>
+      externalTable.name.includes(keyword)
+    );
   }
-  return props.views;
+  return props.externalTables;
 });
 
 const columns = computed(() => {
-  const columns: (DataTableColumn<ViewMetadata> & { hide?: boolean })[] = [
+  const columns: (DataTableColumn<ExternalTableMetadata> & {
+    hide?: boolean;
+  })[] = [
     {
       key: "name",
       title: t("schema-editor.database.name"),
       resizable: true,
       className: "truncate",
-      render: (view) => {
+      render: (externalTable) => {
         return h("span", {
-          innerHTML: getHighlightHTMLByRegExp(view.name, props.keyword ?? ""),
+          innerHTML: getHighlightHTMLByRegExp(
+            externalTable.name,
+            props.keyword ?? ""
+          ),
         });
       },
     },
     {
-      key: "comment",
-      title: t("schema-editor.database.comment"),
+      key: "externalServerName",
+      title: t("database.external-server-name"),
+      resizable: true,
+      className: "truncate",
+    },
+    {
+      key: "externalDatabaseName",
+      title: t("database.external-database-name"),
       resizable: true,
       className: "truncate",
     },
   ];
-  return columns;
+  return columns.filter((col) => !col.hide);
 });
 
-const rowProps = (view: ViewMetadata) => {
+const rowProps = (externalTable: ExternalTableMetadata) => {
   return {
     onClick: () => {
       emit("click", {
         database: props.database,
         schema: props.schema,
-        view,
+        externalTable,
       });
     },
   };
 };
 
 watch(
-  [() => viewState.value?.detail.view, vlRef],
-  ([view, vl]) => {
-    if (view && vl) {
-      vl.scrollTo({ key: view });
+  [() => viewState.value?.detail.externalTable, vlRef],
+  ([externalTable, vl]) => {
+    if (externalTable && vl) {
+      vl.scrollTo({ key: externalTable });
     }
   },
   { immediate: true }

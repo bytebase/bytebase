@@ -6,7 +6,7 @@
       size="small"
       :row-key="(procedure) => procedure.name"
       :columns="columns"
-      :data="layoutReady ? procedures : []"
+      :data="layoutReady ? filteredProcedures : []"
       :row-props="rowProps"
       :max-height="tableBodyHeight"
       :virtual-scroll="true"
@@ -19,7 +19,7 @@
 
 <script setup lang="tsx">
 import { NDataTable, type DataTableColumn, type DataTableInst } from "naive-ui";
-import { computed, ref } from "vue";
+import { computed, h, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import type { ComposedDatabase } from "@/types";
 import type {
@@ -27,16 +27,16 @@ import type {
   ProcedureMetadata,
   SchemaMetadata,
 } from "@/types/proto/v1/database_service";
-import { nextAnimationFrame } from "@/utils";
+import { getHighlightHTMLByRegExp } from "@/utils";
 import { useAutoHeightDataTable } from "../../common";
 import { useEditorPanelContext } from "../../context";
-import type { RichMetadataWithDB, RichProcedureMetadata } from "../../types";
 
 const props = defineProps<{
   db: ComposedDatabase;
   database: DatabaseMetadata;
   schema: SchemaMetadata;
   procedures: ProcedureMetadata[];
+  keyword?: string;
 }>();
 
 const emit = defineEmits<{
@@ -58,7 +58,17 @@ const vlRef = computed(() => {
   return (dataTableRef.value as any)?.$refs?.mainTableInstRef?.bodyInstRef
     ?.virtualListRef;
 });
-const { useConsumePendingScrollToTarget } = useEditorPanelContext();
+const { viewState } = useEditorPanelContext();
+
+const filteredProcedures = computed(() => {
+  const keyword = props.keyword?.trim().toLowerCase();
+  if (keyword) {
+    return props.procedures.filter((procedure) =>
+      procedure.name.includes(keyword)
+    );
+  }
+  return props.procedures;
+});
 
 const columns = computed(() => {
   const columns: (DataTableColumn<ProcedureMetadata> & { hide?: boolean })[] = [
@@ -67,6 +77,14 @@ const columns = computed(() => {
       title: t("schema-editor.database.name"),
       resizable: true,
       className: "truncate",
+      render: (procedure) => {
+        return h("span", {
+          innerHTML: getHighlightHTMLByRegExp(
+            procedure.name,
+            props.keyword ?? ""
+          ),
+        });
+      },
     },
   ];
   return columns;
@@ -84,30 +102,14 @@ const rowProps = (procedure: ProcedureMetadata) => {
   };
 };
 
-useConsumePendingScrollToTarget(
-  (target: RichMetadataWithDB<"procedure">) => {
-    if (target.db.name !== props.db.name) {
-      return false;
+watch(
+  [() => viewState.value?.detail.procedure, vlRef],
+  ([procedure, vl]) => {
+    if (procedure && vl) {
+      vl.scrollTo({ key: procedure });
     }
-    if (target.metadata.type === "procedure") {
-      const metadata = target.metadata as RichProcedureMetadata;
-      return metadata.schema.name === props.schema.name;
-    }
-    return false;
   },
-  vlRef,
-  async (target, vl) => {
-    const key = target.metadata.procedure.name;
-    if (!key) return false;
-    await nextAnimationFrame();
-    try {
-      console.debug("scroll-to-procedure", vl, target, key);
-      vl.scrollTo({ key });
-    } catch {
-      // Do nothing
-    }
-    return true;
-  }
+  { immediate: true }
 );
 </script>
 

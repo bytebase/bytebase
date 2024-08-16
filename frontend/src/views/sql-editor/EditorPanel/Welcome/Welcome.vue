@@ -80,7 +80,7 @@ import { useSidebarItems as useSettingItems } from "../../Setting/Sidebar";
 import { useSQLEditorContext } from "../../context";
 import Button from "./Button.vue";
 
-const { showConnectionPanel } = useSQLEditorContext();
+const { showConnectionPanel, asidePanelTab } = useSQLEditorContext();
 const { itemList: settingItemList } = useSettingItems();
 const router = useRouter();
 const hideLogo = useAppFeature("bb.feature.sql-editor.hide-bytebase-logo");
@@ -94,6 +94,7 @@ const showCreateInstanceButton = computed(() => {
 });
 
 const changeConnection = () => {
+  asidePanelTab.value = "SCHEMA";
   showConnectionPanel.value = true;
 };
 

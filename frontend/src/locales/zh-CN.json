@@ -1876,7 +1876,8 @@
     "external-server-name": "外部服务器名称",
     "external-database-name": "外部数据库名称",
     "foreign-table-detail": "外部表详情",
-    "view-definition": "查看定义"
+    "view-definition": "查看定义",
+    "foreign-keys": "外键"
   },
   "repository": {
     "our-webhook-link": "Bytebase 创建的 webhook 可以在 {webhookLink} 中找到。",
@@ -3663,5 +3664,8 @@
     "source-branch": {
       "self": "源分支"
     }
+  },
+  "worksheet": {
+    "self": "工作表"
   }
 }

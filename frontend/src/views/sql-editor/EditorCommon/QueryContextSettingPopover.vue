@@ -1,46 +1,84 @@
 <template>
-  <NPopover placement="bottom" trigger="click">
+  <NPopover placement="bottom-end" trigger="click" :disabled="disabled">
     <template #trigger>
-      <NButton type="primary" class="!px-1" size="small">
+      <NButton
+        :disabled="disabled"
+        type="primary"
+        size="small"
+        style="--n-padding: 0 0.25rem"
+      >
         <template #icon>
           <ChevronDown />
         </template>
       </NButton>
     </template>
-    <div>
-      <p class="mb-1 textinfolabel">
-        {{ $t("data-source.select-data-source") }}
-      </p>
-      <NRadioGroup
-        class="max-w-44"
-        :value="selectedDataSourceId"
-        @update:value="onDataSourceSelected"
-      >
-        <NTooltip
-          v-for="ds in dataSources"
-          :key="ds.id"
-          :disabled="!Boolean(dataSourceUnaccessibleReason(ds))"
-        >
-          <template #trigger>
-            <NRadio
-              class="w-full"
-              :value="ds.id"
-              :disabled="Boolean(dataSourceUnaccessibleReason(ds))"
-            >
-              <div class="max-w-36 flex flex-row justify-start items-center">
-                <span class="text-xs opacity-60 shrink-0">{{
-                  readableDataSourceType(ds.type)
-                }}</span>
-                <span class="ml-1 truncate">{{ ds.username }}</span>
-              </div>
-            </NRadio>
-          </template>
-          <p class="text-nowrap">
-            {{ dataSourceUnaccessibleReason(ds) }}
+    <template #default>
+      <div class="flex flex-col gap-1">
+        <div>
+          <p class="mb-1 textinfolabel">
+            {{ $t("data-source.select-data-source") }}
           </p>
-        </NTooltip>
-      </NRadioGroup>
-    </div>
+          <NRadioGroup
+            class="max-w-44"
+            :value="selectedDataSourceId"
+            @update:value="onDataSourceSelected"
+          >
+            <NTooltip
+              v-for="ds in dataSources"
+              :key="ds.id"
+              :disabled="!Boolean(dataSourceUnaccessibleReason(ds))"
+            >
+              <template #trigger>
+                <NRadio
+                  class="w-full"
+                  :value="ds.id"
+                  :disabled="Boolean(dataSourceUnaccessibleReason(ds))"
+                >
+                  <div
+                    class="max-w-36 flex flex-row justify-start items-center"
+                  >
+                    <span class="text-xs opacity-60 shrink-0">{{
+                      readableDataSourceType(ds.type)
+                    }}</span>
+                    <span class="ml-1 truncate">{{ ds.username }}</span>
+                  </div>
+                </NRadio>
+              </template>
+              <p class="text-nowrap">
+                {{ dataSourceUnaccessibleReason(ds) }}
+              </p>
+            </NTooltip>
+          </NRadioGroup>
+        </div>
+        <div class="border-t pt-1 -mx-2" style="width: calc(100% + 1rem)">
+          <ResultLimitSelect placement="right-start" trigger="hover">
+            <template
+              #default="{ resultRowsLimit }: { resultRowsLimit: number }"
+            >
+              <NButton
+                quaternary
+                style="justify-content: start; --n-padding: 0 8px; width: 100%"
+              >
+                {{
+                  $t("sql-editor.result-limit.n-rows", { n: resultRowsLimit })
+                }}
+              </NButton>
+            </template>
+          </ResultLimitSelect>
+        </div>
+        <div
+          v-if="showQueryModeSelect"
+          class="border-t pt-1 -mx-2"
+          style="width: calc(100% + 1rem)"
+        >
+          <QueryModeSelect
+            :disabled="isExecutingSQL"
+            placement="right-start"
+            trigger="hover"
+          />
+        </div>
+      </div>
+    </template>
   </NPopover>
 </template>
 
@@ -62,11 +100,23 @@ import {
   PolicyType,
 } from "@/types/proto/v1/org_policy_service";
 import { getAdminDataSourceRestrictionOfDatabase } from "@/utils";
+import { useSQLEditorContext } from "../context";
+import QueryModeSelect from "./QueryModeSelect.vue";
+import ResultLimitSelect from "./ResultLimitSelect.vue";
+
+defineProps<{
+  disabled?: boolean;
+}>();
 
 const { t } = useI18n();
 const tabStore = useSQLEditorTabStore();
+const { standardModeEnabled } = useSQLEditorContext();
 const { connection, database } = useConnectionOfCurrentSQLEditorTab();
 const policyStore = usePolicyV1Store();
+
+const isExecutingSQL = computed(
+  () => tabStore.currentTab?.queryContext?.status === "EXECUTING"
+);
 
 const adminDataSourceRestriction = computed(() => {
   if (!database.value) {
@@ -85,6 +135,17 @@ const selectedDataSourceId = computed(() => {
 
 const dataSources = computed(() => {
   return orderBy(database.value.instanceResource.dataSources, "type");
+});
+
+const showQueryModeSelect = computed(() => {
+  const tab = tabStore.currentTab;
+  if (!tab) {
+    return false;
+  }
+  if (!standardModeEnabled.value) {
+    return false;
+  }
+  return tab.mode !== "ADMIN";
 });
 
 const dataSourceUnaccessibleReason = (
