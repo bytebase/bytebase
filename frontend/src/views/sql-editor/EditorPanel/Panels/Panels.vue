@@ -14,6 +14,10 @@
           v-if="viewState.view === 'PROCEDURES'"
           :key="tab?.id"
         />
+        <ExternalTablesPanel
+          v-if="viewState.view === 'EXTERNAL_TABLES'"
+          :key="tab?.id"
+        />
         <DiagramPanel v-if="viewState.view === 'DIAGRAM'" :key="tab?.id" />
       </template>
     </div>
@@ -36,6 +40,7 @@ import { extractDatabaseResourceName, type VueClass } from "@/utils";
 import GutterBar from "../GutterBar";
 import { useEditorPanelContext } from "../context";
 import DiagramPanel from "./DiagramPanel";
+import ExternalTablesPanel from "./ExternalTablesPanel";
 import FunctionsPanel from "./FunctionsPanel";
 import InfoPanel from "./InfoPanel";
 import ProceduresPanel from "./ProceduresPanel";

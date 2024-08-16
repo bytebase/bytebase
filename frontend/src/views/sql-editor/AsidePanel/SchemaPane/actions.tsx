@@ -166,7 +166,7 @@ export const useActions = () => {
       "expandable-text",
       "table",
       "column",
-      // "external-table", // todo
+      "external-table",
       "view",
       "procedure",
       "function",
@@ -208,7 +208,7 @@ export const useActions = () => {
     }
 
     const { schema } = target as NodeTarget<
-      "table" | "column" | "view" | "procedure" | "function"
+      "table" | "column" | "view" | "procedure" | "function" | "external-table"
     >;
     updateViewState({
       view: typeToView(type),
@@ -231,6 +231,11 @@ export const useActions = () => {
     }
     if (type === "function") {
       detail.func = (target as NodeTarget<"function">).function.name;
+    }
+    if (type === "external-table") {
+      detail.externalTable = (
+        target as NodeTarget<"external-table">
+      ).externalTable.name;
     }
     updateViewState({
       detail,

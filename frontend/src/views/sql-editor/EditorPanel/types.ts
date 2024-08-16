@@ -5,6 +5,7 @@ export type EditorPanelView =
   | "VIEWS"
   | "FUNCTIONS"
   | "PROCEDURES"
+  | "EXTERNAL_TABLES"
   | "DIAGRAM";
 
 export type EditorPanelViewState = {
@@ -16,6 +17,7 @@ export type EditorPanelViewState = {
     view?: string;
     procedure?: string;
     func?: string;
+    externalTable?: string;
   };
 };
 
@@ -32,5 +34,6 @@ export const typeToView = (type: string): EditorPanelView => {
   if (type === "view") return "VIEWS";
   if (type === "function") return "FUNCTIONS";
   if (type === "procedure") return "PROCEDURES";
+  if (type === "external-table") return "EXTERNAL_TABLES";
   throw new Error(`unsupported type: "${type}"`);
 };
