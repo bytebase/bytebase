@@ -51,8 +51,7 @@ message WorkspaceProfileSetting {
   // The workspace database change mode.
   DatabaseChangeMode database_change_mode = 11;
 
-  // The setting for authentication methods.
-  AuthenticationMethod authentication_method = 12;
+  bool disallow_password_auth = 12;
 }
 
 message Announcement {
@@ -348,8 +347,4 @@ message MaximumSQLResultSizeSetting {
   // The limit is in bytes.
   // The default value is 100MB, we will use the default value if the setting not exists, or the limit <= 0.
   int64 limit = 1;
-}
-
-message AuthenticationMethod {
-  bool enable_password_auth = 1;
 }
