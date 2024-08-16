@@ -219,31 +219,6 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 	}
 	defer driver.Close(ctx)
 
-	// Get query span.
-	spans, err := base.GetQuerySpan(
-		ctx,
-		base.GetQuerySpanContext{
-			InstanceID:                    instance.ResourceID,
-			GetDatabaseMetadataFunc:       BuildGetDatabaseMetadataFunc(s.store),
-			ListDatabaseNamesFunc:         BuildListDatabaseNamesFunc(s.store),
-			GetLinkedDatabaseMetadataFunc: BuildGetLinkedDatabaseMetadataFunc(s.store, instance.Engine),
-		},
-		instance.Engine,
-		statement,
-		database.DatabaseName,
-		"",
-		store.IgnoreDatabaseAndTableCaseSensitive(instance),
-	)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get query span: %v", err.Error())
-	}
-
-	if s.licenseService.IsFeatureEnabled(api.FeatureAccessControl) == nil {
-		if err := s.accessCheck(ctx, instance, user, spans, false /* isExport */); err != nil {
-			return nil, err
-		}
-	}
-
 	sqlDB := driver.GetDB()
 	var conn *sql.Conn
 	if sqlDB != nil {
@@ -253,14 +228,7 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 		}
 		defer conn.Close()
 	}
-
-	results, duration, queryErr := executeWithTimeout(ctx, driver, conn, request.Statement, request.Timeout, db.QueryContext{})
-	if queryErr == nil && s.licenseService.IsFeatureEnabledForInstance(api.FeatureSensitiveData, instance) == nil && !request.Explain {
-		masker := NewQueryResultMasker(s.store)
-		if err := masker.MaskResults(ctx, spans, results, instance, storepb.MaskingExceptionPolicy_MaskingException_QUERY); err != nil {
-			return nil, status.Errorf(codes.Internal, err.Error())
-		}
-	}
+	results, spans, duration, queryErr := queryRetry(ctx, s.store, user, instance, database, driver, conn, statement, request.Timeout, db.QueryContext{Explain: request.Explain}, false, s.licenseService, s.accessCheck)
 
 	// Update activity.
 	if err = s.createQueryHistory(ctx, database, store.QueryHistoryTypeQuery, statement, user.ID, duration, queryErr); err != nil {
@@ -283,6 +251,97 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 	}
 
 	return response, nil
+}
+
+type accessCheckFunc func(context.Context, *store.InstanceMessage, *store.UserMessage, []*base.QuerySpan, bool) error
+
+func queryRetry(
+	ctx context.Context,
+	stores *store.Store,
+	user *store.UserMessage,
+	instance *store.InstanceMessage,
+	database *store.DatabaseMessage,
+	driver db.Driver,
+	conn *sql.Conn,
+	statement string,
+	timeout *durationpb.Duration,
+	queryContext db.QueryContext,
+	isExport bool,
+	licenseService enterprise.LicenseService,
+	optionalAccessCheck accessCheckFunc,
+) ([]*v1pb.QueryResult, []*base.QuerySpan, time.Duration, error) {
+	spans, firstSpanErr := base.GetQuerySpan(
+		ctx,
+		base.GetQuerySpanContext{
+			InstanceID:                    instance.ResourceID,
+			GetDatabaseMetadataFunc:       BuildGetDatabaseMetadataFunc(stores),
+			ListDatabaseNamesFunc:         BuildListDatabaseNamesFunc(stores),
+			GetLinkedDatabaseMetadataFunc: BuildGetLinkedDatabaseMetadataFunc(stores, instance.Engine),
+		},
+		instance.Engine,
+		statement,
+		database.DatabaseName,
+		"",
+		store.IgnoreDatabaseAndTableCaseSensitive(instance),
+	)
+	if firstSpanErr == nil {
+		if licenseService.IsFeatureEnabled(api.FeatureAccessControl) == nil && optionalAccessCheck != nil {
+			if err := optionalAccessCheck(ctx, instance, user, spans, isExport); err != nil {
+				return nil, nil, time.Duration(0), err
+			}
+		}
+	}
+
+	results, duration, queryErr := executeWithTimeout(ctx, driver, conn, statement, timeout, queryContext)
+	if queryErr != nil {
+		return nil, nil, duration, queryErr
+	}
+	hasOK := false
+	for _, r := range results {
+		if r.Error == "" {
+			hasOK = true
+			break
+		}
+	}
+	if !hasOK {
+		return results, nil, duration, nil
+	}
+
+	// TODO(d): sync database metadata.
+
+	// Retry getting query span.
+	spans, spanErr := base.GetQuerySpan(
+		ctx,
+		base.GetQuerySpanContext{
+			InstanceID:                    instance.ResourceID,
+			GetDatabaseMetadataFunc:       BuildGetDatabaseMetadataFunc(stores),
+			ListDatabaseNamesFunc:         BuildListDatabaseNamesFunc(stores),
+			GetLinkedDatabaseMetadataFunc: BuildGetLinkedDatabaseMetadataFunc(stores, instance.Engine),
+		},
+		instance.Engine,
+		statement,
+		database.DatabaseName,
+		"",
+		store.IgnoreDatabaseAndTableCaseSensitive(instance),
+	)
+	if spanErr != nil {
+		return nil, nil, duration, status.Errorf(codes.Internal, "failed to get query span: %v", spanErr.Error())
+	}
+
+	if firstSpanErr != nil {
+		if licenseService.IsFeatureEnabled(api.FeatureAccessControl) == nil {
+			if err := optionalAccessCheck(ctx, instance, user, spans, isExport); err != nil {
+				return nil, nil, duration, err
+			}
+		}
+	}
+	if licenseService.IsFeatureEnabledForInstance(api.FeatureSensitiveData, instance) == nil && !queryContext.Explain {
+		masker := NewQueryResultMasker(stores)
+		if err := masker.MaskResults(ctx, spans, results, instance, storepb.MaskingExceptionPolicy_MaskingException_QUERY); err != nil {
+			return nil, nil, duration, status.Errorf(codes.Internal, err.Error())
+		}
+	}
+	return results, spans, duration, nil
 }
 
 func executeWithTimeout(ctx context.Context, driver db.Driver, conn *sql.Conn, statement string, timeout *durationpb.Duration, queryContext db.QueryContext) ([]*v1pb.QueryResult, time.Duration, error) {
@@ -328,31 +387,7 @@ func (s *SQLService) Export(ctx context.Context, request *v1pb.ExportRequest) (*
 		return nil, err
 	}
 
-	spans, err := base.GetQuerySpan(
-		ctx,
-		base.GetQuerySpanContext{
-			InstanceID:                    instance.ResourceID,
-			GetDatabaseMetadataFunc:       BuildGetDatabaseMetadataFunc(s.store),
-			ListDatabaseNamesFunc:         BuildListDatabaseNamesFunc(s.store),
-			GetLinkedDatabaseMetadataFunc: BuildGetLinkedDatabaseMetadataFunc(s.store, instance.Engine),
-		},
-		instance.Engine,
-		statement,
-		database.DatabaseName,
-		"",
-		store.IgnoreDatabaseAndTableCaseSensitive(instance),
-	)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get query span: %v", err.Error())
-	}
-
-	if s.licenseService.IsFeatureEnabled(api.FeatureAccessControl) == nil {
-		if err := s.accessCheck(ctx, instance, user, spans, true /* isExport */); err != nil {
-			return nil, err
-		}
-	}
-
-	bytes, duration, exportErr := DoExport(ctx, s.store, s.dbFactory, s.licenseService, request, instance, database, spans)
+	bytes, duration, exportErr := DoExport(ctx, s.store, s.dbFactory, s.licenseService, request, user, instance, database, s.accessCheck)
 
 	if err := s.createQueryHistory(ctx, database, store.QueryHistoryTypeExport, statement, user.ID, duration, exportErr); err != nil {
 		return nil, err
@@ -427,7 +462,17 @@ func (s *SQLService) doExportFromIssue(ctx context.Context, issueName string) (*
 }
 
 // DoExport does the export.
-func DoExport(ctx context.Context, storeInstance *store.Store, dbFactory *dbfactory.DBFactory, licenseService enterprise.LicenseService, request *v1pb.ExportRequest, instance *store.InstanceMessage, database *store.DatabaseMessage, spans []*base.QuerySpan) ([]byte, time.Duration, error) {
+func DoExport(
+	ctx context.Context,
+	storeInstance *store.Store,
+	dbFactory *dbfactory.DBFactory,
+	licenseService enterprise.LicenseService,
+	request *v1pb.ExportRequest,
+	user *store.UserMessage,
+	instance *store.InstanceMessage,
+	database *store.DatabaseMessage,
+	optionalAccessCheck accessCheckFunc,
+) ([]byte, time.Duration, error) {
 	dataSource, err := checkAndGetDataSourceQueriable(ctx, storeInstance, database, request.DataSourceId)
 	if err != nil {
 		return nil, 0, err
@@ -447,8 +492,7 @@ func DoExport(ctx context.Context, storeInstance *store.Store, dbFactory *dbfact
 		}
 		defer conn.Close()
 	}
-
-	results, duration, queryErr := executeWithTimeout(ctx, driver, conn, request.Statement, nil, db.QueryContext{})
+	results, spans, duration, queryErr := queryRetry(ctx, storeInstance, user, instance, database, driver, conn, request.Statement, nil /* timeDuration */, db.QueryContext{}, false, licenseService, optionalAccessCheck)
 	if queryErr != nil {
 		return nil, duration, err
 	}
