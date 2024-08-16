@@ -14,72 +14,73 @@
 
     <div class="flex-1 lg:px-4">
       <div class="mb-7 mt-4 lg:mt-0">
-        <NTooltip placement="top-start" :disabled="allowEdit">
-          <template #trigger>
-            <label
-              class="flex items-center gap-x-2"
-              :class="[allowEdit ? 'cursor-pointer' : 'cursor-not-allowed']"
-            >
-              <NCheckbox
-                :disabled="!allowEdit"
-                :checked="watermarkEnabled"
-                :label="$t('settings.general.workspace.watermark.enable')"
-                @update:checked="handleWatermarkToggle"
-              />
-            </label>
-          </template>
-          <span class="text-sm text-gray-400 -translate-y-2">
-            {{ $t("settings.general.workspace.watermark.only-admin-can-edit") }}
+        <div class="flex items-center gap-x-2">
+          <Switch
+            :value="watermarkEnabled"
+            :text="true"
+            :disabled="!allowEdit"
+            @update:value="handleWatermarkToggle"
+          />
+          <span class="textlabel">
+            {{ $t("settings.general.workspace.watermark.enable") }}
           </span>
-        </NTooltip>
+        </div>
         <div class="mb-3 text-sm text-gray-400">
           {{ $t("settings.general.workspace.watermark.description") }}
         </div>
       </div>
       <div v-if="!isSaaSMode" class="mb-7 mt-4 lg:mt-0">
-        <NTooltip placement="top-start" :disabled="allowEdit">
-          <template #trigger>
-            <label
-              class="flex items-center gap-x-2"
-              :class="[allowEdit ? 'cursor-pointer' : 'cursor-not-allowed']"
-            >
-              <NCheckbox
-                :disabled="!allowEdit"
-                :checked="disallowSignupEnabled"
-                :label="$t('settings.general.workspace.disallow-signup.enable')"
-                @update:checked="handleDisallowSignupToggle"
-              />
-            </label>
-          </template>
-          <span class="text-sm text-gray-400 -translate-y-2">
-            {{ $t("settings.general.workspace.only-admin-can-edit") }}
+        <div class="flex items-center gap-x-2">
+          <Switch
+            :value="disallowSignupEnabled"
+            :text="true"
+            :disabled="!allowEdit"
+            @update:value="handleDisallowSignupToggle"
+          />
+          <span class="textlabel">
+            {{ $t("settings.general.workspace.disallow-signup.enable") }}
           </span>
-        </NTooltip>
+        </div>
         <div class="mb-3 text-sm text-gray-400">
           {{ $t("settings.general.workspace.disallow-signup.description") }}
         </div>
       </div>
       <div class="mb-7 mt-4 lg:mt-0">
-        <NTooltip placement="top-start" :disabled="allowEdit">
-          <template #trigger>
-            <label
-              class="flex items-center gap-x-2"
-              :class="[allowEdit ? 'cursor-pointer' : 'cursor-not-allowed']"
-            >
-              <NCheckbox
-                :disabled="!allowEdit"
-                :checked="require2FAEnabled"
-                :label="$t('settings.general.workspace.require-2fa.enable')"
-                @update:checked="handleRequire2FAToggle"
-              />
-            </label>
-          </template>
-          <span class="text-sm text-gray-400 -translate-y-2">
-            {{ $t("settings.general.workspace.only-admin-can-edit") }}
+        <div class="flex items-center gap-x-2">
+          <Switch
+            :value="require2FAEnabled"
+            :text="true"
+            :disabled="!allowEdit"
+            @update:value="handleRequire2FAToggle"
+          />
+          <span class="textlabel">
+            {{ $t("settings.general.workspace.require-2fa.enable") }}
           </span>
-        </NTooltip>
+        </div>
         <div class="mb-3 text-sm text-gray-400">
           {{ $t("settings.general.workspace.require-2fa.description") }}
+        </div>
+      </div>
+      <div class="mb-7 mt-4 lg:mt-0">
+        <div class="flex items-center gap-x-2">
+          <Switch
+            :value="disallowPasswordSignin"
+            :text="true"
+            :disabled="!allowEdit"
+            @update:value="handleDisallowPasswordSigninToggle"
+          />
+          <span class="textlabel">
+            {{
+              $t("settings.general.workspace.disallow-password-signin.enable")
+            }}
+          </span>
+        </div>
+        <div class="mb-3 text-sm text-gray-400">
+          {{
+            $t(
+              "settings.general.workspace.disallow-password-signin.description"
+            )
+          }}
         </div>
       </div>
       <RestrictIssueCreationConfigure
@@ -102,13 +103,19 @@
 </template>
 
 <script lang="ts" setup>
-import { NCheckbox, NTooltip } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
-import { featureToRef, pushNotification, useActuatorV1Store } from "@/store";
+import { Switch } from "@/components/v2";
+import {
+  featureToRef,
+  pushNotification,
+  useActuatorV1Store,
+  useIdentityProviderStore,
+} from "@/store";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
 import type { FeatureType } from "@/types";
+import { State } from "@/types/proto/v1/common";
 import { FeatureBadge, FeatureModal } from "../FeatureGuard";
 import DomainRestrictionSetting from "./DomainRestrictionSetting.vue";
 import MaximumRoleExpirationSetting from "./MaximumRoleExpirationSetting.vue";
@@ -133,6 +140,9 @@ const { isSaaSMode } = storeToRefs(actuatorStore);
 const hasWatermarkFeature = featureToRef("bb.feature.branding");
 const has2FAFeature = featureToRef("bb.feature.2fa");
 const hasDisallowSignupFeature = featureToRef("bb.feature.disallow-signup");
+const hasDisallowPasswordSigninFeature = featureToRef(
+  "bb.feature.disallow-password-signin"
+);
 
 const watermarkEnabled = computed((): boolean => {
   return (
@@ -145,6 +155,11 @@ const disallowSignupEnabled = computed((): boolean => {
 });
 const require2FAEnabled = computed((): boolean => {
   return settingV1Store.workspaceProfileSetting?.require2fa ?? false;
+});
+const disallowPasswordSignin = computed((): boolean => {
+  return (
+    settingV1Store.workspaceProfileSetting?.disallowPasswordSignin ?? false
+  );
 });
 
 const handleDisallowSignupToggle = async (on: boolean) => {
@@ -176,6 +191,42 @@ const handleRequire2FAToggle = async (on: boolean) => {
       require2fa: on,
     },
     updateMask: ["value.workspace_profile_setting_value.require_2fa"],
+  });
+  pushNotification({
+    module: "bytebase",
+    style: "SUCCESS",
+    title: t("settings.general.workspace.config-updated"),
+  });
+};
+
+const handleDisallowPasswordSigninToggle = async (on: boolean) => {
+  if (!hasDisallowPasswordSigninFeature.value && on) {
+    state.featureNameForModal = "bb.feature.disallow-password-signin";
+    return;
+  }
+
+  if (on) {
+    const idpStore = useIdentityProviderStore();
+    const idpList = await idpStore.fetchIdentityProviderList();
+    if (idpList.filter((idp) => idp.state === State.ACTIVE).length === 0) {
+      pushNotification({
+        module: "bytebase",
+        style: "CRITICAL",
+        title: t(
+          "settings.general.workspace.disallow-password-signin.require-sso-setup"
+        ),
+      });
+      return;
+    }
+  }
+
+  await settingV1Store.updateWorkspaceProfile({
+    payload: {
+      disallowPasswordSignin: on,
+    },
+    updateMask: [
+      "value.workspace_profile_setting_value.disallow_password_signin",
+    ],
   });
   pushNotification({
     module: "bytebase",

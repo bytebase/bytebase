@@ -76,6 +76,8 @@ export interface ActuatorInfo {
   /** iam_guard is the enablement of IAM checks. */
   iamGuard: boolean;
   unlicensedFeatures: string[];
+  /** disallow_password_signin is the flag to disallow user signin with email&password. (except workspace admins) */
+  disallowPasswordSignin: boolean;
 }
 
 function createBaseGetResourcePackageRequest(): GetResourcePackageRequest {
@@ -361,6 +363,7 @@ function createBaseActuatorInfo(): ActuatorInfo {
     preUpdateBackup: false,
     iamGuard: false,
     unlicensedFeatures: [],
+    disallowPasswordSignin: false,
   };
 }
 
@@ -422,6 +425,9 @@ export const ActuatorInfo = {
     }
     for (const v of message.unlicensedFeatures) {
       writer.uint32(154).string(v!);
+    }
+    if (message.disallowPasswordSignin === true) {
+      writer.uint32(160).bool(message.disallowPasswordSignin);
     }
     return writer;
   },
@@ -566,6 +572,13 @@ export const ActuatorInfo = {
 
           message.unlicensedFeatures.push(reader.string());
           continue;
+        case 20:
+          if (tag !== 160) {
+            break;
+          }
+
+          message.disallowPasswordSignin = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -598,6 +611,9 @@ export const ActuatorInfo = {
       unlicensedFeatures: globalThis.Array.isArray(object?.unlicensedFeatures)
         ? object.unlicensedFeatures.map((e: any) => globalThis.String(e))
         : [],
+      disallowPasswordSignin: isSet(object.disallowPasswordSignin)
+        ? globalThis.Boolean(object.disallowPasswordSignin)
+        : false,
     };
   },
 
@@ -660,6 +676,9 @@ export const ActuatorInfo = {
     if (message.unlicensedFeatures?.length) {
       obj.unlicensedFeatures = message.unlicensedFeatures;
     }
+    if (message.disallowPasswordSignin === true) {
+      obj.disallowPasswordSignin = message.disallowPasswordSignin;
+    }
     return obj;
   },
 
@@ -687,6 +706,7 @@ export const ActuatorInfo = {
     message.preUpdateBackup = object.preUpdateBackup ?? false;
     message.iamGuard = object.iamGuard ?? false;
     message.unlicensedFeatures = object.unlicensedFeatures?.map((e) => e) || [];
+    message.disallowPasswordSignin = object.disallowPasswordSignin ?? false;
     return message;
   },
 };
