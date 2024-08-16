@@ -65,7 +65,7 @@
                 {{ $t("role.default-workspace-role") }}
               </span>
               <NSelect
-                v-model:value="state.user.roles"
+                v-model:value="state.roles"
                 multiple
                 :options="availableRoleOptions"
                 :placeholder="$t('role.select-roles')"
@@ -204,13 +204,10 @@ import {
 import { State } from "@/types/proto/v1/common";
 import { displayRoleTitle, randomString } from "@/utils";
 
-interface ComposedUser extends User {
-  roles: string[];
-}
-
 interface LocalState {
   isRequesting: boolean;
-  user: ComposedUser;
+  user: User;
+  roles: string[];
   passwordConfirm: string;
 }
 
@@ -230,14 +227,14 @@ const userRolesFromProps = computed(() => {
   return workspaceStore.getWorkspaceRolesByEmail(props.user?.email ?? "");
 });
 
-const initUser = (): ComposedUser => {
-  const user = props.user ? cloneDeep(props.user) : emptyUser();
-  return {
-    ...user,
-    roles: [...userRolesFromProps.value].filter(
-      (r) => r !== PresetRoleType.WORKSPACE_MEMBER
-    ),
-  };
+const initRoles = () => {
+  return [...userRolesFromProps.value].filter(
+    (r) => r !== PresetRoleType.WORKSPACE_MEMBER
+  );
+};
+
+const initUser = () => {
+  return props.user ? cloneDeep(props.user) : emptyUser();
 };
 
 const { t } = useI18n();
@@ -252,6 +249,7 @@ const hideProjectRoles = useAppFeature("bb.feature.members.hide-project-roles");
 const state = reactive<LocalState>({
   isRequesting: false,
   user: initUser(),
+  roles: initRoles(),
   passwordConfirm: "",
 });
 
@@ -325,10 +323,7 @@ const rolesChanged = computed(() => {
     return true;
   }
 
-  return (
-    !isUndefined(state.user.roles) &&
-    !isEqual(initUser().roles, state.user.roles)
-  );
+  return !isUndefined(state.roles) && !isEqual(initRoles(), state.roles);
 });
 
 const allowConfirm = computed(() => {
@@ -356,7 +351,7 @@ const allowDeactivate = computed(() => {
   return (
     state.user.state === State.ACTIVE &&
     (hasMoreThanOneOwner.value ||
-      !state.user.roles.includes(PresetRoleType.WORKSPACE_ADMIN))
+      !state.roles.includes(PresetRoleType.WORKSPACE_ADMIN))
   );
 });
 
@@ -401,7 +396,7 @@ const tryCreateOrUpdateUser = async () => {
     await workspaceStore.patchIamPolicy([
       {
         member: `user:${createdUser.email}`,
-        roles: state.user.roles,
+        roles: state.roles,
       },
     ]);
     pushNotification({
@@ -414,7 +409,7 @@ const tryCreateOrUpdateUser = async () => {
     // workspace admin role.
     if (userRolesFromProps.value.has(PresetRoleType.WORKSPACE_ADMIN)) {
       if (
-        !state.user.roles.includes(PresetRoleType.WORKSPACE_ADMIN) &&
+        !state.roles.includes(PresetRoleType.WORKSPACE_ADMIN) &&
         !hasMoreThanOneOwner.value
       ) {
         pushNotification({
@@ -436,7 +431,7 @@ const tryCreateOrUpdateUser = async () => {
       await workspaceStore.patchIamPolicy([
         {
           member: `user:${state.user.email}`,
-          roles: state.user.roles,
+          roles: state.roles,
         },
       ]);
     }
