@@ -2,7 +2,6 @@ package mysql
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
@@ -73,9 +72,9 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*ba
 	// because we do not synchronize the schema of the system table.
 	// This causes an error (NOT_FOUND) when using querySpanExtractor.findTableSchema.
 	// As a result, we exclude getting query span results for accessing only the system table.
-	allSystems, mixed := isMixedQuery(accessTables, q.ignoreCaseSensitive)
-	if mixed != nil {
-		return nil, mixed
+	allSystems, err := isMixedQuery(accessTables, q.ignoreCaseSensitive)
+	if err != nil {
+		return nil, err
 	}
 	if allSystems {
 		return nil, nil
@@ -1463,49 +1462,36 @@ func (l *accessTableListener) EnterTableRef(ctx *mysql.TableRefContext) {
 }
 
 // isMixedQuery checks whether the query accesses the user table and system table at the same time.
-func isMixedQuery(m base.SourceColumnSet, ignoreCaseSensitive bool) (allSystems bool, mixed error) {
-	userMsg, systemMsg := "", ""
+// It returns whether all tables are system tables.
+func isMixedQuery(m base.SourceColumnSet, ignoreCaseSensitive bool) (bool, error) {
+	hasSystem, hasUser := false, false
 	for table := range m {
-		if msg := isSystemResource(table, ignoreCaseSensitive); msg != "" {
-			systemMsg = msg
-			continue
-		}
-		userMsg = fmt.Sprintf("user table %q.%q", table.Schema, table.Table)
-		if systemMsg != "" {
-			return false, errors.Errorf("cannot access %s and %s at the same time", userMsg, systemMsg)
+		if isSystemResource(table, ignoreCaseSensitive) {
+			hasSystem = true
+		} else {
+			hasUser = true
 		}
 	}
 
-	if userMsg != "" && systemMsg != "" {
-		return false, errors.Errorf("cannot access %s and %s at the same time", userMsg, systemMsg)
+	if hasSystem && hasUser {
+		return false, errors.Errorf("cannot access user and system tables at the same time")
 	}
 
-	return userMsg == "" && systemMsg != "", nil
+	return !hasUser, nil
 }
 
-func isSystemResource(resource base.ColumnResource, ignoreCaseSensitive bool) string {
+var systemDatabases = map[string]bool{
+	"information_schema": true,
+	"performance_schema": true,
+	"mysql":              true,
+}
+
+func isSystemResource(resource base.ColumnResource, ignoreCaseSensitive bool) bool {
+	database := resource.Database
 	if ignoreCaseSensitive {
-		if strings.EqualFold(resource.Database, "information_schema") {
-			return fmt.Sprintf("system schema %q", resource.Table)
-		}
-		if strings.EqualFold(resource.Database, "performance_schema") {
-			return fmt.Sprintf("system schema %q", resource.Table)
-		}
-		if strings.EqualFold(resource.Database, "mysql") {
-			return fmt.Sprintf("system schema %q", resource.Table)
-		}
-	} else {
-		if resource.Database == "information_schema" {
-			return fmt.Sprintf("system schema %q", resource.Table)
-		}
-		if resource.Database == "performance_schema" {
-			return fmt.Sprintf("system schema %q", resource.Table)
-		}
-		if resource.Database == "mysql" {
-			return fmt.Sprintf("system schema %q", resource.Table)
-		}
+		database = strings.ToLower(database)
 	}
-	return ""
+	return systemDatabases[database]
 }
 
 func mysqlExtractColumnsClause(ctx mysql.IColumnsClauseContext) []string {
