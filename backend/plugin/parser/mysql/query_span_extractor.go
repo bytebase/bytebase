@@ -69,9 +69,9 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*ba
 	// because we do not synchronize the schema of the system table.
 	// This causes an error (NOT_FOUND) when using querySpanExtractor.findTableSchema.
 	// As a result, we exclude getting query span results for accessing only the system table.
-	allSystems, err := isMixedQuery(accessTables, q.ignoreCaseSensitive)
-	if err != nil {
-		return nil, err
+	allSystems, mixed := isMixedQuery(accessTables, q.ignoreCaseSensitive)
+	if mixed {
+		return nil, base.MixUserSystemTablesError
 	}
 	if allSystems {
 		return nil, nil
@@ -1459,8 +1459,8 @@ func (l *accessTableListener) EnterTableRef(ctx *mysql.TableRefContext) {
 }
 
 // isMixedQuery checks whether the query accesses the user table and system table at the same time.
-// It returns whether all tables are system tables.
-func isMixedQuery(m base.SourceColumnSet, ignoreCaseSensitive bool) (bool, error) {
+// It returns whether all tables are system tables and whether there is a mixture.
+func isMixedQuery(m base.SourceColumnSet, ignoreCaseSensitive bool) (bool, bool) {
 	hasSystem, hasUser := false, false
 	for table := range m {
 		if isSystemResource(table, ignoreCaseSensitive) {
@@ -1471,10 +1471,10 @@ func isMixedQuery(m base.SourceColumnSet, ignoreCaseSensitive bool) (bool, error
 	}
 
 	if hasSystem && hasUser {
-		return false, errors.Errorf("cannot access user and system tables at the same time")
+		return false, true
 	}
 
-	return !hasUser, nil
+	return !hasUser, false
 }
 
 var systemDatabases = map[string]bool{
