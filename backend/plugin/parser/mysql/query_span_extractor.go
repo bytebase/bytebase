@@ -64,10 +64,7 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*ba
 	tree := parseResults[0].Tree
 
 	q.ctx = ctx
-	accessTables, err := getAccessTables(q.connectedDB, tree)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get access tables from statement: %s", stmt)
-	}
+	accessTables := getAccessTables(q.connectedDB, tree)
 	// We do not support simultaneous access to the system table and the user table
 	// because we do not synchronize the schema of the system table.
 	// This causes an error (NOT_FOUND) when using querySpanExtractor.findTableSchema.
@@ -1421,14 +1418,14 @@ func (s *selectOnlyListener) EnterSelectStatement(ctx *mysql.SelectStatementCont
 	s.querySpan.Results = append(s.querySpan.Results, fields.Columns...)
 }
 
-func getAccessTables(currentDatabase string, tree antlr.Tree) (base.SourceColumnSet, error) {
+func getAccessTables(currentDatabase string, tree antlr.Tree) base.SourceColumnSet {
 	l := newAccessTableListener(currentDatabase)
 
 	result := make(base.SourceColumnSet)
 	antlr.ParseTreeWalkerDefault.Walk(l, tree)
 	result, _ = base.MergeSourceColumnSet(result, l.sourceColumnSet)
 
-	return result, nil
+	return result
 }
 
 type accessTableListener struct {
