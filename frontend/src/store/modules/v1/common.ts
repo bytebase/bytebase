@@ -199,13 +199,12 @@ export const getReviewConfigId = (name: string) => {
 // Instance resource name: instances/instance-id.
 // Database resource name: instances/instance-id/databases/database-name.
 export const getPolicyResourceNameAndType = (name: string): string[] => {
-  const tokens = name.split(policyNamePrefix);
-  if (tokens.length !== 2) {
+  const regex = new RegExp(`^(.*)/${policyNamePrefix}(.*)$`);
+  const match = name.match(regex);
+  if (!match || match.length !== 3) {
     return ["", ""];
   }
-  const resourceName = tokens[0].replace(/\/$/, "");
-  const policyType = tokens[1];
-  return [resourceName, policyType];
+  return [match[1], match[2]];
 };
 
 export const isDatabaseName = (name: string): boolean => {
