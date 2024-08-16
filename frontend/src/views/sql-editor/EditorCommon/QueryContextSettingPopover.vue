@@ -66,9 +66,12 @@
             </template>
           </ResultLimitSelect>
         </div>
-        <div class="border-t pt-1 -mx-2" style="width: calc(100% + 1rem)">
+        <div
+          v-if="showQueryModeSelect"
+          class="border-t pt-1 -mx-2"
+          style="width: calc(100% + 1rem)"
+        >
           <QueryModeSelect
-            v-if="showQueryModeSelect"
             :disabled="isExecutingSQL"
             placement="right-start"
             trigger="hover"
