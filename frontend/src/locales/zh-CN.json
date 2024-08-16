@@ -662,7 +662,7 @@
         "disallow-password-signin": {
           "enable": "禁止使用密码登录",
           "description": "用户将无法通过邮箱和密码进行登录，只允许通过所配置的 SSO 进行登录。",
-          "require-sso-setup": "开启钱必须先要创建 SSO，否则用户将无法正常登录。"
+          "require-sso-setup": "开启前必须先要创建 SSO，否则用户将无法正常登录。"
         },
         "network": "网络",
         "external-url": {
