@@ -1,14 +1,27 @@
 <template>
   <div class="px-2 py-2 gap-4 h-full overflow-hidden flex flex-col">
-    <div class="w-full flex flex-row gap-x-2 justify-start items-center">
-      <DatabaseChooser />
+    <div class="grid gap-2 items-center text-sm" style="grid-template-columns: max-content max-content">
+      <div class="flex items-center gap-x-1">
+        <DatabaseIcon class="w-4 h-4" />
+        <span>{{ $t("common.database") }}:</span>
+      </div>
+      <DatabaseChooser style="justify-content: start" />
+      <template v-if="showSchemaSelect">
+        <div class="flex items-center gap-x-1">
+          <SchemaIcon class="w-4 h-4" />
+          <span>{{ $t("common.schema") }}:</span>
+        </div>
+        <NSelect
+          v-model:value="selectedSchemaName"
+          :options="schemaSelectOptions"
+          size="small"
+          class="min-w-[12rem]"
+        />
+      </template>
     </div>
 
     <div class="flex-1 overflow-auto flex flex-col gap-4">
       <DatabaseOverviewInfo :database="database" />
-      <div class="w-full flex flex-row gap-x-2 justify-start items-center">
-        <SchemaSelectToolbar />
-      </div>
 
       <div class="flex flex-col gap-2">
         <h2 class="text-lg">{{ $t("db.tables") }}</h2>
@@ -122,14 +135,16 @@
 </template>
 
 <script setup lang="ts">
+import { NSelect, type SelectOption } from "naive-ui";
 import { computed } from "vue";
 import DatabaseOverviewInfo from "@/components/Database/DatabaseOverviewInfo.vue";
+import { DatabaseIcon, SchemaIcon } from "@/components/Icon";
 import {
   useConnectionOfCurrentSQLEditorTab,
   useDBSchemaV1Store,
 } from "@/store";
 import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
-import { instanceV1SupportsExternalTable } from "@/utils";
+import { hasSchemaProperty, instanceV1SupportsExternalTable } from "@/utils";
 import DatabaseChooser from "@/views/sql-editor/EditorCommon/DatabaseChooser.vue";
 import { useEditorPanelContext } from "../../context";
 import ExternalTablesTable from "../ExternalTablesPanel/ExternalTablesTable.vue";
@@ -139,8 +154,9 @@ import TablesTable from "../TablesPanel/TablesTable.vue";
 import ViewsTable from "../ViewsPanel/ViewsTable.vue";
 import { SchemaSelectToolbar } from "../common";
 
-const { database } = useConnectionOfCurrentSQLEditorTab();
-const { viewState, updateViewState } = useEditorPanelContext();
+const { instance, database } = useConnectionOfCurrentSQLEditorTab();
+const { viewState, updateViewState, selectedSchemaName } =
+  useEditorPanelContext();
 const databaseMetadata = computed(() => {
   return useDBSchemaV1Store().getDatabaseMetadata(
     database.value.name,
@@ -157,5 +173,15 @@ const metadata = computed(() => {
     (t) => t.name === viewState.value?.detail?.table
   );
   return { database, schema, table };
+});
+
+const schemaSelectOptions = computed(() => {
+  return databaseMetadata.value.schemas.map<SelectOption>((schema) => ({
+    label: schema.name,
+    value: schema.name,
+  }));
+});
+const showSchemaSelect = computed(() => {
+  return hasSchemaProperty(instance.value.engine);
 });
 </script>

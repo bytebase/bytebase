@@ -6,7 +6,7 @@
     <div class="flex flex-row justify-start items-center text-sm gap-x-2">
       <div class="flex items-center gap-x-1">
         <SchemaIcon class="w-4 h-4" />
-        <span>Schema:</span>
+        <span>{{ $t("common.schema") }}:</span>
       </div>
       <NSelect
         v-model:value="selectedSchemaName"
