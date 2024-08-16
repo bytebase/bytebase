@@ -9,17 +9,13 @@
         <span>{{ $t("common.database") }}:</span>
       </div>
       <DatabaseChooser style="justify-content: start" />
+
       <template v-if="showSchemaSelect">
         <div class="flex items-center gap-x-1">
           <SchemaIcon class="w-4 h-4" />
           <span>{{ $t("common.schema") }}:</span>
         </div>
-        <NSelect
-          v-model:value="selectedSchemaName"
-          :options="schemaSelectOptions"
-          size="small"
-          class="min-w-[12rem]"
-        />
+        <SchemaSelectToolbar simple />
       </template>
     </div>
 
@@ -138,7 +134,6 @@
 </template>
 
 <script setup lang="ts">
-import { NSelect, type SelectOption } from "naive-ui";
 import { computed } from "vue";
 import DatabaseOverviewInfo from "@/components/Database/DatabaseOverviewInfo.vue";
 import { DatabaseIcon, SchemaIcon } from "@/components/Icon";
@@ -155,10 +150,10 @@ import FunctionsTable from "../FunctionsPanel/FunctionsTable.vue";
 import ProceduresTable from "../ProceduresPanel/ProceduresTable.vue";
 import TablesTable from "../TablesPanel/TablesTable.vue";
 import ViewsTable from "../ViewsPanel/ViewsTable.vue";
+import { SchemaSelectToolbar } from "../common";
 
 const { instance, database } = useConnectionOfCurrentSQLEditorTab();
-const { viewState, updateViewState, selectedSchemaName } =
-  useEditorPanelContext();
+const { viewState, updateViewState } = useEditorPanelContext();
 const databaseMetadata = computed(() => {
   return useDBSchemaV1Store().getDatabaseMetadata(
     database.value.name,
@@ -177,12 +172,6 @@ const metadata = computed(() => {
   return { database, schema, table };
 });
 
-const schemaSelectOptions = computed(() => {
-  return databaseMetadata.value.schemas.map<SelectOption>((schema) => ({
-    label: schema.name,
-    value: schema.name,
-  }));
-});
 const showSchemaSelect = computed(() => {
   return hasSchemaProperty(instance.value.engine);
 });
