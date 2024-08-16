@@ -108,15 +108,15 @@ func (checker *columnSetDefaultForNotNullChecker) EnterCreateTable(ctx *mysql.Cr
 			continue
 		}
 		_, _, columnName := mysqlparser.NormalizeMySQLColumnName(tableElement.ColumnDefinition().ColumnName())
-		filed := tableElement.ColumnDefinition().FieldDefinition()
-		if filed == nil {
+		field := tableElement.ColumnDefinition().FieldDefinition()
+		if field == nil {
 			continue
 		}
 
 		if pkColumn[columnName] {
 			continue
 		}
-		if !checker.canNull(filed) && !checker.hasDefault(filed) && checker.needDefault(filed) {
+		if !checker.canNull(field) && !checker.hasDefault(field) && checker.needDefault(field) {
 			checker.adviceList = append(checker.adviceList, &storepb.Advice{
 				Status:  checker.level,
 				Code:    advisor.NotNullColumnWithNoDefault.Int32(),
