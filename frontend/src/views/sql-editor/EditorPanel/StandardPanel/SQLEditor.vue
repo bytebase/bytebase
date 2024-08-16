@@ -56,7 +56,7 @@ const tabStore = useSQLEditorTabStore();
 const sheetAndTabStore = useWorkSheetAndTabStore();
 const uiStateStore = useUIStateStore();
 const { events: editorEvents } = useSQLEditorContext();
-const { currentTab } = storeToRefs(tabStore);
+const { currentTab, isSwitchingTab } = storeToRefs(tabStore);
 const pendingFormatContentCommand = ref(false);
 
 const content = computed(() => currentTab.value?.statement ?? "");
@@ -86,20 +86,11 @@ const dialect = computed((): SQLDialect => {
   return dialectOfEngineV1(engine);
 });
 const readonly = computed(() => sheetAndTabStore.isReadOnly);
-const currentTabId = computed(() => tabStore.currentTabId);
-const isSwitchingTab = ref(false);
 
 const filename = computed(() => {
   const name = currentTab.value?.id || uuidv1();
   const ext = extensionNameOfLanguage(language.value);
   return `${name}.${ext}`;
-});
-
-watch(currentTabId, () => {
-  isSwitchingTab.value = true;
-  nextTick(() => {
-    isSwitchingTab.value = false;
-  });
 });
 
 const handleChange = (value: string) => {

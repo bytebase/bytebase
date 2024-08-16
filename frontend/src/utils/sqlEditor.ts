@@ -16,6 +16,7 @@ import type {
 import {
   DEFAULT_SQL_EDITOR_TAB_MODE,
   isValidInstanceName,
+  UNKNOWN_DATABASE_NAME,
   UNKNOWN_ID,
 } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
@@ -37,6 +38,10 @@ export const defaultSQLEditorTab = (): SQLEditorTab => {
     mode: DEFAULT_SQL_EDITOR_TAB_MODE,
     worksheet: "",
     editMode: "SQL-EDITOR",
+    treeState: {
+      database: UNKNOWN_DATABASE_NAME,
+      keys: [],
+    },
   };
 };
 

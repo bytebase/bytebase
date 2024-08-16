@@ -6,7 +6,7 @@
       size="small"
       :row-key="(table) => table.name"
       :columns="columns"
-      :data="layoutReady ? tables : []"
+      :data="layoutReady ? filteredTables : []"
       :row-props="rowProps"
       :max-height="tableBodyHeight"
       :virtual-scroll="true"
@@ -19,7 +19,7 @@
 
 <script setup lang="tsx">
 import { NDataTable, type DataTableColumn, type DataTableInst } from "naive-ui";
-import { computed, ref } from "vue";
+import { computed, h, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import type { ComposedDatabase } from "@/types";
 import type {
@@ -29,20 +29,20 @@ import type {
 } from "@/types/proto/v1/database_service";
 import {
   bytesToString,
+  getHighlightHTMLByRegExp,
   hasCollationProperty,
   hasIndexSizeProperty,
   hasTableEngineProperty,
-  nextAnimationFrame,
 } from "@/utils";
 import { useAutoHeightDataTable } from "../../common";
 import { useEditorPanelContext } from "../../context";
-import type { RichMetadataWithDB, RichTableMetadata } from "../../types";
 
 const props = defineProps<{
   db: ComposedDatabase;
   database: DatabaseMetadata;
   schema: SchemaMetadata;
   tables: TableMetadata[];
+  keyword?: string;
 }>();
 
 const emit = defineEmits<{
@@ -56,7 +56,7 @@ const emit = defineEmits<{
   ): void;
 }>();
 
-const { useConsumePendingScrollToTarget } = useEditorPanelContext();
+const { viewState } = useEditorPanelContext();
 const { t } = useI18n();
 const { containerElRef, tableBodyHeight, layoutReady } =
   useAutoHeightDataTable();
@@ -69,6 +69,14 @@ const instanceEngine = computed(() => {
   return props.db.instanceResource.engine;
 });
 
+const filteredTables = computed(() => {
+  const keyword = props.keyword?.trim().toLowerCase();
+  if (keyword) {
+    return props.tables.filter((table) => table.name.includes(keyword));
+  }
+  return props.tables;
+});
+
 const columns = computed(() => {
   const columns: (DataTableColumn<TableMetadata> & { hide?: boolean })[] = [
     {
@@ -76,6 +84,11 @@ const columns = computed(() => {
       title: t("schema-editor.database.name"),
       resizable: true,
       className: "truncate",
+      render: (table) => {
+        return h("span", {
+          innerHTML: getHighlightHTMLByRegExp(table.name, props.keyword ?? ""),
+        });
+      },
     },
     {
       key: "engine",
@@ -149,30 +162,14 @@ const rowProps = (table: TableMetadata) => {
   };
 };
 
-useConsumePendingScrollToTarget(
-  (target: RichMetadataWithDB<"table" | "column">) => {
-    if (target.db.name !== props.db.name) {
-      return false;
+watch(
+  [() => viewState.value?.detail.table, vlRef],
+  ([table, vl]) => {
+    if (table && vl) {
+      vl.scrollTo({ key: table });
     }
-    if (target.metadata.type === "table" || target.metadata.type === "column") {
-      const metadata = target.metadata as RichTableMetadata;
-      return metadata.schema.name === props.schema.name;
-    }
-    return false;
   },
-  vlRef,
-  async (target, vl) => {
-    const key = target.metadata.table.name;
-    if (!key) return false;
-    await nextAnimationFrame();
-    try {
-      console.debug("scroll-to-table", vl, target, key);
-      vl.scrollTo({ key });
-    } catch {
-      // Do nothing
-    }
-    return true;
-  }
+  { immediate: true }
 );
 </script>
 

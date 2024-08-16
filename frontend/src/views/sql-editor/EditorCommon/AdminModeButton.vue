@@ -7,8 +7,10 @@
     :disabled="isDisconnected"
     @click="enterAdminMode"
   >
-    <WrenchIcon class="-ml-1 w-4 h-4" />
-    <span class="ml-1"> {{ $t("sql-editor.admin-mode.self") }} </span>
+    <template #icon>
+      <WrenchIcon class="w-4 h-4" />
+    </template>
+    <span v-if="!hideText">{{ $t("sql-editor.admin-mode.self") }}</span>
   </NButton>
 </template>
 
@@ -34,6 +36,10 @@ const props = defineProps({
   size: {
     type: String as PropType<ButtonProps["size"]>,
     default: "medium",
+  },
+  hideText: {
+    type: Boolean,
+    default: false,
   },
 });
 

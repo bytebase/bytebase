@@ -3,30 +3,51 @@
     v-if="metadata?.schema"
     class="px-2 py-2 gap-y-2 h-full overflow-hidden flex flex-col"
   >
-    <template v-if="!metadata.procedure">
-      <SchemaSelectToolbar />
-      <ProceduresTable
-        v-if="!metadata.procedure"
-        :db="database"
-        :database="metadata.database"
-        :schema="metadata.schema"
-        :procedures="metadata.schema.procedures"
-        @click="select"
-      />
-    </template>
+    <div
+      v-show="!metadata.procedure"
+      class="w-full flex flex-row gap-x-2 justify-between items-center"
+    >
+      <div class="flex items-center justify-start gap-2">
+        <DatabaseChooser />
+        <SchemaSelectToolbar simple />
+      </div>
+      <div class="flex items-center justify-end">
+        <SearchBox
+          v-model:value="state.keyword"
+          size="small"
+          style="width: 10rem"
+        />
+      </div>
+    </div>
+    <ProceduresTable
+      v-show="!metadata.procedure"
+      :db="database"
+      :database="metadata.database"
+      :schema="metadata.schema"
+      :procedures="metadata.schema.procedures"
+      :keyword="state.keyword"
+      @click="select"
+    />
 
     <template v-if="metadata.procedure">
       <CodeViewer
         :db="database"
+        :title="metadata.procedure.name"
         :code="metadata.procedure.definition"
         @back="deselect"
-      />
+      >
+        <template #title-icon>
+          <ProcedureIcon class="w-4 h-4 text-main" />
+        </template>
+      </CodeViewer>
     </template>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { computed, reactive } from "vue";
+import { ProcedureIcon } from "@/components/Icon";
+import { SearchBox } from "@/components/v2";
 import {
   useConnectionOfCurrentSQLEditorTab,
   useDBSchemaV1Store,
@@ -37,47 +58,47 @@ import {
   ProcedureMetadata,
   SchemaMetadata,
 } from "@/types/proto/v1/database_service";
+import DatabaseChooser from "@/views/sql-editor/EditorCommon/DatabaseChooser.vue";
 import { useEditorPanelContext } from "../../context";
 import { SchemaSelectToolbar, CodeViewer } from "../common";
 import ProceduresTable from "./ProceduresTable.vue";
 
 const { database } = useConnectionOfCurrentSQLEditorTab();
-const { selectedSchemaName } = useEditorPanelContext();
+const { viewState, updateViewState } = useEditorPanelContext();
 const databaseMetadata = computed(() => {
   return useDBSchemaV1Store().getDatabaseMetadata(
     database.value.name,
     DatabaseMetadataView.DATABASE_METADATA_VIEW_FULL
   );
 });
+const state = reactive({
+  keyword: "",
+});
 
-const metadata = ref<{
-  database: DatabaseMetadata;
-  schema?: SchemaMetadata;
-  procedure?: ProcedureMetadata;
-}>();
+const metadata = computed(() => {
+  const database = databaseMetadata.value;
+  const schema = database.schemas.find(
+    (s) => s.name === viewState.value?.schema
+  );
+  const procedure = schema?.procedures.find(
+    (p) => p.name === viewState.value?.detail?.procedure
+  );
+  return { database, schema, procedure };
+});
 
 const select = (selected: {
   database: DatabaseMetadata;
   schema: SchemaMetadata;
   procedure: ProcedureMetadata;
 }) => {
-  metadata.value = selected;
+  updateViewState({
+    detail: { procedure: selected.procedure.name },
+  });
 };
 
 const deselect = () => {
-  if (!metadata.value) return;
-  metadata.value.procedure = undefined;
+  updateViewState({
+    detail: {},
+  });
 };
-
-watch(
-  [databaseMetadata, selectedSchemaName],
-  ([database, schema]) => {
-    metadata.value = {
-      database,
-      schema: database.schemas.find((s) => s.name === schema),
-      procedure: undefined,
-    };
-  },
-  { immediate: true }
-);
 </script>

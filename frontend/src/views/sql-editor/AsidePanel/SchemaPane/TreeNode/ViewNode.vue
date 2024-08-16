@@ -3,7 +3,7 @@
     :text="target.view.name"
     :keyword="keyword"
     :highlight="true"
-    :indent="1"
+    :indent="0"
   >
     <template #icon>
       <ViewIcon class="w-4 h-4" />

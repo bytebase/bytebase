@@ -1,21 +1,30 @@
 <template>
-  <div
-    v-if="showSchemaSelect"
-    class="w-full flex flex-row justify-between items-center"
-  >
-    <div class="flex flex-row justify-start items-center text-sm gap-x-2">
-      <div class="flex items-center gap-x-1">
-        <SchemaIcon class="w-4 h-4" />
-        <span>Schema:</span>
+  <template v-if="showSchemaSelect">
+    <NSelect
+      v-if="simple"
+      v-model:value="selectedSchemaName"
+      :options="schemaSelectOptions"
+      size="small"
+      class="min-w-[8rem]"
+      v-bind="$attrs"
+    />
+
+    <div v-else class="w-full flex flex-row justify-between items-center">
+      <div class="flex flex-row justify-start items-center text-sm gap-x-2">
+        <div class="flex items-center gap-x-1">
+          <SchemaIcon class="w-4 h-4" />
+          <span>{{ $t("common.schema") }}:</span>
+        </div>
+        <NSelect
+          v-model:value="selectedSchemaName"
+          :options="schemaSelectOptions"
+          size="small"
+          class="min-w-[8rem]"
+          v-bind="$attrs"
+        />
       </div>
-      <NSelect
-        v-model:value="selectedSchemaName"
-        :options="schemaSelectOptions"
-        size="small"
-        class="min-w-[12rem]"
-      />
     </div>
-  </div>
+  </template>
 </template>
 
 <script setup lang="ts">
@@ -29,6 +38,14 @@ import {
 import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
 import { hasSchemaProperty } from "@/utils";
 import { useEditorPanelContext } from "../../context";
+
+defineOptions({
+  inheritAttrs: false,
+});
+
+defineProps<{
+  simple?: boolean;
+}>();
 
 const { database, instance } = useConnectionOfCurrentSQLEditorTab();
 const { selectedSchemaName } = useEditorPanelContext();

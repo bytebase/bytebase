@@ -9,12 +9,7 @@
         :size="size"
         @click="handleClickTab('WORKSHEET')"
       />
-      <TabItem
-        tab="SCHEMA"
-        :size="size"
-        :disabled="!showSchemaPane"
-        @click="handleClickTab('SCHEMA')"
-      />
+      <TabItem tab="SCHEMA" :size="size" @click="handleClickTab('SCHEMA')" />
       <TabItem tab="HISTORY" :size="size" @click="handleClickTab('HISTORY')" />
     </div>
 
@@ -32,15 +27,8 @@
 
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
-import { computed, toRef, watch } from "vue";
-import {
-  useConnectionOfCurrentSQLEditorTab,
-  useAppFeature,
-  useSQLEditorStore,
-  useSQLEditorTabStore,
-} from "@/store";
-import { UNKNOWN_ID, isValidInstanceName } from "@/types";
-import { hasProjectPermissionV2, instanceV1HasAlterSchema } from "@/utils";
+import { computed, toRef } from "vue";
+import { useAppFeature, useSQLEditorStore } from "@/store";
 import { SettingButton } from "../../Setting";
 import { useSQLEditorContext, type AsidePanelTab } from "../../context";
 import OpenAIButton from "./OpenAIButton.vue";
@@ -56,45 +44,14 @@ const props = withDefaults(
   }
 );
 
-const { currentTab, isDisconnected } = storeToRefs(useSQLEditorTabStore());
 const { asidePanelTab } = useSQLEditorContext();
 const { strictProject } = storeToRefs(useSQLEditorStore());
-const { instance, database } = useConnectionOfCurrentSQLEditorTab();
 const disableSetting = useAppFeature("bb.feature.sql-editor.disable-setting");
 
 const { props: buttonProps, style: buttonStyle } = useButton({
   size: toRef(props, "size"),
   active: false,
   disabled: false,
-});
-
-const isSchemalessInstance = computed(() => {
-  if (!isValidInstanceName(instance.value.name)) {
-    return false;
-  }
-
-  return !instanceV1HasAlterSchema(instance.value);
-});
-
-const showSchemaPane = computed(() => {
-  if (!currentTab.value) {
-    return false;
-  }
-  if (isDisconnected.value) {
-    return false;
-  }
-
-  if (isSchemalessInstance.value) {
-    return false;
-  }
-  if (database.value.uid === String(UNKNOWN_ID)) {
-    return false;
-  }
-
-  return hasProjectPermissionV2(
-    database.value.projectEntity,
-    "bb.databases.getSchema"
-  );
 });
 
 const hideSettingButton = computed(() => {
@@ -109,20 +66,6 @@ const hideSettingButton = computed(() => {
 });
 
 const handleClickTab = (target: AsidePanelTab) => {
-  if (target === "SCHEMA" && !showSchemaPane.value) {
-    return;
-  }
-
   asidePanelTab.value = target;
 };
-
-watch(
-  showSchemaPane,
-  (show) => {
-    if (!show && asidePanelTab.value === "SCHEMA") {
-      asidePanelTab.value = "WORKSHEET";
-    }
-  },
-  { immediate: true }
-);
 </script>

@@ -1,28 +1,32 @@
 <template>
   <NPopover
+    v-if="showBatchQuerySelector"
     placement="bottom"
     :disabled="!hasBatchQueryFeature"
     trigger="click"
   >
     <template #trigger>
-      <NButton
-        size="small"
-        ghost
-        :type="
-          selectedDatabaseNames.length > 0 && hasBatchQueryFeature
-            ? 'primary'
-            : 'default'
-        "
-        @click="handleTriggerClick"
-      >
-        <div class="flex flex-row justify-center items-center gap-1">
-          <span>{{ $t("sql-editor.batch-query.batch") }}</span>
-          <span v-if="selectedDatabaseNames.length > 0">
-            ({{ selectedDatabaseNames.length }})
-          </span>
-          <FeatureBadge feature="bb.feature.batch-query" />
-        </div>
-      </NButton>
+      <NPopover placement="bottom">
+        <template #trigger>
+          <NButton
+            size="small"
+            :type="
+              selectedDatabaseNames.length > 0 && hasBatchQueryFeature
+                ? 'primary'
+                : 'default'
+            "
+            style="--n-padding: 0 5px"
+            @click="handleTriggerClick"
+          >
+            <template #icon>
+              <SquareStackIcon class="w-4 h-4" />
+            </template>
+          </NButton>
+        </template>
+        <template #default>
+          {{ $t("sql-editor.batch-query.batch") }}
+        </template>
+      </NPopover>
     </template>
     <div class="w-128 max-h-128 overflow-y-auto p-1 pb-2">
       <p class="text-gray-500 mb-1 w-full leading-4">
@@ -95,6 +99,7 @@
 </template>
 
 <script lang="ts" setup>
+import { SquareStackIcon } from "lucide-vue-next";
 import type { DataTableRowKey, DataTableColumn } from "naive-ui";
 import {
   NPopover,
@@ -107,17 +112,18 @@ import {
 import { computed, reactive, ref, watch } from "vue";
 import { h } from "vue";
 import { useI18n } from "vue-i18n";
-import { FeatureBadge, FeatureModal } from "@/components/FeatureGuard";
+import { FeatureModal } from "@/components/FeatureGuard";
 import { InstanceV1EngineIcon, SearchBox } from "@/components/v2";
 import { DatabaseLabelsCell } from "@/components/v2/Model/DatabaseV1Table/cells";
 import {
   hasFeature,
+  useAppFeature,
   useConnectionOfCurrentSQLEditorTab,
   useCurrentUserIamPolicy,
   useDatabaseV1Store,
   useSQLEditorTabStore,
 } from "@/store/modules";
-import type { ComposedDatabase } from "@/types";
+import { isValidDatabaseName, type ComposedDatabase } from "@/types";
 
 interface LocalState {
   keyword: string;
@@ -137,6 +143,10 @@ const currentTab = computed(() => tabStore.currentTab);
 const { database: selectedDatabase } = useConnectionOfCurrentSQLEditorTab();
 const selectedDatabaseNames = ref<string[]>([]);
 const hasBatchQueryFeature = hasFeature("bb.feature.batch-query");
+const disallowBatchQuery = useAppFeature(
+  "bb.feature.sql-editor.disallow-batch-query"
+);
+const { database } = useConnectionOfCurrentSQLEditorTab();
 
 const project = computed(() => selectedDatabase.value.projectEntity);
 
@@ -154,6 +164,20 @@ const databases = computed(() => {
           db.instanceResource.engine ===
           selectedDatabase.value.instanceResource.engine
       )
+  );
+});
+
+const showBatchQuerySelector = computed(() => {
+  if (disallowBatchQuery.value) {
+    return false;
+  }
+
+  const tab = currentTab.value;
+  return (
+    tab &&
+    // Only show entry when user selected a database.
+    isValidDatabaseName(database.value.name) &&
+    tab.mode !== "ADMIN"
   );
 });
 

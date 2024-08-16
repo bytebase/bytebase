@@ -1876,7 +1876,8 @@
     "external-server-name": "External Server Name",
     "external-database-name": "External Database Name",
     "foreign-table-detail": "Foreign table detail",
-    "view-definition": "View definition"
+    "view-definition": "View definition",
+    "foreign-keys": "Foreign keys"
   },
   "repository": {
     "our-webhook-link": "The webhook created by Bytebase can be found at {webhookLink}.",
@@ -3663,5 +3664,8 @@
     "source-branch": {
       "self": "Source branch"
     }
+  },
+  "worksheet": {
+    "self": "Worksheet"
   }
 }

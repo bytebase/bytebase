@@ -6,9 +6,11 @@
     placement="bottom-start"
     scrollable
   >
-    <NButton size="small">
-      {{ $t("sql-editor.result-limit.n-rows", { n: resultRowsLimit }) }}
-    </NButton>
+    <slot name="default" :result-rows-limit="resultRowsLimit">
+      <NButton size="small">
+        {{ $t("sql-editor.result-limit.n-rows", { n: resultRowsLimit }) }}
+      </NButton>
+    </slot>
     <template #action>
       <div class="flex items-center justify-between gap-1">
         <NInputNumber
