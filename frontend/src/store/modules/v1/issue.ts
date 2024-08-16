@@ -13,7 +13,7 @@ import {
   ApprovalNode_Type,
   ApprovalNode_GroupValue,
 } from "@/types/proto/v1/issue_service";
-import { extractProjectResourceName, memberListInIAM } from "@/utils";
+import { extractProjectResourceName, memberListInProjectIAM } from "@/utils";
 import { useUserStore } from "../user";
 import {
   shallowComposeIssue,
@@ -150,7 +150,7 @@ export const candidatesOfApprovalStepV1 = (
     (user) => user.userType === UserType.USER
   );
   const project = issue.projectEntity;
-  const projectMemberList = memberListInIAM(project.iamPolicy).filter(
+  const projectMemberList = memberListInProjectIAM(project.iamPolicy).filter(
     (member) => member.user.userType === UserType.USER
   );
 
@@ -186,7 +186,7 @@ export const candidatesOfApprovalStepV1 = (
       return [];
     };
     const candidatesForCustomRoles = (role: string) => {
-      const memberList = memberListInIAM(project.iamPolicy, role);
+      const memberList = memberListInProjectIAM(project.iamPolicy, role);
       return memberList
         .filter((member) => member.user.userType === UserType.USER)
         .map((member) => member.user);

@@ -40,7 +40,7 @@
       <NTabPane name="users" :tab="$t('project.members.view-by-members')">
         <MemberDataTable
           :allow-edit="allowEdit"
-          :bindings="projectBindings"
+          :bindings="memberBindings"
           :selected-bindings="state.selectedMembers"
           :select-disabled="
             (member: MemberBinding) => member.projectRoleBindings.length === 0
@@ -52,7 +52,7 @@
       <NTabPane name="roles" :tab="$t('project.members.view-by-roles')">
         <MemberDataTableByRole
           :allow-edit="allowEdit"
-          :bindings="projectBindings"
+          :bindings-by-role="memberBindingsByRole"
           @update-binding="selectMember"
         />
       </NTabPane>
@@ -74,33 +74,28 @@
 </template>
 
 <script lang="ts" setup>
-import { cloneDeep, uniq } from "lodash-es";
+import { cloneDeep } from "lodash-es";
 import { NButton, NTabs, NTabPane, useDialog } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import MemberDataTable from "@/components/Member/MemberDataTable/index.vue";
 import MemberDataTableByRole from "@/components/Member/MemberDataTableByRole.vue";
-import type { MemberRole, MemberBinding } from "@/components/Member/types";
+import type { MemberBinding } from "@/components/Member/types";
 import {
-  extractGroupEmail,
+  getMemberBindingsByRole,
+  getMemberBindings,
+} from "@/components/Member/utils";
+import {
   extractUserEmail,
   pushNotification,
   useCurrentUserV1,
   useProjectIamPolicy,
   useProjectIamPolicyStore,
-  useGroupStore,
   useWorkspaceV1Store,
 } from "@/store";
 import type { ComposedProject } from "@/types";
-import {
-  getUserEmailInBinding,
-  getGroupEmailInBinding,
-  PRESET_WORKSPACE_ROLES,
-  groupBindingPrefix,
-  PresetRoleType,
-} from "@/types";
-import type { Group } from "@/types/proto/v1/group";
-import { hasProjectPermissionV2, memberListInIAM } from "@/utils";
+import { PRESET_WORKSPACE_ROLES, groupBindingPrefix } from "@/types";
+import { hasProjectPermissionV2 } from "@/utils";
 import { FeatureAttention } from "../FeatureGuard";
 import { SearchBox } from "../v2";
 import AddProjectMembersPanel from "./AddProjectMember/AddProjectMembersPanel.vue";
@@ -124,7 +119,7 @@ const props = defineProps<{
 const { t } = useI18n();
 const dialog = useDialog();
 const currentUserV1 = useCurrentUserV1();
-const groupStore = useGroupStore();
+
 const projectResourceName = computed(() => props.project.name);
 const { policy: iamPolicy } = useProjectIamPolicy(projectResourceName);
 
@@ -138,94 +133,31 @@ const state = reactive<LocalState>({
 
 const workspaceStore = useWorkspaceV1Store();
 
-const projectIAMPolicyBindings = computed(() => {
-  return iamPolicy.value.bindings;
-});
-
 const allowEdit = computed(() => {
   return hasProjectPermissionV2(props.project, "bb.projects.setIamPolicy");
 });
 
-const activeGroupList = computed(() => {
-  return uniq(
-    projectIAMPolicyBindings.value.flatMap((binding) => binding.members)
-  )
-    .filter((user) => user.startsWith(groupBindingPrefix))
-    .map((member) => {
-      return groupStore.getGroupByIdentifier(member);
-    })
-    .filter((group) => !!group) as Group[];
-});
+const workspaceRoles = computed(() => new Set(PRESET_WORKSPACE_ROLES));
 
-const groupRoleMap = computed(() => {
-  const map = new Map<string, MemberRole>();
-  for (const group of activeGroupList.value) {
-    if (!group) {
-      continue;
-    }
-    const bindings = projectIAMPolicyBindings.value.filter((binding) =>
-      binding.members.some(
-        (member) => extractGroupEmail(member) === extractGroupEmail(group.name)
-      )
-    );
-    map.set(group.name, {
-      workspaceLevelRoles: [],
-      projectRoleBindings: bindings,
-    });
-  }
-  return map;
-});
-
-const projectMembers = computed(() => {
-  return memberListInIAM(iamPolicy.value).map((member) => {
-    const bindings = projectIAMPolicyBindings.value.filter((binding) =>
-      binding.members.some((m) => extractUserEmail(m) === member.user.email)
-    );
-
-    const workspaceLevelRoles = [
-      ...workspaceStore.getWorkspaceRolesByEmail(member.user.email),
-    ].filter((role) => !PRESET_WORKSPACE_ROLES.includes(role));
-
-    return {
-      type: "users",
-      title: member.user.title,
-      user: member.user,
-      binding: getUserEmailInBinding(member.user.email),
-      workspaceLevelRoles,
-      projectRoleBindings: bindings,
-    } as MemberBinding;
+const memberBindingsByRole = computed(() => {
+  return getMemberBindingsByRole({
+    policies: [
+      {
+        level: "WORKSPACE",
+        policy: workspaceStore.workspaceIamPolicy,
+      },
+      {
+        level: "PROJECT",
+        policy: iamPolicy.value,
+      },
+    ],
+    searchText: state.searchText,
+    ignoreRoles: workspaceRoles.value,
   });
 });
 
-const projectGroups = computed((): MemberBinding[] => {
-  return activeGroupList.value.map((group) => {
-    const roleBinding: MemberRole = groupRoleMap.value.get(group.name) ?? {
-      workspaceLevelRoles: [],
-      projectRoleBindings: [],
-    };
-    const email = extractGroupEmail(group.name);
-
-    return {
-      type: "groups",
-      title: group.title,
-      group,
-      binding: getGroupEmailInBinding(email),
-      ...roleBinding,
-    };
-  });
-});
-
-const projectBindings = computed(() => {
-  const bindings = [...projectMembers.value, ...projectGroups.value];
-
-  if (!state.searchText) {
-    return bindings;
-  }
-  return bindings.filter(
-    (binding) =>
-      binding.title.toLowerCase().includes(state.searchText.toLowerCase()) ||
-      binding.binding.toLowerCase().includes(state.searchText.toLowerCase())
-  );
+const memberBindings = computed(() => {
+  return getMemberBindings(memberBindingsByRole.value);
 });
 
 const selectMember = (binding: MemberBinding) => {

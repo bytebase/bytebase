@@ -1,6 +1,6 @@
 <template>
   <div class="flex flex-row items-center flex-wrap gap-2">
-    <NTag v-for="role in workspaceLevelRoles" :key="role">
+    <NTag v-for="r in workspaceLevelRoles" :key="r">
       <template #avatar>
         <NTooltip>
           <template #trigger>
@@ -9,7 +9,7 @@
           {{ $t("project.members.workspace-level-roles") }}
         </NTooltip>
       </template>
-      {{ displayRoleTitle(role) }}
+      {{ displayRoleTitle(r) }}
     </NTag>
     <NTag
       v-for="binding in projectRoleBindings"
@@ -34,7 +34,7 @@ const props = defineProps<{
 }>();
 
 const workspaceLevelRoles = computed(() => {
-  return sortRoles(props.role.workspaceLevelRoles);
+  return sortRoles([...props.role.workspaceLevelRoles]);
 });
 
 const projectRoleBindings = computed(() => {

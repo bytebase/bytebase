@@ -42,7 +42,7 @@ import {
 } from "@/types";
 import { UserType, type User } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
-import { extractUserUID, memberListInIAM } from "@/utils";
+import { extractUserUID, memberListInProjectIAM } from "@/utils";
 
 export interface UserSelectOption extends SelectOption {
   value: string;
@@ -127,8 +127,7 @@ watchEffect(prepare);
 
 const getUserListFromProject = (projectName: string) => {
   const project = projectV1Store.getProjectByName(projectName);
-  const memberList = memberListInIAM(project.iamPolicy);
-  return memberList
+  return memberListInProjectIAM(project.iamPolicy)
     .filter((member) => {
       if (props.allowedProjectMemberRoleList.length === 0) {
         // Need not to filter by project member role

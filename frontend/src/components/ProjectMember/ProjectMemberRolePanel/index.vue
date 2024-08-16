@@ -24,7 +24,7 @@
           </div>
         </div>
       </div>
-      <template v-if="binding.workspaceLevelRoles.length > 0">
+      <template v-if="binding.workspaceLevelRoles.size > 0">
         <p class="text-lg px-1 pb-1 w-full border-b mb-3">
           {{ $t("project.members.workspace-level-roles") }}
         </p>
@@ -44,7 +44,7 @@
       </template>
       <template v-if="roleList.length > 0">
         <p
-          v-if="binding.workspaceLevelRoles.length > 0"
+          v-if="binding.workspaceLevelRoles.size > 0"
           class="text-lg px-1 pb-1 w-full border-b mt-4 mb-3"
         >
           {{ $t("project.members.project-level-roles") }}

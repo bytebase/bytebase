@@ -67,7 +67,10 @@ export const getUserEmailListInBinding = ({
   return uniq(emailList);
 };
 
-export const memberListInIAM = (iamPolicy: IamPolicy, targetRole?: string) => {
+export const memberListInProjectIAM = (
+  iamPolicy: IamPolicy,
+  targetRole?: string
+) => {
   const userStore = useUserStore();
   const workspaceStore = useWorkspaceV1Store();
 

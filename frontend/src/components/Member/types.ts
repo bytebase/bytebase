@@ -3,7 +3,7 @@ import type { Group } from "@/types/proto/v1/group";
 import type { Binding } from "@/types/proto/v1/iam_policy";
 
 export interface MemberRole {
-  workspaceLevelRoles: string[];
+  workspaceLevelRoles: Set<string>;
   projectRoleBindings: Binding[];
 }
 

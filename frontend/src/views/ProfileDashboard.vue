@@ -268,7 +268,6 @@ import {
 } from "@/store";
 import {
   unknownUser,
-  PresetRoleType,
   SYSTEM_BOT_USER_NAME,
   ALL_USERS_USER_EMAIL,
 } from "@/types";

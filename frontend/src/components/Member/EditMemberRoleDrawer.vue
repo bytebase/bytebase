@@ -130,7 +130,7 @@ const initMemberList = () => {
 const state = reactive<LocalState>({
   isRequesting: false,
   memberList: initMemberList(),
-  roles: props.member?.workspaceLevelRoles ?? [],
+  roles: [...(props.member?.workspaceLevelRoles ?? new Set<string>())],
 });
 
 const { t } = useI18n();
@@ -204,7 +204,7 @@ const allowConfirm = computed(() => {
   }
 
   if (!isCreating.value) {
-    return !isEqual(props.member?.workspaceLevelRoles ?? [], state.roles);
+    return !isEqual(props.member?.workspaceLevelRoles, state.roles);
   }
 
   return true;
