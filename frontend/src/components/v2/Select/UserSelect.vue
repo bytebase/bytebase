@@ -30,7 +30,7 @@ import { useI18n } from "vue-i18n";
 import UserIcon from "~icons/heroicons-outline/user";
 import UserAvatar from "@/components/User/UserAvatar.vue";
 import ServiceAccountTag from "@/components/misc/ServiceAccountTag.vue";
-import { useProjectV1Store, useUserStore } from "@/store";
+import { useProjectV1Store, useUserStore, useWorkspaceV1Store } from "@/store";
 import {
   SYSTEM_BOT_USER_NAME,
   UNKNOWN_ID,
@@ -39,15 +39,14 @@ import {
   unknownUser,
   PresetRoleType,
   isValidProjectName,
-  type ComposedUser,
 } from "@/types";
-import { UserType } from "@/types/proto/v1/auth_service";
+import { UserType, type User } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
-import { extractUserUID, memberListInIAM } from "@/utils";
+import { extractUserUID, memberListInProjectIAM } from "@/utils";
 
 export interface UserSelectOption extends SelectOption {
   value: string;
-  user: ComposedUser;
+  user: User;
 }
 
 const props = withDefaults(
@@ -65,10 +64,8 @@ const props = withDefaults(
     allowedWorkspaceRoleList?: string[];
     allowedProjectMemberRoleList?: string[];
     autoReset?: boolean;
-    filter?: (user: ComposedUser, index: number) => boolean;
-    mapOptions?: (
-      users: ComposedUser[]
-    ) => (UserSelectOption | SelectGroupOption)[];
+    filter?: (user: User, index: number) => boolean;
+    mapOptions?: (users: User[]) => (UserSelectOption | SelectGroupOption)[];
     fallbackOption?: SelectProps["fallbackOption"];
     size?: "tiny" | "small" | "medium" | "large";
   }>(),
@@ -107,6 +104,7 @@ const emit = defineEmits<{
 const { t } = useI18n();
 const projectV1Store = useProjectV1Store();
 const userStore = useUserStore();
+const workspaceStore = useWorkspaceV1Store();
 const showStatus = ref(false);
 
 const value = computed(() => {
@@ -129,8 +127,7 @@ watchEffect(prepare);
 
 const getUserListFromProject = (projectName: string) => {
   const project = projectV1Store.getProjectByName(projectName);
-  const memberList = memberListInIAM(project.iamPolicy);
-  const filteredUserList = memberList
+  return memberListInProjectIAM(project.iamPolicy)
     .filter((member) => {
       if (props.allowedProjectMemberRoleList.length === 0) {
         // Need not to filter by project member role
@@ -142,8 +139,6 @@ const getUserListFromProject = (projectName: string) => {
       );
     })
     .map((member) => member.user);
-
-  return filteredUserList;
 };
 
 const getUserListFromWorkspace = () => {
@@ -157,8 +152,8 @@ const getUserListFromWorkspace = () => {
         // Need not to filter by workspace role
         return true;
       }
-      return user.roles.some((role) =>
-        props.allowedWorkspaceRoleList.includes(role)
+      return [...workspaceStore.getWorkspaceRolesByEmail(user.email)].some(
+        (role) => props.allowedWorkspaceRoleList.includes(role)
       );
     });
 };
@@ -242,7 +237,7 @@ const handleValueUpdated = (value: string | string[]) => {
   }
 };
 
-const renderAvatar = (user: ComposedUser) => {
+const renderAvatar = (user: User) => {
   if (user.name === UNKNOWN_USER_NAME) {
     return (
       <div class="bb-user-select--avatar w-6 h-6 rounded-full border-2 border-current flex justify-center items-center select-none bg-white">

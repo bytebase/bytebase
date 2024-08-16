@@ -40,7 +40,7 @@
       <NTabPane name="users" :tab="$t('project.members.view-by-members')">
         <MemberDataTable
           :allow-edit="allowEdit"
-          :bindings="projectBindings"
+          :bindings="memberBindings"
           :selected-bindings="state.selectedMembers"
           :select-disabled="
             (member: MemberBinding) => member.projectRoleBindings.length === 0
@@ -52,7 +52,7 @@
       <NTabPane name="roles" :tab="$t('project.members.view-by-roles')">
         <MemberDataTableByRole
           :allow-edit="allowEdit"
-          :bindings="projectBindings"
+          :bindings-by-role="memberBindingsByRole"
           @update-binding="selectMember"
         />
       </NTabPane>
@@ -74,33 +74,27 @@
 </template>
 
 <script lang="ts" setup>
-import { cloneDeep, uniq, uniqBy } from "lodash-es";
+import { cloneDeep } from "lodash-es";
 import { NButton, NTabs, NTabPane, useDialog } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import MemberDataTable from "@/components/Member/MemberDataTable/index.vue";
 import MemberDataTableByRole from "@/components/Member/MemberDataTableByRole.vue";
-import type { MemberRole, MemberBinding } from "@/components/Member/types";
+import type { MemberBinding } from "@/components/Member/types";
 import {
-  extractGroupEmail,
+  getMemberBindingsByRole,
+  getMemberBindings,
+} from "@/components/Member/utils";
+import {
   extractUserEmail,
   pushNotification,
   useCurrentUserV1,
   useProjectIamPolicy,
   useProjectIamPolicyStore,
-  useUserStore,
-  useGroupStore,
+  useWorkspaceV1Store,
 } from "@/store";
-import type { ComposedProject, ComposedUser } from "@/types";
-import {
-  getUserEmailInBinding,
-  getGroupEmailInBinding,
-  unknownUser,
-  PRESET_WORKSPACE_ROLES,
-  groupBindingPrefix,
-} from "@/types";
-import { State } from "@/types/proto/v1/common";
-import type { Group } from "@/types/proto/v1/group";
+import type { ComposedProject } from "@/types";
+import { PRESET_WORKSPACE_ROLES, groupBindingPrefix } from "@/types";
 import { hasProjectPermissionV2 } from "@/utils";
 import { FeatureAttention } from "../FeatureGuard";
 import { SearchBox } from "../v2";
@@ -125,7 +119,7 @@ const props = defineProps<{
 const { t } = useI18n();
 const dialog = useDialog();
 const currentUserV1 = useCurrentUserV1();
-const groupStore = useGroupStore();
+
 const projectResourceName = computed(() => props.project.name);
 const { policy: iamPolicy } = useProjectIamPolicy(projectResourceName);
 
@@ -137,125 +131,33 @@ const state = reactive<LocalState>({
   showAddMemberPanel: false,
 });
 
-const userStore = useUserStore();
-
-const projectIAMPolicyBindings = computed(() => {
-  return iamPolicy.value.bindings;
-});
+const workspaceStore = useWorkspaceV1Store();
 
 const allowEdit = computed(() => {
   return hasProjectPermissionV2(props.project, "bb.projects.setIamPolicy");
 });
 
-const activeUserList = computed(() => {
-  const projectMembers = uniq(
-    projectIAMPolicyBindings.value.flatMap((binding) => binding.members)
-  )
-    .filter((user) => !user.startsWith(groupBindingPrefix))
-    .map((user) => {
-      const email = extractUserEmail(user);
-      return (
-        userStore.getUserByEmail(email) ??
-        ({
-          ...unknownUser(),
-          email,
-        } as ComposedUser)
-      );
-    });
+const workspaceRoles = computed(() => new Set(PRESET_WORKSPACE_ROLES));
 
-  const combinedMembers = uniqBy(
-    [...userStore.workspaceLevelProjectMembers, ...projectMembers],
-    "email"
-  ).filter((user) => user.state === State.ACTIVE);
-
-  return combinedMembers;
-});
-
-const activeGroupList = computed(() => {
-  return uniq(
-    projectIAMPolicyBindings.value.flatMap((binding) => binding.members)
-  )
-    .filter((user) => user.startsWith(groupBindingPrefix))
-    .map((member) => {
-      return groupStore.getGroupByIdentifier(member);
-    })
-    .filter((group) => !!group) as Group[];
-});
-
-const groupRoleMap = computed(() => {
-  const map = new Map<string, MemberRole>();
-  for (const group of activeGroupList.value) {
-    if (!group) {
-      continue;
-    }
-    const bindings = projectIAMPolicyBindings.value.filter((binding) =>
-      binding.members.some(
-        (member) => extractGroupEmail(member) === extractGroupEmail(group.name)
-      )
-    );
-    map.set(group.name, {
-      workspaceLevelRoles: [],
-      projectRoleBindings: bindings,
-    });
-  }
-  return map;
-});
-
-const projectMembers = computed(() => {
-  return activeUserList.value
-    .map((user) => {
-      const roles = user.roles.filter(
-        (role) => !PRESET_WORKSPACE_ROLES.includes(role)
-      );
-      const bindings = projectIAMPolicyBindings.value.filter((binding) =>
-        binding.members.some(
-          (member) => extractUserEmail(member) === user.email
-        )
-      );
-      if (roles.length === 0 && bindings.length === 0) {
-        return null;
-      }
-      return {
-        type: "users",
-        title: user.title,
-        user,
-        binding: getUserEmailInBinding(user.email),
-        workspaceLevelRoles: roles,
-        projectRoleBindings: bindings,
-      } as MemberBinding;
-    })
-    .filter(Boolean) as MemberBinding[];
-});
-
-const projectGroups = computed((): MemberBinding[] => {
-  return activeGroupList.value.map((group) => {
-    const roleBinding: MemberRole = groupRoleMap.value.get(group.name) ?? {
-      workspaceLevelRoles: [],
-      projectRoleBindings: [],
-    };
-    const email = extractGroupEmail(group.name);
-
-    return {
-      type: "groups",
-      title: group.title,
-      group,
-      binding: getGroupEmailInBinding(email),
-      ...roleBinding,
-    };
+const memberBindingsByRole = computed(() => {
+  return getMemberBindingsByRole({
+    policies: [
+      {
+        level: "WORKSPACE",
+        policy: workspaceStore.workspaceIamPolicy,
+      },
+      {
+        level: "PROJECT",
+        policy: iamPolicy.value,
+      },
+    ],
+    searchText: state.searchText,
+    ignoreRoles: workspaceRoles.value,
   });
 });
 
-const projectBindings = computed(() => {
-  const bindings = [...projectMembers.value, ...projectGroups.value];
-
-  if (!state.searchText) {
-    return bindings;
-  }
-  return bindings.filter(
-    (binding) =>
-      binding.title.toLowerCase().includes(state.searchText.toLowerCase()) ||
-      binding.binding.toLowerCase().includes(state.searchText.toLowerCase())
-  );
+const memberBindings = computed(() => {
+  return getMemberBindings(memberBindingsByRole.value);
 });
 
 const selectMember = (binding: MemberBinding) => {
@@ -303,8 +205,8 @@ const handleRevokeSelectedMembers = () => {
 
       pushNotification({
         module: "bytebase",
-        style: "SUCCESS",
-        title: "Revoke succeed",
+        style: "INFO",
+        title: t("settings.members.revoked"),
       });
       state.selectedMembers = [];
     },

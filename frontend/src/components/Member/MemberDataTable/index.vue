@@ -5,7 +5,10 @@
     :data="bindings"
     :row-key="(row: MemberBinding) => row.binding"
     :bordered="true"
+    :striped="true"
     :checked-row-keys="selectedBindings"
+    :max-height="'calc(100vh - 15rem)'"
+    virtual-scroll
     @update:checked-row-keys="handleMemberSelection"
   />
 </template>
@@ -28,7 +31,7 @@ const props = defineProps<{
   allowEdit: boolean;
   bindings: MemberBinding[];
   selectedBindings: string[];
-  selectDisabled: (projectMember: MemberBinding) => boolean;
+  selectDisabled: (memberBinding: MemberBinding) => boolean;
 }>();
 
 const emit = defineEmits<{
@@ -44,24 +47,24 @@ const columns = computed(
     return [
       {
         type: "selection",
-        disabled: (projectMember: MemberBinding) => {
-          return props.selectDisabled(projectMember);
+        disabled: (memberBinding: MemberBinding) => {
+          return props.selectDisabled(memberBinding);
         },
       },
       {
         type: "expand",
         hide: !props.bindings.some((binding) => binding.type === "groups"),
-        expandable: (projectMember: MemberBinding) =>
-          projectMember.type === "groups",
-        renderExpand: (projectMember: MemberBinding) => {
+        expandable: (memberBinding: MemberBinding) =>
+          memberBinding.type === "groups",
+        renderExpand: (memberBinding: MemberBinding) => {
           return (
             <div class="pl-20">
-              {projectMember.group!.members.map((member) => {
+              {memberBinding.group?.members.map((member) => {
                 const user =
                   userStore.getUserByIdentifier(member.member) ?? unknownUser();
                 return (
                   <GroupMemberNameCell
-                    key={`${projectMember.group!.name}-${user.name}`}
+                    key={`${memberBinding.group?.name}-${user.name}`}
                     user={user}
                   />
                 );
@@ -75,20 +78,21 @@ const columns = computed(
         title: t("settings.members.table.account"),
         width: "32rem",
         resizable: true,
-        render: (projectMember: MemberBinding) => {
-          if (projectMember.type === "groups") {
-            return <GroupNameCell group={projectMember.group!} />;
+        render: (memberBinding: MemberBinding) => {
+          if (memberBinding.type === "groups") {
+            return <GroupNameCell group={memberBinding.group!} />;
           }
-          return <UserNameCell projectMember={projectMember} />;
+          return <UserNameCell binding={memberBinding} />;
         },
       },
       {
         key: "roles",
         title: t("settings.members.table.role"),
         resizable: true,
-        render: (projectMember: MemberBinding) => {
+        render: (memberBinding: MemberBinding) => {
           return h(UserRolesCell, {
-            projectRole: projectMember,
+            role: memberBinding,
+            key: memberBinding.binding,
           });
         },
       },
@@ -96,12 +100,13 @@ const columns = computed(
         key: "operations",
         title: "",
         width: "4rem",
-        render: (projectMember: MemberBinding) => {
+        render: (memberBinding: MemberBinding) => {
           return h(UserOperationsCell, {
+            key: memberBinding.binding,
             allowEdit: props.allowEdit,
-            projectMember,
+            binding: memberBinding,
             "onUpdate-binding": () => {
-              emit("update-binding", projectMember);
+              emit("update-binding", memberBinding);
             },
           });
         },

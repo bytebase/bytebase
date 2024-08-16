@@ -1,8 +1,8 @@
 import { pull } from "lodash-es";
 import { issueServiceClient } from "@/grpcweb";
 import { t } from "@/plugins/i18n";
-import { pushNotification } from "@/store";
-import type { ComposedUser } from "@/types";
+import { pushNotification, useCurrentUserV1 } from "@/store";
+import { userNamePrefix } from "@/store/modules/v1/common";
 import { Issue } from "@/types/proto/v1/issue_service";
 
 export const updateIssueSubscribers = async (
@@ -28,12 +28,9 @@ export const updateIssueSubscribers = async (
   }
 };
 
-export const toggleSubscribeIssue = async (
-  issue: Issue,
-  user: ComposedUser
-) => {
+export const toggleSubscribeIssue = async (issue: Issue) => {
   const subscribers = [...issue.subscribers];
-  const userTag = `users/${user.email}`;
+  const userTag = `${userNamePrefix}${useCurrentUserV1().value.email}`;
   const isSubscribed = subscribers.includes(userTag);
   if (isSubscribed) {
     pull(subscribers, userTag);

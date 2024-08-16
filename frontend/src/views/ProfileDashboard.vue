@@ -73,7 +73,7 @@
             <div
               class="flex flex-row justify-start items-start flex-wrap gap-2"
             >
-              <NTag v-for="role in sortRoles(user.roles)" :key="role">
+              <NTag v-for="role in sortRoles(userRoles)" :key="role">
                 {{ displayRoleTitle(role) }}
               </NTag>
             </div>
@@ -264,19 +264,23 @@ import {
   useCurrentUserV1,
   useSettingV1Store,
   useUserStore,
+  useWorkspaceV1Store,
 } from "@/store";
 import {
   unknownUser,
   SYSTEM_BOT_USER_NAME,
   ALL_USERS_USER_EMAIL,
-  type ComposedUser,
 } from "@/types";
-import { UpdateUserRequest, UserType } from "@/types/proto/v1/auth_service";
+import {
+  UpdateUserRequest,
+  UserType,
+  type User,
+} from "@/types/proto/v1/auth_service";
 import { displayRoleTitle, hasWorkspacePermissionV2, sortRoles } from "@/utils";
 
 interface LocalState {
   editing: boolean;
-  editingUser?: ComposedUser;
+  editingUser?: User;
   passwordConfirm: string;
   showFeatureModal: boolean;
   showDisable2FAConfirmModal: boolean;
@@ -294,6 +298,8 @@ const settingV1Store = useSettingV1Store();
 const authStore = useAuthStore();
 const currentUserV1 = useCurrentUserV1();
 const userStore = useUserStore();
+const workspaceStore = useWorkspaceV1Store();
+
 const state = reactive<LocalState>({
   editing: false,
   passwordConfirm: "",
@@ -347,6 +353,10 @@ const user = computed(() => {
   return currentUserV1.value;
 });
 
+const userRoles = computed(() => {
+  return [...workspaceStore.getWorkspaceRolesByEmail(user.value.email)];
+});
+
 const passwordMismatch = computed(() => {
   return (
     !isEmpty(state.editingUser?.password) &&
@@ -383,10 +393,7 @@ onMounted(async () => {
   }
 });
 
-const updateUser = <K extends keyof ComposedUser>(
-  field: K,
-  value: ComposedUser[K]
-) => {
+const updateUser = <K extends keyof User>(field: K, value: User[K]) => {
   if (!state.editingUser) return;
 
   state.editingUser[field] = value;

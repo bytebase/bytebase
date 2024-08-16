@@ -3,7 +3,8 @@ import type { useDialog } from "naive-ui";
 import { v4 as uuidv4 } from "uuid";
 import type { InjectionKey, Ref, ComputedRef } from "vue";
 import { inject, provide } from "vue";
-import type { ComposedIssue, ComposedUser, ReviewFlow } from "@/types";
+import type { ComposedIssue, ReviewFlow } from "@/types";
+import { type User } from "@/types/proto/v1/auth_service";
 import type { Issue_Approver_Status } from "@/types/proto/v1/issue_service";
 import type { Plan_Spec, PlanCheckRun } from "@/types/proto/v1/plan_service";
 import type { Stage, Task } from "@/types/proto/v1/rollout_service";
@@ -47,7 +48,7 @@ export type IssueContext = {
   phase: Ref<IssuePhase>;
   isGhostMode: Ref<boolean>;
   isLegacyIssue: Ref<boolean>;
-  releaserCandidates: Ref<ComposedUser[]>;
+  releaserCandidates: Ref<User[]>;
   allowEditIssue: ComputedRef<boolean>;
 
   // review status
