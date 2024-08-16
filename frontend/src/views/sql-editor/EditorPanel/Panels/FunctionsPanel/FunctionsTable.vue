@@ -6,7 +6,7 @@
       size="small"
       :row-key="(func) => func.name"
       :columns="columns"
-      :data="layoutReady ? funcs : []"
+      :data="layoutReady ? filteredFuncs : []"
       :row-props="rowProps"
       :max-height="tableBodyHeight"
       :virtual-scroll="true"
@@ -19,7 +19,7 @@
 
 <script setup lang="tsx">
 import { NDataTable, type DataTableColumn, type DataTableInst } from "naive-ui";
-import { computed, ref, watch } from "vue";
+import { computed, h, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import type { ComposedDatabase } from "@/types";
 import type {
@@ -27,6 +27,7 @@ import type {
   FunctionMetadata,
   SchemaMetadata,
 } from "@/types/proto/v1/database_service";
+import { getHighlightHTMLByRegExp } from "@/utils";
 import { useAutoHeightDataTable } from "../../common";
 import { useEditorPanelContext } from "../../context";
 
@@ -35,6 +36,7 @@ const props = defineProps<{
   database: DatabaseMetadata;
   schema: SchemaMetadata;
   funcs: FunctionMetadata[];
+  keyword?: string;
 }>();
 
 const emit = defineEmits<{
@@ -58,6 +60,14 @@ const vlRef = computed(() => {
 });
 const { viewState } = useEditorPanelContext();
 
+const filteredFuncs = computed(() => {
+  const keyword = props.keyword?.trim().toLowerCase();
+  if (keyword) {
+    return props.funcs.filter((func) => func.name.includes(keyword));
+  }
+  return props.funcs;
+});
+
 const columns = computed(() => {
   const columns: (DataTableColumn<FunctionMetadata> & { hide?: boolean })[] = [
     {
@@ -65,6 +75,11 @@ const columns = computed(() => {
       title: t("schema-editor.database.name"),
       resizable: true,
       className: "truncate",
+      render: (func) => {
+        return h("span", {
+          innerHTML: getHighlightHTMLByRegExp(func.name, props.keyword ?? ""),
+        });
+      },
     },
   ];
   return columns;

@@ -6,7 +6,7 @@
       size="small"
       :row-key="(column) => column.name"
       :columns="columns"
-      :data="layoutReady ? shownColumnList : []"
+      :data="layoutReady ? filteredColumns : []"
       :max-height="tableBodyHeight"
       :virtual-scroll="true"
       :striped="true"
@@ -33,21 +33,17 @@ import type {
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto/v1/database_service";
+import { getHighlightHTMLByRegExp } from "@/utils";
 import { useAutoHeightDataTable } from "../../common";
 import { useEditorPanelContext } from "../../context";
 
-const props = withDefaults(
-  defineProps<{
-    db: ComposedDatabase;
-    database: DatabaseMetadata;
-    schema: SchemaMetadata;
-    table: TableMetadata;
-    filterColumn?: (column: ColumnMetadata) => boolean;
-  }>(),
-  {
-    filterColumn: (_: ColumnMetadata) => true,
-  }
-);
+const props = defineProps<{
+  db: ComposedDatabase;
+  database: DatabaseMetadata;
+  schema: SchemaMetadata;
+  table: TableMetadata;
+  keyword?: string;
+}>();
 
 const { viewState } = useEditorPanelContext();
 const { containerElRef, tableBodyHeight, layoutReady } =
@@ -58,6 +54,16 @@ const vlRef = computed(() => {
     ?.virtualListRef;
 });
 const { t } = useI18n();
+
+const filteredColumns = computed(() => {
+  const keyword = props.keyword?.trim().toLowerCase();
+  if (keyword) {
+    return props.table.columns.filter((column) =>
+      column.name.includes(keyword)
+    );
+  }
+  return props.table.columns;
+});
 
 const primaryKey = computed(() => {
   return props.table.indexes.find((idx) => idx.primary);
@@ -72,7 +78,11 @@ const columns = computed(() => {
       resizable: true,
       minWidth: 140,
       className: "truncate",
-      render: (col) => col.name,
+      render: (column) => {
+        return h("span", {
+          innerHTML: getHighlightHTMLByRegExp(column.name, props.keyword ?? ""),
+        });
+      },
     },
     {
       key: "type",
@@ -165,10 +175,6 @@ const columns = computed(() => {
     },
   ];
   return columns.filter((header) => !header.hide);
-});
-
-const shownColumnList = computed(() => {
-  return props.table.columns.filter(props.filterColumn);
 });
 
 const isColumnPrimaryKey = (column: ColumnMetadata): boolean => {

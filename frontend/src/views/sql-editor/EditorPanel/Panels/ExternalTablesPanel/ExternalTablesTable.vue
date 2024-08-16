@@ -6,7 +6,7 @@
       size="small"
       :row-key="(table) => table.name"
       :columns="columns"
-      :data="layoutReady ? externalTables : []"
+      :data="layoutReady ? filteredExternalTables : []"
       :row-props="rowProps"
       :max-height="tableBodyHeight"
       :virtual-scroll="true"
@@ -19,7 +19,7 @@
 
 <script setup lang="tsx">
 import { NDataTable, type DataTableColumn, type DataTableInst } from "naive-ui";
-import { computed, ref, watch } from "vue";
+import { computed, h, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import type { ComposedDatabase } from "@/types";
 import type {
@@ -27,6 +27,7 @@ import type {
   SchemaMetadata,
   ExternalTableMetadata,
 } from "@/types/proto/v1/database_service";
+import { getHighlightHTMLByRegExp } from "@/utils";
 import { useAutoHeightDataTable } from "../../common";
 import { useEditorPanelContext } from "../../context";
 
@@ -35,6 +36,7 @@ const props = defineProps<{
   database: DatabaseMetadata;
   schema: SchemaMetadata;
   externalTables: ExternalTableMetadata[];
+  keyword?: string;
 }>();
 
 const emit = defineEmits<{
@@ -57,6 +59,15 @@ const vlRef = computed(() => {
   return (dataTableRef.value as any)?.$refs?.mainTableInstRef?.bodyInstRef
     ?.virtualListRef;
 });
+const filteredExternalTables = computed(() => {
+  const keyword = props.keyword?.trim().toLowerCase();
+  if (keyword) {
+    return props.externalTables.filter((externalTable) =>
+      externalTable.name.includes(keyword)
+    );
+  }
+  return props.externalTables;
+});
 
 const columns = computed(() => {
   const columns: (DataTableColumn<ExternalTableMetadata> & {
@@ -67,6 +78,14 @@ const columns = computed(() => {
       title: t("schema-editor.database.name"),
       resizable: true,
       className: "truncate",
+      render: (externalTable) => {
+        return h("span", {
+          innerHTML: getHighlightHTMLByRegExp(
+            externalTable.name,
+            props.keyword ?? ""
+          ),
+        });
+      },
     },
     {
       key: "externalServerName",

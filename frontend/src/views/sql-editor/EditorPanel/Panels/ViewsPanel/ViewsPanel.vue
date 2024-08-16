@@ -7,11 +7,16 @@
       v-show="!metadata.view"
       class="w-full flex flex-row gap-x-2 justify-between items-center"
     >
-      <div class="flex items-center justify-start">
-        <SchemaSelectToolbar />
+      <div class="flex items-center justify-start gap-2">
+        <DatabaseChooser />
+        <SchemaSelectToolbar simple />
       </div>
       <div class="flex items-center justify-end">
-        <DatabaseChooser />
+        <SearchBox
+          v-model:value="state.keyword"
+          size="small"
+          style="width: 10rem"
+        />
       </div>
     </div>
 
@@ -21,6 +26,7 @@
       :database="metadata.database"
       :schema="metadata.schema"
       :views="metadata.schema.views"
+      :keyword="state.keyword"
       @click="select"
     />
 
@@ -40,8 +46,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, reactive } from "vue";
 import { ViewIcon } from "@/components/Icon";
+import { SearchBox } from "@/components/v2";
 import {
   useConnectionOfCurrentSQLEditorTab,
   useDBSchemaV1Store,
@@ -64,6 +71,9 @@ const databaseMetadata = computed(() => {
     database.value.name,
     DatabaseMetadataView.DATABASE_METADATA_VIEW_FULL
   );
+});
+const state = reactive({
+  keyword: "",
 });
 
 const metadata = computed(() => {
