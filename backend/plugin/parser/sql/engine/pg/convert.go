@@ -503,6 +503,7 @@ func convert(node *pgquery.Node, statement base.SingleSQL) (res ast.Node, err er
 			}
 			update.SubqueryList = append(update.SubqueryList, subqueryList...)
 		}
+		update.SetOriginalNode(in)
 		return update, nil
 	case *pgquery.Node_DeleteStmt:
 		deleteStmt := &ast.DeleteStmt{
