@@ -4,13 +4,7 @@
     class="h-full flex flex-col items-stretch justify-between overflow-hidden text-sm p-1 shrink-0"
   >
     <div class="flex flex-col gap-y-1">
-      <TabItem view="CODE" />
-      <TabItem view="INFO" />
-      <TabItem view="TABLES" />
-      <TabItem view="VIEWS" />
-      <TabItem view="FUNCTIONS" />
-      <TabItem view="PROCEDURES" />
-      <TabItem view="DIAGRAM" />
+      <TabItem v-for="view in availableViews" :key="view" :view="view" />
     </div>
   </div>
 </template>
@@ -20,7 +14,7 @@ import { computed } from "vue";
 import { useEditorPanelContext } from "../context";
 import TabItem from "./TabItem.vue";
 
-const { viewState } = useEditorPanelContext();
+const { viewState, availableViews } = useEditorPanelContext();
 
 const show = computed(() => {
   return viewState.value?.view !== undefined;

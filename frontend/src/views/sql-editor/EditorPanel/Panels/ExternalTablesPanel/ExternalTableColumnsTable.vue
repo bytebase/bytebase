@@ -21,17 +21,13 @@ import type { DataTableColumn, DataTableInst } from "naive-ui";
 import { NCheckbox, NDataTable } from "naive-ui";
 import { computed, h, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import {
-  DefaultValueCell,
-  ForeignKeyCell,
-} from "@/components/SchemaEditorLite/Panels/TableColumnEditor/components";
+import { DefaultValueCell } from "@/components/SchemaEditorLite/Panels/TableColumnEditor/components";
 import type { ComposedDatabase } from "@/types";
-import { Engine } from "@/types/proto/v1/common";
 import type {
   ColumnMetadata,
   DatabaseMetadata,
   SchemaMetadata,
-  TableMetadata,
+  ExternalTableMetadata,
 } from "@/types/proto/v1/database_service";
 import { getHighlightHTMLByRegExp } from "@/utils";
 import { useAutoHeightDataTable } from "../../common";
@@ -41,7 +37,7 @@ const props = defineProps<{
   db: ComposedDatabase;
   database: DatabaseMetadata;
   schema: SchemaMetadata;
-  table: TableMetadata;
+  externalTable: ExternalTableMetadata;
   keyword?: string;
 }>();
 
@@ -58,15 +54,11 @@ const { t } = useI18n();
 const filteredColumns = computed(() => {
   const keyword = props.keyword?.trim().toLowerCase();
   if (keyword) {
-    return props.table.columns.filter((column) =>
+    return props.externalTable.columns.filter((column) =>
       column.name.includes(keyword)
     );
   }
-  return props.table.columns;
-});
-
-const primaryKey = computed(() => {
-  return props.table.indexes.find((idx) => idx.primary);
+  return props.externalTable.columns;
 });
 
 const columns = computed(() => {
@@ -108,14 +100,6 @@ const columns = computed(() => {
       },
     },
     {
-      key: "on-update",
-      title: t("schema-editor.column.on-update"),
-      resizable: true,
-      minWidth: 140,
-      maxWidth: 320,
-      hide: engine !== Engine.MYSQL && engine !== Engine.TIDB,
-    },
-    {
       key: "comment",
       title: t("schema-editor.column.comment"),
       resizable: true,
@@ -140,48 +124,9 @@ const columns = computed(() => {
         });
       },
     },
-    {
-      key: "primary",
-      title: t("schema-editor.column.primary"),
-      resizable: true,
-      minWidth: 80,
-      maxWidth: 160,
-      className: "checkbox-cell",
-      render: (column) => {
-        return h(NCheckbox, {
-          checked: isColumnPrimaryKey(column),
-          readonly: true,
-        });
-      },
-    },
-    {
-      key: "foreign-key",
-      title: t("schema-editor.column.foreign-key"),
-      resizable: true,
-      minWidth: 140,
-      maxWidth: 320,
-      className: "text-cell",
-      render: (column) => {
-        return h(ForeignKeyCell, {
-          db: props.db,
-          database: props.database,
-          schema: props.schema,
-          table: props.table,
-          column: column,
-          readonly: true,
-          disabled: true,
-        });
-      },
-    },
   ];
   return columns.filter((header) => !header.hide);
 });
-
-const isColumnPrimaryKey = (column: ColumnMetadata): boolean => {
-  const pk = primaryKey.value;
-  if (!pk) return false;
-  return pk.expressions.includes(column.name);
-};
 
 watch(
   [() => viewState.value?.detail.column, vlRef],

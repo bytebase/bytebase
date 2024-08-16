@@ -3,7 +3,7 @@
     :text="target.column.name"
     :keyword="keyword"
     :highlight="true"
-    :indent="1"
+    :indent="0"
   >
     <template #icon>
       <PrimaryKeyIcon v-if="isPrimaryKey" class="w-4 h-4" />

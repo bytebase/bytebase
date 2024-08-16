@@ -1,18 +1,22 @@
+import { head } from "lodash-es";
 import {
   computed,
   inject,
   provide,
   reactive,
+  watch,
   type InjectionKey,
   type Ref,
 } from "vue";
+import { useConnectionOfCurrentSQLEditorTab } from "@/store";
 import type { SQLEditorTab } from "@/types";
+import { instanceV1SupportsExternalTable } from "@/utils";
 import {
   defaultViewState,
   typeToView,
+  type EditorPanelView,
   type EditorPanelViewState as ViewState,
 } from "../types";
-import { useScroll } from "./scroll";
 
 const KEY = Symbol(
   "bb.sql-editor.editor-panel"
@@ -24,10 +28,26 @@ export const provideEditorPanelContext = (base: {
   tab: Ref<SQLEditorTab | undefined>;
 }) => {
   const { tab } = base;
+  const { instance } = useConnectionOfCurrentSQLEditorTab();
 
   const viewState = computed(() => {
     if (!tab.value) return undefined;
     return viewStateByTab.get(tab.value.id) ?? defaultViewState();
+  });
+  const availableViews = computed(() => {
+    const views: EditorPanelView[] = [
+      "CODE",
+      "INFO",
+      "TABLES",
+      "VIEWS",
+      "FUNCTIONS",
+      "PROCEDURES",
+    ];
+    if (instanceV1SupportsExternalTable(instance.value)) {
+      views.push("EXTERNAL_TABLES");
+    }
+    views.push("DIAGRAM");
+    return views;
   });
 
   const selectedSchemaName = computed({
@@ -51,11 +71,23 @@ export const provideEditorPanelContext = (base: {
     viewStateByTab.set(tab.value.id, curr);
   };
 
+  watch(
+    [() => viewState.value?.view, availableViews],
+    ([view, availableViews]) => {
+      if (view && !availableViews.includes(view)) {
+        updateViewState({
+          view: head(availableViews),
+        });
+      }
+    },
+    { immediate: true }
+  );
+
   const context = {
     ...base,
-    ...useScroll(viewState),
     viewState,
     selectedSchemaName,
+    availableViews,
     updateViewState,
     typeToView,
   };

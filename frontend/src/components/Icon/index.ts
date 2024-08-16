@@ -1,6 +1,8 @@
 import ColumnIcon from "./ColumnIcon.vue";
 import DatabaseIcon from "./DatabaseIcon.vue";
 import EngineIcon from "./EngineIcon.vue";
+import ExternalTableIcon from "./ExternalTableIcon.vue";
+import ForeignKeyIcon from "./ForeignKeyIcon.vue";
 import FunctionIcon from "./FunctionIcon.vue";
 import IndexIcon from "./IndexIcon.vue";
 import PrimaryKeyIcon from "./PrimaryKeyIcon.vue";
@@ -17,6 +19,7 @@ export {
   DatabaseIcon,
   SchemaIcon,
   TableIcon,
+  ExternalTableIcon,
   ViewIcon,
   ProcedureIcon,
   FunctionIcon,
@@ -24,4 +27,5 @@ export {
   PrimaryKeyIcon,
   ColumnIcon,
   TablePartitionIcon,
+  ForeignKeyIcon,
 };

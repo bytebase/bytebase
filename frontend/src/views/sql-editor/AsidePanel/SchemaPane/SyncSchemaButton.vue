@@ -2,9 +2,9 @@
   <NPopover :disabled="disabled" placement="bottom-start">
     <template #trigger>
       <NButton
-        size="small"
         style="--n-padding: 0 5px"
         :disabled="disabled || isSyncing"
+        v-bind="$attrs"
         @click="syncNow"
       >
         <template #icon>
@@ -40,6 +40,10 @@ import {
   useDatabaseV1Store,
 } from "@/store";
 import { UNKNOWN_ID } from "@/types";
+
+defineOptions({
+  inheritAttrs: false,
+});
 
 const { database } = useConnectionOfCurrentSQLEditorTab();
 

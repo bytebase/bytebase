@@ -1,7 +1,9 @@
 <template>
-  <div class="gap-y-1 h-full flex flex-col relative">
+  <div
+    class="gap-y-1 h-full flex flex-col items-stretch relative overflow-hidden"
+  >
     <div class="px-1 flex flex-row gap-1">
-      <div class="flex-1">
+      <div class="flex-1 overflow-hidden">
         <SearchBox
           v-model:value="searchPattern"
           size="small"
@@ -9,7 +11,11 @@
         />
       </div>
       <div class="shrink-0 flex items-center">
-        <SyncSchemaButton :database="database" :metadata="metadata" />
+        <SyncSchemaButton
+          :database="database"
+          :metadata="metadata"
+          size="small"
+        />
       </div>
     </div>
 
@@ -21,18 +27,18 @@
       <NTree
         v-if="tree"
         ref="treeRef"
-        :default-expanded-keys="defaultExpandedKeys"
+        v-model:expanded-keys="expandedKeys"
         :selected-keys="selectedKeys"
         :block-line="true"
         :data="tree"
         :show-irrelevant-nodes="false"
         :pattern="mounted ? searchPattern : ''"
-        :expand-on-click="true"
         :virtual-scroll="true"
         :node-props="nodeProps"
         :theme-overrides="{ nodeHeight: '21px' }"
         :render-label="renderLabel"
       />
+      <NEmpty v-else class="mt-[4rem]" />
     </div>
 
     <NDropdown
@@ -49,8 +55,6 @@
 
     <MaskSpinner v-if="isFetchingMetadata" class="!bg-white/75" />
 
-    <HoverPanel :offset-x="4" :offset-y="0" :margin="4" />
-
     <BBModal :show="!!schemaViewer" @close="schemaViewer = undefined">
       <template v-if="schemaViewer" #title>
         <RichDatabaseName :database="schemaViewer.database" />
@@ -64,11 +68,12 @@
   </div>
 </template>
 
-<script setup lang="tsx">
+<script setup lang="ts">
 import { computedAsync, useElementSize, useMounted } from "@vueuse/core";
-import { NDropdown, NTree, useDialog, type TreeOption } from "naive-ui";
+import { uniq } from "lodash-es";
+import { NDropdown, NEmpty, NTree, type TreeOption } from "naive-ui";
 import { storeToRefs } from "pinia";
-import { computed, nextTick, ref, watch } from "vue";
+import { computed, h, nextTick, ref, watch } from "vue";
 import { BBModal } from "@/bbkit";
 import TableSchemaViewer from "@/components/TableSchemaViewer.vue";
 import MaskSpinner from "@/components/misc/MaskSpinner.vue";
@@ -80,17 +85,16 @@ import {
 } from "@/store";
 import { UNKNOWN_ID } from "@/types";
 import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
-import { findAncestor, isDescendantOf } from "@/utils";
+import { extractDatabaseResourceName, isDescendantOf } from "@/utils";
 import { useSQLEditorContext } from "../../context";
-import { provideHoverStateContext } from "./HoverPanel";
-import HoverPanel from "./HoverPanel";
 import SyncSchemaButton from "./SyncSchemaButton.vue";
 import { Label } from "./TreeNode";
-import { selectAllFromTableOrView, useDropdown } from "./actions";
+import { useDropdown, useActions } from "./actions";
 import {
   type NodeTarget,
   type TreeNode,
   buildDatabaseSchemaTree,
+  ExpandableNodeTypes,
 } from "./common";
 
 const mounted = useMounted();
@@ -105,12 +109,6 @@ const { height: treeContainerHeight } = useElementSize(
 const searchPattern = ref("");
 const { schemaViewer } = useSQLEditorContext();
 const {
-  state: hoverState,
-  position: hoverPosition,
-  update: updateHoverState,
-} = provideHoverStateContext();
-const $d = useDialog();
-const {
   show: showDropdown,
   context: dropdownContext,
   position: dropdownPosition,
@@ -118,6 +116,7 @@ const {
   handleSelect: handleDropdownSelect,
   handleClickoutside: handleDropdownClickoutside,
 } = useDropdown();
+const { selectAllFromTableOrView, viewDetail } = useActions();
 const { currentTab } = storeToRefs(useSQLEditorTabStore());
 const { connection, database } = useConnectionOfCurrentSQLEditorTab();
 const isFetchingMetadata = ref(false);
@@ -136,12 +135,35 @@ const metadata = computedAsync(
     evaluating: isFetchingMetadata,
   }
 );
-const tree = computed(() => {
-  if (isFetchingMetadata.value) return null;
-  if (!metadata.value) return null;
-  return buildDatabaseSchemaTree(database.value, metadata.value);
+// const tree = computed(() => {
+//   if (isFetchingMetadata.value) return null;
+//   if (!metadata.value) return null;
+//   return buildDatabaseSchemaTree(database.value, metadata.value);
+// });
+const tree = ref<TreeNode[]>();
+
+const expandedKeys = computed({
+  get() {
+    const treeState = currentTab.value?.treeState;
+    if (!treeState) return [];
+    if (treeState.database !== database.value.name) return [];
+    return treeState.keys;
+  },
+  set(keys) {
+    if (!currentTab.value) return;
+    const treeState = currentTab.value.treeState;
+    if (treeState.database !== database.value.name) return;
+    treeState.keys = keys;
+  },
 });
-const defaultExpandedKeys = computed(() => {
+
+const upsertExpandedKeys = (keys: string[]) => {
+  const curr = expandedKeys.value;
+  if (!curr) return;
+  expandedKeys.value = uniq([...curr, ...keys]);
+};
+
+const defaultExpandedKeys = () => {
   if (!tree.value) return [];
   const keys: string[] = [];
   const collect = (node: TreeNode) => {
@@ -161,75 +183,28 @@ const defaultExpandedKeys = computed(() => {
   };
   walk(tree.value[0]);
   return keys;
-});
+};
 const nodeProps = ({ option }: { option: TreeOption }) => {
   const node = option as any as TreeNode;
   return {
-    onClick(e: MouseEvent) {
+    onclick(e: MouseEvent) {
       if (node.disabled) return;
 
+      // if (isDescendantOf(e.target as Element, ".n-tree-node-switcher")) {
+      //   toggleExpanded(node);
+      //   return;
+      // }
+
       if (isDescendantOf(e.target as Element, ".n-tree-node-content")) {
-        const { type, target } = node.meta;
-        // Check if clicked on the content part.
-        // And ignore the fold/unfold arrow.
-        const tab = currentTab.value;
-        if (tab) {
-          if (type === "table" || type === "column") {
-            if ("table" in target) {
-              const { schema, table } = target as NodeTarget<"table">;
-              tab.connection.schema = schema.name;
-              tab.connection.table = table.name;
-            }
-          }
-        }
+        // handleClick(node);
+        handleSingleClickNode(node);
       }
     },
-    ondblclick() {
-      if (node.meta.type === "table" || node.meta.type === "view") {
-        selectAllFromTableOrView($d, node);
+    ondblclick(e: MouseEvent) {
+      if (node.disabled) return;
+      if (isDescendantOf(e.target as Element, ".n-tree-node-content")) {
+        handleDoubleClickNode(node);
       }
-    },
-    onmouseenter(e: MouseEvent) {
-      const { type } = node.meta;
-      if (
-        type === "table" ||
-        type === "external-table" ||
-        type === "column" ||
-        type === "view" ||
-        type === "partition-table" ||
-        type === "procedure" ||
-        type === "function"
-      ) {
-        const target = node.meta.target as NodeTarget<
-          | "table"
-          | "external-table"
-          | "column"
-          | "view"
-          | "partition-table"
-          | "procedure"
-          | "function"
-        >;
-        if (hoverState.value) {
-          updateHoverState(target, "before", 0 /* overrideDelay */);
-        } else {
-          updateHoverState(target, "before");
-        }
-        nextTick().then(() => {
-          // Find the node element and put the database panel to the right corner
-          // of the node
-          const wrapper = findAncestor(e.target as HTMLElement, ".n-tree-node");
-          if (!wrapper) {
-            updateHoverState(undefined, "after", 0 /* overrideDelay */);
-            return;
-          }
-          const bounding = wrapper.getBoundingClientRect();
-          hoverPosition.value.x = bounding.right;
-          hoverPosition.value.y = bounding.top;
-        });
-      }
-    },
-    onmouseleave() {
-      updateHoverState(undefined, "after");
     },
     oncontextmenu(e: MouseEvent) {
       e.preventDefault();
@@ -253,7 +228,8 @@ const nodeProps = ({ option }: { option: TreeOption }) => {
 // dynamic render the highlight keywords
 const renderLabel = ({ option }: { option: TreeOption }) => {
   const node = option as any as TreeNode;
-  return <Label node={node} keyword={searchPattern.value} />;
+  const keyword = searchPattern.value;
+  return h(Label, { node, keyword });
 };
 
 const selectedKeys = computed(() => {
@@ -264,10 +240,52 @@ const selectedKeys = computed(() => {
   return [`${db.name}/schemas/${schema}/tables/${table}`];
 });
 
-watch(tree, () => {
-  showDropdown.value = false;
-  dropdownContext.value = undefined;
-});
+// bottom-up recursively
+const expandNode = (node: TreeNode) => {
+  const keysToExpand: string[] = [];
+  const walk = (node: TreeNode | undefined) => {
+    if (!node) return;
+    if (ExpandableNodeTypes.includes(node.meta.type)) {
+      keysToExpand.push(node.key);
+    }
+    walk(node.parent);
+  };
+  walk(node);
+  upsertExpandedKeys(keysToExpand);
+};
+
+const handleSingleClickNode = (node: TreeNode) => {
+  expandNode(node);
+  viewDetail(node);
+};
+const handleDoubleClickNode = (node: TreeNode) => {
+  if (node.meta.type === "table" || node.meta.type === "view") {
+    selectAllFromTableOrView(node);
+  }
+};
+
+watch(
+  [isFetchingMetadata, metadata],
+  ([isFetchingMetadata, metadata]) => {
+    if (isFetchingMetadata || !metadata) {
+      tree.value = undefined;
+      return;
+    }
+    tree.value = buildDatabaseSchemaTree(database.value, metadata);
+
+    const tab = currentTab.value;
+    if (tab) {
+      const { database } = extractDatabaseResourceName(metadata.name);
+      if (database !== tab.treeState.database) {
+        tab.treeState.database = database;
+        tab.treeState.keys = defaultExpandedKeys();
+      }
+    }
+  },
+  {
+    immediate: true,
+  }
+);
 </script>
 
 <style lang="postcss" scoped>

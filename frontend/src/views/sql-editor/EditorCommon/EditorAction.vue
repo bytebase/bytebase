@@ -1,6 +1,5 @@
 <template>
   <div
-    ref="containerRef"
     class="w-full flex flex-wrap gap-y-2 justify-between sm:items-center p-2 border-b bg-white"
     v-bind="$attrs"
   >
@@ -9,67 +8,92 @@
     >
       <NButtonGroup>
         <NButton
+          :disabled="!allowQuery"
           type="primary"
           size="small"
-          :disabled="!allowQuery"
+          style="--n-padding: 0 3px 0 5px"
           @click="handleRunQuery"
         >
           <template #icon>
-            <mdi:play class="-ml-1.5" />
+            <PlayIcon class="w-4 h-4 !fill-current" />
           </template>
-          <span>
-            {{
-              showRunSelected ? $t("sql-editor.run-selected") : $t("common.run")
-            }}
-          </span>
-
-          <span v-show="showShortcutText" class="ml-1">
-            ({{ keyboardShortcutStr("cmd_or_ctrl+⏎") }})
-          </span>
+          <template #default>
+            <div class="flex items-center gap-1">
+              <span>
+                {{
+                  showRunSelected
+                    ? $t("sql-editor.run-selected")
+                    : $t("common.run")
+                }}
+              </span>
+              <div>
+                <span>(</span>
+                <span>limit&nbsp;{{ resultRowsLimit }}</span>
+                <span>)</span>
+              </div>
+            </div>
+          </template>
         </NButton>
         <QueryContextSettingPopover
-          v-if="showQueryContextSettingPopover && allowQuery"
+          :disabled="!showQueryContextSettingPopover || !allowQuery"
         />
       </NButtonGroup>
-      <NButton size="small" :disabled="!allowQuery" @click="handleExplainQuery">
-        <mdi:play class="-ml-1.5" />
-        <span>Explain</span>
-        <span v-show="showShortcutText" class="ml-1">
-          ({{ keyboardShortcutStr("cmd_or_ctrl+E") }})
-        </span>
-      </NButton>
-      <NButton
-        v-if="showClearScreen"
-        size="small"
-        :disabled="queryList.length <= 1 || isExecutingSQL"
-        @click="handleClearScreen"
-      >
-        <span>{{ $t("sql-editor.clear-screen") }}</span>
-        <span v-show="showShortcutText" class="ml-1">
-          ({{ keyboardShortcutStr("shift+opt_or_alt+C") }})
-        </span>
-      </NButton>
-      <ResultLimitSelect />
-      <QueryModeSelect v-if="showQueryModeSelect" :disabled="isExecutingSQL" />
-    </div>
-    <div
-      class="action-right gap-x-2 flex overflow-x-auto sm:overflow-x-hidden sm:justify-end items-center"
-    >
-      <AdminModeButton :size="'small'" />
+      <NPopover placement="bottom">
+        <template #trigger>
+          <NButton
+            size="small"
+            :disabled="!allowQuery"
+            style="--n-padding: 0 5px"
+            @click="handleExplainQuery"
+          >
+            <template #icon>
+              <PlayIcon class="w-4 h-4" />
+            </template>
+          </NButton>
+        </template>
+        <template #default>
+          <div class="flex items-center gap-1">
+            <span>Explain</span>
+            <span>({{ keyboardShortcutStr("cmd_or_ctrl+E") }})</span>
+          </div>
+        </template>
+      </NPopover>
+
+      <NPopover placement="bottom">
+        <template #trigger>
+          <AdminModeButton
+            size="small"
+            :hide-text="true"
+            style="--n-padding: 0 5px"
+          />
+        </template>
+        <template #default>
+          <span>{{ $t("sql-editor.admin-mode.self") }}</span>
+        </template>
+      </NPopover>
 
       <template v-if="showSheetsFeature">
-        <NButton
-          :strong="allowSave"
-          size="small"
-          :disabled="!allowSave"
-          @click="handleClickSave"
-        >
-          <carbon:save class="-ml-1" />
-          <span class="ml-1">{{ $t("common.save") }}</span>
-          <span v-show="showShortcutText" class="ml-1">
-            ({{ keyboardShortcutStr("cmd_or_ctrl+S") }})
-          </span>
-        </NButton>
+        <NPopover placement="bottom">
+          <template #trigger>
+            <NButton
+              :strong="allowSave"
+              :disabled="!allowSave"
+              size="small"
+              style="--n-padding: 0 5px"
+              @click="handleClickSave"
+            >
+              <template #icon>
+                <SaveIcon class="w-4 h-4" />
+              </template>
+            </NButton>
+          </template>
+          <template #default>
+            <div class="flex items-center gap-1">
+              <span>{{ $t("common.save") }}</span>
+              <span>({{ keyboardShortcutStr("cmd_or_ctrl+S") }})</span>
+            </div>
+          </template>
+        </NPopover>
         <NPopover
           v-if="!disallowShareWorksheet"
           trigger="click"
@@ -78,24 +102,39 @@
           :disabled="!hasSharedSQLScriptFeature"
         >
           <template #trigger>
-            <NButton
-              :strong="allowShare"
-              size="small"
-              :disabled="!allowShare"
-              @click="handleShareButtonClick"
-            >
-              <carbon:share class="" /> &nbsp; {{ $t("common.share") }}
-              <FeatureBadge
-                :feature="'bb.feature.shared-sql-script'"
-                custom-class="ml-2"
-              />
-            </NButton>
+            <NPopover placement="bottom" trigger="hover">
+              <template #trigger>
+                <NButton
+                  :strong="allowShare"
+                  :disabled="!allowShare"
+                  size="small"
+                  style="--n-padding: 0 5px"
+                  @click="handleShareButtonClick"
+                >
+                  <template #icon>
+                    <Share2Icon class="w-4 h-4" />
+                  </template>
+                </NButton>
+              </template>
+              <template #default>
+                <div class="flex items-center gap-1">
+                  <span>{{ $t("common.share") }}</span>
+                  <FeatureBadge feature="bb.feature.shared-sql-script" />
+                </div>
+              </template>
+            </NPopover>
           </template>
           <template #default>
             <SharePopover />
           </template>
         </NPopover>
       </template>
+    </div>
+    <div
+      class="action-right gap-x-2 flex overflow-x-auto sm:overflow-x-hidden sm:justify-end items-center"
+    >
+      <BatchQueryDatabasesSelector />
+      <DatabaseChooser />
     </div>
   </div>
 
@@ -107,10 +146,10 @@
 </template>
 
 <script lang="ts" setup>
-import { useElementSize } from "@vueuse/core";
+import { PlayIcon, SaveIcon, Share2Icon } from "lucide-vue-next";
 import { NButtonGroup, NButton, NPopover } from "naive-ui";
 import { storeToRefs } from "pinia";
-import { computed, reactive, ref } from "vue";
+import { computed, reactive } from "vue";
 import { FeatureBadge, FeatureModal } from "@/components/FeatureGuard";
 import {
   useUIStateStore,
@@ -119,14 +158,15 @@ import {
   useConnectionOfCurrentSQLEditorTab,
   useWorkSheetStore,
   useAppFeature,
+  useSQLEditorStore,
 } from "@/store";
-import type { FeatureType, SQLEditorQueryParams } from "@/types";
+import { type FeatureType, type SQLEditorQueryParams } from "@/types";
 import { keyboardShortcutStr } from "@/utils";
 import { useSQLEditorContext } from "../context";
 import AdminModeButton from "./AdminModeButton.vue";
+import BatchQueryDatabasesSelector from "./BatchQueryDatabasesSelector.vue";
+import DatabaseChooser from "./DatabaseChooser.vue";
 import QueryContextSettingPopover from "./QueryContextSettingPopover.vue";
-import QueryModeSelect from "./QueryModeSelect.vue";
-import ResultLimitSelect from "./ResultLimitSelect.vue";
 import SharePopover from "./SharePopover.vue";
 
 interface LocalState {
@@ -145,9 +185,8 @@ const emit = defineEmits<{
 const state = reactive<LocalState>({});
 const tabStore = useSQLEditorTabStore();
 const uiStateStore = useUIStateStore();
-const { standardModeEnabled, events } = useSQLEditorContext();
-const containerRef = ref<HTMLDivElement>();
-const { width: containerWidth } = useElementSize(containerRef);
+const { events } = useSQLEditorContext();
+const { resultRowsLimit } = storeToRefs(useSQLEditorStore());
 const hasSharedSQLScriptFeature = featureToRef("bb.feature.shared-sql-script");
 const disallowShareWorksheet = useAppFeature(
   "bb.feature.sql-editor.disallow-share-worksheet"
@@ -224,37 +263,12 @@ const allowShare = computed(() => {
   return true;
 });
 
-const showClearScreen = computed(() => {
-  return currentTab.value?.mode === "ADMIN";
-});
-
-const queryList = computed(() => {
-  const tab = currentTab.value;
-  if (!tab) {
-    return [];
-  }
-  // TODO: refactor WebTerminal store types
-  // return unref(webTerminalStore.getQueryStateByTab(tab).queryItemList) || [];
-  return [];
-});
-
 const showQueryContextSettingPopover = computed(() => {
   const tab = currentTab.value;
   if (!tab) {
     return false;
   }
   return instance.value && tab.mode !== "ADMIN";
-});
-
-const showQueryModeSelect = computed(() => {
-  const tab = currentTab.value;
-  if (!tab) {
-    return false;
-  }
-  if (!standardModeEnabled.value) {
-    return false;
-  }
-  return tab.mode !== "ADMIN";
 });
 
 const handleRunQuery = () => {
@@ -289,10 +303,6 @@ const handleExplainQuery = () => {
   });
 };
 
-const handleClearScreen = () => {
-  emit("clear-screen");
-};
-
 const handleClickSave = () => {
   const tab = currentTab.value;
   if (!tab) {
@@ -308,8 +318,4 @@ const handleShareButtonClick = () => {
     state.requiredFeatureName = "bb.feature.shared-sql-script";
   }
 };
-
-const showShortcutText = computed(() => {
-  return containerWidth.value > 800;
-});
 </script>

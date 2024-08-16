@@ -2,7 +2,7 @@ import type { MaybeRef } from "@vueuse/core";
 import { watchThrottled } from "@vueuse/core";
 import { head, pick, uniqBy } from "lodash-es";
 import { defineStore, storeToRefs } from "pinia";
-import { computed, reactive, unref } from "vue";
+import { computed, nextTick, reactive, ref, unref, watch } from "vue";
 import type {
   SQLEditorConnection,
   SQLEditorTreeNodeMeta,
@@ -41,6 +41,7 @@ const PERSISTENT_TAB_FIELDS = [
   "worksheet",
   "status",
   "batchQueryContext",
+  "treeState",
 ] as const;
 type PersistentTab = Pick<SQLEditorTab, (typeof PERSISTENT_TAB_FIELDS)[number]>;
 
@@ -310,6 +311,20 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
     return isDisconnectedSQLEditorTab(tab);
   });
 
+  const isSwitchingTab = ref(false);
+  watch(
+    currentTabId,
+    () => {
+      isSwitchingTab.value = true;
+      nextTick(() => {
+        isSwitchingTab.value = false;
+      });
+    },
+    {
+      immediate: true,
+    }
+  );
+
   return {
     tabIdList,
     tabList,
@@ -327,6 +342,7 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
     tabIdListMapByProject,
     currentTabIdMapByProject,
     isDisconnected,
+    isSwitchingTab,
   };
 });
 
