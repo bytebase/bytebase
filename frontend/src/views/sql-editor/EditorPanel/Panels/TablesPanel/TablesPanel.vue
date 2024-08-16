@@ -3,7 +3,17 @@
     v-if="metadata?.schema"
     class="px-2 py-2 gap-y-2 h-full overflow-hidden flex flex-col"
   >
-    <SchemaSelectToolbar v-show="!metadata.table" />
+    <div
+      v-show="!metadata.table"
+      class="w-full flex flex-row gap-x-2 justify-between items-center"
+    >
+      <div class="flex items-center justify-start">
+        <SchemaSelectToolbar />
+      </div>
+      <div class="flex items-center justify-end">
+        <DatabaseChooser />
+      </div>
+    </div>
     <TablesTable
       v-show="!metadata.table"
       :db="database"
@@ -14,7 +24,9 @@
     />
 
     <template v-if="metadata.table">
-      <div class="w-full flex flex-row gap-x-2 justify-start items-center">
+      <div
+        class="w-full h-[28px] flex flex-row gap-x-2 justify-start items-center"
+      >
         <NButton text @click="deselect">
           <ChevronLeftIcon class="w-5 h-5" />
           <div class="flex items-center gap-1">
@@ -24,7 +36,6 @@
         </NButton>
       </div>
       <ColumnsTable
-        v-if="metadata.table"
         :db="database"
         :database="metadata.database"
         :schema="metadata.schema"
@@ -49,6 +60,7 @@ import {
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto/v1/database_service";
+import DatabaseChooser from "@/views/sql-editor/EditorCommon/DatabaseChooser.vue";
 import { useEditorPanelContext } from "../../context";
 import { SchemaSelectToolbar } from "../common";
 import ColumnsTable from "./ColumnsTable.vue";

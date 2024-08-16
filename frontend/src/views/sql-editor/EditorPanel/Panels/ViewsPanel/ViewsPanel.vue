@@ -3,7 +3,18 @@
     v-if="metadata?.schema"
     class="px-2 py-2 gap-y-2 h-full overflow-hidden flex flex-col"
   >
-    <SchemaSelectToolbar v-show="!metadata.view" />
+    <div
+      v-show="!metadata.view"
+      class="w-full flex flex-row gap-x-2 justify-between items-center"
+    >
+      <div class="flex items-center justify-start">
+        <SchemaSelectToolbar />
+      </div>
+      <div class="flex items-center justify-end">
+        <DatabaseChooser />
+      </div>
+    </div>
+
     <ViewsTable
       v-show="!metadata.view"
       :db="database"
@@ -41,6 +52,7 @@ import {
   ViewMetadata,
   SchemaMetadata,
 } from "@/types/proto/v1/database_service";
+import DatabaseChooser from "@/views/sql-editor/EditorCommon/DatabaseChooser.vue";
 import { useEditorPanelContext } from "../../context";
 import { SchemaSelectToolbar, CodeViewer } from "../common";
 import ViewsTable from "./ViewsTable.vue";

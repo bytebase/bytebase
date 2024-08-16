@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full flex flex-row gap-4 justify-between items-center">
+  <div class="w-full h-[28px] flex flex-row gap-4 justify-between items-center">
     <NButton text @click="$emit('back')">
       <ChevronLeftIcon class="w-5 h-5" />
       <div class="flex items-center gap-1">
