@@ -70,7 +70,7 @@
 
 <script setup lang="ts">
 import { computedAsync, useElementSize, useMounted } from "@vueuse/core";
-import { uniq, without } from "lodash-es";
+import { uniq } from "lodash-es";
 import { NDropdown, NEmpty, NTree, type TreeOption } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { computed, h, nextTick, ref, watch } from "vue";
@@ -78,7 +78,6 @@ import { BBModal } from "@/bbkit";
 import TableSchemaViewer from "@/components/TableSchemaViewer.vue";
 import MaskSpinner from "@/components/misc/MaskSpinner.vue";
 import { RichDatabaseName, SearchBox } from "@/components/v2";
-import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import {
   useConnectionOfCurrentSQLEditorTab,
   useDBSchemaV1Store,
@@ -95,7 +94,6 @@ import {
   type NodeTarget,
   type TreeNode,
   buildDatabaseSchemaTree,
-  useClickNode,
   ExpandableNodeTypes,
 } from "./common";
 
@@ -119,7 +117,6 @@ const {
   handleClickoutside: handleDropdownClickoutside,
 } = useDropdown();
 const { selectAllFromTableOrView, viewDetail } = useActions();
-const { events: clickEvents, handleClick } = useClickNode();
 const { currentTab } = storeToRefs(useSQLEditorTabStore());
 const { connection, database } = useConnectionOfCurrentSQLEditorTab();
 const isFetchingMetadata = ref(false);
@@ -165,11 +162,6 @@ const upsertExpandedKeys = (keys: string[]) => {
   if (!curr) return;
   expandedKeys.value = uniq([...curr, ...keys]);
 };
-const removeExpandedKeys = (keys: string[]) => {
-  const curr = expandedKeys.value;
-  if (!curr) return;
-  expandedKeys.value = without(curr, ...keys);
-};
 
 const defaultExpandedKeys = () => {
   if (!tree.value) return [];
@@ -195,29 +187,23 @@ const defaultExpandedKeys = () => {
 const nodeProps = ({ option }: { option: TreeOption }) => {
   const node = option as any as TreeNode;
   return {
-    onClick(e: MouseEvent) {
+    onclick(e: MouseEvent) {
       if (node.disabled) return;
 
-      if (isDescendantOf(e.target as Element, ".n-tree-node-switcher")) {
-        toggleExpanded(node);
-        return;
-      }
+      // if (isDescendantOf(e.target as Element, ".n-tree-node-switcher")) {
+      //   toggleExpanded(node);
+      //   return;
+      // }
 
       if (isDescendantOf(e.target as Element, ".n-tree-node-content")) {
-        handleClick(node);
-        // const { type, target } = node.meta;
-        // // Check if clicked on the content part.
-        // // And ignore the fold/unfold arrow.
-        // const tab = currentTab.value;
-        // if (tab) {
-        //   if (type === "table" || type === "column") {
-        //     if ("table" in target) {
-        //       const { schema, table } = target as NodeTarget<"table">;
-        //       tab.connection.schema = schema.name;
-        //       tab.connection.table = table.name;
-        //     }
-        //   }
-        // }
+        // handleClick(node);
+        handleSingleClickNode(node);
+      }
+    },
+    ondblclick(e: MouseEvent) {
+      if (node.disabled) return;
+      if (isDescendantOf(e.target as Element, ".n-tree-node-content")) {
+        handleDoubleClickNode(node);
       }
     },
     oncontextmenu(e: MouseEvent) {
@@ -267,37 +253,16 @@ const expandNode = (node: TreeNode) => {
   walk(node);
   upsertExpandedKeys(keysToExpand);
 };
-// top-down recursively
-const collapseNode = (node: TreeNode) => {
-  const keysToCollapse: string[] = [];
-  const walk = (node: TreeNode) => {
-    if (!ExpandableNodeTypes.includes(node.meta.type)) return;
-    keysToCollapse.push(node.key);
-    node.children?.forEach((child: TreeNode) => {
-      walk(child);
-    });
-  };
-  walk(node);
-  removeExpandedKeys(keysToCollapse);
-};
 
-const toggleExpanded = (node: TreeNode) => {
-  if (expandedKeys.value.includes(node.key)) {
-    collapseNode(node);
-  } else {
-    expandNode(node);
-  }
-};
-
-useEmitteryEventListener(clickEvents, "click", ({ node }) => {
+const handleSingleClickNode = (node: TreeNode) => {
   expandNode(node);
   viewDetail(node);
-});
-useEmitteryEventListener(clickEvents, "double-click", ({ node }) => {
+};
+const handleDoubleClickNode = (node: TreeNode) => {
   if (node.meta.type === "table" || node.meta.type === "view") {
     selectAllFromTableOrView(node);
   }
-});
+};
 
 watch(
   [isFetchingMetadata, metadata],

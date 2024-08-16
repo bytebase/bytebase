@@ -1,6 +1,5 @@
-import Emittery from "emittery";
 import type { TreeOption } from "naive-ui";
-import { ref, type RenderFunction } from "vue";
+import { type RenderFunction } from "vue";
 import { t } from "@/plugins/i18n";
 import type { ComposedDatabase } from "@/types";
 import type {
@@ -563,58 +562,4 @@ export const buildDatabaseSchemaTree = (
 
   console.error("should never reach this line");
   return [];
-};
-
-export const useClickNode = () => {
-  // NTree triggers "click" event whenever "dblclick" event happens
-  // This is weird
-  // So we need to take fully control of the click events
-
-  const TIMEOUT = 250;
-  const pending = ref<{
-    node: TreeNode;
-    timeout: ReturnType<typeof setTimeout>;
-  }>();
-  const events = new Emittery<{
-    click: { node: TreeNode };
-    "double-click": { node: TreeNode };
-  }>();
-
-  const clear = () => {
-    if (!pending.value) return;
-    clearTimeout(pending.value.timeout);
-    pending.value = undefined;
-  };
-  const prepare = (node: TreeNode) => {
-    const callback = () => {
-      events.emit("click", { node });
-      clear();
-    };
-    clear();
-    pending.value = {
-      node,
-      timeout: setTimeout(callback, TIMEOUT),
-    };
-  };
-
-  const handleClick = (node: TreeNode) => {
-    if (pending.value) {
-      if (pending.value.node.key === node.key) {
-        // click the same node again very quickly
-        // should process double click
-        clear();
-        events.emit("double-click", { node });
-      } else {
-        // click another node very quickly
-        // trigger the first clicking's node as single click
-        // and store the second one
-        events.emit("click", { node: pending.value.node });
-        prepare(node);
-      }
-    } else {
-      prepare(node);
-    }
-  };
-
-  return { events, handleClick };
 };
