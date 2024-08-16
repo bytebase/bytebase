@@ -23,6 +23,7 @@
     "activity": "Activity",
     "activities": "Activities",
     "sign-in": "Sign in",
+    "sign-in-as-admin": "Sign in as administrator",
     "sign-up": "Sign up",
     "email": "Email",
     "username": "Username",
@@ -650,13 +651,18 @@
           "enable": "Enable watermark"
         },
         "disallow-signup": {
-          "enable": "Disable self-service signup",
-          "description": "Once disabled, users cannot self-service signup and can only be invited by the workspace admin."
+          "enable": "Disallow self-service signup",
+          "description": "Users cannot self-service signup and can only be invited by the workspace admin."
         },
         "require-2fa": {
           "enable": "Require two-factor authentication for all users",
-          "description": "When enabled, users who do not have two-factor authentication enabled for their personal accounts will be forced to configure.",
+          "description": "Users who do not have two-factor authentication enabled for their personal accounts will be forced to configure.",
           "need-all-user-2fa-enabled": "Requires all users to enable 2FA first. There are still {count} users who have not enabled 2FA: {users}"
+        },
+        "disallow-password-signin": {
+          "enable": "Disallow signin with email&password",
+          "description": "Users cannot sign in with email&password, only SSO is allowed.",
+          "require-sso-setup": "A functional SSO must be created first, or users won't be able to log in."
         },
         "network": "Network",
         "external-url": {
@@ -1102,14 +1108,6 @@
           },
           "description": "Search by the issue approval status",
           "title": "Approval Status"
-        },
-        "project-assigned": {
-          "title": "Project Assigned",
-          "description": "Search by databases that are assigned to a project.",
-          "value": {
-            "yes": "yes",
-            "no": "no"
-          }
         },
         "label": {
           "title": "Label",
@@ -2806,6 +2804,10 @@
       "bb-feature-disallow-signup": {
         "title": "Disable self-service signup",
         "desc": "Once disabled, users cannot self-service signup and can only be invited by the workspace admin."
+      },
+      "bb-feature-disallow-password-signin": {
+        "title": "Disallow signin with email&password",
+        "desc": "Users cannot sign in with email&password, only SSO is allowed."
       },
       "bb-feature-schema-template": {
         "title": "Schema Template",

@@ -1,5 +1,7 @@
+import { planCheckRunSummaryForCheckRunList } from "@/components/PlanCheckRun/common";
 import { t } from "@/plugins/i18n";
-import type { ComposedIssue, ComposedUser } from "@/types";
+import { useCurrentUserV1 } from "@/store";
+import type { ComposedIssue } from "@/types";
 import { IssueStatus, Issue_Type } from "@/types/proto/v1/issue_service";
 import type { Task } from "@/types/proto/v1/rollout_service";
 import {
@@ -12,7 +14,7 @@ import {
   extractUserResourceName,
   hasProjectPermissionV2,
 } from "@/utils";
-import { planCheckRunSummaryForTask, specForTask } from ".";
+import { specForTask, useIssueContext } from ".";
 
 export const isGroupingChangeTaskV1 = (issue: ComposedIssue, task: Task) => {
   const spec = specForTask(issue.planEntity, task);
@@ -27,9 +29,9 @@ export const isGroupingChangeTaskV1 = (issue: ComposedIssue, task: Task) => {
 
 export const allowUserToEditStatementForTask = (
   issue: ComposedIssue,
-  task: Task,
-  user: ComposedUser
+  task: Task
 ): string[] => {
+  const user = useCurrentUserV1();
   const denyReasons: string[] = [];
 
   if (isTaskV1TriggeredByVCS(issue, task)) {
@@ -61,10 +63,10 @@ export const allowUserToEditStatementForTask = (
   // - user is the creator
   // - OR user has plans.update permission in the project
 
-  denyReasons.push(...isTaskEditable(issue, task));
+  denyReasons.push(...isTaskEditable(task));
 
-  if (extractUserResourceName(issue.creator) !== user.email) {
-    if (!hasProjectPermissionV2(issue.projectEntity, user, "bb.plans.update")) {
+  if (extractUserResourceName(issue.creator) !== user.value.email) {
+    if (!hasProjectPermissionV2(issue.projectEntity, "bb.plans.update")) {
       denyReasons.push(
         t("issue.error.you-don-have-privilege-to-edit-this-issue")
       );
@@ -73,7 +75,8 @@ export const allowUserToEditStatementForTask = (
   return denyReasons;
 };
 
-export const isTaskEditable = (issue: ComposedIssue, task: Task): string[] => {
+export const isTaskEditable = (task: Task): string[] => {
+  const { getPlanCheckRunsForTask } = useIssueContext();
   if (
     task.status === Task_Status.NOT_STARTED ||
     task.status === Task_Status.FAILED ||
@@ -88,7 +91,9 @@ export const isTaskEditable = (issue: ComposedIssue, task: Task): string[] => {
     // the scheduler.
     // Editing a queued task's SQL statement is dangerous with kinds of race
     // condition risks.
-    const summary = planCheckRunSummaryForTask(issue, task);
+    const summary = planCheckRunSummaryForCheckRunList(
+      getPlanCheckRunsForTask(task)
+    );
     if (summary.errorCount > 0) {
       return [];
     }

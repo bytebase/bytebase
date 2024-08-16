@@ -6,7 +6,6 @@ import {
 import { useUserStore } from "@/store";
 import type { ComposedIssue } from "@/types";
 import { Issue_Approver_Status } from "@/types/proto/v1/issue_service";
-import { hasProjectPermissionV2 } from "@/utils";
 import { extractUserResourceName } from "@/utils/v1/user";
 import type { SearchParams } from "../common";
 import { getValueFromSearchParams } from "../common";
@@ -69,11 +68,6 @@ export const filterIssueByReleaser = (
       extractUserResourceName(releaser)
     );
     if (!user) return false;
-
-    if (hasProjectPermissionV2(issue.projectEntity, user, "bb.issues.update")) {
-      // Super users are always allowed to rollout issues.
-      return true;
-    }
 
     const candidates = releaserCandidatesForIssue(issue);
     // Otherwise any releasers can rollout the issue.

@@ -23,7 +23,6 @@ import (
 	"github.com/bytebase/bytebase/backend/store/model"
 	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
-	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 // NewDatabaseCreateExecutor creates a database create task executor.
@@ -55,12 +54,6 @@ var cannotCreateDatabase = map[storepb.Engine]bool{
 
 // RunOnce will run the database create task executor once.
 func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, taskRunUID int) (terminated bool, result *storepb.TaskRunResult, err error) {
-	exec.stateCfg.TaskRunExecutionStatuses.Store(taskRunUID,
-		state.TaskRunExecutionStatus{
-			ExecutionStatus: v1pb.TaskRun_PRE_EXECUTING,
-			UpdateTime:      time.Now(),
-		})
-
 	payload := &storepb.TaskDatabaseCreatePayload{}
 	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return true, nil, errors.Wrap(err, "invalid create database payload")
@@ -153,21 +146,9 @@ func (exec *DatabaseCreateExecutor) RunOnce(ctx context.Context, driverCtx conte
 	}
 	defer defaultDBDriver.Close(ctx)
 
-	exec.stateCfg.TaskRunExecutionStatuses.Store(taskRunUID,
-		state.TaskRunExecutionStatus{
-			ExecutionStatus: v1pb.TaskRun_EXECUTING,
-			UpdateTime:      time.Now(),
-		})
-
 	if _, err := defaultDBDriver.Execute(driverCtx, statement, db.ExecuteOptions{CreateDatabase: true}); err != nil {
 		return true, nil, err
 	}
-
-	exec.stateCfg.TaskRunExecutionStatuses.Store(taskRunUID,
-		state.TaskRunExecutionStatus{
-			ExecutionStatus: v1pb.TaskRun_POST_EXECUTING,
-			UpdateTime:      time.Now(),
-		})
 
 	environmentID := instance.EnvironmentID
 	if payload.EnvironmentId != "" {

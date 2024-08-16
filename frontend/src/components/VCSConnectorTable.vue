@@ -24,7 +24,7 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBTable, BBTableCell } from "@/bbkit";
 import { PROJECT_V1_ROUTE_GITOPS_DETAIL } from "@/router/dashboard/projectV1";
-import { useProjectV1Store, useCurrentUserV1 } from "@/store";
+import { useProjectV1Store } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { getVCSConnectorId } from "@/store/modules/v1/common";
 import type { VCSConnector } from "@/types/proto/v1/vcs_connector_service";
@@ -38,7 +38,6 @@ const props = defineProps<{
 const { t } = useI18n();
 const projectV1Store = useProjectV1Store();
 const router = useRouter();
-const currentUser = useCurrentUserV1();
 
 const columnList = computed(() => [
   {
@@ -57,9 +56,7 @@ const getProject = (connector: VCSConnector) => {
 const onClick = function (_: number, row: number) {
   const connector = props.connectorList[row];
   const project = getProject(connector);
-  if (
-    !hasProjectPermissionV2(project, currentUser.value, "bb.vcsConnectors.get")
-  ) {
+  if (!hasProjectPermissionV2(project, "bb.vcsConnectors.get")) {
     return;
   }
 

@@ -1,6 +1,7 @@
 import axios from "axios";
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
+import { restartAppRoot } from "@/AppRootContext";
 import { authServiceClient } from "@/grpcweb";
 import { unknownUser } from "@/types";
 import type {
@@ -10,7 +11,7 @@ import type {
 } from "@/types/proto/v1/auth_service";
 import { UserType } from "@/types/proto/v1/auth_service";
 import { getIntCookie } from "@/utils";
-import { useUserStore, useWorkspaceV1Store } from ".";
+import { useUserStore } from ".";
 
 export const useAuthStore = defineStore("auth_v1", () => {
   const userStore = useUserStore();
@@ -56,13 +57,13 @@ export const useAuthStore = defineStore("auth_v1", () => {
       password: request.password,
       web: true,
     });
-    await useWorkspaceV1Store().fetchIamPolicy();
   };
 
   const logout = async () => {
     try {
       await axios.post("/v1/auth/logout");
       currentUserId.value = undefined;
+      restartAppRoot();
     } catch {
       // nothing
     }
@@ -75,7 +76,6 @@ export const useAuthStore = defineStore("auth_v1", () => {
         String(currentUserId.value),
         true // silent
       );
-      await useWorkspaceV1Store().fetchIamPolicy();
     }
   };
 

@@ -21,7 +21,7 @@
             `(${$t("settings.members.groups.n-members", { n: group.members.length })})`
           }}
         </span>
-        <UserRolesCell v-if="role" class="ml-3" :project-role="role" />
+        <UserRolesCell v-if="role" class="ml-3" :role="role" />
       </div>
       <span v-if="showEmail" class="textinfolabel text-sm">
         {{ extractGroupEmail(group.name) }}
@@ -66,6 +66,6 @@ const allowGetGroup = computed(() => {
   ) {
     return true;
   }
-  return hasWorkspacePermissionV2(currentUser.value, "bb.groups.get");
+  return hasWorkspacePermissionV2("bb.groups.get");
 });
 </script>

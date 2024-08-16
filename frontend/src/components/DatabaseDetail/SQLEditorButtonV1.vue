@@ -33,11 +33,7 @@ import { reactive } from "vue";
 import { useRouter } from "vue-router";
 import RequestQueryPanel from "@/components/Issue/panel/RequestQueryPanel/index.vue";
 import { SQL_EDITOR_DATABASE_MODULE } from "@/router/sqlEditor";
-import {
-  useCurrentUserV1,
-  useAppFeature,
-  useSQLEditorTreeStore,
-} from "@/store";
+import { useAppFeature, useSQLEditorTreeStore } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import { DEFAULT_PROJECT_NAME, defaultProject } from "@/types";
 import type { VueClass } from "@/utils";
@@ -76,7 +72,6 @@ const emit = defineEmits<{
 }>();
 
 const router = useRouter();
-const currentUserV1 = useCurrentUserV1();
 const disallowNavigateToConsole = useAppFeature(
   "bb.feature.disallow-navigate-to-console"
 );
@@ -108,13 +103,7 @@ const gotoSQLEditor = () => {
 
   const database = props.database as ComposedDatabase;
   if (database.project === DEFAULT_PROJECT_NAME) {
-    if (
-      !hasProjectPermissionV2(
-        defaultProject(),
-        currentUserV1.value,
-        "bb.databases.query"
-      )
-    ) {
+    if (!hasProjectPermissionV2(defaultProject(), "bb.databases.query")) {
       // For unassigned databases, only high-privileged users
       // are accessible via SQL Editor.
       emit("failed", database);

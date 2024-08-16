@@ -80,6 +80,7 @@
 </template>
 
 <script setup lang="ts">
+import { isEqual } from "lodash-es";
 import { ArchiveIcon } from "lucide-vue-next";
 import type { SelectGroupOption, SelectOption } from "naive-ui";
 import { NPopconfirm, NButton, NSelect } from "naive-ui";
@@ -129,7 +130,7 @@ const initMemberList = () => {
 const state = reactive<LocalState>({
   isRequesting: false,
   memberList: initMemberList(),
-  roles: props.member?.workspaceLevelRoles ?? [],
+  roles: [...(props.member?.workspaceLevelRoles ?? new Set<string>())],
 });
 
 const { t } = useI18n();
@@ -202,6 +203,10 @@ const allowConfirm = computed(() => {
     return false;
   }
 
+  if (!isCreating.value) {
+    return !isEqual(props.member?.workspaceLevelRoles, state.roles);
+  }
+
   return true;
 });
 
@@ -215,7 +220,10 @@ const memberListInBinding = computed(() => {
 const updateRoleBinding = async () => {
   const batchPatch = [];
   for (const member of memberListInBinding.value) {
-    const existedRoles = workspaceStore.findRolesByMember(member);
+    const existedRoles = workspaceStore.findRolesByMember({
+      member,
+      ignoreGroup: true,
+    });
     batchPatch.push({
       member,
       roles: [...new Set([...state.roles, ...existedRoles])],

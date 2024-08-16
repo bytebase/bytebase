@@ -16,7 +16,7 @@
         v-if="hasReadOnlyDataSource"
         class="!ml-1"
         :style="'DELETE'"
-        :disabled="!hasPermission('bb.instances.update')"
+        :disabled="!allowUpdate"
         :require-confirm="!ds.pendingCreate"
         :ok-text="$t('common.delete')"
         :confirm-title="$t('data-source.delete-read-only-data-source') + '?'"
@@ -34,7 +34,7 @@
       <NButton
         quaternary
         size="small"
-        :disabled="!hasPermission('bb.instances.update')"
+        :disabled="!allowUpdate"
         style="--n-padding: 0 4px"
         @click.stop="$emit('add-readonly-datasource')"
       >
@@ -50,10 +50,9 @@
 import { pullAt } from "lodash-es";
 import type { TabsInst } from "naive-ui";
 import { NTabs, NTab, NButton } from "naive-ui";
-import { nextTick, ref, watch } from "vue";
+import { nextTick, ref, watch, computed } from "vue";
 import { BBButtonConfirm } from "@/bbkit";
-import { useCurrentUserV1, useInstanceV1Store } from "@/store";
-import type { Permission } from "@/types";
+import { useInstanceV1Store } from "@/store";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import type { EditDataSource } from "../common";
 import { useInstanceFormContext } from "../context";
@@ -62,7 +61,6 @@ defineEmits<{
   (event: "add-readonly-datasource"): void;
 }>();
 
-const currentUser = useCurrentUserV1();
 const tabsRef = ref<TabsInst>();
 const {
   instance,
@@ -74,9 +72,9 @@ const {
   hasReadOnlyDataSource,
 } = useInstanceFormContext();
 
-const hasPermission = (permission: Permission) => {
-  return hasWorkspacePermissionV2(currentUser.value, permission);
-};
+const allowUpdate = computed(() =>
+  hasWorkspacePermissionV2("bb.instances.update")
+);
 
 const handleDeleteDataSource = async (ds: EditDataSource) => {
   const removeLocalEditDataSource = (ds: EditDataSource) => {

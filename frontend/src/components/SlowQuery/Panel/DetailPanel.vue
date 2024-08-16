@@ -138,7 +138,6 @@ import {
   Drawer,
   DrawerContent,
 } from "@/components/v2";
-import { useCurrentUserV1 } from "@/store";
 import type { ComposedSlowQueryLog } from "@/types";
 import type { SlowQueryDetails } from "@/types/proto/v1/database_service";
 import { instanceV1HasSlowQueryDetail } from "@/utils";
@@ -196,7 +195,6 @@ const selectedDetail = shallowRef<SlowQueryDetails>();
 const hasIndexAdvisorPermission = computed(() =>
   hasProjectPermissionV2(
     database.value.projectEntity,
-    useCurrentUserV1().value,
     "bb.databases.adviseIndex"
   )
 );

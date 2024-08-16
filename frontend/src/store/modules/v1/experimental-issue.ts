@@ -4,7 +4,7 @@ import {
   planServiceClient,
   rolloutServiceClient,
 } from "@/grpcweb";
-import { useCurrentUserV1, useProjectV1Store, useUserStore } from "@/store";
+import { useProjectV1Store, useUserStore } from "@/store";
 import type { ComposedIssue, ComposedProject, ComposedTaskRun } from "@/types";
 import {
   emptyIssue,
@@ -16,11 +16,7 @@ import {
 } from "@/types";
 import type { Issue } from "@/types/proto/v1/issue_service";
 import type { Plan } from "@/types/proto/v1/plan_service";
-import {
-  TaskRun_Status,
-  TaskRunLog,
-  type Rollout,
-} from "@/types/proto/v1/rollout_service";
+import { TaskRunLog, type Rollout } from "@/types/proto/v1/rollout_service";
 import {
   extractProjectResourceName,
   extractUserResourceName,
@@ -37,7 +33,6 @@ export const composeIssue = async (
   config: ComposeIssueConfig = { withPlan: true, withRollout: true }
 ): Promise<ComposedIssue> => {
   const userStore = useUserStore();
-  const me = useCurrentUserV1();
 
   const project = `projects/${extractProjectResourceName(rawIssue.name)}`;
   const projectEntity =
@@ -59,15 +54,13 @@ export const composeIssue = async (
   };
 
   if (config.withPlan && issue.plan) {
-    if (hasProjectPermissionV2(projectEntity, me.value, "bb.plans.get")) {
+    if (hasProjectPermissionV2(projectEntity, "bb.plans.get")) {
       const plan = await planServiceClient.getPlan({
         name: issue.plan,
       });
       issue.planEntity = plan;
     }
-    if (
-      hasProjectPermissionV2(projectEntity, me.value, "bb.planCheckRuns.list")
-    ) {
+    if (hasProjectPermissionV2(projectEntity, "bb.planCheckRuns.list")) {
       // Only show the latest plan check runs.
       // TODO(steven): maybe we need to show all plan check runs on a separate page later.
       const { planCheckRuns } = await planServiceClient.listPlanCheckRuns({
@@ -78,12 +71,12 @@ export const composeIssue = async (
     }
   }
   if (config.withRollout && issue.rollout) {
-    if (hasProjectPermissionV2(projectEntity, me.value, "bb.rollouts.get")) {
+    if (hasProjectPermissionV2(projectEntity, "bb.rollouts.get")) {
       issue.rolloutEntity = await rolloutServiceClient.getRollout({
         name: issue.rollout,
       });
     }
-    if (hasProjectPermissionV2(projectEntity, me.value, "bb.taskRuns.list")) {
+    if (hasProjectPermissionV2(projectEntity, "bb.taskRuns.list")) {
       const { taskRuns } = await rolloutServiceClient.listTaskRuns({
         parent: `${issue.rollout}/stages/-/tasks/-`,
         pageSize: 1000, // MAX
@@ -94,13 +87,6 @@ export const composeIssue = async (
           ...taskRun,
           taskRunLog: TaskRunLog.fromPartial({}),
         };
-        // Fetching task run log for running task runs.
-        if (composed.status === TaskRun_Status.RUNNING) {
-          const taskRunLog = await rolloutServiceClient.getTaskRunLog({
-            parent: taskRun.name,
-          });
-          composed.taskRunLog = taskRunLog;
-        }
         composedTaskRuns.push(composed);
       }
       issue.rolloutTaskRunList = composedTaskRuns;

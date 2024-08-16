@@ -58,7 +58,6 @@ const router = useRouter();
 const dialog = useDialog();
 const { plan } = usePlanContext();
 const { runSQLCheck } = useSQLCheckContext();
-const me = useCurrentUserV1();
 const loading = ref(false);
 
 const planCheckStatus = computed((): PlanCheckRun_Result_Status => {
@@ -80,13 +79,7 @@ const planCheckStatus = computed((): PlanCheckRun_Result_Status => {
 
 const issueCreateErrorList = computed(() => {
   const errorList: string[] = [];
-  if (
-    !hasProjectPermissionV2(
-      plan.value.projectEntity,
-      me.value,
-      "bb.plans.create"
-    )
-  ) {
+  if (!hasProjectPermissionV2(plan.value.projectEntity, "bb.plans.create")) {
     errorList.push(t("common.missing-permission"));
   }
   if (!plan.value.title.trim()) {

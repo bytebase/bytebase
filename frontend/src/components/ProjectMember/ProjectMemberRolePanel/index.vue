@@ -24,7 +24,7 @@
           </div>
         </div>
       </div>
-      <template v-if="binding.workspaceLevelRoles.length > 0">
+      <template v-if="binding.workspaceLevelRoles.size > 0">
         <p class="text-lg px-1 pb-1 w-full border-b mb-3">
           {{ $t("project.members.workspace-level-roles") }}
         </p>
@@ -44,7 +44,7 @@
       </template>
       <template v-if="roleList.length > 0">
         <p
-          v-if="binding.workspaceLevelRoles.length > 0"
+          v-if="binding.workspaceLevelRoles.size > 0"
           class="text-lg px-1 pb-1 w-full border-b mt-4 mb-3"
         >
           {{ $t("project.members.project-level-roles") }}
@@ -216,7 +216,6 @@ import { Drawer, DrawerContent, InstanceV1Name } from "@/components/v2";
 import {
   extractGroupEmail,
   extractUserEmail,
-  useCurrentUserV1,
   useDatabaseV1Store,
   useProjectIamPolicy,
   useProjectIamPolicyStore,
@@ -224,8 +223,9 @@ import {
   pushNotification,
 } from "@/store";
 import { groupNamePrefix } from "@/store/modules/v1/common";
-import type { ComposedProject, DatabaseResource, ComposedUser } from "@/types";
+import type { ComposedProject, DatabaseResource } from "@/types";
 import { PresetRoleType, PRESET_ROLES } from "@/types";
+import { type User } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
 import { Binding } from "@/types/proto/v1/iam_policy";
 import { displayRoleTitle, hasProjectPermissionV2 } from "@/utils";
@@ -263,7 +263,6 @@ const emit = defineEmits<{
 const { t } = useI18n();
 const dialog = useDialog();
 const userStore = useUserStore();
-const currentUser = useCurrentUserV1();
 const databaseStore = useDatabaseV1Store();
 const projectIamPolicyStore = useProjectIamPolicyStore();
 const projectResourceName = computed(() => props.project.name);
@@ -296,11 +295,7 @@ const allowRevokeMember = computed(() => {
     return false;
   }
 
-  return hasProjectPermissionV2(
-    props.project,
-    currentUser.value,
-    "bb.projects.setIamPolicy"
-  );
+  return hasProjectPermissionV2(props.project, "bb.projects.setIamPolicy");
 });
 
 const isRoleShouldShowDatabaseRelatedColumns = (role: string) => {
@@ -369,7 +364,7 @@ const allowRemoveRole = (role: string) => {
     const ownerBindings = iamPolicy.value.bindings.filter(
       (binding) => binding.role === PresetRoleType.PROJECT_OWNER
     );
-    const members: ComposedUser[] = [];
+    const members: User[] = [];
     // Find those never expires owner members.
     for (const binding of ownerBindings) {
       if (binding.condition?.expression !== "") {
@@ -381,9 +376,7 @@ const allowRemoveRole = (role: string) => {
           .map((userIdentifier) => {
             return userStore.getUserByIdentifier(userIdentifier);
           })
-          .filter(
-            (user) => user && user.state === State.ACTIVE
-          ) as ComposedUser[])
+          .filter((user) => user && user.state === State.ACTIVE) as User[])
       );
     }
     // If there is only one owner, disallow removing.

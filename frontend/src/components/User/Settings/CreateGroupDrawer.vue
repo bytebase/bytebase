@@ -58,6 +58,7 @@
                   :multiple="false"
                   :size="'medium'"
                   :include-all="false"
+                  :allowed-workspace-role-list="[]"
                   @update:user="(uid) => updateMemberEmail(i, uid)"
                 />
                 <GroupMemberRoleSelect
@@ -214,7 +215,6 @@ const allowEdit = computed(() => {
     return true;
   }
   return hasWorkspacePermissionV2(
-    currentUserV1.value,
     isCreating.value ? "bb.groups.create" : "bb.groups.update"
   );
 });

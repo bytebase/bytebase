@@ -23,6 +23,7 @@
     "activity": "Actividad",
     "activities": "Actividades",
     "sign-in": "Iniciar sesión",
+    "sign-in-as-admin": "Iniciar sesión como administrador",
     "sign-up": "Registrarse",
     "email": "Correo electrónico",
     "username": "Nombre de usuario",
@@ -658,6 +659,11 @@
           "description": "Cuando está habilitado, los usuarios que no tienen la autenticación de dos factores habilitada para sus cuentas personales serán obligados a configurarla.",
           "need-all-user-2fa-enabled": "Requiere que todos los usuarios habiliten 2FA primero. Todavía hay {count} usuarios que no han habilitado 2FA: {users}"
         },
+        "disallow-password-signin": {
+          "enable": "No permitir el inicio de sesión con correo electrónico y contraseña",
+          "description": "Los usuarios no pueden iniciar sesión con correo electrónico y contraseña, solo se permite SSO.",
+          "require-sso-setup": "Primero se debe crear un SSO funcional o los usuarios no podrán iniciar sesión."
+        },
         "network": "Red",
         "external-url": {
           "self": "URL Externa",
@@ -1102,14 +1108,6 @@
           },
           "description": "Buscar por estado de revisión del problema",
           "title": "Estado de aprobación"
-        },
-        "project-assigned": {
-          "title": "Proyecto asignado",
-          "description": "Buscar en las bases de datos con proyecto asignado",
-          "value": {
-            "yes": "yes",
-            "no": "no"
-          }
         },
         "label": {
           "title": "Etiqueta",
@@ -2806,6 +2804,10 @@
       "bb-feature-disallow-signup": {
         "title": "Deshabilitar el registro de autoservicio",
         "desc": "Una vez deshabilitados, los usuarios no pueden registrarse por sí mismos y solo pueden ser invitados por el administrador del espacio de trabajo."
+      },
+      "bb-feature-disallow-password-signin": {
+        "title": "No permitir el inicio de sesión con correo electrónico y contraseña",
+        "desc": "Los usuarios no pueden iniciar sesión con correo electrónico y contraseña, solo se permite SSO."
       },
       "bb-feature-schema-template": {
         "title": "Plantilla de esquema",

@@ -3,11 +3,7 @@ import { defineAction, useRegisterActions } from "@bytebase/vue-kbar";
 import { computed, unref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import {
-  useCurrentUserV1,
-  useDatabaseV1Store,
-  useEnvironmentV1List,
-} from "@/store";
+import { useDatabaseV1Store, useEnvironmentV1List } from "@/store";
 import type { ComposedDatabase, ComposedProject, MaybeRef } from "@/types";
 import { DEFAULT_PROJECT_NAME } from "@/types";
 import { State } from "@/types/proto/v1/common";
@@ -98,12 +94,10 @@ export const useProjectDatabaseActions = (
 };
 
 export const useGlobalDatabaseActions = (limit: number) => {
-  const me = useCurrentUserV1();
   // Use this to make the list reactive when project is transferred.
   const databaseList = computed(() => {
     return useDatabaseV1Store()
-      .databaseListByUser(me.value)
-      .filter((db) => db.project !== DEFAULT_PROJECT_NAME)
+      .databaseListByUser.filter((db) => db.project !== DEFAULT_PROJECT_NAME)
       .slice(0, limit); // Don't create too many actions
   });
   useDatabaseActions(databaseList);

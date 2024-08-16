@@ -23,6 +23,7 @@
     "activity": "活动",
     "activities": "活动",
     "sign-in": "登录",
+    "sign-in-as-admin": "以管理员身份登录",
     "sign-up": "注册",
     "email": "邮箱",
     "username": "用户名",
@@ -658,6 +659,11 @@
           "description": "启用之后，没有配置双重认证的用户将被强制要求进行配置操作。",
           "need-all-user-2fa-enabled": "需要所有用户都配置双重认证后才能开启此项。还有 {count} 个用户没有配置双重认证：{users}"
         },
+        "disallow-password-signin": {
+          "enable": "禁止使用密码登录",
+          "description": "用户将无法通过邮箱和密码进行登录，只允许通过所配置的 SSO 进行登录。",
+          "require-sso-setup": "开启前必须先要创建 SSO，否则用户将无法正常登录。"
+        },
         "network": "网络",
         "external-url": {
           "self": "External URL",
@@ -1102,14 +1108,6 @@
           },
           "description": "按工单的审批状态搜索",
           "title": "审批状态"
-        },
-        "project-assigned": {
-          "title": "已分配项目",
-          "description": "按数据库的项目分配状态搜索",
-          "value": {
-            "yes": "是",
-            "no": "否"
-          }
         },
         "label": {
           "title": "标签",
@@ -2806,6 +2804,10 @@
       "bb-feature-disallow-signup": {
         "title": "禁用自助注册",
         "desc": "禁用之后，新用户将无法自助注册，只能通过管理员邀请来创建账户。"
+      },
+      "bb-feature-disallow-password-signin": {
+        "title": "禁止使用密码登录",
+        "desc": "用户将无法通过邮箱和密码进行登录，只允许通过所配置的 SSO 进行登录。"
       },
       "bb-feature-schema-template": {
         "title": "Schema 模板",

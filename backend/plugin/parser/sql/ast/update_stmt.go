@@ -1,5 +1,7 @@
 package ast
 
+import pgquery "github.com/pganalyze/pg_query_go/v5"
+
 // UpdateStmt is the struct for update statement.
 type UpdateStmt struct {
 	dml
@@ -15,4 +17,14 @@ type UpdateStmt struct {
 	PatternLikeList []*PatternLikeDef
 	// SubqueryList is the list of the subquery nodes.
 	SubqueryList []*SubqueryDef
+
+	originalNode *pgquery.Node_UpdateStmt
+}
+
+func (us *UpdateStmt) SetOriginalNode(node *pgquery.Node_UpdateStmt) {
+	us.originalNode = node
+}
+
+func (us *UpdateStmt) GetOriginalNode() *pgquery.Node_UpdateStmt {
+	return us.originalNode
 }

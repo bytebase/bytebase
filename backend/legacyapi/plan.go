@@ -55,6 +55,8 @@ const (
 	Feature2FA FeatureType = "bb.feature.2fa"
 	// FeatureDisallowSignup allows user to change the disallow signup flag.
 	FeatureDisallowSignup FeatureType = "bb.feature.disallow-signup"
+	// FeatureDisallowPasswordSignin allows user to disallow password signin.
+	FeatureDisallowPasswordSignin FeatureType = "bb.feature.disallow-password-signin"
 	// FeatureSecureToken allows user to manage authentication token security.
 	FeatureSecureToken FeatureType = "bb.feature.secure-token"
 	// FeatureExternalSecretManager uses secrets from external secret manager.
@@ -186,6 +188,8 @@ func (e FeatureType) Name() string {
 		return "2FA"
 	case FeatureDisallowSignup:
 		return "Disallow singup"
+	case FeatureDisallowPasswordSignin:
+		return "Disallow password signin"
 	case FeatureSecureToken:
 		return "Secure token"
 	case FeatureExternalSecretManager:
@@ -280,17 +284,18 @@ func (e FeatureType) minimumSupportedPlan() PlanType {
 // plan in [FREE, TEAM, Enterprise].
 var FeatureMatrix = map[FeatureType][3]bool{
 	// Admin & Security
-	FeatureSSO:                   {false, false, true},
-	Feature2FA:                   {false, false, true},
-	FeatureDisallowSignup:        {false, false, true},
-	FeatureSecureToken:           {false, false, true},
-	FeatureExternalSecretManager: {false, false, true},
-	FeatureRBAC:                  {true, true, true},
-	FeatureWatermark:             {false, false, true},
-	FeatureAuditLog:              {false, false, true},
-	FeatureCustomRole:            {false, false, true},
-	FeatureIssueAdvancedSearch:   {false, true, true},
-	FeatureAnnouncement:          {false, false, true},
+	FeatureSSO:                    {false, false, true},
+	Feature2FA:                    {false, false, true},
+	FeatureDisallowSignup:         {false, false, true},
+	FeatureDisallowPasswordSignin: {false, false, true},
+	FeatureSecureToken:            {false, false, true},
+	FeatureExternalSecretManager:  {false, false, true},
+	FeatureRBAC:                   {true, true, true},
+	FeatureWatermark:              {false, false, true},
+	FeatureAuditLog:               {false, false, true},
+	FeatureCustomRole:             {false, false, true},
+	FeatureIssueAdvancedSearch:    {false, true, true},
+	FeatureAnnouncement:           {false, false, true},
 	// Branding
 	FeatureBranding: {false, false, true},
 	// Change Workflow

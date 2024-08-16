@@ -39,21 +39,13 @@ func NewDatabricksDriver(db.DriverConfig) db.Driver {
 
 // Each Databricks driver is associated with a single Databricks Workspace (Workspace -> catalog -> schema -> table).
 func (d *Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
-	databricksConfig := &databricks.Config{
-		Host: config.Host,
-	}
 	// Support Databricks native authentication.
 	// ref: https://github.com/databricks/databricks-sdk-go?tab=readme-ov-file#databricks-native-authentication
-	if config.AuthenticationPrivateKey != "" {
-		// Token.
-		databricksConfig.Token = config.AuthenticationPrivateKey
-	} else {
-		// Basic username and password.
-		databricksConfig.Username = config.Username
-		databricksConfig.Password = config.Password
-		databricksConfig.AccountID = config.AccountID
-	}
-	client, err := databricks.NewWorkspaceClient(databricksConfig)
+	// only support token authentication.
+	client, err := databricks.NewWorkspaceClient(&databricks.Config{
+		Host:  config.Host,
+		Token: config.AuthenticationPrivateKey,
+	})
 	if err != nil {
 		return nil, err
 	}

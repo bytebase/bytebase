@@ -449,13 +449,6 @@ func convertToTaskRun(ctx context.Context, s *store.Store, stateCfg *state.State
 		SchemaVersion: taskRun.ResultProto.Version,
 	}
 
-	if v, ok := stateCfg.TaskRunExecutionStatuses.Load(taskRun.ID); ok {
-		if s, ok := v.(state.TaskRunExecutionStatus); ok {
-			t.ExecutionStatus = s.ExecutionStatus
-			t.ExecutionDetail = s.ExecutionDetail
-		}
-	}
-
 	if v, ok := stateCfg.TaskRunSchedulerInfo.Load(taskRun.ID); ok {
 		if info, ok := v.(*storepb.SchedulerInfo); ok {
 			si, err := convertToSchedulerInfo(ctx, s, info)
@@ -463,19 +456,6 @@ func convertToTaskRun(ctx context.Context, s *store.Store, stateCfg *state.State
 				return nil, errors.Wrapf(err, "failed to convert to scheduler info")
 			}
 			t.SchedulerInfo = si
-		}
-	}
-
-	if taskRun.Status == api.TaskRunFailed && taskRun.ResultProto.StartPosition != nil && taskRun.ResultProto.EndPosition != nil {
-		t.ExecutionDetail = &v1pb.TaskRun_ExecutionDetail{
-			CommandStartPosition: &v1pb.TaskRun_ExecutionDetail_Position{
-				Line:   taskRun.ResultProto.StartPosition.Line,
-				Column: taskRun.ResultProto.StartPosition.Column,
-			},
-			CommandEndPosition: &v1pb.TaskRun_ExecutionDetail_Position{
-				Line:   taskRun.ResultProto.EndPosition.Line,
-				Column: taskRun.ResultProto.EndPosition.Column,
-			},
 		}
 	}
 

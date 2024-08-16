@@ -525,8 +525,6 @@
     - [Task.DatabaseSchemaBaseline](#bytebase-v1-Task-DatabaseSchemaBaseline)
     - [Task.DatabaseSchemaUpdate](#bytebase-v1-Task-DatabaseSchemaUpdate)
     - [TaskRun](#bytebase-v1-TaskRun)
-    - [TaskRun.ExecutionDetail](#bytebase-v1-TaskRun-ExecutionDetail)
-    - [TaskRun.ExecutionDetail.Position](#bytebase-v1-TaskRun-ExecutionDetail-Position)
     - [TaskRun.PriorBackupDetail](#bytebase-v1-TaskRun-PriorBackupDetail)
     - [TaskRun.PriorBackupDetail.Item](#bytebase-v1-TaskRun-PriorBackupDetail-Item)
     - [TaskRun.PriorBackupDetail.Item.Table](#bytebase-v1-TaskRun-PriorBackupDetail-Item-Table)
@@ -547,7 +545,6 @@
   
     - [Task.Status](#bytebase-v1-Task-Status)
     - [Task.Type](#bytebase-v1-Task-Type)
-    - [TaskRun.ExecutionStatus](#bytebase-v1-TaskRun-ExecutionStatus)
     - [TaskRun.ExportArchiveStatus](#bytebase-v1-TaskRun-ExportArchiveStatus)
     - [TaskRun.Status](#bytebase-v1-TaskRun-Status)
     - [TaskRunLogEntry.TaskRunStatusUpdate.Status](#bytebase-v1-TaskRunLogEntry-TaskRunStatusUpdate-Status)
@@ -790,6 +787,7 @@ Actuator concept is similar to the Spring Boot Actuator.
 | pre_update_backup | [bool](#bool) |  | pre_update_backup is the enablement of data backup prior to data update. |
 | iam_guard | [bool](#bool) |  | iam_guard is the enablement of IAM checks. |
 | unlicensed_features | [string](#string) | repeated |  |
+| disallow_password_signin | [bool](#bool) |  | disallow_password_signin is the flag to disallow user signin with email&amp;password. (except workspace admins) |
 
 
 
@@ -8468,46 +8466,10 @@ When paginating, all other parameters provided to `ListRolloutTaskRuns` must mat
 | detail | [string](#string) |  | Below are the results of a task run. |
 | change_history | [string](#string) |  | The resource name of the change history Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory} |
 | schema_version | [string](#string) |  |  |
-| execution_status | [TaskRun.ExecutionStatus](#bytebase-v1-TaskRun-ExecutionStatus) |  | **Deprecated.**  |
-| execution_detail | [TaskRun.ExecutionDetail](#bytebase-v1-TaskRun-ExecutionDetail) |  | **Deprecated.**  |
 | start_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | export_archive_status | [TaskRun.ExportArchiveStatus](#bytebase-v1-TaskRun-ExportArchiveStatus) |  |  |
 | prior_backup_detail | [TaskRun.PriorBackupDetail](#bytebase-v1-TaskRun-PriorBackupDetail) |  | The prior backup detail that will be used to rollback the task run. |
 | scheduler_info | [TaskRun.SchedulerInfo](#bytebase-v1-TaskRun-SchedulerInfo) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-TaskRun-ExecutionDetail"></a>
-
-### TaskRun.ExecutionDetail
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| commands_total | [int32](#int32) |  | Currently, the following fields are only used for EXECUTING status. |
-| commands_completed | [int32](#int32) |  |  |
-| command_start_position | [TaskRun.ExecutionDetail.Position](#bytebase-v1-TaskRun-ExecutionDetail-Position) |  |  |
-| command_end_position | [TaskRun.ExecutionDetail.Position](#bytebase-v1-TaskRun-ExecutionDetail-Position) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-TaskRun-ExecutionDetail-Position"></a>
-
-### TaskRun.ExecutionDetail.Position
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| line | [int32](#int32) |  | The line number, starting from 0. |
-| column | [int32](#int32) |  | The column number, starting from 0. |
 
 
 
@@ -8848,20 +8810,6 @@ Read from `pg_stat_activity`
 | DATABASE_SCHEMA_UPDATE_GHOST_CUTOVER | 7 | use payload nil |
 | DATABASE_DATA_UPDATE | 8 | use payload DatabaseDataUpdate |
 | DATABASE_DATA_EXPORT | 12 | use payload DatabaseDataExport |
-
-
-
-<a name="bytebase-v1-TaskRun-ExecutionStatus"></a>
-
-### TaskRun.ExecutionStatus
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| EXECUTION_STATUS_UNSPECIFIED | 0 |  |
-| PRE_EXECUTING | 1 |  |
-| EXECUTING | 2 |  |
-| POST_EXECUTING | 3 |  |
 
 
 
@@ -9789,6 +9737,7 @@ The external URL is used for: 1. Constructing the correct callback URL when conf
 | domains | [string](#string) | repeated | The workspace domain, e.g. bytebase.com. |
 | enforce_identity_domain | [bool](#bool) |  | Only user and group from the domains can be created and login. |
 | database_change_mode | [DatabaseChangeMode](#bytebase-v1-DatabaseChangeMode) |  | The workspace database change mode. |
+| disallow_password_signin | [bool](#bool) |  | Whether to disallow password signin. (Except workspace admins) |
 
 
 
@@ -10229,6 +10178,7 @@ Type of the SheetPayload.
 | format | [ExportFormat](#bytebase-v1-ExportFormat) |  | The export format. |
 | admin | [bool](#bool) |  | The admin is used for workspace owner and DBA for exporting data from SQL Editor Admin mode. The exported data is not masked. |
 | password | [string](#string) |  | The zip password provide by users. |
+| data_source_id | [string](#string) |  | The id of data source. It is used for querying admin data source even if the instance has read-only data sources. Or it can be used to query a specific read-only data source. |
 
 
 

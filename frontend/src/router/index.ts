@@ -19,6 +19,7 @@ import authRoutes, {
   AUTH_OAUTH_CALLBACK_MODULE,
   AUTH_OIDC_CALLBACK_MODULE,
   AUTH_PASSWORD_FORGOT_MODULE,
+  AUTH_SIGNIN_ADMIN_MODULE,
   AUTH_SIGNIN_MODULE,
   AUTH_SIGNUP_MODULE,
 } from "./auth";
@@ -103,6 +104,7 @@ router.beforeEach((to, from, next) => {
 
   if (
     to.name === AUTH_SIGNIN_MODULE ||
+    to.name === AUTH_SIGNIN_ADMIN_MODULE ||
     to.name === AUTH_SIGNUP_MODULE ||
     to.name === AUTH_MFA_MODULE ||
     to.name === AUTH_PASSWORD_FORGOT_MODULE

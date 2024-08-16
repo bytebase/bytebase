@@ -13,7 +13,6 @@ import (
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/state"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
-	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -44,13 +43,7 @@ type DataExportExecutor struct {
 }
 
 // RunOnce will run the data export task executor once.
-func (exec *DataExportExecutor) RunOnce(ctx context.Context, _ context.Context, task *store.TaskMessage, taskRunUID int) (terminated bool, result *storepb.TaskRunResult, err error) {
-	exec.stateCfg.TaskRunExecutionStatuses.Store(taskRunUID,
-		state.TaskRunExecutionStatus{
-			ExecutionStatus: v1pb.TaskRun_PRE_EXECUTING,
-			UpdateTime:      time.Now(),
-		})
-
+func (exec *DataExportExecutor) RunOnce(ctx context.Context, _ context.Context, task *store.TaskMessage, _ int) (terminated bool, result *storepb.TaskRunResult, err error) {
 	ctx = context.WithValue(ctx, common.PrincipalIDContextKey, task.CreatorID)
 	payload := &storepb.TaskDatabaseDataExportPayload{}
 	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(task.Payload), payload); err != nil {
@@ -77,47 +70,19 @@ func (exec *DataExportExecutor) RunOnce(ctx context.Context, _ context.Context, 
 		return true, nil, err
 	}
 
-	spans, err := base.GetQuerySpan(
-		ctx,
-		base.GetQuerySpanContext{
-			InstanceID:                    instance.ResourceID,
-			GetDatabaseMetadataFunc:       apiv1.BuildGetDatabaseMetadataFunc(exec.store),
-			ListDatabaseNamesFunc:         apiv1.BuildListDatabaseNamesFunc(exec.store),
-			GetLinkedDatabaseMetadataFunc: apiv1.BuildGetLinkedDatabaseMetadataFunc(exec.store, instance.Engine),
-		},
-		instance.Engine,
-		statement,
-		database.DatabaseName,
-		"",
-		store.IgnoreDatabaseAndTableCaseSensitive(instance),
-	)
-	if err != nil {
-		return true, nil, errors.Wrap(err, "failed to get query span")
-	}
-
-	exec.stateCfg.TaskRunExecutionStatuses.Store(taskRunUID,
-		state.TaskRunExecutionStatus{
-			ExecutionStatus: v1pb.TaskRun_EXECUTING,
-			UpdateTime:      time.Now(),
-		})
 	exportRequest := &v1pb.ExportRequest{
 		Name:      fmt.Sprintf("instances/%s/databases/%s", instance.ResourceID, database.DatabaseName),
 		Statement: statement,
 		Format:    v1pb.ExportFormat(payload.Format),
 		Password:  payload.Password,
 	}
-	bytes, durationNs, exportErr := apiv1.DoExport(ctx, exec.store, exec.dbFactory, exec.license, exportRequest, instance, database, spans)
+	bytes, durationNs, exportErr := apiv1.DoExport(ctx, exec.store, exec.dbFactory, exec.license, exportRequest, nil /* user */, instance, database, nil, exec.schemaSyncer)
 	if exportErr != nil {
 		return true, nil, errors.Wrap(exportErr, "failed to export data")
 	}
 
-	encryptedBytes, err := apiv1.DoEncrypt(bytes, exportRequest)
-	if err != nil {
-		return true, nil, errors.Wrap(err, "failed to encrypt data")
-	}
-
 	exportArchive, err := exec.store.CreateExportArchive(ctx, &store.ExportArchiveMessage{
-		Bytes: encryptedBytes,
+		Bytes: bytes,
 		Payload: &storepb.ExportArchivePayload{
 			FileFormat: payload.Format,
 		},

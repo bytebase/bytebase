@@ -38,10 +38,10 @@ import { UserType } from "@/types/proto/v1/auth_service";
 import type { MemberBinding } from "../../types";
 
 const props = defineProps<{
-  projectMember: MemberBinding;
+  binding: MemberBinding;
 }>();
 
 const currentUserV1 = useCurrentUserV1();
 
-const user = computed(() => props.projectMember.user ?? unknownUser());
+const user = computed(() => props.binding.user ?? unknownUser());
 </script>

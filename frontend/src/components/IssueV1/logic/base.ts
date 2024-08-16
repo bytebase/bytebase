@@ -1,12 +1,12 @@
 import Emittery from "emittery";
-import { first } from "lodash-es";
+import { first, isEqual } from "lodash-es";
 import { useDialog } from "naive-ui";
-import { computed } from "vue";
+import { computed, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { useUIStateStore } from "@/store";
 import { EMPTY_ID, emptyStage, emptyTask } from "@/types";
-import type { Plan_Spec } from "@/types/proto/v1/plan_service";
+import type { Plan_Spec, PlanCheckRun } from "@/types/proto/v1/plan_service";
 import { Task_Type, Stage, Task } from "@/types/proto/v1/rollout_service";
 import { emptyPlanSpec } from "@/types/v1/issue/plan";
 import {
@@ -21,6 +21,7 @@ import {
   flattenSpecList,
 } from "@/utils";
 import type { IssueContext, IssueEvents, IssuePhase } from "./context";
+import { planCheckRunListForTask } from "./plan-check";
 import { releaserCandidatesForIssue } from "./releaser";
 import { extractReviewContext } from "./review";
 import { specForTask, stageForTask } from "./utils";
@@ -46,6 +47,7 @@ export const useBaseIssueContext = (
   const plan = computed(() => issue.value.planEntity);
   const rollout = computed(() => issue.value.rolloutEntity);
   const specs = computed(() => flattenSpecList(plan.value));
+  const tasks = computed(() => flattenTaskV1List(rollout.value));
 
   const activeStage = computed((): Stage => {
     return activeStageInRollout(rollout.value);
@@ -191,6 +193,29 @@ export const useBaseIssueContext = (
     set: (value: boolean) => uiStateStore.setEditorFormatStatementOnSave(value),
   });
 
+  const planCheckRunMapForTask = ref<Map<string, PlanCheckRun[]>>(new Map());
+
+  const getPlanCheckRunsForTask = (task: Task) => {
+    return planCheckRunMapForTask.value.get(task.name) || [];
+  };
+
+  watch(
+    () => issue.value,
+    (now, old) => {
+      // Only recompute planCheckRunMapForTask when planCheckRunList changes.
+      if (isEqual(old?.planCheckRunList, now.planCheckRunList)) return;
+      const cacheMap = new Map<string, PlanCheckRun[]>();
+      for (const task of tasks.value) {
+        cacheMap.set(task.name, planCheckRunListForTask(issue.value, task));
+      }
+      planCheckRunMapForTask.value = cacheMap;
+    },
+    {
+      deep: true,
+      immediate: true,
+    }
+  );
+
   return {
     phase,
     isGhostMode,
@@ -205,5 +230,6 @@ export const useBaseIssueContext = (
     selectedSpec,
     formatOnSave,
     dialog,
+    getPlanCheckRunsForTask,
   };
 };

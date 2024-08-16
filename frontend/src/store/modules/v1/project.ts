@@ -14,7 +14,6 @@ import {
 import { State } from "@/types/proto/v1/common";
 import type { Project } from "@/types/proto/v1/project_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
-import { useCurrentUserV1 } from "../auth";
 import { useListCache } from "./cache";
 import { useProjectIamPolicyStore } from "./projectIamPolicy";
 
@@ -119,7 +118,6 @@ export const useProjectV1Store = defineStore("project_v1", () => {
 });
 
 export const useProjectV1List = (showDeleted: boolean = false) => {
-  const currentUser = useCurrentUserV1();
   const listCache = useListCache("project");
   const store = useProjectV1Store();
   const cacheKey = listCache.getCacheKey(showDeleted ? "" : "active");
@@ -136,10 +134,7 @@ export const useProjectV1List = (showDeleted: boolean = false) => {
       timestamp: Date.now(),
       isFetching: true,
     });
-    const request = hasWorkspacePermissionV2(
-      currentUser.value,
-      "bb.projects.list"
-    )
+    const request = hasWorkspacePermissionV2("bb.projects.list")
       ? projectServiceClient.listProjects
       : projectServiceClient.searchProjects;
     const { projects } = await request({ showDeleted });

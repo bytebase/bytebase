@@ -44,7 +44,7 @@ import { NButton } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBGrid, type BBGridColumn } from "@/bbkit";
-import { pushNotification, useCurrentUserV1, useRiskStore } from "@/store";
+import { pushNotification, useRiskStore } from "@/store";
 import type { Risk } from "@/types/proto/v1/risk_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import { SpinnerButton, SpinnerSwitch, levelText } from "../common";
@@ -55,7 +55,6 @@ defineProps<{
 }>();
 
 const { t } = useI18n();
-const currentUser = useCurrentUserV1();
 const context = useRiskCenterContext();
 const { hasFeature, showFeatureModal } = context;
 
@@ -81,11 +80,11 @@ const COLUMN_LIST = computed(() => {
 });
 
 const allowUpdateRisk = computed(() => {
-  return hasWorkspacePermissionV2(currentUser.value, "bb.risks.update");
+  return hasWorkspacePermissionV2("bb.risks.update");
 });
 
 const allowDeleteRisk = computed(() => {
-  return hasWorkspacePermissionV2(currentUser.value, "bb.risks.delete");
+  return hasWorkspacePermissionV2("bb.risks.delete");
 });
 
 const editRisk = (risk: Risk) => {

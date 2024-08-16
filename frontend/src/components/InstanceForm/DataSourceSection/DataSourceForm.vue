@@ -637,44 +637,8 @@ MIIEvQ...
         :disabled="!allowEdit"
       />
     </div>
-    <div class="mt-2 sm:col-span-3 sm:col-start-1">
-      <NRadioGroup v-model:value="databricksAuth">
-        <NRadio :value="'PASSWORD'">
-          {{ $t("common.password") }}
-        </NRadio>
-        <NRadio :value="'ACCESS_TOKEN'"> Access Token </NRadio>
-      </NRadioGroup>
-    </div>
 
-    <div v-if="databricksAuth === 'PASSWORD'">
-      <div class="textlabel black mt-4">
-        {{ $t("common.username") }}
-      </div>
-      <NInput
-        v-model:value="dataSource.username"
-        class="mt-2 w-full"
-        :disabled="!allowEdit"
-      />
-      <div class="textlabel black mt-4">
-        {{ $t("common.password") }}
-      </div>
-      <NInput
-        v-model:value="dataSource.password"
-        type="password"
-        show-password-on="click"
-        class="mt-2 w-full"
-        :disabled="!allowEdit"
-        :placeholder="$t('instance.password-write-only')"
-      />
-      <div class="textlabel black mt-4">Account ID</div>
-      <NInput
-        v-model:value="dataSource.accountId"
-        class="mt-2 w-full"
-        :disabled="!allowEdit"
-        placeholder="optional"
-      />
-    </div>
-    <div v-else>
+    <div>
       <div class="textlabel black mt-4">
         Token
         <span class="text-red-600">*</span>
@@ -871,7 +835,7 @@ import {
   type UploadFileInfo,
   NSwitch,
 } from "naive-ui";
-import { watch, reactive, computed, ref } from "vue";
+import { watch, reactive, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBTextField } from "@/bbkit";
 import { FeatureBadge } from "@/components/FeatureGuard";
@@ -947,8 +911,6 @@ watch(
   },
   { immediate: true, deep: true }
 );
-
-const databricksAuth = ref("PASSWORD");
 
 const hiveAuthentication = computed(() => {
   return props.dataSource.saslConfig?.krbConfig ? "KERBEROS" : "PASSWORD";

@@ -23,7 +23,7 @@ import type { MemberBinding } from "../../types";
 
 const props = defineProps<{
   allowEdit: boolean;
-  projectMember: MemberBinding;
+  binding: MemberBinding;
 }>();
 
 defineEmits<{
@@ -31,11 +31,11 @@ defineEmits<{
 }>();
 
 const allowUpdate = computed(() => {
-  if (props.projectMember.type === "groups") {
+  if (props.binding.type === "groups") {
     return props.allowEdit;
   }
 
-  const user = props.projectMember.user ?? unknownUser();
+  const user = props.binding.user ?? unknownUser();
   if (user.name === SYSTEM_BOT_USER_NAME) {
     return false;
   }

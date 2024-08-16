@@ -5,36 +5,42 @@
     :trap-focus="false"
     :show="show"
     :title="$t('project.select')"
-    class="w-[48rem] max-w-full h-128 max-h-full"
+    class="w-[48rem] max-w-full h-auto max-h-full"
     @close="$emit('dismiss')"
   >
-    <div class="h-full overflow-y-auto relative">
-      <div v-if="currentProject" class="mb-2">
-        <NButton text @click="gotoWorkspace">
-          <template #icon>
-            <ChevronLeftIcon class="w-4" />
-          </template>
+    <div class="h-auto overflow-y-auto relative">
+      <div v-if="currentProject">
+        <NButton v-if="currentProject" size="small" text @click="gotoWorkspace">
+          <ChevronLeftIcon class="w-4 opacity-80" />
           {{ $t("common.back-to-workspace") }}
         </NButton>
-      </div>
-      <div class="w-full bg-white sticky top-0 z-50">
-        <div class="flex items-center justify-between space-x-2">
-          <SearchBox
-            v-model:value="state.searchText"
-            :placeholder="$t('common.filter-by-name')"
-            :autofocus="false"
-            style="max-width: 100%"
-          />
-          <NButton @click="state.showCreateDrawer = true">
-            {{ $t("quick-action.new-project") }}
-          </NButton>
-        </div>
       </div>
       <NTabs
         :value="actualSelectedTab"
         type="line"
         @update:value="state.selectedTab = $event"
       >
+        <template #suffix>
+          <div class="flex flex-row justify-end items-center gap-x-2">
+            <SearchBox
+              v-model:value="state.searchText"
+              :placeholder="$t('common.filter-by-name')"
+              :autofocus="false"
+              class="!w-40"
+              size="small"
+            />
+            <NTooltip trigger="hover">
+              <template #trigger>
+                <NButton size="small" @click="state.showCreateDrawer = true">
+                  <template #icon>
+                    <PlusIcon class="w-4 h-auto" />
+                  </template>
+                </NButton>
+              </template>
+              {{ $t("quick-action.new-project") }}
+            </NTooltip>
+          </div>
+        </template>
         <NTabPane
           v-for="tab in tabList"
           :key="tab.id"
@@ -46,13 +52,17 @@
             filteredRecentProjectList.length === 0
           "
         >
-          <ProjectV1Table
-            :project-list="tab.list"
-            :current-project="currentProject"
-            :pagination="false"
-            :keyword="state.searchText"
-            @row-click="onProjectSelect"
-          />
+          <div class="h-128">
+            <ProjectV1Table
+              :project-list="tab.list"
+              :current-project="currentProject"
+              :pagination="false"
+              :keyword="state.searchText"
+              :virtual-scroll="true"
+              :max-height="470"
+              @row-click="onProjectSelect"
+            />
+          </div>
         </NTabPane>
       </NTabs>
     </div>
@@ -68,8 +78,8 @@
 </template>
 
 <script lang="ts" setup>
-import { ChevronLeftIcon } from "lucide-vue-next";
-import { NButton, NTabPane, NTabs } from "naive-ui";
+import { ChevronLeftIcon, PlusIcon } from "lucide-vue-next";
+import { NButton, NTabPane, NTabs, NTooltip } from "naive-ui";
 import { computed, reactive, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";

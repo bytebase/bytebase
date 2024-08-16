@@ -283,7 +283,6 @@ import {
   useUserStore,
   useGroupStore,
   pushNotification,
-  useCurrentUserV1,
   useDBSchemaV1Store,
   extractGroupEmail,
 } from "@/store";
@@ -291,9 +290,9 @@ import {
   getUserEmailInBinding,
   getGroupEmailInBinding,
   groupBindingPrefix,
-  type ComposedUser,
 } from "@/types";
 import { Expr } from "@/types/proto/google/type/expr";
+import { type User } from "@/types/proto/v1/auth_service";
 import { MaskingLevel, maskingLevelToJSON } from "@/types/proto/v1/common";
 import type { Group } from "@/types/proto/v1/group";
 import type {
@@ -317,7 +316,7 @@ import { getMaskDataIdentifier, isCurrentColumnException } from "./utils";
 interface AccessUser {
   type: "user" | "group";
   group?: Group;
-  user?: ComposedUser;
+  user?: User;
   supportActions: Set<MaskingExceptionPolicy_MaskingException_Action>;
   maskingLevel: MaskingLevel;
   expirationTimestamp?: number;
@@ -361,7 +360,6 @@ const MASKING_LEVELS = [
 const { t } = useI18n();
 const userStore = useUserStore();
 const groupStore = useGroupStore();
-const currentUserV1 = useCurrentUserV1();
 const accessUserList = ref<AccessUser[]>([]);
 const policyStore = usePolicyV1Store();
 const dbSchemaStore = useDBSchemaV1Store();
@@ -388,7 +386,7 @@ const policy = usePolicyByParentAndType(
 );
 
 const hasPermission = computed(() => {
-  return hasWorkspacePermissionV2(currentUserV1.value, "bb.policies.update");
+  return hasWorkspacePermissionV2("bb.policies.update");
 });
 
 const expirationTimeRegex = /request.time < timestamp\("(.+)?"\)/;

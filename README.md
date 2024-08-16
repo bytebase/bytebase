@@ -53,7 +53,7 @@
 <br />
 
 <p align="center" >
-  <img src="https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/old-to-new-world.webp" />
+  <img src="https://raw.githubusercontent.com/bytebase/bytebase/main/docs/assets/your-dev-vs-competitor-hitman.webp" />
 </p>
 
 <br />
@@ -367,6 +367,12 @@ SQL GUI Client such as MySQL Workbench, pgAdmin, DBeaver, Navicat provide a GUI 
 
 - [Bytebase vs DBeaver](https://www.bytebase.com/blog/bytebase-vs-dbeaver/)
 - [Bytebase vs Navicat](https://www.bytebase.com/blog/bytebase-vs-navicat/)
+
+## Bytebase vs Jira
+
+Jira is a general-purpose issue ticketing system. Bytebase is a database domain-specific change management system. Bytebase provides an integrated experience to plan, review, and deploy database changes.
+
+- [Bytebase vs Jira](https://www.bytebase.com/blog/use-jira-for-database-change/)
 
 # 👨‍👩‍👧‍👦 Community
 

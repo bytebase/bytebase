@@ -59,12 +59,7 @@ import { NButton, useDialog } from "naive-ui";
 import { v4 as uuidv4 } from "uuid";
 import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
-import {
-  featureToRef,
-  useCurrentUserV1,
-  useSettingV1Store,
-  pushNotification,
-} from "@/store";
+import { featureToRef, useSettingV1Store, pushNotification } from "@/store";
 import {
   MaskingAlgorithmSetting_Algorithm as Algorithm,
   MaskingAlgorithmSetting_Algorithm_InnerOuterMask_MaskType,
@@ -94,12 +89,11 @@ const state = reactive<LocalState>({
 });
 
 const { t } = useI18n();
-const currentUser = useCurrentUserV1();
 const settingStore = useSettingV1Store();
 const $dialog = useDialog();
 
 const hasPermission = computed(() => {
-  return hasWorkspacePermissionV2(currentUser.value, "bb.policies.update");
+  return hasWorkspacePermissionV2("bb.policies.update");
 });
 const hasSensitiveDataFeature = featureToRef("bb.feature.sensitive-data");
 

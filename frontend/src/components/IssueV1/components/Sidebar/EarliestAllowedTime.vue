@@ -132,13 +132,7 @@ const disallowEditReasons = computed(() => {
   ) {
     allow = true;
   }
-  if (
-    hasProjectPermissionV2(
-      issue.value.projectEntity,
-      currentUser.value,
-      "bb.plans.update"
-    )
-  ) {
+  if (hasProjectPermissionV2(issue.value.projectEntity, "bb.plans.update")) {
     allow = true;
   }
   if (!allow) {
@@ -181,11 +175,11 @@ const chooseUpdateStatementTarget = () => {
     TASK: [selectedTask.value],
     STAGE: (stageForTask(issue.value, selectedTask.value)?.tasks ?? []).filter(
       (task) => {
-        return isTaskEditable(issue.value, task).length === 0;
+        return isTaskEditable(task).length === 0;
       }
     ),
     ALL: flattenTaskV1List(issue.value.rolloutEntity).filter((task) => {
-      return isTaskEditable(issue.value, task).length === 0;
+      return isTaskEditable(task).length === 0;
     }),
   };
 

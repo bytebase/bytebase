@@ -112,7 +112,7 @@ import {
   SQL_EDITOR_HOME_MODULE,
   SQL_EDITOR_PROJECT_MODULE,
 } from "@/router/sqlEditor";
-import { useCurrentUserV1, useSubscriptionV1Store } from "@/store";
+import { useSubscriptionV1Store } from "@/store";
 import { PlanType } from "@/types/proto/v1/subscription_service";
 import { extractProjectResourceName, hasWorkspacePermissionV2 } from "@/utils";
 import BytebaseLogo from "../components/BytebaseLogo.vue";
@@ -144,7 +144,6 @@ const params = computed(() => {
   };
 });
 
-const currentUser = useCurrentUserV1();
 const { project } = useCurrentProject(params);
 
 const isMac = navigator.platform.match(/mac/i);
@@ -156,7 +155,7 @@ const onClickSearchButton = () => {
 const { currentPlan } = storeToRefs(subscriptionStore);
 
 const hasGetSettingPermission = computed(() => {
-  return hasWorkspacePermissionV2(currentUser.value, "bb.settings.get");
+  return hasWorkspacePermissionV2("bb.settings.get");
 });
 
 const sqlEditorLink = computed(() => {

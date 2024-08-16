@@ -36,7 +36,7 @@ import InstanceAssignment from "@/components/InstanceAssignment.vue";
 import { specForTask, useIssueContext } from "@/components/IssueV1/logic";
 import type { ErrorItem } from "@/components/misc/ErrorList.vue";
 import { default as ErrorList } from "@/components/misc/ErrorList.vue";
-import { hasFeature, useCurrentUserV1 } from "@/store";
+import { hasFeature } from "@/store";
 import { Engine } from "@/types/proto/v1/common";
 import {
   MIN_GHOST_SUPPORT_MYSQL_VERSION,
@@ -47,7 +47,6 @@ import {
 import { allowGhostForTask, useIssueGhostContext } from "./common";
 
 const { t } = useI18n();
-const me = useCurrentUserV1();
 const { isCreating, issue, selectedTask: task, events } = useIssueContext();
 const { viewType, toggleGhost, showFeatureModal, showMissingInstanceLicense } =
   useIssueGhostContext();
@@ -63,7 +62,7 @@ const checked = computed(() => {
 });
 
 const canManageSubscription = computed((): boolean => {
-  return hasWorkspacePermissionV2(me.value, "bb.settings.set");
+  return hasWorkspacePermissionV2("bb.settings.set");
 });
 
 const allowGhostForEveryDatabase = computed(() => {

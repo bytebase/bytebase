@@ -18,7 +18,6 @@
 import { NButton } from "naive-ui";
 import { computed, ref } from "vue";
 import RequestQueryPanel from "@/components/Issue/panel/RequestQueryPanel/index.vue";
-import { useCurrentUserV1 } from "@/store";
 import { isValidDatabaseName, type ComposedDatabase } from "@/types";
 import { hasPermissionToCreateRequestGrantIssue } from "@/utils";
 
@@ -34,7 +33,6 @@ const props = withDefaults(
   }
 );
 
-const me = useCurrentUserV1();
 const showPanel = ref(false);
 
 const available = computed(() => {
@@ -42,7 +40,7 @@ const available = computed(() => {
     return false;
   }
 
-  return hasPermissionToCreateRequestGrantIssue(props.database, me.value);
+  return hasPermissionToCreateRequestGrantIssue(props.database);
 });
 
 const onClick = (e: MouseEvent) => {

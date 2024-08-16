@@ -5,7 +5,6 @@ import { parseSQL } from "@/components/MonacoEditor/sqlParser";
 import { t } from "@/plugins/i18n";
 import {
   pushNotification,
-  useCurrentUserV1,
   useDatabaseV1Store,
   useSQLEditorStore,
   useSQLEditorTabStore,
@@ -29,7 +28,6 @@ import {
 } from "@/utils";
 
 const useExecuteSQL = () => {
-  const currentUser = useCurrentUserV1();
   const databaseStore = useDatabaseV1Store();
   const tabStore = useSQLEditorTabStore();
   const sqlEditorStore = useSQLEditorStore();
@@ -176,7 +174,7 @@ const useExecuteSQL = () => {
             : database.instance;
           const dataSourceId =
             instance === params.connection.instance
-              ? params.connection.dataSourceId ?? ""
+              ? (params.connection.dataSourceId ?? "")
               : "";
           resultSet = await sqlStore.queryReadonly(
             {
@@ -242,12 +240,7 @@ const useExecuteSQL = () => {
             );
             // Show a tips to navigate to issue creation
             // if the user is allowed to create issue in the project.
-            if (
-              hasPermissionToCreateChangeDatabaseIssue(
-                database,
-                currentUser.value
-              )
-            ) {
+            if (hasPermissionToCreateChangeDatabaseIssue(database)) {
               sqlEditorStore.isShowExecutingHint = true;
               cleanup();
             }

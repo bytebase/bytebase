@@ -236,12 +236,7 @@ import DownloadSheetButton from "@/components/Sheet/DownloadSheetButton.vue";
 import SQLUploadButton from "@/components/misc/SQLUploadButton.vue";
 import { planServiceClient } from "@/grpcweb";
 import { emitWindowEvent } from "@/plugins";
-import {
-  hasFeature,
-  pushNotification,
-  useCurrentUserV1,
-  useSheetV1Store,
-} from "@/store";
+import { hasFeature, pushNotification, useSheetV1Store } from "@/store";
 import type { SQLDialect } from "@/types";
 import {
   EMPTY_ID,
@@ -279,7 +274,6 @@ const props = defineProps<{
 
 const { t } = useI18n();
 const route = useRoute();
-const currentUser = useCurrentUserV1();
 const context = useIssueContext();
 const { events, isCreating, issue, selectedTask, formatOnSave } = context;
 const project = computed(() => issue.value.projectEntity);
@@ -367,11 +361,7 @@ const isSheetOversize = computed(() => {
 });
 
 const denyEditStatementReasons = computed(() => {
-  return allowUserToEditStatementForTask(
-    issue.value,
-    selectedTask.value,
-    currentUser.value
-  );
+  return allowUserToEditStatementForTask(issue.value, selectedTask.value);
 });
 
 const shouldShowEditButton = computed(() => {
@@ -437,14 +427,14 @@ const chooseUpdateStatementTarget = () => {
       (task) => {
         return (
           TaskTypeListWithStatement.includes(task.type) &&
-          isTaskEditable(issue.value, task).length === 0
+          isTaskEditable(task).length === 0
         );
       }
     ),
     ALL: flattenTaskV1List(issue.value.rolloutEntity).filter((task) => {
       return (
         TaskTypeListWithStatement.includes(task.type) &&
-        isTaskEditable(issue.value, task).length === 0
+        isTaskEditable(task).length === 0
       );
     }),
   };

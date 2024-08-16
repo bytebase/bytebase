@@ -19,8 +19,6 @@ import { t } from "@/plugins/i18n";
 import projectV1Routes, {
   PROJECT_V1_ROUTE_DATABASES,
   PROJECT_V1_ROUTE_ISSUES,
-  PROJECT_V1_ROUTE_CHANGE_HISTORIES,
-  PROJECT_V1_ROUTE_DATABASE_CHANGE_HISTORY_DETAIL,
   PROJECT_V1_ROUTE_SYNC_SCHEMA,
   PROJECT_V1_ROUTE_SLOW_QUERIES,
   PROJECT_V1_ROUTE_ANOMALIES,
@@ -35,7 +33,6 @@ import projectV1Routes, {
   PROJECT_V1_ROUTE_AUDIT_LOGS,
   PROJECT_V1_ROUTE_REVIEW_CENTER,
 } from "@/router/dashboard/projectV1";
-import { useCurrentUserV1 } from "@/store";
 import type { ComposedProject, MaybeRef, Permission } from "@/types";
 import { DEFAULT_PROJECT_NAME } from "@/types";
 import { hasProjectPermissionV2 } from "@/utils";
@@ -51,7 +48,6 @@ export const useProjectSidebar = (
   project: MaybeRef<ComposedProject>,
   _route?: RouteLocationNormalizedLoaded
 ) => {
-  const currentUser = useCurrentUserV1();
   const route = _route ?? useRoute();
 
   const isDefaultProject = computed((): boolean => {
@@ -109,7 +105,7 @@ export const useProjectSidebar = (
           (projectV1Route) => projectV1Route.name === item.path
         );
         return (routeConfig?.permissions ?? []).every((permission) =>
-          hasProjectPermissionV2(unref(project), currentUser.value, permission)
+          hasProjectPermissionV2(unref(project), permission)
         );
       })
       .map((item) => ({
@@ -134,11 +130,6 @@ export const useProjectSidebar = (
           {
             title: t("common.groups"),
             path: PROJECT_V1_ROUTE_DATABASE_GROUPS,
-            type: "div",
-          },
-          {
-            title: t("common.change-history"),
-            path: PROJECT_V1_ROUTE_CHANGE_HISTORIES,
             type: "div",
           },
           {
@@ -259,15 +250,6 @@ export const useProjectSidebar = (
 
   const checkIsActive = (item: SidebarItem) => {
     const { name: current } = route;
-
-    if (
-      current?.toString() === PROJECT_V1_ROUTE_DATABASE_CHANGE_HISTORY_DETAIL
-    ) {
-      if (item.path === PROJECT_V1_ROUTE_CHANGE_HISTORIES) {
-        return true;
-      }
-      return false;
-    }
 
     const isActiveRoute =
       item.path === current?.toString() ||

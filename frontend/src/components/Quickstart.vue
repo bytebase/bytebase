@@ -122,12 +122,7 @@ import {
   WORKSPACE_ROUTE_USERS,
 } from "@/router/dashboard/workspaceRoutes";
 import { SQL_EDITOR_WORKSHEET_MODULE } from "@/router/sqlEditor";
-import {
-  pushNotification,
-  useCurrentUserV1,
-  useUIStateStore,
-  useProjectV1Store,
-} from "@/store";
+import { pushNotification, useUIStateStore, useProjectV1Store } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import type { Permission } from "@/types";
 import {
@@ -136,9 +131,9 @@ import {
   isValidProjectName,
 } from "@/types";
 import {
+  hasWorkspaceLevelRole,
   hasWorkspacePermissionV2,
   hasProjectPermissionV2,
-  hasWorkspaceLevelProjectPermission,
   extractProjectResourceName,
 } from "@/utils";
 
@@ -158,7 +153,6 @@ const { t } = useI18n();
 const projectStore = useProjectV1Store();
 const uiStateStore = useUIStateStore();
 const kbarHandler = useKBarHandler();
-const currentUserV1 = useCurrentUserV1();
 
 const show = computed(() => {
   return !uiStateStore.getIntroStateByKey("hidden");
@@ -201,11 +195,7 @@ const introList = computed(() => {
       done: computed(() => uiStateStore.getIntroStateByKey("issue.visit")),
       hide:
         !sampleProject.value ||
-        !hasProjectPermissionV2(
-          sampleProject.value,
-          currentUserV1.value,
-          "bb.issues.get"
-        ),
+        !hasProjectPermissionV2(sampleProject.value, "bb.issues.get"),
     },
     {
       name: computed(() => t("quick-start.query-data")),
@@ -219,11 +209,7 @@ const introList = computed(() => {
       done: computed(() => uiStateStore.getIntroStateByKey("data.query")),
       hide:
         !sampleProject.value ||
-        !hasProjectPermissionV2(
-          sampleProject.value,
-          currentUserV1.value,
-          "bb.databases.query"
-        ),
+        !hasProjectPermissionV2(sampleProject.value, "bb.databases.query"),
     },
     {
       name: computed(() => t("quick-start.visit-project")),
@@ -270,14 +256,14 @@ const introList = computed(() => {
     (item) =>
       !item.hide &&
       (item.requiredPermissions ?? []).every((permission) =>
-        hasWorkspacePermissionV2(currentUserV1.value, permission)
+        hasWorkspacePermissionV2(permission)
       )
   );
 });
 
 const showQuickstart = computed(() => {
   // Only show quickstart for those who have workspace admin role.
-  if (!currentUserV1.value.roles.includes(PresetRoleType.WORKSPACE_ADMIN)) {
+  if (!hasWorkspaceLevelRole(PresetRoleType.WORKSPACE_ADMIN)) {
     return false;
   }
   if (!show.value) return false;
@@ -363,9 +349,7 @@ watchEffect(async () => {
     return;
   }
 
-  if (
-    hasWorkspaceLevelProjectPermission(currentUserV1.value, "bb.projects.get")
-  ) {
+  if (hasWorkspacePermissionV2("bb.projects.get")) {
     try {
       await projectStore.getOrFetchProjectByName(
         "projects/101",

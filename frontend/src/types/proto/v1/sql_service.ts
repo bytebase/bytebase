@@ -243,6 +243,12 @@ export interface ExportRequest {
   admin: boolean;
   /** The zip password provide by users. */
   password: string;
+  /**
+   * The id of data source.
+   * It is used for querying admin data source even if the instance has read-only data sources.
+   * Or it can be used to query a specific read-only data source.
+   */
+  dataSourceId: string;
 }
 
 export interface ExportResponse {
@@ -1777,7 +1783,15 @@ export const Advice = {
 };
 
 function createBaseExportRequest(): ExportRequest {
-  return { name: "", statement: "", limit: 0, format: ExportFormat.FORMAT_UNSPECIFIED, admin: false, password: "" };
+  return {
+    name: "",
+    statement: "",
+    limit: 0,
+    format: ExportFormat.FORMAT_UNSPECIFIED,
+    admin: false,
+    password: "",
+    dataSourceId: "",
+  };
 }
 
 export const ExportRequest = {
@@ -1799,6 +1813,9 @@ export const ExportRequest = {
     }
     if (message.password !== "") {
       writer.uint32(58).string(message.password);
+    }
+    if (message.dataSourceId !== "") {
+      writer.uint32(66).string(message.dataSourceId);
     }
     return writer;
   },
@@ -1852,6 +1869,13 @@ export const ExportRequest = {
 
           message.password = reader.string();
           continue;
+        case 8:
+          if (tag !== 66) {
+            break;
+          }
+
+          message.dataSourceId = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1869,6 +1893,7 @@ export const ExportRequest = {
       format: isSet(object.format) ? exportFormatFromJSON(object.format) : ExportFormat.FORMAT_UNSPECIFIED,
       admin: isSet(object.admin) ? globalThis.Boolean(object.admin) : false,
       password: isSet(object.password) ? globalThis.String(object.password) : "",
+      dataSourceId: isSet(object.dataSourceId) ? globalThis.String(object.dataSourceId) : "",
     };
   },
 
@@ -1892,6 +1917,9 @@ export const ExportRequest = {
     if (message.password !== "") {
       obj.password = message.password;
     }
+    if (message.dataSourceId !== "") {
+      obj.dataSourceId = message.dataSourceId;
+    }
     return obj;
   },
 
@@ -1906,6 +1934,7 @@ export const ExportRequest = {
     message.format = object.format ?? ExportFormat.FORMAT_UNSPECIFIED;
     message.admin = object.admin ?? false;
     message.password = object.password ?? "";
+    message.dataSourceId = object.dataSourceId ?? "";
     return message;
   },
 };

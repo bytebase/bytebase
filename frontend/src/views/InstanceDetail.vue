@@ -92,7 +92,6 @@ import { useBodyLayoutContext } from "@/layouts/common";
 import {
   pushNotification,
   useDBSchemaV1Store,
-  useCurrentUserV1,
   useInstanceV1Store,
   useEnvironmentV1Store,
   useDatabaseV1Store,
@@ -128,8 +127,6 @@ const router = useRouter();
 const instanceV1Store = useInstanceV1Store();
 const databaseStore = useDatabaseV1Store();
 
-const currentUser = useCurrentUserV1();
-
 const state = reactive<LocalState>({
   showCreateDatabaseModal: false,
   syncingSchema: false,
@@ -158,17 +155,14 @@ const instanceRoleList = computed(() => {
 const allowSyncInstance = computed(() => {
   return (
     instance.value.state === State.ACTIVE &&
-    hasWorkspacePermissionV2(currentUser.value, "bb.instances.sync")
+    hasWorkspacePermissionV2("bb.instances.sync")
   );
 });
 
 const allowCreateDatabase = computed(() => {
   return (
     instance.value.state === State.ACTIVE &&
-    hasWorkspaceLevelProjectPermissionInAnyProject(
-      currentUser.value,
-      "bb.issues.create"
-    ) &&
+    hasWorkspaceLevelProjectPermissionInAnyProject("bb.issues.create") &&
     instanceV1HasCreateDatabase(instance.value)
   );
 });

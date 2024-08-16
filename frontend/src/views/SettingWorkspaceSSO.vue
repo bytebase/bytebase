@@ -52,7 +52,7 @@ import {
   WORKSPACE_ROUTE_SSO_CREATE,
   WORKSPACE_ROUTE_SSO_DETAIL,
 } from "@/router/dashboard/workspaceRoutes";
-import { featureToRef, useCurrentUserV1 } from "@/store";
+import { featureToRef } from "@/store";
 import { useIdentityProviderStore } from "@/store/modules/idp";
 import { getSSOId } from "@/store/modules/v1/common";
 import type { IdentityProvider } from "@/types/proto/v1/idp_service";
@@ -69,7 +69,6 @@ interface LocalState {
 
 const { t } = useI18n();
 const router = useRouter();
-const currentUser = useCurrentUserV1();
 const state = reactive<LocalState>({
   showFeatureModal: false,
   showCreatingSSOModal: false,
@@ -83,17 +82,11 @@ const identityProviderList = computed(() => {
 });
 
 const allowCreateSSO = computed(() => {
-  return hasWorkspacePermissionV2(
-    currentUser.value,
-    "bb.identityProviders.create"
-  );
+  return hasWorkspacePermissionV2("bb.identityProviders.create");
 });
 
 const allowGetSSO = computed(() => {
-  return hasWorkspacePermissionV2(
-    currentUser.value,
-    "bb.identityProviders.get"
-  );
+  return hasWorkspacePermissionV2("bb.identityProviders.get");
 });
 
 onMounted(() => {

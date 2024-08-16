@@ -369,9 +369,8 @@ export const previewPlan = async (plan: Plan, params: CreateIssueParams) => {
   const project = useProjectV1Store().getProjectByName(
     `projects/${extractProjectResourceName(plan.name)}`
   );
-  const me = useCurrentUserV1();
   let rollout: Rollout = Rollout.fromPartial({});
-  if (hasProjectPermissionV2(project, me.value, "bb.rollouts.preview")) {
+  if (hasProjectPermissionV2(project, "bb.rollouts.preview")) {
     rollout = await rolloutServiceClient.previewRollout({
       project: params.project.name,
       plan,
@@ -465,6 +464,13 @@ const extractInitialSQLFromQuery = (
   }
   const sql = query.sql;
   if (sql && typeof sql === "string") {
+    return {
+      sql,
+    };
+  }
+  const sqlStorageKey = query.sqlStorageKey;
+  if (sqlStorageKey && typeof sqlStorageKey === "string") {
+    const sql = localStorage.getItem(sqlStorageKey) ?? "";
     return {
       sql,
     };

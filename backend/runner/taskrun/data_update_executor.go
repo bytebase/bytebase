@@ -9,7 +9,6 @@ import (
 	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
-	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -51,12 +50,6 @@ type DataUpdateExecutor struct {
 
 // RunOnce will run the data update (DML) task executor once.
 func (exec *DataUpdateExecutor) RunOnce(ctx context.Context, driverCtx context.Context, task *store.TaskMessage, taskRunUID int) (bool, *storepb.TaskRunResult, error) {
-	exec.stateCfg.TaskRunExecutionStatuses.Store(taskRunUID,
-		state.TaskRunExecutionStatus{
-			ExecutionStatus: v1pb.TaskRun_PRE_EXECUTING,
-			UpdateTime:      time.Now(),
-		})
-
 	payload := &storepb.TaskDatabaseUpdatePayload{}
 	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(task.Payload), payload); err != nil {
 		return true, nil, errors.Wrap(err, "invalid database data update payload")

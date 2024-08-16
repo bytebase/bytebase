@@ -54,7 +54,7 @@ import { NTooltip } from "naive-ui";
 import type { PropType } from "vue";
 import { reactive, computed } from "vue";
 import { SETTING_ROUTE_WORKSPACE_SUBSCRIPTION } from "@/router/dashboard/workspaceSetting";
-import { useSubscriptionV1Store, useCurrentUserV1 } from "@/store";
+import { useSubscriptionV1Store } from "@/store";
 import type { FeatureType } from "@/types";
 import { planTypeToString } from "@/types";
 import type {
@@ -93,7 +93,6 @@ const state = reactive<LocalState>({
 });
 
 const subscriptionStore = useSubscriptionV1Store();
-const currentUserV1 = useCurrentUserV1();
 
 const hasFeature = computed(() => {
   return subscriptionStore.hasInstanceFeature(props.feature, props.instance);
@@ -107,6 +106,6 @@ const instanceMissingLicense = computed(() => {
 });
 
 const canManageSubscription = computed((): boolean => {
-  return hasWorkspacePermissionV2(currentUserV1.value, "bb.instances.update");
+  return hasWorkspacePermissionV2("bb.instances.update");
 });
 </script>

@@ -416,7 +416,6 @@ func (s *SchedulerV2) scheduleRunningTaskRuns(ctx context.Context) error {
 
 func (s *SchedulerV2) runTaskRunOnce(ctx context.Context, taskRun *store.TaskRunMessage, task *store.TaskMessage, executor Executor) {
 	defer func() {
-		s.stateCfg.TaskRunExecutionStatuses.Delete(taskRun.ID)
 		// We don't need to do s.stateCfg.RunningTaskRuns.Delete(taskRun.ID) to avoid race condition.
 		s.stateCfg.RunningTaskRunsCancelFunc.Delete(taskRun.ID)
 		if task.DatabaseID != nil {

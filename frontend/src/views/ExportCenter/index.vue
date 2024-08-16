@@ -163,14 +163,11 @@ const mergedIssueFilter = computed(() => {
 
 const allowExportData = computed(() => {
   if (specificProject.value) {
-    return hasPermissionToCreateDataExportIssueInProject(
-      specificProject.value,
-      currentUser.value
-    );
+    return hasPermissionToCreateDataExportIssueInProject(specificProject.value);
   }
 
   return projectV1Store.projectList.some((project) =>
-    hasPermissionToCreateDataExportIssueInProject(project, currentUser.value)
+    hasPermissionToCreateDataExportIssueInProject(project)
   );
 });
 </script>

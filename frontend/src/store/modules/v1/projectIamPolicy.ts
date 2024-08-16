@@ -2,8 +2,9 @@ import { isUndefined, uniq } from "lodash-es";
 import { defineStore } from "pinia";
 import { computed, ref, unref, watch, watchEffect } from "vue";
 import { projectServiceClient } from "@/grpcweb";
-import type { ComposedDatabase, MaybeRef } from "@/types";
+import type { ComposedDatabase, ComposedProject, MaybeRef } from "@/types";
 import { PresetRoleType } from "@/types";
+import type { Expr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
 import { IamPolicy } from "@/types/proto/v1/iam_policy";
 import {
   hasWorkspacePermissionV2,
@@ -11,7 +12,7 @@ import {
   isOwnerOfProjectV1,
   isViewerOfProjectV1,
 } from "@/utils";
-import { getUserEmailListInBinding, memberListInIAM } from "@/utils";
+import { getUserEmailListInBinding } from "@/utils";
 import { convertFromExpr } from "@/utils/issue/cel";
 import { useCurrentUserV1 } from "../auth";
 import { usePermissionStore } from "./permission";
@@ -151,10 +152,8 @@ export const useCurrentUserIamPolicy = () => {
   });
 
   // hasWorkspaceSuperPrivilege checks whether the current user has the super privilege to access all databases. AKA. Owners and DBAs
-  const hasWorkspaceSuperPrivilege = hasWorkspacePermissionV2(
-    currentUser.value,
-    "bb.projects.list"
-  );
+  const hasWorkspaceSuperPrivilege =
+    hasWorkspacePermissionV2("bb.projects.list");
 
   const isProjectOwnerOrDeveloper = (projectName: string): boolean => {
     if (hasWorkspaceSuperPrivilege) {
@@ -165,14 +164,7 @@ export const useCurrentUserIamPolicy = () => {
     if (!project) {
       return false;
     }
-    const policy = iamPolicyStore.policyMap.get(projectName);
-    if (!policy) {
-      return false;
-    }
-    return (
-      isOwnerOfProjectV1(project, currentUser.value) ||
-      isDeveloperOfProjectV1(project, currentUser.value)
-    );
+    return isOwnerOfProjectV1(project) || isDeveloperOfProjectV1(project);
   };
 
   const isProjectOwnerOrDeveloperOrViewer = (projectName: string): boolean => {
@@ -180,22 +172,55 @@ export const useCurrentUserIamPolicy = () => {
       return true;
     }
 
-    const policy = iamPolicyStore.policyMap.get(projectName);
-    if (!policy) {
-      return false;
-    }
     const project = projectStore.getProjectByName(projectName);
     if (!project) {
       return false;
     }
     return (
-      isProjectOwnerOrDeveloper(projectName) ||
-      isViewerOfProjectV1(project, currentUser.value)
+      isProjectOwnerOrDeveloper(projectName) || isViewerOfProjectV1(project)
     );
   };
 
   const allowToChangeDatabaseOfProject = (projectName: string) => {
     return isProjectOwnerOrDeveloper(projectName);
+  };
+
+  const checkProjectIAMPolicy = (
+    project: ComposedProject,
+    role: string,
+    bindingExprCheck: (expr: Expr) => boolean
+  ): boolean => {
+    const roleList = usePermissionStore().currentRoleListInProjectV1(project);
+    if (roleList.includes(PresetRoleType.PROJECT_OWNER)) {
+      return true;
+    }
+    if (!roleList.includes(role)) {
+      return false;
+    }
+
+    // Check if the user has the permission to query the database.
+    for (const binding of project.iamPolicy.bindings) {
+      if (binding.role !== role) {
+        continue;
+      }
+
+      const userEmailList = getUserEmailListInBinding({
+        binding,
+        ignoreGroup: false,
+      });
+      if (!userEmailList.includes(currentUser.value.email)) {
+        continue;
+      }
+
+      if (!binding.parsedExpr?.expr) {
+        return true;
+      }
+      if (bindingExprCheck(binding.parsedExpr?.expr)) {
+        return true;
+      }
+    }
+
+    return false;
   };
 
   const allowToQueryDatabaseV1 = (
@@ -207,37 +232,11 @@ export const useCurrentUserIamPolicy = () => {
       return true;
     }
 
-    const policy = iamPolicyStore.getProjectIamPolicy(database.project);
-    if (!policy) {
-      return false;
-    }
-
-    const member = memberListInIAM(policy).find(
-      (member) => member.user.email === currentUser.value.email
-    );
-    if (!member) {
-      return false;
-    }
-    if (member.roleList.includes(PresetRoleType.PROJECT_OWNER)) {
-      return true;
-    }
-    if (member.user.roles.includes(PresetRoleType.PROJECT_QUERIER)) {
-      return true;
-    }
-
-    // Check if the user has the permission to query the database.
-    for (const binding of policy.bindings) {
-      if (binding.role !== PresetRoleType.PROJECT_QUERIER) {
-        continue;
-      }
-
-      const userEmailList = getUserEmailListInBinding(binding);
-      if (!userEmailList.includes(currentUser.value.email)) {
-        continue;
-      }
-
-      if (binding.parsedExpr?.expr) {
-        const conditionExpr = convertFromExpr(binding.parsedExpr.expr);
+    return checkProjectIAMPolicy(
+      database.projectEntity,
+      PresetRoleType.PROJECT_QUERIER,
+      (expr: Expr): boolean => {
+        const conditionExpr = convertFromExpr(expr);
         if (
           conditionExpr.databaseResources &&
           conditionExpr.databaseResources.length > 0
@@ -259,16 +258,12 @@ export const useCurrentUserIamPolicy = () => {
               }
             }
           }
+          return false;
         } else {
           return true;
         }
-      } else {
-        return true;
       }
-    }
-
-    // Otherwise, the user is not allowed to query the database.
-    return false;
+    );
   };
 
   const allowToExportDatabaseV1 = (database: ComposedDatabase) => {
@@ -276,35 +271,11 @@ export const useCurrentUserIamPolicy = () => {
       return true;
     }
 
-    const policy = iamPolicyStore.getProjectIamPolicy(database.project);
-    if (!policy) {
-      return false;
-    }
-
-    const member = memberListInIAM(policy).find(
-      (member) => member.user.email === currentUser.value.email
-    );
-    if (!member) {
-      return false;
-    }
-    if (member.roleList.includes(PresetRoleType.PROJECT_OWNER)) {
-      return true;
-    }
-    if (member.user.roles.includes(PresetRoleType.PROJECT_EXPORTER)) {
-      return true;
-    }
-
-    for (const binding of policy.bindings) {
-      if (binding.role !== PresetRoleType.PROJECT_EXPORTER) {
-        continue;
-      }
-      const userEmailList = getUserEmailListInBinding(binding);
-      if (!userEmailList.includes(currentUser.value.email)) {
-        continue;
-      }
-
-      if (binding.parsedExpr?.expr) {
-        const conditionExpr = convertFromExpr(binding.parsedExpr.expr);
+    return checkProjectIAMPolicy(
+      database.projectEntity,
+      PresetRoleType.PROJECT_EXPORTER,
+      (expr: Expr): boolean => {
+        const conditionExpr = convertFromExpr(expr);
         if (
           conditionExpr.databaseResources &&
           conditionExpr.databaseResources.length > 0
@@ -316,15 +287,12 @@ export const useCurrentUserIamPolicy = () => {
           if (hasDatabaseField) {
             return true;
           }
+          return false;
         } else {
           return true;
         }
-      } else {
-        return true;
       }
-    }
-
-    return false;
+    );
   };
 
   return {

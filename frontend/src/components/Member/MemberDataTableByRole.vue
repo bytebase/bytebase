@@ -6,6 +6,8 @@
     :row-key="(row) => row.name"
     :striped="true"
     :bordered="true"
+    :max-height="'calc(100vh - 15rem)'"
+    virtual-scroll
     default-expand-all
   />
 </template>
@@ -16,8 +18,7 @@ import { NDataTable } from "naive-ui";
 import { computed, h } from "vue";
 import { useI18n } from "vue-i18n";
 import GroupNameCell from "@/components/User/Settings/UserDataTableByGroup/cells/GroupNameCell.vue";
-import { useRoleStore } from "@/store";
-import { displayRoleTitle, sortRoles } from "@/utils";
+import { displayRoleTitle } from "@/utils";
 import UserNameCell from "./MemberDataTable/cells/UserNameCell.vue";
 import UserOperationsCell from "./MemberDataTable/cells/UserOperationsCell.vue";
 import type { MemberBinding } from "./types";
@@ -36,7 +37,7 @@ interface BindingRowData {
 
 const props = defineProps<{
   allowEdit: boolean;
-  bindings: MemberBinding[];
+  bindingsByRole: Map<string, Map<string, MemberBinding>>;
 }>();
 
 const emit = defineEmits<{
@@ -44,7 +45,6 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const roleStore = useRoleStore();
 
 const columns = computed(() => {
   return [
@@ -82,7 +82,7 @@ const columns = computed(() => {
           return <GroupNameCell group={row.member.group!} />;
         }
 
-        return <UserNameCell projectMember={row.member} />;
+        return <UserNameCell binding={row.member} />;
       },
     },
     {
@@ -95,7 +95,7 @@ const columns = computed(() => {
         } else {
           return h(UserOperationsCell, {
             allowEdit: props.allowEdit,
-            projectMember: row.member,
+            binding: row.member,
             "onUpdate-binding": () => {
               emit("update-binding", row.member);
             },
@@ -107,30 +107,24 @@ const columns = computed(() => {
 });
 
 const userListByRole = computed(() => {
-  const roles = sortRoles(roleStore.roleList.map((role) => role.name));
   const rowDataList: RoleRowData[] = [];
 
-  for (const role of roles) {
-    const members = props.bindings.filter((member) => {
-      return (
-        member.workspaceLevelRoles.includes(role) ||
-        member.projectRoleBindings.find((binding) => binding.role === role)
-      );
-    });
+  for (const [role, memberBindings] of props.bindingsByRole.entries()) {
+    const children: BindingRowData[] = [];
 
-    if (members.length > 0) {
-      rowDataList.push({
-        type: "role",
-        name: role,
-        children: members.map((member) => {
-          return {
-            type: "binding",
-            name: member.binding,
-            member,
-          };
-        }),
+    for (const memberBinding of memberBindings.values()) {
+      children.push({
+        type: "binding",
+        name: `${role}-${memberBinding.binding}`,
+        member: memberBinding,
       });
     }
+
+    rowDataList.push({
+      type: "role",
+      name: role,
+      children,
+    });
   }
 
   return rowDataList;

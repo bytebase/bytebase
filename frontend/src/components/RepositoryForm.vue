@@ -121,7 +121,7 @@ import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBTextField } from "@/bbkit";
 import { DatabaseGroupSelect } from "@/components/v2/Select";
-import { useVCSConnectorStore, hasFeature, useCurrentUserV1 } from "@/store";
+import { useVCSConnectorStore, hasFeature } from "@/store";
 import type {
   RepositoryConfig,
   ComposedProject,
@@ -160,11 +160,7 @@ const vcsConnectorStore = useVCSConnectorStore();
 const hasDatabaseGroupPermission = computed(
   () =>
     hasFeature("bb.feature.database-grouping") &&
-    hasProjectPermissionV2(
-      props.project,
-      useCurrentUserV1().value,
-      "bb.projects.update"
-    )
+    hasProjectPermissionV2(props.project, "bb.projects.update")
 );
 
 const getWebhookLink = computed(() => {

@@ -201,7 +201,7 @@ const prepareSheetLegacy = async () => {
 
   try {
     const project = await projectStore.getOrFetchProjectByName(projectName);
-    if (!hasProjectPermissionV2(project, me.value, "bb.databases.query")) {
+    if (!hasProjectPermissionV2(project, "bb.databases.query")) {
       return false;
     }
   } catch {
@@ -269,7 +269,7 @@ const prepareSheet = async () => {
   const sheetName = `worksheets/${sheetId}`;
 
   const project = await projectStore.getOrFetchProjectByName(projectName);
-  if (!hasProjectPermissionV2(project, me.value, "bb.databases.query")) {
+  if (!hasProjectPermissionV2(project, "bb.databases.query")) {
     return false;
   }
   await maybeSwitchProject(projectName);
@@ -343,7 +343,7 @@ const prepareConnectionParams = async () => {
     `instances/${instanceName}/databases/${databaseName}`
   );
   if (database.uid !== String(UNKNOWN_ID)) {
-    if (!isDatabaseV1Queryable(database, me.value)) {
+    if (!isDatabaseV1Queryable(database)) {
       router.push({
         name: "error.403",
       });
