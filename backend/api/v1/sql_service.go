@@ -124,9 +124,9 @@ func (s *SQLService) AdminExecute(server v1pb.SQLService_AdminExecuteServer) err
 			}
 		}
 
-		result, durationNs, queryErr := executeWithTimeout(ctx, driver, conn, request.Statement, request.Timeout, db.QueryContext{})
+		result, duration, queryErr := executeWithTimeout(ctx, driver, conn, request.Statement, request.Timeout, db.QueryContext{})
 
-		if err := s.createQueryHistory(ctx, database, store.QueryHistoryTypeQuery, request.Statement, user.ID, durationNs, queryErr); err != nil {
+		if err := s.createQueryHistory(ctx, database, store.QueryHistoryTypeQuery, request.Statement, user.ID, duration, queryErr); err != nil {
 			slog.Error("failed to post admin execute activity", log.BBError(err))
 		}
 
@@ -170,9 +170,9 @@ func (s *SQLService) Execute(ctx context.Context, request *v1pb.ExecuteRequest) 
 		defer conn.Close()
 	}
 
-	results, durationNs, queryErr := executeWithTimeout(ctx, driver, conn, request.Name, request.Timeout, db.QueryContext{})
+	results, duration, queryErr := executeWithTimeout(ctx, driver, conn, request.Name, request.Timeout, db.QueryContext{})
 
-	if err := s.createQueryHistory(ctx, database, store.QueryHistoryTypeQuery, request.Statement, user.ID, durationNs, queryErr); err != nil {
+	if err := s.createQueryHistory(ctx, database, store.QueryHistoryTypeQuery, request.Statement, user.ID, duration, queryErr); err != nil {
 		slog.Error("failed to post admin execute activity", log.BBError(err))
 	}
 
@@ -239,7 +239,7 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 	}
 
 	if s.licenseService.IsFeatureEnabled(api.FeatureAccessControl) == nil {
-		if err := s.accessCheck(ctx, instance, user, spans, request.Limit, false /* isExport */); err != nil {
+		if err := s.accessCheck(ctx, instance, user, spans, false /* isExport */); err != nil {
 			return nil, err
 		}
 	}
@@ -254,7 +254,7 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 		defer conn.Close()
 	}
 
-	results, durationNs, queryErr := executeWithTimeout(ctx, driver, conn, request.Statement, request.Timeout, db.QueryContext{})
+	results, duration, queryErr := executeWithTimeout(ctx, driver, conn, request.Statement, request.Timeout, db.QueryContext{})
 	if queryErr == nil && s.licenseService.IsFeatureEnabledForInstance(api.FeatureSensitiveData, instance) == nil && !request.Explain {
 		masker := NewQueryResultMasker(s.store)
 		if err := masker.MaskResults(ctx, spans, results, instance, storepb.MaskingExceptionPolicy_MaskingException_QUERY); err != nil {
@@ -263,7 +263,7 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 	}
 
 	// Update activity.
-	if err = s.createQueryHistory(ctx, database, store.QueryHistoryTypeQuery, statement, user.ID, durationNs, queryErr); err != nil {
+	if err = s.createQueryHistory(ctx, database, store.QueryHistoryTypeQuery, statement, user.ID, duration, queryErr); err != nil {
 		return nil, err
 	}
 	if queryErr != nil {
@@ -273,7 +273,7 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 	allowExport := true
 	// AllowExport is a validate only check.
 	if s.licenseService.IsFeatureEnabled(api.FeatureAccessControl) == nil {
-		err := s.accessCheck(ctx, instance, user, spans, request.Limit, true /* isExport */)
+		err := s.accessCheck(ctx, instance, user, spans, true /* isExport */)
 		allowExport = (err == nil)
 	}
 
@@ -285,24 +285,24 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 	return response, nil
 }
 
-func executeWithTimeout(ctx context.Context, driver db.Driver, conn *sql.Conn, statement string, timeout *durationpb.Duration, queryContext db.QueryContext) ([]*v1pb.QueryResult, int64, error) {
+func executeWithTimeout(ctx context.Context, driver db.Driver, conn *sql.Conn, statement string, timeout *durationpb.Duration, queryContext db.QueryContext) ([]*v1pb.QueryResult, time.Duration, error) {
 	ctxTimeout := defaultTimeout
 	if timeout != nil {
 		ctxTimeout = timeout.AsDuration()
 	}
-	start := time.Now().UnixNano()
+	start := time.Now()
 	ctx, cancelCtx := context.WithTimeout(ctx, ctxTimeout)
 	defer cancelCtx()
 	result, err := driver.QueryConn(ctx, conn, statement, queryContext)
 	select {
 	case <-ctx.Done():
 		// canceled or timed out
-		return nil, time.Now().UnixNano() - start, errors.Errorf("timeout reached: %v", timeout)
+		return nil, time.Since(start), errors.Errorf("timeout reached: %v", timeout)
 	default:
 		// So the select will not block
 	}
 	sanitizeResults(result)
-	return result, time.Now().UnixNano() - start, err
+	return result, time.Since(start), err
 }
 
 // Export exports the SQL query result.
@@ -347,14 +347,14 @@ func (s *SQLService) Export(ctx context.Context, request *v1pb.ExportRequest) (*
 	}
 
 	if s.licenseService.IsFeatureEnabled(api.FeatureAccessControl) == nil {
-		if err := s.accessCheck(ctx, instance, user, spans, request.Limit, true /* isExport */); err != nil {
+		if err := s.accessCheck(ctx, instance, user, spans, true /* isExport */); err != nil {
 			return nil, err
 		}
 	}
 
-	bytes, durationNs, exportErr := DoExport(ctx, s.store, s.dbFactory, s.licenseService, request, instance, database, spans)
+	bytes, duration, exportErr := DoExport(ctx, s.store, s.dbFactory, s.licenseService, request, instance, database, spans)
 
-	if err := s.createQueryHistory(ctx, database, store.QueryHistoryTypeExport, statement, user.ID, durationNs, exportErr); err != nil {
+	if err := s.createQueryHistory(ctx, database, store.QueryHistoryTypeExport, statement, user.ID, duration, exportErr); err != nil {
 		return nil, err
 	}
 
@@ -427,7 +427,7 @@ func (s *SQLService) doExportFromIssue(ctx context.Context, issueName string) (*
 }
 
 // DoExport does the export.
-func DoExport(ctx context.Context, storeInstance *store.Store, dbFactory *dbfactory.DBFactory, licenseService enterprise.LicenseService, request *v1pb.ExportRequest, instance *store.InstanceMessage, database *store.DatabaseMessage, spans []*base.QuerySpan) ([]byte, int64, error) {
+func DoExport(ctx context.Context, storeInstance *store.Store, dbFactory *dbfactory.DBFactory, licenseService enterprise.LicenseService, request *v1pb.ExportRequest, instance *store.InstanceMessage, database *store.DatabaseMessage, spans []*base.QuerySpan) ([]byte, time.Duration, error) {
 	dataSource, err := checkAndGetDataSourceQueriable(ctx, storeInstance, database, request.DataSourceId)
 	if err != nil {
 		return nil, 0, err
@@ -448,22 +448,22 @@ func DoExport(ctx context.Context, storeInstance *store.Store, dbFactory *dbfact
 		defer conn.Close()
 	}
 
-	results, durationNs, queryErr := executeWithTimeout(ctx, driver, conn, request.Statement, nil, db.QueryContext{})
+	results, duration, queryErr := executeWithTimeout(ctx, driver, conn, request.Statement, nil, db.QueryContext{})
 	if queryErr != nil {
-		return nil, durationNs, err
+		return nil, duration, err
 	}
 	// only return the last result
 	if len(results) > 1 {
 		results = results[len(results)-1:]
 	}
 	if results[0].GetError() != "" {
-		return nil, durationNs, errors.Errorf(results[0].GetError())
+		return nil, duration, errors.Errorf(results[0].GetError())
 	}
 
 	if licenseService.IsFeatureEnabledForInstance(api.FeatureSensitiveData, instance) == nil {
 		masker := NewQueryResultMasker(storeInstance)
 		if err := masker.MaskResults(ctx, spans, results, instance, storepb.MaskingExceptionPolicy_MaskingException_EXPORT); err != nil {
-			return nil, durationNs, err
+			return nil, duration, err
 		}
 	}
 
@@ -473,12 +473,12 @@ func DoExport(ctx context.Context, storeInstance *store.Store, dbFactory *dbfact
 	case v1pb.ExportFormat_CSV:
 		content, err = exportCSV(result)
 		if err != nil {
-			return nil, durationNs, err
+			return nil, duration, err
 		}
 	case v1pb.ExportFormat_JSON:
 		content, err = exportJSON(result)
 		if err != nil {
-			return nil, durationNs, err
+			return nil, duration, err
 		}
 	case v1pb.ExportFormat_SQL:
 		resourceList, err := extractResourceList(ctx, storeInstance, instance.Engine, database.DatabaseName, request.Statement, instance)
@@ -491,22 +491,22 @@ func DoExport(ctx context.Context, storeInstance *store.Store, dbFactory *dbfact
 		}
 		content, err = exportSQL(instance.Engine, statementPrefix, result)
 		if err != nil {
-			return nil, durationNs, err
+			return nil, duration, err
 		}
 	case v1pb.ExportFormat_XLSX:
 		content, err = exportXLSX(result)
 		if err != nil {
-			return nil, durationNs, err
+			return nil, duration, err
 		}
 	default:
-		return nil, durationNs, status.Errorf(codes.InvalidArgument, "unsupported export format: %s", request.Format.String())
+		return nil, duration, status.Errorf(codes.InvalidArgument, "unsupported export format: %s", request.Format.String())
 	}
 
 	encryptedBytes, err := doEncrypt(content, request)
 	if err != nil {
 		return nil, 0, errors.Wrap(err, "failed to encrypt data")
 	}
-	return encryptedBytes, durationNs, nil
+	return encryptedBytes, duration, nil
 }
 
 func doEncrypt(data []byte, request *v1pb.ExportRequest) ([]byte, error) {
@@ -548,7 +548,7 @@ func timeToMsDosTime(t time.Time) (uint16, uint16) {
 	return fDate, fTime
 }
 
-func (s *SQLService) createQueryHistory(ctx context.Context, database *store.DatabaseMessage, queryType store.QueryHistoryType, statement string, userUID int, durationNs int64, queryErr error) error {
+func (s *SQLService) createQueryHistory(ctx context.Context, database *store.DatabaseMessage, queryType store.QueryHistoryType, statement string, userUID int, duration time.Duration, queryErr error) error {
 	qh := &store.QueryHistoryMessage{
 		CreatorUID: userUID,
 		ProjectID:  database.ProjectID,
@@ -557,7 +557,7 @@ func (s *SQLService) createQueryHistory(ctx context.Context, database *store.Dat
 		Type:       queryType,
 		Payload: &storepb.QueryHistoryPayload{
 			Error:    nil,
-			Duration: durationpb.New(time.Duration(durationNs)),
+			Duration: durationpb.New(duration),
 		},
 	}
 	if queryErr != nil {
@@ -790,7 +790,6 @@ func (s *SQLService) accessCheck(
 	instance *store.InstanceMessage,
 	user *store.UserMessage,
 	spans []*base.QuerySpan,
-	limit int32,
 	isExport bool) error {
 	for _, span := range spans {
 		for column := range span.SourceColumns {
@@ -800,7 +799,6 @@ func (s *SQLService) accessCheck(
 				"resource.database": databaseResourceURL,
 				"resource.schema":   column.Schema,
 				"resource.table":    column.Table,
-				"request.row_limit": limit,
 			}
 
 			project, database, err := s.getProjectAndDatabaseMessage(ctx, instance, column.Database)
