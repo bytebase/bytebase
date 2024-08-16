@@ -228,7 +228,7 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 		}
 		defer conn.Close()
 	}
-	results, spans, duration, queryErr := queryRetry(ctx, s.store, user, instance, database, driver, conn, statement, request.Timeout, db.QueryContext{Explain: request.Explain}, false, s.licenseService, s.accessCheck)
+	results, spans, duration, queryErr := queryRetry(ctx, s.store, user, instance, database, driver, conn, statement, request.Timeout, db.QueryContext{Explain: request.Explain}, false, s.licenseService, s.accessCheck, s.schemaSyncer)
 
 	// Update activity.
 	if err = s.createQueryHistory(ctx, database, store.QueryHistoryTypeQuery, statement, user.ID, duration, queryErr); err != nil {
@@ -269,6 +269,7 @@ func queryRetry(
 	isExport bool,
 	licenseService enterprise.LicenseService,
 	optionalAccessCheck accessCheckFunc,
+	schemaSyncer *schemasync.Syncer,
 ) ([]*v1pb.QueryResult, []*base.QuerySpan, time.Duration, error) {
 	spans, firstSpanErr := base.GetQuerySpan(
 		ctx,
@@ -297,17 +298,30 @@ func queryRetry(
 		return nil, nil, duration, queryErr
 	}
 	hasOK := false
-	for _, r := range results {
+	databaseMap := make(map[string]bool)
+	for i, r := range results {
 		if r.Error == "" {
 			hasOK = true
-			break
+			for k := range spans[i].SourceColumns {
+				databaseMap[k.Database] = true
+			}
 		}
 	}
 	if !hasOK {
 		return results, nil, duration, nil
 	}
-
-	// TODO(d): sync database metadata.
+	// Sync database metadata.
+	if firstSpanErr != nil {
+		for accessDatabaseName := range databaseMap {
+			d, err := stores.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID, DatabaseName: &accessDatabaseName})
+			if err != nil {
+				return nil, nil, duration, err
+			}
+			if err := schemaSyncer.SyncDatabaseSchema(ctx, d, true /* force */); err != nil {
+				return nil, nil, duration, errors.Wrapf(err, "failed to sync database schema for database %q", accessDatabaseName)
+			}
+		}
+	}
 
 	// Retry getting query span.
 	spans, spanErr := base.GetQuerySpan(
@@ -387,7 +401,7 @@ func (s *SQLService) Export(ctx context.Context, request *v1pb.ExportRequest) (*
 		return nil, err
 	}
 
-	bytes, duration, exportErr := DoExport(ctx, s.store, s.dbFactory, s.licenseService, request, user, instance, database, s.accessCheck)
+	bytes, duration, exportErr := DoExport(ctx, s.store, s.dbFactory, s.licenseService, request, user, instance, database, s.accessCheck, s.schemaSyncer)
 
 	if err := s.createQueryHistory(ctx, database, store.QueryHistoryTypeExport, statement, user.ID, duration, exportErr); err != nil {
 		return nil, err
@@ -472,6 +486,7 @@ func DoExport(
 	instance *store.InstanceMessage,
 	database *store.DatabaseMessage,
 	optionalAccessCheck accessCheckFunc,
+	schemaSyncer *schemasync.Syncer,
 ) ([]byte, time.Duration, error) {
 	dataSource, err := checkAndGetDataSourceQueriable(ctx, storeInstance, database, request.DataSourceId)
 	if err != nil {
@@ -492,7 +507,7 @@ func DoExport(
 		}
 		defer conn.Close()
 	}
-	results, spans, duration, queryErr := queryRetry(ctx, storeInstance, user, instance, database, driver, conn, request.Statement, nil /* timeDuration */, db.QueryContext{}, false, licenseService, optionalAccessCheck)
+	results, spans, duration, queryErr := queryRetry(ctx, storeInstance, user, instance, database, driver, conn, request.Statement, nil /* timeDuration */, db.QueryContext{}, true, licenseService, optionalAccessCheck, schemaSyncer)
 	if queryErr != nil {
 		return nil, duration, err
 	}
