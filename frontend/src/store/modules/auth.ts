@@ -11,11 +11,10 @@ import type {
 } from "@/types/proto/v1/auth_service";
 import { UserType } from "@/types/proto/v1/auth_service";
 import { getIntCookie } from "@/utils";
-import { useUserStore, useWorkspaceV1Store } from ".";
+import { useUserStore } from ".";
 
 export const useAuthStore = defineStore("auth_v1", () => {
   const userStore = useUserStore();
-  const workspaceStore = useWorkspaceV1Store();
   const currentUserId = ref<number | undefined>();
 
   const currentUser = computed(() => {
@@ -58,8 +57,6 @@ export const useAuthStore = defineStore("auth_v1", () => {
       password: request.password,
       web: true,
     });
-    // TODO(ed): fetch iam.
-    await workspaceStore.fetchIamPolicy();
   };
 
   const logout = async () => {
@@ -79,7 +76,6 @@ export const useAuthStore = defineStore("auth_v1", () => {
         String(currentUserId.value),
         true // silent
       );
-      await workspaceStore.fetchIamPolicy();
     }
   };
 

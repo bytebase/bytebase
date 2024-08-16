@@ -42,7 +42,7 @@ import {
 } from "naive-ui";
 import { ServerError } from "nice-grpc-common";
 import { ClientError, Status } from "nice-grpc-web";
-import { onErrorCaptured, onMounted } from "vue";
+import { onErrorCaptured, onMounted, watchEffect } from "vue";
 import { watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import Watermark from "@/components/misc/Watermark.vue";
@@ -58,6 +58,7 @@ import {
   useAuthStore,
   useNotificationStore,
   useSubscriptionV1Store,
+  useWorkspaceV1Store,
 } from "./store";
 import { isDev } from "./utils";
 
@@ -70,6 +71,7 @@ const { key } = provideAppRootContext();
 const authStore = useAuthStore();
 const notificationStore = useNotificationStore();
 const actuatorStore = useActuatorV1Store();
+const workspaceStore = useWorkspaceV1Store();
 
 onMounted(async () => {
   const initActuator = async () => {
@@ -96,6 +98,12 @@ onMounted(async () => {
 
   await initBasicModules();
   actuatorStore.initialized = true;
+});
+
+watchEffect(async () => {
+  if (authStore.currentUserId) {
+    await workspaceStore.fetchIamPolicy();
+  }
 });
 
 onErrorCaptured((error: any /* , _, info */) => {
