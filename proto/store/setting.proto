@@ -50,6 +50,9 @@ message WorkspaceProfileSetting {
 
   // The workspace database change mode.
   DatabaseChangeMode database_change_mode = 11;
+
+  // Whether to disallow password signin. (Except workspace admins)
+  bool disallow_password_signin = 12;
 }
 
 message Announcement {
