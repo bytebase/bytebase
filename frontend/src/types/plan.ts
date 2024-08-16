@@ -15,6 +15,7 @@ export type FeatureType =
   | "bb.feature.secure-token"
   | "bb.feature.rbac"
   | "bb.feature.disallow-signup"
+  | "bb.feature.disallow-password-signin"
   | "bb.feature.watermark"
   | "bb.feature.audit-log"
   | "bb.feature.issue-advanced-search"

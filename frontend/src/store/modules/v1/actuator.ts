@@ -82,6 +82,9 @@ export const useActuatorV1Store = defineStore("actuator_v1", {
     disallowSignup: (state) => {
       return state.serverInfo?.disallowSignup || false;
     },
+    disallowPasswordSignin: (state) => {
+      return state.serverInfo?.disallowPasswordSignin || false;
+    },
     hasNewRelease: (state) => {
       return (
         (state.serverInfo?.version === "development" &&
