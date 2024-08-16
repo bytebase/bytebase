@@ -33,6 +33,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/metric"
 	"github.com/bytebase/bytebase/backend/runner/metricreport"
 	"github.com/bytebase/bytebase/backend/store"
+	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
@@ -620,6 +621,21 @@ func (s *AuthService) Login(ctx context.Context, request *v1pb.LoginRequest) (*v
 		return nil, status.Errorf(codes.Unauthenticated, "user has been deactivated by administrators")
 	}
 
+	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to find workspace setting, error: %v", err)
+	}
+	// Disallow password signin for end users. (except for workspace admins)
+	if setting.DisallowPasswordSignin && loginUser.Type == api.EndUser {
+		isWorkspaceAdmin, err := s.isUserWorkspaceAdmin(ctx, loginUser)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to check user roles, error: %v", err)
+		}
+		if !isWorkspaceAdmin {
+			return nil, status.Errorf(codes.PermissionDenied, "password signin is disallowed")
+		}
+	}
+
 	userMFAEnabled := loginUser.MFAConfig != nil && loginUser.MFAConfig.OtpSecret != ""
 	// We only allow MFA login (2-step) when the feature is enabled and user has enabled MFA.
 	if s.licenseService.IsFeatureEnabled(api.Feature2FA) == nil && !mfaSecondLogin && userMFAEnabled {
@@ -649,10 +665,6 @@ func (s *AuthService) Login(ctx context.Context, request *v1pb.LoginRequest) (*v
 		return nil, status.Errorf(codes.Unauthenticated, fmt.Sprintf("user type %s cannot login", loginUser.Type))
 	}
 
-	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get workspace setting: %v", err)
-	}
 	var allowedDomains []string
 	if setting.EnforceIdentityDomain {
 		allowedDomains = setting.Domains
@@ -999,4 +1011,13 @@ func (s *AuthService) userCountGuard(ctx context.Context) error {
 		return status.Errorf(codes.ResourceExhausted, "reached the maximum user count %d", userLimit)
 	}
 	return nil
+}
+
+func (s *AuthService) isUserWorkspaceAdmin(ctx context.Context, user *store.UserMessage) (bool, error) {
+	workspacePolicy, err := s.store.GetWorkspaceIamPolicy(ctx)
+	if err != nil {
+		return false, err
+	}
+	roles := utils.GetUserFormattedRolesMap(ctx, s.store, user, workspacePolicy.Policy)
+	return roles[common.FormatRole(api.WorkspaceAdmin.String())], nil
 }
