@@ -7879,6 +7879,9 @@ components:
                     type: array
                     items:
                         type: string
+                disallowPasswordSignin:
+                    type: boolean
+                    description: disallow_password_signin is the flag to disallow user signin with email&password. (except workspace admins)
             description: |-
                 ServerInfo is the API message for server info.
                  Actuator concept is similar to the Spring Boot Actuator.
@@ -14294,6 +14297,9 @@ components:
                     type: string
                     description: The workspace database change mode.
                     format: enum
+                disallowPasswordSignin:
+                    type: boolean
+                    description: Whether to disallow password signin. (Except workspace admins)
         WorkspaceTrialSetting:
             type: object
             properties:
