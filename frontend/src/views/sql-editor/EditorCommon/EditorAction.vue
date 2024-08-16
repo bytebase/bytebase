@@ -47,7 +47,7 @@
             @click="handleExplainQuery"
           >
             <template #icon>
-              <PlayIcon class="w-4 h-4 !fill-current" />
+              <PlayIcon class="w-4 h-4" />
             </template>
           </NButton>
         </template>
