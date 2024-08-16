@@ -1,22 +1,10 @@
 <template>
   <div class="px-2 py-2 gap-4 h-full overflow-hidden flex flex-col">
-    <div
-      class="grid gap-2 items-center text-sm"
-      style="grid-template-columns: max-content max-content"
-    >
-      <div class="flex items-center gap-x-1">
-        <DatabaseIcon class="w-4 h-4" />
-        <span>{{ $t("common.database") }}:</span>
-      </div>
-      <DatabaseChooser style="justify-content: start" />
-
-      <template v-if="showSchemaSelect">
-        <div class="flex items-center gap-x-1">
-          <SchemaIcon class="w-4 h-4" />
-          <span>{{ $t("common.schema") }}:</span>
-        </div>
+    <div class="w-full flex flex-row gap-x-2 justify-between items-center">
+      <div class="flex items-center justify-start gap-2">
+        <DatabaseChooser />
         <SchemaSelectToolbar simple />
-      </template>
+      </div>
     </div>
 
     <div class="flex-1 overflow-auto flex flex-col gap-4">
@@ -136,13 +124,12 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import DatabaseOverviewInfo from "@/components/Database/DatabaseOverviewInfo.vue";
-import { DatabaseIcon, SchemaIcon } from "@/components/Icon";
 import {
   useConnectionOfCurrentSQLEditorTab,
   useDBSchemaV1Store,
 } from "@/store";
 import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
-import { hasSchemaProperty, instanceV1SupportsExternalTable } from "@/utils";
+import { instanceV1SupportsExternalTable } from "@/utils";
 import DatabaseChooser from "@/views/sql-editor/EditorCommon/DatabaseChooser.vue";
 import { useEditorPanelContext } from "../../context";
 import ExternalTablesTable from "../ExternalTablesPanel/ExternalTablesTable.vue";
@@ -152,7 +139,7 @@ import TablesTable from "../TablesPanel/TablesTable.vue";
 import ViewsTable from "../ViewsPanel/ViewsTable.vue";
 import { SchemaSelectToolbar } from "../common";
 
-const { instance, database } = useConnectionOfCurrentSQLEditorTab();
+const { database } = useConnectionOfCurrentSQLEditorTab();
 const { viewState, updateViewState } = useEditorPanelContext();
 const databaseMetadata = computed(() => {
   return useDBSchemaV1Store().getDatabaseMetadata(
@@ -170,9 +157,5 @@ const metadata = computed(() => {
     (t) => t.name === viewState.value?.detail?.table
   );
   return { database, schema, table };
-});
-
-const showSchemaSelect = computed(() => {
-  return hasSchemaProperty(instance.value.engine);
 });
 </script>

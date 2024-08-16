@@ -5,6 +5,7 @@
       v-model:value="selectedSchemaName"
       :options="schemaSelectOptions"
       size="small"
+      class="min-w-[8rem]"
       v-bind="$attrs"
     />
 
@@ -18,6 +19,7 @@
           v-model:value="selectedSchemaName"
           :options="schemaSelectOptions"
           size="small"
+          class="min-w-[8rem]"
           v-bind="$attrs"
         />
       </div>
