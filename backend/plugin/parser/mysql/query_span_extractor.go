@@ -52,9 +52,20 @@ func newQuerySpanExtractor(connectedDB string, gCtx base.GetQuerySpanContext, ig
 }
 
 func (q *querySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*base.QuerySpan, error) {
-	q.ctx = ctx
+	parseResults, err := ParseMySQL(stmt)
+	if err != nil {
+		return nil, err
+	}
+	if len(parseResults) == 0 {
+		return nil, nil
+	}
+	if len(parseResults) != 1 {
+		return nil, errors.Errorf("expecting only one statement to get query span, but got %d", len(parseResults))
+	}
+	tree := parseResults[0].Tree
 
-	accessTables, err := getAccessTables(q.connectedDB, stmt)
+	q.ctx = ctx
+	accessTables, err := getAccessTables(q.connectedDB, tree)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get access tables from statement: %s", stmt)
 	}
@@ -67,24 +78,7 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*ba
 		return nil, mixed
 	}
 	if allSystems {
-		return &base.QuerySpan{
-			Results:       []base.QuerySpanResult{},
-			SourceColumns: base.SourceColumnSet{},
-		}, nil
-	}
-
-	list, err := ParseMySQL(stmt)
-	if err != nil {
-		return nil, err
-	}
-	if len(list) == 0 {
-		return &base.QuerySpan{
-			Results:       []base.QuerySpanResult{},
-			SourceColumns: make(base.SourceColumnSet),
-		}, nil
-	}
-	if len(list) != 1 {
-		return nil, errors.Errorf("expecting only one statement to get query span, but got %d", len(list))
+		return nil, nil
 	}
 
 	// We assumes the caller had handled the statement type case,
@@ -92,7 +86,7 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*ba
 	// In order to decrease the maintenance cost, we use listener to handle
 	// the select statement precisely instead of using type switch.
 	listener := newSelectOnlyListener(q)
-	antlr.ParseTreeWalkerDefault.Walk(listener, list[0].Tree)
+	antlr.ParseTreeWalkerDefault.Walk(listener, tree)
 
 	if listener.err != nil {
 		return nil, listener.err
@@ -1428,22 +1422,12 @@ func (s *selectOnlyListener) EnterSelectStatement(ctx *mysql.SelectStatementCont
 	s.querySpan.Results = append(s.querySpan.Results, fields.Columns...)
 }
 
-func getAccessTables(currentDatabase string, statement string) (base.SourceColumnSet, error) {
-	treeList, err := ParseMySQL(statement)
-	if err != nil {
-		return nil, err
-	}
-
+func getAccessTables(currentDatabase string, tree antlr.Tree) (base.SourceColumnSet, error) {
 	l := newAccessTableListener(currentDatabase)
 
 	result := make(base.SourceColumnSet)
-	for _, tree := range treeList {
-		if tree == nil {
-			continue
-		}
-		antlr.ParseTreeWalkerDefault.Walk(l, tree.Tree)
-		result, _ = base.MergeSourceColumnSet(result, l.sourceColumnSet)
-	}
+	antlr.ParseTreeWalkerDefault.Walk(l, tree)
+	result, _ = base.MergeSourceColumnSet(result, l.sourceColumnSet)
 
 	return result, nil
 }
