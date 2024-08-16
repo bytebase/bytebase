@@ -1,11 +1,15 @@
 <template>
   <NPopover placement="bottom" trigger="click">
     <template #trigger>
-      <NButton size="small" :disabled="disabled">
+      <NButton
+        quaternary
+        style="justify-content: start; --n-padding: 0 8px; width: 100%"
+        :disabled="disabled"
+      >
         {{ $t(`sql-editor.tab-mode.${tab.mode.toLowerCase()}`) }}
       </NButton>
     </template>
-    <div class="flex flex-col gap-2">
+    <div class="flex flex-col gap-2 whitespace-nowrap">
       <p class="font-semibold">{{ $t("common.mode") }}</p>
 
       <NRadioGroup v-model:value="tab.mode" class="!flex flex-col gap-2">

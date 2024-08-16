@@ -51,47 +51,45 @@
           </div>
         </template>
       </NPopover>
-      <NPopover v-if="showClearScreen" placement="bottom">
-        <template #trigger>
-          <NButton
-            size="small"
-            :disabled="queryList.length <= 1 || isExecutingSQL"
-            style="--n-padding: 0 5px"
-            @click="handleClearScreen"
-          >
-            <template #icon>
-              <FileXIcon class="w-4 h-4" />
-            </template>
-          </NButton>
-        </template>
-        <template #default>
-          <div class="flex items-center gap-1">
-            <span>{{ $t("sql-editor.clear-screen") }}</span>
-            <span>({{ keyboardShortcutStr("shift+opt_or_alt+C") }})</span>
-          </div>
-        </template>
-      </NPopover>
-      <ResultLimitSelect />
-      <QueryModeSelect v-if="showQueryModeSelect" :disabled="isExecutingSQL" />
     </div>
     <div
       class="action-right gap-x-2 flex overflow-x-auto sm:overflow-x-hidden sm:justify-end items-center"
     >
-      <AdminModeButton :size="'small'" />
+      <NPopover placement="bottom">
+        <template #trigger>
+          <AdminModeButton
+            size="small"
+            :hide-text="true"
+            style="--n-padding: 0 5px"
+          />
+        </template>
+        <template #default>
+          <span>{{ $t("sql-editor.admin-mode.self") }}</span>
+        </template>
+      </NPopover>
 
       <template v-if="showSheetsFeature">
-        <NButton
-          :strong="allowSave"
-          size="small"
-          :disabled="!allowSave"
-          @click="handleClickSave"
-        >
-          <carbon:save class="-ml-1" />
-          <span class="ml-1">{{ $t("common.save") }}</span>
-          <span v-show="showShortcutText" class="ml-1">
-            ({{ keyboardShortcutStr("cmd_or_ctrl+S") }})
-          </span>
-        </NButton>
+        <NPopover placement="bottom">
+          <template #trigger>
+            <NButton
+              :strong="allowSave"
+              :disabled="!allowSave"
+              size="small"
+              style="--n-padding: 0 5px"
+              @click="handleClickSave"
+            >
+              <template #icon>
+                <SaveIcon class="w-4 h-4" />
+              </template>
+            </NButton>
+          </template>
+          <template #default>
+            <div class="flex items-center gap-1">
+              <span>{{ $t("common.save") }}</span>
+              <span>({{ keyboardShortcutStr("cmd_or_ctrl+S") }})</span>
+            </div>
+          </template>
+        </NPopover>
         <NPopover
           v-if="!disallowShareWorksheet"
           trigger="click"
@@ -100,18 +98,27 @@
           :disabled="!hasSharedSQLScriptFeature"
         >
           <template #trigger>
-            <NButton
-              :strong="allowShare"
-              size="small"
-              :disabled="!allowShare"
-              @click="handleShareButtonClick"
-            >
-              <carbon:share class="" /> &nbsp; {{ $t("common.share") }}
-              <FeatureBadge
-                :feature="'bb.feature.shared-sql-script'"
-                custom-class="ml-2"
-              />
-            </NButton>
+            <NPopover placement="bottom" trigger="hover">
+              <template #trigger>
+                <NButton
+                  :strong="allowShare"
+                  :disabled="!allowShare"
+                  size="small"
+                  style="--n-padding: 0 5px"
+                  @click="handleShareButtonClick"
+                >
+                  <template #icon>
+                    <Share2Icon class="w-4 h-4" />
+                  </template>
+                </NButton>
+              </template>
+              <template #default>
+                <div class="flex items-center gap-1">
+                  <span>{{ $t("common.share") }}</span>
+                  <FeatureBadge feature="bb.feature.shared-sql-script" />
+                </div>
+              </template>
+            </NPopover>
           </template>
           <template #default>
             <SharePopover />
@@ -130,7 +137,7 @@
 
 <script lang="ts" setup>
 import { useElementSize } from "@vueuse/core";
-import { FileXIcon, PlayIcon } from "lucide-vue-next";
+import { PlayIcon, SaveIcon, Share2Icon } from "lucide-vue-next";
 import { NButtonGroup, NButton, NPopover } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { computed, reactive, ref } from "vue";
@@ -148,8 +155,6 @@ import { keyboardShortcutStr } from "@/utils";
 import { useSQLEditorContext } from "../context";
 import AdminModeButton from "./AdminModeButton.vue";
 import QueryContextSettingPopover from "./QueryContextSettingPopover.vue";
-import QueryModeSelect from "./QueryModeSelect.vue";
-import ResultLimitSelect from "./ResultLimitSelect.vue";
 import SharePopover from "./SharePopover.vue";
 
 interface LocalState {
@@ -168,7 +173,7 @@ const emit = defineEmits<{
 const state = reactive<LocalState>({});
 const tabStore = useSQLEditorTabStore();
 const uiStateStore = useUIStateStore();
-const { standardModeEnabled, events } = useSQLEditorContext();
+const { events } = useSQLEditorContext();
 const containerRef = ref<HTMLDivElement>();
 const { width: containerWidth } = useElementSize(containerRef);
 const hasSharedSQLScriptFeature = featureToRef("bb.feature.shared-sql-script");
@@ -247,38 +252,12 @@ const allowShare = computed(() => {
   return true;
 });
 
-const showClearScreen = computed(() => {
-  return false; // buggy, hide by now
-  // return currentTab.value?.mode === "ADMIN";
-});
-
-const queryList = computed(() => {
-  const tab = currentTab.value;
-  if (!tab) {
-    return [];
-  }
-  // TODO: refactor WebTerminal store types
-  // return unref(webTerminalStore.getQueryStateByTab(tab).queryItemList) || [];
-  return [];
-});
-
 const showQueryContextSettingPopover = computed(() => {
   const tab = currentTab.value;
   if (!tab) {
     return false;
   }
   return instance.value && tab.mode !== "ADMIN";
-});
-
-const showQueryModeSelect = computed(() => {
-  const tab = currentTab.value;
-  if (!tab) {
-    return false;
-  }
-  if (!standardModeEnabled.value) {
-    return false;
-  }
-  return tab.mode !== "ADMIN";
 });
 
 const handleRunQuery = () => {
@@ -311,10 +290,6 @@ const handleExplainQuery = () => {
     engine: instance.value.engine,
     explain: true,
   });
-};
-
-const handleClearScreen = () => {
-  emit("clear-screen");
 };
 
 const handleClickSave = () => {
