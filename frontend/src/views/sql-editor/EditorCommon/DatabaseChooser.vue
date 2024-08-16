@@ -2,11 +2,10 @@
   <NButton
     :disabled="!projectContextReady"
     type="primary"
+    size="small"
     ghost
-    class="truncate"
     style="
-      width: 100%;
-      justify-content: start;
+      justify-content: end;
       --n-padding: 0 8px;
       --n-color-hover: rgb(var(--color-accent) / 0.05);
       --n-color-pressed: rgb(var(--color-accent) / 0.05);
@@ -54,7 +53,7 @@ import {
   useSQLEditorTabStore,
 } from "@/store";
 import { isValidDatabaseName, isValidInstanceName } from "@/types";
-import { useSQLEditorContext } from "../../context";
+import { useSQLEditorContext } from "../context";
 
 const { currentTab } = storeToRefs(useSQLEditorTabStore());
 const { showConnectionPanel } = useSQLEditorContext();

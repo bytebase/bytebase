@@ -58,10 +58,7 @@
           </div>
         </template>
       </NPopover>
-    </div>
-    <div
-      class="action-right gap-x-2 flex overflow-x-auto sm:overflow-x-hidden sm:justify-end items-center"
-    >
+
       <NPopover placement="bottom">
         <template #trigger>
           <AdminModeButton
@@ -133,6 +130,12 @@
         </NPopover>
       </template>
     </div>
+    <div
+      class="action-right gap-x-2 flex overflow-x-auto sm:overflow-x-hidden sm:justify-end items-center"
+    >
+      <BatchQueryDatabasesSelector />
+      <DatabaseChooser />
+    </div>
   </div>
 
   <FeatureModal
@@ -161,6 +164,8 @@ import { type FeatureType, type SQLEditorQueryParams } from "@/types";
 import { keyboardShortcutStr } from "@/utils";
 import { useSQLEditorContext } from "../context";
 import AdminModeButton from "./AdminModeButton.vue";
+import BatchQueryDatabasesSelector from "./BatchQueryDatabasesSelector.vue";
+import DatabaseChooser from "./DatabaseChooser.vue";
 import QueryContextSettingPopover from "./QueryContextSettingPopover.vue";
 import SharePopover from "./SharePopover.vue";
 

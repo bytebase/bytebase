@@ -1,5 +1,6 @@
 <template>
   <NPopover
+    v-if="showBatchQuerySelector"
     placement="bottom"
     :disabled="!hasBatchQueryFeature"
     trigger="click"
@@ -116,12 +117,13 @@ import { InstanceV1EngineIcon, SearchBox } from "@/components/v2";
 import { DatabaseLabelsCell } from "@/components/v2/Model/DatabaseV1Table/cells";
 import {
   hasFeature,
+  useAppFeature,
   useConnectionOfCurrentSQLEditorTab,
   useCurrentUserIamPolicy,
   useDatabaseV1Store,
   useSQLEditorTabStore,
 } from "@/store/modules";
-import type { ComposedDatabase } from "@/types";
+import { isValidDatabaseName, type ComposedDatabase } from "@/types";
 
 interface LocalState {
   keyword: string;
@@ -141,6 +143,10 @@ const currentTab = computed(() => tabStore.currentTab);
 const { database: selectedDatabase } = useConnectionOfCurrentSQLEditorTab();
 const selectedDatabaseNames = ref<string[]>([]);
 const hasBatchQueryFeature = hasFeature("bb.feature.batch-query");
+const disallowBatchQuery = useAppFeature(
+  "bb.feature.sql-editor.disallow-batch-query"
+);
+const { database } = useConnectionOfCurrentSQLEditorTab();
 
 const project = computed(() => selectedDatabase.value.projectEntity);
 
@@ -158,6 +164,20 @@ const databases = computed(() => {
           db.instanceResource.engine ===
           selectedDatabase.value.instanceResource.engine
       )
+  );
+});
+
+const showBatchQuerySelector = computed(() => {
+  if (disallowBatchQuery.value) {
+    return false;
+  }
+
+  const tab = currentTab.value;
+  return (
+    tab &&
+    // Only show entry when user selected a database.
+    isValidDatabaseName(database.value.name) &&
+    tab.mode !== "ADMIN"
   );
 });
 
