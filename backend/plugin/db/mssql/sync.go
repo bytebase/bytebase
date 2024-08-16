@@ -159,7 +159,7 @@ func getTables(txn *sql.Tx) (map[string][]*storepb.TableMetadata, error) {
 				(SELECT major_id, name, value FROM sys.extended_properties WHERE name = 'MS_Description' AND minor_id = 0) AS EP
 				INNER JOIN sys.all_objects AS O ON EP.major_id = O.object_id
 				INNER JOIN sys.schemas AS S ON O.schema_id = S.schema_id
-		) lj ON lj.SchemaName = SCHEMA_NAME(t.schema_id) AND LJ.TableName = t.name
+		) lj ON lj.SchemaName = SCHEMA_NAME(t.schema_id) AND lj.TableName = t.name
         WHERE index_id < 2
 		GROUP BY t.name, t.schema_id, lj.PropertyValue
 		ORDER BY 1, 2 ASC
