@@ -4,6 +4,9 @@
 
     <div class="mt-8">
       <NCard>
+        <p class="text-xl pl-1 font-medium mb-4">
+          {{ $t("common.sign-in-as-admin") }}
+        </p>
         <PasswordSigninForm :show-forgot-password="false" />
       </NCard>
     </div>
@@ -25,7 +28,6 @@ const router = useRouter();
 const actuatorStore = useActuatorV1Store();
 
 watchEffect(() => {
-  console.log("aaa", !actuatorStore.disallowPasswordSignin);
   if (!actuatorStore.disallowPasswordSignin) {
     router.push({ name: AUTH_SIGNIN_MODULE, replace: true });
   }

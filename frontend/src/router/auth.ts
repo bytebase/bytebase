@@ -27,7 +27,7 @@ const authRoutes: RouteRecordRaw[] = [
       {
         path: "signin/admin",
         name: AUTH_SIGNIN_ADMIN_MODULE,
-        meta: { title: () => t("common.sign-in") },
+        meta: { title: () => t("common.sign-in-as-admin") },
         component: () => import("@/views/auth/SigninAdmin.vue"),
       },
       {
