@@ -417,17 +417,14 @@ const handleExportBtnClick = async (
     props.database && isValidDatabaseName(props.database.name)
       ? props.database.name
       : "";
-  const instance =
-    props.database && isValidDatabaseName(props.database.name)
-      ? props.database.instance
-      : connectedInstance.value.name;
   const statement = props.result.statement;
   const admin = tabStore.currentTab?.mode === "ADMIN";
   const limit = options.limit ?? (admin ? 0 : editorStore.resultRowsLimit);
 
   const content = await exportData({
     database,
-    instance,
+    // TODO(lj): support data source id similar to queries.
+    dataSourceId: "",
     format: options.format,
     statement,
     limit,

@@ -10176,6 +10176,7 @@ Type of the SheetPayload.
 | format | [ExportFormat](#bytebase-v1-ExportFormat) |  | The export format. |
 | admin | [bool](#bool) |  | The admin is used for workspace owner and DBA for exporting data from SQL Editor Admin mode. The exported data is not masked. |
 | password | [string](#string) |  | The zip password provide by users. |
+| data_source_id | [string](#string) |  | The id of data source. It is used for querying admin data source even if the instance has read-only data sources. Or it can be used to query a specific read-only data source. |
 
 
 
