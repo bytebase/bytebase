@@ -2,6 +2,10 @@
   <div class="space-y-4">
     <div class="textinfolabel">
       {{ $t("gitops.setting.description") }}
+      <LearnMoreLink
+        url="https://www.bytebase.com/docs/vcs-integration/add-git-provider?source=console"
+        class="ml-1 text-sm"
+      />
     </div>
     <div v-if="vcsList.length > 0" class="flex justify-end">
       <NButton
@@ -32,6 +36,7 @@ import type { DataTableColumn } from "naive-ui";
 import { computed, watchEffect, h, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
+import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import VCSIcon from "@/components/VCS/VCSIcon.vue";
 import VCSSetupWizard from "@/components/VCS/VCSSetupWizard.vue";
 import {
