@@ -793,27 +793,32 @@ func (s *SQLService) accessCheck(
 	isExport bool) error {
 	for _, span := range spans {
 		for column := range span.SourceColumns {
-			databaseResourceURL := common.FormatDatabase(instance.ResourceID, column.Database)
 			attributes := map[string]any{
 				"request.time":      time.Now(),
-				"resource.database": databaseResourceURL,
+				"resource.database": common.FormatDatabase(instance.ResourceID, column.Database),
 				"resource.schema":   column.Schema,
 				"resource.table":    column.Table,
 			}
 
-			project, database, err := s.getProjectAndDatabaseMessage(ctx, instance, column.Database)
+			databaseMessage, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+				InstanceID:          &instance.ResourceID,
+				DatabaseName:        &column.Database,
+				IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
+			})
 			if err != nil {
-				return status.Errorf(codes.Internal, err.Error())
+				return err
 			}
-			if project == nil && database == nil {
-				// If database not found, skip.
-				// TODO(d): re-evaluate this case.
-				continue
+			if databaseMessage == nil {
+				return status.Errorf(codes.InvalidArgument, "database %q not found", column.Database)
+			}
+			project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{ResourceID: &databaseMessage.ProjectID})
+			if err != nil {
+				return err
 			}
 			if project == nil {
-				// Never happen
-				return status.Errorf(codes.Internal, "project not found for database: %s", column.Database)
+				return status.Errorf(codes.InvalidArgument, "project %q not found", databaseMessage.ProjectID)
 			}
+
 			// Allow query databases across different projects.
 			projectPolicy, err := s.store.GetProjectIamPolicy(ctx, project.UID)
 			if err != nil {
@@ -944,26 +949,6 @@ func (s *SQLService) hasDatabaseAccessRights(ctx context.Context, user *store.Us
 		}
 	}
 	return false, nil
-}
-
-func (s *SQLService) getProjectAndDatabaseMessage(ctx context.Context, instance *store.InstanceMessage, database string) (*store.ProjectMessage, *store.DatabaseMessage, error) {
-	databaseMessage, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-		InstanceID:          &instance.ResourceID,
-		DatabaseName:        &database,
-		IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
-	})
-	if err != nil {
-		return nil, nil, err
-	}
-	if databaseMessage == nil {
-		return nil, nil, nil
-	}
-
-	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{ResourceID: &databaseMessage.ProjectID})
-	if err != nil {
-		return nil, nil, err
-	}
-	return project, databaseMessage, nil
 }
 
 func (*SQLService) getUser(ctx context.Context) (*store.UserMessage, error) {
