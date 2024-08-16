@@ -261,6 +261,18 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 				oldSetting.EnforceIdentityDomain = payload.EnforceIdentityDomain
 			case "value.workspace_profile_setting_value.database_change_mode":
 				oldSetting.DatabaseChangeMode = payload.DatabaseChangeMode
+			case "value.workspace_profile_setting_value.disallow_password_signin":
+				// TODO(steven): add feature flag checks.
+				if payload.DisallowPasswordSignin {
+					identityProviders, err := s.store.ListIdentityProviders(ctx, &store.FindIdentityProviderMessage{})
+					if err != nil {
+						return nil, status.Errorf(codes.Internal, "failed to list identity providers: %v", err)
+					}
+					if len(identityProviders) == 0 {
+						return nil, status.Errorf(codes.InvalidArgument, "cannot disallow password signin when no identity provider is set")
+					}
+				}
+				oldSetting.DisallowPasswordSignin = payload.DisallowPasswordSignin
 			default:
 				return nil, status.Errorf(codes.InvalidArgument, "invalid update mask path %v", path)
 			}
