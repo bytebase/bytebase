@@ -3,7 +3,7 @@
     :text="target.partition.name"
     :keyword="keyword"
     :highlight="true"
-    :indent="target.partition.subpartitions.length > 0 ? 0 : 1"
+    :indent="0"
   >
     <template #icon>
       <TablePartitionIcon class="w-4 h-4" />

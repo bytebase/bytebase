@@ -7,7 +7,10 @@
         class="inline-block w-[20px] h-[20px] shrink-0 invisible"
         :data-indent="i"
       />
-      <span class="flex items-center justify-center shrink-0 w-[20px] h-[20px]">
+      <span
+        v-if="!hideIcon"
+        class="flex items-center justify-center shrink-0 w-[20px] h-[20px]"
+      >
         <slot name="icon" />
       </span>
       <slot name="text">
@@ -31,5 +34,6 @@ defineProps<{
   indent?: number;
   keyword?: string;
   highlight?: boolean;
+  hideIcon?: boolean;
 }>();
 </script>

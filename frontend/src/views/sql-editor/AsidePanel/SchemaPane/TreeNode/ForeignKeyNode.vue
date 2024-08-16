@@ -1,19 +1,19 @@
 <template>
   <CommonNode
-    :text="target.function.name"
+    :text="target.foreignKey.name"
     :keyword="keyword"
     :highlight="true"
     :indent="0"
   >
     <template #icon>
-      <FunctionIcon class="w-4 h-4" />
+      <ForeignKeyIcon class="!w-3.5 !h-3.5 text-gray-500" />
     </template>
   </CommonNode>
 </template>
 
 <script setup lang="ts">
 import { computed } from "vue";
-import { FunctionIcon } from "@/components/Icon";
+import { ForeignKeyIcon } from "@/components/Icon";
 import type { TreeNode } from "../common";
 import CommonNode from "./CommonNode.vue";
 
@@ -22,5 +22,7 @@ const props = defineProps<{
   keyword: string;
 }>();
 
-const target = computed(() => (props.node as TreeNode<"function">).meta.target);
+const target = computed(
+  () => (props.node as TreeNode<"foreign-key">).meta.target
+);
 </script>

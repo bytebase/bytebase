@@ -389,6 +389,26 @@ const mapIndexNodes = (
   });
   return children;
 };
+const mapForeignKeyNodes = (
+  target: NodeTarget<"table">,
+  foreignKeys: ForeignKeyMetadata[],
+  parent: TreeNode
+) => {
+  if (foreignKeys.length === 0) {
+    // Create a "<Empty>" foreignKey node placeholder
+    return [createDummyNode("foreign-key", parent)];
+  }
+
+  const children = foreignKeys.map((foreignKey) => {
+    const node = mapTreeNodeByType(
+      "foreign-key",
+      { ...target, foreignKey },
+      parent
+    );
+    return node;
+  });
+  return children;
+};
 const mapTableNodes = (target: NodeTarget<"schema">, parent: TreeNode) => {
   const { schema } = target;
   const children = schema.tables.map((table) => {
@@ -415,6 +435,21 @@ const mapTableNodes = (target: NodeTarget<"schema">, parent: TreeNode) => {
         indexesFolderNode
       );
       node.children.push(indexesFolderNode);
+    }
+
+    // Map foreign keys
+    if (table.foreignKeys.length > 0) {
+      const foreignKeysFolderNode = createExpandableTextNode(
+        "foreign-key",
+        node,
+        () => t("database.foreign-keys")
+      );
+      foreignKeysFolderNode.children = mapForeignKeyNodes(
+        node.meta.target,
+        table.foreignKeys,
+        foreignKeysFolderNode
+      );
+      node.children.push(foreignKeysFolderNode);
     }
 
     // Map table-level partitions.
@@ -453,7 +488,10 @@ const mapExternalTableNodes = (
   parent: TreeNode
 ) => {
   const { schema } = target;
-  const children = schema.externalTables.map((externalTable) => {
+  const folderNode = createExpandableTextNode("column", parent, () =>
+    t("database.columns")
+  );
+  folderNode.children = schema.externalTables.map((externalTable) => {
     const node = mapTreeNodeByType(
       "external-table",
       { ...target, externalTable },
@@ -469,7 +507,7 @@ const mapExternalTableNodes = (
 
     return node;
   });
-  return children;
+  return [folderNode];
 };
 // Map partition-table-level partitions.
 const mapPartitionTableNodes = (

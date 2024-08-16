@@ -1878,7 +1878,8 @@
     "external-server-name": "Nombre del servidor externo",
     "external-database-name": "Nombre de la base de datos externa",
     "foreign-table-detail": "Detalle de la tabla externa",
-    "view-definition": "Ver definición"
+    "view-definition": "Ver definición",
+    "foreign-keys": "claves foráneas"
   },
   "repository": {
     "our-webhook-link": "El webhook creado por Bytebase se puede encontrar en {webhookLink}.",
