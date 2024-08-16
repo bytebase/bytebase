@@ -393,40 +393,6 @@ const handleArchiveUser = async () => {
 
 const tryCreateOrUpdateUser = async () => {
   if (isCreating.value) {
-    // const mockRoles = [
-    //   PresetRoleType.PROJECT_DEVELOPER,
-    //   PresetRoleType.PROJECT_EXPORTER,
-    //   PresetRoleType.PROJECT_OWNER,
-    //   PresetRoleType.PROJECT_QUERIER,
-    //   PresetRoleType.PROJECT_RELEASER,
-    //   PresetRoleType.PROJECT_VIEWER,
-    // ];
-    // const randomIntFromInterval = (min: number, max: number) => {
-    //   // min and max included
-    //   return Math.floor(Math.random() * (max - min + 1) + min);
-    // };
-    // for (let i = 0; i < 200; i++) {
-    //   const title = `[${i}] ${state.user.title || extractUserTitle(state.user.email)}`;
-    //   const email = `${i}${state.user.email}`;
-    //   const user = {
-    //     ...state.user,
-    //     email,
-    //     title,
-    //     password: state.user.password || randomString(20),
-    //   };
-    //   const createdUser = await userStore.createUser(user);
-    //   const roles = [...state.user.roles];
-    //   const role = mockRoles[randomIntFromInterval(0, mockRoles.length - 1)];
-    //   if (!roles.includes(role)) {
-    //     roles.push(role);
-    //   }
-    //   await workspaceStore.patchIamPolicy([
-    //     {
-    //       member: `user:${createdUser.email}`,
-    //       roles,
-    //     },
-    //   ]);
-    // }
     const createdUser = await userStore.createUser({
       ...state.user,
       title: state.user.title || extractUserTitle(state.user.email),
