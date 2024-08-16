@@ -180,11 +180,10 @@ func (*columnSetDefaultForNotNullChecker) needDefault(ctx mysql.IFieldDefinition
 	}
 
 	switch ctx.DataType().GetType_().GetTokenType() {
-	case mysql.MySQLParserBLOB_SYMBOL:
-		return false
-	case mysql.MySQLParserJSON_SYMBOL:
-		return false
-	case mysql.MySQLParserGEOMETRY_SYMBOL,
+	case mysql.MySQLParserBLOB_SYMBOL,
+		mysql.MySQLParserJSON_SYMBOL,
+		mysql.MySQLParserTEXT_SYMBOL,
+		mysql.MySQLParserGEOMETRY_SYMBOL,
 		mysql.MySQLParserGEOMETRYCOLLECTION_SYMBOL,
 		mysql.MySQLParserPOINT_SYMBOL,
 		mysql.MySQLParserMULTIPOINT_SYMBOL,
