@@ -8,8 +8,11 @@ import (
 
 	"github.com/pkg/errors"
 
+	pgquery "github.com/pganalyze/pg_query_go/v5"
+
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
+	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -20,6 +23,10 @@ var (
 func init() {
 	advisor.Register(storepb.Engine_POSTGRES, advisor.PostgreSQLBuiltinPriorBackupCheck, &BuiltinPriorBackupCheckAdvisor{})
 }
+
+const (
+	maxMixedDMLCount = 5
+)
 
 // BuiltinPriorBackupCheckAdvisor is the advisor checking for disallow mix DDL and DML.
 type BuiltinPriorBackupCheckAdvisor struct {
@@ -42,12 +49,11 @@ func (*BuiltinPriorBackupCheckAdvisor) Check(ctx advisor.Context, _ string) ([]*
 	}
 	title := string(ctx.Rule.Type)
 
+	var needBackup []ast.Node
+
 	for _, stmt := range stmtList {
-		var isDDL bool
-		if _, ok := stmt.(ast.DDLNode); ok {
-			isDDL = true
-		}
-		if isDDL {
+		switch n := stmt.(type) {
+		case ast.DDLNode:
 			adviceList = append(adviceList, &storepb.Advice{
 				Status:  level,
 				Title:   title,
@@ -57,14 +63,15 @@ func (*BuiltinPriorBackupCheckAdvisor) Check(ctx advisor.Context, _ string) ([]*
 					Line: int32(stmt.LastLine()),
 				},
 			})
-		}
-		if n, ok := stmt.(*ast.VariableSetStmt); ok {
+		case *ast.UpdateStmt, *ast.DeleteStmt:
+			needBackup = append(needBackup, stmt)
+		case *ast.VariableSetStmt:
 			if n.Name == "role" {
 				adviceList = append(adviceList, &storepb.Advice{
 					Status:  level,
 					Title:   title,
 					Content: "Backup cannot deal with SET ROLE statement",
-					Code:    int32(advisor.BuiltinPriorBackupCheck.Int32()),
+					Code:    advisor.BuiltinPriorBackupCheck.Int32(),
 					StartPosition: &storepb.Position{
 						Line: int32(stmt.LastLine()),
 					},
@@ -86,7 +93,168 @@ func (*BuiltinPriorBackupCheckAdvisor) Check(ctx advisor.Context, _ string) ([]*
 		})
 	}
 
+	if len(needBackup) > maxMixedDMLCount && !updateForOneTableWithUnique(ctx.DBSchema, needBackup) {
+		adviceList = append(adviceList, &storepb.Advice{
+			Status:  level,
+			Title:   title,
+			Content: fmt.Sprintf("Prior backup cannot deal with mixed DML more than %d statements, otherwise statements need be UPDATE for one table with PRIMARY KEY or UNIQUE KEY in WHERE clause", maxMixedDMLCount),
+			Code:    advisor.BuiltinPriorBackupCheck.Int32(),
+			StartPosition: &storepb.Position{
+				Line: 0,
+			},
+		})
+	}
+
 	return adviceList, nil
+}
+
+func updateForOneTableWithUnique(dbSchema *storepb.DatabaseSchemaMetadata, stmtList []ast.Node) bool {
+	var table *ast.TableDef
+	for _, stmt := range stmtList {
+		update, ok := stmt.(*ast.UpdateStmt)
+		if !ok {
+			return false
+		}
+		if table == nil {
+			table = update.Table
+		} else if !equalTable(table, update.Table) {
+			return false
+		}
+		node := update.GetOriginalNode()
+		if !hasUniqueInWhereClause(dbSchema, table, node) {
+			return false
+		}
+	}
+
+	return true
+}
+
+func hasUniqueInWhereClause(dbSchema *storepb.DatabaseSchemaMetadata, table *ast.TableDef, node *pgquery.Node_UpdateStmt) bool {
+	list := extractColumnsInEqualCondition(table, node.UpdateStmt.WhereClause)
+	columnMap := make(map[string]bool)
+	for _, column := range list {
+		columnMap[column] = true
+	}
+
+	if dbSchema == nil {
+		return false
+	}
+
+	for _, schema := range dbSchema.Schemas {
+		if schema.Name == table.Schema || (schema.Name == "public" && table.Schema == "") {
+			for _, t := range schema.Tables {
+				if t.Name == table.Name {
+					for _, index := range t.Indexes {
+						if index.Unique || index.Primary {
+							exists := true
+							for _, column := range index.Expressions {
+								if !columnMap[column] {
+									exists = false
+									break
+								}
+							}
+							if exists {
+								return true
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return false
+}
+
+func extractColumnsInEqualCondition(table *ast.TableDef, node *pgquery.Node) []string {
+	if node == nil {
+		return nil
+	}
+
+	switch n := node.Node.(type) {
+	case *pgquery.Node_BoolExpr:
+		if n.BoolExpr.Boolop != pgquery.BoolExprType_AND_EXPR {
+			return nil
+		}
+		var result []string
+		for _, arg := range n.BoolExpr.Args {
+			result = append(result, extractColumnsInEqualCondition(table, arg)...)
+		}
+		return result
+	case *pgquery.Node_AExpr:
+		if len(n.AExpr.Name) != 1 {
+			return nil
+		}
+		op, ok := n.AExpr.Name[0].Node.(*pgquery.Node_String_)
+		if !ok {
+			return nil
+		}
+		if op.String_.Sval != "=" {
+			return nil
+		}
+		if isConst(n.AExpr.Lexpr) {
+			column, err := extractColumn(table, n.AExpr.Rexpr)
+			if err == nil && column != "" {
+				return []string{column}
+			}
+		} else if isConst(n.AExpr.Rexpr) {
+			column, err := extractColumn(table, n.AExpr.Lexpr)
+			if err == nil && column != "" {
+				return []string{column}
+			}
+		}
+	}
+	return nil
+}
+
+func isConst(node *pgquery.Node) bool {
+	switch node.Node.(type) {
+	case *pgquery.Node_AConst:
+		return true
+	default:
+		return false
+	}
+}
+
+func extractColumn(table *ast.TableDef, node *pgquery.Node) (string, error) {
+	switch n := node.Node.(type) {
+	case *pgquery.Node_ColumnRef:
+		columnNameDef, err := pgrawparser.ConvertNodeListToColumnNameDef(n.ColumnRef.Fields)
+		if err != nil {
+			return "", err
+		}
+		if columnNameDef.Table != nil {
+			if columnNameDef.Table.Schema != "" && columnNameDef.Table.Schema != table.Schema {
+				return "", nil
+			}
+			if columnNameDef.Table.Name != "" && columnNameDef.Table.Name != table.Name {
+				return "", nil
+			}
+		}
+		return columnNameDef.ColumnName, nil
+	default:
+		return "", nil
+	}
+}
+
+func equalTable(a, b *ast.TableDef) bool {
+	if a == nil || b == nil {
+		return false
+	}
+
+	if a.Schema == "" && b.Schema != "" && b.Schema != "public" {
+		return false
+	}
+
+	if a.Schema != "" && a.Schema != "public" && b.Schema == "" {
+		return false
+	}
+
+	if a.Schema != b.Schema {
+		return false
+	}
+
+	return a.Name == b.Name
 }
 
 func extractDatabaseName(databaseUID string) string {
