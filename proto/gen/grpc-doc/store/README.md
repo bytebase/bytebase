@@ -4078,6 +4078,7 @@ The external URL is used for: 1. Constructing the correct callback URL when conf
 | domains | [string](#string) | repeated | The workspace domain, e.g. bytebase.com. |
 | enforce_identity_domain | [bool](#bool) |  | Only user and group from the domains can be created and login. |
 | database_change_mode | [DatabaseChangeMode](#bytebase-store-DatabaseChangeMode) |  | The workspace database change mode. |
+| disallow_password_signin | [bool](#bool) |  | Whether to disallow password signin. (Except workspace admins) |
 
 
 
