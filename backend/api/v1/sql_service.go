@@ -302,8 +302,10 @@ func queryRetry(
 	for i, r := range results {
 		if r.Error == "" {
 			hasOK = true
-			for k := range spans[i].SourceColumns {
-				databaseMap[k.Database] = true
+			if i < len(spans) {
+				for k := range spans[i].SourceColumns {
+					databaseMap[k.Database] = true
+				}
 			}
 		}
 	}
