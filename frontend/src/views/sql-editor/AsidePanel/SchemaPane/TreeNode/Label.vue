@@ -14,6 +14,9 @@
   <template v-if="type === 'column'">
     <ColumnNode :node="node" :keyword="keyword" />
   </template>
+  <template v-if="type === 'index'">
+    <IndexNode :node="node" :keyword="keyword" />
+  </template>
   <template v-if="type === 'partition-table'">
     <PartitionTableNode :node="node" :keyword="keyword" />
   </template>
@@ -42,6 +45,7 @@ import DatabaseNode from "./DatabaseNode.vue";
 import DummyNode from "./DummyNode.vue";
 import ExternalTableNode from "./ExternalTableNode.vue";
 import FunctionNode from "./FunctionNode.vue";
+import IndexNode from "./IndexNode.vue";
 import PartitionTableNode from "./PartitionTableNode.vue";
 import ProcedureNode from "./ProcedureNode.vue";
 import SchemaNode from "./SchemaNode.vue";

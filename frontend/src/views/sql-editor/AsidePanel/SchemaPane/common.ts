@@ -373,6 +373,22 @@ const mapColumnNodes = (
   });
   return children;
 };
+const mapIndexNodes = (
+  target: NodeTarget<"table">,
+  indexes: IndexMetadata[],
+  parent: TreeNode
+) => {
+  if (indexes.length === 0) {
+    // Create a "<Empty>" index node placeholder
+    return [createDummyNode("index", parent)];
+  }
+
+  const children = indexes.map((index) => {
+    const node = mapTreeNodeByType("index", { ...target, index }, parent);
+    return node;
+  });
+  return children;
+};
 const mapTableNodes = (target: NodeTarget<"schema">, parent: TreeNode) => {
   const { schema } = target;
   const children = schema.tables.map((table) => {
@@ -388,14 +404,27 @@ const mapTableNodes = (target: NodeTarget<"schema">, parent: TreeNode) => {
       columnsFolderNode
     );
 
+    // Map indexes
+    if (table.indexes.length > 0) {
+      const indexesFolderNode = createExpandableTextNode("index", node, () =>
+        t("database.indexes")
+      );
+      indexesFolderNode.children = mapIndexNodes(
+        node.meta.target,
+        table.indexes,
+        indexesFolderNode
+      );
+      node.children.push(indexesFolderNode);
+    }
+
     // Map table-level partitions.
     if (table.partitions.length > 0) {
-      const partitionTableTextNode = createExpandableTextNode(
+      const partitionsFolderNode = createExpandableTextNode(
         "partition-table",
         node,
         () => t("db.partitions")
       );
-      partitionTableTextNode.children = [];
+      partitionsFolderNode.children = [];
       for (const partition of table.partitions) {
         const subnode = mapTreeNodeByType(
           "partition-table",
@@ -408,9 +437,9 @@ const mapTableNodes = (target: NodeTarget<"schema">, parent: TreeNode) => {
         } else {
           subnode.isLeaf = true;
         }
-        partitionTableTextNode.children?.push(subnode);
+        partitionsFolderNode.children?.push(subnode);
       }
-      node.children?.push(partitionTableTextNode);
+      node.children?.push(partitionsFolderNode);
     }
     return node;
   });
