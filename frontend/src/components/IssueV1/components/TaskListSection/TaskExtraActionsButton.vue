@@ -32,7 +32,6 @@ import {
   getApplicableTaskRolloutActionList,
   useIssueContext,
 } from "@/components/IssueV1/logic";
-import { useCurrentUserV1 } from "@/store";
 import type { Task } from "@/types/proto/v1/rollout_service";
 import { DropdownItemWithErrorList } from "../common";
 
@@ -46,7 +45,6 @@ const props = defineProps<{
 }>();
 
 const { t } = useI18n();
-const currentUser = useCurrentUserV1();
 const { events, isCreating, activeTask, issue, releaserCandidates } =
   useIssueContext();
 
@@ -62,7 +60,6 @@ const allowUserToSkipTask = asyncComputed(() => {
   return allowUserToApplyTaskRolloutAction(
     issue.value,
     props.task,
-    currentUser.value,
     "SKIP",
     releaserCandidates.value
   );

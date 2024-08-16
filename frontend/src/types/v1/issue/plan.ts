@@ -1,5 +1,6 @@
-import { emptyUser, unknownUser, type ComposedUser } from "@/types";
+import { emptyUser, unknownUser } from "@/types";
 import { EMPTY_ID, UNKNOWN_ID } from "@/types/const";
+import { type User } from "@/types/proto/v1/auth_service";
 import {
   Plan,
   PlanCheckRun,
@@ -18,7 +19,7 @@ export interface ComposedPlan extends Plan {
   planCheckRunList: PlanCheckRun[];
   project: string;
   projectEntity: ComposedProject;
-  creatorEntity: ComposedUser;
+  creatorEntity: User;
 }
 
 export const EMPTY_PLAN_NAME = `projects/${EMPTY_ID}/plans/${EMPTY_ID}`;

@@ -29,7 +29,7 @@
         </template>
         <MemberDataTableByRole
           :allow-edit="allowEdit"
-          :bindings="memberBindings"
+          :bindings-by-role="memberBindingsByRole"
           @update-binding="selectMember"
         />
       </NTabPane>
@@ -81,15 +81,17 @@ import EditMemberRoleDrawer from "@/components/Member/EditMemberRoleDrawer.vue";
 import MemberDataTable from "@/components/Member/MemberDataTable/index.vue";
 import MemberDataTableByRole from "@/components/Member/MemberDataTableByRole.vue";
 import type { MemberBinding } from "@/components/Member/types";
+import {
+  getMemberBindingsByRole,
+  getMemberBindings,
+} from "@/components/Member/utils";
 import { SearchBox } from "@/components/v2";
 import {
   pushNotification,
   useCurrentUserV1,
-  useUserStore,
-  useGroupStore,
   useWorkspaceV1Store,
 } from "@/store";
-import { groupBindingPrefix, userBindingPrefix, PresetRoleType } from "@/types";
+import { userBindingPrefix, PresetRoleType } from "@/types";
 import { UserType } from "@/types/proto/v1/auth_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
@@ -105,9 +107,7 @@ interface LocalState {
 const { t } = useI18n();
 const dialog = useDialog();
 const currentUserV1 = useCurrentUserV1();
-const groupStore = useGroupStore();
 const workspaceStore = useWorkspaceV1Store();
-const userStore = useUserStore();
 
 const state = reactive<LocalState>({
   searchText: "",
@@ -164,45 +164,20 @@ const selectMember = (binding: MemberBinding) => {
   state.showAddMemberPanel = true;
 };
 
+const memberBindingsByRole = computed(() => {
+  return getMemberBindingsByRole({
+    policies: [
+      {
+        level: "WORKSPACE",
+        policy: workspaceStore.workspaceIamPolicy,
+      },
+    ],
+    searchText: state.searchText,
+    ignoreRoles: new Set([PresetRoleType.WORKSPACE_MEMBER]),
+  });
+});
+
 const memberBindings = computed(() => {
-  const map = new Map<string, MemberBinding>();
-
-  for (const binding of workspaceStore.workspaceIamPolicy.bindings) {
-    if (binding.role === PresetRoleType.WORKSPACE_MEMBER) {
-      continue;
-    }
-    for (const member of binding.members) {
-      if (!map.has(member)) {
-        const memberBinding: MemberBinding = {
-          type: "users",
-          title: "",
-          binding: member,
-          workspaceLevelRoles: [],
-          projectRoleBindings: [],
-        };
-        if (member.startsWith(groupBindingPrefix)) {
-          const group = groupStore.getGroupByIdentifier(member);
-          if (!group) {
-            continue;
-          }
-          memberBinding.type = "groups";
-          memberBinding.group = group;
-          memberBinding.title = group.title;
-        } else {
-          const user = userStore.getUserByIdentifier(member);
-          if (!user) {
-            continue;
-          }
-          memberBinding.type = "users";
-          memberBinding.user = user;
-          memberBinding.title = user.title;
-        }
-        map.set(member, memberBinding);
-      }
-      map.get(member)?.workspaceLevelRoles?.push(binding.role);
-    }
-  }
-
-  return [...map.values()];
+  return getMemberBindings(memberBindingsByRole.value);
 });
 </script>

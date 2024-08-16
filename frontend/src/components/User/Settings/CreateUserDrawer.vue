@@ -65,7 +65,7 @@
                 {{ $t("role.default-workspace-role") }}
               </span>
               <NSelect
-                v-model:value="state.user.roles"
+                v-model:value="state.roles"
                 multiple
                 :options="availableRoleOptions"
                 :placeholder="$t('role.select-roles')"
@@ -187,6 +187,7 @@ import {
   useRoleStore,
   useSettingV1Store,
   useUserStore,
+  useWorkspaceV1Store,
 } from "@/store";
 import {
   PRESET_PROJECT_ROLES,
@@ -194,39 +195,52 @@ import {
   PRESET_WORKSPACE_ROLES,
   PresetRoleType,
   emptyUser,
-  type ComposedUser,
 } from "@/types";
-import { UpdateUserRequest, UserType } from "@/types/proto/v1/auth_service";
+import {
+  UpdateUserRequest,
+  UserType,
+  User,
+} from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
 import { displayRoleTitle, randomString } from "@/utils";
 
 interface LocalState {
   isRequesting: boolean;
-  user: ComposedUser;
+  user: User;
+  roles: string[];
   passwordConfirm: string;
 }
 
 const serviceAccountEmailSuffix = "service.bytebase.com";
 
 const props = defineProps<{
-  user?: ComposedUser;
+  user?: User;
 }>();
 
 const emit = defineEmits<{
   (event: "close"): void;
 }>();
 
+const workspaceStore = useWorkspaceV1Store();
+
+const userRolesFromProps = computed(() => {
+  return workspaceStore.getWorkspaceRolesByEmail(props.user?.email ?? "");
+});
+
+const initRoles = () => {
+  return [...userRolesFromProps.value].filter(
+    (r) => r !== PresetRoleType.WORKSPACE_MEMBER
+  );
+};
+
 const initUser = () => {
-  const user = props.user ? cloneDeep(props.user) : emptyUser();
-  return {
-    ...user,
-    roles: user.roles.filter((r) => r !== PresetRoleType.WORKSPACE_MEMBER),
-  };
+  return props.user ? cloneDeep(props.user) : emptyUser();
 };
 
 const { t } = useI18n();
 const settingV1Store = useSettingV1Store();
 const userStore = useUserStore();
+
 const hideServiceAccount = useAppFeature(
   "bb.feature.members.hide-service-account"
 );
@@ -235,6 +249,7 @@ const hideProjectRoles = useAppFeature("bb.feature.members.hide-project-roles");
 const state = reactive<LocalState>({
   isRequesting: false,
   user: initUser(),
+  roles: initRoles(),
   passwordConfirm: "",
 });
 
@@ -308,16 +323,14 @@ const rolesChanged = computed(() => {
     return true;
   }
 
-  return (
-    !isUndefined(state.user.roles) &&
-    !isEqual(initUser().roles, state.user.roles)
-  );
+  return !isUndefined(state.roles) && !isEqual(initRoles(), state.roles);
 });
 
 const allowConfirm = computed(() => {
   if (!state.user.email) {
     return false;
   }
+
   if (
     !isCreating.value &&
     (passwordMismatch.value ||
@@ -338,17 +351,18 @@ const allowDeactivate = computed(() => {
   return (
     state.user.state === State.ACTIVE &&
     (hasMoreThanOneOwner.value ||
-      !state.user.roles.includes(PresetRoleType.WORKSPACE_ADMIN))
+      !state.roles.includes(PresetRoleType.WORKSPACE_ADMIN))
   );
 });
 
 const hasMoreThanOneOwner = computed(() => {
   return (
-    userStore.userList.filter(
+    userStore.activeUserList.filter(
       (user) =>
         user.userType === UserType.USER &&
-        user.state === State.ACTIVE &&
-        user.roles.includes(PresetRoleType.WORKSPACE_ADMIN)
+        workspaceStore.emailMapToRoles
+          .get(user.email)
+          ?.has(PresetRoleType.WORKSPACE_ADMIN)
     ).length > 1
   );
 });
@@ -374,11 +388,17 @@ const handleArchiveUser = async () => {
 
 const tryCreateOrUpdateUser = async () => {
   if (isCreating.value) {
-    await userStore.createUser({
+    const createdUser = await userStore.createUser({
       ...state.user,
       title: state.user.title || extractUserTitle(state.user.email),
       password: state.user.password || randomString(20),
     });
+    await workspaceStore.patchIamPolicy([
+      {
+        member: `user:${createdUser.email}`,
+        roles: state.roles,
+      },
+    ]);
     pushNotification({
       module: "bytebase",
       style: "INFO",
@@ -387,9 +407,9 @@ const tryCreateOrUpdateUser = async () => {
   } else {
     // If the user is the only workspace admin, we need to make sure the user is not removing the
     // workspace admin role.
-    if (props.user?.roles.includes(PresetRoleType.WORKSPACE_ADMIN)) {
+    if (userRolesFromProps.value.has(PresetRoleType.WORKSPACE_ADMIN)) {
       if (
-        !state.user.roles.includes(PresetRoleType.WORKSPACE_ADMIN) &&
+        !state.roles.includes(PresetRoleType.WORKSPACE_ADMIN) &&
         !hasMoreThanOneOwner.value
       ) {
         pushNotification({
@@ -408,7 +428,12 @@ const tryCreateOrUpdateUser = async () => {
       })
     );
     if (rolesChanged.value) {
-      await userStore.updateUserRoles(state.user);
+      await workspaceStore.patchIamPolicy([
+        {
+          member: `user:${state.user.email}`,
+          roles: state.roles,
+        },
+      ]);
     }
     pushNotification({
       module: "bytebase",

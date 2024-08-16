@@ -1,15 +1,31 @@
 import { cloneDeep } from "lodash-es";
 import { defineStore } from "pinia";
-import { ref } from "vue";
+import { ref, computed } from "vue";
 import { workspaceServiceClient } from "@/grpcweb";
-import { groupBindingPrefix } from "@/types";
+import { groupBindingPrefix, PresetRoleType } from "@/types";
 import { IamPolicy, Binding } from "@/types/proto/v1/iam_policy";
-import { roleListInIAM } from "@/utils";
+import { roleListInIAM, getUserEmailListInBinding } from "@/utils";
 import { extractUserEmail } from "../user";
 import { extractGroupEmail } from "./group";
 
 export const useWorkspaceV1Store = defineStore("workspace_v1", () => {
   const workspaceIamPolicy = ref<IamPolicy>(IamPolicy.fromPartial({}));
+
+  const emailMapToRoles = computed(() => {
+    const map = new Map<string, Set<string>>(); // Map<email, role list>
+    for (const binding of workspaceIamPolicy.value.bindings) {
+      for (const email of getUserEmailListInBinding({
+        binding,
+        ignoreGroup: false,
+      })) {
+        if (!map.has(email)) {
+          map.set(email, new Set());
+        }
+        map.get(email)?.add(binding.role);
+      }
+    }
+    return map;
+  });
 
   const fetchIamPolicy = async () => {
     const policy = await workspaceServiceClient.getIamPolicy({
@@ -95,7 +111,18 @@ export const useWorkspaceV1Store = defineStore("workspace_v1", () => {
     } else {
       email = extractUserEmail(member);
     }
-    return roleListInIAM(workspaceIamPolicy.value, email, ignoreGroup);
+    return roleListInIAM({
+      policy: workspaceIamPolicy.value,
+      email,
+      ignoreGroup,
+    });
+  };
+
+  const getWorkspaceRolesByEmail = (email: string) => {
+    return (
+      emailMapToRoles.value.get(email) ??
+      new Set<string>([PresetRoleType.WORKSPACE_MEMBER])
+    );
   };
 
   return {
@@ -103,5 +130,7 @@ export const useWorkspaceV1Store = defineStore("workspace_v1", () => {
     fetchIamPolicy,
     patchIamPolicy,
     findRolesByMember,
+    emailMapToRoles,
+    getWorkspaceRolesByEmail,
   };
 });

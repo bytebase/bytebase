@@ -46,7 +46,6 @@ import {
   getApplicableTaskRolloutActionList,
   useIssueContext,
 } from "@/components/IssueV1/logic";
-import { useCurrentUserV1 } from "@/store";
 import type { Task } from "@/types/proto/v1/rollout_service";
 import { isDatabaseDataExportIssue } from "@/utils";
 import type { ExtraActionOption } from "../common";
@@ -58,7 +57,6 @@ import RolloutActionButtonGroup from "./RolloutActionButtonGroup.vue";
 import type { RolloutAction } from "./common";
 
 const { t } = useI18n();
-const currentUser = useCurrentUserV1();
 const {
   issue,
   activeStage,
@@ -103,7 +101,6 @@ const allowUserToSkipTask = asyncComputed(async () => {
       allowUserToApplyTaskRolloutAction(
         issue.value,
         task,
-        currentUser.value,
         "SKIP",
         releaserCandidates.value
       )

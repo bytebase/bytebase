@@ -1,9 +1,9 @@
-import type { ComposedUser } from "@/types";
+import { type User } from "@/types/proto/v1/auth_service";
 import type { Group } from "@/types/proto/v1/group";
 import type { Binding } from "@/types/proto/v1/iam_policy";
 
 export interface MemberRole {
-  workspaceLevelRoles: string[];
+  workspaceLevelRoles: Set<string>;
   projectRoleBindings: Binding[];
 }
 
@@ -13,6 +13,6 @@ export interface MemberBinding extends MemberRole {
   // like user:{email} or group:{email}
   binding: string;
   type: "users" | "groups";
-  user?: ComposedUser;
+  user?: User;
   group?: Group;
 }

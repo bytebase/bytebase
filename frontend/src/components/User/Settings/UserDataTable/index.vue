@@ -26,8 +26,8 @@ import { NDataTable } from "naive-ui";
 import { computed, reactive, h } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBAlert } from "@/bbkit";
-import { useAppFeature, useUserStore } from "@/store";
-import { type ComposedUser } from "@/types";
+import { useAppFeature, useUserStore, useWorkspaceV1Store } from "@/store";
+import { type User } from "@/types/proto/v1/auth_service";
 import type { Group } from "@/types/proto/v1/group";
 import { copyServiceKeyToClipboardIfNeeded } from "../common";
 import GroupsCell from "./cells/GroupsCell.vue";
@@ -37,7 +37,7 @@ import UserRolesCell from "./cells/UserRolesCell.vue";
 
 interface LocalState {
   showResetKeyAlert: boolean;
-  targetServiceAccount?: ComposedUser;
+  targetServiceAccount?: User;
 }
 
 defineOptions({
@@ -46,23 +46,25 @@ defineOptions({
 
 const props = defineProps<{
   showRoles: boolean;
-  userList: ComposedUser[];
+  userList: User[];
 }>();
 
 const emit = defineEmits<{
-  (event: "update-user", user: ComposedUser): void;
+  (event: "update-user", user: User): void;
   (event: "select-group", group: Group): void;
 }>();
 
 const { t } = useI18n();
 const userStore = useUserStore();
+const workspaceStore = useWorkspaceV1Store();
+
 const state = reactive<LocalState>({
   showResetKeyAlert: false,
 });
 const hideGroups = useAppFeature("bb.feature.members.hide-groups");
 
 const columns = computed(() => {
-  const columns: (DataTableColumn<ComposedUser> & { hide?: boolean })[] = [
+  const columns: (DataTableColumn<User> & { hide?: boolean })[] = [
     {
       key: "account",
       title: t("settings.members.table.account"),
@@ -80,9 +82,9 @@ const columns = computed(() => {
       title: t("settings.members.table.role"),
       resizable: true,
       hide: !props.showRoles,
-      render: (user: ComposedUser) => {
+      render: (user: User) => {
         return h(UserRolesCell, {
-          roles: user.roles,
+          roles: [...workspaceStore.getWorkspaceRolesByEmail(user.email)],
         });
       },
     },
@@ -91,7 +93,7 @@ const columns = computed(() => {
       title: t("settings.members.table.groups"),
       hide: hideGroups.value,
       resizable: true,
-      render: (user: ComposedUser) => {
+      render: (user: User) => {
         return h(GroupsCell, {
           user,
           "onSelect-group": (group) => emit("select-group", group),
@@ -102,7 +104,7 @@ const columns = computed(() => {
       key: "operations",
       title: "",
       width: "4rem",
-      render: (user: ComposedUser) => {
+      render: (user: User) => {
         return h(UserOperationsCell, {
           user,
           "onUpdate-user": () => {
@@ -115,7 +117,7 @@ const columns = computed(() => {
   return columns.filter((column) => !column.hide);
 });
 
-const tryResetServiceKey = (user: ComposedUser) => {
+const tryResetServiceKey = (user: User) => {
   state.showResetKeyAlert = true;
   state.targetServiceAccount = user;
 };
