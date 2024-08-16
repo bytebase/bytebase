@@ -23,6 +23,7 @@
     "activity": "活動",
     "activities": "活動",
     "sign-in": "ログイン",
+    "sign-in-as-admin": "管理者としてサインイン",
     "sign-up": "登録する",
     "email": "メールアドレス",
     "username": "ユーザー名",
@@ -657,6 +658,11 @@
           "enable": "すべてのユーザーに 2 要素認証の構成を要求する",
           "description": "有効にすると、2 要素認証が設定されていないユーザーは強制的に設定されます。",
           "need-all-user-2fa-enabled": "これを有効にする前に、すべてのユーザーが 2 要素認証を構成する必要があります。 2 要素認証が構成されていないユーザーが {count} 人います: {users}"
+        },
+        "disallow-password-signin": {
+          "enable": "メールアドレスとパスワードによるサインインを禁止する",
+          "description": "ユーザーはメールとパスワードでサインインすることはできず、SSO のみが許可されます。",
+          "require-sso-setup": "最初に機能的な SSO を作成する必要があります。そうしないと、ユーザーはログインできません。"
         },
         "network": "通信網",
         "external-url": {
@@ -2797,6 +2803,10 @@
       "bb-feature-disallow-signup": {
         "title": "セルフサービス登録を無効にする",
         "desc": "無効化されると、新しいユーザーは自己登録できなくなり、管理者の招待を通じてのみアカウントを作成できます。"
+      },
+      "bb-feature-disallow-password-signin": {
+        "title": "メールアドレスとパスワードによるサインインを禁止する",
+        "desc": "ユーザーはメールとパスワードでサインインすることはできず、SSO のみが許可されます。"
       },
       "bb-feature-schema-template": {
         "title": "スキーマテンプレート",

@@ -4,7 +4,7 @@
       <BytebaseLogo class="mx-auto" />
 
       <div class="mt-8">
-        <NCard>
+        <NCard v-if="showSignInForm">
           <NTabs
             class="card-tabs"
             default-value="standard"
@@ -12,88 +12,16 @@
             animated
             pane-style="padding: 12px 0 0 0"
           >
-            <NTabPane name="standard" tab="Standard">
-              <form class="space-y-6 px-1" @submit.prevent="trySignin()">
-                <div>
-                  <label
-                    for="email"
-                    class="block text-sm font-medium leading-5 text-control"
-                  >
-                    {{ $t("common.email") }}
-                    <span class="text-red-600">*</span>
-                  </label>
-                  <div class="mt-1 rounded-md shadow-sm">
-                    <BBTextField
-                      v-model:value="state.email"
-                      required
-                      :input-props="{
-                        id: 'email',
-                        autocomplete: 'on',
-                        type: 'email',
-                      }"
-                      placeholder="jim@example.com"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label
-                    for="password"
-                    class="flex justify-between text-sm font-medium leading-5 text-control"
-                  >
-                    <div>
-                      {{ $t("common.password") }}
-                      <span class="text-red-600">*</span>
-                    </div>
-                    <router-link
-                      :to="{
-                        path: '/auth/password-forgot',
-                        query: {
-                          hint: route.query.hint,
-                        },
-                      }"
-                      class="text-sm font-normal text-control-light hover:underline focus:outline-none"
-                      tabindex="-1"
-                    >
-                      {{ $t("auth.sign-in.forget-password") }}
-                    </router-link>
-                  </label>
-                  <div
-                    class="relative flex flex-row items-center mt-1 rounded-md shadow-sm"
-                  >
-                    <BBTextField
-                      v-model:value="state.password"
-                      :type="state.showPassword ? 'text' : 'password'"
-                      :input-props="{ id: 'password', autocomplete: 'on' }"
-                      required
-                    />
-                    <div
-                      class="hover:cursor-pointer absolute right-3"
-                      @click="
-                        () => {
-                          state.showPassword = !state.showPassword;
-                        }
-                      "
-                    >
-                      <EyeIcon v-if="state.showPassword" class="w-4 h-4" />
-                      <EyeOffIcon v-else class="w-4 h-4" />
-                    </div>
-                  </div>
-                </div>
-
-                <div class="w-full">
-                  <NButton
-                    attr-type="submit"
-                    type="primary"
-                    :disabled="!allowSignin()"
-                    :loading="state.isLoading"
-                    size="large"
-                    style="width: 100%"
-                  >
-                    {{ $t("common.sign-in") }}
-                  </NButton>
-                </div>
-              </form>
+            <NTabPane
+              v-if="!disallowPasswordSignin"
+              name="standard"
+              tab="Standard"
+            >
+              <PasswordSigninForm
+                :email="state.email"
+                :password="state.password"
+                :show-password="state.showPassword"
+              />
 
               <div class="mt-3">
                 <div
@@ -208,7 +136,7 @@
       </div>
 
       <div v-if="separatedIdentityProviderList.length > 0" class="mb-3 px-1">
-        <div class="relative my-4">
+        <div v-if="showSignInForm" class="relative my-4">
           <div class="absolute inset-0 flex items-center" aria-hidden="true">
             <div class="w-full border-t border-control-border"></div>
           </div>
@@ -255,6 +183,7 @@ import { computed, onMounted, reactive, ref, watchEffect } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { BBSpin, BBTextField } from "@/bbkit";
 import BytebaseLogo from "@/components/BytebaseLogo.vue";
+import PasswordSigninForm from "@/components/PasswordSigninForm.vue";
 import { AUTH_MFA_MODULE, AUTH_SIGNUP_MODULE } from "@/router/auth";
 import {
   useActuatorV1Store,
@@ -287,7 +216,8 @@ const state = reactive<LocalState>({
   isLoading: false,
 });
 const initialized = ref(false);
-const { isDemo, disallowSignup } = storeToRefs(actuatorStore);
+const { isDemo, disallowSignup, disallowPasswordSignin } =
+  storeToRefs(actuatorStore);
 
 const separatedIdentityProviderList = computed(() =>
   identityProviderStore.identityProviderList.filter(
@@ -299,6 +229,13 @@ const groupedIdentityProviderList = computed(() =>
     (idp) => idp.type === IdentityProviderType.LDAP
   )
 );
+
+const showSignInForm = computed(() => {
+  return (
+    !disallowPasswordSignin.value ||
+    groupedIdentityProviderList.value.length > 0
+  );
+});
 
 watchEffect(() => {
   // Navigate to signup if needs admin setup.

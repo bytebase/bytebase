@@ -3,6 +3,7 @@ import SplashLayout from "@/layouts/SplashLayout.vue";
 import { t } from "@/plugins/i18n";
 
 export const AUTH_SIGNIN_MODULE = "auth.signin";
+export const AUTH_SIGNIN_ADMIN_MODULE = "auth.signin.admin";
 export const AUTH_SIGNUP_MODULE = "auth.signup";
 export const AUTH_MFA_MODULE = "auth.mfa";
 export const AUTH_PASSWORD_FORGOT_MODULE = "auth.password.forgot";
@@ -22,6 +23,12 @@ const authRoutes: RouteRecordRaw[] = [
         name: AUTH_SIGNIN_MODULE,
         meta: { title: () => t("common.sign-in") },
         component: () => import("@/views/auth/Signin.vue"),
+      },
+      {
+        path: "signin/admin",
+        name: AUTH_SIGNIN_ADMIN_MODULE,
+        meta: { title: () => t("common.sign-in-as-admin") },
+        component: () => import("@/views/auth/SigninAdmin.vue"),
       },
       {
         path: "signup",
