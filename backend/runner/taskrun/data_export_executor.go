@@ -76,7 +76,7 @@ func (exec *DataExportExecutor) RunOnce(ctx context.Context, _ context.Context, 
 		Format:    v1pb.ExportFormat(payload.Format),
 		Password:  payload.Password,
 	}
-	bytes, durationNs, exportErr := apiv1.DoExport(ctx, exec.store, exec.dbFactory, exec.license, exportRequest, nil /* user */, instance, database, nil)
+	bytes, durationNs, exportErr := apiv1.DoExport(ctx, exec.store, exec.dbFactory, exec.license, exportRequest, nil /* user */, instance, database, nil, exec.schemaSyncer)
 	if exportErr != nil {
 		return true, nil, errors.Wrap(exportErr, "failed to export data")
 	}
