@@ -1,4 +1,4 @@
-import type { ComposedProject, ComposedTaskRun, ComposedUser } from "@/types";
+import type { ComposedProject, ComposedTaskRun } from "@/types";
 import {
   EMPTY_PROJECT_NAME,
   UNKNOWN_PROJECT_NAME,
@@ -8,6 +8,7 @@ import {
   unknownUser,
 } from "@/types";
 import type { Rollout } from "@/types//proto/v1/rollout_service";
+import { type User } from "@/types/proto/v1/auth_service";
 import { Issue, IssueStatus, Issue_Type } from "@/types/proto/v1/issue_service";
 import type { Plan, PlanCheckRun } from "@/types/proto/v1/plan_service";
 import { EMPTY_ID, UNKNOWN_ID } from "../../const";
@@ -22,7 +23,7 @@ export interface ComposedIssue extends Issue {
   rolloutTaskRunList: ComposedTaskRun[];
   project: string;
   projectEntity: ComposedProject;
-  creatorEntity: ComposedUser;
+  creatorEntity: User;
 }
 
 export const ESTABLISH_BASELINE_SQL =

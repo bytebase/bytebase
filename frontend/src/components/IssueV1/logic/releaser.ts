@@ -1,22 +1,20 @@
 import { uniqBy } from "lodash-es";
 import { useUserStore } from "@/store";
 import { userNamePrefix, roleNamePrefix } from "@/store/modules/v1/common";
-import type { ComposedIssue, ComposedUser } from "@/types";
-import { extractUserResourceName, memberListInIAM } from "@/utils";
+import type { ComposedIssue } from "@/types";
+import { type User } from "@/types/proto/v1/auth_service";
+import { extractUserResourceName, memberListInProjectIAM } from "@/utils";
 
 export const releaserCandidatesForIssue = (issue: ComposedIssue) => {
-  const users: ComposedUser[] = [];
+  const users: User[] = [];
 
   const project = issue.projectEntity;
-  const projectMembers = memberListInIAM(project.iamPolicy);
-  const workspaceMembers = useUserStore().userList;
+  const projectMembers = memberListInProjectIAM(project.iamPolicy);
+  const workspaceMembers = useUserStore().activeUserList;
 
   for (let i = 0; i < issue.releasers.length; i++) {
     const releaserRole = issue.releasers[i];
     if (releaserRole.startsWith(roleNamePrefix)) {
-      users.push(
-        ...workspaceMembers.filter((user) => user.roles.includes(releaserRole))
-      );
       users.push(
         ...projectMembers
           .filter((membership) => membership.roleList.includes(releaserRole))

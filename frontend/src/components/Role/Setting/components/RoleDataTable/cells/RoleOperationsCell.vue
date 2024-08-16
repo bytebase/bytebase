@@ -14,7 +14,12 @@
 import { NButton, useDialog } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { useRoleStore, useUserStore, pushNotification } from "@/store";
+import {
+  useRoleStore,
+  useUserStore,
+  useWorkspaceV1Store,
+  pushNotification,
+} from "@/store";
 import type { Role } from "@/types/proto/v1/role_service";
 import { hasWorkspacePermissionV2, isCustomRole } from "@/utils";
 import { useCustomRoleSettingContext } from "../../../context";
@@ -30,6 +35,7 @@ defineEmits<{
 const { hasCustomRoleFeature, showFeatureModal } =
   useCustomRoleSettingContext();
 const userStore = useUserStore();
+const workspaceStore = useWorkspaceV1Store();
 const $dialog = useDialog();
 const { t } = useI18n();
 
@@ -38,7 +44,10 @@ const allowDelete = computed(() => hasWorkspacePermissionV2("bb.roles.delete"));
 
 const usersWithRole = computed(() => {
   return userStore.activeUserList.filter((user) => {
-    return user.roles.includes(props.role.name);
+    return (
+      workspaceStore.emailMapToRoles.get(user.email)?.has(props.role.name) ??
+      false
+    );
   });
 });
 

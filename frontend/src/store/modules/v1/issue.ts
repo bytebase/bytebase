@@ -13,13 +13,14 @@ import {
   ApprovalNode_Type,
   ApprovalNode_GroupValue,
 } from "@/types/proto/v1/issue_service";
-import { extractProjectResourceName, memberListInIAM } from "@/utils";
+import { extractProjectResourceName, memberListInProjectIAM } from "@/utils";
 import { useUserStore } from "../user";
 import {
   shallowComposeIssue,
   type ComposeIssueConfig,
 } from "./experimental-issue";
 import { useProjectV1Store } from "./project";
+import { useWorkspaceV1Store } from "./workspace";
 
 export type ListIssueParams = {
   find: IssueFilter;
@@ -143,11 +144,13 @@ export const candidatesOfApprovalStepV1 = (
   step: ApprovalStep
 ) => {
   const userStore = useUserStore();
+  const workspaceStore = useWorkspaceV1Store();
+
   const workspaceMemberList = userStore.activeUserList.filter(
     (user) => user.userType === UserType.USER
   );
   const project = issue.projectEntity;
-  const projectMemberList = memberListInIAM(project.iamPolicy).filter(
+  const projectMemberList = memberListInProjectIAM(project.iamPolicy).filter(
     (member) => member.user.userType === UserType.USER
   );
 
@@ -166,28 +169,26 @@ export const candidatesOfApprovalStepV1 = (
       ) {
         const targetRole = convertApprovalNodeGroupToRole(groupValue);
         return projectMemberList
-          .filter(
-            (member) =>
-              member.roleList.includes(targetRole) ||
-              member.user.roles.includes(targetRole)
-          )
+          .filter((member) => member.roleList.includes(targetRole))
           .map((member) => member.user);
       }
       if (
         groupValue === ApprovalNode_GroupValue.WORKSPACE_DBA ||
         groupValue === ApprovalNode_GroupValue.WORKSPACE_OWNER
       ) {
-        return workspaceMemberList.filter((member) =>
-          member.roles.includes(convertApprovalNodeGroupToRole(groupValue))
+        return workspaceMemberList.filter(
+          (member) =>
+            workspaceStore.emailMapToRoles
+              .get(member.email)
+              ?.has(convertApprovalNodeGroupToRole(groupValue)) ?? false
         );
       }
       return [];
     };
     const candidatesForCustomRoles = (role: string) => {
-      const memberList = memberListInIAM(project.iamPolicy);
+      const memberList = memberListInProjectIAM(project.iamPolicy, role);
       return memberList
         .filter((member) => member.user.userType === UserType.USER)
-        .filter((member) => member.roleList.includes(role))
         .map((member) => member.user);
     };
 

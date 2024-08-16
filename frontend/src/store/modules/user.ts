@@ -1,46 +1,25 @@
 import { isEqual, isUndefined, orderBy } from "lodash-es";
 import { defineStore } from "pinia";
-import { computed, ref, watch } from "vue";
+import { computed, ref } from "vue";
 import { authServiceClient } from "@/grpcweb";
 import {
-  PresetRoleType,
-  PRESET_WORKSPACE_ROLES,
   ALL_USERS_USER_EMAIL,
   allUsersUser,
   SYSTEM_BOT_USER_NAME,
 } from "@/types";
-import type { ComposedUser } from "@/types";
 import type { UpdateUserRequest, User } from "@/types/proto/v1/auth_service";
 import { UserType } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
-import { roleListInIAM } from "@/utils";
 import { userNamePrefix, getUserEmailFromIdentifier } from "./v1/common";
 import { usePermissionStore } from "./v1/permission";
-import { useWorkspaceV1Store } from "./v1/workspace";
 
 export const useUserStore = defineStore("user", () => {
-  const userMapByName = ref<Map<string, ComposedUser>>(new Map());
-  const workspaceStore = useWorkspaceV1Store();
+  const userMapByName = ref<Map<string, User>>(new Map());
 
   const setUser = (user: User) => {
-    const composedUser: ComposedUser = {
-      ...user,
-      roles: roleListInIAM(workspaceStore.workspaceIamPolicy, user.email),
-    };
-    watch(
-      () => workspaceStore.workspaceIamPolicy,
-      (iamPolicy) => {
-        // re-calculate workspace permission roles for user when
-        // workspace iam policy updated
-        composedUser.roles = roleListInIAM(iamPolicy, user.email);
-        // invalid permission cache
-        usePermissionStore().invalidCacheByUser(composedUser);
-      }
-    );
-    userMapByName.value.set(user.name, composedUser);
-    usePermissionStore().invalidCacheByUser(composedUser);
-
-    return composedUser;
+    userMapByName.value.set(user.name, user);
+    usePermissionStore().invalidCacheByUser(user);
+    return user;
   };
 
   const userList = computed(() => {
@@ -53,10 +32,8 @@ export const useUserStore = defineStore("user", () => {
             : user.userType === UserType.SERVICE_ACCOUNT
               ? 1
               : 2,
-        (user) => user.roles.includes(PresetRoleType.WORKSPACE_ADMIN),
-        (user) => user.roles.includes(PresetRoleType.WORKSPACE_DBA),
       ],
-      ["asc", "desc", "desc"]
+      ["asc"]
     );
   });
   // The active user list and exclude allUsers.
@@ -73,17 +50,11 @@ export const useUserStore = defineStore("user", () => {
     );
   });
 
-  const workspaceLevelProjectMembers = computed(() => {
-    return activeUserList.value.filter((user) =>
-      user.roles.some((role) => !PRESET_WORKSPACE_ROLES.includes(role))
-    );
-  });
-
   const fetchUserList = async () => {
     const { users } = await authServiceClient.listUsers({
       showDeleted: true,
     });
-    const response: ComposedUser[] = [];
+    const response: User[] = [];
     for (const user of users) {
       response.push(setUser(user));
     }
@@ -100,17 +71,10 @@ export const useUserStore = defineStore("user", () => {
     );
     return setUser(user);
   };
-  const createUser = async (user: ComposedUser) => {
+  const createUser = async (user: User) => {
     const createdUser = await authServiceClient.createUser({
       user,
     });
-    await workspaceStore.patchIamPolicy([
-      {
-        member: `user:${createdUser.email}`,
-        roles: user.roles,
-      },
-    ]);
-
     return setUser(createdUser);
   };
   const updateUser = async (updateUserRequest: UpdateUserRequest) => {
@@ -120,15 +84,6 @@ export const useUserStore = defineStore("user", () => {
       throw new Error(`user with name ${name} not found`);
     }
     const user = await authServiceClient.updateUser(updateUserRequest);
-    return setUser(user);
-  };
-  const updateUserRoles = async (user: ComposedUser) => {
-    await workspaceStore.patchIamPolicy([
-      {
-        member: `user:${user.email}`,
-        roles: user.roles,
-      },
-    ]);
     return setUser(user);
   };
   const getOrFetchUserByName = async (name: string, silent = false) => {
@@ -178,12 +133,10 @@ export const useUserStore = defineStore("user", () => {
     userList,
     activeUserList,
     systemBotUser,
-    workspaceLevelProjectMembers,
     fetchUserList,
     fetchUser,
     createUser,
     updateUser,
-    updateUserRoles,
     getOrFetchUserByName,
     getUserByName,
     getOrFetchUserById,

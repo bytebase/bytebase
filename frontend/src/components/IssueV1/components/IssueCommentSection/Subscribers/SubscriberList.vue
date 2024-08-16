@@ -42,7 +42,7 @@ import { updateIssueSubscribers, useIssueContext } from "@/components/IssueV1";
 import UserAvatar from "@/components/User/UserAvatar.vue";
 import { useUserStore } from "@/store";
 import { unknownUser } from "@/types";
-import type { ComposedUser } from "@/types";
+import { type User } from "@/types/proto/v1/auth_service";
 import { UserType } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
 import { extractUserResourceName } from "@/utils";
@@ -53,7 +53,7 @@ defineProps<{
 }>();
 
 type UserSelectOption = SelectOption & {
-  user: ComposedUser;
+  user: User;
   value: string;
 };
 

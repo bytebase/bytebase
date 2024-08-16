@@ -1,15 +1,18 @@
 import { orderBy, uniq } from "lodash-es";
-import { extractUserEmail, useUserStore, useGroupStore } from "@/store";
-import { userNamePrefix, roleNamePrefix } from "@/store/modules/v1/common";
+import {
+  extractUserEmail,
+  useUserStore,
+  useGroupStore,
+  useWorkspaceV1Store,
+} from "@/store";
+import { roleNamePrefix } from "@/store/modules/v1/common";
 import {
   ALL_USERS_USER_EMAIL,
   PresetRoleType,
   groupBindingPrefix,
   PRESET_WORKSPACE_ROLES,
-  type ComposedUser,
-  unknownUser,
 } from "@/types";
-import { getUserEmailInBinding } from "@/types";
+import type { User } from "@/types/proto/v1/auth_service";
 import type { IamPolicy, Binding } from "@/types/proto/v1/iam_policy";
 import { convertFromExpr } from "@/utils/issue/cel";
 
@@ -26,7 +29,13 @@ export const isBindingPolicyExpired = (binding: Binding): boolean => {
   return false;
 };
 
-export const getUserEmailListInBinding = (binding: Binding): string[] => {
+export const getUserEmailListInBinding = ({
+  binding,
+  ignoreGroup,
+}: {
+  binding: Binding;
+  ignoreGroup: boolean;
+}): string[] => {
   if (isBindingPolicyExpired(binding)) {
     return [];
   }
@@ -37,6 +46,9 @@ export const getUserEmailListInBinding = (binding: Binding): string[] => {
 
   for (const member of binding.members) {
     if (member.startsWith(groupBindingPrefix)) {
+      if (ignoreGroup) {
+        continue;
+      }
       const group = groupStore.getGroupByIdentifier(member);
       if (!group) {
         continue;
@@ -55,51 +67,72 @@ export const getUserEmailListInBinding = (binding: Binding): string[] => {
   return uniq(emailList);
 };
 
-export const memberListInIAM = (iamPolicy: IamPolicy) => {
+export const memberListInProjectIAM = (
+  iamPolicy: IamPolicy,
+  targetRole?: string
+) => {
   const userStore = useUserStore();
+  const workspaceStore = useWorkspaceV1Store();
 
-  const emailList = [];
+  const emailSet = new Set<string>();
   // rolesMapByEmail is Map<email, role list>
   const rolesMapByEmail = new Map<string, Set<string>>();
+
+  // Handle project level roles.
   for (const binding of iamPolicy.bindings) {
+    if (targetRole && binding.role !== targetRole) {
+      continue;
+    }
     if (isBindingPolicyExpired(binding)) {
       continue;
     }
 
-    const emails = getUserEmailListInBinding(binding);
+    const emails = getUserEmailListInBinding({ binding, ignoreGroup: false });
 
     for (const email of emails) {
       if (!rolesMapByEmail.has(email)) {
         rolesMapByEmail.set(email, new Set());
       }
       rolesMapByEmail.get(email)?.add(binding.role);
+      emailSet.add(email);
     }
-    emailList.push(...emails);
   }
 
-  for (const workspaceLevelProjectMember of userStore.workspaceLevelProjectMembers) {
-    emailList.push(workspaceLevelProjectMember.email);
-    if (!rolesMapByEmail.has(workspaceLevelProjectMember.email)) {
-      rolesMapByEmail.set(workspaceLevelProjectMember.email, new Set());
+  // Handle workspace level project roles.
+  for (const [email, roleSet] of workspaceStore.emailMapToRoles.entries()) {
+    emailSet.add(email);
+    if (!rolesMapByEmail.has(email)) {
+      rolesMapByEmail.set(email, new Set());
     }
-    for (const role of workspaceLevelProjectMember.roles) {
+    for (const role of roleSet.values()) {
       if (PRESET_WORKSPACE_ROLES.includes(role)) {
         continue;
       }
-      rolesMapByEmail.get(workspaceLevelProjectMember.email)?.add(role);
+      if (targetRole && role !== targetRole) {
+        continue;
+      }
+      rolesMapByEmail.get(email)?.add(role);
     }
   }
 
-  const distinctEmailList = uniq(emailList);
-  const userList = distinctEmailList.map((email) => {
-    const user: ComposedUser = userStore.getUserByEmail(email) ?? unknownUser();
-    return user;
-  });
-
-  const composedUserList = userList.map((user) => {
-    const roleList = rolesMapByEmail.get(user.email) ?? new Set<string>();
-    return { user, roleList: [...roleList] };
-  });
+  const composedUserList: {
+    user: User;
+    roleList: string[];
+  }[] = [];
+  for (const email of emailSet.values()) {
+    const user = userStore.getUserByEmail(email);
+    if (!user) {
+      continue;
+    }
+    const roleList = rolesMapByEmail.get(email);
+    if (!roleList || roleList.size === 0) {
+      continue;
+    }
+    composedUserList.push({
+      user,
+      roleList: [...roleList],
+    });
+  }
 
   return orderBy(
     composedUserList,
@@ -111,42 +144,22 @@ export const memberListInIAM = (iamPolicy: IamPolicy) => {
   );
 };
 
-export const roleListInIAM = (
-  iamPolicy: IamPolicy,
-  email: string,
-  ignoreGroup: boolean = false
-) => {
-  const groupStore = useGroupStore();
-  const userInBinding = getUserEmailInBinding(email);
-
-  const roles = iamPolicy.bindings
+export const roleListInIAM = ({
+  policy,
+  email,
+  ignoreGroup,
+}: {
+  policy: IamPolicy;
+  email: string;
+  ignoreGroup: boolean;
+}) => {
+  const roles = policy.bindings
     .filter((binding) => {
       if (binding.role === PresetRoleType.WORKSPACE_MEMBER) {
         return false;
       }
-      if (isBindingPolicyExpired(binding)) {
-        return false;
-      }
-      for (const member of binding.members) {
-        if (member === ALL_USERS_USER_EMAIL) {
-          return true;
-        }
-        if (member === userInBinding) {
-          return true;
-        }
-
-        if (!ignoreGroup && member.startsWith(groupBindingPrefix)) {
-          const group = groupStore.getGroupByIdentifier(member);
-          if (!group) {
-            continue;
-          }
-
-          return group.members.some(
-            (m) => m.member === `${userNamePrefix}${email}`
-          );
-        }
-      }
-      return false;
+      const emailList = getUserEmailListInBinding({ binding, ignoreGroup });
+      return emailList.includes(email);
     })
     .map((binding) => binding.role);
 

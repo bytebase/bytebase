@@ -1,12 +1,15 @@
 import { head } from "lodash-es";
 import type { ButtonProps } from "naive-ui";
 import { t } from "@/plugins/i18n";
+import { useCurrentUserV1 } from "@/store";
 import { userNamePrefix } from "@/store/modules/v1/common";
-import type { ComposedIssue, ComposedUser } from "@/types";
+import type { ComposedIssue } from "@/types";
 import { PresetRoleType } from "@/types";
+import { type User } from "@/types/proto/v1/auth_service";
 import { IssueStatus, Issue_Type } from "@/types/proto/v1/issue_service";
 import type { Task } from "@/types/proto/v1/rollout_service";
 import { Task_Status, Task_Type } from "@/types/proto/v1/rollout_service";
+import { hasWorkspaceLevelRole } from "@/utils";
 
 export type TaskRolloutAction =
   | "ROLLOUT" // NOT_STARTED -> PENDING
@@ -132,23 +135,25 @@ export const taskRolloutActionButtonProps = (
 export const allowUserToApplyTaskRolloutAction = (
   issue: ComposedIssue,
   task: Task,
-  user: ComposedUser,
   action: TaskRolloutAction,
-  releaserCandidates: ComposedUser[]
+  releaserCandidates: User[]
 ) => {
+  const me = useCurrentUserV1();
   // For data export issues, only the creator can take actions.
   if (issue.type === Issue_Type.DATABASE_DATA_EXPORT) {
-    return issue.creator === `${userNamePrefix}${user.email}`;
+    return issue.creator === `${userNamePrefix}${me.value.email}`;
   }
 
   // Special for workspace admins and DBAs
   // Still using role-based permission checks
   if (
-    user.roles.includes(PresetRoleType.WORKSPACE_ADMIN) ||
-    user.roles.includes(PresetRoleType.WORKSPACE_DBA)
+    hasWorkspaceLevelRole(PresetRoleType.WORKSPACE_ADMIN) ||
+    hasWorkspaceLevelRole(PresetRoleType.WORKSPACE_DBA)
   ) {
     return true;
   }
 
-  return releaserCandidates.some((candidate) => candidate.name === user.name);
+  return releaserCandidates.some(
+    (candidate) => candidate.name === me.value.name
+  );
 };

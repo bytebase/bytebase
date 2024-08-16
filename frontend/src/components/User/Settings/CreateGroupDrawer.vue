@@ -58,6 +58,7 @@
                   :multiple="false"
                   :size="'medium'"
                   :include-all="false"
+                  :allowed-workspace-role-list="[]"
                   @update:user="(uid) => updateMemberEmail(i, uid)"
                 />
                 <GroupMemberRoleSelect

@@ -30,43 +30,40 @@
 import { PencilIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { computed } from "vue";
-import { useCurrentUserV1, useUserStore } from "@/store";
-import {
-  PresetRoleType,
-  SYSTEM_BOT_USER_NAME,
-  type ComposedUser,
-} from "@/types";
-import { State } from "@/types/proto/v1/common";
 import { BBButtonConfirm } from "@/bbkit";
+import { useUserStore } from "@/store";
+import { PresetRoleType, SYSTEM_BOT_USER_NAME } from "@/types";
+import { type User } from "@/types/proto/v1/auth_service";
+import { State } from "@/types/proto/v1/common";
+import { hasWorkspaceLevelRole } from "@/utils";
 
 defineProps<{
-  user: ComposedUser;
+  user: User;
 }>();
 
 defineEmits<{
   (event: "update-user"): void;
 }>();
 
-const currentUserV1 = useCurrentUserV1();
 const userStore = useUserStore();
 
 const allowEdit = computed(() => {
   // Only allow workspace admin to manage user.
-  return currentUserV1.value.roles.includes(PresetRoleType.WORKSPACE_ADMIN);
+  return hasWorkspaceLevelRole(PresetRoleType.WORKSPACE_ADMIN);
 });
 
-const allowUpdateUser = (user: ComposedUser) => {
+const allowUpdateUser = (user: User) => {
   if (user.name === SYSTEM_BOT_USER_NAME) {
     return false;
   }
   return allowEdit.value && user.state === State.ACTIVE;
 };
 
-const allowReactiveUser = (user: ComposedUser) => {
+const allowReactiveUser = (user: User) => {
   return allowEdit.value && user.state === State.DELETED;
 };
 
-const changeRowStatus = (user: ComposedUser, state: State) => {
+const changeRowStatus = (user: User, state: State) => {
   if (state === State.ACTIVE) {
     userStore.restoreUser(user);
   } else {
