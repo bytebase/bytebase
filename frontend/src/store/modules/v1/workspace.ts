@@ -11,23 +11,6 @@ import { extractGroupEmail } from "./group";
 export const useWorkspaceV1Store = defineStore("workspace_v1", () => {
   const workspaceIamPolicy = ref<IamPolicy>(IamPolicy.fromPartial({}));
 
-  // const roleMapToEmails = computed(() => {
-  //   const map = new Map<string, Set<string>>(); // Map<role, email list>
-  //   for (const binding of workspaceIamPolicy.value.bindings) {
-  //     if (!map.has(binding.role)) {
-  //       map.set(binding.role, new Set());
-  //     }
-
-  //     for (const email of getUserEmailListInBinding({
-  //       binding,
-  //       ignoreGroup: false,
-  //     })) {
-  //       map.get(binding.role)?.add(email);
-  //     }
-  //   }
-  //   return map;
-  // });
-
   const emailMapToRoles = computed(() => {
     const map = new Map<string, Set<string>>(); // Map<email, role list>
     for (const binding of workspaceIamPolicy.value.bindings) {
@@ -40,19 +23,6 @@ export const useWorkspaceV1Store = defineStore("workspace_v1", () => {
         }
         map.get(email)?.add(binding.role);
       }
-
-      // for (const member of binding.members) {
-      //   let email = member;
-      //   if (member.startsWith(groupBindingPrefix)) {
-      //     email = extractGroupEmail(member);
-      //   } else {
-      //     email = extractUserEmail(member);
-      //   }
-      //   if (!map.has(email)) {
-      //     map.set(email, new Set());
-      //   }
-      //   map.get(email)?.add(binding.role);
-      // }
     }
     return map;
   });
@@ -160,7 +130,6 @@ export const useWorkspaceV1Store = defineStore("workspace_v1", () => {
     fetchIamPolicy,
     patchIamPolicy,
     findRolesByMember,
-    // roleMapToEmails,
     emailMapToRoles,
     getWorkspaceRolesByEmail,
   };
