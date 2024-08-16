@@ -23,7 +23,7 @@ const getMemberBinding = (
     if (!group) {
       return undefined;
     }
-    if (searchText && group.title.includes(searchText)) {
+    if (searchText && !group.title.toLowerCase().includes(searchText)) {
       return undefined;
     }
     const email = extractGroupEmail(group.name);
@@ -42,7 +42,7 @@ const getMemberBinding = (
   if (!user) {
     return undefined;
   }
-  if (searchText && user.title.includes(searchText)) {
+  if (searchText && !user.title.toLowerCase().includes(searchText)) {
     return undefined;
   }
 
