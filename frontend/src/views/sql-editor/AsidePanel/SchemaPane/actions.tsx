@@ -186,7 +186,7 @@ export const useActions = () => {
       if (!mockType) return;
       try {
         const view = typeToView(mockType);
-        const walk = (node: TreeNode | undefined) => {
+        const walk = (node: TreeNode | undefined): string | undefined => {
           if (!node) return undefined;
           if (node.meta.type === "schema") {
             return (node.meta.target as NodeTarget<"schema">).schema.name;
@@ -222,6 +222,15 @@ export const useActions = () => {
     if (type === "column" && node.parent?.meta.type === "table") {
       detail.table = (target as NodeTarget<"table">).table.name;
       detail.column = (target as NodeTarget<"column">).column.name;
+    }
+    if (type === "column" && node.parent?.meta.type === "external-table") {
+      detail.externalTable = (
+        target as NodeTarget<"external-table">
+      ).externalTable.name;
+      detail.column = (target as NodeTarget<"column">).column.name;
+      updateViewState({
+        view: "EXTERNAL_TABLES",
+      });
     }
     if (type === "view") {
       detail.view = (target as NodeTarget<"view">).view.name;
