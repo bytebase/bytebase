@@ -44,7 +44,7 @@ import {
   useSlowQueryStore,
 } from "@/store";
 import { useGracefulRequest } from "@/store/modules/utils";
-import { getPolicyResourceNameAndType } from "@/store/modules/v1/common";
+import { getInstanceId, getInstanceIdPolicyId } from "@/store/modules/v1/common";
 import type { ComposedSlowQueryPolicy } from "@/types";
 import { isValidEnvironmentName } from "@/types";
 import type { Environment } from "@/types/proto/v1/environment_service";
@@ -86,7 +86,7 @@ const instanceList = computed(() => {
 const composedSlowQueryPolicyList = computed(() => {
   const list = instanceList.value.map<ComposedSlowQueryPolicy>((instance) => {
     const policy = policyList.value.find(
-      (p) => head(getPolicyResourceNameAndType(p.name)) == instance.name
+      (p) => head(getInstanceIdPolicyId(p.name)) === head(getInstanceId(instance.name))
     );
     return {
       instance,
