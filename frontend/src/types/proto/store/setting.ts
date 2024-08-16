@@ -105,6 +105,8 @@ export interface WorkspaceProfileSetting {
   enforceIdentityDomain: boolean;
   /** The workspace database change mode. */
   databaseChangeMode: DatabaseChangeMode;
+  /** Whether to disallow password signin. (Except workspace admins) */
+  disallowPasswordSignin: boolean;
 }
 
 export interface Announcement {
@@ -635,6 +637,7 @@ function createBaseWorkspaceProfileSetting(): WorkspaceProfileSetting {
     domains: [],
     enforceIdentityDomain: false,
     databaseChangeMode: DatabaseChangeMode.DATABASE_CHANGE_MODE_UNSPECIFIED,
+    disallowPasswordSignin: false,
   };
 }
 
@@ -672,6 +675,9 @@ export const WorkspaceProfileSetting = {
     }
     if (message.databaseChangeMode !== DatabaseChangeMode.DATABASE_CHANGE_MODE_UNSPECIFIED) {
       writer.uint32(88).int32(databaseChangeModeToNumber(message.databaseChangeMode));
+    }
+    if (message.disallowPasswordSignin === true) {
+      writer.uint32(96).bool(message.disallowPasswordSignin);
     }
     return writer;
   },
@@ -760,6 +766,13 @@ export const WorkspaceProfileSetting = {
 
           message.databaseChangeMode = databaseChangeModeFromJSON(reader.int32());
           continue;
+        case 12:
+          if (tag !== 96) {
+            break;
+          }
+
+          message.disallowPasswordSignin = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -790,6 +803,9 @@ export const WorkspaceProfileSetting = {
       databaseChangeMode: isSet(object.databaseChangeMode)
         ? databaseChangeModeFromJSON(object.databaseChangeMode)
         : DatabaseChangeMode.DATABASE_CHANGE_MODE_UNSPECIFIED,
+      disallowPasswordSignin: isSet(object.disallowPasswordSignin)
+        ? globalThis.Boolean(object.disallowPasswordSignin)
+        : false,
     };
   },
 
@@ -828,6 +844,9 @@ export const WorkspaceProfileSetting = {
     if (message.databaseChangeMode !== DatabaseChangeMode.DATABASE_CHANGE_MODE_UNSPECIFIED) {
       obj.databaseChangeMode = databaseChangeModeToJSON(message.databaseChangeMode);
     }
+    if (message.disallowPasswordSignin === true) {
+      obj.disallowPasswordSignin = message.disallowPasswordSignin;
+    }
     return obj;
   },
 
@@ -854,6 +873,7 @@ export const WorkspaceProfileSetting = {
     message.domains = object.domains?.map((e) => e) || [];
     message.enforceIdentityDomain = object.enforceIdentityDomain ?? false;
     message.databaseChangeMode = object.databaseChangeMode ?? DatabaseChangeMode.DATABASE_CHANGE_MODE_UNSPECIFIED;
+    message.disallowPasswordSignin = object.disallowPasswordSignin ?? false;
     return message;
   },
 };

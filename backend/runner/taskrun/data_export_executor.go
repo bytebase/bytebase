@@ -44,13 +44,7 @@ type DataExportExecutor struct {
 }
 
 // RunOnce will run the data export task executor once.
-func (exec *DataExportExecutor) RunOnce(ctx context.Context, _ context.Context, task *store.TaskMessage, taskRunUID int) (terminated bool, result *storepb.TaskRunResult, err error) {
-	exec.stateCfg.TaskRunExecutionStatuses.Store(taskRunUID,
-		state.TaskRunExecutionStatus{
-			ExecutionStatus: v1pb.TaskRun_PRE_EXECUTING,
-			UpdateTime:      time.Now(),
-		})
-
+func (exec *DataExportExecutor) RunOnce(ctx context.Context, _ context.Context, task *store.TaskMessage, _ int) (terminated bool, result *storepb.TaskRunResult, err error) {
 	ctx = context.WithValue(ctx, common.PrincipalIDContextKey, task.CreatorID)
 	payload := &storepb.TaskDatabaseDataExportPayload{}
 	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(task.Payload), payload); err != nil {
@@ -95,11 +89,6 @@ func (exec *DataExportExecutor) RunOnce(ctx context.Context, _ context.Context, 
 		return true, nil, errors.Wrap(err, "failed to get query span")
 	}
 
-	exec.stateCfg.TaskRunExecutionStatuses.Store(taskRunUID,
-		state.TaskRunExecutionStatus{
-			ExecutionStatus: v1pb.TaskRun_EXECUTING,
-			UpdateTime:      time.Now(),
-		})
 	exportRequest := &v1pb.ExportRequest{
 		Name:      fmt.Sprintf("instances/%s/databases/%s", instance.ResourceID, database.DatabaseName),
 		Statement: statement,
@@ -111,13 +100,8 @@ func (exec *DataExportExecutor) RunOnce(ctx context.Context, _ context.Context, 
 		return true, nil, errors.Wrap(exportErr, "failed to export data")
 	}
 
-	encryptedBytes, err := apiv1.DoEncrypt(bytes, exportRequest)
-	if err != nil {
-		return true, nil, errors.Wrap(err, "failed to encrypt data")
-	}
-
 	exportArchive, err := exec.store.CreateExportArchive(ctx, &store.ExportArchiveMessage{
-		Bytes: encryptedBytes,
+		Bytes: bytes,
 		Payload: &storepb.ExportArchivePayload{
 			FileFormat: payload.Format,
 		},

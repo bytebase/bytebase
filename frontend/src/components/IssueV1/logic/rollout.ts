@@ -1,3 +1,4 @@
+import { planCheckRunSummaryForCheckRunList } from "@/components/PlanCheckRun/common";
 import { t } from "@/plugins/i18n";
 import { useCurrentUserV1 } from "@/store";
 import type { ComposedIssue } from "@/types";
@@ -13,7 +14,7 @@ import {
   extractUserResourceName,
   hasProjectPermissionV2,
 } from "@/utils";
-import { planCheckRunSummaryForTask, specForTask } from ".";
+import { specForTask, useIssueContext } from ".";
 
 export const isGroupingChangeTaskV1 = (issue: ComposedIssue, task: Task) => {
   const spec = specForTask(issue.planEntity, task);
@@ -62,7 +63,7 @@ export const allowUserToEditStatementForTask = (
   // - user is the creator
   // - OR user has plans.update permission in the project
 
-  denyReasons.push(...isTaskEditable(issue, task));
+  denyReasons.push(...isTaskEditable(task));
 
   if (extractUserResourceName(issue.creator) !== user.value.email) {
     if (!hasProjectPermissionV2(issue.projectEntity, "bb.plans.update")) {
@@ -74,7 +75,8 @@ export const allowUserToEditStatementForTask = (
   return denyReasons;
 };
 
-export const isTaskEditable = (issue: ComposedIssue, task: Task): string[] => {
+export const isTaskEditable = (task: Task): string[] => {
+  const { getPlanCheckRunsForTask } = useIssueContext();
   if (
     task.status === Task_Status.NOT_STARTED ||
     task.status === Task_Status.FAILED ||
@@ -89,7 +91,9 @@ export const isTaskEditable = (issue: ComposedIssue, task: Task): string[] => {
     // the scheduler.
     // Editing a queued task's SQL statement is dangerous with kinds of race
     // condition risks.
-    const summary = planCheckRunSummaryForTask(issue, task);
+    const summary = planCheckRunSummaryForCheckRunList(
+      getPlanCheckRunsForTask(task)
+    );
     if (summary.errorCount > 0) {
       return [];
     }

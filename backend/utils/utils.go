@@ -35,7 +35,6 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
-	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
 // DataSourceFromInstanceWithType gets a typed data source from an instance.
@@ -235,18 +234,18 @@ func MergeTaskCreateLists(taskCreateLists [][]*store.TaskMessage, taskIndexDAGLi
 }
 
 // ExecuteMigrationDefault executes migration.
-func ExecuteMigrationDefault(ctx context.Context, driverCtx context.Context, store *store.Store, stateCfg *state.State, taskRunUID int, driver db.Driver, mi *db.MigrationInfo, statement string, sheetID *int, opts db.ExecuteOptions) (migrationHistoryID string, updatedSchema string, resErr error) {
+func ExecuteMigrationDefault(ctx context.Context, driverCtx context.Context, store *store.Store, _ *state.State, taskRunUID int, driver db.Driver, mi *db.MigrationInfo, statement string, sheetID *int, opts db.ExecuteOptions) (migrationHistoryID string, updatedSchema string, resErr error) {
 	execFunc := func(ctx context.Context, execStatement string) error {
 		if _, err := driver.Execute(ctx, execStatement, opts); err != nil {
 			return err
 		}
 		return nil
 	}
-	return ExecuteMigrationWithFunc(ctx, driverCtx, store, stateCfg, taskRunUID, driver, mi, statement, sheetID, execFunc, opts)
+	return ExecuteMigrationWithFunc(ctx, driverCtx, store, taskRunUID, driver, mi, statement, sheetID, execFunc, opts)
 }
 
 // ExecuteMigrationWithFunc executes the migration with custom migration function.
-func ExecuteMigrationWithFunc(ctx context.Context, driverCtx context.Context, s *store.Store, stateCfg *state.State, taskRunUID int, driver db.Driver, m *db.MigrationInfo, statement string, sheetID *int, execFunc func(ctx context.Context, execStatement string) error, opts db.ExecuteOptions) (migrationHistoryID string, updatedSchema string, resErr error) {
+func ExecuteMigrationWithFunc(ctx context.Context, driverCtx context.Context, s *store.Store, _ int, driver db.Driver, m *db.MigrationInfo, statement string, sheetID *int, execFunc func(ctx context.Context, execStatement string) error, opts db.ExecuteOptions) (migrationHistoryID string, updatedSchema string, resErr error) {
 	var prevSchemaBuf bytes.Buffer
 	if m.Type.NeedDump() {
 		opts.LogSchemaDumpStart()
@@ -302,25 +301,9 @@ func ExecuteMigrationWithFunc(ctx context.Context, driverCtx context.Context, s 
 			renderedStatement = RenderStatement(statement, materials)
 		}
 
-		if stateCfg != nil {
-			stateCfg.TaskRunExecutionStatuses.Store(taskRunUID,
-				state.TaskRunExecutionStatus{
-					ExecutionStatus: v1pb.TaskRun_EXECUTING,
-					UpdateTime:      time.Now(),
-				})
-		}
-
 		if err := execFunc(driverCtx, renderedStatement); err != nil {
 			return "", "", err
 		}
-	}
-
-	if stateCfg != nil {
-		stateCfg.TaskRunExecutionStatuses.Store(taskRunUID,
-			state.TaskRunExecutionStatus{
-				ExecutionStatus: v1pb.TaskRun_POST_EXECUTING,
-				UpdateTime:      time.Now(),
-			})
 	}
 
 	// Phase 4 - Dump the schema after migration

@@ -182,6 +182,7 @@ import {
   NSelect,
 } from "naive-ui";
 import type { BinaryLike } from "node:crypto";
+import { v4 as uuidv4 } from "uuid";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
@@ -416,17 +417,14 @@ const handleExportBtnClick = async (
     props.database && isValidDatabaseName(props.database.name)
       ? props.database.name
       : "";
-  const instance =
-    props.database && isValidDatabaseName(props.database.name)
-      ? props.database.instance
-      : connectedInstance.value.name;
   const statement = props.result.statement;
   const admin = tabStore.currentTab?.mode === "ADMIN";
   const limit = options.limit ?? (admin ? 0 : editorStore.resultRowsLimit);
 
   const content = await exportData({
     database,
-    instance,
+    // TODO(lj): support data source id similar to queries.
+    dataSourceId: "",
     format: options.format,
     statement,
     limit,
@@ -445,11 +443,13 @@ const handleRequestExport = async () => {
   const database = props.database;
   const project = database.projectEntity;
   const issueType = "bb.issue.database.data.export";
+  const sqlStorageKey = `bb.sql-editor.export.${uuidv4()}`;
+  localStorage.setItem(sqlStorageKey, props.result.statement);
   const query: Record<string, any> = {
     template: issueType,
     name: generateIssueName(issueType, [database.databaseName]),
     databaseList: database.name,
-    sql: props.result.statement,
+    sqlStorageKey,
   };
   const route = router.resolve({
     name: PROJECT_V1_ROUTE_ISSUE_DETAIL,

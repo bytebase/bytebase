@@ -327,6 +327,11 @@ message ExportRequest {
 
   // The zip password provide by users.
   string password = 7;
+
+  // The id of data source.
+  // It is used for querying admin data source even if the instance has read-only data sources.
+  // Or it can be used to query a specific read-only data source.
+  string data_source_id = 8;
 }
 
 message ExportResponse {

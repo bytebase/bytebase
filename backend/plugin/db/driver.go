@@ -210,9 +210,6 @@ type ConnectionConfig struct {
 	// Region is the location of where the DB is, works for AWS RDS.
 	Region string
 
-	// AccountID is used by Databricks.
-	AccountID string
-
 	// WarehouseID is used by Databricks.
 	WarehouseID string
 
@@ -247,9 +244,8 @@ type ConnectionContext struct {
 // QueryContext is the context to query.
 type QueryContext struct {
 	// Limit is the maximum row count returned. No limit enforced if limit <= 0
-	Limit        int
-	Explain      bool
-	AdminSession bool
+	Limit   int
+	Explain bool
 }
 
 // DatabaseRoleMessage is the API message for database role.
@@ -343,9 +339,8 @@ func Open(ctx context.Context, dbType storepb.Engine, driverConfig DriverConfig,
 
 // ExecuteOptions is the options for execute.
 type ExecuteOptions struct {
-	CreateDatabase        bool
-	UpdateExecutionStatus func(*v1pb.TaskRun_ExecutionDetail)
-	CreateTaskRunLog      func(time.Time, *storepb.TaskRunLog) error
+	CreateDatabase   bool
+	CreateTaskRunLog func(time.Time, *storepb.TaskRunLog) error
 
 	// Record the connection id first before executing.
 	SetConnectionID    func(id string)
