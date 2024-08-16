@@ -1,6 +1,5 @@
 <template>
   <div
-    ref="containerRef"
     class="w-full flex flex-wrap gap-y-2 justify-between sm:items-center p-2 border-b bg-white"
     v-bind="$attrs"
   >
@@ -9,26 +8,34 @@
     >
       <NButtonGroup>
         <NButton
+          :disabled="!allowQuery"
           type="primary"
           size="small"
-          :disabled="!allowQuery"
+          style="--n-padding: 0 3px 0 5px"
           @click="handleRunQuery"
         >
           <template #icon>
-            <mdi:play class="-ml-1.5" />
+            <PlayIcon class="w-4 h-4 !fill-current" />
           </template>
-          <span>
-            {{
-              showRunSelected ? $t("sql-editor.run-selected") : $t("common.run")
-            }}
-          </span>
-
-          <span v-show="showShortcutText" class="ml-1">
-            ({{ keyboardShortcutStr("cmd_or_ctrl+⏎") }})
-          </span>
+          <template #default>
+            <div class="flex items-center gap-1">
+              <span>
+                {{
+                  showRunSelected
+                    ? $t("sql-editor.run-selected")
+                    : $t("common.run")
+                }}
+              </span>
+              <div>
+                <span>(</span>
+                <span>limit&nbsp;{{ resultRowsLimit }}</span>
+                <span>)</span>
+              </div>
+            </div>
+          </template>
         </NButton>
         <QueryContextSettingPopover
-          v-if="showQueryContextSettingPopover && allowQuery"
+          :disabled="!showQueryContextSettingPopover || !allowQuery"
         />
       </NButtonGroup>
       <NPopover placement="bottom">
@@ -136,11 +143,10 @@
 </template>
 
 <script lang="ts" setup>
-import { useElementSize } from "@vueuse/core";
 import { PlayIcon, SaveIcon, Share2Icon } from "lucide-vue-next";
 import { NButtonGroup, NButton, NPopover } from "naive-ui";
 import { storeToRefs } from "pinia";
-import { computed, reactive, ref } from "vue";
+import { computed, reactive } from "vue";
 import { FeatureBadge, FeatureModal } from "@/components/FeatureGuard";
 import {
   useUIStateStore,
@@ -149,6 +155,7 @@ import {
   useConnectionOfCurrentSQLEditorTab,
   useWorkSheetStore,
   useAppFeature,
+  useSQLEditorStore,
 } from "@/store";
 import { type FeatureType, type SQLEditorQueryParams } from "@/types";
 import { keyboardShortcutStr } from "@/utils";
@@ -174,8 +181,7 @@ const state = reactive<LocalState>({});
 const tabStore = useSQLEditorTabStore();
 const uiStateStore = useUIStateStore();
 const { events } = useSQLEditorContext();
-const containerRef = ref<HTMLDivElement>();
-const { width: containerWidth } = useElementSize(containerRef);
+const { resultRowsLimit } = storeToRefs(useSQLEditorStore());
 const hasSharedSQLScriptFeature = featureToRef("bb.feature.shared-sql-script");
 const disallowShareWorksheet = useAppFeature(
   "bb.feature.sql-editor.disallow-share-worksheet"
@@ -307,8 +313,4 @@ const handleShareButtonClick = () => {
     state.requiredFeatureName = "bb.feature.shared-sql-script";
   }
 };
-
-const showShortcutText = computed(() => {
-  return containerWidth.value > 800;
-});
 </script>

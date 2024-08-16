@@ -1,7 +1,12 @@
 <template>
-  <NPopover placement="bottom-end" trigger="click">
+  <NPopover placement="bottom-end" trigger="click" :disabled="disabled">
     <template #trigger>
-      <NButton type="primary" class="!px-1" size="small">
+      <NButton
+        :disabled="disabled"
+        type="primary"
+        size="small"
+        style="--n-padding: 0 0.25rem"
+      >
         <template #icon>
           <ChevronDown />
         </template>
@@ -63,7 +68,7 @@
         </div>
         <div class="border-t pt-1 -mx-2" style="width: calc(100% + 1rem)">
           <QueryModeSelect
-            v-if="true || showQueryModeSelect"
+            v-if="showQueryModeSelect"
             :disabled="isExecutingSQL"
             placement="right-start"
             trigger="hover"
@@ -95,6 +100,10 @@ import { getAdminDataSourceRestrictionOfDatabase } from "@/utils";
 import { useSQLEditorContext } from "../context";
 import QueryModeSelect from "./QueryModeSelect.vue";
 import ResultLimitSelect from "./ResultLimitSelect.vue";
+
+defineProps<{
+  disabled?: boolean;
+}>();
 
 const { t } = useI18n();
 const tabStore = useSQLEditorTabStore();
