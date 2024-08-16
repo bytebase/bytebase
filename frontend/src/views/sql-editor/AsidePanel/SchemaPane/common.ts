@@ -6,7 +6,9 @@ import type {
   ColumnMetadata,
   DatabaseMetadata,
   ExternalTableMetadata,
+  ForeignKeyMetadata,
   FunctionMetadata,
+  IndexMetadata,
   ProcedureMetadata,
   SchemaMetadata,
   TableMetadata,
@@ -24,6 +26,8 @@ export type NodeType =
   | "function"
   | "partition-table"
   | "column"
+  | "index"
+  | "foreign-key"
   | "expandable-text" // Text nodes to display "Tables / Views / Functions / Triggers" etc.
   | "error"; // Error nodes to display "<Empty>" or "Cannot fetch ..." etc.
 
@@ -45,6 +49,12 @@ export type RichColumnMetadata = (
   | RichExternalTableMetadata
 ) & {
   column: ColumnMetadata;
+};
+export type RichIndexMetadata = RichTableMetadata & {
+  index: IndexMetadata;
+};
+export type RichForeignKeyMetadata = RichTableMetadata & {
+  foreignKey: ForeignKeyMetadata;
 };
 export type RichPartitionTableMetadata = RichTableMetadata & {
   parentPartition?: TablePartitionMetadata;
@@ -81,19 +91,23 @@ export type NodeTarget<T extends NodeType = NodeType> = T extends "database"
         ? RichExternalTableMetadata
         : T extends "column"
           ? RichColumnMetadata
-          : T extends "partition-table"
-            ? RichPartitionTableMetadata
-            : T extends "view"
-              ? RichViewMetadata
-              : T extends "procedure"
-                ? RichProcedureMetadata
-                : T extends "function"
-                  ? RichFunctionMetadata
-                  : T extends "expandable-text"
-                    ? TextTarget<true, any>
-                    : T extends "error"
-                      ? ErrorTarget
-                      : never;
+          : T extends "index"
+            ? RichIndexMetadata
+            : T extends "foreign-key"
+              ? RichForeignKeyMetadata
+              : T extends "partition-table"
+                ? RichPartitionTableMetadata
+                : T extends "view"
+                  ? RichViewMetadata
+                  : T extends "procedure"
+                    ? RichProcedureMetadata
+                    : T extends "function"
+                      ? RichFunctionMetadata
+                      : T extends "expandable-text"
+                        ? TextTarget<true, any>
+                        : T extends "error"
+                          ? ErrorTarget
+                          : never;
 
 export type TreeState = "UNSET" | "LOADING" | "READY";
 
@@ -119,6 +133,8 @@ export const ExpandableNodeTypes: readonly NodeType[] = [
 ] as const;
 export const LeafNodeTypes: readonly NodeType[] = [
   "column",
+  "index",
+  "foreign-key",
   "view",
   "procedure",
   "function",
@@ -162,6 +178,25 @@ export const keyForNodeTarget = <T extends NodeType>(
           );
     const { column } = target as NodeTarget<"column">;
     return [parentKey, `columns/${column.name}`].join("/");
+  }
+  if (type === "index") {
+    const { db, schema, table, index } = target as NodeTarget<"index">;
+    return [
+      db.name,
+      `schemas/${schema.name}`,
+      `tables/${table}`,
+      `indexes/${index.name}`,
+    ].join("/");
+  }
+  if (type === "foreign-key") {
+    const { db, schema, table, foreignKey } =
+      target as NodeTarget<"foreign-key">;
+    return [
+      db.name,
+      `schemas/${schema.name}`,
+      `tables/${table}`,
+      `foreignKeys/${foreignKey.name}`,
+    ].join("/");
   }
   if (type === "partition-table") {
     const { db, schema, table, parentPartition, partition } =
@@ -222,6 +257,12 @@ const readableTextForNodeTarget = <T extends NodeType>(
   if (type === "column") {
     return (target as RichColumnMetadata).column.name;
   }
+  if (type === "index") {
+    return (target as RichIndexMetadata).index.name;
+  }
+  if (type === "foreign-key") {
+    return (target as RichForeignKeyMetadata).foreignKey.name;
+  }
   if (type === "partition-table") {
     return (target as RichPartitionTableMetadata).partition.name;
   }
@@ -271,7 +312,14 @@ export const mapTreeNodeByType = <T extends NodeType>(
 };
 
 const createDummyNode = (
-  type: "column" | "table" | "view" | "procedure" | "function",
+  type:
+    | "column"
+    | "index"
+    | "foreign-key"
+    | "table"
+    | "view"
+    | "procedure"
+    | "function",
   parent: TreeNode,
   key: string | number = 0,
   error: unknown | undefined = undefined
@@ -329,8 +377,16 @@ const mapTableNodes = (target: NodeTarget<"schema">, parent: TreeNode) => {
   const { schema } = target;
   const children = schema.tables.map((table) => {
     const node = mapTreeNodeByType("table", { ...target, table }, parent);
+    const columnsFolderNode = createExpandableTextNode("column", node, () =>
+      t("database.columns")
+    );
+    node.children = [columnsFolderNode];
     // Map table columns
-    node.children = mapColumnNodes(node.meta.target, table.columns, node);
+    columnsFolderNode.children = mapColumnNodes(
+      node.meta.target,
+      table.columns,
+      columnsFolderNode
+    );
 
     // Map table-level partitions.
     if (table.partitions.length > 0) {
