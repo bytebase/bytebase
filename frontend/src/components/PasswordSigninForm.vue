@@ -107,6 +107,9 @@ const props = withDefaults(
     showForgotPassword?: boolean;
   }>(),
   {
+    email: "",
+    password: "",
+    showPassword: false,
     showForgotPassword: true,
   }
 );
@@ -116,9 +119,9 @@ const route = useRoute();
 const authStore = useAuthStore();
 
 const state = reactive<LocalState>({
-  email: props.email || "",
-  password: props.password || "",
-  showPassword: props.showPassword || false,
+  email: props.email,
+  password: props.password,
+  showPassword: props.showPassword,
   isLoading: false,
 });
 
