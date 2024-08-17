@@ -56,7 +56,10 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*ba
 		return nil, err
 	}
 	if len(parseResults) == 0 {
-		return nil, nil
+		return &base.QuerySpan{
+			Results:       []base.QuerySpanResult{},
+			SourceColumns: base.SourceColumnSet{},
+		}, nil
 	}
 	if len(parseResults) != 1 {
 		return nil, errors.Errorf("expecting only one statement to get query span, but got %d", len(parseResults))
@@ -74,7 +77,10 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*ba
 		return nil, base.MixUserSystemTablesError
 	}
 	if allSystems {
-		return nil, nil
+		return &base.QuerySpan{
+			Results:       []base.QuerySpanResult{},
+			SourceColumns: base.SourceColumnSet{},
+		}, nil
 	}
 
 	// We assumes the caller had handled the statement type case,
