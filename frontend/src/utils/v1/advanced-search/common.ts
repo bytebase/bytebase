@@ -28,6 +28,8 @@ export const SearchScopeIdList = [
   "method",
   "level",
   "actor",
+  // instance related search scopes.
+  "address",
 ] as const;
 
 export type SearchScopeId =

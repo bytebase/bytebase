@@ -1,6 +1,7 @@
 import { keyBy, orderBy } from "lodash-es";
 import { computed, unref } from "vue";
 import { useI18n } from "vue-i18n";
+import { t } from "@/plugins/i18n";
 import { useEnvironmentV1Store, useSubscriptionV1Store } from "@/store";
 import type { ComposedInstance, MaybeRef } from "@/types";
 import { isValidProjectName, languageOfEngineV1 } from "@/types";
@@ -10,11 +11,13 @@ import type {
   Instance,
   InstanceResource,
 } from "@/types/proto/v1/instance_service";
-import { DataSourceType } from "@/types/proto/v1/instance_service";
+import {
+  DataSourceType,
+  type DataSource,
+} from "@/types/proto/v1/instance_service";
 import { PlanType } from "@/types/proto/v1/subscription_service";
 
 export function instanceV1Name(instance: Instance | InstanceResource) {
-  const { t } = useI18n();
   const store = useSubscriptionV1Store();
   let name = instance.title;
   // instance cannot be deleted and activated at the same time.
@@ -52,10 +55,17 @@ export const sortInstanceV1List = (
   );
 };
 
-export const hostPortOfInstanceV1 = (instance: Instance | InstanceResource) => {
-  const ds =
-    instance.dataSources.find((ds) => ds.type === DataSourceType.ADMIN) ??
-    instance.dataSources[0];
+export const readableDataSourceType = (type: DataSourceType): string => {
+  if (type === DataSourceType.ADMIN) {
+    return t("data-source.admin");
+  } else if (type === DataSourceType.READ_ONLY) {
+    return t("data-source.read-only");
+  } else {
+    return "Unknown";
+  }
+};
+
+export const hostPortOfDataSource = (ds: DataSource | undefined): string => {
   if (!ds) {
     return "";
   }
@@ -64,6 +74,13 @@ export const hostPortOfInstanceV1 = (instance: Instance | InstanceResource) => {
     parts.push(ds.port);
   }
   return parts.join(":");
+};
+
+export const hostPortOfInstanceV1 = (instance: Instance | InstanceResource) => {
+  const ds =
+    instance.dataSources.find((ds) => ds.type === DataSourceType.ADMIN) ??
+    instance.dataSources[0];
+  return hostPortOfDataSource(ds);
 };
 
 // Sort the list to put prod items first.
