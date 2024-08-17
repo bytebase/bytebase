@@ -26,14 +26,18 @@
 </template>
 
 <script setup lang="tsx">
-import { ExternalLinkIcon } from "lucide-vue-next";
+import {
+  ExternalLinkIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
+} from "lucide-vue-next";
 import { NButton, NDataTable, type DataTableColumn } from "naive-ui";
-import { computed, reactive } from "vue";
+import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { InstanceV1Name } from "@/components/v2";
 import type { ComposedInstance } from "@/types";
-import { urlfy, hostPortOfInstanceV1 } from "@/utils";
+import { urlfy, hostPortOfInstanceV1, hostPortOfDataSource } from "@/utils";
 import EnvironmentV1Name from "../../EnvironmentV1Name.vue";
 import InstanceOperations from "./InstanceOperations.vue";
 
@@ -43,6 +47,7 @@ type InstanceDataTableColumn = DataTableColumn<ComposedInstance> & {
 
 interface LocalState {
   selectedInstance: Set<string>;
+  dataSourceToggle: Set<string>;
   processing: boolean;
 }
 
@@ -54,6 +59,7 @@ const props = withDefaults(
     showSelection?: boolean;
     showOperation?: boolean;
     canAssignLicense?: boolean;
+    defaultExpandDataSource?: string[];
     onClick?: (instance: ComposedInstance, e: MouseEvent) => void;
   }>(),
   {
@@ -62,6 +68,7 @@ const props = withDefaults(
     showOperation: true,
     canAssignLicense: true,
     onClick: undefined,
+    defaultExpandDataSource: () => [],
   }
 );
 
@@ -69,8 +76,20 @@ const { t } = useI18n();
 const router = useRouter();
 const state = reactive<LocalState>({
   selectedInstance: new Set(),
+  dataSourceToggle: new Set(),
   processing: false,
 });
+
+watch(
+  () => props.defaultExpandDataSource,
+  () => {
+    state.dataSourceToggle = new Set(props.defaultExpandDataSource);
+  },
+  {
+    immediate: true,
+    deep: true,
+  }
+);
 
 const columnList = computed((): InstanceDataTableColumn[] => {
   const SELECTION: InstanceDataTableColumn = {
@@ -108,7 +127,32 @@ const columnList = computed((): InstanceDataTableColumn[] => {
     key: "address",
     title: t("common.address"),
     resizable: true,
-    render: (instance) => hostPortOfInstanceV1(instance),
+    render: (instance) => {
+      return (
+        <div class={"flex items-start gap-x-2"}>
+          <div>
+            {state.dataSourceToggle.has(instance.name)
+              ? instance.dataSources.map((ds) => (
+                  <div>{hostPortOfDataSource(ds)}</div>
+                ))
+              : hostPortOfInstanceV1(instance)}
+          </div>
+          {instance.dataSources.length > 1 ? (
+            <NButton
+              quaternary
+              size="tiny"
+              onClick={(e) => handleDataSourceToggle(e, instance)}
+            >
+              {state.dataSourceToggle.has(instance.name) ? (
+                <ChevronUpIcon class={"w-4 cursor-pointer"} />
+              ) : (
+                <ChevronDownIcon class={"w-4 cursor-pointer"} />
+              )}
+            </NButton>
+          ) : null}
+        </div>
+      );
+    },
   };
   const EXTERNAL_LINK: InstanceDataTableColumn = {
     key: "project",
@@ -138,6 +182,15 @@ const columnList = computed((): InstanceDataTableColumn[] => {
     (column) => !column.hide
   );
 });
+
+const handleDataSourceToggle = (e: MouseEvent, instance: ComposedInstance) => {
+  e.stopPropagation();
+  if (state.dataSourceToggle.has(instance.name)) {
+    state.dataSourceToggle.delete(instance.name);
+  } else {
+    state.dataSourceToggle.add(instance.name);
+  }
+};
 
 const rowProps = (instance: ComposedInstance) => {
   return {

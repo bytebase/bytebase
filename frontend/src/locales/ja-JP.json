@@ -1557,6 +1557,14 @@
       "default-value": "デフォルト (10 接続)",
       "description": "インスタンスの最大接続数を設定して、接続とリソースの使用を制限します。",
       "max-value": "最大接続数 {value}"
+    },
+    "advanced-search": {
+      "scope": {
+        "address": {
+          "title": "住所",
+          "description": "住所でフィルタリング"
+        }
+      }
     }
   },
   "environment": {
