@@ -1480,7 +1480,7 @@ func isMixedQuery(m base.SourceColumnSet, ignoreCaseSensitive bool) (bool, bool)
 		return false, true
 	}
 
-	return !hasUser, false
+	return !hasUser && hasSystem, false
 }
 
 var systemDatabases = map[string]bool{
