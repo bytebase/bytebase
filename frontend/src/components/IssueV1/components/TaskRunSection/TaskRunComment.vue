@@ -131,10 +131,16 @@ const commentLink = computed((): CommentLink => {
     }
   } else if (taskRun.status === TaskRun_Status.FAILED) {
     const db = databaseForTask(issue.value, task);
-    if (isPostgresFamily(db.instanceResource.engine)) {
+    // Cast a wide net to catch migration version error
+    if (comment.value.includes('version')) {
       return {
         title: t("common.troubleshoot"),
-        link: "https://www.bytebase.com/docs/change-database/troubleshoot/#postgresql",
+        link: "https://www.bytebase.com/docs/change-database/troubleshoot/?source=console#duplicate-version",
+      };
+    } else if (isPostgresFamily(db.instanceResource.engine)) {
+      return {
+        title: t("common.troubleshoot"),
+        link: "https://www.bytebase.com/docs/change-database/troubleshoot/?source=console#postgresql",
       };
     }
   }
