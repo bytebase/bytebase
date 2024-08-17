@@ -99,6 +99,7 @@ import {
   DataSourceQueryPolicy_Restriction,
   PolicyType,
 } from "@/types/proto/v1/org_policy_service";
+import { readableDataSourceType } from "@/utils";
 import { getAdminDataSourceRestrictionOfDatabase } from "@/utils";
 import { useSQLEditorContext } from "../context";
 import QueryModeSelect from "./QueryModeSelect.vue";
@@ -188,16 +189,6 @@ const onDataSourceSelected = (dataSourceId?: string) => {
       dataSourceId: dataSourceId,
     },
   });
-};
-
-const readableDataSourceType = (type: DataSourceType): string => {
-  if (type === DataSourceType.ADMIN) {
-    return t("data-source.admin");
-  } else if (type === DataSourceType.READ_ONLY) {
-    return t("data-source.read-only");
-  } else {
-    return "Unknown";
-  }
 };
 
 watch(

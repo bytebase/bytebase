@@ -1557,6 +1557,14 @@
       "default-value": "Default (10)",
       "description": "Limiting connection and resource usage is achieved by setting the maximum number of connections to the instance.",
       "max-value": "Maximum {value} connections"
+    },
+    "advanced-search": {
+      "scope": {
+        "address": {
+          "title": "Address",
+          "description": "Filter by address"
+        }
+      }
     }
   },
   "environment": {
