@@ -1557,6 +1557,14 @@
       "default-value": "默认 (10 个连接)",
       "description": "通过设置实例的最大连接数来限制连接和资源的使用。",
       "max-value": "最大连接数 {value} 个"
+    },
+    "advanced-search": {
+      "scope": {
+        "address": {
+          "title": "地址",
+          "description": "按地址过滤"
+        }
+      }
     }
   },
   "environment": {

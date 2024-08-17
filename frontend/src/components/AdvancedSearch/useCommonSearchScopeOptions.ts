@@ -1,6 +1,5 @@
 import type { Ref, VNode } from "vue";
 import { computed, h, unref } from "vue";
-import { useI18n } from "vue-i18n";
 import { useRoute } from "vue-router";
 import GitIcon from "@/components/GitIcon.vue";
 import {
@@ -9,6 +8,7 @@ import {
   RichDatabaseName,
   EnvironmentV1Name,
 } from "@/components/v2";
+import { t } from "@/plugins/i18n";
 import {
   useDatabaseV1Store,
   useEnvironmentV1List,
@@ -33,7 +33,6 @@ export const useCommonSearchScopeOptions = (
   params: Ref<SearchParams>,
   supportOptionIdList: MaybeRef<SearchScopeId[]>
 ) => {
-  const { t } = useI18n();
   const route = useRoute();
   const databaseV1Store = useDatabaseV1Store();
   const environmentStore = useEnvironmentV1Store();
@@ -41,7 +40,7 @@ export const useCommonSearchScopeOptions = (
   const projectList = useProjectV1Store().projectList;
 
   const project = computed(() => {
-    const { projectId } = route.params;
+    const { projectId } = route?.params ?? {};
     if (projectId && typeof projectId === "string") {
       return `projects/${projectId}`;
     }
