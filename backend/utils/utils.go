@@ -345,7 +345,7 @@ func BeginMigration(ctx context.Context, stores *store.Store, m *db.MigrationInf
 			// For force migration, we will ignore the existing migration history and continue to migration.
 			return migrationHistory.UID, nil
 		case db.Failed:
-			err := errors.Errorf("database %q version %s migration has failed, please check your database to make sure things are fine and then start a new migration using a new version ", m.Database, m.Version.Version)
+			err := errors.Errorf("database %q version %s migration has failed, please check your database to make sure things are fine and then start a new migration using a new version", m.Database, m.Version.Version)
 			slog.Debug(err.Error())
 			// For force migration, we will ignore the existing migration history and continue to migration.
 			return migrationHistory.UID, nil
