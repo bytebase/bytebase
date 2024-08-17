@@ -112,6 +112,14 @@ export const getProjectAndBranchId = (name: string): string[] => {
   return [matches[1], matches[2]];
 };
 
+export const getInstanceId = (name: string): string[] => {
+  const tokens = getNameParentTokens(name, [instanceNamePrefix]);
+  if (tokens.length !== 1) {
+    return [""];
+  }
+  return tokens;
+}
+
 export const getInstanceAndDatabaseId = (name: string): string[] => {
   const tokens = getNameParentTokens(name, [
     instanceNamePrefix,
@@ -199,12 +207,21 @@ export const getReviewConfigId = (name: string) => {
 // Instance resource name: instances/instance-id.
 // Database resource name: instances/instance-id/databases/database-name.
 export const getPolicyResourceNameAndType = (name: string): string[] => {
-  const tokens = getNameParentTokens(name, [policyNamePrefix]);
+  const regex = new RegExp(`^(.*)/${policyNamePrefix}(.*)$`);
+  const match = name.match(regex);
+  if (!match || match.length !== 3) {
+    return ["", ""];
+  }
+  return [match[1], match[2]];
+};
+
+export const getInstanceIdPolicyId = (name: string) :string[] => {
+  const tokens = getNameParentTokens(name, [instanceNamePrefix, policyNamePrefix]);
   if (tokens.length !== 2) {
     return ["", ""];
   }
   return tokens;
-};
+}
 
 export const isDatabaseName = (name: string): boolean => {
   const regex = /^instances\/([^/]+)\/databases\/(.+)$/;
