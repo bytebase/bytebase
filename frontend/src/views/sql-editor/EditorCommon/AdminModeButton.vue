@@ -15,13 +15,12 @@
 </template>
 
 <script lang="ts" setup>
-import { last } from "lodash-es";
 import { WrenchIcon } from "lucide-vue-next";
 import { NButton, type ButtonProps } from "naive-ui";
 import { storeToRefs } from "pinia";
-import { computed, nextTick, unref } from "vue";
+import { computed } from "vue";
 import type { PropType } from "vue";
-import { useSQLEditorTabStore, useWebTerminalStore } from "@/store";
+import { useSQLEditorTabStore } from "@/store";
 import type { CoreSQLEditorTab } from "@/types";
 import {
   hasWorkspacePermissionV2,
@@ -61,7 +60,7 @@ const enterAdminMode = async () => {
   if (!tab) {
     return;
   }
-  const statement = tab.statement;
+
   const target: CoreSQLEditorTab = {
     connection: { ...tab.connection },
     mode: "ADMIN",
@@ -72,23 +71,7 @@ const enterAdminMode = async () => {
     /* beside */ true,
     /* title */ suggestedTabTitleForSQLEditorConnection(tab.connection)
   );
-  tabStore.updateCurrentTab({
-    ...target,
-    statement,
-  });
 
-  await nextTick();
-  const current = currentTab.value;
-  if (!current) {
-    return;
-  }
-  const queryItemList = unref(
-    useWebTerminalStore().getQueryStateByTab(current).queryItemList
-  );
-  const queryItem = last(queryItemList || []);
-  if (queryItem) {
-    queryItem.sql = statement;
-  }
   emit("enter");
 };
 </script>
