@@ -17,7 +17,7 @@
       :loading="!ready"
       :instance-list="filteredInstanceV1List"
       :can-assign-license="subscriptionStore.currentPlan !== PlanType.FREE"
-      :default-expand-dataSource="state.dataSourceToggle"
+      :default-expand-data-source="state.dataSourceToggle"
     />
   </div>
 </template>
@@ -41,10 +41,6 @@ import {
   useInstanceV1List,
   useInstanceV1Store,
 } from "@/store";
-import {
-  dataSourceTypeToJSON,
-  type DataSourceType,
-} from "@/types/proto/v1/instance_service";
 import { PlanType } from "@/types/proto/v1/subscription_service";
 import {
   type SearchParams,
