@@ -170,6 +170,9 @@ export const useActions = () => {
       "view",
       "procedure",
       "function",
+      "index",
+      "foreign-key",
+      "partition-table",
     ] as const;
     if (!SUPPORTED_TYPES.includes(type)) {
       return;
@@ -208,7 +211,15 @@ export const useActions = () => {
     }
 
     const { schema } = target as NodeTarget<
-      "table" | "column" | "view" | "procedure" | "function" | "external-table"
+      | "table"
+      | "column"
+      | "view"
+      | "procedure"
+      | "function"
+      | "external-table"
+      | "index"
+      | "foreign-key"
+      | "partition-table"
     >;
     updateViewState({
       view: typeToView(type),
@@ -216,7 +227,12 @@ export const useActions = () => {
     });
     await nextTick();
     const detail: EditorPanelViewState["detail"] = {};
-    if (type === "table") {
+    if (
+      type === "table" ||
+      type === "index" ||
+      type === "foreign-key" ||
+      type === "partition-table"
+    ) {
       detail.table = (target as NodeTarget<"table">).table.name;
     }
     if (type === "column" && node.parent?.parent?.meta.type === "table") {
@@ -248,6 +264,17 @@ export const useActions = () => {
       detail.externalTable = (
         target as NodeTarget<"external-table">
       ).externalTable.name;
+    }
+    if (type === "index") {
+      detail.index = (target as NodeTarget<"index">).index.name;
+    }
+    if (type === "foreign-key") {
+      detail.foreignKey = (target as NodeTarget<"foreign-key">).foreignKey.name;
+    }
+    if (type === "partition-table") {
+      detail.partition = (
+        target as NodeTarget<"partition-table">
+      ).partition.name;
     }
     updateViewState({
       detail,
