@@ -1885,7 +1885,10 @@
     "external-database-name": "Nombre de la base de datos externa",
     "foreign-table-detail": "Detalle de la tabla externa",
     "view-definition": "Ver definición",
-    "foreign-keys": "claves foráneas"
+    "foreign-keys": "claves foráneas",
+    "foreign-key": {
+      "reference": "Referencia"
+    }
   },
   "repository": {
     "our-webhook-link": "El webhook creado por Bytebase se puede encontrar en {webhookLink}.",

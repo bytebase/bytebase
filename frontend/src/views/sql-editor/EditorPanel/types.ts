@@ -18,6 +18,9 @@ export type EditorPanelViewState = {
     procedure?: string;
     func?: string;
     externalTable?: string;
+    partition?: string;
+    index?: string;
+    foreignKey?: string;
   };
 };
 

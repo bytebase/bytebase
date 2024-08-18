@@ -1885,7 +1885,10 @@
     "external-database-name": "外部データベース名",
     "foreign-table-detail": "外部テーブルの詳細",
     "view-definition": "ビューの定義",
-    "foreign-keys": "外部キー"
+    "foreign-keys": "外部キー",
+    "foreign-key": {
+      "reference": "参照"
+    }
   },
   "repository": {
     "our-webhook-link": "Bytebase によって作成された Webhook は、{webhookLink} にあります。",

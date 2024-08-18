@@ -29,43 +29,18 @@
       @click="select"
     />
 
-    <template v-if="metadata.table">
-      <div
-        class="w-full h-[28px] flex flex-row gap-x-2 justify-between items-center"
-      >
-        <div class="flex items-center justify-start">
-          <NButton text @click="deselect">
-            <ChevronLeftIcon class="w-5 h-5" />
-            <div class="flex items-center gap-1">
-              <TableIcon class="w-4 h-4" />
-              <span>{{ metadata.table.name }}</span>
-            </div>
-          </NButton>
-        </div>
-        <div class="flex items-center justify-end">
-          <SearchBox
-            v-model:value="state.keywords.column"
-            size="small"
-            style="width: 10rem"
-          />
-        </div>
-      </div>
-      <ColumnsTable
-        :db="database"
-        :database="metadata.database"
-        :schema="metadata.schema"
-        :table="metadata.table"
-        :keyword="state.keywords.column"
-      />
-    </template>
+    <TableDetail
+      v-if="metadata.table"
+      :db="database"
+      :database="metadata.database"
+      :schema="metadata.schema"
+      :table="metadata.table"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ChevronLeftIcon } from "lucide-vue-next";
-import { NButton } from "naive-ui";
 import { computed, reactive } from "vue";
-import { TableIcon } from "@/components/Icon";
 import { SearchBox } from "@/components/v2";
 import {
   useConnectionOfCurrentSQLEditorTab,
@@ -76,11 +51,12 @@ import {
   DatabaseMetadataView,
   SchemaMetadata,
   TableMetadata,
+  TablePartitionMetadata,
 } from "@/types/proto/v1/database_service";
 import DatabaseChooser from "@/views/sql-editor/EditorCommon/DatabaseChooser.vue";
 import { useEditorPanelContext } from "../../context";
 import { SchemaSelectToolbar } from "../common";
-import ColumnsTable from "./ColumnsTable.vue";
+import TableDetail from "./TableDetail.vue";
 import TablesTable from "./TablesTable.vue";
 
 const { database } = useConnectionOfCurrentSQLEditorTab();
@@ -94,7 +70,6 @@ const databaseMetadata = computed(() => {
 const state = reactive({
   keywords: {
     table: "",
-    column: "",
   },
 });
 
@@ -112,16 +87,14 @@ const metadata = computed(() => {
 const select = (selected: {
   database: DatabaseMetadata;
   schema: SchemaMetadata;
-  table: TableMetadata;
+  table?: TableMetadata;
+  partition?: TablePartitionMetadata;
 }) => {
   updateViewState({
-    detail: { table: selected.table.name },
-  });
-};
-
-const deselect = () => {
-  updateViewState({
-    detail: {},
+    detail: {
+      table: selected.table?.name,
+      partition: selected.partition?.name,
+    },
   });
 };
 </script>
