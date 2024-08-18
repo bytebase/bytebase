@@ -6,7 +6,21 @@
     <div
       class="action-left gap-x-2 flex overflow-x-auto sm:overflow-x-hidden items-center"
     >
-      <NButtonGroup>
+      <NButton
+        v-if="currentTab?.mode === 'ADMIN'"
+        size="small"
+        type="default"
+        :dashed="true"
+        style="--n-padding: 0 8px 0 3px"
+        @click="exitAdminMode"
+      >
+        <template #icon>
+          <ChevronLeftIcon class="w-4 h-4 text-control" />
+        </template>
+        <span>{{ $t("sql-editor.admin-mode.exit") }}</span>
+      </NButton>
+
+      <NButtonGroup v-if="currentTab?.mode !== 'ADMIN'">
         <NButton
           :disabled="!allowQuery"
           type="primary"
@@ -18,10 +32,7 @@
             <PlayIcon class="w-4 h-4 !fill-current" />
           </template>
           <template #default>
-            <div
-              v-if="currentTab?.mode !== 'ADMIN'"
-              class="inline-flex items-center"
-            >
+            <div class="inline-flex items-center">
               <span>(</span>
               <span>limit&nbsp;{{ resultRowsLimit }}</span>
               <span>)</span>
@@ -32,25 +43,6 @@
           :disabled="!showQueryContextSettingPopover || !allowQuery"
         />
       </NButtonGroup>
-
-      <NPopover v-if="currentTab?.mode === 'ADMIN'" placement="bottom">
-        <template #trigger>
-          <NButton
-            size="small"
-            type="default"
-            :dashed="true"
-            style="--n-padding: 0 5px"
-            @click="exitAdminMode"
-          >
-            <template #icon>
-              <WrenchIcon class="w-4 h-4 text-control-placeholder" />
-            </template>
-          </NButton>
-        </template>
-        <template #default>
-          <span>{{ $t("sql-editor.admin-mode.exit") }}</span>
-        </template>
-      </NPopover>
 
       <NPopover placement="bottom">
         <template #trigger>
@@ -139,7 +131,12 @@
 </template>
 
 <script lang="ts" setup>
-import { PlayIcon, SaveIcon, Share2Icon, WrenchIcon } from "lucide-vue-next";
+import {
+  ChevronLeftIcon,
+  PlayIcon,
+  SaveIcon,
+  Share2Icon,
+} from "lucide-vue-next";
 import { NButtonGroup, NButton, NPopover } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { computed, reactive } from "vue";
