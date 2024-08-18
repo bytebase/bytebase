@@ -187,8 +187,15 @@ const connect = (connection: SQLEditorConnection) => {
       mode: DEFAULT_SQL_EDITOR_TAB_MODE,
     },
     /* beside */ false,
-    /* defaultTitle */ suggestedTabTitleForSQLEditorConnection(connection)
+    /* defaultTitle */ suggestedTabTitleForSQLEditorConnection(connection),
+    /* ignoreMode */ true
   );
+  if (tabStore.currentTab?.mode === "ADMIN") {
+    // Don't enter ADMIN mode initially
+    tabStore.updateCurrentTab({
+      mode: DEFAULT_SQL_EDITOR_TAB_MODE,
+    });
+  }
 };
 
 const prepareSheetLegacy = async () => {

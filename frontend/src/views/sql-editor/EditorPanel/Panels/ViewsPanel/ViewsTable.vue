@@ -63,7 +63,9 @@ const { viewState } = useEditorPanelContext();
 const filteredViews = computed(() => {
   const keyword = props.keyword?.trim().toLowerCase();
   if (keyword) {
-    return props.views.filter((view) => view.name.includes(keyword));
+    return props.views.filter((view) =>
+      view.name.toLowerCase().includes(keyword)
+    );
   }
   return props.views;
 });

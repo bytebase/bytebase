@@ -83,13 +83,13 @@ const isSameSQLEditorConnection = (
 
 export const isSimilarSQLEditorTab = (
   a: CoreSQLEditorTab,
-  b: CoreSQLEditorTab
+  b: CoreSQLEditorTab,
+  ignoreMode?: boolean
 ): boolean => {
-  return (
-    isSameSQLEditorConnection(a.connection, b.connection) &&
-    a.worksheet === b.worksheet &&
-    a.mode === b.mode
-  );
+  if (!isSameSQLEditorConnection(a.connection, b.connection)) return false;
+  if (a.worksheet !== b.worksheet) return false;
+  if (!ignoreMode && a.mode !== b.mode) return false;
+  return true;
 };
 
 export const isSimilarToDefaultSQLEditorTabTitle = (title: string) => {

@@ -64,7 +64,7 @@ const filteredProcedures = computed(() => {
   const keyword = props.keyword?.trim().toLowerCase();
   if (keyword) {
     return props.procedures.filter((procedure) =>
-      procedure.name.includes(keyword)
+      procedure.name.toLowerCase().includes(keyword)
     );
   }
   return props.procedures;

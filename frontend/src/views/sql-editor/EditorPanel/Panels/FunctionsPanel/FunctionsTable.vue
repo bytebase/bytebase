@@ -63,7 +63,9 @@ const { viewState } = useEditorPanelContext();
 const filteredFuncs = computed(() => {
   const keyword = props.keyword?.trim().toLowerCase();
   if (keyword) {
-    return props.funcs.filter((func) => func.name.includes(keyword));
+    return props.funcs.filter((func) =>
+      func.name.toLowerCase().includes(keyword)
+    );
   }
   return props.funcs;
 });
