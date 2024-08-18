@@ -55,7 +55,7 @@ const filteredColumns = computed(() => {
   const keyword = props.keyword?.trim().toLowerCase();
   if (keyword) {
     return props.externalTable.columns.filter((column) =>
-      column.name.includes(keyword)
+      column.name.toLowerCase().includes(keyword)
     );
   }
   return props.externalTable.columns;
