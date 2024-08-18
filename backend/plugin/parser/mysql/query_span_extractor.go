@@ -2,7 +2,6 @@ package mysql
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
@@ -52,19 +51,30 @@ func newQuerySpanExtractor(connectedDB string, gCtx base.GetQuerySpanContext, ig
 }
 
 func (q *querySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*base.QuerySpan, error) {
-	q.ctx = ctx
-
-	accessTables, err := getAccessTables(q.connectedDB, stmt)
+	parseResults, err := ParseMySQL(stmt)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get access tables from statement: %s", stmt)
+		return nil, err
 	}
+	if len(parseResults) == 0 {
+		return &base.QuerySpan{
+			Results:       []base.QuerySpanResult{},
+			SourceColumns: base.SourceColumnSet{},
+		}, nil
+	}
+	if len(parseResults) != 1 {
+		return nil, errors.Errorf("expecting only one statement to get query span, but got %d", len(parseResults))
+	}
+	tree := parseResults[0].Tree
+
+	q.ctx = ctx
+	accessTables := getAccessTables(q.connectedDB, tree)
 	// We do not support simultaneous access to the system table and the user table
 	// because we do not synchronize the schema of the system table.
 	// This causes an error (NOT_FOUND) when using querySpanExtractor.findTableSchema.
 	// As a result, we exclude getting query span results for accessing only the system table.
 	allSystems, mixed := isMixedQuery(accessTables, q.ignoreCaseSensitive)
-	if mixed != nil {
-		return nil, mixed
+	if mixed {
+		return nil, base.MixUserSystemTablesError
 	}
 	if allSystems {
 		return &base.QuerySpan{
@@ -73,26 +83,12 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*ba
 		}, nil
 	}
 
-	list, err := ParseMySQL(stmt)
-	if err != nil {
-		return nil, err
-	}
-	if len(list) == 0 {
-		return &base.QuerySpan{
-			Results:       []base.QuerySpanResult{},
-			SourceColumns: make(base.SourceColumnSet),
-		}, nil
-	}
-	if len(list) != 1 {
-		return nil, errors.Errorf("expecting only one statement to get query span, but got %d", len(list))
-	}
-
 	// We assumes the caller had handled the statement type case,
 	// so we only need to handle the determined statement type here.
 	// In order to decrease the maintenance cost, we use listener to handle
 	// the select statement precisely instead of using type switch.
 	listener := newSelectOnlyListener(q)
-	antlr.ParseTreeWalkerDefault.Walk(listener, list[0].Tree)
+	antlr.ParseTreeWalkerDefault.Walk(listener, tree)
 
 	if listener.err != nil {
 		return nil, listener.err
@@ -1428,24 +1424,14 @@ func (s *selectOnlyListener) EnterSelectStatement(ctx *mysql.SelectStatementCont
 	s.querySpan.Results = append(s.querySpan.Results, fields.Columns...)
 }
 
-func getAccessTables(currentDatabase string, statement string) (base.SourceColumnSet, error) {
-	treeList, err := ParseMySQL(statement)
-	if err != nil {
-		return nil, err
-	}
-
+func getAccessTables(currentDatabase string, tree antlr.Tree) base.SourceColumnSet {
 	l := newAccessTableListener(currentDatabase)
 
 	result := make(base.SourceColumnSet)
-	for _, tree := range treeList {
-		if tree == nil {
-			continue
-		}
-		antlr.ParseTreeWalkerDefault.Walk(l, tree.Tree)
-		result, _ = base.MergeSourceColumnSet(result, l.sourceColumnSet)
-	}
+	antlr.ParseTreeWalkerDefault.Walk(l, tree)
+	result, _ = base.MergeSourceColumnSet(result, l.sourceColumnSet)
 
-	return result, nil
+	return result
 }
 
 type accessTableListener struct {
@@ -1479,49 +1465,36 @@ func (l *accessTableListener) EnterTableRef(ctx *mysql.TableRefContext) {
 }
 
 // isMixedQuery checks whether the query accesses the user table and system table at the same time.
-func isMixedQuery(m base.SourceColumnSet, ignoreCaseSensitive bool) (allSystems bool, mixed error) {
-	userMsg, systemMsg := "", ""
+// It returns whether all tables are system tables and whether there is a mixture.
+func isMixedQuery(m base.SourceColumnSet, ignoreCaseSensitive bool) (bool, bool) {
+	hasSystem, hasUser := false, false
 	for table := range m {
-		if msg := isSystemResource(table, ignoreCaseSensitive); msg != "" {
-			systemMsg = msg
-			continue
-		}
-		userMsg = fmt.Sprintf("user table %q.%q", table.Schema, table.Table)
-		if systemMsg != "" {
-			return false, errors.Errorf("cannot access %s and %s at the same time", userMsg, systemMsg)
+		if isSystemResource(table, ignoreCaseSensitive) {
+			hasSystem = true
+		} else {
+			hasUser = true
 		}
 	}
 
-	if userMsg != "" && systemMsg != "" {
-		return false, errors.Errorf("cannot access %s and %s at the same time", userMsg, systemMsg)
+	if hasSystem && hasUser {
+		return false, true
 	}
 
-	return userMsg == "" && systemMsg != "", nil
+	return !hasUser && hasSystem, false
 }
 
-func isSystemResource(resource base.ColumnResource, ignoreCaseSensitive bool) string {
+var systemDatabases = map[string]bool{
+	"information_schema": true,
+	"performance_schema": true,
+	"mysql":              true,
+}
+
+func isSystemResource(resource base.ColumnResource, ignoreCaseSensitive bool) bool {
+	database := resource.Database
 	if ignoreCaseSensitive {
-		if strings.EqualFold(resource.Database, "information_schema") {
-			return fmt.Sprintf("system schema %q", resource.Table)
-		}
-		if strings.EqualFold(resource.Database, "performance_schema") {
-			return fmt.Sprintf("system schema %q", resource.Table)
-		}
-		if strings.EqualFold(resource.Database, "mysql") {
-			return fmt.Sprintf("system schema %q", resource.Table)
-		}
-	} else {
-		if resource.Database == "information_schema" {
-			return fmt.Sprintf("system schema %q", resource.Table)
-		}
-		if resource.Database == "performance_schema" {
-			return fmt.Sprintf("system schema %q", resource.Table)
-		}
-		if resource.Database == "mysql" {
-			return fmt.Sprintf("system schema %q", resource.Table)
-		}
+		database = strings.ToLower(database)
 	}
-	return ""
+	return systemDatabases[database]
 }
 
 func mysqlExtractColumnsClause(ctx mysql.IColumnsClauseContext) []string {

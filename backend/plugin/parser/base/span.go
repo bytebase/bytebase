@@ -5,7 +5,13 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/pkg/errors"
+
 	"github.com/bytebase/bytebase/backend/store/model"
+)
+
+var (
+	MixUserSystemTablesError = errors.Errorf("cannot access user and system tables at the same time")
 )
 
 type SourceColumnSet map[ColumnResource]bool
@@ -33,6 +39,7 @@ type QuerySpan struct {
 	// SourceColumns are the source columns contributing to the span.
 	// SourceColumns here are the source columns for the whole query span, containing fields, where conditions, join conditions, etc.
 	SourceColumns SourceColumnSet
+	Errors        []error
 }
 
 // QuerySpanResult is the result column of a query span.
