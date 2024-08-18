@@ -2376,7 +2376,8 @@
     "connect": "Connect",
     "connect-in-admin-mode": "Connect in admin mode",
     "admin-mode": {
-      "self": "Admin mode"
+      "self": "Admin mode",
+      "exit": "Exit admin mode"
     },
     "allow-admin-mode-only": "Instance {instance} is accessible in admin mode only.",
     "run-selected": "Run selected",

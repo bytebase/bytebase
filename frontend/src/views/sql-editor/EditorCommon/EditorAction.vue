@@ -11,7 +11,7 @@
           :disabled="!allowQuery"
           type="primary"
           size="small"
-          style="--n-padding: 0 3px 0 5px"
+          style="--n-padding: 0 5px"
           @click="handleRunQuery"
         >
           <template #icon>
@@ -19,14 +19,8 @@
           </template>
           <template #default>
             <div class="flex items-center gap-1">
-              <span>
-                {{
-                  showRunSelected
-                    ? $t("sql-editor.run-selected")
-                    : $t("common.run")
-                }}
-              </span>
-              <div>
+              <span>{{ $t("common.run") }}</span>
+              <div v-if="currentTab?.mode !== 'ADMIN'">
                 <span>(</span>
                 <span>limit&nbsp;{{ resultRowsLimit }}</span>
                 <span>)</span>
@@ -38,24 +32,23 @@
           :disabled="!showQueryContextSettingPopover || !allowQuery"
         />
       </NButtonGroup>
-      <NPopover placement="bottom">
+
+      <NPopover v-if="currentTab?.mode === 'ADMIN'" placement="bottom">
         <template #trigger>
           <NButton
             size="small"
-            :disabled="!allowQuery"
+            type="default"
+            :dashed="true"
             style="--n-padding: 0 5px"
-            @click="handleExplainQuery"
+            @click="exitAdminMode"
           >
             <template #icon>
-              <PlayIcon class="w-4 h-4" />
+              <WrenchIcon class="w-4 h-4 text-control-placeholder" />
             </template>
           </NButton>
         </template>
         <template #default>
-          <div class="flex items-center gap-1">
-            <span>Explain</span>
-            <span>({{ keyboardShortcutStr("cmd_or_ctrl+E") }})</span>
-          </div>
+          <span>{{ $t("sql-editor.admin-mode.exit") }}</span>
         </template>
       </NPopover>
 
@@ -146,7 +139,7 @@
 </template>
 
 <script lang="ts" setup>
-import { PlayIcon, SaveIcon, Share2Icon } from "lucide-vue-next";
+import { PlayIcon, SaveIcon, Share2Icon, WrenchIcon } from "lucide-vue-next";
 import { NButtonGroup, NButton, NPopover } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { computed, reactive } from "vue";
@@ -160,7 +153,11 @@ import {
   useAppFeature,
   useSQLEditorStore,
 } from "@/store";
-import { type FeatureType, type SQLEditorQueryParams } from "@/types";
+import {
+  DEFAULT_SQL_EDITOR_TAB_MODE,
+  type FeatureType,
+  type SQLEditorQueryParams,
+} from "@/types";
 import { keyboardShortcutStr } from "@/utils";
 import { useSQLEditorContext } from "../context";
 import AdminModeButton from "./AdminModeButton.vue";
@@ -209,17 +206,6 @@ const { instance } = useConnectionOfCurrentSQLEditorTab();
 const showSheetsFeature = computed(() => {
   const mode = currentTab.value?.mode;
   return mode === "READONLY" || mode === "STANDARD";
-});
-
-const showRunSelected = computed(() => {
-  const tab = currentTab.value;
-  if (!tab) {
-    return false;
-  }
-  return (
-    (tab.mode === "READONLY" || tab.mode === "STANDARD") &&
-    tab.selectedStatement !== ""
-  );
 });
 
 const allowQuery = computed(() => {
@@ -289,17 +275,10 @@ const handleRunQuery = () => {
   });
 };
 
-const handleExplainQuery = () => {
-  const tab = currentTab.value;
-  if (!tab) {
-    return;
-  }
-  const statement = tab.selectedStatement || tab.statement;
-  emit("execute", {
-    statement,
-    connection: { ...tab.connection },
-    engine: instance.value.engine,
-    explain: true,
+const exitAdminMode = () => {
+  tabStore.updateCurrentTab({
+    mode: DEFAULT_SQL_EDITOR_TAB_MODE,
+    statement: "",
   });
 };
 

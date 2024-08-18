@@ -2376,7 +2376,8 @@
     "connect": "Conectar",
     "connect-in-admin-mode": "Conectar en modo administrador",
     "admin-mode": {
-      "self": "Modo administrador"
+      "self": "Modo administrador",
+      "exit": "Salir del modo administrador"
     },
     "allow-admin-mode-only": "La instancia {instance} solo es accesible en modo administrador.",
     "run-selected": "Ejecutar selección",

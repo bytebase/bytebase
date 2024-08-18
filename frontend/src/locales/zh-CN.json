@@ -2376,7 +2376,8 @@
     "connect": "连接",
     "connect-in-admin-mode": "以管理员模式连接",
     "admin-mode": {
-      "self": "管理员模式"
+      "self": "管理员模式",
+      "exit": "退出管理员模式"
     },
     "allow-admin-mode-only": "实例{instance}只能通过管理员模式访问。",
     "run-selected": "运行选中的语句",
