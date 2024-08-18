@@ -10,6 +10,7 @@ var columnTypeCanonicalSynonyms = map[string]string{
 	"mediumint(9)": "mediumint",
 	"int(11)":      "int",
 	"bigint(20)":   "bigint",
+	"char(1)":      "char",
 
 	// Numeric Data Type Synonyms.
 	"integer":        "int",
