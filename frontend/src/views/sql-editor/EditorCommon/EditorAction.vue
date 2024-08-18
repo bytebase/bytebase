@@ -18,13 +18,13 @@
             <PlayIcon class="w-4 h-4 !fill-current" />
           </template>
           <template #default>
-            <div class="flex items-center gap-1">
-              <span>{{ $t("common.run") }}</span>
-              <div v-if="currentTab?.mode !== 'ADMIN'">
-                <span>(</span>
-                <span>limit&nbsp;{{ resultRowsLimit }}</span>
-                <span>)</span>
-              </div>
+            <div
+              v-if="currentTab?.mode !== 'ADMIN'"
+              class="inline-flex items-center"
+            >
+              <span>(</span>
+              <span>limit&nbsp;{{ resultRowsLimit }}</span>
+              <span>)</span>
             </div>
           </template>
         </NButton>
