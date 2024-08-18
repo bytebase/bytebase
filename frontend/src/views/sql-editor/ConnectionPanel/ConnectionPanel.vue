@@ -2,7 +2,7 @@
   <Drawer
     :show="show"
     :close-on-esc="false"
-    placement="left"
+    placement="right"
     style="--n-body-padding: 4px 0"
     @update:show="$emit('update:show', $event)"
   >
