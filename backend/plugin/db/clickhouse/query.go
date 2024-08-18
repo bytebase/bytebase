@@ -51,9 +51,7 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 		queryResult, err := func() (*v1pb.QueryResult, error) {
 			rows, err := conn.QueryContext(ctx, statement)
 			if err != nil {
-				// ClickHouse will return "driver: bad connection" if we use non-SELECT statement for Query(). We need to ignore the error.
-				// nolint
-				return nil, nil
+				return nil, err
 			}
 			defer rows.Close()
 			r, err := convertRowsToQueryResult(rows, driver.maximumSQLResultSize)
