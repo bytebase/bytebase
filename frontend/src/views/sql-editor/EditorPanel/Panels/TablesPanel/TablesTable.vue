@@ -72,7 +72,9 @@ const instanceEngine = computed(() => {
 const filteredTables = computed(() => {
   const keyword = props.keyword?.trim().toLowerCase();
   if (keyword) {
-    return props.tables.filter((table) => table.name.includes(keyword));
+    return props.tables.filter((table) =>
+      table.name.toLowerCase().includes(keyword)
+    );
   }
   return props.tables;
 });

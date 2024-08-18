@@ -1885,7 +1885,10 @@
     "external-database-name": "External Database Name",
     "foreign-table-detail": "Foreign table detail",
     "view-definition": "View definition",
-    "foreign-keys": "Foreign keys"
+    "foreign-keys": "Foreign keys",
+    "foreign-key": {
+      "reference": "Reference"
+    }
   },
   "repository": {
     "our-webhook-link": "The webhook created by Bytebase can be found at {webhookLink}.",
@@ -2376,7 +2379,8 @@
     "connect": "Connect",
     "connect-in-admin-mode": "Connect in admin mode",
     "admin-mode": {
-      "self": "Admin mode"
+      "self": "Admin mode",
+      "exit": "Exit admin mode"
     },
     "allow-admin-mode-only": "Instance {instance} is accessible in admin mode only.",
     "run-selected": "Run selected",

@@ -21,11 +21,7 @@ import { storeToRefs } from "pinia";
 import { computed } from "vue";
 import type { PropType } from "vue";
 import { useSQLEditorTabStore } from "@/store";
-import type { CoreSQLEditorTab } from "@/types";
-import {
-  hasWorkspacePermissionV2,
-  suggestedTabTitleForSQLEditorConnection,
-} from "@/utils";
+import { hasWorkspacePermissionV2 } from "@/utils";
 
 const emit = defineEmits<{
   (e: "enter"): void;
@@ -61,16 +57,10 @@ const enterAdminMode = async () => {
     return;
   }
 
-  const target: CoreSQLEditorTab = {
-    connection: { ...tab.connection },
+  tabStore.updateCurrentTab({
     mode: "ADMIN",
-    worksheet: "",
-  };
-  tabStore.selectOrAddSimilarNewTab(
-    target,
-    /* beside */ true,
-    /* title */ suggestedTabTitleForSQLEditorConnection(tab.connection)
-  );
+    statement: "",
+  });
 
   emit("enter");
 };

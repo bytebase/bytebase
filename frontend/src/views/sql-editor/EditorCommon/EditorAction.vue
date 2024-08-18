@@ -6,31 +6,36 @@
     <div
       class="action-left gap-x-2 flex overflow-x-auto sm:overflow-x-hidden items-center"
     >
-      <NButtonGroup>
+      <NButton
+        v-if="currentTab?.mode === 'ADMIN'"
+        size="small"
+        type="default"
+        :dashed="true"
+        style="--n-padding: 0 8px 0 3px"
+        @click="exitAdminMode"
+      >
+        <template #icon>
+          <ChevronLeftIcon class="w-4 h-4 text-control" />
+        </template>
+        <span>{{ $t("sql-editor.admin-mode.exit") }}</span>
+      </NButton>
+
+      <NButtonGroup v-if="currentTab?.mode !== 'ADMIN'">
         <NButton
           :disabled="!allowQuery"
           type="primary"
           size="small"
-          style="--n-padding: 0 3px 0 5px"
+          style="--n-padding: 0 5px"
           @click="handleRunQuery"
         >
           <template #icon>
             <PlayIcon class="w-4 h-4 !fill-current" />
           </template>
           <template #default>
-            <div class="flex items-center gap-1">
-              <span>
-                {{
-                  showRunSelected
-                    ? $t("sql-editor.run-selected")
-                    : $t("common.run")
-                }}
-              </span>
-              <div>
-                <span>(</span>
-                <span>limit&nbsp;{{ resultRowsLimit }}</span>
-                <span>)</span>
-              </div>
+            <div class="inline-flex items-center">
+              <span>(</span>
+              <span>limit&nbsp;{{ resultRowsLimit }}</span>
+              <span>)</span>
             </div>
           </template>
         </NButton>
@@ -38,26 +43,6 @@
           :disabled="!showQueryContextSettingPopover || !allowQuery"
         />
       </NButtonGroup>
-      <NPopover placement="bottom">
-        <template #trigger>
-          <NButton
-            size="small"
-            :disabled="!allowQuery"
-            style="--n-padding: 0 5px"
-            @click="handleExplainQuery"
-          >
-            <template #icon>
-              <PlayIcon class="w-4 h-4" />
-            </template>
-          </NButton>
-        </template>
-        <template #default>
-          <div class="flex items-center gap-1">
-            <span>Explain</span>
-            <span>({{ keyboardShortcutStr("cmd_or_ctrl+E") }})</span>
-          </div>
-        </template>
-      </NPopover>
 
       <NPopover placement="bottom">
         <template #trigger>
@@ -146,7 +131,12 @@
 </template>
 
 <script lang="ts" setup>
-import { PlayIcon, SaveIcon, Share2Icon } from "lucide-vue-next";
+import {
+  ChevronLeftIcon,
+  PlayIcon,
+  SaveIcon,
+  Share2Icon,
+} from "lucide-vue-next";
 import { NButtonGroup, NButton, NPopover } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { computed, reactive } from "vue";
@@ -160,7 +150,11 @@ import {
   useAppFeature,
   useSQLEditorStore,
 } from "@/store";
-import { type FeatureType, type SQLEditorQueryParams } from "@/types";
+import {
+  DEFAULT_SQL_EDITOR_TAB_MODE,
+  type FeatureType,
+  type SQLEditorQueryParams,
+} from "@/types";
 import { keyboardShortcutStr } from "@/utils";
 import { useSQLEditorContext } from "../context";
 import AdminModeButton from "./AdminModeButton.vue";
@@ -209,17 +203,6 @@ const { instance } = useConnectionOfCurrentSQLEditorTab();
 const showSheetsFeature = computed(() => {
   const mode = currentTab.value?.mode;
   return mode === "READONLY" || mode === "STANDARD";
-});
-
-const showRunSelected = computed(() => {
-  const tab = currentTab.value;
-  if (!tab) {
-    return false;
-  }
-  return (
-    (tab.mode === "READONLY" || tab.mode === "STANDARD") &&
-    tab.selectedStatement !== ""
-  );
 });
 
 const allowQuery = computed(() => {
@@ -289,17 +272,10 @@ const handleRunQuery = () => {
   });
 };
 
-const handleExplainQuery = () => {
-  const tab = currentTab.value;
-  if (!tab) {
-    return;
-  }
-  const statement = tab.selectedStatement || tab.statement;
-  emit("execute", {
-    statement,
-    connection: { ...tab.connection },
-    engine: instance.value.engine,
-    explain: true,
+const exitAdminMode = () => {
+  tabStore.updateCurrentTab({
+    mode: DEFAULT_SQL_EDITOR_TAB_MODE,
+    statement: "",
   });
 };
 

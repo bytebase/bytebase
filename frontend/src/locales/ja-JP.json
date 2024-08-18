@@ -1885,7 +1885,10 @@
     "external-database-name": "外部データベース名",
     "foreign-table-detail": "外部テーブルの詳細",
     "view-definition": "ビューの定義",
-    "foreign-keys": "外部キー"
+    "foreign-keys": "外部キー",
+    "foreign-key": {
+      "reference": "参照"
+    }
   },
   "repository": {
     "our-webhook-link": "Bytebase によって作成された Webhook は、{webhookLink} にあります。",
@@ -2376,7 +2379,8 @@
     "connect": "接続する",
     "connect-in-admin-mode": "管理者モードで接続する",
     "admin-mode": {
-      "self": "管理者モード"
+      "self": "管理者モード",
+      "exit": "管理者モードを終了する"
     },
     "allow-admin-mode-only": "インスタンス {instance} には管理者モードでのみアクセスできます。",
     "run-selected": "選択したステートメントを実行する",

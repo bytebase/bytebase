@@ -1885,7 +1885,10 @@
     "external-database-name": "Nombre de la base de datos externa",
     "foreign-table-detail": "Detalle de la tabla externa",
     "view-definition": "Ver definición",
-    "foreign-keys": "claves foráneas"
+    "foreign-keys": "claves foráneas",
+    "foreign-key": {
+      "reference": "Referencia"
+    }
   },
   "repository": {
     "our-webhook-link": "El webhook creado por Bytebase se puede encontrar en {webhookLink}.",
@@ -2376,7 +2379,8 @@
     "connect": "Conectar",
     "connect-in-admin-mode": "Conectar en modo administrador",
     "admin-mode": {
-      "self": "Modo administrador"
+      "self": "Modo administrador",
+      "exit": "Salir del modo administrador"
     },
     "allow-admin-mode-only": "La instancia {instance} solo es accesible en modo administrador.",
     "run-selected": "Ejecutar selección",
