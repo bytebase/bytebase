@@ -461,7 +461,7 @@ func TestForeignKeyDefination(t *testing.T) {
 				") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;",
 
 			want: "ALTER TABLE `employeee` DROP FOREIGN KEY `employee_ibfk_1`;\n\n" +
-				"ALTER TABLE `employeee` ADD COLUMN `manager_id` INT DEFAULT NULL AFTER `leader_id`;\n\n" +
+				"ALTER TABLE `employeee` ADD COLUMN `manager_id` INT DEFAULT NULL AFTER `leader_id`;\n" +
 				"ALTER TABLE `employeee` ADD CONSTRAINT `employee_ibfk_1` FOREIGN KEY (`manager_id`) REFERENCES `employeee`(`id`);\n\n",
 		},
 	}
@@ -506,7 +506,7 @@ func TestConstraint(t *testing.T) {
 			old: `CREATE TABLE book(id INT, name VARCHAR(50), CONSTRAINT PRIMARY KEY(id, name));`,
 			new: `CREATE TABLE book(id INT, name VARCHAR(50), address VARCHAR(50) NOT NULL, CONSTRAINT PRIMARY KEY(id, address));`,
 			want: "ALTER TABLE `book` DROP PRIMARY KEY;\n\n" +
-				"ALTER TABLE `book` ADD COLUMN `address` VARCHAR(50) NOT NULL AFTER `name`;\n\n" +
+				"ALTER TABLE `book` ADD COLUMN `address` VARCHAR(50) NOT NULL AFTER `name`;\n" +
 				"ALTER TABLE `book` ADD PRIMARY KEY (`id`, `address`);\n\n",
 		},
 		// ADD COLUMN -> ADD INDEX WITH ANOTHER NAME-> DROP INDEX
@@ -514,7 +514,7 @@ func TestConstraint(t *testing.T) {
 			old: `CREATE TABLE book(id INT, name VARCHAR(50), INDEX id_name_idx (id, name));`,
 			new: `CREATE TABLE book(id INT, name VARCHAR(50), address VARCHAR(50) NOT NULL, INDEX id_address_idx (id, address));`,
 			want: "DROP INDEX `id_name_idx` ON `book`;\n\n" +
-				"ALTER TABLE `book` ADD COLUMN `address` VARCHAR(50) NOT NULL AFTER `name`;\n\n" +
+				"ALTER TABLE `book` ADD COLUMN `address` VARCHAR(50) NOT NULL AFTER `name`;\n" +
 				"CREATE INDEX `id_address_idx` ON `book` (`id`, `address`);\n\n",
 		},
 		// ADD COLUMN -> ADD INDEX WITH SAME NAME -> DROP INDEX
@@ -522,7 +522,7 @@ func TestConstraint(t *testing.T) {
 			old: `CREATE TABLE book(id INT, name VARCHAR(50), INDEX idx (id, name));`,
 			new: `CREATE TABLE book(id INT, name VARCHAR(50), address VARCHAR(50) NOT NULL, INDEX idx (id, address));`,
 			want: "DROP INDEX `idx` ON `book`;\n\n" +
-				"ALTER TABLE `book` ADD COLUMN `address` VARCHAR(50) NOT NULL AFTER `name`;\n\n" +
+				"ALTER TABLE `book` ADD COLUMN `address` VARCHAR(50) NOT NULL AFTER `name`;\n" +
 				"CREATE INDEX `idx` ON `book` (`id`, `address`);\n\n",
 		},
 	}
