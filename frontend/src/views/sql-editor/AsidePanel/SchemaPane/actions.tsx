@@ -219,11 +219,14 @@ export const useActions = () => {
     if (type === "table") {
       detail.table = (target as NodeTarget<"table">).table.name;
     }
-    if (type === "column" && node.parent?.meta.type === "table") {
+    if (type === "column" && node.parent?.parent?.meta.type === "table") {
       detail.table = (target as NodeTarget<"table">).table.name;
       detail.column = (target as NodeTarget<"column">).column.name;
     }
-    if (type === "column" && node.parent?.meta.type === "external-table") {
+    if (
+      type === "column" &&
+      node.parent?.parent?.meta.type === "external-table"
+    ) {
       detail.externalTable = (
         target as NodeTarget<"external-table">
       ).externalTable.name;
