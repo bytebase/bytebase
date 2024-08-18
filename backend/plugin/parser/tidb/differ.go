@@ -339,8 +339,6 @@ func (diff *diffNode) diffColumn(oldTable, newTable *tableInfo) {
 	// We use a single ALTER TABLE statement to add and modify columns,
 	// because we need to maintain a fixed order of these two operations.
 	// This approach ensures that we can manipulate the column position as needed.
-	addAndModifyColumnStatement := &ast.AlterTableStmt{Table: newTable.createTable.Table}
-
 	oldColumnMap := buildColumnMap(oldTable.createTable.Cols)
 	oldColumnPositionMap := buildColumnPositionMap(oldTable.createTable)
 	for idx, columnDef := range newTable.createTable.Cols {
@@ -353,11 +351,13 @@ func (diff *diffNode) diffColumn(oldTable, newTable *tableInfo) {
 				columnPosition.Tp = ast.ColumnPositionAfter
 				columnPosition.RelativeColumn = &ast.ColumnName{Name: model.NewCIStr(newTable.createTable.Cols[idx-1].Name.Name.O)}
 			}
+			addAndModifyColumnStatement := &ast.AlterTableStmt{Table: newTable.createTable.Table}
 			addAndModifyColumnStatement.Specs = append(addAndModifyColumnStatement.Specs, &ast.AlterTableSpec{
 				Tp:         ast.AlterTableAddColumns,
 				NewColumns: []*ast.ColumnDef{columnDef},
 				Position:   columnPosition,
 			})
+			diff.addAndModifyColumnList = append(diff.addAndModifyColumnList, addAndModifyColumnStatement)
 			continue
 		}
 
@@ -374,11 +374,13 @@ func (diff *diffNode) diffColumn(oldTable, newTable *tableInfo) {
 		}
 		// Compare the column definitions.
 		if !isColumnEqual(oldColumnDef, columnDef) || columnPosition.Tp != ast.ColumnPositionNone {
+			addAndModifyColumnStatement := &ast.AlterTableStmt{Table: newTable.createTable.Table}
 			addAndModifyColumnStatement.Specs = append(addAndModifyColumnStatement.Specs, &ast.AlterTableSpec{
 				Tp:         ast.AlterTableModifyColumn,
 				NewColumns: []*ast.ColumnDef{columnDef},
 				Position:   columnPosition,
 			})
+			diff.addAndModifyColumnList = append(diff.addAndModifyColumnList, addAndModifyColumnStatement)
 		}
 		delete(oldColumnMap, newColumnName)
 	}
@@ -395,10 +397,6 @@ func (diff *diffNode) diffColumn(oldTable, newTable *tableInfo) {
 				},
 			},
 		})
-	}
-
-	if len(addAndModifyColumnStatement.Specs) > 0 {
-		diff.addAndModifyColumnList = append(diff.addAndModifyColumnList, addAndModifyColumnStatement)
 	}
 }
 
@@ -433,7 +431,7 @@ func (diff *diffNode) deparse() (string, error) {
 	if err := sortAndWriteNodeList(&buf, diff.alterTableOptionList, flag); err != nil {
 		return "", err
 	}
-	if err := sortAndWriteNodeList(&buf, diff.addAndModifyColumnList, flag); err != nil {
+	if err := writeNodeList(&buf, diff.addAndModifyColumnList, flag); err != nil {
 		return "", err
 	}
 	if err := sortAndWriteNodeList(&buf, diff.dropColumnList, flag); err != nil {
@@ -474,12 +472,12 @@ func SchemaDiff(ctx base.DiffContext, oldStmt, newStmt string) (string, error) {
 	return diff.deparse()
 }
 
-func writeNodeStatement(w format.RestoreWriter, n ast.Node, flags format.RestoreFlags) error {
+func writeNodeStatement(w format.RestoreWriter, n ast.Node, flags format.RestoreFlags, ending string) error {
 	restoreCtx := format.NewRestoreCtx(flags, w)
 	if err := n.Restore(restoreCtx); err != nil {
 		return err
 	}
-	if _, err := w.Write([]byte(";\n\n")); err != nil {
+	if _, err := w.Write([]byte(";" + ending)); err != nil {
 		return err
 	}
 	return nil
@@ -522,13 +520,22 @@ func getID(node ast.Node) string {
 	return ""
 }
 
+func writeNodeList(w format.RestoreWriter, ns []ast.Node, flags format.RestoreFlags) error {
+	for _, n := range ns {
+		if err := writeNodeStatement(w, n, flags, "\n"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func sortAndWriteNodeList(w format.RestoreWriter, ns []ast.Node, flags format.RestoreFlags) error {
 	sort.Slice(ns, func(i, j int) bool {
 		return getID(ns[i]) < getID(ns[j])
 	})
 
 	for _, n := range ns {
-		if err := writeNodeStatement(w, n, flags); err != nil {
+		if err := writeNodeStatement(w, n, flags, "\n\n"); err != nil {
 			return err
 		}
 	}

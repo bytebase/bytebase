@@ -1522,11 +1522,11 @@ func trimClassificationIDFromCommentIfNeeded(dbSchema *storepb.DatabaseSchemaMet
 	for _, schema := range dbSchema.Schemas {
 		for _, table := range schema.Tables {
 			if !classificationFromConfig {
-				_, table.UserComment = common.GetClassificationAndUserComment(table.UserComment)
+				_, table.UserComment = common.GetClassificationAndUserComment(table.Comment)
 			}
 			for _, col := range table.Columns {
 				if !classificationFromConfig {
-					_, col.UserComment = common.GetClassificationAndUserComment(col.UserComment)
+					_, col.UserComment = common.GetClassificationAndUserComment(col.Comment)
 				}
 			}
 		}
