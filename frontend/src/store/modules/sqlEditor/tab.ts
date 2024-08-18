@@ -9,7 +9,7 @@ import type {
   CoreSQLEditorTab,
   SQLEditorTab,
 } from "@/types";
-import { UNKNOWN_ID } from "@/types";
+import { DEFAULT_SQL_EDITOR_TAB_MODE, UNKNOWN_ID } from "@/types";
 import {
   WebStorageHelper,
   defaultSQLEditorTab,
@@ -78,6 +78,10 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
       ...stored,
       id,
     });
+    if (tab.mode === "ADMIN") {
+      // Do not enter ADMIN mode initially
+      tab.mode = DEFAULT_SQL_EDITOR_TAB_MODE;
+    }
     watchTab(tab, false /* !immediate */);
     tabsById.set(id, tab);
     return tab;
@@ -218,13 +222,14 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
   const selectOrAddSimilarNewTab = (
     tab: CoreSQLEditorTab,
     beside = false,
-    defaultTitle?: string
+    defaultTitle?: string,
+    ignoreMode?: boolean
   ) => {
     const curr = currentTab.value;
     if (curr) {
       if (
         isDisconnectedSQLEditorTab(curr) ||
-        isSimilarSQLEditorTab(tab, curr)
+        isSimilarSQLEditorTab(tab, curr, ignoreMode)
       ) {
         curr.connection = tab.connection;
         curr.worksheet = tab.worksheet;

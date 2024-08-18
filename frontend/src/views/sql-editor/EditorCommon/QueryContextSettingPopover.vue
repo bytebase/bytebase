@@ -1,5 +1,10 @@
 <template>
-  <NPopover placement="bottom-end" trigger="click" :disabled="disabled">
+  <NPopover
+    v-if="show"
+    placement="bottom-end"
+    trigger="click"
+    :disabled="disabled"
+  >
     <template #trigger>
       <NButton
         :disabled="disabled"
@@ -114,6 +119,10 @@ const tabStore = useSQLEditorTabStore();
 const { standardModeEnabled } = useSQLEditorContext();
 const { connection, database } = useConnectionOfCurrentSQLEditorTab();
 const policyStore = usePolicyV1Store();
+
+const show = computed(() => {
+  return tabStore.currentTab?.mode !== "ADMIN";
+});
 
 const isExecutingSQL = computed(
   () => tabStore.currentTab?.queryContext?.status === "EXECUTING"

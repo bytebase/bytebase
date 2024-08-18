@@ -18,6 +18,9 @@ export type EditorPanelViewState = {
     procedure?: string;
     func?: string;
     externalTable?: string;
+    partition?: string;
+    index?: string;
+    foreignKey?: string;
   };
 };
 
@@ -30,7 +33,14 @@ export const defaultViewState = (): EditorPanelViewState => {
 };
 
 export const typeToView = (type: string): EditorPanelView => {
-  if (type === "table" || type === "column") return "TABLES";
+  if (
+    type === "table" ||
+    type === "column" ||
+    type === "index" ||
+    type === "foreign-key" ||
+    type === "partition-table"
+  )
+    return "TABLES";
   if (type === "view") return "VIEWS";
   if (type === "function") return "FUNCTIONS";
   if (type === "procedure") return "PROCEDURES";

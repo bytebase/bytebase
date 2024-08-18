@@ -59,7 +59,7 @@ const filteredColumns = computed(() => {
   const keyword = props.keyword?.trim().toLowerCase();
   if (keyword) {
     return props.table.columns.filter((column) =>
-      column.name.includes(keyword)
+      column.name.toLowerCase().includes(keyword)
     );
   }
   return props.table.columns;
@@ -213,14 +213,5 @@ watch(
 }
 :deep(.n-data-table-td.text-cell) {
   @apply pr-1 py-0;
-}
-:not(.disable-diff-coloring) :deep(.n-data-table-tr.created .n-data-table-td) {
-  @apply text-green-700 !bg-green-50;
-}
-:not(.disable-diff-coloring) :deep(.n-data-table-tr.dropped .n-data-table-td) {
-  @apply text-red-700 cursor-not-allowed !bg-red-50 opacity-70;
-}
-:not(.disable-diff-coloring) :deep(.n-data-table-tr.updated .n-data-table-td) {
-  @apply text-yellow-700 !bg-yellow-50;
 }
 </style>

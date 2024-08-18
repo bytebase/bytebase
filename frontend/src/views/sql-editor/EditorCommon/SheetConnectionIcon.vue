@@ -1,11 +1,12 @@
 <template>
   <div class="inline-flex items-center justify-center">
     <EngineIcon v-if="instance" :engine="instance.engine" />
-    <octicon:unlink-16 v-else class="w-3.5 h-3.5 text-control opacity-50" />
+    <UnlinkIcon v-else class="w-3.5 h-3.5 text-control opacity-50" />
   </div>
 </template>
 
 <script setup lang="ts">
+import { UnlinkIcon } from "lucide-vue-next";
 import { computed } from "vue";
 import { EngineIcon } from "@/components/Icon";
 import { useDatabaseV1Store } from "@/store";

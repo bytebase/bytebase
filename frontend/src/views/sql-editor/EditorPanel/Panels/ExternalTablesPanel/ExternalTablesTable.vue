@@ -63,7 +63,7 @@ const filteredExternalTables = computed(() => {
   const keyword = props.keyword?.trim().toLowerCase();
   if (keyword) {
     return props.externalTables.filter((externalTable) =>
-      externalTable.name.includes(keyword)
+      externalTable.name.toLowerCase().includes(keyword)
     );
   }
   return props.externalTables;

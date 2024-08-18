@@ -1885,7 +1885,10 @@
     "external-database-name": "外部数据库名称",
     "foreign-table-detail": "外部表详情",
     "view-definition": "查看定义",
-    "foreign-keys": "外键"
+    "foreign-keys": "外键",
+    "foreign-key": {
+      "reference": "引用"
+    }
   },
   "repository": {
     "our-webhook-link": "Bytebase 创建的 webhook 可以在 {webhookLink} 中找到。",
@@ -2376,7 +2379,8 @@
     "connect": "连接",
     "connect-in-admin-mode": "以管理员模式连接",
     "admin-mode": {
-      "self": "管理员模式"
+      "self": "管理员模式",
+      "exit": "退出管理员模式"
     },
     "allow-admin-mode-only": "实例{instance}只能通过管理员模式访问。",
     "run-selected": "运行选中的语句",

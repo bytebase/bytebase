@@ -8,11 +8,12 @@
     class="w-4 h-4"
   />
   <template v-if="tab.mode === 'ADMIN'">
-    <heroicons-outline:wrench class="w-4 h-4" />
+    <WrenchIcon class="w-4 h-4" />
   </template>
 </template>
 
 <script lang="ts" setup>
+import { WrenchIcon } from "lucide-vue-next";
 import type { PropType } from "vue";
 import { computed } from "vue";
 import { useWorkSheetStore } from "@/store";
