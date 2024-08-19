@@ -271,24 +271,28 @@ func queryRetry(
 	optionalAccessCheck accessCheckFunc,
 	schemaSyncer *schemasync.Syncer,
 ) ([]*v1pb.QueryResult, []*base.QuerySpan, time.Duration, error) {
-	spans, firstSpanErr := base.GetQuerySpan(
-		ctx,
-		base.GetQuerySpanContext{
-			InstanceID:                    instance.ResourceID,
-			GetDatabaseMetadataFunc:       BuildGetDatabaseMetadataFunc(stores),
-			ListDatabaseNamesFunc:         BuildListDatabaseNamesFunc(stores),
-			GetLinkedDatabaseMetadataFunc: BuildGetLinkedDatabaseMetadataFunc(stores, instance.Engine),
-		},
-		instance.Engine,
-		statement,
-		database.DatabaseName,
-		"",
-		store.IgnoreDatabaseAndTableCaseSensitive(instance),
-	)
-	if firstSpanErr == nil {
-		if licenseService.IsFeatureEnabled(api.FeatureAccessControl) == nil && optionalAccessCheck != nil {
-			if err := optionalAccessCheck(ctx, instance, user, spans, isExport); err != nil {
-				return nil, nil, time.Duration(0), err
+	var spans []*base.QuerySpan
+	var firstSpanErr error
+	if !queryContext.Explain {
+		spans, firstSpanErr = base.GetQuerySpan(
+			ctx,
+			base.GetQuerySpanContext{
+				InstanceID:                    instance.ResourceID,
+				GetDatabaseMetadataFunc:       BuildGetDatabaseMetadataFunc(stores),
+				ListDatabaseNamesFunc:         BuildListDatabaseNamesFunc(stores),
+				GetLinkedDatabaseMetadataFunc: BuildGetLinkedDatabaseMetadataFunc(stores, instance.Engine),
+			},
+			instance.Engine,
+			statement,
+			database.DatabaseName,
+			"",
+			store.IgnoreDatabaseAndTableCaseSensitive(instance),
+		)
+		if firstSpanErr == nil {
+			if licenseService.IsFeatureEnabled(api.FeatureAccessControl) == nil && optionalAccessCheck != nil {
+				if err := optionalAccessCheck(ctx, instance, user, spans, isExport); err != nil {
+					return nil, nil, time.Duration(0), err
+				}
 			}
 		}
 	}
@@ -296,6 +300,9 @@ func queryRetry(
 	results, duration, queryErr := executeWithTimeout(ctx, driver, conn, statement, timeout, queryContext)
 	if queryErr != nil {
 		return nil, nil, duration, queryErr
+	}
+	if queryContext.Explain {
+		return results, nil, duration, nil
 	}
 	hasOK := false
 	databaseMap := make(map[string]bool)
