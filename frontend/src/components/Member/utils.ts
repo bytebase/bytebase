@@ -14,21 +14,16 @@ const getMemberBinding = (
   const groupStore = useGroupStore();
   const userStore = useUserStore();
 
-  if (searchText && !member.toLowerCase().includes(searchText)) {
-    return undefined;
-  }
+  let memberBinding: MemberBinding | undefined = undefined;
 
   if (member.startsWith(groupBindingPrefix)) {
     const group = groupStore.getGroupByIdentifier(member);
     if (!group) {
       return undefined;
     }
-    if (searchText && !group.title.toLowerCase().includes(searchText)) {
-      return undefined;
-    }
     const email = extractGroupEmail(group.name);
 
-    return {
+    memberBinding = {
       type: "groups",
       title: group.title,
       group,
@@ -36,24 +31,32 @@ const getMemberBinding = (
       workspaceLevelRoles: new Set<string>(),
       projectRoleBindings: [],
     };
+  } else {
+    const user = userStore.getUserByIdentifier(member);
+    if (!user) {
+      return undefined;
+    }
+
+    memberBinding = {
+      type: "users",
+      title: user.title,
+      user,
+      binding: getUserEmailInBinding(user.email),
+      workspaceLevelRoles: new Set<string>(),
+      projectRoleBindings: [],
+    };
   }
 
-  const user = userStore.getUserByIdentifier(member);
-  if (!user) {
-    return undefined;
-  }
-  if (searchText && !user.title.toLowerCase().includes(searchText)) {
-    return undefined;
+  if (searchText && memberBinding) {
+    if (
+      !memberBinding.binding.toLowerCase().includes(searchText) &&
+      !memberBinding.title.toLowerCase().includes(searchText)
+    ) {
+      return undefined;
+    }
   }
 
-  return {
-    type: "users",
-    title: user.title,
-    user,
-    binding: getUserEmailInBinding(user.email),
-    workspaceLevelRoles: new Set<string>(),
-    projectRoleBindings: [],
-  };
+  return memberBinding;
 };
 
 export const getMemberBindingsByRole = ({
