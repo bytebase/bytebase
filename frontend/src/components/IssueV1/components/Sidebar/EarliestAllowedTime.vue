@@ -91,7 +91,8 @@ dayjs.extend(isSameOrAfter);
 
 const { t } = useI18n();
 const currentUser = useCurrentUserV1();
-const { isCreating, issue, selectedTask, events } = useIssueContext();
+const { isCreating, issue, selectedTask, events, getPlanCheckRunsForTask } =
+  useIssueContext();
 const isUpdating = ref(false);
 const showFeatureModal = ref(false);
 const dialog = useDialog();
@@ -175,11 +176,11 @@ const chooseUpdateStatementTarget = () => {
     TASK: [selectedTask.value],
     STAGE: (stageForTask(issue.value, selectedTask.value)?.tasks ?? []).filter(
       (task) => {
-        return isTaskEditable(task).length === 0;
+        return isTaskEditable(task, getPlanCheckRunsForTask(task)).length === 0;
       }
     ),
     ALL: flattenTaskV1List(issue.value.rolloutEntity).filter((task) => {
-      return isTaskEditable(task).length === 0;
+      return isTaskEditable(task, getPlanCheckRunsForTask(task)).length === 0;
     }),
   };
 

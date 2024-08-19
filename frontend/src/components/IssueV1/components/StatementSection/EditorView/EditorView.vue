@@ -275,7 +275,14 @@ const props = defineProps<{
 const { t } = useI18n();
 const route = useRoute();
 const context = useIssueContext();
-const { events, isCreating, issue, selectedTask, formatOnSave } = context;
+const {
+  events,
+  isCreating,
+  issue,
+  selectedTask,
+  formatOnSave,
+  getPlanCheckRunsForTask,
+} = context;
 const project = computed(() => issue.value.projectEntity);
 const dialog = useDialog();
 const editorContainerElRef = ref<HTMLElement>();
@@ -427,14 +434,14 @@ const chooseUpdateStatementTarget = () => {
       (task) => {
         return (
           TaskTypeListWithStatement.includes(task.type) &&
-          isTaskEditable(task).length === 0
+          isTaskEditable(task, getPlanCheckRunsForTask(task)).length === 0
         );
       }
     ),
     ALL: flattenTaskV1List(issue.value.rolloutEntity).filter((task) => {
       return (
         TaskTypeListWithStatement.includes(task.type) &&
-        isTaskEditable(task).length === 0
+        isTaskEditable(task, getPlanCheckRunsForTask(task)).length === 0
       );
     }),
   };
