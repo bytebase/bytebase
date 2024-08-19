@@ -129,7 +129,6 @@ import ProjectSwitchModal from "@/components/Project/ProjectSwitchModal.vue";
 import { useCurrentProject } from "@/components/Project/useCurrentProject";
 import WeChatQRModal from "@/components/WeChatQRModal.vue";
 import { ProjectNameCell } from "@/components/v2/Model/DatabaseV1Table/cells";
-import { PROJECT_V1_ROUTE_ISSUES } from "@/router/dashboard/projectV1";
 import { WORKSPACE_ROUTE_MY_ISSUES } from "@/router/dashboard/workspaceRoutes";
 import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/router/dashboard/workspaceSetting";
 import {
@@ -197,14 +196,7 @@ const sqlEditorLink = computed(() => {
 });
 
 const myIssueLink = computed(() => {
-  if (isValidProjectName(project.value.name)) {
-    return router.resolve({
-      name: PROJECT_V1_ROUTE_ISSUES,
-      params: {
-        project: extractProjectResourceName(project.value.name),
-      },
-    });
-  }
+  // Always redirect to my issues page in workspace level.
   return router.resolve({
     name: WORKSPACE_ROUTE_MY_ISSUES,
   });
