@@ -20,7 +20,7 @@
           class="w-full border-b mb-4 pb-4"
           :project="project"
           :binding="binding"
-          :allow-remove="filteredBindings.length > 1"
+          :allow-remove="state.bindings.length > 1"
           @remove="handleRemove(index)"
         />
       </div>
@@ -56,6 +56,7 @@ import {
 import type { ComposedProject } from "@/types";
 import { PresetRoleType } from "@/types";
 import { Binding } from "@/types/proto/v1/iam_policy";
+import { displayRoleTitle } from "@/utils";
 import AddProjectMemberForm from "./AddProjectMemberForm.vue";
 
 const props = defineProps<{
@@ -68,7 +69,7 @@ const emit = defineEmits<{
 }>();
 
 interface LocalState {
-  bindings: (Binding | undefined)[];
+  bindings: Binding[];
 }
 
 const { t } = useI18n();
@@ -80,7 +81,9 @@ const projectResourceName = computed(() => props.project.name);
 const { policy: iamPolicy } = useProjectIamPolicy(projectResourceName);
 
 const filteredBindings = computed(() => {
-  return state.bindings.filter((binding) => binding !== undefined) as Binding[];
+  return state.bindings.filter(
+    (binding) => binding !== undefined && binding.condition !== undefined
+  );
 });
 
 const allowConfirm = computed(() => {
@@ -117,7 +120,46 @@ const handleAddMore = () => {
 };
 
 const handleRemove = (index: number) => {
-  state.bindings[index] = undefined;
+  state.bindings.splice(index, 1);
+};
+
+const getBindingKey = (binding: Binding): string => {
+  return binding.condition?.title ?? displayRoleTitle(binding.role);
+};
+
+const mergePolicyBinding = () => {
+  const bindingMap = new Map<string, Binding>();
+  for (const binding of filteredBindings.value) {
+    const key = getBindingKey(binding);
+    if (!bindingMap.has(key)) {
+      bindingMap.set(key, binding);
+    } else {
+      bindingMap.get(key)?.members?.push(...binding.members);
+    }
+  }
+
+  const policy = cloneDeep(iamPolicy.value);
+  for (const binding of policy.bindings) {
+    const key = getBindingKey(binding);
+    if (bindingMap.has(key)) {
+      binding.members = [
+        ...new Set([
+          ...binding.members,
+          ...(bindingMap.get(key)?.members ?? []),
+        ]),
+      ];
+      bindingMap.delete(key);
+    }
+  }
+
+  for (const binding of bindingMap.values()) {
+    policy.bindings.push({
+      ...binding,
+      members: [...new Set(binding.members)],
+    });
+  }
+
+  return policy;
 };
 
 const addMembers = async () => {
@@ -125,8 +167,7 @@ const addMembers = async () => {
     return;
   }
 
-  const policy = cloneDeep(iamPolicy.value);
-  policy.bindings.push(...filteredBindings.value);
+  const policy = mergePolicyBinding();
   await useProjectIamPolicyStore().updateProjectIamPolicy(
     projectResourceName.value,
     policy

@@ -189,41 +189,36 @@ const generateConditionTitle = () => {
     return "";
   }
 
-  let conditionSuffix = "";
+  const title = [displayRoleTitle(state.role)];
   if (
     state.role === PresetRoleType.PROJECT_QUERIER ||
     state.role === PresetRoleType.PROJECT_EXPORTER
   ) {
+    let conditionSuffix = "";
     if (!state.databaseResources || state.databaseResources.length === 0) {
-      conditionSuffix = `${conditionSuffix} All`;
+      conditionSuffix = `All databases`;
     } else if (state.databaseResources.length <= 3) {
       const databaseResourceNames = state.databaseResources.map((ds) =>
         getDatabaseResourceName(ds)
       );
-      conditionSuffix = `${conditionSuffix} ${databaseResourceNames.join(
-        ", "
-      )}`;
+      conditionSuffix = `${databaseResourceNames.join(", ")}`;
     } else {
       const firstDatabaseResourceName = getDatabaseResourceName(
         head(state.databaseResources)!
       );
-      conditionSuffix = `${conditionSuffix} ${firstDatabaseResourceName} and ${
+      conditionSuffix = `${firstDatabaseResourceName} and ${
         state.databaseResources.length - 1
       } more`;
     }
+    title.push(conditionSuffix);
   }
   if (state.expireDays > 0) {
     const now = dayjs();
     const expiresAt = now.add(state.expireDays, "days");
-    conditionSuffix = `${conditionSuffix} ${now.format("L")}-${expiresAt.format(
-      "L"
-    )}`;
+    title.push(`${now.format("L")}-${expiresAt.format("L")}`);
   }
 
-  if (conditionSuffix !== "") {
-    return displayRoleTitle(state.role) + conditionSuffix;
-  }
-  return "";
+  return title.join(" ");
 };
 
 const getDatabaseResourceName = (databaseResource: DatabaseResource) => {
