@@ -1234,23 +1234,6 @@ func (*SQLService) ParseMyBatisMapper(_ context.Context, request *v1pb.ParseMyBa
 	}, nil
 }
 
-// DifferPreview returns the diff preview of the given SQL statement and metadata.
-func (*SQLService) DifferPreview(ctx context.Context, request *v1pb.DifferPreviewRequest) (*v1pb.DifferPreviewResponse, error) {
-	storeSchemaMetadata, _, err := convertV1DatabaseMetadata(ctx, request.NewMetadata, nil /* optionalStores */)
-	if err != nil {
-		return nil, err
-	}
-	defaultSchema := extractDefaultSchemaForOracleBranch(storepb.Engine(request.Engine), storeSchemaMetadata)
-	schema, err := schema.GetDesignSchema(storepb.Engine(request.Engine), defaultSchema, request.OldSchema, storeSchemaMetadata)
-	if err != nil {
-		return nil, err
-	}
-
-	return &v1pb.DifferPreviewResponse{
-		Schema: schema,
-	}, nil
-}
-
 // StringifyMetadata returns the stringified schema of the given metadata.
 func (*SQLService) StringifyMetadata(ctx context.Context, request *v1pb.StringifyMetadataRequest) (*v1pb.StringifyMetadataResponse, error) {
 	switch request.Engine {

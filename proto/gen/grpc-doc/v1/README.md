@@ -4132,7 +4132,6 @@ The branch&#39;s `name` field is used to identify the branch to update. Format: 
 | MergeBranch | [MergeBranchRequest](#bytebase-v1-MergeBranchRequest) | [Branch](#bytebase-v1-Branch) |  |
 | RebaseBranch | [RebaseBranchRequest](#bytebase-v1-RebaseBranchRequest) | [RebaseBranchResponse](#bytebase-v1-RebaseBranchResponse) |  |
 | DeleteBranch | [DeleteBranchRequest](#bytebase-v1-DeleteBranchRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
-| DiffDatabase | [DiffDatabaseRequest](#bytebase-v1-DiffDatabaseRequest) | [DiffDatabaseResponse](#bytebase-v1-DiffDatabaseResponse) | DiffDatabase works similar to branch rebase. 1) set the base as the schema of a database; 2) apply the changes between base and head of branch to the new base (schema of database); 3) return the diff DDLs similar to DiffSchema in database service. 4) return the conflict schema if conflict needs to be resolved by user. Once resolved, user will call DiffSchema() in database service to get diff DDLs. |
 | DiffMetadata | [DiffMetadataRequest](#bytebase-v1-DiffMetadataRequest) | [DiffMetadataResponse](#bytebase-v1-DiffMetadataResponse) |  |
 
  
@@ -10542,7 +10541,6 @@ Type of the SheetPayload.
 | AdminExecute | [AdminExecuteRequest](#bytebase-v1-AdminExecuteRequest) stream | [AdminExecuteResponse](#bytebase-v1-AdminExecuteResponse) stream |  |
 | SearchQueryHistories | [SearchQueryHistoriesRequest](#bytebase-v1-SearchQueryHistoriesRequest) | [SearchQueryHistoriesResponse](#bytebase-v1-SearchQueryHistoriesResponse) | SearchQueryHistories searches query histories for the caller. |
 | Export | [ExportRequest](#bytebase-v1-ExportRequest) | [ExportResponse](#bytebase-v1-ExportResponse) |  |
-| DifferPreview | [DifferPreviewRequest](#bytebase-v1-DifferPreviewRequest) | [DifferPreviewResponse](#bytebase-v1-DifferPreviewResponse) |  |
 | Check | [CheckRequest](#bytebase-v1-CheckRequest) | [CheckResponse](#bytebase-v1-CheckResponse) |  |
 | ParseMyBatisMapper | [ParseMyBatisMapperRequest](#bytebase-v1-ParseMyBatisMapperRequest) | [ParseMyBatisMapperResponse](#bytebase-v1-ParseMyBatisMapperResponse) |  |
 | Pretty | [PrettyRequest](#bytebase-v1-PrettyRequest) | [PrettyResponse](#bytebase-v1-PrettyResponse) |  |
