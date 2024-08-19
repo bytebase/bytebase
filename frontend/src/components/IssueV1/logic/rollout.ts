@@ -3,6 +3,7 @@ import { t } from "@/plugins/i18n";
 import { useCurrentUserV1 } from "@/store";
 import type { ComposedIssue } from "@/types";
 import { IssueStatus, Issue_Type } from "@/types/proto/v1/issue_service";
+import type { PlanCheckRun } from "@/types/proto/v1/plan_service";
 import type { Task } from "@/types/proto/v1/rollout_service";
 import {
   Task_Status,
@@ -32,6 +33,7 @@ export const allowUserToEditStatementForTask = (
   task: Task
 ): string[] => {
   const user = useCurrentUserV1();
+  const { getPlanCheckRunsForTask } = useIssueContext();
   const denyReasons: string[] = [];
 
   if (isTaskV1TriggeredByVCS(issue, task)) {
@@ -63,7 +65,7 @@ export const allowUserToEditStatementForTask = (
   // - user is the creator
   // - OR user has plans.update permission in the project
 
-  denyReasons.push(...isTaskEditable(task));
+  denyReasons.push(...isTaskEditable(task, getPlanCheckRunsForTask(task)));
 
   if (extractUserResourceName(issue.creator) !== user.value.email) {
     if (!hasProjectPermissionV2(issue.projectEntity, "bb.plans.update")) {
@@ -75,8 +77,10 @@ export const allowUserToEditStatementForTask = (
   return denyReasons;
 };
 
-export const isTaskEditable = (task: Task): string[] => {
-  const { getPlanCheckRunsForTask } = useIssueContext();
+export const isTaskEditable = (
+  task: Task,
+  planCheckRuns: PlanCheckRun[]
+): string[] => {
   if (
     task.status === Task_Status.NOT_STARTED ||
     task.status === Task_Status.FAILED ||
@@ -91,9 +95,7 @@ export const isTaskEditable = (task: Task): string[] => {
     // the scheduler.
     // Editing a queued task's SQL statement is dangerous with kinds of race
     // condition risks.
-    const summary = planCheckRunSummaryForCheckRunList(
-      getPlanCheckRunsForTask(task)
-    );
+    const summary = planCheckRunSummaryForCheckRunList(planCheckRuns);
     if (summary.errorCount > 0) {
       return [];
     }
