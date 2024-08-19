@@ -1,14 +1,12 @@
 <template>
-  <main class="px-2 py-2 w-full h-full flex flex-col overflow-y-hidden">
+  <main class="w-full h-full flex flex-col overflow-y-hidden">
     <template v-if="currentTab">
       <TabsContainer
+        class="px-2 pt-2"
         @update:table-search-pattern="handleTableSearchPattern"
         @update:column-search-pattern="handleColumnSearchPattern"
       />
-      <div
-        class="w-full flex-1 relative overflow-hidden"
-        :data-key="currentTab.id"
-      >
+      <div class="w-full flex-1 relative overflow-y-hidden" :data-key="currentTab.id">
         <DatabaseEditor
           v-if="currentTab.type === 'database'"
           :key="currentTab.id"
@@ -16,6 +14,7 @@
           :db="currentTab.database"
           :database="currentTab.metadata.database"
           :search-pattern="state.tableSearchPattern"
+          class="px-2 pb-2"
         />
         <TableEditor
           v-if="currentTab.type === 'table'"
@@ -33,6 +32,7 @@
           :database="currentTab.metadata.database"
           :schema="currentTab.metadata.schema"
           :procedure="currentTab.metadata.procedure"
+          class="px-2 pb-2"
         />
         <FunctionEditor
           v-if="currentTab.type === 'function'"
@@ -41,6 +41,7 @@
           :database="currentTab.metadata.database"
           :schema="currentTab.metadata.schema"
           :func="currentTab.metadata.function"
+          class="px-2 pb-2"
         />
         <ViewEditor
           v-if="currentTab.type === 'view'"
@@ -49,6 +50,7 @@
           :database="currentTab.metadata.database"
           :schema="currentTab.metadata.schema"
           :view="currentTab.metadata.view"
+          class="px-2 pb-2"
         />
       </div>
     </template>
