@@ -4,7 +4,7 @@
     :options="{ placeholder, disabled, compare }"
   >
     <KBarPortal>
-      <KBarPositioner class="bb-kbar-mask">
+      <KBarPositioner class="bb-kbar-mask z-[999999]">
         <KBarAnimator class="bb-kbar-container">
           <KBarSearch class="bb-kbar-searchbox" />
           <RenderResults />
