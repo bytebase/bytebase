@@ -71,6 +71,7 @@ const columnList = computed((): DataTableColumn<ComposedIssue>[] => {
   const columns: (DataTableColumn<ComposedIssue> & { hide?: boolean })[] = [
     {
       type: "selection",
+      width: 40,
       cellProps: (issue, rowIndex) => {
         return {
           onClick: (e: MouseEvent) => {
@@ -84,6 +85,7 @@ const columnList = computed((): DataTableColumn<ComposedIssue>[] => {
       type: "expand",
       width: 0,
       expandable: (issue) => isIssueExpanded(issue),
+      hide: !props.highlightText,
       renderExpand: (issue) =>
         h("div", {
           class:

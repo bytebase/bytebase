@@ -67,7 +67,7 @@
       </NButton>
       <NTooltip>
         <template #trigger>
-          <NButton size="small">
+          <NButton size="small" @click="goToMyIssues">
             <router-link :to="myIssueLink" exact-active-class="">
               <CircleDotIcon class="w-4 h-auto" />
             </router-link>
@@ -113,6 +113,7 @@
 <script lang="ts" setup>
 import { defineAction, useRegisterActions } from "@bytebase/vue-kbar";
 import { useKBarHandler } from "@bytebase/vue-kbar";
+import { useLocalStorage } from "@vueuse/core";
 import {
   SettingsIcon,
   CircleDotIcon,
@@ -122,6 +123,7 @@ import {
 } from "lucide-vue-next";
 import { NButton, NTooltip } from "naive-ui";
 import { storeToRefs } from "pinia";
+import { v4 as uuidv4 } from "uuid";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
@@ -138,6 +140,7 @@ import {
 import { useSubscriptionV1Store } from "@/store";
 import { PlanType } from "@/types/proto/v1/subscription_service";
 import { extractProjectResourceName, hasWorkspacePermissionV2 } from "@/utils";
+import { getComponentIdLocalStorageKey } from "@/utils/localStorage";
 import BytebaseLogo from "../components/BytebaseLogo.vue";
 import ProfileBrandingLogo from "../components/ProfileBrandingLogo.vue";
 import ProfileDropdown from "../components/ProfileDropdown.vue";
@@ -201,6 +204,14 @@ const myIssueLink = computed(() => {
     name: WORKSPACE_ROUTE_MY_ISSUES,
   });
 });
+
+const goToMyIssues = () => {
+  // Trigger page reload manually.
+  useLocalStorage<string>(
+    getComponentIdLocalStorageKey(WORKSPACE_ROUTE_MY_ISSUES),
+    ""
+  ).value = uuidv4();
+};
 
 const kbarActions = computed(() => {
   if (!hasGetSettingPermission.value) {

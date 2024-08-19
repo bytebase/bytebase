@@ -25,8 +25,6 @@
 
     <div class="relative w-full mt-4 min-h-[20rem]">
       <PagedPlanTable
-        v-model:loading="state.loading"
-        v-model:loading-more="state.loadingMore"
         :session-key="'review-center'"
         :plan-find="mergedPlanFind"
         :page-size="50"
@@ -84,8 +82,6 @@ const props = defineProps<{
 
 interface LocalState {
   params: SearchParams;
-  loading: boolean;
-  loadingMore: boolean;
   selectedPlanOnlyType?:
     | "bb.issue.database.schema.update"
     | "bb.issue.database.data.update";
@@ -119,8 +115,6 @@ const currentUser = useCurrentUserV1();
 const projectV1Store = useProjectV1Store();
 const state = reactive<LocalState>({
   params: defaultSearchParams(),
-  loading: false,
-  loadingMore: false,
 });
 
 const planCreationButtonOptions = computed((): DropdownOption[] => {
