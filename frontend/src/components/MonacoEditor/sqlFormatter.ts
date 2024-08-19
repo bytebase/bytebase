@@ -28,6 +28,7 @@ const formatSQL = async (
   };
 
   try {
+    console.debug("[formatSQL]", JSON.stringify(options));
     const formatted = format(sql, options);
     return { data: formatted, error: null };
   } catch (error) {
