@@ -30,8 +30,6 @@
 
     <div class="relative w-full mt-4 min-h-[20rem]">
       <PagedIssueTableV1
-        v-model:loading="state.loading"
-        v-model:loading-more="state.loadingMore"
         :session-key="'export-center'"
         :issue-filter="mergedIssueFilter"
         :page-size="50"
@@ -88,8 +86,6 @@ const props = defineProps<{
 interface LocalState {
   showRequestExportPanel: boolean;
   params: SearchParams;
-  loading: boolean;
-  loadingMore: boolean;
 }
 
 const specificProject = computed(() => {
@@ -120,8 +116,6 @@ const projectV1Store = useProjectV1Store();
 const state = reactive<LocalState>({
   showRequestExportPanel: false,
   params: defaultSearchParams(),
-  loading: false,
-  loadingMore: false,
 });
 
 const dataExportIssueSearchParams = computed(() => {
