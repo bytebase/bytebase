@@ -19,7 +19,7 @@
 import { intersection } from "lodash-es";
 import type { SelectGroupOption, SelectOption, SelectProps } from "naive-ui";
 import { NSelect } from "naive-ui";
-import { computed, watch, watchEffect, ref } from "vue";
+import { computed, watch, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import UserIcon from "~icons/heroicons-outline/user";
 import UserAvatar from "@/components/User/UserAvatar.vue";
