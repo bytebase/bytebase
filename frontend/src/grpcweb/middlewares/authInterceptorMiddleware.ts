@@ -41,7 +41,9 @@ export const authInterceptorMiddleware: ClientMiddleware<IgnoreErrorsOptions> =
             try {
               await useAuthStore().logout();
             } finally {
-              router.push({ name: AUTH_SIGNIN_MODULE });
+              router.push({ name: AUTH_SIGNIN_MODULE }).then(() => {
+                window.location.reload();
+              });
             }
           } else if (code === Status.PERMISSION_DENIED) {
             // Jump to 403 page
