@@ -16,7 +16,6 @@
         max: MAX_EDITOR_HEIGHT,
       }"
       @update:content="handleChange"
-      @select-content="handleChangeSelection"
       @ready="handleEditorReady"
     />
   </div>
@@ -110,18 +109,8 @@ const handleChange = (value: string) => {
   if (isSwitchingTab.value) {
     return;
   }
-  tabStore.updateCurrentTab({
-    statement: value,
-    status: "DIRTY",
-  });
 
   emit("update:sql", value);
-};
-
-const handleChangeSelection = (value: string) => {
-  tabStore.updateCurrentTab({
-    selectedStatement: value,
-  });
 };
 
 const execute = (explain = false) => {
