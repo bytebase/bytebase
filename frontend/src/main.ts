@@ -1,3 +1,4 @@
+import { VueQueryPlugin } from "@tanstack/vue-query";
 import axios from "axios";
 import isEmpty from "lodash-es/isEmpty";
 import Long from "long";
@@ -133,6 +134,7 @@ app.config.globalProperties.sizeToFit = sizeToFit;
 app.config.globalProperties.urlfy = urlfy;
 app.config.globalProperties.isEmpty = isEmpty;
 
+app.use(VueQueryPlugin);
 app.use(pinia);
 
 const overrideLang = () => {

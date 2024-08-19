@@ -76,6 +76,7 @@
         :branch="branchData?.branch ?? EMPTY_BRANCH"
         :readonly="true"
         :diff-when-ready="!!branchData?.parent"
+        :show-table-preview="true"
       />
       <!-- turn on diff-when-ready is useful when the branch is created from a parent branch -->
     </div>

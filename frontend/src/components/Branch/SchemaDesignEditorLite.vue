@@ -47,6 +47,7 @@
           :diff-when-ready="true"
           :show-last-updater="true"
           :disable-diff-coloring="disableDiffColoring"
+          :show-table-preview="showTablePreview"
           @update-is-editing="$emit('update-is-editing', $event)"
         />
       </div>
@@ -95,6 +96,7 @@ const props = defineProps<{
   readonly?: boolean;
   hideSQLCheckButton?: boolean;
   disableDiffColoring?: boolean;
+  showTablePreview?: boolean;
 }>();
 
 const { t } = useI18n();

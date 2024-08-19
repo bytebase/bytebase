@@ -2575,7 +2575,8 @@
     },
     "views": "视图",
     "procedures": "存储过程",
-    "functions": "函数"
+    "functions": "函数",
+    "preview-schema-text": "预览文本 schema"
   },
   "label": {
     "empty-label-value": "空",
