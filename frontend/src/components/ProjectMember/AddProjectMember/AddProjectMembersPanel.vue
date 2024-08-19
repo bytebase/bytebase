@@ -80,12 +80,6 @@ const formRefs = ref<InstanceType<typeof AddProjectMemberForm>[]>([]);
 const projectResourceName = computed(() => props.project.name);
 const { policy: iamPolicy } = useProjectIamPolicy(projectResourceName);
 
-const filteredBindings = computed(() => {
-  return state.bindings.filter(
-    (binding) => binding !== undefined && binding.condition !== undefined
-  );
-});
-
 const allowConfirm = computed(() => {
   // Check if all forms are completed.
   for (const form of formRefs.value) {
@@ -97,7 +91,7 @@ const allowConfirm = computed(() => {
     }
   }
 
-  for (const binding of filteredBindings.value) {
+  for (const binding of state.bindings) {
     if (binding.members.length === 0 || binding.role === "") {
       return false;
     }
@@ -129,7 +123,7 @@ const getBindingKey = (binding: Binding): string => {
 
 const mergePolicyBinding = () => {
   const bindingMap = new Map<string, Binding>();
-  for (const binding of filteredBindings.value) {
+  for (const binding of state.bindings) {
     const key = getBindingKey(binding);
     if (!bindingMap.has(key)) {
       bindingMap.set(key, binding);
