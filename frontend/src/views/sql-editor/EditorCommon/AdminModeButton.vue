@@ -59,7 +59,6 @@ const enterAdminMode = async () => {
 
   tabStore.updateCurrentTab({
     mode: "ADMIN",
-    statement: "",
   });
 
   emit("enter");
