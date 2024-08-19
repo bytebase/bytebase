@@ -12133,18 +12133,6 @@ The API will default to the BASIC view.</p></td>
               </tr>
             
               <tr>
-                <td>DiffDatabase</td>
-                <td><a href="#bytebase.v1.DiffDatabaseRequest">DiffDatabaseRequest</a></td>
-                <td><a href="#bytebase.v1.DiffDatabaseResponse">DiffDatabaseResponse</a></td>
-                <td><p>DiffDatabase works similar to branch rebase.
-1) set the base as the schema of a database;
-2) apply the changes between base and head of branch to the new base (schema of database);
-3) return the diff DDLs similar to DiffSchema in database service.
-4) return the conflict schema if conflict needs to be resolved by user. Once resolved, user
-will call DiffSchema() in database service to get diff DDLs.</p></td>
-              </tr>
-            
-              <tr>
                 <td>DiffMetadata</td>
                 <td><a href="#bytebase.v1.DiffMetadataRequest">DiffMetadataRequest</a></td>
                 <td><a href="#bytebase.v1.DiffMetadataResponse">DiffMetadataResponse</a></td>
@@ -12235,16 +12223,6 @@ will call DiffSchema() in database service to get diff DDLs.</p></td>
                 <td>DeleteBranch</td>
                 <td>DELETE</td>
                 <td>/v1/{name=projects/*/branches/*}</td>
-                <td></td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>DiffDatabase</td>
-                <td>POST</td>
-                <td>/v1/{name=projects/*/branches/*}:diffDatabase</td>
                 <td></td>
               </tr>
               
@@ -28657,13 +28635,6 @@ to retrieve the next page of history. </p></td>
               </tr>
             
               <tr>
-                <td>DifferPreview</td>
-                <td><a href="#bytebase.v1.DifferPreviewRequest">DifferPreviewRequest</a></td>
-                <td><a href="#bytebase.v1.DifferPreviewResponse">DifferPreviewResponse</a></td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
                 <td>Check</td>
                 <td><a href="#bytebase.v1.CheckRequest">CheckRequest</a></td>
                 <td><a href="#bytebase.v1.CheckResponse">CheckResponse</a></td>
@@ -28783,16 +28754,6 @@ to retrieve the next page of history. </p></td>
                 <td>Export</td>
                 <td>POST</td>
                 <td>/v1/{name=projects/*/issues/*}:export</td>
-                <td>*</td>
-              </tr>
-              
-            
-              
-              
-              <tr>
-                <td>DifferPreview</td>
-                <td>POST</td>
-                <td>/v1/sql/differPreview</td>
                 <td>*</td>
               </tr>
               

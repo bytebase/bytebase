@@ -3591,49 +3591,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
-    /v1/projects/{project}/branches/{branche}:diffDatabase:
-        post:
-            tags:
-                - BranchService
-            description: |-
-                DiffDatabase works similar to branch rebase.
-                 1) set the base as the schema of a database;
-                 2) apply the changes between base and head of branch to the new base (schema of database);
-                 3) return the diff DDLs similar to DiffSchema in database service.
-                 4) return the conflict schema if conflict needs to be resolved by user. Once resolved, user
-                 will call DiffSchema() in database service to get diff DDLs.
-            operationId: BranchService_DiffDatabase
-            parameters:
-                - name: project
-                  in: path
-                  description: The project id.
-                  required: true
-                  schema:
-                    type: string
-                - name: branche
-                  in: path
-                  description: The branche id.
-                  required: true
-                  schema:
-                    type: string
-                - name: database
-                  in: query
-                  description: The name of the databsae to merge the branch to.
-                  schema:
-                    type: string
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/DiffDatabaseResponse'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
     /v1/projects/{project}/branches/{branche}:merge:
         post:
             tags:
@@ -6922,30 +6879,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
-    /v1/sql/differPreview:
-        post:
-            tags:
-                - SQLService
-            operationId: SQLService_DifferPreview
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/DifferPreviewRequest'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/DifferPreviewResponse'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
     /v1/sql/parseMyBatisMapper:
         post:
             tags:
@@ -9317,23 +9250,6 @@ components:
             properties:
                 labelSelector:
                     $ref: '#/components/schemas/LabelSelector'
-        DiffDatabaseResponse:
-            type: object
-            properties:
-                diff:
-                    type: string
-                    description: The schema diff when merge occurs seamlessly.
-                schema:
-                    type: string
-                    description: The merged schema if there is no conflict.
-                conflictSchema:
-                    type: string
-                    description: |-
-                        The conflict schema when rebase has conflicts.
-                         The conflict section is enclosed by the following.
-                         <<<<< HEAD
-                         ====
-                         >>>>> main
         DiffMetadataRequest:
             required:
                 - sourceMetadata
@@ -9414,47 +9330,6 @@ components:
             type: object
             properties:
                 diff:
-                    type: string
-        DifferPreviewRequest:
-            type: object
-            properties:
-                engine:
-                    enum:
-                        - ENGINE_UNSPECIFIED
-                        - CLICKHOUSE
-                        - MYSQL
-                        - POSTGRES
-                        - SNOWFLAKE
-                        - SQLITE
-                        - TIDB
-                        - MONGODB
-                        - REDIS
-                        - ORACLE
-                        - SPANNER
-                        - MSSQL
-                        - REDSHIFT
-                        - MARIADB
-                        - OCEANBASE
-                        - DM
-                        - RISINGWAVE
-                        - OCEANBASE_ORACLE
-                        - STARROCKS
-                        - DORIS
-                        - HIVE
-                        - ELASTICSEARCH
-                        - BIGQUERY
-                        - DYNAMODB
-                        - DATABRICKS
-                    type: string
-                    format: enum
-                oldSchema:
-                    type: string
-                newMetadata:
-                    $ref: '#/components/schemas/DatabaseMetadata'
-        DifferPreviewResponse:
-            type: object
-            properties:
-                schema:
                     type: string
         DisableCopyDataPolicy:
             type: object
