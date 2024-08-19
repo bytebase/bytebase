@@ -77,6 +77,7 @@
         :branch="virtualBranch"
         :loading="isLoadingVirtualBranch"
         :show-last-updater="true"
+        :show-table-preview="true"
       />
 
       <!-- used as a placeholder -->

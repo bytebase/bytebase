@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col w-full h-full overflow-y-hidden">
+  <div class="flex flex-col w-full h-full overflow-y-hidden" v-bind="$attrs">
     <div class="py-2 w-full flex flex-row justify-between items-center">
       <div>
         <div
@@ -171,6 +171,10 @@ import TableNameModal from "../Modals/TableNameModal.vue";
 import { useSchemaEditorContext } from "../context";
 import TableList from "./TableList";
 import TableSelectionSummary from "./TableSelectionSummary.vue";
+
+defineOptions({
+  inheritAttrs: false,
+});
 
 const props = withDefaults(
   defineProps<{

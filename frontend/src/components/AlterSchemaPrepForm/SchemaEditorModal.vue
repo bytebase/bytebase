@@ -39,6 +39,7 @@
           :loading="state.isPreparingMetadata"
           :diff-when-ready="false"
           :show-last-updater="false"
+          :show-table-preview="true"
         />
       </NTabPane>
       <NTabPane
