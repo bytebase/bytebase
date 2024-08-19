@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col">
+  <div :key="viewId" class="flex flex-col">
     <IssueSearch
       v-model:params="state.params"
       :components="
@@ -9,7 +9,7 @@
       class="px-4 pb-2"
     >
       <template v-if="!state.advanced" #default>
-        <div class="h-[34px] flex items-center gap-x-2">
+        <div class="flex items-center gap-x-2">
           <div class="flex-1 overflow-auto">
             <TabFilter
               :value="tab"
@@ -54,8 +54,6 @@
     <div class="relative min-h-[20rem]">
       <PagedIssueTableV1
         :key="keyForTab(tab)"
-        v-model:loading="state.loading"
-        v-model:loading-more="state.loadingMore"
         :session-key="keyForTab(tab)"
         :issue-filter="mergedIssueFilter"
         :ui-issue-filter="mergedUIIssueFilter"
@@ -133,7 +131,7 @@
 </template>
 
 <script lang="ts" setup>
-import { type UseStorageOptions } from "@vueuse/core";
+import { useLocalStorage, type UseStorageOptions } from "@vueuse/core";
 import { cloneDeep } from "lodash-es";
 import { ChevronDownIcon, SearchIcon } from "lucide-vue-next";
 import { NButton, NTooltip } from "naive-ui";
@@ -146,6 +144,7 @@ import IssueTableV1 from "@/components/IssueV1/components/IssueTableV1.vue";
 import PagedIssueTableV1 from "@/components/IssueV1/components/PagedIssueTableV1.vue";
 import type { TabFilterItem } from "@/components/v2";
 import { TabFilter } from "@/components/v2";
+import { WORKSPACE_ROUTE_MY_ISSUES } from "@/router/dashboard/workspaceRoutes";
 import { SETTING_ROUTE_WORKSPACE_SUBSCRIPTION } from "@/router/dashboard/workspaceSetting";
 import {
   useSubscriptionV1Store,
@@ -164,6 +163,7 @@ import {
   upsertScope,
   useDynamicLocalStorage,
 } from "@/utils";
+import { getComponentIdLocalStorageKey } from "@/utils/localStorage";
 
 const TABS = [
   "CREATED",
@@ -177,8 +177,6 @@ const TABS = [
 type TabValue = (typeof TABS)[number];
 
 interface LocalState {
-  loading: boolean;
-  loadingMore: boolean;
   params: SearchParams;
   advanced: boolean;
   showTrialStartModal: boolean;
@@ -190,6 +188,11 @@ const onboardingStateStore = useOnboardingStateStore();
 const me = useCurrentUserV1();
 const route = useRoute();
 const router = useRouter();
+
+const viewId = useLocalStorage<string>(
+  getComponentIdLocalStorageKey(WORKSPACE_ROUTE_MY_ISSUES),
+  ""
+);
 
 const storedStatus = useDynamicLocalStorage<SemanticIssueStatus>(
   computed(() => `bb.home.issue-list-status.${me.value.name}`),
@@ -373,8 +376,6 @@ const initializeSearchParamsFromQueryOrLocalStorage = () => {
 };
 
 const state = reactive<LocalState>({
-  loading: false,
-  loadingMore: false,
   ...initializeSearchParamsFromQueryOrLocalStorage(),
   showTrialStartModal: false,
 });
@@ -406,7 +407,7 @@ const planImage = computed(() => {
 });
 
 const statusTabHidden = computed(() => {
-  if (state.advanced) return false;
+  if (state.advanced) return true;
   return ["APPROVAL_REQUESTED", "WAITING_ROLLOUT"].includes(tab.value);
 });
 
