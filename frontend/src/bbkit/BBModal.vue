@@ -42,6 +42,7 @@ import { XIcon } from "lucide-vue-next";
 import { NButton, NModal } from "naive-ui";
 import type { PropType, RenderFunction } from "vue";
 import { defineComponent, h } from "vue";
+import { toRef } from "vue";
 import { useOverlayStack } from "@/components/misc/OverlayStackManager.vue";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import type { VueClass } from "@/utils";
@@ -99,7 +100,7 @@ export default defineComponent({
   },
   emits: ["close", "update:show"],
   setup(props, { emit }) {
-    const { id, upmost, events } = useOverlayStack();
+    const { id, upmost, events } = useOverlayStack(toRef(props, "show"));
 
     useEmitteryEventListener(events, "esc", (e) => {
       if (upmost.value && props.closeOnEsc) {
