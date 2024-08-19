@@ -275,7 +275,14 @@ const props = defineProps<{
 const { t } = useI18n();
 const route = useRoute();
 const context = useIssueContext();
-const { events, isCreating, issue, selectedTask, formatOnSave } = context;
+const {
+  events,
+  isCreating,
+  issue,
+  selectedTask,
+  formatOnSave,
+  getPlanCheckRunsForTask,
+} = context;
 const project = computed(() => issue.value.projectEntity);
 const dialog = useDialog();
 const editorContainerElRef = ref<HTMLElement>();
@@ -427,14 +434,14 @@ const chooseUpdateStatementTarget = () => {
       (task) => {
         return (
           TaskTypeListWithStatement.includes(task.type) &&
-          isTaskEditable(task).length === 0
+          isTaskEditable(task, getPlanCheckRunsForTask(task)).length === 0
         );
       }
     ),
     ALL: flattenTaskV1List(issue.value.rolloutEntity).filter((task) => {
       return (
         TaskTypeListWithStatement.includes(task.type) &&
-        isTaskEditable(task).length === 0
+        isTaskEditable(task, getPlanCheckRunsForTask(task)).length === 0
       );
     }),
   };
@@ -601,6 +608,7 @@ const handleUpdateStatement = async (statement: string, filename: string) => {
 };
 
 const updateStatement = async (statement: string) => {
+  console.log(0);
   const planPatch = cloneDeep(issue.value.planEntity);
   if (!planPatch) {
     notifyNotEditableLegacyIssue();
@@ -651,6 +659,8 @@ const updateStatement = async (statement: string) => {
     sheet
   );
 
+  console.log(1);
+
   for (let i = 0; i < specsToPatch.length; i++) {
     const spec = specsToPatch[i];
     let config = undefined;
@@ -662,6 +672,7 @@ const updateStatement = async (statement: string) => {
     if (!config) continue;
     config.sheet = createdSheet.name;
   }
+  console.log(2);
 
   const updatedPlan = await planServiceClient.updatePlan({
     plan: planPatch,
