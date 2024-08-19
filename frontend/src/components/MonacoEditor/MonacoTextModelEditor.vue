@@ -79,7 +79,7 @@ import type {
 const props = withDefaults(
   defineProps<{
     model?: ITextModel;
-    sqlDialect?: SQLDialect;
+    dialect?: SQLDialect;
     readonly?: boolean;
     autoFocus?: boolean;
     autoHeight?: AutoHeightOptions;
@@ -91,7 +91,7 @@ const props = withDefaults(
   }>(),
   {
     model: undefined,
-    sqlDialect: undefined,
+    dialect: undefined,
     readonly: false,
     autoFocus: true,
     autoHeight: undefined,
@@ -162,7 +162,7 @@ onMounted(async () => {
     useOptions(monaco, editor, toRef(props, "options"));
     useModel(monaco, editor, toRef(props, "model"));
     useSuggestOptionByLanguage(monaco, editor);
-    useFormatContent(monaco, editor, toRef(props, "sqlDialect"));
+    useFormatContent(monaco, editor, toRef(props, "dialect"));
     const content = useContent(monaco, editor);
     const selectedContent = useSelectedContent(monaco, editor);
     useAdvices(monaco, editor, toRef(props, "advices"));
