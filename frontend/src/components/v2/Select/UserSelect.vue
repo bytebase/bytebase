@@ -5,18 +5,12 @@
     :multiple="multiple"
     :value="value"
     :options="options"
-    :show="showStatus"
     :fallback-option="fallbackOption"
     :filter="filterByTitle"
     :render-label="renderLabel"
     :placeholder="$t('principal.select')"
     :size="size"
     class="bb-user-select"
-    @update:show="
-      (show: boolean) => {
-        showStatus = show;
-      }
-    "
     @update:value="handleValueUpdated"
   />
 </template>
@@ -25,7 +19,7 @@
 import { intersection } from "lodash-es";
 import type { SelectGroupOption, SelectOption, SelectProps } from "naive-ui";
 import { NSelect } from "naive-ui";
-import { computed, watch, watchEffect, ref } from "vue";
+import { computed, watch, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import UserIcon from "~icons/heroicons-outline/user";
 import UserAvatar from "@/components/User/UserAvatar.vue";
@@ -105,7 +99,6 @@ const { t } = useI18n();
 const projectV1Store = useProjectV1Store();
 const userStore = useUserStore();
 const workspaceStore = useWorkspaceV1Store();
-const showStatus = ref(false);
 
 const value = computed(() => {
   if (props.multiple) {
@@ -221,7 +214,6 @@ const combinedUserList = computed(() => {
 });
 
 const handleValueUpdated = (value: string | string[]) => {
-  showStatus.value = false;
   if (props.multiple) {
     if (!value) {
       // normalize value

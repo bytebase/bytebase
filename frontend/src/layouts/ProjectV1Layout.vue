@@ -34,6 +34,7 @@
 
 <script lang="ts" setup>
 import { NSpin } from "naive-ui";
+import type { ClientError } from "nice-grpc-web";
 import { computed, watchEffect } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { BBAttention } from "@/bbkit";
@@ -45,11 +46,16 @@ import {
   PROJECT_V1_ROUTE_DATABASES,
   PROJECT_V1_ROUTE_DATABASE_GROUPS,
 } from "@/router/dashboard/projectV1";
-import { useAppFeature, useProjectByName } from "@/store";
+import { WORKSPACE_ROUTE_MY_ISSUES } from "@/router/dashboard/workspaceRoutes";
+import { useAppFeature, useProjectV1Store, pushNotification } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { useDatabaseV1List } from "@/store/modules/v1/databaseList";
-import type { QuickActionType } from "@/types";
-import { DEFAULT_PROJECT_NAME, QuickActionProjectPermissionMap } from "@/types";
+import {
+  type QuickActionType,
+  UNKNOWN_PROJECT_NAME,
+  DEFAULT_PROJECT_NAME,
+  QuickActionProjectPermissionMap,
+} from "@/types";
 import { State } from "@/types/proto/v1/common";
 import { hasProjectPermissionV2 } from "@/utils";
 
@@ -60,20 +66,41 @@ const props = defineProps<{
 const route = useRoute();
 const router = useRouter();
 const recentProjects = useRecentProjects();
+const projectStore = useProjectV1Store();
+
 const hideQuickAction = useAppFeature("bb.feature.console.hide-quick-action");
 const hideDefaultProject = useAppFeature("bb.feature.project.hide-default");
 const projectName = computed(() => `${projectNamePrefix}${props.projectId}`);
-const { project, ready: projectReady } = useProjectByName(projectName);
 // Prepare database list of the project.
 const { ready: databaseListReady } = useDatabaseV1List(projectName);
 
-const initialized = computed(
-  () => projectReady.value && databaseListReady.value
+watchEffect(async () => {
+  try {
+    const project = await projectStore.getOrFetchProjectByName(
+      projectName.value
+    );
+    recentProjects.setRecentProject(project.name);
+  } catch (err) {
+    console.error(err);
+    pushNotification({
+      module: "bytebase",
+      style: "CRITICAL",
+      title: `Failed to fetch project ${props.projectId}`,
+      description: (err as ClientError).details,
+    });
+    router.replace({
+      name: WORKSPACE_ROUTE_MY_ISSUES,
+    });
+  }
+});
+
+const project = computed(() =>
+  projectStore.getProjectByName(projectName.value)
 );
 
-watchEffect(() => {
-  recentProjects.setRecentProject(project.value.name);
-});
+const initialized = computed(
+  () => project.value.name !== UNKNOWN_PROJECT_NAME && databaseListReady.value
+);
 
 const isDefaultProject = computed((): boolean => {
   return project.value.name === DEFAULT_PROJECT_NAME;
