@@ -63,7 +63,7 @@ const createQueryState = (tab: SQLEditorTab): WebTerminalQueryState => {
 const createInitialQueryItemByTab = (
   tab: SQLEditorTab
 ): WebTerminalQueryItemV1 => {
-  return createQueryItemV1(tab.statement);
+  return createQueryItemV1("");
 };
 
 export const createQueryItemV1 = (
@@ -252,9 +252,6 @@ const useQueryStateLogic = (qs: WebTerminalQueryState) => {
     qs.timer.stop();
 
     pushQueryItem();
-    // Clear the tab's statement and keep it sync with the latest query
-    qs.tab.statement = "";
-    qs.tab.selectedStatement = "";
   };
 
   qs.controller.events.on("query", (input) => {

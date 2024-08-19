@@ -275,7 +275,6 @@ const handleRunQuery = () => {
 const exitAdminMode = () => {
   tabStore.updateCurrentTab({
     mode: DEFAULT_SQL_EDITOR_TAB_MODE,
-    statement: "",
   });
 };
 
