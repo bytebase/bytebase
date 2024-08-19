@@ -25,6 +25,7 @@ import { watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { EnvironmentV1Name, InstanceV1Name } from "@/components/v2";
 import type { ComposedDatabase } from "@/types";
+import { hostPortOfInstanceV1 } from "@/utils";
 import { DatabaseNameCell, ProjectNameCell, DatabaseLabelsCell } from "./cells";
 
 interface LocalState {
@@ -131,6 +132,12 @@ const columnList = computed((): DatabaseDataTableColumn[] => {
       <InstanceV1Name instance={data.instanceResource} link={false} tag="div" />
     ),
   };
+  const ADDRESS: DatabaseDataTableColumn = {
+    key: "address",
+    title: t("common.address"),
+    resizable: true,
+    render: (data) => hostPortOfInstanceV1(data.instanceResource),
+  };
   const DATABASE_LABELS: DatabaseDataTableColumn = {
     key: "labels",
     title: t("common.labels"),
@@ -143,13 +150,24 @@ const columnList = computed((): DatabaseDataTableColumn[] => {
   const columnsMap = new Map<Mode, DatabaseDataTableColumn[]>([
     [
       "ALL",
-      [NAME, ENVIRONMENT, SCHEMA_VERSION, PROJECT, INSTANCE, DATABASE_LABELS],
+      [
+        NAME,
+        ENVIRONMENT,
+        SCHEMA_VERSION,
+        PROJECT,
+        INSTANCE,
+        ADDRESS,
+        DATABASE_LABELS,
+      ],
     ],
     ["ALL_SHORT", [NAME, ENVIRONMENT, SCHEMA_VERSION, PROJECT, INSTANCE]],
     ["ALL_TINY", [NAME, ENVIRONMENT, PROJECT, INSTANCE]],
     ["INSTANCE", [NAME, ENVIRONMENT, SCHEMA_VERSION, PROJECT, DATABASE_LABELS]],
-    ["PROJECT", [NAME, ENVIRONMENT, SCHEMA_VERSION, INSTANCE, DATABASE_LABELS]],
-    ["PROJECT_SHORT", [NAME, ENVIRONMENT, SCHEMA_VERSION, INSTANCE]],
+    [
+      "PROJECT",
+      [NAME, ENVIRONMENT, SCHEMA_VERSION, INSTANCE, ADDRESS, DATABASE_LABELS],
+    ],
+    ["PROJECT_SHORT", [NAME, ENVIRONMENT, SCHEMA_VERSION, INSTANCE, ADDRESS]],
   ]);
 
   return [SELECTION, ...(columnsMap.get(props.mode) || [])].filter(
