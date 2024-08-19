@@ -57,21 +57,38 @@
       <NButton size="small">
         <router-link
           :to="sqlEditorLink"
+          class="flex flex-row justify-center items-center"
           exact-active-class=""
           target="_blank"
-          class="flex flex-row justify-center items-center"
         >
-          <heroicons-outline:terminal class="w-5 h-auto mr-1" />
+          <SquareTerminalIcon class="w-4 h-auto mr-1" />
           <span class="whitespace-nowrap">{{ $t("sql-editor.self") }}</span>
         </router-link>
       </NButton>
-      <router-link
-        v-if="hasGetSettingPermission"
-        :to="{ name: SETTING_ROUTE_WORKSPACE_GENERAL }"
-        exact-active-class=""
-      >
-        <SettingsIcon class="w-5 h-auto" />
-      </router-link>
+      <NTooltip>
+        <template #trigger>
+          <NButton size="small">
+            <router-link :to="myIssueLink" exact-active-class="">
+              <CircleDotIcon class="w-4 h-auto" />
+            </router-link>
+          </NButton>
+        </template>
+        {{ $t("issue.my-issues") }}
+      </NTooltip>
+      <NTooltip>
+        <template #trigger>
+          <NButton size="small">
+            <router-link
+              v-if="hasGetSettingPermission"
+              :to="{ name: SETTING_ROUTE_WORKSPACE_GENERAL }"
+              exact-active-class=""
+            >
+              <SettingsIcon class="w-4 h-auto" />
+            </router-link>
+          </NButton>
+        </template>
+        {{ $t("common.setting") }}
+      </NTooltip>
       <div class="ml-2">
         <ProfileBrandingLogo>
           <ProfileDropdown />
@@ -96,8 +113,14 @@
 <script lang="ts" setup>
 import { defineAction, useRegisterActions } from "@bytebase/vue-kbar";
 import { useKBarHandler } from "@bytebase/vue-kbar";
-import { SettingsIcon, ChevronDownIcon, SearchIcon } from "lucide-vue-next";
-import { NButton } from "naive-ui";
+import {
+  SettingsIcon,
+  CircleDotIcon,
+  ChevronDownIcon,
+  SearchIcon,
+  SquareTerminalIcon,
+} from "lucide-vue-next";
+import { NButton, NTooltip } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
@@ -106,6 +129,7 @@ import ProjectSwitchModal from "@/components/Project/ProjectSwitchModal.vue";
 import { useCurrentProject } from "@/components/Project/useCurrentProject";
 import WeChatQRModal from "@/components/WeChatQRModal.vue";
 import { ProjectNameCell } from "@/components/v2/Model/DatabaseV1Table/cells";
+import { PROJECT_V1_ROUTE_ISSUES } from "@/router/dashboard/projectV1";
 import { WORKSPACE_ROUTE_MY_ISSUES } from "@/router/dashboard/workspaceRoutes";
 import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/router/dashboard/workspaceSetting";
 import {
@@ -169,6 +193,20 @@ const sqlEditorLink = computed(() => {
   }
   return router.resolve({
     name: SQL_EDITOR_HOME_MODULE,
+  });
+});
+
+const myIssueLink = computed(() => {
+  if (isValidProjectName(project.value.name)) {
+    return router.resolve({
+      name: PROJECT_V1_ROUTE_ISSUES,
+      params: {
+        project: extractProjectResourceName(project.value.name),
+      },
+    });
+  }
+  return router.resolve({
+    name: WORKSPACE_ROUTE_MY_ISSUES,
   });
 });
 
