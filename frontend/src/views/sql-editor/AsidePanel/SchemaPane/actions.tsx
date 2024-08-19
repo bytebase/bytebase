@@ -29,6 +29,10 @@ import {
   type Position,
 } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
+import type {
+  SchemaMetadata,
+  TableMetadata,
+} from "@/types/proto/v1/database_service";
 import { DataSource, DataSourceType } from "@/types/proto/v1/instance_service";
 import {
   defer,
@@ -189,19 +193,35 @@ export const useActions = () => {
       if (!mockType) return;
       try {
         const view = typeToView(mockType);
-        const walk = (node: TreeNode | undefined): string | undefined => {
-          if (!node) return undefined;
-          if (node.meta.type === "schema") {
-            return (node.meta.target as NodeTarget<"schema">).schema.name;
-          }
-          return walk(node.parent);
-        };
-        const schema = walk(node);
+        const schema = schemaForNode(node);
         const vs: Partial<EditorPanelViewState> = {
           view,
         };
-        if (typeof schema === "string") {
-          vs.schema = schema;
+        if (typeof schema !== "undefined") {
+          vs.schema = schema.name;
+        }
+        if (
+          mockType === "column" ||
+          mockType === "index" ||
+          mockType === "foreign-key" ||
+          mockType === "partition-table"
+        ) {
+          const table = tableForNode(node);
+          if (typeof table !== "undefined") {
+            vs.detail = { table: table.name };
+            if (mockType === "column") {
+              vs.detail.column = head(table.columns)?.name;
+            }
+            if (mockType === "index") {
+              vs.detail.index = head(table.indexes)?.name;
+            }
+            if (mockType === "foreign-key") {
+              vs.detail.foreignKey = head(table.foreignKeys)?.name;
+            }
+            if (mockType === "partition-table") {
+              vs.detail.partition = head(table.partitions)?.name;
+            }
+          }
         }
         updateViewState(vs);
       } catch {
@@ -553,6 +573,26 @@ export const useDropdown = () => {
     handleClickoutside,
     selectAllFromTableOrView,
   };
+};
+
+const schemaForNode = (
+  node: TreeNode | undefined
+): SchemaMetadata | undefined => {
+  if (!node) return undefined;
+  if (node.meta.type === "schema") {
+    return (node.meta.target as NodeTarget<"schema">).schema;
+  }
+  return schemaForNode(node.parent);
+};
+
+const tableForNode = (
+  node: TreeNode | undefined
+): TableMetadata | undefined => {
+  if (!node) return undefined;
+  if (node.meta.type === "table") {
+    return (node.meta.target as NodeTarget<"table">).table;
+  }
+  return tableForNode(node.parent);
 };
 
 const tableOrViewNameForNode = (node: TreeNode) => {
