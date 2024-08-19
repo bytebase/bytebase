@@ -71,19 +71,6 @@ service BranchService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
-  // DiffDatabase works similar to branch rebase.
-  // 1) set the base as the schema of a database;
-  // 2) apply the changes between base and head of branch to the new base (schema of database);
-  // 3) return the diff DDLs similar to DiffSchema in database service.
-  // 4) return the conflict schema if conflict needs to be resolved by user. Once resolved, user
-  // will call DiffSchema() in database service to get diff DDLs.
-  rpc DiffDatabase(DiffDatabaseRequest) returns (DiffDatabaseResponse) {
-    option (google.api.http) = {post: "/v1/{name=projects/*/branches/*}:diffDatabase"};
-    option (google.api.method_signature) = "name";
-    option (bytebase.v1.permission) = "bb.branches.update";
-    option (bytebase.v1.auth_method) = IAM;
-  }
-
   rpc DiffMetadata(DiffMetadataRequest) returns (DiffMetadataResponse) {
     option (google.api.http) = {
       post: "/v1/schemaDesign:diffMetadata"

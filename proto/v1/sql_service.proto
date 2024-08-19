@@ -76,14 +76,6 @@ service SQLService {
     option (bytebase.v1.audit) = true;
   }
 
-  rpc DifferPreview(DifferPreviewRequest) returns (DifferPreviewResponse) {
-    option (google.api.http) = {
-      post: "/v1/sql/differPreview"
-      body: "*"
-    };
-    option (bytebase.v1.allow_without_credential) = true;
-  }
-
   rpc Check(CheckRequest) returns (CheckResponse) {
     option (google.api.http) = {
       post: "/v1/sql/check"
