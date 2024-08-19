@@ -43,10 +43,12 @@ import { useRecentProjects } from "@/components/Project/useRecentProjects";
 import QuickActionPanel from "@/components/QuickActionPanel.vue";
 import NoPermissionPlaceholder from "@/components/misc/NoPermissionPlaceholder.vue";
 import {
+  PROJECT_V1_ROUTE_DETAIL,
   PROJECT_V1_ROUTE_DATABASES,
   PROJECT_V1_ROUTE_DATABASE_GROUPS,
 } from "@/router/dashboard/projectV1";
 import { WORKSPACE_ROUTE_MY_ISSUES } from "@/router/dashboard/workspaceRoutes";
+import { useRecentVisit } from "@/router/useRecentVisit";
 import { useAppFeature, useProjectV1Store, pushNotification } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { useDatabaseV1List } from "@/store/modules/v1/databaseList";
@@ -67,6 +69,7 @@ const route = useRoute();
 const router = useRouter();
 const recentProjects = useRecentProjects();
 const projectStore = useProjectV1Store();
+const { remove: removeVisit } = useRecentVisit();
 
 const hideQuickAction = useAppFeature("bb.feature.console.hide-quick-action");
 const hideDefaultProject = useAppFeature("bb.feature.project.hide-default");
@@ -88,6 +91,14 @@ watchEffect(async () => {
       title: `Failed to fetch project ${props.projectId}`,
       description: (err as ClientError).details,
     });
+
+    const projectRoute = router.resolve({
+      name: PROJECT_V1_ROUTE_DETAIL,
+      params: {
+        projectId: props.projectId,
+      },
+    });
+    removeVisit(projectRoute.fullPath);
     router.replace({
       name: WORKSPACE_ROUTE_MY_ISSUES,
     });

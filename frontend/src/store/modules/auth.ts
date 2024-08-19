@@ -62,10 +62,11 @@ export const useAuthStore = defineStore("auth_v1", () => {
   const logout = async () => {
     try {
       await axios.post("/v1/auth/logout");
-      currentUserId.value = undefined;
-      restartAppRoot();
     } catch {
       // nothing
+    } finally {
+      currentUserId.value = undefined;
+      restartAppRoot();
     }
   };
 

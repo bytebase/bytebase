@@ -218,7 +218,7 @@ const updateList = async () => {
   state.isLoading = true;
   const distinctDatabaseNameList = uniq(
     policyList.value.map((policy) => {
-      const [databaseName] = getPolicyResourceNameAndType(policy.name);
+      const [databaseName, _] = getPolicyResourceNameAndType(policy.name);
       return databaseName;
     })
   );
@@ -236,7 +236,10 @@ const updateList = async () => {
       continue;
     }
 
-    const [databaseName] = getPolicyResourceNameAndType(policy.name);
+    const [databaseName, _] = getPolicyResourceNameAndType(policy.name);
+    if (!databaseName) {
+      continue;
+    }
     const database = await databaseStore.getOrFetchDatabaseByName(databaseName);
 
     for (const maskData of policy.maskingPolicy.maskData) {
