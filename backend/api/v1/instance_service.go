@@ -982,14 +982,15 @@ func convertToInstance(instance *store.InstanceMessage) (*v1pb.Instance, error) 
 		Environment:   fmt.Sprintf("environments/%s", instance.EnvironmentID),
 		Activation:    instance.Activation,
 		Options:       convertToInstanceOptions(instance.Options),
-		Roles:         convertToInstanceRoles(instance.Metadata.GetRoles()),
+		Roles:         convertToInstanceRoles(instance, instance.Metadata.GetRoles()),
 	}, nil
 }
 
-func convertToInstanceRoles(roles []*storepb.InstanceRole) []*v1pb.InstanceRole {
+func convertToInstanceRoles(instance *store.InstanceMessage, roles []*storepb.InstanceRole) []*v1pb.InstanceRole {
 	var v1Roles []*v1pb.InstanceRole
 	for _, role := range roles {
 		v1Roles = append(v1Roles, &v1pb.InstanceRole{
+			Name:      fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, instance.ResourceID, common.RolePrefix, role.Name),
 			RoleName:  role.Name,
 			Attribute: role.Attribute,
 		})
