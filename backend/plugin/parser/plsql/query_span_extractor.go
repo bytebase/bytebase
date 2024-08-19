@@ -1239,7 +1239,7 @@ func (q *querySpanExtractor) plsqlFindTableSchema(dbLink []string, schemaName, t
 				DatabaseLink: &linkName,
 			}
 		}
-		return q.findTableSchemaInMetadata(linkedInstanceID, linkedMeta, linkedMeta.GetName(), schemaName, tableName, true /* forLinkedDB */)
+		return q.findTableSchemaInMetadata(linkedInstanceID, linkedMeta, linkedMeta.GetName(), schemaName, tableName)
 	}
 
 	// Each CTE name in one WITH clause must be unique, but we can use the same name in the different level CTE, such as:
@@ -1270,10 +1270,10 @@ func (q *querySpanExtractor) plsqlFindTableSchema(dbLink []string, schemaName, t
 		}
 	}
 
-	return q.findTableSchemaInMetadata(q.gCtx.InstanceID, dbSchema, databaseName, schemaName, tableName, false /* forLinkedDB */)
+	return q.findTableSchemaInMetadata(q.gCtx.InstanceID, dbSchema, databaseName, schemaName, tableName)
 }
 
-func (q *querySpanExtractor) findTableSchemaInMetadata(instanceID string, dbSchema *model.DatabaseMetadata, databaseName, schemaName, tableName string, forLinkedDB bool) (base.TableSource, error) {
+func (q *querySpanExtractor) findTableSchemaInMetadata(instanceID string, dbSchema *model.DatabaseMetadata, databaseName, schemaName, tableName string) (base.TableSource, error) {
 	schema := dbSchema.GetSchema(schemaName)
 	if schema == nil {
 		return nil, &parsererror.ResourceNotFoundError{
@@ -1322,10 +1322,7 @@ func (q *querySpanExtractor) findTableSchemaInMetadata(instanceID string, dbSche
 	}
 
 	if view != nil && view.Definition != "" {
-		connectedDatabase := q.connectedDatabase
-		if forLinkedDB {
-			connectedDatabase = databaseName
-		}
+		connectedDatabase := databaseName
 		columns, err := q.getColumnsForView(instanceID, connectedDatabase, view.Definition)
 		if err != nil {
 			return nil, err
@@ -1337,10 +1334,7 @@ func (q *querySpanExtractor) findTableSchemaInMetadata(instanceID string, dbSche
 	}
 
 	if materializedView != nil && materializedView.Definition != "" {
-		connectedDatabase := q.connectedDatabase
-		if forLinkedDB {
-			connectedDatabase = databaseName
-		}
+		connectedDatabase := databaseName
 		columns, err := q.getColumnsForMaterializedView(instanceID, connectedDatabase, materializedView.Definition)
 		if err != nil {
 			return nil, err
