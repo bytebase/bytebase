@@ -608,7 +608,6 @@ const handleUpdateStatement = async (statement: string, filename: string) => {
 };
 
 const updateStatement = async (statement: string) => {
-  console.log(0);
   const planPatch = cloneDeep(issue.value.planEntity);
   if (!planPatch) {
     notifyNotEditableLegacyIssue();
@@ -659,8 +658,6 @@ const updateStatement = async (statement: string) => {
     sheet
   );
 
-  console.log(1);
-
   for (let i = 0; i < specsToPatch.length; i++) {
     const spec = specsToPatch[i];
     let config = undefined;
@@ -672,7 +669,6 @@ const updateStatement = async (statement: string) => {
     if (!config) continue;
     config.sheet = createdSheet.name;
   }
-  console.log(2);
 
   const updatedPlan = await planServiceClient.updatePlan({
     plan: planPatch,
