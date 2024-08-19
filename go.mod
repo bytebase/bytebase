@@ -23,7 +23,7 @@ require (
 	github.com/bytebase/plsql-parser v0.0.0-20240724030234-55445b9c5491
 	github.com/bytebase/postgresql-parser v0.0.0-20231221075352-cf5025e0d56f
 	github.com/bytebase/snowsql-parser v0.0.0-20240304100801-bb357ccb5535
-	github.com/bytebase/tidb-parser v0.0.0-20240112100539-135234be63bd
+	github.com/bytebase/tidb-parser v0.0.0-20240819063446-808ce92b2021
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/coreos/go-oidc v2.2.1+incompatible
 	github.com/databricks/databricks-sdk-go v0.43.2
