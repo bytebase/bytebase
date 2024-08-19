@@ -8,7 +8,7 @@
     :data-parent-height="parentHeight"
   >
     <div
-      class="bg-control-bg/50 hover:bg-control-bg/80 cursor-pointer flex items-center justify-start px-2 gap-1 overflow-y-visible"
+      class="cursor-pointer flex items-center justify-start px-2 gap-1 overflow-y-visible bg-control-bg hover:bg-control-bg-hover"
       :style="{
         height: '1rem',
       }"
@@ -81,8 +81,8 @@ const parentElement = useParentElement();
 const { height: parentHeight } = useElementSize(parentElement);
 const layoutReady = computed(() => parentHeight.value > 0);
 const panelHeight = computed(() => {
-  const min = 8 * 16; // 8rem
-  const max = 16 * 16; // 16rem
+  const min = 8 * 16; // 8rem ~= 6 lines
+  const max = 16 * 16; // 16rem ~= 13 lines
   const flexible = parentHeight.value * 0.4;
   return minmax(flexible, min, max);
 });
