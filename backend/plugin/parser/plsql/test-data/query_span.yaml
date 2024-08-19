@@ -1,3 +1,78 @@
+- description: Test for cross-schema view
+  statement: SELECT * FROM SCHEMA1.V1;
+  connectedDatabase: PUBLIC
+  metadata: |-
+    {
+      "name":  "PUBLIC",
+      "schemas":  [
+        {
+          "name": "PUBLIC",
+          "tables":  [
+            {
+              "name":  "T1",
+              "columns":  [
+                {
+                  "name":  "A"
+                },
+                {
+                  "name":  "B"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  crossDatabaseMetadata: |-
+    {
+      "name":  "SCHEMA1",
+      "schemas":  [
+        {
+          "name": "SCHEMA1",
+          "tables":  [
+            {
+              "name":  "T",
+              "columns":  [
+                {
+                  "name":  "A"
+                },
+                {
+                  "name":  "B"
+                }
+              ]
+            }
+          ],
+          "views": [
+            {
+              "name":  "V1",
+              "definition": "SELECT A, B FROM T"
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    results:
+        - name: A
+          sourcecolumns:
+            - server: ""
+              database: SCHEMA1
+              schema: SCHEMA1
+              table: T
+              column: A
+        - name: B
+          sourcecolumns:
+            - server: ""
+              database: SCHEMA1
+              schema: SCHEMA1
+              table: T
+              column: B
+    sourcecolumns:
+        - server: ""
+          database: PUBLIC
+          schema: SCHEMA1
+          table: V1
+          column: ""
 - description: Test for alias.* with join
   statement: SELECT t1.*, alias1.* FROM t1 JOIN (select * from t1) alias1 on t1.a = alias1.a;
   connectedDatabase: PUBLIC
