@@ -28,8 +28,9 @@ func TestGetQuerySpan(t *testing.T) {
 		ConnectedDatabase string `yaml:"connectedDatabase,omitempty"`
 		// Metadata is the protojson encoded storepb.DatabaseSchemaMetadata,
 		// if it's empty, we will use the defaultDatabaseMetadata.
-		Metadata  string              `yaml:"metadata,omitempty"`
-		QuerySpan *base.YamlQuerySpan `yaml:"querySpan,omitempty"`
+		Metadata              string              `yaml:"metadata,omitempty"`
+		CrossDatabaseMetadata string              `yaml:"crossDatabaseMetadata,omitempty"`
+		QuerySpan             *base.YamlQuerySpan `yaml:"querySpan,omitempty"`
 	}
 
 	const (
@@ -50,7 +51,13 @@ func TestGetQuerySpan(t *testing.T) {
 	for i, tc := range testCases {
 		metadata := &storepb.DatabaseSchemaMetadata{}
 		a.NoError(common.ProtojsonUnmarshaler.Unmarshal([]byte(tc.Metadata), metadata))
-		databaseMetadataGetter, databaseNamesLister, linkedDatabaseMetadataGetter := buildMockDatabaseMetadataGetter([]*storepb.DatabaseSchemaMetadata{metadata})
+		list := []*storepb.DatabaseSchemaMetadata{metadata}
+		crossDatabase := &storepb.DatabaseSchemaMetadata{}
+		if tc.CrossDatabaseMetadata != "" {
+			a.NoError(common.ProtojsonUnmarshaler.Unmarshal([]byte(tc.CrossDatabaseMetadata), crossDatabase))
+			list = append(list, crossDatabase)
+		}
+		databaseMetadataGetter, databaseNamesLister, linkedDatabaseMetadataGetter := buildMockDatabaseMetadataGetter(list)
 		result, err := GetQuerySpan(context.TODO(), base.GetQuerySpanContext{
 			InstanceID:                    instanceIDA,
 			GetDatabaseMetadataFunc:       databaseMetadataGetter,
