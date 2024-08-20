@@ -901,3 +901,95 @@
       ]
     }
   err: null
+- statement: |-
+    create table all_types(
+      c1 tinyblob not null,
+      c2 blob not null,
+      c3 mediumblob not null,
+      c4 longblob not null,
+      c5 tinytext not null,
+      c6 text not null,
+      c7 mediumtext not null,
+      c8 longtext not null,
+      c9 json not null,
+      c10 serial not null,
+      c11 long varbinary not null,
+      c12 long varchar not null 
+    );
+  ignore_case_sensitive: false
+  want: |-
+    {
+      "name": "test",
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "all_types",
+              "columns": [
+                {
+                  "name": "c1",
+                  "position": 1,
+                  "type": "tinyblob"
+                },
+                {
+                  "name": "c2",
+                  "position": 2,
+                  "type": "blob"
+                },
+                {
+                  "name": "c3",
+                  "position": 3,
+                  "type": "mediumblob"
+                },
+                {
+                  "name": "c4",
+                  "position": 4,
+                  "type": "longblob"
+                },
+                {
+                  "name": "c5",
+                  "position": 5,
+                  "type": "tinytext"
+                },
+                {
+                  "name": "c6",
+                  "position": 6,
+                  "type": "text"
+                },
+                {
+                  "name": "c7",
+                  "position": 7,
+                  "type": "mediumtext"
+                },
+                {
+                  "name": "c8",
+                  "position": 8,
+                  "type": "longtext"
+                },
+                {
+                  "name": "c9",
+                  "position": 9,
+                  "type": "json"
+                },
+                {
+                  "name": "c10",
+                  "position": 10,
+                  "type": "serial"
+                },
+                {
+                  "name": "c11",
+                  "position": 11,
+                  "type": "long"
+                },
+                {
+                  "name": "c12",
+                  "position": 12,
+                  "type": "long"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  err: null
