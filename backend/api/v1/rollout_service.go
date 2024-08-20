@@ -834,7 +834,8 @@ func validateSteps(steps []*v1pb.Plan_Step) error {
 	if len(steps) == 0 {
 		return errors.Errorf("the plan has zero step")
 	}
-	var databaseTarget, databaseGroupTarget, deploymentConfigTarget int
+	var databaseTarget, databaseGroupTarget int
+	configTypeCount := map[string]int{}
 	seenID := map[string]bool{}
 	for _, step := range steps {
 		if len(step.Specs) == 0 {
@@ -851,16 +852,23 @@ func validateSteps(steps []*v1pb.Plan_Step) error {
 			}
 			seenID[id] = true
 			seenIDInStep[id] = true
-			if config := spec.GetChangeDatabaseConfig(); config != nil {
-				if _, _, err := common.GetInstanceDatabaseID(config.Target); err == nil {
+			switch config := spec.Config.(type) {
+			case *v1pb.Plan_Spec_ChangeDatabaseConfig:
+				configTypeCount["ChangeDatabaseConfig"]++
+				c := config.ChangeDatabaseConfig
+				if _, _, err := common.GetInstanceDatabaseID(c.Target); err == nil {
 					databaseTarget++
-				} else if _, _, err := common.GetProjectIDDatabaseGroupID(config.Target); err == nil {
+				} else if _, _, err := common.GetProjectIDDatabaseGroupID(c.Target); err == nil {
 					databaseGroupTarget++
-				} else if _, _, err := common.GetProjectIDDeploymentConfigID(config.Target); err == nil {
-					deploymentConfigTarget++
 				} else {
-					return errors.Errorf("unknown target %q", config.Target)
+					return errors.Errorf("unknown target %q", c.Target)
 				}
+			case *v1pb.Plan_Spec_CreateDatabaseConfig:
+				configTypeCount["CreateDatabaseConfig"]++
+			case *v1pb.Plan_Spec_ExportDataConfig:
+				configTypeCount["ExportDataConfig"]++
+			default:
+				return errors.Errorf("unexpected config type %T", spec.Config)
 			}
 		}
 		for _, spec := range step.Specs {
@@ -874,17 +882,17 @@ func validateSteps(steps []*v1pb.Plan_Step) error {
 			}
 		}
 	}
-	if deploymentConfigTarget > 1 {
-		return errors.Errorf("expect at most 1 deploymentConfig target, got %d", deploymentConfigTarget)
+
+	if len(configTypeCount) > 1 {
+		msg := "expect one kind of config, found"
+		for k, v := range configTypeCount {
+			msg += fmt.Sprintf(" %v %v", v, k)
+		}
+		return errors.New(msg)
 	}
-	if deploymentConfigTarget != 0 && (databaseTarget > 0 || databaseGroupTarget > 0) {
-		return errors.Errorf("expect no other kinds of targets if there is deploymentConfig target")
-	}
-	if databaseGroupTarget > 1 {
-		return errors.Errorf("expect at most 1 databaseGroup target, got %d", databaseGroupTarget)
-	}
-	if databaseGroupTarget > 0 && (databaseTarget > 0 || deploymentConfigTarget > 0) {
-		return errors.Errorf("expect no other kinds of targets if there is databaseGroup target")
+
+	if databaseGroupTarget > 0 && databaseTarget > 0 {
+		return errors.Errorf("found databaseGroupTarget and databaseTarget, expect only one kind")
 	}
 	return nil
 }
@@ -897,29 +905,15 @@ func GetPipelineCreate(ctx context.Context, s *store.Store, sheetManager *sheet.
 		specs = append(specs, step.Specs...)
 	}
 
-	// Step 1 - transform database group
-
-	// The following case should has only one spec.
-	// * ChangeDatabaseConfig with databaseGroup target;
-	// * CreateDatabaseConfig;
-	// * ExportDataConfig.
-	if len(specs) == 1 {
-		spec := specs[0]
-		if config := spec.GetChangeDatabaseConfig(); config != nil {
-			// transform database group.
-			if _, _, err := common.GetProjectIDDatabaseGroupID(config.Target); err == nil {
-				specsFromDatabaseGroup, err := transformDatabaseGroupTargetToSteps(ctx, s, spec, config, project)
-				if err != nil {
-					return nil, errors.Wrapf(err, "failed to transform databaseGroup target to steps")
-				}
-
-				specs = specsFromDatabaseGroup
-			}
-		}
+	// Step 1 - transform database group specs.
+	// Others are untouched.
+	transformSpecs, err := transformDatabaseGroupSpecs(ctx, s, project, specs)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to transform database group specs")
 	}
+	specs = transformSpecs
 
 	// Step 2 - filter by deployment config for ChangeDatabase specs.
-
 	var filterByDeploymentConfig bool
 	for _, spec := range specs {
 		if spec.GetChangeDatabaseConfig() != nil {
