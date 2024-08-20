@@ -13,9 +13,8 @@ import (
 )
 
 type designTest struct {
-	Baseline string
-	Target   string
-	Result   string
+	Target string
+	Result string
 }
 
 func TestGetDesignSchema(t *testing.T) {
