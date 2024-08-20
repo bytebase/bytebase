@@ -3,7 +3,6 @@ package v1
 import (
 	"context"
 	"fmt"
-	"strconv"
 	"time"
 
 	"github.com/pkg/errors"
@@ -43,7 +42,6 @@ func convertToIssue(ctx context.Context, s *store.Store, issue *store.IssueMessa
 
 	issueV1 := &v1pb.Issue{
 		Name:                 fmt.Sprintf("%s%s/%s%d", common.ProjectNamePrefix, issue.Project.ResourceID, common.IssueNamePrefix, issue.UID),
-		Uid:                  fmt.Sprintf("%d", issue.UID),
 		Title:                issue.Title,
 		Description:          issue.Description,
 		Type:                 convertToIssueType(issue.Type),
@@ -341,7 +339,6 @@ func convertToIssueComments(issueName string, issueComments []*store.IssueCommen
 
 func convertToIssueComment(issueName string, ic *store.IssueCommentMessage) *v1pb.IssueComment {
 	r := &v1pb.IssueComment{
-		Uid:        strconv.Itoa(ic.UID),
 		Comment:    ic.Payload.Comment,
 		CreateTime: timestamppb.New(time.Unix(ic.CreatedTs, 0)),
 		UpdateTime: timestamppb.New(time.Unix(ic.UpdatedTs, 0)),

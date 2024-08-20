@@ -13,6 +13,7 @@ import { NButton } from "naive-ui";
 import { useRouter } from "vue-router";
 import { useIssueContext } from "@/components/IssueV1";
 import { WORKSPACE_ROUTE_EXPORT_CENTER } from "@/router/dashboard/workspaceRoutes";
+import { extractIssueUID } from "@/utils";
 
 const router = useRouter();
 const { issue } = useIssueContext();
@@ -20,7 +21,7 @@ const { issue } = useIssueContext();
 const toExportCenter = () => {
   router.push({
     name: WORKSPACE_ROUTE_EXPORT_CENTER,
-    hash: `#${issue.value.uid}`,
+    hash: `#${extractIssueUID(issue.value.name)}`,
   });
 };
 </script>

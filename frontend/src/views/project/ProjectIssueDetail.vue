@@ -37,8 +37,11 @@ import {
 } from "@/components/PlanCheckRun/context";
 import { useBodyLayoutContext } from "@/layouts/common";
 import { useUIStateStore } from "@/store";
-import { UNKNOWN_ID } from "@/types";
-import { isGrantRequestIssue, isDatabaseDataExportIssue } from "@/utils";
+import {
+  isGrantRequestIssue,
+  isDatabaseDataExportIssue,
+  isValidIssueName,
+} from "@/utils";
 
 interface LocalState {
   showFeatureModal: boolean;
@@ -115,7 +118,7 @@ const documentTitle = computed(() => {
   if (isCreating.value) {
     return t("issue.new-issue");
   } else {
-    if (ready.value && issue.value.uid !== String(UNKNOWN_ID)) {
+    if (ready.value && isValidIssueName(issue.value.name)) {
       return issue.value.title;
     }
   }

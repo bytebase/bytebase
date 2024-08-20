@@ -62,6 +62,7 @@ import { type Plan_ChangeDatabaseConfig } from "@/types/proto/v1/plan_service";
 import type { Sheet } from "@/types/proto/v1/sheet_service";
 import {
   extractDatabaseGroupName,
+  extractIssueUID,
   extractProjectResourceName,
   extractSheetUID,
   flattenTaskV1List,
@@ -275,7 +276,7 @@ const maybeFormatSQL = async (sheet: Sheet, target: string) => {
 
 const emitIssueCreateWindowEvent = async (issue: ComposedIssue) => {
   const eventParams = {
-    uid: issue.uid,
+    uid: extractIssueUID(issue.name),
     description: issue.description,
     project: toRaw(issue.projectEntity),
     tasks: [],
