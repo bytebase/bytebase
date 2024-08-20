@@ -115,8 +115,7 @@ const buildIssue = async (params: CreateIssueParams) => {
   issue.creatorEntity = me.value;
   issue.project = project.name;
   issue.projectEntity = project;
-  issue.uid = nextUID();
-  issue.name = `${project.name}/issues/${issue.uid}`;
+  issue.name = `${project.name}/issues/${nextUID()}`;
   issue.title = query.name;
   issue.status = IssueStatus.OPEN;
 

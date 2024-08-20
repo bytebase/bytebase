@@ -11,7 +11,6 @@ import (
 	"log/slog"
 	"net/http"
 	"sort"
-	"strconv"
 	"strings"
 
 	"github.com/google/uuid"
@@ -358,7 +357,7 @@ func (s *Service) createIssueFromPRInfo(ctx context.Context, project *store.Proj
 		return nil, errors.Wrapf(err, "failed to create rollout")
 	}
 
-	issueUID, err := strconv.Atoi(issue.Uid)
+	issueUID, err := common.GetIssueID(issue.Name)
 	if err != nil {
 		return nil, err
 	}

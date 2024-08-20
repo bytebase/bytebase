@@ -6,7 +6,7 @@
       :striped="true"
       :bordered="true"
       :loading="loading"
-      :row-key="(issue: ComposedIssue) => issue.uid"
+      :row-key="(issue: ComposedIssue) => issue.name"
       :row-props="rowProps"
       class="data-export-issue-table"
     />
@@ -37,6 +37,7 @@ import {
   humanizeTs,
   flattenTaskV1List,
   issueV1Slug,
+  extractIssueUID,
 } from "@/utils";
 
 const { t } = useI18n();
@@ -52,7 +53,7 @@ const columnList = computed((): DataTableColumn<ComposedIssue>[] => {
           <div class="flex items-center overflow-hidden space-x-2">
             <IssueStatusIconWithTaskSummary issue={issue} />
             <div class="whitespace-nowrap text-control">
-              {issue.projectEntity.key}-{issue.uid}
+              {issue.projectEntity.key}-{extractIssueUID(issue.name)}
             </div>
             <NPerformantEllipsis class="flex-1 truncate">
               {{
@@ -165,7 +166,7 @@ const rowProps = (issue: ComposedIssue) => {
     style: "cursor: pointer;",
     onClick: (e: MouseEvent) => {
       emitWindowEvent("bb.issue-detail", {
-        uid: issue.uid,
+        uid: extractIssueUID(issue.name),
       });
       const route = router.resolve({
         name: PROJECT_V1_ROUTE_ISSUE_DETAIL,

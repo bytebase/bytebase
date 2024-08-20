@@ -14,7 +14,7 @@ import {
 import type { Rollout, Stage, Task } from "@/types/proto/v1/rollout_service";
 import { Task_Status } from "@/types/proto/v1/rollout_service";
 import { extractProjectResourceName } from "../project";
-import { flattenTaskV1List, issueV1Slug } from "./issue";
+import { extractIssueUID, flattenTaskV1List, issueV1Slug } from "./issue";
 
 export const extractRolloutUID = (name: string) => {
   const pattern = /(?:^|\/)rollouts\/([^/]+)(?:$|\/)/;
@@ -178,7 +178,7 @@ export const buildIssueV1LinkWithTask = (
   );
 
   const projectId = extractProjectResourceName(issue.project);
-  const issueSlug = simple ? issue.uid : issueV1Slug(issue);
+  const issueSlug = simple ? extractIssueUID(issue.name) : issueV1Slug(issue);
   const query: Record<string, string> = {};
   if (stage) {
     query.stage = simple ? extractStageUID(stage.name) : stageV1Slug(stage);

@@ -10048,10 +10048,6 @@ components:
                     description: |-
                         The name of the issue.
                          Format: projects/{project}/issues/{issue}
-                uid:
-                    readOnly: true
-                    type: string
-                    description: The system-assigned, unique identifier for a resource.
                 title:
                     type: string
                 description:
@@ -10166,9 +10162,9 @@ components:
         IssueComment:
             type: object
             properties:
-                uid:
-                    readOnly: true
+                name:
                     type: string
+                    description: 'Format: projects/{project}/issues/{issue}/issueComments/{issueComment-uid}'
                 comment:
                     type: string
                 payload:
@@ -10182,9 +10178,6 @@ components:
                     readOnly: true
                     type: string
                     format: date-time
-                name:
-                    type: string
-                    description: 'Format: projects/{project}/issues/{issue}/issueComments/{issueComment-uid}'
                 creator:
                     type: string
                     description: 'Format: users/{email}'
