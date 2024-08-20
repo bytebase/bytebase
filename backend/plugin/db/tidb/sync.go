@@ -275,7 +275,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 	defer columnRows.Close()
 	for columnRows.Next() {
 		column := &storepb.ColumnMetadata{}
-		var tableName, nullable, extra string
+		var tableName, nullable, extra, tp string
 		var defaultStr sql.NullString
 		if err := columnRows.Scan(
 			&tableName,
@@ -283,7 +283,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 			&column.Position,
 			&defaultStr,
 			&nullable,
-			&column.Type,
+			&tp,
 			&column.CharacterSet,
 			&column.Collation,
 			&column.Comment,
@@ -301,6 +301,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 		if err != nil {
 			return nil, err
 		}
+		column.Type = GetColumnTypeCanonicalSynonym(tp)
 		column.Nullable = nullableBool
 		setColumnMetadataDefault(column, defaultStr, nullableBool, extra)
 		key := db.TableKey{Schema: "", Table: tableName}
