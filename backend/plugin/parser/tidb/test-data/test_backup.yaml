@@ -1,0 +1,251 @@
+- input: |-
+    UPDATE test SET test.c1 = 1 WHERE test.b1 = 1;
+    UPDATE test SET test.c1 = 2 WHERE test.b1 = 2;
+    UPDATE test SET test.c1 = 3 WHERE test.b1 = 3;
+    UPDATE test SET test.c1 = 4 WHERE test.b1 = 4;
+    UPDATE test SET test.c1 = 5 WHERE test.b1 = 5;
+    UPDATE test SET test.c1 = 6 WHERE test.b1 = 6;
+    UPDATE test SET test.c1 = 7 WHERE test.b1 = 7;
+  result:
+    - statement: |-
+        CREATE TABLE `backupDB`.`_rollback_test` LIKE `db`.`test`;
+        INSERT INTO `backupDB`.`_rollback_test`  SELECT `test`.* FROM test WHERE test.b1 = 1
+          UNION ALL
+          SELECT `test`.* FROM test WHERE test.b1 = 2
+          UNION ALL
+          SELECT `test`.* FROM test WHERE test.b1 = 3
+          UNION ALL
+          SELECT `test`.* FROM test WHERE test.b1 = 4
+          UNION ALL
+          SELECT `test`.* FROM test WHERE test.b1 = 5
+          UNION ALL
+          SELECT `test`.* FROM test WHERE test.b1 = 6
+          UNION ALL
+          SELECT `test`.* FROM test WHERE test.b1 = 7;
+      sourceschema: ""
+      sourcetablename: test
+      targettablename: _rollback_test
+      startposition:
+        line: 1
+        column: 0
+      endposition:
+        line: 2
+        column: 44
+- input: |-
+    UPDATE db1.t1 SET c1 = 1 WHERE c1 = 2;
+    UPDATE db2.t2 SET c1 = 1 WHERE c1 = 2;
+  result:
+    - statement: |-
+        CREATE TABLE `backupDB`.`_rollback_0_t1` LIKE `db1`.`t1`;
+        INSERT INTO `backupDB`.`_rollback_0_t1` SELECT `t1`.* FROM db1.t1 WHERE c1 = 2;
+      sourceschema: ""
+      sourcetablename: t1
+      targettablename: _rollback_0_t1
+      startposition:
+        line: 1
+        column: 0
+      endposition:
+        line: 1
+        column: 36
+    - statement: |-
+        CREATE TABLE `backupDB`.`_rollback_1_t2` LIKE `db2`.`t2`;
+        INSERT INTO `backupDB`.`_rollback_1_t2` SELECT `t2`.* FROM db2.t2 WHERE c1 = 2;
+      sourceschema: ""
+      sourcetablename: t2
+      targettablename: _rollback_1_t2
+      startposition:
+        line: 2
+        column: 0
+      endposition:
+        line: 2
+        column: 36
+- input: DELETE test FROM test, test2 as t2 where test.id = t2.id;
+  result:
+    - statement: |-
+        CREATE TABLE `backupDB`.`_rollback_0_test` LIKE `db`.`test`;
+        INSERT INTO `backupDB`.`_rollback_0_test` SELECT `test`.* FROM test, test2 as t2 where test.id = t2.id;
+      sourceschema: ""
+      sourcetablename: test
+      targettablename: _rollback_0_test
+      startposition:
+        line: 1
+        column: 0
+      endposition:
+        line: 1
+        column: 53
+- input: DELETE t1, t2 FROM test as t1, test2 as t2 WHERE t1.id = t2.id;
+  result:
+    - statement: |-
+        CREATE TABLE `backupDB`.`_rollback_0_test` LIKE `db`.`test`;
+        INSERT INTO `backupDB`.`_rollback_0_test` SELECT `t1`.* FROM test as t1, test2 as t2 WHERE t1.id = t2.id;
+      sourceschema: ""
+      sourcetablename: test
+      targettablename: _rollback_0_test
+      startposition:
+        line: 1
+        column: 0
+      endposition:
+        line: 1
+        column: 59
+    - statement: |-
+        CREATE TABLE `backupDB`.`_rollback_0_test2` LIKE `db`.`test2`;
+        INSERT INTO `backupDB`.`_rollback_0_test2` SELECT `t2`.* FROM test as t1, test2 as t2 WHERE t1.id = t2.id;
+      sourceschema: ""
+      sourcetablename: test2
+      targettablename: _rollback_0_test2
+      startposition:
+        line: 1
+        column: 0
+      endposition:
+        line: 1
+        column: 59
+- input: DELETE FROM t1, t2 USING test as t1, test2 as t2 WHERE t1.id = t2.id;
+  result:
+    - statement: |-
+        CREATE TABLE `backupDB`.`_rollback_0_test` LIKE `db`.`test`;
+        INSERT INTO `backupDB`.`_rollback_0_test` SELECT `t1`.* FROM test as t1, test2 as t2 WHERE t1.id = t2.id;
+      sourceschema: ""
+      sourcetablename: test
+      targettablename: _rollback_0_test
+      startposition:
+        line: 1
+        column: 0
+      endposition:
+        line: 1
+        column: 65
+    - statement: |-
+        CREATE TABLE `backupDB`.`_rollback_0_test2` LIKE `db`.`test2`;
+        INSERT INTO `backupDB`.`_rollback_0_test2` SELECT `t2`.* FROM test as t1, test2 as t2 WHERE t1.id = t2.id;
+      sourceschema: ""
+      sourcetablename: test2
+      targettablename: _rollback_0_test2
+      startposition:
+        line: 1
+        column: 0
+      endposition:
+        line: 1
+        column: 65
+- input: DELETE FROM test as t1 WHERE t1.c1 = 1;
+  result:
+    - statement: |-
+        CREATE TABLE `backupDB`.`_rollback_0_test` LIKE `db`.`test`;
+        INSERT INTO `backupDB`.`_rollback_0_test` SELECT `t1`.* FROM test as t1 WHERE t1.c1 = 1;
+      sourceschema: ""
+      sourcetablename: test
+      targettablename: _rollback_0_test
+      startposition:
+        line: 1
+        column: 0
+      endposition:
+        line: 1
+        column: 37
+- input: DELETE FROM test WHERE c1 = 1;
+  result:
+    - statement: |-
+        CREATE TABLE `backupDB`.`_rollback_0_test` LIKE `db`.`test`;
+        INSERT INTO `backupDB`.`_rollback_0_test` SELECT `test`.* FROM test WHERE c1 = 1;
+      sourceschema: ""
+      sourcetablename: test
+      targettablename: _rollback_0_test
+      startposition:
+        line: 1
+        column: 0
+      endposition:
+        line: 1
+        column: 28
+- input: UPDATE test x SET x.c1 = 1 WHERE x.c1 = 1
+  result:
+    - statement: |-
+        CREATE TABLE `backupDB`.`_rollback_0_test` LIKE `db`.`test`;
+        INSERT INTO `backupDB`.`_rollback_0_test` SELECT `x`.* FROM test x WHERE x.c1 = 1;
+      sourceschema: ""
+      sourcetablename: test
+      targettablename: _rollback_0_test
+      startposition:
+        line: 1
+        column: 0
+      endposition:
+        line: 1
+        column: 40
+- input: UPDATE test SET c1 = 1 WHERE c1=2;
+  result:
+    - statement: |-
+        CREATE TABLE `backupDB`.`_rollback_0_test` LIKE `db`.`test`;
+        INSERT INTO `backupDB`.`_rollback_0_test` SELECT `test`.* FROM test WHERE c1=2;
+      sourceschema: ""
+      sourcetablename: test
+      targettablename: _rollback_0_test
+      startposition:
+        line: 1
+        column: 0
+      endposition:
+        line: 1
+        column: 32
+- input: UPDATE test t1, test2 t2 SET t1.c1 = 1 WHERE t1.c1 = t2.c1;
+  result:
+    - statement: |-
+        CREATE TABLE `backupDB`.`_rollback_0_test` LIKE `db`.`test`;
+        INSERT INTO `backupDB`.`_rollback_0_test` SELECT `t1`.* FROM test t1, test2 t2 WHERE t1.c1 = t2.c1;
+      sourceschema: ""
+      sourcetablename: test
+      targettablename: _rollback_0_test
+      startposition:
+        line: 1
+        column: 0
+      endposition:
+        line: 1
+        column: 55
+- input: UPDATE test t1, test2 t2 SET t1.c1 = 1, t2.c2 = 2 WHERE t1.c1 = t2.c1;
+  result:
+    - statement: |-
+        CREATE TABLE `backupDB`.`_rollback_0_test` LIKE `db`.`test`;
+        INSERT INTO `backupDB`.`_rollback_0_test` SELECT `t1`.* FROM test t1, test2 t2 WHERE t1.c1 = t2.c1;
+      sourceschema: ""
+      sourcetablename: test
+      targettablename: _rollback_0_test
+      startposition:
+        line: 1
+        column: 0
+      endposition:
+        line: 1
+        column: 66
+    - statement: |-
+        CREATE TABLE `backupDB`.`_rollback_0_test2` LIKE `db`.`test2`;
+        INSERT INTO `backupDB`.`_rollback_0_test2` SELECT `t2`.* FROM test t1, test2 t2 WHERE t1.c1 = t2.c1;
+      sourceschema: ""
+      sourcetablename: test2
+      targettablename: _rollback_0_test2
+      startposition:
+        line: 1
+        column: 0
+      endposition:
+        line: 1
+        column: 66
+- input: |-
+    UPDATE test t1 SET t1.c1 = 2 WHERE t1.c1 = 1 ;
+    UPDATE test t2 SET t2.c1 = 3 WHERE t2.c1 = 5 ;
+  result:
+    - statement: |-
+        CREATE TABLE `backupDB`.`_rollback_0_test` LIKE `db`.`test`;
+        INSERT INTO `backupDB`.`_rollback_0_test` SELECT `t1`.* FROM test t1 WHERE t1.c1 = 1;
+      sourceschema: ""
+      sourcetablename: test
+      targettablename: _rollback_0_test
+      startposition:
+        line: 1
+        column: 0
+      endposition:
+        line: 1
+        column: 43
+    - statement: |-
+        CREATE TABLE `backupDB`.`_rollback_1_test` LIKE `db`.`test`;
+        INSERT INTO `backupDB`.`_rollback_1_test` SELECT `t2`.* FROM test t2 WHERE t2.c1 = 5;
+      sourceschema: ""
+      sourcetablename: test
+      targettablename: _rollback_1_test
+      startposition:
+        line: 2
+        column: 0
+      endposition:
+        line: 2
+        column: 43
