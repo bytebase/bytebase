@@ -80,6 +80,69 @@ func buildTimestampDefaultValue(input string) timestampDefaultValue {
 	return nil
 }
 
+var (
+	autoRandomRegexp = regexp.MustCompile(`(?mis)^AUTO_RANDOM(\(\s*(?P<shardBit>(\d+))?\s*(,\s*(?P<allocationRange>(\d+)))?\s*\))?`)
+)
+
+// https://docs.pingcap.com/tidb/stable/auto-random
+type autoRandomDefaultValue struct {
+	shardBit        int
+	allocationRange int
+}
+
+func buildAutoRandomDefaultValue(input string) *autoRandomDefaultValue {
+	matches := autoRandomRegexp.FindStringSubmatch(input)
+	if matches != nil {
+		result := &autoRandomDefaultValue{}
+		for i, name := range autoRandomRegexp.SubexpNames() {
+			if name == "shardBit" {
+				if matches[i] != "" {
+					shardBit, err := strconv.ParseInt(matches[i], 10, 64)
+					if err != nil {
+						return nil
+					}
+					result.shardBit = int(shardBit)
+				}
+			} else if name == "allocationRange" {
+				if matches[i] != "" {
+					allocationRange, err := strconv.ParseInt(matches[i], 10, 64)
+					if err != nil {
+						return nil
+					}
+					result.allocationRange = int(allocationRange)
+				}
+			}
+		}
+		return result
+	}
+
+	return nil
+}
+
+func isAutoRandomEquivalent(a, b *autoRandomDefaultValue) bool {
+	if a == nil || b == nil {
+		return (a == nil) == (b == nil)
+	}
+	// https://docs.pingcap.com/tidb/stable/auto-random
+	canonicalShardBitA, canonicalShardBitB := a.shardBit, b.shardBit
+	if canonicalShardBitA == 0 {
+		canonicalShardBitA = 5
+	}
+	if canonicalShardBitB == 0 {
+		canonicalShardBitB = 5
+	}
+
+	canonicalAllocationRangeA, canonicalAllocationRangeB := a.allocationRange, b.allocationRange
+	if canonicalAllocationRangeA == 0 {
+		canonicalAllocationRangeA = 64
+	}
+	if canonicalAllocationRangeB == 0 {
+		canonicalAllocationRangeB = 64
+	}
+
+	return (canonicalShardBitA == canonicalShardBitB) && (canonicalAllocationRangeA == canonicalAllocationRangeB)
+}
+
 type diffAction string
 
 const (
@@ -769,6 +832,12 @@ func compareColumnDefaultValue(a, b any) bool {
 		bTimestampDefaultValue := buildTimestampDefaultValue(bExpr.DefaultExpression)
 		if aTimestampDefaultValue != nil && bTimestampDefaultValue != nil {
 			return aTimestampDefaultValue.getFsp() == bTimestampDefaultValue.getFsp()
+		}
+
+		aAutoRandomDefaultValue := buildAutoRandomDefaultValue(aExpr.DefaultExpression)
+		bAutoRandomDefaultValue := buildAutoRandomDefaultValue(bExpr.DefaultExpression)
+		if aAutoRandomDefaultValue != nil && bAutoRandomDefaultValue != nil {
+			return isAutoRandomEquivalent(aAutoRandomDefaultValue, bAutoRandomDefaultValue)
 		}
 	}
 
