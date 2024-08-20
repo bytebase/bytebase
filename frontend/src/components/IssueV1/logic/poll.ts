@@ -1,7 +1,11 @@
 import { computed, watch } from "vue";
 import { useProgressivePoll } from "@/composables/useProgressivePoll";
 import { experimentalFetchIssueByUID } from "@/store";
-import { extractProjectResourceName, isValidTaskName } from "@/utils";
+import {
+  extractIssueUID,
+  extractProjectResourceName,
+  isValidTaskName,
+} from "@/utils";
 import { useIssueContext } from "./context";
 
 export const usePollIssue = () => {
@@ -15,7 +19,7 @@ export const usePollIssue = () => {
     if (!shouldPollIssue.value) return;
 
     experimentalFetchIssueByUID(
-      issue.value.uid,
+      extractIssueUID(issue.value.name),
       extractProjectResourceName(issue.value.project)
     ).then((updatedIssue) => (issue.value = updatedIssue));
   };

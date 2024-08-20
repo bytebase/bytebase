@@ -5,6 +5,11 @@ import type {
   IssueComment,
   ListIssueCommentsRequest,
 } from "@/types/proto/v1/issue_service";
+import {
+  getProjectIdIssueIdIssueCommentId,
+  issueNamePrefix,
+  projectNamePrefix,
+} from "./common";
 
 export enum IssueCommentType {
   USER_COMMENT = "USER_COMMENT",
@@ -77,26 +82,27 @@ export const useIssueCommentStore = defineStore("issue_comment", () => {
   };
 
   const updateIssueComment = async ({
-    issueName,
-    commentId,
+    issueCommentName,
     comment,
   }: {
-    issueName: string;
-    commentId: string;
+    issueCommentName: string;
     comment: string;
   }) => {
+    const { projectId, issueId } =
+      getProjectIdIssueIdIssueCommentId(issueCommentName);
+    const parent = `${projectNamePrefix}${projectId}/${issueNamePrefix}${issueId}`;
     await issueServiceClient.updateIssueComment({
-      parent: issueName,
+      parent: parent,
       issueComment: {
-        uid: commentId,
+        name: issueCommentName,
         comment,
       },
       updateMask: ["comment"],
     });
     issueCommentMap.set(
-      issueName,
-      (issueCommentMap.get(issueName) ?? []).map((issueComment) => {
-        if (issueComment.uid === commentId) {
+      parent,
+      (issueCommentMap.get(parent) ?? []).map((issueComment) => {
+        if (issueComment.name === issueCommentName) {
           return {
             ...issueComment,
             comment,

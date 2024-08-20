@@ -6,7 +6,7 @@
       :striped="true"
       :bordered="true"
       :loading="loading"
-      :row-key="(issue: ComposedIssue) => issue.uid"
+      :row-key="(issue: ComposedIssue) => issue.name"
       :row-props="rowProps"
       class="review-issue-table"
     />
@@ -31,7 +31,7 @@ import { ProjectNameCell } from "@/components/v2/Model/DatabaseV1Table/cells";
 import { emitWindowEvent } from "@/plugins";
 import { useSheetV1Store } from "@/store";
 import { type ComposedIssue } from "@/types";
-import { humanizeTs, flattenSpecList } from "@/utils";
+import { humanizeTs, flattenSpecList, extractIssueUID } from "@/utils";
 
 const { t } = useI18n();
 
@@ -46,7 +46,7 @@ const columnList = computed((): DataTableColumn<ComposedIssue>[] => {
           <div class="flex items-center overflow-hidden space-x-2">
             <IssueStatusIconWithTaskSummary issue={issue} />
             <div class="whitespace-nowrap text-control">
-              {issue.projectEntity.key}-{issue.uid}
+              {issue.projectEntity.key}-{extractIssueUID(issue.name)}
             </div>
             <NPerformantEllipsis class="flex-1 truncate">
               {{
@@ -159,7 +159,7 @@ const rowProps = (issue: ComposedIssue) => {
     style: "cursor: pointer;",
     onClick: (e: MouseEvent) => {
       emitWindowEvent("bb.issue-detail", {
-        uid: issue.uid,
+        uid: extractIssueUID(issue.name),
       });
       const route = router.resolve({
         path: `/${issue.name}`,

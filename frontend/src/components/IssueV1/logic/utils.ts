@@ -19,6 +19,7 @@ import {
   extractDatabaseResourceName,
   flattenSpecList,
   flattenTaskV1List,
+  isValidIssueName,
 } from "@/utils";
 import type { IssueContext } from "./context";
 
@@ -245,7 +246,7 @@ export const isUnfinishedResolvedTask = (issue: ComposedIssue | undefined) => {
   if (!issue) {
     return false;
   }
-  if (issue.uid.startsWith("-")) {
+  if (!isValidIssueName(issue.name)) {
     return false;
   }
   if (issue.status !== IssueStatus.DONE) {

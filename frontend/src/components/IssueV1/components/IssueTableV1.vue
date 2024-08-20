@@ -13,10 +13,10 @@
       :striped="true"
       :bordered="bordered"
       :loading="loading"
-      :row-key="(issue: ComposedIssue) => issue.uid"
+      :row-key="(issue: ComposedIssue) => issue.name"
       :default-expand-all="true"
       :expanded-row-keys="
-        issueList.filter(isIssueExpanded).map((issue) => issue.uid)
+        issueList.filter(isIssueExpanded).map((issue) => issue.name)
       "
       :checked-row-keys="Array.from(state.selectedIssueIdList)"
       :row-props="rowProps"
@@ -57,6 +57,7 @@ import {
   extractProjectResourceName,
   humanizeTs,
   issueV1Slug,
+  extractIssueUID,
 } from "@/utils";
 import IssueLabelSelector, {
   getValidIssueLabels,
@@ -104,8 +105,8 @@ const columnList = computed((): DataTableColumn<ComposedIssue>[] => {
             "div",
             { class: "whitespace-nowrap text-control" },
             props.mode == "ALL"
-              ? `${issue.projectEntity.key}-${issue.uid}`
-              : `#${issue.uid}`
+              ? `${issue.projectEntity.key}-${extractIssueUID(issue.name)}`
+              : `#${extractIssueUID(issue.name)}`
           ),
           h(
             NPerformantEllipsis,
@@ -233,7 +234,7 @@ const sortedIssueList = computed(() => {
         `${issue.title} ${issue.description}`.includes(props.highlightText)
           ? 1
           : 0,
-      (issue) => parseInt(issue.uid),
+      (issue) => parseInt(extractIssueUID(issue.name)),
     ],
     ["desc", "desc"]
   );
@@ -241,7 +242,7 @@ const sortedIssueList = computed(() => {
 
 const selectedIssueList = computed(() => {
   return props.issueList.filter((issue) =>
-    state.selectedIssueIdList.has(issue.uid)
+    state.selectedIssueIdList.has(extractIssueUID(issue.name))
   );
 });
 
@@ -250,7 +251,7 @@ const rowProps = (issue: ComposedIssue) => {
     style: "cursor: pointer;",
     onClick: (e: MouseEvent) => {
       emitWindowEvent("bb.issue-detail", {
-        uid: issue.uid,
+        uid: extractIssueUID(issue.name),
       });
       const route = router.resolve({
         name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
@@ -273,7 +274,9 @@ watch(
   () => props.issueList,
   (list) => {
     const oldIssueIdList = Array.from(state.selectedIssueIdList.values());
-    const newIssueIdList = new Set(list.map((issue) => issue.uid));
+    const newIssueIdList = new Set(
+      list.map((issue) => extractIssueUID(issue.name))
+    );
     oldIssueIdList.forEach((id) => {
       // If a selected issue id doesn't appear in the new IssueList
       // we should cancel its selection state.

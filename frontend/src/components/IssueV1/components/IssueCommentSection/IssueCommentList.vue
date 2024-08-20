@@ -119,7 +119,6 @@ import {
   useIssueV1Store,
   type ComposedIssueComment,
 } from "@/store";
-import { getIssueCommentId } from "@/store/modules/v1/common";
 import { isValidProjectName } from "@/types";
 import type { ComposedIssue } from "@/types";
 import { ListIssueCommentsRequest } from "@/types/proto/v1/issue_service";
@@ -250,10 +249,8 @@ const doUpdateComment = async () => {
     return;
   }
 
-  const commentId = getIssueCommentId(state.activeComment.name);
   await issueCommentStore.updateIssueComment({
-    issueName: issue.value.name,
-    commentId: `${commentId}`,
+    issueCommentName: state.activeComment.name,
     comment: state.editComment,
   });
   cancelEditComment();
