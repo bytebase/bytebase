@@ -48,6 +48,7 @@ func TestPostgreSQLRules(t *testing.T) {
 		advisor.SchemaRuleStatementAffectedRowLimit,
 		advisor.SchemaRuleStatementMergeAlterTable,
 		advisor.SchemaRuleColumnRequireDefault,
+		advisor.SchemaRuleColumnDefaultDisallowVolatile,
 		advisor.SchemaRuleStatementDisallowAddColumnWithDefault,
 		advisor.SchemaRuleCreateIndexConcurrently,
 		advisor.SchemaRuleStatementAddCheckNotValid,

@@ -347,6 +347,10 @@
       "title": "Hacer obligatorio establecer un valor por defecto en las columnas",
       "description": "Establecer valores por defecto que satisfagan la lógica de negocio puede mejorar efectivamente la calidad de los datos del pipeline analítico aguas abajo. Esta regla no verifica los tipos \"PRIMARY KEY\", \"JSON\", \"BLOB\", \"TEXT\", \"GEOMETRY\", \"AUTO_INCREMENT\", \"GENERATED\". Nivel de error sugerido: Advertencia"
     },
+    "column-default-disallow-volatile": {
+      "title": "No permitir establecer valores predeterminados volátiles en las columnas",
+      "description": "Las funciones volátiles (por ejemplo, clock_timestamp()) actualizan cada fila con el valor en el momento de la ejecución de ALTER TABLE, lo que puede causar actualizaciones prolongadas."
+    },
     "statement-select-no-select-all": {
       "title": "Prohibir el uso de \"SELECT *\"",
       "description": "El uso de SELECT * para obtener todos los datos de una fila puede causar una sobrecarga de recursos innecesaria y también puede causar resultados inesperados en las aplicaciones una vez que la tabla agrega o elimina columnas. Nivel de sugerencia de error: Error"
