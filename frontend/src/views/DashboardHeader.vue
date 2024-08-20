@@ -54,38 +54,38 @@
         <span class="hidden lg:block mr-2">{{ $t("common.want-help") }}</span>
         <heroicons-outline:chat-bubble-left-right class="w-4 h-4" />
       </NButton>
-      <NButton size="small">
-        <router-link
-          :to="sqlEditorLink"
-          class="flex flex-row justify-center items-center"
-          exact-active-class=""
-          target="_blank"
-        >
+      <router-link
+        :to="sqlEditorLink"
+        class="flex flex-row justify-center items-center"
+        exact-active-class=""
+        target="_blank"
+      >
+        <NButton size="small">
           <SquareTerminalIcon class="w-4 h-auto mr-1" />
           <span class="whitespace-nowrap">{{ $t("sql-editor.self") }}</span>
-        </router-link>
-      </NButton>
+        </NButton>
+      </router-link>
       <NTooltip>
         <template #trigger>
-          <NButton size="small" @click="goToMyIssues">
-            <router-link :to="myIssueLink" exact-active-class="">
+          <router-link :to="myIssueLink" exact-active-class="">
+            <NButton size="small" @click="goToMyIssues">
               <CircleDotIcon class="w-4 h-auto" />
-            </router-link>
-          </NButton>
+            </NButton>
+          </router-link>
         </template>
         {{ $t("issue.my-issues") }}
       </NTooltip>
       <NTooltip>
         <template #trigger>
-          <NButton size="small">
-            <router-link
-              v-if="hasGetSettingPermission"
-              :to="{ name: SETTING_ROUTE_WORKSPACE_GENERAL }"
-              exact-active-class=""
-            >
+          <router-link
+            v-if="hasGetSettingPermission"
+            :to="{ name: SETTING_ROUTE_WORKSPACE_GENERAL }"
+            exact-active-class=""
+          >
+            <NButton size="small">
               <SettingsIcon class="w-4 h-auto" />
-            </router-link>
-          </NButton>
+            </NButton>
+          </router-link>
         </template>
         {{ $t("common.setting") }}
       </NTooltip>
