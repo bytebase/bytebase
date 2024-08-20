@@ -64,7 +64,7 @@
               <span class="textinfolabel text-sm">
                 {{ $t("role.default-workspace-role") }}
               </span>
-              <RoleSelect :multiple="true" v-model:value="state.roles" />
+              <RoleSelect v-model:value="state.roles" :multiple="true" />
             </div>
           </NFormItem>
           <template v-if="state.user.userType === UserType.USER">

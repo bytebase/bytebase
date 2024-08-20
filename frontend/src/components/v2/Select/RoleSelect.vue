@@ -24,7 +24,7 @@ import {
 } from "@/types";
 import { displayRoleTitle } from "@/utils";
 
-const props = withDefaults(
+withDefaults(
   defineProps<{
     value?: string[] | string | undefined;
     disabled?: boolean;

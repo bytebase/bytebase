@@ -27,7 +27,7 @@
               {{ $t("settings.members.assign-role", 2 /* multiply*/) }}
               <span class="text-red-600">*</span>
             </div>
-            <RoleSelect :multiple="true" v-model:value="state.roles" />
+            <RoleSelect v-model:value="state.roles" :multiple="true" />
           </div>
         </div>
       </template>
