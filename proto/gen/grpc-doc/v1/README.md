@@ -6616,7 +6616,6 @@ When paginating, all other parameters provided to `ListPlans` must match the cal
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name of the plan. `plan` is a system generated ID. Format: projects/{project}/plans/{plan} |
-| uid | [string](#string) |  | The system-assigned, unique identifier for a resource. |
 | issue | [string](#string) |  | The resource name of the issue associated with this plan. Format: projects/{project}/issues/{issue} |
 | title | [string](#string) |  |  |
 | description | [string](#string) |  |  |
@@ -6818,7 +6817,6 @@ When paginating, all other parameters provided to `ListPlans` must match the cal
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | Format: projects/{project}/plans/{plan}/planCheckRuns/{planCheckRun} |
-| uid | [string](#string) |  | The system-assigned, unique identifier for a resource. |
 | type | [PlanCheckRun.Type](#bytebase-v1-PlanCheckRun-Type) |  |  |
 | status | [PlanCheckRun.Status](#bytebase-v1-PlanCheckRun-Status) |  |  |
 | target | [string](#string) |  | Format: instances/{instance}/databases/{database} |

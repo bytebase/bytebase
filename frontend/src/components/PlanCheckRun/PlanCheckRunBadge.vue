@@ -46,6 +46,7 @@ import {
   PlanCheckRun_Status,
   PlanCheckRun_Type,
 } from "@/types/proto/v1/plan_service";
+import { extractPlanCheckRunUID } from "@/utils";
 import { planCheckRunResultStatus } from "./common";
 
 const props = defineProps<{
@@ -62,7 +63,9 @@ defineEmits<{
 const { t } = useI18n();
 
 const latestPlanCheckRun = computed(() => {
-  return maxBy(props.planCheckRunList, (check) => Number(check.uid))!;
+  return maxBy(props.planCheckRunList, (check) =>
+    Number(extractPlanCheckRunUID(check.name))
+  )!;
 });
 
 const status = computed(() => {

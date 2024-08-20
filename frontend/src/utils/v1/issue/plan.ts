@@ -1,4 +1,5 @@
 import slug from "slug";
+import { EMPTY_ID, UNKNOWN_ID } from "@/types";
 import type { Plan, Plan_Spec } from "@/types/proto/v1/plan_service";
 
 export const sheetNameOfSpec = (spec: Plan_Spec): string => {
@@ -11,6 +12,22 @@ export function planV1Slug(plan: Plan): string {
 
 export const extractPlanUID = (name: string) => {
   const pattern = /(?:^|\/)plans\/(\d+)(?:$|\/)/;
+  const matches = name.match(pattern);
+  return matches?.[1] ?? "";
+};
+
+export const isValidPlanName = (name: string | undefined) => {
+  if (!name) {
+    return false;
+  }
+  const planUID = extractPlanUID(name);
+  return (
+    planUID && planUID !== String(EMPTY_ID) && planUID !== String(UNKNOWN_ID)
+  );
+};
+
+export const extractPlanCheckRunUID = (name: string) => {
+  const pattern = /(?:^|\/)planCheckRuns\/(\d+)(?:$|\/)/;
   const matches = name.match(pattern);
   return matches?.[1] ?? "";
 };

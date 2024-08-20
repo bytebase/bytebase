@@ -151,7 +151,7 @@ const planCheckStatus = computed((): PlanCheckRun_Result_Status => {
   if (isCreating.value) return PlanCheckRun_Result_Status.UNRECOGNIZED;
   const planCheckList = uniqBy(
     props.stage.tasks.flatMap(getPlanCheckRunsForTask),
-    (checkRun) => checkRun.uid
+    (checkRun) => checkRun.name
   );
   const summary = planCheckRunSummaryForCheckRunList(planCheckList);
   if (summary.errorCount > 0) {

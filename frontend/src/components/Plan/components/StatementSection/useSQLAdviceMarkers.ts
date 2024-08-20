@@ -7,6 +7,7 @@ import {
   PlanCheckRun_Type,
 } from "@/types/proto/v1/plan_service";
 import { Advice_Status, type Advice } from "@/types/proto/v1/sql_service";
+import { extractPlanCheckRunUID } from "@/utils";
 import { planCheckRunListForSpec, type PlanContext } from "../../logic";
 
 export const useSQLAdviceMarkers = (
@@ -53,7 +54,7 @@ export const useSQLAdviceMarkers = (
 
 const getLatestAdviceOptions = (planCheckRunList: PlanCheckRun[]) => {
   const latest = maxBy(planCheckRunList, (checkRun) =>
-    parseInt(checkRun.uid, 10)
+    parseInt(extractPlanCheckRunUID(checkRun.name), 10)
   );
   if (!latest) {
     return [];
