@@ -13243,10 +13243,6 @@ components:
                 name:
                     type: string
                     description: 'Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}'
-                uid:
-                    readOnly: true
-                    type: string
-                    description: The system-assigned, unique identifier for a resource.
                 title:
                     type: string
                 specId:

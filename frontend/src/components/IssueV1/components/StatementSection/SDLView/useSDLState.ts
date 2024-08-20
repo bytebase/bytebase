@@ -47,7 +47,7 @@ export const useSDLState = () => {
   const findLatestChangeHistoryName = (task: Task) => {
     if (task.status !== Task_Status.DONE) return undefined;
     const taskRunList = issue.value.rolloutTaskRunList.filter((taskRun) => {
-      return extractTaskUID(taskRun.name) === task.uid;
+      return extractTaskUID(taskRun.name) === extractTaskUID(task.name);
     });
     for (let i = taskRunList.length - 1; i >= 0; i--) {
       const taskRun = taskRunList[i];

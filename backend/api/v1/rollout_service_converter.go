@@ -686,7 +686,6 @@ func convertToTaskFromDatabaseCreate(ctx context.Context, s *store.Store, projec
 	}
 	v1pbTask := &v1pb.Task{
 		Name:           fmt.Sprintf("%s%s/%s%d/%s%d/%s%d", common.ProjectNamePrefix, project.ResourceID, common.RolloutPrefix, task.PipelineID, common.StagePrefix, task.StageID, common.TaskPrefix, task.ID),
-		Uid:            fmt.Sprintf("%d", task.ID),
 		Title:          task.Name,
 		SpecId:         payload.SpecId,
 		Type:           convertToTaskType(task.Type),
@@ -728,7 +727,6 @@ func convertToTaskFromSchemaBaseline(ctx context.Context, s *store.Store, projec
 	}
 	v1pbTask := &v1pb.Task{
 		Name:           fmt.Sprintf("%s%s/%s%d/%s%d/%s%d", common.ProjectNamePrefix, project.ResourceID, common.RolloutPrefix, task.PipelineID, common.StagePrefix, task.StageID, common.TaskPrefix, task.ID),
-		Uid:            fmt.Sprintf("%d", task.ID),
 		Title:          task.Name,
 		SpecId:         payload.SpecId,
 		Type:           convertToTaskType(task.Type),
@@ -763,7 +761,6 @@ func convertToTaskFromSchemaUpdate(ctx context.Context, s *store.Store, project 
 
 	v1pbTask := &v1pb.Task{
 		Name:           fmt.Sprintf("%s%s/%s%d/%s%d/%s%d", common.ProjectNamePrefix, project.ResourceID, common.RolloutPrefix, task.PipelineID, common.StagePrefix, task.StageID, common.TaskPrefix, task.ID),
-		Uid:            fmt.Sprintf("%d", task.ID),
 		Title:          task.Name,
 		SpecId:         payload.SpecId,
 		Type:           convertToTaskType(task.Type),
@@ -798,7 +795,6 @@ func convertToTaskFromSchemaUpdateGhostCutover(ctx context.Context, s *store.Sto
 	}
 	v1pbTask := &v1pb.Task{
 		Name:           fmt.Sprintf("%s%s/%s%d/%s%d/%s%d", common.ProjectNamePrefix, project.ResourceID, common.RolloutPrefix, task.PipelineID, common.StagePrefix, task.StageID, common.TaskPrefix, task.ID),
-		Uid:            fmt.Sprintf("%d", task.ID),
 		Title:          task.Name,
 		SpecId:         payload.SpecId,
 		Status:         convertToTaskStatus(task.LatestTaskRunStatus, payload.Skipped),
@@ -829,7 +825,6 @@ func convertToTaskFromDataUpdate(ctx context.Context, s *store.Store, project *s
 
 	v1pbTask := &v1pb.Task{
 		Name:           fmt.Sprintf("%s%s/%s%d/%s%d/%s%d", common.ProjectNamePrefix, project.ResourceID, common.RolloutPrefix, task.PipelineID, common.StagePrefix, task.StageID, common.TaskPrefix, task.ID),
-		Uid:            fmt.Sprintf("%d", task.ID),
 		Title:          task.Name,
 		SpecId:         payload.SpecId,
 		Type:           convertToTaskType(task.Type),
@@ -877,7 +872,6 @@ func convertToTaskFromDatabaseDataExport(ctx context.Context, s *store.Store, pr
 	}
 	v1pbTask := &v1pb.Task{
 		Name:    fmt.Sprintf("%s%s/%s%d/%s%d/%s%d", common.ProjectNamePrefix, project.ResourceID, common.RolloutPrefix, task.PipelineID, common.StagePrefix, task.StageID, common.TaskPrefix, task.ID),
-		Uid:     fmt.Sprintf("%d", task.ID),
 		Title:   task.Name,
 		SpecId:  payload.SpecId,
 		Type:    convertToTaskType(task.Type),

@@ -54,9 +54,9 @@ import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { type ComposedIssue } from "@/types";
 import {
   getHighlightHTMLByRegExp,
-  issueSlug,
   extractProjectResourceName,
   humanizeTs,
+  issueV1Slug,
 } from "@/utils";
 import IssueLabelSelector, {
   getValidIssueLabels,
@@ -256,7 +256,7 @@ const rowProps = (issue: ComposedIssue) => {
         name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
         params: {
           projectId: extractProjectResourceName(issue.project),
-          issueSlug: issueSlug(issue.title, issue.uid),
+          issueSlug: issueV1Slug(issue),
         },
       });
       const url = route.fullPath;

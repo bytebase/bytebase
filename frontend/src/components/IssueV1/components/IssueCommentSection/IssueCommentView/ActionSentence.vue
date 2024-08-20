@@ -24,9 +24,8 @@ import {
   IssueStatus,
 } from "@/types/proto/v1/issue_service";
 import {
-  extractTaskUID,
   findStageByUID,
-  findTaskByUID,
+  findTaskByName,
   extractStageUID,
   extractSheetUID,
 } from "@/utils";
@@ -157,7 +156,7 @@ const renderActionSentence = () => {
           params.verb = t("activity.sentence.changed");
       }
       const taskEntities = tasks.map((task) =>
-        findTaskByUID(issue.rolloutEntity, extractTaskUID(task))
+        findTaskByName(issue.rolloutEntity, task)
       );
       if (taskEntities.length > 0) {
         params.target = <TaskName issue={issue} task={taskEntities[0]} />;
@@ -195,7 +194,7 @@ const renderActionSentence = () => {
       IssueComment_TaskPriorBackup.fromPartial(
         issueComment.taskPriorBackup || {}
       );
-    const taskEntity = findTaskByUID(issue.rolloutEntity, extractTaskUID(task));
+    const taskEntity = findTaskByName(issue.rolloutEntity, task);
     let verb = t("activity.sentence.prior-back-table", {
       database: database.length > 0 ? database : "bbdataarchive",
       tables: tables

@@ -23,13 +23,13 @@ export const useTempEditState = (state: EditState) => {
     // The issue page is polling the issue entity, making the reference obj
     // of `selectedTask` changes every time.
     // So we need to watch the id instead of the object ref.
-    const selectedTaskUID = computed((): string => {
+    const selectedTaskName = computed((): string => {
       if (isCreating.value) return String(UNKNOWN_ID);
-      return selectedTask.value.uid;
+      return selectedTask.value.name;
     });
 
-    watch(selectedTaskUID, () => {
-      // When switching task id, set the switch flag to true
+    watch(selectedTaskName, () => {
+      // When switching task, set the switch flag to true
       // to temporarily disable change listeners.
       isSwitchingTask.value = true;
       nextTick(() => {
@@ -44,15 +44,15 @@ export const useTempEditState = (state: EditState) => {
         return;
       }
       // Save the temp edit state before switching task.
-      tempEditStateMap.set(selectedTaskUID.value, {
+      tempEditStateMap.set(selectedTaskName.value, {
         isEditing: state.isEditing,
         statement: state.statement,
       });
     };
 
-    const afterTaskUIDChange = (uid: string) => {
+    const afterTaskNameChange = (name: string) => {
       // Try to restore the saved temp edit state after switching task.
-      const storedState = tempEditStateMap.get(uid);
+      const storedState = tempEditStateMap.get(name);
       if (storedState) {
         // If found the stored temp edit state, restore it.
         Object.assign(state, storedState);
@@ -70,8 +70,8 @@ export const useTempEditState = (state: EditState) => {
       { immediate: true }
     );
     const stopWatchAfterChange = watch(
-      selectedTaskUID,
-      afterTaskUIDChange,
+      selectedTaskName,
+      afterTaskNameChange,
       { flush: "post" } // Listen to the event AFTER selectedTaskId changed
     );
 

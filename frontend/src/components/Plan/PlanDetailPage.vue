@@ -24,12 +24,9 @@
 import { onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
+import { Issue } from "@/types/proto/v1/issue_service";
 import type { Advice } from "@/types/proto/v1/sql_service";
-import {
-  extractIssueUID,
-  extractProjectResourceName,
-  issueSlug,
-} from "@/utils";
+import { extractProjectResourceName, issueV1Slug } from "@/utils";
 import { provideSQLCheckContext } from "../SQLCheck";
 import {
   HeaderSection,
@@ -55,13 +52,16 @@ onMounted(() => {
     return;
   }
 
-  // If the plan has an issue, redirect to the issue detail page.
-  const relatedIssueUID = extractIssueUID(plan.value.issue);
   router.replace({
     name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
     params: {
       projectId: extractProjectResourceName(plan.value.project),
-      issueSlug: issueSlug(plan.value.title, relatedIssueUID),
+      issueSlug: issueV1Slug(
+        Issue.fromPartial({
+          title: plan.value.title,
+          name: plan.value.issue,
+        })
+      ),
     },
   });
 });
