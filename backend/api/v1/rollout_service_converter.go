@@ -436,7 +436,6 @@ func convertToTaskRuns(ctx context.Context, s *store.Store, stateCfg *state.Stat
 func convertToTaskRun(ctx context.Context, s *store.Store, stateCfg *state.State, taskRun *store.TaskRunMessage) (*v1pb.TaskRun, error) {
 	t := &v1pb.TaskRun{
 		Name:          fmt.Sprintf("%s%s/%s%d/%s%d/%s%d/%s%d", common.ProjectNamePrefix, taskRun.ProjectID, common.RolloutPrefix, taskRun.PipelineUID, common.StagePrefix, taskRun.StageUID, common.TaskPrefix, taskRun.TaskUID, common.TaskRunPrefix, taskRun.ID),
-		Uid:           fmt.Sprintf("%d", taskRun.ID),
 		Creator:       fmt.Sprintf("users/%s", taskRun.Creator.Email),
 		Updater:       fmt.Sprintf("users/%s", taskRun.Updater.Email),
 		CreateTime:    timestamppb.New(time.Unix(taskRun.CreatedTs, 0)),
@@ -579,7 +578,6 @@ func convertToTaskRunPriorBackupDetail(priorBackupDetail *storepb.PriorBackupDet
 func convertToRollout(ctx context.Context, s *store.Store, project *store.ProjectMessage, rollout *store.PipelineMessage) (*v1pb.Rollout, error) {
 	rolloutV1 := &v1pb.Rollout{
 		Name:   fmt.Sprintf("%s%s/%s%d", common.ProjectNamePrefix, project.ResourceID, common.RolloutPrefix, rollout.ID),
-		Uid:    fmt.Sprintf("%d", rollout.ID),
 		Plan:   "",
 		Title:  rollout.Name,
 		Stages: nil,
@@ -606,7 +604,6 @@ func convertToRollout(ctx context.Context, s *store.Store, project *store.Projec
 		}
 		rolloutStage := &v1pb.Stage{
 			Name:  fmt.Sprintf("%s%s/%s%d/%s%d", common.ProjectNamePrefix, project.ResourceID, common.RolloutPrefix, rollout.ID, common.StagePrefix, stage.ID),
-			Uid:   fmt.Sprintf("%d", stage.ID),
 			Title: stage.Name,
 		}
 		for _, task := range stage.TaskList {

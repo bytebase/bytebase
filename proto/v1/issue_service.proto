@@ -289,12 +289,12 @@ message RequestIssueRequest {
 }
 
 message Issue {
-  reserved 7, 8;
-
   option (google.api.resource) = {
     type: "bytebase.com/Issue"
     pattern: "projects/{project}/issues/{issue}"
   };
+
+  reserved 7, 8;
 
   // The name of the issue.
   // Format: projects/{project}/issues/{issue}

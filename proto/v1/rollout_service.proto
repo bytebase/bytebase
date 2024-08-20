@@ -218,12 +218,11 @@ message Rollout {
     pattern: "projects/{project}/rollouts/{rollout}"
   };
 
+  reserved 2;
+
   // The resource name of the rollout.
   // Format: projects/{project}/rollouts/{rollout}
   string name = 1;
-
-  // The system-assigned, unique identifier for a resource.
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The plan that this rollout is based on.
   // Format: projects/{project}/plans/{plan}
@@ -241,22 +240,22 @@ message Stage {
     pattern: "projects/{project}/rollouts/{rollout}/stages/{stage}"
   };
 
+  reserved 2;
+
   // Format: projects/{project}/rollouts/{rollout}/stages/{stage}
   string name = 1;
-  // The system-assigned, unique identifier for a resource.
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   string title = 4;
   repeated Task tasks = 5;
 }
 
 message Task {
-  reserved 2;
-
   option (google.api.resource) = {
     type: "bytebase.com/Task"
     pattern: "projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}"
   };
+
+  reserved 2;
 
   // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
   string name = 1;
@@ -371,12 +370,10 @@ message TaskRun {
     pattern: "projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}"
   };
 
-  reserved 12, 15;
+  reserved 2, 12, 15;
 
   // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
   string name = 1;
-  // The system-assigned, unique identifier for a resource.
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Format: user/hello@world.com
   string creator = 3;

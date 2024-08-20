@@ -6,7 +6,7 @@
           <div
             class="flex flex-col sm:flex-row justify-between divide-y sm:divide-y-0"
           >
-            <template v-for="(stage, index) in stageList" :key="stage.uid">
+            <template v-for="(stage, index) in stageList" :key="stage.name">
               <StageCard
                 :stage="stage"
                 :index="index"
