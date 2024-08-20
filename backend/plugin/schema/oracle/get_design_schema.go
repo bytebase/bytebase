@@ -18,7 +18,8 @@ func init() {
 	schema.RegisterGetDesignSchema(storepb.Engine_ORACLE, GetDesignSchema)
 }
 
-func GetDesignSchema(defaultSchema, baselineSchema string, to *storepb.DatabaseSchemaMetadata) (string, error) {
+func GetDesignSchema(defaultSchema string, to *storepb.DatabaseSchemaMetadata) (string, error) {
+	baselineSchema := ""
 	toState := convertToDatabaseState(to)
 	tree, tokens, err := plsql.ParsePLSQL(baselineSchema)
 	if err != nil {

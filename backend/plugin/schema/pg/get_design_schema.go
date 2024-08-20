@@ -37,7 +37,8 @@ type designSchemaGenerator struct {
 }
 
 // GetDesignSchema returns the schema string for the design schema.
-func GetDesignSchema(_, baselineSchema string, to *storepb.DatabaseSchemaMetadata) (string, error) {
+func GetDesignSchema(_ string, to *storepb.DatabaseSchemaMetadata) (string, error) {
+	baselineSchema := ""
 	toState := convertToDatabaseState(to)
 	parseResult, err := pgparser.ParsePostgreSQL(baselineSchema)
 	if err != nil {
@@ -121,8 +122,11 @@ func GetDesignSchema(_, baselineSchema string, to *storepb.DatabaseSchemaMetadat
 			}
 		}
 	}
+	s := listener.result.String()
+	// Make goyamlv3 happy.
+	s = strings.TrimLeft(s, "\n")
 
-	return listener.result.String(), nil
+	return s, nil
 }
 
 // EnterCreatestmt is called when production createstmt is entered.
