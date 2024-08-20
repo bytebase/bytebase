@@ -68,7 +68,7 @@
         }
       ]
     }
-  result: |+
+  result: |
     --
     -- Table structure for `t`
     --
@@ -81,7 +81,6 @@
       KEY `idx_t_b` (`b`(20)),
       KEY `idx_t_b2` (`b`(20))
     );
-
 - baseline: |-
     CREATE TABLE `t` (
       `a` int,
@@ -365,7 +364,7 @@
         }
       ]
     }
-  result: |+
+  result: |
     --
     -- Table structure for `rds`
     --
@@ -435,7 +434,6 @@
       PRIMARY KEY (`b`),
       CONSTRAINT `fk1` FOREIGN KEY (`b`) REFERENCES `t4` (`b`)
     );
-
 - baseline: |-
     CREATE TABLE `t1` (
       `a` int
@@ -502,7 +500,7 @@
         }
       ]
     }
-  result: |+
+  result: |
     --
     -- Table structure for `t1`
     --
@@ -530,4 +528,3 @@
     CREATE TABLE `t4` (
       `a` int DEFAULT 1
     );
-
