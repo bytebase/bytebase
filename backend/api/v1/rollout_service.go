@@ -835,6 +835,7 @@ func validateSteps(steps []*v1pb.Plan_Step) error {
 		return errors.Errorf("the plan has zero step")
 	}
 	var databaseTarget, databaseGroupTarget int
+	configTypeCount := map[string]int{}
 	seenID := map[string]bool{}
 	for _, step := range steps {
 		if len(step.Specs) == 0 {
@@ -851,14 +852,23 @@ func validateSteps(steps []*v1pb.Plan_Step) error {
 			}
 			seenID[id] = true
 			seenIDInStep[id] = true
-			if config := spec.GetChangeDatabaseConfig(); config != nil {
-				if _, _, err := common.GetInstanceDatabaseID(config.Target); err == nil {
+			switch config := spec.Config.(type) {
+			case *v1pb.Plan_Spec_ChangeDatabaseConfig:
+				configTypeCount["ChangeDatabaseConfig"]++
+				c := config.ChangeDatabaseConfig
+				if _, _, err := common.GetInstanceDatabaseID(c.Target); err == nil {
 					databaseTarget++
-				} else if _, _, err := common.GetProjectIDDatabaseGroupID(config.Target); err == nil {
+				} else if _, _, err := common.GetProjectIDDatabaseGroupID(c.Target); err == nil {
 					databaseGroupTarget++
 				} else {
-					return errors.Errorf("unknown target %q", config.Target)
+					return errors.Errorf("unknown target %q", c.Target)
 				}
+			case *v1pb.Plan_Spec_CreateDatabaseConfig:
+				configTypeCount["CreateDatabaseConfig"]++
+			case *v1pb.Plan_Spec_ExportDataConfig:
+				configTypeCount["ExportDataConfig"]++
+			default:
+				return errors.Errorf("unexpected config type %T", spec.Config)
 			}
 		}
 		for _, spec := range step.Specs {
@@ -872,6 +882,15 @@ func validateSteps(steps []*v1pb.Plan_Step) error {
 			}
 		}
 	}
+
+	if len(configTypeCount) > 1 {
+		msg := "expect one kind of config, found"
+		for k, v := range configTypeCount {
+			msg += fmt.Sprintf(" %v %v", v, k)
+		}
+		return errors.New(msg)
+	}
+
 	if databaseGroupTarget > 0 && databaseTarget > 0 {
 		return errors.Errorf("found databaseGroupTarget and databaseTarget, expect only one kind")
 	}
