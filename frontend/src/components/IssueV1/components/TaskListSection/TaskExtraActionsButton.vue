@@ -70,7 +70,7 @@ const options = computed((): ExtraTaskRolloutActionDropdownOption[] => {
     return [];
   }
   const { task } = props;
-  if (task.uid !== activeTask.value.uid) {
+  if (task.name !== activeTask.value.name) {
     return [];
   }
   const SKIP = actionList.value.includes("SKIP");

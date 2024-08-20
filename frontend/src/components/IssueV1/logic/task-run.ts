@@ -5,7 +5,7 @@ import { extractTaskUID } from "@/utils";
 
 export const taskRunListForTask = (issue: ComposedIssue, task: Task) => {
   return issue.rolloutTaskRunList.filter(
-    (taskRun) => extractTaskUID(taskRun.name) === task.uid
+    (taskRun) => extractTaskUID(taskRun.name) === extractTaskUID(task.name)
   );
 };
 

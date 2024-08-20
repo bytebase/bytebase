@@ -8,6 +8,8 @@ import {
   emptyTask,
   unknownTask,
   unknownStage,
+  EMPTY_ID,
+  UNKNOWN_ID,
 } from "@/types";
 import type { Rollout, Stage, Task } from "@/types/proto/v1/rollout_service";
 import { Task_Status } from "@/types/proto/v1/rollout_service";
@@ -26,10 +28,30 @@ export const extractStageUID = (name: string) => {
   return matches?.[1] ?? "";
 };
 
+export const isValidStageName = (name: string | undefined) => {
+  if (!name) {
+    return false;
+  }
+  const stageUID = extractStageUID(name);
+  return (
+    stageUID && stageUID !== String(EMPTY_ID) && stageUID !== String(UNKNOWN_ID)
+  );
+};
+
 export const extractTaskUID = (name: string) => {
   const pattern = /(?:^|\/)tasks\/([^/]+)(?:$|\/)/;
   const matches = name.match(pattern);
   return matches?.[1] ?? "";
+};
+
+export const isValidTaskName = (name: string | undefined) => {
+  if (!name) {
+    return false;
+  }
+  const taskUID = extractTaskUID(name);
+  return (
+    taskUID && taskUID !== String(EMPTY_ID) && taskUID !== String(UNKNOWN_ID)
+  );
 };
 
 export const stageV1Slug = (stage: Stage): string => {
@@ -37,7 +59,7 @@ export const stageV1Slug = (stage: Stage): string => {
 };
 
 export const taskV1Slug = (task: Task): string => {
-  return [slug(task.title), task.uid].join("-");
+  return [slug(task.title), extractTaskUID(task.name)].join("-");
 };
 
 export const activeTaskInTaskList = (tasks: Task[]): Task => {
@@ -85,13 +107,13 @@ export const activeStageInRollout = (rollout: Rollout | undefined): Stage => {
   return emptyStage();
 };
 
-export const findTaskByUID = (
+export const findTaskByName = (
   rollout: Rollout | undefined,
-  uid: string
+  name: string
 ): Task => {
   for (const stage of rollout?.stages ?? []) {
     for (const task of stage.tasks) {
-      if (task.uid == uid) {
+      if (task.name == name) {
         return task;
       }
     }
@@ -146,7 +168,7 @@ export const buildIssueV1LinkWithTask = (
   simple = false
 ) => {
   const stage = issue.rolloutEntity?.stages.find(
-    (s) => s.tasks.findIndex((t) => t.uid === task.uid) >= 0
+    (s) => s.tasks.findIndex((t) => t.name === task.name) >= 0
   );
 
   const projectId = extractProjectResourceName(issue.project);
@@ -155,7 +177,7 @@ export const buildIssueV1LinkWithTask = (
   if (stage) {
     query.stage = simple ? stage.uid : stageV1Slug(stage);
   }
-  query.task = simple ? task.uid : taskV1Slug(task);
+  query.task = simple ? extractTaskUID(task.name) : taskV1Slug(task);
 
   const querystring = stringify(query);
   const url = `/projects/${projectId}/issues/${issueSlug}?${querystring}`;

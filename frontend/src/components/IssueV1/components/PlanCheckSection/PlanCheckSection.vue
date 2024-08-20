@@ -19,8 +19,11 @@ import {
 } from "@/components/IssueV1/logic";
 import PlanCheckRunBar from "@/components/PlanCheckRun/PlanCheckRunBar.vue";
 import { useCurrentUserV1 } from "@/store";
-import { EMPTY_ID } from "@/types";
-import { extractUserResourceName, hasProjectPermissionV2 } from "@/utils";
+import {
+  extractUserResourceName,
+  hasProjectPermissionV2,
+  isValidTaskName,
+} from "@/utils";
 
 const currentUser = useCurrentUserV1();
 const { issue, selectedTask, getPlanCheckRunsForTask } = useIssueContext();
@@ -55,7 +58,7 @@ const allowRunChecks = computed(() => {
 
 const planCheckRunList = computed(() => {
   // If a task is selected, show plan checks for the task.
-  if (selectedTask.value && selectedTask.value.uid !== String(EMPTY_ID)) {
+  if (selectedTask.value && isValidTaskName(selectedTask.value.name)) {
     return getPlanCheckRunsForTask(selectedTask.value);
   }
   // Otherwise, show plan checks for the issue.

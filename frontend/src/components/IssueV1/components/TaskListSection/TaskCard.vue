@@ -2,7 +2,7 @@
   <div
     class="task px-2 py-1 pr-1 cursor-pointer border rounded lg:flex-1 flex justify-between items-stretch overflow-hidden gap-x-1"
     :class="taskClass"
-    :data-task-uid="isCreating ? '-creating-' : task.uid"
+    :data-task-name="isCreating ? '-creating-' : task.name"
     @click="onClickTask(task)"
   >
     <div class="flex-1 flex flex-col gap-y-1">

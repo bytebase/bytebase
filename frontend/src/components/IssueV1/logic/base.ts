@@ -5,7 +5,7 @@ import { computed, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { useUIStateStore } from "@/store";
-import { EMPTY_ID, emptyStage, emptyTask } from "@/types";
+import { emptyStage, emptyTask } from "@/types";
 import type { Plan_Spec, PlanCheckRun } from "@/types/proto/v1/plan_service";
 import { Task_Type, Stage, Task } from "@/types/proto/v1/rollout_service";
 import { emptyPlanSpec } from "@/types/v1/issue/plan";
@@ -19,6 +19,9 @@ import {
   stageV1Slug,
   taskV1Slug,
   flattenSpecList,
+  extractTaskUID,
+  isValidTaskName,
+  extractStageUID,
 } from "@/utils";
 import type { IssueContext, IssueEvents, IssuePhase } from "./context";
 import { planCheckRunListForTask } from "./plan-check";
@@ -76,7 +79,7 @@ export const useBaseIssueContext = (
     }
 
     // Otherwise, fallback to selected task's spec.
-    if (selectedTask.value && selectedTask.value.uid !== String(EMPTY_ID)) {
+    if (selectedTask.value && isValidTaskName(selectedTask.value.name)) {
       return specForTask(plan.value, selectedTask.value) || emptyPlanSpec();
     }
     // Fallback to first spec.
@@ -97,7 +100,7 @@ export const useBaseIssueContext = (
         }
       } else {
         const stageFound = stageList.find(
-          (stage) => stage.uid === String(indexOrUID)
+          (stage) => extractStageUID(stage.name) === String(indexOrUID)
         );
         if (stageFound) {
           return stageFound;
@@ -106,7 +109,9 @@ export const useBaseIssueContext = (
     } else if (!isCreating.value && taskSlug) {
       const taskUID = String(uidFromSlug(taskSlug));
       for (const stage of stageList) {
-        if (stage.tasks.findIndex((task) => task.uid === taskUID)) {
+        if (
+          stage.tasks.findIndex((task) => extractTaskUID(task.name) === taskUID)
+        ) {
           return stage;
         }
       }
@@ -130,7 +135,9 @@ export const useBaseIssueContext = (
           return tasks[indexOrUID];
         }
       } else {
-        const taskFound = tasks.find((task) => task.uid === String(indexOrUID));
+        const taskFound = tasks.find(
+          (task) => extractTaskUID(task.name) === String(indexOrUID)
+        );
         if (taskFound) {
           return taskFound;
         }

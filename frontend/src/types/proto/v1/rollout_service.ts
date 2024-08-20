@@ -159,8 +159,6 @@ export interface Stage {
 export interface Task {
   /** Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task} */
   name: string;
-  /** The system-assigned, unique identifier for a resource. */
-  uid: string;
   title: string;
   /**
    * A UUID4 string that uniquely identifies the Spec.
@@ -2002,7 +2000,6 @@ export const Stage = {
 function createBaseTask(): Task {
   return {
     name: "",
-    uid: "",
     title: "",
     specId: "",
     status: Task_Status.STATUS_UNSPECIFIED,
@@ -2022,9 +2019,6 @@ export const Task = {
   encode(message: Task, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
-    }
-    if (message.uid !== "") {
-      writer.uint32(18).string(message.uid);
     }
     if (message.title !== "") {
       writer.uint32(26).string(message.title);
@@ -2078,13 +2072,6 @@ export const Task = {
           }
 
           message.name = reader.string();
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.uid = reader.string();
           continue;
         case 3:
           if (tag !== 26) {
@@ -2182,7 +2169,6 @@ export const Task = {
   fromJSON(object: any): Task {
     return {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
-      uid: isSet(object.uid) ? globalThis.String(object.uid) : "",
       title: isSet(object.title) ? globalThis.String(object.title) : "",
       specId: isSet(object.specId) ? globalThis.String(object.specId) : "",
       status: isSet(object.status) ? task_StatusFromJSON(object.status) : Task_Status.STATUS_UNSPECIFIED,
@@ -2212,9 +2198,6 @@ export const Task = {
     const obj: any = {};
     if (message.name !== "") {
       obj.name = message.name;
-    }
-    if (message.uid !== "") {
-      obj.uid = message.uid;
     }
     if (message.title !== "") {
       obj.title = message.title;
@@ -2261,7 +2244,6 @@ export const Task = {
   fromPartial(object: DeepPartial<Task>): Task {
     const message = createBaseTask();
     message.name = object.name ?? "";
-    message.uid = object.uid ?? "";
     message.title = object.title ?? "";
     message.specId = object.specId ?? "";
     message.status = object.status ?? Task_Status.STATUS_UNSPECIFIED;

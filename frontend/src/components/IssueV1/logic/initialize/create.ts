@@ -384,8 +384,7 @@ export const previewPlan = async (plan: Plan, params: CreateIssueParams) => {
     stage.uid = nextUID();
     stage.name = `${rollout.name}/stages/${stage.uid}`;
     stage.tasks.forEach((task) => {
-      task.uid = nextUID();
-      task.name = `${stage.name}/tasks/${task.uid}`;
+      task.name = `${stage.name}/tasks/${nextUID()}`;
     });
   });
 
