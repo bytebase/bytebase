@@ -101,8 +101,7 @@ func (c *useInnoDBChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
 	code := advisor.Ok
 	for _, option := range ctx.AlterTableActions().AlterCommandList().AlterList().AllCreateTableOptionsSpaceSeparated() {
 		for _, op := range option.AllCreateTableOption() {
-			switch {
-			case op.ENGINE_SYMBOL() != nil:
+			if op.ENGINE_SYMBOL() != nil {
 				if op.EngineRef() == nil {
 					continue
 				}
@@ -111,7 +110,6 @@ func (c *useInnoDBChecker) EnterAlterTable(ctx *mysql.AlterTableContext) {
 					code = advisor.NotInnoDBEngine
 					break
 				}
-			default:
 			}
 		}
 	}
