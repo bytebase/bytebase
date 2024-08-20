@@ -81,7 +81,6 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 				slog.Error("rowsAffected returns error", log.BBError(err))
 			}
 			return util.BuildAffectedRowsResult(affectedRows), nil
-
 		}()
 		stop := false
 		if err != nil {
