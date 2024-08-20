@@ -1193,9 +1193,10 @@ message ChangeHistory {
     pattern: "instances/{instance}/databases/{database}/changeHistories/{changeHistory}"
   };
 
+  reserved 2;
+
   // Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory}
   string name = 1;
-  string uid = 2;
 
   // Format: users/hello@world.com
   string creator = 3;
