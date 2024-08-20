@@ -100,12 +100,12 @@ message DeleteRiskRequest {
 }
 
 message Risk {
-  reserved 2;
-
   option (google.api.resource) = {
     type: "bytebase.com/Risk"
     pattern: "risks/{risk}"
   };
+
+  reserved 2;
 
   // Format: risks/{risk}
   string name = 1;

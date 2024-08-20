@@ -277,13 +277,12 @@ message Label {
 }
 
 message Project {
-  reserved 2;
-
   option (google.api.resource) = {
     type: "bytebase.com/Project"
     pattern: "projects/{project}"
   };
 
+  reserved 2;
   // The name of the project.
   // Format: projects/{project}
   string name = 1;
