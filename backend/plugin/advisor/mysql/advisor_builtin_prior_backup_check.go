@@ -135,7 +135,7 @@ func hasUniqueInWhereClause(dbSchema *storepb.DatabaseSchemaMetadata, update *my
 	list := extractColumnsInEqualCondition(table, update.WhereClause().Expr())
 	columnMap := make(map[string]bool)
 	for _, column := range list {
-		columnMap[column] = true
+		columnMap[strings.ToLower(column)] = true
 	}
 
 	if dbSchema == nil {
@@ -144,12 +144,12 @@ func hasUniqueInWhereClause(dbSchema *storepb.DatabaseSchemaMetadata, update *my
 
 	for _, schema := range dbSchema.Schemas {
 		for _, t := range schema.Tables {
-			if t.Name == table.table {
+			if strings.EqualFold(t.Name, table.table) {
 				for _, index := range t.Indexes {
 					if index.Unique || index.Primary {
 						exists := true
 						for _, column := range index.Expressions {
-							if !columnMap[column] {
+							if !columnMap[strings.ToLower(column)] {
 								exists = false
 								break
 							}
@@ -196,10 +196,10 @@ func extractColumnsInEqualCondition(table *table, node antlr.ParserRuleContext) 
 		return extractColumnsInEqualCondition(table, n.SimpleExpr())
 	case *mysql.SimpleExprColumnRefContext:
 		databaseName, tableName, columnName := mysqlparser.NormalizeMySQLColumnRef(n.ColumnRef())
-		if databaseName != "" && table.database != "" && databaseName != table.database {
+		if databaseName != "" && table.database != "" && !strings.EqualFold(databaseName, table.database) {
 			return nil
 		}
-		if tableName != "" && table.table != "" && tableName != table.table {
+		if tableName != "" && table.table != "" && !strings.EqualFold(tableName, table.table) {
 			return nil
 		}
 		return []string{columnName}
