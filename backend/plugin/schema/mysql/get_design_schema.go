@@ -23,7 +23,8 @@ func init() {
 	schema.RegisterGetDesignSchema(storepb.Engine_OCEANBASE, GetDesignSchema)
 }
 
-func GetDesignSchema(_, baselineSchema string, to *storepb.DatabaseSchemaMetadata) (string, error) {
+func GetDesignSchema(_ string, to *storepb.DatabaseSchemaMetadata) (string, error) {
+	baselineSchema := ""
 	toState := convertToDatabaseState(to)
 	list, err := mysqlparser.ParseMySQL(baselineSchema, tokenizer.KeepEmptyBlocks(), tokenizer.SplitCommentBeforeDelimiter())
 	if err != nil {
@@ -155,6 +156,8 @@ func GetDesignSchema(_, baselineSchema string, to *storepb.DatabaseSchemaMetadat
 	}
 
 	s = listener.result.String()
+	// Make goyamlv3 happy.
+	s = strings.TrimLeft(s, "\n")
 	result, err := mysqlparser.RestoreDelimiter(s)
 	if err != nil {
 		slog.Warn("Failed to restore delimiter", slog.String("result", s), slog.String("error", err.Error()))
@@ -1658,7 +1661,6 @@ func (g *mysqlDesignSchemaGenerator) EnterSetStatement(ctx *mysql.SetStatementCo
 }
 
 func writeRemainingTables(w io.StringWriter, to *storepb.DatabaseSchemaMetadata, state *databaseState) error {
-	firstTable := true
 	// Follow the order of the input schemas.
 	for _, schema := range to.Schemas {
 		schemaState, ok := state.schemas[schema.Name]
@@ -1666,16 +1668,10 @@ func writeRemainingTables(w io.StringWriter, to *storepb.DatabaseSchemaMetadata,
 			continue
 		}
 		// Follow the order of the input tables.
-		for idx, table := range schema.Tables {
+		for _, table := range schema.Tables {
 			table, ok := schemaState.tables[table.Name]
 			if !ok {
 				continue
-			}
-			if firstTable {
-				firstTable = false
-				if _, err := w.WriteString("\n"); err != nil {
-					return err
-				}
 			}
 			if _, err := w.WriteString(getTableAnnouncement(table.name)); err != nil {
 				return err
@@ -1686,14 +1682,8 @@ func writeRemainingTables(w io.StringWriter, to *storepb.DatabaseSchemaMetadata,
 			if err := table.toString(buf); err != nil {
 				return err
 			}
-			if idx == len(schema.Tables)-1 && buf.String()[len(buf.String())-1] == '\n' {
-				if _, err := w.WriteString(buf.String()[:len(buf.String())-1]); err != nil {
-					return err
-				}
-			} else {
-				if _, err := w.WriteString(buf.String()); err != nil {
-					return err
-				}
+			if _, err := w.WriteString(buf.String()); err != nil {
+				return err
 			}
 			delete(schemaState.tables, table.name)
 		}
@@ -1702,7 +1692,6 @@ func writeRemainingTables(w io.StringWriter, to *storepb.DatabaseSchemaMetadata,
 }
 
 func writeRemainingViews(w io.StringWriter, to *storepb.DatabaseSchemaMetadata, state *databaseState) error {
-	firstView := true
 	// Follow the order of the input schemas.
 	for _, schema := range to.Schemas {
 		schemaState, ok := state.schemas[schema.Name]
@@ -1710,7 +1699,7 @@ func writeRemainingViews(w io.StringWriter, to *storepb.DatabaseSchemaMetadata, 
 			continue
 		}
 		// Follow the order of the input views.
-		for idx, view := range schema.Views {
+		for _, view := range schema.Views {
 			_, handled := schemaState.handledViews[view.Name]
 			if handled {
 				continue
@@ -1719,29 +1708,16 @@ func writeRemainingViews(w io.StringWriter, to *storepb.DatabaseSchemaMetadata, 
 			if !ok {
 				continue
 			}
-			if firstView {
-				firstView = false
-				if _, err := w.WriteString("\n"); err != nil {
-					return err
-				}
-			}
 			if _, err := w.WriteString(getViewAnnouncement(view.name)); err != nil {
 				return err
 			}
 
-			// Avoid new line.
 			buf := &strings.Builder{}
 			if err := view.toString(buf); err != nil {
 				return err
 			}
-			if idx == len(schema.Tables)-1 && buf.String()[len(buf.String())-1] == '\n' {
-				if _, err := w.WriteString(buf.String()[:len(buf.String())-1]); err != nil {
-					return err
-				}
-			} else {
-				if _, err := w.WriteString(buf.String()); err != nil {
-					return err
-				}
+			if _, err := w.WriteString(buf.String()); err != nil {
+				return err
 			}
 			delete(schemaState.views, view.name)
 		}
@@ -1750,7 +1726,6 @@ func writeRemainingViews(w io.StringWriter, to *storepb.DatabaseSchemaMetadata, 
 }
 
 func writeRemainingProcedures(w io.StringWriter, to *storepb.DatabaseSchemaMetadata, state *databaseState) error {
-	firstProcedure := true
 	// Follow the order of the input schemas.
 	for _, schema := range to.Schemas {
 		schemaState, ok := state.schemas[schema.Name]
@@ -1758,34 +1733,21 @@ func writeRemainingProcedures(w io.StringWriter, to *storepb.DatabaseSchemaMetad
 			continue
 		}
 		// Follow the order of the input procedures.
-		for idx, procedure := range schema.Procedures {
+		for _, procedure := range schema.Procedures {
 			procedure, ok := schemaState.procedures[procedure.Name]
 			if !ok {
 				continue
-			}
-			if firstProcedure {
-				firstProcedure = false
-				if _, err := w.WriteString("\n"); err != nil {
-					return err
-				}
 			}
 			if _, err := w.WriteString(getProcedureAnnouncement(procedure.name)); err != nil {
 				return err
 			}
 
-			// Avoid new line.
 			buf := &strings.Builder{}
 			if err := procedure.toString(buf); err != nil {
 				return err
 			}
-			if idx == len(schema.Procedures)-1 && buf.String()[len(buf.String())-1] == '\n' {
-				if _, err := w.WriteString(buf.String()[:len(buf.String())-1]); err != nil {
-					return err
-				}
-			} else {
-				if _, err := w.WriteString(buf.String()); err != nil {
-					return err
-				}
+			if _, err := w.WriteString(buf.String()); err != nil {
+				return err
 			}
 			delete(schemaState.procedures, procedure.name)
 		}
@@ -1794,7 +1756,6 @@ func writeRemainingProcedures(w io.StringWriter, to *storepb.DatabaseSchemaMetad
 }
 
 func writeRemainingFunctions(w io.StringWriter, to *storepb.DatabaseSchemaMetadata, state *databaseState) error {
-	firstFunction := true
 	// Follow the order of the input schemas.
 	for _, schema := range to.Schemas {
 		schemaState, ok := state.schemas[schema.Name]
@@ -1802,34 +1763,21 @@ func writeRemainingFunctions(w io.StringWriter, to *storepb.DatabaseSchemaMetada
 			continue
 		}
 		// Follow the order of the input functions.
-		for idx, function := range schema.Functions {
+		for _, function := range schema.Functions {
 			function, ok := schemaState.functions[function.Name]
 			if !ok {
 				continue
-			}
-			if firstFunction {
-				firstFunction = false
-				if _, err := w.WriteString("\n"); err != nil {
-					return err
-				}
 			}
 			if _, err := w.WriteString(getFunctionAnnouncement(function.name)); err != nil {
 				return err
 			}
 
-			// Avoid new line.
 			buf := &strings.Builder{}
 			if err := function.toString(buf); err != nil {
 				return err
 			}
-			if idx == len(schema.Functions)-1 && buf.String()[len(buf.String())-1] == '\n' {
-				if _, err := w.WriteString(buf.String()[:len(buf.String())-1]); err != nil {
-					return err
-				}
-			} else {
-				if _, err := w.WriteString(buf.String()); err != nil {
-					return err
-				}
+			if _, err := w.WriteString(buf.String()); err != nil {
+				return err
 			}
 			delete(schemaState.functions, function.name)
 		}
