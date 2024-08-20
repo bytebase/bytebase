@@ -22,6 +22,7 @@
       </template>
     </InstanceV1Name>
     <span v-else>
+      <!-- For creating database issues, we will only show the resource id of target instance. -->
       {{ extractInstanceResourceName(selectedTask.target) }}
     </span>
 
