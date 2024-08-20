@@ -110,3 +110,19 @@
     CREATE TABLE book(uid int, id int);
     ALTER TABLE book CHANGE COLUMN uid uid int NOT NULL DEFAULT 0, MODIFY COLUMN id int PRIMARY KEY DEFAULT 0, ADD COLUMN name varchar(20) NOT NULL DEFAULT '';
   changeType: 0
+- statement: |-
+    create table all_types(
+      c1 tinyblob not null,
+      c2 blob not null,
+      c3 mediumblob not null,
+      c4 longblob not null,
+      c5 tinytext not null,
+      c6 text not null,
+      c7 mediumtext not null,
+      c8 longtext not null,
+      c9 json not null,
+      c10 serial not null,
+      c11 long varbinary not null,
+      c12 long varchar not null 
+    );
+  changeType: 0
