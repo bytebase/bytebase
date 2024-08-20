@@ -484,6 +484,7 @@
       "email": "邮箱",
       "role": "角色",
       "phone": "手机号",
+      "phone-tips": "请包含国家代码前缀",
       "country-code": "国家或地区代码",
       "password": "密码",
       "password-confirm": "确认密码",
@@ -501,7 +502,6 @@
       "invited": "已邀请",
       "yourself": "您自己",
       "upgrade": "升级到付费方案来解锁角色管理",
-      "select-role": "选择角色",
       "not-assigned": "未指派",
       "table": {
         "account": "账户",
@@ -572,10 +572,10 @@
       "view-by-members": "按会员查看",
       "revoke-access": "撤销访问权限",
       "grant-access": "授予访问权限",
-      "select-users": "选择用户",
-      "select-groups": "选择组",
-      "assign-role": "分配角色",
-      "assign-roles": "分配角色"
+      "select-user": "选择用户 | 选择用户",
+      "select-group": "选择组 | 选择组",
+      "select-role": "选择角色 | 选择角色",
+      "assign-role": "分配角色 | 分配角色"
     },
     "im-integration": {
       "description": "针对特定工单事件向用户推送私信消息。需要与项目 webhook 配合使用。"
@@ -3391,8 +3391,6 @@
       "delete-warning-with-resources": "角色“{name}”已分配给以下用户：",
       "delete-warning-retry": "请从这些用户中删除角色然后重试。"
     },
-    "select": "选择角色",
-    "select-roles": "选择角色",
     "default-workspace-role": "用户将默认获得“工作区成员”角色",
     "title": "称谓",
     "select-role": "选择角色",

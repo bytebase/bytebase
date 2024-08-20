@@ -113,6 +113,7 @@
               v-if="state.editing"
               size="large"
               :value="state.editingUser?.phone"
+              :placeholder="$t('settings.profile.phone-tips')"
               :input-props="{ autocomplete: 'off', type: 'tel' }"
               @update:value="updateUser('phone', $event)"
             />
