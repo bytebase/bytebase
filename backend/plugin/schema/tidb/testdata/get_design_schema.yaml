@@ -1,14 +1,4 @@
-- baseline: |-
-    CREATE TABLE `t` (
-      `a` int,
-      `b` varchar(255),
-      `c` timestamp(3) DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
-      `d` timestamp DEFAULT CURRENT_TIMESTAMP,
-      `e` timestamp(3) DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
-      KEY `idx_t_b` (`b`(20)) COMMENT 'this is comment with',
-      KEY `delete_idx` (`b`(20)) COMMENT 'need to delete'
-    );
-  target: |-
+- target: |-
     {
       "schemas": [
         {
@@ -81,39 +71,7 @@
       KEY `idx_t_b` (`b`(20)),
       KEY `idx_t_b2` (`b`(20))
     );
-- baseline: |-
-    CREATE TABLE `t` (
-      `a` int,
-      PRIMARY KEY (`a`),
-      CONSTRAINT fk1 FOREIGN KEY (`a`) REFERENCES `t2` (`b`),
-      UNIQUE KEY `uk_a` (`a`),
-      KEY `idx_a` (`a`)
-    ) COMMENT 'hello';
-    CREATE TABLE `t3` (
-      `a` int
-    );
-    CREATE TABLE `t4` (
-      `a` int,
-      `c` int,
-      `d` int,
-      `e` char(10) NOT NULL DEFAULT 'NULL' comment 'this is comment',
-      `f` int comment 'this is comment',
-      `g` blob,
-      PRIMARY KEY (`a`, `c`, `d`),
-      CONSTRAINT fk1 FOREIGN KEY (`a`) REFERENCES `t2` (`b`),
-      UNIQUE KEY `uk_a` (`a`)
-    );
-    CREATE TABLE `users` (
-      `id` int(11) NOT NULL COMMENT 'ID',
-      PRIMARY KEY (`id`) /*T![clustered_index] CLUSTERED */
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
-    CREATE TABLE `rds` (
-      `id` bigint(20) NOT NULL,
-      `binlog_format` enum('ROW','MIXED','STATEMENT',''),
-      `c1` int default 1
-    );
-    create table t5(a bigint NOT NULL /*T![auto_rand] AUTO_RANDOM(6, 54) */, primary key (a));
-  target: |-
+- target: |-
     {
       "schemas":  [
         {
@@ -434,20 +392,7 @@
       PRIMARY KEY (`b`),
       CONSTRAINT `fk1` FOREIGN KEY (`b`) REFERENCES `t4` (`b`)
     );
-- baseline: |-
-    CREATE TABLE `t1` (
-      `a` int
-    );
-    CREATE TABLE `t2` (
-      `a` int AUTO_INCREMENT
-    );
-    CREATE TABLE `t3` (
-      `a` int default 1
-    );
-    CREATE TABLE `t4` (
-      `a` int AUTO_INCREMENT
-    );
-  target: |-
+- target: |-
     {
       "schemas":  [
         {

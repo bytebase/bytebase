@@ -1,34 +1,4 @@
 - description: New create table should not appear in delimiter block
-  baseline: |-
-    SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
-    SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
-    --
-    -- Table structure for `u`
-    --
-    CREATE TABLE `u` (
-      `t` text NOT NULL,
-      `g` geometry NOT NULL,
-      `j` json NOT NULL,
-      `ti` tinyint(1) NOT NULL,
-      `tb` tinyblob,
-      `vc` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
-    --
-    -- Function structure for `hello`
-    --
-    SET character_set_client  = utf8mb3;
-    SET character_set_results = utf8mb3;
-    SET collation_connection  = utf8mb3_general_ci;
-    SET sql_mode              = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION';
-    DELIMITER ;;
-    CREATE DEFINER=`root`@`localhost` FUNCTION `hello`(s CHAR(20)) RETURNS char(50) CHARSET utf8mb4
-        DETERMINISTIC
-    RETURN CONCAT ('Hello, ', s, '!') ;;
-    DELIMITER ;
-
-    SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
-    SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
   target: |-
     {
       "schemas": [
@@ -131,35 +101,6 @@
     RETURN CONCAT ('Hello, ', s, '!') ;;
     DELIMITER ;
 - description: ""
-  baseline: |-
-    SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
-    SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
-    --
-    -- Table structure for `u`
-    --
-    CREATE TABLE `u` (
-      `t` text NOT NULL,
-      `g` geometry NOT NULL,
-      `j` json NOT NULL,
-      `ti` tinyint(1) NOT NULL,
-      `tb` tinyblob
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
-    --
-    -- Function structure for `hello`
-    --
-    SET character_set_client  = utf8mb3;
-    SET character_set_results = utf8mb3;
-    SET collation_connection  = utf8mb3_general_ci;
-    SET sql_mode              = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION';
-    DELIMITER ;;
-    CREATE DEFINER=`root`@`localhost` FUNCTION `hello`(s CHAR(20)) RETURNS char(50) CHARSET utf8mb4
-        DETERMINISTIC
-    RETURN CONCAT ('Hello, ', s, '!') ;;
-    DELIMITER ;
-
-    SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
-    SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
   target: |-
     {
       "schemas": [
@@ -232,36 +173,6 @@
     RETURN CONCAT ('Hello, ', s, '!') ;;
     DELIMITER ;
 - description: ""
-  baseline: |-
-    SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
-    SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
-    --
-    -- Table structure for `t`
-    --
-    CREATE TABLE `t` (
-      `a` int,
-      `b` text,
-      PRIMARY KEY (`a`),
-      CONSTRAINT fk1 FOREIGN KEY (`a`) REFERENCES `t2` (`b`)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-    CREATE TABLE `t3` (
-      `a` int
-    );
-
-    --
-    -- Table structure for `t4`
-    --
-    CREATE TABLE `t4` (
-      `a` int,
-      `c` int,
-      `d` int,
-      `e` char(10) NOT NULL DEFAULT 'NULL' comment 'this is comment',
-      PRIMARY KEY (`a`, `c`, `d`),
-      CONSTRAINT fk1 FOREIGN KEY (`a`) REFERENCES `t2` (`b`)
-    );
-
-    SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
-    SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
   target: |-
     {
       "schemas": [
@@ -540,10 +451,6 @@
       KEY `t_d_fulltext_idx` (`d`)
     );
 - description: ""
-  baseline: |-
-    CREATE TABLE `t` (
-      `a` int
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
   target: |-
     {
       "schemas": [
@@ -571,19 +478,6 @@
       `a` int NOT NULL
     ) COMMENT 'this is comment';
 - description: ""
-  baseline: |-
-    CREATE TABLE `t1` (
-      `a` varchar(255)
-    );
-    CREATE TABLE `t2` (
-      `a` int AUTO_INCREMENT primary key
-    );
-    CREATE TABLE `t3` (
-      `a` int default 1 primary key
-    );
-    CREATE TABLE `t4` (
-      `a` int AUTO_INCREMENT primary key
-    );
   target: |-
     {
       "schemas":  [
@@ -683,12 +577,6 @@
       `a` int DEFAULT '\'a\''
     );
 - description: ""
-  baseline: |-
-    CREATE TABLE `t` (
-      `c` timestamp(3) DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
-      `d` timestamp DEFAULT CURRENT_TIMESTAMP,
-      `e` timestamp(3) DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3)
-    );
   target: |-
     {
       "schemas": [

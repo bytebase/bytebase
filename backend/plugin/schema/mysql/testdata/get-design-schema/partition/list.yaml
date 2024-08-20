@@ -1,17 +1,4 @@
 - description: List Columns Partition Hash Subpartition
-  baseline: |-
-    SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
-    SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
-    --
-    -- Table structure for `list_columns_partition_hash_subpartition`
-    --
-    CREATE TABLE `list_columns_partition_hash_subpartition` (
-      `id` int DEFAULT NULL,
-      `d` date DEFAULT NULL
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
-    SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
-    SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
   target: |-
     {
       "schemas": [
@@ -161,19 +148,6 @@
      (SUBPARTITION p3sp0 ENGINE=InnoDB,
       SUBPARTITION p3sp1 ENGINE=InnoDB)) */;
 - description: List Columns Partition
-  baseline: |-
-    SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
-    SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
-    --
-    -- Table structure for `list_columns_partition`
-    --
-    CREATE TABLE `list_columns_partition` (
-      `id` int DEFAULT NULL,
-      `d` date DEFAULT NULL
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
-    SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
-    SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
   target: |-
     {
       "schemas": [
@@ -244,18 +218,6 @@
      PARTITION p2 VALUES IN ((7,'2012-01-01'),(8,'2012-01-02'),(9,'2012-01-03')) ENGINE=InnoDB,
      PARTITION p_null VALUES IN ((NULL,NULL)) ENGINE=InnoDB) */;
 - description: Easy List Partition
-  baseline: |-
-    SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
-    SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
-    --
-    -- Table structure for `list_partition`
-    --
-    CREATE TABLE `list_partition` (
-      `id` int DEFAULT NULL
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
-    SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
-    SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
   target: |-
     {
       "schemas": [
