@@ -35,7 +35,6 @@ func convertToPlans(ctx context.Context, s *store.Store, plans []*store.PlanMess
 func convertToPlan(ctx context.Context, s *store.Store, plan *store.PlanMessage) (*v1pb.Plan, error) {
 	p := &v1pb.Plan{
 		Name:        fmt.Sprintf("%s%s/%s%d", common.ProjectNamePrefix, plan.ProjectID, common.PlanPrefix, plan.UID),
-		Uid:         fmt.Sprintf("%d", plan.UID),
 		Issue:       "",
 		Title:       plan.Name,
 		Description: plan.Description,
@@ -304,7 +303,6 @@ func convertToPlanCheckRuns(ctx context.Context, s *store.Store, projectID strin
 func convertToPlanCheckRun(ctx context.Context, s *store.Store, projectID string, planUID int64, run *store.PlanCheckRunMessage) (*v1pb.PlanCheckRun, error) {
 	converted := &v1pb.PlanCheckRun{
 		Name:       fmt.Sprintf("%s%s/%s%d/%s%d", common.ProjectNamePrefix, projectID, common.PlanPrefix, planUID, common.PlanCheckRunPrefix, run.UID),
-		Uid:        fmt.Sprintf("%d", run.UID),
 		CreateTime: timestamppb.New(time.Unix(run.CreatedTs, 0)),
 		Type:       convertToPlanCheckRunType(run.Type),
 		Status:     convertToPlanCheckRunStatus(run.Status),
