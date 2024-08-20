@@ -59,12 +59,12 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx advisor.Context, _ string) ([
 			isDDL = true
 		}
 
-		if update, ok := stmtNode.(*ast.UpdateStmt); ok {
-			updateStatements = append(updateStatements, update)
+		if u, ok := stmtNode.(*ast.UpdateStmt); ok {
+			updateStatements = append(updateStatements, u)
 		}
 
-		if delete, ok := stmtNode.(*ast.DeleteStmt); ok {
-			deleteStatements = append(deleteStatements, delete)
+		if d, ok := stmtNode.(*ast.DeleteStmt); ok {
+			deleteStatements = append(deleteStatements, d)
 		}
 
 		if isDDL {
