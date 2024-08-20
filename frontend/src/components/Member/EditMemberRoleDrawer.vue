@@ -24,15 +24,10 @@
 
           <div class="w-full space-y-2">
             <div class="flex items-center gap-x-1">
-              {{ $t("settings.members.assign-roles") }}
+              {{ $t("settings.members.assign-role", 2 /* multiply*/) }}
               <span class="text-red-600">*</span>
             </div>
-            <NSelect
-              v-model:value="state.roles"
-              multiple
-              :options="availableRoleOptions"
-              :placeholder="$t('role.select-roles')"
-            />
+            <RoleSelect v-model:value="state.roles" :multiple="true" />
           </div>
         </div>
       </template>
@@ -82,27 +77,18 @@
 <script setup lang="ts">
 import { isEqual } from "lodash-es";
 import { ArchiveIcon } from "lucide-vue-next";
-import type { SelectGroupOption, SelectOption } from "naive-ui";
-import { NPopconfirm, NButton, NSelect } from "naive-ui";
+import { NPopconfirm, NButton } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import EmailInput from "@/components/EmailInput.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
+import { RoleSelect } from "@/components/v2/Select";
 import {
   extractGroupEmail,
   extractUserEmail,
   pushNotification,
-  useAppFeature,
-  useRoleStore,
   useWorkspaceV1Store,
 } from "@/store";
-import {
-  PRESET_PROJECT_ROLES,
-  PRESET_ROLES,
-  PRESET_WORKSPACE_ROLES,
-  PresetRoleType,
-} from "@/types";
-import { displayRoleTitle } from "@/utils";
 import MembersBindingSelect from "./MembersBindingSelect.vue";
 import { type MemberBinding } from "./types";
 
@@ -134,7 +120,6 @@ const state = reactive<LocalState>({
 });
 
 const { t } = useI18n();
-const hideProjectRoles = useAppFeature("bb.feature.members.hide-project-roles");
 const workspaceStore = useWorkspaceV1Store();
 
 const isCreating = computed(() => !props.member);
@@ -148,55 +133,6 @@ const email = computed(() => {
   }
   return extractGroupEmail(props.member.binding);
 });
-
-const availableRoleOptions = computed(
-  (): (SelectOption | SelectGroupOption)[] => {
-    const roleGroups = [
-      {
-        type: "group",
-        key: "workspace-roles",
-        label: t("role.workspace-roles"),
-        children: PRESET_WORKSPACE_ROLES.filter(
-          (role) => role !== PresetRoleType.WORKSPACE_MEMBER
-        ).map((role) => ({
-          label: displayRoleTitle(role),
-          value: role,
-        })),
-      },
-      {
-        type: "group",
-        key: "project-roles",
-        label: `${t("role.project-roles.self")} (${t("common.optional")}, ${t(
-          "role.project-roles.apply-to-all-projects"
-        ).toLocaleLowerCase()})`,
-        children: PRESET_PROJECT_ROLES.map((role) => ({
-          label: displayRoleTitle(role),
-          value: role,
-        })),
-      },
-    ];
-    if (hideProjectRoles.value) {
-      return roleGroups[0].children;
-    }
-    const customRoles = useRoleStore()
-      .roleList.map((role) => role.name)
-      .filter((role) => !PRESET_ROLES.includes(role));
-    if (customRoles.length > 0) {
-      roleGroups.push({
-        type: "group",
-        key: "custom-roles",
-        label: `${t("role.custom-roles")} (${t("common.optional")}, ${t(
-          "role.project-roles.apply-to-all-projects"
-        ).toLocaleLowerCase()})`,
-        children: customRoles.map((role) => ({
-          label: displayRoleTitle(role),
-          value: role,
-        })),
-      });
-    }
-    return roleGroups;
-  }
-);
 
 const allowConfirm = computed(() => {
   if (state.memberList.length === 0 || state.roles.length === 0) {

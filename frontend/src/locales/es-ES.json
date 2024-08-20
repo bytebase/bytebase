@@ -484,6 +484,7 @@
       "email": "Correo electrónico",
       "role": "Rol",
       "phone": "Número de móvil",
+      "phone-tips": "Asegúrese de incluir el código del país.",
       "country-code": "Códigos de país y de área",
       "password": "Contraseña",
       "password-confirm": "Confirmar contraseña",
@@ -501,7 +502,6 @@
       "invited": "Invitado",
       "yourself": "Tú",
       "upgrade": "Actualice para habilitar la gestión de roles",
-      "select-role": "Seleccione el rol",
       "not-assigned": "No asignado",
       "table": {
         "account": "Cuenta",
@@ -572,10 +572,10 @@
       "view-by-members": "Ver por miembros",
       "revoke-access": "Revocar acceso",
       "grant-access": "Conceder acceso",
-      "select-users": "Seleccionar usuarios",
-      "select-groups": "Seleccionar grupos",
-      "assign-role": "Asignar rol",
-      "assign-roles": "Asignar roles"
+      "select-user": "Seleccionar usuario | Seleccionar usuarios",
+      "select-group": "Seleccionar grupo | Seleccionar grupos",
+      "select-role": "Seleccionar rol | Seleccionar roles",
+      "assign-role": "Asignar rol | Asignar roles"
     },
     "im-integration": {
       "description": "Envíe mensajes directos a los usuarios para eventos de problemas específicos. Funciona con el webhook del proyecto."
@@ -3392,8 +3392,6 @@
       "delete-warning-with-resources": "El rol \"{name}\" está asignado a los siguientes usuarios:",
       "delete-warning-retry": "Elimine la función de estos usuarios y vuelva a intentarlo."
     },
-    "select": "Seleccionar rol",
-    "select-roles": "Seleccionar roles",
     "default-workspace-role": "Los usuarios obtendrán el rol de \"Miembro del espacio de trabajo\" de forma predeterminada.",
     "title": "Título",
     "select-role": "Seleccionar rol",
