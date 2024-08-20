@@ -48,6 +48,7 @@ func TestPostgreSQLRules(t *testing.T) {
 		advisor.SchemaRuleStatementAffectedRowLimit,
 		advisor.SchemaRuleStatementMergeAlterTable,
 		advisor.SchemaRuleColumnRequireDefault,
+		advisor.SchemaRuleColumnDefaultDisallowVolatile,
 		advisor.SchemaRuleStatementDisallowAddColumnWithDefault,
 		advisor.SchemaRuleCreateIndexConcurrently,
 		advisor.SchemaRuleStatementAddCheckNotValid,
@@ -60,7 +61,7 @@ func TestPostgreSQLRules(t *testing.T) {
 
 	for _, rule := range pgRules {
 		_, needMetaData := advisorNeedMockData[rule]
-		advisor.RunSQLReviewRuleTest(t, rule, storepb.Engine_POSTGRES, needMetaData, false /* record */)
+		advisor.RunSQLReviewRuleTest(t, rule, storepb.Engine_POSTGRES, needMetaData, true /* record */)
 	}
 }
 

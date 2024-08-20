@@ -1168,6 +1168,9 @@ ruleList:
   - type: column.require-default
     level: WARNING
     engine: MARIADB
+  - type: column.default-disallow-volatile
+    level: WARNING
+    engine: POSTGRES
   - type: schema.backward-compatibility
     level: WARNING
     engine: MYSQL

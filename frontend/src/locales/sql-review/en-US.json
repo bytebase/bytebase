@@ -347,6 +347,10 @@
       "title": "Enforce setting default value on columns",
       "description": "Setting default values that satisfy business logic can effectively improve the data quality of downstream  analytical pipeline. This rule does not check \"PRIMARY KEY\", \"JSON\", \"BLOB\", \"TEXT\", \"GEOMETRY\", \"AUTO_INCREMENT\", \"GENERATED\" types. Suggestion error level: Warning"
     },
+    "column-default-disallow-volatile": {
+      "title": "Disallow setting volatile default value on columns",
+      "description": "Volatile functions (e.g., clock_timestamp()) update each row with the value at the time of ALTER TABLE execution, potentially causing lengthy updates."
+    },
     "statement-select-no-select-all": {
       "title": "Prohibit using \"SELECT *\"",
       "description": "SELECT * to fetch entire row data may cause unnecessary resource overhead and may also cause unexpected results in applications once the table adds or removes columns. Suggestion error level: Error"

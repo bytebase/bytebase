@@ -1675,6 +1675,9 @@
 - type: column.require-default
   category: COLUMN
   engine: MARIADB
+- type: column.default-disallow-volatile
+  category: COLUMN
+  engine: POSTGRES
 - type: schema.backward-compatibility
   category: SCHEMA
   engine: MYSQL

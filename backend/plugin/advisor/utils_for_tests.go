@@ -398,6 +398,7 @@ func SetDefaultSQLReviewRulePayload(ruleTp SQLReviewRuleType, dbType storepb.Eng
 		SchemaRuleAddNotNullColumnRequireDefault,
 		SchemaRuleCurrentTimeColumnCountLimit,
 		SchemaRuleColumnRequireDefault,
+		SchemaRuleColumnDefaultDisallowVolatile,
 		SchemaRuleSchemaBackwardCompatibility,
 		SchemaRuleDropEmptyDatabase,
 		SchemaRuleIndexNoDuplicateColumn,
