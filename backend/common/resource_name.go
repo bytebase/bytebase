@@ -257,7 +257,7 @@ func GetRiskID(name string) (int64, error) {
 	return riskID, nil
 }
 
-// GetProjectIDIssueUID returns the project ID and issue ID from the issue name.
+// GetProjectIDIssueUID returns the project ID and issue UID from the issue name.
 func GetProjectIDIssueUID(name string) (string, int, error) {
 	tokens, err := GetNameParentTokens(name, ProjectNamePrefix, IssueNamePrefix)
 	if err != nil {
@@ -268,6 +268,23 @@ func GetProjectIDIssueUID(name string) (string, int, error) {
 		return "", 0, errors.Errorf("invalid issue ID %q", tokens[1])
 	}
 	return tokens[0], issueUID, nil
+}
+
+// GetProjectIDIssueUIDIssueCommentUID returns the project ID, issue UID and issue comment UID from the issue comment name.
+func GetProjectIDIssueUIDIssueCommentUID(name string) (string, int, int, error) {
+	tokens, err := GetNameParentTokens(name, ProjectNamePrefix, IssueNamePrefix, IssueCommentNamePrefix)
+	if err != nil {
+		return "", 0, 0, err
+	}
+	issueUID, err := strconv.Atoi(tokens[1])
+	if err != nil {
+		return "", 0, 0, errors.Errorf("invalid issue ID %q", tokens[1])
+	}
+	issueCommentUID, err := strconv.Atoi(tokens[2])
+	if err != nil {
+		return "", 0, 0, errors.Errorf("invalid issue comment ID %q", tokens[2])
+	}
+	return tokens[0], issueUID, issueCommentUID, nil
 }
 
 // GetIssueID returns the issue ID from a resource name.

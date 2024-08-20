@@ -1,5 +1,5 @@
 import slug from "slug";
-import { type ComposedIssue } from "@/types";
+import { EMPTY_ID, UNKNOWN_ID, type ComposedIssue } from "@/types";
 import { Issue, Issue_Type } from "@/types/proto/v1/issue_service";
 import type { Plan } from "@/types/proto/v1/plan_service";
 import type { Rollout } from "@/types/proto/v1/rollout_service";
@@ -13,6 +13,14 @@ export const extractIssueUID = (name: string) => {
   const pattern = /(?:^|\/)issues\/(\d+)(?:$|\/)/;
   const matches = name.match(pattern);
   return matches?.[1] ?? "";
+};
+
+export const isValidIssueName = (name: string | undefined) => {
+  if (!name) {
+    return false;
+  }
+  const uid = extractIssueUID(name);
+  return uid && uid !== String(EMPTY_ID) && uid !== String(UNKNOWN_ID);
 };
 
 export const flattenTaskV1List = (rollout: Rollout | undefined) => {

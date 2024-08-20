@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"strconv"
 	"strings"
 	"time"
 
@@ -1470,9 +1469,9 @@ func (s *IssueService) UpdateIssueComment(ctx context.Context, request *v1pb.Upd
 		return nil, status.Errorf(codes.InvalidArgument, "update_mask is required")
 	}
 
-	issueCommentUID, err := strconv.Atoi(request.IssueComment.Uid)
+	_, _, issueCommentUID, err := common.GetProjectIDIssueUIDIssueCommentUID(request.IssueComment.Name)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid comment id %q: %v", request.IssueComment.Uid, err)
+		return nil, status.Errorf(codes.InvalidArgument, "invalid comment name %q: %v", request.IssueComment.Name, err)
 	}
 	issueComment, err := s.store.GetIssueComment(ctx, &store.FindIssueCommentMessage{UID: &issueCommentUID})
 	if err != nil {
@@ -1501,7 +1500,7 @@ func (s *IssueService) UpdateIssueComment(ctx context.Context, request *v1pb.Upd
 
 	if err := s.store.UpdateIssueComment(ctx, update); err != nil {
 		if common.ErrorCode(err) == common.NotFound {
-			return nil, status.Errorf(codes.NotFound, "cannot found the issue comment %s", request.IssueComment.Uid)
+			return nil, status.Errorf(codes.NotFound, "cannot found the issue comment %s", request.IssueComment.Name)
 		}
 		return nil, status.Errorf(codes.Internal, "failed to update the issue comment with error: %v", err.Error())
 	}

@@ -19,7 +19,11 @@ import {
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { pushNotification, useSheetV1Store, useSQLStore } from "@/store";
 import { TaskRun_PriorBackupDetail_Item_Table } from "@/types/proto/v1/rollout_service";
-import { extractProjectResourceName, sheetNameOfTaskV1 } from "@/utils";
+import {
+  extractIssueUID,
+  extractProjectResourceName,
+  sheetNameOfTaskV1,
+} from "@/utils";
 import { usePreBackupContext } from "./common";
 
 const router = useRouter();
@@ -69,10 +73,10 @@ const createRestoreIssue = async () => {
 
   const query: Record<string, any> = {
     template: "bb.issue.database.data.update",
-    name: `Rollback ${selectedTask.value.title} in issue#${issue.value.uid}`,
+    name: `Rollback ${selectedTask.value.title} in issue#${extractIssueUID(issue.value.name)}`,
     databaseList: selectedTask.value.target,
     sql: statements.join("\n"),
-    description: `This issue is created to rollback the data of ${selectedTask.value.title} in issue#${issue.value.uid}`,
+    description: `This issue is created to rollback the data of ${selectedTask.value.title} in issue#${extractIssueUID(issue.value.name)}`,
   };
   router.push({
     name: PROJECT_V1_ROUTE_ISSUE_DETAIL,

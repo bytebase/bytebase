@@ -17,6 +17,7 @@ import { useRouter } from "vue-router";
 import { issueServiceClient } from "@/grpcweb";
 import { pushNotification } from "@/store";
 import { UNKNOWN_ID } from "@/types";
+import { isValidIssueName } from "@/utils";
 
 type DescriptionType = "TEXT" | "ISSUE";
 
@@ -40,7 +41,7 @@ const gotoIssuePage = async () => {
   const issue = await issueServiceClient.getIssue({
     name: `projects/-/issues/${issueUID.value}`,
   });
-  if (issue.uid === String(UNKNOWN_ID)) {
+  if (!isValidIssueName(issue.name)) {
     pushNotification({
       module: "bytebase",
       style: "CRITICAL",

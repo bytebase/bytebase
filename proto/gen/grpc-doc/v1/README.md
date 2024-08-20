@@ -5472,7 +5472,6 @@ The identity provider&#39;s `name` field is used to identify the identity provid
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name of the issue. Format: projects/{project}/issues/{issue} |
-| uid | [string](#string) |  | The system-assigned, unique identifier for a resource. |
 | title | [string](#string) |  |  |
 | description | [string](#string) |  |  |
 | type | [Issue.Type](#bytebase-v1-Issue-Type) |  |  |
@@ -5538,12 +5537,11 @@ The identity provider&#39;s `name` field is used to identify the identity provid
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| uid | [string](#string) |  |  |
+| name | [string](#string) |  | Format: projects/{project}/issues/{issue}/issueComments/{issueComment-uid} |
 | comment | [string](#string) |  |  |
 | payload | [string](#string) |  | TODO: use struct message instead. |
 | create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
-| name | [string](#string) |  | Format: projects/{project}/issues/{issue}/issueComments/{issueComment-uid} |
 | creator | [string](#string) |  | Format: users/{email} |
 | approval | [IssueComment.Approval](#bytebase-v1-IssueComment-Approval) |  |  |
 | issue_update | [IssueComment.IssueUpdate](#bytebase-v1-IssueComment-IssueUpdate) |  |  |

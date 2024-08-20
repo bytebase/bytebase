@@ -231,8 +231,6 @@ export interface Issue {
    * Format: projects/{project}/issues/{issue}
    */
   name: string;
-  /** The system-assigned, unique identifier for a resource. */
-  uid: string;
   title: string;
   description: string;
   type: Issue_Type;
@@ -777,7 +775,8 @@ export interface UpdateIssueCommentRequest {
 }
 
 export interface IssueComment {
-  uid: string;
+  /** Format: projects/{project}/issues/{issue}/issueComments/{issueComment-uid} */
+  name: string;
   comment: string;
   /** TODO: use struct message instead. */
   payload: string;
@@ -785,8 +784,6 @@ export interface IssueComment {
   updateTime:
     | Date
     | undefined;
-  /** Format: projects/{project}/issues/{issue}/issueComments/{issueComment-uid} */
-  name: string;
   /** Format: users/{email} */
   creator: string;
   approval?: IssueComment_Approval | undefined;
@@ -1966,7 +1963,6 @@ export const RequestIssueRequest = {
 function createBaseIssue(): Issue {
   return {
     name: "",
-    uid: "",
     title: "",
     description: "",
     type: Issue_Type.TYPE_UNSPECIFIED,
@@ -1993,9 +1989,6 @@ export const Issue = {
   encode(message: Issue, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
-    }
-    if (message.uid !== "") {
-      writer.uint32(18).string(message.uid);
     }
     if (message.title !== "") {
       writer.uint32(26).string(message.title);
@@ -2070,13 +2063,6 @@ export const Issue = {
           }
 
           message.name = reader.string();
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.uid = reader.string();
           continue;
         case 3:
           if (tag !== 26) {
@@ -2226,7 +2212,6 @@ export const Issue = {
   fromJSON(object: any): Issue {
     return {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
-      uid: isSet(object.uid) ? globalThis.String(object.uid) : "",
       title: isSet(object.title) ? globalThis.String(object.title) : "",
       description: isSet(object.description) ? globalThis.String(object.description) : "",
       type: isSet(object.type) ? issue_TypeFromJSON(object.type) : Issue_Type.TYPE_UNSPECIFIED,
@@ -2270,9 +2255,6 @@ export const Issue = {
     const obj: any = {};
     if (message.name !== "") {
       obj.name = message.name;
-    }
-    if (message.uid !== "") {
-      obj.uid = message.uid;
     }
     if (message.title !== "") {
       obj.title = message.title;
@@ -2346,7 +2328,6 @@ export const Issue = {
   fromPartial(object: DeepPartial<Issue>): Issue {
     const message = createBaseIssue();
     message.name = object.name ?? "";
-    message.uid = object.uid ?? "";
     message.title = object.title ?? "";
     message.description = object.description ?? "";
     message.type = object.type ?? Issue_Type.TYPE_UNSPECIFIED;
@@ -3320,12 +3301,11 @@ export const UpdateIssueCommentRequest = {
 
 function createBaseIssueComment(): IssueComment {
   return {
-    uid: "",
+    name: "",
     comment: "",
     payload: "",
     createTime: undefined,
     updateTime: undefined,
-    name: "",
     creator: "",
     approval: undefined,
     issueUpdate: undefined,
@@ -3337,8 +3317,8 @@ function createBaseIssueComment(): IssueComment {
 
 export const IssueComment = {
   encode(message: IssueComment, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.uid !== "") {
-      writer.uint32(10).string(message.uid);
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
     }
     if (message.comment !== "") {
       writer.uint32(18).string(message.comment);
@@ -3351,9 +3331,6 @@ export const IssueComment = {
     }
     if (message.updateTime !== undefined) {
       Timestamp.encode(toTimestamp(message.updateTime), writer.uint32(42).fork()).ldelim();
-    }
-    if (message.name !== "") {
-      writer.uint32(50).string(message.name);
     }
     if (message.creator !== "") {
       writer.uint32(58).string(message.creator);
@@ -3388,7 +3365,7 @@ export const IssueComment = {
             break;
           }
 
-          message.uid = reader.string();
+          message.name = reader.string();
           continue;
         case 2:
           if (tag !== 18) {
@@ -3417,13 +3394,6 @@ export const IssueComment = {
           }
 
           message.updateTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
-          continue;
-        case 6:
-          if (tag !== 50) {
-            break;
-          }
-
-          message.name = reader.string();
           continue;
         case 7:
           if (tag !== 58) {
@@ -3478,12 +3448,11 @@ export const IssueComment = {
 
   fromJSON(object: any): IssueComment {
     return {
-      uid: isSet(object.uid) ? globalThis.String(object.uid) : "",
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
       comment: isSet(object.comment) ? globalThis.String(object.comment) : "",
       payload: isSet(object.payload) ? globalThis.String(object.payload) : "",
       createTime: isSet(object.createTime) ? fromJsonTimestamp(object.createTime) : undefined,
       updateTime: isSet(object.updateTime) ? fromJsonTimestamp(object.updateTime) : undefined,
-      name: isSet(object.name) ? globalThis.String(object.name) : "",
       creator: isSet(object.creator) ? globalThis.String(object.creator) : "",
       approval: isSet(object.approval) ? IssueComment_Approval.fromJSON(object.approval) : undefined,
       issueUpdate: isSet(object.issueUpdate) ? IssueComment_IssueUpdate.fromJSON(object.issueUpdate) : undefined,
@@ -3497,8 +3466,8 @@ export const IssueComment = {
 
   toJSON(message: IssueComment): unknown {
     const obj: any = {};
-    if (message.uid !== "") {
-      obj.uid = message.uid;
+    if (message.name !== "") {
+      obj.name = message.name;
     }
     if (message.comment !== "") {
       obj.comment = message.comment;
@@ -3511,9 +3480,6 @@ export const IssueComment = {
     }
     if (message.updateTime !== undefined) {
       obj.updateTime = message.updateTime.toISOString();
-    }
-    if (message.name !== "") {
-      obj.name = message.name;
     }
     if (message.creator !== "") {
       obj.creator = message.creator;
@@ -3541,12 +3507,11 @@ export const IssueComment = {
   },
   fromPartial(object: DeepPartial<IssueComment>): IssueComment {
     const message = createBaseIssueComment();
-    message.uid = object.uid ?? "";
+    message.name = object.name ?? "";
     message.comment = object.comment ?? "";
     message.payload = object.payload ?? "";
     message.createTime = object.createTime ?? undefined;
     message.updateTime = object.updateTime ?? undefined;
-    message.name = object.name ?? "";
     message.creator = object.creator ?? "";
     message.approval = (object.approval !== undefined && object.approval !== null)
       ? IssueComment_Approval.fromPartial(object.approval)
