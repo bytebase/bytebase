@@ -26,6 +26,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/iam"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	mysqldb "github.com/bytebase/bytebase/backend/plugin/db/mysql"
+	tidbdb "github.com/bytebase/bytebase/backend/plugin/db/tidb"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
@@ -1174,7 +1175,7 @@ func reconcileMetadata(metadata *storepb.DatabaseSchemaMetadata, engine storepb.
 			if engine == storepb.Engine_MYSQL {
 				reconcileMySQLPartitionMetadata(table.Partitions, "")
 			}
-			if engine == storepb.Engine_MYSQL || engine == storepb.Engine_TIDB {
+			if engine == storepb.Engine_MYSQL {
 				for _, column := range table.GetColumns() {
 					// If the column can take NULL as a value, the column is defined with an explicit DEFAULT NULL clause.
 					if column.Nullable && column.DefaultValue == nil {
@@ -1183,6 +1184,16 @@ func reconcileMetadata(metadata *storepb.DatabaseSchemaMetadata, engine storepb.
 						}
 					}
 					column.Type = mysqldb.GetColumnTypeCanonicalSynonym(column.Type)
+				}
+			} else if engine == storepb.Engine_TIDB {
+				for _, column := range table.GetColumns() {
+					// If the column can take NULL as a value, the column is defined with an explicit DEFAULT NULL clause.
+					if column.Nullable && column.DefaultValue == nil {
+						column.DefaultValue = &storepb.ColumnMetadata_DefaultNull{
+							DefaultNull: true,
+						}
+					}
+					column.Type = tidbdb.GetColumnTypeCanonicalSynonym(column.Type)
 				}
 			}
 		}

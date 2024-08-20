@@ -105,3 +105,36 @@ func TestNormalizeMySQLViewDefinition(t *testing.T) {
 		require.Equal(t, test.want, got, i)
 	}
 }
+
+func TestAutoRandomEqual(t *testing.T) {
+	testCases := []struct {
+		aExpr string
+		bExpr string
+		equal bool
+	}{
+		{
+			aExpr: "AUTO_RANDOM",
+			bExpr: "auto_random(5, 64)",
+			equal: true,
+		},
+		{
+			aExpr: "AUTO_RANDOM(5)",
+			bExpr: "auto_random(5, 64)",
+			equal: true,
+		},
+		{
+			aExpr: "AUTO_RANDOM(10, 32)",
+			bExpr: "auto_random",
+			equal: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		a := buildAutoRandomDefaultValue(tc.aExpr)
+		require.NotNil(t, a)
+		b := buildAutoRandomDefaultValue(tc.bExpr)
+		require.NotNil(t, b)
+		got := isAutoRandomEquivalent(a, b)
+		require.Equal(t, tc.equal, got)
+	}
+}
