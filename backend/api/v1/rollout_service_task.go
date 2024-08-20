@@ -25,7 +25,28 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-func transformDatabaseGroupTargetToSteps(ctx context.Context, s *store.Store, spec *storepb.PlanConfig_Spec, c *storepb.PlanConfig_ChangeDatabaseConfig, project *store.ProjectMessage) ([]*storepb.PlanConfig_Spec, error) {
+func transformDatabaseGroupSpecs(ctx context.Context, s *store.Store, project *store.ProjectMessage, specs []*storepb.PlanConfig_Spec) ([]*storepb.PlanConfig_Spec, error) {
+	var rspecs []*storepb.PlanConfig_Spec
+
+	for _, spec := range specs {
+		if config := spec.GetChangeDatabaseConfig(); config != nil {
+			// transform database group.
+			if _, _, err := common.GetProjectIDDatabaseGroupID(config.Target); err == nil {
+				specsFromDatabaseGroup, err := transformDatabaseGroupTargetToSpecs(ctx, s, spec, config, project)
+				if err != nil {
+					return nil, errors.Wrapf(err, "failed to transform databaseGroup target to steps")
+				}
+				rspecs = append(rspecs, specsFromDatabaseGroup...)
+				continue
+			}
+		}
+		rspecs = append(rspecs, spec)
+	}
+
+	return rspecs, nil
+}
+
+func transformDatabaseGroupTargetToSpecs(ctx context.Context, s *store.Store, spec *storepb.PlanConfig_Spec, c *storepb.PlanConfig_ChangeDatabaseConfig, project *store.ProjectMessage) ([]*storepb.PlanConfig_Spec, error) {
 	projectID, databaseGroupID, err := common.GetProjectIDDatabaseGroupID(c.Target)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get project and deployment id from target %q", c.Target)
