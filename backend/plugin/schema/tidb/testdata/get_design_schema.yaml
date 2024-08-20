@@ -68,16 +68,20 @@
         }
       ]
     }
-  result: |
+  result: |+
+    --
+    -- Table structure for `t`
+    --
     CREATE TABLE `t` (
       `a` int NOT NULL,
       `b` varchar(255) NOT NULL,
       `c` timestamp(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
       `d` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
       `e` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      KEY `idx_t_b` (`b`(20)) COMMENT 'this is comment with',
+      KEY `idx_t_b` (`b`(20)),
       KEY `idx_t_b2` (`b`(20))
     );
+
 - baseline: |-
     CREATE TABLE `t` (
       `a` int,
@@ -362,37 +366,57 @@
       ]
     }
   result: |+
-    CREATE TABLE `t` (
-      `a` int NOT NULL
-    ) ;
-    CREATE TABLE `t4` (
-      `a` varchar(10) NOT NULL DEFAULT 'default value' COMMENT 'this is comment, aha',
-      `c` int NOT NULL DEFAULT 1 COMMENT 'col_b',
-      `e` int NULL DEFAULT 1 COMMENT 'col_e',
-      `f` int,
-      `g` blob,
-      `b` char(10) NOT NULL,
-      PRIMARY KEY (`a`, `b`, `c`),
-      CONSTRAINT `fk1` FOREIGN KEY (`b`) REFERENCES `t2` (`b`),
-      UNIQUE KEY `uk_a` (`b`)
-    );
+    --
+    -- Table structure for `rds`
+    --
+    CREATE TABLE `rds` (
+      `id` bigint NOT NULL COMMENT 'ID',
+      `binlog_format` enum('row','mixed','statement',''),
+      `x1` blob,
+      `c1` int AUTO_INCREMENT
+    ) COMMENT 'hello';
+
+    --
+    -- Table structure for `users`
+    --
     CREATE TABLE `users` (
       `id` int NOT NULL COMMENT 'ID',
       `age` varbinary(500),
       `name` binary(10),
-      PRIMARY KEY (`id`) /*T![clustered_index] CLUSTERED */
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT 'hello';
-    CREATE TABLE `rds` (
-      `id` bigint(20) NOT NULL COMMENT 'ID',
-      `binlog_format` enum('ROW','MIXED','STATEMENT',''),
-      `c1` int AUTO_INCREMENT,
-      `x1` blob
-    ) COMMENT 'hello' ;
-    create table t5(
-      a bigint NOT NULL /*T![auto_rand] AUTO_RANDOM(6, 54) */,
-      primary key (a),
+      PRIMARY KEY (`id`)
+    ) COMMENT 'hello';
+
+    --
+    -- Table structure for `t`
+    --
+    CREATE TABLE `t` (
+      `a` int NOT NULL
+    );
+
+    --
+    -- Table structure for `t4`
+    --
+    CREATE TABLE `t4` (
+      `a` varchar(10) NOT NULL DEFAULT 'default value' COMMENT 'this is comment, aha',
+      `b` char(10) NOT NULL,
+      `c` int NOT NULL DEFAULT 1 COMMENT 'col_b',
+      `e` int DEFAULT 1 COMMENT 'col_e',
+      `f` int,
+      `g` blob,
+      PRIMARY KEY (`a`, `b`, `c`),
+      UNIQUE KEY `uk_a` (`b`),
+      CONSTRAINT `fk1` FOREIGN KEY (`b`) REFERENCES `t2` (`b`)
+    );
+
+    --
+    -- Table structure for `t5`
+    --
+    CREATE TABLE `t5` (
+      `a` bigint NOT NULL /*T![auto_rand] AUTO_RANDOM(6, 54) */,
+      PRIMARY KEY (`a`),
       UNIQUE KEY `udx_a` (`a`)
     );
+
     --
     -- Table structure for `t6`
     --
@@ -478,16 +502,32 @@
         }
       ]
     }
-  result: |
+  result: |+
+    --
+    -- Table structure for `t1`
+    --
     CREATE TABLE `t1` (
       `a` int AUTO_INCREMENT
     );
+
+    --
+    -- Table structure for `t2`
+    --
     CREATE TABLE `t2` (
       `a` int AUTO_INCREMENT
     );
+
+    --
+    -- Table structure for `t3`
+    --
     CREATE TABLE `t3` (
       `a` int AUTO_INCREMENT
     );
+
+    --
+    -- Table structure for `t4`
+    --
     CREATE TABLE `t4` (
       `a` int DEFAULT 1
     );
+
