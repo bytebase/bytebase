@@ -834,7 +834,7 @@ func validateSteps(steps []*v1pb.Plan_Step) error {
 	if len(steps) == 0 {
 		return errors.Errorf("the plan has zero step")
 	}
-	var databaseTarget, databaseGroupTarget, deploymentConfigTarget int
+	var databaseTarget, databaseGroupTarget int
 	seenID := map[string]bool{}
 	for _, step := range steps {
 		if len(step.Specs) == 0 {
@@ -856,8 +856,6 @@ func validateSteps(steps []*v1pb.Plan_Step) error {
 					databaseTarget++
 				} else if _, _, err := common.GetProjectIDDatabaseGroupID(config.Target); err == nil {
 					databaseGroupTarget++
-				} else if _, _, err := common.GetProjectIDDeploymentConfigID(config.Target); err == nil {
-					deploymentConfigTarget++
 				} else {
 					return errors.Errorf("unknown target %q", config.Target)
 				}
@@ -874,17 +872,8 @@ func validateSteps(steps []*v1pb.Plan_Step) error {
 			}
 		}
 	}
-	if deploymentConfigTarget > 1 {
-		return errors.Errorf("expect at most 1 deploymentConfig target, got %d", deploymentConfigTarget)
-	}
-	if deploymentConfigTarget != 0 && (databaseTarget > 0 || databaseGroupTarget > 0) {
-		return errors.Errorf("expect no other kinds of targets if there is deploymentConfig target")
-	}
-	if databaseGroupTarget > 1 {
-		return errors.Errorf("expect at most 1 databaseGroup target, got %d", databaseGroupTarget)
-	}
-	if databaseGroupTarget > 0 && (databaseTarget > 0 || deploymentConfigTarget > 0) {
-		return errors.Errorf("expect no other kinds of targets if there is databaseGroup target")
+	if databaseGroupTarget > 0 && databaseTarget > 0 {
+		return errors.Errorf("found databaseGroupTarget and databaseTarget, expect only one kind")
 	}
 	return nil
 }
