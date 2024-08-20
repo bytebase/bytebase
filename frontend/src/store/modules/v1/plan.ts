@@ -135,6 +135,13 @@ export const usePlanStore = defineStore("plan", () => {
     };
   };
 
+  const fetchPlanByName = async (name: string): Promise<ComposedPlan> => {
+    const rawPlan = await planServiceClient.getPlan({
+      name,
+    });
+    return await composePlan(rawPlan);
+  };
+
   const fetchPlanByUID = async (
     uid: string,
     project = "-"
@@ -147,15 +154,12 @@ export const usePlanStore = defineStore("plan", () => {
     if (uid === String(EMPTY_ID)) return emptyPlan();
     if (uid === String(UNKNOWN_ID)) return unknownPlan();
 
-    const rawPlan = await planServiceClient.getPlan({
-      name: `projects/${project}/plans/${uid}`,
-    });
-
-    return await composePlan(rawPlan);
+    return fetchPlanByName(`projects/${project}/plans/${uid}`);
   };
 
   return {
     searchPlans,
+    fetchPlanByName,
     fetchPlanByUID,
   };
 });

@@ -1,7 +1,6 @@
 import { computed, watch } from "vue";
 import { useProgressivePoll } from "@/composables/useProgressivePoll";
 import { usePlanStore } from "@/store/modules/v1/plan";
-import { extractProjectResourceName } from "@/utils";
 import { usePlanContext } from "./context";
 
 export const usePollPlan = () => {
@@ -16,10 +15,7 @@ export const usePollPlan = () => {
     if (!shouldPollPlan.value) return;
 
     planStore
-      .fetchPlanByUID(
-        plan.value.uid,
-        extractProjectResourceName(plan.value.name)
-      )
+      .fetchPlanByName(plan.value.name)
       .then((updatedPlan) => (plan.value = updatedPlan));
   };
 

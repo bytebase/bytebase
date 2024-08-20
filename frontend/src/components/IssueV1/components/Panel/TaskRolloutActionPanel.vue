@@ -202,7 +202,7 @@ const stage = computed(() => {
 
 const planCheckRunList = computed(() => {
   const list = props.taskList.flatMap(getPlanCheckRunsForTask);
-  return uniqBy(list, (checkRun) => checkRun.uid);
+  return uniqBy(list, (checkRun) => checkRun.name);
 });
 
 const planCheckErrors = computed(() => {

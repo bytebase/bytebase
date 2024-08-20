@@ -86,7 +86,7 @@ const planCheckStatus = computed((): PlanCheckRun_Result_Status => {
     props.step.specs.flatMap((spec) =>
       planCheckRunListForSpec(plan.value, spec)
     ),
-    (checkRun) => checkRun.uid
+    (checkRun) => checkRun.name
   );
   const summary = planCheckRunSummaryForCheckRunList(planCheckList);
   if (summary.errorCount > 0) {
