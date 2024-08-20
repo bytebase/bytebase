@@ -133,10 +133,9 @@ const buildIssue = async (params: CreateIssueParams) => {
 export const buildPlan = async (params: CreateIssueParams) => {
   const { databaseNameList, project, query } = params;
 
-  const plan = Plan.fromJSON({
-    uid: nextUID(),
+  const plan = Plan.fromPartial({
+    name: `${project.name}/plans/${nextUID()}`,
   });
-  plan.name = `${project.name}/plans/${plan.uid}`;
   if (query.changelist) {
     // build plan for changelist
     plan.steps = await buildStepsViaChangelist(

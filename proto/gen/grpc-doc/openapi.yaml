@@ -11047,10 +11047,6 @@ components:
                         The name of the plan.
                          `plan` is a system generated ID.
                          Format: projects/{project}/plans/{plan}
-                uid:
-                    readOnly: true
-                    type: string
-                    description: The system-assigned, unique identifier for a resource.
                 issue:
                     type: string
                     description: |-
@@ -11096,9 +11092,6 @@ components:
                 name:
                     type: string
                     description: 'Format: projects/{project}/plans/{plan}/planCheckRuns/{planCheckRun}'
-                uid:
-                    type: string
-                    description: The system-assigned, unique identifier for a resource.
                 type:
                     enum:
                         - TYPE_UNSPECIFIED

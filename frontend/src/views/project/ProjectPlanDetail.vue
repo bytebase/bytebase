@@ -32,7 +32,7 @@ import {
   type PlanCheckRunEvents,
 } from "@/components/PlanCheckRun/context";
 import { useBodyLayoutContext } from "@/layouts/common";
-import { UNKNOWN_ID } from "@/types";
+import { isValidPlanName } from "@/utils";
 
 interface LocalState {
   showFeatureModal: boolean;
@@ -99,7 +99,7 @@ const documentTitle = computed(() => {
   if (isCreating.value) {
     return t("issue.new-issue");
   } else {
-    if (ready.value && plan.value.uid !== String(UNKNOWN_ID)) {
+    if (ready.value && isValidPlanName(plan.value.name)) {
       return plan.value.title;
     }
   }

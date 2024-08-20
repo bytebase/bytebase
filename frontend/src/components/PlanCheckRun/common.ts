@@ -5,6 +5,7 @@ import {
   PlanCheckRun_Type,
   type PlanCheckRun,
 } from "@/types/proto/v1/plan_service";
+import { extractPlanCheckRunUID } from "@/utils";
 
 export const planCheckRunResultStatus = (checkRun: PlanCheckRun) => {
   let status = PlanCheckRun_Result_Status.SUCCESS;
@@ -62,7 +63,7 @@ export const planCheckRunSummaryForCheckRunList = (
   ).map((k) => {
     const listOfTypeTargetSheet = listGroupByTypeTargetSheet[k];
     const latest = maxBy(listOfTypeTargetSheet, (checkRun) =>
-      Number(checkRun.uid)
+      Number(extractPlanCheckRunUID(checkRun.name))
     )!;
     return latest;
   });
