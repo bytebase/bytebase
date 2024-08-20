@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"sort"
 	"strconv"
 	"testing"
 
@@ -130,9 +129,6 @@ func TestFilterChangeHistoryByResources(t *testing.T) {
 		})
 		a.NoError(err)
 		a.Equal(len(tt.wantStatements), len(resp.ChangeHistories), tt.filter)
-		sort.Slice(resp.ChangeHistories, func(i, j int) bool {
-			return resp.ChangeHistories[i].Uid < resp.ChangeHistories[j].Uid
-		})
 		for i, wantStatement := range tt.wantStatements {
 			a.Equal(wantStatement, string(resp.ChangeHistories[i].Statement), tt.filter)
 		}
