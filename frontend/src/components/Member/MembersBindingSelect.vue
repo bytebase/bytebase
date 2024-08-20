@@ -18,7 +18,7 @@
     </div>
     <div :class="['w-full space-y-2', memberType !== 'USERS' ? 'hidden' : '']">
       <div class="flex items-center gap-x-1">
-        {{ $t("settings.members.select-users") }}
+        {{ $t("settings.members.select-user", 2 /* multiply*/) }}
         <span v-if="required" class="text-red-600">*</span>
       </div>
       <UserSelect
@@ -33,7 +33,7 @@
     </div>
     <div :class="['w-full space-y-2', memberType !== 'GROUPS' ? 'hidden' : '']">
       <div class="flex items-center gap-x-1">
-        {{ $t("settings.members.select-groups") }}
+        {{ $t("settings.members.select-group", 2 /* multiply*/) }}
         <span v-if="required" class="text-red-600">*</span>
       </div>
 
