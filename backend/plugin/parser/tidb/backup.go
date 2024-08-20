@@ -42,7 +42,7 @@ type statementInfo struct {
 }
 
 func prepareTransformation(databaseName, statement string) ([]statementInfo, error) {
-	list, err := SplitSQL(statement)
+	list, err := mysql.SplitSQL(statement)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to split sql")
 	}
