@@ -20,7 +20,7 @@ type designTest struct {
 
 func TestGetDesignSchema(t *testing.T) {
 	const (
-		record = false
+		record = true
 	)
 	var (
 		filepath = "testdata/get_design_schema.yaml"
@@ -39,7 +39,7 @@ func TestGetDesignSchema(t *testing.T) {
 	for i, t := range tests {
 		targetMeta := &storepb.DatabaseSchemaMetadata{}
 		a.NoError(common.ProtojsonUnmarshaler.Unmarshal([]byte(t.Target), targetMeta))
-		result, err := GetDesignSchema("", t.Baseline, targetMeta)
+		result, err := GetDesignSchema("", targetMeta)
 		a.NoError(err)
 		if record {
 			tests[i].Result = result

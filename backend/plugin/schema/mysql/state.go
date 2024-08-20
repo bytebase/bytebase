@@ -473,6 +473,7 @@ func (v *viewState) toString(buf io.StringWriter) error {
 	if !strings.HasSuffix(stmt, ";") {
 		stmt += ";"
 	}
+	stmt += "\n"
 	if _, err := buf.WriteString(stmt); err != nil {
 		return err
 	}
@@ -507,7 +508,7 @@ func (f *procedureState) toString(buf io.StringWriter) error {
 		def += " ;;"
 	}
 
-	stmt := fmt.Sprintf("DELIMITER ;;\n%s\nDELIMITER ;", def)
+	stmt := fmt.Sprintf("DELIMITER ;;\n%s\nDELIMITER ;\n", def)
 	if _, err := buf.WriteString(stmt); err != nil {
 		return err
 	}
@@ -542,7 +543,7 @@ func (f *functionState) toString(buf io.StringWriter) error {
 		def += " ;;"
 	}
 
-	stmt := fmt.Sprintf("DELIMITER ;;\n%s\nDELIMITER ;", def)
+	stmt := fmt.Sprintf("DELIMITER ;;\n%s\nDELIMITER ;\n", def)
 	if _, err := buf.WriteString(stmt); err != nil {
 		return err
 	}

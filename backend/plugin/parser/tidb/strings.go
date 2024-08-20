@@ -482,7 +482,10 @@ func (s *StringsManipulator) Manipulate(actions ...base.StringsManipulatorAction
 	// Add a empty line at the end of the file
 	results = append(results, "")
 
-	return strings.Join(results, "\n"), nil
+	ss := strings.Join(results, "\n")
+	ss = strings.TrimLeft(ss, "\n")
+
+	return ss, nil
 }
 
 func (s *StringsManipulator) RewriteCreateTable(actionsMap map[string][]base.StringsManipulatorAction) (string, error) {
