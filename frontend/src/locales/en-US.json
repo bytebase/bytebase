@@ -120,7 +120,7 @@
     "required-placeholder": "required placeholder",
     "optional-placeholder": "optional placeholder",
     "optional-directory-wildcard": "optional directory wildcard",
-    "sensitive-placeholder": "sensitive - write only",
+    "sensitive-placeholder": "Sensitive - write only",
     "enabled": "enabled",
     "default": "default",
     "gitops": "GitOps",
@@ -484,6 +484,7 @@
       "email": "Email",
       "role": "Role",
       "phone": "Phone",
+      "phone-tips": "Be sure to include the country code",
       "country-code": "Country Code",
       "password": "Password",
       "password-confirm": "Password Confirm",
@@ -501,7 +502,6 @@
       "invited": "Invited",
       "yourself": "You",
       "upgrade": "Upgrade to enable role management",
-      "select-role": "Select role",
       "not-assigned": "Not assigned",
       "table": {
         "account": "Account",
@@ -572,10 +572,10 @@
       "view-by-members": "View by members",
       "revoke-access": "Revoke Access",
       "grant-access": "Grant Access",
-      "select-users": "Select users",
-      "select-groups": "Select groups",
-      "assign-role": "Assign role",
-      "assign-roles": "Assign roles"
+      "select-user": "Select user | Select users",
+      "select-group": "Select group | Select groups",
+      "select-role": "Select role | Select roles",
+      "assign-role": "Assign role | Assign roles"
     },
     "im-integration": {
       "description": "Push direct messages to users for specific issue events. Works with project webhook."
@@ -3392,8 +3392,6 @@
       "delete-warning-with-resources": "The role \"{name}\" is assigned to following users:",
       "delete-warning-retry": "Please remove the role from these users then retry again."
     },
-    "select": "Select role",
-    "select-roles": "Select roles",
     "default-workspace-role": "Users will get the \"Workspace Member\" role by default",
     "title": "Title",
     "select-role": "Select role",

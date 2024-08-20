@@ -40,7 +40,7 @@
             <NInput
               v-model:value="state.user.title"
               :input-props="{ type: 'text', autocomplete: 'off' }"
-              placeholder="foo"
+              placeholder="Foo"
             />
           </NFormItem>
           <NFormItem :label="$t('common.email')" required>
@@ -64,24 +64,24 @@
               <span class="textinfolabel text-sm">
                 {{ $t("role.default-workspace-role") }}
               </span>
-              <NSelect
-                v-model:value="state.roles"
-                multiple
-                :options="availableRoleOptions"
-                :placeholder="$t('role.select-roles')"
-              />
+              <RoleSelect v-model:value="state.roles" :multiple="true" />
             </div>
           </NFormItem>
           <template v-if="state.user.userType === UserType.USER">
             <NFormItem :label="$t('settings.profile.phone')">
-              <NInput
-                v-model:value="state.user.phone"
-                type="text"
-                :input-props="{
-                  type: 'tel',
-                  autocomplete: 'new-password',
-                }"
-              />
+              <div class="w-full space-y-1">
+                <span class="textinfolabel text-sm">
+                  {{ $t("settings.profile.phone-tips") }}
+                </span>
+                <NInput
+                  v-model:value="state.user.phone"
+                  type="text"
+                  :input-props="{
+                    type: 'tel',
+                    autocomplete: 'new-password',
+                  }"
+                />
+              </div>
             </NFormItem>
             <NFormItem :label="$t('settings.profile.password')">
               <NInput
@@ -165,14 +165,12 @@
 <script lang="ts" setup>
 import { cloneDeep, head, isEmpty, isEqual, isUndefined } from "lodash-es";
 import { ArchiveIcon } from "lucide-vue-next";
-import type { SelectGroupOption, SelectOption } from "naive-ui";
 import {
   NPopconfirm,
   NButton,
   NForm,
   NFormItem,
   NInput,
-  NSelect,
   NRadioGroup,
   NRadio,
 } from "naive-ui";
@@ -180,29 +178,23 @@ import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import EmailInput from "@/components/EmailInput.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
+import { RoleSelect } from "@/components/v2/Select";
 import {
   getUpdateMaskFromUsers,
   pushNotification,
   useAppFeature,
-  useRoleStore,
   useSettingV1Store,
   useUserStore,
   useWorkspaceV1Store,
 } from "@/store";
-import {
-  PRESET_PROJECT_ROLES,
-  PRESET_ROLES,
-  PRESET_WORKSPACE_ROLES,
-  PresetRoleType,
-  emptyUser,
-} from "@/types";
+import { PresetRoleType, emptyUser } from "@/types";
 import {
   UpdateUserRequest,
   UserType,
   User,
 } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
-import { displayRoleTitle, randomString } from "@/utils";
+import { randomString } from "@/utils";
 
 interface LocalState {
   isRequesting: boolean;
@@ -244,7 +236,6 @@ const userStore = useUserStore();
 const hideServiceAccount = useAppFeature(
   "bb.feature.members.hide-service-account"
 );
-const hideProjectRoles = useAppFeature("bb.feature.members.hide-project-roles");
 
 const state = reactive<LocalState>({
   isRequesting: false,
@@ -252,55 +243,6 @@ const state = reactive<LocalState>({
   roles: initRoles(),
   passwordConfirm: "",
 });
-
-const availableRoleOptions = computed(
-  (): (SelectOption | SelectGroupOption)[] => {
-    const roleGroups = [
-      {
-        type: "group",
-        key: "workspace-roles",
-        label: t("role.workspace-roles"),
-        children: PRESET_WORKSPACE_ROLES.filter(
-          (role) => role !== PresetRoleType.WORKSPACE_MEMBER
-        ).map((role) => ({
-          label: displayRoleTitle(role),
-          value: role,
-        })),
-      },
-      {
-        type: "group",
-        key: "project-roles",
-        label: `${t("role.project-roles.self")} (${t("common.optional")}, ${t(
-          "role.project-roles.apply-to-all-projects"
-        ).toLocaleLowerCase()})`,
-        children: PRESET_PROJECT_ROLES.map((role) => ({
-          label: displayRoleTitle(role),
-          value: role,
-        })),
-      },
-    ];
-    if (hideProjectRoles.value) {
-      return roleGroups[0].children;
-    }
-    const customRoles = useRoleStore()
-      .roleList.map((role) => role.name)
-      .filter((role) => !PRESET_ROLES.includes(role));
-    if (customRoles.length > 0) {
-      roleGroups.push({
-        type: "group",
-        key: "custom-roles",
-        label: `${t("role.custom-roles")} (${t("common.optional")}, ${t(
-          "role.project-roles.apply-to-all-projects"
-        ).toLocaleLowerCase()})`,
-        children: customRoles.map((role) => ({
-          label: displayRoleTitle(role),
-          value: role,
-        })),
-      });
-    }
-    return roleGroups;
-  }
-);
 
 const workspaceDomain = computed(() => {
   if (!settingV1Store.workspaceProfileSetting?.enforceIdentityDomain) {
@@ -401,7 +343,7 @@ const tryCreateOrUpdateUser = async () => {
     ]);
     pushNotification({
       module: "bytebase",
-      style: "INFO",
+      style: "SUCCESS",
       title: t("common.created"),
     });
   } else {

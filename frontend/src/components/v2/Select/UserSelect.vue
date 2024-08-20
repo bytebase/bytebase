@@ -8,7 +8,7 @@
     :fallback-option="fallbackOption"
     :filter="filterByTitle"
     :render-label="renderLabel"
-    :placeholder="$t('principal.select')"
+    :placeholder="$t('settings.members.select-user', multiple ? 2 : 1)"
     :size="size"
     class="bb-user-select"
     @update:value="handleValueUpdated"

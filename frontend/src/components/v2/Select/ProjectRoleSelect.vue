@@ -7,7 +7,7 @@
     :filterable="true"
     :filter="filterByName"
     :render-option="renderOption"
-    :placeholder="$t('role.select')"
+    :placeholder="$t('role.select-role')"
     :render-label="renderLabel"
     :multiple="multiple"
     class="bb-project-member-role-select"

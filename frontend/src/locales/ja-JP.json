@@ -484,6 +484,7 @@
       "email": "メールアドレス",
       "role": "役割",
       "phone": "電話番号",
+      "phone-tips": "国コードを必ず含めてください",
       "country-code": "国または地域コード",
       "password": "パスワード",
       "password-confirm": "パスワードの確認",
@@ -501,7 +502,6 @@
       "invited": "招待されました",
       "yourself": "あなた自身",
       "upgrade": "有料プランにアップグレードしてキャラクター管理のロックを解除する",
-      "select-role": "役割の選択",
       "not-assigned": "割り当てられていない",
       "table": {
         "account": "アカウント",
@@ -572,10 +572,10 @@
       "view-by-members": "メンバー別に表示",
       "revoke-access": "アクセスを取り消す",
       "grant-access": "アクセスを許可する",
-      "select-users": "ユーザーを選択",
-      "select-groups": "グループを選択",
-      "assign-role": "役割を割り当てる",
-      "assign-roles": "役割を割り当てる"
+      "select-user": "ユーザーを選択 | ユーザーを選択",
+      "select-group": "グループを選択 | グループを選択",
+      "select-role": "役割を選択 | 役割を選択",
+      "assign-role": "役割の割り当て | 役割の割り当て"
     },
     "im-integration": {
       "description": "特定の作業指示イベントについて、プライベート メッセージをユーザーにプッシュします。プロジェクト Webhook で使用する必要があります。"
@@ -3392,8 +3392,6 @@
       "delete-warning-with-resources": "ロール「{name}」は次のユーザーに割り当てられています:",
       "delete-warning-retry": "これらのユーザーからロールを削除して、もう一度お試しください。"
     },
-    "select": "役割の選択",
-    "select-roles": "役割の選択",
     "default-workspace-role": "ユーザーにはデフォルトで「ワークスペースメンバー」の役割が与えられます",
     "title": "タイトル",
     "select-role": "役割の選択",
