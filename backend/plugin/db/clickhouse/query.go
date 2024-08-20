@@ -5,13 +5,14 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"github.com/bytebase/bytebase/backend/common/log"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	"log/slog"
 	"math/big"
 	"reflect"
 	"strings"
 	"time"
+
+	"github.com/bytebase/bytebase/backend/common/log"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 
 	"github.com/paulmach/orb"
 	"github.com/paulmach/orb/encoding/wkt"
