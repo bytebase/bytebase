@@ -1,8 +1,8 @@
 <template>
   <div class="space-y-2">
     <TabFilter
-      v-if="selectedPlanCheckRunUID && tabItemList.length > 1"
-      v-model:value="selectedPlanCheckRunUID"
+      v-if="selectedPlanCheckRunName && tabItemList.length > 1"
+      v-model:value="selectedPlanCheckRunName"
       :items="tabItemList"
     />
 
@@ -33,7 +33,7 @@ import {
   PlanCheckRun_Type,
   type PlanCheckRun,
 } from "@/types/proto/v1/plan_service";
-import { humanizeDate } from "@/utils";
+import { extractPlanCheckRunUID, humanizeDate } from "@/utils";
 import PlanCheckRunBadgeBar from "./PlanCheckRunBadgeBar.vue";
 import PlanCheckRunDetail from "./PlanCheckRunDetail.vue";
 
@@ -71,24 +71,27 @@ const selectedPlanCheckRunList = computed(() => {
     props.planCheckRunList.filter(
       (checkRun) => checkRun.type === selectedTypeRef.value
     ),
-    (checkRun) => parseInt(checkRun.uid, 10),
+    (checkRun) => parseInt(extractPlanCheckRunUID(checkRun.name), 10),
     "desc"
   );
 });
 
-const selectedPlanCheckRunUID = ref(first(selectedPlanCheckRunList.value)?.uid);
+const selectedPlanCheckRunName = ref(
+  first(selectedPlanCheckRunList.value)?.name
+);
 
 const selectedPlanCheckRun = computed(() => {
-  const uid = selectedPlanCheckRunUID.value;
-  if (!uid) return undefined;
+  const name = selectedPlanCheckRunName.value;
+  if (!name) return undefined;
   return selectedPlanCheckRunList.value.find(
-    (checkRun) => checkRun.uid === uid
+    (checkRun) => checkRun.name === name
   );
 });
 
 const isLatestPlanCheckRun = computed(() => {
   return (
-    selectedPlanCheckRunUID.value === first(selectedPlanCheckRunList.value)?.uid
+    selectedPlanCheckRunName.value ===
+    first(selectedPlanCheckRunList.value)?.name
   );
 });
 
@@ -100,10 +103,10 @@ const tabItemList = computed(() => {
           ? t("common.latest")
           : planCheckRun.createTime
             ? humanizeDate(planCheckRun.createTime)
-            : `UID(${planCheckRun.uid})`;
+            : `UID(${extractPlanCheckRunUID(planCheckRun.name)})`;
       return {
         label,
-        value: planCheckRun.uid,
+        value: planCheckRun.name,
       };
     }
   );
@@ -111,6 +114,6 @@ const tabItemList = computed(() => {
 
 const handlePlanCheckRunTypeChange = (type: PlanCheckRun_Type) => {
   selectedTypeRef.value = type;
-  selectedPlanCheckRunUID.value = first(selectedPlanCheckRunList.value)?.uid;
+  selectedPlanCheckRunName.value = first(selectedPlanCheckRunList.value)?.name;
 };
 </script>
