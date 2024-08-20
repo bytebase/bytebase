@@ -170,12 +170,12 @@ message OAuth2IdentityProviderTestRequestContext {
 message TestIdentityProviderResponse {}
 
 message IdentityProvider {
-  reserved 2;
-
   option (google.api.resource) = {
     type: "bytebase.com/IdP"
     pattern: "idps/{idp}"
   };
+
+  reserved 2;
 
   // The name of the identity provider.
   // Format: idps/{idp}

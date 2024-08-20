@@ -378,11 +378,9 @@ export const previewPlan = async (plan: Plan, params: CreateIssueParams) => {
   }
   // Touch UIDs for each object for local referencing
   rollout.plan = plan.name;
-  rollout.uid = nextUID();
-  rollout.name = `${params.project.name}/rollouts/${rollout.uid}`;
+  rollout.name = `${params.project.name}/rollouts/${nextUID()}`;
   rollout.stages.forEach((stage) => {
-    stage.uid = nextUID();
-    stage.name = `${rollout.name}/stages/${stage.uid}`;
+    stage.name = `${rollout.name}/stages/${nextUID()}`;
     stage.tasks.forEach((task) => {
       task.name = `${stage.name}/tasks/${nextUID()}`;
     });

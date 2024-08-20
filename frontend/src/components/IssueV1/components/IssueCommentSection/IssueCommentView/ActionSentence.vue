@@ -23,12 +23,7 @@ import {
   IssueComment_TaskUpdate_Status,
   IssueStatus,
 } from "@/types/proto/v1/issue_service";
-import {
-  findStageByUID,
-  findTaskByName,
-  extractStageUID,
-  extractSheetUID,
-} from "@/utils";
+import { findStageByName, findTaskByName, extractSheetUID } from "@/utils";
 import { extractUserResourceName } from "@/utils";
 import StageName from "./StageName.vue";
 import StatementUpdate from "./StatementUpdate.vue";
@@ -96,10 +91,7 @@ const renderActionSentence = () => {
     const { stage } = IssueComment_StageEnd.fromPartial(
       issueComment.stageEnd || {}
     );
-    const stageEntity = findStageByUID(
-      issue.rolloutEntity,
-      extractStageUID(stage)
-    );
+    const stageEntity = findStageByName(issue.rolloutEntity, stage);
     const params: VerbTypeTarget = {
       issueComment,
       type: t("common.stage"),
