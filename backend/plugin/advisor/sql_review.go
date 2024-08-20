@@ -1134,8 +1134,7 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 			return OracleRequireColumnDefault, nil
 		}
 	case SchemaRuleColumnDefaultDisallowVolatile:
-		switch engine {
-		case storepb.Engine_POSTGRES:
+		if engine == storepb.Engine_POSTGRES {
 			return PostgreSQLColumnDefaultDisallowVolatile, nil
 		}
 	case SchemaRuleAddNotNullColumnRequireDefault:
