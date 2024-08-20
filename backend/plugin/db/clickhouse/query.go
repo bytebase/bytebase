@@ -5,6 +5,9 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"github.com/bytebase/bytebase/backend/common/log"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
+	"log/slog"
 	"math/big"
 	"reflect"
 	"strings"
@@ -46,22 +49,39 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 		} else if queryContext.Limit > 0 {
 			statement = getStatementWithResultLimit(statement, queryContext.Limit)
 		}
+		_, allQuery, err := base.ValidateSQLForEditor(storepb.Engine_CLICKHOUSE, statement)
+		if err != nil {
+			return nil, err
+		}
 
 		startTime := time.Now()
 		queryResult, err := func() (*v1pb.QueryResult, error) {
-			rows, err := conn.QueryContext(ctx, statement)
+			if allQuery {
+				rows, err := conn.QueryContext(ctx, statement)
+				if err != nil {
+					return nil, err
+				}
+				defer rows.Close()
+				r, err := convertRowsToQueryResult(rows, driver.maximumSQLResultSize)
+				if err != nil {
+					return nil, err
+				}
+				if err := rows.Err(); err != nil {
+					return nil, err
+				}
+				return r, nil
+			}
+
+			sqlResult, err := conn.ExecContext(ctx, statement)
 			if err != nil {
 				return nil, err
 			}
-			defer rows.Close()
-			r, err := convertRowsToQueryResult(rows, driver.maximumSQLResultSize)
+			affectedRows, err := sqlResult.RowsAffected()
 			if err != nil {
-				return nil, err
+				slog.Error("rowsAffected returns error", log.BBError(err))
 			}
-			if err := rows.Err(); err != nil {
-				return nil, err
-			}
-			return r, nil
+			return util.BuildAffectedRowsResult(affectedRows), nil
+
 		}()
 		stop := false
 		if err != nil {
