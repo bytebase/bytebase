@@ -50,7 +50,7 @@ const link = computed(() => {
 
   const stage = stageForTask(issue, task);
   if (stage) {
-    query.stage = extractStageUID(stage.uid);
+    query.stage = extractStageUID(stage.name);
   }
 
   return {

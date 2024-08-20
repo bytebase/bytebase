@@ -54,8 +54,14 @@ export const isValidTaskName = (name: string | undefined) => {
   );
 };
 
+export const extractTaskRunUID = (name: string) => {
+  const pattern = /(?:^|\/)taskRuns\/([^/]+)(?:$|\/)/;
+  const matches = name.match(pattern);
+  return matches?.[1] ?? "";
+};
+
 export const stageV1Slug = (stage: Stage): string => {
-  return [slug(stage.title), stage.uid].join("-");
+  return [slug(stage.title), extractStageUID(stage.name)].join("-");
 };
 
 export const taskV1Slug = (task: Task): string => {
@@ -121,11 +127,11 @@ export const findTaskByName = (
   return unknownTask();
 };
 
-export const findStageByUID = (
+export const findStageByName = (
   rollout: Rollout | undefined,
-  uid: string
+  name: string
 ): Stage => {
-  return (rollout?.stages ?? []).find((s) => s.uid === uid) ?? unknownStage();
+  return (rollout?.stages ?? []).find((s) => s.name === name) ?? unknownStage();
 };
 
 export const extractSchemaVersionFromTask = (task: Task): string => {
@@ -175,7 +181,7 @@ export const buildIssueV1LinkWithTask = (
   const issueSlug = simple ? issue.uid : issueV1Slug(issue);
   const query: Record<string, string> = {};
   if (stage) {
-    query.stage = simple ? stage.uid : stageV1Slug(stage);
+    query.stage = simple ? extractStageUID(stage.name) : stageV1Slug(stage);
   }
   query.task = simple ? extractTaskUID(task.name) : taskV1Slug(task);
 
