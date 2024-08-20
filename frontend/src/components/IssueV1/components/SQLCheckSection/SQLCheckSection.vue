@@ -6,7 +6,7 @@
 
     <SQLCheckButton
       v-if="database"
-      :key="selectedTask.uid"
+      :key="selectedTask.name"
       :get-statement="getStatement"
       :database="database"
       :change-type="changeType"

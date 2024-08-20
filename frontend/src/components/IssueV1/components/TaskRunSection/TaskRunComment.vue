@@ -55,7 +55,7 @@ const task = computed(() => {
   const taskUID = extractTaskUID(props.taskRun.name);
   const task =
     flattenTaskV1List(issue.value.rolloutEntity).find(
-      (task) => task.uid === taskUID
+      (task) => extractTaskUID(task.name) === taskUID
     ) ?? unknownTask();
   return task;
 });
@@ -99,7 +99,7 @@ const commentLink = computed((): CommentLink => {
   const taskUID = extractTaskUID(taskRun.name);
   const task =
     flattenTaskV1List(issue.value.rolloutEntity).find(
-      (task) => task.uid === taskUID
+      (task) => extractTaskUID(task.name) === taskUID
     ) ?? unknownTask();
   if (taskRun.status === TaskRun_Status.RUNNING) {
     const task = taskRun.schedulerInfo?.waitingCause?.task;

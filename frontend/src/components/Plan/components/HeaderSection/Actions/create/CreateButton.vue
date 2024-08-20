@@ -55,7 +55,7 @@ import {
   flattenSpecList,
   getSheetStatement,
   hasProjectPermissionV2,
-  planSlug,
+  planV1Slug,
   setSheetStatement,
 } from "@/utils";
 
@@ -109,7 +109,7 @@ const doCreatePlan = async () => {
         name: PROJECT_V1_ROUTE_PLAN_DETAIL,
         params: {
           projectId: extractProjectResourceName(composedPlan.project),
-          planSlug: planSlug(composedPlan.title, composedPlan.uid),
+          planSlug: planV1Slug(composedPlan),
         },
       });
     });

@@ -50,7 +50,7 @@ import { PlanCheckRun_Result_Status } from "@/types/proto/v1/plan_service";
 import {
   extractProjectResourceName,
   hasProjectPermissionV2,
-  issueSlug,
+  issueV1Slug,
 } from "@/utils";
 
 const { t } = useI18n();
@@ -144,7 +144,7 @@ const doCreateIssue = async () => {
         name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
         params: {
           projectId: extractProjectResourceName(plan.value.project),
-          issueSlug: issueSlug(composedIssue.title, composedIssue.uid),
+          issueSlug: issueV1Slug(composedIssue),
         },
       });
     });

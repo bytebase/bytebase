@@ -114,7 +114,7 @@ const isActiveStage = computed(() => {
   }
 
   const taskFound = props.stage.tasks.find(
-    (t) => t.uid === activeTask.value.uid
+    (t) => t.name === activeTask.value.name
   );
   if (taskFound && !isTaskFinished(taskFound)) {
     // A stage is "Active" if the ActiveTaskOfPipeline is inside this stage
