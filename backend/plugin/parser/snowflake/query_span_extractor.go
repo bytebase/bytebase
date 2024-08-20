@@ -43,10 +43,19 @@ func newQuerySpanExtractor(connectedDB, connectedSchema string, gCtx base.GetQue
 func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string) (*base.QuerySpan, error) {
 	q.ctx = ctx
 
-	accessTables, err := getAccessTables(q.connectedDB, q.connectedSchema, statement)
+	parseResult, err := ParseSnowSQL(statement)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get access tables")
+		return nil, err
 	}
+	if parseResult == nil {
+		return nil, nil
+	}
+	tree := parseResult.Tree
+	if tree == nil {
+		return nil, nil
+	}
+
+	accessTables := getAccessTables(q.connectedDB, q.connectedSchema, tree)
 	// We do not support simultaneous access to the system table and the user table
 	// because we do not synchronize the schema of the system table.
 	// This causes an error (NOT_FOUND) when using querySpanExtractor.findTableSchema.
@@ -62,17 +71,6 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string)
 		}, nil
 	}
 
-	result, err := ParseSnowSQL(statement)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to parse tsql")
-	}
-	if result == nil {
-		return nil, nil
-	}
-	if result.Tree == nil {
-		return nil, nil
-	}
-
 	// We assumes the caller had handled the statement type case,
 	// so we only need to handle the determined statement type here.
 	// In order to decrease the maintenance cost, we use listener
@@ -80,7 +78,7 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string)
 	listener := &selectOnlyListener{
 		q: q,
 	}
-	antlr.ParseTreeWalkerDefault.Walk(listener, result.Tree)
+	antlr.ParseTreeWalkerDefault.Walk(listener, tree)
 	if listener.err != nil {
 		return nil, errors.Wrapf(listener.err, "failed to extract sensitive fields from select statement")
 	}
@@ -1285,15 +1283,7 @@ func normalizedObjectName(objectName parser.IObject_nameContext, normalizedFallb
 }
 
 // getAccessTables extracts the list of resources from the SELECT statement, and normalizes the object names with the NON-EMPTY currentNormalizedDatabase and currentNormalizedSchema.
-func getAccessTables(currentNormalizedDatabase string, currentNormalizedSchema string, selectStatement string) (base.SourceColumnSet, error) {
-	parseResult, err := ParseSnowSQL(selectStatement)
-	if err != nil {
-		return nil, err
-	}
-	if parseResult == nil {
-		return nil, nil
-	}
-
+func getAccessTables(currentNormalizedDatabase string, currentNormalizedSchema string, tree antlr.Tree) base.SourceColumnSet {
 	l := &accessTablesListener{
 		currentDatabase: currentNormalizedDatabase,
 		currentSchema:   currentNormalizedSchema,
@@ -1301,12 +1291,12 @@ func getAccessTables(currentNormalizedDatabase string, currentNormalizedSchema s
 	}
 
 	var result []base.SchemaResource
-	antlr.ParseTreeWalkerDefault.Walk(l, parseResult.Tree)
+	antlr.ParseTreeWalkerDefault.Walk(l, tree)
 	sort.Slice(result, func(i, j int) bool {
 		return result[i].String() < result[j].String()
 	})
 
-	return l.resourceMap, nil
+	return l.resourceMap
 }
 
 // isMixedQuery checks whether the query accesses the user table and system table at the same time.
