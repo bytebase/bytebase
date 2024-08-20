@@ -67,7 +67,7 @@ import {
   flattenTaskV1List,
   getSheetStatement,
   hasPermissionToCreateChangeDatabaseIssueInProject,
-  issueSlug,
+  issueV1Slug,
   setSheetStatement,
   sheetNameOfTaskV1,
 } from "@/utils";
@@ -168,7 +168,7 @@ const doCreateIssue = async () => {
         name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
         params: {
           projectId: extractProjectResourceName(composedIssue.project),
-          issueSlug: issueSlug(composedIssue.title, composedIssue.uid),
+          issueSlug: issueV1Slug(composedIssue),
         },
       });
     });

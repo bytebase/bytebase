@@ -11,7 +11,7 @@
       target="_blank"
       @click.stop
     >
-      #{{ changeHistory.issueEntity.uid }}
+      #{{ extractIssueUID(changeHistory.issueEntity.name) }}
     </router-link>
     <NPerformantEllipsis class="flex-1 truncate">
       <!-- eslint-disable-next-line vue/no-v-html -->
@@ -26,7 +26,7 @@ import { escape } from "lodash-es";
 import { NPerformantEllipsis } from "naive-ui";
 import { computed } from "vue";
 import { type ComposedChangeHistory } from "@/types";
-import { getHighlightHTMLByRegExp } from "@/utils";
+import { extractIssueUID, getHighlightHTMLByRegExp } from "@/utils";
 
 const props = defineProps<{
   changeHistory: ComposedChangeHistory;

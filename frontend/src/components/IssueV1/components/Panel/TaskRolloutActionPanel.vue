@@ -36,7 +36,7 @@
               <ul class="text-sm space-y-2">
                 <li
                   v-for="task in taskList"
-                  :key="task.uid"
+                  :key="task.name"
                   class="flex items-center"
                 >
                   <NTag

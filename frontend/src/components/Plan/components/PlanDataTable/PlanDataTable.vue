@@ -23,7 +23,7 @@ import { useRouter } from "vue-router";
 import { ProjectNameCell } from "@/components/v2/Model/DatabaseV1Table/cells";
 import { PROJECT_V1_ROUTE_PLAN_DETAIL } from "@/router/dashboard/projectV1";
 import type { ComposedPlan } from "@/types/v1/issue/plan";
-import { extractProjectResourceName, humanizeTs, planSlug } from "@/utils";
+import { extractProjectResourceName, humanizeTs, planV1Slug } from "@/utils";
 import PlanCheckRunStatusIcon from "../PlanCheckRunStatusIcon.vue";
 
 const { t } = useI18n();
@@ -112,7 +112,7 @@ const rowProps = (plan: ComposedPlan) => {
         name: PROJECT_V1_ROUTE_PLAN_DETAIL,
         params: {
           projectId: extractProjectResourceName(plan.project),
-          planSlug: planSlug(plan.title, plan.uid),
+          planSlug: planV1Slug(plan),
         },
       });
       const url = route.fullPath;
