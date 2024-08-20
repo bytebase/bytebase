@@ -1,4 +1,37 @@
 - input: |-
+    UPDATE test SET test.c1 = 1 WHERE test.b1 = 1;
+    UPDATE test SET test.c1 = 2 WHERE test.b1 = 2;
+    UPDATE test SET test.c1 = 3 WHERE test.b1 = 3;
+    UPDATE test SET test.c1 = 4 WHERE test.b1 = 4;
+    UPDATE test SET test.c1 = 5 WHERE test.b1 = 5;
+    UPDATE test SET test.c1 = 6 WHERE test.b1 = 6;
+    UPDATE test SET test.c1 = 7 WHERE test.b1 = 7;
+  result:
+    - statement: |-
+        CREATE TABLE "backupSchema"."rollback_test" AS
+          SELECT "test".* FROM test WHERE test.b1 = 1
+          UNION ALL
+          SELECT "test".* FROM test WHERE test.b1 = 2
+          UNION ALL
+          SELECT "test".* FROM test WHERE test.b1 = 3
+          UNION ALL
+          SELECT "test".* FROM test WHERE test.b1 = 4
+          UNION ALL
+          SELECT "test".* FROM test WHERE test.b1 = 5
+          UNION ALL
+          SELECT "test".* FROM test WHERE test.b1 = 6
+          UNION ALL
+          SELECT "test".* FROM test WHERE test.b1 = 7;
+      sourceschema: ""
+      sourcetablename: test
+      targettablename: rollback_test
+      startposition:
+        line: 1
+        column: 0
+      endposition:
+        line: 7
+        column: 44
+- input: |-
     DELETE FROM t
     USING test
     WHERE t.c1 = 1 and t.a1 = test.a1;
