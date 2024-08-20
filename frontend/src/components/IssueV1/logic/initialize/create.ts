@@ -115,8 +115,7 @@ const buildIssue = async (params: CreateIssueParams) => {
   issue.creatorEntity = me.value;
   issue.project = project.name;
   issue.projectEntity = project;
-  issue.uid = nextUID();
-  issue.name = `${project.name}/issues/${issue.uid}`;
+  issue.name = `${project.name}/issues/${nextUID()}`;
   issue.title = query.name;
   issue.status = IssueStatus.OPEN;
 
@@ -133,10 +132,9 @@ const buildIssue = async (params: CreateIssueParams) => {
 export const buildPlan = async (params: CreateIssueParams) => {
   const { databaseNameList, project, query } = params;
 
-  const plan = Plan.fromJSON({
-    uid: nextUID(),
+  const plan = Plan.fromPartial({
+    name: `${project.name}/plans/${nextUID()}`,
   });
-  plan.name = `${project.name}/plans/${plan.uid}`;
   if (query.changelist) {
     // build plan for changelist
     plan.steps = await buildStepsViaChangelist(
@@ -378,14 +376,11 @@ export const previewPlan = async (plan: Plan, params: CreateIssueParams) => {
   }
   // Touch UIDs for each object for local referencing
   rollout.plan = plan.name;
-  rollout.uid = nextUID();
-  rollout.name = `${params.project.name}/rollouts/${rollout.uid}`;
+  rollout.name = `${params.project.name}/rollouts/${nextUID()}`;
   rollout.stages.forEach((stage) => {
-    stage.uid = nextUID();
-    stage.name = `${rollout.name}/stages/${stage.uid}`;
+    stage.name = `${rollout.name}/stages/${nextUID()}`;
     stage.tasks.forEach((task) => {
-      task.uid = nextUID();
-      task.name = `${stage.name}/tasks/${task.uid}`;
+      task.name = `${stage.name}/tasks/${nextUID()}`;
     });
   });
 

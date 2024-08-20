@@ -1,17 +1,4 @@
 - description: Easy Key Partition
-  baseline: |-
-    SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
-    SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
-    --
-    -- Table structure for `key_partition_multiple`
-    --
-    CREATE TABLE `key_partition_multiple` (
-      `id` int DEFAULT NULL,
-      `id2` int DEFAULT NULL
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
-    SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
-    SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
   target: |-
     {
       "schemas": [
@@ -55,18 +42,13 @@
       ]
     }
   result: |
-    SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
-    SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
     --
     -- Table structure for `key_partition_multiple`
     --
     CREATE TABLE `key_partition_multiple` (
       `id` int DEFAULT NULL,
       `id2` int DEFAULT NULL
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+    ) ENGINE=InnoDB COLLATE=utf8mb4_0900_ai_ci
     /*!50100 PARTITION BY KEY (id,id2)
     (PARTITION p0 ENGINE=InnoDB,
      PARTITION p1 ENGINE=InnoDB) */;
-
-    SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
-    SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;

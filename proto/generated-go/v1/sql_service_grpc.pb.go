@@ -24,7 +24,6 @@ const (
 	SQLService_AdminExecute_FullMethodName         = "/bytebase.v1.SQLService/AdminExecute"
 	SQLService_SearchQueryHistories_FullMethodName = "/bytebase.v1.SQLService/SearchQueryHistories"
 	SQLService_Export_FullMethodName               = "/bytebase.v1.SQLService/Export"
-	SQLService_DifferPreview_FullMethodName        = "/bytebase.v1.SQLService/DifferPreview"
 	SQLService_Check_FullMethodName                = "/bytebase.v1.SQLService/Check"
 	SQLService_ParseMyBatisMapper_FullMethodName   = "/bytebase.v1.SQLService/ParseMyBatisMapper"
 	SQLService_Pretty_FullMethodName               = "/bytebase.v1.SQLService/Pretty"
@@ -42,7 +41,6 @@ type SQLServiceClient interface {
 	// SearchQueryHistories searches query histories for the caller.
 	SearchQueryHistories(ctx context.Context, in *SearchQueryHistoriesRequest, opts ...grpc.CallOption) (*SearchQueryHistoriesResponse, error)
 	Export(ctx context.Context, in *ExportRequest, opts ...grpc.CallOption) (*ExportResponse, error)
-	DifferPreview(ctx context.Context, in *DifferPreviewRequest, opts ...grpc.CallOption) (*DifferPreviewResponse, error)
 	Check(ctx context.Context, in *CheckRequest, opts ...grpc.CallOption) (*CheckResponse, error)
 	ParseMyBatisMapper(ctx context.Context, in *ParseMyBatisMapperRequest, opts ...grpc.CallOption) (*ParseMyBatisMapperResponse, error)
 	Pretty(ctx context.Context, in *PrettyRequest, opts ...grpc.CallOption) (*PrettyResponse, error)
@@ -112,16 +110,6 @@ func (c *sQLServiceClient) Export(ctx context.Context, in *ExportRequest, opts .
 	return out, nil
 }
 
-func (c *sQLServiceClient) DifferPreview(ctx context.Context, in *DifferPreviewRequest, opts ...grpc.CallOption) (*DifferPreviewResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(DifferPreviewResponse)
-	err := c.cc.Invoke(ctx, SQLService_DifferPreview_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *sQLServiceClient) Check(ctx context.Context, in *CheckRequest, opts ...grpc.CallOption) (*CheckResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(CheckResponse)
@@ -182,7 +170,6 @@ type SQLServiceServer interface {
 	// SearchQueryHistories searches query histories for the caller.
 	SearchQueryHistories(context.Context, *SearchQueryHistoriesRequest) (*SearchQueryHistoriesResponse, error)
 	Export(context.Context, *ExportRequest) (*ExportResponse, error)
-	DifferPreview(context.Context, *DifferPreviewRequest) (*DifferPreviewResponse, error)
 	Check(context.Context, *CheckRequest) (*CheckResponse, error)
 	ParseMyBatisMapper(context.Context, *ParseMyBatisMapperRequest) (*ParseMyBatisMapperResponse, error)
 	Pretty(context.Context, *PrettyRequest) (*PrettyResponse, error)
@@ -213,9 +200,6 @@ func (UnimplementedSQLServiceServer) SearchQueryHistories(context.Context, *Sear
 }
 func (UnimplementedSQLServiceServer) Export(context.Context, *ExportRequest) (*ExportResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Export not implemented")
-}
-func (UnimplementedSQLServiceServer) DifferPreview(context.Context, *DifferPreviewRequest) (*DifferPreviewResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method DifferPreview not implemented")
 }
 func (UnimplementedSQLServiceServer) Check(context.Context, *CheckRequest) (*CheckResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Check not implemented")
@@ -332,24 +316,6 @@ func _SQLService_Export_Handler(srv interface{}, ctx context.Context, dec func(i
 	return interceptor(ctx, in, info, handler)
 }
 
-func _SQLService_DifferPreview_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(DifferPreviewRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(SQLServiceServer).DifferPreview(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: SQLService_DifferPreview_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SQLServiceServer).DifferPreview(ctx, req.(*DifferPreviewRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _SQLService_Check_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CheckRequest)
 	if err := dec(in); err != nil {
@@ -462,10 +428,6 @@ var SQLService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Export",
 			Handler:    _SQLService_Export_Handler,
-		},
-		{
-			MethodName: "DifferPreview",
-			Handler:    _SQLService_DifferPreview_Handler,
 		},
 		{
 			MethodName: "Check",

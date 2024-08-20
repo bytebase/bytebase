@@ -24,7 +24,7 @@
       stageRolloutActionList:
       {{
         stageRolloutActionList.map(
-          ({ action, tasks }) => `${action}(${tasks.map((t) => t.uid)})`
+          ({ action, tasks }) => `${action}(${tasks.map((t) => t.name)})`
         )
       }}
     </div>

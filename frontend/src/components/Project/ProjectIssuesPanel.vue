@@ -54,8 +54,6 @@
     <div class="relative min-h-[20rem]">
       <PagedIssueTableV1
         :key="keyForTab(tab)"
-        v-model:loading="state.loading"
-        v-model:loading-more="state.loadingMore"
         :session-key="keyForTab(tab)"
         :issue-filter="mergedIssueFilter"
         :ui-issue-filter="mergedUIIssueFilter"
@@ -120,8 +118,6 @@ type TabValue = (typeof TABS)[number];
 interface LocalState {
   params: SearchParams;
   advanced: boolean;
-  loading: boolean;
-  loadingMore: boolean;
 }
 
 const props = defineProps<{
@@ -294,8 +290,6 @@ const initializeSearchParamsFromQueryOrLocalStorage = () => {
 
 const state = reactive<LocalState>({
   ...initializeSearchParamsFromQueryOrLocalStorage(),
-  loading: false,
-  loadingMore: false,
 });
 
 const tab = computed<TabValue>({
@@ -311,7 +305,7 @@ const tab = computed<TabValue>({
 });
 
 const statusTabDisabled = computed(() => {
-  if (state.advanced) return false;
+  if (state.advanced) return true;
   return ["WAITING_APPROVAL", "WAITING_ROLLOUT"].includes(tab.value);
 });
 

@@ -127,8 +127,6 @@ export interface Plan {
    * Format: projects/{project}/plans/{plan}
    */
   name: string;
-  /** The system-assigned, unique identifier for a resource. */
-  uid: string;
   /**
    * The resource name of the issue associated with this plan.
    * Format: projects/{project}/issues/{issue}
@@ -438,8 +436,6 @@ export interface BatchCancelPlanCheckRunsResponse {
 export interface PlanCheckRun {
   /** Format: projects/{project}/plans/{plan}/planCheckRuns/{planCheckRun} */
   name: string;
-  /** The system-assigned, unique identifier for a resource. */
-  uid: string;
   type: PlanCheckRun_Type;
   status: PlanCheckRun_Status;
   /** Format: instances/{instance}/databases/{database} */
@@ -1239,7 +1235,6 @@ export const UpdatePlanRequest = {
 function createBasePlan(): Plan {
   return {
     name: "",
-    uid: "",
     issue: "",
     title: "",
     description: "",
@@ -1256,9 +1251,6 @@ export const Plan = {
   encode(message: Plan, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
-    }
-    if (message.uid !== "") {
-      writer.uint32(18).string(message.uid);
     }
     if (message.issue !== "") {
       writer.uint32(26).string(message.issue);
@@ -1303,13 +1295,6 @@ export const Plan = {
           }
 
           message.name = reader.string();
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.uid = reader.string();
           continue;
         case 3:
           if (tag !== 26) {
@@ -1389,7 +1374,6 @@ export const Plan = {
   fromJSON(object: any): Plan {
     return {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
-      uid: isSet(object.uid) ? globalThis.String(object.uid) : "",
       issue: isSet(object.issue) ? globalThis.String(object.issue) : "",
       title: isSet(object.title) ? globalThis.String(object.title) : "",
       description: isSet(object.description) ? globalThis.String(object.description) : "",
@@ -1411,9 +1395,6 @@ export const Plan = {
     const obj: any = {};
     if (message.name !== "") {
       obj.name = message.name;
-    }
-    if (message.uid !== "") {
-      obj.uid = message.uid;
     }
     if (message.issue !== "") {
       obj.issue = message.issue;
@@ -1457,7 +1438,6 @@ export const Plan = {
   fromPartial(object: DeepPartial<Plan>): Plan {
     const message = createBasePlan();
     message.name = object.name ?? "";
-    message.uid = object.uid ?? "";
     message.issue = object.issue ?? "";
     message.title = object.title ?? "";
     message.description = object.description ?? "";
@@ -2976,7 +2956,6 @@ export const BatchCancelPlanCheckRunsResponse = {
 function createBasePlanCheckRun(): PlanCheckRun {
   return {
     name: "",
-    uid: "",
     type: PlanCheckRun_Type.TYPE_UNSPECIFIED,
     status: PlanCheckRun_Status.STATUS_UNSPECIFIED,
     target: "",
@@ -2991,9 +2970,6 @@ export const PlanCheckRun = {
   encode(message: PlanCheckRun, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
-    }
-    if (message.uid !== "") {
-      writer.uint32(18).string(message.uid);
     }
     if (message.type !== PlanCheckRun_Type.TYPE_UNSPECIFIED) {
       writer.uint32(24).int32(planCheckRun_TypeToNumber(message.type));
@@ -3032,13 +3008,6 @@ export const PlanCheckRun = {
           }
 
           message.name = reader.string();
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.uid = reader.string();
           continue;
         case 3:
           if (tag !== 24) {
@@ -3101,7 +3070,6 @@ export const PlanCheckRun = {
   fromJSON(object: any): PlanCheckRun {
     return {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
-      uid: isSet(object.uid) ? globalThis.String(object.uid) : "",
       type: isSet(object.type) ? planCheckRun_TypeFromJSON(object.type) : PlanCheckRun_Type.TYPE_UNSPECIFIED,
       status: isSet(object.status)
         ? planCheckRun_StatusFromJSON(object.status)
@@ -3120,9 +3088,6 @@ export const PlanCheckRun = {
     const obj: any = {};
     if (message.name !== "") {
       obj.name = message.name;
-    }
-    if (message.uid !== "") {
-      obj.uid = message.uid;
     }
     if (message.type !== PlanCheckRun_Type.TYPE_UNSPECIFIED) {
       obj.type = planCheckRun_TypeToJSON(message.type);
@@ -3154,7 +3119,6 @@ export const PlanCheckRun = {
   fromPartial(object: DeepPartial<PlanCheckRun>): PlanCheckRun {
     const message = createBasePlanCheckRun();
     message.name = object.name ?? "";
-    message.uid = object.uid ?? "";
     message.type = object.type ?? PlanCheckRun_Type.TYPE_UNSPECIFIED;
     message.status = object.status ?? PlanCheckRun_Status.STATUS_UNSPECIFIED;
     message.target = object.target ?? "";

@@ -1251,6 +1251,8 @@ func convertExpressionNode(node *pgquery.Node) (ast.ExpressionNode, []*ast.Patte
 			subQuery := &ast.SubqueryDef{Select: subselect}
 			return subQuery, nil, []*ast.SubqueryDef{subQuery}, nil
 		}
+	case *pgquery.Node_SqlvalueFunction:
+		return &ast.UnconvertedExpressionDef{}, nil, nil, nil
 	}
 	return &ast.UnconvertedExpressionDef{}, nil, nil, nil
 }

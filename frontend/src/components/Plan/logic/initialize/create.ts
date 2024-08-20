@@ -89,11 +89,10 @@ export const buildPlan = async (params: CreatePlanParams) => {
   const { databaseNameList, project, query } = params;
 
   const plan = Plan.fromJSON({
-    uid: nextUID(),
+    name: `${project.name}/plans/${nextUID()}`,
+    title: query.name,
+    description: query.description,
   });
-  plan.name = `${project.name}/plans/${plan.uid}`;
-  plan.title = query.name;
-  plan.description = query.description;
   if (query.changelist) {
     // build plan for changelist
     plan.steps = await buildStepsViaChangelist(

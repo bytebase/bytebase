@@ -473,6 +473,7 @@ func (v *viewState) toString(buf io.StringWriter) error {
 	if !strings.HasSuffix(stmt, ";") {
 		stmt += ";"
 	}
+	stmt += "\n"
 	if _, err := buf.WriteString(stmt); err != nil {
 		return err
 	}
@@ -507,7 +508,7 @@ func (f *procedureState) toString(buf io.StringWriter) error {
 		def += " ;;"
 	}
 
-	stmt := fmt.Sprintf("DELIMITER ;;\n%s\nDELIMITER ;", def)
+	stmt := fmt.Sprintf("DELIMITER ;;\n%s\nDELIMITER ;\n", def)
 	if _, err := buf.WriteString(stmt); err != nil {
 		return err
 	}
@@ -542,7 +543,7 @@ func (f *functionState) toString(buf io.StringWriter) error {
 		def += " ;;"
 	}
 
-	stmt := fmt.Sprintf("DELIMITER ;;\n%s\nDELIMITER ;", def)
+	stmt := fmt.Sprintf("DELIMITER ;;\n%s\nDELIMITER ;\n", def)
 	if _, err := buf.WriteString(stmt); err != nil {
 		return err
 	}
@@ -1433,4 +1434,52 @@ func splitPartitionExprIntoFields(expr string) []string {
 		}
 	}
 	return ss
+}
+
+func normalizeOnUpdate(s string) string {
+	if s == "" {
+		return ""
+	}
+
+	lowerS := strings.ToLower(s)
+	re := regexp.MustCompile(`(current_timestamp|now|localtime|localtimestamp)(?:\((\d+)\))?`)
+	match := re.FindStringSubmatch(lowerS)
+	if len(match) > 0 {
+		if len(match) >= 3 && match[2] != "" {
+			// has precision
+			return fmt.Sprintf("CURRENT_TIMESTAMP(%s)", match[2])
+		}
+		// no precision
+		return "CURRENT_TIMESTAMP"
+	}
+	// not a current_timestamp family function
+	return s
+}
+
+// getDataTypePlainText returns the plain text of the data type,
+// which excludes the charset candidate.
+// For example, for "varchar(10) CHARACTER SET utf8mb4",
+// it returns "varchar(10)".
+func getDataTypePlainText(typeCtx mysql.IDataTypeContext) string {
+	begin := typeCtx.GetStart().GetTokenIndex()
+	end := typeCtx.GetStop().GetTokenIndex()
+	if typeCtx.CharsetWithOptBinary() != nil {
+		end = typeCtx.CharsetWithOptBinary().GetStart().GetTokenIndex() - 1
+	}
+	// To skip the trailing spaces, we iterate the token stream reversely and find the first default channel token index.
+	for i := end; i >= begin; i-- {
+		if typeCtx.GetParser().GetTokenStream().Get(i).GetChannel() == antlr.TokenDefaultChannel {
+			end = i
+			break
+		}
+	}
+
+	if end < begin {
+		return ""
+	}
+
+	return typeCtx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+		Start: begin,
+		Stop:  end,
+	})
 }

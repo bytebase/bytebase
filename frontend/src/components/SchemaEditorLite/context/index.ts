@@ -37,6 +37,7 @@ export const provideSchemaEditorContext = (params: {
   selectedRolloutObjects: Ref<RolloutObject[] | undefined>;
   showLastUpdater: Ref<boolean>;
   disableDiffColoring: Ref<boolean>;
+  showTablePreview: Ref<boolean>;
   options?: Ref<SchemaEditorOptions>;
 }) => {
   const events = new Emittery() as SchemaEditorEvents;

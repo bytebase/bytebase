@@ -23,13 +23,7 @@ import {
   IssueComment_TaskUpdate_Status,
   IssueStatus,
 } from "@/types/proto/v1/issue_service";
-import {
-  extractTaskUID,
-  findStageByUID,
-  findTaskByUID,
-  extractStageUID,
-  extractSheetUID,
-} from "@/utils";
+import { findStageByName, findTaskByName, extractSheetUID } from "@/utils";
 import { extractUserResourceName } from "@/utils";
 import StageName from "./StageName.vue";
 import StatementUpdate from "./StatementUpdate.vue";
@@ -97,10 +91,7 @@ const renderActionSentence = () => {
     const { stage } = IssueComment_StageEnd.fromPartial(
       issueComment.stageEnd || {}
     );
-    const stageEntity = findStageByUID(
-      issue.rolloutEntity,
-      extractStageUID(stage)
-    );
+    const stageEntity = findStageByName(issue.rolloutEntity, stage);
     const params: VerbTypeTarget = {
       issueComment,
       type: t("common.stage"),
@@ -157,7 +148,7 @@ const renderActionSentence = () => {
           params.verb = t("activity.sentence.changed");
       }
       const taskEntities = tasks.map((task) =>
-        findTaskByUID(issue.rolloutEntity, extractTaskUID(task))
+        findTaskByName(issue.rolloutEntity, task)
       );
       if (taskEntities.length > 0) {
         params.target = <TaskName issue={issue} task={taskEntities[0]} />;
@@ -195,7 +186,7 @@ const renderActionSentence = () => {
       IssueComment_TaskPriorBackup.fromPartial(
         issueComment.taskPriorBackup || {}
       );
-    const taskEntity = findTaskByUID(issue.rolloutEntity, extractTaskUID(task));
+    const taskEntity = findTaskByName(issue.rolloutEntity, task);
     let verb = t("activity.sentence.prior-back-table", {
       database: database.length > 0 ? database : "bbdataarchive",
       tables: tables

@@ -567,9 +567,9 @@
       "add-user": "添加用户",
       "update-user": "更新用户",
       "workspace-role-at-least-one": "至少选择一个工作空间级别的角色",
-      "search-member": "搜索会员",
+      "search-member": "搜索成员",
       "revoked": "已撤销",
-      "view-by-members": "按会员查看",
+      "view-by-members": "按成员查看",
       "revoke-access": "撤销访问权限",
       "grant-access": "授予访问权限",
       "select-user": "选择用户 | 选择用户",
@@ -2575,7 +2575,8 @@
     },
     "views": "视图",
     "procedures": "存储过程",
-    "functions": "函数"
+    "functions": "函数",
+    "preview-schema-text": "预览文本 schema"
   },
   "label": {
     "empty-label-value": "空",

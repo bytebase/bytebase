@@ -1,21 +1,4 @@
 - description: Keep subpartition algorithm
-  baseline: |-
-    SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
-    SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
-    --
-    -- Table structure for `subpartition_algorithm`
-    --
-    CREATE TABLE `subpartition_algorithm` (
-      `id` int DEFAULT NULL
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
-    /*!50100 PARTITION BY RANGE (`id`)
-    SUBPARTITION BY KEY */ /*!50611 ALGORITHM = 1 */ /*!50100 (id)
-    SUBPARTITIONS 2
-    (PARTITION p0 VALUES LESS THAN (100) ENGINE = InnoDB,
-    PARTITION p1 VALUES LESS THAN (200) ENGINE = InnoDB) */;
-
-    SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
-    SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
   target: |-
     {
       "schemas": [
@@ -62,36 +45,17 @@
       ]
     }
   result: |
-    SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
-    SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
     --
     -- Table structure for `subpartition_algorithm`
     --
     CREATE TABLE `subpartition_algorithm` (
       `id` int DEFAULT NULL
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+    ) ENGINE=InnoDB COLLATE=utf8mb4_0900_ai_ci
     /*!50100 PARTITION BY RANGE (`id`)
-    SUBPARTITION BY KEY */ /*!50611 ALGORITHM = 1 */ /*!50100 (id)
+    SUBPARTITION BY KEY (id)
     SUBPARTITIONS 2
     (PARTITION p0 VALUES LESS THAN (100) ENGINE=InnoDB) */;
-
-    SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
-    SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
 - description: Keep partition algorithm
-  baseline: |-
-    SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
-    SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
-    --
-    -- Table structure for `key_algorithm`
-    --
-    CREATE TABLE `key_algorithm` (
-      `id` int DEFAULT NULL
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
-    /*!50100 PARTITION BY KEY */ /*!50611 ALGORITHM = 1 */ /*!50100 (id)
-    PARTITIONS 2 */;
-
-    SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
-    SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
   target: |-
     {
       "schemas": [
@@ -130,16 +94,11 @@
       ]
     }
   result: |
-    SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
-    SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
     --
     -- Table structure for `key_algorithm`
     --
     CREATE TABLE `key_algorithm` (
       `id` int DEFAULT NULL
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
-    /*!50100 PARTITION BY KEY */ /*!50611 ALGORITHM = 1 */ /*!50100 (id)
+    ) ENGINE=InnoDB COLLATE=utf8mb4_0900_ai_ci
+    /*!50100 PARTITION BY KEY (id)
     PARTITIONS 2 */;
-
-    SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
-    SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;

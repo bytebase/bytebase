@@ -84,7 +84,7 @@
         <ul class="text-sm rounded divide-y divide-solid">
           <li
             v-for="issue in filterIssueList"
-            :key="issue.uid"
+            :key="issue.name"
             class="p-3 rounded hover:bg-blue-500 hover:text-white cursor-pointer flex items-center gap-x-2"
             @click="onIssueSelect(issue)"
           >
@@ -92,7 +92,7 @@
               :issue-status="issue.status"
               :task-status="issueTaskStatus(issue)"
             />
-            <span class="opacity-60">#{{ issue.uid }}</span>
+            <span class="opacity-60">#{{ extractIssueUID(issue.name) }}</span>
             <div class="whitespace-nowrap">
               {{ issue.title }}
             </div>
@@ -111,6 +111,7 @@ import type { ComposedIssue, ComposedProject } from "@/types";
 import { Task_Status } from "@/types/proto/v1/rollout_service";
 import {
   activeTaskInRollout,
+  extractIssueUID,
   isDatabaseChangeRelatedIssue,
   sizeToFit,
 } from "@/utils";
@@ -420,7 +421,7 @@ const onIssueSelect = (issue: ComposedIssue) => {
   replaceStart++;
 
   const content = state.content.split("");
-  const issueId = `${issue.uid} `;
+  const issueId = `${extractIssueUID(issue.name)} `;
   content.splice(replaceStart, start - replaceStart, issueId);
   state.content = content.join("");
 
@@ -473,7 +474,7 @@ const adjustIssuePanelWithPosition = () => {
 
   const id = matches[0].slice(1).trimEnd();
   filterIssueList.value = props.issueList
-    .filter((issue) => `${issue.uid}`.startsWith(id))
+    .filter((issue) => extractIssueUID(issue.name).startsWith(id))
     .slice(0, 5);
 
   const position = getIssuePanelPosition(contentTextArea.value);

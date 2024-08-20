@@ -198,6 +198,8 @@ func RunSQLReviewRuleTest(t *testing.T, rule SQLReviewRuleType, dbType storepb.E
 			case storepb.Engine_MSSQL:
 				curDB = "master"
 				schemaMetadata = MockMSSQLDatabase
+			case storepb.Engine_MYSQL:
+				schemaMetadata = MockMySQLDatabase
 			default:
 				panic(fmt.Sprintf("%s doesn't have mocked metadata support", storepb.Engine_name[int32(dbType)]))
 			}
@@ -398,6 +400,7 @@ func SetDefaultSQLReviewRulePayload(ruleTp SQLReviewRuleType, dbType storepb.Eng
 		SchemaRuleAddNotNullColumnRequireDefault,
 		SchemaRuleCurrentTimeColumnCountLimit,
 		SchemaRuleColumnRequireDefault,
+		SchemaRuleColumnDefaultDisallowVolatile,
 		SchemaRuleSchemaBackwardCompatibility,
 		SchemaRuleDropEmptyDatabase,
 		SchemaRuleIndexNoDuplicateColumn,

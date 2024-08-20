@@ -2575,7 +2575,8 @@
     },
     "views": "ビュー",
     "procedures": "手順",
-    "functions": "関数"
+    "functions": "関数",
+    "preview-schema-text": "スキーマテキストのプレビュー"
   },
   "label": {
     "empty-label-value": "ヌル",

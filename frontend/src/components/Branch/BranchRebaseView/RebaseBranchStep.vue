@@ -29,6 +29,7 @@
           :readonly="true"
           :branch="validationState.branch"
           :show-last-updater="true"
+          :show-table-preview="true"
         />
       </div>
       <div

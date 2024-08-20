@@ -35,7 +35,6 @@ func convertToPlans(ctx context.Context, s *store.Store, plans []*store.PlanMess
 func convertToPlan(ctx context.Context, s *store.Store, plan *store.PlanMessage) (*v1pb.Plan, error) {
 	p := &v1pb.Plan{
 		Name:        fmt.Sprintf("%s%s/%s%d", common.ProjectNamePrefix, plan.ProjectID, common.PlanPrefix, plan.UID),
-		Uid:         fmt.Sprintf("%d", plan.UID),
 		Issue:       "",
 		Title:       plan.Name,
 		Description: plan.Description,
@@ -304,7 +303,6 @@ func convertToPlanCheckRuns(ctx context.Context, s *store.Store, projectID strin
 func convertToPlanCheckRun(ctx context.Context, s *store.Store, projectID string, planUID int64, run *store.PlanCheckRunMessage) (*v1pb.PlanCheckRun, error) {
 	converted := &v1pb.PlanCheckRun{
 		Name:       fmt.Sprintf("%s%s/%s%d/%s%d", common.ProjectNamePrefix, projectID, common.PlanPrefix, planUID, common.PlanCheckRunPrefix, run.UID),
-		Uid:        fmt.Sprintf("%d", run.UID),
 		CreateTime: timestamppb.New(time.Unix(run.CreatedTs, 0)),
 		Type:       convertToPlanCheckRunType(run.Type),
 		Status:     convertToPlanCheckRunStatus(run.Status),
@@ -436,7 +434,6 @@ func convertToTaskRuns(ctx context.Context, s *store.Store, stateCfg *state.Stat
 func convertToTaskRun(ctx context.Context, s *store.Store, stateCfg *state.State, taskRun *store.TaskRunMessage) (*v1pb.TaskRun, error) {
 	t := &v1pb.TaskRun{
 		Name:          fmt.Sprintf("%s%s/%s%d/%s%d/%s%d/%s%d", common.ProjectNamePrefix, taskRun.ProjectID, common.RolloutPrefix, taskRun.PipelineUID, common.StagePrefix, taskRun.StageUID, common.TaskPrefix, taskRun.TaskUID, common.TaskRunPrefix, taskRun.ID),
-		Uid:           fmt.Sprintf("%d", taskRun.ID),
 		Creator:       fmt.Sprintf("users/%s", taskRun.Creator.Email),
 		Updater:       fmt.Sprintf("users/%s", taskRun.Updater.Email),
 		CreateTime:    timestamppb.New(time.Unix(taskRun.CreatedTs, 0)),
@@ -579,7 +576,6 @@ func convertToTaskRunPriorBackupDetail(priorBackupDetail *storepb.PriorBackupDet
 func convertToRollout(ctx context.Context, s *store.Store, project *store.ProjectMessage, rollout *store.PipelineMessage) (*v1pb.Rollout, error) {
 	rolloutV1 := &v1pb.Rollout{
 		Name:   fmt.Sprintf("%s%s/%s%d", common.ProjectNamePrefix, project.ResourceID, common.RolloutPrefix, rollout.ID),
-		Uid:    fmt.Sprintf("%d", rollout.ID),
 		Plan:   "",
 		Title:  rollout.Name,
 		Stages: nil,
@@ -606,7 +602,6 @@ func convertToRollout(ctx context.Context, s *store.Store, project *store.Projec
 		}
 		rolloutStage := &v1pb.Stage{
 			Name:  fmt.Sprintf("%s%s/%s%d/%s%d", common.ProjectNamePrefix, project.ResourceID, common.RolloutPrefix, rollout.ID, common.StagePrefix, stage.ID),
-			Uid:   fmt.Sprintf("%d", stage.ID),
 			Title: stage.Name,
 		}
 		for _, task := range stage.TaskList {
@@ -686,7 +681,6 @@ func convertToTaskFromDatabaseCreate(ctx context.Context, s *store.Store, projec
 	}
 	v1pbTask := &v1pb.Task{
 		Name:           fmt.Sprintf("%s%s/%s%d/%s%d/%s%d", common.ProjectNamePrefix, project.ResourceID, common.RolloutPrefix, task.PipelineID, common.StagePrefix, task.StageID, common.TaskPrefix, task.ID),
-		Uid:            fmt.Sprintf("%d", task.ID),
 		Title:          task.Name,
 		SpecId:         payload.SpecId,
 		Type:           convertToTaskType(task.Type),
@@ -728,7 +722,6 @@ func convertToTaskFromSchemaBaseline(ctx context.Context, s *store.Store, projec
 	}
 	v1pbTask := &v1pb.Task{
 		Name:           fmt.Sprintf("%s%s/%s%d/%s%d/%s%d", common.ProjectNamePrefix, project.ResourceID, common.RolloutPrefix, task.PipelineID, common.StagePrefix, task.StageID, common.TaskPrefix, task.ID),
-		Uid:            fmt.Sprintf("%d", task.ID),
 		Title:          task.Name,
 		SpecId:         payload.SpecId,
 		Type:           convertToTaskType(task.Type),
@@ -763,7 +756,6 @@ func convertToTaskFromSchemaUpdate(ctx context.Context, s *store.Store, project 
 
 	v1pbTask := &v1pb.Task{
 		Name:           fmt.Sprintf("%s%s/%s%d/%s%d/%s%d", common.ProjectNamePrefix, project.ResourceID, common.RolloutPrefix, task.PipelineID, common.StagePrefix, task.StageID, common.TaskPrefix, task.ID),
-		Uid:            fmt.Sprintf("%d", task.ID),
 		Title:          task.Name,
 		SpecId:         payload.SpecId,
 		Type:           convertToTaskType(task.Type),
@@ -798,7 +790,6 @@ func convertToTaskFromSchemaUpdateGhostCutover(ctx context.Context, s *store.Sto
 	}
 	v1pbTask := &v1pb.Task{
 		Name:           fmt.Sprintf("%s%s/%s%d/%s%d/%s%d", common.ProjectNamePrefix, project.ResourceID, common.RolloutPrefix, task.PipelineID, common.StagePrefix, task.StageID, common.TaskPrefix, task.ID),
-		Uid:            fmt.Sprintf("%d", task.ID),
 		Title:          task.Name,
 		SpecId:         payload.SpecId,
 		Status:         convertToTaskStatus(task.LatestTaskRunStatus, payload.Skipped),
@@ -829,7 +820,6 @@ func convertToTaskFromDataUpdate(ctx context.Context, s *store.Store, project *s
 
 	v1pbTask := &v1pb.Task{
 		Name:           fmt.Sprintf("%s%s/%s%d/%s%d/%s%d", common.ProjectNamePrefix, project.ResourceID, common.RolloutPrefix, task.PipelineID, common.StagePrefix, task.StageID, common.TaskPrefix, task.ID),
-		Uid:            fmt.Sprintf("%d", task.ID),
 		Title:          task.Name,
 		SpecId:         payload.SpecId,
 		Type:           convertToTaskType(task.Type),
@@ -877,7 +867,6 @@ func convertToTaskFromDatabaseDataExport(ctx context.Context, s *store.Store, pr
 	}
 	v1pbTask := &v1pb.Task{
 		Name:    fmt.Sprintf("%s%s/%s%d/%s%d/%s%d", common.ProjectNamePrefix, project.ResourceID, common.RolloutPrefix, task.PipelineID, common.StagePrefix, task.StageID, common.TaskPrefix, task.ID),
-		Uid:     fmt.Sprintf("%d", task.ID),
 		Title:   task.Name,
 		SpecId:  payload.SpecId,
 		Type:    convertToTaskType(task.Type),

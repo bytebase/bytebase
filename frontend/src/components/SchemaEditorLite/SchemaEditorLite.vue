@@ -48,6 +48,7 @@ const props = defineProps<{
   diffWhenReady?: boolean;
   showLastUpdater?: boolean;
   disableDiffColoring?: boolean;
+  showTablePreview?: boolean;
 }>();
 const emit = defineEmits<{
   (event: "update:selected-rollout-objects", objects: RolloutObject[]): void;
@@ -105,6 +106,7 @@ const context = provideSchemaEditorContext({
   selectedRolloutObjects: toRef(props, "selectedRolloutObjects"),
   showLastUpdater: toRef(props, "showLastUpdater"),
   disableDiffColoring: toRef(props, "disableDiffColoring"),
+  showTablePreview: toRef(props, "showTablePreview"),
 });
 const { rebuildMetadataEdit, applyMetadataEdit, applySelectedMetadataEdit } =
   useAlgorithm(context);

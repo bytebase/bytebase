@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log/slog"
 	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
@@ -13,6 +14,10 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
+)
+
+const (
+	maxMixedDMLCount = 5
 )
 
 var (
@@ -73,37 +78,164 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx advisor.Context, _ string) ([
 	}
 
 	// Do not allow mixed DML on the same table.
-	checker := &statementDisallowMixDMLChecker{
-		level:             level,
-		title:             string(ctx.Rule.Type),
-		dmlStatementCount: make(map[table]map[string]int),
-	}
+	checker := &statementDisallowMixDMLChecker{}
 	for _, stmt := range stmtList {
-		checker.baseLine = stmt.BaseLine
 		antlr.ParseTreeWalkerDefault.Walk(checker, stmt.Tree)
 	}
 
-	for table, dmlCount := range checker.dmlStatementCount {
-		if len(dmlCount) > 1 {
-			content := "Found"
-			for _, t := range []string{"DELETE", "INSERT", "UPDATE"} {
-				count, ok := dmlCount[t]
-				if ok {
-					content += fmt.Sprintf(" %d %s,", count, t)
-				}
-			}
-			content = strings.TrimSuffix(content, ",")
-			content += fmt.Sprintf(" on table `%s`.`%s`, disallow mixing different types of DML statements", table.database, table.table)
-			adviceList = append(adviceList, &storepb.Advice{
-				Status:  checker.level,
-				Code:    advisor.BuiltinPriorBackupCheck.Int32(),
-				Title:   checker.title,
-				Content: content,
-			})
-		}
+	if len(checker.updateStatements)+len(checker.deleteStatements) > maxMixedDMLCount && !updateForOneTableWithUnique(ctx.DBSchema, checker) {
+		adviceList = append(adviceList, &storepb.Advice{
+			Status:  level,
+			Title:   title,
+			Content: fmt.Sprintf("Prior backup cannot deal with mixed DML more than %d statements, otherwise statements need be UPDATE for one table with PRIMARY KEY or UNIQUE KEY in WHERE clause", maxMixedDMLCount),
+			Code:    advisor.BuiltinPriorBackupCheck.Int32(),
+			StartPosition: &storepb.Position{
+				Line: 0,
+			},
+		})
 	}
 
 	return adviceList, nil
+}
+
+func updateForOneTableWithUnique(dbSchema *storepb.DatabaseSchemaMetadata, checker *statementDisallowMixDMLChecker) bool {
+	if len(checker.deleteStatements) > 0 {
+		return false
+	}
+
+	var table *table
+	for _, update := range checker.updateStatements {
+		for _, tableRefCtx := range update.TableReferenceList().AllTableReference() {
+			tables, err := extractTableReference(tableRefCtx)
+			if err != nil {
+				slog.Debug("failed to extract table reference", "err", err)
+				return false
+			}
+			if len(tables) != 1 {
+				return false
+			}
+			if table == nil {
+				table = &tables[0]
+			} else if !equalTable(table, &tables[0]) {
+				return false
+			}
+			if !hasUniqueInWhereClause(dbSchema, update, table) {
+				return false
+			}
+		}
+	}
+
+	return true
+}
+
+func hasUniqueInWhereClause(dbSchema *storepb.DatabaseSchemaMetadata, update *mysql.UpdateStatementContext, table *table) bool {
+	if update.WhereClause() == nil {
+		return false
+	}
+	list := extractColumnsInEqualCondition(table, update.WhereClause().Expr())
+	columnMap := make(map[string]bool)
+	for _, column := range list {
+		columnMap[strings.ToLower(column)] = true
+	}
+
+	if dbSchema == nil {
+		return false
+	}
+
+	for _, schema := range dbSchema.Schemas {
+		for _, t := range schema.Tables {
+			if strings.EqualFold(t.Name, table.table) {
+				for _, index := range t.Indexes {
+					if index.Unique || index.Primary {
+						exists := true
+						for _, column := range index.Expressions {
+							if !columnMap[strings.ToLower(column)] {
+								exists = false
+								break
+							}
+						}
+						if exists {
+							return true
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return false
+}
+
+func extractColumnsInEqualCondition(table *table, node antlr.ParserRuleContext) []string {
+	if node == nil {
+		return nil
+	}
+
+	switch n := node.(type) {
+	case *mysql.ExprIsContext:
+		return extractColumnsInEqualCondition(table, n.BoolPri())
+	case *mysql.ExprAndContext:
+		return append(extractColumnsInEqualCondition(table, n.Expr(0)), extractColumnsInEqualCondition(table, n.Expr(1))...)
+	case *mysql.PrimaryExprCompareContext:
+		if n.CompOp().EQUAL_OPERATOR() == nil {
+			return nil
+		}
+		if isConstant(n.Predicate()) {
+			return extractColumnsInEqualCondition(table, n.BoolPri())
+		} else if isConstant(n.BoolPri()) {
+			return extractColumnsInEqualCondition(table, n.Predicate())
+		}
+	case *mysql.PrimaryExprPredicateContext:
+		return extractColumnsInEqualCondition(table, n.Predicate())
+	case *mysql.PredicateContext:
+		if n.PredicateOperations() != nil || n.MEMBER_SYMBOL() != nil || n.LIKE_SYMBOL() != nil {
+			return nil
+		}
+		return extractColumnsInEqualCondition(table, n.BitExpr(0))
+	case *mysql.BitExprContext:
+		return extractColumnsInEqualCondition(table, n.SimpleExpr())
+	case *mysql.SimpleExprColumnRefContext:
+		databaseName, tableName, columnName := mysqlparser.NormalizeMySQLColumnRef(n.ColumnRef())
+		if databaseName != "" && table.database != "" && !strings.EqualFold(databaseName, table.database) {
+			return nil
+		}
+		if tableName != "" && table.table != "" && !strings.EqualFold(tableName, table.table) {
+			return nil
+		}
+		return []string{columnName}
+	}
+
+	return nil
+}
+
+func isConstant(node antlr.ParserRuleContext) bool {
+	if node == nil {
+		return false
+	}
+	switch n := node.(type) {
+	case *mysql.ExprIsContext:
+		return isConstant(n.BoolPri())
+	case *mysql.PrimaryExprPredicateContext:
+		return isConstant(n.Predicate())
+	case *mysql.PredicateContext:
+		if n.PredicateOperations() != nil || n.MEMBER_SYMBOL() != nil || n.LIKE_SYMBOL() != nil {
+			return false
+		}
+		return isConstant(n.BitExpr(0))
+	case *mysql.BitExprContext:
+		return isConstant(n.SimpleExpr())
+	case *mysql.SimpleExprLiteralContext:
+		return true
+	default:
+		return false
+	}
+}
+
+func equalTable(a, b *table) bool {
+	if a == nil || b == nil {
+		return false
+	}
+	return a.database == b.database && a.table == b.table
 }
 
 func extractDatabaseName(databaseUID string) string {
@@ -125,12 +257,8 @@ func databaseExists(ctx context.Context, driver *sql.DB, database string) bool {
 type statementDisallowMixDMLChecker struct {
 	*mysql.BaseMySQLParserListener
 
-	baseLine   int
-	adviceList []*storepb.Advice
-	level      storepb.Advice_Status
-	title      string
-
-	dmlStatementCount map[table]map[string]int
+	updateStatements []*mysql.UpdateStatementContext
+	deleteStatements []*mysql.DeleteStatementContext
 }
 
 type table struct {
@@ -138,96 +266,18 @@ type table struct {
 	table    string
 }
 
-func (c *statementDisallowMixDMLChecker) EnterInsertStatement(ctx *mysql.InsertStatementContext) {
-	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
-		return
-	}
-	if ctx.TableRef() == nil {
-		return
-	}
-	databaseName, tableName := mysqlparser.NormalizeMySQLTableRef(ctx.TableRef())
-	table := table{
-		database: databaseName,
-		table:    tableName,
-	}
-	if _, ok := c.dmlStatementCount[table]; !ok {
-		c.dmlStatementCount[table] = make(map[string]int)
-	}
-	c.dmlStatementCount[table]["INSERT"]++
-}
-
 func (c *statementDisallowMixDMLChecker) EnterUpdateStatement(ctx *mysql.UpdateStatementContext) {
 	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
 		return
 	}
-	var allTables []table
-	for _, tableRefCtx := range ctx.TableReferenceList().AllTableReference() {
-		tables, err := extractTableReference(tableRefCtx)
-		if err != nil {
-			c.adviceList = append(c.adviceList, &storepb.Advice{
-				Status:  c.level,
-				Code:    advisor.Internal.Int32(),
-				Title:   c.title,
-				Content: fmt.Sprintf("Failed to extract table reference: %v", err),
-				StartPosition: &storepb.Position{
-					Line: int32(tableRefCtx.GetStart().GetLine() + c.baseLine),
-				},
-			})
-			continue
-		}
-		allTables = append(allTables, tables...)
-	}
-	for _, table := range allTables {
-		if _, ok := c.dmlStatementCount[table]; !ok {
-			c.dmlStatementCount[table] = make(map[string]int)
-		}
-		c.dmlStatementCount[table]["UPDATE"]++
-	}
+	c.updateStatements = append(c.updateStatements, ctx)
 }
 
 func (c *statementDisallowMixDMLChecker) EnterDeleteStatement(ctx *mysql.DeleteStatementContext) {
 	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
 		return
 	}
-	var allTables []table
-	if ctx.TableRef() != nil {
-		tables, err := extractTableRef(ctx.TableRef())
-		if err != nil {
-			c.adviceList = append(c.adviceList, &storepb.Advice{
-				Status:  c.level,
-				Code:    advisor.Internal.Int32(),
-				Title:   c.title,
-				Content: fmt.Sprintf("Failed to extract table reference: %v", err),
-				StartPosition: &storepb.Position{
-					Line: int32(c.baseLine + ctx.GetStart().GetLine()),
-				},
-			})
-		} else {
-			allTables = append(allTables, tables...)
-		}
-	}
-	if ctx.TableReferenceList() != nil {
-		tables, err := extractTableReferenceList(ctx.TableReferenceList())
-		if err != nil {
-			c.adviceList = append(c.adviceList, &storepb.Advice{
-				Status:  c.level,
-				Code:    advisor.Internal.Int32(),
-				Title:   c.title,
-				Content: fmt.Sprintf("Failed to extract table reference: %v", err),
-				StartPosition: &storepb.Position{
-					Line: int32(c.baseLine + ctx.GetStart().GetLine()),
-				},
-			})
-		} else {
-			allTables = append(allTables, tables...)
-		}
-	}
-	for _, table := range allTables {
-		if _, ok := c.dmlStatementCount[table]; !ok {
-			c.dmlStatementCount[table] = make(map[string]int)
-		}
-		c.dmlStatementCount[table]["DELETE"]++
-	}
+	c.deleteStatements = append(c.deleteStatements, ctx)
 }
 
 func extractTableReference(ctx mysql.ITableReferenceContext) ([]table, error) {

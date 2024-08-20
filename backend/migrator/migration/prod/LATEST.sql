@@ -317,7 +317,7 @@ CREATE TABLE db_schema (
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     database_id INTEGER NOT NULL REFERENCES db (id) ON DELETE CASCADE,
-    metadata JSONB NOT NULL DEFAULT '{}',
+    metadata JSON NOT NULL DEFAULT '{}',
     raw_dump TEXT NOT NULL DEFAULT '',
     config JSONB NOT NULL DEFAULT '{}'
 );

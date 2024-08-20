@@ -3,7 +3,7 @@
     class="flex flex-col pt-2 gap-y-2 w-full h-full overflow-y-hidden"
     v-bind="$attrs"
   >
-    <div class="w-full flex flex-row justify-between items-center">
+    <div class="w-full flex flex-row justify-between items-center px-2">
       <div class="w-full flex justify-start items-center gap-x-2">
         <slot v-if="state.mode === 'COLUMNS'" name="toolbar-prefix" />
 
@@ -100,7 +100,7 @@
       </div>
     </div>
 
-    <div class="flex-1 overflow-y-hidden">
+    <div class="flex-1 overflow-y-hidden px-2">
       <TableColumnEditor
         :show="state.mode === 'COLUMNS'"
         :readonly="readonly"
@@ -146,6 +146,14 @@
         @update="markTableStatus('updated')"
       />
     </div>
+
+    <TableSchemaPreview
+      v-if="showTablePreview"
+      :db="db"
+      :database="database"
+      :schema="schema"
+      :table="table"
+    />
   </div>
 
   <EditColumnForeignKeyModal
@@ -226,6 +234,7 @@ import ColumnSelectionSummary from "./ColumnSelectionSummary.vue";
 import IndexesEditor from "./IndexesEditor";
 import PartitionsEditor from "./PartitionsEditor";
 import TableColumnEditor from "./TableColumnEditor";
+import TableSchemaPreview from "./TableSchemaPreview.vue";
 
 type EditMode = "COLUMNS" | "INDEXES" | "PARTITIONS";
 
@@ -254,6 +263,7 @@ const {
   project,
   readonly,
   events,
+  showTablePreview,
   options,
   addTab,
   markEditStatus,

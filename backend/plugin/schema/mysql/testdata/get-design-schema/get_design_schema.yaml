@@ -1,34 +1,4 @@
 - description: New create table should not appear in delimiter block
-  baseline: |-
-    SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
-    SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
-    --
-    -- Table structure for `u`
-    --
-    CREATE TABLE `u` (
-      `t` text NOT NULL,
-      `g` geometry NOT NULL,
-      `j` json NOT NULL,
-      `ti` tinyint(1) NOT NULL,
-      `tb` tinyblob,
-      `vc` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
-    --
-    -- Function structure for `hello`
-    --
-    SET character_set_client  = utf8mb3;
-    SET character_set_results = utf8mb3;
-    SET collation_connection  = utf8mb3_general_ci;
-    SET sql_mode              = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION';
-    DELIMITER ;;
-    CREATE DEFINER=`root`@`localhost` FUNCTION `hello`(s CHAR(20)) RETURNS char(50) CHARSET utf8mb4
-        DETERMINISTIC
-    RETURN CONCAT ('Hello, ', s, '!') ;;
-    DELIMITER ;
-
-    SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
-    SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
   target: |-
     {
       "schemas": [
@@ -102,8 +72,6 @@
       ]
     }
   result: |
-    SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
-    SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
     --
     -- Table structure for `u`
     --
@@ -113,8 +81,8 @@
       `j` json NOT NULL,
       `ti` tinyint(1) NOT NULL,
       `tb` tinyblob,
-      `vc` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+      `vc` varchar(10) NOT NULL
+    ) ENGINE=InnoDB COLLATE=utf8mb4_0900_ai_ci;
 
     --
     -- Table structure for `wahaha`
@@ -127,48 +95,12 @@
     --
     -- Function structure for `hello`
     --
-    SET character_set_client  = utf8mb3;
-    SET character_set_results = utf8mb3;
-    SET collation_connection  = utf8mb3_general_ci;
-    SET sql_mode              = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION';
     DELIMITER ;;
     CREATE DEFINER=`root`@`localhost` FUNCTION `hello`(s CHAR(20)) RETURNS char(50) CHARSET utf8mb4
         DETERMINISTIC
     RETURN CONCAT ('Hello, ', s, '!') ;;
     DELIMITER ;
-
-    SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
-    SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
 - description: ""
-  baseline: |-
-    SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
-    SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
-    --
-    -- Table structure for `u`
-    --
-    CREATE TABLE `u` (
-      `t` text NOT NULL,
-      `g` geometry NOT NULL,
-      `j` json NOT NULL,
-      `ti` tinyint(1) NOT NULL,
-      `tb` tinyblob
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
-    --
-    -- Function structure for `hello`
-    --
-    SET character_set_client  = utf8mb3;
-    SET character_set_results = utf8mb3;
-    SET collation_connection  = utf8mb3_general_ci;
-    SET sql_mode              = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION';
-    DELIMITER ;;
-    CREATE DEFINER=`root`@`localhost` FUNCTION `hello`(s CHAR(20)) RETURNS char(50) CHARSET utf8mb4
-        DETERMINISTIC
-    RETURN CONCAT ('Hello, ', s, '!') ;;
-    DELIMITER ;
-
-    SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
-    SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
   target: |-
     {
       "schemas": [
@@ -221,8 +153,6 @@
       ]
     }
   result: |
-    SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
-    SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
     --
     -- Table structure for `u`
     --
@@ -232,54 +162,17 @@
       `j` json NOT NULL,
       `ti` tinyint(1) NOT NULL,
       `tb` tinyblob
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+    ) ENGINE=InnoDB COLLATE=utf8mb4_0900_ai_ci;
 
     --
     -- Function structure for `hello`
     --
-    SET character_set_client  = utf8mb3;
-    SET character_set_results = utf8mb3;
-    SET collation_connection  = utf8mb3_general_ci;
-    SET sql_mode              = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION';
     DELIMITER ;;
     CREATE DEFINER=`root`@`localhost` FUNCTION `hello`(s CHAR(20)) RETURNS char(50) CHARSET utf8mb4
         DETERMINISTIC
     RETURN CONCAT ('Hello, ', s, '!') ;;
     DELIMITER ;
-
-    SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
-    SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
 - description: ""
-  baseline: |-
-    SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
-    SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
-    --
-    -- Table structure for `t`
-    --
-    CREATE TABLE `t` (
-      `a` int,
-      `b` text,
-      PRIMARY KEY (`a`),
-      CONSTRAINT fk1 FOREIGN KEY (`a`) REFERENCES `t2` (`b`)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-    CREATE TABLE `t3` (
-      `a` int
-    );
-
-    --
-    -- Table structure for `t4`
-    --
-    CREATE TABLE `t4` (
-      `a` int,
-      `c` int,
-      `d` int,
-      `e` char(10) NOT NULL DEFAULT 'NULL' comment 'this is comment',
-      PRIMARY KEY (`a`, `c`, `d`),
-      CONSTRAINT fk1 FOREIGN KEY (`a`) REFERENCES `t2` (`b`)
-    );
-
-    SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
-    SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
   target: |-
     {
       "schemas": [
@@ -507,8 +400,6 @@
       ]
     }
   result: |
-    SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
-    SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
     --
     -- Table structure for `t`
     --
@@ -518,19 +409,19 @@
       `c` text NOT NULL DEFAULT ('aaa'),
       `d` text DEFAULT (NULL),
       UNIQUE KEY `t_a_uniq_idx` (`a`) COMMENT 'this is my comment ''!!'
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+    );
 
     --
     -- Table structure for `t4`
     --
     CREATE TABLE `t4` (
       `a` varchar(10) NOT NULL DEFAULT 'default value' COMMENT 'this is comment, aha',
-      `c` int NOT NULL AUTO_INCREMENT,
-      `e` int ,
       `b` char(10) NOT NULL,
+      `c` int NOT NULL AUTO_INCREMENT,
+      `e` int,
       PRIMARY KEY (`a`, `b`, `c`) COMMENT 'primary key of multiple key fields',
-      CONSTRAINT `fk1` FOREIGN KEY (`b`) REFERENCES `t2` (`b`),
-      KEY `idx_b_5` (`b`(5))
+      KEY `idx_b_5` (`b`(5)),
+      CONSTRAINT `fk1` FOREIGN KEY (`b`) REFERENCES `t2` (`b`)
     );
 
     --
@@ -559,14 +450,7 @@
       UNIQUE KEY `t_c_uniq_idx` (`c`),
       KEY `t_d_fulltext_idx` (`d`)
     );
-
-    SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
-    SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
 - description: ""
-  baseline: |-
-    CREATE TABLE `t` (
-      `a` int
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
   target: |-
     {
       "schemas": [
@@ -587,23 +471,13 @@
       ]
     }
   result: |
+    --
+    -- Table structure for `t`
+    --
     CREATE TABLE `t` (
       `a` int NOT NULL
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT 'this is comment';
+    ) COMMENT 'this is comment';
 - description: ""
-  baseline: |-
-    CREATE TABLE `t1` (
-      `a` varchar(255)
-    );
-    CREATE TABLE `t2` (
-      `a` int AUTO_INCREMENT primary key
-    );
-    CREATE TABLE `t3` (
-      `a` int default 1 primary key
-    );
-    CREATE TABLE `t4` (
-      `a` int AUTO_INCREMENT primary key
-    );
   target: |-
     {
       "schemas":  [
@@ -674,26 +548,35 @@
       ]
     }
   result: |
+    --
+    -- Table structure for `t1`
+    --
     CREATE TABLE `t1` (
       `a` int DEFAULT '\'escaped',
       `b` int
     );
+
+    --
+    -- Table structure for `t2`
+    --
     CREATE TABLE `t2` (
-      `a` int AUTO_INCREMENT primary key
+      `a` int AUTO_INCREMENT
     );
+
+    --
+    -- Table structure for `t3`
+    --
     CREATE TABLE `t3` (
-      `a` int AUTO_INCREMENT primary key
+      `a` int AUTO_INCREMENT
     );
+
+    --
+    -- Table structure for `t4`
+    --
     CREATE TABLE `t4` (
-      `a` int DEFAULT '\'a\'' primary key
+      `a` int DEFAULT '\'a\''
     );
 - description: ""
-  baseline: |-
-    CREATE TABLE `t` (
-      `c` timestamp(3) DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
-      `d` timestamp DEFAULT CURRENT_TIMESTAMP,
-      `e` timestamp(3) DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3)
-    );
   target: |-
     {
       "schemas": [
@@ -734,10 +617,13 @@
       ]
     }
   result: |
+    --
+    -- Table structure for `t`
+    --
     CREATE TABLE `t` (
+      `a` int NOT NULL,
+      `b` varchar(255) NOT NULL,
       `c` timestamp(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
       `d` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-      `e` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      `a` int NOT NULL,
-      `b` varchar(255) NOT NULL
+      `e` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
     );

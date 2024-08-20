@@ -1,6 +1,7 @@
 <template>
   <div class="flex items-center flex-wrap gap-1">
     <InstanceV1Name
+      v-if="databaseCreationStatus === 'EXISTED'"
       :instance="coreDatabaseInfo.instanceResource"
       :plain="true"
       :link="link"
@@ -20,6 +21,10 @@
         />
       </template>
     </InstanceV1Name>
+    <span v-else>
+      <!-- For creating database issues, we will only show the resource id of target instance. -->
+      {{ extractInstanceResourceName(selectedTask.target) }}
+    </span>
 
     <heroicons-outline:chevron-right class="text-control-light" />
 
@@ -77,6 +82,7 @@ import {
 import { useDatabaseV1Store, useEnvironmentV1Store } from "@/store";
 import { UNKNOWN_ID, unknownEnvironment } from "@/types";
 import { Task_Status, Task_Type } from "@/types/proto/v1/rollout_service";
+import { extractInstanceResourceName } from "@/utils";
 
 type DatabaseCreationStatus = "EXISTED" | "PENDING_CREATE" | "CREATED";
 

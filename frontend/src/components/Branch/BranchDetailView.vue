@@ -90,6 +90,7 @@
         :readonly="!state.isEditing"
         :branch="dirtyBranch"
         :disable-diff-coloring="!state.isEditing && !state.showDiff"
+        :show-table-preview="true"
         @update-is-editing="updateIsEditing"
       />
     </div>

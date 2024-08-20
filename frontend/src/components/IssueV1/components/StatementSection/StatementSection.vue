@@ -14,9 +14,10 @@ import { computed } from "vue";
 import { ref } from "vue";
 import { nextTick } from "vue";
 import { useRouter } from "vue-router";
-import { EMPTY_ID, TaskTypeListWithStatement } from "@/types";
+import { TaskTypeListWithStatement } from "@/types";
 import { Task_Type } from "@/types/proto/v1/rollout_service";
 import type { Advice } from "@/types/proto/v1/sql_service";
+import { isValidTaskName } from "@/utils";
 import { useIssueContext } from "../../logic";
 import EditorView from "./EditorView";
 import SDLView from "./SDLView";
@@ -33,7 +34,7 @@ const router = useRouter();
 type ViewMode = "NONE" | "EDITOR" | "SDL";
 
 const viewMode = computed((): ViewMode => {
-  if (selectedTask.value.uid !== String(EMPTY_ID)) {
+  if (isValidTaskName(selectedTask.value.name)) {
     const task = selectedTask.value;
     const { type } = task;
     if (type === Task_Type.DATABASE_SCHEMA_UPDATE_SDL) {

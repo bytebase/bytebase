@@ -86,23 +86,11 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
-  loading: {
-    type: Boolean,
-    default: false,
-  },
-  loadingMore: {
-    type: Boolean,
-    default: false,
-  },
   composeIssueConfig: {
     type: Object as PropType<ComposeIssueConfig>,
     default: undefined,
   },
 });
-const emit = defineEmits<{
-  (event: "update:loading", loading: boolean): void;
-  (event: "update:loading-more", loadingMore: boolean): void;
-}>();
 
 const state = reactive<LocalState>({
   loading: false,
@@ -224,19 +212,4 @@ watch(isLoggedIn, () => {
 useRefreshIssueList(() => {
   refresh();
 });
-
-watch(
-  () => state.loading,
-  (loading) => {
-    emit("update:loading", loading);
-  },
-  { immediate: true }
-);
-watch(
-  () => state.loadingMore,
-  (loadingMore) => {
-    emit("update:loading-more", loadingMore);
-  },
-  { immediate: true }
-);
 </script>

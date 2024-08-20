@@ -114,7 +114,7 @@ const isActiveStage = computed(() => {
   }
 
   const taskFound = props.stage.tasks.find(
-    (t) => t.uid === activeTask.value.uid
+    (t) => t.name === activeTask.value.name
   );
   if (taskFound && !isTaskFinished(taskFound)) {
     // A stage is "Active" if the ActiveTaskOfPipeline is inside this stage
@@ -151,7 +151,7 @@ const planCheckStatus = computed((): PlanCheckRun_Result_Status => {
   if (isCreating.value) return PlanCheckRun_Result_Status.UNRECOGNIZED;
   const planCheckList = uniqBy(
     props.stage.tasks.flatMap(getPlanCheckRunsForTask),
-    (checkRun) => checkRun.uid
+    (checkRun) => checkRun.name
   );
   const summary = planCheckRunSummaryForCheckRunList(planCheckList);
   if (summary.errorCount > 0) {

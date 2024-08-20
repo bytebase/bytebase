@@ -50,7 +50,7 @@ import { PlanCheckRun_Result_Status } from "@/types/proto/v1/plan_service";
 import {
   extractProjectResourceName,
   hasProjectPermissionV2,
-  issueSlug,
+  issueV1Slug,
 } from "@/utils";
 
 const { t } = useI18n();
@@ -65,7 +65,7 @@ const planCheckStatus = computed((): PlanCheckRun_Result_Status => {
     plan.value.steps.flatMap((step) =>
       step.specs.flatMap((spec) => planCheckRunListForSpec(plan.value, spec))
     ),
-    (checkRun) => checkRun.uid
+    (checkRun) => checkRun.name
   );
   const summary = planCheckRunSummaryForCheckRunList(planCheckList);
   if (summary.errorCount > 0) {
@@ -144,7 +144,7 @@ const doCreateIssue = async () => {
         name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
         params: {
           projectId: extractProjectResourceName(plan.value.project),
-          issueSlug: issueSlug(composedIssue.title, composedIssue.uid),
+          issueSlug: issueV1Slug(composedIssue),
         },
       });
     });

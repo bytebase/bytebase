@@ -71,7 +71,6 @@ func TestGetDesignSchema_Procedure(t *testing.T) {
 
 type designTest struct {
 	Description string
-	Baseline    string
 	Target      string
 	Result      string
 }
@@ -91,7 +90,7 @@ func testGetDesignSchema(t *testing.T, filepaths []string, writeback bool) {
 		for i, t := range tests {
 			targetMeta := &storepb.DatabaseSchemaMetadata{}
 			a.NoError(common.ProtojsonUnmarshaler.Unmarshal([]byte(t.Target), targetMeta))
-			result, err := GetDesignSchema("", t.Baseline, targetMeta)
+			result, err := GetDesignSchema("", targetMeta)
 			a.NoError(err)
 
 			// Addintional parse stage to verify the result is parsable.

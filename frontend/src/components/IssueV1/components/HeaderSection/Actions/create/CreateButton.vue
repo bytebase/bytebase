@@ -62,12 +62,13 @@ import { type Plan_ChangeDatabaseConfig } from "@/types/proto/v1/plan_service";
 import type { Sheet } from "@/types/proto/v1/sheet_service";
 import {
   extractDatabaseGroupName,
+  extractIssueUID,
   extractProjectResourceName,
   extractSheetUID,
   flattenTaskV1List,
   getSheetStatement,
   hasPermissionToCreateChangeDatabaseIssueInProject,
-  issueSlug,
+  issueV1Slug,
   setSheetStatement,
   sheetNameOfTaskV1,
 } from "@/utils";
@@ -168,7 +169,7 @@ const doCreateIssue = async () => {
         name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
         params: {
           projectId: extractProjectResourceName(composedIssue.project),
-          issueSlug: issueSlug(composedIssue.title, composedIssue.uid),
+          issueSlug: issueV1Slug(composedIssue),
         },
       });
     });
@@ -275,7 +276,7 @@ const maybeFormatSQL = async (sheet: Sheet, target: string) => {
 
 const emitIssueCreateWindowEvent = async (issue: ComposedIssue) => {
   const eventParams = {
-    uid: issue.uid,
+    uid: extractIssueUID(issue.name),
     description: issue.description,
     project: toRaw(issue.projectEntity),
     tasks: [],

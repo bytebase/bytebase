@@ -719,6 +719,82 @@ func TestPGAddColumnStmt(t *testing.T) {
 				},
 			},
 		},
+		{
+			stmt: "ALTER TABLE techbook ADD COLUMN a text default current_user",
+			want: []ast.Node{
+				&ast.AlterTableStmt{
+					Table: &ast.TableDef{
+						Type: ast.TableTypeBaseTable,
+						Name: "techbook",
+					},
+					AlterItemList: []ast.Node{
+						&ast.AddColumnListStmt{
+							Table: &ast.TableDef{
+								Type: ast.TableTypeBaseTable,
+								Name: "techbook",
+							},
+							ColumnList: []*ast.ColumnDef{
+								{
+									ColumnName: "a",
+									Type:       &ast.Text{},
+									ConstraintList: []*ast.ConstraintDef{
+										{
+											Type:       ast.ConstraintTypeDefault,
+											KeyList:    []string{"a"},
+											Expression: &ast.UnconvertedExpressionDef{},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			statementList: []base.SingleSQL{
+				{
+					Text:     "ALTER TABLE techbook ADD COLUMN a text default current_user",
+					LastLine: 1,
+				},
+			},
+		},
+		{
+			stmt: "ALTER TABLE techbook ADD COLUMN a text default now()",
+			want: []ast.Node{
+				&ast.AlterTableStmt{
+					Table: &ast.TableDef{
+						Type: ast.TableTypeBaseTable,
+						Name: "techbook",
+					},
+					AlterItemList: []ast.Node{
+						&ast.AddColumnListStmt{
+							Table: &ast.TableDef{
+								Type: ast.TableTypeBaseTable,
+								Name: "techbook",
+							},
+							ColumnList: []*ast.ColumnDef{
+								{
+									ColumnName: "a",
+									Type:       &ast.Text{},
+									ConstraintList: []*ast.ConstraintDef{
+										{
+											Type:       ast.ConstraintTypeDefault,
+											KeyList:    []string{"a"},
+											Expression: &ast.UnconvertedExpressionDef{},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			statementList: []base.SingleSQL{
+				{
+					Text:     "ALTER TABLE techbook ADD COLUMN a text default now()",
+					LastLine: 1,
+				},
+			},
+		},
 	}
 
 	runTests(t, tests)

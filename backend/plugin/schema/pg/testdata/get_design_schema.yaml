@@ -156,34 +156,32 @@
       ]
     }
   result: |+
-    CREATE TABLE public."t" (
-      "a" int NOT NULL,
-      CONSTRAINT t_a_check CHECK ("a" > 0)
-    );
-
-
-
-
-
-    CREATE TABLE public.t4 (
-      a varchar(10) NOT NULL DEFAULT 'default value',
-      c int NOT NULL,
-      e int ,
-      "b" char(10) NOT NULL
-    );
-    COMMENT ON COLUMN public.t4.c IS 'comment with ''; test escape';
-    ALTER TABLE public.t4 ADD CONSTRAINT pk_t4_a_c_d PRIMARY KEY ("a", "b", "c");
-    ALTER TABLE public.t4 ADD CONSTRAINT fk_t4_a_t2_b FOREIGN KEY ("b") REFERENCES "public"."t2"("b");
-    CREATE INDEX idx_t4_d ON public.t4 USING btree (d);
     CREATE SCHEMA "s1";
 
     CREATE TABLE "s1"."t" (
       "a" int NOT NULL
     );
 
+    CREATE TABLE "public"."t" (
+      "a" integer NOT NULL
+    );
+
+    CREATE TABLE "public"."t4" (
+      "a" varchar(10) NOT NULL DEFAULT 'default value',
+      "b" char(10) NOT NULL,
+      "c" int NOT NULL,
+      "e" int NULL
+    );
+    ALTER TABLE ONLY "public"."t4"
+        ADD CONSTRAINT "pk_t4_a_c_d" PRIMARY KEY ("a", "b", "c");
+
+    ALTER TABLE ONLY "public"."t4"
+        ADD CONSTRAINT "fk_t4_a_t2_b" FOREIGN KEY ("b") REFERENCES "public"."t2"("b");
 
 
     COMMENT ON COLUMN "public"."t4"."a" IS 'this is comment'', aha';
+
+    COMMENT ON COLUMN "public"."t4"."c" IS 'comment with ''; test escape';
 
     CREATE TABLE "public"."t2" (
       "b" int NULL,

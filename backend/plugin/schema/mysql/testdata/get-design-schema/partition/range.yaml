@@ -1,17 +1,4 @@
 - description: Range Columns
-  baseline: |-
-    SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
-    SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
-    --
-    -- Table structure for `u`
-    --
-    CREATE TABLE `u` (
-      `id` int DEFAULT NULL,
-      `name` varchar(10) DEFAULT NULL
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
-    SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
-    SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
   target: |-
     {
       "schemas": [
@@ -85,9 +72,6 @@
       ]
     }
   result: |
-    SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
-    SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
-
     --
     -- Table structure for `range_columns_partition_hash_subpartition`
     --
@@ -103,23 +87,7 @@
      PARTITION p1 VALUES LESS THAN (2,'2012-01-02 00:00:00')
      (SUBPARTITION p1sp0 ENGINE=InnoDB,
       SUBPARTITION p1sp1 ENGINE=InnoDB)) */;
-
-    SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
-    SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
 - description: Subpartition
-  baseline: |-
-    SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
-    SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
-    --
-    -- Table structure for `range_partition_hash_subpartition`
-    --
-    CREATE TABLE `range_partition_hash_subpartition` (
-      `id` int DEFAULT NULL,
-      `name` varchar(10) DEFAULT NULL
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
-    SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
-    SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
   target: |-
     {
       "schemas": [
@@ -195,15 +163,13 @@
       ]
     }
   result: |
-    SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
-    SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
     --
     -- Table structure for `range_partition_hash_subpartition`
     --
     CREATE TABLE `range_partition_hash_subpartition` (
       `id` int DEFAULT NULL,
       `name` varchar(10) DEFAULT NULL
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+    ) ENGINE=InnoDB COLLATE=utf8mb4_0900_ai_ci
     /*!50100 PARTITION BY RANGE (`id`)
     SUBPARTITION BY HASH (`id`)
     (PARTITION p0 VALUES LESS THAN (10)
@@ -212,23 +178,7 @@
      PARTITION p1 VALUES LESS THAN MAXVALUE
      (SUBPARTITION p1s0 ENGINE=InnoDB,
       SUBPARTITION p1s1 ENGINE=InnoDB)) */;
-
-    SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
-    SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
 - description: Easy Range Partition
-  baseline: |-
-    SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
-    SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
-    --
-    -- Table structure for `range_partition`
-    --
-    CREATE TABLE `range_partition` (
-      `id` int DEFAULT NULL,
-      `name` varchar(10) DEFAULT NULL
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
-    SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
-    SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
   target: |-
     {
       "schemas": [
@@ -282,19 +232,14 @@
       ]
     }
   result: |
-    SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
-    SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
     --
     -- Table structure for `range_partition`
     --
     CREATE TABLE `range_partition` (
       `id` int DEFAULT NULL,
       `name` varchar(10) DEFAULT NULL
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+    ) ENGINE=InnoDB COLLATE=utf8mb4_0900_ai_ci
     /*!50100 PARTITION BY RANGE (`id`)
     (PARTITION p0 VALUES LESS THAN (100) ENGINE=InnoDB,
      PARTITION p1 VALUES LESS THAN (200) ENGINE=InnoDB,
      PARTITION p2 VALUES LESS THAN MAXVALUE ENGINE=InnoDB) */;
-
-    SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
-    SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;

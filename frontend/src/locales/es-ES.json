@@ -2575,7 +2575,8 @@
     },
     "views": "Puntos de vista",
     "procedures": "Trámites",
-    "functions": "Funciones"
+    "functions": "Funciones",
+    "preview-schema-text": "Vista previa del texto del esquema"
   },
   "label": {
     "empty-label-value": "Valor",

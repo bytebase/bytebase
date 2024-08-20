@@ -19,7 +19,7 @@
               class="flex flex-col"
               :class="[issueList.length > 1 && 'list-disc pl-4']"
             >
-              <li v-for="issue in issueList" :key="issue.uid">
+              <li v-for="issue in issueList" :key="issue.name">
                 {{ issue.title }}
               </li>
             </ul>

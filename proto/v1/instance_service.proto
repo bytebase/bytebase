@@ -306,12 +306,12 @@ message InstanceOptions {
 }
 
 message Instance {
-  reserved 2;
-
   option (google.api.resource) = {
     type: "bytebase.com/Instance"
     pattern: "instances/{instance}"
   };
+
+  reserved 2;
 
   // The name of the instance.
   // Format: instances/{instance}

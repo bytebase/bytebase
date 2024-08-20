@@ -6,7 +6,7 @@
       :striped="true"
       :bordered="true"
       :loading="loading"
-      :row-key="(plan: ComposedPlan) => plan.uid"
+      :row-key="(plan: ComposedPlan) => plan.name"
       :row-props="rowProps"
       class="plan-data-table"
     />
@@ -23,7 +23,12 @@ import { useRouter } from "vue-router";
 import { ProjectNameCell } from "@/components/v2/Model/DatabaseV1Table/cells";
 import { PROJECT_V1_ROUTE_PLAN_DETAIL } from "@/router/dashboard/projectV1";
 import type { ComposedPlan } from "@/types/v1/issue/plan";
-import { extractProjectResourceName, humanizeTs, planSlug } from "@/utils";
+import {
+  extractPlanUID,
+  extractProjectResourceName,
+  humanizeTs,
+  planV1Slug,
+} from "@/utils";
 import PlanCheckRunStatusIcon from "../PlanCheckRunStatusIcon.vue";
 
 const { t } = useI18n();
@@ -46,7 +51,7 @@ const columnList = computed((): DataTableColumn<ComposedPlan>[] => {
         return (
           <div class="flex items-center overflow-hidden space-x-2">
             <div class="whitespace-nowrap text-control opacity-60">
-              {plan.projectEntity.key}-{plan.uid}
+              {plan.projectEntity.key}-{extractPlanUID(plan.name)}
             </div>
             <NPerformantEllipsis class="flex-1 truncate">
               {{
@@ -112,7 +117,7 @@ const rowProps = (plan: ComposedPlan) => {
         name: PROJECT_V1_ROUTE_PLAN_DETAIL,
         params: {
           projectId: extractProjectResourceName(plan.project),
-          planSlug: planSlug(plan.title, plan.uid),
+          planSlug: planV1Slug(plan),
         },
       });
       const url = route.fullPath;

@@ -192,13 +192,12 @@ message Plan {
     pattern: "projects/{project}/plans/{plan}"
   };
 
+  reserved 2;
+
   // The name of the plan.
   // `plan` is a system generated ID.
   // Format: projects/{project}/plans/{plan}
   string name = 1;
-
-  // The system-assigned, unique identifier for a resource.
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The resource name of the issue associated with this plan.
   // Format: projects/{project}/issues/{issue}
@@ -396,11 +395,10 @@ message BatchCancelPlanCheckRunsRequest {
 message BatchCancelPlanCheckRunsResponse {}
 
 message PlanCheckRun {
+  reserved 2;
+
   // Format: projects/{project}/plans/{plan}/planCheckRuns/{planCheckRun}
   string name = 1;
-
-  // The system-assigned, unique identifier for a resource.
-  string uid = 2;
 
   enum Type {
     TYPE_UNSPECIFIED = 0;

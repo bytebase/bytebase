@@ -147,12 +147,12 @@ message UndeleteEnvironmentRequest {
 }
 
 message Environment {
-  reserved 2;
-
   option (google.api.resource) = {
     type: "bytebase.com/Environment"
     pattern: "environments/{environment}"
   };
+
+  reserved 2;
 
   // The name of the environment.
   // Format: environments/{environment}

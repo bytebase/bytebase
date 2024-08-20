@@ -1,5 +1,5 @@
 <template>
-  <NPerformantEllipsis expand-trigger="click" line-clamp="3" :tooltip="false">
+  <NPerformantEllipsis expand-trigger="click" line-clamp="2" :tooltip="false">
     {{ comment }}
   </NPerformantEllipsis>
 
@@ -55,7 +55,7 @@ const task = computed(() => {
   const taskUID = extractTaskUID(props.taskRun.name);
   const task =
     flattenTaskV1List(issue.value.rolloutEntity).find(
-      (task) => task.uid === taskUID
+      (task) => extractTaskUID(task.name) === taskUID
     ) ?? unknownTask();
   return task;
 });
@@ -99,7 +99,7 @@ const commentLink = computed((): CommentLink => {
   const taskUID = extractTaskUID(taskRun.name);
   const task =
     flattenTaskV1List(issue.value.rolloutEntity).find(
-      (task) => task.uid === taskUID
+      (task) => extractTaskUID(task.name) === taskUID
     ) ?? unknownTask();
   if (taskRun.status === TaskRun_Status.RUNNING) {
     const task = taskRun.schedulerInfo?.waitingCause?.task;
@@ -132,7 +132,7 @@ const commentLink = computed((): CommentLink => {
   } else if (taskRun.status === TaskRun_Status.FAILED) {
     const db = databaseForTask(issue.value, task);
     // Cast a wide net to catch migration version error
-    if (comment.value.includes('version')) {
+    if (comment.value.includes("version")) {
       return {
         title: t("common.troubleshoot"),
         link: "https://www.bytebase.com/docs/change-database/troubleshoot/?source=console#duplicate-version",

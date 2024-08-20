@@ -289,19 +289,16 @@ message RequestIssueRequest {
 }
 
 message Issue {
-  reserved 7, 8;
-
   option (google.api.resource) = {
     type: "bytebase.com/Issue"
     pattern: "projects/{project}/issues/{issue}"
   };
 
+  reserved 2, 7, 8;
+
   // The name of the issue.
   // Format: projects/{project}/issues/{issue}
   string name = 1;
-
-  // The system-assigned, unique identifier for a resource.
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   string title = 3;
 
@@ -527,7 +524,10 @@ message UpdateIssueCommentRequest {
 }
 
 message IssueComment {
-  string uid = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+  reserved 6;
+
+  // Format: projects/{project}/issues/{issue}/issueComments/{issueComment-uid}
+  string name = 1;
 
   string comment = 2;
 
@@ -537,9 +537,6 @@ message IssueComment {
   google.protobuf.Timestamp create_time = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   google.protobuf.Timestamp update_time = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
-
-  // Format: projects/{project}/issues/{issue}/issueComments/{issueComment-uid}
-  string name = 6;
 
   // Format: users/{email}
   string creator = 7;

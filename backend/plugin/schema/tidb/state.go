@@ -2,6 +2,7 @@ package tidb
 
 import (
 	"fmt"
+	"io"
 	"regexp"
 	"sort"
 	"strings"
@@ -56,11 +57,13 @@ type schemaState struct {
 	id     int
 	name   string
 	tables map[string]*tableState
+	views  map[string]*viewState
 }
 
 func newSchemaState() *schemaState {
 	return &schemaState{
 		tables: make(map[string]*tableState),
+		views:  make(map[string]*viewState),
 	}
 }
 
@@ -69,6 +72,9 @@ func convertToSchemaState(schema *storepb.SchemaMetadata) *schemaState {
 	state.name = schema.Name
 	for i, table := range schema.Tables {
 		state.tables[table.Name] = convertToTableState(i, table)
+	}
+	for i, view := range schema.Views {
+		state.views[view.Name] = convertToViewState(i, view)
 	}
 	return state
 }
@@ -81,15 +87,26 @@ func (s *schemaState) convertToSchemaMetadata() *storepb.SchemaMetadata {
 	sort.Slice(tableStates, func(i, j int) bool {
 		return tableStates[i].id < tableStates[j].id
 	})
+	viewStates := []*viewState{}
+	for _, view := range s.views {
+		viewStates = append(viewStates, view)
+	}
+	sort.Slice(viewStates, func(i, j int) bool {
+		return viewStates[i].id < viewStates[j].id
+	})
 	tables := []*storepb.TableMetadata{}
 	for _, table := range tableStates {
 		tables = append(tables, table.convertToTableMetadata())
 	}
+	views := []*storepb.ViewMetadata{}
+	for _, view := range viewStates {
+		views = append(views, view.convertToViewMetadata())
+	}
 	return &storepb.SchemaMetadata{
 		Name:   s.name,
 		Tables: tables,
+		Views:  views,
 		// Unsupported, for tests only.
-		Views:             []*storepb.ViewMetadata{},
 		Functions:         []*storepb.FunctionMetadata{},
 		Streams:           []*storepb.StreamMetadata{},
 		Tasks:             []*storepb.TaskMetadata{},
@@ -109,17 +126,7 @@ type tableState struct {
 	collation string
 }
 
-const (
-	tableStmtFmt = "" +
-		"--\n" +
-		"-- Table structure for `%s`\n" +
-		"--\n"
-)
-
 func (t *tableState) toString(buf *strings.Builder) error {
-	if _, err := buf.WriteString(fmt.Sprintf(tableStmtFmt, t.name)); err != nil {
-		return err
-	}
 	if _, err := buf.WriteString(fmt.Sprintf("CREATE TABLE `%s` (\n  ", t.name)); err != nil {
 		return err
 	}
@@ -506,14 +513,6 @@ type columnState struct {
 	nullable     bool
 }
 
-func (c *columnState) hasAutoIncrement() bool {
-	return strings.EqualFold(c.defaultValue.toString(), autoIncrementSymbol)
-}
-
-func (c *columnState) hasAutoRand() bool {
-	return strings.Contains(strings.ToUpper(c.defaultValue.toString()), autoRandSymbol)
-}
-
 func (c *columnState) toString(buf *strings.Builder) error {
 	columnCanonicalType := tidb.GetColumnTypeCanonicalSynonym(strings.ToLower(c.tp))
 	if _, err := buf.WriteString(fmt.Sprintf("`%s` %s", c.name, columnCanonicalType)); err != nil {
@@ -619,4 +618,37 @@ func normalizeOnUpdate(s string) string {
 	}
 	// not a current_timestamp family function
 	return s
+}
+
+type viewState struct {
+	id         int
+	name       string
+	definition string
+}
+
+func (v *viewState) convertToViewMetadata() *storepb.ViewMetadata {
+	return &storepb.ViewMetadata{
+		Name:       v.name,
+		Definition: v.definition,
+	}
+}
+
+func convertToViewState(id int, view *storepb.ViewMetadata) *viewState {
+	return &viewState{
+		id:         id,
+		name:       view.Name,
+		definition: view.Definition,
+	}
+}
+
+func (v *viewState) toString(buf io.StringWriter) error {
+	stmt := fmt.Sprintf("CREATE VIEW `%s` AS %s", v.name, v.definition)
+	if !strings.HasSuffix(stmt, ";") {
+		stmt += ";"
+	}
+	stmt += "\n"
+	if _, err := buf.WriteString(stmt); err != nil {
+		return err
+	}
+	return nil
 }

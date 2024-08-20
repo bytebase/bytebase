@@ -27,6 +27,9 @@ import type { Task } from "@/types/proto/v1/rollout_service";
 import {
   extractProjectResourceName,
   extractSchemaVersionFromTask,
+  extractStageUID,
+  extractTaskUID,
+  issueV1Slug,
 } from "@/utils";
 
 const props = defineProps<{
@@ -42,26 +45,28 @@ const link = computed(() => {
   const { issue, task } = props;
 
   const query: Record<string, any> = {
-    task: task.uid,
+    task: extractTaskUID(task.name),
   };
 
   const stage = stageForTask(issue, task);
   if (stage) {
-    query.stage = stage.uid;
+    query.stage = extractStageUID(stage.name);
   }
 
   return {
     name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
     params: {
       projectId: extractProjectResourceName(issue.project),
-      issueSlug: issue.uid,
+      issueSlug: issueV1Slug(issue),
     },
     query,
   };
 });
 
 const toTop = (e: Event) => {
-  const taskElem = document.querySelector(`[data-task-id="${props.task.uid}"]`);
+  const taskElem = document.querySelector(
+    `[data-task-id="${extractTaskUID(props.task.name)}"]`
+  );
   if (taskElem) {
     scrollIntoView(taskElem, {
       scrollMode: "if-needed",

@@ -135,8 +135,6 @@ export interface Rollout {
    * Format: projects/{project}/rollouts/{rollout}
    */
   name: string;
-  /** The system-assigned, unique identifier for a resource. */
-  uid: string;
   /**
    * The plan that this rollout is based on.
    * Format: projects/{project}/plans/{plan}
@@ -150,8 +148,6 @@ export interface Rollout {
 export interface Stage {
   /** Format: projects/{project}/rollouts/{rollout}/stages/{stage} */
   name: string;
-  /** The system-assigned, unique identifier for a resource. */
-  uid: string;
   title: string;
   tasks: Task[];
 }
@@ -159,8 +155,6 @@ export interface Stage {
 export interface Task {
   /** Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task} */
   name: string;
-  /** The system-assigned, unique identifier for a resource. */
-  uid: string;
   title: string;
   /**
    * A UUID4 string that uniquely identifies the Spec.
@@ -457,8 +451,6 @@ export interface Task_DatabaseDataExport {
 export interface TaskRun {
   /** Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun} */
   name: string;
-  /** The system-assigned, unique identifier for a resource. */
-  uid: string;
   /** Format: user/hello@world.com */
   creator: string;
   /** Format: user/hello@world.com */
@@ -1777,16 +1769,13 @@ export const GetTaskRunLogRequest = {
 };
 
 function createBaseRollout(): Rollout {
-  return { name: "", uid: "", plan: "", title: "", stages: [] };
+  return { name: "", plan: "", title: "", stages: [] };
 }
 
 export const Rollout = {
   encode(message: Rollout, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
-    }
-    if (message.uid !== "") {
-      writer.uint32(18).string(message.uid);
     }
     if (message.plan !== "") {
       writer.uint32(26).string(message.plan);
@@ -1813,13 +1802,6 @@ export const Rollout = {
           }
 
           message.name = reader.string();
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.uid = reader.string();
           continue;
         case 3:
           if (tag !== 26) {
@@ -1854,7 +1836,6 @@ export const Rollout = {
   fromJSON(object: any): Rollout {
     return {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
-      uid: isSet(object.uid) ? globalThis.String(object.uid) : "",
       plan: isSet(object.plan) ? globalThis.String(object.plan) : "",
       title: isSet(object.title) ? globalThis.String(object.title) : "",
       stages: globalThis.Array.isArray(object?.stages) ? object.stages.map((e: any) => Stage.fromJSON(e)) : [],
@@ -1865,9 +1846,6 @@ export const Rollout = {
     const obj: any = {};
     if (message.name !== "") {
       obj.name = message.name;
-    }
-    if (message.uid !== "") {
-      obj.uid = message.uid;
     }
     if (message.plan !== "") {
       obj.plan = message.plan;
@@ -1887,7 +1865,6 @@ export const Rollout = {
   fromPartial(object: DeepPartial<Rollout>): Rollout {
     const message = createBaseRollout();
     message.name = object.name ?? "";
-    message.uid = object.uid ?? "";
     message.plan = object.plan ?? "";
     message.title = object.title ?? "";
     message.stages = object.stages?.map((e) => Stage.fromPartial(e)) || [];
@@ -1896,16 +1873,13 @@ export const Rollout = {
 };
 
 function createBaseStage(): Stage {
-  return { name: "", uid: "", title: "", tasks: [] };
+  return { name: "", title: "", tasks: [] };
 }
 
 export const Stage = {
   encode(message: Stage, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
-    }
-    if (message.uid !== "") {
-      writer.uint32(18).string(message.uid);
     }
     if (message.title !== "") {
       writer.uint32(34).string(message.title);
@@ -1929,13 +1903,6 @@ export const Stage = {
           }
 
           message.name = reader.string();
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.uid = reader.string();
           continue;
         case 4:
           if (tag !== 34) {
@@ -1963,7 +1930,6 @@ export const Stage = {
   fromJSON(object: any): Stage {
     return {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
-      uid: isSet(object.uid) ? globalThis.String(object.uid) : "",
       title: isSet(object.title) ? globalThis.String(object.title) : "",
       tasks: globalThis.Array.isArray(object?.tasks) ? object.tasks.map((e: any) => Task.fromJSON(e)) : [],
     };
@@ -1973,9 +1939,6 @@ export const Stage = {
     const obj: any = {};
     if (message.name !== "") {
       obj.name = message.name;
-    }
-    if (message.uid !== "") {
-      obj.uid = message.uid;
     }
     if (message.title !== "") {
       obj.title = message.title;
@@ -1992,7 +1955,6 @@ export const Stage = {
   fromPartial(object: DeepPartial<Stage>): Stage {
     const message = createBaseStage();
     message.name = object.name ?? "";
-    message.uid = object.uid ?? "";
     message.title = object.title ?? "";
     message.tasks = object.tasks?.map((e) => Task.fromPartial(e)) || [];
     return message;
@@ -2002,7 +1964,6 @@ export const Stage = {
 function createBaseTask(): Task {
   return {
     name: "",
-    uid: "",
     title: "",
     specId: "",
     status: Task_Status.STATUS_UNSPECIFIED,
@@ -2022,9 +1983,6 @@ export const Task = {
   encode(message: Task, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
-    }
-    if (message.uid !== "") {
-      writer.uint32(18).string(message.uid);
     }
     if (message.title !== "") {
       writer.uint32(26).string(message.title);
@@ -2078,13 +2036,6 @@ export const Task = {
           }
 
           message.name = reader.string();
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.uid = reader.string();
           continue;
         case 3:
           if (tag !== 26) {
@@ -2182,7 +2133,6 @@ export const Task = {
   fromJSON(object: any): Task {
     return {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
-      uid: isSet(object.uid) ? globalThis.String(object.uid) : "",
       title: isSet(object.title) ? globalThis.String(object.title) : "",
       specId: isSet(object.specId) ? globalThis.String(object.specId) : "",
       status: isSet(object.status) ? task_StatusFromJSON(object.status) : Task_Status.STATUS_UNSPECIFIED,
@@ -2212,9 +2162,6 @@ export const Task = {
     const obj: any = {};
     if (message.name !== "") {
       obj.name = message.name;
-    }
-    if (message.uid !== "") {
-      obj.uid = message.uid;
     }
     if (message.title !== "") {
       obj.title = message.title;
@@ -2261,7 +2208,6 @@ export const Task = {
   fromPartial(object: DeepPartial<Task>): Task {
     const message = createBaseTask();
     message.name = object.name ?? "";
-    message.uid = object.uid ?? "";
     message.title = object.title ?? "";
     message.specId = object.specId ?? "";
     message.status = object.status ?? Task_Status.STATUS_UNSPECIFIED;
@@ -2867,7 +2813,6 @@ export const Task_DatabaseDataExport = {
 function createBaseTaskRun(): TaskRun {
   return {
     name: "",
-    uid: "",
     creator: "",
     updater: "",
     createTime: undefined,
@@ -2888,9 +2833,6 @@ export const TaskRun = {
   encode(message: TaskRun, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
-    }
-    if (message.uid !== "") {
-      writer.uint32(18).string(message.uid);
     }
     if (message.creator !== "") {
       writer.uint32(26).string(message.creator);
@@ -2947,13 +2889,6 @@ export const TaskRun = {
           }
 
           message.name = reader.string();
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.uid = reader.string();
           continue;
         case 3:
           if (tag !== 26) {
@@ -3058,7 +2993,6 @@ export const TaskRun = {
   fromJSON(object: any): TaskRun {
     return {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
-      uid: isSet(object.uid) ? globalThis.String(object.uid) : "",
       creator: isSet(object.creator) ? globalThis.String(object.creator) : "",
       updater: isSet(object.updater) ? globalThis.String(object.updater) : "",
       createTime: isSet(object.createTime) ? fromJsonTimestamp(object.createTime) : undefined,
@@ -3083,9 +3017,6 @@ export const TaskRun = {
     const obj: any = {};
     if (message.name !== "") {
       obj.name = message.name;
-    }
-    if (message.uid !== "") {
-      obj.uid = message.uid;
     }
     if (message.creator !== "") {
       obj.creator = message.creator;
@@ -3135,7 +3066,6 @@ export const TaskRun = {
   fromPartial(object: DeepPartial<TaskRun>): TaskRun {
     const message = createBaseTaskRun();
     message.name = object.name ?? "";
-    message.uid = object.uid ?? "";
     message.creator = object.creator ?? "";
     message.updater = object.updater ?? "";
     message.createTime = object.createTime ?? undefined;
