@@ -189,6 +189,8 @@ const (
 	SchemaRuleCurrentTimeColumnCountLimit SQLReviewRuleType = "column.current-time-count-limit"
 	// SchemaRuleColumnRequireDefault enforce the column default.
 	SchemaRuleColumnRequireDefault SQLReviewRuleType = "column.require-default"
+	// SchemaRuleColumnDefaultDisallowVolatile enforce the column default disallow volatile.
+	SchemaRuleColumnDefaultDisallowVolatile SQLReviewRuleType = "column.default-disallow-volatile"
 	// SchemaRuleAddNotNullColumnRequireDefault enforce the adding not null column requires default.
 	SchemaRuleAddNotNullColumnRequireDefault SQLReviewRuleType = "column.add-not-null-require-default"
 
@@ -1130,6 +1132,10 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 			return PostgreSQLRequireColumnDefault, nil
 		case storepb.Engine_ORACLE, storepb.Engine_OCEANBASE_ORACLE:
 			return OracleRequireColumnDefault, nil
+		}
+	case SchemaRuleColumnDefaultDisallowVolatile:
+		if engine == storepb.Engine_POSTGRES {
+			return PostgreSQLColumnDefaultDisallowVolatile, nil
 		}
 	case SchemaRuleAddNotNullColumnRequireDefault:
 		if engine == storepb.Engine_ORACLE {

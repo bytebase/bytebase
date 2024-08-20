@@ -556,6 +556,9 @@ const (
 	// PostgreSQLRequireColumnDefault is an advisor type for PostgreSQL column default requirement.
 	PostgreSQLRequireColumnDefault Type = "bb.plugin.advisor.postgresql.column.require-default"
 
+	// PostgreSQLColumnDefaultDisallowVolatile is an advisor type for PostgreSQL column default disallow volatile.
+	PostgreSQLColumnDefaultDisallowVolatile Type = "bb.plugin.advisor.postgresql.column.default-disallow-volatile"
+
 	// PostgreSQLStatementDisallowCommit is an advisor type for PostgreSQL to disallow commit.
 	PostgreSQLStatementDisallowCommit Type = "bb.plugin.advisor.postgresql.statement.disallow-commit"
 
