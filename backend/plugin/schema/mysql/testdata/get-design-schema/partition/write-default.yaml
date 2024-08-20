@@ -1,17 +1,4 @@
 - description: Default Subpartition Num
-  baseline: |-
-    SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
-    SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
-    --
-    -- Table structure for `range_partition`
-    --
-    CREATE TABLE `range_partition` (
-      `id` int DEFAULT NULL,
-      `name` varchar(10) DEFAULT NULL
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
-    SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
-    SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
   target: |-
     {
       "schemas": [

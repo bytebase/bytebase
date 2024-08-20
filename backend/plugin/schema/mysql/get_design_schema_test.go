@@ -71,7 +71,6 @@ func TestGetDesignSchema_Procedure(t *testing.T) {
 
 type designTest struct {
 	Description string
-	Baseline    string
 	Target      string
 	Result      string
 }

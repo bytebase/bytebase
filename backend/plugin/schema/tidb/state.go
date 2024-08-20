@@ -109,17 +109,7 @@ type tableState struct {
 	collation string
 }
 
-const (
-	tableStmtFmt = "" +
-		"--\n" +
-		"-- Table structure for `%s`\n" +
-		"--\n"
-)
-
 func (t *tableState) toString(buf *strings.Builder) error {
-	if _, err := buf.WriteString(fmt.Sprintf(tableStmtFmt, t.name)); err != nil {
-		return err
-	}
 	if _, err := buf.WriteString(fmt.Sprintf("CREATE TABLE `%s` (\n  ", t.name)); err != nil {
 		return err
 	}
@@ -504,14 +494,6 @@ type columnState struct {
 	onUpdate     string
 	comment      string
 	nullable     bool
-}
-
-func (c *columnState) hasAutoIncrement() bool {
-	return strings.EqualFold(c.defaultValue.toString(), autoIncrementSymbol)
-}
-
-func (c *columnState) hasAutoRand() bool {
-	return strings.Contains(strings.ToUpper(c.defaultValue.toString()), autoRandSymbol)
 }
 
 func (c *columnState) toString(buf *strings.Builder) error {
