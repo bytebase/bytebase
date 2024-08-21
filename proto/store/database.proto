@@ -341,6 +341,9 @@ message ViewMetadata {
 
   // The dependent_columns is the list of dependent columns of a view.
   repeated DependentColumn dependent_columns = 4;
+
+  // The columns is the ordered list of columns in a table.
+  repeated ColumnMetadata columns = 5;
 }
 
 // DependentColumn is the metadata for dependent columns.

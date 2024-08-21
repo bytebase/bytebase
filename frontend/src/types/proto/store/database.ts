@@ -572,6 +572,8 @@ export interface ViewMetadata {
   comment: string;
   /** The dependent_columns is the list of dependent columns of a view. */
   dependentColumns: DependentColumn[];
+  /** The columns is the ordered list of columns in a table. */
+  columns: ColumnMetadata[];
 }
 
 /** DependentColumn is the metadata for dependent columns. */
@@ -2740,7 +2742,7 @@ export const GenerationMetadata = {
 };
 
 function createBaseViewMetadata(): ViewMetadata {
-  return { name: "", definition: "", comment: "", dependentColumns: [] };
+  return { name: "", definition: "", comment: "", dependentColumns: [], columns: [] };
 }
 
 export const ViewMetadata = {
@@ -2756,6 +2758,9 @@ export const ViewMetadata = {
     }
     for (const v of message.dependentColumns) {
       DependentColumn.encode(v!, writer.uint32(34).fork()).ldelim();
+    }
+    for (const v of message.columns) {
+      ColumnMetadata.encode(v!, writer.uint32(42).fork()).ldelim();
     }
     return writer;
   },
@@ -2795,6 +2800,13 @@ export const ViewMetadata = {
 
           message.dependentColumns.push(DependentColumn.decode(reader, reader.uint32()));
           continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.columns.push(ColumnMetadata.decode(reader, reader.uint32()));
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2811,6 +2823,9 @@ export const ViewMetadata = {
       comment: isSet(object.comment) ? globalThis.String(object.comment) : "",
       dependentColumns: globalThis.Array.isArray(object?.dependentColumns)
         ? object.dependentColumns.map((e: any) => DependentColumn.fromJSON(e))
+        : [],
+      columns: globalThis.Array.isArray(object?.columns)
+        ? object.columns.map((e: any) => ColumnMetadata.fromJSON(e))
         : [],
     };
   },
@@ -2829,6 +2844,9 @@ export const ViewMetadata = {
     if (message.dependentColumns?.length) {
       obj.dependentColumns = message.dependentColumns.map((e) => DependentColumn.toJSON(e));
     }
+    if (message.columns?.length) {
+      obj.columns = message.columns.map((e) => ColumnMetadata.toJSON(e));
+    }
     return obj;
   },
 
@@ -2841,6 +2859,7 @@ export const ViewMetadata = {
     message.definition = object.definition ?? "";
     message.comment = object.comment ?? "";
     message.dependentColumns = object.dependentColumns?.map((e) => DependentColumn.fromPartial(e)) || [];
+    message.columns = object.columns?.map((e) => ColumnMetadata.fromPartial(e)) || [];
     return message;
   },
 };

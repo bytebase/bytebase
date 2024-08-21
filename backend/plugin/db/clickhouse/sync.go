@@ -173,6 +173,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 		} else {
 			schemaMetadata.Views = append(schemaMetadata.Views, &storepb.ViewMetadata{
 				Name:       name,
+				Columns:    columnMap[name],
 				Definition: definition,
 				Comment:    comment,
 			})

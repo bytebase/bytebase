@@ -92,6 +92,26 @@ func TestSyncerForPostgreSQL(t *testing.T) {
 							`    c`,
 							`   FROM "TFK";`},
 							"\n"),
+						Columns: []*v1pb.ColumnMetadata{
+							{
+								Name:     "a",
+								Position: 1,
+								Nullable: true,
+								Type:     "integer",
+							},
+							{
+								Name:     "b",
+								Position: 2,
+								Nullable: true,
+								Type:     "integer",
+							},
+							{
+								Name:     "c",
+								Position: 3,
+								Nullable: true,
+								Type:     "integer",
+							},
+						},
 						DependentColumns: []*v1pb.DependentColumn{
 							{
 								Schema: "public",

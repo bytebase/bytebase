@@ -61,11 +61,15 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 	}
 	defer txn.Rollback()
 
-	tableMap, err := getTables(txn, driver.databaseName)
+	columnMap, err := getTableColumns(txn, driver.databaseName)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get table columns from database %q", driver.databaseName)
+	}
+	tableMap, err := getTables(txn, driver.databaseName, columnMap)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get tables from database %q", driver.databaseName)
 	}
-	viewMap, err := getViews(txn, driver.databaseName)
+	viewMap, err := getViews(txn, driver.databaseName, columnMap)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get views from database %q", driver.databaseName)
 	}
@@ -112,11 +116,7 @@ func getSchemas(txn *sql.Tx) ([]string, error) {
 }
 
 // getTables gets all tables of a database.
-func getTables(txn *sql.Tx, schemaName string) (map[string][]*storepb.TableMetadata, error) {
-	columnMap, err := getTableColumns(txn, schemaName)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to get table columns")
-	}
+func getTables(txn *sql.Tx, schemaName string, columnMap map[db.TableKey][]*storepb.ColumnMetadata) (map[string][]*storepb.TableMetadata, error) {
 	indexMap, err := getIndexes(txn, schemaName)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get indices")
@@ -310,7 +310,7 @@ func getIndexes(txn *sql.Tx, schemaName string) (map[db.TableKey][]*storepb.Inde
 }
 
 // getViews gets all views of a database.
-func getViews(txn *sql.Tx, schemaName string) (map[string][]*storepb.ViewMetadata, error) {
+func getViews(txn *sql.Tx, schemaName string, columnMap map[db.TableKey][]*storepb.ColumnMetadata) (map[string][]*storepb.ViewMetadata, error) {
 	viewMap := make(map[string][]*storepb.ViewMetadata)
 
 	query := ""
@@ -341,6 +341,9 @@ func getViews(txn *sql.Tx, schemaName string) (map[string][]*storepb.ViewMetadat
 		if err := rows.Scan(&schemaName, &view.Name, &view.Definition); err != nil {
 			return nil, err
 		}
+		key := db.TableKey{Schema: schemaName, Table: view.Name}
+		view.Columns = columnMap[key]
+
 		viewMap[schemaName] = append(viewMap[schemaName], view)
 	}
 	if err := rows.Err(); err != nil {
