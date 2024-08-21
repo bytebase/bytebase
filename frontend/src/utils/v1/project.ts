@@ -1,9 +1,4 @@
-import { usePermissionStore } from "@/store/modules/v1/permission";
-import {
-  DEFAULT_PROJECT_NAME,
-  PresetRoleType,
-  type ComposedProject,
-} from "@/types";
+import { DEFAULT_PROJECT_NAME } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import type { Project } from "@/types/proto/v1/project_service";
 
@@ -11,28 +6,6 @@ export const extractProjectResourceName = (name: string) => {
   const pattern = /(?:^|\/)projects\/([^/]+)(?:$|\/)/;
   const matches = name.match(pattern);
   return matches?.[1] ?? "";
-};
-
-export const isMemberOfProjectV1 = (project: ComposedProject) => {
-  return usePermissionStore().currentRoleListInProjectV1(project).length > 0;
-};
-
-export const isOwnerOfProjectV1 = (project: ComposedProject) => {
-  return usePermissionStore()
-    .currentRoleListInProjectV1(project)
-    .includes(PresetRoleType.PROJECT_OWNER);
-};
-
-export const isDeveloperOfProjectV1 = (project: ComposedProject) => {
-  return usePermissionStore()
-    .currentRoleListInProjectV1(project)
-    .includes(PresetRoleType.PROJECT_DEVELOPER);
-};
-
-export const isViewerOfProjectV1 = (project: ComposedProject) => {
-  return usePermissionStore()
-    .currentRoleListInProjectV1(project)
-    .includes(PresetRoleType.PROJECT_VIEWER);
 };
 
 export function projectV1Name(project: Project) {
