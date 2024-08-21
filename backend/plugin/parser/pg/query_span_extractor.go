@@ -143,6 +143,12 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*ba
 	if err != nil {
 		var resourceNotFound *parsererror.ResourceNotFoundError
 		if errors.As(err, &resourceNotFound) {
+			// Sadly, getAccessTables() returns nil for resources not found.
+			if len(accessTables) == 0 {
+				accessTables[base.ColumnResource{
+					Database: q.connectedDB,
+				}] = true
+			}
 			return &base.QuerySpan{
 				SourceColumns: accessTables,
 				Results:       []base.QuerySpanResult{},
@@ -1688,8 +1694,8 @@ func (q *querySpanExtractor) getRangeVarsFromJSONRecursive(jsonData map[string]a
 	if jsonData["RangeVar"] != nil {
 		resource := base.ColumnResource{
 			Server:   "",
-			Database: "",
-			Schema:   "",
+			Database: currentDatabase,
+			Schema:   currentSchema,
 			Table:    "",
 			Column:   "",
 		}
@@ -1722,13 +1728,6 @@ func (q *querySpanExtractor) getRangeVarsFromJSONRecursive(jsonData map[string]a
 
 		// Bytebase do not sync the system objects, so we skip finding for system objects in the metadata.
 		if !isSystemResource(resource) {
-			// Backfill the default database/schema name.
-			if resource.Database == "" {
-				resource.Database = currentDatabase
-			}
-			if resource.Schema == "" {
-				resource.Schema = currentSchema
-			}
 			databaseMetadata, err := q.getDatabaseMetadata(currentDatabase)
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to get database metadata for database: %s", currentDatabase)
