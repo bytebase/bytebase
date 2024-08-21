@@ -1,13 +1,12 @@
 <template>
   <div class="w-72 mx-auto space-y-4">
-    <div class="w-full">
+    <div v-if="allowEditProject" class="w-full">
       <label for="project" class="textlabel">
         {{ $t("common.project") }} <span style="color: red">*</span>
       </label>
       <ProjectSelect
         class="mt-1 !w-full"
         required
-        :disabled="!allowEditProject"
         :project-name="state.projectName"
         @update:project-name="selectProject"
       />
