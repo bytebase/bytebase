@@ -86,8 +86,18 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string)
 		extractor: q,
 	}
 	antlr.ParseTreeWalkerDefault.Walk(listener, tree)
-	if listener.err != nil {
-		return nil, errors.Wrapf(listener.err, "failed to extract sensitive fields from select statement")
+	err = listener.err
+	if err != nil {
+		var resourceNotFound *parsererror.ResourceNotFoundError
+		if errors.As(err, &resourceNotFound) {
+			return &base.QuerySpan{
+				SourceColumns: accessTables,
+				Results:       []base.QuerySpanResult{},
+				NotFoundError: resourceNotFound,
+			}, nil
+		}
+
+		return nil, err
 	}
 
 	return &base.QuerySpan{
