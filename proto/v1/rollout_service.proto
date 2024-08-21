@@ -96,6 +96,16 @@ service RolloutService {
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.auth_method) = CUSTOM;
   }
+
+  rpc PreviewTaskRunRollback(PreviewTaskRunRollbackRequest) returns (PreviewTaskRunRollbackResponse) {
+    option (google.api.http) = {
+      post: "/v1/{name=projects/*/rollouts/*/stages/*/tasks/*/taskRuns/*}:previewRollback"
+      body: "*"
+    };
+    option (google.api.method_signature) = "name";
+    option (bytebase.v1.permission) = "bb.taskRuns.list";
+    option (bytebase.v1.auth_method) = IAM;
+  }
 }
 
 message BatchRunTasksRequest {
@@ -581,4 +591,16 @@ message TaskRunSession {
       optional google.protobuf.Timestamp query_start = 14;
     }
   }
+}
+
+message PreviewTaskRunRollbackRequest {
+  // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/TaskRun"}
+  ];
+}
+
+message PreviewTaskRunRollbackResponse {
+  string statement = 1;
 }

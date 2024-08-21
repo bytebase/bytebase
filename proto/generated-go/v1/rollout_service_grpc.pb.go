@@ -19,15 +19,16 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	RolloutService_GetRollout_FullMethodName          = "/bytebase.v1.RolloutService/GetRollout"
-	RolloutService_CreateRollout_FullMethodName       = "/bytebase.v1.RolloutService/CreateRollout"
-	RolloutService_PreviewRollout_FullMethodName      = "/bytebase.v1.RolloutService/PreviewRollout"
-	RolloutService_ListTaskRuns_FullMethodName        = "/bytebase.v1.RolloutService/ListTaskRuns"
-	RolloutService_GetTaskRunLog_FullMethodName       = "/bytebase.v1.RolloutService/GetTaskRunLog"
-	RolloutService_GetTaskRunSession_FullMethodName   = "/bytebase.v1.RolloutService/GetTaskRunSession"
-	RolloutService_BatchRunTasks_FullMethodName       = "/bytebase.v1.RolloutService/BatchRunTasks"
-	RolloutService_BatchSkipTasks_FullMethodName      = "/bytebase.v1.RolloutService/BatchSkipTasks"
-	RolloutService_BatchCancelTaskRuns_FullMethodName = "/bytebase.v1.RolloutService/BatchCancelTaskRuns"
+	RolloutService_GetRollout_FullMethodName             = "/bytebase.v1.RolloutService/GetRollout"
+	RolloutService_CreateRollout_FullMethodName          = "/bytebase.v1.RolloutService/CreateRollout"
+	RolloutService_PreviewRollout_FullMethodName         = "/bytebase.v1.RolloutService/PreviewRollout"
+	RolloutService_ListTaskRuns_FullMethodName           = "/bytebase.v1.RolloutService/ListTaskRuns"
+	RolloutService_GetTaskRunLog_FullMethodName          = "/bytebase.v1.RolloutService/GetTaskRunLog"
+	RolloutService_GetTaskRunSession_FullMethodName      = "/bytebase.v1.RolloutService/GetTaskRunSession"
+	RolloutService_BatchRunTasks_FullMethodName          = "/bytebase.v1.RolloutService/BatchRunTasks"
+	RolloutService_BatchSkipTasks_FullMethodName         = "/bytebase.v1.RolloutService/BatchSkipTasks"
+	RolloutService_BatchCancelTaskRuns_FullMethodName    = "/bytebase.v1.RolloutService/BatchCancelTaskRuns"
+	RolloutService_PreviewTaskRunRollback_FullMethodName = "/bytebase.v1.RolloutService/PreviewTaskRunRollback"
 )
 
 // RolloutServiceClient is the client API for RolloutService service.
@@ -51,6 +52,7 @@ type RolloutServiceClient interface {
 	// BatchSkipTasks cancels the specified task runs in batch.
 	// The access is the same as BatchRunTasks().
 	BatchCancelTaskRuns(ctx context.Context, in *BatchCancelTaskRunsRequest, opts ...grpc.CallOption) (*BatchCancelTaskRunsResponse, error)
+	PreviewTaskRunRollback(ctx context.Context, in *PreviewTaskRunRollbackRequest, opts ...grpc.CallOption) (*PreviewTaskRunRollbackResponse, error)
 }
 
 type rolloutServiceClient struct {
@@ -151,6 +153,16 @@ func (c *rolloutServiceClient) BatchCancelTaskRuns(ctx context.Context, in *Batc
 	return out, nil
 }
 
+func (c *rolloutServiceClient) PreviewTaskRunRollback(ctx context.Context, in *PreviewTaskRunRollbackRequest, opts ...grpc.CallOption) (*PreviewTaskRunRollbackResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(PreviewTaskRunRollbackResponse)
+	err := c.cc.Invoke(ctx, RolloutService_PreviewTaskRunRollback_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // RolloutServiceServer is the server API for RolloutService service.
 // All implementations must embed UnimplementedRolloutServiceServer
 // for forward compatibility.
@@ -172,6 +184,7 @@ type RolloutServiceServer interface {
 	// BatchSkipTasks cancels the specified task runs in batch.
 	// The access is the same as BatchRunTasks().
 	BatchCancelTaskRuns(context.Context, *BatchCancelTaskRunsRequest) (*BatchCancelTaskRunsResponse, error)
+	PreviewTaskRunRollback(context.Context, *PreviewTaskRunRollbackRequest) (*PreviewTaskRunRollbackResponse, error)
 	mustEmbedUnimplementedRolloutServiceServer()
 }
 
@@ -208,6 +221,9 @@ func (UnimplementedRolloutServiceServer) BatchSkipTasks(context.Context, *BatchS
 }
 func (UnimplementedRolloutServiceServer) BatchCancelTaskRuns(context.Context, *BatchCancelTaskRunsRequest) (*BatchCancelTaskRunsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method BatchCancelTaskRuns not implemented")
+}
+func (UnimplementedRolloutServiceServer) PreviewTaskRunRollback(context.Context, *PreviewTaskRunRollbackRequest) (*PreviewTaskRunRollbackResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method PreviewTaskRunRollback not implemented")
 }
 func (UnimplementedRolloutServiceServer) mustEmbedUnimplementedRolloutServiceServer() {}
 func (UnimplementedRolloutServiceServer) testEmbeddedByValue()                        {}
@@ -392,6 +408,24 @@ func _RolloutService_BatchCancelTaskRuns_Handler(srv interface{}, ctx context.Co
 	return interceptor(ctx, in, info, handler)
 }
 
+func _RolloutService_PreviewTaskRunRollback_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PreviewTaskRunRollbackRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RolloutServiceServer).PreviewTaskRunRollback(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RolloutService_PreviewTaskRunRollback_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RolloutServiceServer).PreviewTaskRunRollback(ctx, req.(*PreviewTaskRunRollbackRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // RolloutService_ServiceDesc is the grpc.ServiceDesc for RolloutService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -434,6 +468,10 @@ var RolloutService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "BatchCancelTaskRuns",
 			Handler:    _RolloutService_BatchCancelTaskRuns_Handler,
+		},
+		{
+			MethodName: "PreviewTaskRunRollback",
+			Handler:    _RolloutService_PreviewTaskRunRollback_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
