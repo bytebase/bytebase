@@ -5,6 +5,8 @@ import (
 	"os"
 	"testing"
 
+	"github.com/antlr4-go/antlr/v4"
+	tidbparser "github.com/bytebase/tidb-parser"
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -57,5 +59,37 @@ func TestParseToMetadata(t *testing.T) {
 		a.NoError(err)
 		err = os.WriteFile(filepath, byteValue, 0644)
 		a.NoError(err)
+	}
+}
+
+func TestScanTiDBExecutableComment(t *testing.T) {
+	testCases := []struct {
+		statement string
+		begin     *int
+		end       *int
+		want      []string
+	}{
+		{
+			statement: `CREATE TABLE t(id BIGINT NOT NULL /*T![auto_rand] AUTO_RANDOM(10) */ PRIMARY KEY);`,
+			want: []string{
+				`[auto_rand] AUTO_RANDOM(10) `,
+			},
+		},
+	}
+	for _, tc := range testCases {
+		input := antlr.NewInputStream(tc.statement)
+		lexer := tidbparser.NewTiDBLexer(input)
+		stream := antlr.NewCommonTokenStream(lexer, 0)
+		stream.Fill()
+		begin := 0
+		if tc.begin != nil {
+			begin = *tc.begin
+		}
+		end := stream.Size()
+		if tc.end != nil {
+			end = *tc.end
+		}
+		got := scanTiDBExecutableComment(stream, begin, end)
+		require.Equal(t, tc.want, got)
 	}
 }
