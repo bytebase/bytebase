@@ -175,10 +175,10 @@ const groupedStageList = computed(() => {
       databaseList,
       props.deployment.schedule
     );
-    const affectedIds = stages.flatMap((dbs) => dbs.map((db) => db.uid));
-    const dict = new Set(affectedIds);
+    const affectedNames = stages.flatMap((dbs) => dbs.map((db) => db.name));
+    const dict = new Set(affectedNames);
     const rest = props.showRest
-      ? databaseList.filter((db) => !dict.has(db.uid))
+      ? databaseList.filter((db) => !dict.has(db.name))
       : [];
 
     return {

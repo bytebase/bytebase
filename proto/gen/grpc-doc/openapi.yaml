@@ -9111,10 +9111,6 @@ components:
                         The name of the database.
                          Format: instances/{instance}/databases/{database}
                          {database} is the database name in the instance.
-                uid:
-                    readOnly: true
-                    type: string
-                    description: The system-assigned, unique identifier for a resource.
                 syncState:
                     readOnly: true
                     enum:

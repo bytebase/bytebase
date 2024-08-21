@@ -17,7 +17,7 @@ import type {
   BBNotificationStyle,
   SQLEditorQueryParams,
 } from "@/types";
-import { UNKNOWN_ID } from "@/types";
+import { isValidDatabaseName } from "@/types";
 import {
   Advice_Status,
   advice_StatusToJSON,
@@ -106,10 +106,9 @@ const useExecuteSQL = () => {
     const selectedDatabase = useDatabaseV1Store().getDatabaseByName(
       params.connection.database
     );
-    const databaseName =
-      selectedDatabase.uid === String(UNKNOWN_ID)
-        ? ""
-        : selectedDatabase.databaseName;
+    const databaseName = isValidDatabaseName(selectedDatabase.name)
+      ? selectedDatabase.databaseName
+      : "";
     const batchQueryDatabases: ComposedDatabase[] = [selectedDatabase];
 
     // Check if the user selects multiple databases to query.
@@ -168,10 +167,9 @@ const useExecuteSQL = () => {
       try {
         let resultSet: SQLResultSetV1;
         if (mode === "READONLY") {
-          const isUnknownDatabase = database.uid === String(UNKNOWN_ID);
-          const instance = isUnknownDatabase
-            ? params.connection.instance
-            : database.instance;
+          const instance = isValidDatabaseName(database.name)
+            ? database.instance
+            : params.connection.instance;
           const dataSourceId =
             instance === params.connection.instance
               ? (params.connection.dataSourceId ?? "")

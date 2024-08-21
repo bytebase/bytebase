@@ -78,7 +78,7 @@ import {
   useProjectV1Store,
 } from "@/store";
 import type { ComposedDatabase, DatabaseResource } from "@/types";
-import { UNKNOWN_ID, PresetRoleType } from "@/types";
+import { PresetRoleType, isValidDatabaseName } from "@/types";
 import { Duration } from "@/types/proto/google/protobuf/duration";
 import { Expr } from "@/types/proto/google/type/expr";
 import {
@@ -120,7 +120,7 @@ const extractDatabaseResourcesFromProps = (): Pick<
   "databaseResources"
 > => {
   const { database } = props;
-  if (!database || database.uid === String(UNKNOWN_ID)) {
+  if (!database || !isValidDatabaseName(database.name)) {
     return {
       databaseResources: [],
     };

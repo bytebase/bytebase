@@ -118,7 +118,6 @@ import QuerierDatabaseResourceForm from "@/components/Issue/panel/RequestQueryPa
 import MembersBindingSelect from "@/components/Member/MembersBindingSelect.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
 import {
-  useDatabaseV1Store,
   useProjectIamPolicy,
   useProjectIamPolicyStore,
   pushNotification,
@@ -150,11 +149,9 @@ interface LocalState {
   databaseResources?: DatabaseResource[];
   // Exporter options.
   maxRowCount: number;
-  databaseId?: string;
 }
 
 const { t } = useI18n();
-const databaseStore = useDatabaseV1Store();
 
 const state = reactive<LocalState>({
   title: "",
@@ -201,17 +198,6 @@ onMounted(() => {
     }
     if (conditionExpr.databaseResources) {
       state.databaseResources = conditionExpr.databaseResources;
-      if (binding.role === PresetRoleType.PROJECT_EXPORTER) {
-        if (conditionExpr.databaseResources.length > 0) {
-          const selectedDatabaseResource = conditionExpr.databaseResources[0];
-          const database = databaseStore.getDatabaseByName(
-            selectedDatabaseResource.databaseName
-          );
-          if (database) {
-            state.databaseId = database.uid;
-          }
-        }
-      }
     }
     if (conditionExpr.rowLimit) {
       state.maxRowCount = conditionExpr.rowLimit;

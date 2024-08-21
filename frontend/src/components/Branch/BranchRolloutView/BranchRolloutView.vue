@@ -422,7 +422,7 @@ watch(
     const db = useDatabaseV1Store().getDatabaseByName(
       props.branch.baselineDatabase
     );
-    handleSelectDatabase(db.uid);
+    handleSelectDatabase(db.name);
   },
   { immediate: true }
 );

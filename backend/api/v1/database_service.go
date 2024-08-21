@@ -1680,7 +1680,6 @@ func (s *DatabaseService) convertToDatabase(ctx context.Context, database *store
 	}
 	return &v1pb.Database{
 		Name:                 common.FormatDatabase(database.InstanceID, database.DatabaseName),
-		Uid:                  fmt.Sprintf("%d", database.UID),
 		SyncState:            syncState,
 		SuccessfulSyncTime:   timestamppb.New(time.Unix(database.SuccessfulSyncTimeTs, 0)),
 		Project:              fmt.Sprintf("%s%s", common.ProjectNamePrefix, database.ProjectID),

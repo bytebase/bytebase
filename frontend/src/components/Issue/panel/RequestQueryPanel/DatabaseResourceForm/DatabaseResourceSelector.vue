@@ -43,7 +43,6 @@ import {
 
 const props = defineProps<{
   projectName: string;
-  databaseId?: string;
   databaseResources: DatabaseResource[];
 }>();
 
@@ -108,9 +107,7 @@ const databaseList = computed(() => {
     ],
     ["desc", "asc", "asc", "asc"]
   );
-  return props.databaseId
-    ? list.filter((item) => item.uid === props.databaseId)
-    : list;
+  return list;
 });
 
 const sourceTreeOptions = computed(() => {

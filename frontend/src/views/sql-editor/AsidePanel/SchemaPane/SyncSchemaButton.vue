@@ -39,7 +39,7 @@ import {
   useDBSchemaV1Store,
   useDatabaseV1Store,
 } from "@/store";
-import { UNKNOWN_ID } from "@/types";
+import { isValidDatabaseName } from "@/types";
 
 defineOptions({
   inheritAttrs: false,
@@ -48,7 +48,7 @@ defineOptions({
 const { database } = useConnectionOfCurrentSQLEditorTab();
 
 const disabled = computed(() => {
-  return database.value.uid === String(UNKNOWN_ID);
+  return !isValidDatabaseName(database.value.name);
 });
 
 const isSyncing = ref(false);
