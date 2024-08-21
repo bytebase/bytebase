@@ -35,6 +35,7 @@ import {
   getHistoryChangeType,
   humanizeDurationV1,
   getAffectedTableDisplayName,
+  extractChangeHistoryUID,
 } from "@/utils";
 import HumanizeDate from "../misc/HumanizeDate.vue";
 import ChangeHistoryStatusIcon from "./ChangeHistoryStatusIcon.vue";
@@ -210,7 +211,7 @@ const rowProps = (history: ChangeHistory) => {
   return {
     onClick: (e: MouseEvent) => {
       if (props.customClick) {
-        emit("row-click", history.uid);
+        emit("row-click", extractChangeHistoryUID(history.name));
         return;
       }
 

@@ -314,6 +314,7 @@ import {
   getStatementSize,
   hasProjectPermissionV2,
   getAffectedTableDisplayName,
+  extractChangeHistoryUID,
 } from "@/utils";
 import NoPermissionPlaceholder from "../misc/NoPermissionPlaceholder.vue";
 
@@ -414,7 +415,7 @@ const prevChangeHistoryList = computed(() => {
   // The returned change history list has been ordered by `id` DESC or (`namespace` ASC, `sequence` DESC) .
   // We can obtain prevChangeHistoryList by cutting up the array by the `changeHistoryId`.
   const idx = changeHistoryList.findIndex(
-    (history) => history.uid === props.changeHistoryId
+    (history) => extractChangeHistoryUID(history.name) === props.changeHistoryId
   );
   if (idx === -1) {
     return [];

@@ -2493,7 +2493,6 @@ AdviseIndexResponse is the response of advising index.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory} |
-| uid | [string](#string) |  |  |
 | creator | [string](#string) |  | Format: users/hello@world.com |
 | updater | [string](#string) |  | Format: users/hello@world.com |
 | create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
