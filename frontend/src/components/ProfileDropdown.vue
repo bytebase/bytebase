@@ -35,6 +35,7 @@ import { PlanType } from "@/types/proto/v1/subscription_service";
 import { hasWorkspacePermissionV2, isDev } from "@/utils";
 import ProfilePreview from "./ProfilePreview.vue";
 import UserAvatar from "./User/UserAvatar.vue";
+import Version from "./misc/Version.vue";
 
 const { t } = useI18n();
 
@@ -305,6 +306,13 @@ const options = computed((): DropdownOption[] => [
   {
     key: "header-divider",
     type: "divider",
+  },
+  {
+    key: "version",
+    type: "render",
+    render() {
+      return h(Version, { tooltipProps: { placement: "left" } });
+    },
   },
   {
     key: "debug",

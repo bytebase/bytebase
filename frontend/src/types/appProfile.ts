@@ -8,6 +8,7 @@ export type AppFeatures = {
   "bb.feature.hide-banner": boolean;
   "bb.feature.hide-help": boolean;
   "bb.feature.hide-quick-start": boolean;
+  "bb.feature.hide-trial": boolean;
   "bb.feature.hide-release-remind": boolean;
   "bb.feature.members.hide-groups": boolean;
   "bb.feature.members.hide-project-roles": boolean;
@@ -62,6 +63,7 @@ export const defaultAppProfile = (): AppProfile => ({
     "bb.feature.hide-help": false,
     "bb.feature.hide-quick-start": false,
     "bb.feature.hide-release-remind": false,
+    "bb.feature.hide-trial": false,
     "bb.feature.members.hide-groups": false,
     "bb.feature.members.hide-project-roles": false,
     "bb.feature.members.hide-service-account": false,

@@ -5,11 +5,28 @@
     :get-item-class="getItemClass"
     :logo-redirect="WORKSPACE_ROUTE_MY_ISSUES"
     @select="onSelect"
-  />
+  >
+    <template #prefix>
+      <div class="px-2.5 mb-2">
+        <router-link
+          class="group flex items-center gap-2 px-2 py-1.5 leading-normal font-medium rounded-md text-main outline-item !text-base"
+          :to="{ name: WORKSPACE_ROUTE_MY_ISSUES }"
+        >
+          <ChevronLeftIcon class="w-5 h-5" />
+          <span>{{ $t("common.setting") }}</span>
+        </router-link>
+      </div>
+    </template>
+  </CommonSidebar>
 </template>
 
 <script lang="ts" setup>
-import { UserCircle, Building, Archive } from "lucide-vue-next";
+import {
+  UserCircle,
+  Building,
+  Archive,
+  ChevronLeftIcon,
+} from "lucide-vue-next";
 import { computed, h } from "vue";
 import { useI18n } from "vue-i18n";
 import type { RouteRecordRaw } from "vue-router";
