@@ -155,15 +155,22 @@ const memberListInBinding = computed(() => {
 
 const updateRoleBinding = async () => {
   const batchPatch = [];
-  for (const member of memberListInBinding.value) {
-    const existedRoles = workspaceStore.findRolesByMember({
-      member,
-      ignoreGroup: true,
-    });
+  if (props.member) {
     batchPatch.push({
-      member,
-      roles: [...new Set([...state.roles, ...existedRoles])],
+      member: props.member.binding,
+      roles: [...state.roles],
     });
+  } else {
+    for (const member of memberListInBinding.value) {
+      const existedRoles = workspaceStore.findRolesByMember({
+        member,
+        ignoreGroup: true,
+      });
+      batchPatch.push({
+        member,
+        roles: [...new Set([...state.roles, ...existedRoles])],
+      });
+    }
   }
   await workspaceStore.patchIamPolicy(batchPatch);
   pushNotification({
