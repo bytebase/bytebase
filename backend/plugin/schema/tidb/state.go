@@ -12,7 +12,6 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/antlr4-go/antlr/v4"
-	mysql "github.com/bytebase/tidb-parser"
 	tidbparser "github.com/bytebase/tidb-parser"
 	"github.com/pkg/errors"
 
@@ -219,6 +218,12 @@ func (t *tableState) toString(buf *strings.Builder) error {
 
 	if t.comment != "" {
 		if _, err := buf.WriteString(fmt.Sprintf(" COMMENT '%s'", t.comment)); err != nil {
+			return err
+		}
+	}
+
+	if t.partition != nil {
+		if err := t.partition.toString(buf, nil); err != nil {
 			return err
 		}
 	}
@@ -790,7 +795,7 @@ func (p *partitionState) toString(buf io.StringWriter, partitionClauseCtx tidbpa
 			// }
 			if partitionClauseCtx != nil && partitionClauseCtx.PartitionTypeDef() != nil {
 				v := partitionClauseCtx.PartitionTypeDef()
-				partitionDefKeyCtx, ok := v.(*mysql.PartitionDefKeyContext)
+				partitionDefKeyCtx, ok := v.(*tidbparser.PartitionDefKeyContext)
 				if ok && partitionDefKeyCtx.PartitionKeyAlgorithm() != nil {
 					numText := partitionDefKeyCtx.PartitionKeyAlgorithm().Real_ulong_number().GetText()
 					num, err := strconv.Atoi(numText)
@@ -1177,18 +1182,23 @@ func (c *columnState) toString(buf *strings.Builder) error {
 		}
 	}
 	if c.defaultValue != nil {
-		// todo(zp): refactor column attribute.
-		if strings.EqualFold(c.defaultValue.toString(), autoIncrementSymbol) {
-			if _, err := buf.WriteString(fmt.Sprintf(" %s", autoIncrementSymbol)); err != nil {
-				return err
-			}
-		} else if strings.Contains(strings.ToUpper(c.defaultValue.toString()), autoRandSymbol) {
-			if _, err := buf.WriteString(fmt.Sprintf(" /*T![auto_rand] %s */", c.defaultValue.toString())); err != nil {
-				return err
-			}
-		} else {
-			if _, err := buf.WriteString(fmt.Sprintf(" DEFAULT %s", c.defaultValue.toString())); err != nil {
-				return err
+		_, isDefaultNull := c.defaultValue.(*defaultValueNull)
+		dontWriteDefaultNull := isDefaultNull && c.nullable && expressionDefaultOnlyTypes[strings.ToUpper(c.tp)]
+		// Some types do not default to NULL, but support default expressions.
+		if !dontWriteDefaultNull {
+			// todo(zp): refactor column attribute.
+			if strings.EqualFold(c.defaultValue.toString(), autoIncrementSymbol) {
+				if _, err := buf.WriteString(" " + autoIncrementSymbol); err != nil {
+					return err
+				}
+			} else if strings.Contains(strings.ToUpper(c.defaultValue.toString()), autoRandSymbol) {
+				if _, err := buf.WriteString(fmt.Sprintf(" /*T![auto_rand] %s */", c.defaultValue.toString())); err != nil {
+					return err
+				}
+			} else {
+				if _, err := buf.WriteString(fmt.Sprintf(" DEFAULT %s", c.defaultValue.toString())); err != nil {
+					return err
+				}
 			}
 		}
 	}
