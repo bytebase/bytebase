@@ -217,6 +217,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 			return nil, err
 		}
 		key := db.TableKey{Schema: "", Table: view.Name}
+		view.Columns = columnMap[key]
 		viewMap[key] = view
 	}
 	if err := viewRows.Err(); err != nil {
