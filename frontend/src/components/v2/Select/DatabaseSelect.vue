@@ -25,7 +25,7 @@ import { useDatabaseV1Store } from "@/store";
 import { useDatabaseV1List } from "@/store/modules/v1/databaseList";
 import type { ComposedDatabase } from "@/types";
 import {
-  UNKNOWN_ID,
+  isValidDatabaseName,
   isValidEnvironmentName,
   isValidInstanceName,
   isValidProjectName,
@@ -171,7 +171,7 @@ const renderLabel: SelectRenderLabel = (option) => {
   }
 
   const children = [h("div", {}, [database.databaseName])];
-  if (database.uid !== String(UNKNOWN_ID)) {
+  if (isValidDatabaseName(database.name)) {
     // prefix engine icon
     children.unshift(
       h(InstanceV1EngineIcon, {

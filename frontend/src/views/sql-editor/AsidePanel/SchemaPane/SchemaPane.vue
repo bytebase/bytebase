@@ -83,7 +83,7 @@ import {
   useDBSchemaV1Store,
   useSQLEditorTabStore,
 } from "@/store";
-import { UNKNOWN_ID } from "@/types";
+import { isValidDatabaseName } from "@/types";
 import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
 import { extractDatabaseResourceName, isDescendantOf } from "@/utils";
 import { useSQLEditorContext } from "../../context";
@@ -123,7 +123,7 @@ const isFetchingMetadata = ref(false);
 const metadata = computedAsync(
   async () => {
     const db = database.value;
-    if (db.uid === String(UNKNOWN_ID)) return null;
+    if (!isValidDatabaseName(db.name)) return null;
     const metadata = await useDBSchemaV1Store().getOrFetchDatabaseMetadata({
       database: db.name,
       view: DatabaseMetadataView.DATABASE_METADATA_VIEW_FULL,
@@ -234,7 +234,7 @@ const renderLabel = ({ option }: { option: TreeOption }) => {
 
 const selectedKeys = computed(() => {
   const db = database.value;
-  if (db.uid === String(UNKNOWN_ID)) return [];
+  if (!isValidDatabaseName(db.name)) return [];
   const { schema, table } = connection.value;
   if (!table) return [];
   return [`${db.name}/schemas/${schema}/tables/${table}`];

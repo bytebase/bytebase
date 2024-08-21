@@ -4,7 +4,11 @@ import type { Ref } from "vue";
 import { computed, watch } from "vue";
 import { useDBSchemaV1Store, useDatabaseV1Store } from "@/store";
 import type { SQLDialect } from "@/types";
-import { UNKNOWN_ID, dialectOfEngineV1, unknownDatabase } from "@/types";
+import {
+  dialectOfEngineV1,
+  isValidDatabaseName,
+  unknownDatabase,
+} from "@/types";
 import {
   DatabaseMetadata,
   DatabaseMetadataView,
@@ -33,20 +37,20 @@ export const useLegacyAutoComplete = async (
     return useDatabaseV1Store().getDatabaseByName(context.value.database);
   });
   const dialect = computed((): SQLDialect => {
-    if (database.value.uid === String(UNKNOWN_ID)) {
+    if (!isValidDatabaseName(database.value.name)) {
       return "MYSQL";
     }
     return dialectOfEngineV1(database.value.instanceResource.engine);
   });
   const connectionScope = computed((): ConnectionScope => {
-    if (database.value.uid !== String(UNKNOWN_ID)) {
+    if (isValidDatabaseName(database.value.name)) {
       return "database";
     }
     return "instance";
   });
   const metadata = computedAsync(
     () => {
-      if (database.value.uid === String(UNKNOWN_ID)) {
+      if (!isValidDatabaseName(database.value.name)) {
         return DatabaseMetadata.fromPartial({
           name: `${database.value.name}/metadata`,
         });

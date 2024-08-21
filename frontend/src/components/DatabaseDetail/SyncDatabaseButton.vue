@@ -21,7 +21,7 @@ import {
   useDatabaseV1Store,
   useDBSchemaV1Store,
 } from "@/store";
-import { UNKNOWN_ID } from "@/types";
+import { isValidDatabaseName } from "@/types";
 import type { ComposedDatabase } from "@/types";
 import { hasProjectPermissionV2 } from "@/utils";
 
@@ -41,7 +41,7 @@ const databaseV1Store = useDatabaseV1Store();
 const dbSchemaStore = useDBSchemaV1Store();
 
 const available = computed(() => {
-  if (props.database.uid === String(UNKNOWN_ID)) {
+  if (!isValidDatabaseName(props.database.name)) {
     return false;
   }
 

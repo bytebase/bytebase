@@ -80,7 +80,7 @@ import {
   InstanceV1Name,
 } from "@/components/v2";
 import { useDatabaseV1Store, useEnvironmentV1Store } from "@/store";
-import { UNKNOWN_ID, unknownEnvironment } from "@/types";
+import { isValidDatabaseName, unknownEnvironment } from "@/types";
 import { Task_Status, Task_Type } from "@/types/proto/v1/rollout_service";
 import { extractInstanceResourceName } from "@/utils";
 
@@ -115,14 +115,14 @@ const databaseCreationStatus = computed((): DatabaseCreationStatus => {
 
 const database = computedAsync(async () => {
   const maybeExistedDatabase = coreDatabaseInfo.value;
-  if (maybeExistedDatabase.uid !== String(UNKNOWN_ID)) {
+  if (isValidDatabaseName(maybeExistedDatabase.name)) {
     return maybeExistedDatabase;
   }
   if (databaseCreationStatus.value === "CREATED") {
     const name = coreDatabaseInfo.value.name;
     const maybeCreatedDatabase =
       await useDatabaseV1Store().getOrFetchDatabaseByName(name);
-    if (maybeCreatedDatabase.uid !== String(UNKNOWN_ID)) {
+    if (isValidDatabaseName(maybeCreatedDatabase.name)) {
       return maybeCreatedDatabase;
     }
   }

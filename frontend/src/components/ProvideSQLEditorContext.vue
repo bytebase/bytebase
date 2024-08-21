@@ -52,8 +52,8 @@ import type { SQLEditorConnection } from "@/types";
 import {
   DEFAULT_PROJECT_NAME,
   DEFAULT_SQL_EDITOR_TAB_MODE,
-  UNKNOWN_ID,
   UNKNOWN_USER_NAME,
+  isValidDatabaseName,
   isValidInstanceName,
 } from "@/types";
 import { PolicyResourceType } from "@/types/proto/v1/org_policy_service";
@@ -349,7 +349,7 @@ const prepareConnectionParams = async () => {
   const database = await useDatabaseV1Store().getOrFetchDatabaseByName(
     `instances/${instanceName}/databases/${databaseName}`
   );
-  if (database.uid !== String(UNKNOWN_ID)) {
+  if (isValidDatabaseName(database.name)) {
     if (!isDatabaseV1Queryable(database)) {
       router.push({
         name: "error.403",
@@ -392,7 +392,7 @@ const initializeConnectionFromQuery = async () => {
       filter.database,
       /* silent */ true
     );
-    if (database.uid !== String(UNKNOWN_ID)) {
+    if (isValidDatabaseName(database.name)) {
       await maybeSwitchProject(database.project);
       connect({
         instance: database.instance,
@@ -464,7 +464,7 @@ const syncURLWithConnection = () => {
       }
       if (databaseName) {
         const database = databaseStore.getDatabaseByName(databaseName);
-        if (database.uid !== String(UNKNOWN_ID)) {
+        if (isValidDatabaseName(database.name)) {
           if (table) {
             query.table = table;
             query.schema = schema ?? "";

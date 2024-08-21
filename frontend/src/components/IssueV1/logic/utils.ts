@@ -9,7 +9,11 @@ import {
   useInstanceResourceByName,
 } from "@/store";
 import type { ComposedDatabase, ComposedIssue, ComposedProject } from "@/types";
-import { unknownDatabase, UNKNOWN_ID, unknownEnvironment } from "@/types";
+import {
+  unknownDatabase,
+  unknownEnvironment,
+  isValidDatabaseName,
+} from "@/types";
 import { State } from "@/types/proto/v1/common";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
 import type { Plan } from "@/types/proto/v1/plan_service";
@@ -40,7 +44,7 @@ export const databaseForTask = (issue: ComposedIssue, task: Task) => {
       task.type === Task_Type.DATABASE_SCHEMA_BASELINE
     ) {
       const db = useDatabaseV1Store().getDatabaseByName(task.target);
-      if (db.uid === String(UNKNOWN_ID)) {
+      if (!isValidDatabaseName(db.name)) {
         // Database not found, it's probably NOT_FOUND (maybe dropped actually)
         // Mock a database using all known resources
         db.project = issue.project;
@@ -75,7 +79,7 @@ const extractCoreDatabaseInfoFromDatabaseCreateTask = (
   ): ComposedDatabase => {
     const name = `${instanceName}/databases/${databaseName}`;
     const maybeExistedDatabase = useDatabaseV1Store().getDatabaseByName(name);
-    if (maybeExistedDatabase.uid !== String(UNKNOWN_ID)) {
+    if (isValidDatabaseName(maybeExistedDatabase.name)) {
       return maybeExistedDatabase;
     }
 
@@ -84,7 +88,6 @@ const extractCoreDatabaseInfoFromDatabaseCreateTask = (
     return {
       ...unknownDatabase(),
       name,
-      uid: String(UNKNOWN_ID),
       databaseName,
       instance: instanceName,
       project: project.name,

@@ -21,7 +21,7 @@ import { NSelect } from "naive-ui";
 import { computed, h } from "vue";
 import { useDatabaseV1Store, useBranchListByProject } from "@/store";
 import type { ComposedProject } from "@/types";
-import { UNKNOWN_ID } from "@/types";
+import { isValidDatabaseName } from "@/types";
 import type { Branch } from "@/types/proto/v1/branch_service";
 import { InstanceV1EngineIcon } from "../v2";
 
@@ -83,7 +83,7 @@ const renderLabel: SelectRenderLabel = (option) => {
 
   const children = [h("div", {}, [branch.branchId])];
   const database = databaseStore.getDatabaseByName(branch.baselineDatabase);
-  if (database.uid !== String(UNKNOWN_ID)) {
+  if (isValidDatabaseName(database.name)) {
     // prefix engine icon
     children.unshift(
       h(InstanceV1EngineIcon, {
