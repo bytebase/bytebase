@@ -21,6 +21,7 @@ func init() {
 
 const (
 	maxTableNameLength = 64
+	maxMixedDMLCount   = 5
 )
 
 func TransformDMLToSelect(ctx context.Context, tCtx base.TransformContext, statement string, sourceDatabase string, targetDatabase string, tablePrefix string) ([]base.BackupStatement, error) {
@@ -49,10 +50,12 @@ type TableReference struct {
 }
 
 type statementInfo struct {
-	offset    int
-	statement string
-	tree      antlr.ParserRuleContext
-	table     *TableReference
+	offset        int
+	statement     string
+	tree          antlr.ParserRuleContext
+	table         *TableReference
+	startPosition *store.Position
+	endPosition   *store.Position
 }
 
 func prepareTransformation(databaseName, statement string) ([]statementInfo, error) {
@@ -63,11 +66,11 @@ func prepareTransformation(databaseName, statement string) ([]statementInfo, err
 
 	var result []statementInfo
 
-	for i, sql := range list {
-		if len(sql.Text) == 0 || sql.Empty {
+	for i, item := range list {
+		if len(item.Text) == 0 || item.Empty {
 			continue
 		}
-		parseResult, err := ParseMySQL(sql.Text)
+		parseResult, err := ParseMySQL(item.Text)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to parse sql")
 		}
@@ -80,7 +83,22 @@ func prepareTransformation(databaseName, statement string) ([]statementInfo, err
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to extract tables")
 			}
-			result = append(result, tables...)
+			for _, table := range tables {
+				result = append(result, statementInfo{
+					offset:    i,
+					statement: table.statement,
+					table:     table.table,
+					tree:      table.tree,
+					startPosition: &store.Position{
+						Line:   int32(item.FirstStatementLine) + 1,
+						Column: int32(item.FirstStatementColumn),
+					},
+					endPosition: &store.Position{
+						Line:   int32(item.LastLine) + 1,
+						Column: int32(item.LastColumn),
+					},
+				})
+			}
 		}
 	}
 
@@ -88,6 +106,117 @@ func prepareTransformation(databaseName, statement string) ([]statementInfo, err
 }
 
 func generateSQL(ctx context.Context, tCtx base.TransformContext, statementInfoList []statementInfo, databaseName string, tablePrefix string) ([]base.BackupStatement, error) {
+	if len(statementInfoList) <= maxMixedDMLCount {
+		return generateSQLForMixedDML(ctx, tCtx, statementInfoList, databaseName, tablePrefix)
+	}
+	return generateSQLForSingleTable(ctx, tCtx, statementInfoList, databaseName, tablePrefix)
+}
+
+func generateSQLForSingleTable(ctx context.Context, tCtx base.TransformContext, statementInfoList []statementInfo, databaseName string, tablePrefix string) ([]base.BackupStatement, error) {
+	table := statementInfoList[0].table
+
+	for _, item := range statementInfoList {
+		if !equalTable(table, item.table) {
+			return nil, errors.Errorf("prior backup cannot handle statements on different tables more than %d", maxMixedDMLCount)
+		}
+	}
+	generatedColumns, normalColumns, err := classifyColumns(ctx, tCtx.GetDatabaseMetadataFunc, tCtx.InstanceID, table)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to classify columns")
+	}
+
+	targetTable := fmt.Sprintf("%s_%s", tablePrefix, table.Table)
+	targetTable, _ = common.TruncateString(targetTable, maxTableNameLength)
+	var buf strings.Builder
+	if _, err := buf.WriteString(fmt.Sprintf("CREATE TABLE `%s`.`%s` LIKE `%s`.`%s`;\n", databaseName, targetTable, table.Database, table.Table)); err != nil {
+		return nil, errors.Wrap(err, "failed to write create table statement")
+	}
+
+	if _, err := buf.WriteString(fmt.Sprintf("INSERT INTO `%s`.`%s`", databaseName, targetTable)); err != nil {
+		return nil, errors.Wrap(err, "failed to write insert into statement")
+	}
+	if len(generatedColumns) > 0 {
+		if _, err := buf.WriteString(" ("); err != nil {
+			return nil, errors.Wrap(err, "failed to write insert into statement")
+		}
+		for i, column := range normalColumns {
+			if i > 0 {
+				if err := buf.WriteByte(','); err != nil {
+					return nil, errors.Wrap(err, "failed to write comma")
+				}
+			}
+			if _, err := buf.WriteString(fmt.Sprintf("`%s`", column)); err != nil {
+				return nil, errors.Wrap(err, "failed to write column")
+			}
+		}
+		if _, err := buf.WriteString(")"); err != nil {
+			return nil, errors.Wrap(err, "failed to write insert into statement")
+		}
+	}
+	for i, item := range statementInfoList {
+		if i != 0 {
+			if _, err := buf.WriteString("\n  UNION ALL\n"); err != nil {
+				return nil, errors.Wrap(err, "failed to write union all statement")
+			}
+		}
+		tableNameOrAlias := item.table.Table
+		if len(item.table.Alias) > 0 {
+			tableNameOrAlias = item.table.Alias
+		}
+		if len(generatedColumns) == 0 {
+			if _, err := buf.WriteString(fmt.Sprintf("  SELECT `%s`.* FROM ", tableNameOrAlias)); err != nil {
+				return nil, errors.Wrap(err, "failed to write select statement")
+			}
+		} else {
+			if _, err := buf.WriteString("  SELECT "); err != nil {
+				return nil, errors.Wrap(err, "failed to write select statement")
+			}
+			for i, column := range normalColumns {
+				if i > 0 {
+					if err := buf.WriteByte(','); err != nil {
+						return nil, errors.Wrap(err, "failed to write comma")
+					}
+				}
+				if _, err := buf.WriteString(fmt.Sprintf("`%s`.`%s`", tableNameOrAlias, column)); err != nil {
+					return nil, errors.Wrap(err, "failed to write column")
+				}
+			}
+			if _, err := buf.WriteString(" FROM "); err != nil {
+				return nil, errors.Wrap(err, "failed to write from")
+			}
+		}
+		if err := extractSuffixSelectStatement(item.tree, &buf); err != nil {
+			return nil, errors.Wrap(err, "failed to extract suffix select statement")
+		}
+	}
+
+	if err := buf.WriteByte(';'); err != nil {
+		return nil, errors.Wrap(err, "failed to write semicolon")
+	}
+
+	return []base.BackupStatement{
+		{
+			Statement:       buf.String(),
+			SourceTableName: table.Table,
+			TargetTableName: targetTable,
+			StartPosition:   statementInfoList[0].startPosition,
+			EndPosition:     statementInfoList[len(statementInfoList)-1].endPosition,
+		},
+	}, nil
+}
+
+func equalTable(a, b *TableReference) bool {
+	if a == nil || b == nil {
+		return false
+	}
+
+	if a.Database != "" && b.Database != "" && a.Database != b.Database {
+		return false
+	}
+	return a.Table == b.Table
+}
+
+func generateSQLForMixedDML(ctx context.Context, tCtx base.TransformContext, statementInfoList []statementInfo, databaseName string, tablePrefix string) ([]base.BackupStatement, error) {
 	var result []base.BackupStatement
 	offsetLength := 1
 	if len(statementInfoList) > 1 {
@@ -157,14 +286,8 @@ func generateSQL(ctx context.Context, tCtx base.TransformContext, statementInfoL
 			Statement:       buf.String(),
 			SourceTableName: table.Table,
 			TargetTableName: targetTable,
-			StartPosition: &store.Position{
-				Line:   int32(statementInfo.tree.GetStart().GetLine()),
-				Column: int32(statementInfo.tree.GetStart().GetColumn()),
-			},
-			EndPosition: &store.Position{
-				Line:   int32(statementInfo.tree.GetStop().GetLine()),
-				Column: int32(statementInfo.tree.GetStop().GetColumn()),
-			},
+			StartPosition:   statementInfo.startPosition,
+			EndPosition:     statementInfo.endPosition,
 		})
 	}
 	return result, nil
