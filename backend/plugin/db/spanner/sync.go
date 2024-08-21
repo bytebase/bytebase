@@ -70,11 +70,15 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 	databaseMetadata := &storepb.DatabaseSchemaMetadata{
 		Name: d.databaseName,
 	}
-	tableMap, err := getTable(ctx, tx)
+	columnMap, err := getColumn(ctx, tx)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get table columns from database %q", d.databaseName)
+	}
+	tableMap, err := getTable(ctx, tx, columnMap)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get tables from database %q", d.databaseName)
 	}
-	viewMap, err := getView(ctx, tx)
+	viewMap, err := getView(ctx, tx, columnMap)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get views from database %q", d.databaseName)
 	}
@@ -114,11 +118,7 @@ func (d *Driver) notFoundDatabase(ctx context.Context, databaseName string) (boo
 	return false, nil
 }
 
-func getTable(ctx context.Context, tx *spanner.ReadOnlyTransaction) (map[string][]*storepb.TableMetadata, error) {
-	columnMap, err := getColumn(ctx, tx)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to get table columns")
-	}
+func getTable(ctx context.Context, tx *spanner.ReadOnlyTransaction, columnMap map[db.TableKey][]*storepb.ColumnMetadata) (map[string][]*storepb.TableMetadata, error) {
 	indexMap, err := getIndex(ctx, tx)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get indices")
@@ -332,7 +332,7 @@ func getForeignKey(ctx context.Context, tx *spanner.ReadOnlyTransaction) (map[db
 	return foreignKeyMap, nil
 }
 
-func getView(ctx context.Context, tx *spanner.ReadOnlyTransaction) (map[string][]*storepb.ViewMetadata, error) {
+func getView(ctx context.Context, tx *spanner.ReadOnlyTransaction, columnMap map[db.TableKey][]*storepb.ColumnMetadata) (map[string][]*storepb.ViewMetadata, error) {
 	viewMap := make(map[string][]*storepb.ViewMetadata)
 	query := `
   SELECT
@@ -359,9 +359,13 @@ func getView(ctx context.Context, tx *spanner.ReadOnlyTransaction) (map[string][
 		if err := row.Columns(&schema, &name, &definition); err != nil {
 			return nil, err
 		}
+
+		key := db.TableKey{Schema: schema, Table: name}
+
 		viewMap[schema] = append(viewMap[schema], &storepb.ViewMetadata{
 			Name:       name,
 			Definition: definition,
+			Columns:    columnMap[key],
 		})
 	}
 	return viewMap, nil

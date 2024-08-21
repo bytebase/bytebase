@@ -243,7 +243,7 @@ func TestSQLReviewForMySQL(t *testing.T) {
 			Rows: []*v1pb.QueryRow{
 				{
 					Values: []*v1pb.RowValue{
-						{Kind: &v1pb.RowValue_StringValue{StringValue: "4"}},
+						{Kind: &v1pb.RowValue_Int64Value{Int64Value: 4}},
 					},
 				},
 			},

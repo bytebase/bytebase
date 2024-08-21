@@ -56,6 +56,14 @@ func convertStoreDatabaseMetadata(ctx context.Context, metadata *storepb.Databas
 				Definition: view.Definition,
 				Comment:    view.Comment,
 			}
+
+			for _, column := range view.Columns {
+				if column == nil {
+					continue
+				}
+				v1View.Columns = append(v1View.Columns, convertStoreColumnMetadata(column))
+			}
+
 			for _, dependentColumn := range view.DependentColumns {
 				if dependentColumn == nil {
 					continue
@@ -442,6 +450,14 @@ func convertV1DatabaseMetadata(ctx context.Context, metadata *v1pb.DatabaseMetad
 				Definition: view.Definition,
 				Comment:    view.Comment,
 			}
+
+			for _, column := range view.Columns {
+				if column == nil {
+					continue
+				}
+				storeView.Columns = append(storeView.Columns, convertV1ColumnMetadata(column))
+			}
+
 			for _, dependentColumn := range view.DependentColumns {
 				storeView.DependentColumns = append(storeView.DependentColumns,
 					&storepb.DependentColumn{

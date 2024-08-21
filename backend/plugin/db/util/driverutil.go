@@ -146,9 +146,9 @@ func makeValueByTypeName(typeName string) any {
 		return new(sql.NullString)
 	case "BOOL":
 		return new(sql.NullBool)
-	case "INT", "INTEGER":
+	case "INT", "INTEGER", "TINYINT", "SMALLINT", "MEDIUMINT", "BIGINT", "INT2", "INT4", "INT8":
 		return new(sql.NullInt64)
-	case "FLOAT", "DOUBLE":
+	case "FLOAT", "DOUBLE", "FLOAT4", "FLOAT8":
 		return new(sql.NullFloat64)
 	case "BIT", "VARBIT":
 		return new([]byte)
