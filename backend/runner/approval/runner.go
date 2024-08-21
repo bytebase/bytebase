@@ -420,7 +420,7 @@ func getDatabaseGeneralIssueRisk(ctx context.Context, s *store.Store, sheetManag
 		return 0, store.RiskSourceUnknown, false, nil
 	}
 
-	pipelineCreate, err := apiv1.GetPipelineCreate(ctx, s, sheetManager, licenseService, dbFactory, plan.Config.Steps, issue.Project)
+	pipelineCreate, err := apiv1.GetPipelineCreate(ctx, s, sheetManager, licenseService, dbFactory, plan.Config.Steps, issue.Project, false)
 	if err != nil {
 		return 0, store.RiskSourceUnknown, false, errors.Wrap(err, "failed to get pipeline create")
 	}
@@ -578,7 +578,7 @@ func getDatabaseDataExportIssueRisk(ctx context.Context, s *store.Store, sheetMa
 		return 0, store.RiskSourceUnknown, false, errors.Errorf("plan %v not found", *issue.PlanUID)
 	}
 
-	pipelineCreate, err := apiv1.GetPipelineCreate(ctx, s, sheetManager, licenseService, dbFactory, plan.Config.Steps, issue.Project)
+	pipelineCreate, err := apiv1.GetPipelineCreate(ctx, s, sheetManager, licenseService, dbFactory, plan.Config.Steps, issue.Project, false)
 	if err != nil {
 		return 0, store.RiskSourceUnknown, false, errors.Wrap(err, "failed to get pipeline create")
 	}
