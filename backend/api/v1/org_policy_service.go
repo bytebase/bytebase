@@ -671,7 +671,6 @@ func (s *OrgPolicyService) convertToPolicy(ctx context.Context, parentPath strin
 		InheritFromParent: policyMessage.InheritFromParent,
 		Enforce:           policyMessage.Enforce,
 		ResourceType:      resourceType,
-		ResourceUid:       fmt.Sprintf("%d", policyMessage.ResourceUID),
 	}
 
 	pType := v1pb.PolicyType_POLICY_TYPE_UNSPECIFIED

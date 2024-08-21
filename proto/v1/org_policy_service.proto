@@ -249,9 +249,6 @@ message Policy {
 
   // The resource type for the policy.
   PolicyResourceType resource_type = 14 [(google.api.field_behavior) = OUTPUT_ONLY];
-
-  // The system-assigned, unique identifier for the resource.
-  string resource_uid = 15 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 enum PolicyType {
