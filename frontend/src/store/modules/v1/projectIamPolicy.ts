@@ -6,12 +6,7 @@ import type { ComposedDatabase, ComposedProject, MaybeRef } from "@/types";
 import { PresetRoleType } from "@/types";
 import type { Expr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
 import { IamPolicy } from "@/types/proto/v1/iam_policy";
-import {
-  hasWorkspacePermissionV2,
-  isDeveloperOfProjectV1,
-  isOwnerOfProjectV1,
-  isViewerOfProjectV1,
-} from "@/utils";
+import { hasProjectPermissionV2, hasWorkspacePermissionV2 } from "@/utils";
 import { getUserEmailListInBinding } from "@/utils";
 import { convertFromExpr } from "@/utils/issue/cel";
 import { useCurrentUserV1 } from "../auth";
@@ -152,37 +147,21 @@ export const useCurrentUserIamPolicy = () => {
   });
 
   // hasWorkspaceSuperPrivilege checks whether the current user has the super privilege to access all databases. AKA. Owners and DBAs
-  const hasWorkspaceSuperPrivilege =
-    hasWorkspacePermissionV2("bb.projects.list");
-
-  const isProjectOwnerOrDeveloper = (projectName: string): boolean => {
-    if (hasWorkspaceSuperPrivilege) {
-      return true;
-    }
-
-    const project = projectStore.getProjectByName(projectName);
-    if (!project) {
-      return false;
-    }
-    return isOwnerOfProjectV1(project) || isDeveloperOfProjectV1(project);
-  };
-
-  const isProjectOwnerOrDeveloperOrViewer = (projectName: string): boolean => {
-    if (hasWorkspaceSuperPrivilege) {
-      return true;
-    }
-
-    const project = projectStore.getProjectByName(projectName);
-    if (!project) {
-      return false;
-    }
-    return (
-      isProjectOwnerOrDeveloper(projectName) || isViewerOfProjectV1(project)
-    );
-  };
+  const hasWorkspaceSuperPrivilege = computed(() =>
+    hasWorkspacePermissionV2("bb.projects.list")
+  );
 
   const allowToChangeDatabaseOfProject = (projectName: string) => {
-    return isProjectOwnerOrDeveloper(projectName);
+    if (hasWorkspaceSuperPrivilege.value) {
+      return true;
+    }
+
+    const project = projectStore.getProjectByName(projectName);
+    if (!project) {
+      return false;
+    }
+
+    return hasProjectPermissionV2(project, "bb.databases.update");
   };
 
   const checkProjectIAMPolicy = (
@@ -228,7 +207,7 @@ export const useCurrentUserIamPolicy = () => {
     schema?: string,
     table?: string
   ) => {
-    if (hasWorkspaceSuperPrivilege) {
+    if (hasWorkspaceSuperPrivilege.value) {
       return true;
     }
 
@@ -267,7 +246,7 @@ export const useCurrentUserIamPolicy = () => {
   };
 
   const allowToExportDatabaseV1 = (database: ComposedDatabase) => {
-    if (hasWorkspaceSuperPrivilege) {
+    if (hasWorkspaceSuperPrivilege.value) {
       return true;
     }
 
@@ -296,8 +275,6 @@ export const useCurrentUserIamPolicy = () => {
   };
 
   return {
-    isProjectOwnerOrDeveloper,
-    isProjectOwnerOrDeveloperOrViewer,
     allowToChangeDatabaseOfProject,
     allowToQueryDatabaseV1,
     allowToExportDatabaseV1,

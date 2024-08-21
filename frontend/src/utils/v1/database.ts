@@ -16,11 +16,7 @@ import {
   hasWorkspacePermissionV2,
 } from "../iam";
 import { semverCompare } from "../util";
-import {
-  extractProjectResourceName,
-  isDeveloperOfProjectV1,
-  isOwnerOfProjectV1,
-} from "./project";
+import { extractProjectResourceName } from "./project";
 
 export const databaseV1Url = (db: ComposedDatabase) => {
   const project = extractProjectResourceName(db.project);
@@ -85,14 +81,6 @@ export const isDatabaseV1Alterable = (database: ComposedDatabase): boolean => {
   }
 
   if (hasPermissionToCreateChangeDatabaseIssue(database)) {
-    return true;
-  }
-
-  // If user is owner or developer of its projects, we will show the database in the UI.
-  if (
-    isOwnerOfProjectV1(database.projectEntity) ||
-    isDeveloperOfProjectV1(database.projectEntity)
-  ) {
     return true;
   }
 
