@@ -103,13 +103,13 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*ba
 	// This causes an error (NOT_FOUND) when using querySpanExtractor.findTableSchema.
 	// As a result, we exclude getting query span results for accessing only the system table.
 	allSystems, mixed := isMixedQuery(accessTables)
-	if mixed != nil {
-		return nil, mixed
+	if mixed {
+		return nil, base.MixUserSystemTablesError
 	}
 	if allSystems {
 		return &base.QuerySpan{
-			Results:       []base.QuerySpanResult{},
 			SourceColumns: base.SourceColumnSet{},
+			Results:       []base.QuerySpanResult{},
 		}, nil
 	}
 
@@ -1722,7 +1722,7 @@ func (q *querySpanExtractor) getRangeVarsFromJSONRecursive(jsonData map[string]a
 		// figure out whether the table is the table the query actually accesses?
 
 		// Bytebase do not sync the system objects, so we skip finding for system objects in the metadata.
-		if msg := isSystemResource(resource); msg == "" {
+		if !isSystemResource(resource) {
 			// Backfill the default database/schema name.
 			if resource.Database == "" {
 				resource.Database = currentDatabase
@@ -1774,42 +1774,39 @@ func (q *querySpanExtractor) getRangeVarsFromJSONRecursive(jsonData map[string]a
 }
 
 // isMixedQuery checks whether the query accesses the user table and system table at the same time.
-func isMixedQuery(m base.SourceColumnSet) (allSystems bool, mixed error) {
-	userMsg, systemMsg := "", ""
+func isMixedQuery(m base.SourceColumnSet) (bool, bool) {
+	hasSystem, hasUser := false, false
 	for table := range m {
-		if msg := isSystemResource(table); msg != "" {
-			systemMsg = msg
-			continue
-		}
-		userMsg = fmt.Sprintf("user table %q.%q", table.Schema, table.Table)
-		if systemMsg != "" {
-			return false, errors.Errorf("cannot access %s and %s at the same time", userMsg, systemMsg)
+		if isSystemResource(table) {
+			hasSystem = true
+		} else {
+			hasUser = true
 		}
 	}
 
-	if userMsg != "" && systemMsg != "" {
-		return false, errors.Errorf("cannot access %s and %s at the same time", userMsg, systemMsg)
+	if hasSystem && hasUser {
+		return false, true
 	}
 
-	return userMsg == "" && systemMsg != "", nil
+	return !hasUser && hasSystem, false
 }
 
-func isSystemResource(resource base.ColumnResource) string {
+func isSystemResource(resource base.ColumnResource) bool {
 	// User can access the system table/view by name directly without database/schema name.
 	// For example: `SELECT * FROM pg_database`, which will access the system table `pg_database`.
 	// Additionally, user can create a table/view with the same name with system table/view and access them
 	// by specify the schema name, for example:
 	// `CREATE TABLE pg_database(id INT); SELECT * FROM public.pg_database;` which will access the user table `pg_database`.
 	if IsSystemSchema(resource.Schema) {
-		return fmt.Sprintf("system schema %q", resource.Schema)
+		return true
 	}
 	if resource.Database == "" && resource.Schema == "" && IsSystemView(resource.Table) {
-		return fmt.Sprintf("system view %q", resource.Table)
+		return true
 	}
 	if resource.Database == "" && resource.Schema == "" && IsSystemTable(resource.Table) {
-		return fmt.Sprintf("system table %q", resource.Table)
+		return true
 	}
-	return ""
+	return false
 }
 
 func (q *querySpanExtractor) getColumnsForView(definition string) ([]base.QuerySpanResult, error) {
