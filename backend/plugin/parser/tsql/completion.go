@@ -1385,20 +1385,19 @@ func (l *tableRefListener) ExitDerivedTable(ctx *tsqlparser.Derived_tableContext
 
 	if pCtx.Column_alias_list() == nil {
 		// User do not specify the column alias, we should use query span to get the column alias.
-		if span, err := base.GetQuerySpan(
+		if span, err := GetQuerySpan(
 			l.context.ctx,
 			base.GetQuerySpanContext{
 				InstanceID:              l.context.instanceID,
 				GetDatabaseMetadataFunc: l.context.metadataGetter,
 				ListDatabaseNamesFunc:   l.context.databaseNamesLister,
 			},
-			storepb.Engine_MSSQL,
 			fmt.Sprintf("SELECT * FROM (%s);", ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)),
 			l.context.defaultDatabase,
 			l.context.defaultSchema,
 			true,
-		); err == nil && len(span) == 1 {
-			for _, column := range span[0].Results {
+		); err == nil && span.NotFoundError == nil {
+			for _, column := range span.Results {
 				reference.Columns = append(reference.Columns, column.Name)
 			}
 		}
@@ -1531,21 +1530,20 @@ func (c *cteExtractor) EnterWith_expression(ctx *tsqlparser.With_expressionConte
 		)
 
 		statement := fmt.Sprintf("WITH %s SELECT * FROM %s", cteBody, cteName)
-		if span, err := base.GetQuerySpan(
+		if span, err := GetQuerySpan(
 			c.completer.ctx,
 			base.GetQuerySpanContext{
 				InstanceID:              c.completer.instanceID,
 				GetDatabaseMetadataFunc: c.completer.metadataGetter,
 				ListDatabaseNamesFunc:   c.completer.databaseNamesLister,
 			},
-			storepb.Engine_MSSQL,
 			statement,
 			c.completer.defaultDatabase,
 			c.completer.defaultSchema,
 			true,
-		); err == nil && len(span) == 1 {
+		); err == nil && span.NotFoundError == nil {
 			var columns []string
-			for _, column := range span[0].Results {
+			for _, column := range span.Results {
 				columns = append(columns, column.Name)
 			}
 			c.virtualReferences = append(c.virtualReferences, &base.VirtualTableReference{

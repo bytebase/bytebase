@@ -673,20 +673,19 @@ func (l *CTETableListener) EnterFactoring_element(ctx *plsql.Factoring_elementCo
 		}
 	} else {
 		// User didn't specify the column list, so we need to fetch the column list from the query.
-		if span, err := base.GetQuerySpan(
+		if span, err := GetQuerySpan(
 			l.context.ctx,
 			base.GetQuerySpanContext{
 				InstanceID:              l.context.instanceID,
 				GetDatabaseMetadataFunc: l.context.getMetadata,
 				ListDatabaseNamesFunc:   l.context.listDatabaseNames,
 			},
-			store.Engine_ORACLE,
 			fmt.Sprintf("SELECT * FROM (%s)", ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.Subquery())),
 			l.context.defaultDatabase,
 			"",
 			false,
-		); err == nil && len(span) == 1 {
-			for _, column := range span[0].Results {
+		); err == nil && span.NotFoundError == nil {
+			for _, column := range span.Results {
 				table.Columns = append(table.Columns, column.Name)
 			}
 		}
@@ -994,20 +993,19 @@ func (l *TableRefListener) ExitDml_table_expression_clause(ctx *plsql.Dml_table_
 	if ctx.Select_statement() != nil && l.level == 0 {
 		reference := &base.VirtualTableReference{}
 
-		if span, err := base.GetQuerySpan(
+		if span, err := GetQuerySpan(
 			l.context.ctx,
 			base.GetQuerySpanContext{
 				InstanceID:              l.context.instanceID,
 				GetDatabaseMetadataFunc: l.context.getMetadata,
 				ListDatabaseNamesFunc:   l.context.listDatabaseNames,
 			},
-			store.Engine_ORACLE,
 			ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.Select_statement()),
 			l.context.defaultDatabase,
 			"",
 			false,
-		); err == nil && len(span) == 1 {
-			for _, column := range span[0].Results {
+		); err == nil && span.NotFoundError == nil {
+			for _, column := range span.Results {
 				reference.Columns = append(reference.Columns, column.Name)
 			}
 		}
