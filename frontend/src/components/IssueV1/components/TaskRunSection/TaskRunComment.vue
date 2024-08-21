@@ -1,25 +1,27 @@
 <template>
-  <NPerformantEllipsis expand-trigger="click" line-clamp="2" :tooltip="false">
-    {{ comment }}
-  </NPerformantEllipsis>
+  <div class="flex flex-wrap flex-row gap-1">
+    <NPerformantEllipsis expand-trigger="click" line-clamp="2" :tooltip="false">
+      {{ comment }}
+    </NPerformantEllipsis>
 
-  <template v-if="commentLink.link">
-    <template v-if="commentLink.link.startsWith('/')">
-      <router-link class="ml-1 inline normal-link" :to="commentLink.link">
-        {{ commentLink.title }}
-      </router-link>
+    <template v-if="commentLink.link">
+      <template v-if="commentLink.link.startsWith('/')">
+        <router-link class="inline normal-link" :to="commentLink.link">
+          {{ commentLink.title }}
+        </router-link>
+      </template>
+      <template v-else>
+        <a
+          class="inline normal-link"
+          :href="commentLink.link"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          {{ commentLink.title }}
+        </a>
+      </template>
     </template>
-    <template v-else>
-      <a
-        class="ml-1 inline normal-link"
-        :href="commentLink.link"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        {{ commentLink.title }}
-      </a>
-    </template>
-  </template>
+  </div>
 </template>
 
 <script setup lang="tsx">
