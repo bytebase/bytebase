@@ -242,6 +242,6 @@ func checkResults(a *require.Assertions, databaseName string, query string, affe
 		result.Latency = nil
 		affectedRows[idx].Statement = query
 		diff := cmp.Diff(affectedRows[idx], result, protocmp.Transform(), protocmp.IgnoreMessages(&durationpb.Duration{}))
-		a.Equal("", diff, "database %s: %s", databaseName, query)
+		a.Empty(diff, "database %s: %s", databaseName, query)
 	}
 }

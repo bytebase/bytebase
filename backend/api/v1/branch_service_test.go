@@ -72,7 +72,7 @@ func TestTrimDatabaseMetadata(t *testing.T) {
 
 	gotSource, gotTarget := trimDatabaseMetadata(source, target)
 	diffTarget := cmp.Diff(wantTrimmedTarget, gotTarget, protocmp.Transform())
-	require.Equal(t, "", diffTarget)
+	require.Empty(t, diffTarget)
 	diffSource := cmp.Diff(wantTrimmedSource, gotSource, protocmp.Transform())
-	require.Equal(t, "", diffSource)
+	require.Empty(t, diffSource)
 }

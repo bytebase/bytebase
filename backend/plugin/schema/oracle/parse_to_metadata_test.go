@@ -47,7 +47,7 @@ func TestParseToMetadata(t *testing.T) {
 			err = common.ProtojsonUnmarshaler.Unmarshal([]byte(t.Metadata), want)
 			a.NoError(err)
 			diff := cmp.Diff(want, result, protocmp.Transform())
-			a.Equal("", diff)
+			a.Empty(diff)
 		}
 	}
 
