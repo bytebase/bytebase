@@ -188,7 +188,7 @@ func runWalkThroughTest(t *testing.T, file string, engineType storepb.Engine, or
 			require.NoError(t, err)
 			result := state.convertToDatabaseMetadata()
 			diff := cmp.Diff(want, result, protocmp.Transform())
-			require.Equal(t, "", diff, test.Statement)
+			require.Empty(t, diff)
 		}
 	}
 

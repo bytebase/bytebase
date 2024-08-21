@@ -44,6 +44,10 @@ func TestMiddle_Rune(t *testing.T) {
 			input: []rune("🥲🤣🥲🤣"),
 			want:  []rune("🤣🥲"),
 		},
+		{
+			input: []rune("abcdefghijklmnopqrstuvwxyzabcdef"),
+			want:  []rune("ijklmnopqrstuvwx"),
+		},
 	}
 
 	a := require.New(t)

@@ -224,7 +224,7 @@ func TestSyncerForPostgreSQL(t *testing.T) {
 	a.NoError(err)
 
 	diff := cmp.Diff(wantDatabaseMetadata, latestSchemaMetadata, protocmp.Transform())
-	a.Equal("", diff)
+	a.Empty(diff)
 }
 
 func TestSyncerForMySQL(t *testing.T) {
@@ -515,5 +515,5 @@ func TestSyncerForMySQL(t *testing.T) {
 	a.NoError(err)
 
 	diff := cmp.Diff(&expectedSchemaMetadata, latestSchemaMetadata, protocmp.Transform())
-	a.Equal("", diff)
+	a.Empty(diff)
 }

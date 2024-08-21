@@ -358,7 +358,7 @@ CREATE TABLE public.book (
 			})
 			a.NoError(err)
 			diff := cmp.Diff(test.wantDatabaseMetadata, latestSchemaMetadata, protocmp.Transform())
-			a.Equal("", diff)
+			a.Empty(diff)
 		})
 	}
 }
