@@ -42,7 +42,7 @@ func (s *AuditLogService) SearchAuditLogs(ctx context.Context, request *v1pb.Sea
 	if err := s.licenseService.IsFeatureEnabled(api.FeatureAuditLog); err != nil {
 		return nil, status.Errorf(codes.PermissionDenied, err.Error())
 	}
-	filter, serr := getSearchAuditLogsFilter(request.Filter)
+	filter, serr := s.getSearchAuditLogsFilter(ctx, request.Filter)
 	if serr != nil {
 		return nil, serr.Err()
 	}
@@ -214,7 +214,7 @@ func convertToAuditLogSeverity(s storepb.AuditLog_Severity) v1pb.AuditLog_Severi
 	}
 }
 
-func getSearchAuditLogsFilter(filter string) (*store.AuditLogFilter, *status.Status) {
+func (s *AuditLogService) getSearchAuditLogsFilter(ctx context.Context, filter string) (*store.AuditLogFilter, *status.Status) {
 	if filter == "" {
 		return nil, nil
 	}
@@ -276,6 +276,15 @@ func getSearchAuditLogsFilter(filter string) (*store.AuditLogFilter, *status.Sta
 				case "resource", "method", "user", "severity":
 				default:
 					return "", errors.Errorf("unknown variable %s", variable)
+				}
+				if variable == "user" {
+					// Convert user email to user id.
+					// e.g. users/y@bb.com -> users/101
+					user, err := s.getUserByIdentifier(ctx, value)
+					if err != nil {
+						return "", err
+					}
+					value = fmt.Sprintf("%s%d", common.UserNamePrefix, user.ID)
 				}
 				positionalArgs = append(positionalArgs, value)
 				return fmt.Sprintf("payload->>'%s'=$%d", variable, len(positionalArgs)), nil
@@ -355,4 +364,19 @@ func getSearchAuditLogsOrderByKeys(orderBy string) ([]store.OrderByKey, error) {
 		})
 	}
 	return orderByKeys, nil
+}
+
+func (s *AuditLogService) getUserByIdentifier(ctx context.Context, identifier string) (*store.UserMessage, error) {
+	email := strings.TrimPrefix(identifier, "users/")
+	if email == "" {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid empty creator identifier")
+	}
+	user, err := s.store.GetUserByEmail(ctx, email)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, `failed to find user "%s" with error: %v`, email, err.Error())
+	}
+	if user == nil {
+		return nil, errors.Errorf("cannot found user %s", email)
+	}
+	return user, nil
 }
