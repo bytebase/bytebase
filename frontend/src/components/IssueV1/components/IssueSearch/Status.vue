@@ -31,6 +31,10 @@ const { t } = useI18n();
 const tabItemList = computed(() => {
   return [
     {
+      value: "",
+      label: t("common.all"),
+    },
+    {
       value: "OPEN",
       label: t("issue.table.open"),
     },
@@ -49,7 +53,7 @@ const tab = computed(() => {
 });
 
 const updateStatus = (value: SemanticIssueStatus) => {
-  if (!["OPEN", "CLOSED"].includes(value)) return;
+  if (!["", "OPEN", "CLOSED"].includes(value)) return;
 
   const updated = upsertScope(props.params, {
     id: "status",
