@@ -35,10 +35,12 @@ func TransformDMLToSelect(ctx context.Context, tCtx base.TransformContext, state
 }
 
 type statementInfo struct {
-	offset    int
-	statement string
-	table     *TableReference
-	tree      antlr.ParserRuleContext
+	offset        int
+	statement     string
+	table         *TableReference
+	tree          antlr.ParserRuleContext
+	startPosition *store.Position
+	endPosition   *store.Position
 }
 
 func prepareTransformation(databaseName, statement string) ([]statementInfo, error) {
@@ -48,11 +50,11 @@ func prepareTransformation(databaseName, statement string) ([]statementInfo, err
 	}
 
 	var result []statementInfo
-	for i, sql := range list {
-		if len(sql.Text) == 0 || sql.Empty {
+	for i, item := range list {
+		if len(item.Text) == 0 || item.Empty {
 			continue
 		}
-		parseResult, err := mysql.ParseMySQL(sql.Text)
+		parseResult, err := mysql.ParseMySQL(item.Text)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to parse sql")
 		}
@@ -65,7 +67,22 @@ func prepareTransformation(databaseName, statement string) ([]statementInfo, err
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to extract tables")
 			}
-			result = append(result, tables...)
+			for _, table := range tables {
+				result = append(result, statementInfo{
+					offset:    i,
+					statement: table.statement,
+					table:     table.table,
+					tree:      table.tree,
+					startPosition: &store.Position{
+						Line:   int32(item.FirstStatementLine) + 1,
+						Column: int32(item.FirstStatementColumn),
+					},
+					endPosition: &store.Position{
+						Line:   int32(item.LastLine) + 1,
+						Column: int32(item.LastColumn),
+					},
+				})
+			}
 		}
 	}
 
@@ -166,14 +183,8 @@ func generateSQLForSingleTable(ctx context.Context, tCtx base.TransformContext, 
 			Statement:       buf.String(),
 			SourceTableName: table.Table,
 			TargetTableName: targetTable,
-			StartPosition: &store.Position{
-				Line:   int32(statementInfoList[0].tree.GetStart().GetLine()),
-				Column: int32(statementInfoList[0].tree.GetStart().GetColumn()),
-			},
-			EndPosition: &store.Position{
-				Line:   int32(statementInfoList[len(statementInfoList)-1].tree.GetStop().GetLine()),
-				Column: int32(statementInfoList[len(statementInfoList)-1].tree.GetStop().GetColumn()),
-			},
+			StartPosition:   statementInfoList[0].startPosition,
+			EndPosition:     statementInfoList[len(statementInfoList)-1].endPosition,
 		},
 	}, nil
 }
@@ -259,14 +270,8 @@ func generateSQLForMixedDML(ctx context.Context, tCtx base.TransformContext, sta
 			Statement:       buf.String(),
 			SourceTableName: table.Table,
 			TargetTableName: targetTable,
-			StartPosition: &store.Position{
-				Line:   int32(statementInfo.tree.GetStart().GetLine()),
-				Column: int32(statementInfo.tree.GetStart().GetColumn()),
-			},
-			EndPosition: &store.Position{
-				Line:   int32(statementInfo.tree.GetStop().GetLine()),
-				Column: int32(statementInfo.tree.GetStop().GetColumn()),
-			},
+			StartPosition:   statementInfo.startPosition,
+			EndPosition:     statementInfo.endPosition,
 		})
 	}
 	return result, nil
