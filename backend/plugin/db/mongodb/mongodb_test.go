@@ -198,7 +198,7 @@ func TestGetSimpleStatementResult(t *testing.T) {
 		result, err := getSimpleStatementResult([]byte(tt.data))
 		a.NoError(err)
 		diff := cmp.Diff(tt.want, result, protocmp.Transform(), protocmp.IgnoreMessages(&durationpb.Duration{}))
-		a.Equal("", diff)
+		a.Empty(diff)
 	}
 }
 
