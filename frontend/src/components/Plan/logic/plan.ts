@@ -7,7 +7,7 @@ import {
 } from "@/store";
 import {
   type ComposedProject,
-  UNKNOWN_ID,
+  isValidDatabaseName,
   unknownDatabase,
   unknownEnvironment,
 } from "@/types";
@@ -22,7 +22,7 @@ export const databaseForSpec = (plan: ComposedPlan, spec: Plan_Spec) => {
   if (changeDatabaseConfig !== undefined) {
     const target = changeDatabaseConfig.target;
     const db = useDatabaseV1Store().getDatabaseByName(target);
-    if (db.uid === String(UNKNOWN_ID)) {
+    if (!isValidDatabaseName(db.name)) {
       // Database not found, it's probably NOT_FOUND (maybe dropped actually)
       // Mock a database using all known resources
       db.project = plan.project;
@@ -71,12 +71,12 @@ export const databaseEngineForSpec = async (
   };
   const target = getTarget(specOrTarget);
 
-  if (extractDatabaseResourceName(target).databaseName !== String(UNKNOWN_ID)) {
+  if (isValidDatabaseName(target)) {
     const db = await useDatabaseV1Store().getOrFetchDatabaseByName(
       target,
       true /* silent */
     );
-    if (db && db.uid !== String(UNKNOWN_ID)) {
+    if (isValidDatabaseName(db.name)) {
       return db.instanceResource.engine;
     }
   }
@@ -89,7 +89,7 @@ export const databaseEngineForSpec = async (
         dbName,
         true /* silent */
       );
-      if (db && db.uid !== String(UNKNOWN_ID)) {
+      if (isValidDatabaseName(db.name)) {
         return db.instanceResource.engine;
       }
     }
@@ -100,10 +100,7 @@ export const databaseEngineForSpec = async (
 
 export const isDatabaseChangeSpec = (spec?: Plan_Spec) => {
   if (!spec) return false;
-  const resourceName = extractDatabaseResourceName(
-    spec.changeDatabaseConfig?.target ?? ""
-  );
-  return resourceName.databaseName !== String(UNKNOWN_ID);
+  return isValidDatabaseName(spec.changeDatabaseConfig?.target);
 };
 
 export const isGroupingChangeSpec = (spec?: Plan_Spec) => {

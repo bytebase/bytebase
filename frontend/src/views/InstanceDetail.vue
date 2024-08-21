@@ -94,7 +94,6 @@ import {
   useDBSchemaV1Store,
   useInstanceV1Store,
   useEnvironmentV1Store,
-  useDatabaseV1Store,
 } from "@/store";
 import { instanceNamePrefix } from "@/store/modules/v1/common";
 import { useDatabaseV1List } from "@/store/modules/v1/databaseList";
@@ -112,7 +111,7 @@ import {
 interface LocalState {
   showCreateDatabaseModal: boolean;
   syncingSchema: boolean;
-  selectedDatabaseIds: Set<string>;
+  selectedDatabaseNameList: Set<string>;
 }
 
 const props = defineProps<{
@@ -125,12 +124,11 @@ overrideMainContainerClass("!pb-0");
 const { t } = useI18n();
 const router = useRouter();
 const instanceV1Store = useInstanceV1Store();
-const databaseStore = useDatabaseV1Store();
 
 const state = reactive<LocalState>({
   showCreateDatabaseModal: false,
   syncingSchema: false,
-  selectedDatabaseIds: new Set(),
+  selectedDatabaseNameList: new Set(),
 });
 
 const instance = computed(() => {
@@ -221,16 +219,12 @@ const handleDatabaseClick = (event: MouseEvent, database: ComposedDatabase) => {
 const handleDatabasesSelectionChanged = (
   selectedDatabaseNameList: Set<string>
 ): void => {
-  state.selectedDatabaseIds = new Set(
-    Array.from(selectedDatabaseNameList).map(
-      (name) => databaseStore.getDatabaseByName(name)?.uid
-    )
-  );
+  state.selectedDatabaseNameList = selectedDatabaseNameList;
 };
 
 const selectedDatabases = computed((): ComposedDatabase[] => {
   return databaseList.value.filter((db) =>
-    state.selectedDatabaseIds.has(db.uid)
+    state.selectedDatabaseNameList.has(db.name)
   );
 });
 </script>

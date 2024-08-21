@@ -100,14 +100,14 @@ export const getPipelineFromDeploymentScheduleV1 = (
 ): ComposedDatabase[][] => {
   const stages: ComposedDatabase[][] = [];
 
-  const collectedIds = new Set<string>();
+  const collectedNames = new Set<string>();
   schedule?.deployments.forEach((deployment) => {
     const dbs: ComposedDatabase[] = [];
     databaseList.forEach((db) => {
-      if (collectedIds.has(db.uid)) return;
+      if (collectedNames.has(db.name)) return;
       if (isDatabaseMatchesSelectorV1(db, deployment.spec?.labelSelector)) {
         dbs.push(db);
-        collectedIds.add(db.uid);
+        collectedNames.add(db.name);
       }
     });
     stages.push(dbs);
