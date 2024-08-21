@@ -31,16 +31,16 @@ const { t } = useI18n();
 const tabItemList = computed(() => {
   return [
     {
-      value: "",
-      label: t("common.all"),
-    },
-    {
       value: "OPEN",
       label: t("issue.table.open"),
     },
     {
       value: "CLOSED",
       label: t("issue.table.closed"),
+    },
+    {
+      value: "",
+      label: t("common.all"),
     },
   ] as {
     value: SemanticIssueStatus;
