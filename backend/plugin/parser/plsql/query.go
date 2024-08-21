@@ -100,18 +100,21 @@ func (l *plsqlResourceExtractListener) EnterTableview_name(ctx *parser.Tableview
 		return
 	}
 
-	result := []string{NormalizeIdentifierContext(ctx.Identifier())}
-	if ctx.Id_expression() != nil {
-		result = append(result, NormalizeIDExpression(ctx.Id_expression()))
+	var schema, tableOrView string
+	if ctx.Id_expression() == nil {
+		tableOrView = NormalizeIdentifierContext(ctx.Identifier())
+	} else {
+		schema = NormalizeIdentifierContext(ctx.Identifier())
+		tableOrView = NormalizeIDExpression(ctx.Id_expression())
 	}
-	if len(result) == 1 {
-		result = []string{l.currentSchema, result[0]}
+	if schema == "" {
+		schema = l.currentDatabase
 	}
 
 	resource := base.SchemaResource{
-		Database: l.currentDatabase,
-		Schema:   result[0],
-		Table:    result[1],
+		Database: schema,
+		Schema:   schema,
+		Table:    tableOrView,
 	}
 	l.resourceMap[resource.String()] = resource
 }
