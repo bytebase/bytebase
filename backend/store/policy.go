@@ -28,7 +28,6 @@ func generateEtag(t time.Time) string {
 	return fmt.Sprintf("%d", t.UnixMilli())
 }
 
-// TODO(ed): support groups.
 func (s *Store) GetWorkspaceIamPolicy(ctx context.Context) (*IamPolicyMessage, error) {
 	resourceType := api.PolicyResourceTypeWorkspace
 	return s.getIamPolicy(ctx, &FindPolicyMessage{

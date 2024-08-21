@@ -3,11 +3,7 @@ import { getUserEmailFromIdentifier } from "@/store/modules/v1/common";
 import { PresetRoleType } from "@/types";
 import type { Worksheet } from "@/types/proto/v1/worksheet_service";
 import { Worksheet_Visibility } from "@/types/proto/v1/worksheet_service";
-import {
-  isMemberOfProjectV1,
-  isOwnerOfProjectV1,
-  hasWorkspaceLevelRole,
-} from "@/utils";
+import { hasWorkspaceLevelRole, hasProjectPermissionV2 } from "@/utils";
 
 export const extractWorksheetUID = (name: string) => {
   const pattern = /(?:^|\/)worksheets\/([^/]+)(?:$|\/)/;
@@ -42,7 +38,7 @@ export const isWorksheetReadableV1 = (sheet: Worksheet) => {
     case Worksheet_Visibility.VISIBILITY_PROJECT_READ:
     case Worksheet_Visibility.VISIBILITY_PROJECT_WRITE: {
       const projectV1 = useProjectV1Store().getProjectByName(sheet.project);
-      return isMemberOfProjectV1(projectV1);
+      return hasProjectPermissionV2(projectV1, "bb.worksheets.get");
     }
   }
   return false;
@@ -73,9 +69,8 @@ export const isWorksheetWritableV1 = (sheet: Worksheet) => {
     case Worksheet_Visibility.VISIBILITY_PRIVATE:
       return false;
     case Worksheet_Visibility.VISIBILITY_PROJECT_WRITE:
-      return isMemberOfProjectV1(projectV1);
     case Worksheet_Visibility.VISIBILITY_PROJECT_READ:
-      return isOwnerOfProjectV1(projectV1);
+      return hasProjectPermissionV2(projectV1, "bb.worksheets.manage");
   }
 
   return false;
