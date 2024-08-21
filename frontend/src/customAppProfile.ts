@@ -95,6 +95,7 @@ const overrideAppFeatures = (
     actuatorStore.overrideAppFeatures({
       "bb.feature.hide-quick-start": true,
       "bb.feature.hide-help": true,
+      "bb.feature.hide-trial": true,
       "bb.feature.members.hide-groups": true,
       "bb.feature.members.hide-project-roles": true,
       "bb.feature.members.hide-service-account": true,

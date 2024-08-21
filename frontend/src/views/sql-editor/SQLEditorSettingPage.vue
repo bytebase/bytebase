@@ -1,6 +1,8 @@
 <template>
   <div class="flex flex-row items-stretch w-full flex-1 overflow-hidden">
-    <Sidebar v-if="windowWidth >= 800" class="w-52 border-r" />
+    <div v-if="windowWidth >= 800" class="border-r">
+      <Sidebar class="w-52" />
+    </div>
     <template v-else>
       <teleport to="body">
         <div
@@ -30,7 +32,9 @@
       </teleport>
     </template>
 
-    <router-view />
+    <div class="flex-1">
+      <router-view />
+    </div>
   </div>
 </template>
 
