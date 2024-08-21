@@ -178,6 +178,7 @@ Product tutorials are available at https://www.bytebase.com/tutorial.
 - [Manage Neon database](https://www.bytebase.com/docs/how-to/integrations/neon)
 - [Deploy to sealos](https://www.bytebase.com/docs/get-started/install/deploy-to-sealos)
 - [Deploy to Rainbond](https://www.bytebase.com/docs/get-started/install/deploy-to-rainbond)
+- [Deploy to Elestio](https://elest.io/open-source/bytebase)
 
 <br />
 
