@@ -172,7 +172,7 @@ type openParenthesis struct {
 	pos       int
 }
 
-func splitMySQLStatement(stream *antlr.CommonTokenStream) ([]base.SingleSQL, error) {
+func splitTiDBStatement(stream *antlr.CommonTokenStream) ([]base.SingleSQL, error) {
 	stream.Fill()
 	if hasDelimiterStatement(stream) {
 		return splitDelimiterModeSQL(stream)

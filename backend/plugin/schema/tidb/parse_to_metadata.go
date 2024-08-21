@@ -26,7 +26,7 @@ func ParseToMetadata(_, schema string) (*storepb.DatabaseSchemaMetadata, error) 
 		return nil, err
 	}
 
-	listener := &mysqlTransformer{
+	listener := &tidbTransformer{
 		state: newDatabaseState(),
 	}
 	listener.state.schemas[""] = newSchemaState()
@@ -38,7 +38,7 @@ func ParseToMetadata(_, schema string) (*storepb.DatabaseSchemaMetadata, error) 
 	return listener.state.convertToDatabaseMetadata(), listener.err
 }
 
-type mysqlTransformer struct {
+type tidbTransformer struct {
 	*tidb.BaseTiDBParserListener
 
 	state        *databaseState
@@ -47,7 +47,7 @@ type mysqlTransformer struct {
 }
 
 // EnterCreateTable is called when production createTable is entered.
-func (t *mysqlTransformer) EnterCreateTable(ctx *tidb.CreateTableContext) {
+func (t *tidbTransformer) EnterCreateTable(ctx *tidb.CreateTableContext) {
 	if t.err != nil {
 		return
 	}
@@ -72,12 +72,12 @@ func (t *mysqlTransformer) EnterCreateTable(ctx *tidb.CreateTableContext) {
 }
 
 // ExitCreateTable is called when production createTable is exited.
-func (t *mysqlTransformer) ExitCreateTable(_ *tidb.CreateTableContext) {
+func (t *tidbTransformer) ExitCreateTable(_ *tidb.CreateTableContext) {
 	t.currentTable = ""
 }
 
 // EnterCreateTableOption is called when production createTableOption is entered.
-func (t *mysqlTransformer) EnterCreateTableOption(ctx *tidb.CreateTableOptionContext) {
+func (t *tidbTransformer) EnterCreateTableOption(ctx *tidb.CreateTableOptionContext) {
 	if t.err != nil || t.currentTable == "" {
 		return
 	}
@@ -123,7 +123,7 @@ func (t *mysqlTransformer) EnterCreateTableOption(ctx *tidb.CreateTableOptionCon
 }
 
 // EnterColumnDefinition is called when production columnDefinition is entered.
-func (t *mysqlTransformer) EnterColumnDef(ctx *tidb.ColumnDefContext) {
+func (t *tidbTransformer) EnterColumnDef(ctx *tidb.ColumnDefContext) {
 	if t.err != nil || t.currentTable == "" {
 		return
 	}
@@ -198,7 +198,7 @@ func (t *mysqlTransformer) EnterColumnDef(ctx *tidb.ColumnDefContext) {
 }
 
 // EnterTableConstraintDef is called when production tableConstraintDef is entered.
-func (t *mysqlTransformer) EnterTableConstraintDef(ctx *tidb.TableConstraintDefContext) {
+func (t *tidbTransformer) EnterTableConstraintDef(ctx *tidb.TableConstraintDefContext) {
 	if t.err != nil || t.currentTable == "" {
 		return
 	}
@@ -312,7 +312,7 @@ func (t *mysqlTransformer) EnterTableConstraintDef(ctx *tidb.TableConstraintDefC
 	}
 }
 
-func (t *mysqlTransformer) EnterPartitionClause(ctx *tidb.PartitionClauseContext) {
+func (t *tidbTransformer) EnterPartitionClause(ctx *tidb.PartitionClauseContext) {
 	if t.err != nil {
 		return
 	}
@@ -549,7 +549,7 @@ func (t *mysqlTransformer) EnterPartitionClause(ctx *tidb.PartitionClauseContext
 	}
 }
 
-func (t *mysqlTransformer) EnterCreateView(ctx *tidb.CreateViewContext) {
+func (t *tidbTransformer) EnterCreateView(ctx *tidb.CreateViewContext) {
 	if t.err != nil {
 		return
 	}

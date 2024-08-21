@@ -96,13 +96,13 @@ func parseInputStream(input *antlr.InputStream) ([]*ParseResult, error) {
 	lexer := parser.NewTiDBLexer(input)
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
 
-	list, err := splitMySQLStatement(stream)
+	list, err := splitTiDBStatement(stream)
 	if err != nil {
 		return nil, err
 	}
 
 	if len(list) > 0 {
-		list[len(list)-1].Text = mysqlAddSemicolonIfNeeded(list[len(list)-1].Text)
+		list[len(list)-1].Text = tidbAddSemicolonIfNeeded(list[len(list)-1].Text)
 	}
 
 	baseLine := 0
@@ -298,7 +298,7 @@ func TypeString(tp byte) string {
 	return "unknown"
 }
 
-func mysqlAddSemicolonIfNeeded(sql string) string {
+func tidbAddSemicolonIfNeeded(sql string) string {
 	lexer := parser.NewTiDBLexer(antlr.NewInputStream(sql))
 	lexerErrorListener := &base.ParseErrorListener{}
 	lexer.RemoveErrorListeners()
