@@ -16,7 +16,7 @@ import (
 	// The packege parser_driver has to be imported.
 	_ "github.com/pingcap/tidb/pkg/types/parser_driver"
 
-	parser "github.com/bytebase/mysql-parser"
+	parser "github.com/bytebase/tidb-parser"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/plugin/parser/tokenizer"
@@ -59,10 +59,10 @@ func ANTLRParseTiDB(statement string, options ...tokenizer.Option) ([]*ParseResu
 
 func parseSingleStatement(baseLine int, statement string) (antlr.Tree, *antlr.CommonTokenStream, error) {
 	input := antlr.NewInputStream(statement)
-	lexer := parser.NewMySQLLexer(input)
+	lexer := parser.NewTiDBLexer(input)
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
 
-	p := parser.NewMySQLParser(stream)
+	p := parser.NewTiDBParser(stream)
 
 	lexerErrorListener := &base.ParseErrorListener{
 		BaseLine: baseLine,
@@ -93,7 +93,7 @@ func parseSingleStatement(baseLine int, statement string) (antlr.Tree, *antlr.Co
 
 func parseInputStream(input *antlr.InputStream) ([]*ParseResult, error) {
 	var result []*ParseResult
-	lexer := parser.NewMySQLLexer(input)
+	lexer := parser.NewTiDBLexer(input)
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
 
 	list, err := splitMySQLStatement(stream)
@@ -129,7 +129,7 @@ func parseInputStream(input *antlr.InputStream) ([]*ParseResult, error) {
 
 func isEmptyStatement(tokens *antlr.CommonTokenStream) bool {
 	for _, token := range tokens.GetAllTokens() {
-		if token.GetChannel() == antlr.TokenDefaultChannel && token.GetTokenType() != parser.MySQLParserSEMICOLON_SYMBOL && token.GetTokenType() != parser.MySQLParserEOF {
+		if token.GetChannel() == antlr.TokenDefaultChannel && token.GetTokenType() != parser.TiDBParserSEMICOLON_SYMBOL && token.GetTokenType() != parser.TiDBParserEOF {
 			return false
 		}
 	}
@@ -299,7 +299,7 @@ func TypeString(tp byte) string {
 }
 
 func mysqlAddSemicolonIfNeeded(sql string) string {
-	lexer := parser.NewMySQLLexer(antlr.NewInputStream(sql))
+	lexer := parser.NewTiDBLexer(antlr.NewInputStream(sql))
 	lexerErrorListener := &base.ParseErrorListener{}
 	lexer.RemoveErrorListeners()
 	lexer.AddErrorListener(lexerErrorListener)
@@ -311,12 +311,12 @@ func mysqlAddSemicolonIfNeeded(sql string) string {
 	}
 	tokens := stream.GetAllTokens()
 	for i := len(tokens) - 1; i >= 0; i-- {
-		if tokens[i].GetChannel() != antlr.TokenDefaultChannel || tokens[i].GetTokenType() == parser.MySQLParserEOF {
+		if tokens[i].GetChannel() != antlr.TokenDefaultChannel || tokens[i].GetTokenType() == parser.TiDBParserEOF {
 			continue
 		}
 
 		// The last default channel token is a semicolon.
-		if tokens[i].GetTokenType() == parser.MySQLParserSEMICOLON_SYMBOL {
+		if tokens[i].GetTokenType() == parser.TiDBParserSEMICOLON_SYMBOL {
 			return sql
 		}
 

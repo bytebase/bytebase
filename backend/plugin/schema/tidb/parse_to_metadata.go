@@ -123,7 +123,7 @@ func (t *mysqlTransformer) EnterCreateTableOption(ctx *tidb.CreateTableOptionCon
 }
 
 // EnterColumnDefinition is called when production columnDefinition is entered.
-func (t *mysqlTransformer) EnterColumnDefinition(ctx *tidb.ColumnDefContext) {
+func (t *mysqlTransformer) EnterColumnDef(ctx *tidb.ColumnDefContext) {
 	if t.err != nil || t.currentTable == "" {
 		return
 	}
