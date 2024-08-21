@@ -5,6 +5,7 @@
       class="w-full px-4 shrink-0"
       :redirect="logoRedirect"
     />
+    <slot name="prefix" />
     <div class="flex-1 overflow-y-auto px-2.5 space-y-1">
       <div v-for="(item, i) in filteredSidebarList" :key="i">
         <router-link

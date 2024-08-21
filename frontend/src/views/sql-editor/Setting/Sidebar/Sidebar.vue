@@ -1,31 +1,33 @@
 <template>
   <div class="h-full flex flex-col overflow-y-auto bg-control-bg">
-    <nav class="flex-1 flex flex-col overflow-y-hidden">
+    <nav class="flex-1 flex flex-col overflow-y-hidden text-sm">
       <BytebaseLogo
         class="w-full px-4 shrink-0"
         :redirect="SQL_EDITOR_HOME_MODULE"
       />
 
-      <div class="flex-1 overflow-y-auto px-2.5 space-y-1">
+      <div class="px-2.5 mb-2">
+        <router-link
+          class="group flex items-center gap-2 px-2 py-1.5 leading-normal font-medium rounded-md text-main outline-item !text-base"
+          :to="{ name: SQL_EDITOR_HOME_MODULE }"
+        >
+          <ChevronLeftIcon class="w-5 h-5" />
+          <span>{{ $t("common.setting") }}</span>
+        </router-link>
+      </div>
+
+      <div class="flex-1 overflow-y-auto px-2.5 flex flex-col gap-1">
         <div v-for="item in itemList" :key="item.name">
           <router-link
             :to="{ path: item.path, name: item.name }"
-            class="group flex items-center px-2 py-1.5 leading-normal font-medium rounded-md text-gray-700 outline-item !text-sm"
+            class="group flex items-center gap-2 px-2 py-1.5 leading-normal font-medium rounded-md text-gray-700 outline-item"
           >
-            <component :is="item.icon" class="mr-2 w-5 h-5 text-gray-500" />
+            <component :is="item.icon" class="w-5 h-5 text-gray-500" />
             {{ item.title }}
           </router-link>
         </div>
       </div>
     </nav>
-
-    <router-link
-      class="flex-shrink-0 flex gap-x-2 justify-start items-center border-t border-block-border px-3 py-2 hover:bg-control-bg-hover cursor-pointer text-sm"
-      :to="{ name: SQL_EDITOR_HOME_MODULE }"
-    >
-      <ChevronLeftIcon class="w-5 h-5" />
-      <span>{{ $t("common.back") }}</span>
-    </router-link>
   </div>
 </template>
 
