@@ -1,4 +1,45 @@
 - schema: |-
+    CREATE TABLE `t1` (
+      `id` bigint(20) NOT NULL /*T![auto_rand] AUTO_RANDOM(10) */,
+      PRIMARY KEY (`id`) /*T![clustered_index] CLUSTERED */
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+  metadata: |-
+    {
+      "schemas":  [
+        {
+          "tables":  [
+            {
+              "name":  "t1",
+              "columns":  [
+                {
+                  "name":  "id",
+                  "position":  1,
+                  "defaultExpression":  "AUTO_RANDOM(10)",
+                  "type":  "bigint(20)"
+                }
+              ],
+              "indexes":  [
+                {
+                  "name":  "PRIMARY",
+                  "expressions":  [
+                    "id"
+                  ],
+                  "keyLength":  [
+                    "-1"
+                  ],
+                  "unique":  true,
+                  "primary":  true,
+                  "visible":  true
+                }
+              ],
+              "engine":  "InnoDB",
+              "collation":  "utf8mb4_bin"
+            }
+          ]
+        }
+      ]
+    }
+- schema: |-
     create table t
       (
         `a` int NOT NULL COMMENT 'this is comment',
@@ -327,6 +368,7 @@
                 {
                   "name":  "a",
                   "position":  1,
+                  "defaultExpression":  "AUTO_RANDOM(6, 54)",
                   "type":  "bigint"
                 }
               ],
