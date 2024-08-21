@@ -155,7 +155,7 @@ const databases = computed(() => {
     databaseStore
       .databaseListByProject(project.value.name)
       // Don't show the currently selected database.
-      .filter((db) => db.uid !== selectedDatabase.value.uid)
+      .filter((db) => db.name !== selectedDatabase.value.name)
       // Only show databases that the user has permission to query.
       .filter((db) => currentUserIamPolicy.allowToQueryDatabaseV1(db))
       // Only show databases with same engine.

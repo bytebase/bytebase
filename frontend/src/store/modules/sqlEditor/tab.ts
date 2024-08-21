@@ -9,7 +9,7 @@ import type {
   CoreSQLEditorTab,
   SQLEditorTab,
 } from "@/types";
-import { DEFAULT_SQL_EDITOR_TAB_MODE, UNKNOWN_ID } from "@/types";
+import { DEFAULT_SQL_EDITOR_TAB_MODE, isValidDatabaseName } from "@/types";
 import {
   WebStorageHelper,
   defaultSQLEditorTab,
@@ -381,7 +381,7 @@ export const useSQLEditorConnectionDetail = (
   });
 
   const environment = computed(() => {
-    if (database.value.uid !== String(UNKNOWN_ID)) {
+    if (isValidDatabaseName(database.value.name)) {
       return database.value.effectiveEnvironmentEntity;
     }
 

@@ -16,8 +16,8 @@ import {
 } from "@/store";
 import {
   isValidEnvironmentName,
-  UNKNOWN_ID,
   isValidProjectName,
+  isValidDatabaseName,
 } from "@/types";
 import { useReviewConfigAttachedResource } from "./useReviewConfigAttachedResource";
 
@@ -48,7 +48,7 @@ const reviewPolicyResourceComponent = computed(() => {
     }
     case "database": {
       const database = databaseStore.getDatabaseByName(props.resource);
-      if (database.uid === `${UNKNOWN_ID}`) {
+      if (!isValidDatabaseName(database.name)) {
         return <div>{props.resource}</div>;
       }
       return (

@@ -16,7 +16,7 @@ import {
   SQL_EDITOR_HOME_MODULE,
 } from "@/router/sqlEditor";
 import { useDatabaseV1Store } from "@/store";
-import { UNKNOWN_ID } from "@/types";
+import { isValidDatabaseName } from "@/types";
 import {
   extractInstanceResourceName,
   extractProjectResourceName,
@@ -39,7 +39,7 @@ const gotoSQLEditor = async () => {
       .databaseName as string;
     const db =
       await useDatabaseV1Store().getOrFetchDatabaseByName(databaseResourceName);
-    if (db.uid !== String(UNKNOWN_ID)) {
+    if (isValidDatabaseName(db.name)) {
       const url = router.resolve({
         name: SQL_EDITOR_DATABASE_MODULE,
         params: {

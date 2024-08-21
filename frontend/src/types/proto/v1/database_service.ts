@@ -342,8 +342,6 @@ export interface Database {
    * {database} is the database name in the instance.
    */
   name: string;
-  /** The system-assigned, unique identifier for a resource. */
-  uid: string;
   /** The existence of a database on latest sync. */
   syncState: State;
   /** The latest synchronization time. */
@@ -2863,7 +2861,6 @@ export const DiffSchemaResponse = {
 function createBaseDatabase(): Database {
   return {
     name: "",
-    uid: "",
     syncState: State.STATE_UNSPECIFIED,
     successfulSyncTime: undefined,
     project: "",
@@ -2880,9 +2877,6 @@ export const Database = {
   encode(message: Database, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
-    }
-    if (message.uid !== "") {
-      writer.uint32(18).string(message.uid);
     }
     if (message.syncState !== State.STATE_UNSPECIFIED) {
       writer.uint32(24).int32(stateToNumber(message.syncState));
@@ -2927,13 +2921,6 @@ export const Database = {
           }
 
           message.name = reader.string();
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.uid = reader.string();
           continue;
         case 3:
           if (tag !== 24) {
@@ -3013,7 +3000,6 @@ export const Database = {
   fromJSON(object: any): Database {
     return {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
-      uid: isSet(object.uid) ? globalThis.String(object.uid) : "",
       syncState: isSet(object.syncState) ? stateFromJSON(object.syncState) : State.STATE_UNSPECIFIED,
       successfulSyncTime: isSet(object.successfulSyncTime) ? fromJsonTimestamp(object.successfulSyncTime) : undefined,
       project: isSet(object.project) ? globalThis.String(object.project) : "",
@@ -3035,9 +3021,6 @@ export const Database = {
     const obj: any = {};
     if (message.name !== "") {
       obj.name = message.name;
-    }
-    if (message.uid !== "") {
-      obj.uid = message.uid;
     }
     if (message.syncState !== State.STATE_UNSPECIFIED) {
       obj.syncState = stateToJSON(message.syncState);
@@ -3081,7 +3064,6 @@ export const Database = {
   fromPartial(object: DeepPartial<Database>): Database {
     const message = createBaseDatabase();
     message.name = object.name ?? "";
-    message.uid = object.uid ?? "";
     message.syncState = object.syncState ?? State.STATE_UNSPECIFIED;
     message.successfulSyncTime = object.successfulSyncTime ?? undefined;
     message.project = object.project ?? "";

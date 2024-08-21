@@ -368,13 +368,12 @@ message Database {
     pattern: "instances/{instance}/databases/{database}"
   };
 
+  reserved 2;
+
   // The name of the database.
   // Format: instances/{instance}/databases/{database}
   // {database} is the database name in the instance.
   string name = 1;
-
-  // The system-assigned, unique identifier for a resource.
-  string uid = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The existence of a database on latest sync.
   State sync_state = 3 [(google.api.field_behavior) = OUTPUT_ONLY];

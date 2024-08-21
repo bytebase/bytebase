@@ -26,7 +26,7 @@ import { orderBy } from "lodash-es";
 import { computed, nextTick, watch } from "vue";
 import { BBSpin } from "@/bbkit";
 import { useDatabaseV1Store, useFilterStore } from "@/store";
-import { UNKNOWN_ID } from "@/types";
+import { isValidDatabaseName } from "@/types";
 import {
   useSheetContextByView,
   type SheetViewMode,
@@ -78,7 +78,7 @@ const sortedWorksheetList = computed(() => {
           return Number.MAX_VALUE;
         }
         const db = useDatabaseV1Store().getDatabaseByName(worksheet.database);
-        if (db.uid === String(UNKNOWN_ID)) {
+        if (!isValidDatabaseName(db.name)) {
           return Number.MAX_VALUE;
         }
         return 1;

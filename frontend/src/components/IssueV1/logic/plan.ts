@@ -13,6 +13,7 @@ import {
   unknownDatabase,
   unknownEnvironment,
   type ComposedDatabase,
+  isValidDatabaseName,
 } from "@/types";
 import { Engine, State } from "@/types/proto/v1/common";
 import type { Plan_Spec } from "@/types/proto/v1/plan_service";
@@ -31,7 +32,6 @@ export const databaseForSpec = (
     return {
       ...unknownDatabase(),
       name: `${instanceName}/databases/${databaseName}`,
-      uid: String(UNKNOWN_ID),
       databaseName,
       instance: instanceName,
       project: issue.project,
@@ -50,7 +50,7 @@ export const databaseForSpec = (
     const target = (changeDatabaseConfig?.target ??
       exportDataConfig?.target) as string;
     const db = useDatabaseV1Store().getDatabaseByName(target);
-    if (db.uid === String(UNKNOWN_ID)) {
+    if (!isValidDatabaseName(db.name)) {
       // Database not found, it's probably NOT_FOUND (maybe dropped actually)
       // Mock a database using all known resources
       db.project = issue.project;
@@ -105,7 +105,7 @@ export const databaseEngineForSpec = async (
       target,
       /* silent */ true
     );
-    if (db && db.uid !== String(UNKNOWN_ID)) {
+    if (isValidDatabaseName(db.name)) {
       return db.instanceResource.engine;
     }
   }
@@ -119,7 +119,7 @@ export const databaseEngineForSpec = async (
         dbName,
         /* silent */ true
       );
-      if (db && db.uid !== String(UNKNOWN_ID)) {
+      if (isValidDatabaseName(db.name)) {
         return db.instanceResource.engine;
       }
     }

@@ -15,9 +15,9 @@ import type {
 } from "@/types";
 import {
   DEFAULT_SQL_EDITOR_TAB_MODE,
+  isValidDatabaseName,
   isValidInstanceName,
   UNKNOWN_DATABASE_NAME,
-  UNKNOWN_ID,
 } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import type { InstanceResource } from "@/types/proto/v1/instance_service";
@@ -102,7 +102,7 @@ export const suggestedTabTitleForSQLEditorConnection = (
 ) => {
   const database = useDatabaseV1Store().getDatabaseByName(conn.database);
   const parts: string[] = [];
-  if (database.uid !== String(UNKNOWN_ID)) {
+  if (isValidDatabaseName(database.name)) {
     parts.push(database.databaseName);
   } else if (isValidInstanceName(database.instance)) {
     parts.push(database.instanceResource.title);

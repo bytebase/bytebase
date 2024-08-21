@@ -660,7 +660,6 @@ const upsertMaskingPolicy = async () => {
   const upsert: Partial<Policy> = {
     type: PolicyType.MASKING,
     resourceType: PolicyResourceType.DATABASE,
-    resourceUid: props.column.database.uid,
     maskingPolicy: {
       maskData,
     },
