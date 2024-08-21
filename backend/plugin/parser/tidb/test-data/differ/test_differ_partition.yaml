@@ -1,0 +1,17 @@
+- oldSchema: |
+    CREATE TABLE range_partition(
+      id INT
+    ) PARTITION BY RANGE (id) (
+      PARTITION p0 VALUES LESS THAN (10)
+    );
+  newSchema: |
+    CREATE TABLE range_partition(
+      id INT
+    ) PARTITION BY RANGE (id) (
+      PARTITION p0 VALUES LESS THAN (10),
+      PARTITION p1 VALUES LESS THAN (20)
+    );
+  diff: |
+    ALTER TABLE `range_partition` PARTITION BY RANGE (`id`)
+    (PARTITION p0 VALUES LESS THAN (10) ENGINE=InnoDB,
+     PARTITION p1 VALUES LESS THAN (20) ENGINE=InnoDB);
