@@ -945,6 +945,15 @@ export interface TaskRunSession_Postgres_Session {
   queryStart?: Date | undefined;
 }
 
+export interface PreviewTaskRunRollbackRequest {
+  /** Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun} */
+  name: string;
+}
+
+export interface PreviewTaskRunRollbackResponse {
+  statement: string;
+}
+
 function createBaseBatchRunTasksRequest(): BatchRunTasksRequest {
   return { parent: "", tasks: [], reason: "" };
 }
@@ -4894,6 +4903,120 @@ export const TaskRunSession_Postgres_Session = {
   },
 };
 
+function createBasePreviewTaskRunRollbackRequest(): PreviewTaskRunRollbackRequest {
+  return { name: "" };
+}
+
+export const PreviewTaskRunRollbackRequest = {
+  encode(message: PreviewTaskRunRollbackRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): PreviewTaskRunRollbackRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBasePreviewTaskRunRollbackRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): PreviewTaskRunRollbackRequest {
+    return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
+  },
+
+  toJSON(message: PreviewTaskRunRollbackRequest): unknown {
+    const obj: any = {};
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<PreviewTaskRunRollbackRequest>): PreviewTaskRunRollbackRequest {
+    return PreviewTaskRunRollbackRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<PreviewTaskRunRollbackRequest>): PreviewTaskRunRollbackRequest {
+    const message = createBasePreviewTaskRunRollbackRequest();
+    message.name = object.name ?? "";
+    return message;
+  },
+};
+
+function createBasePreviewTaskRunRollbackResponse(): PreviewTaskRunRollbackResponse {
+  return { statement: "" };
+}
+
+export const PreviewTaskRunRollbackResponse = {
+  encode(message: PreviewTaskRunRollbackResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.statement !== "") {
+      writer.uint32(10).string(message.statement);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): PreviewTaskRunRollbackResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBasePreviewTaskRunRollbackResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.statement = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): PreviewTaskRunRollbackResponse {
+    return { statement: isSet(object.statement) ? globalThis.String(object.statement) : "" };
+  },
+
+  toJSON(message: PreviewTaskRunRollbackResponse): unknown {
+    const obj: any = {};
+    if (message.statement !== "") {
+      obj.statement = message.statement;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<PreviewTaskRunRollbackResponse>): PreviewTaskRunRollbackResponse {
+    return PreviewTaskRunRollbackResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<PreviewTaskRunRollbackResponse>): PreviewTaskRunRollbackResponse {
+    const message = createBasePreviewTaskRunRollbackResponse();
+    message.statement = object.statement ?? "";
+    return message;
+  },
+};
+
 export type RolloutServiceDefinition = typeof RolloutServiceDefinition;
 export const RolloutServiceDefinition = {
   name: "RolloutService",
@@ -5628,6 +5751,106 @@ export const RolloutServiceDefinition = {
               99,
               101,
               108,
+            ]),
+          ],
+        },
+      },
+    },
+    previewTaskRunRollback: {
+      name: "PreviewTaskRunRollback",
+      requestType: PreviewTaskRunRollbackRequest,
+      requestStream: false,
+      responseType: PreviewTaskRunRollbackResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          8410: [new Uint8Array([4, 110, 97, 109, 101])],
+          800010: [new Uint8Array([16, 98, 98, 46, 116, 97, 115, 107, 82, 117, 110, 115, 46, 108, 105, 115, 116])],
+          800016: [new Uint8Array([1])],
+          578365826: [
+            new Uint8Array([
+              81,
+              58,
+              1,
+              42,
+              34,
+              76,
+              47,
+              118,
+              49,
+              47,
+              123,
+              110,
+              97,
+              109,
+              101,
+              61,
+              112,
+              114,
+              111,
+              106,
+              101,
+              99,
+              116,
+              115,
+              47,
+              42,
+              47,
+              114,
+              111,
+              108,
+              108,
+              111,
+              117,
+              116,
+              115,
+              47,
+              42,
+              47,
+              115,
+              116,
+              97,
+              103,
+              101,
+              115,
+              47,
+              42,
+              47,
+              116,
+              97,
+              115,
+              107,
+              115,
+              47,
+              42,
+              47,
+              116,
+              97,
+              115,
+              107,
+              82,
+              117,
+              110,
+              115,
+              47,
+              42,
+              125,
+              58,
+              112,
+              114,
+              101,
+              118,
+              105,
+              101,
+              119,
+              82,
+              111,
+              108,
+              108,
+              98,
+              97,
+              99,
+              107,
             ]),
           ],
         },

@@ -96,7 +96,7 @@ service RolloutService {
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.auth_method) = CUSTOM;
   }
-  
+
   rpc PreviewTaskRunRollback(PreviewTaskRunRollbackRequest) returns (PreviewTaskRunRollbackResponse) {
     option (google.api.http) = {
       post: "/v1/{name=projects/*/rollouts/*/stages/*/tasks/*/taskRuns/*}:previewRollback"
