@@ -141,6 +141,15 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*ba
 
 	tableSource, err := q.extractTableSourceFromNode(ast.Stmt)
 	if err != nil {
+		var resourceNotFound *parsererror.ResourceNotFoundError
+		if errors.As(err, &resourceNotFound) {
+			return &base.QuerySpan{
+				SourceColumns: accessTables,
+				Results:       []base.QuerySpanResult{},
+				NotFoundError: resourceNotFound,
+			}, nil
+		}
+
 		return nil, err
 	}
 
