@@ -4,11 +4,13 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"sort"
 	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/resources/postgres"
 	"github.com/bytebase/bytebase/backend/tests/fake"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -130,6 +132,17 @@ func TestFilterChangeHistoryByResources(t *testing.T) {
 		a.NoError(err)
 		a.Equal(len(tt.wantStatements), len(resp.ChangeHistories), tt.filter)
 		for i, wantStatement := range tt.wantStatements {
+			sort.Slice(resp.ChangeHistories, func(i, j int) bool {
+				_, _, id1, err := common.GetInstanceDatabaseIDChangeHistory(resp.ChangeHistories[i].Name)
+				a.NoError(err)
+				_, _, id2, err := common.GetInstanceDatabaseIDChangeHistory(resp.ChangeHistories[j].Name)
+				a.NoError(err)
+				uid1, err := strconv.Atoi(id1)
+				a.NoError(err)
+				uid2, err := strconv.Atoi(id2)
+				a.NoError(err)
+				return uid1 < uid2
+			})
 			a.Equal(wantStatement, string(resp.ChangeHistories[i].Statement), tt.filter)
 		}
 	}
