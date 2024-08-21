@@ -18,12 +18,12 @@
       :expanded-row-keys="
         issueList.filter(isIssueExpanded).map((issue) => issue.name)
       "
-      :checked-row-keys="Array.from(state.selectedIssueIdList)"
+      :checked-row-keys="Array.from(state.selectedIssueNameList)"
       :row-props="rowProps"
       :render-expand-icon="() => h('span', { class: 'hidden' })"
       class="issue-table-list"
       @update:checked-row-keys="
-        (val) => (state.selectedIssueIdList = new Set(val as string[]))
+        (val) => (state.selectedIssueNameList = new Set(val as string[]))
       "
     />
   </div>
@@ -186,7 +186,7 @@ const columnList = computed((): DataTableColumn<ComposedIssue>[] => {
 });
 
 interface LocalState {
-  selectedIssueIdList: Set<string>;
+  selectedIssueNameList: Set<string>;
 }
 
 const props = withDefaults(
@@ -212,7 +212,7 @@ const props = withDefaults(
 const router = useRouter();
 
 const state = reactive<LocalState>({
-  selectedIssueIdList: new Set(),
+  selectedIssueNameList: new Set(),
 });
 
 const tableRef = ref<HTMLDivElement>();
@@ -242,7 +242,7 @@ const sortedIssueList = computed(() => {
 
 const selectedIssueList = computed(() => {
   return props.issueList.filter((issue) =>
-    state.selectedIssueIdList.has(extractIssueUID(issue.name))
+    state.selectedIssueNameList.has(issue.name)
   );
 });
 
@@ -273,15 +273,13 @@ const rowProps = (issue: ComposedIssue) => {
 watch(
   () => props.issueList,
   (list) => {
-    const oldIssueIdList = Array.from(state.selectedIssueIdList.values());
-    const newIssueIdList = new Set(
-      list.map((issue) => extractIssueUID(issue.name))
-    );
-    oldIssueIdList.forEach((id) => {
-      // If a selected issue id doesn't appear in the new IssueList
+    const oldIssueNames = Array.from(state.selectedIssueNameList.values());
+    const newIssueNames = new Set(list.map((issue) => issue.name));
+    oldIssueNames.forEach((name) => {
+      // If a selected issue name doesn't appear in the new IssueList
       // we should cancel its selection state.
-      if (!newIssueIdList.has(id)) {
-        state.selectedIssueIdList.delete(id);
+      if (!newIssueNames.has(name)) {
+        state.selectedIssueNameList.delete(name);
       }
     });
   }
