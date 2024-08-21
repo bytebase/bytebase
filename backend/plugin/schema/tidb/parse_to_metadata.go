@@ -2,14 +2,13 @@ package tidb
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
+	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
 
-	tidbast "github.com/pingcap/tidb/pkg/parser/ast"
-	tidbformat "github.com/pingcap/tidb/pkg/parser/format"
-	"github.com/pingcap/tidb/pkg/parser/mysql"
-	tidbtypes "github.com/pingcap/tidb/pkg/parser/types"
+	tidb "github.com/bytebase/tidb-parser"
 
 	tidbparser "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
@@ -20,299 +19,560 @@ func init() {
 	schema.RegisterParseToMetadatas(storepb.Engine_TIDB, ParseToMetadata)
 }
 
-const (
-	autoIncrementSymbol = "AUTO_INCREMENT"
-	autoRandSymbol      = "AUTO_RANDOM"
-)
-
+// ParseToMetadata converts a schema string to database metadata.
 func ParseToMetadata(_, schema string) (*storepb.DatabaseSchemaMetadata, error) {
-	stmts, err := tidbparser.ParseTiDB(schema, "", "")
+	list, err := tidbparser.ANTLRParseTiDB(schema)
 	if err != nil {
 		return nil, err
 	}
 
-	transformer := &tidbTransformer{
+	listener := &tidbTransformer{
 		state: newDatabaseState(),
 	}
-	transformer.state.schemas[""] = newSchemaState()
+	listener.state.schemas[""] = newSchemaState()
 
-	for _, stmt := range stmts {
-		(stmt).Accept(transformer)
+	for _, stmt := range list {
+		antlr.ParseTreeWalkerDefault.Walk(listener, stmt.Tree)
 	}
-	return transformer.state.convertToDatabaseMetadata(), transformer.err
+
+	return listener.state.convertToDatabaseMetadata(), listener.err
 }
 
 type tidbTransformer struct {
-	tidbast.StmtNode
+	*tidb.BaseTiDBParserListener
 
-	state *databaseState
-	err   error
+	state        *databaseState
+	currentTable string
+	err          error
 }
 
-func (t *tidbTransformer) Enter(in tidbast.Node) (tidbast.Node, bool) {
-	if node, ok := in.(*tidbast.CreateTableStmt); ok {
-		dbInfo := node.Table.DBInfo
-		databaseName := ""
-		if dbInfo != nil {
-			databaseName = dbInfo.Name.String()
+// EnterCreateTable is called when production createTable is entered.
+func (t *tidbTransformer) EnterCreateTable(ctx *tidb.CreateTableContext) {
+	if t.err != nil {
+		return
+	}
+	databaseName, tableName := tidbparser.NormalizeTiDBTableName(ctx.TableName())
+	if databaseName != "" {
+		if t.state.name == "" {
+			t.state.name = databaseName
+		} else if t.state.name != databaseName {
+			t.err = errors.New("multiple database names found: " + t.state.name + ", " + databaseName)
+			return
 		}
-		if databaseName != "" {
-			if t.state.name == "" {
-				t.state.name = databaseName
-			} else if t.state.name != databaseName {
-				t.err = errors.New("multiple database names found: " + t.state.name + ", " + databaseName)
-				return in, true
-			}
-		}
+	}
 
-		tableName := node.Table.Name.String()
+	schema := t.state.schemas[""]
+	if _, ok := schema.tables[tableName]; ok {
+		t.err = errors.New("multiple table names found: " + tableName)
+		return
+	}
+
+	schema.tables[tableName] = newTableState(len(schema.tables), tableName)
+	t.currentTable = tableName
+}
+
+// ExitCreateTable is called when production createTable is exited.
+func (t *tidbTransformer) ExitCreateTable(_ *tidb.CreateTableContext) {
+	t.currentTable = ""
+}
+
+// EnterCreateTableOption is called when production createTableOption is entered.
+func (t *tidbTransformer) EnterCreateTableOption(ctx *tidb.CreateTableOptionContext) {
+	if t.err != nil || t.currentTable == "" {
+		return
+	}
+
+	if ctx.ENGINE_SYMBOL() != nil {
+		engineString := ctx.EngineRef().TextOrIdentifier().GetParser().GetTokenStream().GetTextFromRuleContext(ctx.EngineRef().TextOrIdentifier())
 		schema := t.state.schemas[""]
-		if _, ok := schema.tables[tableName]; ok {
-			t.err = errors.New("multiple table names found: " + tableName)
-			return in, true
+		table, ok := schema.tables[t.currentTable]
+		if !ok {
+			// This should never happen.
+			return
 		}
-		schema.tables[tableName] = newTableState(len(schema.tables), tableName)
+		table.engine = engineString
+	}
 
-		table := t.state.schemas[""].tables[tableName]
+	if defaultCollation := ctx.DefaultCollation(); defaultCollation != nil {
+		collationString := defaultCollation.CollationName().GetParser().GetTokenStream().GetTextFromRuleContext(defaultCollation.CollationName())
+		schema := t.state.schemas[""]
+		table, ok := schema.tables[t.currentTable]
+		if !ok {
+			// This should never happen.
+			return
+		}
+		table.collation = collationString
+	}
 
-		// column definition
-		for _, column := range node.Cols {
-			dataType := columnTypeStr(column.Tp)
-			columnName := column.Name.Name.String()
-			if _, ok := table.columns[columnName]; ok {
-				t.err = errors.New("multiple column names found: " + columnName + " in table " + tableName)
-				return in, true
-			}
+	if ctx.COMMENT_SYMBOL() != nil {
+		commentString := ctx.TextStringLiteral().GetText()
+		if len(commentString) > 2 {
+			quotes := commentString[0]
+			escape := fmt.Sprintf("%c%c", quotes, quotes)
+			commentString = strings.ReplaceAll(commentString[1:len(commentString)-1], escape, string(quotes))
+		}
 
-			columnState := &columnState{
-				id:       len(table.columns),
-				name:     columnName,
-				tp:       dataType,
-				comment:  "",
-				nullable: tidbColumnCanNull(column),
-			}
+		schema := t.state.schemas[""]
+		table, ok := schema.tables[t.currentTable]
+		if !ok {
+			// This should never happen.
+			return
+		}
+		table.comment = commentString
+	}
+}
 
-			for _, option := range column.Options {
-				switch option.Tp {
-				case tidbast.ColumnOptionDefaultValue:
-					defaultValue, err := restoreExpr(option.Expr)
-					if err != nil {
-						t.err = err
-						return in, true
-					}
-					if defaultValue != nil {
-						switch {
-						case strings.EqualFold(*defaultValue, "NULL"):
-							columnState.defaultValue = &defaultValueNull{}
-						case strings.HasPrefix(*defaultValue, "'") && strings.HasSuffix(*defaultValue, "'"):
-							columnState.defaultValue = &defaultValueString{value: strings.ReplaceAll((*defaultValue)[1:len(*defaultValue)-1], "''", "'")}
-						default:
-							columnState.defaultValue = &defaultValueExpression{value: *defaultValue}
-						}
-					}
-				case tidbast.ColumnOptionComment:
-					comment, err := restoreComment(option.Expr)
-					if err != nil {
-						t.err = err
-						return in, true
-					}
-					columnState.comment = comment
-				case tidbast.ColumnOptionAutoIncrement:
-					defaultValue := autoIncrementSymbol
+// EnterColumnDefinition is called when production columnDefinition is entered.
+func (t *tidbTransformer) EnterColumnDef(ctx *tidb.ColumnDefContext) {
+	if t.err != nil || t.currentTable == "" {
+		return
+	}
+
+	_, _, columnName := tidbparser.NormalizeTiDBColumnName(ctx.ColumnName())
+	dataType := getDataTypePlainText(ctx.DataType())
+	table := t.state.schemas[""].tables[t.currentTable]
+	if _, ok := table.columns[columnName]; ok {
+		t.err = errors.New("multiple column names found: " + columnName + " in table " + t.currentTable)
+		return
+	}
+	columnState := &columnState{
+		id:           len(table.columns),
+		name:         columnName,
+		tp:           dataType,
+		defaultValue: nil,
+		comment:      "",
+		nullable:     true,
+	}
+
+	if v := ctx.ColumnOptionList(); v != nil {
+		for _, attribute := range v.AllColumnOption() {
+			switch {
+			case attribute.NULL_SYMBOL() != nil && attribute.NOT_SYMBOL() != nil:
+				columnState.nullable = false
+			case attribute.DEFAULT_SYMBOL() != nil && attribute.SERIAL_SYMBOL() == nil:
+				defaultValueStart := nextDefaultChannelTokenIndex(ctx.GetParser().GetTokenStream(), attribute.DEFAULT_SYMBOL().GetSymbol().GetTokenIndex())
+				defaultValue := attribute.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+					Start: defaultValueStart,
+					Stop:  attribute.GetStop().GetTokenIndex(),
+				})
+				switch {
+				case strings.EqualFold(defaultValue, "NULL"):
+					columnState.defaultValue = &defaultValueNull{}
+				case strings.HasPrefix(defaultValue, "'") && strings.HasSuffix(defaultValue, "'"):
+					columnState.defaultValue = &defaultValueString{value: strings.ReplaceAll(defaultValue[1:len(defaultValue)-1], "''", "'")}
+				case strings.HasPrefix(defaultValue, "\"") && strings.HasSuffix(defaultValue, "\""):
+					columnState.defaultValue = &defaultValueString{value: strings.ReplaceAll(defaultValue[1:len(defaultValue)-1], "\"\"", "\"")}
+				default:
 					columnState.defaultValue = &defaultValueExpression{value: defaultValue}
-				case tidbast.ColumnOptionAutoRandom:
-					defaultValue := autoRandSymbol
-					unspecifiedLength := -1
-					if option.AutoRandOpt.ShardBits != unspecifiedLength {
-						if option.AutoRandOpt.RangeBits != unspecifiedLength {
-							defaultValue += fmt.Sprintf("(%d, %d)", option.AutoRandOpt.ShardBits, option.AutoRandOpt.RangeBits)
-						} else {
-							defaultValue += fmt.Sprintf("(%d)", option.AutoRandOpt.ShardBits)
-						}
-					}
-					columnState.defaultValue = &defaultValueExpression{value: defaultValue}
-				case tidbast.ColumnOptionOnUpdate:
-					onUpdate, err := restoreExpr(option.Expr)
-					if err != nil {
-						t.err = err
-						return in, true
-					}
-					columnState.onUpdate = *onUpdate
 				}
-			}
-			table.columns[columnName] = columnState
-		}
-		for _, tableOption := range node.Options {
-			switch tableOption.Tp {
-			case tidbast.TableOptionComment:
-				table.comment = tableComment(tableOption)
-			case tidbast.TableOptionEngine:
-				table.engine = tableOption.StrValue
-			case tidbast.TableOptionCollate:
-				table.collation = tableOption.StrValue
-			}
-		}
-
-		// primary and foreign key definition
-		for _, constraint := range node.Constraints {
-			constraintType := constraint.Tp
-			switch constraintType {
-			case tidbast.ConstraintPrimaryKey:
-				var pkList []string
-				for _, constraint := range node.Constraints {
-					if constraint.Tp == tidbast.ConstraintPrimaryKey {
-						var pks []string
-						for _, key := range constraint.Keys {
-							columnName := key.Column.Name.String()
-							pks = append(pks, columnName)
-						}
-						pkList = append(pkList, pks...)
-					}
+			case attribute.COMMENT_SYMBOL() != nil:
+				commentStart := nextDefaultChannelTokenIndex(ctx.GetParser().GetTokenStream(), attribute.COMMENT_SYMBOL().GetSymbol().GetTokenIndex())
+				comment := attribute.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+					Start: commentStart,
+					Stop:  attribute.GetStop().GetTokenIndex(),
+				})
+				if comment != `''` && len(comment) > 2 {
+					columnState.comment = comment[1 : len(comment)-1]
 				}
-
-				table.indexes["PRIMARY"] = &indexState{
-					id:      len(table.indexes),
-					name:    "PRIMARY",
-					keys:    pkList,
-					primary: true,
-					unique:  true,
-				}
-			case tidbast.ConstraintForeignKey:
-				var referencingColumnList []string
-				for _, key := range constraint.Keys {
-					referencingColumnList = append(referencingColumnList, key.Column.Name.String())
-				}
-				var referencedColumnList []string
-				for _, spec := range constraint.Refer.IndexPartSpecifications {
-					referencedColumnList = append(referencedColumnList, spec.Column.Name.String())
-				}
-
-				fkName := constraint.Name
-				if fkName == "" {
-					t.err = errors.New("empty foreign key name")
-					return in, true
-				}
-				if table.foreignKeys[fkName] != nil {
-					t.err = errors.New("multiple foreign keys found: " + fkName)
-					return in, true
-				}
-
-				fk := &foreignKeyState{
-					id:                len(table.foreignKeys),
-					name:              fkName,
-					columns:           referencingColumnList,
-					referencedTable:   constraint.Refer.Table.Name.String(),
-					referencedColumns: referencedColumnList,
-				}
-				table.foreignKeys[fkName] = fk
-			case tidbast.ConstraintIndex, tidbast.ConstraintUniq, tidbast.ConstraintUniqKey, tidbast.ConstraintUniqIndex, tidbast.ConstraintKey:
-				var referencingColumnList []string
-				var lengthList []int64
-				for _, spec := range constraint.Keys {
-					var specString string
-					var err error
-					if spec.Column != nil {
-						specString = spec.Column.Name.String()
-						if spec.Length > 0 {
-							lengthList = append(lengthList, int64(spec.Length))
-						} else {
-							lengthList = append(lengthList, -1)
-						}
-					} else {
-						specString, err = tidbRestoreNode(spec, tidbformat.RestoreKeyWordLowercase|tidbformat.RestoreStringSingleQuotes|tidbformat.RestoreNameBackQuotes)
-						if err != nil {
-							t.err = err
-							return in, true
-						}
-					}
-					referencingColumnList = append(referencingColumnList, specString)
-				}
-
-				var indexName string
-				if constraint.Name != "" {
-					indexName = constraint.Name
+			// todo(zp): refactor column attribute.
+			case attribute.AUTO_INCREMENT_SYMBOL() != nil:
+				defaultValue := autoIncrementSymbol
+				columnState.defaultValue = &defaultValueExpression{value: defaultValue}
+			case attribute.ON_SYMBOL() != nil && attribute.UPDATE_SYMBOL() != nil:
+				onUpdateValue := ""
+				if attribute.TimeFunctionParameters() != nil && attribute.TimeFunctionParameters().FractionalPrecision() != nil {
+					onUpdateValue = "CURRENT_TIMESTAMP(" + attribute.TimeFunctionParameters().FractionalPrecision().GetText() + ")"
 				} else {
-					t.err = errors.New("empty index name")
-					return in, true
+					onUpdateValue = "CURRENT_TIMESTAMP"
 				}
-
-				if table.indexes[indexName] != nil {
-					t.err = errors.New("multiple foreign keys found: " + indexName)
-					return in, true
-				}
-
-				table.indexes[indexName] = &indexState{
-					id:      len(table.indexes),
-					name:    indexName,
-					keys:    referencingColumnList,
-					length:  lengthList,
-					primary: false,
-					unique:  constraintType == tidbast.ConstraintUniq || constraintType == tidbast.ConstraintUniqKey || constraintType == tidbast.ConstraintUniqIndex,
-				}
+				columnState.onUpdate = onUpdateValue
 			}
 		}
 	}
-	return in, false
+
+	if columnState.defaultValue == nil && columnState.nullable {
+		columnState.defaultValue = &defaultValueNull{}
+	}
+
+	table.columns[columnName] = columnState
 }
 
-// columnTypeStr returns the type string of tp.
-func columnTypeStr(tp *tidbtypes.FieldType) string {
-	// This logic is copy from tidb/pkg/parser/model/model.go:GetTypeDesc()
-	// DO NOT TOUCH!
-	desc := tp.CompactStr()
-	if mysql.HasUnsignedFlag(tp.GetFlag()) && tp.GetType() != mysql.TypeBit && tp.GetType() != mysql.TypeYear {
-		desc += " unsigned"
+// EnterTableConstraintDef is called when production tableConstraintDef is entered.
+func (t *tidbTransformer) EnterTableConstraintDef(ctx *tidb.TableConstraintDefContext) {
+	if t.err != nil || t.currentTable == "" {
+		return
 	}
-	if mysql.HasZerofillFlag(tp.GetFlag()) && tp.GetType() != mysql.TypeYear {
-		desc += " zerofill"
-	}
-	return desc
-}
 
-func tidbColumnCanNull(column *tidbast.ColumnDef) bool {
-	for _, option := range column.Options {
-		if option.Tp == tidbast.ColumnOptionNotNull || option.Tp == tidbast.ColumnOptionPrimaryKey {
-			return false
+	if ctx.GetType_() != nil {
+		symbol := strings.ToUpper(ctx.GetType_().GetText())
+		switch symbol {
+		case "PRIMARY":
+			keys, keyLengths := extractKeyListVariants(ctx.KeyListVariants())
+			table := t.state.schemas[""].tables[t.currentTable]
+			table.indexes["PRIMARY"] = &indexState{
+				id:      len(table.indexes),
+				name:    "PRIMARY",
+				keys:    keys,
+				lengths: keyLengths,
+				primary: true,
+				unique:  true,
+			}
+		case "FOREIGN":
+			var name string
+			if ctx.ConstraintName() != nil && ctx.ConstraintName().Identifier() != nil {
+				name = tidbparser.NormalizeTiDBIdentifier(ctx.ConstraintName().Identifier())
+			} else if ctx.IndexName() != nil {
+				name = tidbparser.NormalizeTiDBIdentifier(ctx.IndexName().Identifier())
+			}
+			keys, _ := extractKeyList(ctx.KeyList())
+			table := t.state.schemas[""].tables[t.currentTable]
+			if table.foreignKeys[name] != nil {
+				t.err = errors.New("multiple foreign keys found: " + name)
+				return
+			}
+			referencedTable, referencedColumns := extractReference(ctx.References())
+			fk := &foreignKeyState{
+				id:                len(table.foreignKeys),
+				name:              name,
+				columns:           keys,
+				referencedTable:   referencedTable,
+				referencedColumns: referencedColumns,
+			}
+			table.foreignKeys[name] = fk
+		case "FULLTEXT":
+			var name string
+			if ctx.IndexName() != nil {
+				name = tidbparser.NormalizeTiDBIdentifier(ctx.IndexName().Identifier())
+			}
+			keys, keyLengths := extractKeyListVariants(ctx.KeyListVariants())
+			table := t.state.schemas[""].tables[t.currentTable]
+			if table.indexes[name] != nil {
+				t.err = errors.New("multiple indexes found: " + name)
+				return
+			}
+			idx := &indexState{
+				id:      len(table.indexes),
+				name:    name,
+				keys:    keys,
+				lengths: keyLengths,
+				primary: false,
+				unique:  false,
+				tp:      symbol,
+			}
+			table.indexes[name] = idx
+		case "SPATIAL":
+			var name string
+			if ctx.IndexName() != nil {
+				name = tidbparser.NormalizeTiDBIdentifier(ctx.IndexName().Identifier())
+			}
+			keys, keyLengths := extractKeyListVariants(ctx.KeyListVariants())
+			table := t.state.schemas[""].tables[t.currentTable]
+			if table.indexes[name] != nil {
+				t.err = errors.New("multiple indexes found: " + name)
+				return
+			}
+			idx := &indexState{
+				id:      len(table.indexes),
+				name:    name,
+				keys:    keys,
+				lengths: keyLengths,
+				primary: false,
+				unique:  false,
+				tp:      symbol,
+			}
+			table.indexes[name] = idx
+		case "KEY", "INDEX", "UNIQUE":
+			var name string
+			if v := ctx.IndexNameAndType(); v != nil {
+				name = tidbparser.NormalizeTiDBIdentifier(v.IndexName().Identifier())
+			} else {
+				t.err = errors.New("index name not found")
+			}
+			keys, keyLengths := extractKeyListVariants(ctx.KeyListVariants())
+			table := t.state.schemas[""].tables[t.currentTable]
+			if table.indexes[name] != nil {
+				t.err = errors.New("multiple indexes found: " + name)
+				return
+			}
+			tp := "BTREE"
+			if v := ctx.IndexNameAndType(); v != nil && v.IndexType() != nil {
+				tp = strings.ToUpper(v.IndexType().GetText())
+			}
+			idx := &indexState{
+				id:      len(table.indexes),
+				name:    name,
+				keys:    keys,
+				lengths: keyLengths,
+				primary: false,
+				unique:  symbol == "UNIQUE",
+				tp:      tp,
+			}
+			table.indexes[name] = idx
 		}
 	}
-	return true
 }
 
-func restoreExpr(expr tidbast.ExprNode) (*string, error) {
-	if expr == nil {
-		return nil, nil
+func (t *tidbTransformer) EnterPartitionClause(ctx *tidb.PartitionClauseContext) {
+	if t.err != nil {
+		return
 	}
-	result, err := tidbRestoreNode(expr, tidbformat.RestoreStringSingleQuotes|tidbformat.RestoreStringWithoutCharset)
-	if err != nil {
-		return nil, err
+	if _, parentIsCreateTable := ctx.GetParent().(*tidb.CreateTableContext); !parentIsCreateTable {
+		return
 	}
-	if result == "CURRENT_TIMESTAMP()" {
-		result = "CURRENT_TIMESTAMP"
+	if t.currentTable == "" {
+		return
 	}
-	return &result, nil
+	table := t.state.schemas[""].tables[t.currentTable]
+	if table == nil {
+		return
+	}
+
+	parititonInfo := partitionInfo{}
+
+	iTypeDefCtx := ctx.PartitionTypeDef()
+	if iTypeDefCtx != nil {
+		switch typeDefCtx := iTypeDefCtx.(type) {
+		case *tidb.PartitionDefKeyContext:
+			parititonInfo.tp = storepb.TablePartitionMetadata_KEY
+			if typeDefCtx.LINEAR_SYMBOL() != nil {
+				parititonInfo.tp = storepb.TablePartitionMetadata_LINEAR_KEY
+			}
+			// TODO(zp): handle the key algorithm
+			if typeDefCtx.IdentifierList() != nil {
+				identifiers := extractIdentifierList(typeDefCtx.IdentifierList())
+				for i, identifier := range identifiers {
+					identifier := strings.TrimSpace(identifier)
+					if !strings.HasPrefix(identifier, "`") || !strings.HasSuffix(identifier, "`") {
+						identifiers[i] = fmt.Sprintf("`%s`", identifier)
+					}
+				}
+				parititonInfo.expr = strings.Join(identifiers, ",")
+			}
+		case *tidb.PartitionDefHashContext:
+			parititonInfo.tp = storepb.TablePartitionMetadata_HASH
+			if typeDefCtx.LINEAR_SYMBOL() != nil {
+				parititonInfo.tp = storepb.TablePartitionMetadata_LINEAR_HASH
+			}
+			bitExprText := typeDefCtx.GetParser().GetTokenStream().GetTextFromRuleContext(typeDefCtx.BitExpr())
+			bitExprFields := strings.Split(bitExprText, ",")
+			for i, bitExprField := range bitExprFields {
+				bitExprField := strings.TrimSpace(bitExprField)
+				if !strings.HasPrefix(bitExprField, "`") || !strings.HasSuffix(bitExprField, "`") {
+					bitExprFields[i] = fmt.Sprintf("`%s`", bitExprField)
+				}
+			}
+			parititonInfo.expr = strings.Join(bitExprFields, ",")
+		case *tidb.PartitionDefRangeListContext:
+			if typeDefCtx.RANGE_SYMBOL() != nil {
+				parititonInfo.tp = storepb.TablePartitionMetadata_RANGE
+			} else {
+				parititonInfo.tp = storepb.TablePartitionMetadata_LIST
+			}
+			if typeDefCtx.COLUMNS_SYMBOL() != nil {
+				if parititonInfo.tp == storepb.TablePartitionMetadata_RANGE {
+					parititonInfo.tp = storepb.TablePartitionMetadata_RANGE_COLUMNS
+				} else {
+					parititonInfo.tp = storepb.TablePartitionMetadata_LIST_COLUMNS
+				}
+
+				identifierList := extractIdentifierList(typeDefCtx.IdentifierList())
+				for i, identifier := range identifierList {
+					identifier := strings.TrimSpace(identifier)
+					if !strings.HasPrefix(identifier, "`") || !strings.HasSuffix(identifier, "`") {
+						identifierList[i] = fmt.Sprintf("`%s`", identifier)
+					}
+				}
+				parititonInfo.expr = strings.Join(identifierList, ",")
+			} else {
+				bitExprText := typeDefCtx.GetParser().GetTokenStream().GetTextFromRuleContext(typeDefCtx.BitExpr())
+				bitExprFields := strings.Split(bitExprText, ",")
+				for i, bitExprField := range bitExprFields {
+					bitExprField := strings.TrimSpace(bitExprField)
+					if !strings.HasPrefix(bitExprField, "`") || !strings.HasSuffix(bitExprField, "`") {
+						bitExprFields[i] = fmt.Sprintf("`%s`", bitExprField)
+					}
+				}
+				parititonInfo.expr = strings.Join(bitExprFields, ",")
+			}
+		default:
+			t.err = errors.New("unknown partition type")
+			return
+		}
+	}
+
+	if n := ctx.Real_ulong_number(); n != nil {
+		number, err := strconv.ParseInt(n.GetText(), 10, 64)
+		if err != nil {
+			t.err = errors.Wrap(err, "failed to parse partition number")
+			return
+		}
+		parititonInfo.useDefault = int(number)
+	}
+
+	var subInfo *partitionInfo
+	if subPartitionCtx := ctx.SubPartitions(); subPartitionCtx != nil {
+		subInfo = new(partitionInfo)
+		if subPartitionCtx.HASH_SYMBOL() != nil {
+			subInfo.tp = storepb.TablePartitionMetadata_HASH
+			if subPartitionCtx.LINEAR_SYMBOL() != nil {
+				subInfo.tp = storepb.TablePartitionMetadata_LINEAR_HASH
+			}
+			if bitExprCtx := subPartitionCtx.BitExpr(); bitExprCtx != nil {
+				bitExprText := bitExprCtx.GetParser().GetTokenStream().GetTextFromRuleContext(bitExprCtx)
+				bitExprFields := strings.Split(bitExprText, ",")
+				for i, bitExprField := range bitExprFields {
+					bitExprField := strings.TrimSpace(bitExprField)
+					if !strings.HasPrefix(bitExprField, "`") || !strings.HasSuffix(bitExprField, "`") {
+						bitExprFields[i] = fmt.Sprintf("`%s`", bitExprField)
+					}
+				}
+				subInfo.expr = strings.Join(bitExprFields, ",")
+			}
+		} else if subPartitionCtx.KEY_SYMBOL() != nil {
+			subInfo.tp = storepb.TablePartitionMetadata_KEY
+			if subPartitionCtx.LINEAR_SYMBOL() != nil {
+				subInfo.tp = storepb.TablePartitionMetadata_LINEAR_KEY
+			}
+			if identifierListParensCtx := subPartitionCtx.IdentifierListWithParentheses(); identifierListParensCtx != nil {
+				identifiers := extractIdentifierList(identifierListParensCtx.IdentifierList())
+				for i, identifier := range identifiers {
+					identifier := strings.TrimSpace(identifier)
+					if !strings.HasPrefix(identifier, "`") || !strings.HasSuffix(identifier, "`") {
+						identifiers[i] = fmt.Sprintf("`%s`", identifier)
+					}
+				}
+				subInfo.expr = strings.Join(identifiers, ",")
+			}
+		}
+
+		if n := subPartitionCtx.Real_ulong_number(); n != nil {
+			number, err := strconv.ParseInt(n.GetText(), 10, 64)
+			if err != nil {
+				t.err = errors.Wrap(err, "failed to parse sub partition number")
+				return
+			}
+			subInfo.useDefault = int(number)
+		}
+	}
+
+	partitionDefinitions := make(map[string]*partitionDefinition)
+	var allPartDefs []tidb.IPartitionDefinitionContext
+	if v := ctx.PartitionDefinitions(); v != nil {
+		allPartDefs = ctx.PartitionDefinitions().AllPartitionDefinition()
+	}
+	for i, partDef := range allPartDefs {
+		pd := &partitionDefinition{
+			id:   i + 1,
+			name: tidbparser.NormalizeTiDBIdentifier(partDef.Identifier()),
+		}
+		switch parititonInfo.tp {
+		case storepb.TablePartitionMetadata_RANGE_COLUMNS, storepb.TablePartitionMetadata_RANGE:
+			if partDef.LESS_SYMBOL() == nil {
+				t.err = errors.New("RANGE partition but no LESS THAN clause")
+				return
+			}
+			if partDef.PartitionValueItemListParen() != nil {
+				itemsText := partDef.PartitionValueItemListParen().GetParser().GetTokenStream().GetTextFromInterval(
+					antlr.NewInterval(
+						partDef.PartitionValueItemListParen().OPEN_PAR_SYMBOL().GetSymbol().GetTokenIndex()+1,
+						partDef.PartitionValueItemListParen().CLOSE_PAR_SYMBOL().GetSymbol().GetTokenIndex()-1,
+					),
+				)
+				itemsTextFields := strings.Split(itemsText, ",")
+				for i, itemsTextField := range itemsTextFields {
+					itemsTextField := strings.TrimSpace(itemsTextField)
+					if strings.HasPrefix(itemsTextField, "`") && strings.HasSuffix(itemsTextField, "`") {
+						itemsTextField = itemsTextField[1 : len(itemsTextField)-1]
+					}
+					itemsTextFields[i] = itemsTextField
+				}
+				pd.value = strings.Join(itemsTextFields, ",")
+			} else {
+				pd.value = "MAXVALUE"
+			}
+		case storepb.TablePartitionMetadata_LIST_COLUMNS, storepb.TablePartitionMetadata_LIST:
+			if partDef.PartitionValuesIn() == nil {
+				t.err = errors.New("COLUMNS partition but no partition value item in IN clause")
+				return
+			}
+			var itemsText string
+			if partDef.PartitionValuesIn().OPEN_PAR_SYMBOL() != nil {
+				itemsText = partDef.PartitionValuesIn().GetParser().GetTokenStream().GetTextFromInterval(
+					antlr.NewInterval(
+						partDef.PartitionValuesIn().OPEN_PAR_SYMBOL().GetSymbol().GetTokenIndex()+1,
+						partDef.PartitionValuesIn().CLOSE_PAR_SYMBOL().GetSymbol().GetTokenIndex()-1,
+					),
+				)
+			} else {
+				itemsText = partDef.PartitionValuesIn().GetParser().GetTokenStream().GetTextFromRuleContext(partDef.PartitionValuesIn().PartitionValueItemListParen(0))
+			}
+
+			itemsTextFields := strings.Split(itemsText, ",")
+			for i, itemsTextField := range itemsTextFields {
+				itemsTextField := strings.TrimSpace(itemsTextField)
+				if strings.HasPrefix(itemsTextField, "`") && strings.HasSuffix(itemsTextField, "`") {
+					itemsTextField = itemsTextField[1 : len(itemsTextField)-1]
+				}
+				itemsTextFields[i] = itemsTextField
+			}
+			pd.value = strings.Join(itemsTextFields, ",")
+		case storepb.TablePartitionMetadata_HASH, storepb.TablePartitionMetadata_LINEAR_HASH, storepb.TablePartitionMetadata_KEY, storepb.TablePartitionMetadata_LINEAR_KEY:
+		default:
+			t.err = errors.New("unknown partition type")
+			return
+		}
+
+		if subInfo != nil {
+			allSubpartitions := partDef.AllSubpartitionDefinition()
+			if subInfo.tp == storepb.TablePartitionMetadata_TYPE_UNSPECIFIED && len(allSubpartitions) > 0 {
+				t.err = errors.New("specify subpartition definition but no subpartition type specified")
+				return
+			}
+			subPartitionDefinitions := make(map[string]*partitionDefinition)
+			for i, sub := range allSubpartitions {
+				subpd := &partitionDefinition{
+					id:   i + 1,
+					name: tidbparser.NormalizeTiDBTextOrIdentifier(sub.TextOrIdentifier()),
+				}
+				subPartitionDefinitions[subpd.name] = subpd
+			}
+			pd.subpartitions = subPartitionDefinitions
+		}
+
+		partitionDefinitions[pd.name] = pd
+	}
+
+	table.partition = &partitionState{
+		info:       parititonInfo,
+		subInfo:    subInfo,
+		partitions: partitionDefinitions,
+	}
 }
 
-func tableComment(option *tidbast.TableOption) string {
-	return option.StrValue
-}
-
-func restoreComment(expr tidbast.ExprNode) (string, error) {
-	comment, err := tidbRestoreNode(expr, tidbformat.RestoreStringWithoutCharset)
-	if err != nil {
-		return "", err
+func (t *tidbTransformer) EnterCreateView(ctx *tidb.CreateViewContext) {
+	if t.err != nil {
+		return
 	}
-	return comment, nil
-}
 
-func tidbRestoreNode(node tidbast.Node, flag tidbformat.RestoreFlags) (string, error) {
-	var buffer strings.Builder
-	ctx := tidbformat.NewRestoreCtx(flag, &buffer)
-	if err := node.Restore(ctx); err != nil {
-		return "", err
+	databaseName, viewName := tidbparser.NormalizeTiDBViewName(ctx.ViewName())
+	if databaseName != "" && t.state.name != "" && databaseName != t.state.name {
+		t.err = errors.New("multiple database names found: " + t.state.name + ", " + databaseName)
+		return
 	}
-	return buffer.String(), nil
-}
 
-func (*tidbTransformer) Leave(in tidbast.Node) (tidbast.Node, bool) {
-	return in, true
+	schema, ok := t.state.schemas[""]
+	if !ok || schema == nil {
+		t.state.schemas[""] = newSchemaState()
+		schema = t.state.schemas[""]
+	}
+
+	definition := ctx.GetParser().GetTokenStream().GetTextFromInterval(antlr.Interval{
+		Start: ctx.ViewTail().ViewSelect().GetStart().GetTokenIndex(),
+		Stop:  ctx.ViewTail().ViewSelect().GetStop().GetTokenIndex(),
+	})
+	schema.views[viewName] = &viewState{
+		id:         len(schema.views),
+		name:       viewName,
+		definition: definition,
+	}
 }
