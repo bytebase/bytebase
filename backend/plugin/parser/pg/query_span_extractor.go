@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
-	"regexp"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -127,14 +126,14 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*ba
 	case *pgquery.Node_ExplainStmt:
 		// Skip the EXPLAIN statement.
 		return &base.QuerySpan{
-			Results:       []base.QuerySpanResult{},
 			SourceColumns: base.SourceColumnSet{},
+			Results:       []base.QuerySpanResult{},
 		}, nil
 	case *pgquery.Node_VariableSetStmt, *pgquery.Node_VariableShowStmt:
 		// Skip the SET statement and VARIABLE SHOW statement.
 		return &base.QuerySpan{
-			Results:       []base.QuerySpanResult{},
 			SourceColumns: base.SourceColumnSet{},
+			Results:       []base.QuerySpanResult{},
 		}, nil
 	default:
 		return nil, errors.Errorf("expect a query statement but found %T", ast.Stmt.Node)
@@ -142,15 +141,15 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*ba
 
 	tableSource, err := q.extractTableSourceFromNode(ast.Stmt)
 	if err != nil {
-		tableNotFound := regexp.MustCompile("^Table \"(.*)\\.(.*)\" not found$")
-		content := tableNotFound.FindStringSubmatch(err.Error())
-		if len(content) == 3 && IsSystemSchema(content[1]) {
-			// skip for system schema
+		var resourceNotFound *parsererror.ResourceNotFoundError
+		if errors.As(err, &resourceNotFound) {
 			return &base.QuerySpan{
+				SourceColumns: accessTables,
 				Results:       []base.QuerySpanResult{},
-				SourceColumns: base.SourceColumnSet{},
+				NotFoundError: resourceNotFound,
 			}, nil
 		}
+
 		return nil, err
 	}
 
@@ -160,8 +159,8 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*ba
 	}
 
 	return &base.QuerySpan{
-		Results:       tableSource.GetQuerySpanResult(),
 		SourceColumns: accessTables,
+		Results:       tableSource.GetQuerySpanResult(),
 	}, nil
 }
 
