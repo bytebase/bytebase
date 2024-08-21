@@ -166,7 +166,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 		return nil, status.Errorf(codes.NotFound, "setting %s not found", settingName)
 	}
 	// audit log.
-	if setServiceData, ok := common.GetSetServiceDataFromContext(ctx); ok {
+	if setServiceData, ok := common.GetSetServiceDataFromContext(ctx); ok && existedSetting != nil {
 		v1pbSetting, err := s.convertToSettingMessage(ctx, existedSetting)
 		if err != nil {
 			slog.Warn("audit: failed to convert to v1.Setting", log.BBError(err))
