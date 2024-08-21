@@ -18,8 +18,7 @@ type EventUser struct {
 type MergeRequestAction string
 
 const (
-	MergeRequestOpen MergeRequestAction = "open"
-	// TODO(ed): code update? or just pr title/comment update.
+	MergeRequestOpen   MergeRequestAction = "open"
 	MergeRequestUpdate MergeRequestAction = "update"
 	MergeRequestMerge  MergeRequestAction = "merge"
 )

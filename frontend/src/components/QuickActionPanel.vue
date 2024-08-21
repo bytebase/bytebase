@@ -128,6 +128,7 @@ import type {
   DatabaseGroupQuickActionType,
   FeatureType,
 } from "@/types";
+import { hasProjectPermissionV2 } from "@/utils";
 import DatabaseGroupPanel from "./DatabaseGroup/DatabaseGroupPanel.vue";
 import { FeatureModal } from "./FeatureGuard";
 
@@ -195,7 +196,10 @@ const shouldShowAlterDatabaseEntries = computed(() => {
   const currentUserIamPolicy = useCurrentUserIamPolicy();
   return projectStore.projectList
     .map((project) => {
-      return currentUserIamPolicy.allowToChangeDatabaseOfProject(project.name);
+      return (
+        currentUserIamPolicy.allowToChangeDatabaseOfProject(project.name) &&
+        hasProjectPermissionV2(project, "bb.issues.create")
+      );
     })
     .includes(true);
 });
