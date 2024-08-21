@@ -68,13 +68,13 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string)
 	// This causes an error (NOT_FOUND) when using querySpanExtractor.findTableSchema.
 	// As a result, we exclude getting query span results for accessing only the system table.
 	allSystems, mixed := isMixedQuery(accessTables, q.ignoreCaseSensitive)
-	if mixed != nil {
-		return nil, mixed
+	if mixed {
+		return nil, base.MixUserSystemTablesError
 	}
 	if allSystems {
 		return &base.QuerySpan{
-			Results:       []base.QuerySpanResult{},
 			SourceColumns: base.SourceColumnSet{},
+			Results:       []base.QuerySpanResult{},
 		}, nil
 	}
 
@@ -3435,34 +3435,31 @@ func (l *accessTableListener) EnterTable_source_item(ctx *parser.Table_source_it
 }
 
 // isMixedQuery checks whether the query accesses the user table and system table at the same time.
-func isMixedQuery(m base.SourceColumnSet, ignoreCaseSensitive bool) (allSystems bool, mixed error) {
-	userMsg, systemMsg := "", ""
+func isMixedQuery(m base.SourceColumnSet, ignoreCaseSensitive bool) (bool, bool) {
+	hasSystem, hasUser := false, false
 	for table := range m {
-		if msg := isSystemResource(table, ignoreCaseSensitive); msg != "" {
-			systemMsg = msg
-			continue
-		}
-		userMsg = fmt.Sprintf("user table %q.%q", table.Schema, table.Table)
-		if systemMsg != "" {
-			return false, errors.Errorf("cannot access %s and %s at the same time", userMsg, systemMsg)
+		if isSystemResource(table, ignoreCaseSensitive) {
+			hasSystem = true
+		} else {
+			hasUser = true
 		}
 	}
 
-	if userMsg != "" && systemMsg != "" {
-		return false, errors.Errorf("cannot access %s and %s at the same time", userMsg, systemMsg)
+	if hasSystem && hasUser {
+		return false, true
 	}
 
-	return userMsg == "" && systemMsg != "", nil
+	return !hasUser && hasSystem, false
 }
 
-func isSystemResource(resource base.ColumnResource, ignoreCaseSensitive bool) string {
+func isSystemResource(resource base.ColumnResource, ignoreCaseSensitive bool) bool {
 	if IsSystemDatabase(resource.Database, !ignoreCaseSensitive) {
-		return fmt.Sprintf("system database %s", resource.Database)
+		return true
 	}
 	if IsSystemSchema(resource.Schema, !ignoreCaseSensitive) {
-		return fmt.Sprintf("system schema %s", resource.Schema)
+		return true
 	}
-	return ""
+	return false
 }
 
 // splitTableNameIntoNormalizedParts splits the table name into normalized 3 parts: database, schema, table.
