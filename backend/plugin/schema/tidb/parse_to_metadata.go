@@ -2,6 +2,7 @@ package tidb
 
 import (
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -192,6 +193,40 @@ func (t *tidbTransformer) EnterColumnDef(ctx *tidb.ColumnDefContext) {
 
 	if columnState.defaultValue == nil && columnState.nullable {
 		columnState.defaultValue = &defaultValueNull{}
+	}
+
+	nextDefaultChannelTokenPos := ctx.GetStop().GetTokenIndex() + 1
+	for ; nextDefaultChannelTokenPos < ctx.GetParser().GetTokenStream().Size(); nextDefaultChannelTokenPos++ {
+		if ctx.GetParser().GetTokenStream().Get(nextDefaultChannelTokenPos).GetChannel() == antlr.LexerDefaultTokenChannel {
+			break
+		}
+	}
+	executableComments := scanTiDBExecutableComment(ctx.GetParser().GetTokenStream(), ctx.GetStart().GetTokenIndex(), nextDefaultChannelTokenPos)
+	for _, comment := range executableComments {
+		c := buildTiDBFeatureExecutableComment(comment)
+		if c == nil {
+			continue
+		}
+		if v, ok := c.(*autoRandomExecutableComment); ok {
+			defaultValueString := "AUTO_RANDOM"
+			canonicalShardBit := 5
+			if v.shardBit != 0 {
+				canonicalShardBit = v.shardBit
+			}
+			canonicalAllocationRange := 64
+			if v.allocationRange != 0 {
+				canonicalAllocationRange = v.allocationRange
+			}
+			suffix := fmt.Sprintf("(%d", canonicalShardBit)
+			if canonicalAllocationRange != 64 {
+				suffix = fmt.Sprintf("%s, %d", suffix, canonicalAllocationRange)
+			}
+			suffix = fmt.Sprintf("%s)", suffix)
+			defaultValueString += suffix
+			columnState.defaultValue = &defaultValueExpression{
+				value: defaultValueString,
+			}
+		}
 	}
 
 	table.columns[columnName] = columnState
@@ -575,4 +610,78 @@ func (t *tidbTransformer) EnterCreateView(ctx *tidb.CreateViewContext) {
 		name:       viewName,
 		definition: definition,
 	}
+}
+
+type tidbFeatureExecutableComment interface {
+	isTiDBFeatureExecutableComment()
+}
+
+type autoRandomExecutableComment struct {
+	shardBit        int
+	allocationRange int
+}
+
+func (*autoRandomExecutableComment) isTiDBFeatureExecutableComment() {}
+
+var (
+	autorandRegexp = regexp.MustCompile(`(?i)\[\s*auto_rand\s*\]\s*auto_random(\(\s*(?P<shardBit>(\d+))?\s*(,\s*(?P<allocationRange>(\d+)))?\s*\))?`)
+)
+
+func buildTiDBFeatureExecutableComment(innerText string) tidbFeatureExecutableComment {
+	// Syntax: [auto_rand] auto_random(5, 32)
+	innerText = strings.TrimSpace(innerText)
+	autoRandMatches := autorandRegexp.FindStringSubmatch(innerText)
+	if autoRandMatches != nil {
+		result := &autoRandomExecutableComment{}
+		for i, name := range autorandRegexp.SubexpNames() {
+			if name == "shardBit" {
+				if autoRandMatches[i] != "" {
+					shardBit, err := strconv.ParseInt(autoRandMatches[i], 10, 64)
+					if err != nil {
+						return nil
+					}
+					result.shardBit = int(shardBit)
+				}
+			} else if name == "allocationRange" {
+				if autoRandMatches[i] != "" {
+					allocationRange, err := strconv.ParseInt(autoRandMatches[i], 10, 64)
+					if err != nil {
+						return nil
+					}
+					result.allocationRange = int(allocationRange)
+				}
+			}
+		}
+		return result
+	}
+
+	return nil
+}
+
+// scanTiDBExecutableComment scans the TiDB executable comment in ts[beginPos:endPos).
+func scanTiDBExecutableComment(ts antlr.TokenStream, beginPos int, endPos int) []string {
+	tssz := ts.Size()
+	if tssz < beginPos {
+		return nil
+	}
+	if tssz < endPos {
+		endPos = tssz
+	}
+
+	var result []string
+
+	for i := beginPos; i < endPos; i++ {
+		token := ts.Get(i)
+		if token.GetChannel() != antlr.TokenHiddenChannel {
+			continue
+		}
+		text := token.GetText()
+		if strings.HasPrefix(text, "/*T!") && strings.HasSuffix(text, "*/") {
+			trimmedText := text[4:]
+			trimmedText = trimmedText[:len(trimmedText)-2]
+			result = append(result, trimmedText)
+		}
+	}
+
+	return result
 }

@@ -1014,6 +1014,17 @@ func filterDatabaseMetadataByEngine(metadata *storepb.DatabaseSchemaMetadata, en
 			filteredSchema.Tables = append(filteredSchema.Tables, filteredTable)
 		}
 
+		if engine == storepb.Engine_MYSQL || engine == storepb.Engine_TIDB {
+			for _, view := range schema.Views {
+				filteredView := &storepb.ViewMetadata{
+					Name:       view.Name,
+					Comment:    view.Comment,
+					Definition: view.Definition,
+				}
+				filteredSchema.Views = append(filteredSchema.Views, filteredView)
+			}
+		}
+
 		if engine == storepb.Engine_MYSQL {
 			for _, function := range schema.Functions {
 				filteredFunction := &storepb.FunctionMetadata{
@@ -1028,14 +1039,6 @@ func filterDatabaseMetadataByEngine(metadata *storepb.DatabaseSchemaMetadata, en
 					Definition: procedure.Definition,
 				}
 				filteredSchema.Procedures = append(filteredSchema.Procedures, filteredProcedure)
-			}
-			for _, view := range schema.Views {
-				filteredView := &storepb.ViewMetadata{
-					Name:       view.Name,
-					Comment:    view.Comment,
-					Definition: view.Definition,
-				}
-				filteredSchema.Views = append(filteredSchema.Views, filteredView)
 			}
 		}
 		filteredDatabase.Schemas = append(filteredDatabase.Schemas, filteredSchema)
