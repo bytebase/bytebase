@@ -547,7 +547,7 @@ func (s *Store) ListInstanceChangeHistory(ctx context.Context, find *FindInstanc
 		LEFT JOIN sheet ON sheet.id = instance_change_history.sheet_id
 		LEFT JOIN instance on instance.id = instance_change_history.instance_id
 		LEFT JOIN db on db.id = instance_change_history.database_id
-		WHERE `+strings.Join(where, " AND ")+` ORDER BY instance_change_history.id, instance_change_history.instance_id, instance_change_history.database_id, instance_change_history.sequence DESC`,
+		WHERE `+strings.Join(where, " AND ")+` ORDER BY instance_change_history.instance_id, instance_change_history.database_id, instance_change_history.sequence DESC`,
 		statementField,
 		schemaField,
 		schemaPrevField,
