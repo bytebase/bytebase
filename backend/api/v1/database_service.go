@@ -1037,7 +1037,6 @@ func (s *DatabaseService) convertToChangeHistories(ctx context.Context, h []*sto
 func (s *DatabaseService) convertToChangeHistory(ctx context.Context, h *store.InstanceChangeHistoryMessage) (*v1pb.ChangeHistory, error) {
 	v1pbHistory := &v1pb.ChangeHistory{
 		Name:              fmt.Sprintf("%s%s/%s%s/%s%v", common.InstanceNamePrefix, h.InstanceID, common.DatabaseIDPrefix, h.DatabaseName, common.ChangeHistoryPrefix, h.UID),
-		Uid:               h.UID,
 		Creator:           fmt.Sprintf("users/%s", h.Creator.Email),
 		Updater:           fmt.Sprintf("users/%s", h.Updater.Email),
 		CreateTime:        timestamppb.New(time.Unix(h.CreatedTs, 0)),

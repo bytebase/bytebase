@@ -8559,8 +8559,6 @@ components:
                 name:
                     type: string
                     description: 'Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory}'
-                uid:
-                    type: string
                 creator:
                     type: string
                     description: 'Format: users/hello@world.com'

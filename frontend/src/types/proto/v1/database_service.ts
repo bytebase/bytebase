@@ -1367,7 +1367,6 @@ export interface AdviseIndexResponse {
 export interface ChangeHistory {
   /** Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory} */
   name: string;
-  uid: string;
   /** Format: users/hello@world.com */
   creator: string;
   /** Format: users/hello@world.com */
@@ -7989,7 +7988,6 @@ export const AdviseIndexResponse = {
 function createBaseChangeHistory(): ChangeHistory {
   return {
     name: "",
-    uid: "",
     creator: "",
     updater: "",
     createTime: undefined,
@@ -8017,9 +8015,6 @@ export const ChangeHistory = {
   encode(message: ChangeHistory, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
-    }
-    if (message.uid !== "") {
-      writer.uint32(18).string(message.uid);
     }
     if (message.creator !== "") {
       writer.uint32(26).string(message.creator);
@@ -8097,13 +8092,6 @@ export const ChangeHistory = {
           }
 
           message.name = reader.string();
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.uid = reader.string();
           continue;
         case 3:
           if (tag !== 26) {
@@ -8257,7 +8245,6 @@ export const ChangeHistory = {
   fromJSON(object: any): ChangeHistory {
     return {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
-      uid: isSet(object.uid) ? globalThis.String(object.uid) : "",
       creator: isSet(object.creator) ? globalThis.String(object.creator) : "",
       updater: isSet(object.updater) ? globalThis.String(object.updater) : "",
       createTime: isSet(object.createTime) ? fromJsonTimestamp(object.createTime) : undefined,
@@ -8289,9 +8276,6 @@ export const ChangeHistory = {
     const obj: any = {};
     if (message.name !== "") {
       obj.name = message.name;
-    }
-    if (message.uid !== "") {
-      obj.uid = message.uid;
     }
     if (message.creator !== "") {
       obj.creator = message.creator;
@@ -8362,7 +8346,6 @@ export const ChangeHistory = {
   fromPartial(object: DeepPartial<ChangeHistory>): ChangeHistory {
     const message = createBaseChangeHistory();
     message.name = object.name ?? "";
-    message.uid = object.uid ?? "";
     message.creator = object.creator ?? "";
     message.updater = object.updater ?? "";
     message.createTime = object.createTime ?? undefined;
