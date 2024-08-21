@@ -1722,7 +1722,7 @@ func (q *querySpanExtractor) getRangeVarsFromJSONRecursive(jsonData map[string]a
 		// figure out whether the table is the table the query actually accesses?
 
 		// Bytebase do not sync the system objects, so we skip finding for system objects in the metadata.
-		if isSystemResource(resource) {
+		if !isSystemResource(resource) {
 			// Backfill the default database/schema name.
 			if resource.Database == "" {
 				resource.Database = currentDatabase
