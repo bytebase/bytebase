@@ -1004,7 +1004,7 @@ func (n *metadataDiffPartitionNode) tryMerge(other *metadataDiffPartitionNode) (
 		if n.head.Type != other.head.Type {
 			return true, fmt.Sprintf("conflict partition type, one is %s, the other is %s", n.head.Type, other.head.Type)
 		}
-		if n.head.Expression != other.head.Expression {
+		if !isPartitionExprEqual(n.head.Expression, other.head.Expression) {
 			return true, fmt.Sprintf("conflict partition expression, one is %s, the other is %s", n.head.Expression, other.head.Expression)
 		}
 		if n.head.Value != other.head.Value {
@@ -1023,9 +1023,9 @@ func (n *metadataDiffPartitionNode) tryMerge(other *metadataDiffPartitionNode) (
 			}
 		}
 
-		if other.base.Expression != other.head.Expression {
-			if n.base.Expression != n.head.Expression {
-				if n.head.Expression != other.head.Expression {
+		if !isPartitionExprEqual(other.base.Expression, other.head.Expression) {
+			if !isPartitionExprEqual(n.base.Expression, n.head.Expression) {
+				if !isPartitionExprEqual(n.head.Expression, other.head.Expression) {
 					return true, fmt.Sprintf("conflict partition expression, one is %s, the other is %s", n.head.Expression, other.head.Expression)
 				}
 			} else {
@@ -1062,6 +1062,17 @@ func (n *metadataDiffPartitionNode) tryMerge(other *metadataDiffPartitionNode) (
 	}
 
 	return false, ""
+}
+
+func isPartitionExprEqual(a, b string) bool {
+	ignoreTokens := []string{
+		"`", " ", "\t", "\n", "\r", "(", ")",
+	}
+	for _, token := range ignoreTokens {
+		a = strings.ReplaceAll(a, token, "")
+		b = strings.ReplaceAll(b, token, "")
+	}
+	return strings.EqualFold(a, b)
 }
 
 func (n *metadataDiffPartitionNode) applyDiffTo(target *storepb.TableMetadata) error {

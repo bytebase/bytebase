@@ -1008,7 +1008,7 @@ func filterDatabaseMetadataByEngine(metadata *storepb.DatabaseSchemaMetadata, en
 				}
 				filteredTable.ForeignKeys = append(filteredTable.ForeignKeys, filteredFK)
 			}
-			if engine == storepb.Engine_MYSQL {
+			if engine == storepb.Engine_MYSQL || engine == storepb.Engine_TIDB {
 				filteredTable.Partitions = table.Partitions
 			}
 			filteredSchema.Tables = append(filteredSchema.Tables, filteredTable)
