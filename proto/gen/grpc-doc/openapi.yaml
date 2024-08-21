@@ -11355,10 +11355,6 @@ components:
                     type: string
                     description: The resource type for the policy.
                     format: enum
-                resourceUid:
-                    readOnly: true
-                    type: string
-                    description: The system-assigned, unique identifier for the resource.
         Position:
             type: object
             properties:

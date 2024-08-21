@@ -385,8 +385,6 @@ export interface Policy {
   enforce: boolean;
   /** The resource type for the policy. */
   resourceType: PolicyResourceType;
-  /** The system-assigned, unique identifier for the resource. */
-  resourceUid: string;
 }
 
 export interface RolloutPolicy {
@@ -1101,7 +1099,6 @@ function createBasePolicy(): Policy {
     dataSourceQueryPolicy: undefined,
     enforce: false,
     resourceType: PolicyResourceType.RESOURCE_TYPE_UNSPECIFIED,
-    resourceUid: "",
   };
 }
 
@@ -1151,9 +1148,6 @@ export const Policy = {
     }
     if (message.resourceType !== PolicyResourceType.RESOURCE_TYPE_UNSPECIFIED) {
       writer.uint32(112).int32(policyResourceTypeToNumber(message.resourceType));
-    }
-    if (message.resourceUid !== "") {
-      writer.uint32(122).string(message.resourceUid);
     }
     return writer;
   },
@@ -1266,13 +1260,6 @@ export const Policy = {
 
           message.resourceType = policyResourceTypeFromJSON(reader.int32());
           continue;
-        case 15:
-          if (tag !== 122) {
-            break;
-          }
-
-          message.resourceUid = reader.string();
-          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1310,7 +1297,6 @@ export const Policy = {
       resourceType: isSet(object.resourceType)
         ? policyResourceTypeFromJSON(object.resourceType)
         : PolicyResourceType.RESOURCE_TYPE_UNSPECIFIED,
-      resourceUid: isSet(object.resourceUid) ? globalThis.String(object.resourceUid) : "",
     };
   },
 
@@ -1360,9 +1346,6 @@ export const Policy = {
     if (message.resourceType !== PolicyResourceType.RESOURCE_TYPE_UNSPECIFIED) {
       obj.resourceType = policyResourceTypeToJSON(message.resourceType);
     }
-    if (message.resourceUid !== "") {
-      obj.resourceUid = message.resourceUid;
-    }
     return obj;
   },
 
@@ -1408,7 +1391,6 @@ export const Policy = {
         : undefined;
     message.enforce = object.enforce ?? false;
     message.resourceType = object.resourceType ?? PolicyResourceType.RESOURCE_TYPE_UNSPECIFIED;
-    message.resourceUid = object.resourceUid ?? "";
     return message;
   },
 };

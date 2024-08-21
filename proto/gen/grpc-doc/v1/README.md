@@ -6245,7 +6245,6 @@ MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
 | data_source_query_policy | [DataSourceQueryPolicy](#bytebase-v1-DataSourceQueryPolicy) |  |  |
 | enforce | [bool](#bool) |  |  |
 | resource_type | [PolicyResourceType](#bytebase-v1-PolicyResourceType) |  | The resource type for the policy. |
-| resource_uid | [string](#string) |  | The system-assigned, unique identifier for the resource. |
 
 
 

@@ -4,7 +4,7 @@ import { policyServiceClient } from "@/grpcweb";
 import { policyNamePrefix } from "@/store/modules/v1/common";
 import type { MaybeRef } from "@/types";
 import { UNKNOWN_USER_NAME, VirtualRoleType } from "@/types";
-import type { Policy } from "@/types/proto/v1/org_policy_service";
+import { Policy } from "@/types/proto/v1/org_policy_service";
 import {
   PolicyType,
   PolicyResourceType,
@@ -81,14 +81,12 @@ export const usePolicyV1Store = defineStore("policy_v1", {
     },
     getPolicies({
       resourceType,
-      resourceUID,
       policyType,
       showDeleted,
     }: {
       resourceType: PolicyResourceType;
       policyType: PolicyType;
       showDeleted?: boolean;
-      resourceUID?: string;
     }) {
       const response: Policy[] = [];
       for (const [_, policy] of this.policyMapByName) {
@@ -96,9 +94,6 @@ export const usePolicyV1Store = defineStore("policy_v1", {
           continue;
         }
         if (!showDeleted && !policy.enforce) {
-          continue;
-        }
-        if (resourceUID && policy.resourceUid != resourceUID) {
           continue;
         }
         response.push(policy);
@@ -266,9 +261,8 @@ export const getEmptyRolloutPolicy = (
       PolicyType.ROLLOUT_POLICY
     )}`
   );
-  return {
+  return Policy.fromPartial({
     name,
-    resourceUid: "",
     inheritFromParent: false,
     type: PolicyType.ROLLOUT_POLICY,
     resourceType,
@@ -279,5 +273,5 @@ export const getEmptyRolloutPolicy = (
       projectRoles: [],
       workspaceRoles: [],
     },
-  };
+  });
 };
