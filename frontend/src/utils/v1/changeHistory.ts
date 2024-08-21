@@ -3,7 +3,7 @@ import Long from "long";
 import { t } from "@/plugins/i18n";
 import { useDBSchemaV1Store, useDatabaseV1Store } from "@/store";
 import type { ComposedDatabase } from "@/types";
-import { UNKNOWN_ID } from "@/types";
+import { EMPTY_ID, UNKNOWN_ID } from "@/types";
 import type { AffectedTable } from "@/types/changeHistory";
 import { EmptyAffectedTable } from "@/types/changeHistory";
 import type { DatabaseSchema } from "@/types/proto/v1/database_service";
@@ -14,7 +14,7 @@ import {
 import { databaseV1Url, extractDatabaseResourceName } from "./database";
 
 export const extractChangeHistoryUID = (name: string) => {
-  const pattern = /(?:^|\/)(?:changeHistories|migrations)\/([^/]+)(?:$|\/)/;
+  const pattern = /(?:^|\/)changeHistories\/([^/]+)(?:$|\/)/;
   const matches = name.match(pattern);
   return matches?.[1] ?? "";
 };
@@ -32,6 +32,14 @@ export const extractDatabaseNameAndChangeHistoryUID = (
   };
 };
 
+export const isValidChangeHistoryName = (name: string | undefined) => {
+  if (!name) {
+    return false;
+  }
+  const uid = extractChangeHistoryUID(name);
+  return uid && uid !== String(EMPTY_ID) && uid !== String(UNKNOWN_ID);
+};
+
 export const changeHistoryLinkRaw = (
   parent: string,
   uid: string,
@@ -46,8 +54,8 @@ export const changeHistoryLinkRaw = (
 };
 
 export const changeHistoryLink = (changeHistory: ChangeHistory): string => {
-  const { name, uid, version } = changeHistory;
-  return changeHistoryLinkRaw(name, uid, version);
+  const { name, version } = changeHistory;
+  return changeHistoryLinkRaw(name, extractChangeHistoryUID(name), version);
 };
 
 export const getAffectedTablesOfChangeHistory = (
@@ -124,7 +132,6 @@ export const mockLatestSchemaChangeHistory = (
 ) => {
   return ChangeHistory.fromPartial({
     name: `${database.name}/changeHistories/${UNKNOWN_ID}`,
-    uid: String(UNKNOWN_ID),
     schema: schema?.schema,
     schemaSize: Long.fromNumber(
       new TextEncoder().encode(schema?.schema).length

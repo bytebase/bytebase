@@ -13,7 +13,7 @@
 import { computed } from "vue";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { useChangeHistoryStore } from "@/store";
-import { extractDatabaseResourceName } from "@/utils";
+import { extractChangeHistoryUID, extractDatabaseResourceName } from "@/utils";
 import ChangeHistoryDetail from "@/views/ChangeHistoryDetail.vue";
 
 const props = defineProps<{
@@ -39,11 +39,10 @@ const detailBindings = computed(() => {
   const { instance, database } = extractDatabaseResourceName(
     changeHistory.value.name
   );
-  const { uid } = changeHistory.value;
   return {
     instance,
     database,
-    changeHistoryId: uid,
+    changeHistoryId: extractChangeHistoryUID(changeHistory.value.name),
   };
 });
 

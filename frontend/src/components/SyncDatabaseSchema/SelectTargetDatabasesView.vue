@@ -40,7 +40,9 @@
             </a>
           </div>
           <div
-            v-if="databaseSourceSchema.changeHistory.uid !== String(UNKNOWN_ID)"
+            v-if="
+              isValidChangeHistoryName(databaseSourceSchema.changeHistory.name)
+            "
           >
             <span>{{ $t("database.sync-schema.schema-version.self") }} - </span>
             <a
@@ -246,20 +248,20 @@ import {
   useSheetV1Store,
 } from "@/store";
 import type { ComposedDatabase } from "@/types";
-import { UNKNOWN_ID } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import type { ChangeHistory } from "@/types/proto/v1/database_service";
 import {
   changeHistoryLink,
   databaseV1Url,
   getSheetStatement,
+  isValidChangeHistoryName,
   toClipboard,
 } from "@/utils";
+import { EngineIcon } from "../Icon";
 import DiffViewPanel from "./DiffViewPanel.vue";
 import RawSQLEditorPanel from "./RawSQLEditorPanel.vue";
 import TargetDatabasesSelectPanel from "./TargetDatabasesSelectPanel.vue";
 import type { RawSQLState, SourceSchemaType } from "./types";
-import { EngineIcon } from "../Icon";
 
 interface DatabaseSourceSchema {
   environmentName: string;
