@@ -42,7 +42,8 @@
       </button>
     </div>
 
-    <div class="hidden lg:block -mt-0.5">
+    <div class="flex items-center gap-2">
+      <SettingButton v-if="!hideSettingButton" size="small" />
       <ProfileDropdown v-if="!hideProfile" />
     </div>
 
@@ -53,19 +54,26 @@
 <script lang="ts" setup>
 import { useResizeObserver } from "@vueuse/core";
 import { useDialog } from "naive-ui";
+import { storeToRefs } from "pinia";
 import scrollIntoView from "scroll-into-view-if-needed";
 import { ref, reactive, nextTick, computed, onMounted, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import Draggable from "vuedraggable";
 import ProfileDropdown from "@/components/ProfileDropdown.vue";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
-import { useAppFeature, useFilterStore, useSQLEditorTabStore } from "@/store";
+import {
+  useAppFeature,
+  useFilterStore,
+  useSQLEditorStore,
+  useSQLEditorTabStore,
+} from "@/store";
 import type { SQLEditorTab } from "@/types";
 import {
   defer,
   emptySQLEditorConnection,
   suggestedTabTitleForSQLEditorConnection,
 } from "@/utils";
+import { SettingButton } from "../Setting";
 import { useSheetContext } from "../Sheet";
 import ContextMenu from "./ContextMenu.vue";
 import TabItem from "./TabItem";
@@ -87,14 +95,27 @@ const state = reactive<LocalState>({
   hoverTabId: "",
 });
 const hideProfile = useAppFeature("bb.feature.sql-editor.hide-profile");
+const disableSetting = useAppFeature("bb.feature.sql-editor.disable-setting");
 const { events: sheetEvents } = useSheetContext();
 const tabListRef = ref<InstanceType<typeof Draggable>>();
+const { strictProject } = storeToRefs(useSQLEditorStore());
 const context = provideTabListContext();
 const contextMenuRef = ref<InstanceType<typeof ContextMenu>>();
 
 const scrollState = reactive({
   moreLeft: false,
   moreRight: false,
+});
+
+const hideSettingButton = computed(() => {
+  if (disableSetting.value) {
+    return true;
+  }
+  if (strictProject.value) {
+    return true;
+  }
+
+  return false;
 });
 
 const filteredTabIdList = computed(() => {

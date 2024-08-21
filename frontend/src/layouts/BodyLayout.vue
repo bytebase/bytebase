@@ -33,50 +33,6 @@
             <div id="sidebar-mobile" class="flex-1 h-0 py-0 overflow-y-auto">
               <!-- Empty as teleport placeholder -->
             </div>
-            <div
-              class="flex-shrink-0 flex border-t border-block-border px-3 py-1.5"
-            >
-              <div
-                v-if="isDemo"
-                class="text-sm flex whitespace-nowrap text-accent"
-              >
-                <heroicons-outline:presentation-chart-bar
-                  class="w-5 h-5 mr-1"
-                />
-                {{ $t("common.demo-mode") }}
-              </div>
-              <router-link
-                v-else-if="!isFreePlan || !hasPermission"
-                :to="{ name: SETTING_ROUTE_WORKSPACE_SUBSCRIPTION }"
-                exact-active-class=""
-                class="text-sm flex"
-              >
-                {{ $t(currentPlan) }}
-              </router-link>
-              <div
-                v-else
-                class="text-sm flex whitespace-nowrap mr-1 text-accent cursor-pointer"
-                @click="state.showTrialModal = true"
-              >
-                <heroicons-solid:sparkles class="w-5 h-5" />
-                {{ $t(currentPlan) }}
-              </div>
-              <div
-                class="text-sm flex items-center gap-x-1 ml-auto"
-                :class="
-                  canUpgrade
-                    ? 'text-success cursor-pointer'
-                    : 'text-control-light cursor-default'
-                "
-                @click="state.showReleaseModal = canUpgrade"
-              >
-                <heroicons-outline:volume-up
-                  v-if="canUpgrade"
-                  class="h-4 w-4"
-                />
-                {{ version }}
-              </div>
-            </div>
           </div>
           <div class="flex-shrink-0 w-14" aria-hidden="true">
             <!-- Force sidebar to shrink to fit close icon -->
@@ -96,63 +52,6 @@
               class="flex-1 flex flex-col py-0 overflow-y-auto"
             >
               <!-- Empty as teleport placeholder -->
-            </div>
-            <div
-              class="flex-shrink-0 flex justify-between border-t border-block-border px-3 py-1.5"
-            >
-              <div
-                v-if="isDemo"
-                class="text-sm flex whitespace-nowrap text-accent"
-              >
-                <heroicons-outline:presentation-chart-bar
-                  class="w-5 h-5 mr-1"
-                />
-                {{ $t("common.demo-mode") }}
-              </div>
-              <router-link
-                v-else-if="!isFreePlan || !hasPermission"
-                :to="{ name: SETTING_ROUTE_WORKSPACE_SUBSCRIPTION }"
-                exact-active-class=""
-                class="text-sm flex whitespace-nowrap mr-1"
-              >
-                {{ $t(currentPlan) }}
-              </router-link>
-              <div
-                v-else-if="subscriptionStore.canTrial"
-                class="text-sm flex whitespace-nowrap mr-1 text-accent cursor-pointer"
-                @click="state.showTrialModal = true"
-              >
-                <heroicons-solid:sparkles class="w-5 h-5" />
-                {{ $t(currentPlan) }}
-              </div>
-              <NTooltip>
-                <template #trigger>
-                  <div
-                    class="text-xs flex items-center gap-x-1 whitespace-nowrap"
-                    :class="
-                      canUpgrade
-                        ? 'text-success cursor-pointer'
-                        : 'text-control-light cursor-default'
-                    "
-                    @click="state.showReleaseModal = canUpgrade"
-                  >
-                    <heroicons-outline:volume-up
-                      v-if="canUpgrade"
-                      class="h-4 w-4"
-                    />
-                    {{ version }}
-                  </div>
-                </template>
-                <template #default>
-                  <div class="flex flex-col gap-y-1">
-                    <div v-if="canUpgrade" class="whitespace-nowrap">
-                      {{ $t("settings.release.new-version-available") }}
-                    </div>
-                    <div>BE Git hash: {{ gitCommitBE }}</div>
-                    <div>FE Git hash: {{ gitCommitFE }}</div>
-                  </div>
-                </template>
-              </NTooltip>
             </div>
           </div>
         </aside>
@@ -249,22 +148,17 @@
 
 <script lang="ts" setup>
 import { useMounted, useWindowSize } from "@vueuse/core";
-import { NTooltip } from "naive-ui";
-import { storeToRefs } from "pinia";
 import { computed, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
 import ReleaseRemindModal from "@/components/ReleaseRemindModal.vue";
 import TrialModal from "@/components/TrialModal.vue";
 import { WORKSPACE_ROOT_MODULE } from "@/router/dashboard/workspaceRoutes";
-import { SETTING_ROUTE_WORKSPACE_SUBSCRIPTION } from "@/router/dashboard/workspaceSetting";
 import {
   useActuatorV1Store,
   useAppFeature,
-  useSubscriptionV1Store,
 } from "@/store";
 import type { QuickActionType } from "@/types";
 import { QuickActionPermissionMap } from "@/types";
-import { PlanType } from "@/types/proto/v1/subscription_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import DashboardHeader from "@/views/DashboardHeader.vue";
 import QuickActionPanel from "../components/QuickActionPanel.vue";
@@ -278,7 +172,6 @@ interface LocalState {
 }
 
 const actuatorStore = useActuatorV1Store();
-const subscriptionStore = useSubscriptionV1Store();
 const router = useRouter();
 const mounted = useMounted();
 
@@ -299,11 +192,6 @@ const sidebarView = computed(() => {
   return windowWidth.value >= 768 ? "DESKTOP" : "MOBILE";
 });
 
-const hasPermission = computed(() =>
-  hasWorkspacePermissionV2("bb.settings.set")
-);
-
-const { isDemo } = storeToRefs(actuatorStore);
 const hideQuickAction = useAppFeature("bb.feature.console.hide-quick-action");
 const hideSidebar = useAppFeature("bb.feature.console.hide-sidebar");
 const hideHeader = useAppFeature("bb.feature.console.hide-header");
@@ -312,10 +200,6 @@ const hideReleaseRemind = useAppFeature("bb.feature.hide-release-remind");
 
 actuatorStore.tryToRemindRelease().then((openRemindModal) => {
   state.showReleaseModal = openRemindModal;
-});
-
-const canUpgrade = computed(() => {
-  return actuatorStore.hasNewRelease;
 });
 
 const getQuickActionList = (list: QuickActionType[]): QuickActionType[] => {
@@ -336,42 +220,6 @@ const quickActionList = computed(() => {
     : [];
 
   return getQuickActionList(listByRole);
-});
-
-const version = computed(() => {
-  const v = actuatorStore.version;
-  if (v.split(".").length == 3) {
-    return `v${v}`;
-  }
-  return v;
-});
-
-const gitCommitBE = computed(() => {
-  return `${actuatorStore.gitCommit.substring(0, 7)}`;
-});
-const gitCommitFE = computed(() => {
-  const commitHash = import.meta.env.BB_GIT_COMMIT_ID_FE as string | undefined;
-  return (commitHash ?? "unknown").substring(0, 7);
-});
-
-const currentPlan = computed((): string => {
-  const plan = subscriptionStore.currentPlan;
-  switch (plan) {
-    case PlanType.TEAM:
-      return "subscription.plan.team.title";
-    case PlanType.ENTERPRISE:
-      return "subscription.plan.enterprise.title";
-    default:
-      if (hasPermission.value) {
-        return "subscription.plan.try";
-      }
-      return "subscription.plan.free.title";
-  }
-});
-
-const isFreePlan = computed((): boolean => {
-  const plan = subscriptionStore.currentPlan;
-  return plan === PlanType.FREE;
 });
 
 const { mainContainerClasses } = provideBodyLayoutContext({
