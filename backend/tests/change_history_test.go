@@ -132,6 +132,7 @@ func TestFilterChangeHistoryByResources(t *testing.T) {
 		a.NoError(err)
 		a.Equal(len(tt.wantStatements), len(resp.ChangeHistories), tt.filter)
 		for i, wantStatement := range tt.wantStatements {
+			// Sort by change history UID.
 			sort.Slice(resp.ChangeHistories, func(i, j int) bool {
 				_, _, id1, err := common.GetInstanceDatabaseIDChangeHistory(resp.ChangeHistories[i].Name)
 				a.NoError(err)
