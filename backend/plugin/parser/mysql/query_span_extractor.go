@@ -57,8 +57,8 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*ba
 	}
 	if len(parseResults) == 0 {
 		return &base.QuerySpan{
-			Results:       []base.QuerySpanResult{},
 			SourceColumns: base.SourceColumnSet{},
+			Results:       []base.QuerySpanResult{},
 		}, nil
 	}
 	if len(parseResults) != 1 {
@@ -78,8 +78,8 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*ba
 	}
 	if allSystems {
 		return &base.QuerySpan{
-			Results:       []base.QuerySpanResult{},
 			SourceColumns: base.SourceColumnSet{},
+			Results:       []base.QuerySpanResult{},
 		}, nil
 	}
 
@@ -89,13 +89,22 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*ba
 	// the select statement precisely instead of using type switch.
 	listener := newSelectOnlyListener(q)
 	antlr.ParseTreeWalkerDefault.Walk(listener, tree)
+	err = listener.err
+	if err != nil {
+		var resourceNotFound *parsererror.ResourceNotFoundError
+		if errors.As(err, &resourceNotFound) {
+			return &base.QuerySpan{
+				SourceColumns: accessTables,
+				Results:       []base.QuerySpanResult{},
+				NotFoundError: resourceNotFound,
+			}, nil
+		}
 
-	if listener.err != nil {
-		return nil, listener.err
+		return nil, err
 	}
 	return &base.QuerySpan{
-		Results:       listener.querySpan.Results,
 		SourceColumns: accessTables,
+		Results:       listener.querySpan.Results,
 	}, nil
 }
 

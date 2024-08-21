@@ -657,20 +657,19 @@ func (l *CTETableListener) EnterCommonTableExpression(ctx *mysql.CommonTableExpr
 		}
 	} else {
 		// User didn't specify the column list, so we need to fetch the column list from the database.
-		if span, err := base.GetQuerySpan(
+		if span, err := GetQuerySpan(
 			l.context.ctx,
 			base.GetQuerySpanContext{
 				InstanceID:              l.context.instanceID,
 				GetDatabaseMetadataFunc: l.context.getMetadata,
 				ListDatabaseNamesFunc:   l.context.listDatabaseNames,
 			},
-			store.Engine_MYSQL,
 			fmt.Sprintf("SELECT * FROM %s;", ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.Subquery())),
 			l.context.defaultDatabase,
 			"",
 			false,
-		); err == nil && len(span) == 1 {
-			for _, column := range span[0].Results {
+		); err == nil && span.NotFoundError == nil {
+			for _, column := range span.Results {
 				table.Columns = append(table.Columns, column.Name)
 			}
 		}
@@ -1128,20 +1127,19 @@ func (l *TableRefListener) EnterDerivedTable(ctx *mysql.DerivedTableContext) {
 			}
 		} else {
 			// User didn't specify the column list, so we should extract the column list from the select statement.
-			if span, err := base.GetQuerySpan(
+			if span, err := GetQuerySpan(
 				l.context.ctx,
 				base.GetQuerySpanContext{
 					InstanceID:              l.context.instanceID,
 					GetDatabaseMetadataFunc: l.context.getMetadata,
 					ListDatabaseNamesFunc:   l.context.listDatabaseNames,
 				},
-				store.Engine_MYSQL,
 				fmt.Sprintf("SELECT * FROM %s;", ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.Subquery())),
 				l.context.defaultDatabase,
 				"",
 				false,
-			); err == nil && len(span) == 1 {
-				for _, column := range span[0].Results {
+			); err == nil && span.NotFoundError == nil {
+				for _, column := range span.Results {
 					reference.Columns = append(reference.Columns, column.Name)
 				}
 			}

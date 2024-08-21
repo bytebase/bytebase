@@ -61,6 +61,13 @@ func (s *QueryResultMasker) MaskResults(ctx context.Context, spans []*base.Query
 		if strings.HasPrefix(strings.TrimSpace(results[i].Statement), "EXPLAIN") {
 			continue
 		}
+		if results[i].Error == "" && spans[i].NotFoundError != nil {
+			return errors.Errorf("query span error: %v", spans[i].NotFoundError)
+		}
+		// Skip masking for error result.
+		if results[i].Error != "" {
+			continue
+		}
 		maskers, err := s.getMaskersForQuerySpan(ctx, m, instance, spans[i], action)
 		if err != nil {
 			return errors.Wrapf(err, "failed to get maskers for query span")

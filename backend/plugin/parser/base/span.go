@@ -39,7 +39,7 @@ type QuerySpan struct {
 	// SourceColumns are the source columns contributing to the span.
 	// SourceColumns here are the source columns for the whole query span, containing fields, where conditions, join conditions, etc.
 	SourceColumns SourceColumnSet
-	Errors        []error
+	NotFoundError error
 }
 
 // QuerySpanResult is the result column of a query span.

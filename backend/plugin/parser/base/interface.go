@@ -163,6 +163,7 @@ func RegisterGetQuerySpan(engine storepb.Engine, f GetQuerySpanFunc) {
 }
 
 // GetQuerySpan gets the span of a query.
+// The interface will return the query spans with non-critical errors, or return an error if the query is invalid.
 func GetQuerySpan(ctx context.Context, gCtx GetQuerySpanContext, engine storepb.Engine, statement, database, schema string, ignoreCaseSensitive bool) ([]*QuerySpan, error) {
 	f, ok := spans[engine]
 	if !ok {
@@ -180,6 +181,7 @@ func GetQuerySpan(ctx context.Context, gCtx GetQuerySpanContext, engine storepb.
 		result, err := f(ctx, gCtx, stmt.Text, database, schema, ignoreCaseSensitive)
 		if err != nil {
 			// Try to unwrap the error to see if it's a ResourceNotFoundError to decrease the error noise.
+			// TODO(d): remove resource not found error checks.
 			var resourceNotFound *parsererror.ResourceNotFoundError
 			if errors.As(err, &resourceNotFound) {
 				return nil, resourceNotFound
