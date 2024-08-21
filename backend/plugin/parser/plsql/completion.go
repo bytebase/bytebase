@@ -684,7 +684,7 @@ func (l *CTETableListener) EnterFactoring_element(ctx *plsql.Factoring_elementCo
 			l.context.defaultDatabase,
 			"",
 			false,
-		); err == nil && span.NotFoundError != nil {
+		); err == nil && span.NotFoundError == nil {
 			for _, column := range span.Results {
 				table.Columns = append(table.Columns, column.Name)
 			}
@@ -1004,7 +1004,7 @@ func (l *TableRefListener) ExitDml_table_expression_clause(ctx *plsql.Dml_table_
 			l.context.defaultDatabase,
 			"",
 			false,
-		); err == nil {
+		); err == nil && span.NotFoundError == nil {
 			for _, column := range span.Results {
 				reference.Columns = append(reference.Columns, column.Name)
 			}

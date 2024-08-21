@@ -1396,7 +1396,7 @@ func (l *tableRefListener) ExitDerivedTable(ctx *tsqlparser.Derived_tableContext
 			l.context.defaultDatabase,
 			l.context.defaultSchema,
 			true,
-		); err == nil && span.NotFoundError != nil {
+		); err == nil && span.NotFoundError == nil {
 			for _, column := range span.Results {
 				reference.Columns = append(reference.Columns, column.Name)
 			}
@@ -1541,7 +1541,7 @@ func (c *cteExtractor) EnterWith_expression(ctx *tsqlparser.With_expressionConte
 			c.completer.defaultDatabase,
 			c.completer.defaultSchema,
 			true,
-		); err == nil {
+		); err == nil && span.NotFoundError == nil {
 			var columns []string
 			for _, column := range span.Results {
 				columns = append(columns, column.Name)

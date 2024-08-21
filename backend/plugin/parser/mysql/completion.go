@@ -668,7 +668,7 @@ func (l *CTETableListener) EnterCommonTableExpression(ctx *mysql.CommonTableExpr
 			l.context.defaultDatabase,
 			"",
 			false,
-		); err == nil {
+		); err == nil && span.NotFoundError == nil {
 			for _, column := range span.Results {
 				table.Columns = append(table.Columns, column.Name)
 			}
@@ -1138,7 +1138,7 @@ func (l *TableRefListener) EnterDerivedTable(ctx *mysql.DerivedTableContext) {
 				l.context.defaultDatabase,
 				"",
 				false,
-			); err == nil {
+			); err == nil && span.NotFoundError == nil {
 				for _, column := range span.Results {
 					reference.Columns = append(reference.Columns, column.Name)
 				}
