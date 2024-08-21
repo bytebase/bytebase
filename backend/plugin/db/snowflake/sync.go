@@ -529,6 +529,7 @@ func (driver *Driver) getTableSchema(ctx context.Context, database string) (map[
 				})
 			}
 		}
+		view.Columns = columnMap[db.TableKey{Schema: schemaName, Table: view.Name}]
 
 		viewMap[schemaName] = append(viewMap[schemaName], view)
 	}

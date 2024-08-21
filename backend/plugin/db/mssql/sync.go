@@ -69,11 +69,15 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get schemas from database %q", driver.databaseName)
 	}
-	tableMap, err := getTables(txn)
+	columnMap, err := getTableColumns(txn)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get table columns from database %q", driver.databaseName)
+	}
+	tableMap, err := getTables(txn, columnMap)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get tables from database %q", driver.databaseName)
 	}
-	viewMap, err := getViews(txn)
+	viewMap, err := getViews(txn, columnMap)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get views from database %q", driver.databaseName)
 	}
@@ -131,11 +135,7 @@ func getSchemas(txn *sql.Tx) ([]string, error) {
 }
 
 // getTables gets all tables of a database.
-func getTables(txn *sql.Tx) (map[string][]*storepb.TableMetadata, error) {
-	columnMap, err := getTableColumns(txn)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to get table columns")
-	}
+func getTables(txn *sql.Tx, columnMap map[db.TableKey][]*storepb.ColumnMetadata) (map[string][]*storepb.TableMetadata, error) {
 	indexMap, err := getIndexes(txn)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get indices")
@@ -336,7 +336,7 @@ func getIndexes(txn *sql.Tx) (map[db.TableKey][]*storepb.IndexMetadata, error) {
 }
 
 // getViews gets all views of a database.
-func getViews(txn *sql.Tx) (map[string][]*storepb.ViewMetadata, error) {
+func getViews(txn *sql.Tx, columnMap map[db.TableKey][]*storepb.ColumnMetadata) (map[string][]*storepb.ViewMetadata, error) {
 	viewMap := make(map[string][]*storepb.ViewMetadata)
 
 	query := `
@@ -359,6 +359,7 @@ func getViews(txn *sql.Tx) (map[string][]*storepb.ViewMetadata, error) {
 		if err := rows.Scan(&schemaName, &view.Name, &view.Definition); err != nil {
 			return nil, err
 		}
+
 		var viewDefinition string
 		if !definition.Valid {
 			// Definition is null if the view is encrypted.
@@ -370,6 +371,10 @@ func getViews(txn *sql.Tx) (map[string][]*storepb.ViewMetadata, error) {
 			viewDefinition = definition.String
 		}
 		view.Definition = viewDefinition
+
+		key := db.TableKey{Schema: schemaName, Table: view.Name}
+		view.Columns = columnMap[key]
+
 		viewMap[schemaName] = append(viewMap[schemaName], view)
 	}
 	if err := rows.Err(); err != nil {

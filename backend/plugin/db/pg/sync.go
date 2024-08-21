@@ -90,7 +90,11 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get schemas from database %q", driver.databaseName)
 	}
-	tableMap, externalTableMap, err := getTables(txn, isAtLeastPG10)
+	columnMap, err := getTableColumns(txn)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get columns from database %q", driver.databaseName)
+	}
+	tableMap, externalTableMap, err := getTables(txn, isAtLeastPG10, columnMap)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get tables from database %q", driver.databaseName)
 	}
@@ -101,7 +105,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 			return nil, errors.Wrapf(err, "failed to get table partitions from database %q", driver.databaseName)
 		}
 	}
-	viewMap, err := getViews(txn)
+	viewMap, err := getViews(txn, columnMap)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get views from database %q", driver.databaseName)
 	}
@@ -349,11 +353,7 @@ func getListTableQuery(isAtLeastPG10 bool) string {
 }
 
 // getTables gets all tables of a database.
-func getTables(txn *sql.Tx, isAtLeastPG10 bool) (map[string][]*storepb.TableMetadata, map[string][]*storepb.ExternalTableMetadata, error) {
-	columnMap, err := getTableColumns(txn)
-	if err != nil {
-		return nil, nil, errors.Wrapf(err, "failed to get columns")
-	}
+func getTables(txn *sql.Tx, isAtLeastPG10 bool, columnMap map[db.TableKey][]*storepb.ColumnMetadata) (map[string][]*storepb.TableMetadata, map[string][]*storepb.ExternalTableMetadata, error) {
 	indexMap, err := getIndexes(txn)
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "failed to get indexes")
@@ -631,7 +631,7 @@ WHERE schemaname NOT IN (%s)
 ORDER BY schemaname, viewname;`, pgparser.SystemSchemaWhereClause)
 
 // getViews gets all views of a database.
-func getViews(txn *sql.Tx) (map[string][]*storepb.ViewMetadata, error) {
+func getViews(txn *sql.Tx, columnMap map[db.TableKey][]*storepb.ColumnMetadata) (map[string][]*storepb.ViewMetadata, error) {
 	viewMap := make(map[string][]*storepb.ViewMetadata)
 
 	rows, err := txn.Query(listViewQuery)
@@ -660,6 +660,9 @@ func getViews(txn *sql.Tx) (map[string][]*storepb.ViewMetadata, error) {
 		if comment.Valid {
 			view.Comment = comment.String
 		}
+
+		key := db.TableKey{Schema: schemaName, Table: view.Name}
+		view.Columns = columnMap[key]
 
 		viewMap[schemaName] = append(viewMap[schemaName], view)
 	}
