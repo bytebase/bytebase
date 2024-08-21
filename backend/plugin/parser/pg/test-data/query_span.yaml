@@ -1600,3 +1600,28 @@
           schema: public
           table: t
           column: ""
+- description: query system tables
+  statement: select * from information_schema.tables;
+  connectedDatabase: db
+  metadata: |-
+    {
+      "name":  "db",
+      "schemas":  [
+        {
+          "name": "public",
+          "tables":  [
+            {
+              "name":  "t",
+              "columns":  [
+                {
+                  "name":  "a"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    results: []
+    sourcecolumns: []
