@@ -224,7 +224,7 @@ func TestSensitiveData(t *testing.T) {
 	a.NoError(err)
 	a.Equal(1, len(queryResp.Results))
 	diff := cmp.Diff(maskedData, queryResp.Results[0], protocmp.Transform(), protocmp.IgnoreMessages(&durationpb.Duration{}))
-	a.Equal("", diff)
+	a.Empty(diff)
 
 	// Query origin data.
 	singleSQLResults, err := ctl.adminQuery(ctx, database, queryTable)
@@ -233,5 +233,5 @@ func TestSensitiveData(t *testing.T) {
 	result := singleSQLResults[0]
 	a.Equal("", result.Error)
 	diff = cmp.Diff(originData, result, protocmp.Transform(), protocmp.IgnoreMessages(&durationpb.Duration{}))
-	a.Equal("", diff)
+	a.Empty(diff)
 }

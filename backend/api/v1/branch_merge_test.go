@@ -62,9 +62,8 @@ func TestTryMerge(t *testing.T) {
 			expectedSchemaMetadata := new(storepb.DatabaseSchemaMetadata)
 			err = common.ProtojsonUnmarshaler.Unmarshal([]byte(tc.Expected), expectedSchemaMetadata)
 			a.NoErrorf(err, "test case %d: %s", idx, tc.Description)
-			if diff := cmp.Diff(expectedSchemaMetadata, mergedSchemaMetadata, protocmp.Transform()); diff != "" {
-				a.Failf("Failed", "mismatch (-want +got):\n%s", diff)
-			}
+			diff := cmp.Diff(expectedSchemaMetadata, mergedSchemaMetadata, protocmp.Transform())
+			a.Empty(diff)
 		}
 	}
 

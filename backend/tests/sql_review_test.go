@@ -371,7 +371,7 @@ func TestSQLReviewForMySQL(t *testing.T) {
 	a.NoError(err)
 	a.Equal(1, len(originQueryResp.Results))
 	diff := cmp.Diff(wantQueryResult, originQueryResp.Results[0], protocmp.Transform(), protocmp.IgnoreMessages(&durationpb.Duration{}))
-	a.Equal("", diff)
+	a.Empty(diff)
 
 	createIssueAndReturnSQLReviewResult(ctx, a, ctl, ctl.project, database, dmlSQL, false /* wait */)
 
@@ -383,7 +383,7 @@ func TestSQLReviewForMySQL(t *testing.T) {
 	a.NoError(err)
 	a.Equal(1, len(finalQueryResp.Results))
 	diff = cmp.Diff(wantQueryResult, finalQueryResp.Results[0], protocmp.Transform(), protocmp.IgnoreMessages(&durationpb.Duration{}))
-	a.Equal("", diff)
+	a.Empty(diff)
 
 	// disable the SQL review policy
 	policy.Enforce = false
@@ -538,6 +538,6 @@ func equalReviewResultProtos(a *require.Assertions, want, got []*v1pb.PlanCheckR
 	a.Equal(len(want), len(got))
 	for i := 0; i < len(want); i++ {
 		diff := cmp.Diff(want[i], got[i], protocmp.Transform())
-		a.Equal("", diff, message)
+		a.Empty(diff, message)
 	}
 }

@@ -206,7 +206,7 @@ func TestAdminQueryAffectedRows(t *testing.T) {
 			a.Equal("", result.Error)
 			result.Latency = nil
 			diff := cmp.Diff(tt.affectedRows[idx], result, protocmp.Transform(), protocmp.IgnoreMessages(&durationpb.Duration{}))
-			a.Equal("", diff)
+			a.Empty(diff)
 		}
 	}
 }
