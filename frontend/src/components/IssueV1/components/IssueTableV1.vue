@@ -273,15 +273,13 @@ const rowProps = (issue: ComposedIssue) => {
 watch(
   () => props.issueList,
   (list) => {
-    const oldIssueIdList = Array.from(state.selectedIssueNameList.values());
-    const newIssueIdList = new Set(
-      list.map((issue) => extractIssueUID(issue.name))
-    );
-    oldIssueIdList.forEach((id) => {
-      // If a selected issue id doesn't appear in the new IssueList
+    const oldIssueNames = Array.from(state.selectedIssueNameList.values());
+    const newIssueNames = new Set(list.map((issue) => issue.name));
+    oldIssueNames.forEach((name) => {
+      // If a selected issue name doesn't appear in the new IssueList
       // we should cancel its selection state.
-      if (!newIssueIdList.has(id)) {
-        state.selectedIssueNameList.delete(id);
+      if (!newIssueNames.has(name)) {
+        state.selectedIssueNameList.delete(name);
       }
     });
   }
