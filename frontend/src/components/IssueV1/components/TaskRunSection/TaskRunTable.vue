@@ -110,7 +110,7 @@ const columnList = computed((): DataTableColumn<ComposedTaskRun>[] => {
       title: () => t("common.statement"),
       width: "30%",
       resizable: true,
-      minWidth: 140,
+      minWidth: 100,
       render: (taskRun) => {
         const entry = getFlattenLogEntry(taskRun);
         return entry ? (
