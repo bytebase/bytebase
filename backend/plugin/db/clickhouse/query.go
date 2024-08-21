@@ -5,10 +5,14 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"math/big"
 	"reflect"
 	"strings"
 	"time"
+
+	"github.com/bytebase/bytebase/backend/common/log"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 
 	"github.com/paulmach/orb"
 	"github.com/paulmach/orb/encoding/wkt"
@@ -46,24 +50,38 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 		} else if queryContext.Limit > 0 {
 			statement = getStatementWithResultLimit(statement, queryContext.Limit)
 		}
+		_, allQuery, err := base.ValidateSQLForEditor(storepb.Engine_CLICKHOUSE, statement)
+		if err != nil {
+			return nil, err
+		}
 
 		startTime := time.Now()
 		queryResult, err := func() (*v1pb.QueryResult, error) {
-			rows, err := conn.QueryContext(ctx, statement)
-			if err != nil {
-				// ClickHouse will return "driver: bad connection" if we use non-SELECT statement for Query(). We need to ignore the error.
-				// nolint
-				return nil, nil
+			if allQuery {
+				rows, err := conn.QueryContext(ctx, statement)
+				if err != nil {
+					return nil, err
+				}
+				defer rows.Close()
+				r, err := convertRowsToQueryResult(rows, driver.maximumSQLResultSize)
+				if err != nil {
+					return nil, err
+				}
+				if err := rows.Err(); err != nil {
+					return nil, err
+				}
+				return r, nil
 			}
-			defer rows.Close()
-			r, err := convertRowsToQueryResult(rows, driver.maximumSQLResultSize)
+
+			sqlResult, err := conn.ExecContext(ctx, statement)
 			if err != nil {
 				return nil, err
 			}
-			if err := rows.Err(); err != nil {
-				return nil, err
+			affectedRows, err := sqlResult.RowsAffected()
+			if err != nil {
+				slog.Error("rowsAffected returns error", log.BBError(err))
 			}
-			return r, nil
+			return util.BuildAffectedRowsResult(affectedRows), nil
 		}()
 		stop := false
 		if err != nil {
