@@ -287,7 +287,6 @@ const onPolicyUpsert = async () => {
   const patch: Partial<Policy> = {
     type: PolicyType.MASKING_RULE,
     resourceType: PolicyResourceType.WORKSPACE,
-    resourceUid: "1",
     maskingRulePolicy: {
       rules: state.maskingRuleItemList
         .filter((item) => item.mode === "NORMAL")
