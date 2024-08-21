@@ -86,7 +86,7 @@ const columnList = computed((): DataTableColumn<ComposedTaskRun>[] => {
     {
       key: "comment",
       title: t("task.comment"),
-      width: "30%",
+      width: "50%",
       className: "flex flex-row items-center",
       minWidth: 140,
       resizable: true,
@@ -97,7 +97,7 @@ const columnList = computed((): DataTableColumn<ComposedTaskRun>[] => {
     {
       key: "detail",
       title: () => t("common.detail"),
-      width: "30%",
+      width: "20%",
       minWidth: 100,
       resizable: true,
       render: (taskRun) => {
@@ -108,9 +108,9 @@ const columnList = computed((): DataTableColumn<ComposedTaskRun>[] => {
     {
       key: "statement",
       title: () => t("common.statement"),
-      width: "40%",
+      width: "30%",
       resizable: true,
-      minWidth: 140,
+      minWidth: 100,
       render: (taskRun) => {
         const entry = getFlattenLogEntry(taskRun);
         return entry ? (
