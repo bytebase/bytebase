@@ -272,9 +272,9 @@ func queryRetry(
 	schemaSyncer *schemasync.Syncer,
 ) ([]*v1pb.QueryResult, []*base.QuerySpan, time.Duration, error) {
 	var spans []*base.QuerySpan
-	var firstSpanErr error
+	var err error
 	if !queryContext.Explain {
-		spans, firstSpanErr = base.GetQuerySpan(
+		spans, err = base.GetQuerySpan(
 			ctx,
 			base.GetQuerySpanContext{
 				InstanceID:                    instance.ResourceID,
@@ -288,11 +288,12 @@ func queryRetry(
 			"",
 			store.IgnoreDatabaseAndTableCaseSensitive(instance),
 		)
-		if firstSpanErr == nil {
-			if licenseService.IsFeatureEnabled(api.FeatureAccessControl) == nil && optionalAccessCheck != nil {
-				if err := optionalAccessCheck(ctx, instance, user, spans, isExport); err != nil {
-					return nil, nil, time.Duration(0), err
-				}
+		if err != nil {
+			return nil, nil, time.Duration(0), status.Errorf(codes.Internal, "failed to get query span: %v", err.Error())
+		}
+		if licenseService.IsFeatureEnabled(api.FeatureAccessControl) == nil && optionalAccessCheck != nil {
+			if err := optionalAccessCheck(ctx, instance, user, spans, isExport); err != nil {
+				return nil, nil, time.Duration(0), err
 			}
 		}
 	}
@@ -304,60 +305,56 @@ func queryRetry(
 	if queryContext.Explain {
 		return results, nil, duration, nil
 	}
-	hasOK := false
-	databaseMap := make(map[string]bool)
+	syncDatabaseMap := make(map[string]bool)
 	for i, r := range results {
-		if r.Error == "" {
-			hasOK = true
-			if i < len(spans) {
-				for k := range spans[i].SourceColumns {
-					databaseMap[k.Database] = true
-				}
+		if r.Error != "" {
+			continue
+		}
+		if i < len(spans) && spans[i].NotFoundError != nil {
+			for k := range spans[i].SourceColumns {
+				syncDatabaseMap[k.Database] = true
 			}
 		}
 	}
-	if !hasOK {
-		return results, nil, duration, nil
-	}
+
 	// Sync database metadata.
-	if firstSpanErr != nil {
-		for accessDatabaseName := range databaseMap {
-			d, err := stores.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID, DatabaseName: &accessDatabaseName})
-			if err != nil {
-				return nil, nil, duration, err
-			}
-			if err := schemaSyncer.SyncDatabaseSchema(ctx, d, true /* force */); err != nil {
-				return nil, nil, duration, errors.Wrapf(err, "failed to sync database schema for database %q", accessDatabaseName)
-			}
+	for accessDatabaseName := range syncDatabaseMap {
+		d, err := stores.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID, DatabaseName: &accessDatabaseName})
+		if err != nil {
+			return nil, nil, duration, err
+		}
+		if err := schemaSyncer.SyncDatabaseSchema(ctx, d, false /* force */); err != nil {
+			return nil, nil, duration, errors.Wrapf(err, "failed to sync database schema for database %q", accessDatabaseName)
 		}
 	}
 
 	// Retry getting query span.
-	spans, spanErr := base.GetQuerySpan(
-		ctx,
-		base.GetQuerySpanContext{
-			InstanceID:                    instance.ResourceID,
-			GetDatabaseMetadataFunc:       BuildGetDatabaseMetadataFunc(stores),
-			ListDatabaseNamesFunc:         BuildListDatabaseNamesFunc(stores),
-			GetLinkedDatabaseMetadataFunc: BuildGetLinkedDatabaseMetadataFunc(stores, instance.Engine),
-		},
-		instance.Engine,
-		statement,
-		database.DatabaseName,
-		"",
-		store.IgnoreDatabaseAndTableCaseSensitive(instance),
-	)
-	if spanErr != nil {
-		return nil, nil, duration, status.Errorf(codes.Internal, "failed to get query span: %v", spanErr.Error())
-	}
-
-	if firstSpanErr != nil {
-		if licenseService.IsFeatureEnabled(api.FeatureAccessControl) == nil {
-			if err := optionalAccessCheck(ctx, instance, user, spans, isExport); err != nil {
-				return nil, nil, duration, err
-			}
+	if len(syncDatabaseMap) > 0 {
+		spans, err = base.GetQuerySpan(
+			ctx,
+			base.GetQuerySpanContext{
+				InstanceID:                    instance.ResourceID,
+				GetDatabaseMetadataFunc:       BuildGetDatabaseMetadataFunc(stores),
+				ListDatabaseNamesFunc:         BuildListDatabaseNamesFunc(stores),
+				GetLinkedDatabaseMetadataFunc: BuildGetLinkedDatabaseMetadataFunc(stores, instance.Engine),
+			},
+			instance.Engine,
+			statement,
+			database.DatabaseName,
+			"",
+			store.IgnoreDatabaseAndTableCaseSensitive(instance),
+		)
+		if err != nil {
+			return nil, nil, duration, status.Errorf(codes.Internal, "failed to get query span: %v", err.Error())
 		}
 	}
+	// The second query span should not tolerate any error, but we should retail the original error from database if possible.
+	for i, result := range results {
+		if i < len(spans) && result.Error == "" && spans[i].NotFoundError != nil {
+			return nil, nil, duration, status.Errorf(codes.Internal, "failed to get query span: %v", spans[i].NotFoundError)
+		}
+	}
+
 	if licenseService.IsFeatureEnabledForInstance(api.FeatureSensitiveData, instance) == nil && !queryContext.Explain {
 		masker := NewQueryResultMasker(stores)
 		if err := masker.MaskResults(ctx, spans, results, instance, storepb.MaskingExceptionPolicy_MaskingException_QUERY); err != nil {

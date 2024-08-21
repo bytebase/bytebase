@@ -661,20 +661,19 @@ func (l *CTETableListener) EnterCommon_table_expr(ctx *pg.Common_table_exprConte
 			table.Columns = append(table.Columns, normalizePostgreSQLName(column))
 		}
 	} else {
-		if span, err := base.GetQuerySpan(
+		if span, err := GetQuerySpan(
 			l.context.ctx,
 			base.GetQuerySpanContext{
 				InstanceID:              l.context.instanceID,
 				GetDatabaseMetadataFunc: l.context.getMetadata,
 				ListDatabaseNamesFunc:   l.context.listDatabaseNames,
 			},
-			store.Engine_POSTGRES,
 			ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.Preparablestmt()),
 			l.context.defaultDatabase,
 			"",
 			false,
-		); err == nil && len(span) == 1 {
-			for _, column := range span[0].Results {
+		); err == nil && span.NotFoundError == nil {
+			for _, column := range span.Results {
 				table.Columns = append(table.Columns, column.Name)
 			}
 		}
@@ -1028,20 +1027,19 @@ func (l *TableRefListener) EnterTable_ref(ctx *pg.Table_refContext) {
 				if len(columnAlias) > 0 {
 					virtualReference.Columns = columnAlias
 				} else {
-					if span, err := base.GetQuerySpan(
+					if span, err := GetQuerySpan(
 						l.context.ctx,
 						base.GetQuerySpanContext{
 							InstanceID:              l.context.instanceID,
 							GetDatabaseMetadataFunc: l.context.getMetadata,
 							ListDatabaseNamesFunc:   l.context.listDatabaseNames,
 						},
-						store.Engine_POSTGRES,
 						fmt.Sprintf("SELECT * FROM %s AS %s;", ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.Select_with_parens()), tableAlias),
 						l.context.defaultDatabase,
 						"",
 						false,
-					); err == nil && len(span) == 1 {
-						for _, column := range span[0].Results {
+					); err == nil && span.NotFoundError == nil {
+						for _, column := range span.Results {
 							virtualReference.Columns = append(virtualReference.Columns, column.Name)
 						}
 					}
