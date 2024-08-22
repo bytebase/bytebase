@@ -121,10 +121,11 @@ func (q *querySpanExtractor) existsTableMetadata(resource base.SchemaResource) b
 	if resource.Table == "DUAL" {
 		return false
 	}
-	if resource.Schema == "" {
-		resource.Schema = q.connectedDatabase
+	database := resource.Database
+	if database == "" {
+		database = q.connectedDatabase
 	}
-	_, meta, err := q.getDatabaseMetadata(resource.Schema)
+	_, meta, err := q.getDatabaseMetadata(database)
 	if err != nil {
 		return false
 	}
