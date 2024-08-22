@@ -78,6 +78,7 @@ import { BBModal } from "@/bbkit";
 import TableSchemaViewer from "@/components/TableSchemaViewer.vue";
 import MaskSpinner from "@/components/misc/MaskSpinner.vue";
 import { RichDatabaseName, SearchBox } from "@/components/v2";
+import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import {
   useConnectionOfCurrentSQLEditorTab,
   useDBSchemaV1Store,
@@ -95,6 +96,7 @@ import {
   type TreeNode,
   buildDatabaseSchemaTree,
   ExpandableNodeTypes,
+  useClickEvents,
 } from "./common";
 
 const mounted = useMounted();
@@ -135,11 +137,8 @@ const metadata = computedAsync(
     evaluating: isFetchingMetadata,
   }
 );
-// const tree = computed(() => {
-//   if (isFetchingMetadata.value) return null;
-//   if (!metadata.value) return null;
-//   return buildDatabaseSchemaTree(database.value, metadata.value);
-// });
+const { events: nodeClickEvents, handleClick: handleNodeClick } =
+  useClickEvents();
 const tree = ref<TreeNode[]>();
 
 const expandedKeys = computed({
@@ -190,20 +189,8 @@ const nodeProps = ({ option }: { option: TreeOption }) => {
     onclick(e: MouseEvent) {
       if (node.disabled) return;
 
-      // if (isDescendantOf(e.target as Element, ".n-tree-node-switcher")) {
-      //   toggleExpanded(node);
-      //   return;
-      // }
-
       if (isDescendantOf(e.target as Element, ".n-tree-node-content")) {
-        // handleClick(node);
-        handleSingleClickNode(node);
-      }
-    },
-    ondblclick(e: MouseEvent) {
-      if (node.disabled) return;
-      if (isDescendantOf(e.target as Element, ".n-tree-node-content")) {
-        handleDoubleClickNode(node);
+        handleNodeClick(node);
       }
     },
     oncontextmenu(e: MouseEvent) {
@@ -254,15 +241,15 @@ const expandNode = (node: TreeNode) => {
   upsertExpandedKeys(keysToExpand);
 };
 
-const handleSingleClickNode = (node: TreeNode) => {
+useEmitteryEventListener(nodeClickEvents, "single-click", ({ node }) => {
   expandNode(node);
   viewDetail(node);
-};
-const handleDoubleClickNode = (node: TreeNode) => {
+});
+useEmitteryEventListener(nodeClickEvents, "double-click", ({ node }) => {
   if (node.meta.type === "table" || node.meta.type === "view") {
     selectAllFromTableOrView(node);
   }
-};
+});
 
 watch(
   [isFetchingMetadata, metadata],

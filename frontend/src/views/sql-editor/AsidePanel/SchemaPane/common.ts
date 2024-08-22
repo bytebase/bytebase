@@ -1,5 +1,6 @@
+import Emittery from "emittery";
 import type { TreeOption } from "naive-ui";
-import { type RenderFunction } from "vue";
+import { ref, type RenderFunction } from "vue";
 import { t } from "@/plugins/i18n";
 import type { ComposedDatabase } from "@/types";
 import type {
@@ -685,4 +686,42 @@ export const buildDatabaseSchemaTree = (
 
   console.error("should never reach this line");
   return [];
+};
+
+export const useClickEvents = () => {
+  const DELAY = 250;
+  const state = ref<{
+    timeout: ReturnType<typeof setTimeout>;
+    node: TreeNode;
+  }>();
+  const events = new Emittery<{
+    "single-click": { node: TreeNode };
+    "double-click": { node: TreeNode };
+  }>();
+
+  const clear = () => {
+    if (!state.value) return;
+    clearTimeout(state.value.timeout);
+    state.value = undefined;
+  };
+  const queue = (node: TreeNode) => {
+    state.value = {
+      timeout: setTimeout(() => {
+        events.emit("single-click", { node });
+      }, DELAY),
+      node,
+    };
+  };
+
+  const handleClick = (node: TreeNode) => {
+    if (state.value && state.value.node.key === node.key) {
+      events.emit("double-click", { node });
+      clear();
+      return;
+    }
+    clear();
+    queue(node);
+  };
+
+  return { events, handleClick };
 };
