@@ -253,6 +253,7 @@ roles:
       - bb.roles.list
       - bb.settings.get
       - bb.settings.list
+      - bb.groups.create
       - bb.groups.get
       - bb.groups.list
       - bb.vcsProviders.get
