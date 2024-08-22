@@ -18,12 +18,12 @@ func TestExtractOracleResourceList(t *testing.T) {
 			expected: []base.SchemaResource{
 				{
 					Database: "DB",
-					Schema:   "ROOT",
+					Schema:   "DB",
 					Table:    "T1",
 				},
 				{
 					Database: "DB",
-					Schema:   "ROOT",
+					Schema:   "DB",
 					Table:    "T2",
 				},
 			},
@@ -32,12 +32,12 @@ func TestExtractOracleResourceList(t *testing.T) {
 			statement: "SELECT * FROM schema1.t1 JOIN schema2.t2 ON t1.c1 = t2.c1;",
 			expected: []base.SchemaResource{
 				{
-					Database: "DB",
+					Database: "SCHEMA1",
 					Schema:   "SCHEMA1",
 					Table:    "T1",
 				},
 				{
-					Database: "DB",
+					Database: "SCHEMA2",
 					Schema:   "SCHEMA2",
 					Table:    "T2",
 				},
@@ -48,12 +48,12 @@ func TestExtractOracleResourceList(t *testing.T) {
 			expected: []base.SchemaResource{
 				{
 					Database: "DB",
-					Schema:   "ROOT",
+					Schema:   "DB",
 					Table:    "T1",
 				},
 				{
 					Database: "DB",
-					Schema:   "ROOT",
+					Schema:   "DB",
 					Table:    "T2",
 				},
 			},
@@ -61,7 +61,7 @@ func TestExtractOracleResourceList(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		resources, err := ExtractResourceList("DB", "ROOT", test.statement)
+		resources, err := ExtractResourceList("DB", "", test.statement)
 		require.NoError(t, err)
 		require.Equal(t, test.expected, resources, test.statement)
 	}

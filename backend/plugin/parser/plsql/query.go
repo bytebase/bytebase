@@ -62,7 +62,7 @@ func (l *queryValidateListener) EnterData_manipulation_language_statements(ctx *
 	}
 }
 
-func ExtractResourceList(currentDatabase string, currentSchema string, statement string) ([]base.SchemaResource, error) {
+func ExtractResourceList(currentDatabase string, _ string, statement string) ([]base.SchemaResource, error) {
 	tree, _, err := ParsePLSQL(statement)
 	if err != nil {
 		return nil, err
@@ -70,7 +70,7 @@ func ExtractResourceList(currentDatabase string, currentSchema string, statement
 
 	l := &plsqlResourceExtractListener{
 		currentDatabase: currentDatabase,
-		currentSchema:   currentSchema,
+		currentSchema:   currentDatabase,
 		resourceMap:     make(map[string]base.SchemaResource),
 	}
 
