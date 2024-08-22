@@ -69,7 +69,7 @@
               column: B
     sourcecolumns:
         - server: ""
-          database: PUBLIC
+          database: SCHEMA1
           schema: SCHEMA1
           table: V1
           column: ""
@@ -240,7 +240,7 @@
               column: LC2
     sourcecolumns:
         - server: ""
-          database: PUBLIC
+          database: SCHEMA1
           schema: SCHEMA1
           table: LV1
           column: ""
