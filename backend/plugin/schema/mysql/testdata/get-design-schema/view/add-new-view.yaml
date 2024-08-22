@@ -46,17 +46,15 @@
       `id` int DEFAULT NULL
     ) ENGINE=InnoDB COLLATE=utf8mb4_0900_ai_ci;
 
-    DROP VIEW IF EXISTS `v1`;
     --
     -- View structure for `v1`
     --
-    CREATE VIEW `v1` AS select `t`.`id` AS `id` from `t`;
+    CREATE OR REPLACE VIEW `v1` AS select `t`.`id` AS `id` from `t`;
 
-    DROP VIEW IF EXISTS `v2`;
     --
     -- View structure for `v2`
     --
-    CREATE VIEW `v2` AS select (`t`.`id` + 1) AS `id + 1` from `t`;
+    CREATE OR REPLACE VIEW `v2` AS select (`t`.`id` + 1) AS `id + 1` from `t`;
 - description: Add new view in schema without views
   target: |-
     {
@@ -104,8 +102,7 @@
       `price` int DEFAULT NULL
     ) ENGINE=InnoDB COLLATE=utf8mb4_0900_ai_ci;
 
-    DROP VIEW IF EXISTS `v`;
     --
     -- View structure for `v`
     --
-    CREATE VIEW `v` AS select * from `test_view`.`t`;
+    CREATE OR REPLACE VIEW `v` AS select * from `test_view`.`t`;

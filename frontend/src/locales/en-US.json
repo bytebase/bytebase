@@ -2577,7 +2577,8 @@
     "views": "Views",
     "procedures": "Procedures",
     "functions": "Functions",
-    "preview-schema-text": "Preview schema text"
+    "preview-schema-text": "Preview schema text",
+    "preview-view-definition": "Preview view definition"
   },
   "label": {
     "empty-label-value": "Empty",

@@ -1,3 +1,54 @@
+- description: Test For PLpgSQL User Defined Function in expression
+  statement: SELECT plpgsql_t(1);
+  connectedDatabase: db
+  metadata: |-
+    {
+      "name":  "db",
+      "schemas":  [
+        {
+          "name": "public",
+          "tables":  [
+            {
+              "name":  "t",
+              "columns":  [
+                {
+                  "name":  "a"
+                },
+                {
+                  "name":  "b"
+                }
+              ]
+            }
+          ],
+          "functions": [
+            {
+              "name": "plpgsql_t",
+              "definition": "CREATE OR REPLACE FUNCTION plpgsql_t (x int) RETURNS TABLE(a int, b int) AS $$ BEGIN RETURN QUERY SELECT a, b FROM t WHERE a = $1; END; $$ LANGUAGE plpgsql;"
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    results:
+        - name: plpgsql_t
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: public
+              table: t
+              column: a
+            - server: ""
+              database: db
+              schema: public
+              table: t
+              column: b
+    sourcecolumns:
+        - server: ""
+          database: db
+          schema: public
+          table: t
+          column: ""
 - description: json_object as target field
   statement: 'SELECT json_object(''id'': a) FROM t'
   connectedDatabase: db
