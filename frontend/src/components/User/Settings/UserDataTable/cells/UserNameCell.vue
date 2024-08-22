@@ -5,7 +5,14 @@
     <div class="flex flex-row items-center">
       <div class="flex flex-col">
         <div class="flex flex-row items-center space-x-2">
+          <span
+            class="truncate max-w-[10em]"
+            v-if="permissionStore.onlyWorkspaceMember"
+          >
+            {{ user.title }}
+          </span>
           <router-link
+            v-else
             :to="`/users/${user.email}`"
             class="normal-link truncate max-w-[10em]"
           >
@@ -66,7 +73,11 @@ import UserAvatar from "@/components/User/UserAvatar.vue";
 import ServiceAccountTag from "@/components/misc/ServiceAccountTag.vue";
 import SystemBotTag from "@/components/misc/SystemBotTag.vue";
 import YouTag from "@/components/misc/YouTag.vue";
-import { pushNotification, useCurrentUserV1 } from "@/store";
+import {
+  pushNotification,
+  useCurrentUserV1,
+  usePermissionStore,
+} from "@/store";
 import { SYSTEM_BOT_USER_NAME } from "@/types";
 import { UserType, type User } from "@/types/proto/v1/auth_service";
 import { hasWorkspacePermissionV2, toClipboard } from "@/utils";
@@ -81,6 +92,7 @@ defineEmits<{
 
 const { t } = useI18n();
 const currentUserV1 = useCurrentUserV1();
+const permissionStore = usePermissionStore();
 
 const allowEdit = computed(() => {
   return hasWorkspacePermissionV2("bb.policies.update");
