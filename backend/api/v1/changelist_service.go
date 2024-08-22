@@ -46,19 +46,19 @@ func (s *ChangelistService) CreateChangelist(ctx context.Context, request *v1pb.
 
 	projectResourceID, err := common.GetProjectID(request.Parent)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
 		ResourceID: &projectResourceID,
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get project with resource id %q, err: %s", projectResourceID, err.Error()))
+		return nil, status.Errorf(codes.Internal, "failed to get project with resource id %q, err: %v", projectResourceID, err)
 	}
 	if project == nil {
-		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("project with resource id %q not found", projectResourceID))
+		return nil, status.Errorf(codes.NotFound, "project with resource id %q not found", projectResourceID)
 	}
 	if project.Deleted {
-		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("project with resource id %q had deleted", projectResourceID))
+		return nil, status.Errorf(codes.NotFound, "project with resource id %q had deleted", projectResourceID)
 	}
 
 	changelist, err := s.store.GetChangelist(ctx, &store.FindChangelistMessage{ProjectID: &project.ResourceID, ResourceID: &request.ChangelistId})
@@ -89,13 +89,13 @@ func (s *ChangelistService) CreateChangelist(ctx context.Context, request *v1pb.
 func (s *ChangelistService) GetChangelist(ctx context.Context, request *v1pb.GetChangelistRequest) (*v1pb.Changelist, error) {
 	projectID, changelistID, err := common.GetProjectIDChangelistID(request.Name)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
 		ResourceID: &projectID,
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	if project == nil {
 		return nil, status.Errorf(codes.NotFound, "project %q not found", projectID)
@@ -119,19 +119,19 @@ func (s *ChangelistService) GetChangelist(ctx context.Context, request *v1pb.Get
 func (s *ChangelistService) ListChangelists(ctx context.Context, request *v1pb.ListChangelistsRequest) (*v1pb.ListChangelistsResponse, error) {
 	projectResourceID, err := common.GetProjectID(request.Parent)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
 		ResourceID: &projectResourceID,
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get project with resource id %q, err: %s", projectResourceID, err.Error()))
+		return nil, status.Errorf(codes.Internal, "failed to get project with resource id %q, err: %s", projectResourceID, err.Error())
 	}
 	if project == nil {
-		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("project with resource id %q not found", projectResourceID))
+		return nil, status.Errorf(codes.NotFound, "project with resource id %q not found", projectResourceID)
 	}
 	if project.Deleted {
-		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("project with resource id %q had deleted", projectResourceID))
+		return nil, status.Errorf(codes.NotFound, "project with resource id %q had deleted", projectResourceID)
 	}
 
 	changelists, err := s.store.ListChangelists(ctx, &store.FindChangelistMessage{
@@ -163,13 +163,13 @@ func (s *ChangelistService) UpdateChangelist(ctx context.Context, request *v1pb.
 
 	projectID, changelistID, err := common.GetProjectIDChangelistID(request.Changelist.Name)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
 		ResourceID: &projectID,
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	if project == nil {
 		return nil, status.Errorf(codes.NotFound, "project %q not found", projectID)
@@ -223,13 +223,13 @@ func (s *ChangelistService) UpdateChangelist(ctx context.Context, request *v1pb.
 func (s *ChangelistService) DeleteChangelist(ctx context.Context, request *v1pb.DeleteChangelistRequest) (*emptypb.Empty, error) {
 	projectID, changelistID, err := common.GetProjectIDChangelistID(request.Name)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
 		ResourceID: &projectID,
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	if project == nil {
 		return nil, status.Errorf(codes.NotFound, "project %q not found", projectID)
@@ -266,17 +266,17 @@ func convertV1ChangelistPayload(changelist *v1pb.Changelist) *storepb.Changelist
 func (s *ChangelistService) convertStoreChangelist(ctx context.Context, changelist *store.ChangelistMessage) (*v1pb.Changelist, error) {
 	creator, err := s.store.GetUserByID(ctx, changelist.CreatorID)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get creator: %v", err))
+		return nil, status.Errorf(codes.Internal, "failed to get creator: %v", err)
 	}
 	if creator == nil {
-		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("cannot find the creator: %d", changelist.CreatorID))
+		return nil, status.Errorf(codes.NotFound, "cannot find the creator: %d", changelist.CreatorID)
 	}
 	updater, err := s.store.GetUserByID(ctx, changelist.UpdaterID)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get updater: %v", err))
+		return nil, status.Errorf(codes.Internal, "failed to get updater: %v", err)
 	}
 	if updater == nil {
-		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("cannot find the updater: %d", changelist.UpdaterID))
+		return nil, status.Errorf(codes.NotFound, "cannot find the updater: %d", changelist.UpdaterID)
 	}
 
 	v1Changelist := &v1pb.Changelist{

@@ -142,15 +142,15 @@ func ValidateMaskingRuleCELExpr(expr string) (cel.Program, error) {
 		MaskingRulePolicyCELAttributes...,
 	)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	ast, issues := e.Compile(expr)
 	if issues != nil && issues.Err() != nil {
-		return nil, status.Errorf(codes.InvalidArgument, issues.Err().Error())
+		return nil, status.Error(codes.InvalidArgument, issues.Err().Error())
 	}
 	prog, err := e.Program(ast)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	return prog, nil
 }
@@ -161,15 +161,15 @@ func ValidateMaskingExceptionCELExpr(expr string) (cel.Program, error) {
 		MaskingExceptionPolicyCELAttributes...,
 	)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	ast, issues := e.Compile(expr)
 	if issues != nil && issues.Err() != nil {
-		return nil, status.Errorf(codes.InvalidArgument, issues.Err().Error())
+		return nil, status.Error(codes.InvalidArgument, issues.Err().Error())
 	}
 	prog, err := e.Program(ast)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	return prog, nil
 }
@@ -182,15 +182,15 @@ func ValidateProjectMemberCELExpr(expression *expr.Expr) (cel.Program, error) {
 		IAMPolicyConditionCELAttributes...,
 	)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	ast, issues := e.Compile(expression.Expression)
 	if issues != nil && issues.Err() != nil {
-		return nil, status.Errorf(codes.InvalidArgument, issues.Err().Error())
+		return nil, status.Error(codes.InvalidArgument, issues.Err().Error())
 	}
 	prog, err := e.Program(ast)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	return prog, nil
 }

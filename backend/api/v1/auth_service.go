@@ -80,7 +80,7 @@ func (s *AuthService) GetUser(ctx context.Context, request *v1pb.GetUserRequest)
 	if err != nil {
 		email, err := common.GetUserEmail(request.Name)
 		if err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, err.Error())
+			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 		u, err := s.store.GetUserByEmail(ctx, email)
 		if err != nil {
@@ -268,7 +268,7 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 
 	userID, err := common.GetUserID(request.User.Name)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	user, err := s.store.GetUserByID(ctx, userID)
 	if err != nil {
@@ -440,7 +440,7 @@ func (s *AuthService) DeleteUser(ctx context.Context, request *v1pb.DeleteUserRe
 
 	userID, err := common.GetUserID(request.Name)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	user, err := s.store.GetUserByID(ctx, userID)
 	if err != nil {
@@ -464,7 +464,7 @@ func (s *AuthService) DeleteUser(ctx context.Context, request *v1pb.DeleteUserRe
 	}
 
 	if _, err := s.store.UpdateUser(ctx, user, &store.UpdateUserMessage{Delete: &deletePatch}, callerUser.ID); err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	return &emptypb.Empty{}, nil
 }
@@ -506,7 +506,7 @@ func (s *AuthService) UndeleteUser(ctx context.Context, request *v1pb.UndeleteUs
 
 	userID, err := common.GetUserID(request.Name)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	user, err := s.store.GetUserByID(ctx, userID)
 	if err != nil {
@@ -521,7 +521,7 @@ func (s *AuthService) UndeleteUser(ctx context.Context, request *v1pb.UndeleteUs
 
 	user, err = s.store.UpdateUser(ctx, user, &store.UpdateUserMessage{Delete: &undeletePatch}, callerUser.ID)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	return convertToUser(user), nil
 }
@@ -663,7 +663,7 @@ func (s *AuthService) Login(ctx context.Context, request *v1pb.LoginRequest) (*v
 		}
 		accessToken = token
 	} else {
-		return nil, status.Errorf(codes.Unauthenticated, fmt.Sprintf("user type %s cannot login", loginUser.Type))
+		return nil, status.Errorf(codes.Unauthenticated, "user type %s cannot login", loginUser.Type)
 	}
 
 	var allowedDomains []string
@@ -713,7 +713,7 @@ func (s *AuthService) Logout(ctx context.Context, _ *v1pb.LogoutRequest) (*empty
 	}
 	accessTokenStr, err := auth.GetTokenFromMetadata(md)
 	if err != nil {
-		return nil, status.Errorf(codes.Unauthenticated, err.Error())
+		return nil, status.Error(codes.Unauthenticated, err.Error())
 	}
 	s.stateCfg.ExpireCache.Add(accessTokenStr, true)
 
@@ -870,7 +870,7 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 	}
 
 	if err := s.licenseService.IsFeatureEnabled(api.FeatureSSO); err != nil {
-		return nil, status.Errorf(codes.PermissionDenied, err.Error())
+		return nil, status.Error(codes.PermissionDenied, err.Error())
 	}
 	// Create new user from identity provider.
 	password, err := common.RandomString(20)
@@ -1006,7 +1006,7 @@ func (s *AuthService) userCountGuard(ctx context.Context) error {
 
 	count, err := s.store.CountActiveUsers(ctx)
 	if err != nil {
-		return status.Errorf(codes.Internal, err.Error())
+		return status.Error(codes.Internal, err.Error())
 	}
 	if int64(count) >= userLimit {
 		return status.Errorf(codes.ResourceExhausted, "reached the maximum user count %d", userLimit)

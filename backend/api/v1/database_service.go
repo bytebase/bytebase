@@ -84,7 +84,7 @@ func NewDatabaseService(store *store.Store, schemaSyncer *schemasync.Syncer, lic
 func (s *DatabaseService) GetDatabase(ctx context.Context, request *v1pb.GetDatabaseRequest) (*v1pb.Database, error) {
 	instanceID, databaseName, err := common.GetInstanceDatabaseID(request.Name)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
 	if err != nil {
@@ -101,7 +101,7 @@ func (s *DatabaseService) GetDatabase(ctx context.Context, request *v1pb.GetData
 	}
 	databaseMessage, err := s.store.GetDatabaseV2(ctx, find)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	if databaseMessage == nil {
 		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
@@ -118,7 +118,7 @@ func (s *DatabaseService) GetDatabase(ctx context.Context, request *v1pb.GetData
 func (s *DatabaseService) ListInstanceDatabases(ctx context.Context, request *v1pb.ListInstanceDatabasesRequest) (*v1pb.ListInstanceDatabasesResponse, error) {
 	instanceID, err := common.GetInstanceID(request.Parent)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	limit, offset, err := parseLimitAndOffset(request.PageToken, int(request.PageSize))
@@ -140,7 +140,7 @@ func (s *DatabaseService) ListInstanceDatabases(ctx context.Context, request *v1
 	if request.Filter != "" {
 		projectFilter, err := getProjectFilter(request.Filter)
 		if err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, err.Error())
+			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 		projectID, err := common.GetProjectID(projectFilter)
 		if err != nil {
@@ -151,7 +151,7 @@ func (s *DatabaseService) ListInstanceDatabases(ctx context.Context, request *v1
 
 	databaseMessages, err := s.store.ListDatabases(ctx, find)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	nextPageToken := ""
@@ -207,7 +207,7 @@ func (s *DatabaseService) ListDatabases(ctx context.Context, request *v1pb.ListD
 
 	databaseMessages, err := s.store.ListDatabases(ctx, find)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	nextPageToken := ""
@@ -245,7 +245,7 @@ func (s *DatabaseService) UpdateDatabase(ctx context.Context, request *v1pb.Upda
 
 	instanceID, databaseName, err := common.GetInstanceDatabaseID(request.Database.Name)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
 	if err != nil {
@@ -260,7 +260,7 @@ func (s *DatabaseService) UpdateDatabase(ctx context.Context, request *v1pb.Upda
 		IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	if databaseMessage == nil {
 		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
@@ -276,14 +276,14 @@ func (s *DatabaseService) UpdateDatabase(ctx context.Context, request *v1pb.Upda
 		case "project":
 			projectID, err := common.GetProjectID(request.Database.Project)
 			if err != nil {
-				return nil, status.Errorf(codes.InvalidArgument, err.Error())
+				return nil, status.Error(codes.InvalidArgument, err.Error())
 			}
 			project, err = s.store.GetProjectV2(ctx, &store.FindProjectMessage{
 				ResourceID:  &projectID,
 				ShowDeleted: true,
 			})
 			if err != nil {
-				return nil, status.Errorf(codes.Internal, err.Error())
+				return nil, status.Error(codes.Internal, err.Error())
 			}
 			if project == nil {
 				return nil, status.Errorf(codes.NotFound, "project %q not found", projectID)
@@ -305,14 +305,14 @@ func (s *DatabaseService) UpdateDatabase(ctx context.Context, request *v1pb.Upda
 			if request.Database.Environment != "" {
 				environmentID, err := common.GetEnvironmentID(request.Database.Environment)
 				if err != nil {
-					return nil, status.Errorf(codes.InvalidArgument, err.Error())
+					return nil, status.Error(codes.InvalidArgument, err.Error())
 				}
 				environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{
 					ResourceID:  &environmentID,
 					ShowDeleted: true,
 				})
 				if err != nil {
-					return nil, status.Errorf(codes.Internal, err.Error())
+					return nil, status.Error(codes.Internal, err.Error())
 				}
 				if environment == nil {
 					return nil, status.Errorf(codes.NotFound, "environment %q not found", environmentID)
@@ -331,7 +331,7 @@ func (s *DatabaseService) UpdateDatabase(ctx context.Context, request *v1pb.Upda
 	}
 	updatedDatabase, err := s.store.UpdateDatabase(ctx, patch, principalID)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	database, err := s.convertToDatabase(ctx, updatedDatabase)
@@ -345,7 +345,7 @@ func (s *DatabaseService) UpdateDatabase(ctx context.Context, request *v1pb.Upda
 func (s *DatabaseService) SyncDatabase(ctx context.Context, request *v1pb.SyncDatabaseRequest) (*v1pb.SyncDatabaseResponse, error) {
 	instanceID, databaseName, err := common.GetInstanceDatabaseID(request.Name)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
 	if err != nil {
@@ -362,7 +362,7 @@ func (s *DatabaseService) SyncDatabase(ctx context.Context, request *v1pb.SyncDa
 	}
 	database, err := s.store.GetDatabaseV2(ctx, find)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	if database == nil {
 		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
@@ -386,7 +386,7 @@ func (s *DatabaseService) BatchUpdateDatabases(ctx context.Context, request *v1p
 		}
 		instanceID, databaseName, err := common.GetInstanceDatabaseID(req.Database.Name)
 		if err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, err.Error())
+			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 		instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
 		if err != nil {
@@ -401,7 +401,7 @@ func (s *DatabaseService) BatchUpdateDatabases(ctx context.Context, request *v1p
 			IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
 		})
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, err.Error())
+			return nil, status.Error(codes.Internal, err.Error())
 		}
 		if database == nil {
 			return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
@@ -415,7 +415,7 @@ func (s *DatabaseService) BatchUpdateDatabases(ctx context.Context, request *v1p
 	// TODO(d): support batch update environment.
 	projectID, err := common.GetProjectID(projectURI)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
@@ -423,7 +423,7 @@ func (s *DatabaseService) BatchUpdateDatabases(ctx context.Context, request *v1p
 		ShowDeleted: true,
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	if project == nil {
 		return nil, status.Errorf(codes.NotFound, "project %q not found", projectID)
@@ -440,7 +440,7 @@ func (s *DatabaseService) BatchUpdateDatabases(ctx context.Context, request *v1p
 	if len(databases) > 0 {
 		updatedDatabases, err := s.store.BatchUpdateDatabaseProject(ctx, databases, project.ResourceID, principalID)
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, err.Error())
+			return nil, status.Error(codes.Internal, err.Error())
 		}
 		for _, databaseMessage := range updatedDatabases {
 			database, err := s.convertToDatabase(ctx, databaseMessage)
@@ -457,7 +457,7 @@ func (s *DatabaseService) BatchUpdateDatabases(ctx context.Context, request *v1p
 func (s *DatabaseService) GetDatabaseMetadata(ctx context.Context, request *v1pb.GetDatabaseMetadataRequest) (*v1pb.DatabaseMetadata, error) {
 	instanceID, databaseName, err := common.TrimSuffixAndGetInstanceDatabaseID(request.Name, common.MetadataSuffix)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
 	if err != nil {
@@ -472,7 +472,7 @@ func (s *DatabaseService) GetDatabaseMetadata(ctx context.Context, request *v1pb
 		IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	if database == nil {
 		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
@@ -481,11 +481,11 @@ func (s *DatabaseService) GetDatabaseMetadata(ctx context.Context, request *v1pb
 		ResourceID: &database.ProjectID,
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	dbSchema, err := s.store.GetDBSchema(ctx, database.UID)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	if dbSchema == nil {
 		if err := s.schemaSyncer.SyncDatabaseSchema(ctx, database, true /* force */); err != nil {
@@ -493,7 +493,7 @@ func (s *DatabaseService) GetDatabaseMetadata(ctx context.Context, request *v1pb
 		}
 		newDBSchema, err := s.store.GetDBSchema(ctx, database.UID)
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, err.Error())
+			return nil, status.Error(codes.Internal, err.Error())
 		}
 		if newDBSchema == nil {
 			return nil, status.Errorf(codes.NotFound, "database schema %q not found", databaseName)
@@ -584,7 +584,7 @@ func (s *DatabaseService) UpdateDatabaseMetadata(ctx context.Context, request *v
 	}
 	instanceID, databaseName, err := common.TrimSuffixAndGetInstanceDatabaseID(request.DatabaseMetadata.Name, common.MetadataSuffix)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
@@ -601,7 +601,7 @@ func (s *DatabaseService) UpdateDatabaseMetadata(ctx context.Context, request *v
 		IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	if database == nil {
 		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
@@ -609,7 +609,7 @@ func (s *DatabaseService) UpdateDatabaseMetadata(ctx context.Context, request *v
 
 	dbSchema, err := s.store.GetDBSchema(ctx, database.UID)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	if dbSchema == nil {
 		return nil, status.Errorf(codes.FailedPrecondition, "database schema metadata not found")
@@ -630,7 +630,7 @@ func (s *DatabaseService) UpdateDatabaseMetadata(ctx context.Context, request *v
 
 	dbSchema, err = s.store.GetDBSchema(ctx, database.UID)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	if dbSchema == nil {
 		return nil, status.Errorf(codes.NotFound, "database schema %q not found", databaseName)
@@ -648,7 +648,7 @@ func (s *DatabaseService) UpdateDatabaseMetadata(ctx context.Context, request *v
 func (s *DatabaseService) GetDatabaseSchema(ctx context.Context, request *v1pb.GetDatabaseSchemaRequest) (*v1pb.DatabaseSchema, error) {
 	instanceID, databaseName, err := common.TrimSuffixAndGetInstanceDatabaseID(request.Name, common.SchemaSuffix)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
 	if err != nil {
@@ -663,14 +663,14 @@ func (s *DatabaseService) GetDatabaseSchema(ctx context.Context, request *v1pb.G
 		IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	if database == nil {
 		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
 	}
 	dbSchema, err := s.store.GetDBSchema(ctx, database.UID)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	if dbSchema == nil {
 		if err := s.schemaSyncer.SyncDatabaseSchema(ctx, database, true /* force */); err != nil {
@@ -678,7 +678,7 @@ func (s *DatabaseService) GetDatabaseSchema(ctx context.Context, request *v1pb.G
 		}
 		newDBSchema, err := s.store.GetDBSchema(ctx, database.UID)
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, err.Error())
+			return nil, status.Error(codes.Internal, err.Error())
 		}
 		if newDBSchema == nil {
 			return nil, status.Errorf(codes.NotFound, "database schema %q not found", databaseName)
@@ -716,13 +716,13 @@ func (s *DatabaseService) GetDatabaseSchema(ctx context.Context, request *v1pb.G
 func (s *DatabaseService) ListChangeHistories(ctx context.Context, request *v1pb.ListChangeHistoriesRequest) (*v1pb.ListChangeHistoriesResponse, error) {
 	instanceID, databaseName, err := common.GetInstanceDatabaseID(request.Parent)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
 		ResourceID: &instanceID,
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	if instance == nil {
 		return nil, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
@@ -733,7 +733,7 @@ func (s *DatabaseService) ListChangeHistories(ctx context.Context, request *v1pb
 		IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	if database == nil {
 		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
@@ -763,7 +763,7 @@ func (s *DatabaseService) ListChangeHistories(ctx context.Context, request *v1pb
 
 	filters, err := parseFilter(request.Filter)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	for _, expr := range filters {
 		if expr.operator != comparatorTypeEqual {
@@ -814,13 +814,13 @@ func (s *DatabaseService) ListChangeHistories(ctx context.Context, request *v1pb
 func (s *DatabaseService) GetChangeHistory(ctx context.Context, request *v1pb.GetChangeHistoryRequest) (*v1pb.ChangeHistory, error) {
 	instanceID, databaseName, changeHistoryIDStr, err := common.GetInstanceDatabaseIDChangeHistory(request.Name)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
 		ResourceID: &instanceID,
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	if instance == nil {
 		return nil, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
@@ -831,7 +831,7 @@ func (s *DatabaseService) GetChangeHistory(ctx context.Context, request *v1pb.Ge
 		IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	if database == nil {
 		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
@@ -985,13 +985,13 @@ func (s *DatabaseService) getParserEngine(ctx context.Context, request *v1pb.Dif
 	if strings.Contains(request.Name, common.ChangeHistoryPrefix) {
 		insID, _, _, err := common.GetInstanceDatabaseIDChangeHistory(request.Name)
 		if err != nil {
-			return engine, status.Errorf(codes.InvalidArgument, err.Error())
+			return engine, status.Error(codes.InvalidArgument, err.Error())
 		}
 		instanceID = insID
 	} else {
 		insID, _, err := common.GetInstanceDatabaseID(request.Name)
 		if err != nil {
-			return engine, status.Errorf(codes.InvalidArgument, err.Error())
+			return engine, status.Error(codes.InvalidArgument, err.Error())
 		}
 		instanceID = insID
 	}
@@ -1016,7 +1016,7 @@ func (s *DatabaseService) getParserEngine(ctx context.Context, request *v1pb.Dif
 	case storepb.Engine_MSSQL:
 		engine = storepb.Engine_MSSQL
 	default:
-		return engine, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid engine type %v", instance.Engine))
+		return engine, status.Errorf(codes.InvalidArgument, "invalid engine type %v", instance.Engine)
 	}
 
 	return engine, nil
@@ -1165,13 +1165,13 @@ func convertToChangeHistoryStatus(s db.MigrationStatus) v1pb.ChangeHistory_Statu
 func (s *DatabaseService) ListSecrets(ctx context.Context, request *v1pb.ListSecretsRequest) (*v1pb.ListSecretsResponse, error) {
 	instanceID, databaseName, err := common.GetInstanceDatabaseID(request.Parent)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
 		ResourceID: &instanceID,
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	if instance == nil {
 		return nil, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
@@ -1182,7 +1182,7 @@ func (s *DatabaseService) ListSecrets(ctx context.Context, request *v1pb.ListSec
 		IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	if database == nil {
 		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
@@ -1204,20 +1204,20 @@ func (s *DatabaseService) UpdateSecret(ctx context.Context, request *v1pb.Update
 
 	instanceID, databaseName, updateSecretName, err := common.GetInstanceDatabaseIDSecretName(request.Secret.Name)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
 		ResourceID: &instanceID,
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	if instance == nil {
 		return nil, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
 	}
 
 	if err := s.licenseService.IsFeatureEnabledForInstance(api.FeatureEncryptedSecrets, instance); err != nil {
-		return nil, status.Errorf(codes.PermissionDenied, err.Error())
+		return nil, status.Error(codes.PermissionDenied, err.Error())
 	}
 
 	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
@@ -1226,7 +1226,7 @@ func (s *DatabaseService) UpdateSecret(ctx context.Context, request *v1pb.Update
 		IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	if database == nil {
 		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
@@ -1269,7 +1269,7 @@ func (s *DatabaseService) UpdateSecret(ctx context.Context, request *v1pb.Update
 		}
 	}
 	if err := isSecretValid(&newSecret); err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	secretsMap[updateSecretName] = &newSecret
@@ -1290,7 +1290,7 @@ func (s *DatabaseService) UpdateSecret(ctx context.Context, request *v1pb.Update
 	}
 	updatedDatabase, err := s.store.UpdateDatabase(ctx, &updateDatabaseMessage, principalID)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	// Get the secret from the updated database.
@@ -1306,21 +1306,21 @@ func (s *DatabaseService) UpdateSecret(ctx context.Context, request *v1pb.Update
 func (s *DatabaseService) DeleteSecret(ctx context.Context, request *v1pb.DeleteSecretRequest) (*emptypb.Empty, error) {
 	instanceID, databaseName, secretName, err := common.GetInstanceDatabaseIDSecretName(request.Name)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
 		ResourceID: &instanceID,
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	if instance == nil {
 		return nil, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
 	}
 
 	if err := s.licenseService.IsFeatureEnabledForInstance(api.FeatureEncryptedSecrets, instance); err != nil {
-		return nil, status.Errorf(codes.PermissionDenied, err.Error())
+		return nil, status.Error(codes.PermissionDenied, err.Error())
 	}
 
 	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
@@ -1329,7 +1329,7 @@ func (s *DatabaseService) DeleteSecret(ctx context.Context, request *v1pb.Delete
 		IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	if database == nil {
 		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
@@ -1362,7 +1362,7 @@ func (s *DatabaseService) DeleteSecret(ctx context.Context, request *v1pb.Delete
 		return nil, status.Errorf(codes.Internal, "principal ID not found")
 	}
 	if _, err := s.store.UpdateDatabase(ctx, &updateDatabaseMessage, principalID); err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	return &emptypb.Empty{}, nil
@@ -1377,7 +1377,7 @@ type totalValue struct {
 func (s *DatabaseService) ListSlowQueries(ctx context.Context, request *v1pb.ListSlowQueriesRequest) (*v1pb.ListSlowQueriesResponse, error) {
 	projectID, err := common.GetProjectID(request.Parent)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	findDatabase := &store.FindDatabaseMessage{
@@ -1386,7 +1386,7 @@ func (s *DatabaseService) ListSlowQueries(ctx context.Context, request *v1pb.Lis
 
 	filters, err := parseFilter(request.Filter)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	var startLogDate, endLogDate *time.Time
@@ -1402,11 +1402,11 @@ func (s *DatabaseService) ListSlowQueries(ctx context.Context, request *v1pb.Lis
 		case filterKeyDatabase:
 			instanceID, databaseName, err := common.GetInstanceDatabaseID(expr.value)
 			if err != nil {
-				return nil, status.Errorf(codes.InvalidArgument, err.Error())
+				return nil, status.Error(codes.InvalidArgument, err.Error())
 			}
 			instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
 			if err != nil {
-				return nil, status.Errorf(codes.InvalidArgument, err.Error())
+				return nil, status.Error(codes.InvalidArgument, err.Error())
 			}
 			if instance == nil {
 				return nil, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
@@ -1466,10 +1466,10 @@ func (s *DatabaseService) ListSlowQueries(ctx context.Context, request *v1pb.Lis
 
 	orderByKeys, err := parseOrderBy(request.OrderBy)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	if err := validSlowQueryOrderByKey(orderByKeys); err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	databases, err := s.store.ListDatabases(ctx, findDatabase)
@@ -1783,11 +1783,11 @@ func isUpperCaseLetter(c rune) bool {
 // AdviseIndex advises the index of a table.
 func (s *DatabaseService) AdviseIndex(ctx context.Context, request *v1pb.AdviseIndexRequest) (*v1pb.AdviseIndexResponse, error) {
 	if err := s.licenseService.IsFeatureEnabled(api.FeatureAIAssistant); err != nil {
-		return nil, status.Errorf(codes.PermissionDenied, err.Error())
+		return nil, status.Error(codes.PermissionDenied, err.Error())
 	}
 	instanceID, databaseName, err := common.GetInstanceDatabaseID(request.Parent)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
