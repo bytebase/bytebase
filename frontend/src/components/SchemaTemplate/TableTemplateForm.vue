@@ -261,7 +261,7 @@ const context = provideSchemaEditorContext({
   selectedRolloutObjects: ref(undefined),
   showLastUpdater: ref(false),
   disableDiffColoring: ref(true),
-  showTablePreview: ref(true),
+  hidePreview: ref(false),
 });
 
 const state = reactive<LocalState>({

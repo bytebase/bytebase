@@ -1305,7 +1305,7 @@ func convertToViewState(id int, view *storepb.ViewMetadata) *viewState {
 }
 
 func (v *viewState) toString(buf io.StringWriter) error {
-	stmt := fmt.Sprintf("CREATE VIEW `%s` AS %s", v.name, v.definition)
+	stmt := fmt.Sprintf("CREATE OR REPLACE VIEW `%s` AS %s", v.name, v.definition)
 	if !strings.HasSuffix(stmt, ";") {
 		stmt += ";"
 	}

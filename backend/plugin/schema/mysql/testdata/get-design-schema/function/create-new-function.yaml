@@ -53,11 +53,10 @@
       `id` int DEFAULT NULL
     ) ENGINE=InnoDB COLLATE=utf8mb4_0900_ai_ci;
 
-    DROP VIEW IF EXISTS `v1`;
     --
     -- View structure for `v1`
     --
-    CREATE VIEW `v1` AS select `t`.`id` AS `id` from `t`;
+    CREATE OR REPLACE VIEW `v1` AS select `t`.`id` AS `id` from `t`;
 
     --
     -- Function structure for `CalcIncome`
@@ -138,11 +137,10 @@
       `id` int DEFAULT NULL
     ) ENGINE=InnoDB COLLATE=utf8mb4_0900_ai_ci;
 
-    DROP VIEW IF EXISTS `v1`;
     --
     -- View structure for `v1`
     --
-    CREATE VIEW `v1` AS select `t`.`id` AS `id` from `t`;
+    CREATE OR REPLACE VIEW `v1` AS select `t`.`id` AS `id` from `t`;
 
     --
     -- Function structure for `CalcIncome`
