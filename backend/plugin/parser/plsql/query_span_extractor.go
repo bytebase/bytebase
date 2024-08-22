@@ -41,16 +41,16 @@ func (q *querySpanExtractor) getLinkedDatabaseMetadata(linkName string, schema s
 	return linkedInstanceID, databaseName, meta, nil
 }
 
-func (q *querySpanExtractor) getDatabaseMetadata(schema string) (string, *model.DatabaseMetadata, error) {
+func (q *querySpanExtractor) getDatabaseMetadata(schema string) (*model.DatabaseMetadata, error) {
 	// There are two models for the database metadata, one is schema based, the other is database based.
 	// We deal with two models in f, so we use schema name here.
 	// The f will return the real database name and the metadata.
 	// We just return them to the caller.
-	databaseName, meta, err := q.gCtx.GetDatabaseMetadataFunc(q.ctx, q.gCtx.InstanceID, schema)
+	_, meta, err := q.gCtx.GetDatabaseMetadataFunc(q.ctx, q.gCtx.InstanceID, schema)
 	if err != nil {
-		return "", nil, errors.Wrapf(err, "failed to get database metadata for schema: %s", schema)
+		return nil, errors.Wrapf(err, "failed to get database metadata for schema: %s", schema)
 	}
-	return databaseName, meta, nil
+	return meta, nil
 }
 
 func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string) (*base.QuerySpan, error) {
@@ -125,7 +125,7 @@ func (q *querySpanExtractor) existsTableMetadata(resource base.SchemaResource) b
 	if database == "" {
 		database = q.connectedDatabase
 	}
-	_, meta, err := q.getDatabaseMetadata(database)
+	meta, err := q.getDatabaseMetadata(database)
 	if err != nil {
 		return false
 	}
@@ -1277,7 +1277,7 @@ func (q *querySpanExtractor) plsqlFindTableSchema(dbLink []string, schemaName, t
 		}
 	}
 
-	databaseName, dbSchema, err := q.getDatabaseMetadata(schemaName)
+	dbSchema, err := q.getDatabaseMetadata(schemaName)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get database metadata for: %s", schemaName)
 	}
@@ -1287,7 +1287,7 @@ func (q *querySpanExtractor) plsqlFindTableSchema(dbLink []string, schemaName, t
 		}
 	}
 
-	return q.findTableSchemaInMetadata(q.gCtx.InstanceID, dbSchema, databaseName, schemaName, tableName)
+	return q.findTableSchemaInMetadata(q.gCtx.InstanceID, dbSchema, schemaName, schemaName, tableName)
 }
 
 func (q *querySpanExtractor) findTableSchemaInMetadata(instanceID string, dbSchema *model.DatabaseMetadata, databaseName, schemaName, tableName string) (base.TableSource, error) {
