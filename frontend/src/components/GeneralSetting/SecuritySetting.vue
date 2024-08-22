@@ -48,22 +48,6 @@
       <div class="mb-7 mt-4 lg:mt-0">
         <div class="flex items-center gap-x-2">
           <Switch
-            :value="require2FAEnabled"
-            :text="true"
-            :disabled="!allowEdit"
-            @update:value="handleRequire2FAToggle"
-          />
-          <span class="textlabel">
-            {{ $t("settings.general.workspace.require-2fa.enable") }}
-          </span>
-        </div>
-        <div class="mb-3 text-sm text-gray-400">
-          {{ $t("settings.general.workspace.require-2fa.description") }}
-        </div>
-      </div>
-      <div class="mb-7 mt-4 lg:mt-0">
-        <div class="flex items-center gap-x-2">
-          <Switch
             :value="disallowPasswordSignin"
             :text="true"
             :disabled="!allowEdit"
@@ -81,6 +65,22 @@
               "settings.general.workspace.disallow-password-signin.description"
             )
           }}
+        </div>
+      </div>
+      <div class="mb-7 mt-4 lg:mt-0">
+        <div class="flex items-center gap-x-2">
+          <Switch
+            :value="require2FAEnabled"
+            :text="true"
+            :disabled="!allowEdit"
+            @update:value="handleRequire2FAToggle"
+          />
+          <span class="textlabel">
+            {{ $t("settings.general.workspace.require-2fa.enable") }}
+          </span>
+        </div>
+        <div class="mb-3 text-sm text-gray-400">
+          {{ $t("settings.general.workspace.require-2fa.description") }}
         </div>
       </div>
       <RestrictIssueCreationConfigure
