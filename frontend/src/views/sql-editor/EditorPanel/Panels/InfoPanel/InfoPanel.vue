@@ -11,14 +11,19 @@
       <DatabaseOverviewInfo :database="database" />
 
       <div class="flex flex-col gap-2">
-        <h2 class="text-lg">{{ $t("db.tables") }}</h2>
-        <div class="max-h-[16rem] overflow-x-auto overflow-y-hidden">
+        <div class="flex items-center justify-between">
+          <h2 class="text-lg">{{ $t("db.tables") }}</h2>
+          <SearchBox v-model:value="state.keywords.tables" />
+        </div>
+        <div class="overflow-x-auto overflow-y-hidden">
           <TablesTable
             v-if="metadata.schema"
             :db="database"
             :database="metadata.database"
             :schema="metadata.schema"
             :tables="metadata.schema.tables"
+            :keyword="state.keywords.tables"
+            :max-height="230"
             @click="
               updateViewState({
                 view: 'TABLES',
@@ -32,14 +37,19 @@
       </div>
 
       <div class="flex flex-col gap-2">
-        <h2 class="text-lg">{{ $t("db.views") }}</h2>
-        <div class="max-h-[16rem] overflow-x-auto overflow-y-hidden">
+        <div class="flex items-center justify-between">
+          <h2 class="text-lg">{{ $t("db.views") }}</h2>
+          <SearchBox v-model:value="state.keywords.views" />
+        </div>
+        <div class="overflow-x-auto overflow-y-hidden">
           <ViewsTable
             v-if="metadata.schema"
             :db="database"
             :database="metadata.database"
             :schema="metadata.schema"
             :views="metadata.schema.views"
+            :keyword="state.keywords.views"
+            :max-height="230"
             @click="
               updateViewState({
                 view: 'VIEWS',
@@ -53,7 +63,10 @@
       </div>
 
       <div class="flex flex-col gap-2">
-        <h2 class="text-lg">{{ $t("db.functions") }}</h2>
+        <div class="flex items-center justify-between">
+          <h2 class="text-lg">{{ $t("db.functions") }}</h2>
+          <SearchBox v-model:value="state.keywords.functions" />
+        </div>
         <div class="max-h-[16rem] overflow-x-auto overflow-y-hidden">
           <FunctionsTable
             v-if="metadata.schema"
@@ -61,6 +74,8 @@
             :database="metadata.database"
             :schema="metadata.schema"
             :funcs="metadata.schema.functions"
+            :keyword="state.keywords.functions"
+            :max-height="230"
             @click="
               updateViewState({
                 view: 'FUNCTIONS',
@@ -74,7 +89,10 @@
       </div>
 
       <div class="flex flex-col gap-2">
-        <h2 class="text-lg">{{ $t("db.procedures") }}</h2>
+        <div class="flex items-center justify-between">
+          <h2 class="text-lg">{{ $t("db.procedures") }}</h2>
+          <SearchBox v-model:value="state.keywords.procedures" />
+        </div>
         <div class="max-h-[16rem] overflow-x-auto overflow-y-hidden">
           <ProceduresTable
             v-if="metadata.schema"
@@ -82,6 +100,8 @@
             :database="metadata.database"
             :schema="metadata.schema"
             :procedures="metadata.schema.procedures"
+            :keyword="state.keywords.procedures"
+            :max-height="230"
             @click="
               updateViewState({
                 view: 'PROCEDURES',
@@ -98,7 +118,10 @@
         v-if="instanceV1SupportsExternalTable(database.instanceResource)"
         class="flex flex-col gap-2"
       >
-        <h2 class="text-lg">{{ $t("db.external-tables") }}</h2>
+        <div class="flex items-center justify-between">
+          <h2 class="text-lg">{{ $t("db.external-tables") }}</h2>
+          <SearchBox v-model:value="state.keywords.externalTables" />
+        </div>
         <div class="max-h-[16rem] overflow-x-auto overflow-y-hidden">
           <ExternalTablesTable
             v-if="metadata.schema"
@@ -106,6 +129,8 @@
             :database="metadata.database"
             :schema="metadata.schema"
             :external-tables="metadata.schema.externalTables"
+            :keyword="state.keywords.externalTables"
+            :max-height="230"
             @click="
               updateViewState({
                 view: 'EXTERNAL_TABLES',
@@ -122,8 +147,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, reactive } from "vue";
 import DatabaseOverviewInfo from "@/components/Database/DatabaseOverviewInfo.vue";
+import { SearchBox } from "@/components/v2";
 import {
   useConnectionOfCurrentSQLEditorTab,
   useDBSchemaV1Store,
@@ -138,6 +164,16 @@ import ProceduresTable from "../ProceduresPanel/ProceduresTable.vue";
 import TablesTable from "../TablesPanel/TablesTable.vue";
 import ViewsTable from "../ViewsPanel/ViewsTable.vue";
 import { SchemaSelectToolbar } from "../common";
+
+const state = reactive({
+  keywords: {
+    tables: "",
+    views: "",
+    functions: "",
+    procedures: "",
+    externalTables: "",
+  },
+});
 
 const { database } = useConnectionOfCurrentSQLEditorTab();
 const { viewState, updateViewState } = useEditorPanelContext();
