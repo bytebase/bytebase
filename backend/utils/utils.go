@@ -679,7 +679,7 @@ func CheckDatabaseGroupMatch(ctx context.Context, expression string, database *s
 		},
 	})
 	if err != nil {
-		return false, status.Errorf(codes.Internal, err.Error())
+		return false, status.Error(codes.Internal, err.Error())
 	}
 
 	val, err := res.ConvertToNative(reflect.TypeOf(false))

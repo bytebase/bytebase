@@ -82,7 +82,7 @@ func (s *LicenseService) LoadSubscription(ctx context.Context) *enterprise.Subsc
 // IsFeatureEnabled returns whether a feature is enabled.
 func (s *LicenseService) IsFeatureEnabled(feature api.FeatureType) error {
 	if !api.Feature(feature, s.GetEffectivePlan()) {
-		return errors.Errorf(feature.AccessErrorMessage())
+		return errors.New(feature.AccessErrorMessage())
 	}
 	return nil
 }

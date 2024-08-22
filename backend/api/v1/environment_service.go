@@ -42,7 +42,7 @@ func (s *EnvironmentService) GetEnvironment(ctx context.Context, request *v1pb.G
 func (s *EnvironmentService) ListEnvironments(ctx context.Context, request *v1pb.ListEnvironmentsRequest) (*v1pb.ListEnvironmentsResponse, error) {
 	environments, err := s.store.ListEnvironmentV2(ctx, &store.FindEnvironmentMessage{ShowDeleted: request.ShowDeleted})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	response := &v1pb.ListEnvironmentsResponse{}
 	for _, environment := range environments {
@@ -71,7 +71,7 @@ func (s *EnvironmentService) CreateEnvironment(ctx context.Context, request *v1p
 	// Environment limit in the plan.
 	environments, err := s.store.ListEnvironmentV2(ctx, &store.FindEnvironmentMessage{ShowDeleted: false})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	maximumEnvironmentLimit := s.licenseService.GetPlanLimitValue(ctx, enterprise.PlanLimitMaximumEnvironment)
 	if int64(len(environments)) >= maximumEnvironmentLimit {
@@ -86,7 +86,7 @@ func (s *EnvironmentService) CreateEnvironment(ctx context.Context, request *v1p
 	}
 	if pendingCreate.Protected {
 		if err := s.licenseService.IsFeatureEnabled(api.FeatureEnvironmentTierPolicy); err != nil {
-			return nil, status.Errorf(codes.PermissionDenied, err.Error())
+			return nil, status.Error(codes.PermissionDenied, err.Error())
 		}
 	}
 
@@ -95,7 +95,7 @@ func (s *EnvironmentService) CreateEnvironment(ctx context.Context, request *v1p
 		principalID,
 	)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	return convertToEnvironment(environment), nil
 }
@@ -132,7 +132,7 @@ func (s *EnvironmentService) UpdateEnvironment(ctx context.Context, request *v1p
 			protected := request.Environment.Tier == v1pb.EnvironmentTier_PROTECTED
 			if protected {
 				if err := s.licenseService.IsFeatureEnabled(api.FeatureEnvironmentTierPolicy); err != nil {
-					return nil, status.Errorf(codes.PermissionDenied, err.Error())
+					return nil, status.Error(codes.PermissionDenied, err.Error())
 				}
 			}
 			patch.Protected = &protected
@@ -145,7 +145,7 @@ func (s *EnvironmentService) UpdateEnvironment(ctx context.Context, request *v1p
 		principalID,
 	)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	return convertToEnvironment(environment), nil
 }
@@ -168,14 +168,14 @@ func (s *EnvironmentService) DeleteEnvironment(ctx context.Context, request *v1p
 	// All instances in the environment must be deleted.
 	count, err := s.store.CountInstance(ctx, &store.CountInstanceMessage{EnvironmentID: &environment.ResourceID})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	if count > 0 {
 		return nil, status.Errorf(codes.FailedPrecondition, "all instances in the environment should be deleted first")
 	}
 
 	if _, err := s.store.UpdateEnvironmentV2(ctx, environment.ResourceID, &store.UpdateEnvironmentMessage{Delete: &deletePatch}, principalID); err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	return &emptypb.Empty{}, nil
 }
@@ -197,7 +197,7 @@ func (s *EnvironmentService) UndeleteEnvironment(ctx context.Context, request *v
 
 	environment, err = s.store.UpdateEnvironmentV2(ctx, environment.ResourceID, &store.UpdateEnvironmentMessage{Delete: &undeletePatch}, principalID)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	return convertToEnvironment(environment), nil
@@ -206,7 +206,7 @@ func (s *EnvironmentService) UndeleteEnvironment(ctx context.Context, request *v
 func (s *EnvironmentService) getEnvironmentMessage(ctx context.Context, name string) (*store.EnvironmentMessage, error) {
 	environmentID, err := common.GetEnvironmentID(name)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	find := &store.FindEnvironmentMessage{
@@ -215,7 +215,7 @@ func (s *EnvironmentService) getEnvironmentMessage(ctx context.Context, name str
 	}
 	environment, err := s.store.GetEnvironmentV2(ctx, find)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	if environment == nil {
 		return nil, status.Errorf(codes.NotFound, "environment %q not found", name)

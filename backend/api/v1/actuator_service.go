@@ -88,7 +88,7 @@ func (s *ActuatorService) GetResourcePackage(ctx context.Context, _ *v1pb.GetRes
 func (s *ActuatorService) getServerInfo(ctx context.Context) (*v1pb.ActuatorInfo, error) {
 	count, err := s.store.CountUsers(ctx, api.EndUser)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
@@ -98,7 +98,7 @@ func (s *ActuatorService) getServerInfo(ctx context.Context) (*v1pb.ActuatorInfo
 
 	workspaceID, err := s.store.GetWorkspaceID(ctx)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	usedFeatures, err := s.getUsedFeatures(ctx)

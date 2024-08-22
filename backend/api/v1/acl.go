@@ -59,7 +59,7 @@ func (in *ACLInterceptor) ACLInterceptor(ctx context.Context, request any, serve
 	}()
 	user, err := in.getUser(ctx)
 	if err != nil {
-		return nil, status.Errorf(codes.PermissionDenied, err.Error())
+		return nil, status.Error(codes.PermissionDenied, err.Error())
 	}
 	if user != nil {
 		ctx = context.WithValue(ctx, common.UserContextKey, user)
@@ -110,7 +110,7 @@ func (in *ACLInterceptor) ACLStreamInterceptor(srv any, ss grpc.ServerStream, se
 
 	user, err := in.getUser(ctx)
 	if err != nil {
-		return status.Errorf(codes.PermissionDenied, err.Error())
+		return status.Error(codes.PermissionDenied, err.Error())
 	}
 	if user != nil {
 		ctx = context.WithValue(ctx, common.UserContextKey, user)

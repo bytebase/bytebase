@@ -235,7 +235,7 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 		return nil, err
 	}
 	if queryErr != nil {
-		return nil, status.Errorf(codes.Internal, queryErr.Error())
+		return nil, status.Error(codes.Internal, queryErr.Error())
 	}
 
 	allowExport := true
@@ -358,7 +358,7 @@ func queryRetry(
 	if licenseService.IsFeatureEnabledForInstance(api.FeatureSensitiveData, instance) == nil && !queryContext.Explain {
 		masker := NewQueryResultMasker(stores)
 		if err := masker.MaskResults(ctx, spans, results, instance, storepb.MaskingExceptionPolicy_MaskingException_QUERY); err != nil {
-			return nil, nil, duration, status.Errorf(codes.Internal, err.Error())
+			return nil, nil, duration, status.Error(codes.Internal, err.Error())
 		}
 	}
 	return results, spans, duration, nil
@@ -414,7 +414,7 @@ func (s *SQLService) Export(ctx context.Context, request *v1pb.ExportRequest) (*
 	}
 
 	if exportErr != nil {
-		return nil, status.Errorf(codes.Internal, exportErr.Error())
+		return nil, status.Error(codes.Internal, exportErr.Error())
 	}
 
 	return &v1pb.ExportResponse{
@@ -522,7 +522,7 @@ func DoExport(
 		results = results[len(results)-1:]
 	}
 	if results[0].GetError() != "" {
-		return nil, duration, errors.Errorf(results[0].GetError())
+		return nil, duration, errors.New(results[0].GetError())
 	}
 
 	if licenseService.IsFeatureEnabledForInstance(api.FeatureSensitiveData, instance) == nil {
@@ -657,7 +657,7 @@ func (s *SQLService) SearchQueryHistories(ctx context.Context, request *v1pb.Sea
 
 	filters, err := parseFilter(request.Filter)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	for _, spec := range filters {
@@ -887,7 +887,7 @@ func (s *SQLService) accessCheck(
 			// Allow query databases across different projects.
 			projectPolicy, err := s.store.GetProjectIamPolicy(ctx, project.UID)
 			if err != nil {
-				return status.Errorf(codes.Internal, err.Error())
+				return status.Error(codes.Internal, err.Error())
 			}
 
 			ok, err := s.hasDatabaseAccessRights(ctx, user, projectPolicy.Policy, attributes, isExport)
@@ -921,7 +921,7 @@ func sanitizeResults(results []*v1pb.QueryResult) {
 func (s *SQLService) prepareRelatedMessage(ctx context.Context, requestName string) (*store.UserMessage, *store.InstanceMessage, *store.DatabaseMessage, error) {
 	user, err := s.getUser(ctx)
 	if err != nil {
-		return nil, nil, nil, status.Errorf(codes.Internal, err.Error())
+		return nil, nil, nil, status.Error(codes.Internal, err.Error())
 	}
 
 	instanceID, databaseName, err := common.GetInstanceDatabaseID(requestName)
@@ -934,7 +934,7 @@ func (s *SQLService) prepareRelatedMessage(ctx context.Context, requestName stri
 	}
 	instance, err := s.store.GetInstanceV2(ctx, find)
 	if err != nil {
-		return nil, nil, nil, status.Errorf(codes.Internal, err.Error())
+		return nil, nil, nil, status.Error(codes.Internal, err.Error())
 	}
 	if instance == nil {
 		return nil, nil, nil, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
@@ -1034,7 +1034,7 @@ func (s *SQLService) Check(ctx context.Context, request *v1pb.CheckRequest) (*v1
 
 	instanceID, databaseName, err := common.GetInstanceDatabaseID(request.Name)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
@@ -1363,7 +1363,7 @@ func (*SQLService) Pretty(_ context.Context, request *v1pb.PrettyRequest) (*v1pb
 func (s *SQLService) GenerateRestoreSQL(ctx context.Context, request *v1pb.GenerateRestoreSQLRequest) (*v1pb.GenerateRestoreSQLResponse, error) {
 	instanceID, databaseName, err := common.GetInstanceDatabaseID(request.Name)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
 	if err != nil {
@@ -1390,7 +1390,7 @@ func (s *SQLService) GenerateRestoreSQL(ctx context.Context, request *v1pb.Gener
 
 	offset, originTable, err := getOffsetAndOriginTable(request.BackupTable)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	_, sheetUID, err := common.GetProjectResourceIDSheetUID(request.Sheet)
@@ -1413,7 +1413,7 @@ func (s *SQLService) GenerateRestoreSQL(ctx context.Context, request *v1pb.Gener
 
 	_, backupDatabase, err := common.GetInstanceDatabaseID(request.BackupDataSource)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	result, err := base.GenerateRestoreSQL(ctx, storepb.Engine_MYSQL, base.RestoreContext{
