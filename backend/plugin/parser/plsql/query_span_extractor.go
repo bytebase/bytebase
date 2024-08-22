@@ -80,7 +80,6 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string)
 		columnSet[base.ColumnResource{
 			Server:   resource.LinkedServer,
 			Database: resource.Database,
-			Schema:   resource.Schema,
 			Table:    resource.Table,
 		}] = true
 	}
@@ -353,7 +352,6 @@ func (q *querySpanExtractor) plsqlExtractQueryBlock(ctx plsql.IQuery_blockContex
 					return nil, &parsererror.ResourceNotFoundError{
 						Err:      errors.Errorf("failed to find table to calculate asterisk"),
 						Database: &q.connectedDatabase,
-						Schema:   &schemaName,
 						Table:    &tableName,
 					}
 				}
@@ -1296,7 +1294,6 @@ func (q *querySpanExtractor) findTableSchemaInMetadata(instanceID string, dbSche
 	if schema == nil {
 		return nil, &parsererror.ResourceNotFoundError{
 			Database: &databaseName,
-			Schema:   &schemaName,
 		}
 	}
 	table := schema.GetTable(tableName)
@@ -1306,7 +1303,6 @@ func (q *querySpanExtractor) findTableSchemaInMetadata(instanceID string, dbSche
 	if table == nil && view == nil && materializedView == nil && foreignTable == nil {
 		return nil, &parsererror.ResourceNotFoundError{
 			Database: &databaseName,
-			Schema:   &schemaName,
 			Table:    &tableName,
 		}
 	}

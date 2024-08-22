@@ -70,7 +70,7 @@
     sourcecolumns:
         - server: ""
           database: SCHEMA1
-          schema: SCHEMA1
+          schema: ""
           table: V1
           column: ""
 - description: Test for alias.* with join
@@ -131,7 +131,7 @@
     sourcecolumns:
         - server: ""
           database: PUBLIC
-          schema: PUBLIC
+          schema: ""
           table: T1
           column: ""
 - description: Test for Join
@@ -186,12 +186,12 @@
     sourcecolumns:
         - server: ""
           database: PUBLIC
-          schema: PUBLIC
+          schema: ""
           table: T1
           column: ""
         - server: ""
           database: PUBLIC
-          schema: PUBLIC
+          schema: ""
           table: T2
           column: ""
 - description: Test For Database Link With View
@@ -400,7 +400,7 @@
     sourcecolumns:
         - server: ""
           database: PUBLIC
-          schema: PUBLIC
+          schema: ""
           table: T
           column: ""
 - description: Happy path for A simple select statement
@@ -467,7 +467,7 @@
     sourcecolumns:
         - server: ""
           database: PUBLIC
-          schema: PUBLIC
+          schema: ""
           table: T
           column: ""
 - description: Referenced table fields by different format
@@ -534,7 +534,7 @@
     sourcecolumns:
         - server: ""
           database: PUBLIC
-          schema: PUBLIC
+          schema: ""
           table: T
           column: ""
 - description: Scalar subquery in select fields
@@ -594,7 +594,7 @@
     sourcecolumns:
         - server: ""
           database: PUBLIC
-          schema: PUBLIC
+          schema: ""
           table: T
           column: ""
 - description: Multiple-Row subquery in where clause
@@ -635,7 +635,7 @@
     sourcecolumns:
         - server: ""
           database: PUBLIC
-          schema: PUBLIC
+          schema: ""
           table: T
           column: ""
 - description: Correlated subquery in the target field clause.
@@ -694,12 +694,12 @@
     sourcecolumns:
         - server: ""
           database: PUBLIC
-          schema: PUBLIC
+          schema: ""
           table: GALLERIES
           column: ""
         - server: ""
           database: PUBLIC
-          schema: PUBLIC
+          schema: ""
           table: PAINTINGS
           column: ""
 - description: Test for functions
@@ -803,7 +803,7 @@
     sourcecolumns:
         - server: ""
           database: PUBLIC
-          schema: PUBLIC
+          schema: ""
           table: T
           column: ""
 - description: Test for SELECT partial FROM JOIN clause
@@ -870,12 +870,12 @@
     sourcecolumns:
         - server: ""
           database: PUBLIC
-          schema: PUBLIC
+          schema: ""
           table: T1
           column: ""
         - server: ""
           database: PUBLIC
-          schema: PUBLIC
+          schema: ""
           table: T2
           column: ""
 - description: Test for JOIN with USING clause
@@ -963,7 +963,7 @@
     sourcecolumns:
         - server: ""
           database: PUBLIC
-          schema: PUBLIC
+          schema: ""
           table: T
           column: ""
 - description: Simple CTE
@@ -1030,7 +1030,7 @@
     sourcecolumns:
         - server: ""
           database: PUBLIC
-          schema: PUBLIC
+          schema: ""
           table: T
           column: ""
 - description: Multi-level CTE
@@ -1076,7 +1076,7 @@
     sourcecolumns:
         - server: ""
           database: PUBLIC
-          schema: PUBLIC
+          schema: ""
           table: T
           column: ""
 - description: Test for CTE rename fields name
@@ -1143,7 +1143,7 @@
     sourcecolumns:
         - server: ""
           database: PUBLIC
-          schema: PUBLIC
+          schema: ""
           table: T
           column: ""
 - description: Test for Recursive Common Table Expression dependent closures
@@ -1225,7 +1225,7 @@
     sourcecolumns:
         - server: ""
           database: PUBLIC
-          schema: PUBLIC
+          schema: ""
           table: T
           column: ""
 - description: Test for Non-Recursive Common Table Expression with RECURSIVE key words
@@ -1292,6 +1292,6 @@
     sourcecolumns:
         - server: ""
           database: PUBLIC
-          schema: PUBLIC
+          schema: ""
           table: T
           column: ""
