@@ -576,13 +576,14 @@ func (s *AuthService) Login(ctx context.Context, request *v1pb.LoginRequest) (*v
 	if request.MfaTempToken != nil && *request.MfaTempToken != "" {
 		mfaSecondLogin = true
 	}
+	loginViaIDP := request.GetIdpName() != ""
 
 	if !mfaSecondLogin {
 		var err error
-		if request.IdpName == "" {
-			loginUser, err = s.getAndVerifyUser(ctx, request)
-		} else {
+		if loginViaIDP {
 			loginUser, err = s.getOrCreateUserWithIDP(ctx, request)
+		} else {
+			loginUser, err = s.getAndVerifyUser(ctx, request)
 		}
 		if err != nil {
 			return nil, err
@@ -626,7 +627,7 @@ func (s *AuthService) Login(ctx context.Context, request *v1pb.LoginRequest) (*v
 		return nil, status.Errorf(codes.Internal, "failed to find workspace setting, error: %v", err)
 	}
 	// Disallow password signin for end users. (except for workspace admins)
-	if setting.DisallowPasswordSignin && loginUser.Type == api.EndUser {
+	if setting.DisallowPasswordSignin && loginUser.Type == api.EndUser && !loginViaIDP {
 		isWorkspaceAdmin, err := s.isUserWorkspaceAdmin(ctx, loginUser)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to check user roles, error: %v", err)
