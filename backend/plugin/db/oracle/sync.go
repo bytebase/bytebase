@@ -647,7 +647,7 @@ func getRoutines(txn *sql.Tx, schemaName string) ([]*storepb.FunctionMetadata, [
 			LISTAGG(TEXT, '') WITHIN GROUP (ORDER BY LINE) AS DEFINITION
 		FROM ALL_SOURCE
 		WHERE
-			TYPE IN ('FUNCTION', 'PROCEDURE', 'PACKAGE')
+			TYPE IN ('FUNCTION', 'PROCEDURE')
 			AND
 			OWNER = '%s'
 		GROUP BY NAME, TYPE
