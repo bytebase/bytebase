@@ -57,14 +57,14 @@
           sourcecolumns:
             - server: ""
               database: SCHEMA1
-              schema: SCHEMA1
+              schema: ""
               table: T
               column: A
         - name: B
           sourcecolumns:
             - server: ""
               database: SCHEMA1
-              schema: SCHEMA1
+              schema: ""
               table: T
               column: B
     sourcecolumns:
@@ -104,28 +104,28 @@
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T1
               column: A
         - name: B
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T1
               column: B
         - name: A
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T1
               column: A
         - name: B
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T1
               column: B
     sourcecolumns:
@@ -173,14 +173,14 @@
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T1
               column: A
         - name: B
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T1
               column: B
     sourcecolumns:
@@ -228,14 +228,14 @@
           sourcecolumns:
             - server: ""
               database: SCHEMA1
-              schema: SCHEMA1
+              schema: ""
               table: LT2
               column: LC1
         - name: LC2
           sourcecolumns:
             - server: ""
               database: SCHEMA1
-              schema: SCHEMA1
+              schema: ""
               table: LT2
               column: LC2
     sourcecolumns: []
@@ -273,7 +273,7 @@
           sourcecolumns:
             - server: ""
               database: SCHEMA1
-              schema: SCHEMA1
+              schema: ""
               table: LT1
               column: LC1
     sourcecolumns: []
@@ -366,35 +366,35 @@
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: A
         - name: A
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: A
         - name: B
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: B
         - name: C
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: C
         - name: D
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: D
     sourcecolumns:
@@ -440,28 +440,28 @@
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: A
         - name: B
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: B
         - name: C
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: C
         - name: D
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: D
     sourcecolumns:
@@ -507,28 +507,28 @@
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: A
         - name: B
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: B
         - name: C
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: C
         - name: D
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: D
     sourcecolumns:
@@ -578,17 +578,17 @@
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: A
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: B
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: C
     sourcecolumns:
@@ -686,7 +686,7 @@
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: GALLERIES
               column: CITY
         - name: TOTAL_PAINTINGS
@@ -739,65 +739,65 @@
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: A
         - name: C1
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: A
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: B
         - name: C2
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: A
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: B
         - name: A>B
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: A
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: B
         - name: Bin(A,C,D)
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: A
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: B
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: C
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: D
     sourcecolumns:
@@ -848,21 +848,21 @@
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T1
               column: A
         - name: B
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T1
               column: B
         - name: C
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T2
               column: C
         - name: "0"
@@ -915,49 +915,49 @@
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: A
         - name: B
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: B
         - name: C
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: C
         - name: D
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: D
         - name: B
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: B
         - name: C
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: C
         - name: D
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: D
     sourcecolumns:
@@ -1003,28 +1003,28 @@
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: A
         - name: B
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: B
         - name: C
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: C
         - name: D
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: D
     sourcecolumns:
@@ -1070,7 +1070,7 @@
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: A
     sourcecolumns:
@@ -1116,28 +1116,28 @@
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: A
         - name: C
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: B
         - name: B
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: C
         - name: A
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: D
     sourcecolumns:
@@ -1183,41 +1183,41 @@
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: A
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: B
         - name: CC2
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: A
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: B
         - name: CC3
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: A
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: B
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: C
         - name: "N"
@@ -1265,28 +1265,28 @@
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: A
         - name: C2
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: B
         - name: C3
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: D
         - name: C4
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: C
     sourcecolumns:

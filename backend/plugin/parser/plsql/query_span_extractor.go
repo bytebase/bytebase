@@ -335,7 +335,7 @@ func (q *querySpanExtractor) plsqlExtractQueryBlock(ctx plsql.IQuery_blockContex
 				_, schemaName, tableName := NormalizeTableViewName("", element.Table_wild().Tableview_name())
 				find := false
 				for _, tableSource := range fromTableSource {
-					if (schemaName == "" || schemaName == tableSource.GetSchemaName()) &&
+					if (schemaName == "" || schemaName == tableSource.GetDatabaseName()) &&
 						tableName == tableSource.GetTableName() {
 						find = true
 						result.Columns = append(result.Columns, tableSource.GetQuerySpanResult()...)
@@ -918,7 +918,7 @@ func (q *querySpanExtractor) plsqlExtractSourceColumnSetFromExpression(ctx antlr
 
 func (q *querySpanExtractor) getFieldColumnSource(schemaName, tableName, columnName string) base.SourceColumnSet {
 	findInTableSource := func(tableSource base.TableSource) (base.SourceColumnSet, bool) {
-		if schemaName != "" && schemaName != tableSource.GetSchemaName() {
+		if schemaName != "" && schemaName != tableSource.GetDatabaseName() {
 			return nil, false
 		}
 		if tableName != "" && tableName != tableSource.GetTableName() {
@@ -982,7 +982,7 @@ func (q *querySpanExtractor) plsqlExtractSourceColumnSetFromExpressionList(list 
 
 func (q *querySpanExtractor) getAllTableColumnSources(schemaName string, tableName string) ([]base.QuerySpanResult, bool) {
 	findInTableSource := func(tableSource base.TableSource) ([]base.QuerySpanResult, bool) {
-		if schemaName != "" && schemaName != tableSource.GetSchemaName() {
+		if schemaName != "" && schemaName != tableSource.GetDatabaseName() {
 			return nil, false
 		}
 		if tableName != "" && tableName != tableSource.GetTableName() {
@@ -1316,7 +1316,6 @@ func (q *querySpanExtractor) findTableSchemaInMetadata(instanceID string, dbSche
 		return &base.PhysicalTable{
 			Server:   "",
 			Database: databaseName,
-			Schema:   databaseName,
 			Name:     tableName,
 			Columns:  columns,
 		}, nil
@@ -1330,7 +1329,6 @@ func (q *querySpanExtractor) findTableSchemaInMetadata(instanceID string, dbSche
 		return &base.PhysicalTable{
 			Server:   "",
 			Database: databaseName,
-			Schema:   databaseName,
 			Name:     tableName,
 			Columns:  columns,
 		}, nil
