@@ -14,6 +14,7 @@
       class="border w-full rounded flex-1 relative"
       @update:content="handleUpdateCode"
     />
+    <slot name="preview" />
   </div>
 </template>
 

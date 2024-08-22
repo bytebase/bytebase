@@ -50,7 +50,6 @@
         :branch="virtualBranch ?? Branch.fromPartial({})"
         :loading="combinedLoading"
         :show-last-updater="true"
-        :show-table-preview="true"
       />
     </div>
     <MaskSpinner v-if="combinedLoading" />

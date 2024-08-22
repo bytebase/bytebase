@@ -147,12 +147,12 @@
       />
     </div>
 
-    <TableSchemaPreview
-      v-if="showTablePreview"
+    <PreviewPane
       :db="db"
       :database="database"
       :schema="schema"
-      :table="table"
+      :title="$t('schema-editor.preview-schema-text')"
+      :mock="mock"
     />
   </div>
 
@@ -200,11 +200,12 @@ import { IndexIcon, TablePartitionIcon } from "@/components/Icon";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { hasFeature, pushNotification } from "@/store/modules";
 import type { ComposedDatabase } from "@/types";
-import type {
+import {
   DatabaseMetadata,
-  ForeignKeyMetadata,
-  SchemaMetadata,
-  TableMetadata,
+  SchemaConfig,
+  type ForeignKeyMetadata,
+  type SchemaMetadata,
+  type TableMetadata,
 } from "@/types/proto/v1/database_service";
 import {
   ColumnMetadata,
@@ -234,8 +235,8 @@ import type { EditStatus } from "../types";
 import ColumnSelectionSummary from "./ColumnSelectionSummary.vue";
 import IndexesEditor from "./IndexesEditor";
 import PartitionsEditor from "./PartitionsEditor";
+import PreviewPane from "./PreviewPane.vue";
 import TableColumnEditor from "./TableColumnEditor";
-import TableSchemaPreview from "./TableSchemaPreview.vue";
 
 type EditMode = "COLUMNS" | "INDEXES" | "PARTITIONS";
 
@@ -264,7 +265,6 @@ const {
   project,
   readonly,
   events,
-  showTablePreview,
   options,
   addTab,
   markEditStatus,
@@ -574,6 +574,42 @@ const handleReorderColumn = (
   if (target < 0) return;
   if (target >= columns.length) return;
   arraySwap(columns, index, target);
+};
+
+const mock = () => {
+  const { db, database, schema, table } = props;
+
+  const mockedTable = cloneDeep(table);
+  mockedTable.columns = mockedTable.columns.filter((column) => {
+    const status = getColumnStatus(db, { database, schema, table, column });
+    return status !== "dropped";
+  });
+  const mockedDatabase = DatabaseMetadata.fromJSON({
+    name: database.name,
+    characterSet: database.characterSet,
+    collation: database.collation,
+    schemas: [
+      {
+        name: schema.name,
+        tables: [mockedTable],
+      },
+    ],
+  });
+  const schemaConfig = database.schemaConfigs.find(
+    (sc) => sc.name === schema.name
+  );
+  const tableConfig = schemaConfig?.tableConfigs.find(
+    (tc) => tc.name === table.name
+  );
+  if (schemaConfig && tableConfig) {
+    mockedDatabase.schemaConfigs = [
+      SchemaConfig.fromJSON({
+        name: schemaConfig.name,
+        tableConfigs: [cloneDeep(tableConfig)],
+      }),
+    ];
+  }
+  return mockedDatabase;
 };
 
 const markTableStatus = (status: EditStatus) => {
