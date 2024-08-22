@@ -94,6 +94,10 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get views from database %q", driver.databaseName)
 	}
+	sequences, err := getSequences(txn, driver.databaseName)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get sequences from database %q", driver.databaseName)
+	}
 	dbLinks, err := getDBLinks(txn)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get db links from database %q", driver.databaseName)
@@ -109,9 +113,10 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 		LinkedDatabases: dbLinks,
 	}
 	databaseMetadata.Schemas = append(databaseMetadata.Schemas, &storepb.SchemaMetadata{
-		Name:   driver.databaseName,
-		Tables: tableMap[driver.databaseName],
-		Views:  viewMap[driver.databaseName],
+		Name:      driver.databaseName,
+		Tables:    tableMap[driver.databaseName],
+		Views:     viewMap[driver.databaseName],
+		Sequences: sequences,
 	})
 	return databaseMetadata, nil
 }
@@ -590,6 +595,38 @@ func getViews(txn *sql.Tx, schemaName string, columnMap map[db.TableKey][]*store
 	}
 
 	return viewMap, nil
+}
+
+// getSequences gets all sequences of a database.
+func getSequences(txn *sql.Tx, schemaName string) ([]*storepb.SequenceMetadata, error) {
+	var sequences []*storepb.SequenceMetadata
+	query := fmt.Sprintf(`
+		SELECT SEQUENCE_NAME FROM ALL_SEQUENCES
+		WHERE SEQUENCE_OWNER = '%s'
+		ORDER BY SEQUENCE_NAME`, schemaName)
+
+	slog.Debug("running get sequences query")
+	rows, err := txn.Query(query)
+	if err != nil {
+		return nil, util.FormatErrorWithQuery(err, query)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		seq := &storepb.SequenceMetadata{}
+		if err := rows.Scan(&seq.Name); err != nil {
+			return nil, err
+		}
+		sequences = append(sequences, seq)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+
+	return sequences, nil
 }
 
 // SyncSlowQuery syncs the slow query.
