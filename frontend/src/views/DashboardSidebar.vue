@@ -54,7 +54,6 @@ import {
 } from "@/router/dashboard/workspaceRoutes";
 import { usePermissionStore } from "@/store";
 import type { Permission } from "@/types";
-import { PresetRoleType } from "@/types";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
 interface DashboardSidebarItem extends SidebarItem {
@@ -67,12 +66,6 @@ const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
 const permissionStore = usePermissionStore();
-
-const yourRoles = computed(() => {
-  return [...permissionStore.currentRolesInWorkspace].filter(
-    (r) => r !== PresetRoleType.WORKSPACE_MEMBER
-  );
-});
 
 const getItemClass = (item: SidebarItem): string[] => {
   const { name: current } = route;
@@ -227,7 +220,7 @@ const dashboardSidebarItemList = computed((): DashboardSidebarItem[] => {
           title: t("settings.sidebar.members"),
           name: WORKSPACE_ROUTE_MEMBERS,
           type: "route",
-          hide: yourRoles.value.length === 0,
+          hide: permissionStore.onlyWorkspaceMember,
         },
         {
           title: t("settings.sidebar.custom-roles"),

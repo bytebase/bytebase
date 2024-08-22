@@ -2,6 +2,7 @@ import { uniq } from "lodash-es";
 import { defineStore } from "pinia";
 import { shallowReactive, computed } from "vue";
 import {
+  PresetRoleType,
   PRESET_WORKSPACE_ROLES,
   type ComposedProject,
   type Permission,
@@ -27,6 +28,13 @@ export const usePermissionStore = defineStore("permission", () => {
   const currentRolesInWorkspace = computed(() => {
     return workspaceStore.getWorkspaceRolesByEmail(currentUser.value.email);
   });
+
+  const onlyWorkspaceMember = computed(
+    () =>
+      currentRolesInWorkspace.value.size === 0 ||
+      (currentRolesInWorkspace.value.size === 1 &&
+        currentRolesInWorkspace.value.has(PresetRoleType.WORKSPACE_MEMBER))
+  );
 
   const currentPermissions = computed(() => {
     return new Set(
@@ -110,6 +118,7 @@ export const usePermissionStore = defineStore("permission", () => {
   return {
     currentPermissions,
     currentRolesInWorkspace,
+    onlyWorkspaceMember,
     currentRoleListInProjectV1,
     currentPermissionsInProjectV1,
     invalidCacheByProject,
