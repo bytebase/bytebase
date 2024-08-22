@@ -210,6 +210,7 @@ import {
   ColumnMetadata,
   IndexMetadata,
   TablePartitionMetadata,
+  TablePartitionMetadata_Type,
 } from "@/types/proto/v1/database_service";
 import type { SchemaTemplateSetting_FieldTemplate } from "@/types/proto/v1/setting_service";
 import {
@@ -449,7 +450,9 @@ const handleAddIndex = () => {
   markTableStatus("updated");
 };
 const handleAddPartition = () => {
-  const partition = TablePartitionMetadata.fromPartial({});
+  const partition = TablePartitionMetadata.fromPartial({
+    type: TablePartitionMetadata_Type.HASH,
+  });
   // eslint-disable-next-line vue/no-mutating-props
   props.table.partitions.push(partition);
   markEditStatus(
