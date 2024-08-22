@@ -56,11 +56,6 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, e
 		}
 	}
 
-	instanceRoles, err := driver.getInstanceRoles(ctx)
-	if err != nil {
-		return nil, err
-	}
-
 	// Query db info
 	where := fmt.Sprintf("LOWER(SCHEMA_NAME) NOT IN (%s)", systemDatabaseClause)
 	query := `
@@ -101,7 +96,6 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, e
 		Databases: databases,
 		Metadata: &storepb.InstanceMetadata{
 			MysqlLowerCaseTableNames: int32(lowerCaseTableNames),
-			Roles:                    instanceRoles,
 		},
 	}, nil
 }
