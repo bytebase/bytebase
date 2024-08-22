@@ -208,9 +208,6 @@ func prepareTransformation(databaseName, statement string) ([]statementInfo, err
 
 	extractor := &dmlExtractor{
 		databaseName: databaseName,
-		// We only consider the managed on schema mode.
-		// For managed on schema mode, the default schema is the database name.
-		defaultSchema: databaseName,
 	}
 	antlr.ParseTreeWalkerDefault.Walk(extractor, tree)
 	return extractor.dmls, nil
@@ -233,10 +230,9 @@ func IsTopLevelStatement(ctx antlr.Tree) bool {
 type dmlExtractor struct {
 	*parser.BasePlSqlParserListener
 
-	databaseName  string
-	defaultSchema string
-	dmls          []statementInfo
-	offset        int
+	databaseName string
+	dmls         []statementInfo
+	offset       int
 }
 
 func (e *dmlExtractor) ExitUnit_statement(_ *parser.Unit_statementContext) {
@@ -250,8 +246,7 @@ func (e *dmlExtractor) ExitSql_plus_command(_ *parser.Sql_plus_commandContext) {
 func (e *dmlExtractor) EnterDelete_statement(ctx *parser.Delete_statementContext) {
 	if IsTopLevelStatement(ctx.GetParent()) {
 		extractor := &tableExtractor{
-			databaseName:  e.databaseName,
-			defaultSchema: e.defaultSchema,
+			databaseName: e.databaseName,
 		}
 		antlr.ParseTreeWalkerDefault.Walk(extractor, ctx)
 
@@ -267,8 +262,7 @@ func (e *dmlExtractor) EnterDelete_statement(ctx *parser.Delete_statementContext
 func (e *dmlExtractor) EnterUpdate_statement(ctx *parser.Update_statementContext) {
 	if IsTopLevelStatement(ctx.GetParent()) {
 		extractor := &tableExtractor{
-			databaseName:  e.databaseName,
-			defaultSchema: e.defaultSchema,
+			databaseName: e.databaseName,
 		}
 		antlr.ParseTreeWalkerDefault.Walk(extractor, ctx)
 
@@ -284,9 +278,8 @@ func (e *dmlExtractor) EnterUpdate_statement(ctx *parser.Update_statementContext
 type tableExtractor struct {
 	*parser.BasePlSqlParserListener
 
-	databaseName  string
-	defaultSchema string
-	table         *TableReference
+	databaseName string
+	table        *TableReference
 }
 
 func (e *tableExtractor) EnterGeneral_table_ref(ctx *parser.General_table_refContext) {
@@ -300,7 +293,7 @@ func (e *tableExtractor) EnterGeneral_table_ref(ctx *parser.General_table_refCon
 			Table:     tableName,
 		}
 		if schemaName == "" {
-			e.table.Schema = e.defaultSchema
+			e.table.Schema = e.databaseName
 			e.table.HasSchema = false
 		}
 		if ctx.Table_alias() != nil {

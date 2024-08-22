@@ -34,7 +34,7 @@ func TestGetQuerySpan(t *testing.T) {
 	}
 
 	const (
-		record       = false
+		record       = true
 		testDataPath = "test-data/query_span.yaml"
 	)
 
@@ -146,7 +146,7 @@ func getLinkedDatabaseMetadata() []*storepb.DatabaseSchemaMetadata {
 			Name: "SCHEMA1",
 			Schemas: []*storepb.SchemaMetadata{
 				{
-					Name: "SCHEMA1",
+					Name: "",
 					Tables: []*storepb.TableMetadata{
 						{
 							Name: "LT1",

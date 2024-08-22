@@ -132,7 +132,7 @@ func (q *querySpanExtractor) existsTableMetadata(resource base.SchemaResource) b
 	if meta == nil {
 		return false
 	}
-	schema := meta.GetSchema(resource.Schema)
+	schema := meta.GetSchema("")
 	if schema == nil {
 		return false
 	}
@@ -1292,7 +1292,7 @@ func (q *querySpanExtractor) plsqlFindTableSchema(dbLink []string, schemaName, t
 }
 
 func (q *querySpanExtractor) findTableSchemaInMetadata(instanceID string, dbSchema *model.DatabaseMetadata, databaseName, schemaName, tableName string) (base.TableSource, error) {
-	schema := dbSchema.GetSchema(schemaName)
+	schema := dbSchema.GetSchema("")
 	if schema == nil {
 		return nil, &parsererror.ResourceNotFoundError{
 			Database: &databaseName,

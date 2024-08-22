@@ -6,7 +6,7 @@
       "name":  "PUBLIC",
       "schemas":  [
         {
-          "name": "PUBLIC",
+          "name": "",
           "tables":  [
             {
               "name":  "T1",
@@ -28,7 +28,7 @@
       "name":  "SCHEMA1",
       "schemas":  [
         {
-          "name": "SCHEMA1",
+          "name": "",
           "tables":  [
             {
               "name":  "T",
@@ -81,7 +81,7 @@
       "name":  "PUBLIC",
       "schemas":  [
         {
-          "name": "PUBLIC",
+          "name": "",
           "tables":  [
             {
               "name":  "T1",
@@ -142,7 +142,7 @@
       "name":  "PUBLIC",
       "schemas":  [
         {
-          "name": "PUBLIC",
+          "name": "",
           "tables":  [
             {
               "name":  "T1",
@@ -202,7 +202,7 @@
       "name":  "PUBLIC",
       "schemas":  [
         {
-          "name": "PUBLIC",
+          "name": "",
           "tables":  [
             {
               "name":  "T",
@@ -247,7 +247,7 @@
       "name":  "PUBLIC",
       "schemas":  [
         {
-          "name": "PUBLIC",
+          "name": "",
           "tables":  [
             {
               "name":  "T",
@@ -285,7 +285,7 @@
       "name":  "PUBLIC",
       "schemas":  [
         {
-          "name": "PUBLIC",
+          "name": "",
           "tables":  [
             {
               "name":  "T",
@@ -310,7 +310,7 @@
       "name":  "PUBLIC",
       "schemas":  [
         {
-          "name": "PUBLIC",
+          "name": "",
           "tables":  [
             {
               "name":  "T",
@@ -337,7 +337,7 @@
       "name":  "PUBLIC",
       "schemas":  [
         {
-          "name": "PUBLIC",
+          "name": "",
           "tables":  [
             {
               "name":  "T",
@@ -411,7 +411,7 @@
       "name":  "PUBLIC",
       "schemas":  [
         {
-          "name": "PUBLIC",
+          "name": "",
           "tables":  [
             {
               "name":  "T",
@@ -478,7 +478,7 @@
       "name":  "PUBLIC",
       "schemas":  [
         {
-          "name": "PUBLIC",
+          "name": "",
           "tables":  [
             {
               "name":  "T",
@@ -545,7 +545,7 @@
       "name":  "PUBLIC",
       "schemas":  [
         {
-          "name": "PUBLIC",
+          "name": "",
           "tables":  [
             {
               "name":  "T",
@@ -605,7 +605,7 @@
       "name":  "PUBLIC",
       "schemas":  [
         {
-          "name": "PUBLIC",
+          "name": "",
           "tables":  [
             {
               "name":  "T",
@@ -646,7 +646,7 @@
       "name":  "PUBLIC",
       "schemas":  [
         {
-          "name": "PUBLIC",
+          "name": "",
           "tables":  [
             {
               "name":  "GALLERIES",
@@ -710,7 +710,7 @@
       "name":  "PUBLIC",
       "schemas":  [
         {
-          "name": "PUBLIC",
+          "name": "",
           "tables":  [
             {
               "name":  "T",
@@ -814,7 +814,7 @@
       "name":  "PUBLIC",
       "schemas":  [
         {
-          "name": "PUBLIC",
+          "name": "",
           "tables":  [
             {
               "name":  "T1",
@@ -886,7 +886,7 @@
       "name":  "PUBLIC",
       "schemas":  [
         {
-          "name": "PUBLIC",
+          "name": "",
           "tables":  [
             {
               "name":  "T",
@@ -974,7 +974,7 @@
       "name":  "PUBLIC",
       "schemas":  [
         {
-          "name": "PUBLIC",
+          "name": "",
           "tables":  [
             {
               "name":  "T",
@@ -1041,7 +1041,7 @@
       "name":  "PUBLIC",
       "schemas":  [
         {
-          "name": "PUBLIC",
+          "name": "",
           "tables":  [
             {
               "name":  "T",
@@ -1087,7 +1087,7 @@
       "name":  "PUBLIC",
       "schemas":  [
         {
-          "name": "PUBLIC",
+          "name": "",
           "tables":  [
             {
               "name":  "T",
@@ -1154,7 +1154,7 @@
       "name":  "PUBLIC",
       "schemas":  [
         {
-          "name": "PUBLIC",
+          "name": "",
           "tables":  [
             {
               "name":  "T",
@@ -1236,7 +1236,7 @@
       "name":  "PUBLIC",
       "schemas":  [
         {
-          "name": "PUBLIC",
+          "name": "",
           "tables":  [
             {
               "name":  "T",
