@@ -82,8 +82,9 @@ func TestGetQuerySpan(t *testing.T) {
 	}
 }
 
-func buildMockDatabaseMetadataGetter(databaseMetadata []*storepb.DatabaseSchemaMetadata) (base.GetDatabaseMetadataFunc, base.ListDatabaseNamesFunc, base.GetLinkedDatabaseMetadataFunc) {
+func buildMockDatabaseMetadataGetter(defaultMetadata []*storepb.DatabaseSchemaMetadata) (base.GetDatabaseMetadataFunc, base.ListDatabaseNamesFunc, base.GetLinkedDatabaseMetadataFunc) {
 	return func(_ context.Context, instanceID, databaseName string) (string, *model.DatabaseMetadata, error) {
+			databaseMetadata := defaultMetadata
 			if instanceID == instanceIDB {
 				databaseMetadata = getLinkedDatabaseMetadata()
 			}
@@ -98,6 +99,7 @@ func buildMockDatabaseMetadataGetter(databaseMetadata []*storepb.DatabaseSchemaM
 
 			return "", nil, errors.Errorf("database %q not found", databaseName)
 		}, func(_ context.Context, instanceID string) ([]string, error) {
+			databaseMetadata := defaultMetadata
 			if instanceID == instanceIDB {
 				return listLinkedDatabaseNames()
 			}
@@ -107,6 +109,7 @@ func buildMockDatabaseMetadataGetter(databaseMetadata []*storepb.DatabaseSchemaM
 			}
 			return names, nil
 		}, func(_ context.Context, _, linkedDatabaseName, _ string) (string, string, *model.DatabaseMetadata, error) {
+			databaseMetadata := defaultMetadata
 			var linkedDBInfo *storepb.LinkedDatabaseMetadata
 			for _, metadata := range databaseMetadata {
 				for _, linkedDatabase := range metadata.GetLinkedDatabases() {
