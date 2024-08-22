@@ -739,7 +739,7 @@
         },
         "confirm-delete-custom-logo": "Delete custom branding logo?",
         "restrict-issue-creation-for-sql-review": {
-          "title": "Prohibit issue creation for SQL review with errors",
+          "title": "Disallow issue creation for SQL review with errors",
           "description": "Once enabled, users are only allowed to create issues if the SQL review does not contain any errors."
         },
         "database-change-mode": {
