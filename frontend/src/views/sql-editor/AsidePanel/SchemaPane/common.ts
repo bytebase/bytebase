@@ -166,7 +166,7 @@ export const keyForNodeTarget = <T extends NodeType>(
     return [
       db.name,
       `schemas/${schema.name}`,
-      `externalTables/${externalTable.externalServerName}/${externalTable.externalDatabaseName}/${externalTable.name}`,
+      `externalTables/${externalTable.name}`,
     ].join("/");
   }
   if (type === "column") {
@@ -200,13 +200,13 @@ export const keyForNodeTarget = <T extends NodeType>(
     ].join("/");
   }
   if (type === "partition-table") {
-    const { db, schema, table, parentPartition, partition } =
+    const { db, schema, table, partition } =
       target as NodeTarget<"partition-table">;
     return [
       db.name,
       `schemas/${schema.name}`,
       `tables/${table.name}`,
-      `partitionTables/${parentPartition?.name ?? ""}/${partition.name}`,
+      `partitionTables/${partition.name}`,
     ].join("/");
   }
   if (type === "view") {
@@ -489,26 +489,27 @@ const mapExternalTableNodes = (
   parent: TreeNode
 ) => {
   const { schema } = target;
-  const folderNode = createExpandableTextNode("column", parent, () =>
-    t("database.columns")
-  );
-  folderNode.children = schema.externalTables.map((externalTable) => {
+  const externalTableNodes = schema.externalTables.map((externalTable) => {
     const node = mapTreeNodeByType(
       "external-table",
       { ...target, externalTable },
       parent
     );
+    const folderNode = createExpandableTextNode("column", node, () =>
+      t("database.columns")
+    );
+    node.children = [folderNode];
 
     // columns
-    node.children = mapColumnNodes(
+    folderNode.children = mapColumnNodes(
       node.meta.target,
       externalTable.columns,
-      node
+      folderNode
     );
 
     return node;
   });
-  return [folderNode];
+  return externalTableNodes;
 };
 // Map partition-table-level partitions.
 const mapPartitionTableNodes = (
