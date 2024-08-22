@@ -5,20 +5,33 @@
     :readonly="disallowChangeView"
     :status="status"
     @update:code="handleUpdateDefinition"
-  />
+  >
+    <template #preview>
+      <PreviewPane
+        :db="db"
+        :database="database"
+        :schema="schema"
+        :mocked="mocked"
+        :title="$t('schema-editor.preview-view-definition')"
+      />
+    </template>
+  </CommonCodeEditor>
 </template>
 
 <script setup lang="ts">
+import { cloneDeep } from "lodash-es";
 import { computed } from "vue";
 import type { ComposedDatabase } from "@/types";
-import type {
+import {
   DatabaseMetadata,
-  ViewMetadata,
-  SchemaMetadata,
+  type ViewMetadata,
+  type SchemaMetadata,
+  SchemaConfig,
 } from "@/types/proto/v1/database_service";
 import { useSchemaEditorContext } from "../context";
 import type { EditStatus } from "../types";
 import CommonCodeEditor from "./CommonCodeEditor.vue";
+import PreviewPane from "./PreviewPane.vue";
 
 const props = defineProps<{
   db: ComposedDatabase;
@@ -60,6 +73,38 @@ const disallowChangeView = computed(() => {
     return true;
   }
   return statusForSchema() === "dropped" || status.value === "dropped";
+});
+
+const mocked = computed(() => {
+  const { database, schema, view } = props;
+
+  const mockedView = cloneDeep(view);
+  const mockedDatabase = DatabaseMetadata.fromJSON({
+    name: database.name,
+    characterSet: database.characterSet,
+    collation: database.collation,
+    schemas: [
+      {
+        name: schema.name,
+        views: [mockedView],
+      },
+    ],
+  });
+  const schemaConfig = database.schemaConfigs.find(
+    (sc) => sc.name === schema.name
+  );
+  const viewConfig = schemaConfig?.viewConfigs.find(
+    (vc) => vc.name === view.name
+  );
+  if (schemaConfig && viewConfig) {
+    mockedDatabase.schemaConfigs = [
+      SchemaConfig.fromJSON({
+        name: schemaConfig.name,
+        tableConfigs: [cloneDeep(viewConfig)],
+      }),
+    ];
+  }
+  return mockedDatabase;
 });
 
 const handleUpdateDefinition = (code: string) => {

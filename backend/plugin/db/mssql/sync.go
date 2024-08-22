@@ -81,7 +81,11 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get views from database %q", driver.databaseName)
 	}
-	funcMap, err := getFunctions(txn)
+	sequenceMap, err := getSequences(txn)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get sequences from database %q", driver.databaseName)
+	}
+	functionMap, err := getFunctions(txn)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get functions from database %q", driver.databaseName)
 	}
@@ -102,7 +106,8 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 			Name:       schemaName,
 			Tables:     tableMap[schemaName],
 			Views:      viewMap[schemaName],
-			Functions:  funcMap[schemaName],
+			Sequences:  sequenceMap[schemaName],
+			Functions:  functionMap[schemaName],
 			Procedures: procedureMap[schemaName],
 		})
 	}
@@ -382,6 +387,42 @@ func getViews(txn *sql.Tx, columnMap map[db.TableKey][]*storepb.ColumnMetadata) 
 	}
 
 	return viewMap, nil
+}
+
+// getSequences gets all sequences of a database.
+func getSequences(txn *sql.Tx) (map[string][]*storepb.SequenceMetadata, error) {
+	query := `
+	SELECT
+		s.name,
+		seq.name,
+		tp.name
+	FROM
+		sys.sequences seq
+	INNER JOIN
+		sys.schemas s ON s.schema_id = seq.schema_id
+	INNER JOIN
+		sys.types tp ON tp.system_type_id = seq.system_type_id
+	ORDER BY s.name, seq.name;`
+	rows, err := txn.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	sequenceMap := make(map[string][]*storepb.SequenceMetadata)
+	for rows.Next() {
+		sequence := &storepb.SequenceMetadata{}
+		var schemaName string
+		if err := rows.Scan(&schemaName, &sequence.Name, &sequence.DataType); err != nil {
+			return nil, err
+		}
+		sequenceMap[schemaName] = append(sequenceMap[schemaName], sequence)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return sequenceMap, nil
 }
 
 func getProcedures(txn *sql.Tx) (map[string][]*storepb.ProcedureMetadata, error) {

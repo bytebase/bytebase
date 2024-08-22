@@ -84,17 +84,15 @@
       KEY `idx_t_b2` (`b`(20))
     );
 
-    DROP VIEW IF EXISTS `v1`;
     --
     -- View structure for `v1`
     --
-    CREATE VIEW `v1` AS select `t`.`id` AS `id` from `t`;
+    CREATE OR REPLACE VIEW `v1` AS select `t`.`id` AS `id` from `t`;
 
-    DROP VIEW IF EXISTS `v2`;
     --
     -- View structure for `v2`
     --
-    CREATE VIEW `v2` AS select (`t`.`id` + 1) AS `id + 1` from `t`;
+    CREATE OR REPLACE VIEW `v2` AS select (`t`.`id` + 1) AS `id + 1` from `t`;
 - target: |-
     {
       "schemas":  [
