@@ -2,7 +2,12 @@
   <div class="w-full mx-auto space-y-4">
     <FeatureAttention feature="bb.feature.rbac" />
 
-    <NTabs v-model:value="state.selectedTab" type="line" animated>
+    <NTabs
+      v-if="yourRoles.length > 0"
+      v-model:value="state.selectedTab"
+      type="line"
+      animated
+    >
       <NTabPane name="MEMBERS">
         <template #tab>
           <p class="text-lg font-medium leading-7 text-main">
@@ -58,6 +63,7 @@
         </div>
       </template>
     </NTabs>
+    <NoPermissionPlaceholder v-else />
   </div>
 
   <EditMemberRoleDrawer
@@ -85,11 +91,13 @@ import {
   getMemberBindingsByRole,
   getMemberBindings,
 } from "@/components/Member/utils";
+import NoPermissionPlaceholder from "@/components/misc/NoPermissionPlaceholder.vue";
 import { SearchBox } from "@/components/v2";
 import {
   pushNotification,
   useCurrentUserV1,
   useWorkspaceV1Store,
+  usePermissionStore,
 } from "@/store";
 import { userBindingPrefix, PresetRoleType } from "@/types";
 import { UserType } from "@/types/proto/v1/auth_service";
@@ -108,12 +116,19 @@ const { t } = useI18n();
 const dialog = useDialog();
 const currentUserV1 = useCurrentUserV1();
 const workspaceStore = useWorkspaceV1Store();
+const permissionStore = usePermissionStore();
 
 const state = reactive<LocalState>({
   searchText: "",
   selectedTab: "MEMBERS",
   selectedMembers: [],
   showAddMemberPanel: false,
+});
+
+const yourRoles = computed(() => {
+  return [...permissionStore.currentRolesInWorkspace].filter(
+    (r) => r !== PresetRoleType.WORKSPACE_MEMBER
+  );
 });
 
 const allowEdit = computed(() => {
