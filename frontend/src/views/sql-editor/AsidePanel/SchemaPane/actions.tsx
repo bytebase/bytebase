@@ -21,12 +21,11 @@ import { t } from "@/plugins/i18n";
 import { SQL_EDITOR_DATABASE_MODULE } from "@/router/sqlEditor";
 import { pushNotification, useAppFeature, useSQLEditorTabStore } from "@/store";
 import {
-  DEFAULT_SQL_EDITOR_TAB_MODE,
   dialectOfEngineV1,
   languageOfEngineV1,
   type ComposedDatabase,
-  type CoreSQLEditorTab,
   type Position,
+  type SQLEditorConnection,
 } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import type {
@@ -44,7 +43,6 @@ import {
   generateSimpleUpdateStatement,
   instanceV1HasAlterSchema,
   sortByDictionary,
-  suggestedTabTitleForSQLEditorConnection,
   toClipboard,
 } from "@/utils";
 import {
@@ -124,7 +122,6 @@ const confirmOverrideStatement = async (
 };
 
 export const useActions = () => {
-  const $d = useDialog();
   const { updateViewState, typeToView } = useEditorPanelContext();
 
   const selectAllFromTableOrView = async (node: TreeNode) => {
@@ -151,13 +148,6 @@ export const useActions = () => {
       ),
       engine
     );
-    const choice = await confirmOverrideStatement($d, query);
-    if (choice === "CANCEL") {
-      return;
-    }
-    if (choice === "COPY") {
-      return copyToClipboard(query);
-    }
     updateViewState({
       view: "CODE",
     });
@@ -661,46 +651,18 @@ const runQuery = async (
   tableOrViewName: string,
   statement: string
 ) => {
-  const tabStore = useSQLEditorTabStore();
   const { execute } = useExecuteSQL();
-  const tab: CoreSQLEditorTab = {
-    connection: {
-      instance: database.instance,
-      database: database.name,
-      schema,
-      table: tableOrViewName,
-      dataSourceId: getDefaultQueryableDataSourceOfDatabase(database).id,
-    },
-    mode: DEFAULT_SQL_EDITOR_TAB_MODE,
-    worksheet: "",
+  const connection: SQLEditorConnection = {
+    instance: database.instance,
+    database: database.name,
+    schema,
+    table: tableOrViewName,
+    dataSourceId: getDefaultQueryableDataSourceOfDatabase(database).id,
   };
-  if (
-    tabStore.currentTab &&
-    (tabStore.currentTab.status === "NEW" || !tabStore.currentTab.worksheet)
-  ) {
-    // If the current tab is "fresh new" or unsaved, update its connection directly.
-    tabStore.updateCurrentTab({
-      ...tab,
-      title: suggestedTabTitleForSQLEditorConnection(tab.connection),
-      status: "DIRTY",
-      statement,
-    });
-  } else {
-    // Otherwise select or add a new tab and set its connection
-    tabStore.addTab(
-      {
-        ...tab,
-        title: suggestedTabTitleForSQLEditorConnection(tab.connection),
-        statement,
-        status: "DIRTY",
-      },
-      /* beside */ true
-    );
-  }
   await nextTick();
   execute({
     statement,
-    connection: { ...tab.connection },
+    connection,
     explain: false,
     engine: database.instanceResource.engine,
   });
