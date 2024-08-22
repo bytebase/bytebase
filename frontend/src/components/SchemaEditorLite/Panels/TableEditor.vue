@@ -152,7 +152,7 @@
       :database="database"
       :schema="schema"
       :title="$t('schema-editor.preview-schema-text')"
-      :mock="mock"
+      :mocked="mocked"
     />
   </div>
 
@@ -576,7 +576,7 @@ const handleReorderColumn = (
   arraySwap(columns, index, target);
 };
 
-const mock = () => {
+const mocked = computed(() => {
   const { db, database, schema, table } = props;
 
   const mockedTable = cloneDeep(table);
@@ -610,7 +610,7 @@ const mock = () => {
     ];
   }
   return mockedDatabase;
-};
+});
 
 const markTableStatus = (status: EditStatus) => {
   const oldStatus = statusForTable();

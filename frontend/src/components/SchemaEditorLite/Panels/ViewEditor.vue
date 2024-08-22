@@ -11,7 +11,7 @@
         :db="db"
         :database="database"
         :schema="schema"
-        :mock="mock"
+        :mocked="mocked"
         :title="$t('schema-editor.preview-view-definition')"
       />
     </template>
@@ -75,7 +75,7 @@ const disallowChangeView = computed(() => {
   return statusForSchema() === "dropped" || status.value === "dropped";
 });
 
-const mock = () => {
+const mocked = computed(() => {
   const { database, schema, view } = props;
 
   const mockedView = cloneDeep(view);
@@ -105,7 +105,7 @@ const mock = () => {
     ];
   }
   return mockedDatabase;
-};
+});
 
 const handleUpdateDefinition = (code: string) => {
   // eslint-disable-next-line vue/no-mutating-props

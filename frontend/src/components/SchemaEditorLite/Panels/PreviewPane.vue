@@ -45,12 +45,13 @@
 <script setup lang="ts">
 import { useQuery } from "@tanstack/vue-query";
 import {
+  refDebounced,
   useElementSize,
   useLocalStorage,
   useParentElement,
 } from "@vueuse/core";
 import { ChevronDownIcon } from "lucide-vue-next";
-import { computed } from "vue";
+import { computed, toRef } from "vue";
 import { MonacoEditor } from "@/components/MonacoEditor";
 import MaskSpinner from "@/components/misc/MaskSpinner.vue";
 import { sqlServiceClient } from "@/grpcweb";
@@ -68,7 +69,7 @@ const props = defineProps<{
   database: DatabaseMetadata;
   schema: SchemaMetadata;
   title: string;
-  mock: () => DatabaseMetadata | undefined;
+  mocked: DatabaseMetadata | undefined;
 }>();
 
 const { hidePreview } = useSchemaEditorContext();
@@ -84,17 +85,16 @@ const panelHeight = computed(() => {
 });
 
 const engine = computed(() => props.db.instanceResource.engine);
-const mockedSchemaMetadata = computed(() => {
-  if (!expanded.value) return undefined;
-  return props.mock();
-});
+const mocked = toRef(props, "mocked");
+const debouncedMocked = refDebounced(mocked, 500);
 
 const { status, data, error } = useQuery({
-  queryKey: [engine, mockedSchemaMetadata],
+  queryKey: [engine, debouncedMocked],
   queryFn: async () => {
     if (!expanded.value) return "";
-    const metadata = mockedSchemaMetadata.value;
+    const metadata = debouncedMocked.value;
     if (!metadata) return "";
+    console.log("call query");
     try {
       const response = await sqlServiceClient.stringifyMetadata(
         {
