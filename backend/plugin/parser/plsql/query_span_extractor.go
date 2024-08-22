@@ -93,6 +93,11 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string)
 	if err != nil {
 		var resourceNotFound *parsererror.ResourceNotFoundError
 		if errors.As(err, &resourceNotFound) {
+			if len(columnSet) == 0 {
+				columnSet[base.ColumnResource{
+					Database: q.connectedDatabase,
+				}] = true
+			}
 			return &base.QuerySpan{
 				SourceColumns: columnSet,
 				Results:       []base.QuerySpanResult{},
