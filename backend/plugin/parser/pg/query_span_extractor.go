@@ -1078,6 +1078,46 @@ func (q *querySpanExtractor) extractTemporaryTableResourceFromRecursiveCTE(cteEx
 	}
 }
 
+func extractFunctionName(funcName []*pgquery.Node) (string, string, error) {
+	var names []string
+	for _, name := range funcName {
+		if stringNode, ok := name.Node.(*pgquery.Node_String_); ok {
+			names = append(names, stringNode.String_.GetSval())
+		}
+	}
+
+	switch len(names) {
+	case 2:
+		return names[0], names[1], nil
+	case 1:
+		return "", names[0], nil
+	default:
+		return "", "", errors.Errorf("expect 1 or 2 names, but got %d", len(names))
+	}
+}
+
+func (q *querySpanExtractor) extractSourceColumnSetFromUDF(node *pgquery.Node_FuncCall) (base.SourceColumnSet, error) {
+	schemaName, funcName, err := extractFunctionName(node.FuncCall.Funcname)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to extract function name from UDF: %+v", node)
+	}
+	if schemaName == "" && IsSystemFunction(funcName, "") {
+		return base.SourceColumnSet{}, nil
+	}
+	if schemaName == "" {
+		schemaName = "public"
+	}
+	result := make(base.SourceColumnSet)
+	tableSource, err := q.findFunctionDefine(schemaName, funcName)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to find function define for UDF: %s.%s", schemaName, funcName)
+	}
+	for _, span := range tableSource.GetQuerySpanResult() {
+		result, _ = base.MergeSourceColumnSet(result, span.SourceColumns)
+	}
+	return result, nil
+}
+
 func (q *querySpanExtractor) extractSourceColumnSetFromExpressionNode(node *pgquery.Node) (base.SourceColumnSet, error) {
 	if node == nil {
 		return base.SourceColumnSet{}, nil
@@ -1091,7 +1131,17 @@ func (q *querySpanExtractor) extractSourceColumnSetFromExpressionNode(node *pgqu
 		nodeList = append(nodeList, node.FuncCall.Args...)
 		nodeList = append(nodeList, node.FuncCall.AggOrder...)
 		nodeList = append(nodeList, node.FuncCall.AggFilter)
-		return q.extractSourceColumnSetFromExpressionNodeList(nodeList)
+		argsResult, err := q.extractSourceColumnSetFromExpressionNodeList(nodeList)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to extract source column set from function call: %+v", node)
+		}
+		// The function call can be a UDF.
+		// If the function is a UDF, we should extract the source column set from the UDF.
+		// If not, we skip it.
+		if udfResult, err := q.extractSourceColumnSetFromUDF(node); err == nil {
+			argsResult, _ = base.MergeSourceColumnSet(argsResult, udfResult)
+		}
+		return argsResult, nil
 	case *pgquery.Node_SortBy:
 		return q.extractSourceColumnSetFromExpressionNode(node.SortBy.Node)
 	case *pgquery.Node_XmlExpr:
