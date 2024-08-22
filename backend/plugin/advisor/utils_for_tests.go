@@ -326,31 +326,6 @@ func (*MockDriver) Dump(_ context.Context, _ io.Writer) (string, error) {
 	return "", nil
 }
 
-// CreateRole creates the role.
-func (*MockDriver) CreateRole(_ context.Context, _ *database.DatabaseRoleUpsertMessage) (*database.DatabaseRoleMessage, error) {
-	return nil, nil
-}
-
-// UpdateRole updates the role.
-func (*MockDriver) UpdateRole(_ context.Context, _ string, _ *database.DatabaseRoleUpsertMessage) (*database.DatabaseRoleMessage, error) {
-	return nil, nil
-}
-
-// FindRole finds the role by name.
-func (*MockDriver) FindRole(_ context.Context, _ string) (*database.DatabaseRoleMessage, error) {
-	return nil, nil
-}
-
-// ListRole lists the role.
-func (*MockDriver) ListRole(_ context.Context) ([]*database.DatabaseRoleMessage, error) {
-	return nil, nil
-}
-
-// DeleteRole deletes the role by name.
-func (*MockDriver) DeleteRole(_ context.Context, _ string) error {
-	return nil
-}
-
 // SyncSlowQuery implements the Driver interface.
 func (*MockDriver) SyncSlowQuery(_ context.Context, _ time.Time) (map[string]*storepb.SlowQueryStatistics, error) {
 	return nil, nil
