@@ -21,6 +21,7 @@ import { t } from "@/plugins/i18n";
 import { SQL_EDITOR_DATABASE_MODULE } from "@/router/sqlEditor";
 import { pushNotification, useAppFeature, useSQLEditorTabStore } from "@/store";
 import {
+  DEFAULT_SQL_EDITOR_TAB_MODE,
   dialectOfEngineV1,
   languageOfEngineV1,
   type ComposedDatabase,
@@ -651,6 +652,16 @@ const runQuery = async (
   tableOrViewName: string,
   statement: string
 ) => {
+  const tab = useSQLEditorTabStore().currentTab;
+  if (!tab) {
+    return;
+  }
+  if (tab.mode === "ADMIN") {
+    useSQLEditorTabStore().updateCurrentTab({
+      mode: DEFAULT_SQL_EDITOR_TAB_MODE,
+    });
+  }
+
   const { execute } = useExecuteSQL();
   const connection: SQLEditorConnection = {
     instance: database.instance,
