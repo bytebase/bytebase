@@ -119,6 +119,7 @@
                   class="w-full flex flex-row justify-between items-center flex-wrap px-4 gap-x-4"
                 >
                   <QuickActionPanel
+                    v-if="quickActionList.length > 0"
                     :quick-action-list="quickActionList"
                     class="flex-1 pb-4"
                   />
@@ -153,10 +154,7 @@ import { useRouter } from "vue-router";
 import ReleaseRemindModal from "@/components/ReleaseRemindModal.vue";
 import TrialModal from "@/components/TrialModal.vue";
 import { WORKSPACE_ROOT_MODULE } from "@/router/dashboard/workspaceRoutes";
-import {
-  useActuatorV1Store,
-  useAppFeature,
-} from "@/store";
+import { useActuatorV1Store, useAppFeature } from "@/store";
 import type { QuickActionType } from "@/types";
 import { QuickActionPermissionMap } from "@/types";
 import { hasWorkspacePermissionV2 } from "@/utils";
