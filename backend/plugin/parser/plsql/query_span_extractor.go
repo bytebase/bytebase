@@ -75,7 +75,7 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string)
 	if listener.err != nil {
 		return nil, errors.Wrapf(listener.err, "failed to extract query span from statement: %s", statement)
 	}
-	resources, err := ExtractResourceList(q.connectedDatabase, q.connectedDatabase, statement)
+	resources, err := ExtractResourceList(q.connectedDatabase, "", statement)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to extract resource list from statement: %s", statement)
 	}
