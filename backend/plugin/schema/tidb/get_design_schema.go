@@ -93,7 +93,7 @@ func writeViews(w io.StringWriter, to *storepb.DatabaseSchemaMetadata, state *da
 }
 
 func getViewAnnouncement(name string) string {
-	return fmt.Sprintf("\nDROP VIEW IF EXISTS `%s`;\n--\n-- View structure for `%s`\n--\n", name, name)
+	return fmt.Sprintf("\n--\n-- View structure for `%s`\n--\n", name)
 }
 
 func getTableAnnouncement(name string) string {

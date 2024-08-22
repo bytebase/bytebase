@@ -46,14 +46,12 @@
       `id` int DEFAULT NULL
     ) ENGINE=InnoDB COLLATE=utf8mb4_0900_ai_ci;
 
-    DROP VIEW IF EXISTS `v1`;
     --
     -- View structure for `v1`
     --
-    CREATE VIEW `v1` AS select `t`.`id` + 20 AS `id` from `t`;
+    CREATE OR REPLACE VIEW `v1` AS select `t`.`id` + 20 AS `id` from `t`;
 
-    DROP VIEW IF EXISTS `v2`;
     --
     -- View structure for `v2`
     --
-    CREATE VIEW `v2` AS select (`t`.`id` + 30) AS `id + 30` from `t`;
+    CREATE OR REPLACE VIEW `v2` AS select (`t`.`id` + 30) AS `id + 30` from `t`;
