@@ -640,16 +640,18 @@ func getRoutines(txn *sql.Tx, schemaName string) ([]*storepb.FunctionMetadata, [
 	var functions []*storepb.FunctionMetadata
 	var procedures []*storepb.ProcedureMetadata
 
-	// Note, we have to use newline for LISTAGG this way.
 	query := fmt.Sprintf(`
-SELECT NAME, TYPE, LISTAGG(TEXT, '') WITHIN GROUP (ORDER BY LINE) AS DEFINITION
-FROM ALL_SOURCE
-WHERE
-    TYPE IN ('FUNCTION', 'PROCEDURE', 'PACKAGE')
-    AND
-    OWNER = '%s'
-GROUP BY NAME, TYPE
-ORDER BY NAME, TYPE`, schemaName)
+		SELECT
+			NAME,
+			TYPE,
+			LISTAGG(TEXT, '') WITHIN GROUP (ORDER BY LINE) AS DEFINITION
+		FROM ALL_SOURCE
+		WHERE
+			TYPE IN ('FUNCTION', 'PROCEDURE', 'PACKAGE')
+			AND
+			OWNER = '%s'
+		GROUP BY NAME, TYPE
+		ORDER BY NAME, TYPE`, schemaName)
 
 	slog.Debug("running get sequences query")
 	rows, err := txn.Query(query)
