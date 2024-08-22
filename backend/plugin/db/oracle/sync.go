@@ -102,6 +102,10 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get db links from database %q", driver.databaseName)
 	}
+	functions, procedures, err := getRoutines(txn, driver.databaseName)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get routines from database %q", driver.databaseName)
+	}
 
 	if err := txn.Commit(); err != nil {
 		return nil, err
@@ -113,10 +117,12 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 		LinkedDatabases: dbLinks,
 	}
 	databaseMetadata.Schemas = append(databaseMetadata.Schemas, &storepb.SchemaMetadata{
-		Name:      driver.databaseName,
-		Tables:    tableMap[driver.databaseName],
-		Views:     viewMap[driver.databaseName],
-		Sequences: sequences,
+		Name:       driver.databaseName,
+		Tables:     tableMap[driver.databaseName],
+		Views:      viewMap[driver.databaseName],
+		Sequences:  sequences,
+		Functions:  functions,
+		Procedures: procedures,
 	})
 	return databaseMetadata, nil
 }
@@ -627,6 +633,57 @@ func getSequences(txn *sql.Tx, schemaName string) ([]*storepb.SequenceMetadata, 
 	}
 
 	return sequences, nil
+}
+
+func getRoutines(txn *sql.Tx, schemaName string) ([]*storepb.FunctionMetadata, []*storepb.ProcedureMetadata, error) {
+	// TODO(d): implement PACKAGE later.
+	var functions []*storepb.FunctionMetadata
+	var procedures []*storepb.ProcedureMetadata
+
+	// Note, we have to use newline for LISTAGG this way.
+	query := fmt.Sprintf(`
+SELECT NAME, TYPE, LISTAGG(TEXT, '') WITHIN GROUP (ORDER BY LINE) AS DEFINITION
+FROM ALL_SOURCE
+WHERE
+    TYPE IN ('FUNCTION', 'PROCEDURE', 'PACKAGE')
+    AND
+    OWNER = '%s'
+GROUP BY NAME, TYPE
+ORDER BY NAME, TYPE`, schemaName)
+
+	slog.Debug("running get sequences query")
+	rows, err := txn.Query(query)
+	if err != nil {
+		return nil, nil, util.FormatErrorWithQuery(err, query)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var name, t, def string
+		if err := rows.Scan(&name, &t, &def); err != nil {
+			return nil, nil, err
+		}
+		switch t {
+		case "FUNCTION":
+			functions = append(functions, &storepb.FunctionMetadata{
+				Name:       name,
+				Definition: def,
+			})
+		case "PROCEDURE":
+			procedures = append(procedures, &storepb.ProcedureMetadata{
+				Name:       name,
+				Definition: def,
+			})
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return nil, nil, err
+	}
+	if err := rows.Close(); err != nil {
+		return nil, nil, err
+	}
+
+	return functions, procedures, nil
 }
 
 // SyncSlowQuery syncs the slow query.
