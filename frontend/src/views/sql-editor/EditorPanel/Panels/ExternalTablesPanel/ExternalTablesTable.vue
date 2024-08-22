@@ -18,8 +18,8 @@
 </template>
 
 <script setup lang="tsx">
-import { NDataTable, type DataTableColumn, type DataTableInst } from "naive-ui";
-import { computed, h, ref, watch } from "vue";
+import { NDataTable, type DataTableColumn } from "naive-ui";
+import { computed, h, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import type { ComposedDatabase } from "@/types";
 import type {
@@ -37,6 +37,7 @@ const props = defineProps<{
   schema: SchemaMetadata;
   externalTables: ExternalTableMetadata[];
   keyword?: string;
+  maxHeight?: number;
 }>();
 
 const emit = defineEmits<{
@@ -52,13 +53,6 @@ const emit = defineEmits<{
 
 const { viewState } = useEditorPanelContext();
 const { t } = useI18n();
-const { containerElRef, tableBodyHeight, layoutReady } =
-  useAutoHeightDataTable();
-const dataTableRef = ref<DataTableInst>();
-const vlRef = computed(() => {
-  return (dataTableRef.value as any)?.$refs?.mainTableInstRef?.bodyInstRef
-    ?.virtualListRef;
-});
 const filteredExternalTables = computed(() => {
   const keyword = props.keyword?.trim().toLowerCase();
   if (keyword) {
@@ -67,6 +61,18 @@ const filteredExternalTables = computed(() => {
     );
   }
   return props.externalTables;
+});
+
+const { dataTableRef, containerElRef, tableBodyHeight, layoutReady } =
+  useAutoHeightDataTable(
+    filteredExternalTables,
+    computed(() => ({
+      maxHeight: props.maxHeight ? props.maxHeight : null,
+    }))
+  );
+const vlRef = computed(() => {
+  return (dataTableRef.value as any)?.$refs?.mainTableInstRef?.bodyInstRef
+    ?.virtualListRef;
 });
 
 const columns = computed(() => {
