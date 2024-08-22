@@ -159,6 +159,19 @@
           <li>• Webhooks (Read and Write)</li>
           <li>• Repositories (Read and Write)</li>
           <li>• Pull requests (Read and Write)</li>
+          <li>
+            <i18n-t
+            tag="span"
+              keypath="gitops.setting.add-git-provider.access-token.bitbucket-app-access-token-tips"
+              class="textinfolabel"
+            >
+              <template #secret>
+                <span class="font-bold">
+                  {{ "<bitbucket username>:<generated app password>" }}
+                </span>
+              </template>
+            </i18n-t>
+          </li>
         </template>
         <template v-if="config.type == VCSType.AZURE_DEVOPS">
           <li>
