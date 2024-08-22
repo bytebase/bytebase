@@ -708,6 +708,7 @@ export const useClickEvents = () => {
     state.value = {
       timeout: setTimeout(() => {
         events.emit("single-click", { node });
+        clear();
       }, DELAY),
       node,
     };
