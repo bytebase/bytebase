@@ -59,19 +59,19 @@ func (s *VCSConnectorService) CreateVCSConnector(ctx context.Context, request *v
 
 	projectResourceID, err := common.GetProjectID(request.Parent)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
 		ResourceID: &projectResourceID,
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get project with resource id %q, err: %s", projectResourceID, err.Error()))
+		return nil, status.Errorf(codes.Internal, "failed to get project with resource id %q, err: %v", projectResourceID, err)
 	}
 	if project == nil {
-		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("project with resource id %q not found", projectResourceID))
+		return nil, status.Errorf(codes.NotFound, "project with resource id %q not found", projectResourceID)
 	}
 	if project.Deleted {
-		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("project with resource id %q had deleted", projectResourceID))
+		return nil, status.Errorf(codes.NotFound, "project with resource id %q had deleted", projectResourceID)
 	}
 
 	vcsConnector, err := s.store.GetVCSConnector(ctx, &store.FindVCSConnectorMessage{ProjectID: &project.ResourceID, ResourceID: &request.VcsConnectorId})
@@ -84,7 +84,7 @@ func (s *VCSConnectorService) CreateVCSConnector(ctx context.Context, request *v
 
 	vcsResourceID, err := common.GetVCSProviderID(request.GetVcsConnector().GetVcsProvider())
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	vcsProvider, err := s.store.GetVCSProvider(ctx, &store.FindVCSProviderMessage{ResourceID: &vcsResourceID})
 	if err != nil {
@@ -172,13 +172,13 @@ func (s *VCSConnectorService) CreateVCSConnector(ctx context.Context, request *v
 func (s *VCSConnectorService) GetVCSConnector(ctx context.Context, request *v1pb.GetVCSConnectorRequest) (*v1pb.VCSConnector, error) {
 	projectID, vcsConnectorID, err := common.GetProjectVCSConnectorID(request.Name)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
 		ResourceID: &projectID,
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	if project == nil {
 		return nil, status.Errorf(codes.NotFound, "project %q not found", projectID)
@@ -202,13 +202,13 @@ func (s *VCSConnectorService) GetVCSConnector(ctx context.Context, request *v1pb
 func (s *VCSConnectorService) ListVCSConnectors(ctx context.Context, request *v1pb.ListVCSConnectorsRequest) (*v1pb.ListVCSConnectorsResponse, error) {
 	projectID, err := common.GetProjectID(request.Parent)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
 		ResourceID: &projectID,
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	if project == nil {
 		return nil, status.Errorf(codes.NotFound, "project %q not found", projectID)
@@ -241,13 +241,13 @@ func (s *VCSConnectorService) UpdateVCSConnector(ctx context.Context, request *v
 
 	projectID, vcsConnectorID, err := common.GetProjectVCSConnectorID(request.GetVcsConnector().GetName())
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
 		ResourceID: &projectID,
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	if project == nil {
 		return nil, status.Errorf(codes.NotFound, "project %q not found", projectID)
@@ -325,13 +325,13 @@ func (s *VCSConnectorService) UpdateVCSConnector(ctx context.Context, request *v
 func (s *VCSConnectorService) DeleteVCSConnector(ctx context.Context, request *v1pb.DeleteVCSConnectorRequest) (*emptypb.Empty, error) {
 	projectID, vcsConnectorID, err := common.GetProjectVCSConnectorID(request.GetName())
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
 		ResourceID: &projectID,
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	if project == nil {
 		return nil, status.Errorf(codes.NotFound, "project %q not found", projectID)
@@ -379,17 +379,17 @@ func (s *VCSConnectorService) DeleteVCSConnector(ctx context.Context, request *v
 func convertStoreVCSConnector(ctx context.Context, stores *store.Store, vcsConnector *store.VCSConnectorMessage) (*v1pb.VCSConnector, error) {
 	creator, err := stores.GetUserByID(ctx, vcsConnector.CreatorID)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get creator: %v", err))
+		return nil, status.Errorf(codes.Internal, "failed to get creator: %v", err)
 	}
 	if creator == nil {
-		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("cannot find the creator: %d", vcsConnector.CreatorID))
+		return nil, status.Errorf(codes.NotFound, "cannot find the creator: %d", vcsConnector.CreatorID)
 	}
 	updater, err := stores.GetUserByID(ctx, vcsConnector.UpdaterID)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get updater: %v", err))
+		return nil, status.Errorf(codes.Internal, "failed to get updater: %v", err)
 	}
 	if updater == nil {
-		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("cannot find the updater: %d", vcsConnector.UpdaterID))
+		return nil, status.Errorf(codes.NotFound, "cannot find the updater: %d", vcsConnector.UpdaterID)
 	}
 
 	v1VCSConnector := &v1pb.VCSConnector{
@@ -418,7 +418,7 @@ func checkBranchExistence(ctx context.Context, vcsProvider *store.VCSProviderMes
 		if common.ErrorCode(err) == common.NotFound {
 			return status.Errorf(codes.NotFound, "branch %s not found in repository %s", branch, externalID)
 		}
-		return status.Errorf(codes.Internal, "failed to check branch: %v", err.Error())
+		return status.Errorf(codes.Internal, "failed to check branch: %v", err)
 	}
 	return nil
 }

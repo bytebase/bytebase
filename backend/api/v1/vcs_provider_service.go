@@ -51,7 +51,7 @@ func (s *VCSProviderService) ListVCSProviders(ctx context.Context, _ *v1pb.ListV
 func (s *VCSProviderService) CreateVCSProvider(ctx context.Context, request *v1pb.CreateVCSProviderRequest) (*v1pb.VCSProvider, error) {
 	vcsProvider, err := s.store.GetVCSProvider(ctx, &store.FindVCSProviderMessage{ResourceID: &request.VcsProviderId})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	if vcsProvider != nil {
 		return nil, status.Errorf(codes.AlreadyExists, "vcs provider %s already exists", request.VcsProviderId)
@@ -62,7 +62,7 @@ func (s *VCSProviderService) CreateVCSProvider(ctx context.Context, request *v1p
 	}
 	vcsProvider, err = convertV1VCSProvider(request)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	if err := checkAccessTokenPermission(ctx, vcsProvider.Type, vcsProvider.InstanceURL, vcsProvider.AccessToken); err != nil {
 		return nil, err
@@ -114,7 +114,7 @@ func (s *VCSProviderService) UpdateVCSProvider(ctx context.Context, request *v1p
 	}
 	vcsProvider, err = s.store.UpdateVCSProvider(ctx, principalID, vcsProvider.ID, update)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	return convertVCSProvider(vcsProvider), nil
 }
@@ -189,7 +189,7 @@ func (s *VCSProviderService) ListVCSConnectorsInProvider(ctx context.Context, re
 func (s *VCSProviderService) getVCS(ctx context.Context, name string) (*store.VCSProviderMessage, error) {
 	vcsResourceID, err := common.GetVCSProviderID(name)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	vcsProvider, err := s.store.GetVCSProvider(ctx, &store.FindVCSProviderMessage{ResourceID: &vcsResourceID})
 	if err != nil {

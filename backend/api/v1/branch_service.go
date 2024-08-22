@@ -60,11 +60,11 @@ func NewBranchService(store *store.Store, licenseService enterprise.LicenseServi
 func (s *BranchService) GetBranch(ctx context.Context, request *v1pb.GetBranchRequest) (*v1pb.Branch, error) {
 	projectID, branchID, err := common.GetProjectAndBranchID(request.Name)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	project, err := s.getProject(ctx, projectID)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	branch, err := s.store.GetBranch(ctx, &store.FindBranchMessage{ProjectID: &project.ResourceID, ResourceID: &branchID, LoadFull: true})
@@ -86,7 +86,7 @@ func (s *BranchService) GetBranch(ctx context.Context, request *v1pb.GetBranchRe
 func (s *BranchService) ListBranches(ctx context.Context, request *v1pb.ListBranchesRequest) (*v1pb.ListBranchesResponse, error) {
 	projectID, err := common.GetProjectID(request.Parent)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	project, err := s.getProject(ctx, projectID)
 	if err != nil {
@@ -127,7 +127,7 @@ func (s *BranchService) CreateBranch(ctx context.Context, request *v1pb.CreateBr
 	}
 	projectID, err := common.GetProjectID(request.Parent)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	project, err := s.getProject(ctx, projectID)
 	if err != nil {
@@ -160,7 +160,7 @@ func (s *BranchService) CreateBranch(ctx context.Context, request *v1pb.CreateBr
 	if request.Branch.ParentBranch != "" {
 		parentProjectID, parentBranchID, err := common.GetProjectAndBranchID(request.Branch.ParentBranch)
 		if err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, err.Error())
+			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 		parentBranch, err := s.store.GetBranch(ctx, &store.FindBranchMessage{ProjectID: &parentProjectID, ResourceID: &parentBranchID, LoadFull: true})
 		if err != nil {
@@ -197,11 +197,11 @@ func (s *BranchService) CreateBranch(ctx context.Context, request *v1pb.CreateBr
 	} else if request.Branch.BaselineDatabase != "" {
 		instanceID, databaseName, err := common.GetInstanceDatabaseID(request.Branch.BaselineDatabase)
 		if err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, err.Error())
+			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 		instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
 		if err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, err.Error())
+			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 		database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
 			InstanceID:          &instanceID,
@@ -209,14 +209,14 @@ func (s *BranchService) CreateBranch(ctx context.Context, request *v1pb.CreateBr
 			IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
 		})
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, err.Error())
+			return nil, status.Error(codes.Internal, err.Error())
 		}
 		if database == nil {
 			return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
 		}
 		databaseSchema, err := s.store.GetDBSchema(ctx, database.UID)
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, err.Error())
+			return nil, status.Error(codes.Internal, err.Error())
 		}
 		if databaseSchema == nil {
 			return nil, status.Errorf(codes.NotFound, "database schema %q not found", databaseName)
@@ -388,7 +388,7 @@ func extractDefaultSchemaForOracleBranch(engine storepb.Engine, metadata *storep
 func (s *BranchService) MergeBranch(ctx context.Context, request *v1pb.MergeBranchRequest) (*v1pb.Branch, error) {
 	projectID, baseBranchID, err := common.GetProjectAndBranchID(request.Name)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	project, err := s.getProject(ctx, projectID)
 	if err != nil {
@@ -412,7 +412,7 @@ func (s *BranchService) MergeBranch(ctx context.Context, request *v1pb.MergeBran
 
 	headProjectID, headBranchID, err := common.GetProjectAndBranchID(request.HeadBranch)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	_, err = s.getProject(ctx, headProjectID)
 	if err != nil {
@@ -525,7 +525,7 @@ func (s *BranchService) MergeBranch(ctx context.Context, request *v1pb.MergeBran
 func (s *BranchService) RebaseBranch(ctx context.Context, request *v1pb.RebaseBranchRequest) (*v1pb.RebaseBranchResponse, error) {
 	baseProjectID, baseBranchID, err := common.GetProjectAndBranchID(request.Name)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	baseProject, err := s.getProject(ctx, baseProjectID)
 	if err != nil {
@@ -686,11 +686,11 @@ func (s *BranchService) getFilteredNewBaseFromRebaseRequest(ctx context.Context,
 	if request.SourceDatabase != "" {
 		instanceID, databaseName, err := common.GetInstanceDatabaseID(request.SourceDatabase)
 		if err != nil {
-			return nil, "", nil, status.Errorf(codes.InvalidArgument, err.Error())
+			return nil, "", nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 		instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
 		if err != nil {
-			return nil, "", nil, status.Errorf(codes.InvalidArgument, err.Error())
+			return nil, "", nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 		if instance == nil {
 			return nil, "", nil, status.Errorf(codes.NotFound, "instance %q not found or had been deleted", instanceID)
@@ -701,14 +701,14 @@ func (s *BranchService) getFilteredNewBaseFromRebaseRequest(ctx context.Context,
 			IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
 		})
 		if err != nil {
-			return nil, "", nil, status.Errorf(codes.Internal, err.Error())
+			return nil, "", nil, status.Error(codes.Internal, err.Error())
 		}
 		if database == nil {
 			return nil, "", nil, status.Errorf(codes.NotFound, "database %q not found or had been archive", databaseName)
 		}
 		databaseSchema, err := s.store.GetDBSchema(ctx, database.UID)
 		if err != nil {
-			return nil, "", nil, status.Errorf(codes.Internal, err.Error())
+			return nil, "", nil, status.Error(codes.Internal, err.Error())
 		}
 		if databaseSchema == nil {
 			return nil, "", nil, status.Errorf(codes.NotFound, "database schema %q not found", databaseName)
@@ -718,7 +718,7 @@ func (s *BranchService) getFilteredNewBaseFromRebaseRequest(ctx context.Context,
 		defaultStoreSourceSchema := extractDefaultSchemaForOracleBranch(instance.Engine, filteredNewBaseMetadata)
 		sourceSchema, err := schema.GetDesignSchema(instance.Engine, defaultStoreSourceSchema, filteredNewBaseMetadata)
 		if err != nil {
-			return nil, "", nil, status.Errorf(codes.Internal, err.Error())
+			return nil, "", nil, status.Error(codes.Internal, err.Error())
 		}
 
 		alignedDatabaseConfig := databaseSchema.GetConfig()
@@ -729,7 +729,7 @@ func (s *BranchService) getFilteredNewBaseFromRebaseRequest(ctx context.Context,
 	if request.SourceBranch != "" {
 		sourceProjectID, sourceBranchID, err := common.GetProjectAndBranchID(request.SourceBranch)
 		if err != nil {
-			return nil, "", nil, status.Errorf(codes.InvalidArgument, err.Error())
+			return nil, "", nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 		sourceBranch, err := s.store.GetBranch(ctx, &store.FindBranchMessage{ProjectID: &sourceProjectID, ResourceID: &sourceBranchID, LoadFull: true})
 		if err != nil {
@@ -748,11 +748,11 @@ func (s *BranchService) getFilteredNewBaseFromRebaseRequest(ctx context.Context,
 func (s *BranchService) DeleteBranch(ctx context.Context, request *v1pb.DeleteBranchRequest) (*emptypb.Empty, error) {
 	projectID, branchID, err := common.GetProjectAndBranchID(request.Name)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	project, err := s.getProject(ctx, projectID)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	branch, err := s.store.GetBranch(ctx, &store.FindBranchMessage{ProjectID: &project.ResourceID, ResourceID: &branchID, LoadFull: false})
 	if err != nil {
@@ -867,7 +867,7 @@ func (s *BranchService) getProject(ctx context.Context, projectID string) (*stor
 		ResourceID: &projectID,
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	if project == nil {
 		return nil, status.Errorf(codes.NotFound, "project %q not found", projectID)

@@ -51,35 +51,35 @@ func (s *SheetService) CreateSheet(ctx context.Context, request *v1pb.CreateShee
 
 	projectResourceID, err := common.GetProjectID(request.Parent)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
 		ResourceID: &projectResourceID,
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get project with resource id %q, err: %s", projectResourceID, err.Error()))
+		return nil, status.Errorf(codes.Internal, "failed to get project with resource id %q, err: %v", projectResourceID, err)
 	}
 	if project == nil {
-		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("project with resource id %q not found", projectResourceID))
+		return nil, status.Errorf(codes.NotFound, "project with resource id %q not found", projectResourceID)
 	}
 	if project.Deleted {
-		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("project with resource id %q had deleted", projectResourceID))
+		return nil, status.Errorf(codes.NotFound, "project with resource id %q had deleted", projectResourceID)
 	}
 
 	var databaseUID *int
 	if request.Sheet.Database != "" {
 		instanceResourceID, databaseName, err := common.GetInstanceDatabaseID(request.Sheet.Database)
 		if err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, err.Error())
+			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 		instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
 			ResourceID: &instanceResourceID,
 		})
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get instance with resource id %q, err: %s", instanceResourceID, err.Error()))
+			return nil, status.Errorf(codes.Internal, "failed to get instance with resource id %q, err: %v", instanceResourceID, err)
 		}
 		if instance == nil {
-			return nil, status.Errorf(codes.NotFound, fmt.Sprintf("instance with resource id %q not found", instanceResourceID))
+			return nil, status.Errorf(codes.NotFound, "instance with resource id %q not found", instanceResourceID)
 		}
 
 		find := &store.FindDatabaseMessage{
@@ -90,20 +90,20 @@ func (s *SheetService) CreateSheet(ctx context.Context, request *v1pb.CreateShee
 		}
 		database, err := s.store.GetDatabaseV2(ctx, find)
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get database with name %q, err: %s", databaseName, err.Error()))
+			return nil, status.Errorf(codes.Internal, "failed to get database with name %q, err: %s", databaseName, err)
 		}
 		if database == nil {
-			return nil, status.Errorf(codes.NotFound, fmt.Sprintf("database with name %q not found in project %q instance %q", databaseName, projectResourceID, instanceResourceID))
+			return nil, status.Errorf(codes.NotFound, "database with name %q not found in project %q instance %q", databaseName, projectResourceID, instanceResourceID)
 		}
 		databaseUID = &database.UID
 	}
 	storeSheetCreate, err := convertToStoreSheetMessage(ctx, project.UID, databaseUID, principalID, request.Sheet)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("failed to convert sheet: %v", err))
+		return nil, status.Errorf(codes.InvalidArgument, "failed to convert sheet: %v", err)
 	}
 	sheet, err := s.sheetManager.CreateSheet(ctx, storeSheetCreate)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to create sheet: %v", err))
+		return nil, status.Errorf(codes.Internal, "failed to create sheet: %v", err)
 	}
 	v1pbSheet, err := s.convertToAPISheetMessage(ctx, sheet)
 	if err != nil {
@@ -116,23 +116,23 @@ func (s *SheetService) CreateSheet(ctx context.Context, request *v1pb.CreateShee
 func (s *SheetService) GetSheet(ctx context.Context, request *v1pb.GetSheetRequest) (*v1pb.Sheet, error) {
 	projectResourceID, sheetUID, err := common.GetProjectResourceIDSheetUID(request.Name)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	if sheetUID <= 0 {
-		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid sheet id %d, must be positive integer", sheetUID))
+		return nil, status.Errorf(codes.InvalidArgument, "invalid sheet id %d, must be positive integer", sheetUID)
 	}
 
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
 		ResourceID: &projectResourceID,
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("project with resource id %s not found", projectResourceID))
+		return nil, status.Errorf(codes.NotFound, "project with resource id %s not found", projectResourceID)
 	}
 	if project == nil {
-		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("project with resource id %s not found", projectResourceID))
+		return nil, status.Errorf(codes.NotFound, "project with resource id %s not found", projectResourceID)
 	}
 	if project.Deleted {
-		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("project with resource id %q had deleted", projectResourceID))
+		return nil, status.Errorf(codes.NotFound, "project with resource id %q had deleted", projectResourceID)
 	}
 
 	find := &store.FindSheetMessage{
@@ -166,23 +166,23 @@ func (s *SheetService) UpdateSheet(ctx context.Context, request *v1pb.UpdateShee
 
 	projectResourceID, sheetUID, err := common.GetProjectResourceIDSheetUID(request.Sheet.Name)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	if sheetUID <= 0 {
-		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid sheet id %d, must be positive integer", sheetUID))
+		return nil, status.Errorf(codes.InvalidArgument, "invalid sheet id %d, must be positive integer", sheetUID)
 	}
 
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
 		ResourceID: &projectResourceID,
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("project with resource id %s not found", projectResourceID))
+		return nil, status.Errorf(codes.NotFound, "project with resource id %s not found", projectResourceID)
 	}
 	if project == nil {
-		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("project with resource id %s not found", projectResourceID))
+		return nil, status.Errorf(codes.NotFound, "project with resource id %s not found", projectResourceID)
 	}
 	if project.Deleted {
-		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("project with resource id %q had deleted", projectResourceID))
+		return nil, status.Errorf(codes.NotFound, "project with resource id %q had deleted", projectResourceID)
 	}
 
 	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
@@ -194,7 +194,7 @@ func (s *SheetService) UpdateSheet(ctx context.Context, request *v1pb.UpdateShee
 		ProjectUID: &project.UID,
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get sheet: %v", err))
+		return nil, status.Errorf(codes.Internal, "failed to get sheet: %v", err)
 	}
 	if sheet == nil {
 		return nil, status.Errorf(codes.NotFound, "sheet %q not found", request.Sheet.Name)
@@ -211,12 +211,12 @@ func (s *SheetService) UpdateSheet(ctx context.Context, request *v1pb.UpdateShee
 			statement := string(request.Sheet.Content)
 			sheetPatch.Statement = &statement
 		default:
-			return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid update mask path %q", path))
+			return nil, status.Errorf(codes.InvalidArgument, "invalid update mask path %q", path)
 		}
 	}
 	storeSheet, err := s.store.PatchSheet(ctx, sheetPatch)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to update sheet: %v", err))
+		return nil, status.Errorf(codes.Internal, "failed to update sheet: %v", err)
 	}
 	v1pbSheet, err := s.convertToAPISheetMessage(ctx, storeSheet)
 	if err != nil {
@@ -229,7 +229,7 @@ func (s *SheetService) UpdateSheet(ctx context.Context, request *v1pb.UpdateShee
 func (s *SheetService) findSheet(ctx context.Context, find *store.FindSheetMessage) (*store.SheetMessage, error) {
 	sheet, err := s.store.GetSheet(ctx, find)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get sheet: %v", err))
+		return nil, status.Errorf(codes.Internal, "failed to get sheet: %v", err)
 	}
 	if sheet == nil {
 		return nil, status.Errorf(codes.NotFound, "cannot find the sheet")
@@ -244,27 +244,27 @@ func (s *SheetService) convertToAPISheetMessage(ctx context.Context, sheet *stor
 			UID: sheet.DatabaseUID,
 		})
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get database: %v", err))
+			return nil, status.Errorf(codes.Internal, "failed to get database: %v", err)
 		}
 		if database == nil {
-			return nil, status.Errorf(codes.NotFound, fmt.Sprintf("database with id %d not found", *sheet.DatabaseUID))
+			return nil, status.Errorf(codes.NotFound, "database with id %d not found", *sheet.DatabaseUID)
 		}
 		databaseParent = fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName)
 	}
 
 	creator, err := s.store.GetUserByID(ctx, sheet.CreatorID)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get creator: %v", err))
+		return nil, status.Errorf(codes.Internal, "failed to get creator: %v", err)
 	}
 
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
 		UID: &sheet.ProjectUID,
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get project: %v", err))
+		return nil, status.Errorf(codes.Internal, "failed to get project: %v", err)
 	}
 	if project == nil {
-		return nil, status.Errorf(codes.NotFound, fmt.Sprintf("project with id %d not found", sheet.ProjectUID))
+		return nil, status.Errorf(codes.NotFound, "project with id %d not found", sheet.ProjectUID)
 	}
 	v1SheetPayload := &v1pb.SheetPayload{}
 	if len(sheet.Payload.GetCommands()) > 0 {

@@ -49,7 +49,7 @@ func (s *IdentityProviderService) GetIdentityProvider(ctx context.Context, reque
 func (s *IdentityProviderService) ListIdentityProviders(ctx context.Context, request *v1pb.ListIdentityProvidersRequest) (*v1pb.ListIdentityProvidersResponse, error) {
 	identityProviders, err := s.store.ListIdentityProviders(ctx, &store.FindIdentityProviderMessage{ShowDeleted: request.ShowDeleted})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	response := &v1pb.ListIdentityProvidersResponse{}
 	for _, identityProvider := range identityProviders {
@@ -61,7 +61,7 @@ func (s *IdentityProviderService) ListIdentityProviders(ctx context.Context, req
 // CreateIdentityProvider creates an identity provider.
 func (s *IdentityProviderService) CreateIdentityProvider(ctx context.Context, request *v1pb.CreateIdentityProviderRequest) (*v1pb.IdentityProvider, error) {
 	if err := s.licenseService.IsFeatureEnabled(api.FeatureSSO); err != nil {
-		return nil, status.Errorf(codes.PermissionDenied, err.Error())
+		return nil, status.Error(codes.PermissionDenied, err.Error())
 	}
 
 	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
@@ -83,7 +83,7 @@ func (s *IdentityProviderService) CreateIdentityProvider(ctx context.Context, re
 		return nil, status.Errorf(codes.InvalidArgument, "domain name must use lower-case")
 	}
 	if err := validIdentityProviderConfig(request.IdentityProvider.Type, request.IdentityProvider.Config); err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	identityProviderMessage := store.IdentityProviderMessage{
 		ResourceID: request.IdentityProviderId,
@@ -94,7 +94,7 @@ func (s *IdentityProviderService) CreateIdentityProvider(ctx context.Context, re
 	}
 	identityProvider, err := s.store.CreateIdentityProvider(ctx, &identityProviderMessage)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	return convertToIdentityProvider(identityProvider), nil
 }
@@ -102,7 +102,7 @@ func (s *IdentityProviderService) CreateIdentityProvider(ctx context.Context, re
 // UpdateIdentityProvider updates an identity provider.
 func (s *IdentityProviderService) UpdateIdentityProvider(ctx context.Context, request *v1pb.UpdateIdentityProviderRequest) (*v1pb.IdentityProvider, error) {
 	if err := s.licenseService.IsFeatureEnabled(api.FeatureSSO); err != nil {
-		return nil, status.Errorf(codes.PermissionDenied, err.Error())
+		return nil, status.Error(codes.PermissionDenied, err.Error())
 	}
 	if request.IdentityProvider == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "identity provider must be set")
@@ -137,7 +137,7 @@ func (s *IdentityProviderService) UpdateIdentityProvider(ctx context.Context, re
 	}
 	if patch.Config != nil {
 		if err := validIdentityProviderConfig(v1pb.IdentityProviderType(identityProvider.Type), request.IdentityProvider.Config); err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, err.Error())
+			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 		// Don't update client secret if it's empty string.
 		if identityProvider.Type == storepb.IdentityProviderType_OAUTH2 {
@@ -157,7 +157,7 @@ func (s *IdentityProviderService) UpdateIdentityProvider(ctx context.Context, re
 
 	identityProvider, err = s.store.UpdateIdentityProvider(ctx, patch)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	return convertToIdentityProvider(identityProvider), nil
 }
@@ -177,7 +177,7 @@ func (s *IdentityProviderService) DeleteIdentityProvider(ctx context.Context, re
 		Delete:     &deletePatch,
 	}
 	if _, err := s.store.UpdateIdentityProvider(ctx, patch); err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	return &emptypb.Empty{}, nil
 }
@@ -185,7 +185,7 @@ func (s *IdentityProviderService) DeleteIdentityProvider(ctx context.Context, re
 // UndeleteIdentityProvider undeletes an identity provider.
 func (s *IdentityProviderService) UndeleteIdentityProvider(ctx context.Context, request *v1pb.UndeleteIdentityProviderRequest) (*v1pb.IdentityProvider, error) {
 	if err := s.licenseService.IsFeatureEnabled(api.FeatureSSO); err != nil {
-		return nil, status.Errorf(codes.PermissionDenied, err.Error())
+		return nil, status.Error(codes.PermissionDenied, err.Error())
 	}
 	identityProvider, err := s.getIdentityProviderMessage(ctx, request.Name)
 	if err != nil {
@@ -201,7 +201,7 @@ func (s *IdentityProviderService) UndeleteIdentityProvider(ctx context.Context, 
 	}
 	identityProvider, err = s.store.UpdateIdentityProvider(ctx, patch)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	return convertToIdentityProvider(identityProvider), nil
 }
@@ -334,14 +334,14 @@ func (s *IdentityProviderService) TestIdentityProvider(ctx context.Context, requ
 func (s *IdentityProviderService) getIdentityProviderMessage(ctx context.Context, name string) (*store.IdentityProviderMessage, error) {
 	identityProviderID, err := common.GetIdentityProviderID(name)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	identityProvider, err := s.store.GetIdentityProvider(ctx, &store.FindIdentityProviderMessage{
 		ResourceID: &identityProviderID,
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	if identityProvider == nil {
 		return nil, status.Errorf(codes.NotFound, "identity provider %q not found", name)
