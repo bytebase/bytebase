@@ -653,7 +653,7 @@ func getRoutines(txn *sql.Tx, schemaName string) ([]*storepb.FunctionMetadata, [
 		GROUP BY NAME, TYPE
 		ORDER BY NAME, TYPE`, schemaName)
 
-	slog.Debug("running get sequences query")
+	slog.Debug("running get routines query")
 	rows, err := txn.Query(query)
 	if err != nil {
 		return nil, nil, util.FormatErrorWithQuery(err, query)
