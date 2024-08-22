@@ -1,6 +1,6 @@
 module github.com/bytebase/bytebase
 
-go 1.22.5
+go 1.23.0
 
 require (
 	cloud.google.com/go/bigquery v1.62.0
