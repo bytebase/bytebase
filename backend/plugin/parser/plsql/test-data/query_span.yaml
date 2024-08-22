@@ -238,12 +238,7 @@
               schema: SCHEMA1
               table: LT2
               column: LC2
-    sourcecolumns:
-        - server: ""
-          database: SCHEMA1
-          schema: SCHEMA1
-          table: LV1
-          column: ""
+    sourcecolumns: []
 - description: Test For Database Link
   statement: SELECT * FROM SCHEMA1.LT1@REMOTE;
   connectedDatabase: PUBLIC
