@@ -10,8 +10,16 @@
   >
     <div class="h-auto overflow-y-auto relative">
       <div v-if="currentProject">
-        <NButton v-if="currentProject" size="small" text @click="gotoWorkspace">
-          <ChevronLeftIcon class="w-4 opacity-80" />
+        <NButton
+          v-if="currentProject"
+          size="small"
+          class="!font-bold"
+          text
+          @click="gotoWorkspace"
+        >
+          <template #icon>
+            <ChevronLeftIcon class="w-4 opacity-80" />
+          </template>
           {{ $t("common.back-to-workspace") }}
         </NButton>
       </div>
