@@ -2,12 +2,8 @@
   <div class="w-full mx-auto space-y-4">
     <FeatureAttention feature="bb.feature.rbac" />
 
-    <NTabs
-      v-if="yourRoles.length > 0"
-      v-model:value="state.selectedTab"
-      type="line"
-      animated
-    >
+    <NoPermissionPlaceholder v-if="permissionStore.onlyWorkspaceMember" />
+    <NTabs v-else v-model:value="state.selectedTab" type="line" animated>
       <NTabPane name="MEMBERS">
         <template #tab>
           <p class="text-lg font-medium leading-7 text-main">
@@ -63,7 +59,6 @@
         </div>
       </template>
     </NTabs>
-    <NoPermissionPlaceholder v-else />
   </div>
 
   <EditMemberRoleDrawer
@@ -123,12 +118,6 @@ const state = reactive<LocalState>({
   selectedTab: "MEMBERS",
   selectedMembers: [],
   showAddMemberPanel: false,
-});
-
-const yourRoles = computed(() => {
-  return [...permissionStore.currentRolesInWorkspace].filter(
-    (r) => r !== PresetRoleType.WORKSPACE_MEMBER
-  );
 });
 
 const allowEdit = computed(() => {
