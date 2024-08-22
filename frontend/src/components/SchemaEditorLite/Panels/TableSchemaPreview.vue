@@ -132,10 +132,15 @@ const { status, data, error } = useQuery({
     const metadata = mockedSchemaMetadata.value;
     if (!metadata) return "";
     try {
-      const response = await sqlServiceClient.stringifyMetadata({
-        engine: engine.value,
-        metadata,
-      });
+      const response = await sqlServiceClient.stringifyMetadata(
+        {
+          engine: engine.value,
+          metadata,
+        },
+        {
+          silent: true,
+        }
+      );
       return response.schema;
     } catch (err) {
       return Promise.reject(new Error(extractGrpcErrorMessage(err)));

@@ -13,11 +13,11 @@ export const engineSupportsEditViews = (engine: Engine) => {
 };
 
 export const engineSupportsEditProcedures = (engine: Engine) => {
-  return [Engine.MYSQL, Engine.TIDB].includes(engine);
+  return [Engine.MYSQL].includes(engine);
 };
 
 export const engineSupportsEditFunctions = (engine: Engine) => {
-  return [Engine.MYSQL, Engine.TIDB].includes(engine);
+  return [Engine.MYSQL].includes(engine);
 };
 
 export const engineSupportsMultiSchema = (engine: Engine) => {
