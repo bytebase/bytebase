@@ -93,7 +93,7 @@ func (in *APIAuthInterceptor) AuthenticationInterceptor(ctx context.Context, req
 	}
 	accessTokenStr, err := GetTokenFromMetadata(md)
 	if err != nil {
-		return nil, status.Errorf(codes.Unauthenticated, err.Error())
+		return nil, status.Error(codes.Unauthenticated, err.Error())
 	}
 
 	authContext, err := getAuthContext(serverInfo.FullMethod)
@@ -123,7 +123,7 @@ func (in *APIAuthInterceptor) AuthenticationStreamInterceptor(request any, ss gr
 	}
 	accessTokenStr, err := GetTokenFromMetadata(md)
 	if err != nil {
-		return status.Errorf(codes.Unauthenticated, err.Error())
+		return status.Error(codes.Unauthenticated, err.Error())
 	}
 
 	authContext, err := getAuthContext(serverInfo.FullMethod)

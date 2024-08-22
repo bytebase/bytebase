@@ -89,7 +89,7 @@ func loadSampleData() (string, error) {
 	for _, name := range names {
 		buf, err := fs.ReadFile(sampleFS, name)
 		if err != nil {
-			return "", errors.Wrapf(err, fmt.Sprintf("failed to read sample database data: %s", name))
+			return "", errors.Wrapf(err, "failed to read sample database data: %s", name)
 		}
 		if _, err := builder.Write(buf); err != nil {
 			return "", err
@@ -128,7 +128,7 @@ func setupOneSampleInstance(ctx context.Context, pgBinDir, pgDataDir string, dbs
 	host := common.GetPostgresSocketDir()
 	for _, v := range dbs {
 		if err := prepareSampleDatabaseIfNeeded(ctx, SampleUser, host, strconv.Itoa(port), v, sampleData); err != nil {
-			return errors.Wrapf(err, fmt.Sprintf("failed to prepare sample database %q", v))
+			return errors.Wrapf(err, "failed to prepare sample database %q", v)
 		}
 		if !includeBatch {
 			break

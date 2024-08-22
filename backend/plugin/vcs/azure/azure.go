@@ -107,7 +107,7 @@ func (p *Provider) getChangesByCommit(ctx context.Context, externalRepositoryID,
 		return nil, errors.Wrapf(err, "GET %s", url)
 	}
 	if code == http.StatusNotFound {
-		return nil, common.Errorf(common.NotFound, fmt.Sprintf("commit %q does not exist in the repository %s", commitID, externalRepositoryID))
+		return nil, common.Errorf(common.NotFound, "commit %q does not exist in the repository %s", commitID, externalRepositoryID)
 	}
 	if code != http.StatusOK {
 		return nil, errors.Errorf("non-200 GET %s status code %d with body %q", url, code, string(body))

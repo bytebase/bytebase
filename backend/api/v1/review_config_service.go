@@ -2,7 +2,6 @@ package v1
 
 import (
 	"context"
-	"fmt"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -38,10 +37,10 @@ func NewReviewConfigService(store *store.Store, licenseService enterprise.Licens
 // CreateReviewConfig creates a new review config.
 func (s *ReviewConfigService) CreateReviewConfig(ctx context.Context, request *v1pb.CreateReviewConfigRequest) (*v1pb.ReviewConfig, error) {
 	if err := s.licenseService.IsFeatureEnabled(api.FeatureSQLReview); err != nil {
-		return nil, status.Errorf(codes.PermissionDenied, err.Error())
+		return nil, status.Error(codes.PermissionDenied, err.Error())
 	}
 	if err := validateSQLReviewRules(request.ReviewConfig.Rules); err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	reviewConfigMessage, err := convertToReviewConfigMessage(request.ReviewConfig)
 	if err != nil {
@@ -56,7 +55,7 @@ func (s *ReviewConfigService) CreateReviewConfig(ctx context.Context, request *v
 	reviewConfigMessage.CreatorUID = principalID
 	created, err := s.store.CreateReviewConfig(ctx, reviewConfigMessage)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	return s.convertToV1ReviewConfig(ctx, created)
 }
@@ -65,14 +64,14 @@ func (s *ReviewConfigService) CreateReviewConfig(ctx context.Context, request *v
 func (s *ReviewConfigService) ListReviewConfigs(ctx context.Context, _ *v1pb.ListReviewConfigsRequest) (*v1pb.ListReviewConfigsResponse, error) {
 	messages, err := s.store.ListReviewConfigs(ctx, &store.FindReviewConfigMessage{})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	response := &v1pb.ListReviewConfigsResponse{}
 	for _, message := range messages {
 		sqlReview, err := s.convertToV1ReviewConfig(ctx, message)
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, err.Error())
+			return nil, status.Error(codes.Internal, err.Error())
 		}
 		response.ReviewConfigs = append(response.ReviewConfigs, sqlReview)
 	}
@@ -83,12 +82,12 @@ func (s *ReviewConfigService) ListReviewConfigs(ctx context.Context, _ *v1pb.Lis
 func (s *ReviewConfigService) GetReviewConfig(ctx context.Context, request *v1pb.GetReviewConfigRequest) (*v1pb.ReviewConfig, error) {
 	id, err := common.GetReviewConfigID(request.Name)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	message, err := s.store.GetReviewConfig(ctx, id)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	if message == nil {
 		return nil, status.Errorf(codes.NotFound, "cannot found review config %s", request.Name)
@@ -99,11 +98,11 @@ func (s *ReviewConfigService) GetReviewConfig(ctx context.Context, request *v1pb
 // UpdateReviewConfig updates the review config.
 func (s *ReviewConfigService) UpdateReviewConfig(ctx context.Context, request *v1pb.UpdateReviewConfigRequest) (*v1pb.ReviewConfig, error) {
 	if err := s.licenseService.IsFeatureEnabled(api.FeatureSQLReview); err != nil {
-		return nil, status.Errorf(codes.PermissionDenied, err.Error())
+		return nil, status.Error(codes.PermissionDenied, err.Error())
 	}
 	id, err := common.GetReviewConfigID(request.ReviewConfig.Name)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
 	if !ok {
@@ -130,13 +129,13 @@ func (s *ReviewConfigService) UpdateReviewConfig(ctx context.Context, request *v
 		case "enabled":
 			patch.Enforce = &request.ReviewConfig.Enabled
 		default:
-			return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid update mask path %q", path))
+			return nil, status.Errorf(codes.InvalidArgument, "invalid update mask path %q", path)
 		}
 	}
 
 	message, err := s.store.UpdateReviewConfig(ctx, patch)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	return s.convertToV1ReviewConfig(ctx, message)
 }
@@ -145,11 +144,11 @@ func (s *ReviewConfigService) UpdateReviewConfig(ctx context.Context, request *v
 func (s *ReviewConfigService) DeleteReviewConfig(ctx context.Context, request *v1pb.DeleteReviewConfigRequest) (*emptypb.Empty, error) {
 	id, err := common.GetReviewConfigID(request.Name)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	if err := s.store.DeleteReviewConfig(ctx, id); err != nil {
-		return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to delete review config: %v", err))
+		return nil, status.Errorf(codes.Internal, "failed to delete review config: %v", err)
 	}
 
 	return &emptypb.Empty{}, nil

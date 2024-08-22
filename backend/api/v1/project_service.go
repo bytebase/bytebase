@@ -66,7 +66,7 @@ func (s *ProjectService) GetProject(ctx context.Context, request *v1pb.GetProjec
 func (s *ProjectService) ListProjects(ctx context.Context, request *v1pb.ListProjectsRequest) (*v1pb.ListProjectsResponse, error) {
 	projects, err := s.store.ListProjectV2(ctx, &store.FindProjectMessage{ShowDeleted: request.ShowDeleted})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	response := &v1pb.ListProjectsResponse{}
 	for _, project := range projects {
@@ -84,7 +84,7 @@ func (s *ProjectService) SearchProjects(ctx context.Context, request *v1pb.Searc
 
 	projects, err := s.store.ListProjectV2(ctx, &store.FindProjectMessage{ShowDeleted: request.ShowDeleted})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	ok, err = s.iamManager.CheckPermission(ctx, iam.PermissionProjectsGet, user)
@@ -120,7 +120,7 @@ func (s *ProjectService) CreateProject(ctx context.Context, request *v1pb.Create
 
 	projectMessage, err := convertToProjectMessage(request.ProjectId, request.Project)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	setting, err := s.store.GetDataClassificationSetting(ctx)
@@ -140,7 +140,7 @@ func (s *ProjectService) CreateProject(ctx context.Context, request *v1pb.Create
 		principalID,
 	)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	return convertToProject(project), nil
 }
@@ -227,7 +227,7 @@ func (s *ProjectService) UpdateProject(ctx context.Context, request *v1pb.Update
 
 	project, err = s.store.UpdateProjectV2(ctx, patch)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	return convertToProject(project), nil
 }
@@ -282,7 +282,7 @@ func (s *ProjectService) DeleteProject(ctx context.Context, request *v1pb.Delete
 		ResourceID: project.ResourceID,
 		Delete:     &deletePatch,
 	}); err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	return &emptypb.Empty{}, nil
@@ -308,7 +308,7 @@ func (s *ProjectService) UndeleteProject(ctx context.Context, request *v1pb.Unde
 		Delete:     &undeletePatch,
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	return convertToProject(project), nil
 }
@@ -317,13 +317,13 @@ func (s *ProjectService) UndeleteProject(ctx context.Context, request *v1pb.Unde
 func (s *ProjectService) GetIamPolicy(ctx context.Context, request *v1pb.GetIamPolicyRequest) (*v1pb.IamPolicy, error) {
 	projectID, err := common.GetProjectID(request.Resource)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
 		ResourceID: &projectID,
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	if project == nil {
 		return nil, status.Errorf(codes.NotFound, "cannot found project %s", projectID)
@@ -331,7 +331,7 @@ func (s *ProjectService) GetIamPolicy(ctx context.Context, request *v1pb.GetIamP
 
 	policy, err := s.store.GetProjectIamPolicy(ctx, project.UID)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	return convertToV1IamPolicy(ctx, s.store, policy)
@@ -343,21 +343,21 @@ func (s *ProjectService) BatchGetIamPolicy(ctx context.Context, request *v1pb.Ba
 	for _, name := range request.Names {
 		projectID, err := common.GetProjectID(name)
 		if err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, err.Error())
+			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 
 		project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
 			ResourceID: &projectID,
 		})
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, err.Error())
+			return nil, status.Error(codes.Internal, err.Error())
 		}
 		if project == nil {
 			continue
 		}
 		policy, err := s.store.GetProjectIamPolicy(ctx, project.UID)
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, err.Error())
+			return nil, status.Error(codes.Internal, err.Error())
 		}
 
 		iamPolicy, err := convertToV1IamPolicy(ctx, s.store, policy)
@@ -378,7 +378,7 @@ func (s *ProjectService) SetIamPolicy(ctx context.Context, request *v1pb.SetIamP
 
 	projectID, err := common.GetProjectID(request.Resource)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	creatorUID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
 	if !ok {
@@ -386,14 +386,14 @@ func (s *ProjectService) SetIamPolicy(ctx context.Context, request *v1pb.SetIamP
 	}
 
 	if err := s.validateIAMPolicy(ctx, request.Policy); err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
 		ResourceID: &projectID,
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	if project == nil {
 		return nil, status.Errorf(codes.NotFound, "project %q not found", request.Resource)
@@ -404,7 +404,7 @@ func (s *ProjectService) SetIamPolicy(ctx context.Context, request *v1pb.SetIamP
 
 	policy, err := convertToStoreIamPolicy(ctx, s.store, request.Policy)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	policyMessage, err := s.store.GetProjectIamPolicy(ctx, project.UID)
@@ -418,7 +418,7 @@ func (s *ProjectService) SetIamPolicy(ctx context.Context, request *v1pb.SetIamP
 
 	policyPayload, err := protojson.Marshal(policy)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	if _, err := s.store.CreatePolicyV2(ctx, &store.PolicyMessage{
 		ResourceUID:       project.UID,
@@ -429,12 +429,12 @@ func (s *ProjectService) SetIamPolicy(ctx context.Context, request *v1pb.SetIamP
 		// Enforce cannot be false while creating a policy.
 		Enforce: true,
 	}, creatorUID); err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	iamPolicyMessage, err := s.store.GetProjectIamPolicy(ctx, project.UID)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	if setServiceData, ok := common.GetSetServiceDataFromContext(ctx); ok {
@@ -565,13 +565,13 @@ func findIamPolicyDeltas(oriIamPolicy *storepb.IamPolicy, newIamPolicy *storepb.
 func (s *ProjectService) GetDeploymentConfig(ctx context.Context, request *v1pb.GetDeploymentConfigRequest) (*v1pb.DeploymentConfig, error) {
 	projectID, _, err := common.GetProjectIDDeploymentConfigID(request.Name)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
 		ResourceID: &projectID,
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	if project == nil {
 		return nil, status.Errorf(codes.NotFound, "project %q not found", request.Name)
@@ -579,7 +579,7 @@ func (s *ProjectService) GetDeploymentConfig(ctx context.Context, request *v1pb.
 
 	deploymentConfig, err := s.store.GetDeploymentConfigV2(ctx, project.UID)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	if deploymentConfig == nil {
 		return nil, status.Errorf(codes.NotFound, "deployment config %q not found", request.Name)
@@ -595,13 +595,13 @@ func (s *ProjectService) UpdateDeploymentConfig(ctx context.Context, request *v1
 	}
 	projectID, _, err := common.GetProjectIDDeploymentConfigID(request.DeploymentConfig.Name)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
 		ResourceID: &projectID,
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	if project == nil {
 		return nil, status.Errorf(codes.NotFound, "project %q not found", projectID)
@@ -612,7 +612,7 @@ func (s *ProjectService) UpdateDeploymentConfig(ctx context.Context, request *v1
 
 	storeDeploymentConfig, err := validateAndConvertToStoreDeploymentSchedule(request.DeploymentConfig)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
@@ -621,7 +621,7 @@ func (s *ProjectService) UpdateDeploymentConfig(ctx context.Context, request *v1
 	}
 	deploymentConfig, err := s.store.UpsertDeploymentConfigV2(ctx, project.UID, principalID, storeDeploymentConfig)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	return convertToDeploymentConfig(project.ResourceID, deploymentConfig), nil
 }
@@ -630,13 +630,13 @@ func (s *ProjectService) UpdateDeploymentConfig(ctx context.Context, request *v1
 func (s *ProjectService) AddWebhook(ctx context.Context, request *v1pb.AddWebhookRequest) (*v1pb.Project, error) {
 	projectID, err := common.GetProjectID(request.Project)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
 		ResourceID: &projectID,
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	if project == nil {
 		return nil, status.Errorf(codes.NotFound, "project %q not found", request.Project)
@@ -647,7 +647,7 @@ func (s *ProjectService) AddWebhook(ctx context.Context, request *v1pb.AddWebhoo
 
 	create, err := convertToStoreProjectWebhookMessage(request.Webhook)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
@@ -655,14 +655,14 @@ func (s *ProjectService) AddWebhook(ctx context.Context, request *v1pb.AddWebhoo
 		return nil, status.Errorf(codes.Internal, "principal ID not found")
 	}
 	if _, err := s.store.CreateProjectWebhookV2(ctx, principalID, project.UID, project.ResourceID, create); err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	project, err = s.store.GetProjectV2(ctx, &store.FindProjectMessage{
 		ResourceID: &projectID,
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	return convertToProject(project), nil
 }
@@ -671,7 +671,7 @@ func (s *ProjectService) AddWebhook(ctx context.Context, request *v1pb.AddWebhoo
 func (s *ProjectService) UpdateWebhook(ctx context.Context, request *v1pb.UpdateWebhookRequest) (*v1pb.Project, error) {
 	projectID, webhookID, err := common.GetProjectIDWebhookID(request.Webhook.Name)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	webhookIDInt, err := strconv.Atoi(webhookID)
 	if err != nil {
@@ -682,7 +682,7 @@ func (s *ProjectService) UpdateWebhook(ctx context.Context, request *v1pb.Update
 		ResourceID: &projectID,
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	if project == nil {
 		return nil, status.Errorf(codes.NotFound, "project %q not found", projectID)
@@ -696,7 +696,7 @@ func (s *ProjectService) UpdateWebhook(ctx context.Context, request *v1pb.Update
 		ID:        &webhookIDInt,
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	if webhook == nil {
 		return nil, status.Errorf(codes.NotFound, "webhook %q not found", request.Webhook.Url)
@@ -714,7 +714,7 @@ func (s *ProjectService) UpdateWebhook(ctx context.Context, request *v1pb.Update
 		case "notification_type":
 			types, err := convertToActivityTypeStrings(request.Webhook.NotificationTypes)
 			if err != nil {
-				return nil, status.Errorf(codes.InvalidArgument, err.Error())
+				return nil, status.Error(codes.InvalidArgument, err.Error())
 			}
 			if len(types) == 0 {
 				return nil, status.Errorf(codes.InvalidArgument, "notification types should not be empty")
@@ -734,14 +734,14 @@ func (s *ProjectService) UpdateWebhook(ctx context.Context, request *v1pb.Update
 		return nil, status.Errorf(codes.Internal, "principal ID not found")
 	}
 	if _, err := s.store.UpdateProjectWebhookV2(ctx, principalID, project.ResourceID, webhook.ID, update); err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	project, err = s.store.GetProjectV2(ctx, &store.FindProjectMessage{
 		ResourceID: &projectID,
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	return convertToProject(project), nil
 }
@@ -750,7 +750,7 @@ func (s *ProjectService) UpdateWebhook(ctx context.Context, request *v1pb.Update
 func (s *ProjectService) RemoveWebhook(ctx context.Context, request *v1pb.RemoveWebhookRequest) (*v1pb.Project, error) {
 	projectID, webhookID, err := common.GetProjectIDWebhookID(request.Webhook.Name)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	webhookIDInt, err := strconv.Atoi(webhookID)
 	if err != nil {
@@ -761,7 +761,7 @@ func (s *ProjectService) RemoveWebhook(ctx context.Context, request *v1pb.Remove
 		ResourceID: &projectID,
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	if project == nil {
 		return nil, status.Errorf(codes.NotFound, "project %q not found", webhookID)
@@ -775,21 +775,21 @@ func (s *ProjectService) RemoveWebhook(ctx context.Context, request *v1pb.Remove
 		ID:        &webhookIDInt,
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	if webhook == nil {
 		return nil, status.Errorf(codes.NotFound, "webhook %q not found", request.Webhook.Url)
 	}
 
 	if err := s.store.DeleteProjectWebhookV2(ctx, project.ResourceID, webhook.ID); err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	project, err = s.store.GetProjectV2(ctx, &store.FindProjectMessage{
 		ResourceID: &projectID,
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	return convertToProject(project), nil
 }
@@ -806,13 +806,13 @@ func (s *ProjectService) TestWebhook(ctx context.Context, request *v1pb.TestWebh
 
 	projectID, err := common.GetProjectID(request.Project)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
 		ResourceID: &projectID,
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	if project == nil {
 		return nil, status.Errorf(codes.NotFound, "project %q not found", request.Project)
@@ -823,7 +823,7 @@ func (s *ProjectService) TestWebhook(ctx context.Context, request *v1pb.TestWebh
 
 	webhook, err := convertToStoreProjectWebhookMessage(request.Webhook)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	resp := &v1pb.TestWebhookResponse{}
@@ -1076,7 +1076,7 @@ func validateAndConvertToStoreDeploymentSchedule(deployment *v1pb.DeploymentConf
 func (s *ProjectService) getProjectMessage(ctx context.Context, name string) (*store.ProjectMessage, error) {
 	projectID, err := common.GetProjectID(name)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	find := &store.FindProjectMessage{
@@ -1085,7 +1085,7 @@ func (s *ProjectService) getProjectMessage(ctx context.Context, name string) (*s
 	}
 	project, err := s.store.GetProjectV2(ctx, find)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	if project == nil {
 		return nil, status.Errorf(codes.NotFound, "project %q not found", name)
@@ -1200,7 +1200,7 @@ func convertToStoreIamPolicyMember(ctx context.Context, stores *store.Store, mem
 		email := strings.TrimPrefix(member, common.UserBindingPrefix)
 		user, err := stores.GetUserByEmail(ctx, email)
 		if err != nil {
-			return "", status.Errorf(codes.Internal, err.Error())
+			return "", status.Error(codes.Internal, err.Error())
 		}
 		if user == nil {
 			return "", status.Errorf(codes.NotFound, "user %q not found", member)

@@ -59,7 +59,7 @@ func getProjectFilter(filter string) (string, error) {
 	}
 	ast, issues := e.Compile(filter)
 	if issues != nil {
-		return "", status.Errorf(codes.InvalidArgument, issues.String())
+		return "", status.Error(codes.InvalidArgument, issues.String())
 	}
 	parsedExpr, err := cel.AstToParsedExpr(ast)
 	if err != nil {
