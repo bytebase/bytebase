@@ -3,17 +3,20 @@
     <div class="flex justify-between items-center text-sm">
       <slot name="header-suffix" />
     </div>
-    <MonacoEditor
-      :content="state.code"
-      :readonly="!editable"
-      :auto-complete-context="{
-        instance: db.instance,
-        database: db.name,
-        scene: 'all',
-      }"
-      class="border w-full rounded flex-1 relative"
-      @update:content="handleUpdateCode"
-    />
+    <div class="flex-1 relative px-2 overflow-y-hidden">
+      <MonacoEditor
+        :content="state.code"
+        :readonly="!editable"
+        :auto-complete-context="{
+          instance: db.instance,
+          database: db.name,
+          scene: 'all',
+        }"
+        class="border w-full h-full rounded"
+        @update:content="handleUpdateCode"
+      />
+    </div>
+    <slot name="preview" />
   </div>
 </template>
 
