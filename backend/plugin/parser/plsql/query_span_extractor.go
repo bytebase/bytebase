@@ -1256,7 +1256,7 @@ func (q *querySpanExtractor) plsqlFindTableSchema(dbLink []string, schemaName, t
 				DatabaseLink: &linkName,
 			}
 		}
-		return q.findTableSchemaInMetadata(linkedInstanceID, linkedMeta, linkedMeta.GetName(), schemaName, tableName)
+		return q.findTableSchemaInMetadata(linkedInstanceID, linkedMeta, schemaName, tableName)
 	}
 
 	// Each CTE name in one WITH clause must be unique, but we can use the same name in the different level CTE, such as:
@@ -1287,10 +1287,10 @@ func (q *querySpanExtractor) plsqlFindTableSchema(dbLink []string, schemaName, t
 		}
 	}
 
-	return q.findTableSchemaInMetadata(q.gCtx.InstanceID, dbSchema, schemaName, schemaName, tableName)
+	return q.findTableSchemaInMetadata(q.gCtx.InstanceID, dbSchema, schemaName, tableName)
 }
 
-func (q *querySpanExtractor) findTableSchemaInMetadata(instanceID string, dbSchema *model.DatabaseMetadata, databaseName, schemaName, tableName string) (base.TableSource, error) {
+func (q *querySpanExtractor) findTableSchemaInMetadata(instanceID string, dbSchema *model.DatabaseMetadata, databaseName, tableName string) (base.TableSource, error) {
 	schema := dbSchema.GetSchema("")
 	if schema == nil {
 		return nil, &parsererror.ResourceNotFoundError{
@@ -1316,7 +1316,7 @@ func (q *querySpanExtractor) findTableSchemaInMetadata(instanceID string, dbSche
 		return &base.PhysicalTable{
 			Server:   "",
 			Database: databaseName,
-			Schema:   schemaName,
+			Schema:   databaseName,
 			Name:     tableName,
 			Columns:  columns,
 		}, nil
@@ -1330,7 +1330,7 @@ func (q *querySpanExtractor) findTableSchemaInMetadata(instanceID string, dbSche
 		return &base.PhysicalTable{
 			Server:   "",
 			Database: databaseName,
-			Schema:   schemaName,
+			Schema:   databaseName,
 			Name:     tableName,
 			Columns:  columns,
 		}, nil
