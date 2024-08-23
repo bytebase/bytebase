@@ -72,14 +72,21 @@
         </BBTableCell>
         <BBTableCell v-for="(dbList, i) in matrix.stages" :key="i">
           <div
-            v-if="databaseList.length > 0"
+            v-if="dbList.length > 0"
             class="flex flex-col items-start w-max mx-auto space-y-1"
           >
-            <DatabaseMatrixItem
-              v-for="db in dbList"
-              :key="db.id"
-              :database="db"
-            />
+            <p v-if="dbList.length > 1" class="textinfolabel">
+              {{ $t("deployment-config.n-databases", { n: dbList.length }) }}
+            </p>
+            <NVirtualList
+              :items="dbList"
+              :item-size="32"
+              style="max-height: 240px"
+            >
+              <template #default="{ item }">
+                <DatabaseMatrixItem :key="item.id" :database="item" />
+              </template>
+            </NVirtualList>
           </div>
           <div v-if="dbList.length === 0" class="text-center">-</div>
         </BBTableCell>
@@ -104,7 +111,7 @@
 
 <script lang="ts" setup>
 import { groupBy } from "lodash-es";
-import { NPopover } from "naive-ui";
+import { NPopover, NVirtualList } from "naive-ui";
 import { computed } from "vue";
 import { BBTable, BBTableCell, BBTableHeaderCell } from "@/bbkit";
 import type { ComposedDatabase } from "@/types";
