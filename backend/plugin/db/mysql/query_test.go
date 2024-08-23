@@ -18,9 +18,14 @@ func TestGetStatementWithResultLimitOfMySQL(t *testing.T) {
 			want:  "SELECT * FROM t LIMIT 10;",
 		},
 		{
+			stmt:  "SELECT * FROM t LIMIT 10;",
+			count: 5,
+			want:  "SELECT * FROM t LIMIT 5;",
+		},
+		{
 			stmt:  "SELECT * FROM t LIMIT 5;",
 			count: 10,
-			want:  "SELECT * FROM t LIMIT 10;",
+			want:  "SELECT * FROM t LIMIT 5;",
 		},
 		{
 			stmt:  "SELECT * FROM t LIMIT 123;",
