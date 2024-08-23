@@ -191,7 +191,6 @@ func getStatementWithResultLimitInline(singleStatement string, limitCount int) (
 
 	listener := &tsqlRewriter{
 		limitCount: limitCount,
-		hasOffset:  false,
 		hasFetch:   false,
 		hasTop:     false,
 	}
@@ -214,7 +213,6 @@ type tsqlRewriter struct {
 	rewriter   antlr.TokenStreamRewriter
 	err        error
 	limitCount int
-	hasOffset  bool
 	hasFetch   bool
 	hasTop     bool
 }
@@ -253,8 +251,11 @@ func (r *tsqlRewriter) handleSqlunionDryRun(ctx tsql.IQuery_expressionContext) {
 }
 
 func (r *tsqlRewriter) handleSelectOrderByDryRun(ctx tsql.ISelect_order_by_clauseContext) {
-	r.hasOffset = r.hasOffset || ctx.GetOffset_rows() != nil
-	r.hasFetch = r.hasFetch || ctx.GetFetch_rows() != nil
+	if ctx.GetFetch_rows() != nil {
+		r.hasFetch = true
+
+		r.overrideFetchRows(ctx)
+	}
 }
 
 func (r *tsqlRewriter) handleQuerySpecificationDryRun(ctx tsql.IQuery_specificationContext) {
@@ -270,7 +271,7 @@ func (r *tsqlRewriter) handleSelectStatement(ctx tsql.ISelect_statementContext) 
 	if ctx.Select_order_by_clause() != nil {
 		r.handleSelectOrderBy(ctx.Select_order_by_clause())
 	}
-	if r.hasOffset && r.hasFetch {
+	if r.hasFetch {
 		return
 	}
 
@@ -285,7 +286,7 @@ func (r *tsqlRewriter) handleSelectStatement(ctx tsql.ISelect_statementContext) 
 		if ctx.Query_expression().Select_order_by_clause() != nil {
 			r.handleSelectOrderBy(ctx.Query_expression().Select_order_by_clause())
 		}
-		if r.hasOffset && r.hasFetch {
+		if r.hasFetch {
 			return
 		}
 		r.handleQuerySpecification(ctx.Query_expression().Query_specification())
@@ -324,7 +325,7 @@ func (r *tsqlRewriter) handleSqlunion(ctx tsql.IQuery_expressionContext) {
 }
 
 func (r *tsqlRewriter) handleQuerySpecification(ctx tsql.IQuery_specificationContext) {
-	if r.hasOffset {
+	if r.hasFetch {
 		return
 	}
 	if ctx.Top_clause() != nil {
@@ -349,30 +350,18 @@ func (r *tsqlRewriter) handleSelectOrderBy(ctx tsql.ISelect_order_by_clauseConte
 	if r.hasTop {
 		return
 	}
-	if ctx.GetOffset_rows() != nil {
-		r.hasOffset = true
-	}
+
+	r.hasFetch = true
 	if ctx.GetFetch_rows() != nil {
-		r.hasFetch = true
-	}
-	// respect original value
-	if r.hasFetch && r.hasOffset {
+		r.overrideFetchRows(ctx)
 		return
 	}
 
-	// no offset, add offet and fetch
+	// OFFSET is required.
 	if ctx.GetOffset_rows() == nil {
-		r.hasOffset = true
-		r.hasFetch = true
 		r.rewriter.InsertAfterDefault(ctx.Order_by_clause().GetStop().GetTokenIndex(), fmt.Sprintf(" OFFSET 0 ROWS FETCH NEXT %d ROWS ONLY", r.limitCount))
-		return
-	}
-	r.hasOffset = true
-	// has offset, but no fetch, add fetch
-	if ctx.GetFetch_rows() == nil {
-		r.hasFetch = true
+	} else {
 		r.rewriter.InsertAfterDefault(ctx.GetOffset_rows().GetTokenIndex(), fmt.Sprintf(" FETCH NEXT %d ROWS ONLY", r.limitCount))
-		return
 	}
 }
 
@@ -388,4 +377,19 @@ func (r *tsqlRewriter) overrideTopClause(topClause tsql.ITop_clauseContext) {
 	}
 
 	r.rewriter.ReplaceDefault(topClause.GetStart().GetTokenIndex(), topClause.GetStop().GetTokenIndex(), fmt.Sprintf("TOP %d", limit))
+}
+
+func (r *tsqlRewriter) overrideFetchRows(ctx tsql.ISelect_order_by_clauseContext) {
+	// Offset must exists.
+	if len(ctx.AllExpression()) > 1 {
+		expression := ctx.Expression(1)
+		if expression != nil {
+			userLimitText := expression.GetText()
+			limit, _ := strconv.Atoi(userLimitText)
+			if limit == 0 || r.limitCount < limit {
+				limit = r.limitCount
+			}
+			r.rewriter.ReplaceDefault(expression.GetStart().GetTokenIndex(), expression.GetStop().GetTokenIndex(), fmt.Sprintf("%d", limit))
+		}
+	}
 }

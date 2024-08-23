@@ -19,16 +19,20 @@
   limit: 10
   want: SELECT id FROM t1 ORDER BY price OFFSET 0 ROWS FETCH NEXT 10 ROWS ONLY;
 - stmt: |
+    SELECT id FROM t1 ORDER BY price OFFSET 123 ROWS;
+  limit: 10
+  want: SELECT id FROM t1 ORDER BY price OFFSET 123 ROWS FETCH NEXT 10 ROWS ONLY;
+- stmt: |
     SELECT name, price
     FROM toy
     ORDER BY price
-    OFFSET 0 ROWS FETCH FIRST 5 ROWS ONLY;
+    OFFSET 0 ROWS FETCH FIRST 123 ROWS ONLY;
   limit: 10
   want: |-
     SELECT name, price
     FROM toy
     ORDER BY price
-    OFFSET 0 ROWS FETCH FIRST 5 ROWS ONLY;
+    OFFSET 0 ROWS FETCH FIRST 10 ROWS ONLY;
 - stmt: |
     SELECT
         product_name,
@@ -56,7 +60,7 @@
         production.products
     ORDER BY
         list_price,
-        product_name OFFSET 0 ROWS FETCH NEXT 10 ROWS ONLY;
+        product_name OFFSET 0 ROWS FETCH NEXT 5 ROWS ONLY;
   limit: 10
   want: |-
     SELECT
@@ -66,7 +70,7 @@
         production.products
     ORDER BY
         list_price,
-        product_name OFFSET 0 ROWS FETCH NEXT 10 ROWS ONLY;
+        product_name OFFSET 0 ROWS FETCH NEXT 5 ROWS ONLY;
 - stmt: |
     SELECT TOP 123
         product_name,
