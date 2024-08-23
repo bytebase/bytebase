@@ -9,6 +9,7 @@ import (
 	parser "github.com/bytebase/mysql-parser"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -17,45 +18,121 @@ func init() {
 	base.RegisterGenerateRestoreSQL(storepb.Engine_MYSQL, GenerateRestoreSQL)
 }
 
-func GenerateRestoreSQL(ctx context.Context, rCtx base.RestoreContext, statement string, backupDatabase string, backupTable string, originalDatabase string, originalTable string) (string, error) {
+func GenerateRestoreSQL(ctx context.Context, rCtx base.RestoreContext, statement string, backupItem *storepb.PriorBackupDetail_Item) (string, error) {
+	originalSQL, err := extractSingleSQL(statement, backupItem)
+	if err != nil {
+		return "", errors.Errorf("failed to extract single SQL: %v", err)
+	}
+
 	parseResult, err := ParseMySQL(statement)
 	if err != nil {
 		return "", err
 	}
 
-	if len(parseResult) != 1 {
-		return "", errors.Errorf("expected 1 statement, but got %d", len(parseResult))
+	if len(parseResult) == 0 {
+		return "", errors.Errorf("no parse result")
 	}
 
-	generatedColumns, normalColumns, err := classifyColumns(ctx, rCtx.GetDatabaseMetadataFunc, rCtx.InstanceID, &TableReference{
-		Database: originalDatabase,
-		Table:    originalTable,
-	})
+	// We only need the first parse result.
+	// There are two cases:
+	// 1. The statement is a single SQL statement.
+	// 2. The statement is a multi SQL statement, but all SQL statements' backup is in the same table.
+	//    So we only need to restore the first SQL statement.
+	return doGenerate(ctx, rCtx, originalSQL, parseResult[0], backupItem)
+}
 
+func doGenerate(ctx context.Context, rCtx base.RestoreContext, originalSQL string, parseResult *ParseResult, backupItem *storepb.PriorBackupDetail_Item) (string, error) {
+	_, sourceDatabase, err := common.GetInstanceDatabaseID(backupItem.SourceTable.Database)
 	if err != nil {
-		return "", errors.Wrapf(err, "failed to classify columns for %s.%s", originalDatabase, originalTable)
+		return "", errors.Wrapf(err, "failed to get source database ID for %s", backupItem.SourceTable.Database)
+	}
+	_, targetDatabase, err := common.GetInstanceDatabaseID(backupItem.TargetTable.Database)
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to get target database ID for %s", backupItem.TargetTable.Database)
+	}
+	generatedColumns, normalColumns, err := classifyColumns(ctx, rCtx.GetDatabaseMetadataFunc, rCtx.InstanceID, &TableReference{
+		Database: sourceDatabase,
+		Table:    backupItem.SourceTable.Table,
+	})
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to classify columns for %s.%s", backupItem.SourceTable.Database, backupItem.SourceTable.Table)
 	}
 
 	g := &generator{
 		ctx:              ctx,
 		rCtx:             rCtx,
-		backupDatabase:   backupDatabase,
-		backupTable:      backupTable,
-		originalDatabase: originalDatabase,
-		originalTable:    originalTable,
+		backupDatabase:   targetDatabase,
+		backupTable:      backupItem.TargetTable.Table,
+		originalDatabase: sourceDatabase,
+		originalTable:    backupItem.SourceTable.Table,
 		generatedColumns: generatedColumns,
 		normalColumns:    normalColumns,
 	}
 	var buf strings.Builder
-	antlr.ParseTreeWalkerDefault.Walk(g, parseResult[0].Tree)
+	antlr.ParseTreeWalkerDefault.Walk(g, parseResult.Tree)
 	if g.err != nil {
 		return "", g.err
 	}
-
-	if _, err := fmt.Fprintf(&buf, "/*\nOriginal SQL:\n%s\n*/\n%s", statement, g.result); err != nil {
+	if _, err := fmt.Fprintf(&buf, "/*\nOriginal SQL:\n%s\n*/\n%s", originalSQL, g.result); err != nil {
 		return "", err
 	}
 	return buf.String(), nil
+}
+
+func extractSingleSQL(statement string, backupItem *storepb.PriorBackupDetail_Item) (string, error) {
+	if backupItem == nil {
+		return "", errors.Errorf("backup item is nil")
+	}
+
+	list, err := SplitSQL(statement)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to split sql")
+	}
+
+	start := 0
+	end := len(list) - 1
+	for i, item := range list {
+		if equalOrLess(&storepb.Position{
+			Line:   int32(item.FirstStatementLine + 1),
+			Column: int32(item.FirstStatementColumn),
+		}, backupItem.StartPosition) {
+			start = i
+		}
+	}
+
+	for i := len(list) - 1; i >= 0; i-- {
+		if equalOrGreater(&storepb.Position{
+			Line:   int32(list[i].FirstStatementLine + 1),
+			Column: int32(list[i].FirstStatementColumn),
+		}, backupItem.EndPosition) {
+			end = i
+		}
+	}
+	var result []string
+	for i := start; i <= end; i++ {
+		result = append(result, list[i].Text)
+	}
+	return strings.Join(result, ""), nil
+}
+
+func equalOrLess(a, b *storepb.Position) bool {
+	if a.Line < b.Line {
+		return true
+	}
+	if a.Line == b.Line && a.Column <= b.Column {
+		return true
+	}
+	return false
+}
+
+func equalOrGreater(a, b *storepb.Position) bool {
+	if a.Line > b.Line {
+		return true
+	}
+	if a.Line == b.Line && a.Column >= b.Column {
+		return true
+	}
+	return false
 }
 
 type generator struct {

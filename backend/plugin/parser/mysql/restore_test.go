@@ -10,6 +10,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	"github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 type restoreCase struct {
@@ -43,7 +44,24 @@ func TestRestore(t *testing.T) {
 	for i, t := range tests {
 		result, err := GenerateRestoreSQL(context.Background(), base.RestoreContext{
 			GetDatabaseMetadataFunc: fixedMockDatabaseMetadataGetter,
-		}, t.Input, t.BackupDatabase, t.BackupTable, t.OriginalDatabase, t.OriginalTable)
+		}, t.Input, &store.PriorBackupDetail_Item{
+			SourceTable: &store.PriorBackupDetail_Item_Table{
+				Database: "instances/i1/databases/" + t.OriginalDatabase,
+				Table:    t.OriginalTable,
+			},
+			TargetTable: &store.PriorBackupDetail_Item_Table{
+				Database: "instances/i1/databases/" + t.BackupDatabase,
+				Table:    t.BackupTable,
+			},
+			StartPosition: &store.Position{
+				Line:   1,
+				Column: 1,
+			},
+			EndPosition: &store.Position{
+				Line:   1000000000,
+				Column: 1,
+			},
+		})
 		a.NoError(err)
 
 		if record {
