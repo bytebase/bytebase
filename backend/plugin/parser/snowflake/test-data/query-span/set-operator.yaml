@@ -1,6 +1,6 @@
 - description: Union and Intersect
   statement: SELECT A, B FROM T1 UNION SELECT * FROM T2 INTERSECT SELECT * FROM T3;
-  connectedDatabase: SNOWFLAKE
+  defaultDatabase: SNOWFLAKE
   ignoreCaseSensitive: true
   metadata: |-
     {

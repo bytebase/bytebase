@@ -1,6 +1,6 @@
 - description: Test Case Insensitive
   statement: SELECT * FROM T;
-  connectedDatabase: db
+  defaultDatabase: db
   ignoreCaseSensitive: true
   metadata: |-
     {

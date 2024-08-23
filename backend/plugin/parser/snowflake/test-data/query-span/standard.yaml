@@ -1,6 +1,6 @@
 - description: Alias
   statement: SELECT A AS X, B AS Z, C, T.D FROM T1 T;
-  connectedDatabase: SNOWFLAKE
+  defaultDatabase: SNOWFLAKE
   ignoreCaseSensitive: true
   metadata: |-
     {
@@ -96,7 +96,7 @@
           column: ""
 - description: If do not specify the JOIN type explicitly, the default JOIN type is CROSS JOIN.
   statement: SELECT * FROM T1, T2, T3;
-  connectedDatabase: SNOWFLAKE
+  defaultDatabase: SNOWFLAKE
   ignoreCaseSensitive: true
   metadata: |-
     {
@@ -244,7 +244,7 @@
           column: ""
 - description: Natural Join
   statement: SELECT A, E, F FROM T1 NATURAL JOIN T2 NATURAL JOIN T3;
-  connectedDatabase: SNOWFLAKE
+  defaultDatabase: SNOWFLAKE
   ignoreCaseSensitive: true
   metadata: |-
     {
@@ -343,7 +343,7 @@
           column: ""
 - description: Column name projection
   statement: SELECT A, B FROM T1;
-  connectedDatabase: SNOWFLAKE
+  defaultDatabase: SNOWFLAKE
   ignoreCaseSensitive: true
   metadata: |-
     {
@@ -397,7 +397,7 @@
           column: ""
 - description: Simple select asterisk statement
   statement: SELECT * FROM T1;
-  connectedDatabase: SNOWFLAKE
+  defaultDatabase: SNOWFLAKE
   ignoreCaseSensitive: true
   metadata: |-
     {

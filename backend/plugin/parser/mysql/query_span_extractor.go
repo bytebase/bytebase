@@ -16,8 +16,8 @@ import (
 
 // querySpanExtractor is the extractor to extract the query span from a single statement.
 type querySpanExtractor struct {
-	ctx         context.Context
-	connectedDB string
+	ctx             context.Context
+	defaultDatabase string
 
 	gCtx base.GetQuerySpanContext
 
@@ -42,9 +42,9 @@ type querySpanExtractor struct {
 }
 
 // newQuerySpanExtractor creates a new query span extractor, the databaseMetadata and the ast are in the read guard.
-func newQuerySpanExtractor(connectedDB string, gCtx base.GetQuerySpanContext, ignoreCaseSensitive bool) *querySpanExtractor {
+func newQuerySpanExtractor(defaultDatabase string, gCtx base.GetQuerySpanContext, ignoreCaseSensitive bool) *querySpanExtractor {
 	return &querySpanExtractor{
-		connectedDB:         connectedDB,
+		defaultDatabase:     defaultDatabase,
 		gCtx:                gCtx,
 		ignoreCaseSensitive: ignoreCaseSensitive,
 	}
@@ -67,7 +67,7 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*ba
 	tree := parseResults[0].Tree
 
 	q.ctx = ctx
-	accessTables := getAccessTables(q.connectedDB, tree)
+	accessTables := getAccessTables(q.defaultDatabase, tree)
 	// We do not support simultaneous access to the system table and the user table
 	// because we do not synchronize the schema of the system table.
 	// This causes an error (NOT_FOUND) when using querySpanExtractor.findTableSchema.
@@ -425,8 +425,8 @@ func (q *querySpanExtractor) extractSourceColumnSetFromExpr(ctx antlr.ParserRule
 		// The reason for new extractor is that we still need the current fromFieldList, overriding it is not expected.
 		subqueryExtractor := &querySpanExtractor{
 			ctx: q.ctx,
-			// The connectedDB is the same as the outer query.
-			connectedDB:       q.connectedDB,
+			// The defaultDatabase is the same as the outer query.
+			defaultDatabase:   q.defaultDatabase,
 			gCtx:              q.gCtx,
 			ctes:              q.ctes,
 			outerTableSources: append(q.outerTableSources, q.tableSourceFrom...),
@@ -1283,7 +1283,7 @@ func (q *querySpanExtractor) findTableSchema(databaseName, tableName string) (ba
 	}
 
 	if databaseName == "" {
-		databaseName = q.connectedDB
+		databaseName = q.defaultDatabase
 	}
 
 	var dbSchema *model.DatabaseMetadata
@@ -1385,7 +1385,7 @@ func (q *querySpanExtractor) findTableSchema(databaseName, tableName string) (ba
 }
 
 func (q *querySpanExtractor) getColumnsForView(definition string) ([]base.QuerySpanResult, error) {
-	newQ := newQuerySpanExtractor(q.connectedDB, q.gCtx, q.ignoreCaseSensitive)
+	newQ := newQuerySpanExtractor(q.defaultDatabase, q.gCtx, q.ignoreCaseSensitive)
 	span, err := newQ.getQuerySpan(q.ctx, definition)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get query span for view")
