@@ -258,7 +258,11 @@ func (r *tsqlRewriter) handleSelectOrderByDryRun(ctx tsql.ISelect_order_by_claus
 }
 
 func (r *tsqlRewriter) handleQuerySpecificationDryRun(ctx tsql.IQuery_specificationContext) {
-	r.hasTop = r.hasTop || ctx.Top_clause() != nil
+	if ctx.Top_clause() != nil {
+		r.hasTop = true
+
+		r.overrideTopClause(ctx.Top_clause())
+	}
 }
 
 func (r *tsqlRewriter) handleSelectStatement(ctx tsql.ISelect_statementContext) {
@@ -328,17 +332,7 @@ func (r *tsqlRewriter) handleQuerySpecification(ctx tsql.IQuery_specificationCon
 	if ctx.Top_clause() != nil {
 		r.hasTop = true
 
-		var limit int
-		topCount := ctx.Top_clause().Top_count()
-		if topCount != nil {
-			userLimitText := topCount.GetText()
-			limit, _ = strconv.Atoi(userLimitText)
-		}
-		if limit == 0 || r.limitCount < limit {
-			limit = r.limitCount
-		}
-
-		r.rewriter.ReplaceDefault(ctx.Top_clause().GetStart().GetTokenIndex(), ctx.Top_clause().GetStop().GetTokenIndex(), fmt.Sprintf("TOP %d", limit))
+		r.overrideTopClause(ctx.Top_clause())
 		return
 	}
 
@@ -384,4 +378,18 @@ func (r *tsqlRewriter) handleSelectOrderBy(ctx tsql.ISelect_order_by_clauseConte
 		r.rewriter.InsertAfterDefault(idx, fmt.Sprintf(" FETCH NEXT %d ROWS ONLY", r.limitCount))
 		return
 	}
+}
+
+func (r *tsqlRewriter) overrideTopClause(topClause tsql.ITop_clauseContext) {
+	var limit int
+	topCount := topClause.Top_count()
+	if topCount != nil {
+		userLimitText := topCount.GetText()
+		limit, _ = strconv.Atoi(userLimitText)
+	}
+	if limit == 0 || r.limitCount < limit {
+		limit = r.limitCount
+	}
+
+	r.rewriter.ReplaceDefault(topClause.GetStart().GetTokenIndex(), topClause.GetStop().GetTokenIndex(), fmt.Sprintf("TOP %d", limit))
 }

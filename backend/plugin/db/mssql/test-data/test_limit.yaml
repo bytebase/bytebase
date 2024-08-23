@@ -232,13 +232,13 @@
     FROM
         sales.customers;
 - stmt: |
-    SELECT TOP 10
+    SELECT TOP 123
         first_name,
         last_name
     FROM
         sales.staffs
     UNION ALL
-    SELECT TOP 10
+    SELECT TOP 321
         first_name,
         last_name
     FROM
