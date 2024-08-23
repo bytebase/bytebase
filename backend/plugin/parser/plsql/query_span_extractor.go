@@ -16,9 +16,9 @@ import (
 )
 
 type querySpanExtractor struct {
-	ctx               context.Context
-	gCtx              base.GetQuerySpanContext
-	connectedDatabase string
+	ctx             context.Context
+	gCtx            base.GetQuerySpanContext
+	defaultDatabase string
 
 	ctes []*base.PseudoTable
 
@@ -28,8 +28,8 @@ type querySpanExtractor struct {
 
 func newQuerySpanExtractor(connectionDatabase string, gCtx base.GetQuerySpanContext) *querySpanExtractor {
 	return &querySpanExtractor{
-		connectedDatabase: connectionDatabase,
-		gCtx:              gCtx,
+		defaultDatabase: connectionDatabase,
+		gCtx:            gCtx,
 	}
 }
 
@@ -68,7 +68,7 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string)
 		return nil, nil
 	}
 
-	resources, err := ExtractResourceList(q.connectedDatabase, "", statement)
+	resources, err := ExtractResourceList(q.defaultDatabase, "", statement)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to extract resource list from statement: %s", statement)
 	}
@@ -94,7 +94,7 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string)
 		if errors.As(err, &resourceNotFound) {
 			if len(columnSet) == 0 {
 				columnSet[base.ColumnResource{
-					Database: q.connectedDatabase,
+					Database: q.defaultDatabase,
 				}] = true
 			}
 			return &base.QuerySpan{
@@ -123,7 +123,7 @@ func (q *querySpanExtractor) existsTableMetadata(resource base.SchemaResource) b
 	}
 	database := resource.Database
 	if database == "" {
-		database = q.connectedDatabase
+		database = q.defaultDatabase
 	}
 	meta, err := q.getDatabaseMetadata(database)
 	if err != nil {
@@ -352,7 +352,7 @@ func (q *querySpanExtractor) plsqlExtractQueryBlock(ctx plsql.IQuery_blockContex
 				if !find {
 					return nil, &parsererror.ResourceNotFoundError{
 						Err:      errors.Errorf("failed to find table to calculate asterisk"),
-						Database: &q.connectedDatabase,
+						Database: &q.defaultDatabase,
 						Table:    &tableName,
 					}
 				}
@@ -459,7 +459,7 @@ func (q *querySpanExtractor) plsqlExtractSourceColumnSetFromExpression(ctx antlr
 		subqueryExtractor := &querySpanExtractor{
 			ctx:               q.ctx,
 			gCtx:              q.gCtx,
-			connectedDatabase: q.connectedDatabase,
+			defaultDatabase:   q.defaultDatabase,
 			outerTableSources: append(q.outerTableSources, q.tableSourcesFrom...),
 			tableSourcesFrom:  []base.TableSource{},
 		}
@@ -482,7 +482,7 @@ func (q *querySpanExtractor) plsqlExtractSourceColumnSetFromExpression(ctx antlr
 		subqueryExtractor := &querySpanExtractor{
 			ctx:               q.ctx,
 			gCtx:              q.gCtx,
-			connectedDatabase: q.connectedDatabase,
+			defaultDatabase:   q.defaultDatabase,
 			outerTableSources: append(q.outerTableSources, q.tableSourcesFrom...),
 			tableSourcesFrom:  []base.TableSource{},
 		}
@@ -662,7 +662,7 @@ func (q *querySpanExtractor) plsqlExtractSourceColumnSetFromExpression(ctx antlr
 		subqueryExtractor := &querySpanExtractor{
 			ctx:               q.ctx,
 			gCtx:              q.gCtx,
-			connectedDatabase: q.connectedDatabase,
+			defaultDatabase:   q.defaultDatabase,
 			outerTableSources: append(q.outerTableSources, q.tableSourcesFrom...),
 			tableSourcesFrom:  []base.TableSource{},
 		}
@@ -1101,7 +1101,7 @@ func (q *querySpanExtractor) mergeJoinTableSource(ctx plsql.IJoin_clauseContext,
 		usingMap := make(map[string]bool)
 		for _, part := range ctx.AllJoin_using_part() {
 			for _, column := range part.Paren_column_list().Column_list().AllColumn_name() {
-				_, _, name, err := plsqlNormalizeColumnName(q.connectedDatabase, column)
+				_, _, name, err := plsqlNormalizeColumnName(q.defaultDatabase, column)
 				if err != nil {
 					return nil, err
 				}
@@ -1222,7 +1222,7 @@ func (q *querySpanExtractor) plsqlExtractDmlTableExpressionClause(ctx plsql.IDml
 
 	tableViewName := ctx.Tableview_name()
 	if tableViewName != nil {
-		dbLink, schema, table := NormalizeTableViewName(q.connectedDatabase, tableViewName)
+		dbLink, schema, table := NormalizeTableViewName(q.defaultDatabase, tableViewName)
 		if len(dbLink) != 0 {
 			// Use the user in db link as default instead of the connected database.
 			dbLink, schema, table = NormalizeTableViewName("", tableViewName)
@@ -1268,7 +1268,7 @@ func (q *querySpanExtractor) plsqlFindTableSchema(dbLink []string, schemaName, t
 	//
 	// This query has two CTE can be called `tt2`, and the FROM clause 'from tt2' uses the closer tt2 CTE.
 	// This is the reason we loop the slice in reversed order.
-	if schemaName == q.connectedDatabase {
+	if schemaName == q.defaultDatabase {
 		for i := len(q.ctes) - 1; i >= 0; i-- {
 			table := q.ctes[i]
 			if table.Name == tableName {
@@ -1335,8 +1335,8 @@ func (q *querySpanExtractor) findTableSchemaInMetadata(instanceID string, dbSche
 	}
 
 	if view != nil && view.Definition != "" {
-		connectedDatabase := databaseName
-		columns, err := q.getColumnsForView(instanceID, connectedDatabase, view.Definition)
+		defaultDatabase := databaseName
+		columns, err := q.getColumnsForView(instanceID, defaultDatabase, view.Definition)
 		if err != nil {
 			return nil, err
 		}
@@ -1347,8 +1347,8 @@ func (q *querySpanExtractor) findTableSchemaInMetadata(instanceID string, dbSche
 	}
 
 	if materializedView != nil && materializedView.Definition != "" {
-		connectedDatabase := databaseName
-		columns, err := q.getColumnsForMaterializedView(instanceID, connectedDatabase, materializedView.Definition)
+		defaultDatabase := databaseName
+		columns, err := q.getColumnsForMaterializedView(instanceID, defaultDatabase, materializedView.Definition)
 		if err != nil {
 			return nil, err
 		}
@@ -1360,14 +1360,14 @@ func (q *querySpanExtractor) findTableSchemaInMetadata(instanceID string, dbSche
 	return nil, nil
 }
 
-func (q *querySpanExtractor) getColumnsForView(instanceID, connectedDatabase, definition string) ([]base.QuerySpanResult, error) {
+func (q *querySpanExtractor) getColumnsForView(instanceID, defaultDatabase, definition string) ([]base.QuerySpanResult, error) {
 	newContext := base.GetQuerySpanContext{
 		InstanceID:                    instanceID,
 		GetDatabaseMetadataFunc:       q.gCtx.GetDatabaseMetadataFunc,
 		ListDatabaseNamesFunc:         q.gCtx.ListDatabaseNamesFunc,
 		GetLinkedDatabaseMetadataFunc: q.gCtx.GetLinkedDatabaseMetadataFunc,
 	}
-	newQ := newQuerySpanExtractor(connectedDatabase, newContext)
+	newQ := newQuerySpanExtractor(defaultDatabase, newContext)
 	span, err := newQ.getQuerySpan(q.ctx, definition)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get query span for view definition: %s", definition)
@@ -1375,14 +1375,14 @@ func (q *querySpanExtractor) getColumnsForView(instanceID, connectedDatabase, de
 	return span.Results, nil
 }
 
-func (q *querySpanExtractor) getColumnsForMaterializedView(instanceID, connectedDatabase, definition string) ([]base.QuerySpanResult, error) {
+func (q *querySpanExtractor) getColumnsForMaterializedView(instanceID, defaultDatabase, definition string) ([]base.QuerySpanResult, error) {
 	newContext := base.GetQuerySpanContext{
 		InstanceID:                    instanceID,
 		GetDatabaseMetadataFunc:       q.gCtx.GetDatabaseMetadataFunc,
 		ListDatabaseNamesFunc:         q.gCtx.ListDatabaseNamesFunc,
 		GetLinkedDatabaseMetadataFunc: q.gCtx.GetLinkedDatabaseMetadataFunc,
 	}
-	newQ := newQuerySpanExtractor(connectedDatabase, newContext)
+	newQ := newQuerySpanExtractor(defaultDatabase, newContext)
 	span, err := newQ.getQuerySpan(q.ctx, definition)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get query span for materialized view definition: %s", definition)

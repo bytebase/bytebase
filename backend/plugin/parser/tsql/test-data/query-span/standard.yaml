@@ -1,6 +1,6 @@
 - description: Test for builtin functions
   statement: SELECT NEWID() as uuid;
-  connectedDatabase: db
+  defaultDatabase: db
   ignoreCaseSensitive: true
   metadata: |-
     {
@@ -37,7 +37,7 @@
     sourcecolumns: []
 - description: Test for view
   statement: SELECT * FROM MyView1;
-  connectedDatabase: db
+  defaultDatabase: db
   ignoreCaseSensitive: true
   metadata: |-
     {
@@ -91,7 +91,7 @@
           column: ""
 - description: Simple select asterisk statement
   statement: SELECT * FROM MyTable1;
-  connectedDatabase: db
+  defaultDatabase: db
   ignoreCaseSensitive: true
   metadata: |-
     {
@@ -139,7 +139,7 @@
           column: ""
 - description: Alias table source
   statement: SELECT T1.* FROM MyTable1 AS T1;
-  connectedDatabase: db
+  defaultDatabase: db
   ignoreCaseSensitive: true
   metadata: |-
     {
@@ -187,7 +187,7 @@
           column: ""
 - description: Subquery in Select target list
   statement: SELECT (SELECT MAX(d) FROM MyTable2) FROM MyTable1;
-  connectedDatabase: db
+  defaultDatabase: db
   ignoreCaseSensitive: true
   metadata: |-
     {
@@ -244,7 +244,7 @@
           column: ""
 - description: Union
   statement: SELECT a FROM MyTable1 UNION SELECT c FROM MyTable2;
-  connectedDatabase: db
+  defaultDatabase: db
   ignoreCaseSensitive: true
   metadata: |-
     {
@@ -306,7 +306,7 @@
           column: ""
 - description: Join
   statement: SELECT a, b, c, d FROM MyTable1 JOIN MyTable2 ON MyTable1.a = MyTable2.d;
-  connectedDatabase: db
+  defaultDatabase: db
   ignoreCaseSensitive: true
   metadata: |-
     {
@@ -384,7 +384,7 @@
           column: ""
 - description: Table Source List
   statement: SELECT a, b, c, d FROM MyTable1, MyTable2;
-  connectedDatabase: db
+  defaultDatabase: db
   ignoreCaseSensitive: true
   metadata: |-
     {
@@ -462,7 +462,7 @@
           column: ""
 - description: Test for subquery in from cluase with as alias.
   statement: SELECT tt.a, b FROM (SELECT * FROM MyTable1) AS tt;
-  connectedDatabase: db
+  defaultDatabase: db
   ignoreCaseSensitive: true
   metadata: |-
     {
@@ -521,7 +521,7 @@
           column: ""
 - description: Test for CTE
   statement: WITH tt1(aa, bb) AS ( SELECT a, b FROM MyTable1 ) SELECT tt1.aa, bb FROM tt1;
-  connectedDatabase: db
+  defaultDatabase: db
   ignoreCaseSensitive: true
   metadata: |-
     {
@@ -592,7 +592,7 @@
       SELECT c FROM MyTable2
     )
     SELECT * FROM tt1 JOIN tt2 ON tt1.aa = tt2.cc;
-  connectedDatabase: db
+  defaultDatabase: db
   ignoreCaseSensitive: true
   metadata: |-
     {
@@ -679,7 +679,7 @@
       SELECT c1 * c2, c2 + c1, c3 * c2, n + 1 FROM cte_01 WHERE n < 5
     )
     SELECT * FROM cte_01;
-  connectedDatabase: db
+  defaultDatabase: db
   ignoreCaseSensitive: true
   metadata: |-
     {
