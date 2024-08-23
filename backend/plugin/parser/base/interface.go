@@ -39,7 +39,7 @@ type GetQuerySpanFunc func(ctx context.Context, gCtx GetQuerySpanContext, statem
 // TransformDMLToSelectFunc is the interface of transforming DML statements to SELECT statements.
 type TransformDMLToSelectFunc func(ctx context.Context, tCtx TransformContext, statement string, sourceDatabase string, targetDatabase string, tablePrefix string) ([]BackupStatement, error)
 
-type GenerateRestoreSQLFunc func(ctx context.Context, rCtx RestoreContext, statement string, backupDatabase string, backupTable string, originalDatabase string, originalTable string) (string, error)
+type GenerateRestoreSQLFunc func(ctx context.Context, rCtx RestoreContext, statement string, backupItem *storepb.PriorBackupDetail_Item) (string, error)
 
 func RegisterQueryValidator(engine storepb.Engine, f ValidateSQLForEditorFunc) {
 	mux.Lock()
@@ -225,12 +225,12 @@ func RegisterGenerateRestoreSQL(engine storepb.Engine, f GenerateRestoreSQLFunc)
 	generateRestoreSQL[engine] = f
 }
 
-func GenerateRestoreSQL(ctx context.Context, engine storepb.Engine, rCtx RestoreContext, statement string, backupDatabase string, backupTable string, originalDatabase string, originalTable string) (string, error) {
+func GenerateRestoreSQL(ctx context.Context, engine storepb.Engine, rCtx RestoreContext, statement string, backupItem *storepb.PriorBackupDetail_Item) (string, error) {
 	f, ok := generateRestoreSQL[engine]
 	if !ok {
 		return "", errors.Errorf("engine %s is not supported", engine)
 	}
-	return f(ctx, rCtx, statement, backupDatabase, backupTable, originalDatabase, originalTable)
+	return f(ctx, rCtx, statement, backupItem)
 }
 
 type ChangeSummary struct {

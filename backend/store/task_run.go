@@ -113,6 +113,7 @@ func (s *Store) ListTaskRunsV2(ctx context.Context, find *FindTaskRunMessage) ([
 			task_run.started_ts,
 			task_run.code,
 			task_run.result,
+			task_run.sheet_id,
 			task.pipeline_id,
 			task.stage_id,
 			project.resource_id
@@ -144,6 +145,7 @@ func (s *Store) ListTaskRunsV2(ctx context.Context, find *FindTaskRunMessage) ([
 			&taskRun.StartedTs,
 			&taskRun.Code,
 			&taskRun.Result,
+			&taskRun.SheetUID,
 			&taskRun.PipelineUID,
 			&taskRun.StageUID,
 			&taskRun.ProjectID,

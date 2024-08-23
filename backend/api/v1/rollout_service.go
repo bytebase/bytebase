@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"slices"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/google/go-cmp/cmp"
@@ -28,6 +29,7 @@ import (
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -790,6 +792,75 @@ func (s *RolloutService) BatchCancelTaskRuns(ctx context.Context, request *v1pb.
 	})
 
 	return &v1pb.BatchCancelTaskRunsResponse{}, nil
+}
+
+func (s *RolloutService) PreviewTaskRunRollback(ctx context.Context, request *v1pb.PreviewTaskRunRollbackRequest) (*v1pb.PreviewTaskRunRollbackResponse, error) {
+	_, _, _, taskUID, taskRunUID, err := common.GetProjectIDRolloutIDStageIDTaskIDTaskRunID(request.Name)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "failed to get task run uid, error: %v", err)
+	}
+
+	taskRuns, err := s.store.ListTaskRunsV2(ctx, &store.FindTaskRunMessage{
+		UID: &taskRunUID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to list task runs, error: %v", err)
+	}
+	if len(taskRuns) == 0 {
+		return nil, status.Errorf(codes.NotFound, "task run %v not found", taskRunUID)
+	}
+	if len(taskRuns) > 1 {
+		return nil, status.Errorf(codes.Internal, "found multiple task runs with the same uid %v", taskRunUID)
+	}
+
+	taskRun := taskRuns[0]
+
+	if taskRun.Status != api.TaskRunDone {
+		return nil, status.Errorf(codes.InvalidArgument, "task run %v is not done", taskRun.Name)
+	}
+
+	if taskRun.ResultProto == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "task run %v has no result", taskRun.Name)
+	}
+
+	backupDetail := taskRun.ResultProto.PriorBackupDetail
+	if backupDetail == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "task run %v has no rollback", taskRun.Name)
+	}
+
+	task, err := s.store.GetTaskV2ByID(ctx, taskUID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get task, error: %v", err)
+	}
+
+	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get instance, error: %v", err)
+	}
+
+	if taskRun.SheetUID == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "task run %v has no sheet", taskRun.Name)
+	}
+	statements, err := s.store.GetSheetStatementByID(ctx, *taskRun.SheetUID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get sheet statements, error: %v", err)
+	}
+
+	var results []string
+	for _, item := range backupDetail.Items {
+		restore, err := base.GenerateRestoreSQL(ctx, instance.Engine, base.RestoreContext{
+			InstanceID:              instance.ResourceID,
+			GetDatabaseMetadataFunc: BuildGetDatabaseMetadataFunc(s.store),
+		}, statements, item)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to generate restore sql, error: %v", err)
+		}
+		results = append(results, restore)
+	}
+
+	return &v1pb.PreviewTaskRunRollbackResponse{
+		Statement: strings.Join(results, "\n"),
+	}, nil
 }
 
 // diffSpecs check if there are any specs removed, added or updated in the new plan.
