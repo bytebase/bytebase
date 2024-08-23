@@ -14,6 +14,10 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
+const (
+	maxCommentLength = 1000
+)
+
 func init() {
 	base.RegisterGenerateRestoreSQL(storepb.Engine_MYSQL, GenerateRestoreSQL)
 }
@@ -38,10 +42,14 @@ func GenerateRestoreSQL(ctx context.Context, rCtx base.RestoreContext, statement
 	// 1. The statement is a single SQL statement.
 	// 2. The statement is a multi SQL statement, but all SQL statements' backup is in the same table.
 	//    So we only need to restore the first SQL statement.
-	return doGenerate(ctx, rCtx, originalSQL, parseResult[0], backupItem)
+	sqlForComment, truncated := common.TruncateString(originalSQL, maxCommentLength)
+	if truncated {
+		sqlForComment += "..."
+	}
+	return doGenerate(ctx, rCtx, sqlForComment, parseResult[0], backupItem)
 }
 
-func doGenerate(ctx context.Context, rCtx base.RestoreContext, originalSQL string, parseResult *ParseResult, backupItem *storepb.PriorBackupDetail_Item) (string, error) {
+func doGenerate(ctx context.Context, rCtx base.RestoreContext, sqlForComment string, parseResult *ParseResult, backupItem *storepb.PriorBackupDetail_Item) (string, error) {
 	_, sourceDatabase, err := common.GetInstanceDatabaseID(backupItem.SourceTable.Database)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get source database ID for %s", backupItem.SourceTable.Database)
@@ -73,7 +81,7 @@ func doGenerate(ctx context.Context, rCtx base.RestoreContext, originalSQL strin
 	if g.err != nil {
 		return "", g.err
 	}
-	if _, err := fmt.Fprintf(&buf, "/*\nOriginal SQL:\n%s\n*/\n%s", originalSQL, g.result); err != nil {
+	if _, err := fmt.Fprintf(&buf, "/*\nOriginal SQL:\n%s\n*/\n%s", sqlForComment, g.result); err != nil {
 		return "", err
 	}
 	return buf.String(), nil
