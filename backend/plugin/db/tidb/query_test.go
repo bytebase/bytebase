@@ -33,16 +33,19 @@ func TestGetStatementWithResultLimitOfTiDB(t *testing.T) {
 			want:  "SELECT * FROM `t1` INTERSECT SELECT * FROM `t2` LIMIT 10",
 		},
 		{
-			stmt: "SELECT * FROM t LIMIT 5;",
-			// If the statement already has limit clause, we will return the original statement.
+			stmt:  "SELECT * FROM t LIMIT 5;",
 			count: 10,
-			want:  "SELECT * FROM t LIMIT 5;",
+			want:  "SELECT * FROM `t` LIMIT 5",
+		},
+		{
+			stmt:  "SELECT * FROM t LIMIT 123;",
+			count: 10,
+			want:  "SELECT * FROM `t` LIMIT 10",
 		},
 	}
 
 	for _, tc := range testCases {
-		got, err := getStatementWithResultLimitForTiDB(tc.stmt, tc.count)
-		require.NoError(t, err, tc.stmt)
+		got := getStatementWithResultLimit(tc.stmt, tc.count)
 		require.Equal(t, tc.want, got, tc.stmt)
 	}
 }
