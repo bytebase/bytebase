@@ -9065,9 +9065,6 @@ components:
                 region:
                     type: string
                     description: region is the location of where the DB is, works for AWS RDS. For example, us-east-1.
-                accountId:
-                    type: string
-                    description: account_id is used by Databricks.
                 warehouseId:
                     type: string
                     description: warehouse_id is used by Databricks.

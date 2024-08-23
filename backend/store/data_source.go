@@ -52,7 +52,6 @@ type DataSourceMessage struct {
 	ReplicaSet               string
 	DirectConnection         bool
 	Region                   string
-	AccountID                string
 	WarehouseID              string
 	UseSSL                   bool
 	RedisType                storepb.DataSourceOptions_RedisType
@@ -148,7 +147,6 @@ type UpdateDataSourceMessage struct {
 	RemoveSASLConfig  bool
 	DirectConnection  *bool
 	Region            *string
-	AccountID         *string
 	WarehouseID       *string
 	UseSSL            *bool
 
@@ -441,9 +439,6 @@ func (s *Store) UpdateDataSourceV2(ctx context.Context, patch *UpdateDataSourceM
 	}
 	if v := patch.Region; v != nil {
 		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('region', $%d::TEXT)", len(args)+1)), append(args, *v)
-	}
-	if v := patch.AccountID; v != nil {
-		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('accountId', $%d::TEXT)", len(args)+1)), append(args, *v)
 	}
 	if v := patch.WarehouseID; v != nil {
 		optionSet, args = append(optionSet, fmt.Sprintf("jsonb_build_object('warehouseId', $%d::TEXT)", len(args)+1)), append(args, *v)
