@@ -4,8 +4,8 @@
     tabindex="0"
   >
     <NoPermissionPlaceholder
-      class="mx-4"
       v-if="permissionStore.onlyWorkspaceMember && !isSelf"
+      class="mx-4"
     />
     <div v-else>
       <!-- Profile header -->
