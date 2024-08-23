@@ -54,7 +54,7 @@
                 !disallowRequestQuery &&
                 resultSet.status === Status.PERMISSION_DENIED
               "
-              :database="database ?? defaultDatabase"
+              :database="database ?? connectedDatabase"
             />
             <SyncDatabaseButton
               v-else-if="
@@ -63,7 +63,7 @@
               "
               :type="'primary'"
               :text="true"
-              :database="database ?? defaultDatabase"
+              :database="database ?? connectedDatabase"
             />
           </template>
         </ErrorView>
@@ -149,7 +149,7 @@ const props = defineProps({
 
 const { t } = useI18n();
 const policyStore = usePolicyV1Store();
-const { instance, database: defaultDatabase } =
+const { instance, database: connectedDatabase } =
   useConnectionOfCurrentSQLEditorTab();
 const disallowRequestQuery = useAppFeature(
   "bb.feature.sql-editor.disallow-request-query"
