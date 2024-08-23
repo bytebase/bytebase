@@ -3,6 +3,7 @@ package starrocks
 import (
 	"fmt"
 	"log/slog"
+	"strconv"
 
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
@@ -25,8 +26,8 @@ func getStatementWithResultLimit(stmt string, limit int) string {
 }
 
 // singleStatement must be a selectStatement for mysql.
-func getStatementWithResultLimitForMySQL(singleStatement string, limitCount int) (string, error) {
-	list, err := mysqlparser.ParseMySQL(singleStatement)
+func getStatementWithResultLimitForMySQL(stmt string, limitCount int) (string, error) {
+	list, err := mysqlparser.ParseMySQL(stmt)
 	if err != nil {
 		return "", err
 	}
@@ -40,7 +41,7 @@ func getStatementWithResultLimitForMySQL(singleStatement string, limitCount int)
 		listener.rewriter = *antlr.NewTokenStreamRewriter(stmt.Tokens)
 		antlr.ParseTreeWalkerDefault.Walk(listener, stmt.Tree)
 		if listener.err != nil {
-			return "", errors.Wrapf(listener.err, "statement: %s", singleStatement)
+			return "", errors.Wrapf(listener.err, "statement: %s", stmt)
 		}
 	}
 	return listener.rewriter.GetTextDefault(), nil
@@ -60,8 +61,17 @@ func (r *mysqlRewriter) EnterQueryExpression(ctx *mysql.QueryExpressionContext) 
 		return
 	}
 	r.outerMostQuery = false
-	if ctx.LimitClause() != nil {
+	limitCluase := ctx.LimitClause()
+	if limitCluase != nil {
 		// limit clause already exists.
+		userLimitText := limitCluase.LimitOptions().GetText()
+		limit, err := strconv.Atoi(userLimitText)
+		if err == nil {
+			if r.limitCount < limit {
+				limit = r.limitCount
+			}
+		}
+		r.rewriter.ReplaceDefault(limitCluase.GetStart().GetTokenIndex(), limitCluase.GetStop().GetTokenIndex(), fmt.Sprintf("LIMIT %d", limit))
 		return
 	}
 

@@ -16,7 +16,7 @@ import (
 )
 
 func getStatementWithResultLimit(stmt string, limit int) string {
-	stmt, err := getStatementWithResultLimitForMySQL(stmt, limit)
+	stmt, err := getStatementWithResultLimitInline(stmt, limit)
 	if err != nil {
 		slog.Error("fail to add limit clause", "statement", stmt, log.BBError(err))
 		// MySQL 5.7 doesn't support WITH clause.
@@ -25,9 +25,8 @@ func getStatementWithResultLimit(stmt string, limit int) string {
 	return stmt
 }
 
-// singleStatement must be a selectStatement for mysql.
-func getStatementWithResultLimitForMySQL(singleStatement string, limitCount int) (string, error) {
-	list, err := mysqlparser.ParseMySQL(singleStatement)
+func getStatementWithResultLimitInline(stmt string, limitCount int) (string, error) {
+	list, err := mysqlparser.ParseMySQL(stmt)
 	if err != nil {
 		return "", err
 	}
@@ -41,7 +40,7 @@ func getStatementWithResultLimitForMySQL(singleStatement string, limitCount int)
 		listener.rewriter = *antlr.NewTokenStreamRewriter(stmt.Tokens)
 		antlr.ParseTreeWalkerDefault.Walk(listener, stmt.Tree)
 		if listener.err != nil {
-			return "", errors.Wrapf(listener.err, "statement: %s", singleStatement)
+			return "", errors.Wrapf(listener.err, "statement: %s", stmt)
 		}
 	}
 	return listener.rewriter.GetTextDefault(), nil
