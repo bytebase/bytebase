@@ -3,6 +3,7 @@ package mssql
 import (
 	"database/sql"
 	"fmt"
+	"log/slog"
 	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
@@ -14,6 +15,8 @@ import (
 	mssqldb "github.com/microsoft/go-mssqldb"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	tsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
@@ -170,8 +173,16 @@ func makeValueByTypeName(typeName string) any {
 	return new(sql.NullString)
 }
 
-// singleStatement must be a selectStatement for mssql.
-func getMSSQLStatementWithResultLimit(singleStatement string, limitCount int) (string, error) {
+func getStatementWithResultLimit(statement string, limit int) string {
+	stmt, err := getStatementWithResultLimitInline(statement, limit)
+	if err != nil {
+		slog.Error("fail to add limit clause", slog.String("statement", statement), log.BBError(err))
+		return fmt.Sprintf("WITH result AS (%s) SELECT TOP %d * FROM result;", util.TrimStatement(statement), limit)
+	}
+	return stmt
+}
+
+func getStatementWithResultLimitInline(singleStatement string, limitCount int) (string, error) {
 	result, err := tsqlparser.ParseTSQL(singleStatement)
 	if err != nil {
 		return "", err

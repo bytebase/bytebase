@@ -16,13 +16,13 @@ import (
 )
 
 func getStatementWithResultLimit(statement string, limit int) string {
-	statement, err := getStatementWithResultLimitInline(statement, limit)
+	stmt, err := getStatementWithResultLimitInline(statement, limit)
 	if err != nil {
-		slog.Error("fail to add limit clause", "statement", statement, log.BBError(err))
+		slog.Error("fail to add limit clause", slog.String("statement", statement), log.BBError(err))
 		// MySQL 5.7 doesn't support WITH clause.
-		statement = fmt.Sprintf("SELECT * FROM (%s) result LIMIT %d;", util.TrimStatement(statement), limit)
+		return fmt.Sprintf("SELECT * FROM (%s) result LIMIT %d;", util.TrimStatement(statement), limit)
 	}
-	return statement
+	return stmt
 }
 
 func getStatementWithResultLimitInline(statement string, limitCount int) (string, error) {

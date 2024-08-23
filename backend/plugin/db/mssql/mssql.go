@@ -259,12 +259,7 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 	for _, singleSQL := range singleSQLs {
 		statement := singleSQL.Text
 		if !isExplain && queryContext.Limit > 0 {
-			stmt, err := getMSSQLStatementWithResultLimit(statement, queryContext.Limit)
-			if err != nil {
-				slog.Error("fail to add limit clause", "statement", statement, log.BBError(err))
-				stmt = fmt.Sprintf("WITH result AS (%s) SELECT TOP %d * FROM result;", util.TrimStatement(stmt), queryContext.Limit)
-			}
-			statement = stmt
+			statement = getStatementWithResultLimit(statement, queryContext.Limit)
 		}
 
 		var allQuery bool

@@ -29,7 +29,7 @@ func runLimitTest(t *testing.T, file string, record bool) {
 	require.NoError(t, err)
 
 	for i, tc := range testCases {
-		want, err := getMSSQLStatementWithResultLimit(tc.Stmt, tc.Count)
+		want, err := getStatementWithResultLimitInline(tc.Stmt, tc.Count)
 		require.NoError(t, err, tc.Stmt)
 		if record {
 			testCases[i].Want = want

@@ -290,11 +290,7 @@ func (driver *Driver) getStatementWithResultLimit(stmt string, queryContext db.Q
 	case versionNumber < dbVersion12:
 		return getStatementWithResultLimitFor11g(stmt, queryContext.Limit), nil
 	default:
-		res, err := getStatementWithResultLimitFor12c(stmt, queryContext.Limit)
-		if err != nil {
-			return "", err
-		}
-		return res, nil
+		return getStatementWithResultLimit(stmt, queryContext.Limit), nil
 	}
 }
 
