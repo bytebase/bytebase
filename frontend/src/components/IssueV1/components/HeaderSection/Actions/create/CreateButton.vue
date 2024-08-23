@@ -165,7 +165,7 @@ const doCreateIssue = async () => {
 
     await emitIssueCreateWindowEvent(composedIssue);
     nextTick(() => {
-      router.push({
+      router.replace({
         name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
         params: {
           projectId: extractProjectResourceName(composedIssue.project),
