@@ -6,8 +6,8 @@
       <div class="flex flex-col">
         <div class="flex flex-row items-center space-x-2">
           <span
-            class="truncate max-w-[10em]"
             v-if="permissionStore.onlyWorkspaceMember"
+            class="truncate max-w-[10em]"
           >
             {{ user.title }}
           </span>
