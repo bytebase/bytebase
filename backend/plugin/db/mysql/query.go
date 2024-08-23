@@ -62,6 +62,7 @@ func (r *mysqlRewriter) EnterQueryExpression(ctx *mysql.QueryExpressionContext) 
 	r.outerMostQuery = false
 	if ctx.LimitClause() != nil {
 		// limit clause already exists.
+		r.rewriter.ReplaceDefault(ctx.LimitClause().GetStart().GetTokenIndex(), ctx.LimitClause().GetStop().GetTokenIndex(), fmt.Sprintf("LIMIT %d", r.limitCount))
 		return
 	}
 
