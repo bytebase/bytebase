@@ -17,6 +17,7 @@ func TestExtractChangedResources(t *testing.T) {
 						DROP TABLE t1;
 						ALTER TABLE t1 ADD COLUMN c1 INT;
 						ALTER TABLE t1 RENAME TO t2;
+						COMMENT ON TABLE t1 IS 'comment';
 						INSERT INTO t1 (c1) VALUES (1), (5);
 						UPDATE t1 SET c1 = 5;
 			`
