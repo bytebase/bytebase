@@ -12031,6 +12031,9 @@ components:
                     allOf:
                         - $ref: '#/components/schemas/GoogleProtobufValue'
                     description: value_value is used for Spanner and TUPLE ARRAY MAP in Clickhouse only.
+                timestampValue:
+                    type: string
+                    format: date-time
         RunPlanChecksRequest:
             required:
                 - name

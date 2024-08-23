@@ -136,6 +136,7 @@ export interface RowValue {
     | undefined;
   /** value_value is used for Spanner and TUPLE ARRAY MAP in Clickhouse only. */
   valueValue?: any | undefined;
+  timestampValue?: Date | undefined;
 }
 
 export interface Advice {
@@ -1377,6 +1378,7 @@ function createBaseRowValue(): RowValue {
     uint32Value: undefined,
     uint64Value: undefined,
     valueValue: undefined,
+    timestampValue: undefined,
   };
 }
 
@@ -1414,6 +1416,9 @@ export const RowValue = {
     }
     if (message.valueValue !== undefined) {
       Value.encode(Value.wrap(message.valueValue), writer.uint32(90).fork()).ldelim();
+    }
+    if (message.timestampValue !== undefined) {
+      Timestamp.encode(toTimestamp(message.timestampValue), writer.uint32(98).fork()).ldelim();
     }
     return writer;
   },
@@ -1502,6 +1507,13 @@ export const RowValue = {
 
           message.valueValue = Value.unwrap(Value.decode(reader, reader.uint32()));
           continue;
+        case 12:
+          if (tag !== 98) {
+            break;
+          }
+
+          message.timestampValue = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1524,6 +1536,7 @@ export const RowValue = {
       uint32Value: isSet(object.uint32Value) ? globalThis.Number(object.uint32Value) : undefined,
       uint64Value: isSet(object.uint64Value) ? Long.fromValue(object.uint64Value) : undefined,
       valueValue: isSet(object?.valueValue) ? object.valueValue : undefined,
+      timestampValue: isSet(object.timestampValue) ? fromJsonTimestamp(object.timestampValue) : undefined,
     };
   },
 
@@ -1562,6 +1575,9 @@ export const RowValue = {
     if (message.valueValue !== undefined) {
       obj.valueValue = message.valueValue;
     }
+    if (message.timestampValue !== undefined) {
+      obj.timestampValue = message.timestampValue.toISOString();
+    }
     return obj;
   },
 
@@ -1585,6 +1601,7 @@ export const RowValue = {
       ? Long.fromValue(object.uint64Value)
       : undefined;
     message.valueValue = object.valueValue ?? undefined;
+    message.timestampValue = object.timestampValue ?? undefined;
     return message;
   },
 };
