@@ -3,6 +3,7 @@ package mysql
 import (
 	"fmt"
 	"log/slog"
+	"strconv"
 
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
@@ -60,9 +61,17 @@ func (r *mysqlRewriter) EnterQueryExpression(ctx *mysql.QueryExpressionContext) 
 		return
 	}
 	r.outerMostQuery = false
-	if ctx.LimitClause() != nil {
+	limitCluase := ctx.LimitClause()
+	if limitCluase != nil {
 		// limit clause already exists.
-		r.rewriter.ReplaceDefault(ctx.LimitClause().GetStart().GetTokenIndex(), ctx.LimitClause().GetStop().GetTokenIndex(), fmt.Sprintf("LIMIT %d", r.limitCount))
+		userLimitText := limitCluase.LimitOptions().GetText()
+		limit, err := strconv.Atoi(userLimitText)
+		if err == nil {
+			if r.limitCount < limit {
+				limit = r.limitCount
+			}
+		}
+		r.rewriter.ReplaceDefault(limitCluase.GetStart().GetTokenIndex(), limitCluase.GetStop().GetTokenIndex(), fmt.Sprintf("LIMIT %d", limit))
 		return
 	}
 
