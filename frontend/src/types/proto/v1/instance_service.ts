@@ -532,8 +532,6 @@ export interface DataSource {
   directConnection: boolean;
   /** region is the location of where the DB is, works for AWS RDS. For example, us-east-1. */
   region: string;
-  /** account_id is used by Databricks. */
-  accountId: string;
   /** warehouse_id is used by Databricks. */
   warehouseId: string;
   /** master_name is the master name used by connecting redis-master via redis sentinel. */
@@ -2381,7 +2379,6 @@ function createBaseDataSource(): DataSource {
     replicaSet: "",
     directConnection: false,
     region: "",
-    accountId: "",
     warehouseId: "",
     masterName: "",
     masterUsername: "",
@@ -2475,9 +2472,6 @@ export const DataSource = {
     }
     if (message.region !== "") {
       writer.uint32(218).string(message.region);
-    }
-    if (message.accountId !== "") {
-      writer.uint32(226).string(message.accountId);
     }
     if (message.warehouseId !== "") {
       writer.uint32(234).string(message.warehouseId);
@@ -2700,13 +2694,6 @@ export const DataSource = {
 
           message.region = reader.string();
           continue;
-        case 28:
-          if (tag !== 226) {
-            break;
-          }
-
-          message.accountId = reader.string();
-          continue;
         case 29:
           if (tag !== 234) {
             break;
@@ -2791,7 +2778,6 @@ export const DataSource = {
       replicaSet: isSet(object.replicaSet) ? globalThis.String(object.replicaSet) : "",
       directConnection: isSet(object.directConnection) ? globalThis.Boolean(object.directConnection) : false,
       region: isSet(object.region) ? globalThis.String(object.region) : "",
-      accountId: isSet(object.accountId) ? globalThis.String(object.accountId) : "",
       warehouseId: isSet(object.warehouseId) ? globalThis.String(object.warehouseId) : "",
       masterName: isSet(object.masterName) ? globalThis.String(object.masterName) : "",
       masterUsername: isSet(object.masterUsername) ? globalThis.String(object.masterUsername) : "",
@@ -2888,9 +2874,6 @@ export const DataSource = {
     if (message.region !== "") {
       obj.region = message.region;
     }
-    if (message.accountId !== "") {
-      obj.accountId = message.accountId;
-    }
     if (message.warehouseId !== "") {
       obj.warehouseId = message.warehouseId;
     }
@@ -2946,7 +2929,6 @@ export const DataSource = {
     message.replicaSet = object.replicaSet ?? "";
     message.directConnection = object.directConnection ?? false;
     message.region = object.region ?? "";
-    message.accountId = object.accountId ?? "";
     message.warehouseId = object.warehouseId ?? "";
     message.masterName = object.masterName ?? "";
     message.masterUsername = object.masterUsername ?? "";
