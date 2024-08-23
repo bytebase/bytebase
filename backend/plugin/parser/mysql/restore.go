@@ -38,10 +38,10 @@ func GenerateRestoreSQL(ctx context.Context, rCtx base.RestoreContext, statement
 	// 1. The statement is a single SQL statement.
 	// 2. The statement is a multi SQL statement, but all SQL statements' backup is in the same table.
 	//    So we only need to restore the first SQL statement.
-	return generateRestoreSQL(ctx, rCtx, originalSQL, parseResult[0], backupItem)
+	return doGenerate(ctx, rCtx, originalSQL, parseResult[0], backupItem)
 }
 
-func generateRestoreSQL(ctx context.Context, rCtx base.RestoreContext, originalSQL string, parseResult *ParseResult, backupItem *storepb.PriorBackupDetail_Item) (string, error) {
+func doGenerate(ctx context.Context, rCtx base.RestoreContext, originalSQL string, parseResult *ParseResult, backupItem *storepb.PriorBackupDetail_Item) (string, error) {
 	_, sourceDatabase, err := common.GetInstanceDatabaseID(backupItem.SourceTable.Database)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get source database ID for %s", backupItem.SourceTable.Database)
