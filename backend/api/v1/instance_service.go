@@ -800,9 +800,6 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 			dataSource.DirectConnection = request.DataSource.DirectConnection
 		case "region":
 			dataSource.Region = request.DataSource.Region
-		case "account_id":
-			dataSource.AccountID = request.DataSource.AccountId
-			patch.AccountID = &request.DataSource.AccountId
 		case "warehouse_id":
 			dataSource.WarehouseID = request.DataSource.WarehouseId
 			patch.WarehouseID = &request.DataSource.WarehouseId
@@ -1334,7 +1331,6 @@ func (s *InstanceService) convertToDataSourceMessage(dataSource *v1pb.DataSource
 		ReplicaSet:                         dataSource.ReplicaSet,
 		DirectConnection:                   dataSource.DirectConnection,
 		Region:                             dataSource.Region,
-		AccountID:                          dataSource.AccountId,
 		WarehouseID:                        dataSource.WarehouseId,
 		UseSSL:                             dataSource.UseSsl,
 		RedisType:                          convertToStoreRedisType(dataSource.RedisType),
