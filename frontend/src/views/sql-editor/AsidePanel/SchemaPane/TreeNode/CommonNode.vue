@@ -22,6 +22,7 @@
         />
         <span v-else class="pl-[2px]">{{ text }}</span>
       </slot>
+      <slot name="suffix" />
     </slot>
   </div>
 </template>
