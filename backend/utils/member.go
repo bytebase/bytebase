@@ -107,53 +107,56 @@ func getUserByIdentifier(ctx context.Context, stores *store.Store, identifier st
 }
 
 // GetUserIAMPolicyBindings return the valid bindings for the user.
-func GetUserIAMPolicyBindings(ctx context.Context, stores *store.Store, user *store.UserMessage, policy *storepb.IamPolicy) []*storepb.Binding {
+func GetUserIAMPolicyBindings(ctx context.Context, stores *store.Store, user *store.UserMessage, policies ...*storepb.IamPolicy) []*storepb.Binding {
 	userIDFullName := common.FormatUserUID(user.ID)
 
 	var bindings []*storepb.Binding
-	for _, binding := range policy.Bindings {
-		if !validateIAMBinding(binding) {
-			continue
-		}
 
-		hasUser := false
-		for _, member := range binding.Members {
-			if member == api.AllUsers {
-				hasUser = true
-				break
+	for _, policy := range policies {
+		for _, binding := range policy.Bindings {
+			if !validateIAMBinding(binding) {
+				continue
 			}
-			if userIDFullName == member {
-				hasUser = true
-				break
-			}
-			if strings.HasPrefix(member, common.GroupPrefix) {
-				groupEmail, err := common.GetGroupEmail(member)
-				if err != nil {
-					slog.Error("failed to parse group email", slog.String("group", member), log.BBError(err))
-					continue
+
+			hasUser := false
+			for _, member := range binding.Members {
+				if member == api.AllUsers {
+					hasUser = true
+					break
 				}
-				group, err := stores.GetGroup(ctx, groupEmail)
-				if err != nil {
-					slog.Error("failed to get group", slog.String("group", member), log.BBError(err))
-					continue
+				if userIDFullName == member {
+					hasUser = true
+					break
 				}
-				if group == nil {
-					slog.Error("cannot found group", slog.String("group", member))
-					continue
-				}
-				for _, member := range group.Payload.Members {
-					if userIDFullName == member.Member {
-						hasUser = true
+				if strings.HasPrefix(member, common.GroupPrefix) {
+					groupEmail, err := common.GetGroupEmail(member)
+					if err != nil {
+						slog.Error("failed to parse group email", slog.String("group", member), log.BBError(err))
+						continue
+					}
+					group, err := stores.GetGroup(ctx, groupEmail)
+					if err != nil {
+						slog.Error("failed to get group", slog.String("group", member), log.BBError(err))
+						continue
+					}
+					if group == nil {
+						slog.Error("cannot found group", slog.String("group", member))
+						continue
+					}
+					for _, member := range group.Payload.Members {
+						if userIDFullName == member.Member {
+							hasUser = true
+							break
+						}
+					}
+					if hasUser {
 						break
 					}
 				}
-				if hasUser {
-					break
-				}
 			}
-		}
-		if hasUser {
-			bindings = append(bindings, binding)
+			if hasUser {
+				bindings = append(bindings, binding)
+			}
 		}
 	}
 	return bindings
