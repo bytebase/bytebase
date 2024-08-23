@@ -117,6 +117,13 @@ export const useProjectSidebar = (
   const projectSidebarItemList = computed((): ProjectSidebarItem[] => {
     const sidebarList: ProjectSidebarItem[] = [
       {
+        title: t("common.issues"),
+        path: PROJECT_V1_ROUTE_ISSUES,
+        icon: () => h(CircleDot),
+        type: "div",
+        hide: isDefaultProject.value,
+      },
+      {
         title: t("common.database"),
         icon: () => h(Database),
         type: "div",
@@ -143,13 +150,6 @@ export const useProjectSidebar = (
             type: "div",
           },
         ],
-      },
-      {
-        title: t("common.issues"),
-        path: PROJECT_V1_ROUTE_ISSUES,
-        icon: () => h(CircleDot),
-        type: "div",
-        hide: isDefaultProject.value,
       },
       {
         title: t("review-center.self"),
