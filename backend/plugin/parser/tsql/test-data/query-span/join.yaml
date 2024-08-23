@@ -1,6 +1,6 @@
 - description: Join Alias and Asterisk
   statement: SELECT t.* FROM MyTable1 t JOIN MyTable2 u ON t.a = u.id;
-  connectedDatabase: db
+  defaultDatabase: db
   ignoreCaseSensitive: true
   metadata: |-
     {
@@ -64,7 +64,7 @@
           column: ""
 - description: Join Alias
   statement: SELECT t.a, t.b FROM MyTable1 t JOIN MyTable2 u ON t.a = u.id;
-  connectedDatabase: db
+  defaultDatabase: db
   ignoreCaseSensitive: true
   metadata: |-
     {

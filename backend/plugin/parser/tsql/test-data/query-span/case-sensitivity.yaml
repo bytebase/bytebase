@@ -1,6 +1,6 @@
 - description: Case insensitive query but resource column should take original case.
   statement: SELECT dbo.mytable1.a FROM dbo.[mytable1] ;
-  connectedDatabase: db
+  defaultDatabase: db
   ignoreCaseSensitive: true
   metadata: |-
     {

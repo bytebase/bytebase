@@ -6,7 +6,7 @@
       SELECT C1 * C2, C2 + C1, C3 * C2, N + 1 FROM CTE_01 WHERE N < 5
     )
     SELECT * FROM CTE_01;
-  connectedDatabase: SNOWFLAKE
+  defaultDatabase: SNOWFLAKE
   ignoreCaseSensitive: true
   metadata: |-
     {

@@ -1,6 +1,6 @@
 - description: Uncorrelated Subquery In From Clause
   statement: SELECT A, B, C, D FROM (SELECT * FROM T1) T;
-  connectedDatabase: SNOWFLAKE
+  defaultDatabase: SNOWFLAKE
   ignoreCaseSensitive: true
   metadata: |-
     {

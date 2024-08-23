@@ -20,7 +20,7 @@ func TestGetQuerySpan(t *testing.T) {
 	type testCase struct {
 		Description        string `yaml:"description,omitempty"`
 		Statement          string `yaml:"statement,omitempty"`
-		ConnectedDatabase  string `yaml:"connectedDatabase,omitempty"`
+		DefaultDatabase    string `yaml:"defaultDatabase,omitempty"`
 		IgnoreCaseSensitve bool   `yaml:"ignoreCaseSensitive,omitempty"`
 		// Metadata is the protojson encoded storepb.DatabaseSchemaMetadata,
 		// if it's empty, we will use the defaultDatabaseMetadata.
@@ -59,7 +59,7 @@ func TestGetQuerySpan(t *testing.T) {
 			result, err := GetQuerySpan(context.TODO(), base.GetQuerySpanContext{
 				GetDatabaseMetadataFunc: databaseMetadataGetter,
 				ListDatabaseNamesFunc:   databaseNameLister,
-			}, tc.Statement, tc.ConnectedDatabase, "PUBLIC", tc.IgnoreCaseSensitve)
+			}, tc.Statement, tc.DefaultDatabase, "PUBLIC", tc.IgnoreCaseSensitve)
 			a.NoErrorf(err, "statement: %s", tc.Statement)
 			resultYaml := result.ToYaml()
 			if record {
