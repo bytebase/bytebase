@@ -74,7 +74,7 @@ func (s *SubscriptionService) UpdateSubscription(ctx context.Context, request *v
 		License:   request.Patch.License,
 	}); err != nil {
 		if common.ErrorCode(err) == common.Invalid {
-			return nil, status.Errorf(codes.InvalidArgument, err.Error())
+			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 		return nil, status.Errorf(codes.Internal, "failed to store license: %v", err.Error())
 	}

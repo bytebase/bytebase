@@ -20,8 +20,8 @@ import (
 type querySpanExtractor struct {
 	ctx context.Context
 
-	connectedDB         string
-	connectedSchema     string
+	defaultDatabase     string
+	defaultSchema       string
 	ignoreCaseSensitive bool
 
 	gCtx base.GetQuerySpanContext
@@ -38,10 +38,10 @@ type querySpanExtractor struct {
 	tableSourcesFrom []base.TableSource
 }
 
-func newQuerySpanExtractor(connectedDB string, connectedSchema string, gCtx base.GetQuerySpanContext, ignoreCaseSensitive bool) *querySpanExtractor {
+func newQuerySpanExtractor(defaultDatabase string, defaultSchema string, gCtx base.GetQuerySpanContext, ignoreCaseSensitive bool) *querySpanExtractor {
 	return &querySpanExtractor{
-		connectedDB:         connectedDB,
-		connectedSchema:     connectedSchema,
+		defaultDatabase:     defaultDatabase,
+		defaultSchema:       defaultSchema,
 		gCtx:                gCtx,
 		ignoreCaseSensitive: ignoreCaseSensitive,
 	}
@@ -62,7 +62,7 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string)
 		return nil, nil
 	}
 
-	accessTables := getAccessTables(q.connectedDB, q.connectedSchema, tree)
+	accessTables := getAccessTables(q.defaultDatabase, q.defaultSchema, tree)
 	// We do not support simultaneous access to the system table and the user table
 	// because we do not synchronize the schema of the system table.
 	// This causes an error (NOT_FOUND) when using querySpanExtractor.findTableSchema.
@@ -604,7 +604,7 @@ func (q *querySpanExtractor) tsqlFindTableSchema(fullTableName parser.IFull_tabl
 		}
 	}
 
-	normalizedLinkedServer, normalizedDatabaseName, normalizedSchemaName, normalizedTableName = normalizeFullTableNameFallback(fullTableName, "" /* Linked Server Name */, q.connectedDB, q.connectedSchema)
+	normalizedLinkedServer, normalizedDatabaseName, normalizedSchemaName, normalizedTableName = normalizeFullTableNameFallback(fullTableName, "" /* Linked Server Name */, q.defaultDatabase, q.defaultSchema)
 	if normalizedLinkedServer != "" {
 		// TODO(zp): How do we handle the linked server?
 		return nil, errors.Errorf("linked server is not supported yet, but found %q", fullTableName.GetText())
@@ -680,7 +680,7 @@ func (q *querySpanExtractor) tsqlFindTableSchema(fullTableName parser.IFull_tabl
 }
 
 func (q *querySpanExtractor) getColumnsForView(definition string) ([]base.QuerySpanResult, error) {
-	newQ := newQuerySpanExtractor(q.connectedDB, q.connectedSchema, q.gCtx, q.ignoreCaseSensitive)
+	newQ := newQuerySpanExtractor(q.defaultDatabase, q.defaultSchema, q.gCtx, q.ignoreCaseSensitive)
 	span, err := newQ.getQuerySpan(q.ctx, definition)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get query span for view definition")
@@ -1071,8 +1071,8 @@ func (q *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleContext) (
 	case *parser.SubqueryContext:
 		// For subquery, we clone the current extractor, reset the from list, but keep the cte, and then extract the sensitive fields from the subquery
 		cloneExtractor := &querySpanExtractor{
-			connectedDB:     q.connectedDB,
-			connectedSchema: q.connectedSchema,
+			defaultDatabase: q.defaultDatabase,
+			defaultSchema:   q.defaultSchema,
 			gCtx:            q.gCtx,
 			// outerTableSources: extractor.outerTableSources,
 			ctes:                q.ctes,

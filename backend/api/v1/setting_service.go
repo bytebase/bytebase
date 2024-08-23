@@ -200,7 +200,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 					return nil, status.Errorf(codes.InvalidArgument, "feature %s is unavailable in current mode", settingName)
 				}
 				if err := s.licenseService.IsFeatureEnabled(api.FeatureDisallowSignup); err != nil {
-					return nil, status.Errorf(codes.PermissionDenied, err.Error())
+					return nil, status.Error(codes.PermissionDenied, err.Error())
 				}
 				oldSetting.DisallowSignup = payload.DisallowSignup
 			case "value.workspace_profile_setting_value.external_url":
@@ -217,7 +217,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 				oldSetting.ExternalUrl = payload.ExternalUrl
 			case "value.workspace_profile_setting_value.require_2fa":
 				if err := s.licenseService.IsFeatureEnabled(api.Feature2FA); err != nil {
-					return nil, status.Errorf(codes.PermissionDenied, err.Error())
+					return nil, status.Error(codes.PermissionDenied, err.Error())
 				}
 				oldSetting.Require_2Fa = payload.Require_2Fa
 			case "value.workspace_profile_setting_value.outbound_ip_list":
@@ -233,7 +233,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 				oldSetting.GitopsWebhookUrl = payload.GitopsWebhookUrl
 			case "value.workspace_profile_setting_value.token_duration":
 				if err := s.licenseService.IsFeatureEnabled(api.FeatureSecureToken); err != nil {
-					return nil, status.Errorf(codes.PermissionDenied, err.Error())
+					return nil, status.Error(codes.PermissionDenied, err.Error())
 				}
 				if payload.TokenDuration != nil && payload.TokenDuration.Seconds > 0 && payload.TokenDuration.AsDuration() < time.Hour {
 					return nil, status.Errorf(codes.InvalidArgument, "refresh token duration should be at least one hour")
@@ -241,7 +241,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 				oldSetting.TokenDuration = payload.TokenDuration
 			case "value.workspace_profile_setting_value.announcement":
 				if err := s.licenseService.IsFeatureEnabled(api.FeatureAnnouncement); err != nil {
-					return nil, status.Errorf(codes.PermissionDenied, err.Error())
+					return nil, status.Error(codes.PermissionDenied, err.Error())
 				}
 				oldSetting.Announcement = payload.Announcement
 			case "value.workspace_profile_setting_value.maximum_role_expiration":
@@ -288,7 +288,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 		storeSettingValue = string(bytes)
 	case api.SettingWorkspaceApproval:
 		if err := s.licenseService.IsFeatureEnabled(api.FeatureCustomApproval); err != nil {
-			return nil, status.Errorf(codes.PermissionDenied, err.Error())
+			return nil, status.Error(codes.PermissionDenied, err.Error())
 		}
 
 		payload := &storepb.WorkspaceApprovalSetting{}
@@ -304,14 +304,14 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 			creatorID := 0
 			email, err := common.GetUserEmail(rule.Template.Creator)
 			if err != nil {
-				return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("failed to get creator: %v", err))
+				return nil, status.Errorf(codes.InvalidArgument, "failed to get creator: %v", err)
 			}
 			creator, err := s.store.GetUserByEmail(ctx, email)
 			if err != nil {
-				return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get creator: %v", err))
+				return nil, status.Errorf(codes.Internal, "failed to get creator: %v", err)
 			}
 			if creator == nil {
-				return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("creator %s not found", rule.Template.Creator))
+				return nil, status.Errorf(codes.InvalidArgument, "creator %s not found", rule.Template.Creator)
 			}
 			creatorID = creator.ID
 
@@ -390,7 +390,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 		storeSettingValue = string(bytes)
 	case api.SettingBrandingLogo:
 		if err := s.licenseService.IsFeatureEnabled(api.FeatureBranding); err != nil {
-			return nil, status.Errorf(codes.PermissionDenied, err.Error())
+			return nil, status.Error(codes.PermissionDenied, err.Error())
 		}
 		storeSettingValue = request.Setting.Value.GetStringValue()
 	case api.SettingPluginAgent:
@@ -509,7 +509,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 		storeSettingValue = string(bytes)
 	case api.SettingSchemaTemplate:
 		if err := s.licenseService.IsFeatureEnabled(api.FeatureSchemaTemplate); err != nil {
-			return nil, status.Errorf(codes.PermissionDenied, err.Error())
+			return nil, status.Error(codes.PermissionDenied, err.Error())
 		}
 		schemaTemplateSetting := request.Setting.Value.GetSchemaTemplateSettingValue()
 		if schemaTemplateSetting == nil {
@@ -588,12 +588,12 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 		storeSettingValue = string(bytes)
 	case api.SettingWatermark:
 		if err := s.licenseService.IsFeatureEnabled(api.FeatureWatermark); err != nil {
-			return nil, status.Errorf(codes.PermissionDenied, err.Error())
+			return nil, status.Error(codes.PermissionDenied, err.Error())
 		}
 		storeSettingValue = request.Setting.Value.GetStringValue()
 	case api.SettingPluginOpenAIKey:
 		if err := s.licenseService.IsFeatureEnabled(api.FeatureAIAssistant); err != nil {
-			return nil, status.Errorf(codes.PermissionDenied, err.Error())
+			return nil, status.Error(codes.PermissionDenied, err.Error())
 		}
 		storeSettingValue = request.Setting.Value.GetStringValue()
 	case api.SettingSQLResultSizeLimit:
@@ -748,7 +748,7 @@ func (s *SettingService) convertToSettingMessage(ctx context.Context, setting *s
 			template := convertToApprovalTemplate(rule.Template)
 			creator, err := s.store.GetUserByID(ctx, int(rule.Template.CreatorId))
 			if err != nil {
-				return nil, status.Errorf(codes.Internal, fmt.Sprintf("failed to get creator: %v", err))
+				return nil, status.Errorf(codes.Internal, "failed to get creator: %v", err)
 			}
 			if creator != nil {
 				template.Creator = common.FormatUserEmail(creator.Email)

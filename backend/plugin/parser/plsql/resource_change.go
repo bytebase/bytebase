@@ -74,7 +74,7 @@ func (l *plsqlChangedResourceExtractListener) EnterCreate_table(ctx *parser.Crea
 	tableName := NormalizeIdentifierContext(ctx.Table_name().Identifier())
 	l.changedResources.AddTable(
 		schema,
-		schema,
+		"",
 		&storepb.ChangedResourceTable{
 			Name:   tableName,
 			Ranges: []*storepb.Range{base.NewRange(l.statement, l.text)},
@@ -101,7 +101,7 @@ func (l *plsqlChangedResourceExtractListener) EnterDrop_table(ctx *parser.Drop_t
 
 	l.changedResources.AddTable(
 		schema,
-		schema,
+		"",
 		&storepb.ChangedResourceTable{
 			Name:   table,
 			Ranges: []*storepb.Range{base.NewRange(l.statement, l.text)},
@@ -128,7 +128,7 @@ func (l *plsqlChangedResourceExtractListener) EnterAlter_table(ctx *parser.Alter
 
 	l.changedResources.AddTable(
 		schema,
-		schema,
+		"",
 		&storepb.ChangedResourceTable{
 			Name:   table,
 			Ranges: []*storepb.Range{base.NewRange(l.statement, l.text)},
@@ -156,7 +156,7 @@ func (l *plsqlChangedResourceExtractListener) EnterAlter_table_properties(ctx *p
 
 	l.changedResources.AddTable(
 		schema,
-		schema,
+		"",
 		&storepb.ChangedResourceTable{
 			Name:   table,
 			Ranges: []*storepb.Range{base.NewRange(l.statement, l.text)},
@@ -184,7 +184,7 @@ func (l *plsqlChangedResourceExtractListener) EnterCreate_index(ctx *parser.Crea
 
 	l.changedResources.AddTable(
 		schema,
-		schema,
+		"",
 		&storepb.ChangedResourceTable{
 			Name:   table,
 			Ranges: []*storepb.Range{base.NewRange(l.statement, l.text)},
@@ -215,7 +215,7 @@ func (l *plsqlChangedResourceExtractListener) EnterDrop_index(ctx *parser.Drop_i
 
 	l.changedResources.AddTable(
 		schema,
-		schema,
+		"",
 		&storepb.ChangedResourceTable{
 			Name:   foundTable,
 			Ranges: []*storepb.Range{base.NewRange(l.statement, l.text)},
@@ -238,7 +238,7 @@ func (l *plsqlChangedResourceExtractListener) EnterCreate_view(ctx *parser.Creat
 
 	l.changedResources.AddView(
 		schema,
-		schema,
+		"",
 		&storepb.ChangedResourceView{
 			Name:   view,
 			Ranges: []*storepb.Range{base.NewRange(l.statement, l.text)},
@@ -261,7 +261,7 @@ func (l *plsqlChangedResourceExtractListener) EnterDrop_view(ctx *parser.Drop_vi
 
 	l.changedResources.AddView(
 		schema,
-		schema,
+		"",
 		&storepb.ChangedResourceView{
 			Name:   view,
 			Ranges: []*storepb.Range{base.NewRange(l.statement, l.text)},
@@ -284,7 +284,7 @@ func (l *plsqlChangedResourceExtractListener) EnterAlter_view(ctx *parser.Alter_
 
 	l.changedResources.AddView(
 		schema,
-		schema,
+		"",
 		&storepb.ChangedResourceView{
 			Name:   view,
 			Ranges: []*storepb.Range{base.NewRange(l.statement, l.text)},
@@ -307,7 +307,7 @@ func (l *plsqlChangedResourceExtractListener) EnterCreate_procedure_body(ctx *pa
 
 	l.changedResources.AddProcedure(
 		schema,
-		schema,
+		"",
 		&storepb.ChangedResourceProcedure{
 			Name:   procedure,
 			Ranges: []*storepb.Range{base.NewRange(l.statement, l.text)},
@@ -330,7 +330,7 @@ func (l *plsqlChangedResourceExtractListener) EnterDrop_procedure(ctx *parser.Dr
 
 	l.changedResources.AddProcedure(
 		schema,
-		schema,
+		"",
 		&storepb.ChangedResourceProcedure{
 			Name:   procedure,
 			Ranges: []*storepb.Range{base.NewRange(l.statement, l.text)},
@@ -353,7 +353,7 @@ func (l *plsqlChangedResourceExtractListener) EnterAlter_procedure(ctx *parser.A
 
 	l.changedResources.AddProcedure(
 		schema,
-		schema,
+		"",
 		&storepb.ChangedResourceProcedure{
 			Name:   procedure,
 			Ranges: []*storepb.Range{base.NewRange(l.statement, l.text)},
@@ -376,7 +376,7 @@ func (l *plsqlChangedResourceExtractListener) EnterCreate_function_body(ctx *par
 
 	l.changedResources.AddFunction(
 		schema,
-		schema,
+		"",
 		&storepb.ChangedResourceFunction{
 			Name:   function,
 			Ranges: []*storepb.Range{base.NewRange(l.statement, l.text)},
@@ -399,7 +399,7 @@ func (l *plsqlChangedResourceExtractListener) EnterDrop_function(ctx *parser.Dro
 
 	l.changedResources.AddFunction(
 		schema,
-		schema,
+		"",
 		&storepb.ChangedResourceFunction{
 			Name:   function,
 			Ranges: []*storepb.Range{base.NewRange(l.statement, l.text)},
@@ -422,7 +422,7 @@ func (l *plsqlChangedResourceExtractListener) EnterAlter_function(ctx *parser.Al
 
 	l.changedResources.AddFunction(
 		schema,
-		schema,
+		"",
 		&storepb.ChangedResourceFunction{
 			Name:   function,
 			Ranges: []*storepb.Range{base.NewRange(l.statement, l.text)},

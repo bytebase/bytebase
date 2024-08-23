@@ -133,7 +133,7 @@ func (krbConfig *KerberosConfig) InitEnv() error {
 	cmd = exec.Command("bash", "-c", strings.Join(args, " "))
 
 	if output, err := cmd.CombinedOutput(); err != nil {
-		return errors.Wrapf(err, fmt.Sprintf("failed to execute command kinit: %s", output))
+		return errors.Wrapf(err, "failed to execute command kinit: %s", output)
 	}
 
 	return nil

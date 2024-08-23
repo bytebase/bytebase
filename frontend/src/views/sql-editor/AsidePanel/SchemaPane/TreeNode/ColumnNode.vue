@@ -10,10 +10,31 @@
       <IndexIcon v-else-if="isIndex" class="!w-4 !h-4 text-accent/80" />
       <ColumnIcon v-else class="w-4 h-4" />
     </template>
+    <template #suffix>
+      <div
+        class="flex items-center justify-end gap-1 overflow-hidden whitespace-nowrap shrink opacity-80 !font-normal"
+      >
+        <NTag
+          size="small"
+          class="text-size-adjust-none"
+          style="--n-height: 16px; --n-padding: 0 3px; --n-font-size: 10px"
+        >
+          {{ target.column.nullable ? "NULL" : "NOT NULL" }}
+        </NTag>
+        <NTag
+          size="small"
+          class="text-size-adjust-none"
+          style="--n-height: 16px; --n-padding: 0 3px; --n-font-size: 10px"
+        >
+          {{ target.column.type }}
+        </NTag>
+      </div>
+    </template>
   </CommonNode>
 </template>
 
 <script setup lang="ts">
+import { NTag } from "naive-ui";
 import { computed } from "vue";
 import { ColumnIcon, IndexIcon, PrimaryKeyIcon } from "@/components/Icon";
 import type { TreeNode } from "../common";

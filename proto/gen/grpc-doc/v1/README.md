@@ -10433,6 +10433,7 @@ Type of the SheetPayload.
 | uint32_value | [uint32](#uint32) |  |  |
 | uint64_value | [uint64](#uint64) |  |  |
 | value_value | [google.protobuf.Value](#google-protobuf-Value) |  | value_value is used for Spanner and TUPLE ARRAY MAP in Clickhouse only. |
+| timestamp_value | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 
 
 

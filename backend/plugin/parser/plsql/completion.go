@@ -361,7 +361,7 @@ func (m CompletionMap) insertColumns(c *Completer, schemas, tables map[string]bo
 		}
 
 		for table := range tables {
-			tableMeta := c.metadataCache[schema].GetSchema(schema).GetTable(table)
+			tableMeta := c.metadataCache[schema].GetSchema("").GetTable(table)
 			if tableMeta == nil {
 				continue
 			}
@@ -408,7 +408,7 @@ func (c *Completer) listTables(schema string) []string {
 		c.metadataCache[schema] = metadata
 	}
 
-	return c.metadataCache[schema].GetSchema(schema).ListTableNames()
+	return c.metadataCache[schema].GetSchema("").ListTableNames()
 }
 
 func (c *Completer) listViews(schema string) []string {
@@ -420,7 +420,7 @@ func (c *Completer) listViews(schema string) []string {
 		c.metadataCache[schema] = metadata
 	}
 
-	return c.metadataCache[schema].GetSchema(schema).ListViewNames()
+	return c.metadataCache[schema].GetSchema("").ListViewNames()
 }
 
 func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]base.Candidate, error) {

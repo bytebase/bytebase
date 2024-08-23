@@ -133,7 +133,7 @@ func (ctl *controller) waitRollout(ctx context.Context, issueName, rolloutName s
 						return err
 					}
 					if len(resp.TaskRuns) > 0 {
-						return errors.Errorf(resp.TaskRuns[0].Detail)
+						return errors.New(resp.TaskRuns[0].Detail)
 					}
 				default:
 					completed = false

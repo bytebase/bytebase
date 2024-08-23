@@ -23,9 +23,9 @@ const (
 
 func TestGetQuerySpan(t *testing.T) {
 	type testCase struct {
-		Description       string `yaml:"description,omitempty"`
-		Statement         string `yaml:"statement,omitempty"`
-		ConnectedDatabase string `yaml:"connectedDatabase,omitempty"`
+		Description     string `yaml:"description,omitempty"`
+		Statement       string `yaml:"statement,omitempty"`
+		DefaultDatabase string `yaml:"defaultDatabase,omitempty"`
 		// Metadata is the protojson encoded storepb.DatabaseSchemaMetadata,
 		// if it's empty, we will use the defaultDatabaseMetadata.
 		Metadata              string              `yaml:"metadata,omitempty"`
@@ -63,7 +63,7 @@ func TestGetQuerySpan(t *testing.T) {
 			GetDatabaseMetadataFunc:       databaseMetadataGetter,
 			ListDatabaseNamesFunc:         databaseNamesLister,
 			GetLinkedDatabaseMetadataFunc: linkedDatabaseMetadataGetter,
-		}, tc.Statement, tc.ConnectedDatabase, tc.ConnectedDatabase, false)
+		}, tc.Statement, tc.DefaultDatabase, tc.DefaultDatabase, false)
 		a.NoError(err)
 		a.NotNil(result)
 		resultYaml := result.ToYaml()
@@ -146,7 +146,7 @@ func getLinkedDatabaseMetadata() []*storepb.DatabaseSchemaMetadata {
 			Name: "SCHEMA1",
 			Schemas: []*storepb.SchemaMetadata{
 				{
-					Name: "SCHEMA1",
+					Name: "",
 					Tables: []*storepb.TableMetadata{
 						{
 							Name: "LT1",

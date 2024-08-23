@@ -45,7 +45,7 @@ func convertToRisk(risk *store.RiskMessage) (*v1pb.Risk, error) {
 func (s *RiskService) ListRisks(ctx context.Context, _ *v1pb.ListRisksRequest) (*v1pb.ListRisksResponse, error) {
 	risks, err := s.store.ListRisks(ctx)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	response := &v1pb.ListRisksResponse{}
 	for _, risk := range risks {
@@ -61,7 +61,7 @@ func (s *RiskService) ListRisks(ctx context.Context, _ *v1pb.ListRisksRequest) (
 // CreateRisk creates a risk.
 func (s *RiskService) CreateRisk(ctx context.Context, request *v1pb.CreateRiskRequest) (*v1pb.Risk, error) {
 	if err := s.licenseService.IsFeatureEnabled(api.FeatureCustomApproval); err != nil {
-		return nil, status.Errorf(codes.PermissionDenied, err.Error())
+		return nil, status.Error(codes.PermissionDenied, err.Error())
 	}
 	// Validate the condition.
 	if _, err := common.ConvertUnparsedRisk(request.Risk.Condition); err != nil {
@@ -80,7 +80,7 @@ func (s *RiskService) CreateRisk(ctx context.Context, request *v1pb.CreateRiskRe
 		Expression: request.Risk.Condition,
 	}, principalID)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	return convertToRisk(risk)
 }
@@ -88,7 +88,7 @@ func (s *RiskService) CreateRisk(ctx context.Context, request *v1pb.CreateRiskRe
 // UpdateRisk updates a risk.
 func (s *RiskService) UpdateRisk(ctx context.Context, request *v1pb.UpdateRiskRequest) (*v1pb.Risk, error) {
 	if err := s.licenseService.IsFeatureEnabled(api.FeatureCustomApproval); err != nil {
-		return nil, status.Errorf(codes.PermissionDenied, err.Error())
+		return nil, status.Error(codes.PermissionDenied, err.Error())
 	}
 	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
 	if !ok {
@@ -99,7 +99,7 @@ func (s *RiskService) UpdateRisk(ctx context.Context, request *v1pb.UpdateRiskRe
 	}
 	riskID, err := common.GetRiskID(request.Risk.Name)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	risk, err := s.store.GetRisk(ctx, riskID)
 	if err != nil {
@@ -131,7 +131,7 @@ func (s *RiskService) UpdateRisk(ctx context.Context, request *v1pb.UpdateRiskRe
 
 	risk, err = s.store.UpdateRisk(ctx, patch, riskID, principalID)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	return convertToRisk(risk)
@@ -145,7 +145,7 @@ func (s *RiskService) DeleteRisk(ctx context.Context, request *v1pb.DeleteRiskRe
 	}
 	riskID, err := common.GetRiskID(request.Name)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	risk, err := s.store.GetRisk(ctx, riskID)
 	if err != nil {
@@ -165,7 +165,7 @@ func (s *RiskService) DeleteRisk(ctx context.Context, request *v1pb.DeleteRiskRe
 		},
 		riskID,
 		principalID); err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	return &emptypb.Empty{}, nil

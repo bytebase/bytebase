@@ -235,7 +235,7 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 		return nil, err
 	}
 	if queryErr != nil {
-		return nil, status.Errorf(codes.Internal, queryErr.Error())
+		return nil, status.Error(codes.Internal, queryErr.Error())
 	}
 
 	allowExport := true
@@ -358,7 +358,7 @@ func queryRetry(
 	if licenseService.IsFeatureEnabledForInstance(api.FeatureSensitiveData, instance) == nil && !queryContext.Explain {
 		masker := NewQueryResultMasker(stores)
 		if err := masker.MaskResults(ctx, spans, results, instance, storepb.MaskingExceptionPolicy_MaskingException_QUERY); err != nil {
-			return nil, nil, duration, status.Errorf(codes.Internal, err.Error())
+			return nil, nil, duration, status.Error(codes.Internal, err.Error())
 		}
 	}
 	return results, spans, duration, nil
@@ -414,7 +414,7 @@ func (s *SQLService) Export(ctx context.Context, request *v1pb.ExportRequest) (*
 	}
 
 	if exportErr != nil {
-		return nil, status.Errorf(codes.Internal, exportErr.Error())
+		return nil, status.Error(codes.Internal, exportErr.Error())
 	}
 
 	return &v1pb.ExportResponse{
@@ -522,7 +522,7 @@ func DoExport(
 		results = results[len(results)-1:]
 	}
 	if results[0].GetError() != "" {
-		return nil, duration, errors.Errorf(results[0].GetError())
+		return nil, duration, errors.New(results[0].GetError())
 	}
 
 	if licenseService.IsFeatureEnabledForInstance(api.FeatureSensitiveData, instance) == nil {
@@ -657,7 +657,7 @@ func (s *SQLService) SearchQueryHistories(ctx context.Context, request *v1pb.Sea
 
 	filters, err := parseFilter(request.Filter)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	for _, spec := range filters {
@@ -884,13 +884,17 @@ func (s *SQLService) accessCheck(
 				return status.Errorf(codes.InvalidArgument, "project %q not found", databaseMessage.ProjectID)
 			}
 
+			workspacePolicy, err := s.store.GetWorkspaceIamPolicy(ctx)
+			if err != nil {
+				return status.Errorf(codes.Internal, "failed to get workspace iam policy, error: %v", err)
+			}
 			// Allow query databases across different projects.
 			projectPolicy, err := s.store.GetProjectIamPolicy(ctx, project.UID)
 			if err != nil {
-				return status.Errorf(codes.Internal, err.Error())
+				return status.Error(codes.Internal, err.Error())
 			}
 
-			ok, err := s.hasDatabaseAccessRights(ctx, user, projectPolicy.Policy, attributes, isExport)
+			ok, err := s.hasDatabaseAccessRights(ctx, user, []*storepb.IamPolicy{workspacePolicy.Policy, projectPolicy.Policy}, attributes, isExport)
 			if err != nil {
 				return status.Errorf(codes.Internal, "failed to check access control for database: %q, error %v", column.Database, err)
 			}
@@ -921,7 +925,7 @@ func sanitizeResults(results []*v1pb.QueryResult) {
 func (s *SQLService) prepareRelatedMessage(ctx context.Context, requestName string) (*store.UserMessage, *store.InstanceMessage, *store.DatabaseMessage, error) {
 	user, err := s.getUser(ctx)
 	if err != nil {
-		return nil, nil, nil, status.Errorf(codes.Internal, err.Error())
+		return nil, nil, nil, status.Error(codes.Internal, err.Error())
 	}
 
 	instanceID, databaseName, err := common.GetInstanceDatabaseID(requestName)
@@ -934,7 +938,7 @@ func (s *SQLService) prepareRelatedMessage(ctx context.Context, requestName stri
 	}
 	instance, err := s.store.GetInstanceV2(ctx, find)
 	if err != nil {
-		return nil, nil, nil, status.Errorf(codes.Internal, err.Error())
+		return nil, nil, nil, status.Error(codes.Internal, err.Error())
 	}
 	if instance == nil {
 		return nil, nil, nil, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
@@ -980,21 +984,13 @@ func validateQueryRequest(instance *store.InstanceMessage, statement string) err
 	return nil
 }
 
-func (s *SQLService) hasDatabaseAccessRights(ctx context.Context, user *store.UserMessage, projectPolicy *storepb.IamPolicy, attributes map[string]any, isExport bool) (bool, error) {
+func (s *SQLService) hasDatabaseAccessRights(ctx context.Context, user *store.UserMessage, iamPolicies []*storepb.IamPolicy, attributes map[string]any, isExport bool) (bool, error) {
 	wantPermission := iam.PermissionDatabasesQuery
 	if isExport {
 		wantPermission = iam.PermissionDatabasesExport
 	}
 
-	hasPermission, err := s.iamManager.CheckPermission(ctx, wantPermission, user)
-	if err != nil {
-		return false, errors.Wrapf(err, "failed to check permissions")
-	}
-	if hasPermission {
-		return true, nil
-	}
-
-	bindings := utils.GetUserIAMPolicyBindings(ctx, s.store, user, projectPolicy)
+	bindings := utils.GetUserIAMPolicyBindings(ctx, s.store, user, iamPolicies...)
 	for _, binding := range bindings {
 		permissions, err := s.iamManager.GetPermissions(binding.Role)
 		if err != nil {
@@ -1034,7 +1030,7 @@ func (s *SQLService) Check(ctx context.Context, request *v1pb.CheckRequest) (*v1
 
 	instanceID, databaseName, err := common.GetInstanceDatabaseID(request.Name)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{

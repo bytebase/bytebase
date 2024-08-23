@@ -50,6 +50,7 @@ func NewManager(store *store.Store, licenseService enterprise.LicenseService) (*
 }
 
 // Check if the user has permission on the resource hierarchy.
+// CEL on the binding is not considered.
 // When multiple projects are specified, the user should have permission on every projects.
 func (m *Manager) CheckPermission(ctx context.Context, p Permission, user *store.UserMessage, projectIDs ...string) (bool, error) {
 	if m.licenseService.IsFeatureEnabled(api.FeatureRBAC) != nil {

@@ -40,7 +40,7 @@ func NewAuditLogService(store *store.Store, iamManager *iam.Manager, licenseServ
 
 func (s *AuditLogService) SearchAuditLogs(ctx context.Context, request *v1pb.SearchAuditLogsRequest) (*v1pb.SearchAuditLogsResponse, error) {
 	if err := s.licenseService.IsFeatureEnabled(api.FeatureAuditLog); err != nil {
-		return nil, status.Errorf(codes.PermissionDenied, err.Error())
+		return nil, status.Error(codes.PermissionDenied, err.Error())
 	}
 	filter, serr := s.getSearchAuditLogsFilter(ctx, request.Filter)
 	if serr != nil {
@@ -96,7 +96,7 @@ func (s *AuditLogService) SearchAuditLogs(ctx context.Context, request *v1pb.Sea
 
 func (s *AuditLogService) ExportAuditLogs(ctx context.Context, request *v1pb.ExportAuditLogsRequest) (*v1pb.ExportAuditLogsResponse, error) {
 	if err := s.licenseService.IsFeatureEnabled(api.FeatureAuditLog); err != nil {
-		return nil, status.Errorf(codes.PermissionDenied, err.Error())
+		return nil, status.Error(codes.PermissionDenied, err.Error())
 	}
 	searchAuditLogsResult, err := s.SearchAuditLogs(ctx, &v1pb.SearchAuditLogsRequest{
 		Filter:  request.Filter,

@@ -74,7 +74,7 @@ func (s *InstanceService) ListInstances(ctx context.Context, request *v1pb.ListI
 	}
 	instances, err := s.store.ListInstancesV2(ctx, find)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	response := &v1pb.ListInstancesResponse{}
 	for _, instance := range instances {
@@ -102,7 +102,7 @@ func (s *InstanceService) CreateInstance(ctx context.Context, request *v1pb.Crea
 
 	instanceMessage, err := s.convertToInstanceMessage(request.InstanceId, request.Instance)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	// Test connection.
@@ -130,9 +130,9 @@ func (s *InstanceService) CreateInstance(ctx context.Context, request *v1pb.Crea
 	if instanceMessage.Activation {
 		if err := s.store.CheckActivationLimit(ctx, instanceCountLimit); err != nil {
 			if common.ErrorCode(err) == common.Invalid {
-				return nil, status.Errorf(codes.ResourceExhausted, err.Error())
+				return nil, status.Error(codes.ResourceExhausted, err.Error())
 			}
-			return nil, status.Errorf(codes.Internal, err.Error())
+			return nil, status.Error(codes.Internal, err.Error())
 		}
 	}
 
@@ -150,7 +150,7 @@ func (s *InstanceService) CreateInstance(ctx context.Context, request *v1pb.Crea
 		instanceCountLimit,
 	)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */, db.ConnectionContext{})
@@ -200,11 +200,11 @@ func (s *InstanceService) checkDataSource(instance *store.InstanceMessage, dataS
 	}
 	password, err := common.Unobfuscate(dataSource.ObfuscatedPassword, s.secret)
 	if err != nil {
-		return status.Errorf(codes.Internal, err.Error())
+		return status.Error(codes.Internal, err.Error())
 	}
 
 	if err := s.licenseService.IsFeatureEnabledForInstance(api.FeatureExternalSecretManager, instance); err != nil {
-		missingFeatureError := status.Errorf(codes.PermissionDenied, err.Error())
+		missingFeatureError := status.Error(codes.PermissionDenied, err.Error())
 		if dataSource.ExternalSecret != nil {
 			return missingFeatureError
 		}
@@ -251,14 +251,14 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, request *v1pb.Upda
 			if request.Instance.Environment != "" {
 				environmentID, err := common.GetEnvironmentID(request.Instance.Environment)
 				if err != nil {
-					return nil, status.Errorf(codes.InvalidArgument, err.Error())
+					return nil, status.Error(codes.InvalidArgument, err.Error())
 				}
 				environment, err := s.store.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{
 					ResourceID:  &environmentID,
 					ShowDeleted: true,
 				})
 				if err != nil {
-					return nil, status.Errorf(codes.Internal, err.Error())
+					return nil, status.Error(codes.Internal, err.Error())
 				}
 				if environment == nil {
 					return nil, status.Errorf(codes.NotFound, "environment %q not found", environmentID)
@@ -273,7 +273,7 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, request *v1pb.Upda
 		case "data_sources":
 			datasources, err := s.convertToDataSourceMessages(request.Instance.DataSources)
 			if err != nil {
-				return nil, status.Errorf(codes.InvalidArgument, err.Error())
+				return nil, status.Error(codes.InvalidArgument, err.Error())
 			}
 			if err := s.checkInstanceDataSources(instance, datasources); err != nil {
 				return nil, err
@@ -302,15 +302,15 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, request *v1pb.Upda
 	if v := patch.Activation; v != nil && *v {
 		if err := s.store.CheckActivationLimit(ctx, instanceCountLimit); err != nil {
 			if common.ErrorCode(err) == common.Invalid {
-				return nil, status.Errorf(codes.ResourceExhausted, err.Error())
+				return nil, status.Error(codes.ResourceExhausted, err.Error())
 			}
-			return nil, status.Errorf(codes.Internal, err.Error())
+			return nil, status.Error(codes.Internal, err.Error())
 		}
 	}
 
 	ins, err := s.store.UpdateInstanceV2(ctx, patch, instanceCountLimit)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	return convertToInstance(ins)
 }
@@ -326,7 +326,7 @@ func (s *InstanceService) syncSlowQueriesForInstance(ctx context.Context, instan
 
 	slowQueryPolicy, err := s.store.GetSlowQueryPolicy(ctx, api.PolicyResourceTypeInstance, instance.UID)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	if slowQueryPolicy == nil || !slowQueryPolicy.Active {
 		return nil, status.Errorf(codes.FailedPrecondition, "slow query policy is not active for instance %q", instanceName)
@@ -440,7 +440,7 @@ func (s *InstanceService) syncSlowQueriesForProject(ctx context.Context, project
 
 			slowQueryPolicy, err := s.store.GetSlowQueryPolicy(ctx, api.PolicyResourceTypeInstance, instance.UID)
 			if err != nil {
-				return nil, status.Errorf(codes.Internal, err.Error())
+				return nil, status.Error(codes.Internal, err.Error())
 			}
 			if slowQueryPolicy == nil || !slowQueryPolicy.Active {
 				continue
@@ -518,7 +518,7 @@ func (s *InstanceService) DeleteInstance(ctx context.Context, request *v1pb.Dele
 		Delete:     &deletePatch,
 		UpdaterID:  principalID,
 	}, -1 /* don't need to pass the instance limition */); err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	return &emptypb.Empty{}, nil
@@ -544,7 +544,7 @@ func (s *InstanceService) UndeleteInstance(ctx context.Context, request *v1pb.Un
 		UpdaterID:  principalID,
 	}, -1 /* don't need to pass the instance limition */)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	return convertToInstance(ins)
@@ -643,7 +643,7 @@ func (s *InstanceService) AddDataSource(ctx context.Context, request *v1pb.AddDa
 	}
 
 	if err := s.licenseService.IsFeatureEnabledForInstance(api.FeatureReadReplicaConnection, instance); err != nil {
-		return nil, status.Errorf(codes.PermissionDenied, err.Error())
+		return nil, status.Error(codes.PermissionDenied, err.Error())
 	}
 
 	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
@@ -651,14 +651,14 @@ func (s *InstanceService) AddDataSource(ctx context.Context, request *v1pb.AddDa
 		return nil, status.Errorf(codes.Internal, "principal ID not found")
 	}
 	if err := s.store.AddDataSourceToInstanceV2(ctx, instance.UID, principalID, instance.ResourceID, dataSource); err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	instance, err = s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
 		UID: &instance.UID,
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	return convertToInstance(instance)
@@ -696,7 +696,7 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 
 	if dataSource.Type == api.RO {
 		if err := s.licenseService.IsFeatureEnabledForInstance(api.FeatureReadReplicaConnection, instance); err != nil {
-			return nil, status.Errorf(codes.PermissionDenied, err.Error())
+			return nil, status.Error(codes.PermissionDenied, err.Error())
 		}
 	}
 
@@ -834,7 +834,7 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 
 	if patch.SSHHost != nil || patch.SSHPort != nil || patch.SSHUser != nil || patch.SSHObfuscatedPassword != nil || patch.SSHObfuscatedPrivateKey != nil {
 		if err := s.licenseService.IsFeatureEnabledForInstance(api.FeatureInstanceSSHConnection, instance); err != nil {
-			return nil, status.Errorf(codes.PermissionDenied, err.Error())
+			return nil, status.Error(codes.PermissionDenied, err.Error())
 		}
 	}
 
@@ -858,14 +858,14 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, request *v1pb.Up
 	}
 
 	if err := s.store.UpdateDataSourceV2(ctx, patch); err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	instance, err = s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
 		UID: &instance.UID,
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	return convertToInstance(instance)
@@ -905,21 +905,21 @@ func (s *InstanceService) RemoveDataSource(ctx context.Context, request *v1pb.Re
 	}
 
 	if err := s.store.RemoveDataSourceV2(ctx, instance.UID, instance.ResourceID, dataSource.ID); err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	instance, err = s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
 		ResourceID: &instance.ResourceID,
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	instance, err = s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
 		UID: &instance.UID,
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	return convertToInstance(instance)
@@ -928,14 +928,14 @@ func (s *InstanceService) RemoveDataSource(ctx context.Context, request *v1pb.Re
 func (s *InstanceService) getProjectMessage(ctx context.Context, name string) (*store.ProjectMessage, error) {
 	projectID, err := common.GetProjectID(name)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
 		ResourceID:  &projectID,
 		ShowDeleted: true,
 	})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	if project == nil {
 		return nil, status.Errorf(codes.NotFound, "project %q not found", name)
@@ -947,7 +947,7 @@ func (s *InstanceService) getProjectMessage(ctx context.Context, name string) (*
 func getInstanceMessage(ctx context.Context, stores *store.Store, name string) (*store.InstanceMessage, error) {
 	instanceID, err := common.GetInstanceID(name)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	find := &store.FindInstanceMessage{
@@ -955,7 +955,7 @@ func getInstanceMessage(ctx context.Context, stores *store.Store, name string) (
 	}
 	instance, err := stores.GetInstanceV2(ctx, find)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	if instance == nil {
 		return nil, status.Errorf(codes.NotFound, "instance %q not found", name)
@@ -1349,7 +1349,7 @@ func (s *InstanceService) instanceCountGuard(ctx context.Context) error {
 
 	count, err := s.store.CountInstance(ctx, &store.CountInstanceMessage{})
 	if err != nil {
-		return status.Errorf(codes.Internal, err.Error())
+		return status.Error(codes.Internal, err.Error())
 	}
 	if int64(count) >= instanceLimit {
 		return status.Errorf(codes.ResourceExhausted, "reached the maximum instance count %d", instanceLimit)

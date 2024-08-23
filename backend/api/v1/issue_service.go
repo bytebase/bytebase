@@ -2,7 +2,6 @@ package v1
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"strings"
 	"time"
@@ -122,7 +121,7 @@ func (s *IssueService) getIssueFind(ctx context.Context, filter string, query st
 	}
 	filters, err := parseFilter(filter)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	for _, spec := range filters {
 		switch spec.key {
@@ -223,14 +222,14 @@ func (s *IssueService) getIssueFind(ctx context.Context, filter string, query st
 			}
 			instanceID, databaseName, err := common.GetInstanceDatabaseID(spec.value)
 			if err != nil {
-				return nil, status.Errorf(codes.InvalidArgument, err.Error())
+				return nil, status.Error(codes.InvalidArgument, err.Error())
 			}
 			database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
 				InstanceID:   &instanceID,
 				DatabaseName: &databaseName,
 			})
 			if err != nil {
-				return nil, status.Errorf(codes.Internal, err.Error())
+				return nil, status.Error(codes.Internal, err.Error())
 			}
 			if database == nil {
 				return nil, status.Errorf(codes.InvalidArgument, `database "%q" not found`, spec.value)
@@ -253,7 +252,7 @@ func (s *IssueService) getIssueFind(ctx context.Context, filter string, query st
 				issueFind.NoPipeline = true
 			case "true":
 			default:
-				return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("invalid value %q for has_pipeline", spec.value))
+				return nil, status.Errorf(codes.InvalidArgument, "invalid value %q for has_pipeline", spec.value)
 			}
 		}
 	}
@@ -263,12 +262,12 @@ func (s *IssueService) getIssueFind(ctx context.Context, filter string, query st
 
 func (s *IssueService) ListIssues(ctx context.Context, request *v1pb.ListIssuesRequest) (*v1pb.ListIssuesResponse, error) {
 	if request.PageSize < 0 {
-		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("page size must be non-negative: %d", request.PageSize))
+		return nil, status.Errorf(codes.InvalidArgument, "page size must be non-negative: %d", request.PageSize)
 	}
 
 	projectID, err := common.GetProjectID(request.Parent)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	limit, offset, err := parseLimitAndOffset(request.PageToken, int(request.PageSize))
@@ -310,12 +309,12 @@ func (s *IssueService) ListIssues(ctx context.Context, request *v1pb.ListIssuesR
 
 func (s *IssueService) SearchIssues(ctx context.Context, request *v1pb.SearchIssuesRequest) (*v1pb.SearchIssuesResponse, error) {
 	if request.PageSize < 0 {
-		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("page size must be non-negative: %d", request.PageSize))
+		return nil, status.Errorf(codes.InvalidArgument, "page size must be non-negative: %d", request.PageSize)
 	}
 
 	projectID, err := common.GetProjectID(request.Parent)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	limit, offset, err := parseLimitAndOffset(request.PageToken, int(request.PageSize))
@@ -410,7 +409,7 @@ func (s *IssueService) createIssueDatabaseChange(ctx context.Context, request *v
 	}
 	projectID, err := common.GetProjectID(request.Parent)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
 		ResourceID: &projectID,
@@ -429,7 +428,7 @@ func (s *IssueService) createIssueDatabaseChange(ctx context.Context, request *v
 	var planUID *int64
 	_, planID, err := common.GetProjectIDPlanID(request.Issue.Plan)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{UID: &planID})
 	if err != nil {
@@ -443,7 +442,7 @@ func (s *IssueService) createIssueDatabaseChange(ctx context.Context, request *v
 	if request.Issue.Rollout != "" {
 		_, rolloutID, err := common.GetProjectIDRolloutID(request.Issue.Rollout)
 		if err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, err.Error())
+			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 		pipeline, err := s.store.GetPipelineV2ByID(ctx, rolloutID)
 		if err != nil {
@@ -503,7 +502,7 @@ func (s *IssueService) createIssueGrantRequest(ctx context.Context, request *v1p
 	}
 	projectID, err := common.GetProjectID(request.Parent)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
 		ResourceID: &projectID,
@@ -594,7 +593,7 @@ func (s *IssueService) createIssueDatabaseDataExport(ctx context.Context, reques
 	}
 	projectID, err := common.GetProjectID(request.Parent)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
 		ResourceID: &projectID,
@@ -613,7 +612,7 @@ func (s *IssueService) createIssueDatabaseDataExport(ctx context.Context, reques
 	var planUID *int64
 	_, planID, err := common.GetProjectIDPlanID(request.Issue.Plan)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{UID: &planID})
 	if err != nil {
@@ -627,7 +626,7 @@ func (s *IssueService) createIssueDatabaseDataExport(ctx context.Context, reques
 	if request.Issue.Rollout != "" {
 		_, rolloutID, err := common.GetProjectIDRolloutID(request.Issue.Rollout)
 		if err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, err.Error())
+			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 		pipeline, err := s.store.GetPipelineV2ByID(ctx, rolloutID)
 		if err != nil {
@@ -1369,11 +1368,11 @@ func (s *IssueService) BatchUpdateIssuesStatus(ctx context.Context, request *v1p
 
 func (s *IssueService) ListIssueComments(ctx context.Context, request *v1pb.ListIssueCommentsRequest) (*v1pb.ListIssueCommentsResponse, error) {
 	if request.PageSize < 0 {
-		return nil, status.Errorf(codes.InvalidArgument, fmt.Sprintf("page size must be non-negative: %d", request.PageSize))
+		return nil, status.Errorf(codes.InvalidArgument, "page size must be non-negative: %d", request.PageSize)
 	}
 	_, issueUID, err := common.GetProjectIDIssueUID(request.Parent)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{UID: &issueUID})
 	if err != nil {
@@ -1515,7 +1514,7 @@ func (s *IssueService) UpdateIssueComment(ctx context.Context, request *v1pb.Upd
 func (s *IssueService) getIssueMessage(ctx context.Context, name string) (*store.IssueMessage, error) {
 	issueID, err := common.GetIssueID(name)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{UID: &issueID})
 	if err != nil {

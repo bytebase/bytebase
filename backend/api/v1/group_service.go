@@ -34,12 +34,12 @@ func NewGroupService(store *store.Store, iamManager *iam.Manager) *GroupService 
 func (s *GroupService) GetGroup(ctx context.Context, request *v1pb.GetGroupRequest) (*v1pb.Group, error) {
 	email, err := common.GetGroupEmail(request.Name)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	group, err := s.store.GetGroup(ctx, email)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	return s.convertToV1Group(ctx, group)
@@ -49,7 +49,7 @@ func (s *GroupService) GetGroup(ctx context.Context, request *v1pb.GetGroupReque
 func (s *GroupService) ListGroups(ctx context.Context, _ *v1pb.ListGroupsRequest) (*v1pb.ListGroupsResponse, error) {
 	groups, err := s.store.ListGroups(ctx, &store.FindGroupMessage{})
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	response := &v1pb.ListGroupsResponse{}
@@ -67,7 +67,7 @@ func (s *GroupService) ListGroups(ctx context.Context, _ *v1pb.ListGroupsRequest
 func (s *GroupService) CreateGroup(ctx context.Context, request *v1pb.CreateGroupRequest) (*v1pb.Group, error) {
 	groupMessage, err := s.convertToGroupMessage(ctx, request.Group)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
@@ -88,7 +88,7 @@ func (s *GroupService) CreateGroup(ctx context.Context, request *v1pb.CreateGrou
 
 	group, err := s.store.CreateGroup(ctx, groupMessage, principalID)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	if err := s.iamManager.ReloadCache(ctx); err != nil {
@@ -102,7 +102,7 @@ func (s *GroupService) CreateGroup(ctx context.Context, request *v1pb.CreateGrou
 func (s *GroupService) UpdateGroup(ctx context.Context, request *v1pb.UpdateGroupRequest) (*v1pb.Group, error) {
 	groupEmail, err := common.GetGroupEmail(request.Group.Name)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
@@ -144,7 +144,7 @@ func (s *GroupService) UpdateGroup(ctx context.Context, request *v1pb.UpdateGrou
 		case "members":
 			payload, err := s.convertToGroupPayload(ctx, request.Group)
 			if err != nil {
-				return nil, status.Errorf(codes.InvalidArgument, err.Error())
+				return nil, status.Error(codes.InvalidArgument, err.Error())
 			}
 			patch.Payload = payload
 		default:
@@ -154,7 +154,7 @@ func (s *GroupService) UpdateGroup(ctx context.Context, request *v1pb.UpdateGrou
 
 	groupMessage, err := s.store.UpdateGroup(ctx, groupEmail, patch, user.ID)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	if err := s.iamManager.ReloadCache(ctx); err != nil {
@@ -168,11 +168,11 @@ func (s *GroupService) UpdateGroup(ctx context.Context, request *v1pb.UpdateGrou
 func (s *GroupService) DeleteGroup(ctx context.Context, request *v1pb.DeleteGroupRequest) (*emptypb.Empty, error) {
 	email, err := common.GetGroupEmail(request.Name)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	if err := s.store.DeleteGroup(ctx, email); err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	if err := s.iamManager.ReloadCache(ctx); err != nil {
@@ -216,7 +216,7 @@ func (s *GroupService) convertToGroupPayload(ctx context.Context, group *v1pb.Gr
 func (s *GroupService) convertToGroupMessage(ctx context.Context, group *v1pb.Group) (*store.GroupMessage, error) {
 	email, err := common.GetGroupEmail(group.Name)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	groupMessage := &store.GroupMessage{
@@ -228,7 +228,7 @@ func (s *GroupService) convertToGroupMessage(ctx context.Context, group *v1pb.Gr
 
 	payload, err := s.convertToGroupPayload(ctx, group)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	groupMessage.Payload = payload
 	return groupMessage, nil

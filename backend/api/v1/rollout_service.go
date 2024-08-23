@@ -67,7 +67,7 @@ func NewRolloutService(store *store.Store, sheetManager *sheet.Manager, licenseS
 func (s *RolloutService) PreviewRollout(ctx context.Context, request *v1pb.PreviewRolloutRequest) (*v1pb.Rollout, error) {
 	projectID, err := common.GetProjectID(request.Project)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
 		ResourceID: &projectID,
@@ -105,7 +105,7 @@ func (s *RolloutService) PreviewRollout(ctx context.Context, request *v1pb.Previ
 func (s *RolloutService) GetRollout(ctx context.Context, request *v1pb.GetRolloutRequest) (*v1pb.Rollout, error) {
 	projectID, rolloutID, err := common.GetProjectIDRolloutID(request.Name)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
 		ResourceID: &projectID,
@@ -139,7 +139,7 @@ func (s *RolloutService) CreateRollout(ctx context.Context, request *v1pb.Create
 	}
 	projectID, err := common.GetProjectID(request.Parent)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
 		ResourceID: &projectID,
@@ -153,7 +153,7 @@ func (s *RolloutService) CreateRollout(ctx context.Context, request *v1pb.Create
 
 	_, planID, err := common.GetProjectIDPlanID(request.GetRollout().GetPlan())
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	plan, err := s.store.GetPlan(ctx, &store.FindPlanMessage{UID: &planID})
 	if err != nil {
@@ -218,7 +218,7 @@ func (s *RolloutService) CreateRollout(ctx context.Context, request *v1pb.Create
 func (s *RolloutService) ListTaskRuns(ctx context.Context, request *v1pb.ListTaskRunsRequest) (*v1pb.ListTaskRunsResponse, error) {
 	projectID, rolloutID, maybeStageID, maybeTaskID, err := common.GetProjectIDRolloutIDMaybeStageIDMaybeTaskID(request.Parent)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
@@ -403,7 +403,7 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, request *v1pb.BatchR
 	}
 	projectID, rolloutID, _, err := common.GetProjectIDRolloutIDMaybeStageID(request.Parent)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
 		ResourceID: &projectID,
@@ -444,7 +444,7 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, request *v1pb.BatchR
 	for _, task := range request.Tasks {
 		_, _, stageID, taskID, err := common.GetProjectIDRolloutIDStageIDTaskID(task)
 		if err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, err.Error())
+			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 		stageTasks[stageID] = append(stageTasks[stageID], taskID)
 		taskIDsToRunMap[taskID] = true
@@ -551,7 +551,7 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, request *v1pb.BatchR
 func (s *RolloutService) BatchSkipTasks(ctx context.Context, request *v1pb.BatchSkipTasksRequest) (*v1pb.BatchSkipTasksResponse, error) {
 	projectID, rolloutID, _, err := common.GetProjectIDRolloutIDMaybeStageID(request.Parent)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
 		ResourceID: &projectID,
@@ -599,7 +599,7 @@ func (s *RolloutService) BatchSkipTasks(ctx context.Context, request *v1pb.Batch
 	for _, task := range request.Tasks {
 		_, _, stageID, taskID, err := common.GetProjectIDRolloutIDStageIDTaskID(task)
 		if err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, err.Error())
+			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 		if _, ok := taskByID[taskID]; !ok {
 			return nil, status.Errorf(codes.NotFound, "task %v not found in the rollout", taskID)
@@ -668,7 +668,7 @@ func (s *RolloutService) BatchCancelTaskRuns(ctx context.Context, request *v1pb.
 
 	projectID, rolloutID, stageID, _, err := common.GetProjectIDRolloutIDStageIDMaybeTaskID(request.Parent)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
@@ -741,7 +741,7 @@ func (s *RolloutService) BatchCancelTaskRuns(ctx context.Context, request *v1pb.
 	for _, taskRun := range request.TaskRuns {
 		projectID, rolloutID, stageID, taskID, taskRunID, err := common.GetProjectIDRolloutIDStageIDTaskIDTaskRunID(taskRun)
 		if err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, err.Error())
+			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 		taskRunIDs = append(taskRunIDs, taskRunID)
 		taskNames = append(taskNames, common.FormatTask(projectID, rolloutID, stageID, taskID))
@@ -1015,14 +1015,14 @@ func GetPipelineCreate(ctx context.Context, s *store.Store, sheetManager *sheet.
 			if config := spec.GetChangeDatabaseConfig(); config != nil {
 				instanceID, databaseName, err := common.GetInstanceDatabaseID(config.Target)
 				if err != nil {
-					return nil, status.Errorf(codes.InvalidArgument, err.Error())
+					return nil, status.Error(codes.InvalidArgument, err.Error())
 				}
 				database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
 					InstanceID:   &instanceID,
 					DatabaseName: &databaseName,
 				})
 				if err != nil {
-					return nil, status.Errorf(codes.Internal, err.Error())
+					return nil, status.Error(codes.Internal, err.Error())
 				}
 				if database == nil {
 					return nil, status.Errorf(codes.NotFound, "database %v not found", config.Target)

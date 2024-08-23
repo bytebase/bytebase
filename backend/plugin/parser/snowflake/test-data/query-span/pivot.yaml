@@ -1,6 +1,6 @@
 - description: Unpivot
   statement: SELECT * FROM T1 UNPIVOT(E FOR F IN (B, C, D));
-  connectedDatabase: SNOWFLAKE
+  defaultDatabase: SNOWFLAKE
   ignoreCaseSensitive: true
   metadata: |-
     {
@@ -88,7 +88,7 @@
           column: ""
 - description: Pivot
   statement: SELECT TT1.* FROM T1 PIVOT(MAX(A) FOR B IN ('a', 'b', 'c')) AS TT1
-  connectedDatabase: SNOWFLAKE
+  defaultDatabase: SNOWFLAKE
   ignoreCaseSensitive: true
   metadata: |-
     {
