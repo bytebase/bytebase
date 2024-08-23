@@ -227,14 +227,8 @@ func getColumnTypeName(columnType *sppb.Type) (string, error) {
 
 func getStatementWithResultLimit(stmt string, limit int) string {
 	stmt = strings.TrimRight(stmt, " \n\t;")
-	if !strings.HasPrefix(stmt, "EXPLAIN") {
-		limitPart := ""
-		if limit > 0 {
-			limitPart = fmt.Sprintf(" LIMIT %d", limit)
-		}
-		return fmt.Sprintf("WITH result AS (%s) SELECT * FROM result%s;", stmt, limitPart)
-	}
-	return stmt
+	limitPart := fmt.Sprintf(" LIMIT %d", limit)
+	return fmt.Sprintf("WITH result AS (%s) SELECT * FROM result%s;", stmt, limitPart)
 }
 
 func getDSN(host, database string) string {

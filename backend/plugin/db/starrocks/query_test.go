@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestGetStatementWithResultLimitOfMySQL(t *testing.T) {
+func TestGetStatementWithResultLimit(t *testing.T) {
 	testCases := []struct {
 		stmt  string
 		count int
@@ -18,9 +18,24 @@ func TestGetStatementWithResultLimitOfMySQL(t *testing.T) {
 			want:  "SELECT * FROM t LIMIT 10;",
 		},
 		{
+			stmt:  "SELECT * FROM t LIMIT 10;",
+			count: 5,
+			want:  "SELECT * FROM t LIMIT 5;",
+		},
+		{
 			stmt:  "SELECT * FROM t LIMIT 5;",
 			count: 10,
 			want:  "SELECT * FROM t LIMIT 5;",
+		},
+		{
+			stmt:  "SELECT * FROM t LIMIT 123;",
+			count: 10,
+			want:  "SELECT * FROM t LIMIT 10;",
+		},
+		{
+			stmt:  "SELECT * FROM t LIMIT 123;",
+			count: 10,
+			want:  "SELECT * FROM t LIMIT 10;",
 		},
 		{
 			stmt:  "SELECT * FROM t2 JOIN t1 ON t2.c2 = t1.c2 where t2.c2 > 10;",
@@ -73,8 +88,7 @@ func TestGetStatementWithResultLimitOfMySQL(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		got, err := getStatementWithResultLimitForMySQL(tc.stmt, tc.count)
-		require.NoError(t, err, tc.stmt)
+		got := getStatementWithResultLimit(tc.stmt, tc.count)
 		require.Equal(t, tc.want, got, tc.stmt)
 	}
 }
