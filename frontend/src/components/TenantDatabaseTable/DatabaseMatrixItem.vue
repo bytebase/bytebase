@@ -1,6 +1,7 @@
 <template>
   <NPopover
     trigger="hover"
+    placement="right"
     :theme-overrides="{
       borderRadius: '0.375rem',
       padding: '0',
