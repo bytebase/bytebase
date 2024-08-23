@@ -40,8 +40,8 @@ const (
 
 // querySpanExtractor is the extractor to extract the query span from the given pgquery.RawStmt.
 type querySpanExtractor struct {
-	ctx         context.Context
-	connectedDB string
+	ctx             context.Context
+	defaultDatabase string
 	// The metaCache serves as a lazy-load cache for the database metadata and should not be accessed directly.
 	// Instead, use querySpanExtractor.getDatabaseMetadata to access it.
 	metaCache map[string]*model.DatabaseMetadata
@@ -65,9 +65,9 @@ type querySpanExtractor struct {
 }
 
 // newQuerySpanExtractor creates a new query span extractor, the databaseMetadata and the ast are in the read guard.
-func newQuerySpanExtractor(connectedDB string, gCtx base.GetQuerySpanContext) *querySpanExtractor {
+func newQuerySpanExtractor(defaultDatabase string, gCtx base.GetQuerySpanContext) *querySpanExtractor {
 	return &querySpanExtractor{
-		connectedDB:             connectedDB,
+		defaultDatabase:         defaultDatabase,
 		metaCache:               make(map[string]*model.DatabaseMetadata),
 		gCtx:                    gCtx,
 		sourceColumnsInFunction: make(base.SourceColumnSet),
@@ -146,7 +146,7 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*ba
 			// Sadly, getAccessTables() returns nil for resources not found.
 			if len(accessTables) == 0 {
 				accessTables[base.ColumnResource{
-					Database: q.connectedDB,
+					Database: q.defaultDatabase,
 				}] = true
 			}
 			return &base.QuerySpan{
@@ -360,13 +360,13 @@ func (q *querySpanExtractor) extractTableSourceFromSystemFunction(node *pgquery.
 }
 
 func (q *querySpanExtractor) findFunctionDefine(schemaName, funcName string) (base.TableSource, error) {
-	dbSchema, err := q.getDatabaseMetadata(q.connectedDB)
+	dbSchema, err := q.getDatabaseMetadata(q.defaultDatabase)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get database metadata for database: %s", q.connectedDB)
+		return nil, errors.Wrapf(err, "failed to get database metadata for database: %s", q.defaultDatabase)
 	}
 	if dbSchema == nil {
 		return nil, &parsererror.ResourceNotFoundError{
-			Database: &q.connectedDB,
+			Database: &q.defaultDatabase,
 		}
 	}
 	if schemaName == "" {
@@ -375,7 +375,7 @@ func (q *querySpanExtractor) findFunctionDefine(schemaName, funcName string) (ba
 	schema := dbSchema.GetSchema(schemaName)
 	if schema == nil {
 		return nil, &parsererror.ResourceNotFoundError{
-			Database: &q.connectedDB,
+			Database: &q.defaultDatabase,
 			Schema:   &schemaName,
 		}
 	}
@@ -392,7 +392,7 @@ func (q *querySpanExtractor) findFunctionDefine(schemaName, funcName string) (ba
 	}
 
 	return nil, &parsererror.ResourceNotFoundError{
-		Database: &q.connectedDB,
+		Database: &q.defaultDatabase,
 		Schema:   &schemaName,
 		Function: &funcName,
 	}
@@ -515,7 +515,7 @@ func (q *querySpanExtractor) extractTableSourceFromPLPGSQLFunction(createFunc *p
 	}
 
 	for _, sql := range sqlList {
-		newQ := newQuerySpanExtractor(q.connectedDB, q.gCtx)
+		newQ := newQuerySpanExtractor(q.defaultDatabase, q.gCtx)
 		span, err := newQ.getQuerySpan(q.ctx, sql)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get query span for function: %s", name)
@@ -584,7 +584,7 @@ func extractSQL(data any) string {
 }
 
 func (q *querySpanExtractor) extractTableSourceFromSQLFunction(createFunc *pgquery.Node_CreateFunctionStmt, name string, asBody string) ([]base.QuerySpanResult, error) {
-	newQ := newQuerySpanExtractor(q.connectedDB, q.gCtx)
+	newQ := newQuerySpanExtractor(q.defaultDatabase, q.gCtx)
 	span, err := newQ.getQuerySpan(q.ctx, asBody)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get query span for function: %s", name)
@@ -1169,7 +1169,7 @@ func (q *querySpanExtractor) extractSourceColumnSetFromExpressionNode(node *pgqu
 				if err != nil || tableSource == nil {
 					return base.SourceColumnSet{}, &parsererror.ResourceNotFoundError{
 						Err:      errors.New("cannot find the column ref"),
-						Database: &q.connectedDB,
+						Database: &q.defaultDatabase,
 						Schema:   &schema,
 						Table:    &table,
 						Column:   &column,
@@ -1184,7 +1184,7 @@ func (q *querySpanExtractor) extractSourceColumnSetFromExpressionNode(node *pgqu
 			}
 			return base.SourceColumnSet{}, &parsererror.ResourceNotFoundError{
 				Err:      errors.New("cannot find the column ref"),
-				Database: &q.connectedDB,
+				Database: &q.defaultDatabase,
 				Schema:   &schema,
 				Table:    &table,
 				Column:   &column,
@@ -1229,7 +1229,7 @@ func (q *querySpanExtractor) extractSourceColumnSetFromExpressionNode(node *pgqu
 		// The reason for new extractor is that we still need the current fromFieldList, overriding it is not expected.
 		subqueryExtractor := &querySpanExtractor{
 			ctx:               q.ctx,
-			connectedDB:       q.connectedDB,
+			defaultDatabase:   q.defaultDatabase,
 			metaCache:         q.metaCache,
 			gCtx:              q.gCtx,
 			ctes:              q.ctes,
@@ -1442,13 +1442,13 @@ func (q *querySpanExtractor) findTableSchema(schemaName string, tableName string
 	}
 
 	// FIXME: consider cross database query which is supported in Redshift.
-	dbSchema, err := q.getDatabaseMetadata(q.connectedDB)
+	dbSchema, err := q.getDatabaseMetadata(q.defaultDatabase)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get database metadata for database: %s", q.connectedDB)
+		return nil, errors.Wrapf(err, "failed to get database metadata for database: %s", q.defaultDatabase)
 	}
 	if dbSchema == nil {
 		return nil, &parsererror.ResourceNotFoundError{
-			Database: &q.connectedDB,
+			Database: &q.defaultDatabase,
 		}
 	}
 	if schemaName == "" {
@@ -1457,7 +1457,7 @@ func (q *querySpanExtractor) findTableSchema(schemaName string, tableName string
 	schema := dbSchema.GetSchema(schemaName)
 	if schema == nil {
 		return nil, &parsererror.ResourceNotFoundError{
-			Database: &q.connectedDB,
+			Database: &q.defaultDatabase,
 			Schema:   &schemaName,
 		}
 	}
@@ -1468,7 +1468,7 @@ func (q *querySpanExtractor) findTableSchema(schemaName string, tableName string
 	sequence := schema.GetSequence(tableName)
 	if table == nil && view == nil && foreignTable == nil && materializedView == nil && sequence == nil {
 		return nil, &parsererror.ResourceNotFoundError{
-			Database: &q.connectedDB,
+			Database: &q.defaultDatabase,
 			Schema:   &schemaName,
 			Table:    &tableName,
 		}
@@ -1481,7 +1481,7 @@ func (q *querySpanExtractor) findTableSchema(schemaName string, tableName string
 		}
 		return &base.PhysicalTable{
 			Server:   "",
-			Database: q.connectedDB,
+			Database: q.defaultDatabase,
 			Schema:   schemaName,
 			Name:     tableName,
 			Columns:  columns,
@@ -1495,7 +1495,7 @@ func (q *querySpanExtractor) findTableSchema(schemaName string, tableName string
 		}
 		return &base.PhysicalTable{
 			Server:   "",
-			Database: q.connectedDB,
+			Database: q.defaultDatabase,
 			Schema:   schemaName,
 			Name:     tableName,
 			Columns:  columns,
@@ -1509,7 +1509,7 @@ func (q *querySpanExtractor) findTableSchema(schemaName string, tableName string
 		}
 		return &base.PhysicalView{
 			Server:   "",
-			Database: q.connectedDB,
+			Database: q.defaultDatabase,
 			Schema:   schemaName,
 			Name:     tableName,
 			Columns:  columns,
@@ -1523,7 +1523,7 @@ func (q *querySpanExtractor) findTableSchema(schemaName string, tableName string
 		}
 		return &base.PhysicalView{
 			Server:   "",
-			Database: q.connectedDB,
+			Database: q.defaultDatabase,
 			Schema:   schemaName,
 			Name:     tableName,
 			Columns:  columns,
@@ -1535,7 +1535,7 @@ func (q *querySpanExtractor) findTableSchema(schemaName string, tableName string
 		columns := []string{"last_value", "log_cnt", "is_called"}
 		return &base.Sequence{
 			Server:   "",
-			Database: q.connectedDB,
+			Database: q.defaultDatabase,
 			Schema:   schemaName,
 			Name:     tableName,
 			Columns:  columns,
@@ -1728,7 +1728,7 @@ func (q *querySpanExtractor) getAccessTables(sql string) (base.SourceColumnSet, 
 
 	accessesMap := make(base.SourceColumnSet)
 
-	result, err := q.getRangeVarsFromJSONRecursive(jsonData, q.connectedDB, "public")
+	result, err := q.getRangeVarsFromJSONRecursive(jsonData, q.defaultDatabase, "public")
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get range vars from json")
 	}
@@ -1858,7 +1858,7 @@ func isSystemResource(resource base.ColumnResource) bool {
 }
 
 func (q *querySpanExtractor) getColumnsForView(definition string) ([]base.QuerySpanResult, error) {
-	newQ := newQuerySpanExtractor(q.connectedDB, q.gCtx)
+	newQ := newQuerySpanExtractor(q.defaultDatabase, q.gCtx)
 	span, err := newQ.getQuerySpan(q.ctx, definition)
 	if err != nil {
 		return nil, err
@@ -1867,7 +1867,7 @@ func (q *querySpanExtractor) getColumnsForView(definition string) ([]base.QueryS
 }
 
 func (q *querySpanExtractor) getColumnsForMaterializedView(definition string) ([]base.QuerySpanResult, error) {
-	newQ := newQuerySpanExtractor(q.connectedDB, q.gCtx)
+	newQ := newQuerySpanExtractor(q.defaultDatabase, q.gCtx)
 	span, err := newQ.getQuerySpan(q.ctx, definition)
 	if err != nil {
 		return nil, err

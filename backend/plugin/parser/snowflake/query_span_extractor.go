@@ -17,8 +17,8 @@ import (
 type querySpanExtractor struct {
 	ctx context.Context
 
-	connectedDB     string
-	connectedSchema string
+	defaultDatbase string
+	defaultSchema  string
 	// https://docs.com/en/sql-reference/identifiers-syntax
 	ignoreCaseSensitive bool
 
@@ -32,10 +32,10 @@ type querySpanExtractor struct {
 	tableSourcesFrom []base.TableSource
 }
 
-func newQuerySpanExtractor(connectedDB, connectedSchema string, gCtx base.GetQuerySpanContext, ignoreCaseSensitive bool) *querySpanExtractor {
+func newQuerySpanExtractor(defaultDatabase, defaultSchema string, gCtx base.GetQuerySpanContext, ignoreCaseSensitive bool) *querySpanExtractor {
 	return &querySpanExtractor{
-		connectedDB:         connectedDB,
-		connectedSchema:     connectedSchema,
+		defaultDatbase:      defaultDatabase,
+		defaultSchema:       defaultSchema,
 		ignoreCaseSensitive: ignoreCaseSensitive,
 		gCtx:                gCtx,
 	}
@@ -56,7 +56,7 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string)
 		return nil, nil
 	}
 
-	accessTables := getAccessTables(q.connectedDB, q.connectedSchema, tree)
+	accessTables := getAccessTables(q.defaultDatbase, q.defaultSchema, tree)
 	// We do not support simultaneous access to the system table and the user table
 	// because we do not synchronize the schema of the system table.
 	// This causes an error (NOT_FOUND) when using querySpanExtractor.findTableSchema.
@@ -415,7 +415,7 @@ func (q *querySpanExtractor) extractQuerySpanResultResultFromExpr(ctx antlr.Rule
 		}
 		return querySpanResult.Name, querySpanResult, nil
 	case *parser.Object_nameContext:
-		normalizedDatabaseName, normalizedSchemaName, normalizedTableName := normalizedObjectName(ctx, q.connectedDB, "PUBLIC")
+		normalizedDatabaseName, normalizedSchemaName, normalizedTableName := normalizedObjectName(ctx, q.defaultDatbase, "PUBLIC")
 		fieldInfo, err := q.getField(normalizedDatabaseName, normalizedSchemaName, normalizedTableName, "")
 		if err != nil {
 			return "", base.QuerySpanResult{}, errors.Wrapf(err, "failed to check whether the object %q is sensitive near line %d", normalizedTableName, ctx.GetStart().GetLine())
@@ -939,7 +939,7 @@ func (q *querySpanExtractor) extractTableSourceFromObjectRef(ctx parser.IObject_
 	var result []base.QuerySpanResult
 
 	if objectName := ctx.Object_name(); objectName != nil {
-		_, tableSource, err := q.findTableSchema(objectName, q.connectedDB, "PUBLIC")
+		_, tableSource, err := q.findTableSchema(objectName, q.defaultDatbase, "PUBLIC")
 		if err != nil {
 			return nil, err
 		}

@@ -16,7 +16,7 @@ import (
 
 type querySpanExtractor struct {
 	ctx               context.Context
-	connectedDB       string
+	defaultDatabase   string
 	metaCache         map[string]*model.DatabaseMetadata
 	gCtx              base.GetQuerySpanContext
 	lowerTableViewMap map[string]map[string]bool
@@ -26,9 +26,9 @@ type querySpanExtractor struct {
 	tableSourcesFrom  []base.TableSource
 }
 
-func newQuerySpanExtractor(connectedDB string, gCtx base.GetQuerySpanContext) *querySpanExtractor {
+func newQuerySpanExtractor(defaultDatabase string, gCtx base.GetQuerySpanContext) *querySpanExtractor {
 	return &querySpanExtractor{
-		connectedDB:       connectedDB,
+		defaultDatabase:   defaultDatabase,
 		metaCache:         make(map[string]*model.DatabaseMetadata),
 		lowerTableViewMap: make(map[string]map[string]bool),
 		gCtx:              gCtx,
@@ -84,7 +84,7 @@ func (q *querySpanExtractor) getAccessTables(node tidbast.Node) base.SourceColum
 	for _, table := range tables {
 		databaseName := table.Schema.O
 		if databaseName == "" {
-			databaseName = q.connectedDB
+			databaseName = q.defaultDatabase
 		}
 
 		// This is a false-positive behavior, the table we found may not be the table the query actually accesses.
@@ -108,7 +108,7 @@ func (q *querySpanExtractor) getAccessTables(node tidbast.Node) base.SourceColum
 
 func (q *querySpanExtractor) existsTableMetadata(databaseName string, tableName string) bool {
 	if databaseName == "" {
-		databaseName = q.connectedDB
+		databaseName = q.defaultDatabase
 	}
 
 	if q.lowerTableViewMap[databaseName] != nil {
@@ -361,7 +361,7 @@ func (q *querySpanExtractor) extractSelect(node *tidbast.SelectStmt) (base.Table
 					result.Columns = append(result.Columns, columns...)
 				} else {
 					for _, tableSource := range fromFieldList {
-						sameDatabase := (field.WildCard.Schema.O == tableSource.GetDatabaseName() || (field.WildCard.Schema.O == "" && tableSource.GetDatabaseName() == q.connectedDB))
+						sameDatabase := (field.WildCard.Schema.O == tableSource.GetDatabaseName() || (field.WildCard.Schema.O == "" && tableSource.GetDatabaseName() == q.defaultDatabase))
 						sameTable := field.WildCard.Table.O == tableSource.GetTableName()
 						find := false
 						if sameDatabase && sameTable {
@@ -460,7 +460,7 @@ func (q *querySpanExtractor) extractSourceColumnSetFromExpression(in tidbast.Exp
 		// The reason for new q is that we still need the current fromFieldList, overriding it is not expected.
 		subqueryExtractor := &querySpanExtractor{
 			ctx:               q.ctx,
-			connectedDB:       q.connectedDB,
+			defaultDatabase:   q.defaultDatabase,
 			metaCache:         q.metaCache,
 			gCtx:              q.gCtx,
 			ctes:              q.ctes,
@@ -527,7 +527,7 @@ func (q *querySpanExtractor) getAllTableColumnSources(databaseName, tableName st
 		if databaseName != "" && databaseName != tableSource.GetDatabaseName() {
 			return nil, false
 		}
-		if databaseName == "" && tableSource.GetDatabaseName() != "" && tableSource.GetDatabaseName() != q.connectedDB {
+		if databaseName == "" && tableSource.GetDatabaseName() != "" && tableSource.GetDatabaseName() != q.defaultDatabase {
 			return nil, false
 		}
 		if tableName != "" && tableName != tableSource.GetTableName() {
@@ -733,7 +733,7 @@ func (q *querySpanExtractor) findTableSchema(databaseName string, tableName stri
 	}
 
 	if databaseName == "" {
-		databaseName = q.connectedDB
+		databaseName = q.defaultDatabase
 	}
 
 	dbSchema, err := q.getDatabaseMetadata(databaseName)
@@ -796,7 +796,7 @@ func (q *querySpanExtractor) findTableSchema(databaseName string, tableName stri
 }
 
 func (q *querySpanExtractor) getColumnsForView(definition string) ([]base.QuerySpanResult, error) {
-	newQ := newQuerySpanExtractor(q.connectedDB, q.gCtx)
+	newQ := newQuerySpanExtractor(q.defaultDatabase, q.gCtx)
 	span, err := newQ.getQuerySpan(q.ctx, definition)
 	if err != nil {
 		return nil, err
