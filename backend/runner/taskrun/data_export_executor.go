@@ -3,7 +3,6 @@ package taskrun
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/pkg/errors"
 
@@ -76,7 +75,7 @@ func (exec *DataExportExecutor) RunOnce(ctx context.Context, _ context.Context, 
 		Format:    v1pb.ExportFormat(payload.Format),
 		Password:  payload.Password,
 	}
-	bytes, durationNs, exportErr := apiv1.DoExport(ctx, exec.store, exec.dbFactory, exec.license, exportRequest, nil /* user */, instance, database, nil, exec.schemaSyncer)
+	bytes, _, exportErr := apiv1.DoExport(ctx, exec.store, exec.dbFactory, exec.license, exportRequest, nil /* user */, instance, database, nil, exec.schemaSyncer)
 	if exportErr != nil {
 		return true, nil, errors.Wrap(exportErr, "failed to export data")
 	}
@@ -92,7 +91,7 @@ func (exec *DataExportExecutor) RunOnce(ctx context.Context, _ context.Context, 
 	}
 
 	return true, &storepb.TaskRunResult{
-		Detail:           fmt.Sprintf("Data export succeeded within %v", time.Duration(durationNs).String()),
+		Detail:           "Data export succeeded",
 		ExportArchiveUid: int32(exportArchive.UID),
 	}, nil
 }
