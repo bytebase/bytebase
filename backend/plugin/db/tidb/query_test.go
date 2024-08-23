@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestGetStatementWithResultLimitOfTiDB(t *testing.T) {
+func TestGetStatementWithResultLimit(t *testing.T) {
 	testCases := []struct {
 		stmt  string
 		count int
