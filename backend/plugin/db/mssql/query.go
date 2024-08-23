@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log/slog"
+	"strconv"
 	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
@@ -326,6 +327,18 @@ func (r *tsqlRewriter) handleQuerySpecification(ctx tsql.IQuery_specificationCon
 	}
 	if ctx.Top_clause() != nil {
 		r.hasTop = true
+
+		var limit int
+		topCount := ctx.Top_clause().Top_count()
+		if topCount != nil {
+			userLimitText := topCount.GetText()
+			limit, _ = strconv.Atoi(userLimitText)
+		}
+		if limit == 0 || r.limitCount < limit {
+			limit = r.limitCount
+		}
+
+		r.rewriter.ReplaceDefault(ctx.Top_clause().GetStart().GetTokenIndex(), ctx.Top_clause().GetStop().GetTokenIndex(), fmt.Sprintf("TOP %d", limit))
 		return
 	}
 

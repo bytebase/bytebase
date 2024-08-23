@@ -84,15 +84,7 @@ func (r *plsqlRewriter) EnterSubquery(ctx *plsql.SubqueryContext) {
 	if ctx.AllSubquery_operation_part() != nil && len(ctx.AllSubquery_operation_part()) > 0 {
 		lastPart := ctx.Subquery_operation_part(len(ctx.AllSubquery_operation_part()) - 1)
 		if lastPart.Subquery_basic_elements().Query_block().Fetch_clause() != nil {
-			expression := lastPart.Subquery_basic_elements().Query_block().Fetch_clause().Expression()
-			if expression != nil {
-				userLimitText := expression.GetText()
-				limit, _ := strconv.Atoi(userLimitText)
-				if limit == 0 || r.limitCount < limit {
-					limit = r.limitCount
-				}
-				r.rewriter.ReplaceDefault(expression.GetStart().GetTokenIndex(), expression.GetStop().GetTokenIndex(), fmt.Sprintf("%d", limit))
-			}
+			r.handleFetchClause(lastPart.Subquery_basic_elements().Query_block().Fetch_clause())
 			return
 		}
 		if subqueryOp, ok := lastPart.(*plsql.Subquery_operation_partContext); ok {
@@ -104,16 +96,20 @@ func (r *plsqlRewriter) EnterSubquery(ctx *plsql.SubqueryContext) {
 	// otherwise (subquery and normally)
 	basicElements := ctx.Subquery_basic_elements()
 	if basicElements.Query_block().Fetch_clause() != nil {
-		expression := basicElements.Query_block().Fetch_clause().Expression()
-		if expression != nil {
-			userLimitText := expression.GetText()
-			limit, _ := strconv.Atoi(userLimitText)
-			if limit == 0 || r.limitCount < limit {
-				limit = r.limitCount
-			}
-			r.rewriter.ReplaceDefault(expression.GetStart().GetTokenIndex(), expression.GetStop().GetTokenIndex(), fmt.Sprintf("%d", limit))
-		}
+		r.handleFetchClause(basicElements.Query_block().Fetch_clause())
 		return
 	}
 	r.rewriter.InsertAfterDefault(basicElements.GetStop().GetTokenIndex(), fmt.Sprintf(" FETCH NEXT %d ROWS ONLY", r.limitCount))
+}
+
+func (r *plsqlRewriter) handleFetchClause(fetchClause plsql.IFetch_clauseContext) {
+	expression := fetchClause.Expression()
+	if expression != nil {
+		userLimitText := expression.GetText()
+		limit, _ := strconv.Atoi(userLimitText)
+		if limit == 0 || r.limitCount < limit {
+			limit = r.limitCount
+		}
+		r.rewriter.ReplaceDefault(expression.GetStart().GetTokenIndex(), expression.GetStop().GetTokenIndex(), fmt.Sprintf("%d", limit))
+	}
 }

@@ -11,6 +11,10 @@
   count: 10
   want: SELECT TOP 3 id FROM t1;
 - stmt: |
+    SELECT TOP 123 id FROM t1;
+  count: 10
+  want: SELECT TOP 10 id FROM t1;
+- stmt: |
     SELECT id FROM t1 ORDER BY price;
   count: 10
   want: SELECT id FROM t1 ORDER BY price OFFSET 0 ROWS FETCH NEXT 10 ROWS ONLY;
@@ -64,7 +68,7 @@
         list_price,
         product_name OFFSET 0 ROWS FETCH NEXT 10 ROWS ONLY;
 - stmt: |
-    SELECT TOP 10
+    SELECT TOP 123
         product_name,
         list_price
     FROM
