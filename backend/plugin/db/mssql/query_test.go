@@ -16,7 +16,7 @@ func TestGetStatementWithResultLimit(t *testing.T) {
 
 type limitTestData struct {
 	Stmt  string `yaml:"stmt"`
-	Count int    `yaml:"count"`
+	Limit int    `yaml:"limit"`
 	Want  string `yaml:"want"`
 }
 
@@ -33,7 +33,7 @@ func runLimitTest(t *testing.T, file string, record bool) {
 	require.NoError(t, err)
 
 	for i, tc := range testCases {
-		want := getStatementWithResultLimit(tc.Stmt, tc.Count)
+		want := getStatementWithResultLimit(tc.Stmt, tc.Limit)
 		if record {
 			testCases[i].Want = want
 		} else {

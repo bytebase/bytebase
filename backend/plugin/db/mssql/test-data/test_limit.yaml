@@ -1,29 +1,29 @@
 - stmt: |
     SELECT 1;
-  count: 10
+  limit: 10
   want: SELECT TOP 10 1;
 - stmt: |
     SELECT id FROM t1;
-  count: 10
+  limit: 10
   want: SELECT TOP 10 id FROM t1;
 - stmt: |
     SELECT TOP 3 id FROM t1;
-  count: 10
+  limit: 10
   want: SELECT TOP 3 id FROM t1;
 - stmt: |
     SELECT TOP 123 id FROM t1;
-  count: 10
+  limit: 10
   want: SELECT TOP 10 id FROM t1;
 - stmt: |
     SELECT id FROM t1 ORDER BY price;
-  count: 10
+  limit: 10
   want: SELECT id FROM t1 ORDER BY price OFFSET 0 ROWS FETCH NEXT 10 ROWS ONLY;
 - stmt: |
     SELECT name, price
     FROM toy
     ORDER BY price
     OFFSET 0 ROWS FETCH FIRST 5 ROWS ONLY;
-  count: 10
+  limit: 10
   want: |-
     SELECT name, price
     FROM toy
@@ -38,7 +38,7 @@
     ORDER BY
         list_price,
         product_name;
-  count: 10
+  limit: 10
   want: |-
     SELECT
         product_name,
@@ -57,7 +57,7 @@
     ORDER BY
         list_price,
         product_name OFFSET 0 ROWS FETCH NEXT 10 ROWS ONLY;
-  count: 10
+  limit: 10
   want: |-
     SELECT
         product_name,
@@ -75,7 +75,7 @@
         production.products
     ORDER BY
         list_price DESC;
-  count: 10
+  limit: 10
   want: |-
     SELECT TOP 10
         product_name,
@@ -95,7 +95,7 @@
         ON c.category_id = p.category_id
     ORDER BY
         product_name DESC;
-  count: 10
+  limit: 10
   want: |-
     SELECT
     product_name,
@@ -125,7 +125,7 @@
         )
     ORDER BY
         order_date DESC;
-  count: 10
+  limit: 10
   want: |-
     SELECT
       order_id,
@@ -159,7 +159,7 @@
     FROM
         sales.orders o
     order by order_date desc;
-  count: 10
+  limit: 10
   want: |-
     SELECT
       order_id,
@@ -190,7 +190,7 @@
     ORDER BY
         first_name,
         last_name;
-  count: 10
+  limit: 10
   want: |-
     SELECT
       first_name,
@@ -218,7 +218,7 @@
         last_name
     FROM
         sales.customers;
-  count: 10
+  limit: 10
   want: |-
     SELECT TOP 10
         first_name,
@@ -243,7 +243,7 @@
         last_name
     FROM
         sales.customers;
-  count: 10
+  limit: 10
   want: |-
     SELECT TOP 10
         first_name,
@@ -278,7 +278,7 @@
         cte_sales_amounts
     WHERE
         year = 2018;
-  count: 10
+  limit: 10
   want: |-
     WITH cte_sales_amounts (staff, sales, year) AS (
     SELECT
@@ -322,7 +322,7 @@
             ON o.staff_id = e.manager_id
     )
     SELECT * FROM cte_org;
-  count: 10
+  limit: 10
   want: |-
     WITH cte_org AS (
     SELECT
