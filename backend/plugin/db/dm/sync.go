@@ -82,7 +82,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 		Name: driver.databaseName,
 	}
 	databaseMetadata.Schemas = append(databaseMetadata.Schemas, &storepb.SchemaMetadata{
-		Name:   driver.databaseName,
+		Name:   "",
 		Tables: tableMap[driver.databaseName],
 		Views:  viewMap[driver.databaseName],
 	})
