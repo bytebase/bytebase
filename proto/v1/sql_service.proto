@@ -255,6 +255,7 @@ message RowValue {
     uint64 uint64_value = 10;
     // value_value is used for Spanner and TUPLE ARRAY MAP in Clickhouse only.
     google.protobuf.Value value_value = 11;
+    google.protobuf.Timestamp timestamp_value = 12;
   }
 }
 
