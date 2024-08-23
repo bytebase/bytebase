@@ -33,9 +33,9 @@ func TestGetStatementWithResultLimit(t *testing.T) {
 			want:  "SELECT * FROM t LIMIT 10;",
 		},
 		{
-			stmt:  "SELECT * FROM t LIMIT 123;",
-			count: 10,
-			want:  "SELECT * FROM t LIMIT 10;",
+			stmt:  "SELECT * FROM t LIMIT 10 OFFSET 123;",
+			count: 5,
+			want:  "SELECT * FROM t LIMIT 5 OFFSET 123;",
 		},
 		{
 			stmt:  "SELECT * FROM t2 JOIN t1 ON t2.c2 = t1.c2 where t2.c2 > 10;",

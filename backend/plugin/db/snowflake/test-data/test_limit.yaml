@@ -1,3 +1,28 @@
+- stmt: SELECT * FROM CUSTOMER LIMIT 15;
+  count: 10
+  want: |-
+    SELECT * FROM CUSTOMER LIMIT 10
+    ;
+- stmt: SELECT * FROM CUSTOMER LIMIT 5;
+  count: 10
+  want: |-
+    SELECT * FROM CUSTOMER LIMIT 5
+    ;
+- stmt: SELECT * FROM CUSTOMER FETCH 123;
+  count: 10
+  want: |-
+    SELECT * FROM CUSTOMER FETCH 10
+    ;
+- stmt: SELECT * FROM CUSTOMER OFFSET 12 FETCH 123;
+  count: 10
+  want: |-
+    SELECT * FROM CUSTOMER OFFSET 12 FETCH 10
+    ;
+- stmt: SELECT TOP 125 * FROM CUSTOMER;
+  count: 10
+  want: |-
+    SELECT TOP 10 * FROM CUSTOMER
+    ;
 - stmt: SELECT * FROM CUSTOMER;
   count: 10
   want: |-
@@ -106,10 +131,10 @@
     ;
 # top
 - stmt: |+
-    select TOP 4 c1 from testtable;
+    select TOP 40 c1 from testtable;
   count: 1
   want: |-
-    select TOP 4 c1 from testtable
+    select TOP 1 c1 from testtable
     ;
 # group by
 - stmt: |+

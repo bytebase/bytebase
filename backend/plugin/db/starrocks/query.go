@@ -61,17 +61,17 @@ func (r *mysqlRewriter) EnterQueryExpression(ctx *mysql.QueryExpressionContext) 
 		return
 	}
 	r.outerMostQuery = false
-	limitCluase := ctx.LimitClause()
-	if limitCluase != nil {
-		// limit clause already exists.
-		userLimitText := limitCluase.LimitOptions().GetText()
+	limitClause := ctx.LimitClause()
+	if limitClause != nil && limitClause.LimitOptions() != nil && len(limitClause.LimitOptions().AllLimitOption()) > 0 {
+		firstOption := limitClause.LimitOptions().LimitOption(0)
+		userLimitText := firstOption.GetText()
 		limit, err := strconv.Atoi(userLimitText)
-		if err == nil {
+		if err == nil && limit > 0 {
 			if r.limitCount < limit {
 				limit = r.limitCount
 			}
 		}
-		r.rewriter.ReplaceDefault(limitCluase.GetStart().GetTokenIndex(), limitCluase.GetStop().GetTokenIndex(), fmt.Sprintf("LIMIT %d", limit))
+		r.rewriter.ReplaceDefault(firstOption.GetStart().GetTokenIndex(), firstOption.GetStop().GetTokenIndex(), fmt.Sprintf("%d", limit))
 		return
 	}
 
