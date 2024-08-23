@@ -9,69 +9,73 @@ import (
 
 	tidbast "github.com/pingcap/tidb/pkg/parser/ast"
 	"github.com/pingcap/tidb/pkg/parser/format"
+	tidbdriver "github.com/pingcap/tidb/pkg/types/parser_driver"
 
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	tidbparser "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
 )
 
-func getStatementWithResultLimit(stmt string, limit int) string {
-	stmt, err := getStatementWithResultLimitForTiDB(stmt, limit)
+func getStatementWithResultLimit(statement string, limit int) string {
+	statement, err := getStatementWithResultLimitInline(statement, limit)
 	if err != nil {
-		slog.Error("fail to add limit clause", "statement", stmt, log.BBError(err))
-		stmt = fmt.Sprintf("WITH result AS (%s) SELECT * FROM result LIMIT %d;", util.TrimStatement(stmt), limit)
+		slog.Error("fail to add limit clause", "statement", statement, log.BBError(err))
+		statement = fmt.Sprintf("WITH result AS (%s) SELECT * FROM result LIMIT %d;", util.TrimStatement(statement), limit)
 	}
-	return stmt
+	return statement
 }
 
-func getStatementWithResultLimitForTiDB(singleStatement string, limitCount int) (string, error) {
-	stmtList, err := tidbparser.ParseTiDB(singleStatement, "", "")
+func getStatementWithResultLimitInline(statement string, limit int) (string, error) {
+	stmtList, err := tidbparser.ParseTiDB(statement, "", "")
 	if err != nil {
-		return "", errors.Wrapf(err, "failed to parse tidb statement: %s", singleStatement)
+		return "", errors.Wrapf(err, "failed to parse tidb statement: %s", statement)
 	}
-	for _, stmt := range stmtList {
-		switch stmt := stmt.(type) {
-		case *tidbast.SelectStmt:
-			limit := &tidbast.Limit{
-				Count: tidbast.NewValueExpr(int64(limitCount), "", ""),
-			}
-			if stmt.Limit != nil {
-				limit = stmt.Limit
-				if stmt.Limit.Count != nil {
-					// If the statement already has limit clause, we will return the original statement.
-					return singleStatement, nil
+	if len(stmtList) != 1 {
+		return "", errors.Errorf("expect one single statement in the query, %s", statement)
+	}
+	stmt := stmtList[0]
+	switch stmt := stmt.(type) {
+	case *tidbast.SelectStmt:
+		if stmt.Limit != nil && stmt.Limit.Count != nil {
+			if v, ok := stmt.Limit.Count.(*tidbdriver.ValueExpr); ok {
+				userLimit := int(v.GetInt64())
+				if limit < userLimit {
+					userLimit = limit
 				}
-				stmt.Limit.Count = tidbast.NewValueExpr(int64(limitCount), "", "")
+				stmt.Limit.Count = tidbast.NewValueExpr(int64(userLimit), "", "")
 			}
-			stmt.Limit = limit
-			var buffer strings.Builder
-			ctx := format.NewRestoreCtx(format.DefaultRestoreFlags, &buffer)
-			if err := stmt.Restore(ctx); err != nil {
-				return "", err
+		} else {
+			stmt.Limit = &tidbast.Limit{
+				Count: tidbast.NewValueExpr(int64(limit), "", ""),
 			}
-			return buffer.String(), nil
-		case *tidbast.SetOprStmt:
-			limit := &tidbast.Limit{
-				Count: tidbast.NewValueExpr(int64(limitCount), "", ""),
-			}
-			if stmt.Limit != nil {
-				limit = stmt.Limit
-				if stmt.Limit.Count != nil {
-					// If the statement already has limit clause, we will return the original statement.
-					return singleStatement, nil
-				}
-				stmt.Limit.Count = tidbast.NewValueExpr(int64(limitCount), "", "")
-			}
-			stmt.Limit = limit
-			var buffer strings.Builder
-			ctx := format.NewRestoreCtx(format.DefaultRestoreFlags, &buffer)
-			if err := stmt.Restore(ctx); err != nil {
-				return "", err
-			}
-			return buffer.String(), nil
-		default:
-			continue
 		}
+		var buffer strings.Builder
+		ctx := format.NewRestoreCtx(format.DefaultRestoreFlags, &buffer)
+		if err := stmt.Restore(ctx); err != nil {
+			return "", err
+		}
+		return buffer.String(), nil
+	case *tidbast.SetOprStmt:
+		if stmt.Limit != nil && stmt.Limit.Count != nil {
+			if v, ok := stmt.Limit.Count.(*tidbdriver.ValueExpr); ok {
+				userLimit := int(v.GetInt64())
+				if limit < userLimit {
+					userLimit = limit
+				}
+				stmt.Limit.Count = tidbast.NewValueExpr(int64(userLimit), "", "")
+			}
+		} else {
+			stmt.Limit = &tidbast.Limit{
+				Count: tidbast.NewValueExpr(int64(limit), "", ""),
+			}
+		}
+		var buffer strings.Builder
+		ctx := format.NewRestoreCtx(format.DefaultRestoreFlags, &buffer)
+		if err := stmt.Restore(ctx); err != nil {
+			return "", err
+		}
+		return buffer.String(), nil
+	default:
 	}
-	return singleStatement, nil
+	return statement, nil
 }
