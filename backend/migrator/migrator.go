@@ -63,8 +63,14 @@ func MigrateSchema(ctx context.Context, storeDB *store.DB, storeInstance *store.
 		return nil, errors.Wrap(err, "failed to get current schema version")
 	}
 
-	if err := migrate(ctx, storeInstance, metadataDriver, cutoffSchemaVersion, verBefore, mode, serverVersion, storeDB.ConnCfg.Database); err != nil {
+	migrated, err := migrate(ctx, storeInstance, metadataDriver, cutoffSchemaVersion, verBefore, mode, serverVersion, storeDB.ConnCfg.Database)
+	if err != nil {
 		return nil, errors.Wrap(err, "failed to migrate")
+	}
+	if migrated {
+		if err := backfillOracleSchema(ctx, storeInstance); err != nil {
+			return nil, errors.Wrap(err, "failed to backfill oracle schema")
+		}
 	}
 
 	verAfter, err := getLatestVersion(ctx, storeInstance)
@@ -248,7 +254,7 @@ const (
 // file run in a transaction to prevent partial migrations.
 //
 // The procedure follows https://github.com/bytebase/bytebase/blob/main/docs/schema-update-guide.md.
-func migrate(ctx context.Context, storeInstance *store.Store, metadataDriver dbdriver.Driver, cutoffSchemaVersion, curVer semver.Version, mode common.ReleaseMode, serverVersion, databaseName string) error {
+func migrate(ctx context.Context, storeInstance *store.Store, metadataDriver dbdriver.Driver, cutoffSchemaVersion, curVer semver.Version, mode common.ReleaseMode, serverVersion, databaseName string) (bool, error) {
 	slog.Info("Apply database migration if needed...")
 	slog.Info(fmt.Sprintf("Current schema version before migration: %s", curVer))
 
@@ -262,7 +268,7 @@ func migrate(ctx context.Context, storeInstance *store.Store, metadataDriver dbd
 			ShowFull:   true,
 		})
 		if err != nil {
-			return err
+			return false, err
 		}
 		histories = h
 	}
@@ -271,29 +277,29 @@ func migrate(ctx context.Context, storeInstance *store.Store, metadataDriver dbd
 	retVersion := curVer
 	names, err := fs.Glob(migrationFS, fmt.Sprintf("migration/%s/*", common.ReleaseModeProd))
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	minorVersions, err := getMinorMigrationVersions(names, curVer)
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	for _, minorVersion := range minorVersions {
 		slog.Info(fmt.Sprintf("Starting minor version migration cycle from %s ...", minorVersion))
 		names, err := fs.Glob(migrationFS, fmt.Sprintf("migration/%s/%d.%d/*.sql", common.ReleaseModeProd, minorVersion.Major, minorVersion.Minor))
 		if err != nil {
-			return err
+			return false, err
 		}
 		patchVersions, err := getPatchVersions(minorVersion, curVer, names)
 		if err != nil {
-			return err
+			return false, err
 		}
 
 		for _, pv := range patchVersions {
 			buf, err := fs.ReadFile(migrationFS, pv.filename)
 			if err != nil {
-				return errors.Wrapf(err, "failed to read migration file %q", pv.filename)
+				return false, errors.Wrapf(err, "failed to read migration file %q", pv.filename)
 			}
 			// This happens when a migration file is moved from dev to release and we should not reapply the migration.
 			// For example,
@@ -318,7 +324,7 @@ func migrate(ctx context.Context, storeInstance *store.Store, metadataDriver dbd
 				Description:    fmt.Sprintf("Migrate version %s server version %s with files %s.", pv.version, serverVersion, pv.filename),
 			}
 			if _, _, err := utils.ExecuteMigrationDefault(ctx, ctx, storeInstance, nil, 0, metadataDriver, mi, string(buf), nil, dbdriver.ExecuteOptions{}); err != nil {
-				return err
+				return false, err
 			}
 			retVersion = pv.version
 		}
@@ -331,10 +337,10 @@ func migrate(ctx context.Context, storeInstance *store.Store, metadataDriver dbd
 
 	if mode == common.ReleaseModeDev {
 		if err := migrateDev(ctx, storeInstance, metadataDriver, serverVersion, databaseName, cutoffSchemaVersion, histories); err != nil {
-			return errors.Wrapf(err, "failed to migrate dev schema")
+			return false, errors.Wrapf(err, "failed to migrate dev schema")
 		}
 	}
-	return nil
+	return len(minorVersions) > 0, nil
 }
 
 func getProdCutoffVersion() (semver.Version, error) {
@@ -545,4 +551,26 @@ func getMinorVersions(names []string) ([]semver.Version, error) {
 		return versions[i].LT(versions[j])
 	})
 	return versions, nil
+}
+
+func backfillOracleSchema(ctx context.Context, stores *store.Store) error {
+	engine := storepb.Engine_ORACLE
+	databases, err := stores.ListDatabases(ctx, &store.FindDatabaseMessage{Engine: &engine})
+	if err != nil {
+		return err
+	}
+	for _, database := range databases {
+		dbSchema, err := stores.GetDBSchema(ctx, database.UID)
+		if err != nil {
+			return err
+		}
+		dbMetadata := dbSchema.GetMetadata()
+		for _, schema := range dbMetadata.Schemas {
+			schema.Name = ""
+		}
+		if err := stores.UpsertDBSchema(ctx, database.UID, dbSchema, api.SystemBotID); err != nil {
+			return err
+		}
+	}
+	return nil
 }
