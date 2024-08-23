@@ -1,6 +1,10 @@
 - stmt: |
-    SELECT * FROM "C##TEST"."rownum_order_test" ORDER BY val FETCH NEXT 5 ROWS ONLY
+    SELECT * FROM "C##TEST"."rownum_order_test" ORDER BY val FETCH NEXT 15 ROWS ONLY
   count: 5
+  want: SELECT * FROM "C##TEST"."rownum_order_test" ORDER BY val FETCH NEXT 5 ROWS ONLY
+- stmt: |
+    SELECT * FROM "C##TEST"."rownum_order_test" ORDER BY val FETCH NEXT 5 ROWS ONLY
+  count: 10
   want: SELECT * FROM "C##TEST"."rownum_order_test" ORDER BY val FETCH NEXT 5 ROWS ONLY
 - stmt: |
     SELECT * FROM "C##TEST"."rownum_order_test" ORDER BY val

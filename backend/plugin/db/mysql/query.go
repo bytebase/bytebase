@@ -64,11 +64,9 @@ func (r *mysqlRewriter) EnterQueryExpression(ctx *mysql.QueryExpressionContext) 
 	if limitClause != nil && limitClause.LimitOptions() != nil && len(limitClause.LimitOptions().AllLimitOption()) > 0 {
 		firstOption := limitClause.LimitOptions().LimitOption(0)
 		userLimitText := firstOption.GetText()
-		limit, err := strconv.Atoi(userLimitText)
-		if err == nil && limit > 0 {
-			if r.limitCount < limit {
-				limit = r.limitCount
-			}
+		limit, _ := strconv.Atoi(userLimitText)
+		if limit == 0 || r.limitCount < limit {
+			limit = r.limitCount
 		}
 		r.rewriter.ReplaceDefault(firstOption.GetStart().GetTokenIndex(), firstOption.GetStop().GetTokenIndex(), fmt.Sprintf("%d", limit))
 		return

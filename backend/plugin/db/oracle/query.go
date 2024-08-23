@@ -3,6 +3,7 @@ package oracle
 import (
 	"fmt"
 	"log/slog"
+	"strconv"
 	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
@@ -82,8 +83,16 @@ func (r *plsqlRewriter) EnterSubquery(ctx *plsql.SubqueryContext) {
 	// union | intersect | minus
 	if ctx.AllSubquery_operation_part() != nil && len(ctx.AllSubquery_operation_part()) > 0 {
 		lastPart := ctx.Subquery_operation_part(len(ctx.AllSubquery_operation_part()) - 1)
-		// respect original fetch.
 		if lastPart.Subquery_basic_elements().Query_block().Fetch_clause() != nil {
+			expression := lastPart.Subquery_basic_elements().Query_block().Fetch_clause().Expression()
+			if expression != nil {
+				userLimitText := expression.GetText()
+				limit, _ := strconv.Atoi(userLimitText)
+				if limit == 0 || r.limitCount < limit {
+					limit = r.limitCount
+				}
+				r.rewriter.ReplaceDefault(expression.GetStart().GetTokenIndex(), expression.GetStop().GetTokenIndex(), fmt.Sprintf("%d", limit))
+			}
 			return
 		}
 		if subqueryOp, ok := lastPart.(*plsql.Subquery_operation_partContext); ok {
@@ -94,8 +103,16 @@ func (r *plsqlRewriter) EnterSubquery(ctx *plsql.SubqueryContext) {
 
 	// otherwise (subquery and normally)
 	basicElements := ctx.Subquery_basic_elements()
-	// respect original fetch;
 	if basicElements.Query_block().Fetch_clause() != nil {
+		expression := basicElements.Query_block().Fetch_clause().Expression()
+		if expression != nil {
+			userLimitText := expression.GetText()
+			limit, _ := strconv.Atoi(userLimitText)
+			if limit == 0 || r.limitCount < limit {
+				limit = r.limitCount
+			}
+			r.rewriter.ReplaceDefault(expression.GetStart().GetTokenIndex(), expression.GetStop().GetTokenIndex(), fmt.Sprintf("%d", limit))
+		}
 		return
 	}
 	r.rewriter.InsertAfterDefault(basicElements.GetStop().GetTokenIndex(), fmt.Sprintf(" FETCH NEXT %d ROWS ONLY", r.limitCount))

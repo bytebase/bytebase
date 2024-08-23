@@ -84,11 +84,9 @@ func (r *snowsqlRewriter) EnterQuery_statement(ctx *snowsql.Query_statementConte
 			if len(limitClause.AllNum()) > 0 {
 				firstNumber := limitClause.Num(0)
 				userLimitText := firstNumber.GetText()
-				limit, err := strconv.Atoi(userLimitText)
-				if err == nil && limit > 0 {
-					if r.limitCount < limit {
-						limit = r.limitCount
-					}
+				limit, _ := strconv.Atoi(userLimitText)
+				if limit == 0 || r.limitCount < limit {
+					limit = r.limitCount
 				}
 				r.rewriter.ReplaceDefault(firstNumber.GetStart().GetTokenIndex(), firstNumber.GetStop().GetTokenIndex(), fmt.Sprintf("%d", limit))
 			}
@@ -105,11 +103,9 @@ func (r *snowsqlRewriter) EnterQuery_statement(ctx *snowsql.Query_statementConte
 			}
 			if num != nil {
 				userLimitText := num.GetText()
-				limit, err := strconv.Atoi(userLimitText)
-				if err == nil && limit > 0 {
-					if r.limitCount < limit {
-						limit = r.limitCount
-					}
+				limit, _ := strconv.Atoi(userLimitText)
+				if limit == 0 || r.limitCount < limit {
+					limit = r.limitCount
 				}
 				r.rewriter.ReplaceDefault(num.GetStart().GetTokenIndex(), num.GetStop().GetTokenIndex(), fmt.Sprintf("%d", limit))
 			}
@@ -122,11 +118,9 @@ func (r *snowsqlRewriter) EnterQuery_statement(ctx *snowsql.Query_statementConte
 		topClause := selectTopClause.Select_list_top().Top_clause()
 		number := topClause.Num()
 		userLimitText := number.GetText()
-		limit, err := strconv.Atoi(userLimitText)
-		if err == nil && limit > 0 {
-			if r.limitCount < limit {
-				limit = r.limitCount
-			}
+		limit, _ := strconv.Atoi(userLimitText)
+		if limit == 0 || r.limitCount < limit {
+			limit = r.limitCount
 		}
 		r.rewriter.ReplaceDefault(number.GetStart().GetTokenIndex(), number.GetStop().GetTokenIndex(), fmt.Sprintf("%d", limit))
 		return
