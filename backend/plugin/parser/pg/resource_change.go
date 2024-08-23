@@ -3,8 +3,6 @@ package pg
 import (
 	"github.com/pkg/errors"
 
-	pgquery "github.com/pganalyze/pg_query_go/v5"
-
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
@@ -237,62 +235,4 @@ func getResourceChanges(database, schema string, node ast.Node, statement string
 	}
 
 	return nil
-}
-
-func convertTableName(node *pgquery.Node_List) (string, string, error) {
-	list, err := convertNodeList(node)
-	if err != nil {
-		return "", "", err
-	}
-	switch len(list) {
-	case 2:
-		return list[0], list[1], nil
-	case 1:
-		return "", list[0], nil
-	default:
-		return "", "", errors.Errorf("expect to get 1 or 2 items but got %d", len(list))
-	}
-}
-
-func convertConstraintName(node *pgquery.Node_List) (string, string, string, error) {
-	list, err := convertNodeList(node)
-	if err != nil {
-		return "", "", "", err
-	}
-	switch len(list) {
-	case 3:
-		return list[0], list[1], list[2], nil
-	case 2:
-		return "", list[0], list[1], nil
-	default:
-		return "", "", "", errors.Errorf("expect to get 2 or 3 items but got %d", len(list))
-	}
-}
-
-func convertColumnName(node *pgquery.Node_List) (string, string, string, error) {
-	list, err := convertNodeList(node)
-	if err != nil {
-		return "", "", "", err
-	}
-	switch len(list) {
-	case 3:
-		return list[0], list[1], list[2], nil
-	case 2:
-		return "", list[0], list[1], nil
-	default:
-		return "", "", "", errors.Errorf("expect to get 2 or 3 items but got %d", len(list))
-	}
-}
-
-func convertNodeList(node *pgquery.Node_List) ([]string, error) {
-	var list []string
-	for _, item := range node.List.Items {
-		switch s := item.Node.(type) {
-		case *pgquery.Node_String_:
-			list = append(list, s.String_.Sval)
-		default:
-			return nil, errors.Errorf("expect to get a string node but got %T", s)
-		}
-	}
-	return list, nil
 }
