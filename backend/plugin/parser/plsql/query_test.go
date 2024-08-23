@@ -18,12 +18,10 @@ func TestExtractOracleResourceList(t *testing.T) {
 			expected: []base.SchemaResource{
 				{
 					Database: "DB",
-					Schema:   "DB",
 					Table:    "T1",
 				},
 				{
 					Database: "DB",
-					Schema:   "DB",
 					Table:    "T2",
 				},
 			},
@@ -33,12 +31,10 @@ func TestExtractOracleResourceList(t *testing.T) {
 			expected: []base.SchemaResource{
 				{
 					Database: "SCHEMA1",
-					Schema:   "SCHEMA1",
 					Table:    "T1",
 				},
 				{
 					Database: "SCHEMA2",
-					Schema:   "SCHEMA2",
 					Table:    "T2",
 				},
 			},
@@ -48,12 +44,10 @@ func TestExtractOracleResourceList(t *testing.T) {
 			expected: []base.SchemaResource{
 				{
 					Database: "DB",
-					Schema:   "DB",
 					Table:    "T1",
 				},
 				{
 					Database: "DB",
-					Schema:   "DB",
 					Table:    "T2",
 				},
 			},
