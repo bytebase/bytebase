@@ -17,14 +17,14 @@ import {
   useIssueContext,
 } from "@/components/IssueV1/logic";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
-import { pushNotification, useSheetV1Store, useSQLStore } from "@/store";
-import { TaskRun_PriorBackupDetail_Item_Table } from "@/types/proto/v1/rollout_service";
+import { pushNotification, useSheetV1Store } from "@/store";
 import {
   extractIssueUID,
   extractProjectResourceName,
   sheetNameOfTaskV1,
 } from "@/utils";
 import { usePreBackupContext } from "./common";
+import { rolloutServiceClient } from "@/grpcweb";
 
 const router = useRouter();
 const { issue, selectedTask } = useIssueContext();
@@ -56,26 +56,16 @@ const createRestoreIssue = async () => {
   }
 
   isLoading.value = true;
-  const statements: string[] = [];
-  for (const item of latestTaskRun.value.priorBackupDetail.items) {
-    const targetTable = TaskRun_PriorBackupDetail_Item_Table.fromPartial({
-      ...item.targetTable,
-    });
-    const { statement } = await useSQLStore().generateRestoreSQL({
-      name: selectedTask.value.target,
-      sheet: sheet.name,
-      backupDataSource: targetTable.database,
-      backupTable: targetTable.table,
-    });
-    statements.push(statement);
-  }
+  const { statement } = await rolloutServiceClient.previewTaskRunRollback({
+    name: latestTaskRun.value.name,
+  });
   isLoading.value = false;
 
   const query: Record<string, any> = {
     template: "bb.issue.database.data.update",
     name: `Rollback ${selectedTask.value.title} in issue#${extractIssueUID(issue.value.name)}`,
     databaseList: selectedTask.value.target,
-    sql: statements.join("\n"),
+    sql: statement,
     description: `This issue is created to rollback the data of ${selectedTask.value.title} in issue#${extractIssueUID(issue.value.name)}`,
   };
   router.push({

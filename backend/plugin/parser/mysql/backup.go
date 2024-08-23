@@ -3,6 +3,7 @@ package mysql
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
@@ -301,6 +302,11 @@ func classifyColumns(ctx context.Context, getDatabaseMetadataFunc base.GetDataba
 	_, metadata, err := getDatabaseMetadataFunc(ctx, instanceID, table.Database)
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "failed to get database metadata for InstanceID %q, Database %q", instanceID, table.Database)
+	}
+
+	if metadata == nil {
+		slog.Debug("failed to get database metadata", slog.String("instanceID", instanceID), slog.String("database", table.Database))
+		return nil, nil, errors.Errorf("failed to get database metadata for InstanceID %q, Database %q", instanceID, table.Database)
 	}
 
 	schemaMetadata := metadata.GetSchema("")
