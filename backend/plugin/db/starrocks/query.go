@@ -15,19 +15,19 @@ import (
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 )
 
-func getStatementWithResultLimit(stmt string, limit int) string {
-	stmt, err := getStatementWithResultLimitForMySQL(stmt, limit)
+func getStatementWithResultLimit(statement string, limit int) string {
+	statement, err := getStatementWithResultLimitForMySQL(statement, limit)
 	if err != nil {
-		slog.Error("fail to add limit clause", "statement", stmt, log.BBError(err))
+		slog.Error("fail to add limit clause", "statement", statement, log.BBError(err))
 		// MySQL 5.7 doesn't support WITH clause.
-		stmt = fmt.Sprintf("SELECT * FROM (%s) result LIMIT %d;", util.TrimStatement(stmt), limit)
+		statement = fmt.Sprintf("SELECT * FROM (%s) result LIMIT %d;", util.TrimStatement(statement), limit)
 	}
-	return stmt
+	return statement
 }
 
 // singleStatement must be a selectStatement for mysql.
-func getStatementWithResultLimitForMySQL(stmt string, limitCount int) (string, error) {
-	list, err := mysqlparser.ParseMySQL(stmt)
+func getStatementWithResultLimitForMySQL(statement string, limitCount int) (string, error) {
+	list, err := mysqlparser.ParseMySQL(statement)
 	if err != nil {
 		return "", err
 	}
@@ -41,7 +41,7 @@ func getStatementWithResultLimitForMySQL(stmt string, limitCount int) (string, e
 		listener.rewriter = *antlr.NewTokenStreamRewriter(stmt.Tokens)
 		antlr.ParseTreeWalkerDefault.Walk(listener, stmt.Tree)
 		if listener.err != nil {
-			return "", errors.Wrapf(listener.err, "statement: %s", stmt)
+			return "", errors.Wrapf(listener.err, "statement: %s", statement)
 		}
 	}
 	return listener.rewriter.GetTextDefault(), nil
