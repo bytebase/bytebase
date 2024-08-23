@@ -70,10 +70,17 @@
 
 <script setup lang="ts">
 import { computedAsync, useElementSize, useMounted } from "@vueuse/core";
-import { uniq } from "lodash-es";
-import { NDropdown, NEmpty, NTree, type TreeOption } from "naive-ui";
+import { head, uniq } from "lodash-es";
+import {
+  NDropdown,
+  NEmpty,
+  NTree,
+  type TreeInst,
+  type TreeOption,
+} from "naive-ui";
 import { storeToRefs } from "pinia";
 import { computed, h, nextTick, ref, watch } from "vue";
+import { watchEffect } from "vue";
 import { BBModal } from "@/bbkit";
 import TableSchemaViewer from "@/components/TableSchemaViewer.vue";
 import MaskSpinner from "@/components/misc/MaskSpinner.vue";
@@ -87,6 +94,7 @@ import {
 import { isValidDatabaseName } from "@/types";
 import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
 import { extractDatabaseResourceName, isDescendantOf } from "@/utils";
+import { useEditorPanelContext } from "../../EditorPanel";
 import { useSQLEditorContext } from "../../context";
 import SyncSchemaButton from "./SyncSchemaButton.vue";
 import { Label } from "./TreeNode";
@@ -100,6 +108,7 @@ import {
 } from "./common";
 
 const mounted = useMounted();
+const treeRef = ref<TreeInst>();
 const treeContainerElRef = ref<HTMLElement>();
 const { height: treeContainerHeight } = useElementSize(
   treeContainerElRef,
@@ -109,6 +118,7 @@ const { height: treeContainerHeight } = useElementSize(
   }
 );
 const searchPattern = ref("");
+const { viewState: panelViewState } = useEditorPanelContext();
 const { schemaViewer } = useSQLEditorContext();
 const {
   show: showDropdown,
@@ -120,7 +130,7 @@ const {
 } = useDropdown();
 const { selectAllFromTableOrView, viewDetail } = useActions();
 const { currentTab } = storeToRefs(useSQLEditorTabStore());
-const { connection, database } = useConnectionOfCurrentSQLEditorTab();
+const { database } = useConnectionOfCurrentSQLEditorTab();
 const isFetchingMetadata = ref(false);
 const metadata = computedAsync(
   async () => {
@@ -222,9 +232,55 @@ const renderLabel = ({ option }: { option: TreeOption }) => {
 const selectedKeys = computed(() => {
   const db = database.value;
   if (!isValidDatabaseName(db.name)) return [];
-  const { schema, table } = connection.value;
-  if (!table) return [];
-  return [`${db.name}/schemas/${schema}/tables/${table}`];
+  if (!panelViewState.value) return [];
+  const {
+    schema,
+    detail: {
+      table,
+      column,
+      view,
+      procedure,
+      func,
+      externalTable,
+      partition,
+      index,
+      foreignKey,
+    },
+  } = panelViewState.value;
+
+  const parts = [db.name, `schemas/${schema}`];
+  if (table) {
+    parts.push(`tables/${table}`);
+    if (column) {
+      parts.push(`columns/${column}`);
+    } else if (index) {
+      parts.push(`indexes/${index}`);
+    } else if (partition) {
+      parts.push(`partitionTables/${partition}`);
+    } else if (foreignKey) {
+      parts.push(`foreignKeys/${foreignKey}`);
+    }
+  } else if (view) {
+    parts.push(`views/${view}`);
+  } else if (procedure) {
+    parts.push(`procedures/${procedure}`);
+  } else if (func) {
+    parts.push(`functions/${func}`);
+  } else if (externalTable) {
+    parts.push(`externalTables/${externalTable}`);
+  }
+  if (parts.length <= 2) {
+    // don't highlight if only the root (schema) node is picked
+    return [];
+  }
+
+  return [parts.join("/")];
+});
+watchEffect(() => {
+  const key = head(selectedKeys.value);
+  if (key) {
+    treeRef.value?.scrollTo({ key });
+  }
 });
 
 // bottom-up recursively
