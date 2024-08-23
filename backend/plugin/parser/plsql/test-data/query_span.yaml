@@ -6,7 +6,7 @@
       "name":  "PUBLIC",
       "schemas":  [
         {
-          "name": "PUBLIC",
+          "name": "",
           "tables":  [
             {
               "name":  "T1",
@@ -28,7 +28,7 @@
       "name":  "SCHEMA1",
       "schemas":  [
         {
-          "name": "SCHEMA1",
+          "name": "",
           "tables":  [
             {
               "name":  "T",
@@ -57,20 +57,20 @@
           sourcecolumns:
             - server: ""
               database: SCHEMA1
-              schema: SCHEMA1
+              schema: ""
               table: T
               column: A
         - name: B
           sourcecolumns:
             - server: ""
               database: SCHEMA1
-              schema: SCHEMA1
+              schema: ""
               table: T
               column: B
     sourcecolumns:
         - server: ""
           database: SCHEMA1
-          schema: SCHEMA1
+          schema: ""
           table: V1
           column: ""
 - description: Test for alias.* with join
@@ -81,7 +81,7 @@
       "name":  "PUBLIC",
       "schemas":  [
         {
-          "name": "PUBLIC",
+          "name": "",
           "tables":  [
             {
               "name":  "T1",
@@ -104,34 +104,34 @@
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T1
               column: A
         - name: B
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T1
               column: B
         - name: A
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T1
               column: A
         - name: B
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T1
               column: B
     sourcecolumns:
         - server: ""
           database: PUBLIC
-          schema: PUBLIC
+          schema: ""
           table: T1
           column: ""
 - description: Test for Join
@@ -142,7 +142,7 @@
       "name":  "PUBLIC",
       "schemas":  [
         {
-          "name": "PUBLIC",
+          "name": "",
           "tables":  [
             {
               "name":  "T1",
@@ -173,25 +173,25 @@
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T1
               column: A
         - name: B
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T1
               column: B
     sourcecolumns:
         - server: ""
           database: PUBLIC
-          schema: PUBLIC
+          schema: ""
           table: T1
           column: ""
         - server: ""
           database: PUBLIC
-          schema: PUBLIC
+          schema: ""
           table: T2
           column: ""
 - description: Test For Database Link With View
@@ -202,7 +202,7 @@
       "name":  "PUBLIC",
       "schemas":  [
         {
-          "name": "PUBLIC",
+          "name": "",
           "tables":  [
             {
               "name":  "T",
@@ -228,14 +228,14 @@
           sourcecolumns:
             - server: ""
               database: SCHEMA1
-              schema: SCHEMA1
+              schema: ""
               table: LT2
               column: LC1
         - name: LC2
           sourcecolumns:
             - server: ""
               database: SCHEMA1
-              schema: SCHEMA1
+              schema: ""
               table: LT2
               column: LC2
     sourcecolumns: []
@@ -247,7 +247,7 @@
       "name":  "PUBLIC",
       "schemas":  [
         {
-          "name": "PUBLIC",
+          "name": "",
           "tables":  [
             {
               "name":  "T",
@@ -273,7 +273,7 @@
           sourcecolumns:
             - server: ""
               database: SCHEMA1
-              schema: SCHEMA1
+              schema: ""
               table: LT1
               column: LC1
     sourcecolumns: []
@@ -285,7 +285,7 @@
       "name":  "PUBLIC",
       "schemas":  [
         {
-          "name": "PUBLIC",
+          "name": "",
           "tables":  [
             {
               "name":  "T",
@@ -310,7 +310,7 @@
       "name":  "PUBLIC",
       "schemas":  [
         {
-          "name": "PUBLIC",
+          "name": "",
           "tables":  [
             {
               "name":  "T",
@@ -337,7 +337,7 @@
       "name":  "PUBLIC",
       "schemas":  [
         {
-          "name": "PUBLIC",
+          "name": "",
           "tables":  [
             {
               "name":  "T",
@@ -366,41 +366,41 @@
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: A
         - name: A
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: A
         - name: B
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: B
         - name: C
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: C
         - name: D
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: D
     sourcecolumns:
         - server: ""
           database: PUBLIC
-          schema: PUBLIC
+          schema: ""
           table: T
           column: ""
 - description: Happy path for A simple select statement
@@ -411,7 +411,7 @@
       "name":  "PUBLIC",
       "schemas":  [
         {
-          "name": "PUBLIC",
+          "name": "",
           "tables":  [
             {
               "name":  "T",
@@ -440,34 +440,34 @@
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: A
         - name: B
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: B
         - name: C
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: C
         - name: D
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: D
     sourcecolumns:
         - server: ""
           database: PUBLIC
-          schema: PUBLIC
+          schema: ""
           table: T
           column: ""
 - description: Referenced table fields by different format
@@ -478,7 +478,7 @@
       "name":  "PUBLIC",
       "schemas":  [
         {
-          "name": "PUBLIC",
+          "name": "",
           "tables":  [
             {
               "name":  "T",
@@ -507,34 +507,34 @@
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: A
         - name: B
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: B
         - name: C
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: C
         - name: D
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: D
     sourcecolumns:
         - server: ""
           database: PUBLIC
-          schema: PUBLIC
+          schema: ""
           table: T
           column: ""
 - description: Scalar subquery in select fields
@@ -545,7 +545,7 @@
       "name":  "PUBLIC",
       "schemas":  [
         {
-          "name": "PUBLIC",
+          "name": "",
           "tables":  [
             {
               "name":  "T",
@@ -578,23 +578,23 @@
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: A
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: B
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: C
     sourcecolumns:
         - server: ""
           database: PUBLIC
-          schema: PUBLIC
+          schema: ""
           table: T
           column: ""
 - description: Multiple-Row subquery in where clause
@@ -605,7 +605,7 @@
       "name":  "PUBLIC",
       "schemas":  [
         {
-          "name": "PUBLIC",
+          "name": "",
           "tables":  [
             {
               "name":  "T",
@@ -635,7 +635,7 @@
     sourcecolumns:
         - server: ""
           database: PUBLIC
-          schema: PUBLIC
+          schema: ""
           table: T
           column: ""
 - description: Correlated subquery in the target field clause.
@@ -646,7 +646,7 @@
       "name":  "PUBLIC",
       "schemas":  [
         {
-          "name": "PUBLIC",
+          "name": "",
           "tables":  [
             {
               "name":  "GALLERIES",
@@ -686,7 +686,7 @@
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: GALLERIES
               column: CITY
         - name: TOTAL_PAINTINGS
@@ -694,12 +694,12 @@
     sourcecolumns:
         - server: ""
           database: PUBLIC
-          schema: PUBLIC
+          schema: ""
           table: GALLERIES
           column: ""
         - server: ""
           database: PUBLIC
-          schema: PUBLIC
+          schema: ""
           table: PAINTINGS
           column: ""
 - description: Test for functions
@@ -710,7 +710,7 @@
       "name":  "PUBLIC",
       "schemas":  [
         {
-          "name": "PUBLIC",
+          "name": "",
           "tables":  [
             {
               "name":  "T",
@@ -739,71 +739,71 @@
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: A
         - name: C1
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: A
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: B
         - name: C2
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: A
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: B
         - name: A>B
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: A
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: B
         - name: Bin(A,C,D)
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: A
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: B
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: C
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: D
     sourcecolumns:
         - server: ""
           database: PUBLIC
-          schema: PUBLIC
+          schema: ""
           table: T
           column: ""
 - description: Test for SELECT partial FROM JOIN clause
@@ -814,7 +814,7 @@
       "name":  "PUBLIC",
       "schemas":  [
         {
-          "name": "PUBLIC",
+          "name": "",
           "tables":  [
             {
               "name":  "T1",
@@ -848,21 +848,21 @@
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T1
               column: A
         - name: B
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T1
               column: B
         - name: C
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T2
               column: C
         - name: "0"
@@ -870,12 +870,12 @@
     sourcecolumns:
         - server: ""
           database: PUBLIC
-          schema: PUBLIC
+          schema: ""
           table: T1
           column: ""
         - server: ""
           database: PUBLIC
-          schema: PUBLIC
+          schema: ""
           table: T2
           column: ""
 - description: Test for JOIN with USING clause
@@ -886,7 +886,7 @@
       "name":  "PUBLIC",
       "schemas":  [
         {
-          "name": "PUBLIC",
+          "name": "",
           "tables":  [
             {
               "name":  "T",
@@ -915,55 +915,55 @@
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: A
         - name: B
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: B
         - name: C
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: C
         - name: D
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: D
         - name: B
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: B
         - name: C
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: C
         - name: D
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: D
     sourcecolumns:
         - server: ""
           database: PUBLIC
-          schema: PUBLIC
+          schema: ""
           table: T
           column: ""
 - description: Simple CTE
@@ -974,7 +974,7 @@
       "name":  "PUBLIC",
       "schemas":  [
         {
-          "name": "PUBLIC",
+          "name": "",
           "tables":  [
             {
               "name":  "T",
@@ -1003,34 +1003,34 @@
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: A
         - name: B
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: B
         - name: C
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: C
         - name: D
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: D
     sourcecolumns:
         - server: ""
           database: PUBLIC
-          schema: PUBLIC
+          schema: ""
           table: T
           column: ""
 - description: Multi-level CTE
@@ -1041,7 +1041,7 @@
       "name":  "PUBLIC",
       "schemas":  [
         {
-          "name": "PUBLIC",
+          "name": "",
           "tables":  [
             {
               "name":  "T",
@@ -1070,13 +1070,13 @@
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: A
     sourcecolumns:
         - server: ""
           database: PUBLIC
-          schema: PUBLIC
+          schema: ""
           table: T
           column: ""
 - description: Test for CTE rename fields name
@@ -1087,7 +1087,7 @@
       "name":  "PUBLIC",
       "schemas":  [
         {
-          "name": "PUBLIC",
+          "name": "",
           "tables":  [
             {
               "name":  "T",
@@ -1116,34 +1116,34 @@
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: A
         - name: C
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: B
         - name: B
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: C
         - name: A
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: D
     sourcecolumns:
         - server: ""
           database: PUBLIC
-          schema: PUBLIC
+          schema: ""
           table: T
           column: ""
 - description: Test for Recursive Common Table Expression dependent closures
@@ -1154,7 +1154,7 @@
       "name":  "PUBLIC",
       "schemas":  [
         {
-          "name": "PUBLIC",
+          "name": "",
           "tables":  [
             {
               "name":  "T",
@@ -1183,41 +1183,41 @@
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: A
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: B
         - name: CC2
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: A
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: B
         - name: CC3
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: A
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: B
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: C
         - name: "N"
@@ -1225,7 +1225,7 @@
     sourcecolumns:
         - server: ""
           database: PUBLIC
-          schema: PUBLIC
+          schema: ""
           table: T
           column: ""
 - description: Test for Non-Recursive Common Table Expression with RECURSIVE key words
@@ -1236,7 +1236,7 @@
       "name":  "PUBLIC",
       "schemas":  [
         {
-          "name": "PUBLIC",
+          "name": "",
           "tables":  [
             {
               "name":  "T",
@@ -1265,33 +1265,33 @@
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: A
         - name: C2
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: B
         - name: C3
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: D
         - name: C4
           sourcecolumns:
             - server: ""
               database: PUBLIC
-              schema: PUBLIC
+              schema: ""
               table: T
               column: C
     sourcecolumns:
         - server: ""
           database: PUBLIC
-          schema: PUBLIC
+          schema: ""
           table: T
           column: ""

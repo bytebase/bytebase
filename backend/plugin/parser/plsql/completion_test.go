@@ -82,7 +82,7 @@ func getMetadataForTest(_ context.Context, _, databaseName string) (string, *mod
 			Name: databaseName,
 			Schemas: []*storepb.SchemaMetadata{
 				{
-					Name: databaseName,
+					Name: "",
 					Tables: []*storepb.TableMetadata{
 						{
 							Name: "T1",
@@ -124,7 +124,7 @@ func getMetadataForTest(_ context.Context, _, databaseName string) (string, *mod
 			Name: databaseName,
 			Schemas: []*storepb.SchemaMetadata{
 				{
-					Name: databaseName,
+					Name: "",
 					Tables: []*storepb.TableMetadata{
 						{
 							Name: "T1",
@@ -166,7 +166,7 @@ func getMetadataForTest(_ context.Context, _, databaseName string) (string, *mod
 			Name: databaseName,
 			Schemas: []*storepb.SchemaMetadata{
 				{
-					Name: databaseName,
+					Name: "",
 					Tables: []*storepb.TableMetadata{
 						{
 							Name: "T1",

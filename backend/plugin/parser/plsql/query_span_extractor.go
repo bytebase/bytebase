@@ -41,16 +41,16 @@ func (q *querySpanExtractor) getLinkedDatabaseMetadata(linkName string, schema s
 	return linkedInstanceID, databaseName, meta, nil
 }
 
-func (q *querySpanExtractor) getDatabaseMetadata(schema string) (string, *model.DatabaseMetadata, error) {
+func (q *querySpanExtractor) getDatabaseMetadata(schema string) (*model.DatabaseMetadata, error) {
 	// There are two models for the database metadata, one is schema based, the other is database based.
 	// We deal with two models in f, so we use schema name here.
 	// The f will return the real database name and the metadata.
 	// We just return them to the caller.
-	databaseName, meta, err := q.gCtx.GetDatabaseMetadataFunc(q.ctx, q.gCtx.InstanceID, schema)
+	_, meta, err := q.gCtx.GetDatabaseMetadataFunc(q.ctx, q.gCtx.InstanceID, schema)
 	if err != nil {
-		return "", nil, errors.Wrapf(err, "failed to get database metadata for schema: %s", schema)
+		return nil, errors.Wrapf(err, "failed to get database metadata for schema: %s", schema)
 	}
-	return databaseName, meta, nil
+	return meta, nil
 }
 
 func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string) (*base.QuerySpan, error) {
@@ -80,7 +80,6 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string)
 		columnSet[base.ColumnResource{
 			Server:   resource.LinkedServer,
 			Database: resource.Database,
-			Schema:   resource.Schema,
 			Table:    resource.Table,
 		}] = true
 	}
@@ -122,17 +121,18 @@ func (q *querySpanExtractor) existsTableMetadata(resource base.SchemaResource) b
 	if resource.Table == "DUAL" {
 		return false
 	}
-	if resource.Schema == "" {
-		resource.Schema = q.connectedDatabase
+	database := resource.Database
+	if database == "" {
+		database = q.connectedDatabase
 	}
-	_, meta, err := q.getDatabaseMetadata(resource.Schema)
+	meta, err := q.getDatabaseMetadata(database)
 	if err != nil {
 		return false
 	}
 	if meta == nil {
 		return false
 	}
-	schema := meta.GetSchema(resource.Schema)
+	schema := meta.GetSchema("")
 	if schema == nil {
 		return false
 	}
@@ -335,7 +335,7 @@ func (q *querySpanExtractor) plsqlExtractQueryBlock(ctx plsql.IQuery_blockContex
 				_, schemaName, tableName := NormalizeTableViewName("", element.Table_wild().Tableview_name())
 				find := false
 				for _, tableSource := range fromTableSource {
-					if (schemaName == "" || schemaName == tableSource.GetSchemaName()) &&
+					if (schemaName == "" || schemaName == tableSource.GetDatabaseName()) &&
 						tableName == tableSource.GetTableName() {
 						find = true
 						result.Columns = append(result.Columns, tableSource.GetQuerySpanResult()...)
@@ -353,7 +353,6 @@ func (q *querySpanExtractor) plsqlExtractQueryBlock(ctx plsql.IQuery_blockContex
 					return nil, &parsererror.ResourceNotFoundError{
 						Err:      errors.Errorf("failed to find table to calculate asterisk"),
 						Database: &q.connectedDatabase,
-						Schema:   &schemaName,
 						Table:    &tableName,
 					}
 				}
@@ -919,7 +918,7 @@ func (q *querySpanExtractor) plsqlExtractSourceColumnSetFromExpression(ctx antlr
 
 func (q *querySpanExtractor) getFieldColumnSource(schemaName, tableName, columnName string) base.SourceColumnSet {
 	findInTableSource := func(tableSource base.TableSource) (base.SourceColumnSet, bool) {
-		if schemaName != "" && schemaName != tableSource.GetSchemaName() {
+		if schemaName != "" && schemaName != tableSource.GetDatabaseName() {
 			return nil, false
 		}
 		if tableName != "" && tableName != tableSource.GetTableName() {
@@ -983,7 +982,7 @@ func (q *querySpanExtractor) plsqlExtractSourceColumnSetFromExpressionList(list 
 
 func (q *querySpanExtractor) getAllTableColumnSources(schemaName string, tableName string) ([]base.QuerySpanResult, bool) {
 	findInTableSource := func(tableSource base.TableSource) ([]base.QuerySpanResult, bool) {
-		if schemaName != "" && schemaName != tableSource.GetSchemaName() {
+		if schemaName != "" && schemaName != tableSource.GetDatabaseName() {
 			return nil, false
 		}
 		if tableName != "" && tableName != tableSource.GetTableName() {
@@ -1257,7 +1256,7 @@ func (q *querySpanExtractor) plsqlFindTableSchema(dbLink []string, schemaName, t
 				DatabaseLink: &linkName,
 			}
 		}
-		return q.findTableSchemaInMetadata(linkedInstanceID, linkedMeta, linkedMeta.GetName(), schemaName, tableName)
+		return q.findTableSchemaInMetadata(linkedInstanceID, linkedMeta, schemaName, tableName)
 	}
 
 	// Each CTE name in one WITH clause must be unique, but we can use the same name in the different level CTE, such as:
@@ -1278,7 +1277,7 @@ func (q *querySpanExtractor) plsqlFindTableSchema(dbLink []string, schemaName, t
 		}
 	}
 
-	databaseName, dbSchema, err := q.getDatabaseMetadata(schemaName)
+	dbSchema, err := q.getDatabaseMetadata(schemaName)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get database metadata for: %s", schemaName)
 	}
@@ -1288,15 +1287,14 @@ func (q *querySpanExtractor) plsqlFindTableSchema(dbLink []string, schemaName, t
 		}
 	}
 
-	return q.findTableSchemaInMetadata(q.gCtx.InstanceID, dbSchema, databaseName, schemaName, tableName)
+	return q.findTableSchemaInMetadata(q.gCtx.InstanceID, dbSchema, schemaName, tableName)
 }
 
-func (q *querySpanExtractor) findTableSchemaInMetadata(instanceID string, dbSchema *model.DatabaseMetadata, databaseName, schemaName, tableName string) (base.TableSource, error) {
-	schema := dbSchema.GetSchema(schemaName)
+func (q *querySpanExtractor) findTableSchemaInMetadata(instanceID string, dbSchema *model.DatabaseMetadata, databaseName, tableName string) (base.TableSource, error) {
+	schema := dbSchema.GetSchema("")
 	if schema == nil {
 		return nil, &parsererror.ResourceNotFoundError{
 			Database: &databaseName,
-			Schema:   &schemaName,
 		}
 	}
 	table := schema.GetTable(tableName)
@@ -1306,7 +1304,6 @@ func (q *querySpanExtractor) findTableSchemaInMetadata(instanceID string, dbSche
 	if table == nil && view == nil && materializedView == nil && foreignTable == nil {
 		return nil, &parsererror.ResourceNotFoundError{
 			Database: &databaseName,
-			Schema:   &schemaName,
 			Table:    &tableName,
 		}
 	}
@@ -1319,7 +1316,6 @@ func (q *querySpanExtractor) findTableSchemaInMetadata(instanceID string, dbSche
 		return &base.PhysicalTable{
 			Server:   "",
 			Database: databaseName,
-			Schema:   schemaName,
 			Name:     tableName,
 			Columns:  columns,
 		}, nil
@@ -1333,7 +1329,6 @@ func (q *querySpanExtractor) findTableSchemaInMetadata(instanceID string, dbSche
 		return &base.PhysicalTable{
 			Server:   "",
 			Database: databaseName,
-			Schema:   schemaName,
 			Name:     tableName,
 			Columns:  columns,
 		}, nil

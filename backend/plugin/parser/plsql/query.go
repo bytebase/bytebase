@@ -70,7 +70,6 @@ func ExtractResourceList(currentDatabase string, _ string, statement string) ([]
 
 	l := &plsqlResourceExtractListener{
 		currentDatabase: currentDatabase,
-		currentSchema:   currentDatabase,
 		resourceMap:     make(map[string]base.SchemaResource),
 	}
 
@@ -91,7 +90,6 @@ type plsqlResourceExtractListener struct {
 	*parser.BasePlSqlParserListener
 
 	currentDatabase string
-	currentSchema   string
 	resourceMap     map[string]base.SchemaResource
 }
 
@@ -113,7 +111,6 @@ func (l *plsqlResourceExtractListener) EnterTableview_name(ctx *parser.Tableview
 
 	resource := base.SchemaResource{
 		Database: schema,
-		Schema:   schema,
 		Table:    tableOrView,
 	}
 	l.resourceMap[resource.String()] = resource
