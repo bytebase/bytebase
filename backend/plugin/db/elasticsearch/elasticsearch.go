@@ -12,7 +12,6 @@ import (
 	"io"
 	"net/http"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/elastic/go-elasticsearch/v8"
@@ -63,16 +62,13 @@ func (client *BasicAuthClient) Do(method string, route []byte, queryString []byt
 
 type AddressScheduler struct {
 	addresses []string
-	mutex     sync.Mutex
 	count     int
 }
 
 // Get a new address using round-robin. No failover mechanisms temporarily.
 func (scheduler *AddressScheduler) GetNewAddress() string {
-	scheduler.mutex.Lock()
 	address := scheduler.addresses[scheduler.count]
 	scheduler.count = (scheduler.count + 1) % len(scheduler.addresses)
-	scheduler.mutex.Unlock()
 	return address
 }
 
