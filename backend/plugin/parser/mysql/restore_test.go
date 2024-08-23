@@ -46,11 +46,11 @@ func TestRestore(t *testing.T) {
 			GetDatabaseMetadataFunc: fixedMockDatabaseMetadataGetter,
 		}, t.Input, &store.PriorBackupDetail_Item{
 			SourceTable: &store.PriorBackupDetail_Item_Table{
-				Database: t.OriginalDatabase,
+				Database: "instances/i1/databases/" + t.OriginalDatabase,
 				Table:    t.OriginalTable,
 			},
 			TargetTable: &store.PriorBackupDetail_Item_Table{
-				Database: t.BackupDatabase,
+				Database: "instances/i1/databases/" + t.BackupDatabase,
 				Table:    t.BackupTable,
 			},
 			StartPosition: &store.Position{
