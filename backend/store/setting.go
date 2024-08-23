@@ -48,7 +48,6 @@ func (s *Store) GetMaximumSQLResultLimit(ctx context.Context) int64 {
 		return common.DefaultMaximumSQLResultSize
 	}
 	if setting == nil {
-		slog.Warn("cannot find setting", slog.String("setting", string(settingName)))
 		return common.DefaultMaximumSQLResultSize
 	}
 
