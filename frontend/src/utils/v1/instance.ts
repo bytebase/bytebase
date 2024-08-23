@@ -329,7 +329,6 @@ export const hasSchemaProperty = (databaseEngine: Engine) => {
   return (
     databaseEngine === Engine.POSTGRES ||
     databaseEngine === Engine.SNOWFLAKE ||
-    databaseEngine === Engine.ORACLE ||
     databaseEngine === Engine.MSSQL ||
     databaseEngine === Engine.REDSHIFT ||
     databaseEngine === Engine.RISINGWAVE
