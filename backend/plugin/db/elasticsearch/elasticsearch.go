@@ -160,7 +160,7 @@ func (d *Driver) Execute(ctx context.Context, statement string, _ db.ExecuteOpti
 }
 
 func (d *Driver) QueryConn(_ context.Context, _ *sql.Conn, statement string, _ db.QueryContext) ([]*v1pb.QueryResult, error) {
-	statements, err := SplitElasticsearchStatements(statement)
+	statements, err := splitElasticsearchStatements(statement)
 	if err != nil {
 		return nil, err
 	}
@@ -169,18 +169,19 @@ func (d *Driver) QueryConn(_ context.Context, _ *sql.Conn, statement string, _ d
 	for _, s := range statements {
 		if err := func() error {
 			startTime := time.Now()
+			// It's ok for routes without the leading '/' in the editor.
+			if !strings.HasPrefix(string(s.route), "/") {
+				s.route = append([]byte{'/'}, s.route...)
+			}
 			// send HTTP request.
-			resp, err := d.basicAuthClient.Do(s.method, s.route, s.queryString)
+			resp, err := d.basicAuthClient.Do(string(s.method), s.route, s.queryBody)
 			if err != nil {
-				return errors.Wrapf(err, "failed to send HTTP request, status code message: %s", resp.Status)
+				return errors.Wrapf(err, "failed to send HTTP request")
 			}
 			defer resp.Body.Close()
 
 			respBytes, err := io.ReadAll(resp.Body)
 			if err != nil {
-				return err
-			}
-			if err := resp.Body.Close(); err != nil {
 				return err
 			}
 
@@ -210,7 +211,7 @@ func (d *Driver) QueryConn(_ context.Context, _ *sql.Conn, statement string, _ d
 			}
 			result.Rows = append(result.Rows, &row)
 			result.Latency = durationpb.New(time.Since(startTime))
-			result.Statement = fmt.Sprintf("%s %s\n%s", s.method, s.route, s.queryString)
+			result.Statement = fmt.Sprintf("%s %s\n%s", s.method, s.route, s.queryBody)
 			// TODO(d): handle max size.
 			results = append(results, &result)
 			return nil
