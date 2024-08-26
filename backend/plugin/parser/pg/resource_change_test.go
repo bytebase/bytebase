@@ -12,6 +12,7 @@ import (
 )
 
 func TestExtractChangedResources(t *testing.T) {
+	dbSchema := model.NewDBSchema(&storepb.DatabaseSchemaMetadata{}, []byte{}, &storepb.DatabaseConfig{})
 	statement :=
 		`CREATE TABLE t1 (c1 INT);
 						DROP TABLE t1;
@@ -21,7 +22,7 @@ func TestExtractChangedResources(t *testing.T) {
 						INSERT INTO t1 (c1) VALUES (1), (5);
 						UPDATE t1 SET c1 = 5;
 			`
-	changedResources := model.NewChangedResources(nil /* dbSchema */)
+	changedResources := model.NewChangedResources(dbSchema)
 	changedResources.AddTable(
 		"db",
 		"public",
@@ -54,7 +55,7 @@ func TestExtractChangedResources(t *testing.T) {
 
 	nodes, err := pgrawparser.Parse(pgrawparser.ParseContext{}, statement)
 	require.NoError(t, err)
-	got, err := extractChangedResources("db", "public", nil /* dbSchema */, nodes, statement)
+	got, err := extractChangedResources("db", "public", dbSchema, nodes, statement)
 	require.NoError(t, err)
 	require.Equal(t, want, got)
 }
