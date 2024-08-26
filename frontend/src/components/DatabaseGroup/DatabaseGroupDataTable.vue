@@ -7,26 +7,26 @@
     :bordered="bordered"
     :loading="loading"
     :row-key="(data: ComposedDatabaseGroup) => data.name"
-    :checked-row-keys="Array.from(state.selectedDatabaseGroupNameList)"
     :row-props="rowProps"
     :pagination="{ pageSize: 20 }"
     :paginate-single-page="false"
-    @update:checked-row-keys="
-        (val) => (state.selectedDatabaseGroupNameList = new Set(val as string[]))
-      "
-  ></NDataTable>
+  />
 </template>
 
 <script lang="tsx" setup>
-import { NButton, NDataTable, NTag, type DataTableColumn } from "naive-ui";
-import { computed, reactive, watch } from "vue";
+import {
+  NButton,
+  NDataTable,
+  NTag,
+  NDropdown,
+  type DataTableColumn,
+} from "naive-ui";
+import { computed } from "vue";
 import { useI18n } from "vue-i18n";
+import { useRouter } from "vue-router";
 import type { ComposedDatabaseGroup } from "@/types";
-
-interface LocalState {
-  // The selected database group name list.
-  selectedDatabaseGroupNameList: Set<string>;
-}
+import { hasPermissionToCreateChangeDatabaseIssueInProject } from "@/utils";
+import { generateDatabaseGroupIssueRoute } from "@/utils/databaseGroup/issue";
 
 type DatabaseGroupDataTableColumn = DataTableColumn<ComposedDatabaseGroup> & {
   hide?: boolean;
@@ -37,14 +37,11 @@ const props = withDefaults(
     databaseGroupList: ComposedDatabaseGroup[];
     bordered?: boolean;
     loading?: boolean;
-    showSelection?: boolean;
     showProject?: boolean;
-    showEdit?: boolean;
     customClick?: boolean;
   }>(),
   {
     bordered: true,
-    showSelection: true,
     showProject: true,
   }
 );
@@ -60,23 +57,9 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const state = reactive<LocalState>({
-  selectedDatabaseGroupNameList: new Set(),
-});
+const router = useRouter();
 
 const columnList = computed((): DatabaseGroupDataTableColumn[] => {
-  const SELECTION: DatabaseGroupDataTableColumn = {
-    type: "selection",
-    multiple: false,
-    hide: !props.showSelection,
-    cellProps: () => {
-      return {
-        onClick: (e: MouseEvent) => {
-          e.stopPropagation();
-        },
-      };
-    },
-  };
   const NAME: DatabaseGroupDataTableColumn = {
     key: "title",
     title: t("common.name"),
@@ -102,32 +85,44 @@ const columnList = computed((): DatabaseGroupDataTableColumn[] => {
     },
   };
   const EDIT_BUTTON: DatabaseGroupDataTableColumn = {
-    key: "edit",
+    key: "actions",
     title: "",
-    hide: !props.showEdit,
     width: 150,
     render: (data) => {
       return (
-        <div class="flex justify-end">
-          <NButton
-            size="small"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              emit("edit", data);
-            }}
+        <div class="flex justify-end gap-2">
+          <NDropdown
+            trigger="hover"
+            options={[
+              {
+                label: `${t("database.edit-schema")} (DDL)`,
+                key: "bb.issue.database.schema.update",
+              },
+              {
+                label: `${t("database.change-data")} (DML)`,
+                key: "bb.issue.database.data.update",
+              },
+            ]}
+            onSelect={(key) => doDatabaseGroupChangeAction(key, data)}
           >
-            {t("common.configure")}
-          </NButton>
+            <NButton
+              size="small"
+              disabled={
+                !hasPermissionToCreateChangeDatabaseIssueInProject(
+                  data.projectEntity
+                )
+              }
+            >
+              {t("common.change")}
+            </NButton>
+          </NDropdown>
         </div>
       );
     },
   };
 
   // Maybe we can add more columns here. e.g. matched databases, etc.
-  return [SELECTION, NAME, PROJECT, EDIT_BUTTON].filter(
-    (column) => !column.hide
-  );
+  return [NAME, PROJECT, EDIT_BUTTON].filter((column) => !column.hide);
 });
 
 const data = computed(() => {
@@ -142,19 +137,15 @@ const rowProps = (databaseGroup: ComposedDatabaseGroup) => {
         emit("row-click", e, databaseGroup);
         return;
       }
-
-      state.selectedDatabaseGroupNameList = new Set([databaseGroup.name]);
     },
   };
 };
 
-watch(
-  () => state.selectedDatabaseGroupNameList,
-  () => {
-    emit(
-      "update:selected-database-groups",
-      state.selectedDatabaseGroupNameList
-    );
-  }
-);
+const doDatabaseGroupChangeAction = (
+  key: string,
+  databaseGroup: ComposedDatabaseGroup
+) => {
+  const issueRoute = generateDatabaseGroupIssueRoute(key as any, databaseGroup);
+  router.push(issueRoute);
+};
 </script>
