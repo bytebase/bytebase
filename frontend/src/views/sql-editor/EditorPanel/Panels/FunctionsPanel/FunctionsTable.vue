@@ -4,7 +4,7 @@
       v-bind="$attrs"
       ref="dataTableRef"
       size="small"
-      :row-key="(func) => func.name"
+      :row-key="(func) => keyForFunction(func)"
       :columns="columns"
       :data="layoutReady ? filteredFuncs : []"
       :row-props="rowProps"
@@ -27,7 +27,7 @@ import type {
   FunctionMetadata,
   SchemaMetadata,
 } from "@/types/proto/v1/database_service";
-import { getHighlightHTMLByRegExp } from "@/utils";
+import { getHighlightHTMLByRegExp, keyForFunction } from "@/utils";
 import { useAutoHeightDataTable } from "../../common";
 import { useEditorPanelContext } from "../../context";
 
