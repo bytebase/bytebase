@@ -32,18 +32,18 @@ export const useDatabaseV1List = (
   const formatParent = computed(() =>
     formatDatabaseParent(unref(parent) || "")
   );
-  const cacheKey = listCache.getCacheKey(formatParent.value);
-  const cache = computed(() => listCache.getCache(cacheKey));
+  const cacheKey = computed(() => listCache.getCacheKey(formatParent.value));
+  const cache = computed(() => listCache.getCache(cacheKey.value));
 
   watch(
-    () => cache.value,
+    [() => cache.value],
     async () => {
       // Skip if request is already in progress or cache is available.
       if (cache.value?.isFetching || cache.value) {
         return;
       }
 
-      listCache.cacheMap.set(cacheKey, {
+      listCache.cacheMap.set(cacheKey.value, {
         timestamp: Date.now(),
         isFetching: true,
       });
@@ -55,7 +55,7 @@ export const useDatabaseV1List = (
         pageSize: DEFAULT_DATABASE_PAGE_SIZE,
       });
       await store.upsertDatabaseMap(databases);
-      listCache.cacheMap.set(cacheKey, {
+      listCache.cacheMap.set(cacheKey.value, {
         timestamp: Date.now(),
         isFetching: false,
       });

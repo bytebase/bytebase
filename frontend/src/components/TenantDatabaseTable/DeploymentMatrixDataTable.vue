@@ -13,6 +13,7 @@
 import { groupBy } from "lodash-es";
 import { NDataTable, type DataTableColumn } from "naive-ui";
 import { computed } from "vue";
+import { useI18n } from "vue-i18n";
 import type { ComposedDatabase } from "@/types";
 import type { Environment } from "@/types/proto/v1/environment_service";
 import type { DeploymentConfig } from "@/types/proto/v1/project_service";
@@ -49,6 +50,8 @@ const props = withDefaults(
     showRest: true,
   }
 );
+
+const { t } = useI18n();
 
 const databaseGroupList = computed(() => {
   const key = props.label;
@@ -115,6 +118,9 @@ const columnList = computed((): DeploymentMatrixDataTableColumn[] => {
     hide: props.label === "environment",
     width: 160,
     render: (data) => {
+      if (!data.labelValue) {
+        return <span class="text-opacity-70 italic">{t("common.empty")}</span>;
+      }
       return data.labelValue;
     },
   };
