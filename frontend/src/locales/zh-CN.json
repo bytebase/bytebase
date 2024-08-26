@@ -487,6 +487,7 @@
       "phone-tips": "请包含国家代码前缀",
       "country-code": "国家或地区代码",
       "password": "密码",
+      "password-hint": "最少 8 个字符，其中至少包含 1 个字母和 1 个数字。",
       "password-confirm": "确认密码",
       "password-confirm-placeholder": "确认新密码",
       "password-mismatch": "新密码不匹配",

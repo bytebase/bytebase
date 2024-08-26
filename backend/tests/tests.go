@@ -500,7 +500,7 @@ func (ctl *controller) signupAndLogin(ctx context.Context) (string, error) {
 	if _, err := ctl.authServiceClient.CreateUser(ctx, &v1pb.CreateUserRequest{
 		User: &v1pb.User{
 			Email:    "demo@example.com",
-			Password: "1024",
+			Password: "1024bytebase",
 			Title:    "demo",
 			UserType: v1pb.UserType_USER,
 		},
@@ -509,7 +509,7 @@ func (ctl *controller) signupAndLogin(ctx context.Context) (string, error) {
 	}
 	resp, err := ctl.authServiceClient.Login(ctx, &v1pb.LoginRequest{
 		Email:    "demo@example.com",
-		Password: "1024",
+		Password: "1024bytebase",
 	})
 	if err != nil {
 		return "", err

@@ -84,28 +84,43 @@
               </div>
             </NFormItem>
             <NFormItem :label="$t('settings.profile.password')">
-              <NInput
-                v-model:value="state.user.password"
-                type="password"
-                :input-props="{ autocomplete: 'new-password' }"
-                :placeholder="$t('common.sensitive-placeholder')"
-              />
+              <div class="w-full space-y-1">
+                <span
+                  :class="[
+                    'textinfolabel text-sm',
+                    state.passwordHint ? '!text-error' : '',
+                  ]"
+                >
+                  {{ $t("settings.profile.password-hint") }}
+                </span>
+                <NInput
+                  v-model:value="state.user.password"
+                  type="password"
+                  :status="state.passwordHint ? 'error' : undefined"
+                  :input-props="{ autocomplete: 'new-password' }"
+                  :placeholder="$t('common.sensitive-placeholder')"
+                  @blur="checkPassword"
+                />
+              </div>
             </NFormItem>
             <NFormItem :label="$t('settings.profile.password-confirm')">
               <div class="w-full flex flex-col justify-start items-start">
                 <NInput
                   v-model:value="state.passwordConfirm"
                   type="password"
+                  :status="state.passwordMismatch ? 'error' : undefined"
                   :input-props="{ autocomplete: 'new-password' }"
                   :placeholder="
                     $t('settings.profile.password-confirm-placeholder')
                   "
+                  @blur="checkPasswordMismatch"
                 />
                 <span
-                  v-if="passwordMismatch"
+                  v-if="state.passwordMismatch"
                   class="text-error text-sm mt-1 pl-1"
-                  >{{ $t("settings.profile.password-mismatch") }}</span
                 >
+                  {{ $t("settings.profile.password-mismatch") }}
+                </span>
               </div>
             </NFormItem>
           </template>
@@ -201,6 +216,8 @@ interface LocalState {
   user: User;
   roles: string[];
   passwordConfirm: string;
+  passwordHint: boolean;
+  passwordMismatch: boolean;
 }
 
 const serviceAccountEmailSuffix = "service.bytebase.com";
@@ -242,6 +259,8 @@ const state = reactive<LocalState>({
   user: initUser(),
   roles: initRoles(),
   passwordConfirm: "",
+  passwordHint: false,
+  passwordMismatch: false,
 });
 
 const workspaceDomain = computed(() => {
@@ -253,12 +272,21 @@ const workspaceDomain = computed(() => {
 
 const isCreating = computed(() => !props.user);
 
-const passwordMismatch = computed(() => {
-  return (
+const checkPassword = () => {
+  const pwd = state.user?.password ?? "";
+  if (!pwd) {
+    state.passwordHint = false;
+    return;
+  }
+  state.passwordHint = !/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/.test(pwd);
+  return;
+};
+
+const checkPasswordMismatch = () => {
+  state.passwordMismatch =
     !isEmpty(state.user?.password) &&
-    state.user?.password !== state.passwordConfirm
-  );
-});
+    state.user?.password !== state.passwordConfirm;
+};
 
 const rolesChanged = computed(() => {
   if (isCreating.value) {
@@ -275,7 +303,7 @@ const allowConfirm = computed(() => {
 
   if (
     !isCreating.value &&
-    (passwordMismatch.value ||
+    (state.passwordMismatch ||
       (getUpdateMaskFromUsers(props.user!, state.user).length == 0 &&
         !rolesChanged.value))
   ) {
@@ -333,7 +361,9 @@ const tryCreateOrUpdateUser = async () => {
     const createdUser = await userStore.createUser({
       ...state.user,
       title: state.user.title || extractUserTitle(state.user.email),
-      password: state.user.password || randomString(20),
+      password:
+        state.user.password ||
+        randomString(10) + randomString(10, "0123456789"),
     });
     await workspaceStore.patchIamPolicy([
       {

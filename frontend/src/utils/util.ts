@@ -145,16 +145,17 @@ export function isValidEmail(email: string) {
   return re.test(email);
 }
 
-export function randomString(n?: number): string {
+export function randomString(
+  n: number,
+  candidate: string = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+): string {
   if (!n) {
     n = 16;
   }
   let result = "";
-  const characters =
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-  const charactersLength = characters.length;
+  const charactersLength = candidate.length;
   for (let i = 0; i < n; i++) {
-    result += characters.charAt(Math.floor(Math.random() * charactersLength));
+    result += candidate.charAt(Math.floor(Math.random() * charactersLength));
   }
   return result;
 }
