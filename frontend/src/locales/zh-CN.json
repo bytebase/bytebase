@@ -2226,7 +2226,12 @@
     "wont-be-deployed": "不参与部署",
     "pipeline-generated-from-deployment-config": "部署的流水线根据项目的{deployment_config}生成。",
     "preview-deployment-pipeline": "预览部署流水线",
-    "select-database-group": "选择数据库分组"
+    "select-database-group": "选择数据库分组",
+    "matched-databases": {
+      "all": "所有匹配的数据库",
+      "n": "{n} 个匹配的数据库 | {n} 个匹配的数据库",
+      "show-more": "显示更多"
+    }
   },
   "data-source": {
     "role-type": "权限类型",

@@ -12,12 +12,9 @@
         <div class="sync-status">
           <heroicons-solid:check-circle
             v-if="database.syncState === State.ACTIVE"
-            class="p-1 w-8 h-8 text-success"
+            class="w-6 h-6 text-success"
           />
-          <heroicons-solid:exclamation
-            v-else
-            class="p-1 w-8 h-8 text-warning"
-          />
+          <heroicons-solid:exclamation v-else class="w-6 h-6 text-warning" />
         </div>
         <div class="flex flex-col items-start">
           <router-link

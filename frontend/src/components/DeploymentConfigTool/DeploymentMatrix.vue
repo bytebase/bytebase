@@ -34,7 +34,7 @@
         </NInputGroup>
       </div>
       <div class="w-full overflow-x-auto">
-        <DeployDatabaseTable
+        <DeploymentMatrixDataTable
           :database-list="filteredDatabaseList"
           :label="state.label"
           :environment-list="environmentList"
@@ -52,7 +52,10 @@ import type { ComposedDatabase } from "@/types";
 import type { Environment } from "@/types/proto/v1/environment_service";
 import type { DeploymentConfig } from "@/types/proto/v1/project_service";
 import { filterDatabaseV1ByKeyword } from "@/utils";
-import { DeployDatabaseTable, YAxisRadioGroup } from "../TenantDatabaseTable";
+import {
+  YAxisRadioGroup,
+  DeploymentMatrixDataTable,
+} from "../TenantDatabaseTable";
 import { SearchBox } from "../v2";
 
 const props = withDefaults(

@@ -2226,7 +2226,12 @@
     "wont-be-deployed": "導入には関与しない",
     "pipeline-generated-from-deployment-config": "デプロイ パイプラインはプロジェクト {deployment_config} に基づいて生成されます。",
     "preview-deployment-pipeline": "導入パイプラインのプレビュー",
-    "select-database-group": "データベースグループの選択"
+    "select-database-group": "データベースグループの選択",
+    "matched-databases": {
+      "all": "一致したすべてのデータベース",
+      "n": "{n} 個の一致したデータベース | {n} 個の一致したデータベース",
+      "show-more": "もっと見る"
+    }
   },
   "data-source": {
     "role-type": "権限の種類",

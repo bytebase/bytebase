@@ -2226,7 +2226,12 @@
     "wont-be-deployed": "No se implementará",
     "pipeline-generated-from-deployment-config": "El pipeline de implementación se genera de acuerdo con la {deployment_config} del proyecto.",
     "preview-deployment-pipeline": "Vista previa del pipeline de implementación",
-    "select-database-group": "Seleccionar grupo de bases de datos"
+    "select-database-group": "Seleccionar grupo de bases de datos",
+    "matched-databases": {
+      "all": "Todas las bases de datos coincidentes",
+      "n": "{n} base de datos coincidente | {n} bases de datos coincidentes",
+      "show-more": "Mostrar más"
+    }
   },
   "data-source": {
     "role-type": "Tipo de rol",
