@@ -2,7 +2,7 @@
   <NTooltip v-if="showFailedTaskCountTooltip">
     <template #trigger>
       <span
-        class="flex items-center justify-center rounded-full select-none overflow-hidden w-5 h-5 bg-white border-2 border-warning text-warning"
+        class="flex items-center justify-center rounded-full select-none overflow-hidden w-5 h-5 bg-white border-2 border-warning text-warning shrink-0"
       >
         <span
           class="h-1.5 w-1.5 bg-warning rounded-full"
