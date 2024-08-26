@@ -1,6 +1,8 @@
 package elasticsearch
 
 import (
+	"bufio"
+	"io"
 	"net/http"
 	"strings"
 
@@ -83,6 +85,10 @@ func (sm *stateMachine) clear() {
 
 // Perform logic checks and generate a statement.
 func (sm *stateMachine) generateStatement() (*statement, error) {
+	if !(sm.state == statusRoute || sm.state == statusQueryBody) {
+		return nil, errors.Errorf("expect Route or QueryBody, get %v", sm.state)
+	}
+
 	// Case insensitive, similar to Kibana's approach.
 	upperCaseMethod := strings.ToUpper(string(sm.methodBuf))
 	if !supportedHTTPMethods[upperCaseMethod] {
@@ -125,7 +131,21 @@ func (sm *stateMachine) error() error {
 	return sm.err
 }
 
-func (sm *stateMachine) transfer(c rune) (*statement, error) {
+func (sm *stateMachine) transfer(reader *bufio.Reader) (*statement, error) {
+	c, _, err := reader.ReadRune()
+	if err == io.EOF {
+		stmt, err := sm.generateStatement()
+		if err != nil {
+			sm.err = err
+			return nil, sm.err
+		}
+		sm.stmt = stmt
+		sm.state = statusTerminate
+	} else if err != nil {
+		sm.err = err
+		return nil, sm.err
+	}
+
 	switch sm.state {
 	case statusInit:
 		if isASCIIAlpha(c) {
