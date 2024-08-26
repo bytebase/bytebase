@@ -42,6 +42,10 @@ export const defaultSQLEditorTab = (): SQLEditorTab => {
       database: UNKNOWN_DATABASE_NAME,
       keys: [],
     },
+    editorState: {
+      selection: null,
+      advices: [],
+    },
   };
 };
 
@@ -173,6 +177,7 @@ export const emptySQLEditorTabQueryContext = (): SQLEditorTabQueryContext => ({
     engine: Engine.MYSQL,
     explain: false,
     statement: "",
+    selection: null,
   },
 });
 
