@@ -25,6 +25,7 @@ require (
 	github.com/bytebase/snowsql-parser v0.0.0-20240304100801-bb357ccb5535
 	github.com/bytebase/tidb-parser v0.0.0-20240821091609-162fffe2a839
 	github.com/cenkalti/backoff/v4 v4.3.0
+	github.com/cockroachdb/errors v1.8.1
 	github.com/coreos/go-oidc v2.2.1+incompatible
 	github.com/databricks/databricks-sdk-go v0.43.2
 	github.com/epiclabs-io/diff3 v0.0.0-20240325112732-ba77e92bf0e4
@@ -118,7 +119,6 @@ require (
 	github.com/boombuler/barcode v1.0.1 // indirect
 	github.com/cenkalti/backoff/v3 v3.2.2 // indirect
 	github.com/cloudfoundry/gosigar v1.3.6 // indirect
-	github.com/cockroachdb/errors v1.8.1 // indirect
 	github.com/cockroachdb/logtags v0.0.0-20190617123548-eb05cc24525f // indirect
 	github.com/cockroachdb/redact v1.0.8 // indirect
 	github.com/cockroachdb/sentry-go v0.6.1-cockroachdb.2 // indirect
