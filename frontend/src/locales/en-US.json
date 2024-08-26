@@ -487,6 +487,7 @@
       "phone-tips": "Be sure to include the country code",
       "country-code": "Country Code",
       "password": "Password",
+      "password-hint": "Minimum eight characters, at least contains one letter and one number.",
       "password-confirm": "Password Confirm",
       "password-confirm-placeholder": "Confirm new password",
       "password-mismatch": "New password mismatch",
