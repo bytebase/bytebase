@@ -13,20 +13,22 @@ func splitElasticsearchStatements(statementsStr string) ([]*statement, error) {
 	var stmts []*statement
 	sm := &stateMachine{}
 
-	for idx, c := range statementsStr {
-		stmt, err := sm.transfer(c)
-		if err == nil {
-			stmts = append(stmts, stmt)
-			continue
+	reader := bufio.NewReader(strings.NewReader(statementsStr))
+
+	for {
+		sm.clear()
+		for sm.needMore() {
+			sm.transfer(reader)
 		}
-		if !strings.Contains(err.Error(), "incomplete") {
-			return nil, errors.Wrap(err, "failed to parse statements")
+		if sm.err != nil {
+			return nil, sm.err
 		}
-		if idx == len(statementsStr)-1 && (sm.state == statusRoute || sm.state == statusQueryBody) {
-			if stmt, err = sm.generateStatement(); err != nil {
-				return nil, err
-			}
-			stmts = append(stmts, stmt)
+		if sm.stmt != nil {
+			stmts = append(stmts, sm.stmt)
+		}
+
+		if sm.eof {
+			break
 		}
 	}
 
@@ -72,6 +74,7 @@ type stateMachine struct {
 
 	stmt *statement
 	err  error
+	eof  bool
 }
 
 func (sm *stateMachine) clear() {
@@ -81,14 +84,14 @@ func (sm *stateMachine) clear() {
 	sm.queryBodyBuf = nil
 	sm.numLeftBraces = 0
 	sm.numRightBraces = 0
+
+	sm.stmt = nil
+	sm.err = nil
+	sm.eof = false
 }
 
 // Perform logic checks and generate a statement.
 func (sm *stateMachine) generateStatement() (*statement, error) {
-	if !(sm.state == statusRoute || sm.state == statusQueryBody) {
-		return nil, errors.Errorf("expect Route or QueryBody, get %v", sm.state)
-	}
-
 	// Case insensitive, similar to Kibana's approach.
 	upperCaseMethod := strings.ToUpper(string(sm.methodBuf))
 	if !supportedHTTPMethods[upperCaseMethod] {
@@ -134,13 +137,18 @@ func (sm *stateMachine) error() error {
 func (sm *stateMachine) transfer(reader *bufio.Reader) (*statement, error) {
 	c, _, err := reader.ReadRune()
 	if err == io.EOF {
-		stmt, err := sm.generateStatement()
-		if err != nil {
-			sm.err = err
-			return nil, sm.err
+		sm.eof = true
+		if sm.state == statusRoute || sm.state == statusQueryBody {
+			stmt, err := sm.generateStatement()
+			if err != nil {
+				sm.err = err
+				return nil, sm.err
+			}
+			sm.stmt = stmt
 		}
-		sm.stmt = stmt
 		sm.state = statusTerminate
+
+		return nil, nil
 	} else if err != nil {
 		sm.err = err
 		return nil, sm.err
@@ -183,6 +191,9 @@ func (sm *stateMachine) transfer(reader *bufio.Reader) (*statement, error) {
 		// 1. An alphabetic character is encountered, which represents the start of a method in the next statement.
 		// 2. A newline character is encountered and there are no left braces.
 		if (isASCIIAlpha(c) && (sm.numLeftBraces == sm.numRightBraces)) || (c == '\n' && sm.numLeftBraces == 0) {
+			if isASCIIAlpha(c) {
+				reader.UnreadRune()
+			}
 			stmt, err := sm.generateStatement()
 			if err != nil {
 				sm.err = err
@@ -191,11 +202,6 @@ func (sm *stateMachine) transfer(reader *bufio.Reader) (*statement, error) {
 			sm.stmt = stmt
 			sm.state = statusTerminate
 
-			sm.clear()
-			if isASCIIAlpha(c) {
-				sm.methodBuf = append(sm.methodBuf, string(c)...)
-				sm.state = statusMethod
-			}
 			return stmt, nil
 		}
 
