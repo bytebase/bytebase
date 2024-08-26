@@ -52,7 +52,7 @@ GET _cat/indices`,
 		},
 		// Test 2: with CR characters.
 		{
-			input: "GET /_cat/indices\r\n\r\nget /_cat/indices\r\nget /_cat/indices\r\n\r\n",
+			input: "\nGET /_cat/indices\r\n\r\nget /_cat/indices\r\nget /_cat/indices\r\n\r\n",
 			expected: []*statement{
 				{
 					method: []byte("GET"),
@@ -70,7 +70,7 @@ GET _cat/indices`,
 		},
 		// Test 3: with emojis.
 		{
-			input: "PUT /my_index\r\n\r\nPOST /my_index/_doc\r\n{\r\n\t\"emoji\":\"😈😈😈😈\"}\r\nGET /",
+			input: "\r\n\rPUT /my_index\r\n\r\nPOST /my_index/_doc\r\n{\r\n\t\"emoji\":\"😈😈😈😈\"}\r\nGET /",
 			expected: []*statement{
 				{
 					method: []byte("PUT"),
@@ -89,7 +89,7 @@ GET _cat/indices`,
 		},
 		// Test 4: bulk APIs.
 		{
-			input: "POST /_bulk\r\n{ \"index\" : { \"_index\" : \"test\", \"_id\" : \"1\" } }\r\n{ \"field1\" : \"value1\" }\r\n\r\n",
+			input: "\r\nPOST /_bulk\r\n{ \"index\" : { \"_index\" : \"test\", \"_id\" : \"1\" } }\r\n{ \"field1\" : \"value1\" }\r\n\r\n",
 			expected: []*statement{
 				{
 					method:    []byte("POST"),
