@@ -4,10 +4,10 @@
 
     <DatabaseGroupDataTable
       :database-group-list="databaseGroupList"
-      :show-edit="allowEdit"
       :custom-click="true"
       :show-selection="false"
       :show-project="false"
+      :loading="isLoading"
       @row-click="handleDatabaseGroupClick"
       @edit="handleEditDatabaseGroup"
     />
@@ -29,7 +29,7 @@
 
 <script lang="ts" setup>
 import { cloneDeep } from "lodash-es";
-import { computed, onMounted, reactive } from "vue";
+import { computed, onMounted, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
 import DatabaseGroupDataTable from "@/components/DatabaseGroup/DatabaseGroupDataTable.vue";
 import { PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL } from "@/router/dashboard/projectV1";
@@ -46,7 +46,6 @@ interface LocalState {
 
 const props = defineProps<{
   project: ComposedProject;
-  allowEdit: boolean;
 }>();
 
 const router = useRouter();
@@ -55,6 +54,7 @@ const state = reactive<LocalState>({
   showFeatureModal: false,
   showDatabaseGroupPanel: false,
 });
+const isLoading = ref(true);
 
 const hasDatabaseGroupFeature = computed(() => {
   return hasFeature("bb.feature.database-grouping");
@@ -66,6 +66,7 @@ const databaseGroupList = computed(() => {
 
 onMounted(async () => {
   await dbGroupStore.getOrFetchDBGroupListByProjectName(props.project.name);
+  isLoading.value = false;
 });
 
 const handleDatabaseGroupClick = (
