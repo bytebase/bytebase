@@ -316,6 +316,7 @@ func NewDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata) *DatabaseMeta
 		schemaMetadata := &SchemaMetadata{
 			internalTables:           make(map[string]*TableMetadata),
 			internalExternalTable:    make(map[string]*ExternalTableMetadata),
+			internalIndexes:          make(map[string]*IndexMetadata),
 			internalViews:            make(map[string]*ViewMetadata),
 			internalMaterializedView: make(map[string]*MaterializedViewMetadata),
 			internalFunctions:        make(map[string]*FunctionMetadata),
@@ -327,6 +328,10 @@ func NewDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata) *DatabaseMeta
 			tables, names := buildTablesMetadata(table)
 			for i, table := range tables {
 				schemaMetadata.internalTables[names[i]] = table
+			}
+			indexes := buildIndexesMetadata(table)
+			for _, index := range indexes {
+				schemaMetadata.internalIndexes[index.proto.Name] = index
 			}
 		}
 		for _, externalTable := range schema.ExternalTables {
@@ -424,6 +429,7 @@ func (l *LinkedDatabaseMetadata) GetHost() string {
 type SchemaMetadata struct {
 	internalTables           map[string]*TableMetadata
 	internalExternalTable    map[string]*ExternalTableMetadata
+	internalIndexes          map[string]*IndexMetadata
 	internalViews            map[string]*ViewMetadata
 	internalMaterializedView map[string]*MaterializedViewMetadata
 	internalFunctions        map[string]*FunctionMetadata
@@ -436,6 +442,10 @@ type SchemaMetadata struct {
 // GetTable gets the schema by name.
 func (s *SchemaMetadata) GetTable(name string) *TableMetadata {
 	return s.internalTables[name]
+}
+
+func (s *SchemaMetadata) GetIndex(name string) *IndexMetadata {
+	return s.internalIndexes[name]
 }
 
 // GetView gets the view by name.
@@ -564,6 +574,23 @@ func buildTablesMetadata(table *storepb.TableMetadata) ([]*TableMetadata, []stri
 	return result, name
 }
 
+func buildIndexesMetadata(table *storepb.TableMetadata) []*IndexMetadata {
+	if table == nil {
+		return nil
+	}
+
+	var result []*IndexMetadata
+
+	for _, index := range table.Indexes {
+		result = append(result, &IndexMetadata{
+			tableProto: table,
+			proto:      index,
+		})
+	}
+
+	return result
+}
+
 // buildTablesMetadataRecursive builds the partition tables recursively,
 // returns the table metadata and the partition names, the length of them must be the same.
 func buildTablesMetadataRecursive(originalColumn []*storepb.ColumnMetadata, partitions []*storepb.TablePartitionMetadata, root *TableMetadata, proto *storepb.TableMetadata) ([]*TableMetadata, []string) {
@@ -638,6 +665,19 @@ func (t *ExternalTableMetadata) GetColumn(name string) *storepb.ColumnMetadata {
 // GetColumns gets the columns.
 func (t *ExternalTableMetadata) GetColumns() []*storepb.ColumnMetadata {
 	return t.columns
+}
+
+type IndexMetadata struct {
+	tableProto *storepb.TableMetadata
+	proto      *storepb.IndexMetadata
+}
+
+func (i *IndexMetadata) GetProto() *storepb.IndexMetadata {
+	return i.proto
+}
+
+func (i *IndexMetadata) GetTableProto() *storepb.TableMetadata {
+	return i.tableProto
 }
 
 // ViewMetadata is the metadata for a view.
