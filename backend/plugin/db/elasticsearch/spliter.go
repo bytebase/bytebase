@@ -134,7 +134,7 @@ func (sm *stateMachine) error() error {
 	return sm.err
 }
 
-func (sm *stateMachine) consume(reader *bufio.Reader) (*statement, error) {
+func (sm *stateMachine) consume(reader *bufio.Reader) {
 	c, _, err := reader.ReadRune()
 	if err == io.EOF {
 		sm.eof = true
@@ -142,16 +142,15 @@ func (sm *stateMachine) consume(reader *bufio.Reader) (*statement, error) {
 			stmt, err := sm.generateStatement()
 			if err != nil {
 				sm.err = err
-				return nil, sm.err
+				return
 			}
 			sm.stmt = stmt
 		}
 		sm.state = statusTerminate
-
-		return nil, nil
+		return
 	} else if err != nil {
 		sm.err = err
-		return nil, sm.err
+		return
 	}
 
 	switch sm.state {
@@ -161,7 +160,7 @@ func (sm *stateMachine) consume(reader *bufio.Reader) (*statement, error) {
 			sm.methodBuf = append(sm.methodBuf, string(c)...)
 		} else if c != '\r' && c != '\n' && c != ' ' {
 			sm.err = errors.Errorf("invalid character %q for method", c)
-			return nil, sm.err
+			return
 		}
 
 	case statusMethod:
@@ -171,14 +170,14 @@ func (sm *stateMachine) consume(reader *bufio.Reader) (*statement, error) {
 			sm.methodBuf = append(sm.methodBuf, string(c)...)
 		} else {
 			sm.err = errors.Errorf("invalid character %q for method", c)
-			return nil, sm.err
+			return
 		}
 
 	case statusRoute:
 		if c == '\n' {
 			if sm.routeBuf == nil {
 				sm.err = errors.New("required route is missing")
-				return nil, sm.err
+				return
 			}
 			sm.state = statusQueryBody
 			// Ignore CR characters produced by line breaks on Windows.
@@ -197,12 +196,11 @@ func (sm *stateMachine) consume(reader *bufio.Reader) (*statement, error) {
 			stmt, err := sm.generateStatement()
 			if err != nil {
 				sm.err = err
-				return nil, sm.err
+				return
 			}
 			sm.stmt = stmt
 			sm.state = statusTerminate
-
-			return stmt, nil
+			return
 		}
 
 		// Ignore any characters other than '\n', '{' and '}' outside the braces.
@@ -216,13 +214,12 @@ func (sm *stateMachine) consume(reader *bufio.Reader) (*statement, error) {
 			sm.numRightBraces++
 			if sm.numLeftBraces < sm.numRightBraces {
 				sm.err = errors.New("the curly braces '{}' are mismatched")
-				return nil, sm.err
+				return
 			}
 		}
-
 	default:
+		sm.err = errors.Errorf("unexpected state %v", sm.state)
 	}
-	return nil, errors.New("incomplete")
 }
 
 func isASCIIAlpha(c rune) bool {
