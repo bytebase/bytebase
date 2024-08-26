@@ -2,7 +2,7 @@
   <NTooltip :disabled="!isUnfinishedResolvedIssue">
     <template #trigger>
       <span
-        class="flex items-center justify-center rounded-full select-none overflow-hidden"
+        class="flex items-center justify-center rounded-full select-none overflow-hidden shrink-0"
         :class="issueIconClass()"
       >
         <template v-if="issueStatus === IssueStatus.OPEN">
