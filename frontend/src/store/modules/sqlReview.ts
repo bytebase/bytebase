@@ -386,7 +386,7 @@ export const useReviewPolicyForDatabase = (
     const reviewForProject = store.getReviewPolicyByResouce(
       unref(database)!.project
     );
-    if (reviewForProject) {
+    if (reviewForProject && reviewForProject.enforce) {
       return reviewForProject;
     }
     return store.getReviewPolicyByResouce(
