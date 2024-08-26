@@ -1,22 +1,19 @@
 <template>
   <div class="flex flex-col items-start w-max space-y-2">
-    <div>
+    <div class="space-y-1">
       <DatabaseMatrixItem
         v-for="item in shownDatabases"
         :key="item.name"
         :database="item"
       />
     </div>
-    <p v-if="databases.length > 1" class="textinfolabel space-x-1">
+    <p v-if="showDisplayMore" class="textinfolabel space-x-1">
       <span>{{
         $t("deployment-config.matched-databases.n", { n: databases.length })
       }}</span>
-      <NButton
-        v-if="showDisplayMore"
-        size="tiny"
-        @click="() => (state.showAll = true)"
-        >{{ $t("deployment-config.matched-databases.show-more") }}</NButton
-      >
+      <NButton size="tiny" @click="() => (state.showAll = true)">{{
+        $t("deployment-config.matched-databases.show-more")
+      }}</NButton>
     </p>
   </div>
 
