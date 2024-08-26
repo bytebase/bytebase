@@ -8,27 +8,27 @@ import (
 )
 
 func splitElasticsearchStatements(statementsStr string) ([]*statement, error) {
-	var stats []*statement
+	var stmts []*statement
 	sm := &stateMachine{}
 
 	for idx, c := range statementsStr {
-		stat, err := sm.transfer(c)
+		stmt, err := sm.transfer(c)
 		if err == nil {
-			stats = append(stats, stat)
+			stmts = append(stmts, stmt)
 			continue
 		}
 		if !strings.Contains(err.Error(), "incomplete") {
 			return nil, errors.Wrap(err, "failed to parse statements")
 		}
 		if idx == len(statementsStr)-1 && (sm.state == statusRoute || sm.state == statusQueryBody) {
-			if stat, err = sm.generateStatement(); err != nil {
+			if stmt, err = sm.generateStatement(); err != nil {
 				return nil, err
 			}
-			stats = append(stats, stat)
+			stmts = append(stmts, stmt)
 		}
 	}
 
-	return stats, nil
+	return stmts, nil
 }
 
 type state int
@@ -141,7 +141,7 @@ func (sm *stateMachine) transfer(c rune) (*statement, error) {
 		// 1. An alphabetic character is encountered, which represents the start of a method in the next statement.
 		// 2. A newline character is encountered and there are no left braces.
 		if (isASCIIAlpha(c) && (sm.numLeftBraces == sm.numRightBraces)) || (c == '\n' && sm.numLeftBraces == 0) {
-			stat, err := sm.generateStatement()
+			stmt, err := sm.generateStatement()
 			if err != nil {
 				return nil, err
 			}
@@ -150,7 +150,7 @@ func (sm *stateMachine) transfer(c rune) (*statement, error) {
 				sm.methodBuf = append(sm.methodBuf, string(c)...)
 				sm.state = statusMethod
 			}
-			return stat, nil
+			return stmt, nil
 		}
 
 		// Ignore any characters other than '\n', '{' and '}' outside the braces.
