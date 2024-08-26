@@ -3,7 +3,7 @@
     trigger="hover"
     placement="right"
     :theme-overrides="{
-      borderRadius: '0.375rem',
+      borderRadius: '0.5rem',
       padding: '0',
     }"
   >
@@ -19,14 +19,14 @@
         <div class="flex flex-col items-start">
           <router-link
             :to="databaseDetailUrl"
-            class="text-main whitespace-nowrap hover:underline"
+            class="text-main whitespace-nowrap leading-snug hover:underline"
           >
             {{ database.databaseName }}
           </router-link>
 
           <router-link
             :to="schemaVersionUrl"
-            class="text-sm text-control hover:underline"
+            class="text-xs text-control hover:underline"
           >
             {{ database.schemaVersion }}
           </router-link>
