@@ -20,11 +20,11 @@ func splitElasticsearchStatements(statementsStr string) ([]*statement, error) {
 		for sm.needMore() {
 			sm.consume(reader)
 		}
-		if sm.err != nil {
-			return nil, sm.err
+		if sm.error() != nil {
+			return nil, sm.error()
 		}
-		if sm.stmt != nil {
-			stmts = append(stmts, sm.stmt)
+		if sm.statement() != nil {
+			stmts = append(stmts, sm.statement())
 		}
 
 		if sm.eof {
@@ -134,10 +134,15 @@ func (sm *stateMachine) error() error {
 	return sm.err
 }
 
+func (sm *stateMachine) statement() *statement {
+	return sm.stmt
+}
+
 func (sm *stateMachine) consume(reader *bufio.Reader) {
 	c, _, err := reader.ReadRune()
 	if err == io.EOF {
 		sm.eof = true
+		// maybe the previous run left us some empty chars to read.
 		if sm.state == statusRoute || sm.state == statusQueryBody {
 			stmt, err := sm.generateStatement()
 			if err != nil {
