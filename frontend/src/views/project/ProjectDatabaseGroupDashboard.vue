@@ -1,5 +1,5 @@
 <template>
-  <ProjectDatabaseGroupPanel :project="project" :allow-edit="allowEdit" />
+  <ProjectDatabaseGroupPanel :project="project" />
 </template>
 
 <script setup lang="ts">
@@ -10,7 +10,6 @@ import { projectNamePrefix } from "@/store/modules/v1/common";
 
 const props = defineProps<{
   projectId: string;
-  allowEdit: boolean;
 }>();
 
 const { project } = useProjectByName(
