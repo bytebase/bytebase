@@ -16,6 +16,7 @@ import type {
   TablePartitionMetadata,
   ViewMetadata,
 } from "@/types/proto/v1/database_service";
+import { keyForFunction } from "@/utils";
 
 export type NodeType =
   | "database"
@@ -222,10 +223,8 @@ export const keyForNodeTarget = <T extends NodeType>(
     ].join("/");
   }
   if (type === "function") {
-    const { db, schema, function: func } = target as NodeTarget<"function">;
-    return [db.name, `schemas/${schema.name}`, `functions/${func.name}`].join(
-      "/"
-    );
+    const { function: func } = target as NodeTarget<"function">;
+    return keyForFunction(func);
   }
   if (type === "expandable-text") {
     const { id } = target as NodeTarget<"expandable-text">;

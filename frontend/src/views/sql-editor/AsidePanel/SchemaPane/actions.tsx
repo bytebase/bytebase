@@ -43,6 +43,7 @@ import {
   generateSimpleSelectAllStatement,
   generateSimpleUpdateStatement,
   instanceV1HasAlterSchema,
+  keyForFunction,
   sortByDictionary,
   toClipboard,
 } from "@/utils";
@@ -269,7 +270,7 @@ export const useActions = () => {
       detail.procedure = (target as NodeTarget<"procedure">).procedure.name;
     }
     if (type === "function") {
-      detail.func = (target as NodeTarget<"function">).function.name;
+      detail.func = keyForFunction((target as NodeTarget<"function">).function);
     }
     if (type === "external-table") {
       detail.externalTable = (

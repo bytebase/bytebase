@@ -58,6 +58,7 @@ import {
   FunctionMetadata,
   SchemaMetadata,
 } from "@/types/proto/v1/database_service";
+import { extractFunctionName, keyForFunction } from "@/utils";
 import DatabaseChooser from "@/views/sql-editor/EditorCommon/DatabaseChooser.vue";
 import { useEditorPanelContext } from "../../context";
 import { SchemaSelectToolbar, CodeViewer } from "../common";
@@ -80,9 +81,8 @@ const metadata = computed(() => {
   const schema = database.schemas.find(
     (s) => s.name === viewState.value?.schema
   );
-  const func = schema?.functions.find(
-    (f) => f.name === viewState.value?.detail?.func
-  );
+  const name = extractFunctionName(viewState.value?.detail?.func ?? "");
+  const func = schema?.functions.find((f) => f.name === name);
   return { database, schema, func };
 });
 
@@ -92,7 +92,7 @@ const select = (selected: {
   func: FunctionMetadata;
 }) => {
   updateViewState({
-    detail: { func: selected.func.name },
+    detail: { func: keyForFunction(selected.func) },
   });
 };
 
