@@ -2226,7 +2226,12 @@
     "wont-be-deployed": "Won't be deployed",
     "pipeline-generated-from-deployment-config": "The deployment pipeline is generated according to the project's {deployment_config}.",
     "preview-deployment-pipeline": "Preview Deployment Pipeline",
-    "select-database-group": "Select database group"
+    "select-database-group": "Select database group",
+    "matched-databases": {
+      "all": "All matched databases",
+      "n": "{n} matched database | {n} matched databases",
+      "show-more": "Show more"
+    }
   },
   "data-source": {
     "role-type": "Role Type",
