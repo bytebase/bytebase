@@ -8,11 +8,13 @@ import (
 
 func TestSpliter(t *testing.T) {
 	tests := []struct {
+		name     string
 		input    string
 		expected []*statement
 	}{
 		// Test 1: basic test.
 		{
+			name: "test 1",
 			input: `POST /_bulk
 { "index" : { "_index" : "books" } }
 {"name": "Revelation Space", "author": "天舟", "page_count": 585}
@@ -52,6 +54,7 @@ GET _cat/indices`,
 		},
 		// Test 2: with CR characters.
 		{
+			name:  "test 2",
 			input: "\nGET /_cat/indices\r\n\r\nget /_cat/indices\r\nget /_cat/indices\r\n\r\n",
 			expected: []*statement{
 				{
@@ -70,6 +73,7 @@ GET _cat/indices`,
 		},
 		// Test 3: with emojis.
 		{
+			name:  "test 3",
 			input: "\r\n\rPUT /my_index\r\n\r\nPOST /my_index/_doc\r\n{\r\n\t\"emoji\":\"😈😈😈😈\"}\r\nGET /",
 			expected: []*statement{
 				{
@@ -89,6 +93,7 @@ GET _cat/indices`,
 		},
 		// Test 4: bulk APIs.
 		{
+			name:  "test 4",
 			input: "\r\nPOST /_bulk\r\n{ \"index\" : { \"_index\" : \"test\", \"_id\" : \"1\" } }\r\n{ \"field1\" : \"value1\" }\r\n\r\n",
 			expected: []*statement{
 				{
@@ -100,11 +105,10 @@ GET _cat/indices`,
 		},
 	}
 
+	a := require.New(t)
 	for _, test := range tests {
-		stats, err := splitElasticsearchStatements(test.input)
-		if err != nil {
-			t.Fatal(err.Error())
-		}
-		require.Equal(t, test.expected, stats)
+		stmts, err := splitElasticsearchStatements(test.input)
+		a.NoError(err, test.name)
+		a.Equal(test.expected, stmts, test.name)
 	}
 }
