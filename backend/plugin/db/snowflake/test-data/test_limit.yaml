@@ -1,5 +1,30 @@
+- stmt: SELECT * FROM CUSTOMER LIMIT 15;
+  limit: 10
+  want: |-
+    SELECT * FROM CUSTOMER LIMIT 10
+    ;
+- stmt: SELECT * FROM CUSTOMER LIMIT 5;
+  limit: 10
+  want: |-
+    SELECT * FROM CUSTOMER LIMIT 5
+    ;
+- stmt: SELECT * FROM CUSTOMER FETCH 123;
+  limit: 10
+  want: |-
+    SELECT * FROM CUSTOMER FETCH 10
+    ;
+- stmt: SELECT * FROM CUSTOMER OFFSET 12 FETCH 123;
+  limit: 10
+  want: |-
+    SELECT * FROM CUSTOMER OFFSET 12 FETCH 10
+    ;
+- stmt: SELECT TOP 125 * FROM CUSTOMER;
+  limit: 10
+  want: |-
+    SELECT TOP 10 * FROM CUSTOMER
+    ;
 - stmt: SELECT * FROM CUSTOMER;
-  count: 10
+  limit: 10
   want: |-
     SELECT * FROM CUSTOMER LIMIT 10
     ;
@@ -8,7 +33,7 @@
     SELECT C_NAME FROM customer WHERE C_CUSTKEY < 5350008
     INTERSECT
     SELECT C_NAME FROM customer WHERE C_CUSTKEY >= 535006 AND C_CUSTKEY <= 5350013;
-  count: 10
+  limit: 10
   want: |-
     SELECT C_NAME FROM customer WHERE C_CUSTKEY < 5350008
     INTERSECT
@@ -22,7 +47,7 @@
     FROM employee_table INNER JOIN department_table
     ON employee_table.department_id = department_table.department_id
     ORDER BY department_id, last_name, first_name;
-  count: 10
+  limit: 10
   want: |-
     SELECT
       employee_table.employee_id, employee_table.last_name, employee_table.first_name,
@@ -36,7 +61,7 @@
     FROM employee_table INNER JOIN department_table
         ON employee_table.department_ID = department_table.department_ID
     ORDER BY department_name, last_name, first_name;
-  count: 1
+  limit: 1
   want: |-
     SELECT department_name, last_name, first_name
     FROM employee_table INNER JOIN department_table
@@ -46,7 +71,7 @@
 # where
 - stmt: |+
     SELECT last_name FROM employee_table WHERE employee_ID = 101;
-  count: 10
+  limit: 10
   want: |-
     SELECT last_name FROM employee_table WHERE employee_ID = 101 LIMIT 10
     ;
@@ -55,7 +80,7 @@
     with
       albums_1976 as (select * from music_albums where album_year = 1976)
     select album_name from albums_1976 order by album_name;
-  count: 1
+  limit: 1
   want: |-
     with
       albums_1976 as (select * from music_albums where album_year = 1976)
@@ -71,7 +96,7 @@
           where band_name = 'Journey')
     select album_name, band_name 
       from Journey_album_info_1976;
-  count: 1
+  limit: 1
   want: |-
     with
       album_info_1976 as (select m.album_ID, m.album_name, b.band_name
@@ -93,7 +118,7 @@
         WHERE current_val + previous_val < 100
       )
     SELECT current_val FROM current_f ORDER BY current_val;
-  count: 1
+  limit: 1
   want: |-
     WITH RECURSIVE current_f (current_val, previous_val) AS
       (
@@ -106,17 +131,17 @@
     ;
 # top
 - stmt: |+
-    select TOP 4 c1 from testtable;
-  count: 1
+    select TOP 40 c1 from testtable;
+  limit: 1
   want: |-
-    select TOP 4 c1 from testtable
+    select TOP 1 c1 from testtable
     ;
 # group by
 - stmt: |+
     select sum(salary), ANY_VALUE(employment_state) as state
     from employees
     group by state;
-  count: 1
+  limit: 1
   want: |-
     select sum(salary), ANY_VALUE(employment_state) as state
     from employees
