@@ -82,7 +82,7 @@ func (sm *stateMachine) generateStatement() (*statement, error) {
 	// Case insensitive, similar to Kibana's approach.
 	upperCaseMethod := strings.ToUpper(string(sm.methodBuf))
 	if !supportedHTTPMethods[upperCaseMethod] {
-		return nil, errors.New(fmt.Sprintf("unsupported method type %q", string(sm.methodBuf)))
+		return nil, fmt.Errorf("unsupported method type %q", string(sm.methodBuf))
 	}
 	if len(sm.routeBuf) == 0 {
 		return nil, errors.New("required route is missing")
@@ -114,7 +114,7 @@ func (sm *stateMachine) transfer(c rune) (*statement, error) {
 			sm.state = statusMethod
 			sm.methodBuf = append(sm.methodBuf, string(c)...)
 		} else if c != '\r' && c != '\n' && c != ' ' {
-			return nil, errors.New(fmt.Sprintf("invalid character %q for method", c))
+			return nil, fmt.Errorf("invalid character %q for method", c)
 		}
 
 	case statusMethod:
@@ -123,7 +123,7 @@ func (sm *stateMachine) transfer(c rune) (*statement, error) {
 		} else if isASCIIAlpha(c) {
 			sm.methodBuf = append(sm.methodBuf, string(c)...)
 		} else {
-			return nil, errors.New(fmt.Sprintf("invalid character %q for method", c))
+			return nil, fmt.Errorf("invalid character %q for method", c)
 		}
 
 	case statusRoute:
