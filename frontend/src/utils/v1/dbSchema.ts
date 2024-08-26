@@ -1,22 +1,17 @@
-import { head } from "lodash-es";
-import type { FunctionMetadata } from "@/types/proto/v1/database_service";
+import { FunctionMetadata } from "@/types/proto/v1/database_service";
 
-export const keyForFunction = (func: FunctionMetadata) => {
-  return JSON.stringify([`functions/${func.name}`, func.definition]);
+export const keyForFunction = (func: FunctionMetadata): string => {
+  // return JSON.stringify([`functions/${func.name}`, func.definition]);
+  return JSON.stringify(FunctionMetadata.toJSON(func));
 };
 
-export const extractFunctionName = (key: string) => {
-  if (!key) return "";
+export const extractFunction = (key: string) => {
+  if (!key) return FunctionMetadata.fromJSON({});
   try {
-    const parts = JSON.parse(key);
-    if (!Array.isArray(parts)) return "";
-    const name = head(parts);
-    if (typeof name !== "string") return "";
-
-    const pattern = /(?:^|\/)functions\/([^/]+)(?:$|\/)/;
-    const matches = name.match(pattern);
-    return matches?.[1] ?? "";
+    const obj = JSON.parse(key);
+    const func = FunctionMetadata.fromJSON(obj);
+    return func;
   } catch {
-    return "";
+    return FunctionMetadata.fromJSON({});
   }
 };
