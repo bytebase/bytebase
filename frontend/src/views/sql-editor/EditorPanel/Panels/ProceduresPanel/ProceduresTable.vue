@@ -4,7 +4,7 @@
       v-bind="$attrs"
       ref="dataTableRef"
       size="small"
-      :row-key="(procedure) => procedure.name"
+      :row-key="(procedure) => keyForProcedure(procedure)"
       :columns="columns"
       :data="layoutReady ? filteredProcedures : []"
       :row-props="rowProps"
@@ -27,7 +27,7 @@ import type {
   ProcedureMetadata,
   SchemaMetadata,
 } from "@/types/proto/v1/database_service";
-import { getHighlightHTMLByRegExp } from "@/utils";
+import { getHighlightHTMLByRegExp, keyForProcedure } from "@/utils";
 import { useAutoHeightDataTable } from "../../common";
 import { useEditorPanelContext } from "../../context";
 
