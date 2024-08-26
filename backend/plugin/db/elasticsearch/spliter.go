@@ -1,9 +1,11 @@
 package elasticsearch
 
 import (
+	"fmt"
+	"net/http"
 	"strings"
 
-	"github.com/cockroachdb/errors"
+	"github.com/pkg/errors"
 )
 
 func splitElasticsearchStatements(statementsStr string) ([]*statement, error) {
@@ -12,16 +14,17 @@ func splitElasticsearchStatements(statementsStr string) ([]*statement, error) {
 
 	for idx, c := range statementsStr {
 		stat, err := sm.transfer(c)
-		if err != nil {
+		if err == nil {
+			stats = append(stats, stat)
+			continue
+		}
+		if !strings.Contains(err.Error(), "incomplete") {
 			return nil, errors.Wrap(err, "failed to parse statements")
 		}
-		// Generate a statement when the maximum parsed content length is reached.
-		if stat == nil && (idx == len(statementsStr)-1) {
+		if idx == len(statementsStr)-1 && (sm.state == statusRoute || sm.state == statusQueryBody) {
 			if stat, err = sm.generateStatement(); err != nil {
 				return nil, err
 			}
-		}
-		if stat != nil {
 			stats = append(stats, stat)
 		}
 	}
@@ -42,11 +45,11 @@ const (
 // Supported HTTP methods for Elasticsearch API.
 var (
 	supportedHTTPMethods = map[string]bool{
-		"GET":    true,
-		"POST":   true,
-		"PUT":    true,
-		"HEAD":   true,
-		"DELETE": true,
+		http.MethodGet:    true,
+		http.MethodPost:   true,
+		http.MethodPut:    true,
+		http.MethodHead:   true,
+		http.MethodDelete: true,
 	}
 )
 
@@ -76,16 +79,17 @@ func (sm *stateMachine) clear() {
 
 // Perform logic checks and generate a statement.
 func (sm *stateMachine) generateStatement() (*statement, error) {
-	if sm.state != statusRoute && sm.state != statusQueryBody {
-		return nil, nil
-	}
 	// Case insensitive, similar to Kibana's approach.
 	upperCaseMethod := strings.ToUpper(string(sm.methodBuf))
 	if !supportedHTTPMethods[upperCaseMethod] {
-		return nil, errors.Newf("unsupported method type %q", string(sm.methodBuf))
+		return nil, errors.New(fmt.Sprintf("unsupported method type %q", string(sm.methodBuf)))
 	}
-	if sm.routeBuf == nil {
+	if len(sm.routeBuf) == 0 {
 		return nil, errors.New("required route is missing")
+	}
+	// It's ok for routes without the leading '/' in the editor.
+	if sm.routeBuf[0] != '/' {
+		sm.routeBuf = append([]byte{'/'}, sm.routeBuf...)
 	}
 	if sm.queryBodyBuf != nil {
 		if sm.numLeftBraces != sm.numRightBraces {
@@ -110,7 +114,7 @@ func (sm *stateMachine) transfer(c rune) (*statement, error) {
 			sm.state = statusMethod
 			sm.methodBuf = append(sm.methodBuf, string(c)...)
 		} else if c != '\r' && c != '\n' && c != ' ' {
-			return nil, errors.Newf("invalid character %q for method", c)
+			return nil, errors.New(fmt.Sprintf("invalid character %q for method", c))
 		}
 
 	case statusMethod:
@@ -119,7 +123,7 @@ func (sm *stateMachine) transfer(c rune) (*statement, error) {
 		} else if isASCIIAlpha(c) {
 			sm.methodBuf = append(sm.methodBuf, string(c)...)
 		} else {
-			return nil, errors.Newf("invalid character %q for method", c)
+			return nil, errors.New(fmt.Sprintf("invalid character %q for method", c))
 		}
 
 	case statusRoute:
@@ -165,10 +169,8 @@ func (sm *stateMachine) transfer(c rune) (*statement, error) {
 		}
 
 	default:
-		return nil, errors.New("invalid state")
 	}
-
-	return nil, nil
+	return nil, errors.New("incomplete")
 }
 
 func isASCIIAlpha(c rune) bool {

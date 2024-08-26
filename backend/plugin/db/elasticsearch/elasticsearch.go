@@ -169,10 +169,6 @@ func (d *Driver) QueryConn(_ context.Context, _ *sql.Conn, statement string, _ d
 	for _, s := range statements {
 		if err := func() error {
 			startTime := time.Now()
-			// It's ok for routes without the leading '/' in the editor.
-			if !strings.HasPrefix(string(s.route), "/") {
-				s.route = append([]byte{'/'}, s.route...)
-			}
 			// send HTTP request.
 			resp, err := d.basicAuthClient.Do(string(s.method), s.route, s.queryBody)
 			if err != nil {

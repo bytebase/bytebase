@@ -37,7 +37,7 @@ GET _cat/indices`,
 				},
 				{
 					method: []byte("GET"),
-					route:  []byte(`books/_search`),
+					route:  []byte(`/books/_search`),
 					queryBody: []byte(`{
 	"query": {
 		"match_all": {}
@@ -47,7 +47,7 @@ GET _cat/indices`,
 				},
 				{
 					method: []byte("GET"),
-					route:  []byte(`_cat/indices`),
+					route:  []byte(`/_cat/indices`),
 				}},
 		},
 		// Test 2: with CR characters.
@@ -70,7 +70,7 @@ GET _cat/indices`,
 		},
 		// Test 3: with emoijs.
 		{
-			input: "PUT /my_index\r\n\r\nPOST /my_index/_doc\r\n{\r\n\t\"emoij\":\"😈😈😈😈\"}\r\nGET /",
+			input: "PUT /my_index\r\n\r\nPOST /my_index/_doc\r\n{\r\n\t\"emoji\":\"😈😈😈😈\"}\r\nGET /",
 			expected: []*statement{
 				{
 					method: []byte("PUT"),
@@ -79,7 +79,7 @@ GET _cat/indices`,
 				{
 					method:    []byte("POST"),
 					route:     []byte("/my_index/_doc"),
-					queryBody: []byte("{\r\n\t\"emoij\":\"😈😈😈😈\"}\n"),
+					queryBody: []byte("{\r\n\t\"emoji\":\"😈😈😈😈\"}\n"),
 				},
 				{
 					method: []byte("GET"),
