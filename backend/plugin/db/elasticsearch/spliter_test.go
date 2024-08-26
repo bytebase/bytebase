@@ -68,7 +68,7 @@ GET _cat/indices`,
 				},
 			},
 		},
-		// Test 3: with emoijs.
+		// Test 3: with emojis.
 		{
 			input: "PUT /my_index\r\n\r\nPOST /my_index/_doc\r\n{\r\n\t\"emoji\":\"😈😈😈😈\"}\r\nGET /",
 			expected: []*statement{
