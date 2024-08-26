@@ -1,7 +1,9 @@
+import Emittery from "emittery";
 import { isEmpty } from "lodash-es";
 import { Status } from "nice-grpc-common";
 import { markRaw } from "vue";
 import { parseSQL } from "@/components/MonacoEditor/sqlParser";
+import { sqlServiceClient } from "@/grpcweb";
 import { t } from "@/plugins/i18n";
 import {
   pushNotification,
@@ -16,22 +18,35 @@ import type {
   SQLResultSetV1,
   BBNotificationStyle,
   SQLEditorQueryParams,
+  SQLEditorTab,
 } from "@/types";
 import { isValidDatabaseName } from "@/types";
 import {
+  Advice,
   Advice_Status,
   advice_StatusToJSON,
+  CheckRequest_ChangeType,
 } from "@/types/proto/v1/sql_service";
 import {
   emptySQLEditorTabQueryContext,
   hasPermissionToCreateChangeDatabaseIssue,
 } from "@/utils";
 
+// SKIP_CHECK_THRESHOLD is the MaxSheetCheckSize in the backend.
+const SKIP_CHECK_THRESHOLD = 1024 * 1024;
+
+const events = new Emittery<{
+  "update:advices": {
+    tab: SQLEditorTab;
+    params: SQLEditorQueryParams;
+    advices: Advice[];
+  };
+}>();
+
 const useExecuteSQL = () => {
   const databaseStore = useDatabaseV1Store();
   const tabStore = useSQLEditorTabStore();
   const sqlEditorStore = useSQLEditorStore();
-
   const notify = (
     type: BBNotificationStyle,
     title: string,
@@ -45,7 +60,7 @@ const useExecuteSQL = () => {
     });
   };
 
-  const preflight = (params: SQLEditorQueryParams) => {
+  const preflight = async (params: SQLEditorQueryParams) => {
     const tab = tabStore.currentTab;
     if (!tab) {
       return false;
@@ -74,6 +89,32 @@ const useExecuteSQL = () => {
     return true;
   };
 
+  const check = async () => {
+    const tab = tabStore.currentTab;
+    if (!tab) {
+      return false;
+    }
+
+    const params = tab.queryContext?.params;
+    if (!params) {
+      return false;
+    }
+    if (params.explain) {
+      return true;
+    }
+    if (params.statement.length > SKIP_CHECK_THRESHOLD) {
+      return true;
+    }
+    const response = await sqlServiceClient.check({
+      name: params.connection.database,
+      statement: params.statement,
+      changeType: CheckRequest_ChangeType.SQL_EDITOR,
+    });
+    const { advices } = response;
+    events.emit("update:advices", { tab, params, advices });
+    return true;
+  };
+
   const cleanup = () => {
     const tab = tabStore.currentTab;
     if (!tab) return;
@@ -94,6 +135,10 @@ const useExecuteSQL = () => {
     if (mode === "ADMIN") {
       return;
     }
+    if (!(await check())) {
+      return cleanup();
+    }
+
     const queryContext = tab.queryContext!;
     const batchQueryContext = tab.batchQueryContext;
     const { data } = await parseSQL(params.statement);
@@ -254,6 +299,11 @@ const useExecuteSQL = () => {
       }
     }
 
+    const firstResultSet = queryResultMap.get(params.connection.database);
+    if (firstResultSet) {
+      // const { advices } = firstResultSet;
+      // events.emit("update:advices", { tab, params, advices });
+    }
     // After all the queries are executed, we update the tab with the latest query result map.
     // Refresh the query history list when the query executed successfully
     // (with or without warnings).
@@ -262,6 +312,7 @@ const useExecuteSQL = () => {
   };
 
   return {
+    events,
     execute,
   };
 };

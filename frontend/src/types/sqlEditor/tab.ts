@@ -1,5 +1,7 @@
-import type { Selection as MonacoSelection } from "@/components/MonacoEditor";
-import type { Advice } from "../proto/v1/sql_service";
+import type {
+  AdviceOption,
+  Selection as MonacoSelection,
+} from "@/components/MonacoEditor";
 import type { SQLResultSetV1 } from "../v1/sql";
 import type { SQLEditorConnection, SQLEditorQueryParams } from "./editor";
 
@@ -53,7 +55,7 @@ export type SQLEditorTab = {
   };
   editorState: {
     selection: MonacoSelection | null;
-    advices: Advice[];
+    advices: AdviceOption[];
   };
 };
 

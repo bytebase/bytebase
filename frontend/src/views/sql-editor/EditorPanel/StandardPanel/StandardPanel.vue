@@ -69,7 +69,7 @@ import {
   useSQLEditorTabStore,
 } from "@/store";
 import type { SQLEditorConnection, SQLEditorQueryParams } from "@/types";
-import { instanceV1HasReadonlyMode } from "@/utils";
+import { instanceV1HasReadonlyMode, nextAnimationFrame } from "@/utils";
 import {
   EditorAction,
   ExecutingHintModal,
@@ -109,6 +109,7 @@ const handleApplyStatement = async (
   }
   tab.value.statement = statement;
   if (run) {
+    await nextAnimationFrame();
     const database = useDatabaseV1Store().getDatabaseByName(
       connection.database
     );
@@ -117,6 +118,7 @@ const handleApplyStatement = async (
       statement,
       engine: database.instanceResource.engine,
       explain: false,
+      selection: tab.value.editorState.selection,
     });
   }
 };

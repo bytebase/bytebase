@@ -46,8 +46,9 @@ import {
   useSQLEditorTabStore,
   useConnectionOfCurrentSQLEditorTab,
 } from "@/store";
-import type { SQLDialect, SQLEditorQueryParams } from "@/types";
+import type { SQLDialect, SQLEditorQueryParams, SQLEditorTab } from "@/types";
 import { dialectOfEngineV1 } from "@/types";
+import { Advice_Status, type Advice } from "@/types/proto/v1/sql_service";
 import { useInstanceV1EditorLanguage } from "@/utils";
 import { useSQLEditorContext } from "../../context";
 
@@ -69,19 +70,7 @@ const advices = computed((): AdviceOption[] => {
   if (!tab) {
     return [];
   }
-  return (
-    Array.from(tab.queryContext?.results.values() || [])
-      .map((result) => result?.advices || [])
-      .flat() ?? []
-  ).map((advice) => ({
-    severity: "ERROR",
-    message: advice.content,
-    startLineNumber: advice.line,
-    endLineNumber: advice.line,
-    startColumn: advice.column,
-    endColumn: advice.column,
-    source: advice.detail,
-  }));
+  return tab.editorState.advices;
 });
 const { instance, database } = useConnectionOfCurrentSQLEditorTab();
 const language = useInstanceV1EditorLanguage(instance);
@@ -201,7 +190,70 @@ const handleEditorReady = (
     { immediate: true }
   );
 };
+const updateAdvices = (
+  tab: SQLEditorTab,
+  params: SQLEditorQueryParams,
+  advices: Advice[]
+) => {
+  const withOffset = (advice: Advice) => {
+    let line = advice.line;
+    let column = advice.column + 1;
+    const { selection } = params;
+    if (!selection) {
+      return { line, column };
+    }
+    if (
+      selection.endLineNumber > selection.startLineNumber ||
+      selection.endColumn > selection.startColumn
+    ) {
+      if (line === 1) {
+        column += selection.startColumn - 1;
+      }
+      line += selection.startLineNumber - 1;
+    }
+    return { line, column };
+  };
+  tab.editorState.advices = advices.map<AdviceOption>((advice) => {
+    const { line, column } = withOffset(advice);
+    const code = advice.code;
+    const source = [`L${line}:C${column}`];
+    if (code > 0) {
+      source.unshift(`(${code})`);
+    }
+    if (advice.title) {
+      source.unshift(advice.title);
+    }
+    return {
+      severity: advice.status === Advice_Status.ERROR ? "ERROR" : "WARNING",
+      message: advice.content,
+      source: source.join(" "),
+      startLineNumber: line,
+      endLineNumber: line,
+      startColumn: column,
+      endColumn: column,
+    };
+  });
+  console.log(
+    "computed advices",
+    JSON.stringify(tab.editorState.advices, null, "  ")
+  );
+};
+
 useEmitteryEventListener(editorEvents, "format-content", () => {
   pendingFormatContentCommand.value = true;
 });
+
+useEmitteryEventListener(
+  executeSQLEvents,
+  "update:advices",
+  ({ tab, params, advices }) => {
+    if (tab.id !== currentTab.value?.id) return;
+    updateAdvices(tab, params, advices);
+    console.log(
+      "update:advices",
+      JSON.stringify(params.selection?.toJSON(), null, "  "),
+      JSON.stringify(advices, null, "  ")
+    );
+  }
+);
 </script>
