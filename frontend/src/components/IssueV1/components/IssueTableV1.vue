@@ -129,7 +129,7 @@ const columnList = computed((): DataTableColumn<ComposedIssue>[] => {
                 class="!w-auto shrink-0"
                 size="small"
                 selected={labels}
-                maxTagCount="responsive"
+                maxTagCount={3}
                 project={issue.projectEntity}
                 disabled
               />
