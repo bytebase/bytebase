@@ -18,7 +18,7 @@
           v-if="highlight"
           :text="text"
           :keyword="keyword ?? ''"
-          class="flex-1 truncate pl-[2px]"
+          class="flex-1 truncate pl-[2px] min-w-[4rem]"
         />
         <span v-else class="pl-[2px]">{{ text }}</span>
       </slot>
