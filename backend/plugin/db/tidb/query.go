@@ -17,12 +17,12 @@ import (
 )
 
 func getStatementWithResultLimit(statement string, limit int) string {
-	statement, err := getStatementWithResultLimitInline(statement, limit)
+	stmt, err := getStatementWithResultLimitInline(statement, limit)
 	if err != nil {
-		slog.Error("fail to add limit clause", "statement", statement, log.BBError(err))
-		statement = fmt.Sprintf("WITH result AS (%s) SELECT * FROM result LIMIT %d;", util.TrimStatement(statement), limit)
+		slog.Error("fail to add limit clause", slog.String("statement", statement), log.BBError(err))
+		return fmt.Sprintf("WITH result AS (%s) SELECT * FROM result LIMIT %d;", util.TrimStatement(statement), limit)
 	}
-	return statement
+	return stmt
 }
 
 func getStatementWithResultLimitInline(statement string, limit int) (string, error) {

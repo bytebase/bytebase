@@ -2,6 +2,8 @@ package oracle
 
 import (
 	"fmt"
+	"log/slog"
+	"strconv"
 	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
@@ -9,18 +11,28 @@ import (
 
 	plsql "github.com/bytebase/plsql-parser"
 
+	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 )
 
 // singleStatement must be a selectStatement for oracle.
-func getStatementWithResultLimitFor11g(singleStatement string, limitCount int) string {
-	return fmt.Sprintf("SELECT * FROM (%s) WHERE ROWNUM <= %d", util.TrimStatement(singleStatement), limitCount)
+func getStatementWithResultLimitFor11g(statement string, limitCount int) string {
+	return fmt.Sprintf("SELECT * FROM (%s) WHERE ROWNUM <= %d", util.TrimStatement(statement), limitCount)
+}
+
+func getStatementWithResultLimit(statement string, limit int) string {
+	stmt, err := getStatementWithResultLimitInline(statement, limit)
+	if err != nil {
+		slog.Error("fail to add limit clause", slog.String("statement", statement), log.BBError(err))
+		return getStatementWithResultLimitFor11g(statement, limit)
+	}
+	return stmt
 }
 
 // singleStatement must be a selectStatement for oracle.
-func getStatementWithResultLimitFor12c(singleStatement string, limitCount int) (string, error) {
-	tree, stream, err := plsqlparser.ParsePLSQL(singleStatement)
+func getStatementWithResultLimitInline(statement string, limitCount int) (string, error) {
+	tree, stream, err := plsqlparser.ParsePLSQL(statement)
 	if err != nil {
 		return "", err
 	}
@@ -34,7 +46,7 @@ func getStatementWithResultLimitFor12c(singleStatement string, limitCount int) (
 	listener.rewriter = *antlr.NewTokenStreamRewriter(stream)
 	antlr.ParseTreeWalkerDefault.Walk(listener, tree)
 	if listener.err != nil {
-		return "", errors.Wrapf(listener.err, "statement: %s", singleStatement)
+		return "", errors.Wrapf(listener.err, "statement: %s", statement)
 	}
 
 	res := listener.rewriter.GetTextDefault()
@@ -71,8 +83,8 @@ func (r *plsqlRewriter) EnterSubquery(ctx *plsql.SubqueryContext) {
 	// union | intersect | minus
 	if ctx.AllSubquery_operation_part() != nil && len(ctx.AllSubquery_operation_part()) > 0 {
 		lastPart := ctx.Subquery_operation_part(len(ctx.AllSubquery_operation_part()) - 1)
-		// respect original fetch.
 		if lastPart.Subquery_basic_elements().Query_block().Fetch_clause() != nil {
+			r.overrideFetchClause(lastPart.Subquery_basic_elements().Query_block().Fetch_clause())
 			return
 		}
 		if subqueryOp, ok := lastPart.(*plsql.Subquery_operation_partContext); ok {
@@ -83,9 +95,21 @@ func (r *plsqlRewriter) EnterSubquery(ctx *plsql.SubqueryContext) {
 
 	// otherwise (subquery and normally)
 	basicElements := ctx.Subquery_basic_elements()
-	// respect original fetch;
 	if basicElements.Query_block().Fetch_clause() != nil {
+		r.overrideFetchClause(basicElements.Query_block().Fetch_clause())
 		return
 	}
 	r.rewriter.InsertAfterDefault(basicElements.GetStop().GetTokenIndex(), fmt.Sprintf(" FETCH NEXT %d ROWS ONLY", r.limitCount))
+}
+
+func (r *plsqlRewriter) overrideFetchClause(fetchClause plsql.IFetch_clauseContext) {
+	expression := fetchClause.Expression()
+	if expression != nil {
+		userLimitText := expression.GetText()
+		limit, _ := strconv.Atoi(userLimitText)
+		if limit == 0 || r.limitCount < limit {
+			limit = r.limitCount
+		}
+		r.rewriter.ReplaceDefault(expression.GetStart().GetTokenIndex(), expression.GetStop().GetTokenIndex(), fmt.Sprintf("%d", limit))
+	}
 }

@@ -10,14 +10,18 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-type LimitTestData struct {
+func TestGetStatementWithResultLimit(t *testing.T) {
+	runLimitTest(t, "test_limit.yaml", false /* record */)
+}
+
+type limitTestData struct {
 	Stmt  string `yaml:"stmt"`
-	Count int    `yaml:"count"`
+	Limit int    `yaml:"limit"`
 	Want  string `yaml:"want"`
 }
 
 func runLimitTest(t *testing.T, file string, record bool) {
-	var testCases []LimitTestData
+	var testCases []limitTestData
 	filepath := filepath.Join("test-data", file)
 	yamlFile, err := os.Open(filepath)
 	require.NoError(t, err)
@@ -29,8 +33,7 @@ func runLimitTest(t *testing.T, file string, record bool) {
 	require.NoError(t, err)
 
 	for i, tc := range testCases {
-		want, err := getStatementWithResultLimitFor12c(tc.Stmt, tc.Count)
-		require.NoError(t, err, tc.Stmt)
+		want := getStatementWithResultLimit(tc.Stmt, tc.Limit)
 		if record {
 			testCases[i].Want = want
 		} else {
@@ -46,8 +49,4 @@ func runLimitTest(t *testing.T, file string, record bool) {
 		err = os.WriteFile(filepath, byteValue, 0644)
 		require.NoError(t, err)
 	}
-}
-
-func TestGetStatementWithResultLimitFor12c(t *testing.T) {
-	runLimitTest(t, "test_limit.yaml", false /* record */)
 }
