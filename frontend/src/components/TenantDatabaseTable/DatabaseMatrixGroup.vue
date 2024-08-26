@@ -40,7 +40,7 @@ interface LocalState {
 }
 
 // Show databases with limit.
-const MAX_DISPLAY_DATABASES = 5;
+const MAX_DISPLAY_DATABASES = 10;
 
 const props = defineProps({
   databases: {
