@@ -39,6 +39,8 @@ const (
 	statusMethod
 	statusRoute
 	statusQueryBody
+
+	statusTerminate
 )
 
 // Supported HTTP methods for Elasticsearch API.
@@ -65,6 +67,9 @@ type stateMachine struct {
 	queryBodyBuf   []byte
 	numLeftBraces  int
 	numRightBraces int
+
+	stmt *statement
+	err  error
 }
 
 func (sm *stateMachine) clear() {
@@ -106,6 +111,20 @@ func (sm *stateMachine) generateStatement() (*statement, error) {
 	}, nil
 }
 
+func (sm *stateMachine) needMore() bool {
+	if sm.err != nil {
+		return false
+	}
+	if sm.state == statusTerminate {
+		return false
+	}
+	return true
+}
+
+func (sm *stateMachine) error() error {
+	return sm.err
+}
+
 func (sm *stateMachine) transfer(c rune) (*statement, error) {
 	switch sm.state {
 	case statusInit:
@@ -113,7 +132,8 @@ func (sm *stateMachine) transfer(c rune) (*statement, error) {
 			sm.state = statusMethod
 			sm.methodBuf = append(sm.methodBuf, string(c)...)
 		} else if c != '\r' && c != '\n' && c != ' ' {
-			return nil, errors.Errorf("invalid character %q for method", c)
+			sm.err = errors.Errorf("invalid character %q for method", c)
+			return nil, sm.err
 		}
 
 	case statusMethod:
@@ -122,13 +142,15 @@ func (sm *stateMachine) transfer(c rune) (*statement, error) {
 		} else if isASCIIAlpha(c) {
 			sm.methodBuf = append(sm.methodBuf, string(c)...)
 		} else {
-			return nil, errors.Errorf("invalid character %q for method", c)
+			sm.err = errors.Errorf("invalid character %q for method", c)
+			return nil, sm.err
 		}
 
 	case statusRoute:
 		if c == '\n' {
 			if sm.routeBuf == nil {
-				return nil, errors.New("required route is missing")
+				sm.err = errors.New("required route is missing")
+				return nil, sm.err
 			}
 			sm.state = statusQueryBody
 			// Ignore CR characters produced by line breaks on Windows.
@@ -143,8 +165,12 @@ func (sm *stateMachine) transfer(c rune) (*statement, error) {
 		if (isASCIIAlpha(c) && (sm.numLeftBraces == sm.numRightBraces)) || (c == '\n' && sm.numLeftBraces == 0) {
 			stmt, err := sm.generateStatement()
 			if err != nil {
-				return nil, err
+				sm.err = err
+				return nil, sm.err
 			}
+			sm.stmt = stmt
+			sm.state = statusTerminate
+
 			sm.clear()
 			if isASCIIAlpha(c) {
 				sm.methodBuf = append(sm.methodBuf, string(c)...)
@@ -163,7 +189,8 @@ func (sm *stateMachine) transfer(c rune) (*statement, error) {
 		} else if c == '}' {
 			sm.numRightBraces++
 			if sm.numLeftBraces < sm.numRightBraces {
-				return nil, errors.New("the curly braces '{}' are mismatched")
+				sm.err = errors.New("the curly braces '{}' are mismatched")
+				return nil, sm.err
 			}
 		}
 
