@@ -272,12 +272,7 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 		if queryContext.Explain {
 			statement = fmt.Sprintf("EXPLAIN %s", statement)
 		} else if queryContext.Limit > 0 {
-			stmt, err := getStatementWithResultLimit(statement, queryContext.Limit)
-			if err != nil {
-				slog.Error("fail to add limit clause", "statement", statement, log.BBError(err))
-				stmt = fmt.Sprintf("SELECT * FROM (%s) LIMIT %d", util.TrimStatement(stmt), queryContext.Limit)
-			}
-			statement = stmt
+			statement = getStatementWithResultLimit(statement, queryContext.Limit)
 		}
 
 		_, allQuery, err := base.ValidateSQLForEditor(storepb.Engine_SNOWFLAKE, statement)

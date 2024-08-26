@@ -1,21 +1,25 @@
 - stmt: |
+    SELECT * FROM "C##TEST"."rownum_order_test" ORDER BY val FETCH NEXT 15 ROWS ONLY
+  limit: 5
+  want: SELECT * FROM "C##TEST"."rownum_order_test" ORDER BY val FETCH NEXT 5 ROWS ONLY
+- stmt: |
     SELECT * FROM "C##TEST"."rownum_order_test" ORDER BY val FETCH NEXT 5 ROWS ONLY
-  count: 5
+  limit: 10
   want: SELECT * FROM "C##TEST"."rownum_order_test" ORDER BY val FETCH NEXT 5 ROWS ONLY
 - stmt: |
     SELECT * FROM "C##TEST"."rownum_order_test" ORDER BY val
-  count: 5
+  limit: 5
   want: SELECT * FROM "C##TEST"."rownum_order_test" ORDER BY val FETCH NEXT 5 ROWS ONLY
 - stmt: |
     SELECT * FROM "C##TEST"."rownum_order_test" ORDER BY val FETCH NEXT 5 ROWS WITH TIES
-  count: 5
+  limit: 5
   want: SELECT * FROM "C##TEST"."rownum_order_test" ORDER BY val FETCH NEXT 5 ROWS WITH TIES
 - stmt: |
     SELECT val
     FROM  "C##TEST"."rownum_order_test"
     ORDER BY val
     OFFSET 4 ROWS FETCH NEXT 4 ROWS ONLY
-  count: 10
+  limit: 10
   want: |-
     SELECT val
     FROM  "C##TEST"."rownum_order_test"
@@ -26,7 +30,7 @@
     FROM "C##TEST"."orders"
     INNER JOIN "C##TEST"."customers" USING(customer_id) WHERE  status = "Shipped"
     GROUP BY name ORDER BY name
-  count: 10
+  limit: 10
   want: |-
     SELECT name, COUNT( order_id )
     FROM "C##TEST"."orders"
@@ -37,7 +41,7 @@
     FROM "C##TEST"."orders"
     INNER JOIN "C##TEST"."customers" USING(customer_id) WHERE  status = "Shipped"
     GROUP BY name ORDER BY name FETCH NEXT 10 ROWS ONLY
-  count: 10
+  limit: 10
   want: |-
     SELECT name, COUNT( order_id )
     FROM "C##TEST"."orders"
@@ -52,7 +56,7 @@
     FROM
         "C##TEST"."palette_a" a
     INNER JOIN "C##TEST"."palette_b" b ON a.color = b.color
-  count: 10
+  limit: 10
   want: |-
     SELECT
         a.id id_a,
@@ -71,7 +75,7 @@
     FROM
         "C##TEST"."palette_a" a
     INNER JOIN "C##TEST"."palette_b" b ON a.color = b.color
-  count: 10
+  limit: 10
   want: |-
     SELECT
         a.id id_a,
@@ -90,7 +94,7 @@
     FROM
         "C##TEST"."palette_a" a
     INNER JOIN "C##TEST"."palette_b" b ON a.color = b.color FETCH NEXT 10 ROWS ONLY
-  count: 10
+  limit: 10
   want: |-
     SELECT
         a.id id_a,
@@ -114,7 +118,7 @@
             FROM
                 "C##TEST"."products"
         )
-  count: 10
+  limit: 10
   want: |-
     SELECT
         product_id,
@@ -143,7 +147,7 @@
             FROM
                 "C##TEST"."products"
         ) FETCH NEXT 10 ROWS ONLY
-  count: 10
+  limit: 10
   want: |-
     SELECT
         product_id,
@@ -177,7 +181,7 @@
         "C##TEST"."products" p2
     ORDER BY
         product_name
-  count: 10
+  limit: 10
   want: |-
     SELECT
         product_name,
@@ -216,7 +220,7 @@
         "C##TEST"."products" p2
     ORDER BY
         product_name FETCH NEXT 10 ROWS ONLY
-  count: 10
+  limit: 10
   want: |-
     SELECT
         product_name,
@@ -252,7 +256,7 @@
       'employee'
     FROM
       "C##TEST"."employees"
-  count: 5
+  limit: 5
   want: |-
     SELECT
       first_name,
@@ -285,7 +289,7 @@
       'employee'
     FROM
       "C##TEST"."employees" FETCH NEXT 5 ROWS ONLY
-  count: 5
+  limit: 5
   want: |-
     SELECT
       first_name,
