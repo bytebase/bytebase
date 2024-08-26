@@ -16,9 +16,9 @@ func splitElasticsearchStatements(statementsStr string) ([]*statement, error) {
 	reader := bufio.NewReader(strings.NewReader(statementsStr))
 
 	for {
-		sm.clear()
+		sm.reset()
 		for sm.needMore() {
-			sm.transfer(reader)
+			sm.consume(reader)
 		}
 		if sm.err != nil {
 			return nil, sm.err
@@ -77,7 +77,7 @@ type stateMachine struct {
 	eof  bool
 }
 
-func (sm *stateMachine) clear() {
+func (sm *stateMachine) reset() {
 	sm.state = statusInit
 	sm.methodBuf = nil
 	sm.routeBuf = nil
@@ -134,7 +134,7 @@ func (sm *stateMachine) error() error {
 	return sm.err
 }
 
-func (sm *stateMachine) transfer(reader *bufio.Reader) (*statement, error) {
+func (sm *stateMachine) consume(reader *bufio.Reader) (*statement, error) {
 	c, _, err := reader.ReadRune()
 	if err == io.EOF {
 		sm.eof = true
