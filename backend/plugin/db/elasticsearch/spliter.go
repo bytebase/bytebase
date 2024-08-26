@@ -3,10 +3,13 @@ package elasticsearch
 import (
 	"bufio"
 	"io"
+	"log/slog"
 	"net/http"
 	"strings"
 
 	"github.com/pkg/errors"
+
+	"github.com/bytebase/bytebase/backend/common/log"
 )
 
 func splitElasticsearchStatements(statementsStr string) ([]*statement, error) {
@@ -196,7 +199,9 @@ func (sm *stateMachine) consume(reader *bufio.Reader) {
 		// 2. A newline character is encountered and there are no left braces.
 		if (isASCIIAlpha(c) && (sm.numLeftBraces == sm.numRightBraces)) || (c == '\n' && sm.numLeftBraces == 0) {
 			if isASCIIAlpha(c) {
-				reader.UnreadRune()
+				if err := reader.UnreadRune(); err != nil {
+					slog.Warn("failed to unread rune", log.BBError(err))
+				}
 			}
 			stmt, err := sm.generateStatement()
 			if err != nil {
