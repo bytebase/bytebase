@@ -15,8 +15,9 @@
         database: database.name,
         scene: 'query',
       }"
-      @update:content="handleChange"
-      @select-content="handleChangeSelection"
+      @update:content="handleUpdateStatement"
+      @select-content="handleUpdateSelectedStatement"
+      @update:selection="handleUpdateSelection"
       @ready="handleEditorReady"
     />
   </div>
@@ -31,12 +32,14 @@ import type {
   IStandaloneCodeEditor,
   MonacoModule,
 } from "@/components/MonacoEditor";
+import type { Selection as MonacoSelection } from "@/components/MonacoEditor";
 import MonacoEditor from "@/components/MonacoEditor/MonacoEditor.vue";
 import {
   extensionNameOfLanguage,
   formatEditorContent,
 } from "@/components/MonacoEditor/utils";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
+import { useExecuteSQL } from "@/composables/useExecuteSQL";
 import {
   useUIStateStore,
   useWorkSheetAndTabStore,
@@ -58,6 +61,7 @@ const uiStateStore = useUIStateStore();
 const { events: editorEvents } = useSQLEditorContext();
 const { currentTab, isSwitchingTab } = storeToRefs(tabStore);
 const pendingFormatContentCommand = ref(false);
+const { events: executeSQLEvents } = useExecuteSQL();
 
 const content = computed(() => currentTab.value?.statement ?? "");
 const advices = computed((): AdviceOption[] => {
@@ -93,7 +97,7 @@ const filename = computed(() => {
   return `${name}.${ext}`;
 });
 
-const handleChange = (value: string) => {
+const handleUpdateStatement = (value: string) => {
   // When we are switching between tabs, the MonacoEditor emits a 'change'
   // event, but we shouldn't update the current tab;
   if (isSwitchingTab.value) {
@@ -116,9 +120,20 @@ const handleChange = (value: string) => {
   });
 };
 
-const handleChangeSelection = (value: string) => {
+const handleUpdateSelectedStatement = (value: string) => {
   tabStore.updateCurrentTab({
     selectedStatement: value,
+  });
+};
+
+const handleUpdateSelection = (selection: MonacoSelection | null) => {
+  const tab = currentTab.value;
+  if (!tab) return;
+  tabStore.updateCurrentTab({
+    editorState: {
+      ...tab.editorState,
+      selection,
+    },
   });
 };
 
@@ -141,6 +156,7 @@ const runQueryAction = (explain = false) => {
     statement,
     engine: instance.value.engine,
     explain,
+    selection: tab.editorState.selection,
   });
   uiStateStore.saveIntroStateByKey({
     key: "data.query",
