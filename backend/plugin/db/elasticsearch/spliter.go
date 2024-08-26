@@ -1,138 +1,237 @@
 package elasticsearch
 
 import (
-	"errors"
+	"bufio"
+	"io"
+	"log/slog"
+	"net/http"
+	"strings"
+
+	"github.com/pkg/errors"
+
+	"github.com/bytebase/bytebase/backend/common/log"
 )
 
-func SplitElasticsearchStatements(statementsStr string) ([]*Statement, error) {
-	var sm StateMachine
-	var statements []*Statement
+func splitElasticsearchStatements(statementsStr string) ([]*statement, error) {
+	var stmts []*statement
+	sm := &stateMachine{}
 
-	for idx, c := range statementsStr {
-		statement := sm.transfer(c)
-		if sm.state == StatusError {
-			return nil, errors.New("failed to parse statements")
+	reader := bufio.NewReader(strings.NewReader(statementsStr))
+
+	for {
+		sm.reset()
+		for sm.needMore() {
+			sm.consume(reader)
 		}
-		if statement != nil {
-			statements = append(statements, statement)
-		} else if idx == len(statementsStr)-1 && isMethodSupported(sm.statement.method) && sm.statement.route != nil {
-			tmpStatement := &Statement{
-				method: sm.statement.method,
-				route:  sm.statement.route,
-			}
-			if sm.statement.queryString != nil && sm.numLeftBrace == 0 {
-				tmpStatement.queryString = sm.statement.queryString
-			}
-			statements = append(statements, tmpStatement)
+		if sm.error() != nil {
+			return nil, sm.error()
+		}
+		if sm.statement() != nil {
+			stmts = append(stmts, sm.statement())
+		}
+
+		if sm.eof {
+			break
 		}
 	}
 
-	return statements, nil
+	return stmts, nil
 }
 
-// state for FSM.
+type state int
+
+// States for FSM.
 const (
-	StatusInit = iota
-	StatusMethod
-	StatusRoute
-	StatusQueryBody
-	StatusError
+	statusInit state = iota
+	statusMethod
+	statusRoute
+	statusQueryBody
+
+	statusTerminate
 )
 
-// supported HTTP methods for elasticsearch API.
+// Supported HTTP methods for Elasticsearch API.
 var (
-	suportedHTTPMethods = []string{"GET", "POST", "PUT", "HEAD", "DELETE"}
+	supportedHTTPMethods = map[string]bool{
+		http.MethodGet:    true,
+		http.MethodPost:   true,
+		http.MethodPut:    true,
+		http.MethodHead:   true,
+		http.MethodDelete: true,
+	}
 )
 
-type Statement struct {
-	method      string
-	route       []byte
-	queryString []byte
+type statement struct {
+	method    []byte
+	route     []byte
+	queryBody []byte
 }
 
-func (s *Statement) Clear() {
-	s.method = ""
-	s.queryString = []byte{}
-	s.route = []byte{}
+type stateMachine struct {
+	state          state
+	methodBuf      []byte
+	routeBuf       []byte
+	queryBodyBuf   []byte
+	numLeftBraces  int
+	numRightBraces int
+
+	stmt *statement
+	err  error
+	eof  bool
 }
 
-type StateMachine struct {
-	state        int
-	statement    Statement
-	numLeftBrace int
+func (sm *stateMachine) reset() {
+	sm.state = statusInit
+	sm.methodBuf = nil
+	sm.routeBuf = nil
+	sm.queryBodyBuf = nil
+	sm.numLeftBraces = 0
+	sm.numRightBraces = 0
+
+	sm.stmt = nil
+	sm.err = nil
+	sm.eof = false
 }
 
-func (sm *StateMachine) transfer(c rune) *Statement {
+// Perform logic checks and generate a statement.
+func (sm *stateMachine) generateStatement() (*statement, error) {
+	// Case insensitive, similar to Kibana's approach.
+	upperCaseMethod := strings.ToUpper(string(sm.methodBuf))
+	if !supportedHTTPMethods[upperCaseMethod] {
+		return nil, errors.Errorf("unsupported method type %q", string(sm.methodBuf))
+	}
+	if len(sm.routeBuf) == 0 {
+		return nil, errors.New("required route is missing")
+	}
+	// It's ok for routes without the leading '/' in the editor.
+	if sm.routeBuf[0] != '/' {
+		sm.routeBuf = append([]byte{'/'}, sm.routeBuf...)
+	}
+	if sm.queryBodyBuf != nil {
+		if sm.numLeftBraces != sm.numRightBraces {
+			return nil, errors.New("unclosed brace")
+		}
+		// Elasticsearch Bulk APIs need a '\n' as the end character for the query body.
+		if strings.Contains(string(sm.routeBuf), "_bulk") && sm.queryBodyBuf[len(sm.queryBodyBuf)-1] != '\n' {
+			sm.queryBodyBuf = append(sm.queryBodyBuf, '\n')
+		}
+	}
+	return &statement{
+		method:    []byte(upperCaseMethod),
+		route:     sm.routeBuf,
+		queryBody: sm.queryBodyBuf,
+	}, nil
+}
+
+func (sm *stateMachine) needMore() bool {
+	if sm.err != nil {
+		return false
+	}
+	if sm.state == statusTerminate {
+		return false
+	}
+	return true
+}
+
+func (sm *stateMachine) error() error {
+	return sm.err
+}
+
+func (sm *stateMachine) statement() *statement {
+	return sm.stmt
+}
+
+func (sm *stateMachine) consume(reader *bufio.Reader) {
+	c, _, err := reader.ReadRune()
+	if err == io.EOF {
+		sm.eof = true
+		// maybe the previous run left us some empty chars to read.
+		if sm.state == statusRoute || sm.state == statusQueryBody {
+			stmt, err := sm.generateStatement()
+			if err != nil {
+				sm.err = err
+				return
+			}
+			sm.stmt = stmt
+		}
+		sm.state = statusTerminate
+		return
+	} else if err != nil {
+		sm.err = err
+		return
+	}
+
 	switch sm.state {
-	case StatusInit:
+	case statusInit:
 		if isASCIIAlpha(c) {
-			sm.state = StatusMethod
-			sm.statement.method += string(c)
+			sm.state = statusMethod
+			sm.methodBuf = append(sm.methodBuf, string(c)...)
+		} else if c != '\r' && c != '\n' && c != ' ' {
+			sm.err = errors.Errorf("invalid character %q for method", c)
+			return
 		}
 
-	case StatusMethod:
-		if isASCIIAlpha(c) {
-			sm.statement.method += string(c)
-		} else if c == ' ' {
-			if !isMethodSupported(sm.statement.method) {
-				sm.state = StatusError
-			} else {
-				sm.state = StatusRoute
-			}
+	case statusMethod:
+		if c == ' ' {
+			sm.state = statusRoute
+		} else if isASCIIAlpha(c) {
+			sm.methodBuf = append(sm.methodBuf, string(c)...)
+		} else {
+			sm.err = errors.Errorf("invalid character %q for method", c)
+			return
 		}
 
-	case StatusRoute:
+	case statusRoute:
 		if c == '\n' {
-			if sm.statement.route == nil {
-				sm.state = StatusError
-			} else {
-				sm.state = StatusQueryBody
+			if sm.routeBuf == nil {
+				sm.err = errors.New("required route is missing")
+				return
 			}
-		} else if c != ' ' {
-			sm.statement.route = append(sm.statement.route, string(c)...)
+			sm.state = statusQueryBody
+			// Ignore CR characters produced by line breaks on Windows.
+		} else if c != '\r' && c != ' ' {
+			sm.routeBuf = append(sm.routeBuf, string(c)...)
 		}
 
-	case StatusQueryBody:
-		if isASCIIAlpha(c) && sm.numLeftBrace == 0 {
-			statement := &Statement{
-				method:      sm.statement.method,
-				route:       sm.statement.route,
-				queryString: sm.statement.queryString,
+	case statusQueryBody:
+		// Return a valid statement when:
+		// 1. An alphabetic character is encountered, which represents the start of a method in the next statement.
+		// 2. A newline character is encountered and there are no left braces.
+		if (isASCIIAlpha(c) && (sm.numLeftBraces == sm.numRightBraces)) || (c == '\n' && sm.numLeftBraces == 0) {
+			if isASCIIAlpha(c) {
+				if err := reader.UnreadRune(); err != nil {
+					slog.Warn("failed to unread rune", log.BBError(err))
+				}
 			}
-
-			sm.state = StatusInit
-			sm.statement.Clear()
-			sm.statement.method += string(c)
-			return statement
+			stmt, err := sm.generateStatement()
+			if err != nil {
+				sm.err = err
+				return
+			}
+			sm.stmt = stmt
+			sm.state = statusTerminate
+			return
 		}
-		sm.statement.queryString = append(sm.statement.queryString, string(c)...)
+
+		// Ignore any characters other than '\n', '{' and '}' outside the braces.
+		if c == '\n' || c == '{' || c == '}' || sm.numLeftBraces > sm.numRightBraces {
+			sm.queryBodyBuf = append(sm.queryBodyBuf, string(c)...)
+		}
+
 		if c == '{' {
-			sm.numLeftBrace++
+			sm.numLeftBraces++
 		} else if c == '}' {
-			sm.numLeftBrace--
-			if sm.numLeftBrace < 0 {
-				sm.state = StatusError
+			sm.numRightBraces++
+			if sm.numLeftBraces < sm.numRightBraces {
+				sm.err = errors.New("the curly braces '{}' are mismatched")
+				return
 			}
 		}
 	default:
-		sm.state = StatusError
-		return nil
+		sm.err = errors.Errorf("unexpected state %v", sm.state)
 	}
-	return nil
 }
 
 func isASCIIAlpha(c rune) bool {
 	return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
-}
-
-func isMethodSupported(s string) bool {
-	if s == "" {
-		return false
-	}
-	for _, m := range suportedHTTPMethods {
-		if s == m {
-			return true
-		}
-	}
-	return false
 }
