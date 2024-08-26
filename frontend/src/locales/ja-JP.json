@@ -487,6 +487,7 @@
       "phone-tips": "国コードを必ず含めてください",
       "country-code": "国または地域コード",
       "password": "パスワード",
+      "password-hint": "最低 8 文字で、少なくとも 1 つの文字と 1 つの数字が含まれます。",
       "password-confirm": "パスワードの確認",
       "password-confirm-placeholder": "新しいパスワードを確認します",
       "password-mismatch": "新しいパスワードが一致しません",

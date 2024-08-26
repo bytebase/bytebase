@@ -11,6 +11,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/dlclark/regexp2"
 	"github.com/pquerna/otp/totp"
 	"golang.org/x/crypto/bcrypt"
 	"google.golang.org/grpc"
@@ -42,6 +43,7 @@ type CreateUserFunc func(ctx context.Context, user *store.UserMessage, firstEndU
 
 var (
 	invalidUserOrPasswordError = status.Errorf(codes.Unauthenticated, "The email or password is not valid.")
+	passwordValidRegex         = regexp2.MustCompile(`^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$`, 0)
 )
 
 // AuthService implements the auth service.
@@ -186,6 +188,9 @@ func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 	}
 
 	password := request.User.Password
+	if isMatch, _ := passwordValidRegex.MatchString(password); !isMatch {
+		return nil, status.Errorf(codes.InvalidArgument, "password at least contains one letter and one number, no less than 8 characters")
+	}
 	if request.User.UserType == v1pb.UserType_SERVICE_ACCOUNT {
 		pwd, err := common.RandomString(20)
 		if err != nil {
@@ -321,6 +326,9 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 		case "password":
 			if user.Type != api.EndUser {
 				return nil, status.Errorf(codes.InvalidArgument, "password can be mutated for end users only")
+			}
+			if isMatch, _ := passwordValidRegex.MatchString(request.User.Password); !isMatch {
+				return nil, status.Errorf(codes.InvalidArgument, "password at least contains one letter and one number, no less than 8 characters")
 			}
 			passwordPatch = &request.User.Password
 		case "service_key":
