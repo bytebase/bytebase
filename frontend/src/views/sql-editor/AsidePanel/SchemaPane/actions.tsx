@@ -248,21 +248,28 @@ export const useActions = () => {
     ) {
       detail.table = (target as NodeTarget<"table">).table.name;
     }
-    if (type === "column" && node.parent?.parent?.meta.type === "table") {
-      detail.table = (target as NodeTarget<"table">).table.name;
-      detail.column = (target as NodeTarget<"column">).column.name;
-    }
-    if (
-      type === "column" &&
-      node.parent?.parent?.meta.type === "external-table"
-    ) {
-      detail.externalTable = (
-        target as NodeTarget<"external-table">
-      ).externalTable.name;
-      detail.column = (target as NodeTarget<"column">).column.name;
-      updateViewState({
-        view: "EXTERNAL_TABLES",
-      });
+    if (type === "column") {
+      const parentType = node.parent?.parent?.meta.type;
+      if (parentType === "table") {
+        detail.table = (target as NodeTarget<"table">).table.name;
+        detail.column = (target as NodeTarget<"column">).column.name;
+      }
+      if (parentType === "external-table") {
+        detail.externalTable = (
+          target as NodeTarget<"external-table">
+        ).externalTable.name;
+        detail.column = (target as NodeTarget<"column">).column.name;
+        updateViewState({
+          view: "EXTERNAL_TABLES",
+        });
+      }
+      if (parentType === "view") {
+        detail.view = (target as NodeTarget<"view">).view.name;
+        detail.column = (target as NodeTarget<"column">).column.name;
+        updateViewState({
+          view: "VIEWS",
+        });
+      }
     }
     if (type === "view") {
       detail.view = (target as NodeTarget<"view">).view.name;

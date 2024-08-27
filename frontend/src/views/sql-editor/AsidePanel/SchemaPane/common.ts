@@ -49,6 +49,7 @@ export type RichExternalTableMetadata = RichSchemaMetadata & {
 export type RichColumnMetadata = (
   | RichTableMetadata
   | RichExternalTableMetadata
+  | RichViewMetadata
 ) & {
   column: ColumnMetadata;
 };
@@ -129,6 +130,7 @@ export const ExpandableNodeTypes: readonly NodeType[] = [
   "database",
   "schema",
   "table",
+  "view",
   "external-table",
   "partition-table",
   "expandable-text",
@@ -137,7 +139,6 @@ export const LeafNodeTypes: readonly NodeType[] = [
   "column",
   "index",
   "foreign-key",
-  "view",
   "procedure",
   "function",
   "error",
@@ -174,10 +175,12 @@ export const keyForNodeTarget = <T extends NodeType>(
     const parentKey =
       "table" in target
         ? keyForNodeTarget("table", target as NodeTarget<"table">)
-        : keyForNodeTarget(
-            "external-table",
-            target as NodeTarget<"external-table">
-          );
+        : "external-table" in target
+          ? keyForNodeTarget(
+              "external-table",
+              target as NodeTarget<"external-table">
+            )
+          : keyForNodeTarget("view", target as NodeTarget<"view">);
     const { column } = target as NodeTarget<"column">;
     return [parentKey, `columns/${column.name}`].join("/");
   }
@@ -362,7 +365,10 @@ const createExpandableTextNode = (
   );
 };
 const mapColumnNodes = (
-  target: NodeTarget<"table"> | NodeTarget<"external-table">,
+  target:
+    | NodeTarget<"table">
+    | NodeTarget<"external-table">
+    | NodeTarget<"view">,
   columns: ColumnMetadata[],
   parent: TreeNode
 ) => {
@@ -421,7 +427,7 @@ const mapTableNodes = (target: NodeTarget<"schema">, parent: TreeNode) => {
       t("database.columns")
     );
     node.children = [columnsFolderNode];
-    // Map table columns
+    // Map column columns
     columnsFolderNode.children = mapColumnNodes(
       node.meta.target,
       table.columns,
@@ -544,9 +550,20 @@ const mapViewNodes = (
   parent: TreeNode<"expandable-text">
 ) => {
   const { schema } = target;
-  const children = schema.views.map((view) =>
-    mapTreeNodeByType("view", { ...target, view }, parent)
-  );
+  const children = schema.views.map((view) => {
+    const viewNode = mapTreeNodeByType("view", { ...target, view }, parent);
+    const columnsFolderNode = createExpandableTextNode("column", viewNode, () =>
+      t("database.columns")
+    );
+    viewNode.children = [columnsFolderNode];
+    // Map column columns
+    columnsFolderNode.children = mapColumnNodes(
+      viewNode.meta.target,
+      view.columns,
+      columnsFolderNode
+    );
+    return viewNode;
+  });
   if (children.length === 0) {
     return [createDummyNode("view", parent)];
   }
