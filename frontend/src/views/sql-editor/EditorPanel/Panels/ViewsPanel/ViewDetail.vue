@@ -1,0 +1,161 @@
+<template>
+  <div
+    class="w-full h-[28px] flex flex-row gap-x-2 justify-between items-center"
+  >
+    <NTabs
+      v-model:value="state.mode"
+      size="small"
+      style="height: 28px; --n-tab-gap: 1rem"
+    >
+      <template #prefix>
+        <NButton text @click="deselect">
+          <ChevronLeftIcon class="w-5 h-5" />
+          <div class="flex items-center gap-1">
+            <ViewIcon class="w-4 h-4" />
+            <span>{{ view.name }}</span>
+          </div>
+        </NButton>
+      </template>
+      <template v-if="tabItems.length > 1">
+        <NTab v-for="tab in tabItems" :key="tab.view" :name="tab.view">
+          <div class="flex items-center gap-1">
+            <component :is="{ render: tab.icon }" class="w-4 h-4" />
+            {{ tab.text }}
+          </div>
+        </NTab>
+      </template>
+      <template #suffix>
+        <SearchBox
+          v-if="state.mode !== 'DEFINITION'"
+          v-model:value="state.keyword"
+          size="small"
+          style="width: 10rem"
+        />
+
+        <NCheckbox v-if="state.mode === 'DEFINITION'" v-model:checked="format">
+          {{ $t("sql-editor.format") }}
+        </NCheckbox>
+      </template>
+    </NTabs>
+  </div>
+  <DefinitionViewer
+    v-show="state.mode === 'DEFINITION'"
+    :db="db"
+    :code="view.definition"
+    :format="format"
+  />
+  <ColumnsTable
+    v-show="state.mode === 'COLUMNS'"
+    :db="db"
+    :database="database"
+    :schema="schema"
+    :view="view"
+    :keyword="state.keyword"
+  />
+  <DependentColumnsTable
+    v-show="state.mode === 'DEPENDENT-COLUMNS'"
+    :db="db"
+    :database="database"
+    :schema="schema"
+    :view="view"
+    :keyword="state.keyword"
+  />
+</template>
+
+<script setup lang="ts">
+import { useLocalStorage } from "@vueuse/core";
+import { ChevronLeftIcon, CodeIcon, FileSymlinkIcon } from "lucide-vue-next";
+import { NButton, NCheckbox, NTab, NTabs } from "naive-ui";
+import { computed, h, reactive, watch } from "vue";
+import { useI18n } from "vue-i18n";
+import { ColumnIcon, ViewIcon } from "@/components/Icon";
+import { SearchBox } from "@/components/v2";
+import type { ComposedDatabase } from "@/types";
+import type {
+  DatabaseMetadata,
+  SchemaMetadata,
+  ViewMetadata,
+} from "@/types/proto/v1/database_service";
+import { useEditorPanelContext } from "../../context";
+import ColumnsTable from "./ColumnsTable.vue";
+import DefinitionViewer from "./DefinitionViewer.vue";
+import DependentColumnsTable from "./DependentColumnsTable.vue";
+
+type Mode = "DEFINITION" | "COLUMNS" | "DEPENDENT-COLUMNS";
+type LocalState = {
+  mode: Mode;
+  keyword: string;
+};
+
+const props = defineProps<{
+  db: ComposedDatabase;
+  database: DatabaseMetadata;
+  schema: SchemaMetadata;
+  view: ViewMetadata;
+}>();
+
+const { t } = useI18n();
+const { viewState, updateViewState } = useEditorPanelContext();
+const state = reactive<LocalState>({
+  mode: "COLUMNS",
+  keyword: "",
+});
+const format = useLocalStorage<boolean>(
+  "bb.sql-editor.editor-panel.code-viewer.format",
+  false
+);
+
+const tabItems = computed(() => {
+  const items = [
+    {
+      view: "DEFINITION",
+      text: t("common.definition"),
+      icon: () => h(CodeIcon),
+    },
+  ];
+  const { view } = props;
+  if (view.columns.length > 0) {
+    items.push({
+      view: "COLUMNS",
+      text: t("database.columns"),
+      icon: () => h(ColumnIcon),
+    });
+  }
+  if (view.dependentColumns.length > 0) {
+    items.push({
+      view: "DEPENDENT-COLUMNS",
+      text: t("schema-editor.index.dependent-columns"),
+      icon: () => h(FileSymlinkIcon),
+    });
+  }
+  return items;
+});
+
+const deselect = () => {
+  updateViewState({
+    detail: {},
+  });
+};
+
+watch(
+  [
+    () => viewState.value?.detail.view,
+    () => viewState.value?.detail.column,
+    () => viewState.value?.detail.dependentColumn,
+  ],
+  ([view, column, dependentColumn]) => {
+    if (!view) return;
+    if (column) {
+      state.mode = "COLUMNS";
+      return;
+    }
+    if (dependentColumn) {
+      state.mode = "DEPENDENT-COLUMNS";
+      return;
+    }
+    // fallback
+    state.mode = "DEFINITION";
+  },
+  { immediate: true }
+);
+</script>

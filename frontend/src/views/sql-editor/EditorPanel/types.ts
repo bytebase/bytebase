@@ -21,6 +21,7 @@ export type EditorPanelViewState = {
     partition?: string;
     index?: string;
     foreignKey?: string;
+    dependentColumn?: string;
   };
 };
 
@@ -39,9 +40,12 @@ export const typeToView = (type: string): EditorPanelView => {
     type === "index" ||
     type === "foreign-key" ||
     type === "partition-table"
-  )
+  ) {
     return "TABLES";
-  if (type === "view") return "VIEWS";
+  }
+  if (type === "view" || type === "dependent-column") {
+    return "VIEWS";
+  }
   if (type === "function") return "FUNCTIONS";
   if (type === "procedure") return "PROCEDURES";
   if (type === "external-table") return "EXTERNAL_TABLES";
