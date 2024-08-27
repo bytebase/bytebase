@@ -1,0 +1,160 @@
+<template>
+  <div ref="containerElRef" class="w-full h-full overflow-x-auto">
+    <NDataTable
+      v-bind="$attrs"
+      ref="dataTableRef"
+      size="small"
+      :row-key="(dep) => keyForDependentColumn(dep)"
+      :columns="columns"
+      :data="layoutReady ? filteredDependentColumns : []"
+      :max-height="tableBodyHeight"
+      :row-props="rowProps"
+      :virtual-scroll="true"
+      :striped="true"
+      :bordered="true"
+      :bottom-bordered="true"
+    />
+  </div>
+</template>
+
+<script lang="ts" setup>
+import type { DataTableColumn } from "naive-ui";
+import { NDataTable } from "naive-ui";
+import { computed, h, watch } from "vue";
+import { useI18n } from "vue-i18n";
+import type { ComposedDatabase } from "@/types";
+import type {
+  DatabaseMetadata,
+  DependentColumn,
+  SchemaMetadata,
+  ViewMetadata,
+} from "@/types/proto/v1/database_service";
+import {
+  getHighlightHTMLByRegExp,
+  hasSchemaProperty,
+  keyForDependentColumn,
+} from "@/utils";
+import { useAutoHeightDataTable } from "../../common";
+import { useEditorPanelContext } from "../../context";
+
+const props = defineProps<{
+  db: ComposedDatabase;
+  database: DatabaseMetadata;
+  schema: SchemaMetadata;
+  view: ViewMetadata;
+  keyword?: string;
+}>();
+
+const { viewState, updateViewState } = useEditorPanelContext();
+const { dataTableRef, containerElRef, tableBodyHeight, layoutReady } =
+  useAutoHeightDataTable();
+const vlRef = computed(() => {
+  return (dataTableRef.value as any)?.$refs?.mainTableInstRef?.bodyInstRef
+    ?.virtualListRef;
+});
+const { t } = useI18n();
+
+const filteredDependentColumns = computed(() => {
+  const keyword = props.keyword?.trim().toLowerCase();
+  if (keyword) {
+    return props.view.dependentColumns.filter(
+      (dep) =>
+        dep.column.toLowerCase().includes(keyword) ||
+        dep.table.toLowerCase().includes(keyword) ||
+        dep.schema.toLowerCase().includes(keyword)
+    );
+  }
+  return props.view.dependentColumns;
+});
+
+const columns = computed(() => {
+  const engine = props.db.instanceResource.engine;
+  const columns: (DataTableColumn<DependentColumn> & { hide?: boolean })[] = [
+    {
+      key: "schema",
+      title: t("common.schema"),
+      resizable: true,
+      minWidth: 140,
+      className: "truncate",
+      hide: !hasSchemaProperty(engine),
+      render: (dep) => {
+        return h("span", {
+          innerHTML: getHighlightHTMLByRegExp(dep.schema, props.keyword ?? ""),
+        });
+      },
+    },
+    {
+      key: "table",
+      title: t("common.table"),
+      resizable: true,
+      minWidth: 140,
+      className: "truncate",
+      render: (dep) => {
+        return h("span", {
+          innerHTML: getHighlightHTMLByRegExp(dep.table, props.keyword ?? ""),
+        });
+      },
+    },
+    {
+      key: "column",
+      title: t("database.column"),
+      resizable: true,
+      minWidth: 140,
+      className: "truncate",
+      render: (dep) => {
+        return h("span", {
+          innerHTML: getHighlightHTMLByRegExp(dep.column, props.keyword ?? ""),
+        });
+      },
+    },
+  ];
+  return columns.filter((header) => !header.hide);
+});
+
+const rowProps = (dep: DependentColumn) => {
+  return {
+    onClick: () => {
+      updateViewState({
+        view: "TABLES",
+        schema: dep.schema,
+        detail: {
+          table: dep.table,
+          column: dep.column,
+        },
+      });
+    },
+  };
+};
+
+watch(
+  [() => viewState.value?.detail.column, vlRef],
+  ([column, vl]) => {
+    if (column && vl) {
+      requestAnimationFrame(() => {
+        vl.scrollTo({ key: column });
+      });
+    }
+  },
+  { immediate: true }
+);
+</script>
+
+<style lang="postcss" scoped>
+:deep(.n-data-table-th .n-data-table-resize-button::after) {
+  @apply bg-control-bg h-2/3;
+}
+:deep(.n-data-table-td.input-cell) {
+  @apply pl-0.5 pr-1 py-0;
+}
+
+:deep(.n-data-table-td.input-cell .n-input__placeholder),
+:deep(.n-data-table-td.input-cell .n-base-selection-placeholder) {
+  @apply italic;
+}
+:deep(.n-data-table-td.checkbox-cell) {
+  @apply pr-1 py-0;
+}
+:deep(.n-data-table-td.text-cell) {
+  @apply pr-1 py-0;
+}
+</style>

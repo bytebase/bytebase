@@ -26,6 +26,9 @@
   <template v-if="type === 'view'">
     <ViewNode :node="node" :keyword="keyword" />
   </template>
+  <template v-if="type === 'dependent-column'">
+    <DependentColumnNode :node="node" :keyword="keyword" />
+  </template>
   <template v-if="type === 'procedure'">
     <ProcedureNode :node="node" :keyword="keyword" />
   </template>
@@ -45,6 +48,7 @@ import { computed } from "vue";
 import type { TreeNode } from "../common";
 import ColumnNode from "./ColumnNode.vue";
 import DatabaseNode from "./DatabaseNode.vue";
+import DependentColumnNode from "./DependentColumnNode.vue";
 import DummyNode from "./DummyNode.vue";
 import ExternalTableNode from "./ExternalTableNode.vue";
 import ForeignKeyNode from "./ForeignKeyNode.vue";
