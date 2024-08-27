@@ -352,7 +352,7 @@ watch(
   --n-node-content-height: 21px !important;
 }
 .schema-tree :deep(.n-tree-node-content) {
-  @apply !pl-0 text-sm;
+  @apply !px-0 text-sm;
 }
 .schema-tree :deep(.n-tree-node-wrapper) {
   padding: 0;
