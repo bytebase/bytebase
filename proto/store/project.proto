@@ -12,6 +12,7 @@ message Label {
 
 message Project {
   reserved 1;
+
   repeated Label issue_labels = 2;
   // Force issue labels to be used when creating an issue.
   bool force_issue_labels = 3;
