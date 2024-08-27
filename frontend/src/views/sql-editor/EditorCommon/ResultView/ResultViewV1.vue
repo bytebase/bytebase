@@ -47,7 +47,11 @@
         <EmptyView />
       </template>
       <template v-else-if="viewMode === 'ERROR'">
-        <ErrorView :error="resultSet.error">
+        <ErrorView
+          :error="resultSet.error"
+          :execute-params="executeParams"
+          :result-set="resultSet"
+        >
           <template #suffix>
             <RequestQueryButton
               v-if="
