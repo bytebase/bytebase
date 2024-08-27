@@ -44,6 +44,7 @@ export type AppFeatures = {
   "bb.feature.sql-editor.hide-projects": boolean;
   "bb.feature.sql-editor.hide-environments": boolean;
   "bb.feature.sql-editor.hide-advance-instance-features": boolean;
+  "bb.feature.sql-editor.sql-check-style": "PREFLIGHT" | "NOTIFICATION";
 };
 
 export type AppProfile = {
@@ -98,5 +99,6 @@ export const defaultAppProfile = (): AppProfile => ({
     "bb.feature.sql-editor.hide-projects": false,
     "bb.feature.sql-editor.hide-environments": false,
     "bb.feature.sql-editor.hide-advance-instance-features": false,
+    "bb.feature.sql-editor.sql-check-style": "NOTIFICATION",
   },
 });

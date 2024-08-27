@@ -56,3 +56,5 @@ export const SupportedLanguages: monaco.languages.ILanguageExtensionPoint[] = [
     mimetypes: ["application/redis"],
   },
 ];
+
+export type Selection = monaco.Selection;
