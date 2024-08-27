@@ -316,7 +316,6 @@ func NewDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata) *DatabaseMeta
 		schemaMetadata := &SchemaMetadata{
 			internalTables:           make(map[string]*TableMetadata),
 			internalExternalTable:    make(map[string]*ExternalTableMetadata),
-			internalIndexes:          make(map[string]*IndexMetadata),
 			internalViews:            make(map[string]*ViewMetadata),
 			internalMaterializedView: make(map[string]*MaterializedViewMetadata),
 			internalFunctions:        make(map[string]*FunctionMetadata),
@@ -328,10 +327,6 @@ func NewDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata) *DatabaseMeta
 			tables, names := buildTablesMetadata(table)
 			for i, table := range tables {
 				schemaMetadata.internalTables[names[i]] = table
-			}
-			indexes := buildIndexesMetadata(table)
-			for _, index := range indexes {
-				schemaMetadata.internalIndexes[index.proto.Name] = index
 			}
 		}
 		for _, externalTable := range schema.ExternalTables {
@@ -429,7 +424,6 @@ func (l *LinkedDatabaseMetadata) GetHost() string {
 type SchemaMetadata struct {
 	internalTables           map[string]*TableMetadata
 	internalExternalTable    map[string]*ExternalTableMetadata
-	internalIndexes          map[string]*IndexMetadata
 	internalViews            map[string]*ViewMetadata
 	internalMaterializedView map[string]*MaterializedViewMetadata
 	internalFunctions        map[string]*FunctionMetadata
@@ -444,8 +438,14 @@ func (s *SchemaMetadata) GetTable(name string) *TableMetadata {
 	return s.internalTables[name]
 }
 
-func (s *SchemaMetadata) GetIndex(name string) *IndexMetadata {
-	return s.internalIndexes[name]
+func (s *SchemaMetadata) GetIndexes(name string) []*IndexMetadata {
+	var result []*IndexMetadata
+	for _, table := range s.internalTables {
+		if index := table.GetIndex(name); index != nil {
+			result = append(result, index)
+		}
+	}
+	return result
 }
 
 // GetView gets the view by name.
@@ -555,12 +555,17 @@ func buildTablesMetadata(table *storepb.TableMetadata) ([]*TableMetadata, []stri
 	var result []*TableMetadata
 	var name []string
 	tableMetadata := &TableMetadata{
-		internal: make(map[string]*storepb.ColumnMetadata),
-		proto:    table,
+		internalColumn:  make(map[string]*storepb.ColumnMetadata),
+		internalIndexes: make(map[string]*IndexMetadata),
+		proto:           table,
 	}
 	for _, column := range table.Columns {
-		tableMetadata.internal[column.Name] = column
+		tableMetadata.internalColumn[column.Name] = column
 		tableMetadata.columns = append(tableMetadata.columns, column)
+	}
+	indexes := buildIndexesMetadata(table)
+	for _, index := range indexes {
+		tableMetadata.internalIndexes[index.proto.Name] = index
 	}
 	tableMetadata.rowCount = table.RowCount
 	result = append(result, tableMetadata)
@@ -603,12 +608,12 @@ func buildTablesMetadataRecursive(originalColumn []*storepb.ColumnMetadata, part
 
 	for _, partition := range partitions {
 		partitionMetadata := &TableMetadata{
-			partitionOf: root,
-			internal:    make(map[string]*storepb.ColumnMetadata),
-			proto:       proto,
+			partitionOf:    root,
+			internalColumn: make(map[string]*storepb.ColumnMetadata),
+			proto:          proto,
 		}
 		for _, column := range originalColumn {
-			partitionMetadata.internal[column.Name] = column
+			partitionMetadata.internalColumn[column.Name] = column
 			partitionMetadata.columns = append(partitionMetadata.columns, column)
 		}
 		tables = append(tables, partitionMetadata)
@@ -627,15 +632,20 @@ type TableMetadata struct {
 	// If partitionOf is not nil, it means this table is a partition table.
 	partitionOf *TableMetadata
 
-	internal map[string]*storepb.ColumnMetadata
-	columns  []*storepb.ColumnMetadata
-	rowCount int64
-	proto    *storepb.TableMetadata
+	internalColumn  map[string]*storepb.ColumnMetadata
+	internalIndexes map[string]*IndexMetadata
+	columns         []*storepb.ColumnMetadata
+	rowCount        int64
+	proto           *storepb.TableMetadata
 }
 
 // GetColumn gets the column by name.
 func (t *TableMetadata) GetColumn(name string) *storepb.ColumnMetadata {
-	return t.internal[name]
+	return t.internalColumn[name]
+}
+
+func (t *TableMetadata) GetIndex(name string) *IndexMetadata {
+	return t.internalIndexes[name]
 }
 
 // GetColumns gets the columns.
