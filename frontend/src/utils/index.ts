@@ -1,7 +1,6 @@
 export * from "./css";
 export * from "./clipboard";
 export * from "./collections";
-export * from "./issue";
 export * from "./link";
 export * from "./role";
 export * from "./slug";

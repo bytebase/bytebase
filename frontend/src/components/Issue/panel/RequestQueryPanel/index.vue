@@ -64,7 +64,7 @@
 
 <script lang="ts" setup>
 import dayjs from "dayjs";
-import { isUndefined, uniq } from "lodash-es";
+import { isUndefined } from "lodash-es";
 import { NButton, NInput } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useRouter } from "vue-router";
@@ -72,11 +72,7 @@ import ExpirationSelector from "@/components/ExpirationSelector.vue";
 import RequiredStar from "@/components/RequiredStar.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { issueServiceClient } from "@/grpcweb";
-import {
-  useCurrentUserV1,
-  useDatabaseV1Store,
-  useProjectV1Store,
-} from "@/store";
+import { useCurrentUserV1, useProjectV1Store } from "@/store";
 import type { ComposedDatabase, DatabaseResource } from "@/types";
 import { PresetRoleType, isValidDatabaseName } from "@/types";
 import { Duration } from "@/types/proto/google/protobuf/duration";
@@ -86,6 +82,7 @@ import {
   Issue,
   Issue_Type,
 } from "@/types/proto/v1/issue_service";
+import { generateIssueTitle } from "@/utils";
 import DatabaseResourceForm from "./DatabaseResourceForm/index.vue";
 
 interface LocalState {
@@ -135,7 +132,6 @@ const extractDatabaseResourcesFromProps = (): Pick<
 };
 
 const router = useRouter();
-const databaseStore = useDatabaseV1Store();
 const currentUser = useCurrentUserV1();
 const state = reactive<LocalState>({
   ...extractDatabaseResourcesFromProps(),
@@ -159,7 +155,12 @@ const doCreateIssue = async () => {
   }
 
   const newIssue = Issue.fromPartial({
-    title: generateIssueName(),
+    title: generateIssueTitle(
+      "bb.issue.grant.request.querier",
+      state.databaseResources.map(
+        (databaseResource) => databaseResource.databaseName
+      )
+    ),
     description: state.description,
     type: Issue_Type.GRANT_REQUEST,
     grantRequest: {},
@@ -205,23 +206,5 @@ const doCreateIssue = async () => {
   router.push({
     path: `/${createdIssue.name}`,
   });
-};
-
-const generateIssueName = () => {
-  if (state.databaseResources.length === 0) {
-    return `Request query for all database`;
-  } else {
-    const databaseNames = uniq(
-      state.databaseResources.map(
-        (databaseResource) => databaseResource.databaseName
-      )
-    );
-    const databases = databaseNames.map((name) =>
-      databaseStore.getDatabaseByName(name)
-    );
-    return `Request query for "${databases
-      .map((database) => database.databaseName)
-      .join(", ")}"`;
-  }
 };
 </script>

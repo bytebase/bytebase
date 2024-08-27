@@ -139,7 +139,7 @@ import {
   instanceV1HasAlterSchema,
   filterDatabaseV1ByKeyword,
   sortDatabaseV1List,
-  generateIssueName,
+  generateIssueTitle,
   extractEnvironmentResourceName,
   extractInstanceResourceName,
   extractProjectResourceName,
@@ -350,7 +350,7 @@ const generateMultiDb = async () => {
   const project = flattenSelectedProjectList.value[0];
   const query: Record<string, any> = {
     template: props.type,
-    name: generateIssueName(
+    name: generateIssueTitle(
       props.type,
       flattenSelectedDatabaseList.value.map((db) => db.databaseName)
     ),

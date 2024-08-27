@@ -103,11 +103,11 @@ import { State } from "@/types/proto/v1/common";
 import {
   extractProjectResourceName,
   filterDatabaseV1ByKeyword,
+  generateIssueTitle,
   guessChangelistChangeType,
   instanceV1HasAlterSchema,
   sortDatabaseV1List,
 } from "@/utils";
-import { generateIssueName } from "../common";
 import { useChangelistDetailContext } from "../context";
 
 type LocalState = {
@@ -208,12 +208,13 @@ const handleClickNext = async () => {
         guessedDatabaseChangeType.value === "DDL"
           ? "bb.issue.database.schema.update"
           : "bb.issue.database.data.update",
-      name: generateIssueName(
-        databaseList.map((db) => db.databaseName),
-        changelist.value
+      name: generateIssueTitle(
+        "bb.issue.database.schema.update",
+        databaseList.map((db) => db.databaseName)
       ),
       changelist: changelist.value.name,
       databaseList: databaseList.map((db) => db.name).join(","),
+      description: `Apply changelist [${changelist.value.description}]`,
     };
 
     router.push({

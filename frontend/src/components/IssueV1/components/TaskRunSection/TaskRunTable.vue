@@ -38,7 +38,6 @@ import { useIssueContext } from "../../logic";
 import TaskRunComment from "./TaskRunComment.vue";
 import TaskRunDetail from "./TaskRunDetail.vue";
 import DetailCell from "./TaskRunLogTable/DetailCell";
-import StatementCell from "./TaskRunLogTable/StatementCell.vue";
 import { convertTaskRunLogEntryToFlattenLogEntries } from "./TaskRunLogTable/common";
 import TaskRunStatusIcon from "./TaskRunStatusIcon.vue";
 
@@ -86,7 +85,7 @@ const columnList = computed((): DataTableColumn<ComposedTaskRun>[] => {
     {
       key: "comment",
       title: t("task.comment"),
-      width: "50%",
+      width: "60%",
       className: "flex flex-row items-center",
       minWidth: 140,
       resizable: true,
@@ -103,21 +102,6 @@ const columnList = computed((): DataTableColumn<ComposedTaskRun>[] => {
       render: (taskRun) => {
         const entry = getFlattenLogEntry(taskRun);
         return entry ? <DetailCell entry={entry} sheet={sheet.value} /> : "-";
-      },
-    },
-    {
-      key: "statement",
-      title: () => t("common.statement"),
-      width: "30%",
-      resizable: true,
-      minWidth: 100,
-      render: (taskRun) => {
-        const entry = getFlattenLogEntry(taskRun);
-        return entry ? (
-          <StatementCell entry={entry} sheet={sheet.value} />
-        ) : (
-          "-"
-        );
       },
     },
     {
