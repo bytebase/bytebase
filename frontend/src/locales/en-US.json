@@ -2098,6 +2098,10 @@
         "auto-resolve-issue": {
           "self": "Auto resolve issue",
           "description": "Automatically resolve the issue after all tasks are completed."
+        },
+        "enforce-issue-title": {
+          "self": "Enforce issue title",
+          "description": "Enforce issue title to be non-empty and created by user instead of auto generated."
         }
       }
     },
