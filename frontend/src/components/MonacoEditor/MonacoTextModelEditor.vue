@@ -61,6 +61,7 @@ import {
   useOptionByKey,
   useOptions,
   useSelectedContent,
+  useSelection,
   useSuggestOptionByLanguage,
   useLineHighlights,
   useLSPConnectionState,
@@ -74,6 +75,7 @@ import type {
   ITextModel,
   LineHighlightOption,
   MonacoModule,
+  Selection as MonacoSelection,
 } from "./types";
 
 const props = withDefaults(
@@ -106,6 +108,7 @@ const props = withDefaults(
 const emit = defineEmits<{
   (e: "update:content", content: string): void;
   (e: "select-content", content: string): void;
+  (e: "update:selection", selection: MonacoSelection | null): void;
   (e: "ready", monaco: MonacoModule, editor: IStandaloneCodeEditor): void;
 }>();
 
@@ -165,6 +168,7 @@ onMounted(async () => {
     useFormatContent(monaco, editor, toRef(props, "dialect"));
     const content = useContent(monaco, editor);
     const selectedContent = useSelectedContent(monaco, editor);
+    const selection = useSelection(monaco, editor);
     useAdvices(monaco, editor, toRef(props, "advices"));
     useLineHighlights(monaco, editor, toRef(props, "lineHighlights"));
     useAutoHeight(monaco, editor, containerRef, toRef(props, "autoHeight"));
@@ -188,6 +192,9 @@ onMounted(async () => {
     });
     watchEffect(() => {
       emit("select-content", selectedContent.value);
+    });
+    watchEffect(() => {
+      emit("update:selection", selection.value);
     });
   } catch (ex) {
     console.error("[MonacoEditor] initialize failed", ex);

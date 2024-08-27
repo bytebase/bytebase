@@ -1,4 +1,6 @@
+import dayjs from "dayjs";
 import slug from "slug";
+import { t } from "@/plugins/i18n";
 import { EMPTY_ID, UNKNOWN_ID, type ComposedIssue } from "@/types";
 import { Issue, Issue_Type } from "@/types/proto/v1/issue_service";
 import type { Plan } from "@/types/proto/v1/plan_service";
@@ -55,4 +57,49 @@ export const isGrantRequestIssue = (issue: ComposedIssue): boolean => {
 
 export const isDatabaseDataExportIssue = (issue: ComposedIssue): boolean => {
   return issue.type === Issue_Type.DATABASE_DATA_EXPORT;
+};
+
+export const generateIssueTitle = (
+  type:
+    | "bb.issue.database.schema.update"
+    | "bb.issue.database.data.update"
+    | "bb.issue.database.data.export"
+    | "bb.issue.grant.request.querier"
+    | "bb.issue.grant.request.exporter",
+  databaseNameList: string[],
+  isOnlineMode = false
+) => {
+  // Create a user friendly default issue name
+  const parts: string[] = [];
+  if (databaseNameList.length === 0) {
+    parts.push(`[All databases]`);
+  } else if (databaseNameList.length === 1) {
+    parts.push(`[${databaseNameList[0]}]`);
+  } else {
+    parts.push(`[${databaseNameList.length} databases]`);
+  }
+  if (type.startsWith("bb.issue.database")) {
+    if (isOnlineMode) {
+      parts.push("Online schema change");
+    } else {
+      parts.push(
+        type === "bb.issue.database.schema.update"
+          ? t("issue.title.edit-schema")
+          : type === "bb.issue.database.data.update"
+            ? t("issue.title.change-data")
+            : t("issue.title.export-data")
+      );
+    }
+  } else {
+    parts.push(
+      type === "bb.issue.grant.request.querier"
+        ? t("issue.title.request-querier-role")
+        : t("issue.title.request-exporter-role")
+    );
+  }
+  const datetime = dayjs().format("@MM-DD HH:mm");
+  const tz = "UTC" + dayjs().format("ZZ");
+  parts.push(`${datetime} ${tz}`);
+
+  return parts.join(" ");
 };

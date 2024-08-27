@@ -388,9 +388,15 @@ func (s *IssueService) getUserByIdentifier(ctx context.Context, identifier strin
 
 // CreateIssue creates a issue.
 func (s *IssueService) CreateIssue(ctx context.Context, request *v1pb.CreateIssueRequest) (*v1pb.Issue, error) {
-	switch request.Issue.Type {
-	case v1pb.Issue_TYPE_UNSPECIFIED:
+	// Validate requests.
+	if request.Issue.Title == "" {
+		return nil, status.Errorf(codes.InvalidArgument, "issue title is required")
+	}
+	if request.Issue.Type == v1pb.Issue_TYPE_UNSPECIFIED {
 		return nil, status.Errorf(codes.InvalidArgument, "issue type is required")
+	}
+
+	switch request.Issue.Type {
 	case v1pb.Issue_GRANT_REQUEST:
 		return s.createIssueGrantRequest(ctx, request)
 	case v1pb.Issue_DATABASE_CHANGE:
@@ -1156,6 +1162,10 @@ func (s *IssueService) UpdateIssue(ctx context.Context, request *v1pb.UpdateIssu
 			}
 
 		case "title":
+			if request.Issue.Title == "" {
+				return nil, status.Errorf(codes.InvalidArgument, "title cannot be empty")
+			}
+
 			patch.Title = &request.Issue.Title
 
 			issueCommentCreates = append(issueCommentCreates, &store.IssueCommentMessage{

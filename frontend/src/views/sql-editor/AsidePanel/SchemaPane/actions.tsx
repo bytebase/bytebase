@@ -719,6 +719,7 @@ const runQuery = async (
     connection,
     explain: false,
     engine: database.instanceResource.engine,
+    selection: tab.editorState.selection,
   });
 };
 

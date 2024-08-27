@@ -26,7 +26,7 @@ func extractChangedResources(database string, schema string, dbSchema *model.DBS
 	var sampleDMLs []string
 	for _, node := range nodes {
 		// schema is "public" by default.
-		err := getResourceChanges(database, schema, node, statement, changedResources)
+		err := getResourceChanges(database, schema, node, statement, changedResources, dbSchema.GetDatabaseMetadata())
 		if err != nil {
 			return nil, err
 		}
@@ -52,7 +52,7 @@ func extractChangedResources(database string, schema string, dbSchema *model.DBS
 	}, nil
 }
 
-func getResourceChanges(database, schema string, node ast.Node, statement string, changedResources *model.ChangedResources) error {
+func getResourceChanges(database, schema string, node ast.Node, statement string, changedResources *model.ChangedResources, databaseMetadata *model.DatabaseMetadata) error {
 	switch node := node.(type) {
 	case *ast.CreateTableStmt:
 		if node.Name.Type == ast.TableTypeBaseTable {
@@ -171,22 +171,46 @@ func getResourceChanges(database, schema string, node ast.Node, statement string
 		)
 	case *ast.DropIndexStmt:
 		for _, index := range node.IndexList {
-			d, s, table := index.Table.Database, index.Table.Schema, index.Table.Name
-			if d == "" {
-				d = database
+			if index.Table != nil {
+				d, s, table := index.Table.Database, index.Table.Schema, index.Table.Name
+				if d == "" {
+					d = database
+				}
+				if s == "" {
+					s = schema
+				}
+				changedResources.AddTable(
+					d,
+					s,
+					&storepb.ChangedResourceTable{
+						Name:   table,
+						Ranges: []*storepb.Range{base.NewRange(statement, node.Text())},
+					},
+					false,
+				)
+			} else {
+				schemaMetadata := databaseMetadata.GetSchema(schema)
+				if schemaMetadata == nil {
+					continue
+				}
+				indexMetadata := schemaMetadata.GetIndex(index.Name)
+				if indexMetadata == nil {
+					continue
+				}
+				tableMetadata := indexMetadata.GetTableProto()
+				if tableMetadata == nil {
+					continue
+				}
+				changedResources.AddTable(
+					database,
+					schema,
+					&storepb.ChangedResourceTable{
+						Name:   tableMetadata.GetName(),
+						Ranges: []*storepb.Range{base.NewRange(statement, node.Text())},
+					},
+					false,
+				)
 			}
-			if s == "" {
-				s = schema
-			}
-			changedResources.AddTable(
-				d,
-				s,
-				&storepb.ChangedResourceTable{
-					Name:   table,
-					Ranges: []*storepb.Range{base.NewRange(statement, node.Text())},
-				},
-				false,
-			)
 		}
 	case *ast.CreateViewStmt:
 		d, s, view := node.Name.Database, node.Name.Schema, node.Name.Name

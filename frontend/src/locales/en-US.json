@@ -1300,7 +1300,14 @@
     },
     "sql-review-only": "SQL Review Only",
     "create-issue": "Create issue",
-    "this-plan-will-be-converted-to-a-new-issue": "This plan will be converted to a new issue"
+    "this-plan-will-be-converted-to-a-new-issue": "This plan will be converted to a new issue",
+    "title": {
+      "edit-schema": "Edit schema",
+      "change-data": "Change data",
+      "export-data": "Export data",
+      "request-querier-role": "Request querier role",
+      "request-export-role": "Request export role"
+    }
   },
   "alter-schema": {
     "vcs-enabled": "This project has enabled VCS based version control and selecting database below will navigate you to the corresponding Git repository to initiate the change process.",
@@ -2091,6 +2098,10 @@
         "auto-resolve-issue": {
           "self": "Auto resolve issue",
           "description": "Automatically resolve the issue after all tasks are completed."
+        },
+        "enforce-issue-title": {
+          "self": "Enforce issue title",
+          "description": "Enforce issue title to be non-empty and created by user instead of auto generated."
         }
       }
     },
@@ -2466,7 +2477,8 @@
     "manage-connections": "Manage connections",
     "view-detail": "View detail",
     "generate-sql": "Generate SQL",
-    "current-editing-statement-is-not-empty": "Current editing statement is not empty."
+    "current-editing-statement-is-not-empty": "Current editing statement is not empty.",
+    "run-anyway": "Run anyway"
   },
   "schema-editor": {
     "self": "Schema Editor",

@@ -71,7 +71,7 @@ import {
   sortDatabaseV1List,
   extractEnvironmentResourceName,
   extractInstanceResourceName,
-  generateIssueName,
+  generateIssueTitle,
   extractProjectResourceName,
 } from "@/utils";
 import { useCommonSearchScopeOptions } from "../AdvancedSearch/useCommonSearchScopeOptions";
@@ -196,7 +196,7 @@ const navigateToIssuePage = async () => {
   const issueType = "bb.issue.database.data.export";
   const query: Record<string, any> = {
     template: issueType,
-    name: generateIssueName(issueType, [selectedDatabase.databaseName]),
+    name: generateIssueTitle(issueType, [selectedDatabase.databaseName]),
     databaseList: selectedDatabase.name,
   };
   router.push({

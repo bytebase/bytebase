@@ -105,6 +105,7 @@ const overrideAppFeatures = (
       "bb.feature.sql-editor.disallow-share-worksheet": true,
       "bb.feature.sql-editor.disallow-edit-schema": true,
       "bb.feature.sql-editor.hide-advance-instance-features": true,
+      "bb.feature.sql-editor.sql-check-style": "PREFLIGHT"
     });
   }
 };

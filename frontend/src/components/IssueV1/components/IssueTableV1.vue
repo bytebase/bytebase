@@ -37,7 +37,7 @@
   </div>
 </template>
 
-<script lang="ts" setup>
+<script lang="tsx" setup>
 import { useElementSize } from "@vueuse/core";
 import { orderBy } from "lodash-es";
 import type { DataTableColumn } from "naive-ui";
@@ -73,7 +73,7 @@ const columnList = computed((): DataTableColumn<ComposedIssue>[] => {
     {
       type: "selection",
       width: 40,
-      cellProps: (issue, rowIndex) => {
+      cellProps: () => {
         return {
           onClick: (e: MouseEvent) => {
             e.stopPropagation();
@@ -87,99 +87,82 @@ const columnList = computed((): DataTableColumn<ComposedIssue>[] => {
       width: 0,
       expandable: (issue) => isIssueExpanded(issue),
       hide: !props.highlightText,
-      renderExpand: (issue) =>
-        h("div", {
-          class:
-            "max-h-[20rem] overflow-auto whitespace-pre-wrap break-words break-all",
-          innerHTML: highlight(issue.description),
-        }),
+      renderExpand: (issue) => (
+        <div
+          class="max-h-[20rem] overflow-auto whitespace-pre-wrap break-words break-all"
+          innerHTML={highlight(issue.description)}
+        ></div>
+      ),
     },
     {
       key: "title",
       title: t("issue.table.name"),
+      ellipsis: true,
       resizable: true,
-      render: (issue) =>
-        h("div", { class: "flex items-center overflow-hidden space-x-2" }, [
-          h(IssueStatusIconWithTaskSummary, { issue }),
-          h(
-            "div",
-            { class: "whitespace-nowrap text-control" },
-            props.mode == "ALL"
-              ? `${issue.projectEntity.key}-${extractIssueUID(issue.name)}`
-              : `#${extractIssueUID(issue.name)}`
-          ),
-          h(
-            NPerformantEllipsis,
-            {
-              class: "flex-1 truncate",
-            },
-            {
-              default: () => h("span", { innerHTML: highlight(issue.title) }),
-              tooltip: () =>
-                h(
-                  "div",
-                  { class: "whitespace-pre-wrap break-words break-all" },
-                  issue.title
-                ),
-            }
-          ),
-        ]),
-    },
-    {
-      key: "labels",
-      title: t("common.labels"),
-      resizable: true,
-      minWidth: 120,
-      hide: !showExtendedColumns.value,
+      minWidth: 300,
       render: (issue) => {
         const labels = getValidIssueLabels(
           issue.labels,
           issue.projectEntity.issueLabels
         );
-        if (labels.length === 0) {
-          return h("span", {}, "-");
-        }
-
-        return h(IssueLabelSelector, {
-          disabled: true,
-          selected: labels,
-          size: "small",
-          maxTagCount: "responsive",
-          project: issue.projectEntity,
-        });
+        return (
+          <div class="flex items-center space-x-2">
+            <IssueStatusIconWithTaskSummary issue={issue} />
+            <div class="whitespace-nowrap text-control">
+              {props.mode == "ALL"
+                ? `${issue.projectEntity.key}-${extractIssueUID(issue.name)}`
+                : `#${extractIssueUID(issue.name)}`}
+            </div>
+            <NPerformantEllipsis>
+              {{
+                default: () => (
+                  <span
+                    class="min-w-32 shrink"
+                    innerHTML={highlight(issue.title)}
+                  ></span>
+                ),
+                tooltip: () => issue.title,
+              }}
+            </NPerformantEllipsis>
+            {labels.length > 0 && (
+              <IssueLabelSelector
+                class="!w-auto shrink-0"
+                size="small"
+                selected={labels}
+                maxTagCount={3}
+                project={issue.projectEntity}
+                disabled
+              />
+            )}
+          </div>
+        );
       },
     },
     {
       key: "updateTime",
       title: t("issue.table.updated"),
-      minWidth: 130,
-      resizable: true,
+      width: 150,
       hide: !showExtendedColumns.value,
       render: (issue) => humanizeTs((issue.updateTime?.getTime() ?? 0) / 1000),
     },
     {
       key: "approver",
       width: 150,
-      resizable: true,
       title: t("issue.table.current-approver"),
       hide: !showExtendedColumns.value,
-      render: (issue) => h(CurrentApproverV1, { issue }),
+      render: (issue) => <CurrentApproverV1 issue={issue} />,
     },
     {
       key: "creator",
-      resizable: true,
       width: 150,
       title: t("issue.table.creator"),
       hide: !showExtendedColumns.value,
-      render: (issue) =>
-        h(
-          "div",
-          { class: "flex flex-row items-center overflow-hidden gap-x-2" },
-          [
-            h(BBAvatar, { size: "SMALL", username: issue.creatorEntity.title }),
-            h("span", { class: "truncate" }, issue.creatorEntity.title),
-          ]
-        ),
+      render: (issue) => (
+        <div class="flex flex-row items-center overflow-hidden gap-x-2">
+          <BBAvatar size="SMALL" username="issue.creatorEntity.title" />
+          <span class="truncate">{issue.creatorEntity.title}</span>
+        </div>
+      ),
     },
   ];
   return columns.filter((column) => !column.hide);

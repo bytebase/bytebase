@@ -1300,7 +1300,14 @@
     },
     "sql-review-only": "SQLレビューのみ",
     "create-issue": "問題を作成",
-    "this-plan-will-be-converted-to-a-new-issue": "この計画は新しい問題に変換されます"
+    "this-plan-will-be-converted-to-a-new-issue": "この計画は新しい問題に変換されます",
+    "title": {
+      "edit-schema": "スキーマを編集",
+      "change-data": "データの変更",
+      "export-data": "データをエクスポート",
+      "request-querier-role": "リクエストクエリーロール",
+      "request-export-role": "エクスポートロールのリクエスト"
+    }
   },
   "alter-schema": {
     "vcs-enabled": "このプロジェクトでは、VCS ベースのバージョン管理が有効になっています。以下のデータベースを選択すると、対応する Git リポジトリに移動して、変更プロセスを開始します。",
@@ -2091,6 +2098,10 @@
         "auto-resolve-issue": {
           "self": "自動解決の問題",
           "description": "すべてのタスクが完了すると、問題が自動的に解決されます。"
+        },
+        "enforce-issue-title": {
+          "self": "問題のタイトルを強制する",
+          "description": "問題のタイトルが空でないこと、および自動生成ではなくユーザーが作成することを強制します。"
         }
       }
     },
@@ -2466,7 +2477,8 @@
     "manage-connections": "接続を管理する",
     "view-detail": "詳細を見る",
     "generate-sql": "SQLの生成",
-    "current-editing-statement-is-not-empty": "現在編集中のステートメントは空ではありません。"
+    "current-editing-statement-is-not-empty": "現在編集中のステートメントは空ではありません。",
+    "run-anyway": "とにかく走ってください"
   },
   "schema-editor": {
     "self": "スキーマエディタ",
