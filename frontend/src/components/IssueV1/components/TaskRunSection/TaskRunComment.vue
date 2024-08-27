@@ -1,9 +1,11 @@
 <template>
-  <div class="flex flex-wrap flex-row gap-1">
-    <NPerformantEllipsis expand-trigger="click" line-clamp="2" :tooltip="false">
-      {{ comment }}
-    </NPerformantEllipsis>
-
+  <NEllipsis
+    class="space-x-1"
+    expand-trigger="click"
+    line-clamp="2"
+    :tooltip="false"
+  >
+    <span>{{ comment }}</span>
     <template v-if="commentLink.link">
       <template v-if="commentLink.link.startsWith('/')">
         <router-link class="inline normal-link" :to="commentLink.link">
@@ -21,12 +23,12 @@
         </a>
       </template>
     </template>
-  </div>
+  </NEllipsis>
 </template>
 
 <script setup lang="tsx">
 import { last } from "lodash-es";
-import { NPerformantEllipsis } from "naive-ui";
+import { NEllipsis } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { getProjectIdRolloutUidStageUidTaskUid } from "@/store/modules/v1/common";
