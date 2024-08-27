@@ -9,7 +9,7 @@
     </div>
     <div v-if="viewMode === 'RICH'">
       <NButton
-        v-if="executeParams"
+        v-if="showRunAnywayButton"
         size="small"
         type="primary"
         @click="runAnyway"
@@ -26,6 +26,7 @@ import { computed } from "vue";
 import { useExecuteSQL } from "@/composables/useExecuteSQL";
 import { useAppFeature } from "@/store";
 import type { SQLEditorQueryParams, SQLResultSetV1 } from "@/types";
+import { Advice_Status } from "@/types/proto/v1/sql_service";
 import { useSQLResultViewContext } from "./context";
 
 const props = defineProps<{
@@ -45,6 +46,16 @@ const viewMode = computed((): "SIMPLE" | "RICH" => {
     }
   }
   return "SIMPLE";
+});
+const showRunAnywayButton = computed(() => {
+  const { resultSet } = props;
+  if (!resultSet) return false;
+  if (
+    resultSet.advices.some((advice) => advice.status === Advice_Status.ERROR)
+  ) {
+    return false;
+  }
+  return true;
 });
 
 const runAnyway = () => {

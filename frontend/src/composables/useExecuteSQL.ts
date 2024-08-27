@@ -259,6 +259,20 @@ const useExecuteSQL = () => {
         checkResult.advices
       );
     }
+    if (
+      checkBehavior === "NOTIFICATION" &&
+      !checkResult.passed &&
+      checkResult.advices
+    ) {
+      const { advices } = checkResult;
+      const errorAdvice = advices.find(
+        (advice) => advice.status === Advice_Status.ERROR
+      );
+      if (errorAdvice) {
+        notifyAdvices(advices);
+        return abort(errorAdvice.content);
+      }
+    }
 
     for (const database of batchQueryDatabases) {
       if (abortController.signal.aborted) {
