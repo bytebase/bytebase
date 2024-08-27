@@ -2581,7 +2581,8 @@
     "index": {
       "indexes": "Índices",
       "edit-indexes": "Editar índices",
-      "unique": "Único"
+      "unique": "Único",
+      "dependent-columns": "Columnas dependientes"
     },
     "generated-ddl-is-empty": "El DDL generado está vacío",
     "table-partition": {
