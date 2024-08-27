@@ -1,3 +1,7 @@
+import type {
+  AdviceOption,
+  Selection as MonacoSelection,
+} from "@/components/MonacoEditor";
 import type { SQLResultSetV1 } from "../v1/sql";
 import type { SQLEditorConnection, SQLEditorQueryParams } from "./editor";
 
@@ -48,6 +52,10 @@ export type SQLEditorTab = {
   treeState: {
     database: string;
     keys: string[];
+  };
+  editorState: {
+    selection: MonacoSelection | null;
+    advices: AdviceOption[];
   };
 };
 

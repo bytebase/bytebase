@@ -119,6 +119,7 @@ const execute = (explain = false) => {
     statement: props.sql,
     engine: instance.value.engine,
     explain,
+    selection: null,
   });
 };
 
