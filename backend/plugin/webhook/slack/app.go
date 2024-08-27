@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"strings"
 
+	lru "github.com/hashicorp/golang-lru/v2"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/webhook"
@@ -104,8 +105,21 @@ func (p *provider) authTest(ctx context.Context) error {
 	return nil
 }
 
+var userIDCache = func() *lru.Cache[string, string] {
+	cache, err := lru.New[string, string](5000)
+	if err != nil {
+		panic(err)
+	}
+	return cache
+}()
+
 // https://api.slack.com/methods/users.lookupByEmail
-func (p *provider) lookupByEmail(ctx context.Context, email string) (string, error) {
+// id="" indicates that the user is not found.
+func (p *provider) lookupByEmail(ctx context.Context, email string) (id string, err error) {
+	if id, ok := userIDCache.Get(email); ok {
+		return id, nil
+	}
+
 	q := url.Values{}
 	q.Set("email", email)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://slack.com/api/users.lookupByEmail", nil)
@@ -135,9 +149,14 @@ func (p *provider) lookupByEmail(ctx context.Context, email string) (string, err
 		return "", errors.Wrapf(err, "failed to unmarshal")
 	}
 	if !res.OK {
+		if strings.Contains(res.Error, "users_not_found") {
+			userIDCache.Add(email, "")
+			return "", nil
+		}
 		return "", errors.Errorf("failed to get user, error: %v", res.Error)
 	}
 
+	userIDCache.Add(email, res.User.ID)
 	return res.User.ID, nil
 }
 
