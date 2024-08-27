@@ -40,6 +40,7 @@ import {
   useDatabaseV1Store,
 } from "@/store";
 import { isValidDatabaseName } from "@/types";
+import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
 
 defineOptions({
   inheritAttrs: false,
@@ -67,6 +68,7 @@ const syncNow = async () => {
     await useDBSchemaV1Store().getOrFetchDatabaseMetadata({
       database: database.value.name,
       skipCache: true,
+      view: DatabaseMetadataView.DATABASE_METADATA_VIEW_FULL,
     });
   } finally {
     isSyncing.value = false;
