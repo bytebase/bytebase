@@ -193,10 +193,11 @@ func getResourceChanges(database, schema string, node ast.Node, statement string
 				if schemaMetadata == nil {
 					continue
 				}
-				indexMetadata := schemaMetadata.GetIndex(index.Name)
-				if indexMetadata == nil {
+				indexMetadataList := schemaMetadata.GetIndexes(index.Name)
+				if len(indexMetadataList) == 0 {
 					continue
 				}
+				indexMetadata := indexMetadataList[0]
 				tableMetadata := indexMetadata.GetTableProto()
 				if tableMetadata == nil {
 					continue
