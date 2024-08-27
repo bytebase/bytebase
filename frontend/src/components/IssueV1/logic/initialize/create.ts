@@ -117,7 +117,7 @@ const buildIssue = async (params: CreateIssueParams) => {
   issue.projectEntity = project;
   issue.name = `${project.name}/issues/${nextUID()}`;
   issue.status = IssueStatus.OPEN;
-  // Only allow to set title if enforceIssueTitle is false.
+  // Only set title from query if enforceIssueTitle is false.
   if (!project.enforceIssueTitle) {
     issue.title = query.name;
   }
