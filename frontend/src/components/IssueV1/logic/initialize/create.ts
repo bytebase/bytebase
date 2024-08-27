@@ -116,8 +116,11 @@ const buildIssue = async (params: CreateIssueParams) => {
   issue.project = project.name;
   issue.projectEntity = project;
   issue.name = `${project.name}/issues/${nextUID()}`;
-  issue.title = query.name;
   issue.status = IssueStatus.OPEN;
+  // Only set title from query if enforceIssueTitle is false.
+  if (!project.enforceIssueTitle) {
+    issue.title = query.name;
+  }
 
   const template = query.template as TemplateType | undefined;
   if (template === "bb.issue.database.data.export") {
