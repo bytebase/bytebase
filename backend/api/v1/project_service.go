@@ -220,6 +220,10 @@ func (s *ProjectService) UpdateProject(ctx context.Context, request *v1pb.Update
 			projectSettings := project.Setting
 			projectSettings.AutoResolveIssue = request.Project.AutoResolveIssue
 			patch.Setting = projectSettings
+		case "enforce_issue_title":
+			projectSettings := project.Setting
+			projectSettings.EnforceIssueTitle = request.Project.EnforceIssueTitle
+			patch.Setting = projectSettings
 		default:
 			return nil, status.Errorf(codes.InvalidArgument, `unsupport update_mask "%s"`, path)
 		}
@@ -1253,6 +1257,7 @@ func convertToProject(projectMessage *store.ProjectMessage) *v1pb.Project {
 		ForceIssueLabels:           projectMessage.Setting.ForceIssueLabels,
 		AllowModifyStatement:       projectMessage.Setting.AllowModifyStatement,
 		AutoResolveIssue:           projectMessage.Setting.AutoResolveIssue,
+		EnforceIssueTitle:          projectMessage.Setting.EnforceIssueTitle,
 	}
 }
 
