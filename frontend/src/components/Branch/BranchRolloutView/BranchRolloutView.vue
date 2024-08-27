@@ -122,7 +122,6 @@
 </template>
 
 <script lang="ts" setup>
-import dayjs from "dayjs";
 import { cloneDeep } from "lodash-es";
 import { NButton, useDialog } from "naive-ui";
 import { computed, reactive, ref, toRef, watch } from "vue";
@@ -153,6 +152,7 @@ import {
   defer,
   extractProjectResourceName,
   extractSheetUID,
+  generateIssueTitle,
   setSheetStatement,
 } from "@/utils";
 import { useVirtualBranch } from "./useVirtualBranch";
@@ -371,7 +371,10 @@ const handlePreviewIssue = async () => {
     template: "bb.issue.database.schema.update",
     databaseList: db.name,
     sheetId: extractSheetUID(createdSheet.name),
-    name: generateIssueName(db.databaseName),
+    name: generateIssueTitle("bb.issue.database.schema.update", [
+      db.databaseName,
+    ]),
+    description: generateIssueDescription(db.databaseName),
   };
   const routeInfo = {
     name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
@@ -384,16 +387,13 @@ const handlePreviewIssue = async () => {
   router.push(routeInfo);
 };
 
-const generateIssueName = (databaseName: string) => {
-  const issueNameParts: string[] = [];
-  issueNameParts.push(`Apply branch`);
-  issueNameParts.push(`"${props.branch.branchId}"`);
-  issueNameParts.push("to database");
-  issueNameParts.push(`[${databaseName}]`);
-  const datetime = dayjs().format("@MM-DD HH:mm");
-  const tz = "UTC" + dayjs().format("ZZ");
-  issueNameParts.push(`${datetime} ${tz}`);
-  return issueNameParts.join(" ");
+const generateIssueDescription = (databaseName: string) => {
+  const parts: string[] = [];
+  parts.push(`Apply branch`);
+  parts.push(`"${props.branch.branchId}"`);
+  parts.push("to database");
+  parts.push(`[${databaseName}]`);
+  return parts.join(" ");
 };
 
 const confirmCreateIssueWithEmptyStatement = () => {
