@@ -35,6 +35,19 @@
       </div>
       <div>
         <NCheckbox
+          v-model:checked="state.enforceIssueTitle"
+          size="large"
+          :disabled="!allowEdit"
+          :label="$t('project.settings.issue-related.enforce-issue-title.self')"
+        />
+        <p class="text-sm text-gray-400 pl-6 ml-0.5">
+          {{
+            $t("project.settings.issue-related.enforce-issue-title.description")
+          }}
+        </p>
+      </div>
+      <div>
+        <NCheckbox
           v-model:checked="state.allowModifyStatement"
           size="large"
           :disabled="!allowEdit"
@@ -92,6 +105,7 @@ const getInitialLocalState = (): LocalState => {
     forceIssueLabels: project.forceIssueLabels,
     allowModifyStatement: project.allowModifyStatement,
     autoResolveIssue: project.autoResolveIssue,
+    enforceIssueTitle: project.enforceIssueTitle,
   };
 };
 
@@ -100,6 +114,7 @@ interface LocalState {
   forceIssueLabels: boolean;
   allowModifyStatement: boolean;
   autoResolveIssue: boolean;
+  enforceIssueTitle: boolean;
 }
 
 const defaultColor = "#4f46e5";
@@ -199,6 +214,9 @@ const getUpdateMask = () => {
   }
   if (state.autoResolveIssue !== props.project.autoResolveIssue) {
     mask.push("auto_resolve_issue");
+  }
+  if (state.enforceIssueTitle !== props.project.enforceIssueTitle) {
+    mask.push("enforce_issue_title");
   }
   return mask;
 };
