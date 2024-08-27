@@ -117,7 +117,6 @@
 
 <script lang="ts" setup>
 import { asyncComputed, computedAsync } from "@vueuse/core";
-import dayjs from "dayjs";
 import { cloneDeep } from "lodash-es";
 import { NButton, NCheckbox, NDivider, useDialog } from "naive-ui";
 import { Status } from "nice-grpc-common";
@@ -154,6 +153,7 @@ import { DatabaseMetadata } from "@/types/proto/v1/database_service";
 import {
   defer,
   extractProjectResourceName,
+  generateIssueTitle,
   hasProjectPermissionV2,
 } from "@/utils";
 import { getErrorCode } from "@/utils/grpcweb";
@@ -458,7 +458,8 @@ const handleApplyToDatabase = async (databaseNameList: string[]) => {
   };
   query.databaseList = targetDatabaseList.map((db) => db.name).join(",");
   query.sql = result.statement;
-  query.name = generateIssueName(
+  query.name = generateIssueTitle(
+    "bb.issue.database.schema.update",
     targetDatabaseList.map((db) => db.databaseName)
   );
   const routeInfo = {
@@ -470,20 +471,6 @@ const handleApplyToDatabase = async (databaseNameList: string[]) => {
     query,
   };
   router.push(routeInfo);
-};
-
-const generateIssueName = (databaseNameList: string[]) => {
-  const issueNameParts: string[] = [];
-  if (databaseNameList.length === 1) {
-    issueNameParts.push(`[${databaseNameList[0]}]`);
-  } else {
-    issueNameParts.push(`[${databaseNameList.length} databases]`);
-  }
-  issueNameParts.push(`Edit schema`);
-  const datetime = dayjs().format("@MM-DD HH:mm");
-  const tz = "UTC" + dayjs().format("ZZ");
-  issueNameParts.push(`${datetime} ${tz}`);
-  return issueNameParts.join(" ");
 };
 
 const confirmForceDeleteBranch = () => {

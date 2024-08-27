@@ -217,7 +217,7 @@ import {
   createExplainToken,
   extractProjectResourceName,
   extractSQLRowValue,
-  generateIssueName,
+  generateIssueTitle,
   hasPermissionToCreateRequestGrantIssue,
   hasWorkspacePermissionV2,
   instanceV1HasStructuredQueryResult,
@@ -447,7 +447,7 @@ const handleRequestExport = async () => {
   localStorage.setItem(sqlStorageKey, props.result.statement);
   const query: Record<string, any> = {
     template: issueType,
-    name: generateIssueName(issueType, [database.databaseName]),
+    name: generateIssueTitle(issueType, [database.databaseName]),
     databaseList: database.name,
     sqlStorageKey,
   };
