@@ -216,7 +216,7 @@ const updateAdvices = (
   tab.editorState.advices = advices.map<AdviceOption>((advice) => {
     const { line, column } = withOffset(advice);
     const code = advice.code;
-    const source = [`L${line}:C${column}`];
+    const source = [`L${line}:C${column - 1}`];
     if (code > 0) {
       source.unshift(`(${code})`);
     }
