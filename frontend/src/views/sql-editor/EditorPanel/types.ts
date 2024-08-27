@@ -21,6 +21,7 @@ export type EditorPanelViewState = {
     partition?: string;
     index?: string;
     foreignKey?: string;
+    dependentColumn?: string;
   };
 };
 

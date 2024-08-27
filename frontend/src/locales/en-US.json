@@ -2569,7 +2569,8 @@
     "index": {
       "indexes": "Indexes",
       "edit-indexes": "Edit indexes",
-      "unique": "Unique"
+      "unique": "Unique",
+      "dependent-columns": "Depenedent columns"
     },
     "generated-ddl-is-empty": "Generated DDL is empty",
     "table-partition": {
