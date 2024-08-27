@@ -4,7 +4,7 @@
       v-bind="$attrs"
       ref="dataTableRef"
       size="small"
-      :row-key="(column) => column.name"
+      :row-key="(dep) => keyForDependentColumn(dep)"
       :columns="columns"
       :data="layoutReady ? filteredDependentColumns : []"
       :max-height="tableBodyHeight"
@@ -29,7 +29,11 @@ import type {
   SchemaMetadata,
   ViewMetadata,
 } from "@/types/proto/v1/database_service";
-import { getHighlightHTMLByRegExp, hasSchemaProperty } from "@/utils";
+import {
+  getHighlightHTMLByRegExp,
+  hasSchemaProperty,
+  keyForDependentColumn,
+} from "@/utils";
 import { useAutoHeightDataTable } from "../../common";
 import { useEditorPanelContext } from "../../context";
 
