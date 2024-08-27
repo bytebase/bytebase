@@ -191,7 +191,10 @@ func (p *provider) getIDByEmail(ctx context.Context, emails []string) (map[strin
 	for _, email := range emails {
 		id, ok := userIDCache.Get(email)
 		if ok {
-			userID[email] = id
+			// user.UserID == "" means the user is not found on feishu.
+			if id != "" {
+				userID[email] = id
+			}
 		} else {
 			emailsToGet = append(emailsToGet, email)
 		}
@@ -224,6 +227,8 @@ func (p *provider) getIDByEmail(ctx context.Context, emails []string) (map[strin
 		if user.UserID == "" {
 			continue
 		}
+		// user.UserID == "" means the user is not found on feishu.
+		// We store "" into the cache to prevent finding every time.
 		userID[user.Email] = user.UserID
 		userIDCache.Add(user.Email, user.UserID)
 	}
