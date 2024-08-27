@@ -8,7 +8,10 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"sync"
+	"time"
 
+	lru "github.com/hashicorp/golang-lru/v2"
 	"github.com/pkg/errors"
 )
 
@@ -82,47 +85,126 @@ func Validate(ctx context.Context, id, secret, email string) error {
 	return nil
 }
 
-func (p *provider) refreshToken(ctx context.Context) error {
+func getToken(ctx context.Context, c *http.Client, id, secret string) (*tokenValue, error) {
 	const getTenantAccessTokenReq = `{"app_id": "%s","app_secret": "%s"}`
 	const url = "https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal"
-	body := strings.NewReader(fmt.Sprintf(getTenantAccessTokenReq, p.id, p.secret))
+	body := strings.NewReader(fmt.Sprintf(getTenantAccessTokenReq, id, secret))
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, body)
 	if err != nil {
-		return errors.Wrapf(err, "construct POST %s", url)
+		return nil, errors.Wrapf(err, "construct POST %s", url)
 	}
 	req.Header.Set("Content-Type", "application/json")
-	resp, err := p.c.Do(req)
+	resp, err := c.Do(req)
 	if err != nil {
-		return errors.Wrapf(err, "POST %s", url)
+		return nil, errors.Wrapf(err, "POST %s", url)
 	}
 
 	b, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return errors.Wrapf(err, "read body of POST %s", url)
+		return nil, errors.Wrapf(err, "read body of POST %s", url)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return errors.Errorf("non-200 POST status code %d with body %q", resp.StatusCode, b)
+		return nil, errors.Errorf("non-200 POST status code %d with body %q", resp.StatusCode, b)
 	}
 
 	var response tenantAccessTokenResponse
 	if err := json.Unmarshal(b, &response); err != nil {
-		return errors.Wrapf(err, "unmarshal body from POST %s", url)
+		return nil, errors.Wrapf(err, "unmarshal body from POST %s", url)
 	}
 	if response.Code != 0 {
-		return errors.Errorf("failed to get tenant access token, code %d, msg %s", response.Code, response.Msg)
+		return nil, errors.Errorf("failed to get tenant access token, code %d, msg %s", response.Code, response.Msg)
 	}
 
-	p.token = response.Token
+	return &tokenValue{
+		token:    response.Token,
+		expireAt: time.Now().Add(time.Second * time.Duration(response.Expire)),
+	}, nil
+}
+
+var tokenCacheLock sync.Mutex
+
+type tokenKey struct {
+	id     string
+	secret string
+}
+
+type tokenValue struct {
+	token    string
+	expireAt time.Time
+}
+
+var tokenCache = func() *lru.Cache[tokenKey, *tokenValue] {
+	cache, err := lru.New[tokenKey, *tokenValue](3)
+	if err != nil {
+		panic(err)
+	}
+	return cache
+}()
+
+func getTokenCached(ctx context.Context, c *http.Client, id, secret string) (string, error) {
+	tokenCacheLock.Lock()
+	defer tokenCacheLock.Unlock()
+
+	key := tokenKey{
+		id:     id,
+		secret: secret,
+	}
+
+	token, ok := tokenCache.Get(key)
+	if ok && time.Now().Before(token.expireAt.Add(-time.Minute)) {
+		return token.token, nil
+	}
+
+	token, err := getToken(ctx, c, id, secret)
+	if err != nil {
+		return "", err
+	}
+	tokenCache.Add(key, token)
+
+	return token.token, nil
+}
+
+func (p *provider) refreshToken(ctx context.Context) error {
+	token, err := getTokenCached(ctx, p.c, p.id, p.secret)
+	if err != nil {
+		return err
+	}
+	p.token = token
 	return nil
 }
+
+var userIDCache = func() *lru.Cache[string, string] {
+	cache, err := lru.New[string, string](5000)
+	if err != nil {
+		panic(err)
+	}
+	return cache
+}()
 
 // getIDByEmail gets user ids by emails, returns email to userID mapping.
 // https://open.feishu.cn/document/server-docs/contact-v3/user/batch_get_id
 func (p *provider) getIDByEmail(ctx context.Context, emails []string) (map[string]string, error) {
+	userID := make(map[string]string)
+	var emailsToGet []string
+	for _, email := range emails {
+		id, ok := userIDCache.Get(email)
+		if ok {
+			// user.UserID == "" means the user is not found on feishu.
+			if id != "" {
+				userID[email] = id
+			}
+		} else {
+			emailsToGet = append(emailsToGet, email)
+		}
+	}
+	if len(emailsToGet) == 0 {
+		return userID, nil
+	}
+
 	const url = "https://open.feishu.cn/open-apis/contact/v3/users/batch_get_id"
-	body, err := json.Marshal(&getIDByEmailRequest{Emails: emails})
+	body, err := json.Marshal(&getIDByEmailRequest{Emails: emailsToGet})
 	if err != nil {
 		return nil, err
 	}
@@ -141,12 +223,14 @@ func (p *provider) getIDByEmail(ctx context.Context, emails []string) (map[strin
 		return nil, errors.Errorf("failed to get id by email, code %d, msg %s", response.Code, response.Msg)
 	}
 
-	userID := make(map[string]string)
 	for _, user := range response.Data.UserList {
 		if user.UserID == "" {
 			continue
 		}
+		// user.UserID == "" means the user is not found on feishu.
+		// We store "" into the cache to prevent finding every time.
 		userID[user.Email] = user.UserID
+		userIDCache.Add(user.Email, user.UserID)
 	}
 
 	return userID, nil
