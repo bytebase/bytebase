@@ -81,7 +81,7 @@ import RequiredStar from "@/components/RequiredStar.vue";
 import { DrawerContent, Drawer } from "@/components/v2";
 import { issueServiceClient } from "@/grpcweb";
 import { useCurrentUserV1, useProjectV1Store, pushNotification } from "@/store";
-import type { DatabaseResource, ComposedProject } from "@/types";
+import type { DatabaseResource } from "@/types";
 import { PresetRoleType } from "@/types";
 import { Duration } from "@/types/proto/google/protobuf/duration";
 import { Expr } from "@/types/proto/google/type/expr";
@@ -90,6 +90,7 @@ import {
   Issue,
   Issue_Type,
 } from "@/types/proto/v1/issue_service";
+import { generateIssueTitle } from "@/utils";
 import DatabaseResourceForm from "../RequestQueryPanel/DatabaseResourceForm/index.vue";
 import MaxRowCountSelect from "./MaxRowCountSelect.vue";
 
@@ -136,7 +137,12 @@ const doCreateIssue = async () => {
 
   const project = await projectStore.getOrFetchProjectByName(props.projectName);
   const newIssue = Issue.fromPartial({
-    title: generateIssueName(project),
+    title: generateIssueTitle(
+      "bb.issue.grant.request.exporter",
+      state.databaseResources.map(
+        (databaseResource) => databaseResource.databaseName
+      )
+    ),
     description: state.description,
     type: Issue_Type.GRANT_REQUEST,
     grantRequest: {},
@@ -191,9 +197,5 @@ const doCreateIssue = async () => {
   }
 
   emit("close");
-};
-
-const generateIssueName = (project: ComposedProject) => {
-  return `Request data export for "${project.title}"`;
 };
 </script>

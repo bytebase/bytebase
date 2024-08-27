@@ -121,7 +121,7 @@ import {
   isArchivedDatabaseV1,
   instanceV1HasAlterSchema,
   allowUsingSchemaEditor,
-  generateIssueName,
+  generateIssueTitle,
   hasProjectPermissionV2,
   extractProjectResourceName,
   hasPermissionToCreateChangeDatabaseIssue,
@@ -288,7 +288,7 @@ const generateMultiDb = async (
 
   const query: Record<string, any> = {
     template: type,
-    name: generateIssueName(
+    name: generateIssueTitle(
       type,
       props.databases.map((db) => db.databaseName),
       false
