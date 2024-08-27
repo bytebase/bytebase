@@ -2466,7 +2466,8 @@
     "manage-connections": "管理连接",
     "view-detail": "查看详情",
     "generate-sql": "生成 SQL",
-    "current-editing-statement-is-not-empty": "当前编辑中的语句不为空。"
+    "current-editing-statement-is-not-empty": "当前编辑中的语句不为空。",
+    "run-anyway": "仍要运行"
   },
   "schema-editor": {
     "self": "Schema 编辑器",

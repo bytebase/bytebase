@@ -1,5 +1,5 @@
 import Emittery from "emittery";
-import { isEmpty } from "lodash-es";
+import { head, isEmpty } from "lodash-es";
 import { Status } from "nice-grpc-common";
 import { markRaw } from "vue";
 import { parseSQL } from "@/components/MonacoEditor/sqlParser";
@@ -12,6 +12,7 @@ import {
   useSQLEditorTabStore,
   useSQLStore,
   useSQLEditorQueryHistoryStore,
+  useAppFeature,
 } from "@/store";
 import type {
   ComposedDatabase,
@@ -31,6 +32,7 @@ import {
   emptySQLEditorTabQueryContext,
   hasPermissionToCreateChangeDatabaseIssue,
 } from "@/utils";
+import { extractGrpcErrorMessage } from "@/utils/grpcweb";
 
 // SKIP_CHECK_THRESHOLD is the MaxSheetCheckSize in the backend.
 const SKIP_CHECK_THRESHOLD = 1024 * 1024;
@@ -43,10 +45,13 @@ const events = new Emittery<{
   };
 }>();
 
+type SQLCheckResult = { passed: boolean; advices?: Advice[] };
+
 const useExecuteSQL = () => {
   const databaseStore = useDatabaseV1Store();
   const tabStore = useSQLEditorTabStore();
   const sqlEditorStore = useSQLEditorStore();
+  const sqlCheckStyle = useAppFeature("bb.feature.sql-editor.sql-check-style");
   const notify = (
     type: BBNotificationStyle,
     title: string,
@@ -89,30 +94,65 @@ const useExecuteSQL = () => {
     return true;
   };
 
-  const check = async () => {
+  const check = async (): Promise<SQLCheckResult> => {
     const tab = tabStore.currentTab;
     if (!tab) {
-      return false;
+      return { passed: false };
     }
 
     const params = tab.queryContext?.params;
+    const abortController = tab.queryContext?.abortController;
     if (!params) {
-      return false;
-    }
-    if (params.explain) {
-      return true;
+      return { passed: false };
     }
     if (params.statement.length > SKIP_CHECK_THRESHOLD) {
-      return true;
+      return { passed: true };
     }
-    const response = await sqlServiceClient.check({
-      name: params.connection.database,
-      statement: params.statement,
-      changeType: CheckRequest_ChangeType.SQL_EDITOR,
-    });
+    const response = await sqlServiceClient.check(
+      {
+        name: params.connection.database,
+        statement: params.statement,
+        changeType: CheckRequest_ChangeType.SQL_EDITOR,
+      },
+      {
+        signal: abortController?.signal,
+      }
+    );
     const { advices } = response;
     events.emit("update:advices", { tab, params, advices });
-    return true;
+    return { passed: advices.length === 0, advices };
+  };
+
+  const notifyAdvices = (advices: Advice[]) => {
+    let adviceStatus: "SUCCESS" | "ERROR" | "WARNING" = "SUCCESS";
+    let adviceNotifyMessage = "";
+    for (const advice of advices) {
+      if (advice.status === Advice_Status.SUCCESS) {
+        continue;
+      }
+
+      if (advice.status === Advice_Status.ERROR) {
+        adviceStatus = "ERROR";
+      } else if (adviceStatus !== "ERROR") {
+        adviceStatus = "WARNING";
+      }
+
+      adviceNotifyMessage += `${advice_StatusToJSON(advice.status)}: ${
+        advice.title
+      }\n`;
+      if (advice.content) {
+        adviceNotifyMessage += `${advice.content}\n`;
+      }
+    }
+
+    if (adviceStatus !== "SUCCESS") {
+      const notifyStyle = adviceStatus === "ERROR" ? "CRITICAL" : "WARN";
+      notify(
+        notifyStyle,
+        t("sql-editor.sql-review-result"),
+        adviceNotifyMessage
+      );
+    }
   };
 
   const cleanup = () => {
@@ -129,13 +169,10 @@ const useExecuteSQL = () => {
 
     const tab = tabStore.currentTab;
     if (!tab) {
-      return;
+      return cleanup();
     }
     const { mode } = tab;
     if (mode === "ADMIN") {
-      return;
-    }
-    if (!(await check())) {
       return cleanup();
     }
 
@@ -191,10 +228,38 @@ const useExecuteSQL = () => {
         allowExport: false,
       });
     };
+    const abort = (error: string, advices: Advice[] = []) => {
+      fail(batchQueryDatabases[0], {
+        error,
+        results: [],
+        advices,
+        status: Status.ABORTED,
+        allowExport: false,
+      });
+      return cleanup();
+    };
 
     const { abortController } = queryContext;
+
     const sqlStore = useSQLStore();
     queryContext.beginTimestampMS = Date.now();
+
+    const checkBehavior = params.skipCheck ? "SKIP" : sqlCheckStyle.value;
+    let checkResult: SQLCheckResult = { passed: true };
+    if (checkBehavior !== "SKIP") {
+      try {
+        checkResult = await check();
+      } catch (error) {
+        return abort(extractGrpcErrorMessage(error));
+      }
+    }
+    if (checkBehavior === "PREFLIGHT" && !checkResult.passed) {
+      return abort(
+        head(checkResult.advices)?.content ?? "",
+        checkResult.advices
+      );
+    }
+
     for (const database of batchQueryDatabases) {
       if (abortController.signal.aborted) {
         // Once any one of the batch queries is aborted, don't go further
@@ -241,35 +306,12 @@ const useExecuteSQL = () => {
             abortController.signal
           );
         }
-
-        let adviceStatus: "SUCCESS" | "ERROR" | "WARNING" = "SUCCESS";
-        let adviceNotifyMessage = "";
-        for (const advice of resultSet.advices) {
-          if (advice.status === Advice_Status.SUCCESS) {
-            continue;
-          }
-
-          if (advice.status === Advice_Status.ERROR) {
-            adviceStatus = "ERROR";
-          } else if (adviceStatus !== "ERROR") {
-            adviceStatus = "WARNING";
-          }
-
-          adviceNotifyMessage += `${advice_StatusToJSON(advice.status)}: ${
-            advice.title
-          }\n`;
-          if (advice.content) {
-            adviceNotifyMessage += `${advice.content}\n`;
-          }
-        }
-
-        if (adviceStatus !== "SUCCESS") {
-          const notifyStyle = adviceStatus === "ERROR" ? "CRITICAL" : "WARN";
-          notify(
-            notifyStyle,
-            t("sql-editor.sql-review-result"),
-            adviceNotifyMessage
-          );
+        if (checkBehavior === "NOTIFICATION") {
+          const combinedAdvices =
+            resultSet.advices.length > 0
+              ? resultSet.advices
+              : (checkResult.advices ?? []);
+          notifyAdvices(combinedAdvices);
         }
 
         if (resultSet.error) {
@@ -299,11 +341,6 @@ const useExecuteSQL = () => {
       }
     }
 
-    const firstResultSet = queryResultMap.get(params.connection.database);
-    if (firstResultSet) {
-      // const { advices } = firstResultSet;
-      // events.emit("update:advices", { tab, params, advices });
-    }
     // After all the queries are executed, we update the tab with the latest query result map.
     // Refresh the query history list when the query executed successfully
     // (with or without warnings).

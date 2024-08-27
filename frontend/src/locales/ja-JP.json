@@ -2466,7 +2466,8 @@
     "manage-connections": "接続を管理する",
     "view-detail": "詳細を見る",
     "generate-sql": "SQLの生成",
-    "current-editing-statement-is-not-empty": "現在編集中のステートメントは空ではありません。"
+    "current-editing-statement-is-not-empty": "現在編集中のステートメントは空ではありません。",
+    "run-anyway": "とにかく走ってください"
   },
   "schema-editor": {
     "self": "スキーマエディタ",

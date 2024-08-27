@@ -73,4 +73,5 @@ export type SQLEditorQueryParams = {
   engine: Engine;
   explain: boolean;
   selection: monaco.Selection | null;
+  skipCheck?: boolean;
 };
