@@ -52,6 +52,14 @@
     :view="view"
     :keyword="state.keyword"
   />
+  <DependentColumnsTable
+    v-show="state.mode === 'DEPENDENT-COLUMNS'"
+    :db="db"
+    :database="database"
+    :schema="schema"
+    :view="view"
+    :keyword="state.keyword"
+  />
 </template>
 
 <script setup lang="ts">
@@ -71,6 +79,7 @@ import type {
 import { useEditorPanelContext } from "../../context";
 import ColumnsTable from "./ColumnsTable.vue";
 import DefinitionViewer from "./DefinitionViewer.vue";
+import DependentColumnsTable from "./DependentColumnsTable.vue";
 
 type Mode = "DEFINITION" | "COLUMNS" | "DEPENDENT-COLUMNS";
 type LocalState = {
