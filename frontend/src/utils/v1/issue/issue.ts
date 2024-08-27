@@ -1,5 +1,6 @@
 import dayjs from "dayjs";
 import slug from "slug";
+import { t } from "@/plugins/i18n";
 import { EMPTY_ID, UNKNOWN_ID, type ComposedIssue } from "@/types";
 import { Issue, Issue_Type } from "@/types/proto/v1/issue_service";
 import type { Plan } from "@/types/proto/v1/plan_service";
@@ -83,17 +84,17 @@ export const generateIssueTitle = (
     } else {
       parts.push(
         type === "bb.issue.database.schema.update"
-          ? `Edit schema`
+          ? t("issue.title.edit-schema")
           : type === "bb.issue.database.data.update"
-            ? `Change data`
-            : "Export data"
+            ? t("issue.title.change-data")
+            : t("issue.title.export-data")
       );
     }
   } else {
     parts.push(
       type === "bb.issue.grant.request.querier"
-        ? "Request querier access"
-        : "Request exporter access"
+        ? t("issue.title.request-querier-role")
+        : t("issue.title.request-exporter-role")
     );
   }
   const datetime = dayjs().format("@MM-DD HH:mm");

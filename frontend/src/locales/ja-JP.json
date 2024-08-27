@@ -1300,7 +1300,14 @@
     },
     "sql-review-only": "SQLレビューのみ",
     "create-issue": "問題を作成",
-    "this-plan-will-be-converted-to-a-new-issue": "この計画は新しい問題に変換されます"
+    "this-plan-will-be-converted-to-a-new-issue": "この計画は新しい問題に変換されます",
+    "title": {
+      "edit-schema": "スキーマを編集",
+      "change-data": "データの変更",
+      "export-data": "データをエクスポート",
+      "request-querier-role": "リクエストクエリーロール",
+      "request-export-role": "エクスポートロールのリクエスト"
+    }
   },
   "alter-schema": {
     "vcs-enabled": "このプロジェクトでは、VCS ベースのバージョン管理が有効になっています。以下のデータベースを選択すると、対応する Git リポジトリに移動して、変更プロセスを開始します。",
