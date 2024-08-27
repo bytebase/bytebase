@@ -1300,7 +1300,14 @@
     },
     "sql-review-only": "仅 SQL 审核",
     "create-issue": "创建变更工单",
-    "this-plan-will-be-converted-to-a-new-issue": "该计划将转换为一个变更工单"
+    "this-plan-will-be-converted-to-a-new-issue": "该计划将转换为一个变更工单",
+    "title": {
+      "edit-schema": "变更 Schema",
+      "change-data": "变更数据",
+      "export-data": "导出数据",
+      "request-querier-role": "申请查询者角色",
+      "request-export-role": "申请导出者角色"
+    }
   },
   "alter-schema": {
     "vcs-enabled": "该项目开启了基于 VCS 的版本管理，选择下面的数据库会将您导航到相应的 Git 仓库以发起变更流程。",
