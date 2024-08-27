@@ -329,7 +329,7 @@ replace github.com/pganalyze/pg_query_go/v5 => github.com/bytebase/pg_query_go2/
 
 replace github.com/mattn/go-oci8 => github.com/bytebase/go-obo v0.0.0-20231026081615-705a7fffbfd2
 
-replace github.com/antlr4-go/antlr/v4 => github.com/bytebase/antlr/v4 v4.0.0-20240628084508-8a85f73b60b3
+replace github.com/antlr4-go/antlr/v4 => github.com/bytebase/antlr/v4 v4.0.0-20240827034948-8c385f108920
 
 replace github.com/sourcegraph/go-lsp => github.com/bytebase/go-lsp v0.0.0-20240130071507-c04b5c75010c
 
