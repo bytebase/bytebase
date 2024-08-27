@@ -33,7 +33,7 @@
         :block-line="true"
         :data="tree"
         :show-irrelevant-nodes="false"
-        :pattern="mounted ? searchPattern : ''"
+        :pattern="mounted ? debouncedSearchPattern : ''"
         :virtual-scroll="true"
         :node-props="nodeProps"
         :theme-overrides="{ nodeHeight: '21px' }"
@@ -70,7 +70,12 @@
 </template>
 
 <script setup lang="ts">
-import { computedAsync, useElementSize, useMounted } from "@vueuse/core";
+import {
+  computedAsync,
+  refDebounced,
+  useElementSize,
+  useMounted,
+} from "@vueuse/core";
 import { head, uniq } from "lodash-es";
 import {
   NDropdown,
@@ -119,6 +124,7 @@ const { height: treeContainerHeight } = useElementSize(
   }
 );
 const searchPattern = ref("");
+const debouncedSearchPattern = refDebounced(searchPattern, 200);
 const { viewState: panelViewState } = useEditorPanelContext();
 const { schemaViewer } = useSQLEditorContext();
 const {
