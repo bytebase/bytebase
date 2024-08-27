@@ -265,6 +265,7 @@ const handleRunQuery = () => {
     connection: { ...tab.connection },
     engine: instance.value.engine,
     explain: false,
+    selection: tab.editorState.selection,
   });
   uiStateStore.saveIntroStateByKey({
     key: "data.query",

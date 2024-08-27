@@ -2473,7 +2473,8 @@
     "manage-connections": "Manage connections",
     "view-detail": "View detail",
     "generate-sql": "Generate SQL",
-    "current-editing-statement-is-not-empty": "Current editing statement is not empty."
+    "current-editing-statement-is-not-empty": "Current editing statement is not empty.",
+    "run-anyway": "Run anyway"
   },
   "schema-editor": {
     "self": "Schema Editor",
