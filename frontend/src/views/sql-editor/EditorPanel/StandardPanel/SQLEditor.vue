@@ -233,10 +233,6 @@ const updateAdvices = (
       endColumn: column,
     };
   });
-  console.log(
-    "computed advices",
-    JSON.stringify(tab.editorState.advices, null, "  ")
-  );
 };
 
 useEmitteryEventListener(editorEvents, "format-content", () => {
@@ -249,11 +245,6 @@ useEmitteryEventListener(
   ({ tab, params, advices }) => {
     if (tab.id !== currentTab.value?.id) return;
     updateAdvices(tab, params, advices);
-    console.log(
-      "update:advices",
-      JSON.stringify(params.selection?.toJSON(), null, "  "),
-      JSON.stringify(advices, null, "  ")
-    );
   }
 );
 </script>
