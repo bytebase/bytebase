@@ -648,6 +648,15 @@ func (t *TableMetadata) GetIndex(name string) *IndexMetadata {
 	return t.internalIndexes[name]
 }
 
+func (t *TableMetadata) GetPrimaryKey() *IndexMetadata {
+	for _, index := range t.internalIndexes {
+		if index.proto.Primary {
+			return index
+		}
+	}
+	return nil
+}
+
 // GetColumns gets the columns.
 func (t *TableMetadata) GetColumns() []*storepb.ColumnMetadata {
 	return t.columns

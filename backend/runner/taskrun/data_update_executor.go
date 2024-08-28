@@ -179,9 +179,10 @@ func (exec *DataUpdateExecutor) backupData(
 			}
 		}
 
-		priorBackupDetail.Items = append(priorBackupDetail.Items, &storepb.PriorBackupDetail_Item{
+		item := &storepb.PriorBackupDetail_Item{
 			SourceTable: &storepb.PriorBackupDetail_Item_Table{
 				Database: sourceDatabaseName,
+				Schema:   statement.SourceSchema,
 				Table:    statement.SourceTableName,
 			},
 			TargetTable: &storepb.PriorBackupDetail_Item_Table{
@@ -191,7 +192,16 @@ func (exec *DataUpdateExecutor) backupData(
 			},
 			StartPosition: statement.StartPosition,
 			EndPosition:   statement.EndPosition,
-		})
+		}
+		if instance.Engine == storepb.Engine_POSTGRES {
+			item.TargetTable = &storepb.PriorBackupDetail_Item_Table{
+				Database: sourceDatabaseName,
+				// postgres uses schema as the backup database name currently.
+				Schema: backupDatabaseName,
+				Table:  statement.TargetTableName,
+			}
+		}
+		priorBackupDetail.Items = append(priorBackupDetail.Items, item)
 
 		if _, err := exec.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
 			IssueUID: issue.UID,
