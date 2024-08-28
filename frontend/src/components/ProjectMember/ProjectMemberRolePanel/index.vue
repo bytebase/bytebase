@@ -185,7 +185,10 @@
   <EditProjectRolePanel
     v-if="editingBinding"
     :project="project"
-    :binding="editingBinding"
+    :binding="{
+      ...editingBinding,
+      members: [binding.binding],
+    }"
     @close="editingBinding = null"
   />
 
