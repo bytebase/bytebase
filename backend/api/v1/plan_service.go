@@ -336,7 +336,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 		UpdaterID: user.ID,
 	}
 
-	var doUpdateSheet bool
+	var planCheckRunsTrigger bool
 	for _, path := range request.UpdateMask.Paths {
 		switch path {
 		case "title":
@@ -725,8 +725,12 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 			}
 
 			for _, taskPatch := range taskPatchList {
+				if taskPatch.PreUpdateBackupDetail != nil {
+					planCheckRunsTrigger = true
+					break
+				}
 				if taskPatch.SheetID != nil {
-					doUpdateSheet = true
+					planCheckRunsTrigger = true
 					break
 				}
 			}
@@ -738,7 +742,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 					if oldSpec.GetChangeDatabaseConfig() != nil && specPatch.GetChangeDatabaseConfig() != nil {
 						oldConfig, newConfig := oldSpec.GetChangeDatabaseConfig(), specPatch.GetChangeDatabaseConfig()
 						if oldConfig.Sheet != newConfig.Sheet {
-							doUpdateSheet = true
+							planCheckRunsTrigger = true
 							break
 						}
 					}
@@ -746,7 +750,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 			}
 
 			// Check project setting for modify statement.
-			if len(taskPatchList) > 0 && doUpdateSheet && !project.Setting.AllowModifyStatement {
+			if len(taskPatchList) > 0 && planCheckRunsTrigger && !project.Setting.AllowModifyStatement {
 				return nil, status.Errorf(codes.FailedPrecondition, "modify statement is not allowed for project %s", project.Title)
 			}
 
@@ -769,7 +773,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 				}
 			}
 
-			if issue != nil && doUpdateSheet {
+			if issue != nil && planCheckRunsTrigger {
 				if err := func() error {
 					issue, err := s.store.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{
 						PayloadUpsert: &storepb.IssuePayload{
@@ -804,7 +808,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 		return nil, status.Errorf(codes.NotFound, "updated plan %q not found", request.Plan.Name)
 	}
 
-	if doUpdateSheet {
+	if planCheckRunsTrigger {
 		planCheckRuns, err := getPlanCheckRunsFromPlan(ctx, s.store, updatedPlan)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to get plan check runs for plan, error: %v", err)
