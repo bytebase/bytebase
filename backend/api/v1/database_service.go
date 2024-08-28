@@ -1688,14 +1688,14 @@ func (s *DatabaseService) convertToDatabase(ctx context.Context, database *store
 		SchemaVersion:        database.SchemaVersion.Version,
 		Labels:               database.Metadata.Labels,
 		InstanceResource:     instanceResource,
-		BackupAvailable:      s.isBackupAvailable(ctx, instance, database),
+		BackupAvailable:      isBackupAvailable(ctx, s.store, instance, database),
 	}, nil
 }
 
-func (s *DatabaseService) isBackupAvailable(ctx context.Context, instance *store.InstanceMessage, database *store.DatabaseMessage) bool {
+func isBackupAvailable(ctx context.Context, s *store.Store, instance *store.InstanceMessage, database *store.DatabaseMessage) bool {
 	switch instance.Engine {
 	case storepb.Engine_POSTGRES:
-		dbSchema, err := s.store.GetDBSchema(ctx, database.UID)
+		dbSchema, err := s.GetDBSchema(ctx, database.UID)
 		if err != nil {
 			slog.Debug("Failed to get db schema for checking backup availability", "err", err)
 			return false
@@ -1710,7 +1710,7 @@ func (s *DatabaseService) isBackupAvailable(ctx context.Context, instance *store
 		}
 	case storepb.Engine_MYSQL, storepb.Engine_ORACLE, storepb.Engine_MSSQL, storepb.Engine_TIDB:
 		dbName := backupDatabaseName
-		backupDB, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+		backupDB, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
 			InstanceID:   &instance.ResourceID,
 			DatabaseName: &dbName,
 		})
