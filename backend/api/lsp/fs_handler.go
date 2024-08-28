@@ -6,9 +6,15 @@ import (
 	"encoding/json"
 	"os"
 
+	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
 	"github.com/sourcegraph/go-lsp"
 	"github.com/sourcegraph/jsonrpc2"
+
+	parser "github.com/bytebase/mysql-parser"
+
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	"github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 // GetFS returns the file system.
@@ -31,7 +37,7 @@ func (h *Handler) readFile(_ context.Context, uri lsp.DocumentURI) ([]byte, erro
 }
 
 // handleFileSystemRequest handles textDocument/did* requests.
-func (h *Handler) handleFileSystemRequest(ctx context.Context, req *jsonrpc2.Request) (lsp.DocumentURI, bool, error) {
+func (h *Handler) handleFileSystemRequest(ctx context.Context, conn *jsonrpc2.Conn, req *jsonrpc2.Request) (lsp.DocumentURI, bool, error) {
 	fs := h.GetFS()
 
 	do := func(uri lsp.DocumentURI, op func() error) (lsp.DocumentURI, bool, error) {
@@ -70,7 +76,26 @@ func (h *Handler) handleFileSystemRequest(ctx context.Context, req *jsonrpc2.Req
 			return "", false, err
 		}
 		return do(params.TextDocument.URI, func() error {
-			return fs.DidChange(&params)
+			if err := fs.DidChange(&params); err != nil {
+				return err
+			}
+			// Beta: Parse and send diagnostics for MySQL.
+			if h.getEngineType(ctx) == store.Engine_MYSQL {
+				uri := params.TextDocument.URI
+				content, found := fs.get(uri)
+				if !found {
+					return &os.PathError{Op: "Open", Path: string(uri), Err: os.ErrNotExist}
+				}
+				err := parseMySQLStatement(string(content))
+				diagnostics := collectDiagnostics(err)
+				if err := conn.Notify(ctx, string(LSPMethodPublishDiagnostics), &lsp.PublishDiagnosticsParams{
+					URI:         uri,
+					Diagnostics: diagnostics,
+				}); err != nil {
+					return err
+				}
+			}
+			return nil
 		})
 	case LSPMethodTextDocumentDidClose:
 		var params lsp.DidCloseTextDocumentParams
@@ -91,4 +116,59 @@ func (h *Handler) handleFileSystemRequest(ctx context.Context, req *jsonrpc2.Req
 	default:
 		return "", false, errors.Errorf("unknown file system request method: %q", req.Method)
 	}
+}
+
+func parseMySQLStatement(statement string) *base.SyntaxError {
+	inputStream := antlr.NewInputStream(statement)
+	lexer := parser.NewMySQLLexer(inputStream)
+	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
+
+	p := parser.NewMySQLParser(stream)
+	lexerErrorListener := &base.ParseErrorListener{
+		BaseLine: 0,
+	}
+	lexer.RemoveErrorListeners()
+	lexer.AddErrorListener(lexerErrorListener)
+
+	parserErrorListener := &base.ParseErrorListener{
+		BaseLine: 0,
+	}
+	p.RemoveErrorListeners()
+	p.AddErrorListener(parserErrorListener)
+
+	p.BuildParseTrees = false
+
+	_ = p.Script()
+
+	if lexerErrorListener.Err != nil {
+		return lexerErrorListener.Err
+	}
+
+	if parserErrorListener.Err != nil {
+		return parserErrorListener.Err
+	}
+	return nil
+}
+
+func collectDiagnostics(err *base.SyntaxError) []lsp.Diagnostic {
+	if err == nil {
+		return []lsp.Diagnostic{}
+	}
+	syntaxDiagnostic := lsp.Diagnostic{
+		Range: lsp.Range{
+			Start: lsp.Position{
+				Line:      err.Line,
+				Character: err.Column,
+			},
+			End: lsp.Position{
+				Line:      err.Line,
+				Character: err.Column,
+			},
+		},
+		Severity: lsp.Error,
+		Source:   "Syntax check",
+		Message:  err.Message,
+	}
+
+	return []lsp.Diagnostic{syntaxDiagnostic}
 }
