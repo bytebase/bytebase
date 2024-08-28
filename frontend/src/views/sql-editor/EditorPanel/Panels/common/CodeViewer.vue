@@ -7,7 +7,7 @@
         <span>{{ title }}</span>
       </div>
     </NButton>
-    <NCheckbox v-if="!formatted.error" v-model:checked="format">
+    <NCheckbox v-model:checked="format">
       {{ $t("sql-editor.format") }}
     </NCheckbox>
   </div>
@@ -68,6 +68,8 @@ const formatted = computedAsync(
 );
 
 const content = computed(() => {
-  return format.value ? formatted.value.data : props.code;
+  return format.value && !formatted.value.error
+    ? formatted.value.data
+    : props.code;
 });
 </script>
