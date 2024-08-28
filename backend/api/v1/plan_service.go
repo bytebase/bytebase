@@ -490,24 +490,26 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 							return nil
 						}
 
+						// The target backup database name.
 						// Format: instances/{instance}/databases/{database}
-						var databaseResourceName *string
+						var backupDatabaseName *string
 						if config.ChangeDatabaseConfig.PreUpdateBackupDetail == nil {
 							if payload.PreUpdateBackupDetail.Database != "" {
 								emptyValue := ""
-								databaseResourceName = &emptyValue
+								backupDatabaseName = &emptyValue
 							}
 						} else {
 							if config.ChangeDatabaseConfig.PreUpdateBackupDetail.Database != payload.PreUpdateBackupDetail.Database {
-								databaseResourceName = &config.ChangeDatabaseConfig.PreUpdateBackupDetail.Database
+								backupDatabaseName = &config.ChangeDatabaseConfig.PreUpdateBackupDetail.Database
 							}
 						}
-						if databaseResourceName != nil {
-							// Check if backup is available for the database.
-							if *databaseResourceName != "" {
-								instanceID, databaseName, err := common.GetInstanceDatabaseID(*databaseResourceName)
+						if backupDatabaseName != nil {
+							if *backupDatabaseName != "" {
+								// If backup is enabled, we need to check if the backup is available for the source database. AKA, the task's target database.
+								sourceDatabaseName := config.ChangeDatabaseConfig.Target
+								instanceID, databaseName, err := common.GetInstanceDatabaseID(sourceDatabaseName)
 								if err != nil {
-									return errors.Wrapf(err, "failed to get instance database id from %q", *databaseResourceName)
+									return errors.Wrapf(err, "failed to get instance database id from %q", sourceDatabaseName)
 								}
 								instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
 								if err != nil {
@@ -533,7 +535,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 							}
 
 							taskPatch.PreUpdateBackupDetail = &storepb.PreUpdateBackupDetail{
-								Database: *databaseResourceName,
+								Database: *backupDatabaseName,
 							}
 							doUpdate = true
 						}
