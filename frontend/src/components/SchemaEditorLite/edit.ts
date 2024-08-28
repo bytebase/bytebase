@@ -1,3 +1,4 @@
+import { MD5 } from "crypto-js";
 import { pull, pullAt } from "lodash-es";
 import type {
   ForeignKeyMetadata,
@@ -12,10 +13,15 @@ export const upsertColumnPrimaryKey = (
 ) => {
   const pkIndex = table.indexes.findIndex((idx) => idx.primary);
   if (pkIndex < 0) {
+    // Generate a unique pk name.
+    // Format: table_pk_{md5(table_pk_timestamp).slice(0, 6)}, e.g. test_pk_d4402d
+    const nameParts: string[] = [table.name, "pk"];
+    const rawName = nameParts.join("_").toLowerCase();
+    const name = `${rawName}_${MD5(`${rawName}_${Date.now()}`).toString().slice(0, 6)}`;
     table.indexes.push(
       IndexMetadata.fromPartial({
+        name,
         primary: true,
-        name: "PRIMARY",
         unique: true,
         expressions: [columnName],
       })
@@ -25,6 +31,7 @@ export const upsertColumnPrimaryKey = (
     upsertArray(pk.expressions, columnName);
   }
 };
+
 export const removeColumnPrimaryKey = (
   table: TableMetadata,
   columnName: string
@@ -39,6 +46,7 @@ export const removeColumnPrimaryKey = (
     pullAt(table.indexes, pkIndex);
   }
 };
+
 export const upsertColumnFromForeignKey = (
   fk: ForeignKeyMetadata,
   columnName: string,
@@ -52,6 +60,7 @@ export const upsertColumnFromForeignKey = (
     fk.referencedColumns[position] = referencedColumnName;
   }
 };
+
 export const removeColumnFromForeignKey = (
   table: TableMetadata,
   fk: ForeignKeyMetadata,
@@ -70,6 +79,7 @@ export const removeColumnFromForeignKey = (
     }
   }
 };
+
 export const removeColumnFromAllForeignKeys = (
   table: TableMetadata,
   columnName: string

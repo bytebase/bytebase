@@ -102,6 +102,7 @@
 
 <script lang="ts" setup>
 import { useElementSize } from "@vueuse/core";
+import { MD5 } from "crypto-js";
 import { cloneDeep, debounce, escape, head } from "lodash-es";
 import { MoreHorizontalIcon, CopyIcon } from "lucide-vue-next";
 import type { TreeOption } from "naive-ui";
@@ -651,6 +652,10 @@ const handleDuplicateTable = (treeNode: TreeNodeForTable) => {
 
   const newTable = cloneDeep(table);
   newTable.name = getDuplicateName(targetName);
+  // As index names should be unique, we need to generate new names for them.
+  for (const index of newTable.indexes) {
+    index.name = `${index.name}_${MD5(`${newTable.name}_${Date.now()}`).toString().slice(0, 6)}`;
+  }
   schema.tables.push(newTable);
   markEditStatus(
     db,
