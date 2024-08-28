@@ -1,6 +1,6 @@
 <template>
   <div
-    class="flex justify-between items-center box-border text-gray-500 text-sm border-b pr-2 pt-0.5"
+    class="flex justify-between items-center box-border text-gray-500 text-sm border-b pr-2 pt-0.5 gap-1"
   >
     <div class="relative flex flex-1 flex-nowrap overflow-hidden h-[36px]">
       <Draggable
