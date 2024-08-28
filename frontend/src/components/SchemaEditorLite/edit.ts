@@ -14,7 +14,7 @@ export const upsertColumnPrimaryKey = (
   const pkIndex = table.indexes.findIndex((idx) => idx.primary);
   if (pkIndex < 0) {
     // Generate a unique pk name.
-    // Format: table_pk_{md5(table + pk).slice(0, 6)}, e.g. test_pk_d4402d
+    // Format: table_pk_{md5(table_pk_timestamp).slice(0, 6)}, e.g. test_pk_d4402d
     const nameParts: string[] = [table.name, "pk"];
     const rawName = nameParts.join("_").toLowerCase();
     const name = `${rawName}_${MD5(`${rawName}_${Date.now()}`).toString().slice(0, 6)}`;
