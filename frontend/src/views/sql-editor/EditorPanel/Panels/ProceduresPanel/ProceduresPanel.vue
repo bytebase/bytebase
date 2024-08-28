@@ -87,7 +87,7 @@ const metadata = computed(() => {
   const [name, position] = extractKeyWithPosition(
     viewState.value?.detail?.procedure ?? ""
   );
-  const procedure = schema?.functions.find(
+  const procedure = schema?.procedures.find(
     (p, i) => p.name === name && i === position
   );
   return { database, schema, procedure };
