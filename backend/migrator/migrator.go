@@ -564,7 +564,13 @@ func backfillOracleSchema(ctx context.Context, stores *store.Store) error {
 		if err != nil {
 			return err
 		}
+		if dbSchema == nil {
+			continue
+		}
 		dbMetadata := dbSchema.GetMetadata()
+		if dbMetadata == nil {
+			continue
+		}
 		for _, schema := range dbMetadata.Schemas {
 			schema.Name = ""
 		}
