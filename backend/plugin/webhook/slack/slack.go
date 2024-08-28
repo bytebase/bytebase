@@ -8,7 +8,6 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
-	"strings"
 
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
@@ -191,10 +190,10 @@ func postDirectMessage(webhookCtx webhook.Context) {
 			err := func() error {
 				userID, err := p.lookupByEmail(ctx, u.Email)
 				if err != nil {
-					if strings.Contains(err.Error(), "users_not_found") {
-						return nil
-					}
 					return errors.Wrapf(err, "failed to lookup user")
+				}
+				if userID == "" {
+					return nil
 				}
 				channelID, err := p.openConversation(ctx, userID)
 				if err != nil {

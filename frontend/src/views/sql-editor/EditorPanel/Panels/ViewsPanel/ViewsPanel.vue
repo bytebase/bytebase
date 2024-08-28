@@ -30,24 +30,18 @@
       @click="select"
     />
 
-    <template v-if="metadata.view">
-      <CodeViewer
-        :db="database"
-        :title="metadata.view.name"
-        :code="metadata.view.definition"
-        @back="deselect"
-      >
-        <template #title-icon>
-          <ViewIcon class="w-4 h-4" />
-        </template>
-      </CodeViewer>
-    </template>
+    <ViewDetail
+      v-if="metadata.view"
+      :db="database"
+      :database="metadata.database"
+      :schema="metadata.schema"
+      :view="metadata.view"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, reactive } from "vue";
-import { ViewIcon } from "@/components/Icon";
 import { SearchBox } from "@/components/v2";
 import {
   useConnectionOfCurrentSQLEditorTab,
@@ -61,7 +55,8 @@ import {
 } from "@/types/proto/v1/database_service";
 import DatabaseChooser from "@/views/sql-editor/EditorCommon/DatabaseChooser.vue";
 import { useEditorPanelContext } from "../../context";
-import { SchemaSelectToolbar, CodeViewer } from "../common";
+import { SchemaSelectToolbar } from "../common";
+import ViewDetail from "./ViewDetail.vue";
 import ViewsTable from "./ViewsTable.vue";
 
 const { database } = useConnectionOfCurrentSQLEditorTab();
@@ -94,12 +89,6 @@ const select = (selected: {
 }) => {
   updateViewState({
     detail: { view: selected.view.name },
-  });
-};
-
-const deselect = () => {
-  updateViewState({
-    detail: {},
   });
 };
 </script>

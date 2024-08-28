@@ -32,6 +32,7 @@ import { Engine } from "@/types/proto/v1/common";
 import type {
   SchemaMetadata,
   TableMetadata,
+  ViewMetadata,
 } from "@/types/proto/v1/database_service";
 import { DataSource, DataSourceType } from "@/types/proto/v1/instance_service";
 import {
@@ -43,6 +44,7 @@ import {
   generateSimpleSelectAllStatement,
   generateSimpleUpdateStatement,
   instanceV1HasAlterSchema,
+  keyForDependentColumn,
   keyForFunction,
   keyForProcedure,
   sortByDictionary,
@@ -165,6 +167,7 @@ export const useActions = () => {
       "column",
       "external-table",
       "view",
+      "dependent-column",
       "procedure",
       "function",
       "index",
@@ -216,6 +219,21 @@ export const useActions = () => {
             }
           }
         }
+        if (mockType === "column" || mockType === "dependent-column") {
+          const view = viewForNode(node);
+          if (typeof view !== "undefined") {
+            vs.detail = { view: view.name };
+            if (mockType === "column") {
+              vs.detail.column = head(view.columns)?.name;
+            }
+            if (mockType === "dependent-column") {
+              const dep = head(view.dependentColumns);
+              if (dep) {
+                vs.detail.dependentColumn = keyForDependentColumn(dep);
+              }
+            }
+          }
+        }
         updateViewState(vs);
       } catch {
         // nothing
@@ -233,6 +251,7 @@ export const useActions = () => {
       | "index"
       | "foreign-key"
       | "partition-table"
+      | "dependent-column"
     >;
     updateViewState({
       view: typeToView(type),
@@ -248,24 +267,36 @@ export const useActions = () => {
     ) {
       detail.table = (target as NodeTarget<"table">).table.name;
     }
-    if (type === "column" && node.parent?.parent?.meta.type === "table") {
-      detail.table = (target as NodeTarget<"table">).table.name;
-      detail.column = (target as NodeTarget<"column">).column.name;
-    }
-    if (
-      type === "column" &&
-      node.parent?.parent?.meta.type === "external-table"
-    ) {
-      detail.externalTable = (
-        target as NodeTarget<"external-table">
-      ).externalTable.name;
-      detail.column = (target as NodeTarget<"column">).column.name;
-      updateViewState({
-        view: "EXTERNAL_TABLES",
-      });
+    if (type === "column") {
+      const parentType = node.parent?.parent?.meta.type;
+      if (parentType === "table") {
+        detail.table = (target as NodeTarget<"table">).table.name;
+        detail.column = (target as NodeTarget<"column">).column.name;
+      }
+      if (parentType === "external-table") {
+        detail.externalTable = (
+          target as NodeTarget<"external-table">
+        ).externalTable.name;
+        detail.column = (target as NodeTarget<"column">).column.name;
+        updateViewState({
+          view: "EXTERNAL_TABLES",
+        });
+      }
+      if (parentType === "view") {
+        detail.view = (target as NodeTarget<"view">).view.name;
+        detail.column = (target as NodeTarget<"column">).column.name;
+        updateViewState({
+          view: "VIEWS",
+        });
+      }
     }
     if (type === "view") {
       detail.view = (target as NodeTarget<"view">).view.name;
+    }
+    if (type === "dependent-column") {
+      detail.dependentColumn = keyForDependentColumn(
+        (target as NodeTarget<"dependent-column">).dependentColumn
+      );
     }
     if (type === "procedure") {
       detail.procedure = keyForProcedure(
@@ -588,6 +619,14 @@ const tableForNode = (
     return (node.meta.target as NodeTarget<"table">).table;
   }
   return tableForNode(node.parent);
+};
+
+const viewForNode = (node: TreeNode | undefined): ViewMetadata | undefined => {
+  if (!node) return undefined;
+  if (node.meta.type === "view") {
+    return (node.meta.target as NodeTarget<"view">).view;
+  }
+  return viewForNode(node.parent);
 };
 
 const tableOrViewNameForNode = (node: TreeNode) => {

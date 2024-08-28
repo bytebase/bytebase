@@ -98,8 +98,6 @@ const columnList = computed((): DataTableColumn<ComposedIssue>[] => {
       key: "title",
       title: t("issue.table.name"),
       ellipsis: true,
-      resizable: true,
-      minWidth: 300,
       render: (issue) => {
         const labels = getValidIssueLabels(
           issue.labels,
@@ -108,7 +106,7 @@ const columnList = computed((): DataTableColumn<ComposedIssue>[] => {
         return (
           <div class="flex items-center space-x-2">
             <IssueStatusIconWithTaskSummary issue={issue} />
-            <div class="whitespace-nowrap text-control">
+            <div class="whitespace-nowrap text-control text-opacity-80">
               {props.mode == "ALL"
                 ? `${issue.projectEntity.key}-${extractIssueUID(issue.name)}`
                 : `#${extractIssueUID(issue.name)}`}

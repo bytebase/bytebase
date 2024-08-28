@@ -331,3 +331,12 @@ export const isNullOrUndefined = (value: any) => {
 export const onlyAllowNumber = (value: string) => {
   return value === "" || /^\d+$/.test(value);
 };
+
+export const allEqual = <T>(...values: T[]) => {
+  if (values.length <= 1) return true;
+  const first = values[0];
+  for (let i = 1; i < values.length; i++) {
+    if (values[i] !== first) return false;
+  }
+  return true;
+};
