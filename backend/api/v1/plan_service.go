@@ -503,31 +503,33 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 							}
 						}
 						if databaseResourceName != nil {
-							instanceID, databaseName, err := common.GetInstanceDatabaseID(*databaseResourceName)
-							if err != nil {
-								return errors.Wrapf(err, "failed to get instance database id from %q", *databaseResourceName)
-							}
-							instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
-							if err != nil {
-								return errors.Wrapf(err, "failed to get instance %s", instanceID)
-							}
-							if instance == nil {
-								return status.Errorf(codes.NotFound, "instance %q not found", instanceID)
-							}
-							database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-								InstanceID:          &instanceID,
-								DatabaseName:        &databaseName,
-								IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
-							})
-							if err != nil {
-								return errors.Wrapf(err, "failed to get database %s", databaseName)
-							}
-							if database == nil {
-								return status.Errorf(codes.NotFound, "database %q not found", databaseName)
-							}
 							// Check if backup is available for the database.
-							if ok := isBackupAvailable(ctx, s.store, instance, database); !ok {
-								return status.Errorf(codes.FailedPrecondition, "backup is not available for database %q", databaseName)
+							if *databaseResourceName != "" {
+								instanceID, databaseName, err := common.GetInstanceDatabaseID(*databaseResourceName)
+								if err != nil {
+									return errors.Wrapf(err, "failed to get instance database id from %q", *databaseResourceName)
+								}
+								instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &instanceID})
+								if err != nil {
+									return errors.Wrapf(err, "failed to get instance %s", instanceID)
+								}
+								if instance == nil {
+									return status.Errorf(codes.NotFound, "instance %q not found", instanceID)
+								}
+								database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+									InstanceID:          &instanceID,
+									DatabaseName:        &databaseName,
+									IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
+								})
+								if err != nil {
+									return errors.Wrapf(err, "failed to get database %s", databaseName)
+								}
+								if database == nil {
+									return status.Errorf(codes.NotFound, "database %q not found", databaseName)
+								}
+								if ok := isBackupAvailable(ctx, s.store, instance, database); !ok {
+									return status.Errorf(codes.FailedPrecondition, "backup is not available for database %q", databaseName)
+								}
 							}
 
 							taskPatch.PreUpdateBackupDetail = &storepb.PreUpdateBackupDetail{
