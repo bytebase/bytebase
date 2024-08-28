@@ -20,6 +20,10 @@ const (
 	maxCommentLength = 1000
 )
 
+func init() {
+	base.RegisterGenerateRestoreSQL(storepb.Engine_POSTGRES, GenerateRestoreSQL)
+}
+
 func GenerateRestoreSQL(ctx context.Context, rCtx base.RestoreContext, statement string, backupItem *storepb.PriorBackupDetail_Item) (string, error) {
 	originalSQL, err := extractSingleSQL(statement, backupItem)
 	if err != nil {
@@ -61,19 +65,23 @@ func doGenerate(ctx context.Context, rCtx base.RestoreContext, sqlForComment str
 		return "", errors.Errorf("database metadata not found for %s", sourceDatabase)
 	}
 
-	schemaMetadata := metadata.GetSchema(backupItem.SourceTable.Schema)
+	schema := backupItem.SourceTable.Schema
+	if schema == "" {
+		schema = "public"
+	}
+	schemaMetadata := metadata.GetSchema(schema)
 	if schemaMetadata == nil {
-		return "", errors.Errorf("schema metadata not found for %s", backupItem.SourceTable.Schema)
+		return "", errors.Errorf("schema metadata not found for %s", schema)
 	}
 
 	tableMetadata := schemaMetadata.GetTable(backupItem.SourceTable.Table)
 	if tableMetadata == nil {
-		return "", errors.Errorf("table metadata not found for %s.%s", backupItem.SourceTable.Schema, backupItem.SourceTable.Table)
+		return "", errors.Errorf("table metadata not found for %s.%s", schema, backupItem.SourceTable.Table)
 	}
 
 	pk := tableMetadata.GetPrimaryKey()
 	if pk == nil {
-		return "", errors.Errorf("primary key not found for %s.%s", backupItem.SourceTable.Schema, backupItem.SourceTable.Table)
+		return "", errors.Errorf("primary key not found for %s.%s", schema, backupItem.SourceTable.Table)
 	}
 
 	g := &generator{
@@ -81,7 +89,7 @@ func doGenerate(ctx context.Context, rCtx base.RestoreContext, sqlForComment str
 		rCtx:           rCtx,
 		backupSchema:   backupItem.TargetTable.Schema,
 		backupTable:    backupItem.TargetTable.Table,
-		originalSchema: backupItem.SourceTable.Schema,
+		originalSchema: schema,
 		originalTable:  backupItem.SourceTable.Table,
 		pk:             pk,
 		isFirst:        true,

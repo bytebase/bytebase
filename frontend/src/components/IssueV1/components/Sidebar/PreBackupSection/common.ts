@@ -34,7 +34,7 @@ const PRE_BACKUP_AVAILABLE_ENGINES = [
   Engine.POSTGRES,
 ];
 
-const ROLLBACK_AVAILABLE_ENGINES = [Engine.MYSQL];
+const ROLLBACK_AVAILABLE_ENGINES = [Engine.MYSQL, Engine.POSTGRES];
 
 export const usePreBackupContext = () => {
   const { t } = useI18n();
