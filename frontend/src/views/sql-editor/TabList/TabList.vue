@@ -1,6 +1,6 @@
 <template>
   <div
-    class="flex justify-between items-center box-border text-gray-500 text-sm border-b pr-2 pt-0.5"
+    class="flex justify-between items-center box-border text-gray-500 text-sm border-b pr-2 pt-0.5 gap-1"
   >
     <div class="relative flex flex-1 flex-nowrap overflow-hidden h-[36px]">
       <Draggable
@@ -35,10 +35,11 @@
         </template>
       </Draggable>
 
-      <button class="px-1" @click="handleAddTab">
-        <heroicons-solid:plus
-          class="h-6 w-6 p-1 hover:bg-gray-200 rounded-md"
-        />
+      <button
+        class="bg-gray-200/20 hover:bg-accent/10 ml-1 py-1 px-1.5 border-t border-x rounded-t hover:border-accent"
+        @click="handleAddTab"
+      >
+        <PlusIcon class="h-5 w-5" stroke-width="2.5" />
       </button>
     </div>
 
@@ -53,6 +54,7 @@
 
 <script lang="ts" setup>
 import { useResizeObserver } from "@vueuse/core";
+import { PlusIcon } from "lucide-vue-next";
 import { useDialog } from "naive-ui";
 import { storeToRefs } from "pinia";
 import scrollIntoView from "scroll-into-view-if-needed";
