@@ -7,6 +7,7 @@
       <NRadioGroup
         :value="memberType"
         class="space-x-2"
+        :disabled="disabled"
         @update:value="onTypeChange"
       >
         <NRadio value="USERS">{{ $t("common.users") }}</NRadio>
@@ -25,6 +26,7 @@
         key="user-select"
         :users="memberList"
         :multiple="true"
+        :disabled="disabled"
         :include-all-users="includeAllUsers"
         :include-service-account="includeServiceAccount"
         :allowed-workspace-role-list="[]"
@@ -40,6 +42,7 @@
       <GroupSelect
         key="group-select"
         :value="memberList"
+        :disabled="disabled"
         :multiple="true"
         @update:value="onMemberListUpdate($event as string[])"
       />
@@ -69,11 +72,13 @@ const props = withDefaults(
     // We don't support mixed data.
     value: string[];
     required: boolean;
+    disabled?: boolean;
     allowChangeType?: boolean;
     includeAllUsers?: boolean;
     includeServiceAccount?: boolean;
   }>(),
   {
+    disabled: false,
     allowChangeType: true,
     includeAllUsers: false,
     includeServiceAccount: false,

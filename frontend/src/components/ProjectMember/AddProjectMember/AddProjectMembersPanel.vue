@@ -56,7 +56,7 @@ import {
 import type { ComposedProject } from "@/types";
 import { PresetRoleType } from "@/types";
 import { Binding } from "@/types/proto/v1/iam_policy";
-import { displayRoleTitle } from "@/utils";
+import { getBindingIdentifier } from "../utils";
 import AddProjectMemberForm from "./AddProjectMemberForm.vue";
 
 const props = defineProps<{
@@ -117,14 +117,10 @@ const handleRemove = (index: number) => {
   state.bindings.splice(index, 1);
 };
 
-const getBindingKey = (binding: Binding): string => {
-  return binding.condition?.title ?? displayRoleTitle(binding.role);
-};
-
 const mergePolicyBinding = () => {
   const bindingMap = new Map<string, Binding>();
   for (const binding of state.bindings) {
-    const key = getBindingKey(binding);
+    const key = getBindingIdentifier(binding);
     if (!bindingMap.has(key)) {
       bindingMap.set(key, binding);
     } else {
@@ -134,7 +130,7 @@ const mergePolicyBinding = () => {
 
   const policy = cloneDeep(iamPolicy.value);
   for (const binding of policy.bindings) {
-    const key = getBindingKey(binding);
+    const key = getBindingIdentifier(binding);
     if (bindingMap.has(key)) {
       binding.members = [
         ...new Set([
