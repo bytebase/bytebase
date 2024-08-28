@@ -116,7 +116,7 @@ func (g *generator) EnterDeletestmt(ctx *parser.DeletestmtContext) {
 	}
 }
 
-func (g *generator) EnterUpdateStmt(ctx *parser.UpdatestmtContext) {
+func (g *generator) EnterUpdatestmt(ctx *parser.UpdatestmtContext) {
 	if isTopLevel(ctx.GetParent()) && g.isFirst {
 		g.isFirst = false
 
@@ -184,7 +184,7 @@ type originalSQLExtractor struct {
 	endPos      *storepb.Position
 }
 
-func (l *originalSQLExtractor) EnterUpdateStmt(ctx *parser.UpdatestmtContext) {
+func (l *originalSQLExtractor) EnterUpdatestmt(ctx *parser.UpdatestmtContext) {
 	if isTopLevel(ctx.GetParent()) {
 		if inRange(&storepb.Position{
 			Line:   int32(ctx.GetStart().GetLine()),
