@@ -34,6 +34,9 @@ const (
 	LSPMethodTextDocumentDidChange Method = "textDocument/didChange"
 	LSPMethodTextDocumentDidClose  Method = "textDocument/didClose"
 	LSPMethodTextDocumentDidSave   Method = "textDocument/didSave"
+
+	// See https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocument_publishDiagnostics.
+	LSPMethodPublishDiagnostics Method = "textDocument/publishDiagnostics"
 )
 
 // NewHandler creates a new Language Server Protocol handler.
@@ -263,7 +266,7 @@ func (h *Handler) handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonrpc2
 		return h.handleTextDocumentCompletion(ctx, conn, req, params)
 	default:
 		if isFileSystemRequest(req.Method) {
-			_, _, err := h.handleFileSystemRequest(ctx, req)
+			_, _, err := h.handleFileSystemRequest(ctx, conn, req)
 			return nil, err
 		}
 		return nil, &jsonrpc2.Error{Code: jsonrpc2.CodeMethodNotFound, Message: fmt.Sprintf("method not supported: %s", req.Method)}
