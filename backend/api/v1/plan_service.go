@@ -336,7 +336,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 		UpdaterID: user.ID,
 	}
 
-	var doUpdateSheet bool
+	var planCheckRunsTrigger bool
 	for _, path := range request.UpdateMask.Paths {
 		switch path {
 		case "title":
@@ -724,10 +724,14 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 				}
 			}
 
+			var doUpdateSheet bool
 			for _, taskPatch := range taskPatchList {
+				// If pre-backup detail has been updated, we need to rerun the plan check runs.
+				if taskPatch.PreUpdateBackupDetail != nil {
+					planCheckRunsTrigger = true
+				}
 				if taskPatch.SheetID != nil {
 					doUpdateSheet = true
-					break
 				}
 			}
 
@@ -743,6 +747,11 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 						}
 					}
 				}
+			}
+
+			// If sheet is updated, we need to rerun the plan check runs.
+			if doUpdateSheet {
+				planCheckRunsTrigger = true
 			}
 
 			// Check project setting for modify statement.
@@ -804,7 +813,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 		return nil, status.Errorf(codes.NotFound, "updated plan %q not found", request.Plan.Name)
 	}
 
-	if doUpdateSheet {
+	if planCheckRunsTrigger {
 		planCheckRuns, err := getPlanCheckRunsFromPlan(ctx, s.store, updatedPlan)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to get plan check runs for plan, error: %v", err)
