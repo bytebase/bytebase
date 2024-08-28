@@ -39,7 +39,7 @@
         class="bg-gray-200/20 hover:bg-accent/10 ml-1 py-1 px-1.5 border-t border-x rounded-t hover:border-accent"
         @click="handleAddTab"
       >
-        <PlusIcon class="h-5 w-5" stroke="2.5px" />
+        <PlusIcon class="h-5 w-5" stroke-width="2.5" />
       </button>
     </div>
 
