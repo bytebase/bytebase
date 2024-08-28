@@ -27,7 +27,7 @@ func TestRestore(t *testing.T) {
 	tests := []restoreCase{}
 
 	const (
-		record = true
+		record = false
 	)
 	var (
 		filepath = "test-data/test_restore.yaml"
@@ -58,7 +58,7 @@ func TestRestore(t *testing.T) {
 			},
 			StartPosition: &store.Position{
 				Line:   1,
-				Column: 1,
+				Column: 0,
 			},
 			EndPosition: &store.Position{
 				Line:   1000000000,
@@ -102,6 +102,8 @@ func fixedMockDatabaseMetadataGetter(_ context.Context, _ string, database strin
 							{
 								Name:        "t_generated_pk",
 								Expressions: []string{"b"},
+								Primary:     true,
+								Unique:      true,
 							},
 						},
 					},
@@ -150,6 +152,8 @@ func fixedMockDatabaseMetadataGetter(_ context.Context, _ string, database strin
 							{
 								Name:        "test_pk",
 								Expressions: []string{"a"},
+								Primary:     true,
+								Unique:      true,
 							},
 						},
 					},

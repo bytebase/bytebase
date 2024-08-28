@@ -143,6 +143,7 @@ func (g *generator) EnterUpdatestmt(ctx *parser.UpdatestmtContext) {
 			g.err = errors.Wrapf(err, "failed to generate update statement")
 			return
 		}
+		g.result = buf.String()
 	}
 }
 
@@ -154,7 +155,7 @@ type setFieldListener struct {
 
 func (l *setFieldListener) EnterSet_clause(ctx *parser.Set_clauseContext) {
 	if ctx.Set_target() != nil {
-		l.result = append(l.result, ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx))
+		l.result = append(l.result, ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.Set_target()))
 	}
 }
 
@@ -173,7 +174,7 @@ func extractSingleSQL(statement string, backupItem *storepb.PriorBackupDetail_It
 		endPos:   backupItem.EndPosition,
 	}
 	antlr.ParseTreeWalkerDefault.Walk(l, tree.Tree)
-	return strings.Join(l.originalSQL, ";"), nil
+	return strings.Join(l.originalSQL, ";\n"), nil
 }
 
 type originalSQLExtractor struct {
