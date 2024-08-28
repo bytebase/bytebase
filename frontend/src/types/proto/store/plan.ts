@@ -12,6 +12,7 @@ import {
   vCSTypeToJSON,
   vCSTypeToNumber,
 } from "./common";
+import { PreUpdateBackupDetail } from "./plan_check_run";
 
 export const protobufPackage = "bytebase.store";
 
@@ -106,7 +107,7 @@ export interface PlanConfig_ChangeDatabaseConfig {
   schemaVersion: string;
   ghostFlags: { [key: string]: string };
   /** If set, a backup of the modified data will be created automatically before any changes are applied. */
-  preUpdateBackupDetail?: PlanConfig_ChangeDatabaseConfig_PreUpdateBackupDetail | undefined;
+  preUpdateBackupDetail?: PreUpdateBackupDetail | undefined;
 }
 
 /** Type is the database change type. */
@@ -208,14 +209,6 @@ export function planConfig_ChangeDatabaseConfig_TypeToNumber(object: PlanConfig_
 export interface PlanConfig_ChangeDatabaseConfig_GhostFlagsEntry {
   key: string;
   value: string;
-}
-
-export interface PlanConfig_ChangeDatabaseConfig_PreUpdateBackupDetail {
-  /**
-   * The database for keeping the backup data.
-   * Format: instances/{instance}/databases/{database}
-   */
-  database: string;
 }
 
 export interface PlanConfig_ExportDataConfig {
@@ -886,10 +879,7 @@ export const PlanConfig_ChangeDatabaseConfig = {
         .ldelim();
     });
     if (message.preUpdateBackupDetail !== undefined) {
-      PlanConfig_ChangeDatabaseConfig_PreUpdateBackupDetail.encode(
-        message.preUpdateBackupDetail,
-        writer.uint32(66).fork(),
-      ).ldelim();
+      PreUpdateBackupDetail.encode(message.preUpdateBackupDetail, writer.uint32(66).fork()).ldelim();
     }
     return writer;
   },
@@ -944,10 +934,7 @@ export const PlanConfig_ChangeDatabaseConfig = {
             break;
           }
 
-          message.preUpdateBackupDetail = PlanConfig_ChangeDatabaseConfig_PreUpdateBackupDetail.decode(
-            reader,
-            reader.uint32(),
-          );
+          message.preUpdateBackupDetail = PreUpdateBackupDetail.decode(reader, reader.uint32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -973,7 +960,7 @@ export const PlanConfig_ChangeDatabaseConfig = {
         }, {})
         : {},
       preUpdateBackupDetail: isSet(object.preUpdateBackupDetail)
-        ? PlanConfig_ChangeDatabaseConfig_PreUpdateBackupDetail.fromJSON(object.preUpdateBackupDetail)
+        ? PreUpdateBackupDetail.fromJSON(object.preUpdateBackupDetail)
         : undefined,
     };
   },
@@ -1002,9 +989,7 @@ export const PlanConfig_ChangeDatabaseConfig = {
       }
     }
     if (message.preUpdateBackupDetail !== undefined) {
-      obj.preUpdateBackupDetail = PlanConfig_ChangeDatabaseConfig_PreUpdateBackupDetail.toJSON(
-        message.preUpdateBackupDetail,
-      );
+      obj.preUpdateBackupDetail = PreUpdateBackupDetail.toJSON(message.preUpdateBackupDetail);
     }
     return obj;
   },
@@ -1029,7 +1014,7 @@ export const PlanConfig_ChangeDatabaseConfig = {
     );
     message.preUpdateBackupDetail =
       (object.preUpdateBackupDetail !== undefined && object.preUpdateBackupDetail !== null)
-        ? PlanConfig_ChangeDatabaseConfig_PreUpdateBackupDetail.fromPartial(object.preUpdateBackupDetail)
+        ? PreUpdateBackupDetail.fromPartial(object.preUpdateBackupDetail)
         : undefined;
     return message;
   },
@@ -1112,70 +1097,6 @@ export const PlanConfig_ChangeDatabaseConfig_GhostFlagsEntry = {
     const message = createBasePlanConfig_ChangeDatabaseConfig_GhostFlagsEntry();
     message.key = object.key ?? "";
     message.value = object.value ?? "";
-    return message;
-  },
-};
-
-function createBasePlanConfig_ChangeDatabaseConfig_PreUpdateBackupDetail(): PlanConfig_ChangeDatabaseConfig_PreUpdateBackupDetail {
-  return { database: "" };
-}
-
-export const PlanConfig_ChangeDatabaseConfig_PreUpdateBackupDetail = {
-  encode(
-    message: PlanConfig_ChangeDatabaseConfig_PreUpdateBackupDetail,
-    writer: _m0.Writer = _m0.Writer.create(),
-  ): _m0.Writer {
-    if (message.database !== "") {
-      writer.uint32(10).string(message.database);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): PlanConfig_ChangeDatabaseConfig_PreUpdateBackupDetail {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBasePlanConfig_ChangeDatabaseConfig_PreUpdateBackupDetail();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.database = reader.string();
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): PlanConfig_ChangeDatabaseConfig_PreUpdateBackupDetail {
-    return { database: isSet(object.database) ? globalThis.String(object.database) : "" };
-  },
-
-  toJSON(message: PlanConfig_ChangeDatabaseConfig_PreUpdateBackupDetail): unknown {
-    const obj: any = {};
-    if (message.database !== "") {
-      obj.database = message.database;
-    }
-    return obj;
-  },
-
-  create(
-    base?: DeepPartial<PlanConfig_ChangeDatabaseConfig_PreUpdateBackupDetail>,
-  ): PlanConfig_ChangeDatabaseConfig_PreUpdateBackupDetail {
-    return PlanConfig_ChangeDatabaseConfig_PreUpdateBackupDetail.fromPartial(base ?? {});
-  },
-  fromPartial(
-    object: DeepPartial<PlanConfig_ChangeDatabaseConfig_PreUpdateBackupDetail>,
-  ): PlanConfig_ChangeDatabaseConfig_PreUpdateBackupDetail {
-    const message = createBasePlanConfig_ChangeDatabaseConfig_PreUpdateBackupDetail();
-    message.database = object.database ?? "";
     return message;
   },
 };

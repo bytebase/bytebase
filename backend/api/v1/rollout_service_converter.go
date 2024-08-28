@@ -235,9 +235,9 @@ func convertPlanConfigCreateDatabaseConfig(c *v1pb.Plan_CreateDatabaseConfig) *s
 
 func convertPlanSpecChangeDatabaseConfig(config *v1pb.Plan_Spec_ChangeDatabaseConfig) *storepb.PlanConfig_Spec_ChangeDatabaseConfig {
 	c := config.ChangeDatabaseConfig
-	var preUpdateBackupDetail *storepb.PlanConfig_ChangeDatabaseConfig_PreUpdateBackupDetail
+	var preUpdateBackupDetail *storepb.PreUpdateBackupDetail
 	if c.PreUpdateBackupDetail != nil && c.GetPreUpdateBackupDetail().GetDatabase() != "" {
-		preUpdateBackupDetail = &storepb.PlanConfig_ChangeDatabaseConfig_PreUpdateBackupDetail{
+		preUpdateBackupDetail = &storepb.PreUpdateBackupDetail{
 			Database: c.GetPreUpdateBackupDetail().GetDatabase(),
 		}
 	}

@@ -724,14 +724,14 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 				}
 			}
 
+			var doUpdateSheet bool
 			for _, taskPatch := range taskPatchList {
+				// If pre-backup detail has been updated, we need to rerun the plan check runs.
 				if taskPatch.PreUpdateBackupDetail != nil {
 					planCheckRunsTrigger = true
-					break
 				}
 				if taskPatch.SheetID != nil {
-					planCheckRunsTrigger = true
-					break
+					doUpdateSheet = true
 				}
 			}
 
@@ -742,15 +742,20 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 					if oldSpec.GetChangeDatabaseConfig() != nil && specPatch.GetChangeDatabaseConfig() != nil {
 						oldConfig, newConfig := oldSpec.GetChangeDatabaseConfig(), specPatch.GetChangeDatabaseConfig()
 						if oldConfig.Sheet != newConfig.Sheet {
-							planCheckRunsTrigger = true
+							doUpdateSheet = true
 							break
 						}
 					}
 				}
 			}
 
+			// If sheet is updated, we need to rerun the plan check runs.
+			if doUpdateSheet {
+				planCheckRunsTrigger = true
+			}
+
 			// Check project setting for modify statement.
-			if len(taskPatchList) > 0 && planCheckRunsTrigger && !project.Setting.AllowModifyStatement {
+			if len(taskPatchList) > 0 && doUpdateSheet && !project.Setting.AllowModifyStatement {
 				return nil, status.Errorf(codes.FailedPrecondition, "modify statement is not allowed for project %s", project.Title)
 			}
 
@@ -773,7 +778,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 				}
 			}
 
-			if issue != nil && planCheckRunsTrigger {
+			if issue != nil && doUpdateSheet {
 				if err := func() error {
 					issue, err := s.store.UpdateIssueV2(ctx, issue.UID, &store.UpdateIssueMessage{
 						PayloadUpsert: &storepb.IssuePayload{

@@ -5,6 +5,7 @@ package bytebase.store;
 import "google/api/field_behavior.proto";
 import "google/protobuf/timestamp.proto";
 import "store/common.proto";
+import "store/plan_check_run.proto";
 
 option go_package = "generated-go/store";
 
@@ -97,11 +98,6 @@ message PlanConfig {
 
     map<string, string> ghost_flags = 7;
 
-    message PreUpdateBackupDetail {
-      // The database for keeping the backup data.
-      // Format: instances/{instance}/databases/{database}
-      string database = 1;
-    }
     // If set, a backup of the modified data will be created automatically before any changes are applied.
     optional PreUpdateBackupDetail pre_update_backup_detail = 8;
   }
