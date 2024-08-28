@@ -874,6 +874,13 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 		return nil, status.Errorf(codes.Internal, "failed to list users by email %s: %v", email, err)
 	}
 	if user != nil {
+		if user.MemberDeleted {
+			// Undelete the user when login via SSO.
+			user, err = s.store.UpdateUser(ctx, user, &store.UpdateUserMessage{Delete: &undeletePatch}, api.SystemBotID)
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to undelete user: %v", err)
+			}
+		}
 		return user, nil
 	}
 
