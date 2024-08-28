@@ -822,61 +822,6 @@
         
           
           <li>
-            <a href="#store%2fplan.proto">store/plan.proto</a>
-            <ul>
-              
-                <li>
-                  <a href="#bytebase.store.PlanConfig"><span class="badge">M</span>PlanConfig</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.PlanConfig.ChangeDatabaseConfig"><span class="badge">M</span>PlanConfig.ChangeDatabaseConfig</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.PlanConfig.ChangeDatabaseConfig.GhostFlagsEntry"><span class="badge">M</span>PlanConfig.ChangeDatabaseConfig.GhostFlagsEntry</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.PlanConfig.ChangeDatabaseConfig.PreUpdateBackupDetail"><span class="badge">M</span>PlanConfig.ChangeDatabaseConfig.PreUpdateBackupDetail</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.PlanConfig.CreateDatabaseConfig"><span class="badge">M</span>PlanConfig.CreateDatabaseConfig</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.PlanConfig.CreateDatabaseConfig.LabelsEntry"><span class="badge">M</span>PlanConfig.CreateDatabaseConfig.LabelsEntry</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.PlanConfig.ExportDataConfig"><span class="badge">M</span>PlanConfig.ExportDataConfig</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.PlanConfig.Spec"><span class="badge">M</span>PlanConfig.Spec</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.PlanConfig.Step"><span class="badge">M</span>PlanConfig.Step</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.store.PlanConfig.VCSSource"><span class="badge">M</span>PlanConfig.VCSSource</a>
-                </li>
-              
-              
-                <li>
-                  <a href="#bytebase.store.PlanConfig.ChangeDatabaseConfig.Type"><span class="badge">E</span>PlanConfig.ChangeDatabaseConfig.Type</a>
-                </li>
-              
-              
-              
-            </ul>
-          </li>
-        
-          
-          <li>
             <a href="#store%2fplan_check_run.proto">store/plan_check_run.proto</a>
             <ul>
               
@@ -915,6 +860,57 @@
               
                 <li>
                   <a href="#bytebase.store.PlanCheckRunResult.Result.Status"><span class="badge">E</span>PlanCheckRunResult.Result.Status</a>
+                </li>
+              
+              
+              
+            </ul>
+          </li>
+        
+          
+          <li>
+            <a href="#store%2fplan.proto">store/plan.proto</a>
+            <ul>
+              
+                <li>
+                  <a href="#bytebase.store.PlanConfig"><span class="badge">M</span>PlanConfig</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.PlanConfig.ChangeDatabaseConfig"><span class="badge">M</span>PlanConfig.ChangeDatabaseConfig</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.PlanConfig.ChangeDatabaseConfig.GhostFlagsEntry"><span class="badge">M</span>PlanConfig.ChangeDatabaseConfig.GhostFlagsEntry</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.PlanConfig.CreateDatabaseConfig"><span class="badge">M</span>PlanConfig.CreateDatabaseConfig</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.PlanConfig.CreateDatabaseConfig.LabelsEntry"><span class="badge">M</span>PlanConfig.CreateDatabaseConfig.LabelsEntry</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.PlanConfig.ExportDataConfig"><span class="badge">M</span>PlanConfig.ExportDataConfig</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.PlanConfig.Spec"><span class="badge">M</span>PlanConfig.Spec</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.PlanConfig.Step"><span class="badge">M</span>PlanConfig.Step</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.PlanConfig.VCSSource"><span class="badge">M</span>PlanConfig.VCSSource</a>
+                </li>
+              
+              
+                <li>
+                  <a href="#bytebase.store.PlanConfig.ChangeDatabaseConfig.Type"><span class="badge">E</span>PlanConfig.ChangeDatabaseConfig.Type</a>
                 </li>
               
               
@@ -6942,527 +6938,6 @@ Format: users/{userUID}. </p></td>
     
       
       <div class="file-heading">
-        <h2 id="store/plan.proto">store/plan.proto</h2><a href="#title">Top</a>
-      </div>
-      <p></p>
-
-      
-        <h3 id="bytebase.store.PlanConfig">PlanConfig</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>steps</td>
-                  <td><a href="#bytebase.store.PlanConfig.Step">PlanConfig.Step</a></td>
-                  <td>repeated</td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>vcs_source</td>
-                  <td><a href="#bytebase.store.PlanConfig.VCSSource">PlanConfig.VCSSource</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.store.PlanConfig.ChangeDatabaseConfig">PlanConfig.ChangeDatabaseConfig</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>target</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The resource name of the target.
-Format: instances/{instance-id}/databases/{database-name}.
-Format: projects/{project}/databaseGroups/{databaseGroup}. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>sheet</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The resource name of the sheet.
-Format: projects/{project}/sheets/{sheet} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>type</td>
-                  <td><a href="#bytebase.store.PlanConfig.ChangeDatabaseConfig.Type">PlanConfig.ChangeDatabaseConfig.Type</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>schema_version</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>schema_version is parsed from VCS file name.
-It is automatically generated in the UI workflow. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>ghost_flags</td>
-                  <td><a href="#bytebase.store.PlanConfig.ChangeDatabaseConfig.GhostFlagsEntry">PlanConfig.ChangeDatabaseConfig.GhostFlagsEntry</a></td>
-                  <td>repeated</td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>pre_update_backup_detail</td>
-                  <td><a href="#bytebase.store.PlanConfig.ChangeDatabaseConfig.PreUpdateBackupDetail">PlanConfig.ChangeDatabaseConfig.PreUpdateBackupDetail</a></td>
-                  <td>optional</td>
-                  <td><p>If set, a backup of the modified data will be created automatically before any changes are applied. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.store.PlanConfig.ChangeDatabaseConfig.GhostFlagsEntry">PlanConfig.ChangeDatabaseConfig.GhostFlagsEntry</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>key</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>value</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.store.PlanConfig.ChangeDatabaseConfig.PreUpdateBackupDetail">PlanConfig.ChangeDatabaseConfig.PreUpdateBackupDetail</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>database</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The database for keeping the backup data.
-Format: instances/{instance}/databases/{database} </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.store.PlanConfig.CreateDatabaseConfig">PlanConfig.CreateDatabaseConfig</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>target</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The resource name of the instance on which the database is created.
-Format: instances/{instance} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>database</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The name of the database to create. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>table</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>table is the name of the table, if it is not empty, Bytebase should create a table after creating the database.
-For example, in MongoDB, it only creates the database when we first store data in that database. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>character_set</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>character_set is the character set of the database. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>collation</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>collation is the collation of the database. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>cluster</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>cluster is the cluster of the database. This is only applicable to ClickHouse for &#34;ON CLUSTER &lt;&lt;cluster&gt;&gt;&#34;. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>owner</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>owner is the owner of the database. This is only applicable to Postgres for &#34;WITH OWNER &lt;&lt;owner&gt;&gt;&#34;. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>backup</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>backup is the resource name of the backup.
-Format: instances/{instance}/databases/{database}/backups/{backup-name} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>environment</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The environment resource.
-Format: environments/prod where prod is the environment resource ID. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>labels</td>
-                  <td><a href="#bytebase.store.PlanConfig.CreateDatabaseConfig.LabelsEntry">PlanConfig.CreateDatabaseConfig.LabelsEntry</a></td>
-                  <td>repeated</td>
-                  <td><p>labels of the database. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.store.PlanConfig.CreateDatabaseConfig.LabelsEntry">PlanConfig.CreateDatabaseConfig.LabelsEntry</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>key</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>value</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.store.PlanConfig.ExportDataConfig">PlanConfig.ExportDataConfig</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>target</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The resource name of the target.
-Format: instances/{instance-id}/databases/{database-name} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>sheet</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The resource name of the sheet.
-Format: projects/{project}/sheets/{sheet} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>format</td>
-                  <td><a href="#bytebase.store.ExportFormat">ExportFormat</a></td>
-                  <td></td>
-                  <td><p>The format of the exported file. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>password</td>
-                  <td><a href="#string">string</a></td>
-                  <td>optional</td>
-                  <td><p>The zip password provide by users.
-Leave it empty if no needs to encrypt the zip file. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.store.PlanConfig.Spec">PlanConfig.Spec</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>earliest_allowed_time</td>
-                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
-                  <td></td>
-                  <td><p>earliest_allowed_time the earliest execution time of the change. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>id</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>A UUID4 string that uniquely identifies the Spec. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>depends_on_specs</td>
-                  <td><a href="#string">string</a></td>
-                  <td>repeated</td>
-                  <td><p>IDs of the specs that this spec depends on.
-Must be a subset of the specs in the same step. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>create_database_config</td>
-                  <td><a href="#bytebase.store.PlanConfig.CreateDatabaseConfig">PlanConfig.CreateDatabaseConfig</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>change_database_config</td>
-                  <td><a href="#bytebase.store.PlanConfig.ChangeDatabaseConfig">PlanConfig.ChangeDatabaseConfig</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>export_data_config</td>
-                  <td><a href="#bytebase.store.PlanConfig.ExportDataConfig">PlanConfig.ExportDataConfig</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.store.PlanConfig.Step">PlanConfig.Step</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>title</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Use the title if set.
-Use a generated title if empty. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>specs</td>
-                  <td><a href="#bytebase.store.PlanConfig.Spec">PlanConfig.Spec</a></td>
-                  <td>repeated</td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.store.PlanConfig.VCSSource">PlanConfig.VCSSource</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>vcs_type</td>
-                  <td><a href="#bytebase.store.VCSType">VCSType</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>vcs_connector</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Optional.
-If present, we will update the pull request for rollout status.
-Format: projects/{project-ID}/vcsConnectors/{vcs-connector} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>pull_request_url</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-
-      
-        <h3 id="bytebase.store.PlanConfig.ChangeDatabaseConfig.Type">PlanConfig.ChangeDatabaseConfig.Type</h3>
-        <p>Type is the database change type.</p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>TYPE_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>BASELINE</td>
-                <td>1</td>
-                <td><p>Used for establishing schema baseline, this is used when
-1. Onboard the database into Bytebase since Bytebase needs to know the current database schema.
-2. Had schema drift and need to re-establish the baseline.</p></td>
-              </tr>
-            
-              <tr>
-                <td>MIGRATE</td>
-                <td>2</td>
-                <td><p>Used for DDL changes including CREATE DATABASE.</p></td>
-              </tr>
-            
-              <tr>
-                <td>MIGRATE_SDL</td>
-                <td>3</td>
-                <td><p>Used for schema changes via state-based schema migration including CREATE DATABASE.</p></td>
-              </tr>
-            
-              <tr>
-                <td>MIGRATE_GHOST</td>
-                <td>4</td>
-                <td><p>Used for DDL changes using gh-ost.</p></td>
-              </tr>
-            
-              <tr>
-                <td>BRANCH</td>
-                <td>5</td>
-                <td><p>Used when restoring from a backup (the restored database branched from the original backup).</p></td>
-              </tr>
-            
-              <tr>
-                <td>DATA</td>
-                <td>6</td>
-                <td><p>Used for DML change.</p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-      
-
-      
-
-      
-    
-      
-      <div class="file-heading">
         <h2 id="store/plan_check_run.proto">store/plan_check_run.proto</h2><a href="#title">Top</a>
       </div>
       <p></p>
@@ -7885,6 +7360,502 @@ Format: instances/{instance}/databases/{database} </p></td>
                 <td>SUCCESS</td>
                 <td>3</td>
                 <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+
+      
+
+      
+    
+      
+      <div class="file-heading">
+        <h2 id="store/plan.proto">store/plan.proto</h2><a href="#title">Top</a>
+      </div>
+      <p></p>
+
+      
+        <h3 id="bytebase.store.PlanConfig">PlanConfig</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>steps</td>
+                  <td><a href="#bytebase.store.PlanConfig.Step">PlanConfig.Step</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>vcs_source</td>
+                  <td><a href="#bytebase.store.PlanConfig.VCSSource">PlanConfig.VCSSource</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.PlanConfig.ChangeDatabaseConfig">PlanConfig.ChangeDatabaseConfig</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>target</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The resource name of the target.
+Format: instances/{instance-id}/databases/{database-name}.
+Format: projects/{project}/databaseGroups/{databaseGroup}. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>sheet</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The resource name of the sheet.
+Format: projects/{project}/sheets/{sheet} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>type</td>
+                  <td><a href="#bytebase.store.PlanConfig.ChangeDatabaseConfig.Type">PlanConfig.ChangeDatabaseConfig.Type</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>schema_version</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>schema_version is parsed from VCS file name.
+It is automatically generated in the UI workflow. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>ghost_flags</td>
+                  <td><a href="#bytebase.store.PlanConfig.ChangeDatabaseConfig.GhostFlagsEntry">PlanConfig.ChangeDatabaseConfig.GhostFlagsEntry</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>pre_update_backup_detail</td>
+                  <td><a href="#bytebase.store.PreUpdateBackupDetail">PreUpdateBackupDetail</a></td>
+                  <td>optional</td>
+                  <td><p>If set, a backup of the modified data will be created automatically before any changes are applied. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.PlanConfig.ChangeDatabaseConfig.GhostFlagsEntry">PlanConfig.ChangeDatabaseConfig.GhostFlagsEntry</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>key</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>value</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.PlanConfig.CreateDatabaseConfig">PlanConfig.CreateDatabaseConfig</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>target</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The resource name of the instance on which the database is created.
+Format: instances/{instance} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>database</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of the database to create. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>table</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>table is the name of the table, if it is not empty, Bytebase should create a table after creating the database.
+For example, in MongoDB, it only creates the database when we first store data in that database. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>character_set</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>character_set is the character set of the database. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>collation</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>collation is the collation of the database. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>cluster</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>cluster is the cluster of the database. This is only applicable to ClickHouse for &#34;ON CLUSTER &lt;&lt;cluster&gt;&gt;&#34;. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>owner</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>owner is the owner of the database. This is only applicable to Postgres for &#34;WITH OWNER &lt;&lt;owner&gt;&gt;&#34;. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>backup</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>backup is the resource name of the backup.
+Format: instances/{instance}/databases/{database}/backups/{backup-name} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>environment</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The environment resource.
+Format: environments/prod where prod is the environment resource ID. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>labels</td>
+                  <td><a href="#bytebase.store.PlanConfig.CreateDatabaseConfig.LabelsEntry">PlanConfig.CreateDatabaseConfig.LabelsEntry</a></td>
+                  <td>repeated</td>
+                  <td><p>labels of the database. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.PlanConfig.CreateDatabaseConfig.LabelsEntry">PlanConfig.CreateDatabaseConfig.LabelsEntry</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>key</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>value</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.PlanConfig.ExportDataConfig">PlanConfig.ExportDataConfig</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>target</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The resource name of the target.
+Format: instances/{instance-id}/databases/{database-name} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>sheet</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The resource name of the sheet.
+Format: projects/{project}/sheets/{sheet} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>format</td>
+                  <td><a href="#bytebase.store.ExportFormat">ExportFormat</a></td>
+                  <td></td>
+                  <td><p>The format of the exported file. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>password</td>
+                  <td><a href="#string">string</a></td>
+                  <td>optional</td>
+                  <td><p>The zip password provide by users.
+Leave it empty if no needs to encrypt the zip file. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.PlanConfig.Spec">PlanConfig.Spec</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>earliest_allowed_time</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p>earliest_allowed_time the earliest execution time of the change. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>A UUID4 string that uniquely identifies the Spec. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>depends_on_specs</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
+                  <td><p>IDs of the specs that this spec depends on.
+Must be a subset of the specs in the same step. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>create_database_config</td>
+                  <td><a href="#bytebase.store.PlanConfig.CreateDatabaseConfig">PlanConfig.CreateDatabaseConfig</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>change_database_config</td>
+                  <td><a href="#bytebase.store.PlanConfig.ChangeDatabaseConfig">PlanConfig.ChangeDatabaseConfig</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>export_data_config</td>
+                  <td><a href="#bytebase.store.PlanConfig.ExportDataConfig">PlanConfig.ExportDataConfig</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.PlanConfig.Step">PlanConfig.Step</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>title</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Use the title if set.
+Use a generated title if empty. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>specs</td>
+                  <td><a href="#bytebase.store.PlanConfig.Spec">PlanConfig.Spec</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.PlanConfig.VCSSource">PlanConfig.VCSSource</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>vcs_type</td>
+                  <td><a href="#bytebase.store.VCSType">VCSType</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>vcs_connector</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Optional.
+If present, we will update the pull request for rollout status.
+Format: projects/{project-ID}/vcsConnectors/{vcs-connector} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>pull_request_url</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+
+      
+        <h3 id="bytebase.store.PlanConfig.ChangeDatabaseConfig.Type">PlanConfig.ChangeDatabaseConfig.Type</h3>
+        <p>Type is the database change type.</p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>TYPE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>BASELINE</td>
+                <td>1</td>
+                <td><p>Used for establishing schema baseline, this is used when
+1. Onboard the database into Bytebase since Bytebase needs to know the current database schema.
+2. Had schema drift and need to re-establish the baseline.</p></td>
+              </tr>
+            
+              <tr>
+                <td>MIGRATE</td>
+                <td>2</td>
+                <td><p>Used for DDL changes including CREATE DATABASE.</p></td>
+              </tr>
+            
+              <tr>
+                <td>MIGRATE_SDL</td>
+                <td>3</td>
+                <td><p>Used for schema changes via state-based schema migration including CREATE DATABASE.</p></td>
+              </tr>
+            
+              <tr>
+                <td>MIGRATE_GHOST</td>
+                <td>4</td>
+                <td><p>Used for DDL changes using gh-ost.</p></td>
+              </tr>
+            
+              <tr>
+                <td>BRANCH</td>
+                <td>5</td>
+                <td><p>Used when restoring from a backup (the restored database branched from the original backup).</p></td>
+              </tr>
+            
+              <tr>
+                <td>DATA</td>
+                <td>6</td>
+                <td><p>Used for DML change.</p></td>
               </tr>
             
           </tbody>
