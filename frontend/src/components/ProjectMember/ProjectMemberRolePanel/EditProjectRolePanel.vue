@@ -73,7 +73,8 @@
         </div>
 
         <MembersBindingSelect
-          v-model:value="state.memberList"
+          :value="binding.members"
+          :disabled="true"
           :required="true"
           :allow-change-type="false"
           :include-all-users="true"
@@ -129,6 +130,7 @@ import { State } from "@/types/proto/v1/common";
 import type { Binding } from "@/types/proto/v1/iam_policy";
 import { displayRoleTitle } from "@/utils";
 import { convertFromExpr } from "@/utils/issue/cel";
+import { getBindingIdentifier } from "../utils";
 
 const props = defineProps<{
   project: ComposedProject;
@@ -142,7 +144,6 @@ const emit = defineEmits<{
 interface LocalState {
   title: string;
   description: string;
-  memberList: string[];
   expirationTimestamp?: number;
   // Querier and exporter options.
   databaseResourceCondition?: string;
@@ -156,7 +157,6 @@ const { t } = useI18n();
 const state = reactive<LocalState>({
   title: "",
   description: "",
-  memberList: props.binding.members,
   maxRowCount: 1000,
 });
 const isLoading = ref(true);
@@ -182,7 +182,8 @@ const allowRemoveRole = () => {
 };
 
 const allowConfirm = computed(() => {
-  return state.memberList.length > 0;
+  // only allow update current single user.
+  return props.binding.members.length === 1;
 });
 
 onMounted(() => {
@@ -220,13 +221,29 @@ const handleDeleteRole = async () => {
 };
 
 const handleUpdateRole = async () => {
+  const member = props.binding.members[0];
   const newBinding = cloneDeep(props.binding);
   if (!newBinding.condition) {
     newBinding.condition = Expr.fromPartial({});
   }
   newBinding.condition.title = state.title;
   newBinding.condition.description = state.description;
-  newBinding.members = state.memberList;
+  newBinding.members = [member];
+
+  const policy = cloneDeep(iamPolicy.value);
+  const oldBindingIndex = policy.bindings.findIndex(
+    (binding) =>
+      getBindingIdentifier(binding) === getBindingIdentifier(props.binding)
+  );
+
+  if (oldBindingIndex >= 0) {
+    policy.bindings[oldBindingIndex].members = policy.bindings[
+      oldBindingIndex
+    ].members.filter((m) => m !== member);
+    if (policy.bindings[oldBindingIndex].members.length === 0) {
+      policy.bindings.splice(oldBindingIndex, 1);
+    }
+  }
 
   const expression: string[] = [];
   if (state.expirationTimestamp) {
@@ -255,10 +272,6 @@ const handleUpdateRole = async () => {
     newBinding.condition.expression = "";
   }
 
-  const policy = cloneDeep(iamPolicy.value);
-  policy.bindings = policy.bindings.filter(
-    (binding) => !isEqual(binding, props.binding)
-  );
   policy.bindings.push(newBinding);
 
   await useProjectIamPolicyStore().updateProjectIamPolicy(
