@@ -572,6 +572,7 @@
       "revoked": "取り消されました",
       "view-by-members": "メンバー別に表示",
       "revoke-access": "アクセスを取り消す",
+      "revoke-access-alert": "アクセスを取り消してもよろしいですか?",
       "grant-access": "アクセスを許可する",
       "select-user": "ユーザーを選択 | ユーザーを選択",
       "select-group": "グループを選択 | グループを選択",
