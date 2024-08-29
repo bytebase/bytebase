@@ -43,11 +43,10 @@ import {
   generateSimpleSelectAllStatement,
   generateSimpleUpdateStatement,
   instanceV1HasAlterSchema,
-  keyForFunction,
-  keyForProcedure,
   sortByDictionary,
   toClipboard,
 } from "@/utils";
+import { keyWithPosition } from "../../EditorCommon";
 import {
   useEditorPanelContext,
   type EditorPanelViewState,
@@ -268,12 +267,12 @@ export const useActions = () => {
       detail.view = (target as NodeTarget<"view">).view.name;
     }
     if (type === "procedure") {
-      detail.procedure = keyForProcedure(
-        (target as NodeTarget<"procedure">).procedure
-      );
+      const { procedure, position } = target as NodeTarget<"procedure">;
+      detail.procedure = keyWithPosition(procedure.name, position);
     }
     if (type === "function") {
-      detail.func = keyForFunction((target as NodeTarget<"function">).function);
+      const { function: func, position } = target as NodeTarget<"function">;
+      detail.func = keyWithPosition(func.name, position);
     }
     if (type === "external-table") {
       detail.externalTable = (
