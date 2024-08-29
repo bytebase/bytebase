@@ -4,7 +4,9 @@
       v-bind="$attrs"
       ref="dataTableRef"
       size="small"
-      :row-key="(procedure) => keyForProcedure(procedure)"
+      :row-key="
+        ({ procedure, position }) => keyWithPosition(procedure.name, position)
+      "
       :columns="columns"
       :data="layoutReady ? filteredProcedures : []"
       :row-props="rowProps"
@@ -27,9 +29,15 @@ import type {
   ProcedureMetadata,
   SchemaMetadata,
 } from "@/types/proto/v1/database_service";
-import { getHighlightHTMLByRegExp, keyForProcedure } from "@/utils";
+import { getHighlightHTMLByRegExp } from "@/utils";
+import { keyWithPosition } from "@/views/sql-editor/EditorCommon";
 import { useAutoHeightDataTable } from "../../common";
 import { useEditorPanelContext } from "../../context";
+
+type ProcedureWithPosition = {
+  procedure: ProcedureMetadata;
+  position: number;
+};
 
 const props = defineProps<{
   db: ComposedDatabase;
@@ -47,6 +55,7 @@ const emit = defineEmits<{
       database: DatabaseMetadata;
       schema: SchemaMetadata;
       procedure: ProcedureMetadata;
+      position: number;
     }
   ): void;
 }>();
@@ -54,14 +63,21 @@ const emit = defineEmits<{
 const { t } = useI18n();
 const { viewState } = useEditorPanelContext();
 
+const proceduresWithPosition = computed(() => {
+  return props.procedures.map<ProcedureWithPosition>((procedure, position) => ({
+    procedure,
+    position,
+  }));
+});
+
 const filteredProcedures = computed(() => {
   const keyword = props.keyword?.trim().toLowerCase();
   if (keyword) {
-    return props.procedures.filter((procedure) =>
+    return proceduresWithPosition.value.filter(({ procedure }) =>
       procedure.name.toLowerCase().includes(keyword)
     );
   }
-  return props.procedures;
+  return proceduresWithPosition.value;
 });
 
 const { dataTableRef, containerElRef, tableBodyHeight, layoutReady } =
@@ -77,13 +93,15 @@ const vlRef = computed(() => {
 });
 
 const columns = computed(() => {
-  const columns: (DataTableColumn<ProcedureMetadata> & { hide?: boolean })[] = [
+  const columns: (DataTableColumn<ProcedureWithPosition> & {
+    hide?: boolean;
+  })[] = [
     {
       key: "name",
       title: t("schema-editor.database.name"),
       resizable: true,
       className: "truncate",
-      render: (procedure) => {
+      render: ({ procedure }) => {
         return h("span", {
           innerHTML: getHighlightHTMLByRegExp(
             procedure.name,
@@ -96,13 +114,14 @@ const columns = computed(() => {
   return columns;
 });
 
-const rowProps = (procedure: ProcedureMetadata) => {
+const rowProps = ({ procedure, position }: ProcedureWithPosition) => {
   return {
     onClick: () => {
       emit("click", {
         database: props.database,
         schema: props.schema,
         procedure,
+        position,
       });
     },
   };

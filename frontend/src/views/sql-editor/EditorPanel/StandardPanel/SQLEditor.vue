@@ -37,6 +37,7 @@ import MonacoEditor from "@/components/MonacoEditor/MonacoEditor.vue";
 import {
   extensionNameOfLanguage,
   formatEditorContent,
+  positionWithOffset,
 } from "@/components/MonacoEditor/utils";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import { useExecuteSQL } from "@/composables/useExecuteSQL";
@@ -62,6 +63,10 @@ const uiStateStore = useUIStateStore();
 const { events: editorEvents } = useSQLEditorContext();
 const { currentTab, isSwitchingTab } = storeToRefs(tabStore);
 const pendingFormatContentCommand = ref(false);
+const pendingSetSelectionCommand = ref<{
+  start: { line: number; column: number };
+  end?: { line: number; column: number };
+}>();
 const { events: executeSQLEvents } = useExecuteSQL();
 
 const content = computed(() => currentTab.value?.statement ?? "");
@@ -99,10 +104,6 @@ const handleUpdateStatement = (value: string) => {
   if (value === tab.statement) {
     return;
   }
-  // Clear old advices when the statement is changed.
-  tab.queryContext?.results.forEach((result) => {
-    result.advices = [];
-  });
   tabStore.updateCurrentTab({
     statement: value,
     status: "DIRTY",
@@ -189,34 +190,49 @@ const handleEditorReady = (
     },
     { immediate: true }
   );
+
+  watch(
+    pendingSetSelectionCommand,
+    (range) => {
+      if (range) {
+        const start = range.start;
+        const end = range.end ?? start;
+        editor.setSelection({
+          startLineNumber: start.line,
+          startColumn: start.column,
+          endLineNumber: end.line,
+          endColumn: end.column,
+        });
+        editor.revealLineNearTop(start.line);
+        editor.focus();
+        nextTick(() => {
+          pendingSetSelectionCommand.value = undefined;
+        });
+      }
+    },
+    { immediate: true }
+  );
 };
 const updateAdvices = (
   tab: SQLEditorTab,
   params: SQLEditorQueryParams,
   advices: Advice[]
 ) => {
-  const withOffset = (advice: Advice) => {
-    let line = advice.line;
-    let column = advice.column + 1;
-    const { selection } = params;
-    if (!selection) {
-      return { line, column };
-    }
-    if (
-      selection.endLineNumber > selection.startLineNumber ||
-      selection.endColumn > selection.startColumn
-    ) {
-      if (line === 1) {
-        column += selection.startColumn - 1;
-      }
-      line += selection.startLineNumber - 1;
-    }
-    return { line, column };
-  };
   tab.editorState.advices = advices.map<AdviceOption>((advice) => {
-    const { line, column } = withOffset(advice);
+    const [startLine, startColumn] = positionWithOffset(
+      advice.startPosition?.line ?? advice.line,
+      advice.startPosition?.column ?? advice.column,
+      params.selection
+    );
+    const [endLine, endColumn] = positionWithOffset(
+      advice.endPosition?.line ?? advice.startPosition?.line ?? advice.line,
+      advice.endPosition?.column ??
+        advice.startPosition?.column ??
+        advice.column,
+      params.selection
+    );
     const code = advice.code;
-    const source = [`L${line}:C${column - 1}`];
+    const source = [`L${startLine}:C${startColumn}`];
     if (code > 0) {
       source.unshift(`(${code})`);
     }
@@ -227,16 +243,19 @@ const updateAdvices = (
       severity: advice.status === Advice_Status.ERROR ? "ERROR" : "WARNING",
       message: advice.content,
       source: source.join(" "),
-      startLineNumber: line,
-      endLineNumber: line,
-      startColumn: column,
-      endColumn: column,
+      startLineNumber: startLine,
+      endLineNumber: endLine,
+      startColumn: startColumn,
+      endColumn: endColumn,
     };
   });
 };
 
 useEmitteryEventListener(editorEvents, "format-content", () => {
   pendingFormatContentCommand.value = true;
+});
+useEmitteryEventListener(editorEvents, "set-editor-selection", (range) => {
+  pendingSetSelectionCommand.value = range;
 });
 
 useEmitteryEventListener(
