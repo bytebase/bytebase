@@ -1,7 +1,6 @@
 package common
 
 import (
-	"regexp"
 	"slices"
 
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
