@@ -100,4 +100,8 @@ const confirmTitle = computed(() => {
 const confirmDescription = computed(() => {
   return props.confirmDescription || t("bbkit.confirm-button.cannot-undo");
 });
+
+defineExpose({
+  showAlert: () => (state.showModal = true),
+});
 </script>
