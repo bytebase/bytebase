@@ -226,7 +226,7 @@ import {
 import DataBlock from "./DataBlock.vue";
 import DataTable from "./DataTable";
 import EmptyView from "./EmptyView.vue";
-import ErrorView from "./ErrorView.vue";
+import ErrorView from "./ErrorView";
 import { useSQLResultViewContext } from "./context";
 
 type LocalState = {

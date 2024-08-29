@@ -7,7 +7,7 @@ import type { Language, MaybeRef, SQLDialect } from "@/types";
 import { minmax } from "@/utils";
 import LearnMoreLink from "../LearnMoreLink.vue";
 import sqlFormatter from "./sqlFormatter";
-import type { IStandaloneCodeEditor } from "./types";
+import type { IStandaloneCodeEditor, Selection } from "./types";
 
 // Max retires in a retry serial. Will be reset after a success connection
 export const MAX_RETRIES = 5;
@@ -149,4 +149,16 @@ export const progressiveDelay = (serial: number) => {
     RECONNECTION_DELAY.min,
     RECONNECTION_DELAY.max
   );
+};
+
+export const positionWithOffset = (
+  line: number,
+  column: number,
+  selection?: Selection | undefined | null
+) => {
+  if (!selection || selection.isEmpty()) {
+    return [line, column];
+  }
+  const pos = selection.getStartPosition().delta(line - 1, column);
+  return [pos.lineNumber, pos.column - 1];
 };
