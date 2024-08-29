@@ -1771,22 +1771,6 @@
     "row-count-est": "Cantidad est. de filas",
     "incorrect-project-warning": "El editor de SQL solo puede consultar bases de datos en proyectos disponibles para el usuario. Primero debe transferir esta base de datos a un proyecto.",
     "go-to-transfer": "Ir a transferir",
-    "pitr": {
-      "restore": "@:common.restore @:common.database",
-      "no-available-backup": "No hay copia de seguridad disponible",
-      "point-in-time": "Punto en el tiempo",
-      "help-info": "Restaurar el estado de la base de datos a un punto en el tiempo. {link}.",
-      "minimum-supported-engine-and-version": "Se requiere {engine} >= {min_version}",
-      "restore-to-point-in-time": "Restaurar a un punto en el tiempo",
-      "no-earlier-than": "El punto de restauración no puede ser anterior a [{earliest}] (la copia de seguridad más antigua disponible).",
-      "no-later-than-now": "El punto de restauración no puede ser posterior a ahora.",
-      "will-overwrite-current-database": "Se sobrescribirá la base de datos actual",
-      "restore-before-last-migration": "Restaurar al punto antes de la última migración",
-      "restore-before-last-migration-help-info": "@:{'database.pitr.restore-before-last-migration'}. {link}.",
-      "restore-to": "Restaurar a",
-      "restore-to-new-db": "A una nueva base de datos",
-      "restore-to-in-place": "En el mismo lugar"
-    },
     "show-reserved-tables": "Mostrar tablas reservadas de Bytebase",
     "show-reserved-databases": "Mostrar bases de datos reservadas de Bytebase",
     "synced-at": "Sincronizado en {time}",
@@ -1896,7 +1880,8 @@
     "foreign-keys": "claves foráneas",
     "foreign-key": {
       "reference": "Referencia"
-    }
+    },
+    "create-target-database-or-schema-for-backup": "Primero cree la base de datos o el esquema de destino para la copia de seguridad"
   },
   "repository": {
     "our-webhook-link": "El webhook creado por Bytebase se puede encontrar en {webhookLink}.",
