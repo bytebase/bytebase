@@ -119,35 +119,35 @@ func (s *IssueService) getIssueFind(ctx context.Context, filter string, query st
 	if query != "" {
 		issueFind.Query = &query
 	}
-	filters, err := parseFilter(filter)
+	filters, err := ParseFilter(filter)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	for _, spec := range filters {
-		switch spec.key {
+		switch spec.Key {
 		case "creator":
-			if spec.operator != comparatorTypeEqual {
+			if spec.Operator != ComparatorTypeEqual {
 				return nil, status.Errorf(codes.InvalidArgument, `only support "=" operation for "creator" filter`)
 			}
-			user, err := s.getUserByIdentifier(ctx, spec.value)
+			user, err := s.getUserByIdentifier(ctx, spec.Value)
 			if err != nil {
 				return nil, err
 			}
 			issueFind.CreatorID = &user.ID
 		case "subscriber":
-			if spec.operator != comparatorTypeEqual {
+			if spec.Operator != ComparatorTypeEqual {
 				return nil, status.Errorf(codes.InvalidArgument, `only support "=" operation for "subscriber" filter`)
 			}
-			user, err := s.getUserByIdentifier(ctx, spec.value)
+			user, err := s.getUserByIdentifier(ctx, spec.Value)
 			if err != nil {
 				return nil, err
 			}
 			issueFind.SubscriberID = &user.ID
 		case "status":
-			if spec.operator != comparatorTypeEqual {
+			if spec.Operator != ComparatorTypeEqual {
 				return nil, status.Errorf(codes.InvalidArgument, `only support "=" operation for "status" filter`)
 			}
-			for _, raw := range strings.Split(spec.value, " | ") {
+			for _, raw := range strings.Split(spec.Value, " | ") {
 				newStatus, err := convertToAPIIssueStatus(v1pb.IssueStatus(v1pb.IssueStatus_value[raw]))
 				if err != nil {
 					return nil, status.Errorf(codes.InvalidArgument, "failed to convert to issue status, err: %v", err)
@@ -155,40 +155,40 @@ func (s *IssueService) getIssueFind(ctx context.Context, filter string, query st
 				issueFind.StatusList = append(issueFind.StatusList, newStatus)
 			}
 		case "create_time":
-			if spec.operator != comparatorTypeGreaterEqual && spec.operator != comparatorTypeLessEqual {
+			if spec.Operator != ComparatorTypeGreaterEqual && spec.Operator != ComparatorTypeLessEqual {
 				return nil, status.Errorf(codes.InvalidArgument, `only support "<=" or ">=" operation for "create_time" filter`)
 			}
-			t, err := time.Parse(time.RFC3339, spec.value)
+			t, err := time.Parse(time.RFC3339, spec.Value)
 			if err != nil {
-				return nil, status.Errorf(codes.InvalidArgument, "failed to parse create_time %s, err: %v", spec.value, err)
+				return nil, status.Errorf(codes.InvalidArgument, "failed to parse create_time %s, err: %v", spec.Value, err)
 			}
 			ts := t.Unix()
-			if spec.operator == comparatorTypeGreaterEqual {
+			if spec.Operator == ComparatorTypeGreaterEqual {
 				issueFind.CreatedTsAfter = &ts
 			} else {
 				issueFind.CreatedTsBefore = &ts
 			}
 		case "create_time_after":
-			t, err := time.Parse(time.RFC3339, spec.value)
+			t, err := time.Parse(time.RFC3339, spec.Value)
 			if err != nil {
-				return nil, status.Errorf(codes.InvalidArgument, "failed to parse create_time_after %s, err: %v", spec.value, err)
+				return nil, status.Errorf(codes.InvalidArgument, "failed to parse create_time_after %s, err: %v", spec.Value, err)
 			}
 			ts := t.Unix()
 			issueFind.CreatedTsAfter = &ts
 		case "type":
-			if spec.operator != comparatorTypeEqual {
+			if spec.Operator != ComparatorTypeEqual {
 				return nil, status.Errorf(codes.InvalidArgument, `only support "=" operation for "type" filter`)
 			}
-			issueType, err := convertToAPIIssueType(v1pb.Issue_Type(v1pb.Issue_Type_value[spec.value]))
+			issueType, err := convertToAPIIssueType(v1pb.Issue_Type(v1pb.Issue_Type_value[spec.Value]))
 			if err != nil {
 				return nil, status.Errorf(codes.InvalidArgument, "failed to convert to issue type, err: %v", err)
 			}
 			issueFind.Types = &[]api.IssueType{issueType}
 		case "task_type":
-			if spec.operator != comparatorTypeEqual {
+			if spec.Operator != ComparatorTypeEqual {
 				return nil, status.Errorf(codes.InvalidArgument, `only support "=" operation for "task_type" filter`)
 			}
-			switch spec.value {
+			switch spec.Value {
 			case "DDL":
 				issueFind.TaskTypes = &[]api.TaskType{
 					api.TaskDatabaseSchemaUpdate,
@@ -205,22 +205,22 @@ func (s *IssueService) getIssueFind(ctx context.Context, filter string, query st
 					api.TaskDatabaseDataExport,
 				}
 			default:
-				return nil, status.Errorf(codes.InvalidArgument, `unknown value %q`, spec.value)
+				return nil, status.Errorf(codes.InvalidArgument, `unknown value %q`, spec.Value)
 			}
 		case "instance":
-			if spec.operator != comparatorTypeEqual {
+			if spec.Operator != ComparatorTypeEqual {
 				return nil, status.Errorf(codes.InvalidArgument, `only support "=" operation for "instance" filter`)
 			}
-			instanceResourceID, err := common.GetInstanceID(spec.value)
+			instanceResourceID, err := common.GetInstanceID(spec.Value)
 			if err != nil {
-				return nil, status.Errorf(codes.InvalidArgument, `invalid instance resource id "%s": %v`, spec.value, err.Error())
+				return nil, status.Errorf(codes.InvalidArgument, `invalid instance resource id "%s": %v`, spec.Value, err.Error())
 			}
 			issueFind.InstanceResourceID = &instanceResourceID
 		case "database":
-			if spec.operator != comparatorTypeEqual {
+			if spec.Operator != ComparatorTypeEqual {
 				return nil, status.Errorf(codes.InvalidArgument, `only support "=" operation for "database" filter`)
 			}
-			instanceID, databaseName, err := common.GetInstanceDatabaseID(spec.value)
+			instanceID, databaseName, err := common.GetInstanceDatabaseID(spec.Value)
 			if err != nil {
 				return nil, status.Error(codes.InvalidArgument, err.Error())
 			}
@@ -232,27 +232,27 @@ func (s *IssueService) getIssueFind(ctx context.Context, filter string, query st
 				return nil, status.Error(codes.Internal, err.Error())
 			}
 			if database == nil {
-				return nil, status.Errorf(codes.InvalidArgument, `database "%q" not found`, spec.value)
+				return nil, status.Errorf(codes.InvalidArgument, `database "%q" not found`, spec.Value)
 			}
 			issueFind.DatabaseUID = &database.UID
 		case "labels":
-			if spec.operator != comparatorTypeEqual {
-				return nil, status.Errorf(codes.InvalidArgument, `only support "=" operation for "%s" filter`, spec.key)
+			if spec.Operator != ComparatorTypeEqual {
+				return nil, status.Errorf(codes.InvalidArgument, `only support "=" operation for "%s" filter`, spec.Key)
 			}
-			for _, label := range strings.Split(spec.value, " & ") {
+			for _, label := range strings.Split(spec.Value, " & ") {
 				issueLabel := label
 				issueFind.LabelList = append(issueFind.LabelList, issueLabel)
 			}
 		case "has_pipeline":
-			if spec.operator != comparatorTypeEqual {
-				return nil, status.Errorf(codes.InvalidArgument, `only support "=" operation for "%s" filter`, spec.key)
+			if spec.Operator != ComparatorTypeEqual {
+				return nil, status.Errorf(codes.InvalidArgument, `only support "=" operation for "%s" filter`, spec.Key)
 			}
-			switch spec.value {
+			switch spec.Value {
 			case "false":
 				issueFind.NoPipeline = true
 			case "true":
 			default:
-				return nil, status.Errorf(codes.InvalidArgument, "invalid value %q for has_pipeline", spec.value)
+				return nil, status.Errorf(codes.InvalidArgument, "invalid value %q for has_pipeline", spec.Value)
 			}
 		}
 	}

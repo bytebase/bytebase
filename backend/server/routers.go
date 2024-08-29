@@ -15,13 +15,22 @@ import (
 	"github.com/tmc/grpc-websocket-proxy/wsproxy"
 	"google.golang.org/grpc"
 
+	directorysync "github.com/bytebase/bytebase/backend/api/directory-sync"
 	"github.com/bytebase/bytebase/backend/api/gitops"
 	"github.com/bytebase/bytebase/backend/api/lsp"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
 )
 
-func configureEchoRouters(e *echo.Echo, grpcServer *grpc.Server, lspServer *lsp.Server, gitOpsServer *gitops.Service, mux *grpcruntime.ServeMux, profile *config.Profile) {
+func configureEchoRouters(
+	e *echo.Echo,
+	grpcServer *grpc.Server,
+	lspServer *lsp.Server,
+	gitOpsServer *gitops.Service,
+	directorySyncServer *directorysync.Service,
+	mux *grpcruntime.ServeMux,
+	profile *config.Profile,
+) {
 	// Embed frontend.
 	embedFrontend(e)
 
@@ -106,6 +115,9 @@ func configureEchoRouters(e *echo.Echo, grpcServer *grpc.Server, lspServer *lsp.
 	// GitOps Webhook server.
 	webhookGroup := e.Group(webhookAPIPrefix)
 	gitOpsServer.RegisterWebhookRoutes(webhookGroup)
+
+	scimGroup := webhookGroup.Group(scimAPIPrefix)
+	directorySyncServer.RegisterDirectorySyncRoutes(scimGroup)
 }
 
 func recoverMiddleware(next echo.HandlerFunc) echo.HandlerFunc {

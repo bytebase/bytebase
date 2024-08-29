@@ -4,7 +4,6 @@ package gitops
 import (
 	v1pb "github.com/bytebase/bytebase/backend/api/v1"
 	"github.com/bytebase/bytebase/backend/component/sheet"
-	"github.com/bytebase/bytebase/backend/component/state"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	"github.com/bytebase/bytebase/backend/store"
 )
@@ -12,7 +11,6 @@ import (
 // Service is the API endpoint for handling GitOps requests.
 type Service struct {
 	store          *store.Store
-	stateCfg       *state.State
 	licenseService enterprise.LicenseService
 	planService    *v1pb.PlanService
 	rolloutService *v1pb.RolloutService
@@ -24,7 +22,6 @@ type Service struct {
 // NewService creates a GitOps service.
 func NewService(
 	store *store.Store,
-	stateCfg *state.State,
 	licenseService enterprise.LicenseService,
 	planService *v1pb.PlanService,
 	rolloutService *v1pb.RolloutService,
@@ -34,7 +31,6 @@ func NewService(
 ) *Service {
 	return &Service{
 		store:          store,
-		stateCfg:       stateCfg,
 		licenseService: licenseService,
 		planService:    planService,
 		rolloutService: rolloutService,
