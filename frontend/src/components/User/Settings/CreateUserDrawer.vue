@@ -30,11 +30,7 @@
             </a>
           </div>
           <NFormItem
-            v-if="
-              (isCreating &&
-                state.user.userType !== UserType.SERVICE_ACCOUNT) ||
-              !isCreating
-            "
+            v-if="state.user.userType !== UserType.SERVICE_ACCOUNT"
             :label="$t('common.name')"
           >
             <NInput
