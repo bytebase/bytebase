@@ -16,7 +16,7 @@ import (
 
 	"github.com/labstack/echo/v4"
 
-	v1 "github.com/bytebase/bytebase/backend/api/v1"
+	v1api "github.com/bytebase/bytebase/backend/api/v1"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
@@ -134,7 +134,7 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 		}
 
 		// AAD SCIM will send ?filter=userName eq "{user name}" query
-		filters, err := v1.ParseFilter(c.QueryParam("filter"))
+		filters, err := v1api.ParseFilter(c.QueryParam("filter"))
 		if err != nil {
 			return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to parse filter, error %v", err))
 		}
@@ -149,7 +149,7 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 
 		find := &store.FindUserMessage{}
 		for _, expr := range filters {
-			if expr.Operator != v1.ComparatorTypeEqual {
+			if expr.Operator != v1api.ComparatorTypeEqual {
 				slog.Warn("unsupport filter operation", slog.String("key", expr.Key), slog.String("operator", string(expr.Operator)), slog.String("value", expr.Value))
 				continue
 			}
