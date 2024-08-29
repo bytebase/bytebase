@@ -17,11 +17,8 @@ import type {
   TablePartitionMetadata,
   ViewMetadata,
 } from "@/types/proto/v1/database_service";
-import {
-  keyForDependentColumn,
-  keyForFunction,
-  keyForProcedure,
-} from "@/utils";
+import { keyForDependentColumn } from "@/utils";
+import { keyWithPosition } from "../../EditorCommon";
 
 export type NodeType =
   | "database"
@@ -77,9 +74,11 @@ export type RichViewMetadata = RichSchemaMetadata & {
 };
 export type RichProcedureMetadata = RichSchemaMetadata & {
   procedure: ProcedureMetadata;
+  position: number;
 };
 export type RichFunctionMetadata = RichSchemaMetadata & {
   function: FunctionMetadata;
+  position: number;
 };
 export type TextTarget<E extends boolean = any, S extends boolean = any> = {
   expandable: E;
@@ -240,19 +239,25 @@ export const keyForNodeTarget = <T extends NodeType>(
     return [db.name, `schemas/${schema.name}`, `views/${view.name}`].join("/");
   }
   if (type === "procedure") {
-    const { db, schema, procedure } = target as NodeTarget<"procedure">;
+    const { db, schema, procedure, position } =
+      target as NodeTarget<"procedure">;
     return [
       db.name,
       `schemas/${schema.name}`,
-      `procedures/${keyForProcedure(procedure)}`,
+      `procedures/${keyWithPosition(procedure.name, position)}`,
     ].join("/");
   }
   if (type === "function") {
-    const { db, schema, function: func } = target as NodeTarget<"function">;
+    const {
+      db,
+      schema,
+      function: func,
+      position,
+    } = target as NodeTarget<"function">;
     return [
       db.name,
       `schemas/${schema.name}`,
-      `functions/${keyForFunction(func)}`,
+      `functions/${keyWithPosition(func.name, position)}`,
     ].join("/");
   }
   if (type === "expandable-text") {
@@ -636,8 +641,8 @@ const mapProcedureNodes = (
   parent: TreeNode<"expandable-text">
 ) => {
   const { schema } = target;
-  const children = schema.procedures.map((procedure) =>
-    mapTreeNodeByType("procedure", { ...target, procedure }, parent)
+  const children = schema.procedures.map((procedure, position) =>
+    mapTreeNodeByType("procedure", { ...target, procedure, position }, parent)
   );
   if (children.length === 0) {
     return [createDummyNode("procedure", parent)];
@@ -649,8 +654,12 @@ const mapFunctionNodes = (
   parent: TreeNode<"expandable-text">
 ) => {
   const { schema } = target;
-  const children = schema.functions.map((func) =>
-    mapTreeNodeByType("function", { ...target, function: func }, parent)
+  const children = schema.functions.map((func, position) =>
+    mapTreeNodeByType(
+      "function",
+      { ...target, function: func, position },
+      parent
+    )
   );
   if (children.length === 0) {
     return [createDummyNode("function", parent)];

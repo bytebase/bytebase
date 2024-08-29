@@ -58,7 +58,10 @@ import {
   ProcedureMetadata,
   SchemaMetadata,
 } from "@/types/proto/v1/database_service";
-import { extractProcedure, keyForProcedure } from "@/utils";
+import {
+  extractKeyWithPosition,
+  keyWithPosition,
+} from "@/views/sql-editor/EditorCommon";
 import DatabaseChooser from "@/views/sql-editor/EditorCommon/DatabaseChooser.vue";
 import { useEditorPanelContext } from "../../context";
 import { SchemaSelectToolbar, CodeViewer } from "../common";
@@ -81,9 +84,11 @@ const metadata = computed(() => {
   const schema = database.schemas.find(
     (s) => s.name === viewState.value?.schema
   );
-  const target = extractProcedure(viewState.value?.detail?.procedure ?? "");
-  const procedure = schema?.functions.find(
-    (p) => p.name === target.name && p.definition === target.definition
+  const [name, position] = extractKeyWithPosition(
+    viewState.value?.detail?.procedure ?? ""
+  );
+  const procedure = schema?.procedures.find(
+    (p, i) => p.name === name && i === position
   );
   return { database, schema, procedure };
 });
@@ -92,9 +97,12 @@ const select = (selected: {
   database: DatabaseMetadata;
   schema: SchemaMetadata;
   procedure: ProcedureMetadata;
+  position: number;
 }) => {
   updateViewState({
-    detail: { procedure: keyForProcedure(selected.procedure) },
+    detail: {
+      procedure: keyWithPosition(selected.procedure.name, selected.position),
+    },
   });
 };
 
