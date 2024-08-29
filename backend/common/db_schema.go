@@ -7,8 +7,6 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-var numberReg = regexp.MustCompile("^[0-9]+$")
-
 // GetClassificationAndUserComment parses classification and user comment from the given comment.
 func GetClassificationAndUserComment(comment string, classificationConfig *storepb.DataClassificationSetting_DataClassificationConfig) (string, string) {
 	if classificationConfig == nil {
