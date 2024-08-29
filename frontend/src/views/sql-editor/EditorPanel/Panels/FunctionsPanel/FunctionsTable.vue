@@ -4,7 +4,7 @@
       v-bind="$attrs"
       ref="dataTableRef"
       size="small"
-      :row-key="(func) => keyForFunction(func)"
+      :row-key="({ func, position }) => keyWithPosition(func.name, position)"
       :columns="columns"
       :data="layoutReady ? filteredFuncs : []"
       :row-props="rowProps"
@@ -27,9 +27,12 @@ import type {
   FunctionMetadata,
   SchemaMetadata,
 } from "@/types/proto/v1/database_service";
-import { getHighlightHTMLByRegExp, keyForFunction } from "@/utils";
+import { getHighlightHTMLByRegExp } from "@/utils";
+import { keyWithPosition } from "@/views/sql-editor/EditorCommon";
 import { useAutoHeightDataTable } from "../../common";
 import { useEditorPanelContext } from "../../context";
+
+type FunctionWithPosition = { func: FunctionMetadata; position: number };
 
 const props = defineProps<{
   db: ComposedDatabase;
@@ -47,6 +50,7 @@ const emit = defineEmits<{
       database: DatabaseMetadata;
       schema: SchemaMetadata;
       func: FunctionMetadata;
+      position: number;
     }
   ): void;
 }>();
@@ -54,14 +58,21 @@ const emit = defineEmits<{
 const { t } = useI18n();
 const { viewState } = useEditorPanelContext();
 
+const funcsWithPosition = computed(() => {
+  return props.funcs.map<FunctionWithPosition>((func, position) => ({
+    func,
+    position,
+  }));
+});
+
 const filteredFuncs = computed(() => {
   const keyword = props.keyword?.trim().toLowerCase();
   if (keyword) {
-    return props.funcs.filter((func) =>
+    return funcsWithPosition.value.filter(({ func }) =>
       func.name.toLowerCase().includes(keyword)
     );
   }
-  return props.funcs;
+  return funcsWithPosition.value;
 });
 
 const { dataTableRef, containerElRef, tableBodyHeight, layoutReady } =
@@ -77,13 +88,15 @@ const vlRef = computed(() => {
 });
 
 const columns = computed(() => {
-  const columns: (DataTableColumn<FunctionMetadata> & { hide?: boolean })[] = [
+  const columns: (DataTableColumn<FunctionWithPosition> & {
+    hide?: boolean;
+  })[] = [
     {
       key: "name",
       title: t("schema-editor.database.name"),
       resizable: true,
       className: "truncate",
-      render: (func) => {
+      render: ({ func }) => {
         return h("span", {
           innerHTML: getHighlightHTMLByRegExp(func.name, props.keyword ?? ""),
         });
@@ -93,13 +106,14 @@ const columns = computed(() => {
   return columns;
 });
 
-const rowProps = (func: FunctionMetadata) => {
+const rowProps = ({ func, position }: FunctionWithPosition) => {
   return {
     onClick: () => {
       emit("click", {
         database: props.database,
         schema: props.schema,
         func,
+        position,
       });
     },
   };
