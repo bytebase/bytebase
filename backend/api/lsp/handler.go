@@ -13,6 +13,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -40,8 +41,8 @@ const (
 )
 
 // NewHandler creates a new Language Server Protocol handler.
-func NewHandler(s *store.Store) jsonrpc2.Handler {
-	return lspHandler{jsonrpc2.HandlerWithError((&Handler{store: s}).handle)}
+func NewHandler(s *store.Store, profile *config.Profile) jsonrpc2.Handler {
+	return lspHandler{Handler: jsonrpc2.HandlerWithError((&Handler{store: s, profile: profile}).handle)}
 }
 
 type lspHandler struct {
@@ -65,6 +66,7 @@ type Handler struct {
 	store    *store.Store
 
 	shutDown bool
+	profile  *config.Profile
 }
 
 // ShutDown shuts down the handler.
