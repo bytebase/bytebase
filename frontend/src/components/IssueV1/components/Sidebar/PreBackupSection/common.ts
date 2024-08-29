@@ -66,7 +66,12 @@ export const usePreBackupContext = () => {
   });
 
   const allowPreBackup = computed((): boolean => {
-    // Always allow pre-backup when creating.
+    // Disallow pre-backup if no backup available for the target database.
+    if (!database.value.backupAvailable) {
+      return false;
+    }
+
+    // Allow toggle pre-backup when creating.
     if (isCreating.value) {
       return true;
     }
