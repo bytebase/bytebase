@@ -594,7 +594,7 @@ func (s *BranchService) RebaseBranch(ctx context.Context, request *v1pb.RebaseBr
 			return nil, status.Errorf(codes.Internal, `failed to get classification config by id "%s" with error: %v`, baseProject.DataClassificationConfigID, err)
 		}
 
-		trimClassificationIDFromCommentIfNeeded(newHeadMetadata, classificationConfig.ClassificationFromConfig)
+		trimClassificationIDFromCommentIfNeeded(newHeadMetadata, classificationConfig)
 		sanitizeCommentForSchemaMetadata(newHeadMetadata, modelNewHeadConfig, classificationConfig.ClassificationFromConfig)
 	} else {
 		newHeadMetadata, err = tryMerge(baseBranch.Base.Metadata, baseBranch.Head.Metadata, filteredNewBaseMetadata, baseBranch.Engine)
@@ -1529,18 +1529,18 @@ func initBranchLastUpdateInfoConfig(metadata *storepb.DatabaseSchemaMetadata, co
 	}
 }
 
-func trimClassificationIDFromCommentIfNeeded(dbSchema *storepb.DatabaseSchemaMetadata, classificationFromConfig bool) {
-	if classificationFromConfig {
+func trimClassificationIDFromCommentIfNeeded(dbSchema *storepb.DatabaseSchemaMetadata, classificationConfig *storepb.DataClassificationSetting_DataClassificationConfig) {
+	if classificationConfig.ClassificationFromConfig {
 		return
 	}
 	for _, schema := range dbSchema.Schemas {
 		for _, table := range schema.Tables {
-			if !classificationFromConfig {
-				_, table.UserComment = common.GetClassificationAndUserComment(table.Comment)
+			if !classificationConfig.ClassificationFromConfig {
+				_, table.UserComment = common.GetClassificationAndUserComment(table.Comment, classificationConfig)
 			}
 			for _, col := range table.Columns {
-				if !classificationFromConfig {
-					_, col.UserComment = common.GetClassificationAndUserComment(col.Comment)
+				if !classificationConfig.ClassificationFromConfig {
+					_, col.UserComment = common.GetClassificationAndUserComment(col.Comment, classificationConfig)
 				}
 			}
 		}
