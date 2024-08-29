@@ -177,7 +177,7 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 			if !existInIAM {
 				continue
 			}
-			response.TotalResults += 1
+			response.TotalResults++
 			response.Resources = append(response.Resources, formatAADUser(user))
 		}
 
@@ -275,8 +275,8 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 			}
 		}
 
-		if delete := updateUser.Delete; delete != nil {
-			if *delete {
+		if shouldDelete := updateUser.Delete; shouldDelete != nil {
+			if *shouldDelete {
 				if err := s.removeUserFromIAM(ctx, user, project); err != nil {
 					return c.String(http.StatusInternalServerError, err.Error())
 				}
