@@ -7,7 +7,7 @@
 
     <div
       class="hidden lg:grid items-center gap-4"
-      style="grid-template-columns: 1fr 1fr 1fr"
+      :class="showCreateInstanceButton ? 'grid-cols-3' : 'grid-cols-2'"
     >
       <Button
         v-if="showCreateInstanceButton"
