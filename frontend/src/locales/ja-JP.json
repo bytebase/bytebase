@@ -1771,22 +1771,6 @@
     "row-count-est": "推定行数",
     "incorrect-project-warning": "SQL エディターは、ユーザーが使用できるプロジェクト内のデータベースのみをクエリできます。まず、このデータベースを作業中のプロジェクトに転送する必要があります。",
     "go-to-transfer": "転送に行く",
-    "pitr": {
-      "restore": "@:common.restore@:common.database",
-      "no-available-backup": "利用可能なバックアップがありません",
-      "point-in-time": "時点",
-      "help-info": "データベースの状態を特定の時点に復元します。 {link}。",
-      "minimum-supported-engine-and-version": "{engine} >= {min_version} が必要です",
-      "restore-to-point-in-time": "指定した時点に復元する",
-      "no-earlier-than": "[{earliest}] (利用可能な最も古いバックアップ) よりも古い時点から復元することはできません。",
-      "no-later-than-now": "回復時刻を現在時刻より遅くすることはできません。",
-      "will-overwrite-current-database": "既存のデータベースを上書きします",
-      "restore-before-last-migration": "最後の変更前の履歴に戻す",
-      "restore-before-last-migration-help-info": "@:{'database.pitr.restore-before-last-migration'}。 {link}。",
-      "restore-to": "再開しました",
-      "restore-to-new-db": "新しいデータベース",
-      "restore-to-in-place": "オリジナルデータベース"
-    },
     "show-reserved-tables": "バイトベース予約テーブルを表示",
     "show-reserved-databases": "Bytebase によって保持されているデータベースを表示する",
     "synced-at": "{time} と同期しました",
@@ -1896,7 +1880,8 @@
     "foreign-keys": "外部キー",
     "foreign-key": {
       "reference": "参照"
-    }
+    },
+    "create-target-database-or-schema-for-backup": "まずバックアップのターゲットデータベースまたはスキーマを作成してください"
   },
   "repository": {
     "our-webhook-link": "Bytebase によって作成された Webhook は、{webhookLink} にあります。",

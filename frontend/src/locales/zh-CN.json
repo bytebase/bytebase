@@ -1771,22 +1771,6 @@
     "row-count-est": "估计行数",
     "incorrect-project-warning": "SQL 编辑器只能查询用户可用的项目中的数据库。您应该首先将此数据库转移到一个可用的项目中。",
     "go-to-transfer": "前去转移",
-    "pitr": {
-      "restore": "@:common.restore@:common.database",
-      "no-available-backup": "没有可用的备份",
-      "point-in-time": "时间点",
-      "help-info": "将数据库的状态恢复到一个时间点。{link}。",
-      "minimum-supported-engine-and-version": "需要 {engine} >= {min_version}",
-      "restore-to-point-in-time": "恢复到指定时间点",
-      "no-earlier-than": "恢复的时间点不能早于 [{earliest}] (最早可用的备份)。",
-      "no-later-than-now": "恢复的时间点不能晚于当前时间。",
-      "will-overwrite-current-database": "会覆盖现有数据库",
-      "restore-before-last-migration": "恢复到上次变更历史之前",
-      "restore-before-last-migration-help-info": "@:{'database.pitr.restore-before-last-migration'}。{link}。",
-      "restore-to": "恢复到",
-      "restore-to-new-db": "新数据库",
-      "restore-to-in-place": "原数据库"
-    },
     "show-reserved-tables": "显示 Bytebase 保留的表",
     "show-reserved-databases": "显示 Bytebase 保留的数据库",
     "synced-at": "同步于 {time}",
@@ -1896,7 +1880,8 @@
     "foreign-keys": "外键",
     "foreign-key": {
       "reference": "引用"
-    }
+    },
+    "create-target-database-or-schema-for-backup": "请先创建备份的目标数据库或 Schema"
   },
   "repository": {
     "our-webhook-link": "Bytebase 创建的 webhook 可以在 {webhookLink} 中找到。",
