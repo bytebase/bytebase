@@ -120,7 +120,7 @@ import type { QueryResult } from "@/types/proto/v1/sql_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import DetailPanel from "./DetailPanel.vue";
 import EmptyView from "./EmptyView.vue";
-import ErrorView from "./ErrorView.vue";
+import ErrorView from "./ErrorView";
 import RequestQueryButton from "./RequestQueryButton.vue";
 import SingleResultViewV1 from "./SingleResultViewV1.vue";
 import type { SQLResultViewContext } from "./context";

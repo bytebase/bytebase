@@ -25,6 +25,10 @@ type SQLEditorEvents = Emittery<{
   "project-context-ready": {
     project: string;
   };
+  "set-editor-selection": {
+    start: { line: number; column: number };
+    end?: { line: number; column: number };
+  };
 }>;
 
 export type SQLEditorContext = {
