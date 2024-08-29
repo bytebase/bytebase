@@ -572,6 +572,7 @@
       "revoked": "已撤销",
       "view-by-members": "按成员查看",
       "revoke-access": "撤销访问权限",
+      "revoke-access-alert": "您确定要撤销访问权限吗？",
       "grant-access": "授予访问权限",
       "select-user": "选择用户 | 选择用户",
       "select-group": "选择组 | 选择组",

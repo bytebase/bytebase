@@ -572,6 +572,7 @@
       "revoked": "Revocado",
       "view-by-members": "Ver por miembros",
       "revoke-access": "Revocar acceso",
+      "revoke-access-alert": "¿Está seguro de revocar el acceso?",
       "grant-access": "Conceder acceso",
       "select-user": "Seleccionar usuario | Seleccionar usuarios",
       "select-group": "Seleccionar grupo | Seleccionar grupos",
