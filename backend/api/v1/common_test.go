@@ -135,43 +135,43 @@ func TestGetEBNFTokens(t *testing.T) {
 func TestParseFilter(t *testing.T) {
 	testCases := []struct {
 		input string
-		want  []expression
+		want  []Expression
 		err   error
 	}{
 		{
 			input: `resource="environments/e1/instances/i2"`,
-			want: []expression{
+			want: []Expression{
 				{
-					key:      "resource",
-					operator: comparatorTypeEqual,
-					value:    "environments/e1/instances/i2",
+					Key:      "resource",
+					Operator: ComparatorTypeEqual,
+					Value:    "environments/e1/instances/i2",
 				},
 			},
 		},
 		{
 			input: `project = "p1" && start_time>="2020-01-01T00:00:00Z" && start_time<2020-01-02T00:00:00Z`,
-			want: []expression{
+			want: []Expression{
 				{
-					key:      "project",
-					operator: comparatorTypeEqual,
-					value:    "p1",
+					Key:      "project",
+					Operator: ComparatorTypeEqual,
+					Value:    "p1",
 				},
 				{
-					key:      "start_time",
-					operator: comparatorTypeGreaterEqual,
-					value:    "2020-01-01T00:00:00Z",
+					Key:      "start_time",
+					Operator: ComparatorTypeGreaterEqual,
+					Value:    "2020-01-01T00:00:00Z",
 				},
 				{
-					key:      "start_time",
-					operator: comparatorTypeLess,
-					value:    "2020-01-02T00:00:00Z",
+					Key:      "start_time",
+					Operator: ComparatorTypeLess,
+					Value:    "2020-01-02T00:00:00Z",
 				},
 			},
 		},
 	}
 
 	for _, test := range testCases {
-		got, err := parseFilter(test.input)
+		got, err := ParseFilter(test.input)
 		if test.err != nil {
 			require.EqualError(t, err, test.err.Error())
 		} else {

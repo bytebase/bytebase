@@ -964,56 +964,56 @@ func (s *PlanService) BatchCancelPlanCheckRuns(ctx context.Context, request *v1p
 }
 
 func (s *PlanService) buildPlanFindWithFilter(ctx context.Context, planFind *store.FindPlanMessage, filter string) error {
-	filters, err := parseFilter(filter)
+	filters, err := ParseFilter(filter)
 	if err != nil {
 		return errors.Wrap(err, "failed to parse filter")
 	}
 	for _, spec := range filters {
-		switch spec.key {
+		switch spec.Key {
 		case "creator":
-			if spec.operator != comparatorTypeEqual {
+			if spec.Operator != ComparatorTypeEqual {
 				return errors.New(`only support "=" operation for "creator" filter`)
 			}
-			user, err := s.getUserByIdentifier(ctx, spec.value)
+			user, err := s.getUserByIdentifier(ctx, spec.Value)
 			if err != nil {
 				return errors.Wrap(err, "failed to get user by identifier")
 			}
 			planFind.CreatorID = &user.ID
 		case "create_time":
-			if spec.operator != comparatorTypeGreaterEqual && spec.operator != comparatorTypeLessEqual {
+			if spec.Operator != ComparatorTypeGreaterEqual && spec.Operator != ComparatorTypeLessEqual {
 				return errors.New(`only support ">=" and "<=" operation for "create_time" filter`)
 			}
-			t, err := time.Parse(time.RFC3339, spec.value)
+			t, err := time.Parse(time.RFC3339, spec.Value)
 			if err != nil {
 				return errors.Wrap(err, "failed to parse create_time value")
 			}
 			ts := t.Unix()
-			if spec.operator == comparatorTypeGreaterEqual {
+			if spec.Operator == ComparatorTypeGreaterEqual {
 				planFind.CreatedTsAfter = &ts
 			} else {
 				planFind.CreatedTsBefore = &ts
 			}
 		case "has_pipeline":
-			if spec.operator != comparatorTypeEqual {
+			if spec.Operator != ComparatorTypeEqual {
 				return errors.New(`only support "=" operation for "has_pipeline" filter`)
 			}
-			switch spec.value {
+			switch spec.Value {
 			case "false":
 				planFind.NoPipeline = true
 			case "true":
 			default:
-				return errors.Errorf("invalid value %q for has_pipeline", spec.value)
+				return errors.Errorf("invalid value %q for has_pipeline", spec.Value)
 			}
 		case "has_issue":
-			if spec.operator != comparatorTypeEqual {
+			if spec.Operator != ComparatorTypeEqual {
 				return errors.New(`only support "=" operation for "has_issue" filter`)
 			}
-			switch spec.value {
+			switch spec.Value {
 			case "false":
 				planFind.NoIssue = true
 			case "true":
 			default:
-				return errors.Errorf("invalid value %q for has_issue", spec.value)
+				return errors.Errorf("invalid value %q for has_issue", spec.Value)
 			}
 		}
 	}

@@ -158,14 +158,14 @@ func (s *WorksheetService) SearchWorksheets(ctx context.Context, request *v1pb.S
 		return nil, status.Errorf(codes.InvalidArgument, "filter should not be empty")
 	}
 
-	specs, err := parseFilter(request.Filter)
+	specs, err := ParseFilter(request.Filter)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 	for _, spec := range specs {
-		switch spec.key {
+		switch spec.Key {
 		case "creator":
-			creatorEmail := strings.TrimPrefix(spec.value, "users/")
+			creatorEmail := strings.TrimPrefix(spec.Value, "users/")
 			if creatorEmail == "" {
 				return nil, status.Errorf(codes.InvalidArgument, "invalid empty creator identifier")
 			}
@@ -176,31 +176,31 @@ func (s *WorksheetService) SearchWorksheets(ctx context.Context, request *v1pb.S
 			if user == nil {
 				return nil, status.Errorf(codes.NotFound, "user with email %s not found", creatorEmail)
 			}
-			switch spec.operator {
-			case comparatorTypeEqual:
+			switch spec.Operator {
+			case ComparatorTypeEqual:
 				worksheetFind.CreatorID = &user.ID
-			case comparatorTypeNotEqual:
+			case ComparatorTypeNotEqual:
 				worksheetFind.ExcludedCreatorID = &user.ID
 			default:
-				return nil, status.Errorf(codes.InvalidArgument, "invalid operator %q for creator", spec.operator)
+				return nil, status.Errorf(codes.InvalidArgument, "invalid operator %q for creator", spec.Operator)
 			}
 		case "starred":
-			if spec.operator != comparatorTypeEqual {
-				return nil, status.Errorf(codes.InvalidArgument, "invalid operator %q for starred", spec.operator)
+			if spec.Operator != ComparatorTypeEqual {
+				return nil, status.Errorf(codes.InvalidArgument, "invalid operator %q for starred", spec.Operator)
 			}
-			switch spec.value {
+			switch spec.Value {
 			case "true":
 				worksheetFind.OrganizerPrincipalIDStarred = &principalID
 			case "false":
 				worksheetFind.OrganizerPrincipalIDNotStarred = &principalID
 			default:
-				return nil, status.Errorf(codes.InvalidArgument, "invalid value %q for starred", spec.value)
+				return nil, status.Errorf(codes.InvalidArgument, "invalid value %q for starred", spec.Value)
 			}
 		case "visibility":
-			if spec.operator != comparatorTypeEqual {
-				return nil, status.Errorf(codes.InvalidArgument, "invalid operator %q for starred", spec.operator)
+			if spec.Operator != ComparatorTypeEqual {
+				return nil, status.Errorf(codes.InvalidArgument, "invalid operator %q for starred", spec.Operator)
 			}
-			for _, rawVisibility := range strings.Split(spec.value, " | ") {
+			for _, rawVisibility := range strings.Split(spec.Value, " | ") {
 				visibility, err := convertToStoreWorksheetVisibility(v1pb.Worksheet_Visibility(v1pb.Worksheet_Visibility_value[rawVisibility]))
 				if err != nil {
 					return nil, err
@@ -208,7 +208,7 @@ func (s *WorksheetService) SearchWorksheets(ctx context.Context, request *v1pb.S
 				worksheetFind.Visibilities = append(worksheetFind.Visibilities, visibility)
 			}
 		default:
-			return nil, status.Errorf(codes.InvalidArgument, "invalid filter key %q", spec.key)
+			return nil, status.Errorf(codes.InvalidArgument, "invalid filter key %q", spec.Key)
 		}
 	}
 	worksheetList, err := s.store.ListWorkSheets(ctx, worksheetFind, principalID)

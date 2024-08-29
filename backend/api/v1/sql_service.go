@@ -655,27 +655,27 @@ func (s *SQLService) SearchQueryHistories(ctx context.Context, request *v1pb.Sea
 		Offset:     &offset,
 	}
 
-	filters, err := parseFilter(request.Filter)
+	filters, err := ParseFilter(request.Filter)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	for _, spec := range filters {
-		if spec.operator != comparatorTypeEqual {
-			return nil, status.Errorf(codes.InvalidArgument, `only support "=" operation for "%v" filter`, spec.key)
+		if spec.Operator != ComparatorTypeEqual {
+			return nil, status.Errorf(codes.InvalidArgument, `only support "=" operation for "%v" filter`, spec.Key)
 		}
-		switch spec.key {
+		switch spec.Key {
 		case "database":
-			database := spec.value
+			database := spec.Value
 			find.Database = &database
 		case "instance":
-			instance := spec.value
+			instance := spec.Value
 			find.Instance = &instance
 		case "type":
-			historyType := store.QueryHistoryType(spec.value)
+			historyType := store.QueryHistoryType(spec.Value)
 			find.Type = &historyType
 		default:
-			return nil, status.Errorf(codes.InvalidArgument, "invalid filter %s", spec.key)
+			return nil, status.Errorf(codes.InvalidArgument, "invalid filter %s", spec.Key)
 		}
 	}
 
