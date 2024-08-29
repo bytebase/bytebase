@@ -1,29 +1,28 @@
 package common
 
 import (
-	"regexp"
 	"slices"
-	"strings"
 
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-var numberReg = regexp.MustCompile("^[0-9]+$")
-
 // GetClassificationAndUserComment parses classification and user comment from the given comment.
-func GetClassificationAndUserComment(comment string) (string, string) {
-	sections := strings.Split(comment, "-")
-	classification := []string{}
-	userComment := ""
-	for i, section := range sections {
-		if numberReg.MatchString(section) {
-			classification = append(classification, section)
-		} else {
-			userComment = strings.Join(sections[i:], "-")
-			break
+func GetClassificationAndUserComment(comment string, classificationConfig *storepb.DataClassificationSetting_DataClassificationConfig) (string, string) {
+	if classificationConfig == nil {
+		return "", comment
+	}
+	if _, ok := classificationConfig.Classification[comment]; ok {
+		return comment, ""
+	}
+	for i := len(comment) - 1; i >= 0; i-- {
+		if comment[i] != '-' {
+			continue
+		}
+		if _, ok := classificationConfig.Classification[comment[:i]]; ok {
+			return comment[:i], comment[i+1:]
 		}
 	}
-	return strings.Join(classification, "-"), userComment
+	return "", comment
 }
 
 // GetCommentFromClassificationAndUserComment returns the comment from the given classification and user comment.
