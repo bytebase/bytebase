@@ -7,36 +7,29 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
-	"slices"
 	"strconv"
 
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/bcrypt"
-	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/labstack/echo/v4"
 
 	v1api "github.com/bytebase/bytebase/backend/api/v1"
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/log"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
-	"github.com/bytebase/bytebase/backend/utils"
-	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 // https://learn.microsoft.com/en-us/entra/identity/app-provisioning/use-scim-to-provision-users-and-groups
 func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
-	g.POST("/workspaces/:workspaceID/projects/:projectID/Users", func(c echo.Context) error {
+	g.POST("/workspaces/:workspaceID/Users", func(c echo.Context) error {
 		body, err := io.ReadAll(c.Request().Body)
 		if err != nil {
 			return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to read body, error %v", err))
 		}
 
 		ctx := c.Request().Context()
-
-		project, err := s.validRequestURL(ctx, c)
-		if err != nil {
+		if err := s.validRequestURL(ctx, c); err != nil {
 			return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to find project, error %v", err))
 		}
 		var aadUser AADUser
@@ -79,17 +72,12 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 			user = updatedUser
 		}
 
-		if err := s.addUserToIAM(ctx, user, project); err != nil {
-			return c.String(http.StatusInternalServerError, err.Error())
-		}
-
 		return c.JSON(http.StatusCreated, formatAADUser(user))
 	})
 
-	g.GET("/workspaces/:workspaceID/projects/:projectID/Users/:userID", func(c echo.Context) error {
+	g.GET("/workspaces/:workspaceID/Users/:userID", func(c echo.Context) error {
 		ctx := c.Request().Context()
-		project, err := s.validRequestURL(ctx, c)
-		if err != nil {
+		if err := s.validRequestURL(ctx, c); err != nil {
 			return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to find project, error %v", err))
 		}
 
@@ -110,26 +98,13 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 				"status": "404",
 			})
 		}
-		existInIAM, _, err := s.userInTheProject(ctx, user, project)
-		if err != nil {
-			return err
-		}
-		if !existInIAM {
-			return c.JSON(http.StatusNotFound, map[string]any{
-				"schemas": []string{
-					"urn:ietf:params:scim:api:messages:2.0:Error",
-				},
-				"status": "404",
-			})
-		}
 
 		return c.JSON(http.StatusOK, formatAADUser(user))
 	})
 
-	g.GET("/workspaces/:workspaceID/projects/:projectID/Users", func(c echo.Context) error {
+	g.GET("/workspaces/:workspaceID/Users", func(c echo.Context) error {
 		ctx := c.Request().Context()
-		project, err := s.validRequestURL(ctx, c)
-		if err != nil {
+		if err := s.validRequestURL(ctx, c); err != nil {
 			return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to find project, error %v", err))
 		}
 
@@ -169,14 +144,6 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 			if user.MemberDeleted {
 				continue
 			}
-			existInIAM, _, err := s.userInTheProject(ctx, user, project)
-			if err != nil {
-				slog.Error("failed to check if user exist in iam", slog.String("user", user.Email), slog.String("project", project.ResourceID), log.BBError(err))
-				continue
-			}
-			if !existInIAM {
-				continue
-			}
 			response.TotalResults++
 			response.Resources = append(response.Resources, formatAADUser(user))
 		}
@@ -184,10 +151,9 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 		return c.JSON(http.StatusOK, response)
 	})
 
-	g.DELETE("/workspaces/:workspaceID/projects/:projectID/Users/:userID", func(c echo.Context) error {
+	g.DELETE("/workspaces/:workspaceID/Users/:userID", func(c echo.Context) error {
 		ctx := c.Request().Context()
-		project, err := s.validRequestURL(ctx, c)
-		if err != nil {
+		if err := s.validRequestURL(ctx, c); err != nil {
 			return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to find project, error %v", err))
 		}
 
@@ -204,17 +170,19 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 			return c.String(http.StatusNoContent, "")
 		}
 
-		if err := s.removeUserFromIAM(ctx, user, project); err != nil {
-			return c.String(http.StatusInternalServerError, err.Error())
+		deleteUser := true
+		if _, err := s.store.UpdateUser(ctx, user, &store.UpdateUserMessage{
+			Delete: &deleteUser,
+		}, api.SystemBotID); err != nil {
+			return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to update user, error %v", err))
 		}
 
 		return c.String(http.StatusNoContent, "")
 	})
 
-	g.PATCH("/workspaces/:workspaceID/projects/:projectID/Users/:userID", func(c echo.Context) error {
+	g.PATCH("/workspaces/:workspaceID/Users/:userID", func(c echo.Context) error {
 		ctx := c.Request().Context()
-		project, err := s.validRequestURL(ctx, c)
-		if err != nil {
+		if err := s.validRequestURL(ctx, c); err != nil {
 			return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to find project, error %v", err))
 		}
 
@@ -275,20 +243,6 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 			}
 		}
 
-		if shouldDelete := updateUser.Delete; shouldDelete != nil {
-			if *shouldDelete {
-				if err := s.removeUserFromIAM(ctx, user, project); err != nil {
-					return c.String(http.StatusInternalServerError, err.Error())
-				}
-			} else {
-				if err := s.addUserToIAM(ctx, user, project); err != nil {
-					return c.String(http.StatusInternalServerError, err.Error())
-				}
-			}
-			// Do not delete the user in the workspace. Only revoke him from the project.
-			updateUser.Delete = nil
-		}
-
 		updatedUser, err := s.store.UpdateUser(ctx, user, updateUser, api.SystemBotID)
 		if err != nil {
 			return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to update user, error %v", err))
@@ -296,70 +250,6 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 
 		return c.JSON(http.StatusOK, formatAADUser(updatedUser))
 	})
-}
-
-func (s *Service) removeUserFromIAM(ctx context.Context, user *store.UserMessage, project *store.ProjectMessage) error {
-	policy, err := s.store.GetProjectIamPolicy(ctx, project.UID)
-	if err != nil {
-		return errors.Wrapf(err, "failed to get iam policy for project %s", project.ResourceID)
-	}
-	member := fmt.Sprintf("%s%s", common.UserBindingPrefix, user.Email)
-	for _, binding := range policy.Policy.Bindings {
-		index := slices.Index(binding.Members, member)
-		if index >= 0 {
-			binding.Members = slices.Delete(binding.Members, index, index+1)
-		}
-	}
-
-	return s.updateIAMPolicy(ctx, project.UID, policy.Policy)
-}
-
-func (s *Service) userInTheProject(ctx context.Context, user *store.UserMessage, project *store.ProjectMessage) (bool, *storepb.IamPolicy, error) {
-	policy, err := s.store.GetProjectIamPolicy(ctx, project.UID)
-	if err != nil {
-		return false, nil, errors.Wrapf(err, "failed to get iam policy for project %s", project.ResourceID)
-	}
-
-	roles := utils.GetUserRolesInIamPolicy(ctx, s.store, user, policy.Policy)
-	return len(roles) > 0, policy.Policy, nil
-}
-
-func (s *Service) addUserToIAM(ctx context.Context, user *store.UserMessage, project *store.ProjectMessage) error {
-	existInIAM, policy, err := s.userInTheProject(ctx, user, project)
-	if err != nil {
-		return err
-	}
-	if !existInIAM {
-		policy.Bindings = append(policy.Bindings, &storepb.Binding{
-			Role: common.FormatRole(api.ProjectViewer.String()),
-			Members: []string{
-				fmt.Sprintf("%s%s", common.UserBindingPrefix, user.Email),
-			},
-		})
-
-		return s.updateIAMPolicy(ctx, project.UID, policy)
-	}
-
-	return nil
-}
-
-func (s *Service) updateIAMPolicy(ctx context.Context, projectUID int, iamPolicy *storepb.IamPolicy) error {
-	policyPayload, err := protojson.Marshal(iamPolicy)
-	if err != nil {
-		return errors.Wrapf(err, "failed to marshal iam policy")
-	}
-	if _, err := s.store.CreatePolicyV2(ctx, &store.PolicyMessage{
-		ResourceUID:       projectUID,
-		ResourceType:      api.PolicyResourceTypeProject,
-		Payload:           string(policyPayload),
-		Type:              api.PolicyTypeIAM,
-		InheritFromParent: false,
-		// Enforce cannot be false while creating a policy.
-		Enforce: true,
-	}, api.SystemBotID); err != nil {
-		return errors.Wrapf(err, "failed to update iam policy")
-	}
-	return nil
 }
 
 func formatAADUser(user *store.UserMessage) *AADUser {
@@ -381,31 +271,25 @@ func formatAADUser(user *store.UserMessage) *AADUser {
 	}
 }
 
-func (s *Service) validRequestURL(ctx context.Context, c echo.Context) (*store.ProjectMessage, error) {
+func (s *Service) validRequestURL(ctx context.Context, c echo.Context) error {
 	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	if setting.ExternalUrl == "" {
-		return nil, errors.Errorf("external URL is empty")
+		return errors.Errorf("external URL is empty")
 	}
 
 	workspaceID := c.Param("workspaceID")
-	projectID := c.Param("projectID")
 
 	myWorkspaceID, err := s.store.GetWorkspaceID(ctx)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	if myWorkspaceID != workspaceID {
-		return nil, errors.Errorf("invalid workspace id %q, my ID %q", workspaceID, myWorkspaceID)
+		return errors.Errorf("invalid workspace id %q, my ID %q", workspaceID, myWorkspaceID)
 	}
-	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{ResourceID: &projectID})
-	if err != nil {
-		return nil, err
-	}
-	if project == nil || project.Deleted {
-		return nil, errors.Errorf("project %q does not exist or has been deleted", projectID)
-	}
-	return project, nil
+
+	// TODO: validate token
+	return nil
 }
