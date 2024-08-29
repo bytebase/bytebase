@@ -35,24 +35,16 @@
       <template #footer>
         <div class="w-full flex justify-between items-center">
           <div>
-            <NPopconfirm v-if="!isCreating" @positive-click="handleRevoke">
-              <template #trigger>
-                <NButton quaternary size="small" @click.stop>
-                  <template #icon>
-                    <ArchiveIcon class="w-4 h-auto" />
-                  </template>
-                  <template #default>
-                    {{ $t("settings.members.action.deactivate") }}
-                  </template>
-                </NButton>
-              </template>
-
-              <template #default>
-                <div>
-                  {{ $t("settings.members.action.deactivate-confirm-title") }}
-                </div>
-              </template>
-            </NPopconfirm>
+            <BBButtonConfirm
+              v-if="!isCreating"
+              ref="confirmRevokeAccessRef"
+              :style="'DELETE'"
+              :confirm-title="$t('settings.members.revoke-access-alert')"
+              :ok-text="$t('settings.members.revoke-access')"
+              :button-text="$t('settings.members.revoke-access')"
+              :require-confirm="true"
+              @confirm="handleRevoke"
+            />
           </div>
 
           <div class="flex flex-row items-center justify-end gap-x-3">
@@ -76,10 +68,10 @@
 
 <script setup lang="ts">
 import { isEqual } from "lodash-es";
-import { ArchiveIcon } from "lucide-vue-next";
-import { NPopconfirm, NButton } from "naive-ui";
-import { computed, reactive } from "vue";
+import { NButton } from "naive-ui";
+import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
+import { BBButtonConfirm } from "@/bbkit";
 import EmailInput from "@/components/EmailInput.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { RoleSelect } from "@/components/v2/Select";
@@ -121,6 +113,7 @@ const state = reactive<LocalState>({
 
 const { t } = useI18n();
 const workspaceStore = useWorkspaceV1Store();
+const confirmRevokeAccessRef = ref<InstanceType<typeof BBButtonConfirm>>();
 
 const isCreating = computed(() => !props.member);
 
@@ -135,7 +128,7 @@ const email = computed(() => {
 });
 
 const allowConfirm = computed(() => {
-  if (state.memberList.length === 0 || state.roles.length === 0) {
+  if (state.memberList.length === 0) {
     return false;
   }
 
@@ -143,7 +136,7 @@ const allowConfirm = computed(() => {
     return !isEqual(props.member?.workspaceLevelRoles, state.roles);
   }
 
-  return true;
+  return state.roles.length !== 0;
 });
 
 const memberListInBinding = computed(() => {
@@ -154,6 +147,11 @@ const memberListInBinding = computed(() => {
 });
 
 const updateRoleBinding = async () => {
+  if (state.roles.length === 0) {
+    confirmRevokeAccessRef.value?.showAlert();
+    return;
+  }
+
   const batchPatch = [];
   if (props.member) {
     batchPatch.push({
