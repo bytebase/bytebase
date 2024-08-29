@@ -366,6 +366,7 @@ roles:
   - name: roles/projectQuerier
     title: Project querier
     permissions:
+      - bb.databases.check
       - bb.databases.get
       - bb.databases.getSchema
       - bb.databases.list
