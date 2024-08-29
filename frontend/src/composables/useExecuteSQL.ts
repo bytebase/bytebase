@@ -270,7 +270,7 @@ const useExecuteSQL = () => {
       );
       if (errorAdvice) {
         notifyAdvices(advices);
-        return abort(errorAdvice.content);
+        return abort(errorAdvice.content, advices);
       }
     }
 
