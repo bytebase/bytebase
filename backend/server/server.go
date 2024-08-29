@@ -22,6 +22,7 @@ import (
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/recovery"
 
 	"github.com/bytebase/bytebase/backend/api/auth"
+	directorysync "github.com/bytebase/bytebase/backend/api/directory-sync"
 	"github.com/bytebase/bytebase/backend/api/gitops"
 	"github.com/bytebase/bytebase/backend/api/lsp"
 	apiv1 "github.com/bytebase/bytebase/backend/api/v1"
@@ -56,6 +57,7 @@ import (
 const (
 	// webhookAPIPrefix is the API prefix for Bytebase webhook.
 	webhookAPIPrefix = "/hook"
+	scimAPIPrefix    = "/scim"
 	// lspAPI is the API for Bytebase Language Server Protocol.
 	lspAPI                 = "/lsp"
 	maxStacksize           = 1024 * 10240
@@ -350,10 +352,11 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	}
 	s.planService, s.rolloutService, s.issueService = planService, rolloutService, issueService
 	// GitOps webhook server.
-	gitOpsServer := gitops.NewService(s.store, s.stateCfg, s.licenseService, planService, rolloutService, issueService, sqlService, s.sheetManager)
+	gitOpsServer := gitops.NewService(s.store, s.licenseService, planService, rolloutService, issueService, sqlService, s.sheetManager)
+	directorySyncServer := directorysync.NewService(s.store, s.licenseService)
 
 	// Configure echo server routes.
-	configureEchoRouters(s.echoServer, s.grpcServer, s.lspServer, gitOpsServer, mux, profile)
+	configureEchoRouters(s.echoServer, s.grpcServer, s.lspServer, gitOpsServer, directorySyncServer, mux, profile)
 
 	serverStarted = true
 	return s, nil

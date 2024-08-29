@@ -16,17 +16,17 @@ import (
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
-type operatorType string
+type OperatorType string
 
 const (
 	setupExternalURLError = "external URL isn't setup yet, see https://www.bytebase.com/docs/get-started/install/external-url"
 
-	comparatorTypeEqual        operatorType = "="
-	comparatorTypeLess         operatorType = "<"
-	comparatorTypeLessEqual    operatorType = "<="
-	comparatorTypeGreater      operatorType = ">"
-	comparatorTypeGreaterEqual operatorType = ">="
-	comparatorTypeNotEqual     operatorType = "!="
+	ComparatorTypeEqual        OperatorType = "="
+	ComparatorTypeLess         OperatorType = "<"
+	ComparatorTypeLessEqual    OperatorType = "<="
+	ComparatorTypeGreater      OperatorType = ">"
+	ComparatorTypeGreaterEqual OperatorType = ">="
+	ComparatorTypeNotEqual     OperatorType = "!="
 )
 
 var (
@@ -156,13 +156,13 @@ func parseOrderBy(orderBy string) ([]orderByKey, error) {
 	return result, nil
 }
 
-type expression struct {
-	key      string
-	operator operatorType
-	value    string
+type Expression struct {
+	Key      string
+	Operator OperatorType
+	Value    string
 }
 
-// parseFilter will parse the simple filter.
+// ParseFilter will parse the simple filter.
 // TODO(rebelice): support more complex filter.
 // Currently we support the following syntax:
 //  1. for single expression:
@@ -172,7 +172,7 @@ type expression struct {
 //  2. for multiple expressions:
 //     i.  We only support && currently.
 //     ii. defined as `key comparator "val" && key comparator "val" && ...`.
-func parseFilter(filter string) ([]expression, error) {
+func ParseFilter(filter string) ([]Expression, error) {
 	if filter == "" {
 		return nil, nil
 	}
@@ -182,7 +182,7 @@ func parseFilter(filter string) ([]expression, error) {
 		return nil, err
 	}
 
-	var result []expression
+	var result []Expression
 	nextStringPos := 0
 
 	// Split the normalized filter by " && " to get the list of expressions.
@@ -192,11 +192,11 @@ func parseFilter(filter string) ([]expression, error) {
 		if err != nil {
 			return nil, err
 		}
-		if expr.value == "?" {
+		if expr.Value == "?" {
 			if nextStringPos >= len(quotedString) {
 				return nil, errors.Errorf("invalid filter %q", filter)
 			}
-			expr.value = quotedString[nextStringPos]
+			expr.Value = quotedString[nextStringPos]
 			nextStringPos++
 		}
 		result = append(result, expr)
@@ -205,42 +205,42 @@ func parseFilter(filter string) ([]expression, error) {
 	return result, nil
 }
 
-func parseExpression(expr string) (expression, error) {
+func parseExpression(expr string) (Expression, error) {
 	// Split the expression by " " to get the key, comparator and val.
 	re := regexp.MustCompile(`\s+`)
 	words := re.Split(strings.TrimSpace(expr), -1)
 	if len(words) != 3 {
-		return expression{}, errors.Errorf("invalid expression %q", expr)
+		return Expression{}, errors.Errorf("invalid expression %q", expr)
 	}
 
 	comparator, err := getComparatorType(words[1])
 	if err != nil {
-		return expression{}, err
+		return Expression{}, err
 	}
 
-	return expression{
-		key:      words[0],
-		operator: comparator,
-		value:    words[2],
+	return Expression{
+		Key:      words[0],
+		Operator: comparator,
+		Value:    words[2],
 	}, nil
 }
 
-func getComparatorType(op string) (operatorType, error) {
+func getComparatorType(op string) (OperatorType, error) {
 	switch op {
-	case "=":
-		return comparatorTypeEqual, nil
+	case "=", "eq":
+		return ComparatorTypeEqual, nil
 	case "!=":
-		return comparatorTypeNotEqual, nil
+		return ComparatorTypeNotEqual, nil
 	case ">":
-		return comparatorTypeGreater, nil
+		return ComparatorTypeGreater, nil
 	case ">=":
-		return comparatorTypeGreaterEqual, nil
+		return ComparatorTypeGreaterEqual, nil
 	case "<":
-		return comparatorTypeLess, nil
+		return ComparatorTypeLess, nil
 	case "<=":
-		return comparatorTypeLessEqual, nil
+		return ComparatorTypeLessEqual, nil
 	default:
-		return comparatorTypeEqual, errors.Errorf("invalid comparator %q", op)
+		return ComparatorTypeEqual, errors.Errorf("invalid comparator %q", op)
 	}
 }
 
