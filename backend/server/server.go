@@ -327,7 +327,7 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	reflection.Register(s.grpcServer)
 
 	// LSP server.
-	s.lspServer = lsp.NewServer(s.store)
+	s.lspServer = lsp.NewServer(s.store, profile)
 
 	postCreateUser := func(ctx context.Context, user *store.UserMessage, firstEndUser bool) error {
 		if profile.TestOnlySkipOnboardingData {
