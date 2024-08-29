@@ -10,7 +10,14 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-func TestClassification(t *testing.T) {
+func TestGetClassificationAndUserComment(t *testing.T) {
+	classificationConfig := &storepb.DataClassificationSetting_DataClassificationConfig{
+		Classification: map[string]*storepb.DataClassificationSetting_DataClassificationConfig_DataClassification{
+			"0":   {},
+			"1":   {},
+			"1-2": {},
+		},
+	}
 	tests := []struct {
 		rawComment     string
 		classification string
@@ -76,11 +83,16 @@ func TestClassification(t *testing.T) {
 			classification: "",
 			userComment:    "1 2",
 		},
+		{
+			rawComment:     "7-8-9-stuff-not-exists",
+			classification: "",
+			userComment:    "7-8-9-stuff-not-exists",
+		},
 	}
 
 	for _, test := range tests {
 		t.Run(fmt.Sprintf("test classification for comment: %v", test.rawComment), func(t *testing.T) {
-			classification, userComment := GetClassificationAndUserComment(test.rawComment)
+			classification, userComment := GetClassificationAndUserComment(test.rawComment, classificationConfig)
 			assert.Equal(t, test.classification, classification)
 			assert.Equal(t, test.userComment, userComment)
 			rebuildComment := GetCommentFromClassificationAndUserComment(classification, userComment)
