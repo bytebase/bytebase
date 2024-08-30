@@ -7,6 +7,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"slices"
 	"strconv"
 
 	"github.com/pkg/errors"
@@ -18,6 +19,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 // https://learn.microsoft.com/en-us/entra/identity/app-provisioning/use-scim-to-provision-users-and-groups
@@ -30,7 +32,7 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 
 		ctx := c.Request().Context()
 		if err := s.validRequestURL(ctx, c); err != nil {
-			return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to find project, error %v", err))
+			return c.String(http.StatusInternalServerError, err.Error())
 		}
 		var aadUser AADUser
 		if err := json.Unmarshal(body, &aadUser); err != nil {
@@ -72,13 +74,14 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 			user = updatedUser
 		}
 
-		return c.JSON(http.StatusCreated, formatAADUser(user))
+		return c.JSON(http.StatusCreated, convertToAADUser(user))
 	})
 
+	// Get a single user. The user id is the Bytebase user uid.
 	g.GET("/workspaces/:workspaceID/Users/:userID", func(c echo.Context) error {
 		ctx := c.Request().Context()
 		if err := s.validRequestURL(ctx, c); err != nil {
-			return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to find project, error %v", err))
+			return c.String(http.StatusInternalServerError, err.Error())
 		}
 
 		uid, err := strconv.Atoi(c.Param("userID"))
@@ -99,19 +102,14 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 			})
 		}
 
-		return c.JSON(http.StatusOK, formatAADUser(user))
+		return c.JSON(http.StatusOK, convertToAADUser(user))
 	})
 
+	// List users. AAD SCIM will send ?filter=userName eq "{user name}" query
 	g.GET("/workspaces/:workspaceID/Users", func(c echo.Context) error {
 		ctx := c.Request().Context()
 		if err := s.validRequestURL(ctx, c); err != nil {
-			return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to find project, error %v", err))
-		}
-
-		// AAD SCIM will send ?filter=userName eq "{user name}" query
-		filters, err := v1api.ParseFilter(c.QueryParam("filter"))
-		if err != nil {
-			return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to parse filter, error %v", err))
+			return c.String(http.StatusInternalServerError, err.Error())
 		}
 
 		response := &ListUsersResponse{
@@ -120,6 +118,16 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 			},
 			TotalResults: 0,
 			Resources:    []*AADUser{},
+		}
+
+		filter := c.QueryParam("filter")
+		if filter == "" {
+			return c.JSON(http.StatusOK, response)
+		}
+
+		filters, err := v1api.ParseFilter(filter)
+		if err != nil {
+			return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to parse filter, error %v", err))
 		}
 
 		find := &store.FindUserMessage{}
@@ -145,7 +153,7 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 				continue
 			}
 			response.TotalResults++
-			response.Resources = append(response.Resources, formatAADUser(user))
+			response.Resources = append(response.Resources, convertToAADUser(user))
 		}
 
 		return c.JSON(http.StatusOK, response)
@@ -154,7 +162,7 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 	g.DELETE("/workspaces/:workspaceID/Users/:userID", func(c echo.Context) error {
 		ctx := c.Request().Context()
 		if err := s.validRequestURL(ctx, c); err != nil {
-			return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to find project, error %v", err))
+			return c.String(http.StatusInternalServerError, err.Error())
 		}
 
 		uid, err := strconv.Atoi(c.Param("userID"))
@@ -174,7 +182,7 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 		if _, err := s.store.UpdateUser(ctx, user, &store.UpdateUserMessage{
 			Delete: &deleteUser,
 		}, api.SystemBotID); err != nil {
-			return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to update user, error %v", err))
+			return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to delete user, error %v", err))
 		}
 
 		return c.String(http.StatusNoContent, "")
@@ -183,7 +191,7 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 	g.PATCH("/workspaces/:workspaceID/Users/:userID", func(c echo.Context) error {
 		ctx := c.Request().Context()
 		if err := s.validRequestURL(ctx, c); err != nil {
-			return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to find project, error %v", err))
+			return c.String(http.StatusInternalServerError, err.Error())
 		}
 
 		body, err := io.ReadAll(c.Request().Body)
@@ -191,7 +199,7 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 			return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to read body, error %v", err))
 		}
 
-		var patch PatchUserRequest
+		var patch PatchRequest
 		if err := json.Unmarshal(body, &patch); err != nil {
 			return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to unmarshal body, error %v", err))
 		}
@@ -248,27 +256,201 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 			return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to update user, error %v", err))
 		}
 
-		return c.JSON(http.StatusOK, formatAADUser(updatedUser))
+		return c.JSON(http.StatusOK, convertToAADUser(updatedUser))
 	})
-}
 
-func formatAADUser(user *store.UserMessage) *AADUser {
-	return &AADUser{
-		Schemas: []string{
-			"urn:ietf:params:scim:schemas:core:2.0:User",
-		},
-		UserName:    user.Email,
-		Active:      !user.MemberDeleted,
-		DisplayName: user.Name,
-		ID:          common.FormatUserEmail(user.Email),
-		Emails: []*AADUserEmail{
-			{
-				Type:    "work",
-				Primary: true,
-				Value:   user.Email,
+	g.POST("/workspaces/:workspaceID/Groups", func(c echo.Context) error {
+		ctx := c.Request().Context()
+		if err := s.validRequestURL(ctx, c); err != nil {
+			return c.String(http.StatusInternalServerError, err.Error())
+		}
+
+		body, err := io.ReadAll(c.Request().Body)
+		if err != nil {
+			return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to read body, error %v", err))
+		}
+
+		var aadGroup AADGroup
+		if err := json.Unmarshal(body, &aadGroup); err != nil {
+			return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to unmarshal body, error %v", err))
+		}
+
+		// TODO(ed): check the external id & create the group with member
+		group, err := s.store.CreateGroup(ctx, &store.GroupMessage{
+			Email: aadGroup.ExternalID,
+			Title: aadGroup.DisplayName,
+		}, api.SystemBotID)
+		if err != nil {
+			return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to create group, error %v", err))
+		}
+
+		return c.JSON(http.StatusCreated, convertToAADGroup(group))
+	})
+
+	// Get a single user. The group id is the Bytebase group resource id.
+	g.GET("/workspaces/:workspaceID/Groups/:groupID", func(c echo.Context) error {
+		ctx := c.Request().Context()
+		if err := s.validRequestURL(ctx, c); err != nil {
+			return c.String(http.StatusInternalServerError, err.Error())
+		}
+
+		group, err := s.store.GetGroup(ctx, c.Param("groupID"))
+		if err != nil {
+			return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to find group, error %v", err))
+		}
+		if group == nil {
+			return c.JSON(http.StatusNotFound, map[string]any{
+				"schemas": []string{
+					"urn:ietf:params:scim:api:messages:2.0:Error",
+				},
+				"status": "404",
+			})
+		}
+
+		return c.JSON(http.StatusOK, convertToAADGroup(group))
+	})
+
+	// List groups. AAD SCIM will send ?filter=displayName eq "displayName" query
+	g.GET("/workspaces/:workspaceID/Groups", func(c echo.Context) error {
+		ctx := c.Request().Context()
+		if err := s.validRequestURL(ctx, c); err != nil {
+			return c.String(http.StatusInternalServerError, err.Error())
+		}
+
+		response := &ListGroupsResponse{
+			Schemas: []string{
+				"urn:ietf:params:scim:api:messages:2.0:ListResponse",
 			},
-		},
-	}
+			TotalResults: 0,
+			Resources:    []*AADGroup{},
+		}
+
+		filter := c.QueryParam("filter")
+		if filter == "" {
+			return c.JSON(http.StatusOK, response)
+		}
+
+		// TODO(ed): should support the filter
+		groups, err := s.store.ListGroups(ctx, &store.FindGroupMessage{})
+		if err != nil {
+			return c.String(http.StatusInternalServerError, fmt.Sprintf(`failed to list group, error %v`, err))
+		}
+
+		for _, group := range groups {
+			response.TotalResults++
+			response.Resources = append(response.Resources, convertToAADGroup(group))
+		}
+
+		return c.JSON(http.StatusOK, response)
+	})
+
+	g.DELETE("/workspaces/:workspaceID/Groups/:groupID", func(c echo.Context) error {
+		ctx := c.Request().Context()
+		if err := s.validRequestURL(ctx, c); err != nil {
+			return c.String(http.StatusInternalServerError, err.Error())
+		}
+
+		if err := s.store.DeleteGroup(ctx, c.Param("groupID")); err != nil {
+			return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to delete group, error %v", err))
+		}
+
+		if err := s.iamManager.ReloadCache(ctx); err != nil {
+			return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to reload iam cache, error %v", err))
+		}
+
+		return c.JSON(http.StatusNoContent, "")
+	})
+
+	g.PATCH("/workspaces/:workspaceID/Groups/:groupID", func(c echo.Context) error {
+		ctx := c.Request().Context()
+		if err := s.validRequestURL(ctx, c); err != nil {
+			return c.String(http.StatusInternalServerError, err.Error())
+		}
+
+		body, err := io.ReadAll(c.Request().Body)
+		if err != nil {
+			return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to read body, error %v", err))
+		}
+
+		var patch PatchRequest
+		if err := json.Unmarshal(body, &patch); err != nil {
+			return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to unmarshal body, error %v", err))
+		}
+
+		group, err := s.store.GetGroup(ctx, c.Param("groupID"))
+		if err != nil {
+			return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to find group, error %v", err))
+		}
+
+		updateGroup := &store.UpdateGroupMessage{
+			Payload: group.Payload,
+		}
+		for _, op := range patch.Operations {
+			switch op.Path {
+			case "members":
+				patchMember, ok := op.Value.(PatchMember)
+				if !ok {
+					slog.Warn("unsupport value, expect PatchMember entity", slog.String("operation", op.OP), slog.String("path", op.Path))
+					continue
+				}
+
+				// TODO(ed): what's the member, bytebase uid/email, or aad user identifier?
+				uid, err := strconv.Atoi(patchMember.Value)
+				if err != nil {
+					return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to parse user id, error %v", err))
+				}
+				user, err := s.store.GetUserByID(ctx, uid)
+				if err != nil {
+					return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to get user, error %v", err))
+				}
+				if user == nil {
+					slog.Warn("cannot found user", slog.String("operation", op.OP), slog.String("uid", patchMember.Value))
+					continue
+				}
+
+				member := &storepb.GroupMember{
+					Member: common.FormatUserUID(user.ID),
+					Role:   storepb.GroupMember_MEMBER,
+				}
+				index := slices.IndexFunc(group.Payload.Members, func(m *storepb.GroupMember) bool {
+					return m.Member == member.Member
+				})
+				switch op.OP {
+				case "Add":
+					if index < 0 {
+						updateGroup.Payload.Members = append(updateGroup.Payload.Members, member)
+					}
+				case "Remove":
+					if index >= 0 {
+						updateGroup.Payload.Members = slices.Delete(updateGroup.Payload.Members, index, index+1)
+					}
+				default:
+					slog.Warn("unsupport operation type", slog.String("operation", op.OP), slog.String("path", op.Path))
+					continue
+				}
+			case "displayName":
+				if op.OP != "Replace" {
+					slog.Warn("unsupport operation type", slog.String("operation", op.OP), slog.String("path", op.Path))
+					continue
+				}
+				displayName, ok := op.Value.(string)
+				if !ok {
+					slog.Warn("unsupport value, expect string", slog.String("operation", op.OP), slog.String("path", op.Path))
+					continue
+				}
+				updateGroup.Title = &displayName
+			default:
+				slog.Warn("unsupport patch", slog.String("operation", op.OP), slog.String("path", op.Path))
+			}
+		}
+
+		updatedGroup, err := s.store.UpdateGroup(ctx, group.Email, updateGroup, api.SystemBotID)
+		if err != nil {
+			return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to update group, error %v", err))
+		}
+
+		return c.JSON(http.StatusOK, convertToAADGroup(updatedGroup))
+	})
 }
 
 func (s *Service) validRequestURL(ctx context.Context, c echo.Context) error {
@@ -292,4 +474,39 @@ func (s *Service) validRequestURL(ctx context.Context, c echo.Context) error {
 
 	// TODO: validate token
 	return nil
+}
+
+func convertToAADUser(user *store.UserMessage) *AADUser {
+	return &AADUser{
+		Schemas: []string{
+			"urn:ietf:params:scim:schemas:core:2.0:User",
+		},
+		UserName:    user.Email,
+		Active:      !user.MemberDeleted,
+		DisplayName: user.Name,
+		ID:          common.FormatUserEmail(user.Email),
+		Emails: []*AADUserEmail{
+			{
+				Type:    "work",
+				Primary: true,
+				Value:   user.Email,
+			},
+		},
+		Meta: &AADResourceMeta{
+			ResourceType: "User",
+		},
+	}
+}
+
+func convertToAADGroup(group *store.GroupMessage) *AADGroup {
+	return &AADGroup{
+		Schemas: []string{
+			"urn:ietf:params:scim:schemas:core:2.0:Group",
+		},
+		ID:          group.Email,
+		DisplayName: group.Title,
+		Meta: &AADResourceMeta{
+			ResourceType: "Group",
+		},
+	}
 }
