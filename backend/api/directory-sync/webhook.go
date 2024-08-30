@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"slices"
 	"strconv"
+	"strings"
 
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/bcrypt"
@@ -454,6 +455,11 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 }
 
 func (s *Service) validRequestURL(ctx context.Context, c echo.Context) error {
+	authorization := strings.TrimPrefix(c.Request().Header.Get("Authorization"), "Bearer ")
+	if authorization == "" {
+		return errors.Errorf("missing authorization token")
+	}
+
 	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
 	if err != nil {
 		return err
@@ -472,7 +478,25 @@ func (s *Service) validRequestURL(ctx context.Context, c echo.Context) error {
 		return errors.Errorf("invalid workspace id %q, my ID %q", workspaceID, myWorkspaceID)
 	}
 
-	// TODO(ed): validate token
+	scimSettingName := api.SettingSCIM
+	scimSetting, err := s.store.GetSettingV2(ctx, &store.FindSettingMessage{
+		Name: &scimSettingName,
+	})
+	if err != nil {
+		return errors.Wrapf(err, "failed to find scim setting")
+	}
+	if scimSetting == nil {
+		return errors.Errorf("cannot found scim setting")
+	}
+	payload := new(storepb.SCIMSetting)
+	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(scimSetting.Value), payload); err != nil {
+		return errors.Wrapf(err, "failed to unmarshal scim setting")
+	}
+
+	if payload.Token != authorization {
+		return errors.Errorf("invalid authorization token")
+	}
+
 	return nil
 }
 

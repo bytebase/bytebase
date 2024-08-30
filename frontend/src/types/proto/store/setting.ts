@@ -624,6 +624,10 @@ export interface MaximumSQLResultSizeSetting {
   limit: Long;
 }
 
+export interface SCIMSetting {
+  token: string;
+}
+
 function createBaseWorkspaceProfileSetting(): WorkspaceProfileSetting {
   return {
     externalUrl: "",
@@ -3833,6 +3837,63 @@ export const MaximumSQLResultSizeSetting = {
   fromPartial(object: DeepPartial<MaximumSQLResultSizeSetting>): MaximumSQLResultSizeSetting {
     const message = createBaseMaximumSQLResultSizeSetting();
     message.limit = (object.limit !== undefined && object.limit !== null) ? Long.fromValue(object.limit) : Long.ZERO;
+    return message;
+  },
+};
+
+function createBaseSCIMSetting(): SCIMSetting {
+  return { token: "" };
+}
+
+export const SCIMSetting = {
+  encode(message: SCIMSetting, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.token !== "") {
+      writer.uint32(10).string(message.token);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): SCIMSetting {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSCIMSetting();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.token = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SCIMSetting {
+    return { token: isSet(object.token) ? globalThis.String(object.token) : "" };
+  },
+
+  toJSON(message: SCIMSetting): unknown {
+    const obj: any = {};
+    if (message.token !== "") {
+      obj.token = message.token;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<SCIMSetting>): SCIMSetting {
+    return SCIMSetting.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<SCIMSetting>): SCIMSetting {
+    const message = createBaseSCIMSetting();
+    message.token = object.token ?? "";
     return message;
   },
 };
