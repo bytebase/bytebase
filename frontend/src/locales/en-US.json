@@ -1333,7 +1333,7 @@
     "transfer-in-db": "Transfer in DB",
     "request-db": "Request DB",
     "from-unassigned-databases": "Unassigned databases",
-    "from-projects": "From other project",
+    "from-projects": "From other projects",
     "transfer-in-db-title": "Transfer in database",
     "unassigned-db-hint": "Newly synced databases start unassigned and must be moved to a project for use.",
     "transfer-out-db": "Transfer out DB",
