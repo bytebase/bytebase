@@ -1333,7 +1333,7 @@
     "transfer-in-db": "转进数据库",
     "request-db": "申请数据库",
     "from-unassigned-databases": "未分配的数据库",
-    "from-projects": "来自其他项目",
+    "from-projects": "从其他项目",
     "transfer-in-db-title": "转进数据库",
     "unassigned-db-hint": "新同步的数据库起先是未分配的状态，必须移至一个项目以供使用。",
     "transfer-out-db": "转出数据库",
