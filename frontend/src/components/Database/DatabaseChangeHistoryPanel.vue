@@ -140,7 +140,11 @@ import { useDatabaseDetailContext } from "@/components/Database/context";
 import { TooltipButton } from "@/components/v2";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
-import { useChangeHistoryStore, useDBSchemaV1Store } from "@/store";
+import {
+  DEFAULT_CHANGE_HISTORY_PAGE_SIZE,
+  useChangeHistoryStore,
+  useDBSchemaV1Store,
+} from "@/store";
 import type { ComposedDatabase } from "@/types";
 import { DEFAULT_PROJECT_NAME } from "@/types";
 import type { Table } from "@/types/changeHistory";
@@ -185,7 +189,7 @@ const prepareChangeHistoryList = async () => {
   state.loading = true;
   await changeHistoryStore.fetchChangeHistoryList({
     parent: props.database.name,
-    pageSize: 1000,
+    pageSize: DEFAULT_CHANGE_HISTORY_PAGE_SIZE,
   });
   // prepare database metadata for getting affected tables.
   await useDBSchemaV1Store().getOrFetchDatabaseMetadata({
