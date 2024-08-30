@@ -566,6 +566,13 @@
       "view-by-roles": "View by roles",
       "add-member": "Add member",
       "add-user": "Add user",
+      "aad-sync": {
+        "self": "Sync from Entra ID (Azure ID)",
+        "endpoint": "Endpoint",
+        "endpoint-tip": "Provide the URL to the Azure as tenant URL, it will sync users and groups via webhook.",
+        "token": "Token",
+        "token-tip": "Entra ID sync token. Please keep it in secret."
+      },
       "update-user": "Update user",
       "workspace-role-at-least-one": "At least one workspace role is required",
       "search-member": "Search member",
