@@ -1511,6 +1511,8 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 			return MySQLBuiltinPriorBackupCheck, nil
 		case storepb.Engine_POSTGRES:
 			return PostgreSQLBuiltinPriorBackupCheck, nil
+		case storepb.Engine_MSSQL:
+			return MSSQLBuiltinPriorBackupCheck, nil
 		}
 	}
 	return "", errors.Errorf("unknown SQL review rule type %v for %v", ruleType, engine)

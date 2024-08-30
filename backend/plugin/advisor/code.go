@@ -727,6 +727,9 @@ const (
 	// MSSQLSyntax is an advisor type for MSSQL syntax.
 	MSSQLSyntax Type = "bb.plugin.advisor.mssql.syntax"
 
+	// MSSQLBuiltinPriorBackupCheck is an advisor type for MSSQL prior backup check.
+	MSSQLBuiltinPriorBackupCheck Type = "bb.plugin.advisor.mssql.builtin.prior-backup-check"
+
 	// MSSQLNoSelectAll is an advisor type for MSSQL no select all.
 	MSSQLNoSelectAll Type = "bb.plugin.advisor.mssql.select.no-select-all"
 
