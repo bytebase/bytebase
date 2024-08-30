@@ -112,6 +112,9 @@ export const defaultEditorOptions =
       scrollbar: {
         alwaysConsumeMouseWheel: false,
       },
+      inlineSuggest: {
+        showToolbar: "never",
+      },
     };
   };
 
@@ -143,6 +146,9 @@ export const defaultDiffEditorOptions =
       codeLens: false,
       scrollbar: {
         alwaysConsumeMouseWheel: false,
+      },
+      inlineSuggest: {
+        showToolbar: "never",
       },
     };
   };
