@@ -349,3 +349,7 @@ message MaximumSQLResultSizeSetting {
   // The default value is 100MB, we will use the default value if the setting not exists, or the limit <= 0.
   int64 limit = 1;
 }
+
+message SCIMSetting {
+  string token = 1;
+}

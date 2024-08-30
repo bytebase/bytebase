@@ -153,6 +153,7 @@ export interface Value {
   semanticTypeSettingValue?: SemanticTypeSetting | undefined;
   maskingAlgorithmSettingValue?: MaskingAlgorithmSetting | undefined;
   maximumSqlResultSizeSetting?: MaximumSQLResultSizeSetting | undefined;
+  scimSetting?: SCIMSetting | undefined;
 }
 
 export interface SMTPMailDeliverySettingValue {
@@ -715,6 +716,10 @@ export interface MaximumSQLResultSizeSetting {
   limit: Long;
 }
 
+export interface SCIMSetting {
+  token: string;
+}
+
 function createBaseListSettingsRequest(): ListSettingsRequest {
   return { pageSize: 0, pageToken: "" };
 }
@@ -1174,6 +1179,7 @@ function createBaseValue(): Value {
     semanticTypeSettingValue: undefined,
     maskingAlgorithmSettingValue: undefined,
     maximumSqlResultSizeSetting: undefined,
+    scimSetting: undefined,
   };
 }
 
@@ -1217,6 +1223,9 @@ export const Value = {
     }
     if (message.maximumSqlResultSizeSetting !== undefined) {
       MaximumSQLResultSizeSetting.encode(message.maximumSqlResultSizeSetting, writer.uint32(106).fork()).ldelim();
+    }
+    if (message.scimSetting !== undefined) {
+      SCIMSetting.encode(message.scimSetting, writer.uint32(114).fork()).ldelim();
     }
     return writer;
   },
@@ -1319,6 +1328,13 @@ export const Value = {
 
           message.maximumSqlResultSizeSetting = MaximumSQLResultSizeSetting.decode(reader, reader.uint32());
           continue;
+        case 14:
+          if (tag !== 114) {
+            break;
+          }
+
+          message.scimSetting = SCIMSetting.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1365,6 +1381,7 @@ export const Value = {
       maximumSqlResultSizeSetting: isSet(object.maximumSqlResultSizeSetting)
         ? MaximumSQLResultSizeSetting.fromJSON(object.maximumSqlResultSizeSetting)
         : undefined,
+      scimSetting: isSet(object.scimSetting) ? SCIMSetting.fromJSON(object.scimSetting) : undefined,
     };
   },
 
@@ -1408,6 +1425,9 @@ export const Value = {
     }
     if (message.maximumSqlResultSizeSetting !== undefined) {
       obj.maximumSqlResultSizeSetting = MaximumSQLResultSizeSetting.toJSON(message.maximumSqlResultSizeSetting);
+    }
+    if (message.scimSetting !== undefined) {
+      obj.scimSetting = SCIMSetting.toJSON(message.scimSetting);
     }
     return obj;
   },
@@ -1465,6 +1485,9 @@ export const Value = {
       (object.maximumSqlResultSizeSetting !== undefined && object.maximumSqlResultSizeSetting !== null)
         ? MaximumSQLResultSizeSetting.fromPartial(object.maximumSqlResultSizeSetting)
         : undefined;
+    message.scimSetting = (object.scimSetting !== undefined && object.scimSetting !== null)
+      ? SCIMSetting.fromPartial(object.scimSetting)
+      : undefined;
     return message;
   },
 };
@@ -4743,6 +4766,63 @@ export const MaximumSQLResultSizeSetting = {
   fromPartial(object: DeepPartial<MaximumSQLResultSizeSetting>): MaximumSQLResultSizeSetting {
     const message = createBaseMaximumSQLResultSizeSetting();
     message.limit = (object.limit !== undefined && object.limit !== null) ? Long.fromValue(object.limit) : Long.ZERO;
+    return message;
+  },
+};
+
+function createBaseSCIMSetting(): SCIMSetting {
+  return { token: "" };
+}
+
+export const SCIMSetting = {
+  encode(message: SCIMSetting, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.token !== "") {
+      writer.uint32(10).string(message.token);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): SCIMSetting {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSCIMSetting();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.token = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): SCIMSetting {
+    return { token: isSet(object.token) ? globalThis.String(object.token) : "" };
+  },
+
+  toJSON(message: SCIMSetting): unknown {
+    const obj: any = {};
+    if (message.token !== "") {
+      obj.token = message.token;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<SCIMSetting>): SCIMSetting {
+    return SCIMSetting.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<SCIMSetting>): SCIMSetting {
+    const message = createBaseSCIMSetting();
+    message.token = object.token ?? "";
     return message;
   },
 };

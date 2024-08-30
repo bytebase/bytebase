@@ -50,6 +50,17 @@
         <div class="flex items-center space-x-3">
           <SearchBox v-model:value="state.activeUserFilterText" />
 
+          <NButton
+            v-if="isDev()"
+            class="capitalize"
+            @click="state.showAadSyncDrawer = true"
+          >
+            <template #icon>
+              <SettingsIcon class="h-5 w-5" />
+            </template>
+            {{ $t(`settings.members.aad-sync.self`) }}
+          </NButton>
+
           <NPopover
             v-if="allowCreateGroup"
             :disabled="workspaceProfileSetting.domains.length > 0"
@@ -128,15 +139,21 @@
     :group="state.editingGroup"
     @close="state.showCreateGroupDrawer = false"
   />
+
+  <AADSyncDrawer
+    v-if="state.showAadSyncDrawer"
+    @close="state.showAadSyncDrawer = false"
+  />
 </template>
 
 <script setup lang="ts">
-import { PlusIcon } from "lucide-vue-next";
+import { PlusIcon, SettingsIcon } from "lucide-vue-next";
 import { NButton, NTabs, NTabPane, NPopover, NCheckbox } from "naive-ui";
 import { computed, onMounted, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter, RouterLink } from "vue-router";
 import { FeatureAttention } from "@/components/FeatureGuard";
+import AADSyncDrawer from "@/components/User/Settings/AADSyncDrawer.vue";
 import CreateGroupDrawer from "@/components/User/Settings/CreateGroupDrawer.vue";
 import CreateUserDrawer from "@/components/User/Settings/CreateUserDrawer.vue";
 import UserDataTable from "@/components/User/Settings/UserDataTable/index.vue";
@@ -159,7 +176,11 @@ import { UserType, type User } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
 import type { Group } from "@/types/proto/v1/group";
 import { WorkspaceProfileSetting } from "@/types/proto/v1/setting_service";
-import { hasWorkspacePermissionV2, hasWorkspaceLevelRole } from "@/utils";
+import {
+  hasWorkspacePermissionV2,
+  hasWorkspaceLevelRole,
+  isDev,
+} from "@/utils";
 
 const tabList = ["USERS", "GROUPS"] as const;
 type MemberTab = (typeof tabList)[number];
@@ -173,6 +194,7 @@ type LocalState = {
   showInactiveUserList: boolean;
   showCreateUserDrawer: boolean;
   showCreateGroupDrawer: boolean;
+  showAadSyncDrawer: boolean;
   editingUser?: User;
   editingGroup?: Group;
 };
@@ -184,6 +206,7 @@ const state = reactive<LocalState>({
   showInactiveUserList: false,
   showCreateUserDrawer: false,
   showCreateGroupDrawer: false,
+  showAadSyncDrawer: false,
 });
 
 const { t } = useI18n();
