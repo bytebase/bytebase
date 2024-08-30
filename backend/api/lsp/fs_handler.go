@@ -13,6 +13,7 @@ import (
 
 	parser "github.com/bytebase/mysql-parser"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -80,7 +81,7 @@ func (h *Handler) handleFileSystemRequest(ctx context.Context, conn *jsonrpc2.Co
 				return err
 			}
 			// Beta: Parse and send diagnostics for MySQL.
-			if h.getEngineType(ctx) == store.Engine_MYSQL {
+			if h.profile.Mode == common.ReleaseModeDev && h.getEngineType(ctx) == store.Engine_MYSQL {
 				uri := params.TextDocument.URI
 				content, found := fs.get(uri)
 				if !found {

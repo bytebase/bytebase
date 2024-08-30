@@ -42,7 +42,7 @@
 import { ChevronsDownIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { ref } from "vue";
-import TransferDatabaseForm from "@/components/TransferDatabaseForm.vue";
+import { TransferDatabaseForm } from "@/components/TransferDatabaseForm";
 import MaskSpinner from "@/components/misc/MaskSpinner.vue";
 import { Drawer } from "@/components/v2";
 import DatabaseV1Table from "@/components/v2/Model/DatabaseV1Table";
