@@ -100,7 +100,7 @@ import { Drawer, DrawerContent } from "@/components/v2";
 import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/router/dashboard/workspaceSetting";
 import { pushNotification, useSettingV1Store } from "@/store";
 
-const emit = defineEmits<{
+defineEmits<{
   (event: "close"): void;
 }>();
 
