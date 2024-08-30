@@ -9,26 +9,29 @@
       >
         <BBSpin />
       </div>
-      <div v-else class="space-y-4">
+      <div v-else class="space-y-4 pb-4">
         <div class="space-y-4">
           <span class="text-main text-base">
             {{ $t("database.transfer.select-databases") }}
             <span class="text-red-500">*</span>
           </span>
-          <MultipleDatabaseSelector
-            v-model:selected-database-name-list="selectedDatabaseNameList"
-            :transfer-source="'OTHER'"
-            :database-list="[...databaseList]"
+          <DatabaseV1Table
+            :database-list="databaseList"
+            :show-selection="true"
+            :selected-database-names="selectedDatabaseNameList"
+            @update:selected-databases="
+              selectedDatabaseNameList = Array.from($event)
+            "
           />
         </div>
         <NDivider class="w-full py-2" />
-        <NRadioGroup v-model:value="transfer">
+        <NRadioGroup v-model:value="transfer" class="space-x-4">
           <NRadio value="project">
             <span class="text-main text-base">
               {{ $t("database.transfer.select-target-project") }}
             </span>
           </NRadio>
-          <NRadio v-if="!allUnassigned" value="unassign">
+          <NRadio v-if="showUnassignOption" value="unassign">
             <span class="text-main text-base">
               {{ $t("database.unassign") }}
             </span>
@@ -87,7 +90,7 @@ import {
   isValidProjectName,
 } from "@/types";
 import { extractProjectResourceName } from "@/utils";
-import { MultipleDatabaseSelector } from "../TransferDatabaseForm";
+import DatabaseV1Table from "../v2/Model/DatabaseV1Table/DatabaseV1Table.vue";
 
 const props = defineProps<{
   databaseList: ComposedDatabase[];
@@ -99,11 +102,11 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
+const router = useRouter();
 const projectStore = useProjectV1Store();
 const databaseStore = useDatabaseV1Store();
 const loading = ref(false);
 const transfer = ref<"project" | "unassign">("project");
-const router = useRouter();
 
 const selectedDatabaseNameList = ref<string[]>(
   props.selectedDatabaseNames ?? []
@@ -121,9 +124,9 @@ const selectedDatabaseList = computed(() => {
   });
 });
 
-const allUnassigned = computed(() => {
-  return selectedDatabaseList.value.every(
-    (db) => db.project === DEFAULT_PROJECT_NAME
+const showUnassignOption = computed(() => {
+  return selectedDatabaseList.value.some(
+    (db) => db.project !== DEFAULT_PROJECT_NAME
   );
 });
 
