@@ -3,33 +3,56 @@
     <div
       class="px-4 w-[calc(100vw-8rem)] lg:w-[60rem] max-w-[calc(100vw-8rem)]"
     >
-      <div
-        v-if="state.loading"
-        class="absolute inset-0 z-10 bg-white/70 flex items-center justify-center"
-      >
-        <BBSpin />
-      </div>
-      <div v-else class="space-y-4">
+      <div class="space-y-4">
         <TransferSourceSelector
           :project="project"
           :raw-database-list="rawDatabaseList"
           :transfer-source="state.transferSource"
+          :environment-filter="state.environmentFilter"
           :instance-filter="state.instanceFilter"
-          :project-filter="state.projectFilter"
           :search-text="state.searchText"
           :has-permission-for-default-project="hasPermissionForDefaultProject"
           @change="state.transferSource = $event"
+          @select-environment="state.environmentFilter = $event"
           @select-instance="state.instanceFilter = $event"
-          @select-project="state.projectFilter = $event"
           @search-text-change="state.searchText = $event"
         />
-        <MultipleDatabaseSelector
-          v-if="filteredDatabaseList.length > 0"
-          v-model:selected-database-name-list="state.selectedDatabaseNameList"
-          :transfer-source="state.transferSource"
-          :database-list="filteredDatabaseList"
-        />
-        <NoDataPlaceholder v-else />
+        <div>
+          <ProjectSelect
+            v-if="state.transferSource == 'OTHER'"
+            class="!w-48"
+            :include-all="false"
+            :project-name="state.fromProjectName"
+            :filter="filterSourceProject"
+            @update:project-name="changeProjectFilter"
+          />
+        </div>
+        <template
+          v-if="state.transferSource === 'OTHER' && !state.fromProjectName"
+        >
+          <!-- Empty -->
+        </template>
+        <template v-else>
+          <div class="w-full relative">
+            <div
+              v-if="state.loading"
+              class="absolute inset-0 z-10 bg-white/70 flex items-center justify-center"
+            >
+              <BBSpin />
+            </div>
+            <template v-else>
+              <DatabaseV1Table
+                mode="PROJECT"
+                :database-list="filteredDatabaseList"
+                :show-selection="true"
+                :selected-database-names="state.selectedDatabaseNameList"
+                @update:selected-databases="
+                  state.selectedDatabaseNameList = Array.from($event)
+                "
+              />
+            </template>
+          </div>
+        </template>
       </div>
     </div>
 
@@ -80,37 +103,36 @@ import {
   pushNotification,
   useDatabaseV1Store,
   useProjectByName,
-  useProjectV1List,
 } from "@/store";
 import { useDatabaseV1List } from "@/store/modules/v1/databaseList";
 import type { ComposedDatabase, ComposedProject } from "@/types";
 import {
   DEFAULT_PROJECT_NAME,
   defaultProject,
-  isValidInstanceName,
+  isValidProjectName,
 } from "@/types";
 import type { UpdateDatabaseRequest } from "@/types/proto/v1/database_service";
+import type { Environment } from "@/types/proto/v1/environment_service";
 import type { InstanceResource } from "@/types/proto/v1/instance_service";
-import type { Project } from "@/types/proto/v1/project_service";
 import {
   filterDatabaseV1ByKeyword,
   hasProjectPermissionV2,
   sortDatabaseV1List,
   wrapRefAsPromise,
 } from "@/utils";
-import NoDataPlaceholder from "../misc/NoDataPlaceholder.vue";
-import { DrawerContent } from "../v2";
-import MultipleDatabaseSelector from "./MultipleDatabaseSelector.vue";
+import { DrawerContent, ProjectSelect } from "../v2";
+import DatabaseV1Table from "../v2/Model/DatabaseV1Table/DatabaseV1Table.vue";
 import TransferSourceSelector from "./TransferSourceSelector.vue";
 import type { TransferSource } from "./utils";
 
 interface LocalState {
   transferSource: TransferSource;
   instanceFilter: InstanceResource | undefined;
-  projectFilter: Project | undefined;
+  environmentFilter: Environment | undefined;
   searchText: string;
   loading: boolean;
   selectedDatabaseNameList: string[];
+  fromProjectName: string | undefined;
 }
 
 const props = defineProps<{
@@ -123,45 +145,24 @@ const emit = defineEmits<{
 }>();
 
 const databaseStore = useDatabaseV1Store();
-const { projectList, ready: projectListReady } = useProjectV1List();
-
-const hasTransferDatabasePermission = (project: ComposedProject): boolean => {
-  return (
-    hasProjectPermissionV2(project, "bb.databases.list") &&
-    hasProjectPermissionV2(project, "bb.projects.update")
-  );
-};
-
-const hasPermissionForDefaultProject = computed(() => {
-  return hasTransferDatabasePermission(defaultProject());
-});
 
 const state = reactive<LocalState>({
-  transferSource:
-    props.projectName === DEFAULT_PROJECT_NAME ||
-    !hasPermissionForDefaultProject.value
-      ? "OTHER"
-      : "DEFAULT",
+  transferSource: "OTHER",
   instanceFilter: undefined,
-  projectFilter: undefined,
+  environmentFilter: undefined,
   searchText: "",
-  loading: true,
   selectedDatabaseNameList: [],
+  fromProjectName: undefined,
+  loading: false,
 });
 const { project } = useProjectByName(toRef(props, "projectName"));
 
 watchEffect(async () => {
-  if (!projectListReady) {
+  if (!state.fromProjectName) {
     return;
   }
-  await Promise.all(
-    projectList.value.map(async (proj) => {
-      if (proj.name === props.projectName) {
-        return Promise.resolve();
-      }
-      return await wrapRefAsPromise(useDatabaseV1List(proj.name).ready, true);
-    })
-  );
+  state.loading = true;
+  await wrapRefAsPromise(useDatabaseV1List(state.fromProjectName).ready, true);
   state.loading = false;
 });
 
@@ -192,22 +193,18 @@ const filteredDatabaseList = computed(() => {
   );
 
   list = list.filter((db) => {
-    // Default uses instance filter
-    if (state.transferSource === "DEFAULT") {
-      const instance = state.instanceFilter;
-      if (
-        instance &&
-        isValidInstanceName(instance.name) &&
-        db.instance !== instance.name
-      ) {
-        return false;
-      }
+    const environment = state.environmentFilter;
+    if (environment && db.effectiveEnvironment !== environment.name) {
+      return false;
+    }
+    const instance = state.instanceFilter;
+    if (instance && db.instance !== instance.name) {
+      return false;
     }
 
     // Other uses project filter
     if (state.transferSource === "OTHER") {
-      const project = state.projectFilter;
-      if (project && db.project != project.name) {
+      if (state.fromProjectName && db.project !== state.fromProjectName) {
         return false;
       }
     }
@@ -225,6 +222,31 @@ const selectedDatabaseList = computed(() =>
     databaseStore.getDatabaseByName(name)
   )
 );
+
+const hasPermissionForDefaultProject = computed(() => {
+  return hasTransferDatabasePermission(defaultProject());
+});
+
+const hasTransferDatabasePermission = (project: ComposedProject): boolean => {
+  return (
+    hasProjectPermissionV2(project, "bb.databases.list") &&
+    hasProjectPermissionV2(project, "bb.projects.update")
+  );
+};
+
+const changeProjectFilter = (name: string | undefined) => {
+  if (!name || !isValidProjectName(name)) {
+    state.fromProjectName = undefined;
+  } else {
+    state.fromProjectName = name;
+  }
+};
+
+const filterSourceProject = (project: ComposedProject) => {
+  return (
+    hasTransferDatabasePermission(project) && project.name !== props.projectName
+  );
+};
 
 const transferDatabase = async () => {
   try {

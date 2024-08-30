@@ -4,35 +4,34 @@
       class="flex flex-col md:flex-row md:items-center gap-y-2 justify-between"
     >
       <div v-if="project.name !== DEFAULT_PROJECT_NAME" class="radio-set-row">
-        <NRadioGroup v-model:value="state.transferSource">
-          <NRadio v-if="hasPermissionForDefaultProject" :value="'DEFAULT'">
-            {{ $t("quick-action.from-unassigned-databases") }}
-          </NRadio>
+        <NRadioGroup
+          v-model:value="state.transferSource"
+          class="space-x-4"
+          size="large"
+        >
           <NRadio :value="'OTHER'">
             {{ $t("quick-action.from-projects") }}
+          </NRadio>
+          <NRadio v-if="hasPermissionForDefaultProject" :value="'DEFAULT'">
+            {{ $t("quick-action.from-unassigned-databases") }}
           </NRadio>
         </NRadioGroup>
       </div>
       <NInputGroup style="width: auto">
+        <EnvironmentSelect
+          class="!w-40"
+          :environment-name="environmentFilter?.name"
+          :filter="filterEnvironment"
+          @update:environment-name="changeEnvironmentFilter"
+        />
         <InstanceSelect
-          v-if="
-            state.transferSource == 'DEFAULT' && hasPermissionForDefaultProject
-          "
-          class="!w-48"
-          :instance="instanceFilter?.name ?? UNKNOWN_INSTANCE_NAME"
-          :include-all="true"
+          class="!w-40"
+          :instance="instanceFilter?.name"
           :filter="filterInstance"
           @update:instance-name="changeInstanceFilter"
         />
-        <ProjectSelect
-          v-else-if="state.transferSource == 'OTHER'"
-          :include-all="true"
-          :project-name="projectFilter?.name ?? UNKNOWN_PROJECT_NAME"
-          :allowed-project-role-list="[PresetRoleType.PROJECT_OWNER]"
-          :filter="filterSourceProject"
-          @update:project-name="changeProjectFilter"
-        />
         <SearchBox
+          class="!w-40"
           :value="searchText"
           :placeholder="$t('database.filter-database')"
           @update:value="$emit('search-text-change', $event)"
@@ -48,19 +47,18 @@
 <script lang="ts" setup>
 import { NInputGroup, NRadio, NRadioGroup } from "naive-ui";
 import { computed, reactive, watch } from "vue";
-import { InstanceSelect, ProjectSelect, SearchBox } from "@/components/v2";
-import { useInstanceResourceByName, useProjectV1Store } from "@/store";
+import { InstanceSelect, SearchBox } from "@/components/v2";
+import { useEnvironmentV1Store, useInstanceResourceByName } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import {
   DEFAULT_PROJECT_NAME,
-  PresetRoleType,
-  UNKNOWN_INSTANCE_NAME,
-  UNKNOWN_PROJECT_NAME,
+  isValidEnvironmentName,
   isValidInstanceName,
-  isValidProjectName,
 } from "@/types";
+import type { Environment } from "@/types/proto/v1/environment_service";
 import type { InstanceResource } from "@/types/proto/v1/instance_service";
 import type { Project } from "@/types/proto/v1/project_service";
+import EnvironmentSelect from "../v2/Select/EnvironmentSelect.vue";
 import type { TransferSource } from "./utils";
 
 interface LocalState {
@@ -74,13 +72,13 @@ const props = withDefaults(
     transferSource: TransferSource;
     hasPermissionForDefaultProject: boolean;
     instanceFilter?: InstanceResource;
-    projectFilter?: Project;
+    environmentFilter?: Environment;
     searchText: string;
   }>(),
   {
     rawDatabaseList: () => [],
     instanceFilter: undefined,
-    projectFilter: undefined,
+    environmentFilter: undefined,
     searchText: "",
   }
 );
@@ -88,7 +86,7 @@ const props = withDefaults(
 const emit = defineEmits<{
   (event: "change", src: TransferSource): void;
   (event: "select-instance", instance: InstanceResource | undefined): void;
-  (event: "select-project", project: Project | undefined): void;
+  (event: "select-environment", env: Environment | undefined): void;
   (event: "search-text-change", searchText: string): void;
 }>();
 
@@ -96,13 +94,23 @@ const state = reactive<LocalState>({
   transferSource: props.transferSource,
 });
 
-const filterSourceProject = (project: Project) => {
-  return project.name !== props.project.name;
-};
+const nonEmptyEnvironmentNameSet = computed(() => {
+  return new Set(props.rawDatabaseList.map((db) => db.effectiveEnvironment));
+});
 
 const nonEmptyInstanceNameSet = computed(() => {
   return new Set(props.rawDatabaseList.map((db) => db.instance));
 });
+
+const changeEnvironmentFilter = (name: string | undefined) => {
+  if (!isValidEnvironmentName(name)) {
+    return emit("select-environment", undefined);
+  }
+  emit(
+    "select-environment",
+    useEnvironmentV1Store().getEnvironmentByName(name)
+  );
+};
 
 const changeInstanceFilter = (name: string | undefined) => {
   if (!isValidInstanceName(name)) {
@@ -111,16 +119,12 @@ const changeInstanceFilter = (name: string | undefined) => {
   emit("select-instance", useInstanceResourceByName(name));
 };
 
-const filterInstance = (instance: InstanceResource) => {
-  if (instance.name === UNKNOWN_INSTANCE_NAME) return true; // "ALL" can be displayed.
-  return nonEmptyInstanceNameSet.value.has(instance.name);
+const filterEnvironment = (environment: Environment) => {
+  return nonEmptyEnvironmentNameSet.value.has(environment.name);
 };
 
-const changeProjectFilter = (name: string | undefined) => {
-  if (!name || !isValidProjectName(name)) {
-    return emit("select-project", undefined);
-  }
-  emit("select-project", useProjectV1Store().getProjectByName(name));
+const filterInstance = (instance: InstanceResource) => {
+  return nonEmptyInstanceNameSet.value.has(instance.name);
 };
 
 watch(
