@@ -8,10 +8,12 @@
           :project="project"
           :raw-database-list="rawDatabaseList"
           :transfer-source="state.transferSource"
+          :environment-filter="state.environmentFilter"
           :instance-filter="state.instanceFilter"
           :search-text="state.searchText"
           :has-permission-for-default-project="hasPermissionForDefaultProject"
           @change="state.transferSource = $event"
+          @select-environment="state.environmentFilter = $event"
           @select-instance="state.instanceFilter = $event"
           @search-text-change="state.searchText = $event"
         />
@@ -107,10 +109,10 @@ import type { ComposedDatabase, ComposedProject } from "@/types";
 import {
   DEFAULT_PROJECT_NAME,
   defaultProject,
-  isValidInstanceName,
   isValidProjectName,
 } from "@/types";
 import type { UpdateDatabaseRequest } from "@/types/proto/v1/database_service";
+import type { Environment } from "@/types/proto/v1/environment_service";
 import type { InstanceResource } from "@/types/proto/v1/instance_service";
 import {
   filterDatabaseV1ByKeyword,
@@ -126,6 +128,7 @@ import type { TransferSource } from "./utils";
 interface LocalState {
   transferSource: TransferSource;
   instanceFilter: InstanceResource | undefined;
+  environmentFilter: Environment | undefined;
   searchText: string;
   loading: boolean;
   selectedDatabaseNameList: string[];
@@ -146,6 +149,7 @@ const databaseStore = useDatabaseV1Store();
 const state = reactive<LocalState>({
   transferSource: "OTHER",
   instanceFilter: undefined,
+  environmentFilter: undefined,
   searchText: "",
   selectedDatabaseNameList: [],
   fromProjectName: undefined,
@@ -189,12 +193,12 @@ const filteredDatabaseList = computed(() => {
   );
 
   list = list.filter((db) => {
+    const environment = state.environmentFilter;
+    if (environment && db.effectiveEnvironment !== environment.name) {
+      return false;
+    }
     const instance = state.instanceFilter;
-    if (
-      instance &&
-      isValidInstanceName(instance.name) &&
-      db.instance !== instance.name
-    ) {
+    if (instance && db.instance !== instance.name) {
       return false;
     }
 
