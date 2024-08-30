@@ -1335,7 +1335,6 @@
     "from-unassigned-databases": "Unassigned databases",
     "from-projects": "From other project",
     "transfer-in-db-title": "Transfer in database",
-    "transfer-in-db-alert": "Are you sure to transfer \"{ dbName }\" into our project?",
     "unassigned-db-hint": "Newly synced databases start unassigned and must be moved to a project for use.",
     "transfer-out-db": "Transfer out DB",
     "transfer-out-db-title": "Transfer out database",

@@ -1335,7 +1335,6 @@
     "from-unassigned-databases": "割り当てられていないデータベース",
     "from-projects": "他のプロジェクトから",
     "transfer-in-db-title": "データベースへの転送",
-    "transfer-in-db-alert": "「{ dbName }」をプロジェクトに転送してもよろしいですか?",
     "unassigned-db-hint": "新しく同期されたデータベースは最初は割り当てられていないため、使用するにはプロジェクトに移動する必要があります。",
     "transfer-out-db": "データベースを転送する",
     "transfer-out-db-title": "データベースを転送する",
