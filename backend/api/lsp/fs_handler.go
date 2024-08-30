@@ -158,12 +158,15 @@ func collectDiagnostics(err *base.SyntaxError) []lsp.Diagnostic {
 	syntaxDiagnostic := lsp.Diagnostic{
 		Range: lsp.Range{
 			Start: lsp.Position{
-				Line:      err.Line,
+				// Convert to zero-based.
+				Line:      err.Line - 1,
 				Character: err.Column,
 			},
 			End: lsp.Position{
-				Line:      err.Line,
-				Character: err.Column,
+				// Convert to zero-based.
+				Line: err.Line - 1,
+				// The end position is exclusive.
+				Character: err.Column + 1,
 			},
 		},
 		Severity: lsp.Error,
