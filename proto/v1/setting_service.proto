@@ -131,6 +131,7 @@ message Value {
     SemanticTypeSetting semantic_type_setting_value = 11;
     MaskingAlgorithmSetting masking_algorithm_setting_value = 12;
     MaximumSQLResultSizeSetting maximum_sql_result_size_setting = 13;
+    SCIMSetting scim_setting = 14;
   }
 }
 
@@ -478,4 +479,8 @@ message MaximumSQLResultSizeSetting {
   // The limit is in bytes.
   // The default value is 100MB, we will use the default value if the setting not exists, or the limit <= 0.
   int64 limit = 1;
+}
+
+message SCIMSetting {
+  string token = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
 }

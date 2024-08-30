@@ -12052,6 +12052,12 @@ components:
             properties:
                 krbConfig:
                     $ref: '#/components/schemas/KerberosConfig'
+        SCIMSetting:
+            type: object
+            properties:
+                token:
+                    readOnly: true
+                    type: string
         SMTPMailDeliverySettingValue:
             type: object
             properties:
@@ -13954,6 +13960,8 @@ components:
                     $ref: '#/components/schemas/MaskingAlgorithmSetting'
                 maximumSqlResultSizeSetting:
                     $ref: '#/components/schemas/MaximumSQLResultSizeSetting'
+                scimSetting:
+                    $ref: '#/components/schemas/SCIMSetting'
             description: The data in setting value.
         ViewConfig:
             type: object

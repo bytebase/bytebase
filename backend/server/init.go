@@ -56,6 +56,25 @@ func (s *Server) getInitSetting(ctx context.Context) (string, time.Duration, err
 		return "", 0, err
 	}
 
+	// Init SCIM config
+	scimToken, err := common.RandomString(secretLength)
+	if err != nil {
+		return "", 0, errors.Wrap(err, "failed to generate random SCIM secret")
+	}
+	scimSettingValue, err := protojson.Marshal(&storepb.SCIMSetting{
+		Token: scimToken,
+	})
+	if err != nil {
+		return "", 0, errors.Wrap(err, "failed to marshal initial schema template setting")
+	}
+	if _, _, err := s.store.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
+		Name:        api.SettingSCIM,
+		Value:       string(scimSettingValue),
+		Description: "The SCIM sync",
+	}, api.SystemBotID); err != nil {
+		return "", 0, err
+	}
+
 	// initial license
 	if _, _, err = s.store.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
 		Name:        api.SettingEnterpriseLicense,

@@ -566,6 +566,13 @@
       "view-by-roles": "役割ごとに表示",
       "add-member": "メンバーを追加",
       "add-user": "ユーザーを追加",
+      "aad-sync": {
+        "self": "Entra ID (Azure ID) から同期",
+        "endpoint": "API URL",
+        "endpoint-tip": "この URL を Azure に提供すると、Webhook 経由でユーザーとグループが同期されます。",
+        "token": "鍵",
+        "token-tip": "Entra ID同期キーは公開しないでください。"
+      },
       "update-user": "ユーザーを更新",
       "workspace-role-at-least-one": "少なくとも 1 つのワークスペースレベルの役割を選択してください",
       "search-member": "メンバーを検索",
