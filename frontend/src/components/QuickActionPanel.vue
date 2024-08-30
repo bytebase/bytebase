@@ -111,7 +111,7 @@ import {
 import RequestExportPanel from "@/components/Issue/panel/RequestExportPanel/index.vue";
 import RequestQueryPanel from "@/components/Issue/panel/RequestQueryPanel/index.vue";
 import ProjectCreatePanel from "@/components/Project/ProjectCreatePanel.vue";
-import TransferDatabaseForm from "@/components/TransferDatabaseForm.vue";
+import { TransferDatabaseForm } from "@/components/TransferDatabaseForm";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL } from "@/router/dashboard/projectV1";
 import { PROJECT_V1_ROUTE_DASHBOARD } from "@/router/dashboard/workspaceRoutes";
