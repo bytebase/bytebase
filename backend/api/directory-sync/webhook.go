@@ -287,7 +287,7 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 		return c.JSON(http.StatusCreated, convertToAADGroup(group))
 	})
 
-	// Get a single user. The group id is the Bytebase group resource id.
+	// Get a single group. The group id is the Bytebase group resource id.
 	g.GET("/workspaces/:workspaceID/Groups/:groupID", func(c echo.Context) error {
 		ctx := c.Request().Context()
 		if err := s.validRequestURL(ctx, c); err != nil {
@@ -472,7 +472,7 @@ func (s *Service) validRequestURL(ctx context.Context, c echo.Context) error {
 		return errors.Errorf("invalid workspace id %q, my ID %q", workspaceID, myWorkspaceID)
 	}
 
-	// TODO: validate token
+	// TODO(ed): validate token
 	return nil
 }
 
