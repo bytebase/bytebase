@@ -353,7 +353,7 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	s.planService, s.rolloutService, s.issueService = planService, rolloutService, issueService
 	// GitOps webhook server.
 	gitOpsServer := gitops.NewService(s.store, s.licenseService, planService, rolloutService, issueService, sqlService, s.sheetManager)
-	directorySyncServer := directorysync.NewService(s.store, s.licenseService)
+	directorySyncServer := directorysync.NewService(s.store, s.licenseService, s.iamManager)
 
 	// Configure echo server routes.
 	configureEchoRouters(s.echoServer, s.grpcServer, s.lspServer, gitOpsServer, directorySyncServer, mux, profile)
