@@ -3,7 +3,6 @@
   "include": [
     "env.d.ts",
     "naive-ui.config.ts",
-    "components.d.ts",
     "src/**/*.ts",
     "src/**/*.tsx",
     "src/**/*.vue"
