@@ -129,14 +129,14 @@ func hasUniqueInWhereClause(dbSchema *storepb.DatabaseSchemaMetadata, table *tab
 		return false
 	}
 
+	if dbSchema == nil {
+		return false
+	}
+
 	list := extractColumnsInEqualCondition(dbSchema.Name, table, update.Search_condition())
 	columnMap := make(map[string]bool)
 	for _, column := range list {
 		columnMap[strings.ToLower(column)] = true
-	}
-
-	if dbSchema == nil {
-		return false
 	}
 
 	for _, schema := range dbSchema.Schemas {
@@ -298,7 +298,7 @@ type statementDisallowMixDMLChecker struct {
 	hasDDL           bool
 }
 
-func (l *statementDisallowMixDMLChecker) EnterDdl_clause(ctx *tsql.Ddl_clauseContext) {
+func (l *statementDisallowMixDMLChecker) EnterDdl_clause(_ *tsql.Ddl_clauseContext) {
 	l.hasDDL = true
 }
 
