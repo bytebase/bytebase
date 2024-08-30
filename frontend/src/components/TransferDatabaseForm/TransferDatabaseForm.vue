@@ -73,21 +73,17 @@
 <script lang="ts" setup>
 import { cloneDeep } from "lodash-es";
 import { NButton, NTooltip } from "naive-ui";
-import { computed, onMounted, reactive } from "vue";
+import { computed, reactive, watchEffect } from "vue";
 import { toRef } from "vue";
 import { BBSpin } from "@/bbkit";
-import type { TransferSource } from "@/components/TransferDatabaseForm";
-import {
-  MultipleDatabaseSelector,
-  TransferSourceSelector,
-} from "@/components/TransferDatabaseForm";
 import {
   pushNotification,
   useDatabaseV1Store,
   useProjectByName,
+  useProjectV1List,
 } from "@/store";
 import { useDatabaseV1List } from "@/store/modules/v1/databaseList";
-import type { ComposedDatabase } from "@/types";
+import type { ComposedDatabase, ComposedProject } from "@/types";
 import {
   DEFAULT_PROJECT_NAME,
   defaultProject,
@@ -102,8 +98,11 @@ import {
   sortDatabaseV1List,
   wrapRefAsPromise,
 } from "@/utils";
-import NoDataPlaceholder from "./misc/NoDataPlaceholder.vue";
-import { DrawerContent } from "./v2";
+import NoDataPlaceholder from "../misc/NoDataPlaceholder.vue";
+import { DrawerContent } from "../v2";
+import MultipleDatabaseSelector from "./MultipleDatabaseSelector.vue";
+import TransferSourceSelector from "./TransferSourceSelector.vue";
+import type { TransferSource } from "./utils";
 
 interface LocalState {
   transferSource: TransferSource;
@@ -124,9 +123,17 @@ const emit = defineEmits<{
 }>();
 
 const databaseStore = useDatabaseV1Store();
+const { projectList, ready: projectListReady } = useProjectV1List();
+
+const hasTransferDatabasePermission = (project: ComposedProject): boolean => {
+  return (
+    hasProjectPermissionV2(project, "bb.databases.list") &&
+    hasProjectPermissionV2(project, "bb.projects.update")
+  );
+};
 
 const hasPermissionForDefaultProject = computed(() => {
-  return hasProjectPermissionV2(defaultProject(), "bb.projects.update");
+  return hasTransferDatabasePermission(defaultProject());
 });
 
 const state = reactive<LocalState>({
@@ -138,15 +145,23 @@ const state = reactive<LocalState>({
   instanceFilter: undefined,
   projectFilter: undefined,
   searchText: "",
-  loading: false,
+  loading: true,
   selectedDatabaseNameList: [],
 });
 const { project } = useProjectByName(toRef(props, "projectName"));
 
-onMounted(async () => {
-  state.loading = true;
-  // Prepare all databases for transfer.
-  await wrapRefAsPromise(useDatabaseV1List().ready, true);
+watchEffect(async () => {
+  if (!projectListReady) {
+    return;
+  }
+  await Promise.all(
+    projectList.value.map(async (proj) => {
+      if (proj.name === props.projectName) {
+        return Promise.resolve();
+      }
+      return await wrapRefAsPromise(useDatabaseV1List(proj.name).ready, true);
+    })
+  );
   state.loading = false;
 });
 
@@ -158,7 +173,7 @@ const rawDatabaseList = computed(() => {
       return (
         db.project !== props.projectName &&
         db.project !== DEFAULT_PROJECT_NAME &&
-        hasProjectPermissionV2(db.projectEntity, "bb.projects.update")
+        hasTransferDatabasePermission(db.projectEntity)
       );
     });
   }
