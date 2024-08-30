@@ -50,7 +50,11 @@
         <div class="flex items-center space-x-3">
           <SearchBox v-model:value="state.activeUserFilterText" />
 
-          <NButton class="capitalize" @click="state.showAadSyncDrawer = true">
+          <NButton
+            v-if="isDev()"
+            class="capitalize"
+            @click="state.showAadSyncDrawer = true"
+          >
             <template #icon>
               <SettingsIcon class="h-5 w-5" />
             </template>
@@ -172,7 +176,11 @@ import { UserType, type User } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
 import type { Group } from "@/types/proto/v1/group";
 import { WorkspaceProfileSetting } from "@/types/proto/v1/setting_service";
-import { hasWorkspacePermissionV2, hasWorkspaceLevelRole } from "@/utils";
+import {
+  hasWorkspacePermissionV2,
+  hasWorkspaceLevelRole,
+  isDev,
+} from "@/utils";
 
 const tabList = ["USERS", "GROUPS"] as const;
 type MemberTab = (typeof tabList)[number];
