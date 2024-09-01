@@ -159,8 +159,8 @@ importers:
         specifier: 3.1.5
         version: 3.1.5
       sql-formatter:
-        specifier: 15.3.2
-        version: 15.3.2
+        specifier: 15.4.1
+        version: 15.4.1
       uuid:
         specifier: 10.0.0
         version: 10.0.0
@@ -3487,8 +3487,8 @@ packages:
   splitpanes@3.1.5:
     resolution: {integrity: sha512-r3Mq2ITFQ5a2VXLOy4/Sb2Ptp7OfEO8YIbhVJqJXoFc9hc5nTXXkCvtVDjIGbvC0vdE7tse+xTM9BMjsszP6bw==}
 
-  sql-formatter@15.3.2:
-    resolution: {integrity: sha512-pNxSMf5DtwhpZ8gUcOGCGZIWtCcyAUx9oLgAtlO4ag7DvlfnETL0BGqXaISc84pNrXvTWmt8Wal1FWKxdTsL3Q==}
+  sql-formatter@15.4.1:
+    resolution: {integrity: sha512-lw/G/emIJ+tVspOtOFzfD2YFFMN3MFPxGnbWl1DlJLB+fsX7X7zMqSRM1SLSn2YuaRJ0lTe7AMknHDqmIW1Y8w==}
     hasBin: true
 
   stackback@0.0.2:
@@ -7379,7 +7379,7 @@ snapshots:
 
   splitpanes@3.1.5: {}
 
-  sql-formatter@15.3.2:
+  sql-formatter@15.4.1:
     dependencies:
       argparse: 2.0.1
       get-stdin: 8.0.0
