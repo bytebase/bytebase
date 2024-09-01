@@ -7,7 +7,7 @@ require (
 	cloud.google.com/go/cloudsqlconn v1.11.1
 	cloud.google.com/go/secretmanager v1.14.0
 	cloud.google.com/go/spanner v1.67.0
-	gitee.com/chunanyong/dm v1.8.15
+	gitee.com/chunanyong/dm v1.8.16
 	github.com/ClickHouse/clickhouse-go/v2 v2.28.2
 	github.com/alexmullins/zip v0.0.0-20180717182244-4affb64b04d0
 	github.com/antlr4-go/antlr/v4 v4.13.1
