@@ -141,7 +141,7 @@
   />
 
   <AADSyncDrawer
-    v-if="state.showAadSyncDrawer"
+    :show="state.showAadSyncDrawer"
     @close="state.showAadSyncDrawer = false"
   />
 </template>

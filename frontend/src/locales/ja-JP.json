@@ -567,7 +567,8 @@
       "add-member": "メンバーを追加",
       "add-user": "ユーザーを追加",
       "aad-sync": {
-        "self": "Entra ID (Azure ID) から同期",
+        "self": "Entra ID (Azure AD) から同期",
+        "description": "Entra ID (旧 Azure AD) のユーザーとグループを Bytebase インスタンスに同期します。",
         "endpoint": "API URL",
         "endpoint-tip": "この URL を Azure に提供すると、Webhook 経由でユーザーとグループが同期されます。",
         "token": "鍵",

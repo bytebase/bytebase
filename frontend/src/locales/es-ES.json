@@ -567,7 +567,8 @@
       "add-member": "Agregar miembro",
       "add-user": "Agregar usuario",
       "aad-sync": {
-        "self": "Sincronización desde Entra ID (Azure ID)",
+        "self": "Sincronización desde Entra ID (Azure AD)",
+        "description": "Sincronice usuarios y grupos de Entra ID (anteriormente Azure AD) con su instancia de Bytebase.",
         "endpoint": "Punto final",
         "endpoint-tip": "Proporcione la URL a Azure como URL de inquilino y sincronizará usuarios y grupos a través de webhook.",
         "token": "Simbólico",

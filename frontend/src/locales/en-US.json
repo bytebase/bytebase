@@ -567,7 +567,8 @@
       "add-member": "Add member",
       "add-user": "Add user",
       "aad-sync": {
-        "self": "Sync from Entra ID (Azure ID)",
+        "self": "Sync from Entra ID (Azure AD)",
+        "description": "Sync users and groups from Entra ID (formerly Azure AD) to your Bytebase instance.",
         "endpoint": "Endpoint",
         "endpoint-tip": "Provide the URL to the Azure as tenant URL, it will sync users and groups via webhook.",
         "token": "Token",
