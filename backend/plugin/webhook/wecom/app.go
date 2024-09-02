@@ -291,7 +291,7 @@ var userIDCache = func() *lru.Cache[string, string] {
 	return cache
 }()
 
-var notFoundUserCache = expirable.NewLRU[string, time.Time](100, nil, time.Hour*12)
+var notFoundUserCache = expirable.NewLRU[string, time.Time](100, nil, time.Hour*48)
 
 func getTokenCached(ctx context.Context, c *http.Client, corpID, secret string) (string, error) {
 	tokenCacheLock.Lock()
