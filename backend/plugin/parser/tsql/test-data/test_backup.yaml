@@ -1,4 +1,38 @@
 - input: |-
+    UPDATE test SET test.c1 = 1 WHERE test.b1 = 1;
+    UPDATE test SET test.c1 = 2 WHERE test.b1 = 2;
+    UPDATE test SET test.c1 = 3 WHERE test.b1 = 3;
+    UPDATE test SET test.c1 = 4 WHERE test.b1 = 4;
+    UPDATE test SET test.c1 = 5 WHERE test.b1 = 5;
+    UPDATE test SET test.c1 = 6 WHERE test.b1 = 6;
+    UPDATE test SET test.c1 = 7 WHERE test.b1 = 7;
+  result:
+    - statement: |-
+        SELECT * INTO "backupDB"."dbo"."rollback_test" FROM (
+          SELECT "db"."dbo"."test".* FROM test WHERE test.b1 = 1
+          UNION ALL
+          SELECT "db"."dbo"."test".* FROM test WHERE test.b1 = 2
+          UNION ALL
+          SELECT "db"."dbo"."test".* FROM test WHERE test.b1 = 3
+          UNION ALL
+          SELECT "db"."dbo"."test".* FROM test WHERE test.b1 = 4
+          UNION ALL
+          SELECT "db"."dbo"."test".* FROM test WHERE test.b1 = 5
+          UNION ALL
+          SELECT "db"."dbo"."test".* FROM test WHERE test.b1 = 6
+          UNION ALL
+          SELECT "db"."dbo"."test".* FROM test WHERE test.b1 = 7
+        ) AS backup_table;
+      sourceschema: dbo
+      sourcetablename: test
+      targettablename: rollback_test
+      startposition:
+        line: 1
+        column: 0
+      endposition:
+        line: 8
+        column: 0
+- input: |-
     DELETE FROM t_alias
     FROM test AS t_alias
     WHERE t_alias.c1 = 1;
