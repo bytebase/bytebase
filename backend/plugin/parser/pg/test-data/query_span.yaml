@@ -1,3 +1,474 @@
+- description: Bytebase Regression Test
+  statement: |-
+    WITH
+      issue_approvers AS (
+        SELECT
+          issue.id AS issue_id,
+          COALESCE(
+            array_agg(DISTINCT principal.email) FILTER (
+              WHERE
+                x.status = 'APPROVED'
+            ),
+            '{}'
+          ) AS approver_emails
+        FROM
+          issue
+          LEFT JOIN LATERAL jsonb_to_recordset(issue.payload -> 'approval' -> 'approvers') as x (status text, "principalId" int) ON TRUE
+          LEFT JOIN principal ON principal.id = x."principalId"
+        GROUP BY
+          issue.id
+        ORDER BY
+          issue.id
+      ),
+      issue_releasers AS (
+        SELECT
+          issue.id AS issue_id,
+          COALESCE(
+            array_agg(DISTINCT principal.email) FILTER (
+              WHERE
+                task_run.creator_id IS NOT NULL
+            ),
+            '{}'
+          ) AS releaser_emails
+        FROM
+          issue
+          LEFT JOIN task ON issue.pipeline_id = task.pipeline_id
+          LEFT JOIN task_run ON task_run.task_id = task.id
+          LEFT JOIN principal ON task_run.creator_id = principal.id
+        GROUP BY
+          issue.id
+        ORDER BY
+          issue.id
+      )
+    SELECT
+      date_trunc('month', to_timestamp(issue.created_ts)) AS month,
+      COUNT(issue.id) AS issue_count,
+      ia.approver_emails,
+      ir.releaser_emails
+    FROM
+      issue
+      LEFT JOIN issue_approvers ia ON ia.issue_id = issue.id
+      LEFT JOIN issue_releasers ir ON ir.issue_id = issue.id
+    WHERE
+      issue.status = 'DONE'
+      AND ia.approver_emails @> ir.releaser_emails
+      AND ir.releaser_emails @> ia.approver_emails
+      AND array_length(ir.releaser_emails, 1) > 0
+    GROUP BY
+      month,
+      ia.approver_emails,
+      ir.releaser_emails
+    ORDER BY
+      month;
+  defaultDatabase: db
+  metadata: |-
+    {
+      "name": "db",
+      "schemas": [
+        {
+          "name": "public",
+          "tables": [
+            {
+              "name": "issue",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "defaultExpression": "nextval('issue_id_seq'::regclass)",
+                  "type": "integer"
+                },
+                {
+                  "name": "row_status",
+                  "position": 2,
+                  "defaultExpression": "'NORMAL'::row_status",
+                  "type": "public.row_status"
+                },
+                {
+                  "name": "creator_id",
+                  "position": 3,
+                  "type": "integer"
+                },
+                {
+                  "name": "created_ts",
+                  "position": 4,
+                  "defaultExpression": "EXTRACT(epoch FROM now())",
+                  "type": "bigint"
+                },
+                {
+                  "name": "updater_id",
+                  "position": 5,
+                  "type": "integer"
+                },
+                {
+                  "name": "updated_ts",
+                  "position": 6,
+                  "defaultExpression": "EXTRACT(epoch FROM now())",
+                  "type": "bigint"
+                },
+                {
+                  "name": "project_id",
+                  "position": 7,
+                  "type": "integer"
+                },
+                {
+                  "name": "plan_id",
+                  "position": 8,
+                  "nullable": true,
+                  "type": "bigint"
+                },
+                {
+                  "name": "pipeline_id",
+                  "position": 9,
+                  "nullable": true,
+                  "type": "integer"
+                },
+                {
+                  "name": "name",
+                  "position": 10,
+                  "type": "text"
+                },
+                {
+                  "name": "status",
+                  "position": 11,
+                  "type": "text"
+                },
+                {
+                  "name": "type",
+                  "position": 12,
+                  "type": "text"
+                },
+                {
+                  "name": "description",
+                  "position": 13,
+                  "defaultExpression": "''::text",
+                  "type": "text"
+                },
+                {
+                  "name": "assignee_id",
+                  "position": 14,
+                  "nullable": true,
+                  "type": "integer"
+                },
+                {
+                  "name": "assignee_need_attention",
+                  "position": 15,
+                  "defaultExpression": "false",
+                  "type": "boolean"
+                },
+                {
+                  "name": "payload",
+                  "position": 16,
+                  "defaultExpression": "'{}'::jsonb",
+                  "type": "jsonb"
+                },
+                {
+                  "name": "ts_vector",
+                  "position": 17,
+                  "nullable": true,
+                  "type": "tsvector"
+                }
+              ]
+            },
+            {
+              "name": "principal",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "defaultExpression": "nextval('principal_id_seq'::regclass)",
+                  "type": "integer"
+                },
+                {
+                  "name": "row_status",
+                  "position": 2,
+                  "defaultExpression": "'NORMAL'::row_status",
+                  "type": "public.row_status"
+                },
+                {
+                  "name": "creator_id",
+                  "position": 3,
+                  "type": "integer"
+                },
+                {
+                  "name": "created_ts",
+                  "position": 4,
+                  "defaultExpression": "EXTRACT(epoch FROM now())",
+                  "type": "bigint"
+                },
+                {
+                  "name": "updater_id",
+                  "position": 5,
+                  "type": "integer"
+                },
+                {
+                  "name": "updated_ts",
+                  "position": 6,
+                  "defaultExpression": "EXTRACT(epoch FROM now())",
+                  "type": "bigint"
+                },
+                {
+                  "name": "type",
+                  "position": 7,
+                  "type": "text"
+                },
+                {
+                  "name": "name",
+                  "position": 8,
+                  "type": "text"
+                },
+                {
+                  "name": "email",
+                  "position": 9,
+                  "type": "text"
+                },
+                {
+                  "name": "password_hash",
+                  "position": 10,
+                  "type": "text"
+                },
+                {
+                  "name": "phone",
+                  "position": 11,
+                  "defaultExpression": "''::text",
+                  "type": "text"
+                },
+                {
+                  "name": "mfa_config",
+                  "position": 12,
+                  "defaultExpression": "'{}'::jsonb",
+                  "type": "jsonb"
+                }
+              ]
+            },
+            {
+              "name": "task",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "defaultExpression": "nextval('task_id_seq'::regclass)",
+                  "type": "integer"
+                },
+                {
+                  "name": "row_status",
+                  "position": 2,
+                  "defaultExpression": "'NORMAL'::row_status",
+                  "type": "public.row_status"
+                },
+                {
+                  "name": "creator_id",
+                  "position": 3,
+                  "type": "integer"
+                },
+                {
+                  "name": "created_ts",
+                  "position": 4,
+                  "defaultExpression": "EXTRACT(epoch FROM now())",
+                  "type": "bigint"
+                },
+                {
+                  "name": "updater_id",
+                  "position": 5,
+                  "type": "integer"
+                },
+                {
+                  "name": "updated_ts",
+                  "position": 6,
+                  "defaultExpression": "EXTRACT(epoch FROM now())",
+                  "type": "bigint"
+                },
+                {
+                  "name": "pipeline_id",
+                  "position": 7,
+                  "type": "integer"
+                },
+                {
+                  "name": "stage_id",
+                  "position": 8,
+                  "type": "integer"
+                },
+                {
+                  "name": "instance_id",
+                  "position": 9,
+                  "type": "integer"
+                },
+                {
+                  "name": "database_id",
+                  "position": 10,
+                  "nullable": true,
+                  "type": "integer"
+                },
+                {
+                  "name": "name",
+                  "position": 11,
+                  "type": "text"
+                },
+                {
+                  "name": "status",
+                  "position": 12,
+                  "type": "text"
+                },
+                {
+                  "name": "type",
+                  "position": 13,
+                  "type": "text"
+                },
+                {
+                  "name": "payload",
+                  "position": 14,
+                  "defaultExpression": "'{}'::jsonb",
+                  "type": "jsonb"
+                },
+                {
+                  "name": "earliest_allowed_ts",
+                  "position": 15,
+                  "defaultExpression": "0",
+                  "type": "bigint"
+                }
+              ]
+            },
+            {
+              "name": "task_run",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "defaultExpression": "nextval('task_run_id_seq'::regclass)",
+                  "type": "integer"
+                },
+                {
+                  "name": "creator_id",
+                  "position": 2,
+                  "type": "integer"
+                },
+                {
+                  "name": "created_ts",
+                  "position": 3,
+                  "defaultExpression": "EXTRACT(epoch FROM now())",
+                  "type": "bigint"
+                },
+                {
+                  "name": "updater_id",
+                  "position": 4,
+                  "type": "integer"
+                },
+                {
+                  "name": "updated_ts",
+                  "position": 5,
+                  "defaultExpression": "EXTRACT(epoch FROM now())",
+                  "type": "bigint"
+                },
+                {
+                  "name": "task_id",
+                  "position": 6,
+                  "type": "integer"
+                },
+                {
+                  "name": "attempt",
+                  "position": 7,
+                  "type": "integer"
+                },
+                {
+                  "name": "name",
+                  "position": 8,
+                  "type": "text"
+                },
+                {
+                  "name": "status",
+                  "position": 9,
+                  "type": "text"
+                },
+                {
+                  "name": "started_ts",
+                  "position": 10,
+                  "defaultExpression": "0",
+                  "type": "bigint"
+                },
+                {
+                  "name": "code",
+                  "position": 11,
+                  "defaultExpression": "0",
+                  "type": "integer"
+                },
+                {
+                  "name": "result",
+                  "position": 12,
+                  "defaultExpression": "'{}'::jsonb",
+                  "type": "jsonb"
+                },
+                {
+                  "name": "sheet_id",
+                  "position": 13,
+                  "nullable": true,
+                  "type": "integer"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    results:
+        - name: month
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: public
+              table: issue
+              column: created_ts
+        - name: issue_count
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: public
+              table: issue
+              column: id
+        - name: approver_emails
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: public
+              table: issue
+              column: payload
+            - server: ""
+              database: db
+              schema: public
+              table: principal
+              column: email
+        - name: releaser_emails
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: public
+              table: principal
+              column: email
+            - server: ""
+              database: db
+              schema: public
+              table: task_run
+              column: creator_id
+    sourcecolumns:
+        - server: ""
+          database: db
+          schema: public
+          table: issue
+          column: ""
+        - server: ""
+          database: db
+          schema: public
+          table: principal
+          column: ""
+        - server: ""
+          database: db
+          schema: public
+          table: task
+          column: ""
+        - server: ""
+          database: db
+          schema: public
+          table: task_run
+          column: ""
 - description: Test For PLpgSQL User Defined Function in expression
   statement: SELECT plpgsql_t(1);
   defaultDatabase: db
