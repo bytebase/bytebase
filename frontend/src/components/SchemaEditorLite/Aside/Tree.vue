@@ -129,8 +129,8 @@ import type {
   ViewMetadata,
 } from "@/types/proto/v1/database_service";
 import {
+  getFixedPrimaryKey,
   getHighlightHTMLByKeyWords,
-  hasSchemaProperty,
   isDescendantOf,
 } from "@/utils";
 import FunctionNameModal from "../Modals/FunctionNameModal.vue";
@@ -659,11 +659,15 @@ const handleDuplicateTable = (treeNode: TreeNodeForTable) => {
   newTable.name = getDuplicateName(targetName);
   // As index names should be unique, we need to generate new names for them.
   for (const index of newTable.indexes) {
-    if (index.primary && !hasSchemaProperty(engine)) {
-      // Skip primary key index for non-PostgreSQL engines, such as MySQL.
-      continue;
+    let name = `${index.name}_${MD5(`${newTable.name}_${Date.now()}`).toString().slice(0, 6)}`;
+    if (index.primary) {
+      const fixedName = getFixedPrimaryKey(engine);
+      // If the primary key name is fixed, use it instead.
+      if (fixedName) {
+        name = fixedName;
+      }
     }
-    index.name = `${index.name}_${MD5(`${newTable.name}_${Date.now()}`).toString().slice(0, 6)}`;
+    index.name = name;
   }
   schema.tables.push(newTable);
   markEditStatus(
