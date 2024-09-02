@@ -79,9 +79,9 @@ func TestOffsetForPosition(t *testing.T) {
 		if !tc.valid {
 			require.NotNil(t, err)
 			continue
-		} else {
-			require.Nil(t, err)
 		}
+
+		require.Nil(t, err)
 		require.Equal(t, tc.expected, offset, "test cases %d", idx)
 	}
 }

@@ -2,11 +2,11 @@ package lsp
 
 import (
 	"bytes"
-	"fmt"
 	"net/url"
 	"strings"
 	"unicode/utf8"
 
+	"github.com/pkg/errors"
 	"github.com/sourcegraph/go-lsp"
 )
 
@@ -43,7 +43,7 @@ func offsetForPosition(content []byte, p lsp.Position) (byteOffset int, whyInval
 
 	// Validate line number, notes that the Posititon in LSP is 0-based.
 	if p.Line >= lineNumber {
-		return 0, fmt.Errorf("line number %d out of range [0, %d)", p.Line, lineNumber)
+		return 0, errors.Errorf("line number %d out of range [0, %d)", p.Line, lineNumber)
 	}
 
 	offset := lineStartOffsets[p.Line]
@@ -54,13 +54,13 @@ func offsetForPosition(content []byte, p lsp.Position) (byteOffset int, whyInval
 		// Unpack the first rune.
 		r, sz := utf8.DecodeRune(trimmedContent)
 		if sz == 0 {
-			return 0, fmt.Errorf("column is beyond end of file")
+			return 0, errors.Errorf("column is beyond end of file")
 		}
 		if r == '\n' {
-			return 0, fmt.Errorf("column is beyond end of line")
+			return 0, errors.Errorf("column is beyond end of line")
 		}
 		if sz == 1 && r == utf8.RuneError {
-			return 0, fmt.Errorf("mem buffer contains invalid UTF-8 text")
+			return 0, errors.Errorf("mem buffer contains invalid UTF-8 text")
 		}
 
 		// Step to the first code unit of next rune.
