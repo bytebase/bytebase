@@ -376,7 +376,7 @@ const disableAlterColumn = (column: ColumnMetadata): boolean => {
 const setColumnPrimaryKey = (column: ColumnMetadata, isPrimaryKey: boolean) => {
   if (isPrimaryKey) {
     column.nullable = false;
-    upsertColumnPrimaryKey(props.table, column.name);
+    upsertColumnPrimaryKey(engine.value, props.table, column.name);
   } else {
     removeColumnPrimaryKey(props.table, column.name);
   }

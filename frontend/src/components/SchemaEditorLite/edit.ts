@@ -1,23 +1,29 @@
 import { MD5 } from "crypto-js";
 import { pull, pullAt } from "lodash-es";
+import { Engine } from "@/types/proto/v1/common";
 import type {
   ForeignKeyMetadata,
   TableMetadata,
 } from "@/types/proto/v1/database_service";
 import { IndexMetadata } from "@/types/proto/v1/database_service";
-import { upsertArray } from "@/utils";
+import { getFixedPrimaryKey, upsertArray } from "@/utils";
 
 export const upsertColumnPrimaryKey = (
+  engine: Engine,
   table: TableMetadata,
   columnName: string
 ) => {
   const pkIndex = table.indexes.findIndex((idx) => idx.primary);
   if (pkIndex < 0) {
-    // Generate a unique pk name.
-    // Format: table_pk_{md5(table_pk_timestamp).slice(0, 6)}, e.g. test_pk_d4402d
-    const nameParts: string[] = [table.name, "pk"];
-    const rawName = nameParts.join("_").toLowerCase();
-    const name = `${rawName}_${MD5(`${rawName}_${Date.now()}`).toString().slice(0, 6)}`;
+    let name = getFixedPrimaryKey(engine);
+    // If no fixed primary key, generate a unique name.
+    if (!name) {
+      // For Postgres, constraint name must be unique within the schema.
+      // Format: table_pk_{md5(table_pk_timestamp).slice(0, 6)}, e.g. test_pk_d4402d
+      const nameParts: string[] = [table.name, "pk"];
+      const rawName = nameParts.join("_").toLowerCase();
+      name = `${rawName}_${MD5(`${rawName}_${Date.now()}`).toString().slice(0, 6)}`;
+    }
     table.indexes.push(
       IndexMetadata.fromPartial({
         name,

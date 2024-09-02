@@ -122,7 +122,7 @@ const handleConfirmButtonClick = async () => {
     column.type = engine === Engine.POSTGRES ? "integer" : "int";
     column.comment = "";
     table.columns.push(column);
-    upsertColumnPrimaryKey(table, column.name);
+    upsertColumnPrimaryKey(engine, table, column.name);
     markEditStatus(
       props.database,
       {
