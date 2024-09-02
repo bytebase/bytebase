@@ -369,3 +369,11 @@ export const isValidSpannerHost = (host: string) => {
     /^projects\/(?<PROJECT_ID>(?:[a-z]|[-.:]|[0-9])+)\/instances\/(?<INSTANCE_ID>(?:[a-z]|[-]|[0-9])+)$/;
   return RE.test(host);
 };
+
+export const getFixedPrimaryKey = (engine: Engine) => {
+  // For MySQL and TiDB, the name of a primary key is always PRIMARY.
+  if ([Engine.MYSQL, Engine.TIDB].includes(engine)) {
+    return "PRIMARY";
+  }
+  return undefined;
+};

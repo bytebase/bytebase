@@ -445,7 +445,11 @@ const handleDropColumn = (column: ColumnMetadata) => {
 const setColumnPrimaryKey = (column: ColumnMetadata, isPrimaryKey: boolean) => {
   if (isPrimaryKey) {
     column.nullable = false;
-    upsertColumnPrimaryKey(editing.value.table, column.name);
+    upsertColumnPrimaryKey(
+      editing.value.engine,
+      editing.value.table,
+      column.name
+    );
   } else {
     removeColumnPrimaryKey(editing.value.table, column.name);
   }
