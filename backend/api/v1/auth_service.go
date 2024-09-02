@@ -639,11 +639,11 @@ func (s *AuthService) Login(ctx context.Context, request *v1pb.LoginRequest) (*v
 		return nil, status.Errorf(codes.Internal, "failed to check user roles, error: %v", err)
 	}
 	if !isWorkspaceAdmin && loginUser.Type == api.EndUser {
-		// Disallow password signin for end users. (except for workspace admins)
+		// Disallow password signin for end users.
 		if setting.DisallowPasswordSignin && !loginViaIDP {
 			return nil, status.Errorf(codes.PermissionDenied, "password signin is disallowed")
 		}
-		// For non-admin users, we only allow login with email from allowed domains.
+		// Check domain restriction for end users.
 		var allowedDomains []string
 		if setting.EnforceIdentityDomain {
 			allowedDomains = setting.Domains
