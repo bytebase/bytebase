@@ -429,7 +429,7 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 		for _, op := range patch.Operations {
 			switch op.Path {
 			case "members":
-				values, ok := op.Value.([]interface{})
+				values, ok := op.Value.([]any)
 				if !ok {
 					slog.Warn("unsupport value, expect PatchMember slice", slog.Any("value", op.Value), slog.String("operation", op.OP), slog.String("path", op.Path))
 					continue
