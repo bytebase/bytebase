@@ -7,6 +7,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"slices"
 	"strconv"
 	"strings"
@@ -18,6 +19,7 @@ import (
 
 	v1api "github.com/bytebase/bytebase/backend/api/v1"
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/log"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
@@ -276,7 +278,10 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 			return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to unmarshal body, error %v", err))
 		}
 
-		// TODO(ed): check the external id & create the group with member
+		// Azure SCIM sync group process:
+		// 1. POST users
+		// 2. POST group without members
+		// 3. PATCH group with members
 		group, err := s.store.CreateGroup(ctx, &store.GroupMessage{
 			Email: aadGroup.ExternalID,
 			Title: aadGroup.DisplayName,
@@ -295,7 +300,12 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 			return c.String(http.StatusInternalServerError, err.Error())
 		}
 
-		group, err := s.store.GetGroup(ctx, c.Param("groupID"))
+		email, err := decodeGroupEmail(c.Param("groupID"))
+		if err != nil {
+			return c.String(http.StatusInternalServerError, err.Error())
+		}
+
+		group, err := s.store.GetGroup(ctx, email)
 		if err != nil {
 			return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to find group, error %v", err))
 		}
@@ -311,7 +321,7 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 		return c.JSON(http.StatusOK, convertToAADGroup(group))
 	})
 
-	// List groups. AAD SCIM will send ?filter=displayName eq "displayName" query
+	// List groups. AAD SCIM will send ?filter=externalId eq "{group email}" query
 	g.GET("/workspaces/:workspaceID/Groups", func(c echo.Context) error {
 		ctx := c.Request().Context()
 		if err := s.validRequestURL(ctx, c); err != nil {
@@ -331,8 +341,25 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 			return c.JSON(http.StatusOK, response)
 		}
 
-		// TODO(ed): should support the filter
-		groups, err := s.store.ListGroups(ctx, &store.FindGroupMessage{})
+		filters, err := v1api.ParseFilter(filter)
+		if err != nil {
+			return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to parse filter, error %v", err))
+		}
+
+		find := &store.FindGroupMessage{}
+		for _, expr := range filters {
+			if expr.Operator != v1api.ComparatorTypeEqual {
+				slog.Warn("unsupport filter operation", slog.String("key", expr.Key), slog.String("operator", string(expr.Operator)), slog.String("value", expr.Value))
+				continue
+			}
+			if expr.Key != "externalId" {
+				slog.Warn("unsupport filter key", slog.String("key", expr.Key), slog.String("operator", string(expr.Operator)), slog.String("value", expr.Value))
+				continue
+			}
+			find.Email = &expr.Value
+		}
+
+		groups, err := s.store.ListGroups(ctx, find)
 		if err != nil {
 			return c.String(http.StatusInternalServerError, fmt.Sprintf(`failed to list group, error %v`, err))
 		}
@@ -351,7 +378,12 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 			return c.String(http.StatusInternalServerError, err.Error())
 		}
 
-		if err := s.store.DeleteGroup(ctx, c.Param("groupID")); err != nil {
+		email, err := decodeGroupEmail(c.Param("groupID"))
+		if err != nil {
+			return c.String(http.StatusInternalServerError, err.Error())
+		}
+
+		if err := s.store.DeleteGroup(ctx, email); err != nil {
 			return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to delete group, error %v", err))
 		}
 
@@ -378,9 +410,17 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 			return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to unmarshal body, error %v", err))
 		}
 
-		group, err := s.store.GetGroup(ctx, c.Param("groupID"))
+		email, err := decodeGroupEmail(c.Param("groupID"))
+		if err != nil {
+			return c.String(http.StatusInternalServerError, err.Error())
+		}
+
+		group, err := s.store.GetGroup(ctx, email)
 		if err != nil {
 			return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to find group, error %v", err))
+		}
+		if group == nil {
+			return c.String(http.StatusNotFound, "cannot found group")
 		}
 
 		updateGroup := &store.UpdateGroupMessage{
@@ -389,45 +429,58 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 		for _, op := range patch.Operations {
 			switch op.Path {
 			case "members":
-				patchMember, ok := op.Value.(PatchMember)
+				values, ok := op.Value.([]any)
 				if !ok {
-					slog.Warn("unsupport value, expect PatchMember entity", slog.String("operation", op.OP), slog.String("path", op.Path))
+					slog.Warn("unsupport value, expect PatchMember slice", slog.Any("value", op.Value), slog.String("operation", op.OP), slog.String("path", op.Path))
 					continue
 				}
 
-				// TODO(ed): what's the member, bytebase uid/email, or aad user identifier?
-				uid, err := strconv.Atoi(patchMember.Value)
-				if err != nil {
-					return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to parse user id, error %v", err))
-				}
-				user, err := s.store.GetUserByID(ctx, uid)
-				if err != nil {
-					return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to get user, error %v", err))
-				}
-				if user == nil {
-					slog.Warn("cannot found user", slog.String("operation", op.OP), slog.String("uid", patchMember.Value))
-					continue
-				}
+				for _, value := range values {
+					var patchMember PatchMember
+					bytes, err := json.Marshal(value)
+					if err != nil {
+						slog.Warn("failed to marshal patch member", slog.Any("value", value), slog.String("operation", op.OP), slog.String("path", op.Path), log.BBError(err))
+						continue
+					}
+					if err := json.Unmarshal(bytes, &patchMember); err != nil {
+						slog.Warn("failed to unmarshal patch member", slog.Any("value", value), slog.String("operation", op.OP), slog.String("path", op.Path), log.BBError(err))
+						continue
+					}
 
-				member := &storepb.GroupMember{
-					Member: common.FormatUserUID(user.ID),
-					Role:   storepb.GroupMember_MEMBER,
-				}
-				index := slices.IndexFunc(group.Payload.Members, func(m *storepb.GroupMember) bool {
-					return m.Member == member.Member
-				})
-				switch op.OP {
-				case "Add":
-					if index < 0 {
-						updateGroup.Payload.Members = append(updateGroup.Payload.Members, member)
+					// the member identifier in group patch is Bytebase user uid
+					uid, err := strconv.Atoi(patchMember.Value)
+					if err != nil {
+						return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to parse user id, error %v", err))
 					}
-				case "Remove":
-					if index >= 0 {
-						updateGroup.Payload.Members = slices.Delete(updateGroup.Payload.Members, index, index+1)
+					user, err := s.store.GetUserByID(ctx, uid)
+					if err != nil {
+						return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to get user, error %v", err))
 					}
-				default:
-					slog.Warn("unsupport operation type", slog.String("operation", op.OP), slog.String("path", op.Path))
-					continue
+					if user == nil {
+						slog.Warn("cannot found user", slog.String("operation", op.OP), slog.String("uid", patchMember.Value))
+						continue
+					}
+
+					member := &storepb.GroupMember{
+						Member: common.FormatUserUID(user.ID),
+						Role:   storepb.GroupMember_MEMBER,
+					}
+					index := slices.IndexFunc(group.Payload.Members, func(m *storepb.GroupMember) bool {
+						return m.Member == member.Member
+					})
+					switch op.OP {
+					case "Add":
+						if index < 0 {
+							updateGroup.Payload.Members = append(updateGroup.Payload.Members, member)
+						}
+					case "Remove":
+						if index >= 0 {
+							updateGroup.Payload.Members = slices.Delete(updateGroup.Payload.Members, index, index+1)
+						}
+					default:
+						slog.Warn("unsupport operation type", slog.String("operation", op.OP), slog.String("path", op.Path))
+						continue
+					}
 				}
 			case "displayName":
 				if op.OP != "Replace" {
@@ -500,6 +553,14 @@ func (s *Service) validRequestURL(ctx context.Context, c echo.Context) error {
 	return nil
 }
 
+func decodeGroupEmail(groupID string) (string, error) {
+	email, err := url.QueryUnescape(groupID)
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to decode group id %s", groupID)
+	}
+	return email, nil
+}
+
 func convertToAADUser(user *store.UserMessage) *AADUser {
 	return &AADUser{
 		Schemas: []string{
@@ -508,7 +569,7 @@ func convertToAADUser(user *store.UserMessage) *AADUser {
 		UserName:    user.Email,
 		Active:      !user.MemberDeleted,
 		DisplayName: user.Name,
-		ID:          common.FormatUserEmail(user.Email),
+		ID:          fmt.Sprintf("%d", user.ID),
 		Emails: []*AADUserEmail{
 			{
 				Type:    "work",
@@ -528,6 +589,7 @@ func convertToAADGroup(group *store.GroupMessage) *AADGroup {
 			"urn:ietf:params:scim:schemas:core:2.0:Group",
 		},
 		ID:          group.Email,
+		ExternalID:  group.Email,
 		DisplayName: group.Title,
 		Meta: &AADResourceMeta{
 			ResourceType: "Group",
