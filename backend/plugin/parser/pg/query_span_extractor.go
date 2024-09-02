@@ -317,8 +317,46 @@ func (q *querySpanExtractor) extractTableSourceFromSystemFunction(node *pgquery.
 			})
 		}
 		return tableSource, nil
+	case jsonToRecordset, jsonbToRecordset:
+		if node.RangeFunction.Alias == nil {
+			return nil, &parsererror.TypeNotSupportedError{
+				Extra: fmt.Sprintf("Use %s result as the table source must have the alias clause to specify table and columns name", strings.ToLower(funcName)),
+				Type:  "function",
+				Name:  funcName,
+			}
+		}
+
+		sourceColumns, err := q.extractSourceColumnSetFromExpressionNodeList(args)
+		if err != nil {
+			return nil, err
+		}
+
+		var columns []base.QuerySpanResult
+		if len(node.RangeFunction.Alias.Colnames) > 0 {
+			for _, columnName := range node.RangeFunction.Alias.Colnames {
+				name := columnName.GetString_().Sval
+				columns = append(columns, base.QuerySpanResult{
+					Name:          name,
+					SourceColumns: sourceColumns,
+				})
+			}
+		} else {
+			for _, columnName := range node.RangeFunction.Coldeflist {
+				name := columnName.GetColumnDef().Colname
+				columns = append(columns, base.QuerySpanResult{
+					Name:          name,
+					SourceColumns: sourceColumns,
+				})
+			}
+		}
+
+		return &base.PseudoTable{
+			Name:    node.RangeFunction.Alias.Aliasname,
+			Columns: columns,
+		}, nil
+
 	case jsonPopulateRecord, jsonbPopulateRecord, jsonPopulateRecordset, jsonbPopulateRecordset,
-		jsonToRecord, jsonbToRecord, jsonToRecordset, jsonbToRecordset:
+		jsonToRecord, jsonbToRecord:
 		return nil, &parsererror.TypeNotSupportedError{
 			Extra: fmt.Sprintf("Unsupport function %s", funcName),
 			Type:  "function",
