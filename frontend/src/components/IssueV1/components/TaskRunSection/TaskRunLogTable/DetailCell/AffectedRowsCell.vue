@@ -1,23 +1,17 @@
 <template>
-  <div class="text-sm">
-    <div v-if="!isNaN(affectedRows)">
-      {{
-        $t("issue.task-run.task-run-log.affected-rows-n", { n: affectedRows })
-      }}
-    </div>
-    <div v-else class="text-control-placeholder">-</div>
-  </div>
+  <span v-if="!isNaN(affectedRows)">
+    {{ $t("issue.task-run.task-run-log.affected-rows-n", { n: affectedRows }) }}
+  </span>
+  <span v-else class="text-control-placeholder">-</span>
 </template>
 
 <script setup lang="ts">
 import { computed } from "vue";
 import { TaskRunLogEntry_Type } from "@/types/proto/v1/rollout_service";
-import type { Sheet } from "@/types/proto/v1/sheet_service";
 import type { FlattenLogEntry } from "../common";
 
 const props = defineProps<{
   entry: FlattenLogEntry;
-  sheet?: Sheet;
 }>();
 
 const affectedRows = computed(() => {

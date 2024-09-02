@@ -142,6 +142,9 @@ func EqualTable(s, t *storepb.TableMetadata) bool {
 	if len(s.Indexes) != len(t.Indexes) {
 		return false
 	}
+	if len(s.ForeignKeys) != len(t.ForeignKeys) {
+		return false
+	}
 	if len(s.Partitions) != len(t.Partitions) {
 		return false
 	}
@@ -205,6 +208,33 @@ func EqualTable(s, t *storepb.TableMetadata) bool {
 			return false
 		}
 		if !slices.Equal(si.GetExpressions(), ti.GetExpressions()) {
+			return false
+		}
+	}
+	for i := 0; i < len(s.GetForeignKeys()); i++ {
+		si, ti := s.GetForeignKeys()[i], t.GetForeignKeys()[i]
+		if si.GetName() != ti.GetName() {
+			return false
+		}
+		if !slices.Equal(si.GetColumns(), ti.GetColumns()) {
+			return false
+		}
+		if si.GetReferencedSchema() != ti.GetReferencedSchema() {
+			return false
+		}
+		if si.GetReferencedTable() != ti.GetReferencedTable() {
+			return false
+		}
+		if !slices.Equal(si.GetReferencedColumns(), ti.GetReferencedColumns()) {
+			return false
+		}
+		if si.GetOnDelete() != ti.GetOnDelete() {
+			return false
+		}
+		if si.GetOnUpdate() != ti.GetOnUpdate() {
+			return false
+		}
+		if si.GetMatchType() != ti.GetMatchType() {
 			return false
 		}
 	}

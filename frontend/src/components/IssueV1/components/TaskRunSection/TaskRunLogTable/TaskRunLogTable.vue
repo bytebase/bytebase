@@ -165,7 +165,11 @@ const columns = computed(() => {
       width: "40%",
       rowSpan: detailCellRowSpan,
       render: (entry) => {
-        return <DetailCell entry={entry} sheet={sheet.value} />;
+        return (
+          <div class="flex flex-row justify-start items-center">
+            <DetailCell entry={entry} sheet={sheet.value} />
+          </div>
+        );
       },
     },
     {

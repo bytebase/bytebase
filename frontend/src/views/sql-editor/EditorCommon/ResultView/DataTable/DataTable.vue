@@ -107,14 +107,18 @@
 <script lang="ts" setup>
 import type { Table } from "@tanstack/vue-table";
 import { computed, nextTick, ref, watch } from "vue";
+import {
+  FeatureBadge,
+  FeatureBadgeForInstanceLicense,
+} from "@/components/FeatureGuard";
 import { useSubscriptionV1Store } from "@/store";
 import type { QueryRow, RowValue } from "@/types/proto/v1/sql_service";
+import { usePreventBackAndForward } from "@/utils";
 import { useSQLResultViewContext } from "../context";
 import ColumnSortedIcon from "./ColumnSortedIcon.vue";
 import SensitiveDataIcon from "./SensitiveDataIcon.vue";
 import TableCell from "./TableCell.vue";
 import useTableColumnWidthLogic from "./useTableResize";
-import { FeatureBadge, FeatureBadgeForInstanceLicense } from "@/components/FeatureGuard";
 
 export type DataTableColumn = {
   key: string;
@@ -132,6 +136,8 @@ const props = defineProps<{
 const scrollerRef = ref<HTMLDivElement>();
 const tableRef = ref<HTMLTableElement>();
 const subscriptionStore = useSubscriptionV1Store();
+
+usePreventBackAndForward(scrollerRef);
 
 const tableResize = useTableColumnWidthLogic({
   tableRef,

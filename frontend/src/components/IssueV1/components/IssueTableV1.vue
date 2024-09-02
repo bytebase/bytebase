@@ -157,7 +157,7 @@ const columnList = computed((): DataTableColumn<ComposedIssue>[] => {
       hide: !showExtendedColumns.value,
       render: (issue) => (
         <div class="flex flex-row items-center overflow-hidden gap-x-2">
-          <BBAvatar size="SMALL" username="issue.creatorEntity.title" />
+          <BBAvatar size="SMALL" username={issue.creatorEntity.title} />
           <span class="truncate">{issue.creatorEntity.title}</span>
         </div>
       ),

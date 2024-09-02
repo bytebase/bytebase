@@ -530,7 +530,7 @@ func printDefaultClause(buf *strings.Builder, column *storepb.ColumnMetadata) er
 	}
 
 	if column.GetDefault() != nil {
-		if _, err := fmt.Fprintf(buf, " DEFAULT '%s'", column.GetDefault().String()); err != nil {
+		if _, err := fmt.Fprintf(buf, " DEFAULT '%s'", column.GetDefault().GetValue()); err != nil {
 			return err
 		}
 	}

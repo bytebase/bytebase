@@ -634,14 +634,22 @@ func (s *AuthService) Login(ctx context.Context, request *v1pb.LoginRequest) (*v
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to find workspace setting, error: %v", err)
 	}
-	// Disallow password signin for end users. (except for workspace admins)
-	if setting.DisallowPasswordSignin && loginUser.Type == api.EndUser && !loginViaIDP {
-		isWorkspaceAdmin, err := s.isUserWorkspaceAdmin(ctx, loginUser)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to check user roles, error: %v", err)
-		}
-		if !isWorkspaceAdmin {
+	isWorkspaceAdmin, err := s.isUserWorkspaceAdmin(ctx, loginUser)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to check user roles, error: %v", err)
+	}
+	if !isWorkspaceAdmin && loginUser.Type == api.EndUser {
+		// Disallow password signin for end users.
+		if setting.DisallowPasswordSignin && !loginViaIDP {
 			return nil, status.Errorf(codes.PermissionDenied, "password signin is disallowed")
+		}
+		// Check domain restriction for end users.
+		var allowedDomains []string
+		if setting.EnforceIdentityDomain {
+			allowedDomains = setting.Domains
+		}
+		if err := validateEmail(loginUser.Email, allowedDomains, false); err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "invalid email %q, error: %v", loginUser.Email, err)
 		}
 	}
 
@@ -672,14 +680,6 @@ func (s *AuthService) Login(ctx context.Context, request *v1pb.LoginRequest) (*v
 		accessToken = token
 	} else {
 		return nil, status.Errorf(codes.Unauthenticated, "user type %s cannot login", loginUser.Type)
-	}
-
-	var allowedDomains []string
-	if setting.EnforceIdentityDomain {
-		allowedDomains = setting.Domains
-	}
-	if err := validateEmail(loginUser.Email, allowedDomains, loginUser.Type == api.ServiceAccount); err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid email %q, error: %v", loginUser.Email, err)
 	}
 
 	if request.Web {

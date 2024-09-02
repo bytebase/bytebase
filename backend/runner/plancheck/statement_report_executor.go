@@ -16,6 +16,7 @@ import (
 	mysqldriver "github.com/bytebase/bytebase/backend/plugin/db/mysql"
 	oracledriver "github.com/bytebase/bytebase/backend/plugin/db/oracle"
 	pgdriver "github.com/bytebase/bytebase/backend/plugin/db/pg"
+	tidbdriver "github.com/bytebase/bytebase/backend/plugin/db/tidb"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	"github.com/bytebase/bytebase/backend/plugin/parser/pg"
@@ -173,7 +174,7 @@ func (e *StatementReportExecutor) runReport(ctx context.Context, instance *store
 			return nil, err
 		}
 		defaultSchema = "public"
-	case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_OCEANBASE:
+	case storepb.Engine_MYSQL, storepb.Engine_OCEANBASE:
 		md, ok := driver.(*mysqldriver.Driver)
 		if !ok {
 			return nil, errors.Errorf("invalid mysql driver type")
@@ -186,7 +187,19 @@ func (e *StatementReportExecutor) runReport(ctx context.Context, instance *store
 				return nil, err
 			}
 		}
+		defaultSchema = ""
+	case storepb.Engine_TIDB:
+		md, ok := driver.(*tidbdriver.Driver)
+		if !ok {
+			return nil, errors.Errorf("invalid tidb driver type")
+		}
+		explainCalculator = md.CountAffectedRows
+
 		// TODO(d): implement TiDB sqlTypes.
+		sqlTypes, err = mysqlparser.GetStatementTypes(asts)
+		if err != nil {
+			slog.Error("failed to get statement types", log.BBError(err))
+		}
 		defaultSchema = ""
 	case storepb.Engine_ORACLE, storepb.Engine_OCEANBASE_ORACLE:
 		od, ok := driver.(*oracledriver.Driver)

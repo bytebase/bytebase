@@ -62,7 +62,7 @@ Prerequisite:
 1.  Compose up quickstart.
 
     ```
-    docker compose -f clickhoust-cluster-quickstart.docker-compose.yml up
+    docker compose -f clickhouse-cluster-quickstart.docker-compose.yml up
     ```
 
     This compose file sets up a 2 shards \* 2 replica clickhouse cluster.

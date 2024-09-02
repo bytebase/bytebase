@@ -1,8 +1,6 @@
 <template>
-  <div class="text-sm">
-    <div v-if="status">{{ status }}</div>
-    <div v-else class="text-control-placeholder">-</div>
-  </div>
+  <span v-if="status">{{ status }}</span>
+  <span v-else class="text-control-placeholder">-</span>
 </template>
 
 <script setup lang="ts">
