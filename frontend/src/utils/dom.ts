@@ -1,3 +1,5 @@
+import { onBeforeUnmount, onMounted, unref, type Ref } from "vue";
+
 export const isDescendantOf = (
   node: Element | null | undefined,
   selector: string
@@ -40,4 +42,37 @@ export const getScrollParent = (
 
 export const nextAnimationFrame = () => {
   return new Promise<number>((resolve) => requestAnimationFrame(resolve));
+};
+
+export const usePreventBackAndForward = (
+  elemRef: Ref<HTMLElement | null | undefined> | HTMLElement = document.body
+) => {
+  const preventBackForward = (elem: HTMLElement) => {
+    function handleWheel(e: WheelEvent) {
+      const maxX = elem.scrollWidth - elem.clientWidth;
+      const scrollTarget = elem.scrollLeft + e.deltaX;
+      if (scrollTarget < 0 || scrollTarget > maxX) {
+        e.preventDefault();
+      }
+    }
+
+    elem.addEventListener("wheel", handleWheel, {
+      passive: false,
+    });
+
+    return () => {
+      elem.removeEventListener("wheel", handleWheel);
+    };
+  };
+
+  let unregister: () => void;
+  onMounted(() => {
+    const elem = unref(elemRef);
+    if (!elem) return;
+    unregister = preventBackForward(elem);
+  });
+
+  onBeforeUnmount(() => {
+    unregister && unregister();
+  });
 };
