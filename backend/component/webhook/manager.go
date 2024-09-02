@@ -226,6 +226,9 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, acti
 				if mentionedUser[user.ID] {
 					continue
 				}
+				if user.MemberDeleted {
+					continue
+				}
 				mentionedUser[user.ID] = true
 				mentionUsers = append(mentionUsers, user)
 				phone, err := maybeGetPhoneFromUser(user)
