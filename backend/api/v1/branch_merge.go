@@ -1991,7 +1991,12 @@ func diffTableMetadata(base, head *storepb.TableMetadata) (*metadataDiffTableNod
 	}
 
 	if action == diffActionUpdate {
-		if len(tableNode.columnsMap) == 0 && len(tableNode.foreignKeys) == 0 && len(tableNode.indexes) == 0 && len(tableNode.partitionsMap) == 0 {
+		if len(tableNode.columnsMap) == 0 &&
+			len(tableNode.foreignKeys) == 0 &&
+			len(tableNode.indexes) == 0 &&
+			len(tableNode.partitionsMap) == 0 &&
+			!(tableNode.base.GetComment() != tableNode.head.GetComment()) &&
+			!(tableNode.base.GetUserComment() != tableNode.head.GetUserComment()) {
 			return nil, nil
 		}
 	}
