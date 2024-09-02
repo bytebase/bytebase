@@ -1609,7 +1609,6 @@ func updateDatabaseConfigLastModifierForMerge(baseMetadata *storepb.DatabaseSche
 				baseTableConfig = initTableConfig(baseTable.GetProto(), "", "", now)
 			}
 			if diff := cmp.Diff(headTable, baseTable.GetProto(), protocmp.Transform()); diff != "" {
-				fmt.Println(diff)
 				baseTableConfig.SourceBranch = headTableConfig.SourceBranch
 				baseTableConfig.Updater = headTableConfig.Updater
 				baseTableConfig.UpdateTime = now
