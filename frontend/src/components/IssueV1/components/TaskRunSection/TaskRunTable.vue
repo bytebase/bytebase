@@ -78,47 +78,56 @@ const columnList = computed((): DataTableColumn<ComposedTaskRun>[] => {
       key: "status",
       title: "",
       width: 30,
-      render: (taskRun: ComposedTaskRun) => {
-        return <TaskRunStatusIcon status={taskRun.status} />;
-      },
+      render: (taskRun: ComposedTaskRun) => (
+        <TaskRunStatusIcon status={taskRun.status} />
+      ),
     },
     {
       key: "comment",
       title: t("task.comment"),
       width: "60%",
-      className: "flex flex-row items-center",
+      className: "",
       minWidth: 140,
       resizable: true,
-      render: (taskRun: ComposedTaskRun) => {
-        return <TaskRunComment taskRun={taskRun} />;
-      },
+      render: (taskRun: ComposedTaskRun) => (
+        <div class="flex flex-row justify-start items-center">
+          <TaskRunComment taskRun={taskRun} />
+        </div>
+      ),
     },
     {
       key: "detail",
       title: () => t("common.detail"),
       width: "20%",
+      className: "",
       minWidth: 100,
       resizable: true,
       render: (taskRun) => {
         const entry = getFlattenLogEntry(taskRun);
-        return entry ? <DetailCell entry={entry} sheet={sheet.value} /> : "-";
+        return entry ? (
+          <div class="flex flex-row justify-start items-center">
+            <DetailCell entry={entry} sheet={sheet.value} />
+          </div>
+        ) : (
+          "-"
+        );
       },
     },
     {
       key: "createTime",
       title: t("task.created"),
       width: 100,
-      render: (taskRun: ComposedTaskRun) => {
-        return <HumanizeDate date={taskRun.createTime} />;
-      },
+      render: (taskRun: ComposedTaskRun) => (
+        <HumanizeDate date={taskRun.createTime} />
+      ),
     },
     {
       key: "startTime",
       title: t("task.started"),
       width: 100,
-      render: (taskRun: ComposedTaskRun) => {
-        return <HumanizeDate date={taskRun.startTime} />;
-      },
+      render: (taskRun: ComposedTaskRun) => (
+        <HumanizeDate date={taskRun.startTime} />
+      ),
     },
     {
       key: "executionDuration",
@@ -132,17 +141,15 @@ const columnList = computed((): DataTableColumn<ComposedTaskRun>[] => {
       key: "actions",
       title: "",
       width: 60,
-      render: (taskRun: ComposedTaskRun) => {
-        return (
-          <NButton
-            v-if={shouldShowDetailButton(taskRun)}
-            size="tiny"
-            onClick={() => showDetail(taskRun)}
-          >
-            {t("common.detail")}
-          </NButton>
-        );
-      },
+      render: (taskRun: ComposedTaskRun) => (
+        <NButton
+          v-if={shouldShowDetailButton(taskRun)}
+          size="tiny"
+          onClick={() => showDetail(taskRun)}
+        >
+          {t("common.detail")}
+        </NButton>
+      ),
     },
   ];
 });

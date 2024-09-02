@@ -1,16 +1,19 @@
 <template>
-  <AffectedRowsCell v-if="view === 'AFFECTED_ROWS'" v-bind="props" />
-  <ErrorCell v-if="view === 'ERROR'" v-bind="props" />
-  <StatusUpdateCell v-if="view === 'STATUS_UPDATE'" v-bind="props" />
-  <TransactionControlCell
-    v-if="view === 'TRANSACTION_CONTROL'"
-    v-bind="props"
-  />
-  <DatabaseSyncCell v-if="view === 'DATABASE_SYNC'" v-bind="props" />
-  <div v-if="view === 'N/A'" class="text-control-placeholder">-</div>
+  <NEllipsis expand-trigger="click" line-clamp="2" :tooltip="false">
+    <AffectedRowsCell v-if="view === 'AFFECTED_ROWS'" v-bind="props" />
+    <ErrorCell v-if="view === 'ERROR'" v-bind="props" />
+    <StatusUpdateCell v-if="view === 'STATUS_UPDATE'" v-bind="props" />
+    <TransactionControlCell
+      v-if="view === 'TRANSACTION_CONTROL'"
+      v-bind="props"
+    />
+    <DatabaseSyncCell v-if="view === 'DATABASE_SYNC'" v-bind="props" />
+    <span v-if="view === 'N/A'">-</span>
+  </NEllipsis>
 </template>
 
 <script setup lang="ts">
+import { NEllipsis } from "naive-ui";
 import { computed } from "vue";
 import { TaskRunLogEntry_Type } from "@/types/proto/v1/rollout_service";
 import type { Sheet } from "@/types/proto/v1/sheet_service";
