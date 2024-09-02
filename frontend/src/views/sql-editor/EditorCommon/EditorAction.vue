@@ -44,6 +44,8 @@
         />
       </NButtonGroup>
 
+      <OpenAIButton size="small" />
+
       <NPopover placement="bottom">
         <template #trigger>
           <AdminModeButton
@@ -160,6 +162,7 @@ import { useSQLEditorContext } from "../context";
 import AdminModeButton from "./AdminModeButton.vue";
 import BatchQueryDatabasesSelector from "./BatchQueryDatabasesSelector.vue";
 import DatabaseChooser from "./DatabaseChooser.vue";
+import OpenAIButton from "./OpenAIButton.vue";
 import QueryContextSettingPopover from "./QueryContextSettingPopover.vue";
 import SharePopover from "./SharePopover.vue";
 

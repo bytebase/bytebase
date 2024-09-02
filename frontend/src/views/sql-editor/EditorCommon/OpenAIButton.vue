@@ -1,9 +1,13 @@
 <template>
-  <NTooltip v-if="showButton" placement="right">
+  <NPopover v-if="showButton" placement="bottom">
     <template #trigger>
       <NButton
-        :style="buttonStyle"
-        v-bind="buttonProps"
+        :active="showAIChatBox"
+        v-bind="{
+          ...buttonProps,
+          ...$attrs,
+        }"
+        style="--n-icon-size: 16px; --n-padding: 0 6px"
         @click="showAIChatBox = !showAIChatBox"
       >
         <template #icon>
@@ -28,20 +32,18 @@
           : $t("plugin.ai.enable-text2sql")
       }}
     </template>
-  </NTooltip>
+  </NPopover>
 </template>
 
 <script setup lang="ts">
-import { NButton, NTooltip } from "naive-ui";
+import { NButton, NPopover, type ButtonProps } from "naive-ui";
 import { computed } from "vue";
-import { toRef } from "vue";
 import { useSettingV1Store, useSQLEditorTabStore } from "@/store";
-import { useSQLEditorContext } from "../../context";
-import { useButton, type Size } from "./common";
+import { useSQLEditorContext } from "../context";
 
-const props = defineProps<{
-  size: Size;
-}>();
+defineOptions({
+  inheritAttrs: false,
+});
 
 const tabStore = useSQLEditorTabStore();
 const settingV1Store = useSettingV1Store();
@@ -58,9 +60,16 @@ const showButton = computed(() => {
   return openAIKey.value && !tabStore.isDisconnected;
 });
 
-const { props: buttonProps, style: buttonStyle } = useButton({
-  size: toRef(props, "size"),
-  active: showAIChatBox,
-  disabled: false,
+const buttonProps = computed(() => {
+  const buttonProps: ButtonProps = {
+    tag: "div",
+  };
+  if (showAIChatBox.value) {
+    buttonProps.ghost = true;
+    buttonProps.type = "primary";
+  } else {
+    buttonProps.type = "default";
+  }
+  return buttonProps;
 });
 </script>

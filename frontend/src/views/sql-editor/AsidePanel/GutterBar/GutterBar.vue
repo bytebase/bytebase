@@ -13,15 +13,12 @@
       <TabItem tab="HISTORY" :size="size" @click="handleClickTab('HISTORY')" />
     </div>
 
-    <div class="flex flex-col justify-end items-center">
-      <OpenAIButton :size="size" />
-    </div>
+    <div class="flex flex-col justify-end items-center"></div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { useSQLEditorContext, type AsidePanelTab } from "../../context";
-import OpenAIButton from "./OpenAIButton.vue";
 import TabItem from "./TabItem.vue";
 import { type Size } from "./common";
 
