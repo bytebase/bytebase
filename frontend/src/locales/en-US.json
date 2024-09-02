@@ -2912,9 +2912,9 @@
       "no-linked-resources": "No attached resources",
       "change-resources": "Change attached resources",
       "self": "Attach to resources",
-      "label": "You can apply the review policy to environments or projects, this will affect all databases belong to the resource. The database will use the SQL review policy attached to the project, otherwise fallback to the environment policy.",
-      "label-environment": "The SQL review policy will effect all databases belongs to the selected environment.",
-      "label-project": "The SQL review policy will effect all databases belongs to the selected project. The SQL review policy for environment will be ignored.",
+      "label": "You can apply the SQL review policy to environments or projects. The database will use the project-level policy if exists, or fallback to the environment-level policy.",
+      "label-environment": "The SQL review policy will affect all databases belonging to the selected environment.",
+      "label-project": "The SQL review policy will affect all databases belonging to the selected project. This will supersede the database environment-level policy.",
       "override-warning": "Following resources already bound with other SQL review policies. Click \"{button}\" will override the config."
     },
     "create": {
