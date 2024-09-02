@@ -1,11 +1,19 @@
 <template>
-  <Drawer @close="$emit('close')">
+  <Drawer :show="show" @close="$emit('close')">
     <DrawerContent
       class="w-[50rem] max-w-[90vw] relative"
       :title="$t('settings.members.aad-sync.self')"
     >
       <template #default>
         <div class="flex flex-col gap-y-4">
+          <div class="text-sm text-control-light">
+            {{ $t(`settings.members.aad-sync.description`) }}
+            <LearnMoreLink
+              url="https://www.bytebase.com/docs/administration/directiry-sync?source=console"
+              class="ml-1"
+            />
+          </div>
+
           <BBAttention
             v-if="!externalUrl"
             class="w-full border-none"
@@ -99,6 +107,10 @@ import { BBAttention } from "@/bbkit";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/router/dashboard/workspaceSetting";
 import { pushNotification, useSettingV1Store } from "@/store";
+
+defineProps<{
+  show: boolean;
+}>();
 
 defineEmits<{
   (event: "close"): void;

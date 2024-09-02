@@ -567,7 +567,8 @@
       "add-member": "添加成员",
       "add-user": "添加用户",
       "aad-sync": {
-        "self": "从 Entra ID (Azure ID) 同步",
+        "self": "从 Entra ID (Azure AD) 同步",
+        "description": "将 Entra ID（前 Azure AD）中的用户和组同步到您的 Bytebase 实例。",
         "endpoint": "API URL",
         "endpoint-tip": "将该 URL 提供给 Azure，它将通过 webhook 来同步用户和组。",
         "token": "密钥",
