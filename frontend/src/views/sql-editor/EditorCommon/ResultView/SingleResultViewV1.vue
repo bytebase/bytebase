@@ -4,7 +4,7 @@
       <ErrorView :error="result.error" />
     </BBAttention>
     <div
-      class="w-full shrink-0 flex flex-row justify-between items-center mb-2 overflow-x-auto"
+      class="w-full shrink-0 flex flex-row justify-between items-center mb-2 overflow-x-auto hide-scrollbar"
     >
       <div class="flex flex-row justify-start items-center mr-2 shrink-0">
         <NInput
@@ -34,7 +34,9 @@
           <span class="ml-2">{{ $t("sql-editor.rows-upper-limit") }}</span>
         </span>
       </div>
-      <div class="flex justify-between items-center gap-x-3 overflow-y-hidden">
+      <div
+        class="flex justify-between items-center shrink-0 gap-x-3 overflow-y-hidden hide-scrollbar"
+      >
         <div class="flex items-center">
           <NSwitch v-model:value="state.vertical" size="small" />
           <span class="ml-1 whitespace-nowrap text-sm text-gray-500">
@@ -47,7 +49,7 @@
           :item-count="table.getCoreRowModel().rows.length"
           :page="pageIndex + 1"
           :page-size="pageSize"
-          class="pagination"
+          class="pagination whitespace-nowrap"
           style="--n-input-width: 2.5rem"
           @update-page="handleChangePage"
         >
