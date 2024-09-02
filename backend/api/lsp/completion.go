@@ -42,9 +42,9 @@ func (h *Handler) handleTextDocumentCompletion(ctx context.Context, _ *jsonrpc2.
 		// We don't want to parse a huge file.
 		return newEmptyCompletionList(), nil
 	}
-	_, valid, why := offsetForPosition(content, params.Position)
-	if !valid {
-		return nil, errors.Errorf("invalid position %d:%d (%s)", params.Position.Line, params.Position.Character, why)
+	_, err = offsetForPosition(content, params.Position)
+	if err != nil {
+		return nil, errors.Wrapf(err, "invalid position %d:%d", params.Position.Line, params.Position.Character)
 	}
 
 	defaultDatabase := h.getDefaultDatabase()
