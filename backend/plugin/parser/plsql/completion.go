@@ -1020,7 +1020,7 @@ func (l *TableRefListener) ExitTable_alias(ctx *plsql.Table_aliasContext) {
 	}
 
 	if l.level == 0 && len(l.context.referencesStack) > 0 && len(l.context.referencesStack[0]) > 0 {
-		alias := normalizeTableAlias(ctx)
+		alias := NormalizeTableAlias(ctx)
 		switch reference := l.context.referencesStack[0][len(l.context.referencesStack[0])-1].(type) {
 		case *base.PhysicalTableReference:
 			reference.Alias = alias

@@ -39,7 +39,7 @@ func normalizeColumnAlias(ctx plsql.IColumn_aliasContext) string {
 	return ""
 }
 
-func normalizeTableAlias(ctx plsql.ITable_aliasContext) string {
+func NormalizeTableAlias(ctx plsql.ITable_aliasContext) string {
 	if ctx == nil {
 		return ""
 	}
