@@ -491,7 +491,7 @@ func (s *BranchService) MergeBranch(ctx context.Context, request *v1pb.MergeBran
 	updateDatabaseConfigLastModifierForMerge(baseBranch.Head.Metadata, filteredMergedMetadata, baseBranch.Head.DatabaseConfig, mergedConfig)
 	baseBranchNewHead := &storepb.BranchSnapshot{
 		Metadata:       filteredMergedMetadata,
-		DatabaseConfig: baseBranch.Head.DatabaseConfig,
+		DatabaseConfig: mergedConfig,
 	}
 	baseBranchNewHeadSchema := mergedSchemaBytes
 
