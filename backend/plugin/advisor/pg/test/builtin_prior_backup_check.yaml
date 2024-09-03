@@ -10,7 +10,7 @@
     - status: 3
       code: 2001
       title: builtin.prior-backup-check
-      content: Prior backup cannot deal with mixed DML more than 5 statements, otherwise statements need be UPDATE for one table with PRIMARY KEY or UNIQUE KEY in WHERE clause
+      content: Prior backup is feasible only with up to 5 statements that are either UPDATE or DELETE, or if all UPDATEs target the same table with a PRIMARY or UNIQUE KEY in the WHERE clause
       detail: ""
       startposition:
         line: 0
@@ -38,7 +38,7 @@
     - status: 3
       code: 2001
       title: builtin.prior-backup-check
-      content: Prior backup cannot deal with mixed DML more than 5 statements, otherwise statements need be UPDATE for one table with PRIMARY KEY or UNIQUE KEY in WHERE clause
+      content: Prior backup is feasible only with up to 5 statements that are either UPDATE or DELETE, or if all UPDATEs target the same table with a PRIMARY or UNIQUE KEY in the WHERE clause
       detail: ""
       startposition:
         line: 0
