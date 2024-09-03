@@ -56,7 +56,8 @@ const (
 	orderByKeyAverageRowsExamined = "average_rows_examined"
 	orderByKeyMaximumRowsExamined = "maximum_rows_examined"
 
-	backupDatabaseName = "bbdataarchive"
+	backupDatabaseName       = "bbdataarchive"
+	oracleBackupDatabaseName = "BBDATAARCHIVE"
 )
 
 // DatabaseService implements the database service.
@@ -1708,8 +1709,19 @@ func isBackupAvailable(ctx context.Context, s *store.Store, instance *store.Inst
 				return true
 			}
 		}
-	case storepb.Engine_MYSQL, storepb.Engine_ORACLE, storepb.Engine_MSSQL, storepb.Engine_TIDB:
+	case storepb.Engine_MYSQL, storepb.Engine_MSSQL, storepb.Engine_TIDB:
 		dbName := backupDatabaseName
+		backupDB, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+			InstanceID:   &instance.ResourceID,
+			DatabaseName: &dbName,
+		})
+		if err != nil {
+			slog.Debug("Failed to get backup database", "err", err)
+			return false
+		}
+		return backupDB != nil
+	case storepb.Engine_ORACLE:
+		dbName := oracleBackupDatabaseName
 		backupDB, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
 			InstanceID:   &instance.ResourceID,
 			DatabaseName: &dbName,
