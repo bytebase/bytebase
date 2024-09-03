@@ -45,7 +45,7 @@
           @click.prevent="() => copyServiceKey(user.serviceKey)"
         >
           <template #icon>
-            <heroicons-outline:clipboard class="w-4 h-4" />
+            <ClipboardIcon class="w-4 h-4" />
           </template>
           {{ $t("settings.members.copy-service-key") }}
         </NButton>
@@ -56,7 +56,7 @@
           @click.prevent="$emit('reset-service-key', user)"
         >
           <template #icon>
-            <heroicons-outline:reply class="w-4 h-4" />
+            <ReplyIcon class="w-4 h-4" />
           </template>
           {{ $t("settings.members.reset-service-key") }}
         </NButton>
@@ -66,6 +66,7 @@
 </template>
 
 <script lang="ts" setup>
+import { ClipboardIcon, ReplyIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";

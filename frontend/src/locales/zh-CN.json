@@ -572,7 +572,9 @@
         "endpoint": "API URL",
         "endpoint-tip": "将该 URL 提供给 Azure，它将通过 webhook 来同步用户和组。",
         "token": "密钥",
-        "token-tip": "Entra ID 同步密钥，请勿泄漏。"
+        "token-tip": "Entra ID 同步密钥，请勿泄漏。",
+        "reset-token": "重置密钥",
+        "reset-token-warning": "您需要更新 Azure 应用程序配置。"
       },
       "update-user": "更新用户",
       "workspace-role-at-least-one": "至少选择一个工作空间级别的角色",

@@ -51,7 +51,7 @@
           <SearchBox v-model:value="state.activeUserFilterText" />
 
           <NButton
-            v-if="isDev()"
+            v-if="isDev() && allowGetSCIMSetting"
             class="capitalize"
             @click="state.showAadSyncDrawer = true"
           >
@@ -244,6 +244,10 @@ const workspaceProfileSetting = computed(() =>
   WorkspaceProfileSetting.fromPartial(
     settingV1Store.workspaceProfileSetting || {}
   )
+);
+
+const allowGetSCIMSetting = computed(() =>
+  hasWorkspacePermissionV2("bb.settings.get")
 );
 
 const allowCreateGroup = computed(() =>
