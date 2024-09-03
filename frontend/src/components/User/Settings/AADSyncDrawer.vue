@@ -86,9 +86,9 @@
             <NButton
               v-if="hasPermission"
               tertiary
-              @click="resetToken"
               :type="'warning'"
               :size="'small'"
+              @click="resetToken"
             >
               <template #icon>
                 <ReplyIcon class="w-4" />
