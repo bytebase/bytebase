@@ -307,7 +307,7 @@ useEmitteryEventListener(events, "rebuild-tree", (params) => {
   debouncedBuildDatabaseTreeData(params.openFirstChild);
 });
 watch(disableDiffColoring, () =>
-  buildDatabaseTreeData(/* openFirstChild */ true)
+  buildDatabaseTreeData(/* !openFirstChild */ false)
 );
 
 const tabWatchKey = computed(() => {

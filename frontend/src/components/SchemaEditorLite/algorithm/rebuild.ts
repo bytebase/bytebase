@@ -13,7 +13,7 @@ export const useRebuildMetadataEdit = (context: SchemaEditorContext) => {
     database: ComposedDatabase,
     source: DatabaseMetadata,
     target: DatabaseMetadata,
-    resets: RebuildMetadataEditReset[] = ["tabs", "tree"]
+    resets: RebuildMetadataEditReset[] = ["tree"]
   ) => {
     clearEditStatus();
     const dm = new DiffMerge(context, database, source, target);
