@@ -57,7 +57,11 @@ const openAIKey = computed(
 const { showAIChatBox } = useSQLEditorContext();
 
 const showButton = computed(() => {
-  return openAIKey.value && !tabStore.isDisconnected;
+  return (
+    openAIKey.value &&
+    !tabStore.isDisconnected &&
+    tabStore.currentTab?.mode !== "ADMIN"
+  );
 });
 
 const buttonProps = computed(() => {
