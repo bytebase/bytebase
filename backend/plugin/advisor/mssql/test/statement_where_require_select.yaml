@@ -4,7 +4,7 @@
     - status: 2
       code: 202
       title: statement.where.require.select
-      content: WHERE clause is required for query specification.
+      content: WHERE clause is required for SELETE statement.
       detail: ""
       startposition:
         line: 1
@@ -21,7 +21,7 @@
     - status: 2
       code: 202
       title: statement.where.require.select
-      content: WHERE clause is required for query specification.
+      content: WHERE clause is required for SELETE statement.
       detail: ""
       startposition:
         line: 2
@@ -30,7 +30,7 @@
     - status: 2
       code: 202
       title: statement.where.require.select
-      content: WHERE clause is required for query specification.
+      content: WHERE clause is required for SELETE statement.
       detail: ""
       startposition:
         line: 3

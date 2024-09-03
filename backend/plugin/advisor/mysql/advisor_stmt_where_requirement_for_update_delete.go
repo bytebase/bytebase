@@ -59,6 +59,10 @@ type whereRequirementForUpdateDeleteChecker struct {
 	text       string
 }
 
+func (checker *whereRequirementForUpdateDeleteChecker) EnterQuery(ctx *mysql.QueryContext) {
+	checker.text = ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
+}
+
 // EnterDeleteStatement is called when production deleteStatement is entered.
 func (checker *whereRequirementForUpdateDeleteChecker) EnterDeleteStatement(ctx *mysql.DeleteStatementContext) {
 	if !mysqlparser.IsTopMySQLRule(&ctx.BaseParserRuleContext) {
