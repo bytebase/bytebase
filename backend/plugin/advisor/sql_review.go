@@ -57,8 +57,10 @@ const (
 
 	// SchemaRuleStatementNoSelectAll disallow 'SELECT *'.
 	SchemaRuleStatementNoSelectAll SQLReviewRuleType = "statement.select.no-select-all"
-	// SchemaRuleStatementRequireWhere require 'WHERE' clause.
-	SchemaRuleStatementRequireWhere SQLReviewRuleType = "statement.where.require"
+	// SchemaRuleStatementRequireWhereForSelect require 'WHERE' clause for SELECT statements.
+	SchemaRuleStatementRequireWhereForSelect SQLReviewRuleType = "statement.where.require.select"
+	// SchemaRuleStatementRequireWhereForUpdateDelete require 'WHERE' clause for UPDATE and DELETE statements.
+	SchemaRuleStatementRequireWhereForUpdateDelete SQLReviewRuleType = "statement.where.require.update-delete"
 	// SchemaRuleStatementNoLeadingWildcardLike disallow leading '%' in LIKE, e.g. LIKE foo = '%x' is not allowed.
 	SchemaRuleStatementNoLeadingWildcardLike SQLReviewRuleType = "statement.where.no-leading-wildcard-like"
 	// SchemaRuleStatementDisallowOnDelCascade disallows ON DELETE CASCADE clauses.
@@ -879,18 +881,31 @@ func getViewDefinition(checkContext SQLReviewCheckContext, viewList []string) (s
 
 func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Type, error) {
 	switch ruleType {
-	case SchemaRuleStatementRequireWhere:
+	case SchemaRuleStatementRequireWhereForSelect:
 		switch engine {
 		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
-			return MySQLWhereRequirement, nil
+			return MySQLWhereRequirementForSelect, nil
 		case storepb.Engine_POSTGRES:
-			return PostgreSQLWhereRequirement, nil
+			return PostgreSQLWhereRequirementForSelect, nil
 		case storepb.Engine_ORACLE, storepb.Engine_OCEANBASE_ORACLE:
-			return OracleWhereRequirement, nil
+			return OracleWhereRequirementForSelect, nil
 		case storepb.Engine_SNOWFLAKE:
-			return SnowflakeWhereRequirement, nil
+			return SnowflakeWhereRequirementForSelect, nil
 		case storepb.Engine_MSSQL:
-			return MSSQLWhereRequirement, nil
+			return MSSQLWhereRequirementForSelect, nil
+		}
+	case SchemaRuleStatementRequireWhereForUpdateDelete:
+		switch engine {
+		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
+			return MySQLWhereRequirementForUpdateDelete, nil
+		case storepb.Engine_POSTGRES:
+			return PostgreSQLWhereRequirementForUpdateDelete, nil
+		case storepb.Engine_ORACLE, storepb.Engine_OCEANBASE_ORACLE:
+			return OracleWhereRequirementForUpdateDelete, nil
+		case storepb.Engine_SNOWFLAKE:
+			return SnowflakeWhereRequirementForUpdateDelete, nil
+		case storepb.Engine_MSSQL:
+			return MSSQLWhereRequirementForUpdateDelete, nil
 		}
 	case SchemaRuleStatementNoLeadingWildcardLike:
 		switch engine {

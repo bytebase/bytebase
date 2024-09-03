@@ -98,7 +98,12 @@ func prodTemplateReviewConfigForPostgreSQL() (*v1pb.ReviewConfig, error) {
 				Engine: v1pb.Engine_POSTGRES,
 			},
 			{
-				Type:   string(advisor.SchemaRuleStatementRequireWhere),
+				Type:   string(advisor.SchemaRuleStatementRequireWhereForSelect),
+				Level:  v1pb.SQLReviewRuleLevel_ERROR,
+				Engine: v1pb.Engine_POSTGRES,
+			},
+			{
+				Type:   string(advisor.SchemaRuleStatementRequireWhereForUpdateDelete),
 				Level:  v1pb.SQLReviewRuleLevel_ERROR,
 				Engine: v1pb.Engine_POSTGRES,
 			},
@@ -336,7 +341,12 @@ func prodTemplateReviewConfigForMySQL() (*v1pb.ReviewConfig, error) {
 				Engine: v1pb.Engine_MYSQL,
 			},
 			{
-				Type:   string(advisor.SchemaRuleStatementRequireWhere),
+				Type:   string(advisor.SchemaRuleStatementRequireWhereForSelect),
+				Level:  v1pb.SQLReviewRuleLevel_ERROR,
+				Engine: v1pb.Engine_MYSQL,
+			},
+			{
+				Type:   string(advisor.SchemaRuleStatementRequireWhereForUpdateDelete),
 				Level:  v1pb.SQLReviewRuleLevel_ERROR,
 				Engine: v1pb.Engine_MYSQL,
 			},
