@@ -81,6 +81,8 @@ export interface QueryRequest {
   dataSourceId: string;
   /** Explain the statement. */
   explain: boolean;
+  /** The schema of search path. Most works for Postgres. */
+  schema?: string | undefined;
 }
 
 export interface QueryResponse {
@@ -877,7 +879,7 @@ export const AdminExecuteResponse = {
 };
 
 function createBaseQueryRequest(): QueryRequest {
-  return { name: "", statement: "", limit: 0, timeout: undefined, dataSourceId: "", explain: false };
+  return { name: "", statement: "", limit: 0, timeout: undefined, dataSourceId: "", explain: false, schema: undefined };
 }
 
 export const QueryRequest = {
@@ -899,6 +901,9 @@ export const QueryRequest = {
     }
     if (message.explain === true) {
       writer.uint32(56).bool(message.explain);
+    }
+    if (message.schema !== undefined) {
+      writer.uint32(66).string(message.schema);
     }
     return writer;
   },
@@ -952,6 +957,13 @@ export const QueryRequest = {
 
           message.explain = reader.bool();
           continue;
+        case 8:
+          if (tag !== 66) {
+            break;
+          }
+
+          message.schema = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -969,6 +981,7 @@ export const QueryRequest = {
       timeout: isSet(object.timeout) ? Duration.fromJSON(object.timeout) : undefined,
       dataSourceId: isSet(object.dataSourceId) ? globalThis.String(object.dataSourceId) : "",
       explain: isSet(object.explain) ? globalThis.Boolean(object.explain) : false,
+      schema: isSet(object.schema) ? globalThis.String(object.schema) : undefined,
     };
   },
 
@@ -992,6 +1005,9 @@ export const QueryRequest = {
     if (message.explain === true) {
       obj.explain = message.explain;
     }
+    if (message.schema !== undefined) {
+      obj.schema = message.schema;
+    }
     return obj;
   },
 
@@ -1008,6 +1024,7 @@ export const QueryRequest = {
       : undefined;
     message.dataSourceId = object.dataSourceId ?? "";
     message.explain = object.explain ?? false;
+    message.schema = object.schema ?? undefined;
     return message;
   },
 };

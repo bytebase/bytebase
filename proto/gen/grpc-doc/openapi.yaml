@@ -11662,6 +11662,9 @@ components:
                 explain:
                     type: boolean
                     description: Explain the statement.
+                schema:
+                    type: string
+                    description: The schema of search path. Most works for Postgres.
         QueryResponse:
             type: object
             properties:

@@ -196,6 +196,9 @@ message QueryRequest {
 
   // Explain the statement.
   bool explain = 7;
+
+  // The schema of search path. Most works for Postgres.
+  optional string schema = 8;
 }
 
 message QueryResponse {

@@ -10371,6 +10371,7 @@ Type of the SheetPayload.
 | timeout | [google.protobuf.Duration](#google-protobuf-Duration) | optional | The timeout for the request. |
 | data_source_id | [string](#string) |  | The id of data source. It is used for querying admin data source even if the instance has read-only data sources. Or it can be used to query a specific read-only data source. |
 | explain | [bool](#bool) |  | Explain the statement. |
+| schema | [string](#string) | optional | The schema of search path. Most works for Postgres. |
 
 
 
