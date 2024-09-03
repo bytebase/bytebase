@@ -21,7 +21,8 @@
     "database": "数据库",
     "index": "索引",
     "system": "系统",
-    "advice": "建议"
+    "advice": "建议",
+    "builtin": "内置规则"
   },
   "template": {
     "bb-sql-review-prod": "进阶模板",
@@ -658,6 +659,10 @@
     "statement-non-transactional": {
       "title": "检测并报告非事务性语句",
       "description": ""
+    },
+    "builtin-prior-backup-check": {
+      "title": "事先备份可行性检查",
+      "description": "此规则检查是否可以在数据更改之前创建备份。它会验证备份目标数据库是否存在，并禁止不支持的方案。它是内置的，无法跳过。"
     }
   },
   "level": {

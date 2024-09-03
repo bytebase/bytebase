@@ -21,7 +21,8 @@
     "database": "Database",
     "index": "Index",
     "system": "System",
-    "advice": "Advice"
+    "advice": "Advice",
+    "builtin": "Builtin rules"
   },
   "template": {
     "bb-sql-review-prod": "Advanced Template",
@@ -658,6 +659,10 @@
     "statement-non-transactional": {
       "title": "Detect and report non-transactional statements",
       "description": ""
+    },
+    "builtin-prior-backup-check": {
+      "title": "Prior backup feasibility check",
+      "description": "This rule checks whether a backup can be created before data changes. It verifies the existence of the backup target database and disallows non-supported scenarios. It's builtin and cannot skip."
     }
   },
   "level": {
