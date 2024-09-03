@@ -94,7 +94,6 @@ const { status, data, error } = useQuery({
     if (!expanded.value) return "";
     const metadata = debouncedMocked.value;
     if (!metadata) return "";
-    console.log("call query");
     try {
       const response = await sqlServiceClient.stringifyMetadata(
         {

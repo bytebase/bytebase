@@ -123,7 +123,21 @@ const metadataForPartition = (partition: TablePartitionMetadata) => {
 const statusForPartition = (partition: TablePartitionMetadata) => {
   return getPartitionStatus(props.db, metadataForPartition(partition));
 };
-const markStatus = (partition: TablePartitionMetadata, status: EditStatus) => {
+const markStatus = (
+  partition: TablePartitionMetadata,
+  status: EditStatus,
+  oldStatus: EditStatus | undefined = undefined
+) => {
+  if (!oldStatus) {
+    oldStatus = statusForPartition(partition);
+  }
+  if (
+    (oldStatus === "created" || oldStatus === "dropped") &&
+    status === "updated"
+  ) {
+    markEditStatus(props.db, metadataForPartition(partition), oldStatus);
+    return;
+  }
   markEditStatus(props.db, metadataForPartition(partition), status);
 };
 
@@ -197,14 +211,9 @@ const columns = computed(() => {
             readonly={!allowEditPartition(item.partition)}
             partition={item.partition}
             onUpdate:name={(name) => {
-              removeEditStatus(
-                props.db,
-                metadataForPartition(item.partition),
-                /* !recursive */ false
-              );
+              const oldStatus = statusForPartition(item.partition);
               item.partition.name = name;
-              markStatus(item.partition, "created");
-              emit("update");
+              markStatus(item.partition, "updated", oldStatus);
             }}
           />
         );
