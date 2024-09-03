@@ -66,7 +66,7 @@ const createRestoreIssue = async () => {
     name: `Rollback ${selectedTask.value.title} in issue#${extractIssueUID(issue.value.name)}`,
     databaseList: selectedTask.value.target,
     sql: statement,
-    description: `This issue is created to rollback the data of ${selectedTask.value.title} in issue#${extractIssueUID(issue.value.name)}`,
+    description: `This issue is created to rollback the data of ${selectedTask.value.title} in issue #${extractIssueUID(issue.value.name)}`,
   };
   router.push({
     name: PROJECT_V1_ROUTE_ISSUE_DETAIL,

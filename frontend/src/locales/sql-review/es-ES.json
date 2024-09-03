@@ -356,9 +356,13 @@
       "title": "Prohibir el uso de \"SELECT *\"",
       "description": "El uso de SELECT * para obtener todos los datos de una fila puede causar una sobrecarga de recursos innecesaria y también puede causar resultados inesperados en las aplicaciones una vez que la tabla agrega o elimina columnas. Nivel de sugerencia de error: Error"
     },
-    "statement-where-require": {
-      "title": "Obligar la presencia de la condición \"WHERE\" en las declaraciones",
-      "description": "Las consultas sin cláusula WHERE pueden causar una enorme sobrecarga de recursos innecesarios, y las DML pueden causar una pérdida masiva de datos accidental. Nivel de sugerencia de error: Error"
+    "statement-where-require-select": {
+      "title": "Hacer cumplir la presencia de la condición \"WHERE\" en las instrucciones SELECT",
+      "description": "Las consultas sin la cláusula WHERE pueden causar una sobrecarga de recursos innecesaria y enorme. Nivel de error sugerido: Error"
+    },
+    "statement-where-require-update-delete": {
+      "title": "Hacer cumplir la presencia de la condición \"WHERE\" en las declaraciones",
+      "description": "Los DML sin cláusula WHERE pueden provocar una pérdida masiva de datos accidental. Nivel de error sugerido: Error"
     },
     "statement-where-no-leading-wildcard-like": {
       "title": "Prohibir el uso de comodines principales en las condiciones de filtrado",
