@@ -85,6 +85,7 @@
             </div>
             <NButton
               v-if="hasPermission"
+              tertiary
               @click="resetToken"
               :type="'warning'"
               :size="'small'"
