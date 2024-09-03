@@ -3,7 +3,7 @@ package advisor
 import storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 
 var sqlEditorAllowlist = map[SQLReviewRuleType]bool{
-	SchemaRuleStatementRequireWhere: true,
+	SchemaRuleStatementRequireWhereForSelect: true,
 }
 
 func isRuleAllowed(rule SQLReviewRuleType, changeType storepb.PlanCheckRunConfig_ChangeDatabaseType) bool {

@@ -355,9 +355,13 @@
       "title": "禁止使用 \"SELECT *\"",
       "description": "SELECT * 拉取整行数据可能造成不必要的资源开销，同时一旦表增减列，也可能造成应用出现不符合预期的结果。建议错误等级：错误"
     },
-    "statement-where-require": {
-      "title": "强制语句带有 \"WHERE\" 条件",
-      "description": "语句不带过滤条件，查询可能导致巨大的资源开销，DML 更可能导致大规模数据丢失。建议错误等级：错误"
+    "statement-where-require-select": {
+      "title": "强制要求在 SELECT 语句中带有 \"WHERE\" 条件",
+      "description": "没有 WHERE 子句的查询可能会造成巨大的不必要的资源开销。建议错误等级：错误"
+    },
+    "statement-where-require-update-delete": {
+      "title": "强制要求在 DML 语句中带有 \"WHERE\" 条件",
+      "description": "没有 WHERE 子句的 DML 可能会造成大规模数据丢失。建议错误等级：错误"
     },
     "statement-where-no-leading-wildcard-like": {
       "title": "禁止过滤条件使用左模糊匹配",

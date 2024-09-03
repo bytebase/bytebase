@@ -355,9 +355,13 @@
       "title": "Prohibit using \"SELECT *\"",
       "description": "SELECT * to fetch entire row data may cause unnecessary resource overhead and may also cause unexpected results in applications once the table adds or removes columns. Suggestion error level: Error"
     },
-    "statement-where-require": {
-      "title": "Enforce the presence of \"WHERE\" condition in statements",
-      "description": "Queries without WHERE clause may cause huge uncessary resource overhead, and DMLs may cause massive accidental data loss. Suggestion error level: Error"
+    "statement-where-require-select": {
+      "title": "Enforce the presence of \"WHERE\" condition in SELECT statements",
+      "description": "Queries without WHERE clause may cause huge uncessary resource overhead. Suggestion error level: Error"
+    },
+    "statement-where-require-update-delete": {
+      "title": "Enforce the presence of \"WHERE\" condition in UDPATE/DELETE statements",
+      "description": "DMLs without WHERE clause may cause massive accidental data loss. Suggestion error level: Error"
     },
     "statement-where-no-leading-wildcard-like": {
       "title": "Prohibit using leading wildcard in filter conditions",

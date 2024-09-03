@@ -3,7 +3,7 @@
   want:
     - status: 2
       code: 202
-      title: statement.where.require
+      title: statement.where.require.select
       content: WHERE clause is required for query specification.
       detail: ""
       startposition:
@@ -11,34 +11,6 @@
         column: 0
       endposition: null
 - statement: SELECT * FROM MyTable WHERE a = 1;
-  changeType: 0
-- statement: UPDATE MyTable SET a = 1;
-  changeType: 0
-  want:
-    - status: 2
-      code: 202
-      title: statement.where.require
-      content: WHERE clause is required for UPDATE statement.
-      detail: ""
-      startposition:
-        line: 1
-        column: 0
-      endposition: null
-- statement: UPDATE MyTable SET a = 1 WHERE a = 1;
-  changeType: 0
-- statement: DELETE FROM MyTable;
-  changeType: 0
-  want:
-    - status: 2
-      code: 202
-      title: statement.where.require
-      content: WHERE clause is required for DELETE statement.
-      detail: ""
-      startposition:
-        line: 1
-        column: 0
-      endposition: null
-- statement: DELETE FROM MyTable WHERE a = 1;
   changeType: 0
 - statement: |-
     WITH CteA AS (SELECT * FROM TableA WHERE a = 1),
@@ -48,7 +20,7 @@
   want:
     - status: 2
       code: 202
-      title: statement.where.require
+      title: statement.where.require.select
       content: WHERE clause is required for query specification.
       detail: ""
       startposition:
@@ -57,7 +29,7 @@
       endposition: null
     - status: 2
       code: 202
-      title: statement.where.require
+      title: statement.where.require.select
       content: WHERE clause is required for query specification.
       detail: ""
       startposition:

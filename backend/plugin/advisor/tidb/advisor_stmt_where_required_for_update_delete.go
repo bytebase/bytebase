@@ -12,20 +12,20 @@ import (
 )
 
 var (
-	_ advisor.Advisor = (*WhereRequirementAdvisor)(nil)
-	_ ast.Visitor     = (*whereRequirementChecker)(nil)
+	_ advisor.Advisor = (*WhereRequirementForUpdateDeleteAdvisor)(nil)
+	_ ast.Visitor     = (*whereRequirementForUpdateDeleteChecker)(nil)
 )
 
 func init() {
-	advisor.Register(storepb.Engine_TIDB, advisor.MySQLWhereRequirement, &WhereRequirementAdvisor{})
+	advisor.Register(storepb.Engine_TIDB, advisor.MySQLWhereRequirementForUpdateDelete, &WhereRequirementForUpdateDeleteAdvisor{})
 }
 
-// WhereRequirementAdvisor is the advisor checking for the WHERE clause requirement.
-type WhereRequirementAdvisor struct {
+// WhereRequirementForUpdateDeleteAdvisor is the advisor checking for the WHERE clause requirement for UPDATE and DELETE statements.
+type WhereRequirementForUpdateDeleteAdvisor struct {
 }
 
 // Check checks for the WHERE clause requirement.
-func (*WhereRequirementAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
+func (*WhereRequirementForUpdateDeleteAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	root, ok := ctx.AST.([]ast.StmtNode)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to StmtNode")
@@ -35,7 +35,7 @@ func (*WhereRequirementAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb
 	if err != nil {
 		return nil, err
 	}
-	checker := &whereRequirementChecker{
+	checker := &whereRequirementForUpdateDeleteChecker{
 		level: level,
 		title: string(ctx.Rule.Type),
 	}
@@ -48,7 +48,7 @@ func (*WhereRequirementAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb
 	return checker.adviceList, nil
 }
 
-type whereRequirementChecker struct {
+type whereRequirementForUpdateDeleteChecker struct {
 	adviceList []*storepb.Advice
 	level      storepb.Advice_Status
 	title      string
@@ -57,7 +57,7 @@ type whereRequirementChecker struct {
 }
 
 // Enter implements the ast.Visitor interface.
-func (v *whereRequirementChecker) Enter(in ast.Node) (ast.Node, bool) {
+func (v *whereRequirementForUpdateDeleteChecker) Enter(in ast.Node) (ast.Node, bool) {
 	code := advisor.Ok
 	switch node := in.(type) {
 	// DELETE
@@ -68,12 +68,6 @@ func (v *whereRequirementChecker) Enter(in ast.Node) (ast.Node, bool) {
 	// UPDATE
 	case *ast.UpdateStmt:
 		if node.Where == nil {
-			code = advisor.StatementNoWhere
-		}
-	// SELECT
-	case *ast.SelectStmt:
-		// Allow SELECT queries without a FROM clause to proceed, e.g. SELECT 1.
-		if node.Where == nil && node.From != nil {
 			code = advisor.StatementNoWhere
 		}
 	}
@@ -93,6 +87,6 @@ func (v *whereRequirementChecker) Enter(in ast.Node) (ast.Node, bool) {
 }
 
 // Leave implements the ast.Visitor interface.
-func (*whereRequirementChecker) Leave(in ast.Node) (ast.Node, bool) {
+func (*whereRequirementForUpdateDeleteChecker) Leave(in ast.Node) (ast.Node, bool) {
 	return in, true
 }

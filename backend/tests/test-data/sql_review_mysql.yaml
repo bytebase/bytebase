@@ -433,12 +433,12 @@
         }
       }
   run: false
-- statement: '        DELETE FROM tech_book'
+- statement: "        DELETE FROM tech_book"
   result:
     - |-
       {
         "status":  "ERROR",
-        "title":  "statement.where.require",
+        "title":  "statement.where.require.update-delete",
         "content":  "\"DELETE FROM tech_book;\" requires WHERE clause",
         "sqlReviewReport":  {
           "line":  1,
@@ -517,7 +517,7 @@
         }
       }
   run: false
-- statement: '        INSERT INTO t_copy SELECT * FROM t'
+- statement: "        INSERT INTO t_copy SELECT * FROM t"
   result:
     - |-
       {
@@ -535,7 +535,7 @@
     - |-
       {
         "status":  "ERROR",
-        "title":  "statement.where.require",
+        "title":  "statement.where.require.select",
         "content":  "\"INSERT INTO t_copy SELECT * FROM t;\" requires WHERE clause",
         "sqlReviewReport":  {
           "line":  1,
@@ -585,7 +585,7 @@
         }
       }
   run: false
-- statement: '        INSERT INTO t VALUES (1, 1, now(), 1, now())'
+- statement: "        INSERT INTO t VALUES (1, 1, now(), 1, now())"
   result:
     - |-
       {
@@ -749,7 +749,7 @@
         }
       }
   run: false
-- statement: '        ALTER TABLE user PARTITION BY HASH(id) PARTITIONS 8;'
+- statement: "        ALTER TABLE user PARTITION BY HASH(id) PARTITIONS 8;"
   result:
     - |-
       {
@@ -835,7 +835,7 @@
         }
       }
   run: false
-- statement: '        DROP TABLE user;'
+- statement: "        DROP TABLE user;"
   result:
     - |-
       {

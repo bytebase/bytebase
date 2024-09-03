@@ -1,0 +1,28 @@
+- statement: SELECT id FROM tech_book
+  changeType: 0
+  want:
+    - status: 2
+      code: 202
+      title: statement.where.require.select
+      content: '"SELECT id FROM tech_book" requires WHERE clause'
+      detail: ""
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: SELECT id FROM tech_book WHERE id > 0
+  changeType: 0
+- statement: SELECT id FROM tech_book WHERE id > (SELECT max(id) FROM tech_book)
+  changeType: 0
+  want:
+    - status: 2
+      code: 202
+      title: statement.where.require.select
+      content: '"SELECT id FROM tech_book WHERE id > (SELECT max(id) FROM tech_book)" requires WHERE clause'
+      detail: ""
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: SELECT CURDATE()
+  changeType: 0
