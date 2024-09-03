@@ -82,7 +82,7 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx advisor.Context, _ string) ([
 		adviceList = append(adviceList, &storepb.Advice{
 			Status:  level,
 			Title:   title,
-			Content: fmt.Sprintf("Prior backup cannot deal with mixed DML more than %d statements, otherwise statements need be UPDATE for one table with PRIMARY KEY or UNIQUE KEY in WHERE clause", maxMixedDMLCount),
+			Content: fmt.Sprintf("Prior backup is feasible only with up to %d statements that are either UPDATE or DELETE, or if all UPDATEs target the same table with a PRIMARY or UNIQUE KEY in the WHERE clause", maxMixedDMLCount),
 			Code:    int32(advisor.BuiltinPriorBackupCheck),
 			StartPosition: &storepb.Position{
 				Line: 0,
