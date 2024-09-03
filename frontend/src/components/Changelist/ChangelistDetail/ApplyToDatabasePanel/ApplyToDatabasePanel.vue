@@ -5,30 +5,28 @@
         <div
           class="w-[calc(100vw-8rem)] lg:w-[60rem] max-w-[calc(100vw-8rem)] overflow-x-auto"
         >
-          <div v-if="ready" class="flex flex-col gap-y-4">
-            <ProjectStandardView
-              :project="project"
-              :database-list="schemaDatabaseList"
-              :environment-list="environmentList"
-              @select-databases="
-                (...dbNameList) =>
-                  (state.selectedDatabaseNameList = new Set(dbNameList))
-              "
-            >
-              <template #header>
-                <div class="flex items-center justify-end mx-2">
-                  <SearchBox
-                    v-model:value="state.keyword"
-                    class="m-px"
-                    :placeholder="$t('database.filter-database')"
-                  />
-                </div>
-              </template>
-            </ProjectStandardView>
-            <SchemalessDatabaseTable
-              v-if="guessedDatabaseChangeType === 'DDL'"
+          <div v-if="ready" class="flex flex-col">
+            <div class="mb-4 flex flex-row justify-start items-center gap-2">
+              <span class="textlabel">{{ t("changelist.change-type") }}:</span>
+              <NRadioGroup v-model:value="state.changeType">
+                <NRadio :value="'DDL'" :label="t('issue.title.edit-schema')" />
+                <NRadio :value="'DML'" :label="t('issue.title.change-data')" />
+              </NRadioGroup>
+            </div>
+            <DatabaseV1Table
               mode="PROJECT"
-              class="px-2"
+              :database-list="schemaDatabaseList"
+              :show-selection="true"
+              :selected-database-names="state.selectedDatabaseNameList"
+              @update:selected-databases="
+                state.selectedDatabaseNameList = Array.from($event)
+              "
+            />
+            <SchemalessDatabaseTable
+              v-if="
+                state.changeType === 'DDL' && schemalessDatabaseList.length > 0
+              "
+              mode="PROJECT"
               :database-list="schemalessDatabaseList"
             />
           </div>
@@ -81,39 +79,33 @@
 
 <script lang="ts" setup>
 import { NButton } from "naive-ui";
+import { NRadioGroup, NRadio } from "naive-ui";
 import { zindexable as vZindexable } from "vdirs";
 import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBSpin } from "@/bbkit";
-import ProjectStandardView from "@/components/AlterSchemaPrepForm/ProjectStandardView.vue";
 import SchemalessDatabaseTable from "@/components/AlterSchemaPrepForm/SchemalessDatabaseTable.vue";
-import {
-  Drawer,
-  DrawerContent,
-  ErrorTipsButton,
-  SearchBox,
-} from "@/components/v2";
+import { Drawer, DrawerContent, ErrorTipsButton } from "@/components/v2";
+import DatabaseV1Table from "@/components/v2/Model/DatabaseV1Table/DatabaseV1Table.vue";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
-import { useDatabaseV1Store, useEnvironmentV1List } from "@/store";
+import { useDatabaseV1Store } from "@/store";
 import { useDatabaseV1List } from "@/store/modules/v1/databaseList";
 import type { ComposedDatabase } from "@/types";
 import { DEFAULT_PROJECT_NAME } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import {
   extractProjectResourceName,
-  filterDatabaseV1ByKeyword,
   generateIssueTitle,
-  guessChangelistChangeType,
   instanceV1HasAlterSchema,
   sortDatabaseV1List,
 } from "@/utils";
 import { useChangelistDetailContext } from "../context";
 
 type LocalState = {
-  keyword: string;
+  selectedDatabaseNameList: string[];
+  changeType: "DDL" | "DML";
   isGenerating: boolean;
-  selectedDatabaseNameList: Set<string>;
 };
 
 const { t } = useI18n();
@@ -126,27 +118,12 @@ const {
 } = useChangelistDetailContext();
 
 const state = reactive<LocalState>({
-  selectedDatabaseNameList: new Set<string>(),
-  keyword: "",
+  selectedDatabaseNameList: [],
+  changeType: "DDL",
   isGenerating: false,
 });
 
 const { ready } = useDatabaseV1List(project.value.name);
-
-const environmentList = useEnvironmentV1List(false /* !showDeleted */);
-
-const guessedDatabaseChangeType = computed(() => {
-  if (
-    changelist.value.changes.every(
-      (change) => guessChangelistChangeType(change) === "DML"
-    )
-  ) {
-    // When ALL of the changes are DML, we are confident that the whole
-    // changelist could be a DML
-    return "DML";
-  }
-  return "DDL";
-});
 
 const databaseList = computed(() => {
   let list: ComposedDatabase[] = [];
@@ -156,24 +133,15 @@ const databaseList = computed(() => {
     (db) => db.syncState == State.ACTIVE && db.project !== DEFAULT_PROJECT_NAME
   );
 
-  list = list.filter((db) => {
-    return filterDatabaseV1ByKeyword(db, state.keyword.trim(), [
-      "name",
-      "environment",
-      "instance",
-    ]);
-  });
-
   return sortDatabaseV1List(list);
 });
 
 const schemaDatabaseList = computed(() => {
-  if (guessedDatabaseChangeType.value === "DDL") {
+  if (state.changeType === "DDL") {
     return databaseList.value.filter((db) =>
       instanceV1HasAlterSchema(db.instanceResource)
     );
   }
-
   return databaseList.value;
 });
 
@@ -205,7 +173,7 @@ const handleClickNext = async () => {
 
     const query: Record<string, any> = {
       template:
-        guessedDatabaseChangeType.value === "DDL"
+        state.changeType === "DDL"
           ? "bb.issue.database.schema.update"
           : "bb.issue.database.data.update",
       name: generateIssueTitle(
@@ -231,8 +199,7 @@ const handleClickNext = async () => {
 };
 
 const reset = () => {
-  state.selectedDatabaseNameList = new Set();
-  state.keyword = "";
+  state.selectedDatabaseNameList = [];
 };
 
 watch(
