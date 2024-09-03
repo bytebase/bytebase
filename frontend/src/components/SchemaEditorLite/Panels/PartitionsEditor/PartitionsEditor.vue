@@ -28,7 +28,7 @@
 
 <script setup lang="tsx">
 import { useElementSize } from "@vueuse/core";
-import { pull } from "lodash-es";
+import { head, pull } from "lodash-es";
 import { ChevronDownIcon } from "lucide-vue-next";
 import { NDataTable, type DataTableColumn } from "naive-ui";
 import { computed, ref } from "vue";
@@ -181,8 +181,36 @@ const flattenItemList = computed(() => {
   return list;
 });
 
+const firstPartition = computed(() => {
+  return head(
+    flattenItemList.value.filter((item) => item.parent === undefined)
+  );
+});
+const firstSubPartition = computed(() => {
+  return head(
+    flattenItemList.value.filter((item) => item.parent !== undefined)
+  );
+});
+
 const getItemKey = (item: FlattenTablePartitionMetadata) => {
   return markUUID(item.partition);
+};
+
+const allowEditTypeAndExprForItem = (item: FlattenTablePartitionMetadata) => {
+  if (
+    item.parent === undefined &&
+    firstPartition.value &&
+    item !== firstPartition.value
+  ) {
+    return false;
+  } else if (
+    item.parent !== undefined &&
+    firstSubPartition.value &&
+    item !== firstSubPartition.value
+  ) {
+    return false;
+  }
+  return true;
 };
 
 const columns = computed(() => {
@@ -227,13 +255,30 @@ const columns = computed(() => {
       minWidth: 140,
       className: "input-cell",
       render: (item) => {
+        if (!allowEditTypeAndExprForItem(item)) {
+          return (
+            <div
+              class="flex items-center text-control-placeholder italic cursor-disallowed px-1.5"
+              style="height: 34px"
+            >
+              {item.partition.type}
+            </div>
+          );
+        }
         return (
           <TypeCell
             readonly={!allowEditPartition(item.partition)}
             partition={item.partition}
             parent={item.parent}
             onUpdate:type={(type) => {
-              item.partition.type = type;
+              flattenItemList.value
+                .filter((it) => {
+                  if (item.parent === undefined) return it.parent === undefined;
+                  return it.parent !== undefined;
+                })
+                .forEach((it) => {
+                  it.partition.type = type;
+                });
               emit("update");
             }}
           />
@@ -247,12 +292,29 @@ const columns = computed(() => {
       minWidth: 140,
       className: "input-cell",
       render: (item) => {
+        if (!allowEditTypeAndExprForItem(item)) {
+          return (
+            <div
+              class="flex items-center text-control-placeholder italic cursor-disallowed px-1.5"
+              style="height: 34px"
+            >
+              {item.partition.expression}
+            </div>
+          );
+        }
         return (
           <ExpressionCell
             readonly={!allowEditPartition(item.partition)}
             partition={item.partition}
             onUpdate:expression={(expression) => {
-              item.partition.expression = expression;
+              flattenItemList.value
+                .filter((it) => {
+                  if (item.parent === undefined) return it.parent === undefined;
+                  return it.parent !== undefined;
+                })
+                .forEach((it) => {
+                  it.partition.expression = expression;
+                });
               emit("update");
             }}
           />
@@ -331,8 +393,10 @@ const columns = computed(() => {
               }
             }}
             onAdd-sub={() => {
+              const first = firstSubPartition.value;
               const sub = TablePartitionMetadata.fromPartial({
-                type: TablePartitionMetadata_Type.HASH,
+                type: first?.partition.type ?? TablePartitionMetadata_Type.HASH,
+                expression: first?.partition.expression ?? "",
               });
               markStatus(sub, "created");
               if (item.partition.subpartitions) {
