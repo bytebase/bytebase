@@ -1,7 +1,6 @@
-import { useChangeHistoryStore, useSheetV1Store } from "@/store";
+import { useSheetV1Store } from "@/store";
 import type { Changelist_Change_Source, ComposedDatabase } from "@/types";
 import type { Changelist_Change as Change } from "@/types/proto/v1/changelist_service";
-import { getHistoryChangeType } from "./changeHistory";
 import { getSheetStatement } from "./sheet";
 
 export const extractChangelistResourceName = (name: string) => {
@@ -27,30 +26,6 @@ export const getChangelistChangeSourceType = (
   } else {
     return "RAW_SQL";
   }
-};
-
-export const guessChangelistChangeType = (
-  change: Change
-): "DML" | "DDL" | "-" => {
-  const type = getChangelistChangeSourceType(change);
-  if (type === "CHANGE_HISTORY") {
-    const history = useChangeHistoryStore().getChangeHistoryByName(
-      change.source
-    );
-    if (!history) {
-      return "-";
-    }
-    return getHistoryChangeType(history.type);
-  }
-  if (type === "BRANCH") {
-    return "DDL";
-  }
-  if (type === "RAW_SQL") {
-    return "-";
-  }
-
-  console.error("Should never reach this line");
-  return "-";
 };
 
 export const generateSQLForChangeToDatabase = async (
