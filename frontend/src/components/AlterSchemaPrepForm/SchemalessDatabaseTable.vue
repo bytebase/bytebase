@@ -1,6 +1,6 @@
 <template>
   <div v-if="databaseList.length > 0" class="mt-4">
-    <div class="px-0.5">
+    <div class="px-0.5 mb-2">
       <NCheckbox v-model:checked="expand">
         {{ $t("database.show-schemaless-databases") }}
       </NCheckbox>

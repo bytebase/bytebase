@@ -3609,7 +3609,8 @@
       "no-file-to-upload": "アップロードするファイルがありません",
       "upload-sql-or-zip-file": ".sql または .zip ファイルをアップロードする",
       "optional-upload-sql-or-zip-file": "(オプション) .sql または .zip ファイルをアップロードします"
-    }
+    },
+    "change-type": "タイプを変更"
   },
   "export-data": {
     "export-rows": "エクスポート行数",
