@@ -21,7 +21,8 @@
     "database": "データベース",
     "index": "インデックス",
     "system": "システム",
-    "advice": "アドバイス"
+    "advice": "アドバイス",
+    "builtin": "組み込みルール"
   },
   "template": {
     "bb-sql-review-prod": "高度なテンプレート",
@@ -662,6 +663,10 @@
     "statement-non-transactional": {
       "title": "非トランザクションステートメントを検出してレポートする",
       "description": ""
+    },
+    "builtin-prior-backup-check": {
+      "title": "事前のバックアップ実行可能性チェック",
+      "description": "このルールは、データが変更される前にバックアップを作成できるかどうかを確認します。バックアップ ターゲット データベースの存在を確認し、サポートされていないシナリオを禁止します。これは組み込みであり、スキップできません。"
     }
   },
   "level": {

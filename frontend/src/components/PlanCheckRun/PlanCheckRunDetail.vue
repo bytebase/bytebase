@@ -258,6 +258,7 @@ import {
   ruleTemplateMapV2,
   convertPolicyRuleToRuleTemplate,
 } from "@/types";
+import { SQLReviewRuleLevel } from "@/types/proto/v1/org_policy_service";
 import {
   PlanCheckRun,
   PlanCheckRun_Result,
@@ -357,6 +358,10 @@ const getRuleTemplateByType = (type: string) => {
   return;
 };
 
+const isBuiltinRule = (type: string) => {
+  return type.startsWith("builtin.");
+};
+
 const categoryAndTitle = (
   checkResult: PlanCheckRun_Result
 ): [string, string] => {
@@ -376,6 +381,11 @@ const categoryAndTitle = (
       const category = t(key);
       const title = messageWithCode(ruleLocalization.title, code);
       return [category, title];
+    } else if (isBuiltinRule(checkResult.title)) {
+      return [
+        t("sql-review.category.builtin"),
+        messageWithCode(getRuleLocalization(checkResult.title).title, code),
+      ];
     }
     return ["", messageWithCode(checkResult.title, code)];
   }
@@ -463,6 +473,15 @@ const reviewPolicy = useReviewPolicyForDatabase(
 
 const getActiveRule = (type: string): RuleTemplateV2 | undefined => {
   const engine = props.database?.instanceResource.engine;
+  if (isBuiltinRule(type) && engine) {
+    return {
+      type,
+      category: "BUILTIN",
+      engine,
+      level: SQLReviewRuleLevel.ERROR,
+      componentList: [],
+    };
+  }
   const rule = reviewPolicy.value?.ruleList.find((rule) => {
     if (engine && rule.engine !== engine) {
       return false;
