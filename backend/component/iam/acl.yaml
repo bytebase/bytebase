@@ -334,6 +334,7 @@ roles:
       - bb.changelists.create
       - bb.changelists.get
       - bb.changelists.list
+      - bb.changelists.update
       - bb.databases.check
       - bb.databases.get
       - bb.databases.getSchema
