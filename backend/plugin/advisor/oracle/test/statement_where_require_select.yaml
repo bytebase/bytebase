@@ -1,0 +1,28 @@
+- statement: SELECT a FROM t
+  changeType: 0
+  want:
+    - status: 2
+      code: 202
+      title: statement.where.require.select
+      content: WHERE clause is required for SELECT statement.
+      detail: ""
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: SELECT a FROM t WHERE a > 0
+  changeType: 0
+- statement: SELECT a FROM t WHERE a > (SELECT max(id) FROM user)
+  changeType: 0
+  want:
+    - status: 2
+      code: 202
+      title: statement.where.require.select
+      content: WHERE clause is required for SELECT statement.
+      detail: ""
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: SELECT 1 FROM dual
+  changeType: 0

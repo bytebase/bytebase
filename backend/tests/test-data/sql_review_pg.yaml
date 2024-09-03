@@ -175,7 +175,7 @@
     - |-
       {
         "status":  "ERROR",
-        "title":  "statement.where.require",
+        "title":  "statement.where.require.update-delete",
         "content":  "\"DELETE FROM t\" requires WHERE clause",
         "sqlReviewReport":  {
           "line":  1,

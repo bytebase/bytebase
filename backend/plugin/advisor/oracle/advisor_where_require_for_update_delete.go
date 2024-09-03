@@ -2,8 +2,6 @@
 package oracle
 
 import (
-	"strings"
-
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/plsql-parser"
 	"github.com/pkg/errors"
@@ -13,21 +11,21 @@ import (
 )
 
 var (
-	_ advisor.Advisor = (*WhereRequireAdvisor)(nil)
+	_ advisor.Advisor = (*WhereRequireForUpdateDeleteAdvisor)(nil)
 )
 
 func init() {
-	advisor.Register(storepb.Engine_ORACLE, advisor.OracleWhereRequirement, &WhereRequireAdvisor{})
-	advisor.Register(storepb.Engine_DM, advisor.OracleWhereRequirement, &WhereRequireAdvisor{})
-	advisor.Register(storepb.Engine_OCEANBASE_ORACLE, advisor.OracleWhereRequirement, &WhereRequireAdvisor{})
+	advisor.Register(storepb.Engine_ORACLE, advisor.OracleWhereRequirementForUpdateDelete, &WhereRequireForUpdateDeleteAdvisor{})
+	advisor.Register(storepb.Engine_DM, advisor.OracleWhereRequirementForUpdateDelete, &WhereRequireForUpdateDeleteAdvisor{})
+	advisor.Register(storepb.Engine_OCEANBASE_ORACLE, advisor.OracleWhereRequirementForUpdateDelete, &WhereRequireForUpdateDeleteAdvisor{})
 }
 
-// WhereRequireAdvisor is the advisor checking for WHERE clause requirement.
-type WhereRequireAdvisor struct {
+// WhereRequireForUpdateDeleteAdvisor is the advisor checking for WHERE clause requirement.
+type WhereRequireForUpdateDeleteAdvisor struct {
 }
 
 // Check checks for WHERE clause requirement.
-func (*WhereRequireAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
+func (*WhereRequireForUpdateDeleteAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	tree, ok := ctx.AST.(antlr.Tree)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Tree")
@@ -38,7 +36,7 @@ func (*WhereRequireAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Adv
 		return nil, err
 	}
 
-	listener := &whereRequireListener{
+	listener := &whereRequireForUpdateDeleteListener{
 		level:           level,
 		title:           string(ctx.Rule.Type),
 		currentDatabase: ctx.CurrentDatabase,
@@ -49,8 +47,8 @@ func (*WhereRequireAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Adv
 	return listener.generateAdvice()
 }
 
-// whereRequireListener is the listener for WHERE clause requirement.
-type whereRequireListener struct {
+// whereRequireForUpdateDeleteListener is the listener for WHERE clause requirement.
+type whereRequireForUpdateDeleteListener struct {
 	*parser.BasePlSqlParserListener
 
 	level           storepb.Advice_Status
@@ -59,12 +57,12 @@ type whereRequireListener struct {
 	adviceList      []*storepb.Advice
 }
 
-func (l *whereRequireListener) generateAdvice() ([]*storepb.Advice, error) {
+func (l *whereRequireForUpdateDeleteListener) generateAdvice() ([]*storepb.Advice, error) {
 	return l.adviceList, nil
 }
 
 // EnterUpdate_statement is called when production update_statement is entered.
-func (l *whereRequireListener) EnterUpdate_statement(ctx *parser.Update_statementContext) {
+func (l *whereRequireForUpdateDeleteListener) EnterUpdate_statement(ctx *parser.Update_statementContext) {
 	if ctx.Where_clause() == nil {
 		l.adviceList = append(l.adviceList, &storepb.Advice{
 			Status:  l.level,
@@ -79,35 +77,13 @@ func (l *whereRequireListener) EnterUpdate_statement(ctx *parser.Update_statemen
 }
 
 // EnterDelete_statement is called when production delete_statement is entered.
-func (l *whereRequireListener) EnterDelete_statement(ctx *parser.Delete_statementContext) {
+func (l *whereRequireForUpdateDeleteListener) EnterDelete_statement(ctx *parser.Delete_statementContext) {
 	if ctx.Where_clause() == nil {
 		l.adviceList = append(l.adviceList, &storepb.Advice{
 			Status:  l.level,
 			Code:    advisor.StatementNoWhere.Int32(),
 			Title:   l.title,
 			Content: "WHERE clause is required for DELETE statement.",
-			StartPosition: &storepb.Position{
-				Line: int32(ctx.GetStop().GetLine()),
-			},
-		})
-	}
-}
-
-// EnterQuery_block is called when production query_block is entered.
-func (l *whereRequireListener) EnterQuery_block(ctx *parser.Query_blockContext) {
-	// Allow SELECT queries without a FROM clause to proceed, e.g. SELECT 1.
-	if ctx.From_clause() == nil || ctx.From_clause().Table_ref_list() == nil {
-		return
-	}
-	if strings.ToLower(ctx.From_clause().Table_ref_list().GetText()) == "dual" {
-		return
-	}
-	if ctx.Where_clause() == nil {
-		l.adviceList = append(l.adviceList, &storepb.Advice{
-			Status:  l.level,
-			Code:    advisor.StatementNoWhere.Int32(),
-			Title:   l.title,
-			Content: "WHERE clause is required for SELECT statement.",
 			StartPosition: &storepb.Position{
 				Line: int32(ctx.GetStop().GetLine()),
 			},

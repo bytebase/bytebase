@@ -1,0 +1,40 @@
+- statement: |
+    CREATE TABLE book(id INT);
+    INSERT INTO book(id) values (1);
+  changeType: 0
+- statement: |
+    CREATE TABLE book(id INT);
+    DELETE FROM book;
+  changeType: 0
+  want:
+    - status: 2
+      code: 202
+      title: statement.where.require.update-delete
+      content: '"DELETE FROM book;" requires WHERE clause'
+      detail: ""
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: |
+    CREATE TABLE book(id INT);
+    UPDATE book SET id = 1;
+  changeType: 0
+  want:
+    - status: 2
+      code: 202
+      title: statement.where.require.update-delete
+      content: '"UPDATE book SET id = 1;" requires WHERE clause'
+      detail: ""
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: |
+    CREATE TABLE book(id INT);
+    DELETE FROM book WHERE id > 0;
+  changeType: 0
+- statement: |
+    CREATE TABLE book(id INT);
+    UPDATE book SET id = 1 WHERE id > 10;
+  changeType: 0

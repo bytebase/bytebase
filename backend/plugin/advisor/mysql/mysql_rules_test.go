@@ -31,8 +31,10 @@ func TestMySQLRules(t *testing.T) {
 		// Statement related rules.
 		// advisor.SchemaRuleStatementNoSelectAll disallow 'SELECT *'.
 		advisor.SchemaRuleStatementNoSelectAll,
-		// advisor.SchemaRuleStatementRequireWhere require 'WHERE' clause.
-		advisor.SchemaRuleStatementRequireWhere,
+		// advisor.SchemaRuleStatementRequireWhereForSelect require 'WHERE' clause for SELECT statement.
+		advisor.SchemaRuleStatementRequireWhereForSelect,
+		// advisor.SchemaRuleStatementRequireWhereForUpdateDelete require 'WHERE' clause for UPDATE/DELETE statement.
+		advisor.SchemaRuleStatementRequireWhereForUpdateDelete,
 		// advisor.SchemaRuleStatementNoLeadingWildcardLike disallow leading '%' in LIKE, e.g. LIKE foo = '%x' is not allowed.
 		advisor.SchemaRuleStatementNoLeadingWildcardLike,
 		// advisor.SchemaRuleStatementDisallowCommit disallow using commit in the issue.
