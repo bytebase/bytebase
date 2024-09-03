@@ -82,15 +82,6 @@ func (checker *whereRequirementForUpdateDeleteChecker) EnterUpdateStatement(ctx 
 		checker.handleWhereClause(ctx.GetStart().GetLine())
 	}
 }
-func (checker *whereRequirementForUpdateDeleteChecker) EnterQuerySpecification(ctx *mysql.QuerySpecificationContext) {
-	// Allow SELECT queries without a FROM clause to proceed, e.g. SELECT 1.
-	if ctx.FromClause() == nil {
-		return
-	}
-	if ctx.WhereClause() == nil || ctx.WhereClause().WHERE_SYMBOL() == nil {
-		checker.handleWhereClause(ctx.GetStart().GetLine())
-	}
-}
 
 func (checker *whereRequirementForUpdateDeleteChecker) handleWhereClause(lineNumber int) {
 	checker.adviceList = append(checker.adviceList, &storepb.Advice{
