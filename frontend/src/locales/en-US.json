@@ -3609,7 +3609,8 @@
       "no-file-to-upload": "No file to upload",
       "upload-sql-or-zip-file": "Upload .sql or .zip file",
       "optional-upload-sql-or-zip-file": "(Optional) Upload .sql or .zip file"
-    }
+    },
+    "change-type": "Change type"
   },
   "export-data": {
     "export-rows": "Export rows",

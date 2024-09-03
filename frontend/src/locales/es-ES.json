@@ -3609,7 +3609,8 @@
       "no-file-to-upload": "No hay archivos para subir",
       "upload-sql-or-zip-file": "Cargue el archivo .sql o .zip",
       "optional-upload-sql-or-zip-file": "(Opcional) Cargue el archivo .sql o .zip"
-    }
+    },
+    "change-type": "Cambiar tipo"
   },
   "export-data": {
     "export-rows": "Exportar filas",
