@@ -36,6 +36,7 @@ import { useI18n } from "vue-i18n";
 import type { ComposedDatabase } from "@/types";
 import {
   TablePartitionMetadata,
+  TablePartitionMetadata_Type,
   type DatabaseMetadata,
   type SchemaMetadata,
   type TableMetadata,
@@ -330,7 +331,9 @@ const columns = computed(() => {
               }
             }}
             onAdd-sub={() => {
-              const sub = TablePartitionMetadata.fromPartial({});
+              const sub = TablePartitionMetadata.fromPartial({
+                type: TablePartitionMetadata_Type.HASH,
+              });
               markStatus(sub, "created");
               if (item.partition.subpartitions) {
                 item.partition.subpartitions.push(sub);
