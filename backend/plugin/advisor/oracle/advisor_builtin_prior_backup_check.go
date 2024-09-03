@@ -352,7 +352,7 @@ func extractDatabaseName(databaseUID string) string {
 
 func databaseExists(ctx context.Context, driver *sql.DB, databaseName string) bool {
 	var exists bool
-	err := driver.QueryRowContext(ctx, "SELECT 1 FROM all_users WHERE username = ?", databaseName).Scan(&exists)
+	err := driver.QueryRowContext(ctx, fmt.Sprintf("SELECT 1 FROM all_users WHERE username = '%s'", databaseName)).Scan(&exists)
 	if err != nil {
 		return false
 	}
