@@ -245,31 +245,58 @@
 - type: statement.select.no-select-all
   category: STATEMENT
   engine: MARIADB
-- type: statement.where.require
+- type: statement.where.require.select
   category: STATEMENT
   engine: MYSQL
-- type: statement.where.require
+- type: statement.where.require.select
   category: STATEMENT
   engine: TIDB
-- type: statement.where.require
+- type: statement.where.require.select
   category: STATEMENT
   engine: POSTGRES
-- type: statement.where.require
+- type: statement.where.require.select
   category: STATEMENT
   engine: ORACLE
-- type: statement.where.require
+- type: statement.where.require.select
   category: STATEMENT
   engine: OCEANBASE_ORACLE
-- type: statement.where.require
+- type: statement.where.require.select
   category: STATEMENT
   engine: OCEANBASE
-- type: statement.where.require
+- type: statement.where.require.select
   category: STATEMENT
   engine: SNOWFLAKE
-- type: statement.where.require
+- type: statement.where.require.select
   category: STATEMENT
   engine: MSSQL
-- type: statement.where.require
+- type: statement.where.require.select
+  category: STATEMENT
+  engine: MARIADB
+- type: statement.where.require.update-delete
+  category: STATEMENT
+  engine: MYSQL
+- type: statement.where.require.update-delete
+  category: STATEMENT
+  engine: TIDB
+- type: statement.where.require.update-delete
+  category: STATEMENT
+  engine: POSTGRES
+- type: statement.where.require.update-delete
+  category: STATEMENT
+  engine: ORACLE
+- type: statement.where.require.update-delete
+  category: STATEMENT
+  engine: OCEANBASE_ORACLE
+- type: statement.where.require.update-delete
+  category: STATEMENT
+  engine: OCEANBASE
+- type: statement.where.require.update-delete
+  category: STATEMENT
+  engine: SNOWFLAKE
+- type: statement.where.require.update-delete
+  category: STATEMENT
+  engine: MSSQL
+- type: statement.where.require.update-delete
   category: STATEMENT
   engine: MARIADB
 - type: statement.where.no-leading-wildcard-like
@@ -618,7 +645,7 @@
     - key: format
       payload:
         type: STRING
-        default: '^[a-z]+(_[a-z]+)*$'
+        default: "^[a-z]+(_[a-z]+)*$"
     - key: maxLength
       payload:
         type: NUMBER
@@ -630,7 +657,7 @@
     - key: format
       payload:
         type: STRING
-        default: '^[a-z]+(_[a-z]+)*$'
+        default: "^[a-z]+(_[a-z]+)*$"
     - key: maxLength
       payload:
         type: NUMBER
@@ -642,7 +669,7 @@
     - key: format
       payload:
         type: STRING
-        default: '^[a-z]+(_[a-z]+)*$'
+        default: "^[a-z]+(_[a-z]+)*$"
     - key: maxLength
       payload:
         type: NUMBER
@@ -654,7 +681,7 @@
     - key: format
       payload:
         type: STRING
-        default: '^[a-z]+(_[a-z]+)*$'
+        default: "^[a-z]+(_[a-z]+)*$"
     - key: maxLength
       payload:
         type: NUMBER
@@ -666,7 +693,7 @@
     - key: format
       payload:
         type: STRING
-        default: '^[a-z]+(_[a-z]+)*$'
+        default: "^[a-z]+(_[a-z]+)*$"
     - key: maxLength
       payload:
         type: NUMBER
@@ -678,7 +705,7 @@
     - key: format
       payload:
         type: STRING
-        default: '^[a-z]+(_[a-z]+)*$'
+        default: "^[a-z]+(_[a-z]+)*$"
     - key: maxLength
       payload:
         type: NUMBER
@@ -690,7 +717,7 @@
     - key: format
       payload:
         type: STRING
-        default: '^[a-z]+(_[a-z]+)*$'
+        default: "^[a-z]+(_[a-z]+)*$"
     - key: maxLength
       payload:
         type: NUMBER
@@ -702,7 +729,7 @@
     - key: format
       payload:
         type: STRING
-        default: '^[a-z]+(_[a-z]+)*$'
+        default: "^[a-z]+(_[a-z]+)*$"
     - key: maxLength
       payload:
         type: NUMBER
@@ -714,7 +741,7 @@
     - key: format
       payload:
         type: STRING
-        default: '^[a-z]+(_[a-z]+)*$'
+        default: "^[a-z]+(_[a-z]+)*$"
     - key: maxLength
       payload:
         type: NUMBER
@@ -726,7 +753,7 @@
     - key: format
       payload:
         type: STRING
-        default: '^[a-z]+(_[a-z]+)*$'
+        default: "^[a-z]+(_[a-z]+)*$"
     - key: maxLength
       payload:
         type: NUMBER
@@ -738,7 +765,7 @@
     - key: format
       payload:
         type: STRING
-        default: '^[a-z]+(_[a-z]+)*$'
+        default: "^[a-z]+(_[a-z]+)*$"
     - key: maxLength
       payload:
         type: NUMBER
@@ -750,7 +777,7 @@
     - key: format
       payload:
         type: STRING
-        default: '^[a-z]+(_[a-z]+)*$'
+        default: "^[a-z]+(_[a-z]+)*$"
     - key: maxLength
       payload:
         type: NUMBER
@@ -762,7 +789,7 @@
     - key: format
       payload:
         type: STRING
-        default: '^[a-z]+(_[a-z]+)*$'
+        default: "^[a-z]+(_[a-z]+)*$"
     - key: maxLength
       payload:
         type: NUMBER
@@ -774,7 +801,7 @@
     - key: format
       payload:
         type: STRING
-        default: '^[a-z]+(_[a-z]+)*$'
+        default: "^[a-z]+(_[a-z]+)*$"
     - key: maxLength
       payload:
         type: NUMBER
@@ -786,7 +813,7 @@
     - key: format
       payload:
         type: TEMPLATE
-        default: '^uk_{{table}}_{{column_list}}$'
+        default: "^uk_{{table}}_{{column_list}}$"
         templateList:
           - table
           - column_list
@@ -801,7 +828,7 @@
     - key: format
       payload:
         type: TEMPLATE
-        default: '^uk_{{table}}_{{column_list}}$'
+        default: "^uk_{{table}}_{{column_list}}$"
         templateList:
           - table
           - column_list
@@ -816,7 +843,7 @@
     - key: format
       payload:
         type: TEMPLATE
-        default: '^uk_{{table}}_{{column_list}}$'
+        default: "^uk_{{table}}_{{column_list}}$"
         templateList:
           - table
           - column_list
@@ -831,7 +858,7 @@
     - key: format
       payload:
         type: TEMPLATE
-        default: '^uk_{{table}}_{{column_list}}$'
+        default: "^uk_{{table}}_{{column_list}}$"
         templateList:
           - table
           - column_list
@@ -846,7 +873,7 @@
     - key: format
       payload:
         type: TEMPLATE
-        default: '^uk_{{table}}_{{column_list}}$'
+        default: "^uk_{{table}}_{{column_list}}$"
         templateList:
           - table
           - column_list
@@ -861,7 +888,7 @@
     - key: format
       payload:
         type: TEMPLATE
-        default: '^idx_{{table}}_{{column_list}}$'
+        default: "^idx_{{table}}_{{column_list}}$"
         templateList:
           - table
           - column_list
@@ -876,7 +903,7 @@
     - key: format
       payload:
         type: TEMPLATE
-        default: '^idx_{{table}}_{{column_list}}$'
+        default: "^idx_{{table}}_{{column_list}}$"
         templateList:
           - table
           - column_list
@@ -891,7 +918,7 @@
     - key: format
       payload:
         type: TEMPLATE
-        default: '^idx_{{table}}_{{column_list}}$'
+        default: "^idx_{{table}}_{{column_list}}$"
         templateList:
           - table
           - column_list
@@ -906,7 +933,7 @@
     - key: format
       payload:
         type: TEMPLATE
-        default: '^idx_{{table}}_{{column_list}}$'
+        default: "^idx_{{table}}_{{column_list}}$"
         templateList:
           - table
           - column_list
@@ -921,7 +948,7 @@
     - key: format
       payload:
         type: TEMPLATE
-        default: '^idx_{{table}}_{{column_list}}$'
+        default: "^idx_{{table}}_{{column_list}}$"
         templateList:
           - table
           - column_list
@@ -1026,7 +1053,7 @@
     - key: format
       payload:
         type: TEMPLATE
-        default: '^pk_{{table}}_{{column_list}}$'
+        default: "^pk_{{table}}_{{column_list}}$"
         templateList:
           - table
           - column_list
