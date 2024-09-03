@@ -59,9 +59,7 @@ type whereRequirementForSelectChecker struct {
 // Visit implements the ast.Visitor interface.
 func (checker *whereRequirementForSelectChecker) Visit(node ast.Node) ast.Visitor {
 	code := advisor.Ok
-	switch n := node.(type) {
-	// SELECT
-	case *ast.SelectStmt:
+	if n, ok := node.(*ast.SelectStmt); ok {
 		// Allow SELECT queries without a FROM clause to proceed, e.g. SELECT 1.
 		if n.WhereClause == nil && len(n.GetFromClause()) > 0 {
 			code = advisor.StatementNoWhere
