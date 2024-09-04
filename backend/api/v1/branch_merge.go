@@ -2757,7 +2757,6 @@ func applyUpdateInfoDiffSchemaNode(a *updateInfoDiffSchemaNode, target *storepb.
 			viewConfigs = append(viewConfigs, viewConfig)
 			delete(viewConfigMap, viewName)
 		}
-
 	}
 	// Add the remaining view configs in the target schema config.
 	for _, viewConfig := range viewConfigMap {
