@@ -39,6 +39,10 @@ export const useChangeHistoryStore = defineStore("changeHistory_v1", () => {
     });
   };
 
+  const clearCache = (parent: string) => {
+    changeHistoryListMapByDatabase.delete(parent);
+  };
+
   const fetchChangeHistoryList = async (
     params: Partial<ListChangeHistoriesRequest>
   ) => {
@@ -154,6 +158,7 @@ export const useChangeHistoryStore = defineStore("changeHistory_v1", () => {
   };
 
   return {
+    clearCache,
     fetchChangeHistoryList,
     getOrFetchChangeHistoryListOfDatabase,
     changeHistoryListByDatabase,

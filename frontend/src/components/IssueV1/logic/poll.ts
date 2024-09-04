@@ -1,12 +1,25 @@
 import { computed, watch } from "vue";
+import { databaseForTask } from "@/components/IssueV1/logic";
 import { useProgressivePoll } from "@/composables/useProgressivePoll";
-import { experimentalFetchIssueByUID } from "@/store";
+import { experimentalFetchIssueByUID, useChangeHistoryStore } from "@/store";
+import type { ComposedIssue } from "@/types";
+import { IssueStatus } from "@/types/proto/v1/issue_service";
 import {
   extractIssueUID,
   extractProjectResourceName,
   isValidTaskName,
 } from "@/utils";
+import { flattenTaskV1List } from "@/utils";
 import { useIssueContext } from "./context";
+
+const clearChangeHistory = (issue: ComposedIssue) => {
+  const changeHistoryStore = useChangeHistoryStore();
+  const tasks = flattenTaskV1List(issue.rolloutEntity);
+  for (const task of tasks) {
+    const database = databaseForTask(issue, task);
+    changeHistoryStore.clearCache(database.name);
+  }
+};
 
 export const usePollIssue = () => {
   const { isCreating, ready, issue, events, activeTask } = useIssueContext();
@@ -17,11 +30,19 @@ export const usePollIssue = () => {
 
   const refreshIssue = () => {
     if (!shouldPollIssue.value) return;
-
     experimentalFetchIssueByUID(
       extractIssueUID(issue.value.name),
       extractProjectResourceName(issue.value.project)
-    ).then((updatedIssue) => (issue.value = updatedIssue));
+    ).then((updatedIssue) => {
+      if (
+        issue.value.status !== IssueStatus.DONE &&
+        updatedIssue.status === IssueStatus.DONE
+      ) {
+        clearChangeHistory(updatedIssue);
+      }
+
+      issue.value = updatedIssue;
+    });
   };
 
   const poller = useProgressivePoll(refreshIssue, {
