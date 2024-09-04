@@ -582,7 +582,7 @@ var (
 	// VACUUM cannot run inside a transaction block.
 	// VACUUM [ ( option [, ...] ) ] [ table_and_columns [, ...] ]
 	// VACUUM [ FULL ] [ FREEZE ] [ VERBOSE ] [ ANALYZE ] [ table_and_columns [, ...] ].
-	vacuumReg = regexp.MustCompile(`(?i)VACUUM`)
+	vacuumReg = regexp.MustCompile(`(?i)^\s*VACUUM`)
 	// SET ROLE is a special statement that should be run before any other statements containing inside a transaction block or not.
 	setRoleReg = regexp.MustCompile(`(?i)SET\s+((SESSION|LOCAL)\s+)?ROLE`)
 )
