@@ -8,7 +8,7 @@ const (
 
 func GetBuiltinRules(engine storepb.Engine) []*storepb.SQLReviewRule {
 	switch engine {
-	case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_POSTGRES:
+	case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_POSTGRES, storepb.Engine_MSSQL, storepb.Engine_ORACLE:
 		return []*storepb.SQLReviewRule{
 			{
 				Type:    string(BuiltinRulePriorBackupCheck),

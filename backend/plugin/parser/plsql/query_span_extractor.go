@@ -1159,7 +1159,7 @@ func (q *querySpanExtractor) plsqlExtractTableRefAux(ctx plsql.ITable_ref_auxCon
 		return tableSource, nil
 	}
 
-	alias := normalizeTableAlias(tableAlias)
+	alias := NormalizeTableAlias(tableAlias)
 	return &base.PseudoTable{
 		Name:    alias,
 		Columns: tableSource.GetQuerySpanResult(),

@@ -627,6 +627,9 @@ const (
 	// OracleSyntax is an advisor type for Oracle syntax.
 	OracleSyntax Type = "bb.plugin.advisor.oracle.syntax"
 
+	// OracleBuiltinPriorBackupCheck is an advisor type for Oracle prior backup check.
+	OracleBuiltinPriorBackupCheck Type = "bb.plugin.advisor.oracle.builtin.prior-backup-check"
+
 	// OracleTableRequirePK is an advisor type for Oracle table require primary key.
 	OracleTableRequirePK Type = "bb.plugin.advisor.oracle.table.require-pk"
 
