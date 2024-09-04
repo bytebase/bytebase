@@ -34,6 +34,7 @@ func validateQuery(statement string) (bool, bool, error) {
 		return false, false, err
 	}
 	hasExecute := false
+	readOnly := true
 	for _, item := range trees {
 		l := &queryValidateListener{
 			valid:      true,
@@ -43,18 +44,22 @@ func validateQuery(statement string) (bool, bool, error) {
 		if !l.valid {
 			return false, false, nil
 		}
+		if l.explainAnalyze {
+			readOnly = false
+		}
 		if l.hasExecute {
 			hasExecute = true
 		}
 	}
-	return true, !hasExecute, nil
+	return readOnly, !hasExecute, nil
 }
 
 type queryValidateListener struct {
 	*parser.BaseMySQLParserListener
 
-	valid      bool
-	hasExecute bool
+	valid          bool
+	explainAnalyze bool
+	hasExecute     bool
 }
 
 // EnterQuery is called when production query is entered.
@@ -91,7 +96,7 @@ func (l *queryValidateListener) EnterUtilityStatement(ctx *parser.UtilityStateme
 	}
 	if ctx.ExplainStatement() != nil {
 		if ctx.ExplainStatement().ANALYZE_SYMBOL() != nil {
-			l.valid = false
+			l.explainAnalyze = true
 			return
 		}
 	}
