@@ -164,7 +164,7 @@ const gotoCreateIssue = () => {
 
   const db = useDatabaseV1Store().getDatabaseByName(database);
 
-  router.push({
+  const route = router.resolve({
     name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
     params: {
       projectId: extractProjectResourceName(db.project),
@@ -179,6 +179,7 @@ const gotoCreateIssue = () => {
       sql: statement.value,
     },
   });
+  window.open(route.fullPath, "_blank");
 };
 
 const changeToStandardMode = () => {
