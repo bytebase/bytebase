@@ -153,7 +153,7 @@ const (
 )
 
 // tryMerge merges other metadata to current metadata, always returns a non-nil metadata if no error occurs.
-func tryMerge(ancestor, head, base *storepb.DatabaseSchemaMetadata, engine storepb.Engine) (*storepb.DatabaseSchemaMetadata, error) {
+func tryMerge(ancestor, head, base *storepb.DatabaseSchemaMetadata, headConfig, baseConfig *storepb.DatabaseConfig, engine storepb.Engine) (*storepb.DatabaseSchemaMetadata, error) {
 	ancestor, head, base = proto.Clone(ancestor).(*storepb.DatabaseSchemaMetadata), proto.Clone(head).(*storepb.DatabaseSchemaMetadata), proto.Clone(base).(*storepb.DatabaseSchemaMetadata)
 
 	if ancestor == nil {
@@ -164,14 +164,20 @@ func tryMerge(ancestor, head, base *storepb.DatabaseSchemaMetadata, engine store
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to diff between ancestor and head")
 	}
+	configDiffBetweenAncestorAndHead := deriveUpdateInfoFromMetadataDiff(diffBetweenAncestorAndHead, headConfig)
 
 	diffBetweenAncestorAndBase, err := diffMetadata(ancestor, base)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to diff between ancestor and base")
 	}
+	configDiffBetweenAncestorAndBase := deriveUpdateInfoFromMetadataDiff(diffBetweenAncestorAndBase, baseConfig)
 
 	if conflict, msg := diffBetweenAncestorAndBase.tryMerge(diffBetweenAncestorAndHead, engine); conflict {
 		return nil, errors.Errorf("merge conflict: %s", msg)
+	}
+	mergedUpdateInfoDiff, err := mergeUpdateInfoDiffRooNode(configDiffBetweenAncestorAndBase, configDiffBetweenAncestorAndHead)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to merge update info diff")
 	}
 
 	if err := diffBetweenAncestorAndBase.applyDiffTo(ancestor); err != nil {
@@ -2209,6 +2215,18 @@ type updateInfo struct {
 	sourceBranch    string
 }
 
+func (u *updateInfo) clone() *updateInfo {
+	if u == nil {
+		return nil
+	}
+	return &updateInfo{
+		//nolint
+		lastUpdatedTime: proto.Clone(u.lastUpdatedTime).(*timestamppb.Timestamp),
+		lastUpdater:     u.lastUpdater,
+		sourceBranch:    u.sourceBranch,
+	}
+}
+
 type updateInfoDiffRootNode struct {
 	schemas map[string]*updateInfoDiffSchemaNode
 }
@@ -2365,4 +2383,284 @@ func deriveUpdateInfoFromMetadataDiff(metadataDiff *metadataDiffRootNode, headDa
 	}
 
 	return rootNode
+}
+
+func mergeUpdateInfoDiffRooNode(a, b *updateInfoDiffRootNode) (*updateInfoDiffRootNode, error) {
+	if a == nil && b == nil {
+		return nil, nil
+	}
+	if a == nil {
+		return b, nil
+	}
+	if b == nil {
+		return a, nil
+	}
+	rootNode := &updateInfoDiffRootNode{}
+
+	schemaNamesMap := make(map[string]bool)
+	for schemaName := range a.schemas {
+		schemaNamesMap[schemaName] = true
+	}
+	for schemaName := range b.schemas {
+		schemaNamesMap[schemaName] = true
+	}
+
+	for schemaName := range schemaNamesMap {
+		aSchema, aOk := a.schemas[schemaName]
+		bSchema, bOk := b.schemas[schemaName]
+		if aOk && bOk {
+			mergedSchema, err := mergeUpdateInfoDiffSchemaNode(aSchema, bSchema)
+			if err != nil {
+				return nil, err
+			}
+			rootNode.schemas[schemaName] = mergedSchema
+			continue
+		}
+		if aOk {
+			rootNode.schemas[schemaName] = aSchema
+			continue
+		}
+		if bOk {
+			rootNode.schemas[schemaName] = bSchema
+			continue
+		}
+	}
+
+	return rootNode, nil
+}
+
+func mergeUpdateInfoDiffSchemaNode(a, b *updateInfoDiffSchemaNode) (*updateInfoDiffSchemaNode, error) {
+	if a == nil && b == nil {
+		return nil, nil
+	}
+	if a == nil {
+		return b, nil
+	}
+	if b == nil {
+		return a, nil
+	}
+
+	if a.action != b.action {
+		return nil, errors.Errorf("conflict schema config action, one is %s, the other is %s", a.action, b.action)
+	}
+	schemaNode := &updateInfoDiffSchemaNode{
+		diffBaseNode: diffBaseNode{
+			action: b.action,
+		},
+		name:       b.name,
+		tables:     make(map[string]*updateInfoDiffTableNode),
+		views:      make(map[string]*updateInfoDiffViewNode),
+		functions:  make(map[string]*updateInfoDiffFunctionNode),
+		procedures: make(map[string]*updateInfoDiffProcedureNode),
+	}
+
+	tableNameMap := make(map[string]bool)
+	for tableName := range a.tables {
+		tableNameMap[tableName] = true
+	}
+	for tableName := range b.tables {
+		tableNameMap[tableName] = true
+	}
+	for tableName := range tableNameMap {
+		aTable, aOk := a.tables[tableName]
+		bTable, bOk := b.tables[tableName]
+		if aOk && bOk {
+			mergedTable, err := mergeUpdateInfoDiffTableNode(aTable, bTable)
+			if err != nil {
+				return nil, err
+			}
+			schemaNode.tables[tableName] = mergedTable
+			continue
+		}
+		if aOk {
+			schemaNode.tables[tableName] = aTable
+			continue
+		}
+		if bOk {
+			schemaNode.tables[tableName] = bTable
+			continue
+		}
+	}
+
+	viewNameMap := make(map[string]bool)
+	for viewName := range a.views {
+		viewNameMap[viewName] = true
+	}
+	for viewName := range b.views {
+		viewNameMap[viewName] = true
+	}
+	for viewName := range viewNameMap {
+		aView, aOk := a.views[viewName]
+		bView, bOk := b.views[viewName]
+		if aOk && bOk {
+			mergedView, err := mergeUpdateInfoDiffViewNode(aView, bView)
+			if err != nil {
+				return nil, err
+			}
+			schemaNode.views[viewName] = mergedView
+			continue
+		}
+		if aOk {
+			schemaNode.views[viewName] = aView
+			continue
+		}
+		if bOk {
+			schemaNode.views[viewName] = bView
+			continue
+		}
+	}
+
+	procedureNameMap := make(map[string]bool)
+	for procedureName := range a.procedures {
+		procedureNameMap[procedureName] = true
+	}
+	for procedureName := range b.procedures {
+		procedureNameMap[procedureName] = true
+	}
+	for procedureName := range procedureNameMap {
+		aProcedure, aOk := a.procedures[procedureName]
+		bProcedure, bOk := b.procedures[procedureName]
+		if aOk && bOk {
+			mergedProcedure, err := mergeUpdateInfoDiffProcedureNode(aProcedure, bProcedure)
+			if err != nil {
+				return nil, err
+			}
+			schemaNode.procedures[procedureName] = mergedProcedure
+			continue
+		}
+		if aOk {
+			schemaNode.procedures[procedureName] = aProcedure
+			continue
+		}
+		if bOk {
+			schemaNode.procedures[procedureName] = bProcedure
+			continue
+		}
+	}
+
+	functionNameMap := make(map[string]bool)
+	for functionName := range a.functions {
+		functionNameMap[functionName] = true
+	}
+	for functionName := range b.functions {
+		functionNameMap[functionName] = true
+	}
+	for functionName := range functionNameMap {
+		aFunction, aOk := a.functions[functionName]
+		bFunction, bOk := b.functions[functionName]
+		if aOk && bOk {
+			mergedFunction, err := mergeUpdateInfoDiffFunctionNode(aFunction, bFunction)
+			if err != nil {
+				return nil, err
+			}
+			schemaNode.functions[functionName] = mergedFunction
+			continue
+		}
+		if aOk {
+			schemaNode.functions[functionName] = aFunction
+			continue
+		}
+		if bOk {
+			schemaNode.functions[functionName] = bFunction
+			continue
+		}
+	}
+
+	return schemaNode, nil
+}
+
+func mergeUpdateInfoDiffTableNode(a, b *updateInfoDiffTableNode) (*updateInfoDiffTableNode, error) {
+	if a == nil && b == nil {
+		return nil, nil
+	}
+	if a == nil {
+		return b, nil
+	}
+	if b == nil {
+		return a, nil
+	}
+
+	if a.action != b.action {
+		return nil, errors.Errorf("conflict table config action, one is %s, the other is %s", a.action, b.action)
+	}
+
+	return &updateInfoDiffTableNode{
+		diffBaseNode: diffBaseNode{
+			action: b.action,
+		},
+		name:       b.name,
+		updateInfo: b.updateInfo.clone(),
+	}, nil
+}
+
+func mergeUpdateInfoDiffViewNode(a, b *updateInfoDiffViewNode) (*updateInfoDiffViewNode, error) {
+	if a == nil && b == nil {
+		return nil, nil
+	}
+	if a == nil {
+		return b, nil
+	}
+	if b == nil {
+		return a, nil
+	}
+
+	if a.action != b.action {
+		return nil, errors.Errorf("conflict view config action, one is %s, the other is %s", a.action, b.action)
+	}
+
+	return &updateInfoDiffViewNode{
+		diffBaseNode: diffBaseNode{
+			action: b.action,
+		},
+		name:       b.name,
+		updateInfo: b.updateInfo.clone(),
+	}, nil
+}
+
+func mergeUpdateInfoDiffProcedureNode(a, b *updateInfoDiffProcedureNode) (*updateInfoDiffProcedureNode, error) {
+	if a == nil && b == nil {
+		return nil, nil
+	}
+	if a == nil {
+		return b, nil
+	}
+	if b == nil {
+		return a, nil
+	}
+
+	if a.action != b.action {
+		return nil, errors.Errorf("conflict procedure config action, one is %s, the other is %s", a.action, b.action)
+	}
+
+	return &updateInfoDiffProcedureNode{
+		diffBaseNode: diffBaseNode{
+			action: b.action,
+		},
+		name:       b.name,
+		updateInfo: b.updateInfo.clone(),
+	}, nil
+}
+
+func mergeUpdateInfoDiffFunctionNode(a, b *updateInfoDiffFunctionNode) (*updateInfoDiffFunctionNode, error) {
+	if a == nil && b == nil {
+		return nil, nil
+	}
+	if a == nil {
+		return b, nil
+	}
+	if b == nil {
+		return a, nil
+	}
+
+	if a.action != b.action {
+		return nil, errors.Errorf("conflict function config action, one is %s, the other is %s", a.action, b.action)
+	}
+
+	return &updateInfoDiffFunctionNode{
+		diffBaseNode: diffBaseNode{
+			action: b.action,
+		},
+		name:       b.name,
+		updateInfo: b.updateInfo.clone(),
+	}, nil
 }
