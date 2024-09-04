@@ -469,7 +469,13 @@ func (s *WorksheetService) canWriteWorksheet(ctx context.Context, worksheet *sto
 	case store.PrivateWorkSheet:
 		return false, nil
 	case store.ProjectWriteWorkSheet:
-		ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionProjectsGet, user)
+		project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+			UID: &worksheet.ProjectUID,
+		})
+		if err != nil {
+			return false, err
+		}
+		ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionProjectsGet, user, project.ResourceID)
 		if err != nil {
 			return false, err
 		}
@@ -508,7 +514,13 @@ func (s *WorksheetService) canReadWorksheet(ctx context.Context, worksheet *stor
 	case store.PrivateWorkSheet:
 		return false, nil
 	case store.ProjectReadWorkSheet, store.ProjectWriteWorkSheet:
-		ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionProjectsGet, user)
+		project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+			UID: &worksheet.ProjectUID,
+		})
+		if err != nil {
+			return false, err
+		}
+		ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionProjectsGet, user, project.ResourceID)
 		if err != nil {
 			return false, err
 		}
