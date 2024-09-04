@@ -39,6 +39,11 @@ type querySpanExtractor struct {
 }
 
 func newQuerySpanExtractor(defaultDatabase string, defaultSchema string, gCtx base.GetQuerySpanContext, ignoreCaseSensitive bool) *querySpanExtractor {
+	if defaultSchema == "" {
+		// Fall back to the default schema `dbo`.
+		// Reference: https://learn.microsoft.com/en-us/sql/relational-databases/security/authentication-access/ownership-and-user-schema-separation#the-dbo-schema
+		defaultSchema = "dbo"
+	}
 	return &querySpanExtractor{
 		defaultDatabase:     defaultDatabase,
 		defaultSchema:       defaultSchema,
