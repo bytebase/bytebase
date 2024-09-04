@@ -462,12 +462,12 @@ func (s *BranchService) MergeBranch(ctx context.Context, request *v1pb.MergeBran
 	sanitizeCommentForSchemaMetadata(headBranch.Head.Metadata, model.NewDatabaseConfig(headBranch.Head.DatabaseConfig), classificationConfig.ClassificationFromConfig)
 	sanitizeCommentForSchemaMetadata(baseBranch.Head.Metadata, model.NewDatabaseConfig(baseBranch.Head.DatabaseConfig), classificationConfig.ClassificationFromConfig)
 
-	adHead, err := tryMerge(headBranch.Base.Metadata, headBranch.Head.Metadata, baseBranch.Head.Metadata, baseBranch.Engine)
+	adHead, adConfig, err := tryMerge(headBranch.Base.Metadata, headBranch.Head.Metadata, baseBranch.Head.Metadata, headBranch.Base.DatabaseConfig, headBranch.Head.DatabaseConfig, baseBranch.Head.DatabaseConfig, baseBranch.Engine)
 	if err != nil {
 		slog.Info("cannot merge branches", log.BBError(err))
 		return nil, status.Errorf(codes.Aborted, "cannot merge branches without conflict, error: %v", err)
 	}
-	mergedMetadata, err := tryMerge(baseBranch.Head.Metadata, adHead, baseBranch.Head.Metadata, baseBranch.Engine)
+	mergedMetadata, mergedConfig, err := tryMerge(baseBranch.Head.Metadata, adHead, baseBranch.Head.Metadata, baseBranch.Head.DatabaseConfig, adConfig, baseBranch.Head.DatabaseConfig, baseBranch.Engine)
 	if err != nil {
 		slog.Info("cannot merge branches", log.BBError(err))
 		return nil, status.Errorf(codes.Aborted, "cannot merge branches without conflict, error: %v", err)
@@ -482,7 +482,8 @@ func (s *BranchService) MergeBranch(ctx context.Context, request *v1pb.MergeBran
 	}
 	// XXX(zp): We only try to merge the schema config while the schema could be merged successfully. Otherwise, users manually merge the
 	// metadata in the frontend, and config would be ignored.
-	mergedConfig := utils.MergeDatabaseConfig(baseBranch.Head.GetDatabaseConfig(), headBranch.Base.GetDatabaseConfig(), headBranch.Head.GetDatabaseConfig())
+	classificationIDSource := utils.MergeDatabaseConfig(baseBranch.Head.GetDatabaseConfig(), headBranch.Base.GetDatabaseConfig(), headBranch.Head.GetDatabaseConfig())
+	setClassificationIDToConfig(classificationIDSource, mergedConfig)
 
 	mergedSchemaBytes := []byte(mergedSchema)
 
@@ -596,7 +597,7 @@ func (s *BranchService) RebaseBranch(ctx context.Context, request *v1pb.RebaseBr
 		trimClassificationIDFromCommentIfNeeded(newHeadMetadata, classificationConfig)
 		sanitizeCommentForSchemaMetadata(newHeadMetadata, modelNewHeadConfig, classificationConfig.ClassificationFromConfig)
 	} else {
-		newHeadMetadata, err = tryMerge(baseBranch.Base.Metadata, baseBranch.Head.Metadata, filteredNewBaseMetadata, baseBranch.Engine)
+		newHeadMetadata, newHeadConfig, err = tryMerge(baseBranch.Base.Metadata, baseBranch.Head.Metadata, filteredNewBaseMetadata, baseBranch.Base.DatabaseConfig, baseBranch.Head.DatabaseConfig, newBaseConfig, baseBranch.Engine)
 		if err != nil {
 			slog.Info("cannot rebase branches", log.BBError(err))
 			conflictSchema, err := diff3.Merge(
@@ -625,7 +626,8 @@ func (s *BranchService) RebaseBranch(ctx context.Context, request *v1pb.RebaseBr
 		}
 		// XXX(zp): We only try to merge the schema config while the schema could be merged successfully. Otherwise, users manually merge the
 		// metadata in the frontend, and config would be ignored.
-		newHeadConfig = utils.MergeDatabaseConfig(newBaseConfig, baseBranch.Base.GetDatabaseConfig(), baseBranch.Head.GetDatabaseConfig())
+		classificationIDSource := utils.MergeDatabaseConfig(newBaseConfig, baseBranch.Base.GetDatabaseConfig(), baseBranch.Head.GetDatabaseConfig())
+		setClassificationIDToConfig(classificationIDSource, newHeadConfig)
 	}
 
 	reconcileMetadata(newHeadMetadata, baseBranch.Engine)
@@ -635,10 +637,8 @@ func (s *BranchService) RebaseBranch(ctx context.Context, request *v1pb.RebaseBr
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to convert new head metadata to schema string, %v", err)
 	}
-
 	newBaseSchemaBytes := []byte(newBaseSchema)
 	newHeadSchemaBytes := []byte(newHeadSchema)
-	updateDatabaseConfigLastModifierForMerge(filteredNewHeadMetadata, filteredNewBaseMetadata, newHeadConfig, newBaseConfig)
 	if request.ValidateOnly {
 		baseBranch.Base = &storepb.BranchSnapshot{
 			Metadata:       filteredNewBaseMetadata,
@@ -1832,4 +1832,38 @@ func equalProcedure(a, b *storepb.ProcedureMetadata) bool {
 	}
 
 	return equalRoutineDefinition(a.GetDefinition(), b.GetDefinition())
+}
+
+// setClassificationIDToConfig inplace set the classification ID from the a config to the b config.
+func setClassificationIDToConfig(a, b *storepb.DatabaseConfig) {
+	aSchemaConfigMap := buildMap(a.SchemaConfigs, func(s *storepb.SchemaConfig) string {
+		return s.Name
+	})
+
+	for _, schemaConfig := range b.SchemaConfigs {
+		aSchemaConfig, ok := aSchemaConfigMap[schemaConfig.Name]
+		if !ok {
+			continue
+		}
+		aTableConfigMap := buildMap(aSchemaConfig.TableConfigs, func(t *storepb.TableConfig) string {
+			return t.Name
+		})
+		for _, tableConfig := range schemaConfig.TableConfigs {
+			aTableConfig, ok := aTableConfigMap[tableConfig.Name]
+			if !ok {
+				continue
+			}
+			tableConfig.ClassificationId = aTableConfig.ClassificationId
+			aColumnConfigMap := buildMap(aTableConfig.ColumnConfigs, func(c *storepb.ColumnConfig) string {
+				return c.Name
+			})
+			for _, columnConfig := range tableConfig.ColumnConfigs {
+				aColumnConfig, ok := aColumnConfigMap[columnConfig.Name]
+				if !ok {
+					continue
+				}
+				columnConfig.ClassificationId = aColumnConfig.ClassificationId
+			}
+		}
+	}
 }

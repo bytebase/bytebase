@@ -52,7 +52,7 @@ func TestTryMerge(t *testing.T) {
 		baseSchemaMetadata := new(storepb.DatabaseSchemaMetadata)
 		err := common.ProtojsonUnmarshaler.Unmarshal([]byte(tc.Base), baseSchemaMetadata)
 		a.NoErrorf(err, "test case %d: %s", idx, tc.Description)
-		mergedSchemaMetadata, err := tryMerge(ancestorSchemaMetadata, headSchemaMetadata, baseSchemaMetadata, storepb.Engine_MYSQL)
+		mergedSchemaMetadata, _, err := tryMerge(ancestorSchemaMetadata, headSchemaMetadata, baseSchemaMetadata, nil, nil, nil /*TODO(zp): fix test*/, storepb.Engine_MYSQL)
 		a.NoErrorf(err, "test case %d: %s", idx, tc.Description)
 		a.NotNil(mergedSchemaMetadata, "test case %d: %s, mergedSchemaMetadata should not be nil if there is no error", idx, tc.Description)
 
@@ -238,6 +238,99 @@ func TestDeriveUpdateInfoFromMetadataDiff(t *testing.T) {
 
 	for _, tc := range testCases {
 		got := deriveUpdateInfoFromMetadataDiff(tc.metadataDiff, tc.config)
+		require.Equal(t, tc.want, got)
+	}
+}
+
+func TestApplyUpdateInfoDiffRootNode(t *testing.T) {
+	time1 := timestamppb.Now()
+	time2 := timestamppb.New(time1.AsTime().Add(1 * time.Second))
+	testCases := []struct {
+		updateInfoDiffRootNode *updateInfoDiffRootNode
+		config                 *storepb.DatabaseConfig
+		want                   *storepb.DatabaseConfig
+	}{
+		{
+			updateInfoDiffRootNode: &updateInfoDiffRootNode{
+				schemas: map[string]*updateInfoDiffSchemaNode{
+					"": {
+						tables: map[string]*updateInfoDiffTableNode{
+							"t1": {
+								name: "t1",
+								diffBaseNode: diffBaseNode{
+									action: diffActionCreate,
+								},
+								updateInfo: &updateInfo{
+									lastUpdatedTime: time2,
+									lastUpdater:     "anonymous+01@bytebase.com",
+									sourceBranch:    "feat/01",
+								},
+							},
+							"t2": {
+								name: "t2",
+								diffBaseNode: diffBaseNode{
+									action: diffActionDrop,
+								},
+								updateInfo: nil,
+							},
+						},
+						views:      map[string]*updateInfoDiffViewNode{},
+						functions:  map[string]*updateInfoDiffFunctionNode{},
+						procedures: map[string]*updateInfoDiffProcedureNode{},
+					},
+				},
+			},
+			config: &storepb.DatabaseConfig{
+				SchemaConfigs: []*storepb.SchemaConfig{
+					{
+						Name: "",
+						TableConfigs: []*storepb.TableConfig{
+							{
+								Name:       "t1",
+								Updater:    "my",
+								UpdateTime: time1,
+								ColumnConfigs: []*storepb.ColumnConfig{
+									{
+										Name:             "t",
+										ClassificationId: "1-1-1",
+									},
+								},
+							},
+							{
+								Name:       "t2",
+								Updater:    "my",
+								UpdateTime: time1,
+							},
+						},
+					},
+				},
+			},
+			want: &storepb.DatabaseConfig{
+				SchemaConfigs: []*storepb.SchemaConfig{
+					{
+						Name: "",
+						TableConfigs: []*storepb.TableConfig{
+							{
+								Name:         "t1",
+								UpdateTime:   time2,
+								Updater:      "anonymous+01@bytebase.com",
+								SourceBranch: "feat/01",
+								ColumnConfigs: []*storepb.ColumnConfig{
+									{
+										Name:             "t",
+										ClassificationId: "1-1-1",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		got := applyUpdateInfoDiffRootNode(tc.updateInfoDiffRootNode, tc.config)
 		require.Equal(t, tc.want, got)
 	}
 }
