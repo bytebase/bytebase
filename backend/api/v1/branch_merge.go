@@ -2396,7 +2396,9 @@ func mergeUpdateInfoDiffRooNode(a, b *updateInfoDiffRootNode) (*updateInfoDiffRo
 	if b == nil {
 		return a, nil
 	}
-	rootNode := &updateInfoDiffRootNode{}
+	rootNode := &updateInfoDiffRootNode{
+		schemas: make(map[string]*updateInfoDiffSchemaNode),
+	}
 
 	schemaNamesMap := make(map[string]bool)
 	for schemaName := range a.schemas {
@@ -2724,6 +2726,11 @@ func applyUpdateInfoDiffSchemaNode(a *updateInfoDiffSchemaNode, target *storepb.
 			tableConfig.SourceBranch = table.updateInfo.sourceBranch
 			tableConfigs = append(tableConfigs, tableConfig)
 		}
+		delete(tableConfigMap, tableName)
+	}
+	// Add the remaining table configs in the target schema config.
+	for _, tableConfig := range tableConfigMap {
+		tableConfigs = append(tableConfigs, tableConfig)
 	}
 
 	viewConfigMap := buildMap(target.GetViewConfigs(), func(viewConfig *storepb.ViewConfig) string {
@@ -2746,6 +2753,11 @@ func applyUpdateInfoDiffSchemaNode(a *updateInfoDiffSchemaNode, target *storepb.
 			viewConfig.SourceBranch = view.updateInfo.sourceBranch
 			viewConfigs = append(viewConfigs, viewConfig)
 		}
+		delete(viewConfigMap, viewName)
+	}
+	// Add the remaining view configs in the target schema config.
+	for _, viewConfig := range viewConfigMap {
+		viewConfigs = append(viewConfigs, viewConfig)
 	}
 
 	procedureConfigMap := buildMap(target.GetProcedureConfigs(), func(procedureConfig *storepb.ProcedureConfig) string {
@@ -2768,6 +2780,11 @@ func applyUpdateInfoDiffSchemaNode(a *updateInfoDiffSchemaNode, target *storepb.
 			procedureConfig.SourceBranch = procedure.updateInfo.sourceBranch
 			procedureConfigs = append(procedureConfigs, procedureConfig)
 		}
+		delete(procedureConfigMap, procedureName)
+	}
+	// Add the remaining procedure configs in the target schema config.
+	for _, procedureConfig := range procedureConfigMap {
+		procedureConfigs = append(procedureConfigs, procedureConfig)
 	}
 
 	functionConfigMap := buildMap(target.GetFunctionConfigs(), func(functionConfig *storepb.FunctionConfig) string {
@@ -2790,7 +2807,13 @@ func applyUpdateInfoDiffSchemaNode(a *updateInfoDiffSchemaNode, target *storepb.
 			functionConfig.SourceBranch = function.updateInfo.sourceBranch
 			functionConfigs = append(functionConfigs, functionConfig)
 		}
+		delete(functionConfigMap, functionName)
 	}
+	// Add the remaining function configs in the target schema config.
+	for _, functionConfig := range functionConfigMap {
+		functionConfigs = append(functionConfigs, functionConfig)
+	}
+
 	return &storepb.SchemaConfig{
 		Name:             target.GetName(),
 		TableConfigs:     tableConfigs,
