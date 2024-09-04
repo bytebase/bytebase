@@ -171,7 +171,9 @@ func collectDiagnostics(err *base.SyntaxError) []lsp.Diagnostic {
 		},
 		Severity: lsp.Error,
 		Source:   "Syntax check",
-		Message:  err.Message,
+		// Use RawMessage which created by antlr runtime, do not need our fine-tuned message
+		// because we had indicated the error position in the message.
+		Message: err.RawMessage,
 	}
 
 	return []lsp.Diagnostic{syntaxDiagnostic}

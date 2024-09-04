@@ -39,9 +39,10 @@ type SingleSQL struct {
 
 // SyntaxError is a syntax error.
 type SyntaxError struct {
-	Line    int
-	Column  int
-	Message string
+	Line       int
+	Column     int
+	Message    string
+	RawMessage string
 }
 
 // Error returns the error message.
@@ -56,7 +57,7 @@ type ParseErrorListener struct {
 }
 
 // SyntaxError returns the errors.
-func (l *ParseErrorListener) SyntaxError(_ antlr.Recognizer, token any, line, column int, _ string, _ antlr.RecognitionException) {
+func (l *ParseErrorListener) SyntaxError(_ antlr.Recognizer, token any, line, column int, message string, _ antlr.RecognitionException) {
 	if l.Err == nil {
 		errMessage := ""
 		if token, ok := token.(*antlr.CommonToken); ok {
@@ -72,9 +73,10 @@ func (l *ParseErrorListener) SyntaxError(_ antlr.Recognizer, token any, line, co
 			errMessage = fmt.Sprintf("related text: %s", stream.GetTextFromInterval(antlr.NewInterval(start, stop)))
 		}
 		l.Err = &SyntaxError{
-			Line:    line + l.BaseLine,
-			Column:  column,
-			Message: fmt.Sprintf("Syntax error at line %d:%d \n%s", line+l.BaseLine, column, errMessage),
+			Line:       line + l.BaseLine,
+			Column:     column,
+			Message:    fmt.Sprintf("Syntax error at line %d:%d \n%s", line+l.BaseLine, column, errMessage),
+			RawMessage: message,
 		}
 	}
 }
