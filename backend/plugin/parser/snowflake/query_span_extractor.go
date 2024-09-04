@@ -33,6 +33,11 @@ type querySpanExtractor struct {
 }
 
 func newQuerySpanExtractor(defaultDatabase, defaultSchema string, gCtx base.GetQuerySpanContext, ignoreCaseSensitive bool) *querySpanExtractor {
+	if defaultSchema == "" {
+		// Fall back to the default schema `PUBLIC`.
+		// Reference: https://docs.snowflake.com/en/sql-reference/name-resolution#name-resolution-in-queries
+		defaultSchema = "PUBLIC"
+	}
 	return &querySpanExtractor{
 		defaultDatbase:      defaultDatabase,
 		defaultSchema:       defaultSchema,
@@ -415,7 +420,7 @@ func (q *querySpanExtractor) extractQuerySpanResultResultFromExpr(ctx antlr.Rule
 		}
 		return querySpanResult.Name, querySpanResult, nil
 	case *parser.Object_nameContext:
-		normalizedDatabaseName, normalizedSchemaName, normalizedTableName := normalizedObjectName(ctx, q.defaultDatbase, "PUBLIC")
+		normalizedDatabaseName, normalizedSchemaName, normalizedTableName := normalizedObjectName(ctx, q.defaultDatbase, q.defaultSchema)
 		fieldInfo, err := q.getField(normalizedDatabaseName, normalizedSchemaName, normalizedTableName, "")
 		if err != nil {
 			return "", base.QuerySpanResult{}, errors.Wrapf(err, "failed to check whether the object %q is sensitive near line %d", normalizedTableName, ctx.GetStart().GetLine())
@@ -939,7 +944,7 @@ func (q *querySpanExtractor) extractTableSourceFromObjectRef(ctx parser.IObject_
 	var result []base.QuerySpanResult
 
 	if objectName := ctx.Object_name(); objectName != nil {
-		_, tableSource, err := q.findTableSchema(objectName, q.defaultDatbase, "PUBLIC")
+		_, tableSource, err := q.findTableSchema(objectName, q.defaultDatbase, q.defaultSchema)
 		if err != nil {
 			return nil, err
 		}
