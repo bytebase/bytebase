@@ -1,7 +1,7 @@
 import Emittery from "emittery";
 import { head, isEmpty } from "lodash-es";
 import { Status } from "nice-grpc-common";
-import { markRaw } from "vue";
+import { markRaw, reactive } from "vue";
 import { parseSQL } from "@/components/MonacoEditor/sqlParser";
 import { sqlServiceClient } from "@/grpcweb";
 import { t } from "@/plugins/i18n";
@@ -36,6 +36,8 @@ import { extractGrpcErrorMessage } from "@/utils/grpcweb";
 
 // SKIP_CHECK_THRESHOLD is the MaxSheetCheckSize in the backend.
 const SKIP_CHECK_THRESHOLD = 1024 * 1024;
+// QUERY_INTERVAL_LIMIT is the minimal gap between two queries
+const QUERY_INTERVAL_LIMIT = 1000;
 
 const events = new Emittery<{
   "update:advices": {
@@ -48,6 +50,9 @@ const events = new Emittery<{
 type SQLCheckResult = { passed: boolean; advices?: Advice[] };
 
 const useExecuteSQL = () => {
+  const state = reactive<{
+    lastQueryTime?: number;
+  }>({});
   const databaseStore = useDatabaseV1Store();
   const tabStore = useSQLEditorTabStore();
   const sqlEditorStore = useSQLEditorStore();
@@ -66,6 +71,8 @@ const useExecuteSQL = () => {
   };
 
   const preflight = async (params: SQLEditorQueryParams) => {
+    state.lastQueryTime = Date.now();
+
     const tab = tabStore.currentTab;
     if (!tab) {
       return false;
@@ -163,6 +170,14 @@ const useExecuteSQL = () => {
   };
 
   const execute = async (params: SQLEditorQueryParams) => {
+    const now = Date.now();
+    if (
+      state.lastQueryTime &&
+      now - state.lastQueryTime < QUERY_INTERVAL_LIMIT
+    ) {
+      return;
+    }
+
     if (!preflight(params)) {
       return cleanup();
     }
