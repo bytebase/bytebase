@@ -191,7 +191,9 @@ export const keyForNodeTarget = <T extends NodeType>(
               "external-table",
               target as NodeTarget<"external-table">
             )
-          : keyForNodeTarget("view", target as NodeTarget<"view">);
+          : "view" in target
+            ? keyForNodeTarget("view", target as NodeTarget<"view">)
+            : ""; // Fall back to empty string.
     const { column } = target as NodeTarget<"column">;
     return [parentKey, `columns/${column.name}`].join("/");
   }
