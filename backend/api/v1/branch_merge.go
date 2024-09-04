@@ -180,7 +180,7 @@ func tryMerge(ancestor, head, base *storepb.DatabaseSchemaMetadata, engine store
 	return ancestor, nil
 }
 
-type metadataDiffBaseNode struct {
+type diffBaseNode struct {
 	action diffAction
 }
 
@@ -225,7 +225,7 @@ func (mr *metadataDiffRootNode) applyDiffTo(target *storepb.DatabaseSchemaMetada
 
 // Schema related.
 type metadataDiffSchemaNode struct {
-	metadataDiffBaseNode
+	diffBaseNode
 	name string
 	//nolint
 	base *storepb.SchemaMetadata
@@ -434,7 +434,7 @@ func (n *metadataDiffSchemaNode) applyDiffTo(target *storepb.DatabaseSchemaMetad
 
 // Table related.
 type metadataDiffTableNode struct {
-	metadataDiffBaseNode
+	diffBaseNode
 	name string
 	//nolint
 	base *storepb.TableMetadata
@@ -701,7 +701,7 @@ func (n *metadataDiffTableNode) applyDiffTo(target *storepb.SchemaMetadata) erro
 
 // Column related.
 type metadataDiffColumnNode struct {
-	metadataDiffBaseNode
+	diffBaseNode
 	name string
 	//nolint
 	base *storepb.ColumnMetadata
@@ -871,7 +871,7 @@ func (n *metadataDiffColumnNode) applyDiffTo(target *storepb.TableMetadata) erro
 
 // Index related.
 type metadataDiffIndexNode struct {
-	metadataDiffBaseNode
+	diffBaseNode
 	name string
 	//nolint
 	base *storepb.IndexMetadata
@@ -975,7 +975,7 @@ func (n *metadataDiffIndexNode) applyDiffTo(target *storepb.TableMetadata) error
 }
 
 type metadataDiffPartitionNode struct {
-	metadataDiffBaseNode
+	diffBaseNode
 	name string
 	// nolint
 	base *storepb.TablePartitionMetadata
@@ -1098,7 +1098,7 @@ func (n *metadataDiffPartitionNode) applyDiffTo(target *storepb.TableMetadata) e
 }
 
 type metadataDiffFunctioNnode struct {
-	metadataDiffBaseNode
+	diffBaseNode
 	name string
 	//nolint
 	base *storepb.FunctionMetadata
@@ -1178,7 +1178,7 @@ func (n *metadataDiffFunctioNnode) applyDiffTo(target *storepb.SchemaMetadata) e
 }
 
 type metadataDiffProcedureNode struct {
-	metadataDiffBaseNode
+	diffBaseNode
 	name string
 	//nolint
 	base *storepb.ProcedureMetadata
@@ -1258,7 +1258,7 @@ func (n *metadataDiffProcedureNode) applyDiffTo(target *storepb.SchemaMetadata) 
 }
 
 type metadataDiffViewNode struct {
-	metadataDiffBaseNode
+	diffBaseNode
 	name string
 	//nolint
 	base *storepb.ViewMetadata
@@ -1391,7 +1391,7 @@ func (n *metadataDiffViewNode) applyDiffTo(target *storepb.SchemaMetadata) error
 
 // Foreign Key related.
 type metadataDiffForeignKeyNode struct {
-	metadataDiffBaseNode
+	diffBaseNode
 	name string
 	//nolint
 	base *storepb.ForeignKeyMetadata
@@ -1567,7 +1567,7 @@ func diffSchemaMetadata(base, head *storepb.SchemaMetadata) (*metadataDiffSchema
 	}
 
 	schemaNode := &metadataDiffSchemaNode{
-		metadataDiffBaseNode: metadataDiffBaseNode{
+		diffBaseNode: diffBaseNode{
 			action: action,
 		},
 		name:       name,
@@ -1719,7 +1719,7 @@ func diffViewMetadata(base, head *storepb.ViewMetadata) (*metadataDiffViewNode, 
 	}
 
 	viewNode := &metadataDiffViewNode{
-		metadataDiffBaseNode: metadataDiffBaseNode{
+		diffBaseNode: diffBaseNode{
 			action: action,
 		},
 		name: name,
@@ -1754,7 +1754,7 @@ func diffProcedureMetadata(base, head *storepb.ProcedureMetadata) (*metadataDiff
 	}
 
 	procedureNode := &metadataDiffProcedureNode{
-		metadataDiffBaseNode: metadataDiffBaseNode{
+		diffBaseNode: diffBaseNode{
 			action: action,
 		},
 		name: name,
@@ -1789,7 +1789,7 @@ func diffFunctionMetadata(base, head *storepb.FunctionMetadata) (*metadataDiffFu
 	}
 
 	functionNode := &metadataDiffFunctioNnode{
-		metadataDiffBaseNode: metadataDiffBaseNode{
+		diffBaseNode: diffBaseNode{
 			action: action,
 		},
 		name: name,
@@ -1824,7 +1824,7 @@ func diffTableMetadata(base, head *storepb.TableMetadata) (*metadataDiffTableNod
 	}
 
 	tableNode := &metadataDiffTableNode{
-		metadataDiffBaseNode: metadataDiffBaseNode{
+		diffBaseNode: diffBaseNode{
 			action: action,
 		},
 		name:          name,
@@ -2022,7 +2022,7 @@ func diffColumnMetadata(base, head *storepb.ColumnMetadata) (*metadataDiffColumn
 	}
 
 	columnNode := &metadataDiffColumnNode{
-		metadataDiffBaseNode: metadataDiffBaseNode{
+		diffBaseNode: diffBaseNode{
 			action: action,
 		},
 		name: name,
@@ -2057,7 +2057,7 @@ func diffForeignKeyMetadata(base, head *storepb.ForeignKeyMetadata) (*metadataDi
 	}
 
 	fkNode := &metadataDiffForeignKeyNode{
-		metadataDiffBaseNode: metadataDiffBaseNode{
+		diffBaseNode: diffBaseNode{
 			action: action,
 		},
 		name: name,
@@ -2092,7 +2092,7 @@ func diffIndexMetadata(base, head *storepb.IndexMetadata) (*metadataDiffIndexNod
 	}
 
 	indexNode := &metadataDiffIndexNode{
-		metadataDiffBaseNode: metadataDiffBaseNode{
+		diffBaseNode: diffBaseNode{
 			action: action,
 		},
 		name: name,
@@ -2127,7 +2127,7 @@ func diffPartitionMetadata(base, head *storepb.TablePartitionMetadata) (*metadat
 	}
 
 	partitionNode := &metadataDiffPartitionNode{
-		metadataDiffBaseNode: metadataDiffBaseNode{
+		diffBaseNode: diffBaseNode{
 			action: action,
 		},
 		name:          name,
