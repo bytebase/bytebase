@@ -572,7 +572,9 @@
         "endpoint": "Endpoint",
         "endpoint-tip": "Provide the URL to the Azure as tenant URL, it will sync users and groups via webhook.",
         "token": "Token",
-        "token-tip": "Entra ID sync token. Please keep it in secret."
+        "token-tip": "Entra ID sync token. Please keep it in secret.",
+        "reset-token": "Reset token",
+        "reset-token-warning": "You need to update the Azure application provisioning config."
       },
       "update-user": "Update user",
       "workspace-role-at-least-one": "At least one workspace role is required",

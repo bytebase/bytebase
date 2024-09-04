@@ -52,7 +52,7 @@
                 :disabled="!scimUrl"
                 @click="handleCopyUrl(scimUrlFieldRef)"
               >
-                <heroicons-outline:clipboard-document class="w-4 h-4" />
+                <ClipboardIcon class="w-4 h-4" />
               </NButton>
             </div>
           </div>
@@ -63,7 +63,7 @@
                 {{ $t(`settings.members.aad-sync.token`) }}
               </div>
               <div class="text-sm text-gray-400">
-                {{ $t(`settings.members.aad-sync.token-tip`) }}
+                {{ $t("settings.members.aad-sync.token-tip") }}
               </div>
             </div>
             <div class="flex space-x-2">
@@ -80,9 +80,21 @@
                 :disabled="!scimToken"
                 @click="handleCopyUrl(scimTokenFieldRef)"
               >
-                <heroicons-outline:clipboard-document class="w-4 h-4" />
+                <ClipboardIcon class="w-4 h-4" />
               </NButton>
             </div>
+            <NButton
+              v-if="hasPermission"
+              tertiary
+              :type="'warning'"
+              :size="'small'"
+              @click="resetToken"
+            >
+              <template #icon>
+                <ReplyIcon class="w-4" />
+              </template>
+              {{ $t("settings.members.aad-sync.reset-token") }}
+            </NButton>
           </div>
         </div>
       </template>
@@ -99,7 +111,8 @@
 
 <script setup lang="ts">
 import { useClipboard } from "@vueuse/core";
-import { NButton, NInput } from "naive-ui";
+import { ClipboardIcon, ReplyIcon } from "lucide-vue-next";
+import { NButton, NInput, useDialog } from "naive-ui";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
@@ -108,6 +121,7 @@ import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/router/dashboard/workspaceSetting";
 import { pushNotification, useSettingV1Store } from "@/store";
+import { hasWorkspacePermissionV2 } from "@/utils";
 
 defineProps<{
   show: boolean;
@@ -122,6 +136,11 @@ const { t } = useI18n();
 const router = useRouter();
 const scimUrlFieldRef = ref<HTMLInputElement | null>(null);
 const scimTokenFieldRef = ref<HTMLInputElement | null>(null);
+const $dialog = useDialog();
+
+const hasPermission = computed(() =>
+  hasWorkspacePermissionV2("bb.settings.set")
+);
 
 const workspaceId = computed(() => {
   return (
@@ -170,6 +189,40 @@ const handleCopyUrl = (component: HTMLInputElement | null) => {
 const configureSetting = () => {
   router.push({
     name: SETTING_ROUTE_WORKSPACE_GENERAL,
+  });
+};
+
+const resetToken = () => {
+  $dialog.warning({
+    title: t("common.warning"),
+    style: "z-index: 100000",
+    content: () => {
+      return t("settings.members.aad-sync.reset-token-warning");
+    },
+    negativeText: t("common.cancel"),
+    positiveText: t("common.continue-anyway"),
+    closeOnEsc: true,
+    maskClosable: true,
+    onPositiveClick: () => {
+      settingV1Store
+        .upsertSetting({
+          name: "bb.workspace.scim",
+          value: {
+            scimSetting: {
+              token: "",
+            },
+          },
+        })
+        .then(() => {
+          pushNotification({
+            module: "bytebase",
+            style: "SUCCESS",
+            title: t("common.updated"),
+          });
+
+          handleCopyUrl(scimTokenFieldRef.value);
+        });
+    },
   });
 };
 </script>
