@@ -18,6 +18,7 @@ import (
 const (
 	maxTableNameLengthAfter12_2  = 128
 	maxTableNameLengthBefore12_2 = 30
+	maxMixedDMLCount             = 5
 )
 
 func init() {
@@ -61,6 +62,97 @@ func TransformDMLToSelect(_ context.Context, tCtx base.TransformContext, stateme
 }
 
 func generateSQL(ctx base.TransformContext, statementInfoList []statementInfo, targetDatabase string, tablePrefix string) ([]base.BackupStatement, error) {
+	if len(statementInfoList) <= maxMixedDMLCount {
+		return generateSQLForMixedDML(ctx, statementInfoList, targetDatabase, tablePrefix)
+	}
+	return generateSQLForSingleTable(ctx, statementInfoList, targetDatabase, tablePrefix)
+}
+
+func generateSQLForSingleTable(ctx base.TransformContext, statementInfoList []statementInfo, targetDatabase string, tablePrefix string) ([]base.BackupStatement, error) {
+	table := statementInfoList[0].table
+
+	for _, item := range statementInfoList {
+		if !equalTable(table, item.table) {
+			return nil, errors.Errorf("prior backup cannot handle statements on different tables more than %d", maxMixedDMLCount)
+		}
+	}
+
+	version, ok := ctx.Version.(*Version)
+	if !ok {
+		version = &Version{
+			First:  11,
+			Second: 0,
+		}
+	}
+
+	targetTable := fmt.Sprintf("%s_%s", tablePrefix, table.Table)
+	if version.GTE(&Version{First: 12, Second: 2}) {
+		targetTable, _ = common.TruncateString(targetTable, maxTableNameLengthAfter12_2)
+	} else {
+		targetTable, _ = common.TruncateString(targetTable, maxTableNameLengthBefore12_2)
+	}
+	var buf strings.Builder
+	if _, err := buf.WriteString(fmt.Sprintf(`CREATE TABLE "%s"."%s" AS`+"\n", targetDatabase, targetTable)); err != nil {
+		return nil, errors.Wrap(err, "failed to write to buffer")
+	}
+	for i, info := range statementInfoList {
+		if i != 0 {
+			if _, err := buf.WriteString("\n  UNION ALL\n"); err != nil {
+				return nil, errors.Wrap(err, "failed to write to buffer")
+			}
+		}
+		t := info.table
+		if t.Alias != "" {
+			if _, err := buf.WriteString(fmt.Sprintf(`  SELECT "%s".* FROM `, t.Alias)); err != nil {
+				return nil, errors.Wrap(err, "failed to write to buffer")
+			}
+		} else {
+			if t.HasSchema {
+				if _, err := buf.WriteString(fmt.Sprintf(`  SELECT "%s"."%s".* FROM `, t.Schema, t.Table)); err != nil {
+					return nil, errors.Wrap(err, "failed to write to buffer")
+				}
+			} else {
+				if _, err := buf.WriteString(fmt.Sprintf(`  SELECT "%s".* FROM `, t.Table)); err != nil {
+					return nil, errors.Wrap(err, "failed to write to buffer")
+				}
+			}
+		}
+		if err := writeSuffixSelectClause(&buf, info.tree); err != nil {
+			return nil, errors.Wrap(err, "failed to write suffix select clause")
+		}
+	}
+
+	if _, err := buf.WriteString(";"); err != nil {
+		return nil, errors.Wrap(err, "failed to write to buffer")
+	}
+
+	return []base.BackupStatement{
+		{
+			Statement:       buf.String(),
+			SourceSchema:    table.Schema,
+			SourceTableName: table.Table,
+			TargetTableName: targetTable,
+			StartPosition: &store.Position{
+				Line:   int32(statementInfoList[0].tree.GetStart().GetLine()),
+				Column: int32(statementInfoList[0].tree.GetStart().GetColumn()),
+			},
+			EndPosition: &store.Position{
+				Line:   int32(statementInfoList[len(statementInfoList)-1].tree.GetStop().GetLine()),
+				Column: int32(statementInfoList[len(statementInfoList)-1].tree.GetStop().GetColumn()),
+			},
+		},
+	}, nil
+}
+
+func equalTable(a, b *TableReference) bool {
+	if a == nil || b == nil {
+		return false
+	}
+
+	return a.Database == b.Database && a.Schema == b.Schema && a.Table == b.Table
+}
+
+func generateSQLForMixedDML(ctx base.TransformContext, statementInfoList []statementInfo, targetDatabase string, tablePrefix string) ([]base.BackupStatement, error) {
 	var result []base.BackupStatement
 	offsetLength := 1
 	if len(statementInfoList) > 1 {
