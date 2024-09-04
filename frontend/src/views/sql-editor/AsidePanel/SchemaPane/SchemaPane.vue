@@ -6,6 +6,7 @@
       <div class="flex-1 overflow-hidden">
         <SearchBox
           v-model:value="searchPattern"
+          :disabled="!currentTab"
           size="small"
           style="width: 100%; max-width: 100%"
         />
@@ -85,7 +86,7 @@ import {
   type TreeOption,
 } from "naive-ui";
 import { storeToRefs } from "pinia";
-import { computed, h, nextTick, ref, watch } from "vue";
+import { computed, h, nextTick, reactive, ref, watch } from "vue";
 import { watchEffect } from "vue";
 import { BBModal } from "@/bbkit";
 import TableSchemaViewer from "@/components/TableSchemaViewer.vue";
@@ -123,8 +124,7 @@ const { height: treeContainerHeight } = useElementSize(
     box: "content-box",
   }
 );
-const searchPattern = ref("");
-const debouncedSearchPattern = refDebounced(searchPattern, 200);
+const searchPatternByTabId = reactive(new Map<string, string>());
 const { viewState: panelViewState } = useEditorPanelContext();
 const { schemaViewer } = useSQLEditorContext();
 const {
@@ -138,6 +138,17 @@ const {
 const { selectAllFromTableOrView, viewDetail } = useActions();
 const { currentTab } = storeToRefs(useSQLEditorTabStore());
 const { database } = useConnectionOfCurrentSQLEditorTab();
+const searchPattern = computed({
+  get() {
+    const id = currentTab.value?.id ?? "";
+    return searchPatternByTabId.get(id) ?? "";
+  },
+  set(value) {
+    const id = currentTab.value?.id ?? "";
+    searchPatternByTabId.set(id, value);
+  },
+});
+const debouncedSearchPattern = refDebounced(searchPattern, 200);
 const isFetchingMetadata = ref(false);
 const metadata = computedAsync(
   async () => {
