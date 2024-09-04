@@ -26,6 +26,7 @@ func validateQuery(statement string) (bool, bool, error) {
 		return false, false, err
 	}
 	hasExecute := false
+	readOnly := true
 	for _, stmt := range stmtList {
 		switch stmt := stmt.(type) {
 		case *tidbast.SelectStmt:
@@ -34,13 +35,13 @@ func validateQuery(statement string) (bool, bool, error) {
 		case *tidbast.ShowStmt:
 		case *tidbast.ExplainStmt:
 			if stmt.Analyze {
-				return false, false, nil
+				readOnly = false
 			}
 		default:
 			return false, false, nil
 		}
 	}
-	return true, !hasExecute, nil
+	return readOnly, !hasExecute, nil
 }
 
 func ExtractResourceList(currentDatabase string, _, sql string) ([]base.SchemaResource, error) {
