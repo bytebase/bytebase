@@ -337,8 +337,8 @@ func (l *statementDisallowMixDMLChecker) EnterUnit_statement(ctx *plsql.Unit_sta
 	if dml := ctx.Data_manipulation_language_statements(); dml != nil {
 		if update := dml.Update_statement(); update != nil {
 			l.updateStatements = append(l.updateStatements, update)
-		} else if delete := dml.Delete_statement(); delete != nil {
-			l.deleteStatements = append(l.deleteStatements, delete)
+		} else if d := dml.Delete_statement(); d != nil {
+			l.deleteStatements = append(l.deleteStatements, d)
 		}
 	} else {
 		l.hasDDL = true
