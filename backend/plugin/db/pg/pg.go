@@ -665,6 +665,14 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 		if err != nil {
 			return nil, err
 		}
+
+		// If the queryContext.Schema is not empty, set the search path for the database connection to the specified schema.
+		if queryContext.Schema != "" {
+			if _, err := conn.ExecContext(ctx, fmt.Sprintf("SET search_path TO %s;", queryContext.Schema)); err != nil {
+				return nil, err
+			}
+		}
+
 		startTime := time.Now()
 		queryResult, err := func() (*v1pb.QueryResult, error) {
 			if allQuery {
