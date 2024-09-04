@@ -11664,7 +11664,7 @@ components:
                     description: Explain the statement.
                 schema:
                     type: string
-                    description: The schema of search path. Most works for Postgres.
+                    description: The default schema to search objects. Equals to the default schema in Oracle and search path in Postgres.
         QueryResponse:
             type: object
             properties:

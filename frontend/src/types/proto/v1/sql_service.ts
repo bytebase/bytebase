@@ -81,7 +81,7 @@ export interface QueryRequest {
   dataSourceId: string;
   /** Explain the statement. */
   explain: boolean;
-  /** The schema of search path. Most works for Postgres. */
+  /** The default schema to search objects. Equals to the default schema in Oracle and search path in Postgres. */
   schema?: string | undefined;
 }
 

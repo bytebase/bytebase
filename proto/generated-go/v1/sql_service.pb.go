@@ -458,7 +458,7 @@ type QueryRequest struct {
 	DataSourceId string `protobuf:"bytes,6,opt,name=data_source_id,json=dataSourceId,proto3" json:"data_source_id,omitempty"`
 	// Explain the statement.
 	Explain bool `protobuf:"varint,7,opt,name=explain,proto3" json:"explain,omitempty"`
-	// The schema of search path. Most works for Postgres.
+	// The default schema to search objects. Equals to the default schema in Oracle and search path in Postgres.
 	Schema *string `protobuf:"bytes,8,opt,name=schema,proto3,oneof" json:"schema,omitempty"`
 }
 
