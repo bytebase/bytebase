@@ -236,7 +236,7 @@ func (s *BranchService) CreateBranch(ctx context.Context, request *v1pb.CreateBr
 		config := databaseSchema.GetConfig()
 		sanitizeCommentForSchemaMetadata(filteredBaseSchemaMetadata, model.NewDatabaseConfig(config), classificationConfig.ClassificationFromConfig)
 		initBranchLastUpdateInfoConfig(filteredBaseSchemaMetadata, config)
-		alignDatabaseConfig(filteredBaseSchemaMetadata, config)
+		config = alignDatabaseConfig(filteredBaseSchemaMetadata, config)
 		created, err := s.store.CreateBranch(ctx, &store.BranchMessage{
 			ProjectID:  project.ResourceID,
 			ResourceID: branchID,
@@ -340,7 +340,7 @@ func (s *BranchService) UpdateBranch(ctx context.Context, request *v1pb.UpdateBr
 
 		reconcileMetadata(metadata, branch.Engine)
 		filteredMetadata := filterDatabaseMetadataByEngine(metadata, branch.Engine)
-		updateConfigBranchUpdateInfoForUpdate(branch.Head.Metadata, filteredMetadata, config, common.FormatUserUID(user.ID), common.FormatBranchResourceID(projectID, branchID))
+		config = updateConfigBranchUpdateInfoForUpdate(branch.Head.Metadata, filteredMetadata, config, common.FormatUserUID(user.ID), common.FormatBranchResourceID(projectID, branchID))
 		defaultSchema := extractDefaultSchemaForOracleBranch(storepb.Engine(branch.Engine), filteredMetadata)
 		schema, err := schema.GetDesignSchema(branch.Engine, defaultSchema, filteredMetadata)
 		if err != nil {
@@ -481,7 +481,6 @@ func (s *BranchService) MergeBranch(ctx context.Context, request *v1pb.MergeBran
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to convert merged metadata to schema string, %v", err)
 	}
-	alignDatabaseConfig(mergedMetadata, mergedConfig)
 	// XXX(zp): We only try to merge the schema config while the schema could be merged successfully. Otherwise, users manually merge the
 	// metadata in the frontend, and config would be ignored.
 	classificationIDSource := utils.MergeDatabaseConfig(baseBranch.Head.GetDatabaseConfig(), headBranch.Base.GetDatabaseConfig(), headBranch.Head.GetDatabaseConfig())
@@ -591,15 +590,16 @@ func (s *BranchService) RebaseBranch(ctx context.Context, request *v1pb.RebaseBr
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, `failed to get classification config by id "%s" with error: %v`, baseProject.DataClassificationConfigID, err)
 		}
+		newHeadConfig = alignDatabaseConfig(newHeadMetadata, newHeadConfig)
 		// String-based rebase operation do not include the structural information, such as classification, so we need to sanitize the user comment,
 		// trim the classification in user comment if the classification is not from the config.
 		trimClassificationIDFromCommentIfNeeded(newHeadMetadata, classificationConfig)
 		modelNewHeadConfig := model.NewDatabaseConfig(newHeadConfig)
 		sanitizeCommentForSchemaMetadata(newHeadMetadata, modelNewHeadConfig, classificationConfig.ClassificationFromConfig)
-		alignDatabaseConfig(newHeadMetadata, newHeadConfig)
 
 		// If users solve the conflict manually, it is equivalent to them updating HEAD on the branch first.
-		updateConfigBranchUpdateInfoForUpdate(baseBranch.Head.Metadata, newHeadMetadata, newHeadConfig, common.FormatUserUID(user.ID), common.FormatBranchResourceID(baseProjectID, baseBranchID))
+		newHeadConfig = updateConfigBranchUpdateInfoForUpdate(baseBranch.Head.Metadata, newHeadMetadata, newHeadConfig, common.FormatUserUID(user.ID), common.FormatBranchResourceID(baseProjectID, baseBranchID))
+		newHeadConfig = alignDatabaseConfig(newHeadMetadata, newHeadConfig)
 	} else {
 		newHeadMetadata, newHeadConfig, err = tryMerge(baseBranch.Base.Metadata, baseBranch.Head.Metadata, filteredNewBaseMetadata, baseBranch.Base.DatabaseConfig, baseBranch.Head.DatabaseConfig, newBaseConfig, baseBranch.Engine)
 		if err != nil {
@@ -725,8 +725,7 @@ func (s *BranchService) getFilteredNewBaseFromRebaseRequest(ctx context.Context,
 			return nil, "", nil, status.Error(codes.Internal, err.Error())
 		}
 
-		alignedDatabaseConfig := databaseSchema.GetConfig()
-		alignDatabaseConfig(filteredNewBaseMetadata, alignedDatabaseConfig)
+		alignedDatabaseConfig := alignDatabaseConfig(filteredNewBaseMetadata, databaseSchema.GetConfig())
 		return filteredNewBaseMetadata, sourceSchema, alignedDatabaseConfig, nil
 	}
 
@@ -1252,7 +1251,7 @@ func reconcileMySQLPartitionMetadata(partitions []*storepb.TablePartitionMetadat
 // updateConfigBranchUpdateInfoForUpdate compare the proto of old and new metadata, and update the config branch update info.
 // NOTE: this function would not delete the config of deleted objects, and it's safe because the next time adding the object
 // back will trigger the update of the config branch update info.
-func updateConfigBranchUpdateInfoForUpdate(old *storepb.DatabaseSchemaMetadata, new *storepb.DatabaseSchemaMetadata, config *storepb.DatabaseConfig, formattedUserUID string, formattedBranchResourceID string) {
+func updateConfigBranchUpdateInfoForUpdate(old *storepb.DatabaseSchemaMetadata, new *storepb.DatabaseSchemaMetadata, config *storepb.DatabaseConfig, formattedUserUID string, formattedBranchResourceID string) *storepb.DatabaseConfig {
 	time := timestamppb.Now()
 
 	oldModel := model.NewDatabaseMetadata(old)
@@ -1398,6 +1397,8 @@ func updateConfigBranchUpdateInfoForUpdate(old *storepb.DatabaseSchemaMetadata, 
 		newSchemaConfig.ProcedureConfigs = append(newSchemaConfig.ProcedureConfigs, newProcedureConfig...)
 	}
 	config.SchemaConfigs = append(config.SchemaConfigs, newSchemaConfigs...)
+	result := alignDatabaseConfig(new, config)
+	return result
 }
 
 func initSchemaConfig(schema *storepb.SchemaMetadata, formattedUserUID string, branchResourceID string, time *timestamppb.Timestamp) *storepb.SchemaConfig {
@@ -1695,7 +1696,6 @@ func setClassificationIDToConfig(a, b *storepb.DatabaseConfig) {
 					continue
 				}
 				columnConfig.ClassificationId = aColumnConfig.ClassificationId
-				delete(aColumnConfigMap, columnConfig.Name)
 			}
 		}
 	}
