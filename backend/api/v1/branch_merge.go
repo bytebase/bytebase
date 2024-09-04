@@ -12,6 +12,7 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/testing/protocmp"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/plugin/db/mysql"
 	"github.com/bytebase/bytebase/backend/plugin/db/tidb"
@@ -152,7 +153,7 @@ const (
 )
 
 // tryMerge merges other metadata to current metadata, always returns a non-nil metadata if no error occurs.
-func tryMerge(ancestor, head, base *storepb.DatabaseSchemaMetadata, engine storepb.Engine) (*storepb.DatabaseSchemaMetadata, error) {
+func tryMerge(ancestor, head, base *storepb.DatabaseSchemaMetadata, ancestorConfig *storepb.DatabaseConfig, headConfig, baseConfig *storepb.DatabaseConfig, engine storepb.Engine) (*storepb.DatabaseSchemaMetadata, *storepb.DatabaseConfig, error) {
 	ancestor, head, base = proto.Clone(ancestor).(*storepb.DatabaseSchemaMetadata), proto.Clone(head).(*storepb.DatabaseSchemaMetadata), proto.Clone(base).(*storepb.DatabaseSchemaMetadata)
 
 	if ancestor == nil {
@@ -161,26 +162,33 @@ func tryMerge(ancestor, head, base *storepb.DatabaseSchemaMetadata, engine store
 
 	diffBetweenAncestorAndHead, err := diffMetadata(ancestor, head)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to diff between ancestor and head")
+		return nil, nil, errors.Wrap(err, "failed to diff between ancestor and head")
 	}
+	configDiffBetweenAncestorAndHead := deriveUpdateInfoFromMetadataDiff(diffBetweenAncestorAndHead, headConfig)
 
 	diffBetweenAncestorAndBase, err := diffMetadata(ancestor, base)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to diff between ancestor and base")
+		return nil, nil, errors.Wrap(err, "failed to diff between ancestor and base")
 	}
+	configDiffBetweenAncestorAndBase := deriveUpdateInfoFromMetadataDiff(diffBetweenAncestorAndBase, baseConfig)
 
 	if conflict, msg := diffBetweenAncestorAndBase.tryMerge(diffBetweenAncestorAndHead, engine); conflict {
-		return nil, errors.Errorf("merge conflict: %s", msg)
+		return nil, nil, errors.Errorf("merge conflict: %s", msg)
+	}
+	mergedUpdateInfoDiff, err := mergeUpdateInfoDiffRooNode(configDiffBetweenAncestorAndBase, configDiffBetweenAncestorAndHead)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "failed to merge update info diff")
 	}
 
 	if err := diffBetweenAncestorAndBase.applyDiffTo(ancestor); err != nil {
-		return nil, errors.Wrap(err, "failed to apply diff to target")
+		return nil, nil, errors.Wrap(err, "failed to apply diff to target")
 	}
 
-	return ancestor, nil
+	config := applyUpdateInfoDiffRootNode(mergedUpdateInfoDiff, ancestorConfig)
+	return ancestor, config, nil
 }
 
-type metadataDiffBaseNode struct {
+type diffBaseNode struct {
 	action diffAction
 }
 
@@ -225,7 +233,7 @@ func (mr *metadataDiffRootNode) applyDiffTo(target *storepb.DatabaseSchemaMetada
 
 // Schema related.
 type metadataDiffSchemaNode struct {
-	metadataDiffBaseNode
+	diffBaseNode
 	name string
 	//nolint
 	base *storepb.SchemaMetadata
@@ -434,7 +442,7 @@ func (n *metadataDiffSchemaNode) applyDiffTo(target *storepb.DatabaseSchemaMetad
 
 // Table related.
 type metadataDiffTableNode struct {
-	metadataDiffBaseNode
+	diffBaseNode
 	name string
 	//nolint
 	base *storepb.TableMetadata
@@ -701,7 +709,7 @@ func (n *metadataDiffTableNode) applyDiffTo(target *storepb.SchemaMetadata) erro
 
 // Column related.
 type metadataDiffColumnNode struct {
-	metadataDiffBaseNode
+	diffBaseNode
 	name string
 	//nolint
 	base *storepb.ColumnMetadata
@@ -871,7 +879,7 @@ func (n *metadataDiffColumnNode) applyDiffTo(target *storepb.TableMetadata) erro
 
 // Index related.
 type metadataDiffIndexNode struct {
-	metadataDiffBaseNode
+	diffBaseNode
 	name string
 	//nolint
 	base *storepb.IndexMetadata
@@ -975,7 +983,7 @@ func (n *metadataDiffIndexNode) applyDiffTo(target *storepb.TableMetadata) error
 }
 
 type metadataDiffPartitionNode struct {
-	metadataDiffBaseNode
+	diffBaseNode
 	name string
 	// nolint
 	base *storepb.TablePartitionMetadata
@@ -1098,7 +1106,7 @@ func (n *metadataDiffPartitionNode) applyDiffTo(target *storepb.TableMetadata) e
 }
 
 type metadataDiffFunctioNnode struct {
-	metadataDiffBaseNode
+	diffBaseNode
 	name string
 	//nolint
 	base *storepb.FunctionMetadata
@@ -1178,7 +1186,7 @@ func (n *metadataDiffFunctioNnode) applyDiffTo(target *storepb.SchemaMetadata) e
 }
 
 type metadataDiffProcedureNode struct {
-	metadataDiffBaseNode
+	diffBaseNode
 	name string
 	//nolint
 	base *storepb.ProcedureMetadata
@@ -1258,7 +1266,7 @@ func (n *metadataDiffProcedureNode) applyDiffTo(target *storepb.SchemaMetadata) 
 }
 
 type metadataDiffViewNode struct {
-	metadataDiffBaseNode
+	diffBaseNode
 	name string
 	//nolint
 	base *storepb.ViewMetadata
@@ -1391,7 +1399,7 @@ func (n *metadataDiffViewNode) applyDiffTo(target *storepb.SchemaMetadata) error
 
 // Foreign Key related.
 type metadataDiffForeignKeyNode struct {
-	metadataDiffBaseNode
+	diffBaseNode
 	name string
 	//nolint
 	base *storepb.ForeignKeyMetadata
@@ -1567,7 +1575,7 @@ func diffSchemaMetadata(base, head *storepb.SchemaMetadata) (*metadataDiffSchema
 	}
 
 	schemaNode := &metadataDiffSchemaNode{
-		metadataDiffBaseNode: metadataDiffBaseNode{
+		diffBaseNode: diffBaseNode{
 			action: action,
 		},
 		name:       name,
@@ -1719,7 +1727,7 @@ func diffViewMetadata(base, head *storepb.ViewMetadata) (*metadataDiffViewNode, 
 	}
 
 	viewNode := &metadataDiffViewNode{
-		metadataDiffBaseNode: metadataDiffBaseNode{
+		diffBaseNode: diffBaseNode{
 			action: action,
 		},
 		name: name,
@@ -1754,7 +1762,7 @@ func diffProcedureMetadata(base, head *storepb.ProcedureMetadata) (*metadataDiff
 	}
 
 	procedureNode := &metadataDiffProcedureNode{
-		metadataDiffBaseNode: metadataDiffBaseNode{
+		diffBaseNode: diffBaseNode{
 			action: action,
 		},
 		name: name,
@@ -1789,7 +1797,7 @@ func diffFunctionMetadata(base, head *storepb.FunctionMetadata) (*metadataDiffFu
 	}
 
 	functionNode := &metadataDiffFunctioNnode{
-		metadataDiffBaseNode: metadataDiffBaseNode{
+		diffBaseNode: diffBaseNode{
 			action: action,
 		},
 		name: name,
@@ -1824,7 +1832,7 @@ func diffTableMetadata(base, head *storepb.TableMetadata) (*metadataDiffTableNod
 	}
 
 	tableNode := &metadataDiffTableNode{
-		metadataDiffBaseNode: metadataDiffBaseNode{
+		diffBaseNode: diffBaseNode{
 			action: action,
 		},
 		name:          name,
@@ -2022,7 +2030,7 @@ func diffColumnMetadata(base, head *storepb.ColumnMetadata) (*metadataDiffColumn
 	}
 
 	columnNode := &metadataDiffColumnNode{
-		metadataDiffBaseNode: metadataDiffBaseNode{
+		diffBaseNode: diffBaseNode{
 			action: action,
 		},
 		name: name,
@@ -2057,7 +2065,7 @@ func diffForeignKeyMetadata(base, head *storepb.ForeignKeyMetadata) (*metadataDi
 	}
 
 	fkNode := &metadataDiffForeignKeyNode{
-		metadataDiffBaseNode: metadataDiffBaseNode{
+		diffBaseNode: diffBaseNode{
 			action: action,
 		},
 		name: name,
@@ -2092,7 +2100,7 @@ func diffIndexMetadata(base, head *storepb.IndexMetadata) (*metadataDiffIndexNod
 	}
 
 	indexNode := &metadataDiffIndexNode{
-		metadataDiffBaseNode: metadataDiffBaseNode{
+		diffBaseNode: diffBaseNode{
 			action: action,
 		},
 		name: name,
@@ -2127,7 +2135,7 @@ func diffPartitionMetadata(base, head *storepb.TablePartitionMetadata) (*metadat
 	}
 
 	partitionNode := &metadataDiffPartitionNode{
-		metadataDiffBaseNode: metadataDiffBaseNode{
+		diffBaseNode: diffBaseNode{
 			action: action,
 		},
 		name:          name,
@@ -2199,5 +2207,623 @@ func isColumnTypeEqual(a, b string, engine storepb.Engine) bool {
 		return strings.EqualFold(canonicalA, canonicalB)
 	default:
 		return strings.EqualFold(a, b)
+	}
+}
+
+type updateInfo struct {
+	lastUpdatedTime *timestamppb.Timestamp
+	lastUpdater     string
+	sourceBranch    string
+}
+
+func (u *updateInfo) clone() *updateInfo {
+	if u == nil {
+		return nil
+	}
+	return &updateInfo{
+		//nolint
+		lastUpdatedTime: proto.Clone(u.lastUpdatedTime).(*timestamppb.Timestamp),
+		lastUpdater:     u.lastUpdater,
+		sourceBranch:    u.sourceBranch,
+	}
+}
+
+type updateInfoDiffRootNode struct {
+	schemas map[string]*updateInfoDiffSchemaNode
+}
+
+type updateInfoDiffSchemaNode struct {
+	diffBaseNode
+	name       string
+	tables     map[string]*updateInfoDiffTableNode
+	views      map[string]*updateInfoDiffViewNode
+	functions  map[string]*updateInfoDiffFunctionNode
+	procedures map[string]*updateInfoDiffProcedureNode
+}
+
+type updateInfoDiffTableNode struct {
+	diffBaseNode
+	name string
+	// If the action is diffActionDelete, the updateInfo should be nil.
+	updateInfo *updateInfo
+}
+
+type updateInfoDiffViewNode struct {
+	diffBaseNode
+	name string
+	// If the action is diffActionDelete, the updateInfo should be nil.
+	updateInfo *updateInfo
+}
+
+type updateInfoDiffFunctionNode struct {
+	diffBaseNode
+	name string
+	// If the action is diffActionDelete, the updateInfo should be nil.
+	updateInfo *updateInfo
+}
+
+type updateInfoDiffProcedureNode struct {
+	diffBaseNode
+	name string
+	// If the action is diffActionDelete, the updateInfo should be nil.
+	updateInfo *updateInfo
+}
+
+// deriveUpdateInfoFromMetadataDiff derives the update info diff from the metadata diff.
+func deriveUpdateInfoFromMetadataDiff(metadataDiff *metadataDiffRootNode, headDatabaseConfig *storepb.DatabaseConfig) *updateInfoDiffRootNode {
+	if metadataDiff == nil {
+		return nil
+	}
+	rootNode := &updateInfoDiffRootNode{
+		schemas: make(map[string]*updateInfoDiffSchemaNode),
+	}
+
+	schemaConfigMap := buildMap(headDatabaseConfig.GetSchemaConfigs(), func(schemaConfig *storepb.SchemaConfig) string {
+		return schemaConfig.GetName()
+	})
+	for _, metadataSchemaDiff := range metadataDiff.schemas {
+		action := metadataSchemaDiff.action
+		updateInfoSchemaDiff := &updateInfoDiffSchemaNode{
+			diffBaseNode: diffBaseNode{
+				action: action,
+			},
+			name:       metadataSchemaDiff.name,
+			tables:     make(map[string]*updateInfoDiffTableNode),
+			views:      make(map[string]*updateInfoDiffViewNode),
+			functions:  make(map[string]*updateInfoDiffFunctionNode),
+			procedures: make(map[string]*updateInfoDiffProcedureNode),
+		}
+		schemaConfig := schemaConfigMap[metadataSchemaDiff.name]
+		tableConfigMap := buildMap(schemaConfig.GetTableConfigs(), func(tableConfig *storepb.TableConfig) string {
+			return tableConfig.GetName()
+		})
+		for tableName, table := range metadataSchemaDiff.tables {
+			action := table.action
+			updateInfoSchemaDiff.tables[tableName] = &updateInfoDiffTableNode{
+				diffBaseNode: diffBaseNode{
+					action: action,
+				},
+				name: tableName,
+			}
+			if action != diffActionDrop {
+				tableConfig := tableConfigMap[tableName]
+				updateInfoSchemaDiff.tables[tableName].updateInfo = &updateInfo{
+					lastUpdatedTime: tableConfig.GetUpdateTime(),
+					lastUpdater:     tableConfig.GetUpdater(),
+					sourceBranch:    tableConfig.GetSourceBranch(),
+				}
+			}
+		}
+
+		// Views
+		viewConfigMap := buildMap(schemaConfig.GetViewConfigs(), func(viewConfig *storepb.ViewConfig) string {
+			return viewConfig.GetName()
+		})
+		for viewName, view := range metadataSchemaDiff.views {
+			action := view.action
+			updateInfoSchemaDiff.views[viewName] = &updateInfoDiffViewNode{
+				diffBaseNode: diffBaseNode{
+					action: action,
+				},
+				name: viewName,
+			}
+			if action != diffActionDrop {
+				viewConfig := viewConfigMap[viewName]
+				updateInfoSchemaDiff.views[viewName].updateInfo = &updateInfo{
+					lastUpdatedTime: viewConfig.GetUpdateTime(),
+					lastUpdater:     viewConfig.GetUpdater(),
+					sourceBranch:    viewConfig.GetSourceBranch(),
+				}
+			}
+		}
+
+		// Functions
+		functionConfigMap := buildMap(schemaConfig.GetFunctionConfigs(), func(functionConfig *storepb.FunctionConfig) string {
+			return functionConfig.GetName()
+		})
+		for functionName, function := range metadataSchemaDiff.functions {
+			action := function.action
+			updateInfoSchemaDiff.functions[functionName] = &updateInfoDiffFunctionNode{
+				diffBaseNode: diffBaseNode{
+					action: action,
+				},
+				name: functionName,
+			}
+			if action != diffActionDrop {
+				functionConfig := functionConfigMap[functionName]
+				updateInfoSchemaDiff.functions[functionName].updateInfo = &updateInfo{
+					lastUpdatedTime: functionConfig.GetUpdateTime(),
+					lastUpdater:     functionConfig.GetUpdater(),
+					sourceBranch:    functionConfig.GetSourceBranch(),
+				}
+			}
+		}
+
+		// Procedures
+		procedureConfigMap := buildMap(schemaConfig.GetProcedureConfigs(), func(procedureConfig *storepb.ProcedureConfig) string {
+			return procedureConfig.GetName()
+		})
+		for procedureName, procedure := range metadataSchemaDiff.procedures {
+			action := procedure.action
+			updateInfoSchemaDiff.procedures[procedureName] = &updateInfoDiffProcedureNode{
+				diffBaseNode: diffBaseNode{
+					action: action,
+				},
+				name: procedureName,
+			}
+			if action != diffActionDrop {
+				procedureConfig := procedureConfigMap[procedureName]
+				updateInfoSchemaDiff.procedures[procedureName].updateInfo = &updateInfo{
+					lastUpdatedTime: procedureConfig.GetUpdateTime(),
+					lastUpdater:     procedureConfig.GetUpdater(),
+					sourceBranch:    procedureConfig.GetSourceBranch(),
+				}
+			}
+		}
+		rootNode.schemas[metadataSchemaDiff.name] = updateInfoSchemaDiff
+	}
+
+	return rootNode
+}
+
+func mergeUpdateInfoDiffRooNode(a, b *updateInfoDiffRootNode) (*updateInfoDiffRootNode, error) {
+	if a == nil && b == nil {
+		return nil, nil
+	}
+	if a == nil {
+		return b, nil
+	}
+	if b == nil {
+		return a, nil
+	}
+	rootNode := &updateInfoDiffRootNode{
+		schemas: make(map[string]*updateInfoDiffSchemaNode),
+	}
+
+	schemaNamesMap := make(map[string]bool)
+	for schemaName := range a.schemas {
+		schemaNamesMap[schemaName] = true
+	}
+	for schemaName := range b.schemas {
+		schemaNamesMap[schemaName] = true
+	}
+
+	for schemaName := range schemaNamesMap {
+		aSchema, aOk := a.schemas[schemaName]
+		bSchema, bOk := b.schemas[schemaName]
+		if aOk && bOk {
+			mergedSchema, err := mergeUpdateInfoDiffSchemaNode(aSchema, bSchema)
+			if err != nil {
+				return nil, err
+			}
+			rootNode.schemas[schemaName] = mergedSchema
+			continue
+		}
+		if aOk {
+			rootNode.schemas[schemaName] = aSchema
+			continue
+		}
+		if bOk {
+			rootNode.schemas[schemaName] = bSchema
+			continue
+		}
+	}
+
+	return rootNode, nil
+}
+
+func mergeUpdateInfoDiffSchemaNode(a, b *updateInfoDiffSchemaNode) (*updateInfoDiffSchemaNode, error) {
+	if a == nil && b == nil {
+		return nil, nil
+	}
+	if a == nil {
+		return b, nil
+	}
+	if b == nil {
+		return a, nil
+	}
+
+	if a.action != b.action {
+		return nil, errors.Errorf("conflict schema config action, one is %s, the other is %s", a.action, b.action)
+	}
+	schemaNode := &updateInfoDiffSchemaNode{
+		diffBaseNode: diffBaseNode{
+			action: b.action,
+		},
+		name:       b.name,
+		tables:     make(map[string]*updateInfoDiffTableNode),
+		views:      make(map[string]*updateInfoDiffViewNode),
+		functions:  make(map[string]*updateInfoDiffFunctionNode),
+		procedures: make(map[string]*updateInfoDiffProcedureNode),
+	}
+
+	tableNameMap := make(map[string]bool)
+	for tableName := range a.tables {
+		tableNameMap[tableName] = true
+	}
+	for tableName := range b.tables {
+		tableNameMap[tableName] = true
+	}
+	for tableName := range tableNameMap {
+		aTable, aOk := a.tables[tableName]
+		bTable, bOk := b.tables[tableName]
+		if aOk && bOk {
+			mergedTable, err := mergeUpdateInfoDiffTableNode(aTable, bTable)
+			if err != nil {
+				return nil, err
+			}
+			schemaNode.tables[tableName] = mergedTable
+			continue
+		}
+		if aOk {
+			schemaNode.tables[tableName] = aTable
+			continue
+		}
+		if bOk {
+			schemaNode.tables[tableName] = bTable
+			continue
+		}
+	}
+
+	viewNameMap := make(map[string]bool)
+	for viewName := range a.views {
+		viewNameMap[viewName] = true
+	}
+	for viewName := range b.views {
+		viewNameMap[viewName] = true
+	}
+	for viewName := range viewNameMap {
+		aView, aOk := a.views[viewName]
+		bView, bOk := b.views[viewName]
+		if aOk && bOk {
+			mergedView, err := mergeUpdateInfoDiffViewNode(aView, bView)
+			if err != nil {
+				return nil, err
+			}
+			schemaNode.views[viewName] = mergedView
+			continue
+		}
+		if aOk {
+			schemaNode.views[viewName] = aView
+			continue
+		}
+		if bOk {
+			schemaNode.views[viewName] = bView
+			continue
+		}
+	}
+
+	procedureNameMap := make(map[string]bool)
+	for procedureName := range a.procedures {
+		procedureNameMap[procedureName] = true
+	}
+	for procedureName := range b.procedures {
+		procedureNameMap[procedureName] = true
+	}
+	for procedureName := range procedureNameMap {
+		aProcedure, aOk := a.procedures[procedureName]
+		bProcedure, bOk := b.procedures[procedureName]
+		if aOk && bOk {
+			mergedProcedure, err := mergeUpdateInfoDiffProcedureNode(aProcedure, bProcedure)
+			if err != nil {
+				return nil, err
+			}
+			schemaNode.procedures[procedureName] = mergedProcedure
+			continue
+		}
+		if aOk {
+			schemaNode.procedures[procedureName] = aProcedure
+			continue
+		}
+		if bOk {
+			schemaNode.procedures[procedureName] = bProcedure
+			continue
+		}
+	}
+
+	functionNameMap := make(map[string]bool)
+	for functionName := range a.functions {
+		functionNameMap[functionName] = true
+	}
+	for functionName := range b.functions {
+		functionNameMap[functionName] = true
+	}
+	for functionName := range functionNameMap {
+		aFunction, aOk := a.functions[functionName]
+		bFunction, bOk := b.functions[functionName]
+		if aOk && bOk {
+			mergedFunction, err := mergeUpdateInfoDiffFunctionNode(aFunction, bFunction)
+			if err != nil {
+				return nil, err
+			}
+			schemaNode.functions[functionName] = mergedFunction
+			continue
+		}
+		if aOk {
+			schemaNode.functions[functionName] = aFunction
+			continue
+		}
+		if bOk {
+			schemaNode.functions[functionName] = bFunction
+			continue
+		}
+	}
+
+	return schemaNode, nil
+}
+
+func mergeUpdateInfoDiffTableNode(a, b *updateInfoDiffTableNode) (*updateInfoDiffTableNode, error) {
+	if a == nil && b == nil {
+		return nil, nil
+	}
+	if a == nil {
+		return b, nil
+	}
+	if b == nil {
+		return a, nil
+	}
+
+	if a.action != b.action {
+		return nil, errors.Errorf("conflict table config action, one is %s, the other is %s", a.action, b.action)
+	}
+
+	return &updateInfoDiffTableNode{
+		diffBaseNode: diffBaseNode{
+			action: b.action,
+		},
+		name:       b.name,
+		updateInfo: b.updateInfo.clone(),
+	}, nil
+}
+
+func mergeUpdateInfoDiffViewNode(a, b *updateInfoDiffViewNode) (*updateInfoDiffViewNode, error) {
+	if a == nil && b == nil {
+		return nil, nil
+	}
+	if a == nil {
+		return b, nil
+	}
+	if b == nil {
+		return a, nil
+	}
+
+	if a.action != b.action {
+		return nil, errors.Errorf("conflict view config action, one is %s, the other is %s", a.action, b.action)
+	}
+
+	return &updateInfoDiffViewNode{
+		diffBaseNode: diffBaseNode{
+			action: b.action,
+		},
+		name:       b.name,
+		updateInfo: b.updateInfo.clone(),
+	}, nil
+}
+
+func mergeUpdateInfoDiffProcedureNode(a, b *updateInfoDiffProcedureNode) (*updateInfoDiffProcedureNode, error) {
+	if a == nil && b == nil {
+		return nil, nil
+	}
+	if a == nil {
+		return b, nil
+	}
+	if b == nil {
+		return a, nil
+	}
+
+	if a.action != b.action {
+		return nil, errors.Errorf("conflict procedure config action, one is %s, the other is %s", a.action, b.action)
+	}
+
+	return &updateInfoDiffProcedureNode{
+		diffBaseNode: diffBaseNode{
+			action: b.action,
+		},
+		name:       b.name,
+		updateInfo: b.updateInfo.clone(),
+	}, nil
+}
+
+func mergeUpdateInfoDiffFunctionNode(a, b *updateInfoDiffFunctionNode) (*updateInfoDiffFunctionNode, error) {
+	if a == nil && b == nil {
+		return nil, nil
+	}
+	if a == nil {
+		return b, nil
+	}
+	if b == nil {
+		return a, nil
+	}
+
+	if a.action != b.action {
+		return nil, errors.Errorf("conflict function config action, one is %s, the other is %s", a.action, b.action)
+	}
+
+	return &updateInfoDiffFunctionNode{
+		diffBaseNode: diffBaseNode{
+			action: b.action,
+		},
+		name:       b.name,
+		updateInfo: b.updateInfo.clone(),
+	}, nil
+}
+
+func applyUpdateInfoDiffRootNode(a *updateInfoDiffRootNode, target *storepb.DatabaseConfig) *storepb.DatabaseConfig {
+	if a == nil {
+		//nolint
+		return proto.Clone(target).(*storepb.DatabaseConfig)
+	}
+
+	schemaConfigMap := buildMap(target.GetSchemaConfigs(), func(schemaConfig *storepb.SchemaConfig) string {
+		return schemaConfig.GetName()
+	})
+
+	var schemaConfigs []*storepb.SchemaConfig
+	for schemaName, schema := range a.schemas {
+		switch schema.action {
+		case diffActionDrop:
+			continue
+		default:
+			schemaConfig := schemaConfigMap[schemaName]
+			if schemaConfig == nil {
+				schemaConfig = &storepb.SchemaConfig{
+					Name: schema.name,
+				}
+			}
+			appliedSchema := applyUpdateInfoDiffSchemaNode(schema, schemaConfig)
+			schemaConfigs = append(schemaConfigs, appliedSchema)
+		}
+	}
+
+	return &storepb.DatabaseConfig{
+		Name:          target.GetName(),
+		SchemaConfigs: schemaConfigs,
+	}
+}
+
+func applyUpdateInfoDiffSchemaNode(a *updateInfoDiffSchemaNode, target *storepb.SchemaConfig) *storepb.SchemaConfig {
+	if a == nil {
+		//nolint
+		return proto.Clone(target).(*storepb.SchemaConfig)
+	}
+
+	tableConfigMap := buildMap(target.GetTableConfigs(), func(tableConfig *storepb.TableConfig) string {
+		return tableConfig.GetName()
+	})
+	var tableConfigs []*storepb.TableConfig
+	for tableName, table := range a.tables {
+		switch table.action {
+		case diffActionDrop:
+			delete(tableConfigMap, tableName)
+			continue
+		default:
+			tableConfig := tableConfigMap[tableName]
+			if tableConfig == nil {
+				tableConfig = &storepb.TableConfig{
+					Name: tableName,
+				}
+			}
+			tableConfig.UpdateTime = table.updateInfo.lastUpdatedTime
+			tableConfig.Updater = table.updateInfo.lastUpdater
+			tableConfig.SourceBranch = table.updateInfo.sourceBranch
+			tableConfigs = append(tableConfigs, tableConfig)
+			delete(tableConfigMap, tableName)
+		}
+	}
+	// Add the remaining table configs in the target schema config.
+	for _, tableConfig := range tableConfigMap {
+		tableConfigs = append(tableConfigs, tableConfig)
+	}
+
+	viewConfigMap := buildMap(target.GetViewConfigs(), func(viewConfig *storepb.ViewConfig) string {
+		return viewConfig.GetName()
+	})
+	var viewConfigs []*storepb.ViewConfig
+	for viewName, view := range a.views {
+		switch view.action {
+		case diffActionDrop:
+			delete(viewConfigMap, viewName)
+			continue
+		default:
+			viewConfig := viewConfigMap[viewName]
+			if viewConfig == nil {
+				viewConfig = &storepb.ViewConfig{
+					Name: viewName,
+				}
+			}
+			viewConfig.UpdateTime = view.updateInfo.lastUpdatedTime
+			viewConfig.Updater = view.updateInfo.lastUpdater
+			viewConfig.SourceBranch = view.updateInfo.sourceBranch
+			viewConfigs = append(viewConfigs, viewConfig)
+			delete(viewConfigMap, viewName)
+		}
+	}
+	// Add the remaining view configs in the target schema config.
+	for _, viewConfig := range viewConfigMap {
+		viewConfigs = append(viewConfigs, viewConfig)
+	}
+
+	procedureConfigMap := buildMap(target.GetProcedureConfigs(), func(procedureConfig *storepb.ProcedureConfig) string {
+		return procedureConfig.GetName()
+	})
+	var procedureConfigs []*storepb.ProcedureConfig
+	for procedureName, procedure := range a.procedures {
+		switch procedure.action {
+		case diffActionDrop:
+			delete(procedureConfigMap, procedureName)
+			continue
+		default:
+			procedureConfig := procedureConfigMap[procedureName]
+			if procedureConfig == nil {
+				procedureConfig = &storepb.ProcedureConfig{
+					Name: procedureName,
+				}
+			}
+			procedureConfig.UpdateTime = procedure.updateInfo.lastUpdatedTime
+			procedureConfig.Updater = procedure.updateInfo.lastUpdater
+			procedureConfig.SourceBranch = procedure.updateInfo.sourceBranch
+			procedureConfigs = append(procedureConfigs, procedureConfig)
+			delete(procedureConfigMap, procedureName)
+		}
+	}
+	// Add the remaining procedure configs in the target schema config.
+	for _, procedureConfig := range procedureConfigMap {
+		procedureConfigs = append(procedureConfigs, procedureConfig)
+	}
+
+	functionConfigMap := buildMap(target.GetFunctionConfigs(), func(functionConfig *storepb.FunctionConfig) string {
+		return functionConfig.GetName()
+	})
+	var functionConfigs []*storepb.FunctionConfig
+	for functionName, function := range a.functions {
+		switch function.action {
+		case diffActionDrop:
+			delete(functionConfigMap, functionName)
+			continue
+		default:
+			functionConfig := functionConfigMap[functionName]
+			if functionConfig == nil {
+				functionConfig = &storepb.FunctionConfig{
+					Name: functionName,
+				}
+			}
+			functionConfig.UpdateTime = function.updateInfo.lastUpdatedTime
+			functionConfig.Updater = function.updateInfo.lastUpdater
+			functionConfig.SourceBranch = function.updateInfo.sourceBranch
+			functionConfigs = append(functionConfigs, functionConfig)
+			delete(functionConfigMap, functionName)
+		}
+	}
+	// Add the remaining function configs in the target schema config.
+	for _, functionConfig := range functionConfigMap {
+		functionConfigs = append(functionConfigs, functionConfig)
+	}
+
+	return &storepb.SchemaConfig{
+		Name:             target.GetName(),
+		TableConfigs:     tableConfigs,
+		ViewConfigs:      viewConfigs,
+		FunctionConfigs:  functionConfigs,
+		ProcedureConfigs: procedureConfigs,
 	}
 }
