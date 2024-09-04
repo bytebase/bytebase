@@ -610,6 +610,18 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 			return nil, status.Errorf(codes.Internal, "failed to marshal setting for %s with error: %v", apiSettingName, err)
 		}
 		storeSettingValue = string(bytes)
+	case api.SettingSCIM:
+		scimToken, err := common.RandomString(32)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to generate random SCIM secret with error: %v", err)
+		}
+		bytes, err := protojson.Marshal(&storepb.SCIMSetting{
+			Token: scimToken,
+		})
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to marshal SCIM setting with error: %v", err)
+		}
+		storeSettingValue = string(bytes)
 	default:
 		storeSettingValue = request.Setting.Value.GetStringValue()
 	}

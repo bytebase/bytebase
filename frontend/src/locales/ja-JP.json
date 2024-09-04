@@ -572,7 +572,9 @@
         "endpoint": "API URL",
         "endpoint-tip": "この URL を Azure に提供すると、Webhook 経由でユーザーとグループが同期されます。",
         "token": "鍵",
-        "token-tip": "Entra ID同期キーは公開しないでください。"
+        "token-tip": "Entra ID同期キーは公開しないでください。",
+        "reset-token": "トークンをリセット",
+        "reset-token-warning": "Azure アプリケーションのプロビジョニング構成を更新する必要があります。"
       },
       "update-user": "ユーザーを更新",
       "workspace-role-at-least-one": "少なくとも 1 つのワークスペースレベルの役割を選択してください",
