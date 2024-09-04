@@ -228,7 +228,12 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 		}
 		defer conn.Close()
 	}
-	results, spans, duration, queryErr := queryRetry(ctx, s.store, user, instance, database, driver, conn, statement, request.Timeout, db.QueryContext{Explain: request.Explain, Limit: int(request.Limit)}, false, s.licenseService, s.accessCheck, s.schemaSyncer)
+
+	queryContext := db.QueryContext{Explain: request.Explain, Limit: int(request.Limit)}
+	if request.Schema != nil {
+		queryContext.Schema = *request.Schema
+	}
+	results, spans, duration, queryErr := queryRetry(ctx, s.store, user, instance, database, driver, conn, statement, request.Timeout, queryContext, false, s.licenseService, s.accessCheck, s.schemaSyncer)
 
 	// Update activity.
 	if err = s.createQueryHistory(ctx, database, store.QueryHistoryTypeQuery, statement, user.ID, duration, queryErr); err != nil {
@@ -285,7 +290,7 @@ func queryRetry(
 			instance.Engine,
 			statement,
 			database.DatabaseName,
-			"",
+			queryContext.Schema,
 			store.IgnoreDatabaseAndTableCaseSensitive(instance),
 		)
 		if err != nil {
@@ -341,7 +346,7 @@ func queryRetry(
 			instance.Engine,
 			statement,
 			database.DatabaseName,
-			"",
+			queryContext.Schema,
 			store.IgnoreDatabaseAndTableCaseSensitive(instance),
 		)
 		if err != nil {
