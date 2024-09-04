@@ -12,7 +12,6 @@ import (
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/testing/protocmp"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -1593,7 +1592,13 @@ func alignDatabaseConfig(metadata *storepb.DatabaseSchemaMetadata, config *store
 				continue
 			}
 			//nolint
-			tableConfig := proto.Clone(oldTableConfig).(*storepb.TableConfig)
+			tableConfig := &storepb.TableConfig{
+				Name:             tableName,
+				ClassificationId: oldTableConfig.ClassificationId,
+				Updater:          oldTableConfig.Updater,
+				UpdateTime:       oldTableConfig.UpdateTime,
+				SourceBranch:     oldTableConfig.SourceBranch,
+			}
 			columnConfigMap := buildMap(oldTableConfig.ColumnConfigs, func(c *storepb.ColumnConfig) string {
 				return c.Name
 			})
@@ -1604,8 +1609,12 @@ func alignDatabaseConfig(metadata *storepb.DatabaseSchemaMetadata, config *store
 						Name: columnName,
 					})
 				} else {
-					//nolint
-					columnConfig = proto.Clone(columnConfig).(*storepb.ColumnConfig)
+					columnConfig := &storepb.ColumnConfig{
+						Name:             columnName,
+						ClassificationId: columnConfig.ClassificationId,
+						SemanticTypeId:   columnConfig.SemanticTypeId,
+						Labels:           columnConfig.Labels,
+					}
 					tableConfig.ColumnConfigs = append(tableConfig.ColumnConfigs, columnConfig)
 				}
 			}
@@ -1623,8 +1632,13 @@ func alignDatabaseConfig(metadata *storepb.DatabaseSchemaMetadata, config *store
 				schemaConfig.ViewConfigs = append(schemaConfig.ViewConfigs, viewConfig)
 				continue
 			}
-			//nolint
-			viewConfig := proto.Clone(oldViewConfig).(*storepb.ViewConfig)
+			viewConfig := &storepb.ViewConfig{
+				Name:         viewName,
+				Updater:      oldViewConfig.Updater,
+				UpdateTime:   oldViewConfig.UpdateTime,
+				SourceBranch: oldViewConfig.SourceBranch,
+			}
+
 			schemaConfig.ViewConfigs = append(schemaConfig.ViewConfigs, viewConfig)
 		}
 
@@ -1639,8 +1653,12 @@ func alignDatabaseConfig(metadata *storepb.DatabaseSchemaMetadata, config *store
 				schemaConfig.ProcedureConfigs = append(schemaConfig.ProcedureConfigs, procedureConfig)
 				continue
 			}
-			//nolint
-			procedureConfig := proto.Clone(oldProcedureConfig).(*storepb.ProcedureConfig)
+			procedureConfig := &storepb.ProcedureConfig{
+				Name:         procedureName,
+				Updater:      oldProcedureConfig.Updater,
+				UpdateTime:   oldProcedureConfig.UpdateTime,
+				SourceBranch: oldProcedureConfig.SourceBranch,
+			}
 			schemaConfig.ProcedureConfigs = append(schemaConfig.ProcedureConfigs, procedureConfig)
 		}
 
@@ -1655,8 +1673,12 @@ func alignDatabaseConfig(metadata *storepb.DatabaseSchemaMetadata, config *store
 				schemaConfig.FunctionConfigs = append(schemaConfig.FunctionConfigs, functionConfig)
 				continue
 			}
-			//nolint
-			functionConfig := proto.Clone(oldFunctionConfig).(*storepb.FunctionConfig)
+			functionConfig := &storepb.FunctionConfig{
+				Name:         functionName,
+				Updater:      oldFunctionConfig.Updater,
+				UpdateTime:   oldFunctionConfig.UpdateTime,
+				SourceBranch: oldFunctionConfig.SourceBranch,
+			}
 			schemaConfig.FunctionConfigs = append(schemaConfig.FunctionConfigs, functionConfig)
 		}
 		result.SchemaConfigs = append(result.SchemaConfigs, schemaConfig)
