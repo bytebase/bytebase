@@ -1273,6 +1273,7 @@ func (q *querySpanExtractor) extractSourceColumnSetFromExpressionNode(node *pgqu
 		subqueryExtractor := &querySpanExtractor{
 			ctx:               q.ctx,
 			defaultDatabase:   q.defaultDatabase,
+			defaultSchema:     q.defaultSchema,
 			metaCache:         q.metaCache,
 			gCtx:              q.gCtx,
 			ctes:              q.ctes,
