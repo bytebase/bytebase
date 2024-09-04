@@ -2703,6 +2703,7 @@ func applyUpdateInfoDiffRootNode(a *updateInfoDiffRootNode, target *storepb.Data
 
 func applyUpdateInfoDiffSchemaNode(a *updateInfoDiffSchemaNode, target *storepb.SchemaConfig) *storepb.SchemaConfig {
 	if a == nil {
+		//nolint
 		return proto.Clone(target).(*storepb.SchemaConfig)
 	}
 

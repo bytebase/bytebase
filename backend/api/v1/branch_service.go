@@ -1310,7 +1310,6 @@ func updateConfigBranchUpdateInfoForUpdate(old *storepb.DatabaseSchemaMetadata, 
 				continue
 			}
 			if diff := cmp.Diff(table, oldTable.GetProto(), protocmp.Transform()); diff != "" {
-				fmt.Println(diff)
 				tableConfig.Updater = formattedUserUID
 				tableConfig.UpdateTime = time
 				tableConfig.SourceBranch = formattedBranchResourceID
