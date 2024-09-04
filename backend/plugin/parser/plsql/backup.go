@@ -297,7 +297,7 @@ func (e *tableExtractor) EnterGeneral_table_ref(ctx *parser.General_table_refCon
 			e.table.HasSchema = false
 		}
 		if ctx.Table_alias() != nil {
-			e.table.Alias = normalizeTableAlias(ctx.Table_alias())
+			e.table.Alias = NormalizeTableAlias(ctx.Table_alias())
 		}
 	}
 }
