@@ -7776,6 +7776,11 @@ paths:
                     pattern: ^-?(?:0|[1-9][0-9]{0,11})(?:\.[0-9]{1,9})?s$
                     type: string
                     description: Represents a a duration between -315,576,000,000s and 315,576,000,000s (around 10000 years). Precision is in nanoseconds. 1 nanosecond is represented as 0.000000001s
+                - name: schema
+                  in: query
+                  description: The default schema to execute the statement. Equals to the current schema in Oracle and search path in Postgres.
+                  schema:
+                    type: string
             responses:
                 "200":
                     description: OK
@@ -9430,6 +9435,9 @@ components:
                     pattern: ^-?(?:0|[1-9][0-9]{0,11})(?:\.[0-9]{1,9})?s$
                     type: string
                     description: The timeout for the request.
+                schema:
+                    type: string
+                    description: The default schema to execute the statement. Equals to the current schema in Oracle and search path in Postgres.
         ExecuteResponse:
             type: object
             properties:
@@ -11664,7 +11672,7 @@ components:
                     description: Explain the statement.
                 schema:
                     type: string
-                    description: The default schema to search objects. Equals to the default schema in Oracle and search path in Postgres.
+                    description: The default schema to search objects. Equals to the current schema in Oracle and search path in Postgres.
         QueryResponse:
             type: object
             properties:

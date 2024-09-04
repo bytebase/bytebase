@@ -415,7 +415,7 @@ func (q *querySpanExtractor) extractQuerySpanResultResultFromExpr(ctx antlr.Rule
 		}
 		return querySpanResult.Name, querySpanResult, nil
 	case *parser.Object_nameContext:
-		normalizedDatabaseName, normalizedSchemaName, normalizedTableName := normalizedObjectName(ctx, q.defaultDatbase, "PUBLIC")
+		normalizedDatabaseName, normalizedSchemaName, normalizedTableName := normalizedObjectName(ctx, q.defaultDatbase, q.defaultSchema)
 		fieldInfo, err := q.getField(normalizedDatabaseName, normalizedSchemaName, normalizedTableName, "")
 		if err != nil {
 			return "", base.QuerySpanResult{}, errors.Wrapf(err, "failed to check whether the object %q is sensitive near line %d", normalizedTableName, ctx.GetStart().GetLine())
@@ -939,7 +939,7 @@ func (q *querySpanExtractor) extractTableSourceFromObjectRef(ctx parser.IObject_
 	var result []base.QuerySpanResult
 
 	if objectName := ctx.Object_name(); objectName != nil {
-		_, tableSource, err := q.findTableSchema(objectName, q.defaultDatbase, "PUBLIC")
+		_, tableSource, err := q.findTableSchema(objectName, q.defaultDatbase, q.defaultSchema)
 		if err != nil {
 			return nil, err
 		}
