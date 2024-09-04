@@ -320,6 +320,7 @@ roles:
       - bb.vcsConnectors.get
       - bb.vcsConnectors.list
       - bb.vcsConnectors.update
+      - bb.worksheets.get
   - name: roles/projectDeveloper
     title: Project developer
     permissions:
@@ -374,6 +375,7 @@ roles:
       - bb.databases.query
       - bb.projects.get
       - bb.projects.getIamPolicy
+      - bb.worksheets.get
   - name: roles/projectExporter
     title: Project exporter
     permissions:
@@ -383,6 +385,7 @@ roles:
       - bb.databases.list
       - bb.projects.get
       - bb.projects.getIamPolicy
+      - bb.worksheets.get
   - name: roles/projectReleaser
     title: Project releaser
     permissions:
