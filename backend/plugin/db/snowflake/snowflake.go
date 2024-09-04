@@ -280,14 +280,6 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 			slog.Error("failed to validate sql", slog.String("statement", statement), log.BBError(err))
 			allQuery = true
 		}
-
-		// If the queryContext.Schema is not empty, set the current schema to the given schema.
-		if queryContext.Schema != "" {
-			if _, err := conn.ExecContext(ctx, fmt.Sprintf("USE SCHEMA %s;", queryContext.Schema)); err != nil {
-				return nil, err
-			}
-		}
-
 		startTime := time.Now()
 		queryResult, err := func() (*v1pb.QueryResult, error) {
 			if allQuery {
