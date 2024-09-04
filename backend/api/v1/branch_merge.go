@@ -12,6 +12,7 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/testing/protocmp"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/plugin/db/mysql"
 	"github.com/bytebase/bytebase/backend/plugin/db/tidb"
@@ -2200,4 +2201,168 @@ func isColumnTypeEqual(a, b string, engine storepb.Engine) bool {
 	default:
 		return strings.EqualFold(a, b)
 	}
+}
+
+type updateInfo struct {
+	lastUpdatedTime *timestamppb.Timestamp
+	lastUpdater     string
+	sourceBranch    string
+}
+
+type updateInfoDiffRootNode struct {
+	schemas map[string]*updateInfoDiffSchemaNode
+}
+
+type updateInfoDiffSchemaNode struct {
+	diffBaseNode
+	name       string
+	tables     map[string]*updateInfoDiffTableNode
+	views      map[string]*updateInfoDiffViewNode
+	functions  map[string]*updateInfoDiffFunctionNode
+	procedures map[string]*updateInfoDiffProcedureNode
+}
+
+type updateInfoDiffTableNode struct {
+	diffBaseNode
+	name string
+	// If the action is diffActionDelete, the updateInfo should be nil.
+	updateInfo *updateInfo
+}
+
+type updateInfoDiffViewNode struct {
+	diffBaseNode
+	name string
+	// If the action is diffActionDelete, the updateInfo should be nil.
+	updateInfo *updateInfo
+}
+
+type updateInfoDiffFunctionNode struct {
+	diffBaseNode
+	name string
+	// If the action is diffActionDelete, the updateInfo should be nil.
+	updateInfo *updateInfo
+}
+
+type updateInfoDiffProcedureNode struct {
+	diffBaseNode
+	name string
+	// If the action is diffActionDelete, the updateInfo should be nil.
+	updateInfo *updateInfo
+}
+
+// deriveUpdateInfoFromMetadataDiff derives the update info diff from the metadata diff.
+func deriveUpdateInfoFromMetadataDiff(metadataDiff *metadataDiffRootNode, headDatabaseConfig *storepb.DatabaseConfig) *updateInfoDiffRootNode {
+	if metadataDiff == nil {
+		return nil
+	}
+	rootNode := &updateInfoDiffRootNode{
+		schemas: make(map[string]*updateInfoDiffSchemaNode),
+	}
+
+	schemaConfigMap := buildMap(headDatabaseConfig.GetSchemaConfigs(), func(schemaConfig *storepb.SchemaConfig) string {
+		return schemaConfig.GetName()
+	})
+	for _, metadataSchemaDiff := range metadataDiff.schemas {
+		action := metadataSchemaDiff.action
+		updateInfoSchemaDiff := &updateInfoDiffSchemaNode{
+			diffBaseNode: diffBaseNode{
+				action: action,
+			},
+			name:       metadataSchemaDiff.name,
+			tables:     make(map[string]*updateInfoDiffTableNode),
+			views:      make(map[string]*updateInfoDiffViewNode),
+			functions:  make(map[string]*updateInfoDiffFunctionNode),
+			procedures: make(map[string]*updateInfoDiffProcedureNode),
+		}
+		schemaConfig := schemaConfigMap[metadataSchemaDiff.name]
+		tableConfigMap := buildMap(schemaConfig.GetTableConfigs(), func(tableConfig *storepb.TableConfig) string {
+			return tableConfig.GetName()
+		})
+		for tableName, table := range metadataSchemaDiff.tables {
+			action := table.action
+			updateInfoSchemaDiff.tables[tableName] = &updateInfoDiffTableNode{
+				diffBaseNode: diffBaseNode{
+					action: action,
+				},
+				name: tableName,
+			}
+			if action != diffActionDrop {
+				tableConfig := tableConfigMap[tableName]
+				updateInfoSchemaDiff.tables[tableName].updateInfo = &updateInfo{
+					lastUpdatedTime: tableConfig.GetUpdateTime(),
+					lastUpdater:     tableConfig.GetUpdater(),
+					sourceBranch:    tableConfig.GetSourceBranch(),
+				}
+			}
+		}
+
+		// Views
+		viewConfigMap := buildMap(schemaConfig.GetViewConfigs(), func(viewConfig *storepb.ViewConfig) string {
+			return viewConfig.GetName()
+		})
+		for viewName, view := range metadataSchemaDiff.views {
+			action := view.action
+			updateInfoSchemaDiff.views[viewName] = &updateInfoDiffViewNode{
+				diffBaseNode: diffBaseNode{
+					action: action,
+				},
+				name: viewName,
+			}
+			if action != diffActionDrop {
+				viewConfig := viewConfigMap[viewName]
+				updateInfoSchemaDiff.views[viewName].updateInfo = &updateInfo{
+					lastUpdatedTime: viewConfig.GetUpdateTime(),
+					lastUpdater:     viewConfig.GetUpdater(),
+					sourceBranch:    viewConfig.GetSourceBranch(),
+				}
+			}
+		}
+
+		// Functions
+		functionConfigMap := buildMap(schemaConfig.GetFunctionConfigs(), func(functionConfig *storepb.FunctionConfig) string {
+			return functionConfig.GetName()
+		})
+		for functionName, function := range metadataSchemaDiff.functions {
+			action := function.action
+			updateInfoSchemaDiff.functions[functionName] = &updateInfoDiffFunctionNode{
+				diffBaseNode: diffBaseNode{
+					action: action,
+				},
+				name: functionName,
+			}
+			if action != diffActionDrop {
+				functionConfig := functionConfigMap[functionName]
+				updateInfoSchemaDiff.functions[functionName].updateInfo = &updateInfo{
+					lastUpdatedTime: functionConfig.GetUpdateTime(),
+					lastUpdater:     functionConfig.GetUpdater(),
+					sourceBranch:    functionConfig.GetSourceBranch(),
+				}
+			}
+		}
+
+		// Procedures
+		procedureConfigMap := buildMap(schemaConfig.GetProcedureConfigs(), func(procedureConfig *storepb.ProcedureConfig) string {
+			return procedureConfig.GetName()
+		})
+		for procedureName, procedure := range metadataSchemaDiff.procedures {
+			action := procedure.action
+			updateInfoSchemaDiff.procedures[procedureName] = &updateInfoDiffProcedureNode{
+				diffBaseNode: diffBaseNode{
+					action: action,
+				},
+				name: procedureName,
+			}
+			if action != diffActionDrop {
+				procedureConfig := procedureConfigMap[procedureName]
+				updateInfoSchemaDiff.procedures[procedureName].updateInfo = &updateInfo{
+					lastUpdatedTime: procedureConfig.GetUpdateTime(),
+					lastUpdater:     procedureConfig.GetUpdater(),
+					sourceBranch:    procedureConfig.GetSourceBranch(),
+				}
+			}
+		}
+		rootNode.schemas[metadataSchemaDiff.name] = updateInfoSchemaDiff
+	}
+
+	return rootNode
 }
