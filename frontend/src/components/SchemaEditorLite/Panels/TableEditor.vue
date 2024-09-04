@@ -189,7 +189,7 @@
 </template>
 
 <script lang="ts" setup>
-import { cloneDeep, pull } from "lodash-es";
+import { cloneDeep, head, pull } from "lodash-es";
 import { PlusIcon } from "lucide-vue-next";
 import { ArrowLeftIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
@@ -450,8 +450,10 @@ const handleAddIndex = () => {
   markTableStatus("updated");
 };
 const handleAddPartition = () => {
+  const first = head(props.table.partitions);
   const partition = TablePartitionMetadata.fromPartial({
-    type: TablePartitionMetadata_Type.HASH,
+    type: first?.type ?? TablePartitionMetadata_Type.HASH,
+    expression: first?.expression ?? "",
   });
   // eslint-disable-next-line vue/no-mutating-props
   props.table.partitions.push(partition);
