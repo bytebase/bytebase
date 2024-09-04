@@ -68,6 +68,8 @@ type querySpanExtractor struct {
 // newQuerySpanExtractor creates a new query span extractor, the databaseMetadata and the ast are in the read guard.
 func newQuerySpanExtractor(defaultDatabase string, defaultSchema string, gCtx base.GetQuerySpanContext) *querySpanExtractor {
 	if defaultSchema == "" {
+		// Fall back to the default schema `public`.
+		// Reference: https://www.postgresql.org/docs/current/ddl-schemas.html#DDL-SCHEMAS-PUBLIC
 		defaultSchema = "public"
 	}
 	return &querySpanExtractor{

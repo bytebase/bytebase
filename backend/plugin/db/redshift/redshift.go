@@ -320,6 +320,14 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 		return nil, nil
 	}
 
+	// If the queryContext.Schema is not empty, set the search path for the database connection to the specified schema.
+	// Reference: https://docs.aws.amazon.com/redshift/latest/dg/r_search_path.html
+	if queryContext.Schema != "" {
+		if _, err := conn.ExecContext(ctx, fmt.Sprintf("set search_path to %s;", queryContext.Schema)); err != nil {
+			return nil, err
+		}
+	}
+
 	var results []*v1pb.QueryResult
 	for _, singleSQL := range singleSQLs {
 		statement := singleSQL.Text
