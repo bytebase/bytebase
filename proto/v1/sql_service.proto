@@ -135,6 +135,9 @@ message ExecuteRequest {
 
   // The timeout for the request.
   google.protobuf.Duration timeout = 4;
+
+  // The default schema to execute the statement. Equals to the current schema in Oracle and search path in Postgres.
+  optional string schema = 5;
 }
 
 message ExecuteResponse {
@@ -163,6 +166,9 @@ message AdminExecuteRequest {
 
   // The timeout for the request.
   google.protobuf.Duration timeout = 5;
+
+  // The default schema to execute the statement. Equals to the current schema in Oracle and search path in Postgres.
+  optional string schema = 6;
 }
 
 message AdminExecuteResponse {
@@ -197,7 +203,7 @@ message QueryRequest {
   // Explain the statement.
   bool explain = 7;
 
-  // The default schema to search objects. Equals to the default schema in Oracle and search path in Postgres.
+  // The default schema to search objects. Equals to the current schema in Oracle and search path in Postgres.
   optional string schema = 8;
 }
 
