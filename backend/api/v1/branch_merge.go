@@ -2714,6 +2714,7 @@ func applyUpdateInfoDiffSchemaNode(a *updateInfoDiffSchemaNode, target *storepb.
 	for tableName, table := range a.tables {
 		switch table.action {
 		case diffActionDrop:
+			delete(tableConfigMap, tableName)
 			continue
 		default:
 			tableConfig := tableConfigMap[tableName]
@@ -2726,8 +2727,8 @@ func applyUpdateInfoDiffSchemaNode(a *updateInfoDiffSchemaNode, target *storepb.
 			tableConfig.Updater = table.updateInfo.lastUpdater
 			tableConfig.SourceBranch = table.updateInfo.sourceBranch
 			tableConfigs = append(tableConfigs, tableConfig)
+			delete(tableConfigMap, tableName)
 		}
-		delete(tableConfigMap, tableName)
 	}
 	// Add the remaining table configs in the target schema config.
 	for _, tableConfig := range tableConfigMap {
@@ -2741,6 +2742,7 @@ func applyUpdateInfoDiffSchemaNode(a *updateInfoDiffSchemaNode, target *storepb.
 	for viewName, view := range a.views {
 		switch view.action {
 		case diffActionDrop:
+			delete(viewConfigMap, viewName)
 			continue
 		default:
 			viewConfig := viewConfigMap[viewName]
@@ -2753,8 +2755,9 @@ func applyUpdateInfoDiffSchemaNode(a *updateInfoDiffSchemaNode, target *storepb.
 			viewConfig.Updater = view.updateInfo.lastUpdater
 			viewConfig.SourceBranch = view.updateInfo.sourceBranch
 			viewConfigs = append(viewConfigs, viewConfig)
+			delete(viewConfigMap, viewName)
 		}
-		delete(viewConfigMap, viewName)
+
 	}
 	// Add the remaining view configs in the target schema config.
 	for _, viewConfig := range viewConfigMap {
@@ -2768,6 +2771,7 @@ func applyUpdateInfoDiffSchemaNode(a *updateInfoDiffSchemaNode, target *storepb.
 	for procedureName, procedure := range a.procedures {
 		switch procedure.action {
 		case diffActionDrop:
+			delete(procedureConfigMap, procedureName)
 			continue
 		default:
 			procedureConfig := procedureConfigMap[procedureName]
@@ -2780,8 +2784,8 @@ func applyUpdateInfoDiffSchemaNode(a *updateInfoDiffSchemaNode, target *storepb.
 			procedureConfig.Updater = procedure.updateInfo.lastUpdater
 			procedureConfig.SourceBranch = procedure.updateInfo.sourceBranch
 			procedureConfigs = append(procedureConfigs, procedureConfig)
+			delete(procedureConfigMap, procedureName)
 		}
-		delete(procedureConfigMap, procedureName)
 	}
 	// Add the remaining procedure configs in the target schema config.
 	for _, procedureConfig := range procedureConfigMap {
@@ -2795,6 +2799,7 @@ func applyUpdateInfoDiffSchemaNode(a *updateInfoDiffSchemaNode, target *storepb.
 	for functionName, function := range a.functions {
 		switch function.action {
 		case diffActionDrop:
+			delete(functionConfigMap, functionName)
 			continue
 		default:
 			functionConfig := functionConfigMap[functionName]
@@ -2807,8 +2812,8 @@ func applyUpdateInfoDiffSchemaNode(a *updateInfoDiffSchemaNode, target *storepb.
 			functionConfig.Updater = function.updateInfo.lastUpdater
 			functionConfig.SourceBranch = function.updateInfo.sourceBranch
 			functionConfigs = append(functionConfigs, functionConfig)
+			delete(functionConfigMap, functionName)
 		}
-		delete(functionConfigMap, functionName)
 	}
 	// Add the remaining function configs in the target schema config.
 	for _, functionConfig := range functionConfigMap {
