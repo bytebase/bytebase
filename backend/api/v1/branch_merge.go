@@ -185,6 +185,8 @@ func tryMerge(ancestor, head, base *storepb.DatabaseSchemaMetadata, ancestorConf
 	}
 
 	config := applyUpdateInfoDiffRootNode(mergedUpdateInfoDiff, ancestorConfig)
+	// The updateInfoDiff do not contain the column config, align database config to add the column config.
+	config = alignDatabaseConfig(ancestor, config)
 	return ancestor, config, nil
 }
 
