@@ -76,3 +76,47 @@ func TestTrimDatabaseMetadata(t *testing.T) {
 	diffSource := cmp.Diff(wantTrimmedSource, gotSource, protocmp.Transform())
 	require.Empty(t, diffSource)
 }
+
+func TestAlignDatabaseConfig(t *testing.T) {
+	// Create a sample metadata with two schemas and tables
+	metadata := &storepb.DatabaseSchemaMetadata{
+		Name: "testdb",
+		Schemas: []*storepb.SchemaMetadata{
+			{
+				Name: "schema1",
+				Tables: []*storepb.TableMetadata{
+					{Name: "table3"},
+				},
+			},
+		},
+	}
+
+	// Create a sample config with one schema and one table
+	config := &storepb.DatabaseConfig{
+		Name: "testdb",
+		SchemaConfigs: []*storepb.SchemaConfig{
+			{
+				Name: "schema1",
+				TableConfigs: []*storepb.TableConfig{
+					{Name: "table1"},
+				},
+			},
+		},
+	}
+
+	want := &storepb.DatabaseConfig{
+		Name: "testdb",
+		SchemaConfigs: []*storepb.SchemaConfig{
+			{
+				Name: "schema1",
+				TableConfigs: []*storepb.TableConfig{
+					{Name: "table3"},
+				},
+			},
+		},
+	}
+
+	got := alignDatabaseConfig(metadata, config)
+	diff := cmp.Diff(want, got, protocmp.Transform())
+	require.Empty(t, diff)
+}

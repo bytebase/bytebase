@@ -12,6 +12,7 @@ import (
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/testing/protocmp"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -1557,92 +1558,108 @@ func trimClassificationIDFromCommentIfNeeded(dbSchema *storepb.DatabaseSchemaMet
 	}
 }
 
-func alignDatabaseConfig(metadata *storepb.DatabaseSchemaMetadata, config *storepb.DatabaseConfig) {
-	if config == nil {
-		config = &storepb.DatabaseConfig{
-			Name: metadata.Name,
-		}
+// alignDatabaseConfig aligns the database config with the metadata by adding an empty config for the missing objects,
+// and deleting the config for the deleted objects.
+func alignDatabaseConfig(metadata *storepb.DatabaseSchemaMetadata, config *storepb.DatabaseConfig) *storepb.DatabaseConfig {
+	result := &storepb.DatabaseConfig{
+		Name: metadata.GetName(),
 	}
-	now := timestamppb.Now()
 	dbModel := model.NewDatabaseMetadata(metadata)
 	schemaConfigMap := buildMap(config.SchemaConfigs, func(s *storepb.SchemaConfig) string {
 		return s.Name
 	})
-	var newSchemaConfigs []*storepb.SchemaConfig
 	for _, schemaName := range dbModel.ListSchemaNames() {
-		schemaModel := dbModel.GetSchema(schemaName)
-		schemaConfig, ok := schemaConfigMap[schemaName]
+		schema := dbModel.GetSchema(schemaName)
+		_, ok := schemaConfigMap[schemaName]
 		if !ok {
-			newSchemaConfigs = append(newSchemaConfigs, initSchemaConfig(schemaModel.GetProto(), "", "", now))
+			schemaConfig := initSchemaConfig(schema.GetProto(), "", "", nil)
+			result.SchemaConfigs = append(result.SchemaConfigs, schemaConfig)
 			continue
 		}
-
-		var newTableConfigs []*storepb.TableConfig
-		tableConfigMap := buildMap(schemaConfig.TableConfigs, func(s *storepb.TableConfig) string {
-			return s.Name
-		})
-		for _, tableName := range schemaModel.ListTableNames() {
-			tableModel := schemaModel.GetTable(tableName)
-			if _, ok := tableConfigMap[tableName]; !ok {
-				newTableConfigs = append(newTableConfigs, initTableConfig(tableModel.GetProto(), "", "", now))
+		schemaConfig := &storepb.SchemaConfig{
+			Name: schemaName,
+		}
+		for _, tableName := range schema.ListTableNames() {
+			table := schema.GetTable(tableName)
+			tableConfigMap := buildMap(schemaConfig.TableConfigs, func(t *storepb.TableConfig) string {
+				return t.Name
+			})
+			tableConfig, ok := tableConfigMap[tableName]
+			if !ok {
+				tableConfig := initTableConfig(table.GetProto(), "", "", nil)
+				schemaConfig.TableConfigs = append(schemaConfig.TableConfigs, tableConfig)
 				continue
 			}
-			// Align column configs
-			tableConfig := tableConfigMap[tableName]
-			columnConfigMap := buildMap(tableConfig.ColumnConfigs, func(s *storepb.ColumnConfig) string {
-				return s.Name
+			//nolint
+			tableConfig = proto.Clone(tableConfig).(*storepb.TableConfig)
+			columnConfigMap := buildMap(tableConfig.ColumnConfigs, func(c *storepb.ColumnConfig) string {
+				return c.Name
 			})
-			for _, column := range tableModel.GetColumns() {
-				if _, ok := columnConfigMap[column.GetName()]; !ok {
+			for _, columnProto := range table.GetColumns() {
+				columnName := columnProto.GetName()
+				if columnConfig, ok := columnConfigMap[columnName]; !ok {
 					tableConfig.ColumnConfigs = append(tableConfig.ColumnConfigs, &storepb.ColumnConfig{
-						Name: column.GetName(),
+						Name: columnName,
 					})
-					continue
+				} else {
+					//nolint
+					columnConfig = proto.Clone(columnConfig).(*storepb.ColumnConfig)
+					tableConfig.ColumnConfigs = append(tableConfig.ColumnConfigs, columnConfig)
 				}
 			}
+			schemaConfig.TableConfigs = append(schemaConfig.TableConfigs, tableConfig)
 		}
-		schemaConfig.TableConfigs = append(schemaConfig.TableConfigs, newTableConfigs...)
 
-		var newViewConfigs []*storepb.ViewConfig
-		viewConfigMap := buildMap(schemaConfig.ViewConfigs, func(s *storepb.ViewConfig) string {
-			return s.Name
-		})
-		for _, viewName := range schemaModel.ListViewNames() {
-			viewModel := schemaModel.GetView(viewName)
-			if _, ok := viewConfigMap[viewName]; !ok {
-				newViewConfigs = append(newViewConfigs, initViewConfig(viewModel.GetProto(), "", "", now))
+		for _, viewName := range schema.ListViewNames() {
+			view := schema.GetView(viewName)
+			viewConfigMap := buildMap(schemaConfig.ViewConfigs, func(v *storepb.ViewConfig) string {
+				return v.Name
+			})
+			viewConfig, ok := viewConfigMap[viewName]
+			if !ok {
+				viewConfig = initViewConfig(view.GetProto(), "", "", nil)
+				schemaConfig.ViewConfigs = append(schemaConfig.ViewConfigs, viewConfig)
 				continue
 			}
+			//nolint
+			viewConfig = proto.Clone(viewConfig).(*storepb.ViewConfig)
+			schemaConfig.ViewConfigs = append(schemaConfig.ViewConfigs, viewConfig)
 		}
-		schemaConfig.ViewConfigs = append(schemaConfig.ViewConfigs, newViewConfigs...)
 
-		var newProcedureConfigs []*storepb.ProcedureConfig
-		procedureConfigMap := buildMap(schemaConfig.ProcedureConfigs, func(s *storepb.ProcedureConfig) string {
-			return s.Name
-		})
-		for _, procedureName := range schemaModel.ListProcedureNames() {
-			procedureModel := schemaModel.GetProcedure(procedureName)
-			if _, ok := procedureConfigMap[procedureName]; !ok {
-				newProcedureConfigs = append(newProcedureConfigs, initProcedureConfig(procedureModel.GetProto(), "", "", now))
+		for _, procedureName := range schema.ListProcedureNames() {
+			procedure := schema.GetProcedure(procedureName)
+			procedureConfigMap := buildMap(schemaConfig.ProcedureConfigs, func(p *storepb.ProcedureConfig) string {
+				return p.Name
+			})
+			procedureConfig, ok := procedureConfigMap[procedureName]
+			if !ok {
+				procedureConfig = initProcedureConfig(procedure.GetProto(), "", "", nil)
+				schemaConfig.ProcedureConfigs = append(schemaConfig.ProcedureConfigs, procedureConfig)
 				continue
 			}
+			//nolint
+			procedureConfig = proto.Clone(procedureConfig).(*storepb.ProcedureConfig)
+			schemaConfig.ProcedureConfigs = append(schemaConfig.ProcedureConfigs, procedureConfig)
 		}
-		schemaConfig.ProcedureConfigs = append(schemaConfig.ProcedureConfigs, newProcedureConfigs...)
 
-		var newFunctionConfigs []*storepb.FunctionConfig
-		functionConfigMap := buildMap(schemaConfig.FunctionConfigs, func(s *storepb.FunctionConfig) string {
-			return s.Name
-		})
-		for _, functionName := range schemaModel.ListFunctionNames() {
-			functionModel := schemaModel.GetFunction(functionName)
-			if _, ok := functionConfigMap[functionName]; !ok {
-				newFunctionConfigs = append(newFunctionConfigs, initFunctionConfig(functionModel.GetProto(), "", "", now))
+		for _, functionName := range schema.ListFunctionNames() {
+			function := schema.GetFunction(functionName)
+			functionConfigMap := buildMap(schemaConfig.FunctionConfigs, func(f *storepb.FunctionConfig) string {
+				return f.Name
+			})
+			functionConfig, ok := functionConfigMap[functionName]
+			if !ok {
+				functionConfig = initFunctionConfig(function.GetProto(), "", "", nil)
+				schemaConfig.FunctionConfigs = append(schemaConfig.FunctionConfigs, functionConfig)
 				continue
 			}
+			//nolint
+			functionConfig = proto.Clone(functionConfig).(*storepb.FunctionConfig)
+			schemaConfig.FunctionConfigs = append(schemaConfig.FunctionConfigs, functionConfig)
 		}
-		schemaConfig.FunctionConfigs = append(schemaConfig.FunctionConfigs, newFunctionConfigs...)
+		result.SchemaConfigs = append(result.SchemaConfigs, schemaConfig)
 	}
-	config.SchemaConfigs = append(config.SchemaConfigs, newSchemaConfigs...)
+	return result
 }
 
 func formatViewDef(def string) string {
