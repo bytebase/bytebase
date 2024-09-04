@@ -97,7 +97,9 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
   );
   const currentTabIdMapByProject = useDynamicLocalStorage<
     Record<string, string | undefined>
-  >(currentTabIdKey, {});
+  >(currentTabIdKey, {}, localStorage, {
+    listenToStorageChanges: false,
+  });
 
   const initializedProjects = new Set<string>();
   const maybeInitProject = (project: string) => {
