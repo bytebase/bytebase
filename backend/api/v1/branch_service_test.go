@@ -87,6 +87,12 @@ func TestAlignDatabaseConfig(t *testing.T) {
 				Tables: []*storepb.TableMetadata{
 					{Name: "table3"},
 				},
+				Functions: []*storepb.FunctionMetadata{
+					{
+						Name:       "function1",
+						Definition: "CREATE FUNCTION `f1`() RETURNS char(50)\n    DETERMINISTIC\nBEGIN\n  return 1;\nEND",
+					},
+				},
 			},
 		},
 	}
@@ -100,6 +106,12 @@ func TestAlignDatabaseConfig(t *testing.T) {
 				TableConfigs: []*storepb.TableConfig{
 					{Name: "table1"},
 				},
+				FunctionConfigs: []*storepb.FunctionConfig{
+					{
+						Name:    "function1",
+						Updater: "anonymous",
+					},
+				},
 			},
 		},
 	}
@@ -111,6 +123,12 @@ func TestAlignDatabaseConfig(t *testing.T) {
 				Name: "schema1",
 				TableConfigs: []*storepb.TableConfig{
 					{Name: "table3"},
+				},
+				FunctionConfigs: []*storepb.FunctionConfig{
+					{
+						Name:    "function1",
+						Updater: "anonymous",
+					},
 				},
 			},
 		},
