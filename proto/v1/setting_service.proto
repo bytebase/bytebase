@@ -482,5 +482,5 @@ message MaximumSQLResultSizeSetting {
 }
 
 message SCIMSetting {
-  string token = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string token = 1;
 }

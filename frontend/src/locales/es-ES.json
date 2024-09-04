@@ -572,7 +572,9 @@
         "endpoint": "Punto final",
         "endpoint-tip": "Proporcione la URL a Azure como URL de inquilino y sincronizará usuarios y grupos a través de webhook.",
         "token": "Simbólico",
-        "token-tip": "Token de sincronización de ID de entrada. Manténgalo en secreto."
+        "token-tip": "Token de sincronización de ID de entrada. Manténgalo en secreto.",
+        "reset-token": "Restablecer token",
+        "reset-token-warning": "Debe actualizar la configuración de aprovisionamiento de aplicaciones de Azure."
       },
       "update-user": "Actualizar usuario",
       "workspace-role-at-least-one": "El espacio de trabajo debe tener al menos un administrador",

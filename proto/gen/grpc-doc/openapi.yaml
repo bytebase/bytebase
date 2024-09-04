@@ -12067,7 +12067,6 @@ components:
             type: object
             properties:
                 token:
-                    readOnly: true
                     type: string
         SMTPMailDeliverySettingValue:
             type: object
