@@ -21,6 +21,7 @@ var (
 	splitters               = make(map[storepb.Engine]SplitMultiSQLFunc)
 	schemaDiffers           = make(map[storepb.Engine]SchemaDiffFunc)
 	completers              = make(map[storepb.Engine]CompletionFunc)
+	diagnoseCollectors      = make(map[storepb.Engine]DiagnoseFunc)
 	spans                   = make(map[storepb.Engine]GetQuerySpanFunc)
 	transformDMLToSelect    = make(map[storepb.Engine]TransformDMLToSelectFunc)
 	generateRestoreSQL      = make(map[storepb.Engine]GenerateRestoreSQLFunc)
@@ -32,6 +33,7 @@ type ExtractResourceListFunc func(string, string, string) ([]SchemaResource, err
 type SplitMultiSQLFunc func(string) ([]SingleSQL, error)
 type SchemaDiffFunc func(ctx DiffContext, oldStmt, newStmt string) (string, error)
 type CompletionFunc func(ctx context.Context, cCtx CompletionContext, statement string, caretLine int, caretOffset int) ([]Candidate, error)
+type DiagnoseFunc func(ctx context.Context, dCtx DiagnoseContext, statement string) ([]Diagnostic, error)
 
 // GetQuerySpanFunc is the interface of getting the query span for a query.
 type GetQuerySpanFunc func(ctx context.Context, gCtx GetQuerySpanContext, statement, database, schema string, ignoreCaseSensitive bool) (*QuerySpan, error)
@@ -151,6 +153,25 @@ func Completion(ctx context.Context, engine storepb.Engine, cCtx CompletionConte
 		return nil, errors.Errorf("engine %s is not supported", engine)
 	}
 	return f(ctx, cCtx, statement, caretLine, caretOffset)
+}
+
+// RegisterDiagnoseFunc registers the diagnose function for the engine.
+func RegisterDiagnoseFunc(engine storepb.Engine, f DiagnoseFunc) {
+	mux.Lock()
+	defer mux.Unlock()
+	if _, dup := diagnoseCollectors[engine]; dup {
+		panic(fmt.Sprintf("Register called twice %s", engine))
+	}
+	diagnoseCollectors[engine] = f
+}
+
+// Diagnose returns the diagnostics for the statement. The diagnostics never be nil, and may not be empty although the error is not nil.
+func Diagnose(ctx context.Context, dCtx DiagnoseContext, engine storepb.Engine, statement string) ([]Diagnostic, error) {
+	f, ok := diagnoseCollectors[engine]
+	if !ok {
+		return []Diagnostic{}, nil
+	}
+	return f(ctx, dCtx, statement)
 }
 
 func RegisterGetQuerySpan(engine storepb.Engine, f GetQuerySpanFunc) {
