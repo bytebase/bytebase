@@ -10310,6 +10310,8 @@ components:
                     format: int32
                 database:
                     type: string
+                error:
+                    type: string
         IssueComment_TaskUpdate:
             type: object
             properties:
