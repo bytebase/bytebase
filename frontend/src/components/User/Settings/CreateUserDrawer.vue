@@ -274,7 +274,10 @@ const checkPassword = () => {
     state.passwordHint = false;
     return;
   }
-  state.passwordHint = !/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/.test(pwd);
+  state.passwordHint =
+    !/^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])[\w~@#$%^&*+=`|{}:;!.?\"()\[\]-]{8,}/.test(
+      pwd
+    );
   return;
 };
 
