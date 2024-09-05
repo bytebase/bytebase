@@ -76,6 +76,7 @@ message IssueCommentPayload {
     repeated Table tables = 2;
     optional int32 original_line = 3;
     string database = 4;
+    string error = 5;
 
     message Table {
       string schema = 1;
