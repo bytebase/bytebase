@@ -121,7 +121,10 @@
       class="action-right gap-x-2 flex overflow-x-auto sm:overflow-x-hidden sm:justify-end items-center"
     >
       <BatchQueryDatabasesSelector />
-      <DatabaseChooser />
+      <NButtonGroup>
+        <DatabaseChooser />
+        <SchemaChooser />
+      </NButtonGroup>
     </div>
   </div>
 
@@ -164,6 +167,7 @@ import BatchQueryDatabasesSelector from "./BatchQueryDatabasesSelector.vue";
 import DatabaseChooser from "./DatabaseChooser.vue";
 import OpenAIButton from "./OpenAIButton.vue";
 import QueryContextSettingPopover from "./QueryContextSettingPopover.vue";
+import SchemaChooser from "./SchemaChooser.vue";
 import SharePopover from "./SharePopover.vue";
 
 interface LocalState {

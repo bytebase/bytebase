@@ -83,6 +83,28 @@ export const provideEditorPanelContext = (base: {
     { immediate: true }
   );
 
+  watch(
+    () => tab.value?.connection.schema,
+    (schema) => {
+      if (!schema) return;
+      if (!viewState.value) return;
+      if (viewState.value.schema === schema) return;
+      viewState.value.schema = schema;
+    },
+    { immediate: true }
+  );
+  watch(
+    () => viewState.value?.schema,
+    (schema) => {
+      if (!schema) return;
+      if (!tab.value) return;
+      if (!tab.value.connection.schema) return; // if schema chooser is "ALL", don't sync
+      if (tab.value.connection.schema === schema) return;
+      tab.value.connection.schema = schema;
+    },
+    { immediate: true }
+  );
+
   const context = {
     ...base,
     viewState,
