@@ -20,7 +20,7 @@ func init() {
 	base.RegisterDiagnoseFunc(store.Engine_DORIS, Diagnose)
 }
 
-func Diagnose(ctx context.Context, _ base.DiagnoseContext, statement string) ([]base.Diagnostic, error) {
+func Diagnose(_ context.Context, _ base.DiagnoseContext, statement string) ([]base.Diagnostic, error) {
 	diagnostics := make([]base.Diagnostic, 0)
 	syntaxError := parseMySQLStatement(statement)
 	if syntaxError != nil {
