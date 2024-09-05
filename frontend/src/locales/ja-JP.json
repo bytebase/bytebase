@@ -1316,6 +1316,7 @@
       "edit-schema": "スキーマを編集",
       "change-data": "データの変更",
       "export-data": "データをエクスポート",
+      "create-database": "データベースを作成する",
       "request-querier-role": "リクエストクエリーロール",
       "request-export-role": "エクスポートロールのリクエスト"
     }

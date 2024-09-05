@@ -160,6 +160,7 @@ import { isEmpty } from "lodash-es";
 import { NInput } from "naive-ui";
 import { v4 as uuidv4 } from "uuid";
 import { computed, reactive } from "vue";
+import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBSpin } from "@/bbkit";
 import InstanceRoleSelect from "@/components/InstanceRoleSelect.vue";
@@ -221,6 +222,7 @@ const emit = defineEmits<{
   (event: "dismiss"): void;
 }>();
 
+const { t } = useI18n();
 const router = useRouter();
 const currentUserV1 = useCurrentUserV1();
 // Prepare instance list.
@@ -360,7 +362,7 @@ const createV1 = async () => {
     creator: `users/${currentUserV1.value.email}`,
   });
 
-  issueCreate.title = `Create database '${databaseName}'`;
+  issueCreate.title = `${t("issue.title.create-database")} '${databaseName}'`;
   spec.createDatabaseConfig = createDatabaseConfig;
 
   state.creating = true;
