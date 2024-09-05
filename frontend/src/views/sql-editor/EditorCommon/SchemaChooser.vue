@@ -109,7 +109,7 @@ const options = computed(() => {
   );
   options.unshift({
     value: "",
-    label: t("common.all"),
+    label: t("database.schema.unspecified"),
   });
   return options;
 });
