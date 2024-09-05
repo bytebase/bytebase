@@ -65,6 +65,7 @@ func (h *Handler) handleTextDocumentCompletion(ctx context.Context, _ *jsonrpc2.
 		Scene:             h.getScene(),
 		InstanceID:        h.getInstanceID(),
 		DefaultDatabase:   defaultDatabase,
+		DefaultSchema:     h.getDefaultSchema(),
 		Metadata:          h.GetDatabaseMetadataFunc,
 		ListDatabaseNames: h.ListDatabaseNamesFunc,
 	}, string(content), params.Position.Line+1, params.Position.Character)
