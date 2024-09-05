@@ -1,4 +1,4 @@
-import { computed, watch } from "vue";
+import { watch } from "vue";
 import { databaseForTask } from "@/components/IssueV1/logic";
 import { useProgressivePoll } from "@/composables/useProgressivePoll";
 import { experimentalFetchIssueByUID, useChangeHistoryStore } from "@/store";
@@ -24,12 +24,8 @@ const clearChangeHistory = (issue: ComposedIssue) => {
 export const usePollIssue = () => {
   const { isCreating, ready, issue, events, activeTask } = useIssueContext();
 
-  const shouldPollIssue = computed(() => {
-    return !isCreating.value && ready.value;
-  });
-
   const refreshIssue = () => {
-    if (!shouldPollIssue.value) return;
+    if (isCreating.value || !ready.value) return;
     experimentalFetchIssueByUID(
       extractIssueUID(issue.value.name),
       extractProjectResourceName(issue.value.project)
@@ -55,9 +51,9 @@ export const usePollIssue = () => {
   });
 
   watch(
-    shouldPollIssue,
+    () => [isCreating.value, ready.value],
     () => {
-      if (shouldPollIssue.value) {
+      if (!isCreating.value && ready.value) {
         poller.start();
       } else {
         poller.stop();
