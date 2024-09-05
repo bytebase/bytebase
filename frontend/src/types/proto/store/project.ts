@@ -36,13 +36,13 @@ export function project_DefaultBackupBehaviorFromJSON(object: any): Project_Defa
     case 0:
     case "DEFAULT_BACKUP_BEHAVIOR_UNSPECIFIED":
       return Project_DefaultBackupBehavior.DEFAULT_BACKUP_BEHAVIOR_UNSPECIFIED;
-    case 2:
+    case 1:
     case "DEFAULT_BACKUP_BEHAVIOR_NO_BACKUP":
       return Project_DefaultBackupBehavior.DEFAULT_BACKUP_BEHAVIOR_NO_BACKUP;
-    case 3:
+    case 2:
     case "DEFAULT_BACKUP_BEHAVIOR_BACKUP_ON_ERROR_STOP":
       return Project_DefaultBackupBehavior.DEFAULT_BACKUP_BEHAVIOR_BACKUP_ON_ERROR_STOP;
-    case 4:
+    case 3:
     case "DEFAULT_BACKUP_BEHAVIOR_BACKUP_ON_ERROR_SKIP":
       return Project_DefaultBackupBehavior.DEFAULT_BACKUP_BEHAVIOR_BACKUP_ON_ERROR_SKIP;
     case -1:
@@ -73,11 +73,11 @@ export function project_DefaultBackupBehaviorToNumber(object: Project_DefaultBac
     case Project_DefaultBackupBehavior.DEFAULT_BACKUP_BEHAVIOR_UNSPECIFIED:
       return 0;
     case Project_DefaultBackupBehavior.DEFAULT_BACKUP_BEHAVIOR_NO_BACKUP:
-      return 2;
+      return 1;
     case Project_DefaultBackupBehavior.DEFAULT_BACKUP_BEHAVIOR_BACKUP_ON_ERROR_STOP:
-      return 3;
+      return 2;
     case Project_DefaultBackupBehavior.DEFAULT_BACKUP_BEHAVIOR_BACKUP_ON_ERROR_SKIP:
-      return 4;
+      return 3;
     case Project_DefaultBackupBehavior.UNRECOGNIZED:
     default:
       return -1;
