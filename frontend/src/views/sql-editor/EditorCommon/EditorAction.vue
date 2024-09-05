@@ -157,7 +157,7 @@ import {
   type FeatureType,
   type SQLEditorQueryParams,
 } from "@/types";
-import { keyboardShortcutStr } from "@/utils";
+import { keyboardShortcutStr, isWorksheetWritableV1 } from "@/utils";
 import { useSQLEditorContext } from "../context";
 import AdminModeButton from "./AdminModeButton.vue";
 import BatchQueryDatabasesSelector from "./BatchQueryDatabasesSelector.vue";
@@ -215,6 +215,19 @@ const allowQuery = computed(() => {
   return true;
 });
 
+const canWriteSheet = computed(() => {
+  if (!currentTab.value || !currentTab.value.worksheet) {
+    return false;
+  }
+  const sheet = useWorkSheetStore().getWorksheetByName(
+    currentTab.value.worksheet
+  );
+  if (!sheet) {
+    return false;
+  }
+  return isWorksheetWritableV1(sheet);
+});
+
 const allowSave = computed(() => {
   if (!showSheetsFeature.value) {
     return false;
@@ -228,6 +241,9 @@ const allowSave = computed(() => {
   }
 
   if (tab.worksheet) {
+    if (!canWriteSheet.value) {
+      return false;
+    }
     const sheet = useWorkSheetStore().getWorksheetByName(tab.worksheet);
     if (sheet && sheet.database !== tab.connection.database) {
       return true;
@@ -246,6 +262,11 @@ const allowShare = computed(() => {
   if (tab.status === "NEW" || tab.status === "DIRTY") return false;
   if (isEmptyStatement.value) return false;
   if (isDisconnected.value) return false;
+  if (tab.worksheet) {
+    if (!canWriteSheet.value) {
+      return false;
+    }
+  }
   return true;
 });
 
