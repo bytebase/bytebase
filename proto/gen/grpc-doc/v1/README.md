@@ -5620,6 +5620,7 @@ The identity provider&#39;s `name` field is used to identify the identity provid
 | tables | [IssueComment.TaskPriorBackup.Table](#bytebase-v1-IssueComment-TaskPriorBackup-Table) | repeated |  |
 | original_line | [int32](#int32) | optional |  |
 | database | [string](#string) |  |  |
+| error | [string](#string) |  |  |
 
 
 
