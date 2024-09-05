@@ -169,7 +169,7 @@ func RegisterDiagnoseFunc(engine storepb.Engine, f DiagnoseFunc) {
 func Diagnose(ctx context.Context, dCtx DiagnoseContext, engine storepb.Engine, statement string) ([]Diagnostic, error) {
 	f, ok := diagnoseCollectors[engine]
 	if !ok {
-		return nil, errors.Errorf("engine %s is not supported", engine)
+		return []Diagnostic{}, nil
 	}
 	return f(ctx, dCtx, statement)
 }
