@@ -13,12 +13,14 @@ export type AutoCompleteContextScene = "query" | "all";
 export type AutoCompleteContext = {
   instance: string; // instances/{instance}
   database?: string; // instances/{instance}/databases/{database_name}
+  schema?: string;
   scene?: AutoCompleteContextScene;
 };
 
 type SetMetadataParams = {
   instanceId: string; // instances/{instance}
   databaseName: string;
+  schema: string;
   scene?: AutoCompleteContextScene;
 };
 
@@ -34,6 +36,7 @@ export const useAutoComplete = async (
     const p: SetMetadataParams = {
       instanceId: "",
       databaseName: "",
+      schema: "",
       scene: context.value?.scene,
     };
     const ctx = context.value;
@@ -45,6 +48,9 @@ export const useAutoComplete = async (
       const { databaseName } = extractDatabaseResourceName(ctx.database ?? "");
       if (databaseName && databaseName !== String(UNKNOWN_ID)) {
         p.databaseName = databaseName;
+      }
+      if (ctx.schema) {
+        p.schema = ctx.schema;
       }
     }
     return p;
