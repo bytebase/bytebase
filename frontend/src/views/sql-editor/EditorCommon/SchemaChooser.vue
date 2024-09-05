@@ -23,8 +23,6 @@
       ghost
       type="primary"
       style="
-        max-width: 14rem;
-        margin-left: -1px;
         display: inline-flex;
         justify-content: end;
         overflow-x: hidden;
@@ -34,6 +32,9 @@
         --n-color-pressed: rgb(var(--color-accent) / 0.05);
         --n-color-focus: rgb(var(--color-accent) / 0.05);
       "
+      :style="{
+        maxWidth: chosenSchema ? '12rem' : 'unset',
+      }"
     >
       <template #icon>
         <SchemaIcon
@@ -44,7 +45,7 @@
       <span v-if="chosenSchema" class="truncate text-main">
         {{ chosenSchema }}
       </span>
-      <span v-else class="text-control-placeholder truncate">
+      <span v-else class="text-control-placeholder whitespace-nowrap">
         {{ $t("database.schema.select") }}
       </span>
     </NButton>
@@ -102,13 +103,13 @@ const databaseMetadata = computed(() => {
 const options = computed(() => {
   const options = databaseMetadata.value.schemas.map<SelectOption>(
     (schema) => ({
-      label: schema.name,
       value: schema.name,
+      label: schema.name,
     })
   );
   options.unshift({
-    label: t("common.all"),
     value: "",
+    label: t("common.all"),
   });
   return options;
 });
