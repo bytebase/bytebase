@@ -335,6 +335,13 @@ export const hasSchemaProperty = (databaseEngine: Engine) => {
   );
 };
 
+export const instanceAllowsSchemaScopedQuery = (
+  instanceOrEngine: Instance | InstanceResource | Engine
+) => {
+  const engine = engineOfInstanceV1(instanceOrEngine);
+  return hasSchemaProperty(engine) && engine !== Engine.MSSQL;
+};
+
 export const hasTableEngineProperty = (
   instanceOrEngine: Instance | InstanceResource | Engine
 ) => {

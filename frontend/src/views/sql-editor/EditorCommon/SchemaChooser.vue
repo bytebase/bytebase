@@ -64,13 +64,13 @@ import {
   useSQLEditorTabStore,
 } from "@/store";
 import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
-import { hasSchemaProperty } from "@/utils";
+import { instanceAllowsSchemaScopedQuery } from "@/utils";
 
 const { t } = useI18n();
 const { currentTab: tab } = storeToRefs(useSQLEditorTabStore());
 const { database, instance } = useConnectionOfCurrentSQLEditorTab();
 const show = computed(() => {
-  return hasSchemaProperty(instance.value.engine);
+  return instanceAllowsSchemaScopedQuery(instance.value.engine);
 });
 
 const popoverPaneRef = ref<HTMLDivElement>();
