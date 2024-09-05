@@ -1316,6 +1316,7 @@
       "edit-schema": "Editar esquema",
       "change-data": "Cambiar datos",
       "export-data": "Exportar datos",
+      "create-database": "Crear base de datos",
       "request-querier-role": "Rol de consultador de solicitudes",
       "request-export-role": "Solicitar función de exportación"
     }
