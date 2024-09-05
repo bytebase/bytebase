@@ -502,14 +502,15 @@ func NewTrickyCompleter(ctx context.Context, cCtx base.CompletionContext, statem
 	)
 
 	return &Completer{
-		ctx:                 ctx,
-		core:                core,
-		scene:               cCtx.Scene,
-		parser:              parser,
-		lexer:               lexer,
-		scanner:             scanner,
-		instanceID:          cCtx.InstanceID,
-		defaultDatabase:     cCtx.DefaultDatabase,
+		ctx:             ctx,
+		core:            core,
+		scene:           cCtx.Scene,
+		parser:          parser,
+		lexer:           lexer,
+		scanner:         scanner,
+		instanceID:      cCtx.InstanceID,
+		defaultDatabase: cCtx.DefaultDatabase,
+		// SQL Server does not support specifying schema in the frontend, so we always use dbo as the default schema.
 		defaultSchema:       "dbo",
 		metadataGetter:      cCtx.Metadata,
 		databaseNamesLister: cCtx.ListDatabaseNames,

@@ -74,6 +74,7 @@ type CompletionContext struct {
 	Scene             SceneType
 	InstanceID        string
 	DefaultDatabase   string
+	DefaultSchema     string
 	Metadata          GetDatabaseMetadataFunc
 	ListDatabaseNames ListDatabaseNamesFunc
 }
