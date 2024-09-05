@@ -1028,7 +1028,7 @@
               
               
                 <li>
-                  <a href="#bytebase.store.Project.PriorBackupPolicy"><span class="badge">E</span>Project.PriorBackupPolicy</a>
+                  <a href="#bytebase.store.Project.DefaultBackupBehavior"><span class="badge">E</span>Project.DefaultBackupBehavior</a>
                 </li>
               
               
@@ -8659,8 +8659,8 @@ for example, the environment resource can have the sql review config tag, like &
                 </tr>
               
                 <tr>
-                  <td>prior_backup_policy</td>
-                  <td><a href="#bytebase.store.Project.PriorBackupPolicy">Project.PriorBackupPolicy</a></td>
+                  <td>default_backup_behavior</td>
+                  <td><a href="#bytebase.store.Project.DefaultBackupBehavior">Project.DefaultBackupBehavior</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
@@ -8674,7 +8674,7 @@ for example, the environment resource can have the sql review config tag, like &
       
 
       
-        <h3 id="bytebase.store.Project.PriorBackupPolicy">Project.PriorBackupPolicy</h3>
+        <h3 id="bytebase.store.Project.DefaultBackupBehavior">Project.DefaultBackupBehavior</h3>
         <p></p>
         <table class="enum-table">
           <thead>
@@ -8683,26 +8683,26 @@ for example, the environment resource can have the sql review config tag, like &
           <tbody>
             
               <tr>
-                <td>PRIOR_BACKUP_POLICY_UNSPECIFIED</td>
+                <td>DEFAULT_BACKUP_BEHAVIOR_UNSPECIFIED</td>
                 <td>0</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>PRIOR_BACKUP_POLICY_NO_BACKUP</td>
-                <td>1</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>PRIOR_BACKUP_POLICY_BACKUP_ON_ERROR_STOP</td>
+                <td>DEFAULT_BACKUP_BEHAVIOR_NO_BACKUP</td>
                 <td>2</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>PRIOR_BACKUP_POLICY_BACKUP_ON_ERROR_SKIP</td>
+                <td>DEFAULT_BACKUP_BEHAVIOR_BACKUP_ON_ERROR_STOP</td>
                 <td>3</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>DEFAULT_BACKUP_BEHAVIOR_BACKUP_ON_ERROR_SKIP</td>
+                <td>4</td>
                 <td><p></p></td>
               </tr>
             

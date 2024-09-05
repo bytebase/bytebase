@@ -1940,7 +1940,7 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.Project.PriorBackupPolicy"><span class="badge">E</span>Project.PriorBackupPolicy</a>
+                  <a href="#bytebase.v1.Project.DefaultBackupBehavior"><span class="badge">E</span>Project.DefaultBackupBehavior</a>
                 </li>
               
                 <li>
@@ -20461,8 +20461,8 @@ Format: projects/{project} </p></td>
                 </tr>
               
                 <tr>
-                  <td>prior_backup_policy</td>
-                  <td><a href="#bytebase.v1.Project.PriorBackupPolicy">Project.PriorBackupPolicy</a></td>
+                  <td>default_backup_behavior</td>
+                  <td><a href="#bytebase.v1.Project.DefaultBackupBehavior">Project.DefaultBackupBehavior</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
@@ -21030,7 +21030,7 @@ TYPE_SQL_EDITOR_QUERY represents executing query in SQL Editor.</p></td>
           </tbody>
         </table>
       
-        <h3 id="bytebase.v1.Project.PriorBackupPolicy">Project.PriorBackupPolicy</h3>
+        <h3 id="bytebase.v1.Project.DefaultBackupBehavior">Project.DefaultBackupBehavior</h3>
         <p></p>
         <table class="enum-table">
           <thead>
@@ -21039,26 +21039,26 @@ TYPE_SQL_EDITOR_QUERY represents executing query in SQL Editor.</p></td>
           <tbody>
             
               <tr>
-                <td>PRIOR_BACKUP_POLICY_UNSPECIFIED</td>
+                <td>DEFAULT_BACKUP_BEHAVIOR_UNSPECIFIED</td>
                 <td>0</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>PRIOR_BACKUP_POLICY_NO_BACKUP</td>
-                <td>1</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>PRIOR_BACKUP_POLICY_BACKUP_ON_ERROR_STOP</td>
+                <td>DEFAULT_BACKUP_BEHAVIOR_NO_BACKUP</td>
                 <td>2</td>
                 <td><p></p></td>
               </tr>
             
               <tr>
-                <td>PRIOR_BACKUP_POLICY_BACKUP_ON_ERROR_SKIP</td>
+                <td>DEFAULT_BACKUP_BEHAVIOR_BACKUP_ON_ERROR_STOP</td>
                 <td>3</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>DEFAULT_BACKUP_BEHAVIOR_BACKUP_ON_ERROR_SKIP</td>
+                <td>4</td>
                 <td><p></p></td>
               </tr>
             
