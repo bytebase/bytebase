@@ -23,6 +23,9 @@ type SetMetadataCommandArguments struct {
 	// For PostgreSQL, it's required.
 	// For other database engines, it's optional.
 	DatabaseName string `json:"databaseName,omitempty"`
+	// The Schema is the connection schema name.
+	// Mainly using to set the search path or current schema.
+	Schema string `json:"schema,omitempty"`
 	// The scene is the scene for completion.
 	// Available scenes: "query", "all".
 	// If not provided, it defaults to "all".
