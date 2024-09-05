@@ -1316,6 +1316,7 @@
       "edit-schema": "Edit schema",
       "change-data": "Change data",
       "export-data": "Export data",
+      "create-database": "Create database",
       "request-querier-role": "Request querier role",
       "request-export-role": "Request export role"
     }
