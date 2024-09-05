@@ -489,8 +489,8 @@ func printColumnClause(buf *strings.Builder, column *storepb.ColumnMetadata) err
 		}
 	}
 
-	if column.GetOnUpdate() != "" {
-		if _, err := buf.WriteString(fmt.Sprintf(" ON UPDATE %s", c.onUpdate)); err != nil {
+	if column.OnUpdate != "" {
+		if _, err := buf.WriteString(fmt.Sprintf(" ON UPDATE %s", column.OnUpdate)); err != nil {
 			return err
 		}
 	}
