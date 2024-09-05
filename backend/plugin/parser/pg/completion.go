@@ -291,6 +291,10 @@ func (m CompletionMap) insertFunctions() {
 }
 
 func (m CompletionMap) insertSchemas(c *Completer) {
+	// Skip if user has specified the schema.
+	if c.defaultSchema != "" && c.defaultSchema != "public" {
+		return
+	}
 	for _, schema := range c.listAllSchemas() {
 		m.Insert(base.Candidate{
 			Type: base.CandidateTypeSchema,
