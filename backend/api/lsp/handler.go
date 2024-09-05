@@ -96,6 +96,15 @@ func (h *Handler) getDefaultDatabase() string {
 	return h.metadata.DatabaseName
 }
 
+func (h *Handler) getDefaultSchema() string {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	if h.metadata == nil {
+		return ""
+	}
+	return h.metadata.Schema
+}
+
 func (h *Handler) getInstanceID() string {
 	h.mu.Lock()
 	defer h.mu.Unlock()
