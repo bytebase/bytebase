@@ -1831,7 +1831,8 @@
     "sensitive": "Sensible",
     "access-denied": "No tiene permiso para acceder a esta base de datos.",
     "schema": {
-      "select": "Seleccionar esquema"
+      "select": "Seleccionar esquema",
+      "unspecified": "No especificado"
     },
     "show-missing-databases": "Mostrar bases de datos faltantes",
     "n-selected-m-in-total": "({selected} seleccionados, {total} en total)",

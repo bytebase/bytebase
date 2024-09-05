@@ -1831,7 +1831,8 @@
     "sensitive": "Sensitive",
     "access-denied": "You don't have the permission to access this database.",
     "schema": {
-      "select": "Select schema"
+      "select": "Select schema",
+      "unspecified": "Unspecified"
     },
     "show-missing-databases": "Show missing databases",
     "n-selected-m-in-total": "({selected} selected, {total} in total)",
