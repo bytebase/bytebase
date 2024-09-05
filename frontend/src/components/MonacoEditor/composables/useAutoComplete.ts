@@ -20,7 +20,7 @@ export type AutoCompleteContext = {
 type SetMetadataParams = {
   instanceId: string; // instances/{instance}
   databaseName: string;
-  schema: string;
+  schema?: string;
   scene?: AutoCompleteContextScene;
 };
 
@@ -36,7 +36,6 @@ export const useAutoComplete = async (
     const p: SetMetadataParams = {
       instanceId: "",
       databaseName: "",
-      schema: "",
       scene: context.value?.scene,
     };
     const ctx = context.value;
