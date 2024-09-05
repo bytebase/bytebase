@@ -275,9 +275,8 @@ const checkPassword = () => {
     return;
   }
   state.passwordHint =
-    !/^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])[\w~@#$%^&*+=`|{}:;!.?\"()\[\]-]{8,}/.test(
-      pwd
-    );
+    // eslint-disable-next-line no-useless-escape
+    !/^(?=.*\d)(?=.*[a-zA-Z])[\w~@#$%^&*+=|{}:;!.?\"()\[\]-]{8,}$/.test(pwd);
   return;
 };
 
