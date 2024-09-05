@@ -12,7 +12,7 @@ import { Worksheet_Visibility } from "@/types/proto/v1/worksheet_service";
 import {
   extractWorksheetUID,
   getSheetStatement,
-  isWorksheetReadableV1,
+  isWorksheetWritableV1,
   getStatementSize,
 } from "@/utils";
 import { useCurrentUserV1 } from "../auth";
@@ -257,7 +257,7 @@ export const useWorkSheetAndTabStore = defineStore("worksheet_and_tab", () => {
       return true;
     }
 
-    return !isWorksheetReadableV1(worksheet);
+    return !isWorksheetWritableV1(worksheet);
   });
 
   return { currentSheet: currentWorksheet, isCreator, isReadOnly };
