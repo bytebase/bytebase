@@ -95,30 +95,24 @@ const OperatorList: Record<Factor, Operator[]> = {
   classification_level: uniq([...CollectionOperatorList]),
 
   // Database group related fields.
-  "resource.environment_name": uniq(["_==_"]),
+  "resource.environment_name": uniq([
+    ...EqualityOperatorList,
+    ...CollectionOperatorList,
+  ]),
   "resource.instance_id": uniq([
-    "_==_",
-    "_!=_",
-    "startsWith",
-    "endsWith",
-    "contains",
-    "matches",
+    ...EqualityOperatorList,
+    ...CollectionOperatorList,
+    ...StringOperatorList,
   ]),
   "resource.database_name": uniq([
-    "_==_",
-    "_!=_",
-    "startsWith",
-    "endsWith",
-    "contains",
-    "matches",
+    ...EqualityOperatorList,
+    ...CollectionOperatorList,
+    ...StringOperatorList,
   ]),
   "resource.table_name": uniq([
-    "_==_",
-    "_!=_",
-    "startsWith",
-    "endsWith",
-    "contains",
-    "matches",
+    ...EqualityOperatorList,
+    ...CollectionOperatorList,
+    ...StringOperatorList,
   ]),
 
   // Request query/export factors
