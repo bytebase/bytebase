@@ -288,7 +288,8 @@
       "n-rows": "{n} 行"
     },
     "back-to-workspace": "返回工作空间",
-    "override": "覆盖"
+    "override": "覆盖",
+    "encoding": "编码"
   },
   "error-page": {
     "go-back-home": "回到主页"

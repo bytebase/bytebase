@@ -288,7 +288,8 @@
       "n-rows": "{n} rows"
     },
     "back-to-workspace": "Back to workspace",
-    "override": "Override"
+    "override": "Override",
+    "encoding": "Encoding"
   },
   "error-page": {
     "go-back-home": "Go back home"
