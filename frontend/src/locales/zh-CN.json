@@ -1830,9 +1830,10 @@
       "generated-ddl-statement": "生成的 DDL 语句"
     },
     "sensitive": "敏感",
-    "access-denied": "您没有访问该数据库的权限",
+    "access-denied": "您无权访问该数据库",
     "schema": {
-      "select": "选择 schema"
+      "select": "选择 schema",
+      "unspecified": "未指定"
     },
     "show-missing-databases": "显示未找到的数据库",
     "n-selected-m-in-total": "（已选择 {selected}，共计 {total}）",
