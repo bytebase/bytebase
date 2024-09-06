@@ -269,7 +269,8 @@ onMounted(async () => {
   }
   // Try to signin with example account in demo site.
   if (
-    window.location.href.startsWith("https://demo.bytebase.com") &&
+    (window.location.href.startsWith("https://demo.bytebase.com") ||
+      window.location.href.startsWith("https://sql-editor.com")) &&
     isDemo.value &&
     state.email &&
     state.password
