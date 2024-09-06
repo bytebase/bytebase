@@ -23,19 +23,53 @@
       </NTooltip>
     </NUploadTrigger>
   </NUpload>
+
+  <BBModal
+    :show="state.showModal"
+    :title="$t('sql-editor.select-encoding')"
+    class="shadow-inner outline outline-gray-200"
+    @close="closeModal"
+  >
+    <div class="w-80">
+      <div class="w-full flex flex-row justify-start items-center gap-2">
+        <span class="textinfolabel">{{ $t("common.encoding") }}</span>
+        <NSelect
+          v-model:value="state.encoding"
+          class="!w-24"
+          filterable
+          :options="encodingOptions"
+          :consistent-menu-width="false"
+        />
+      </div>
+      <div>
+        <NUpload :file-list="uploadFileList" disabled trigger-class="!hidden">
+        </NUpload>
+      </div>
+    </div>
+    <div class="w-full flex items-center justify-end mt-2 space-x-3">
+      <NButton @click="closeModal">
+        {{ $t("common.cancel") }}
+      </NButton>
+      <NButton type="primary" @click="save">
+        {{ $t("common.save") }}
+      </NButton>
+    </div>
+  </BBModal>
 </template>
 
 <script setup lang="ts">
 import { UploadIcon } from "lucide-vue-next";
 import {
   NButton,
+  NSelect,
   NTooltip,
   NUpload,
   NUploadTrigger,
   type UploadFileInfo,
 } from "naive-ui";
-import { ref } from "vue";
+import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
+import BBModal from "@/bbkit/BBModal.vue";
 import { pushNotification, useChangelistStore, useSheetV1Store } from "@/store";
 import {
   Changelist_Change as Change,
@@ -43,54 +77,64 @@ import {
 } from "@/types/proto/v1/changelist_service";
 import { Engine } from "@/types/proto/v1/common";
 import { Sheet } from "@/types/proto/v1/sheet_service";
-import { setSheetStatement } from "@/utils";
+import { ENCODINGS, setSheetStatement, type Encoding } from "@/utils";
+import { fallbackVersionForChange } from "../../common";
 import { readUpload, type ParsedFile } from "../../import";
 import { useChangelistDetailContext } from "../context";
-import { fallbackVersionForChange } from "../../common";
+
+interface LocalState {
+  encoding: Encoding;
+  files: ParsedFile[];
+  showModal: boolean;
+}
 
 const { t } = useI18n();
 const { changelist, project, isUpdating } = useChangelistDetailContext();
+const state = reactive<LocalState>({
+  encoding: "utf-8",
+  files: [],
+  showModal: false,
+});
 const uploadFileList = ref<UploadFileInfo[]>([]);
 
-const handleFileChange = async (options: { file: UploadFileInfo }) => {
-  const cleanup = () => {
-    isUpdating.value = false;
-    uploadFileList.value = [];
-  };
+const encodingOptions = computed(() =>
+  ENCODINGS.map((encoding) => ({
+    label: encoding,
+    value: encoding,
+  }))
+);
 
-  try {
-    isUpdating.value = true;
-    const files = await readUpload(options.file);
-
-    if (files.length === 0) {
-      pushNotification({
-        module: "bytebase",
-        style: "WARN",
-        title: t("changelist.import.no-file-to-upload"),
-      });
-      return cleanup();
-    }
-
-    await save(files);
-
-    pushNotification({
-      module: "bytebase",
-      style: "SUCCESS",
-      title: t("common.updated"),
-    });
-  } finally {
-    cleanup();
-  }
+const cleanup = () => {
+  isUpdating.value = false;
+  uploadFileList.value = [];
+  state.files = [];
 };
 
-const save = async (files: ParsedFile[]) => {
+const handleFileChange = async (options: { file: UploadFileInfo }) => {
+  isUpdating.value = true;
+  const files = await readUpload(options.file);
+  if (files.length === 0) {
+    pushNotification({
+      module: "bytebase",
+      style: "WARN",
+      title: t("changelist.import.no-file-to-upload"),
+    });
+    uploadFileList.value = [];
+  }
+  state.files = files;
+  state.showModal = true;
+};
+
+const save = async () => {
+  isUpdating.value = true;
   const createdSheets = await Promise.all(
-    files.map(async (f) => {
-      const { name, content } = f;
+    state.files.map(async (f) => {
+      const { name, arrayBuffer } = f;
       const sheet = Sheet.fromPartial({
         title: name,
         engine: Engine.ENGINE_UNSPECIFIED, // TODO(jim)
       });
+      const content = new TextDecoder(state.encoding).decode(arrayBuffer);
       setSheetStatement(sheet, content);
       const created = await useSheetV1Store().createSheet(
         project.value.name,
@@ -102,7 +146,7 @@ const save = async (files: ParsedFile[]) => {
   const newChanges = createdSheets.map((sheet) =>
     Change.fromPartial({
       sheet: sheet.name,
-      version: fallbackVersionForChange()
+      version: fallbackVersionForChange(),
     })
   );
   const changelistPatch = Changelist.fromPartial({
@@ -110,5 +154,16 @@ const save = async (files: ParsedFile[]) => {
     changes: [...changelist.value.changes, ...newChanges],
   });
   await useChangelistStore().patchChangelist(changelistPatch, ["changes"]);
+  closeModal();
+  pushNotification({
+    module: "bytebase",
+    style: "SUCCESS",
+    title: t("common.updated"),
+  });
+};
+
+const closeModal = () => {
+  state.showModal = false;
+  cleanup();
 };
 </script>

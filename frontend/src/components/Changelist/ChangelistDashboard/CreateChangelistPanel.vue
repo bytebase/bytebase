@@ -55,22 +55,34 @@
                 :multiple="false"
                 @change="uploadFileList = [$event.file]"
               >
-                <NUploadTrigger #="{ handleClick }" abstract>
-                  <NButton
-                    icon
-                    style="--n-padding: 0 10px"
-                    class="self-start"
-                    :loading="isParsingUploadFile"
-                    @click="handleClick"
-                  >
-                    <template #icon>
-                      <UploadIcon class="w-4 h-4" />
-                    </template>
-                    {{
-                      $t("changelist.import.optional-upload-sql-or-zip-file")
-                    }}
-                  </NButton>
-                </NUploadTrigger>
+                <div
+                  class="w-full flex flex-row justify-start items-center gap-2"
+                >
+                  <NUploadTrigger #="{ handleClick }" abstract>
+                    <NButton
+                      icon
+                      style="--n-padding: 0 10px"
+                      class="self-start"
+                      :loading="isParsingUploadFile"
+                      @click="handleClick"
+                    >
+                      <template #icon>
+                        <UploadIcon class="w-4 h-4" />
+                      </template>
+                      {{
+                        $t("changelist.import.optional-upload-sql-or-zip-file")
+                      }}
+                    </NButton>
+                  </NUploadTrigger>
+                  <NSelect
+                    v-if="uploadFileList.length > 0"
+                    v-model:value="state.encoding"
+                    class="!w-24"
+                    filterable
+                    :options="encodingOptions"
+                    :consistent-menu-width="false"
+                  />
+                </div>
                 <div class="flex flex-col gap-1">
                   <NUploadFileList />
                 </div>
@@ -130,10 +142,11 @@ import {
   NUploadFileList,
   NUploadTrigger,
   type UploadFileInfo,
+  NSelect,
 } from "naive-ui";
 import { Status } from "nice-grpc-common";
 import { zindexable as vZindexable } from "vdirs";
-import { ref, watch } from "vue";
+import { computed, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBSpin } from "@/bbkit";
@@ -159,11 +172,20 @@ import {
 } from "@/types/proto/v1/changelist_service";
 import { Engine } from "@/types/proto/v1/common";
 import { Sheet } from "@/types/proto/v1/sheet_service";
-import { extractChangelistResourceName, setSheetStatement } from "@/utils";
+import {
+  ENCODINGS,
+  extractChangelistResourceName,
+  setSheetStatement,
+  type Encoding,
+} from "@/utils";
 import { getErrorCode } from "@/utils/grpcweb";
 import { fallbackVersionForChange } from "../common";
 import { readUpload, type ParsedFile } from "../import";
 import { useChangelistDashboardContext } from "./context";
+
+interface LocalState {
+  encoding: Encoding;
+}
 
 const props = defineProps<{
   project?: ComposedProject;
@@ -173,12 +195,22 @@ const props = defineProps<{
 const router = useRouter();
 const { t } = useI18n();
 const { showCreatePanel, events } = useChangelistDashboardContext();
+const state = reactive<LocalState>({
+  encoding: "utf-8",
+});
 
 const title = ref("");
 const projectName = ref<string | undefined>(props.project?.name);
 const isLoading = ref(false);
 const resourceId = ref("");
 const resourceIdField = ref<InstanceType<typeof ResourceIdField>>();
+
+const encodingOptions = computed(() =>
+  ENCODINGS.map((encoding) => ({
+    label: encoding,
+    value: encoding,
+  }))
+);
 
 const errors = asyncComputed(() => {
   const errors: string[] = [];
@@ -276,11 +308,12 @@ const doCreate = async () => {
 
     const createdSheets = await Promise.all(
       files.value.map(async (f) => {
-        const { name, content } = f;
+        const { name, arrayBuffer } = f;
         const sheet = Sheet.fromPartial({
           title: name,
           engine: Engine.ENGINE_UNSPECIFIED, // TODO(jim)
         });
+        const content = new TextDecoder(state.encoding).decode(arrayBuffer);
         setSheetStatement(sheet, content);
         const created = await useSheetV1Store().createSheet(
           project.name,
