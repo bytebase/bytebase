@@ -323,6 +323,15 @@ const expandNode = (node: TreeNode) => {
 
 useEmitteryEventListener(nodeClickEvents, "single-click", ({ node }) => {
   expandNode(node);
+  if (node.meta.type === "schema") {
+    const tab = currentTab.value;
+    if (tab) {
+      tab.connection.schema = (
+        node.meta.target as NodeTarget<"schema">
+      ).schema.name;
+      return;
+    }
+  }
   viewDetail(node);
 });
 useEmitteryEventListener(nodeClickEvents, "double-click", ({ node }) => {
