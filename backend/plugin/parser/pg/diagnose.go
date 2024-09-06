@@ -18,7 +18,7 @@ func init() {
 
 func Diagnose(_ context.Context, _ base.DiagnoseContext, statement string) ([]base.Diagnostic, error) {
 	diagnostics := make([]base.Diagnostic, 0)
-	syntaxError := parsePostgreSQL(statement)
+	syntaxError := parsePostgreSQLStatement(statement)
 	if syntaxError != nil {
 		diagnostics = append(diagnostics, base.ConvertSyntaxErrorToDiagnostic(syntaxError))
 	}
@@ -26,9 +26,9 @@ func Diagnose(_ context.Context, _ base.DiagnoseContext, statement string) ([]ba
 	return diagnostics, nil
 }
 
-// parsePostgreSQL parses the given SQL and returns the ParseResult.
+// parsePostgreSQLStatement parses the given SQL and returns the ParseResult.
 // Use the PostgreSQL parser based on antlr4.
-func parsePostgreSQL(sql string) *base.SyntaxError {
+func parsePostgreSQLStatement(sql string) *base.SyntaxError {
 	lexer := parser.NewPostgreSQLLexer(antlr.NewInputStream(sql))
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
 	p := parser.NewPostgreSQLParser(stream)
