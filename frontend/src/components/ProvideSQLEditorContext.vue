@@ -465,6 +465,9 @@ const syncURLWithConnection = () => {
       if (databaseName) {
         const database = databaseStore.getDatabaseByName(databaseName);
         if (isValidDatabaseName(database.name)) {
+          if (schema) {
+            query.schema = schema;
+          }
           if (table) {
             query.table = table;
             query.schema = schema ?? "";

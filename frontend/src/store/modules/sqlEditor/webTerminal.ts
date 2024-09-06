@@ -293,9 +293,10 @@ const mapRequest = (
   const { connection, statement, explain } = params;
 
   const database = useDatabaseV1Store().getDatabaseByName(connection.database);
-  const request = AdminExecuteRequest.fromJSON({
+  const request = AdminExecuteRequest.fromPartial({
     name: database.name,
     statement: explain ? `EXPLAIN ${statement}` : statement,
+    schema: connection.schema,
   });
   return request;
 };

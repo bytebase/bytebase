@@ -13,6 +13,7 @@
       :auto-complete-context="{
         instance: instance.name,
         database: database.name,
+        schema: chosenSchema,
         scene: 'query',
       }"
       @update:content="handleUpdateStatement"
@@ -89,6 +90,12 @@ const filename = computed(() => {
   const name = currentTab.value?.id || uuidv1();
   const ext = extensionNameOfLanguage(language.value);
   return `${name}.${ext}`;
+});
+
+const chosenSchema = computed(() => {
+  const tab = currentTab.value;
+  if (!tab || tab.connection.schema === "") return undefined;
+  return tab.connection.schema;
 });
 
 const handleUpdateStatement = (value: string) => {
