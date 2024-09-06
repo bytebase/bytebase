@@ -4,18 +4,16 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"log/slog"
 	"os"
 
-	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
 	"github.com/sourcegraph/go-lsp"
 	"github.com/sourcegraph/jsonrpc2"
 
-	parser "github.com/bytebase/mysql-parser"
-
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	"github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 // GetFS returns the file system.
@@ -81,14 +79,16 @@ func (h *Handler) handleFileSystemRequest(ctx context.Context, conn *jsonrpc2.Co
 				return err
 			}
 			// Beta: Parse and send diagnostics for MySQL.
-			if h.profile.Mode == common.ReleaseModeDev && h.getEngineType(ctx) == store.Engine_MYSQL {
+			if h.profile.Mode == common.ReleaseModeDev {
 				uri := params.TextDocument.URI
 				content, found := fs.get(uri)
 				if !found {
 					return &os.PathError{Op: "Open", Path: string(uri), Err: os.ErrNotExist}
 				}
-				err := parseMySQLStatement(string(content))
-				diagnostics := collectDiagnostics(err)
+				diagnostics, err := base.Diagnose(ctx, base.DiagnoseContext{}, h.getEngineType(ctx), string(content))
+				if err != nil {
+					slog.Warn("dianose error", log.BBError(err))
+				}
 				if err := conn.Notify(ctx, string(LSPMethodPublishDiagnostics), &lsp.PublishDiagnosticsParams{
 					URI:         uri,
 					Diagnostics: diagnostics,
@@ -117,64 +117,4 @@ func (h *Handler) handleFileSystemRequest(ctx context.Context, conn *jsonrpc2.Co
 	default:
 		return "", false, errors.Errorf("unknown file system request method: %q", req.Method)
 	}
-}
-
-func parseMySQLStatement(statement string) *base.SyntaxError {
-	inputStream := antlr.NewInputStream(statement)
-	lexer := parser.NewMySQLLexer(inputStream)
-	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
-
-	p := parser.NewMySQLParser(stream)
-	lexerErrorListener := &base.ParseErrorListener{
-		BaseLine: 0,
-	}
-	lexer.RemoveErrorListeners()
-	lexer.AddErrorListener(lexerErrorListener)
-
-	parserErrorListener := &base.ParseErrorListener{
-		BaseLine: 0,
-	}
-	p.RemoveErrorListeners()
-	p.AddErrorListener(parserErrorListener)
-
-	p.BuildParseTrees = false
-
-	_ = p.Script()
-
-	if lexerErrorListener.Err != nil {
-		return lexerErrorListener.Err
-	}
-
-	if parserErrorListener.Err != nil {
-		return parserErrorListener.Err
-	}
-	return nil
-}
-
-func collectDiagnostics(err *base.SyntaxError) []lsp.Diagnostic {
-	if err == nil {
-		return []lsp.Diagnostic{}
-	}
-	syntaxDiagnostic := lsp.Diagnostic{
-		Range: lsp.Range{
-			Start: lsp.Position{
-				// Convert to zero-based.
-				Line:      err.Line - 1,
-				Character: err.Column,
-			},
-			End: lsp.Position{
-				// Convert to zero-based.
-				Line: err.Line - 1,
-				// The end position is exclusive.
-				Character: err.Column + 1,
-			},
-		},
-		Severity: lsp.Error,
-		Source:   "Syntax check",
-		// Use RawMessage which created by antlr runtime, do not need our fine-tuned message
-		// because we had indicated the error position in the message.
-		Message: err.RawMessage,
-	}
-
-	return []lsp.Diagnostic{syntaxDiagnostic}
 }

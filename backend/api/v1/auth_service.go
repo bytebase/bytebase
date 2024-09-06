@@ -43,7 +43,7 @@ type CreateUserFunc func(ctx context.Context, user *store.UserMessage, firstEndU
 
 var (
 	invalidUserOrPasswordError = status.Errorf(codes.Unauthenticated, "The email or password is not valid.")
-	passwordValidRegex         = regexp2.MustCompile(`^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$`, 0)
+	passwordValidRegex         = regexp2.MustCompile(`^(?=.*\d)(?=.*[a-zA-Z])[\w~@#$%^&*+=|{}:;!.?\"()\[\]-]{8,}$`, 0)
 )
 
 // AuthService implements the auth service.

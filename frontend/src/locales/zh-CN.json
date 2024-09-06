@@ -1316,6 +1316,7 @@
       "edit-schema": "变更 Schema",
       "change-data": "变更数据",
       "export-data": "导出数据",
+      "create-database": "创建数据库",
       "request-querier-role": "申请查询者角色",
       "request-export-role": "申请导出者角色"
     }
