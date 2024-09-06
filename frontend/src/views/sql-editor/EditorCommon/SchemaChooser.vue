@@ -25,7 +25,7 @@
       style="
         display: inline-flex;
         justify-content: end;
-        overflow-x: hidden;
+        overflow: hidden;
         --n-padding: 0 7px 0 5px;
         --n-icon-margin: 6px 2px 6px 0;
         --n-color-hover: rgb(var(--color-accent) / 0.05);
