@@ -288,7 +288,8 @@
       "n-rows": "{n} 行"
     },
     "back-to-workspace": "ワークスペースに戻る",
-    "override": "オーバーライド"
+    "override": "オーバーライド",
+    "encoding": "エンコーディング"
   },
   "error-page": {
     "go-back-home": "ホームページに戻る"

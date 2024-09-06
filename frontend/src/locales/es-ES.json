@@ -288,7 +288,8 @@
       "n-rows": "{n} filas"
     },
     "back-to-workspace": "Volver al espacio de trabajo",
-    "override": "Anular"
+    "override": "Anular",
+    "encoding": "Codificación"
   },
   "error-page": {
     "go-back-home": "Volver al inicio"
