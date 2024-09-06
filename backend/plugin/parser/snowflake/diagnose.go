@@ -1,0 +1,57 @@
+package snowflake
+
+import (
+	"context"
+
+	"github.com/antlr4-go/antlr/v4"
+	parser "github.com/bytebase/snowsql-parser"
+
+	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	"github.com/bytebase/bytebase/proto/generated-go/store"
+)
+
+func init() {
+	base.RegisterDiagnoseFunc(store.Engine_SNOWFLAKE, Diagnose)
+}
+
+func Diagnose(_ context.Context, _ base.DiagnoseContext, statement string) ([]base.Diagnostic, error) {
+	diagnostics := make([]base.Diagnostic, 0)
+	syntaxError := parseSnowflakeStatement(statement)
+	if syntaxError != nil {
+		diagnostics = append(diagnostics, base.ConvertSyntaxErrorToDiagnostic(syntaxError))
+	}
+
+	return diagnostics, nil
+}
+
+func parseSnowflakeStatement(statement string) *base.SyntaxError {
+	inputStream := antlr.NewInputStream(statement)
+	lexer := parser.NewSnowflakeLexer(inputStream)
+	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
+
+	p := parser.NewSnowflakeParser(stream)
+	lexerErrorListener := &base.ParseErrorListener{
+		BaseLine: 0,
+	}
+	lexer.RemoveErrorListeners()
+	lexer.AddErrorListener(lexerErrorListener)
+
+	parserErrorListener := &base.ParseErrorListener{
+		BaseLine: 0,
+	}
+	p.RemoveErrorListeners()
+	p.AddErrorListener(parserErrorListener)
+
+	p.BuildParseTrees = false
+
+	_ = p.Snowflake_file()
+
+	if lexerErrorListener.Err != nil {
+		return lexerErrorListener.Err
+	}
+
+	if parserErrorListener.Err != nil {
+		return parserErrorListener.Err
+	}
+	return nil
+}
