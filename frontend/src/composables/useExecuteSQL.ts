@@ -320,6 +320,7 @@ const useExecuteSQL = () => {
               statement: params.statement,
               limit: sqlEditorStore.resultRowsLimit,
               explain: params.explain,
+              schema: params.connection.schema,
               timeout: undefined, // TODO: make this param configurable
             },
             abortController.signal
@@ -330,6 +331,7 @@ const useExecuteSQL = () => {
               name: database.name,
               statement: params.statement,
               limit: sqlEditorStore.resultRowsLimit,
+              schema: params.connection.schema,
               timeout: undefined, // TODO: make this param configurable
             },
             abortController.signal

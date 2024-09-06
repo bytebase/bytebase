@@ -1,6 +1,6 @@
 <template>
   <div
-    class="text-md font-normal flex flex-col gap-2"
+    class="text-md font-normal flex flex-col gap-2 text-sm"
     :class="[dark ? 'text-matrix-green-hover' : 'text-control-light']"
   >
     <template v-if="resultSet && resultSet.advices.length > 0">
@@ -12,7 +12,7 @@
       />
     </template>
     <template v-else>
-      <div class="flex items-start gap-2">
+      <div class="flex items-center gap-2">
         <div class="shrink-0 flex items-center h-6">
           <CircleAlertIcon class="w-6 h-6 text-error" />
         </div>

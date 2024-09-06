@@ -15,6 +15,12 @@
         min: MIN_EDITOR_HEIGHT,
         max: MAX_EDITOR_HEIGHT,
       }"
+      :auto-complete-context="{
+        instance: instance.name,
+        database: database.name,
+        schema: chosenSchema,
+        scene: 'query',
+      }"
       @update:content="handleChange"
       @ready="handleEditorReady"
     />
@@ -74,13 +80,19 @@ const MAX_EDITOR_HEIGHT = 360; // ~= 2 lines
 const tabStore = useSQLEditorTabStore();
 
 const { events: editorEvents } = useSQLEditorContext();
-const { connection, instance } = useConnectionOfCurrentSQLEditorTab();
+const { connection, instance, database } = useConnectionOfCurrentSQLEditorTab();
 const language = useInstanceV1EditorLanguage(instance);
-const { isSwitchingTab } = storeToRefs(tabStore);
+const { currentTab, isSwitchingTab } = storeToRefs(tabStore);
 const pendingFormatContentCommand = ref(false);
 const dialect = computed((): SQLDialect => {
   const engine = instance.value.engine;
   return dialectOfEngineV1(engine);
+});
+
+const chosenSchema = computed(() => {
+  const tab = currentTab.value;
+  if (!tab || tab.connection.schema === "") return undefined;
+  return tab.connection.schema;
 });
 
 const firstLinePrompt = computed(() => {

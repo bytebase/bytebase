@@ -250,7 +250,14 @@ const renderLabel = ({ option }: { option: TreeOption }) => {
 const selectedKeys = computed(() => {
   const db = database.value;
   if (!isValidDatabaseName(db.name)) return [];
-  if (!panelViewState.value) return [];
+  const keys: string[] = [];
+  const tab = currentTab.value;
+  if (tab && tab.connection.schema) {
+    keys.push(`${db.name}/schemas/${tab.connection.schema}`);
+  }
+  if (!panelViewState.value || panelViewState.value.view === "CODE") {
+    return keys;
+  }
   const {
     schema,
     detail: {
@@ -293,10 +300,6 @@ const selectedKeys = computed(() => {
   } else if (externalTable) {
     parts.push(`externalTables/${externalTable}`);
   }
-  if (parts.length <= 2) {
-    // don't highlight if only the root (schema) node is picked
-    return [];
-  }
 
   return [parts.join("/")];
 });
@@ -323,6 +326,15 @@ const expandNode = (node: TreeNode) => {
 
 useEmitteryEventListener(nodeClickEvents, "single-click", ({ node }) => {
   expandNode(node);
+  if (node.meta.type === "schema") {
+    const tab = currentTab.value;
+    if (tab) {
+      tab.connection.schema = (
+        node.meta.target as NodeTarget<"schema">
+      ).schema.name;
+      return;
+    }
+  }
   viewDetail(node);
 });
 useEmitteryEventListener(nodeClickEvents, "double-click", ({ node }) => {
