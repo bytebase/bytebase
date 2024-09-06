@@ -148,10 +148,6 @@ Bytebase is a Database CI/CD solution for the Developers and DBAs. It's the **on
 
 # 🔧 Installation
 
-- One liner installation script from latest release
-  ```bash
-  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/bytebase/install/main/install.sh)"
-  ```
 - [Docker](https://www.bytebase.com/docs/get-started/install/deploy-with-docker)
 - [Kubernetes](https://www.bytebase.com/docs/get-started/install/deploy-to-kubernetes)
 - [Build from source](https://www.bytebase.com/docs/get-started/install/build-from-source-code)
