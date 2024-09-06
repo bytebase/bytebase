@@ -40,7 +40,7 @@
                 }}
               </span>
               <NSelect
-                v-model:value="state.fullMaskingAlgorithmId"
+                :value="state.fullMaskingAlgorithmId"
                 :options="algorithmList"
                 :consistent-menu-width="false"
                 :placeholder="columnDefaultMaskingAlgorithm"
@@ -53,7 +53,12 @@
                 clearable
                 size="small"
                 style="min-width: 7rem; max-width: 20rem; overflow-x: hidden"
-                @change="onMaskingAlgorithmChanged"
+                @update:value="
+                  (val) => {
+                    state.partialMaskingAlgorithmId = val;
+                    onMaskingAlgorithmChanged();
+                  }
+                "
               />
             </div>
             <div
@@ -74,7 +79,7 @@
                 }}
               </span>
               <NSelect
-                v-model:value="state.partialMaskingAlgorithmId"
+                :value="state.partialMaskingAlgorithmId"
                 :options="algorithmList"
                 :consistent-menu-width="false"
                 :placeholder="columnDefaultMaskingAlgorithm"
@@ -87,7 +92,12 @@
                 clearable
                 size="small"
                 style="min-width: 7rem; max-width: 20rem; overflow-x: hidden"
-                @change="onMaskingAlgorithmChanged"
+                @update:value="
+                  (val) => {
+                    state.partialMaskingAlgorithmId = val;
+                    onMaskingAlgorithmChanged();
+                  }
+                "
               />
             </div>
           </div>
