@@ -1,11 +1,10 @@
 import JSZip from "jszip";
 import { orderBy } from "lodash-es";
 import type { UploadFileInfo } from "naive-ui";
-import { defer } from "@/utils";
 
 export type ParsedFile = {
   name: string;
-  content: string;
+  arrayBuffer: ArrayBuffer;
 };
 
 const unzip = async (file: File) => {
@@ -15,32 +14,14 @@ const unzip = async (file: File) => {
   );
   const results = await Promise.all(
     files.map<Promise<ParsedFile>>(async (f) => {
-      const content = await f.async("string");
+      const arrayBuffer = await f.async("arraybuffer");
       return {
         name: f.name,
-        content,
+        arrayBuffer,
       };
     })
   );
   return results;
-};
-
-const readFile = (file: File) => {
-  const d = defer<string>();
-  const fr = new FileReader();
-  fr.addEventListener("load", (e) => {
-    const result = fr.result;
-    if (typeof result === "string") {
-      d.resolve(result);
-      return;
-    }
-    d.reject(new Error("Failed to read file content."));
-  });
-  fr.addEventListener("error", (e) => {
-    d.reject(fr.error ?? new Error("Failed to read file content."));
-  });
-  fr.readAsText(file);
-  return d.promise;
 };
 
 export const readUpload = async (fileInfo: UploadFileInfo) => {
@@ -50,10 +31,14 @@ export const readUpload = async (fileInfo: UploadFileInfo) => {
 
   const files: ParsedFile[] = [];
   if (fileInfo.name.toLowerCase().endsWith(".sql")) {
-    const content = await readFile(fileInfo.file);
+    if (!fileInfo.file) {
+      // Should not reach here.
+      return [];
+    }
+    const arrayBuffer = await fileInfo.file.arrayBuffer();
     files.push({
       name: fileInfo.file.name,
-      content,
+      arrayBuffer: arrayBuffer,
     });
   } else {
     const results = await unzip(fileInfo.file);
