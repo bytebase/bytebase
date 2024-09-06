@@ -30,7 +30,7 @@
 
   <div
     v-if="isTableInViewport && selectedIssueList.length > 0"
-    class="sticky bottom-0 w-full bg-white flex items-center gap-x-2 px-4 py-2 border-b"
+    class="sticky -bottom-4 w-full bg-white flex items-center gap-x-2 px-4 py-2 border-y"
     :class="bordered && 'border-x'"
   >
     <BatchIssueActionsV1 :issue-list="selectedIssueList" />
