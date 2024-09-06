@@ -78,7 +78,6 @@ func (h *Handler) handleFileSystemRequest(ctx context.Context, conn *jsonrpc2.Co
 			if err := fs.DidChange(&params); err != nil {
 				return err
 			}
-			// Beta: Parse and send diagnostics for MySQL.
 			if h.profile.Mode == common.ReleaseModeDev {
 				uri := params.TextDocument.URI
 				content, found := fs.get(uri)
