@@ -215,7 +215,7 @@ func (s *SlowQueryWeeklyMailSender) getEmailListByRoles(
 	for _, role := range roles {
 		users := utils.GetUsersByRoleInIAMPolicy(ctx, s.store, role, policy)
 		for _, user := range users {
-			if user.Email == api.SystemBotEmail {
+			if user.Type != api.EndUser {
 				continue
 			}
 			if _, ok := usersMap[user.Email]; ok {
