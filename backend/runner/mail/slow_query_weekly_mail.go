@@ -7,6 +7,8 @@ import (
 	"embed"
 	"fmt"
 	"log/slog"
+	"maps"
+	"slices"
 	"sort"
 	"strings"
 	"sync"
@@ -149,35 +151,24 @@ func (s *SlowQueryWeeklyMailSender) sendEmail(ctx context.Context, now time.Time
 	}
 
 	if len(activePolicies) == 0 {
-		users := utils.GetUsersByRoleInIAMPolicy(ctx, s.store, api.WorkspaceDBA, workspaceIAMPolicy.Policy)
-		for _, user := range users {
-			if user.Email == api.SystemBotEmail {
-				continue
-			}
-			if err := s.sendNeedConfigSlowQueryPolicyEmail(storeValue, user.Email, consoleRedirectURL); err != nil {
-				slog.Error("Failed to send need config slow query policy email", slog.String("user", user.Name), slog.String("email", user.Email), log.BBError(err))
-			}
-		}
-
-		users = utils.GetUsersByRoleInIAMPolicy(ctx, s.store, api.WorkspaceAdmin, workspaceIAMPolicy.Policy)
-		for _, user := range users {
-			if err := s.sendNeedConfigSlowQueryPolicyEmail(storeValue, user.Email, consoleRedirectURL); err != nil {
-				slog.Error("Failed to send need config slow query policy email", slog.String("user", user.Name), slog.String("email", user.Email), log.BBError(err))
+		emailList := s.getEmailListByRoles(ctx, workspaceIAMPolicy.Policy, api.WorkspaceDBA, api.WorkspaceAdmin)
+		for _, email := range emailList {
+			if err := s.sendNeedConfigSlowQueryPolicyEmail(storeValue, email, consoleRedirectURL); err != nil {
+				slog.Error("Failed to send need config slow query policy email", slog.String("email", email), log.BBError(err))
 			}
 		}
 		return
 	}
 
 	if body, err := s.generateWeeklyEmailForDBA(ctx, activePolicies, now, consoleRedirectURL); err == nil {
-		users := utils.GetUsersByRoleInIAMPolicy(ctx, s.store, api.WorkspaceDBA, workspaceIAMPolicy.Policy)
-		for _, user := range users {
-			if user.Email == api.SystemBotEmail {
-				continue
-			}
-			if err := send(storeValue, user.Email, fmt.Sprintf("Database slow query weekly report %s", generateDateRange(now)), body); err != nil {
-				slog.Error("Failed to send need config slow query policy email", slog.String("user", user.Name), slog.String("email", user.Email), log.BBError(err))
-			}
-		}
+		s.sendEmailToUsersByPolicy(
+			ctx,
+			api.WorkspaceDBA,
+			workspaceIAMPolicy.Policy,
+			storeValue,
+			fmt.Sprintf("Database slow query weekly report %s", generateDateRange(now)),
+			body,
+		)
 	} else {
 		slog.Error("Failed to generate weekly email for dba", log.BBError(err))
 	}
@@ -204,15 +195,50 @@ func (s *SlowQueryWeeklyMailSender) sendEmail(ctx context.Context, now time.Time
 			continue
 		}
 
-		users := utils.GetUsersByRoleInIAMPolicy(ctx, s.store, api.ProjectOwner, policyMessage.Policy)
+		s.sendEmailToUsersByPolicy(
+			ctx,
+			api.ProjectOwner,
+			policyMessage.Policy,
+			storeValue,
+			fmt.Sprintf("%s database slow query weekly report %s", project.Title, generateDateRange(now)),
+			body,
+		)
+	}
+}
+
+func (s *SlowQueryWeeklyMailSender) getEmailListByRoles(
+	ctx context.Context,
+	policy *storepb.IamPolicy,
+	roles ...api.Role,
+) []string {
+	usersMap := make(map[string]bool)
+	for _, role := range roles {
+		users := utils.GetUsersByRoleInIAMPolicy(ctx, s.store, role, policy)
 		for _, user := range users {
-			if user.Email == api.SystemBotEmail {
+			if user.Type != api.EndUser {
 				continue
 			}
-			subject := fmt.Sprintf("%s database slow query weekly report %s", project.Title, generateDateRange(now))
-			if err := send(storeValue, user.Email, subject, body); err != nil {
-				slog.Error("Failed to send need config slow query policy email", slog.String("user", user.Name), slog.String("email", user.Email), log.BBError(err))
+			if _, ok := usersMap[user.Email]; ok {
+				continue
 			}
+			usersMap[user.Email] = true
+		}
+	}
+	return slices.Collect(maps.Keys(usersMap))
+}
+
+func (s *SlowQueryWeeklyMailSender) sendEmailToUsersByPolicy(
+	ctx context.Context,
+	role api.Role,
+	policy *storepb.IamPolicy,
+	deliverySetting *storepb.SMTPMailDeliverySetting,
+	subject,
+	body string,
+) {
+	emailList := s.getEmailListByRoles(ctx, policy, role)
+	for _, email := range emailList {
+		if err := send(deliverySetting, email, subject, body); err != nil {
+			slog.Error("Failed to send need config slow query policy email", slog.String("email", email), log.BBError(err))
 		}
 	}
 }
