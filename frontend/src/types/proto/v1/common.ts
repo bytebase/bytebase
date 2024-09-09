@@ -83,6 +83,7 @@ export enum Engine {
   BIGQUERY = "BIGQUERY",
   DYNAMODB = "DYNAMODB",
   DATABRICKS = "DATABRICKS",
+  COCKROACHDB = "COCKROACHDB",
   UNRECOGNIZED = "UNRECOGNIZED",
 }
 
@@ -163,6 +164,9 @@ export function engineFromJSON(object: any): Engine {
     case 24:
     case "DATABRICKS":
       return Engine.DATABRICKS;
+    case 25:
+    case "COCKROACHDB":
+      return Engine.COCKROACHDB;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -222,6 +226,8 @@ export function engineToJSON(object: Engine): string {
       return "DYNAMODB";
     case Engine.DATABRICKS:
       return "DATABRICKS";
+    case Engine.COCKROACHDB:
+      return "COCKROACHDB";
     case Engine.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
@@ -280,6 +286,8 @@ export function engineToNumber(object: Engine): number {
       return 23;
     case Engine.DATABRICKS:
       return 24;
+    case Engine.COCKROACHDB:
+      return 25;
     case Engine.UNRECOGNIZED:
     default:
       return -1;
@@ -290,7 +298,10 @@ export enum VCSType {
   VCS_TYPE_UNSPECIFIED = "VCS_TYPE_UNSPECIFIED",
   /** GITHUB - GitHub type. Using for GitHub community edition(ce). */
   GITHUB = "GITHUB",
-  /** GITLAB - GitLab type. Using for GitLab community edition(ce) and enterprise edition(ee). */
+  /**
+   * GITLAB - GitLab type. Using for GitLab community edition(ce) and enterprise
+   * edition(ee).
+   */
   GITLAB = "GITLAB",
   /** BITBUCKET - BitBucket type. Using for BitBucket cloud or BitBucket server. */
   BITBUCKET = "BITBUCKET",

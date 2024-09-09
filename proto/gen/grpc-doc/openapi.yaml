@@ -8566,6 +8566,7 @@ components:
                         - BIGQUERY
                         - DYNAMODB
                         - DATABRICKS
+                        - COCKROACHDB
                     type: string
                     description: The database engine of the branch.
                     format: enum
@@ -9342,6 +9343,7 @@ components:
                         - BIGQUERY
                         - DYNAMODB
                         - DATABRICKS
+                        - COCKROACHDB
                     type: string
                     description: The database engine of the schema.
                     format: enum
@@ -9977,6 +9979,7 @@ components:
                         - BIGQUERY
                         - DYNAMODB
                         - DATABRICKS
+                        - COCKROACHDB
                     type: string
                     format: enum
                 engineVersion:
@@ -10048,6 +10051,7 @@ components:
                         - BIGQUERY
                         - DYNAMODB
                         - DATABRICKS
+                        - COCKROACHDB
                     type: string
                     format: enum
                 engineVersion:
@@ -11493,6 +11497,7 @@ components:
                         - BIGQUERY
                         - DYNAMODB
                         - DATABRICKS
+                        - COCKROACHDB
                     type: string
                     format: enum
                 currentSchema:
@@ -12818,6 +12823,7 @@ components:
                         - BIGQUERY
                         - DYNAMODB
                         - DATABRICKS
+                        - COCKROACHDB
                     type: string
                     description: The SQL dialect.
                     format: enum
@@ -13066,6 +13072,7 @@ components:
                         - BIGQUERY
                         - DYNAMODB
                         - DATABRICKS
+                        - COCKROACHDB
                     type: string
                     description: The database engine of the schema string.
                     format: enum
