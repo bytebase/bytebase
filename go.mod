@@ -20,7 +20,7 @@ require (
 	github.com/blang/semver/v4 v4.0.0
 	github.com/bytebase/bq-parser v0.0.0-20240529032606-614a0230b8f7
 	github.com/bytebase/mysql-parser v0.0.0-20240810145851-ab2c11629c24
-	github.com/bytebase/plsql-parser v0.0.0-20240724030234-55445b9c5491
+	github.com/bytebase/plsql-parser v0.0.0-20240909070200-1468a31cd5a4
 	github.com/bytebase/postgresql-parser v0.0.0-20231221075352-cf5025e0d56f
 	github.com/bytebase/snowsql-parser v0.0.0-20240304100801-bb357ccb5535
 	github.com/bytebase/tidb-parser v0.0.0-20240821091609-162fffe2a839
