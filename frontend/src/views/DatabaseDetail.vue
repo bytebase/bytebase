@@ -79,6 +79,7 @@
           data-label="bb-database-detail-action-buttons-container"
         >
           <SyncDatabaseButton
+            v-if="allowSyncDatabase"
             :type="'default'"
             :text="false"
             :database="database"
@@ -118,7 +119,11 @@
         />
       </NTabPane>
       <NTabPane
-        v-if="allowToChangeDatabase && allowListChangeHistories"
+        v-if="
+          databaseChangeMode === DatabaseChangeMode.PIPELINE &&
+          allowToChangeDatabase &&
+          allowListChangeHistories
+        "
         name="change-history"
         :tab="$t('change-history.self')"
       >
@@ -228,6 +233,7 @@ import {
 import { UNKNOWN_PROJECT_NAME, unknownEnvironment } from "@/types";
 import type { Anomaly } from "@/types/proto/v1/anomaly_service";
 import { State } from "@/types/proto/v1/common";
+import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
 import {
   instanceV1HasAlterSchema,
   isDatabaseV1Queryable,
@@ -275,6 +281,7 @@ const route = useRoute();
 const currentUserIamPolicy = useCurrentUserIamPolicy();
 const anomalyList = ref<Anomaly[]>([]);
 const {
+  allowSyncDatabase,
   allowTransferDatabase,
   allowChangeData,
   allowAlterSchema,
@@ -284,6 +291,7 @@ const {
 const disableSchemaEditor = useAppFeature(
   "bb.feature.issue.disable-schema-editor"
 );
+const databaseChangeMode = useAppFeature("bb.feature.database-change-mode");
 
 onMounted(async () => {
   anomalyList.value = await useAnomalyV1Store().fetchAnomalyList({
@@ -325,7 +333,6 @@ const allowToChangeDatabase = computed(() => {
     project.value.name
   );
 });
-
 const hasSchemaDiagramFeature = computed((): boolean => {
   return instanceV1HasAlterSchema(database.value.instanceResource);
 });

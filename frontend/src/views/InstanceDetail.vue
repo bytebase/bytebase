@@ -94,11 +94,13 @@ import {
   useDBSchemaV1Store,
   useInstanceV1Store,
   useEnvironmentV1Store,
+  useAppFeature,
 } from "@/store";
 import { instanceNamePrefix } from "@/store/modules/v1/common";
 import { useDatabaseV1List } from "@/store/modules/v1/databaseList";
 import type { ComposedDatabase } from "@/types";
 import { State } from "@/types/proto/v1/common";
+import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
 import {
   instanceV1HasCreateDatabase,
   instanceV1Name,
@@ -124,6 +126,7 @@ overrideMainContainerClass("!pb-0");
 const { t } = useI18n();
 const router = useRouter();
 const instanceV1Store = useInstanceV1Store();
+const databaseChangeMode = useAppFeature("bb.feature.database-change-mode");
 
 const state = reactive<LocalState>({
   showCreateDatabaseModal: false,
@@ -159,6 +162,7 @@ const allowSyncInstance = computed(() => {
 
 const allowCreateDatabase = computed(() => {
   return (
+    databaseChangeMode.value === DatabaseChangeMode.PIPELINE &&
     instance.value.state === State.ACTIVE &&
     hasWorkspaceLevelProjectPermissionInAnyProject("bb.issues.create") &&
     instanceV1HasCreateDatabase(instance.value)
