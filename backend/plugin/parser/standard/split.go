@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"io"
 	"strings"
+	"unicode"
 
 	"github.com/pkg/errors"
 
@@ -53,7 +54,7 @@ func applyMultiStatements(sc io.Reader, f func(string) error) error {
 				return err
 			}
 		}
-		line = strings.TrimRight(line, "\r\n")
+		line = strings.TrimRightFunc(line, unicode.IsSpace)
 
 		execute := false
 		switch {

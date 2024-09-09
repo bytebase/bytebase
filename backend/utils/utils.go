@@ -730,3 +730,11 @@ func ConvertBytesToUTF8String(data []byte) (string, error) {
 func isUtf8(data []byte) bool {
 	return !strings.Contains(string(data), string(unicode.ReplacementChar))
 }
+
+// IsSpaceOrSemicolon checks if the rune is a space or a semicolon.
+func IsSpaceOrSemicolon(r rune) bool {
+	if ok := unicode.IsSpace(r); ok {
+		return true
+	}
+	return r == ';'
+}
