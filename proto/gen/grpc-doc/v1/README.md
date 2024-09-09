@@ -1121,6 +1121,7 @@ DATABASE_CONNECTION is the anomaly type for database connection, e.g. the databa
 | BIGQUERY | 22 |  |
 | DYNAMODB | 23 |  |
 | DATABRICKS | 24 |  |
+| COCKROACHDB | 25 |  |
 
 
 
