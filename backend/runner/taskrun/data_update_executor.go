@@ -65,9 +65,15 @@ func (exec *DataUpdateExecutor) RunOnce(ctx context.Context, driverCtx context.C
 	if err != nil {
 		return true, nil, errors.Wrap(err, "failed to get instance")
 	}
+	if instance == nil {
+		return true, nil, errors.Errorf("instance not found for task %v", task.ID)
+	}
 	database, err := exec.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: task.DatabaseID})
 	if err != nil {
 		return true, nil, errors.Wrap(err, "failed to get database")
+	}
+	if database == nil {
+		return true, nil, errors.Errorf("database not found for task %v", task.ID)
 	}
 	issue, err := exec.store.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &task.PipelineID})
 	if err != nil {
