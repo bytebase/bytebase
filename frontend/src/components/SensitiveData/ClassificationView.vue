@@ -49,11 +49,7 @@
         >
           {{ $t("settings.sensitive-data.classification.upload") }}
         </NButton>
-        <NButton
-          type="primary"
-          :disabled="!allowEdit || !hasSensitiveDataFeature || !allowSave"
-          @click="upsertSetting"
-        >
+        <NButton type="primary" :disabled="!allowSave" @click="saveChanges">
           {{ $t("common.save") }}
         </NButton>
         <input
@@ -68,7 +64,7 @@
     </div>
 
     <div
-      v-if="Object.keys(state.classification.classification).length === 0"
+      v-if="emptyConfig"
       class="flex justify-center border-2 border-gray-300 border-dashed rounded-md relative h-72"
     >
       <SingleFileSelector
@@ -99,14 +95,14 @@
 </template>
 
 <script lang="ts" setup>
-import { head, isEqual } from "lodash-es";
+import { head, isEqual, isEmpty } from "lodash-es";
 import { NSwitch, useDialog, NDivider, NButton } from "naive-ui";
 import { v4 as uuidv4 } from "uuid";
 import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { featureToRef, useSettingV1Store, pushNotification } from "@/store";
 import { PresetRoleType } from "@/types";
-import type {
+import {
   DataClassificationSetting_DataClassificationConfig_Level as ClassificationLevel,
   DataClassificationSetting_DataClassificationConfig_DataClassification as DataClassification,
 } from "@/types/proto/v1/setting_service";
@@ -124,7 +120,7 @@ const maxFileSizeInMiB = 10;
 interface UploadClassificationConfig {
   title: string;
   levels: ClassificationLevel[];
-  classifications: DataClassification[];
+  classification: { [key: string]: DataClassification };
 }
 
 interface LocalState {
@@ -135,20 +131,28 @@ interface LocalState {
 const { t } = useI18n();
 const $dialog = useDialog();
 const settingStore = useSettingV1Store();
+
+const formerConfig = computed(() =>
+  DataClassificationSetting_DataClassificationConfig.fromPartial({
+    id: uuidv4(),
+    ...head(settingStore.classification),
+  })
+);
+
 const state = reactive<LocalState>({
   showExampleModal: false,
-  classification:
-    DataClassificationSetting_DataClassificationConfig.fromPartial({
-      id: uuidv4(),
-      ...head(settingStore.classification),
-    }),
+  classification: { ...formerConfig.value },
 });
+
+const emptyConfig = computed(
+  () => Object.keys(state.classification.classification).length === 0
+);
 
 const allowSave = computed(() => {
   return (
     allowEdit.value &&
     hasSensitiveDataFeature.value &&
-    !isEqual(head(settingStore.classification), state.classification)
+    !isEqual(formerConfig.value, state.classification)
   );
 });
 
@@ -166,6 +170,25 @@ const onClassificationConfigChange = (fromComment: boolean) => {
       await upsertSetting();
     },
   });
+};
+
+const saveChanges = async () => {
+  if (Object.keys(formerConfig.value.classification).length !== 0) {
+    $dialog.warning({
+      title: t("settings.sensitive-data.classification.override-title"),
+      content: t("settings.sensitive-data.classification.override-desc"),
+      style: "z-index: 100000",
+      negativeText: t("common.cancel"),
+      positiveText: t(
+        "settings.sensitive-data.classification.override-confirm"
+      ),
+      onPositiveClick: async () => {
+        await upsertSetting();
+      },
+    });
+    return;
+  }
+  await upsertSetting();
 };
 
 const upsertSetting = async () => {
@@ -221,15 +244,20 @@ const onFileSelect = (file: File) => {
       return;
     }
     const data: UploadClassificationConfig = JSON.parse(fr.result as string);
-    if (
-      !Array.isArray(data.classifications) ||
-      data.classifications.length === 0
-    ) {
+    if (isEmpty(data.classification) || Array.isArray(data.classification)) {
       return pushNotification({
         module: "bytebase",
         style: "CRITICAL",
         title: "Data format error",
-        description: "Should has classifications array field",
+        description: `Should has the "classification" field. Please check the example.`,
+      });
+    }
+    if (Object.keys(data.classification).length === 0) {
+      return pushNotification({
+        module: "bytebase",
+        style: "CRITICAL",
+        title: "Data format error",
+        description: `"classification" field is empty. Please check the example.`,
       });
     }
     if (!Array.isArray(data.levels) || data.levels.length === 0) {
@@ -237,31 +265,35 @@ const onFileSelect = (file: File) => {
         module: "bytebase",
         style: "CRITICAL",
         title: "Data format error",
-        description: "Should has levels array field",
-      });
-    }
-    if (
-      data.classifications.length !==
-      new Set(data.classifications.map((item) => item.id)).size
-    ) {
-      return pushNotification({
-        module: "bytebase",
-        style: "CRITICAL",
-        title: "Data format error",
-        description: "Should not contains duplicate classification id",
+        description: `Should has the "levels" field. Please check the example.`,
       });
     }
     Object.assign(state.classification, {
       title: data.title || state.classification.title || "",
-      levels: data.levels,
-      classification: data.classifications.reduce(
-        (obj, item) => {
-          obj[item.id] = item;
-          return obj;
+      levels: data.levels.map((level) =>
+        ClassificationLevel.fromPartial(level)
+      ),
+      classification: Object.values(data.classification).reduce(
+        (map, data) => {
+          map[data.id] = DataClassification.fromPartial(data);
+          return map;
         },
         {} as { [key: string]: DataClassification }
       ),
     });
+    if (isEqual(formerConfig.value, state.classification)) {
+      return pushNotification({
+        module: "bytebase",
+        style: "INFO",
+        title: "Nothing changed",
+      });
+    }
+    if (
+      Object.keys(formerConfig.value.classification).length === 0 &&
+      allowSave.value
+    ) {
+      upsertSetting();
+    }
   };
   fr.onerror = () => {
     pushNotification({
@@ -299,47 +331,47 @@ const example: UploadClassificationConfig = {
       description: "",
     },
   ],
-  classifications: [
-    {
+  classification: {
+    "1": {
       id: "1",
       title: "Basic",
       description: "",
     },
-    {
+    "1-1": {
       id: "1-1",
       title: "Basic",
       description: "",
       levelId: "1",
     },
-    {
+    "1-2": {
       id: "1-2",
       title: "Contact",
       description: "",
       levelId: "2",
     },
-    {
+    "1-3": {
       id: "1-3",
       title: "Health",
       description: "",
       levelId: "4",
     },
-    {
+    "2": {
       id: "2",
       title: "Relationship",
       description: "",
     },
-    {
+    "2-1": {
       id: "2-1",
       title: "Social",
       description: "",
       levelId: "1",
     },
-    {
+    "2-2": {
       id: "2-2",
       title: "Business",
       description: "",
       levelId: "3",
     },
-  ],
+  },
 };
 </script>
