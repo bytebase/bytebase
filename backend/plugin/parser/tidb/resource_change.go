@@ -2,6 +2,7 @@ package tidb
 
 import (
 	"strings"
+	"unicode"
 
 	tidbast "github.com/pingcap/tidb/pkg/parser/ast"
 	"github.com/pkg/errors"
@@ -9,6 +10,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store/model"
+	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -209,5 +211,5 @@ func getRange(statement string, node tidbast.StmtNode) *storepb.Range {
 }
 
 func trimStatement(statement string) string {
-	return strings.TrimLeft(strings.TrimRight(statement, " \n\t;"), " \n\t")
+	return strings.TrimLeftFunc(strings.TrimRightFunc(statement, utils.IsSpaceOrSemicolon), unicode.IsSpace)
 }

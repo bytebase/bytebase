@@ -19,6 +19,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
+	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 
@@ -226,7 +227,7 @@ func getColumnTypeName(columnType *sppb.Type) (string, error) {
 }
 
 func getStatementWithResultLimit(stmt string, limit int) string {
-	stmt = strings.TrimRight(stmt, " \n\t;")
+	stmt = strings.TrimRightFunc(stmt, utils.IsSpaceOrSemicolon)
 	limitPart := fmt.Sprintf(" LIMIT %d", limit)
 	return fmt.Sprintf("WITH result AS (%s) SELECT * FROM result%s;", stmt, limitPart)
 }

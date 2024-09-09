@@ -5,12 +5,14 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
+	"unicode"
 
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/utils"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -159,7 +161,7 @@ func makeValueByTypeName(typeName string) any {
 
 // TrimStatement trims the unused characters from the statement for making getStatementWithResultLimit() happy.
 func TrimStatement(statement string) string {
-	return strings.TrimLeft(strings.TrimRight(statement, " \n\t;"), " \n\t")
+	return strings.TrimLeftFunc(strings.TrimRightFunc(statement, utils.IsSpaceOrSemicolon), unicode.IsSpace)
 }
 
 func MySQLPrependBytebaseAppComment(statement string) string {

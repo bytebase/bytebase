@@ -14,6 +14,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
+	"github.com/bytebase/bytebase/backend/utils"
 )
 
 // singleStatement must be a selectStatement for oracle.
@@ -51,7 +52,7 @@ func getStatementWithResultLimitInline(statement string, limitCount int) (string
 
 	res := listener.rewriter.GetTextDefault()
 	// https://stackoverflow.com/questions/27987882/how-can-i-solve-ora-00911-invalid-character-error
-	res = strings.TrimRight(res, " \t\n\r\f;")
+	res = strings.TrimRightFunc(res, utils.IsSpaceOrSemicolon)
 
 	return res, nil
 }
