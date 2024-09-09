@@ -7,7 +7,7 @@
     <div class="h-full border-r shrink-0">
       <GutterBar size="medium" />
     </div>
-    <div class="h-full flex flex-col overflow-hidden">
+    <div class="h-full flex-1 flex flex-col overflow-hidden">
       <div
         v-if="!strictProject && !hideProjects"
         class="flex flex-row items-center gap-x-1 px-1 py-1 border-b"
