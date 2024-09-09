@@ -6,7 +6,6 @@ import (
 	"log/slog"
 	"strconv"
 	"strings"
-	"unicode"
 
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
@@ -20,6 +19,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	tsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
+	"github.com/bytebase/bytebase/backend/utils"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -203,7 +203,7 @@ func getStatementWithResultLimitInline(singleStatement string, limitCount int) (
 	}
 
 	res := listener.rewriter.GetTextDefault()
-	res = strings.TrimRightFunc(res, unicode.IsSpace) + ";"
+	res = strings.TrimRightFunc(res, utils.IsSpaceOrSemicolon) + ";"
 
 	return res, nil
 }
