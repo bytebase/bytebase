@@ -238,7 +238,6 @@ const dashboardSidebarItemList = computed((): DashboardSidebarItem[] => {
           title: t("schema-template.self"),
           name: WORKSPACE_ROUTE_SCHEMA_TEMPLATE,
           type: "route",
-          hide: databaseChangeMode.value === DatabaseChangeMode.EDITOR,
         },
         {
           title: t("custom-approval.risk.risk-center"),
