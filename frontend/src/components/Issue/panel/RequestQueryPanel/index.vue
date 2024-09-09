@@ -54,7 +54,10 @@
             :disabled="!allowCreate"
             @click="doCreateIssue"
           >
-            {{ $t("common.ok") }}
+            <div class="flex items-center gap-1">
+              {{ $t("common.ok") }}
+              <ExternalLinkIcon v-if="openInNewWindow" class="w-4 h-4" />
+            </div>
           </NButton>
         </div>
       </template>
@@ -65,6 +68,7 @@
 <script lang="ts" setup>
 import dayjs from "dayjs";
 import { isUndefined } from "lodash-es";
+import { ExternalLinkIcon } from "lucide-vue-next";
 import { NButton, NInput } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useRouter } from "vue-router";
@@ -101,10 +105,12 @@ const props = withDefaults(
     projectName: string;
     database?: ComposedDatabase;
     placement: "left" | "right";
+    openInNewWindow?: boolean;
   }>(),
   {
     database: undefined,
     placement: "right",
+    openInNewWindow: false,
   }
 );
 
@@ -203,8 +209,13 @@ const doCreateIssue = async () => {
     issue: newIssue,
   });
 
-  router.push({
-    path: `/${createdIssue.name}`,
-  });
+  const path = `/${createdIssue.name}`;
+  if (props.openInNewWindow) {
+    window.open(router.resolve({ path }).fullPath);
+  } else {
+    router.push({
+      path,
+    });
+  }
 };
 </script>

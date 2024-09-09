@@ -9,6 +9,7 @@
       :project-name="database.project"
       :database="database"
       :placement="'right'"
+      :open-in-new-window="true"
       @close="showPanel = false"
     />
   </div>
