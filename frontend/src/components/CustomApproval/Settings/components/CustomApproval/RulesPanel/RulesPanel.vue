@@ -14,17 +14,18 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
-import { SupportedSourceList } from "@/types";
+import { useSupportedSourceList } from "@/types";
 import { Risk_Source } from "@/types/proto/v1/risk_service";
 import { RiskFilter, useRiskFilter } from "../../common";
 import RulesSection from "./RulesSection.vue";
 
 const filter = useRiskFilter();
+const SupportedSourceList = useSupportedSourceList();
 
 const selectedSourceList = computed(() => {
   if (filter.source.value === Risk_Source.SOURCE_UNSPECIFIED) {
     // "ALL"
-    return SupportedSourceList;
+    return SupportedSourceList.value;
   }
   return [filter.source.value];
 });
