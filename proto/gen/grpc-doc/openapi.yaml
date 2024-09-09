@@ -12173,6 +12173,7 @@ components:
                         - BIGQUERY
                         - DYNAMODB
                         - DATABRICKS
+                        - COCKROACHDB
                     type: string
                     format: enum
                 comment:
@@ -12270,6 +12271,7 @@ components:
                         - BIGQUERY
                         - DYNAMODB
                         - DATABRICKS
+                        - COCKROACHDB
                     type: string
                     format: enum
                 enabled:
@@ -12310,6 +12312,7 @@ components:
                         - BIGQUERY
                         - DYNAMODB
                         - DATABRICKS
+                        - COCKROACHDB
                     type: string
                     format: enum
                 category:
@@ -12350,6 +12353,7 @@ components:
                         - BIGQUERY
                         - DYNAMODB
                         - DATABRICKS
+                        - COCKROACHDB
                     type: string
                     format: enum
                 category:
