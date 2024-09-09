@@ -1,12 +1,20 @@
-import { BuildingIcon, LayersIcon, UsersIcon } from "lucide-vue-next";
+import {
+  BuildingIcon,
+  GalleryHorizontalEndIcon,
+  LayersIcon,
+  SquareStackIcon,
+  UsersIcon,
+} from "lucide-vue-next";
 import { computed, h } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, type RouteRecordRaw } from "vue-router";
 import type { SidebarItem } from "@/components/CommonSidebar.vue";
 import sqlEditorRoutes, {
+  SQL_EDITOR_SETTING_ENVIRONMENT_MODULE,
   SQL_EDITOR_SETTING_GENERAL_MODULE,
   SQL_EDITOR_SETTING_INSTANCE_MODULE,
   SQL_EDITOR_SETTING_MEMBERS_MODULE,
+  SQL_EDITOR_SETTING_PROJECT_MODULE,
 } from "@/router/sqlEditor";
 import { useAppFeature } from "@/store";
 import type { Permission } from "@/types";
@@ -101,9 +109,21 @@ export const useSidebarItems = () => {
         type: "route",
       },
       {
+        title: t("common.projects"),
+        icon: () => h(GalleryHorizontalEndIcon),
+        name: SQL_EDITOR_SETTING_PROJECT_MODULE,
+        type: "route",
+      },
+      {
         title: t("common.instances"),
         icon: () => h(LayersIcon),
         name: SQL_EDITOR_SETTING_INSTANCE_MODULE,
+        type: "route",
+      },
+      {
+        title: t("common.environments"),
+        icon: () => h(SquareStackIcon),
+        name: SQL_EDITOR_SETTING_ENVIRONMENT_MODULE,
         type: "route",
       },
       {
