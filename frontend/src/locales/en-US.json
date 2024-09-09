@@ -759,12 +759,14 @@
         },
         "database-change-mode": {
           "self": "Database Change Mode",
-          "description": "Controls how users perform database schema migrations. Issue mode uses issue/task workflows with custom approvals for a structured process. SQL Editor mode allows direct SQL execution in a SQL editor for quick and simple changes.",
+          "description": "Controls how users perform database schema migrations.",
           "issue-mode": {
-            "self": "Issue Mode"
+            "self": "Issue Mode",
+            "description": "Use issue/task workflows with custom approvals for a structured process."
           },
           "sql-editor-mode": {
-            "self": "SQL Editor Mode"
+            "self": "SQL Editor Mode",
+            "description": "Allows direct SQL execution in a SQL editor for quick and simple changes."
           }
         }
       }

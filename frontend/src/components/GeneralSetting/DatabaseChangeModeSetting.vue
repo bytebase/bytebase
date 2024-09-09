@@ -14,24 +14,42 @@
       <div>
         <NRadioGroup v-model:value="state.databaseChangeMode" size="large">
           <NSpace vertical>
-            <NRadio
-              key="PIPELINE"
-              :value="DatabaseChangeMode.PIPELINE"
-              :label="
-                $t(
-                  'settings.general.workspace.database-change-mode.issue-mode.self'
-                )
-              "
-            />
-            <NRadio
-              key="EDITOR"
-              :value="DatabaseChangeMode.EDITOR"
-              :label="
-                $t(
-                  'settings.general.workspace.database-change-mode.sql-editor-mode.self'
-                )
-              "
-            />
+            <NRadio key="PIPELINE" :value="DatabaseChangeMode.PIPELINE">
+              <div class="flex flex-col gap-1">
+                <div class="text-medium">
+                  {{
+                    $t(
+                      "settings.general.workspace.database-change-mode.issue-mode.self"
+                    )
+                  }}
+                </div>
+                <div class="textinfolabel">
+                  {{
+                    $t(
+                      "settings.general.workspace.database-change-mode.issue-mode.description"
+                    )
+                  }}
+                </div>
+              </div>
+            </NRadio>
+            <NRadio key="EDITOR" :value="DatabaseChangeMode.EDITOR">
+              <div class="flex flex-col gap-1">
+                <div class="text-medium">
+                  {{
+                    $t(
+                      "settings.general.workspace.database-change-mode.sql-editor-mode.self"
+                    )
+                  }}
+                </div>
+                <div class="textinfolabel">
+                  {{
+                    $t(
+                      "settings.general.workspace.database-change-mode.sql-editor-mode.description"
+                    )
+                  }}
+                </div>
+              </div>
+            </NRadio>
           </NSpace>
         </NRadioGroup>
       </div>
