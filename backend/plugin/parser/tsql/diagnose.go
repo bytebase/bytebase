@@ -2,6 +2,8 @@ package tsql
 
 import (
 	"context"
+	"strings"
+	"unicode"
 
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/tsql-parser"
@@ -25,6 +27,12 @@ func Diagnose(_ context.Context, _ base.DiagnoseContext, statement string) ([]ba
 }
 
 func parseTSQLStatement(statement string) *base.SyntaxError {
+	trimmedStatement := strings.TrimRightFunc(statement, unicode.IsSpace)
+	if !strings.HasSuffix(trimmedStatement, ";") {
+		// Add a semicolon to the end of the statement to allow users to omit the semicolon
+		// for the last statement in the script.
+		statement += ";"
+	}
 	inputStream := antlr.NewInputStream(statement)
 	lexer := parser.NewTSqlLexer(inputStream)
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
