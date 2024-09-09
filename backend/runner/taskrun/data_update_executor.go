@@ -60,9 +60,51 @@ func (exec *DataUpdateExecutor) RunOnce(ctx context.Context, driverCtx context.C
 	if err != nil {
 		return true, nil, err
 	}
-	priorBackupDetail, err := exec.backupData(ctx, driverCtx, statement, payload, task)
+
+	instance, err := exec.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
 	if err != nil {
-		return true, nil, err
+		return true, nil, errors.Wrap(err, "failed to get instance")
+	}
+	if instance == nil {
+		return true, nil, errors.Errorf("instance not found for task %v", task.ID)
+	}
+	database, err := exec.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: task.DatabaseID})
+	if err != nil {
+		return true, nil, errors.Wrap(err, "failed to get database")
+	}
+	if database == nil {
+		return true, nil, errors.Errorf("database not found for task %v", task.ID)
+	}
+	issue, err := exec.store.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &task.PipelineID})
+	if err != nil {
+		return true, nil, errors.Wrapf(err, "failed to find issue for pipeline %v", task.PipelineID)
+	}
+	if issue == nil {
+		return true, nil, errors.Errorf("issue not found for pipeline %v", task.PipelineID)
+	}
+
+	priorBackupDetail, backupErr := exec.backupData(ctx, driverCtx, statement, payload, task, issue, instance, database)
+	if backupErr != nil {
+		skip, skipErr := exec.skipBackupError(ctx, task)
+		if skipErr != nil {
+			return true, nil, errors.Errorf("failed to check skip backup error or not: %v", skipErr)
+		}
+		if !skip {
+			return true, nil, backupErr
+		}
+		if _, err := exec.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
+			IssueUID: issue.UID,
+			Payload: &storepb.IssueCommentPayload{
+				Event: &storepb.IssueCommentPayload_TaskPriorBackup_{
+					TaskPriorBackup: &storepb.IssueCommentPayload_TaskPriorBackup{
+						Task:  common.FormatTask(issue.Project.ResourceID, task.PipelineID, task.StageID, task.ID),
+						Error: backupErr.Error(),
+					},
+				},
+			},
+		}, api.SystemBotID); err != nil {
+			slog.Warn("failed to create issue comment", "task", task.ID, log.BBError(err), "backup error", backupErr)
+		}
 	}
 	version := model.Version{Version: payload.SchemaVersion}
 	terminated, result, err := runMigration(ctx, driverCtx, exec.store, exec.dbFactory, exec.stateCfg, exec.profile, task, taskRunUID, db.Data, statement, version, &sheetID)
@@ -73,31 +115,36 @@ func (exec *DataUpdateExecutor) RunOnce(ctx context.Context, driverCtx context.C
 	return terminated, result, err
 }
 
+func (exec *DataUpdateExecutor) skipBackupError(ctx context.Context, task *store.TaskMessage) (bool, error) {
+	pipeline, pipelineErr := exec.store.GetPipelineV2ByID(ctx, task.PipelineID)
+	if pipelineErr != nil {
+		return false, errors.Wrapf(pipelineErr, "failed to get pipeline %v", task.PipelineID)
+	}
+	project, projectErr := exec.store.GetProjectV2(ctx, &store.FindProjectMessage{ResourceID: &pipeline.ProjectID})
+	if projectErr != nil {
+		return false, errors.Wrapf(projectErr, "failed to get project %v", pipeline.ProjectID)
+	}
+	if project == nil {
+		return false, errors.Errorf("project not found for pipeline %v", task.PipelineID)
+	}
+	if project.Setting == nil {
+		return false, nil
+	}
+	return project.Setting.DefaultBackupBehavior == storepb.Project_DEFAULT_BACKUP_BEHAVIOR_BACKUP_ON_ERROR_SKIP, nil
+}
+
 func (exec *DataUpdateExecutor) backupData(
 	ctx context.Context,
 	driverCtx context.Context,
 	statement string,
 	payload *storepb.TaskDatabaseUpdatePayload,
 	task *store.TaskMessage,
+	issue *store.IssueMessage,
+	instance *store.InstanceMessage,
+	database *store.DatabaseMessage,
 ) (*storepb.PriorBackupDetail, error) {
 	if payload.PreUpdateBackupDetail == nil || payload.PreUpdateBackupDetail.Database == "" {
 		return nil, nil
-	}
-
-	instance, err := exec.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to get instance")
-	}
-	database, err := exec.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: task.DatabaseID})
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to get database")
-	}
-	issue, err := exec.store.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &task.PipelineID})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to find issue for pipeline %v", task.PipelineID)
-	}
-	if issue == nil {
-		return nil, errors.Errorf("issue not found for pipeline %v", task.PipelineID)
 	}
 
 	sourceDatabaseName := common.FormatDatabase(database.InstanceID, database.DatabaseName)
