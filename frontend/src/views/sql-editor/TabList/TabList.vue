@@ -2,7 +2,9 @@
   <div
     class="flex justify-between items-center box-border text-gray-500 text-sm border-b pr-2 gap-1"
   >
-    <div class="relative flex flex-1 flex-nowrap overflow-hidden h-[36px] pt-0.5">
+    <div
+      class="relative flex flex-1 flex-nowrap overflow-hidden h-[36px] pt-0.5"
+    >
       <Draggable
         id="tab-list"
         ref="tabListRef"
@@ -46,7 +48,7 @@
     <div class="flex items-center gap-2">
       <SettingButton v-if="!hideSettingButton" size="small" />
       <BrandingLogoWrapper v-if="!hideProfile">
-        <ProfileDropdown />
+        <ProfileDropdown :link="true" />
       </BrandingLogoWrapper>
     </div>
 
