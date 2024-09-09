@@ -475,8 +475,10 @@
       "gitops": "GitOps",
       "subscription": "Subscription",
       "labels": "Labels",
-      "sensitive-data": "Data Masking",
-      "access-control": "Data Access Control",
+      "data-masking": "Data Masking",
+      "data-classification": "Data Classification",
+      "access-control": "Access Control",
+      "data-access": "Data Access",
       "audit-log": "Audit Log",
       "custom-roles": "Custom Roles",
       "mail-delivery": "Mail Delivery"
