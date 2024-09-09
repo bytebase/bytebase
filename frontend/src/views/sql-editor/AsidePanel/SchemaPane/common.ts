@@ -137,7 +137,6 @@ export type TreeNode<T extends NodeType = NodeType> = TreeOption & {
 };
 
 export const ExpandableNodeTypes: readonly NodeType[] = [
-  "database",
   "schema",
   "table",
   "view",
