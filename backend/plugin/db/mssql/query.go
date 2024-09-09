@@ -19,6 +19,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	tsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
+	"github.com/bytebase/bytebase/backend/utils"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -202,7 +203,7 @@ func getStatementWithResultLimitInline(singleStatement string, limitCount int) (
 	}
 
 	res := listener.rewriter.GetTextDefault()
-	res = strings.TrimRight(res, " \t\n\r\f;") + ";"
+	res = strings.TrimRightFunc(res, utils.IsSpaceOrSemicolon) + ";"
 
 	return res, nil
 }
