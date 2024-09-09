@@ -8,7 +8,7 @@
       :show="showPanel"
       :project-name="database.project"
       :database="database"
-      :placement="panelPlacement"
+      :placement="'right'"
       @close="showPanel = false"
     />
   </div>
@@ -24,11 +24,9 @@ import { hasPermissionToCreateRequestGrantIssue } from "@/utils";
 const props = withDefaults(
   defineProps<{
     database: ComposedDatabase;
-    panelPlacement: "left" | "right";
     size?: "tiny" | "medium";
   }>(),
   {
-    panelPlacement: "right",
     size: "medium",
   }
 );

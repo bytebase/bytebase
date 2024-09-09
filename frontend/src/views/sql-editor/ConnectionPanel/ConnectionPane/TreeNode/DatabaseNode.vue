@@ -28,7 +28,6 @@
       v-if="!disallowRequestQuery && !canQuery"
       :database="database"
       :size="'tiny'"
-      :panel-placement="'left'"
     />
   </div>
 </template>
