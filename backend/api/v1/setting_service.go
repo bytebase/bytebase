@@ -536,8 +536,11 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", apiSettingName, err)
 		}
 		// it's a temporary solution to limit only 1 classification config before we support manage it in the UX.
-		if len(payload.Configs) > 1 {
+		if len(payload.Configs) != 1 {
 			return nil, status.Errorf(codes.InvalidArgument, "only support define 1 classification config for now")
+		}
+		if len(payload.Configs[0].Classification) == 0 {
+			return nil, status.Errorf(codes.InvalidArgument, "missing classification map")
 		}
 		bytes, err := protojson.Marshal(payload)
 		if err != nil {
