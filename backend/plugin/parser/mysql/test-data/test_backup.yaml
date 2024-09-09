@@ -1,4 +1,96 @@
 - input: |-
+    WITH t_cte AS (
+      SELECT * FROM test WHERE test.b1 > 10
+    ) UPDATE test, t_cte SET test.c1 = 1 WHERE test.b1 = t_cte.b1 and test.b1 = 1;
+    WITH t_cte AS (
+      SELECT * FROM test WHERE test.b1 > 10
+    ) UPDATE test, t_cte SET test.c1 = 1 WHERE test.b1 = t_cte.b1 and test.b1 = 2;
+    WITH t_cte AS (
+      SELECT * FROM test WHERE test.b1 > 10
+    ) UPDATE test, t_cte SET test.c1 = 1 WHERE test.b1 = t_cte.b1 and test.b1 = 3;
+    WITH t_cte AS (
+      SELECT * FROM test WHERE test.b1 > 10
+    ) UPDATE test, t_cte SET test.c1 = 1 WHERE test.b1 = t_cte.b1 and test.b1 = 4;
+    WITH t_cte AS (
+      SELECT * FROM test WHERE test.b1 > 10
+    ) UPDATE test, t_cte SET test.c1 = 1 WHERE test.b1 = t_cte.b1 and test.b1 = 5;
+    WITH t_cte AS (
+      SELECT * FROM test WHERE test.b1 > 10
+    ) UPDATE test, t_cte SET test.c1 = 1 WHERE test.b1 = t_cte.b1 and test.b1 = 6;
+  result:
+    - statement: |-
+        CREATE TABLE `backupDB`.`_rollback_test` LIKE `db`.`test`;
+        INSERT INTO `backupDB`.`_rollback_test`  WITH t_cte AS (
+          SELECT * FROM test WHERE test.b1 > 10
+        ) SELECT `test`.* FROM test, t_cte WHERE test.b1 = t_cte.b1 and test.b1 = 1
+          UNION ALL
+          WITH t_cte AS (
+          SELECT * FROM test WHERE test.b1 > 10
+        ) SELECT `test`.* FROM test, t_cte WHERE test.b1 = t_cte.b1 and test.b1 = 2
+          UNION ALL
+          WITH t_cte AS (
+          SELECT * FROM test WHERE test.b1 > 10
+        ) SELECT `test`.* FROM test, t_cte WHERE test.b1 = t_cte.b1 and test.b1 = 3
+          UNION ALL
+          WITH t_cte AS (
+          SELECT * FROM test WHERE test.b1 > 10
+        ) SELECT `test`.* FROM test, t_cte WHERE test.b1 = t_cte.b1 and test.b1 = 4
+          UNION ALL
+          WITH t_cte AS (
+          SELECT * FROM test WHERE test.b1 > 10
+        ) SELECT `test`.* FROM test, t_cte WHERE test.b1 = t_cte.b1 and test.b1 = 5
+          UNION ALL
+          WITH t_cte AS (
+          SELECT * FROM test WHERE test.b1 > 10
+        ) SELECT `test`.* FROM test, t_cte WHERE test.b1 = t_cte.b1 and test.b1 = 6;
+      sourceschema: ""
+      sourcetablename: test
+      targettablename: _rollback_test
+      startposition:
+        line: 1
+        column: 0
+      endposition:
+        line: 18
+        column: 77
+- input: |-
+    WITH t_cte AS (
+      SELECT * FROM test WHERE test.b1 > 10
+    ) DELETE FROM test USING test JOIN t_cte WHERE test.b1 = t_cte.b1;
+  result:
+    - statement: |-
+        CREATE TABLE `backupDB`.`_rollback_0_test` LIKE `db`.`test`;
+        INSERT INTO `backupDB`.`_rollback_0_test` WITH t_cte AS (
+          SELECT * FROM test WHERE test.b1 > 10
+        ) SELECT `test`.* FROM test JOIN t_cte WHERE test.b1 = t_cte.b1;
+      sourceschema: ""
+      sourcetablename: test
+      targettablename: _rollback_0_test
+      startposition:
+        line: 1
+        column: 0
+      endposition:
+        line: 3
+        column: 65
+- input: |-
+    WITH t_cte AS (
+      SELECT * FROM test WHERE test.b1 > 10
+    ) UPDATE test, t_cte SET test.c1 = 1 WHERE test.b1 = t_cte.b1;
+  result:
+    - statement: |-
+        CREATE TABLE `backupDB`.`_rollback_0_test` LIKE `db`.`test`;
+        INSERT INTO `backupDB`.`_rollback_0_test` WITH t_cte AS (
+          SELECT * FROM test WHERE test.b1 > 10
+        ) SELECT `test`.* FROM test, t_cte WHERE test.b1 = t_cte.b1;
+      sourceschema: ""
+      sourcetablename: test
+      targettablename: _rollback_0_test
+      startposition:
+        line: 1
+        column: 0
+      endposition:
+        line: 3
+        column: 61
+- input: |-
     UPDATE test SET test.c1 = 1 WHERE test.b1 = 1;
     UPDATE test SET test.c1 = 2 WHERE test.b1 = 2;
     UPDATE test SET test.c1 = 3 WHERE test.b1 = 3;
