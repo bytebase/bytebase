@@ -2,6 +2,7 @@ export type WorkspaceMode = "CONSOLE" | "EDITOR";
 
 export type AppFeatures = {
   // Use simple and accurate phrases. Namespace if needed
+  "bb.feature.default-workspace-view": "CONSOLE" | "EDITOR";
   "bb.feature.custom-color-scheme": Record<string, string> | undefined;
   "bb.feature.disable-kbar": boolean;
   "bb.feature.disallow-navigate-to-console": boolean;
@@ -57,6 +58,7 @@ export const defaultAppProfile = (): AppProfile => ({
   mode: "CONSOLE",
   embedded: false,
   features: {
+    "bb.feature.default-workspace-view": "CONSOLE",
     "bb.feature.custom-color-scheme": undefined,
     "bb.feature.disable-kbar": false,
     "bb.feature.disallow-navigate-to-console": false,

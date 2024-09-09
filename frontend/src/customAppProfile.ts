@@ -93,6 +93,7 @@ const overrideAppFeatures = (
 
   if (workspaceMode === "EDITOR") {
     actuatorStore.overrideAppFeatures({
+      "bb.feature.default-workspace-view": "EDITOR",
       "bb.feature.hide-quick-start": true,
       "bb.feature.hide-help": true,
       "bb.feature.hide-trial": true,
@@ -105,7 +106,7 @@ const overrideAppFeatures = (
       "bb.feature.sql-editor.disallow-share-worksheet": true,
       "bb.feature.sql-editor.disallow-edit-schema": true,
       "bb.feature.sql-editor.hide-advance-instance-features": true,
-      "bb.feature.sql-editor.sql-check-style": "PREFLIGHT"
+      "bb.feature.sql-editor.sql-check-style": "PREFLIGHT",
     });
   }
 };

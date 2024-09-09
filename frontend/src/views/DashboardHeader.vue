@@ -91,7 +91,7 @@
       </NTooltip>
       <div class="ml-2">
         <ProfileBrandingLogo>
-          <ProfileDropdown />
+          <ProfileDropdown :link="true" />
         </ProfileBrandingLogo>
       </div>
     </div>
