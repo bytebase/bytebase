@@ -38,9 +38,40 @@
     >
       <DrawerContent
         v-if="state.detail.project"
-        :title="`${$t('common.project')} - ${state.detail.project.title}`"
+        class="project-detail-drawer"
         body-content-class="flex flex-col gap-2 overflow-hidden"
       >
+        <template #header>
+          <span>{{
+            `${$t("common.project")} - ${state.detail.project.title}`
+          }}</span>
+          <NTooltip placement="bottom">
+            <template #trigger>
+              <NButton
+                quaternary
+                size="tiny"
+                style="--n-padding: 0 4px"
+                @click="
+                  $router.push({
+                    name: PROJECT_V1_ROUTE_DATABASES,
+                    params: {
+                      projectId: extractProjectResourceName(
+                        state.detail.project.name
+                      ),
+                    },
+                  })
+                "
+              >
+                <template #icon>
+                  <ExternalLinkIcon class="w-4 h-4" />
+                </template>
+              </NButton>
+            </template>
+            <template #default>
+              {{ $t("common.detail") }}
+            </template>
+          </NTooltip>
+        </template>
         <Detail :project="state.detail.project" />
       </DrawerContent>
       <ProjectCreatePanel
@@ -55,8 +86,8 @@
 </template>
 
 <script setup lang="ts">
-import { PlusIcon } from "lucide-vue-next";
-import { NButton, NEllipsis } from "naive-ui";
+import { ExternalLinkIcon, PlusIcon } from "lucide-vue-next";
+import { NButton, NEllipsis, NTooltip } from "naive-ui";
 import { computed, onMounted, reactive, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import ProjectCreatePanel from "@/components/Project/ProjectCreatePanel.vue";
@@ -66,10 +97,15 @@ import {
   ProjectV1Table,
   SearchBox,
 } from "@/components/v2";
+import { PROJECT_V1_ROUTE_DATABASES } from "@/router/dashboard/projectV1";
 import { useProjectV1List } from "@/store";
 import { useDatabaseV1List } from "@/store/modules/v1/databaseList";
 import type { Project } from "@/types/proto/v1/project_service";
-import { filterProjectV1ListByKeyword, wrapRefAsPromise } from "@/utils";
+import {
+  extractProjectResourceName,
+  filterProjectV1ListByKeyword,
+  wrapRefAsPromise,
+} from "@/utils";
 import Detail from "./Detail.vue";
 
 interface LocalState {
@@ -143,3 +179,9 @@ onMounted(() => {
   });
 });
 </script>
+
+<style scoped lang="postcss">
+.project-detail-drawer :deep(.n-drawer-header__main) {
+  @apply flex-1 flex items-center justify-between;
+}
+</style>
