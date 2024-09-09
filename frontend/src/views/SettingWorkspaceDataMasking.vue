@@ -12,12 +12,6 @@
         <GlobalMaskingRulesView />
       </NTabPane>
       <NTabPane
-        name="sensitive-column-list"
-        :tab="$t('settings.sensitive-data.sensitive-column-list')"
-      >
-        <SensitiveColumnView />
-      </NTabPane>
-      <NTabPane
         name="semantic-types"
         :tab="$t('settings.sensitive-data.semantic-types.self')"
       >
@@ -29,12 +23,6 @@
       >
         <MaskingAlgorithmsView />
       </NTabPane>
-      <NTabPane
-        name="classification"
-        :tab="$t('settings.sensitive-data.classification.self')"
-      >
-        <ClassificationView />
-      </NTabPane>
     </NTabs>
   </div>
 </template>
@@ -45,20 +33,16 @@ import { reactive, watch } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { FeatureAttention } from "@/components/FeatureGuard";
 import {
-  SensitiveColumnView,
   GlobalMaskingRulesView,
   SemanticTypesView,
-  ClassificationView,
 } from "@/components/SensitiveData";
 import MaskingAlgorithmsView from "@/components/SensitiveData/MaskingAlgorithmsView.vue";
 import { featureToRef } from "@/store";
 
 const dataMaskingTabList = [
-  "sensitive-column-list",
   "global-masking-rule",
   "semantic-types",
   "masking-algorithms",
-  "classification",
 ] as const;
 type DataMaskingTab = (typeof dataMaskingTabList)[number];
 const isDataMaskingTab = (tab: any): tab is DataMaskingTab =>

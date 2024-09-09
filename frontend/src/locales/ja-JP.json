@@ -475,8 +475,10 @@
       "gitops": "GitOps",
       "subscription": "サブスクリプション",
       "labels": "ラベル",
-      "sensitive-data": "データマスキング",
-      "access-control": "データアクセス制御",
+      "data-masking": "データマスキング",
+      "data-classification": "データ分類",
+      "access-control": "アクセス制御",
+      "data-access": "データアクセス",
       "audit-log": "監査ログ",
       "custom-roles": "カスタムロール",
       "mail-delivery": "メール送信"
