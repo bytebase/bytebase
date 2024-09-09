@@ -5,6 +5,7 @@
     </h3>
     <SQLReviewForResource :resource="project.name" :allow-edit="allowEdit" />
     <RestrictIssueCreationConfigure
+      v-if="databaseChangeMode === DatabaseChangeMode.PIPELINE"
       :resource="project.name"
       :allow-edit="allowEdit"
     />
@@ -16,10 +17,14 @@
 import AccessControlConfigure from "@/components/EnvironmentForm/AccessControlConfigure.vue";
 import RestrictIssueCreationConfigure from "@/components/GeneralSetting/RestrictIssueCreationConfigure.vue";
 import { SQLReviewForResource } from "@/components/SQLReview";
+import { useAppFeature } from "@/store";
 import type { ComposedProject } from "@/types";
+import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
 
 defineProps<{
   project: ComposedProject;
   allowEdit: boolean;
 }>();
+
+const databaseChangeMode = useAppFeature("bb.feature.database-change-mode");
 </script>
