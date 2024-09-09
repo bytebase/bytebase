@@ -2,15 +2,21 @@ import {
   BuildingIcon,
   GalleryHorizontalEndIcon,
   LayersIcon,
+  ShieldCheckIcon,
   SquareStackIcon,
   UsersIcon,
+  WorkflowIcon,
 } from "lucide-vue-next";
 import { computed, h } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter, type RouteRecordRaw } from "vue-router";
 import type { SidebarItem } from "@/components/CommonSidebar.vue";
 import { DatabaseIcon } from "@/components/Icon";
-import { WORKSPACE_ROUTE_USERS } from "@/router/dashboard/workspaceRoutes";
+import {
+  WORKSPACE_ROUTE_DATA_CLASSIFICATION,
+  WORKSPACE_ROUTE_SQL_REVIEW,
+  WORKSPACE_ROUTE_USERS,
+} from "@/router/dashboard/workspaceRoutes";
 import sqlEditorRoutes, {
   SQL_EDITOR_SETTING_DATABASES_MODULE,
   SQL_EDITOR_SETTING_ENVIRONMENT_MODULE,
@@ -140,10 +146,27 @@ export const useSidebarItems = () => {
         name: "",
       },
       {
-        title: "IAM & Admin",
+        title: t("settings.sidebar.users-and-groups"),
         icon: () => h(UsersIcon),
         name: WORKSPACE_ROUTE_USERS,
         path: router.resolve({ name: WORKSPACE_ROUTE_USERS }).fullPath,
+        type: "link",
+        newWindow: true,
+      },
+      {
+        title: "CI/CD",
+        icon: () => h(WorkflowIcon),
+        name: WORKSPACE_ROUTE_SQL_REVIEW,
+        path: router.resolve({ name: WORKSPACE_ROUTE_SQL_REVIEW }).fullPath,
+        type: "link",
+        newWindow: true,
+      },
+      {
+        title: t("settings.sidebar.data-access"),
+        icon: () => h(ShieldCheckIcon),
+        name: WORKSPACE_ROUTE_DATA_CLASSIFICATION,
+        path: router.resolve({ name: WORKSPACE_ROUTE_DATA_CLASSIFICATION })
+          .fullPath,
         type: "link",
         newWindow: true,
       },
