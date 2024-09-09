@@ -23,7 +23,7 @@ export const overrideAppProfile = () => {
 };
 
 const overrideAppFeatures = (
-  databaseChangeMode: DatabaseChangeMode,
+  databaseChangeMode: DatabaseChangeMode.PIPELINE | DatabaseChangeMode.EDITOR,
   query: URLSearchParams
 ) => {
   const actuatorStore = useActuatorV1Store();

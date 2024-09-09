@@ -3,7 +3,9 @@ import { DatabaseChangeMode } from "./proto/v1/setting_service";
 export type AppFeatures = {
   // Use simple and accurate phrases. Namespace if needed
   "bb.feature.default-workspace-view": "CONSOLE" | "EDITOR";
-  "bb.feature.database-change-mode": DatabaseChangeMode;
+  "bb.feature.database-change-mode":
+    | DatabaseChangeMode.PIPELINE
+    | DatabaseChangeMode.EDITOR;
   "bb.feature.custom-color-scheme": Record<string, string> | undefined;
   "bb.feature.disable-kbar": boolean;
   "bb.feature.disallow-navigate-to-console": boolean;
