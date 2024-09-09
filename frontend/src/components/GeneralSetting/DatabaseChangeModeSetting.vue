@@ -8,7 +8,7 @@
       </div>
     </div>
     <div class="flex-1 lg:px-4">
-      <p class="mb-2 textinfolabel">
+      <p class="mt-0.5 mb-2 font-medium">
         {{ $t("settings.general.workspace.database-change-mode.description") }}
       </p>
       <div>
