@@ -475,8 +475,10 @@
       "gitops": "GitOps",
       "subscription": "Suscripción",
       "labels": "Etiquetas",
-      "sensitive-data": "Enmascaramiento de Datos",
-      "access-control": "Control de Acceso a Datos",
+      "data-masking": "Enmascaramiento de datos",
+      "data-classification": "Clasificación de datos",
+      "access-control": "Control de acceso",
+      "data-access": "Acceso a datos",
       "audit-log": "Registro de auditoría",
       "custom-roles": "Roles personalizados",
       "mail-delivery": "Entrega de Correo"
@@ -2572,7 +2574,10 @@
       "description": "¿Está seguro de que desea cerrar el panel? Se perderán los cambios realizados."
     },
     "tenant-mode-tips": "Los cambios se aplicarán a todas las bases de datos de inquilinos seleccionados después de hacer clic en \"Vista previa de la incidencia\".",
-    "edit-foreign-key": "Editar clave externa",
+    "foreign-key": {
+      "edit": "Editar clave externa",
+      "name-description": "El nombre único de la clave externa"
+    },
     "select-reference-schema": "Seleccionar un esquema de referencia",
     "select-reference-table": "Seleccionar una tabla de referencia",
     "select-reference-column": "Seleccionar una columna de referencia",

@@ -29,7 +29,7 @@
           <router-link
             class="flex items-center light-link text-sm"
             :to="{
-              name: WORKSPACE_ROUTE_SENSITIVE_DATA,
+              name: WORKSPACE_ROUTE_DATA_MASKING,
               hash: 'global-masking-rule',
             }"
           >
@@ -66,10 +66,11 @@
 </template>
 
 <script lang="ts" setup>
+import { NTooltip } from "naive-ui";
 import { computed } from "vue";
 import { reactive } from "vue";
 import { useI18n } from "vue-i18n";
-import { WORKSPACE_ROUTE_SENSITIVE_DATA } from "@/router/dashboard/workspaceRoutes";
+import { WORKSPACE_ROUTE_DATA_MASKING } from "@/router/dashboard/workspaceRoutes";
 import { useSubscriptionV1Store } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import { MaskingLevel, maskingLevelToJSON } from "@/types/proto/v1/common";
@@ -80,7 +81,6 @@ import type {
 import type { MaskData } from "@/types/proto/v1/org_policy_service";
 import FeatureModal from "../FeatureGuard/FeatureModal.vue";
 import SensitiveColumnDrawer from "../SensitiveData/SensitiveColumnDrawer.vue";
-import { NTooltip } from "naive-ui";
 
 type LocalState = {
   showFeatureModal: boolean;

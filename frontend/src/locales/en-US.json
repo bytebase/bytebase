@@ -475,8 +475,10 @@
       "gitops": "GitOps",
       "subscription": "Subscription",
       "labels": "Labels",
-      "sensitive-data": "Data Masking",
-      "access-control": "Data Access Control",
+      "data-masking": "Data Masking",
+      "data-classification": "Data Classification",
+      "access-control": "Access Control",
+      "data-access": "Data Access",
       "audit-log": "Audit Log",
       "custom-roles": "Custom Roles",
       "mail-delivery": "Mail Delivery"
@@ -2572,7 +2574,10 @@
       "description": "Are you sure you want to close the panel? Your changes will be lost."
     },
     "tenant-mode-tips": "Changes will be applied to all selected tenant databases after clicking \"Preview issue\".",
-    "edit-foreign-key": "Edit foreign key",
+    "foreign-key": {
+      "edit": "Edit foreign key",
+      "name-description": "The unique name of foreign key"
+    },
     "select-reference-schema": "Select a schema to reference to",
     "select-reference-table": "Select a table to reference to",
     "select-reference-column": "Select a column to reference to",

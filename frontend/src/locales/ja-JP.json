@@ -475,8 +475,10 @@
       "gitops": "GitOps",
       "subscription": "サブスクリプション",
       "labels": "ラベル",
-      "sensitive-data": "データマスキング",
-      "access-control": "データアクセス制御",
+      "data-masking": "データマスキング",
+      "data-classification": "データ分類",
+      "access-control": "アクセス制御",
+      "data-access": "データアクセス",
       "audit-log": "監査ログ",
       "custom-roles": "カスタムロール",
       "mail-delivery": "メール送信"
@@ -2572,7 +2574,10 @@
       "description": "変更は閉じると失われます。"
     },
     "tenant-mode-tips": "[チケットのプレビュー] をクリックすると、現在の変更が選択したすべてのテナント データベースに適用されます。",
-    "edit-foreign-key": "外部キーを変更する",
+    "foreign-key": {
+      "edit": "外部キーを編集",
+      "name-description": "外部キーの一意の名前"
+    },
     "select-reference-schema": "外部キーのスキーマを選択します",
     "select-reference-table": "外部キーのあるテーブルを選択",
     "select-reference-column": "外部キー列を選択します",

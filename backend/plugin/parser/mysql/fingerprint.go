@@ -72,7 +72,6 @@ func GetFingerprint(query string) (string, error) {
 
 	// Remove spaces and line breaks in SQL queries.
 	query = strings.TrimSpace(query)
-	query = strings.TrimRight(query, "\n\r\f ")
 	query = regexp.MustCompile(`\s+`).ReplaceAllString(query, " ")
 	query = strings.ToLower(query)
 

@@ -15,11 +15,12 @@ import {
   LinkIcon,
   HomeIcon,
   DatabaseIcon,
-  ShieldAlertIcon,
+  WorkflowIcon,
   GalleryHorizontalEndIcon,
   LayersIcon,
   SquareStackIcon,
   ShieldCheck,
+  UsersIcon,
 } from "lucide-vue-next";
 import { computed, h } from "vue";
 import { useI18n } from "vue-i18n";
@@ -36,12 +37,13 @@ import {
   INSTANCE_ROUTE_DASHBOARD,
   PROJECT_V1_ROUTE_DASHBOARD,
   WORKSPACE_ROUTE_MY_ISSUES,
-  WORKSPACE_ROUTE_ANOMALY_CENTER,
   WORKSPACE_ROUTE_SQL_REVIEW,
   WORKSPACE_ROUTE_SCHEMA_TEMPLATE,
   WORKSPACE_ROUTE_CUSTOM_APPROVAL,
   WORKSPACE_ROUTE_RISK_CENTER,
-  WORKSPACE_ROUTE_SENSITIVE_DATA,
+  WORKSPACE_ROUTE_DATA_MASKING,
+  WORKSPACE_ROUTE_DATA_CLASSIFICATION,
+  WORKSPACE_ROUTE_DATA_ACCESS_CONTROL,
   WORKSPACE_ROUTE_AUDIT_LOG,
   WORKSPACE_ROUTE_GITOPS,
   WORKSPACE_ROUTE_SSO,
@@ -201,16 +203,8 @@ const dashboardSidebarItemList = computed((): DashboardSidebarItem[] => {
       name: "",
     },
     {
-      navigationId: "bb.navigation.anomaly-center",
-      title: t("anomaly-center"),
-      icon: () => h(ShieldAlertIcon),
-      name: WORKSPACE_ROUTE_ANOMALY_CENTER,
-      type: "route",
-      shortcuts: ["g", "a", "c"],
-    },
-    {
-      title: t("settings.sidebar.security-and-policy"),
-      icon: () => h(ShieldCheck),
+      title: "IAM & Admin",
+      icon: () => h(UsersIcon),
       type: "div",
       children: [
         {
@@ -230,13 +224,25 @@ const dashboardSidebarItemList = computed((): DashboardSidebarItem[] => {
           type: "route",
         },
         {
-          title: t("sql-review.title"),
-          name: WORKSPACE_ROUTE_SQL_REVIEW,
+          title: t("settings.sidebar.sso"),
+          name: WORKSPACE_ROUTE_SSO,
           type: "route",
         },
         {
-          title: t("schema-template.self"),
-          name: WORKSPACE_ROUTE_SCHEMA_TEMPLATE,
+          title: t("settings.sidebar.audit-log"),
+          name: WORKSPACE_ROUTE_AUDIT_LOG,
+          type: "route",
+        },
+      ],
+    },
+    {
+      title: "CI/CD",
+      icon: () => h(WorkflowIcon),
+      type: "div",
+      children: [
+        {
+          title: t("sql-review.title"),
+          name: WORKSPACE_ROUTE_SQL_REVIEW,
           type: "route",
         },
         {
@@ -250,13 +256,35 @@ const dashboardSidebarItemList = computed((): DashboardSidebarItem[] => {
           type: "route",
         },
         {
-          title: t("settings.sidebar.sensitive-data"),
-          name: WORKSPACE_ROUTE_SENSITIVE_DATA,
+          title: t("schema-template.self"),
+          name: WORKSPACE_ROUTE_SCHEMA_TEMPLATE,
           type: "route",
         },
         {
-          title: t("settings.sidebar.audit-log"),
-          name: WORKSPACE_ROUTE_AUDIT_LOG,
+          title: t("settings.sidebar.gitops"),
+          name: WORKSPACE_ROUTE_GITOPS,
+          type: "route",
+        },
+      ],
+    },
+    {
+      title: t("settings.sidebar.data-access"),
+      icon: () => h(ShieldCheck),
+      type: "div",
+      children: [
+        {
+          title: t("settings.sidebar.data-classification"),
+          name: WORKSPACE_ROUTE_DATA_CLASSIFICATION,
+          type: "route",
+        },
+        {
+          title: t("settings.sidebar.data-masking"),
+          name: WORKSPACE_ROUTE_DATA_MASKING,
+          type: "route",
+        },
+        {
+          title: t("settings.sidebar.access-control"),
+          name: WORKSPACE_ROUTE_DATA_ACCESS_CONTROL,
           type: "route",
         },
       ],
@@ -266,17 +294,6 @@ const dashboardSidebarItemList = computed((): DashboardSidebarItem[] => {
       icon: () => h(LinkIcon),
       type: "div",
       children: [
-        {
-          title: t("settings.sidebar.gitops"),
-          name: WORKSPACE_ROUTE_GITOPS,
-          type: "route",
-          hide: databaseChangeMode.value === DatabaseChangeMode.EDITOR,
-        },
-        {
-          title: t("settings.sidebar.sso"),
-          name: WORKSPACE_ROUTE_SSO,
-          type: "route",
-        },
         {
           title: t("settings.sidebar.mail-delivery"),
           name: WORKSPACE_ROUTE_MAIL_DELIVERY,

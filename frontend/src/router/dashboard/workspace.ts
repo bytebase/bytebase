@@ -9,7 +9,6 @@ import {
   ENVIRONMENT_V1_ROUTE_DASHBOARD,
   WORKSPACE_ROOT_MODULE,
   WORKSPACE_ROUTE_MY_ISSUES,
-  WORKSPACE_ROUTE_ANOMALY_CENTER,
   WORKSPACE_ROUTE_USER_PROFILE,
   WORKSPACE_ROUTE_SQL_REVIEW,
   WORKSPACE_ROUTE_SQL_REVIEW_CREATE,
@@ -17,7 +16,9 @@ import {
   WORKSPACE_ROUTE_SCHEMA_TEMPLATE,
   WORKSPACE_ROUTE_CUSTOM_APPROVAL,
   WORKSPACE_ROUTE_RISK_CENTER,
-  WORKSPACE_ROUTE_SENSITIVE_DATA,
+  WORKSPACE_ROUTE_DATA_MASKING,
+  WORKSPACE_ROUTE_DATA_CLASSIFICATION,
+  WORKSPACE_ROUTE_DATA_ACCESS_CONTROL,
   WORKSPACE_ROUTE_AUDIT_LOG,
   WORKSPACE_ROUTE_GITOPS,
   WORKSPACE_ROUTE_GITOPS_CREATE,
@@ -128,19 +129,6 @@ const workspaceRoutes: RouteRecordRaw[] = [
       leftSidebar: () => import("@/views/DashboardSidebar.vue"),
     },
     props: { content: true, leftSidebar: true },
-  },
-  {
-    path: "anomaly-center",
-    name: WORKSPACE_ROUTE_ANOMALY_CENTER,
-    meta: { title: () => t("anomaly-center") },
-    components: {
-      content: () => import("@/views/AnomalyCenterDashboard.vue"),
-      leftSidebar: () => import("@/views/DashboardSidebar.vue"),
-    },
-    props: {
-      content: true,
-      leftSidebar: true,
-    },
   },
   {
     path: "users/:principalEmail",
@@ -351,13 +339,35 @@ const workspaceRoutes: RouteRecordRaw[] = [
         props: true,
       },
       {
-        path: "sensitive-data",
-        name: WORKSPACE_ROUTE_SENSITIVE_DATA,
+        path: "data-masking",
+        name: WORKSPACE_ROUTE_DATA_MASKING,
         meta: {
-          title: () => t("settings.sidebar.sensitive-data"),
+          title: () => t("settings.sidebar.data-masking"),
           requiredWorkspacePermissionList: () => ["bb.policies.get"],
         },
-        component: () => import("@/views/SettingWorkspaceSensitiveData.vue"),
+        component: () => import("@/views/SettingWorkspaceDataMasking.vue"),
+        props: true,
+      },
+      {
+        path: "data-classification",
+        name: WORKSPACE_ROUTE_DATA_CLASSIFICATION,
+        meta: {
+          title: () => t("settings.sidebar.data-classification"),
+          requiredWorkspacePermissionList: () => ["bb.policies.get"],
+        },
+        component: () =>
+          import("@/views/SettingWorkspaceDataClassification.vue"),
+        props: true,
+      },
+      {
+        path: "data-access-control",
+        name: WORKSPACE_ROUTE_DATA_ACCESS_CONTROL,
+        meta: {
+          title: () => t("settings.sidebar.access-control"),
+          requiredWorkspacePermissionList: () => ["bb.policies.get"],
+        },
+        component: () =>
+          import("@/views/SettingWorkspaceDataAccessControl.vue"),
         props: true,
       },
       {

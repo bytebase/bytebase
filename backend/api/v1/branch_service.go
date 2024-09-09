@@ -1687,7 +1687,7 @@ func alignDatabaseConfig(metadata *storepb.DatabaseSchemaMetadata, config *store
 }
 
 func formatViewDef(def string) string {
-	return strings.TrimRight(def, "; \n\r\t")
+	return strings.TrimRightFunc(def, utils.IsSpaceOrSemicolon)
 }
 
 // setClassificationIDToConfig inplace set the classification ID from the a config to the b config.

@@ -1,51 +1,62 @@
 <template>
   <BBModal
-    :title="$t('schema-editor.edit-foreign-key')"
+    :title="$t('schema-editor.foreign-key.edit')"
     class="shadow-inner outline outline-gray-200"
     @close="dismissModal"
   >
-    <div v-if="shouldShowSchemaSelector" class="w-72">
-      <p class="mb-2">{{ $t("schema-editor.select-reference-schema") }}</p>
-      <NSelect
-        v-model:value="state.referencedSchemaName"
-        :options="referenceSelectOptions"
-        :placeholder="$t('schema-editor.schema.select')"
-        :filterable="true"
-        @update:value="
-          () => {
-            state.referencedTableName = null;
-            state.referencedColumnName = null;
-          }
-        "
-      />
+    <div>
+      <p class="textlabel mb-2">
+        {{ $t("database.foreign-key.reference") }}
+        <span class="textinfolabel"> ({{ referenceTips }}) </span>
+      </p>
+      <NInputGroup>
+        <NSelect
+          v-if="shouldShowSchemaSelector"
+          v-model:value="state.referencedSchemaName"
+          :options="referenceSelectOptions"
+          :placeholder="$t('schema-editor.schema.select')"
+          :filterable="true"
+          @update:value="
+            () => {
+              state.referencedTableName = null;
+              state.referencedColumnName = null;
+            }
+          "
+        />
+        <NSelect
+          v-model:value="state.referencedTableName"
+          :options="referencedTableOptions"
+          :placeholder="$t('schema-editor.table.select')"
+          :filterable="true"
+          @update:value="state.referencedColumnName = null"
+        />
+        <NSelect
+          v-model:value="state.referencedColumnName"
+          :options="referencedColumnOptions"
+          :placeholder="$t('schema-editor.column.select')"
+          :filterable="true"
+        />
+      </NInputGroup>
     </div>
-    <div class="w-72">
-      <p class="mt-4 mb-2">{{ $t("schema-editor.select-reference-table") }}</p>
-      <NSelect
-        v-model:value="state.referencedTableName"
-        :options="referencedTableOptions"
-        :placeholder="$t('schema-editor.table.select')"
-        :filterable="true"
-        @update:value="state.referencedColumnName = null"
-      />
-    </div>
-    <div class="w-72">
-      <p class="mt-4 mb-2">{{ $t("schema-editor.select-reference-column") }}</p>
-      <NSelect
-        v-model:value="state.referencedColumnName"
-        :options="referencedColumnOptions"
-        :placeholder="$t('schema-editor.column.select')"
-        :filterable="true"
+    <div class="mt-4">
+      <p class="textlabel mb-2">{{ $t("common.name") }}</p>
+      <NInput
+        v-model:value="state.foreignKeyName"
+        :placeholder="$t('schema-editor.foreign-key.name-description')"
       />
     </div>
 
-    <div class="w-full flex items-center justify-between mt-6">
+    <div class="w-full flex items-center justify-between mt-4">
       <div class="flex flex-row items-center justify-start">
         <NButton
           v-if="foreignKey !== undefined"
           type="error"
+          text
           @click="handleRemove"
         >
+          <template #icon>
+            <TrashIcon class="w-4 h-auto" />
+          </template>
           {{ $t("common.delete") }}
         </NButton>
       </div>
@@ -66,12 +77,12 @@
 </template>
 
 <script lang="ts" setup>
+import { TrashIcon } from "lucide-vue-next";
 import type { SelectOption } from "naive-ui";
-import { NButton, NSelect } from "naive-ui";
+import { NButton, NSelect, NInputGroup, NInput } from "naive-ui";
 import { computed, onMounted, reactive } from "vue";
 import { BBModal } from "@/bbkit";
 import type { ComposedDatabase } from "@/types";
-import { Engine } from "@/types/proto/v1/common";
 import type {
   ColumnMetadata,
   DatabaseMetadata,
@@ -79,7 +90,7 @@ import type {
   TableMetadata,
 } from "@/types/proto/v1/database_service";
 import { ForeignKeyMetadata } from "@/types/proto/v1/database_service";
-import { randomString } from "@/utils";
+import { hasSchemaProperty } from "@/utils";
 import { useSchemaEditorContext } from "../context";
 import {
   removeColumnFromForeignKey,
@@ -90,6 +101,7 @@ interface LocalState {
   referencedSchemaName: string;
   referencedTableName: string | null;
   referencedColumnName: string | null;
+  foreignKeyName: string;
 }
 
 type SchemaSelectOption = SelectOption & {
@@ -122,6 +134,7 @@ const state = reactive<LocalState>({
   referencedSchemaName: props.schema.name,
   referencedTableName: null,
   referencedColumnName: null,
+  foreignKeyName: "",
 });
 const engine = computed(() => {
   return props.database.instanceResource.engine;
@@ -179,11 +192,15 @@ const referencedColumnOptions = computed(() => {
   }));
 });
 const allowConfirm = computed(() => {
-  return referencedColumn.value !== undefined;
+  return state.foreignKeyName !== "" && referencedColumn.value !== undefined;
 });
-
 const shouldShowSchemaSelector = computed(() => {
-  return engine.value === Engine.POSTGRES;
+  return hasSchemaProperty(engine.value);
+});
+const referenceTips = computed(() => {
+  return shouldShowSchemaSelector.value
+    ? "Schema.Table.Column"
+    : "Table.Column";
 });
 
 onMounted(() => {
@@ -194,6 +211,7 @@ onMounted(() => {
   state.referencedSchemaName = foreignKey.referencedSchema;
   state.referencedTableName = foreignKey.referencedTable;
   state.referencedColumnName = foreignKey.referencedColumns[position];
+  state.foreignKeyName = foreignKey.name;
 });
 
 const metadataForColumn = () => {
@@ -224,6 +242,9 @@ const handleRemove = async () => {
 };
 
 const handleConfirm = async () => {
+  if (state.foreignKeyName === "") {
+    return;
+  }
   if (!referencedColumn.value) {
     return;
   }
@@ -242,10 +263,11 @@ const handleConfirm = async () => {
       foreignKey.columns = [];
       foreignKey.referencedColumns = [];
     }
+    foreignKey.name = state.foreignKeyName;
     upsertColumnFromForeignKey(foreignKey, column.name, refed.column.name);
   } else {
     const fk = ForeignKeyMetadata.fromPartial({
-      name: `${table.name}-fk-${randomString(8).toLowerCase()}`,
+      name: state.foreignKeyName,
       columns: [props.column.name],
       referencedSchema: refed.schema.name,
       referencedTable: refed.table.name,

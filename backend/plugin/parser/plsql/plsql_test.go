@@ -13,6 +13,9 @@ func TestPLSQLParser(t *testing.T) {
 		errorMessage string
 	}{
 		{
+			statement: `UPDATE t1 SET (c1) = 1 WHERE c2 = 2;`,
+		},
+		{
 			statement: `
 			SELECT q'\This is String\' FROM DUAL;
 			`,

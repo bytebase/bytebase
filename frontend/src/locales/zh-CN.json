@@ -475,8 +475,10 @@
       "gitops": "GitOps",
       "subscription": "订阅",
       "labels": "标签",
-      "sensitive-data": "数据脱敏",
-      "access-control": "数据访问控制",
+      "data-masking": "数据屏蔽",
+      "data-classification": "数据分类",
+      "access-control": "访问控制",
+      "data-access": "数据访问",
       "audit-log": "审计日志",
       "custom-roles": "自定义角色",
       "mail-delivery": "邮件发送"
@@ -2572,7 +2574,10 @@
       "description": "关闭后更改将会丢失。"
     },
     "tenant-mode-tips": "点击“预览工单”后，当前更改将会应用于所有选定的租户数据库。",
-    "edit-foreign-key": "修改外键",
+    "foreign-key": {
+      "edit": "修改外键",
+      "name-description": "外键的名称应该是唯一的"
+    },
     "select-reference-schema": "选择外键的 Schema",
     "select-reference-table": "选择外键的表",
     "select-reference-column": "选择外键的列",

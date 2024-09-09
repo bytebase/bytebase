@@ -7,6 +7,7 @@ import (
 	parser "github.com/bytebase/plsql-parser"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -53,7 +54,7 @@ func SplitSQL(statement string) ([]base.SingleSQL, error) {
 				lastToken := tokens.Get(stopIndex)
 				lastLine = lastToken.GetLine()
 				text = tokens.GetTextFromTokens(stmt.GetStart(), lastToken)
-				text = strings.TrimRight(text, " \n\t;")
+				text = strings.TrimRightFunc(text, utils.IsSpaceOrSemicolon)
 			}
 
 			result = append(result, base.SingleSQL{
