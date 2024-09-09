@@ -62,6 +62,7 @@ import { hasWorkspacePermissionV2 } from "@/utils";
 interface DashboardSidebarItem extends SidebarItem {
   navigationId?: string;
   shortcuts?: string[];
+  hide?: boolean;
   children?: DashboardSidebarItem[];
 }
 
@@ -157,7 +158,7 @@ const filterSidebarByPermissions = (
 };
 
 const dashboardSidebarItemList = computed((): DashboardSidebarItem[] => {
-  const sidebarList: (DashboardSidebarItem & { hide?: boolean })[] = [
+  const sidebarList: DashboardSidebarItem[] = [
     {
       navigationId: "bb.navigation.my-issues",
       title: t("issue.my-issues"),
@@ -264,6 +265,7 @@ const dashboardSidebarItemList = computed((): DashboardSidebarItem[] => {
           title: t("settings.sidebar.gitops"),
           name: WORKSPACE_ROUTE_GITOPS,
           type: "route",
+          hide: databaseChangeMode.value === DatabaseChangeMode.EDITOR,
         },
       ],
     },
@@ -293,18 +295,17 @@ const dashboardSidebarItemList = computed((): DashboardSidebarItem[] => {
       title: t("settings.sidebar.integration"),
       icon: () => h(LinkIcon),
       type: "div",
+      hide: databaseChangeMode.value === DatabaseChangeMode.EDITOR,
       children: [
         {
           title: t("settings.sidebar.mail-delivery"),
           name: WORKSPACE_ROUTE_MAIL_DELIVERY,
           type: "route",
-          hide: databaseChangeMode.value === DatabaseChangeMode.EDITOR,
         },
         {
           title: t("settings.sidebar.im-integration"),
           name: WORKSPACE_ROUTE_IM,
           type: "route",
-          hide: databaseChangeMode.value === DatabaseChangeMode.EDITOR,
         },
       ],
     },
