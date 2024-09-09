@@ -51,16 +51,7 @@
                 quaternary
                 size="tiny"
                 style="--n-padding: 0 4px"
-                @click="
-                  $router.push({
-                    name: PROJECT_V1_ROUTE_DATABASES,
-                    params: {
-                      projectId: extractProjectResourceName(
-                        state.detail.project.name
-                      ),
-                    },
-                  })
-                "
+                @click="toDetailPage(state.detail.project)"
               >
                 <template #icon>
                   <ExternalLinkIcon class="w-4 h-4" />
@@ -144,6 +135,17 @@ const showProjectDetail = (project: Project) => {
 
 const hideDrawer = () => {
   state.detail.show = false;
+};
+
+const toDetailPage = (project: Project) => {
+  const projectId = extractProjectResourceName(project.name);
+  const route = router.resolve({
+    name: PROJECT_V1_ROUTE_DATABASES,
+    params: {
+      projectId,
+    },
+  });
+  window.open(route.fullPath, "_blank");
 };
 
 onMounted(() => {
