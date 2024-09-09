@@ -248,7 +248,11 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 		return nil, err
 	}
 	if queryErr != nil {
-		return nil, status.Error(codes.Internal, queryErr.Error())
+		code := codes.Internal
+		if status, ok := status.FromError(queryErr); ok && status.Code() != codes.OK && status.Code() != codes.Unknown {
+			code = status.Code()
+		}
+		return nil, status.Error(code, queryErr.Error())
 	}
 
 	allowExport := true
