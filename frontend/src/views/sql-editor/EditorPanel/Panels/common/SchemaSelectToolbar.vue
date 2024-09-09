@@ -7,6 +7,7 @@
       size="small"
       class="min-w-[8rem]"
       v-bind="$attrs"
+      :consistent-menu-width="false"
     />
 
     <div v-else class="w-full flex flex-row justify-between items-center">
