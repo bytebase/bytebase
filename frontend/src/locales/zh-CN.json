@@ -475,8 +475,10 @@
       "gitops": "GitOps",
       "subscription": "订阅",
       "labels": "标签",
-      "sensitive-data": "数据脱敏",
-      "access-control": "数据访问控制",
+      "data-masking": "数据屏蔽",
+      "data-classification": "数据分类",
+      "access-control": "访问控制",
+      "data-access": "数据访问",
       "audit-log": "审计日志",
       "custom-roles": "自定义角色",
       "mail-delivery": "邮件发送"

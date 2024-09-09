@@ -19,7 +19,7 @@
 import { NTooltip } from "naive-ui";
 import { computed } from "vue";
 import { useRouter } from "vue-router";
-import { WORKSPACE_ROUTE_SENSITIVE_DATA } from "@/router/dashboard/workspaceRoutes";
+import { WORKSPACE_ROUTE_DATA_ACCESS_CONTROL } from "@/router/dashboard/workspaceRoutes";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
 const router = useRouter();
@@ -32,7 +32,7 @@ const handleClick = () => {
   if (!clickable.value) {
     return;
   }
-  const url = router.resolve({ name: WORKSPACE_ROUTE_SENSITIVE_DATA });
+  const url = router.resolve({ name: WORKSPACE_ROUTE_DATA_ACCESS_CONTROL });
   window.open(url.href, "_BLANK");
 };
 </script>
