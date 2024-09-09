@@ -8,6 +8,7 @@ import (
 	parser "github.com/bytebase/partiql-parser"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	"github.com/bytebase/bytebase/backend/utils"
 )
 
 type ParseResult struct {
@@ -17,7 +18,7 @@ type ParseResult struct {
 
 // ParsePartiQL parses the given PartiQL statement by using antlr4. Returns the AST and token stream if no error.
 func ParsePartiQL(statement string) (*ParseResult, error) {
-	statement = strings.TrimRight(statement, " \t\n\r\f;") + "\n;"
+	statement = strings.TrimRightFunc(statement, utils.IsSpaceOrSemicolon) + "\n;"
 	inputStream := antlr.NewInputStream(statement)
 	lexer := parser.NewPartiQLLexer(inputStream)
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)

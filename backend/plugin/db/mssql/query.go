@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"strconv"
 	"strings"
+	"unicode"
 
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
@@ -202,7 +203,7 @@ func getStatementWithResultLimitInline(singleStatement string, limitCount int) (
 	}
 
 	res := listener.rewriter.GetTextDefault()
-	res = strings.TrimRight(res, " \t\n\r\f;") + ";"
+	res = strings.TrimRightFunc(res, unicode.IsSpace) + ";"
 
 	return res, nil
 }
