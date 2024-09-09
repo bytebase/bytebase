@@ -52,8 +52,9 @@ import {
   WORKSPACE_ROUTE_USER_PROFILE,
   WORKSPACE_ROUTE_IM,
 } from "@/router/dashboard/workspaceRoutes";
-import { usePermissionStore } from "@/store";
+import { useAppFeature, usePermissionStore } from "@/store";
 import type { Permission } from "@/types";
+import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
 interface DashboardSidebarItem extends SidebarItem {
@@ -66,6 +67,7 @@ const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
 const permissionStore = usePermissionStore();
+const databaseChangeMode = useAppFeature("bb.feature.database-change-mode");
 
 const getItemClass = (item: SidebarItem): string[] => {
   const { name: current } = route;
@@ -153,7 +155,7 @@ const filterSidebarByPermissions = (
 };
 
 const dashboardSidebarItemList = computed((): DashboardSidebarItem[] => {
-  const sidebarList: DashboardSidebarItem[] = [
+  const sidebarList: (DashboardSidebarItem & { hide?: boolean })[] = [
     {
       navigationId: "bb.navigation.my-issues",
       title: t("issue.my-issues"),
@@ -236,6 +238,7 @@ const dashboardSidebarItemList = computed((): DashboardSidebarItem[] => {
           title: t("schema-template.self"),
           name: WORKSPACE_ROUTE_SCHEMA_TEMPLATE,
           type: "route",
+          hide: databaseChangeMode.value === DatabaseChangeMode.EDITOR,
         },
         {
           title: t("custom-approval.risk.risk-center"),
@@ -268,6 +271,7 @@ const dashboardSidebarItemList = computed((): DashboardSidebarItem[] => {
           title: t("settings.sidebar.gitops"),
           name: WORKSPACE_ROUTE_GITOPS,
           type: "route",
+          hide: databaseChangeMode.value === DatabaseChangeMode.EDITOR,
         },
         {
           title: t("settings.sidebar.sso"),
@@ -278,11 +282,13 @@ const dashboardSidebarItemList = computed((): DashboardSidebarItem[] => {
           title: t("settings.sidebar.mail-delivery"),
           name: WORKSPACE_ROUTE_MAIL_DELIVERY,
           type: "route",
+          hide: databaseChangeMode.value === DatabaseChangeMode.EDITOR,
         },
         {
           title: t("settings.sidebar.im-integration"),
           name: WORKSPACE_ROUTE_IM,
           type: "route",
+          hide: databaseChangeMode.value === DatabaseChangeMode.EDITOR,
         },
       ],
     },
