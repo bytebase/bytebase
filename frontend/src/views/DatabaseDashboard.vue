@@ -64,6 +64,10 @@ interface LocalState {
   selectedLabels: { key: string; value: string }[];
 }
 
+const props = defineProps<{
+  openInNewWindow?: boolean;
+}>();
+
 const uiStateStore = useUIStateStore();
 const { projectList } = useProjectV1List();
 const hideUnassignedDatabases = useAppFeature(
@@ -209,7 +213,7 @@ const handleDatabasesSelectionChanged = (
 
 const handleDatabaseClick = (event: MouseEvent, database: ComposedDatabase) => {
   const url = databaseV1Url(database);
-  if (event.ctrlKey || event.metaKey) {
+  if (props.openInNewWindow || event.ctrlKey || event.metaKey) {
     window.open(url, "_blank");
   } else {
     router.push(url);

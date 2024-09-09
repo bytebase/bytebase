@@ -9,8 +9,10 @@ import { computed, h } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter, type RouteRecordRaw } from "vue-router";
 import type { SidebarItem } from "@/components/CommonSidebar.vue";
+import { DatabaseIcon } from "@/components/Icon";
 import { WORKSPACE_ROUTE_USERS } from "@/router/dashboard/workspaceRoutes";
 import sqlEditorRoutes, {
+  SQL_EDITOR_SETTING_DATABASES_MODULE,
   SQL_EDITOR_SETTING_ENVIRONMENT_MODULE,
   SQL_EDITOR_SETTING_GENERAL_MODULE,
   SQL_EDITOR_SETTING_INSTANCE_MODULE,
@@ -119,6 +121,12 @@ export const useSidebarItems = () => {
         title: t("common.instances"),
         icon: () => h(LayersIcon),
         name: SQL_EDITOR_SETTING_INSTANCE_MODULE,
+        type: "route",
+      },
+      {
+        title: t("common.databases"),
+        icon: () => h(DatabaseIcon),
+        name: SQL_EDITOR_SETTING_DATABASES_MODULE,
         type: "route",
       },
       {
