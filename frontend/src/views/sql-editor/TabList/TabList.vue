@@ -1,8 +1,8 @@
 <template>
   <div
-    class="flex justify-between items-center box-border text-gray-500 text-sm border-b pr-2 pt-0.5 gap-1"
+    class="flex justify-between items-center box-border text-gray-500 text-sm border-b pr-2 gap-1"
   >
-    <div class="relative flex flex-1 flex-nowrap overflow-hidden h-[36px]">
+    <div class="relative flex flex-1 flex-nowrap overflow-hidden h-[36px] pt-0.5">
       <Draggable
         id="tab-list"
         ref="tabListRef"
@@ -45,7 +45,9 @@
 
     <div class="flex items-center gap-2">
       <SettingButton v-if="!hideSettingButton" size="small" />
-      <ProfileDropdown v-if="!hideProfile" />
+      <BrandingLogoWrapper v-if="!hideProfile">
+        <ProfileDropdown />
+      </BrandingLogoWrapper>
     </div>
 
     <ContextMenu ref="contextMenuRef" />
@@ -77,6 +79,7 @@ import {
 } from "@/utils";
 import { SettingButton } from "../Setting";
 import { useSheetContext } from "../Sheet";
+import BrandingLogoWrapper from "./BrandingLogoWrapper.vue";
 import ContextMenu from "./ContextMenu.vue";
 import TabItem from "./TabItem";
 import { provideTabListContext } from "./context";
