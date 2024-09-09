@@ -7,13 +7,13 @@ import {
 } from "lucide-vue-next";
 import { computed, h } from "vue";
 import { useI18n } from "vue-i18n";
-import { useRoute, type RouteRecordRaw } from "vue-router";
+import { useRoute, useRouter, type RouteRecordRaw } from "vue-router";
 import type { SidebarItem } from "@/components/CommonSidebar.vue";
+import { WORKSPACE_ROUTE_USERS } from "@/router/dashboard/workspaceRoutes";
 import sqlEditorRoutes, {
   SQL_EDITOR_SETTING_ENVIRONMENT_MODULE,
   SQL_EDITOR_SETTING_GENERAL_MODULE,
   SQL_EDITOR_SETTING_INSTANCE_MODULE,
-  SQL_EDITOR_SETTING_MEMBERS_MODULE,
   SQL_EDITOR_SETTING_PROJECT_MODULE,
 } from "@/router/sqlEditor";
 import { useAppFeature } from "@/store";
@@ -22,6 +22,7 @@ import { hasWorkspacePermissionV2 } from "@/utils";
 
 export const useSidebarItems = () => {
   const route = useRoute();
+  const router = useRouter();
   const { t } = useI18n();
   const disableSetting = useAppFeature("bb.feature.sql-editor.disable-setting");
 
@@ -127,10 +128,16 @@ export const useSidebarItems = () => {
         type: "route",
       },
       {
-        title: t("common.members"),
+        type: "divider",
+        name: "",
+      },
+      {
+        title: "IAM & Admin",
         icon: () => h(UsersIcon),
-        name: SQL_EDITOR_SETTING_MEMBERS_MODULE,
-        type: "route",
+        name: WORKSPACE_ROUTE_USERS,
+        path: router.resolve({ name: WORKSPACE_ROUTE_USERS }).fullPath,
+        type: "link",
+        newWindow: true,
       },
     ];
 
