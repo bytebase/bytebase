@@ -91,20 +91,19 @@ func (exec *DataUpdateExecutor) RunOnce(ctx context.Context, driverCtx context.C
 		}
 		if !skip {
 			return true, nil, backupErr
-		} else {
-			if _, err := exec.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
-				IssueUID: issue.UID,
-				Payload: &storepb.IssueCommentPayload{
-					Event: &storepb.IssueCommentPayload_TaskPriorBackup_{
-						TaskPriorBackup: &storepb.IssueCommentPayload_TaskPriorBackup{
-							Task:  common.FormatTask(issue.Project.ResourceID, task.PipelineID, task.StageID, task.ID),
-							Error: backupErr.Error(),
-						},
+		}
+		if _, err := exec.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
+			IssueUID: issue.UID,
+			Payload: &storepb.IssueCommentPayload{
+				Event: &storepb.IssueCommentPayload_TaskPriorBackup_{
+					TaskPriorBackup: &storepb.IssueCommentPayload_TaskPriorBackup{
+						Task:  common.FormatTask(issue.Project.ResourceID, task.PipelineID, task.StageID, task.ID),
+						Error: backupErr.Error(),
 					},
 				},
-			}, api.SystemBotID); err != nil {
-				slog.Warn("failed to create issue comment", "task", task.ID, log.BBError(err), "backup error", backupErr)
-			}
+			},
+		}, api.SystemBotID); err != nil {
+			slog.Warn("failed to create issue comment", "task", task.ID, log.BBError(err), "backup error", backupErr)
 		}
 	}
 	version := model.Version{Version: payload.SchemaVersion}
