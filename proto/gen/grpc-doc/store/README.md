@@ -425,6 +425,7 @@ Used internally for obfuscating the page token.
 | BIGQUERY | 22 |  |
 | DYNAMODB | 23 |  |
 | DATABRICKS | 24 |  |
+| COCKROACHDB | 25 |  |
 
 
 
