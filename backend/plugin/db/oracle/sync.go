@@ -644,14 +644,13 @@ func getRoutines(txn *sql.Tx, schemaName string) ([]*storepb.FunctionMetadata, [
 		SELECT
 			NAME,
 			TYPE,
-			LISTAGG(TEXT, '') WITHIN GROUP (ORDER BY LINE) AS DEFINITION
+			TEXT
 		FROM ALL_SOURCE
 		WHERE
 			TYPE IN ('FUNCTION', 'PROCEDURE')
 			AND
 			OWNER = '%s'
-		GROUP BY NAME, TYPE
-		ORDER BY NAME, TYPE`, schemaName)
+		ORDER BY NAME, TYPE, LINE`, schemaName)
 
 	slog.Debug("running get routines query")
 	rows, err := txn.Query(query)
@@ -660,23 +659,44 @@ func getRoutines(txn *sql.Tx, schemaName string) ([]*storepb.FunctionMetadata, [
 	}
 	defer rows.Close()
 
+	var currentName, currentType string
+	var defText []string
 	for rows.Next() {
 		var name, t, def string
 		if err := rows.Scan(&name, &t, &def); err != nil {
 			return nil, nil, err
 		}
-		switch t {
-		case "FUNCTION":
-			functions = append(functions, &storepb.FunctionMetadata{
-				Name:       name,
-				Definition: def,
-			})
-		case "PROCEDURE":
-			procedures = append(procedures, &storepb.ProcedureMetadata{
-				Name:       name,
-				Definition: def,
-			})
+		if name == currentName && t == currentType {
+			defText = append(defText, def)
+		} else {
+			switch currentType {
+			case "FUNCTION":
+				functions = append(functions, &storepb.FunctionMetadata{
+					Name:       currentName,
+					Definition: strings.Join(defText, ""),
+				})
+			case "PROCEDURE":
+				procedures = append(procedures, &storepb.ProcedureMetadata{
+					Name:       currentName,
+					Definition: strings.Join(defText, ""),
+				})
+			}
+			currentName = name
+			currentType = t
+			defText = []string{def}
 		}
+	}
+	switch currentType {
+	case "FUNCTION":
+		functions = append(functions, &storepb.FunctionMetadata{
+			Name:       currentName,
+			Definition: strings.Join(defText, ""),
+		})
+	case "PROCEDURE":
+		procedures = append(procedures, &storepb.ProcedureMetadata{
+			Name:       currentName,
+			Definition: strings.Join(defText, ""),
+		})
 	}
 	if err := rows.Err(); err != nil {
 		return nil, nil, err
