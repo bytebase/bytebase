@@ -136,7 +136,10 @@ export const useSidebarItems = () => {
         name: SQL_EDITOR_SETTING_ENVIRONMENT_MODULE,
         type: "route",
       },
-
+      {
+        type: "divider",
+        name: "",
+      },
       {
         title: "IAM & Admin",
         icon: () => h(UsersIcon),
@@ -155,12 +158,6 @@ export const useSidebarItems = () => {
           },
         ],
       },
-      // {
-      //   title: t("common.members"),
-      //   icon: () => h(UsersIcon),
-      //   name: SQL_EDITOR_SETTING_MEMBERS_MODULE,
-      //   type: "route",
-      // },
     ];
 
     return filterSidebarByPermissions(sidebarList);
