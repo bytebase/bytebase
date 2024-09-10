@@ -1972,6 +1972,7 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | master_username | [string](#string) |  | master_username and master_password are master credentials used by redis sentinel mode. |
 | master_password | [string](#string) |  |  |
 | redis_type | [DataSource.RedisType](#bytebase-v1-DataSource-RedisType) |  |  |
+| cluster | [string](#string) |  | Cluster is the cluster name for the data source. Used by CockroachDB. |
 
 
 
