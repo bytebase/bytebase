@@ -474,6 +474,9 @@ message DataSource {
     CLUSTER = 3;
   }
   RedisType redis_type = 34;
+
+  // Cluster is the cluster name for the data source. Used by CockroachDB.
+  string cluster = 35;
 }
 
 enum DataSourceType {
