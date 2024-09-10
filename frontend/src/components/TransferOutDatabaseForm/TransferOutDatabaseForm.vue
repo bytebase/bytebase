@@ -80,6 +80,7 @@ import { ProjectSelect, DrawerContent } from "@/components/v2";
 import { PROJECT_V1_ROUTE_DATABASES } from "@/router/dashboard/projectV1";
 import {
   pushNotification,
+  useAppFeature,
   useDatabaseV1Store,
   useProjectV1Store,
 } from "@/store";
@@ -110,6 +111,10 @@ const transfer = ref<"project" | "unassign">("project");
 
 const selectedDatabaseNameList = ref<string[]>(
   props.selectedDatabaseNames ?? []
+);
+
+const disallowNavigateToConsole = useAppFeature(
+  "bb.feature.disallow-navigate-to-console"
 );
 
 watch(
@@ -191,12 +196,14 @@ const doTransfer = async () => {
         title: `Successfully transferred ${displayDatabaseName} to project '${target.title}'.`,
       });
 
-      router.push({
-        name: PROJECT_V1_ROUTE_DATABASES,
-        params: {
-          projectId: extractProjectResourceName(target.name),
-        },
-      });
+      if (!disallowNavigateToConsole.value) {
+        router.push({
+          name: PROJECT_V1_ROUTE_DATABASES,
+          params: {
+            projectId: extractProjectResourceName(target.name),
+          },
+        });
+      }
     }
 
     emit("dismiss");

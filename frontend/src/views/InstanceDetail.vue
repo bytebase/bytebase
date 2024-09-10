@@ -1,13 +1,16 @@
 <template>
-  <div class="px-6 space-y-2 mb-4">
+  <div class="px-6 space-y-2 mb-4" v-bind="$attrs">
     <ArchiveBanner v-if="instance.state === State.DELETED" />
 
-    <div class="flex items-center justify-between">
+    <div v-if="!embedded" class="flex items-center justify-between">
       <div class="flex items-center gap-x-2">
         <EngineIcon :engine="instance.engine" custom-class="!h-6" />
         <span class="text-lg font-medium">{{ instanceV1Name(instance) }}</span>
       </div>
-      <div class="flex items-center gap-x-2">
+    </div>
+
+    <NTabs>
+      <template #suffix>
         <NButton
           v-if="allowSyncInstance"
           :loading="state.syncingSchema"
@@ -27,10 +30,7 @@
         >
           {{ $t("instance.new-database") }}
         </NButton>
-      </div>
-    </div>
-
-    <NTabs>
+      </template>
       <NTabPane name="OVERVIEW" :tab="$t('common.overview')">
         <InstanceForm class="-mt-2" :instance="instance">
           <InstanceFormBody />
@@ -115,13 +115,20 @@ interface LocalState {
   syncingSchema: boolean;
   selectedDatabaseNameList: Set<string>;
 }
-
 const props = defineProps<{
   instanceId: string;
+  embedded?: boolean;
+  onClickDatabase?: (db: ComposedDatabase, event: MouseEvent) => void;
 }>();
 
-const { overrideMainContainerClass } = useBodyLayoutContext();
-overrideMainContainerClass("!pb-0");
+defineOptions({
+  inheritAttrs: false,
+});
+
+if (!props.embedded) {
+  const { overrideMainContainerClass } = useBodyLayoutContext();
+  overrideMainContainerClass("!pb-0");
+}
 
 const { t } = useI18n();
 const router = useRouter();
@@ -212,6 +219,10 @@ const createDatabase = () => {
 useTitle(instance.value.title);
 
 const handleDatabaseClick = (event: MouseEvent, database: ComposedDatabase) => {
+  if (props.onClickDatabase) {
+    props.onClickDatabase(database, event);
+    return;
+  }
   const url = databaseV1Url(database);
   if (event.ctrlKey || event.metaKey) {
     window.open(url, "_blank");

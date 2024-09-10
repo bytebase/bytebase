@@ -36,35 +36,16 @@
       :mask-closable="!!state.detail.instance"
     >
       <InstanceForm
+        v-if="!state.detail.instance"
         :instance="state.detail.instance"
         :hide-advanced-features="hideAdvancedFeatures"
         @dismiss="state.detail.show = false"
       >
         <DrawerContent
+          :title="detailTitle"
           class="instance-detail-drawer"
           body-content-class="flex flex-col gap-2 overflow-hidden"
         >
-          <template #header>
-            <span>{{ detailTitle }}</span>
-            <NTooltip v-if="state.detail.instance" placement="bottom">
-              <template #trigger>
-                <NButton
-                  quaternary
-                  size="tiny"
-                  style="--n-padding: 0 4px"
-                  @click="toDetailPage(state.detail.instance)"
-                >
-                  <template #icon>
-                    <ExternalLinkIcon class="w-4 h-4" />
-                  </template>
-                </NButton>
-              </template>
-              <template #default>
-                {{ $t("common.detail") }}
-              </template>
-            </NTooltip>
-          </template>
-
           <InstanceFormBody
             :hide-archive-restore="true"
             class="flex-1 overflow-auto"
@@ -76,26 +57,50 @@
           />
         </DrawerContent>
       </InstanceForm>
+      <DrawerContent
+        v-else
+        header-style="--n-header-padding: 0 24px;"
+        body-style="--n-body-padding: 16px 24px 0;"
+      >
+        <template #header>
+          <div class="flex items-center gap-x-2 h-[50px]">
+            <EngineIcon
+              :engine="state.detail.instance.engine"
+              custom-class="!h-6"
+            />
+            <span class="font-medium">{{
+              instanceV1Name(state.detail.instance)
+            }}</span>
+          </div>
+        </template>
+        <InstanceDetail
+          :instance-id="extractInstanceResourceName(state.detail.instance.name)"
+          :embedded="true"
+          :on-click-database="handleClickDatabase"
+          class="!px-0 !mb-0 w-[850px]"
+        />
+      </DrawerContent>
     </Drawer>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { ExternalLinkIcon, PlusIcon } from "lucide-vue-next";
-import { NButton, NEllipsis, NTooltip } from "naive-ui";
+import { PlusIcon } from "lucide-vue-next";
+import { NButton, NEllipsis } from "naive-ui";
 import { computed, onMounted, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 import AdvancedSearch from "@/components/AdvancedSearch";
 import { useCommonSearchScopeOptions } from "@/components/AdvancedSearch/useCommonSearchScopeOptions";
 import { FeatureAttention } from "@/components/FeatureGuard";
+import { EngineIcon } from "@/components/Icon";
 import {
   InstanceForm,
   Form as InstanceFormBody,
   Buttons as InstanceFormButtons,
 } from "@/components/InstanceForm";
 import { Drawer, DrawerContent, InstanceV1Table } from "@/components/v2";
-import { INSTANCE_ROUTE_DETAIL } from "@/router/dashboard/instance";
+import { SQL_EDITOR_DATABASE_MODULE } from "@/router/sqlEditor";
 import {
   useSubscriptionV1Store,
   useEnvironmentV1List,
@@ -103,7 +108,12 @@ import {
   useInstanceV1Store,
   useAppFeature,
 } from "@/store";
-import { UNKNOWN_ID } from "@/types";
+import {
+  DEFAULT_PROJECT_NAME,
+  defaultProject,
+  UNKNOWN_ID,
+  type ComposedDatabase,
+} from "@/types";
 import type { Instance } from "@/types/proto/v1/instance_service";
 import { PlanType } from "@/types/proto/v1/subscription_service";
 import {
@@ -112,7 +122,13 @@ import {
   extractEnvironmentResourceName,
   wrapRefAsPromise,
   extractInstanceResourceName,
+  instanceV1Name,
+  hasProjectPermissionV2,
+  isDatabaseV1Queryable,
+  extractProjectResourceName,
+  extractDatabaseResourceName,
 } from "@/utils";
+import InstanceDetail from "@/views/InstanceDetail.vue";
 
 interface LocalState {
   params: SearchParams;
@@ -247,15 +263,24 @@ const showInstanceDetail = (instance: Instance) => {
   state.detail.instance = instance;
 };
 
-const toDetailPage = (instance: Instance) => {
-  const instanceId = extractInstanceResourceName(instance.name);
-  const route = router.resolve({
-    name: INSTANCE_ROUTE_DETAIL,
+const allowQueryDatabase = (db: ComposedDatabase) => {
+  if (db.project === DEFAULT_PROJECT_NAME) {
+    return hasProjectPermissionV2(defaultProject(), "bb.databases.query");
+  }
+  return isDatabaseV1Queryable(db);
+};
+const handleClickDatabase = (db: ComposedDatabase) => {
+  if (!allowQueryDatabase(db)) return;
+  const projectName = extractProjectResourceName(db.project);
+  const { instanceName, databaseName } = extractDatabaseResourceName(db.name);
+  router.push({
+    name: SQL_EDITOR_DATABASE_MODULE,
     params: {
-      instanceId,
+      project: projectName,
+      instance: instanceName,
+      database: databaseName,
     },
   });
-  window.open(route.fullPath, "_blank");
 };
 </script>
 
