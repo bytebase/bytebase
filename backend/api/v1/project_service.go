@@ -224,6 +224,10 @@ func (s *ProjectService) UpdateProject(ctx context.Context, request *v1pb.Update
 			projectSettings := project.Setting
 			projectSettings.EnforceIssueTitle = request.Project.EnforceIssueTitle
 			patch.Setting = projectSettings
+		case "default_backup_behavior":
+			projectSettings := project.Setting
+			projectSettings.DefaultBackupBehavior = convertProjectDefaultBackupBehaviorToStorepb(request.Project.DefaultBackupBehavior)
+			patch.Setting = projectSettings
 		default:
 			return nil, status.Errorf(codes.InvalidArgument, `unsupport update_mask "%s"`, path)
 		}
@@ -1258,6 +1262,7 @@ func convertToProject(projectMessage *store.ProjectMessage) *v1pb.Project {
 		AllowModifyStatement:       projectMessage.Setting.AllowModifyStatement,
 		AutoResolveIssue:           projectMessage.Setting.AutoResolveIssue,
 		EnforceIssueTitle:          projectMessage.Setting.EnforceIssueTitle,
+		DefaultBackupBehavior:      convertProjectDefaultBackupBehaviorFromStorepb(projectMessage.Setting.DefaultBackupBehavior),
 	}
 }
 
@@ -1606,4 +1611,28 @@ func validateMember(member string) error {
 		}
 	}
 	return errors.Errorf("invalid user %s", member)
+}
+
+func convertProjectDefaultBackupBehaviorFromStorepb(behavior storepb.Project_DefaultBackupBehavior) v1pb.Project_DefaultBackupBehavior {
+	switch behavior {
+	case storepb.Project_DEFAULT_BACKUP_BEHAVIOR_NO_BACKUP:
+		return v1pb.Project_DEFAULT_BACKUP_BEHAVIOR_NO_BACKUP
+	case storepb.Project_DEFAULT_BACKUP_BEHAVIOR_BACKUP_ON_ERROR_STOP:
+		return v1pb.Project_DEFAULT_BACKUP_BEHAVIOR_BACKUP_ON_ERROR_STOP
+	case storepb.Project_DEFAULT_BACKUP_BEHAVIOR_BACKUP_ON_ERROR_SKIP:
+		return v1pb.Project_DEFAULT_BACKUP_BEHAVIOR_BACKUP_ON_ERROR_SKIP
+	}
+	return v1pb.Project_DEFAULT_BACKUP_BEHAVIOR_UNSPECIFIED
+}
+
+func convertProjectDefaultBackupBehaviorToStorepb(behavior v1pb.Project_DefaultBackupBehavior) storepb.Project_DefaultBackupBehavior {
+	switch behavior {
+	case v1pb.Project_DEFAULT_BACKUP_BEHAVIOR_NO_BACKUP:
+		return storepb.Project_DEFAULT_BACKUP_BEHAVIOR_NO_BACKUP
+	case v1pb.Project_DEFAULT_BACKUP_BEHAVIOR_BACKUP_ON_ERROR_STOP:
+		return storepb.Project_DEFAULT_BACKUP_BEHAVIOR_BACKUP_ON_ERROR_STOP
+	case v1pb.Project_DEFAULT_BACKUP_BEHAVIOR_BACKUP_ON_ERROR_SKIP:
+		return storepb.Project_DEFAULT_BACKUP_BEHAVIOR_BACKUP_ON_ERROR_SKIP
+	}
+	return storepb.Project_DEFAULT_BACKUP_BEHAVIOR_UNSPECIFIED
 }
