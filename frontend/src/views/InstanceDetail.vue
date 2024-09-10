@@ -1,5 +1,5 @@
 <template>
-  <div class="px-6 space-y-2 mb-4" v-bind="$attrs">
+  <div class="space-y-2 px-6 mb-4" v-bind="$attrs">
     <ArchiveBanner v-if="instance.state === State.DELETED" />
 
     <div v-if="!embedded" class="flex items-center justify-between">
@@ -33,7 +33,7 @@
       </template>
       <NTabPane name="OVERVIEW" :tab="$t('common.overview')">
         <InstanceForm class="-mt-2" :instance="instance">
-          <InstanceFormBody />
+          <InstanceFormBody :hide-archive-restore="hideArchiveRestore" />
           <InstanceFormButtons class="sticky bottom-0 z-10" />
         </InstanceForm>
       </NTabPane>
@@ -118,6 +118,7 @@ interface LocalState {
 const props = defineProps<{
   instanceId: string;
   embedded?: boolean;
+  hideArchiveRestore?: boolean;
   onClickDatabase?: (db: ComposedDatabase, event: MouseEvent) => void;
 }>();
 

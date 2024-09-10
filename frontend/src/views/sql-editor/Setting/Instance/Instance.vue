@@ -77,6 +77,7 @@
           :instance-id="extractInstanceResourceName(state.detail.instance.name)"
           :embedded="true"
           :on-click-database="handleClickDatabase"
+          :hide-archive-restore="true"
           class="!px-0 !mb-0 w-[850px]"
         />
       </DrawerContent>
