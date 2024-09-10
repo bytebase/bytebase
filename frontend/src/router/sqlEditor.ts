@@ -10,6 +10,8 @@ export const SQL_EDITOR_DETAIL_MODULE_LEGACY = "sql-editor.legacy-detail";
 export const SQL_EDITOR_SHARE_MODULE_LEGACY = "sql-editor.legacy-share";
 export const SQL_EDITOR_SETTING_MODULE = "sql-editor.setting";
 export const SQL_EDITOR_SETTING_GENERAL_MODULE = "sql-editor.setting.general";
+export const SQL_EDITOR_SETTING_SUBSCRIPTION_MODULE =
+  "sql-editor.setting.subscription";
 export const SQL_EDITOR_SETTING_INSTANCE_MODULE = "sql-editor.setting.instance";
 export const SQL_EDITOR_SETTING_ENVIRONMENT_MODULE =
   "sql-editor.setting.environment";
@@ -83,12 +85,17 @@ const sqlEditorRoutes: RouteRecordRaw[] = [
             path: "general",
             name: SQL_EDITOR_SETTING_GENERAL_MODULE,
             meta: {
-              requiredWorkspacePermissionList: () => [
-                "bb.settings.get",
-                "bb.settings.set",
-              ],
+              requiredWorkspacePermissionList: () => ["bb.settings.get"],
             },
             component: () => import("../views/sql-editor/Setting/General"),
+          },
+          {
+            path: "subscription",
+            name: SQL_EDITOR_SETTING_SUBSCRIPTION_MODULE,
+            meta: {
+              requiredWorkspacePermissionList: () => ["bb.settings.get"],
+            },
+            component: () => import("../views/sql-editor/Setting/Subscription"),
           },
           {
             path: "instance",

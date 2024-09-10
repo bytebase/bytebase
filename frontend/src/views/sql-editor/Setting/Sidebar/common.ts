@@ -17,6 +17,7 @@ import sqlEditorRoutes, {
   SQL_EDITOR_SETTING_INSTANCE_MODULE,
   SQL_EDITOR_SETTING_MEMBERS_MODULE,
   SQL_EDITOR_SETTING_PROJECT_MODULE,
+  SQL_EDITOR_SETTING_SUBSCRIPTION_MODULE,
   SQL_EDITOR_SETTING_USERS_MODULE,
 } from "@/router/sqlEditor";
 import { useAppFeature, usePermissionStore } from "@/store";
@@ -107,12 +108,6 @@ export const useSidebarItems = () => {
 
     const sidebarList: SidebarItem[] = [
       {
-        title: t("settings.sidebar.general"),
-        icon: () => h(BuildingIcon),
-        name: SQL_EDITOR_SETTING_GENERAL_MODULE,
-        type: "route",
-      },
-      {
         title: t("common.projects"),
         icon: () => h(GalleryHorizontalEndIcon),
         name: SQL_EDITOR_SETTING_PROJECT_MODULE,
@@ -138,12 +133,12 @@ export const useSidebarItems = () => {
       },
       {
         type: "divider",
-        name: "",
       },
       {
         title: "IAM & Admin",
         icon: () => h(UsersIcon),
         type: "div",
+        expand: true,
         children: [
           {
             title: t("settings.sidebar.users-and-groups"),
@@ -155,6 +150,27 @@ export const useSidebarItems = () => {
             name: SQL_EDITOR_SETTING_MEMBERS_MODULE,
             type: "route",
             hide: permissionStore.onlyWorkspaceMember,
+          },
+        ],
+      },
+      {
+        type: "divider",
+      },
+      {
+        title: t("settings.sidebar.workspace"),
+        icon: () => h(BuildingIcon),
+        type: "div",
+        expand: true,
+        children: [
+          {
+            title: t("settings.sidebar.general"),
+            name: SQL_EDITOR_SETTING_GENERAL_MODULE,
+            type: "route",
+          },
+          {
+            title: t("settings.sidebar.subscription"),
+            name: SQL_EDITOR_SETTING_SUBSCRIPTION_MODULE,
+            type: "route",
           },
         ],
       },
