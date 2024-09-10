@@ -16,9 +16,8 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, onMounted, reactive } from "vue";
+import { computed, reactive } from "vue";
 import { Drawer, DrawerContent } from "@/components/v2";
-import { useGroupStore, useUserStore } from "@/store";
 import type { User } from "@/types/proto/v1/auth_service";
 import ProfileDashboard from "@/views/ProfileDashboard.vue";
 import SettingWorkspaceUsers from "@/views/SettingWorkspaceUsers.vue";
@@ -40,9 +39,4 @@ const handleClickUser = (user: User) => {
   state.detail.show = true;
   state.detail.user = user;
 };
-
-onMounted(() => {
-  useUserStore().fetchUserList();
-  useGroupStore().fetchGroupList();
-});
 </script>

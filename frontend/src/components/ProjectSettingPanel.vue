@@ -8,7 +8,10 @@
         :project="project"
         :allow-edit="allowEdit"
       />
-      <div class="pt-4">
+      <div
+        v-if="databaseChangeMode === DatabaseChangeMode.PIPELINE"
+        class="pt-4"
+      >
         <ProjectArchiveRestoreButton :project="project" />
       </div>
     </div>

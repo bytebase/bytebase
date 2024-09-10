@@ -38,37 +38,16 @@
     >
       <DrawerContent
         v-if="state.detail.project"
+        :title="`${$t('common.project')} - ${state.detail.project.title}`"
         class="project-detail-drawer"
         body-content-class="flex flex-col gap-2 overflow-hidden"
       >
-        <template #header>
-          <span>{{
-            `${$t("common.project")} - ${state.detail.project.title}`
-          }}</span>
-          <NTooltip placement="bottom">
-            <template #trigger>
-              <NButton
-                quaternary
-                size="tiny"
-                style="--n-padding: 0 4px"
-                @click="toDetailPage(state.detail.project)"
-              >
-                <template #icon>
-                  <ExternalLinkIcon class="w-4 h-4" />
-                </template>
-              </NButton>
-            </template>
-            <template #default>
-              {{ $t("common.detail") }}
-            </template>
-          </NTooltip>
-        </template>
         <Detail :project="state.detail.project" />
       </DrawerContent>
       <ProjectCreatePanel
         v-else
         :simple="true"
-        :on-created="(project: Project) => (state.detail.project = project)"
+        :on-created="handleCreated"
         style="width: calc(100vw - 8rem); max-width: 50rem"
         @dismiss="hideDrawer"
       />
@@ -77,8 +56,8 @@
 </template>
 
 <script setup lang="ts">
-import { ExternalLinkIcon, PlusIcon } from "lucide-vue-next";
-import { NButton, NEllipsis, NTooltip } from "naive-ui";
+import { PlusIcon } from "lucide-vue-next";
+import { NButton, NEllipsis } from "naive-ui";
 import { computed, onMounted, reactive, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import ProjectCreatePanel from "@/components/Project/ProjectCreatePanel.vue";
@@ -88,22 +67,18 @@ import {
   ProjectV1Table,
   SearchBox,
 } from "@/components/v2";
-import { PROJECT_V1_ROUTE_DATABASES } from "@/router/dashboard/projectV1";
-import { useProjectV1List } from "@/store";
+import { useProjectV1List, useProjectV1Store } from "@/store";
 import { useDatabaseV1List } from "@/store/modules/v1/databaseList";
+import type { ComposedProject } from "@/types";
 import type { Project } from "@/types/proto/v1/project_service";
-import {
-  extractProjectResourceName,
-  filterProjectV1ListByKeyword,
-  wrapRefAsPromise,
-} from "@/utils";
+import { filterProjectV1ListByKeyword, wrapRefAsPromise } from "@/utils";
 import Detail from "./Detail.vue";
 
 interface LocalState {
   keyword: string;
   detail: {
     show: boolean;
-    project: Project | undefined;
+    project: ComposedProject | undefined;
   };
 }
 
@@ -128,7 +103,7 @@ const handleClickNewProject = () => {
   state.detail.project = undefined;
 };
 
-const showProjectDetail = (project: Project) => {
+const showProjectDetail = (project: ComposedProject) => {
   state.detail.show = true;
   state.detail.project = project;
 };
@@ -137,15 +112,11 @@ const hideDrawer = () => {
   state.detail.show = false;
 };
 
-const toDetailPage = (project: Project) => {
-  const projectId = extractProjectResourceName(project.name);
-  const route = router.resolve({
-    name: PROJECT_V1_ROUTE_DATABASES,
-    params: {
-      projectId,
-    },
-  });
-  window.open(route.fullPath, "_blank");
+const handleCreated = async (project: Project) => {
+  const composed = await useProjectV1Store().getOrFetchProjectByName(
+    project.name
+  );
+  state.detail.project = composed;
 };
 
 onMounted(() => {

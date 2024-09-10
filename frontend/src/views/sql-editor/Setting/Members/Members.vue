@@ -16,10 +16,9 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, onMounted, reactive } from "vue";
+import { computed, reactive } from "vue";
 import Drawer from "@/components/v2/Container/Drawer.vue";
 import DrawerContent from "@/components/v2/Container/DrawerContent.vue";
-import { useRoleStore, useUserStore } from "@/store";
 import type { User } from "@/types/proto/v1/auth_service";
 import ProfileDashboard from "@/views/ProfileDashboard.vue";
 import SettingWorkspaceMembers from "@/views/SettingWorkspaceMembers.vue";
@@ -41,9 +40,4 @@ const handleClickUser = (user: User) => {
   state.detail.show = true;
   state.detail.user = user;
 };
-
-onMounted(() => {
-  useUserStore().fetchUserList();
-  useRoleStore().fetchRoleList();
-});
 </script>

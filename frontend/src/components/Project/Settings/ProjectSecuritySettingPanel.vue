@@ -3,7 +3,11 @@
     <h3 class="text-lg font-medium leading-7 text-main">
       {{ $t("settings.sidebar.security-and-policy") }}
     </h3>
-    <SQLReviewForResource :resource="project.name" :allow-edit="allowEdit" />
+    <SQLReviewForResource
+      v-if="databaseChangeMode === DatabaseChangeMode.PIPELINE"
+      :resource="project.name"
+      :allow-edit="allowEdit"
+    />
     <RestrictIssueCreationConfigure
       v-if="databaseChangeMode === DatabaseChangeMode.PIPELINE"
       :resource="project.name"
