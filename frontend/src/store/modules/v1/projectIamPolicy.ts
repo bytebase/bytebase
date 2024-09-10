@@ -1,17 +1,16 @@
 import { isUndefined, uniq } from "lodash-es";
 import { defineStore } from "pinia";
-import { computed, ref, unref, watch, watchEffect } from "vue";
+import { computed, ref, unref, watch } from "vue";
 import { projectServiceClient } from "@/grpcweb";
 import type { ComposedDatabase, ComposedProject, MaybeRef } from "@/types";
 import { PresetRoleType } from "@/types";
 import type { Expr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
+import type { User } from "@/types/proto/v1/auth_service";
 import { IamPolicy } from "@/types/proto/v1/iam_policy";
-import { hasProjectPermissionV2, hasWorkspacePermissionV2 } from "@/utils";
 import { getUserEmailListInBinding } from "@/utils";
-import { convertFromExpr } from "@/utils/issue/cel";
 import { useCurrentUserV1 } from "../auth";
 import { usePermissionStore } from "./permission";
-import { useProjectV1Store } from "./project";
+import { convertFromExpr } from "@/utils/issue/cel";
 
 export const useProjectIamPolicyStore = defineStore(
   "project-iam-policy",
@@ -132,151 +131,81 @@ export const useProjectIamPolicy = (project: MaybeRef<string>) => {
   return { policy, ready };
 };
 
-export const useCurrentUserIamPolicy = () => {
-  const iamPolicyStore = useProjectIamPolicyStore();
-  const projectStore = useProjectV1Store();
-  const currentUser = useCurrentUserV1();
-
-  watchEffect(() => {
-    // Fetch all project iam policies.
-    Promise.all(
-      projectStore.projectList.map((project) =>
-        iamPolicyStore.getOrFetchProjectIamPolicy(project.name)
-      )
-    );
-  });
-
-  // hasWorkspaceSuperPrivilege checks whether the current user has the super privilege to access all databases. AKA. Owners and DBAs
-  const hasWorkspaceSuperPrivilege = computed(() =>
-    hasWorkspacePermissionV2("bb.projects.list")
-  );
-
-  const allowToChangeDatabaseOfProject = (projectName: string) => {
-    if (hasWorkspaceSuperPrivilege.value) {
-      return true;
-    }
-
-    const project = projectStore.getProjectByName(projectName);
-    if (!project) {
-      return false;
-    }
-
-    return hasProjectPermissionV2(project, "bb.databases.update");
-  };
-
-  const checkProjectIAMPolicy = (
-    project: ComposedProject,
-    role: string,
-    bindingExprCheck: (expr: Expr) => boolean
-  ): boolean => {
-    const roleList = usePermissionStore().currentRoleListInProjectV1(project);
-    if (roleList.includes(PresetRoleType.PROJECT_OWNER)) {
-      return true;
-    }
-    if (!roleList.includes(role)) {
-      return false;
-    }
-
-    // Check if the user has the permission to query the database.
-    for (const binding of project.iamPolicy.bindings) {
-      if (binding.role !== role) {
-        continue;
-      }
-
-      const userEmailList = getUserEmailListInBinding({
-        binding,
-        ignoreGroup: false,
-      });
-      if (!userEmailList.includes(currentUser.value.email)) {
-        continue;
-      }
-
-      if (!binding.parsedExpr?.expr) {
-        return true;
-      }
-      if (bindingExprCheck(binding.parsedExpr?.expr)) {
-        return true;
-      }
-    }
-
+const checkProjectIAMPolicyWithExpr = (
+  user: User,
+  project: ComposedProject,
+  role: string,
+  bindingExprCheck: (expr: Expr) => boolean
+): boolean => {
+  const roleList = usePermissionStore().currentRoleListInProjectV1(project);
+  if (roleList.includes(PresetRoleType.PROJECT_OWNER)) {
+    return true;
+  }
+  if (!roleList.includes(role)) {
     return false;
-  };
+  }
 
-  const allowToQueryDatabaseV1 = (
-    database: ComposedDatabase,
-    schema?: string,
-    table?: string
-  ) => {
-    if (hasWorkspaceSuperPrivilege.value) {
-      return true;
+  // Check if the user has the permission to query the database.
+  for (const binding of project.iamPolicy.bindings) {
+    if (binding.role !== role) {
+      continue;
     }
 
-    return checkProjectIAMPolicy(
-      database.projectEntity,
-      PresetRoleType.PROJECT_QUERIER,
-      (expr: Expr): boolean => {
-        const conditionExpr = convertFromExpr(expr);
-        if (
-          conditionExpr.databaseResources &&
-          conditionExpr.databaseResources.length > 0
-        ) {
-          for (const databaseResource of conditionExpr.databaseResources) {
-            if (databaseResource.databaseName === database.name) {
-              if (isUndefined(schema) && isUndefined(table)) {
+    const userEmailList = getUserEmailListInBinding({
+      binding,
+      ignoreGroup: false,
+    });
+    if (!userEmailList.includes(user.email)) {
+      continue;
+    }
+
+    if (!binding.parsedExpr?.expr) {
+      return true;
+    }
+    if (bindingExprCheck(binding.parsedExpr?.expr)) {
+      return true;
+    }
+  }
+
+  return false;
+};
+
+export const checkQuerierPermission = (
+  database: ComposedDatabase,
+  schema?: string,
+  table?: string
+) => {
+  return checkProjectIAMPolicyWithExpr(
+    useCurrentUserV1().value,
+    database.projectEntity,
+    PresetRoleType.PROJECT_QUERIER,
+    (expr: Expr): boolean => {
+      const conditionExpr = convertFromExpr(expr);
+      if (
+        conditionExpr.databaseResources &&
+        conditionExpr.databaseResources.length > 0
+      ) {
+        for (const databaseResource of conditionExpr.databaseResources) {
+          if (databaseResource.databaseName === database.name) {
+            if (isUndefined(schema) && isUndefined(table)) {
+              return true;
+            } else {
+              if (
+                isUndefined(databaseResource.schema) ||
+                (isUndefined(databaseResource.schema) &&
+                  isUndefined(databaseResource.table)) ||
+                (databaseResource.schema === schema &&
+                  databaseResource.table === table)
+              ) {
                 return true;
-              } else {
-                if (
-                  isUndefined(databaseResource.schema) ||
-                  (isUndefined(databaseResource.schema) &&
-                    isUndefined(databaseResource.table)) ||
-                  (databaseResource.schema === schema &&
-                    databaseResource.table === table)
-                ) {
-                  return true;
-                }
               }
             }
           }
-          return false;
-        } else {
-          return true;
         }
+        return false;
+      } else {
+        return true;
       }
-    );
-  };
-
-  const allowToExportDatabaseV1 = (database: ComposedDatabase) => {
-    if (hasWorkspaceSuperPrivilege.value) {
-      return true;
     }
-
-    return checkProjectIAMPolicy(
-      database.projectEntity,
-      PresetRoleType.PROJECT_EXPORTER,
-      (expr: Expr): boolean => {
-        const conditionExpr = convertFromExpr(expr);
-        if (
-          conditionExpr.databaseResources &&
-          conditionExpr.databaseResources.length > 0
-        ) {
-          const hasDatabaseField =
-            conditionExpr.databaseResources.find(
-              (item) => item.databaseName === database.name
-            ) !== undefined;
-          if (hasDatabaseField) {
-            return true;
-          }
-          return false;
-        } else {
-          return true;
-        }
-      }
-    );
-  };
-
-  return {
-    allowToChangeDatabaseOfProject,
-    allowToQueryDatabaseV1,
-    allowToExportDatabaseV1,
-  };
+  );
 };
