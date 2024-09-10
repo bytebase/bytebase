@@ -130,6 +130,9 @@ message DataSourceOptions {
 
   // Use SSL to connect to the data source. By default, we use system default SSL configuration.
   bool use_ssl = 24;
+
+  // Cluster is the cluster name for the data source. Used by CockroachDB.
+  string cluster = 25;
 }
 
 message SASLConfig {

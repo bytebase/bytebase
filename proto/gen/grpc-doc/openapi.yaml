@@ -9090,6 +9090,9 @@ components:
                         - CLUSTER
                     type: string
                     format: enum
+                cluster:
+                    type: string
+                    description: Cluster is the cluster name for the data source. Used by CockroachDB.
         DataSourceExternalSecret:
             type: object
             properties:

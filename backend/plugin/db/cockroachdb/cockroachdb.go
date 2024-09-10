@@ -76,7 +76,7 @@ func (driver *Driver) Open(ctx context.Context, _ storepb.Engine, config db.Conn
 	case storepb.DataSourceOptions_AWS_RDS_IAM:
 		pgxConnConfig, err = getRDSConnectionConfig(ctx, config)
 	default:
-		pgxConnConfig, err = getPGConnectionConfig(config)
+		pgxConnConfig, err = getCockroachConnectionConfig(config)
 	}
 	if err != nil {
 		return nil, err
@@ -128,7 +128,21 @@ func (driver *Driver) Open(ctx context.Context, _ storepb.Engine, config db.Conn
 	return driver, nil
 }
 
-func getPGConnectionConfig(config db.ConnectionConfig) (*pgx.ConnConfig, error) {
+// getRoutingIDFromCockroachCloudURL returns the routing ID from the Cockroach Cloud URL, returns empty string if not found.
+func getRoutingIDFromCockroachCloudURL(host string) string {
+	host = strings.TrimSpace(host)
+	if !strings.HasSuffix(host, "cockroachlabs.cloud") {
+		return ""
+	}
+	parts := strings.Split(host, ".")
+	// routing-id[.xxx].cockroachlabs.cloud
+	if len(parts) > 2 {
+		return parts[0]
+	}
+	return ""
+}
+
+func getCockroachConnectionConfig(config db.ConnectionConfig) (*pgx.ConnConfig, error) {
 	// Require username for Postgres, as the guessDSN 1st guess is to use the username as the connecting database
 	// if database name is not explicitly specified.
 	if config.Username == "" {
@@ -151,6 +165,11 @@ func getPGConnectionConfig(config db.ConnectionConfig) (*pgx.ConnConfig, error) 
 	connStr := fmt.Sprintf("host=%s port=%s", config.Host, config.Port)
 	sslMode := getSSLMode(config.TLSConfig, config.SSHConfig)
 	connStr += fmt.Sprintf(" sslmode=%s", sslMode)
+
+	routingID := getRoutingIDFromCockroachCloudURL(config.Host)
+	if routingID != "" {
+		connStr += fmt.Sprintf(" options='--cluster=%s'", routingID)
+	}
 
 	connConfig, err := pgx.ParseConfig(connStr)
 	if err != nil {
