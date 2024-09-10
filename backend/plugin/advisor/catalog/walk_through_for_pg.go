@@ -92,6 +92,9 @@ func (d *DatabaseState) pgDropIndex(indexDef *ast.IndexDef, ifExists bool, _ ast
 
 	table, index, err := schema.getIndex(indexDef.Name)
 	if err != nil {
+		if ifExists {
+			return nil
+		}
 		return err
 	}
 
