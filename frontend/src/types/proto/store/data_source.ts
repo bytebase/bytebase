@@ -256,6 +256,8 @@ export interface DataSourceOptions {
   redisType: DataSourceOptions_RedisType;
   /** Use SSL to connect to the data source. By default, we use system default SSL configuration. */
   useSsl: boolean;
+  /** Cluster is the cluster name for the data source. Used by CockroachDB. */
+  cluster: string;
 }
 
 export enum DataSourceOptions_AuthenticationType {
@@ -716,6 +718,7 @@ function createBaseDataSourceOptions(): DataSourceOptions {
     masterObfuscatedPassword: "",
     redisType: DataSourceOptions_RedisType.REDIS_TYPE_UNSPECIFIED,
     useSsl: false,
+    cluster: "",
   };
 }
 
@@ -789,6 +792,9 @@ export const DataSourceOptions = {
     }
     if (message.useSsl === true) {
       writer.uint32(192).bool(message.useSsl);
+    }
+    if (message.cluster !== "") {
+      writer.uint32(202).string(message.cluster);
     }
     return writer;
   },
@@ -961,6 +967,13 @@ export const DataSourceOptions = {
 
           message.useSsl = reader.bool();
           continue;
+        case 25:
+          if (tag !== 202) {
+            break;
+          }
+
+          message.cluster = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1011,6 +1024,7 @@ export const DataSourceOptions = {
         ? dataSourceOptions_RedisTypeFromJSON(object.redisType)
         : DataSourceOptions_RedisType.REDIS_TYPE_UNSPECIFIED,
       useSsl: isSet(object.useSsl) ? globalThis.Boolean(object.useSsl) : false,
+      cluster: isSet(object.cluster) ? globalThis.String(object.cluster) : "",
     };
   },
 
@@ -1085,6 +1099,9 @@ export const DataSourceOptions = {
     if (message.useSsl === true) {
       obj.useSsl = message.useSsl;
     }
+    if (message.cluster !== "") {
+      obj.cluster = message.cluster;
+    }
     return obj;
   },
 
@@ -1122,6 +1139,7 @@ export const DataSourceOptions = {
     message.masterObfuscatedPassword = object.masterObfuscatedPassword ?? "";
     message.redisType = object.redisType ?? DataSourceOptions_RedisType.REDIS_TYPE_UNSPECIFIED;
     message.useSsl = object.useSsl ?? false;
+    message.cluster = object.cluster ?? "";
     return message;
   },
 };
