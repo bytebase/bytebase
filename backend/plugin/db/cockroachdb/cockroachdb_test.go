@@ -49,3 +49,40 @@ func TestGetDatabaseInCreateDatabaseStatement(t *testing.T) {
 		require.Equal(t, test.want, got)
 	}
 }
+
+func TestGetRoutingIDFromCockroachCloudURL(t *testing.T) {
+	tests := []struct {
+		host     string
+		expected string
+	}{
+		{
+			host:     "routing-id.cockroachlabs.cloud",
+			expected: "routing-id",
+		},
+		{
+			host:     "bytebase-cluster-7749.6xw.aws-ap-southeast-1.cockroachlabs.cloud",
+			expected: "bytebase-cluster-7749",
+		},
+		{
+			host:     "subdomain.routing-id.cockroachlabs.cloud",
+			expected: "subdomain",
+		},
+		{
+			host:     "subdomain.routing-id.cockroachlabs.cloud",
+			expected: "subdomain",
+		},
+		{
+			host:     "cockroachlabs.cloud",
+			expected: "",
+		},
+		{
+			host:     "example.com",
+			expected: "",
+		},
+	}
+
+	for _, test := range tests {
+		got := getRoutingIDFromCockroachCloudURL(test.host)
+		require.Equal(t, test.expected, got, "host: %s", test.host)
+	}
+}
