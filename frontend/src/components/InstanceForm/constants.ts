@@ -39,6 +39,8 @@ export const defaultPortForEngine = (engine: Engine) => {
     return "";
   } else if (engine == Engine.DATABRICKS) {
     return "";
+  } else if (engine == Engine.COCKROACHDB) {
+    return "26257";
   }
   return "3306";
 };
@@ -84,6 +86,8 @@ export const EngineIconPath: Record<string, string> = {
   [Engine.BIGQUERY]: new URL("@/assets/bigquery.svg", import.meta.url).href,
   [Engine.DYNAMODB]: new URL("@/assets/db-dynamodb.svg", import.meta.url).href,
   [Engine.DATABRICKS]: new URL("@/assets/db-databricks.svg", import.meta.url)
+    .href,
+  [Engine.COCKROACHDB]: new URL("@/assets/db-cockroachdb.png", import.meta.url)
     .href,
 };
 

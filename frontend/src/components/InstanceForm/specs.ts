@@ -13,7 +13,8 @@ export const useInstanceSpecs = (
   const showDatabase = computed((): boolean => {
     return (
       (basicInfo.value.engine === Engine.POSTGRES ||
-        basicInfo.value.engine === Engine.REDSHIFT) &&
+        basicInfo.value.engine === Engine.REDSHIFT ||
+        basicInfo.value.engine === Engine.COCKROACHDB) &&
       editingDataSource.value?.type === DataSourceType.ADMIN
     );
   });
