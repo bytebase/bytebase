@@ -18,6 +18,7 @@
             (member: MemberBinding) =>
               member.user?.userType === UserType.SYSTEM_BOT
           "
+          :on-click-user="onClickUser"
           @update-binding="selectMember"
           @update-selected-bindings="state.selectedMembers = $event"
         />
@@ -31,6 +32,7 @@
         <MemberDataTableByRole
           :allow-edit="allowEdit"
           :bindings-by-role="memberBindingsByRole"
+          :on-click-user="onClickUser"
           @update-binding="selectMember"
         />
       </NTabPane>
@@ -95,7 +97,7 @@ import {
   usePermissionStore,
 } from "@/store";
 import { userBindingPrefix, PresetRoleType } from "@/types";
-import { UserType } from "@/types/proto/v1/auth_service";
+import { User, UserType } from "@/types/proto/v1/auth_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
 interface LocalState {
@@ -106,6 +108,10 @@ interface LocalState {
   showAddMemberPanel: boolean;
   editingMember?: MemberBinding;
 }
+
+defineProps<{
+  onClickUser?: (user: User, event: MouseEvent) => void;
+}>();
 
 const { t } = useI18n();
 const dialog = useDialog();
