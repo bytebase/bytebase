@@ -344,6 +344,8 @@ func convertToEngine(engine storepb.Engine) v1pb.Engine {
 		return v1pb.Engine_DYNAMODB
 	case storepb.Engine_DATABRICKS:
 		return v1pb.Engine_DATABRICKS
+	case storepb.Engine_COCKROACHDB:
+		return v1pb.Engine_COCKROACHDB
 	}
 	return v1pb.Engine_ENGINE_UNSPECIFIED
 }
@@ -398,6 +400,8 @@ func convertEngine(engine v1pb.Engine) storepb.Engine {
 		return storepb.Engine_DYNAMODB
 	case v1pb.Engine_DATABRICKS:
 		return storepb.Engine_DATABRICKS
+	case v1pb.Engine_COCKROACHDB:
+		return storepb.Engine_COCKROACHDB
 	}
 	return storepb.Engine_ENGINE_UNSPECIFIED
 }
