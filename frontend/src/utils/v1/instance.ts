@@ -16,6 +16,7 @@ import {
   type DataSource,
 } from "@/types/proto/v1/instance_service";
 import { PlanType } from "@/types/proto/v1/subscription_service";
+import { isDev } from "../util";
 
 export function instanceV1Name(instance: Instance | InstanceResource) {
   const store = useSubscriptionV1Store();
@@ -127,6 +128,9 @@ export const supportedEngineV1List = () => {
     engines.push(Engine.DM);
     engines.push(Engine.DORIS);
   }
+  if (isDev()) {
+    engines.push(Engine.COCKROACHDB);
+  }
   return engines;
 };
 
@@ -177,6 +181,7 @@ export const instanceV1HasSSL = (
     Engine.MYSQL,
     Engine.TIDB,
     Engine.POSTGRES,
+    Engine.COCKROACHDB,
     Engine.REDIS,
     Engine.ORACLE,
     Engine.MARIADB,
@@ -281,6 +286,8 @@ export const engineNameV1 = (type: Engine): string => {
       return "MySQL";
     case Engine.POSTGRES:
       return "PostgreSQL";
+    case Engine.COCKROACHDB:
+      return "CockroachDB";
     case Engine.SNOWFLAKE:
       return "Snowflake";
     case Engine.TIDB:
@@ -331,7 +338,8 @@ export const hasSchemaProperty = (databaseEngine: Engine) => {
     databaseEngine === Engine.SNOWFLAKE ||
     databaseEngine === Engine.MSSQL ||
     databaseEngine === Engine.REDSHIFT ||
-    databaseEngine === Engine.RISINGWAVE
+    databaseEngine === Engine.RISINGWAVE ||
+    databaseEngine === Engine.COCKROACHDB
   );
 };
 
@@ -346,7 +354,9 @@ export const hasTableEngineProperty = (
   instanceOrEngine: Instance | InstanceResource | Engine
 ) => {
   const engine = engineOfInstanceV1(instanceOrEngine);
-  return ![Engine.POSTGRES, Engine.SNOWFLAKE].includes(engine);
+  return ![Engine.POSTGRES, Engine.COCKROACHDB, Engine.SNOWFLAKE].includes(
+    engine
+  );
 };
 export const hasIndexSizeProperty = (
   instanceOrEngine: Instance | InstanceResource | Engine
@@ -358,9 +368,12 @@ export const hasCollationProperty = (
   instanceOrEngine: Instance | InstanceResource | Engine
 ) => {
   const engine = engineOfInstanceV1(instanceOrEngine);
-  return ![Engine.POSTGRES, Engine.CLICKHOUSE, Engine.SNOWFLAKE].includes(
-    engine
-  );
+  return ![
+    Engine.POSTGRES,
+    Engine.COCKROACHDB,
+    Engine.CLICKHOUSE,
+    Engine.SNOWFLAKE,
+  ].includes(engine);
 };
 
 export const useInstanceV1EditorLanguage = (
