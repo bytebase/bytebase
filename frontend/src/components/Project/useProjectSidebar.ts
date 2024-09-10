@@ -160,14 +160,18 @@ export const useProjectSidebar = (
         icon: () => h(SearchCodeIcon),
         path: PROJECT_V1_ROUTE_REVIEW_CENTER,
         type: "div",
-        hide: isDefaultProject.value,
+        hide:
+          isDefaultProject.value ||
+          databaseChangeMode.value === DatabaseChangeMode.EDITOR,
       },
       {
         title: t("export-center.self"),
         icon: () => h(DownloadIcon),
         path: PROJECT_V1_ROUTE_EXPORT_CENTER,
         type: "div",
-        hide: isDefaultProject.value,
+        hide:
+          isDefaultProject.value ||
+          databaseChangeMode.value === DatabaseChangeMode.EDITOR,
       },
       {
         title: t("changelist.changelists"),
