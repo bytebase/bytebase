@@ -8,9 +8,9 @@ import type { Expr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
 import type { User } from "@/types/proto/v1/auth_service";
 import { IamPolicy } from "@/types/proto/v1/iam_policy";
 import { getUserEmailListInBinding } from "@/utils";
+import { convertFromExpr } from "@/utils/issue/cel";
 import { useCurrentUserV1 } from "../auth";
 import { usePermissionStore } from "./permission";
-import { convertFromExpr } from "@/utils/issue/cel";
 
 export const useProjectIamPolicyStore = defineStore(
   "project-iam-policy",
@@ -181,6 +181,14 @@ export const checkQuerierPermission = (
     PresetRoleType.PROJECT_QUERIER,
     (expr: Expr): boolean => {
       const conditionExpr = convertFromExpr(expr);
+      // Check if the condition is expired.
+      if (
+        conditionExpr.expiredTime &&
+        new Date(conditionExpr.expiredTime).getTime() < Date.now()
+      ) {
+        return false;
+      }
+      // Check if the condition is valid for the database.
       if (
         conditionExpr.databaseResources &&
         conditionExpr.databaseResources.length > 0
