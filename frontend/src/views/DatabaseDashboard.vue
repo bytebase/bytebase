@@ -66,6 +66,7 @@ interface LocalState {
 
 const props = defineProps<{
   openInNewWindow?: boolean;
+  onClickDatabase?: (db: ComposedDatabase, event: MouseEvent) => void;
 }>();
 
 const uiStateStore = useUIStateStore();
@@ -212,6 +213,11 @@ const handleDatabasesSelectionChanged = (
 };
 
 const handleDatabaseClick = (event: MouseEvent, database: ComposedDatabase) => {
+  if (props.onClickDatabase) {
+    props.onClickDatabase(database, event);
+    return;
+  }
+
   const url = databaseV1Url(database);
   if (props.openInNewWindow || event.ctrlKey || event.metaKey) {
     window.open(url, "_blank");
