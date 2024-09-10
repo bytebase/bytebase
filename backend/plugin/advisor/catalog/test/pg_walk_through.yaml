@@ -49,6 +49,7 @@
     CREATE TABLE public.t(a int, "B" int);
     CREATE INDEX ON t(a, "B");
     CREATE UNIQUE INDEX ON t(a, "B");
+    DROP INDEX IF EXISTS t_a_B_idx_11111;
   ignore_case_sensitive: false
   want: |-
     {
