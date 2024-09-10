@@ -2,35 +2,30 @@ import {
   BuildingIcon,
   GalleryHorizontalEndIcon,
   LayersIcon,
-  ShieldCheckIcon,
   SquareStackIcon,
   UsersIcon,
-  WorkflowIcon,
 } from "lucide-vue-next";
 import { computed, h } from "vue";
 import { useI18n } from "vue-i18n";
-import { useRoute, useRouter, type RouteRecordRaw } from "vue-router";
+import { useRoute, type RouteRecordRaw } from "vue-router";
 import type { SidebarItem } from "@/components/CommonSidebar.vue";
 import { DatabaseIcon } from "@/components/Icon";
-import {
-  WORKSPACE_ROUTE_DATA_CLASSIFICATION,
-  WORKSPACE_ROUTE_SQL_REVIEW,
-  WORKSPACE_ROUTE_USERS,
-} from "@/router/dashboard/workspaceRoutes";
 import sqlEditorRoutes, {
   SQL_EDITOR_SETTING_DATABASES_MODULE,
   SQL_EDITOR_SETTING_ENVIRONMENT_MODULE,
   SQL_EDITOR_SETTING_GENERAL_MODULE,
   SQL_EDITOR_SETTING_INSTANCE_MODULE,
+  SQL_EDITOR_SETTING_MEMBERS_MODULE,
   SQL_EDITOR_SETTING_PROJECT_MODULE,
+  SQL_EDITOR_SETTING_USERS_MODULE,
 } from "@/router/sqlEditor";
-import { useAppFeature } from "@/store";
+import { useAppFeature, usePermissionStore } from "@/store";
 import type { Permission } from "@/types";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
 export const useSidebarItems = () => {
   const route = useRoute();
-  const router = useRouter();
+  const permissionStore = usePermissionStore();
   const { t } = useI18n();
   const disableSetting = useAppFeature("bb.feature.sql-editor.disable-setting");
 
@@ -141,35 +136,31 @@ export const useSidebarItems = () => {
         name: SQL_EDITOR_SETTING_ENVIRONMENT_MODULE,
         type: "route",
       },
+
       {
-        type: "divider",
-        name: "",
-      },
-      {
-        title: t("settings.sidebar.users-and-groups"),
+        title: "IAM & Admin",
         icon: () => h(UsersIcon),
-        name: WORKSPACE_ROUTE_USERS,
-        path: router.resolve({ name: WORKSPACE_ROUTE_USERS }).fullPath,
-        type: "link",
-        newWindow: true,
+        type: "div",
+        children: [
+          {
+            title: t("settings.sidebar.users-and-groups"),
+            name: SQL_EDITOR_SETTING_USERS_MODULE,
+            type: "route",
+          },
+          {
+            title: t("settings.sidebar.members"),
+            name: SQL_EDITOR_SETTING_MEMBERS_MODULE,
+            type: "route",
+            hide: permissionStore.onlyWorkspaceMember,
+          },
+        ],
       },
-      {
-        title: "CI/CD",
-        icon: () => h(WorkflowIcon),
-        name: WORKSPACE_ROUTE_SQL_REVIEW,
-        path: router.resolve({ name: WORKSPACE_ROUTE_SQL_REVIEW }).fullPath,
-        type: "link",
-        newWindow: true,
-      },
-      {
-        title: t("settings.sidebar.data-access"),
-        icon: () => h(ShieldCheckIcon),
-        name: WORKSPACE_ROUTE_DATA_CLASSIFICATION,
-        path: router.resolve({ name: WORKSPACE_ROUTE_DATA_CLASSIFICATION })
-          .fullPath,
-        type: "link",
-        newWindow: true,
-      },
+      // {
+      //   title: t("common.members"),
+      //   icon: () => h(UsersIcon),
+      //   name: SQL_EDITOR_SETTING_MEMBERS_MODULE,
+      //   type: "route",
+      // },
     ];
 
     return filterSidebarByPermissions(sidebarList);

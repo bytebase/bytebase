@@ -35,7 +35,6 @@
           v-if="item.type === 'link'"
           :class="[parentRouteClass, getItemClass(item)]"
           :href="item.path"
-          :target="item.newWindow ? '_blank' : undefined"
           @click="$emit('select', item, $event)"
         >
           <component :is="item.icon" class="mr-2 w-5 h-5 text-gray-500" />
@@ -54,7 +53,6 @@
               v-if="child.type === 'link'"
               :class="[childRouteClass, getItemClass(child)]"
               :href="child.path"
-              :target="child.newWindow ? '_blank' : undefined"
               @click="$emit('select', child, $event)"
             >
               {{ child.title }}
@@ -95,7 +93,6 @@ export interface SidebarItem {
   icon?: () => VNode;
   hide?: boolean;
   type: "route" | "div" | "divider" | "link";
-  newWindow?: boolean;
   expand?: boolean;
   children?: SidebarItem[];
 }

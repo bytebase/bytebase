@@ -3,10 +3,10 @@
     class="w-full flex flex-col py-4 px-4 gap-4 divide-block-border overflow-y-auto"
     v-bind="$attrs"
   >
-    <SettingWorkspaceMembers />
+    <SettingWorkspaceUsers />
   </div>
 </template>
 
 <script lang="ts" setup>
-import SettingWorkspaceMembers from "@/views/SettingWorkspaceMembers.vue";
+import SettingWorkspaceUsers from "@/views/SettingWorkspaceUsers.vue";
 </script>

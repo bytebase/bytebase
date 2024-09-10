@@ -16,6 +16,7 @@ export const SQL_EDITOR_SETTING_ENVIRONMENT_MODULE =
 export const SQL_EDITOR_SETTING_PROJECT_MODULE = "sql-editor.setting.project";
 export const SQL_EDITOR_SETTING_DATABASES_MODULE =
   "sql-editor.setting.databases";
+export const SQL_EDITOR_SETTING_USERS_MODULE = "sql-editor.setting.users";
 export const SQL_EDITOR_SETTING_MEMBERS_MODULE = "sql-editor.setting.members";
 
 const sqlEditorRoutes: RouteRecordRaw[] = [
@@ -131,6 +132,11 @@ const sqlEditorRoutes: RouteRecordRaw[] = [
               requiredWorkspacePermissionList: () => ["bb.databases.list"],
             },
             component: () => import("../views/sql-editor/Setting/Database"),
+          },
+          {
+            path: "users",
+            name: SQL_EDITOR_SETTING_USERS_MODULE,
+            component: () => import("../views/sql-editor/Setting/Users"),
           },
           {
             path: "members",
