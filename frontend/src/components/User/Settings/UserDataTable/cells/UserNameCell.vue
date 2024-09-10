@@ -6,7 +6,14 @@
       <div class="flex flex-col">
         <div class="flex flex-row items-center space-x-2">
           <span
-            v-if="permissionStore.onlyWorkspaceMember"
+            v-if="onClickUser"
+            class="normal-link truncate max-w-[10rem]"
+            @click="onClickUser(user, $event)"
+          >
+            {{ user.title }}
+          </span>
+          <span
+            v-else-if="permissionStore.onlyWorkspaceMember"
             class="truncate max-w-[10em]"
           >
             {{ user.title }}
@@ -85,6 +92,7 @@ import { hasWorkspacePermissionV2, toClipboard } from "@/utils";
 
 defineProps<{
   user: User;
+  onClickUser?: (user: User, event: MouseEvent) => void;
 }>();
 
 defineEmits<{
