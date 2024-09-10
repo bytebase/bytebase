@@ -295,7 +295,6 @@ const dashboardSidebarItemList = computed((): DashboardSidebarItem[] => {
       title: t("settings.sidebar.integration"),
       icon: () => h(LinkIcon),
       type: "div",
-      hide: databaseChangeMode.value === DatabaseChangeMode.EDITOR,
       children: [
         {
           title: t("settings.sidebar.mail-delivery"),
