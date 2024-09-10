@@ -18,8 +18,7 @@ import (
 
 // FindSettingMessage is the message for finding setting.
 type FindSettingMessage struct {
-	Name    *api.SettingName
-	Enforce bool
+	Name *api.SettingName
 }
 
 // SetSettingMessage is the message for updating setting.
@@ -38,13 +37,9 @@ type SettingMessage struct {
 }
 
 func (s *Store) GetMaximumSQLResultLimit(ctx context.Context) int64 {
-	settingName := api.SettingSQLResultSizeLimit
-	setting, err := s.GetSettingV2(ctx, &FindSettingMessage{
-		Name:    &settingName,
-		Enforce: true,
-	})
+	setting, err := s.GetSettingV2(ctx, api.SettingSQLResultSizeLimit)
 	if err != nil {
-		slog.Error("failed to get setting", slog.String("setting", string(settingName)), log.BBError(err))
+		slog.Error("failed to get setting", slog.String("setting", string(api.SettingSQLResultSizeLimit)), log.BBError(err))
 		return common.DefaultMaximumSQLResultSize
 	}
 	if setting == nil {
@@ -53,7 +48,7 @@ func (s *Store) GetMaximumSQLResultLimit(ctx context.Context) int64 {
 
 	payload := new(storepb.MaximumSQLResultSizeSetting)
 	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), payload); err != nil {
-		slog.Error("failed to unmarshaler setting", slog.String("setting", string(settingName)), log.BBError(err))
+		slog.Error("failed to unmarshaler setting", slog.String("setting", string(api.SettingSQLResultSizeLimit)), log.BBError(err))
 		return common.DefaultMaximumSQLResultSize
 	}
 	if payload.Limit <= 0 {
@@ -64,16 +59,12 @@ func (s *Store) GetMaximumSQLResultLimit(ctx context.Context) int64 {
 
 // GetWorkspaceGeneralSetting gets the workspace general setting payload.
 func (s *Store) GetWorkspaceGeneralSetting(ctx context.Context) (*storepb.WorkspaceProfileSetting, error) {
-	settingName := api.SettingWorkspaceProfile
-	setting, err := s.GetSettingV2(ctx, &FindSettingMessage{
-		Name:    &settingName,
-		Enforce: true,
-	})
+	setting, err := s.GetSettingV2(ctx, api.SettingWorkspaceProfile)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get setting %s", settingName)
+		return nil, errors.Wrapf(err, "failed to get setting %v", api.SettingWorkspaceProfile)
 	}
 	if setting == nil {
-		return nil, errors.Errorf("cannot find setting %v", settingName)
+		return nil, errors.Errorf("cannot find setting %v", api.SettingWorkspaceProfile)
 	}
 
 	payload := new(storepb.WorkspaceProfileSetting)
@@ -84,15 +75,12 @@ func (s *Store) GetWorkspaceGeneralSetting(ctx context.Context) (*storepb.Worksp
 }
 
 func (s *Store) GetAppIMSetting(ctx context.Context) (*storepb.AppIMSetting, error) {
-	settingName := api.SettingAppIM
-	setting, err := s.GetSettingV2(ctx, &FindSettingMessage{
-		Name: &settingName,
-	})
+	setting, err := s.GetSettingV2(ctx, api.SettingAppIM)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get setting %s", settingName)
+		return nil, errors.Wrapf(err, "failed to get setting %v", api.SettingAppIM)
 	}
 	if setting == nil {
-		return nil, errors.Errorf("cannot find setting %v", settingName)
+		return nil, errors.Errorf("cannot find setting %v", api.SettingAppIM)
 	}
 
 	payload := new(storepb.AppIMSetting)
@@ -104,30 +92,24 @@ func (s *Store) GetAppIMSetting(ctx context.Context) (*storepb.AppIMSetting, err
 
 // GetWorkspaceID finds the workspace id in setting bb.workspace.id.
 func (s *Store) GetWorkspaceID(ctx context.Context) (string, error) {
-	settingName := api.SettingWorkspaceID
-	setting, err := s.GetSettingV2(ctx, &FindSettingMessage{
-		Name: &settingName,
-	})
+	setting, err := s.GetSettingV2(ctx, api.SettingWorkspaceID)
 	if err != nil {
-		return "", errors.Wrapf(err, "failed to get setting %s", settingName)
+		return "", errors.Wrapf(err, "failed to get setting %v", api.SettingWorkspaceID)
 	}
 	if setting == nil {
-		return "", errors.Errorf("cannot find setting %v", settingName)
+		return "", errors.Errorf("cannot find setting %v", api.SettingWorkspaceID)
 	}
 	return setting.Value, nil
 }
 
 // GetWorkspaceApprovalSetting gets the workspace approval setting.
 func (s *Store) GetWorkspaceApprovalSetting(ctx context.Context) (*storepb.WorkspaceApprovalSetting, error) {
-	settingName := api.SettingWorkspaceApproval
-	setting, err := s.GetSettingV2(ctx, &FindSettingMessage{
-		Name: &settingName,
-	})
+	setting, err := s.GetSettingV2(ctx, api.SettingWorkspaceApproval)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get setting %s", settingName)
+		return nil, errors.Wrapf(err, "failed to get setting %v", api.SettingWorkspaceApproval)
 	}
 	if setting == nil {
-		return nil, errors.Errorf("cannot find setting %v", settingName)
+		return nil, errors.Errorf("cannot find setting %v", api.SettingWorkspaceApproval)
 	}
 
 	payload := new(storepb.WorkspaceApprovalSetting)
@@ -139,15 +121,12 @@ func (s *Store) GetWorkspaceApprovalSetting(ctx context.Context) (*storepb.Works
 
 // GetWorkspaceExternalApprovalSetting gets the workspace external approval setting.
 func (s *Store) GetWorkspaceExternalApprovalSetting(ctx context.Context) (*storepb.ExternalApprovalSetting, error) {
-	settingName := api.SettingWorkspaceExternalApproval
-	setting, err := s.GetSettingV2(ctx, &FindSettingMessage{
-		Name: &settingName,
-	})
+	setting, err := s.GetSettingV2(ctx, api.SettingWorkspaceExternalApproval)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get setting %s", settingName)
+		return nil, errors.Wrapf(err, "failed to get setting %v", api.SettingWorkspaceExternalApproval)
 	}
 	if setting == nil {
-		return nil, errors.Errorf("cannot find setting %v", settingName)
+		return nil, errors.Errorf("cannot find setting %v", api.SettingWorkspaceExternalApproval)
 	}
 
 	payload := new(storepb.ExternalApprovalSetting)
@@ -159,12 +138,9 @@ func (s *Store) GetWorkspaceExternalApprovalSetting(ctx context.Context) (*store
 
 // GetMaskingAlgorithmSetting gets the masking algorithm setting.
 func (s *Store) GetMaskingAlgorithmSetting(ctx context.Context) (*storepb.MaskingAlgorithmSetting, error) {
-	settingName := api.SettingMaskingAlgorithm
-	setting, err := s.GetSettingV2(ctx, &FindSettingMessage{
-		Name: &settingName,
-	})
+	setting, err := s.GetSettingV2(ctx, api.SettingMaskingAlgorithm)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get setting %s", settingName)
+		return nil, errors.Wrapf(err, "failed to get setting %v", api.SettingMaskingAlgorithm)
 	}
 	if setting == nil {
 		return &storepb.MaskingAlgorithmSetting{}, nil
@@ -179,12 +155,9 @@ func (s *Store) GetMaskingAlgorithmSetting(ctx context.Context) (*storepb.Maskin
 
 // GetSemanticTypesSetting gets the semantic types setting.
 func (s *Store) GetSemanticTypesSetting(ctx context.Context) (*storepb.SemanticTypeSetting, error) {
-	settingName := api.SettingSemanticTypes
-	setting, err := s.GetSettingV2(ctx, &FindSettingMessage{
-		Name: &settingName,
-	})
+	setting, err := s.GetSettingV2(ctx, api.SettingSemanticTypes)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get setting %s", settingName)
+		return nil, errors.Wrapf(err, "failed to get setting %v", api.SettingSemanticTypes)
 	}
 	if setting == nil {
 		return &storepb.SemanticTypeSetting{}, nil
@@ -199,12 +172,9 @@ func (s *Store) GetSemanticTypesSetting(ctx context.Context) (*storepb.SemanticT
 
 // GetDataClassificationSetting gets the data classification setting.
 func (s *Store) GetDataClassificationSetting(ctx context.Context) (*storepb.DataClassificationSetting, error) {
-	settingName := api.SettingDataClassification
-	setting, err := s.GetSettingV2(ctx, &FindSettingMessage{
-		Name: &settingName,
-	})
+	setting, err := s.GetSettingV2(ctx, api.SettingDataClassification)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get setting %s", settingName)
+		return nil, errors.Wrapf(err, "failed to get setting %v", api.SettingDataClassification)
 	}
 	if setting == nil {
 		return &storepb.DataClassificationSetting{}, nil
@@ -240,11 +210,9 @@ func (s *Store) DeleteCache() {
 }
 
 // GetSettingV2 returns the setting by name.
-func (s *Store) GetSettingV2(ctx context.Context, find *FindSettingMessage) (*SettingMessage, error) {
-	if find.Name != nil && !find.Enforce {
-		if v, ok := s.settingCache.Get(*find.Name); ok {
-			return v, nil
-		}
+func (s *Store) GetSettingV2(ctx context.Context, name api.SettingName) (*SettingMessage, error) {
+	if v, ok := s.settingCache.Get(name); ok {
+		return v, nil
 	}
 
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
@@ -253,7 +221,9 @@ func (s *Store) GetSettingV2(ctx context.Context, find *FindSettingMessage) (*Se
 	}
 	defer tx.Rollback()
 
-	settings, err := listSettingV2Impl(ctx, tx, find)
+	settings, err := listSettingV2Impl(ctx, tx, &FindSettingMessage{
+		Name: &name,
+	})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to list setting")
 	}
@@ -261,7 +231,7 @@ func (s *Store) GetSettingV2(ctx context.Context, find *FindSettingMessage) (*Se
 		return nil, nil
 	}
 	if len(settings) > 1 {
-		return nil, errors.Errorf("found multiple settings: %v", find.Name)
+		return nil, errors.Errorf("found multiple settings: %v", name)
 	}
 
 	if err := tx.Commit(); err != nil {
