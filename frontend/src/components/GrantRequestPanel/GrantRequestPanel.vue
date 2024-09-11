@@ -66,7 +66,6 @@
           >
             <div class="flex items-center gap-1">
               {{ $t("common.ok") }}
-              <ExternalLinkIcon v-if="openInNewWindow" class="w-4 h-4" />
             </div>
           </NButton>
         </div>
@@ -78,10 +77,8 @@
 <script lang="ts" setup>
 import dayjs from "dayjs";
 import { isUndefined } from "lodash-es";
-import { ExternalLinkIcon } from "lucide-vue-next";
 import { NButton, NInput } from "naive-ui";
 import { computed, reactive } from "vue";
-import { useRouter } from "vue-router";
 import ExpirationSelector from "@/components/ExpirationSelector.vue";
 import RequiredStar from "@/components/RequiredStar.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
@@ -114,12 +111,10 @@ const props = withDefaults(
     role: PresetRoleType.PROJECT_QUERIER | PresetRoleType.PROJECT_EXPORTER;
     database?: ComposedDatabase;
     placement: "left" | "right";
-    openInNewWindow?: boolean;
   }>(),
   {
     database: undefined,
     placement: "right",
-    openInNewWindow: false,
   }
 );
 
@@ -146,7 +141,6 @@ const extractDatabaseResourcesFromProps = (): Pick<
   };
 };
 
-const router = useRouter();
 const currentUser = useCurrentUserV1();
 const state = reactive<LocalState>({
   ...extractDatabaseResourcesFromProps(),
@@ -225,12 +219,7 @@ const doCreateIssue = async () => {
   });
 
   const path = `/${createdIssue.name}`;
-  if (props.openInNewWindow) {
-    window.open(router.resolve({ path }).fullPath);
-  } else {
-    router.push({
-      path,
-    });
-  }
+
+  window.open(path, "_blank");
 };
 </script>

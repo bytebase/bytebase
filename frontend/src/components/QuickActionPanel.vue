@@ -251,16 +251,12 @@ const availableQuickActionList = computed((): QuickAction[] => {
     {
       type: "quickaction.bb.database.create",
       title: t("quick-action.new-db"),
-<<<<<<< HEAD
       hide:
         databaseChangeMode.value === DatabaseChangeMode.EDITOR ||
-        !shouldShowAlterDatabaseEntries.value,
-=======
-      hide: !(
-        hasProjectPermissionV2(project.value, "bb.issues.create") &&
-        hasProjectPermissionV2(project.value, "bb.plans.create")
-      ),
->>>>>>> main
+        !(
+          hasProjectPermissionV2(project.value, "bb.issues.create") &&
+          hasProjectPermissionV2(project.value, "bb.plans.create")
+        ),
       action: createDatabase,
       icon: h(DatabaseIcon),
     },
