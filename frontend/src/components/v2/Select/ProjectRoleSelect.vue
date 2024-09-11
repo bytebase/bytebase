@@ -34,7 +34,7 @@ import { displayRoleDescription, displayRoleTitle } from "@/utils";
 
 // UNALLOWED_ROLES_IN_PROJECT are roles that are not allowed to be assigned to
 // project members.
-const UNALLOWED_ROLES_IN_PROJECT = [
+const UNALLOWED_ROLES_IN_PROJECT: string[] = [
   PresetRoleType.WORKSPACE_ADMIN,
   PresetRoleType.WORKSPACE_DBA,
   PresetRoleType.WORKSPACE_MEMBER,
@@ -58,7 +58,7 @@ const emit = defineEmits<{
   (event: "update:roles", roles: string[]): void;
 }>();
 
-const FREE_ROLE_LIST = [
+const FREE_ROLE_LIST: string[] = [
   PresetRoleType.PROJECT_OWNER,
   PresetRoleType.PROJECT_DEVELOPER,
   PresetRoleType.PROJECT_RELEASER,
