@@ -2,6 +2,7 @@
   <div class="space-y-4 divide-y divide-block-border">
     <NetworkSetting v-if="!isSaaSMode" :allow-edit="allowEdit" />
     <BrandingSetting :allow-edit="allowEdit" />
+    <AccountSetting :allow-edit="allowEdit" />
     <SecuritySetting :allow-edit="allowEdit" />
     <AIAugmentationSetting :allow-edit="allowEdit" />
     <AnnouncementSetting :allow-edit="allowEdit" />
@@ -15,6 +16,7 @@ import { useRoute } from "vue-router";
 import {
   BrandingSetting,
   SecuritySetting,
+  AccountSetting,
   NetworkSetting,
   AIAugmentationSetting,
   AnnouncementSetting,

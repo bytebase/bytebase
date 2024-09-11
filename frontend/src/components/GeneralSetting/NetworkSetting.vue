@@ -1,5 +1,5 @@
 <template>
-  <div class="lg:flex">
+  <div id="network" class="lg:flex">
     <div class="text-left lg:w-1/4">
       <h1 class="text-2xl font-bold">
         {{ $t("settings.general.workspace.network") }}
