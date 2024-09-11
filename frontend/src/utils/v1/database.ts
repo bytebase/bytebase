@@ -1,7 +1,7 @@
 import { orderBy } from "lodash-es";
 import {
+  checkQuerierPermission,
   hasFeature,
-  useCurrentUserIamPolicy,
   useSubscriptionV1Store,
 } from "@/store";
 import {
@@ -88,7 +88,11 @@ export const isDatabaseV1Alterable = (database: ComposedDatabase): boolean => {
 };
 
 // isDatabaseV1Queryable checks if database allowed to query in SQL Editor.
-export const isDatabaseV1Queryable = (database: ComposedDatabase): boolean => {
+export const isDatabaseV1Queryable = (
+  database: ComposedDatabase,
+  schema?: string,
+  table?: string
+): boolean => {
   if (!hasFeature("bb.feature.access-control")) {
     // The current plan doesn't have access control feature.
     // Fallback to true.
@@ -99,8 +103,7 @@ export const isDatabaseV1Queryable = (database: ComposedDatabase): boolean => {
     return true;
   }
 
-  const currentUserIamPolicy = useCurrentUserIamPolicy();
-  if (currentUserIamPolicy.allowToQueryDatabaseV1(database)) {
+  if (checkQuerierPermission(database, schema, table)) {
     return true;
   }
 
