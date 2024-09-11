@@ -20,6 +20,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/db/mssql"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	crparser "github.com/bytebase/bytebase/backend/plugin/parser/cockroachdb"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	partiqlparser "github.com/bytebase/bytebase/backend/plugin/parser/partiql"
 	plsqlparser "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
@@ -231,6 +232,8 @@ func syntaxCheck(dbType storepb.Engine, statement string) (any, []*storepb.Advic
 		return mssqlSyntaxCheck(statement)
 	case storepb.Engine_DYNAMODB:
 		return partiqlSyntaxCheck(statement)
+	case storepb.Engine_COCKROACHDB:
+		return cockroachdbSyntaxCheck(statement)
 	}
 	return nil, []*storepb.Advice{
 		{
@@ -243,6 +246,30 @@ func syntaxCheck(dbType storepb.Engine, statement string) (any, []*storepb.Advic
 			},
 		},
 	}
+}
+
+func cockroachdbSyntaxCheck(statement string) (any, []*storepb.Advice) {
+	result, err := crparser.ParseCockroachDBSQL(statement)
+	if err != nil {
+		return nil, []*storepb.Advice{
+			{
+				Status:  storepb.Advice_WARNING,
+				Code:    InternalErrorCode,
+				Title:   "Parse error",
+				Content: err.Error(),
+				StartPosition: &storepb.Position{
+					Line: 1,
+				},
+			},
+		}
+	}
+
+	if result == nil {
+		return nil, nil
+	}
+
+	// TODO(d): burnout early.
+	return result.Stmts, nil
 }
 
 func partiqlSyntaxCheck(statement string) (any, []*storepb.Advice) {
