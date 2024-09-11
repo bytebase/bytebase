@@ -2,8 +2,12 @@ import { isUndefined, uniq } from "lodash-es";
 import { defineStore } from "pinia";
 import { computed, ref, unref, watch } from "vue";
 import { projectServiceClient } from "@/grpcweb";
-import type { ComposedDatabase, ComposedProject, MaybeRef } from "@/types";
-import { PresetRoleType } from "@/types";
+import type {
+  ComposedDatabase,
+  ComposedProject,
+  MaybeRef,
+  Permission,
+} from "@/types";
 import type { Expr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
 import type { User } from "@/types/proto/v1/auth_service";
 import { IamPolicy } from "@/types/proto/v1/iam_policy";
@@ -135,7 +139,7 @@ export const useProjectIamPolicy = (project: MaybeRef<string>) => {
 const checkProjectIAMPolicyWithExpr = (
   user: User,
   project: ComposedProject,
-  permission: string,
+  permission: Permission,
   bindingExprCheck: (expr?: Expr) => boolean
 ): boolean => {
   const roleStore = useRoleStore();
@@ -172,7 +176,7 @@ export const checkQuerierPermission = (
   return checkProjectIAMPolicyWithExpr(
     useCurrentUserV1().value,
     database.projectEntity,
-    PresetRoleType.PROJECT_QUERIER,
+    "bb.databases.query",
     (expr?: Expr): boolean => {
       // If no condition is set, then return true.
       if (!expr) {
