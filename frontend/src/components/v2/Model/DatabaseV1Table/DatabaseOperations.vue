@@ -103,7 +103,6 @@ import TransferOutDatabaseForm from "@/components/TransferOutDatabaseForm";
 import { Drawer } from "@/components/v2";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
-  useCurrentUserIamPolicy,
   useProjectV1Store,
   useDatabaseV1Store,
   useGracefulRequest,
@@ -111,7 +110,7 @@ import {
   pushNotification,
   useAppFeature,
 } from "@/store";
-import type { ComposedDatabase, Permission } from "@/types";
+import type { ComposedDatabase } from "@/types";
 import { DEFAULT_PROJECT_NAME } from "@/types";
 import {
   Database,
@@ -165,7 +164,6 @@ const router = useRouter();
 const databaseStore = useDatabaseV1Store();
 const projectStore = useProjectV1Store();
 const dbSchemaStore = useDBSchemaV1Store();
-const currentUserIamPolicy = useCurrentUserIamPolicy();
 const disableSchemaEditor = useAppFeature(
   "bb.feature.issue.disable-schema-editor"
 );
@@ -204,24 +202,6 @@ const selectedProjectName = computed(() => {
   return projectStore.getProjectByName(project).name;
 });
 
-const canEditDatabase = (
-  db: ComposedDatabase,
-  requiredProjectPermission: Permission
-): boolean => {
-  if (isArchivedDatabaseV1(db)) {
-    return false;
-  }
-  if (currentUserIamPolicy.allowToChangeDatabaseOfProject(db.project)) {
-    return true;
-  }
-
-  if (hasProjectPermissionV2(db.projectEntity, requiredProjectPermission)) {
-    return true;
-  }
-
-  return false;
-};
-
 const databaseSupportAlterSchema = computed(() => {
   return props.databases.every((db) => {
     return instanceV1HasAlterSchema(db.instanceResource);
@@ -241,8 +221,10 @@ const allowChangeData = computed(() => {
 });
 
 const allowTransferProject = computed(() => {
-  return props.databases.every((db) =>
-    canEditDatabase(db, "bb.projects.update")
+  return props.databases.every(
+    (db) =>
+      !isArchivedDatabaseV1(db) &&
+      hasProjectPermissionV2(db.projectEntity, "bb.projects.update")
   );
 });
 

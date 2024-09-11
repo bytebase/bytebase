@@ -117,7 +117,6 @@ import { PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL } from "@/router/dashboard/proje
 import { PROJECT_V1_ROUTE_DASHBOARD } from "@/router/dashboard/workspaceRoutes";
 import {
   useCommandStore,
-  useCurrentUserIamPolicy,
   useSubscriptionV1Store,
   useProjectV1Store,
   useInstanceResourceList,
@@ -191,19 +190,6 @@ const project = computed(() => {
   );
 });
 
-// Only show alter schema and change data if the user has permission to alter schema of at least one project.
-const shouldShowAlterDatabaseEntries = computed(() => {
-  const currentUserIamPolicy = useCurrentUserIamPolicy();
-  return projectStore.projectList
-    .map((project) => {
-      return (
-        currentUserIamPolicy.allowToChangeDatabaseOfProject(project.name) &&
-        hasProjectPermissionV2(project, "bb.issues.create")
-      );
-    })
-    .includes(true);
-});
-
 watch(route, () => {
   state.quickActionType = undefined;
 });
@@ -265,7 +251,10 @@ const availableQuickActionList = computed((): QuickAction[] => {
     {
       type: "quickaction.bb.database.create",
       title: t("quick-action.new-db"),
-      hide: !shouldShowAlterDatabaseEntries.value,
+      hide: !(
+        hasProjectPermissionV2(project.value, "bb.issues.create") &&
+        hasProjectPermissionV2(project.value, "bb.plans.create")
+      ),
       action: createDatabase,
       icon: h(DatabaseIcon),
     },
