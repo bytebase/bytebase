@@ -1,5 +1,5 @@
 <template>
-  <div class="py-6 lg:flex" id="account">
+  <div id="account" class="py-6 lg:flex">
     <div class="text-left lg:w-1/4">
       <div class="flex items-center space-x-2">
         <h1 class="text-2xl font-bold">Account</h1>
@@ -116,7 +116,6 @@ const settingV1Store = useSettingV1Store();
 const actuatorStore = useActuatorV1Store();
 
 const { isSaaSMode } = storeToRefs(actuatorStore);
-const hasWatermarkFeature = featureToRef("bb.feature.branding");
 const has2FAFeature = featureToRef("bb.feature.2fa");
 const hasDisallowSignupFeature = featureToRef("bb.feature.disallow-signup");
 const hasDisallowPasswordSigninFeature = featureToRef(
@@ -205,25 +204,6 @@ const handleDisallowPasswordSigninToggle = async (on: boolean) => {
     module: "bytebase",
     style: "SUCCESS",
     title: t("settings.general.workspace.config-updated"),
-  });
-};
-
-const handleWatermarkToggle = async (on: boolean) => {
-  if (!hasWatermarkFeature.value && on) {
-    state.featureNameForModal = "bb.feature.watermark";
-    return;
-  }
-  const value = on ? "1" : "0";
-  await settingV1Store.upsertSetting({
-    name: "bb.workspace.watermark",
-    value: {
-      stringValue: value,
-    },
-  });
-  pushNotification({
-    module: "bytebase",
-    style: "SUCCESS",
-    title: t("settings.general.workspace.watermark.update-success"),
   });
 };
 </script>

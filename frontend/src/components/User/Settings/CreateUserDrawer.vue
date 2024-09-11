@@ -176,7 +176,7 @@
 </template>
 
 <script lang="ts" setup>
-import { cloneDeep, head, isEmpty, isEqual, isUndefined } from "lodash-es";
+import { cloneDeep, head, isEqual, isUndefined } from "lodash-es";
 import { ArchiveIcon } from "lucide-vue-next";
 import {
   NPopconfirm,
@@ -190,6 +190,7 @@ import {
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import EmailInput from "@/components/EmailInput.vue";
+import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { RoleSelect } from "@/components/v2/Select";
 import {
@@ -298,6 +299,7 @@ const passwordHint = computed(() => {
   }
   if (
     passwordRestrictionSetting.value.requireSpecialCharacter &&
+    // eslint-disable-next-line no-useless-escape
     !/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]+/.test(pwd)
   ) {
     return true;
