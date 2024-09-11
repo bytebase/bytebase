@@ -101,34 +101,20 @@ const sqlEditorRoutes: RouteRecordRaw[] = [
             path: "instance",
             name: SQL_EDITOR_SETTING_INSTANCE_MODULE,
             meta: {
-              requiredWorkspacePermissionList: () => [
-                "bb.instances.list",
-                "bb.instances.create",
-                "bb.instances.update",
-              ],
+              requiredWorkspacePermissionList: () => ["bb.instances.list"],
             },
             component: () => import("../views/sql-editor/Setting/Instance"),
           },
           {
             path: "project",
             name: SQL_EDITOR_SETTING_PROJECT_MODULE,
-            meta: {
-              requiredWorkspacePermissionList: () => [
-                "bb.projects.list",
-                "bb.projects.create",
-              ],
-            },
             component: () => import("../views/sql-editor/Setting/Project"),
           },
           {
             path: "environment",
             name: SQL_EDITOR_SETTING_ENVIRONMENT_MODULE,
             meta: {
-              requiredWorkspacePermissionList: () => [
-                "bb.environments.list",
-                "bb.environments.create",
-                "bb.environments.update",
-              ],
+              requiredWorkspacePermissionList: () => ["bb.environments.list"],
             },
             component: () => import("../views/sql-editor/Setting/Environment"),
           },
