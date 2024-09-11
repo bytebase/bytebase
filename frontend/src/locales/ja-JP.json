@@ -1324,7 +1324,7 @@
       "export-data": "データをエクスポート",
       "create-database": "データベースを作成する",
       "request-querier-role": "リクエストクエリーロール",
-      "request-export-role": "エクスポートロールのリクエスト"
+      "request-exporter-role": "エクスポートロールのリクエスト"
     }
   },
   "alter-schema": {

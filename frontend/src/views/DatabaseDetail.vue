@@ -74,7 +74,6 @@
           </dl>
         </div>
         <div
-          v-if="allowToChangeDatabase"
           class="flex flex-row justify-start items-center flex-wrap shrink gap-x-2 gap-y-2"
           data-label="bb-database-detail-action-buttons-container"
         >
@@ -121,7 +120,6 @@
       <NTabPane
         v-if="
           databaseChangeMode === DatabaseChangeMode.PIPELINE &&
-          allowToChangeDatabase &&
           allowListChangeHistories
         "
         name="change-history"
@@ -130,14 +128,14 @@
         <DatabaseChangeHistoryPanel class="mt-2" :database="database" />
       </NTabPane>
       <NTabPane
-        v-if="allowToChangeDatabase && allowListSlowQueries"
+        v-if="allowListSlowQueries"
         name="slow-query"
         :tab="$t('slow-query.slow-queries')"
       >
         <DatabaseSlowQueryPanel class="mt-2" :database="database" />
       </NTabPane>
       <NTabPane
-        v-if="allowToChangeDatabase"
+        v-if="allowUpdateDatabase"
         name="setting"
         :tab="$t('common.settings')"
       >
@@ -222,7 +220,6 @@ import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
   useAnomalyV1Store,
   useAppFeature,
-  useCurrentUserIamPolicy,
   useDatabaseV1Store,
   useEnvironmentV1Store,
 } from "@/store";
@@ -278,10 +275,10 @@ const state = reactive<LocalState>({
   selectedTab: "overview",
 });
 const route = useRoute();
-const currentUserIamPolicy = useCurrentUserIamPolicy();
 const anomalyList = ref<Anomaly[]>([]);
 const {
   allowSyncDatabase,
+  allowUpdateDatabase,
   allowTransferDatabase,
   allowChangeData,
   allowAlterSchema,
@@ -328,11 +325,6 @@ const database = computed(() => {
 });
 const project = computed(() => database.value.projectEntity);
 
-const allowToChangeDatabase = computed(() => {
-  return currentUserIamPolicy.allowToChangeDatabaseOfProject(
-    project.value.name
-  );
-});
 const hasSchemaDiagramFeature = computed((): boolean => {
   return instanceV1HasAlterSchema(database.value.instanceResource);
 });

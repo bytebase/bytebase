@@ -14,13 +14,14 @@ import (
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	crrawparser "github.com/cockroachdb/cockroachdb-parser/pkg/sql/parser"
+	crrawparsertree "github.com/cockroachdb/cockroachdb-parser/pkg/sql/sem/tree"
+
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
-	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
-	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -338,12 +339,11 @@ func getListForeignTableQuery() string {
 func getListTableQuery(isAtLeastPG10 bool) string {
 	relisPartition := ""
 	if isAtLeastPG10 {
-		relisPartition = " AND pc.relispartition IS FALSE"
+		relisPartition = " AND (pc.relispartition IS NULL OR pc.relispartition IS FALSE)"
 	}
+	// CockroachDB does not support pg_table_size and pg_indexes_size now.
 	return `
 	SELECT tbl.schemaname, tbl.tablename,
-		pg_table_size(format('%s.%s', quote_ident(tbl.schemaname), quote_ident(tbl.tablename))::regclass),
-		pg_indexes_size(format('%s.%s', quote_ident(tbl.schemaname), quote_ident(tbl.tablename))::regclass),
 		GREATEST(pc.reltuples::bigint, 0::BIGINT) AS estimate,
 		obj_description(format('%s.%s', quote_ident(tbl.schemaname), quote_ident(tbl.tablename))::regclass) AS comment
 	FROM pg_catalog.pg_tables tbl
@@ -379,7 +379,7 @@ func getTables(txn *sql.Tx, isAtLeastPG10 bool, columnMap map[db.TableKey][]*sto
 		table := &storepb.TableMetadata{}
 		var schemaName string
 		var comment sql.NullString
-		if err := rows.Scan(&schemaName, &table.Name, &table.DataSize, &table.IndexSize, &table.RowCount, &comment); err != nil {
+		if err := rows.Scan(&schemaName, &table.Name, &table.RowCount, &comment); err != nil {
 			return nil, nil, err
 		}
 		if pgparser.IsSystemTable(table.Name) {
@@ -784,13 +784,13 @@ func getSequences(txn *sql.Tx) (map[string][]*storepb.SequenceMetadata, error) {
 }
 
 var listIndexQuery = `
-SELECT idx.schemaname, idx.tablename, idx.indexname, idx.indexdef, (SELECT 1
+SELECT idx.schemaname, idx.tablename, idx.indexname, idx.indexdef, (SELECT constraint_type
 	FROM information_schema.table_constraints
 	WHERE constraint_schema = idx.schemaname
 	AND constraint_name = idx.indexname
 	AND table_schema = idx.schemaname
 	AND table_name = idx.tablename
-	AND constraint_type = 'PRIMARY KEY') AS primary,
+	AND constraint_type = 'PRIMARY KEY') AS constraint_type,
 	obj_description(format('%s.%s', quote_ident(idx.schemaname), quote_ident(idx.indexname))::regclass) AS comment` + fmt.Sprintf(`
 FROM pg_indexes AS idx WHERE idx.schemaname NOT IN (%s)
 ORDER BY idx.schemaname, idx.tablename, idx.indexname;`, pgparser.SystemSchemaWhereClause)
@@ -807,35 +807,50 @@ func getIndexes(txn *sql.Tx) (map[db.TableKey][]*storepb.IndexMetadata, error) {
 	for rows.Next() {
 		index := &storepb.IndexMetadata{}
 		var schemaName, tableName, statement string
-		var primary sql.NullInt32
+		var constraintType sql.NullString
 		var comment sql.NullString
-		if err := rows.Scan(&schemaName, &tableName, &index.Name, &statement, &primary, &comment); err != nil {
+		if err := rows.Scan(&schemaName, &tableName, &index.Name, &statement, &constraintType, &comment); err != nil {
 			return nil, err
 		}
 
-		nodes, err := pgrawparser.Parse(pgrawparser.ParseContext{}, statement)
+		nodes, err := crrawparser.Parse(statement)
 		if err != nil {
 			return nil, err
 		}
 		if len(nodes) != 1 {
-			return nil, errors.Errorf("invalid number of statements %v, expecting one", len(nodes))
+			return nil, errors.Errorf("invalid number of statement %v, expecting one", len(nodes))
 		}
-		node, ok := nodes[0].(*ast.CreateIndexStmt)
+		node, ok := nodes[0].AST.(*crrawparsertree.CreateIndex)
 		if !ok {
-			return nil, errors.Errorf("statement %q is not index statement", statement)
+			return nil, errors.Errorf("invalid statement type %T, expecting CreateIndex", nodes[0].AST)
 		}
-		deparsed, err := pgrawparser.Deparse(pgrawparser.DeparseContext{}, node)
-		if err != nil {
-			return nil, err
+		for _, indexElem := range node.Columns {
+			if indexElem.Column != "" {
+				index.Expressions = append(index.Expressions, indexElem.Column.String())
+				continue
+			}
+			if indexElem.Expr != nil {
+				index.Expressions = append(index.Expressions, indexElem.Expr.String())
+				continue
+			}
+			if indexElem.OpClass != "" {
+				index.Expressions = append(index.Expressions, indexElem.OpClass.String())
+				continue
+			}
 		}
-		// Instead of using indexdef, we use deparsed format so that the definition has quoted identifiers.
-		index.Definition = deparsed
 
+		index.Definition = statement
+
+		// FIXME(zp): Get expression.
 		index.Type = getIndexMethodType(statement)
-		index.Unique = node.Index.Unique
-		index.Expressions = node.Index.GetKeyNameList()
-		if primary.Valid && primary.Int32 == 1 {
-			index.Primary = true
+		if constraintType.Valid {
+			switch constraintType.String {
+			case "PRIMARY KEY":
+				index.Primary = true
+				index.Unique = true
+			case "UNIQUE":
+				index.Unique = true
+			}
 		}
 		if comment.Valid {
 			index.Comment = comment.String

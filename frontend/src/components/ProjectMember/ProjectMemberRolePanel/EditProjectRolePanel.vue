@@ -114,8 +114,8 @@ import { NButton, NDatePicker, NInput } from "naive-ui";
 import { computed, reactive, ref, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBButtonConfirm } from "@/bbkit";
-import MaxRowCountSelect from "@/components/Issue/panel/RequestExportPanel/MaxRowCountSelect.vue";
-import QuerierDatabaseResourceForm from "@/components/Issue/panel/RequestQueryPanel/DatabaseResourceForm/index.vue";
+import QuerierDatabaseResourceForm from "@/components/GrantRequestPanel/DatabaseResourceForm/index.vue";
+import MaxRowCountSelect from "@/components/GrantRequestPanel/MaxRowCountSelect.vue";
 import MembersBindingSelect from "@/components/Member/MembersBindingSelect.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
 import {
