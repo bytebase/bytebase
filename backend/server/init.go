@@ -76,7 +76,7 @@ func (s *Server) getInitSetting(ctx context.Context) (string, time.Duration, err
 	}
 
 	// Init password validation
-	passwordSettingValue, err := protojson.Marshal(&storepb.PasswordValidationSetting{
+	passwordSettingValue, err := protojson.Marshal(&storepb.PasswordRestrictionSetting{
 		MinLength:                         8,
 		RequireNumber:                     true,
 		RequireLetter:                     true,
@@ -88,7 +88,7 @@ func (s *Server) getInitSetting(ctx context.Context) (string, time.Duration, err
 		return "", 0, errors.Wrap(err, "failed to marshal initial password validation setting")
 	}
 	if _, _, err := s.store.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
-		Name:        api.SettingPasswordValidation,
+		Name:        api.SettingPasswordRestriction,
 		Value:       string(passwordSettingValue),
 		Description: "The password validation",
 	}, api.SystemBotID); err != nil {

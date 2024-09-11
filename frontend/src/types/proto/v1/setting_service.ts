@@ -154,7 +154,7 @@ export interface Value {
   maskingAlgorithmSettingValue?: MaskingAlgorithmSetting | undefined;
   maximumSqlResultSizeSetting?: MaximumSQLResultSizeSetting | undefined;
   scimSetting?: SCIMSetting | undefined;
-  passwordValidationSetting?: PasswordValidationSetting | undefined;
+  passwordRestrictionSetting?: PasswordRestrictionSetting | undefined;
 }
 
 export interface SMTPMailDeliverySettingValue {
@@ -721,7 +721,7 @@ export interface SCIMSetting {
   token: string;
 }
 
-export interface PasswordValidationSetting {
+export interface PasswordRestrictionSetting {
   /** min_length is the minimum length for password, should no less than 8. */
   minLength: number;
   /** require_number requires the password must contains at least one number. */
@@ -1198,7 +1198,7 @@ function createBaseValue(): Value {
     maskingAlgorithmSettingValue: undefined,
     maximumSqlResultSizeSetting: undefined,
     scimSetting: undefined,
-    passwordValidationSetting: undefined,
+    passwordRestrictionSetting: undefined,
   };
 }
 
@@ -1246,8 +1246,8 @@ export const Value = {
     if (message.scimSetting !== undefined) {
       SCIMSetting.encode(message.scimSetting, writer.uint32(114).fork()).ldelim();
     }
-    if (message.passwordValidationSetting !== undefined) {
-      PasswordValidationSetting.encode(message.passwordValidationSetting, writer.uint32(122).fork()).ldelim();
+    if (message.passwordRestrictionSetting !== undefined) {
+      PasswordRestrictionSetting.encode(message.passwordRestrictionSetting, writer.uint32(122).fork()).ldelim();
     }
     return writer;
   },
@@ -1362,7 +1362,7 @@ export const Value = {
             break;
           }
 
-          message.passwordValidationSetting = PasswordValidationSetting.decode(reader, reader.uint32());
+          message.passwordRestrictionSetting = PasswordRestrictionSetting.decode(reader, reader.uint32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -1411,8 +1411,8 @@ export const Value = {
         ? MaximumSQLResultSizeSetting.fromJSON(object.maximumSqlResultSizeSetting)
         : undefined,
       scimSetting: isSet(object.scimSetting) ? SCIMSetting.fromJSON(object.scimSetting) : undefined,
-      passwordValidationSetting: isSet(object.passwordValidationSetting)
-        ? PasswordValidationSetting.fromJSON(object.passwordValidationSetting)
+      passwordRestrictionSetting: isSet(object.passwordRestrictionSetting)
+        ? PasswordRestrictionSetting.fromJSON(object.passwordRestrictionSetting)
         : undefined,
     };
   },
@@ -1461,8 +1461,8 @@ export const Value = {
     if (message.scimSetting !== undefined) {
       obj.scimSetting = SCIMSetting.toJSON(message.scimSetting);
     }
-    if (message.passwordValidationSetting !== undefined) {
-      obj.passwordValidationSetting = PasswordValidationSetting.toJSON(message.passwordValidationSetting);
+    if (message.passwordRestrictionSetting !== undefined) {
+      obj.passwordRestrictionSetting = PasswordRestrictionSetting.toJSON(message.passwordRestrictionSetting);
     }
     return obj;
   },
@@ -1523,9 +1523,9 @@ export const Value = {
     message.scimSetting = (object.scimSetting !== undefined && object.scimSetting !== null)
       ? SCIMSetting.fromPartial(object.scimSetting)
       : undefined;
-    message.passwordValidationSetting =
-      (object.passwordValidationSetting !== undefined && object.passwordValidationSetting !== null)
-        ? PasswordValidationSetting.fromPartial(object.passwordValidationSetting)
+    message.passwordRestrictionSetting =
+      (object.passwordRestrictionSetting !== undefined && object.passwordRestrictionSetting !== null)
+        ? PasswordRestrictionSetting.fromPartial(object.passwordRestrictionSetting)
         : undefined;
     return message;
   },
@@ -4866,7 +4866,7 @@ export const SCIMSetting = {
   },
 };
 
-function createBasePasswordValidationSetting(): PasswordValidationSetting {
+function createBasePasswordRestrictionSetting(): PasswordRestrictionSetting {
   return {
     minLength: 0,
     requireNumber: false,
@@ -4878,8 +4878,8 @@ function createBasePasswordValidationSetting(): PasswordValidationSetting {
   };
 }
 
-export const PasswordValidationSetting = {
-  encode(message: PasswordValidationSetting, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const PasswordRestrictionSetting = {
+  encode(message: PasswordRestrictionSetting, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.minLength !== 0) {
       writer.uint32(8).int32(message.minLength);
     }
@@ -4904,10 +4904,10 @@ export const PasswordValidationSetting = {
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): PasswordValidationSetting {
+  decode(input: _m0.Reader | Uint8Array, length?: number): PasswordRestrictionSetting {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBasePasswordValidationSetting();
+    const message = createBasePasswordRestrictionSetting();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -4969,7 +4969,7 @@ export const PasswordValidationSetting = {
     return message;
   },
 
-  fromJSON(object: any): PasswordValidationSetting {
+  fromJSON(object: any): PasswordRestrictionSetting {
     return {
       minLength: isSet(object.minLength) ? globalThis.Number(object.minLength) : 0,
       requireNumber: isSet(object.requireNumber) ? globalThis.Boolean(object.requireNumber) : false,
@@ -4987,7 +4987,7 @@ export const PasswordValidationSetting = {
     };
   },
 
-  toJSON(message: PasswordValidationSetting): unknown {
+  toJSON(message: PasswordRestrictionSetting): unknown {
     const obj: any = {};
     if (message.minLength !== 0) {
       obj.minLength = Math.round(message.minLength);
@@ -5013,11 +5013,11 @@ export const PasswordValidationSetting = {
     return obj;
   },
 
-  create(base?: DeepPartial<PasswordValidationSetting>): PasswordValidationSetting {
-    return PasswordValidationSetting.fromPartial(base ?? {});
+  create(base?: DeepPartial<PasswordRestrictionSetting>): PasswordRestrictionSetting {
+    return PasswordRestrictionSetting.fromPartial(base ?? {});
   },
-  fromPartial(object: DeepPartial<PasswordValidationSetting>): PasswordValidationSetting {
-    const message = createBasePasswordValidationSetting();
+  fromPartial(object: DeepPartial<PasswordRestrictionSetting>): PasswordRestrictionSetting {
+    const message = createBasePasswordRestrictionSetting();
     message.minLength = object.minLength ?? 0;
     message.requireNumber = object.requireNumber ?? false;
     message.requireLetter = object.requireLetter ?? false;

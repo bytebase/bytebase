@@ -11089,7 +11089,7 @@ components:
                         - $ref: '#/components/schemas/SourceInfo'
                     description: The source info derived from input that generated the parsed `expr`.
             description: An expression together with source information as returned by the parser.
-        PasswordValidationSetting:
+        PasswordRestrictionSetting:
             type: object
             properties:
                 minLength:
@@ -14022,8 +14022,8 @@ components:
                     $ref: '#/components/schemas/MaximumSQLResultSizeSetting'
                 scimSetting:
                     $ref: '#/components/schemas/SCIMSetting'
-                passwordValidationSetting:
-                    $ref: '#/components/schemas/PasswordValidationSetting'
+                passwordRestrictionSetting:
+                    $ref: '#/components/schemas/PasswordRestrictionSetting'
             description: The data in setting value.
         ViewConfig:
             type: object

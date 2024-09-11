@@ -44,6 +44,6 @@ const (
 	SettingSQLResultSizeLimit SettingName = "bb.workspace.maximum-sql-result-size"
 	// SettingSCIM is the setting name for SCIM config.
 	SettingSCIM SettingName = "bb.workspace.scim"
-	// SettingPasswordValidation is the setting name for password.
-	SettingPasswordValidation SettingName = "bb.workspace.password-validation"
+	// SettingPasswordRestriction is the setting name for password.
+	SettingPasswordRestriction SettingName = "bb.workspace.password-restriction"
 )

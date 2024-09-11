@@ -77,7 +77,7 @@ var whitelistSettings = []api.SettingName{
 	api.SettingMaskingAlgorithm,
 	api.SettingSQLResultSizeLimit,
 	api.SettingSCIM,
-	api.SettingPasswordValidation,
+	api.SettingPasswordRestriction,
 }
 
 var preservedMaskingAlgorithmIDMatcher = regexp.MustCompile("^[0]{8}-[0]{4}-[0]{4}-[0]{4}-[0]{9}[0-9a-fA-F]{3}$")
@@ -619,9 +619,9 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 			return nil, status.Errorf(codes.Internal, "failed to marshal SCIM setting with error: %v", err)
 		}
 		storeSettingValue = string(bytes)
-	case api.SettingPasswordValidation:
-		passwordSetting := new(storepb.PasswordValidationSetting)
-		if err := convertV1PbToStorePb(request.Setting.Value.GetPasswordValidationSetting(), passwordSetting); err != nil {
+	case api.SettingPasswordRestriction:
+		passwordSetting := new(storepb.PasswordRestrictionSetting)
+		if err := convertV1PbToStorePb(request.Setting.Value.GetPasswordRestrictionSetting(), passwordSetting); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", apiSettingName, err)
 		}
 		if passwordSetting.MinLength < 8 {
@@ -889,16 +889,16 @@ func (s *SettingService) convertToSettingMessage(ctx context.Context, setting *s
 				},
 			},
 		}, nil
-	case api.SettingPasswordValidation:
-		v1Value := new(v1pb.PasswordValidationSetting)
+	case api.SettingPasswordRestriction:
+		v1Value := new(v1pb.PasswordRestrictionSetting)
 		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), v1Value); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", setting.Name, err)
 		}
 		return &v1pb.Setting{
 			Name: settingName,
 			Value: &v1pb.Value{
-				Value: &v1pb.Value_PasswordValidationSetting{
-					PasswordValidationSetting: v1Value,
+				Value: &v1pb.Value_PasswordRestrictionSetting{
+					PasswordRestrictionSetting: v1Value,
 				},
 			},
 		}, nil

@@ -354,7 +354,7 @@ message SCIMSetting {
   string token = 1;
 }
 
-message PasswordValidationSetting {
+message PasswordRestrictionSetting {
   // min_length is the minimum length for password, should no less than 8.
   int32 min_length = 1;
   // require_number requires the password must contains at least one number.

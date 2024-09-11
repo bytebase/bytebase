@@ -258,16 +258,16 @@ func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 }
 
 func (s *AuthService) validatePassword(ctx context.Context, password string) error {
-	passwordSetting := &storepb.PasswordValidationSetting{
+	passwordSetting := &storepb.PasswordRestrictionSetting{
 		MinLength: 8,
 	}
-	setting, err := s.store.GetSettingV2(ctx, api.SettingPasswordValidation)
+	setting, err := s.store.GetSettingV2(ctx, api.SettingPasswordRestriction)
 	if err != nil {
-		return status.Errorf(codes.Internal, "failed to get setting %v with error: %v", api.SettingPasswordValidation, err)
+		return status.Errorf(codes.Internal, "failed to get setting %v with error: %v", api.SettingPasswordRestriction, err)
 	}
 	if setting != nil {
 		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), passwordSetting); err != nil {
-			return status.Errorf(codes.Internal, "failed to unmarshal setting %v with error: %v", api.SettingPasswordValidation, err)
+			return status.Errorf(codes.Internal, "failed to unmarshal setting %v with error: %v", api.SettingPasswordRestriction, err)
 		}
 	}
 	if len(password) < int(passwordSetting.MinLength) {

@@ -628,7 +628,7 @@ export interface SCIMSetting {
   token: string;
 }
 
-export interface PasswordValidationSetting {
+export interface PasswordRestrictionSetting {
   /** min_length is the minimum length for password, should no less than 8. */
   minLength: number;
   /** require_number requires the password must contains at least one number. */
@@ -3915,7 +3915,7 @@ export const SCIMSetting = {
   },
 };
 
-function createBasePasswordValidationSetting(): PasswordValidationSetting {
+function createBasePasswordRestrictionSetting(): PasswordRestrictionSetting {
   return {
     minLength: 0,
     requireNumber: false,
@@ -3927,8 +3927,8 @@ function createBasePasswordValidationSetting(): PasswordValidationSetting {
   };
 }
 
-export const PasswordValidationSetting = {
-  encode(message: PasswordValidationSetting, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const PasswordRestrictionSetting = {
+  encode(message: PasswordRestrictionSetting, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.minLength !== 0) {
       writer.uint32(8).int32(message.minLength);
     }
@@ -3953,10 +3953,10 @@ export const PasswordValidationSetting = {
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): PasswordValidationSetting {
+  decode(input: _m0.Reader | Uint8Array, length?: number): PasswordRestrictionSetting {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBasePasswordValidationSetting();
+    const message = createBasePasswordRestrictionSetting();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -4018,7 +4018,7 @@ export const PasswordValidationSetting = {
     return message;
   },
 
-  fromJSON(object: any): PasswordValidationSetting {
+  fromJSON(object: any): PasswordRestrictionSetting {
     return {
       minLength: isSet(object.minLength) ? globalThis.Number(object.minLength) : 0,
       requireNumber: isSet(object.requireNumber) ? globalThis.Boolean(object.requireNumber) : false,
@@ -4036,7 +4036,7 @@ export const PasswordValidationSetting = {
     };
   },
 
-  toJSON(message: PasswordValidationSetting): unknown {
+  toJSON(message: PasswordRestrictionSetting): unknown {
     const obj: any = {};
     if (message.minLength !== 0) {
       obj.minLength = Math.round(message.minLength);
@@ -4062,11 +4062,11 @@ export const PasswordValidationSetting = {
     return obj;
   },
 
-  create(base?: DeepPartial<PasswordValidationSetting>): PasswordValidationSetting {
-    return PasswordValidationSetting.fromPartial(base ?? {});
+  create(base?: DeepPartial<PasswordRestrictionSetting>): PasswordRestrictionSetting {
+    return PasswordRestrictionSetting.fromPartial(base ?? {});
   },
-  fromPartial(object: DeepPartial<PasswordValidationSetting>): PasswordValidationSetting {
-    const message = createBasePasswordValidationSetting();
+  fromPartial(object: DeepPartial<PasswordRestrictionSetting>): PasswordRestrictionSetting {
+    const message = createBasePasswordRestrictionSetting();
     message.minLength = object.minLength ?? 0;
     message.requireNumber = object.requireNumber ?? false;
     message.requireLetter = object.requireLetter ?? false;

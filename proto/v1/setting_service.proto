@@ -132,7 +132,7 @@ message Value {
     MaskingAlgorithmSetting masking_algorithm_setting_value = 12;
     MaximumSQLResultSizeSetting maximum_sql_result_size_setting = 13;
     SCIMSetting scim_setting = 14;
-    PasswordValidationSetting password_validation_setting = 15;
+    PasswordRestrictionSetting password_restriction_setting = 15;
   }
 }
 
@@ -486,7 +486,7 @@ message SCIMSetting {
   string token = 1;
 }
 
-message PasswordValidationSetting {
+message PasswordRestrictionSetting {
   // min_length is the minimum length for password, should no less than 8.
   int32 min_length = 1;
   // require_number requires the password must contains at least one number.

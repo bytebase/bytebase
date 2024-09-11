@@ -251,7 +251,7 @@
     - [MaskingAlgorithmSetting.Algorithm.RangeMask](#bytebase-store-MaskingAlgorithmSetting-Algorithm-RangeMask)
     - [MaskingAlgorithmSetting.Algorithm.RangeMask.Slice](#bytebase-store-MaskingAlgorithmSetting-Algorithm-RangeMask-Slice)
     - [MaximumSQLResultSizeSetting](#bytebase-store-MaximumSQLResultSizeSetting)
-    - [PasswordValidationSetting](#bytebase-store-PasswordValidationSetting)
+    - [PasswordRestrictionSetting](#bytebase-store-PasswordRestrictionSetting)
     - [SCIMSetting](#bytebase-store-SCIMSetting)
     - [SMTPMailDeliverySetting](#bytebase-store-SMTPMailDeliverySetting)
     - [SchemaTemplateSetting](#bytebase-store-SchemaTemplateSetting)
@@ -3903,9 +3903,9 @@ SlowQueryPolicy is the policy configuration for slow query.
 
 
 
-<a name="bytebase-store-PasswordValidationSetting"></a>
+<a name="bytebase-store-PasswordRestrictionSetting"></a>
 
-### PasswordValidationSetting
+### PasswordRestrictionSetting
 
 
 
