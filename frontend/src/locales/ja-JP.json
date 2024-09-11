@@ -1263,7 +1263,6 @@
       "you-are-not-allowed-to-perform-this-action": "このアクションを実行する権限がありません",
       "cannot-close-issue-with-running-tasks": "実行中のタスクに関する問題を解決できません"
     },
-    "approval-requested": "承認リクエスト",
     "unfinished-resolved-issue-tips": "作業指示書は「完了」とマークされましたが、一部のタスクは正常に実行されませんでした。",
     "some-tasks-are-not-executed-successfully": "(一部のタスクは正常に実行されませんでした)",
     "preview": "作業指示のプレビュー",

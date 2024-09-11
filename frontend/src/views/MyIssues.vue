@@ -167,7 +167,7 @@ import { getComponentIdLocalStorageKey } from "@/utils/localStorage";
 
 const TABS = [
   "CREATED",
-  "APPROVAL_REQUESTED",
+  "WAITING_APPROVAL",
   "WAITING_ROLLOUT",
   "SUBSCRIBED",
   "ALL",
@@ -230,8 +230,8 @@ const tabItemList = computed((): TabFilterItem<TabValue>[] => {
   return [
     { value: "CREATED", label: t("common.created") },
     {
-      value: "APPROVAL_REQUESTED",
-      label: t("issue.approval-requested"),
+      value: "WAITING_APPROVAL",
+      label: t("issue.waiting-approval"),
     },
     { value: "WAITING_ROLLOUT", label: t("issue.waiting-rollout") },
     { value: "SUBSCRIBED", label: t("common.subscribed") },
@@ -256,7 +256,7 @@ const storedTab = useDynamicLocalStorage<TabValue>(
 );
 const keyForTab = (tab: TabValue) => {
   if (tab === "CREATED") return "my-issues-created";
-  if (tab === "APPROVAL_REQUESTED") return "my-issues-approval-requested";
+  if (tab === "WAITING_APPROVAL") return "my-issues-waiting-approval";
   if (tab === "WAITING_ROLLOUT") return "my-issues-waiting-rollout";
   if (tab === "SUBSCRIBED") return "my-issues-subscribed";
   if (tab === "ALL") return "my-issues-all";
@@ -282,7 +282,7 @@ const mergeSearchParamsByTab = (params: SearchParams, tab: TabValue) => {
       value: myEmail,
     });
   }
-  if (tab === "APPROVAL_REQUESTED") {
+  if (tab === "WAITING_APPROVAL") {
     return upsertScope(common, [
       {
         id: "status",
@@ -345,7 +345,7 @@ const guessTabValueFromSearchParams = (params: SearchParams): TabValue => {
     getValueFromSearchParams(params, "approval") === "pending" &&
     getValueFromSearchParams(params, "approver") === myEmail
   ) {
-    return "APPROVAL_REQUESTED";
+    return "WAITING_APPROVAL";
   }
   if (
     verifyScopes(["approval", "releaser"]) &&
@@ -408,7 +408,7 @@ const planImage = computed(() => {
 
 const statusTabHidden = computed(() => {
   if (state.advanced) return true;
-  return ["APPROVAL_REQUESTED", "WAITING_ROLLOUT"].includes(tab.value);
+  return ["WAITING_APPROVAL", "WAITING_ROLLOUT"].includes(tab.value);
 });
 
 const mergedIssueFilter = computed(() => {
@@ -439,7 +439,7 @@ const toggleAdvancedSearch = (on: boolean) => {
 watch(
   [tab],
   () => {
-    if (tab.value === "APPROVAL_REQUESTED" || tab.value === "WAITING_ROLLOUT") {
+    if (tab.value === "WAITING_APPROVAL" || tab.value === "WAITING_ROLLOUT") {
       if (getValueFromSearchParams(state.params, "status") === "CLOSED") {
         upsertScope(
           state.params,
