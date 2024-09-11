@@ -64,18 +64,19 @@
       @close="state.quickActionType = undefined"
       @created="onDatabaseGroupCreated"
     />
-
-    <RequestQueryPanel
-      v-if="state.showRequestQueryPanel"
+    <GrantRequestPanel
+      v-if="
+        state.quickActionType ===
+          'quickaction.bb.issue.grant.request.querier' ||
+        state.quickActionType === 'quickaction.bb.issue.grant.request.exporter'
+      "
       :project-name="project.name"
-      @close="state.showRequestQueryPanel = false"
-    />
-
-    <RequestExportPanel
-      v-if="state.showRequestExportPanel"
-      :redirect-to-issue-page="true"
-      :project-name="project.name"
-      @close="state.showRequestExportPanel = false"
+      :role="
+        state.quickActionType === 'quickaction.bb.issue.grant.request.querier'
+          ? PresetRoleType.PROJECT_QUERIER
+          : PresetRoleType.PROJECT_EXPORTER
+      "
+      @close="state.quickActionType = undefined"
     />
   </template>
 
@@ -103,13 +104,12 @@ import { reactive, computed, watch, h } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 import { CreateDatabasePrepPanel } from "@/components/CreateDatabasePrepForm";
+import GrantRequestPanel from "@/components/GrantRequestPanel";
 import {
   InstanceForm,
   Form as InstanceFormBody,
   Buttons as InstanceFormButtons,
 } from "@/components/InstanceForm/";
-import RequestExportPanel from "@/components/Issue/panel/RequestExportPanel/index.vue";
-import RequestQueryPanel from "@/components/Issue/panel/RequestQueryPanel/index.vue";
 import ProjectCreatePanel from "@/components/Project/ProjectCreatePanel.vue";
 import { TransferDatabaseForm } from "@/components/TransferDatabaseForm";
 import { Drawer, DrawerContent } from "@/components/v2";
@@ -122,10 +122,11 @@ import {
   useInstanceResourceList,
 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
-import type {
-  QuickActionType,
-  DatabaseGroupQuickActionType,
-  FeatureType,
+import {
+  type QuickActionType,
+  type DatabaseGroupQuickActionType,
+  type FeatureType,
+  PresetRoleType,
 } from "@/types";
 import { hasProjectPermissionV2 } from "@/utils";
 import DatabaseGroupPanel from "./DatabaseGroup/DatabaseGroupPanel.vue";
@@ -134,8 +135,6 @@ import { FeatureModal } from "./FeatureGuard";
 interface LocalState {
   feature?: FeatureType;
   quickActionType: QuickActionType | undefined;
-  showRequestQueryPanel: boolean;
-  showRequestExportPanel: boolean;
 }
 
 interface QuickAction {
@@ -170,8 +169,6 @@ const hasDBAWorkflowFeature = computed(() => {
 
 const state = reactive<LocalState>({
   quickActionType: undefined,
-  showRequestQueryPanel: false,
-  showRequestExportPanel: false,
 });
 
 const projectId = computed((): string | undefined => {
@@ -293,14 +290,16 @@ const availableQuickActionList = computed((): QuickAction[] => {
       type: "quickaction.bb.issue.grant.request.querier",
       title: t("custom-approval.risk-rule.risk.namespace.request_query"),
       hide: !hasDBAWorkflowFeature.value,
-      action: () => (state.showRequestQueryPanel = true),
+      action: () =>
+        (state.quickActionType = "quickaction.bb.issue.grant.request.querier"),
       icon: h(FileSearchIcon),
     },
     {
       type: "quickaction.bb.issue.grant.request.exporter",
       title: t("custom-approval.risk-rule.risk.namespace.request_export"),
       hide: !hasDBAWorkflowFeature.value,
-      action: () => (state.showRequestExportPanel = true),
+      action: () =>
+        (state.quickActionType = "quickaction.bb.issue.grant.request.exporter"),
       icon: h(FileDownIcon),
     },
   ];
