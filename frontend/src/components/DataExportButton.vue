@@ -124,7 +124,7 @@ import { BBModal, BBTextField } from "@/bbkit";
 import { pushNotification } from "@/store";
 import { ExportFormat, exportFormatToJSON } from "@/types/proto/v1/common";
 import { defer, isNullOrUndefined } from "@/utils";
-import MaxRowCountSelect from "./Issue/panel/RequestExportPanel/MaxRowCountSelect.vue";
+import MaxRowCountSelect from "./GrantRequestPanel/MaxRowCountSelect.vue";
 import { Drawer, DrawerContent, ErrorTipsButton } from "./v2";
 
 interface LocalState {

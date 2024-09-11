@@ -1,7 +1,7 @@
-import { PresetRoleType, PRESET_ROLES } from "@/types";
+import { PRESET_ROLES } from "@/types";
 
 export const isCustomRole = (role: string) => {
-  return !Object.values(PresetRoleType).includes(role);
+  return !PRESET_ROLES.includes(role);
 };
 
 export const sortRoles = (roles: string[]) => {

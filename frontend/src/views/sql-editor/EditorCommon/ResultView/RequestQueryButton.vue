@@ -4,11 +4,12 @@
       {{ $t("sql-editor.request-query") }}
     </NButton>
 
-    <RequestQueryPanel
-      :show="showPanel"
+    <GrantRequestPanel
+      v-if="showPanel"
       :project-name="database.project"
       :database="database"
       :placement="panelPlacement"
+      :role="PresetRoleType.PROJECT_QUERIER"
       @close="showPanel = false"
     />
   </div>
@@ -17,8 +18,12 @@
 <script setup lang="ts">
 import { NButton } from "naive-ui";
 import { computed, ref } from "vue";
-import RequestQueryPanel from "@/components/Issue/panel/RequestQueryPanel/index.vue";
-import { isValidDatabaseName, type ComposedDatabase } from "@/types";
+import GrantRequestPanel from "@/components/GrantRequestPanel";
+import {
+  isValidDatabaseName,
+  PresetRoleType,
+  type ComposedDatabase,
+} from "@/types";
 import { hasPermissionToCreateRequestGrantIssue } from "@/utils";
 
 const props = withDefaults(

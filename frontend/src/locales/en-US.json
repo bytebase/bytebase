@@ -1321,7 +1321,7 @@
       "export-data": "Export data",
       "create-database": "Create database",
       "request-querier-role": "Request querier role",
-      "request-export-role": "Request export role"
+      "request-exporter-role": "Request exporter role"
     }
   },
   "alter-schema": {
