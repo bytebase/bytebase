@@ -1266,7 +1266,6 @@
       "you-are-not-allowed-to-perform-this-action": "No tienes permiso para realizar esta acción.",
       "cannot-close-issue-with-running-tasks": "No se puede cerrar el problema con las tareas en ejecución"
     },
-    "approval-requested": "Aprobación solicitada",
     "unfinished-resolved-issue-tips": "Este problema está marcado como \"Listo\", pero algunas de sus tareas no se ejecutan correctamente.",
     "some-tasks-are-not-executed-successfully": "(Algunas tareas no se ejecutan correctamente)",
     "preview": "Problema de vista previa",
