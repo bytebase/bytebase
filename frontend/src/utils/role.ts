@@ -1,7 +1,7 @@
 import { kebabCase } from "lodash-es";
 import { t } from "@/plugins/i18n";
 import { useRoleStore } from "@/store";
-import { PresetRoleType } from "@/types";
+import { PRESET_ROLES } from "@/types";
 
 export const extractRoleResourceName = (resourceId: string): string => {
   const pattern = /(?:^|\/)roles\/([^/]+)(?:$|\/)/;
@@ -10,7 +10,7 @@ export const extractRoleResourceName = (resourceId: string): string => {
 };
 
 export const displayRoleTitle = (role: string): string => {
-  if (Object.values(PresetRoleType).includes(role)) {
+  if (PRESET_ROLES.includes(role)) {
     return t(`role.${kebabCase(extractRoleResourceName(role))}.self`);
   }
   // Use role.title if possible
@@ -20,7 +20,7 @@ export const displayRoleTitle = (role: string): string => {
 };
 
 export const displayRoleDescription = (role: string): string => {
-  if (Object.values(PresetRoleType).includes(role)) {
+  if (PRESET_ROLES.includes(role)) {
     return t(`role.${kebabCase(extractRoleResourceName(role))}.description`);
   }
   // Use role.description if possible

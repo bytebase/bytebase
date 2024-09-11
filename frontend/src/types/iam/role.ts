@@ -12,15 +12,15 @@ export enum PresetRoleType {
   PROJECT_VIEWER = `${roleNamePrefix}projectViewer`,
 }
 
-export const PRESET_ROLES = Object.values(PresetRoleType);
+export const PRESET_ROLES: string[] = Object.values(PresetRoleType);
 
-export const PRESET_WORKSPACE_ROLES = [
+export const PRESET_WORKSPACE_ROLES: string[] = [
   PresetRoleType.WORKSPACE_ADMIN,
   PresetRoleType.WORKSPACE_DBA,
   PresetRoleType.WORKSPACE_MEMBER,
 ];
 
-export const PRESET_PROJECT_ROLES = [
+export const PRESET_PROJECT_ROLES: string[] = [
   PresetRoleType.PROJECT_OWNER,
   PresetRoleType.PROJECT_DEVELOPER,
   PresetRoleType.PROJECT_QUERIER,
