@@ -119,11 +119,11 @@ import {
   hasFeature,
   useAppFeature,
   useConnectionOfCurrentSQLEditorTab,
-  useCurrentUserIamPolicy,
   useDatabaseV1Store,
   useSQLEditorTabStore,
 } from "@/store/modules";
 import { isValidDatabaseName, type ComposedDatabase } from "@/types";
+import { isDatabaseV1Queryable } from "@/utils";
 
 interface LocalState {
   keyword: string;
@@ -133,7 +133,6 @@ interface LocalState {
 const { t } = useI18n();
 const databaseStore = useDatabaseV1Store();
 const tabStore = useSQLEditorTabStore();
-const currentUserIamPolicy = useCurrentUserIamPolicy();
 const state = reactive<LocalState>({
   keyword: "",
   showFeatureModal: false,
@@ -157,7 +156,7 @@ const databases = computed(() => {
       // Don't show the currently selected database.
       .filter((db) => db.name !== selectedDatabase.value.name)
       // Only show databases that the user has permission to query.
-      .filter((db) => currentUserIamPolicy.allowToQueryDatabaseV1(db))
+      .filter((db) => isDatabaseV1Queryable(db))
       // Only show databases with same engine.
       .filter(
         (db) =>
