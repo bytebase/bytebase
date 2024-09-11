@@ -142,7 +142,11 @@
     @cancel="state.showTrialModal = false"
   />
   <ReleaseRemindModal
-    v-if="!hideReleaseRemind && state.showReleaseModal"
+    v-if="
+      !hideReleaseRemind &&
+      state.showReleaseModal &&
+      route.name !== WORKSPACE_ROOT_MODULE
+    "
     @cancel="state.showReleaseModal = false"
   />
 </template>
@@ -150,7 +154,7 @@
 <script lang="ts" setup>
 import { useMounted, useWindowSize } from "@vueuse/core";
 import { computed, reactive, ref } from "vue";
-import { useRouter } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import ReleaseRemindModal from "@/components/ReleaseRemindModal.vue";
 import TrialModal from "@/components/TrialModal.vue";
 import { WORKSPACE_ROOT_MODULE } from "@/router/dashboard/workspaceRoutes";
@@ -170,6 +174,7 @@ interface LocalState {
 }
 
 const actuatorStore = useActuatorV1Store();
+const route = useRoute();
 const router = useRouter();
 const mounted = useMounted();
 

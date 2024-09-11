@@ -33,11 +33,17 @@ import {
   WORKSPACE_ROOT_MODULE,
 } from "./dashboard/workspaceRoutes";
 import { SETTING_ROUTE } from "./dashboard/workspaceSetting";
+import setupRoutes from "./setup";
 import sqlEditorRoutes from "./sqlEditor";
 
 export const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
-  routes: [...authRoutes, ...dashboardRoutes, ...sqlEditorRoutes],
+  routes: [
+    ...authRoutes,
+    ...setupRoutes,
+    ...dashboardRoutes,
+    ...sqlEditorRoutes,
+  ],
   linkExactActiveClass: "bg-link-hover",
   scrollBehavior(to /*, from, savedPosition */) {
     if (to.hash) {
@@ -186,7 +192,8 @@ router.beforeEach((to, from, next) => {
     to.name === INSTANCE_ROUTE_DETAIL ||
     to.name?.toString().startsWith("sql-editor") ||
     to.name?.toString().startsWith(SETTING_ROUTE) ||
-    to.name?.toString().startsWith("workspace")
+    to.name?.toString().startsWith("workspace") ||
+    to.name?.toString().startsWith("setup")
   ) {
     next();
     return;

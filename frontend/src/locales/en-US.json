@@ -289,7 +289,8 @@
     },
     "back-to-workspace": "Back to workspace",
     "override": "Override",
-    "encoding": "Encoding"
+    "encoding": "Encoding",
+    "finish": "Finish"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -3705,5 +3706,20 @@
   },
   "worksheet": {
     "self": "Worksheet"
+  },
+  "setup": {
+    "workspace-mode": {
+      "choose": "Choose workspace mode",
+      "issue-mode": {
+        "self": "Issue mode",
+        "description": "Change database via committing issues. Empower your database change workflow with Batch change, GitOps, SQL review, Custom approval and more."
+      },
+      "sql-editor-mode": {
+        "self": "SQL Editor mode",
+        "description": "Change database via SQL Editor like classical SQL GUI clients. An easy way to access your databases quickly and directly."
+      },
+      "can-be-changed-later": "This setting can be changed anytime later."
+    },
+    "self": "Setup"
   }
 }

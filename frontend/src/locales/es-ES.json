@@ -289,7 +289,8 @@
     },
     "back-to-workspace": "Volver al espacio de trabajo",
     "override": "Anular",
-    "encoding": "Codificación"
+    "encoding": "Codificación",
+    "finish": "Finalizar"
   },
   "error-page": {
     "go-back-home": "Volver al inicio"
@@ -3705,5 +3706,20 @@
   },
   "worksheet": {
     "self": "Hoja de trabajo"
+  },
+  "setup": {
+    "workspace-mode": {
+      "choose": "Elija el modo de espacio de trabajo",
+      "issue-mode": {
+        "self": "Modo de emisión",
+        "description": "Cambie la base de datos confirmando problemas. \nMejore su flujo de trabajo de cambio de base de datos con cambio por lotes, GitOps, revisión de SQL, aprobación personalizada y más."
+      },
+      "sql-editor-mode": {
+        "self": "Modo editor SQL",
+        "description": "Cambie la base de datos a través del Editor SQL como los clientes GUI de SQL clásicos. \nUna forma sencilla de acceder a sus bases de datos de forma rápida y directa."
+      },
+      "can-be-changed-later": "Esta configuración se puede cambiar en cualquier momento posterior."
+    },
+    "self": "Configuración"
   }
 }
