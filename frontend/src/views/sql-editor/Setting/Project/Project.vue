@@ -68,7 +68,6 @@ import {
   SearchBox,
 } from "@/components/v2";
 import { useProjectV1List, useProjectV1Store } from "@/store";
-import { useDatabaseV1List } from "@/store/modules/v1/databaseList";
 import type { ComposedProject } from "@/types";
 import type { Project } from "@/types/proto/v1/project_service";
 import { filterProjectV1ListByKeyword, wrapRefAsPromise } from "@/utils";
@@ -120,9 +119,6 @@ const handleCreated = async (project: Project) => {
 };
 
 onMounted(() => {
-  // prepare for transferring databases.
-  useDatabaseV1List();
-
   if (route.hash === "#add") {
     state.detail.show = true;
     state.detail.project = undefined;
