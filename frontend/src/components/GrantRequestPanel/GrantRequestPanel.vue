@@ -2,10 +2,11 @@
   <Drawer
     :show="true"
     width="auto"
+    :placement="placement"
     @update:show="(show: boolean) => !show && $emit('close')"
   >
     <DrawerContent
-      :title="$t('custom-approval.risk-rule.risk.namespace.request_export')"
+      :title="$t('custom-approval.risk-rule.risk.namespace.request_query')"
       :closable="true"
       class="w-[50rem] max-w-[100vw] relative"
     >
@@ -22,21 +23,23 @@
             @update:database-resources="state.databaseResources = $event"
           />
         </div>
-        <div class="w-full flex flex-col justify-start items-start">
+        <div
+          v-if="props.role === PresetRoleType.PROJECT_EXPORTER"
+          class="w-full flex flex-col justify-start items-start"
+        >
           <span class="flex items-center textlabel mb-2">
             {{ $t("issue.grant-request.export-rows") }}
             <RequiredStar />
           </span>
-
           <MaxRowCountSelect v-model:value="state.maxRowCount" />
         </div>
         <div class="w-full flex flex-col justify-start items-start">
-          <span class="flex items-start textlabel mb-2">
+          <span class="flex items-start textlabel mb-4">
             {{ $t("common.expiration") }}
             <RequiredStar />
           </span>
           <ExpirationSelector
-            class="grid-cols-3 sm:grid-cols-4 md:grid-cols-6"
+            class="grid-cols-3 sm:grid-cols-4"
             :value="state.expireDays"
             @update="state.expireDays = $event"
           />
@@ -74,15 +77,14 @@ import dayjs from "dayjs";
 import { isUndefined } from "lodash-es";
 import { NButton, NInput } from "naive-ui";
 import { computed, reactive } from "vue";
-import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import ExpirationSelector from "@/components/ExpirationSelector.vue";
 import RequiredStar from "@/components/RequiredStar.vue";
-import { DrawerContent, Drawer } from "@/components/v2";
+import { Drawer, DrawerContent } from "@/components/v2";
 import { issueServiceClient } from "@/grpcweb";
-import { useCurrentUserV1, useProjectV1Store, pushNotification } from "@/store";
-import type { DatabaseResource } from "@/types";
-import { PresetRoleType } from "@/types";
+import { useCurrentUserV1, useProjectV1Store } from "@/store";
+import type { ComposedDatabase, DatabaseResource } from "@/types";
+import { PresetRoleType, isValidDatabaseName } from "@/types";
 import { Duration } from "@/types/proto/google/protobuf/duration";
 import { Expr } from "@/types/proto/google/type/expr";
 import {
@@ -91,39 +93,66 @@ import {
   Issue_Type,
 } from "@/types/proto/v1/issue_service";
 import { generateIssueTitle } from "@/utils";
-import DatabaseResourceForm from "../RequestQueryPanel/DatabaseResourceForm/index.vue";
+import DatabaseResourceForm from "./DatabaseResourceForm/index.vue";
 import MaxRowCountSelect from "./MaxRowCountSelect.vue";
 
 interface LocalState {
-  environmentName?: string;
   databaseResourceCondition?: string;
   databaseResources: DatabaseResource[];
   expireDays: number;
-  maxRowCount: number;
   description: string;
+  maxRowCount: number;
 }
 
-const props = defineProps<{
-  projectName: string;
-  redirectToIssuePage?: boolean;
-}>();
+const props = withDefaults(
+  defineProps<{
+    projectName: string;
+    role: PresetRoleType.PROJECT_QUERIER | PresetRoleType.PROJECT_EXPORTER;
+    database?: ComposedDatabase;
+    placement: "left" | "right";
+  }>(),
+  {
+    database: undefined,
+    placement: "right",
+  }
+);
 
-const emit = defineEmits<{
+defineEmits<{
   (event: "close"): void;
 }>();
 
-const { t } = useI18n();
+const extractDatabaseResourcesFromProps = (): Pick<
+  LocalState,
+  "databaseResources"
+> => {
+  const { database } = props;
+  if (!database || !isValidDatabaseName(database.name)) {
+    return {
+      databaseResources: [],
+    };
+  }
+  return {
+    databaseResources: [
+      {
+        databaseName: database.name,
+      },
+    ],
+  };
+};
+
 const router = useRouter();
 const currentUser = useCurrentUserV1();
-const projectStore = useProjectV1Store();
 const state = reactive<LocalState>({
-  databaseResources: [],
+  ...extractDatabaseResourcesFromProps(),
   expireDays: 1,
-  maxRowCount: 1000,
   description: "",
+  maxRowCount: 1000,
 });
 
 const allowCreate = computed(() => {
+  // If all database selected, the condition is an empty string.
+  // If some databases selected, the condition is a string.
+  // If no database selected, the condition is undefined.
   if (isUndefined(state.databaseResourceCondition)) {
     return false;
   }
@@ -135,10 +164,11 @@ const doCreateIssue = async () => {
     return;
   }
 
-  const project = await projectStore.getOrFetchProjectByName(props.projectName);
   const newIssue = Issue.fromPartial({
     title: generateIssueTitle(
-      "bb.issue.grant.request.exporter",
+      props.role === PresetRoleType.PROJECT_QUERIER
+        ? "bb.issue.grant.request.querier"
+        : "bb.issue.grant.request.exporter",
       state.databaseResources.map(
         (databaseResource) => databaseResource.databaseName
       )
@@ -148,8 +178,10 @@ const doCreateIssue = async () => {
     grantRequest: {},
   });
 
+  const project = await useProjectV1Store().getOrFetchProjectByName(
+    props.projectName
+  );
   const expression: string[] = [];
-  expression.push(`request.row_limit <= ${state.maxRowCount}`);
   if (state.databaseResourceCondition) {
     expression.push(state.databaseResourceCondition);
   }
@@ -161,9 +193,12 @@ const doCreateIssue = async () => {
         .toISOString()}")`
     );
   }
+  if (props.role === PresetRoleType.PROJECT_EXPORTER) {
+    expression.push(`request.row_limit <= ${state.maxRowCount}`);
+  }
 
   newIssue.grantRequest = GrantRequest.fromPartial({
-    role: PresetRoleType.PROJECT_EXPORTER,
+    role: props.role,
     user: `users/${currentUser.value.email}`,
   });
   if (expression.length > 0) {
@@ -183,19 +218,8 @@ const doCreateIssue = async () => {
     issue: newIssue,
   });
 
-  pushNotification({
-    module: "bytebase",
-    style: "INFO",
-    title: t("issue.grant-request.request-sent"),
+  router.push({
+    path: `/${createdIssue.name}`,
   });
-
-  if (props.redirectToIssuePage) {
-    const route = router.resolve({
-      path: `/${createdIssue.name}`,
-    });
-    window.open(route.href, "_blank");
-  }
-
-  emit("close");
 };
 </script>
