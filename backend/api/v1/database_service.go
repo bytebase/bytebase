@@ -1693,22 +1693,27 @@ func (s *DatabaseService) convertToDatabase(ctx context.Context, database *store
 	}, nil
 }
 
-func isBackupAvailable(ctx context.Context, s *store.Store, instance *store.InstanceMessage, database *store.DatabaseMessage) bool {
+func isBackupAvailable(ctx context.Context, s *store.Store, instance *store.InstanceMessage, _ *store.DatabaseMessage) bool {
 	switch instance.Engine {
 	case storepb.Engine_POSTGRES:
-		dbSchema, err := s.GetDBSchema(ctx, database.UID)
-		if err != nil {
-			slog.Debug("Failed to get db schema for checking backup availability", "err", err)
-			return false
-		}
-		if dbSchema == nil {
-			return false
-		}
-		for _, schema := range dbSchema.GetMetadata().GetSchemas() {
-			if schema.GetName() == backupDatabaseName {
-				return true
-			}
-		}
+		// It's so slow for ListDatabases, so we comment it out.
+		// TODO(d/rebelice): check backup availability for postgres faster.
+		// dbSchema, err := s.GetDBSchema(ctx, database.UID)
+		// if err != nil {
+		// 	slog.Debug("Failed to get db schema for checking backup availability", "err", err)
+		// 	return false
+		// }
+		// if dbSchema == nil {
+		// 	return false
+		// }
+		// for _, schema := range dbSchema.GetMetadata().GetSchemas() {
+		// 	if schema.GetName() == backupDatabaseName {
+		// 		return true
+		// 	}
+		// }
+		//
+		// Return true for all postgres database, we'll truthfully check it in the sql review rules.
+		return true
 	case storepb.Engine_MYSQL, storepb.Engine_MSSQL, storepb.Engine_TIDB:
 		dbName := backupDatabaseName
 		backupDB, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
