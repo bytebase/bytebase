@@ -6,6 +6,6 @@ import (
 )
 
 // Dump dumps the database.
-func (driver *Driver) Dump(ctx context.Context, out io.Writer) (string, error) {
+func (*Driver) Dump(context.Context, io.Writer) (string, error) {
 	return "", nil
 }
