@@ -10,6 +10,7 @@ import { IamPolicy } from "@/types/proto/v1/iam_policy";
 import { getUserEmailListInBinding } from "@/utils";
 import { convertFromExpr } from "@/utils/issue/cel";
 import { useCurrentUserV1 } from "../auth";
+import { useRoleStore } from "../role";
 import { usePermissionStore } from "./permission";
 
 export const useProjectIamPolicyStore = defineStore(
@@ -134,23 +135,13 @@ export const useProjectIamPolicy = (project: MaybeRef<string>) => {
 const checkProjectIAMPolicyWithExpr = (
   user: User,
   project: ComposedProject,
-  role: string,
-  bindingExprCheck: (expr: Expr) => boolean
+  permission: string,
+  bindingExprCheck: (expr?: Expr) => boolean
 ): boolean => {
-  const roleList = usePermissionStore().currentRoleListInProjectV1(project);
-  if (roleList.includes(PresetRoleType.PROJECT_OWNER)) {
-    return true;
-  }
-  if (!roleList.includes(role)) {
-    return false;
-  }
-
-  // Check if the user has the permission to query the database.
+  const roleStore = useRoleStore();
+  // Check if the user has the permission.
   for (const binding of project.iamPolicy.bindings) {
-    if (binding.role !== role) {
-      continue;
-    }
-
+    // If the user is not in the binding, then skip.
     const userEmailList = getUserEmailListInBinding({
       binding,
       ignoreGroup: false,
@@ -158,10 +149,13 @@ const checkProjectIAMPolicyWithExpr = (
     if (!userEmailList.includes(user.email)) {
       continue;
     }
-
-    if (!binding.parsedExpr?.expr) {
-      return true;
+    // If the role does not have the permission, then skip.
+    const permissions =
+      roleStore.getRoleByName(binding.role)?.permissions || [];
+    if (!permissions.includes(permission)) {
+      continue;
     }
+    // If binding expr check passes, then return true.
     if (bindingExprCheck(binding.parsedExpr?.expr)) {
       return true;
     }
@@ -179,7 +173,12 @@ export const checkQuerierPermission = (
     useCurrentUserV1().value,
     database.projectEntity,
     PresetRoleType.PROJECT_QUERIER,
-    (expr: Expr): boolean => {
+    (expr?: Expr): boolean => {
+      // If no condition is set, then return true.
+      if (!expr) {
+        return true;
+      }
+
       const conditionExpr = convertFromExpr(expr);
       // Check if the condition is expired.
       if (
