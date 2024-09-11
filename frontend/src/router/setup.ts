@@ -2,7 +2,7 @@ import type { RouteRecordRaw } from "vue-router";
 import SplashLayout from "@/layouts/SplashLayout.vue";
 import { t } from "@/plugins/i18n";
 
-export const SETUP_HOME_MODULE = "setup.home";
+export const SETUP_WORKSPACE_MODE_MODULE = "setup.workspace-mode";
 
 const setupRoutes: RouteRecordRaw[] = [
   {
@@ -11,16 +11,16 @@ const setupRoutes: RouteRecordRaw[] = [
     component: SplashLayout,
     children: [
       {
-        path: "",
-        name: SETUP_HOME_MODULE,
+        path: "mode",
+        name: SETUP_WORKSPACE_MODE_MODULE,
         meta: {
-          title: () => t("setup.self"),
+          title: () => `${t("setup.self")} | ${"setup.workspace-mode"}`,
           requiredWorkspacePermissionList: () => [
             "bb.settings.get",
             "bb.settings.set",
           ],
         },
-        component: () => import("@/views/Setup/Home.vue"),
+        component: () => import("@/views/Setup/WorkspaceMode.vue"),
       },
     ],
   },

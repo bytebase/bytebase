@@ -55,12 +55,11 @@
 
 <script lang="ts" setup>
 import { NButton, NRadio, NRadioGroup, NSpace } from "naive-ui";
-import { onBeforeMount, reactive } from "vue";
+import { reactive } from "vue";
 import { useRouter } from "vue-router";
 import BytebaseLogo from "@/components/BytebaseLogo.vue";
 import { useSettingV1Store } from "@/store";
 import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
-import { hasWorkspacePermissionV2 } from "@/utils";
 import AuthFooter from "@/views/auth/AuthFooter.vue";
 
 const router = useRouter();
@@ -99,17 +98,4 @@ const handleFinish = async () => {
     state.isLoading = false;
   }
 };
-
-onBeforeMount(() => {
-  const route = router.currentRoute.value;
-  if (!route.meta.requiredWorkspacePermissionList) return;
-  const requiredPermissionList = route.meta.requiredWorkspacePermissionList();
-  if (
-    !requiredPermissionList.every((permission) =>
-      hasWorkspacePermissionV2(permission)
-    )
-  ) {
-    router.replace("/");
-  }
-});
 </script>
