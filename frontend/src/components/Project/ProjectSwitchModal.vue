@@ -37,7 +37,7 @@
               class="!w-40"
               size="small"
             />
-            <NTooltip trigger="hover">
+            <NTooltip v-if="allowToCreateProject" trigger="hover">
               <template #trigger>
                 <NButton size="small" @click="state.showCreateDrawer = true">
                   <template #icon>
@@ -102,7 +102,10 @@ import { useProjectV1List } from "@/store";
 import { getProjectName } from "@/store/modules/v1/common";
 import type { ComposedProject } from "@/types";
 import { isValidProjectName, DEFAULT_PROJECT_NAME } from "@/types";
-import { filterProjectV1ListByKeyword } from "@/utils";
+import {
+  filterProjectV1ListByKeyword,
+  hasWorkspacePermissionV2,
+} from "@/utils";
 import ProjectCreatePanel from "./ProjectCreatePanel.vue";
 
 interface LocalState {
@@ -150,6 +153,10 @@ const filteredRecentProjectList = computed(() => {
 const filteredAllProjectList = computed(() => {
   return getFilteredProjectList(projectList.value);
 });
+
+const allowToCreateProject = computed(() =>
+  hasWorkspacePermissionV2("bb.projects.create")
+);
 
 const tabList = computed(() => [
   {
