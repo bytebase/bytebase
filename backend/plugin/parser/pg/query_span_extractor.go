@@ -1791,7 +1791,7 @@ func (q *querySpanExtractor) getRangeVarsFromJSONRecursive(jsonData map[string]a
 		resource := base.ColumnResource{
 			Server:   "",
 			Database: currentDatabase,
-			Schema:   currentSchema,
+			Schema:   "",
 			Table:    "",
 			Column:   "",
 		}
@@ -1824,6 +1824,10 @@ func (q *querySpanExtractor) getRangeVarsFromJSONRecursive(jsonData map[string]a
 
 		// Bytebase do not sync the system objects, so we skip finding for system objects in the metadata.
 		if !isSystemResource(resource) {
+			if resource.Schema == "" {
+				resource.Schema = currentSchema
+			}
+
 			databaseMetadata, err := q.getDatabaseMetadata(currentDatabase)
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to get database metadata for database: %s", currentDatabase)
@@ -1894,10 +1898,10 @@ func isSystemResource(resource base.ColumnResource) bool {
 	if IsSystemSchema(resource.Schema) {
 		return true
 	}
-	if resource.Database == "" && resource.Schema == "" && IsSystemView(resource.Table) {
+	if resource.Schema == "" && IsSystemView(resource.Table) {
 		return true
 	}
-	if resource.Database == "" && resource.Schema == "" && IsSystemTable(resource.Table) {
+	if resource.Schema == "" && IsSystemTable(resource.Table) {
 		return true
 	}
 	return false
