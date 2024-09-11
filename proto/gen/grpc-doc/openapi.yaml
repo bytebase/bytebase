@@ -8566,6 +8566,7 @@ components:
                         - BIGQUERY
                         - DYNAMODB
                         - DATABRICKS
+                        - COCKROACHDB
                     type: string
                     description: The database engine of the branch.
                     format: enum
@@ -9089,6 +9090,9 @@ components:
                         - CLUSTER
                     type: string
                     format: enum
+                cluster:
+                    type: string
+                    description: Cluster is the cluster name for the data source. Used by CockroachDB.
         DataSourceExternalSecret:
             type: object
             properties:
@@ -9342,6 +9346,7 @@ components:
                         - BIGQUERY
                         - DYNAMODB
                         - DATABRICKS
+                        - COCKROACHDB
                     type: string
                     description: The database engine of the schema.
                     format: enum
@@ -9977,6 +9982,7 @@ components:
                         - BIGQUERY
                         - DYNAMODB
                         - DATABRICKS
+                        - COCKROACHDB
                     type: string
                     format: enum
                 engineVersion:
@@ -10048,6 +10054,7 @@ components:
                         - BIGQUERY
                         - DYNAMODB
                         - DATABRICKS
+                        - COCKROACHDB
                     type: string
                     format: enum
                 engineVersion:
@@ -11493,6 +11500,7 @@ components:
                         - BIGQUERY
                         - DYNAMODB
                         - DATABRICKS
+                        - COCKROACHDB
                     type: string
                     format: enum
                 currentSchema:
@@ -12168,6 +12176,7 @@ components:
                         - BIGQUERY
                         - DYNAMODB
                         - DATABRICKS
+                        - COCKROACHDB
                     type: string
                     format: enum
                 comment:
@@ -12265,6 +12274,7 @@ components:
                         - BIGQUERY
                         - DYNAMODB
                         - DATABRICKS
+                        - COCKROACHDB
                     type: string
                     format: enum
                 enabled:
@@ -12305,6 +12315,7 @@ components:
                         - BIGQUERY
                         - DYNAMODB
                         - DATABRICKS
+                        - COCKROACHDB
                     type: string
                     format: enum
                 category:
@@ -12345,6 +12356,7 @@ components:
                         - BIGQUERY
                         - DYNAMODB
                         - DATABRICKS
+                        - COCKROACHDB
                     type: string
                     format: enum
                 category:
@@ -12818,6 +12830,7 @@ components:
                         - BIGQUERY
                         - DYNAMODB
                         - DATABRICKS
+                        - COCKROACHDB
                     type: string
                     description: The SQL dialect.
                     format: enum
@@ -13066,6 +13079,7 @@ components:
                         - BIGQUERY
                         - DYNAMODB
                         - DATABRICKS
+                        - COCKROACHDB
                     type: string
                     description: The database engine of the schema string.
                     format: enum

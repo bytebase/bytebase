@@ -93,6 +93,8 @@ export const defaultCharsetOfEngineV1 = (engine: Engine): string => {
       return "utf8mb4";
     case Engine.POSTGRES:
       return "UTF8";
+    case Engine.COCKROACHDB:
+      return "UTF8";
     case Engine.MONGODB:
       return "";
     case Engine.SPANNER:
@@ -135,6 +137,8 @@ export const defaultCollationOfEngineV1 = (engine: Engine): string => {
     // install it.
     case Engine.POSTGRES:
       return "";
+    case Engine.COCKROACHDB:
+      return "";
     case Engine.MONGODB:
       return "";
     case Engine.SPANNER:
@@ -165,6 +169,7 @@ export function isPostgresFamily(type: Engine): boolean {
   return (
     type == Engine.POSTGRES ||
     type == Engine.REDSHIFT ||
-    type == Engine.RISINGWAVE
+    type == Engine.RISINGWAVE ||
+    type == Engine.COCKROACHDB
   );
 }

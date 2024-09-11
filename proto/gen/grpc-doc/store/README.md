@@ -425,6 +425,7 @@ Used internally for obfuscating the page token.
 | BIGQUERY | 22 |  |
 | DYNAMODB | 23 |  |
 | DATABRICKS | 24 |  |
+| COCKROACHDB | 25 |  |
 
 
 
@@ -1741,6 +1742,7 @@ PostgreSQL: RANGE, LIST, HASH (https://www.postgresql.org/docs/current/ddl-parti
 | master_obfuscated_password | [string](#string) |  |  |
 | redis_type | [DataSourceOptions.RedisType](#bytebase-store-DataSourceOptions-RedisType) |  |  |
 | use_ssl | [bool](#bool) |  | Use SSL to connect to the data source. By default, we use system default SSL configuration. |
+| cluster | [string](#string) |  | Cluster is the cluster name for the data source. Used by CockroachDB. |
 
 
 

@@ -540,6 +540,8 @@ export interface DataSource {
   masterUsername: string;
   masterPassword: string;
   redisType: DataSource_RedisType;
+  /** Cluster is the cluster name for the data source. Used by CockroachDB. */
+  cluster: string;
 }
 
 export enum DataSource_AuthenticationType {
@@ -2384,6 +2386,7 @@ function createBaseDataSource(): DataSource {
     masterUsername: "",
     masterPassword: "",
     redisType: DataSource_RedisType.REDIS_TYPE_UNSPECIFIED,
+    cluster: "",
   };
 }
 
@@ -2487,6 +2490,9 @@ export const DataSource = {
     }
     if (message.redisType !== DataSource_RedisType.REDIS_TYPE_UNSPECIFIED) {
       writer.uint32(272).int32(dataSource_RedisTypeToNumber(message.redisType));
+    }
+    if (message.cluster !== "") {
+      writer.uint32(282).string(message.cluster);
     }
     return writer;
   },
@@ -2729,6 +2735,13 @@ export const DataSource = {
 
           message.redisType = dataSource_RedisTypeFromJSON(reader.int32());
           continue;
+        case 35:
+          if (tag !== 282) {
+            break;
+          }
+
+          message.cluster = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2785,6 +2798,7 @@ export const DataSource = {
       redisType: isSet(object.redisType)
         ? dataSource_RedisTypeFromJSON(object.redisType)
         : DataSource_RedisType.REDIS_TYPE_UNSPECIFIED,
+      cluster: isSet(object.cluster) ? globalThis.String(object.cluster) : "",
     };
   },
 
@@ -2889,6 +2903,9 @@ export const DataSource = {
     if (message.redisType !== DataSource_RedisType.REDIS_TYPE_UNSPECIFIED) {
       obj.redisType = dataSource_RedisTypeToJSON(message.redisType);
     }
+    if (message.cluster !== "") {
+      obj.cluster = message.cluster;
+    }
     return obj;
   },
 
@@ -2934,6 +2951,7 @@ export const DataSource = {
     message.masterUsername = object.masterUsername ?? "";
     message.masterPassword = object.masterPassword ?? "";
     message.redisType = object.redisType ?? DataSource_RedisType.REDIS_TYPE_UNSPECIFIED;
+    message.cluster = object.cluster ?? "";
     return message;
   },
 };
