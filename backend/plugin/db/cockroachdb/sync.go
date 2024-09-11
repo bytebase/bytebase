@@ -14,6 +14,9 @@ import (
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	crrawparser "github.com/cockroachdb/cockroachdb-parser/pkg/sql/parser"
+	crrawparsertree "github.com/cockroachdb/cockroachdb-parser/pkg/sql/sem/tree"
+
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
@@ -808,6 +811,32 @@ func getIndexes(txn *sql.Tx) (map[db.TableKey][]*storepb.IndexMetadata, error) {
 		var comment sql.NullString
 		if err := rows.Scan(&schemaName, &tableName, &index.Name, &statement, &constraintType, &comment); err != nil {
 			return nil, err
+		}
+
+		nodes, err := crrawparser.Parse(statement)
+		if err != nil {
+			return nil, err
+		}
+		if len(nodes) != 1 {
+			return nil, errors.Errorf("invalid number of statement %v, expecting one", len(nodes))
+		}
+		node, ok := nodes[0].AST.(*crrawparsertree.CreateIndex)
+		if !ok {
+			return nil, errors.Errorf("invalid statement type %T, expecting CreateIndex", nodes[0].AST)
+		}
+		for _, indexElem := range node.Columns {
+			if indexElem.Column != "" {
+				index.Expressions = append(index.Expressions, indexElem.Column.String())
+				continue
+			}
+			if indexElem.Expr != nil {
+				index.Expressions = append(index.Expressions, indexElem.Expr.String())
+				continue
+			}
+			if indexElem.OpClass != "" {
+				index.Expressions = append(index.Expressions, indexElem.OpClass.String())
+				continue
+			}
 		}
 
 		index.Definition = statement
