@@ -386,7 +386,14 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 					return nil, status.Errorf(codes.Internal, "failed to find workspace setting, error: %v", err)
 				}
 				if setting.Require_2Fa {
-					return nil, status.Errorf(codes.InvalidArgument, "2FA is required and cannot be disabled")
+					isWorkspaceAdmin, err := s.isUserWorkspaceAdmin(ctx, callerUser)
+					if err != nil {
+						return nil, status.Errorf(codes.Internal, "failed to check user roles, error: %v", err)
+					}
+					// Allow workspace admin to disable 2FA even if it is required.
+					if !isWorkspaceAdmin {
+						return nil, status.Errorf(codes.InvalidArgument, "2FA is required and cannot be disabled")
+					}
 				}
 				patch.MFAConfig = &storepb.MFAConfig{}
 			}
