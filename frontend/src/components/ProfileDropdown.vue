@@ -25,7 +25,6 @@ import { AUTH_SIGNIN_MODULE } from "@/router/auth";
 import {
   useActuatorV1Store,
   useAppFeature,
-  useWorkspaceMode,
   useAuthStore,
   useCurrentUserV1,
   useSubscriptionV1Store,
@@ -39,6 +38,10 @@ import Version from "./misc/Version.vue";
 
 const { t } = useI18n();
 
+const props = defineProps<{
+  link?: boolean;
+}>();
+
 const actuatorStore = useActuatorV1Store();
 const authStore = useAuthStore();
 const subscriptionStore = useSubscriptionV1Store();
@@ -47,7 +50,6 @@ const router = useRouter();
 const { setLocale, locale } = useLanguage();
 const currentUserV1 = useCurrentUserV1();
 const showDropdown = ref(false);
-const workspaceMode = useWorkspaceMode();
 const hideQuickstart = useAppFeature("bb.feature.hide-quick-start");
 const hideHelp = useAppFeature("bb.feature.hide-help");
 
@@ -218,7 +220,7 @@ const options = computed((): DropdownOption[] => [
     type: "render",
     render() {
       return h(ProfilePreview, {
-        link: workspaceMode.value === "CONSOLE",
+        link: props.link,
         onClick: () => (showDropdown.value = false),
       });
     },

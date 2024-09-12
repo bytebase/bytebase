@@ -289,7 +289,8 @@
     },
     "back-to-workspace": "Back to workspace",
     "override": "Override",
-    "encoding": "Encoding"
+    "encoding": "Encoding",
+    "finish": "Finish"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -759,12 +760,14 @@
         },
         "database-change-mode": {
           "self": "Database Change Mode",
-          "description": "Controls how users perform database schema migrations. Issue mode uses issue/task workflows with custom approvals for a structured process. SQL Editor mode allows direct SQL execution in a SQL editor for quick and simple changes.",
+          "description": "Controls how users perform database schema migrations.",
           "issue-mode": {
-            "self": "Issue Mode"
+            "self": "Issue Mode",
+            "description": "Use issue/task workflows with custom approvals for a structured process."
           },
           "sql-editor-mode": {
-            "self": "SQL Editor Mode"
+            "self": "SQL Editor Mode",
+            "description": "Allows direct SQL execution in a SQL editor for quick and simple changes."
           }
         }
       }
@@ -3702,5 +3705,20 @@
   },
   "worksheet": {
     "self": "Worksheet"
+  },
+  "setup": {
+    "workspace-mode": {
+      "choose": "Choose workspace mode",
+      "issue-mode": {
+        "self": "Issue mode",
+        "description": "Change database via committing issues. Empower your database change workflow with Batch change, GitOps, SQL review, Custom approval and more."
+      },
+      "sql-editor-mode": {
+        "self": "SQL Editor mode",
+        "description": "Change database via SQL Editor like classical SQL GUI clients. An easy way to access your databases quickly and directly."
+      },
+      "can-be-changed-later": "This setting can be changed anytime later."
+    },
+    "self": "Setup"
   }
 }

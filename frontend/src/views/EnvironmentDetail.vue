@@ -14,7 +14,7 @@
     @update-policy="updatePolicy"
   >
     <EnvironmentFormBody
-      :simple="simple"
+      :features="features"
       :hide-archive-restore="hideArchiveRestore"
       class="w-full px-4 pb-2"
       :class="bodyClass"
@@ -81,8 +81,8 @@ interface LocalState {
 }
 
 const props = defineProps<{
+  features?: InstanceType<typeof EnvironmentFormBody>["features"];
   environmentName: string;
-  simple?: boolean;
   hideArchiveRestore?: boolean;
   bodyClass?: VueClass;
   buttonsClass?: VueClass;

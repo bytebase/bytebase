@@ -150,8 +150,10 @@ import {
   useSubscriptionV1Store,
   useOnboardingStateStore,
   useCurrentUserV1,
+  useAppFeature,
 } from "@/store";
 import { planTypeToString } from "@/types";
+import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
 import type { SearchParams, SearchScopeId, SemanticIssueStatus } from "@/utils";
 import {
   buildIssueFilterBySearchParams,
@@ -188,6 +190,7 @@ const onboardingStateStore = useOnboardingStateStore();
 const me = useCurrentUserV1();
 const route = useRoute();
 const router = useRouter();
+const databaseChangeMode = useAppFeature("bb.feature.database-change-mode");
 
 const viewId = useLocalStorage<string>(
   getComponentIdLocalStorageKey(WORKSPACE_ROUTE_MY_ISSUES),
@@ -227,16 +230,21 @@ const defaultScopeIds = computed(() => {
   return new Set(defaultSearchParams().scopes.map((s) => s.id));
 });
 const tabItemList = computed((): TabFilterItem<TabValue>[] => {
-  return [
+  const items: (TabFilterItem<TabValue> & { hide?: boolean })[] = [
     { value: "CREATED", label: t("common.created") },
     {
       value: "WAITING_APPROVAL",
       label: t("issue.waiting-approval"),
     },
-    { value: "WAITING_ROLLOUT", label: t("issue.waiting-rollout") },
+    {
+      value: "WAITING_ROLLOUT",
+      label: t("issue.waiting-rollout"),
+      hide: databaseChangeMode.value === DatabaseChangeMode.EDITOR,
+    },
     { value: "SUBSCRIBED", label: t("common.subscribed") },
     { value: "ALL", label: t("common.all") },
   ];
+  return items.filter((item) => !item.hide);
 });
 const storedTab = useDynamicLocalStorage<TabValue>(
   computed(() => `bb.home.issue-list-tab.${me.value.name}`),

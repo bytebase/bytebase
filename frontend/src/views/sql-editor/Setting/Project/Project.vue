@@ -39,6 +39,7 @@
       <DrawerContent
         v-if="state.detail.project"
         :title="`${$t('common.project')} - ${state.detail.project.title}`"
+        class="project-detail-drawer"
         body-content-class="flex flex-col gap-2 overflow-hidden"
       >
         <Detail :project="state.detail.project" />
@@ -46,7 +47,7 @@
       <ProjectCreatePanel
         v-else
         :simple="true"
-        :on-created="(project: Project) => (state.detail.project = project)"
+        :on-created="handleCreated"
         style="width: calc(100vw - 8rem); max-width: 50rem"
         @dismiss="hideDrawer"
       />
@@ -66,8 +67,8 @@ import {
   ProjectV1Table,
   SearchBox,
 } from "@/components/v2";
-import { useProjectV1List } from "@/store";
-import { useDatabaseV1List } from "@/store/modules/v1/databaseList";
+import { useProjectV1List, useProjectV1Store } from "@/store";
+import type { ComposedProject } from "@/types";
 import type { Project } from "@/types/proto/v1/project_service";
 import { filterProjectV1ListByKeyword, wrapRefAsPromise } from "@/utils";
 import Detail from "./Detail.vue";
@@ -76,7 +77,7 @@ interface LocalState {
   keyword: string;
   detail: {
     show: boolean;
-    project: Project | undefined;
+    project: ComposedProject | undefined;
   };
 }
 
@@ -101,7 +102,7 @@ const handleClickNewProject = () => {
   state.detail.project = undefined;
 };
 
-const showProjectDetail = (project: Project) => {
+const showProjectDetail = (project: ComposedProject) => {
   state.detail.show = true;
   state.detail.project = project;
 };
@@ -110,10 +111,14 @@ const hideDrawer = () => {
   state.detail.show = false;
 };
 
-onMounted(() => {
-  // prepare for transferring databases.
-  useDatabaseV1List();
+const handleCreated = async (project: Project) => {
+  const composed = await useProjectV1Store().getOrFetchProjectByName(
+    project.name
+  );
+  state.detail.project = composed;
+};
 
+onMounted(() => {
   if (route.hash === "#add") {
     state.detail.show = true;
     state.detail.project = undefined;
@@ -143,3 +148,9 @@ onMounted(() => {
   });
 });
 </script>
+
+<style scoped lang="postcss">
+.project-detail-drawer :deep(.n-drawer-header__main) {
+  @apply flex-1 flex items-center justify-between;
+}
+</style>
