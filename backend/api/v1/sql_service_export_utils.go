@@ -588,27 +588,41 @@ func extractResourceList(ctx context.Context, storeInstance *store.Store, engine
 
 func exportJSON(result *v1pb.QueryResult) ([]byte, error) {
 	var buf bytes.Buffer
-	buf.WriteString("[")
+	if _, err := buf.WriteString("["); err != nil {
+		return nil, err
+	}
 
 	for rowIndex, row := range result.Rows {
-		buf.WriteString("{")
+		if _, err := buf.WriteString("{"); err != nil {
+			return nil, err
+		}
 		for i, value := range row.Values {
-			buf.WriteString(`"`)
-			buf.WriteString(result.ColumnNames[i])
-			buf.WriteString(`":`)
-			buf.WriteString(convertValueToStringInJSON(value))
+			if _, err := buf.WriteString(fmt.Sprintf(`"%s":`, result.ColumnNames[i])); err != nil {
+				return nil, err
+			}
+			if _, err := buf.WriteString(convertValueToStringInJSON(value)); err != nil {
+				return nil, err
+			}
 			if i != len(row.Values)-1 {
-				buf.WriteString(",")
+				if _, err := buf.WriteString(","); err != nil {
+					return nil, err
+				}
 			}
 		}
-		buf.WriteString("}")
+		if _, err := buf.WriteString("}"); err != nil {
+			return nil, err
+		}
 
 		if rowIndex != len(result.Rows)-1 {
-			buf.WriteString(",")
+			if _, err := buf.WriteString(","); err != nil {
+				return nil, err
+			}
 		}
 	}
 
-	buf.WriteString("]")
+	if _, err := buf.WriteString("]"); err != nil {
+		return nil, err
+	}
 	return buf.Bytes(), nil
 }
 
