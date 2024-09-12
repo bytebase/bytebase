@@ -2104,6 +2104,13 @@
         "enforce-issue-title": {
           "self": "Hacer cumplir el título del problema",
           "description": "Exigir que el título del problema no esté vacío y que lo cree el usuario en lugar de generarse automáticamente."
+        },
+        "default-backup-behavior": {
+          "self": "Comportamiento de copia de seguridad predeterminado",
+          "description": "El comportamiento de copia de seguridad predeterminado al crear problemas de cambio de datos.",
+          "default_backup_behavior_no_backup": "Deshabilitar copia de seguridad",
+          "default_backup_behavior_backup_on_error_stop": "Habilitar copia de seguridad, pero detener la tarea en caso de error",
+          "default_backup_behavior_backup_on_error_skip": "Habilitar copia de seguridad, omitir error de copia de seguridad en caso de falla"
         }
       }
     },
