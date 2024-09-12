@@ -32,7 +32,8 @@ CREATE TABLE principal (
     email TEXT NOT NULL,
     password_hash TEXT NOT NULL,
     phone TEXT NOT NULL DEFAULT '',
-    mfa_config JSONB NOT NULL DEFAULT '{}'
+    mfa_config JSONB NOT NULL DEFAULT '{}',
+    profile JSONB NOT NULL DEFAULT '{}'
 );
 
 -- Default bytebase system account id is 1
