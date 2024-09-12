@@ -14,7 +14,7 @@
 import type { SelectOption } from "naive-ui";
 import { NSelect, type SelectProps } from "naive-ui";
 import { computed } from "vue";
-import { SupportedSourceList } from "@/types";
+import { useSupportedSourceList } from "@/types";
 import type { Risk_Source } from "@/types/proto/v1/risk_service";
 import { sourceText } from "../../common";
 import { useRiskCenterContext } from "../context";
@@ -32,9 +32,10 @@ defineEmits<{
 
 const context = useRiskCenterContext();
 const { allowAdmin } = context;
+const SupportedSourceList = useSupportedSourceList();
 
 const options = computed(() => {
-  return SupportedSourceList.map<SelectOption>((source) => ({
+  return SupportedSourceList.value.map<SelectOption>((source) => ({
     label: sourceText(source),
     value: source,
   }));

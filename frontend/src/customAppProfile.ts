@@ -1,40 +1,37 @@
 import { computed, watch } from "vue";
 import { useActuatorV1Store, useAppFeature, useSettingByName } from "./store";
-import { defaultAppProfile, type WorkspaceMode } from "./types";
+import { defaultAppProfile } from "./types";
 import { DatabaseChangeMode } from "./types/proto/v1/setting_service";
 import { useCustomTheme } from "./utils/customTheme";
 
 export const overrideAppProfile = () => {
-  const actuatorStore = useActuatorV1Store();
   const setting = useSettingByName("bb.workspace.profile");
-  const workspaceMode = computed(() => {
-    return setting.value?.value?.workspaceProfileSettingValue
-      ?.databaseChangeMode === DatabaseChangeMode.EDITOR
-      ? "EDITOR"
-      : "CONSOLE";
-  });
-  actuatorStore.appProfile.mode = workspaceMode.value;
-  watch(workspaceMode, (mode) => {
-    actuatorStore.appProfile.mode = mode;
+  const databaseChangeMode = computed(() => {
+    const mode =
+      setting.value?.value?.workspaceProfileSettingValue?.databaseChangeMode;
+    if (mode === DatabaseChangeMode.EDITOR) return DatabaseChangeMode.EDITOR;
+    return DatabaseChangeMode.PIPELINE;
   });
 
   const query = new URLSearchParams(window.location.search);
-  overrideAppFeatures(workspaceMode.value, query);
+  overrideAppFeatures(databaseChangeMode.value, query);
   useCustomTheme(useAppFeature("bb.feature.custom-color-scheme"));
 
-  watch(workspaceMode, (mode) => {
+  watch(databaseChangeMode, (mode) => {
     overrideAppFeatures(mode, query);
   });
 };
 
 const overrideAppFeatures = (
-  workspaceMode: WorkspaceMode,
+  databaseChangeMode: DatabaseChangeMode.PIPELINE | DatabaseChangeMode.EDITOR,
   query: URLSearchParams
 ) => {
   const actuatorStore = useActuatorV1Store();
 
   actuatorStore.appProfile = defaultAppProfile();
-  actuatorStore.appProfile.mode = workspaceMode;
+  actuatorStore.overrideAppFeatures({
+    "bb.feature.database-change-mode": databaseChangeMode,
+  });
 
   const modeInQuery = query.get("mode");
   if (modeInQuery === "STANDALONE") {
@@ -91,21 +88,28 @@ const overrideAppFeatures = (
     }
   }
 
-  if (workspaceMode === "EDITOR") {
+  if (databaseChangeMode === "EDITOR") {
     actuatorStore.overrideAppFeatures({
+      "bb.feature.default-workspace-view": "EDITOR",
       "bb.feature.hide-quick-start": true,
       "bb.feature.hide-help": true,
       "bb.feature.hide-trial": true,
-      "bb.feature.members.hide-groups": true,
-      "bb.feature.members.hide-project-roles": true,
-      "bb.feature.members.hide-service-account": true,
-      "bb.feature.sql-editor.hide-projects": true,
-      "bb.feature.sql-editor.hide-environments": true,
-      "bb.feature.sql-editor.disallow-batch-query": true,
-      "bb.feature.sql-editor.disallow-share-worksheet": true,
+      // "bb.feature.members.hide-groups": true,
+      // "bb.feature.members.hide-project-roles": true,
+      // "bb.feature.members.hide-service-account": true,
+      // "bb.feature.sql-editor.hide-projects": true,
+      // "bb.feature.sql-editor.hide-environments": true,
+      // "bb.feature.sql-editor.disallow-batch-query": true,
+      // "bb.feature.sql-editor.disallow-share-worksheet": true,
       "bb.feature.sql-editor.disallow-edit-schema": true,
-      "bb.feature.sql-editor.hide-advance-instance-features": true,
-      "bb.feature.sql-editor.sql-check-style": "PREFLIGHT"
+      // "bb.feature.sql-editor.hide-advance-instance-features": true,
+      "bb.feature.sql-editor.sql-check-style": "PREFLIGHT",
+      "bb.feature.databases.operations": new Set([
+        "EXPORT-DATA",
+        "SYNC-SCHEMA",
+        "EDIT-LABELS",
+        "TRANSFER",
+      ]),
     });
   }
 };

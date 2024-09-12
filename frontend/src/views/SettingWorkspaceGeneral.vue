@@ -1,5 +1,6 @@
 <template>
-  <div class="space-y-4 divide-y divide-block-border">
+  <div class="space-y-0 divide-y divide-block-border">
+    <DatabaseChangeModeSetting :allow-edit="allowEdit" />
     <NetworkSetting v-if="!isSaaSMode" :allow-edit="allowEdit" />
     <BrandingSetting :allow-edit="allowEdit" />
     <AccountSetting :allow-edit="allowEdit" />
@@ -20,6 +21,7 @@ import {
   NetworkSetting,
   AIAugmentationSetting,
   AnnouncementSetting,
+  DatabaseChangeModeSetting,
 } from "@/components/GeneralSetting";
 import { useActuatorV1Store } from "@/store";
 import { useSettingV1Store } from "@/store/modules/v1/setting";

@@ -64,18 +64,19 @@
       @close="state.quickActionType = undefined"
       @created="onDatabaseGroupCreated"
     />
-
-    <RequestQueryPanel
-      v-if="state.showRequestQueryPanel"
+    <GrantRequestPanel
+      v-if="
+        state.quickActionType ===
+          'quickaction.bb.issue.grant.request.querier' ||
+        state.quickActionType === 'quickaction.bb.issue.grant.request.exporter'
+      "
       :project-name="project.name"
-      @close="state.showRequestQueryPanel = false"
-    />
-
-    <RequestExportPanel
-      v-if="state.showRequestExportPanel"
-      :redirect-to-issue-page="true"
-      :project-name="project.name"
-      @close="state.showRequestExportPanel = false"
+      :role="
+        state.quickActionType === 'quickaction.bb.issue.grant.request.querier'
+          ? PresetRoleType.PROJECT_QUERIER
+          : PresetRoleType.PROJECT_EXPORTER
+      "
+      @close="state.quickActionType = undefined"
     />
   </template>
 
@@ -103,13 +104,12 @@ import { reactive, computed, watch, h } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 import { CreateDatabasePrepPanel } from "@/components/CreateDatabasePrepForm";
+import GrantRequestPanel from "@/components/GrantRequestPanel";
 import {
   InstanceForm,
   Form as InstanceFormBody,
   Buttons as InstanceFormButtons,
 } from "@/components/InstanceForm/";
-import RequestExportPanel from "@/components/Issue/panel/RequestExportPanel/index.vue";
-import RequestQueryPanel from "@/components/Issue/panel/RequestQueryPanel/index.vue";
 import ProjectCreatePanel from "@/components/Project/ProjectCreatePanel.vue";
 import { TransferDatabaseForm } from "@/components/TransferDatabaseForm";
 import { Drawer, DrawerContent } from "@/components/v2";
@@ -120,13 +120,16 @@ import {
   useSubscriptionV1Store,
   useProjectV1Store,
   useInstanceResourceList,
+  useAppFeature,
 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
-import type {
-  QuickActionType,
-  DatabaseGroupQuickActionType,
-  FeatureType,
+import {
+  type QuickActionType,
+  type DatabaseGroupQuickActionType,
+  type FeatureType,
+  PresetRoleType,
 } from "@/types";
+import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
 import { hasProjectPermissionV2 } from "@/utils";
 import DatabaseGroupPanel from "./DatabaseGroup/DatabaseGroupPanel.vue";
 import { FeatureModal } from "./FeatureGuard";
@@ -134,8 +137,6 @@ import { FeatureModal } from "./FeatureGuard";
 interface LocalState {
   feature?: FeatureType;
   quickActionType: QuickActionType | undefined;
-  showRequestQueryPanel: boolean;
-  showRequestExportPanel: boolean;
 }
 
 interface QuickAction {
@@ -163,6 +164,7 @@ const router = useRouter();
 const commandStore = useCommandStore();
 const subscriptionStore = useSubscriptionV1Store();
 const projectStore = useProjectV1Store();
+const databaseChangeMode = useAppFeature("bb.feature.database-change-mode");
 
 const hasDBAWorkflowFeature = computed(() => {
   return subscriptionStore.hasFeature("bb.feature.dba-workflow");
@@ -170,8 +172,6 @@ const hasDBAWorkflowFeature = computed(() => {
 
 const state = reactive<LocalState>({
   quickActionType: undefined,
-  showRequestQueryPanel: false,
-  showRequestExportPanel: false,
 });
 
 const projectId = computed((): string | undefined => {
@@ -251,10 +251,12 @@ const availableQuickActionList = computed((): QuickAction[] => {
     {
       type: "quickaction.bb.database.create",
       title: t("quick-action.new-db"),
-      hide: !(
-        hasProjectPermissionV2(project.value, "bb.issues.create") &&
-        hasProjectPermissionV2(project.value, "bb.plans.create")
-      ),
+      hide:
+        databaseChangeMode.value === DatabaseChangeMode.EDITOR ||
+        !(
+          hasProjectPermissionV2(project.value, "bb.issues.create") &&
+          hasProjectPermissionV2(project.value, "bb.plans.create")
+        ),
       action: createDatabase,
       icon: h(DatabaseIcon),
     },
@@ -293,14 +295,16 @@ const availableQuickActionList = computed((): QuickAction[] => {
       type: "quickaction.bb.issue.grant.request.querier",
       title: t("custom-approval.risk-rule.risk.namespace.request_query"),
       hide: !hasDBAWorkflowFeature.value,
-      action: () => (state.showRequestQueryPanel = true),
+      action: () =>
+        (state.quickActionType = "quickaction.bb.issue.grant.request.querier"),
       icon: h(FileSearchIcon),
     },
     {
       type: "quickaction.bb.issue.grant.request.exporter",
       title: t("custom-approval.risk-rule.risk.namespace.request_export"),
       hide: !hasDBAWorkflowFeature.value,
-      action: () => (state.showRequestExportPanel = true),
+      action: () =>
+        (state.quickActionType = "quickaction.bb.issue.grant.request.exporter"),
       icon: h(FileDownIcon),
     },
   ];

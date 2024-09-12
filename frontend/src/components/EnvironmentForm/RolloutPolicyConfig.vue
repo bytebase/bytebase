@@ -169,7 +169,7 @@ const emit = defineEmits<{
 }>();
 
 const rolloutPolicy = ref(cloneDeep(props.policy.rolloutPolicy!));
-const PresetProjectRoles = [
+const PresetProjectRoles: string[] = [
   PresetRoleType.PROJECT_OWNER,
   PresetRoleType.PROJECT_RELEASER,
 ];

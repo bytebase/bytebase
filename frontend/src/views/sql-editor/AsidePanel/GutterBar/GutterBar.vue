@@ -4,6 +4,14 @@
     class="h-full flex flex-col items-stretch justify-between overflow-hidden text-sm p-1"
   >
     <div class="flex flex-col gap-y-1">
+      <div class="flex flex-col justify-center items-center pb-1">
+        <img
+          class="w-[36px] h-auto"
+          src="@/assets/logo-icon.svg"
+          alt="Bytebase"
+        />
+      </div>
+      <div class="w-full h-0 border-t" />
       <TabItem
         tab="WORKSHEET"
         :size="size"

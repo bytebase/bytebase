@@ -284,7 +284,7 @@ const requireDatabaseOwnerName = computed((): boolean => {
   if (!isValidInstanceName(instance.name)) {
     return false;
   }
-  return [Engine.POSTGRES, Engine.REDSHIFT].includes(instance.engine);
+  return [Engine.POSTGRES, Engine.REDSHIFT, Engine.COCKROACHDB].includes(instance.engine);
 });
 
 const validDatabaseOwnerName = computed((): boolean => {

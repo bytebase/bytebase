@@ -25,7 +25,9 @@
       class="pt-5"
     />
     <Secrets
-      v-if="allowListSecrets"
+      v-if="
+        databaseChangeMode === DatabaseChangeMode.PIPELINE && allowListSecrets
+      "
       :database="database"
       :allow-edit="allowUpdateSecrets"
       :allow-delete="allowDeleteSecrets"
@@ -44,8 +46,10 @@ import {
   useDatabaseV1Store,
   useEnvironmentV1Store,
   pushNotification,
+  useAppFeature,
 } from "@/store";
 import { type ComposedDatabase } from "@/types";
+import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
 import Labels from "./components/Labels.vue";
 import Secrets from "./components/Secrets.vue";
 
@@ -67,6 +71,7 @@ const {
   allowUpdateSecrets,
   allowDeleteSecrets,
 } = useDatabaseDetailContext();
+const databaseChangeMode = useAppFeature("bb.feature.database-change-mode");
 
 const handleSelectEnvironment = async (name: string | undefined) => {
   if (!name || name === props.database.effectiveEnvironment) {

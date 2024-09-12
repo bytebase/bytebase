@@ -6,7 +6,14 @@
       <div class="flex flex-col">
         <div class="flex flex-row items-center space-x-2">
           <span
-            v-if="permissionStore.onlyWorkspaceMember"
+            v-if="onClickUser"
+            class="normal-link truncate max-w-[10rem]"
+            @click="onClickUser(user, $event)"
+          >
+            {{ user.title }}
+          </span>
+          <span
+            v-else-if="permissionStore.onlyWorkspaceMember"
             class="truncate max-w-[10em]"
           >
             {{ user.title }}
@@ -41,11 +48,12 @@ import YouTag from "@/components/misc/YouTag.vue";
 import { useCurrentUserV1, usePermissionStore } from "@/store";
 import { SYSTEM_BOT_USER_NAME } from "@/types";
 import { unknownUser } from "@/types";
-import { UserType } from "@/types/proto/v1/auth_service";
+import { User, UserType } from "@/types/proto/v1/auth_service";
 import type { MemberBinding } from "../../types";
 
 const props = defineProps<{
   binding: MemberBinding;
+  onClickUser?: (user: User, event: MouseEvent) => void;
 }>();
 
 const currentUserV1 = useCurrentUserV1();

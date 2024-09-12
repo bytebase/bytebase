@@ -1,19 +1,32 @@
-import { BuildingIcon, LayersIcon, UsersIcon } from "lucide-vue-next";
+import {
+  BuildingIcon,
+  GalleryHorizontalEndIcon,
+  LayersIcon,
+  SquareStackIcon,
+  UsersIcon,
+} from "lucide-vue-next";
 import { computed, h } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, type RouteRecordRaw } from "vue-router";
 import type { SidebarItem } from "@/components/CommonSidebar.vue";
+import { DatabaseIcon } from "@/components/Icon";
 import sqlEditorRoutes, {
+  SQL_EDITOR_SETTING_DATABASES_MODULE,
+  SQL_EDITOR_SETTING_ENVIRONMENT_MODULE,
   SQL_EDITOR_SETTING_GENERAL_MODULE,
   SQL_EDITOR_SETTING_INSTANCE_MODULE,
   SQL_EDITOR_SETTING_MEMBERS_MODULE,
+  SQL_EDITOR_SETTING_PROJECT_MODULE,
+  SQL_EDITOR_SETTING_SUBSCRIPTION_MODULE,
+  SQL_EDITOR_SETTING_USERS_MODULE,
 } from "@/router/sqlEditor";
-import { useAppFeature } from "@/store";
+import { useAppFeature, usePermissionStore } from "@/store";
 import type { Permission } from "@/types";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
 export const useSidebarItems = () => {
   const route = useRoute();
+  const permissionStore = usePermissionStore();
   const { t } = useI18n();
   const disableSetting = useAppFeature("bb.feature.sql-editor.disable-setting");
 
@@ -95,9 +108,9 @@ export const useSidebarItems = () => {
 
     const sidebarList: SidebarItem[] = [
       {
-        title: t("settings.sidebar.general"),
-        icon: () => h(BuildingIcon),
-        name: SQL_EDITOR_SETTING_GENERAL_MODULE,
+        title: t("common.projects"),
+        icon: () => h(GalleryHorizontalEndIcon),
+        name: SQL_EDITOR_SETTING_PROJECT_MODULE,
         type: "route",
       },
       {
@@ -107,10 +120,59 @@ export const useSidebarItems = () => {
         type: "route",
       },
       {
-        title: t("common.members"),
-        icon: () => h(UsersIcon),
-        name: SQL_EDITOR_SETTING_MEMBERS_MODULE,
+        title: t("common.databases"),
+        icon: () => h(DatabaseIcon),
+        name: SQL_EDITOR_SETTING_DATABASES_MODULE,
         type: "route",
+      },
+      {
+        title: t("common.environments"),
+        icon: () => h(SquareStackIcon),
+        name: SQL_EDITOR_SETTING_ENVIRONMENT_MODULE,
+        type: "route",
+      },
+      {
+        type: "divider",
+      },
+      {
+        title: "IAM & Admin",
+        icon: () => h(UsersIcon),
+        type: "div",
+        expand: true,
+        children: [
+          {
+            title: t("settings.sidebar.users-and-groups"),
+            name: SQL_EDITOR_SETTING_USERS_MODULE,
+            type: "route",
+          },
+          {
+            title: t("settings.sidebar.members"),
+            name: SQL_EDITOR_SETTING_MEMBERS_MODULE,
+            type: "route",
+            hide: permissionStore.onlyWorkspaceMember,
+          },
+        ],
+      },
+      {
+        type: "divider",
+      },
+      {
+        title: t("settings.sidebar.workspace"),
+        icon: () => h(BuildingIcon),
+        type: "div",
+        expand: true,
+        children: [
+          {
+            title: t("settings.sidebar.general"),
+            name: SQL_EDITOR_SETTING_GENERAL_MODULE,
+            type: "route",
+          },
+          {
+            title: t("settings.sidebar.subscription"),
+            name: SQL_EDITOR_SETTING_SUBSCRIPTION_MODULE,
+            type: "route",
+          },
+        ],
       },
     ];
 

@@ -555,6 +555,10 @@ func checkCharacterSetCollationOwner(dbType storepb.Engine, characterSet, collat
 		if collation != "" {
 			return errors.Errorf("RisingWave does not support collation, but got %s", collation)
 		}
+	case storepb.Engine_COCKROACHDB:
+		if owner == "" {
+			return errors.Errorf("database owner is required for CockroachDB")
+		}
 	case storepb.Engine_SQLITE, storepb.Engine_MONGODB, storepb.Engine_MSSQL:
 		// no-op.
 	default:
@@ -632,6 +636,26 @@ func getCreateDatabaseStatement(dbType storepb.Engine, c *storepb.PlanConfig_Cre
 			stmt = fmt.Sprintf("%s WITH\n\t%s", stmt, strings.Join(list, "\n\t"))
 		}
 		return fmt.Sprintf("%s;", stmt), nil
+	case storepb.Engine_COCKROACHDB:
+		// On Cloud RDS, the data source role isn't the actual superuser with sudo privilege.
+		// We need to grant the database owner role to the data source admin so that Bytebase can have permission for the database using the data source admin.
+		if adminDatasourceUser != "" && c.Owner != adminDatasourceUser {
+			stmt = fmt.Sprintf("GRANT \"%s\" TO \"%s\";\n", c.Owner, adminDatasourceUser)
+		}
+		if c.Collation == "" {
+			stmt = fmt.Sprintf("%sCREATE DATABASE \"%s\" ENCODING %q;", stmt, databaseName, c.CharacterSet)
+		} else {
+			stmt = fmt.Sprintf("%sCREATE DATABASE \"%s\" ENCODING %q LC_COLLATE %q;", stmt, databaseName, c.CharacterSet, c.Collation)
+		}
+		// Set the database owner.
+		// We didn't use CREATE DATABASE WITH OWNER because RDS requires the current role to be a member of the database owner.
+		// However, people can still use ALTER DATABASE to change the owner afterwards.
+		// Error string below:
+		// query: CREATE DATABASE h1 WITH OWNER hello;
+		// ERROR:  must be member of role "hello"
+		//
+		// TODO(d): alter schema "public" owner to the database owner.
+		return fmt.Sprintf("%s\nALTER DATABASE \"%s\" OWNER TO \"%s\";", stmt, databaseName, c.Owner), nil
 	case storepb.Engine_HIVE:
 		return fmt.Sprintf("CREATE DATABASE %s;", databaseName), nil
 	}

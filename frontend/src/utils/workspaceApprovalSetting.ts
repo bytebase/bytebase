@@ -19,7 +19,7 @@ import {
   SYSTEM_BOT_EMAIL,
 } from "@/types";
 import type { LocalApprovalConfig, LocalApprovalRule } from "@/types";
-import { PresetRiskLevelList, SupportedSourceList } from "@/types";
+import { PresetRiskLevelList, useSupportedSourceList } from "@/types";
 import {
   ParsedExpr,
   Expr as CELExpr,
@@ -239,14 +239,24 @@ export const buildWorkspaceApprovalSetting = async (
 };
 
 const resolveSourceExpr = (expr: SimpleExpr): Risk_Source => {
-  if (!isConditionExpr(expr)) return Risk_Source.UNRECOGNIZED;
+  if (!isConditionExpr(expr)) {
+    return Risk_Source.UNRECOGNIZED;
+  }
   const { operator, args } = expr;
-  if (operator !== "_==_") return Risk_Source.UNRECOGNIZED;
-  if (!args || args.length !== 2) return Risk_Source.UNRECOGNIZED;
+  if (operator !== "_==_") {
+    return Risk_Source.UNRECOGNIZED;
+  }
+  if (!args || args.length !== 2) {
+    return Risk_Source.UNRECOGNIZED;
+  }
   const factor = args[0];
-  if (factor !== "source") return Risk_Source.UNRECOGNIZED;
+  if (factor !== "source") {
+    return Risk_Source.UNRECOGNIZED;
+  }
   const source = risk_SourceFromJSON(args[1]);
-  if (!SupportedSourceList.includes(source)) return Risk_Source.UNRECOGNIZED;
+  if (!useSupportedSourceList().value.includes(source)) {
+    return Risk_Source.UNRECOGNIZED;
+  }
   return source;
 };
 

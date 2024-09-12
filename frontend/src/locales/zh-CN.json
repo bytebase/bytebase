@@ -289,7 +289,8 @@
     },
     "back-to-workspace": "返回工作空间",
     "override": "覆盖",
-    "encoding": "编码"
+    "encoding": "编码",
+    "finish": "完成"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -767,12 +768,14 @@
         },
         "database-change-mode": {
           "self": "数据库变更模式",
-          "description": "控制用户如何进行数据库变更。工单模式使用工单/任务工作流和自定义审批流来实现结构化流程。SQL 编辑器模式允许用户在 SQL 编辑器中直接执行变更语句，以便快速简单地进行更改。",
+          "description": "控制用户如何进行数据库变更。",
           "issue-mode": {
-            "self": "工单模式"
+            "self": "工单模式",
+            "description": "使用工单/任务工作流和自定义审批流来实现结构化流程。"
           },
           "sql-editor-mode": {
-            "self": "SQL 编辑器模式"
+            "self": "SQL 编辑器模式",
+            "description": "允许用户在 SQL 编辑器中直接执行变更语句，以便快速简单地进行更改。"
           }
         }
       }
@@ -1271,7 +1274,6 @@
       "you-are-not-allowed-to-perform-this-action": "您无权执行此操作",
       "cannot-close-issue-with-running-tasks": "无法关闭还存在运行中任务的工单"
     },
-    "approval-requested": "审批请求",
     "unfinished-resolved-issue-tips": "该工单被标记为「已完成」，但其中某些任务并未成功执行。",
     "some-tasks-are-not-executed-successfully": "（部分任务并未成功执行）",
     "preview": "预览工单",
@@ -1329,7 +1331,7 @@
       "export-data": "导出数据",
       "create-database": "创建数据库",
       "request-querier-role": "申请查询者角色",
-      "request-export-role": "申请导出者角色"
+      "request-exporter-role": "申请导出者角色"
     }
   },
   "alter-schema": {
@@ -2110,6 +2112,13 @@
         "enforce-issue-title": {
           "self": "要求手动输入工单标题",
           "description": "工单标题必须由用户输入而不是自动生成。"
+        },
+        "default-backup-behavior": {
+          "self": "默认备份行为",
+          "description": "创建数据更改问题时的默认备份行为。",
+          "default_backup_behavior_no_backup": "禁用备份",
+          "default_backup_behavior_backup_on_error_stop": "启用备份，但在发生错误时停止任务",
+          "default_backup_behavior_backup_on_error_skip": "启用备份，失败时跳过备份错误"
         }
       }
     },
@@ -3711,5 +3720,20 @@
   },
   "worksheet": {
     "self": "工作表"
+  },
+  "setup": {
+    "workspace-mode": {
+      "choose": "选择工作空间模式",
+      "issue-mode": {
+        "self": "工单模式",
+        "description": "通过提交工单变更数据库。通过批量变更、GitOps、SQL 审核、自定义审批等功能增强您的数据库变更工作流。"
+      },
+      "sql-editor-mode": {
+        "self": "SQL 编辑器模式",
+        "description": "通过 SQL 编辑器变更数据库，如同典型的 SQL GUI 客户端一样。这是一种简单、快速且直接的访问数据库的方式。"
+      },
+      "can-be-changed-later": "此设置以后可以随时更改。"
+    },
+    "self": "设置"
   }
 }

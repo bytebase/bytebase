@@ -289,7 +289,8 @@
     },
     "back-to-workspace": "ワークスペースに戻る",
     "override": "オーバーライド",
-    "encoding": "エンコーディング"
+    "encoding": "エンコーディング",
+    "finish": "仕上げる"
   },
   "error-page": {
     "go-back-home": "ホームページに戻る"
@@ -767,12 +768,14 @@
         },
         "database-change-mode": {
           "self": "データベース変更モード",
-          "description": "ユーザーがデータベース スキーマの移行を実行する方法を制御します。問題モードでは、構造化されたプロセスにカスタム承認を使用した問題/タスク ワークフローを使用します。SQL エディター モードでは、SQL エディターで直接 SQL を実行して、すばやく簡単に変更できます。",
+          "description": "ユーザーがデータベース スキーマの移行を実行する方法を制御します。",
           "issue-mode": {
-            "self": "発行モード"
+            "self": "発行モード",
+            "description": "構造化されたプロセスのカスタム承認を備えた課題/タスクのワークフローを使用します。"
           },
           "sql-editor-mode": {
-            "self": "SQL エディター モード"
+            "self": "SQL エディター モード",
+            "description": "SQL エディターで SQL を直接実行できるため、迅速かつ簡単に変更できます。"
           }
         }
       }
@@ -1271,7 +1274,6 @@
       "you-are-not-allowed-to-perform-this-action": "このアクションを実行する権限がありません",
       "cannot-close-issue-with-running-tasks": "実行中のタスクに関する問題を解決できません"
     },
-    "approval-requested": "承認リクエスト",
     "unfinished-resolved-issue-tips": "作業指示書は「完了」とマークされましたが、一部のタスクは正常に実行されませんでした。",
     "some-tasks-are-not-executed-successfully": "(一部のタスクは正常に実行されませんでした)",
     "preview": "作業指示のプレビュー",
@@ -1329,7 +1331,7 @@
       "export-data": "データをエクスポート",
       "create-database": "データベースを作成する",
       "request-querier-role": "リクエストクエリーロール",
-      "request-export-role": "エクスポートロールのリクエスト"
+      "request-exporter-role": "エクスポートロールのリクエスト"
     }
   },
   "alter-schema": {
@@ -2110,6 +2112,13 @@
         "enforce-issue-title": {
           "self": "問題のタイトルを強制する",
           "description": "問題のタイトルが空でないこと、および自動生成ではなくユーザーが作成することを強制します。"
+        },
+        "default-backup-behavior": {
+          "self": "デフォルトのバックアップ動作",
+          "description": "データ変更の問題を作成するときのデフォルトのバックアップ動作。",
+          "default_backup_behavior_no_backup": "バックアップを無効にする",
+          "default_backup_behavior_backup_on_error_stop": "バックアップを有効にするが、エラーが発生した場合はタスクを停止する",
+          "default_backup_behavior_backup_on_error_skip": "バックアップを有効にし、失敗した場合はバックアップ エラーをスキップします"
         }
       }
     },
@@ -3711,5 +3720,20 @@
   },
   "worksheet": {
     "self": "ワークシート"
+  },
+  "setup": {
+    "workspace-mode": {
+      "choose": "ワークスペースモードを選択してください",
+      "issue-mode": {
+        "self": "発行モード",
+        "description": "問題をコミットしてデータベースを変更します。\nバッチ変更、GitOps、SQL レビュー、カスタム承認などを使用してデータベース変更ワークフローを強化します。"
+      },
+      "sql-editor-mode": {
+        "self": "SQLエディターモード",
+        "description": "従来の SQL GUI クライアントと同様に、SQL エディターを介してデータベースを変更します。\nデータベースに素早く直接アクセスする簡単な方法です。"
+      },
+      "can-be-changed-later": "この設定は後でいつでも変更できます。"
+    },
+    "self": "設定"
   }
 }

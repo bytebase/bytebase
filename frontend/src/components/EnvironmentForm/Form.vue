@@ -1,7 +1,7 @@
 <template>
   <div>
     <div class="flex flex-col gap-y-6">
-      <div class="flex flex-col gap-y-2">
+      <div v-if="features.includes('BASE')" class="flex flex-col gap-y-2">
         <label for="name" class="textlabel">
           {{ $t("common.environment-name") }}
           <span class="text-red-600">*</span>
@@ -22,7 +22,7 @@
         />
       </div>
 
-      <div class="flex flex-col gap-y-2">
+      <div v-if="features.includes('TIER')" class="flex flex-col gap-y-2">
         <label class="textlabel flex items-center">
           {{ $t("policy.environment-tier.name") }}
           <FeatureBadge feature="bb.feature.environment-tier-policy" />
@@ -55,44 +55,45 @@
         </NCheckbox>
       </div>
 
-      <template v-if="!simple">
-        <div class="flex flex-col gap-y-2">
-          <label class="textlabel">
-            {{ $t("policy.rollout.name") }}
-          </label>
-          <span
-            v-show="!create && valueChanged('rolloutPolicy')"
-            class="textlabeltip !ml-0"
-            >{{ $t("policy.rollout.tip") }}</span
-          >
-          <div class="textinfolabel">
-            {{ $t("policy.rollout.info") }}
-            <a
-              class="inline-flex items-center text-blue-600 ml-1 hover:underline"
-              href="https://www.bytebase.com/docs/administration/environment-policy/rollout-policy"
-              target="_blank"
-              >{{ $t("common.learn-more")
-              }}<heroicons-outline:external-link class="w-4 h-4"
-            /></a>
-          </div>
-          <RolloutPolicyConfig
-            v-model:policy="state.rolloutPolicy"
-            :disabled="!allowEdit"
-          />
+      <div
+        v-if="features.includes('ROLLOUT_POLICY')"
+        class="flex flex-col gap-y-2"
+      >
+        <label class="textlabel">
+          {{ $t("policy.rollout.name") }}
+        </label>
+        <span
+          v-show="!create && valueChanged('rolloutPolicy')"
+          class="textlabeltip !ml-0"
+          >{{ $t("policy.rollout.tip") }}</span
+        >
+        <div class="textinfolabel">
+          {{ $t("policy.rollout.info") }}
+          <a
+            class="inline-flex items-center text-blue-600 ml-1 hover:underline"
+            href="https://www.bytebase.com/docs/administration/environment-policy/rollout-policy"
+            target="_blank"
+            >{{ $t("common.learn-more")
+            }}<heroicons-outline:external-link class="w-4 h-4"
+          /></a>
         </div>
-
-        <SQLReviewForResource
-          v-if="!create"
-          :resource="environment.name"
-          :allow-edit="allowEdit"
+        <RolloutPolicyConfig
+          v-model:policy="state.rolloutPolicy"
+          :disabled="!allowEdit"
         />
+      </div>
 
-        <AccessControlConfigure
-          v-if="!create"
-          :resource="environment.name"
-          :allow-edit="allowEdit"
-        />
-      </template>
+      <SQLReviewForResource
+        v-if="features.includes('SQL_REVIEW') && !create"
+        :resource="environment.name"
+        :allow-edit="allowEdit"
+      />
+
+      <AccessControlConfigure
+        v-if="features.includes('ACCESS_CONTROL') && !create"
+        :resource="environment.name"
+        :allow-edit="allowEdit"
+      />
     </div>
 
     <div
@@ -152,10 +153,24 @@ import AccessControlConfigure from "./AccessControlConfigure.vue";
 import RolloutPolicyConfig from "./RolloutPolicyConfig.vue";
 import { useEnvironmentFormContext } from "./context";
 
-defineProps<{
-  simple?: boolean;
-  hideArchiveRestore?: boolean;
-}>();
+withDefaults(
+  defineProps<{
+    hideArchiveRestore?: boolean;
+    features?: Array<
+      "BASE" | "TIER" | "ROLLOUT_POLICY" | "SQL_REVIEW" | "ACCESS_CONTROL"
+    >;
+  }>(),
+  {
+    hideArchiveRestore: false,
+    features: () => [
+      "BASE",
+      "TIER",
+      "ROLLOUT_POLICY",
+      "SQL_REVIEW",
+      "ACCESS_CONTROL",
+    ],
+  }
+);
 
 const { t } = useI18n();
 const {

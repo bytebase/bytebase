@@ -1,32 +1,34 @@
 <template>
   <div
     ref="containerRef"
-    class="h-full flex flex-col overflow-hidden"
+    class="h-full flex flex-row overflow-hidden"
     :data-width="containerWidth"
   >
-    <div
-      v-if="!strictProject && !hideProjects"
-      class="flex flex-row items-center gap-x-1 px-1 py-1 border-b"
-    >
-      <ProjectSelect
-        style="width: 100%"
-        class="project-select"
-        :project-name="projectName"
-        :include-all="false"
-        :include-default-project="true"
-        :loading="!projectContextReady"
-        @update:project-name="handleSwitchProject"
-      />
+    <div class="h-full border-r shrink-0">
+      <GutterBar size="medium" />
     </div>
-
-    <div class="flex-1 flex flex-row overflow-hidden">
-      <div class="h-full border-r shrink-0">
-        <GutterBar size="medium" />
+    <div class="h-full flex-1 flex flex-col overflow-hidden">
+      <div
+        v-if="!strictProject && !hideProjects"
+        class="flex flex-row items-center gap-x-1 px-1 py-1 border-b"
+      >
+        <ProjectSelect
+          style="width: 100%"
+          class="project-select"
+          :project-name="projectName"
+          :include-all="false"
+          :include-default-project="true"
+          :loading="!projectContextReady"
+          @update:project-name="handleSwitchProject"
+        />
       </div>
-      <div class="h-full flex-1 flex flex-col pt-1 overflow-hidden">
-        <WorksheetPane v-if="asidePanelTab === 'WORKSHEET'" />
-        <SchemaPane v-if="asidePanelTab === 'SCHEMA'" />
-        <HistoryPane v-if="asidePanelTab === 'HISTORY'" />
+
+      <div class="flex-1 flex flex-row overflow-hidden">
+        <div class="h-full flex-1 flex flex-col pt-1 overflow-hidden">
+          <WorksheetPane v-if="asidePanelTab === 'WORKSHEET'" />
+          <SchemaPane v-if="asidePanelTab === 'SCHEMA'" />
+          <HistoryPane v-if="asidePanelTab === 'HISTORY'" />
+        </div>
       </div>
     </div>
   </div>

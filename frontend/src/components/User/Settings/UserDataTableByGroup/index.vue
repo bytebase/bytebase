@@ -42,10 +42,12 @@ const props = withDefaults(
     groups: Group[];
     showGroupRole?: boolean;
     allowEdit: boolean;
+    onClickUser?: (user: User, event: MouseEvent) => void;
   }>(),
   {
     showGroupRole: true,
     groupRoleMap: () => new Map(),
+    onClickUser: undefined,
   }
 );
 
@@ -73,6 +75,7 @@ const columns = computed(() => {
           <GroupMemberNameCell
             user={row.user}
             role={props.showGroupRole ? row.role : undefined}
+            onClickUser={props.onClickUser}
           />
         );
       },

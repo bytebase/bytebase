@@ -36,12 +36,14 @@
       :mask-closable="!!state.detail.instance"
     >
       <InstanceForm
+        v-if="!state.detail.instance"
         :instance="state.detail.instance"
         :hide-advanced-features="hideAdvancedFeatures"
         @dismiss="state.detail.show = false"
       >
         <DrawerContent
           :title="detailTitle"
+          class="instance-detail-drawer"
           body-content-class="flex flex-col gap-2 overflow-hidden"
         >
           <InstanceFormBody
@@ -55,6 +57,30 @@
           />
         </DrawerContent>
       </InstanceForm>
+      <DrawerContent
+        v-else
+        header-style="--n-header-padding: 0 24px;"
+        body-style="--n-body-padding: 16px 24px 0;"
+      >
+        <template #header>
+          <div class="flex items-center gap-x-2 h-[50px]">
+            <EngineIcon
+              :engine="state.detail.instance.engine"
+              custom-class="!h-6"
+            />
+            <span class="font-medium">{{
+              instanceV1Name(state.detail.instance)
+            }}</span>
+          </div>
+        </template>
+        <InstanceDetail
+          :instance-id="extractInstanceResourceName(state.detail.instance.name)"
+          :embedded="true"
+          :on-click-database="handleClickDatabase"
+          :hide-archive-restore="true"
+          class="!px-0 !mb-0 w-[850px]"
+        />
+      </DrawerContent>
     </Drawer>
   </div>
 </template>
@@ -68,12 +94,14 @@ import { useRoute, useRouter } from "vue-router";
 import AdvancedSearch from "@/components/AdvancedSearch";
 import { useCommonSearchScopeOptions } from "@/components/AdvancedSearch/useCommonSearchScopeOptions";
 import { FeatureAttention } from "@/components/FeatureGuard";
+import { EngineIcon } from "@/components/Icon";
 import {
   InstanceForm,
   Form as InstanceFormBody,
   Buttons as InstanceFormButtons,
 } from "@/components/InstanceForm";
 import { Drawer, DrawerContent, InstanceV1Table } from "@/components/v2";
+import { SQL_EDITOR_DATABASE_MODULE } from "@/router/sqlEditor";
 import {
   useSubscriptionV1Store,
   useEnvironmentV1List,
@@ -81,7 +109,12 @@ import {
   useInstanceV1Store,
   useAppFeature,
 } from "@/store";
-import { UNKNOWN_ID } from "@/types";
+import {
+  DEFAULT_PROJECT_NAME,
+  defaultProject,
+  UNKNOWN_ID,
+  type ComposedDatabase,
+} from "@/types";
 import type { Instance } from "@/types/proto/v1/instance_service";
 import { PlanType } from "@/types/proto/v1/subscription_service";
 import {
@@ -89,7 +122,14 @@ import {
   sortInstanceV1ListByEnvironmentV1,
   extractEnvironmentResourceName,
   wrapRefAsPromise,
+  extractInstanceResourceName,
+  instanceV1Name,
+  hasProjectPermissionV2,
+  isDatabaseV1Queryable,
+  extractProjectResourceName,
+  extractDatabaseResourceName,
 } from "@/utils";
+import InstanceDetail from "@/views/InstanceDetail.vue";
 
 interface LocalState {
   params: SearchParams;
@@ -223,4 +263,30 @@ const showInstanceDetail = (instance: Instance) => {
   state.detail.show = true;
   state.detail.instance = instance;
 };
+
+const allowQueryDatabase = (db: ComposedDatabase) => {
+  if (db.project === DEFAULT_PROJECT_NAME) {
+    return hasProjectPermissionV2(defaultProject(), "bb.databases.query");
+  }
+  return isDatabaseV1Queryable(db);
+};
+const handleClickDatabase = (db: ComposedDatabase) => {
+  if (!allowQueryDatabase(db)) return;
+  const projectName = extractProjectResourceName(db.project);
+  const { instanceName, databaseName } = extractDatabaseResourceName(db.name);
+  router.push({
+    name: SQL_EDITOR_DATABASE_MODULE,
+    params: {
+      project: projectName,
+      instance: instanceName,
+      database: databaseName,
+    },
+  });
+};
 </script>
+
+<style scoped lang="postcss">
+.instance-detail-drawer :deep(.n-drawer-header__main) {
+  @apply flex-1 flex items-center justify-between;
+}
+</style>

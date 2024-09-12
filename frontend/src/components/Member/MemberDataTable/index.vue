@@ -22,6 +22,7 @@ import GroupMemberNameCell from "@/components/User/Settings/UserDataTableByGroup
 import GroupNameCell from "@/components/User/Settings/UserDataTableByGroup/cells/GroupNameCell.vue";
 import { useUserStore } from "@/store";
 import { unknownUser } from "@/types";
+import type { User } from "@/types/proto/v1/auth_service";
 import type { MemberBinding } from "../types";
 import UserNameCell from "./cells/UserNameCell.vue";
 import UserOperationsCell from "./cells/UserOperationsCell.vue";
@@ -32,6 +33,7 @@ const props = defineProps<{
   bindings: MemberBinding[];
   selectedBindings: string[];
   selectDisabled: (memberBinding: MemberBinding) => boolean;
+  onClickUser?: (user: User, event: MouseEvent) => void;
 }>();
 
 const emit = defineEmits<{
@@ -66,6 +68,7 @@ const columns = computed(
                   <GroupMemberNameCell
                     key={`${memberBinding.group?.name}-${user.name}`}
                     user={user}
+                    onClickUser={props.onClickUser}
                   />
                 );
               })}
@@ -82,7 +85,12 @@ const columns = computed(
           if (memberBinding.type === "groups") {
             return <GroupNameCell group={memberBinding.group!} />;
           }
-          return <UserNameCell binding={memberBinding} />;
+          return (
+            <UserNameCell
+              binding={memberBinding}
+              onClickUser={props.onClickUser}
+            />
+          );
         },
       },
       {

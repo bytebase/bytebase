@@ -221,6 +221,7 @@ import { useRouter } from "vue-router";
 import { BBTextField } from "@/bbkit";
 import BytebaseLogo from "@/components/BytebaseLogo.vue";
 import { AUTH_SIGNIN_MODULE } from "@/router/auth";
+import { SETUP_WORKSPACE_MODE_MODULE } from "@/router/setup";
 import {
   useActuatorV1Store,
   useAuthStore,
@@ -359,8 +360,12 @@ const trySignup = async () => {
         // We write a flag here to indicate that the workspace is just created
         // and we can consume this flag somewhere else if needed.
         useOnboardingStateStore().initialize();
+        router.replace({
+          name: SETUP_WORKSPACE_MODE_MODULE,
+        });
+      } else {
+        router.replace("/");
       }
-      router.replace("/");
     } finally {
       state.isLoading = false;
     }

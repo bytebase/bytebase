@@ -289,7 +289,8 @@
     },
     "back-to-workspace": "Volver al espacio de trabajo",
     "override": "Anular",
-    "encoding": "Codificación"
+    "encoding": "Codificación",
+    "finish": "Finalizar"
   },
   "error-page": {
     "go-back-home": "Volver al inicio"
@@ -767,12 +768,14 @@
         },
         "database-change-mode": {
           "self": "Modo de cambio de base de datos",
-          "description": "Controla cómo los usuarios realizan migraciones de esquemas de bases de datos. El modo de emisión utiliza flujos de trabajo de problemas/tareas con aprobaciones personalizadas para un proceso estructurado. El modo Editor SQL permite la ejecución directa de SQL en un editor SQL para realizar cambios rápidos y sencillos.",
+          "description": "Controla cómo los usuarios realizan migraciones de esquemas de bases de datos.",
           "issue-mode": {
-            "self": "Modo de emisión"
+            "self": "Modo de emisión",
+            "description": "Utilice flujos de trabajo de problemas/tareas con aprobaciones personalizadas para un proceso estructurado."
           },
           "sql-editor-mode": {
-            "self": "Modo de edición SQL"
+            "self": "Modo de edición SQL",
+            "description": "Permite la ejecución directa de SQL en un editor de SQL para realizar cambios rápidos y sencillos."
           }
         }
       }
@@ -1271,7 +1274,6 @@
       "you-are-not-allowed-to-perform-this-action": "No tienes permiso para realizar esta acción.",
       "cannot-close-issue-with-running-tasks": "No se puede cerrar el problema con las tareas en ejecución"
     },
-    "approval-requested": "Aprobación solicitada",
     "unfinished-resolved-issue-tips": "Este problema está marcado como \"Listo\", pero algunas de sus tareas no se ejecutan correctamente.",
     "some-tasks-are-not-executed-successfully": "(Algunas tareas no se ejecutan correctamente)",
     "preview": "Problema de vista previa",
@@ -1329,7 +1331,7 @@
       "export-data": "Exportar datos",
       "create-database": "Crear base de datos",
       "request-querier-role": "Rol de consultador de solicitudes",
-      "request-export-role": "Solicitar función de exportación"
+      "request-exporter-role": "Solicitar función de exportación"
     }
   },
   "alter-schema": {
@@ -2110,6 +2112,13 @@
         "enforce-issue-title": {
           "self": "Hacer cumplir el título del problema",
           "description": "Exigir que el título del problema no esté vacío y que lo cree el usuario en lugar de generarse automáticamente."
+        },
+        "default-backup-behavior": {
+          "self": "Comportamiento de copia de seguridad predeterminado",
+          "description": "El comportamiento de copia de seguridad predeterminado al crear problemas de cambio de datos.",
+          "default_backup_behavior_no_backup": "Deshabilitar copia de seguridad",
+          "default_backup_behavior_backup_on_error_stop": "Habilitar copia de seguridad, pero detener la tarea en caso de error",
+          "default_backup_behavior_backup_on_error_skip": "Habilitar copia de seguridad, omitir error de copia de seguridad en caso de falla"
         }
       }
     },
@@ -3711,5 +3720,20 @@
   },
   "worksheet": {
     "self": "Hoja de trabajo"
+  },
+  "setup": {
+    "workspace-mode": {
+      "choose": "Elija el modo de espacio de trabajo",
+      "issue-mode": {
+        "self": "Modo de emisión",
+        "description": "Cambie la base de datos confirmando problemas. \nMejore su flujo de trabajo de cambio de base de datos con cambio por lotes, GitOps, revisión de SQL, aprobación personalizada y más."
+      },
+      "sql-editor-mode": {
+        "self": "Modo editor SQL",
+        "description": "Cambie la base de datos a través del Editor SQL como los clientes GUI de SQL clásicos. \nUna forma sencilla de acceder a sus bases de datos de forma rápida y directa."
+      },
+      "can-be-changed-later": "Esta configuración se puede cambiar en cualquier momento posterior."
+    },
+    "self": "Configuración"
   }
 }

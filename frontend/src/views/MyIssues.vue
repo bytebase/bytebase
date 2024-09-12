@@ -150,8 +150,10 @@ import {
   useSubscriptionV1Store,
   useOnboardingStateStore,
   useCurrentUserV1,
+  useAppFeature,
 } from "@/store";
 import { planTypeToString } from "@/types";
+import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
 import type { SearchParams, SearchScopeId, SemanticIssueStatus } from "@/utils";
 import {
   buildIssueFilterBySearchParams,
@@ -167,7 +169,7 @@ import { getComponentIdLocalStorageKey } from "@/utils/localStorage";
 
 const TABS = [
   "CREATED",
-  "APPROVAL_REQUESTED",
+  "WAITING_APPROVAL",
   "WAITING_ROLLOUT",
   "SUBSCRIBED",
   "ALL",
@@ -188,6 +190,7 @@ const onboardingStateStore = useOnboardingStateStore();
 const me = useCurrentUserV1();
 const route = useRoute();
 const router = useRouter();
+const databaseChangeMode = useAppFeature("bb.feature.database-change-mode");
 
 const viewId = useLocalStorage<string>(
   getComponentIdLocalStorageKey(WORKSPACE_ROUTE_MY_ISSUES),
@@ -227,16 +230,21 @@ const defaultScopeIds = computed(() => {
   return new Set(defaultSearchParams().scopes.map((s) => s.id));
 });
 const tabItemList = computed((): TabFilterItem<TabValue>[] => {
-  return [
+  const items: (TabFilterItem<TabValue> & { hide?: boolean })[] = [
     { value: "CREATED", label: t("common.created") },
     {
-      value: "APPROVAL_REQUESTED",
-      label: t("issue.approval-requested"),
+      value: "WAITING_APPROVAL",
+      label: t("issue.waiting-approval"),
     },
-    { value: "WAITING_ROLLOUT", label: t("issue.waiting-rollout") },
+    {
+      value: "WAITING_ROLLOUT",
+      label: t("issue.waiting-rollout"),
+      hide: databaseChangeMode.value === DatabaseChangeMode.EDITOR,
+    },
     { value: "SUBSCRIBED", label: t("common.subscribed") },
     { value: "ALL", label: t("common.all") },
   ];
+  return items.filter((item) => !item.hide);
 });
 const storedTab = useDynamicLocalStorage<TabValue>(
   computed(() => `bb.home.issue-list-tab.${me.value.name}`),
@@ -256,7 +264,7 @@ const storedTab = useDynamicLocalStorage<TabValue>(
 );
 const keyForTab = (tab: TabValue) => {
   if (tab === "CREATED") return "my-issues-created";
-  if (tab === "APPROVAL_REQUESTED") return "my-issues-approval-requested";
+  if (tab === "WAITING_APPROVAL") return "my-issues-waiting-approval";
   if (tab === "WAITING_ROLLOUT") return "my-issues-waiting-rollout";
   if (tab === "SUBSCRIBED") return "my-issues-subscribed";
   if (tab === "ALL") return "my-issues-all";
@@ -282,7 +290,7 @@ const mergeSearchParamsByTab = (params: SearchParams, tab: TabValue) => {
       value: myEmail,
     });
   }
-  if (tab === "APPROVAL_REQUESTED") {
+  if (tab === "WAITING_APPROVAL") {
     return upsertScope(common, [
       {
         id: "status",
@@ -345,7 +353,7 @@ const guessTabValueFromSearchParams = (params: SearchParams): TabValue => {
     getValueFromSearchParams(params, "approval") === "pending" &&
     getValueFromSearchParams(params, "approver") === myEmail
   ) {
-    return "APPROVAL_REQUESTED";
+    return "WAITING_APPROVAL";
   }
   if (
     verifyScopes(["approval", "releaser"]) &&
@@ -408,7 +416,7 @@ const planImage = computed(() => {
 
 const statusTabHidden = computed(() => {
   if (state.advanced) return true;
-  return ["APPROVAL_REQUESTED", "WAITING_ROLLOUT"].includes(tab.value);
+  return ["WAITING_APPROVAL", "WAITING_ROLLOUT"].includes(tab.value);
 });
 
 const mergedIssueFilter = computed(() => {
@@ -439,7 +447,7 @@ const toggleAdvancedSearch = (on: boolean) => {
 watch(
   [tab],
   () => {
-    if (tab.value === "APPROVAL_REQUESTED" || tab.value === "WAITING_ROLLOUT") {
+    if (tab.value === "WAITING_APPROVAL" || tab.value === "WAITING_ROLLOUT") {
       if (getValueFromSearchParams(state.params, "status") === "CLOSED") {
         upsertScope(
           state.params,

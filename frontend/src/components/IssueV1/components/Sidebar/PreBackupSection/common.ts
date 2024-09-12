@@ -108,11 +108,7 @@ export const usePreBackupContext = () => {
 
   const archiveDatabase = computed((): string => {
     const { engine } = database.value.instanceResource;
-    if (engine === Engine.ORACLE) {
-      return "BBDATAARCHIVE";
-    }
-
-    return "bbdataarchive";
+    return getArchiveDatabase(engine);
   });
 
   const togglePreBackup = async (on: boolean) => {
@@ -212,4 +208,11 @@ export const usePreBackupContext = () => {
     showRollbackSection,
     allowRollback,
   };
+};
+
+export const getArchiveDatabase = (engine: Engine): string => {
+  if (engine === Engine.ORACLE) {
+    return "BBDATAARCHIVE";
+  }
+  return "bbdataarchive";
 };

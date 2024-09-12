@@ -64,6 +64,11 @@ interface LocalState {
   selectedLabels: { key: string; value: string }[];
 }
 
+const props = defineProps<{
+  openInNewWindow?: boolean;
+  onClickDatabase?: (db: ComposedDatabase, event: MouseEvent) => void;
+}>();
+
 const uiStateStore = useUIStateStore();
 const { projectList } = useProjectV1List();
 const hideUnassignedDatabases = useAppFeature(
@@ -208,8 +213,13 @@ const handleDatabasesSelectionChanged = (
 };
 
 const handleDatabaseClick = (event: MouseEvent, database: ComposedDatabase) => {
+  if (props.onClickDatabase) {
+    props.onClickDatabase(database, event);
+    return;
+  }
+
   const url = databaseV1Url(database);
-  if (event.ctrlKey || event.metaKey) {
+  if (props.openInNewWindow || event.ctrlKey || event.metaKey) {
     window.open(url, "_blank");
   } else {
     router.push(url);

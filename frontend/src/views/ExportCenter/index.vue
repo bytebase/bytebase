@@ -8,7 +8,7 @@
           v-model:params="state.params"
           class="flex-1"
           :readonly-scopes="readonlyScopes"
-          :override-scope-id-list="overideSearchScopeIdList"
+          :override-scope-id-list="overrideSearchScopeIdList"
         >
           <template #searchbox-suffix>
             <NTooltip :disabled="allowExportData">
@@ -139,7 +139,7 @@ const dataExportIssueSearchParams = computed(() => {
   } as SearchParams;
 });
 
-const overideSearchScopeIdList = computed(() => {
+const overrideSearchScopeIdList = computed(() => {
   const defaultScopeIdList: SearchScopeId[] = [
     "status",
     "instance",
