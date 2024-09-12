@@ -24,6 +24,7 @@ export const SQL_EDITOR_SETTING_ROLES_MODULE = "sql-editor.setting.roles";
 export const SQL_EDITOR_SETTING_SSO_MODULE = "sql-editor.setting.sso";
 export const SQL_EDITOR_SETTING_AUDIT_LOG_MODULE =
   "sql-editor.setting.audit-log";
+export const SQL_EDITOR_SETTING_PROFILE_MODULE = "sql-editor.setting.profile";
 
 const sqlEditorRoutes: RouteRecordRaw[] = [
   {
@@ -169,6 +170,14 @@ const sqlEditorRoutes: RouteRecordRaw[] = [
               ],
             },
             component: () => import("../views/sql-editor/Setting/AuditLog"),
+          },
+          {
+            path: "profile",
+            name: SQL_EDITOR_SETTING_PROFILE_MODULE,
+            meta: {
+              requiredWorkspacePermissionList: () => [],
+            },
+            component: () => import("../views/sql-editor/Setting/Profile"),
           },
         ],
       },

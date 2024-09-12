@@ -3,6 +3,7 @@ import {
   GalleryHorizontalEndIcon,
   LayersIcon,
   SquareStackIcon,
+  UserCircleIcon,
   UsersIcon,
 } from "lucide-vue-next";
 import { computed, h } from "vue";
@@ -17,6 +18,7 @@ import sqlEditorRoutes, {
   SQL_EDITOR_SETTING_GENERAL_MODULE,
   SQL_EDITOR_SETTING_INSTANCE_MODULE,
   SQL_EDITOR_SETTING_MEMBERS_MODULE,
+  SQL_EDITOR_SETTING_PROFILE_MODULE,
   SQL_EDITOR_SETTING_PROJECT_MODULE,
   SQL_EDITOR_SETTING_ROLES_MODULE,
   SQL_EDITOR_SETTING_SSO_MODULE,
@@ -167,6 +169,22 @@ export const useSidebarItems = () => {
           {
             title: t("settings.sidebar.audit-log"),
             name: SQL_EDITOR_SETTING_AUDIT_LOG_MODULE,
+            type: "route",
+          },
+        ],
+      },
+      {
+        type: "divider",
+      },
+      {
+        title: t("settings.sidebar.account"),
+        icon: () => h(UserCircleIcon),
+        type: "div",
+        expand: true,
+        children: [
+          {
+            title: t("settings.sidebar.profile"),
+            name: SQL_EDITOR_SETTING_PROFILE_MODULE,
             type: "route",
           },
         ],
