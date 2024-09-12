@@ -30,7 +30,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
+	crdbparser "github.com/bytebase/bytebase/backend/plugin/parser/cockroachdb"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
@@ -391,17 +391,16 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 	// HACK(p0ny): always split for pg
 	//nolint
 	if true || len(statement) <= common.MaxSheetCheckSize {
-		singleSQLs, err := pgparser.SplitSQL(statement)
+		singleSQLs, err := crdbparser.SplitSQLStatement(statement)
 		if err != nil {
 			return 0, err
 		}
-		commands, originalIndex = base.FilterEmptySQLWithIndexes(singleSQLs)
 
 		// If the statement is a single statement and is a PL/pgSQL block,
 		// we should execute it as a single statement without transaction.
 		// If the statement is a PL/pgSQL block, we should execute it as a single statement.
 		// https://www.postgresql.org/docs/current/plpgsql-control-structures.html
-		if len(singleSQLs) == 1 && isPlSQLBlock(singleSQLs[0].Text) {
+		if len(singleSQLs) == 1 && isPlSQLBlock(singleSQLs[0]) {
 			isPlsql = true
 		}
 		// HACK(p0ny): always split for pg
@@ -684,18 +683,17 @@ func (driver *Driver) GetCurrentDatabaseOwner(ctx context.Context) (string, erro
 
 // QueryConn queries a SQL statement in a given connection.
 func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement string, queryContext db.QueryContext) ([]*v1pb.QueryResult, error) {
-	singleSQLs, err := pgparser.SplitSQL(statement)
+	singleSQLs, err := crdbparser.SplitSQLStatement(statement)
 	if err != nil {
 		return nil, err
 	}
-	singleSQLs = base.FilterEmptySQL(singleSQLs)
 	if len(singleSQLs) == 0 {
 		return nil, nil
 	}
 
 	var results []*v1pb.QueryResult
 	for _, singleSQL := range singleSQLs {
-		statement := singleSQL.Text
+		statement := singleSQL
 		if queryContext.Explain {
 			statement = fmt.Sprintf("EXPLAIN %s", statement)
 		} else if queryContext.Limit > 0 {
