@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
@@ -588,15 +587,29 @@ func extractResourceList(ctx context.Context, storeInstance *store.Store, engine
 }
 
 func exportJSON(result *v1pb.QueryResult) ([]byte, error) {
-	var results []map[string]any
-	for _, row := range result.Rows {
-		m := make(map[string]any)
+	var buf bytes.Buffer
+	buf.WriteString("[")
+
+	for rowIndex, row := range result.Rows {
+		buf.WriteString("{")
 		for i, value := range row.Values {
-			m[result.ColumnNames[i]] = convertValueToStringInJSON(value)
+			buf.WriteString(`"`)
+			buf.WriteString(result.ColumnNames[i])
+			buf.WriteString(`":`)
+			buf.WriteString(convertValueToStringInJSON(value))
+			if i != len(row.Values)-1 {
+				buf.WriteString(",")
+			}
 		}
-		results = append(results, m)
+		buf.WriteString("}")
+
+		if rowIndex != len(result.Rows)-1 {
+			buf.WriteString(",")
+		}
 	}
-	return json.MarshalIndent(results, "", "  ")
+
+	buf.WriteString("]")
+	return buf.Bytes(), nil
 }
 
 func convertValueToStringInJSON(value *v1pb.RowValue) string {
@@ -622,7 +635,7 @@ func convertValueToStringInJSON(value *v1pb.RowValue) string {
 	case *v1pb.RowValue_BoolValue:
 		return strconv.FormatBool(value.GetBoolValue())
 	case *v1pb.RowValue_BytesValue:
-		return base64.StdEncoding.EncodeToString(value.GetBytesValue())
+		return convertBytesToBinaryString(value.GetBytesValue())
 	case *v1pb.RowValue_NullValue:
 		return "null"
 	case *v1pb.RowValue_ValueValue:
@@ -631,6 +644,15 @@ func convertValueToStringInJSON(value *v1pb.RowValue) string {
 	default:
 		return ""
 	}
+}
+
+func convertBytesToBinaryString(bs []byte) string {
+	var buf bytes.Buffer
+	buf.WriteString("0b")
+	for _, b := range bs {
+		buf.WriteString(fmt.Sprintf("%08b", b))
+	}
+	return buf.String()
 }
 
 const (
