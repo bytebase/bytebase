@@ -160,7 +160,9 @@ const columnList = computed((): DataTableColumn<IdentityProvider>[] => {
               size: "small",
               onClick: () => handleViewSSO(identityProvider),
             },
-            t("common.view")
+            {
+              default: () => t("common.view"),
+            }
           )
         ),
     });
