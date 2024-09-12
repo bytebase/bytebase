@@ -112,11 +112,8 @@ func (driver *Driver) Dump(ctx context.Context, out io.Writer) error {
 		return err
 	}
 
-	if err := txn.Commit(); err != nil {
-		return err
-	}
-
-	return nil
+	err = txn.Commit()
+	return err
 }
 
 // FlushTablesWithReadLock runs FLUSH TABLES table1, table2, ... WITH READ LOCK for all the tables in the database.

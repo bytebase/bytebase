@@ -35,11 +35,8 @@ func (driver *Driver) Dump(ctx context.Context, out io.Writer) error {
 		return err
 	}
 
-	if err := txn.Commit(); err != nil {
-		return err
-	}
-
-	return nil
+	err = txn.Commit()
+	return err
 }
 
 func dumpTxn(ctx context.Context, txn *sql.Tx, schemas []string, out io.Writer) error {

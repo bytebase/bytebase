@@ -94,11 +94,7 @@ func (driver *Driver) Dump(ctx context.Context, out io.Writer) error {
 		return err
 	}
 
-	if err := txn.Commit(); err != nil {
-		return err
-	}
-
-	return nil
+	return txn.Commit()
 }
 
 func dumpTxn(txn *sql.Tx, database string, out io.Writer) error {

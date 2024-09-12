@@ -27,10 +27,7 @@ func (driver *Driver) Dump(ctx context.Context, out io.Writer) error {
 		return errors.Wrapf(err, "failed to dump database %q", driver.databaseName)
 	}
 
-	if err := txn.Commit(); err != nil {
-		return err
-	}
-	return nil
+	return txn.Commit()
 }
 
 func (driver *Driver) dumpSchemaTxn(ctx context.Context, txn *sql.Tx, schema string, out io.Writer) error {

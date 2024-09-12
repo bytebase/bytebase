@@ -43,11 +43,7 @@ func (driver *Driver) Dump(ctx context.Context, out io.Writer) error {
 		return err
 	}
 
-	if err := txn.Commit(); err != nil {
-		return err
-	}
-
-	return err
+	return txn.Commit()
 }
 
 // getDatabases gets all databases of an instance.

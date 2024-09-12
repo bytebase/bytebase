@@ -32,11 +32,8 @@ func (driver *Driver) Dump(ctx context.Context, out io.Writer) error {
 		return err
 	}
 
-	if err := txn.Commit(); err != nil {
-		return err
-	}
-
-	return nil
+	err = txn.Commit()
+	return err
 }
 
 // dumpTxn will dump the input database. schemaOnly isn't supported yet and true by default.

@@ -29,10 +29,7 @@ func (driver *Driver) Dump(ctx context.Context, out io.Writer) error {
 		return errors.Wrapf(err, "failed to dump database %q", driver.databaseName)
 	}
 
-	if err := txn.Commit(); err != nil {
-		return  err
-	}
-	return  nil
+	return txn.Commit()
 }
 
 const (

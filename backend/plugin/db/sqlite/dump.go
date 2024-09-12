@@ -33,11 +33,7 @@ func (driver *Driver) Dump(ctx context.Context, out io.Writer) error {
 		return errors.Errorf("database %s not found", driver.databaseName)
 	}
 
-	if err := driver.dumpOneDatabase(ctx, out); err != nil {
-		return err
-	}
-
-	return nil
+	return driver.dumpOneDatabase(ctx, out)
 }
 
 type sqliteSchema struct {
