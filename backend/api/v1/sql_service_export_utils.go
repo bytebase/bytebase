@@ -649,7 +649,11 @@ func convertValueToStringInJSON(value *v1pb.RowValue) string {
 	case *v1pb.RowValue_BoolValue:
 		return strconv.FormatBool(value.GetBoolValue())
 	case *v1pb.RowValue_BytesValue:
-		return convertBytesToBinaryString(value.GetBytesValue())
+		value, err := convertBytesToBinaryString(value.GetBytesValue())
+		if err != nil {
+			return ""
+		}
+		return value
 	case *v1pb.RowValue_NullValue:
 		return "null"
 	case *v1pb.RowValue_ValueValue:
@@ -660,13 +664,17 @@ func convertValueToStringInJSON(value *v1pb.RowValue) string {
 	}
 }
 
-func convertBytesToBinaryString(bs []byte) string {
+func convertBytesToBinaryString(bs []byte) (string, error) {
 	var buf bytes.Buffer
-	buf.WriteString("0b")
-	for _, b := range bs {
-		buf.WriteString(fmt.Sprintf("%08b", b))
+	if _, err := buf.WriteString("0b"); err != nil {
+		return "", err
 	}
-	return buf.String()
+	for _, b := range bs {
+		if _, err := buf.WriteString(fmt.Sprintf("%08b", b)); err != nil {
+			return "", err
+		}
+	}
+	return buf.String(), nil
 }
 
 func escapeJSONString(str string) string {
