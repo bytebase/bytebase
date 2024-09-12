@@ -322,10 +322,8 @@ func (driver *Driver) getDatabases(ctx context.Context) ([]*storepb.DatabaseSche
 			}
 			databases = append(databases, database)
 		}
-		if err := rows.Err(); err != nil {
-			return err
-		}
-		return nil
+		err = rows.Err()
+		return err
 	}); err != nil {
 		return nil, err
 	}
@@ -733,10 +731,8 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 					if err != nil {
 						return err
 					}
-					if err := rows.Err(); err != nil {
-						return err
-					}
-					return nil
+					err = rows.Err()
+					return err
 				}); err != nil {
 					return nil, err
 				}
