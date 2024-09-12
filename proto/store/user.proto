@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package bytebase.store;
 
+import "google/protobuf/timestamp.proto";
+
 option go_package = "generated-go/store";
 
 // MFAConfig is the MFA configuration for a user.
@@ -17,4 +19,9 @@ message MFAConfig {
 
   //  The temp_recovery_codes are the temporary codes that will replace the recovery_codes in two phase commits.
   repeated string temp_recovery_codes = 4;
+}
+
+message UserProfile {
+  google.protobuf.Timestamp last_login_time = 1;
+  google.protobuf.Timestamp last_change_password_time = 2;
 }
