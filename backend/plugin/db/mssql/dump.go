@@ -18,21 +18,18 @@ const (
 )
 
 // Dump dumps the database.
-func (driver *Driver) Dump(ctx context.Context, out io.Writer) (string, error) {
+func (driver *Driver) Dump(ctx context.Context, out io.Writer) error {
 	txn, err := driver.db.BeginTx(ctx, &sql.TxOptions{})
 	if err != nil {
-		return "", err
+		return err
 	}
 	defer txn.Rollback()
 
 	if err := driver.dumpDatabaseTxn(ctx, txn, out); err != nil {
-		return "", errors.Wrapf(err, "failed to dump database %q", driver.databaseName)
+		return errors.Wrapf(err, "failed to dump database %q", driver.databaseName)
 	}
 
-	if err := txn.Commit(); err != nil {
-		return "", err
-	}
-	return "", nil
+	return txn.Commit()
 }
 
 const (

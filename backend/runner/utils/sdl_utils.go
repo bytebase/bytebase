@@ -29,7 +29,7 @@ func ComputeDatabaseSchemaDiff(ctx context.Context, instance *store.InstanceMess
 	}()
 
 	var schema bytes.Buffer
-	_, err = driver.Dump(ctx, &schema)
+	err = driver.Dump(ctx, &schema)
 	if err != nil {
 		return "", errors.Wrap(err, "dump old schema")
 	}

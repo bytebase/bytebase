@@ -14,21 +14,21 @@ import (
 )
 
 // Dump dumps the database.
-func (driver *Driver) Dump(ctx context.Context, out io.Writer) (string, error) {
+func (driver *Driver) Dump(ctx context.Context, out io.Writer) error {
 	txn, err := driver.db.BeginTx(ctx, &sql.TxOptions{})
 	if err != nil {
-		return "", err
+		return err
 	}
 	defer txn.Rollback()
 
 	if err := driver.dumpTxn(ctx, txn, []string{driver.databaseName}, out); err != nil {
-		return "", err
+		return err
 	}
 
 	if err := txn.Commit(); err != nil {
-		return "", err
+		return err
 	}
-	return "", nil
+	return err
 }
 
 func (driver *Driver) dumpTxn(ctx context.Context, txn *sql.Tx, schemas []string, out io.Writer) error {

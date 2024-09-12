@@ -10,10 +10,10 @@ import (
 )
 
 // Dump dumps the database.
-func (d *Driver) Dump(ctx context.Context, out io.Writer) (string, error) {
+func (d *Driver) Dump(ctx context.Context, out io.Writer) error {
 	instance, err := d.SyncInstance(ctx)
 	if err != nil {
-		return "", err
+		return err
 	}
 	var dumpableDbNames []string
 	if d.databaseName != "" {
@@ -25,7 +25,7 @@ func (d *Driver) Dump(ctx context.Context, out io.Writer) (string, error) {
 			}
 		}
 		if !exist {
-			return "", errors.Errorf("database %q not found", d.databaseName)
+			return errors.Errorf("database %q not found", d.databaseName)
 		}
 		dumpableDbNames = []string{d.databaseName}
 	} else {
@@ -38,14 +38,14 @@ func (d *Driver) Dump(ctx context.Context, out io.Writer) (string, error) {
 			Database: getDSN(d.config.Host, db),
 		})
 		if err != nil {
-			return "", err
+			return err
 		}
 		for _, stmt := range resp.Statements {
 			if _, err := io.WriteString(out, fmt.Sprintf("%s;\n", stmt)); err != nil {
-				return "", err
+				return err
 			}
 		}
 	}
 
-	return "", nil
+	return nil
 }
