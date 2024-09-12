@@ -2104,6 +2104,13 @@
         "enforce-issue-title": {
           "self": "Enforce issue title",
           "description": "Enforce issue title to be non-empty and created by user instead of auto generated."
+        },
+        "default-backup-behavior": {
+          "self": "Default backup behavior",
+          "description": "The default backup behavior when creating data changing issues.",
+          "default_backup_behavior_no_backup": "Disable backup",
+          "default_backup_behavior_backup_on_error_stop": "Enable backup, but stop the task on error",
+          "default_backup_behavior_backup_on_error_skip": "Enable backup, skip backup error on failure"
         }
       }
     },
