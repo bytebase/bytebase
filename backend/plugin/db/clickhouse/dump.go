@@ -32,22 +32,18 @@ const (
 )
 
 // Dump dumps the database.
-func (driver *Driver) Dump(ctx context.Context, out io.Writer) (string, error) {
+func (driver *Driver) Dump(ctx context.Context, out io.Writer) error {
 	txn, err := driver.db.BeginTx(ctx, &sql.TxOptions{})
 	if err != nil {
-		return "", err
+		return err
 	}
 	defer txn.Rollback()
 
 	if err := dumpTxn(ctx, txn, driver.databaseName, out); err != nil {
-		return "", err
+		return err
 	}
 
-	if err := txn.Commit(); err != nil {
-		return "", err
-	}
-
-	return "", nil
+	return txn.Commit()
 }
 
 // getDatabases gets all databases of an instance.

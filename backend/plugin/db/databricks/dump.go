@@ -27,10 +27,10 @@ var (
 	dftSchema  = "default"
 )
 
-func (d *Driver) Dump(ctx context.Context, writer io.Writer) (string, error) {
+func (d *Driver) Dump(ctx context.Context, writer io.Writer) error {
 	catalogMap, err := d.listCatologTables(ctx, "")
 	if err != nil {
-		return "", err
+		return err
 	}
 
 	for catalogName, schemaMap := range catalogMap {
@@ -38,7 +38,7 @@ func (d *Driver) Dump(ctx context.Context, writer io.Writer) (string, error) {
 			continue
 		}
 		if _, err := writer.Write([]byte(fmt.Sprintf("CREATE CATALOG %s\n", catalogName))); err != nil {
-			return "", err
+			return err
 		}
 
 		for schemaName, tableList := range schemaMap {
@@ -48,7 +48,7 @@ func (d *Driver) Dump(ctx context.Context, writer io.Writer) (string, error) {
 			if schemaName != dftSchema {
 				_, err := writer.Write([]byte(fmt.Sprintf("CREATE SCHEMA `%s`.`%s`\n", catalogName, schemaName)))
 				if err != nil {
-					return "", err
+					return err
 				}
 			}
 
@@ -59,52 +59,52 @@ func (d *Driver) Dump(ctx context.Context, writer io.Writer) (string, error) {
 			for _, tblUnion := range tableList {
 				qualifiedName, err := getQualifiedTblName(catalogName, schemaName, tblUnion.name)
 				if err != nil {
-					return "", err
+					return err
 				}
 
 				switch tblUnion.typeName {
 				case catalog.TableTypeView:
 					ddl, err := d.showCreateTable(ctx, qualifiedName)
 					if err != nil {
-						return "", err
+						return err
 					}
 					formatDDL := fmt.Sprintf(schemaStmtFmt, "VIEW", qualifiedName, ddl)
 					if _, err := viewDDL.WriteString(formatDDL); err != nil {
-						return "", err
+						return err
 					}
 				case catalog.TableTypeMaterializedView:
 					tblAddInfo, err := d.descTbl(ctx, qualifiedName)
 					if err != nil {
-						return "", err
+						return err
 					}
 					tblProperties, err := formatTblProperties(tblAddInfo)
 					if err != nil {
-						return "", err
+						return err
 					}
 					formatDDL, err := genMaterializedViewDDL(qualifiedName, tblUnion.materialView, tblProperties)
 					if err != nil {
-						return "", err
+						return err
 					}
 					if _, err := mtViewDDL.WriteString(formatDDL); err != nil {
-						return "", err
+						return err
 					}
 				case catalog.TableTypeExternal:
 					ddl, err := d.showCreateTable(ctx, qualifiedName)
 					if err != nil {
-						return "", err
+						return err
 					}
 					formatDDL := fmt.Sprintf(schemaStmtFmt, "EXTERNAL TABLE", qualifiedName, ddl)
 					if _, err := extTblDDL.WriteString(formatDDL); err != nil {
-						return "", err
+						return err
 					}
 				case catalog.TableTypeManaged:
 					ddl, err := d.showCreateTable(ctx, qualifiedName)
 					if err != nil {
-						return "", err
+						return err
 					}
 					formatDDL := fmt.Sprintf(schemaStmtFmt, "MANAGED TABLE", qualifiedName, ddl)
 					if _, err := mngTblDDL.WriteString(formatDDL); err != nil {
-						return "", err
+						return err
 					}
 				default:
 					// we do not sync streaming table.
@@ -112,21 +112,21 @@ func (d *Driver) Dump(ctx context.Context, writer io.Writer) (string, error) {
 				}
 			}
 			if _, err := writer.Write([]byte(mngTblDDL.String())); err != nil {
-				return "", err
+				return err
 			}
 			if _, err := writer.Write([]byte(extTblDDL.String())); err != nil {
-				return "", err
+				return err
 			}
 			if _, err := writer.Write([]byte(viewDDL.String())); err != nil {
-				return "", err
+				return err
 			}
 			if _, err := writer.Write([]byte(mtViewDDL.String())); err != nil {
-				return "", err
+				return err
 			}
 		}
 	}
 
-	return "", nil
+	return nil
 }
 
 func (d *Driver) showCreateTable(ctx context.Context, qualifiedTblName string) (string, error) {
