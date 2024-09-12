@@ -17,7 +17,7 @@
           class="project-select"
           :project-name="projectName"
           :include-all="false"
-          :include-default-project="true"
+          :include-default-project="allowAccessDefaultProject"
           :loading="!projectContextReady"
           @update:project-name="handleSwitchProject"
         />
@@ -44,7 +44,8 @@ import {
   useSQLEditorStore,
   useAppFeature,
 } from "@/store";
-import { isValidProjectName } from "@/types";
+import { defaultProject, isValidProjectName } from "@/types";
+import { hasProjectPermissionV2 } from "@/utils";
 import { useSQLEditorContext } from "../context";
 import GutterBar from "./GutterBar";
 import HistoryPane from "./HistoryPane";
@@ -62,6 +63,10 @@ const hideProjects = useAppFeature("bb.feature.sql-editor.hide-projects");
 
 const projectName = computed(() => {
   return editorStore.currentProject?.name ?? null;
+});
+
+const allowAccessDefaultProject = computed(() => {
+  return hasProjectPermissionV2(defaultProject(), "bb.projects.get");
 });
 
 watch([project, projectContextReady], ([project, ready]) => {
