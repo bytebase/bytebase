@@ -24,6 +24,7 @@ func TestSplitSQLStatement(t *testing.T) {
 
 	var testCases []testCase
 	err = yaml.Unmarshal(content, &testCases)
+	a.NoError(err)
 
 	for idx, tc := range testCases {
 		got, err := SplitSQLStatement(tc.Statement)
