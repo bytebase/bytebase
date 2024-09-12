@@ -11,7 +11,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/dlclark/regexp2"
 	"github.com/pquerna/otp/totp"
 	"golang.org/x/crypto/bcrypt"
 	"google.golang.org/grpc"
@@ -43,7 +42,6 @@ type CreateUserFunc func(ctx context.Context, user *store.UserMessage, firstEndU
 
 var (
 	invalidUserOrPasswordError = status.Errorf(codes.Unauthenticated, "The email or password is not valid.")
-	passwordValidRegex         = regexp2.MustCompile(`^(?=.*\d)(?=.*[a-zA-Z])[\w~@#$%^&*+=|{}:;!.?\"()\[\]-]{8,}$`, 0)
 )
 
 // AuthService implements the auth service.
@@ -188,9 +186,10 @@ func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 	}
 
 	password := request.User.Password
-	if isMatch, _ := passwordValidRegex.MatchString(password); !isMatch {
-		return nil, status.Errorf(codes.InvalidArgument, "password at least contains one letter and one number, no less than 8 characters")
+	if err := s.validatePassword(ctx, password); err != nil {
+		return nil, err
 	}
+
 	if request.User.UserType == v1pb.UserType_SERVICE_ACCOUNT {
 		pwd, err := common.RandomString(20)
 		if err != nil {
@@ -256,6 +255,37 @@ func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 		userResponse.ServiceKey = password
 	}
 	return userResponse, nil
+}
+
+func (s *AuthService) validatePassword(ctx context.Context, password string) error {
+	passwordSetting := &storepb.PasswordRestrictionSetting{
+		MinLength: 8,
+	}
+	setting, err := s.store.GetSettingV2(ctx, api.SettingPasswordRestriction)
+	if err != nil {
+		return status.Errorf(codes.Internal, "failed to get setting %v with error: %v", api.SettingPasswordRestriction, err)
+	}
+	if setting != nil {
+		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), passwordSetting); err != nil {
+			return status.Errorf(codes.Internal, "failed to unmarshal setting %v with error: %v", api.SettingPasswordRestriction, err)
+		}
+	}
+	if len(password) < int(passwordSetting.MinLength) {
+		return status.Errorf(codes.InvalidArgument, "password length should no less than %v characters", passwordSetting.MinLength)
+	}
+	if passwordSetting.RequireNumber && !regexp.MustCompile("[0-9]+").MatchString(password) {
+		return status.Errorf(codes.InvalidArgument, "password must contains at least 1 number")
+	}
+	if passwordSetting.RequireLetter && !regexp.MustCompile("[a-zA-Z]+").MatchString(password) {
+		return status.Errorf(codes.InvalidArgument, "password must contains at least 1 lower case letter")
+	}
+	if passwordSetting.RequireUppercaseLetter && !regexp.MustCompile("[A-Z]+").MatchString(password) {
+		return status.Errorf(codes.InvalidArgument, "password must contains at least 1 upper case letter")
+	}
+	if passwordSetting.RequireSpecialCharacter && !regexp.MustCompile(`[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]+`).MatchString(password) {
+		return status.Errorf(codes.InvalidArgument, "password must contains at least 1 special character")
+	}
+	return nil
 }
 
 // UpdateUser updates a user.
@@ -327,8 +357,8 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 			if user.Type != api.EndUser {
 				return nil, status.Errorf(codes.InvalidArgument, "password can be mutated for end users only")
 			}
-			if isMatch, _ := passwordValidRegex.MatchString(request.User.Password); !isMatch {
-				return nil, status.Errorf(codes.InvalidArgument, "password at least contains one letter and one number, no less than 8 characters")
+			if err := s.validatePassword(ctx, request.User.Password); err != nil {
+				return nil, err
 			}
 			passwordPatch = &request.User.Password
 		case "service_key":

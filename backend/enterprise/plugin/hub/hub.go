@@ -154,10 +154,7 @@ func (p *Provider) parseLicense(ctx context.Context, license string) (*enterpris
 
 func (p *Provider) findEnterpriseLicense(ctx context.Context) (*enterprise.License, error) {
 	// Find enterprise license.
-	settingName := api.SettingEnterpriseLicense
-	setting, err := p.store.GetSettingV2(ctx, &store.FindSettingMessage{
-		Name: &settingName,
-	})
+	setting, err := p.store.GetSettingV2(ctx, api.SettingEnterpriseLicense)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to load enterprise license from settings")
 	}

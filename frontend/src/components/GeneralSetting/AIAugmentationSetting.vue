@@ -1,5 +1,5 @@
 <template>
-  <div ref="containerRef" class="py-6 lg:flex">
+  <div id="ai" ref="containerRef" class="py-6 lg:flex">
     <div class="text-left lg:w-1/4">
       <div class="flex items-center space-x-2">
         <h1 class="text-2xl font-bold">
