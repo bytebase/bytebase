@@ -2104,6 +2104,13 @@
         "enforce-issue-title": {
           "self": "要求手动输入工单标题",
           "description": "工单标题必须由用户输入而不是自动生成。"
+        },
+        "default-backup-behavior": {
+          "self": "默认备份行为",
+          "description": "创建数据更改问题时的默认备份行为。",
+          "default_backup_behavior_no_backup": "禁用备份",
+          "default_backup_behavior_backup_on_error_stop": "启用备份，但在发生错误时停止任务",
+          "default_backup_behavior_backup_on_error_skip": "启用备份，失败时跳过备份错误"
         }
       }
     },
