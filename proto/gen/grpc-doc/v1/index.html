@@ -2453,6 +2453,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.PasswordRestrictionSetting"><span class="badge">M</span>PasswordRestrictionSetting</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.SCIMSetting"><span class="badge">M</span>SCIMSetting</a>
                 </li>
               
@@ -25981,6 +25985,72 @@ The default value is 100MB, we will use the default value if the setting not exi
 
         
       
+        <h3 id="bytebase.v1.PasswordRestrictionSetting">PasswordRestrictionSetting</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>min_length</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>min_length is the minimum length for password, should no less than 8. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>require_number</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>require_number requires the password must contains at least one number. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>require_letter</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>require_letter requires the password must contains at least one letter, regardless of upper case or lower case </p></td>
+                </tr>
+              
+                <tr>
+                  <td>require_uppercase_letter</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>require_uppercase_letter requires the password must contains at least one upper case letter. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>require_special_character</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>require_uppercase_letter requires the password must contains at least one special character. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>require_reset_password_for_first_login</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>require_reset_password_for_first_login requires users to reset their password after the 1st login. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>rotation_days</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td>optional</td>
+                  <td><p>rotation_days requires users to reset their password after n days. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.SCIMSetting">SCIMSetting</h3>
         <p></p>
 
@@ -26540,6 +26610,13 @@ server would not persist the setting value if it is true. </p></td>
                 <tr>
                   <td>scim_setting</td>
                   <td><a href="#bytebase.v1.SCIMSetting">SCIMSetting</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>password_restriction_setting</td>
+                  <td><a href="#bytebase.v1.PasswordRestrictionSetting">PasswordRestrictionSetting</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>

@@ -1,5 +1,5 @@
 <template>
-  <div class="py-6 lg:flex">
+  <div id="network" class="py-6 lg:flex">
     <div class="text-left lg:w-1/4">
       <h1 class="text-2xl font-bold">
         {{ $t("settings.general.workspace.network") }}

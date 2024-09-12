@@ -491,7 +491,7 @@
       "phone-tips": "Asegúrese de incluir el código del país.",
       "country-code": "Códigos de país y de área",
       "password": "Contraseña",
-      "password-hint": "Mínimo ocho caracteres, al menos contiene una letra y un número.",
+      "password-hint": "La contraseña debe seguir la configuración de restricción.",
       "password-confirm": "Confirmar contraseña",
       "password-confirm-placeholder": "Confirmar nueva contraseña",
       "password-mismatch": "Nueva contraseña no coincide",
@@ -715,6 +715,14 @@
             "self": "Restricción de miembros",
             "description": "Restrinja el inicio de sesión a usuarios con direcciones de correo electrónico de los dominios especificados."
           }
+        },
+        "password-restriction": {
+          "self": "Restricción de contraseña",
+          "min-length": "La longitud mínima de la contraseña no debe ser inferior a {min} caracteres",
+          "require-number": "Requiere que la contraseña contenga al menos un número",
+          "require-letter": "Requiere que la contraseña contenga al menos una letra, independientemente de si es mayúscula o minúscula.",
+          "require-uppercase-letter": "Requiere que la contraseña contenga al menos una letra mayúscula",
+          "require-special-character": "Requiere que la contraseña contenga al menos un carácter especial"
         },
         "config-updated": "La configuración se ha actualizado.",
         "ai-assistant": {

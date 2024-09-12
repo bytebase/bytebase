@@ -87,8 +87,7 @@ func (s *SlowQueryWeeklyMailSender) Run(ctx context.Context, wg *sync.WaitGroup)
 }
 
 func (s *SlowQueryWeeklyMailSender) sendEmail(ctx context.Context, now time.Time) {
-	name := api.SettingWorkspaceMailDelivery
-	mailSetting, err := s.store.GetSettingV2(ctx, &store.FindSettingMessage{Name: &name})
+	mailSetting, err := s.store.GetSettingV2(ctx, api.SettingWorkspaceMailDelivery)
 	if err != nil {
 		slog.Error("Failed to get mail setting", log.BBError(err))
 		return
@@ -105,21 +104,13 @@ func (s *SlowQueryWeeklyMailSender) sendEmail(ctx context.Context, now time.Time
 	}
 
 	consoleRedirectURL := "www.bytebase.com"
-	workspaceProfileSettingName := api.SettingWorkspaceProfile
-	setting, err := s.store.GetSettingV2(ctx, &store.FindSettingMessage{Name: &workspaceProfileSettingName})
+	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
 	if err != nil {
 		slog.Error("Failed to get workspace profile setting", log.BBError(err))
 		return
 	}
-	if setting != nil {
-		settingValue := new(storepb.WorkspaceProfileSetting)
-		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), settingValue); err != nil {
-			slog.Error("Failed to unmarshal setting value", log.BBError(err))
-			return
-		}
-		if settingValue.ExternalUrl != "" {
-			consoleRedirectURL = settingValue.ExternalUrl
-		}
+	if setting.ExternalUrl != "" {
+		consoleRedirectURL = setting.ExternalUrl
 	}
 
 	slowQueryPolicyType := api.PolicyTypeSlowQuery

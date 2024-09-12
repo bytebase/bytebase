@@ -65,12 +65,32 @@ func (s *Server) getInitSetting(ctx context.Context) (string, time.Duration, err
 		Token: scimToken,
 	})
 	if err != nil {
-		return "", 0, errors.Wrap(err, "failed to marshal initial schema template setting")
+		return "", 0, errors.Wrap(err, "failed to marshal initial scim setting")
 	}
 	if _, _, err := s.store.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
 		Name:        api.SettingSCIM,
 		Value:       string(scimSettingValue),
 		Description: "The SCIM sync",
+	}, api.SystemBotID); err != nil {
+		return "", 0, err
+	}
+
+	// Init password validation
+	passwordSettingValue, err := protojson.Marshal(&storepb.PasswordRestrictionSetting{
+		MinLength:                         8,
+		RequireNumber:                     true,
+		RequireLetter:                     true,
+		RequireUppercaseLetter:            false,
+		RequireSpecialCharacter:           false,
+		RequireResetPasswordForFirstLogin: false,
+	})
+	if err != nil {
+		return "", 0, errors.Wrap(err, "failed to marshal initial password validation setting")
+	}
+	if _, _, err := s.store.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
+		Name:        api.SettingPasswordRestriction,
+		Value:       string(passwordSettingValue),
+		Description: "The password validation",
 	}, api.SystemBotID); err != nil {
 		return "", 0, err
 	}
@@ -173,11 +193,7 @@ func (s *Server) getInitSetting(ctx context.Context) (string, time.Duration, err
 	}
 
 	// initial workspace profile setting
-	settingName := api.SettingWorkspaceProfile
-	workspaceProfileSetting, err := s.store.GetSettingV2(ctx, &store.FindSettingMessage{
-		Name:    &settingName,
-		Enforce: true,
-	})
+	workspaceProfileSetting, err := s.store.GetSettingV2(ctx, api.SettingWorkspaceProfile)
 	if err != nil {
 		return "", 0, err
 	}
@@ -228,8 +244,7 @@ func (s *Server) getInitSetting(ctx context.Context) (string, time.Duration, err
 	}
 
 	// Get token duration and external URL.
-	workspaceProfileSettingName := api.SettingWorkspaceProfile
-	setting, err := s.store.GetSettingV2(ctx, &store.FindSettingMessage{Name: &workspaceProfileSettingName})
+	setting, err := s.store.GetSettingV2(ctx, api.SettingWorkspaceProfile)
 	if err != nil {
 		return "", 0, err
 	}
