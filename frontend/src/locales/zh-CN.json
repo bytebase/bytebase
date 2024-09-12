@@ -491,7 +491,7 @@
       "phone-tips": "请包含国家代码前缀",
       "country-code": "国家或地区代码",
       "password": "密码",
-      "password-hint": "最少 8 个字符，其中至少包含 1 个字母和 1 个数字。",
+      "password-hint": "密码应遵循限制设置。",
       "password-confirm": "确认密码",
       "password-confirm-placeholder": "确认新密码",
       "password-mismatch": "新密码不匹配",
@@ -715,6 +715,14 @@
             "self": "成员邮箱限制",
             "description": "仅允许具有指定域名的电子邮箱的用户进行登录或注册。"
           }
+        },
+        "password-restriction": {
+          "self": "密码限制",
+          "min-length": "密码最小长度，不得少于 {min} 个字符",
+          "require-number": "要求密码必须至少包含一个数字",
+          "require-letter": "要求密码必须至少包含一个字母（不区分大小写）",
+          "require-uppercase-letter": "要求密码必须至少包含一个大写字母",
+          "require-special-character": "要求密码必须至少包含一个特殊字符"
         },
         "config-updated": "配置已更新。",
         "ai-assistant": {

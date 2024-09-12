@@ -628,6 +628,23 @@ export interface SCIMSetting {
   token: string;
 }
 
+export interface PasswordRestrictionSetting {
+  /** min_length is the minimum length for password, should no less than 8. */
+  minLength: number;
+  /** require_number requires the password must contains at least one number. */
+  requireNumber: boolean;
+  /** require_letter requires the password must contains at least one letter, regardless of upper case or lower case */
+  requireLetter: boolean;
+  /** require_uppercase_letter requires the password must contains at least one upper case letter. */
+  requireUppercaseLetter: boolean;
+  /** require_uppercase_letter requires the password must contains at least one special character. */
+  requireSpecialCharacter: boolean;
+  /** require_reset_password_for_first_login requires users to reset their password after the 1st login. */
+  requireResetPasswordForFirstLogin: boolean;
+  /** rotation_days requires users to reset their password after n days. */
+  rotationDays?: number | undefined;
+}
+
 function createBaseWorkspaceProfileSetting(): WorkspaceProfileSetting {
   return {
     externalUrl: "",
@@ -3894,6 +3911,169 @@ export const SCIMSetting = {
   fromPartial(object: DeepPartial<SCIMSetting>): SCIMSetting {
     const message = createBaseSCIMSetting();
     message.token = object.token ?? "";
+    return message;
+  },
+};
+
+function createBasePasswordRestrictionSetting(): PasswordRestrictionSetting {
+  return {
+    minLength: 0,
+    requireNumber: false,
+    requireLetter: false,
+    requireUppercaseLetter: false,
+    requireSpecialCharacter: false,
+    requireResetPasswordForFirstLogin: false,
+    rotationDays: undefined,
+  };
+}
+
+export const PasswordRestrictionSetting = {
+  encode(message: PasswordRestrictionSetting, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.minLength !== 0) {
+      writer.uint32(8).int32(message.minLength);
+    }
+    if (message.requireNumber === true) {
+      writer.uint32(16).bool(message.requireNumber);
+    }
+    if (message.requireLetter === true) {
+      writer.uint32(24).bool(message.requireLetter);
+    }
+    if (message.requireUppercaseLetter === true) {
+      writer.uint32(32).bool(message.requireUppercaseLetter);
+    }
+    if (message.requireSpecialCharacter === true) {
+      writer.uint32(40).bool(message.requireSpecialCharacter);
+    }
+    if (message.requireResetPasswordForFirstLogin === true) {
+      writer.uint32(48).bool(message.requireResetPasswordForFirstLogin);
+    }
+    if (message.rotationDays !== undefined) {
+      writer.uint32(56).int32(message.rotationDays);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): PasswordRestrictionSetting {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBasePasswordRestrictionSetting();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 8) {
+            break;
+          }
+
+          message.minLength = reader.int32();
+          continue;
+        case 2:
+          if (tag !== 16) {
+            break;
+          }
+
+          message.requireNumber = reader.bool();
+          continue;
+        case 3:
+          if (tag !== 24) {
+            break;
+          }
+
+          message.requireLetter = reader.bool();
+          continue;
+        case 4:
+          if (tag !== 32) {
+            break;
+          }
+
+          message.requireUppercaseLetter = reader.bool();
+          continue;
+        case 5:
+          if (tag !== 40) {
+            break;
+          }
+
+          message.requireSpecialCharacter = reader.bool();
+          continue;
+        case 6:
+          if (tag !== 48) {
+            break;
+          }
+
+          message.requireResetPasswordForFirstLogin = reader.bool();
+          continue;
+        case 7:
+          if (tag !== 56) {
+            break;
+          }
+
+          message.rotationDays = reader.int32();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): PasswordRestrictionSetting {
+    return {
+      minLength: isSet(object.minLength) ? globalThis.Number(object.minLength) : 0,
+      requireNumber: isSet(object.requireNumber) ? globalThis.Boolean(object.requireNumber) : false,
+      requireLetter: isSet(object.requireLetter) ? globalThis.Boolean(object.requireLetter) : false,
+      requireUppercaseLetter: isSet(object.requireUppercaseLetter)
+        ? globalThis.Boolean(object.requireUppercaseLetter)
+        : false,
+      requireSpecialCharacter: isSet(object.requireSpecialCharacter)
+        ? globalThis.Boolean(object.requireSpecialCharacter)
+        : false,
+      requireResetPasswordForFirstLogin: isSet(object.requireResetPasswordForFirstLogin)
+        ? globalThis.Boolean(object.requireResetPasswordForFirstLogin)
+        : false,
+      rotationDays: isSet(object.rotationDays) ? globalThis.Number(object.rotationDays) : undefined,
+    };
+  },
+
+  toJSON(message: PasswordRestrictionSetting): unknown {
+    const obj: any = {};
+    if (message.minLength !== 0) {
+      obj.minLength = Math.round(message.minLength);
+    }
+    if (message.requireNumber === true) {
+      obj.requireNumber = message.requireNumber;
+    }
+    if (message.requireLetter === true) {
+      obj.requireLetter = message.requireLetter;
+    }
+    if (message.requireUppercaseLetter === true) {
+      obj.requireUppercaseLetter = message.requireUppercaseLetter;
+    }
+    if (message.requireSpecialCharacter === true) {
+      obj.requireSpecialCharacter = message.requireSpecialCharacter;
+    }
+    if (message.requireResetPasswordForFirstLogin === true) {
+      obj.requireResetPasswordForFirstLogin = message.requireResetPasswordForFirstLogin;
+    }
+    if (message.rotationDays !== undefined) {
+      obj.rotationDays = Math.round(message.rotationDays);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<PasswordRestrictionSetting>): PasswordRestrictionSetting {
+    return PasswordRestrictionSetting.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<PasswordRestrictionSetting>): PasswordRestrictionSetting {
+    const message = createBasePasswordRestrictionSetting();
+    message.minLength = object.minLength ?? 0;
+    message.requireNumber = object.requireNumber ?? false;
+    message.requireLetter = object.requireLetter ?? false;
+    message.requireUppercaseLetter = object.requireUppercaseLetter ?? false;
+    message.requireSpecialCharacter = object.requireSpecialCharacter ?? false;
+    message.requireResetPasswordForFirstLogin = object.requireResetPasswordForFirstLogin ?? false;
+    message.rotationDays = object.rotationDays ?? undefined;
     return message;
   },
 };

@@ -251,6 +251,7 @@
     - [MaskingAlgorithmSetting.Algorithm.RangeMask](#bytebase-store-MaskingAlgorithmSetting-Algorithm-RangeMask)
     - [MaskingAlgorithmSetting.Algorithm.RangeMask.Slice](#bytebase-store-MaskingAlgorithmSetting-Algorithm-RangeMask-Slice)
     - [MaximumSQLResultSizeSetting](#bytebase-store-MaximumSQLResultSizeSetting)
+    - [PasswordRestrictionSetting](#bytebase-store-PasswordRestrictionSetting)
     - [SCIMSetting](#bytebase-store-SCIMSetting)
     - [SMTPMailDeliverySetting](#bytebase-store-SMTPMailDeliverySetting)
     - [SchemaTemplateSetting](#bytebase-store-SchemaTemplateSetting)
@@ -3896,6 +3897,27 @@ SlowQueryPolicy is the policy configuration for slow query.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | limit | [int64](#int64) |  | The limit is in bytes. The default value is 100MB, we will use the default value if the setting not exists, or the limit &lt;= 0. |
+
+
+
+
+
+
+<a name="bytebase-store-PasswordRestrictionSetting"></a>
+
+### PasswordRestrictionSetting
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| min_length | [int32](#int32) |  | min_length is the minimum length for password, should no less than 8. |
+| require_number | [bool](#bool) |  | require_number requires the password must contains at least one number. |
+| require_letter | [bool](#bool) |  | require_letter requires the password must contains at least one letter, regardless of upper case or lower case |
+| require_uppercase_letter | [bool](#bool) |  | require_uppercase_letter requires the password must contains at least one upper case letter. |
+| require_special_character | [bool](#bool) |  | require_uppercase_letter requires the password must contains at least one special character. |
+| require_reset_password_for_first_login | [bool](#bool) |  | require_reset_password_for_first_login requires users to reset their password after the 1st login. |
+| rotation_days | [int32](#int32) | optional | rotation_days requires users to reset their password after n days. |
 
 
 

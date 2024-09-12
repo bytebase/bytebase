@@ -11089,6 +11089,32 @@ components:
                         - $ref: '#/components/schemas/SourceInfo'
                     description: The source info derived from input that generated the parsed `expr`.
             description: An expression together with source information as returned by the parser.
+        PasswordRestrictionSetting:
+            type: object
+            properties:
+                minLength:
+                    type: integer
+                    description: min_length is the minimum length for password, should no less than 8.
+                    format: int32
+                requireNumber:
+                    type: boolean
+                    description: require_number requires the password must contains at least one number.
+                requireLetter:
+                    type: boolean
+                    description: require_letter requires the password must contains at least one letter, regardless of upper case or lower case
+                requireUppercaseLetter:
+                    type: boolean
+                    description: require_uppercase_letter requires the password must contains at least one upper case letter.
+                requireSpecialCharacter:
+                    type: boolean
+                    description: require_uppercase_letter requires the password must contains at least one special character.
+                requireResetPasswordForFirstLogin:
+                    type: boolean
+                    description: require_reset_password_for_first_login requires users to reset their password after the 1st login.
+                rotationDays:
+                    type: integer
+                    description: rotation_days requires users to reset their password after n days.
+                    format: int32
         PatchSubscription:
             type: object
             properties:
@@ -13996,6 +14022,8 @@ components:
                     $ref: '#/components/schemas/MaximumSQLResultSizeSetting'
                 scimSetting:
                     $ref: '#/components/schemas/SCIMSetting'
+                passwordRestrictionSetting:
+                    $ref: '#/components/schemas/PasswordRestrictionSetting'
             description: The data in setting value.
         ViewConfig:
             type: object
