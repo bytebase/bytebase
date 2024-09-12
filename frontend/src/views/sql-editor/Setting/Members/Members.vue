@@ -3,148 +3,41 @@
     class="w-full flex flex-col py-4 px-4 gap-4 divide-block-border overflow-y-auto"
     v-bind="$attrs"
   >
-    <div class="flex flex-col gap-2">
-      <div class="flex justify-between items-center">
-        <p class="text-lg font-medium leading-7 text-main">
-          <span>{{ $t("common.members") }}</span>
-          <span class="ml-1 font-normal text-control-light">
-            ({{ userStore.activeUserList.length }})
-          </span>
-        </p>
-
-        <div class="flex justify-end items-center gap-3">
-          <SearchBox v-model:value="state.activeUserFilterText" />
-
-          <NButton
-            v-if="allowCreateUser"
-            type="primary"
-            class="capitalize"
-            @click="handleCreateUser"
-          >
-            <template #icon>
-              <PlusIcon class="h-5 w-5" />
-            </template>
-            {{ $t(`settings.members.add-member`) }}
-          </NButton>
-        </div>
-      </div>
-
-      <UserDataTable
-        :show-roles="true"
-        :user-list="filteredUserList"
-        @update-user="handleUpdateUser"
-      />
-    </div>
-
-    <div
-      v-if="inactiveUserList.length > 0 || state.inactiveUserFilterText"
-      class="flex flex-col gap-2"
-    >
-      <div>
-        <NCheckbox v-model:checked="state.showInactiveUserList">
-          <span class="textinfolabel">
-            {{ $t("settings.members.show-inactive") }}
-          </span>
-        </NCheckbox>
-      </div>
-
-      <template v-if="state.showInactiveUserList">
-        <div class="flex justify-between items-center">
-          <p class="text-lg font-medium leading-7 text-main">
-            <span>{{ $t("settings.members.inactive") }}</span>
-            <span class="ml-1 font-normal text-control-light">
-              ({{ inactiveUserList.length }})
-            </span>
-          </p>
-
-          <div>
-            <SearchBox v-model:value="state.inactiveUserFilterText" />
-          </div>
-        </div>
-
-        <UserDataTable :show-roles="true" :user-list="inactiveUserList" />
-      </template>
-    </div>
+    <SettingWorkspaceMembers :on-click-user="handleClickUser" />
   </div>
-
-  <CreateUserDrawer
-    v-if="state.showCreateUserDrawer"
-    :user="state.editingUser"
-    @close="state.showCreateUserDrawer = false"
-  />
+  <Drawer v-model:show="state.detail.show">
+    <DrawerContent :title="detailTitle">
+      <ProfileDashboard
+        v-if="state.detail.user"
+        :principal-email="state.detail.user.email"
+      />
+    </DrawerContent>
+  </Drawer>
 </template>
 
 <script lang="ts" setup>
-import { PlusIcon } from "lucide-vue-next";
-import { NButton, NCheckbox } from "naive-ui";
-import { computed, onMounted, reactive } from "vue";
-import CreateUserDrawer from "@/components/User/Settings/CreateUserDrawer.vue";
-import UserDataTable from "@/components/User/Settings/UserDataTable/index.vue";
-import { SearchBox } from "@/components/v2";
-import { useUserStore } from "@/store";
-import {
-  ALL_USERS_USER_EMAIL,
-  PresetRoleType,
-  filterUserListByKeyword,
-} from "@/types";
-import { UserType, type User } from "@/types/proto/v1/auth_service";
-import { State } from "@/types/proto/v1/common";
-import { hasWorkspaceLevelRole } from "@/utils";
+import { computed, reactive } from "vue";
+import Drawer from "@/components/v2/Container/Drawer.vue";
+import DrawerContent from "@/components/v2/Container/DrawerContent.vue";
+import type { User } from "@/types/proto/v1/auth_service";
+import ProfileDashboard from "@/views/ProfileDashboard.vue";
+import SettingWorkspaceMembers from "@/views/SettingWorkspaceMembers.vue";
 
 type LocalState = {
-  activeUserFilterText: string;
-  inactiveUserFilterText: string;
-  showInactiveUserList: boolean;
-  showCreateUserDrawer: boolean;
-  editingUser?: User;
+  detail: { show: boolean; user?: User };
 };
-
 const state = reactive<LocalState>({
-  activeUserFilterText: "",
-  inactiveUserFilterText: "",
-  showInactiveUserList: false,
-  showCreateUserDrawer: false,
-  editingUser: undefined,
+  detail: { show: false },
 });
 
-const userStore = useUserStore();
-
-const allowCreateUser = computed(() => {
-  return hasWorkspaceLevelRole(PresetRoleType.WORKSPACE_ADMIN);
+const detailTitle = computed(() => {
+  const { user } = state.detail;
+  if (!user) return "";
+  return `${user.title} (${user.email})`;
 });
 
-const userList = computed(() => {
-  return userStore.userList.filter(
-    (user) => user.email !== ALL_USERS_USER_EMAIL
-  );
-});
-
-const filteredUserList = computed(() => {
-  return filterUserListByKeyword(
-    userStore.activeUserList,
-    state.activeUserFilterText
-  );
-});
-
-const inactiveUserList = computed(() => {
-  const list = userList.value.filter(
-    (user) =>
-      user.state === State.DELETED && user.userType !== UserType.SYSTEM_BOT
-  );
-  return filterUserListByKeyword(list, state.inactiveUserFilterText);
-});
-
-const handleCreateUser = () => {
-  state.editingUser = undefined;
-  state.showCreateUserDrawer = true;
+const handleClickUser = (user: User) => {
+  state.detail.show = true;
+  state.detail.user = user;
 };
-
-const handleUpdateUser = (user: User) => {
-  state.editingUser = user;
-  state.showCreateUserDrawer = true;
-};
-
-onMounted(() => {
-  userStore.fetchUserList();
-});
 </script>

@@ -8,7 +8,7 @@
 
       <div class="px-2.5 mb-2">
         <router-link
-          class="group flex items-center gap-2 px-2 py-1.5 leading-normal font-medium rounded-md text-main outline-item !text-base"
+          class="group flex items-center gap-2 px-2 py-1 leading-normal font-medium rounded-md text-main outline-item !text-base"
           :to="{ name: SQL_EDITOR_HOME_MODULE }"
         >
           <ChevronLeftIcon class="w-5 h-5" />
@@ -16,16 +16,12 @@
         </router-link>
       </div>
 
-      <div class="flex-1 overflow-y-auto px-2.5 flex flex-col gap-1">
-        <div v-for="item in itemList" :key="item.name">
-          <router-link
-            :to="{ path: item.path, name: item.name }"
-            class="group flex items-center gap-2 px-2 py-1.5 leading-normal font-medium rounded-md text-gray-700 outline-item"
-          >
-            <component :is="item.icon" class="w-5 h-5 text-gray-500" />
-            {{ item.title }}
-          </router-link>
-        </div>
+      <div class="flex-1 overflow-y-auto flex flex-col gap-1">
+        <CommonSidebar
+          :key="'dashboard'"
+          :item-list="itemList"
+          :show-logo="false"
+        />
       </div>
     </nav>
   </div>
@@ -37,6 +33,7 @@ import { ChevronLeftIcon } from "lucide-vue-next";
 import { watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import BytebaseLogo from "@/components/BytebaseLogo.vue";
+import CommonSidebar from "@/components/CommonSidebar.vue";
 import {
   SQL_EDITOR_HOME_MODULE,
   SQL_EDITOR_SETTING_MODULE,

@@ -1,4 +1,7 @@
-import { cloneDeep, pullAt } from "lodash-es";
+import { cloneDeep, pullAt, without } from "lodash-es";
+import { computed } from "vue";
+import { useAppFeature } from "@/store";
+import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
 
 export type SemanticIssueStatus = "OPEN" | "CLOSED";
 
@@ -12,7 +15,7 @@ type UIIssueFilterScopeId = (typeof UIIssueFilterScopeIdList)[number];
 export const CommonFilterScopeIdList = ["environment", "instance"] as const;
 type CommonFilterScopeId = (typeof CommonFilterScopeIdList)[number];
 
-export const SearchScopeIdList = [
+export const AllSearchScopeIdList = [
   // common search scopes.
   "project",
   "instance",
@@ -31,9 +34,18 @@ export const SearchScopeIdList = [
   // instance related search scopes.
   "address",
 ] as const;
+export const useSearchScopeIdList = () => {
+  const databaseChangeMode = useAppFeature("bb.feature.database-change-mode");
+  return computed(() => {
+    if (databaseChangeMode.value === DatabaseChangeMode.PIPELINE) {
+      return AllSearchScopeIdList;
+    }
+    return without(AllSearchScopeIdList, "taskType");
+  });
+};
 
 export type SearchScopeId =
-  | (typeof SearchScopeIdList)[number]
+  | (typeof AllSearchScopeIdList)[number]
   | UIIssueFilterScopeId
   | CommonFilterScopeId;
 
@@ -49,7 +61,7 @@ export interface SearchParams {
 
 export const isValidSearchScopeId = (id: string): id is SearchScopeId => {
   return (
-    SearchScopeIdList.includes(id as any) ||
+    AllSearchScopeIdList.includes(id as any) ||
     UIIssueFilterScopeIdList.includes(id as any) ||
     CommonFilterScopeIdList.includes(id as any)
   );

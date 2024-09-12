@@ -33,8 +33,10 @@ import projectV1Routes, {
   PROJECT_V1_ROUTE_AUDIT_LOGS,
   PROJECT_V1_ROUTE_REVIEW_CENTER,
 } from "@/router/dashboard/projectV1";
+import { useAppFeature } from "@/store";
 import type { ComposedProject, MaybeRef, Permission } from "@/types";
 import { DEFAULT_PROJECT_NAME } from "@/types";
+import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
 import { hasProjectPermissionV2 } from "@/utils";
 
 interface ProjectSidebarItem extends SidebarItem {
@@ -49,6 +51,7 @@ export const useProjectSidebar = (
   _route?: RouteLocationNormalizedLoaded
 ) => {
   const route = _route ?? useRoute();
+  const databaseChangeMode = useAppFeature("bb.feature.database-change-mode");
 
   const isDefaultProject = computed((): boolean => {
     return unref(project).name === DEFAULT_PROJECT_NAME;
@@ -138,6 +141,7 @@ export const useProjectSidebar = (
             title: t("common.groups"),
             path: PROJECT_V1_ROUTE_DATABASE_GROUPS,
             type: "div",
+            hide: databaseChangeMode.value === DatabaseChangeMode.EDITOR,
           },
           {
             title: startCase(t("slow-query.slow-queries")),
@@ -156,35 +160,44 @@ export const useProjectSidebar = (
         icon: () => h(SearchCodeIcon),
         path: PROJECT_V1_ROUTE_REVIEW_CENTER,
         type: "div",
-        hide: isDefaultProject.value,
+        hide:
+          isDefaultProject.value ||
+          databaseChangeMode.value === DatabaseChangeMode.EDITOR,
       },
       {
         title: t("export-center.self"),
         icon: () => h(DownloadIcon),
         path: PROJECT_V1_ROUTE_EXPORT_CENTER,
         type: "div",
-        hide: isDefaultProject.value,
+        hide:
+          isDefaultProject.value ||
+          databaseChangeMode.value === DatabaseChangeMode.EDITOR,
       },
       {
         title: t("changelist.changelists"),
         path: PROJECT_V1_ROUTE_CHANGELISTS,
         icon: () => h(PencilRuler),
         type: "div",
-        hide: isDefaultProject.value,
+        hide:
+          isDefaultProject.value ||
+          databaseChangeMode.value === DatabaseChangeMode.EDITOR,
       },
       {
         title: t("database.sync-schema.title"),
         path: PROJECT_V1_ROUTE_SYNC_SCHEMA,
         icon: () => h(RefreshCcw),
         type: "div",
-        hide: isDefaultProject.value,
+        hide:
+          isDefaultProject.value ||
+          databaseChangeMode.value === DatabaseChangeMode.EDITOR,
       },
       {
         title: t("settings.sidebar.integration"),
         icon: () => h(Link),
         type: "div",
-        hide: isDefaultProject.value,
-        expand: true,
+        hide:
+          isDefaultProject.value ||
+          databaseChangeMode.value === DatabaseChangeMode.EDITOR,
         children: [
           {
             title: t("common.gitops"),
@@ -222,7 +235,9 @@ export const useProjectSidebar = (
         icon: () => h(SquareGanttChartIcon),
         path: PROJECT_V1_ROUTE_DEPLOYMENT_CONFIG,
         type: "div",
-        hide: isDefaultProject.value,
+        hide:
+          isDefaultProject.value ||
+          databaseChangeMode.value === DatabaseChangeMode.EDITOR,
       },
       {
         title: t("common.setting"),

@@ -120,6 +120,7 @@ import {
   useSubscriptionV1Store,
   useProjectV1Store,
   useInstanceResourceList,
+  useAppFeature,
 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import {
@@ -128,6 +129,7 @@ import {
   type FeatureType,
   PresetRoleType,
 } from "@/types";
+import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
 import { hasProjectPermissionV2 } from "@/utils";
 import DatabaseGroupPanel from "./DatabaseGroup/DatabaseGroupPanel.vue";
 import { FeatureModal } from "./FeatureGuard";
@@ -162,6 +164,7 @@ const router = useRouter();
 const commandStore = useCommandStore();
 const subscriptionStore = useSubscriptionV1Store();
 const projectStore = useProjectV1Store();
+const databaseChangeMode = useAppFeature("bb.feature.database-change-mode");
 
 const hasDBAWorkflowFeature = computed(() => {
   return subscriptionStore.hasFeature("bb.feature.dba-workflow");
@@ -248,10 +251,12 @@ const availableQuickActionList = computed((): QuickAction[] => {
     {
       type: "quickaction.bb.database.create",
       title: t("quick-action.new-db"),
-      hide: !(
-        hasProjectPermissionV2(project.value, "bb.issues.create") &&
-        hasProjectPermissionV2(project.value, "bb.plans.create")
-      ),
+      hide:
+        databaseChangeMode.value === DatabaseChangeMode.EDITOR ||
+        !(
+          hasProjectPermissionV2(project.value, "bb.issues.create") &&
+          hasProjectPermissionV2(project.value, "bb.plans.create")
+        ),
       action: createDatabase,
       icon: h(DatabaseIcon),
     },

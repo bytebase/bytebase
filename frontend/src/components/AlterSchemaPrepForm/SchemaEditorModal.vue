@@ -93,7 +93,10 @@
     <div class="w-full flex flex-row justify-between items-center">
       <div class="flex flex-row items-center text-sm text-gray-500"></div>
       <div class="flex justify-end items-center space-x-3">
-        <NCheckbox v-model:checked="state.planOnly">
+        <NCheckbox
+          v-if="databaseChangeMode === DatabaseChangeMode.PIPELINE"
+          v-model:checked="state.planOnly"
+        >
           {{ $t("issue.sql-review-only") }}
         </NCheckbox>
         <NCheckbox
@@ -144,12 +147,14 @@ import {
   useDatabaseV1Store,
   useNotificationStore,
   useDBSchemaV1Store,
+  useAppFeature,
 } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import { dialectOfEngineV1, isValidProjectName, unknownProject } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import type { DatabaseMetadata } from "@/types/proto/v1/database_service";
 import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
+import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
 import {
   TinyTimer,
   defer,
@@ -225,6 +230,7 @@ const notificationStore = useNotificationStore();
 const dbSchemaStore = useDBSchemaV1Store();
 const { runSQLCheck } = provideSQLCheckContext();
 const $dialog = useDialog();
+const databaseChangeMode = useAppFeature("bb.feature.database-change-mode");
 
 const allowPreviewIssue = computed(() => {
   if (state.selectedTab === "schema-editor") {
@@ -261,7 +267,10 @@ const editTargetsKey = computed(() => {
 });
 
 const allowUseOnlineSchemaMigration = computed(() => {
-  return databaseList.value.every((db) => allowGhostForDatabase(db));
+  return (
+    databaseChangeMode.value === DatabaseChangeMode.PIPELINE &&
+    databaseList.value.every((db) => allowGhostForDatabase(db))
+  );
 });
 
 const prepareDatabaseMetadata = async () => {

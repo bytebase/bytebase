@@ -44,8 +44,7 @@ export const useCurrentProject = (
       return useDatabaseV1Store().getDatabaseByName(
         `${instanceNamePrefix}${
           unref(params).instanceId
-        }/${databaseNamePrefix}${unref(params).databaseName}
-        )`
+        }/${databaseNamePrefix}${unref(params).databaseName}`
       );
     }
     return unknownDatabase();
@@ -75,5 +74,6 @@ export const useCurrentProject = (
 
   return {
     project,
+    database,
   };
 };

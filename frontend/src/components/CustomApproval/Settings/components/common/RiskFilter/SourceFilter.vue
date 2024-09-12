@@ -6,7 +6,7 @@
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { TabFilter } from "@/components/v2";
-import { SupportedSourceList } from "@/types";
+import { useSupportedSourceList } from "@/types";
 import { Risk_Source } from "@/types/proto/v1/risk_service";
 import { sourceText } from "../../common";
 import { useRiskFilter } from "./context";
@@ -18,6 +18,7 @@ export interface RiskSourceFilterItem {
 
 const { t } = useI18n();
 const { source } = useRiskFilter();
+const SupportedSourceList = useSupportedSourceList();
 
 const filterItemList = computed(() => {
   const items = [
@@ -26,7 +27,7 @@ const filterItemList = computed(() => {
       label: t("common.all"),
     },
   ];
-  SupportedSourceList.forEach((source) => {
+  SupportedSourceList.value.forEach((source) => {
     items.push({
       value: source,
       label: sourceText(source),

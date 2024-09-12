@@ -18,6 +18,7 @@ import { NDataTable } from "naive-ui";
 import { computed, h } from "vue";
 import { useI18n } from "vue-i18n";
 import GroupNameCell from "@/components/User/Settings/UserDataTableByGroup/cells/GroupNameCell.vue";
+import type { User } from "@/types/proto/v1/auth_service";
 import { displayRoleTitle } from "@/utils";
 import UserNameCell from "./MemberDataTable/cells/UserNameCell.vue";
 import UserOperationsCell from "./MemberDataTable/cells/UserOperationsCell.vue";
@@ -38,6 +39,7 @@ interface BindingRowData {
 const props = defineProps<{
   allowEdit: boolean;
   bindingsByRole: Map<string, Map<string, MemberBinding>>;
+  onClickUser?: (user: User, event: MouseEvent) => void;
 }>();
 
 const emit = defineEmits<{
@@ -82,7 +84,9 @@ const columns = computed(() => {
           return <GroupNameCell group={row.member.group!} />;
         }
 
-        return <UserNameCell binding={row.member} />;
+        return (
+          <UserNameCell binding={row.member} onClickUser={props.onClickUser} />
+        );
       },
     },
     {

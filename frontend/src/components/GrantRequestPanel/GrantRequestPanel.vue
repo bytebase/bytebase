@@ -64,7 +64,9 @@
             :disabled="!allowCreate"
             @click="doCreateIssue"
           >
-            {{ $t("common.ok") }}
+            <div class="flex items-center gap-1">
+              {{ $t("common.ok") }}
+            </div>
           </NButton>
         </div>
       </template>
@@ -77,7 +79,6 @@ import dayjs from "dayjs";
 import { isUndefined } from "lodash-es";
 import { NButton, NInput } from "naive-ui";
 import { computed, reactive } from "vue";
-import { useRouter } from "vue-router";
 import ExpirationSelector from "@/components/ExpirationSelector.vue";
 import RequiredStar from "@/components/RequiredStar.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
@@ -140,7 +141,6 @@ const extractDatabaseResourcesFromProps = (): Pick<
   };
 };
 
-const router = useRouter();
 const currentUser = useCurrentUserV1();
 const state = reactive<LocalState>({
   ...extractDatabaseResourcesFromProps(),
@@ -218,8 +218,8 @@ const doCreateIssue = async () => {
     issue: newIssue,
   });
 
-  router.push({
-    path: `/${createdIssue.name}`,
-  });
+  const path = `/${createdIssue.name}`;
+
+  window.open(path, "_blank");
 };
 </script>

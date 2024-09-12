@@ -22,6 +22,7 @@
         <UserDataTable
           :show-roles="false"
           :user-list="filteredUserList"
+          :on-click-user="onClickUser"
           @update-user="handleUpdateUser"
           @select-group="handleUpdateGroup"
         />
@@ -42,6 +43,7 @@
         <UserDataTableByGroup
           :groups="filteredGroupList"
           :allow-edit="allowEditGroup"
+          :on-click-user="onClickUser"
           @update-group="handleUpdateGroup"
         />
       </NTabPane>
@@ -198,6 +200,10 @@ type LocalState = {
   editingUser?: User;
   editingGroup?: Group;
 };
+
+defineProps<{
+  onClickUser?: (user: User, event: MouseEvent) => void;
+}>();
 
 const state = reactive<LocalState>({
   typeTab: defaultTab,

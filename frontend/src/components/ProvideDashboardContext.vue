@@ -102,6 +102,7 @@ onMounted(async () => {
       }
       isSwitchingProject.value = false;
       next();
+      return;
     }
 
     next();

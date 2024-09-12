@@ -56,7 +56,7 @@ const props = withDefaults(
     schemaless?: boolean;
     customClick?: boolean;
     rowClickable?: boolean;
-    selectedDatabaseNames: string[];
+    selectedDatabaseNames?: string[];
   }>(),
   {
     mode: "ALL",

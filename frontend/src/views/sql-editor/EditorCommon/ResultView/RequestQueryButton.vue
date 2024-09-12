@@ -8,7 +8,7 @@
       v-if="showPanel"
       :project-name="database.project"
       :database="database"
-      :placement="panelPlacement"
+      :placement="'right'"
       :role="PresetRoleType.PROJECT_QUERIER"
       @close="showPanel = false"
     />
@@ -29,11 +29,9 @@ import { hasPermissionToCreateRequestGrantIssue } from "@/utils";
 const props = withDefaults(
   defineProps<{
     database: ComposedDatabase;
-    panelPlacement: "left" | "right";
     size?: "tiny" | "medium";
   }>(),
   {
-    panelPlacement: "right",
     size: "medium",
   }
 );
