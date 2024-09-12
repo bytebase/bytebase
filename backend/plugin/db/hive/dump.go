@@ -53,29 +53,29 @@ type MaterializedViewDDLOptions struct {
 	as             string
 }
 
-func (d *Driver) Dump(ctx context.Context, out io.Writer) (string, error) {
+func (d *Driver) Dump(ctx context.Context, out io.Writer) error {
 	var builder strings.Builder
 
 	databaseName := d.config.Database
 	database, err := d.SyncDBSchema(ctx)
 	if err != nil {
-		return "", err
+		return err
 	}
 	if len(database.Schemas) == 0 {
-		return "", errors.New("database schemas is empty")
+		return errors.New("database schemas is empty")
 	}
 	schema := database.Schemas[0]
 
 	cursor := d.conn.Cursor()
 	if err := executeCursor(ctx, cursor, fmt.Sprintf("use %s", databaseName)); err != nil {
-		return "", err
+		return err
 	}
 
 	// dump managed tables.
 	for _, table := range schema.GetTables() {
 		tableDDL, err := showCreateDDL(ctx, d.conn, "TABLE", table.Name, d.config.MaximumSQLResultSize)
 		if err != nil {
-			return "", errors.Wrapf(err, "failed to dump table %s", table.Name)
+			return errors.Wrapf(err, "failed to dump table %s", table.Name)
 		}
 
 		// dump indexes.
@@ -97,7 +97,7 @@ func (d *Driver) Dump(ctx context.Context, out io.Writer) (string, error) {
 				comment:               index.Comment,
 			})
 			if err != nil {
-				return "", errors.Wrapf(err, "failed to generate DDL for index %s", index.Name)
+				return errors.Wrapf(err, "failed to generate DDL for index %s", index.Name)
 			}
 
 			_, _ = builder.WriteString(fmt.Sprintf(schemaStmtFmt, "INDEX", fmt.Sprintf("`%s`", index.Name), indexDDL))
@@ -109,7 +109,7 @@ func (d *Driver) Dump(ctx context.Context, out io.Writer) (string, error) {
 	for _, extTable := range schema.GetExternalTables() {
 		tabDDL, err := showCreateDDL(ctx, d.conn, "TABLE", extTable.Name, d.config.MaximumSQLResultSize)
 		if err != nil {
-			return "", errors.Wrapf(err, "failed to dump table %s", extTable.Name)
+			return errors.Wrapf(err, "failed to dump table %s", extTable.Name)
 		}
 		_, _ = builder.WriteString(tabDDL)
 	}
@@ -118,7 +118,7 @@ func (d *Driver) Dump(ctx context.Context, out io.Writer) (string, error) {
 	for _, view := range schema.GetViews() {
 		viewDDL, err := showCreateDDL(ctx, d.conn, "VIEW", view.Name, d.config.MaximumSQLResultSize)
 		if err != nil {
-			return "", errors.Wrapf(err, "failed to dump view %s", view.Name)
+			return errors.Wrapf(err, "failed to dump view %s", view.Name)
 		}
 		_, _ = builder.WriteString(viewDDL)
 	}
@@ -143,16 +143,16 @@ func (d *Driver) Dump(ctx context.Context, out io.Writer) (string, error) {
 			as:             mtView.Definition,
 		})
 		if err != nil {
-			return "", errors.Wrapf(err, "failed to generate DDL for materialized view %s", mtView.Name)
+			return errors.Wrapf(err, "failed to generate DDL for materialized view %s", mtView.Name)
 		}
 
 		_, _ = builder.WriteString(fmt.Sprintf(schemaStmtFmt, "MATERIALIZED VIEW", fmt.Sprintf("`%s`.`%s`", databaseName, mtView.Name), mtViewDDL))
 	}
 
 	if _, err = io.WriteString(out, builder.String()); err != nil {
-		return "", err
+		return err
 	}
-	return builder.String(), nil
+	return nil
 }
 
 // This function shows DDLs for creating certain type of schema [VIEW, DATABASE, TABLE].

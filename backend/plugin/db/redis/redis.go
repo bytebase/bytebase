@@ -220,8 +220,8 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 // Dump and restore
 // Dump the database, if dbName is empty, then dump all databases.
 // Redis is schemaless, we don't support dump Redis data currently.
-func (*Driver) Dump(_ context.Context, _ io.Writer) (string, error) {
-	return "", nil
+func (*Driver) Dump(_ context.Context, _ io.Writer) error {
+	return nil
 }
 
 // QueryConn queries a SQL statement in a given connection.
