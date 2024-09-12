@@ -619,7 +619,7 @@ func convertValueToStringInJSON(value *v1pb.RowValue) string {
 
 	switch value.Kind.(type) {
 	case *v1pb.RowValue_StringValue:
-		return value.GetStringValue()
+		return `"` + escapeJSONString(value.GetStringValue()) + `"`
 	case *v1pb.RowValue_Int32Value:
 		return strconv.FormatInt(int64(value.GetInt32Value()), 10)
 	case *v1pb.RowValue_Int64Value:
@@ -653,6 +653,11 @@ func convertBytesToBinaryString(bs []byte) string {
 		buf.WriteString(fmt.Sprintf("%08b", b))
 	}
 	return buf.String()
+}
+
+func escapeJSONString(str string) string {
+	s := strconv.Quote(str)
+	return s[1 : len(s)-1]
 }
 
 const (
