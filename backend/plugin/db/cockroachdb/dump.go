@@ -25,15 +25,21 @@ func (driver *Driver) Dump(ctx context.Context, w io.Writer) (string, error) {
 		if err := rows.Scan(&payload); err != nil {
 			return "", err
 		}
-		sb.WriteString(payload)
-		sb.WriteString("\n\n")
+		if _, err := sb.WriteString(payload); err != nil {
+			return "", err
+		}
+		if _, err := sb.WriteString("\n\n"); err != nil {
+			return "", err
+		}
 	}
 
 	if err := rows.Err(); err != nil {
 		return "", err
 	}
 
-	w.Write([]byte(sb.String()))
+	if _, err := w.Write([]byte(sb.String())); err != nil {
+		return "", err
+	}
 
 	return sb.String(), nil
 }
