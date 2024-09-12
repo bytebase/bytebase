@@ -20,6 +20,10 @@ export const SQL_EDITOR_SETTING_DATABASES_MODULE =
   "sql-editor.setting.databases";
 export const SQL_EDITOR_SETTING_USERS_MODULE = "sql-editor.setting.users";
 export const SQL_EDITOR_SETTING_MEMBERS_MODULE = "sql-editor.setting.members";
+export const SQL_EDITOR_SETTING_ROLES_MODULE = "sql-editor.setting.roles";
+export const SQL_EDITOR_SETTING_SSO_MODULE = "sql-editor.setting.sso";
+export const SQL_EDITOR_SETTING_AUDIT_LOG_MODULE =
+  "sql-editor.setting.audit-log";
 
 const sqlEditorRoutes: RouteRecordRaw[] = [
   {
@@ -138,6 +142,33 @@ const sqlEditorRoutes: RouteRecordRaw[] = [
               requiredWorkspacePermissionList: () => ["bb.policies.get"],
             },
             component: () => import("../views/sql-editor/Setting/Members"),
+          },
+          {
+            path: "roles",
+            name: SQL_EDITOR_SETTING_ROLES_MODULE,
+            meta: {
+              requiredWorkspacePermissionList: () => ["bb.roles.list"],
+            },
+            component: () => import("../views/sql-editor/Setting/Roles"),
+          },
+          {
+            path: "sso",
+            name: SQL_EDITOR_SETTING_SSO_MODULE,
+            meta: {
+              requiredWorkspacePermissionList: () => ["bb.settings.get"],
+            },
+            component: () => import("../views/sql-editor/Setting/SSO"),
+          },
+          {
+            path: "audit-log",
+            name: SQL_EDITOR_SETTING_AUDIT_LOG_MODULE,
+            meta: {
+              requiredWorkspacePermissionList: () => [
+                "bb.settings.get",
+                "bb.auditLogs.search",
+              ],
+            },
+            component: () => import("../views/sql-editor/Setting/AuditLog"),
           },
         ],
       },

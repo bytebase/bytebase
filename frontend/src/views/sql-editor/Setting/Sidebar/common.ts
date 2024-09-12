@@ -11,12 +11,15 @@ import { useRoute, type RouteRecordRaw } from "vue-router";
 import type { SidebarItem } from "@/components/CommonSidebar.vue";
 import { DatabaseIcon } from "@/components/Icon";
 import sqlEditorRoutes, {
+  SQL_EDITOR_SETTING_AUDIT_LOG_MODULE,
   SQL_EDITOR_SETTING_DATABASES_MODULE,
   SQL_EDITOR_SETTING_ENVIRONMENT_MODULE,
   SQL_EDITOR_SETTING_GENERAL_MODULE,
   SQL_EDITOR_SETTING_INSTANCE_MODULE,
   SQL_EDITOR_SETTING_MEMBERS_MODULE,
   SQL_EDITOR_SETTING_PROJECT_MODULE,
+  SQL_EDITOR_SETTING_ROLES_MODULE,
+  SQL_EDITOR_SETTING_SSO_MODULE,
   SQL_EDITOR_SETTING_SUBSCRIPTION_MODULE,
   SQL_EDITOR_SETTING_USERS_MODULE,
 } from "@/router/sqlEditor";
@@ -150,6 +153,21 @@ export const useSidebarItems = () => {
             name: SQL_EDITOR_SETTING_MEMBERS_MODULE,
             type: "route",
             hide: permissionStore.onlyWorkspaceMember,
+          },
+          {
+            title: t("settings.sidebar.custom-roles"),
+            name: SQL_EDITOR_SETTING_ROLES_MODULE,
+            type: "route",
+          },
+          {
+            title: t("settings.sidebar.sso"),
+            name: SQL_EDITOR_SETTING_SSO_MODULE,
+            type: "route",
+          },
+          {
+            title: t("settings.sidebar.audit-log"),
+            name: SQL_EDITOR_SETTING_AUDIT_LOG_MODULE,
+            type: "route",
           },
         ],
       },
