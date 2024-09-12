@@ -1,9 +1,9 @@
-import { computed, defineComponent, watch } from "vue";
+import { defineComponent, watch } from "vue";
 import { useRouter } from "vue-router";
 import { WORKSPACE_ROUTE_MY_ISSUES } from "./router/dashboard/workspaceRoutes";
 import { SQL_EDITOR_HOME_MODULE } from "./router/sqlEditor";
 import { useRecentVisit } from "./router/useRecentVisit";
-import { useActuatorV1Store } from "./store";
+import { useAppFeature } from "./store";
 import { isDev } from "./utils";
 
 export default defineComponent({
@@ -12,14 +12,12 @@ export default defineComponent({
     const { lastVisit } = useRecentVisit();
 
     const router = useRouter();
-    const actuatorStore = useActuatorV1Store();
-
-    const mode = computed(() => {
-      return actuatorStore.appProfile.mode;
-    });
+    const defaultWorkspaceView = useAppFeature(
+      "bb.feature.default-workspace-view"
+    );
 
     watch(
-      mode,
+      defaultWorkspaceView,
       () => {
         const fallback = () => {
           router.replace({
@@ -28,7 +26,7 @@ export default defineComponent({
         };
 
         // Redirect to
-        // - /sql-editor if mode == 'EDITOR'
+        // - /sql-editor if defaultWorkspaceView == 'EDITOR'
         // - lastVisit.path if not empty
         // - /issues as fallback
         // Only turned on when isDev() is true
@@ -36,7 +34,7 @@ export default defineComponent({
           return fallback();
         }
 
-        if (actuatorStore.appProfile.mode === "EDITOR") {
+        if (defaultWorkspaceView.value === "EDITOR") {
           router.replace({
             name: SQL_EDITOR_HOME_MODULE,
           });

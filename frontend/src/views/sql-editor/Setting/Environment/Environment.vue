@@ -1,5 +1,7 @@
 <template>
-  <div class="w-full flex flex-col gap-4 pt-4 px-2 overflow-hidden relative">
+  <div
+    class="w-full h-full flex flex-col gap-4 pt-4 px-2 overflow-hidden relative"
+  >
     <div class="grid grid-cols-3 gap-x-2 gap-y-4 md:inline-flex items-stretch">
       <NButton @click="handleClickCreateEnvironment">
         <template #icon>
@@ -29,7 +31,7 @@
         >
           <EnvironmentDetail
             :environment-name="item.id"
-            :simple="true"
+            :features="['BASE', 'TIER', 'ACCESS_CONTROL']"
             :hide-archive-restore="true"
             body-class="!px-0"
             buttons-class="!absolute left-2 right-2"
@@ -51,7 +53,7 @@
     >
       <DrawerContent :title="$t('environment.create')">
         <EnvironmentFormBody
-          :simple="true"
+          :features="['BASE', 'TIER', 'ACCESS_CONTROL']"
           :hide-archive-restore="true"
           class="w-[36rem]"
         />

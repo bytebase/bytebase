@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-6">
+  <div class="space-y-6 pb-2">
     <div class="divide-y divide-block-border w-[850px]">
       <InstanceEngineRadioGrid
         v-if="isCreating"

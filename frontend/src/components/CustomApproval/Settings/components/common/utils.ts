@@ -5,8 +5,8 @@ import { t, te } from "@/plugins/i18n";
 import { useEnvironmentV1Store, useProjectV1List } from "@/store";
 import {
   PresetRiskLevelList,
-  SupportedSourceList,
   DEFAULT_PROJECT_NAME,
+  useSupportedSourceList,
 } from "@/types";
 import type { Risk } from "@/types/proto/v1/risk_service";
 import { Risk_Source, risk_SourceToJSON } from "@/types/proto/v1/risk_service";
@@ -186,7 +186,7 @@ const getLevelOptions = () => {
 };
 
 const getSourceOptions = () => {
-  return SupportedSourceList.map<SelectOption>((source) => ({
+  return useSupportedSourceList().value.map<SelectOption>((source) => ({
     label: risk_SourceToJSON(source),
     value: source,
   }));

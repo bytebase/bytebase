@@ -91,7 +91,7 @@
       </NTooltip>
       <div class="ml-2">
         <ProfileBrandingLogo>
-          <ProfileDropdown />
+          <ProfileDropdown :link="true" />
         </ProfileBrandingLogo>
       </div>
     </div>
@@ -134,18 +134,23 @@ import { ProjectNameCell } from "@/components/v2/Model/DatabaseV1Table/cells";
 import { WORKSPACE_ROUTE_MY_ISSUES } from "@/router/dashboard/workspaceRoutes";
 import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/router/dashboard/workspaceSetting";
 import {
+  SQL_EDITOR_DATABASE_MODULE,
   SQL_EDITOR_HOME_MODULE,
   SQL_EDITOR_PROJECT_MODULE,
 } from "@/router/sqlEditor";
 import { useSubscriptionV1Store } from "@/store";
 import { PlanType } from "@/types/proto/v1/subscription_service";
-import { extractProjectResourceName, hasWorkspacePermissionV2 } from "@/utils";
+import {
+  extractDatabaseResourceName,
+  extractProjectResourceName,
+  hasWorkspacePermissionV2,
+} from "@/utils";
 import { getComponentIdLocalStorageKey } from "@/utils/localStorage";
 import BytebaseLogo from "../components/BytebaseLogo.vue";
 import ProfileBrandingLogo from "../components/ProfileBrandingLogo.vue";
 import ProfileDropdown from "../components/ProfileDropdown.vue";
 import { useLanguage } from "../composables/useLanguage";
-import { isValidProjectName } from "../types";
+import { isValidDatabaseName, isValidProjectName } from "../types";
 
 interface LocalState {
   showQRCodeModal: boolean;
@@ -165,12 +170,15 @@ const state = reactive<LocalState>({
 const params = computed(() => {
   const route = router.currentRoute.value;
   return {
-    projectId: route.params.projectId as string,
-    issueSlug: route.params.issueSlug as string,
+    projectId: route.params.projectId as string | undefined,
+    issueSlug: route.params.issueSlug as string | undefined,
+    instanceId: route.params.instanceId as string | undefined,
+    databaseName: route.params.databaseName as string | undefined,
+    changeHistoryId: route.params.changeHistoryId as string | undefined,
   };
 });
 
-const { project } = useCurrentProject(params);
+const { project, database } = useCurrentProject(params);
 
 const isMac = navigator.platform.match(/mac/i);
 const handler = useKBarHandler();
@@ -186,6 +194,19 @@ const hasGetSettingPermission = computed(() => {
 
 const sqlEditorLink = computed(() => {
   if (isValidProjectName(project.value.name)) {
+    if (isValidDatabaseName(database.value.name)) {
+      const { instanceName, databaseName } = extractDatabaseResourceName(
+        database.value.name
+      );
+      return router.resolve({
+        name: SQL_EDITOR_DATABASE_MODULE,
+        params: {
+          project: extractProjectResourceName(project.value.name),
+          instance: instanceName,
+          database: databaseName,
+        },
+      });
+    }
     return router.resolve({
       name: SQL_EDITOR_PROJECT_MODULE,
       params: {

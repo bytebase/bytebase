@@ -4,7 +4,7 @@
     :key="'dashboard'"
     :item-list="dashboardSidebarItemList"
     :get-item-class="getItemClass"
-    :logo-redirect="WORKSPACE_ROUTE_MY_ISSUES"
+    :logo-redirect="logoRedirect"
   />
 </template>
 
@@ -54,13 +54,16 @@ import {
   WORKSPACE_ROUTE_USER_PROFILE,
   WORKSPACE_ROUTE_IM,
 } from "@/router/dashboard/workspaceRoutes";
-import { usePermissionStore } from "@/store";
+import { SQL_EDITOR_HOME_MODULE } from "@/router/sqlEditor";
+import { useAppFeature, usePermissionStore } from "@/store";
 import type { Permission } from "@/types";
+import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
 interface DashboardSidebarItem extends SidebarItem {
   navigationId?: string;
   shortcuts?: string[];
+  hide?: boolean;
   children?: DashboardSidebarItem[];
 }
 
@@ -68,6 +71,7 @@ const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
 const permissionStore = usePermissionStore();
+const databaseChangeMode = useAppFeature("bb.feature.database-change-mode");
 
 const getItemClass = (item: SidebarItem): string[] => {
   const { name: current } = route;
@@ -161,6 +165,7 @@ const dashboardSidebarItemList = computed((): DashboardSidebarItem[] => {
       title: t("issue.my-issues"),
       icon: () => h(HomeIcon),
       name: WORKSPACE_ROUTE_MY_ISSUES,
+      hide: databaseChangeMode.value === DatabaseChangeMode.EDITOR,
       type: "route",
       shortcuts: ["g", "m", "i"],
     },
@@ -237,6 +242,7 @@ const dashboardSidebarItemList = computed((): DashboardSidebarItem[] => {
       title: "CI/CD",
       icon: () => h(WorkflowIcon),
       type: "div",
+      hide: databaseChangeMode.value === DatabaseChangeMode.EDITOR,
       children: [
         {
           title: t("sql-review.title"),
@@ -262,6 +268,7 @@ const dashboardSidebarItemList = computed((): DashboardSidebarItem[] => {
           title: t("settings.sidebar.gitops"),
           name: WORKSPACE_ROUTE_GITOPS,
           type: "route",
+          hide: databaseChangeMode.value === DatabaseChangeMode.EDITOR,
         },
       ],
     },
@@ -291,6 +298,7 @@ const dashboardSidebarItemList = computed((): DashboardSidebarItem[] => {
       title: t("settings.sidebar.integration"),
       icon: () => h(LinkIcon),
       type: "div",
+      hide: databaseChangeMode.value === DatabaseChangeMode.EDITOR,
       children: [
         {
           title: t("settings.sidebar.mail-delivery"),
@@ -307,6 +315,13 @@ const dashboardSidebarItemList = computed((): DashboardSidebarItem[] => {
   ];
 
   return filterSidebarByPermissions(sidebarList);
+});
+
+const logoRedirect = computed(() => {
+  if (databaseChangeMode.value === DatabaseChangeMode.EDITOR) {
+    return SQL_EDITOR_HOME_MODULE;
+  }
+  return WORKSPACE_ROUTE_MY_ISSUES;
 });
 
 const navigationKbarActions = computed((): Action[] => {

@@ -8,30 +8,48 @@
       </div>
     </div>
     <div class="flex-1 lg:px-4">
-      <p class="mb-2 textinfolabel">
+      <p class="mt-0.5 mb-2 font-medium">
         {{ $t("settings.general.workspace.database-change-mode.description") }}
       </p>
       <div>
         <NRadioGroup v-model:value="state.databaseChangeMode" size="large">
           <NSpace vertical>
-            <NRadio
-              key="PIPELINE"
-              :value="DatabaseChangeMode.PIPELINE"
-              :label="
-                $t(
-                  'settings.general.workspace.database-change-mode.issue-mode.self'
-                )
-              "
-            />
-            <NRadio
-              key="EDITOR"
-              :value="DatabaseChangeMode.EDITOR"
-              :label="
-                $t(
-                  'settings.general.workspace.database-change-mode.sql-editor-mode.self'
-                )
-              "
-            />
+            <NRadio key="PIPELINE" :value="DatabaseChangeMode.PIPELINE">
+              <div class="flex flex-col gap-1">
+                <div class="text-medium">
+                  {{
+                    $t(
+                      "settings.general.workspace.database-change-mode.issue-mode.self"
+                    )
+                  }}
+                </div>
+                <div class="textinfolabel">
+                  {{
+                    $t(
+                      "settings.general.workspace.database-change-mode.issue-mode.description"
+                    )
+                  }}
+                </div>
+              </div>
+            </NRadio>
+            <NRadio key="EDITOR" :value="DatabaseChangeMode.EDITOR">
+              <div class="flex flex-col gap-1">
+                <div class="text-medium">
+                  {{
+                    $t(
+                      "settings.general.workspace.database-change-mode.sql-editor-mode.self"
+                    )
+                  }}
+                </div>
+                <div class="textinfolabel">
+                  {{
+                    $t(
+                      "settings.general.workspace.database-change-mode.sql-editor-mode.description"
+                    )
+                  }}
+                </div>
+              </div>
+            </NRadio>
           </NSpace>
         </NRadioGroup>
       </div>
@@ -47,6 +65,22 @@
         </div>
       </div>
     </div>
+
+    <BBModal
+      v-model:show="state.showModal"
+      :title="$t('settings.general.workspace.config-updated')"
+      container-class="flex flex-col gap-2"
+    >
+      <div class="py-2">
+        The workspace's default view has been changed to SQL Editor.
+      </div>
+      <div class="flex items-center justify-end gap-2">
+        <NButton @click="state.showModal = false">OK</NButton>
+        <NButton type="primary" @click="goToSQLEditor">
+          Go to SQL Editor
+        </NButton>
+      </div>
+    </BBModal>
   </div>
 </template>
 
@@ -55,13 +89,22 @@ import { isEqual } from "lodash-es";
 import { NRadioGroup, NSpace, NRadio, NButton } from "naive-ui";
 import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
+import { BBModal } from "@/bbkit";
+import { router } from "@/router";
+import { SQL_EDITOR_HOME_MODULE } from "@/router/sqlEditor";
 import { pushNotification } from "@/store";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
 import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
 
+interface LocalState {
+  databaseChangeMode: DatabaseChangeMode;
+  showModal: boolean;
+}
+
 const getInitialState = (): LocalState => {
   const defaultState: LocalState = {
     databaseChangeMode: DatabaseChangeMode.PIPELINE,
+    showModal: false,
   };
   if (
     settingV1Store.workspaceProfileSetting &&
@@ -74,11 +117,6 @@ const getInitialState = (): LocalState => {
   }
   return defaultState;
 };
-
-interface LocalState {
-  databaseChangeMode: DatabaseChangeMode;
-}
-
 defineProps<{
   allowEdit: boolean;
 }>();
@@ -104,6 +142,15 @@ const save = async () => {
     module: "bytebase",
     style: "SUCCESS",
     title: t("settings.general.workspace.config-updated"),
+  });
+  if (state.databaseChangeMode === DatabaseChangeMode.EDITOR) {
+    state.showModal = true;
+  }
+};
+
+const goToSQLEditor = () => {
+  router.push({
+    name: SQL_EDITOR_HOME_MODULE,
   });
 };
 </script>

@@ -1,13 +1,16 @@
 <template>
-  <div class="px-6 space-y-2 mb-4">
+  <div class="space-y-2 px-6 mb-4" v-bind="$attrs">
     <ArchiveBanner v-if="instance.state === State.DELETED" />
 
-    <div class="flex items-center justify-between">
+    <div v-if="!embedded" class="flex items-center justify-between">
       <div class="flex items-center gap-x-2">
         <EngineIcon :engine="instance.engine" custom-class="!h-6" />
         <span class="text-lg font-medium">{{ instanceV1Name(instance) }}</span>
       </div>
-      <div class="flex items-center gap-x-2">
+    </div>
+
+    <NTabs>
+      <template #suffix>
         <NButton
           v-if="allowSyncInstance"
           :loading="state.syncingSchema"
@@ -27,13 +30,10 @@
         >
           {{ $t("instance.new-database") }}
         </NButton>
-      </div>
-    </div>
-
-    <NTabs>
+      </template>
       <NTabPane name="OVERVIEW" :tab="$t('common.overview')">
         <InstanceForm class="-mt-2" :instance="instance">
-          <InstanceFormBody />
+          <InstanceFormBody :hide-archive-restore="hideArchiveRestore" />
           <InstanceFormButtons class="sticky bottom-0 z-10" />
         </InstanceForm>
       </NTabPane>
@@ -94,11 +94,13 @@ import {
   useDBSchemaV1Store,
   useInstanceV1Store,
   useEnvironmentV1Store,
+  useAppFeature,
 } from "@/store";
 import { instanceNamePrefix } from "@/store/modules/v1/common";
 import { useDatabaseV1List } from "@/store/modules/v1/databaseList";
 import type { ComposedDatabase } from "@/types";
 import { State } from "@/types/proto/v1/common";
+import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
 import {
   instanceV1HasCreateDatabase,
   instanceV1Name,
@@ -113,17 +115,26 @@ interface LocalState {
   syncingSchema: boolean;
   selectedDatabaseNameList: Set<string>;
 }
-
 const props = defineProps<{
   instanceId: string;
+  embedded?: boolean;
+  hideArchiveRestore?: boolean;
+  onClickDatabase?: (db: ComposedDatabase, event: MouseEvent) => void;
 }>();
 
-const { overrideMainContainerClass } = useBodyLayoutContext();
-overrideMainContainerClass("!pb-0");
+defineOptions({
+  inheritAttrs: false,
+});
+
+if (!props.embedded) {
+  const { overrideMainContainerClass } = useBodyLayoutContext();
+  overrideMainContainerClass("!pb-0");
+}
 
 const { t } = useI18n();
 const router = useRouter();
 const instanceV1Store = useInstanceV1Store();
+const databaseChangeMode = useAppFeature("bb.feature.database-change-mode");
 
 const state = reactive<LocalState>({
   showCreateDatabaseModal: false,
@@ -159,6 +170,7 @@ const allowSyncInstance = computed(() => {
 
 const allowCreateDatabase = computed(() => {
   return (
+    databaseChangeMode.value === DatabaseChangeMode.PIPELINE &&
     instance.value.state === State.ACTIVE &&
     hasWorkspaceLevelProjectPermissionInAnyProject("bb.issues.create") &&
     instanceV1HasCreateDatabase(instance.value)
@@ -208,6 +220,10 @@ const createDatabase = () => {
 useTitle(instance.value.title);
 
 const handleDatabaseClick = (event: MouseEvent, database: ComposedDatabase) => {
+  if (props.onClickDatabase) {
+    props.onClickDatabase(database, event);
+    return;
+  }
   const url = databaseV1Url(database);
   if (event.ctrlKey || event.metaKey) {
     window.open(url, "_blank");
