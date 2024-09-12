@@ -21,6 +21,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
+	crparser "github.com/bytebase/bytebase/backend/plugin/parser/cockroachdb"
 	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -46,7 +47,7 @@ func (driver *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, e
 	var filteredDatabases []*storepb.DatabaseSchemaMetadata
 	for _, database := range databases {
 		// Skip all system databases
-		if pgparser.IsSystemDatabase(database.Name) {
+		if crparser.IsSystemDatabase(database.Name) {
 			continue
 		}
 		filteredDatabases = append(filteredDatabases, database)
@@ -183,7 +184,7 @@ FROM
 WHERE
 	n.nspname NOT IN(%s)
 	AND c.contype = 'f'
-ORDER BY fk_schema, fk_table, fk_name;`, pgparser.SystemSchemaWhereClause)
+ORDER BY fk_schema, fk_table, fk_name;`, crparser.SystemSchemaWhereClause)
 
 func getForeignKeys(txn *sql.Tx) (map[db.TableKey][]*storepb.ForeignKeyMetadata, error) {
 	foreignKeysMap := make(map[db.TableKey][]*storepb.ForeignKeyMetadata)
@@ -302,7 +303,7 @@ SELECT nspname
 FROM pg_catalog.pg_namespace
 WHERE nspname NOT IN (%s)
 ORDER BY nspname;
-`, pgparser.SystemSchemaWhereClause)
+`, crparser.SystemSchemaWhereClause)
 
 func getSchemas(txn *sql.Tx) ([]string, error) {
 	rows, err := txn.Query(listSchemaQuery)
@@ -317,7 +318,7 @@ func getSchemas(txn *sql.Tx) ([]string, error) {
 		if err := rows.Scan(&schemaName); err != nil {
 			return nil, err
 		}
-		if pgparser.IsSystemSchema(schemaName) {
+		if crparser.IsSystemSchema(schemaName) {
 			continue
 		}
 		schemaNames = append(schemaNames, schemaName)
@@ -349,7 +350,7 @@ func getListTableQuery(isAtLeastPG10 bool) string {
 	FROM pg_catalog.pg_tables tbl
 	LEFT JOIN pg_class as pc ON pc.oid = format('%s.%s', quote_ident(tbl.schemaname), quote_ident(tbl.tablename))::regclass` + fmt.Sprintf(`
 	WHERE tbl.schemaname NOT IN (%s)%s
-	ORDER BY tbl.schemaname, tbl.tablename;`, pgparser.SystemSchemaWhereClause, relisPartition)
+	ORDER BY tbl.schemaname, tbl.tablename;`, crparser.SystemSchemaWhereClause, relisPartition)
 }
 
 // getTables gets all tables of a database.
@@ -460,7 +461,7 @@ WHERE
 	((c.relkind = 'r'::"char") OR (c.relkind = 'f'::"char") OR (c.relkind = 'p'::"char"))
 	AND c.relispartition IS TRUE ` + fmt.Sprintf(`
 	AND n.nspname NOT IN (%s)
-ORDER BY c.oid;`, pgparser.SystemSchemaWhereClause)
+ORDER BY c.oid;`, crparser.SystemSchemaWhereClause)
 
 func getTablePartitions(txn *sql.Tx) (map[db.TableKey][]*storepb.TablePartitionMetadata, error) {
 	result := make(map[db.TableKey][]*storepb.TablePartitionMetadata)
@@ -518,7 +519,7 @@ SELECT
 	pg_catalog.col_description(format('%s.%s', quote_ident(table_schema), quote_ident(table_name))::regclass, cols.ordinal_position::int) as column_comment
 FROM INFORMATION_SCHEMA.COLUMNS AS cols` + fmt.Sprintf(`
 WHERE cols.table_schema NOT IN (%s)
-ORDER BY cols.table_schema, cols.table_name, cols.ordinal_position;`, pgparser.SystemSchemaWhereClause)
+ORDER BY cols.table_schema, cols.table_name, cols.ordinal_position;`, crparser.SystemSchemaWhereClause)
 
 // getTableColumns gets the columns of a table.
 func getTableColumns(txn *sql.Tx) (map[db.TableKey][]*storepb.ColumnMetadata, error) {
@@ -575,7 +576,7 @@ func getTableColumns(txn *sql.Tx) (map[db.TableKey][]*storepb.ColumnMetadata, er
 var listMaterializedViewQuery = `
 SELECT schemaname, matviewname, definition, obj_description(format('%s.%s', quote_ident(schemaname), quote_ident(matviewname))::regclass) FROM pg_catalog.pg_matviews` + fmt.Sprintf(`
 WHERE schemaname NOT IN (%s)
-ORDER BY schemaname, matviewname;`, pgparser.SystemSchemaWhereClause)
+ORDER BY schemaname, matviewname;`, crparser.SystemSchemaWhereClause)
 
 func getMaterializedViews(txn *sql.Tx) (map[string][]*storepb.MaterializedViewMetadata, error) {
 	matviewMap := make(map[string][]*storepb.MaterializedViewMetadata)
@@ -628,7 +629,7 @@ func getMaterializedViews(txn *sql.Tx) (map[string][]*storepb.MaterializedViewMe
 var listViewQuery = `
 SELECT schemaname, viewname, definition, obj_description(format('%s.%s', quote_ident(schemaname), quote_ident(viewname))::regclass) FROM pg_catalog.pg_views` + fmt.Sprintf(`
 WHERE schemaname NOT IN (%s)
-ORDER BY schemaname, viewname;`, pgparser.SystemSchemaWhereClause)
+ORDER BY schemaname, viewname;`, crparser.SystemSchemaWhereClause)
 
 // getViews gets all views of a database.
 func getViews(txn *sql.Tx, columnMap map[db.TableKey][]*storepb.ColumnMetadata) (map[string][]*storepb.ViewMetadata, error) {
@@ -793,7 +794,7 @@ SELECT idx.schemaname, idx.tablename, idx.indexname, idx.indexdef, (SELECT const
 	AND constraint_type = 'PRIMARY KEY') AS constraint_type,
 	obj_description(format('%s.%s', quote_ident(idx.schemaname), quote_ident(idx.indexname))::regclass) AS comment` + fmt.Sprintf(`
 FROM pg_indexes AS idx WHERE idx.schemaname NOT IN (%s)
-ORDER BY idx.schemaname, idx.tablename, idx.indexname;`, pgparser.SystemSchemaWhereClause)
+ORDER BY idx.schemaname, idx.tablename, idx.indexname;`, crparser.SystemSchemaWhereClause)
 
 // getIndexes gets all indices of a database.
 func getIndexes(txn *sql.Tx) (map[db.TableKey][]*storepb.IndexMetadata, error) {
@@ -886,7 +887,7 @@ left join pg_namespace n on p.pronamespace = n.oid
 left join pg_language l on p.prolang = l.oid
 left join pg_type t on t.oid = p.prorettype ` + fmt.Sprintf(`
 where n.nspname not in (%s)
-order by function_schema, function_name;`, pgparser.SystemSchemaWhereClause)
+order by function_schema, function_name;`, crparser.SystemSchemaWhereClause)
 
 // getFunctions gets all functions of a database.
 func getFunctions(txn *sql.Tx) (map[string][]*storepb.FunctionMetadata, error) {
