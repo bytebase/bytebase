@@ -308,22 +308,28 @@ func (driver *Driver) GetDB() *sql.DB {
 // getDatabases gets all databases of an instance.
 func (driver *Driver) getDatabases(ctx context.Context) ([]*storepb.DatabaseSchemaMetadata, error) {
 	var databases []*storepb.DatabaseSchemaMetadata
-	rows, err := driver.db.QueryContext(ctx, "SELECT datname, pg_encoding_to_char(encoding), datcollate FROM pg_database;")
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		database := &storepb.DatabaseSchemaMetadata{}
-		if err := rows.Scan(&database.Name, &database.CharacterSet, &database.Collation); err != nil {
-			return nil, err
+	if err := crdb.Execute(func() error {
+		rows, err := driver.db.QueryContext(ctx, "SELECT datname, pg_encoding_to_char(encoding), datcollate FROM pg_database;")
+		if err != nil {
+			return err
 		}
-		databases = append(databases, database)
-	}
-	if err := rows.Err(); err != nil {
+		defer rows.Close()
+
+		for rows.Next() {
+			database := &storepb.DatabaseSchemaMetadata{}
+			if err := rows.Scan(&database.Name, &database.CharacterSet, &database.Collation); err != nil {
+				return err
+			}
+			databases = append(databases, database)
+		}
+		if err := rows.Err(); err != nil {
+			return err
+		}
+		return nil
+	}); err != nil {
 		return nil, err
 	}
+
 	return databases, nil
 }
 
@@ -716,16 +722,22 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 		startTime := time.Now()
 		queryResult, err := func() (*v1pb.QueryResult, error) {
 			if allQuery {
-				rows, err := conn.QueryContext(ctx, statement)
-				if err != nil {
-					return nil, err
-				}
-				defer rows.Close()
-				r, err := util.RowsToQueryResult(rows, driver.config.MaximumSQLResultSize)
-				if err != nil {
-					return nil, err
-				}
-				if err := rows.Err(); err != nil {
+				var r *v1pb.QueryResult
+				if err := crdb.Execute(func() error {
+					rows, err := conn.QueryContext(ctx, statement)
+					if err != nil {
+						return err
+					}
+					defer rows.Close()
+					r, err = util.RowsToQueryResult(rows, driver.config.MaximumSQLResultSize)
+					if err != nil {
+						return err
+					}
+					if err := rows.Err(); err != nil {
+						return err
+					}
+					return nil
+				}); err != nil {
 					return nil, err
 				}
 				return r, nil
