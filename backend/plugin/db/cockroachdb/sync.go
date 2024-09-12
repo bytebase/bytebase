@@ -17,6 +17,8 @@ import (
 	crrawparser "github.com/cockroachdb/cockroachdb-parser/pkg/sql/parser"
 	crrawparsertree "github.com/cockroachdb/cockroachdb-parser/pkg/sql/sem/tree"
 
+	crdb "github.com/cockroachdb/cockroach-go/v2/crdb"
+
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
@@ -1020,9 +1022,15 @@ func (driver *Driver) SyncSlowQuery(ctx context.Context, _ time.Time) (map[strin
 	}
 
 	reset := `SELECT pg_stat_statements_reset();`
-	if _, err := driver.db.ExecContext(ctx, reset); err != nil {
+	if err := crdb.Execute(func() error {
+		if _, err := driver.db.ExecContext(ctx, reset); err != nil {
+			return err
+		}
+		return nil
+	}); err != nil {
 		return nil, util.FormatErrorWithQuery(err, reset)
 	}
+
 	return result, nil
 }
 
