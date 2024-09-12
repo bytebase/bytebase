@@ -14,7 +14,7 @@ func TestSplitSQLStatement(t *testing.T) {
 		Want      []string `yaml:"want"`
 	}
 
-	const record = true
+	const record = false
 
 	a := require.New(t)
 
