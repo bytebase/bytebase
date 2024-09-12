@@ -158,6 +158,9 @@ export const roleListInIAM = ({
       if (binding.role === PresetRoleType.WORKSPACE_MEMBER) {
         return false;
       }
+      if (isBindingPolicyExpired(binding)) {
+        return false;
+      }
       const emailList = getUserEmailListInBinding({ binding, ignoreGroup });
       return emailList.includes(email);
     })
