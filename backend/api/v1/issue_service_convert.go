@@ -492,6 +492,7 @@ func convertToIssueCommentEventTaskPriorBackup(b *storepb.IssueCommentPayload_Ta
 			Tables:       convertToIssueCommentEventTaskPriorBackupTables(b.TaskPriorBackup.Tables),
 			Database:     b.TaskPriorBackup.Database,
 			OriginalLine: b.TaskPriorBackup.OriginalLine,
+			Error:        b.TaskPriorBackup.Error,
 		},
 	}
 }
