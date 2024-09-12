@@ -55,10 +55,8 @@ func (driver *Driver) CountAffectedRows(ctx context.Context, statement string) (
 			}
 			rowCount = v
 		}
-		if err := rows.Err(); err != nil {
-			return err
-		}
-		return nil
+		err = rows.Err()
+		return err
 	}); err != nil {
 		return 0, err
 	}

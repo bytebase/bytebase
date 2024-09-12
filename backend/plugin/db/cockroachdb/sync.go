@@ -17,7 +17,7 @@ import (
 	crrawparser "github.com/cockroachdb/cockroachdb-parser/pkg/sql/parser"
 	crrawparsertree "github.com/cockroachdb/cockroachdb-parser/pkg/sql/sem/tree"
 
-	crdb "github.com/cockroachdb/cockroach-go/v2/crdb"
+	"github.com/cockroachdb/cockroach-go/v2/crdb"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -937,10 +937,8 @@ func (driver *Driver) SyncSlowQuery(ctx context.Context, _ time.Time) (map[strin
 				return err
 			}
 		}
-		if err := nowRows.Err(); err != nil {
-			return err
-		}
-		return nil
+		err = nowRows.Err()
+		return err
 	}); err != nil {
 		return nil, util.FormatErrorWithQuery(err, getNow)
 	}
@@ -1023,11 +1021,8 @@ func (driver *Driver) SyncSlowQuery(ctx context.Context, _ time.Time) (map[strin
 				}
 			}
 		}
-		if err := slowQueryStatisticsRows.Err(); err != nil {
-			return err
-		}
-
-		return nil
+		err = slowQueryStatisticsRows.Err()
+		return err
 	}); err != nil {
 		return nil, util.FormatErrorWithQuery(err, query)
 	}
@@ -1084,10 +1079,8 @@ func (driver *Driver) CheckSlowQueryLogEnabled(ctx context.Context) error {
 		if !pgStatStatementsInfoRows.Next() {
 			return errors.New("pg_stat_statements is empty")
 		}
-		if err := pgStatStatementsInfoRows.Err(); err != nil {
-			return err
-		}
-		return nil
+		err = pgStatStatementsInfoRows.Err()
+		return err
 	}); err != nil {
 		return util.FormatErrorWithQuery(err, checkPGStatStatements)
 	}

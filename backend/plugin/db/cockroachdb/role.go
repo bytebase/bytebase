@@ -78,11 +78,8 @@ func (driver *Driver) getInstanceRoles(ctx context.Context) ([]*storepb.Instance
 				Attribute: &attribute,
 			})
 		}
-		if err := rows.Err(); err != nil {
-			return err
-		}
-
-		return nil
+		err = rows.Err()
+		return err
 	}); err != nil {
 		return nil, util.FormatErrorWithQuery(err, query)
 	}

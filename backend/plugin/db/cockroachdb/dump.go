@@ -32,11 +32,8 @@ func (driver *Driver) Dump(ctx context.Context, w io.Writer) (string, error) {
 			_, _ = sb.WriteString("\n\n")
 		}
 
-		if err := rows.Err(); err != nil {
-			return err
-		}
-
-		return nil
+		err = rows.Err()
+		return err
 	}); err != nil {
 		return "", err
 	}
