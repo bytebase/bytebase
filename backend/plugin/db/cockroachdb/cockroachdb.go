@@ -15,6 +15,7 @@ import (
 	"cloud.google.com/go/cloudsqlconn"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/feature/rds/auth"
+	"github.com/cockroachdb/cockroach-go/v2/crdb"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/stdlib"
 	"github.com/pkg/errors"
@@ -120,7 +121,10 @@ func (driver *Driver) Open(ctx context.Context, _ storepb.Engine, config db.Conn
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get database owner")
 		}
-		if _, err := driver.db.ExecContext(ctx, fmt.Sprintf("SET ROLE \"%s\";", owner)); err != nil {
+		if err := crdb.Execute(func() error {
+			_, err := driver.db.ExecContext(ctx, fmt.Sprintf("SET ROLE \"%s\";", owner))
+			return err
+		}); err != nil {
 			return nil, errors.Wrapf(err, "failed to set role to database owner %q", owner)
 		}
 	}
@@ -304,22 +308,26 @@ func (driver *Driver) GetDB() *sql.DB {
 // getDatabases gets all databases of an instance.
 func (driver *Driver) getDatabases(ctx context.Context) ([]*storepb.DatabaseSchemaMetadata, error) {
 	var databases []*storepb.DatabaseSchemaMetadata
-	rows, err := driver.db.QueryContext(ctx, "SELECT datname, pg_encoding_to_char(encoding), datcollate FROM pg_database;")
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		database := &storepb.DatabaseSchemaMetadata{}
-		if err := rows.Scan(&database.Name, &database.CharacterSet, &database.Collation); err != nil {
-			return nil, err
+	if err := crdb.Execute(func() error {
+		rows, err := driver.db.QueryContext(ctx, "SELECT datname, pg_encoding_to_char(encoding), datcollate FROM pg_database;")
+		if err != nil {
+			return err
 		}
-		databases = append(databases, database)
-	}
-	if err := rows.Err(); err != nil {
+		defer rows.Close()
+
+		for rows.Next() {
+			database := &storepb.DatabaseSchemaMetadata{}
+			if err := rows.Scan(&database.Name, &database.CharacterSet, &database.Collation); err != nil {
+				return err
+			}
+			databases = append(databases, database)
+		}
+		err = rows.Err()
+		return err
+	}); err != nil {
 		return nil, err
 	}
+
 	return databases, nil
 }
 
@@ -454,12 +462,17 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 
 	if isPlsql {
 		// USE SET SESSION ROLE to set the role for the current session.
-		if _, err := conn.ExecContext(ctx, fmt.Sprintf("SET SESSION ROLE '%s'", owner)); err != nil {
+		if err := crdb.Execute(func() error {
+			_, err := conn.ExecContext(ctx, fmt.Sprintf("SET SESSION ROLE '%s'", owner))
+			return err
+		}); err != nil {
 			return 0, errors.Wrapf(err, "failed to set role to database owner %q", owner)
 		}
 		opts.LogCommandExecute([]int32{0})
-		if _, err := conn.ExecContext(ctx, statement); err != nil {
-			opts.LogCommandResponse([]int32{0}, 0, []int32{0}, err.Error())
+		if err := crdb.Execute(func() error {
+			_, err := conn.ExecContext(ctx, statement)
+			return err
+		}); err != nil {
 			return 0, err
 		}
 		opts.LogCommandResponse([]int32{0}, 0, []int32{0}, "")
@@ -548,14 +561,20 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 	}
 
 	// USE SET SESSION ROLE to set the role for the current session.
-	if _, err := conn.ExecContext(ctx, fmt.Sprintf("SET SESSION ROLE '%s'", owner)); err != nil {
+	if err := crdb.Execute(func() error {
+		_, err := conn.ExecContext(ctx, fmt.Sprintf("SET SESSION ROLE '%s'", owner))
+		return err
+	}); err != nil {
 		return 0, errors.Wrapf(err, "failed to set role to database owner %q", owner)
 	}
 	// Run non-transaction statements at the end.
 	for i, stmt := range nonTransactionAndSetRoleStmts {
 		indexes := []int32{nonTransactionAndSetRoleStmtsIndex[i]}
 		opts.LogCommandExecute(indexes)
-		if _, err := conn.ExecContext(ctx, stmt); err != nil {
+		if err := crdb.Execute(func() error {
+			_, err := conn.ExecContext(ctx, stmt)
+			return err
+		}); err != nil {
 			opts.LogCommandResponse(indexes, 0, []int32{0}, err.Error())
 			return 0, err
 		}
@@ -581,7 +600,10 @@ func (driver *Driver) createDatabaseExecute(ctx context.Context, statement strin
 	}
 
 	for _, s := range strings.Split(statement, "\n") {
-		if _, err := driver.db.ExecContext(ctx, s); err != nil {
+		if err := crdb.Execute(func() error {
+			_, err := driver.db.ExecContext(ctx, s)
+			return err
+		}); err != nil {
 			return err
 		}
 	}
@@ -687,7 +709,10 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 
 		// If the queryContext.Schema is not empty, set the search path for the database connection to the specified schema.
 		if queryContext.Schema != "" {
-			if _, err := conn.ExecContext(ctx, fmt.Sprintf("SET search_path TO %s;", queryContext.Schema)); err != nil {
+			if err := crdb.Execute(func() error {
+				_, err := conn.ExecContext(ctx, fmt.Sprintf("SET search_path TO %s;", queryContext.Schema))
+				return err
+			}); err != nil {
 				return nil, err
 			}
 		}
@@ -695,23 +720,31 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 		startTime := time.Now()
 		queryResult, err := func() (*v1pb.QueryResult, error) {
 			if allQuery {
-				rows, err := conn.QueryContext(ctx, statement)
-				if err != nil {
-					return nil, err
-				}
-				defer rows.Close()
-				r, err := util.RowsToQueryResult(rows, driver.config.MaximumSQLResultSize)
-				if err != nil {
-					return nil, err
-				}
-				if err := rows.Err(); err != nil {
+				var r *v1pb.QueryResult
+				if err := crdb.Execute(func() error {
+					rows, err := conn.QueryContext(ctx, statement)
+					if err != nil {
+						return err
+					}
+					defer rows.Close()
+					r, err = util.RowsToQueryResult(rows, driver.config.MaximumSQLResultSize)
+					if err != nil {
+						return err
+					}
+					err = rows.Err()
+					return err
+				}); err != nil {
 					return nil, err
 				}
 				return r, nil
 			}
 
-			sqlResult, err := conn.ExecContext(ctx, statement)
-			if err != nil {
+			var sqlResult sql.Result
+			if err := crdb.Execute(func() error {
+				var err error
+				sqlResult, err = conn.ExecContext(ctx, statement)
+				return err
+			}); err != nil {
 				return nil, err
 			}
 			affectedRows, err := sqlResult.RowsAffected()

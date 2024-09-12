@@ -17,6 +17,8 @@ import (
 	crrawparser "github.com/cockroachdb/cockroachdb-parser/pkg/sql/parser"
 	crrawparsertree "github.com/cockroachdb/cockroachdb-parser/pkg/sql/sem/tree"
 
+	"github.com/cockroachdb/cockroach-go/v2/crdb"
+
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
@@ -924,17 +926,20 @@ var statPluginVersion = semver.MustParse("1.8.0")
 func (driver *Driver) SyncSlowQuery(ctx context.Context, _ time.Time) (map[string]*storepb.SlowQueryStatistics, error) {
 	var now time.Time
 	getNow := `SELECT NOW();`
-	nowRows, err := driver.db.QueryContext(ctx, getNow)
-	if err != nil {
-		return nil, util.FormatErrorWithQuery(err, getNow)
-	}
-	defer nowRows.Close()
-	for nowRows.Next() {
-		if err := nowRows.Scan(&now); err != nil {
-			return nil, util.FormatErrorWithQuery(err, getNow)
+	if err := crdb.Execute(func() error {
+		nowRows, err := driver.db.QueryContext(ctx, getNow)
+		if err != nil {
+			return err
 		}
-	}
-	if err := nowRows.Err(); err != nil {
+		defer nowRows.Close()
+		for nowRows.Next() {
+			if err := nowRows.Scan(&now); err != nil {
+				return err
+			}
+		}
+		err = nowRows.Err()
+		return err
+	}); err != nil {
 		return nil, util.FormatErrorWithQuery(err, getNow)
 	}
 
@@ -981,48 +986,57 @@ func (driver *Driver) SyncSlowQuery(ctx context.Context, _ time.Time) (map[strin
 		`
 	}
 
-	slowQueryStatisticsRows, err := driver.db.QueryContext(ctx, query)
-	if err != nil {
-		return nil, util.FormatErrorWithQuery(err, query)
-	}
-	defer slowQueryStatisticsRows.Close()
-	for slowQueryStatisticsRows.Next() {
-		var database string
-		var fingerprint string
-		var calls int32
-		var totalExecTime float64
-		var maxExecTime float64
-		var rows int32
-		if err := slowQueryStatisticsRows.Scan(&database, &fingerprint, &calls, &totalExecTime, &maxExecTime, &rows); err != nil {
-			return nil, err
+	if err := crdb.Execute(func() error {
+		slowQueryStatisticsRows, err := driver.db.QueryContext(ctx, query)
+		if err != nil {
+			return err
 		}
-		if len(fingerprint) > db.SlowQueryMaxLen {
-			fingerprint, _ = common.TruncateString(fingerprint, db.SlowQueryMaxLen)
-		}
-		item := storepb.SlowQueryStatisticsItem{
-			SqlFingerprint:   fingerprint,
-			Count:            calls,
-			LatestLogTime:    timestamppb.New(now.UTC()),
-			TotalQueryTime:   durationpb.New(time.Duration(totalExecTime * float64(time.Millisecond))),
-			MaximumQueryTime: durationpb.New(time.Duration(maxExecTime * float64(time.Millisecond))),
-			TotalRowsSent:    rows,
-		}
-		if statistics, exists := result[database]; exists {
-			statistics.Items = append(statistics.Items, &item)
-		} else {
-			result[database] = &storepb.SlowQueryStatistics{
-				Items: []*storepb.SlowQueryStatisticsItem{&item},
+		defer slowQueryStatisticsRows.Close()
+		for slowQueryStatisticsRows.Next() {
+			var database string
+			var fingerprint string
+			var calls int32
+			var totalExecTime float64
+			var maxExecTime float64
+			var rows int32
+			if err := slowQueryStatisticsRows.Scan(&database, &fingerprint, &calls, &totalExecTime, &maxExecTime, &rows); err != nil {
+				return err
+			}
+			if len(fingerprint) > db.SlowQueryMaxLen {
+				fingerprint, _ = common.TruncateString(fingerprint, db.SlowQueryMaxLen)
+			}
+			item := storepb.SlowQueryStatisticsItem{
+				SqlFingerprint:   fingerprint,
+				Count:            calls,
+				LatestLogTime:    timestamppb.New(now.UTC()),
+				TotalQueryTime:   durationpb.New(time.Duration(totalExecTime * float64(time.Millisecond))),
+				MaximumQueryTime: durationpb.New(time.Duration(maxExecTime * float64(time.Millisecond))),
+				TotalRowsSent:    rows,
+			}
+			if statistics, exists := result[database]; exists {
+				statistics.Items = append(statistics.Items, &item)
+			} else {
+				result[database] = &storepb.SlowQueryStatistics{
+					Items: []*storepb.SlowQueryStatisticsItem{&item},
+				}
 			}
 		}
-	}
-	if err := slowQueryStatisticsRows.Err(); err != nil {
-		return nil, err
+		err = slowQueryStatisticsRows.Err()
+		return err
+	}); err != nil {
+		return nil, util.FormatErrorWithQuery(err, query)
 	}
 
 	reset := `SELECT pg_stat_statements_reset();`
-	if _, err := driver.db.ExecContext(ctx, reset); err != nil {
+	if err := crdb.Execute(func() error {
+		if _, err := driver.db.ExecContext(ctx, reset); err != nil {
+			return err
+		}
+		return nil
+	}); err != nil {
 		return nil, util.FormatErrorWithQuery(err, reset)
 	}
+
 	return result, nil
 }
 
@@ -1030,36 +1044,44 @@ func (driver *Driver) SyncSlowQuery(ctx context.Context, _ time.Time) (map[strin
 func (driver *Driver) CheckSlowQueryLogEnabled(ctx context.Context) error {
 	showSharedPreloadLibraries := `SELECT setting FROM pg_settings WHERE name = 'shared_preload_libraries';`
 
-	sharedPreloadLibrariesRows, err := driver.db.QueryContext(ctx, showSharedPreloadLibraries)
-	if err != nil {
-		return util.FormatErrorWithQuery(err, showSharedPreloadLibraries)
-	}
-	defer sharedPreloadLibrariesRows.Close()
-	for sharedPreloadLibrariesRows.Next() {
-		var sharedPreloadLibraries string
-		if err := sharedPreloadLibrariesRows.Scan(&sharedPreloadLibraries); err != nil {
-			return err
+	if err := crdb.Execute(func() error {
+		sharedPreloadLibrariesRows, err := driver.db.QueryContext(ctx, showSharedPreloadLibraries)
+		if err != nil {
+			return util.FormatErrorWithQuery(err, showSharedPreloadLibraries)
 		}
-		if !strings.Contains(sharedPreloadLibraries, "pg_stat_statements") {
-			return errors.New("pg_stat_statements is not loaded")
+		defer sharedPreloadLibrariesRows.Close()
+		for sharedPreloadLibrariesRows.Next() {
+			var sharedPreloadLibraries string
+			if err := sharedPreloadLibrariesRows.Scan(&sharedPreloadLibraries); err != nil {
+				return err
+			}
+			if !strings.Contains(sharedPreloadLibraries, "pg_stat_statements") {
+				return errors.New("pg_stat_statements is not loaded")
+			}
 		}
-	}
-	if err := sharedPreloadLibrariesRows.Err(); err != nil {
+		if err := sharedPreloadLibrariesRows.Err(); err != nil {
+			return util.FormatErrorWithQuery(err, showSharedPreloadLibraries)
+		}
+		return nil
+	}); err != nil {
 		return util.FormatErrorWithQuery(err, showSharedPreloadLibraries)
 	}
 
 	checkPGStatStatements := `SELECT count(*) FROM pg_stat_statements limit 10;`
 
-	pgStatStatementsInfoRows, err := driver.db.QueryContext(ctx, checkPGStatStatements)
-	if err != nil {
-		return util.FormatErrorWithQuery(err, checkPGStatStatements)
-	}
-	defer pgStatStatementsInfoRows.Close()
-	// no need to scan rows, just check if there is any row
-	if !pgStatStatementsInfoRows.Next() {
-		return errors.New("pg_stat_statements is empty")
-	}
-	if err := pgStatStatementsInfoRows.Err(); err != nil {
+	if err := crdb.Execute(func() error {
+		pgStatStatementsInfoRows, err := driver.db.QueryContext(ctx, checkPGStatStatements)
+		if err != nil {
+			return err
+		}
+		defer pgStatStatementsInfoRows.Close()
+		// no need to scan rows, just check if there is any row
+		if !pgStatStatementsInfoRows.Next() {
+			return errors.New("pg_stat_statements is empty")
+		}
+		err = pgStatStatementsInfoRows.Err()
+		return err
+	}); err != nil {
 		return util.FormatErrorWithQuery(err, checkPGStatStatements)
 	}
 
