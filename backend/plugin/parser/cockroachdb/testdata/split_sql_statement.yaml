@@ -1,0 +1,86 @@
+- statement: SELECT 1;
+  want:
+    - SELECT 1;
+- statement: |-
+    SELECT
+
+
+
+    1;
+  want:
+    - |-
+      SELECT
+
+
+
+      1;
+- statement: |-
+    SELECT
+
+
+
+    1;
+
+
+    SELECT
+
+
+
+
+
+
+
+    2;
+  want:
+    - |-
+      SELECT
+
+
+
+      1;
+    - |-
+      SELECT
+
+
+
+
+
+
+
+      2;
+- statement: |-
+    SELECT
+
+
+
+    1;
+
+    ;
+
+
+    SELECT
+
+
+
+
+
+
+
+    2;
+  want:
+    - |-
+      SELECT
+
+
+
+      1;
+    - |-
+      SELECT
+
+
+
+
+
+
+
+      2;

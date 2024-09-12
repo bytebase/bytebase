@@ -26,3 +26,20 @@ func ParseCockroachDBSQL(statement string) (*ParseResult, error) {
 
 	return result, nil
 }
+
+func SplitSQLStatement(statement string) ([]string, error) {
+	statement = strings.TrimRightFunc(statement, utils.IsSpaceOrSemicolon) + ";"
+	stmts, err := crrawparser.Parse(statement)
+	if err != nil {
+		return nil, err
+	}
+	var result []string
+	for _, stmt := range stmts {
+		sql := stmt.SQL
+		if !strings.HasSuffix(sql, ";") {
+			sql += ";"
+		}
+		result = append(result, sql)
+	}
+	return result, nil
+}
