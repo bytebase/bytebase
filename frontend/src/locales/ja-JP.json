@@ -491,7 +491,7 @@
       "phone-tips": "国コードを必ず含めてください",
       "country-code": "国または地域コード",
       "password": "パスワード",
-      "password-hint": "最低 8 文字で、少なくとも 1 つの文字と 1 つの数字が含まれます。",
+      "password-hint": "パスワードは制限設定に従う必要があります。",
       "password-confirm": "パスワードの確認",
       "password-confirm-placeholder": "新しいパスワードを確認します",
       "password-mismatch": "新しいパスワードが一致しません",
@@ -715,6 +715,14 @@
             "self": "メンバー制限",
             "description": "指定されたドメインの電子メール アドレスを持つユーザーのみにサインインを制限します。"
           }
+        },
+        "password-restriction": {
+          "self": "パスワード制限",
+          "min-length": "パスワードの最小文字数は {min} 文字以上である必要があります",
+          "require-number": "パスワードには少なくとも1つの数字が含まれている必要があります",
+          "require-letter": "パスワードには大文字、小文字に関係なく少なくとも1文字が含まれている必要があります",
+          "require-uppercase-letter": "パスワードには少なくとも1つの大文字が含まれている必要があります",
+          "require-special-character": "パスワードには少なくとも1つの特殊文字が含まれている必要があります"
         },
         "config-updated": "構成が更新されました。",
         "ai-assistant": {
@@ -1016,6 +1024,7 @@
       "verb-type-target-by-people": "{verb}{type} {target}",
       "verb-type-target-by-system-bot": "{type} {target} {verb}",
       "changed-x-link": "{name} が変更されました。 {link}",
+      "failed-to-backup": "データのバックアップに失敗しました: {error}",
       "prior-back-table": "データベース {database} のテーブル {tables} にバックアップされました",
       "prior-back-table-for-line": "DML のデータベース {database} とテーブル {tables} の行 {line} へのデータのバックアップ"
     },

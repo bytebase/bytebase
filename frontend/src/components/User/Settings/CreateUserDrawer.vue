@@ -84,18 +84,21 @@
                 <span
                   :class="[
                     'textinfolabel text-sm',
-                    state.passwordHint ? '!text-error' : '',
+                    passwordHint ? '!text-error' : '',
                   ]"
                 >
                   {{ $t("settings.profile.password-hint") }}
+                  <LearnMoreLink
+                    :external="false"
+                    url="/setting/general#account"
+                  />
                 </span>
                 <NInput
                   v-model:value="state.user.password"
                   type="password"
-                  :status="state.passwordHint ? 'error' : undefined"
+                  :status="passwordHint ? 'error' : undefined"
                   :input-props="{ autocomplete: 'new-password' }"
                   :placeholder="$t('common.sensitive-placeholder')"
-                  @blur="checkPassword"
                 />
               </div>
             </NFormItem>
@@ -104,15 +107,14 @@
                 <NInput
                   v-model:value="state.passwordConfirm"
                   type="password"
-                  :status="state.passwordMismatch ? 'error' : undefined"
+                  :status="passwordMismatch ? 'error' : undefined"
                   :input-props="{ autocomplete: 'new-password' }"
                   :placeholder="
                     $t('settings.profile.password-confirm-placeholder')
                   "
-                  @blur="checkPasswordMismatch"
                 />
                 <span
-                  v-if="state.passwordMismatch"
+                  v-if="passwordMismatch"
                   class="text-error text-sm mt-1 pl-1"
                 >
                   {{ $t("settings.profile.password-mismatch") }}
@@ -174,7 +176,7 @@
 </template>
 
 <script lang="ts" setup>
-import { cloneDeep, head, isEmpty, isEqual, isUndefined } from "lodash-es";
+import { cloneDeep, head, isEqual, isUndefined } from "lodash-es";
 import { ArchiveIcon } from "lucide-vue-next";
 import {
   NPopconfirm,
@@ -188,6 +190,7 @@ import {
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import EmailInput from "@/components/EmailInput.vue";
+import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { RoleSelect } from "@/components/v2/Select";
 import {
@@ -205,6 +208,7 @@ import {
   User,
 } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
+import { PasswordRestrictionSetting } from "@/types/proto/v1/setting_service";
 import { randomString } from "@/utils";
 
 interface LocalState {
@@ -212,8 +216,6 @@ interface LocalState {
   user: User;
   roles: string[];
   passwordConfirm: string;
-  passwordHint: boolean;
-  passwordMismatch: boolean;
 }
 
 const serviceAccountEmailSuffix = "service.bytebase.com";
@@ -255,8 +257,6 @@ const state = reactive<LocalState>({
   user: initUser(),
   roles: initRoles(),
   passwordConfirm: "",
-  passwordHint: false,
-  passwordMismatch: false,
 });
 
 const workspaceDomain = computed(() => {
@@ -266,25 +266,54 @@ const workspaceDomain = computed(() => {
   return head(settingV1Store.workspaceProfileSetting?.domains);
 });
 
+const passwordRestrictionSetting = computed(
+  () =>
+    settingV1Store.getSettingByName("bb.workspace.password-restriction")?.value
+      ?.passwordRestrictionSetting ?? PasswordRestrictionSetting.fromPartial({})
+);
+
 const isCreating = computed(() => !props.user);
 
-const checkPassword = () => {
+const passwordHint = computed(() => {
   const pwd = state.user?.password ?? "";
   if (!pwd) {
-    state.passwordHint = false;
-    return;
+    return false;
   }
-  state.passwordHint =
+  if (pwd.length < passwordRestrictionSetting.value.minLength) {
+    return true;
+  }
+  if (passwordRestrictionSetting.value.requireNumber && !/[0-9]+/.test(pwd)) {
+    return true;
+  }
+  if (
+    passwordRestrictionSetting.value.requireLetter &&
+    !/[a-zA-Z]+/.test(pwd)
+  ) {
+    return true;
+  }
+  if (
+    passwordRestrictionSetting.value.requireUppercaseLetter &&
+    !/[A-Z]+/.test(pwd)
+  ) {
+    return true;
+  }
+  if (
+    passwordRestrictionSetting.value.requireSpecialCharacter &&
     // eslint-disable-next-line no-useless-escape
-    !/^(?=.*\d)(?=.*[a-zA-Z])[\w~@#$%^&*+=|{}:;!.?\"()\[\]-]{8,}$/.test(pwd);
-  return;
-};
+    !/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]+/.test(pwd)
+  ) {
+    return true;
+  }
+  return false;
+});
 
-const checkPasswordMismatch = () => {
-  state.passwordMismatch =
-    !isEmpty(state.user?.password) &&
-    state.user?.password !== state.passwordConfirm;
-};
+const passwordMismatch = computed(() => {
+  const pwd = state.user?.password ?? "";
+  if (!pwd) {
+    return false;
+  }
+  return pwd !== state.passwordConfirm;
+});
 
 const rolesChanged = computed(() => {
   if (isCreating.value) {
@@ -298,12 +327,17 @@ const allowConfirm = computed(() => {
   if (!state.user.email) {
     return false;
   }
+  if (passwordHint.value) {
+    return false;
+  }
+  if (passwordMismatch.value) {
+    return false;
+  }
 
   if (
     !isCreating.value &&
-    (state.passwordMismatch ||
-      (getUpdateMaskFromUsers(props.user!, state.user).length == 0 &&
-        !rolesChanged.value))
+    getUpdateMaskFromUsers(props.user!, state.user).length == 0 &&
+    !rolesChanged.value
   ) {
     return false;
   }

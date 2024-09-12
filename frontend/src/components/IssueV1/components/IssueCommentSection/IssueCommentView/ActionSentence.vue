@@ -182,10 +182,14 @@ const renderActionSentence = () => {
       });
     }
   } else if (issueComment.type === IssueCommentType.TASK_PRIOR_BACKUP) {
-    const { task, tables, originalLine, database } =
+    const { task, tables, originalLine, database, error } =
       IssueComment_TaskPriorBackup.fromPartial(
         issueComment.taskPriorBackup || {}
       );
+    if (error) {
+      return t("activity.sentence.failed-to-backup", { error });
+    }
+
     const taskEntity = findTaskByName(issue.rolloutEntity, task);
     let verb = t("activity.sentence.prior-back-table", {
       database: database.length > 0 ? database : "bbdataarchive",

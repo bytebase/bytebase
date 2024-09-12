@@ -491,7 +491,7 @@
       "phone-tips": "Be sure to include the country code",
       "country-code": "Country Code",
       "password": "Password",
-      "password-hint": "Minimum eight characters, at least contains one letter and one number.",
+      "password-hint": "Password should follow restriction setting.",
       "password-confirm": "Password Confirm",
       "password-confirm-placeholder": "Confirm new password",
       "password-mismatch": "New password mismatch",
@@ -676,8 +676,8 @@
           "need-all-user-2fa-enabled": "Requires all users to enable 2FA first. There are still {count} users who have not enabled 2FA: {users}"
         },
         "disallow-password-signin": {
-          "enable": "Disallow signin with email&password",
-          "description": "Users cannot sign in with email&password, only SSO is allowed.",
+          "enable": "Disallow signin with email & password",
+          "description": "Users cannot sign in with email & password, only SSO is allowed.",
           "require-sso-setup": "A functional SSO must be created first, or users won't be able to log in."
         },
         "network": "Network",
@@ -715,6 +715,14 @@
             "self": "Members restriction",
             "description": "Restrict sign-in to users with email addresses from the specified domains."
           }
+        },
+        "password-restriction": {
+          "self": "Password Restriction",
+          "min-length": "Minimum length for password, should no less than {min} characters",
+          "require-number": "Requires the password must contains at least one number",
+          "require-letter": "Requires the password must contains at least one letter, regardless of upper case or lower case",
+          "require-uppercase-letter": "Requires the password must contains at least one upper case letter",
+          "require-special-character": "Requires the password must contains at least one special character"
         },
         "config-updated": "Configuration is updated.",
         "ai-assistant": {
@@ -1016,6 +1024,7 @@
       "verb-type-target-by-people": "{verb} {type} {target}",
       "verb-type-target-by-system-bot": "{type} {target} {verb}",
       "changed-x-link": "changed {name}. {link}",
+      "failed-to-backup": "Failed to backup data: {error}",
       "prior-back-table": "Data backup to database {database} and tables {tables}",
       "prior-back-table-for-line": "Data backup to database {database} and table {tables} for DML in line {line}"
     },
@@ -2852,8 +2861,8 @@
         "desc": "Once disabled, users cannot self-service signup and can only be invited by the workspace admin."
       },
       "bb-feature-disallow-password-signin": {
-        "title": "Disallow signin with email&password",
-        "desc": "Users cannot sign in with email&password, only SSO is allowed."
+        "title": "Disallow signin with email & password",
+        "desc": "Users cannot sign in with email & password, only SSO is allowed."
       },
       "bb-feature-schema-template": {
         "title": "Schema Template",

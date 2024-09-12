@@ -1200,6 +1200,108 @@ func (x *SCIMSetting) GetToken() string {
 	return ""
 }
 
+type PasswordRestrictionSetting struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// min_length is the minimum length for password, should no less than 8.
+	MinLength int32 `protobuf:"varint,1,opt,name=min_length,json=minLength,proto3" json:"min_length,omitempty"`
+	// require_number requires the password must contains at least one number.
+	RequireNumber bool `protobuf:"varint,2,opt,name=require_number,json=requireNumber,proto3" json:"require_number,omitempty"`
+	// require_letter requires the password must contains at least one letter, regardless of upper case or lower case
+	RequireLetter bool `protobuf:"varint,3,opt,name=require_letter,json=requireLetter,proto3" json:"require_letter,omitempty"`
+	// require_uppercase_letter requires the password must contains at least one upper case letter.
+	RequireUppercaseLetter bool `protobuf:"varint,4,opt,name=require_uppercase_letter,json=requireUppercaseLetter,proto3" json:"require_uppercase_letter,omitempty"`
+	// require_uppercase_letter requires the password must contains at least one special character.
+	RequireSpecialCharacter bool `protobuf:"varint,5,opt,name=require_special_character,json=requireSpecialCharacter,proto3" json:"require_special_character,omitempty"`
+	// require_reset_password_for_first_login requires users to reset their password after the 1st login.
+	RequireResetPasswordForFirstLogin bool `protobuf:"varint,6,opt,name=require_reset_password_for_first_login,json=requireResetPasswordForFirstLogin,proto3" json:"require_reset_password_for_first_login,omitempty"`
+	// rotation_days requires users to reset their password after n days.
+	RotationDays *int32 `protobuf:"varint,7,opt,name=rotation_days,json=rotationDays,proto3,oneof" json:"rotation_days,omitempty"`
+}
+
+func (x *PasswordRestrictionSetting) Reset() {
+	*x = PasswordRestrictionSetting{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_store_setting_proto_msgTypes[14]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *PasswordRestrictionSetting) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PasswordRestrictionSetting) ProtoMessage() {}
+
+func (x *PasswordRestrictionSetting) ProtoReflect() protoreflect.Message {
+	mi := &file_store_setting_proto_msgTypes[14]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PasswordRestrictionSetting.ProtoReflect.Descriptor instead.
+func (*PasswordRestrictionSetting) Descriptor() ([]byte, []int) {
+	return file_store_setting_proto_rawDescGZIP(), []int{14}
+}
+
+func (x *PasswordRestrictionSetting) GetMinLength() int32 {
+	if x != nil {
+		return x.MinLength
+	}
+	return 0
+}
+
+func (x *PasswordRestrictionSetting) GetRequireNumber() bool {
+	if x != nil {
+		return x.RequireNumber
+	}
+	return false
+}
+
+func (x *PasswordRestrictionSetting) GetRequireLetter() bool {
+	if x != nil {
+		return x.RequireLetter
+	}
+	return false
+}
+
+func (x *PasswordRestrictionSetting) GetRequireUppercaseLetter() bool {
+	if x != nil {
+		return x.RequireUppercaseLetter
+	}
+	return false
+}
+
+func (x *PasswordRestrictionSetting) GetRequireSpecialCharacter() bool {
+	if x != nil {
+		return x.RequireSpecialCharacter
+	}
+	return false
+}
+
+func (x *PasswordRestrictionSetting) GetRequireResetPasswordForFirstLogin() bool {
+	if x != nil {
+		return x.RequireResetPasswordForFirstLogin
+	}
+	return false
+}
+
+func (x *PasswordRestrictionSetting) GetRotationDays() int32 {
+	if x != nil && x.RotationDays != nil {
+		return *x.RotationDays
+	}
+	return 0
+}
+
 type WorkspaceApprovalSetting_Rule struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -1213,7 +1315,7 @@ type WorkspaceApprovalSetting_Rule struct {
 func (x *WorkspaceApprovalSetting_Rule) Reset() {
 	*x = WorkspaceApprovalSetting_Rule{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_store_setting_proto_msgTypes[14]
+		mi := &file_store_setting_proto_msgTypes[15]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1226,7 +1328,7 @@ func (x *WorkspaceApprovalSetting_Rule) String() string {
 func (*WorkspaceApprovalSetting_Rule) ProtoMessage() {}
 
 func (x *WorkspaceApprovalSetting_Rule) ProtoReflect() protoreflect.Message {
-	mi := &file_store_setting_proto_msgTypes[14]
+	mi := &file_store_setting_proto_msgTypes[15]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1281,7 +1383,7 @@ type ExternalApprovalSetting_Node struct {
 func (x *ExternalApprovalSetting_Node) Reset() {
 	*x = ExternalApprovalSetting_Node{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_store_setting_proto_msgTypes[15]
+		mi := &file_store_setting_proto_msgTypes[16]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1294,7 +1396,7 @@ func (x *ExternalApprovalSetting_Node) String() string {
 func (*ExternalApprovalSetting_Node) ProtoMessage() {}
 
 func (x *ExternalApprovalSetting_Node) ProtoReflect() protoreflect.Message {
-	mi := &file_store_setting_proto_msgTypes[15]
+	mi := &file_store_setting_proto_msgTypes[16]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1346,7 +1448,7 @@ type SchemaTemplateSetting_FieldTemplate struct {
 func (x *SchemaTemplateSetting_FieldTemplate) Reset() {
 	*x = SchemaTemplateSetting_FieldTemplate{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_store_setting_proto_msgTypes[16]
+		mi := &file_store_setting_proto_msgTypes[17]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1359,7 +1461,7 @@ func (x *SchemaTemplateSetting_FieldTemplate) String() string {
 func (*SchemaTemplateSetting_FieldTemplate) ProtoMessage() {}
 
 func (x *SchemaTemplateSetting_FieldTemplate) ProtoReflect() protoreflect.Message {
-	mi := &file_store_setting_proto_msgTypes[16]
+	mi := &file_store_setting_proto_msgTypes[17]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1423,7 +1525,7 @@ type SchemaTemplateSetting_ColumnType struct {
 func (x *SchemaTemplateSetting_ColumnType) Reset() {
 	*x = SchemaTemplateSetting_ColumnType{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_store_setting_proto_msgTypes[17]
+		mi := &file_store_setting_proto_msgTypes[18]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1436,7 +1538,7 @@ func (x *SchemaTemplateSetting_ColumnType) String() string {
 func (*SchemaTemplateSetting_ColumnType) ProtoMessage() {}
 
 func (x *SchemaTemplateSetting_ColumnType) ProtoReflect() protoreflect.Message {
-	mi := &file_store_setting_proto_msgTypes[17]
+	mi := &file_store_setting_proto_msgTypes[18]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1488,7 +1590,7 @@ type SchemaTemplateSetting_TableTemplate struct {
 func (x *SchemaTemplateSetting_TableTemplate) Reset() {
 	*x = SchemaTemplateSetting_TableTemplate{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_store_setting_proto_msgTypes[18]
+		mi := &file_store_setting_proto_msgTypes[19]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1501,7 +1603,7 @@ func (x *SchemaTemplateSetting_TableTemplate) String() string {
 func (*SchemaTemplateSetting_TableTemplate) ProtoMessage() {}
 
 func (x *SchemaTemplateSetting_TableTemplate) ProtoReflect() protoreflect.Message {
-	mi := &file_store_setting_proto_msgTypes[18]
+	mi := &file_store_setting_proto_msgTypes[19]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1576,7 +1678,7 @@ type DataClassificationSetting_DataClassificationConfig struct {
 func (x *DataClassificationSetting_DataClassificationConfig) Reset() {
 	*x = DataClassificationSetting_DataClassificationConfig{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_store_setting_proto_msgTypes[19]
+		mi := &file_store_setting_proto_msgTypes[20]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1589,7 +1691,7 @@ func (x *DataClassificationSetting_DataClassificationConfig) String() string {
 func (*DataClassificationSetting_DataClassificationConfig) ProtoMessage() {}
 
 func (x *DataClassificationSetting_DataClassificationConfig) ProtoReflect() protoreflect.Message {
-	mi := &file_store_setting_proto_msgTypes[19]
+	mi := &file_store_setting_proto_msgTypes[20]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1653,7 +1755,7 @@ type DataClassificationSetting_DataClassificationConfig_Level struct {
 func (x *DataClassificationSetting_DataClassificationConfig_Level) Reset() {
 	*x = DataClassificationSetting_DataClassificationConfig_Level{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_store_setting_proto_msgTypes[20]
+		mi := &file_store_setting_proto_msgTypes[21]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1666,7 +1768,7 @@ func (x *DataClassificationSetting_DataClassificationConfig_Level) String() stri
 func (*DataClassificationSetting_DataClassificationConfig_Level) ProtoMessage() {}
 
 func (x *DataClassificationSetting_DataClassificationConfig_Level) ProtoReflect() protoreflect.Message {
-	mi := &file_store_setting_proto_msgTypes[20]
+	mi := &file_store_setting_proto_msgTypes[21]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1718,7 +1820,7 @@ type DataClassificationSetting_DataClassificationConfig_DataClassification struc
 func (x *DataClassificationSetting_DataClassificationConfig_DataClassification) Reset() {
 	*x = DataClassificationSetting_DataClassificationConfig_DataClassification{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_store_setting_proto_msgTypes[21]
+		mi := &file_store_setting_proto_msgTypes[22]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1731,7 +1833,7 @@ func (x *DataClassificationSetting_DataClassificationConfig_DataClassification) 
 func (*DataClassificationSetting_DataClassificationConfig_DataClassification) ProtoMessage() {}
 
 func (x *DataClassificationSetting_DataClassificationConfig_DataClassification) ProtoReflect() protoreflect.Message {
-	mi := &file_store_setting_proto_msgTypes[21]
+	mi := &file_store_setting_proto_msgTypes[22]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1797,7 +1899,7 @@ type SemanticTypeSetting_SemanticType struct {
 func (x *SemanticTypeSetting_SemanticType) Reset() {
 	*x = SemanticTypeSetting_SemanticType{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_store_setting_proto_msgTypes[23]
+		mi := &file_store_setting_proto_msgTypes[24]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1810,7 +1912,7 @@ func (x *SemanticTypeSetting_SemanticType) String() string {
 func (*SemanticTypeSetting_SemanticType) ProtoMessage() {}
 
 func (x *SemanticTypeSetting_SemanticType) ProtoReflect() protoreflect.Message {
-	mi := &file_store_setting_proto_msgTypes[23]
+	mi := &file_store_setting_proto_msgTypes[24]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1889,7 +1991,7 @@ type MaskingAlgorithmSetting_Algorithm struct {
 func (x *MaskingAlgorithmSetting_Algorithm) Reset() {
 	*x = MaskingAlgorithmSetting_Algorithm{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_store_setting_proto_msgTypes[24]
+		mi := &file_store_setting_proto_msgTypes[25]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1902,7 +2004,7 @@ func (x *MaskingAlgorithmSetting_Algorithm) String() string {
 func (*MaskingAlgorithmSetting_Algorithm) ProtoMessage() {}
 
 func (x *MaskingAlgorithmSetting_Algorithm) ProtoReflect() protoreflect.Message {
-	mi := &file_store_setting_proto_msgTypes[24]
+	mi := &file_store_setting_proto_msgTypes[25]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2023,7 +2125,7 @@ type MaskingAlgorithmSetting_Algorithm_FullMask struct {
 func (x *MaskingAlgorithmSetting_Algorithm_FullMask) Reset() {
 	*x = MaskingAlgorithmSetting_Algorithm_FullMask{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_store_setting_proto_msgTypes[25]
+		mi := &file_store_setting_proto_msgTypes[26]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2036,7 +2138,7 @@ func (x *MaskingAlgorithmSetting_Algorithm_FullMask) String() string {
 func (*MaskingAlgorithmSetting_Algorithm_FullMask) ProtoMessage() {}
 
 func (x *MaskingAlgorithmSetting_Algorithm_FullMask) ProtoReflect() protoreflect.Message {
-	mi := &file_store_setting_proto_msgTypes[25]
+	mi := &file_store_setting_proto_msgTypes[26]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2072,7 +2174,7 @@ type MaskingAlgorithmSetting_Algorithm_RangeMask struct {
 func (x *MaskingAlgorithmSetting_Algorithm_RangeMask) Reset() {
 	*x = MaskingAlgorithmSetting_Algorithm_RangeMask{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_store_setting_proto_msgTypes[26]
+		mi := &file_store_setting_proto_msgTypes[27]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2085,7 +2187,7 @@ func (x *MaskingAlgorithmSetting_Algorithm_RangeMask) String() string {
 func (*MaskingAlgorithmSetting_Algorithm_RangeMask) ProtoMessage() {}
 
 func (x *MaskingAlgorithmSetting_Algorithm_RangeMask) ProtoReflect() protoreflect.Message {
-	mi := &file_store_setting_proto_msgTypes[26]
+	mi := &file_store_setting_proto_msgTypes[27]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2120,7 +2222,7 @@ type MaskingAlgorithmSetting_Algorithm_MD5Mask struct {
 func (x *MaskingAlgorithmSetting_Algorithm_MD5Mask) Reset() {
 	*x = MaskingAlgorithmSetting_Algorithm_MD5Mask{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_store_setting_proto_msgTypes[27]
+		mi := &file_store_setting_proto_msgTypes[28]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2133,7 +2235,7 @@ func (x *MaskingAlgorithmSetting_Algorithm_MD5Mask) String() string {
 func (*MaskingAlgorithmSetting_Algorithm_MD5Mask) ProtoMessage() {}
 
 func (x *MaskingAlgorithmSetting_Algorithm_MD5Mask) ProtoReflect() protoreflect.Message {
-	mi := &file_store_setting_proto_msgTypes[27]
+	mi := &file_store_setting_proto_msgTypes[28]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2170,7 +2272,7 @@ type MaskingAlgorithmSetting_Algorithm_InnerOuterMask struct {
 func (x *MaskingAlgorithmSetting_Algorithm_InnerOuterMask) Reset() {
 	*x = MaskingAlgorithmSetting_Algorithm_InnerOuterMask{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_store_setting_proto_msgTypes[28]
+		mi := &file_store_setting_proto_msgTypes[29]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2183,7 +2285,7 @@ func (x *MaskingAlgorithmSetting_Algorithm_InnerOuterMask) String() string {
 func (*MaskingAlgorithmSetting_Algorithm_InnerOuterMask) ProtoMessage() {}
 
 func (x *MaskingAlgorithmSetting_Algorithm_InnerOuterMask) ProtoReflect() protoreflect.Message {
-	mi := &file_store_setting_proto_msgTypes[28]
+	mi := &file_store_setting_proto_msgTypes[29]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2243,7 +2345,7 @@ type MaskingAlgorithmSetting_Algorithm_RangeMask_Slice struct {
 func (x *MaskingAlgorithmSetting_Algorithm_RangeMask_Slice) Reset() {
 	*x = MaskingAlgorithmSetting_Algorithm_RangeMask_Slice{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_store_setting_proto_msgTypes[29]
+		mi := &file_store_setting_proto_msgTypes[30]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2256,7 +2358,7 @@ func (x *MaskingAlgorithmSetting_Algorithm_RangeMask_Slice) String() string {
 func (*MaskingAlgorithmSetting_Algorithm_RangeMask_Slice) ProtoMessage() {}
 
 func (x *MaskingAlgorithmSetting_Algorithm_RangeMask_Slice) ProtoReflect() protoreflect.Message {
-	mi := &file_store_setting_proto_msgTypes[29]
+	mi := &file_store_setting_proto_msgTypes[30]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2305,7 +2407,7 @@ type AppIMSetting_Slack struct {
 func (x *AppIMSetting_Slack) Reset() {
 	*x = AppIMSetting_Slack{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_store_setting_proto_msgTypes[30]
+		mi := &file_store_setting_proto_msgTypes[31]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2318,7 +2420,7 @@ func (x *AppIMSetting_Slack) String() string {
 func (*AppIMSetting_Slack) ProtoMessage() {}
 
 func (x *AppIMSetting_Slack) ProtoReflect() protoreflect.Message {
-	mi := &file_store_setting_proto_msgTypes[30]
+	mi := &file_store_setting_proto_msgTypes[31]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2361,7 +2463,7 @@ type AppIMSetting_Feishu struct {
 func (x *AppIMSetting_Feishu) Reset() {
 	*x = AppIMSetting_Feishu{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_store_setting_proto_msgTypes[31]
+		mi := &file_store_setting_proto_msgTypes[32]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2374,7 +2476,7 @@ func (x *AppIMSetting_Feishu) String() string {
 func (*AppIMSetting_Feishu) ProtoMessage() {}
 
 func (x *AppIMSetting_Feishu) ProtoReflect() protoreflect.Message {
-	mi := &file_store_setting_proto_msgTypes[31]
+	mi := &file_store_setting_proto_msgTypes[32]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2425,7 +2527,7 @@ type AppIMSetting_Wecom struct {
 func (x *AppIMSetting_Wecom) Reset() {
 	*x = AppIMSetting_Wecom{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_store_setting_proto_msgTypes[32]
+		mi := &file_store_setting_proto_msgTypes[33]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2438,7 +2540,7 @@ func (x *AppIMSetting_Wecom) String() string {
 func (*AppIMSetting_Wecom) ProtoMessage() {}
 
 func (x *AppIMSetting_Wecom) ProtoReflect() protoreflect.Message {
-	mi := &file_store_setting_proto_msgTypes[32]
+	mi := &file_store_setting_proto_msgTypes[33]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2864,14 +2966,39 @@ var file_store_setting_proto_rawDesc = []byte{
 	0x69, 0x74, 0x18, 0x01, 0x20, 0x01, 0x28, 0x03, 0x52, 0x05, 0x6c, 0x69, 0x6d, 0x69, 0x74, 0x22,
 	0x23, 0x0a, 0x0b, 0x53, 0x43, 0x49, 0x4d, 0x53, 0x65, 0x74, 0x74, 0x69, 0x6e, 0x67, 0x12, 0x14,
 	0x0a, 0x05, 0x74, 0x6f, 0x6b, 0x65, 0x6e, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05, 0x74,
-	0x6f, 0x6b, 0x65, 0x6e, 0x2a, 0x54, 0x0a, 0x12, 0x44, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73, 0x65,
-	0x43, 0x68, 0x61, 0x6e, 0x67, 0x65, 0x4d, 0x6f, 0x64, 0x65, 0x12, 0x24, 0x0a, 0x20, 0x44, 0x41,
-	0x54, 0x41, 0x42, 0x41, 0x53, 0x45, 0x5f, 0x43, 0x48, 0x41, 0x4e, 0x47, 0x45, 0x5f, 0x4d, 0x4f,
-	0x44, 0x45, 0x5f, 0x55, 0x4e, 0x53, 0x50, 0x45, 0x43, 0x49, 0x46, 0x49, 0x45, 0x44, 0x10, 0x00,
-	0x12, 0x0c, 0x0a, 0x08, 0x50, 0x49, 0x50, 0x45, 0x4c, 0x49, 0x4e, 0x45, 0x10, 0x01, 0x12, 0x0a,
-	0x0a, 0x06, 0x45, 0x44, 0x49, 0x54, 0x4f, 0x52, 0x10, 0x02, 0x42, 0x14, 0x5a, 0x12, 0x67, 0x65,
-	0x6e, 0x65, 0x72, 0x61, 0x74, 0x65, 0x64, 0x2d, 0x67, 0x6f, 0x2f, 0x73, 0x74, 0x6f, 0x72, 0x65,
-	0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x6f, 0x6b, 0x65, 0x6e, 0x22, 0x8e, 0x03, 0x0a, 0x1a, 0x50, 0x61, 0x73, 0x73, 0x77, 0x6f, 0x72,
+	0x64, 0x52, 0x65, 0x73, 0x74, 0x72, 0x69, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x53, 0x65, 0x74, 0x74,
+	0x69, 0x6e, 0x67, 0x12, 0x1d, 0x0a, 0x0a, 0x6d, 0x69, 0x6e, 0x5f, 0x6c, 0x65, 0x6e, 0x67, 0x74,
+	0x68, 0x18, 0x01, 0x20, 0x01, 0x28, 0x05, 0x52, 0x09, 0x6d, 0x69, 0x6e, 0x4c, 0x65, 0x6e, 0x67,
+	0x74, 0x68, 0x12, 0x25, 0x0a, 0x0e, 0x72, 0x65, 0x71, 0x75, 0x69, 0x72, 0x65, 0x5f, 0x6e, 0x75,
+	0x6d, 0x62, 0x65, 0x72, 0x18, 0x02, 0x20, 0x01, 0x28, 0x08, 0x52, 0x0d, 0x72, 0x65, 0x71, 0x75,
+	0x69, 0x72, 0x65, 0x4e, 0x75, 0x6d, 0x62, 0x65, 0x72, 0x12, 0x25, 0x0a, 0x0e, 0x72, 0x65, 0x71,
+	0x75, 0x69, 0x72, 0x65, 0x5f, 0x6c, 0x65, 0x74, 0x74, 0x65, 0x72, 0x18, 0x03, 0x20, 0x01, 0x28,
+	0x08, 0x52, 0x0d, 0x72, 0x65, 0x71, 0x75, 0x69, 0x72, 0x65, 0x4c, 0x65, 0x74, 0x74, 0x65, 0x72,
+	0x12, 0x38, 0x0a, 0x18, 0x72, 0x65, 0x71, 0x75, 0x69, 0x72, 0x65, 0x5f, 0x75, 0x70, 0x70, 0x65,
+	0x72, 0x63, 0x61, 0x73, 0x65, 0x5f, 0x6c, 0x65, 0x74, 0x74, 0x65, 0x72, 0x18, 0x04, 0x20, 0x01,
+	0x28, 0x08, 0x52, 0x16, 0x72, 0x65, 0x71, 0x75, 0x69, 0x72, 0x65, 0x55, 0x70, 0x70, 0x65, 0x72,
+	0x63, 0x61, 0x73, 0x65, 0x4c, 0x65, 0x74, 0x74, 0x65, 0x72, 0x12, 0x3a, 0x0a, 0x19, 0x72, 0x65,
+	0x71, 0x75, 0x69, 0x72, 0x65, 0x5f, 0x73, 0x70, 0x65, 0x63, 0x69, 0x61, 0x6c, 0x5f, 0x63, 0x68,
+	0x61, 0x72, 0x61, 0x63, 0x74, 0x65, 0x72, 0x18, 0x05, 0x20, 0x01, 0x28, 0x08, 0x52, 0x17, 0x72,
+	0x65, 0x71, 0x75, 0x69, 0x72, 0x65, 0x53, 0x70, 0x65, 0x63, 0x69, 0x61, 0x6c, 0x43, 0x68, 0x61,
+	0x72, 0x61, 0x63, 0x74, 0x65, 0x72, 0x12, 0x51, 0x0a, 0x26, 0x72, 0x65, 0x71, 0x75, 0x69, 0x72,
+	0x65, 0x5f, 0x72, 0x65, 0x73, 0x65, 0x74, 0x5f, 0x70, 0x61, 0x73, 0x73, 0x77, 0x6f, 0x72, 0x64,
+	0x5f, 0x66, 0x6f, 0x72, 0x5f, 0x66, 0x69, 0x72, 0x73, 0x74, 0x5f, 0x6c, 0x6f, 0x67, 0x69, 0x6e,
+	0x18, 0x06, 0x20, 0x01, 0x28, 0x08, 0x52, 0x21, 0x72, 0x65, 0x71, 0x75, 0x69, 0x72, 0x65, 0x52,
+	0x65, 0x73, 0x65, 0x74, 0x50, 0x61, 0x73, 0x73, 0x77, 0x6f, 0x72, 0x64, 0x46, 0x6f, 0x72, 0x46,
+	0x69, 0x72, 0x73, 0x74, 0x4c, 0x6f, 0x67, 0x69, 0x6e, 0x12, 0x28, 0x0a, 0x0d, 0x72, 0x6f, 0x74,
+	0x61, 0x74, 0x69, 0x6f, 0x6e, 0x5f, 0x64, 0x61, 0x79, 0x73, 0x18, 0x07, 0x20, 0x01, 0x28, 0x05,
+	0x48, 0x00, 0x52, 0x0c, 0x72, 0x6f, 0x74, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x44, 0x61, 0x79, 0x73,
+	0x88, 0x01, 0x01, 0x42, 0x10, 0x0a, 0x0e, 0x5f, 0x72, 0x6f, 0x74, 0x61, 0x74, 0x69, 0x6f, 0x6e,
+	0x5f, 0x64, 0x61, 0x79, 0x73, 0x2a, 0x54, 0x0a, 0x12, 0x44, 0x61, 0x74, 0x61, 0x62, 0x61, 0x73,
+	0x65, 0x43, 0x68, 0x61, 0x6e, 0x67, 0x65, 0x4d, 0x6f, 0x64, 0x65, 0x12, 0x24, 0x0a, 0x20, 0x44,
+	0x41, 0x54, 0x41, 0x42, 0x41, 0x53, 0x45, 0x5f, 0x43, 0x48, 0x41, 0x4e, 0x47, 0x45, 0x5f, 0x4d,
+	0x4f, 0x44, 0x45, 0x5f, 0x55, 0x4e, 0x53, 0x50, 0x45, 0x43, 0x49, 0x46, 0x49, 0x45, 0x44, 0x10,
+	0x00, 0x12, 0x0c, 0x0a, 0x08, 0x50, 0x49, 0x50, 0x45, 0x4c, 0x49, 0x4e, 0x45, 0x10, 0x01, 0x12,
+	0x0a, 0x0a, 0x06, 0x45, 0x44, 0x49, 0x54, 0x4f, 0x52, 0x10, 0x02, 0x42, 0x14, 0x5a, 0x12, 0x67,
+	0x65, 0x6e, 0x65, 0x72, 0x61, 0x74, 0x65, 0x64, 0x2d, 0x67, 0x6f, 0x2f, 0x73, 0x74, 0x6f, 0x72,
+	0x65, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -2887,7 +3014,7 @@ func file_store_setting_proto_rawDescGZIP() []byte {
 }
 
 var file_store_setting_proto_enumTypes = make([]protoimpl.EnumInfo, 5)
-var file_store_setting_proto_msgTypes = make([]protoimpl.MessageInfo, 33)
+var file_store_setting_proto_msgTypes = make([]protoimpl.MessageInfo, 34)
 var file_store_setting_proto_goTypes = []any{
 	(DatabaseChangeMode)(0),                                                       // 0: bytebase.store.DatabaseChangeMode
 	(Announcement_AlertLevel)(0),                                                  // 1: bytebase.store.Announcement.AlertLevel
@@ -2908,72 +3035,73 @@ var file_store_setting_proto_goTypes = []any{
 	(*AppIMSetting)(nil),                                                          // 16: bytebase.store.AppIMSetting
 	(*MaximumSQLResultSizeSetting)(nil),                                           // 17: bytebase.store.MaximumSQLResultSizeSetting
 	(*SCIMSetting)(nil),                                                           // 18: bytebase.store.SCIMSetting
-	(*WorkspaceApprovalSetting_Rule)(nil),                                         // 19: bytebase.store.WorkspaceApprovalSetting.Rule
-	(*ExternalApprovalSetting_Node)(nil),                                          // 20: bytebase.store.ExternalApprovalSetting.Node
-	(*SchemaTemplateSetting_FieldTemplate)(nil),                                   // 21: bytebase.store.SchemaTemplateSetting.FieldTemplate
-	(*SchemaTemplateSetting_ColumnType)(nil),                                      // 22: bytebase.store.SchemaTemplateSetting.ColumnType
-	(*SchemaTemplateSetting_TableTemplate)(nil),                                   // 23: bytebase.store.SchemaTemplateSetting.TableTemplate
-	(*DataClassificationSetting_DataClassificationConfig)(nil),                    // 24: bytebase.store.DataClassificationSetting.DataClassificationConfig
-	(*DataClassificationSetting_DataClassificationConfig_Level)(nil),              // 25: bytebase.store.DataClassificationSetting.DataClassificationConfig.Level
-	(*DataClassificationSetting_DataClassificationConfig_DataClassification)(nil), // 26: bytebase.store.DataClassificationSetting.DataClassificationConfig.DataClassification
-	nil,                                      // 27: bytebase.store.DataClassificationSetting.DataClassificationConfig.ClassificationEntry
-	(*SemanticTypeSetting_SemanticType)(nil), // 28: bytebase.store.SemanticTypeSetting.SemanticType
-	(*MaskingAlgorithmSetting_Algorithm)(nil),                 // 29: bytebase.store.MaskingAlgorithmSetting.Algorithm
-	(*MaskingAlgorithmSetting_Algorithm_FullMask)(nil),        // 30: bytebase.store.MaskingAlgorithmSetting.Algorithm.FullMask
-	(*MaskingAlgorithmSetting_Algorithm_RangeMask)(nil),       // 31: bytebase.store.MaskingAlgorithmSetting.Algorithm.RangeMask
-	(*MaskingAlgorithmSetting_Algorithm_MD5Mask)(nil),         // 32: bytebase.store.MaskingAlgorithmSetting.Algorithm.MD5Mask
-	(*MaskingAlgorithmSetting_Algorithm_InnerOuterMask)(nil),  // 33: bytebase.store.MaskingAlgorithmSetting.Algorithm.InnerOuterMask
-	(*MaskingAlgorithmSetting_Algorithm_RangeMask_Slice)(nil), // 34: bytebase.store.MaskingAlgorithmSetting.Algorithm.RangeMask.Slice
-	(*AppIMSetting_Slack)(nil),                                // 35: bytebase.store.AppIMSetting.Slack
-	(*AppIMSetting_Feishu)(nil),                               // 36: bytebase.store.AppIMSetting.Feishu
-	(*AppIMSetting_Wecom)(nil),                                // 37: bytebase.store.AppIMSetting.Wecom
-	(*durationpb.Duration)(nil),                               // 38: google.protobuf.Duration
-	(*v1alpha1.ParsedExpr)(nil),                               // 39: google.api.expr.v1alpha1.ParsedExpr
-	(*ApprovalTemplate)(nil),                                  // 40: bytebase.store.ApprovalTemplate
-	(*expr.Expr)(nil),                                         // 41: google.type.Expr
-	(Engine)(0),                                               // 42: bytebase.store.Engine
-	(*ColumnMetadata)(nil),                                    // 43: bytebase.store.ColumnMetadata
-	(*ColumnConfig)(nil),                                      // 44: bytebase.store.ColumnConfig
-	(*TableMetadata)(nil),                                     // 45: bytebase.store.TableMetadata
-	(*TableConfig)(nil),                                       // 46: bytebase.store.TableConfig
+	(*PasswordRestrictionSetting)(nil),                                            // 19: bytebase.store.PasswordRestrictionSetting
+	(*WorkspaceApprovalSetting_Rule)(nil),                                         // 20: bytebase.store.WorkspaceApprovalSetting.Rule
+	(*ExternalApprovalSetting_Node)(nil),                                          // 21: bytebase.store.ExternalApprovalSetting.Node
+	(*SchemaTemplateSetting_FieldTemplate)(nil),                                   // 22: bytebase.store.SchemaTemplateSetting.FieldTemplate
+	(*SchemaTemplateSetting_ColumnType)(nil),                                      // 23: bytebase.store.SchemaTemplateSetting.ColumnType
+	(*SchemaTemplateSetting_TableTemplate)(nil),                                   // 24: bytebase.store.SchemaTemplateSetting.TableTemplate
+	(*DataClassificationSetting_DataClassificationConfig)(nil),                    // 25: bytebase.store.DataClassificationSetting.DataClassificationConfig
+	(*DataClassificationSetting_DataClassificationConfig_Level)(nil),              // 26: bytebase.store.DataClassificationSetting.DataClassificationConfig.Level
+	(*DataClassificationSetting_DataClassificationConfig_DataClassification)(nil), // 27: bytebase.store.DataClassificationSetting.DataClassificationConfig.DataClassification
+	nil,                                      // 28: bytebase.store.DataClassificationSetting.DataClassificationConfig.ClassificationEntry
+	(*SemanticTypeSetting_SemanticType)(nil), // 29: bytebase.store.SemanticTypeSetting.SemanticType
+	(*MaskingAlgorithmSetting_Algorithm)(nil),                 // 30: bytebase.store.MaskingAlgorithmSetting.Algorithm
+	(*MaskingAlgorithmSetting_Algorithm_FullMask)(nil),        // 31: bytebase.store.MaskingAlgorithmSetting.Algorithm.FullMask
+	(*MaskingAlgorithmSetting_Algorithm_RangeMask)(nil),       // 32: bytebase.store.MaskingAlgorithmSetting.Algorithm.RangeMask
+	(*MaskingAlgorithmSetting_Algorithm_MD5Mask)(nil),         // 33: bytebase.store.MaskingAlgorithmSetting.Algorithm.MD5Mask
+	(*MaskingAlgorithmSetting_Algorithm_InnerOuterMask)(nil),  // 34: bytebase.store.MaskingAlgorithmSetting.Algorithm.InnerOuterMask
+	(*MaskingAlgorithmSetting_Algorithm_RangeMask_Slice)(nil), // 35: bytebase.store.MaskingAlgorithmSetting.Algorithm.RangeMask.Slice
+	(*AppIMSetting_Slack)(nil),                                // 36: bytebase.store.AppIMSetting.Slack
+	(*AppIMSetting_Feishu)(nil),                               // 37: bytebase.store.AppIMSetting.Feishu
+	(*AppIMSetting_Wecom)(nil),                                // 38: bytebase.store.AppIMSetting.Wecom
+	(*durationpb.Duration)(nil),                               // 39: google.protobuf.Duration
+	(*v1alpha1.ParsedExpr)(nil),                               // 40: google.api.expr.v1alpha1.ParsedExpr
+	(*ApprovalTemplate)(nil),                                  // 41: bytebase.store.ApprovalTemplate
+	(*expr.Expr)(nil),                                         // 42: google.type.Expr
+	(Engine)(0),                                               // 43: bytebase.store.Engine
+	(*ColumnMetadata)(nil),                                    // 44: bytebase.store.ColumnMetadata
+	(*ColumnConfig)(nil),                                      // 45: bytebase.store.ColumnConfig
+	(*TableMetadata)(nil),                                     // 46: bytebase.store.TableMetadata
+	(*TableConfig)(nil),                                       // 47: bytebase.store.TableConfig
 }
 var file_store_setting_proto_depIdxs = []int32{
-	38, // 0: bytebase.store.WorkspaceProfileSetting.token_duration:type_name -> google.protobuf.Duration
+	39, // 0: bytebase.store.WorkspaceProfileSetting.token_duration:type_name -> google.protobuf.Duration
 	6,  // 1: bytebase.store.WorkspaceProfileSetting.announcement:type_name -> bytebase.store.Announcement
-	38, // 2: bytebase.store.WorkspaceProfileSetting.maximum_role_expiration:type_name -> google.protobuf.Duration
+	39, // 2: bytebase.store.WorkspaceProfileSetting.maximum_role_expiration:type_name -> google.protobuf.Duration
 	0,  // 3: bytebase.store.WorkspaceProfileSetting.database_change_mode:type_name -> bytebase.store.DatabaseChangeMode
 	1,  // 4: bytebase.store.Announcement.level:type_name -> bytebase.store.Announcement.AlertLevel
-	19, // 5: bytebase.store.WorkspaceApprovalSetting.rules:type_name -> bytebase.store.WorkspaceApprovalSetting.Rule
-	20, // 6: bytebase.store.ExternalApprovalSetting.nodes:type_name -> bytebase.store.ExternalApprovalSetting.Node
+	20, // 5: bytebase.store.WorkspaceApprovalSetting.rules:type_name -> bytebase.store.WorkspaceApprovalSetting.Rule
+	21, // 6: bytebase.store.ExternalApprovalSetting.nodes:type_name -> bytebase.store.ExternalApprovalSetting.Node
 	2,  // 7: bytebase.store.SMTPMailDeliverySetting.encryption:type_name -> bytebase.store.SMTPMailDeliverySetting.Encryption
 	3,  // 8: bytebase.store.SMTPMailDeliverySetting.authentication:type_name -> bytebase.store.SMTPMailDeliverySetting.Authentication
-	21, // 9: bytebase.store.SchemaTemplateSetting.field_templates:type_name -> bytebase.store.SchemaTemplateSetting.FieldTemplate
-	22, // 10: bytebase.store.SchemaTemplateSetting.column_types:type_name -> bytebase.store.SchemaTemplateSetting.ColumnType
-	23, // 11: bytebase.store.SchemaTemplateSetting.table_templates:type_name -> bytebase.store.SchemaTemplateSetting.TableTemplate
-	24, // 12: bytebase.store.DataClassificationSetting.configs:type_name -> bytebase.store.DataClassificationSetting.DataClassificationConfig
-	28, // 13: bytebase.store.SemanticTypeSetting.types:type_name -> bytebase.store.SemanticTypeSetting.SemanticType
-	29, // 14: bytebase.store.MaskingAlgorithmSetting.algorithms:type_name -> bytebase.store.MaskingAlgorithmSetting.Algorithm
-	35, // 15: bytebase.store.AppIMSetting.slack:type_name -> bytebase.store.AppIMSetting.Slack
-	36, // 16: bytebase.store.AppIMSetting.feishu:type_name -> bytebase.store.AppIMSetting.Feishu
-	37, // 17: bytebase.store.AppIMSetting.wecom:type_name -> bytebase.store.AppIMSetting.Wecom
-	39, // 18: bytebase.store.WorkspaceApprovalSetting.Rule.expression:type_name -> google.api.expr.v1alpha1.ParsedExpr
-	40, // 19: bytebase.store.WorkspaceApprovalSetting.Rule.template:type_name -> bytebase.store.ApprovalTemplate
-	41, // 20: bytebase.store.WorkspaceApprovalSetting.Rule.condition:type_name -> google.type.Expr
-	42, // 21: bytebase.store.SchemaTemplateSetting.FieldTemplate.engine:type_name -> bytebase.store.Engine
-	43, // 22: bytebase.store.SchemaTemplateSetting.FieldTemplate.column:type_name -> bytebase.store.ColumnMetadata
-	44, // 23: bytebase.store.SchemaTemplateSetting.FieldTemplate.config:type_name -> bytebase.store.ColumnConfig
-	42, // 24: bytebase.store.SchemaTemplateSetting.ColumnType.engine:type_name -> bytebase.store.Engine
-	42, // 25: bytebase.store.SchemaTemplateSetting.TableTemplate.engine:type_name -> bytebase.store.Engine
-	45, // 26: bytebase.store.SchemaTemplateSetting.TableTemplate.table:type_name -> bytebase.store.TableMetadata
-	46, // 27: bytebase.store.SchemaTemplateSetting.TableTemplate.config:type_name -> bytebase.store.TableConfig
-	25, // 28: bytebase.store.DataClassificationSetting.DataClassificationConfig.levels:type_name -> bytebase.store.DataClassificationSetting.DataClassificationConfig.Level
-	27, // 29: bytebase.store.DataClassificationSetting.DataClassificationConfig.classification:type_name -> bytebase.store.DataClassificationSetting.DataClassificationConfig.ClassificationEntry
-	26, // 30: bytebase.store.DataClassificationSetting.DataClassificationConfig.ClassificationEntry.value:type_name -> bytebase.store.DataClassificationSetting.DataClassificationConfig.DataClassification
-	30, // 31: bytebase.store.MaskingAlgorithmSetting.Algorithm.full_mask:type_name -> bytebase.store.MaskingAlgorithmSetting.Algorithm.FullMask
-	31, // 32: bytebase.store.MaskingAlgorithmSetting.Algorithm.range_mask:type_name -> bytebase.store.MaskingAlgorithmSetting.Algorithm.RangeMask
-	32, // 33: bytebase.store.MaskingAlgorithmSetting.Algorithm.md5_mask:type_name -> bytebase.store.MaskingAlgorithmSetting.Algorithm.MD5Mask
-	33, // 34: bytebase.store.MaskingAlgorithmSetting.Algorithm.inner_outer_mask:type_name -> bytebase.store.MaskingAlgorithmSetting.Algorithm.InnerOuterMask
-	34, // 35: bytebase.store.MaskingAlgorithmSetting.Algorithm.RangeMask.slices:type_name -> bytebase.store.MaskingAlgorithmSetting.Algorithm.RangeMask.Slice
+	22, // 9: bytebase.store.SchemaTemplateSetting.field_templates:type_name -> bytebase.store.SchemaTemplateSetting.FieldTemplate
+	23, // 10: bytebase.store.SchemaTemplateSetting.column_types:type_name -> bytebase.store.SchemaTemplateSetting.ColumnType
+	24, // 11: bytebase.store.SchemaTemplateSetting.table_templates:type_name -> bytebase.store.SchemaTemplateSetting.TableTemplate
+	25, // 12: bytebase.store.DataClassificationSetting.configs:type_name -> bytebase.store.DataClassificationSetting.DataClassificationConfig
+	29, // 13: bytebase.store.SemanticTypeSetting.types:type_name -> bytebase.store.SemanticTypeSetting.SemanticType
+	30, // 14: bytebase.store.MaskingAlgorithmSetting.algorithms:type_name -> bytebase.store.MaskingAlgorithmSetting.Algorithm
+	36, // 15: bytebase.store.AppIMSetting.slack:type_name -> bytebase.store.AppIMSetting.Slack
+	37, // 16: bytebase.store.AppIMSetting.feishu:type_name -> bytebase.store.AppIMSetting.Feishu
+	38, // 17: bytebase.store.AppIMSetting.wecom:type_name -> bytebase.store.AppIMSetting.Wecom
+	40, // 18: bytebase.store.WorkspaceApprovalSetting.Rule.expression:type_name -> google.api.expr.v1alpha1.ParsedExpr
+	41, // 19: bytebase.store.WorkspaceApprovalSetting.Rule.template:type_name -> bytebase.store.ApprovalTemplate
+	42, // 20: bytebase.store.WorkspaceApprovalSetting.Rule.condition:type_name -> google.type.Expr
+	43, // 21: bytebase.store.SchemaTemplateSetting.FieldTemplate.engine:type_name -> bytebase.store.Engine
+	44, // 22: bytebase.store.SchemaTemplateSetting.FieldTemplate.column:type_name -> bytebase.store.ColumnMetadata
+	45, // 23: bytebase.store.SchemaTemplateSetting.FieldTemplate.config:type_name -> bytebase.store.ColumnConfig
+	43, // 24: bytebase.store.SchemaTemplateSetting.ColumnType.engine:type_name -> bytebase.store.Engine
+	43, // 25: bytebase.store.SchemaTemplateSetting.TableTemplate.engine:type_name -> bytebase.store.Engine
+	46, // 26: bytebase.store.SchemaTemplateSetting.TableTemplate.table:type_name -> bytebase.store.TableMetadata
+	47, // 27: bytebase.store.SchemaTemplateSetting.TableTemplate.config:type_name -> bytebase.store.TableConfig
+	26, // 28: bytebase.store.DataClassificationSetting.DataClassificationConfig.levels:type_name -> bytebase.store.DataClassificationSetting.DataClassificationConfig.Level
+	28, // 29: bytebase.store.DataClassificationSetting.DataClassificationConfig.classification:type_name -> bytebase.store.DataClassificationSetting.DataClassificationConfig.ClassificationEntry
+	27, // 30: bytebase.store.DataClassificationSetting.DataClassificationConfig.ClassificationEntry.value:type_name -> bytebase.store.DataClassificationSetting.DataClassificationConfig.DataClassification
+	31, // 31: bytebase.store.MaskingAlgorithmSetting.Algorithm.full_mask:type_name -> bytebase.store.MaskingAlgorithmSetting.Algorithm.FullMask
+	32, // 32: bytebase.store.MaskingAlgorithmSetting.Algorithm.range_mask:type_name -> bytebase.store.MaskingAlgorithmSetting.Algorithm.RangeMask
+	33, // 33: bytebase.store.MaskingAlgorithmSetting.Algorithm.md5_mask:type_name -> bytebase.store.MaskingAlgorithmSetting.Algorithm.MD5Mask
+	34, // 34: bytebase.store.MaskingAlgorithmSetting.Algorithm.inner_outer_mask:type_name -> bytebase.store.MaskingAlgorithmSetting.Algorithm.InnerOuterMask
+	35, // 35: bytebase.store.MaskingAlgorithmSetting.Algorithm.RangeMask.slices:type_name -> bytebase.store.MaskingAlgorithmSetting.Algorithm.RangeMask.Slice
 	4,  // 36: bytebase.store.MaskingAlgorithmSetting.Algorithm.InnerOuterMask.type:type_name -> bytebase.store.MaskingAlgorithmSetting.Algorithm.InnerOuterMask.MaskType
 	37, // [37:37] is the sub-list for method output_type
 	37, // [37:37] is the sub-list for method input_type
@@ -3160,7 +3288,7 @@ func file_store_setting_proto_init() {
 			}
 		}
 		file_store_setting_proto_msgTypes[14].Exporter = func(v any, i int) any {
-			switch v := v.(*WorkspaceApprovalSetting_Rule); i {
+			switch v := v.(*PasswordRestrictionSetting); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -3172,7 +3300,7 @@ func file_store_setting_proto_init() {
 			}
 		}
 		file_store_setting_proto_msgTypes[15].Exporter = func(v any, i int) any {
-			switch v := v.(*ExternalApprovalSetting_Node); i {
+			switch v := v.(*WorkspaceApprovalSetting_Rule); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -3184,7 +3312,7 @@ func file_store_setting_proto_init() {
 			}
 		}
 		file_store_setting_proto_msgTypes[16].Exporter = func(v any, i int) any {
-			switch v := v.(*SchemaTemplateSetting_FieldTemplate); i {
+			switch v := v.(*ExternalApprovalSetting_Node); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -3196,7 +3324,7 @@ func file_store_setting_proto_init() {
 			}
 		}
 		file_store_setting_proto_msgTypes[17].Exporter = func(v any, i int) any {
-			switch v := v.(*SchemaTemplateSetting_ColumnType); i {
+			switch v := v.(*SchemaTemplateSetting_FieldTemplate); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -3208,7 +3336,7 @@ func file_store_setting_proto_init() {
 			}
 		}
 		file_store_setting_proto_msgTypes[18].Exporter = func(v any, i int) any {
-			switch v := v.(*SchemaTemplateSetting_TableTemplate); i {
+			switch v := v.(*SchemaTemplateSetting_ColumnType); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -3220,7 +3348,7 @@ func file_store_setting_proto_init() {
 			}
 		}
 		file_store_setting_proto_msgTypes[19].Exporter = func(v any, i int) any {
-			switch v := v.(*DataClassificationSetting_DataClassificationConfig); i {
+			switch v := v.(*SchemaTemplateSetting_TableTemplate); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -3232,7 +3360,7 @@ func file_store_setting_proto_init() {
 			}
 		}
 		file_store_setting_proto_msgTypes[20].Exporter = func(v any, i int) any {
-			switch v := v.(*DataClassificationSetting_DataClassificationConfig_Level); i {
+			switch v := v.(*DataClassificationSetting_DataClassificationConfig); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -3244,6 +3372,18 @@ func file_store_setting_proto_init() {
 			}
 		}
 		file_store_setting_proto_msgTypes[21].Exporter = func(v any, i int) any {
+			switch v := v.(*DataClassificationSetting_DataClassificationConfig_Level); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_store_setting_proto_msgTypes[22].Exporter = func(v any, i int) any {
 			switch v := v.(*DataClassificationSetting_DataClassificationConfig_DataClassification); i {
 			case 0:
 				return &v.state
@@ -3255,7 +3395,7 @@ func file_store_setting_proto_init() {
 				return nil
 			}
 		}
-		file_store_setting_proto_msgTypes[23].Exporter = func(v any, i int) any {
+		file_store_setting_proto_msgTypes[24].Exporter = func(v any, i int) any {
 			switch v := v.(*SemanticTypeSetting_SemanticType); i {
 			case 0:
 				return &v.state
@@ -3267,7 +3407,7 @@ func file_store_setting_proto_init() {
 				return nil
 			}
 		}
-		file_store_setting_proto_msgTypes[24].Exporter = func(v any, i int) any {
+		file_store_setting_proto_msgTypes[25].Exporter = func(v any, i int) any {
 			switch v := v.(*MaskingAlgorithmSetting_Algorithm); i {
 			case 0:
 				return &v.state
@@ -3279,7 +3419,7 @@ func file_store_setting_proto_init() {
 				return nil
 			}
 		}
-		file_store_setting_proto_msgTypes[25].Exporter = func(v any, i int) any {
+		file_store_setting_proto_msgTypes[26].Exporter = func(v any, i int) any {
 			switch v := v.(*MaskingAlgorithmSetting_Algorithm_FullMask); i {
 			case 0:
 				return &v.state
@@ -3291,7 +3431,7 @@ func file_store_setting_proto_init() {
 				return nil
 			}
 		}
-		file_store_setting_proto_msgTypes[26].Exporter = func(v any, i int) any {
+		file_store_setting_proto_msgTypes[27].Exporter = func(v any, i int) any {
 			switch v := v.(*MaskingAlgorithmSetting_Algorithm_RangeMask); i {
 			case 0:
 				return &v.state
@@ -3303,7 +3443,7 @@ func file_store_setting_proto_init() {
 				return nil
 			}
 		}
-		file_store_setting_proto_msgTypes[27].Exporter = func(v any, i int) any {
+		file_store_setting_proto_msgTypes[28].Exporter = func(v any, i int) any {
 			switch v := v.(*MaskingAlgorithmSetting_Algorithm_MD5Mask); i {
 			case 0:
 				return &v.state
@@ -3315,7 +3455,7 @@ func file_store_setting_proto_init() {
 				return nil
 			}
 		}
-		file_store_setting_proto_msgTypes[28].Exporter = func(v any, i int) any {
+		file_store_setting_proto_msgTypes[29].Exporter = func(v any, i int) any {
 			switch v := v.(*MaskingAlgorithmSetting_Algorithm_InnerOuterMask); i {
 			case 0:
 				return &v.state
@@ -3327,7 +3467,7 @@ func file_store_setting_proto_init() {
 				return nil
 			}
 		}
-		file_store_setting_proto_msgTypes[29].Exporter = func(v any, i int) any {
+		file_store_setting_proto_msgTypes[30].Exporter = func(v any, i int) any {
 			switch v := v.(*MaskingAlgorithmSetting_Algorithm_RangeMask_Slice); i {
 			case 0:
 				return &v.state
@@ -3339,7 +3479,7 @@ func file_store_setting_proto_init() {
 				return nil
 			}
 		}
-		file_store_setting_proto_msgTypes[30].Exporter = func(v any, i int) any {
+		file_store_setting_proto_msgTypes[31].Exporter = func(v any, i int) any {
 			switch v := v.(*AppIMSetting_Slack); i {
 			case 0:
 				return &v.state
@@ -3351,7 +3491,7 @@ func file_store_setting_proto_init() {
 				return nil
 			}
 		}
-		file_store_setting_proto_msgTypes[31].Exporter = func(v any, i int) any {
+		file_store_setting_proto_msgTypes[32].Exporter = func(v any, i int) any {
 			switch v := v.(*AppIMSetting_Feishu); i {
 			case 0:
 				return &v.state
@@ -3363,7 +3503,7 @@ func file_store_setting_proto_init() {
 				return nil
 			}
 		}
-		file_store_setting_proto_msgTypes[32].Exporter = func(v any, i int) any {
+		file_store_setting_proto_msgTypes[33].Exporter = func(v any, i int) any {
 			switch v := v.(*AppIMSetting_Wecom); i {
 			case 0:
 				return &v.state
@@ -3376,8 +3516,9 @@ func file_store_setting_proto_init() {
 			}
 		}
 	}
-	file_store_setting_proto_msgTypes[21].OneofWrappers = []any{}
-	file_store_setting_proto_msgTypes[24].OneofWrappers = []any{
+	file_store_setting_proto_msgTypes[14].OneofWrappers = []any{}
+	file_store_setting_proto_msgTypes[22].OneofWrappers = []any{}
+	file_store_setting_proto_msgTypes[25].OneofWrappers = []any{
 		(*MaskingAlgorithmSetting_Algorithm_FullMask_)(nil),
 		(*MaskingAlgorithmSetting_Algorithm_RangeMask_)(nil),
 		(*MaskingAlgorithmSetting_Algorithm_Md5Mask)(nil),
@@ -3389,7 +3530,7 @@ func file_store_setting_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_store_setting_proto_rawDesc,
 			NumEnums:      5,
-			NumMessages:   33,
+			NumMessages:   34,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
