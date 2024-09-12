@@ -114,6 +114,7 @@ import {
   IssueComment_Approval,
   IssueComment_Approval_Status,
   IssueComment_IssueUpdate,
+  IssueComment_TaskPriorBackup,
   IssueComment_TaskUpdate,
   IssueComment_TaskUpdate_Status,
 } from "@/types/proto/v1/issue_service";
@@ -208,6 +209,15 @@ const icon = computed((): ActionIconType => {
       return "update";
     }
     // Otherwise, show avatar icon based on the creator.
+  } else if (issueComment.type === IssueCommentType.TASK_PRIOR_BACKUP) {
+    const taskPriorBackup = IssueComment_TaskPriorBackup.fromPartial(
+      issueComment.taskPriorBackup || {}
+    );
+    if (taskPriorBackup.error !== "") {
+      return "fail";
+    } else {
+      return "complete";
+    }
   }
 
   return extractUserResourceName(issueComment.creator) ==
