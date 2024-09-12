@@ -305,7 +305,7 @@ type Driver interface {
 	// CheckSlowQueryLogEnabled checks if the slow query log is enabled.
 	CheckSlowQueryLogEnabled(ctx context.Context) error
 	// Dump dumps the schema of database.
-	Dump(ctx context.Context, out io.Writer) (string, error)
+	Dump(ctx context.Context, out io.Writer) error
 }
 
 // Register makes a database driver available by the provided type.

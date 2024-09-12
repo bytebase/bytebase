@@ -322,8 +322,8 @@ func (*MockDriver) SyncDBSchema(_ context.Context) (*storepb.DatabaseSchemaMetad
 }
 
 // Dump implements the Driver interface.
-func (*MockDriver) Dump(_ context.Context, _ io.Writer) (string, error) {
-	return "", nil
+func (*MockDriver) Dump(_ context.Context, _ io.Writer) error {
+	return nil
 }
 
 // SyncSlowQuery implements the Driver interface.

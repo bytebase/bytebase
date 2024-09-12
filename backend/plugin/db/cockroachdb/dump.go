@@ -9,10 +9,10 @@ import (
 )
 
 // Dump dumps the database.
-func (driver *Driver) Dump(ctx context.Context, w io.Writer) (string, error) {
+func (driver *Driver) Dump(ctx context.Context, w io.Writer) error {
 	conn, err := driver.db.Conn(ctx)
 	if err != nil {
-		return "", err
+		return err
 	}
 	defer conn.Close()
 
@@ -35,12 +35,12 @@ func (driver *Driver) Dump(ctx context.Context, w io.Writer) (string, error) {
 		err = rows.Err()
 		return err
 	}); err != nil {
-		return "", err
+		return err
 	}
 
 	if _, err := w.Write([]byte(sb.String())); err != nil {
-		return "", err
+		return err
 	}
 
-	return sb.String(), nil
+	return nil
 }
