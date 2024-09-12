@@ -25,12 +25,8 @@ func (driver *Driver) Dump(ctx context.Context, w io.Writer) (string, error) {
 		if err := rows.Scan(&payload); err != nil {
 			return "", err
 		}
-		if _, err := sb.WriteString(payload); err != nil {
-			return "", err
-		}
-		if _, err := sb.WriteString("\n\n"); err != nil {
-			return "", err
-		}
+		_, _ = sb.WriteString(payload)
+		_, _ = sb.WriteString("\n\n")
 	}
 
 	if err := rows.Err(); err != nil {
