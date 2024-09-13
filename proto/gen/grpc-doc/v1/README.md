@@ -655,6 +655,7 @@
     - [QueryRequest](#bytebase-v1-QueryRequest)
     - [QueryResponse](#bytebase-v1-QueryResponse)
     - [QueryResult](#bytebase-v1-QueryResult)
+    - [QueryResult.PostgresError](#bytebase-v1-QueryResult-PostgresError)
     - [QueryRow](#bytebase-v1-QueryRow)
     - [RowValue](#bytebase-v1-RowValue)
     - [SearchQueryHistoriesRequest](#bytebase-v1-SearchQueryHistoriesRequest)
@@ -10455,6 +10456,39 @@ Type of the SheetPayload.
 | error | [string](#string) |  | The error message if the query failed. |
 | latency | [google.protobuf.Duration](#google-protobuf-Duration) |  | The time it takes to execute the query. |
 | statement | [string](#string) |  | The query statement for the result. |
+| postgres_error | [QueryResult.PostgresError](#bytebase-v1-QueryResult-PostgresError) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-QueryResult-PostgresError"></a>
+
+### QueryResult.PostgresError
+refer https://www.postgresql.org/docs/11/protocol-error-fields.html
+for field description.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| severity | [string](#string) |  |  |
+| code | [string](#string) |  |  |
+| message | [string](#string) |  |  |
+| detail | [string](#string) |  |  |
+| hint | [string](#string) |  |  |
+| position | [int32](#int32) |  |  |
+| internal_position | [int32](#int32) |  |  |
+| internal_query | [string](#string) |  |  |
+| where | [string](#string) |  |  |
+| schema_name | [string](#string) |  |  |
+| table_name | [string](#string) |  |  |
+| column_name | [string](#string) |  |  |
+| data_type_name | [string](#string) |  |  |
+| constraint_name | [string](#string) |  |  |
+| file | [string](#string) |  |  |
+| line | [int32](#int32) |  |  |
+| routine | [string](#string) |  |  |
 
 
 
