@@ -159,7 +159,11 @@
     <EmptyView />
   </template>
   <template v-else-if="viewMode === 'ERROR'">
-    <ErrorView :error="result.error" />
+    <ErrorView
+      :error="result.error"
+      :execute-params="params"
+      :result-set="sqlResultSet"
+    />
   </template>
 </template>
 
