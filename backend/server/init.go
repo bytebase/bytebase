@@ -243,20 +243,21 @@ func (s *Server) getInitSetting(ctx context.Context) (string, time.Duration, err
 		return "", 0, err
 	}
 
-	// Get token duration and external URL.
-	setting, err := s.store.GetSettingV2(ctx, api.SettingWorkspaceProfile)
+	// Get token duration.
+	workspaceProfile, err := s.store.GetWorkspaceGeneralSetting(ctx)
 	if err != nil {
 		return "", 0, err
 	}
+	passwordRestriction, err := s.store.GetPasswordRestrictionSetting(ctx)
+	if err != nil {
+		return "", 0, err
+	}
+
 	tokenDuration := auth.DefaultTokenDuration
-	if setting != nil {
-		settingValue := new(storepb.WorkspaceProfileSetting)
-		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), settingValue); err != nil {
-			return "", 0, err
-		}
-		if settingValue.TokenDuration != nil && settingValue.TokenDuration.Seconds > 0 {
-			tokenDuration = settingValue.TokenDuration.AsDuration()
-		}
+	if passwordRestriction.PasswordRotation != nil && passwordRestriction.PasswordRotation.GetSeconds() > 0 {
+		tokenDuration = passwordRestriction.PasswordRotation.AsDuration()
+	} else if workspaceProfile.TokenDuration != nil && workspaceProfile.TokenDuration.Seconds > 0 {
+		tokenDuration = workspaceProfile.TokenDuration.AsDuration()
 	}
 
 	return secret, tokenDuration, nil

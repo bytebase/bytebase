@@ -491,7 +491,7 @@
       "phone-tips": "Be sure to include the country code",
       "country-code": "Country Code",
       "password": "Password",
-      "password-hint": "Password should follow restriction setting.",
+      "password-hint": "Password should follow restriction setting",
       "password-confirm": "Password Confirm",
       "password-confirm-placeholder": "Confirm new password",
       "password-mismatch": "New password mismatch",
@@ -718,11 +718,13 @@
         },
         "password-restriction": {
           "self": "Password Restriction",
-          "min-length": "Minimum length for password, should no less than {min} characters",
-          "require-number": "Requires the password must contains at least one number",
-          "require-letter": "Requires the password must contains at least one letter, regardless of upper case or lower case",
-          "require-uppercase-letter": "Requires the password must contains at least one upper case letter",
-          "require-special-character": "Requires the password must contains at least one special character"
+          "min-length": "Minimum length for password should no less than {min} characters",
+          "require-number": "The password must contain at least one number",
+          "require-letter": "The password must contain at least one letter, regardless of upper case or lower case",
+          "require-uppercase-letter": "The password must contain at least one upper case letter",
+          "require-special-character": "The password must contain at least one special character",
+          "require-reset-password-for-first-login": "Require users reset their password after the 1st time login",
+          "password-rotation": "Require users reset their password every {day} days"
         },
         "config-updated": "Configuration is updated.",
         "ai-assistant": {

@@ -734,8 +734,8 @@ export interface PasswordRestrictionSetting {
   requireSpecialCharacter: boolean;
   /** require_reset_password_for_first_login requires users to reset their password after the 1st login. */
   requireResetPasswordForFirstLogin: boolean;
-  /** rotation_days requires users to reset their password after n days. */
-  rotationDays?: number | undefined;
+  /** password_rotation requires users to reset their password after the duration. */
+  passwordRotation: Duration | undefined;
 }
 
 function createBaseListSettingsRequest(): ListSettingsRequest {
@@ -4874,7 +4874,7 @@ function createBasePasswordRestrictionSetting(): PasswordRestrictionSetting {
     requireUppercaseLetter: false,
     requireSpecialCharacter: false,
     requireResetPasswordForFirstLogin: false,
-    rotationDays: undefined,
+    passwordRotation: undefined,
   };
 }
 
@@ -4898,8 +4898,8 @@ export const PasswordRestrictionSetting = {
     if (message.requireResetPasswordForFirstLogin === true) {
       writer.uint32(48).bool(message.requireResetPasswordForFirstLogin);
     }
-    if (message.rotationDays !== undefined) {
-      writer.uint32(56).int32(message.rotationDays);
+    if (message.passwordRotation !== undefined) {
+      Duration.encode(message.passwordRotation, writer.uint32(58).fork()).ldelim();
     }
     return writer;
   },
@@ -4954,11 +4954,11 @@ export const PasswordRestrictionSetting = {
           message.requireResetPasswordForFirstLogin = reader.bool();
           continue;
         case 7:
-          if (tag !== 56) {
+          if (tag !== 58) {
             break;
           }
 
-          message.rotationDays = reader.int32();
+          message.passwordRotation = Duration.decode(reader, reader.uint32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -4983,7 +4983,7 @@ export const PasswordRestrictionSetting = {
       requireResetPasswordForFirstLogin: isSet(object.requireResetPasswordForFirstLogin)
         ? globalThis.Boolean(object.requireResetPasswordForFirstLogin)
         : false,
-      rotationDays: isSet(object.rotationDays) ? globalThis.Number(object.rotationDays) : undefined,
+      passwordRotation: isSet(object.passwordRotation) ? Duration.fromJSON(object.passwordRotation) : undefined,
     };
   },
 
@@ -5007,8 +5007,8 @@ export const PasswordRestrictionSetting = {
     if (message.requireResetPasswordForFirstLogin === true) {
       obj.requireResetPasswordForFirstLogin = message.requireResetPasswordForFirstLogin;
     }
-    if (message.rotationDays !== undefined) {
-      obj.rotationDays = Math.round(message.rotationDays);
+    if (message.passwordRotation !== undefined) {
+      obj.passwordRotation = Duration.toJSON(message.passwordRotation);
     }
     return obj;
   },
@@ -5024,7 +5024,9 @@ export const PasswordRestrictionSetting = {
     message.requireUppercaseLetter = object.requireUppercaseLetter ?? false;
     message.requireSpecialCharacter = object.requireSpecialCharacter ?? false;
     message.requireResetPasswordForFirstLogin = object.requireResetPasswordForFirstLogin ?? false;
-    message.rotationDays = object.rotationDays ?? undefined;
+    message.passwordRotation = (object.passwordRotation !== undefined && object.passwordRotation !== null)
+      ? Duration.fromPartial(object.passwordRotation)
+      : undefined;
     return message;
   },
 };

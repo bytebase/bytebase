@@ -36,6 +36,24 @@ type SettingMessage struct {
 	CreatedTs   int64
 }
 
+func (s *Store) GetPasswordRestrictionSetting(ctx context.Context) (*storepb.PasswordRestrictionSetting, error) {
+	passwordRestriction := &storepb.PasswordRestrictionSetting{
+		MinLength: 8,
+	}
+	setting, err := s.GetSettingV2(ctx, api.SettingPasswordRestriction)
+	if err != nil {
+		return nil, err
+	}
+	if setting == nil {
+		return passwordRestriction, nil
+	}
+
+	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), passwordRestriction); err != nil {
+		return nil, err
+	}
+	return passwordRestriction, nil
+}
+
 func (s *Store) GetMaximumSQLResultLimit(ctx context.Context) int64 {
 	setting, err := s.GetSettingV2(ctx, api.SettingSQLResultSizeLimit)
 	if err != nil {

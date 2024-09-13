@@ -131,44 +131,14 @@
             </dd>
           </div>
 
-          <template v-if="state.editing">
-            <div class="sm:col-span-1">
-              <dt class="text-sm font-medium text-control-light">
-                {{ $t("settings.profile.password") }}
-              </dt>
-              <dd class="mt-1 text-sm text-main">
-                <NInput
-                  type="password"
-                  size="large"
-                  :placeholder="$t('common.sensitive-placeholder')"
-                  :value="state.editingUser?.password"
-                  :input-props="{ autocomplete: 'new-password' }"
-                  @update:value="updateUser('password', $event)"
-                />
-              </dd>
-            </div>
-
-            <div class="sm:col-span-1">
-              <dt class="text-sm font-medium text-control-light">
-                {{ $t("settings.profile.password-confirm") }}
-                <span v-if="passwordMismatch" class="text-error">{{
-                  $t("settings.profile.password-mismatch")
-                }}</span>
-              </dt>
-              <dd class="mt-1 text-sm text-main">
-                <NInput
-                  type="password"
-                  size="large"
-                  :placeholder="
-                    $t('settings.profile.password-confirm-placeholder')
-                  "
-                  :value="state.passwordConfirm"
-                  :input-props="{ autocomplete: 'new-password' }"
-                  @update:value="state.passwordConfirm = $event"
-                />
-              </dd>
-            </div>
-          </template>
+          <div v-if="state.editing" class="col-span-2">
+            <UserPassword
+              v-if="state.editingUser"
+              ref="userPasswordRef"
+              v-model:password="state.editingUser.password"
+              v-model:password-confirm="state.passwordConfirm"
+            />
+          </div>
         </dl>
       </div>
 
@@ -253,7 +223,7 @@
 
 <script lang="ts" setup>
 import { useTitle } from "@vueuse/core";
-import { cloneDeep, head, isEmpty, isEqual } from "lodash-es";
+import { cloneDeep, head, isEqual } from "lodash-es";
 import type { DropdownOption } from "naive-ui";
 import { NButton, NInput, NDropdown, NTag } from "naive-ui";
 import { nextTick, computed, onMounted, onUnmounted, reactive, ref } from "vue";
@@ -265,6 +235,7 @@ import FeatureBadge from "@/components/FeatureGuard/FeatureBadge.vue";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import RegenerateRecoveryCodesView from "@/components/RegenerateRecoveryCodesView.vue";
 import { ActionConfirmModal } from "@/components/SchemaEditorLite";
+import UserPassword from "@/components/User/Settings/UserPassword.vue";
 import UserAvatar from "@/components/User/UserAvatar.vue";
 import NoPermissionPlaceholder from "@/components/misc/NoPermissionPlaceholder.vue";
 import ServiceAccountTag from "@/components/misc/ServiceAccountTag.vue";
@@ -325,6 +296,7 @@ const state = reactive<LocalState>({
 });
 
 const editNameTextField = ref<InstanceType<typeof NInput>>();
+const userPasswordRef = ref<InstanceType<typeof UserPassword>>();
 
 const workspaceDomain = computed(() =>
   head(settingV1Store.workspaceProfileSetting?.domains)
@@ -373,13 +345,6 @@ const userRoles = computed(() => {
   return [...workspaceStore.getWorkspaceRolesByEmail(user.value.email)];
 });
 
-const passwordMismatch = computed(() => {
-  return (
-    !isEmpty(state.editingUser?.password) &&
-    state.editingUser?.password !== state.passwordConfirm
-  );
-});
-
 const isSelf = computed(() => currentUserV1.value.name === user.value.name);
 
 // User can change her own info.
@@ -397,8 +362,8 @@ const allowEdit = computed(() => {
 const allowSaveEdit = computed(() => {
   return (
     !isEqual(user.value, state.editingUser) &&
-    (state.passwordConfirm === "" ||
-      state.passwordConfirm === state.editingUser?.password)
+    !userPasswordRef.value?.passwordHint &&
+    !userPasswordRef.value?.passwordMismatch
   );
 });
 
