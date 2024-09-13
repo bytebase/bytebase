@@ -21,6 +21,7 @@ import (
 
 func init() {
 	base.RegisterSchemaDiffFunc(storepb.Engine_POSTGRES, SchemaDiff)
+	base.RegisterSchemaDiffFunc(storepb.Engine_COCKROACHDB, SchemaDiff)
 }
 
 // diffNode defines different modification types as the safe change order.
