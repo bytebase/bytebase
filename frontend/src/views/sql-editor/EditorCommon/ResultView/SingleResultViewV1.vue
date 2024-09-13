@@ -445,7 +445,7 @@ const handleRequestExport = async () => {
   const database = props.database;
   const project = database.projectEntity;
   const issueType = "bb.issue.database.data.export";
-  const sqlStorageKey = `bb.sql-editor.export.${uuidv4()}`;
+  const sqlStorageKey = `bb.issues.sql.${uuidv4()}`;
   localStorage.setItem(sqlStorageKey, props.result.statement);
   const query: Record<string, any> = {
     template: issueType,
