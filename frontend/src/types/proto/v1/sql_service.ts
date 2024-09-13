@@ -124,6 +124,31 @@ export interface QueryResult {
     | undefined;
   /** The query statement for the result. */
   statement: string;
+  postgresError?: QueryResult_PostgresError | undefined;
+}
+
+/**
+ * refer https://www.postgresql.org/docs/11/protocol-error-fields.html
+ * for field description.
+ */
+export interface QueryResult_PostgresError {
+  severity: string;
+  code: string;
+  message: string;
+  detail: string;
+  hint: string;
+  position: number;
+  internalPosition: number;
+  internalQuery: string;
+  where: string;
+  schemaName: string;
+  tableName: string;
+  columnName: string;
+  dataTypeName: string;
+  constraintName: string;
+  file: string;
+  line: number;
+  routine: string;
 }
 
 export interface QueryRow {
@@ -1166,6 +1191,7 @@ function createBaseQueryResult(): QueryResult {
     error: "",
     latency: undefined,
     statement: "",
+    postgresError: undefined,
   };
 }
 
@@ -1198,6 +1224,9 @@ export const QueryResult = {
     }
     if (message.statement !== "") {
       writer.uint32(66).string(message.statement);
+    }
+    if (message.postgresError !== undefined) {
+      QueryResult_PostgresError.encode(message.postgresError, writer.uint32(74).fork()).ldelim();
     }
     return writer;
   },
@@ -1285,6 +1314,13 @@ export const QueryResult = {
 
           message.statement = reader.string();
           continue;
+        case 9:
+          if (tag !== 74) {
+            break;
+          }
+
+          message.postgresError = QueryResult_PostgresError.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1310,6 +1346,7 @@ export const QueryResult = {
       error: isSet(object.error) ? globalThis.String(object.error) : "",
       latency: isSet(object.latency) ? Duration.fromJSON(object.latency) : undefined,
       statement: isSet(object.statement) ? globalThis.String(object.statement) : "",
+      postgresError: isSet(object.postgresError) ? QueryResult_PostgresError.fromJSON(object.postgresError) : undefined,
     };
   },
 
@@ -1339,6 +1376,9 @@ export const QueryResult = {
     if (message.statement !== "") {
       obj.statement = message.statement;
     }
+    if (message.postgresError !== undefined) {
+      obj.postgresError = QueryResult_PostgresError.toJSON(message.postgresError);
+    }
     return obj;
   },
 
@@ -1357,6 +1397,326 @@ export const QueryResult = {
       ? Duration.fromPartial(object.latency)
       : undefined;
     message.statement = object.statement ?? "";
+    message.postgresError = (object.postgresError !== undefined && object.postgresError !== null)
+      ? QueryResult_PostgresError.fromPartial(object.postgresError)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseQueryResult_PostgresError(): QueryResult_PostgresError {
+  return {
+    severity: "",
+    code: "",
+    message: "",
+    detail: "",
+    hint: "",
+    position: 0,
+    internalPosition: 0,
+    internalQuery: "",
+    where: "",
+    schemaName: "",
+    tableName: "",
+    columnName: "",
+    dataTypeName: "",
+    constraintName: "",
+    file: "",
+    line: 0,
+    routine: "",
+  };
+}
+
+export const QueryResult_PostgresError = {
+  encode(message: QueryResult_PostgresError, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.severity !== "") {
+      writer.uint32(10).string(message.severity);
+    }
+    if (message.code !== "") {
+      writer.uint32(18).string(message.code);
+    }
+    if (message.message !== "") {
+      writer.uint32(26).string(message.message);
+    }
+    if (message.detail !== "") {
+      writer.uint32(34).string(message.detail);
+    }
+    if (message.hint !== "") {
+      writer.uint32(42).string(message.hint);
+    }
+    if (message.position !== 0) {
+      writer.uint32(48).int32(message.position);
+    }
+    if (message.internalPosition !== 0) {
+      writer.uint32(56).int32(message.internalPosition);
+    }
+    if (message.internalQuery !== "") {
+      writer.uint32(66).string(message.internalQuery);
+    }
+    if (message.where !== "") {
+      writer.uint32(74).string(message.where);
+    }
+    if (message.schemaName !== "") {
+      writer.uint32(82).string(message.schemaName);
+    }
+    if (message.tableName !== "") {
+      writer.uint32(90).string(message.tableName);
+    }
+    if (message.columnName !== "") {
+      writer.uint32(98).string(message.columnName);
+    }
+    if (message.dataTypeName !== "") {
+      writer.uint32(106).string(message.dataTypeName);
+    }
+    if (message.constraintName !== "") {
+      writer.uint32(114).string(message.constraintName);
+    }
+    if (message.file !== "") {
+      writer.uint32(122).string(message.file);
+    }
+    if (message.line !== 0) {
+      writer.uint32(128).int32(message.line);
+    }
+    if (message.routine !== "") {
+      writer.uint32(138).string(message.routine);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): QueryResult_PostgresError {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseQueryResult_PostgresError();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.severity = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.code = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.message = reader.string();
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.detail = reader.string();
+          continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.hint = reader.string();
+          continue;
+        case 6:
+          if (tag !== 48) {
+            break;
+          }
+
+          message.position = reader.int32();
+          continue;
+        case 7:
+          if (tag !== 56) {
+            break;
+          }
+
+          message.internalPosition = reader.int32();
+          continue;
+        case 8:
+          if (tag !== 66) {
+            break;
+          }
+
+          message.internalQuery = reader.string();
+          continue;
+        case 9:
+          if (tag !== 74) {
+            break;
+          }
+
+          message.where = reader.string();
+          continue;
+        case 10:
+          if (tag !== 82) {
+            break;
+          }
+
+          message.schemaName = reader.string();
+          continue;
+        case 11:
+          if (tag !== 90) {
+            break;
+          }
+
+          message.tableName = reader.string();
+          continue;
+        case 12:
+          if (tag !== 98) {
+            break;
+          }
+
+          message.columnName = reader.string();
+          continue;
+        case 13:
+          if (tag !== 106) {
+            break;
+          }
+
+          message.dataTypeName = reader.string();
+          continue;
+        case 14:
+          if (tag !== 114) {
+            break;
+          }
+
+          message.constraintName = reader.string();
+          continue;
+        case 15:
+          if (tag !== 122) {
+            break;
+          }
+
+          message.file = reader.string();
+          continue;
+        case 16:
+          if (tag !== 128) {
+            break;
+          }
+
+          message.line = reader.int32();
+          continue;
+        case 17:
+          if (tag !== 138) {
+            break;
+          }
+
+          message.routine = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): QueryResult_PostgresError {
+    return {
+      severity: isSet(object.severity) ? globalThis.String(object.severity) : "",
+      code: isSet(object.code) ? globalThis.String(object.code) : "",
+      message: isSet(object.message) ? globalThis.String(object.message) : "",
+      detail: isSet(object.detail) ? globalThis.String(object.detail) : "",
+      hint: isSet(object.hint) ? globalThis.String(object.hint) : "",
+      position: isSet(object.position) ? globalThis.Number(object.position) : 0,
+      internalPosition: isSet(object.internalPosition) ? globalThis.Number(object.internalPosition) : 0,
+      internalQuery: isSet(object.internalQuery) ? globalThis.String(object.internalQuery) : "",
+      where: isSet(object.where) ? globalThis.String(object.where) : "",
+      schemaName: isSet(object.schemaName) ? globalThis.String(object.schemaName) : "",
+      tableName: isSet(object.tableName) ? globalThis.String(object.tableName) : "",
+      columnName: isSet(object.columnName) ? globalThis.String(object.columnName) : "",
+      dataTypeName: isSet(object.dataTypeName) ? globalThis.String(object.dataTypeName) : "",
+      constraintName: isSet(object.constraintName) ? globalThis.String(object.constraintName) : "",
+      file: isSet(object.file) ? globalThis.String(object.file) : "",
+      line: isSet(object.line) ? globalThis.Number(object.line) : 0,
+      routine: isSet(object.routine) ? globalThis.String(object.routine) : "",
+    };
+  },
+
+  toJSON(message: QueryResult_PostgresError): unknown {
+    const obj: any = {};
+    if (message.severity !== "") {
+      obj.severity = message.severity;
+    }
+    if (message.code !== "") {
+      obj.code = message.code;
+    }
+    if (message.message !== "") {
+      obj.message = message.message;
+    }
+    if (message.detail !== "") {
+      obj.detail = message.detail;
+    }
+    if (message.hint !== "") {
+      obj.hint = message.hint;
+    }
+    if (message.position !== 0) {
+      obj.position = Math.round(message.position);
+    }
+    if (message.internalPosition !== 0) {
+      obj.internalPosition = Math.round(message.internalPosition);
+    }
+    if (message.internalQuery !== "") {
+      obj.internalQuery = message.internalQuery;
+    }
+    if (message.where !== "") {
+      obj.where = message.where;
+    }
+    if (message.schemaName !== "") {
+      obj.schemaName = message.schemaName;
+    }
+    if (message.tableName !== "") {
+      obj.tableName = message.tableName;
+    }
+    if (message.columnName !== "") {
+      obj.columnName = message.columnName;
+    }
+    if (message.dataTypeName !== "") {
+      obj.dataTypeName = message.dataTypeName;
+    }
+    if (message.constraintName !== "") {
+      obj.constraintName = message.constraintName;
+    }
+    if (message.file !== "") {
+      obj.file = message.file;
+    }
+    if (message.line !== 0) {
+      obj.line = Math.round(message.line);
+    }
+    if (message.routine !== "") {
+      obj.routine = message.routine;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<QueryResult_PostgresError>): QueryResult_PostgresError {
+    return QueryResult_PostgresError.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<QueryResult_PostgresError>): QueryResult_PostgresError {
+    const message = createBaseQueryResult_PostgresError();
+    message.severity = object.severity ?? "";
+    message.code = object.code ?? "";
+    message.message = object.message ?? "";
+    message.detail = object.detail ?? "";
+    message.hint = object.hint ?? "";
+    message.position = object.position ?? 0;
+    message.internalPosition = object.internalPosition ?? 0;
+    message.internalQuery = object.internalQuery ?? "";
+    message.where = object.where ?? "";
+    message.schemaName = object.schemaName ?? "";
+    message.tableName = object.tableName ?? "";
+    message.columnName = object.columnName ?? "";
+    message.dataTypeName = object.dataTypeName ?? "";
+    message.constraintName = object.constraintName ?? "";
+    message.file = object.file ?? "";
+    message.line = object.line ?? 0;
+    message.routine = object.routine ?? "";
     return message;
   },
 };

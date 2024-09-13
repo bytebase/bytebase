@@ -11773,6 +11773,51 @@ components:
                 statement:
                     type: string
                     description: The query statement for the result.
+                postgresError:
+                    $ref: '#/components/schemas/QueryResult_PostgresError'
+        QueryResult_PostgresError:
+            type: object
+            properties:
+                severity:
+                    type: string
+                code:
+                    type: string
+                message:
+                    type: string
+                detail:
+                    type: string
+                hint:
+                    type: string
+                position:
+                    type: integer
+                    format: int32
+                internalPosition:
+                    type: integer
+                    format: int32
+                internalQuery:
+                    type: string
+                where:
+                    type: string
+                schemaName:
+                    type: string
+                tableName:
+                    type: string
+                columnName:
+                    type: string
+                dataTypeName:
+                    type: string
+                constraintName:
+                    type: string
+                file:
+                    type: string
+                line:
+                    type: integer
+                    format: int32
+                routine:
+                    type: string
+            description: |-
+                refer https://www.postgresql.org/docs/11/protocol-error-fields.html
+                 for field description.
         QueryRow:
             type: object
             properties:

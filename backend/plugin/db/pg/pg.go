@@ -16,6 +16,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/feature/rds/auth"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/stdlib"
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
@@ -704,7 +705,8 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 		stop := false
 		if err != nil {
 			queryResult = &v1pb.QueryResult{
-				Error: err.Error(),
+				Error:         err.Error(),
+				DetailedError: getPgError(err),
 			}
 			stop = true
 		}
@@ -717,6 +719,37 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 	}
 
 	return results, nil
+}
+
+func getPgError(e error) *v1pb.QueryResult_PostgresError_ {
+	if e == nil {
+		return nil
+	}
+	var pge *pgconn.PgError
+	if errors.As(e, &pge) {
+		return &v1pb.QueryResult_PostgresError_{
+			PostgresError: &v1pb.QueryResult_PostgresError{
+				Severity:         pge.Severity,
+				Code:             pge.Code,
+				Message:          pge.Message,
+				Detail:           pge.Detail,
+				Hint:             pge.Hint,
+				Position:         pge.Position,
+				InternalPosition: pge.InternalPosition,
+				InternalQuery:    pge.InternalQuery,
+				Where:            pge.Where,
+				SchemaName:       pge.SchemaName,
+				TableName:        pge.TableName,
+				ColumnName:       pge.ColumnName,
+				DataTypeName:     pge.DataTypeName,
+				ConstraintName:   pge.ConstraintName,
+				File:             pge.File,
+				Line:             pge.Line,
+				Routine:          pge.Routine,
+			},
+		}
+	}
+	return nil
 }
 
 func getStatementWithResultLimit(stmt string, limit int) string {
