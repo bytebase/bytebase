@@ -60,7 +60,6 @@
               />
             </dd>
             <SQLEditorButtonV1
-              v-if="!hideSQLEditorLink"
               class="text-sm md:mr-4"
               :database="database"
               :label="true"
@@ -236,7 +235,6 @@ import {
   isDatabaseV1Queryable,
   allowUsingSchemaEditor,
   extractProjectResourceName,
-  isSQLEditorRoute,
 } from "@/utils";
 
 const databaseHashList = [
@@ -290,9 +288,6 @@ const disableSchemaEditor = useAppFeature(
   "bb.feature.issue.disable-schema-editor"
 );
 const databaseChangeMode = useAppFeature("bb.feature.database-change-mode");
-const hideSQLEditorLink = computed(() => {
-  return isSQLEditorRoute(router);
-});
 
 onMounted(async () => {
   anomalyList.value = await useAnomalyV1Store().fetchAnomalyList({
