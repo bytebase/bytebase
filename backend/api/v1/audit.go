@@ -489,6 +489,7 @@ func redactQueryResponse(r *v1pb.QueryResponse) *v1pb.QueryResponse {
 			Error:           result.Error,
 			Latency:         result.Latency,
 			Statement:       result.Statement,
+			DetailedError:   result.DetailedError,
 		})
 	}
 	return n
