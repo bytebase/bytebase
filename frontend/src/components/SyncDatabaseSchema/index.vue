@@ -65,6 +65,7 @@
 import { isUndefined } from "lodash-es";
 import type { ButtonProps } from "naive-ui";
 import { NRadioGroup, NRadio, useDialog } from "naive-ui";
+import { v4 as uuidv4 } from "uuid";
 import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
@@ -238,7 +239,9 @@ const tryFinishSetup = async () => {
     const diff = targetDatabaseViewRef.value!.databaseDiffCache[db.name];
     sqlMap[db.name] = diff.edited;
   });
-  query.sqlMap = JSON.stringify(sqlMap);
+  const sqlMapStorageKey = `bb.issues.sql-map.${uuidv4()}`;
+  localStorage.setItem(sqlMapStorageKey, JSON.stringify(sqlMap));
+  query.sqlMapStorageKey = sqlMapStorageKey;
   query.name = generateIssueTitle(
     "bb.issue.database.schema.update",
     targetDatabaseList.map((db) => db.databaseName)

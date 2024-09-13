@@ -10,12 +10,14 @@
 <script lang="ts" setup>
 import { Undo2Icon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
+import { v4 as uuidv4 } from "uuid";
 import { computed, ref } from "vue";
 import { useRouter } from "vue-router";
 import {
   latestTaskRunForTask,
   useIssueContext,
 } from "@/components/IssueV1/logic";
+import { rolloutServiceClient } from "@/grpcweb";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { pushNotification, useSheetV1Store } from "@/store";
 import {
@@ -24,7 +26,6 @@ import {
   sheetNameOfTaskV1,
 } from "@/utils";
 import { usePreBackupContext } from "./common";
-import { rolloutServiceClient } from "@/grpcweb";
 
 const router = useRouter();
 const { issue, selectedTask } = useIssueContext();
@@ -61,12 +62,14 @@ const createRestoreIssue = async () => {
   });
   isLoading.value = false;
 
+  const sqlStorageKey = `bb.issues.sql.${uuidv4()}`;
+  localStorage.setItem(sqlStorageKey, statement);
   const query: Record<string, any> = {
     template: "bb.issue.database.data.update",
     name: `Rollback ${selectedTask.value.title} in issue#${extractIssueUID(issue.value.name)}`,
     databaseList: selectedTask.value.target,
-    sql: statement,
     description: `This issue is created to rollback the data of ${selectedTask.value.title} in issue #${extractIssueUID(issue.value.name)}`,
+    sqlStorageKey,
   };
   router.push({
     name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
