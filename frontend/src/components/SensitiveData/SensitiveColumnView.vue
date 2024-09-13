@@ -184,6 +184,10 @@ interface LocalState {
   showSensitiveColumnDrawer: boolean;
 }
 
+const props = defineProps<{
+  onViewItem?: (sc: SensitiveColumn) => any;
+}>();
+
 const { t } = useI18n();
 const router = useRouter();
 const databaseStore = useDatabaseV1Store();
@@ -331,11 +335,15 @@ const onRowClick = async (
 ) => {
   switch (action) {
     case "VIEW": {
-      let url = `${databaseV1Url(item.database)}?table=${item.maskData.table}`;
-      if (item.maskData.schema != "") {
-        url += `&schema=${item.maskData.schema}`;
+      if (props.onViewItem) {
+        props.onViewItem(item);
+      } else {
+        let url = `${databaseV1Url(item.database)}?table=${item.maskData.table}`;
+        if (item.maskData.schema != "") {
+          url += `&schema=${item.maskData.schema}`;
+        }
+        router.push(url);
       }
-      router.push(url);
       break;
     }
     case "DELETE":

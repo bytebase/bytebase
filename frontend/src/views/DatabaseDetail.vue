@@ -39,6 +39,7 @@
               >
               <EnvironmentV1Name
                 :environment="environment"
+                :link="!disableLinks"
                 icon-class="textinfolabel"
               />
             </dd>
@@ -47,7 +48,10 @@
               <span class="ml-1 textlabel"
                 >{{ $t("common.instance") }}&nbsp;-&nbsp;</span
               >
-              <InstanceV1Name :instance="database.instanceResource" />
+              <InstanceV1Name
+                :instance="database.instanceResource"
+                :link="!disableLinks"
+              />
             </dd>
             <dt class="sr-only">{{ $t("common.project") }}</dt>
             <dd class="flex items-center text-sm md:mr-4">
@@ -56,10 +60,12 @@
               >
               <ProjectV1Name
                 :project="database.projectEntity"
+                :link="!disableLinks"
                 hash="#databases"
               />
             </dd>
             <SQLEditorButtonV1
+              v-if="!disableLinks"
               class="text-sm md:mr-4"
               :database="database"
               :label="true"
@@ -176,6 +182,7 @@
     <TransferOutDatabaseForm
       :database-list="[database]"
       :selected-database-names="[database.name]"
+      :on-transfer-databases="() => {}"
       @dismiss="state.showTransferDatabaseModal = false"
     />
   </Drawer>
@@ -215,7 +222,6 @@ import {
   ProductionEnvironmentV1Icon,
   ProjectV1Name,
 } from "@/components/v2";
-import { PROJECT_V1_ROUTE_DATABASE_DETAIL } from "@/router/dashboard/projectV1";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
   useAnomalyV1Store,
@@ -289,6 +295,9 @@ const disableSchemaEditor = useAppFeature(
   "bb.feature.issue.disable-schema-editor"
 );
 const databaseChangeMode = useAppFeature("bb.feature.database-change-mode");
+const disableLinks = computed(() => {
+  return databaseChangeMode.value === DatabaseChangeMode.EDITOR;
+});
 
 onMounted(async () => {
   anomalyList.value = await useAnomalyV1Store().fetchAnomalyList({
@@ -311,7 +320,6 @@ watch(
   () => state.selectedTab,
   (tab) => {
     router.replace({
-      name: PROJECT_V1_ROUTE_DATABASE_DETAIL,
       hash: `#${tab}`,
       query: route.query,
     });

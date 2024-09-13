@@ -59,6 +59,7 @@ import {
   buildSearchTextBySearchParams,
   buildSearchParamsBySearchText,
   databaseV1Url,
+  wrapRefAsPromise,
 } from "@/utils";
 
 interface LocalState {
@@ -68,12 +69,14 @@ interface LocalState {
 }
 
 const props = defineProps<{
-  openInNewWindow?: boolean;
   onClickDatabase?: (db: ComposedDatabase, event: MouseEvent) => void;
   onTransferDatabases?: (
     targetProject: ComposedProject,
     databaseList: ComposedDatabase[]
   ) => void;
+}>();
+const emit = defineEmits<{
+  (event: "ready",): void;
 }>();
 
 const uiStateStore = useUIStateStore();
@@ -226,10 +229,14 @@ const handleDatabaseClick = (event: MouseEvent, database: ComposedDatabase) => {
   }
 
   const url = databaseV1Url(database);
-  if (props.openInNewWindow || event.ctrlKey || event.metaKey) {
+  if (event.ctrlKey || event.metaKey) {
     window.open(url, "_blank");
   } else {
     router.push(url);
   }
 };
+
+wrapRefAsPromise(ready, /* expected */ true).then(() => {
+  emit("ready");
+});
 </script>

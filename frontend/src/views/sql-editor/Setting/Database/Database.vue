@@ -1,52 +1,69 @@
 <template>
-  <div class="w-full h-full flex flex-col gap-4 py-4 px-2 overflow-y-auto">
+  <div
+    class="w-full h-full flex flex-col gap-4 py-4 px-2 overflow-y-auto"
+    v-bind="$attrs"
+  >
     <DatabaseDashboard
-      :open-in-new-window="true"
       :on-click-database="handleClickDatabase"
       :on-transfer-databases="handleTransferDatabases"
+      @ready="ready = true"
     />
   </div>
+
+  <Drawer v-model:show="state.detail.show">
+    <DrawerContent
+      :title="$t('common.detail')"
+      style="width: calc(100vw - 4rem)"
+    >
+      <Detail v-if="state.detail.database" :database="state.detail.database" />
+    </DrawerContent>
+  </Drawer>
 </template>
 
 <script setup lang="ts">
-import { useRouter } from "vue-router";
+import { onMounted, reactive, ref, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import { Drawer, DrawerContent } from "@/components/v2";
 import {
-  SQL_EDITOR_DATABASE_MODULE,
+  SQL_EDITOR_SETTING_DATABASE_DETAIL_MODULE,
+  SQL_EDITOR_SETTING_DATABASES_MODULE,
   SQL_EDITOR_SETTING_PROJECT_MODULE,
 } from "@/router/sqlEditor";
+import { useDatabaseV1Store } from "@/store";
 import {
-  DEFAULT_PROJECT_NAME,
-  defaultProject,
+  isValidDatabaseName,
   type ComposedDatabase,
   type ComposedProject,
 } from "@/types";
-import {
-  extractDatabaseResourceName,
-  extractProjectResourceName,
-  hasProjectPermissionV2,
-  isDatabaseV1Queryable,
-} from "@/utils";
+import { extractDatabaseResourceName, wrapRefAsPromise } from "@/utils";
 import DatabaseDashboard from "@/views/DatabaseDashboard.vue";
+import Detail from "./Detail.vue";
 
-const router = useRouter();
-const allowQueryDatabase = (db: ComposedDatabase) => {
-  if (db.project === DEFAULT_PROJECT_NAME) {
-    return hasProjectPermissionV2(defaultProject(), "bb.databases.query");
-  }
-  return isDatabaseV1Queryable(db);
+defineOptions({
+  inheritAttrs: false,
+});
+
+type LocalState = {
+  detail: {
+    show: boolean;
+    database?: ComposedDatabase;
+  };
 };
+
+const route = useRoute();
+const router = useRouter();
+const state = reactive<LocalState>({
+  detail: {
+    show: false,
+  },
+});
+const ready = ref(false);
+
 const handleClickDatabase = (db: ComposedDatabase) => {
-  if (!allowQueryDatabase(db)) return;
-  const projectName = extractProjectResourceName(db.project);
-  const { instanceName, databaseName } = extractDatabaseResourceName(db.name);
-  router.push({
-    name: SQL_EDITOR_DATABASE_MODULE,
-    params: {
-      project: projectName,
-      instance: instanceName,
-      database: databaseName,
-    },
-  });
+  state.detail = {
+    show: true,
+    database: db,
+  };
 };
 
 const handleTransferDatabases = (targetProject: ComposedProject) => {
@@ -55,4 +72,38 @@ const handleTransferDatabases = (targetProject: ComposedProject) => {
     hash: `#${targetProject.name}`,
   });
 };
+
+onMounted(() => {
+  wrapRefAsPromise(ready, true).then(() => {
+    const maybeDatabase = `instances/${route.params.instanceId || -1}/databases/${route.params.databaseName || -1}`;
+    if (isValidDatabaseName(maybeDatabase)) {
+      const db = useDatabaseV1Store().getDatabaseByName(maybeDatabase);
+      if (db) {
+        state.detail.show = true;
+        state.detail.database = db;
+      }
+    }
+
+    watch(
+      [() => state.detail.show, () => state.detail.database?.name],
+      ([show, database]) => {
+        if (show && database) {
+          const { instanceName: instanceId, databaseName } =
+            extractDatabaseResourceName(database);
+          router.replace({
+            name: SQL_EDITOR_SETTING_DATABASE_DETAIL_MODULE,
+            params: {
+              instanceId,
+              databaseName,
+            },
+          });
+        } else {
+          router.replace({
+            name: SQL_EDITOR_SETTING_DATABASES_MODULE,
+          });
+        }
+      }
+    );
+  });
+});
 </script>

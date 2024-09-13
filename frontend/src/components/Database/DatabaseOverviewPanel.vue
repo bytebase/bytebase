@@ -69,7 +69,11 @@
           :view-list="viewList"
         />
 
-        <template v-if="databaseEngine === Engine.POSTGRES || databaseEngine === Engine.HIVE">
+        <template
+          v-if="
+            databaseEngine === Engine.POSTGRES || databaseEngine === Engine.HIVE
+          "
+        >
           <div
             class="mt-6 w-full flex flex-row justify-between items-center mb-4"
           >
@@ -153,6 +157,7 @@ import StreamTable from "@/components/StreamTable.vue";
 import TableDataTable from "@/components/TableDataTable.vue";
 import TaskTable from "@/components/TaskTable.vue";
 import ViewDataTable from "@/components/ViewDataTable.vue";
+import { SQL_EDITOR_SETTING_DATABASES_MODULE } from "@/router/sqlEditor";
 import { useDBSchemaV1Store } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import type { Anomaly } from "@/types/proto/v1/anomaly_service";
@@ -185,17 +190,6 @@ const state = reactive<LocalState>({
   tableNameSearchKeyword: "",
   externalTableNameSearchKeyword: "",
 });
-
-watch(
-  () => state.selectedSchemaName,
-  (schema) => {
-    router.push({
-      query: {
-        schema: schema ? schema : undefined,
-      },
-    });
-  }
-);
 
 const { allowGetSchema } = useDatabaseDetailContext();
 
@@ -331,5 +325,17 @@ const taskList = computed(() => {
     .getDatabaseMetadata(props.database.name)
     .schemas.map((schema) => schema.tasks)
     .flat();
+});
+
+watch([() => state.selectedSchemaName, route], ([schema, route]) => {
+  if (route.name === SQL_EDITOR_SETTING_DATABASES_MODULE) {
+    // Very weird, should not trigger this
+    return;
+  }
+  router.replace({
+    query: {
+      schema: schema ? schema : undefined,
+    },
+  });
 });
 </script>
