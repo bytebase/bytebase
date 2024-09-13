@@ -60,6 +60,7 @@
 <script lang="ts" setup>
 import { computedAsync } from "@vueuse/core";
 import { NAlert, NButton } from "naive-ui";
+import { v4 as uuidv4 } from "uuid";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
@@ -163,7 +164,8 @@ const gotoCreateIssue = () => {
   emit("close");
 
   const db = useDatabaseV1Store().getDatabaseByName(database);
-
+  const sqlStorageKey = `bb.issues.sql.${uuidv4()}`;
+  localStorage.setItem(sqlStorageKey, statement.value);
   const route = router.resolve({
     name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
     params: {
@@ -176,7 +178,7 @@ const gotoCreateIssue = () => {
         isDDL.value ? "Edit schema" : "Change Data"
       }`,
       databaseList: db.name,
-      sql: statement.value,
+      sqlStorageKey,
     },
   });
   window.open(route.fullPath, "_blank");
