@@ -182,6 +182,8 @@ func (exec *DataUpdateExecutor) backupData(
 	tc := base.TransformContext{
 		InstanceID:              instance.ResourceID,
 		GetDatabaseMetadataFunc: BuildGetDatabaseMetadataFunc(exec.store),
+		ListDatabaseNamesFunc:   BuildListDatabaseNamesFunc(exec.store),
+		IgnoreCaseSensitive:     store.IgnoreDatabaseAndTableCaseSensitive(instance),
 	}
 	if instance.Engine == storepb.Engine_ORACLE {
 		oracleDriver, ok := driver.(*oracle.Driver)
@@ -310,5 +312,21 @@ func BuildGetDatabaseMetadataFunc(storeInstance *store.Store) base.GetDatabaseMe
 			return "", nil, nil
 		}
 		return databaseName, databaseMetadata.GetDatabaseMetadata(), nil
+	}
+}
+
+func BuildListDatabaseNamesFunc(storeInstance *store.Store) base.ListDatabaseNamesFunc {
+	return func(ctx context.Context, instanceID string) ([]string, error) {
+		databases, err := storeInstance.ListDatabases(ctx, &store.FindDatabaseMessage{
+			InstanceID: &instanceID,
+		})
+		if err != nil {
+			return nil, err
+		}
+		names := make([]string, 0, len(databases))
+		for _, database := range databases {
+			names = append(names, database.DatabaseName)
+		}
+		return names, nil
 	}
 }
