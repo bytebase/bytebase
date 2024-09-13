@@ -4,14 +4,20 @@ import {
   PROJECT_V1_ROUTE_DATABASE_DETAIL,
   PROJECT_V1_ROUTE_DATABASES,
 } from "@/router/dashboard/projectV1";
-import { SETTING_ROUTE_WORKSPACE_SUBSCRIPTION } from "@/router/dashboard/workspaceSetting";
+import {
+  SETTING_ROUTE_PROFILE,
+  SETTING_ROUTE_WORKSPACE_SUBSCRIPTION,
+} from "@/router/dashboard/workspaceSetting";
 import {
   SQL_EDITOR_SETTING_DATABASE_DETAIL_MODULE,
   SQL_EDITOR_SETTING_ENVIRONMENT_MODULE,
   SQL_EDITOR_SETTING_INSTANCE_MODULE,
+  SQL_EDITOR_SETTING_PROFILE_MODULE,
   SQL_EDITOR_SETTING_PROJECT_MODULE,
   SQL_EDITOR_SETTING_SUBSCRIPTION_MODULE,
+  SQL_EDITOR_SETTING_USERS_MODULE,
 } from "@/router/sqlEditor";
+import type { User } from "@/types/proto/v1/auth_service";
 import type { Database } from "@/types/proto/v1/database_service";
 import type { Environment } from "@/types/proto/v1/environment_service";
 import type {
@@ -101,4 +107,26 @@ export const autoSubscriptionRoute = (router: Router) => {
     return { name: SQL_EDITOR_SETTING_SUBSCRIPTION_MODULE };
   }
   return { name: SETTING_ROUTE_WORKSPACE_SUBSCRIPTION };
+};
+
+export const autoProfileLink = (router: Router, user?: User) => {
+  if (isSQLEditorRoute(router)) {
+    if (user) {
+      return {
+        name: SQL_EDITOR_SETTING_USERS_MODULE,
+        hash: `#${user.email}`,
+      };
+    }
+    return {
+      name: SQL_EDITOR_SETTING_PROFILE_MODULE,
+    };
+  }
+  if (user) {
+    return {
+      path: `/users/${user.email}`,
+    };
+  }
+  return {
+    name: SETTING_ROUTE_PROFILE,
+  };
 };
