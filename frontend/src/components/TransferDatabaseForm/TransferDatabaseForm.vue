@@ -158,11 +158,16 @@ const state = reactive<LocalState>({
 const { project } = useProjectByName(toRef(props, "projectName"));
 
 watchEffect(async () => {
-  if (!state.fromProjectName) {
+  if (state.transferSource === "OTHER" && !state.fromProjectName) {
     return;
   }
+
+  let fetchingProject = DEFAULT_PROJECT_NAME;
+  if (state.fromProjectName) {
+    fetchingProject = state.fromProjectName;
+  }
   state.loading = true;
-  await wrapRefAsPromise(useDatabaseV1List(state.fromProjectName).ready, true);
+  await wrapRefAsPromise(useDatabaseV1List(fetchingProject).ready, true);
   state.loading = false;
 });
 
