@@ -32,7 +32,7 @@
       </teleport>
     </template>
 
-    <div class="flex-1 overflow-y-auto">
+    <div class="flex-1 overflow-y-auto overflow-x-hidden">
       <router-view />
     </div>
   </div>
