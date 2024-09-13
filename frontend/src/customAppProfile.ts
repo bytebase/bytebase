@@ -99,7 +99,6 @@ const overrideAppFeatures = (
       "bb.feature.sql-editor.disallow-export-query-data": true,
       "bb.feature.sql-editor.disallow-request-query": true,
       "bb.feature.databases.operations": new Set([
-        "EXPORT-DATA",
         "SYNC-SCHEMA",
         "EDIT-LABELS",
         "TRANSFER",
