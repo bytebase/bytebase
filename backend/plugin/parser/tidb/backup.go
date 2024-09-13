@@ -3,6 +3,7 @@ package tidb
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
@@ -13,6 +14,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/plugin/parser/mysql"
+	"github.com/bytebase/bytebase/backend/store/model"
 	"github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -104,7 +106,7 @@ func generateSQLForSingleTable(ctx context.Context, tCtx base.TransformContext, 
 			return nil, errors.Errorf("prior backup cannot handle statements on different tables more than %d", maxMixedDMLCount)
 		}
 	}
-	generatedColumns, normalColumns, err := classifyColumns(ctx, tCtx.GetDatabaseMetadataFunc, tCtx.InstanceID, table)
+	generatedColumns, normalColumns, err := classifyColumns(ctx, tCtx.GetDatabaseMetadataFunc, tCtx.ListDatabaseNamesFunc, tCtx.IgnoreCaseSensitive, tCtx.InstanceID, table)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to classify columns")
 	}
@@ -217,7 +219,7 @@ func generateSQLForMixedDML(ctx context.Context, tCtx base.TransformContext, sta
 		if _, err := buf.WriteString(fmt.Sprintf("CREATE TABLE `%s`.`%s` LIKE `%s`.`%s`;\n", databaseName, targetTable, table.Database, table.Table)); err != nil {
 			return nil, errors.Wrap(err, "failed to write create table statement")
 		}
-		generatedColumns, normalColumns, err := classifyColumns(ctx, tCtx.GetDatabaseMetadataFunc, tCtx.InstanceID, table)
+		generatedColumns, normalColumns, err := classifyColumns(ctx, tCtx.GetDatabaseMetadataFunc, tCtx.ListDatabaseNamesFunc, tCtx.IgnoreCaseSensitive, tCtx.InstanceID, table)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to classify columns")
 		}
@@ -277,28 +279,62 @@ func generateSQLForMixedDML(ctx context.Context, tCtx base.TransformContext, sta
 	return result, nil
 }
 
-func classifyColumns(ctx context.Context, getDatabaseMetadataFunc base.GetDatabaseMetadataFunc, instanceID string, table *TableReference) ([]string, []string, error) {
+func classifyColumns(ctx context.Context, getDatabaseMetadataFunc base.GetDatabaseMetadataFunc, listDatabaseNamesFunc base.ListDatabaseNamesFunc, ignoreCaseSensitive bool, instanceID string, table *TableReference) ([]string, []string, error) {
 	if getDatabaseMetadataFunc == nil {
 		return nil, nil, errors.New("GetDatabaseMetadataFunc is not set")
 	}
 
-	_, metadata, err := getDatabaseMetadataFunc(ctx, instanceID, table.Database)
+	var dbSchema *model.DatabaseMetadata
+	allDatabaseNames, err := listDatabaseNamesFunc(ctx, instanceID)
 	if err != nil {
-		return nil, nil, errors.Wrapf(err, "failed to get database metadata for InstanceID %q, Database %q", instanceID, table.Database)
+		return nil, nil, errors.Wrap(err, "failed to list databases names")
+	}
+	if ignoreCaseSensitive {
+		for _, db := range allDatabaseNames {
+			if strings.EqualFold(db, table.Database) {
+				_, dbSchema, err = getDatabaseMetadataFunc(ctx, instanceID, db)
+				if err != nil {
+					return nil, nil, errors.Wrapf(err, "failed to get database metadata for database %q", db)
+				}
+				break
+			}
+		}
+	} else {
+		for _, db := range allDatabaseNames {
+			if db == table.Database {
+				_, dbSchema, err = getDatabaseMetadataFunc(ctx, instanceID, db)
+				if err != nil {
+					return nil, nil, errors.Wrapf(err, "failed to get database metadata for database %q", db)
+				}
+				break
+			}
+		}
+	}
+	if dbSchema == nil {
+		slog.Debug("failed to get database metadata", slog.String("instanceID", instanceID), slog.String("database", table.Database))
+		return nil, nil, errors.Errorf("failed to get database metadata for InstanceID %q, Database %q", instanceID, table.Database)
 	}
 
-	schemaMetadata := metadata.GetSchema("")
-	if schemaMetadata == nil {
+	emptySchema := ""
+	schema := dbSchema.GetSchema(emptySchema)
+	if schema == nil {
 		return nil, nil, errors.New("failed to get schema metadata")
 	}
 
-	tableMetadata := schemaMetadata.GetTable(table.Table)
-	if tableMetadata == nil {
-		return nil, nil, errors.New("failed to get table metadata for table " + table.Table)
+	var tableSchema *model.TableMetadata
+	if ignoreCaseSensitive {
+		for _, tableName := range schema.ListTableNames() {
+			if strings.EqualFold(tableName, table.Table) {
+				tableSchema = schema.GetTable(tableName)
+				break
+			}
+		}
+	} else {
+		tableSchema = schema.GetTable(table.Table)
 	}
 
 	var generatedColumns, normalColumns []string
-	for _, column := range tableMetadata.GetColumns() {
+	for _, column := range tableSchema.GetColumns() {
 		if column.GetGeneration() != nil {
 			generatedColumns = append(generatedColumns, column.GetName())
 		} else {
