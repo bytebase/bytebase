@@ -851,6 +851,8 @@ func (s *RolloutService) PreviewTaskRunRollback(ctx context.Context, request *v1
 		restore, err := base.GenerateRestoreSQL(ctx, instance.Engine, base.RestoreContext{
 			InstanceID:              instance.ResourceID,
 			GetDatabaseMetadataFunc: BuildGetDatabaseMetadataFunc(s.store),
+			ListDatabaseNamesFunc:   BuildListDatabaseNamesFunc(s.store),
+			IgnoreCaseSensitive:     store.IgnoreDatabaseAndTableCaseSensitive(instance),
 		}, statements, item)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to generate restore sql, error: %v", err)

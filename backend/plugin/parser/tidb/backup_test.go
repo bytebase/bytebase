@@ -40,8 +40,11 @@ func TestBackup(t *testing.T) {
 	a.NoError(yaml.Unmarshal(byteValue, &tests))
 
 	for i, t := range tests {
+		getter, lister := buildFixedMockDatabaseMetadataGetterAndLister()
 		result, err := TransformDMLToSelect(context.Background(), base.TransformContext{
-			GetDatabaseMetadataFunc: fixedMockDatabaseMetadataGetter,
+			GetDatabaseMetadataFunc: getter,
+			ListDatabaseNamesFunc:   lister,
+			IgnoreCaseSensitive:     true,
 		}, t.Input, "db", "backupDB", "_rollback")
 		a.NoError(err)
 		sort.Slice(result, func(i, j int) bool {
@@ -65,88 +68,94 @@ func TestBackup(t *testing.T) {
 	}
 }
 
-func fixedMockDatabaseMetadataGetter(_ context.Context, _ string, database string) (string, *model.DatabaseMetadata, error) {
-	return database, model.NewDatabaseMetadata(&store.DatabaseSchemaMetadata{
-		Name: database,
-		Schemas: []*store.SchemaMetadata{
-			{
-				Name: "",
-				Tables: []*store.TableMetadata{
-					{
-						Name: "t_generated",
-						Columns: []*store.ColumnMetadata{
-							{
-								Name: "a",
-							},
-							{
-								Name: "b",
-							},
-							{
-								Name: "c_generated",
-								Generation: &store.GenerationMetadata{
-									Expression: "a + b",
-								},
+func buildFixedMockDatabaseMetadataGetterAndLister() (base.GetDatabaseMetadataFunc, base.ListDatabaseNamesFunc) {
+	schemaMetadata := []*store.SchemaMetadata{
+		{
+			Name: "",
+			Tables: []*store.TableMetadata{
+				{
+					Name: "t_generated",
+					Columns: []*store.ColumnMetadata{
+						{
+							Name: "a",
+						},
+						{
+							Name: "b",
+						},
+						{
+							Name: "c_generated",
+							Generation: &store.GenerationMetadata{
+								Expression: "a + b",
 							},
 						},
 					},
-					{
-						Name: "t1",
-						Columns: []*store.ColumnMetadata{
-							{
-								Name: "a",
-							},
-							{
-								Name: "b",
-							},
-							{
-								Name: "c",
-							},
+				},
+				{
+					Name: "t1",
+					Columns: []*store.ColumnMetadata{
+						{
+							Name: "a",
+						},
+						{
+							Name: "b",
+						},
+						{
+							Name: "c",
 						},
 					},
-					{
-						Name: "t2",
-						Columns: []*store.ColumnMetadata{
-							{
-								Name: "a",
-							},
-							{
-								Name: "b",
-							},
-							{
-								Name: "c",
-							},
+				},
+				{
+					Name: "t2",
+					Columns: []*store.ColumnMetadata{
+						{
+							Name: "a",
+						},
+						{
+							Name: "b",
+						},
+						{
+							Name: "c",
 						},
 					},
-					{
-						Name: "test",
-						Columns: []*store.ColumnMetadata{
-							{
-								Name: "a",
-							},
-							{
-								Name: "b",
-							},
-							{
-								Name: "c",
-							},
+				},
+				{
+					Name: "test",
+					Columns: []*store.ColumnMetadata{
+						{
+							Name: "a",
+						},
+						{
+							Name: "b",
+						},
+						{
+							Name: "c",
 						},
 					},
-					{
-						Name: "test2",
-						Columns: []*store.ColumnMetadata{
-							{
-								Name: "a",
-							},
-							{
-								Name: "b",
-							},
-							{
-								Name: "c",
-							},
+				},
+				{
+					Name: "test2",
+					Columns: []*store.ColumnMetadata{
+						{
+							Name: "a",
+						},
+						{
+							Name: "b",
+						},
+						{
+							Name: "c",
 						},
 					},
 				},
 			},
 		},
-	}), nil
+	}
+
+	return func(_ context.Context, _ string, database string) (string, *model.DatabaseMetadata, error) {
+			return database, model.NewDatabaseMetadata(&store.DatabaseSchemaMetadata{
+				Name:    database,
+				Schemas: schemaMetadata,
+			}), nil
+		}, func(_ context.Context, _ string) ([]string, error) {
+			return []string{"db", "db1", "db2"}, nil
+		}
 }
