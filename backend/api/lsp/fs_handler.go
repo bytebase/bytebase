@@ -86,13 +86,10 @@ func (h *Handler) handleFileSystemRequest(ctx context.Context, conn *jsonrpc2.Co
 			if err != nil {
 				slog.Warn("dianose error", log.BBError(err))
 			}
-			if err := conn.Notify(ctx, string(LSPMethodPublishDiagnostics), &lsp.PublishDiagnosticsParams{
+			return conn.Notify(ctx, string(LSPMethodPublishDiagnostics), &lsp.PublishDiagnosticsParams{
 				URI:         uri,
 				Diagnostics: diagnostics,
-			}); err != nil {
-				return err
-			}
-			return nil
+			})
 		})
 	case LSPMethodTextDocumentDidClose:
 		var params lsp.DidCloseTextDocumentParams
