@@ -1447,6 +1447,10 @@
                   <a href="#bytebase.store.MFAConfig"><span class="badge">M</span>MFAConfig</a>
                 </li>
               
+                <li>
+                  <a href="#bytebase.store.UserProfile"><span class="badge">M</span>UserProfile</a>
+                </li>
+              
               
               
               
@@ -11810,6 +11814,37 @@ Format: instances/{instance}/databases/{database} </p></td>
                   <td><a href="#string">string</a></td>
                   <td>repeated</td>
                   <td><p>The temp_recovery_codes are the temporary codes that will replace the recovery_codes in two phase commits. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.UserProfile">UserProfile</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>last_login_time</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>last_change_password_time</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p> </p></td>
                 </tr>
               
             </tbody>
