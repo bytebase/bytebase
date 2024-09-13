@@ -9,6 +9,7 @@ import (
 
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -39,6 +40,7 @@ type UpdateUserMessage struct {
 	PasswordHash *string
 	Delete       *bool
 	MFAConfig    *storepb.MFAConfig
+	Profile      *storepb.UserProfile
 	Phone        *string
 }
 
@@ -52,6 +54,7 @@ type UserMessage struct {
 	PasswordHash  string
 	MemberDeleted bool
 	MFAConfig     *storepb.MFAConfig
+	Profile       *storepb.UserProfile
 	// Phone conforms E.164 format.
 	Phone string
 }
@@ -173,7 +176,8 @@ func listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage) ([]*UserMe
 		principal.type,
 		principal.password_hash,
 		principal.mfa_config,
-		principal.phone
+		principal.phone,
+		principal.profile
 	FROM principal
 	WHERE ` + strings.Join(where, " AND ")
 
@@ -191,6 +195,7 @@ func listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage) ([]*UserMe
 		var userMessage UserMessage
 		var rowStatus string
 		var mfaConfigBytes []byte
+		var profileBytes []byte
 		if err := rows.Scan(
 			&userMessage.ID,
 			&rowStatus,
@@ -200,6 +205,7 @@ func listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage) ([]*UserMe
 			&userMessage.PasswordHash,
 			&mfaConfigBytes,
 			&userMessage.Phone,
+			&profileBytes,
 		); err != nil {
 			return nil, err
 		}
@@ -210,6 +216,11 @@ func listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage) ([]*UserMe
 			return nil, err
 		}
 		userMessage.MFAConfig = &mfaConfig
+		profile := storepb.UserProfile{}
+		if err := common.ProtojsonUnmarshaler.Unmarshal(profileBytes, &profile); err != nil {
+			return nil, err
+		}
+		userMessage.Profile = &profile
 		userMessages = append(userMessages, &userMessage)
 	}
 	if err := rows.Err(); err != nil {
@@ -292,6 +303,10 @@ func (s *Store) UpdateUser(ctx context.Context, currentUser *UserMessage, patch 
 	}
 	if v := patch.PasswordHash; v != nil {
 		principalSet, principalArgs = append(principalSet, fmt.Sprintf("password_hash = $%d", len(principalArgs)+1)), append(principalArgs, *v)
+		if patch.Profile == nil {
+			patch.Profile = currentUser.Profile
+			patch.Profile.LastChangePasswordTime = timestamppb.New(time.Now())
+		}
 	}
 	if v := patch.Phone; v != nil {
 		principalSet, principalArgs = append(principalSet, fmt.Sprintf("phone = $%d", len(principalArgs)+1)), append(principalArgs, *v)
@@ -302,6 +317,13 @@ func (s *Store) UpdateUser(ctx context.Context, currentUser *UserMessage, patch 
 			return nil, err
 		}
 		principalSet, principalArgs = append(principalSet, fmt.Sprintf("mfa_config = $%d", len(principalArgs)+1)), append(principalArgs, mfaConfigBytes)
+	}
+	if v := patch.Profile; v != nil {
+		profileBytes, err := protojson.Marshal(v)
+		if err != nil {
+			return nil, err
+		}
+		principalSet, principalArgs = append(principalSet, fmt.Sprintf("profile = $%d", len(principalArgs)+1)), append(principalArgs, profileBytes)
 	}
 	principalArgs = append(principalArgs, currentUser.ID)
 
