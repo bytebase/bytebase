@@ -89,7 +89,7 @@ import { NButton } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { BBTextField } from "@/bbkit";
-import { AUTH_MFA_MODULE } from "@/router/auth";
+import { AUTH_PASSWORD_RESET_MODULE } from "@/router/auth";
 import { useAuthStore } from "@/store";
 
 interface LocalState {
@@ -129,23 +129,18 @@ const allowSignin = computed(() => {
   return state.email && state.password;
 });
 
-const trySignin = async (idpName?: string) => {
+const trySignin = async () => {
   if (state.isLoading) return;
   state.isLoading = true;
   try {
-    const mfaTempToken = await authStore.login({
+    const { requireResetPassword } = await authStore.login({
       email: state.email,
       password: state.password,
       web: true,
-      idpName: idpName,
     });
-    if (mfaTempToken) {
+    if (requireResetPassword) {
       router.push({
-        name: AUTH_MFA_MODULE,
-        query: {
-          mfaTempToken,
-          redirect: route.query.redirect as string,
-        },
+        name: AUTH_PASSWORD_RESET_MODULE,
       });
     } else {
       router.push("/");

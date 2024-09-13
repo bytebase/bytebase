@@ -491,7 +491,7 @@
       "phone-tips": "Asegúrese de incluir el código del país.",
       "country-code": "Códigos de país y de área",
       "password": "Contraseña",
-      "password-hint": "La contraseña debe seguir la configuración de restricción.",
+      "password-hint": "La contraseña debe seguir la configuración de restricción",
       "password-confirm": "Confirmar contraseña",
       "password-confirm-placeholder": "Confirmar nueva contraseña",
       "password-mismatch": "Nueva contraseña no coincide",
@@ -722,7 +722,9 @@
           "require-number": "Requiere que la contraseña contenga al menos un número",
           "require-letter": "Requiere que la contraseña contenga al menos una letra, independientemente de si es mayúscula o minúscula.",
           "require-uppercase-letter": "Requiere que la contraseña contenga al menos una letra mayúscula",
-          "require-special-character": "Requiere que la contraseña contenga al menos un carácter especial"
+          "require-special-character": "Requiere que la contraseña contenga al menos un carácter especial",
+          "require-reset-password-for-first-login": "Requerir que los usuarios restablezcan su contraseña después del primer inicio de sesión",
+          "password-rotation": "Requerir que los usuarios restablezcan su contraseña cada {day} días"
         },
         "config-updated": "La configuración se ha actualizado.",
         "ai-assistant": {

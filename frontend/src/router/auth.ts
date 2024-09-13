@@ -6,6 +6,7 @@ export const AUTH_SIGNIN_MODULE = "auth.signin";
 export const AUTH_SIGNIN_ADMIN_MODULE = "auth.signin.admin";
 export const AUTH_SIGNUP_MODULE = "auth.signup";
 export const AUTH_MFA_MODULE = "auth.mfa";
+export const AUTH_PASSWORD_RESET_MODULE = "auth.password.reset";
 export const AUTH_PASSWORD_FORGOT_MODULE = "auth.password.forgot";
 export const AUTH_OAUTH_CALLBACK_MODULE = "auth.oauth.callback";
 export const AUTH_OIDC_CALLBACK_MODULE = "auth.oidc.callback";
@@ -41,6 +42,12 @@ const authRoutes: RouteRecordRaw[] = [
         name: AUTH_PASSWORD_FORGOT_MODULE,
         meta: { title: () => `${t("auth.password-forgot")}` },
         component: () => import("@/views/auth/PasswordForgot.vue"),
+      },
+      {
+        path: "password-reset",
+        name: AUTH_PASSWORD_RESET_MODULE,
+        meta: { title: () => `${t("auth.password-reset.title")}` },
+        component: () => import("@/views/auth/PasswordReset.vue"),
       },
       {
         path: "mfa",

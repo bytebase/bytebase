@@ -79,48 +79,12 @@
                 />
               </div>
             </NFormItem>
-            <NFormItem :label="$t('settings.profile.password')">
-              <div class="w-full space-y-1">
-                <span
-                  :class="[
-                    'textinfolabel text-sm',
-                    passwordHint ? '!text-error' : '',
-                  ]"
-                >
-                  {{ $t("settings.profile.password-hint") }}
-                  <LearnMoreLink
-                    :external="false"
-                    url="/setting/general#account"
-                  />
-                </span>
-                <NInput
-                  v-model:value="state.user.password"
-                  type="password"
-                  :status="passwordHint ? 'error' : undefined"
-                  :input-props="{ autocomplete: 'new-password' }"
-                  :placeholder="$t('common.sensitive-placeholder')"
-                />
-              </div>
-            </NFormItem>
-            <NFormItem :label="$t('settings.profile.password-confirm')">
-              <div class="w-full flex flex-col justify-start items-start">
-                <NInput
-                  v-model:value="state.passwordConfirm"
-                  type="password"
-                  :status="passwordMismatch ? 'error' : undefined"
-                  :input-props="{ autocomplete: 'new-password' }"
-                  :placeholder="
-                    $t('settings.profile.password-confirm-placeholder')
-                  "
-                />
-                <span
-                  v-if="passwordMismatch"
-                  class="text-error text-sm mt-1 pl-1"
-                >
-                  {{ $t("settings.profile.password-mismatch") }}
-                </span>
-              </div>
-            </NFormItem>
+
+            <UserPassword
+              ref="userPasswordRef"
+              v-model:password="state.user.password"
+              v-model:password-confirm="state.passwordConfirm"
+            />
           </template>
         </NForm>
       </template>
@@ -187,10 +151,9 @@ import {
   NRadioGroup,
   NRadio,
 } from "naive-ui";
-import { computed, reactive } from "vue";
+import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import EmailInput from "@/components/EmailInput.vue";
-import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { RoleSelect } from "@/components/v2/Select";
 import {
@@ -208,8 +171,8 @@ import {
   User,
 } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
-import { PasswordRestrictionSetting } from "@/types/proto/v1/setting_service";
 import { randomString } from "@/utils";
+import UserPassword from "./UserPassword.vue";
 
 interface LocalState {
   isRequesting: boolean;
@@ -247,6 +210,7 @@ const initUser = () => {
 const { t } = useI18n();
 const settingV1Store = useSettingV1Store();
 const userStore = useUserStore();
+const userPasswordRef = ref<InstanceType<typeof UserPassword>>();
 
 const hideServiceAccount = useAppFeature(
   "bb.feature.members.hide-service-account"
@@ -266,54 +230,7 @@ const workspaceDomain = computed(() => {
   return head(settingV1Store.workspaceProfileSetting?.domains);
 });
 
-const passwordRestrictionSetting = computed(
-  () =>
-    settingV1Store.getSettingByName("bb.workspace.password-restriction")?.value
-      ?.passwordRestrictionSetting ?? PasswordRestrictionSetting.fromPartial({})
-);
-
 const isCreating = computed(() => !props.user);
-
-const passwordHint = computed(() => {
-  const pwd = state.user?.password ?? "";
-  if (!pwd) {
-    return false;
-  }
-  if (pwd.length < passwordRestrictionSetting.value.minLength) {
-    return true;
-  }
-  if (passwordRestrictionSetting.value.requireNumber && !/[0-9]+/.test(pwd)) {
-    return true;
-  }
-  if (
-    passwordRestrictionSetting.value.requireLetter &&
-    !/[a-zA-Z]+/.test(pwd)
-  ) {
-    return true;
-  }
-  if (
-    passwordRestrictionSetting.value.requireUppercaseLetter &&
-    !/[A-Z]+/.test(pwd)
-  ) {
-    return true;
-  }
-  if (
-    passwordRestrictionSetting.value.requireSpecialCharacter &&
-    // eslint-disable-next-line no-useless-escape
-    !/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]+/.test(pwd)
-  ) {
-    return true;
-  }
-  return false;
-});
-
-const passwordMismatch = computed(() => {
-  const pwd = state.user?.password ?? "";
-  if (!pwd) {
-    return false;
-  }
-  return pwd !== state.passwordConfirm;
-});
 
 const rolesChanged = computed(() => {
   if (isCreating.value) {
@@ -327,10 +244,10 @@ const allowConfirm = computed(() => {
   if (!state.user.email) {
     return false;
   }
-  if (passwordHint.value) {
+  if (userPasswordRef.value?.passwordHint) {
     return false;
   }
-  if (passwordMismatch.value) {
+  if (userPasswordRef.value?.passwordMismatch) {
     return false;
   }
 
@@ -397,12 +314,14 @@ const tryCreateOrUpdateUser = async () => {
         state.user.password ||
         randomString(10) + randomString(10, "0123456789"),
     });
-    await workspaceStore.patchIamPolicy([
-      {
-        member: `user:${createdUser.email}`,
-        roles: state.roles,
-      },
-    ]);
+    if (state.roles.length > 0) {
+      await workspaceStore.patchIamPolicy([
+        {
+          member: `user:${createdUser.email}`,
+          roles: state.roles,
+        },
+      ]);
+    }
     pushNotification({
       module: "bytebase",
       style: "SUCCESS",
