@@ -70,17 +70,6 @@ router.beforeEach((to, from, next) => {
     "bb.feature.disallow-navigate-to-console"
   );
 
-  // In standalone mode, we don't want to user get out of some standalone pages.
-  if (disallowNavigateAwaySQLEditor.value) {
-    // If user is trying to navigate away from SQL Editor, we'll explicitly return false to cancel the navigation.
-    if (
-      from.name?.toString().startsWith("sql-editor") &&
-      !to.name?.toString().startsWith("sql-editor")
-    ) {
-      return false;
-    }
-  }
-
   const authStore = useAuthStore();
   const routerStore = useRouterStore();
   const isLoggedIn = authStore.isLoggedIn();
@@ -94,6 +83,15 @@ router.beforeEach((to, from, next) => {
 
   if (toModule != fromModule) {
     routerStore.setBackPath(from.fullPath);
+  }
+
+  if (
+    to.name === "error.403" ||
+    to.name === "error.404" ||
+    to.name === "error.500"
+  ) {
+    next();
+    return;
   }
 
   // SSO callback routes are relayes to handle the IdP callback and dispatch the subsequent events.
@@ -182,10 +180,18 @@ router.beforeEach((to, from, next) => {
     }
   }
 
+  // In standalone mode, we don't want to user get out of some standalone pages.
+  if (disallowNavigateAwaySQLEditor.value) {
+    // If user is trying to navigate away from SQL Editor, we'll explicitly return false to cancel the navigation.
+    if (
+      from.name?.toString().startsWith("sql-editor") &&
+      !to.name?.toString().startsWith("sql-editor")
+    ) {
+      return false;
+    }
+  }
+
   if (
-    to.name === "error.403" ||
-    to.name === "error.404" ||
-    to.name === "error.500" ||
     to.name?.toString().startsWith(ENVIRONMENT_V1_ROUTE_DASHBOARD) ||
     to.name?.toString().startsWith(INSTANCE_ROUTE_DASHBOARD) ||
     to.name?.toString().startsWith(PROJECT_V1_ROUTE_DASHBOARD) ||
