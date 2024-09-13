@@ -10861,6 +10861,8 @@ components:
                     type: string
                 mfaTempToken:
                     type: string
+                requireResetPassword:
+                    type: boolean
         LogoutRequest:
             type: object
             properties: {}
@@ -11111,10 +11113,10 @@ components:
                 requireResetPasswordForFirstLogin:
                     type: boolean
                     description: require_reset_password_for_first_login requires users to reset their password after the 1st login.
-                rotationDays:
-                    type: integer
-                    description: rotation_days requires users to reset their password after n days.
-                    format: int32
+                passwordRotation:
+                    pattern: ^-?(?:0|[1-9][0-9]{0,11})(?:\.[0-9]{1,9})?s$
+                    type: string
+                    description: password_rotation requires users to reset their password after the duration.
         PatchSubscription:
             type: object
             properties:

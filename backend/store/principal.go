@@ -57,6 +57,8 @@ type UserMessage struct {
 	Profile       *storepb.UserProfile
 	// Phone conforms E.164 format.
 	Phone string
+	// output only
+	CreatedTime time.Time
 }
 
 // GetSystemBotUser gets the system bot.
@@ -177,7 +179,8 @@ func listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage) ([]*UserMe
 		principal.password_hash,
 		principal.mfa_config,
 		principal.phone,
-		principal.profile
+		principal.profile,
+		principal.created_ts
 	FROM principal
 	WHERE ` + strings.Join(where, " AND ")
 
@@ -196,6 +199,7 @@ func listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage) ([]*UserMe
 		var rowStatus string
 		var mfaConfigBytes []byte
 		var profileBytes []byte
+		var createdTs int64
 		if err := rows.Scan(
 			&userMessage.ID,
 			&rowStatus,
@@ -206,6 +210,7 @@ func listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage) ([]*UserMe
 			&mfaConfigBytes,
 			&userMessage.Phone,
 			&profileBytes,
+			&createdTs,
 		); err != nil {
 			return nil, err
 		}
@@ -221,6 +226,8 @@ func listUserImpl(ctx context.Context, tx *Tx, find *FindUserMessage) ([]*UserMe
 			return nil, err
 		}
 		userMessage.Profile = &profile
+		userMessage.CreatedTime = time.Unix(createdTs, 0)
+
 		userMessages = append(userMessages, &userMessage)
 	}
 	if err := rows.Err(); err != nil {
@@ -252,15 +259,16 @@ func (s *Store) CreateUser(ctx context.Context, create *UserMessage, creatorID i
 	}
 
 	var userID int
+	var createdTs int64
 	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
 			INSERT INTO principal (
 				%s
 			)
 			VALUES (%s)
-			RETURNING id
+			RETURNING id, created_ts
 		`, strings.Join(set, ","), strings.Join(placeholder, ",")),
 		args...,
-	).Scan(&userID); err != nil {
+	).Scan(&userID, &createdTs); err != nil {
 		return nil, err
 	}
 
@@ -275,6 +283,9 @@ func (s *Store) CreateUser(ctx context.Context, create *UserMessage, creatorID i
 		Type:         create.Type,
 		PasswordHash: create.PasswordHash,
 		Phone:        create.Phone,
+		CreatedTime:  time.Unix(createdTs, 0),
+		Profile:      &storepb.UserProfile{},
+		MFAConfig:    &storepb.MFAConfig{},
 	}
 	s.userIDCache.Add(user.ID, user)
 	s.userEmailCache.Add(user.Email, user)

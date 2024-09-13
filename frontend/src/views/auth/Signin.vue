@@ -291,7 +291,7 @@ const trySignin = async (idpName?: string) => {
   if (state.isLoading) return;
   state.isLoading = true;
   try {
-    const mfaTempToken = await authStore.login({
+    const { mfaTempToken } = await authStore.login({
       email: state.email,
       password: state.password,
       web: true,

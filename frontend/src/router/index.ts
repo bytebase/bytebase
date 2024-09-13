@@ -19,6 +19,7 @@ import authRoutes, {
   AUTH_OAUTH_CALLBACK_MODULE,
   AUTH_OIDC_CALLBACK_MODULE,
   AUTH_PASSWORD_FORGOT_MODULE,
+  AUTH_PASSWORD_RESET_MODULE,
   AUTH_SIGNIN_ADMIN_MODULE,
   AUTH_SIGNIN_MODULE,
   AUTH_SIGNUP_MODULE,
@@ -193,7 +194,8 @@ router.beforeEach((to, from, next) => {
     to.name?.toString().startsWith("sql-editor") ||
     to.name?.toString().startsWith(SETTING_ROUTE) ||
     to.name?.toString().startsWith("workspace") ||
-    to.name?.toString().startsWith("setup")
+    to.name?.toString().startsWith("setup") ||
+    to.name === AUTH_PASSWORD_RESET_MODULE
   ) {
     next();
     return;

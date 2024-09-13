@@ -722,7 +722,9 @@
           "require-number": "Requiere que la contraseña contenga al menos un número",
           "require-letter": "Requiere que la contraseña contenga al menos una letra, independientemente de si es mayúscula o minúscula.",
           "require-uppercase-letter": "Requiere que la contraseña contenga al menos una letra mayúscula",
-          "require-special-character": "Requiere que la contraseña contenga al menos un carácter especial"
+          "require-special-character": "Requiere que la contraseña contenga al menos un carácter especial",
+          "require-reset-password-for-first-login": "Requerir que los usuarios restablezcan su contraseña después del primer inicio de sesión",
+          "password-rotation": "Requerir que los usuarios restablezcan su contraseña cada {day} días"
         },
         "config-updated": "La configuración se ha actualizado.",
         "ai-assistant": {

@@ -1624,6 +1624,7 @@ When paginating, all other parameters provided to `ListUsers` must match the cal
 | ----- | ---- | ----- | ----------- |
 | token | [string](#string) |  |  |
 | mfa_temp_token | [string](#string) | optional |  |
+| require_reset_password | [bool](#bool) |  |  |
 
 
 
@@ -9548,7 +9549,7 @@ When paginating, all other parameters provided to `ListSettings` must match the 
 | require_uppercase_letter | [bool](#bool) |  | require_uppercase_letter requires the password must contains at least one upper case letter. |
 | require_special_character | [bool](#bool) |  | require_uppercase_letter requires the password must contains at least one special character. |
 | require_reset_password_for_first_login | [bool](#bool) |  | require_reset_password_for_first_login requires users to reset their password after the 1st login. |
-| rotation_days | [int32](#int32) | optional | rotation_days requires users to reset their password after n days. |
+| password_rotation | [google.protobuf.Duration](#google-protobuf-Duration) |  | password_rotation requires users to reset their password after the duration. |
 
 
 

@@ -5148,6 +5148,13 @@ Format: idps/{idp} </p></td>
                   <td><p> </p></td>
                 </tr>
               
+                <tr>
+                  <td>require_reset_password</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -26038,10 +26045,10 @@ The default value is 100MB, we will use the default value if the setting not exi
                 </tr>
               
                 <tr>
-                  <td>rotation_days</td>
-                  <td><a href="#int32">int32</a></td>
-                  <td>optional</td>
-                  <td><p>rotation_days requires users to reset their password after n days. </p></td>
+                  <td>password_rotation</td>
+                  <td><a href="#google.protobuf.Duration">google.protobuf.Duration</a></td>
+                  <td></td>
+                  <td><p>password_rotation requires users to reset their password after the duration. </p></td>
                 </tr>
               
             </tbody>
