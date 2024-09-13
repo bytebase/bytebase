@@ -29,11 +29,16 @@
 <script lang="ts" setup>
 import { NEllipsis } from "naive-ui";
 import { computed } from "vue";
+import { useRouter } from "vue-router";
 import type {
   Instance,
   InstanceResource,
 } from "@/types/proto/v1/instance_service";
-import { hasWorkspacePermissionV2, instanceV1Name } from "@/utils";
+import {
+  autoInstanceRoute,
+  hasWorkspacePermissionV2,
+  instanceV1Name,
+} from "@/utils";
 import InstanceV1EngineIcon from "./InstanceV1EngineIcon.vue";
 
 const props = withDefaults(
@@ -57,11 +62,12 @@ const props = withDefaults(
     textClass: "",
   }
 );
+const router = useRouter();
 
 const bindings = computed(() => {
   if (props.link) {
     return {
-      to: `/${props.instance.name}`,
+      to: autoInstanceRoute(router, props.instance),
       activeClass: "",
       exactActiveClass: "",
       onClick: (e: MouseEvent) => {

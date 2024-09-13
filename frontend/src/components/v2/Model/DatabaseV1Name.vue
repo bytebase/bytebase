@@ -22,9 +22,10 @@
 <script lang="ts" setup>
 import { NEllipsis } from "naive-ui";
 import { computed } from "vue";
+import { useRouter } from "vue-router";
 import type { ComposedDatabase } from "@/types";
 import { Engine, State } from "@/types/proto/v1/common";
-import { databaseV1Url } from "@/utils";
+import { autoDatabaseRoute } from "@/utils";
 
 const props = withDefaults(
   defineProps<{
@@ -40,6 +41,7 @@ const props = withDefaults(
   }
 );
 
+const router = useRouter();
 const shouldShowLink = computed(() => {
   return props.link && props.database.syncState === State.ACTIVE;
 });
@@ -47,7 +49,7 @@ const shouldShowLink = computed(() => {
 const bindings = computed(() => {
   if (shouldShowLink.value) {
     return {
-      to: databaseV1Url(props.database),
+      to: autoDatabaseRoute(router, props.database),
       activeClass: "",
       exactActiveClass: "",
       onClick: (e: MouseEvent) => {

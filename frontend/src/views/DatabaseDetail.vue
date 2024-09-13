@@ -39,7 +39,6 @@
               >
               <EnvironmentV1Name
                 :environment="environment"
-                :link="!disableLinks"
                 icon-class="textinfolabel"
               />
             </dd>
@@ -48,10 +47,7 @@
               <span class="ml-1 textlabel"
                 >{{ $t("common.instance") }}&nbsp;-&nbsp;</span
               >
-              <InstanceV1Name
-                :instance="database.instanceResource"
-                :link="!disableLinks"
-              />
+              <InstanceV1Name :instance="database.instanceResource" />
             </dd>
             <dt class="sr-only">{{ $t("common.project") }}</dt>
             <dd class="flex items-center text-sm md:mr-4">
@@ -60,12 +56,11 @@
               >
               <ProjectV1Name
                 :project="database.projectEntity"
-                :link="!disableLinks"
                 hash="#databases"
               />
             </dd>
             <SQLEditorButtonV1
-              v-if="!disableLinks"
+              v-if="!hideSQLEditorLink"
               class="text-sm md:mr-4"
               :database="database"
               :label="true"
@@ -241,6 +236,7 @@ import {
   isDatabaseV1Queryable,
   allowUsingSchemaEditor,
   extractProjectResourceName,
+  isSQLEditorRoute,
 } from "@/utils";
 
 const databaseHashList = [
@@ -294,8 +290,8 @@ const disableSchemaEditor = useAppFeature(
   "bb.feature.issue.disable-schema-editor"
 );
 const databaseChangeMode = useAppFeature("bb.feature.database-change-mode");
-const disableLinks = computed(() => {
-  return databaseChangeMode.value === DatabaseChangeMode.EDITOR;
+const hideSQLEditorLink = computed(() => {
+  return isSQLEditorRoute(router);
 });
 
 onMounted(async () => {

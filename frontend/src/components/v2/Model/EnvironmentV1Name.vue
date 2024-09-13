@@ -23,9 +23,10 @@
 
 <script lang="ts" setup>
 import { computed } from "vue";
+import { useRouter } from "vue-router";
 import type { Environment } from "@/types/proto/v1/environment_service";
 import type { VueClass } from "@/utils";
-import { environmentV1Name } from "@/utils";
+import { autoEnvironmentRoute, environmentV1Name } from "@/utils";
 import ProductionEnvironmentV1Icon from "./ProductionEnvironmentV1Icon.vue";
 
 const props = withDefaults(
@@ -54,10 +55,14 @@ const props = withDefaults(
   }
 );
 
+const router = useRouter();
+
 const bindings = computed(() => {
   if (props.link) {
     return {
-      to: `/${props.environment.name}`,
+      to: {
+        ...autoEnvironmentRoute(router, props.environment),
+      },
       activeClass: "",
       exactActiveClass: "",
       onClick: (e: MouseEvent) => {

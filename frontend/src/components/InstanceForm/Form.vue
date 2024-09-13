@@ -42,7 +42,7 @@
           <label for="activation" class="textlabel block">
             {{ $t("subscription.instance-assignment.assign-license") }}
             (<router-link
-              :to="{ name: subscriptionRouteName }"
+              :to="autoSubscriptionRoute($router)"
               class="accent-link"
             >
               {{
@@ -451,7 +451,6 @@ import {
 import { Status } from "nice-grpc-common";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
-import { useRoute } from "vue-router";
 import { BBAttention, BBBetaBadge } from "@/bbkit";
 import { InstanceArchiveRestoreButton } from "@/components/Instance";
 import {
@@ -461,8 +460,6 @@ import {
   MiniActionButton,
 } from "@/components/v2";
 import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
-import { SETTING_ROUTE_WORKSPACE_SUBSCRIPTION } from "@/router/dashboard/workspaceSetting";
-import { SQL_EDITOR_SETTING_SUBSCRIPTION_MODULE } from "@/router/sqlEditor";
 import {
   useSettingV1Store,
   useActuatorV1Store,
@@ -480,7 +477,12 @@ import {
 } from "@/types/proto/v1/instance_service";
 import { DataSource_RedisType } from "@/types/proto/v1/instance_service";
 import { PlanType } from "@/types/proto/v1/subscription_service";
-import { isDev, extractInstanceResourceName, onlyAllowNumber } from "@/utils";
+import {
+  isDev,
+  extractInstanceResourceName,
+  onlyAllowNumber,
+  autoSubscriptionRoute,
+} from "@/utils";
 import { getErrorCode } from "@/utils/grpcweb";
 import LearnMoreLink from "../LearnMoreLink.vue";
 import BigQueryHostInput from "./BigQueryHostInput.vue";
@@ -517,7 +519,6 @@ const {
 } = context;
 const { isEngineBeta, defaultPort, instanceLink, allowEditPort } = specs;
 
-const route = useRoute();
 const { t } = useI18n();
 const instanceV1Store = useInstanceV1Store();
 const settingV1Store = useSettingV1Store();
@@ -538,12 +539,6 @@ const availableLicenseCountText = computed((): string => {
     return t("subscription.unlimited");
   }
   return `${availableLicenseCount.value}`;
-});
-
-const subscriptionRouteName = computed(() => {
-  return route.name?.toString().startsWith("sql-editor")
-    ? SQL_EDITOR_SETTING_SUBSCRIPTION_MODULE
-    : SETTING_ROUTE_WORKSPACE_SUBSCRIPTION;
 });
 
 const resourceId = computed({
