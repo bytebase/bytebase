@@ -243,6 +243,32 @@ message QueryResult {
 
   // The query statement for the result.
   string statement = 8;
+
+  oneof detailed_error {
+    PostgresError postgres_error = 9;
+  }
+
+  // refer https://www.postgresql.org/docs/11/protocol-error-fields.html
+  // for field description.
+  message PostgresError {
+    string severity = 1;
+    string code = 2;
+    string message = 3;
+    string detail = 4;
+    string hint = 5;
+    int32 position = 6;
+    int32 internal_position = 7;
+    string internal_query = 8;
+    string where = 9;
+    string schema_name = 10;
+    string table_name = 11;
+    string column_name = 12;
+    string data_type_name = 13;
+    string constraint_name = 14;
+    string file = 15;
+    int32 line = 16;
+    string routine = 17;
+  }
 }
 
 message QueryRow {
