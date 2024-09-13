@@ -466,20 +466,6 @@ const maybeSetInitialDatabaseConfigForSpec = async (
 const extractInitialSQLFromQuery = (
   query: Record<string, string>
 ): InitialSQL => {
-  const sqlMapJSON = query.sqlMap;
-  if (sqlMapJSON && sqlMapJSON.startsWith("{") && sqlMapJSON.endsWith("}")) {
-    try {
-      const sqlMap = JSON.parse(sqlMapJSON) as Record<string, string>;
-      const keys = Object.keys(sqlMap);
-      if (keys.every((key) => typeof sqlMap[key] === "string")) {
-        return {
-          sqlMap,
-        };
-      }
-    } catch {
-      // Nothing
-    }
-  }
   const sql = query.sql;
   if (sql && typeof sql === "string") {
     return {
@@ -492,6 +478,21 @@ const extractInitialSQLFromQuery = (
     return {
       sql,
     };
+  }
+  const sqlMapStorageKey = query.sqlMapStorageKey;
+  if (sqlMapStorageKey && typeof sqlMapStorageKey === "string") {
+    const sqlMapJSON = localStorage.getItem(sqlMapStorageKey) ?? "{}";
+    try {
+      const sqlMap = JSON.parse(sqlMapJSON) as Record<string, string>;
+      const keys = Object.keys(sqlMap);
+      if (keys.every((key) => typeof sqlMap[key] === "string")) {
+        return {
+          sqlMap,
+        };
+      }
+    } catch {
+      // Nothing
+    }
   }
   return {};
 };

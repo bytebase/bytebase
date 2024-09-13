@@ -1,4 +1,5 @@
 import { uniqBy } from "lodash-es";
+import { v4 as uuidv4 } from "uuid";
 import type { InjectionKey, Ref } from "vue";
 import { computed, inject, provide, ref } from "vue";
 import { useI18n } from "vue-i18n";
@@ -130,7 +131,9 @@ export const provideIssueGhostContext = () => {
       const sheet = getLocalSheetByName(sheetName);
       sqlMap[target] = getSheetStatement(sheet);
     });
-    overrides["sqlMap"] = JSON.stringify(sqlMap);
+    const sqlMapStorageKey = `bb.issues.sql-map.${uuidv4()}`;
+    localStorage.setItem(sqlMapStorageKey, JSON.stringify(sqlMap));
+    overrides["sqlMapStorageKey"] = sqlMapStorageKey;
 
     await reInitialize(overrides);
   };

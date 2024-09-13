@@ -131,6 +131,7 @@
 <script lang="ts" setup>
 import { cloneDeep, head, uniq } from "lodash-es";
 import { NTabs, NCheckbox, NButton, NTabPane, useDialog } from "naive-ui";
+import { v4 as uuidv4 } from "uuid";
 import type { PropType } from "vue";
 import { computed, onMounted, h, reactive, ref, watch } from "vue";
 import { I18nT, useI18n } from "vue-i18n";
@@ -452,12 +453,14 @@ const handlePreviewIssue = async () => {
   }
 
   if (state.selectedTab === "raw-sql") {
-    query.sql = state.editStatement;
-
     query.name = generateIssueTitle(
       "bb.issue.database.schema.update",
       databaseList.value.map((db) => db.databaseName)
     );
+
+    const sqlStorageKey = `bb.issues.sql.${uuidv4()}`;
+    localStorage.setItem(sqlStorageKey, state.editStatement);
+    query.sqlStorageKey = sqlStorageKey;
   } else {
     query.name = generateIssueTitle(
       "bb.issue.database.schema.update",
@@ -494,7 +497,9 @@ const handlePreviewIssue = async () => {
       const sql = statementList[i];
       sqlMap[db.name] = sql;
     });
-    query.sqlMap = JSON.stringify(sqlMap);
+    const sqlMapStorageKey = `bb.issues.sql-map.${uuidv4()}`;
+    localStorage.setItem(sqlMapStorageKey, JSON.stringify(sqlMap));
+    query.sqlMapStorageKey = sqlMapStorageKey;
     const databaseNameList = databaseList.value.map((db) => db.databaseName);
     query.name = generateIssueTitle(
       "bb.issue.database.schema.update",
