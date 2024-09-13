@@ -16,6 +16,7 @@ func init() {
 	base.RegisterDiagnoseFunc(store.Engine_POSTGRES, Diagnose)
 	base.RegisterDiagnoseFunc(store.Engine_REDSHIFT, Diagnose)
 	base.RegisterDiagnoseFunc(store.Engine_RISINGWAVE, Diagnose)
+	base.RegisterDiagnoseFunc(store.Engine_COCKROACHDB, Diagnose)
 }
 
 func Diagnose(_ context.Context, _ base.DiagnoseContext, statement string) ([]base.Diagnostic, error) {
