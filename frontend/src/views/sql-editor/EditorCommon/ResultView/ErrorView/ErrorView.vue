@@ -70,6 +70,9 @@ const showRunAnywayButton = computed(() => {
   ) {
     return false;
   }
+  if (resultSet.status !== Status.OK) {
+    return false;
+  }
   return true;
 });
 
