@@ -1,3 +1,3 @@
-import SQLEditorSettingDataClassification from "./DataClassification.vue";
+import SQLEditorSettingDataMasking from "./DataMasking.vue";
 
-export default SQLEditorSettingDataClassification;
+export default SQLEditorSettingDataMasking;
