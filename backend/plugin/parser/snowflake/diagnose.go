@@ -28,7 +28,7 @@ func Diagnose(_ context.Context, _ base.DiagnoseContext, statement string) ([]ba
 
 func parseSnowflakeStatement(statement string) *base.SyntaxError {
 	trimmedStatement := strings.TrimRightFunc(statement, unicode.IsSpace)
-	if !strings.HasSuffix(trimmedStatement, ";") {
+	if len(trimmedStatement) > 0 && !strings.HasSuffix(trimmedStatement, ";") {
 		// Add a semicolon to the end of the statement to allow users to omit the semicolon
 		// for the last statement in the script.
 		statement += ";"
