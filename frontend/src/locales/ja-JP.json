@@ -491,7 +491,7 @@
       "phone-tips": "国コードを必ず含めてください",
       "country-code": "国または地域コード",
       "password": "パスワード",
-      "password-hint": "パスワードは制限設定に従う必要があります。",
+      "password-hint": "パスワードは制限設定に従う必要があります",
       "password-confirm": "パスワードの確認",
       "password-confirm-placeholder": "新しいパスワードを確認します",
       "password-mismatch": "新しいパスワードが一致しません",
@@ -722,7 +722,9 @@
           "require-number": "パスワードには少なくとも1つの数字が含まれている必要があります",
           "require-letter": "パスワードには大文字、小文字に関係なく少なくとも1文字が含まれている必要があります",
           "require-uppercase-letter": "パスワードには少なくとも1つの大文字が含まれている必要があります",
-          "require-special-character": "パスワードには少なくとも1つの特殊文字が含まれている必要があります"
+          "require-special-character": "パスワードには少なくとも1つの特殊文字が含まれている必要があります",
+          "require-reset-password-for-first-login": "初回ログイン後にユーザーにパスワードのリセットを要求する",
+          "password-rotation": "ユーザーに{day}日ごとにパスワードのリセットを要求する"
         },
         "config-updated": "構成が更新されました。",
         "ai-assistant": {

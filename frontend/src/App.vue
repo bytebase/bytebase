@@ -46,6 +46,7 @@ import { onErrorCaptured, onMounted, watchEffect } from "vue";
 import { watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import Watermark from "@/components/misc/Watermark.vue";
+import { AUTH_PASSWORD_RESET_MODULE } from "@/router/auth";
 import { themeOverrides, dateLang, generalLang } from "../naive-ui.config";
 import { provideAppRootContext } from "./AppRootContext";
 import AuthContext from "./AuthContext.vue";
@@ -98,6 +99,12 @@ onMounted(async () => {
 
   await initBasicModules();
   actuatorStore.initialized = true;
+
+  if (authStore.requireResetPassword) {
+    router.replace({
+      name: AUTH_PASSWORD_RESET_MODULE,
+    });
+  }
 });
 
 watchEffect(async () => {

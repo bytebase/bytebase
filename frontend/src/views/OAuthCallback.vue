@@ -86,7 +86,7 @@ const triggerAuthCallback = async () => {
       );
       window.close();
     } else {
-      const mfaTempToken = await authStore.login({
+      const { mfaTempToken } = await authStore.login({
         idpName: eventName.split(".").pop()!,
         idpContext: {
           oauth2Context: {

@@ -11,7 +11,7 @@
           :value="passwordRestrictionSetting.minLength"
           :readonly="!allowEdit"
           class="w-24"
-          :min="DEFAULT_MIN_LENGTH"
+          :min="1"
           :placeholder="'Minimum length'"
           :precision="0"
           @update:value="
@@ -21,7 +21,7 @@
         <span class="textlabel">
           {{
             $t("settings.general.workspace.password-restriction.min-length", {
-              min: DEFAULT_MIN_LENGTH,
+              min: passwordRestrictionSetting.minLength || DEFAULT_MIN_LENGTH,
             })
           }}
         </span>
@@ -90,6 +90,76 @@
           }}
         </span>
       </NCheckbox>
+      <NCheckbox
+        :checked="passwordRestrictionSetting.requireResetPasswordForFirstLogin"
+        :readonly="!allowEdit"
+        @update:checked="
+          (val) => {
+            onUpdate({ requireResetPasswordForFirstLogin: val });
+          }
+        "
+      >
+        <span class="textlabel">
+          {{
+            $t(
+              "settings.general.workspace.password-restriction.require-reset-password-for-first-login"
+            )
+          }}
+        </span>
+      </NCheckbox>
+      <NCheckbox
+        :checked="!!passwordRestrictionSetting.passwordRotation"
+        :readonly="!allowEdit"
+        class="!flex !items-center"
+        @update:checked="
+          (checked) => {
+            onUpdate({
+              passwordRotation: checked
+                ? Duration.fromPartial({
+                    seconds: 7 * 24 * 60 * 60 /* default 7 days */,
+                    nanos: 0,
+                  })
+                : undefined,
+            });
+          }
+        "
+      >
+        <i18n-t
+          tag="div"
+          keypath="settings.general.workspace.password-restriction.password-rotation"
+          class="flex items-center space-x-2 textlabel"
+        >
+          <template #day>
+            <NInputNumber
+              v-if="passwordRestrictionSetting.passwordRotation"
+              :value="
+                Number(
+                  passwordRestrictionSetting.passwordRotation.seconds.divide(
+                    24 * 60 * 60
+                  )
+                )
+              "
+              :readonly="!allowEdit"
+              :min="1"
+              class="w-24 mx-2"
+              :size="'small'"
+              :placeholder="'Minimum length'"
+              :precision="0"
+              @update:value="
+                (val) =>
+                  val &&
+                  onUpdate({
+                    passwordRotation: Duration.fromPartial({
+                      seconds: val * 24 * 60 * 60,
+                      nanos: 0,
+                    }),
+                  })
+              "
+            />
+            <span v-else class="mx-1">N</span>
+          </template>
+        </i18n-t>
+      </NCheckbox>
     </div>
   </div>
 </template>
@@ -100,6 +170,7 @@ import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { pushNotification } from "@/store";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
+import { Duration } from "@/types/proto/google/protobuf/duration";
 import { PasswordRestrictionSetting } from "@/types/proto/v1/setting_service";
 
 const DEFAULT_MIN_LENGTH = 8;

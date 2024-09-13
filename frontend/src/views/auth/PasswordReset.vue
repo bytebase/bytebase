@@ -9,71 +9,98 @@
 
     <div class="mt-8">
       <div class="mt-6">
-        <form class="space-y-6" @submit.prevent="tryReset">
-          <div>
-            <label
-              for="email"
-              class="block text-base font-medium leading-5 text-control"
-            >
-              {{ $t("auth.password-reset.content") }}
-            </label>
-            <div class="mt-4 rounded-md shadow-sm">
-              <BBTextField
-                v-model:value="state.email"
-                required
-                placeholder="jim@example.com"
-              />
-            </div>
-          </div>
-
-          <div class="w-full">
-            <NButton
-              attr-type="submit"
-              type="primary"
-              :disabled="!allowReset"
-              style="width: 100%"
-            >
-              {{ $t("auth.password-reset.send-reset-link") }}
-            </NButton>
-          </div>
-        </form>
-      </div>
-    </div>
-
-    <div class="mt-6 relative">
-      <div class="absolute inset-0 flex items-center" aria-hidden="true">
-        <div class="w-full border-t border-control-border"></div>
-      </div>
-      <div class="relative flex justify-center text-sm">
-        <router-link
-          :to="{ name: AUTH_SIGNIN_MODULE }"
-          class="accent-link bg-white px-2"
+        <NForm>
+          <UserPassword
+            ref="userPasswordRef"
+            v-model:password="state.password"
+            v-model:password-confirm="state.passwordConfirm"
+            :show-learn-more="false"
+          />
+        </NForm>
+        <NButton
+          type="primary"
+          size="large"
+          style="width: 100%"
+          :disabled="!allowConfirm"
+          @click="onConfirm"
         >
-          {{ $t("auth.password-reset.return-to-sign-in") }}
-        </router-link>
+          {{ $t("common.confirm") }}
+        </NButton>
       </div>
     </div>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { NButton } from "naive-ui";
-import { computed, reactive } from "vue";
-import { BBTextField } from "@/bbkit";
-import { AUTH_SIGNIN_MODULE } from "@/router/auth";
-import { isValidEmail } from "../../utils";
+import { NButton, NForm } from "naive-ui";
+import { computed, reactive, ref, onMounted } from "vue";
+import { useI18n } from "vue-i18n";
+import { useRouter } from "vue-router";
+import UserPassword from "@/components/User/Settings/UserPassword.vue";
+import {
+  pushNotification,
+  useSettingV1Store,
+  useUserStore,
+  useAuthStore,
+  useCurrentUserV1,
+} from "@/store";
+import { UpdateUserRequest, User } from "@/types/proto/v1/auth_service";
 
 interface LocalState {
-  email: string;
+  password: string;
+  passwordConfirm: string;
 }
 
 const state = reactive<LocalState>({
-  email: "",
+  password: "",
+  passwordConfirm: "",
 });
 
-const allowReset = computed(() => {
-  return isValidEmail(state.email);
+const { t } = useI18n();
+const me = useCurrentUserV1();
+const userStore = useUserStore();
+const authStore = useAuthStore();
+const userPasswordRef = ref<InstanceType<typeof UserPassword>>();
+const router = useRouter();
+const settingV1Store = useSettingV1Store();
+
+onMounted(async () => {
+  if (!authStore.requireResetPassword) {
+    router.replace("/");
+    return;
+  }
+  await settingV1Store.getOrFetchSettingByName(
+    "bb.workspace.password-restriction"
+  );
 });
 
-const tryReset = () => {};
+const allowConfirm = computed(() => {
+  if (!state.password) {
+    return false;
+  }
+  return (
+    !userPasswordRef.value?.passwordHint &&
+    !userPasswordRef.value?.passwordMismatch
+  );
+});
+
+const onConfirm = async () => {
+  const patch: User = {
+    ...me.value,
+    password: state.password,
+  };
+  await userStore.updateUser(
+    UpdateUserRequest.fromPartial({
+      user: patch,
+      updateMask: ["password"],
+    })
+  );
+  pushNotification({
+    module: "bytebase",
+    style: "SUCCESS",
+    title: t("common.updated"),
+  });
+  authStore.setRequireResetPassword(false);
+  router.replace("/");
+};
 </script>

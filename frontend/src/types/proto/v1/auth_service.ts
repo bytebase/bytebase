@@ -195,6 +195,7 @@ export interface OIDCIdentityProviderContext {
 export interface LoginResponse {
   token: string;
   mfaTempToken?: string | undefined;
+  requireResetPassword: boolean;
 }
 
 export interface LogoutRequest {
@@ -1101,7 +1102,7 @@ export const OIDCIdentityProviderContext = {
 };
 
 function createBaseLoginResponse(): LoginResponse {
-  return { token: "", mfaTempToken: undefined };
+  return { token: "", mfaTempToken: undefined, requireResetPassword: false };
 }
 
 export const LoginResponse = {
@@ -1111,6 +1112,9 @@ export const LoginResponse = {
     }
     if (message.mfaTempToken !== undefined) {
       writer.uint32(18).string(message.mfaTempToken);
+    }
+    if (message.requireResetPassword === true) {
+      writer.uint32(24).bool(message.requireResetPassword);
     }
     return writer;
   },
@@ -1136,6 +1140,13 @@ export const LoginResponse = {
 
           message.mfaTempToken = reader.string();
           continue;
+        case 3:
+          if (tag !== 24) {
+            break;
+          }
+
+          message.requireResetPassword = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1149,6 +1160,9 @@ export const LoginResponse = {
     return {
       token: isSet(object.token) ? globalThis.String(object.token) : "",
       mfaTempToken: isSet(object.mfaTempToken) ? globalThis.String(object.mfaTempToken) : undefined,
+      requireResetPassword: isSet(object.requireResetPassword)
+        ? globalThis.Boolean(object.requireResetPassword)
+        : false,
     };
   },
 
@@ -1160,6 +1174,9 @@ export const LoginResponse = {
     if (message.mfaTempToken !== undefined) {
       obj.mfaTempToken = message.mfaTempToken;
     }
+    if (message.requireResetPassword === true) {
+      obj.requireResetPassword = message.requireResetPassword;
+    }
     return obj;
   },
 
@@ -1170,6 +1187,7 @@ export const LoginResponse = {
     const message = createBaseLoginResponse();
     message.token = object.token ?? "";
     message.mfaTempToken = object.mfaTempToken ?? undefined;
+    message.requireResetPassword = object.requireResetPassword ?? false;
     return message;
   },
 };
