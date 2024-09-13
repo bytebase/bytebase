@@ -675,7 +675,7 @@ func (s *AuthService) Login(ctx context.Context, request *v1pb.LoginRequest) (*v
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to check user roles, error: %v", err)
 	}
-	if !isWorkspaceAdmin && loginUser.Type == api.EndUser {
+	if !isWorkspaceAdmin && loginUser.Type == api.EndUser && !mfaSecondLogin {
 		// Disallow password signin for end users.
 		if setting.DisallowPasswordSignin && !loginViaIDP {
 			return nil, status.Errorf(codes.PermissionDenied, "password signin is disallowed")
