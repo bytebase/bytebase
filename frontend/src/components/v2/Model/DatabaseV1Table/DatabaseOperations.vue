@@ -61,7 +61,6 @@
     <TransferOutDatabaseForm
       :database-list="props.databases"
       :selected-database-names="selectedDatabaseNameList"
-      :on-transfer-databases="onTransferDatabases"
       @dismiss="state.showTransferOutDatabaseForm = false"
     />
   </Drawer>
@@ -111,7 +110,7 @@ import {
   pushNotification,
   useAppFeature,
 } from "@/store";
-import type { ComposedDatabase, ComposedProject } from "@/types";
+import type { ComposedDatabase } from "@/types";
 import { DEFAULT_PROJECT_NAME } from "@/types";
 import {
   Database,
@@ -148,12 +147,8 @@ const props = withDefaults(
   defineProps<{
     databases: ComposedDatabase[];
     projectName?: string;
-    onTransferDatabases?: (
-      targetProject: ComposedProject,
-      databaseList: ComposedDatabase[]
-    ) => void;
   }>(),
-  { projectName: "", onTransferDatabases: undefined }
+  { projectName: "" }
 );
 
 const state = reactive<LocalState>({

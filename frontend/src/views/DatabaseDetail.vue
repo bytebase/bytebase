@@ -182,7 +182,6 @@
     <TransferOutDatabaseForm
       :database-list="[database]"
       :selected-database-names="[database.name]"
-      :on-transfer-databases="() => {}"
       @dismiss="state.showTransferDatabaseModal = false"
     />
   </Drawer>

@@ -5,7 +5,6 @@
   >
     <DatabaseDashboard
       :on-click-database="handleClickDatabase"
-      :on-transfer-databases="handleTransferDatabases"
       @ready="ready = true"
     />
   </div>
@@ -27,14 +26,9 @@ import { Drawer, DrawerContent } from "@/components/v2";
 import {
   SQL_EDITOR_SETTING_DATABASE_DETAIL_MODULE,
   SQL_EDITOR_SETTING_DATABASES_MODULE,
-  SQL_EDITOR_SETTING_PROJECT_MODULE,
 } from "@/router/sqlEditor";
 import { useDatabaseV1Store } from "@/store";
-import {
-  isValidDatabaseName,
-  type ComposedDatabase,
-  type ComposedProject,
-} from "@/types";
+import { isValidDatabaseName, type ComposedDatabase } from "@/types";
 import { extractDatabaseResourceName, wrapRefAsPromise } from "@/utils";
 import DatabaseDashboard from "@/views/DatabaseDashboard.vue";
 import Detail from "./Detail.vue";
@@ -64,13 +58,6 @@ const handleClickDatabase = (db: ComposedDatabase) => {
     show: true,
     database: db,
   };
-};
-
-const handleTransferDatabases = (targetProject: ComposedProject) => {
-  router.push({
-    name: SQL_EDITOR_SETTING_PROJECT_MODULE,
-    hash: `#${targetProject.name}`,
-  });
 };
 
 onMounted(() => {
