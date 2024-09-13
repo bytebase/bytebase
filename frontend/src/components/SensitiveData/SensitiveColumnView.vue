@@ -160,7 +160,7 @@ import {
   PolicyType,
   PolicyResourceType,
 } from "@/types/proto/v1/org_policy_service";
-import { databaseV1Url, hasWorkspacePermissionV2 } from "@/utils";
+import { autoDatabaseRoute, hasWorkspacePermissionV2 } from "@/utils";
 import { FeatureAttentionForInstanceLicense } from "../FeatureGuard";
 import FeatureModal from "../FeatureGuard/FeatureModal.vue";
 import NoDataPlaceholder from "../misc/NoDataPlaceholder.vue";
@@ -183,10 +183,6 @@ interface LocalState {
   showGrantAccessDrawer: boolean;
   showSensitiveColumnDrawer: boolean;
 }
-
-const props = defineProps<{
-  onViewItem?: (sc: SensitiveColumn) => any;
-}>();
 
 const { t } = useI18n();
 const router = useRouter();
@@ -335,15 +331,16 @@ const onRowClick = async (
 ) => {
   switch (action) {
     case "VIEW": {
-      if (props.onViewItem) {
-        props.onViewItem(item);
-      } else {
-        let url = `${databaseV1Url(item.database)}?table=${item.maskData.table}`;
-        if (item.maskData.schema != "") {
-          url += `&schema=${item.maskData.schema}`;
-        }
-        router.push(url);
+      const query: Record<string, string> = {
+        table: item.maskData.table,
+      };
+      if (item.maskData.schema != "") {
+        query.schema = item.maskData.schema;
       }
+      router.push({
+        ...autoDatabaseRoute(router, item.database),
+        query,
+      });
       break;
     }
     case "DELETE":
