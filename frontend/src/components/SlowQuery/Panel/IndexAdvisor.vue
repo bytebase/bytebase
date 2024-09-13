@@ -56,6 +56,7 @@
 <script lang="ts" setup>
 import { NButton } from "naive-ui";
 import { Status } from "nice-grpc-common";
+import { v4 as uuidv4 } from "uuid";
 import { computed, reactive, watch } from "vue";
 import { useRouter } from "vue-router";
 import { BBSpin } from "@/bbkit";
@@ -113,15 +114,17 @@ const showIndexAdvisor = computed(() => {
 });
 
 const handleCreateIndex = () => {
+  const sqlStorageKey = `bb.issues.sql.${uuidv4()}`;
+  localStorage.setItem(sqlStorageKey, state.createIndexStatement);
   const query: Record<string, any> = {
     template: "bb.issue.database.schema.update",
     name: generateIssueTitle("bb.issue.database.schema.update", [
       database.value.databaseName,
     ]),
     databaseList: database.value.name,
-    sql: state.createIndexStatement,
     mode: "normal",
     description: `Create index for database ${database.value.databaseName}`,
+    sqlStorageKey,
   };
 
   const routeInfo = {
