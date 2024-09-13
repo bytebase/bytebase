@@ -491,7 +491,7 @@
       "phone-tips": "国コードを必ず含めてください",
       "country-code": "国または地域コード",
       "password": "パスワード",
-      "password-hint": "パスワードは制限設定に従う必要があります。",
+      "password-hint": "パスワードは制限設定に従う必要があります",
       "password-confirm": "パスワードの確認",
       "password-confirm-placeholder": "新しいパスワードを確認します",
       "password-mismatch": "新しいパスワードが一致しません",

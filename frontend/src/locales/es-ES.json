@@ -491,7 +491,7 @@
       "phone-tips": "Asegúrese de incluir el código del país.",
       "country-code": "Códigos de país y de área",
       "password": "Contraseña",
-      "password-hint": "La contraseña debe seguir la configuración de restricción.",
+      "password-hint": "La contraseña debe seguir la configuración de restricción",
       "password-confirm": "Confirmar contraseña",
       "password-confirm-placeholder": "Confirmar nueva contraseña",
       "password-mismatch": "Nueva contraseña no coincide",

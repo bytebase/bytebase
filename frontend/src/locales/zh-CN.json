@@ -491,7 +491,7 @@
       "phone-tips": "请包含国家代码前缀",
       "country-code": "国家或地区代码",
       "password": "密码",
-      "password-hint": "密码应遵循限制设置。",
+      "password-hint": "密码应遵循限制设置",
       "password-confirm": "确认密码",
       "password-confirm-placeholder": "确认新密码",
       "password-mismatch": "新密码不匹配",
