@@ -13,6 +13,7 @@ import { useRoute, type RouteRecordRaw } from "vue-router";
 import type { SidebarItem } from "@/components/CommonSidebar.vue";
 import { DatabaseIcon } from "@/components/Icon";
 import sqlEditorRoutes, {
+  SQL_EDITOR_SETTING_ACCESS_CONTROL_MODULE,
   SQL_EDITOR_SETTING_AUDIT_LOG_MODULE,
   SQL_EDITOR_SETTING_DATA_CLASSIFICATION_MODULE,
   SQL_EDITOR_SETTING_DATA_MASKING_MODULE,
@@ -110,7 +111,9 @@ export const useSidebarItems = () => {
 
   const itemList = computed((): SidebarItem[] => {
     if (disableSetting.value) {
-      // Hide SQL Editor settings entirely if embedded in iframe
+      // Hide SQL Editor settings entirely if
+      // - embedded in iframe
+      // - or workspace mode is Issue mode
       return [];
     }
 
@@ -193,11 +196,11 @@ export const useSidebarItems = () => {
             name: SQL_EDITOR_SETTING_DATA_MASKING_MODULE,
             type: "route",
           },
-          // {
-          //   title: t("settings.sidebar.access-control"),
-          //   name: WORKSPACE_ROUTE_DATA_ACCESS_CONTROL,
-          //   type: "route",
-          // },
+          {
+            title: t("settings.sidebar.access-control"),
+            name: SQL_EDITOR_SETTING_ACCESS_CONTROL_MODULE,
+            type: "route",
+          },
         ],
       },
       {

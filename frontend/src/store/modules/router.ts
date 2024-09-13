@@ -34,7 +34,7 @@ export const useRouterStore = defineStore("router", {
       {
         // /sql-editor/:connectionSlug
         const sqlEditorComponents = currentRoute.path.match(
-          "/sql-editor/([0-9a-zA-Z_-]+)"
+          "/sql-editor/(instances/[0-9a-zA-Z_-]+/databases/[0-9a-zA-Z_-]+)"
         ) || ["/", undefined];
 
         if (sqlEditorComponents[1]) {
