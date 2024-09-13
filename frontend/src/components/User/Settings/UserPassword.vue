@@ -69,7 +69,7 @@ const props = withDefaults(
   }
 );
 
-const emit = defineEmits<{
+defineEmits<{
   (event: "update:password", password: string): void;
   (event: "update:passwordConfirm", passwordConfirm: string): void;
 }>();
