@@ -84,7 +84,7 @@ import {
   useDatabaseV1Store,
   useProjectV1Store,
 } from "@/store";
-import type { ComposedDatabase } from "@/types";
+import type { ComposedDatabase, ComposedProject } from "@/types";
 import {
   PresetRoleType,
   DEFAULT_PROJECT_NAME,
@@ -96,6 +96,10 @@ import DatabaseV1Table from "../v2/Model/DatabaseV1Table/DatabaseV1Table.vue";
 const props = defineProps<{
   databaseList: ComposedDatabase[];
   selectedDatabaseNames?: string[];
+  onTransferDatabases?: (
+    targetProject: ComposedProject,
+    databaseList: ComposedDatabase[]
+  ) => void;
 }>();
 
 const emit = defineEmits<{
@@ -196,13 +200,17 @@ const doTransfer = async () => {
         title: `Successfully transferred ${displayDatabaseName} to project '${target.title}'.`,
       });
 
-      if (!disallowNavigateToConsole.value) {
-        router.push({
-          name: PROJECT_V1_ROUTE_DATABASES,
-          params: {
-            projectId: extractProjectResourceName(target.name),
-          },
-        });
+      if (props.onTransferDatabases) {
+        props.onTransferDatabases(target, databaseList);
+      } else {
+        if (!disallowNavigateToConsole.value) {
+          router.push({
+            name: PROJECT_V1_ROUTE_DATABASES,
+            params: {
+              projectId: extractProjectResourceName(target.name),
+            },
+          });
+        }
       }
     }
 

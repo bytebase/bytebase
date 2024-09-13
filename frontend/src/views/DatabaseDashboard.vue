@@ -17,7 +17,10 @@
     </div>
 
     <div class="space-y-2">
-      <DatabaseOperations :databases="selectedDatabases" />
+      <DatabaseOperations
+        :databases="selectedDatabases"
+        :on-transfer-databases="onTransferDatabases"
+      />
 
       <DatabaseV1Table
         mode="ALL"
@@ -43,7 +46,7 @@ import DatabaseV1Table, {
 } from "@/components/v2/Model/DatabaseV1Table";
 import { useAppFeature, useProjectV1List, useUIStateStore } from "@/store";
 import { useDatabaseV1List } from "@/store/modules/v1/databaseList";
-import type { ComposedDatabase } from "@/types";
+import type { ComposedDatabase, ComposedProject } from "@/types";
 import { UNKNOWN_ID, DEFAULT_PROJECT_NAME } from "@/types";
 import type { SearchParams } from "@/utils";
 import {
@@ -67,6 +70,10 @@ interface LocalState {
 const props = defineProps<{
   openInNewWindow?: boolean;
   onClickDatabase?: (db: ComposedDatabase, event: MouseEvent) => void;
+  onTransferDatabases?: (
+    targetProject: ComposedProject,
+    databaseList: ComposedDatabase[]
+  ) => void;
 }>();
 
 const uiStateStore = useUIStateStore();

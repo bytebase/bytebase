@@ -3,17 +3,22 @@
     <DatabaseDashboard
       :open-in-new-window="true"
       :on-click-database="handleClickDatabase"
+      :on-transfer-databases="handleTransferDatabases"
     />
   </div>
 </template>
 
 <script setup lang="ts">
 import { useRouter } from "vue-router";
-import { SQL_EDITOR_DATABASE_MODULE } from "@/router/sqlEditor";
+import {
+  SQL_EDITOR_DATABASE_MODULE,
+  SQL_EDITOR_SETTING_PROJECT_MODULE,
+} from "@/router/sqlEditor";
 import {
   DEFAULT_PROJECT_NAME,
   defaultProject,
   type ComposedDatabase,
+  type ComposedProject,
 } from "@/types";
 import {
   extractDatabaseResourceName,
@@ -41,6 +46,13 @@ const handleClickDatabase = (db: ComposedDatabase) => {
       instance: instanceName,
       database: databaseName,
     },
+  });
+};
+
+const handleTransferDatabases = (targetProject: ComposedProject) => {
+  router.push({
+    name: SQL_EDITOR_SETTING_PROJECT_MODULE,
+    hash: `#${targetProject.name}`,
   });
 };
 </script>
