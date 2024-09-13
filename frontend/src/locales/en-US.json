@@ -491,7 +491,7 @@
       "phone-tips": "Be sure to include the country code",
       "country-code": "Country Code",
       "password": "Password",
-      "password-hint": "Minimum eight characters, at least contains one letter and one number.",
+      "password-hint": "Password should follow restriction setting",
       "password-confirm": "Password Confirm",
       "password-confirm-placeholder": "Confirm new password",
       "password-mismatch": "New password mismatch",
@@ -570,15 +570,15 @@
       "view-by-roles": "View by roles",
       "add-member": "Add member",
       "add-user": "Add user",
-      "aad-sync": {
+      "entra-sync": {
         "self": "Sync from Entra ID (Azure AD)",
         "description": "Sync users and groups from Entra ID (formerly Azure AD) to your Bytebase instance.",
         "endpoint": "Endpoint",
-        "endpoint-tip": "Provide the URL to the Azure as tenant URL, it will sync users and groups via webhook.",
-        "token": "Token",
-        "token-tip": "Entra ID sync token. Please keep it in secret.",
+        "endpoint-tip": "Paste this to the \"Tenant URL\" field in Entra. Entra will sync users and groups to Bytebase via this endpoint.",
+        "secret-token": "Secret Token",
+        "secret-token-tip": "Paste this to the \"Secret Token\" field in Entra.",
         "reset-token": "Reset token",
-        "reset-token-warning": "You need to update the Azure application provisioning config."
+        "reset-token-warning": "You need to update the Entra application provisioning config."
       },
       "update-user": "Update user",
       "workspace-role-at-least-one": "At least one workspace role is required",
@@ -676,8 +676,8 @@
           "need-all-user-2fa-enabled": "Requires all users to enable 2FA first. There are still {count} users who have not enabled 2FA: {users}"
         },
         "disallow-password-signin": {
-          "enable": "Disallow signin with email&password",
-          "description": "Users cannot sign in with email&password, only SSO is allowed.",
+          "enable": "Disallow signin with email & password",
+          "description": "Users cannot sign in with email & password, only SSO is allowed.",
           "require-sso-setup": "A functional SSO must be created first, or users won't be able to log in."
         },
         "network": "Network",
@@ -715,6 +715,16 @@
             "self": "Members restriction",
             "description": "Restrict sign-in to users with email addresses from the specified domains."
           }
+        },
+        "password-restriction": {
+          "self": "Password Restriction",
+          "min-length": "Minimum length for password should no less than {min} characters",
+          "require-number": "The password must contain at least one number",
+          "require-letter": "The password must contain at least one letter, regardless of upper case or lower case",
+          "require-uppercase-letter": "The password must contain at least one upper case letter",
+          "require-special-character": "The password must contain at least one special character",
+          "require-reset-password-for-first-login": "Require users reset their password after the 1st time login",
+          "password-rotation": "Require users reset their password every {day} days"
         },
         "config-updated": "Configuration is updated.",
         "ai-assistant": {
@@ -1016,6 +1026,7 @@
       "verb-type-target-by-people": "{verb} {type} {target}",
       "verb-type-target-by-system-bot": "{type} {target} {verb}",
       "changed-x-link": "changed {name}. {link}",
+      "failed-to-backup": "Failed to backup data: {error}",
       "prior-back-table": "Data backup to database {database} and tables {tables}",
       "prior-back-table-for-line": "Data backup to database {database} and table {tables} for DML in line {line}"
     },
@@ -2104,6 +2115,13 @@
         "enforce-issue-title": {
           "self": "Enforce issue title",
           "description": "Enforce issue title to be non-empty and created by user instead of auto generated."
+        },
+        "default-backup-behavior": {
+          "self": "Default backup behavior",
+          "description": "The default backup behavior when creating data changing issues.",
+          "default_backup_behavior_no_backup": "Disable backup",
+          "default_backup_behavior_backup_on_error_stop": "Enable backup, but stop the task on error",
+          "default_backup_behavior_backup_on_error_skip": "Enable backup, skip backup error on failure"
         }
       }
     },
@@ -2845,8 +2863,8 @@
         "desc": "Once disabled, users cannot self-service signup and can only be invited by the workspace admin."
       },
       "bb-feature-disallow-password-signin": {
-        "title": "Disallow signin with email&password",
-        "desc": "Users cannot sign in with email&password, only SSO is allowed."
+        "title": "Disallow signin with email & password",
+        "desc": "Users cannot sign in with email & password, only SSO is allowed."
       },
       "bb-feature-schema-template": {
         "title": "Schema Template",

@@ -1,14 +1,12 @@
+import { useLocalStorage } from "@vueuse/core";
 import axios from "axios";
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
 import { restartAppRoot } from "@/AppRootContext";
 import { authServiceClient } from "@/grpcweb";
 import { unknownUser } from "@/types";
-import type {
-  LoginRequest,
-  LoginResponse,
-  User,
-} from "@/types/proto/v1/auth_service";
+import type { LoginRequest, User } from "@/types/proto/v1/auth_service";
+import { LoginResponse } from "@/types/proto/v1/auth_service";
 import { UserType } from "@/types/proto/v1/auth_service";
 import { getIntCookie } from "@/utils";
 import { useUserStore } from ".";
@@ -32,15 +30,38 @@ export const useAuthStore = defineStore("auth_v1", () => {
     return getIntCookie("user");
   };
 
-  const login = async (request: Partial<LoginRequest>) => {
-    const {
-      data: { mfaTempToken },
-    } = await axios.post<LoginResponse>("/v1/auth/login", request);
-    if (mfaTempToken) {
-      return mfaTempToken;
+  const requireResetPassword = computed(() => {
+    if (!currentUserId.value) {
+      return false;
+    }
+    return useLocalStorage<boolean>(
+      `${currentUserId.value}.require_reset_password`,
+      false
+    ).value;
+  });
+
+  const setRequireResetPassword = (requireResetPassword: boolean) => {
+    if (currentUserId.value) {
+      const needResetPasswordCache = useLocalStorage<boolean>(
+        `${currentUserId.value}.require_reset_password`,
+        false
+      );
+      needResetPasswordCache.value = requireResetPassword;
+    }
+  };
+
+  const login = async (
+    request: Partial<LoginRequest>
+  ): Promise<LoginResponse> => {
+    const { data } = await axios.post<LoginResponse>("/v1/auth/login", request);
+    if (data.mfaTempToken) {
+      return data;
     }
 
     await restoreUser();
+    setRequireResetPassword(data.requireResetPassword);
+
+    return data;
   };
 
   const signup = async (request: Partial<User>) => {
@@ -99,6 +120,8 @@ export const useAuthStore = defineStore("auth_v1", () => {
     logout,
     restoreUser,
     refreshUserIfNeeded,
+    requireResetPassword,
+    setRequireResetPassword,
   };
 });
 

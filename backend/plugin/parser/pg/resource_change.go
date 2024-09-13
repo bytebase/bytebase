@@ -12,6 +12,7 @@ import (
 
 func init() {
 	base.RegisterExtractChangedResourcesFunc(storepb.Engine_POSTGRES, extractChangedResources)
+	base.RegisterExtractChangedResourcesFunc(storepb.Engine_COCKROACHDB, extractChangedResources)
 }
 
 func extractChangedResources(database string, schema string, dbSchema *model.DBSchema, asts any, statement string) (*base.ChangeSummary, error) {

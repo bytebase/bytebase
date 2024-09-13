@@ -11,20 +11,20 @@ import (
 )
 
 // Dump dumps the database.
-func (driver *Driver) Dump(ctx context.Context, out io.Writer) (string, error) {
+func (driver *Driver) Dump(ctx context.Context, out io.Writer) error {
 	txn, err := driver.db.BeginTx(ctx, &sql.TxOptions{})
 	if err != nil {
-		return "", err
+		return err
 	}
 	defer txn.Rollback()
 
 	schemas, err := getSchemas(txn)
 	if err != nil {
-		return "", err
+		return err
 	}
 
 	if len(schemas) == 0 {
-		return "", nil
+		return err
 	}
 
 	var quotedSchemas []string
@@ -32,13 +32,11 @@ func (driver *Driver) Dump(ctx context.Context, out io.Writer) (string, error) {
 		quotedSchemas = append(quotedSchemas, fmt.Sprintf("'%s'", schema))
 	}
 	if err := dumpTxn(ctx, txn, quotedSchemas, out); err != nil {
-		return "", err
+		return err
 	}
 
-	if err := txn.Commit(); err != nil {
-		return "", err
-	}
-	return "", nil
+	err = txn.Commit()
+	return err
 }
 
 func dumpTxn(ctx context.Context, txn *sql.Tx, schemas []string, out io.Writer) error {

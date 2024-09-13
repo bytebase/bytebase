@@ -77,6 +77,7 @@ var whitelistSettings = []api.SettingName{
 	api.SettingMaskingAlgorithm,
 	api.SettingSQLResultSizeLimit,
 	api.SettingSCIM,
+	api.SettingPasswordRestriction,
 }
 
 var preservedMaskingAlgorithmIDMatcher = regexp.MustCompile("^[0]{8}-[0]{4}-[0]{4}-[0]{4}-[0]{9}[0-9a-fA-F]{3}$")
@@ -121,9 +122,7 @@ func (s *SettingService) GetSetting(ctx context.Context, request *v1pb.GetSettin
 		return nil, status.Errorf(codes.InvalidArgument, "setting is not available")
 	}
 
-	setting, err := s.store.GetSettingV2(ctx, &store.FindSettingMessage{
-		Name: &apiSettingName,
-	})
+	setting, err := s.store.GetSettingV2(ctx, apiSettingName)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get setting: %v", err)
 	}
@@ -156,10 +155,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 		return nil, status.Errorf(codes.InvalidArgument, "feature %s is unavailable in current mode", settingName)
 	}
 	apiSettingName := api.SettingName(settingName)
-
-	existedSetting, err := s.store.GetSettingV2(ctx, &store.FindSettingMessage{
-		Name: &apiSettingName,
-	})
+	existedSetting, err := s.store.GetSettingV2(ctx, apiSettingName)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to find setting %s with error: %v", settingName, err)
 	}
@@ -339,9 +335,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 		apiValue := request.Setting.Value.GetSmtpMailDeliverySettingValue()
 		// We will fill the password read from the store if it is not set.
 		if apiValue.Password == nil {
-			oldStoreSetting, err := s.store.GetSettingV2(ctx, &store.FindSettingMessage{
-				Name: &apiSettingName,
-			})
+			oldStoreSetting, err := s.store.GetSettingV2(ctx, apiSettingName)
 			if err != nil {
 				return nil, status.Errorf(codes.Internal, "failed to get setting %q: %v", apiSettingName, err)
 			}
@@ -625,6 +619,19 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 			return nil, status.Errorf(codes.Internal, "failed to marshal SCIM setting with error: %v", err)
 		}
 		storeSettingValue = string(bytes)
+	case api.SettingPasswordRestriction:
+		passwordSetting := new(storepb.PasswordRestrictionSetting)
+		if err := convertV1PbToStorePb(request.Setting.Value.GetPasswordRestrictionSetting(), passwordSetting); err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", apiSettingName, err)
+		}
+		if passwordSetting.MinLength < 8 {
+			return nil, status.Errorf(codes.InvalidArgument, "invalid password minimum length, should no less than 8")
+		}
+		bytes, err := protojson.Marshal(passwordSetting)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to marshal setting for %s with error: %v", apiSettingName, err)
+		}
+		storeSettingValue = string(bytes)
 	default:
 		storeSettingValue = request.Setting.Value.GetStringValue()
 	}
@@ -882,6 +889,19 @@ func (s *SettingService) convertToSettingMessage(ctx context.Context, setting *s
 				},
 			},
 		}, nil
+	case api.SettingPasswordRestriction:
+		v1Value := new(v1pb.PasswordRestrictionSetting)
+		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), v1Value); err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", setting.Name, err)
+		}
+		return &v1pb.Setting{
+			Name: settingName,
+			Value: &v1pb.Value{
+				Value: &v1pb.Value_PasswordRestrictionSetting{
+					PasswordRestrictionSetting: v1Value,
+				},
+			},
+		}, nil
 	default:
 		return &v1pb.Setting{
 			Name: settingName,
@@ -895,12 +915,9 @@ func (s *SettingService) convertToSettingMessage(ctx context.Context, setting *s
 }
 
 func (s *SettingService) validateSchemaTemplate(ctx context.Context, schemaTemplateSetting *v1pb.SchemaTemplateSetting) error {
-	settingName := api.SettingSchemaTemplate
-	oldStoreSetting, err := s.store.GetSettingV2(ctx, &store.FindSettingMessage{
-		Name: &settingName,
-	})
+	oldStoreSetting, err := s.store.GetSettingV2(ctx, api.SettingSchemaTemplate)
 	if err != nil {
-		return status.Errorf(codes.Internal, "failed to get setting %q: %v", settingName, err)
+		return status.Errorf(codes.Internal, "failed to get setting %q: %v", api.SettingSchemaTemplate, err)
 	}
 	settingValue := "{}"
 	if oldStoreSetting != nil {
@@ -909,7 +926,7 @@ func (s *SettingService) validateSchemaTemplate(ctx context.Context, schemaTempl
 
 	value := new(storepb.SchemaTemplateSetting)
 	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(settingValue), value); err != nil {
-		return status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", settingName, err)
+		return status.Errorf(codes.Internal, "failed to unmarshal setting value for %v with error: %v", api.SettingSchemaTemplate, err)
 	}
 	v1Value, err := convertSchemaTemplateSetting(ctx, value)
 	if err != nil {
@@ -1018,19 +1035,12 @@ func (s *SettingService) sendTestEmail(ctx context.Context, value *v1pb.SMTPMail
 	}
 
 	consoleRedirectURL := "www.bytebase.com"
-	workspaceProfileSettingName := api.SettingWorkspaceProfile
-	setting, err := s.store.GetSettingV2(ctx, &store.FindSettingMessage{Name: &workspaceProfileSettingName})
+	setting, err := s.store.GetWorkspaceGeneralSetting(ctx)
 	if err != nil {
 		return status.Errorf(codes.Internal, "failed to get workspace profile setting: %v", err)
 	}
-	if setting != nil {
-		settingValue := new(storepb.WorkspaceProfileSetting)
-		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(setting.Value), settingValue); err != nil {
-			return status.Errorf(codes.Internal, "failed to unmarshal setting value: %v", err)
-		}
-		if settingValue.ExternalUrl != "" {
-			consoleRedirectURL = settingValue.ExternalUrl
-		}
+	if setting.ExternalUrl != "" {
+		consoleRedirectURL = setting.ExternalUrl
 	}
 
 	email := mail.NewEmailMsg()

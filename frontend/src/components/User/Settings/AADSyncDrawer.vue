@@ -2,14 +2,14 @@
   <Drawer :show="show" @close="$emit('close')">
     <DrawerContent
       class="w-[50rem] max-w-[90vw] relative"
-      :title="$t('settings.members.aad-sync.self')"
+      :title="$t('settings.members.entra-sync.self')"
     >
       <template #default>
         <div class="flex flex-col gap-y-4">
           <div class="text-sm text-control-light">
-            {{ $t(`settings.members.aad-sync.description`) }}
+            {{ $t(`settings.members.entra-sync.description`) }}
             <LearnMoreLink
-              url="https://www.bytebase.com/docs/administration/directiry-sync?source=console"
+              url="https://www.bytebase.com/docs/administration/scim/overview?source=console"
               class="ml-1"
             />
           </div>
@@ -33,10 +33,10 @@
           <div class="space-y-2">
             <div class="gap-x-2">
               <div class="font-medium">
-                {{ $t(`settings.members.aad-sync.endpoint`) }}
+                {{ $t(`settings.members.entra-sync.endpoint`) }}
               </div>
               <div class="text-sm text-gray-400">
-                {{ $t(`settings.members.aad-sync.endpoint-tip`) }}
+                {{ $t(`settings.members.entra-sync.endpoint-tip`) }}
               </div>
             </div>
             <div class="flex space-x-2">
@@ -60,10 +60,10 @@
           <div class="space-y-2">
             <div class="gap-x-2">
               <div class="font-medium">
-                {{ $t(`settings.members.aad-sync.token`) }}
+                {{ $t(`settings.members.entra-sync.secret-token`) }}
               </div>
               <div class="text-sm text-gray-400">
-                {{ $t("settings.members.aad-sync.token-tip") }}
+                {{ $t("settings.members.entra-sync.secret-token-tip") }}
               </div>
             </div>
             <div class="flex space-x-2">
@@ -93,7 +93,7 @@
               <template #icon>
                 <ReplyIcon class="w-4" />
               </template>
-              {{ $t("settings.members.aad-sync.reset-token") }}
+              {{ $t("settings.members.entra-sync.reset-token") }}
             </NButton>
           </div>
         </div>
@@ -197,7 +197,7 @@ const resetToken = () => {
     title: t("common.warning"),
     style: "z-index: 100000",
     content: () => {
-      return t("settings.members.aad-sync.reset-token-warning");
+      return t("settings.members.entra-sync.reset-token-warning");
     },
     negativeText: t("common.cancel"),
     positiveText: t("common.continue-anyway"),

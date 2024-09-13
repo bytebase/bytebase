@@ -64,10 +64,7 @@ func (p *remoteLicenseProvider) FetchLicense(ctx context.Context) (string, error
 		return "", nil
 	}
 
-	settingName := api.SettingPluginAgent
-	setting, err := p.store.GetSettingV2(ctx, &store.FindSettingMessage{
-		Name: &settingName,
-	})
+	setting, err := p.store.GetSettingV2(ctx, api.SettingPluginAgent)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to find the hub token from settings")
 	}

@@ -11,7 +11,6 @@ import (
 	"github.com/sourcegraph/go-lsp"
 	"github.com/sourcegraph/jsonrpc2"
 
-	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
@@ -78,24 +77,19 @@ func (h *Handler) handleFileSystemRequest(ctx context.Context, conn *jsonrpc2.Co
 			if err := fs.DidChange(&params); err != nil {
 				return err
 			}
-			if h.profile.Mode == common.ReleaseModeDev {
-				uri := params.TextDocument.URI
-				content, found := fs.get(uri)
-				if !found {
-					return &os.PathError{Op: "Open", Path: string(uri), Err: os.ErrNotExist}
-				}
-				diagnostics, err := base.Diagnose(ctx, base.DiagnoseContext{}, h.getEngineType(ctx), string(content))
-				if err != nil {
-					slog.Warn("dianose error", log.BBError(err))
-				}
-				if err := conn.Notify(ctx, string(LSPMethodPublishDiagnostics), &lsp.PublishDiagnosticsParams{
-					URI:         uri,
-					Diagnostics: diagnostics,
-				}); err != nil {
-					return err
-				}
+			uri := params.TextDocument.URI
+			content, found := fs.get(uri)
+			if !found {
+				return &os.PathError{Op: "Open", Path: string(uri), Err: os.ErrNotExist}
 			}
-			return nil
+			diagnostics, err := base.Diagnose(ctx, base.DiagnoseContext{}, h.getEngineType(ctx), string(content))
+			if err != nil {
+				slog.Warn("dianose error", log.BBError(err))
+			}
+			return conn.Notify(ctx, string(LSPMethodPublishDiagnostics), &lsp.PublishDiagnosticsParams{
+				URI:         uri,
+				Diagnostics: diagnostics,
+			})
 		})
 	case LSPMethodTextDocumentDidClose:
 		var params lsp.DidCloseTextDocumentParams

@@ -491,7 +491,7 @@
       "phone-tips": "Asegúrese de incluir el código del país.",
       "country-code": "Códigos de país y de área",
       "password": "Contraseña",
-      "password-hint": "Mínimo ocho caracteres, al menos contiene una letra y un número.",
+      "password-hint": "La contraseña debe seguir la configuración de restricción",
       "password-confirm": "Confirmar contraseña",
       "password-confirm-placeholder": "Confirmar nueva contraseña",
       "password-mismatch": "Nueva contraseña no coincide",
@@ -570,15 +570,15 @@
       "view-by-roles": "Ver por roles",
       "add-member": "Agregar miembro",
       "add-user": "Agregar usuario",
-      "aad-sync": {
+      "entra-sync": {
         "self": "Sincronización desde Entra ID (Azure AD)",
         "description": "Sincronice usuarios y grupos de Entra ID (anteriormente Azure AD) con su instancia de Bytebase.",
         "endpoint": "Punto final",
-        "endpoint-tip": "Proporcione la URL a Azure como URL de inquilino y sincronizará usuarios y grupos a través de webhook.",
-        "token": "Simbólico",
-        "token-tip": "Token de sincronización de ID de entrada. Manténgalo en secreto.",
+        "endpoint-tip": "Pegue esto en el campo \"Tenant URL\" en Entra. Entra sincronizará usuarios y grupos con Bytebase a través de este punto de conexión.",
+        "secret-token": "Secret Token",
+        "secret-token-tip": "Pegue esto en el campo \"Secret Token\" en Entra.",
         "reset-token": "Restablecer token",
-        "reset-token-warning": "Debe actualizar la configuración de aprovisionamiento de aplicaciones de Azure."
+        "reset-token-warning": "Debe actualizar la configuración de aprovisionamiento de aplicaciones de Entra."
       },
       "update-user": "Actualizar usuario",
       "workspace-role-at-least-one": "El espacio de trabajo debe tener al menos un administrador",
@@ -715,6 +715,16 @@
             "self": "Restricción de miembros",
             "description": "Restrinja el inicio de sesión a usuarios con direcciones de correo electrónico de los dominios especificados."
           }
+        },
+        "password-restriction": {
+          "self": "Restricción de contraseña",
+          "min-length": "La longitud mínima de la contraseña no debe ser inferior a {min} caracteres",
+          "require-number": "Requiere que la contraseña contenga al menos un número",
+          "require-letter": "Requiere que la contraseña contenga al menos una letra, independientemente de si es mayúscula o minúscula.",
+          "require-uppercase-letter": "Requiere que la contraseña contenga al menos una letra mayúscula",
+          "require-special-character": "Requiere que la contraseña contenga al menos un carácter especial",
+          "require-reset-password-for-first-login": "Requerir que los usuarios restablezcan su contraseña después del primer inicio de sesión",
+          "password-rotation": "Requerir que los usuarios restablezcan su contraseña cada {day} días"
         },
         "config-updated": "La configuración se ha actualizado.",
         "ai-assistant": {
@@ -1016,6 +1026,7 @@
       "verb-type-target-by-people": "{verb} {type} {target}",
       "verb-type-target-by-system-bot": "{type} {target} {verb}",
       "changed-x-link": "cambiado {name}. \n{link}",
+      "failed-to-backup": "No se pudo realizar la copia de seguridad de los datos: {error}",
       "prior-back-table": "Copia de seguridad de datos en la base de datos {database} y tablas {tables}",
       "prior-back-table-for-line": "Copia de seguridad de datos en la base de datos {database} y la tabla {tables} para DML en la línea {line}"
     },
@@ -2104,6 +2115,13 @@
         "enforce-issue-title": {
           "self": "Hacer cumplir el título del problema",
           "description": "Exigir que el título del problema no esté vacío y que lo cree el usuario en lugar de generarse automáticamente."
+        },
+        "default-backup-behavior": {
+          "self": "Comportamiento de copia de seguridad predeterminado",
+          "description": "El comportamiento de copia de seguridad predeterminado al crear problemas de cambio de datos.",
+          "default_backup_behavior_no_backup": "Deshabilitar copia de seguridad",
+          "default_backup_behavior_backup_on_error_stop": "Habilitar copia de seguridad, pero detener la tarea en caso de error",
+          "default_backup_behavior_backup_on_error_skip": "Habilitar copia de seguridad, omitir error de copia de seguridad en caso de falla"
         }
       }
     },

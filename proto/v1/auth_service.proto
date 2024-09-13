@@ -212,6 +212,8 @@ message LoginResponse {
   string token = 1;
 
   optional string mfa_temp_token = 2;
+
+  bool require_reset_password = 3;
 }
 
 message LogoutRequest {}

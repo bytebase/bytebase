@@ -181,8 +181,8 @@ func (driver *Driver) Execute(ctx context.Context, statement string, _ db.Execut
 }
 
 // Dump dumps the database.
-func (*Driver) Dump(_ context.Context, _ io.Writer) (string, error) {
-	return "", nil
+func (*Driver) Dump(_ context.Context, _ io.Writer) error {
+	return nil
 }
 
 // getBasicMongoDBConnectionURI returns the basic MongoDB connection URI, the following fields are excluded:

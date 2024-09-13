@@ -4,32 +4,31 @@
     class="inline-flex items-center"
     :class="[color === 'normal' ? 'normal-link' : 'light-link']"
     :href="url"
-    target="__BLANK"
+    :target="external ? '__BLANK' : ''"
   >
     {{ $t("common.learn-more") }}
-    <ExternalLinkIcon class="w-4 h-4 ml-1" />
+    <ExternalLinkIcon v-if="external" class="w-4 h-4 ml-1" />
   </a>
 </template>
 
 <script lang="ts" setup>
 import { ExternalLinkIcon } from "lucide-vue-next";
-import { computed, type PropType } from "vue";
+import { computed } from "vue";
 import { useActuatorV1Store } from "@/store";
 
-const props = defineProps({
-  url: {
-    type: String,
-    required: true,
-  },
-  color: {
-    type: String as PropType<"normal" | "light">,
-    default: "normal",
-  },
-  hideWhenEmbedded: {
-    type: Boolean,
-    default: false,
-  },
-});
+const props = withDefaults(
+  defineProps<{
+    url: string;
+    external?: boolean;
+    color?: "normal" | "light";
+    hideWhenEmbedded?: boolean;
+  }>(),
+  {
+    color: "normal",
+    hideWhenEmbedded: false,
+    external: true,
+  }
+);
 
 const hide = computed(() => {
   if (!props.hideWhenEmbedded) return false;

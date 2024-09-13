@@ -53,14 +53,14 @@
           <SearchBox v-model:value="state.activeUserFilterText" />
 
           <NButton
-            v-if="isDev() && allowGetSCIMSetting"
+            v-if="allowGetSCIMSetting"
             class="capitalize"
             @click="state.showAadSyncDrawer = true"
           >
             <template #icon>
               <SettingsIcon class="h-5 w-5" />
             </template>
-            {{ $t(`settings.members.aad-sync.self`) }}
+            {{ $t(`settings.members.entra-sync.self`) }}
           </NButton>
 
           <NPopover
@@ -178,11 +178,7 @@ import { UserType, type User } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
 import type { Group } from "@/types/proto/v1/group";
 import { WorkspaceProfileSetting } from "@/types/proto/v1/setting_service";
-import {
-  hasWorkspacePermissionV2,
-  hasWorkspaceLevelRole,
-  isDev,
-} from "@/utils";
+import { hasWorkspacePermissionV2, hasWorkspaceLevelRole } from "@/utils";
 
 const tabList = ["USERS", "GROUPS"] as const;
 type MemberTab = (typeof tabList)[number];

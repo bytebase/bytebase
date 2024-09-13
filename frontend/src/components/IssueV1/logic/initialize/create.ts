@@ -13,11 +13,15 @@ import {
   useProjectV1Store,
   useSheetV1Store,
 } from "@/store";
-import { projectNamePrefix } from "@/store/modules/v1/common";
+import {
+  databaseNamePrefix,
+  projectNamePrefix,
+} from "@/store/modules/v1/common";
 import { useDatabaseV1List } from "@/store/modules/v1/databaseList";
 import type { ComposedProject } from "@/types";
 import {
   emptyIssue,
+  isValidDatabaseName,
   isValidProjectName,
   TaskTypeListWithStatement,
 } from "@/types";
@@ -31,6 +35,7 @@ import {
   Plan_Spec,
   Plan_Step,
 } from "@/types/proto/v1/plan_service";
+import { Project_DefaultBackupBehavior } from "@/types/proto/v1/project_service";
 import type { Stage } from "@/types/proto/v1/rollout_service";
 import { Rollout, Task_Type } from "@/types/proto/v1/rollout_service";
 import { SheetPayload } from "@/types/proto/v1/sheet_service";
@@ -44,6 +49,7 @@ import {
   sheetNameOfTaskV1,
   wrapRefAsPromise,
 } from "@/utils";
+import { getArchiveDatabase } from "../../components/Sidebar/PreBackupSection/common";
 import { nextUID } from "../base";
 import { databaseEngineForSpec, sheetNameForSpec } from "../plan";
 import { getLocalSheetByName } from "../sheet";
@@ -316,6 +322,20 @@ export const buildSpecForTarget = async (
     if (version) {
       spec.changeDatabaseConfig.schemaVersion = version;
     }
+    const database = useDatabaseV1Store().getDatabaseByName(target);
+    if (isValidDatabaseName(database.name)) {
+      // Set default backup behavior for the database.
+      if (
+        [
+          Project_DefaultBackupBehavior.DEFAULT_BACKUP_BEHAVIOR_BACKUP_ON_ERROR_SKIP,
+          Project_DefaultBackupBehavior.DEFAULT_BACKUP_BEHAVIOR_BACKUP_ON_ERROR_STOP,
+        ].includes(project.defaultBackupBehavior)
+      ) {
+        spec.changeDatabaseConfig.preUpdateBackupDetail = {
+          database: `${database.instance}/${databaseNamePrefix}${getArchiveDatabase(database.instanceResource.engine)}`,
+        };
+      }
+    }
   }
   if (template === "bb.issue.database.schema.update") {
     const type =
@@ -446,20 +466,6 @@ const maybeSetInitialDatabaseConfigForSpec = async (
 const extractInitialSQLFromQuery = (
   query: Record<string, string>
 ): InitialSQL => {
-  const sqlMapJSON = query.sqlMap;
-  if (sqlMapJSON && sqlMapJSON.startsWith("{") && sqlMapJSON.endsWith("}")) {
-    try {
-      const sqlMap = JSON.parse(sqlMapJSON) as Record<string, string>;
-      const keys = Object.keys(sqlMap);
-      if (keys.every((key) => typeof sqlMap[key] === "string")) {
-        return {
-          sqlMap,
-        };
-      }
-    } catch {
-      // Nothing
-    }
-  }
   const sql = query.sql;
   if (sql && typeof sql === "string") {
     return {
@@ -472,6 +478,21 @@ const extractInitialSQLFromQuery = (
     return {
       sql,
     };
+  }
+  const sqlMapStorageKey = query.sqlMapStorageKey;
+  if (sqlMapStorageKey && typeof sqlMapStorageKey === "string") {
+    const sqlMapJSON = localStorage.getItem(sqlMapStorageKey) ?? "{}";
+    try {
+      const sqlMap = JSON.parse(sqlMapJSON) as Record<string, string>;
+      const keys = Object.keys(sqlMap);
+      if (keys.every((key) => typeof sqlMap[key] === "string")) {
+        return {
+          sqlMap,
+        };
+      }
+    } catch {
+      // Nothing
+    }
   }
   return {};
 };

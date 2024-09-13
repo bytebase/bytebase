@@ -84,17 +84,15 @@ var (
 )
 
 // Dump dumps the database.
-func (driver *Driver) Dump(ctx context.Context, out io.Writer) (string, error) {
+func (driver *Driver) Dump(ctx context.Context, out io.Writer) error {
 	// mysqldump -u root --databases dbName --no-data --routines --events --triggers --compact
 
 	// We must use the same MySQL connection to lock and unlock tables.
 	conn, err := driver.db.Conn(ctx)
 	if err != nil {
-		return "", err
+		return err
 	}
 	defer conn.Close()
-
-	var payloadBytes []byte
 
 	readOnly := driver.getReadOnly()
 	options := sql.TxOptions{ReadOnly: readOnly}
@@ -104,20 +102,17 @@ func (driver *Driver) Dump(ctx context.Context, out io.Writer) (string, error) {
 	// ref: https://dev.mysql.com/doc/refman/8.0/en/lock-tables.html, section "Interaction of Table Locking and Transactions".
 	txn, err := conn.BeginTx(ctx, &options)
 	if err != nil {
-		return "", err
+		return err
 	}
 	defer txn.Rollback()
 
 	slog.Debug("begin to dump database", slog.String("database", driver.databaseName))
 	if err := dumpTxn(txn, driver.dbType, driver.databaseName, out); err != nil {
-		return "", err
+		return err
 	}
 
-	if err := txn.Commit(); err != nil {
-		return "", err
-	}
-
-	return string(payloadBytes), nil
+	err = txn.Commit()
+	return err
 }
 
 func dumpTxn(txn *sql.Tx, dbType storepb.Engine, database string, out io.Writer) error {

@@ -76,6 +76,18 @@
           }}
         </p>
       </div>
+      <div class="w-full flex flex-row items-center gap-3">
+        <span class="font-normal">{{
+          $t("project.settings.issue-related.default-backup-behavior.self")
+        }}</span>
+        <div class="w-80">
+          <NSelect
+            v-model:value="state.defaultBackupBehavior"
+            :options="defaultBackupBehaviorOptions"
+            :consistent-menu-width="false"
+          />
+        </div>
+      </div>
     </div>
     <div class="w-full flex justify-end gap-x-3">
       <NButton
@@ -91,23 +103,22 @@
 
 <script setup lang="tsx">
 import { isEqual, cloneDeep } from "lodash-es";
-import { NButton, NDynamicTags, NTag, NColorPicker, NCheckbox } from "naive-ui";
+import {
+  NButton,
+  NDynamicTags,
+  NSelect,
+  NTag,
+  NColorPicker,
+  NCheckbox,
+} from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { pushNotification, useProjectV1Store } from "@/store";
 import type { ComposedProject } from "@/types";
-import { Label } from "@/types/proto/v1/project_service";
-
-const getInitialLocalState = (): LocalState => {
-  const project = props.project;
-  return {
-    issueLabels: [...cloneDeep(project.issueLabels)],
-    forceIssueLabels: project.forceIssueLabels,
-    allowModifyStatement: project.allowModifyStatement,
-    autoResolveIssue: project.autoResolveIssue,
-    enforceIssueTitle: project.enforceIssueTitle,
-  };
-};
+import {
+  Label,
+  Project_DefaultBackupBehavior,
+} from "@/types/proto/v1/project_service";
 
 interface LocalState {
   issueLabels: Label[];
@@ -115,7 +126,31 @@ interface LocalState {
   allowModifyStatement: boolean;
   autoResolveIssue: boolean;
   enforceIssueTitle: boolean;
+  defaultBackupBehavior: Project_DefaultBackupBehavior;
 }
+
+const getInitialLocalState = (): LocalState => {
+  const project = props.project;
+  let defaultBackupBehavior =
+    Project_DefaultBackupBehavior.DEFAULT_BACKUP_BEHAVIOR_NO_BACKUP;
+  if (
+    [
+      Project_DefaultBackupBehavior.DEFAULT_BACKUP_BEHAVIOR_NO_BACKUP,
+      Project_DefaultBackupBehavior.DEFAULT_BACKUP_BEHAVIOR_BACKUP_ON_ERROR_STOP,
+      Project_DefaultBackupBehavior.DEFAULT_BACKUP_BEHAVIOR_BACKUP_ON_ERROR_SKIP,
+    ].includes(project.defaultBackupBehavior)
+  ) {
+    defaultBackupBehavior = project.defaultBackupBehavior;
+  }
+  return {
+    issueLabels: [...cloneDeep(project.issueLabels)],
+    forceIssueLabels: project.forceIssueLabels,
+    allowModifyStatement: project.allowModifyStatement,
+    autoResolveIssue: project.autoResolveIssue,
+    enforceIssueTitle: project.enforceIssueTitle,
+    defaultBackupBehavior: defaultBackupBehavior,
+  };
+};
 
 const defaultColor = "#4f46e5";
 
@@ -124,14 +159,26 @@ const props = defineProps<{
   allowEdit: boolean;
 }>();
 
-const state = reactive<LocalState>(getInitialLocalState());
-
 const { t } = useI18n();
 const projectStore = useProjectV1Store();
+const state = reactive<LocalState>(getInitialLocalState());
 
 const labelValues = computed(() => state.issueLabels.map((l) => l.value));
 
 const valueChanged = computed(() => !isEqual(state, getInitialLocalState()));
+
+const defaultBackupBehaviorOptions = computed(() => {
+  return [
+    Project_DefaultBackupBehavior.DEFAULT_BACKUP_BEHAVIOR_NO_BACKUP,
+    Project_DefaultBackupBehavior.DEFAULT_BACKUP_BEHAVIOR_BACKUP_ON_ERROR_STOP,
+    Project_DefaultBackupBehavior.DEFAULT_BACKUP_BEHAVIOR_BACKUP_ON_ERROR_SKIP,
+  ].map((value) => ({
+    label: t(
+      `project.settings.issue-related.default-backup-behavior.${value.toLocaleLowerCase()}`
+    ),
+    value,
+  }));
+});
 
 const onLabelsUpdate = (values: string[]) => {
   if (state.issueLabels.length + 1 !== values.length) {
@@ -217,6 +264,9 @@ const getUpdateMask = () => {
   }
   if (state.enforceIssueTitle !== props.project.enforceIssueTitle) {
     mask.push("enforce_issue_title");
+  }
+  if (state.defaultBackupBehavior !== props.project.defaultBackupBehavior) {
+    mask.push("default_backup_behavior");
   }
   return mask;
 };

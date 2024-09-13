@@ -1,5 +1,5 @@
 <template>
-  <div class="py-6 lg:flex">
+  <div id="security" class="py-6 lg:flex">
     <div class="text-left lg:w-1/4">
       <div class="flex items-center space-x-2">
         <h1 class="text-2xl font-bold">
@@ -29,68 +29,13 @@
           {{ $t("settings.general.workspace.watermark.description") }}
         </div>
       </div>
-      <div v-if="!isSaaSMode" class="mb-7 mt-4 lg:mt-0">
-        <div class="flex items-center gap-x-2">
-          <Switch
-            :value="disallowSignupEnabled"
-            :text="true"
-            :disabled="!allowEdit"
-            @update:value="handleDisallowSignupToggle"
-          />
-          <span class="textlabel">
-            {{ $t("settings.general.workspace.disallow-signup.enable") }}
-          </span>
-        </div>
-        <div class="mb-3 text-sm text-gray-400">
-          {{ $t("settings.general.workspace.disallow-signup.description") }}
-        </div>
-      </div>
-      <div class="mb-7 mt-4 lg:mt-0">
-        <div class="flex items-center gap-x-2">
-          <Switch
-            :value="disallowPasswordSignin"
-            :text="true"
-            :disabled="!allowEdit"
-            @update:value="handleDisallowPasswordSigninToggle"
-          />
-          <span class="textlabel">
-            {{
-              $t("settings.general.workspace.disallow-password-signin.enable")
-            }}
-          </span>
-        </div>
-        <div class="mb-3 text-sm text-gray-400">
-          {{
-            $t(
-              "settings.general.workspace.disallow-password-signin.description"
-            )
-          }}
-        </div>
-      </div>
-      <div class="mb-7 mt-4 lg:mt-0">
-        <div class="flex items-center gap-x-2">
-          <Switch
-            :value="require2FAEnabled"
-            :text="true"
-            :disabled="!allowEdit"
-            @update:value="handleRequire2FAToggle"
-          />
-          <span class="textlabel">
-            {{ $t("settings.general.workspace.require-2fa.enable") }}
-          </span>
-        </div>
-        <div class="mb-3 text-sm text-gray-400">
-          {{ $t("settings.general.workspace.require-2fa.description") }}
-        </div>
-      </div>
       <RestrictIssueCreationConfigure
         class="mb-7 mt-4 lg:mt-0"
         :resource="''"
         :allow-edit="allowEdit"
       />
-      <SignInFrequencySetting :allow-edit="allowEdit" />
-      <MaximumRoleExpirationSetting :allow-edit="allowEdit" />
       <MaximumSQLResultSizeSetting :allow-edit="allowEdit" />
+      <MaximumRoleExpirationSetting :allow-edit="allowEdit" />
       <DomainRestrictionSetting :allow-edit="allowEdit" />
     </div>
   </div>
@@ -103,25 +48,17 @@
 </template>
 
 <script lang="ts" setup>
-import { storeToRefs } from "pinia";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { Switch } from "@/components/v2";
-import {
-  featureToRef,
-  pushNotification,
-  useActuatorV1Store,
-  useIdentityProviderStore,
-} from "@/store";
+import { featureToRef, pushNotification } from "@/store";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
 import type { FeatureType } from "@/types";
-import { State } from "@/types/proto/v1/common";
 import { FeatureBadge, FeatureModal } from "../FeatureGuard";
 import DomainRestrictionSetting from "./DomainRestrictionSetting.vue";
 import MaximumRoleExpirationSetting from "./MaximumRoleExpirationSetting.vue";
 import MaximumSQLResultSizeSetting from "./MaximumSQLResultSizeSetting.vue";
 import RestrictIssueCreationConfigure from "./RestrictIssueCreationConfigure.vue";
-import SignInFrequencySetting from "./SignInFrequencySetting.vue";
 
 interface LocalState {
   featureNameForModal?: FeatureType;
@@ -134,15 +71,7 @@ defineProps<{
 const state = reactive<LocalState>({});
 const { t } = useI18n();
 const settingV1Store = useSettingV1Store();
-const actuatorStore = useActuatorV1Store();
-
-const { isSaaSMode } = storeToRefs(actuatorStore);
 const hasWatermarkFeature = featureToRef("bb.feature.branding");
-const has2FAFeature = featureToRef("bb.feature.2fa");
-const hasDisallowSignupFeature = featureToRef("bb.feature.disallow-signup");
-const hasDisallowPasswordSigninFeature = featureToRef(
-  "bb.feature.disallow-password-signin"
-);
 
 const watermarkEnabled = computed((): boolean => {
   return (
@@ -150,90 +79,6 @@ const watermarkEnabled = computed((): boolean => {
       ?.stringValue === "1"
   );
 });
-const disallowSignupEnabled = computed((): boolean => {
-  return settingV1Store.workspaceProfileSetting?.disallowSignup ?? false;
-});
-const require2FAEnabled = computed((): boolean => {
-  return settingV1Store.workspaceProfileSetting?.require2fa ?? false;
-});
-const disallowPasswordSignin = computed((): boolean => {
-  return (
-    settingV1Store.workspaceProfileSetting?.disallowPasswordSignin ?? false
-  );
-});
-
-const handleDisallowSignupToggle = async (on: boolean) => {
-  if (!hasDisallowSignupFeature.value && on) {
-    state.featureNameForModal = "bb.feature.disallow-signup";
-    return;
-  }
-  await settingV1Store.updateWorkspaceProfile({
-    payload: {
-      disallowSignup: on,
-    },
-    updateMask: ["value.workspace_profile_setting_value.disallow_signup"],
-  });
-  pushNotification({
-    module: "bytebase",
-    style: "SUCCESS",
-    title: t("settings.general.workspace.config-updated"),
-  });
-};
-
-const handleRequire2FAToggle = async (on: boolean) => {
-  if (!has2FAFeature.value && on) {
-    state.featureNameForModal = "bb.feature.2fa";
-    return;
-  }
-
-  await settingV1Store.updateWorkspaceProfile({
-    payload: {
-      require2fa: on,
-    },
-    updateMask: ["value.workspace_profile_setting_value.require_2fa"],
-  });
-  pushNotification({
-    module: "bytebase",
-    style: "SUCCESS",
-    title: t("settings.general.workspace.config-updated"),
-  });
-};
-
-const handleDisallowPasswordSigninToggle = async (on: boolean) => {
-  if (!hasDisallowPasswordSigninFeature.value && on) {
-    state.featureNameForModal = "bb.feature.disallow-password-signin";
-    return;
-  }
-
-  if (on) {
-    const idpStore = useIdentityProviderStore();
-    const idpList = await idpStore.fetchIdentityProviderList();
-    if (idpList.filter((idp) => idp.state === State.ACTIVE).length === 0) {
-      pushNotification({
-        module: "bytebase",
-        style: "CRITICAL",
-        title: t(
-          "settings.general.workspace.disallow-password-signin.require-sso-setup"
-        ),
-      });
-      return;
-    }
-  }
-
-  await settingV1Store.updateWorkspaceProfile({
-    payload: {
-      disallowPasswordSignin: on,
-    },
-    updateMask: [
-      "value.workspace_profile_setting_value.disallow_password_signin",
-    ],
-  });
-  pushNotification({
-    module: "bytebase",
-    style: "SUCCESS",
-    title: t("settings.general.workspace.config-updated"),
-  });
-};
 
 const handleWatermarkToggle = async (on: boolean) => {
   if (!hasWatermarkFeature.value && on) {

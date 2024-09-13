@@ -10861,6 +10861,8 @@ components:
                     type: string
                 mfaTempToken:
                     type: string
+                requireResetPassword:
+                    type: boolean
         LogoutRequest:
             type: object
             properties: {}
@@ -11089,6 +11091,32 @@ components:
                         - $ref: '#/components/schemas/SourceInfo'
                     description: The source info derived from input that generated the parsed `expr`.
             description: An expression together with source information as returned by the parser.
+        PasswordRestrictionSetting:
+            type: object
+            properties:
+                minLength:
+                    type: integer
+                    description: min_length is the minimum length for password, should no less than 8.
+                    format: int32
+                requireNumber:
+                    type: boolean
+                    description: require_number requires the password must contains at least one number.
+                requireLetter:
+                    type: boolean
+                    description: require_letter requires the password must contains at least one letter, regardless of upper case or lower case
+                requireUppercaseLetter:
+                    type: boolean
+                    description: require_uppercase_letter requires the password must contains at least one upper case letter.
+                requireSpecialCharacter:
+                    type: boolean
+                    description: require_uppercase_letter requires the password must contains at least one special character.
+                requireResetPasswordForFirstLogin:
+                    type: boolean
+                    description: require_reset_password_for_first_login requires users to reset their password after the 1st login.
+                passwordRotation:
+                    pattern: ^-?(?:0|[1-9][0-9]{0,11})(?:\.[0-9]{1,9})?s$
+                    type: string
+                    description: password_rotation requires users to reset their password after the duration.
         PatchSubscription:
             type: object
             properties:
@@ -11747,6 +11775,51 @@ components:
                 statement:
                     type: string
                     description: The query statement for the result.
+                postgresError:
+                    $ref: '#/components/schemas/QueryResult_PostgresError'
+        QueryResult_PostgresError:
+            type: object
+            properties:
+                severity:
+                    type: string
+                code:
+                    type: string
+                message:
+                    type: string
+                detail:
+                    type: string
+                hint:
+                    type: string
+                position:
+                    type: integer
+                    format: int32
+                internalPosition:
+                    type: integer
+                    format: int32
+                internalQuery:
+                    type: string
+                where:
+                    type: string
+                schemaName:
+                    type: string
+                tableName:
+                    type: string
+                columnName:
+                    type: string
+                dataTypeName:
+                    type: string
+                constraintName:
+                    type: string
+                file:
+                    type: string
+                line:
+                    type: integer
+                    format: int32
+                routine:
+                    type: string
+            description: |-
+                refer https://www.postgresql.org/docs/11/protocol-error-fields.html
+                 for field description.
         QueryRow:
             type: object
             properties:
@@ -13996,6 +14069,8 @@ components:
                     $ref: '#/components/schemas/MaximumSQLResultSizeSetting'
                 scimSetting:
                     $ref: '#/components/schemas/SCIMSetting'
+                passwordRestrictionSetting:
+                    $ref: '#/components/schemas/PasswordRestrictionSetting'
             description: The data in setting value.
         ViewConfig:
             type: object

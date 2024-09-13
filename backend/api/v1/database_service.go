@@ -2084,16 +2084,14 @@ func (s *DatabaseService) pgAdviseIndex(ctx context.Context, request *v1pb.Advis
 }
 
 func (s *DatabaseService) getOpenAISetting(ctx context.Context) (string, string, error) {
-	openaiKeyName := api.SettingPluginOpenAIKey
-	key, err := s.store.GetSettingV2(ctx, &store.FindSettingMessage{Name: &openaiKeyName})
+	key, err := s.store.GetSettingV2(ctx, api.SettingPluginOpenAIKey)
 	if err != nil {
 		return "", "", status.Errorf(codes.Internal, "Failed to get setting: %v", err)
 	}
 	if key.Value == "" {
 		return "", "", status.Errorf(codes.FailedPrecondition, "OpenAI key is not set")
 	}
-	openaiEndpointName := api.SettingPluginOpenAIEndpoint
-	endpointSetting, err := s.store.GetSettingV2(ctx, &store.FindSettingMessage{Name: &openaiEndpointName})
+	endpointSetting, err := s.store.GetSettingV2(ctx, api.SettingPluginOpenAIEndpoint)
 	if err != nil {
 		return "", "", status.Errorf(codes.Internal, "Failed to get setting: %v", err)
 	}

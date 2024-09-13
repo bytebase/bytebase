@@ -69,15 +69,12 @@ func (s *ActuatorService) DeleteCache(_ context.Context, _ *v1pb.DeleteCacheRequ
 
 // GetResourcePackage gets the theme resources.
 func (s *ActuatorService) GetResourcePackage(ctx context.Context, _ *v1pb.GetResourcePackageRequest) (*v1pb.ResourcePackage, error) {
-	settingName := api.SettingBrandingLogo
-	brandingSetting, err := s.store.GetSettingV2(ctx, &store.FindSettingMessage{
-		Name: &settingName,
-	})
+	brandingSetting, err := s.store.GetSettingV2(ctx, api.SettingBrandingLogo)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to find workspace branding: %v", err)
 	}
 	if brandingSetting == nil {
-		return nil, errors.Errorf("cannot find setting %v", settingName)
+		return nil, errors.Errorf("cannot find setting %v", api.SettingBrandingLogo)
 	}
 
 	return &v1pb.ResourcePackage{
@@ -147,8 +144,7 @@ func (s *ActuatorService) getUsedFeatures(ctx context.Context) ([]api.FeatureTyp
 	}
 
 	// setting
-	settingName := api.SettingBrandingLogo
-	brandingLogo, err := s.store.GetSettingV2(ctx, &store.FindSettingMessage{Name: &settingName})
+	brandingLogo, err := s.store.GetSettingV2(ctx, api.SettingBrandingLogo)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get branding logo setting")
 	}
@@ -156,8 +152,7 @@ func (s *ActuatorService) getUsedFeatures(ctx context.Context) ([]api.FeatureTyp
 		features = append(features, api.FeatureBranding)
 	}
 
-	settingName = api.SettingWatermark
-	watermark, err := s.store.GetSettingV2(ctx, &store.FindSettingMessage{Name: &settingName})
+	watermark, err := s.store.GetSettingV2(ctx, api.SettingWatermark)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get watermark setting")
 	}
@@ -165,8 +160,7 @@ func (s *ActuatorService) getUsedFeatures(ctx context.Context) ([]api.FeatureTyp
 		features = append(features, api.FeatureWatermark)
 	}
 
-	settingName = api.SettingPluginOpenAIKey
-	openAIKey, err := s.store.GetSettingV2(ctx, &store.FindSettingMessage{Name: &settingName})
+	openAIKey, err := s.store.GetSettingV2(ctx, api.SettingPluginOpenAIKey)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get openai key setting")
 	}

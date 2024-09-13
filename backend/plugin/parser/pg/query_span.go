@@ -13,6 +13,7 @@ func init() {
 	base.RegisterGetQuerySpan(storepb.Engine_POSTGRES, GetQuerySpan)
 	base.RegisterGetQuerySpan(storepb.Engine_REDSHIFT, GetQuerySpan)
 	base.RegisterGetQuerySpan(storepb.Engine_RISINGWAVE, GetQuerySpan)
+	base.RegisterGetQuerySpan(storepb.Engine_COCKROACHDB, GetQuerySpan)
 }
 
 // GetQuerySpan returns the query span for the given statement.

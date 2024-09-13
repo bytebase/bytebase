@@ -3,6 +3,7 @@ package v1
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net/mail"
 	"regexp"
 	"slices"
@@ -11,7 +12,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/dlclark/regexp2"
 	"github.com/pquerna/otp/totp"
 	"golang.org/x/crypto/bcrypt"
 	"google.golang.org/grpc"
@@ -19,9 +19,11 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/iam"
 	"github.com/bytebase/bytebase/backend/component/state"
@@ -43,7 +45,6 @@ type CreateUserFunc func(ctx context.Context, user *store.UserMessage, firstEndU
 
 var (
 	invalidUserOrPasswordError = status.Errorf(codes.Unauthenticated, "The email or password is not valid.")
-	passwordValidRegex         = regexp2.MustCompile(`^(?=.*\d)(?=.*[a-zA-Z])[\w~@#$%^&*+=|{}:;!.?\"()\[\]-]{8,}$`, 0)
 )
 
 // AuthService implements the auth service.
@@ -188,9 +189,10 @@ func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 	}
 
 	password := request.User.Password
-	if isMatch, _ := passwordValidRegex.MatchString(password); !isMatch {
-		return nil, status.Errorf(codes.InvalidArgument, "password at least contains one letter and one number, no less than 8 characters")
+	if err := s.validatePassword(ctx, password); err != nil {
+		return nil, err
 	}
+
 	if request.User.UserType == v1pb.UserType_SERVICE_ACCOUNT {
 		pwd, err := common.RandomString(20)
 		if err != nil {
@@ -256,6 +258,29 @@ func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 		userResponse.ServiceKey = password
 	}
 	return userResponse, nil
+}
+
+func (s *AuthService) validatePassword(ctx context.Context, password string) error {
+	passwordRestriction, err := s.store.GetPasswordRestrictionSetting(ctx)
+	if err != nil {
+		return status.Errorf(codes.Internal, "failed to get password restriction with error: %v", err)
+	}
+	if len(password) < int(passwordRestriction.MinLength) {
+		return status.Errorf(codes.InvalidArgument, "password length should no less than %v characters", passwordRestriction.MinLength)
+	}
+	if passwordRestriction.RequireNumber && !regexp.MustCompile("[0-9]+").MatchString(password) {
+		return status.Errorf(codes.InvalidArgument, "password must contains at least 1 number")
+	}
+	if passwordRestriction.RequireLetter && !regexp.MustCompile("[a-zA-Z]+").MatchString(password) {
+		return status.Errorf(codes.InvalidArgument, "password must contains at least 1 lower case letter")
+	}
+	if passwordRestriction.RequireUppercaseLetter && !regexp.MustCompile("[A-Z]+").MatchString(password) {
+		return status.Errorf(codes.InvalidArgument, "password must contains at least 1 upper case letter")
+	}
+	if passwordRestriction.RequireSpecialCharacter && !regexp.MustCompile(`[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]+`).MatchString(password) {
+		return status.Errorf(codes.InvalidArgument, "password must contains at least 1 special character")
+	}
+	return nil
 }
 
 // UpdateUser updates a user.
@@ -327,8 +352,8 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 			if user.Type != api.EndUser {
 				return nil, status.Errorf(codes.InvalidArgument, "password can be mutated for end users only")
 			}
-			if isMatch, _ := passwordValidRegex.MatchString(request.User.Password); !isMatch {
-				return nil, status.Errorf(codes.InvalidArgument, "password at least contains one letter and one number, no less than 8 characters")
+			if err := s.validatePassword(ctx, request.User.Password); err != nil {
+				return nil, err
 			}
 			passwordPatch = &request.User.Password
 		case "service_key":
@@ -356,7 +381,14 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 					return nil, status.Errorf(codes.Internal, "failed to find workspace setting, error: %v", err)
 				}
 				if setting.Require_2Fa {
-					return nil, status.Errorf(codes.InvalidArgument, "2FA is required and cannot be disabled")
+					isWorkspaceAdmin, err := s.isUserWorkspaceAdmin(ctx, callerUser)
+					if err != nil {
+						return nil, status.Errorf(codes.Internal, "failed to check user roles, error: %v", err)
+					}
+					// Allow workspace admin to disable 2FA even if it is required.
+					if !isWorkspaceAdmin {
+						return nil, status.Errorf(codes.InvalidArgument, "2FA is required and cannot be disabled")
+					}
 				}
 				patch.MFAConfig = &storepb.MFAConfig{}
 			}
@@ -370,6 +402,11 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 		}
 	}
 	if passwordPatch != nil {
+		if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(*passwordPatch)); err == nil {
+			// return bad request if the passwords match
+			return nil, status.Errorf(codes.InvalidArgument, "password cannot be the same")
+		}
+
 		passwordHash, err := bcrypt.GenerateFromPassword([]byte((*passwordPatch)), bcrypt.DefaultCost)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to generate password hash, error: %v", err)
@@ -577,6 +614,44 @@ func convertToPrincipalType(userType v1pb.UserType) (api.PrincipalType, error) {
 	return t, nil
 }
 
+func (s *AuthService) needResetPassword(ctx context.Context, user *store.UserMessage) bool {
+	// Reset password restriction only works for end user with email & password login.
+	if user.Type != api.EndUser {
+		return false
+	}
+
+	passwordRestriction, err := s.store.GetPasswordRestrictionSetting(ctx)
+	if err != nil {
+		slog.Error("failed to get password restriction", log.BBError(err))
+		return false
+	}
+
+	if user.Profile.LastLoginTime == nil {
+		if !passwordRestriction.RequireResetPasswordForFirstLogin {
+			return false
+		}
+		count, err := s.store.CountUsers(ctx, api.EndUser)
+		if err != nil {
+			slog.Error("failed to count end users", log.BBError(err))
+			return false
+		}
+		// The 1st workspace admin login don't need to reset the password
+		return count > 1
+	}
+
+	if passwordRestriction.PasswordRotation != nil && passwordRestriction.PasswordRotation.GetNanos() > 0 {
+		lastChangePasswordTime := user.CreatedTime
+		if user.Profile.LastChangePasswordTime != nil {
+			lastChangePasswordTime = user.Profile.LastChangePasswordTime.AsTime()
+		}
+		if lastChangePasswordTime.Add(time.Duration(passwordRestriction.PasswordRotation.GetNanos())).Before(time.Now()) {
+			return true
+		}
+	}
+
+	return false
+}
+
 // Login is the auth login method including SSO.
 func (s *AuthService) Login(ctx context.Context, request *v1pb.LoginRequest) (*v1pb.LoginResponse, error) {
 	var loginUser *store.UserMessage
@@ -586,15 +661,21 @@ func (s *AuthService) Login(ctx context.Context, request *v1pb.LoginRequest) (*v
 	}
 	loginViaIDP := request.GetIdpName() != ""
 
+	response := &v1pb.LoginResponse{}
 	if !mfaSecondLogin {
 		var err error
 		if loginViaIDP {
 			loginUser, err = s.getOrCreateUserWithIDP(ctx, request)
+			if err != nil {
+				return nil, err
+			}
 		} else {
 			loginUser, err = s.getAndVerifyUser(ctx, request)
-		}
-		if err != nil {
-			return nil, err
+			if err != nil {
+				return nil, err
+			}
+			// Reset password restriction only works for end user with email & password login.
+			response.RequireResetPassword = s.needResetPassword(ctx, loginUser)
 		}
 	} else {
 		userID, err := auth.GetUserIDFromMFATempToken(*request.MfaTempToken, s.profile.Mode, s.secret)
@@ -623,9 +704,6 @@ func (s *AuthService) Login(ctx context.Context, request *v1pb.LoginRequest) (*v
 		loginUser = user
 	}
 
-	if loginUser == nil {
-		return nil, invalidUserOrPasswordError
-	}
 	if loginUser.MemberDeleted {
 		return nil, status.Errorf(codes.Unauthenticated, "user has been deactivated by administrators")
 	}
@@ -638,7 +716,7 @@ func (s *AuthService) Login(ctx context.Context, request *v1pb.LoginRequest) (*v
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to check user roles, error: %v", err)
 	}
-	if !isWorkspaceAdmin && loginUser.Type == api.EndUser {
+	if !isWorkspaceAdmin && loginUser.Type == api.EndUser && !mfaSecondLogin {
 		// Disallow password signin for end users.
 		if setting.DisallowPasswordSignin && !loginViaIDP {
 			return nil, status.Errorf(codes.PermissionDenied, "password signin is disallowed")
@@ -665,19 +743,18 @@ func (s *AuthService) Login(ctx context.Context, request *v1pb.LoginRequest) (*v
 		}, nil
 	}
 
-	var accessToken string
 	if loginUser.Type == api.EndUser {
 		token, err := auth.GenerateAccessToken(loginUser.Name, loginUser.ID, s.profile.Mode, s.secret, s.tokenDuration)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to generate API access token")
 		}
-		accessToken = token
+		response.Token = token
 	} else if loginUser.Type == api.ServiceAccount {
 		token, err := auth.GenerateAPIToken(loginUser.Name, loginUser.ID, s.profile.Mode, s.secret)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to generate API access token")
 		}
-		accessToken = token
+		response.Token = token
 	} else {
 		return nil, status.Errorf(codes.Unauthenticated, "user type %s cannot login", loginUser.Type)
 	}
@@ -693,12 +770,21 @@ func (s *AuthService) Login(ctx context.Context, request *v1pb.LoginRequest) (*v
 			origin = v
 		}
 		if err := grpc.SetHeader(ctx, metadata.New(map[string]string{
-			auth.GatewayMetadataAccessTokenKey:   accessToken,
+			auth.GatewayMetadataAccessTokenKey:   response.Token,
 			auth.GatewayMetadataUserIDKey:        fmt.Sprintf("%d", loginUser.ID),
 			auth.GatewayMetadataRequestOriginKey: origin,
 		})); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to set grpc header, error: %v", err)
 		}
+	}
+
+	if _, err := s.store.UpdateUser(ctx, loginUser, &store.UpdateUserMessage{
+		Profile: &storepb.UserProfile{
+			LastLoginTime:          timestamppb.Now(),
+			LastChangePasswordTime: loginUser.Profile.GetLastChangePasswordTime(),
+		},
+	}, api.SystemBotID); err != nil {
+		slog.Error("failed to update user profile", log.BBError(err), slog.String("user", loginUser.Email))
 	}
 
 	s.metricReporter.Report(ctx, &metric.Metric{
@@ -708,9 +794,7 @@ func (s *AuthService) Login(ctx context.Context, request *v1pb.LoginRequest) (*v
 			"email": loginUser.Email,
 		},
 	})
-	return &v1pb.LoginResponse{
-		Token: accessToken,
-	}, nil
+	return response, nil
 }
 
 // Logout is the auth logout method.
