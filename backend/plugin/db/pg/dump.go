@@ -21,19 +21,19 @@ import (
 )
 
 // Dump dumps the database.
-func (driver *Driver) Dump(ctx context.Context, out io.Writer) (string, error) {
+func (driver *Driver) Dump(ctx context.Context, out io.Writer) error {
 	// We don't support pg_dump for CloudSQL, because pg_dump not support IAM & instance name for authentication.
 	// To dump schema for CloudSQL, you need to run the cloud-sql-proxy with IAM to get the host and port.
 	// Learn more: https://linear.app/bytebase/issue/BYT-5401/support-iam-authentication-for-gcp-and-aws
 	if driver.config.AuthenticationType == storepb.DataSourceOptions_GOOGLE_CLOUD_SQL_IAM {
-		return "", nil
+		return nil
 	}
 	// pg_dump -d dbName --schema-only+
 
 	// Find all dumpable databases
 	databases, err := driver.getDatabases(ctx)
 	if err != nil {
-		return "", errors.Wrap(err, "failed to get databases")
+		return errors.Wrap(err, "failed to get databases")
 	}
 
 	var dumpableDbNames []string
@@ -46,7 +46,7 @@ func (driver *Driver) Dump(ctx context.Context, out io.Writer) (string, error) {
 			}
 		}
 		if !exist {
-			return "", errors.Errorf("database %s not found", driver.databaseName)
+			return errors.Errorf("database %s not found", driver.databaseName)
 		}
 		dumpableDbNames = []string{driver.databaseName}
 	} else {
@@ -60,11 +60,11 @@ func (driver *Driver) Dump(ctx context.Context, out io.Writer) (string, error) {
 
 	for _, dbName := range dumpableDbNames {
 		if err := driver.dumpOneDatabaseWithPgDump(ctx, dbName, out); err != nil {
-			return "", err
+			return err
 		}
 	}
 
-	return "", nil
+	return nil
 }
 
 func (driver *Driver) dumpOneDatabaseWithPgDump(ctx context.Context, database string, out io.Writer) error {

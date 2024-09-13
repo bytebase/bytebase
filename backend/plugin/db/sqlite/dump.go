@@ -12,15 +12,15 @@ import (
 )
 
 // Dump dumps the database.
-func (driver *Driver) Dump(ctx context.Context, out io.Writer) (string, error) {
+func (driver *Driver) Dump(ctx context.Context, out io.Writer) error {
 	if driver.databaseName == "" {
-		return "", errors.Errorf("SQLite can dump one database only at a time")
+		return errors.Errorf("SQLite can dump one database only at a time")
 	}
 
 	// Find all dumpable databases and make sure the existence of the database to be dumped.
 	databases, err := driver.getDatabases()
 	if err != nil {
-		return "", errors.Wrap(err, "failed to get databases")
+		return errors.Wrap(err, "failed to get databases")
 	}
 	exist := false
 	for _, n := range databases {
@@ -30,14 +30,10 @@ func (driver *Driver) Dump(ctx context.Context, out io.Writer) (string, error) {
 		}
 	}
 	if !exist {
-		return "", errors.Errorf("database %s not found", driver.databaseName)
+		return errors.Errorf("database %s not found", driver.databaseName)
 	}
 
-	if err := driver.dumpOneDatabase(ctx, out); err != nil {
-		return "", err
-	}
-
-	return "", nil
+	return driver.dumpOneDatabase(ctx, out)
 }
 
 type sqliteSchema struct {
