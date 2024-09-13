@@ -168,10 +168,6 @@ const initializeProjects = async () => {
 
 const handleProjectSwitched = async () => {
   const { project } = editorStore;
-  if (!project) {
-    editorStore.databaseList = [];
-    return;
-  }
   if (project) {
     await projectStore.getOrFetchProjectByName(project, true /* silent */);
   } else {
@@ -186,6 +182,10 @@ const prepareDatabases = async () => {
     return;
   }
   const { project } = editorStore;
+  if (!project) {
+    editorStore.databaseList = [];
+    return;
+  }
   // `databaseList` is the database list in the project.
   const { databaseList, ready } = useDatabaseV1List(project);
   await wrapRefAsPromise(ready, true);
