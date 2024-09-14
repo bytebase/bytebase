@@ -82,7 +82,7 @@ const (
 	// FeatureIssueAdvancedSearch supports search issue with advanced filter.
 	FeatureIssueAdvancedSearch FeatureType = "bb.feature.issue-advanced-search"
 
-	// FeatureIssueProjectSetting supports some basic project settings for issue.
+	// FeatureIssueProjectSetting supports some advanced project settings for issue.
 	FeatureIssueProjectSetting FeatureType = "bb.feature.issue-project-setting"
 
 	// FeatureAnnouncement enable announcement banner setting.
