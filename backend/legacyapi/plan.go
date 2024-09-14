@@ -79,9 +79,6 @@ const (
 	// FeatureCustomRole enables customizing roles.
 	FeatureCustomRole FeatureType = "bb.feature.custom-role"
 
-	// FeatureIssueAdvancedSearch supports search issue with advanced filter.
-	FeatureIssueAdvancedSearch FeatureType = "bb.feature.issue-advanced-search"
-
 	// FeatureIssueProjectSetting supports some advanced project settings for issue.
 	FeatureIssueProjectSetting FeatureType = "bb.feature.issue-project-setting"
 
@@ -129,6 +126,8 @@ const (
 	FeatureDatabaseGrouping FeatureType = "bb.feature.database-grouping"
 	// FeatureSchemaTemplate allows user to create and use the schema template.
 	FeatureSchemaTemplate FeatureType = "bb.feature.schema-template"
+	// FeatureIssueAdvancedSearch supports search issue with advanced filter.
+	FeatureIssueAdvancedSearch FeatureType = "bb.feature.issue-advanced-search"
 
 	// Database management.
 
@@ -211,8 +210,6 @@ func (e FeatureType) Name() string {
 		return "Custom role"
 	case FeatureIssueAdvancedSearch:
 		return "Advanced search"
-	case FeatureIssueProjectSetting:
-		return "Issue project setting"
 	case FeatureAnnouncement:
 		return "Announcement"
 	// Branding
@@ -237,6 +234,8 @@ func (e FeatureType) Name() string {
 		return "Database grouping"
 	case FeatureSchemaTemplate:
 		return "Schema template"
+	case FeatureIssueProjectSetting:
+		return "Issue project setting"
 	// Database management
 	case FeatureReadReplicaConnection:
 		return "Read replica connection"
@@ -305,20 +304,20 @@ var FeatureMatrix = map[FeatureType][3]bool{
 	FeatureAuditLog:               {false, false, true},
 	FeatureCustomRole:             {false, false, true},
 	FeatureIssueAdvancedSearch:    {false, true, true},
-	FeatureIssueProjectSetting:    {false, true, true},
 	FeatureAnnouncement:           {false, false, true},
 	// Branding
 	FeatureBranding: {false, false, true},
 	// Change Workflow
-	FeatureDBAWorkflow:      {false, false, true},
-	FeatureMultiTenancy:     {false, false, true},
-	FeatureOnlineMigration:  {false, true, true},
-	FeatureSchemaDrift:      {false, false, true},
-	FeatureSQLReview:        {true, true, true},
-	FeatureTaskScheduleTime: {false, true, true},
-	FeatureEncryptedSecrets: {false, true, true},
-	FeatureDatabaseGrouping: {false, false, true},
-	FeatureSchemaTemplate:   {false, false, true},
+	FeatureDBAWorkflow:         {false, false, true},
+	FeatureMultiTenancy:        {false, false, true},
+	FeatureOnlineMigration:     {false, true, true},
+	FeatureSchemaDrift:         {false, false, true},
+	FeatureSQLReview:           {true, true, true},
+	FeatureTaskScheduleTime:    {false, true, true},
+	FeatureEncryptedSecrets:    {false, true, true},
+	FeatureDatabaseGrouping:    {false, false, true},
+	FeatureSchemaTemplate:      {false, false, true},
+	FeatureIssueProjectSetting: {false, true, true},
 	// Database management
 	FeatureReadReplicaConnection:      {false, false, true},
 	FeatureInstanceSSHConnection:      {false, false, true},

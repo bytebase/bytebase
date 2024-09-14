@@ -186,7 +186,7 @@ func (s *ProjectService) UpdateProject(ctx context.Context, request *v1pb.Update
 		if slices.Contains(issueProjectSettingFeatureRelatedPaths, path) {
 			// Check if the issue project setting feature is enabled.
 			if err := s.licenseService.IsFeatureEnabled(api.FeatureIssueProjectSetting); err != nil {
-				return nil, status.Error(codes.InvalidArgument, err.Error())
+				return nil, status.Error(codes.PermissionDenied, err.Error())
 			}
 		}
 
