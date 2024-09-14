@@ -51,8 +51,8 @@
             </div>
             <EmailInput
               v-else
-              :readonly="disallowEditUser"
               v-model:value="state.user.email"
+              :readonly="disallowEditUser"
               :domain="workspaceDomain"
             />
           </NFormItem>
