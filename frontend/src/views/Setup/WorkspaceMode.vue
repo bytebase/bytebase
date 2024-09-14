@@ -4,7 +4,7 @@
       <BytebaseLogo />
 
       <h2 class="text-2xl leading-9 font-medium text-accent">
-        {{ $t("setup.workspace-mode.choose") }}
+        {{ $t("settings.general.workspace.database-change-mode.self") }}
       </h2>
     </div>
 
@@ -13,26 +13,50 @@
         <NRadio :value="DatabaseChangeMode.PIPELINE">
           <div class="flex flex-col gap-1">
             <div class="font-medium">
-              {{ $t("setup.workspace-mode.issue-mode.self") }}
+              {{
+                $t(
+                  "settings.general.workspace.database-change-mode.issue-mode.self"
+                )
+              }}
             </div>
             <div>
-              {{ $t("setup.workspace-mode.issue-mode.description") }}
+              {{
+                $t(
+                  "settings.general.workspace.database-change-mode.issue-mode.description"
+                )
+              }}
             </div>
           </div>
         </NRadio>
         <NRadio :value="DatabaseChangeMode.EDITOR">
           <div class="flex flex-col gap-1">
             <div class="font-medium">
-              {{ $t("setup.workspace-mode.sql-editor-mode.self") }}
+              {{
+                $t(
+                  "settings.general.workspace.database-change-mode.sql-editor-mode.self"
+                )
+              }}
             </div>
             <div>
-              {{ $t("setup.workspace-mode.sql-editor-mode.description") }}
+              {{
+                $t(
+                  "settings.general.workspace.database-change-mode.sql-editor-mode.description"
+                )
+              }}
             </div>
           </div>
         </NRadio>
 
         <div class="text-control-placeholder text-sm">
-          {{ $t("setup.workspace-mode.can-be-changed-later") }}
+          {{
+            $t(
+              "settings.general.workspace.database-change-mode.can-be-changed-later"
+            )
+          }}
+          <LearnMoreLink
+            url="https://www.bytebase.com/docs/administration/mode?source=console"
+            class="ml-1 text-sm"
+          />
         </div>
       </NSpace>
     </NRadioGroup>
@@ -58,6 +82,7 @@ import { NButton, NRadio, NRadioGroup, NSpace } from "naive-ui";
 import { reactive } from "vue";
 import { useRouter } from "vue-router";
 import BytebaseLogo from "@/components/BytebaseLogo.vue";
+import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import { SQL_EDITOR_HOME_MODULE } from "@/router/sqlEditor";
 import { useSettingV1Store } from "@/store";
 import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
