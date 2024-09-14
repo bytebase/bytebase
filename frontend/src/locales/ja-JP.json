@@ -2506,7 +2506,12 @@
     "view-detail": "詳細を見る",
     "generate-sql": "SQLの生成",
     "current-editing-statement-is-not-empty": "現在編集中のステートメントは空ではありません。",
-    "run-anyway": "とにかく走ってください"
+    "run-anyway": "とにかく走ってください",
+    "no-project": {
+      "not-member-of-any-projects": "あなたはどのプロジェクトのメンバーでもありません。",
+      "go-to-create": "作成に行く",
+      "contact-the-admin-to-grant-access": "管理者に連絡してアクセスを許可してください。"
+    }
   },
   "schema-editor": {
     "self": "スキーマエディタ",

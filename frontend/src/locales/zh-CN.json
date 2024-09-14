@@ -2506,7 +2506,12 @@
     "view-detail": "查看详情",
     "generate-sql": "生成 SQL",
     "current-editing-statement-is-not-empty": "当前编辑中的语句不为空。",
-    "run-anyway": "仍要运行"
+    "run-anyway": "仍要运行",
+    "no-project": {
+      "not-member-of-any-projects": "你不是任何项目的成员。",
+      "go-to-create": "去创建",
+      "contact-the-admin-to-grant-access": "联系管理员以授予访问权限。"
+    }
   },
   "schema-editor": {
     "self": "Schema 编辑器",

@@ -106,8 +106,8 @@ import {
   instanceV1Name,
   hasWorkspacePermissionV2,
   hasWorkspaceLevelProjectPermissionInAnyProject,
-  databaseV1Url,
   wrapRefAsPromise,
+  autoDatabaseRoute,
 } from "@/utils";
 
 interface LocalState {
@@ -119,7 +119,6 @@ const props = defineProps<{
   instanceId: string;
   embedded?: boolean;
   hideArchiveRestore?: boolean;
-  onClickDatabase?: (db: ComposedDatabase, event: MouseEvent) => void;
 }>();
 
 defineOptions({
@@ -220,11 +219,7 @@ const createDatabase = () => {
 useTitle(instance.value.title);
 
 const handleDatabaseClick = (event: MouseEvent, database: ComposedDatabase) => {
-  if (props.onClickDatabase) {
-    props.onClickDatabase(database, event);
-    return;
-  }
-  const url = databaseV1Url(database);
+  const url = router.resolve(autoDatabaseRoute(router, database)).fullPath;
   if (event.ctrlKey || event.metaKey) {
     window.open(url, "_blank");
   } else {

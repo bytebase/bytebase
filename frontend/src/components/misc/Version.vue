@@ -15,7 +15,7 @@
       </div>
       <router-link
         v-if="subscriptionViewMode === 'LINK'"
-        :to="{ name: SETTING_ROUTE_WORKSPACE_SUBSCRIPTION }"
+        :to="autoSubscriptionRoute($router)"
         exact-active-class=""
       >
         {{ $t(readableCurrentPlan) }}
@@ -67,14 +67,13 @@ import { Volume2Icon } from "lucide-vue-next";
 import { NTooltip, type TooltipProps } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { computed, reactive } from "vue";
-import { SETTING_ROUTE_WORKSPACE_SUBSCRIPTION } from "@/router/dashboard/workspaceSetting";
 import {
   useActuatorV1Store,
   useAppFeature,
   useSubscriptionV1Store,
 } from "@/store";
 import { PlanType } from "@/types/proto/v1/subscription_service";
-import { hasWorkspacePermissionV2 } from "@/utils";
+import { autoSubscriptionRoute, hasWorkspacePermissionV2 } from "@/utils";
 import ReleaseRemindModal from "../ReleaseRemindModal.vue";
 import TrialModal from "../TrialModal.vue";
 

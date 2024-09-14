@@ -47,7 +47,7 @@ export type Mode =
 
 const props = withDefaults(
   defineProps<{
-    mode: Mode;
+    mode?: Mode;
     databaseList: ComposedDatabase[];
     bordered?: boolean;
     loading?: boolean;
