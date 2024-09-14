@@ -42,7 +42,7 @@ import { useSidebarItems } from "./common";
 
 const route = useRoute();
 const router = useRouter();
-const { itemList } = useSidebarItems();
+const { itemList } = useSidebarItems(/* ignoreModeCheck */ true);
 
 watch(
   () => route.name,

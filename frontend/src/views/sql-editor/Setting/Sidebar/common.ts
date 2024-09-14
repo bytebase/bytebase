@@ -7,7 +7,7 @@ import {
   UserCircleIcon,
   UsersIcon,
 } from "lucide-vue-next";
-import { computed, h } from "vue";
+import { computed, h, unref, type MaybeRef } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, type RouteRecordRaw } from "vue-router";
 import type { SidebarItem } from "@/components/CommonSidebar.vue";
@@ -33,7 +33,7 @@ import { useAppFeature, usePermissionStore } from "@/store";
 import type { Permission } from "@/types";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
-export const useSidebarItems = () => {
+export const useSidebarItems = (ignoreModeCheck?: MaybeRef<boolean>) => {
   const route = useRoute();
   const permissionStore = usePermissionStore();
   const { t } = useI18n();
@@ -110,7 +110,7 @@ export const useSidebarItems = () => {
   };
 
   const itemList = computed((): SidebarItem[] => {
-    if (disableSetting.value) {
+    if (disableSetting.value && !unref(ignoreModeCheck)) {
       // Hide SQL Editor settings entirely if
       // - embedded in iframe
       // - or workspace mode is Issue mode
