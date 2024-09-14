@@ -19,7 +19,7 @@ export type FeatureType =
   | "bb.feature.disallow-password-signin"
   | "bb.feature.watermark"
   | "bb.feature.audit-log"
-  | "bb.feature.issue-project-setting"
+  | "bb.feature.issue-advanced-search"
   | "bb.feature.announcement"
   | "bb.feature.external-secret-manager"
   // Branding
@@ -34,7 +34,7 @@ export type FeatureType =
   | "bb.feature.encrypted-secrets"
   | "bb.feature.database-grouping"
   | "bb.feature.schema-template"
-  | "bb.feature.issue-advanced-search"
+  | "bb.feature.issue-project-setting"
   // Database management
   | "bb.feature.read-replica-connection"
   | "bb.feature.custom-instance-scan-interval"
