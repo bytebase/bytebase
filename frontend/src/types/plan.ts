@@ -34,6 +34,7 @@ export type FeatureType =
   | "bb.feature.encrypted-secrets"
   | "bb.feature.database-grouping"
   | "bb.feature.schema-template"
+  | "bb.feature.issue-project-setting"
   // Database management
   | "bb.feature.read-replica-connection"
   | "bb.feature.custom-instance-scan-interval"

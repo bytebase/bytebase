@@ -1,6 +1,6 @@
 <template>
   <div class="flex flex-col gap-y-2">
-    <div class="textlabel flex items-center space-x-1">
+    <div class="textlabel flex items-center space-x-2">
       <label>
         {{ $t("environment.access-control.title") }}
       </label>
