@@ -85,6 +85,7 @@
               ref="userPasswordRef"
               v-model:password="state.user.password"
               v-model:password-confirm="state.passwordConfirm"
+              :password-restriction="passwordRestrictionSetting"
             />
           </template>
         </NForm>
@@ -222,6 +223,10 @@ const state = reactive<LocalState>({
   roles: initRoles(),
   passwordConfirm: "",
 });
+
+const passwordRestrictionSetting = computed(
+  () => settingV1Store.passwordRestriction
+);
 
 const workspaceDomain = computed(() => {
   if (!settingV1Store.workspaceProfileSetting?.enforceIdentityDomain) {

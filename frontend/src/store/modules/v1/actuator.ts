@@ -16,6 +16,7 @@ import type {
   ActuatorInfo,
   ResourcePackage,
 } from "@/types/proto/v1/actuator_service";
+import { PasswordRestrictionSetting } from "@/types/proto/v1/setting_service";
 import { semverCompare } from "@/utils";
 
 const EXTERNAL_URL_PLACEHOLDER =
@@ -93,6 +94,15 @@ export const useActuatorV1Store = defineStore("actuator_v1", {
           state.releaseInfo.latest?.tag_name ?? "",
           state.serverInfo?.version ?? ""
         )
+      );
+    },
+    passwordRestriction: (state) => {
+      return (
+        state.serverInfo?.passwordRestriction ??
+        PasswordRestrictionSetting.fromPartial({
+          minLength: 8,
+          requireLetter: true,
+        })
       );
     },
   },

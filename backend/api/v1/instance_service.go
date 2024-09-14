@@ -1052,7 +1052,7 @@ func convertToV1DataSourceExternalSecret(externalSecret *storepb.DataSourceExter
 		return nil, nil
 	}
 	secret := new(v1pb.DataSourceExternalSecret)
-	if err := convertV1PbToStorePb(externalSecret, secret); err != nil {
+	if err := convertProtoToProto(externalSecret, secret); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to convert external secret with error: %v", err.Error())
 	}
 
@@ -1145,7 +1145,7 @@ func convertToStoreDataSourceExternalSecret(externalSecret *v1pb.DataSourceExter
 		return nil, nil
 	}
 	secret := new(storepb.DataSourceExternalSecret)
-	if err := convertV1PbToStorePb(externalSecret, secret); err != nil {
+	if err := convertProtoToProto(externalSecret, secret); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to convert external secret with error: %v", err.Error())
 	}
 	switch secret.SecretType {

@@ -15,6 +15,7 @@
             v-model:password="state.password"
             v-model:password-confirm="state.passwordConfirm"
             :show-learn-more="false"
+            :password-restriction="passwordRestrictionSetting"
           />
         </NForm>
         <NButton
@@ -63,6 +64,10 @@ const authStore = useAuthStore();
 const userPasswordRef = ref<InstanceType<typeof UserPassword>>();
 const router = useRouter();
 const settingV1Store = useSettingV1Store();
+
+const passwordRestrictionSetting = computed(
+  () => settingV1Store.passwordRestriction
+);
 
 onMounted(async () => {
   if (!authStore.requireResetPassword) {
