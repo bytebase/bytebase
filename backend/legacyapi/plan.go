@@ -79,8 +79,8 @@ const (
 	// FeatureCustomRole enables customizing roles.
 	FeatureCustomRole FeatureType = "bb.feature.custom-role"
 
-	// FeatureIssueProjectSetting supports some advanced project settings for issue.
-	FeatureIssueProjectSetting FeatureType = "bb.feature.issue-project-setting"
+	// FeatureIssueAdvancedSearch supports search issue with advanced filter.
+	FeatureIssueAdvancedSearch FeatureType = "bb.feature.issue-advanced-search"
 
 	// FeatureAnnouncement enable announcement banner setting.
 	FeatureAnnouncement FeatureType = "bb.feature.announcement"
@@ -126,8 +126,8 @@ const (
 	FeatureDatabaseGrouping FeatureType = "bb.feature.database-grouping"
 	// FeatureSchemaTemplate allows user to create and use the schema template.
 	FeatureSchemaTemplate FeatureType = "bb.feature.schema-template"
-	// FeatureIssueAdvancedSearch supports search issue with advanced filter.
-	FeatureIssueAdvancedSearch FeatureType = "bb.feature.issue-advanced-search"
+	// FeatureIssueProjectSetting supports some advanced project settings for issue.
+	FeatureIssueProjectSetting FeatureType = "bb.feature.issue-project-setting"
 
 	// Database management.
 
