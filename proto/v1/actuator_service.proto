@@ -9,6 +9,7 @@ import "google/protobuf/empty.proto";
 import "google/protobuf/field_mask.proto";
 import "google/protobuf/timestamp.proto";
 import "v1/annotation.proto";
+import "v1/setting_service.proto";
 
 option go_package = "generated-go/v1";
 
@@ -123,4 +124,6 @@ message ActuatorInfo {
 
   // disallow_password_signin is the flag to disallow user signin with email&password. (except workspace admins)
   bool disallow_password_signin = 20;
+
+  PasswordRestrictionSetting password_restriction = 21;
 }

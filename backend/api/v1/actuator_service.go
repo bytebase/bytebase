@@ -93,6 +93,15 @@ func (s *ActuatorService) getServerInfo(ctx context.Context) (*v1pb.ActuatorInfo
 		return nil, status.Errorf(codes.Internal, "failed to find workspace setting: %v", err)
 	}
 
+	passwordRestrictionSetting, err := s.store.GetPasswordRestrictionSetting(ctx)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to find password restriction setting: %v", err)
+	}
+	passwordSetting := new(v1pb.PasswordRestrictionSetting)
+	if err := convertProtoToProto(passwordRestrictionSetting, passwordSetting); err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to unmarshal password restriction setting with error: %v", err)
+	}
+
 	workspaceID, err := s.store.GetWorkspaceID(ctx)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -126,6 +135,7 @@ func (s *ActuatorService) getServerInfo(ctx context.Context) (*v1pb.ActuatorInfo
 		PreUpdateBackup:        true,
 		UnlicensedFeatures:     unlicensedFeaturesString,
 		DisallowPasswordSignin: setting.DisallowPasswordSignin,
+		PasswordRestriction:    passwordSetting,
 	}
 
 	return &serverInfo, nil

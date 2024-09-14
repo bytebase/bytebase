@@ -1,67 +1,105 @@
 <template>
-  <div v-bind="$attrs">
-    <NFormItem :label="$t('settings.profile.password')">
-      <div class="w-full space-y-1">
+  <div class="space-y-6" v-bind="$attrs">
+    <div :label="$t('settings.profile.password')">
+      <div class="flex items-center space-x-2">
+        <label class="block text-sm font-medium leading-5 text-control">
+          {{ $t("settings.profile.password") }}
+        </label>
         <span
           :class="[
-            'flex items-center gap-x-1 textinfolabel text-sm',
+            'flex items-center gap-x-1 textinfolabel !text-sm',
             passwordHint ? '!text-error' : '',
           ]"
         >
           {{ $t("settings.profile.password-hint") }}
           <NTooltip>
             <template #trigger>
-              <CircleHelpIcon class="w-4" />
+              <CircleHelpIcon class="w-3" />
             </template>
             <component :is="passwordRestrictionText" class="text-sm" />
           </NTooltip>
           <LearnMoreLink
             v-if="showLearnMore"
             :external="false"
+            class="!text-sm"
             url="/setting/general#account"
           />
         </span>
-        <NInput
-          :value="password"
-          type="password"
-          :status="passwordHint ? 'error' : undefined"
-          :input-props="{ autocomplete: 'new-password' }"
-          :placeholder="$t('common.sensitive-placeholder')"
-          @update:value="$emit('update:password', $event)"
-        />
       </div>
-    </NFormItem>
-    <NFormItem :label="$t('settings.profile.password-confirm')">
-      <div class="w-full flex flex-col justify-start items-start">
-        <NInput
-          :value="passwordConfirm"
-          type="password"
-          :status="passwordMismatch ? 'error' : undefined"
-          :input-props="{ autocomplete: 'new-password' }"
-          :placeholder="$t('settings.profile.password-confirm-placeholder')"
-          @update:value="$emit('update:passwordConfirm', $event)"
-        />
+      <div class="w-full space-y-1">
+        <div class="mt-1 relative flex flex-row items-center">
+          <NInput
+            :value="password"
+            :type="showPassword ? 'text' : 'password'"
+            :status="passwordHint ? 'error' : undefined"
+            :input-props="{ autocomplete: 'new-password' }"
+            :placeholder="$t('common.sensitive-placeholder')"
+            @update:value="$emit('update:password', $event)"
+          />
+          <div
+            class="hover:cursor-pointer absolute right-3"
+            @click="
+              () => {
+                showPassword = !showPassword;
+              }
+            "
+          >
+            <EyeIcon v-if="showPassword" class="w-4 h-4" />
+            <EyeOffIcon v-else class="w-4 h-4" />
+          </div>
+        </div>
+      </div>
+    </div>
+    <div :label="$t('settings.profile.password-confirm')">
+      <label
+        for="email"
+        class="block text-sm font-medium leading-5 text-control"
+      >
+        {{ $t("settings.profile.password-confirm") }}
+      </label>
+      <div class="w-full mt-1 flex flex-col justify-start items-start">
+        <div class="w-full relative flex flex-row items-center">
+          <NInput
+            :value="passwordConfirm"
+            :type="showPassword ? 'text' : 'password'"
+            :status="passwordMismatch ? 'error' : undefined"
+            :input-props="{ autocomplete: 'new-password' }"
+            :placeholder="$t('settings.profile.password-confirm-placeholder')"
+            @update:value="$emit('update:passwordConfirm', $event)"
+          />
+          <div
+            class="hover:cursor-pointer absolute right-3"
+            @click="
+              () => {
+                showPassword = !showPassword;
+              }
+            "
+          >
+            <EyeIcon v-if="showPassword" class="w-4 h-4" />
+            <EyeOffIcon v-else class="w-4 h-4" />
+          </div>
+        </div>
         <span v-if="passwordMismatch" class="text-error text-sm mt-1 pl-1">
           {{ $t("settings.profile.password-mismatch") }}
         </span>
       </div>
-    </NFormItem>
+    </div>
   </div>
 </template>
 
 <script lang="tsx" setup>
-import { CircleHelpIcon } from "lucide-vue-next";
-import { NFormItem, NInput, NTooltip } from "naive-ui";
-import { computed } from "vue";
+import { CircleHelpIcon, EyeIcon, EyeOffIcon } from "lucide-vue-next";
+import { NInput, NTooltip } from "naive-ui";
+import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
-import { useSettingV1Store } from "@/store";
-import { PasswordRestrictionSetting } from "@/types/proto/v1/setting_service";
+import { type PasswordRestrictionSetting } from "@/types/proto/v1/setting_service";
 
 const props = withDefaults(
   defineProps<{
     password: string;
     passwordConfirm: string;
+    passwordRestriction: PasswordRestrictionSetting;
     showLearnMore?: boolean;
   }>(),
   {
@@ -74,38 +112,32 @@ defineEmits<{
   (event: "update:passwordConfirm", passwordConfirm: string): void;
 }>();
 
+const showPassword = ref<boolean>(false);
 const { t } = useI18n();
-const settingV1Store = useSettingV1Store();
-
-const passwordRestrictionSetting = computed(
-  () =>
-    settingV1Store.getSettingByName("bb.workspace.password-restriction")?.value
-      ?.passwordRestrictionSetting ?? PasswordRestrictionSetting.fromPartial({})
-);
 
 const passwordRestrictionText = computed(() => {
   const text = [
     t("settings.general.workspace.password-restriction.min-length", {
-      min: passwordRestrictionSetting.value.minLength,
+      min: props.passwordRestriction.minLength,
     }),
   ];
-  if (passwordRestrictionSetting.value.requireNumber) {
+  if (props.passwordRestriction.requireNumber) {
     text.push(
       t("settings.general.workspace.password-restriction.require-number")
     );
   }
-  if (passwordRestrictionSetting.value.requireUppercaseLetter) {
+  if (props.passwordRestriction.requireUppercaseLetter) {
     text.push(
       t(
         "settings.general.workspace.password-restriction.require-uppercase-letter"
       )
     );
-  } else if (passwordRestrictionSetting.value.requireLetter) {
+  } else if (props.passwordRestriction.requireLetter) {
     text.push(
       t("settings.general.workspace.password-restriction.require-letter")
     );
   }
-  if (passwordRestrictionSetting.value.requireSpecialCharacter) {
+  if (props.passwordRestriction.requireSpecialCharacter) {
     text.push(
       t(
         "settings.general.workspace.password-restriction.require-special-character"
@@ -127,26 +159,20 @@ const passwordHint = computed(() => {
   if (!pwd) {
     return false;
   }
-  if (pwd.length < passwordRestrictionSetting.value.minLength) {
+  if (pwd.length < props.passwordRestriction.minLength) {
     return true;
   }
-  if (passwordRestrictionSetting.value.requireNumber && !/[0-9]+/.test(pwd)) {
+  if (props.passwordRestriction.requireNumber && !/[0-9]+/.test(pwd)) {
     return true;
   }
-  if (
-    passwordRestrictionSetting.value.requireLetter &&
-    !/[a-zA-Z]+/.test(pwd)
-  ) {
+  if (props.passwordRestriction.requireLetter && !/[a-zA-Z]+/.test(pwd)) {
     return true;
   }
-  if (
-    passwordRestrictionSetting.value.requireUppercaseLetter &&
-    !/[A-Z]+/.test(pwd)
-  ) {
+  if (props.passwordRestriction.requireUppercaseLetter && !/[A-Z]+/.test(pwd)) {
     return true;
   }
   if (
-    passwordRestrictionSetting.value.requireSpecialCharacter &&
+    props.passwordRestriction.requireSpecialCharacter &&
     // eslint-disable-next-line no-useless-escape
     !/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]+/.test(pwd)
   ) {

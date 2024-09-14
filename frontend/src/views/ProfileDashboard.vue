@@ -137,6 +137,7 @@
               ref="userPasswordRef"
               v-model:password="state.editingUser.password"
               v-model:password-confirm="state.passwordConfirm"
+              :password-restriction="passwordRestrictionSetting"
             />
           </div>
         </dl>
@@ -300,6 +301,10 @@ const userPasswordRef = ref<InstanceType<typeof UserPassword>>();
 
 const workspaceDomain = computed(() =>
   head(settingV1Store.workspaceProfileSetting?.domains)
+);
+
+const passwordRestrictionSetting = computed(
+  () => settingV1Store.passwordRestriction
 );
 
 const keyboardHandler = (e: KeyboardEvent) => {

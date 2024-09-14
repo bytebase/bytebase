@@ -4,6 +4,7 @@ import _m0 from "protobufjs/minimal";
 import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
 import { Timestamp } from "../google/protobuf/timestamp";
+import { PasswordRestrictionSetting } from "./setting_service";
 
 export const protobufPackage = "bytebase.v1";
 
@@ -78,6 +79,7 @@ export interface ActuatorInfo {
   unlicensedFeatures: string[];
   /** disallow_password_signin is the flag to disallow user signin with email&password. (except workspace admins) */
   disallowPasswordSignin: boolean;
+  passwordRestriction: PasswordRestrictionSetting | undefined;
 }
 
 function createBaseGetResourcePackageRequest(): GetResourcePackageRequest {
@@ -364,6 +366,7 @@ function createBaseActuatorInfo(): ActuatorInfo {
     iamGuard: false,
     unlicensedFeatures: [],
     disallowPasswordSignin: false,
+    passwordRestriction: undefined,
   };
 }
 
@@ -428,6 +431,9 @@ export const ActuatorInfo = {
     }
     if (message.disallowPasswordSignin === true) {
       writer.uint32(160).bool(message.disallowPasswordSignin);
+    }
+    if (message.passwordRestriction !== undefined) {
+      PasswordRestrictionSetting.encode(message.passwordRestriction, writer.uint32(170).fork()).ldelim();
     }
     return writer;
   },
@@ -579,6 +585,13 @@ export const ActuatorInfo = {
 
           message.disallowPasswordSignin = reader.bool();
           continue;
+        case 21:
+          if (tag !== 170) {
+            break;
+          }
+
+          message.passwordRestriction = PasswordRestrictionSetting.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -614,6 +627,9 @@ export const ActuatorInfo = {
       disallowPasswordSignin: isSet(object.disallowPasswordSignin)
         ? globalThis.Boolean(object.disallowPasswordSignin)
         : false,
+      passwordRestriction: isSet(object.passwordRestriction)
+        ? PasswordRestrictionSetting.fromJSON(object.passwordRestriction)
+        : undefined,
     };
   },
 
@@ -679,6 +695,9 @@ export const ActuatorInfo = {
     if (message.disallowPasswordSignin === true) {
       obj.disallowPasswordSignin = message.disallowPasswordSignin;
     }
+    if (message.passwordRestriction !== undefined) {
+      obj.passwordRestriction = PasswordRestrictionSetting.toJSON(message.passwordRestriction);
+    }
     return obj;
   },
 
@@ -707,6 +726,9 @@ export const ActuatorInfo = {
     message.iamGuard = object.iamGuard ?? false;
     message.unlicensedFeatures = object.unlicensedFeatures?.map((e) => e) || [];
     message.disallowPasswordSignin = object.disallowPasswordSignin ?? false;
+    message.passwordRestriction = (object.passwordRestriction !== undefined && object.passwordRestriction !== null)
+      ? PasswordRestrictionSetting.fromPartial(object.passwordRestriction)
+      : undefined;
     return message;
   },
 };
