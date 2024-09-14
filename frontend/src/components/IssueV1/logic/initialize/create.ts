@@ -5,6 +5,7 @@ import { useRoute } from "vue-router";
 import { rolloutServiceClient } from "@/grpcweb";
 import type { TemplateType } from "@/plugins";
 import {
+  hasFeature,
   useBranchStore,
   useChangelistStore,
   useCurrentUserV1,
@@ -123,7 +124,10 @@ const buildIssue = async (params: CreateIssueParams) => {
   issue.name = `${project.name}/issues/${nextUID()}`;
   issue.status = IssueStatus.OPEN;
   // Only set title from query if enforceIssueTitle is false.
-  if (!project.enforceIssueTitle) {
+  if (
+    !hasFeature("bb.feature.issue-project-setting") ||
+    !project.enforceIssueTitle
+  ) {
     issue.title = query.name;
   }
 
@@ -324,7 +328,10 @@ export const buildSpecForTarget = async (
     const database = useDatabaseV1Store().getDatabaseByName(target);
     if (isValidDatabaseName(database.name)) {
       // Set default backup behavior for the database.
-      if (project.autoEnableBackup) {
+      if (
+        hasFeature("bb.feature.issue-project-setting") &&
+        project.autoEnableBackup
+      ) {
         spec.changeDatabaseConfig.preUpdateBackupDetail = {
           database: `${database.instance}/${databaseNamePrefix}${getArchiveDatabase(database.instanceResource.engine)}`,
         };
