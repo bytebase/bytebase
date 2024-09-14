@@ -251,8 +251,16 @@ func (s *Store) CreateUser(ctx context.Context, create *UserMessage, creatorID i
 	}
 	defer tx.Rollback()
 
-	set := []string{"creator_id", "updater_id", "email", "name", "type", "password_hash", "phone"}
-	args := []any{creatorID, creatorID, create.Email, create.Name, create.Type, create.PasswordHash, create.Phone}
+	if create.Profile == nil {
+		create.Profile = &storepb.UserProfile{}
+	}
+	profileBytes, err := protojson.Marshal(create.Profile)
+	if err != nil {
+		return nil, err
+	}
+
+	set := []string{"creator_id", "updater_id", "email", "name", "type", "password_hash", "phone", "profile"}
+	args := []any{creatorID, creatorID, create.Email, create.Name, create.Type, create.PasswordHash, create.Phone, profileBytes}
 	placeholder := []string{}
 	for index := range set {
 		placeholder = append(placeholder, fmt.Sprintf("$%d", index+1))
@@ -284,7 +292,7 @@ func (s *Store) CreateUser(ctx context.Context, create *UserMessage, creatorID i
 		PasswordHash: create.PasswordHash,
 		Phone:        create.Phone,
 		CreatedTime:  time.Unix(createdTs, 0),
-		Profile:      &storepb.UserProfile{},
+		Profile:      create.Profile,
 		MFAConfig:    &storepb.MFAConfig{},
 	}
 	s.userIDCache.Add(user.ID, user)

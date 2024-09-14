@@ -157,9 +157,6 @@ func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 	if request.User.UserType != v1pb.UserType_SERVICE_ACCOUNT && request.User.UserType != v1pb.UserType_USER {
 		return nil, status.Errorf(codes.InvalidArgument, "support user and service account only")
 	}
-	if request.User.UserType != v1pb.UserType_SERVICE_ACCOUNT && request.User.Password == "" {
-		return nil, status.Errorf(codes.InvalidArgument, "password must be set")
-	}
 
 	count, err := s.store.CountUsers(ctx, api.EndUser)
 	if err != nil {
@@ -189,16 +186,24 @@ func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 	}
 
 	password := request.User.Password
-	if err := s.validatePassword(ctx, password); err != nil {
-		return nil, err
-	}
-
 	if request.User.UserType == v1pb.UserType_SERVICE_ACCOUNT {
 		pwd, err := common.RandomString(20)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to generate access key for service account.")
 		}
 		password = fmt.Sprintf("%s%s", api.ServiceAccountAccessKeyPrefix, pwd)
+	} else {
+		if password != "" {
+			if err := s.validatePassword(ctx, password); err != nil {
+				return nil, err
+			}
+		} else {
+			pwd, err := common.RandomString(20)
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to generate random password for service account.")
+			}
+			password = pwd
+		}
 	}
 	passwordHash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
