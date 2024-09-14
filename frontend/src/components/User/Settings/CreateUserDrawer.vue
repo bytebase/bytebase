@@ -172,7 +172,6 @@ import {
   User,
 } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
-import { randomString } from "@/utils";
 import UserPassword from "./UserPassword.vue";
 
 interface LocalState {
@@ -313,9 +312,7 @@ const tryCreateOrUpdateUser = async () => {
     const createdUser = await userStore.createUser({
       ...state.user,
       title: state.user.title || extractUserTitle(state.user.email),
-      password:
-        state.user.password ||
-        randomString(10) + randomString(10, "0123456789"),
+      password: state.user.password,
     });
     if (state.roles.length > 0) {
       await workspaceStore.patchIamPolicy([
