@@ -2891,6 +2891,10 @@
         "title": "Búsqueda avanzada de problemas",
         "desc": "Acceda a un historial de problemas ilimitado con búsqueda avanzada de problemas."
       },
+      "bb-feature-issue-project-setting": {
+        "title": "Configuración avanzada de proyectos de problemas",
+        "desc": "Personalice la configuración avanzada del proyecto de problemas, incluida la creación de restricciones de problemas y configuraciones de copia de seguridad predeterminadas."
+      },
       "bb-feature-password-restriction": {
         "title": "Restricción de contraseña",
         "desc": "Permitir configurar la restricción de contraseña de los usuarios"

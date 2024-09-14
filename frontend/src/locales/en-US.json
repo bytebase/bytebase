@@ -2891,6 +2891,10 @@
         "title": "Advanced issue search",
         "desc": "Access unlimited issue history with advanced issue search."
       },
+      "bb-feature-issue-project-setting": {
+        "title": "Advanced issue project setting",
+        "desc": "Customize advanced issue project settings. Including creating issue restrictions and default backup settings."
+      },
       "bb-feature-password-restriction": {
         "title": "Password restriction",
         "desc": "Allow to configure the restriction for users' password"

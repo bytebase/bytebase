@@ -20,6 +20,7 @@ export type FeatureType =
   | "bb.feature.watermark"
   | "bb.feature.audit-log"
   | "bb.feature.issue-advanced-search"
+  | "bb.feature.issue-project-setting"
   | "bb.feature.announcement"
   | "bb.feature.external-secret-manager"
   // Branding
