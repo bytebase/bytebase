@@ -18,6 +18,7 @@ import {
   isWorksheetReadableV1,
   suggestedTabTitleForSQLEditorConnection,
 } from "@/utils";
+import { setDefaultDataSourceForConn } from "../EditorCommon";
 import type { SQLEditorContext } from "../context";
 import type { SheetViewMode } from "./types";
 
@@ -132,6 +133,7 @@ export const extractWorksheetConnection = (worksheet: Worksheet) => {
       );
       connection.instance = database.instance;
       connection.database = database.name;
+      setDefaultDataSourceForConn(connection, database);
     } catch {
       // Skip.
     }
