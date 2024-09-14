@@ -40,6 +40,7 @@ import { computed } from "vue";
 import { useExecuteSQL } from "@/composables/useExecuteSQL";
 import { useAppFeature, useSQLEditorTabStore } from "@/store";
 import type { SQLEditorQueryParams, SQLResultSetV1 } from "@/types";
+import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
 import { Advice_Status } from "@/types/proto/v1/sql_service";
 import { useSQLResultViewContext } from "../context";
 import AdviceItem from "./AdviceItem.vue";
@@ -55,6 +56,7 @@ const sqlCheckStyle = useAppFeature("bb.feature.sql-editor.sql-check-style");
 const { currentTab: tab } = storeToRefs(useSQLEditorTabStore());
 const { dark } = useSQLResultViewContext();
 const { execute } = useExecuteSQL();
+const databaseChangeMode = useAppFeature("bb.feature.database-change-mode");
 
 const showRunAnywayButton = computed(() => {
   if (!tab.value) return false;
@@ -63,14 +65,12 @@ const showRunAnywayButton = computed(() => {
   if (!resultSet) return false;
   if (!executeParams) return false;
   if (sqlCheckStyle.value !== "PREFLIGHT") return false;
+  if (databaseChangeMode.value !== DatabaseChangeMode.EDITOR) return false;
   if (resultSet.status === Status.PERMISSION_DENIED) return false;
   if (resultSet.error.includes("resource not found")) return false;
-  if (
-    resultSet.advices.some((advice) => advice.status === Advice_Status.ERROR)
-  ) {
-    return false;
-  }
-  return true;
+  return resultSet.advices.some(
+    (advice) => advice.status === Advice_Status.WARNING
+  );
 });
 
 const runAnyway = () => {

@@ -127,6 +127,7 @@ const initializeProjects = async () => {
     initializeSuccess = await initProject(project);
   } else {
     // plain "/sql-editor"
+
     if (hideProjects.value) {
       // Direct to Default Project
       editorStore.project = DEFAULT_PROJECT_NAME;
@@ -158,6 +159,7 @@ const initializeProjects = async () => {
       }
     }
   }
+
   if (initializeSuccess) {
     tabStore.maybeInitProject(editorStore.project);
   } else {

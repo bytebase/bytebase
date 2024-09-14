@@ -16,9 +16,11 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, reactive } from "vue";
+import { computed, onMounted, reactive, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import Drawer from "@/components/v2/Container/Drawer.vue";
 import DrawerContent from "@/components/v2/Container/DrawerContent.vue";
+import { useUserStore } from "@/store";
 import type { User } from "@/types/proto/v1/auth_service";
 import ProfileDashboard from "@/views/ProfileDashboard.vue";
 import SettingWorkspaceMembers from "@/views/SettingWorkspaceMembers.vue";
@@ -26,6 +28,9 @@ import SettingWorkspaceMembers from "@/views/SettingWorkspaceMembers.vue";
 type LocalState = {
   detail: { show: boolean; user?: User };
 };
+
+const route = useRoute();
+const router = useRouter();
 const state = reactive<LocalState>({
   detail: { show: false },
 });
@@ -40,4 +45,26 @@ const handleClickUser = (user: User) => {
   state.detail.show = true;
   state.detail.user = user;
 };
+
+onMounted(() => {
+  const maybeEmail = route.hash.replace(/^#*/g, "");
+  if (maybeEmail) {
+    const user = useUserStore().getUserByEmail(maybeEmail);
+    if (user) {
+      state.detail.show = true;
+      state.detail.user = user;
+    }
+  }
+
+  watch(
+    [() => state.detail.show, () => state.detail.user?.email],
+    ([show, email]) => {
+      if (show && email) {
+        router.replace({ hash: `#${email}` });
+      } else {
+        router.replace({ hash: "" });
+      }
+    }
+  );
+});
 </script>

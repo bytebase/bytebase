@@ -6,7 +6,10 @@
     <SettingWorkspaceUsers :on-click-user="handleClickUser" />
   </div>
   <Drawer v-model:show="state.detail.show">
-    <DrawerContent :title="detailTitle">
+    <DrawerContent
+      :title="detailTitle"
+      style="width: 800px; max-width: calc(100vw - 4rem)"
+    >
       <ProfileDashboard
         v-if="state.detail.user"
         :principal-email="state.detail.user.email"
@@ -16,8 +19,10 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, reactive } from "vue";
+import { computed, onMounted, reactive, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import { Drawer, DrawerContent } from "@/components/v2";
+import { useUserStore } from "@/store";
 import type { User } from "@/types/proto/v1/auth_service";
 import ProfileDashboard from "@/views/ProfileDashboard.vue";
 import SettingWorkspaceUsers from "@/views/SettingWorkspaceUsers.vue";
@@ -25,6 +30,9 @@ import SettingWorkspaceUsers from "@/views/SettingWorkspaceUsers.vue";
 type LocalState = {
   detail: { show: boolean; user?: User };
 };
+
+const route = useRoute();
+const router = useRouter();
 const state = reactive<LocalState>({
   detail: { show: false },
 });
@@ -39,4 +47,26 @@ const handleClickUser = (user: User) => {
   state.detail.show = true;
   state.detail.user = user;
 };
+
+onMounted(() => {
+  const maybeEmail = route.hash.replace(/^#*/g, "");
+  if (maybeEmail) {
+    const user = useUserStore().getUserByEmail(maybeEmail);
+    if (user) {
+      state.detail.show = true;
+      state.detail.user = user;
+    }
+  }
+
+  watch(
+    [() => state.detail.show, () => state.detail.user?.email],
+    ([show, email]) => {
+      if (show && email) {
+        router.replace({ hash: `#${email}` });
+      } else {
+        router.replace({ hash: "" });
+      }
+    }
+  );
+});
 </script>
