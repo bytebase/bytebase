@@ -114,24 +114,24 @@ const initializeProjects = async () => {
 
   const projectInQuery = route.query.project as string;
   const projectInParams = route.params.project as string;
+  let initializeSuccess = false;
   if (typeof projectInQuery === "string" && projectInQuery) {
     // Legacy "?project={project}"
     const project = `projects/${projectInQuery}`;
     editorStore.strictProject = true;
-    await initProject(project);
+    initializeSuccess = await initProject(project);
   } else if (typeof projectInParams === "string" && projectInParams) {
     // "/sql-editor/projects/{project}"
     const project = `projects/${projectInParams}`;
     editorStore.strictProject = "strict" in route.query;
-    await initProject(project);
+    initializeSuccess = await initProject(project);
   } else {
     // plain "/sql-editor"
-
     if (hideProjects.value) {
       // Direct to Default Project
       editorStore.project = DEFAULT_PROJECT_NAME;
       editorStore.strictProject = false;
-      await initProject(DEFAULT_PROJECT_NAME);
+      initializeSuccess = await initProject(DEFAULT_PROJECT_NAME);
     } else {
       const { projectList, ready } = useProjectV1List();
       await wrapRefAsPromise(ready, true);
@@ -151,10 +151,19 @@ const initializeProjects = async () => {
           "";
       }
       editorStore.strictProject = false;
+      if (editorStore.project) {
+        initializeSuccess = true;
+      } else {
+        initializeSuccess = false;
+      }
     }
   }
-
-  tabStore.maybeInitProject(editorStore.project);
+  if (initializeSuccess) {
+    tabStore.maybeInitProject(editorStore.project);
+  } else {
+    editorStore.project = "";
+    editorStore.storedLastViewedProject = "";
+  }
 };
 
 const handleProjectSwitched = async () => {
@@ -173,6 +182,10 @@ const prepareDatabases = async () => {
     return;
   }
   const { project } = editorStore;
+  if (!project) {
+    editorStore.databaseList = [];
+    return;
+  }
   // `databaseList` is the database list in the project.
   const { databaseList, ready } = useDatabaseV1List(project);
   await wrapRefAsPromise(ready, true);

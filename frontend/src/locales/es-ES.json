@@ -570,15 +570,15 @@
       "view-by-roles": "Ver por roles",
       "add-member": "Agregar miembro",
       "add-user": "Agregar usuario",
-      "aad-sync": {
+      "entra-sync": {
         "self": "Sincronización desde Entra ID (Azure AD)",
         "description": "Sincronice usuarios y grupos de Entra ID (anteriormente Azure AD) con su instancia de Bytebase.",
         "endpoint": "Punto final",
-        "endpoint-tip": "Proporcione la URL a Azure como URL de inquilino y sincronizará usuarios y grupos a través de webhook.",
-        "token": "Simbólico",
-        "token-tip": "Token de sincronización de ID de entrada. Manténgalo en secreto.",
+        "endpoint-tip": "Pegue esto en el campo \"Tenant URL\" en Entra. Entra sincronizará usuarios y grupos con Bytebase a través de este punto de conexión.",
+        "secret-token": "Secret Token",
+        "secret-token-tip": "Pegue esto en el campo \"Secret Token\" en Entra.",
         "reset-token": "Restablecer token",
-        "reset-token-warning": "Debe actualizar la configuración de aprovisionamiento de aplicaciones de Azure."
+        "reset-token-warning": "Debe actualizar la configuración de aprovisionamiento de aplicaciones de Entra."
       },
       "update-user": "Actualizar usuario",
       "workspace-role-at-least-one": "El espacio de trabajo debe tener al menos un administrador",

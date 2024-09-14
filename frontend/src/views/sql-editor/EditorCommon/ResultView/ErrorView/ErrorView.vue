@@ -19,9 +19,10 @@
         <span>{{ error }}</span>
       </div>
     </template>
-    <div>
+    <div v-if="$slots.suffix">
       <slot name="suffix" />
     </div>
+    <PostgresError v-if="resultSet" :result-set="resultSet" />
     <div v-if="showRunAnywayButton">
       <NButton size="small" type="primary" @click="runAnyway">
         {{ $t("sql-editor.run-anyway") }}
@@ -34,13 +35,15 @@
 import { CircleAlertIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { Status } from "nice-grpc-common";
+import { storeToRefs } from "pinia";
 import { computed } from "vue";
 import { useExecuteSQL } from "@/composables/useExecuteSQL";
-import { useAppFeature } from "@/store";
+import { useAppFeature, useSQLEditorTabStore } from "@/store";
 import type { SQLEditorQueryParams, SQLResultSetV1 } from "@/types";
 import { Advice_Status } from "@/types/proto/v1/sql_service";
 import { useSQLResultViewContext } from "../context";
 import AdviceItem from "./AdviceItem.vue";
+import PostgresError from "./PostgresError.vue";
 
 const props = defineProps<{
   error: string | undefined;
@@ -49,10 +52,13 @@ const props = defineProps<{
 }>();
 
 const sqlCheckStyle = useAppFeature("bb.feature.sql-editor.sql-check-style");
+const { currentTab: tab } = storeToRefs(useSQLEditorTabStore());
 const { dark } = useSQLResultViewContext();
 const { execute } = useExecuteSQL();
 
 const showRunAnywayButton = computed(() => {
+  if (!tab.value) return false;
+  if (tab.value?.mode === "ADMIN") return false;
   const { executeParams, resultSet } = props;
   if (!resultSet) return false;
   if (!executeParams) return false;

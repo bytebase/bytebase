@@ -464,6 +464,7 @@ func redactAdminExecuteResponse(r *v1pb.AdminExecuteResponse) *v1pb.AdminExecute
 			Error:           result.Error,
 			Latency:         result.Latency,
 			Statement:       result.Statement,
+			DetailedError:   result.DetailedError,
 		})
 	}
 
@@ -489,6 +490,7 @@ func redactQueryResponse(r *v1pb.QueryResponse) *v1pb.QueryResponse {
 			Error:           result.Error,
 			Latency:         result.Latency,
 			Statement:       result.Statement,
+			DetailedError:   result.DetailedError,
 		})
 	}
 	return n

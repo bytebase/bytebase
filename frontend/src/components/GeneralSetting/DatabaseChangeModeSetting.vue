@@ -143,7 +143,10 @@ const save = async () => {
     style: "SUCCESS",
     title: t("settings.general.workspace.config-updated"),
   });
-  if (state.databaseChangeMode === DatabaseChangeMode.EDITOR) {
+  if (
+    state.databaseChangeMode === DatabaseChangeMode.EDITOR &&
+    !router.currentRoute.value.name?.toString().startsWith("sql-editor")
+  ) {
     state.showModal = true;
   }
 };

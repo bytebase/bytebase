@@ -42,8 +42,11 @@ func TestRestore(t *testing.T) {
 	a.NoError(yaml.Unmarshal(byteValue, &tests))
 
 	for i, t := range tests {
+		getter, lister := buildFixedMockDatabaseMetadataGetterAndLister()
 		result, err := GenerateRestoreSQL(context.Background(), base.RestoreContext{
-			GetDatabaseMetadataFunc: fixedMockDatabaseMetadataGetter,
+			GetDatabaseMetadataFunc: getter,
+			ListDatabaseNamesFunc:   lister,
+			IgnoreCaseSensitive:     false,
 		}, t.Input, &store.PriorBackupDetail_Item{
 			SourceTable: &store.PriorBackupDetail_Item_Table{
 				Database: "instances/i1/databases/" + t.OriginalDatabase,

@@ -60,7 +60,7 @@
             <template #icon>
               <SettingsIcon class="h-5 w-5" />
             </template>
-            {{ $t(`settings.members.aad-sync.self`) }}
+            {{ $t(`settings.members.entra-sync.self`) }}
           </NButton>
 
           <NPopover
