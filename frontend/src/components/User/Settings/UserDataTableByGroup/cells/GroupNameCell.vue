@@ -16,7 +16,16 @@
           {{ group.title }}
         </router-link>
         <span v-else class="font-medium">{{ group.title }}</span>
-        <span class="ml-1 font-normal text-control-light">
+        <NTag
+          v-if="group.source"
+          size="small"
+          round
+          type="primary"
+          class="ml-2"
+        >
+          {{ group.source }}
+        </NTag>
+        <span class="ml-2 font-normal text-control-light">
           {{
             `(${$t("settings.members.groups.n-members", { n: group.members.length })})`
           }}
@@ -32,6 +41,7 @@
 
 <script lang="ts" setup>
 import { UsersIcon } from "lucide-vue-next";
+import { NTag } from "naive-ui";
 import { computed } from "vue";
 import UserRolesCell from "@/components/Member/MemberDataTable/cells/UserRolesCell.vue";
 import type { MemberRole } from "@/components/Member/types";

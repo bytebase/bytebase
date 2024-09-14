@@ -25,6 +25,9 @@
           >
             {{ user.title }}
           </router-link>
+          <NTag v-if="user.profile?.source" size="small" round type="primary">
+            {{ user.profile.source }}
+          </NTag>
           <YouTag v-if="currentUserV1.name === user.name" />
           <SystemBotTag v-if="user.name === SYSTEM_BOT_USER_NAME" />
           <ServiceAccountTag
@@ -74,7 +77,7 @@
 
 <script lang="ts" setup>
 import { ClipboardIcon, ReplyIcon } from "lucide-vue-next";
-import { NButton } from "naive-ui";
+import { NButton, NTag } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import UserAvatar from "@/components/User/UserAvatar.vue";

@@ -3,6 +3,7 @@ import Long from "long";
 import _m0 from "protobufjs/minimal";
 import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
+import { Timestamp } from "../google/protobuf/timestamp";
 import { State, stateFromJSON, stateToJSON, stateToNumber } from "./common";
 
 export const protobufPackage = "bytebase.v1";
@@ -224,6 +225,16 @@ export interface User {
    * Could be empty.
    */
   phone: string;
+  profile: User_Profile | undefined;
+}
+
+export interface User_Profile {
+  lastLoginTime: Date | undefined;
+  lastChangePasswordTime:
+    | Date
+    | undefined;
+  /** source means where the user comes from. For now we support Entra ID SCIM sync, so the source could be Entra ID. */
+  source: string;
 }
 
 function createBaseGetUserRequest(): GetUserRequest {
@@ -1248,6 +1259,7 @@ function createBaseUser(): User {
     mfaSecret: "",
     recoveryCodes: [],
     phone: "",
+    profile: undefined,
   };
 }
 
@@ -1285,6 +1297,9 @@ export const User = {
     }
     if (message.phone !== "") {
       writer.uint32(98).string(message.phone);
+    }
+    if (message.profile !== undefined) {
+      User_Profile.encode(message.profile, writer.uint32(106).fork()).ldelim();
     }
     return writer;
   },
@@ -1373,6 +1388,13 @@ export const User = {
 
           message.phone = reader.string();
           continue;
+        case 13:
+          if (tag !== 106) {
+            break;
+          }
+
+          message.profile = User_Profile.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1397,6 +1419,7 @@ export const User = {
         ? object.recoveryCodes.map((e: any) => globalThis.String(e))
         : [],
       phone: isSet(object.phone) ? globalThis.String(object.phone) : "",
+      profile: isSet(object.profile) ? User_Profile.fromJSON(object.profile) : undefined,
     };
   },
 
@@ -1435,6 +1458,9 @@ export const User = {
     if (message.phone !== "") {
       obj.phone = message.phone;
     }
+    if (message.profile !== undefined) {
+      obj.profile = User_Profile.toJSON(message.profile);
+    }
     return obj;
   },
 
@@ -1454,6 +1480,100 @@ export const User = {
     message.mfaSecret = object.mfaSecret ?? "";
     message.recoveryCodes = object.recoveryCodes?.map((e) => e) || [];
     message.phone = object.phone ?? "";
+    message.profile = (object.profile !== undefined && object.profile !== null)
+      ? User_Profile.fromPartial(object.profile)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseUser_Profile(): User_Profile {
+  return { lastLoginTime: undefined, lastChangePasswordTime: undefined, source: "" };
+}
+
+export const User_Profile = {
+  encode(message: User_Profile, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.lastLoginTime !== undefined) {
+      Timestamp.encode(toTimestamp(message.lastLoginTime), writer.uint32(10).fork()).ldelim();
+    }
+    if (message.lastChangePasswordTime !== undefined) {
+      Timestamp.encode(toTimestamp(message.lastChangePasswordTime), writer.uint32(18).fork()).ldelim();
+    }
+    if (message.source !== "") {
+      writer.uint32(26).string(message.source);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): User_Profile {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseUser_Profile();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.lastLoginTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.lastChangePasswordTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.source = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): User_Profile {
+    return {
+      lastLoginTime: isSet(object.lastLoginTime) ? fromJsonTimestamp(object.lastLoginTime) : undefined,
+      lastChangePasswordTime: isSet(object.lastChangePasswordTime)
+        ? fromJsonTimestamp(object.lastChangePasswordTime)
+        : undefined,
+      source: isSet(object.source) ? globalThis.String(object.source) : "",
+    };
+  },
+
+  toJSON(message: User_Profile): unknown {
+    const obj: any = {};
+    if (message.lastLoginTime !== undefined) {
+      obj.lastLoginTime = message.lastLoginTime.toISOString();
+    }
+    if (message.lastChangePasswordTime !== undefined) {
+      obj.lastChangePasswordTime = message.lastChangePasswordTime.toISOString();
+    }
+    if (message.source !== "") {
+      obj.source = message.source;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<User_Profile>): User_Profile {
+    return User_Profile.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<User_Profile>): User_Profile {
+    const message = createBaseUser_Profile();
+    message.lastLoginTime = object.lastLoginTime ?? undefined;
+    message.lastChangePasswordTime = object.lastChangePasswordTime ?? undefined;
+    message.source = object.source ?? "";
     return message;
   },
 };
@@ -1750,6 +1870,32 @@ export type DeepPartial<T> = T extends Builtin ? T
   : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
+
+function toTimestamp(date: Date): Timestamp {
+  const seconds = numberToLong(date.getTime() / 1_000);
+  const nanos = (date.getTime() % 1_000) * 1_000_000;
+  return { seconds, nanos };
+}
+
+function fromTimestamp(t: Timestamp): Date {
+  let millis = (t.seconds.toNumber() || 0) * 1_000;
+  millis += (t.nanos || 0) / 1_000_000;
+  return new globalThis.Date(millis);
+}
+
+function fromJsonTimestamp(o: any): Date {
+  if (o instanceof globalThis.Date) {
+    return o;
+  } else if (typeof o === "string") {
+    return new globalThis.Date(o);
+  } else {
+    return fromTimestamp(Timestamp.fromJSON(o));
+  }
+}
+
+function numberToLong(number: number) {
+  return Long.fromNumber(number);
+}
 
 if (_m0.util.Long !== Long) {
   _m0.util.Long = Long as any;

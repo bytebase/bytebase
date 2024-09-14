@@ -69,6 +69,8 @@ export function groupMember_RoleToNumber(object: GroupMember_Role): number {
 
 export interface GroupPayload {
   members: GroupMember[];
+  /** source means where the group comes from. For now we support Entra ID SCIM sync, so the source could be Entra ID. */
+  source: string;
 }
 
 function createBaseGroupMember(): GroupMember {
@@ -146,13 +148,16 @@ export const GroupMember = {
 };
 
 function createBaseGroupPayload(): GroupPayload {
-  return { members: [] };
+  return { members: [], source: "" };
 }
 
 export const GroupPayload = {
   encode(message: GroupPayload, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     for (const v of message.members) {
       GroupMember.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.source !== "") {
+      writer.uint32(18).string(message.source);
     }
     return writer;
   },
@@ -171,6 +176,13 @@ export const GroupPayload = {
 
           message.members.push(GroupMember.decode(reader, reader.uint32()));
           continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.source = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -183,6 +195,7 @@ export const GroupPayload = {
   fromJSON(object: any): GroupPayload {
     return {
       members: globalThis.Array.isArray(object?.members) ? object.members.map((e: any) => GroupMember.fromJSON(e)) : [],
+      source: isSet(object.source) ? globalThis.String(object.source) : "",
     };
   },
 
@@ -190,6 +203,9 @@ export const GroupPayload = {
     const obj: any = {};
     if (message.members?.length) {
       obj.members = message.members.map((e) => GroupMember.toJSON(e));
+    }
+    if (message.source !== "") {
+      obj.source = message.source;
     }
     return obj;
   },
@@ -200,6 +216,7 @@ export const GroupPayload = {
   fromPartial(object: DeepPartial<GroupPayload>): GroupPayload {
     const message = createBaseGroupPayload();
     message.members = object.members?.map((e) => GroupMember.fromPartial(e)) || [];
+    message.source = object.source ?? "";
     return message;
   },
 };

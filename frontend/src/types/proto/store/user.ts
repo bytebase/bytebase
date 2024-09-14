@@ -19,7 +19,11 @@ export interface MFAConfig {
 
 export interface UserProfile {
   lastLoginTime: Date | undefined;
-  lastChangePasswordTime: Date | undefined;
+  lastChangePasswordTime:
+    | Date
+    | undefined;
+  /** source means where the user comes from. For now we support Entra ID SCIM sync, so the source could be Entra ID. */
+  source: string;
 }
 
 function createBaseMFAConfig(): MFAConfig {
@@ -131,7 +135,7 @@ export const MFAConfig = {
 };
 
 function createBaseUserProfile(): UserProfile {
-  return { lastLoginTime: undefined, lastChangePasswordTime: undefined };
+  return { lastLoginTime: undefined, lastChangePasswordTime: undefined, source: "" };
 }
 
 export const UserProfile = {
@@ -141,6 +145,9 @@ export const UserProfile = {
     }
     if (message.lastChangePasswordTime !== undefined) {
       Timestamp.encode(toTimestamp(message.lastChangePasswordTime), writer.uint32(18).fork()).ldelim();
+    }
+    if (message.source !== "") {
+      writer.uint32(26).string(message.source);
     }
     return writer;
   },
@@ -166,6 +173,13 @@ export const UserProfile = {
 
           message.lastChangePasswordTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.source = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -181,6 +195,7 @@ export const UserProfile = {
       lastChangePasswordTime: isSet(object.lastChangePasswordTime)
         ? fromJsonTimestamp(object.lastChangePasswordTime)
         : undefined,
+      source: isSet(object.source) ? globalThis.String(object.source) : "",
     };
   },
 
@@ -192,6 +207,9 @@ export const UserProfile = {
     if (message.lastChangePasswordTime !== undefined) {
       obj.lastChangePasswordTime = message.lastChangePasswordTime.toISOString();
     }
+    if (message.source !== "") {
+      obj.source = message.source;
+    }
     return obj;
   },
 
@@ -202,6 +220,7 @@ export const UserProfile = {
     const message = createBaseUserProfile();
     message.lastLoginTime = object.lastLoginTime ?? undefined;
     message.lastChangePasswordTime = object.lastChangePasswordTime ?? undefined;
+    message.source = object.source ?? "";
     return message;
   },
 };
