@@ -42,83 +42,13 @@
             </div>
           </div>
 
-          <div>
-            <label
-              for="password"
-              class="block text-sm font-medium leading-5 text-control"
-            >
-              {{ $t("common.password") }}
-              <span class="text-red-600">*</span>
-            </label>
-            <div
-              class="relative flex flex-row items-center mt-1 rounded-md shadow-sm"
-            >
-              <BBTextField
-                v-model:value="state.password"
-                :type="state.showPassword ? 'text' : 'password'"
-                :input-props="{ id: 'password', autocomplete: 'off' }"
-                required
-                @input="refreshPasswordValidation"
-              />
-              <div
-                class="hover:cursor-pointer absolute right-3"
-                @click="
-                  () => {
-                    state.showPassword = !state.showPassword;
-                  }
-                "
-              >
-                <heroicons-outline:eye
-                  v-if="state.showPassword"
-                  class="w-4 h-4"
-                />
-                <heroicons-outline:eye-slash v-else class="w-4 h-4" />
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <label
-              for="password-confirm"
-              class="block text-sm font-medium leading-5 text-control"
-            >
-              {{ $t("auth.sign-up.confirm-password") }}
-              <span class="text-red-600">
-                *
-                {{
-                  state.showPasswordMismatchError
-                    ? $t("auth.sign-up.password-mismatch")
-                    : ""
-                }}
-              </span>
-            </label>
-            <div
-              class="relative flex flex-row items-center mt-1 rounded-md shadow-sm"
-            >
-              <BBTextField
-                v-model:value="state.passwordConfirm"
-                :type="state.showPassword ? 'text' : 'password'"
-                :input-props="{ id: 'password-confirm', autocomplete: 'off' }"
-                :placeholder="$t('auth.sign-up.confirm-password-placeholder')"
-                required
-                @input="refreshPasswordValidation"
-              />
-              <div
-                class="hover:cursor-pointer absolute right-3"
-                @click="
-                  () => {
-                    state.showPassword = !state.showPassword;
-                  }
-                "
-              >
-                <heroicons-outline:eye
-                  v-if="state.showPassword"
-                  class="w-4 h-4"
-                />
-                <heroicons-outline:eye-slash v-else class="w-4 h-4" />
-              </div>
-            </div>
-          </div>
+          <UserPassword
+            ref="userPasswordRef"
+            v-model:password="state.password"
+            v-model:password-confirm="state.passwordConfirm"
+            :show-learn-more="false"
+            :password-restriction="passwordRestriction"
+          />
 
           <div>
             <label
@@ -216,10 +146,11 @@
 <script lang="ts" setup>
 import { NButton, NCheckbox } from "naive-ui";
 import { storeToRefs } from "pinia";
-import { computed, onMounted, onUnmounted, reactive } from "vue";
+import { computed, onMounted, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
 import { BBTextField } from "@/bbkit";
 import BytebaseLogo from "@/components/BytebaseLogo.vue";
+import UserPassword from "@/components/User/Settings/UserPassword.vue";
 import { AUTH_SIGNIN_MODULE } from "@/router/auth";
 import { SETUP_WORKSPACE_MODE_MODULE } from "@/router/setup";
 import {
@@ -227,7 +158,6 @@ import {
   useAuthStore,
   useOnboardingStateStore,
 } from "@/store";
-import { TEXT_VALIDATION_DELAY } from "@/types";
 import type { User } from "@/types/proto/v1/auth_service";
 import { isValidEmail } from "@/utils";
 import AuthFooter from "./AuthFooter.vue";
@@ -236,50 +166,38 @@ interface LocalState {
   email: string;
   password: string;
   passwordConfirm: string;
-  passwordValidationTimer?: ReturnType<typeof setTimeout>;
-  showPasswordMismatchError: boolean;
   name: string;
   nameManuallyEdited: boolean;
   acceptTermsAndPolicy: boolean;
-  showPassword: boolean;
   isLoading: boolean;
 }
 
 const actuatorStore = useActuatorV1Store();
 const router = useRouter();
+const userPasswordRef = ref<InstanceType<typeof UserPassword>>();
 
 const state = reactive<LocalState>({
   email: "",
   password: "",
   passwordConfirm: "",
-  showPasswordMismatchError: false,
   name: "",
   nameManuallyEdited: false,
   acceptTermsAndPolicy: true,
-  showPassword: false,
   isLoading: false,
 });
 
-onUnmounted(() => {
-  if (state.passwordValidationTimer) {
-    clearInterval(state.passwordValidationTimer);
-  }
-});
-
-const { needAdminSetup, disallowSignup } = storeToRefs(actuatorStore);
+const { needAdminSetup, disallowSignup, passwordRestriction } =
+  storeToRefs(actuatorStore);
 
 const allowSignup = computed(() => {
   return (
     isValidEmail(state.email) &&
     state.password &&
-    !state.showPasswordMismatchError &&
+    !userPasswordRef.value?.passwordHint &&
+    !userPasswordRef.value?.passwordMismatch &&
     state.acceptTermsAndPolicy &&
     !disallowSignup.value
   );
-});
-
-const passwordMatch = computed(() => {
-  return state.password == state.passwordConfirm;
 });
 
 onMounted(() => {
@@ -287,29 +205,6 @@ onMounted(() => {
     state.acceptTermsAndPolicy = false;
   }
 });
-
-const refreshPasswordValidation = () => {
-  if (state.passwordValidationTimer) {
-    clearInterval(state.passwordValidationTimer);
-  }
-
-  if (passwordMatch.value) {
-    state.showPasswordMismatchError = false;
-  } else {
-    state.passwordValidationTimer = setTimeout(() => {
-      // If error is already displayed, we hide the error only if there is valid input.
-      // Otherwise, we hide the error if input is either empty or valid.
-      if (state.showPasswordMismatchError) {
-        state.showPasswordMismatchError = !passwordMatch.value;
-      } else {
-        state.showPasswordMismatchError =
-          state.password != "" &&
-          state.passwordConfirm != "" &&
-          !passwordMatch.value;
-      }
-    }, TEXT_VALIDATION_DELAY);
-  }
-};
 
 const onTextEmail = () => {
   const email = state.email.trim().toLowerCase();
@@ -340,35 +235,30 @@ const onTextName = () => {
 
 const trySignup = async () => {
   if (state.isLoading) return;
+  state.isLoading = true;
 
-  if (!passwordMatch.value) {
-    state.showPasswordMismatchError = true;
-  } else {
-    state.isLoading = true;
-
-    try {
-      const signupInfo: Partial<User> = {
-        email: state.email,
-        password: state.password,
-        name: state.name,
-      };
-      await useAuthStore().signup(signupInfo);
-      if (needAdminSetup.value) {
-        await actuatorStore.fetchServerInfo();
-        // When the first time we created an end user, the server-side will
-        // generate onboarding data.
-        // We write a flag here to indicate that the workspace is just created
-        // and we can consume this flag somewhere else if needed.
-        useOnboardingStateStore().initialize();
-        router.replace({
-          name: SETUP_WORKSPACE_MODE_MODULE,
-        });
-      } else {
-        router.replace("/");
-      }
-    } finally {
-      state.isLoading = false;
+  try {
+    const signupInfo: Partial<User> = {
+      email: state.email,
+      password: state.password,
+      name: state.name,
+    };
+    await useAuthStore().signup(signupInfo);
+    if (needAdminSetup.value) {
+      await actuatorStore.fetchServerInfo();
+      // When the first time we created an end user, the server-side will
+      // generate onboarding data.
+      // We write a flag here to indicate that the workspace is just created
+      // and we can consume this flag somewhere else if needed.
+      useOnboardingStateStore().initialize();
+      router.replace({
+        name: SETUP_WORKSPACE_MODE_MODULE,
+      });
+    } else {
+      router.replace("/");
     }
+  } finally {
+    state.isLoading = false;
   }
 };
 </script>

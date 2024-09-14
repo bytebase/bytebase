@@ -8,6 +8,7 @@ import type {
   WorkspaceProfileSetting,
   DataClassificationSetting_DataClassificationConfig,
 } from "@/types/proto/v1/setting_service";
+import { PasswordRestrictionSetting } from "@/types/proto/v1/setting_service";
 import type { SettingName } from "@/types/setting";
 import { useActuatorV1Store } from "./actuator";
 
@@ -39,6 +40,18 @@ export const useSettingV1Store = defineStore("setting_v1", {
         `${settingNamePrefix}bb.workspace.data-classification`
       );
       return setting?.value?.dataClassificationSettingValue?.configs ?? [];
+    },
+    passwordRestriction(state): PasswordRestrictionSetting {
+      const setting = this.settingMapByName.get(
+        `${settingNamePrefix}bb.workspace.password-restriction`
+      );
+      return (
+        setting?.value?.passwordRestrictionSetting ??
+        PasswordRestrictionSetting.fromPartial({
+          minLength: 8,
+          requireLetter: true,
+        })
+      );
     },
   },
   actions: {
