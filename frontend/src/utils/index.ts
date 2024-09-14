@@ -25,3 +25,4 @@ export * from "./sheet";
 
 export * from "./v1";
 export * from "./iam";
+export * from "./auto-route";

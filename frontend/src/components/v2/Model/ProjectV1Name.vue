@@ -15,8 +15,13 @@
 <script lang="ts" setup>
 import { NPerformantEllipsis } from "naive-ui";
 import { computed } from "vue";
+import { useRouter } from "vue-router";
 import type { Project } from "@/types/proto/v1/project_service";
-import { getHighlightHTMLByRegExp, projectV1Name } from "@/utils";
+import {
+  autoProjectRoute,
+  getHighlightHTMLByRegExp,
+  projectV1Name,
+} from "@/utils";
 
 const props = withDefaults(
   defineProps<{
@@ -35,11 +40,12 @@ const props = withDefaults(
     keyword: undefined,
   }
 );
+const router = useRouter();
 
 const bindings = computed(() => {
   if (props.link) {
     return {
-      to: `/${props.project.name}`,
+      to: autoProjectRoute(router, props.project),
       activeClass: "",
       exactActiveClass: "",
       onClick: (e: MouseEvent) => {

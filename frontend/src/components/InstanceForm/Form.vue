@@ -42,7 +42,7 @@
           <label for="activation" class="textlabel block">
             {{ $t("subscription.instance-assignment.assign-license") }}
             (<router-link
-              :to="{ name: SETTING_ROUTE_WORKSPACE_SUBSCRIPTION }"
+              :to="autoSubscriptionRoute($router)"
               class="accent-link"
             >
               {{
@@ -460,7 +460,6 @@ import {
   MiniActionButton,
 } from "@/components/v2";
 import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
-import { SETTING_ROUTE_WORKSPACE_SUBSCRIPTION } from "@/router/dashboard/workspaceSetting";
 import {
   useSettingV1Store,
   useActuatorV1Store,
@@ -478,7 +477,12 @@ import {
 } from "@/types/proto/v1/instance_service";
 import { DataSource_RedisType } from "@/types/proto/v1/instance_service";
 import { PlanType } from "@/types/proto/v1/subscription_service";
-import { isDev, extractInstanceResourceName, onlyAllowNumber } from "@/utils";
+import {
+  isDev,
+  extractInstanceResourceName,
+  onlyAllowNumber,
+  autoSubscriptionRoute,
+} from "@/utils";
 import { getErrorCode } from "@/utils/grpcweb";
 import LearnMoreLink from "../LearnMoreLink.vue";
 import BigQueryHostInput from "./BigQueryHostInput.vue";

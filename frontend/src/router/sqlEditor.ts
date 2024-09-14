@@ -18,8 +18,21 @@ export const SQL_EDITOR_SETTING_ENVIRONMENT_MODULE =
 export const SQL_EDITOR_SETTING_PROJECT_MODULE = "sql-editor.setting.project";
 export const SQL_EDITOR_SETTING_DATABASES_MODULE =
   "sql-editor.setting.databases";
+export const SQL_EDITOR_SETTING_DATABASE_DETAIL_MODULE =
+  "sql-editor.setting.database.detail";
 export const SQL_EDITOR_SETTING_USERS_MODULE = "sql-editor.setting.users";
 export const SQL_EDITOR_SETTING_MEMBERS_MODULE = "sql-editor.setting.members";
+export const SQL_EDITOR_SETTING_ROLES_MODULE = "sql-editor.setting.roles";
+export const SQL_EDITOR_SETTING_SSO_MODULE = "sql-editor.setting.sso";
+export const SQL_EDITOR_SETTING_AUDIT_LOG_MODULE =
+  "sql-editor.setting.audit-log";
+export const SQL_EDITOR_SETTING_DATA_CLASSIFICATION_MODULE =
+  "sql-editor.setting.data-classification";
+export const SQL_EDITOR_SETTING_DATA_MASKING_MODULE =
+  "sql-editor.setting.data-masking";
+export const SQL_EDITOR_SETTING_ACCESS_CONTROL_MODULE =
+  "sql-editor.setting.access-control";
+export const SQL_EDITOR_SETTING_PROFILE_MODULE = "sql-editor.setting.profile";
 
 const sqlEditorRoutes: RouteRecordRaw[] = [
   {
@@ -119,6 +132,14 @@ const sqlEditorRoutes: RouteRecordRaw[] = [
             component: () => import("../views/sql-editor/Setting/Environment"),
           },
           {
+            path: "database/instances/:instanceId/databases/:databaseName",
+            name: SQL_EDITOR_SETTING_DATABASE_DETAIL_MODULE,
+            meta: {
+              requiredWorkspacePermissionList: () => ["bb.databases.list"],
+            },
+            component: () => import("../views/sql-editor/Setting/Database"),
+          },
+          {
             path: "database",
             name: SQL_EDITOR_SETTING_DATABASES_MODULE,
             meta: {
@@ -138,6 +159,67 @@ const sqlEditorRoutes: RouteRecordRaw[] = [
               requiredWorkspacePermissionList: () => ["bb.policies.get"],
             },
             component: () => import("../views/sql-editor/Setting/Members"),
+          },
+          {
+            path: "roles",
+            name: SQL_EDITOR_SETTING_ROLES_MODULE,
+            meta: {
+              requiredWorkspacePermissionList: () => ["bb.roles.list"],
+            },
+            component: () => import("../views/sql-editor/Setting/Roles"),
+          },
+          {
+            path: "sso",
+            name: SQL_EDITOR_SETTING_SSO_MODULE,
+            meta: {
+              requiredWorkspacePermissionList: () => ["bb.settings.get"],
+            },
+            component: () => import("../views/sql-editor/Setting/SSO"),
+          },
+          {
+            path: "audit-log",
+            name: SQL_EDITOR_SETTING_AUDIT_LOG_MODULE,
+            meta: {
+              requiredWorkspacePermissionList: () => [
+                "bb.settings.get",
+                "bb.auditLogs.search",
+              ],
+            },
+            component: () => import("../views/sql-editor/Setting/AuditLog"),
+          },
+          {
+            path: "data-classification",
+            name: SQL_EDITOR_SETTING_DATA_CLASSIFICATION_MODULE,
+            meta: {
+              requiredWorkspacePermissionList: () => ["bb.policies.get"],
+            },
+            component: () =>
+              import("../views/sql-editor/Setting/DataClassification"),
+          },
+          {
+            path: "data-masking",
+            name: SQL_EDITOR_SETTING_DATA_MASKING_MODULE,
+            meta: {
+              requiredWorkspacePermissionList: () => ["bb.policies.get"],
+            },
+            component: () => import("../views/sql-editor/Setting/DataMasking"),
+          },
+          {
+            path: "data-access-control",
+            name: SQL_EDITOR_SETTING_ACCESS_CONTROL_MODULE,
+            meta: {
+              requiredWorkspacePermissionList: () => ["bb.policies.get"],
+            },
+            component: () =>
+              import("../views/sql-editor/Setting/AccessControl"),
+          },
+          {
+            path: "profile",
+            name: SQL_EDITOR_SETTING_PROFILE_MODULE,
+            meta: {
+              requiredWorkspacePermissionList: () => [],
+            },
+            component: () => import("../views/sql-editor/Setting/Profile"),
           },
         ],
       },

@@ -48,7 +48,7 @@
     <div class="flex items-center gap-2">
       <SettingButton v-if="!hideSettingButton" size="small" />
       <BrandingLogoWrapper v-if="!hideProfile">
-        <ProfileDropdown :link="false" />
+        <ProfileDropdown :link="true" />
       </BrandingLogoWrapper>
     </div>
 

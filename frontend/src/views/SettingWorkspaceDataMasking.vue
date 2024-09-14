@@ -9,7 +9,7 @@
         name="global-masking-rule"
         :tab="$t('settings.sensitive-data.global-rules.self')"
       >
-        <GlobalMaskingRulesView />
+        <GlobalMaskingRulesView :embedded="embedded" />
       </NTabPane>
       <NTabPane
         name="semantic-types"
@@ -51,6 +51,10 @@ const isDataMaskingTab = (tab: any): tab is DataMaskingTab =>
 interface LocalState {
   selectedTab: DataMaskingTab;
 }
+
+defineProps<{
+  embedded?: boolean;
+}>();
 
 const defaultTab: DataMaskingTab = "global-masking-rule";
 

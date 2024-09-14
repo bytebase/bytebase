@@ -12,7 +12,11 @@
     class="bb-project-select"
     style="width: 12rem"
     @update:value="handleValueUpdated"
-  />
+  >
+    <template v-if="$slots.empty" #empty>
+      <slot name="empty" />
+    </template>
+  </NSelect>
 </template>
 
 <script lang="tsx" setup>
