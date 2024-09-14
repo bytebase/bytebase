@@ -16,7 +16,13 @@
           :placeholder="'Minimum length'"
           :precision="0"
           @update:value="
-            (val) => onUpdate({ minLength: val || DEFAULT_MIN_LENGTH })
+            (val) =>
+              onUpdate({
+                minLength: Math.max(
+                  val || DEFAULT_MIN_LENGTH,
+                  DEFAULT_MIN_LENGTH
+                ),
+              })
           "
         />
         <span class="textlabel">
@@ -146,12 +152,12 @@
               :size="'small'"
               :placeholder="'Minimum length'"
               :precision="0"
+              @click="(e: MouseEvent) => e.stopPropagation()"
               @update:value="
                 (val) =>
-                  val &&
                   onUpdate({
                     passwordRotation: Duration.fromPartial({
-                      seconds: val * 24 * 60 * 60,
+                      seconds: (val || 1) * 24 * 60 * 60,
                       nanos: 0,
                     }),
                   })
