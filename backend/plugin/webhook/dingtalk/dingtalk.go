@@ -9,42 +9,44 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+
+	"github.com/bytebase/bytebase/backend/plugin/webhook"
 )
 
-// DingTalkWebhookResponse is the API message for DingTalk webhook response.
-type DingTalkWebhookResponse struct {
+// Response is the API message for DingTalk webhook response.
+type Response struct {
 	ErrorCode    int    `json:"errcode"`
 	ErrorMessage string `json:"errmsg"`
 }
 
-// DingTalkWebhookMarkdown is the API message for DingTalk webhook markdown.
-type DingTalkWebhookMarkdown struct {
+// MessageMarkdown is the API message for DingTalk webhook markdown.
+type MessageMarkdown struct {
 	Title string `json:"title"`
 	Text  string `json:"text"`
 }
 
-// DingTalkMention is the API message for DingTalk webhook to mention users in DingTalk.
+// Mention is the API message for DingTalk webhook to mention users in DingTalk.
 // https://open.dingtalk.com/document/orgapp/custom-robots-send-group-messages
-type DingTalkMention struct {
+type Mention struct {
 	Mobiles []string `json:"atMobiles"`
 }
 
-// DingTalkWebhook is the API message for DingTalk webhook.
-type DingTalkWebhook struct {
-	MessageType string                  `json:"msgtype"`
-	Markdown    DingTalkWebhookMarkdown `json:"markdown"`
-	Mention     DingTalkMention         `json:"at"`
+// Message is the API message for DingTalk webhook message.
+type Message struct {
+	MessageType string          `json:"msgtype"`
+	Markdown    MessageMarkdown `json:"markdown"`
+	Mention     Mention         `json:"at"`
 }
 
 func init() {
-	Register("bb.plugin.webhook.dingtalk", &DingTalkReceiver{})
+	webhook.Register("bb.plugin.webhook.dingtalk", &DingTalkReceiver{})
 }
 
 // DingTalkReceiver is the receiver for DingTalk.
 type DingTalkReceiver struct {
 }
 
-func (*DingTalkReceiver) Post(context Context) error {
+func (*DingTalkReceiver) Post(context webhook.Context) error {
 	metaStrList := []string{}
 	for _, meta := range context.GetMetaListZh() {
 		metaStrList = append(metaStrList, fmt.Sprintf("##### **%s:** %s", meta.Name, meta.Value))
@@ -63,9 +65,9 @@ func (*DingTalkReceiver) Post(context Context) error {
 		text += "\n" + strings.Join(ats, " ")
 	}
 
-	post := DingTalkWebhook{
+	post := Message{
 		MessageType: "markdown",
-		Markdown: DingTalkWebhookMarkdown{
+		Markdown: MessageMarkdown{
 			Title: context.TitleZh,
 			Text:  text,
 		},
@@ -86,7 +88,7 @@ func (*DingTalkReceiver) Post(context Context) error {
 
 	req.Header.Set("Content-Type", "application/json")
 	client := &http.Client{
-		Timeout: Timeout,
+		Timeout: webhook.Timeout,
 	}
 	resp, err := client.Do(req)
 	if err != nil {
@@ -103,7 +105,7 @@ func (*DingTalkReceiver) Post(context Context) error {
 		return errors.Errorf("failed to POST webhook %s, status code: %d, response body: %s", context.URL, resp.StatusCode, b)
 	}
 
-	webhookResponse := &DingTalkWebhookResponse{}
+	webhookResponse := &Response{}
 	if err := json.Unmarshal(b, webhookResponse); err != nil {
 		return errors.Wrapf(err, "malformed webhook response from %s", context.URL)
 	}
