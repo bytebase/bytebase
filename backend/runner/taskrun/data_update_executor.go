@@ -85,13 +85,7 @@ func (exec *DataUpdateExecutor) RunOnce(ctx context.Context, driverCtx context.C
 
 	priorBackupDetail, backupErr := exec.backupData(ctx, driverCtx, statement, payload, task, issue, instance, database)
 	if backupErr != nil {
-		skip, skipErr := exec.skipBackupError(ctx, task)
-		if skipErr != nil {
-			return true, nil, errors.Errorf("failed to check skip backup error or not: %v", skipErr)
-		}
-		if !skip {
-			return true, nil, backupErr
-		}
+		// Create issue comment for backup error.
 		if _, err := exec.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
 			IssueUID: issue.UID,
 			Payload: &storepb.IssueCommentPayload{
@@ -105,6 +99,15 @@ func (exec *DataUpdateExecutor) RunOnce(ctx context.Context, driverCtx context.C
 		}, api.SystemBotID); err != nil {
 			slog.Warn("failed to create issue comment", "task", task.ID, log.BBError(err), "backup error", backupErr)
 		}
+
+		// Check if we should skip backup error and continue to run migration.
+		skip, err := exec.shouldSkipBackupError(ctx, task)
+		if err != nil {
+			return true, nil, errors.Errorf("failed to check skip backup error or not: %v", err)
+		}
+		if !skip {
+			return true, nil, backupErr
+		}
 	}
 	version := model.Version{Version: payload.SchemaVersion}
 	terminated, result, err := runMigration(ctx, driverCtx, exec.store, exec.dbFactory, exec.stateCfg, exec.profile, task, taskRunUID, db.Data, statement, version, &sheetID)
@@ -115,7 +118,7 @@ func (exec *DataUpdateExecutor) RunOnce(ctx context.Context, driverCtx context.C
 	return terminated, result, err
 }
 
-func (exec *DataUpdateExecutor) skipBackupError(ctx context.Context, task *store.TaskMessage) (bool, error) {
+func (exec *DataUpdateExecutor) shouldSkipBackupError(ctx context.Context, task *store.TaskMessage) (bool, error) {
 	pipeline, pipelineErr := exec.store.GetPipelineV2ByID(ctx, task.PipelineID)
 	if pipelineErr != nil {
 		return false, errors.Wrapf(pipelineErr, "failed to get pipeline %v", task.PipelineID)
@@ -130,7 +133,7 @@ func (exec *DataUpdateExecutor) skipBackupError(ctx context.Context, task *store
 	if project.Setting == nil {
 		return false, nil
 	}
-	return project.Setting.DefaultBackupBehavior == storepb.Project_DEFAULT_BACKUP_BEHAVIOR_BACKUP_ON_ERROR_SKIP, nil
+	return project.Setting.SkipBackupErrors, nil
 }
 
 func (exec *DataUpdateExecutor) backupData(
