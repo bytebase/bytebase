@@ -13,6 +13,7 @@ export type FeatureType =
   | "bb.feature.sso"
   | "bb.feature.2fa"
   | "bb.feature.secure-token"
+  | "bb.feature.password-restriction"
   | "bb.feature.rbac"
   | "bb.feature.disallow-signup"
   | "bb.feature.disallow-password-signin"

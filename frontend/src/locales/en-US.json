@@ -2877,6 +2877,10 @@
       "bb-feature-issue-advanced-search": {
         "title": "Advanced issue search",
         "desc": "Access unlimited issue history with advanced issue search."
+      },
+      "bb-feature-password-restriction": {
+        "title": "Password restriction",
+        "desc": "Allow to configure the restriction for users' password"
       }
     }
   },

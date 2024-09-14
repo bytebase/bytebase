@@ -2877,6 +2877,10 @@
       "bb-feature-issue-advanced-search": {
         "title": "チケットの詳細検索",
         "desc": "高度な検索機能を使用して、無制限の過去のチケットにアクセスできます。"
+      },
+      "bb-feature-password-restriction": {
+        "title": "パスワード制限",
+        "desc": "ユーザーのパスワードの制限を設定できるようにする"
       }
     }
   },

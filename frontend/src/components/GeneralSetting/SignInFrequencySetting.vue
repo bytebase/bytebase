@@ -42,9 +42,9 @@
   </div>
 
   <FeatureModal
-    :open="!!state.featureNameForModal"
-    :feature="state.featureNameForModal"
-    @cancel="state.featureNameForModal = undefined"
+    feature="bb.feature.secure-token"
+    :open="state.showFeatureModal"
+    @cancel="state.showFeatureModal = false"
   />
 </template>
 
@@ -55,7 +55,6 @@ import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { featureToRef, pushNotification } from "@/store";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
-import type { FeatureType } from "@/types";
 import { defaultTokenDurationInHours } from "@/types";
 import { Duration } from "@/types/proto/google/protobuf/duration";
 import { FeatureBadge, FeatureModal } from "../FeatureGuard";
@@ -64,6 +63,7 @@ const getInitialState = (): LocalState => {
   const defaultState: LocalState = {
     inputValue: defaultTokenDurationInHours / 24,
     timeFormat: "DAYS",
+    showFeatureModal: false,
   };
   const seconds =
     settingV1Store.workspaceProfileSetting?.tokenDuration?.seconds?.toNumber();
@@ -82,7 +82,7 @@ const getInitialState = (): LocalState => {
 interface LocalState {
   inputValue: number;
   timeFormat: "HOURS" | "DAYS";
-  featureNameForModal?: FeatureType;
+  showFeatureModal: boolean;
 }
 
 const props = defineProps<{
@@ -101,7 +101,7 @@ const allowChangeSetting = computed(() => {
 
 const handleValueFieldClick = () => {
   if (!hasSecureTokenFeature.value) {
-    state.featureNameForModal = "bb.feature.secure-token";
+    state.showFeatureModal = true;
     return;
   }
 };
@@ -137,7 +137,7 @@ watch(
   () => [state.inputValue, state.timeFormat],
   () => {
     if (!hasSecureTokenFeature.value) {
-      state.featureNameForModal = "bb.feature.secure-token";
+      state.showFeatureModal = true;
       return;
     }
 

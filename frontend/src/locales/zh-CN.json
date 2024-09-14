@@ -2877,6 +2877,10 @@
       "bb-feature-issue-advanced-search": {
         "title": "工单高级搜索",
         "desc": "通过高级搜索来访问无限制的历史工单。"
+      },
+      "bb-feature-password-restriction": {
+        "title": "密码限制",
+        "desc": "允许配置用户密码的规则"
       }
     }
   },
