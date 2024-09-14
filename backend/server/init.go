@@ -78,7 +78,7 @@ func (s *Server) getInitSetting(ctx context.Context) (string, time.Duration, err
 	// Init password validation
 	passwordSettingValue, err := protojson.Marshal(&storepb.PasswordRestrictionSetting{
 		MinLength:                         8,
-		RequireNumber:                     true,
+		RequireNumber:                     false,
 		RequireLetter:                     true,
 		RequireUppercaseLetter:            false,
 		RequireSpecialCharacter:           false,
@@ -254,10 +254,19 @@ func (s *Server) getInitSetting(ctx context.Context) (string, time.Duration, err
 	}
 
 	tokenDuration := auth.DefaultTokenDuration
-	if passwordRestriction.PasswordRotation != nil && passwordRestriction.PasswordRotation.GetSeconds() > 0 {
-		tokenDuration = passwordRestriction.PasswordRotation.AsDuration()
-	} else if workspaceProfile.TokenDuration != nil && workspaceProfile.TokenDuration.Seconds > 0 {
+	if workspaceProfile.TokenDuration != nil && workspaceProfile.TokenDuration.GetSeconds() > 0 {
 		tokenDuration = workspaceProfile.TokenDuration.AsDuration()
+	}
+	// Currently we implement the password rotation restriction in a simple way:
+	// 1. Only check if users need to reset their password during login.
+	// 2. For the 1st time login, if `RequireResetPasswordForFirstLogin` is true, `require_reset_password` in the response will be true
+	// 3. Otherwise if the `PasswordRotation` exists, check the password last updated time to decide if the `require_reset_password` is true.
+	// So we will use the minimum value between (`workspaceProfile.TokenDuration`, `passwordRestriction.PasswordRotation`) to force to expire the token.
+	if passwordRestriction.PasswordRotation != nil && passwordRestriction.PasswordRotation.GetSeconds() > 0 {
+		passwordRotation := passwordRestriction.PasswordRotation.AsDuration()
+		if passwordRotation.Seconds() < tokenDuration.Seconds() {
+			tokenDuration = passwordRotation
+		}
 	}
 
 	return secret, tokenDuration, nil
