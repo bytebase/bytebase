@@ -1027,10 +1027,6 @@
                 </li>
               
               
-                <li>
-                  <a href="#bytebase.store.Project.DefaultBackupBehavior"><span class="badge">E</span>Project.DefaultBackupBehavior</a>
-                </li>
-              
               
               
             </ul>
@@ -8688,10 +8684,17 @@ for example, the environment resource can have the sql review config tag, like &
                 </tr>
               
                 <tr>
-                  <td>default_backup_behavior</td>
-                  <td><a href="#bytebase.store.Project.DefaultBackupBehavior">Project.DefaultBackupBehavior</a></td>
+                  <td>auto_enable_backup</td>
+                  <td><a href="#bool">bool</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>Whether to automatically enable backup. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>skip_backup_errors</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>Whether to skip backup errors and continue the data migration. </p></td>
                 </tr>
               
             </tbody>
@@ -8702,41 +8705,6 @@ for example, the environment resource can have the sql review config tag, like &
         
       
 
-      
-        <h3 id="bytebase.store.Project.DefaultBackupBehavior">Project.DefaultBackupBehavior</h3>
-        <p></p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>DEFAULT_BACKUP_BEHAVIOR_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>DEFAULT_BACKUP_BEHAVIOR_NO_BACKUP</td>
-                <td>1</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>DEFAULT_BACKUP_BEHAVIOR_BACKUP_ON_ERROR_STOP</td>
-                <td>2</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>DEFAULT_BACKUP_BEHAVIOR_BACKUP_ON_ERROR_SKIP</td>
-                <td>3</td>
-                <td><p></p></td>
-              </tr>
-            
-          </tbody>
-        </table>
       
 
       
