@@ -1976,6 +1976,7 @@ Format: users/{userUID}. |
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | members | [GroupMember](#bytebase-store-GroupMember) | repeated |  |
+| source | [string](#string) |  | source means where the group comes from. For now we support Entra ID SCIM sync, so the source could be Entra ID. |
 
 
 
@@ -4830,6 +4831,7 @@ MFAConfig is the MFA configuration for a user.
 | ----- | ---- | ----- | ----------- |
 | last_login_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | last_change_password_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| source | [string](#string) |  | source means where the user comes from. For now we support Entra ID SCIM sync, so the source could be Entra ID. |
 
 
 

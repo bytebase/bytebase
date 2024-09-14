@@ -25,6 +25,9 @@
           >
             {{ user.title }}
           </router-link>
+          <NTag v-if="user.profile?.source" size="small" round type="primary">
+            {{ user.profile.source }}
+          </NTag>
           <YouTag v-if="currentUserV1.name === user.name" />
           <SystemBotTag v-if="user.name === SYSTEM_BOT_USER_NAME" />
           <ServiceAccountTag
@@ -40,6 +43,7 @@
 </template>
 
 <script lang="ts" setup>
+import { NTag } from "naive-ui";
 import { computed } from "vue";
 import UserAvatar from "@/components/User/UserAvatar.vue";
 import ServiceAccountTag from "@/components/misc/ServiceAccountTag.vue";

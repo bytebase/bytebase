@@ -9823,6 +9823,9 @@ components:
                     type: string
                     description: The timestamp when the group was created.
                     format: date-time
+                source:
+                    type: string
+                    description: source means where the group comes from. For now we support Entra ID SCIM sync, so the source could be Entra ID.
         GroupMember:
             type: object
             properties:
@@ -13940,6 +13943,20 @@ components:
                     description: |-
                         Should be a valid E.164 compliant phone number.
                          Could be empty.
+                profile:
+                    $ref: '#/components/schemas/User_Profile'
+        User_Profile:
+            type: object
+            properties:
+                lastLoginTime:
+                    type: string
+                    format: date-time
+                lastChangePasswordTime:
+                    type: string
+                    format: date-time
+                source:
+                    type: string
+                    description: source means where the user comes from. For now we support Entra ID SCIM sync, so the source could be Entra ID.
         VCSConnector:
             type: object
             properties:
