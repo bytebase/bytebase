@@ -33,9 +33,9 @@
         v-if="ready"
         mode="PROJECT_SHORT"
         :database-list="databaseList"
-        :custom-click="true"
         :show-selection="false"
-        :row-clickable="false"
+        :custom-click="true"
+        @row-click="handleDatabaseClick"
       />
     </div>
     <MaskSpinner v-if="!ready" />
@@ -75,6 +75,7 @@
 import { ChevronsDownIcon, SettingsIcon, UsersIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { computed, reactive } from "vue";
+import { useRouter } from "vue-router";
 import ProjectMemberPanel from "@/components/ProjectMember/ProjectMemberPanel.vue";
 import ProjectSettingPanel from "@/components/ProjectSettingPanel.vue";
 import { TransferDatabaseForm } from "@/components/TransferDatabaseForm";
@@ -82,9 +83,13 @@ import MaskSpinner from "@/components/misc/MaskSpinner.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
 import DatabaseV1Table from "@/components/v2/Model/DatabaseV1Table";
 import { useDatabaseV1List } from "@/store/modules/v1/databaseList";
-import { DEFAULT_PROJECT_NAME, type ComposedProject } from "@/types";
+import {
+  DEFAULT_PROJECT_NAME,
+  type ComposedDatabase,
+  type ComposedProject,
+} from "@/types";
 import { State } from "@/types/proto/v1/common";
-import { hasProjectPermissionV2 } from "@/utils";
+import { autoDatabaseRoute, hasProjectPermissionV2 } from "@/utils";
 
 type LocalState = {
   transfer: {
@@ -102,6 +107,7 @@ const props = defineProps<{
   project: ComposedProject;
 }>();
 
+const router = useRouter();
 const { databaseList, ready } = useDatabaseV1List(props.project.name);
 const state = reactive<LocalState>({
   transfer: { show: false },
@@ -136,4 +142,8 @@ const allowEditMembers = computed(() => {
 
   return hasProjectPermissionV2(props.project, "bb.projects.setIamPolicy");
 });
+
+const handleDatabaseClick = (event: MouseEvent, database: ComposedDatabase) => {
+  router.push(autoDatabaseRoute(router, database));
+};
 </script>

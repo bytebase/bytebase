@@ -108,7 +108,7 @@
 import { PencilIcon, ChevronUpIcon, ChevronDownIcon } from "lucide-vue-next";
 import { NButton, type SelectOption } from "naive-ui";
 import { v4 as uuidv4 } from "uuid";
-import { computed, reactive, nextTick, onMounted } from "vue";
+import { computed, reactive, nextTick, onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useBodyLayoutContext } from "@/layouts/common";
 import type { Factor } from "@/plugins/cel";
@@ -144,7 +144,9 @@ interface LocalState {
   processing: boolean;
   reorderRules: boolean;
 }
-
+const props = defineProps<{
+  embedded?: boolean;
+}>();
 const { t } = useI18n();
 const state = reactive<LocalState>({
   maskingRuleItemList: [],
@@ -157,7 +159,12 @@ const hasPermission = computed(() => {
   return hasWorkspacePermissionV2("bb.policies.update");
 });
 const hasSensitiveDataFeature = featureToRef("bb.feature.sensitive-data");
-const { mainContainerRef } = useBodyLayoutContext();
+const layout = {
+  mainContainerRef: ref<HTMLDivElement>(),
+};
+if (!props.embedded) {
+  layout.mainContainerRef = useBodyLayoutContext().mainContainerRef;
+}
 
 const updateList = async () => {
   const policy = await policyStore.getOrFetchPolicyByParentAndType({
@@ -191,7 +198,7 @@ const addNewRule = () => {
     }),
   });
   nextTick(() => {
-    mainContainerRef.value?.scrollTo(
+    layout.mainContainerRef.value?.scrollTo(
       0,
       document.body.scrollHeight || document.documentElement.scrollHeight
     );

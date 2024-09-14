@@ -215,7 +215,6 @@ import {
   ProductionEnvironmentV1Icon,
   ProjectV1Name,
 } from "@/components/v2";
-import { PROJECT_V1_ROUTE_DATABASE_DETAIL } from "@/router/dashboard/projectV1";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
   useAnomalyV1Store,
@@ -311,7 +310,6 @@ watch(
   () => state.selectedTab,
   (tab) => {
     router.replace({
-      name: PROJECT_V1_ROUTE_DATABASE_DETAIL,
       hash: `#${tab}`,
       query: route.query,
     });

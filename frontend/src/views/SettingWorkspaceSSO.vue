@@ -67,6 +67,11 @@ interface LocalState {
   selectedIdentityProviderName: string;
 }
 
+const props = defineProps<{
+  onClickCreate?: () => void;
+  onClickView?: (sso: IdentityProvider) => void;
+}>();
+
 const { t } = useI18n();
 const router = useRouter();
 const state = reactive<LocalState>({
@@ -99,12 +104,21 @@ const handleCreateSSO = () => {
     return;
   }
 
+  if (props.onClickCreate) {
+    props.onClickCreate();
+    return;
+  }
+
   router.push({
     name: WORKSPACE_ROUTE_SSO_CREATE,
   });
 };
 
 const handleViewSSO = (identityProvider: IdentityProvider) => {
+  if (props.onClickView) {
+    props.onClickView(identityProvider);
+    return;
+  }
   router.push({
     name: WORKSPACE_ROUTE_SSO_DETAIL,
     params: {
@@ -146,7 +160,9 @@ const columnList = computed((): DataTableColumn<IdentityProvider>[] => {
               size: "small",
               onClick: () => handleViewSSO(identityProvider),
             },
-            t("common.view")
+            {
+              default: () => t("common.view"),
+            }
           )
         ),
     });

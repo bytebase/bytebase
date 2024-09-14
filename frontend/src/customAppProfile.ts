@@ -94,22 +94,19 @@ const overrideAppFeatures = (
       "bb.feature.hide-quick-start": true,
       "bb.feature.hide-help": true,
       "bb.feature.hide-trial": true,
-      // "bb.feature.members.hide-groups": true,
-      // "bb.feature.members.hide-project-roles": true,
-      // "bb.feature.members.hide-service-account": true,
-      // "bb.feature.sql-editor.hide-projects": true,
-      // "bb.feature.sql-editor.hide-environments": true,
-      // "bb.feature.sql-editor.disallow-batch-query": true,
-      // "bb.feature.sql-editor.disallow-share-worksheet": true,
       "bb.feature.sql-editor.disallow-edit-schema": true,
-      // "bb.feature.sql-editor.hide-advance-instance-features": true,
       "bb.feature.sql-editor.sql-check-style": "PREFLIGHT",
+      "bb.feature.sql-editor.disallow-export-query-data": true,
+      "bb.feature.sql-editor.disallow-request-query": true,
       "bb.feature.databases.operations": new Set([
-        "EXPORT-DATA",
         "SYNC-SCHEMA",
         "EDIT-LABELS",
         "TRANSFER",
       ]),
+    });
+  } else {
+    actuatorStore.overrideAppFeatures({
+      "bb.feature.sql-editor.disable-setting": true,
     });
   }
 };
