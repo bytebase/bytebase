@@ -18,7 +18,7 @@ export const setDefaultDataSourceForConn = (
   conn: SQLEditorConnection,
   database: ComposedDatabase
 ) => {
-  if (!conn.dataSourceId) {
+  if (conn.dataSourceId) {
     return;
   }
 
