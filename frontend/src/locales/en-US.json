@@ -2120,6 +2120,14 @@
           "default_backup_behavior_no_backup": "Disable backup",
           "default_backup_behavior_backup_on_error_stop": "Enable backup, but stop the task on error",
           "default_backup_behavior_backup_on_error_skip": "Enable backup, skip backup error on failure"
+        },
+        "auto-enable-backup": {
+          "self": "Auto enable backup",
+          "description": "Automatically enable backup for all data changing issues."
+        },
+        "skip-backup-errors": {
+          "self": "Skip backup errors",
+          "description": "Skip backup errors and changing data tasks will continue to run."
         }
       }
     },

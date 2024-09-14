@@ -2120,6 +2120,14 @@
           "default_backup_behavior_no_backup": "禁用备份",
           "default_backup_behavior_backup_on_error_stop": "启用备份，但在发生错误时停止任务",
           "default_backup_behavior_backup_on_error_skip": "启用备份，失败时跳过备份错误"
+        },
+        "auto-enable-backup": {
+          "self": "自动启用备份",
+          "description": "自动为所有数据更改工单启用备份。"
+        },
+        "skip-backup-errors": {
+          "self": "跳过备份失败的错误",
+          "description": "当备份失败时，跳过错误并且变更数据任务将继续执行。"
         }
       }
     },

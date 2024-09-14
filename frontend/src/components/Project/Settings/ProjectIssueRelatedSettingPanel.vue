@@ -76,17 +76,31 @@
           }}
         </p>
       </div>
-      <div class="w-full flex flex-row items-center gap-3">
-        <span class="font-normal">{{
-          $t("project.settings.issue-related.default-backup-behavior.self")
-        }}</span>
-        <div class="w-80">
-          <NSelect
-            v-model:value="state.defaultBackupBehavior"
-            :options="defaultBackupBehaviorOptions"
-            :consistent-menu-width="false"
-          />
-        </div>
+      <div>
+        <NCheckbox
+          v-model:checked="state.autoEnableBackup"
+          size="large"
+          :disabled="!allowEdit"
+          :label="$t('project.settings.issue-related.auto-enable-backup.self')"
+        />
+        <p class="text-sm text-gray-400 pl-6 ml-0.5">
+          {{
+            $t("project.settings.issue-related.auto-enable-backup.description")
+          }}
+        </p>
+      </div>
+      <div>
+        <NCheckbox
+          v-model:checked="state.skipBackupErrors"
+          size="large"
+          :disabled="!allowEdit"
+          :label="$t('project.settings.issue-related.skip-backup-errors.self')"
+        />
+        <p class="text-sm text-gray-400 pl-6 ml-0.5">
+          {{
+            $t("project.settings.issue-related.skip-backup-errors.description")
+          }}
+        </p>
       </div>
     </div>
     <div class="w-full flex justify-end gap-x-3">
@@ -103,22 +117,12 @@
 
 <script setup lang="tsx">
 import { isEqual, cloneDeep } from "lodash-es";
-import {
-  NButton,
-  NDynamicTags,
-  NSelect,
-  NTag,
-  NColorPicker,
-  NCheckbox,
-} from "naive-ui";
+import { NButton, NDynamicTags, NTag, NColorPicker, NCheckbox } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { pushNotification, useProjectV1Store } from "@/store";
 import type { ComposedProject } from "@/types";
-import {
-  Label,
-  Project_DefaultBackupBehavior,
-} from "@/types/proto/v1/project_service";
+import { Label } from "@/types/proto/v1/project_service";
 
 interface LocalState {
   issueLabels: Label[];
@@ -126,29 +130,20 @@ interface LocalState {
   allowModifyStatement: boolean;
   autoResolveIssue: boolean;
   enforceIssueTitle: boolean;
-  defaultBackupBehavior: Project_DefaultBackupBehavior;
+  autoEnableBackup: boolean;
+  skipBackupErrors: boolean;
 }
 
 const getInitialLocalState = (): LocalState => {
   const project = props.project;
-  let defaultBackupBehavior =
-    Project_DefaultBackupBehavior.DEFAULT_BACKUP_BEHAVIOR_NO_BACKUP;
-  if (
-    [
-      Project_DefaultBackupBehavior.DEFAULT_BACKUP_BEHAVIOR_NO_BACKUP,
-      Project_DefaultBackupBehavior.DEFAULT_BACKUP_BEHAVIOR_BACKUP_ON_ERROR_STOP,
-      Project_DefaultBackupBehavior.DEFAULT_BACKUP_BEHAVIOR_BACKUP_ON_ERROR_SKIP,
-    ].includes(project.defaultBackupBehavior)
-  ) {
-    defaultBackupBehavior = project.defaultBackupBehavior;
-  }
   return {
     issueLabels: [...cloneDeep(project.issueLabels)],
     forceIssueLabels: project.forceIssueLabels,
     allowModifyStatement: project.allowModifyStatement,
     autoResolveIssue: project.autoResolveIssue,
     enforceIssueTitle: project.enforceIssueTitle,
-    defaultBackupBehavior: defaultBackupBehavior,
+    autoEnableBackup: project.autoEnableBackup,
+    skipBackupErrors: project.skipBackupErrors,
   };
 };
 
@@ -166,19 +161,6 @@ const state = reactive<LocalState>(getInitialLocalState());
 const labelValues = computed(() => state.issueLabels.map((l) => l.value));
 
 const valueChanged = computed(() => !isEqual(state, getInitialLocalState()));
-
-const defaultBackupBehaviorOptions = computed(() => {
-  return [
-    Project_DefaultBackupBehavior.DEFAULT_BACKUP_BEHAVIOR_NO_BACKUP,
-    Project_DefaultBackupBehavior.DEFAULT_BACKUP_BEHAVIOR_BACKUP_ON_ERROR_STOP,
-    Project_DefaultBackupBehavior.DEFAULT_BACKUP_BEHAVIOR_BACKUP_ON_ERROR_SKIP,
-  ].map((value) => ({
-    label: t(
-      `project.settings.issue-related.default-backup-behavior.${value.toLocaleLowerCase()}`
-    ),
-    value,
-  }));
-});
 
 const onLabelsUpdate = (values: string[]) => {
   if (state.issueLabels.length + 1 !== values.length) {
@@ -265,8 +247,11 @@ const getUpdateMask = () => {
   if (state.enforceIssueTitle !== props.project.enforceIssueTitle) {
     mask.push("enforce_issue_title");
   }
-  if (state.defaultBackupBehavior !== props.project.defaultBackupBehavior) {
-    mask.push("default_backup_behavior");
+  if (!isEqual(state.autoEnableBackup, props.project.autoEnableBackup)) {
+    mask.push("auto_enable_backup");
+  }
+  if (!isEqual(state.skipBackupErrors, props.project.skipBackupErrors)) {
+    mask.push("skip_backup_errors");
   }
   return mask;
 };

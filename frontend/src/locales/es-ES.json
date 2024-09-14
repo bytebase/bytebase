@@ -2120,6 +2120,14 @@
           "default_backup_behavior_no_backup": "Deshabilitar copia de seguridad",
           "default_backup_behavior_backup_on_error_stop": "Habilitar copia de seguridad, pero detener la tarea en caso de error",
           "default_backup_behavior_backup_on_error_skip": "Habilitar copia de seguridad, omitir error de copia de seguridad en caso de falla"
+        },
+        "auto-enable-backup": {
+          "self": "Habilitar automáticamente la copia de seguridad",
+          "description": "Habilitar automáticamente la copia de seguridad para todos los problemas de modificación de datos."
+        },
+        "skip-backup-errors": {
+          "self": "Omitir errores de copia de seguridad",
+          "description": "Se omitirán los errores de copia de seguridad y las tareas de cambio de datos continuarán ejecutándose."
         }
       }
     },

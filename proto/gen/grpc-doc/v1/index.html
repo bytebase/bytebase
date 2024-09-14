@@ -1940,10 +1940,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.Project.DefaultBackupBehavior"><span class="badge">E</span>Project.DefaultBackupBehavior</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.Webhook.Type"><span class="badge">E</span>Webhook.Type</a>
                 </li>
               
@@ -20486,10 +20482,17 @@ Format: projects/{project} </p></td>
                 </tr>
               
                 <tr>
-                  <td>default_backup_behavior</td>
-                  <td><a href="#bytebase.v1.Project.DefaultBackupBehavior">Project.DefaultBackupBehavior</a></td>
+                  <td>auto_enable_backup</td>
+                  <td><a href="#bool">bool</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>Whether to automatically enable backup. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>skip_backup_errors</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>Whether to skip backup errors and continue the data migration. </p></td>
                 </tr>
               
             </tbody>
@@ -21050,41 +21053,6 @@ TYPE_SQL_EDITOR_QUERY represents executing query in SQL Editor.</p></td>
                 <td>OPERATOR_TYPE_NOT_IN</td>
                 <td>3</td>
                 <td><p>The operator is &#34;Not In&#34;.</p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-      
-        <h3 id="bytebase.v1.Project.DefaultBackupBehavior">Project.DefaultBackupBehavior</h3>
-        <p></p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>DEFAULT_BACKUP_BEHAVIOR_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>DEFAULT_BACKUP_BEHAVIOR_NO_BACKUP</td>
-                <td>1</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>DEFAULT_BACKUP_BEHAVIOR_BACKUP_ON_ERROR_STOP</td>
-                <td>2</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>DEFAULT_BACKUP_BEHAVIOR_BACKUP_ON_ERROR_SKIP</td>
-                <td>3</td>
-                <td><p></p></td>
               </tr>
             
           </tbody>
