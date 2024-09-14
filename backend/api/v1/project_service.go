@@ -174,7 +174,22 @@ func (s *ProjectService) UpdateProject(ctx context.Context, request *v1pb.Update
 		ResourceID: project.ResourceID,
 	}
 
+	issueProjectSettingFeatureRelatedPaths := []string{
+		"force_issue_labels",
+		"allow_modify_statement",
+		"auto_resolve_issue",
+		"enforce_issue_title",
+		"auto_enable_backup",
+		"skip_backup_errors",
+	}
 	for _, path := range request.UpdateMask.Paths {
+		if slices.Contains(issueProjectSettingFeatureRelatedPaths, path) {
+			// Check if the issue project setting feature is enabled.
+			if err := s.licenseService.IsFeatureEnabled(api.FeatureIssueProjectSetting); err != nil {
+				return nil, status.Error(codes.PermissionDenied, err.Error())
+			}
+		}
+
 		switch path {
 		case "title":
 			patch.Title = &request.Project.Title
