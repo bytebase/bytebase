@@ -674,12 +674,5 @@
     "error": "Error",
     "warning": "Warning",
     "disabled": "Disabled"
-  },
-  "sql-editor": {
-    "no-project": {
-      "not-member-of-any-projects": "You are not any member of any projects.",
-      "go-to-create": "Go to create",
-      "contact-the-admin-to-grant-access": "Contact to the admin to grant access."
-    }
   }
 }
