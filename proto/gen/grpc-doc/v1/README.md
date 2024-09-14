@@ -82,6 +82,7 @@
     - [UndeleteUserRequest](#bytebase-v1-UndeleteUserRequest)
     - [UpdateUserRequest](#bytebase-v1-UpdateUserRequest)
     - [User](#bytebase-v1-User)
+    - [User.Profile](#bytebase-v1-User-Profile)
   
     - [UserType](#bytebase-v1-UserType)
   
@@ -1721,6 +1722,24 @@ The user&#39;s `name` field is used to identify the user to update. Format: user
 | mfa_secret | [string](#string) |  | The mfa_secret is the temporary secret using in two phase verification. |
 | recovery_codes | [string](#string) | repeated | The recovery_codes is the temporary recovery codes using in two phase verification. |
 | phone | [string](#string) |  | Should be a valid E.164 compliant phone number. Could be empty. |
+| profile | [User.Profile](#bytebase-v1-User-Profile) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-User-Profile"></a>
+
+### User.Profile
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| last_login_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| last_change_password_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| source | [string](#string) |  | source means where the user comes from. For now we support Entra ID SCIM sync, so the source could be Entra ID. |
 
 
 
@@ -4828,6 +4847,7 @@ The environment&#39;s `name` field is used to identify the environment to update
 | creator | [string](#string) |  | The name for the creator. Format: users/hello@world.com |
 | members | [GroupMember](#bytebase-v1-GroupMember) | repeated |  |
 | create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The timestamp when the group was created. |
+| source | [string](#string) |  | source means where the group comes from. For now we support Entra ID SCIM sync, so the source could be Entra ID. |
 
 
 

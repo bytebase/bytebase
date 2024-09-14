@@ -21,4 +21,6 @@ message GroupMember {
 
 message GroupPayload {
   repeated GroupMember members = 1;
+  // source means where the group comes from. For now we support Entra ID SCIM sync, so the source could be Entra ID.
+  string source = 2;
 }

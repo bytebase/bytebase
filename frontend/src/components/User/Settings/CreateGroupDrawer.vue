@@ -71,6 +71,7 @@
                     quaternary
                     circle
                     size="tiny"
+                    :disabled="disallowEditMember"
                     @click="deleteMember(i)"
                   >
                     <template #icon>
@@ -81,7 +82,10 @@
               </div>
             </div>
             <div>
-              <NButton :disabled="!allowEdit" @click="addMember">
+              <NButton
+                :disabled="!allowEdit || disallowEditMember"
+                @click="addMember"
+              >
                 {{ $t("settings.members.add-member") }}
               </NButton>
             </div>
@@ -202,6 +206,8 @@ const isCreating = computed(() => !props.group);
 const workspaceDomain = computed(() =>
   head(settingV1Store.workspaceProfileSetting?.domains)
 );
+
+const disallowEditMember = computed(() => !!props.group?.source);
 
 const selfMemberInGroup = computed(() => {
   return props.group?.members.find(
