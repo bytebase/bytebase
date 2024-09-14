@@ -178,7 +178,7 @@ func (s *SQLService) Execute(ctx context.Context, request *v1pb.ExecuteRequest) 
 	if request.Schema != nil {
 		queryContext.Schema = *request.Schema
 	}
-	results, duration, queryErr := executeWithTimeout(ctx, driver, conn, request.Name, request.Timeout, queryContext)
+	results, duration, queryErr := executeWithTimeout(ctx, driver, conn, request.Statement, request.Timeout, queryContext)
 
 	if err := s.createQueryHistory(ctx, database, store.QueryHistoryTypeQuery, request.Statement, user.ID, duration, queryErr); err != nil {
 		slog.Error("failed to post admin execute activity", log.BBError(err))
