@@ -58,6 +58,7 @@ import { NButton, NRadio, NRadioGroup, NSpace } from "naive-ui";
 import { reactive } from "vue";
 import { useRouter } from "vue-router";
 import BytebaseLogo from "@/components/BytebaseLogo.vue";
+import { SQL_EDITOR_HOME_MODULE } from "@/router/sqlEditor";
 import { useSettingV1Store } from "@/store";
 import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
 import AuthFooter from "@/views/auth/AuthFooter.vue";
@@ -93,7 +94,13 @@ const handleFinish = async () => {
         "value.workspace_profile_setting_value.database_change_mode",
       ],
     });
-    router.replace("/");
+    if (state.mode === DatabaseChangeMode.EDITOR) {
+      router.replace({
+        name: SQL_EDITOR_HOME_MODULE,
+      });
+    } else {
+      router.replace("/");
+    }
   } finally {
     state.isLoading = false;
   }
