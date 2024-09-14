@@ -2892,7 +2892,7 @@
         "desc": "Access unlimited issue history with advanced issue search."
       },
       "bb-feature-issue-project-setting": {
-        "title": "Advanced issue project setting",
+        "title": "Issue project setting",
         "desc": "Customize advanced issue project settings. Including creating issue restrictions and default backup settings."
       },
       "bb-feature-password-restriction": {
