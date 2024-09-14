@@ -179,9 +179,6 @@ export const useSidebarItems = (ignoreModeCheck?: MaybeRef<boolean>) => {
         ],
       },
       {
-        type: "divider",
-      },
-      {
         title: t("settings.sidebar.data-access"),
         icon: () => h(ShieldCheckIcon),
         type: "div",
@@ -218,9 +215,6 @@ export const useSidebarItems = (ignoreModeCheck?: MaybeRef<boolean>) => {
             type: "route",
           },
         ],
-      },
-      {
-        type: "divider",
       },
       {
         title: t("settings.sidebar.workspace"),
