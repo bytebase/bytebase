@@ -157,9 +157,6 @@ func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 	if request.User.UserType != v1pb.UserType_SERVICE_ACCOUNT && request.User.UserType != v1pb.UserType_USER {
 		return nil, status.Errorf(codes.InvalidArgument, "support user and service account only")
 	}
-	if request.User.UserType != v1pb.UserType_SERVICE_ACCOUNT && request.User.Password == "" {
-		return nil, status.Errorf(codes.InvalidArgument, "password must be set")
-	}
 
 	count, err := s.store.CountUsers(ctx, api.EndUser)
 	if err != nil {
