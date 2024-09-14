@@ -146,6 +146,9 @@ func (s *QueryResultMasker) getMaskerForColumnResource(
 	action storepb.MaskingExceptionPolicy_MaskingException_Action,
 	currentPrincipal *store.UserMessage,
 ) (masker.Masker, error) {
+	if instance != nil && !isMaskingSupported(instance.Engine) {
+		return masker.NewNoneMasker(), nil
+	}
 	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
 		InstanceID:   &instance.ResourceID,
 		DatabaseName: &sourceColumn.Database,
@@ -353,4 +356,20 @@ func doMaskResult(maskers []masker.Masker, result *v1pb.QueryResult) {
 
 	result.Sensitive = sensitive
 	result.Masked = sensitive
+}
+
+func isMaskingSupported(e storepb.Engine) bool {
+	var supportedEngines = map[storepb.Engine]bool{
+		storepb.Engine_MYSQL:     true,
+		storepb.Engine_POSTGRES:  true,
+		storepb.Engine_ORACLE:    true,
+		storepb.Engine_MSSQL:     true,
+		storepb.Engine_MARIADB:   true,
+		storepb.Engine_OCEANBASE: true,
+	}
+
+	if _, ok := supportedEngines[e]; !ok {
+		return false
+	}
+	return true
 }
