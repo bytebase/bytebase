@@ -189,16 +189,24 @@ func (s *AuthService) CreateUser(ctx context.Context, request *v1pb.CreateUserRe
 	}
 
 	password := request.User.Password
-	if err := s.validatePassword(ctx, password); err != nil {
-		return nil, err
-	}
-
 	if request.User.UserType == v1pb.UserType_SERVICE_ACCOUNT {
 		pwd, err := common.RandomString(20)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to generate access key for service account.")
 		}
 		password = fmt.Sprintf("%s%s", api.ServiceAccountAccessKeyPrefix, pwd)
+	} else {
+		if password != "" {
+			if err := s.validatePassword(ctx, password); err != nil {
+				return nil, err
+			}
+		} else {
+			pwd, err := common.RandomString(20)
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to generate random password for service account.")
+			}
+			password = pwd
+		}
 	}
 	passwordHash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
