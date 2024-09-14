@@ -51,6 +51,7 @@
             </div>
             <EmailInput
               v-else
+              :readonly="disallowEditUser"
               v-model:value="state.user.email"
               :domain="workspaceDomain"
             />
@@ -239,6 +240,8 @@ const rolesChanged = computed(() => {
 
   return !isUndefined(state.roles) && !isEqual(initRoles(), state.roles);
 });
+
+const disallowEditUser = computed(() => !!props.user?.profile?.source);
 
 const allowConfirm = computed(() => {
   if (!state.user.email) {

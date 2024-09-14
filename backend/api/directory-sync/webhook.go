@@ -25,6 +25,8 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
+const entraIDSource = "Entra ID"
+
 // https://learn.microsoft.com/en-us/entra/identity/app-provisioning/use-scim-to-provision-users-and-groups
 func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 	g.POST("/workspaces/:workspaceID/Users", func(c echo.Context) error {
@@ -61,15 +63,24 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 				Type:          api.EndUser,
 				MemberDeleted: !aadUser.Active,
 				PasswordHash:  string(passwordHash),
+				Profile: &storepb.UserProfile{
+					Source: entraIDSource,
+				},
 			}, api.SystemBotID)
 			if err != nil {
 				return c.String(http.StatusInternalServerError, fmt.Sprintf(`failed to create user "%s", error %v`, aadUser.UserName, err))
 			}
 			user = newUser
-		} else if user.MemberDeleted && aadUser.Active {
+		} else {
 			deleted := !aadUser.Active
 			updatedUser, err := s.store.UpdateUser(ctx, user, &store.UpdateUserMessage{
 				Delete: &deleted,
+				Name:   &aadUser.UserName,
+				Profile: &storepb.UserProfile{
+					Source:                 entraIDSource,
+					LastLoginTime:          user.Profile.LastLoginTime,
+					LastChangePasswordTime: user.Profile.LastChangePasswordTime,
+				},
 			}, api.SystemBotID)
 			if err != nil {
 				return c.String(http.StatusInternalServerError, fmt.Sprintf(`failed to update user "%s", error %v`, user.Email, err))
@@ -285,6 +296,9 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 		group, err := s.store.CreateGroup(ctx, &store.GroupMessage{
 			Email: aadGroup.ExternalID,
 			Title: aadGroup.DisplayName,
+			Payload: &storepb.GroupPayload{
+				Source: entraIDSource,
+			},
 		}, api.SystemBotID)
 		if err != nil {
 			return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to create group, error %v", err))
@@ -423,9 +437,7 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 			return c.String(http.StatusNotFound, "cannot found group")
 		}
 
-		updateGroup := &store.UpdateGroupMessage{
-			Payload: group.Payload,
-		}
+		updateGroup := &store.UpdateGroupMessage{}
 		for _, op := range patch.Operations {
 			switch op.Path {
 			case "members":
@@ -434,6 +446,9 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 					slog.Warn("unsupport value, expect PatchMember slice", slog.Any("value", op.Value), slog.String("operation", op.OP), slog.String("path", op.Path))
 					continue
 				}
+
+				updateGroup.Payload = group.Payload
+				updateGroup.Payload.Source = entraIDSource
 
 				for _, value := range values {
 					var patchMember PatchMember

@@ -331,6 +331,9 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 	for _, path := range request.UpdateMask.Paths {
 		switch path {
 		case "email":
+			if user.Profile.Source != "" {
+				return nil, status.Errorf(codes.InvalidArgument, "cannot change email for external user")
+			}
 			var allowedDomains []string
 			if setting.EnforceIdentityDomain {
 				allowedDomains = setting.Domains
@@ -589,6 +592,11 @@ func convertToUser(user *store.UserMessage) *v1pb.User {
 		Phone:    user.Phone,
 		Title:    user.Name,
 		UserType: userType,
+		Profile: &v1pb.User_Profile{
+			LastLoginTime:          user.Profile.LastLoginTime,
+			LastChangePasswordTime: user.Profile.LastChangePasswordTime,
+			Source:                 user.Profile.Source,
+		},
 	}
 
 	if user.MFAConfig != nil {

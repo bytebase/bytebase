@@ -142,6 +142,9 @@ func (s *GroupService) UpdateGroup(ctx context.Context, request *v1pb.UpdateGrou
 		case "description":
 			patch.Description = &request.Group.Description
 		case "members":
+			if group.Payload.Source != "" {
+				return nil, status.Errorf(codes.InvalidArgument, "cannot change members for external group")
+			}
 			payload, err := s.convertToGroupPayload(ctx, request.Group)
 			if err != nil {
 				return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -252,6 +255,7 @@ func (s *GroupService) convertToV1Group(ctx context.Context, groupMessage *store
 		Description: groupMessage.Description,
 		Creator:     common.FormatUserEmail(creator.Email),
 		CreateTime:  timestamppb.New(groupMessage.CreatedTime),
+		Source:      groupMessage.Payload.Source,
 	}
 
 	for _, member := range groupMessage.Payload.Members {

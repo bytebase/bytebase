@@ -153,4 +153,7 @@ message Group {
 
   // The timestamp when the group was created.
   google.protobuf.Timestamp create_time = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // source means where the group comes from. For now we support Entra ID SCIM sync, so the source could be Entra ID.
+  string source = 7;
 }

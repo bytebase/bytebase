@@ -148,7 +148,11 @@ export interface Group {
   creator: string;
   members: GroupMember[];
   /** The timestamp when the group was created. */
-  createTime: Date | undefined;
+  createTime:
+    | Date
+    | undefined;
+  /** source means where the group comes from. For now we support Entra ID SCIM sync, so the source could be Entra ID. */
+  source: string;
 }
 
 function createBaseGetGroupRequest(): GetGroupRequest {
@@ -619,7 +623,7 @@ export const GroupMember = {
 };
 
 function createBaseGroup(): Group {
-  return { name: "", title: "", description: "", creator: "", members: [], createTime: undefined };
+  return { name: "", title: "", description: "", creator: "", members: [], createTime: undefined, source: "" };
 }
 
 export const Group = {
@@ -641,6 +645,9 @@ export const Group = {
     }
     if (message.createTime !== undefined) {
       Timestamp.encode(toTimestamp(message.createTime), writer.uint32(50).fork()).ldelim();
+    }
+    if (message.source !== "") {
+      writer.uint32(58).string(message.source);
     }
     return writer;
   },
@@ -694,6 +701,13 @@ export const Group = {
 
           message.createTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           continue;
+        case 7:
+          if (tag !== 58) {
+            break;
+          }
+
+          message.source = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -711,6 +725,7 @@ export const Group = {
       creator: isSet(object.creator) ? globalThis.String(object.creator) : "",
       members: globalThis.Array.isArray(object?.members) ? object.members.map((e: any) => GroupMember.fromJSON(e)) : [],
       createTime: isSet(object.createTime) ? fromJsonTimestamp(object.createTime) : undefined,
+      source: isSet(object.source) ? globalThis.String(object.source) : "",
     };
   },
 
@@ -734,6 +749,9 @@ export const Group = {
     if (message.createTime !== undefined) {
       obj.createTime = message.createTime.toISOString();
     }
+    if (message.source !== "") {
+      obj.source = message.source;
+    }
     return obj;
   },
 
@@ -748,6 +766,7 @@ export const Group = {
     message.creator = object.creator ?? "";
     message.members = object.members?.map((e) => GroupMember.fromPartial(e)) || [];
     message.createTime = object.createTime ?? undefined;
+    message.source = object.source ?? "";
     return message;
   },
 };
