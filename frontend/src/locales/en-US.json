@@ -2506,7 +2506,12 @@
     "view-detail": "View detail",
     "generate-sql": "Generate SQL",
     "current-editing-statement-is-not-empty": "Current editing statement is not empty.",
-    "run-anyway": "Run anyway"
+    "run-anyway": "Run anyway",
+    "no-project": {
+      "not-member-of-any-projects": "You are not any member of any projects.",
+      "go-to-create": "Go to create",
+      "contact-the-admin-to-grant-access": "Contact to the admin to grant access."
+    }
   },
   "schema-editor": {
     "self": "Schema Editor",
@@ -2885,6 +2890,10 @@
       "bb-feature-issue-advanced-search": {
         "title": "Advanced issue search",
         "desc": "Access unlimited issue history with advanced issue search."
+      },
+      "bb-feature-password-restriction": {
+        "title": "Password restriction",
+        "desc": "Allow to configure the restriction for users' password"
       }
     }
   },

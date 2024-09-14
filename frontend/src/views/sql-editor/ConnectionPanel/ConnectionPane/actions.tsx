@@ -9,7 +9,7 @@ import { computed, ref } from "vue";
 import { useRouter } from "vue-router";
 import { t } from "@/plugins/i18n";
 import { PROJECT_V1_ROUTE_DATABASE_DETAIL } from "@/router/dashboard/projectV1";
-import {  useAppFeature } from "@/store";
+import { useAppFeature } from "@/store";
 import {
   DEFAULT_SQL_EDITOR_TAB_MODE,
   instanceOfSQLEditorTreeNode,
@@ -29,6 +29,7 @@ import {
   instanceV1HasReadonlyMode,
   tryConnectToCoreSQLEditorTab,
 } from "@/utils";
+import { setDefaultDataSourceForConn } from "../../EditorCommon";
 import { useSQLEditorContext, type SQLEditorContext } from "../../context";
 
 type DropdownOptionWithTreeNode = DropdownOption & {
@@ -51,7 +52,7 @@ export const useDropdown = () => {
   const context = ref<TreeNode>();
 
   const allowAdmin = computed(() =>
-    hasWorkspacePermissionV2( "bb.instances.adminExecute")
+    hasWorkspacePermissionV2("bb.instances.adminExecute")
   );
 
   const options = computed((): DropdownOptionWithTreeNode[] => {
@@ -203,6 +204,7 @@ export const setConnection = (
   const database = node.meta.target as ComposedDatabase;
   conn.instance = database.instance;
   conn.database = database.name;
+  setDefaultDataSourceForConn(conn, database);
   tryConnectToCoreSQLEditorTab(coreTab, /* overrideTitle */ true, newTab);
 
   if (context) {

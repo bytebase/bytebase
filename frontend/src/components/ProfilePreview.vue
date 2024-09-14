@@ -2,8 +2,8 @@
   <component
     :is="link ? 'router-link' : 'div'"
     class="px-4 py-3 menu-item w-48"
-    :to="{ name: SETTING_ROUTE_PROFILE }"
     role="menuitem"
+    v-bind="bindings"
   >
     <p class="text-sm flex justify-between space-x-2">
       <span class="text-main font-medium truncate text-ellipsis">
@@ -17,10 +17,12 @@
 </template>
 
 <script setup lang="ts">
-import { SETTING_ROUTE_PROFILE } from "@/router/dashboard/workspaceSetting";
+import { computed } from "vue";
+import { useRouter } from "vue-router";
 import { useCurrentUserV1 } from "@/store";
+import { autoProfileLink } from "@/utils";
 
-withDefaults(
+const props = withDefaults(
   defineProps<{
     link?: boolean;
   }>(),
@@ -29,5 +31,13 @@ withDefaults(
   }
 );
 
+const router = useRouter();
 const currentUserV1 = useCurrentUserV1();
+
+const bindings = computed(() => {
+  if (!props.link) return {};
+  return {
+    to: autoProfileLink(router),
+  };
+});
 </script>

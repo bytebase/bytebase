@@ -22,6 +22,10 @@
     v-if="!isLoading"
     class="py-4"
     :identity-provider-name="currentIdentityProvider?.name"
+    :on-created="onCreated"
+    :on-updated="onUpdated"
+    :on-deleted="onDeleted"
+    :on-canceled="onCanceled"
   />
   <BBSpin v-else class="w-full h-64" />
 
@@ -41,9 +45,14 @@ import IdentityProviderCreateForm from "@/components/SSO/IdentityProviderCreateF
 import { useIdentityProviderStore } from "@/store/modules/idp";
 import { ssoNamePrefix } from "@/store/modules/v1/common";
 import { State } from "@/types/proto/v1/common";
+import type { IdentityProvider } from "@/types/proto/v1/idp_service";
 
 const props = defineProps<{
   ssoId?: string;
+  onCreated?: (sso: IdentityProvider) => void;
+  onUpdated?: (sso: IdentityProvider) => void;
+  onDeleted?: (sso: IdentityProvider) => void;
+  onCanceled?: () => void;
 }>();
 
 interface LocalState {

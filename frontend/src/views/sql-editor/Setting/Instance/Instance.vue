@@ -76,7 +76,6 @@
         <InstanceDetail
           :instance-id="extractInstanceResourceName(state.detail.instance.name)"
           :embedded="true"
-          :on-click-database="handleClickDatabase"
           :hide-archive-restore="true"
           class="!px-0 !mb-0 w-[850px]"
         />
@@ -101,7 +100,6 @@ import {
   Buttons as InstanceFormButtons,
 } from "@/components/InstanceForm";
 import { Drawer, DrawerContent, InstanceV1Table } from "@/components/v2";
-import { SQL_EDITOR_DATABASE_MODULE } from "@/router/sqlEditor";
 import {
   useSubscriptionV1Store,
   useEnvironmentV1List,
@@ -109,12 +107,7 @@ import {
   useInstanceV1Store,
   useAppFeature,
 } from "@/store";
-import {
-  DEFAULT_PROJECT_NAME,
-  defaultProject,
-  UNKNOWN_ID,
-  type ComposedDatabase,
-} from "@/types";
+import { UNKNOWN_ID } from "@/types";
 import type { Instance } from "@/types/proto/v1/instance_service";
 import { PlanType } from "@/types/proto/v1/subscription_service";
 import {
@@ -124,10 +117,6 @@ import {
   wrapRefAsPromise,
   extractInstanceResourceName,
   instanceV1Name,
-  hasProjectPermissionV2,
-  isDatabaseV1Queryable,
-  extractProjectResourceName,
-  extractDatabaseResourceName,
 } from "@/utils";
 import InstanceDetail from "@/views/InstanceDetail.vue";
 
@@ -262,26 +251,6 @@ const handleClickAddInstance = () => {
 const showInstanceDetail = (instance: Instance) => {
   state.detail.show = true;
   state.detail.instance = instance;
-};
-
-const allowQueryDatabase = (db: ComposedDatabase) => {
-  if (db.project === DEFAULT_PROJECT_NAME) {
-    return hasProjectPermissionV2(defaultProject(), "bb.databases.query");
-  }
-  return isDatabaseV1Queryable(db);
-};
-const handleClickDatabase = (db: ComposedDatabase) => {
-  if (!allowQueryDatabase(db)) return;
-  const projectName = extractProjectResourceName(db.project);
-  const { instanceName, databaseName } = extractDatabaseResourceName(db.name);
-  router.push({
-    name: SQL_EDITOR_DATABASE_MODULE,
-    params: {
-      project: projectName,
-      instance: instanceName,
-      database: databaseName,
-    },
-  });
 };
 </script>
 

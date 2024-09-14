@@ -636,6 +636,7 @@ import ResourceIdField from "@/components/v2/Form/ResourceIdField.vue";
 import { identityProviderClient } from "@/grpcweb";
 import { WORKSPACE_ROUTE_SSO } from "@/router/dashboard/workspaceRoutes";
 import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/router/dashboard/workspaceSetting";
+import { SQL_EDITOR_SETTING_GENERAL_MODULE } from "@/router/sqlEditor";
 import { pushNotification, useActuatorV1Store } from "@/store";
 import { useIdentityProviderStore } from "@/store/modules/idp";
 import {
@@ -675,6 +676,10 @@ interface LocalState {
 
 const props = defineProps<{
   identityProviderName?: string;
+  onCreated?: (sso: IdentityProvider) => void;
+  onUpdated?: (sso: IdentityProvider) => void;
+  onDeleted?: (sso: IdentityProvider) => void;
+  onCanceled?: () => void;
 }>();
 
 const { t } = useI18n();
@@ -721,7 +726,9 @@ const identityProviderTypeList = computed(() => {
 
 const configureSetting = () => {
   router.push({
-    name: SETTING_ROUTE_WORKSPACE_GENERAL,
+    name: router.currentRoute.value.name?.toString().startsWith("sql-editor")
+      ? SQL_EDITOR_SETTING_GENERAL_MODULE
+      : SETTING_ROUTE_WORKSPACE_GENERAL,
   });
 };
 
@@ -1024,6 +1031,10 @@ const handleDeleteButtonClick = async () => {
     style: "SUCCESS",
     title: "Archive SSO succeed",
   });
+  if (props.onDeleted) {
+    props.onDeleted(currentIdentityProvider.value);
+    return;
+  }
   router.push({
     name: WORKSPACE_ROUTE_SSO,
   });
@@ -1053,6 +1064,10 @@ const handleRestoreButtonClick = async () => {
 };
 
 const handleCancelButtonClick = () => {
+  if (props.onCanceled) {
+    props.onCanceled();
+    return;
+  }
   router.push({
     name: WORKSPACE_ROUTE_SSO,
   });
@@ -1094,7 +1109,7 @@ const handleDiscardChangesButtonClick = async () => {
 };
 
 const handleCreateButtonClick = async () => {
-  await identityProviderStore.createIdentityProvider(
+  const created = await identityProviderStore.createIdentityProvider(
     editedIdentityProvider.value
   );
   pushNotification({
@@ -1102,6 +1117,10 @@ const handleCreateButtonClick = async () => {
     style: "SUCCESS",
     title: "Create SSO succeed",
   });
+  if (props.onCreated) {
+    props.onCreated(created);
+    return;
+  }
   router.push({
     name: WORKSPACE_ROUTE_SSO,
   });
@@ -1118,6 +1137,9 @@ const handleUpdateButtonClick = async () => {
     title: "Update SSO succeed",
   });
   updateEditState(updatedIdentityProvider);
+  if (props.onUpdated) {
+    props.onUpdated(updatedIdentityProvider);
+  }
 };
 
 watch(

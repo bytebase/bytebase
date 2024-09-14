@@ -31,6 +31,7 @@ import {
   hasProjectPermissionV2,
   extractProjectResourceName,
   extractInstanceResourceName,
+  isSQLEditorRoute,
 } from "@/utils";
 
 const props = withDefaults(
@@ -110,6 +111,10 @@ const gotoSQLEditor = () => {
       schema: props.schema ? props.schema : undefined,
     },
   });
-  window.open(route.fullPath);
+  if (isSQLEditorRoute(router)) {
+    router.push(route);
+  } else {
+    window.open(route.fullPath);
+  }
 };
 </script>

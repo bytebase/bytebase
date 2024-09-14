@@ -61,6 +61,8 @@ const (
 	FeatureSecureToken FeatureType = "bb.feature.secure-token"
 	// FeatureExternalSecretManager uses secrets from external secret manager.
 	FeatureExternalSecretManager FeatureType = "bb.feature.external-secret-manager"
+	// FeaturePasswordRestriction allows user to configure the password restriction.
+	FeaturePasswordRestriction FeatureType = "bb.feature.password-restriction"
 
 	// FeatureRBAC enables RBAC.
 	//
@@ -192,6 +194,8 @@ func (e FeatureType) Name() string {
 		return "Disallow password signin"
 	case FeatureSecureToken:
 		return "Secure token"
+	case FeaturePasswordRestriction:
+		return "Password restriction"
 	case FeatureExternalSecretManager:
 		return "External Secret Manager"
 	case FeatureRBAC:
@@ -289,6 +293,7 @@ var FeatureMatrix = map[FeatureType][3]bool{
 	FeatureDisallowSignup:         {false, false, true},
 	FeatureDisallowPasswordSignin: {false, false, true},
 	FeatureSecureToken:            {false, false, true},
+	FeaturePasswordRestriction:    {false, false, true},
 	FeatureExternalSecretManager:  {false, false, true},
 	FeatureRBAC:                   {true, true, true},
 	FeatureWatermark:              {false, false, true},

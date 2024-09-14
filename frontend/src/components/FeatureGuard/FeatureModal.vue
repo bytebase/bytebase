@@ -122,7 +122,6 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBModal } from "@/bbkit";
 import { useLanguage } from "@/composables/useLanguage";
-import { SETTING_ROUTE_WORKSPACE_SUBSCRIPTION } from "@/router/dashboard/workspaceSetting";
 import { useSubscriptionV1Store } from "@/store";
 import type { FeatureType } from "@/types";
 import { planTypeToString, ENTERPRISE_INQUIRE_LINK } from "@/types";
@@ -131,7 +130,7 @@ import type {
   InstanceResource,
 } from "@/types/proto/v1/instance_service";
 import { PlanType } from "@/types/proto/v1/subscription_service";
-import { hasWorkspacePermissionV2 } from "@/utils";
+import { autoSubscriptionRoute, hasWorkspacePermissionV2 } from "@/utils";
 import InstanceAssignment from "../InstanceAssignment.vue";
 import WeChatQRModal from "../WeChatQRModal.vue";
 
@@ -187,9 +186,7 @@ const ok = () => {
   if (instanceMissingLicense.value) {
     state.showInstanceAssignmentDrawer = true;
   } else {
-    router.push({
-      name: SETTING_ROUTE_WORKSPACE_SUBSCRIPTION,
-    });
+    router.push(autoSubscriptionRoute(router));
   }
   emit("cancel");
 };
