@@ -620,6 +620,9 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *v1pb.Update
 		}
 		storeSettingValue = string(bytes)
 	case api.SettingPasswordRestriction:
+		if err := s.licenseService.IsFeatureEnabled(api.FeaturePasswordRestriction); err != nil {
+			return nil, status.Error(codes.PermissionDenied, err.Error())
+		}
 		passwordSetting := new(storepb.PasswordRestrictionSetting)
 		if err := convertV1PbToStorePb(request.Setting.Value.GetPasswordRestrictionSetting(), passwordSetting); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to unmarshal setting value for %s with error: %v", apiSettingName, err)
