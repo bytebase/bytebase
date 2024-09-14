@@ -21,23 +21,6 @@
     <div class="w-full flex flex-col justify-start items-start gap-2">
       <div>
         <NCheckbox
-          v-model:checked="state.forceIssueLabels"
-          size="large"
-          :disabled="!allowUpdateIssueProjectSetting || state.issueLabels.length === 0"
-          :label="
-            $t('project.settings.issue-related.labels.force-issue-labels.self')
-          "
-        />
-        <p class="text-sm text-gray-400 pl-6 ml-0.5">
-          {{
-            $t(
-              "project.settings.issue-related.labels.force-issue-labels.description"
-            )
-          }}
-        </p>
-      </div>
-      <div>
-        <NCheckbox
           v-model:checked="state.allowModifyStatement"
           size="large"
           :disabled="!allowUpdateIssueProjectSetting"
@@ -63,6 +46,25 @@
         <p class="text-sm text-gray-400 pl-6 ml-0.5">
           {{
             $t("project.settings.issue-related.auto-resolve-issue.description")
+          }}
+        </p>
+      </div>
+      <div>
+        <NCheckbox
+          v-model:checked="state.forceIssueLabels"
+          size="large"
+          :disabled="
+            !allowUpdateIssueProjectSetting || state.issueLabels.length === 0
+          "
+          :label="
+            $t('project.settings.issue-related.labels.force-issue-labels.self')
+          "
+        />
+        <p class="text-sm text-gray-400 pl-6 ml-0.5">
+          {{
+            $t(
+              "project.settings.issue-related.labels.force-issue-labels.description"
+            )
           }}
         </p>
       </div>
