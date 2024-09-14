@@ -35,7 +35,6 @@ import {
   Plan_Spec,
   Plan_Step,
 } from "@/types/proto/v1/plan_service";
-import { Project_DefaultBackupBehavior } from "@/types/proto/v1/project_service";
 import type { Stage } from "@/types/proto/v1/rollout_service";
 import { Rollout, Task_Type } from "@/types/proto/v1/rollout_service";
 import { SheetPayload } from "@/types/proto/v1/sheet_service";
@@ -325,12 +324,7 @@ export const buildSpecForTarget = async (
     const database = useDatabaseV1Store().getDatabaseByName(target);
     if (isValidDatabaseName(database.name)) {
       // Set default backup behavior for the database.
-      if (
-        [
-          Project_DefaultBackupBehavior.DEFAULT_BACKUP_BEHAVIOR_BACKUP_ON_ERROR_SKIP,
-          Project_DefaultBackupBehavior.DEFAULT_BACKUP_BEHAVIOR_BACKUP_ON_ERROR_STOP,
-        ].includes(project.defaultBackupBehavior)
-      ) {
+      if (project.autoEnableBackup) {
         spec.changeDatabaseConfig.preUpdateBackupDetail = {
           database: `${database.instance}/${databaseNamePrefix}${getArchiveDatabase(database.instanceResource.engine)}`,
         };
