@@ -2498,7 +2498,12 @@
     "view-detail": "Ver detalle",
     "generate-sql": "Generar SQL",
     "current-editing-statement-is-not-empty": "La declaración de edición actual no está vacía.",
-    "run-anyway": "Corre de todos modos"
+    "run-anyway": "Corre de todos modos",
+    "no-project": {
+      "not-member-of-any-projects": "No eres miembro de ningún proyecto.",
+      "go-to-create": "ir a crear",
+      "contact-the-admin-to-grant-access": "Póngase en contacto con el administrador para otorgar acceso."
+    }
   },
   "schema-editor": {
     "self": "Editor de esquema",
