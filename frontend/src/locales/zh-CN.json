@@ -2891,6 +2891,10 @@
         "title": "工单高级搜索",
         "desc": "通过高级搜索来访问无限制的历史工单。"
       },
+      "bb-feature-issue-project-setting": {
+        "title": "工单项目设置",
+        "desc": "自定义高级工单项目设置。包括创建工单限制以及默认备份设置等。"
+      },
       "bb-feature-password-restriction": {
         "title": "密码限制",
         "desc": "允许配置用户密码的规则"
