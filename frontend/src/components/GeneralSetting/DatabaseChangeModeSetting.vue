@@ -10,6 +10,10 @@
     <div class="flex-1 lg:px-4">
       <p class="mt-0.5 mb-2 font-medium">
         {{ $t("settings.general.workspace.database-change-mode.description") }}
+        <LearnMoreLink
+          url="https://www.bytebase.com/docs/administration/mode?source=console"
+          class="ml-1 text-sm"
+        />
       </p>
       <div>
         <NRadioGroup v-model:value="state.databaseChangeMode" size="large">
@@ -90,6 +94,7 @@ import { NRadioGroup, NSpace, NRadio, NButton } from "naive-ui";
 import { computed, reactive, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBModal } from "@/bbkit";
+import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import { router } from "@/router";
 import { WORKSPACE_ROOT_MODULE } from "@/router/dashboard/workspaceRoutes";
 import { SQL_EDITOR_HOME_MODULE } from "@/router/sqlEditor";
