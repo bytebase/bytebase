@@ -15,6 +15,8 @@ categoryList:
       - database-group
       - batch-change
       - issue-advanced-search
+      - password-restriction
+      - directory-sync
   - type: sql-editor
     featureList:
       - auto-complete
@@ -231,6 +233,8 @@ planList:
       - type: custom-approval
       - type: issue-advanced-search
         content: issue-advanced-search-advanced
+      - type: password-restriction
+      - type: directory-sync
       # SQL Editor
       - type: auto-complete
       - type: schema-editor

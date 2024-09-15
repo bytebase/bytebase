@@ -63,6 +63,8 @@ const (
 	FeatureExternalSecretManager FeatureType = "bb.feature.external-secret-manager"
 	// FeaturePasswordRestriction allows user to configure the password restriction.
 	FeaturePasswordRestriction FeatureType = "bb.feature.password-restriction"
+	// FeatureDirectorySync allows to sync users and groups from Entra ID.
+	FeatureDirectorySync FeatureType = "bb.feature.directory-sync"
 
 	// FeatureRBAC enables RBAC.
 	//
@@ -198,6 +200,8 @@ func (e FeatureType) Name() string {
 		return "Secure token"
 	case FeaturePasswordRestriction:
 		return "Password restriction"
+	case FeatureDirectorySync:
+		return "Directory sync"
 	case FeatureExternalSecretManager:
 		return "External Secret Manager"
 	case FeatureRBAC:
@@ -298,6 +302,7 @@ var FeatureMatrix = map[FeatureType][3]bool{
 	FeatureDisallowPasswordSignin: {false, false, true},
 	FeatureSecureToken:            {false, false, true},
 	FeaturePasswordRestriction:    {false, false, true},
+	FeatureDirectorySync:          {false, false, true},
 	FeatureExternalSecretManager:  {false, false, true},
 	FeatureRBAC:                   {true, true, true},
 	FeatureWatermark:              {false, false, true},
