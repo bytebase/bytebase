@@ -167,6 +167,7 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 
 		var comment string
 		var commentPrefix string
+		var createCommentIfNotExist bool
 		switch prInfo.action {
 		case webhookActionCreateIssue:
 			issue, err := s.createIssueFromPRInfo(childCtx, project, vcsProvider, vcsConnector, prInfo)
@@ -175,6 +176,7 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 			}
 			comment = getPullRequestComment(setting.ExternalUrl, issue.Name)
 			commentPrefix = commentPrefixBytebaseBot
+			createCommentIfNotExist = true
 		case webhookActionSQLReview:
 			comment, err = s.sqlReviewWithPRInfo(childCtx, project, vcsConnector, vcsProvider.Type, prInfo)
 			if err != nil {
@@ -184,6 +186,11 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 				comment = fmt.Sprintf("%s\n\n---\n\nClick [here](%s) to check the SQL review config", comment, fmt.Sprintf("%s/sql-review", setting.ExternalUrl))
 			}
 			commentPrefix = commentPrefixSQLReview
+			// We don't have the "Enable SQL review" option for VCS connection.
+			// It's confused that projects may not have the active SQL review policy but will get "SQL Reivew Check Passed" comment.
+			// So in order to not to always trigger the SQL review comment for PRs,
+			// we will not create the comment for "SQL Reivew Check Passed" comment, but we can still update existed comment (from errors/warnings to passed).
+			createCommentIfNotExist = !strings.HasPrefix(comment, commentPrefixSQLReviewPassed)
 		default:
 		}
 
@@ -195,6 +202,7 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 				prInfo,
 				fmt.Sprintf("%s\n\n%s", commentPrefix, comment),
 				func(content string) bool { return strings.HasPrefix(content, commentPrefix) },
+				createCommentIfNotExist,
 			); err != nil {
 				slog.Error("failed to upsert comment", slog.String("pr", prInfo.url), log.BBError(err))
 				return c.String(http.StatusOK, fmt.Sprintf("failed to create pull request comment, error %v", err))
@@ -279,7 +287,7 @@ func (s *Service) sqlReviewWithPRInfo(ctx context.Context, project *store.Projec
 	}
 
 	if len(content) == 0 {
-		return "", nil
+		return commentPrefixSQLReviewPassed, nil
 	}
 
 	return fmt.Sprintf("\n%d errors, %d warnings\n\n---\n\n%s", errorCount, warnCount, strings.Join(content, "\n")), nil
@@ -401,6 +409,7 @@ func upsertPullRequestComment(
 	prInfo *pullRequestInfo,
 	comment string,
 	checkComment isTargetComment,
+	createIfNotExist bool,
 ) error {
 	pullRequestID := getPullRequestID(prInfo.url)
 	provider := vcs.Get(
@@ -419,6 +428,10 @@ func upsertPullRequestComment(
 		}); err != nil {
 			return errors.Wrapf(err, `failed to update comment for PR "%s"`, prInfo.url)
 		}
+		return nil
+	}
+
+	if !createIfNotExist {
 		return nil
 	}
 
