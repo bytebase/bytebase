@@ -2899,6 +2899,10 @@
       "bb-feature-password-restriction": {
         "title": "Password restriction",
         "desc": "Allow to configure the restriction for users' password"
+      },
+      "bb-feature-directory-sync": {
+        "title": "Directory sync",
+        "desc": "Sync users and groups from Entra ID (formerly Azure AD) to your Bytebase instance"
       }
     }
   },

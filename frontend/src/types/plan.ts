@@ -22,6 +22,7 @@ export type FeatureType =
   | "bb.feature.issue-advanced-search"
   | "bb.feature.announcement"
   | "bb.feature.external-secret-manager"
+  | "bb.feature.directory-sync"
   // Branding
   | "bb.feature.branding"
   // Change Workflow
