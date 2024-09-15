@@ -89,7 +89,9 @@
         "issue-advanced-search": "Issue advanced search",
         "issue-advanced-search-basic": "30-day limit",
         "issue-advanced-search-basic-tooltip": "Issues older than 30 days are hidden",
-        "issue-advanced-search-advanced": "Unlimited"
+        "issue-advanced-search-advanced": "Unlimited",
+        "password-restriction": "Password restriction",
+        "directory-sync": "Sync from Entra ID"
       }
     },
     "sql-editor": {

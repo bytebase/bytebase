@@ -55,10 +55,19 @@
           <NButton
             v-if="allowGetSCIMSetting"
             class="capitalize"
-            @click="state.showAadSyncDrawer = true"
+            @click="
+              () => {
+                if (!hasDirectorySyncFeature) {
+                  state.showFeatureModal = true;
+                  return;
+                }
+                state.showAadSyncDrawer = true;
+              }
+            "
           >
             <template #icon>
-              <SettingsIcon class="h-5 w-5" />
+              <SettingsIcon v-if="hasDirectorySyncFeature" class="h-5 w-5" />
+              <FeatureBadge v-else feature="bb.feature.directory-sync" />
             </template>
             {{ $t(`settings.members.entra-sync.self`) }}
           </NButton>
@@ -146,6 +155,12 @@
     :show="state.showAadSyncDrawer"
     @close="state.showAadSyncDrawer = false"
   />
+
+  <FeatureModal
+    feature="bb.feature.directory-sync"
+    :open="state.showFeatureModal"
+    @cancel="state.showFeatureModal = false"
+  />
 </template>
 
 <script setup lang="ts">
@@ -155,6 +170,7 @@ import { computed, onMounted, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter, RouterLink } from "vue-router";
 import { FeatureAttention } from "@/components/FeatureGuard";
+import { FeatureBadge, FeatureModal } from "@/components/FeatureGuard";
 import AADSyncDrawer from "@/components/User/Settings/AADSyncDrawer.vue";
 import CreateGroupDrawer from "@/components/User/Settings/CreateGroupDrawer.vue";
 import CreateUserDrawer from "@/components/User/Settings/CreateUserDrawer.vue";
@@ -167,6 +183,7 @@ import {
   useUIStateStore,
   useGroupStore,
   useSettingV1Store,
+  featureToRef,
 } from "@/store";
 import { groupNamePrefix } from "@/store/modules/v1/common";
 import {
@@ -195,6 +212,7 @@ type LocalState = {
   showAadSyncDrawer: boolean;
   editingUser?: User;
   editingGroup?: Group;
+  showFeatureModal: boolean;
 };
 
 defineProps<{
@@ -209,6 +227,7 @@ const state = reactive<LocalState>({
   showCreateUserDrawer: false,
   showCreateGroupDrawer: false,
   showAadSyncDrawer: false,
+  showFeatureModal: false,
 });
 
 const { t } = useI18n();
@@ -247,6 +266,8 @@ const workspaceProfileSetting = computed(() =>
     settingV1Store.workspaceProfileSetting || {}
   )
 );
+
+const hasDirectorySyncFeature = featureToRef("bb.feature.directory-sync");
 
 const allowGetSCIMSetting = computed(() =>
   hasWorkspacePermissionV2("bb.settings.get")

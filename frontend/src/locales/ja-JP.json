@@ -2899,6 +2899,10 @@
       "bb-feature-password-restriction": {
         "title": "パスワード制限",
         "desc": "ユーザーのパスワードの制限を設定できるようにする"
+      },
+      "bb-feature-directory-sync": {
+        "title": "ディレクトリ同期",
+        "desc": "Entra ID (旧 Azure AD) のユーザーとグループを Bytebase インスタンスに同期します"
       }
     }
   },

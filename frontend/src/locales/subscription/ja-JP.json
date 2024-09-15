@@ -89,7 +89,9 @@
         "issue-advanced-search": "高度な検索",
         "issue-advanced-search-basic": "30日間の制限",
         "issue-advanced-search-basic-tooltip": "30日以上前の問題は非表示になります",
-        "issue-advanced-search-advanced": "無制限"
+        "issue-advanced-search-advanced": "無制限",
+        "password-restriction": "パスワード制限",
+        "directory-sync": "Entra IDからの同期"
       }
     },
     "sql-editor": {

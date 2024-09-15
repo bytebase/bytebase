@@ -89,7 +89,9 @@
         "issue-advanced-search": "Emitir búsqueda avanzada",
         "issue-advanced-search-basic": "límite de 30 días",
         "issue-advanced-search-basic-tooltip": "Los problemas de más de 30 días están ocultos",
-        "issue-advanced-search-advanced": "Ilimitado"
+        "issue-advanced-search-advanced": "Ilimitado",
+        "password-restriction": "Restricción de contraseña",
+        "directory-sync": "Sincronización desde Entra ID"
       }
     },
     "sql-editor": {
