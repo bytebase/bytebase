@@ -30,15 +30,19 @@ const entraIDSource = "Entra ID"
 // https://learn.microsoft.com/en-us/entra/identity/app-provisioning/use-scim-to-provision-users-and-groups
 func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 	g.POST("/workspaces/:workspaceID/Users", func(c echo.Context) error {
+		ctx := c.Request().Context()
+		if err := s.validRequestURL(ctx, c); err != nil {
+			return c.String(http.StatusInternalServerError, err.Error())
+		}
+		if err := s.licenseService.IsFeatureEnabled(api.FeaturePasswordRestriction); err != nil {
+			return c.String(http.StatusForbidden, err.Error())
+		}
+
 		body, err := io.ReadAll(c.Request().Body)
 		if err != nil {
 			return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to read body, error %v", err))
 		}
 
-		ctx := c.Request().Context()
-		if err := s.validRequestURL(ctx, c); err != nil {
-			return c.String(http.StatusInternalServerError, err.Error())
-		}
 		var aadUser AADUser
 		if err := json.Unmarshal(body, &aadUser); err != nil {
 			return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to unmarshal body, error %v", err))
@@ -97,6 +101,9 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 		if err := s.validRequestURL(ctx, c); err != nil {
 			return c.String(http.StatusInternalServerError, err.Error())
 		}
+		if err := s.licenseService.IsFeatureEnabled(api.FeaturePasswordRestriction); err != nil {
+			return c.String(http.StatusForbidden, err.Error())
+		}
 
 		uid, err := strconv.Atoi(c.Param("userID"))
 		if err != nil {
@@ -124,6 +131,9 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 		ctx := c.Request().Context()
 		if err := s.validRequestURL(ctx, c); err != nil {
 			return c.String(http.StatusInternalServerError, err.Error())
+		}
+		if err := s.licenseService.IsFeatureEnabled(api.FeaturePasswordRestriction); err != nil {
+			return c.String(http.StatusForbidden, err.Error())
 		}
 
 		response := &ListUsersResponse{
@@ -178,6 +188,9 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 		if err := s.validRequestURL(ctx, c); err != nil {
 			return c.String(http.StatusInternalServerError, err.Error())
 		}
+		if err := s.licenseService.IsFeatureEnabled(api.FeaturePasswordRestriction); err != nil {
+			return c.String(http.StatusForbidden, err.Error())
+		}
 
 		uid, err := strconv.Atoi(c.Param("userID"))
 		if err != nil {
@@ -206,6 +219,9 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 		ctx := c.Request().Context()
 		if err := s.validRequestURL(ctx, c); err != nil {
 			return c.String(http.StatusInternalServerError, err.Error())
+		}
+		if err := s.licenseService.IsFeatureEnabled(api.FeaturePasswordRestriction); err != nil {
+			return c.String(http.StatusForbidden, err.Error())
 		}
 
 		body, err := io.ReadAll(c.Request().Body)
@@ -278,6 +294,9 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 		if err := s.validRequestURL(ctx, c); err != nil {
 			return c.String(http.StatusInternalServerError, err.Error())
 		}
+		if err := s.licenseService.IsFeatureEnabled(api.FeaturePasswordRestriction); err != nil {
+			return c.String(http.StatusForbidden, err.Error())
+		}
 
 		body, err := io.ReadAll(c.Request().Body)
 		if err != nil {
@@ -313,6 +332,9 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 		if err := s.validRequestURL(ctx, c); err != nil {
 			return c.String(http.StatusInternalServerError, err.Error())
 		}
+		if err := s.licenseService.IsFeatureEnabled(api.FeaturePasswordRestriction); err != nil {
+			return c.String(http.StatusForbidden, err.Error())
+		}
 
 		email, err := decodeGroupEmail(c.Param("groupID"))
 		if err != nil {
@@ -340,6 +362,9 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 		ctx := c.Request().Context()
 		if err := s.validRequestURL(ctx, c); err != nil {
 			return c.String(http.StatusInternalServerError, err.Error())
+		}
+		if err := s.licenseService.IsFeatureEnabled(api.FeaturePasswordRestriction); err != nil {
+			return c.String(http.StatusForbidden, err.Error())
 		}
 
 		response := &ListGroupsResponse{
@@ -391,6 +416,9 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 		if err := s.validRequestURL(ctx, c); err != nil {
 			return c.String(http.StatusInternalServerError, err.Error())
 		}
+		if err := s.licenseService.IsFeatureEnabled(api.FeaturePasswordRestriction); err != nil {
+			return c.String(http.StatusForbidden, err.Error())
+		}
 
 		email, err := decodeGroupEmail(c.Param("groupID"))
 		if err != nil {
@@ -412,6 +440,9 @@ func (s *Service) RegisterDirectorySyncRoutes(g *echo.Group) {
 		ctx := c.Request().Context()
 		if err := s.validRequestURL(ctx, c); err != nil {
 			return c.String(http.StatusInternalServerError, err.Error())
+		}
+		if err := s.licenseService.IsFeatureEnabled(api.FeaturePasswordRestriction); err != nil {
+			return c.String(http.StatusForbidden, err.Error())
 		}
 
 		body, err := io.ReadAll(c.Request().Body)

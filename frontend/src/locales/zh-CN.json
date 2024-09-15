@@ -2899,6 +2899,10 @@
       "bb-feature-password-restriction": {
         "title": "密码限制",
         "desc": "允许配置用户密码的规则"
+      },
+      "bb-feature-directory-sync": {
+        "title": "目录同步",
+        "desc": "将 Entra ID（以前称为 Azure AD）中的用户和组同步到您的 Bytebase 实例"
       }
     }
   },

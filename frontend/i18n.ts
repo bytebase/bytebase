@@ -176,29 +176,24 @@ async function addMissingKeysFromSource(
 
 // Main function to load the source file and update each target file
 async function updateLocalizationFiles() {
-  const sourceData = await loadJsonFile(`src/locales/${SOURCE_LANG}.json`);
-  const sourceSQLReviewData = await loadJsonFile(
-    `src/locales/sql-review/${SOURCE_LANG}.json`
-  );
+  const folders = [
+    "src/locales",
+    "src/locales/sql-review",
+    "src/locales/subscription",
+  ];
 
-  for (const lang of TARGET_LANGS) {
-    const langFile = `src/locales/${lang}.json`;
-    const targetData = await loadJsonFile(langFile);
-    const updatedData = await addMissingKeysFromSource(
-      sourceData,
-      targetData,
-      lang.split("-")[0]
-    );
-    await saveJsonFile(langFile, updatedData);
-
-    const langSQLReviewFile = `src/locales/sql-review/${lang}.json`;
-    const targetSQLReviewData = await loadJsonFile(langSQLReviewFile);
-    const updatedSQLReviewData = await addMissingKeysFromSource(
-      sourceSQLReviewData,
-      targetSQLReviewData,
-      lang.split("-")[0]
-    );
-    await saveJsonFile(langSQLReviewFile, updatedSQLReviewData);
+  for (const folder of folders) {
+    const sourceData = await loadJsonFile(`${folder}/${SOURCE_LANG}.json`);
+    for (const lang of TARGET_LANGS) {
+      const langFile = `${folder}/${lang}.json`;
+      const targetData = await loadJsonFile(langFile);
+      const updatedData = await addMissingKeysFromSource(
+        sourceData,
+        targetData,
+        lang.split("-")[0]
+      );
+      await saveJsonFile(langFile, updatedData);
+    }
   }
 }
 
