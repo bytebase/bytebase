@@ -91,7 +91,7 @@
         "issue-advanced-search-basic-tooltip": "Issues older than 30 days are hidden",
         "issue-advanced-search-advanced": "Unlimited",
         "password-restriction": "Password restriction",
-        "directory-sync": "Directory sync"
+        "directory-sync": "Sync from Entra ID"
       }
     },
     "sql-editor": {

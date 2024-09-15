@@ -91,7 +91,7 @@
         "issue-advanced-search-basic-tooltip": "30 天之前的工单会被隐藏",
         "issue-advanced-search-advanced": "无限制",
         "password-restriction": "密码限制",
-        "directory-sync": "目录同步"
+        "directory-sync": "同步 Entra ID"
       }
     },
     "sql-editor": {

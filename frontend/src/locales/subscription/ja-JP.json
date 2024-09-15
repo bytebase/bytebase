@@ -91,7 +91,7 @@
         "issue-advanced-search-basic-tooltip": "30日以上前の問題は非表示になります",
         "issue-advanced-search-advanced": "無制限",
         "password-restriction": "パスワード制限",
-        "directory-sync": "ディレクトリ同期"
+        "directory-sync": "Entra IDからの同期"
       }
     },
     "sql-editor": {
