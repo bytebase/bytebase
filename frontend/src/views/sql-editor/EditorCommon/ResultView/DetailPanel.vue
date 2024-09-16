@@ -99,7 +99,7 @@ const detailValueString = computed(() => {
     .rows[row]?.getVisibleCells()
     [col]?.getValue<RowValue>();
 
-  return String(extractSQLRowValue(value));
+  return String(extractSQLRowValue(value).plain);
 });
 
 const totalCount = computed(() => {

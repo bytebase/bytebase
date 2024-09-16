@@ -356,7 +356,7 @@ const data = computed(() => {
   if (search) {
     temp = data.filter((item) => {
       return item.values.some((col) => {
-        const value = extractSQLRowValue(col);
+        const value = extractSQLRowValue(col).plain;
         if (isNullOrUndefined(value)) {
           return false;
         }
@@ -502,7 +502,7 @@ const handleChangePage = (page: number) => {
 const explainFromSQLResultSetV1 = (resultSet: SQLResultSetV1 | undefined) => {
   if (!resultSet) return "";
   const lines = resultSet.results[0].rows.map((row) =>
-    row.values.map((value) => String(extractSQLRowValue(value)))
+    row.values.map((value) => String(extractSQLRowValue(value).plain))
   );
   const explain = lines.map((line) => line[0]).join("\n");
   return explain;

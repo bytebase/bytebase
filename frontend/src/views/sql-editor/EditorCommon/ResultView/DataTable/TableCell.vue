@@ -84,7 +84,7 @@ const classes = computed(() => {
 });
 
 const html = computed(() => {
-  const value = extractSQLRowValue(props.value);
+  const value = extractSQLRowValue(props.value).plain;
   if (value === undefined) {
     return `<span class="text-gray-400 italic">UNSET</span>`;
   }
