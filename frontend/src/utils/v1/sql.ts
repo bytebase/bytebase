@@ -1,20 +1,27 @@
 import dayjs from "dayjs";
+import Long from "long";
 import { NullValue } from "@/types/proto/google/protobuf/struct";
 import { Engine } from "@/types/proto/v1/common";
 import { RowValue } from "@/types/proto/v1/sql_service";
+import { isNullOrUndefined } from "../util";
 
-export const extractSQLRowValue = (value: RowValue | undefined) => {
+export const extractSQLRowValue = (
+  value: RowValue | undefined
+): { plain: any; raw: any } => {
+  const fallback = (v: any) => {
+    return { plain: v, raw: v };
+  };
   if (typeof value === "undefined") {
-    return null;
+    return fallback(null);
   }
   if (value.nullValue === NullValue.NULL_VALUE) {
-    return null;
+    return fallback(null);
   }
 
   const plainObject = RowValue.toJSON(value) as Record<string, any>;
   const keys = Object.keys(plainObject);
   if (keys.length === 0) {
-    return undefined; // Will bi displayed as "UNSET"
+    return fallback(undefined); // Will bi displayed as "UNSET"
   }
   if (keys.length > 1) {
     console.debug("mixed type in row value", value);
@@ -30,12 +37,21 @@ export const extractSQLRowValue = (value: RowValue | undefined) => {
     }
     const binaryString = parts.join("").replace(/^0+/g, "");
     if (binaryString.length === 0) {
-      return "0";
+      return {
+        plain: "0",
+        raw: byteArray,
+      };
     }
-    return binaryString;
+    return {
+      plain: binaryString,
+      raw: byteArray,
+    };
   }
   const key = keys[0];
-  return plainObject[key];
+  return {
+    plain: plainObject[key],
+    raw: (value as any)[key],
+  };
 };
 
 export const wrapSQLIdentifier = (id: string, engine: Engine) => {
@@ -157,8 +173,22 @@ export const compareQueryRowValues = (
   a: RowValue,
   b: RowValue
 ): number => {
-  const valueA = extractSQLRowValue(a);
-  const valueB = extractSQLRowValue(b);
+  const { plain: valueA, raw: rawA } = extractSQLRowValue(a);
+  const { plain: valueB, raw: rawB } = extractSQLRowValue(b);
+
+  // NULL or undefined values go behind
+  if (isNullOrUndefined(valueA)) return 1;
+  if (isNullOrUndefined(valueB)) return 0;
+
+  if (Long.isLong(rawA) && Long.isLong(rawB)) {
+    const cmp = rawA.compare(rawB);
+    return cmp <= 0 ? 0 : 1;
+  }
+
+  if (typeof valueA === "number" && typeof valueB === "number") {
+    return valueA - valueB;
+  }
+
   if (type === "INT" || type === "INTEGER") {
     const intA = toInt(valueA);
     const intB = toInt(valueB);
