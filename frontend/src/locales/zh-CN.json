@@ -471,6 +471,7 @@
       "general": "通用",
       "members": "成员",
       "users-and-groups": "用户和群组",
+      "iam-and-admin": "IAM & 管理",
       "im-integration": "IM",
       "sso": "SSO",
       "gitops": "GitOps",
@@ -659,6 +660,7 @@
         "logo-upload-tip": "支持 {extension} 类型文件，不能大于 {size} MiB",
         "logo-upload-succeed": "Logo 更新完成",
         "security": "安全",
+        "account": "帐户",
         "watermark": {
           "self": "水印",
           "update-success": "水印设置已更新",

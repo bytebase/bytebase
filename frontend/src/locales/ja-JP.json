@@ -471,6 +471,7 @@
       "general": "ユニバーサル",
       "members": "メンバー",
       "users-and-groups": "ユーザーとグループ",
+      "iam-and-admin": "IAM と管理",
       "im-integration": "私は",
       "sso": "SSO",
       "gitops": "GitOps",
@@ -659,6 +660,7 @@
         "logo-upload-tip": "{extension} タイプのファイルをサポートします。{size} MiB より大きくすることはできません",
         "logo-upload-succeed": "ロゴ更新完了",
         "security": "安全性",
+        "account": "アカウント",
         "watermark": {
           "self": "透かし",
           "update-success": "ウォーターマーク設定が更新されました",

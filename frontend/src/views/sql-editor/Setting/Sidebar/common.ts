@@ -146,7 +146,7 @@ export const useSidebarItems = (ignoreModeCheck?: MaybeRef<boolean>) => {
         type: "divider",
       },
       {
-        title: "IAM & Admin",
+        title: t("settings.sidebar.iam-and-admin"),
         icon: () => h(UsersIcon),
         type: "div",
         children: [
