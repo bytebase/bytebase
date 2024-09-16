@@ -206,7 +206,7 @@ const dashboardSidebarItemList = computed((): DashboardSidebarItem[] => {
       name: "",
     },
     {
-      title: "IAM & Admin",
+      title: t("settings.sidebar.iam-and-admin"),
       icon: () => h(UsersIcon),
       type: "div",
       children: [

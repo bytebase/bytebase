@@ -471,6 +471,7 @@
       "general": "General",
       "members": "Miembros",
       "users-and-groups": "Usuarios y grupos",
+      "iam-and-admin": "IAM y administración",
       "im-integration": "Integración de IM",
       "sso": "SSO",
       "gitops": "GitOps",
@@ -659,6 +660,7 @@
         "logo-upload-tip": "{extension} hasta {size} MiB",
         "logo-upload-succeed": "Logo actualizado correctamente",
         "security": "Seguridad",
+        "account": "Cuenta",
         "watermark": {
           "self": "Marca de agua",
           "update-success": "Configuración de marca de agua actualizada",
