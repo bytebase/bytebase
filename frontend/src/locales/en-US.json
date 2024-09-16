@@ -471,6 +471,7 @@
       "general": "General",
       "members": "Members",
       "users-and-groups": "Users & Groups",
+      "iam-and-admin": "IAM & Admin",
       "im-integration": "IM",
       "sso": "SSO",
       "gitops": "GitOps",
@@ -659,6 +660,7 @@
         "logo-upload-tip": "{extension} up to {size} MiB",
         "logo-upload-succeed": "Successfully updated the logo",
         "security": "Security",
+        "account": "Account",
         "watermark": {
           "self": "Watermark",
           "update-success": "Watermark setting updated",

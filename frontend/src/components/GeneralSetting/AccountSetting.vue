@@ -2,7 +2,9 @@
   <div id="account" class="py-6 lg:flex">
     <div class="text-left lg:w-1/4">
       <div class="flex items-center space-x-2">
-        <h1 class="text-2xl font-bold">Account</h1>
+        <h1 class="text-2xl font-bold">
+          {{ $t("settings.general.workspace.account") }}
+        </h1>
         <FeatureBadge feature="bb.feature.watermark" />
       </div>
       <span v-if="!allowEdit" class="text-sm text-gray-400">
