@@ -73,7 +73,7 @@ const connectWebSocket = () => {
         if (conn.retries >= MAX_RETRIES) {
           conn.state = "closed";
           return reject(
-            `${messages.disconnected()}: maxRetires exceeded (${MAX_RETRIES}). code=${code} reason="${reason}"`
+            `${messages.disconnected()}: max retries exceeded (${MAX_RETRIES}). code=${code} reason="${reason}"`
           );
         }
         return connect(resolve, reject);
