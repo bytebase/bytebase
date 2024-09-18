@@ -14,7 +14,7 @@
           {{ $t("settings.profile.password-hint") }}
           <NTooltip>
             <template #trigger>
-              <CircleHelpIcon class="w-3" />
+              <CircleHelpIcon class="w-4" />
             </template>
             <component :is="passwordRestrictionText" class="text-sm" />
           </NTooltip>
@@ -88,7 +88,13 @@
 </template>
 
 <script lang="tsx" setup>
-import { CircleHelpIcon, EyeIcon, EyeOffIcon } from "lucide-vue-next";
+import {
+  CircleHelpIcon,
+  EyeIcon,
+  EyeOffIcon,
+  CircleCheckIcon,
+  CircleAlertIcon,
+} from "lucide-vue-next";
 import { NInput, NTooltip } from "naive-ui";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
@@ -115,40 +121,60 @@ defineEmits<{
 const showPassword = ref<boolean>(false);
 const { t } = useI18n();
 
-const passwordRestrictionText = computed(() => {
-  const text = [
-    t("settings.general.workspace.password-restriction.min-length", {
-      min: props.passwordRestriction.minLength,
-    }),
+const passwordCheck = computed(() => {
+  const check: { text: string; matched: boolean }[] = [
+    {
+      text: t("settings.general.workspace.password-restriction.min-length", {
+        min: props.passwordRestriction.minLength,
+      }),
+      matched: props.password.length >= props.passwordRestriction.minLength,
+    },
   ];
+
   if (props.passwordRestriction.requireNumber) {
-    text.push(
-      t("settings.general.workspace.password-restriction.require-number")
-    );
+    check.push({
+      text: t("settings.general.workspace.password-restriction.require-number"),
+      matched: /[0-9]+/.test(props.password),
+    });
   }
   if (props.passwordRestriction.requireUppercaseLetter) {
-    text.push(
-      t(
+    check.push({
+      text: t(
         "settings.general.workspace.password-restriction.require-uppercase-letter"
-      )
-    );
+      ),
+      matched: /[A-Z]+/.test(props.password),
+    });
   } else if (props.passwordRestriction.requireLetter) {
-    text.push(
-      t("settings.general.workspace.password-restriction.require-letter")
-    );
+    check.push({
+      text: t("settings.general.workspace.password-restriction.require-letter"),
+      matched: /[a-zA-Z]+/.test(props.password),
+    });
   }
   if (props.passwordRestriction.requireSpecialCharacter) {
-    text.push(
-      t(
+    check.push({
+      text: t(
         "settings.general.workspace.password-restriction.require-special-character"
-      )
-    );
+      ),
+      // eslint-disable-next-line no-useless-escape
+      matched: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]+/.test(props.password),
+    });
   }
 
+  return check;
+});
+
+const passwordRestrictionText = computed(() => {
   return (
-    <ul class="list-disc px-2">
-      {text.map((t, i) => (
-        <li key={i}>{t}</li>
+    <ul class="list-disc">
+      {passwordCheck.value.map((check, i) => (
+        <li key={i} class={"flex gap-x-1 items-center"}>
+          {check.matched ? (
+            <CircleCheckIcon class={"w-4 text-green-400"} />
+          ) : (
+            <CircleAlertIcon class={"w-4 text-red-400"} />
+          )}
+          {check.text}
+        </li>
       ))}
     </ul>
   );
@@ -159,26 +185,7 @@ const passwordHint = computed(() => {
   if (!pwd) {
     return false;
   }
-  if (pwd.length < props.passwordRestriction.minLength) {
-    return true;
-  }
-  if (props.passwordRestriction.requireNumber && !/[0-9]+/.test(pwd)) {
-    return true;
-  }
-  if (props.passwordRestriction.requireLetter && !/[a-zA-Z]+/.test(pwd)) {
-    return true;
-  }
-  if (props.passwordRestriction.requireUppercaseLetter && !/[A-Z]+/.test(pwd)) {
-    return true;
-  }
-  if (
-    props.passwordRestriction.requireSpecialCharacter &&
-    // eslint-disable-next-line no-useless-escape
-    !/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]+/.test(pwd)
-  ) {
-    return true;
-  }
-  return false;
+  return passwordCheck.value.some((check) => !check.matched);
 });
 
 const passwordMismatch = computed(() => {
