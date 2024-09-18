@@ -30,8 +30,13 @@ import {
   useSubscriptionV1Store,
   useUIStateStore,
 } from "@/store";
+import { PresetRoleType } from "@/types";
 import { PlanType } from "@/types/proto/v1/subscription_service";
-import { hasWorkspacePermissionV2, isDev } from "@/utils";
+import {
+  hasWorkspacePermissionV2,
+  isDev,
+  hasWorkspaceLevelRole,
+} from "@/utils";
 import ProfilePreview from "./ProfilePreview.vue";
 import UserAvatar from "./User/UserAvatar.vue";
 import Version from "./misc/Version.vue";
@@ -50,7 +55,15 @@ const router = useRouter();
 const { setLocale, locale } = useLanguage();
 const currentUserV1 = useCurrentUserV1();
 const showDropdown = ref(false);
-const hideQuickstart = useAppFeature("bb.feature.hide-quick-start");
+const hideQuickstart = computed(() => {
+  if (useAppFeature("bb.feature.hide-quick-start").value) {
+    return true;
+  }
+  return !(
+    hasWorkspaceLevelRole(PresetRoleType.WORKSPACE_ADMIN) ||
+    hasWorkspaceLevelRole(PresetRoleType.WORKSPACE_DBA)
+  );
+});
 const hideHelp = useAppFeature("bb.feature.hide-help");
 
 // For now, debug mode is a global setting and will affect all users.
