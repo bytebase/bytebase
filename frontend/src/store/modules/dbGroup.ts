@@ -1,8 +1,8 @@
 import { computedAsync } from "@vueuse/core";
-import { head, isEqual } from "lodash-es";
+import { head } from "lodash-es";
 import { defineStore } from "pinia";
 import type { MaybeRef } from "vue";
-import { computed, ref, unref } from "vue";
+import { computed, ref, unref, watchEffect } from "vue";
 import { databaseGroupServiceClient } from "@/grpcweb";
 import type { ConditionGroupExpr } from "@/plugins/cel";
 import {
@@ -24,6 +24,7 @@ import {
   batchConvertParsedExprToCELString,
   batchConvertCELStringToParsedExpr,
 } from "@/utils";
+import { useCache } from "../cache";
 import { useProjectV1Store, useDatabaseV1Store } from "./v1";
 import {
   databaseGroupNamePrefix,
@@ -76,13 +77,25 @@ const batchComposeDatabaseGroup = async (
   return [...composedDatabaseGroupMap.values()];
 };
 
-export const useDBGroupStore = defineStore("db-group", () => {
-  // TODO(steven): update cache key with view.
-  const dbGroupMapByName = ref<Map<string, ComposedDatabaseGroup>>(new Map());
-  const cachedProjectNameSet = ref<Set<string>>(new Set());
+type DatabaseGroupCacheKey = [string /* name */, DatabaseGroupView];
 
-  const getAllDatabaseGroupList = () => {
-    return Array.from(dbGroupMapByName.value.values());
+export const useDBGroupStore = defineStore("db-group", () => {
+  const cacheByName = useCache<DatabaseGroupCacheKey, ComposedDatabaseGroup>(
+    "bb.database-group.by-name"
+  );
+
+  // Cache utils
+  const setDatabaseGroupCache = (
+    databaseGroup: ComposedDatabaseGroup,
+    view: DatabaseGroupView
+  ) => {
+    if (view === DatabaseGroupView.DATABASE_GROUP_VIEW_FULL) {
+      cacheByName.invalidateEntity([
+        databaseGroup.name,
+        DatabaseGroupView.DATABASE_GROUP_VIEW_BASIC,
+      ]);
+    }
+    cacheByName.setEntity([databaseGroup.name, view], databaseGroup);
   };
 
   const getOrFetchDBGroupByName = async (
@@ -102,7 +115,7 @@ export const useDBGroupStore = defineStore("db-group", () => {
       ...options,
     };
     if (!skipCache) {
-      const cached = dbGroupMapByName.value.get(name);
+      const cached = cacheByName.getEntity([name, view]);
       if (cached) return cached;
     }
 
@@ -115,18 +128,11 @@ export const useDBGroupStore = defineStore("db-group", () => {
     );
     const composedData = await batchComposeDatabaseGroup([databaseGroup]);
     const response = composedData[0];
-    dbGroupMapByName.value.set(name, response);
+    setDatabaseGroupCache(response, view);
     return response;
   };
 
-  const getOrFetchDBGroupListByProjectName = async (projectName: string) => {
-    const hasCache = cachedProjectNameSet.value.has(projectName);
-    if (hasCache) {
-      return Array.from(dbGroupMapByName.value.values()).filter((dbGroup) =>
-        dbGroup.name.startsWith(projectName)
-      );
-    }
-
+  const fetchDBGroupListByProjectName = async (projectName: string) => {
     const { databaseGroups } =
       await databaseGroupServiceClient.listDatabaseGroups({
         parent: projectName,
@@ -135,23 +141,32 @@ export const useDBGroupStore = defineStore("db-group", () => {
     const composeDatabaseGroups =
       await batchComposeDatabaseGroup(databaseGroups);
     for (const composedData of composeDatabaseGroups) {
-      dbGroupMapByName.value.set(composedData.name, composedData);
+      setDatabaseGroupCache(
+        composedData,
+        DatabaseGroupView.DATABASE_GROUP_VIEW_BASIC
+      );
       composedList.push(composedData);
     }
-    cachedProjectNameSet.value.add(projectName);
     return composedList;
   };
 
-  const getDBGroupListByProjectName = (projectName: string) => {
-    return Array.from(dbGroupMapByName.value.values()).filter((dbGroup) =>
-      dbGroup.name.startsWith(projectName)
-    );
-  };
-
   const getDBGroupByName = (
-    name: string
+    name: string,
+    view?: DatabaseGroupView
   ): ComposedDatabaseGroup | undefined => {
-    return dbGroupMapByName.value.get(name);
+    if (!view) {
+      return (
+        cacheByName.getEntity([
+          name,
+          DatabaseGroupView.DATABASE_GROUP_VIEW_FULL,
+        ]) ??
+        cacheByName.getEntity([
+          name,
+          DatabaseGroupView.DATABASE_GROUP_VIEW_BASIC,
+        ])
+      );
+    }
+    return cacheByName.getEntity([name, view]);
   };
 
   const createDatabaseGroup = async ({
@@ -180,14 +195,49 @@ export const useDBGroupStore = defineStore("db-group", () => {
           silent: validateOnly,
         }
       );
-
     if (!validateOnly) {
       const composedData = await batchComposeDatabaseGroup([
         createdDatabaseGroup,
       ]);
-      dbGroupMapByName.value.set(createdDatabaseGroup.name, composedData[0]);
+      setDatabaseGroupCache(
+        composedData[0],
+        DatabaseGroupView.DATABASE_GROUP_VIEW_FULL
+      );
     }
     return createdDatabaseGroup;
+  };
+
+  const updateDatabaseGroup = async (
+    databaseGroup: DatabaseGroup,
+    updateMask: string[]
+  ) => {
+    const updatedDatabaseGroup =
+      await databaseGroupServiceClient.updateDatabaseGroup({
+        databaseGroup,
+        updateMask,
+      });
+    const composedData = await batchComposeDatabaseGroup([
+      updatedDatabaseGroup,
+    ]);
+    setDatabaseGroupCache(
+      composedData[0],
+      DatabaseGroupView.DATABASE_GROUP_VIEW_FULL
+    );
+    return updatedDatabaseGroup;
+  };
+
+  const deleteDatabaseGroup = async (name: string) => {
+    await databaseGroupServiceClient.deleteDatabaseGroup({
+      name: name,
+    });
+    cacheByName.invalidateEntity([
+      name,
+      DatabaseGroupView.DATABASE_GROUP_VIEW_FULL,
+    ]);
+    cacheByName.invalidateEntity([
+      name,
+      DatabaseGroupView.DATABASE_GROUP_VIEW_BASIC,
+    ]);
   };
 
   const fetchDatabaseGroupMatchList = async ({
@@ -243,55 +293,9 @@ export const useDBGroupStore = defineStore("db-group", () => {
     };
   };
 
-  const updateDatabaseGroup = async (
-    databaseGroup: Pick<
-      DatabaseGroup,
-      "name" | "databasePlaceholder" | "databaseExpr" | "multitenancy"
-    >
-  ) => {
-    const rawDatabaseGroup = dbGroupMapByName.value.get(databaseGroup.name);
-    if (!rawDatabaseGroup) {
-      throw new Error("Database group not found");
-    }
-    const updateMask: string[] = [];
-    if (
-      !isEqual(
-        rawDatabaseGroup.databasePlaceholder,
-        databaseGroup.databasePlaceholder
-      )
-    ) {
-      updateMask.push("database_placeholder");
-    }
-    if (!isEqual(rawDatabaseGroup.databaseExpr, databaseGroup.databaseExpr)) {
-      updateMask.push("database_expr");
-    }
-    if (!isEqual(rawDatabaseGroup.multitenancy, databaseGroup.multitenancy)) {
-      updateMask.push("multitenancy");
-    }
-    const updatedDatabaseGroup =
-      await databaseGroupServiceClient.updateDatabaseGroup({
-        databaseGroup,
-        updateMask,
-      });
-    const composedData = await batchComposeDatabaseGroup([
-      updatedDatabaseGroup,
-    ]);
-    dbGroupMapByName.value.set(updatedDatabaseGroup.name, composedData[0]);
-    return updatedDatabaseGroup;
-  };
-
-  const deleteDatabaseGroup = async (name: string) => {
-    await databaseGroupServiceClient.deleteDatabaseGroup({
-      name: name,
-    });
-    dbGroupMapByName.value.delete(name);
-  };
-
   return {
-    getAllDatabaseGroupList,
     getOrFetchDBGroupByName,
-    getOrFetchDBGroupListByProjectName,
-    getDBGroupListByProjectName,
+    fetchDBGroupListByProjectName,
     getDBGroupByName,
     createDatabaseGroup,
     updateDatabaseGroup,
@@ -299,6 +303,23 @@ export const useDBGroupStore = defineStore("db-group", () => {
     fetchDatabaseGroupMatchList,
   };
 });
+
+export const useDBGroupListByProject = (project: MaybeRef<string>) => {
+  const store = useDBGroupStore();
+  const ready = ref(false);
+  const dbGroupList = ref<ComposedDatabaseGroup[]>([]);
+
+  watchEffect(() => {
+    ready.value = false;
+    dbGroupList.value = [];
+    store.fetchDBGroupListByProjectName(unref(project)).then((response) => {
+      ready.value = true;
+      dbGroupList.value = response;
+    });
+  });
+
+  return { dbGroupList, ready };
+};
 
 export const useDatabaseInGroupFilter = (
   project: MaybeRef<ComposedProject>,

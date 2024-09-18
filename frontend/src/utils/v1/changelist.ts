@@ -32,7 +32,7 @@ export const generateSQLForChangeToDatabase = async (
   change: Change,
   database: ComposedDatabase
 ) => {
-  const sheet = await useSheetV1Store().fetchSheetByName(change.sheet, "FULL");
+  const sheet = await useSheetV1Store().getOrFetchSheetByName(change.sheet, "FULL");
   if (!sheet) {
     return "";
   }
