@@ -3,13 +3,10 @@
     <FeatureAttention feature="bb.feature.database-grouping" />
 
     <DatabaseGroupDataTable
-      :database-group-list="databaseGroupList"
+      :database-group-list="dbGroupList"
       :custom-click="true"
-      :show-selection="false"
-      :show-project="false"
-      :loading="isLoading"
+      :loading="!ready"
       @row-click="handleDatabaseGroupClick"
-      @edit="handleEditDatabaseGroup"
     />
   </div>
 
@@ -28,12 +25,11 @@
 </template>
 
 <script lang="ts" setup>
-import { cloneDeep } from "lodash-es";
-import { computed, onMounted, reactive, ref } from "vue";
+import { reactive } from "vue";
 import { useRouter } from "vue-router";
 import DatabaseGroupDataTable from "@/components/DatabaseGroup/DatabaseGroupDataTable.vue";
 import { PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL } from "@/router/dashboard/projectV1";
-import { useDBGroupStore, hasFeature } from "@/store";
+import { useDBGroupListByProject } from "@/store";
 import type { ComposedDatabaseGroup, ComposedProject } from "@/types";
 import { FeatureAttention, FeatureModal } from "../FeatureGuard";
 import DatabaseGroupPanel from "./DatabaseGroupPanel.vue";
@@ -49,25 +45,11 @@ const props = defineProps<{
 }>();
 
 const router = useRouter();
-const dbGroupStore = useDBGroupStore();
 const state = reactive<LocalState>({
   showFeatureModal: false,
   showDatabaseGroupPanel: false,
 });
-const isLoading = ref(true);
-
-const hasDatabaseGroupFeature = computed(() => {
-  return hasFeature("bb.feature.database-grouping");
-});
-
-const databaseGroupList = computed(() => {
-  return dbGroupStore.getDBGroupListByProjectName(props.project.name);
-});
-
-onMounted(async () => {
-  await dbGroupStore.getOrFetchDBGroupListByProjectName(props.project.name);
-  isLoading.value = false;
-});
+const { dbGroupList, ready } = useDBGroupListByProject(props.project.name);
 
 const handleDatabaseGroupClick = (
   event: MouseEvent,
@@ -84,14 +66,5 @@ const handleDatabaseGroupClick = (
   } else {
     router.push(url);
   }
-};
-
-const handleEditDatabaseGroup = (databaseGroup: ComposedDatabaseGroup) => {
-  if (!hasDatabaseGroupFeature.value) {
-    state.showFeatureModal = true;
-    return;
-  }
-  state.editingDatabaseGroup = cloneDeep(databaseGroup);
-  state.showDatabaseGroupPanel = true;
 };
 </script>
