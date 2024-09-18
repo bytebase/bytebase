@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strconv"
 	"syscall"
 
 	"github.com/pkg/errors"
@@ -98,6 +99,26 @@ func Execute() error {
 	return rootCmd.Execute()
 }
 
+// Return the content of an environment variable or the fallback value if not present.
+// Return string from env var.
+func getStringEnv(key, fallback string) string {
+	if value, ok := os.LookupEnv(key); ok {
+		return value
+	}
+	return fallback
+}
+
+// Return bool from env var.
+func getBooleanEnv(key string, fallback bool) bool {
+	// Return the content of an environment variable or the fallback value if ont present.
+	if value, ok := os.LookupEnv(key); ok {
+		if val, err := strconv.ParseBool(value); err != nil {
+			return val
+		}
+	}
+	return fallback
+}
+
 func init() {
 	// In the release build, Bytebase bundles frontend and backend together and runs on a single port as a mono server.
 	// During development, Bytebase frontend runs on a separate port.
@@ -110,20 +131,20 @@ func init() {
 	// 1. Constructing the correct callback URL when configuring the VCS provider. The callback URL points to the frontend.
 	// 2. Creating the correct webhook endpoint when configuring the project GitOps workflow. The webhook endpoint points to the backend.
 	// Since frontend and backend are bundled and run on the same address in the release build, thus we just need to specify a single external URL.
-	rootCmd.PersistentFlags().StringVar(&flags.externalURL, "external-url", "", "the external URL where user visits Bytebase, must start with http:// or https://")
+	rootCmd.PersistentFlags().StringVar(&flags.externalURL, "external-url", getStringEnv("BYTEBASE_EXTERNAL_URL", ""), "the external URL where user visits Bytebase, must start with http:// or https://")
 	// Support environment variable for deploying to render.com using its blueprint file.
 	// Render blueprint allows to specify a postgres database along with a service.
 	// It allows to pass the postgres connection string as an ENV to the service.
 	rootCmd.PersistentFlags().StringVar(&flags.pgURL, "pg", os.Getenv("PG_URL"), "optional external PostgreSQL instance connection url (must provide dbname); for example postgresql://user:secret@masterhost:5432/dbname?sslrootcert=cert")
-	rootCmd.PersistentFlags().StringVar(&flags.dataDir, "data", ".", "not recommended for production. Directory where Bytebase stores data if --pg is not specified. If relative path is supplied, then the path is relative to the directory where Bytebase is under")
-	rootCmd.PersistentFlags().BoolVar(&flags.readonly, "readonly", false, "whether to run in read-only mode")
-	rootCmd.PersistentFlags().BoolVar(&flags.saas, "saas", false, "whether to run in SaaS mode")
+	rootCmd.PersistentFlags().StringVar(&flags.dataDir, "data", getStringEnv("BYTEBASE_DATA_DIR", "."), "not recommended for production. Directory where Bytebase stores data if --pg is not specified. If relative path is supplied, then the path is relative to the directory where Bytebase is under")
+	rootCmd.PersistentFlags().BoolVar(&flags.readonly, "readonly", getBooleanEnv("BYTEBASE_READONLY", false), "whether to run in read-only mode")
+	rootCmd.PersistentFlags().BoolVar(&flags.saas, "saas", getBooleanEnv("BYTEBASE_SAAS", false), "whether to run in SaaS mode")
 	// Must be one of the subpath name in the ../migrator/demo directory
-	rootCmd.PersistentFlags().StringVar(&flags.demoName, "demo", "", "name of the demo to use. Empty means not running in demo mode.")
-	rootCmd.PersistentFlags().BoolVar(&flags.debug, "debug", false, "whether to enable debug level logging")
-	rootCmd.PersistentFlags().BoolVar(&flags.lsp, "lsp", true, "whether to enable lsp in SQL Editor")
-	rootCmd.PersistentFlags().BoolVar(&flags.disableMetric, "disable-metric", false, "disable the metric collector")
-	rootCmd.PersistentFlags().BoolVar(&flags.disableSample, "disable-sample", false, "disable the sample instance")
+	rootCmd.PersistentFlags().StringVar(&flags.demoName, "demo", getStringEnv("BYTEBASE_DEMO_NAME", ""), "name of the demo to use. Empty means not running in demo mode.")
+	rootCmd.PersistentFlags().BoolVar(&flags.debug, "debug", getBooleanEnv("BYTEBASE_DEBUG", false), "whether to enable debug level logging")
+	rootCmd.PersistentFlags().BoolVar(&flags.lsp, "lsp", getBooleanEnv("BYTEBASE_LSP", true), "whether to enable lsp in SQL Editor")
+	rootCmd.PersistentFlags().BoolVar(&flags.disableMetric, "disable-metric", getBooleanEnv("BYTEBASE_DISABLE_METRIC", false), "disable the metric collector")
+	rootCmd.PersistentFlags().BoolVar(&flags.disableSample, "disable-sample", getBooleanEnv("BYTEBASE_DISABLE_SAMPLE", false), "disable the sample instance")
 }
 
 // -----------------------------------Command Line Config END--------------------------------------
