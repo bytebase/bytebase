@@ -781,7 +781,9 @@
             "self": "SQL エディター モード (個人)",
             "description": "SQL エディタを使用してデータベースの変更を直接実行します。個人に適しています。"
           },
-          "can-be-changed-later": "この設定は後でいつでも変更できます。"
+          "can-be-changed-later": "この設定は後でいつでも変更できます。",
+          "default-view-changed-to-sql-editor": "ワークスペースのデフォルトのビューが SQL エディターに変更されました。",
+          "go-to-sql-editor": "SQLエディターに移動します"
         }
       }
     },
