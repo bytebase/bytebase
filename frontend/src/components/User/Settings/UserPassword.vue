@@ -14,7 +14,7 @@
           {{ $t("settings.profile.password-hint") }}
           <NTooltip>
             <template #trigger>
-              <CircleHelpIcon class="w-3" />
+              <CircleHelpIcon class="w-4" />
             </template>
             <component :is="passwordRestrictionText" class="text-sm" />
           </NTooltip>
@@ -88,7 +88,13 @@
 </template>
 
 <script lang="tsx" setup>
-import { CircleHelpIcon, EyeIcon, EyeOffIcon } from "lucide-vue-next";
+import {
+  CircleHelpIcon,
+  EyeIcon,
+  EyeOffIcon,
+  CircleCheckIcon,
+  CircleAlertIcon,
+} from "lucide-vue-next";
 import { NInput, NTooltip } from "naive-ui";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
@@ -159,9 +165,14 @@ const passwordCheck = computed(() => {
 
 const passwordRestrictionText = computed(() => {
   return (
-    <ul class="list-disc px-2">
+    <ul class="list-disc">
       {passwordCheck.value.map((check, i) => (
-        <li key={i} class={check.matched && "line-through"}>
+        <li key={i} class={"flex gap-x-1 items-center"}>
+          {check.matched ? (
+            <CircleCheckIcon class={"w-4 text-green-400"} />
+          ) : (
+            <CircleAlertIcon class={"w-4 text-red-400"} />
+          )}
           {check.text}
         </li>
       ))}
