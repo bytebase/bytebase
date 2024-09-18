@@ -41,7 +41,7 @@
     },
     "table-require-pk": {
       "title": "Enforce inclusion of primary key in a table",
-      "description": "In addition to carry business meaning, primary key are also beneficial for high-concurrency queries in MySQL. Various data synchronization, comparison, and rollback tools often require tables to have primary key. Suggestion error level: Error"
+      "description": "Various data synchronization, comparison, and rollback tools require tables to have primary key. Suggestion error level: Error"
     },
     "table-no-foreign-key": {
       "title": "Prohibit using foreign key constraints",
