@@ -41,7 +41,7 @@
 </template>
 
 <script lang="ts" setup>
-import { head } from "lodash-es";
+import { head, isEqual } from "lodash-es";
 import { Trash2Icon } from "lucide-vue-next";
 import { NButton, useDialog } from "naive-ui";
 import { computed, ref } from "vue";
@@ -181,14 +181,40 @@ const doConfirm = async () => {
     });
     emit("created", resourceId);
   } else {
-    await dbGroupStore.updateDatabaseGroup({
-      ...props.databaseGroup!,
-      databasePlaceholder: formState.placeholder,
-      databaseExpr: Expr.fromPartial({
-        expression: celString,
-      }),
-      multitenancy: formState.multitenancy,
-    });
+    if (!props.databaseGroup) {
+      return;
+    }
+
+    const updateMask: string[] = [];
+    if (
+      !isEqual(props.databaseGroup.databasePlaceholder, formState.placeholder)
+    ) {
+      updateMask.push("database_placeholder");
+    }
+    if (
+      !isEqual(
+        props.databaseGroup.databaseExpr,
+        Expr.fromPartial({
+          expression: celString,
+        })
+      )
+    ) {
+      updateMask.push("database_expr");
+    }
+    if (!isEqual(props.databaseGroup.multitenancy, formState.multitenancy)) {
+      updateMask.push("multitenancy");
+    }
+    await dbGroupStore.updateDatabaseGroup(
+      {
+        ...props.databaseGroup!,
+        databasePlaceholder: formState.placeholder,
+        databaseExpr: Expr.fromPartial({
+          expression: celString,
+        }),
+        multitenancy: formState.multitenancy,
+      },
+      updateMask
+    );
   }
 
   pushNotification({
