@@ -781,7 +781,9 @@
             "self": "SQL 编辑器模式（单人）",
             "description": "使用 SQL 编辑器直接执行数据库变更。适合单人使用。"
           },
-          "can-be-changed-later": "此设置以后可以随时更改。"
+          "can-be-changed-later": "此设置以后可以随时更改。",
+          "default-view-changed-to-sql-editor": "工作空间的默认视图已更改为 SQL 编辑器。",
+          "go-to-sql-editor": "前往 SQL 编辑器"
         }
       }
     },
