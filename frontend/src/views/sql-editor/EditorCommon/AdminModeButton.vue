@@ -48,7 +48,7 @@ const { currentTab, isDisconnected } = storeToRefs(tabStore);
 const showButton = computed(() => {
   if (!allowAdmin.value) return false;
   const mode = currentTab.value?.mode;
-  return mode === "READONLY" || mode === "STANDARD";
+  return mode === "WORKSHEET";
 });
 
 const enterAdminMode = async () => {

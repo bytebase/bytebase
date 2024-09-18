@@ -2,13 +2,7 @@
   <div class="w-full flex-1 flex flex-row items-stretch overflow-hidden">
     <Panels>
       <template #code-panel>
-        <StandardPanel
-          v-if="
-            !currentTab ||
-            currentTab.mode === 'READONLY' ||
-            currentTab.mode === 'STANDARD'
-          "
-        />
+        <StandardPanel v-if="!currentTab || currentTab.mode === 'WORKSHEET'" />
 
         <TerminalPanel v-else-if="currentTab.mode === 'ADMIN'" />
 

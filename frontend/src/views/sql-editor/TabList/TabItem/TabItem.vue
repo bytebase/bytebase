@@ -18,11 +18,7 @@
   >
     <div class="body">
       <Prefix :tab="tab" :index="index" />
-      <Label
-        v-if="tab.mode === 'READONLY' || tab.mode === 'STANDARD'"
-        :tab="tab"
-        :index="index"
-      />
+      <Label v-if="tab.mode === 'WORKSHEET'" :tab="tab" :index="index" />
       <AdminLabel v-else :tab="tab" :index="index" />
       <Suffix :tab="tab" :index="index" @close="$emit('close', tab, index)" />
     </div>
