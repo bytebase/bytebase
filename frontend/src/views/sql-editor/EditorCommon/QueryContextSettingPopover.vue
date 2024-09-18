@@ -71,17 +71,6 @@
             </template>
           </ResultLimitSelect>
         </div>
-        <div
-          v-if="showQueryModeSelect"
-          class="border-t pt-1 -mx-2"
-          style="width: calc(100% + 1rem)"
-        >
-          <QueryModeSelect
-            :disabled="isExecutingSQL"
-            placement="right-start"
-            trigger="hover"
-          />
-        </div>
       </div>
     </template>
   </NPopover>
@@ -106,8 +95,6 @@ import {
 } from "@/types/proto/v1/org_policy_service";
 import { readableDataSourceType } from "@/utils";
 import { getAdminDataSourceRestrictionOfDatabase } from "@/utils";
-import { useSQLEditorContext } from "../context";
-import QueryModeSelect from "./QueryModeSelect.vue";
 import ResultLimitSelect from "./ResultLimitSelect.vue";
 
 defineProps<{
@@ -116,17 +103,12 @@ defineProps<{
 
 const { t } = useI18n();
 const tabStore = useSQLEditorTabStore();
-const { standardModeEnabled } = useSQLEditorContext();
 const { connection, database } = useConnectionOfCurrentSQLEditorTab();
 const policyStore = usePolicyV1Store();
 
 const show = computed(() => {
   return tabStore.currentTab?.mode !== "ADMIN";
 });
-
-const isExecutingSQL = computed(
-  () => tabStore.currentTab?.queryContext?.status === "EXECUTING"
-);
 
 const adminDataSourceRestriction = computed(() => {
   if (!database.value) {
@@ -145,17 +127,6 @@ const selectedDataSourceId = computed(() => {
 
 const dataSources = computed(() => {
   return orderBy(database.value.instanceResource.dataSources, "type");
-});
-
-const showQueryModeSelect = computed(() => {
-  const tab = tabStore.currentTab;
-  if (!tab) {
-    return false;
-  }
-  if (!standardModeEnabled.value) {
-    return false;
-  }
-  return tab.mode !== "ADMIN";
 });
 
 const dataSourceUnaccessibleReason = (

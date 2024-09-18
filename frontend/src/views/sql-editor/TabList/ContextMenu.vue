@@ -60,7 +60,7 @@ const options = computed((): DropdownOption[] => {
   ];
 
   const { tab } = state.value;
-  if (tab.mode === "READONLY" || tab.mode === "STANDARD") {
+  if (tab.mode === "WORKSHEET") {
     const DIVIDER: DropdownOption = {
       type: "divider",
       key: "DIVIDER",

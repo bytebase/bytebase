@@ -170,10 +170,7 @@ const handleRemoveTab = async (
   focusWhenConfirm = false
 ) => {
   const _defer = defer<boolean>();
-  if (
-    (tab.mode === "READONLY" || tab.mode === "STANDARD") &&
-    tab.status === "DIRTY"
-  ) {
+  if (tab.mode === "WORKSHEET" && tab.status === "DIRTY") {
     if (focusWhenConfirm) {
       tabStore.setCurrentTabId(tab.id);
     }

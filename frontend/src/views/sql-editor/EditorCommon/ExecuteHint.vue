@@ -32,7 +32,7 @@
 
     <div class="execute-hint-content mt-4 flex justify-between">
       <div
-        v-if="actions.action && actions.admin"
+        v-if="actions.issue && actions.admin"
         class="flex justify-start items-center space-x-2"
       >
         <AdminModeButton @enter="$emit('close')" />
@@ -40,16 +40,11 @@
       <div class="flex flex-1 justify-end items-center space-x-2">
         <NButton @click="handleClose">{{ $t("common.close") }}</NButton>
         <NButton
-          v-if="actions.action"
+          v-if="actions.issue"
           type="primary"
-          @click="handleClickActionButton"
+          @click="handleClickCreateIssue"
         >
-          <template v-if="actions.action === 'CREATE_ISSUE'">
-            {{ descriptions.action }}
-          </template>
-          <template v-if="actions.action === 'STANDARD_MODE'">
-            {{ $t("sql-editor.standard-mode.self") }}
-          </template>
+          {{ descriptions.action }}
         </NButton>
         <AdminModeButton v-else @enter="$emit('close')" />
       </div>
@@ -73,7 +68,6 @@ import {
   useSQLEditorTabStore,
 } from "@/store";
 import { extractProjectResourceName, hasWorkspacePermissionV2 } from "@/utils";
-import { useSQLEditorContext } from "../context";
 import AdminModeButton from "./AdminModeButton.vue";
 
 const emit = defineEmits<{
@@ -86,7 +80,6 @@ const DMLIssueTemplate = "bb.issue.database.data.update";
 const router = useRouter();
 const { t } = useI18n();
 const tabStore = useSQLEditorTabStore();
-const { standardModeEnabled } = useSQLEditorContext();
 const disallowNavigateToConsole = useAppFeature(
   "bb.feature.disallow-navigate-to-console"
 );
@@ -104,19 +97,17 @@ const isDDL = computedAsync(async () => {
 const actions = computed(() => {
   type Actions = {
     admin: boolean;
-    action: "STANDARD_MODE" | "CREATE_ISSUE" | undefined;
+    issue: boolean;
   };
   const actions: Actions = {
     admin: false,
-    action: undefined,
+    issue: false,
   };
   if (hasWorkspacePermissionV2("bb.instances.adminExecute")) {
     actions.admin = true;
   }
-  if (standardModeEnabled.value) {
-    actions.action = "STANDARD_MODE";
-  } else if (!disallowNavigateToConsole.value) {
-    actions.action = "CREATE_ISSUE";
+  if (!disallowNavigateToConsole.value) {
+    actions.issue = true;
   }
 
   return actions;
@@ -130,15 +121,12 @@ const descriptions = computed(() => {
     action: "",
     reaction: "",
   };
-  const { admin, action } = actions.value;
-  if (action === "CREATE_ISSUE") {
+  const { admin, issue } = actions.value;
+  if (issue) {
     descriptions.action = isDDL.value
       ? t("database.edit-schema")
       : t("database.change-data");
     descriptions.reaction = t("sql-editor.and-submit-an-issue");
-  } else if (action === "STANDARD_MODE") {
-    descriptions.action = t("sql-editor.standard-mode.self");
-    descriptions.reaction = t("sql-editor.to-enable-standard-mode");
   } else if (admin) {
     descriptions.action = t("sql-editor.admin-mode.self");
     descriptions.reaction = t("sql-editor.to-enable-admin-mode");
@@ -184,27 +172,7 @@ const gotoCreateIssue = () => {
   window.open(route.fullPath, "_blank");
 };
 
-const changeToStandardMode = () => {
-  const tab = tabStore.currentTab;
-  if (!tab) {
-    return;
-  }
-  if (tab.mode === "ADMIN") {
-    return;
-  }
-  tab.mode = "STANDARD";
-  emit("close");
-};
-
-const handleClickActionButton = () => {
-  const { action } = actions.value;
-  if (action === "CREATE_ISSUE") {
-    gotoCreateIssue();
-    return;
-  }
-  if (action === "STANDARD_MODE") {
-    changeToStandardMode();
-    return;
-  }
+const handleClickCreateIssue = () => {
+  gotoCreateIssue();
 };
 </script>
