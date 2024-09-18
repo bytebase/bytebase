@@ -107,7 +107,7 @@ const actions = computed(() => {
     actions.admin = true;
   }
   if (!disallowNavigateToConsole.value) {
-    actions.issue;
+    actions.issue = true;
   }
 
   return actions;
