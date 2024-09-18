@@ -31,7 +31,7 @@
 import { uniqBy } from "lodash-es";
 import { NTooltip, NButton, useDialog } from "naive-ui";
 import { zindexable as vZindexable } from "vdirs";
-import { computed, nextTick, ref } from "vue";
+import { computed, nextTick, ref, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { ErrorList } from "@/components/Plan/components/common";
@@ -43,9 +43,10 @@ import { planCheckRunSummaryForCheckRunList } from "@/components/PlanCheckRun/co
 import { useSQLCheckContext } from "@/components/SQLCheck";
 import { issueServiceClient, rolloutServiceClient } from "@/grpcweb";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
-import { useCurrentUserV1 } from "@/store";
+import { useCurrentUserV1, usePolicyV1Store } from "@/store";
 import { emptyIssue, type ComposedIssue } from "@/types";
 import { Issue, IssueStatus, Issue_Type } from "@/types/proto/v1/issue_service";
+import { PolicyType } from "@/types/proto/v1/org_policy_service";
 import { PlanCheckRun_Result_Status } from "@/types/proto/v1/plan_service";
 import {
   extractProjectResourceName,
@@ -56,9 +57,11 @@ import {
 const { t } = useI18n();
 const router = useRouter();
 const dialog = useDialog();
+const policyV1Store = usePolicyV1Store();
 const { plan } = usePlanContext();
 const { runSQLCheck } = useSQLCheckContext();
 const loading = ref(false);
+const restrictIssueCreationForSqlReviewPolicy = ref(false);
 
 const planCheckStatus = computed((): PlanCheckRun_Result_Status => {
   const planCheckList = uniqBy(
@@ -85,7 +88,10 @@ const issueCreateErrorList = computed(() => {
   if (!plan.value.title.trim()) {
     errorList.push("Missing issue title");
   }
-  if (planCheckStatus.value !== PlanCheckRun_Result_Status.SUCCESS) {
+  if (
+    planCheckStatus.value === PlanCheckRun_Result_Status.ERROR &&
+    restrictIssueCreationForSqlReviewPolicy.value
+  ) {
     errorList.push(
       t(
         "custom-approval.issue-review.disallow-approve-reason.some-task-checks-didnt-pass"
@@ -93,6 +99,31 @@ const issueCreateErrorList = computed(() => {
     );
   }
   return errorList;
+});
+
+watchEffect(async () => {
+  const workspaceLevelPolicy =
+    await policyV1Store.getOrFetchPolicyByParentAndType({
+      parentPath: "",
+      policyType: PolicyType.RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW,
+    });
+  if (workspaceLevelPolicy?.restrictIssueCreationForSqlReviewPolicy?.disallow) {
+    restrictIssueCreationForSqlReviewPolicy.value = true;
+    return;
+  }
+
+  const projectLevelPolicy =
+    await policyV1Store.getOrFetchPolicyByParentAndType({
+      parentPath: plan.value.project,
+      policyType: PolicyType.RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW,
+    });
+  if (projectLevelPolicy?.restrictIssueCreationForSqlReviewPolicy?.disallow) {
+    restrictIssueCreationForSqlReviewPolicy.value = true;
+    return;
+  }
+
+  // Fall back to default value.
+  restrictIssueCreationForSqlReviewPolicy.value = false;
 });
 
 const handleCreateIssue = async () => {

@@ -98,6 +98,9 @@ watchEffect(async () => {
     restrictIssueCreationForSqlReviewPolicy.value = true;
     return;
   }
+
+  // Fall back to default value.
+  restrictIssueCreationForSqlReviewPolicy.value = false;
 });
 
 const planCheckRun = computed((): PlanCheckRun => {
