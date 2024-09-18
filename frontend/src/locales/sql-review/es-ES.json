@@ -41,7 +41,7 @@
     },
     "table-require-pk": {
       "title": "Imponer la inclusión de clave primaria en una tabla",
-      "description": "Además de llevar un significado empresarial, las claves primarias también son beneficiosas para consultas de alta concurrencia en MySQL. Varias herramientas de sincronización, comparación y reversión de datos a menudo requieren que las tablas tengan claves primarias. Nivel de sugerencia de error: Error"
+      "description": "Varias herramientas de sincronización, comparación y recuperación de datos a menudo requieren que las tablas tengan una clave principal. Nivel de error sugerido: Error"
     },
     "table-no-foreign-key": {
       "title": "Prohibir el uso de restricciones de clave externa",

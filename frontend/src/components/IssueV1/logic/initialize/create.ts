@@ -9,6 +9,7 @@ import {
   useChangelistStore,
   useCurrentUserV1,
   useDatabaseV1Store,
+  useDBGroupStore,
   useEnvironmentV1Store,
   useProjectV1Store,
   useSheetV1Store,
@@ -25,6 +26,7 @@ import {
   isValidProjectName,
   TaskTypeListWithStatement,
 } from "@/types";
+import { DatabaseGroupView } from "@/types/proto/v1/database_group_service";
 import { DatabaseConfig } from "@/types/proto/v1/database_service";
 import { IssueStatus, Issue_Type } from "@/types/proto/v1/issue_service";
 import {
@@ -59,7 +61,6 @@ export type InitialSQL = {
 };
 
 type CreateIssueParams = {
-  databaseNameList: string[];
   project: ComposedProject;
   query: Record<string, string>;
   initialSQL: InitialSQL;
@@ -74,11 +75,7 @@ export const createIssueSkeleton = async (
   const project = await useProjectV1Store().getOrFetchProjectByName(
     `${projectNamePrefix}${projectName}`
   );
-  const databaseNameList = (query.databaseList ?? "").split(",");
-  await prepareDatabaseList(databaseNameList, project.name);
-
   const params: CreateIssueParams = {
-    databaseNameList,
     project,
     query,
     initialSQL: extractInitialSQLFromQuery(query),
@@ -138,8 +135,22 @@ const buildIssue = async (params: CreateIssueParams) => {
 };
 
 export const buildPlan = async (params: CreateIssueParams) => {
-  const { databaseNameList, project, query } = params;
-
+  const { project, query } = params;
+  let databaseNameList = (query.databaseList ?? "").split(",");
+  const databaseGroupName = query.databaseGroupName;
+  // Prepare database list if databaseGroupName and changelist are specified.
+  if (query.changelist && databaseGroupName) {
+    const dbGroup = await useDBGroupStore().getOrFetchDBGroupByName(
+      databaseGroupName,
+      {
+        view: DatabaseGroupView.DATABASE_GROUP_VIEW_FULL,
+      }
+    );
+    if (dbGroup) {
+      databaseNameList = dbGroup.matchedDatabases.map((db) => db.name);
+    }
+  }
+  await prepareDatabaseList(databaseNameList, project.name);
   const plan = Plan.fromPartial({
     name: `${project.name}/plans/${nextUID()}`,
   });

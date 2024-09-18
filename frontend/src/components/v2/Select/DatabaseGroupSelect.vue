@@ -13,7 +13,7 @@
 import { head } from "lodash-es";
 import { NSelect, type SelectOption } from "naive-ui";
 import { computed, reactive, watch } from "vue";
-import { useDBGroupStore } from "@/store";
+import { useDBGroupListByProject } from "@/store";
 import type { DatabaseGroup } from "@/types/proto/v1/database_group_service";
 
 interface LocalState {
@@ -42,12 +42,8 @@ const emit = defineEmits<{
 const state = reactive<LocalState>({
   selectedDatabaseGroup: undefined,
 });
+const { dbGroupList } = useDBGroupListByProject(props.project);
 
-const dbGroupStore = useDBGroupStore();
-
-const dbGroupList = computed(() => {
-  return dbGroupStore.getDBGroupListByProjectName(props.project);
-});
 const dbGroupOptions = computed(() => {
   return dbGroupList.value.map<SelectOption>((dbGroup) => ({
     value: dbGroup.name,

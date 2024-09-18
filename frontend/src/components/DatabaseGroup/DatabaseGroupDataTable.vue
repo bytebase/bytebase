@@ -7,9 +7,13 @@
     :bordered="bordered"
     :loading="loading"
     :row-key="(data: ComposedDatabaseGroup) => data.name"
+    :checked-row-keys="Array.from(state.selectedDatabaseGroupNameList)"
     :row-props="rowProps"
     :pagination="{ pageSize: 20 }"
     :paginate-single-page="false"
+    @update:checked-row-keys="
+        (val) => (state.selectedDatabaseGroupNameList = new Set(val as string[]))
+      "
   />
 </template>
 
@@ -21,12 +25,16 @@ import {
   NDropdown,
   type DataTableColumn,
 } from "naive-ui";
-import { computed } from "vue";
+import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import type { ComposedDatabaseGroup } from "@/types";
 import { hasPermissionToCreateChangeDatabaseIssueInProject } from "@/utils";
 import { generateDatabaseGroupIssueRoute } from "@/utils/databaseGroup/issue";
+
+interface LocalState {
+  selectedDatabaseGroupNameList: Set<string>;
+}
 
 type DatabaseGroupDataTableColumn = DataTableColumn<ComposedDatabaseGroup> & {
   hide?: boolean;
@@ -39,10 +47,13 @@ const props = withDefaults(
     loading?: boolean;
     showProject?: boolean;
     customClick?: boolean;
+    showSelection?: boolean;
+    singleSelection?: boolean;
+    selectedDatabaseGroupNames?: string[];
   }>(),
   {
     bordered: true,
-    showProject: true,
+    selectedDatabaseGroupNames: () => [],
   }
 );
 
@@ -53,13 +64,27 @@ const emit = defineEmits<{
     databaseGroup: ComposedDatabaseGroup
   ): void;
   (event: "update:selected-database-groups", val: Set<string>): void;
-  (event: "edit", databaseGroup: ComposedDatabaseGroup): void;
 }>();
 
 const { t } = useI18n();
 const router = useRouter();
+const state = reactive<LocalState>({
+  selectedDatabaseGroupNameList: new Set(props.selectedDatabaseGroupNames),
+});
 
 const columnList = computed((): DatabaseGroupDataTableColumn[] => {
+  const SELECTION: DatabaseGroupDataTableColumn = {
+    type: "selection",
+    multiple: !props.singleSelection,
+    hide: !props.showSelection,
+    cellProps: () => {
+      return {
+        onClick: (e: MouseEvent) => {
+          e.stopPropagation();
+        },
+      };
+    },
+  };
   const NAME: DatabaseGroupDataTableColumn = {
     key: "title",
     title: t("common.name"),
@@ -84,7 +109,7 @@ const columnList = computed((): DatabaseGroupDataTableColumn[] => {
       return <span>{data.projectEntity.title}</span>;
     },
   };
-  const EDIT_BUTTON: DatabaseGroupDataTableColumn = {
+  const ACTIONS: DatabaseGroupDataTableColumn = {
     key: "actions",
     title: "",
     width: 150,
@@ -122,7 +147,7 @@ const columnList = computed((): DatabaseGroupDataTableColumn[] => {
   };
 
   // Maybe we can add more columns here. e.g. matched databases, etc.
-  return [NAME, PROJECT, EDIT_BUTTON].filter((column) => !column.hide);
+  return [SELECTION, NAME, PROJECT, ACTIONS].filter((column) => !column.hide);
 });
 
 const data = computed(() => {
@@ -137,6 +162,20 @@ const rowProps = (databaseGroup: ComposedDatabaseGroup) => {
         emit("row-click", e, databaseGroup);
         return;
       }
+
+      if (props.singleSelection) {
+        state.selectedDatabaseGroupNameList = new Set([databaseGroup.name]);
+      } else {
+        const selectedDatabaseGroupNameList = new Set(
+          Array.from(state.selectedDatabaseGroupNameList)
+        );
+        if (selectedDatabaseGroupNameList.has(databaseGroup.name)) {
+          selectedDatabaseGroupNameList.delete(databaseGroup.name);
+        } else {
+          selectedDatabaseGroupNameList.add(databaseGroup.name);
+        }
+        state.selectedDatabaseGroupNameList = selectedDatabaseGroupNameList;
+      }
     },
   };
 };
@@ -148,4 +187,14 @@ const doDatabaseGroupChangeAction = (
   const issueRoute = generateDatabaseGroupIssueRoute(key as any, databaseGroup);
   router.push(issueRoute);
 };
+
+watch(
+  () => state.selectedDatabaseGroupNameList,
+  () => {
+    emit(
+      "update:selected-database-groups",
+      state.selectedDatabaseGroupNameList
+    );
+  }
+);
 </script>
