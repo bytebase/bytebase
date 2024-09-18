@@ -15,7 +15,7 @@
     @update:checked-row-keys="
         (val) => (state.selectedDatabaseNameList = new Set(val as string[]))
       "
-  ></NDataTable>
+  />
 </template>
 
 <script setup lang="tsx">
