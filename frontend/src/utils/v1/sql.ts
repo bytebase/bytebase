@@ -66,6 +66,7 @@ export const wrapSQLIdentifier = (id: string, engine: Engine) => {
       Engine.ORACLE,
       Engine.OCEANBASE_ORACLE,
       Engine.REDSHIFT,
+      Engine.COCKROACHDB,
     ].includes(engine)
   ) {
     return `"${id}"`;
