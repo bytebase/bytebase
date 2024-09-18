@@ -7,28 +7,24 @@
       </h2>
     </div>
 
-    <div class="mt-8">
-      <div class="mt-6">
-        <NForm>
-          <UserPassword
-            ref="userPasswordRef"
-            v-model:password="state.password"
-            v-model:password-confirm="state.passwordConfirm"
-            :show-learn-more="false"
-            :password-restriction="passwordRestrictionSetting"
-          />
-        </NForm>
-        <NButton
-          type="primary"
-          size="large"
-          style="width: 100%"
-          :disabled="!allowConfirm"
-          @click="onConfirm"
-        >
-          {{ $t("common.confirm") }}
-        </NButton>
-      </div>
-    </div>
+    <NForm class="my-6">
+      <UserPassword
+        ref="userPasswordRef"
+        v-model:password="state.password"
+        v-model:password-confirm="state.passwordConfirm"
+        :show-learn-more="false"
+        :password-restriction="passwordRestrictionSetting"
+      />
+    </NForm>
+    <NButton
+      class="!w-full"
+      type="primary"
+      size="large"
+      :disabled="!allowConfirm"
+      @click="onConfirm"
+    >
+      {{ $t("common.confirm") }}
+    </NButton>
   </div>
 </template>
 
