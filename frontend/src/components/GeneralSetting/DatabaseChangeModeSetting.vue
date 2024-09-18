@@ -7,7 +7,7 @@
         </h1>
       </div>
     </div>
-    <div class="flex-1 lg:px-4">
+    <div class="flex-1 mt-4 lg:px-4 lg:mt-0">
       <p class="mt-0.5 mb-2 font-medium">
         {{ $t("settings.general.workspace.database-change-mode.description") }}
         <LearnMoreLink
