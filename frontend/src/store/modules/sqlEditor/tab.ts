@@ -78,7 +78,7 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
       ...stored,
       id,
     });
-    if (tab.mode === "ADMIN") {
+    if (tab.mode !== DEFAULT_SQL_EDITOR_TAB_MODE) {
       // Do not enter ADMIN mode initially
       tab.mode = DEFAULT_SQL_EDITOR_TAB_MODE;
     }

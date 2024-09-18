@@ -57,6 +57,10 @@ const useExecuteSQL = () => {
   const tabStore = useSQLEditorTabStore();
   const sqlEditorStore = useSQLEditorStore();
   const sqlCheckStyle = useAppFeature("bb.feature.sql-editor.sql-check-style");
+  const changeMode =
+    useAppFeature("bb.feature.database-change-mode").value === "EDITOR"
+      ? "RW"
+      : "RO";
   const notify = (
     type: BBNotificationStyle,
     title: string,
@@ -305,7 +309,7 @@ const useExecuteSQL = () => {
 
       try {
         let resultSet: SQLResultSetV1;
-        if (mode === "READONLY") {
+        if (changeMode === "RO") {
           const instance = isValidDatabaseName(database.name)
             ? database.instance
             : params.connection.instance;

@@ -1,6 +1,6 @@
 <template>
   <Splitpanes
-    v-if="!tab || tab.mode === 'READONLY' || tab.mode === 'STANDARD'"
+    v-if="!tab || tab.mode === 'WORKSHEET'"
     horizontal
     class="default-theme"
     :dbl-click-splitter="false"
@@ -59,7 +59,7 @@
 <script lang="ts" setup>
 import { storeToRefs } from "pinia";
 import { Pane, Splitpanes } from "splitpanes";
-import { computed, defineAsyncComponent, watch } from "vue";
+import { computed, defineAsyncComponent } from "vue";
 import { BBSpin } from "@/bbkit";
 import { useExecuteSQL } from "@/composables/useExecuteSQL";
 import { AIChatToSQL } from "@/plugins/ai";
@@ -84,7 +84,7 @@ const SQLEditor = defineAsyncComponent(() => import("./SQLEditor.vue"));
 
 const tabStore = useSQLEditorTabStore();
 const { currentTab: tab, isDisconnected } = storeToRefs(tabStore);
-const { showAIChatBox, standardModeEnabled } = useSQLEditorContext();
+const { showAIChatBox } = useSQLEditorContext();
 const { instance } = useConnectionOfCurrentSQLEditorTab();
 
 const allowReadonlyMode = computed(() => {
@@ -122,19 +122,4 @@ const handleApplyStatement = async (
     });
   }
 };
-
-watch(
-  [() => tab.value?.id, standardModeEnabled],
-  () => {
-    if (!tab.value) return;
-    // Fallback to READONLY mode if standard.value mode is not allowed.
-    if (!standardModeEnabled.value && tab.value.mode === "STANDARD") {
-      tab.value.mode = "READONLY";
-    }
-  },
-  {
-    immediate: true,
-    deep: false,
-  }
-);
 </script>

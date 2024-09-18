@@ -56,10 +56,7 @@ const icon = computed((): IconType | undefined => {
     return "close";
   }
   const { mode, status } = props.tab;
-  if (
-    (mode === "READONLY" || mode === "STANDARD") &&
-    (status === "DIRTY" || status === "NEW")
-  ) {
+  if (mode === "WORKSHEET" && (status === "DIRTY" || status === "NEW")) {
     return "unsaved";
   }
   return "close";

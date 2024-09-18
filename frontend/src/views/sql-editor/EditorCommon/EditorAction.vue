@@ -209,7 +209,7 @@ const { instance } = useConnectionOfCurrentSQLEditorTab();
 
 const showSheetsFeature = computed(() => {
   const mode = currentTab.value?.mode;
-  return mode === "READONLY" || mode === "STANDARD";
+  return mode === "WORKSHEET";
 });
 
 const allowQuery = computed(() => {
