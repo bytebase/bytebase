@@ -60,7 +60,7 @@ const hasReadonlyDataSource = computed(() => {
 
 const showReadonlyDatasourceHint = computed(() => {
   return (
-    tabStore.currentTab?.mode === "READONLY" &&
+    tabStore.currentTab?.mode === "WORKSHEET" &&
     isValidInstanceName(props.instance.name) &&
     !hasReadonlyDataSource.value
   );

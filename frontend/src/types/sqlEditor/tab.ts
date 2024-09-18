@@ -12,9 +12,8 @@ export type SQLEditorTabStatus =
   | "DIRTY" // edited
   | "CLEAN"; // saved to a remote sheet
 
-// STANDARD not supported by backend so far
-export type SQLEditorTabMode = "STANDARD" | "READONLY" | "ADMIN";
-export const DEFAULT_SQL_EDITOR_TAB_MODE: SQLEditorTabMode = "READONLY";
+export type SQLEditorTabMode = "WORKSHEET" | "ADMIN";
+export const DEFAULT_SQL_EDITOR_TAB_MODE: SQLEditorTabMode = "WORKSHEET";
 
 export type BatchQueryContext = {
   // databases is used to store the selected database names.

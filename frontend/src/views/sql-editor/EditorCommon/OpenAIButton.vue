@@ -60,7 +60,7 @@ const showButton = computed(() => {
   return (
     openAIKey.value &&
     !tabStore.isDisconnected &&
-    tabStore.currentTab?.mode !== "ADMIN"
+    tabStore.currentTab?.mode === "WORKSHEET"
   );
 });
 
