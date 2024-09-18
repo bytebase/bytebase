@@ -395,6 +395,10 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 		if err != nil {
 			return 0, err
 		}
+		for i, singleSQL := range singleSQLs {
+			commands = append(commands, base.SingleSQL{Text: singleSQL})
+			originalIndex = append(originalIndex, int32(i))
+		}
 
 		// If the statement is a single statement and is a PL/pgSQL block,
 		// we should execute it as a single statement without transaction.
