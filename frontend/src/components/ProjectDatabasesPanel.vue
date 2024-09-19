@@ -1,7 +1,7 @@
 <template>
   <div class="space-y-4">
     <div
-      class="w-full text-lg font-medium leading-7 text-main flex flex-col sm:flex-row items-start sm:items-end justify-between gap-2"
+      class="w-full flex flex-col sm:flex-row items-start sm:items-end justify-between gap-2"
     >
       <AdvancedSearch
         v-model:params="state.params"
