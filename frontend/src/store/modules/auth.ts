@@ -10,12 +10,14 @@ import {
   AUTH_PASSWORD_RESET_MODULE,
   AUTH_MFA_MODULE,
 } from "@/router/auth";
+import { SQL_EDITOR_HOME_MODULE } from "@/router/sqlEditor";
+import { useAppFeature, useUserStore, useSettingV1Store } from "@/store";
 import { unknownUser } from "@/types";
 import type { LoginRequest, User } from "@/types/proto/v1/auth_service";
 import { LoginResponse } from "@/types/proto/v1/auth_service";
 import { UserType } from "@/types/proto/v1/auth_service";
+import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
 import { getIntCookie } from "@/utils";
-import { useUserStore } from ".";
 
 export const useAuthStore = defineStore("auth_v1", () => {
   const userStore = useUserStore();
@@ -87,6 +89,17 @@ export const useAuthStore = defineStore("auth_v1", () => {
         query: {
           redirect: redirectUrl,
         },
+      });
+    }
+
+    await useSettingV1Store().getOrFetchSettingByName(
+      "bb.workspace.profile",
+      /* silent */ true
+    );
+    const mode = useAppFeature("bb.feature.database-change-mode");
+    if (mode.value === DatabaseChangeMode.EDITOR) {
+      return router.replace({
+        name: SQL_EDITOR_HOME_MODULE,
       });
     }
 
