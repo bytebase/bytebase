@@ -17,11 +17,7 @@
               name="standard"
               tab="Standard"
             >
-              <PasswordSigninForm
-                :email="state.email"
-                :password="state.password"
-                :show-password="state.showPassword"
-              />
+              <PasswordSigninForm />
 
               <div class="mt-3">
                 <div
@@ -121,7 +117,7 @@
                       attr-type="submit"
                       type="primary"
                       size="large"
-                      :disabled="!allowSignin(identityProvider.name)"
+                      :disabled="!allowIdPSignin"
                       :loading="state.isLoading"
                       style="width: 100%"
                     >
@@ -184,7 +180,7 @@ import { useRoute, useRouter } from "vue-router";
 import { BBSpin, BBTextField } from "@/bbkit";
 import BytebaseLogo from "@/components/BytebaseLogo.vue";
 import PasswordSigninForm from "@/components/PasswordSigninForm.vue";
-import { AUTH_MFA_MODULE, AUTH_SIGNUP_MODULE } from "@/router/auth";
+import { AUTH_SIGNUP_MODULE } from "@/router/auth";
 import {
   useActuatorV1Store,
   useAuthStore,
@@ -193,7 +189,7 @@ import {
 import { idpNamePrefix } from "@/store/modules/v1/common";
 import type { IdentityProvider } from "@/types/proto/v1/idp_service";
 import { IdentityProviderType } from "@/types/proto/v1/idp_service";
-import { isValidEmail, openWindowForSSO } from "@/utils";
+import { openWindowForSSO } from "@/utils";
 import AuthFooter from "./AuthFooter.vue";
 
 interface LocalState {
@@ -247,12 +243,6 @@ watchEffect(() => {
 });
 
 onMounted(async () => {
-  const url = new URL(window.location.href);
-  const params = new URLSearchParams(url.search);
-  state.email = params.get("email") ?? (isDemo.value ? "demo@example.com" : "");
-  state.password = params.get("password") ?? (isDemo.value ? "1024" : "");
-  state.showPassword = !!isDemo.value;
-
   await identityProviderStore.fetchIdentityProviderList();
 
   // Check if there is an identity provider in the query string and try to sign in with it.
@@ -267,49 +257,24 @@ onMounted(async () => {
       return;
     }
   }
-  // Try to signin with example account in demo site.
-  if (
-    (window.location.href.startsWith("https://demo.bytebase.com") ||
-      window.location.href.startsWith("https://sql-editor.com")) &&
-    isDemo.value &&
-    state.email &&
-    state.password
-  ) {
-    await trySignin();
-  }
   initialized.value = true;
 });
 
-const allowSignin = (idpName?: string) => {
-  if (!idpName) {
-    return isValidEmail(state.email) && state.password;
-  }
+const allowIdPSignin = computed(() => {
   return state.email && state.password;
-};
+});
 
-// Mainly for LDAP signin and demo signin.
-const trySignin = async (idpName?: string) => {
+// Mainly for LDAP signin.
+const trySignin = async (idpName: string) => {
   if (state.isLoading) return;
   state.isLoading = true;
   try {
-    // For LDAP signin, we don't need to check requireResetPassword.
-    const { mfaTempToken } = await authStore.login({
+    await authStore.login({
       email: state.email,
       password: state.password,
       web: true,
       idpName: idpName,
     });
-    if (mfaTempToken) {
-      router.push({
-        name: AUTH_MFA_MODULE,
-        query: {
-          mfaTempToken,
-          redirect: route.query.redirect as string,
-        },
-      });
-      return;
-    }
-    router.push("/");
   } finally {
     state.isLoading = false;
   }
