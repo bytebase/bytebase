@@ -10,18 +10,13 @@
 </template>
 
 <script lang="ts" setup>
-import { useRouter } from "vue-router";
-import { AUTH_SIGNIN_MODULE } from "@/router/auth";
+import { BBAttention } from "@/bbkit";
 import { useAuthStore } from "@/store";
 import TwoFactorSetup from "./TwoFactorSetup.vue";
-import { BBAttention } from "@/bbkit";
 
-const router = useRouter();
 const authStore = useAuthStore();
 
 const handleSetupCancel = () => {
-  authStore.logout().then(() => {
-    router.push({ name: AUTH_SIGNIN_MODULE });
-  });
+  authStore.logout();
 };
 </script>
