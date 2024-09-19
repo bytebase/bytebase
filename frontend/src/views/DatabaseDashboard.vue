@@ -21,7 +21,7 @@
 
       <DatabaseV1Table
         mode="ALL"
-        :loading="!ready"
+        :loading="loading"
         :bordered="false"
         :database-list="filteredDatabaseList"
         :custom-click="true"
@@ -33,7 +33,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, onMounted, reactive, watch } from "vue";
+import { computed, onMounted, reactive, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import AdvancedSearch from "@/components/AdvancedSearch";
 import { useCommonSearchScopeOptions } from "@/components/AdvancedSearch/useCommonSearchScopeOptions";
@@ -41,10 +41,16 @@ import DatabaseV1Table, {
   DatabaseLabelFilter,
   DatabaseOperations,
 } from "@/components/v2/Model/DatabaseV1Table";
-import { useAppFeature, useProjectV1List, useUIStateStore } from "@/store";
+import {
+  useAppFeature,
+  useDatabaseV1Store,
+  useProjectV1List,
+  useUIStateStore,
+} from "@/store";
+import { projectNamePrefix } from "@/store/modules/v1/common";
 import { useDatabaseV1List } from "@/store/modules/v1/databaseList";
 import type { ComposedDatabase } from "@/types";
-import { UNKNOWN_ID, DEFAULT_PROJECT_NAME } from "@/types";
+import { DEFAULT_PROJECT_NAME } from "@/types";
 import type { SearchParams } from "@/utils";
 import {
   filterDatabaseV1ByKeyword,
@@ -68,22 +74,30 @@ interface LocalState {
 const props = defineProps<{
   onClickDatabase?: (db: ComposedDatabase, event: MouseEvent) => void;
 }>();
+
 const emit = defineEmits<{
   (event: "ready"): void;
 }>();
 
+const route = useRoute();
+const router = useRouter();
 const uiStateStore = useUIStateStore();
 const { projectList } = useProjectV1List();
 const hideUnassignedDatabases = useAppFeature(
   "bb.feature.databases.hide-unassigned"
 );
-const route = useRoute();
-const router = useRouter();
+const loading = ref(false);
 
 const defaultSearchParams = () => {
   const params: SearchParams = {
     query: "",
-    scopes: [],
+    scopes: [
+      // Default to show unassigned database from default project.
+      {
+        id: "project",
+        value: extractProjectResourceName(DEFAULT_PROJECT_NAME),
+      },
+    ],
   };
   return params;
 };
@@ -102,45 +116,21 @@ const state = reactive<LocalState>({
   selectedLabels: [],
 });
 
-watch(
-  () => state.params,
-  () => {
-    // using custom advanced search query, sync the search query string
-    // to URL
-    router.replace({
-      query: {
-        ...route.query,
-        qs: buildSearchTextBySearchParams(state.params),
-      },
-    });
-  },
-  { deep: true }
-);
-
 const scopeOptions = useCommonSearchScopeOptions(
   computed(() => state.params),
   [...CommonFilterScopeIdList, "project"]
 );
 
 const selectedInstance = computed(() => {
-  return (
-    state.params.scopes.find((scope) => scope.id === "instance")?.value ??
-    `${UNKNOWN_ID}`
-  );
+  return state.params.scopes.find((scope) => scope.id === "instance")?.value;
 });
 
 const selectedEnvironment = computed(() => {
-  return (
-    state.params.scopes.find((scope) => scope.id === "environment")?.value ??
-    `${UNKNOWN_ID}`
-  );
+  return state.params.scopes.find((scope) => scope.id === "environment")?.value;
 });
 
 const selectedProject = computed(() => {
-  return (
-    state.params.scopes.find((scope) => scope.id === "project")?.value ??
-    `${UNKNOWN_ID}`
-  );
+  return state.params.scopes.find((scope) => scope.id === "project")?.value;
 });
 
 onMounted(() => {
@@ -152,31 +142,49 @@ onMounted(() => {
   }
 });
 
-const { databaseList, ready } = useDatabaseV1List();
+watch(
+  () => selectedProject.value,
+  async () => {
+    loading.value = true;
+    let parent = undefined;
+    if (selectedProject.value) {
+      parent = `${projectNamePrefix}${selectedProject.value}`;
+    }
+    await wrapRefAsPromise(
+      useDatabaseV1List(parent).ready,
+      /* expected */ true
+    );
+    loading.value = false;
+    emit("ready");
+  },
+  {
+    immediate: true,
+  }
+);
 
 const databaseV1List = computed(() => {
   const projects = new Set(projectList.value.map((project) => project.name));
-  return sortDatabaseV1List(databaseList.value).filter((db) =>
+  return sortDatabaseV1List(useDatabaseV1Store().databaseList).filter((db) =>
     projects.has(db.project)
   );
 });
 
 const filteredDatabaseList = computed(() => {
   let list = databaseV1List.value;
-  if (selectedEnvironment.value !== `${UNKNOWN_ID}`) {
+  if (selectedEnvironment.value) {
     list = list.filter(
       (db) =>
         extractEnvironmentResourceName(db.effectiveEnvironment) ===
         selectedEnvironment.value
     );
   }
-  if (selectedInstance.value !== `${UNKNOWN_ID}`) {
+  if (selectedInstance.value) {
     list = list.filter(
       (db) =>
         extractInstanceResourceName(db.instance) === selectedInstance.value
     );
   }
-  if (selectedProject.value !== `${UNKNOWN_ID}`) {
+  if (selectedProject.value) {
     list = list.filter(
       (db) => extractProjectResourceName(db.project) === selectedProject.value
     );
@@ -229,7 +237,16 @@ const handleDatabaseClick = (event: MouseEvent, database: ComposedDatabase) => {
   }
 };
 
-wrapRefAsPromise(ready, /* expected */ true).then(() => {
-  emit("ready");
-});
+watch(
+  () => state.params,
+  () => {
+    router.replace({
+      query: {
+        ...route.query,
+        qs: buildSearchTextBySearchParams(state.params),
+      },
+    });
+  },
+  { deep: true }
+);
 </script>
