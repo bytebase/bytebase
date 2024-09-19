@@ -21,7 +21,6 @@ import {
 import type { Environment } from "@/types/proto/v1/environment_service";
 import type { InstanceResource } from "@/types/proto/v1/instance_service";
 import { getSemanticLabelValue, groupBy, isDatabaseV1Queryable } from "@/utils";
-import { useFilterStore } from "../filter";
 import {
   useAppFeature,
   useEnvironmentV1Store,
@@ -41,7 +40,6 @@ const defaultInstanceFactor: StatefulFactor = {
 };
 
 export const useSQLEditorTreeStore = defineStore("sqlEditorTree", () => {
-  const { filter } = useFilterStore();
   const hideEnvironments = useAppFeature(
     "bb.feature.sql-editor.hide-environments"
   );
@@ -88,7 +86,7 @@ export const useSQLEditorTreeStore = defineStore("sqlEditorTree", () => {
   const nodeListMapById = reactive(new Map<string, TreeNode[]>());
   // states
   // re-expose `databaseList`, `project`, `currentProject` from sqlEditor store for shortcuts
-  const { databaseList, project, currentProject } =
+  const { databaseList, project } =
     storeToRefs(useSQLEditorStore());
   const factorList = ref<StatefulFactor[]>(
     cloneDeep(factorListInLocalStorage.value)
@@ -106,22 +104,6 @@ export const useSQLEditorTreeStore = defineStore("sqlEditorTree", () => {
       [(db) => (isDatabaseV1Queryable(db) ? 1 : 0)],
       ["desc"]
     );
-  });
-
-  const filteredDatabaseList = computed(() => {
-    if (filter.database) {
-      return sortedDatabaseList.value.filter((database) => {
-        return database.name === filter.database;
-      });
-    }
-    if (filter.project || currentProject.value) {
-      const projectName = filter.project ?? currentProject.value?.name;
-      return sortedDatabaseList.value.filter((database) => {
-        return database.project === projectName;
-      });
-    }
-
-    return sortedDatabaseList.value;
   });
 
   const filteredFactorList = computed(() => {
@@ -190,7 +172,7 @@ export const useSQLEditorTreeStore = defineStore("sqlEditorTree", () => {
     nodeListMapById.clear();
     expandedKeys.value = [];
     tree.value = buildTreeImpl(
-      filteredDatabaseList.value,
+      sortedDatabaseList.value,
       filteredFactorList.value
     );
   };
@@ -208,7 +190,7 @@ export const useSQLEditorTreeStore = defineStore("sqlEditorTree", () => {
     () => showMissingQueryDatabases.value,
     () => {
       tree.value = buildTreeImpl(
-        filteredDatabaseList.value,
+        sortedDatabaseList.value,
         filteredFactorList.value
       );
     }
