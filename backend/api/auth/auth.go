@@ -60,7 +60,6 @@ const (
 type APIAuthInterceptor struct {
 	store          *store.Store
 	secret         string
-	tokenDuration  time.Duration
 	licenseService enterprise.LicenseService
 	stateCfg       *state.State
 	profile        *config.Profile
@@ -70,7 +69,6 @@ type APIAuthInterceptor struct {
 func New(
 	store *store.Store,
 	secret string,
-	tokenDuration time.Duration,
 	licenseService enterprise.LicenseService,
 	stateCfg *state.State,
 	profile *config.Profile,
@@ -78,7 +76,6 @@ func New(
 	return &APIAuthInterceptor{
 		store:          store,
 		secret:         secret,
-		tokenDuration:  tokenDuration,
 		licenseService: licenseService,
 		stateCfg:       stateCfg,
 		profile:        profile,

@@ -37,7 +37,7 @@
       </div>
       <div class="relative flex justify-center text-sm">
         <router-link
-          :to="{ name: AUTH_SIGNIN_MODULE }"
+          :to="{ name: AUTH_SIGNIN_MODULE, query: $route.query }"
           class="accent-link bg-white px-2"
         >
           {{ $t("auth.password-forget.return-to-sign-in") }}

@@ -4,6 +4,8 @@ import { defineStore } from "pinia";
 import { computed, ref } from "vue";
 import { restartAppRoot } from "@/AppRootContext";
 import { authServiceClient } from "@/grpcweb";
+import { router } from "@/router";
+import { AUTH_SIGNIN_MODULE } from "@/router/auth";
 import { unknownUser } from "@/types";
 import type { LoginRequest, User } from "@/types/proto/v1/auth_service";
 import { LoginResponse } from "@/types/proto/v1/auth_service";
@@ -88,6 +90,21 @@ export const useAuthStore = defineStore("auth_v1", () => {
     } finally {
       currentUserId.value = undefined;
       restartAppRoot();
+
+      const query = new URLSearchParams(window.location.search);
+      const redirect = query.get("redirect");
+      const pathname = location.pathname;
+      router
+        .push({
+          name: AUTH_SIGNIN_MODULE,
+          query: {
+            redirect:
+              redirect || (pathname.startsWith("/auth") ? undefined : pathname),
+          },
+        })
+        .then(() => {
+          window.location.reload();
+        });
     }
   };
 

@@ -42,7 +42,7 @@
                       {{ $t("auth.sign-in.new-user") }}
                     </span>
                     <router-link
-                      :to="{ name: AUTH_SIGNUP_MODULE }"
+                      :to="{ name: AUTH_SIGNUP_MODULE, query: $route.query }"
                       class="accent-link px-2"
                     >
                       {{ $t("common.sign-up") }}
