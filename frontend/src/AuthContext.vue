@@ -7,7 +7,6 @@ import { useDialog, type DialogReactive } from "naive-ui";
 import { onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import { t } from "./plugins/i18n";
-import { AUTH_SIGNIN_MODULE } from "./router/auth";
 import { WORKSPACE_ROOT_MODULE } from "./router/dashboard/workspaceRoutes";
 import { useActuatorV1Store, useAuthStore } from "./store";
 
@@ -35,9 +34,7 @@ onMounted(() => {
     if (prevLoggedIn.value != loggedIn) {
       prevLoggedIn.value = loggedIn;
       if (!loggedIn) {
-        authStore.logout().then(() => {
-          router.push({ name: AUTH_SIGNIN_MODULE });
-        });
+        authStore.logout();
       }
     }
     if (

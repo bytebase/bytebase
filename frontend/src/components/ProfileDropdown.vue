@@ -19,9 +19,7 @@ import { NSwitch, NDropdown } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { computed, ref, h } from "vue";
 import { useI18n } from "vue-i18n";
-import { useRouter } from "vue-router";
 import { useLanguage } from "@/composables/useLanguage";
-import { AUTH_SIGNIN_MODULE } from "@/router/auth";
 import {
   useActuatorV1Store,
   useAppFeature,
@@ -51,7 +49,6 @@ const actuatorStore = useActuatorV1Store();
 const authStore = useAuthStore();
 const subscriptionStore = useSubscriptionV1Store();
 const uiStateStore = useUIStateStore();
-const router = useRouter();
 const { setLocale, locale } = useLanguage();
 const currentUserV1 = useCurrentUserV1();
 const showDropdown = ref(false);
@@ -74,9 +71,7 @@ const allowToggleDebug = computed(() => {
 const { currentPlan } = storeToRefs(subscriptionStore);
 
 const logout = () => {
-  authStore.logout().then(() => {
-    router.push({ name: AUTH_SIGNIN_MODULE });
-  });
+  authStore.logout();
 };
 
 const resetQuickstart = () => {

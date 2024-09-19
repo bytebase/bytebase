@@ -2,13 +2,11 @@ package server
 
 import (
 	"context"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
 
-	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/common"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/metric"
@@ -18,7 +16,7 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
-func (s *Server) getInitSetting(ctx context.Context) (string, time.Duration, error) {
+func (s *Server) getInitSetting(ctx context.Context) (string, error) {
 	// secretLength is the length for the secret used to sign the JWT auto token.
 	const secretLength = 32
 
@@ -28,13 +26,13 @@ func (s *Server) getInitSetting(ctx context.Context) (string, time.Duration, err
 		Value:       "",
 		Description: "The branding slogo image in base64 string format.",
 	}, api.SystemBotID); err != nil {
-		return "", 0, err
+		return "", err
 	}
 
 	// initial JWT token
 	secret, err := common.RandomString(secretLength)
 	if err != nil {
-		return "", 0, errors.Wrap(err, "failed to generate random JWT secret")
+		return "", errors.Wrap(err, "failed to generate random JWT secret")
 	}
 	authSetting, _, err := s.store.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
 		Name:        api.SettingAuthSecret,
@@ -42,7 +40,7 @@ func (s *Server) getInitSetting(ctx context.Context) (string, time.Duration, err
 		Description: "Random string used to sign the JWT auth token.",
 	}, api.SystemBotID)
 	if err != nil {
-		return "", 0, err
+		return "", err
 	}
 	// Set secret to the stored secret.
 	secret = authSetting.Value
@@ -53,26 +51,26 @@ func (s *Server) getInitSetting(ctx context.Context) (string, time.Duration, err
 		Value:       uuid.New().String(),
 		Description: "The workspace identifier",
 	}, api.SystemBotID); err != nil {
-		return "", 0, err
+		return "", err
 	}
 
 	// Init SCIM config
 	scimToken, err := common.RandomString(secretLength)
 	if err != nil {
-		return "", 0, errors.Wrap(err, "failed to generate random SCIM secret")
+		return "", errors.Wrap(err, "failed to generate random SCIM secret")
 	}
 	scimSettingValue, err := protojson.Marshal(&storepb.SCIMSetting{
 		Token: scimToken,
 	})
 	if err != nil {
-		return "", 0, errors.Wrap(err, "failed to marshal initial scim setting")
+		return "", errors.Wrap(err, "failed to marshal initial scim setting")
 	}
 	if _, _, err := s.store.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
 		Name:        api.SettingSCIM,
 		Value:       string(scimSettingValue),
 		Description: "The SCIM sync",
 	}, api.SystemBotID); err != nil {
-		return "", 0, err
+		return "", err
 	}
 
 	// Init password validation
@@ -85,14 +83,14 @@ func (s *Server) getInitSetting(ctx context.Context) (string, time.Duration, err
 		RequireResetPasswordForFirstLogin: false,
 	})
 	if err != nil {
-		return "", 0, errors.Wrap(err, "failed to marshal initial password validation setting")
+		return "", errors.Wrap(err, "failed to marshal initial password validation setting")
 	}
 	if _, _, err := s.store.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
 		Name:        api.SettingPasswordRestriction,
 		Value:       string(passwordSettingValue),
 		Description: "The password validation",
 	}, api.SystemBotID); err != nil {
-		return "", 0, err
+		return "", err
 	}
 
 	// initial license
@@ -101,7 +99,7 @@ func (s *Server) getInitSetting(ctx context.Context) (string, time.Duration, err
 		Value:       "",
 		Description: "Enterprise license",
 	}, api.SystemBotID); err != nil {
-		return "", 0, err
+		return "", err
 	}
 
 	// initial IM app
@@ -110,7 +108,7 @@ func (s *Server) getInitSetting(ctx context.Context) (string, time.Duration, err
 		Value:       "{}",
 		Description: "",
 	}, api.SystemBotID); err != nil {
-		return "", 0, err
+		return "", err
 	}
 
 	// initial watermark setting
@@ -119,7 +117,7 @@ func (s *Server) getInitSetting(ctx context.Context) (string, time.Duration, err
 		Value:       "0",
 		Description: "Display watermark",
 	}, api.SystemBotID); err != nil {
-		return "", 0, err
+		return "", err
 	}
 
 	// initial OpenAI key setting
@@ -128,7 +126,7 @@ func (s *Server) getInitSetting(ctx context.Context) (string, time.Duration, err
 		Value:       "",
 		Description: "API key to request OpenAI (ChatGPT)",
 	}, api.SystemBotID); err != nil {
-		return "", 0, err
+		return "", err
 	}
 
 	if _, _, err := s.store.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
@@ -136,52 +134,52 @@ func (s *Server) getInitSetting(ctx context.Context) (string, time.Duration, err
 		Value:       "",
 		Description: "API Endpoint for OpenAI",
 	}, api.SystemBotID); err != nil {
-		return "", 0, err
+		return "", err
 	}
 
 	// initial external approval setting
 	externalApprovalSettingValue, err := protojson.Marshal(&storepb.ExternalApprovalSetting{})
 	if err != nil {
-		return "", 0, errors.Wrap(err, "failed to marshal initial external approval setting")
+		return "", errors.Wrap(err, "failed to marshal initial external approval setting")
 	}
 	if _, _, err := s.store.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
 		Name:        api.SettingWorkspaceExternalApproval,
 		Value:       string(externalApprovalSettingValue),
 		Description: "The external approval setting",
 	}, api.SystemBotID); err != nil {
-		return "", 0, err
+		return "", err
 	}
 
 	// initial schema template setting
 	schemaTemplateSettingValue, err := protojson.Marshal(&storepb.SchemaTemplateSetting{})
 	if err != nil {
-		return "", 0, errors.Wrap(err, "failed to marshal initial schema template setting")
+		return "", errors.Wrap(err, "failed to marshal initial schema template setting")
 	}
 	if _, _, err := s.store.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
 		Name:        api.SettingSchemaTemplate,
 		Value:       string(schemaTemplateSettingValue),
 		Description: "The schema template setting",
 	}, api.SystemBotID); err != nil {
-		return "", 0, err
+		return "", err
 	}
 
 	// initial data classification setting
 	dataClassificationSettingValue, err := protojson.Marshal(&storepb.DataClassificationSetting{})
 	if err != nil {
-		return "", 0, errors.Wrap(err, "failed to marshal initial data classification setting")
+		return "", errors.Wrap(err, "failed to marshal initial data classification setting")
 	}
 	if _, _, err := s.store.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
 		Name:        api.SettingDataClassification,
 		Value:       string(dataClassificationSettingValue),
 		Description: "The data classification setting",
 	}, api.SystemBotID); err != nil {
-		return "", 0, err
+		return "", err
 	}
 
 	// initial workspace approval setting
 	approvalSettingValue, err := protojson.Marshal(&storepb.WorkspaceApprovalSetting{})
 	if err != nil {
-		return "", 0, errors.Wrap(err, "failed to marshal initial workspace approval setting")
+		return "", errors.Wrap(err, "failed to marshal initial workspace approval setting")
 	}
 	if _, _, err := s.store.CreateSettingIfNotExistV2(ctx, &store.SettingMessage{
 		Name: api.SettingWorkspaceApproval,
@@ -189,13 +187,13 @@ func (s *Server) getInitSetting(ctx context.Context) (string, time.Duration, err
 		Value:       string(approvalSettingValue),
 		Description: "The workspace approval setting",
 	}, api.SystemBotID); err != nil {
-		return "", 0, err
+		return "", err
 	}
 
 	// initial workspace profile setting
 	workspaceProfileSetting, err := s.store.GetSettingV2(ctx, api.SettingWorkspaceProfile)
 	if err != nil {
-		return "", 0, err
+		return "", err
 	}
 
 	workspaceProfilePayload := &storepb.WorkspaceProfileSetting{
@@ -204,7 +202,7 @@ func (s *Server) getInitSetting(ctx context.Context) (string, time.Duration, err
 	if workspaceProfileSetting != nil {
 		workspaceProfilePayload = new(storepb.WorkspaceProfileSetting)
 		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(workspaceProfileSetting.Value), workspaceProfilePayload); err != nil {
-			return "", 0, err
+			return "", err
 		}
 		if s.profile.ExternalURL != "" {
 			workspaceProfilePayload.ExternalUrl = s.profile.ExternalURL
@@ -213,14 +211,14 @@ func (s *Server) getInitSetting(ctx context.Context) (string, time.Duration, err
 
 	bytes, err := protojson.Marshal(workspaceProfilePayload)
 	if err != nil {
-		return "", 0, err
+		return "", err
 	}
 
 	if _, err := s.store.UpsertSettingV2(ctx, &store.SetSettingMessage{
 		Name:  api.SettingWorkspaceProfile,
 		Value: string(bytes),
 	}, api.SystemBotID); err != nil {
-		return "", 0, err
+		return "", err
 	}
 
 	// Init workspace IAM policy
@@ -231,7 +229,7 @@ func (s *Server) getInitSetting(ctx context.Context) (string, time.Duration, err
 		},
 		UpdaterUID: api.SystemBotID,
 	}); err != nil {
-		return "", 0, err
+		return "", err
 	}
 	if _, err := s.store.PatchWorkspaceIamPolicy(ctx, &store.PatchIamPolicyMessage{
 		Member: api.AllUsers,
@@ -240,36 +238,10 @@ func (s *Server) getInitSetting(ctx context.Context) (string, time.Duration, err
 		},
 		UpdaterUID: api.SystemBotID,
 	}); err != nil {
-		return "", 0, err
+		return "", err
 	}
 
-	// Get token duration.
-	workspaceProfile, err := s.store.GetWorkspaceGeneralSetting(ctx)
-	if err != nil {
-		return "", 0, err
-	}
-	passwordRestriction, err := s.store.GetPasswordRestrictionSetting(ctx)
-	if err != nil {
-		return "", 0, err
-	}
-
-	tokenDuration := auth.DefaultTokenDuration
-	if workspaceProfile.TokenDuration != nil && workspaceProfile.TokenDuration.GetSeconds() > 0 {
-		tokenDuration = workspaceProfile.TokenDuration.AsDuration()
-	}
-	// Currently we implement the password rotation restriction in a simple way:
-	// 1. Only check if users need to reset their password during login.
-	// 2. For the 1st time login, if `RequireResetPasswordForFirstLogin` is true, `require_reset_password` in the response will be true
-	// 3. Otherwise if the `PasswordRotation` exists, check the password last updated time to decide if the `require_reset_password` is true.
-	// So we will use the minimum value between (`workspaceProfile.TokenDuration`, `passwordRestriction.PasswordRotation`) to force to expire the token.
-	if passwordRestriction.PasswordRotation != nil && passwordRestriction.PasswordRotation.GetSeconds() > 0 {
-		passwordRotation := passwordRestriction.PasswordRotation.AsDuration()
-		if passwordRotation.Seconds() < tokenDuration.Seconds() {
-			tokenDuration = passwordRotation
-		}
-	}
-
-	return secret, tokenDuration, nil
+	return secret, nil
 }
 
 // initMetricReporter will initial the metric scheduler.
