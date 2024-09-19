@@ -151,7 +151,7 @@
       class="text-md font-normal flex items-center gap-x-1"
       :class="[dark ? 'text-matrix-green-hover' : 'text-control-light']"
     >
-      <span>{{ extractSQLRowValue(result.rows[0].values[0]) }}</span>
+      <span>{{ extractSQLRowValue(result.rows[0].values[0]).plain }}</span>
       <span>rows affected</span>
     </div>
   </template>
