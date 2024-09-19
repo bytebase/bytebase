@@ -218,9 +218,9 @@
 
   <TargetDatabasesSelectPanel
     v-if="state.showSelectDatabasePanel"
-    :project-name="projectName"
+    :project="projectName"
     :engine="engine"
-    :selected-database-name-list="state.selectedDatabaseNameList"
+    :selected-database-names="state.selectedDatabaseNameList"
     @close="state.showSelectDatabasePanel = false"
     @update="handleSelectedDatabaseNameListChanged"
   />
