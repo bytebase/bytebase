@@ -37,7 +37,6 @@
 import { reactive, computed } from "vue";
 import { useRouter } from "vue-router";
 import DatabaseV1Table from "@/components/v2/Model/DatabaseV1Table";
-import { useFilterStore } from "@/store";
 import type { ComposedDatabase, ComposedProject } from "@/types";
 import { UNKNOWN_ID } from "@/types";
 import type { SearchParams } from "@/utils";
@@ -64,7 +63,6 @@ const props = defineProps<{
 }>();
 
 const router = useRouter();
-const { filter } = useFilterStore();
 
 const state = reactive<LocalState>({
   selectedDatabaseNames: new Set(),
@@ -124,9 +122,6 @@ const filteredDatabaseList = computed(() => {
     list = list.filter((db) => {
       return labels.some((kv) => db.labels[kv.key] === kv.value);
     });
-  }
-  if (filter.database) {
-    list = list.filter((db) => db.name === filter.database);
   }
   return list;
 });
