@@ -1,7 +1,6 @@
 import { ClientError, ServerError, Status } from "nice-grpc-common";
 import type { ClientMiddleware } from "nice-grpc-web";
 import { router } from "@/router";
-import { AUTH_SIGNIN_MODULE } from "@/router/auth";
 import { useAuthStore } from "@/store";
 
 export type IgnoreErrorsOptions = {
@@ -38,13 +37,7 @@ export const authInterceptorMiddleware: ClientMiddleware<IgnoreErrorsOptions> =
         } else {
           if (code === Status.UNAUTHENTICATED) {
             // "Kick out" sign in status if access token expires.
-            try {
-              await useAuthStore().logout();
-            } finally {
-              router.push({ name: AUTH_SIGNIN_MODULE }).then(() => {
-                window.location.reload();
-              });
-            }
+            await useAuthStore().logout();
           } else if (code === Status.PERMISSION_DENIED) {
             // Jump to 403 page
             router.push({ name: "error.403" });
