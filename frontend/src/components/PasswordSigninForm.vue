@@ -90,7 +90,9 @@ import { computed, reactive } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { BBTextField } from "@/bbkit";
 import { AUTH_MFA_MODULE, AUTH_PASSWORD_RESET_MODULE } from "@/router/auth";
-import { useAuthStore } from "@/store";
+import { SQL_EDITOR_HOME_MODULE } from "@/router/sqlEditor";
+import { useAppFeature, useAuthStore, useSettingV1Store } from "@/store";
+import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
 
 interface LocalState {
   email: string;
@@ -154,7 +156,22 @@ const trySignin = async () => {
       });
       return;
     }
-    router.push("/");
+    try {
+      await useSettingV1Store().fetchSettingByName(
+        "bb.workspace.profile",
+        /* silent */ true
+      );
+      const mode = useAppFeature("bb.feature.database-change-mode");
+      if (mode.value === DatabaseChangeMode.EDITOR) {
+        router.replace({
+          name: SQL_EDITOR_HOME_MODULE,
+        });
+      } else {
+        router.replace("/");
+      }
+    } catch {
+      router.replace("/");
+    }
   } finally {
     state.isLoading = false;
   }
