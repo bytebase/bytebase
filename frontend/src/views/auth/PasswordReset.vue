@@ -67,9 +67,14 @@ const passwordRestrictionSetting = computed(
   () => settingV1Store.passwordRestriction
 );
 
+const redirectQuery = computed(() => {
+  const query = new URLSearchParams(window.location.search);
+  return query.get("redirect") || "/";
+});
+
 onMounted(async () => {
   if (!authStore.requireResetPassword) {
-    router.replace("/");
+    router.replace(redirectQuery.value);
     return;
   }
   await settingV1Store.getOrFetchSettingByName(
@@ -104,6 +109,6 @@ const onConfirm = async () => {
     title: t("common.updated"),
   });
   authStore.setRequireResetPassword(false);
-  router.replace("/");
+  router.replace(redirectQuery.value);
 };
 </script>
