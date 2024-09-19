@@ -83,27 +83,30 @@ export const useAuthStore = defineStore("auth_v1", () => {
     await restoreUser();
     setRequireResetPassword(data.requireResetPassword);
 
-    if (data.requireResetPassword) {
-      return router.push({
-        name: AUTH_PASSWORD_RESET_MODULE,
-        query: {
-          redirect: redirectUrl,
-        },
-      });
-    }
-
     await useSettingV1Store().getOrFetchSettingByName(
       "bb.workspace.profile",
       /* silent */ true
     );
     const mode = useAppFeature("bb.feature.database-change-mode");
+
+    let nextPage = redirectUrl || "/";
     if (mode.value === DatabaseChangeMode.EDITOR) {
-      return router.replace({
+      const route = router.resolve({
         name: SQL_EDITOR_HOME_MODULE,
+      });
+      nextPage = route.fullPath;
+    }
+
+    if (data.requireResetPassword) {
+      return router.push({
+        name: AUTH_PASSWORD_RESET_MODULE,
+        query: {
+          redirect: nextPage,
+        },
       });
     }
 
-    return router.replace(redirectUrl || "/");
+    return router.replace(nextPage);
   };
 
   const signup = async (request: Partial<User>) => {
