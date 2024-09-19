@@ -264,7 +264,7 @@ const allowIdPSignin = computed(() => {
   return state.email && state.password;
 });
 
-// Mainly for LDAP signin and demo signin.
+// Mainly for LDAP signin.
 const trySignin = async (idpName: string) => {
   if (state.isLoading) return;
   state.isLoading = true;
