@@ -5,7 +5,11 @@ import { computed, ref } from "vue";
 import { restartAppRoot } from "@/AppRootContext";
 import { authServiceClient } from "@/grpcweb";
 import { router } from "@/router";
-import { AUTH_SIGNIN_MODULE } from "@/router/auth";
+import {
+  AUTH_SIGNIN_MODULE,
+  AUTH_PASSWORD_RESET_MODULE,
+  AUTH_MFA_MODULE,
+} from "@/router/auth";
 import { unknownUser } from "@/types";
 import type { LoginRequest, User } from "@/types/proto/v1/auth_service";
 import { LoginResponse } from "@/types/proto/v1/auth_service";
@@ -52,18 +56,41 @@ export const useAuthStore = defineStore("auth_v1", () => {
     }
   };
 
+  const getRedirectQuery = () => {
+    const query = new URLSearchParams(window.location.search);
+    return query.get("redirect");
+  };
+
   const login = async (
-    request: Partial<LoginRequest>
-  ): Promise<LoginResponse> => {
+    request: Partial<LoginRequest>,
+    redirect: string = ""
+  ) => {
     const { data } = await axios.post<LoginResponse>("/v1/auth/login", request);
+
+    const redirectUrl = redirect || getRedirectQuery();
     if (data.mfaTempToken) {
-      return data;
+      return router.push({
+        name: AUTH_MFA_MODULE,
+        query: {
+          mfaTempToken: data.mfaTempToken,
+          redirect: redirectUrl,
+        },
+      });
     }
 
     await restoreUser();
     setRequireResetPassword(data.requireResetPassword);
 
-    return data;
+    if (data.requireResetPassword) {
+      return router.push({
+        name: AUTH_PASSWORD_RESET_MODULE,
+        query: {
+          redirect: redirectUrl,
+        },
+      });
+    }
+
+    return router.replace(redirectUrl || "/");
   };
 
   const signup = async (request: Partial<User>) => {
@@ -91,15 +118,14 @@ export const useAuthStore = defineStore("auth_v1", () => {
       currentUserId.value = undefined;
       restartAppRoot();
 
-      const query = new URLSearchParams(window.location.search);
-      const redirect = query.get("redirect");
       const pathname = location.pathname;
       router
         .push({
           name: AUTH_SIGNIN_MODULE,
           query: {
             redirect:
-              redirect || (pathname.startsWith("/auth") ? undefined : pathname),
+              getRedirectQuery() ||
+              (pathname.startsWith("/auth") ? undefined : pathname),
           },
         })
         .then(() => {

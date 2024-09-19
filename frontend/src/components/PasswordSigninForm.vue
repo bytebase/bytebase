@@ -86,11 +86,11 @@
 <script setup lang="ts">
 import { EyeIcon, EyeOffIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
-import { computed, reactive } from "vue";
-import { useRoute, useRouter } from "vue-router";
+import { storeToRefs } from "pinia";
+import { computed, reactive, onMounted } from "vue";
+import { useRoute } from "vue-router";
 import { BBTextField } from "@/bbkit";
-import { AUTH_MFA_MODULE, AUTH_PASSWORD_RESET_MODULE } from "@/router/auth";
-import { useAuthStore } from "@/store";
+import { useAuthStore, useActuatorV1Store } from "@/store";
 
 interface LocalState {
   email: string;
@@ -101,28 +101,41 @@ interface LocalState {
 
 const props = withDefaults(
   defineProps<{
-    email?: string;
-    password?: string;
-    showPassword?: boolean;
     showForgotPassword?: boolean;
   }>(),
   {
-    email: "",
-    password: "",
-    showPassword: false,
     showForgotPassword: true,
   }
 );
 
-const router = useRouter();
 const route = useRoute();
 const authStore = useAuthStore();
+const { isDemo } = storeToRefs(useActuatorV1Store());
 
 const state = reactive<LocalState>({
-  email: props.email,
-  password: props.password,
-  showPassword: props.showPassword,
+  email: "",
+  password: "",
+  showPassword: false,
   isLoading: false,
+});
+
+onMounted(async () => {
+  const url = new URL(window.location.href);
+  const params = new URLSearchParams(url.search);
+  state.email = params.get("email") ?? (isDemo.value ? "demo@example.com" : "");
+  state.password = params.get("password") ?? (isDemo.value ? "1024" : "");
+  state.showPassword = !!isDemo.value;
+
+  // Try to signin with example account in demo site.
+  if (
+    (window.location.href.startsWith("https://demo.bytebase.com") ||
+      window.location.href.startsWith("https://sql-editor.com")) &&
+    isDemo.value &&
+    state.email &&
+    state.password
+  ) {
+    await trySignin();
+  }
 });
 
 const allowSignin = computed(() => {
@@ -133,28 +146,11 @@ const trySignin = async () => {
   if (state.isLoading) return;
   state.isLoading = true;
   try {
-    const { mfaTempToken, requireResetPassword } = await authStore.login({
+    await authStore.login({
       email: state.email,
       password: state.password,
       web: true,
     });
-    if (mfaTempToken) {
-      router.push({
-        name: AUTH_MFA_MODULE,
-        query: {
-          mfaTempToken,
-          redirect: route.query.redirect as string,
-        },
-      });
-      return;
-    }
-    if (requireResetPassword) {
-      router.push({
-        name: AUTH_PASSWORD_RESET_MODULE,
-      });
-      return;
-    }
-    router.push("/");
   } finally {
     state.isLoading = false;
   }
