@@ -16,8 +16,8 @@
 import { NButton } from "naive-ui";
 import { parse } from "qs";
 import { onMounted, reactive } from "vue";
-import { useRoute, useRouter } from "vue-router";
-import { AUTH_MFA_MODULE, AUTH_SIGNIN_MODULE } from "@/router/auth";
+import { useRoute } from "vue-router";
+import { AUTH_SIGNIN_MODULE } from "@/router/auth";
 import { useAuthStore } from "@/store";
 import type { OAuthState, OAuthWindowEventPayload } from "../types";
 
@@ -28,7 +28,6 @@ interface LocalState {
   payload: OAuthWindowEventPayload;
 }
 
-const router = useRouter();
 const route = useRoute();
 const authStore = useAuthStore();
 
@@ -86,28 +85,18 @@ const triggerAuthCallback = async () => {
       );
       window.close();
     } else {
-      // We don't need to check password reset for SSO login.
-      const { mfaTempToken } = await authStore.login({
-        idpName: eventName.split(".").pop()!,
-        idpContext: {
-          oauth2Context: {
-            code: state.payload.code,
+      await authStore.login(
+        {
+          idpName: eventName.split(".").pop()!,
+          idpContext: {
+            oauth2Context: {
+              code: state.payload.code,
+            },
           },
+          web: true,
         },
-        web: true,
-      });
-      if (mfaTempToken) {
-        const route = router.resolve({
-          name: AUTH_MFA_MODULE,
-          query: {
-            mfaTempToken,
-            redirect: oAuthState.redirect || "",
-          },
-        });
-        window.location.href = route.href;
-      } else {
-        window.location.href = oAuthState.redirect || "/";
-      }
+        oAuthState.redirect
+      );
     }
   } else if (
     eventName.startsWith("bb.oauth.register-vcs") ||

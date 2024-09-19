@@ -68,9 +68,8 @@
 import { NButton } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
-import { useRoute, useRouter } from "vue-router";
+import { useRoute } from "vue-router";
 import { BBTextField } from "@/bbkit";
-import { AUTH_PASSWORD_RESET_MODULE } from "@/router/auth";
 import { useAuthStore } from "@/store";
 
 type MFAType = "OTP" | "RECOVERY_CODE";
@@ -83,7 +82,6 @@ interface LocalState {
 
 const { t } = useI18n();
 const route = useRoute();
-const router = useRouter();
 const authStore = useAuthStore();
 const state = reactive<LocalState>({
   selectedMFAType: "OTP",
@@ -93,9 +91,6 @@ const state = reactive<LocalState>({
 
 const mfaTempToken = computed(() => {
   return route.query.mfaTempToken as string;
-});
-const redirectUrl = computed(() => {
-  return route.query.redirect as string;
 });
 
 const challengeDescription = computed(() => {
@@ -115,18 +110,10 @@ const challenge = async () => {
   } else if (state.selectedMFAType === "RECOVERY_CODE") {
     mfaContext.recoveryCode = state.recoveryCode;
   }
-  const { requireResetPassword } = await authStore.login({
+  await authStore.login({
     web: true,
     mfaTempToken: mfaTempToken.value,
     ...mfaContext,
   });
-  // Check if the user needs to reset their password after MFA passed.
-  if (requireResetPassword) {
-    router.push({
-      name: AUTH_PASSWORD_RESET_MODULE,
-    });
-    return;
-  }
-  router.replace(redirectUrl.value || "/");
 };
 </script>
