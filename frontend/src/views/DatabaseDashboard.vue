@@ -144,18 +144,18 @@ onMounted(() => {
 
 watch(
   () => selectedProject.value,
-  () => {
+  async () => {
     loading.value = true;
     let parent = undefined;
     if (selectedProject.value) {
       parent = `${projectNamePrefix}${selectedProject.value}`;
     }
-    wrapRefAsPromise(useDatabaseV1List(parent).ready, /* expected */ true).then(
-      () => {
-        loading.value = false;
-        emit("ready");
-      }
+    await wrapRefAsPromise(
+      useDatabaseV1List(parent).ready,
+      /* expected */ true
     );
+    loading.value = false;
+    emit("ready");
   },
   {
     immediate: true,
