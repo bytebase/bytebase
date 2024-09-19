@@ -3,7 +3,6 @@ import { defineStore } from "pinia";
 import { computed, ref, watch } from "vue";
 import type { ComposedDatabase } from "@/types";
 import { hasWorkspacePermissionV2 } from "@/utils";
-import { useProjectV1Store } from "../v1";
 
 export const useSQLEditorStore = defineStore("sqlEditor", () => {
   const resultRowsLimit = useLocalStorage(
@@ -23,12 +22,6 @@ export const useSQLEditorStore = defineStore("sqlEditor", () => {
     ""
   );
 
-  const currentProject = computed(() => {
-    if (project.value) {
-      return useProjectV1Store().getProjectByName(project.value);
-    }
-    return undefined;
-  });
   const allowViewALLProjects = computed(() => {
     return hasWorkspacePermissionV2("bb.projects.list");
   });
@@ -48,7 +41,6 @@ export const useSQLEditorStore = defineStore("sqlEditor", () => {
     strictProject,
     projectContextReady,
     storedLastViewedProject,
-    currentProject,
     allowViewALLProjects,
     databaseList,
     isShowExecutingHint,
