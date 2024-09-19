@@ -220,7 +220,7 @@
     v-if="state.showSelectDatabasePanel"
     :project="projectName"
     :engine="engine"
-    :selected-database-names="state.selectedDatabaseNameList"
+    :selected-database-name-list="state.selectedDatabaseNameList"
     @close="state.showSelectDatabasePanel = false"
     @update="handleSelectedDatabaseNameListChanged"
   />
