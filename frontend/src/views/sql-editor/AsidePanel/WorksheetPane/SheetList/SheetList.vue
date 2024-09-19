@@ -25,7 +25,7 @@
 import { orderBy } from "lodash-es";
 import { computed, nextTick, watch } from "vue";
 import { BBSpin } from "@/bbkit";
-import { useDatabaseV1Store, useFilterStore } from "@/store";
+import { useDatabaseV1Store } from "@/store";
 import { isValidDatabaseName } from "@/types";
 import {
   useSheetContextByView,
@@ -42,20 +42,11 @@ const emit = defineEmits<{
   (event: "ready"): void;
 }>();
 
-const { filter } = useFilterStore();
 const { isInitialized, isLoading, sheetList, fetchSheetList } =
   useSheetContextByView(props.view);
 
 const filteredWorksheetList = computed(() => {
   let sheets = sheetList.value;
-
-  // Only show those sheets that match the filtered database or are unconnected.
-  if (filter.database) {
-    sheets = sheets.filter(
-      (worksheet) =>
-        !worksheet.database || worksheet.database === filter.database
-    );
-  }
 
   // Filter by keyword.
   const keyword = (props.keyword ?? "").trim().toLowerCase();

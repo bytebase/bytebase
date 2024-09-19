@@ -11,25 +11,27 @@
 
     <NTabs>
       <template #suffix>
-        <NButton
-          v-if="allowSyncInstance"
-          :loading="state.syncingSchema"
-          @click.prevent="syncSchema"
-        >
-          <template v-if="state.syncingSchema">
-            {{ $t("instance.syncing") }}
-          </template>
-          <template v-else>
-            {{ $t("common.sync-now") }}
-          </template>
-        </NButton>
-        <NButton
-          v-if="allowCreateDatabase"
-          type="primary"
-          @click.prevent="createDatabase"
-        >
-          {{ $t("instance.new-database") }}
-        </NButton>
+        <div class="space-x-2">
+          <NButton
+            v-if="allowSyncInstance"
+            :loading="state.syncingSchema"
+            @click.prevent="syncSchema"
+          >
+            <template v-if="state.syncingSchema">
+              {{ $t("instance.syncing") }}
+            </template>
+            <template v-else>
+              {{ $t("common.sync-now") }}
+            </template>
+          </NButton>
+          <NButton
+            v-if="allowCreateDatabase"
+            type="primary"
+            @click.prevent="createDatabase"
+          >
+            {{ $t("instance.new-database") }}
+          </NButton>
+        </div>
       </template>
       <NTabPane name="OVERVIEW" :tab="$t('common.overview')">
         <InstanceForm class="-mt-2" :instance="instance">
