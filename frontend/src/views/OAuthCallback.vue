@@ -86,6 +86,7 @@ const triggerAuthCallback = async () => {
       );
       window.close();
     } else {
+      // We don't need to check password reset for SSO login.
       const { mfaTempToken } = await authStore.login({
         idpName: eventName.split(".").pop()!,
         idpContext: {
