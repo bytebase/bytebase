@@ -42,7 +42,7 @@
                       {{ $t("auth.sign-in.new-user") }}
                     </span>
                     <router-link
-                      :to="{ name: AUTH_SIGNUP_MODULE }"
+                      :to="{ name: AUTH_SIGNUP_MODULE, query: $route.query }"
                       class="accent-link px-2"
                     >
                       {{ $t("common.sign-up") }}
@@ -287,10 +287,12 @@ const allowSignin = (idpName?: string) => {
   return state.email && state.password;
 };
 
+// Mainly for LDAP signin and demo signin.
 const trySignin = async (idpName?: string) => {
   if (state.isLoading) return;
   state.isLoading = true;
   try {
+    // For LDAP signin, we don't need to check requireResetPassword.
     const { mfaTempToken } = await authStore.login({
       email: state.email,
       password: state.password,
@@ -305,9 +307,9 @@ const trySignin = async (idpName?: string) => {
           redirect: route.query.redirect as string,
         },
       });
-    } else {
-      router.push("/");
+      return;
     }
+    router.push("/");
   } finally {
     state.isLoading = false;
   }

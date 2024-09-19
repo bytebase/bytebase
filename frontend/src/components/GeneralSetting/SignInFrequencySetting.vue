@@ -52,8 +52,7 @@
 import { useDebounceFn } from "@vueuse/core";
 import { NInputNumber, NRadioGroup, NRadio, NTooltip } from "naive-ui";
 import { computed, reactive, watch } from "vue";
-import { useI18n } from "vue-i18n";
-import { featureToRef, pushNotification } from "@/store";
+import { featureToRef } from "@/store";
 import { useSettingV1Store } from "@/store/modules/v1/setting";
 import { defaultTokenDurationInHours } from "@/types";
 import { Duration } from "@/types/proto/google/protobuf/duration";
@@ -89,7 +88,6 @@ const props = defineProps<{
   allowEdit: boolean;
 }>();
 
-const { t } = useI18n();
 const settingV1Store = useSettingV1Store();
 const state = reactive<LocalState>(getInitialState());
 
@@ -116,11 +114,6 @@ const handleFrequencySettingChange = useDebounceFn(async () => {
       tokenDuration: Duration.fromPartial({ seconds, nanos: 0 }),
     },
     updateMask: ["value.workspace_profile_setting_value.token_duration"],
-  });
-  pushNotification({
-    module: "bytebase",
-    style: "SUCCESS",
-    title: t("settings.general.workspace.sign-in-frequency.config-updated"),
   });
 }, 2000);
 

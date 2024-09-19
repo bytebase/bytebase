@@ -3,7 +3,6 @@ package server
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -43,10 +42,9 @@ func configureGrpcRouters(
 	relayRunner *relay.Runner,
 	planCheckScheduler *plancheck.Scheduler,
 	postCreateUser apiv1.CreateUserFunc,
-	secret string,
-	tokenDuration time.Duration) (*apiv1.PlanService, *apiv1.RolloutService, *apiv1.IssueService, *apiv1.SQLService, error) {
+	secret string) (*apiv1.PlanService, *apiv1.RolloutService, *apiv1.IssueService, *apiv1.SQLService, error) {
 	// Register services.
-	authService, err := apiv1.NewAuthService(stores, secret, tokenDuration, licenseService, metricReporter, profile, stateCfg, iamManager, postCreateUser)
+	authService, err := apiv1.NewAuthService(stores, secret, licenseService, metricReporter, profile, stateCfg, iamManager, postCreateUser)
 	if err != nil {
 		return nil, nil, nil, nil, err
 	}

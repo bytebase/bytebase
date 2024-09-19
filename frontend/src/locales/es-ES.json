@@ -694,10 +694,9 @@
         },
         "sign-in-frequency": {
           "self": "Frecuencia de inicio de sesión",
-          "description": "La frecuencia de inicio de sesión es el período antes de que un usuario deba iniciar sesión nuevamente.",
+          "description": "La frecuencia de inicio de sesión define con qué frecuencia los usuarios deben volver a autenticarse. Las actualizaciones de configuración requieren que los usuarios inicien sesión nuevamente para que los cambios surtan efecto.",
           "hours": "Horas",
-          "days": "Días",
-          "config-updated": "La configuración se ha actualizado. Necesita reiniciar Bytebase y volver a iniciar sesión para que surta efecto."
+          "days": "Días"
         },
         "maximum-role-expiration": {
           "self": "Caducidad máxima del rol",

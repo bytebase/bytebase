@@ -227,7 +227,7 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	// Cache the license.
 	s.licenseService.LoadSubscription(ctx)
 
-	secret, tokenDuration, err := s.getInitSetting(ctx)
+	secret, err := s.getInitSetting(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to init config")
 	}
@@ -254,7 +254,7 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 
 	// Note: the gateway response modifier takes the token duration on server startup. If the value is changed,
 	// the user has to restart the server to take the latest value.
-	gatewayModifier := auth.GatewayResponseModifier{TokenDuration: tokenDuration}
+	gatewayModifier := auth.GatewayResponseModifier{Store: s.store}
 	mux := grpcruntime.NewServeMux(grpcruntime.WithForwardResponseOption(gatewayModifier.Modify))
 
 	s.metricReporter = metricreport.NewReporter(s.store, s.licenseService, s.profile, false)
@@ -291,7 +291,7 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	}
 
 	// Setup the gRPC and grpc-gateway.
-	authProvider := auth.New(s.store, s.secret, tokenDuration, s.licenseService, s.stateCfg, s.profile)
+	authProvider := auth.New(s.store, s.secret, s.licenseService, s.stateCfg, s.profile)
 	auditProvider := apiv1.NewAuditInterceptor(s.store)
 	aclProvider := apiv1.NewACLInterceptor(s.store, s.secret, s.iamManager, s.profile)
 	debugProvider := apiv1.NewDebugInterceptor(s.metricReporter)
@@ -346,7 +346,7 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 		}
 		return nil
 	}
-	planService, rolloutService, issueService, sqlService, err := configureGrpcRouters(ctx, mux, s.grpcServer, s.store, s.sheetManager, s.dbFactory, s.licenseService, s.profile, s.metricReporter, s.stateCfg, s.schemaSyncer, s.webhookManager, s.iamManager, s.relayRunner, s.planCheckScheduler, postCreateUser, s.secret, tokenDuration)
+	planService, rolloutService, issueService, sqlService, err := configureGrpcRouters(ctx, mux, s.grpcServer, s.store, s.sheetManager, s.dbFactory, s.licenseService, s.profile, s.metricReporter, s.stateCfg, s.schemaSyncer, s.webhookManager, s.iamManager, s.relayRunner, s.planCheckScheduler, postCreateUser, s.secret)
 	if err != nil {
 		return nil, err
 	}
