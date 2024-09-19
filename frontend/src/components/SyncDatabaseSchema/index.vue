@@ -233,12 +233,15 @@ const tryFinishSetup = async () => {
     mode: "normal",
     ghost: undefined,
   };
-  query.databaseList = targetDatabaseList.map((db) => db.name).join(",");
   const sqlMap: Record<string, string> = {};
   targetDatabaseList.forEach((db) => {
     const diff = targetDatabaseViewRef.value!.databaseDiffCache[db.name];
-    sqlMap[db.name] = diff.edited;
+    // Only allow edited database to be included in the issue.
+    if (diff.edited) {
+      sqlMap[db.name] = diff.edited;
+    }
   });
+  query.databaseList = Object.keys(sqlMap);
   const sqlMapStorageKey = `bb.issues.sql-map.${uuidv4()}`;
   localStorage.setItem(sqlMapStorageKey, JSON.stringify(sqlMap));
   query.sqlMapStorageKey = sqlMapStorageKey;

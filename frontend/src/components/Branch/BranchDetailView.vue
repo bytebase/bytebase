@@ -106,9 +106,8 @@
 
   <TargetDatabasesSelectPanel
     v-if="selectTargetDatabasesContext.show"
-    :project-name="project.name"
+    :project="project.name"
     :engine="dirtyBranch.engine"
-    :selected-database-name-list="[]"
     :loading="!!state.applyingToDatabaseStatus"
     @close="selectTargetDatabasesContext.show = false"
     @update="handleApplyToDatabase"

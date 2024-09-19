@@ -131,7 +131,7 @@
           {{ $t("auth.sign-up.existing-user") }}
         </span>
         <router-link
-          :to="{ name: AUTH_SIGNIN_MODULE }"
+          :to="{ name: AUTH_SIGNIN_MODULE, query: $route.query }"
           class="accent-link px-2 bg-white"
         >
           {{ $t("common.sign-in") }}
