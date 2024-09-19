@@ -696,8 +696,7 @@
           "self": "ログイン頻度",
           "description": "ログイン頻度は、ユーザーが再度ログインする必要がある間隔を指定します。",
           "hours": "時間",
-          "days": "日々",
-          "config-updated": "構成が更新されたため、有効にするには Bytebase を再起動し、再度ログインする必要があります。"
+          "days": "日々"
         },
         "maximum-role-expiration": {
           "self": "最大ロール有効期限",

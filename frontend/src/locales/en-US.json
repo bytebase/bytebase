@@ -696,8 +696,7 @@
           "self": "Sign-in frequency",
           "description": "Sign-in frequency is the period before a user must sign in again.",
           "hours": "Hour(s)",
-          "days": "Day(s)",
-          "config-updated": "Configuration is updated. Need to restart Bytebase and re-login to take effect."
+          "days": "Day(s)"
         },
         "maximum-role-expiration": {
           "self": "Maximum role expiration",
