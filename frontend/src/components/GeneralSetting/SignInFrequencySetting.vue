@@ -117,11 +117,6 @@ const handleFrequencySettingChange = useDebounceFn(async () => {
     },
     updateMask: ["value.workspace_profile_setting_value.token_duration"],
   });
-  pushNotification({
-    module: "bytebase",
-    style: "SUCCESS",
-    title: t("settings.general.workspace.sign-in-frequency.config-updated"),
-  });
 }, 2000);
 
 watch(
