@@ -70,6 +70,7 @@ import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 import { BBTextField } from "@/bbkit";
+import { AUTH_PASSWORD_RESET_MODULE } from "@/router/auth";
 import { useAuthStore } from "@/store";
 
 type MFAType = "OTP" | "RECOVERY_CODE";
@@ -114,11 +115,18 @@ const challenge = async () => {
   } else if (state.selectedMFAType === "RECOVERY_CODE") {
     mfaContext.recoveryCode = state.recoveryCode;
   }
-  await authStore.login({
+  const { requireResetPassword } = await authStore.login({
     web: true,
     mfaTempToken: mfaTempToken.value,
     ...mfaContext,
   });
+  // Check if the user needs to reset their password after MFA passed.
+  if (requireResetPassword) {
+    router.push({
+      name: AUTH_PASSWORD_RESET_MODULE,
+    });
+    return;
+  }
   router.replace(redirectUrl.value || "/");
 };
 </script>

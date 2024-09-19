@@ -10,8 +10,12 @@ import {
   type RouteLocationNormalizedLoadedGeneric,
 } from "vue-router";
 import MaskSpinner from "@/components/misc/MaskSpinner.vue";
-import { AUTH_SIGNIN_MODULE } from "@/router/auth";
-import { usePolicyV1Store, useRoleStore, useSettingV1Store } from "@/store";
+import {
+  usePolicyV1Store,
+  useRoleStore,
+  useSettingV1Store,
+  useAuthStore,
+} from "@/store";
 import { PolicyResourceType } from "@/types/proto/v1/org_policy_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
@@ -46,10 +50,7 @@ onMounted(async () => {
     (route) => {
       if (!checkPermissions(route)) {
         ready.value = false;
-        router.replace({
-          name: AUTH_SIGNIN_MODULE,
-        });
-        return;
+        return useAuthStore().logout();
       }
       ready.value = true;
     },

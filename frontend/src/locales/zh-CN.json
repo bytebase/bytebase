@@ -694,10 +694,9 @@
         },
         "sign-in-frequency": {
           "self": "登录频率",
-          "description": "登录频率指定用户必须再次登录的间隔。",
+          "description": "登录频率定义了用户需要重新验证身份的时间间隔。配置更新需要用户重新登录才能生效。",
           "hours": "小时",
-          "days": "天数",
-          "config-updated": "配置已更新，需要重新启动 Bytebase 以及重新登录后生效。"
+          "days": "天数"
         },
         "maximum-role-expiration": {
           "self": "角色最大过期时间",
