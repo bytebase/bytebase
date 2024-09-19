@@ -86,7 +86,7 @@ const { width: containerWidth } = useElementSize(containerRef);
 const hideProjects = useAppFeature("bb.feature.sql-editor.hide-projects");
 
 const projectName = computed(() => {
-  return editorStore.currentProject?.name ?? null;
+  return editorStore.project ?? null;
 });
 
 const allowAccessDefaultProject = computed(() => {
