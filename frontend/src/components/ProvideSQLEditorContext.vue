@@ -43,7 +43,6 @@ import {
   useWorkSheetStore,
   useGroupStore,
   pushNotification,
-  useFilterStore,
   useAppFeature,
   useProjectV1List,
 } from "@/store";
@@ -92,7 +91,6 @@ const tabStore = useSQLEditorTabStore();
 const groupStore = useGroupStore();
 const policyStore = usePolicyV1Store();
 const { isFetching: isFetchingWorksheet } = useSheetContext();
-const { filter } = useFilterStore();
 const {
   asidePanelTab,
   events: editorEvents,
@@ -376,8 +374,6 @@ const prepareConnectionParams = async () => {
     connect({
       instance: database.instance,
       database: database.name,
-      schema: filter.schema,
-      table: filter.table,
     });
     return true;
   }
@@ -400,23 +396,6 @@ const initializeConnectionFromQuery = async () => {
 
   if (await prepareConnectionParams()) {
     return;
-  }
-
-  if (filter.database) {
-    const database = await databaseStore.getOrFetchDatabaseByName(
-      filter.database,
-      /* silent */ true
-    );
-    if (isValidDatabaseName(database.name)) {
-      await maybeSwitchProject(database.project);
-      connect({
-        instance: database.instance,
-        database: database.name,
-        schema: filter.schema,
-        table: filter.table,
-      });
-      return;
-    }
   }
 
   // Keep disconnected otherwise

@@ -30,7 +30,7 @@ type SheetEvents = Emittery<{
 const useSheetListByView = (viewMode: SheetViewMode) => {
   const sheetStore = useWorkSheetStore();
 
-  const { currentProject } = storeToRefs(useSQLEditorStore());
+  const { project } = storeToRefs(useSQLEditorStore());
 
   const isInitialized = ref(false);
   const isLoading = ref(false);
@@ -48,9 +48,7 @@ const useSheetListByView = (viewMode: SheetViewMode) => {
         break;
     }
     return list.filter((worksheet) => {
-      return (
-        !currentProject.value || worksheet.project === currentProject.value.name
-      );
+      return !project.value || worksheet.project === project.value;
     });
   });
 

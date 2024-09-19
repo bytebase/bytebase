@@ -31,7 +31,10 @@
             {{ $t("common.instance") }}
           </div>
           <div class="text-main text-right">
-            <InstanceV1Name :instance="database.instanceResource" :link="false" />
+            <InstanceV1Name
+              :instance="database.instanceResource"
+              :link="false"
+            />
           </div>
         </div>
         <div v-if="!hasProjectContext" class="contents">
@@ -112,7 +115,7 @@ const database = computed(() => {
 });
 
 const hasProjectContext = computed(() => {
-  return !!editorStore.currentProject;
+  return !!editorStore.project;
 });
 
 const displayPosition = computed(() => {
