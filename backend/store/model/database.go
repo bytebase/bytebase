@@ -318,7 +318,7 @@ func NewDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata) *DatabaseMeta
 			internalExternalTable:    make(map[string]*ExternalTableMetadata),
 			internalViews:            make(map[string]*ViewMetadata),
 			internalMaterializedView: make(map[string]*MaterializedViewMetadata),
-			internalFunctions:        make(map[string]*FunctionMetadata),
+			internalFunctions:        make([]*FunctionMetadata, 0),
 			internalProcedures:       make(map[string]*ProcedureMetadata),
 			internalSequences:        make(map[string]*SequenceMetadata),
 			proto:                    schema,
@@ -351,10 +351,10 @@ func NewDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata) *DatabaseMeta
 			}
 		}
 		for _, function := range schema.Functions {
-			schemaMetadata.internalFunctions[function.Name] = &FunctionMetadata{
+			schemaMetadata.internalFunctions = append(schemaMetadata.internalFunctions, &FunctionMetadata{
 				Definition: function.Definition,
 				proto:      function,
-			}
+			})
 		}
 		for _, procedure := range schema.Procedures {
 			schemaMetadata.internalProcedures[procedure.Name] = &ProcedureMetadata{
@@ -426,9 +426,10 @@ type SchemaMetadata struct {
 	internalExternalTable    map[string]*ExternalTableMetadata
 	internalViews            map[string]*ViewMetadata
 	internalMaterializedView map[string]*MaterializedViewMetadata
-	internalFunctions        map[string]*FunctionMetadata
-	internalProcedures       map[string]*ProcedureMetadata
-	internalSequences        map[string]*SequenceMetadata
+	// Store internal functions by list to take care of the overloadings.
+	internalFunctions  []*FunctionMetadata
+	internalProcedures map[string]*ProcedureMetadata
+	internalSequences  map[string]*SequenceMetadata
 
 	proto *storepb.SchemaMetadata
 }
@@ -467,9 +468,21 @@ func (s *SchemaMetadata) GetExternalTable(name string) *ExternalTableMetadata {
 	return s.internalExternalTable[name]
 }
 
+// ListFunctions lists the functions.
+func (s *SchemaMetadata) ListFunctions() []*FunctionMetadata {
+	var result []*FunctionMetadata
+	result = append(result, s.internalFunctions...)
+	return result
+}
+
 // GetFunction gets the function by name.
 func (s *SchemaMetadata) GetFunction(name string) *FunctionMetadata {
-	return s.internalFunctions[name]
+	for _, function := range s.internalFunctions {
+		if function.proto.Name == name {
+			return function
+		}
+	}
+	return nil
 }
 
 // GetSequence gets the sequence by name.
@@ -507,8 +520,8 @@ func (s *SchemaMetadata) ListProcedureNames() []string {
 // ListFunctionNames lists the function names.
 func (s *SchemaMetadata) ListFunctionNames() []string {
 	var result []string
-	for functionName := range s.internalFunctions {
-		result = append(result, functionName)
+	for _, function := range s.internalFunctions {
+		result = append(result, function.GetProto().GetName())
 	}
 
 	sort.Strings(result)
