@@ -28,8 +28,7 @@ import type {
   ViewMetadata,
   SchemaMetadata,
 } from "@/types/proto/v1/database_service";
-import { getHighlightHTMLByRegExp } from "@/utils";
-import { useAutoHeightDataTable } from "../../common";
+import { getHighlightHTMLByRegExp, useAutoHeightDataTable } from "@/utils";
 import { useEditorPanelContext } from "../../context";
 
 const props = defineProps<{
@@ -65,17 +64,18 @@ const filteredViews = computed(() => {
   return props.views;
 });
 
-const { dataTableRef, containerElRef, tableBodyHeight, layoutReady } =
-  useAutoHeightDataTable(
-    filteredViews,
-    computed(() => ({
-      maxHeight: props.maxHeight ? props.maxHeight : null,
-    }))
-  );
-const vlRef = computed(() => {
-  return (dataTableRef.value as any)?.$refs?.mainTableInstRef?.bodyInstRef
-    ?.virtualListRef;
-});
+const {
+  dataTableRef,
+  containerElRef,
+  virtualListRef,
+  tableBodyHeight,
+  layoutReady,
+} = useAutoHeightDataTable(
+  filteredViews,
+  computed(() => ({
+    maxHeight: props.maxHeight ? props.maxHeight : null,
+  }))
+);
 
 const columns = computed(() => {
   const columns: (DataTableColumn<ViewMetadata> & { hide?: boolean })[] = [
@@ -113,7 +113,7 @@ const rowProps = (view: ViewMetadata) => {
 };
 
 watch(
-  [() => viewState.value?.detail.view, vlRef],
+  [() => viewState.value?.detail.view, virtualListRef],
   ([view, vl]) => {
     if (view && vl) {
       vl.scrollTo({ key: view });
