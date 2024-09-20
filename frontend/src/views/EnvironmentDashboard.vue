@@ -53,12 +53,6 @@
       </DrawerContent>
     </EnvironmentForm>
   </Drawer>
-
-  <FeatureModal
-    :open="state.missingRequiredFeature != undefined"
-    :feature="state.missingRequiredFeature"
-    @cancel="state.missingRequiredFeature = undefined"
-  />
 </template>
 
 <script lang="ts" setup>
@@ -72,7 +66,6 @@ import {
   Form as EnvironmentFormBody,
   Buttons as EnvironmentFormButtons,
 } from "@/components/EnvironmentForm";
-import { FeatureModal } from "@/components/FeatureGuard";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { EnvironmentV1Name, MiniActionButton } from "@/components/v2";
 import { useBodyLayoutContext } from "@/layouts/common";
@@ -80,7 +73,6 @@ import { ENVIRONMENT_V1_ROUTE_DASHBOARD } from "@/router/dashboard/workspaceRout
 import {
   useRegisterCommand,
   useUIStateStore,
-  hasFeature,
   useEnvironmentV1Store,
   defaultEnvironmentTier,
   useEnvironmentV1List,
@@ -89,7 +81,7 @@ import {
   usePolicyV1Store,
   getEmptyRolloutPolicy,
 } from "@/store/modules/v1/policy";
-import { VirtualRoleType, emptyEnvironment } from "@/types";
+import { emptyEnvironment } from "@/types";
 import type {
   Environment,
   EnvironmentTier,
@@ -109,10 +101,6 @@ interface LocalState {
   reorderedEnvironmentList: Environment[];
   showCreateModal: boolean;
   reorder: boolean;
-  missingRequiredFeature?:
-    | "bb.feature.approval-policy"
-    | "bb.feature.custom-approval"
-    | "bb.feature.environment-tier-policy";
 }
 
 const environmentV1Store = useEnvironmentV1Store();
@@ -214,20 +202,6 @@ const doCreate = async (params: {
   environmentTier: EnvironmentTier;
 }) => {
   const { environment, rolloutPolicy, environmentTier } = params;
-  const rp = rolloutPolicy.rolloutPolicy;
-  if (rp?.automatic === false) {
-    if (rp.issueRoles.includes(VirtualRoleType.LAST_APPROVER)) {
-      if (!hasFeature("bb.feature.custom-approval")) {
-        state.missingRequiredFeature = "bb.feature.custom-approval";
-        return;
-      }
-    }
-    if (!hasFeature("bb.feature.approval-policy")) {
-      state.missingRequiredFeature = "bb.feature.approval-policy";
-      return;
-    }
-  }
-
   const createdEnvironment = await environmentV1Store.createEnvironment({
     name: environment.name,
     title: environment.title,

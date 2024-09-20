@@ -24,12 +24,6 @@
       :class="buttonsClass"
     />
   </EnvironmentForm>
-
-  <FeatureModal
-    :open="state.missingRequiredFeature != undefined"
-    :feature="state.missingRequiredFeature"
-    @cancel="state.missingRequiredFeature = undefined"
-  />
 </template>
 
 <script lang="ts" setup>
@@ -43,20 +37,16 @@ import {
   Form as EnvironmentFormBody,
   Buttons as EnvironmentFormButtons,
 } from "@/components/EnvironmentForm";
-import { FeatureModal } from "@/components/FeatureGuard";
 import { ENVIRONMENT_V1_ROUTE_DETAIL } from "@/router/dashboard/environmentV1";
 import { ENVIRONMENT_V1_ROUTE_DASHBOARD } from "@/router/dashboard/workspaceRoutes";
-import { hasFeature, pushNotification } from "@/store";
+import { pushNotification } from "@/store";
 import { environmentNamePrefix } from "@/store/modules/v1/common";
-import {
-  useEnvironmentV1Store,
-  defaultEnvironmentTier,
-} from "@/store/modules/v1/environment";
+import { useEnvironmentV1Store } from "@/store/modules/v1/environment";
 import {
   usePolicyV1Store,
   getEmptyRolloutPolicy,
 } from "@/store/modules/v1/policy";
-import { VirtualRoleType, unknownEnvironment } from "@/types";
+import { unknownEnvironment } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import type {
   Environment,
@@ -74,10 +64,6 @@ interface LocalState {
   showArchiveModal: boolean;
   rolloutPolicy?: Policy;
   environmentTier?: EnvironmentTier;
-  missingRequiredFeature?:
-    | "bb.feature.approval-policy"
-    | "bb.feature.custom-approval"
-    | "bb.feature.environment-tier-policy";
 }
 
 const props = defineProps<{
@@ -146,13 +132,6 @@ const doUpdate = (environmentPatch: Environment) => {
     pendingUpdate.title = environmentPatch.title;
   }
   if (environmentPatch.tier !== pendingUpdate.tier) {
-    if (
-      environmentPatch.tier !== defaultEnvironmentTier &&
-      !hasFeature("bb.feature.environment-tier-policy")
-    ) {
-      state.missingRequiredFeature = "bb.feature.environment-tier-policy";
-      return;
-    }
     pendingUpdate.tier = environmentPatch.tier;
   }
 
@@ -215,21 +194,6 @@ const updatePolicy = async (params: {
   policy: Policy;
 }) => {
   const { environment, policyType, policy } = params;
-  if (policyType === PolicyType.ROLLOUT_POLICY) {
-    const rp = policy.rolloutPolicy;
-    if (rp?.automatic === false) {
-      if (rp.issueRoles.includes(VirtualRoleType.LAST_APPROVER)) {
-        if (!hasFeature("bb.feature.custom-approval")) {
-          state.missingRequiredFeature = "bb.feature.custom-approval";
-          return;
-        }
-      }
-      if (!hasFeature("bb.feature.approval-policy")) {
-        state.missingRequiredFeature = "bb.feature.approval-policy";
-        return;
-      }
-    }
-  }
 
   const updatedPolicy = await policyV1Store.upsertPolicy({
     parentPath: environment.name,
