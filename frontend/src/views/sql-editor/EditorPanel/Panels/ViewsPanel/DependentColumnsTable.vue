@@ -33,8 +33,8 @@ import {
   getHighlightHTMLByRegExp,
   hasSchemaProperty,
   keyForDependentColumn,
+  useAutoHeightDataTable,
 } from "@/utils";
-import { useAutoHeightDataTable } from "../../common";
 import { useEditorPanelContext } from "../../context";
 
 const props = defineProps<{
@@ -46,12 +46,13 @@ const props = defineProps<{
 }>();
 
 const { viewState, updateViewState } = useEditorPanelContext();
-const { dataTableRef, containerElRef, tableBodyHeight, layoutReady } =
-  useAutoHeightDataTable();
-const vlRef = computed(() => {
-  return (dataTableRef.value as any)?.$refs?.mainTableInstRef?.bodyInstRef
-    ?.virtualListRef;
-});
+const {
+  dataTableRef,
+  containerElRef,
+  virtualListRef,
+  tableBodyHeight,
+  layoutReady,
+} = useAutoHeightDataTable();
 const { t } = useI18n();
 
 const filteredDependentColumns = computed(() => {
@@ -127,7 +128,7 @@ const rowProps = (dep: DependentColumn) => {
 };
 
 watch(
-  [() => viewState.value?.detail.column, vlRef],
+  [() => viewState.value?.detail.column, virtualListRef],
   ([column, vl]) => {
     if (column && vl) {
       requestAnimationFrame(() => {

@@ -27,8 +27,7 @@ import type {
   SchemaMetadata,
   ExternalTableMetadata,
 } from "@/types/proto/v1/database_service";
-import { getHighlightHTMLByRegExp } from "@/utils";
-import { useAutoHeightDataTable } from "../../common";
+import { getHighlightHTMLByRegExp, useAutoHeightDataTable } from "@/utils";
 import { useEditorPanelContext } from "../../context";
 
 const props = defineProps<{
@@ -63,17 +62,18 @@ const filteredExternalTables = computed(() => {
   return props.externalTables;
 });
 
-const { dataTableRef, containerElRef, tableBodyHeight, layoutReady } =
-  useAutoHeightDataTable(
-    filteredExternalTables,
-    computed(() => ({
-      maxHeight: props.maxHeight ? props.maxHeight : null,
-    }))
-  );
-const vlRef = computed(() => {
-  return (dataTableRef.value as any)?.$refs?.mainTableInstRef?.bodyInstRef
-    ?.virtualListRef;
-});
+const {
+  dataTableRef,
+  containerElRef,
+  virtualListRef,
+  tableBodyHeight,
+  layoutReady,
+} = useAutoHeightDataTable(
+  filteredExternalTables,
+  computed(() => ({
+    maxHeight: props.maxHeight ? props.maxHeight : null,
+  }))
+);
 
 const columns = computed(() => {
   const columns: (DataTableColumn<ExternalTableMetadata> & {
@@ -122,7 +122,7 @@ const rowProps = (externalTable: ExternalTableMetadata) => {
 };
 
 watch(
-  [() => viewState.value?.detail.externalTable, vlRef],
+  [() => viewState.value?.detail.externalTable, virtualListRef],
   ([externalTable, vl]) => {
     if (externalTable && vl) {
       vl.scrollTo({ key: externalTable });

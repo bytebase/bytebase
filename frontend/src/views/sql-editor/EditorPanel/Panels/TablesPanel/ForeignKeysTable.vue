@@ -29,8 +29,7 @@ import type {
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto/v1/database_service";
-import { getHighlightHTMLByRegExp } from "@/utils";
-import { useAutoHeightDataTable } from "../../common";
+import { getHighlightHTMLByRegExp, useAutoHeightDataTable } from "@/utils";
 import { useEditorPanelContext } from "../../context";
 
 const props = defineProps<{
@@ -42,13 +41,9 @@ const props = defineProps<{
 }>();
 
 const { viewState } = useEditorPanelContext();
-const { containerElRef, tableBodyHeight, layoutReady } =
+const { containerElRef, virtualListRef, tableBodyHeight, layoutReady } =
   useAutoHeightDataTable();
 const dataTableRef = ref<DataTableInst>();
-const vlRef = computed(() => {
-  return (dataTableRef.value as any)?.$refs?.mainTableInstRef?.bodyInstRef
-    ?.virtualListRef;
-});
 const { t } = useI18n();
 
 const filteredForeignKeys = computed(() => {
@@ -144,7 +139,7 @@ const columns = computed(() => {
 });
 
 watch(
-  [() => viewState.value?.detail.foreignKey, vlRef],
+  [() => viewState.value?.detail.foreignKey, virtualListRef],
   ([fk, vl]) => {
     if (fk && vl) {
       requestAnimationFrame(() => {

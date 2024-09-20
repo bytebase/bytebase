@@ -27,9 +27,8 @@ import type {
   FunctionMetadata,
   SchemaMetadata,
 } from "@/types/proto/v1/database_service";
-import { getHighlightHTMLByRegExp } from "@/utils";
+import { getHighlightHTMLByRegExp, useAutoHeightDataTable } from "@/utils";
 import { keyWithPosition } from "@/views/sql-editor/EditorCommon";
-import { useAutoHeightDataTable } from "../../common";
 import { useEditorPanelContext } from "../../context";
 
 type FunctionWithPosition = { func: FunctionMetadata; position: number };
@@ -75,17 +74,18 @@ const filteredFuncs = computed(() => {
   return funcsWithPosition.value;
 });
 
-const { dataTableRef, containerElRef, tableBodyHeight, layoutReady } =
-  useAutoHeightDataTable(
-    filteredFuncs,
-    computed(() => ({
-      maxHeight: props.maxHeight ? props.maxHeight : null,
-    }))
-  );
-const vlRef = computed(() => {
-  return (dataTableRef.value as any)?.$refs?.mainTableInstRef?.bodyInstRef
-    ?.virtualListRef;
-});
+const {
+  dataTableRef,
+  containerElRef,
+  tableBodyHeight,
+  layoutReady,
+  virtualListRef,
+} = useAutoHeightDataTable(
+  filteredFuncs,
+  computed(() => ({
+    maxHeight: props.maxHeight ? props.maxHeight : null,
+  }))
+);
 
 const columns = computed(() => {
   const columns: (DataTableColumn<FunctionWithPosition> & {
@@ -120,7 +120,7 @@ const rowProps = ({ func, position }: FunctionWithPosition) => {
 };
 
 watch(
-  [() => viewState.value?.detail.func, vlRef],
+  [() => viewState.value?.detail.func, virtualListRef],
   ([func, vl]) => {
     if (func && vl) {
       vl.scrollTo({ key: func });

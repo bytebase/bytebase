@@ -33,8 +33,8 @@ import {
   hasCollationProperty,
   hasIndexSizeProperty,
   hasTableEngineProperty,
+  useAutoHeightDataTable,
 } from "@/utils";
-import { useAutoHeightDataTable } from "../../common";
 import { useEditorPanelContext } from "../../context";
 
 const props = defineProps<{
@@ -72,17 +72,18 @@ const filteredTables = computed(() => {
   }
   return props.tables;
 });
-const { dataTableRef, containerElRef, tableBodyHeight, layoutReady } =
-  useAutoHeightDataTable(
-    filteredTables,
-    computed(() => ({
-      maxHeight: props.maxHeight ? props.maxHeight : null,
-    }))
-  );
-const vlRef = computed(() => {
-  return (dataTableRef.value as any)?.$refs?.mainTableInstRef?.bodyInstRef
-    ?.virtualListRef;
-});
+const {
+  dataTableRef,
+  containerElRef,
+  virtualListRef,
+  tableBodyHeight,
+  layoutReady,
+} = useAutoHeightDataTable(
+  filteredTables,
+  computed(() => ({
+    maxHeight: props.maxHeight ? props.maxHeight : null,
+  }))
+);
 
 const columns = computed(() => {
   const columns: (DataTableColumn<TableMetadata> & { hide?: boolean })[] = [
@@ -170,7 +171,7 @@ const rowProps = (table: TableMetadata) => {
 };
 
 watch(
-  [() => viewState.value?.detail.table, vlRef],
+  [() => viewState.value?.detail.table, virtualListRef],
   ([table, vl]) => {
     if (table && vl) {
       vl.scrollTo({ key: table });
