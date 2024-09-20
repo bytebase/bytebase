@@ -551,7 +551,7 @@ func getFunctionCandidates(functions []*model.FunctionMetadata, argumentList []*
 			continue
 		}
 
-		// Default paramter matches 0 or 1 argument, and variadic parameter matches 0 or more arguments.
+		// Default parameter matches 0 or 1 argument, and variadic parameter matches 0 or more arguments.
 		lbound := len(d.params) - d.nDefaultParam - d.nVariadicParam
 		ubound := len(d.params)
 		if d.nVariadicParam > 0 && ubound < nargument {
