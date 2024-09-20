@@ -17,7 +17,6 @@ export type LocalState = {
   environment: Environment;
   rolloutPolicy: Policy;
   environmentTier: EnvironmentTier;
-  missingRequiredFeature?: FeatureType;
 };
 
 const KEY = Symbol(
