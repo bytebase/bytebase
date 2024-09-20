@@ -68,7 +68,7 @@ axios.interceptors.response.use(
         const origin = location.origin;
         const pathname = location.pathname;
         if (
-          pathname !== "/auth/mfa" &&
+          !pathname.startsWith("/auth") &&
           error.response.request.responseURL.startsWith(origin)
         ) {
           // If the request URL starts with the browser's location origin
