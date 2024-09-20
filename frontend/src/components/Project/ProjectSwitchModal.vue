@@ -60,17 +60,13 @@
             filteredRecentProjectList.length === 0
           "
         >
-          <div class="h-128">
-            <ProjectV1Table
-              :project-list="tab.list"
-              :current-project="currentProject"
-              :pagination="false"
-              :keyword="state.searchText"
-              :virtual-scroll="true"
-              :max-height="470"
-              @row-click="onProjectSelect"
-            />
-          </div>
+          <ProjectV1Table
+            :project-list="tab.list"
+            :current-project="currentProject"
+            :pagination="false"
+            :keyword="state.searchText"
+            @row-click="onProjectSelect"
+          />
         </NTabPane>
       </NTabs>
     </div>
