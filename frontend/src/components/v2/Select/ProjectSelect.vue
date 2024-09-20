@@ -211,6 +211,7 @@ const filterByName = (pattern: string, option: SelectOption) => {
 
 const renderLabel = (option: SelectOption) => {
   const { project } = option as ProjectSelectOption;
+  if (!project) return null;
   return (
     <ProjectNameCell
       project={project}
