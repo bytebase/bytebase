@@ -18,8 +18,8 @@
 
 <script setup lang="tsx">
 import { ChevronDownIcon } from "lucide-vue-next";
-import { NDataTable, type DataTableColumn, type DataTableInst } from "naive-ui";
-import { computed, h, ref, watch } from "vue";
+import { NDataTable, type DataTableColumn } from "naive-ui";
+import { computed, h, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import type { ComposedDatabase } from "@/types";
 import {
@@ -28,8 +28,7 @@ import {
   type SchemaMetadata,
   type TableMetadata,
 } from "@/types/proto/v1/database_service";
-import { getHighlightHTMLByRegExp } from "@/utils";
-import { useAutoHeightDataTable } from "../../common";
+import { getHighlightHTMLByRegExp, useAutoHeightDataTable } from "@/utils";
 import { useEditorPanelContext } from "../../context";
 
 type FlattenTablePartitionMetadata = {
@@ -47,13 +46,13 @@ const props = defineProps<{
 
 const { t } = useI18n();
 const { viewState } = useEditorPanelContext();
-const { containerElRef, tableBodyHeight, layoutReady } =
-  useAutoHeightDataTable();
-const dataTableRef = ref<DataTableInst>();
-const vlRef = computed(() => {
-  return (dataTableRef.value as any)?.$refs?.mainTableInstRef?.bodyInstRef
-    ?.virtualListRef;
-});
+const {
+  dataTableRef,
+  containerElRef,
+  virtualListRef,
+  tableBodyHeight,
+  layoutReady,
+} = useAutoHeightDataTable();
 
 const filteredPartitions = computed(() => {
   const keyword = props.keyword?.trim().toLowerCase();
@@ -154,7 +153,7 @@ const columns = computed(() => {
 });
 
 watch(
-  [() => viewState.value?.detail.partition, vlRef],
+  [() => viewState.value?.detail.partition, virtualListRef],
   ([partition, vl]) => {
     if (partition && vl) {
       requestAnimationFrame(() => {
