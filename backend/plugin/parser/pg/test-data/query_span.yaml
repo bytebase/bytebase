@@ -1,3 +1,69 @@
+- description: Function Overloading
+  statement: SELECT plpgsql_t(1, 2);
+  defaultDatabase: db
+  metadata: |-
+    {
+      "name":  "db",
+      "schemas":  [
+        {
+          "name": "public",
+          "tables":  [
+            {
+              "name":  "t",
+              "columns":  [
+                {
+                  "name":  "a"
+                },
+                {
+                  "name":  "b"
+                }
+              ]
+            },
+            {
+              "name":  "t2",
+              "columns":  [
+                {
+                  "name":  "c"
+                },
+                {
+                  "name":  "d"
+                }
+              ]
+            }
+          ],
+          "functions": [
+            {
+              "name": "plpgsql_t",
+              "definition": "CREATE OR REPLACE FUNCTION plpgsql_t (x int) RETURNS TABLE(a int, b int) AS $$ BEGIN RETURN QUERY SELECT a, b FROM t WHERE a = $1; END; $$ LANGUAGE plpgsql;"
+            },
+            {
+              "name": "plpgsql_t",
+              "definition": "CREATE OR REPLACE FUNCTION plpgsql_t (x int, y int) RETURNS TABLE(a int, b int) AS $$ BEGIN RETURN QUERY SELECT c, d FROM t2 WHERE a = $1 AND b = $2; END; $$ LANGUAGE plpgsql;"
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    results:
+        - name: plpgsql_t
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: public
+              table: t2
+              column: c
+            - server: ""
+              database: db
+              schema: public
+              table: t2
+              column: d
+    sourcecolumns:
+        - server: ""
+          database: db
+          schema: public
+          table: t2
+          column: ""
 - description: Bytebase Regression Test
   statement: |-
     WITH

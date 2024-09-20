@@ -213,7 +213,7 @@ func (q *querySpanExtractor) extractTableSourceFromRangeFunction(node *pgquery.N
 }
 
 func (q *querySpanExtractor) extractTableSourceFromUDF(node *pgquery.Node_RangeFunction, schemaName string, funcName string) (base.TableSource, error) {
-	tableSource, err := q.findFunctionDefine(schemaName, funcName)
+	tableSource, err := q.findFunctionDefine(schemaName, funcName, node.RangeFunction.GetFunctions())
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find function: %s.%s", schemaName, funcName)
 	}
@@ -404,7 +404,7 @@ func (q *querySpanExtractor) extractTableSourceFromSystemFunction(node *pgquery.
 	}, nil
 }
 
-func (q *querySpanExtractor) findFunctionDefine(schemaName, funcName string) (base.TableSource, error) {
+func (q *querySpanExtractor) findFunctionDefine(schemaName, funcName string, argumentList []*pgquery.Node) (base.TableSource, error) {
 	dbSchema, err := q.getDatabaseMetadata(q.defaultDatabase)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get database metadata for database: %s", q.defaultDatabase)
@@ -424,23 +424,146 @@ func (q *querySpanExtractor) findFunctionDefine(schemaName, funcName string) (ba
 			Schema:   &schemaName,
 		}
 	}
-	// find user defined function.
-	function := schema.GetFunction(funcName)
-	if function != nil {
-		columns, err := q.getColumnsForFunction(fmt.Sprintf("%s.%s", schemaName, funcName), function.Definition)
+	functions := schema.ListFunctions()
+	if len(functions) == 0 {
+		return nil, &parsererror.ResourceNotFoundError{
+			Database: &q.defaultDatabase,
+			Schema:   &schemaName,
+			Function: &funcName,
+		}
+	}
+
+	candidates, err := getFunctionCandidates(functions, argumentList, funcName)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get function candidates")
+	}
+	if len(candidates) == 0 {
+		return nil, &parsererror.ResourceNotFoundError{
+			Database: &q.defaultDatabase,
+			Schema:   &schemaName,
+			Function: &funcName,
+		}
+	}
+
+	if len(candidates) > 1 {
+		return nil, errors.Errorf("ambiguous function call: %s", funcName)
+	}
+
+	function := candidates[0]
+	columns, err := q.getColumnsForFunction(fmt.Sprintf("%s.%s", schemaName, funcName), function.Definition)
+	if err != nil {
+		return nil, err
+	}
+	return &base.PseudoTable{
+		Columns: columns,
+	}, nil
+}
+
+type functionDefinitionDetail struct {
+	nDefaultParam  int
+	nVariadicParam int
+	params         []*pgquery.FunctionParameter
+	function       *model.FunctionMetadata
+}
+
+func buildFunctionDefinitionDetail(function *model.FunctionMetadata) (*functionDefinitionDetail, error) {
+	definition := function.GetProto().GetDefinition()
+	res, err := pgquery.Parse(definition)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to parse function definition: %s", definition)
+	}
+	if len(res.Stmts) != 1 {
+		return nil, errors.Errorf("expecting 1 statement, but got %d", len(res.Stmts))
+	}
+	createFunc, ok := res.Stmts[0].Stmt.Node.(*pgquery.Node_CreateFunctionStmt)
+	if !ok {
+		return nil, errors.Errorf("expecting CreateFunctionStmt but got %T", res.Stmts[0].Stmt.Node)
+	}
+	var params []*pgquery.FunctionParameter
+	for _, param := range createFunc.CreateFunctionStmt.Parameters {
+		funcPara := param.GetFunctionParameter()
+		if funcPara == nil {
+			continue
+		}
+		if funcPara.GetMode() == pgquery.FunctionParameterMode_FUNC_PARAM_TABLE || funcPara.GetMode() == pgquery.FunctionParameterMode_FUNCTION_PARAMETER_MODE_UNDEFINED {
+			continue
+		}
+		params = append(params, funcPara)
+	}
+	var nDefaultParam, nVariadicParam int
+	for _, param := range params {
+		if param.GetMode() == pgquery.FunctionParameterMode_FUNC_PARAM_VARIADIC {
+			nVariadicParam++
+		}
+		if param.GetDefexpr() != nil {
+			nDefaultParam++
+		}
+	}
+	return &functionDefinitionDetail{
+		nDefaultParam:  nDefaultParam,
+		nVariadicParam: nVariadicParam,
+		params:         params,
+		function:       function,
+	}, nil
+}
+
+// getFunctionCandidates returns the function candidates for the function call.
+func getFunctionCandidates(functions []*model.FunctionMetadata, argumentList []*pgquery.Node, funcName string) ([]*model.FunctionMetadata, error) {
+	nargument := len(argumentList)
+
+	// Filter by name only.
+	var nameFiltered []*model.FunctionMetadata
+	for _, function := range functions {
+		if function.GetProto().GetName() != funcName {
+			continue
+		}
+		nameFiltered = append(nameFiltered, function)
+	}
+
+	if len(nameFiltered) == 0 {
+		return nil, nil
+	}
+	// If there is only one function with the same name, we return it directly,
+	// PostgreSQL would throw an error if the argument does not match the function signature.
+	if len(nameFiltered) == 1 {
+		return nameFiltered, nil
+	}
+
+	detail := make([]*functionDefinitionDetail, 0, len(nameFiltered))
+	for _, function := range nameFiltered {
+		d, err := buildFunctionDefinitionDetail(function)
 		if err != nil {
 			return nil, err
 		}
-		return &base.PseudoTable{
-			Columns: columns,
-		}, nil
+		if d == nil {
+			continue
+		}
+		detail = append(detail, d)
 	}
 
-	return nil, &parsererror.ResourceNotFoundError{
-		Database: &q.defaultDatabase,
-		Schema:   &schemaName,
-		Function: &funcName,
+	var candidates []*model.FunctionMetadata
+	for _, d := range detail {
+		// If there are no default and variadic parameters, the number of arguments must match the number of parameters.
+		if d.nDefaultParam == 0 && d.nVariadicParam == 0 {
+			if nargument == len(d.params) {
+				candidates = append(candidates, d.function)
+			}
+			continue
+		}
+
+		// Default parameter matches 0 or 1 argument, and variadic parameter matches 0 or more arguments.
+		lbound := len(d.params) - d.nDefaultParam - d.nVariadicParam
+		ubound := len(d.params)
+		if d.nVariadicParam > 0 && ubound < nargument {
+			// Hack to make variadic parameter match 0 or more arguments.
+			ubound = nargument
+		}
+		if nargument >= lbound && nargument <= ubound {
+			candidates = append(candidates, d.function)
+		}
 	}
+
+	return candidates, nil
 }
 
 type languageType int
@@ -1153,7 +1276,7 @@ func (q *querySpanExtractor) extractSourceColumnSetFromUDF(node *pgquery.Node_Fu
 		schemaName = q.defaultSchema
 	}
 	result := make(base.SourceColumnSet)
-	tableSource, err := q.findFunctionDefine(schemaName, funcName)
+	tableSource, err := q.findFunctionDefine(schemaName, funcName, node.FuncCall.Args)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find function define for UDF: %s.%s", schemaName, funcName)
 	}
