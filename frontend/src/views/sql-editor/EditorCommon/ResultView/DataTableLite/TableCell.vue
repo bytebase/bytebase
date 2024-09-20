@@ -52,8 +52,10 @@ const plainValue = computed(() => {
   return extractSQLRowValue(props.value).plain;
 });
 const truncated = computed(() => {
-  const chars = props.width / 16; // not that accurate
-  return String(plainValue.value).length > chars;
+  // not that accurate
+  const xPadding = 8;
+  const availChars = (props.width - xPadding * 2) / 10;
+  return String(plainValue.value).length >= availChars;
 });
 
 const { database } = useConnectionOfCurrentSQLEditorTab();
