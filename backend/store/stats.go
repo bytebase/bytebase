@@ -100,49 +100,6 @@ func (s *Store) CountActiveUsers(ctx context.Context) (int, error) {
 	return count, nil
 }
 
-// CountMemberGroupByRoleAndStatus counts the number of member and group by role and status.
-// Used by the metric collector.
-func (s *Store) CountMemberGroupByRoleAndStatus(ctx context.Context) ([]*metric.MemberCountMetric, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
-
-	rows, err := tx.QueryContext(ctx, `
-		SELECT role, 'ACTIVE' AS status, principal.row_status AS row_status, principal.type, COUNT(*)
-		FROM member
-		LEFT JOIN principal ON principal.id = member.principal_id
-		GROUP BY role, status, principal.row_status, principal.type`,
-	)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var res []*metric.MemberCountMetric
-	for rows.Next() {
-		var metric metric.MemberCountMetric
-		if err := rows.Scan(
-			&metric.Role,
-			&metric.Status,
-			&metric.RowStatus,
-			&metric.Type,
-			&metric.Count,
-		); err != nil {
-			return nil, err
-		}
-		res = append(res, &metric)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	if err := tx.Commit(); err != nil {
-		return nil, err
-	}
-	return res, nil
-}
-
 // CountProjectGroupByWorkflow counts the number of projects and group by workflow type.
 // Used by the metric collector.
 func (s *Store) CountProjectGroupByWorkflow(ctx context.Context) ([]*metric.ProjectCountMetric, error) {
