@@ -26,20 +26,22 @@ func NewMemberCountCollector(store *store.Store) metric.Collector {
 func (c *memberCountCollector) Collect(ctx context.Context) ([]*metric.Metric, error) {
 	var res []*metric.Metric
 
-	memberCountMetricList, err := c.store.CountMemberGroupByRoleAndStatus(ctx)
+	workspaceIAMPolicy, err := c.store.GetWorkspaceIamPolicy(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	for _, memberCountMetric := range memberCountMetricList {
+	roleMap := map[string]int{}
+	for _, binding := range workspaceIAMPolicy.Policy.Bindings {
+		roleMap[binding.Role] += len(binding.Members)
+	}
+
+	for role, count := range roleMap {
 		res = append(res, &metric.Metric{
 			Name:  metricapi.MemberCountMetricName,
-			Value: memberCountMetric.Count,
+			Value: count,
 			Labels: map[string]any{
-				"role":       string(memberCountMetric.Role),
-				"status":     string(memberCountMetric.Status),
-				"row_status": string(memberCountMetric.RowStatus),
-				"type":       string(memberCountMetric.Type),
+				"role": role,
 			},
 		})
 	}
