@@ -125,7 +125,7 @@
         :is-sensitive-column="isSensitiveColumn"
         :is-column-missing-sensitive="isColumnMissingSensitive"
       />
-      <DataTableV2
+      <DataTableLite
         v-else
         :table="table"
         :set-index="setIndex"
@@ -230,7 +230,7 @@ import {
   isNullOrUndefined,
 } from "@/utils";
 import DataBlock from "./DataBlock.vue";
-import DataTableV2 from "./DataTableV2";
+import DataTableLite from "./DataTableLite";
 import EmptyView from "./EmptyView.vue";
 import ErrorView from "./ErrorView";
 import { useSQLResultViewContext } from "./context";

@@ -27,7 +27,7 @@
 import type { Header, Row, Table } from "@tanstack/vue-table";
 import { useElementSize } from "@vueuse/core";
 import { type DataTableColumn, NDataTable } from "naive-ui";
-import { computed, h, nextTick, watch, watchEffect } from "vue";
+import { computed, h, nextTick, watch } from "vue";
 import { QueryRow, type RowValue } from "@/types/proto/v1/sql_service";
 import {
   nextAnimationFrame,
@@ -61,7 +61,6 @@ const {
   dataTableRef,
   containerElRef,
   tableBodyHeight,
-  virtualListRef,
   scrollerRef,
   layoutReady,
 } = useAutoHeightDataTable(rows);
@@ -122,7 +121,7 @@ const rowProps = (row: Row<QueryRow>) => {
 const scrollTo = async (x: number, y: number) => {
   await nextAnimationFrame();
   const table = dataTableRef.value;
-  console.log("should scroll to", x, y, table);
+  table?.scrollTo(x, y);
 };
 
 watch(
@@ -148,11 +147,6 @@ watch(
     scrollTo(0, 0);
   }
 );
-
-watchEffect(() => {
-  console.log("virtualListRef", virtualListRef.value);
-  console.log("scrollerRef", scrollerRef.value);
-});
 </script>
 
 <style lang="postcss" scoped>

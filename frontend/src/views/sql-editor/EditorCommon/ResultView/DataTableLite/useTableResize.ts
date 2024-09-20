@@ -1,14 +1,7 @@
 import { useEventListener, usePointer } from "@vueuse/core";
 import { sumBy } from "lodash-es";
 import type { Ref } from "vue";
-import {
-  computed,
-  onBeforeUnmount,
-  reactive,
-  unref,
-  watch,
-  watchEffect,
-} from "vue";
+import { computed, onBeforeUnmount, reactive, unref, watch } from "vue";
 
 export type TableResizeOptions = {
   scrollerRef: Ref<HTMLElement | undefined>;
@@ -46,10 +39,6 @@ const useTableResize = (options: TableResizeOptions) => {
   });
   const tableWidth = computed(() => {
     return sumBy(state.columns, (col) => col.width);
-  });
-
-  watchEffect(() => {
-    console.log("containerWidth", containerWidth.value);
   });
 
   const normalizeWidth = (width: number) => {
@@ -163,7 +152,9 @@ const toggleDragStyle = (
     // Set the cursor style.
     document.body.classList.add("cursor-col-resize");
   } else {
-    element.value?.classList.remove("select-none");
-    document.body.classList.remove("cursor-col-resize");
+    requestAnimationFrame(() => {
+      element.value?.classList.remove("select-none");
+      document.body.classList.remove("cursor-col-resize");
+    });
   }
 };
