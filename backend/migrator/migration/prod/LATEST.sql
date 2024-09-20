@@ -118,23 +118,6 @@ CREATE UNIQUE INDEX idx_role_unique_resource_id on role (resource_id);
 
 ALTER SEQUENCE role_id_seq RESTART WITH 101;
 
--- Member
--- We separate the concept from Principal because if we support multiple workspace in the future, each workspace can have different member for the same principal
-CREATE TABLE member (
-    id SERIAL PRIMARY KEY,
-    row_status row_status NOT NULL DEFAULT 'NORMAL',
-    creator_id INTEGER NOT NULL REFERENCES principal (id),
-    created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    updater_id INTEGER NOT NULL REFERENCES principal (id),
-    updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
-    role TEXT NOT NULL,
-    principal_id INTEGER NOT NULL REFERENCES principal (id)
-);
-
-CREATE INDEX idx_member_principal_id ON member (principal_id);
-
-ALTER SEQUENCE member_id_seq RESTART WITH 101;
-
 -- Environment
 CREATE TABLE environment (
     id SERIAL PRIMARY KEY,
