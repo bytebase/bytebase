@@ -22,6 +22,7 @@ export * from "./slowQuery";
 export * from "./resource-composer";
 export * from "./TinyTimer";
 export * from "./sheet";
+export * from "./naive-ui";
 
 export * from "./v1";
 export * from "./iam";

@@ -19,6 +19,7 @@
           type="card"
           size="small"
           class="flex-1 flex flex-col overflow-hidden"
+          style="--n-tab-padding: 4px 12px"
         >
           <NTabPane
             v-for="(result, i) in resultSet.results"
