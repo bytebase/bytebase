@@ -1,19 +1,6 @@
 <template>
   <div class="space-y-2 w-192 px-1">
-    <div v-if="databaseList.length === 0" class="textinfolabel px-10 py-4">
-      <i18n-t keypath="project.overview.no-db-prompt" tag="p">
-        <template #newDb>
-          <span class="text-main">{{ $t("quick-action.new-db") }}</span>
-        </template>
-        <template #transferInDb>
-          <span class="text-main">
-            {{ $t("quick-action.transfer-in-db") }}
-          </span>
-        </template>
-      </i18n-t>
-    </div>
-
-    <template v-else>
+    <template v-if="databaseList.length != 0">
       <div class="flex justify-end items-center">
         <NInputGroup style="width: auto" class="py-0.5">
           <NInputGroupLabel
