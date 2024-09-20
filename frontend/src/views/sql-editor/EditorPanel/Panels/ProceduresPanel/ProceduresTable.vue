@@ -30,9 +30,8 @@ import type {
   ProcedureMetadata,
   SchemaMetadata,
 } from "@/types/proto/v1/database_service";
-import { getHighlightHTMLByRegExp } from "@/utils";
+import { getHighlightHTMLByRegExp, useAutoHeightDataTable } from "@/utils";
 import { keyWithPosition } from "@/views/sql-editor/EditorCommon";
-import { useAutoHeightDataTable } from "../../common";
 import { useEditorPanelContext } from "../../context";
 
 type ProcedureWithPosition = {
@@ -81,17 +80,18 @@ const filteredProcedures = computed(() => {
   return proceduresWithPosition.value;
 });
 
-const { dataTableRef, containerElRef, tableBodyHeight, layoutReady } =
-  useAutoHeightDataTable(
-    filteredProcedures,
-    computed(() => ({
-      maxHeight: props.maxHeight ? props.maxHeight : null,
-    }))
-  );
-const vlRef = computed(() => {
-  return (dataTableRef.value as any)?.$refs?.mainTableInstRef?.bodyInstRef
-    ?.virtualListRef;
-});
+const {
+  dataTableRef,
+  containerElRef,
+  virtualListRef,
+  tableBodyHeight,
+  layoutReady,
+} = useAutoHeightDataTable(
+  filteredProcedures,
+  computed(() => ({
+    maxHeight: props.maxHeight ? props.maxHeight : null,
+  }))
+);
 
 const columns = computed(() => {
   const columns: (DataTableColumn<ProcedureWithPosition> & {
@@ -129,7 +129,7 @@ const rowProps = ({ procedure, position }: ProcedureWithPosition) => {
 };
 
 watch(
-  [() => viewState.value?.detail.procedure, vlRef],
+  [() => viewState.value?.detail.procedure, virtualListRef],
   ([procedure, vl]) => {
     if (procedure && vl) {
       vl.scrollTo({ key: procedure });

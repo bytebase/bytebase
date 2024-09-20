@@ -18,9 +18,9 @@
 </template>
 
 <script lang="ts" setup>
-import type { DataTableColumn, DataTableInst } from "naive-ui";
+import type { DataTableColumn } from "naive-ui";
 import { NCheckbox, NDataTable } from "naive-ui";
-import { computed, h, ref, watch } from "vue";
+import { computed, h, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import type { ComposedDatabase } from "@/types";
 import type {
@@ -29,8 +29,7 @@ import type {
   SchemaMetadata,
   TableMetadata,
 } from "@/types/proto/v1/database_service";
-import { getHighlightHTMLByRegExp } from "@/utils";
-import { useAutoHeightDataTable } from "../../common";
+import { getHighlightHTMLByRegExp, useAutoHeightDataTable } from "@/utils";
 import { useEditorPanelContext } from "../../context";
 
 const props = defineProps<{
@@ -42,13 +41,13 @@ const props = defineProps<{
 }>();
 
 const { viewState } = useEditorPanelContext();
-const { containerElRef, tableBodyHeight, layoutReady } =
-  useAutoHeightDataTable();
-const dataTableRef = ref<DataTableInst>();
-const vlRef = computed(() => {
-  return (dataTableRef.value as any)?.$refs?.mainTableInstRef?.bodyInstRef
-    ?.virtualListRef;
-});
+const {
+  containerElRef,
+  dataTableRef,
+  virtualListRef,
+  tableBodyHeight,
+  layoutReady,
+} = useAutoHeightDataTable();
 const { t } = useI18n();
 
 const filteredIndexes = computed(() => {
@@ -120,7 +119,7 @@ const columns = computed(() => {
 });
 
 watch(
-  [() => viewState.value?.detail.index, vlRef],
+  [() => viewState.value?.detail.index, virtualListRef],
   ([index, vl]) => {
     if (index && vl) {
       requestAnimationFrame(() => {
