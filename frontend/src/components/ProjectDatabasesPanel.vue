@@ -1,5 +1,17 @@
 <template>
   <div class="space-y-4">
+    <div v-if="databaseList.length === 0" class="textinfolabel p-2">
+      <i18n-t keypath="project.overview.no-db-prompt" tag="p">
+        <template #newDb>
+          <span class="text-main">{{ $t("quick-action.new-db") }}</span>
+        </template>
+        <template #transferInDb>
+          <span class="text-main">
+            {{ $t("quick-action.transfer-in-db") }}
+          </span>
+        </template>
+      </i18n-t>
+    </div>
     <div
       class="w-full flex flex-col sm:flex-row items-start sm:items-end justify-between gap-2"
     >
