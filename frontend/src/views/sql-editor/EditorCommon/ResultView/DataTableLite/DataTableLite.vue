@@ -115,6 +115,7 @@ const columns = computed(() => {
 const rowProps = (row: Row<QueryRow>) => {
   return {
     class: "group",
+    "data-row-index": row.index,
   };
 };
 
