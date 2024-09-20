@@ -1,13 +1,9 @@
 <template>
-  <div
-    ref="containerRef"
-    class="bb-advanced-audit-log-search-box w-full relative"
-  >
+  <div ref="containerRef" class="w-full relative">
     <NInput
       ref="inputRef"
       v-model:value="inputText"
       :placeholder="placeholder ?? $t('issue.advanced-search.self')"
-      class="bb-advanced-audit-log-search-box__input"
       style="--n-padding-left: 8px; --n-padding-right: 4px"
       @click="handleInputClick"
       @blur="hideMenu"
@@ -547,11 +543,3 @@ watch(
   }
 );
 </script>
-
-<style lang="postcss" scoped>
-.bb-advanced-audit-log-search-box
-  .bb-advanced-audit-log-search-box__input
-  :deep(.n-input__input) {
-  @apply flex flex-row items-center;
-}
-</style>
