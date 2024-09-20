@@ -15,6 +15,7 @@
       :striped="true"
       :bordered="true"
       :bottom-bordered="true"
+      row-class-name="cursor-pointer"
     />
   </div>
 </template>

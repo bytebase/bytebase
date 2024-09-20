@@ -2,13 +2,24 @@
   <div
     class="w-full h-full flex flex-col gap-4 pt-4 px-2 overflow-hidden relative"
   >
-    <div class="grid grid-cols-3 gap-x-2 gap-y-4 md:inline-flex items-stretch">
-      <NButton @click="handleClickCreateEnvironment">
+    <div
+      v-if="allowCreate || allowReorder"
+      class="grid grid-cols-3 gap-x-2 gap-y-4 md:inline-flex items-stretch"
+    >
+      <NButton v-if="allowCreate" @click="handleClickCreateEnvironment">
         <template #icon>
           <PlusIcon class="h-4 w-4" />
         </template>
         <NEllipsis>
           {{ $t("environment.create") }}
+        </NEllipsis>
+      </NButton>
+      <NButton v-if="allowReorder" @click="startReorder">
+        <template #icon>
+          <ListOrderedIcon class="h-4 w-4" />
+        </template>
+        <NEllipsis>
+          {{ $t("common.reorder") }}
         </NEllipsis>
       </NButton>
     </div>
@@ -30,6 +41,7 @@
           :tab="() => renderTab(item.data, index)"
         >
           <EnvironmentDetail
+            v-if="!state.reorder"
             :environment-name="item.id"
             :features="['BASE', 'TIER', 'ACCESS_CONTROL']"
             :hide-archive-restore="true"
@@ -37,6 +49,22 @@
             buttons-class="!absolute left-2 right-2"
             @archive="doArchive"
           />
+
+          <div
+            v-if="state.reorder"
+            class="flex justify-start pt-5 gap-x-3 px-5"
+          >
+            <NButton @click.prevent="discardReorder">
+              {{ $t("common.cancel") }}
+            </NButton>
+            <NButton
+              type="primary"
+              :disabled="!orderChanged"
+              @click.prevent="doReorder"
+            >
+              {{ $t("common.apply") }}
+            </NButton>
+          </div>
         </NTabPane>
       </NTabs>
     </div>
@@ -66,7 +94,12 @@
 </template>
 
 <script lang="ts" setup>
-import { PlusIcon } from "lucide-vue-next";
+import {
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  ListOrderedIcon,
+  PlusIcon,
+} from "lucide-vue-next";
 import { NTabs, NTabPane, NButton, NEllipsis } from "naive-ui";
 import { onMounted, computed, reactive, watch, h } from "vue";
 import { useRoute, useRouter } from "vue-router";
@@ -76,7 +109,7 @@ import {
   Form as EnvironmentFormBody,
   Buttons as EnvironmentFormButtons,
 } from "@/components/EnvironmentForm";
-import { Drawer, DrawerContent } from "@/components/v2";
+import { Drawer, DrawerContent, MiniActionButton } from "@/components/v2";
 import { EnvironmentV1Name } from "@/components/v2";
 import { SQL_EDITOR_SETTING_ENVIRONMENT_MODULE } from "@/router/sqlEditor";
 import {
@@ -95,7 +128,11 @@ import type {
 } from "@/types/proto/v1/environment_service";
 import type { Policy } from "@/types/proto/v1/org_policy_service";
 import { PolicyResourceType } from "@/types/proto/v1/org_policy_service";
-import { extractEnvironmentResourceName } from "@/utils";
+import {
+  arraySwap,
+  extractEnvironmentResourceName,
+  hasWorkspacePermissionV2,
+} from "@/utils";
 import EnvironmentDetail from "@/views/EnvironmentDetail.vue";
 
 const DEFAULT_NEW_ROLLOUT_POLICY: Policy = getEmptyRolloutPolicy(
@@ -104,8 +141,10 @@ const DEFAULT_NEW_ROLLOUT_POLICY: Policy = getEmptyRolloutPolicy(
 );
 
 interface LocalState {
+  reorder: boolean;
   selectedId: string;
   showCreateModal: boolean;
+  reorderedEnvironmentList: Environment[];
 }
 
 const environmentV1Store = useEnvironmentV1Store();
@@ -114,8 +153,17 @@ const route = useRoute();
 const router = useRouter();
 
 const state = reactive<LocalState>({
+  reorder: false,
   selectedId: "",
   showCreateModal: false,
+  reorderedEnvironmentList: [],
+});
+
+const allowCreate = computed(() => {
+  return hasWorkspacePermissionV2("bb.environments.create");
+});
+const allowReorder = computed(() => {
+  return hasWorkspacePermissionV2("bb.environments.update");
 });
 
 const selectEnvironmentOnHash = () => {
@@ -136,24 +184,51 @@ const selectEnvironmentOnHash = () => {
   }
 };
 
-onMounted(() => {
-  selectEnvironmentOnHash();
-});
-
-watch(
-  () => route.hash,
-  () => {
-    if (route.name == SQL_EDITOR_SETTING_ENVIRONMENT_MODULE) {
-      selectEnvironmentOnHash();
+const orderChanged = computed(() => {
+  for (let i = 0; i < state.reorderedEnvironmentList.length; i++) {
+    if (
+      state.reorderedEnvironmentList[i].name != environmentList.value[i].name
+    ) {
+      return true;
     }
   }
-);
+  return false;
+});
+
+const discardReorder = () => {
+  stopReorder();
+};
+
+const doReorder = () => {
+  environmentV1Store
+    .reorderEnvironmentList(state.reorderedEnvironmentList)
+    .then(() => {
+      stopReorder();
+    });
+};
+
+const startReorder = () => {
+  state.reorderedEnvironmentList = [...environmentList.value];
+  state.reorder = true;
+};
+
+const stopReorder = () => {
+  state.reorder = false;
+  state.reorderedEnvironmentList = [];
+};
+
+const reorderEnvironment = (sourceIndex: number, targetIndex: number) => {
+  arraySwap(state.reorderedEnvironmentList, sourceIndex, targetIndex);
+  selectEnvironment(targetIndex);
+};
 
 const environmentList = useEnvironmentV1List();
 
 const tabItemList = computed((): BBTabItem[] => {
   if (environmentList.value) {
-    const list = environmentList.value;
+    const list = state.reorder
+      ? state.reorderedEnvironmentList
+      : environmentList.value;
     return list.map((item, index: number): BBTabItem => {
       const title = `${index + 1}. ${item.title}`;
       const id = extractEnvironmentResourceName(item.name);
@@ -220,9 +295,51 @@ const renderTab = (env: Environment, index: number) => {
     h(EnvironmentV1Name, {
       environment: env,
       link: false,
-      prefix: `${index + 1}.`,
+      prefix: state.reorder ? "" : `${index + 1}.`,
     }),
   ];
+  if (state.reorder) {
+    if (index > 0) {
+      child.unshift(
+        h(
+          MiniActionButton,
+          {
+            onClick: () => reorderEnvironment(index, index - 1),
+          },
+          {
+            default: () => h(ChevronLeftIcon, { class: "w-4 h-4" }),
+          }
+        )
+      );
+    }
+    if (index < tabItemList.value.length - 1) {
+      child.push(
+        h(
+          MiniActionButton,
+          {
+            onClick: () => reorderEnvironment(index, index + 1),
+          },
+          {
+            default: () => h(ChevronRightIcon, { class: "w-4 h-4" }),
+          }
+        )
+      );
+    }
+  }
+
   return h("div", { class: "flex items-center space-x-2" }, child);
 };
+
+onMounted(() => {
+  selectEnvironmentOnHash();
+});
+
+watch(
+  () => route.hash,
+  () => {
+    if (route.name == SQL_EDITOR_SETTING_ENVIRONMENT_MODULE) {
+      selectEnvironmentOnHash();
+    }
+  }
+);
 </script>

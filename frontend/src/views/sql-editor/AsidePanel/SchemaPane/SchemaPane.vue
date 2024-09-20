@@ -324,7 +324,7 @@ const expandNode = (node: TreeNode) => {
   upsertExpandedKeys(keysToExpand);
 };
 
-useEmitteryEventListener(nodeClickEvents, "single-click", ({ node }) => {
+const singleClick = (node: TreeNode) => {
   expandNode(node);
   if (node.meta.type === "schema") {
     const tab = currentTab.value;
@@ -336,10 +336,15 @@ useEmitteryEventListener(nodeClickEvents, "single-click", ({ node }) => {
     }
   }
   viewDetail(node);
+};
+useEmitteryEventListener(nodeClickEvents, "single-click", ({ node }) => {
+  singleClick(node);
 });
 useEmitteryEventListener(nodeClickEvents, "double-click", ({ node }) => {
   if (node.meta.type === "table" || node.meta.type === "view") {
     selectAllFromTableOrView(node);
+  } else {
+    singleClick(node);
   }
 });
 
