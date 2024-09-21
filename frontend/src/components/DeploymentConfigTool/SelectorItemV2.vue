@@ -143,8 +143,7 @@ const values = computed(() => {
   if (!props.selector.key) return [];
   return getLabelValuesFromDatabaseV1List(
     props.selector.key,
-    props.databaseList,
-    false /* !withEmptyValue */
+    props.databaseList
   );
 });
 const valueOptions = computed(() => {
