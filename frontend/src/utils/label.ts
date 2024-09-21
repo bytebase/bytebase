@@ -35,8 +35,7 @@ export const convertKVListToLabels = (
 
 export const getLabelValuesFromDatabaseV1List = (
   key: string,
-  databaseList: ComposedDatabase[],
-  withEmptyValue = false
+  databaseList: ComposedDatabase[]
 ): string[] => {
   if (key === "environment") {
     const environmentList = useEnvironmentV1Store().getEnvironmentList();
@@ -51,15 +50,9 @@ export const getLabelValuesFromDatabaseV1List = (
     }
     return [];
   });
+
   // Select all distinct database label values of {{key}}
-  const distinctValueList = uniq(valueList);
-
-  if (withEmptyValue) {
-    // plus one more "<empty value>" if needed
-    distinctValueList.push("");
-  }
-
-  return distinctValueList;
+  return uniq(valueList);
 };
 
 export const getSemanticLabelValue = (db: ComposedDatabase, key: string) => {
