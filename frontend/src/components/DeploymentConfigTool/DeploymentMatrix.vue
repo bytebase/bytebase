@@ -1,6 +1,5 @@
 <template>
   <div class="space-y-2 w-192 px-1">
-    <template v-if="databaseList.length != 0">
       <div class="flex justify-end items-center">
         <NInputGroup style="width: auto" class="py-0.5">
           <NInputGroupLabel
@@ -28,7 +27,6 @@
           :deployment="deployment"
         />
       </div>
-    </template>
   </div>
 </template>
 

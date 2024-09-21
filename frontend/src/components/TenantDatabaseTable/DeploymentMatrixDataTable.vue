@@ -60,8 +60,7 @@ const databaseGroupList = computed(() => {
   );
   const rows = getLabelValuesFromDatabaseV1List(
     props.label,
-    props.databaseList,
-    true /* withEmptyValue */
+    props.databaseList
   ).map((labelValue) => {
     const databaseList = dict[labelValue] || [];
     return {
@@ -70,9 +69,10 @@ const databaseGroupList = computed(() => {
     };
   });
 
-  if (rows.length > 0 && rows[rows.length - 1].databaseList.length === 0) {
-    // ignore "<empty value>" row if no databases
-    rows.pop();
+  // Add the empty label value row only if it matches any db.
+  const emptyLabelDBList = dict[""] || [];
+  if (emptyLabelDBList.length > 0) {
+    rows.push({labelValue: "", databaseList: emptyLabelDBList})
   }
 
   return rows;
