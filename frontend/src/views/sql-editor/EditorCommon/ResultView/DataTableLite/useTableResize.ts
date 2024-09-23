@@ -101,8 +101,8 @@ const useTableResize = (options: TableResizeOptions) => {
       const headerTable = options.queryTableHeaderElement();
       const bodyTable = options.queryTableBodyElement();
       const trList = [
-        ...(headerTable?.querySelectorAll("tr") || []),
-        ...(bodyTable?.querySelectorAll("tr") || []),
+        ...Array.from(headerTable?.querySelectorAll("tr") || []),
+        ...Array.from(bodyTable?.querySelectorAll("tr") || []),
       ] as HTMLElement[];
       if (!headerTable || !bodyTable || trList.length === 0) {
         return reject(undefined);
