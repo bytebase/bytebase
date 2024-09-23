@@ -54,7 +54,7 @@ const plainValue = computed(() => {
 const truncated = computed(() => {
   // not that accurate
   const xPadding = 8;
-  const availChars = (props.width - xPadding * 2) / 10;
+  const availChars = (props.width - xPadding * 2) / 8;
   return String(plainValue.value).length >= availChars;
 });
 

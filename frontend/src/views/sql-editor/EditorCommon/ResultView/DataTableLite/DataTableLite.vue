@@ -5,6 +5,11 @@
     :data-width="containerWidth"
     :data-height="containerHeight"
   >
+    <div
+      tag="div"
+      class="header-track absolute z-0 left-0 top-0 right-0 h-[34px] border border-block-border bg-gray-50 dark:bg-gray-700"
+    />
+
     <NDataTable
       ref="dataTableRef"
       :columns="columns"
@@ -15,10 +20,13 @@
       table-layout="fixed"
       size="small"
       class="relative z-[1]"
-      style="--n-th-padding: 0; --n-td-padding: 0; --n-border-radius: 0"
-      :style="{
-        width: `calc(min(100%, ${tableResize.tableWidth.value + 2}px))`,
-      }"
+      style="
+        --n-th-padding: 0;
+        --n-td-padding: 0;
+        --n-border-radius: 0;
+        --n-border-color: rgb(var(--color-block-border));
+      "
+      v-bind="tableResize.getTableProps()"
     />
   </div>
 </template>
@@ -68,8 +76,21 @@ const { height: containerHeight, width: containerWidth } =
   useElementSize(containerElRef);
 usePreventBackAndForward(scrollerRef);
 
+const queryTableHeaderElement = () => {
+  return containerElRef.value?.querySelector(
+    ".n-data-table-base-table-header table.n-data-table-table"
+  ) as HTMLElement | undefined;
+};
+const queryTableBodyElement = () => {
+  return containerElRef.value?.querySelector(
+    ".n-data-table-base-table-body table.n-data-table-table"
+  ) as HTMLElement | undefined;
+};
+
 const tableResize = useTableColumnWidthLogic({
   scrollerRef,
+  queryTableHeaderElement,
+  queryTableBodyElement,
   columnCount: computed(() => headers.value.length),
   defaultWidth: DEFAULT_COLUMN_WIDTH,
   minWidth: 64, // 4rem
@@ -106,7 +127,10 @@ const columns = computed(() => {
             colIndex,
           });
         },
-        width: tableResize.state.columns[colIndex]?.width ?? 32,
+        width: tableResize.state.isAutoAdjusting
+          ? undefined
+          : (tableResize.state.columns[colIndex]?.width ??
+            DEFAULT_COLUMN_WIDTH),
       };
     }
   );
