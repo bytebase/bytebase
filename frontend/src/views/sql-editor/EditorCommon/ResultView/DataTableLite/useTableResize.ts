@@ -1,10 +1,16 @@
 import { useEventListener, usePointer } from "@vueuse/core";
-import { sumBy } from "lodash-es";
+import { reject, sumBy } from "lodash-es";
 import type { Ref } from "vue";
 import { computed, onBeforeUnmount, reactive, unref, watch } from "vue";
+import { minmax } from "@/utils";
+
+const MAX_AUTO_ADJUST_SCAN_ROWS = 20;
+const MAX_AUTO_ADJUST_COLUMNS = 20;
 
 export type TableResizeOptions = {
   scrollerRef: Ref<HTMLElement | undefined>;
+  queryTableHeaderElement: () => HTMLElement | undefined;
+  queryTableBodyElement: () => HTMLElement | undefined;
   columnCount: Ref<number>;
   defaultWidth: number;
   minWidth: number;
@@ -23,12 +29,14 @@ type DragState = {
 
 type LocalState = {
   columns: ColumnProps[];
+  isAutoAdjusting: boolean;
   drag?: DragState;
 };
 
 const useTableResize = (options: TableResizeOptions) => {
   const state = reactive<LocalState>({
     columns: [],
+    isAutoAdjusting: false,
     drag: undefined,
   });
   const pointer = usePointer();
@@ -37,9 +45,6 @@ const useTableResize = (options: TableResizeOptions) => {
   const containerWidth = computed(() => {
     return scroller.value?.scrollWidth || 0;
   });
-  const tableWidth = computed(() => {
-    return sumBy(state.columns, (col) => col.width);
-  });
 
   const normalizeWidth = (width: number) => {
     if (state.columns.length === 1) {
@@ -47,23 +52,128 @@ const useTableResize = (options: TableResizeOptions) => {
       // minus 1px to avoid unexpected horizontal scrollbar.
       return containerWidth.value - 1;
     }
-    const { maxWidth, minWidth } = options;
-    if (width > maxWidth) return maxWidth;
-    if (width < minWidth) return minWidth;
-    return width;
+    return minmax(width, options.minWidth, options.maxWidth);
   };
 
   const reset = () => {
     state.drag = undefined;
 
+    state.isAutoAdjusting = false;
+
     const columnCount = unref(options.columnCount);
     state.columns = new Array(columnCount);
 
+    const indexList: number[] = [];
     for (let i = 0; i < columnCount; i++) {
+      indexList.push(i);
       state.columns[i] = {
-        width: options.defaultWidth,
+        width: i < MAX_AUTO_ADJUST_COLUMNS ? 0 : options.defaultWidth, // For auto adjust below
       };
     }
+
+    // Calculate a friendly width for every column when the first render happened.
+    const scanner = async (n = 0) => {
+      // Wait for several frames for the initial render of the table
+      requestAnimationFrame(() => {
+        const headerTable = options.queryTableHeaderElement();
+        const bodyTable = options.queryTableBodyElement();
+        if (headerTable && bodyTable) {
+          autoAdjustColumnWidth(
+            indexList.slice(0, MAX_AUTO_ADJUST_COLUMNS)
+          ).catch(() => {
+            for (let i = 0; i < state.columns.length; i++) {
+              state.columns[i].width = options.defaultWidth;
+            }
+          });
+          return;
+        }
+        scanner(n + 1);
+      });
+    };
+    scanner();
+  };
+
+  // Automatically estimate the width of a column.
+  // Like double-clicking a cell border of Excel.
+  // Able to estimate multiple columns in a time.
+  const autoAdjustColumnWidth = (indexList: number[]): Promise<number[]> => {
+    return new Promise((resolve) => {
+      const headerTable = options.queryTableHeaderElement();
+      const bodyTable = options.queryTableBodyElement();
+      const trList = [
+        ...Array.from(headerTable?.querySelectorAll("tr") || []),
+        ...Array.from(bodyTable?.querySelectorAll("tr") || []),
+      ] as HTMLElement[];
+      if (!headerTable || !bodyTable || trList.length === 0) {
+        return reject(undefined);
+      }
+
+      const numScanRows = Math.min(trList.length, MAX_AUTO_ADJUST_SCAN_ROWS);
+      const cellListOfEachColumn = indexList.map((index) => {
+        const cellList: HTMLElement[] = [];
+        for (let row = 0; row < numScanRows; row++) {
+          const tr = trList[row];
+          const cell = tr.children[index] as HTMLElement;
+          if (cell && ["th", "td"].includes(cell.tagName.toLowerCase())) {
+            cellList.push(cell);
+          }
+        }
+        return cellList;
+      });
+
+      // Update the cells' and table's style to estimate the width.
+      state.isAutoAdjusting = true;
+      cellListOfEachColumn.forEach((cellList) => {
+        cellList.forEach((cell) => {
+          cell.style.whiteSpace = "nowrap";
+          cell.style.overflow = "visible";
+          cell.style.width = "auto";
+          cell.style.maxWidth = `${options.maxWidth}px`;
+          cell.style.minWidth = `${options.minWidth}px`;
+        });
+      });
+      const headerTableWidthBackup = headerTable.style.width;
+      const bodyTableWidthBackup = bodyTable.style.width;
+      headerTable.style.width = "auto";
+      bodyTable.style.width = "auto";
+
+      // Wait for the next render frame.
+      requestAnimationFrame(() => {
+        // Read the rendered widths.
+        const widthList = indexList.map((index) => {
+          const cellList = cellListOfEachColumn[index];
+          const stretchedWidths = cellList.map((cell) => getElementWidth(cell));
+          const finalWidth = normalizeWidth(Math.max(...stretchedWidths));
+
+          const column = state.columns[index];
+          if (column) {
+            // Sometimes the `columns` is out-of-sync with the `indexList`
+            // so we need to detect and suppress errors here.
+            // Only occurs in dev hot reload mode.
+            column.width = finalWidth;
+          }
+
+          return finalWidth;
+        });
+
+        // Reset the cells' and table's style.
+        cellListOfEachColumn.forEach((cellList) => {
+          cellList.forEach((cell) => {
+            cell.style.whiteSpace = "";
+            cell.style.overflow = "";
+            cell.style.width = "";
+            cell.style.maxWidth = "";
+            cell.style.minWidth = "";
+          });
+        });
+        headerTable.style.width = headerTableWidthBackup;
+        bodyTable.style.width = bodyTableWidthBackup;
+        state.isAutoAdjusting = false;
+
+        resolve(widthList);
+        // Style bindings will be automatically updated next frame.
+      });
+    });
   };
 
   // Record the initial state of dragging.
@@ -113,9 +223,12 @@ const useTableResize = (options: TableResizeOptions) => {
   };
 
   const getTableProps = () => {
+    const width = state.isAutoAdjusting
+      ? "auto"
+      : `calc(min(100%, ${sumBy(state.columns, (col) => col.width) + 2}px))`;
     return {
       style: {
-        width: `${tableWidth.value}px`,
+        width,
       },
     };
   };
@@ -127,10 +240,10 @@ const useTableResize = (options: TableResizeOptions) => {
   return {
     reset,
     state,
-    tableWidth,
     getCellProps,
     getTableProps,
     startResizing,
+    autoAdjustColumnWidth,
   };
 };
 
@@ -140,6 +253,12 @@ const scrollMaxX = (elem: HTMLElement | undefined) => {
   if (!elem) return;
   const max = elem.scrollWidth;
   elem.scrollTo(max, elem.scrollTop);
+};
+
+const getElementWidth = (elem: HTMLElement) => {
+  if (!elem) return 0;
+  const rect = elem.getBoundingClientRect();
+  return rect.width;
 };
 
 const toggleDragStyle = (
