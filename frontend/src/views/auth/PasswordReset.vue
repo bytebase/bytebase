@@ -5,6 +5,9 @@
       <h2 class="mt-6 text-3xl leading-9 font-extrabold text-main">
         {{ $t("auth.password-reset.title") }}
       </h2>
+      <p class="textinfo mt-2">
+        {{ $t("auth.password-reset.content") }}
+      </p>
     </div>
 
     <div class="mt-8">

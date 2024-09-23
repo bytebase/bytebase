@@ -1676,7 +1676,7 @@
     "password-forgot": "忘记密码",
     "password-reset": {
       "title": "重置您的密码",
-      "content": "我们会将重置密码链接发送到您的邮箱",
+      "content": "依据密码限制策略，您需要重置登录密码。",
       "send-reset-link": "发送重置链接",
       "return-to-sign-in": "返回登录"
     },
