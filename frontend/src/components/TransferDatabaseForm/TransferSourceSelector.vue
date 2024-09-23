@@ -5,9 +5,10 @@
     >
       <div v-if="project.name !== DEFAULT_PROJECT_NAME" class="radio-set-row">
         <NRadioGroup
-          v-model:value="state.transferSource"
+          :value="transferSource"
           class="space-x-4"
           size="large"
+          @update:value="$emit('update:transferSource', $event)"
         >
           <NRadio :value="'OTHER'">
             {{ $t("quick-action.from-projects") }}
@@ -38,7 +39,7 @@
         />
       </NInputGroup>
     </div>
-    <div v-if="state.transferSource == 'DEFAULT'" class="textinfolabel mt-2">
+    <div v-if="transferSource == 'DEFAULT'" class="textinfolabel mt-2">
       {{ $t("quick-action.unassigned-db-hint") }}
     </div>
   </div>
@@ -46,7 +47,7 @@
 
 <script lang="ts" setup>
 import { NInputGroup, NRadio, NRadioGroup } from "naive-ui";
-import { computed, reactive, watch } from "vue";
+import { computed } from "vue";
 import { InstanceSelect, SearchBox } from "@/components/v2";
 import { useEnvironmentV1Store, useInstanceResourceByName } from "@/store";
 import type { ComposedDatabase } from "@/types";
@@ -60,10 +61,6 @@ import type { InstanceResource } from "@/types/proto/v1/instance_service";
 import type { Project } from "@/types/proto/v1/project_service";
 import EnvironmentSelect from "../v2/Select/EnvironmentSelect.vue";
 import type { TransferSource } from "./utils";
-
-interface LocalState {
-  transferSource: TransferSource;
-}
 
 const props = withDefaults(
   defineProps<{
@@ -84,15 +81,11 @@ const props = withDefaults(
 );
 
 const emit = defineEmits<{
-  (event: "change", src: TransferSource): void;
+  (event: "update:transferSource", src: TransferSource): void;
   (event: "select-instance", instance: InstanceResource | undefined): void;
   (event: "select-environment", env: Environment | undefined): void;
   (event: "search-text-change", searchText: string): void;
 }>();
-
-const state = reactive<LocalState>({
-  transferSource: props.transferSource,
-});
 
 const nonEmptyEnvironmentNameSet = computed(() => {
   return new Set(props.rawDatabaseList.map((db) => db.effectiveEnvironment));
@@ -126,18 +119,4 @@ const filterEnvironment = (environment: Environment) => {
 const filterInstance = (instance: InstanceResource) => {
   return nonEmptyInstanceNameSet.value.has(instance.name);
 };
-
-watch(
-  () => props.transferSource,
-  (src) => (state.transferSource = src)
-);
-
-watch(
-  () => state.transferSource,
-  (src) => {
-    if (src !== props.transferSource) {
-      emit("change", src);
-    }
-  }
-);
 </script>

@@ -1676,7 +1676,7 @@
     "password-forgot": "Contraseña olvidada",
     "password-reset": {
       "title": "Restablecer su contraseña",
-      "content": "Ingrese su dirección de correo electrónico y le enviaremos un enlace para restablecer su contraseña",
+      "content": "Debe restablecer su contraseña de acuerdo con la política de restricción de contraseña.",
       "send-reset-link": "Enviar enlace de restablecimiento",
       "return-to-sign-in": "Volver a iniciar sesión"
     },
