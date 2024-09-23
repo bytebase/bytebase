@@ -5,9 +5,9 @@
     >
       <div class="space-y-4">
         <TransferSourceSelector
+          v-model:transfer-source="state.transferSource"
           :project="project"
           :raw-database-list="rawDatabaseList"
-          v-model:transfer-source="state.transferSource"
           :environment-filter="state.environmentFilter"
           :instance-filter="state.instanceFilter"
           :search-text="state.searchText"
