@@ -397,15 +397,12 @@ const generateDiffDDLMap = async (silent: boolean) => {
   }
   for (let i = 0; i < state.targets.length; i++) {
     const target = state.targets[i];
-    const { database, baselineMetadata: source } = target;
-    // To avoid affect the editing status, we need to copy it here for DDL generation
-    const editing = cloneDeep(target.metadata);
-    await applyMetadataEdit(database, editing);
-
+    const { database, baselineMetadata: source, metadata } = target;
+    await applyMetadataEdit(database, metadata);
     const result = await generateSingleDiffDDL(
       database,
       source,
-      editing,
+      metadata,
       /* !allowEmptyDiffDDLWithConfigChange */ false
     );
 
