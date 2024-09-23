@@ -6,6 +6,7 @@ import "google/api/annotations.proto";
 import "google/api/client.proto";
 import "google/api/field_behavior.proto";
 import "google/api/resource.proto";
+import "v1/common.proto";
 
 option go_package = "generated-go/v1";
 
@@ -64,24 +65,25 @@ message Release {
 
   VCSSource vcs_source = 3;
 
-  message VCSSource {
-    string pull_request_url = 1;
+  message File {
+    string filename = 1;
+
+    // The sheet that holds the statement.
+    // Format: projects/{project}/sheets/{sheet}
+    string sheet = 2 [(google.api.resource_reference) = {type: "bytebase.com/Sheet"}];
+    bytes sheet_hash = 3;
+
+    Type type = 4;
+    string version = 5;
+
+    enum Type {
+      TYPE_UNSPECIFIED = 0;
+      VERSIONED = 1;
+    }
   }
-}
 
-message File {
-  string filename = 1;
-
-  // The sheet that holds the statement.
-  // Format: projects/{project}/sheets/{sheet}
-  string sheet = 2 [(google.api.resource_reference) = {type: "bytebase.com/Sheet"}];
-  bytes sheet_hash = 3;
-
-  Type type = 4;
-  string version = 5;
-
-  enum Type {
-    TYPE_UNSPECIFIED = 0;
-    VERSIONED = 1;
+  message VCSSource {
+    VCSType vcs_type = 1;
+    string pull_request_url = 2;
   }
 }

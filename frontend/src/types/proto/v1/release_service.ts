@@ -1,6 +1,7 @@
 /* eslint-disable */
 import Long from "long";
 import _m0 from "protobufjs/minimal";
+import { VCSType, vCSTypeFromJSON, vCSTypeToJSON, vCSTypeToNumber } from "./common";
 
 export const protobufPackage = "bytebase.v1";
 
@@ -40,15 +41,11 @@ export interface ListReleasesResponse {
 export interface Release {
   /** Format: projects/{project}/releases/{release} */
   name: string;
-  files: File[];
+  files: Release_File[];
   vcsSource: Release_VCSSource | undefined;
 }
 
-export interface Release_VCSSource {
-  pullRequestUrl: string;
-}
-
-export interface File {
+export interface Release_File {
   filename: string;
   /**
    * The sheet that holds the statement.
@@ -56,53 +53,58 @@ export interface File {
    */
   sheet: string;
   sheetHash: Uint8Array;
-  type: File_Type;
+  type: Release_File_Type;
   version: string;
 }
 
-export enum File_Type {
+export enum Release_File_Type {
   TYPE_UNSPECIFIED = "TYPE_UNSPECIFIED",
   VERSIONED = "VERSIONED",
   UNRECOGNIZED = "UNRECOGNIZED",
 }
 
-export function file_TypeFromJSON(object: any): File_Type {
+export function release_File_TypeFromJSON(object: any): Release_File_Type {
   switch (object) {
     case 0:
     case "TYPE_UNSPECIFIED":
-      return File_Type.TYPE_UNSPECIFIED;
+      return Release_File_Type.TYPE_UNSPECIFIED;
     case 1:
     case "VERSIONED":
-      return File_Type.VERSIONED;
+      return Release_File_Type.VERSIONED;
     case -1:
     case "UNRECOGNIZED":
     default:
-      return File_Type.UNRECOGNIZED;
+      return Release_File_Type.UNRECOGNIZED;
   }
 }
 
-export function file_TypeToJSON(object: File_Type): string {
+export function release_File_TypeToJSON(object: Release_File_Type): string {
   switch (object) {
-    case File_Type.TYPE_UNSPECIFIED:
+    case Release_File_Type.TYPE_UNSPECIFIED:
       return "TYPE_UNSPECIFIED";
-    case File_Type.VERSIONED:
+    case Release_File_Type.VERSIONED:
       return "VERSIONED";
-    case File_Type.UNRECOGNIZED:
+    case Release_File_Type.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
   }
 }
 
-export function file_TypeToNumber(object: File_Type): number {
+export function release_File_TypeToNumber(object: Release_File_Type): number {
   switch (object) {
-    case File_Type.TYPE_UNSPECIFIED:
+    case Release_File_Type.TYPE_UNSPECIFIED:
       return 0;
-    case File_Type.VERSIONED:
+    case Release_File_Type.VERSIONED:
       return 1;
-    case File_Type.UNRECOGNIZED:
+    case Release_File_Type.UNRECOGNIZED:
     default:
       return -1;
   }
+}
+
+export interface Release_VCSSource {
+  vcsType: VCSType;
+  pullRequestUrl: string;
 }
 
 function createBaseGetReleaseRequest(): GetReleaseRequest {
@@ -335,7 +337,7 @@ export const Release = {
       writer.uint32(10).string(message.name);
     }
     for (const v of message.files) {
-      File.encode(v!, writer.uint32(18).fork()).ldelim();
+      Release_File.encode(v!, writer.uint32(18).fork()).ldelim();
     }
     if (message.vcsSource !== undefined) {
       Release_VCSSource.encode(message.vcsSource, writer.uint32(26).fork()).ldelim();
@@ -362,7 +364,7 @@ export const Release = {
             break;
           }
 
-          message.files.push(File.decode(reader, reader.uint32()));
+          message.files.push(Release_File.decode(reader, reader.uint32()));
           continue;
         case 3:
           if (tag !== 26) {
@@ -383,7 +385,7 @@ export const Release = {
   fromJSON(object: any): Release {
     return {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
-      files: globalThis.Array.isArray(object?.files) ? object.files.map((e: any) => File.fromJSON(e)) : [],
+      files: globalThis.Array.isArray(object?.files) ? object.files.map((e: any) => Release_File.fromJSON(e)) : [],
       vcsSource: isSet(object.vcsSource) ? Release_VCSSource.fromJSON(object.vcsSource) : undefined,
     };
   },
@@ -394,7 +396,7 @@ export const Release = {
       obj.name = message.name;
     }
     if (message.files?.length) {
-      obj.files = message.files.map((e) => File.toJSON(e));
+      obj.files = message.files.map((e) => Release_File.toJSON(e));
     }
     if (message.vcsSource !== undefined) {
       obj.vcsSource = Release_VCSSource.toJSON(message.vcsSource);
@@ -408,7 +410,7 @@ export const Release = {
   fromPartial(object: DeepPartial<Release>): Release {
     const message = createBaseRelease();
     message.name = object.name ?? "";
-    message.files = object.files?.map((e) => File.fromPartial(e)) || [];
+    message.files = object.files?.map((e) => Release_File.fromPartial(e)) || [];
     message.vcsSource = (object.vcsSource !== undefined && object.vcsSource !== null)
       ? Release_VCSSource.fromPartial(object.vcsSource)
       : undefined;
@@ -416,69 +418,18 @@ export const Release = {
   },
 };
 
-function createBaseRelease_VCSSource(): Release_VCSSource {
-  return { pullRequestUrl: "" };
+function createBaseRelease_File(): Release_File {
+  return {
+    filename: "",
+    sheet: "",
+    sheetHash: new Uint8Array(0),
+    type: Release_File_Type.TYPE_UNSPECIFIED,
+    version: "",
+  };
 }
 
-export const Release_VCSSource = {
-  encode(message: Release_VCSSource, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.pullRequestUrl !== "") {
-      writer.uint32(10).string(message.pullRequestUrl);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): Release_VCSSource {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseRelease_VCSSource();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.pullRequestUrl = reader.string();
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): Release_VCSSource {
-    return { pullRequestUrl: isSet(object.pullRequestUrl) ? globalThis.String(object.pullRequestUrl) : "" };
-  },
-
-  toJSON(message: Release_VCSSource): unknown {
-    const obj: any = {};
-    if (message.pullRequestUrl !== "") {
-      obj.pullRequestUrl = message.pullRequestUrl;
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<Release_VCSSource>): Release_VCSSource {
-    return Release_VCSSource.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<Release_VCSSource>): Release_VCSSource {
-    const message = createBaseRelease_VCSSource();
-    message.pullRequestUrl = object.pullRequestUrl ?? "";
-    return message;
-  },
-};
-
-function createBaseFile(): File {
-  return { filename: "", sheet: "", sheetHash: new Uint8Array(0), type: File_Type.TYPE_UNSPECIFIED, version: "" };
-}
-
-export const File = {
-  encode(message: File, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const Release_File = {
+  encode(message: Release_File, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.filename !== "") {
       writer.uint32(10).string(message.filename);
     }
@@ -488,8 +439,8 @@ export const File = {
     if (message.sheetHash.length !== 0) {
       writer.uint32(26).bytes(message.sheetHash);
     }
-    if (message.type !== File_Type.TYPE_UNSPECIFIED) {
-      writer.uint32(32).int32(file_TypeToNumber(message.type));
+    if (message.type !== Release_File_Type.TYPE_UNSPECIFIED) {
+      writer.uint32(32).int32(release_File_TypeToNumber(message.type));
     }
     if (message.version !== "") {
       writer.uint32(42).string(message.version);
@@ -497,10 +448,10 @@ export const File = {
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): File {
+  decode(input: _m0.Reader | Uint8Array, length?: number): Release_File {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseFile();
+    const message = createBaseRelease_File();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -530,7 +481,7 @@ export const File = {
             break;
           }
 
-          message.type = file_TypeFromJSON(reader.int32());
+          message.type = release_File_TypeFromJSON(reader.int32());
           continue;
         case 5:
           if (tag !== 42) {
@@ -548,17 +499,17 @@ export const File = {
     return message;
   },
 
-  fromJSON(object: any): File {
+  fromJSON(object: any): Release_File {
     return {
       filename: isSet(object.filename) ? globalThis.String(object.filename) : "",
       sheet: isSet(object.sheet) ? globalThis.String(object.sheet) : "",
       sheetHash: isSet(object.sheetHash) ? bytesFromBase64(object.sheetHash) : new Uint8Array(0),
-      type: isSet(object.type) ? file_TypeFromJSON(object.type) : File_Type.TYPE_UNSPECIFIED,
+      type: isSet(object.type) ? release_File_TypeFromJSON(object.type) : Release_File_Type.TYPE_UNSPECIFIED,
       version: isSet(object.version) ? globalThis.String(object.version) : "",
     };
   },
 
-  toJSON(message: File): unknown {
+  toJSON(message: Release_File): unknown {
     const obj: any = {};
     if (message.filename !== "") {
       obj.filename = message.filename;
@@ -569,8 +520,8 @@ export const File = {
     if (message.sheetHash.length !== 0) {
       obj.sheetHash = base64FromBytes(message.sheetHash);
     }
-    if (message.type !== File_Type.TYPE_UNSPECIFIED) {
-      obj.type = file_TypeToJSON(message.type);
+    if (message.type !== Release_File_Type.TYPE_UNSPECIFIED) {
+      obj.type = release_File_TypeToJSON(message.type);
     }
     if (message.version !== "") {
       obj.version = message.version;
@@ -578,16 +529,90 @@ export const File = {
     return obj;
   },
 
-  create(base?: DeepPartial<File>): File {
-    return File.fromPartial(base ?? {});
+  create(base?: DeepPartial<Release_File>): Release_File {
+    return Release_File.fromPartial(base ?? {});
   },
-  fromPartial(object: DeepPartial<File>): File {
-    const message = createBaseFile();
+  fromPartial(object: DeepPartial<Release_File>): Release_File {
+    const message = createBaseRelease_File();
     message.filename = object.filename ?? "";
     message.sheet = object.sheet ?? "";
     message.sheetHash = object.sheetHash ?? new Uint8Array(0);
-    message.type = object.type ?? File_Type.TYPE_UNSPECIFIED;
+    message.type = object.type ?? Release_File_Type.TYPE_UNSPECIFIED;
     message.version = object.version ?? "";
+    return message;
+  },
+};
+
+function createBaseRelease_VCSSource(): Release_VCSSource {
+  return { vcsType: VCSType.VCS_TYPE_UNSPECIFIED, pullRequestUrl: "" };
+}
+
+export const Release_VCSSource = {
+  encode(message: Release_VCSSource, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.vcsType !== VCSType.VCS_TYPE_UNSPECIFIED) {
+      writer.uint32(8).int32(vCSTypeToNumber(message.vcsType));
+    }
+    if (message.pullRequestUrl !== "") {
+      writer.uint32(18).string(message.pullRequestUrl);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): Release_VCSSource {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseRelease_VCSSource();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 8) {
+            break;
+          }
+
+          message.vcsType = vCSTypeFromJSON(reader.int32());
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.pullRequestUrl = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): Release_VCSSource {
+    return {
+      vcsType: isSet(object.vcsType) ? vCSTypeFromJSON(object.vcsType) : VCSType.VCS_TYPE_UNSPECIFIED,
+      pullRequestUrl: isSet(object.pullRequestUrl) ? globalThis.String(object.pullRequestUrl) : "",
+    };
+  },
+
+  toJSON(message: Release_VCSSource): unknown {
+    const obj: any = {};
+    if (message.vcsType !== VCSType.VCS_TYPE_UNSPECIFIED) {
+      obj.vcsType = vCSTypeToJSON(message.vcsType);
+    }
+    if (message.pullRequestUrl !== "") {
+      obj.pullRequestUrl = message.pullRequestUrl;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<Release_VCSSource>): Release_VCSSource {
+    return Release_VCSSource.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<Release_VCSSource>): Release_VCSSource {
+    const message = createBaseRelease_VCSSource();
+    message.vcsType = object.vcsType ?? VCSType.VCS_TYPE_UNSPECIFIED;
+    message.pullRequestUrl = object.pullRequestUrl ?? "";
     return message;
   },
 };

@@ -9742,27 +9742,6 @@ components:
                  Then the identifier of FieldMapping will be `login`, display_name will be `name`,
                  and email will be `email`.
                  reference: https://docs.github.com/en/rest/users/users?apiVersion=2022-11-28#get-the-authenticated-user
-        File:
-            type: object
-            properties:
-                filename:
-                    type: string
-                sheet:
-                    type: string
-                    description: |-
-                        The sheet that holds the statement.
-                         Format: projects/{project}/sheets/{sheet}
-                sheetHash:
-                    type: string
-                    format: bytes
-                type:
-                    enum:
-                        - TYPE_UNSPECIFIED
-                        - VERSIONED
-                    type: string
-                    format: enum
-                version:
-                    type: string
         ForeignKeyMetadata:
             type: object
             properties:
@@ -11998,12 +11977,42 @@ components:
                 files:
                     type: array
                     items:
-                        $ref: '#/components/schemas/File'
+                        $ref: '#/components/schemas/Release_File'
                 vcsSource:
                     $ref: '#/components/schemas/Release_VCSSource'
+        Release_File:
+            type: object
+            properties:
+                filename:
+                    type: string
+                sheet:
+                    type: string
+                    description: |-
+                        The sheet that holds the statement.
+                         Format: projects/{project}/sheets/{sheet}
+                sheetHash:
+                    type: string
+                    format: bytes
+                type:
+                    enum:
+                        - TYPE_UNSPECIFIED
+                        - VERSIONED
+                    type: string
+                    format: enum
+                version:
+                    type: string
         Release_VCSSource:
             type: object
             properties:
+                vcsType:
+                    enum:
+                        - VCS_TYPE_UNSPECIFIED
+                        - GITHUB
+                        - GITLAB
+                        - BITBUCKET
+                        - AZURE_DEVOPS
+                    type: string
+                    format: enum
                 pullRequestUrl:
                     type: string
         RemoveDataSourceRequest:

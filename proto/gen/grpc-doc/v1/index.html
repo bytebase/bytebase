@@ -2216,10 +2216,6 @@
             <ul>
               
                 <li>
-                  <a href="#bytebase.v1.File"><span class="badge">M</span>File</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.GetReleaseRequest"><span class="badge">M</span>GetReleaseRequest</a>
                 </li>
               
@@ -2236,12 +2232,16 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.Release.File"><span class="badge">M</span>Release.File</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.Release.VCSSource"><span class="badge">M</span>Release.VCSSource</a>
                 </li>
               
               
                 <li>
-                  <a href="#bytebase.v1.File.Type"><span class="badge">E</span>File.Type</a>
+                  <a href="#bytebase.v1.Release.File.Type"><span class="badge">E</span>Release.File.Type</a>
                 </li>
               
               
@@ -23926,59 +23926,6 @@ TYPE_SQL_EDITOR_QUERY represents executing query in SQL Editor.</p></td>
       <p></p>
 
       
-        <h3 id="bytebase.v1.File">File</h3>
-        <p></p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>filename</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>sheet</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The sheet that holds the statement.
-Format: projects/{project}/sheets/{sheet} </p></td>
-                </tr>
-              
-                <tr>
-                  <td>sheet_hash</td>
-                  <td><a href="#bytes">bytes</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>type</td>
-                  <td><a href="#bytebase.v1.File.Type">File.Type</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>version</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.v1.GetReleaseRequest">GetReleaseRequest</h3>
         <p></p>
 
@@ -24098,7 +24045,7 @@ If this field is omitted, there are no subsequent pages. </p></td>
               
                 <tr>
                   <td>files</td>
-                  <td><a href="#bytebase.v1.File">File</a></td>
+                  <td><a href="#bytebase.v1.Release.File">Release.File</a></td>
                   <td>repeated</td>
                   <td><p> </p></td>
                 </tr>
@@ -24106,6 +24053,59 @@ If this field is omitted, there are no subsequent pages. </p></td>
                 <tr>
                   <td>vcs_source</td>
                   <td><a href="#bytebase.v1.Release.VCSSource">Release.VCSSource</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.Release.File">Release.File</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>filename</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>sheet</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The sheet that holds the statement.
+Format: projects/{project}/sheets/{sheet} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>sheet_hash</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>type</td>
+                  <td><a href="#bytebase.v1.Release.File.Type">Release.File.Type</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>version</td>
+                  <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
@@ -24128,6 +24128,13 @@ If this field is omitted, there are no subsequent pages. </p></td>
             <tbody>
               
                 <tr>
+                  <td>vcs_type</td>
+                  <td><a href="#bytebase.v1.VCSType">VCSType</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
                   <td>pull_request_url</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
@@ -24143,7 +24150,7 @@ If this field is omitted, there are no subsequent pages. </p></td>
       
 
       
-        <h3 id="bytebase.v1.File.Type">File.Type</h3>
+        <h3 id="bytebase.v1.Release.File.Type">Release.File.Type</h3>
         <p></p>
         <table class="enum-table">
           <thead>

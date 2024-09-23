@@ -535,14 +535,14 @@
     - [ProjectService](#bytebase-v1-ProjectService)
   
 - [v1/release_service.proto](#v1_release_service-proto)
-    - [File](#bytebase-v1-File)
     - [GetReleaseRequest](#bytebase-v1-GetReleaseRequest)
     - [ListReleasesRequest](#bytebase-v1-ListReleasesRequest)
     - [ListReleasesResponse](#bytebase-v1-ListReleasesResponse)
     - [Release](#bytebase-v1-Release)
+    - [Release.File](#bytebase-v1-Release-File)
     - [Release.VCSSource](#bytebase-v1-Release-VCSSource)
   
-    - [File.Type](#bytebase-v1-File-Type)
+    - [Release.File.Type](#bytebase-v1-Release-File-Type)
   
     - [ReleaseService](#bytebase-v1-ReleaseService)
   
@@ -8678,25 +8678,6 @@ TYPE_PROJECT_REPOSITORY_PUSH represents Bytebase receiving a push event from the
 
 
 
-<a name="bytebase-v1-File"></a>
-
-### File
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| filename | [string](#string) |  |  |
-| sheet | [string](#string) |  | The sheet that holds the statement. Format: projects/{project}/sheets/{sheet} |
-| sheet_hash | [bytes](#bytes) |  |  |
-| type | [File.Type](#bytebase-v1-File-Type) |  |  |
-| version | [string](#string) |  |  |
-
-
-
-
-
-
 <a name="bytebase-v1-GetReleaseRequest"></a>
 
 ### GetReleaseRequest
@@ -8756,8 +8737,27 @@ When paginating, all other parameters provided to `ListReleasesRequest` must mat
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | Format: projects/{project}/releases/{release} |
-| files | [File](#bytebase-v1-File) | repeated |  |
+| files | [Release.File](#bytebase-v1-Release-File) | repeated |  |
 | vcs_source | [Release.VCSSource](#bytebase-v1-Release-VCSSource) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-Release-File"></a>
+
+### Release.File
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| filename | [string](#string) |  |  |
+| sheet | [string](#string) |  | The sheet that holds the statement. Format: projects/{project}/sheets/{sheet} |
+| sheet_hash | [bytes](#bytes) |  |  |
+| type | [Release.File.Type](#bytebase-v1-Release-File-Type) |  |  |
+| version | [string](#string) |  |  |
 
 
 
@@ -8772,6 +8772,7 @@ When paginating, all other parameters provided to `ListReleasesRequest` must mat
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
+| vcs_type | [VCSType](#bytebase-v1-VCSType) |  |  |
 | pull_request_url | [string](#string) |  |  |
 
 
@@ -8781,9 +8782,9 @@ When paginating, all other parameters provided to `ListReleasesRequest` must mat
  
 
 
-<a name="bytebase-v1-File-Type"></a>
+<a name="bytebase-v1-Release-File-Type"></a>
 
-### File.Type
+### Release.File.Type
 
 
 | Name | Number | Description |
