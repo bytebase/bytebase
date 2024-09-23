@@ -630,6 +630,9 @@ func (s *AuthService) needResetPassword(ctx context.Context, user *store.UserMes
 	if user.Type != api.EndUser {
 		return false
 	}
+	if err := s.licenseService.IsFeatureEnabled(api.FeaturePasswordRestriction); err != nil {
+		return false
+	}
 
 	passwordRestriction, err := s.store.GetPasswordRestrictionSetting(ctx)
 	if err != nil {
