@@ -5252,6 +5252,81 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
+    /v1/projects/{project}/releases:
+        get:
+            tags:
+                - ReleaseService
+            operationId: ReleaseService_ListReleases
+            parameters:
+                - name: project
+                  in: path
+                  description: The project id.
+                  required: true
+                  schema:
+                    type: string
+                - name: pageSize
+                  in: query
+                  description: |-
+                    The maximum number of change histories to return. The service may return fewer than this value.
+                     If unspecified, at most 10 change histories will be returned.
+                     The maximum value is 1000; values above 1000 will be coerced to 1000.
+                  schema:
+                    type: integer
+                    format: int32
+                - name: pageToken
+                  in: query
+                  description: |-
+                    Not used. A page token, received from a previous `ListReleasesRequest` call.
+                     Provide this to retrieve the subsequent page.
+
+                     When paginating, all other parameters provided to `ListReleasesRequest` must match
+                     the call that provided the page token.
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ListReleasesResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v1/projects/{project}/releases/{release}:
+        get:
+            tags:
+                - ReleaseService
+            operationId: ReleaseService_GetRelease
+            parameters:
+                - name: project
+                  in: path
+                  description: The project id.
+                  required: true
+                  schema:
+                    type: string
+                - name: release
+                  in: path
+                  description: The release id.
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Release'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
     /v1/projects/{project}/rollouts:
         post:
             tags:
@@ -9667,6 +9742,24 @@ components:
                  Then the identifier of FieldMapping will be `login`, display_name will be `name`,
                  and email will be `email`.
                  reference: https://docs.github.com/en/rest/users/users?apiVersion=2022-11-28#get-the-authenticated-user
+        File:
+            type: object
+            properties:
+                filename:
+                    type: string
+                sheet:
+                    type: string
+                    description: sheet holds the statement.
+                sheetHash:
+                    type: string
+                    format: bytes
+                type:
+                    enum:
+                        - VERSIONED
+                    type: string
+                    format: enum
+                version:
+                    type: string
         ForeignKeyMetadata:
             type: object
             properties:
@@ -10692,6 +10785,18 @@ components:
                     items:
                         $ref: '#/components/schemas/Project'
                     description: The projects from the specified request.
+                nextPageToken:
+                    type: string
+                    description: |-
+                        A token, which can be sent as `page_token` to retrieve the next page.
+                         If this field is omitted, there are no subsequent pages.
+        ListReleasesResponse:
+            type: object
+            properties:
+                releases:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/Release'
                 nextPageToken:
                     type: string
                     description: |-
@@ -11880,6 +11985,23 @@ components:
                         The name of the issue to add an rejection.
                          Format: projects/{project}/issues/{issue}
                 comment:
+                    type: string
+        Release:
+            type: object
+            properties:
+                name:
+                    type: string
+                    description: 'Format: projects/{project}/releases/{release}'
+                files:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/File'
+                vcsSource:
+                    $ref: '#/components/schemas/Release_VCSSource'
+        Release_VCSSource:
+            type: object
+            properties:
+                pullRequestUrl:
                     type: string
         RemoveDataSourceRequest:
             required:
@@ -14383,6 +14505,7 @@ tags:
     - name: OrgPolicyService
     - name: PlanService
     - name: ProjectService
+    - name: ReleaseService
     - name: ReviewConfigService
     - name: RiskService
     - name: RoleService

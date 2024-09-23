@@ -2212,6 +2212,49 @@
         
           
           <li>
+            <a href="#v1%2frelease_service.proto">v1/release_service.proto</a>
+            <ul>
+              
+                <li>
+                  <a href="#bytebase.v1.File"><span class="badge">M</span>File</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.GetReleaseRequest"><span class="badge">M</span>GetReleaseRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.ListReleasesRequest"><span class="badge">M</span>ListReleasesRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.ListReleasesResponse"><span class="badge">M</span>ListReleasesResponse</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.Release"><span class="badge">M</span>Release</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.Release.VCSSource"><span class="badge">M</span>Release.VCSSource</a>
+                </li>
+              
+              
+                <li>
+                  <a href="#bytebase.v1.File.Type"><span class="badge">E</span>File.Type</a>
+                </li>
+              
+              
+              
+                <li>
+                  <a href="#bytebase.v1.ReleaseService"><span class="badge">S</span>ReleaseService</a>
+                </li>
+              
+            </ul>
+          </li>
+        
+          
+          <li>
             <a href="#v1%2freview_config_service.proto">v1/review_config_service.proto</a>
             <ul>
               
@@ -23868,6 +23911,315 @@ TYPE_SQL_EDITOR_QUERY represents executing query in SQL Editor.</p></td>
                 <td>POST</td>
                 <td>/v1/{project=projects/*}:testWebhook</td>
                 <td>*</td>
+              </tr>
+              
+            
+            </tbody>
+          </table>
+          
+        
+    
+      
+      <div class="file-heading">
+        <h2 id="v1/release_service.proto">v1/release_service.proto</h2><a href="#title">Top</a>
+      </div>
+      <p></p>
+
+      
+        <h3 id="bytebase.v1.File">File</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>filename</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>sheet</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>sheet holds the statement. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>sheet_hash</td>
+                  <td><a href="#bytes">bytes</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>type</td>
+                  <td><a href="#bytebase.v1.File.Type">File.Type</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>version</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.GetReleaseRequest">GetReleaseRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Format: projects/{project}/releases/{release} </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.ListReleasesRequest">ListReleasesRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>parent</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Format: projects/{project} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>page_size</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>The maximum number of change histories to return. The service may return fewer than this value.
+If unspecified, at most 10 change histories will be returned.
+The maximum value is 1000; values above 1000 will be coerced to 1000. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>page_token</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Not used. A page token, received from a previous `ListReleasesRequest` call.
+Provide this to retrieve the subsequent page.
+
+When paginating, all other parameters provided to `ListReleasesRequest` must match
+the call that provided the page token. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.ListReleasesResponse">ListReleasesResponse</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>releases</td>
+                  <td><a href="#bytebase.v1.Release">Release</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>next_page_token</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>A token, which can be sent as `page_token` to retrieve the next page.
+If this field is omitted, there are no subsequent pages. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.Release">Release</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Format: projects/{project}/releases/{release} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>files</td>
+                  <td><a href="#bytebase.v1.File">File</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>vcs_source</td>
+                  <td><a href="#bytebase.v1.Release.VCSSource">Release.VCSSource</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.Release.VCSSource">Release.VCSSource</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>pull_request_url</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+
+      
+        <h3 id="bytebase.v1.File.Type">File.Type</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>VERSIONED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+
+      
+
+      
+        <h3 id="bytebase.v1.ReleaseService">ReleaseService</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Method Name</td><td>Request Type</td><td>Response Type</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>GetRelease</td>
+                <td><a href="#bytebase.v1.GetReleaseRequest">GetReleaseRequest</a></td>
+                <td><a href="#bytebase.v1.Release">Release</a></td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>ListReleases</td>
+                <td><a href="#bytebase.v1.ListReleasesRequest">ListReleasesRequest</a></td>
+                <td><a href="#bytebase.v1.ListReleasesResponse">ListReleasesResponse</a></td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+
+        
+          
+          
+          <h4>Methods with HTTP bindings</h4>
+          <table>
+            <thead>
+              <tr>
+                <td>Method Name</td>
+                <td>Method</td>
+                <td>Pattern</td>
+                <td>Body</td>
+              </tr>
+            </thead>
+            <tbody>
+            
+              
+              
+              <tr>
+                <td>GetRelease</td>
+                <td>GET</td>
+                <td>/v1/{name=projects/*/releases/*}</td>
+                <td></td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>ListReleases</td>
+                <td>GET</td>
+                <td>/v1/{parent=projects/*}/releases</td>
+                <td></td>
               </tr>
               
             
