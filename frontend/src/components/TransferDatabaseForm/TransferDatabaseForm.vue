@@ -5,14 +5,13 @@
     >
       <div class="space-y-4">
         <TransferSourceSelector
+          v-model:transfer-source="state.transferSource"
           :project="project"
           :raw-database-list="rawDatabaseList"
-          :transfer-source="state.transferSource"
           :environment-filter="state.environmentFilter"
           :instance-filter="state.instanceFilter"
           :search-text="state.searchText"
           :has-permission-for-default-project="hasPermissionForDefaultProject"
-          @change="state.transferSource = $event"
           @select-environment="state.environmentFilter = $event"
           @select-instance="state.instanceFilter = $event"
           @search-text-change="state.searchText = $event"
@@ -147,7 +146,7 @@ const emit = defineEmits<{
 const databaseStore = useDatabaseV1Store();
 
 const state = reactive<LocalState>({
-  transferSource: "OTHER",
+  transferSource: "DEFAULT",
   instanceFilter: undefined,
   environmentFilter: undefined,
   searchText: "",
@@ -228,16 +227,22 @@ const selectedDatabaseList = computed(() =>
   )
 );
 
-const hasPermissionForDefaultProject = computed(() => {
-  return hasTransferDatabasePermission(defaultProject());
-});
-
 const hasTransferDatabasePermission = (project: ComposedProject): boolean => {
   return (
     hasProjectPermissionV2(project, "bb.databases.list") &&
     hasProjectPermissionV2(project, "bb.projects.update")
   );
 };
+
+const hasPermissionForDefaultProject = computed(() => {
+  return hasTransferDatabasePermission(defaultProject());
+});
+
+watchEffect(() => {
+  if (!hasPermissionForDefaultProject.value) {
+    state.transferSource = "OTHER";
+  }
+});
 
 const changeProjectFilter = (name: string | undefined) => {
   if (!name || !isValidProjectName(name)) {

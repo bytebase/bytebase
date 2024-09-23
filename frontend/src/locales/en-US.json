@@ -1676,7 +1676,7 @@
     "password-forgot": "Forgot Password",
     "password-reset": {
       "title": "Reset your password",
-      "content": "Enter your email address and we will send you a password reset link",
+      "content": "You need to reset your password according to the password restriction policy.",
       "send-reset-link": "Send reset link",
       "return-to-sign-in": "Return to Sign in"
     },
