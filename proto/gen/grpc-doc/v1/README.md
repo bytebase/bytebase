@@ -8687,7 +8687,7 @@ TYPE_PROJECT_REPOSITORY_PUSH represents Bytebase receiving a push event from the
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | filename | [string](#string) |  |  |
-| sheet | [string](#string) |  | sheet holds the statement. |
+| sheet | [string](#string) |  | The sheet that holds the statement. Format: projects/{project}/sheets/{sheet} |
 | sheet_hash | [bytes](#bytes) |  |  |
 | type | [File.Type](#bytebase-v1-File-Type) |  |  |
 | version | [string](#string) |  |  |
@@ -8788,7 +8788,8 @@ When paginating, all other parameters provided to `ListReleasesRequest` must mat
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| VERSIONED | 0 |  |
+| TYPE_UNSPECIFIED | 0 |  |
+| VERSIONED | 1 |  |
 
 
  

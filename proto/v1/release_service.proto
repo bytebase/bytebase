@@ -6,11 +6,6 @@ import "google/api/annotations.proto";
 import "google/api/client.proto";
 import "google/api/field_behavior.proto";
 import "google/api/resource.proto";
-import "google/protobuf/duration.proto";
-import "google/protobuf/field_mask.proto";
-import "google/protobuf/timestamp.proto";
-import "google/type/expr.proto";
-import "v1/annotation.proto";
 
 option go_package = "generated-go/v1";
 
@@ -77,14 +72,16 @@ message Release {
 message File {
   string filename = 1;
 
-  // sheet holds the statement.
-  string sheet = 2;
+  // The sheet that holds the statement.
+  // Format: projects/{project}/sheets/{sheet}
+  string sheet = 2 [(google.api.resource_reference) = {type: "bytebase.com/Sheet"}];
   bytes sheet_hash = 3;
 
   Type type = 4;
   string version = 5;
 
   enum Type {
-    VERSIONED = 0;
+    TYPE_UNSPECIFIED = 0;
+    VERSIONED = 1;
   }
 }

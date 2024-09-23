@@ -9749,12 +9749,15 @@ components:
                     type: string
                 sheet:
                     type: string
-                    description: sheet holds the statement.
+                    description: |-
+                        The sheet that holds the statement.
+                         Format: projects/{project}/sheets/{sheet}
                 sheetHash:
                     type: string
                     format: bytes
                 type:
                     enum:
+                        - TYPE_UNSPECIFIED
                         - VERSIONED
                     type: string
                     format: enum

@@ -50,7 +50,10 @@ export interface Release_VCSSource {
 
 export interface File {
   filename: string;
-  /** sheet holds the statement. */
+  /**
+   * The sheet that holds the statement.
+   * Format: projects/{project}/sheets/{sheet}
+   */
   sheet: string;
   sheetHash: Uint8Array;
   type: File_Type;
@@ -58,6 +61,7 @@ export interface File {
 }
 
 export enum File_Type {
+  TYPE_UNSPECIFIED = "TYPE_UNSPECIFIED",
   VERSIONED = "VERSIONED",
   UNRECOGNIZED = "UNRECOGNIZED",
 }
@@ -65,6 +69,9 @@ export enum File_Type {
 export function file_TypeFromJSON(object: any): File_Type {
   switch (object) {
     case 0:
+    case "TYPE_UNSPECIFIED":
+      return File_Type.TYPE_UNSPECIFIED;
+    case 1:
     case "VERSIONED":
       return File_Type.VERSIONED;
     case -1:
@@ -76,6 +83,8 @@ export function file_TypeFromJSON(object: any): File_Type {
 
 export function file_TypeToJSON(object: File_Type): string {
   switch (object) {
+    case File_Type.TYPE_UNSPECIFIED:
+      return "TYPE_UNSPECIFIED";
     case File_Type.VERSIONED:
       return "VERSIONED";
     case File_Type.UNRECOGNIZED:
@@ -86,8 +95,10 @@ export function file_TypeToJSON(object: File_Type): string {
 
 export function file_TypeToNumber(object: File_Type): number {
   switch (object) {
-    case File_Type.VERSIONED:
+    case File_Type.TYPE_UNSPECIFIED:
       return 0;
+    case File_Type.VERSIONED:
+      return 1;
     case File_Type.UNRECOGNIZED:
     default:
       return -1;
@@ -463,7 +474,7 @@ export const Release_VCSSource = {
 };
 
 function createBaseFile(): File {
-  return { filename: "", sheet: "", sheetHash: new Uint8Array(0), type: File_Type.VERSIONED, version: "" };
+  return { filename: "", sheet: "", sheetHash: new Uint8Array(0), type: File_Type.TYPE_UNSPECIFIED, version: "" };
 }
 
 export const File = {
@@ -477,7 +488,7 @@ export const File = {
     if (message.sheetHash.length !== 0) {
       writer.uint32(26).bytes(message.sheetHash);
     }
-    if (message.type !== File_Type.VERSIONED) {
+    if (message.type !== File_Type.TYPE_UNSPECIFIED) {
       writer.uint32(32).int32(file_TypeToNumber(message.type));
     }
     if (message.version !== "") {
@@ -542,7 +553,7 @@ export const File = {
       filename: isSet(object.filename) ? globalThis.String(object.filename) : "",
       sheet: isSet(object.sheet) ? globalThis.String(object.sheet) : "",
       sheetHash: isSet(object.sheetHash) ? bytesFromBase64(object.sheetHash) : new Uint8Array(0),
-      type: isSet(object.type) ? file_TypeFromJSON(object.type) : File_Type.VERSIONED,
+      type: isSet(object.type) ? file_TypeFromJSON(object.type) : File_Type.TYPE_UNSPECIFIED,
       version: isSet(object.version) ? globalThis.String(object.version) : "",
     };
   },
@@ -558,7 +569,7 @@ export const File = {
     if (message.sheetHash.length !== 0) {
       obj.sheetHash = base64FromBytes(message.sheetHash);
     }
-    if (message.type !== File_Type.VERSIONED) {
+    if (message.type !== File_Type.TYPE_UNSPECIFIED) {
       obj.type = file_TypeToJSON(message.type);
     }
     if (message.version !== "") {
@@ -575,7 +586,7 @@ export const File = {
     message.filename = object.filename ?? "";
     message.sheet = object.sheet ?? "";
     message.sheetHash = object.sheetHash ?? new Uint8Array(0);
-    message.type = object.type ?? File_Type.VERSIONED;
+    message.type = object.type ?? File_Type.TYPE_UNSPECIFIED;
     message.version = object.version ?? "";
     return message;
   },
