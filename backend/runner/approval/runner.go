@@ -443,6 +443,7 @@ func (r *Runner) getDatabaseGeneralIssueRisk(ctx context.Context, issue *store.I
 				continue
 			}
 			if r.licenseService.IsFeatureEnabledForInstance(api.FeatureCustomApproval, instance) != nil {
+				// nolint:nilerr
 				return 0, store.RiskSourceUnknown, true, nil
 			}
 
@@ -609,6 +610,7 @@ func (r *Runner) getDatabaseDataExportIssueRisk(ctx context.Context, issue *stor
 				continue
 			}
 			if r.licenseService.IsFeatureEnabledForInstance(api.FeatureCustomApproval, instance) != nil {
+				// nolint:nilerr
 				return 0, store.RiskSourceUnknown, true, nil
 			}
 
@@ -788,6 +790,7 @@ func (r *Runner) getGrantRequestIssueRisk(ctx context.Context, issue *store.Issu
 				continue
 			}
 			if r.licenseService.IsFeatureEnabledForInstance(api.FeatureCustomApproval, instance) != nil {
+				// nolint:nilerr
 				return 0, store.RiskSourceUnknown, true, nil
 			}
 
