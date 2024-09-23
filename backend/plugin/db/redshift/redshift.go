@@ -352,7 +352,7 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 					return nil, err
 				}
 				defer rows.Close()
-				r, err := rowsToQueryResult(rows, driver.config.MaximumSQLResultSize)
+				r, err := util.RowsToQueryResult(rows, driver.config.MaximumSQLResultSize)
 				if err != nil {
 					return nil, err
 				}
