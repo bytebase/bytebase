@@ -146,9 +146,44 @@ export const useSidebarItems = (ignoreModeCheck?: MaybeRef<boolean>) => {
         type: "divider",
       },
       {
+        title: t("settings.sidebar.workspace"),
+        icon: () => h(BuildingIcon),
+        type: "div",
+        expand: true,
+        children: [
+          {
+            title: t("settings.sidebar.general"),
+            name: SQL_EDITOR_SETTING_GENERAL_MODULE,
+            type: "route",
+          },
+          {
+            title: t("settings.sidebar.subscription"),
+            name: SQL_EDITOR_SETTING_SUBSCRIPTION_MODULE,
+            type: "route",
+          },
+        ],
+      },
+      {
+        title: t("settings.sidebar.account"),
+        icon: () => h(UserCircleIcon),
+        type: "div",
+        expand: true,
+        children: [
+          {
+            title: t("settings.sidebar.profile"),
+            name: SQL_EDITOR_SETTING_PROFILE_MODULE,
+            type: "route",
+          },
+        ],
+      },
+      {
+        type: "divider",
+      },
+      {
         title: t("settings.sidebar.iam-and-admin"),
         icon: () => h(UsersIcon),
         type: "div",
+        expand: true,
         children: [
           {
             title: t("settings.sidebar.users-and-groups"),
@@ -182,6 +217,7 @@ export const useSidebarItems = (ignoreModeCheck?: MaybeRef<boolean>) => {
         title: t("settings.sidebar.data-access"),
         icon: () => h(ShieldCheckIcon),
         type: "div",
+        expand: true,
         children: [
           {
             title: t("settings.sidebar.data-classification"),
@@ -196,40 +232,6 @@ export const useSidebarItems = (ignoreModeCheck?: MaybeRef<boolean>) => {
           {
             title: t("settings.sidebar.access-control"),
             name: SQL_EDITOR_SETTING_ACCESS_CONTROL_MODULE,
-            type: "route",
-          },
-        ],
-      },
-      {
-        type: "divider",
-      },
-      {
-        title: t("settings.sidebar.account"),
-        icon: () => h(UserCircleIcon),
-        type: "div",
-        expand: true,
-        children: [
-          {
-            title: t("settings.sidebar.profile"),
-            name: SQL_EDITOR_SETTING_PROFILE_MODULE,
-            type: "route",
-          },
-        ],
-      },
-      {
-        title: t("settings.sidebar.workspace"),
-        icon: () => h(BuildingIcon),
-        type: "div",
-        expand: true,
-        children: [
-          {
-            title: t("settings.sidebar.general"),
-            name: SQL_EDITOR_SETTING_GENERAL_MODULE,
-            type: "route",
-          },
-          {
-            title: t("settings.sidebar.subscription"),
-            name: SQL_EDITOR_SETTING_SUBSCRIPTION_MODULE,
             type: "route",
           },
         ],

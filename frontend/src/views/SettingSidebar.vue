@@ -86,19 +86,6 @@ const onSelect = (item: SidebarItem, e: MouseEvent | undefined) => {
 const settingSidebarItemList = computed((): SidebarItem[] => {
   const list: SidebarItem[] = [
     {
-      title: t("settings.sidebar.account"),
-      icon: () => h(UserCircle),
-      type: "div",
-      expand: true,
-      children: [
-        {
-          title: t("settings.sidebar.profile"),
-          name: SETTING_ROUTE_PROFILE,
-          type: "route",
-        },
-      ],
-    },
-    {
       title: t("settings.sidebar.workspace"),
       icon: () => h(Building),
       type: "div",
@@ -112,6 +99,19 @@ const settingSidebarItemList = computed((): SidebarItem[] => {
         {
           title: t("settings.sidebar.subscription"),
           name: SETTING_ROUTE_WORKSPACE_SUBSCRIPTION,
+          type: "route",
+        },
+      ],
+    },
+    {
+      title: t("settings.sidebar.account"),
+      icon: () => h(UserCircle),
+      type: "div",
+      expand: true,
+      children: [
+        {
+          title: t("settings.sidebar.profile"),
+          name: SETTING_ROUTE_PROFILE,
           type: "route",
         },
       ],
