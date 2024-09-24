@@ -220,6 +220,13 @@
 - [store/query_history.proto](#store_query_history-proto)
     - [QueryHistoryPayload](#bytebase-store-QueryHistoryPayload)
   
+- [store/release.proto](#store_release-proto)
+    - [ReleasePayload](#bytebase-store-ReleasePayload)
+    - [ReleasePayload.File](#bytebase-store-ReleasePayload-File)
+    - [ReleasePayload.VCSSource](#bytebase-store-ReleasePayload-VCSSource)
+  
+    - [ReleasePayload.File.Type](#bytebase-store-ReleasePayload-File-Type)
+  
 - [store/review_config.proto](#store_review_config-proto)
     - [ReviewConfigPayload](#bytebase-store-ReviewConfigPayload)
   
@@ -3446,6 +3453,86 @@ SlowQueryPolicy is the policy configuration for slow query.
 
 
  
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="store_release-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## store/release.proto
+
+
+
+<a name="bytebase-store-ReleasePayload"></a>
+
+### ReleasePayload
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| title | [string](#string) |  |  |
+| files | [ReleasePayload.File](#bytebase-store-ReleasePayload-File) | repeated |  |
+| vcs_source | [ReleasePayload.VCSSource](#bytebase-store-ReleasePayload-VCSSource) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-ReleasePayload-File"></a>
+
+### ReleasePayload.File
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| title | [string](#string) |  | The filename. |
+| sheet | [string](#string) |  | The sheet that holds the content. Format: projects/{project}/sheets/{sheet} |
+| sheet_sha1 | [string](#string) |  | The SHA1 hash value of the sheet. |
+| type | [ReleasePayload.File.Type](#bytebase-store-ReleasePayload-File-Type) |  |  |
+| version | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-ReleasePayload-VCSSource"></a>
+
+### ReleasePayload.VCSSource
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| vcs_type | [VCSType](#bytebase-store-VCSType) |  |  |
+| pull_request_url | [string](#string) |  |  |
+
+
+
+
+
+ 
+
+
+<a name="bytebase-store-ReleasePayload-File-Type"></a>
+
+### ReleasePayload.File.Type
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| TYPE_UNSPECIFIED | 0 |  |
+| VERSIONED | 1 |  |
+
 
  
 

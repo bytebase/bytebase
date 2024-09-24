@@ -1,6 +1,7 @@
 /* eslint-disable */
 import Long from "long";
 import _m0 from "protobufjs/minimal";
+import { Timestamp } from "../google/protobuf/timestamp";
 import { VCSType, vCSTypeFromJSON, vCSTypeToJSON, vCSTypeToNumber } from "./common";
 
 export const protobufPackage = "bytebase.v1";
@@ -48,14 +49,21 @@ export interface CreateReleaseRequest {
 export interface Release {
   /** Format: projects/{project}/releases/{release} */
   name: string;
+  title: string;
   files: Release_File[];
-  vcsSource: Release_VCSSource | undefined;
+  vcsSource:
+    | Release_VCSSource
+    | undefined;
+  /** Format: users/hello@world.com */
+  creator: string;
+  createTime: Date | undefined;
 }
 
 export interface Release_File {
-  filename: string;
+  /** The filename. */
+  title: string;
   /**
-   * The sheet that holds the statement.
+   * The sheet that holds the content.
    * Format: projects/{project}/sheets/{sheet}
    */
   sheet: string;
@@ -412,7 +420,7 @@ export const CreateReleaseRequest = {
 };
 
 function createBaseRelease(): Release {
-  return { name: "", files: [], vcsSource: undefined };
+  return { name: "", title: "", files: [], vcsSource: undefined, creator: "", createTime: undefined };
 }
 
 export const Release = {
@@ -420,11 +428,20 @@ export const Release = {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
     }
+    if (message.title !== "") {
+      writer.uint32(18).string(message.title);
+    }
     for (const v of message.files) {
-      Release_File.encode(v!, writer.uint32(18).fork()).ldelim();
+      Release_File.encode(v!, writer.uint32(26).fork()).ldelim();
     }
     if (message.vcsSource !== undefined) {
-      Release_VCSSource.encode(message.vcsSource, writer.uint32(26).fork()).ldelim();
+      Release_VCSSource.encode(message.vcsSource, writer.uint32(34).fork()).ldelim();
+    }
+    if (message.creator !== "") {
+      writer.uint32(42).string(message.creator);
+    }
+    if (message.createTime !== undefined) {
+      Timestamp.encode(toTimestamp(message.createTime), writer.uint32(50).fork()).ldelim();
     }
     return writer;
   },
@@ -448,14 +465,35 @@ export const Release = {
             break;
           }
 
-          message.files.push(Release_File.decode(reader, reader.uint32()));
+          message.title = reader.string();
           continue;
         case 3:
           if (tag !== 26) {
             break;
           }
 
+          message.files.push(Release_File.decode(reader, reader.uint32()));
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
           message.vcsSource = Release_VCSSource.decode(reader, reader.uint32());
+          continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.creator = reader.string();
+          continue;
+        case 6:
+          if (tag !== 50) {
+            break;
+          }
+
+          message.createTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -469,8 +507,11 @@ export const Release = {
   fromJSON(object: any): Release {
     return {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
+      title: isSet(object.title) ? globalThis.String(object.title) : "",
       files: globalThis.Array.isArray(object?.files) ? object.files.map((e: any) => Release_File.fromJSON(e)) : [],
       vcsSource: isSet(object.vcsSource) ? Release_VCSSource.fromJSON(object.vcsSource) : undefined,
+      creator: isSet(object.creator) ? globalThis.String(object.creator) : "",
+      createTime: isSet(object.createTime) ? fromJsonTimestamp(object.createTime) : undefined,
     };
   },
 
@@ -479,11 +520,20 @@ export const Release = {
     if (message.name !== "") {
       obj.name = message.name;
     }
+    if (message.title !== "") {
+      obj.title = message.title;
+    }
     if (message.files?.length) {
       obj.files = message.files.map((e) => Release_File.toJSON(e));
     }
     if (message.vcsSource !== undefined) {
       obj.vcsSource = Release_VCSSource.toJSON(message.vcsSource);
+    }
+    if (message.creator !== "") {
+      obj.creator = message.creator;
+    }
+    if (message.createTime !== undefined) {
+      obj.createTime = message.createTime.toISOString();
     }
     return obj;
   },
@@ -494,22 +544,25 @@ export const Release = {
   fromPartial(object: DeepPartial<Release>): Release {
     const message = createBaseRelease();
     message.name = object.name ?? "";
+    message.title = object.title ?? "";
     message.files = object.files?.map((e) => Release_File.fromPartial(e)) || [];
     message.vcsSource = (object.vcsSource !== undefined && object.vcsSource !== null)
       ? Release_VCSSource.fromPartial(object.vcsSource)
       : undefined;
+    message.creator = object.creator ?? "";
+    message.createTime = object.createTime ?? undefined;
     return message;
   },
 };
 
 function createBaseRelease_File(): Release_File {
-  return { filename: "", sheet: "", sheetSha1: "", type: Release_File_Type.TYPE_UNSPECIFIED, version: "" };
+  return { title: "", sheet: "", sheetSha1: "", type: Release_File_Type.TYPE_UNSPECIFIED, version: "" };
 }
 
 export const Release_File = {
   encode(message: Release_File, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.filename !== "") {
-      writer.uint32(10).string(message.filename);
+    if (message.title !== "") {
+      writer.uint32(10).string(message.title);
     }
     if (message.sheet !== "") {
       writer.uint32(18).string(message.sheet);
@@ -538,7 +591,7 @@ export const Release_File = {
             break;
           }
 
-          message.filename = reader.string();
+          message.title = reader.string();
           continue;
         case 2:
           if (tag !== 18) {
@@ -579,7 +632,7 @@ export const Release_File = {
 
   fromJSON(object: any): Release_File {
     return {
-      filename: isSet(object.filename) ? globalThis.String(object.filename) : "",
+      title: isSet(object.title) ? globalThis.String(object.title) : "",
       sheet: isSet(object.sheet) ? globalThis.String(object.sheet) : "",
       sheetSha1: isSet(object.sheetSha1) ? globalThis.String(object.sheetSha1) : "",
       type: isSet(object.type) ? release_File_TypeFromJSON(object.type) : Release_File_Type.TYPE_UNSPECIFIED,
@@ -589,8 +642,8 @@ export const Release_File = {
 
   toJSON(message: Release_File): unknown {
     const obj: any = {};
-    if (message.filename !== "") {
-      obj.filename = message.filename;
+    if (message.title !== "") {
+      obj.title = message.title;
     }
     if (message.sheet !== "") {
       obj.sheet = message.sheet;
@@ -612,7 +665,7 @@ export const Release_File = {
   },
   fromPartial(object: DeepPartial<Release_File>): Release_File {
     const message = createBaseRelease_File();
-    message.filename = object.filename ?? "";
+    message.title = object.title ?? "";
     message.sheet = object.sheet ?? "";
     message.sheetSha1 = object.sheetSha1 ?? "";
     message.type = object.type ?? Release_File_Type.TYPE_UNSPECIFIED;
@@ -872,6 +925,32 @@ export type DeepPartial<T> = T extends Builtin ? T
   : T extends ReadonlyArray<infer U> ? ReadonlyArray<DeepPartial<U>>
   : T extends {} ? { [K in keyof T]?: DeepPartial<T[K]> }
   : Partial<T>;
+
+function toTimestamp(date: Date): Timestamp {
+  const seconds = numberToLong(date.getTime() / 1_000);
+  const nanos = (date.getTime() % 1_000) * 1_000_000;
+  return { seconds, nanos };
+}
+
+function fromTimestamp(t: Timestamp): Date {
+  let millis = (t.seconds.toNumber() || 0) * 1_000;
+  millis += (t.nanos || 0) / 1_000_000;
+  return new globalThis.Date(millis);
+}
+
+function fromJsonTimestamp(o: any): Date {
+  if (o instanceof globalThis.Date) {
+    return o;
+  } else if (typeof o === "string") {
+    return new globalThis.Date(o);
+  } else {
+    return fromTimestamp(Timestamp.fromJSON(o));
+  }
+}
+
+function numberToLong(number: number) {
+  return Long.fromNumber(number);
+}
 
 if (_m0.util.Long !== Long) {
   _m0.util.Long = Long as any;
