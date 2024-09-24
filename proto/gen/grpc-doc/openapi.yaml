@@ -12004,21 +12004,32 @@ components:
                 name:
                     type: string
                     description: 'Format: projects/{project}/releases/{release}'
+                title:
+                    type: string
                 files:
                     type: array
                     items:
                         $ref: '#/components/schemas/Release_File'
                 vcsSource:
                     $ref: '#/components/schemas/Release_VCSSource'
+                creator:
+                    readOnly: true
+                    type: string
+                    description: 'Format: users/hello@world.com'
+                createTime:
+                    readOnly: true
+                    type: string
+                    format: date-time
         Release_File:
             type: object
             properties:
-                filename:
+                title:
                     type: string
+                    description: The filename.
                 sheet:
                     type: string
                     description: |-
-                        The sheet that holds the statement.
+                        The sheet that holds the content.
                          Format: projects/{project}/sheets/{sheet}
                 sheetSha1:
                     type: string

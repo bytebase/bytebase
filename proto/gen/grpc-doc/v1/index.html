@@ -24079,6 +24079,13 @@ If this field is omitted, there are no subsequent pages. </p></td>
                 </tr>
               
                 <tr>
+                  <td>title</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
                   <td>files</td>
                   <td><a href="#bytebase.v1.Release.File">Release.File</a></td>
                   <td>repeated</td>
@@ -24088,6 +24095,20 @@ If this field is omitted, there are no subsequent pages. </p></td>
                 <tr>
                   <td>vcs_source</td>
                   <td><a href="#bytebase.v1.Release.VCSSource">Release.VCSSource</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>creator</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Format: users/hello@world.com </p></td>
+                </tr>
+              
+                <tr>
+                  <td>create_time</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
@@ -24110,17 +24131,17 @@ If this field is omitted, there are no subsequent pages. </p></td>
             <tbody>
               
                 <tr>
-                  <td>filename</td>
+                  <td>title</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>The filename. </p></td>
                 </tr>
               
                 <tr>
                   <td>sheet</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The sheet that holds the statement.
+                  <td><p>The sheet that holds the content.
 Format: projects/{project}/sheets/{sheet} </p></td>
                 </tr>
               
