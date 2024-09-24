@@ -17,6 +17,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/state"
 	"github.com/bytebase/bytebase/backend/component/webhook"
+	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/store"
@@ -35,16 +36,24 @@ type SchedulerV2 struct {
 	webhookManager *webhook.Manager
 	executorMap    map[api.TaskType]Executor
 	profile        *config.Profile
+	licenseService enterprise.LicenseService
 }
 
 // NewSchedulerV2 will create a new scheduler.
-func NewSchedulerV2(store *store.Store, stateCfg *state.State, webhookManager *webhook.Manager, profile *config.Profile) *SchedulerV2 {
+func NewSchedulerV2(
+	store *store.Store,
+	stateCfg *state.State,
+	webhookManager *webhook.Manager,
+	profile *config.Profile,
+	licenseService enterprise.LicenseService,
+) *SchedulerV2 {
 	return &SchedulerV2{
 		store:          store,
 		stateCfg:       stateCfg,
 		webhookManager: webhookManager,
 		profile:        profile,
 		executorMap:    map[api.TaskType]Executor{},
+		licenseService: licenseService,
 	}
 }
 
@@ -109,34 +118,67 @@ func (s *SchedulerV2) scheduleAutoRolloutTasks(ctx context.Context) error {
 		return errors.Wrapf(err, "failed to list environments")
 	}
 
-	var autoRolloutEnvironmentIDs []int
 	for _, environment := range environments {
 		policy, err := s.store.GetRolloutPolicy(ctx, environment.UID)
 		if err != nil {
-			return errors.Wrapf(err, "failed to get rollout policy for environment ID %d", environment.UID)
+			return errors.Wrapf(err, "failed to get rollout policy for environment %d", environment.UID)
 		}
-		if !policy.Automatic {
-			continue
+
+		taskIDs, err := s.store.ListTasksToAutoRollout(ctx, []int{environment.UID})
+		if err != nil {
+			return errors.Wrapf(err, "failed to list tasks with zero task run")
 		}
-		autoRolloutEnvironmentIDs = append(autoRolloutEnvironmentIDs, environment.UID)
+		for _, taskID := range taskIDs {
+			if err := s.scheduleAutoRolloutTask(ctx, policy, taskID); err != nil {
+				slog.Error("failed to schedule auto rollout task", log.BBError(err))
+			}
+		}
 	}
 
-	taskIDs, err := s.store.ListTasksToAutoRollout(ctx, autoRolloutEnvironmentIDs)
-	if err != nil {
-		return errors.Wrapf(err, "failed to list tasks with zero task run")
-	}
-	for _, taskID := range taskIDs {
-		if err := s.scheduleAutoRolloutTask(ctx, taskID); err != nil {
-			slog.Error("failed to schedule auto rollout task", log.BBError(err))
-		}
-	}
 	return nil
 }
 
-func (s *SchedulerV2) scheduleAutoRolloutTask(ctx context.Context, taskUID int) error {
+func (s *SchedulerV2) canTaskAutoRollout(ctx context.Context, rolloutPolicy *storepb.RolloutPolicy, task *store.TaskMessage) (bool, error) {
+	if rolloutPolicy.Automatic {
+		return true, nil
+	}
+
+	if s.licenseService.IsFeatureEnabled(api.FeatureRolloutPolicy) != nil {
+		// nolint:nilerr
+		return true, nil
+	}
+
+	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
+	if err != nil {
+		return false, err
+	}
+	if instance == nil || instance.Deleted {
+		return false, nil
+	}
+
+	if s.licenseService.IsFeatureEnabledForInstance(api.FeatureRolloutPolicy, instance) != nil {
+		// nolint:nilerr
+		return true, nil
+	}
+
+	return false, nil
+}
+
+func (s *SchedulerV2) scheduleAutoRolloutTask(ctx context.Context, rolloutPolicy *storepb.RolloutPolicy, taskUID int) error {
 	task, err := s.store.GetTaskV2ByID(ctx, taskUID)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get task")
+	}
+	if task == nil {
+		return nil
+	}
+
+	canAutoRollout, err := s.canTaskAutoRollout(ctx, rolloutPolicy, task)
+	if err != nil {
+		return err
+	}
+	if !canAutoRollout {
+		return nil
 	}
 
 	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})

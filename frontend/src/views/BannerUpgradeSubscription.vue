@@ -81,7 +81,10 @@ import { SETTING_ROUTE_WORKSPACE_SUBSCRIPTION } from "@/router/dashboard/workspa
 import { useSubscriptionV1Store, useActuatorV1Store } from "@/store";
 import type { FeatureType } from "@/types";
 import { planTypeToString } from "@/types";
-import { PlanType } from "@/types/proto/v1/subscription_service";
+import {
+  PlanType,
+  planTypeToNumber,
+} from "@/types/proto/v1/subscription_service";
 
 interface LocalState {
   showModal: boolean;
@@ -98,7 +101,8 @@ const state = reactive<LocalState>({
 const showBanner = computed(() => {
   return (
     unlicensedFeatures.value.length > 0 &&
-    neededPlan.value > subscriptionStore.currentPlan
+    planTypeToNumber(neededPlan.value) >
+      planTypeToNumber(subscriptionStore.currentPlan)
   );
 });
 
@@ -113,7 +117,7 @@ const neededPlan = computed(() => {
     const requiredPlan = subscriptionStore.getMinimumRequiredPlan(
       feature as FeatureType
     );
-    if (requiredPlan > plan) {
+    if (planTypeToNumber(requiredPlan) > planTypeToNumber(plan)) {
       plan = requiredPlan;
     }
   }
