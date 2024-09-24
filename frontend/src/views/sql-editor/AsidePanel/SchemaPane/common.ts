@@ -202,7 +202,7 @@ export const keyForNodeTarget = <T extends NodeType>(
     return [
       db.name,
       `schemas/${schema.name}`,
-      `views/${view}`,
+      `views/${view.name}`,
       `dependentColumns/${keyForDependentColumn(dependentColumn)}`,
     ].join("/");
   }

@@ -48,4 +48,8 @@ onMounted(() => {
     inputRef.value?.inputElRef?.focus();
   }
 });
+
+defineExpose({
+  inputRef,
+});
 </script>
