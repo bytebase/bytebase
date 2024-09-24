@@ -19,6 +19,13 @@ service ReleaseService {
     option (google.api.http) = {get: "/v1/{parent=projects/*}/releases"};
     option (google.api.method_signature) = "parent";
   }
+  rpc CreateRelease(CreateReleaseRequest) returns (Release) {
+    option (google.api.http) = {
+      post: "/v1/{parent=projects/*}/releases"
+      body: "release"
+    };
+    option (google.api.method_signature) = "parent,release";
+  }
 }
 
 message GetReleaseRequest {
@@ -57,6 +64,17 @@ message ListReleasesResponse {
   string next_page_token = 2;
 }
 
+message CreateReleaseRequest {
+  // Format: projects/{project}
+  string parent = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Project"}
+  ];
+
+  // The release to create.
+  Release release = 2 [(google.api.field_behavior) = REQUIRED];
+}
+
 message Release {
   // Format: projects/{project}/releases/{release}
   string name = 1;
@@ -71,7 +89,8 @@ message Release {
     // The sheet that holds the statement.
     // Format: projects/{project}/sheets/{sheet}
     string sheet = 2 [(google.api.resource_reference) = {type: "bytebase.com/Sheet"}];
-    bytes sheet_hash = 3;
+    // The SHA1 hash value of the sheet.
+    string sheet_sha1 = 3;
 
     Type type = 4;
     string version = 5;

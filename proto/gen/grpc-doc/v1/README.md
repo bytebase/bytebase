@@ -535,6 +535,7 @@
     - [ProjectService](#bytebase-v1-ProjectService)
   
 - [v1/release_service.proto](#v1_release_service-proto)
+    - [CreateReleaseRequest](#bytebase-v1-CreateReleaseRequest)
     - [GetReleaseRequest](#bytebase-v1-GetReleaseRequest)
     - [ListReleasesRequest](#bytebase-v1-ListReleasesRequest)
     - [ListReleasesResponse](#bytebase-v1-ListReleasesResponse)
@@ -8678,6 +8679,22 @@ TYPE_PROJECT_REPOSITORY_PUSH represents Bytebase receiving a push event from the
 
 
 
+<a name="bytebase-v1-CreateReleaseRequest"></a>
+
+### CreateReleaseRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | Format: projects/{project} |
+| release | [Release](#bytebase-v1-Release) |  | The release to create. |
+
+
+
+
+
+
 <a name="bytebase-v1-GetReleaseRequest"></a>
 
 ### GetReleaseRequest
@@ -8755,7 +8772,7 @@ When paginating, all other parameters provided to `ListReleasesRequest` must mat
 | ----- | ---- | ----- | ----------- |
 | filename | [string](#string) |  |  |
 | sheet | [string](#string) |  | The sheet that holds the statement. Format: projects/{project}/sheets/{sheet} |
-| sheet_hash | [bytes](#bytes) |  |  |
+| sheet_sha1 | [string](#string) |  | The SHA1 hash value of the sheet. |
 | type | [Release.File.Type](#bytebase-v1-Release-File-Type) |  |  |
 | version | [string](#string) |  |  |
 
@@ -8807,6 +8824,7 @@ When paginating, all other parameters provided to `ListReleasesRequest` must mat
 | ----------- | ------------ | ------------- | ------------|
 | GetRelease | [GetReleaseRequest](#bytebase-v1-GetReleaseRequest) | [Release](#bytebase-v1-Release) |  |
 | ListReleases | [ListReleasesRequest](#bytebase-v1-ListReleasesRequest) | [ListReleasesResponse](#bytebase-v1-ListReleasesResponse) |  |
+| CreateRelease | [CreateReleaseRequest](#bytebase-v1-CreateReleaseRequest) | [Release](#bytebase-v1-Release) |  |
 
  
 
