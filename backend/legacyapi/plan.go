@@ -147,11 +147,11 @@ const (
 
 	// Policy Control.
 
-	// FeatureApprovalPolicy allows user to specify approval policy for the environment
+	// FeatureRolloutPolicy allows user to specify approval policy for the environment
 	//
 	// e.g. One can configure to NOT require approval for dev environment while require
-	//      manual approval for production.
-	FeatureApprovalPolicy FeatureType = "bb.feature.approval-policy"
+	//      manual rollout for production.
+	FeatureRolloutPolicy FeatureType = "bb.feature.rollout-policy"
 	// FeatureEnvironmentTierPolicy allows user to set the tier of an environment.
 	//
 	// e.g. set the tier to "PROTECTED" for the production environment.
@@ -252,8 +252,8 @@ func (e FeatureType) Name() string {
 	case FeatureIndexAdvisor:
 		return "Index advisor"
 	// Policy Control
-	case FeatureApprovalPolicy:
-		return "Approval policy"
+	case FeatureRolloutPolicy:
+		return "Rollout policy"
 	case FeatureEnvironmentTierPolicy:
 		return "Environment tier"
 	case FeatureSensitiveData:
@@ -330,7 +330,7 @@ var FeatureMatrix = map[FeatureType][3]bool{
 	FeatureSyncSchemaAllVersions:      {false, true, true},
 	FeatureIndexAdvisor:               {false, false, true},
 	// Policy Control
-	FeatureApprovalPolicy:        {false, true, true},
+	FeatureRolloutPolicy:         {false, true, true},
 	FeatureEnvironmentTierPolicy: {false, false, true},
 	FeatureSensitiveData:         {false, false, true},
 	FeatureAccessControl:         {false, false, true},
@@ -362,6 +362,7 @@ var InstanceLimitFeature = map[FeatureType]bool{
 	// Policy Control
 	FeatureSensitiveData:  true,
 	FeatureCustomApproval: true,
+	FeatureRolloutPolicy:  true,
 }
 
 // Feature returns whether a particular feature is available in a particular plan.

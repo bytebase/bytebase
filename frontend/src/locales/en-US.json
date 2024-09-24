@@ -2759,7 +2759,7 @@
         "title": "Batch mode",
         "desc": "Batch changing a group of databases from different tenants or partitions."
       },
-      "bb-feature-approval-policy": {
+      "bb-feature-rollout-policy": {
         "title": "Rollout policy",
         "desc": "Rollout policy controls whether the schema change task requires manual rolling out."
       },
