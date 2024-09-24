@@ -195,6 +195,8 @@ export const useSQLEditorTabStore = defineStore("sqlEditorTab", () => {
     }
     currentTabId.value = id;
     tabsById.set(id, newTab);
+
+    return newTab;
   };
   const removeTab = (tab: SQLEditorTab) => {
     const { id } = tab;

@@ -1,6 +1,6 @@
 <template>
   <div class="h-full flex flex-col gap-1 overflow-hidden pb-1 text-sm">
-    <div class="flex items-center gap-x-1 px-1 pt-1">
+    <div class="flex items-center gap-x-1 px-1">
       <SearchBox
         v-model:value="keyword"
         size="small"

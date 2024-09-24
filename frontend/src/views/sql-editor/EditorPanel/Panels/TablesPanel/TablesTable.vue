@@ -36,6 +36,7 @@ import {
   hasTableEngineProperty,
   useAutoHeightDataTable,
 } from "@/utils";
+import { EllipsisCell } from "../../common";
 import { useEditorPanelContext } from "../../context";
 
 const props = defineProps<{
@@ -87,6 +88,7 @@ const {
 );
 
 const columns = computed(() => {
+  const downGrade = filteredTables.value.length > 50;
   const columns: (DataTableColumn<TableMetadata> & { hide?: boolean })[] = [
     {
       key: "name",
@@ -152,8 +154,13 @@ const columns = computed(() => {
       resizable: true,
       minWidth: 140,
       maxWidth: 320,
-      className: "truncate",
-      render: (table) => table.userComment,
+      className: "overflow-hidden",
+      render: (table) => {
+        return h(EllipsisCell, {
+          content: table.comment,
+          downGrade,
+        });
+      },
     },
   ];
   return columns.filter((col) => !col.hide);

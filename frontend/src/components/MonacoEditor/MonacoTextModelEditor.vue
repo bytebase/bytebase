@@ -225,4 +225,10 @@ defineExpose({
   left: 52px;
   top: 8px;
 }
+.bb-monaco-editor :deep(.monaco-editor .peekview-title .filename) {
+  display: none !important;
+}
+.bb-monaco-editor :deep(.monaco-editor .peekview-title .dirname) {
+  margin-left: 0 !important;
+}
 </style>

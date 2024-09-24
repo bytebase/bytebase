@@ -16,7 +16,11 @@
         />
       </p>
       <div>
-        <NRadioGroup v-model:value="state.databaseChangeMode" size="large">
+        <NRadioGroup
+          v-model:value="state.databaseChangeMode"
+          :disabled="!allowEdit"
+          size="large"
+        >
           <NSpace vertical>
             <NRadio key="PIPELINE" :value="DatabaseChangeMode.PIPELINE">
               <div class="flex flex-col gap-1">

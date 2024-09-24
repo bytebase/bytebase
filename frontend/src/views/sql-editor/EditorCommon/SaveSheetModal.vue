@@ -54,7 +54,7 @@ const doSaveSheet = async (
 ) => {
   const { title, statement, worksheet } = tab;
 
-  if (title === "" || statement === "") {
+  if (title === "") {
     return;
   }
 
