@@ -45,7 +45,7 @@ var NullRowValue = &v1pb.RowValue{
 	},
 }
 
-func RowsToQueryResult(rows *sql.Rows, valueMaker func(string) any, rowValueConverter func(any) *v1pb.RowValue, limit int64) (*v1pb.QueryResult, error) {
+func RowsToQueryResult(rows *sql.Rows, valueMaker func(string, *sql.ColumnType) any, rowValueConverter func(any) *v1pb.RowValue, limit int64) (*v1pb.QueryResult, error) {
 	columnNames, err := rows.Columns()
 	if err != nil {
 		return nil, err
@@ -70,7 +70,7 @@ func RowsToQueryResult(rows *sql.Rows, valueMaker func(string) any, rowValueConv
 		for rows.Next() {
 			values := make([]any, columnLength)
 			for i, v := range columnTypeNames {
-				values[i] = valueMaker(v)
+				values[i] = valueMaker(v, columnTypes[i])
 			}
 
 			if err := rows.Scan(values...); err != nil {
@@ -98,7 +98,7 @@ func RowsToQueryResult(rows *sql.Rows, valueMaker func(string) any, rowValueConv
 	return result, nil
 }
 
-func MakeCommonValueByTypeName(typeName string) any {
+func MakeCommonValueByTypeName(typeName string, _ *sql.ColumnType) any {
 	switch typeName {
 	case "VARCHAR", "TEXT", "UUID", "TIMESTAMP":
 		return new(sql.NullString)

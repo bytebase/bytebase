@@ -20,7 +20,7 @@ import (
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
-func makeValueByTypeName(typeName string) any {
+func makeValueByTypeName(typeName string, _ *sql.ColumnType) any {
 	switch typeName {
 	case "UNIQUEIDENTIFIER":
 		return new(mssqldb.NullUniqueIdentifier)
