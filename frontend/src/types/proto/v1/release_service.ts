@@ -41,7 +41,7 @@ export interface ListReleasesResponse {
 export interface CreateReleaseRequest {
   /** Format: projects/{project} */
   parent: string;
-  /** The release to craete. */
+  /** The release to create. */
   release: Release | undefined;
 }
 

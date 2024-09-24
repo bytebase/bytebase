@@ -8688,7 +8688,7 @@ TYPE_PROJECT_REPOSITORY_PUSH represents Bytebase receiving a push event from the
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | parent | [string](#string) |  | Format: projects/{project} |
-| release | [Release](#bytebase-v1-Release) |  | The release to craete. |
+| release | [Release](#bytebase-v1-Release) |  | The release to create. |
 
 
 

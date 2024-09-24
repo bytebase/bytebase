@@ -251,7 +251,7 @@ type CreateReleaseRequest struct {
 
 	// Format: projects/{project}
 	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
-	// The release to craete.
+	// The release to create.
 	Release *Release `protobuf:"bytes,2,opt,name=release,proto3" json:"release,omitempty"`
 }
 
