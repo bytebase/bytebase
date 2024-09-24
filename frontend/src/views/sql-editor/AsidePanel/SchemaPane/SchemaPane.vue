@@ -5,6 +5,7 @@
     <div class="px-1 flex flex-row gap-1">
       <div class="flex-1 overflow-hidden">
         <SearchBox
+          ref="searchBoxRef"
           v-model:value="searchPattern"
           :disabled="!currentTab"
           size="small"
@@ -75,6 +76,7 @@ import {
   computedAsync,
   refDebounced,
   useElementSize,
+  useEventListener,
   useMounted,
 } from "@vueuse/core";
 import { head, uniq, without } from "lodash-es";
@@ -115,6 +117,7 @@ import {
 } from "./common";
 
 const mounted = useMounted();
+const searchBoxRef = ref<InstanceType<typeof SearchBox>>();
 const treeRef = ref<TreeInst>();
 const treeContainerElRef = ref<HTMLElement>();
 const { height: treeContainerHeight } = useElementSize(
@@ -399,6 +402,10 @@ watch(
     immediate: true,
   }
 );
+
+useEventListener(treeContainerElRef, "keydown", (e) => {
+  searchBoxRef.value?.inputRef?.focus()
+});
 </script>
 
 <style lang="postcss" scoped>
