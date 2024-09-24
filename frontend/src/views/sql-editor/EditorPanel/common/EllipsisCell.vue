@@ -10,7 +10,9 @@
       </div>
     </template>
   </NPerformantEllipsis>
-  <div v-else :title="content" class="truncate">{{ content }}</div>
+  <div v-else :title="content" class="truncate">
+    {{ content }}
+  </div>
 </template>
 
 <script setup lang="ts">
