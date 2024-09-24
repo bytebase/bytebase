@@ -2759,7 +2759,7 @@
         "title": "Modo Lote",
         "desc": "Cambio por lotes de un grupo de bases de datos de diferentes inquilinos o particiones."
       },
-      "bb-feature-approval-policy": {
+      "bb-feature-rollout-policy": {
         "title": "Política de implementación",
         "desc": "La política de implementación controla si la tarea de cambio de esquema requiere una implementación manual."
       },

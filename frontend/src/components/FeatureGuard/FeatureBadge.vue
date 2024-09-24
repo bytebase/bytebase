@@ -4,7 +4,13 @@
   <div
     v-if="instanceMissingLicense"
     :class="['text-accent cursor-pointer', customClass]"
-    @click="state.showInstanceAssignmentDrawer = true"
+    @click="
+      (e: MouseEvent) => {
+        e.stopPropagation();
+        e.preventDefault();
+        state.showInstanceAssignmentDrawer = true;
+      }
+    "
   >
     <NTooltip :show-arrow="true">
       <template #trigger>

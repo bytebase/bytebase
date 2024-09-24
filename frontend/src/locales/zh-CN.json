@@ -2759,7 +2759,7 @@
         "title": "批量模式",
         "desc": "批量变更一组属于不同租户或者数据库分库的数据库。"
       },
-      "bb-feature-approval-policy": {
+      "bb-feature-rollout-policy": {
         "title": "发布策略",
         "desc": "「发布策略」可以控制数据库 schema 的变更是否需要手动发布"
       },

@@ -101,8 +101,8 @@ useEmitteryEventListener(events, "create", (params) => {
         return;
       }
     }
-    if (!hasFeature("bb.feature.approval-policy")) {
-      missingFeature.value = "bb.feature.approval-policy";
+    if (!hasFeature("bb.feature.rollout-policy")) {
+      missingFeature.value = "bb.feature.rollout-policy";
       return;
     }
   }
@@ -132,8 +132,8 @@ useEmitteryEventListener(events, "update-policy", (params) => {
           return;
         }
       }
-      if (!hasFeature("bb.feature.approval-policy")) {
-        missingFeature.value = "bb.feature.approval-policy";
+      if (!hasFeature("bb.feature.rollout-policy")) {
+        missingFeature.value = "bb.feature.rollout-policy";
         return;
       }
     }
