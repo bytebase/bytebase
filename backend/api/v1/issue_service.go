@@ -104,7 +104,7 @@ func (s *IssueService) GetIssue(ctx context.Context, request *v1pb.GetIssueReque
 		}
 	}
 
-	issueV1, err := convertToIssue(ctx, s.store, issue)
+	issueV1, err := s.convertToIssue(ctx, issue)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to convert to issue, error: %v", err)
 	}
@@ -297,7 +297,7 @@ func (s *IssueService) ListIssues(ctx context.Context, request *v1pb.ListIssuesR
 		issues = issues[:limit]
 	}
 
-	converted, err := convertToIssues(ctx, s.store, issues)
+	converted, err := s.convertToIssues(ctx, issues)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to convert to issue, error: %v", err)
 	}
@@ -350,7 +350,7 @@ func (s *IssueService) SearchIssues(ctx context.Context, request *v1pb.SearchIss
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to get next page token, error: %v", err)
 		}
-		converted, err := convertToIssues(ctx, s.store, issues[:limit])
+		converted, err := s.convertToIssues(ctx, issues[:limit])
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to convert to issue, error: %v", err)
 		}
@@ -361,7 +361,7 @@ func (s *IssueService) SearchIssues(ctx context.Context, request *v1pb.SearchIss
 	}
 
 	// No subsequent pages.
-	converted, err := convertToIssues(ctx, s.store, issues)
+	converted, err := s.convertToIssues(ctx, issues)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to convert to issue, error: %v", err)
 	}
@@ -493,7 +493,7 @@ func (s *IssueService) createIssueDatabaseChange(ctx context.Context, request *v
 		Project: webhook.NewProject(issue.Project),
 	})
 
-	converted, err := convertToIssue(ctx, s.store, issue)
+	converted, err := s.convertToIssue(ctx, issue)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to convert to issue, error: %v", err)
 	}
@@ -576,7 +576,7 @@ func (s *IssueService) createIssueGrantRequest(ctx context.Context, request *v1p
 		Project: webhook.NewProject(issue.Project),
 	})
 
-	converted, err := convertToIssue(ctx, s.store, issue)
+	converted, err := s.convertToIssue(ctx, issue)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to convert to issue, error: %v", err)
 	}
@@ -677,7 +677,7 @@ func (s *IssueService) createIssueDatabaseDataExport(ctx context.Context, reques
 		Project: webhook.NewProject(issue.Project),
 	})
 
-	converted, err := convertToIssue(ctx, s.store, issue)
+	converted, err := s.convertToIssue(ctx, issue)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to convert to issue, error: %v", err)
 	}
@@ -858,9 +858,10 @@ func (s *IssueService) ApproveIssue(ctx context.Context, request *v1pb.ApproveIs
 			if len(stages) == 0 {
 				return nil
 			}
-			policy, err := s.store.GetRolloutPolicy(ctx, stages[0].EnvironmentID)
+
+			policy, err := GetValidRolloutPolicyForStage(ctx, s.store, s.licenseService, stages[0])
 			if err != nil {
-				return errors.Wrapf(err, "failed to get rollout policy")
+				return err
 			}
 			s.webhookManager.CreateEvent(ctx, &webhook.Event{
 				Actor:   user,
@@ -898,7 +899,7 @@ func (s *IssueService) ApproveIssue(ctx context.Context, request *v1pb.ApproveIs
 		}
 	}
 
-	issueV1, err := convertToIssue(ctx, s.store, issue)
+	issueV1, err := s.convertToIssue(ctx, issue)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to convert to issue, error: %v", err)
 	}
@@ -1000,7 +1001,7 @@ func (s *IssueService) RejectIssue(ctx context.Context, request *v1pb.RejectIssu
 		slog.Warn("failed to create issue comment", log.BBError(err))
 	}
 
-	issueV1, err := convertToIssue(ctx, s.store, issue)
+	issueV1, err := s.convertToIssue(ctx, issue)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to convert to issue, error: %v", err)
 	}
@@ -1095,7 +1096,7 @@ func (s *IssueService) RequestIssue(ctx context.Context, request *v1pb.RequestIs
 		slog.Warn("failed to create issue comment", log.BBError(err))
 	}
 
-	issueV1, err := convertToIssue(ctx, s.store, issue)
+	issueV1, err := s.convertToIssue(ctx, issue)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to convert to issue, error: %v", err)
 	}
@@ -1277,7 +1278,7 @@ func (s *IssueService) UpdateIssue(ctx context.Context, request *v1pb.UpdateIssu
 		}
 	}
 
-	issueV1, err := convertToIssue(ctx, s.store, issue)
+	issueV1, err := s.convertToIssue(ctx, issue)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to convert to issue, error: %v", err)
 	}
@@ -1558,7 +1559,7 @@ func (s *IssueService) updateExternalApprovalWithStatus(ctx context.Context, iss
 		return nil, status.Errorf(codes.Internal, "failed to update external approval, error: %v", err)
 	}
 
-	issueV1, err := convertToIssue(ctx, s.store, issue)
+	issueV1, err := s.convertToIssue(ctx, issue)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to convert to issue, error: %v", err)
 	}

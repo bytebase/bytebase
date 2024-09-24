@@ -15,10 +15,10 @@ import (
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
-func convertToIssues(ctx context.Context, s *store.Store, issues []*store.IssueMessage) ([]*v1pb.Issue, error) {
+func (s *IssueService) convertToIssues(ctx context.Context, issues []*store.IssueMessage) ([]*v1pb.Issue, error) {
 	var converted []*v1pb.Issue
 	for _, issue := range issues {
-		v1Issue, err := convertToIssue(ctx, s, issue)
+		v1Issue, err := s.convertToIssue(ctx, issue)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to convert to issue")
 		}
@@ -27,15 +27,15 @@ func convertToIssues(ctx context.Context, s *store.Store, issues []*store.IssueM
 	return converted, nil
 }
 
-func convertToIssue(ctx context.Context, s *store.Store, issue *store.IssueMessage) (*v1pb.Issue, error) {
+func (s *IssueService) convertToIssue(ctx context.Context, issue *store.IssueMessage) (*v1pb.Issue, error) {
 	issuePayload := issue.Payload
 
-	convertedGrantRequest, err := convertToGrantRequest(ctx, s, issuePayload.GrantRequest)
+	convertedGrantRequest, err := convertToGrantRequest(ctx, s.store, issuePayload.GrantRequest)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to convert GrantRequest")
 	}
 
-	releasers, err := convertToIssueReleasers(ctx, s, issue)
+	releasers, err := s.convertToIssueReleasers(ctx, issue)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get issue releasers")
 	}
@@ -83,7 +83,7 @@ func convertToIssue(ctx context.Context, s *store.Store, issue *store.IssueMessa
 		}
 		for _, approver := range issuePayload.Approval.Approvers {
 			convertedApprover := &v1pb.Issue_Approver{Status: v1pb.Issue_Approver_Status(approver.Status)}
-			user, err := s.GetUserByID(ctx, int(approver.PrincipalId))
+			user, err := s.store.GetUserByID(ctx, int(approver.PrincipalId))
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to find user by id %v", approver.PrincipalId)
 			}
@@ -95,7 +95,7 @@ func convertToIssue(ctx context.Context, s *store.Store, issue *store.IssueMessa
 	return issueV1, nil
 }
 
-func convertToIssueReleasers(ctx context.Context, s *store.Store, issue *store.IssueMessage) ([]string, error) {
+func (s *IssueService) convertToIssueReleasers(ctx context.Context, issue *store.IssueMessage) ([]string, error) {
 	if issue.Type != api.IssueDatabaseGeneral {
 		return nil, nil
 	}
@@ -105,7 +105,7 @@ func convertToIssueReleasers(ctx context.Context, s *store.Store, issue *store.I
 	if issue.PipelineUID == nil {
 		return nil, nil
 	}
-	stages, err := s.ListStageV2(ctx, *issue.PipelineUID)
+	stages, err := s.store.ListStageV2(ctx, *issue.PipelineUID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to list issue stages")
 	}
@@ -119,9 +119,9 @@ func convertToIssueReleasers(ctx context.Context, s *store.Store, issue *store.I
 	if activeStage == nil {
 		return nil, nil
 	}
-	policy, err := s.GetRolloutPolicy(ctx, activeStage.EnvironmentID)
+	policy, err := GetValidRolloutPolicyForStage(ctx, s.store, s.licenseService, activeStage)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get rollout policy")
+		return nil, err
 	}
 
 	var releasers []string
@@ -141,7 +141,7 @@ func convertToIssueReleasers(ctx context.Context, s *store.Store, issue *store.I
 			approvers := issue.Payload.GetApproval().GetApprovers()
 			if len(approvers) > 0 {
 				lastApproverUID := approvers[len(approvers)-1].GetPrincipalId()
-				user, err := s.GetUserByID(ctx, int(lastApproverUID))
+				user, err := s.store.GetUserByID(ctx, int(lastApproverUID))
 				if err != nil {
 					return nil, errors.Wrapf(err, "failed to get last approver uid %d", lastApproverUID)
 				}

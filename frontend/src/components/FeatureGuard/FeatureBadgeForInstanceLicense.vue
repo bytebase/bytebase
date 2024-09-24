@@ -5,7 +5,13 @@
   <div
     v-if="show || instanceMissingLicense"
     :class="['text-accent cursor-pointer', customClass]"
-    @click="state.showInstanceAssignmentDrawer = true"
+    @click="
+      (e: MouseEvent) => {
+        e.stopPropagation();
+        e.preventDefault();
+        state.showInstanceAssignmentDrawer = true;
+      }
+    "
   >
     <NTooltip :show-arrow="true">
       <template #trigger>
@@ -15,6 +21,7 @@
       </template>
       <span class="w-56 text-sm">
         {{
+          tooltip ||
           $t("subscription.instance-assignment.missing-license-for-feature", {
             feature: $t(
               `subscription.features.${feature.split(".").join("-")}.title`
@@ -33,7 +40,6 @@
 
 <script lang="ts" setup>
 import { NTooltip } from "naive-ui";
-import type { PropType } from "vue";
 import { reactive, computed } from "vue";
 import { useSubscriptionV1Store } from "@/store";
 import type { FeatureType } from "@/types";
@@ -48,25 +54,21 @@ interface LocalState {
   showInstanceAssignmentDrawer: boolean;
 }
 
-const props = defineProps({
-  show: {
-    type: Boolean,
-    default: false,
-  },
-  feature: {
-    required: true,
-    type: String as PropType<FeatureType>,
-  },
-  instance: {
-    type: Object as PropType<Instance | InstanceResource>,
-    default: undefined,
-  },
-  customClass: {
-    require: false,
-    default: "",
-    type: String,
-  },
-});
+const props = withDefaults(
+  defineProps<{
+    show?: boolean;
+    feature: FeatureType;
+    instance?: Instance | InstanceResource;
+    customClass?: string;
+    tooltip?: string;
+  }>(),
+  {
+    show: false,
+    instance: undefined,
+    customClass: "",
+    tooltip: "",
+  }
+);
 
 const state = reactive<LocalState>({
   showInstanceAssignmentDrawer: false,

@@ -542,7 +542,7 @@ func (s *OrgPolicyService) convertPolicyPayloadToString(ctx context.Context, pol
 	case v1pb.PolicyType_ROLLOUT_POLICY:
 		rolloutPolicy := convertToStorePBRolloutPolicy(policy.GetRolloutPolicy())
 		if !rolloutPolicy.Automatic {
-			if err := s.licenseService.IsFeatureEnabled(api.FeatureApprovalPolicy); err != nil {
+			if err := s.licenseService.IsFeatureEnabled(api.FeatureRolloutPolicy); err != nil {
 				return "", status.Error(codes.PermissionDenied, err.Error())
 			}
 		}
