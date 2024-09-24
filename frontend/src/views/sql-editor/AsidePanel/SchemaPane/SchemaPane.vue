@@ -77,7 +77,7 @@ import {
   useElementSize,
   useMounted,
 } from "@vueuse/core";
-import { head, uniq } from "lodash-es";
+import { head, uniq, without } from "lodash-es";
 import {
   NDropdown,
   NEmpty,
@@ -188,6 +188,11 @@ const upsertExpandedKeys = (keys: string[]) => {
   const curr = expandedKeys.value;
   if (!curr) return;
   expandedKeys.value = uniq([...curr, ...keys]);
+};
+const removeExpandedKeys = (keys: string[]) => {
+  const curr = expandedKeys.value;
+  if (!curr) return;
+  expandedKeys.value = without(curr, ...keys);
 };
 
 const defaultExpandedKeys = () => {
@@ -323,6 +328,16 @@ const expandNode = (node: TreeNode) => {
   walk(node);
   upsertExpandedKeys(keysToExpand);
 };
+const collapseNode = (node: TreeNode) => {
+  removeExpandedKeys([node.key]);
+};
+const toggleNode = (node: TreeNode) => {
+  if (expandedKeys.value.includes(node.key)) {
+    collapseNode(node);
+  } else {
+    expandNode(node);
+  }
+};
 
 const singleClick = (node: TreeNode) => {
   expandNode(node);
@@ -343,6 +358,11 @@ useEmitteryEventListener(nodeClickEvents, "single-click", ({ node }) => {
 useEmitteryEventListener(nodeClickEvents, "double-click", ({ node }) => {
   if (node.meta.type === "table" || node.meta.type === "view") {
     selectAllFromTableOrView(node);
+  } else if (
+    node.meta.type === "expandable-text" ||
+    node.meta.type === "schema"
+  ) {
+    toggleNode(node);
   } else {
     singleClick(node);
   }
