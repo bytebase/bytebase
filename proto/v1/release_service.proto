@@ -6,6 +6,7 @@ import "google/api/annotations.proto";
 import "google/api/client.proto";
 import "google/api/field_behavior.proto";
 import "google/api/resource.proto";
+import "google/protobuf/timestamp.proto";
 import "v1/common.proto";
 
 option go_package = "generated-go/v1";
@@ -79,19 +80,25 @@ message Release {
   // Format: projects/{project}/releases/{release}
   string name = 1;
 
-  repeated File files = 2;
+  string title = 2;
 
-  VCSSource vcs_source = 3;
+  repeated File files = 3;
+
+  VCSSource vcs_source = 4;
+
+  // Format: users/hello@world.com
+  string creator = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  google.protobuf.Timestamp create_time = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   message File {
-    string filename = 1;
-
-    // The sheet that holds the statement.
+    // The filename.
+    string title = 1;
+    // The sheet that holds the content.
     // Format: projects/{project}/sheets/{sheet}
     string sheet = 2 [(google.api.resource_reference) = {type: "bytebase.com/Sheet"}];
     // The SHA1 hash value of the sheet.
     string sheet_sha1 = 3;
-
     Type type = 4;
     string version = 5;
 
