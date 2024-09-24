@@ -43,7 +43,7 @@ export type FeatureType =
   | "bb.feature.sync-schema-all-versions"
   | "bb.feature.index-advisor"
   // Policy Control
-  | "bb.feature.approval-policy"
+  | "bb.feature.rollout-policy"
   | "bb.feature.environment-tier-policy"
   | "bb.feature.sensitive-data"
   | "bb.feature.access-control"
@@ -75,6 +75,7 @@ export const instanceLimitFeature = new Set<FeatureType>([
   // Policy Control
   "bb.feature.sensitive-data",
   "bb.feature.custom-approval",
+  "bb.feature.rollout-policy",
 ]);
 
 export const planTypeToString = (planType: PlanType): string => {

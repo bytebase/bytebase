@@ -240,9 +240,9 @@ func (r *Runner) findApprovalTemplateForIssue(ctx context.Context, issue *store.
 		if len(stages) == 0 {
 			return nil
 		}
-		policy, err := r.store.GetRolloutPolicy(ctx, stages[0].EnvironmentID)
+		policy, err := apiv1.GetValidRolloutPolicyForStage(ctx, r.store, r.licenseService, stages[0])
 		if err != nil {
-			return errors.Wrapf(err, "failed to get rollout policy")
+			return err
 		}
 		r.webhookManager.CreateEvent(ctx, &webhook.Event{
 			Actor:   r.store.GetSystemBotUser(ctx),
