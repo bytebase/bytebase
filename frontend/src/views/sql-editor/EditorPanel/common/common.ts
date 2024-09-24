@@ -7,7 +7,7 @@ import {
 } from "@/store";
 import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
 import { hasSchemaProperty } from "@/utils";
-import { useEditorPanelContext } from "./context";
+import { useEditorPanelContext } from "../context";
 
 export const useSelectSchema = () => {
   const { database, instance } = useConnectionOfCurrentSQLEditorTab();
