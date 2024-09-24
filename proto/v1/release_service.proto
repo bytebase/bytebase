@@ -71,7 +71,7 @@ message CreateReleaseRequest {
     (google.api.resource_reference) = {type: "bytebase.com/Project"}
   ];
 
-  // The release to craete.
+  // The release to create.
   Release release = 2 [(google.api.field_behavior) = REQUIRED];
 }
 
