@@ -1,4 +1,4 @@
-import { head } from "lodash-es";
+import { cloneDeep, head } from "lodash-es";
 import {
   computed,
   inject,
@@ -71,6 +71,12 @@ export const provideEditorPanelContext = (base: {
     viewStateByTab.set(tab.value.id, curr);
   };
 
+  const cloneViewState = (from: string, to: string) => {
+    const vs = viewStateByTab.get(from);
+    if (!vs) return;
+    viewStateByTab.set(to, cloneDeep(vs));
+  };
+
   watch(
     [() => viewState.value?.view, availableViews],
     ([view, availableViews]) => {
@@ -111,6 +117,7 @@ export const provideEditorPanelContext = (base: {
     selectedSchemaName,
     availableViews,
     updateViewState,
+    cloneViewState,
     typeToView,
   };
 
