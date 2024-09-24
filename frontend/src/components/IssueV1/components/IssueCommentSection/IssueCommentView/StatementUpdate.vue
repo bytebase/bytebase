@@ -39,28 +39,31 @@ import { BBModal, BBSpin } from "@/bbkit";
 import { DiffEditor } from "@/components/MonacoEditor";
 import { useSheetV1Store } from "@/store";
 import { UNKNOWN_ID } from "@/types";
-import { getSheetStatement } from "@/utils";
+import { extractSheetUID, getSheetStatement } from "@/utils";
 
 const props = defineProps<{
-  oldSheetId: string;
-  newSheetId: string;
+  // Format: projects/{project}/sheets/{sheet}
+  oldSheet: string;
+  // Format: projects/{project}/sheets/{sheet}
+  newSheet: string;
 }>();
 
 const showPanel = ref(false);
 
-const prepareStatement = async (uid: string) => {
-  if (uid === String(UNKNOWN_ID)) return "";
+const prepareStatement = async (sheetName: string) => {
+  if (extractSheetUID(sheetName) === String(UNKNOWN_ID)) return "";
   // Use any (basic or full) view of sheets here to save data size
-  const sheet = await useSheetV1Store().getOrFetchSheetByUID(uid);
+  const sheet = await useSheetV1Store().getOrFetchSheetByName(sheetName);
   if (!sheet) return "";
   return getSheetStatement(sheet);
 };
+
 const isPreparingOldStatement = ref(false);
 const isPreparingNewStatement = ref(false);
 
 const oldStatement = asyncComputed(
   () => {
-    return prepareStatement(props.oldSheetId);
+    return prepareStatement(props.oldSheet);
   },
   "",
   {
@@ -68,9 +71,10 @@ const oldStatement = asyncComputed(
     lazy: true,
   }
 );
+
 const newStatement = asyncComputed(
   () => {
-    return prepareStatement(props.newSheetId);
+    return prepareStatement(props.newSheet);
   },
   "",
   {
