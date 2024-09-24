@@ -534,6 +534,18 @@
   
     - [ProjectService](#bytebase-v1-ProjectService)
   
+- [v1/release_service.proto](#v1_release_service-proto)
+    - [GetReleaseRequest](#bytebase-v1-GetReleaseRequest)
+    - [ListReleasesRequest](#bytebase-v1-ListReleasesRequest)
+    - [ListReleasesResponse](#bytebase-v1-ListReleasesResponse)
+    - [Release](#bytebase-v1-Release)
+    - [Release.File](#bytebase-v1-Release-File)
+    - [Release.VCSSource](#bytebase-v1-Release-VCSSource)
+  
+    - [Release.File.Type](#bytebase-v1-Release-File-Type)
+  
+    - [ReleaseService](#bytebase-v1-ReleaseService)
+  
 - [v1/review_config_service.proto](#v1_review_config_service-proto)
     - [CreateReviewConfigRequest](#bytebase-v1-CreateReviewConfigRequest)
     - [DeleteReviewConfigRequest](#bytebase-v1-DeleteReviewConfigRequest)
@@ -8654,6 +8666,147 @@ TYPE_PROJECT_REPOSITORY_PUSH represents Bytebase receiving a push event from the
 | UpdateWebhook | [UpdateWebhookRequest](#bytebase-v1-UpdateWebhookRequest) | [Project](#bytebase-v1-Project) |  |
 | RemoveWebhook | [RemoveWebhookRequest](#bytebase-v1-RemoveWebhookRequest) | [Project](#bytebase-v1-Project) |  |
 | TestWebhook | [TestWebhookRequest](#bytebase-v1-TestWebhookRequest) | [TestWebhookResponse](#bytebase-v1-TestWebhookResponse) |  |
+
+ 
+
+
+
+<a name="v1_release_service-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v1/release_service.proto
+
+
+
+<a name="bytebase-v1-GetReleaseRequest"></a>
+
+### GetReleaseRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | Format: projects/{project}/releases/{release} |
+
+
+
+
+
+
+<a name="bytebase-v1-ListReleasesRequest"></a>
+
+### ListReleasesRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | Format: projects/{project} |
+| page_size | [int32](#int32) |  | The maximum number of change histories to return. The service may return fewer than this value. If unspecified, at most 10 change histories will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | Not used. A page token, received from a previous `ListReleasesRequest` call. Provide this to retrieve the subsequent page.
+
+When paginating, all other parameters provided to `ListReleasesRequest` must match the call that provided the page token. |
+
+
+
+
+
+
+<a name="bytebase-v1-ListReleasesResponse"></a>
+
+### ListReleasesResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| releases | [Release](#bytebase-v1-Release) | repeated |  |
+| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
+
+
+
+
+
+
+<a name="bytebase-v1-Release"></a>
+
+### Release
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | Format: projects/{project}/releases/{release} |
+| files | [Release.File](#bytebase-v1-Release-File) | repeated |  |
+| vcs_source | [Release.VCSSource](#bytebase-v1-Release-VCSSource) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-Release-File"></a>
+
+### Release.File
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| filename | [string](#string) |  |  |
+| sheet | [string](#string) |  | The sheet that holds the statement. Format: projects/{project}/sheets/{sheet} |
+| sheet_hash | [bytes](#bytes) |  |  |
+| type | [Release.File.Type](#bytebase-v1-Release-File-Type) |  |  |
+| version | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-Release-VCSSource"></a>
+
+### Release.VCSSource
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| vcs_type | [VCSType](#bytebase-v1-VCSType) |  |  |
+| pull_request_url | [string](#string) |  |  |
+
+
+
+
+
+ 
+
+
+<a name="bytebase-v1-Release-File-Type"></a>
+
+### Release.File.Type
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| TYPE_UNSPECIFIED | 0 |  |
+| VERSIONED | 1 |  |
+
+
+ 
+
+ 
+
+
+<a name="bytebase-v1-ReleaseService"></a>
+
+### ReleaseService
+
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| GetRelease | [GetReleaseRequest](#bytebase-v1-GetReleaseRequest) | [Release](#bytebase-v1-Release) |  |
+| ListReleases | [ListReleasesRequest](#bytebase-v1-ListReleasesRequest) | [ListReleasesResponse](#bytebase-v1-ListReleasesResponse) |  |
 
  
 
