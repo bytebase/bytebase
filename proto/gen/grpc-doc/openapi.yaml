@@ -5296,6 +5296,36 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
+        post:
+            tags:
+                - ReleaseService
+            operationId: ReleaseService_CreateRelease
+            parameters:
+                - name: project
+                  in: path
+                  description: The project id.
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/Release'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Release'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
     /v1/projects/{project}/releases/{release}:
         get:
             tags:
@@ -11990,9 +12020,9 @@ components:
                     description: |-
                         The sheet that holds the statement.
                          Format: projects/{project}/sheets/{sheet}
-                sheetHash:
+                sheetSha1:
                     type: string
-                    format: bytes
+                    description: The SHA1 hash value of the sheet.
                 type:
                     enum:
                         - TYPE_UNSPECIFIED

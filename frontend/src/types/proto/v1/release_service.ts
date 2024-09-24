@@ -38,6 +38,13 @@ export interface ListReleasesResponse {
   nextPageToken: string;
 }
 
+export interface CreateReleaseRequest {
+  /** Format: projects/{project} */
+  parent: string;
+  /** The release to craete. */
+  release: Release | undefined;
+}
+
 export interface Release {
   /** Format: projects/{project}/releases/{release} */
   name: string;
@@ -52,7 +59,8 @@ export interface Release_File {
    * Format: projects/{project}/sheets/{sheet}
    */
   sheet: string;
-  sheetHash: Uint8Array;
+  /** The SHA1 hash value of the sheet. */
+  sheetSha1: string;
   type: Release_File_Type;
   version: string;
 }
@@ -327,6 +335,82 @@ export const ListReleasesResponse = {
   },
 };
 
+function createBaseCreateReleaseRequest(): CreateReleaseRequest {
+  return { parent: "", release: undefined };
+}
+
+export const CreateReleaseRequest = {
+  encode(message: CreateReleaseRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.parent !== "") {
+      writer.uint32(10).string(message.parent);
+    }
+    if (message.release !== undefined) {
+      Release.encode(message.release, writer.uint32(18).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): CreateReleaseRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCreateReleaseRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.parent = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.release = Release.decode(reader, reader.uint32());
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CreateReleaseRequest {
+    return {
+      parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
+      release: isSet(object.release) ? Release.fromJSON(object.release) : undefined,
+    };
+  },
+
+  toJSON(message: CreateReleaseRequest): unknown {
+    const obj: any = {};
+    if (message.parent !== "") {
+      obj.parent = message.parent;
+    }
+    if (message.release !== undefined) {
+      obj.release = Release.toJSON(message.release);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<CreateReleaseRequest>): CreateReleaseRequest {
+    return CreateReleaseRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<CreateReleaseRequest>): CreateReleaseRequest {
+    const message = createBaseCreateReleaseRequest();
+    message.parent = object.parent ?? "";
+    message.release = (object.release !== undefined && object.release !== null)
+      ? Release.fromPartial(object.release)
+      : undefined;
+    return message;
+  },
+};
+
 function createBaseRelease(): Release {
   return { name: "", files: [], vcsSource: undefined };
 }
@@ -419,13 +503,7 @@ export const Release = {
 };
 
 function createBaseRelease_File(): Release_File {
-  return {
-    filename: "",
-    sheet: "",
-    sheetHash: new Uint8Array(0),
-    type: Release_File_Type.TYPE_UNSPECIFIED,
-    version: "",
-  };
+  return { filename: "", sheet: "", sheetSha1: "", type: Release_File_Type.TYPE_UNSPECIFIED, version: "" };
 }
 
 export const Release_File = {
@@ -436,8 +514,8 @@ export const Release_File = {
     if (message.sheet !== "") {
       writer.uint32(18).string(message.sheet);
     }
-    if (message.sheetHash.length !== 0) {
-      writer.uint32(26).bytes(message.sheetHash);
+    if (message.sheetSha1 !== "") {
+      writer.uint32(26).string(message.sheetSha1);
     }
     if (message.type !== Release_File_Type.TYPE_UNSPECIFIED) {
       writer.uint32(32).int32(release_File_TypeToNumber(message.type));
@@ -474,7 +552,7 @@ export const Release_File = {
             break;
           }
 
-          message.sheetHash = reader.bytes();
+          message.sheetSha1 = reader.string();
           continue;
         case 4:
           if (tag !== 32) {
@@ -503,7 +581,7 @@ export const Release_File = {
     return {
       filename: isSet(object.filename) ? globalThis.String(object.filename) : "",
       sheet: isSet(object.sheet) ? globalThis.String(object.sheet) : "",
-      sheetHash: isSet(object.sheetHash) ? bytesFromBase64(object.sheetHash) : new Uint8Array(0),
+      sheetSha1: isSet(object.sheetSha1) ? globalThis.String(object.sheetSha1) : "",
       type: isSet(object.type) ? release_File_TypeFromJSON(object.type) : Release_File_Type.TYPE_UNSPECIFIED,
       version: isSet(object.version) ? globalThis.String(object.version) : "",
     };
@@ -517,8 +595,8 @@ export const Release_File = {
     if (message.sheet !== "") {
       obj.sheet = message.sheet;
     }
-    if (message.sheetHash.length !== 0) {
-      obj.sheetHash = base64FromBytes(message.sheetHash);
+    if (message.sheetSha1 !== "") {
+      obj.sheetSha1 = message.sheetSha1;
     }
     if (message.type !== Release_File_Type.TYPE_UNSPECIFIED) {
       obj.type = release_File_TypeToJSON(message.type);
@@ -536,7 +614,7 @@ export const Release_File = {
     const message = createBaseRelease_File();
     message.filename = object.filename ?? "";
     message.sheet = object.sheet ?? "";
-    message.sheetHash = object.sheetHash ?? new Uint8Array(0);
+    message.sheetSha1 = object.sheetSha1 ?? "";
     message.type = object.type ?? Release_File_Type.TYPE_UNSPECIFIED;
     message.version = object.version ?? "";
     return message;
@@ -724,33 +802,68 @@ export const ReleaseServiceDefinition = {
         },
       },
     },
+    createRelease: {
+      name: "CreateRelease",
+      requestType: CreateReleaseRequest,
+      requestStream: false,
+      responseType: Release,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          8410: [new Uint8Array([14, 112, 97, 114, 101, 110, 116, 44, 114, 101, 108, 101, 97, 115, 101])],
+          578365826: [
+            new Uint8Array([
+              43,
+              58,
+              7,
+              114,
+              101,
+              108,
+              101,
+              97,
+              115,
+              101,
+              34,
+              32,
+              47,
+              118,
+              49,
+              47,
+              123,
+              112,
+              97,
+              114,
+              101,
+              110,
+              116,
+              61,
+              112,
+              114,
+              111,
+              106,
+              101,
+              99,
+              116,
+              115,
+              47,
+              42,
+              125,
+              47,
+              114,
+              101,
+              108,
+              101,
+              97,
+              115,
+              101,
+              115,
+            ]),
+          ],
+        },
+      },
+    },
   },
 } as const;
-
-function bytesFromBase64(b64: string): Uint8Array {
-  if (globalThis.Buffer) {
-    return Uint8Array.from(globalThis.Buffer.from(b64, "base64"));
-  } else {
-    const bin = globalThis.atob(b64);
-    const arr = new Uint8Array(bin.length);
-    for (let i = 0; i < bin.length; ++i) {
-      arr[i] = bin.charCodeAt(i);
-    }
-    return arr;
-  }
-}
-
-function base64FromBytes(arr: Uint8Array): string {
-  if (globalThis.Buffer) {
-    return globalThis.Buffer.from(arr).toString("base64");
-  } else {
-    const bin: string[] = [];
-    arr.forEach((byte) => {
-      bin.push(globalThis.String.fromCharCode(byte));
-    });
-    return globalThis.btoa(bin.join(""));
-  }
-}
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 

@@ -2216,6 +2216,10 @@
             <ul>
               
                 <li>
+                  <a href="#bytebase.v1.CreateReleaseRequest"><span class="badge">M</span>CreateReleaseRequest</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.GetReleaseRequest"><span class="badge">M</span>GetReleaseRequest</a>
                 </li>
               
@@ -23926,6 +23930,37 @@ TYPE_SQL_EDITOR_QUERY represents executing query in SQL Editor.</p></td>
       <p></p>
 
       
+        <h3 id="bytebase.v1.CreateReleaseRequest">CreateReleaseRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>parent</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Format: projects/{project} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>release</td>
+                  <td><a href="#bytebase.v1.Release">Release</a></td>
+                  <td></td>
+                  <td><p>The release to craete. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.GetReleaseRequest">GetReleaseRequest</h3>
         <p></p>
 
@@ -24090,10 +24125,10 @@ Format: projects/{project}/sheets/{sheet} </p></td>
                 </tr>
               
                 <tr>
-                  <td>sheet_hash</td>
-                  <td><a href="#bytes">bytes</a></td>
+                  <td>sheet_sha1</td>
+                  <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>The SHA1 hash value of the sheet. </p></td>
                 </tr>
               
                 <tr>
@@ -24199,6 +24234,13 @@ Format: projects/{project}/sheets/{sheet} </p></td>
                 <td><p></p></td>
               </tr>
             
+              <tr>
+                <td>CreateRelease</td>
+                <td><a href="#bytebase.v1.CreateReleaseRequest">CreateReleaseRequest</a></td>
+                <td><a href="#bytebase.v1.Release">Release</a></td>
+                <td><p></p></td>
+              </tr>
+            
           </tbody>
         </table>
 
@@ -24234,6 +24276,16 @@ Format: projects/{project}/sheets/{sheet} </p></td>
                 <td>GET</td>
                 <td>/v1/{parent=projects/*}/releases</td>
                 <td></td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>CreateRelease</td>
+                <td>POST</td>
+                <td>/v1/{parent=projects/*}/releases</td>
+                <td>release</td>
               </tr>
               
             
