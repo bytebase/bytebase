@@ -257,13 +257,13 @@
         </div>
       </template>
     </DrawerContent>
-
-    <GrantAccessDrawer
-      v-if="state.showGrantAccessDrawer"
-      :column-list="[props.column]"
-      @dismiss="state.showGrantAccessDrawer = false"
-    />
   </Drawer>
+
+  <GrantAccessDrawer
+    v-if="state.showGrantAccessDrawer"
+    :column-list="[props.column]"
+    @dismiss="state.showGrantAccessDrawer = false"
+  />
 </template>
 
 <script lang="ts" setup>
