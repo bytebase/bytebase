@@ -78,6 +78,8 @@ func configureGrpcRouters(
 	v1pb.RegisterSQLServiceServer(grpcServer, sqlService)
 	v1pb.RegisterVCSProviderServiceServer(grpcServer, apiv1.NewVCSProviderService(stores))
 	v1pb.RegisterRiskServiceServer(grpcServer, apiv1.NewRiskService(stores, licenseService))
+	releaseService := apiv1.NewReleaseService(stores)
+	v1pb.RegisterReleaseServiceServer(grpcServer, releaseService)
 	planService := apiv1.NewPlanService(stores, sheetManager, licenseService, dbFactory, planCheckScheduler, stateCfg, profile, iamManager)
 	v1pb.RegisterPlanServiceServer(grpcServer, planService)
 	issueService := apiv1.NewIssueService(stores, webhookManager, relayRunner, stateCfg, licenseService, profile, iamManager, metricReporter)
@@ -197,6 +199,9 @@ func configureGrpcRouters(
 		return nil, nil, nil, nil, err
 	}
 	if err := v1pb.RegisterWorkspaceServiceHandler(ctx, mux, grpcConn); err != nil {
+		return nil, nil, nil, nil, err
+	}
+	if err := v1pb.RegisterReleaseServiceHandler(ctx, mux, grpcConn); err != nil {
 		return nil, nil, nil, nil, err
 	}
 

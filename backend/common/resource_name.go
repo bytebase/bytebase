@@ -49,6 +49,7 @@ const (
 	AuditLogPrefix             = "auditLogs/"
 	GroupPrefix                = "groups/"
 	ReviewConfigPrefix         = "reviewConfigs/"
+	ReleaseNamePrefix          = "releases/"
 
 	SchemaSuffix     = "/schema"
 	MetadataSuffix   = "/metadata"
@@ -643,4 +644,8 @@ func FormatTask(projectID string, pipelineUID, stageUID, taskUID int) string {
 
 func FormatBranchResourceID(projectID string, branchID string) string {
 	return fmt.Sprintf("%s%s/%s%s", ProjectNamePrefix, projectID, BranchPrefix, branchID)
+}
+
+func FormatReleaseName(projectID string, releaseUID int64) string {
+	return fmt.Sprintf("%s%s/%s%d", ProjectNamePrefix, projectID, ReleaseNamePrefix, releaseUID)
 }
