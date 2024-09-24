@@ -63,7 +63,7 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 					return nil, err
 				}
 				defer rows.Close()
-				r, err := convertRowsToQueryResult(rows, driver.maximumSQLResultSize)
+				r, err := rowsToQueryResult(rows, driver.maximumSQLResultSize)
 				if err != nil {
 					return nil, err
 				}
@@ -105,7 +105,7 @@ func getStatementWithResultLimit(statement string, limit int) string {
 	return fmt.Sprintf("WITH result AS (%s) SELECT * FROM result LIMIT %d;", util.TrimStatement(statement), limit)
 }
 
-func convertRowsToQueryResult(rows *sql.Rows, limit int64) (*v1pb.QueryResult, error) {
+func rowsToQueryResult(rows *sql.Rows, limit int64) (*v1pb.QueryResult, error) {
 	columnNames, err := rows.Columns()
 	if err != nil {
 		return nil, err
