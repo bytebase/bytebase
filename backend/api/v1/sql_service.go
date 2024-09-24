@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"fmt"
 	"io"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -272,6 +273,107 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 
 type accessCheckFunc func(context.Context, *store.InstanceMessage, *store.UserMessage, []*base.QuerySpan, bool) error
 
+func extractSourceTable(comment string) (string, string, error) {
+	pattern := `source table \((\w+),\s*(\w+)\)`
+	re := regexp.MustCompile(pattern)
+
+	matches := re.FindStringSubmatch(comment)
+
+	if len(matches) > 2 {
+		schemaName := matches[1]
+		tableName := matches[2]
+		return schemaName, tableName, nil
+	}
+
+	return "", "", errors.Errorf("failed to extract source table from comment: %s", comment)
+}
+
+func replaceBackupTableWithSource(ctx context.Context, stores *store.Store, instance *store.InstanceMessage, database *store.DatabaseMessage, spans []*base.QuerySpan) ([]*base.QuerySpan, error) {
+	var result []*base.QuerySpan
+	switch instance.Engine {
+	case storepb.Engine_POSTGRES:
+	case storepb.Engine_ORACLE:
+	case storepb.Engine_MYSQL, storepb.Engine_TIDB:
+		if database.DatabaseName != backupDatabaseName {
+			return spans, nil
+		}
+		dbSchema, err := stores.GetDBSchema(ctx, database.UID)
+		if err != nil {
+			return spans, err
+		}
+		schema := dbSchema.GetDatabaseMetadata().GetSchema("")
+		if schema == nil {
+			return spans, nil
+		}
+
+		for _, span := range spans {
+			newSpan := &base.QuerySpan{
+				NotFoundError: span.NotFoundError,
+				SourceColumns: make(base.SourceColumnSet),
+			}
+			for _, result := range span.Results {
+				newResult := base.QuerySpanResult{
+					Name:          result.Name,
+					SourceColumns: make(base.SourceColumnSet),
+				}
+				for column := range result.SourceColumns {
+					if column.Database == backupDatabaseName {
+						tableSchema := schema.GetTable(column.Table)
+						if tableSchema == nil {
+							newResult.SourceColumns[column] = true
+							continue
+						}
+						sourceDatabase, sourceTable, err := extractSourceTable(tableSchema.GetTableComment())
+						if err != nil {
+							slog.Debug("failed to extract source table", log.BBError(err))
+							newResult.SourceColumns[column] = true
+							continue
+						}
+						newColumn := base.ColumnResource{
+							Server:   column.Server,
+							Database: sourceDatabase,
+							Schema:   column.Schema,
+							Table:    sourceTable,
+							Column:   column.Column,
+						}
+						newResult.SourceColumns[newColumn] = true
+					} else {
+						newResult.SourceColumns[column] = true
+					}
+				}
+
+				newSpan.Results = append(newSpan.Results, newResult)
+			}
+
+			for column := range span.SourceColumns {
+				if column.Database == backupDatabaseName {
+					tableSchema := schema.GetTable(column.Table)
+					if tableSchema == nil {
+						newSpan.SourceColumns[column] = true
+						continue
+					}
+					sourceDatabase, sourceTable, err := extractSourceTable(tableSchema.GetTableComment())
+					if err != nil {
+						slog.Debug("failed to extract source table", log.BBError(err))
+						newSpan.SourceColumns[column] = true
+						continue
+					}
+					newColumn := base.ColumnResource{
+						Server:   column.Server,
+						Database: sourceDatabase,
+						Schema:   column.Schema,
+						Table:    sourceTable,
+						Column:   column.Column,
+					}
+					newSpan.SourceColumns[newColumn] = true
+				} else {
+					newSpan.SourceColumns[column] = true
+				}
+			}
+		}
+	}
+}
+
 func queryRetry(
 	ctx context.Context,
 	stores *store.Store,
@@ -307,6 +409,12 @@ func queryRetry(
 		)
 		if err != nil {
 			return nil, nil, time.Duration(0), status.Errorf(codes.Internal, "failed to get query span: %v", err.Error())
+		}
+		// After replacing backup table with source, we can apply the original access check and mask sensitive data for backup table.
+		// If err != nil, this function will return the original spans.
+		spans, err = replaceBackupTableWithSource(ctx, stores, instance, database, spans)
+		if err != nil {
+			slog.Debug("failed to replace backup table with source", log.BBError(err))
 		}
 		if licenseService.IsFeatureEnabled(api.FeatureAccessControl) == nil && optionalAccessCheck != nil {
 			if err := optionalAccessCheck(ctx, instance, user, spans, isExport); err != nil {
