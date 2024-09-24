@@ -8754,8 +8754,11 @@ When paginating, all other parameters provided to `ListReleasesRequest` must mat
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | Format: projects/{project}/releases/{release} |
+| title | [string](#string) |  |  |
 | files | [Release.File](#bytebase-v1-Release-File) | repeated |  |
 | vcs_source | [Release.VCSSource](#bytebase-v1-Release-VCSSource) |  |  |
+| creator | [string](#string) |  | Format: users/hello@world.com |
+| create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 
 
 
@@ -8770,8 +8773,8 @@ When paginating, all other parameters provided to `ListReleasesRequest` must mat
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| filename | [string](#string) |  |  |
-| sheet | [string](#string) |  | The sheet that holds the statement. Format: projects/{project}/sheets/{sheet} |
+| title | [string](#string) |  | The filename. |
+| sheet | [string](#string) |  | The sheet that holds the content. Format: projects/{project}/sheets/{sheet} |
 | sheet_sha1 | [string](#string) |  | The SHA1 hash value of the sheet. |
 | type | [Release.File.Type](#bytebase-v1-Release-File-Type) |  |  |
 | version | [string](#string) |  |  |
