@@ -23,7 +23,7 @@ import {
   IssueComment_TaskUpdate_Status,
   IssueStatus,
 } from "@/types/proto/v1/issue_service";
-import { findStageByName, findTaskByName, extractSheetUID } from "@/utils";
+import { findStageByName, findTaskByName } from "@/utils";
 import { extractUserResourceName } from "@/utils";
 import StageName from "./StageName.vue";
 import StatementUpdate from "./StatementUpdate.vue";
@@ -160,10 +160,7 @@ const renderActionSentence = () => {
           {{
             name: () => "SQL",
             link: () => (
-              <StatementUpdate
-                oldSheetId={extractSheetUID(fromSheet)}
-                newSheetId={extractSheetUID(toSheet)}
-              />
+              <StatementUpdate oldSheet={fromSheet} newSheet={toSheet} />
             ),
           }}
         </Translation>
