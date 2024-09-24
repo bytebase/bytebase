@@ -30,6 +30,7 @@ import type {
   TableMetadata,
 } from "@/types/proto/v1/database_service";
 import { getHighlightHTMLByRegExp, useAutoHeightDataTable } from "@/utils";
+import { EllipsisCell } from "../../common";
 import { useEditorPanelContext } from "../../context";
 
 const props = defineProps<{
@@ -61,6 +62,7 @@ const filteredIndexes = computed(() => {
 });
 
 const columns = computed(() => {
+  const downGrade = filteredIndexes.value.length > 50;
   const columns: (DataTableColumn<IndexMetadata> & { hide?: boolean })[] = [
     {
       key: "name",
@@ -92,7 +94,13 @@ const columns = computed(() => {
       resizable: true,
       minWidth: 140,
       maxWidth: 320,
-      className: "truncate",
+      className: "overflow-hidden",
+      render: (index) => {
+        return h(EllipsisCell, {
+          content: index.comment,
+          downGrade,
+        });
+      },
     },
     {
       key: "primary",

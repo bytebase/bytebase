@@ -293,9 +293,29 @@ export const useActions = () => {
       detail.view = (target as NodeTarget<"view">).view.name;
     }
     if (type === "dependent-column") {
-      detail.dependentColumn = keyForDependentColumn(
-        (target as NodeTarget<"dependent-column">).dependentColumn
+      const { database, dependentColumn } =
+        target as NodeTarget<"dependent-column">;
+      const depSchema = database.schemas.find(
+        (s) => s.name === dependentColumn.schema
       );
+      if (
+        depSchema &&
+        depSchema.views.find((v) => v.name === dependentColumn.table)
+      ) {
+        updateViewState({
+          view: "VIEWS",
+          schema: dependentColumn.schema,
+        });
+        detail.view = dependentColumn.table;
+        detail.column = dependentColumn.column;
+      } else {
+        updateViewState({
+          view: "TABLES",
+          schema: dependentColumn.schema,
+        });
+        detail.table = dependentColumn.table;
+        detail.column = dependentColumn.column;
+      }
     }
     if (type === "procedure") {
       const { procedure, position } = target as NodeTarget<"procedure">;

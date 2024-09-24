@@ -35,6 +35,7 @@ import type {
   TableMetadata,
 } from "@/types/proto/v1/database_service";
 import { getHighlightHTMLByRegExp, useAutoHeightDataTable } from "@/utils";
+import { EllipsisCell } from "../../common";
 import { useEditorPanelContext } from "../../context";
 
 const props = defineProps<{
@@ -67,6 +68,7 @@ const primaryKey = computed(() => {
 
 const columns = computed(() => {
   const engine = props.db.instanceResource.engine;
+  const downGrade = filteredColumns.value.length > 50;
   const columns: (DataTableColumn<ColumnMetadata> & { hide?: boolean })[] = [
     {
       key: "name",
@@ -110,6 +112,13 @@ const columns = computed(() => {
       minWidth: 140,
       maxWidth: 320,
       hide: engine !== Engine.MYSQL && engine !== Engine.TIDB,
+      className: "overflow-hidden",
+      render: (column) => {
+        return h(EllipsisCell, {
+          content: column.onUpdate,
+          downGrade,
+        });
+      },
     },
     {
       key: "comment",
@@ -117,10 +126,13 @@ const columns = computed(() => {
       resizable: true,
       minWidth: 140,
       maxWidth: 320,
-      className: "truncate",
-      ellipsis: true,
-      ellipsisComponent: "performant-ellipsis",
-      render: (column) => column.userComment,
+      className: "overflow-hidden",
+      render: (column) => {
+        return h(EllipsisCell, {
+          content: column.userComment,
+          downGrade,
+        });
+      },
     },
     {
       key: "not-null",

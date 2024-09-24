@@ -58,6 +58,7 @@
 
 <script lang="ts" setup>
 import { useResizeObserver } from "@vueuse/core";
+import { cloneDeep } from "lodash-es";
 import { PlusIcon } from "lucide-vue-next";
 import { useDialog } from "naive-ui";
 import { storeToRefs } from "pinia";
@@ -74,10 +75,11 @@ import {
 } from "@/store";
 import type { SQLEditorTab } from "@/types";
 import {
+  defaultSQLEditorTab,
   defer,
-  emptySQLEditorConnection,
   suggestedTabTitleForSQLEditorConnection,
 } from "@/utils";
+import { useEditorPanelContext } from "../EditorPanel";
 import { SettingButton } from "../Setting";
 import { useSheetContext } from "../Sheet";
 import BrandingLogoWrapper from "./BrandingLogoWrapper.vue";
@@ -104,6 +106,7 @@ const disableSetting = useAppFeature("bb.feature.sql-editor.disable-setting");
 const { events: sheetEvents } = useSheetContext();
 const tabListRef = ref<InstanceType<typeof Draggable>>();
 const { strictProject } = storeToRefs(useSQLEditorStore());
+const { cloneViewState } = useEditorPanelContext();
 const context = provideTabListContext();
 const contextMenuRef = ref<InstanceType<typeof ContextMenu>>();
 
@@ -128,17 +131,19 @@ const handleSelectTab = async (tab: SQLEditorTab | undefined) => {
 };
 
 const handleAddTab = () => {
-  const currentTab = tabStore.currentTab;
-  const connection = currentTab?.connection
-    ? { ...currentTab.connection }
-    : emptySQLEditorConnection();
-  const title = suggestedTabTitleForSQLEditorConnection(connection);
-  tabStore.addTab({
-    title,
-    connection,
-    // The newly created tab is "clean"
-    status: "CLEAN",
-  });
+  const fromTab = tabStore.currentTab;
+  const clonedTab = defaultSQLEditorTab();
+  if (fromTab) {
+    clonedTab.connection = cloneDeep(fromTab.connection);
+    clonedTab.treeState = cloneDeep(fromTab.treeState);
+  }
+  clonedTab.title = suggestedTabTitleForSQLEditorConnection(
+    clonedTab.connection
+  );
+  const newTab = tabStore.addTab(clonedTab);
+  if (fromTab) {
+    cloneViewState(fromTab.id, newTab.id);
+  }
   nextTick(recalculateScrollState);
   sheetEvents.emit("add-sheet");
 };

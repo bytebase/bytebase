@@ -29,6 +29,7 @@ import type {
   SchemaMetadata,
 } from "@/types/proto/v1/database_service";
 import { getHighlightHTMLByRegExp, useAutoHeightDataTable } from "@/utils";
+import { EllipsisCell } from "../../common";
 import { useEditorPanelContext } from "../../context";
 
 const props = defineProps<{
@@ -78,6 +79,7 @@ const {
 );
 
 const columns = computed(() => {
+  const downGrade = filteredViews.value.length > 50;
   const columns: (DataTableColumn<ViewMetadata> & { hide?: boolean })[] = [
     {
       key: "name",
@@ -94,7 +96,13 @@ const columns = computed(() => {
       key: "comment",
       title: t("schema-editor.database.comment"),
       resizable: true,
-      className: "truncate",
+      className: "overflow-hidden",
+      render: (view) => {
+        return h(EllipsisCell, {
+          content: view.comment,
+          downGrade,
+        });
+      },
     },
   ];
   return columns;
