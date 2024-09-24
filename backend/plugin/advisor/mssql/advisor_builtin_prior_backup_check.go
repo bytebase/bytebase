@@ -321,7 +321,7 @@ func extractDatabaseName(databaseUID string) string {
 
 func databaseExists(ctx context.Context, driver *sql.DB, databaseName string) bool {
 	var exists bool
-	err := driver.QueryRowContext(ctx, fmt.Sprintf("SELECT 1 FROM master.sys.databases WHERE name = '%q'", databaseName)).Scan(&exists)
+	err := driver.QueryRowContext(ctx, fmt.Sprintf("SELECT 1 FROM master.sys.databases WHERE name = '%s'", databaseName)).Scan(&exists)
 	if err != nil {
 		return false
 	}
