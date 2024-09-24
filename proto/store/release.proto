@@ -1,0 +1,38 @@
+syntax = "proto3";
+
+package bytebase.store;
+
+import "google/api/resource.proto";
+import "store/common.proto";
+
+option go_package = "generated-go/store";
+
+message ReleasePayload {
+  string title = 1;
+
+  repeated File files = 2;
+
+  VCSSource vcs_source = 3;
+
+  message File {
+    // The filename.
+    string title = 1;
+    // The sheet that holds the content.
+    // Format: projects/{project}/sheets/{sheet}
+    string sheet = 2 [(google.api.resource_reference) = {type: "bytebase.com/Sheet"}];
+    // The SHA1 hash value of the sheet.
+    string sheet_sha1 = 3;
+    Type type = 4;
+    string version = 5;
+
+    enum Type {
+      TYPE_UNSPECIFIED = 0;
+      VERSIONED = 1;
+    }
+  }
+
+  message VCSSource {
+    VCSType vcs_type = 1;
+    string pull_request_url = 2;
+  }
+}
