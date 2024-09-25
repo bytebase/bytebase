@@ -37,6 +37,7 @@ const (
 	DatabaseService_AdviseIndex_FullMethodName            = "/bytebase.v1.DatabaseService/AdviseIndex"
 	DatabaseService_ListChangeHistories_FullMethodName    = "/bytebase.v1.DatabaseService/ListChangeHistories"
 	DatabaseService_GetChangeHistory_FullMethodName       = "/bytebase.v1.DatabaseService/GetChangeHistory"
+	DatabaseService_ListRevisions_FullMethodName          = "/bytebase.v1.DatabaseService/ListRevisions"
 )
 
 // DatabaseServiceClient is the client API for DatabaseService service.
@@ -60,6 +61,7 @@ type DatabaseServiceClient interface {
 	AdviseIndex(ctx context.Context, in *AdviseIndexRequest, opts ...grpc.CallOption) (*AdviseIndexResponse, error)
 	ListChangeHistories(ctx context.Context, in *ListChangeHistoriesRequest, opts ...grpc.CallOption) (*ListChangeHistoriesResponse, error)
 	GetChangeHistory(ctx context.Context, in *GetChangeHistoryRequest, opts ...grpc.CallOption) (*ChangeHistory, error)
+	ListRevisions(ctx context.Context, in *ListRevisionsRequest, opts ...grpc.CallOption) (*ListRevisionsResponse, error)
 }
 
 type databaseServiceClient struct {
@@ -240,6 +242,16 @@ func (c *databaseServiceClient) GetChangeHistory(ctx context.Context, in *GetCha
 	return out, nil
 }
 
+func (c *databaseServiceClient) ListRevisions(ctx context.Context, in *ListRevisionsRequest, opts ...grpc.CallOption) (*ListRevisionsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListRevisionsResponse)
+	err := c.cc.Invoke(ctx, DatabaseService_ListRevisions_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // DatabaseServiceServer is the server API for DatabaseService service.
 // All implementations must embed UnimplementedDatabaseServiceServer
 // for forward compatibility.
@@ -261,6 +273,7 @@ type DatabaseServiceServer interface {
 	AdviseIndex(context.Context, *AdviseIndexRequest) (*AdviseIndexResponse, error)
 	ListChangeHistories(context.Context, *ListChangeHistoriesRequest) (*ListChangeHistoriesResponse, error)
 	GetChangeHistory(context.Context, *GetChangeHistoryRequest) (*ChangeHistory, error)
+	ListRevisions(context.Context, *ListRevisionsRequest) (*ListRevisionsResponse, error)
 	mustEmbedUnimplementedDatabaseServiceServer()
 }
 
@@ -321,6 +334,9 @@ func (UnimplementedDatabaseServiceServer) ListChangeHistories(context.Context, *
 }
 func (UnimplementedDatabaseServiceServer) GetChangeHistory(context.Context, *GetChangeHistoryRequest) (*ChangeHistory, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetChangeHistory not implemented")
+}
+func (UnimplementedDatabaseServiceServer) ListRevisions(context.Context, *ListRevisionsRequest) (*ListRevisionsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListRevisions not implemented")
 }
 func (UnimplementedDatabaseServiceServer) mustEmbedUnimplementedDatabaseServiceServer() {}
 func (UnimplementedDatabaseServiceServer) testEmbeddedByValue()                         {}
@@ -649,6 +665,24 @@ func _DatabaseService_GetChangeHistory_Handler(srv interface{}, ctx context.Cont
 	return interceptor(ctx, in, info, handler)
 }
 
+func _DatabaseService_ListRevisions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListRevisionsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DatabaseServiceServer).ListRevisions(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: DatabaseService_ListRevisions_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DatabaseServiceServer).ListRevisions(ctx, req.(*ListRevisionsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // DatabaseService_ServiceDesc is the grpc.ServiceDesc for DatabaseService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -723,6 +757,10 @@ var DatabaseService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetChangeHistory",
 			Handler:    _DatabaseService_GetChangeHistory_Handler,
+		},
+		{
+			MethodName: "ListRevisions",
+			Handler:    _DatabaseService_ListRevisions_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
