@@ -407,6 +407,7 @@ roles:
       - bb.projects.get
       - bb.projects.getIamPolicy
       - bb.rollouts.get
+      - bb.sheets.get
       - bb.taskRuns.list
   - name: roles/projectViewer
     title: Project viewer
