@@ -29,14 +29,14 @@ type DragState = {
 
 type LocalState = {
   columns: ColumnProps[];
-  isAutoAdjusting: boolean;
+  autoAdjusting: Set<number>;
   drag?: DragState;
 };
 
 const useTableResize = (options: TableResizeOptions) => {
   const state = reactive<LocalState>({
     columns: [],
-    isAutoAdjusting: false,
+    autoAdjusting: new Set(),
     drag: undefined,
   });
   const pointer = usePointer();
@@ -58,7 +58,7 @@ const useTableResize = (options: TableResizeOptions) => {
   const reset = () => {
     state.drag = undefined;
 
-    state.isAutoAdjusting = false;
+    state.autoAdjusting.clear();
 
     const columnCount = unref(options.columnCount);
     state.columns = new Array(columnCount);
@@ -109,29 +109,31 @@ const useTableResize = (options: TableResizeOptions) => {
       }
 
       const numScanRows = Math.min(trList.length, MAX_AUTO_ADJUST_SCAN_ROWS);
-      const cellListOfEachColumn = indexList.map((index) => {
-        const cellList: HTMLElement[] = [];
+      const cellsMapByColumn = new Map<number, HTMLElement[]>();
+      indexList.forEach((index) => {
+        const cells: HTMLElement[] = [];
         for (let row = 0; row < numScanRows; row++) {
           const tr = trList[row];
           const cell = tr.children[index] as HTMLElement;
           if (cell && ["th", "td"].includes(cell.tagName.toLowerCase())) {
-            cellList.push(cell);
+            cells.push(cell);
           }
         }
-        return cellList;
+        cellsMapByColumn.set(index, cells);
+        return cells;
       });
 
       // Update the cells' and table's style to estimate the width.
-      state.isAutoAdjusting = true;
-      cellListOfEachColumn.forEach((cellList) => {
-        cellList.forEach((cell) => {
+      indexList.forEach((colIndex) => state.autoAdjusting.add(colIndex));
+      for (const [_index, cells] of cellsMapByColumn.entries()) {
+        cells.forEach((cell) => {
           cell.style.whiteSpace = "nowrap";
           cell.style.overflow = "visible";
           cell.style.width = "auto";
           cell.style.maxWidth = `${options.maxWidth}px`;
           cell.style.minWidth = `${options.minWidth}px`;
         });
-      });
+      }
       const headerTableWidthBackup = headerTable.style.width;
       const bodyTableWidthBackup = bodyTable.style.width;
       headerTable.style.width = "auto";
@@ -141,8 +143,8 @@ const useTableResize = (options: TableResizeOptions) => {
       requestAnimationFrame(() => {
         // Read the rendered widths.
         const widthList = indexList.map((index) => {
-          const cellList = cellListOfEachColumn[index];
-          const stretchedWidths = cellList.map((cell) => getElementWidth(cell));
+          const cells = cellsMapByColumn.get(index) ?? [];
+          const stretchedWidths = cells.map((cell) => getElementWidth(cell));
           const finalWidth = normalizeWidth(Math.max(...stretchedWidths));
 
           const column = state.columns[index];
@@ -157,18 +159,18 @@ const useTableResize = (options: TableResizeOptions) => {
         });
 
         // Reset the cells' and table's style.
-        cellListOfEachColumn.forEach((cellList) => {
-          cellList.forEach((cell) => {
+        for (const [_index, cells] of cellsMapByColumn.entries()) {
+          cells.forEach((cell) => {
             cell.style.whiteSpace = "";
             cell.style.overflow = "";
             cell.style.width = "";
             cell.style.maxWidth = "";
             cell.style.minWidth = "";
           });
-        });
+        }
         headerTable.style.width = headerTableWidthBackup;
         bodyTable.style.width = bodyTableWidthBackup;
-        state.isAutoAdjusting = false;
+        state.autoAdjusting.clear();
 
         resolve(widthList);
         // Style bindings will be automatically updated next frame.
@@ -223,9 +225,10 @@ const useTableResize = (options: TableResizeOptions) => {
   };
 
   const getTableProps = () => {
-    const width = state.isAutoAdjusting
-      ? "auto"
-      : `calc(min(100%, ${sumBy(state.columns, (col) => col.width) + 2}px))`;
+    const width =
+      state.autoAdjusting.size > 0
+        ? "auto"
+        : `calc(min(100%, ${sumBy(state.columns, (col) => col.width) + 2}px))`;
     return {
       style: {
         width,
