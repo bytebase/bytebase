@@ -98,7 +98,7 @@ message Release {
     // Format: projects/{project}/sheets/{sheet}
     string sheet = 2 [(google.api.resource_reference) = {type: "bytebase.com/Sheet"}];
     // The SHA1 hash value of the sheet.
-    string sheet_sha1 = 3;
+    string sheet_sha1 = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
     Type type = 4;
     string version = 5;
 
