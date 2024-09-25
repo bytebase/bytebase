@@ -167,10 +167,10 @@ func convertToReleaseFiles(files []*storepb.ReleasePayload_File) []*v1pb.Release
 	var rFiles []*v1pb.Release_File
 	for _, f := range files {
 		rFiles = append(rFiles, &v1pb.Release_File{
-			Title:     f.Title,
+			Name:      f.Name,
 			Sheet:     f.Sheet,
 			SheetSha1: f.SheetSha1,
-			Type:      v1pb.Release_File_Type(f.Type),
+			Type:      v1pb.ReleaseFileType(f.Type),
 			Version:   f.Version,
 		})
 	}
@@ -188,10 +188,10 @@ func convertReleaseFiles(files []*v1pb.Release_File) []*storepb.ReleasePayload_F
 	var rFiles []*storepb.ReleasePayload_File
 	for _, f := range files {
 		rFiles = append(rFiles, &storepb.ReleasePayload_File{
-			Title:     f.Title,
+			Name:      f.Name,
 			Sheet:     f.Sheet,
 			SheetSha1: f.SheetSha1,
-			Type:      storepb.ReleasePayload_File_Type(f.Type),
+			Type:      storepb.ReleaseFileType(f.Type),
 			Version:   f.Version,
 		})
 	}
