@@ -238,7 +238,7 @@ func (s *Service) sqlReviewWithPRInfo(ctx context.Context, project *store.Projec
 	content := []string{}
 	errorCount := 0
 	warnCount := 0
-	maximumCount := 20
+	maximumCount := 30
 
 	for i, change := range prInfo.changes {
 		changeType := v1pb.CheckRequest_DDL
