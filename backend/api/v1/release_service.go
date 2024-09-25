@@ -38,7 +38,7 @@ func (s *ReleaseService) CreateRelease(ctx context.Context, request *v1pb.Create
 
 	projectID, err := common.GetProjectID(request.Parent)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Errorf(codes.InvalidArgument, "failed to get project id, err: %v", err)
 	}
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{ResourceID: &projectID})
 	if err != nil {
@@ -77,7 +77,7 @@ func (s *ReleaseService) ListReleases(ctx context.Context, request *v1pb.ListRel
 
 	projectID, err := common.GetProjectID(request.Parent)
 	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+		return nil, status.Errorf(codes.InvalidArgument, "failed to get project id, err: %v", err)
 	}
 	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{ResourceID: &projectID})
 	if err != nil {
