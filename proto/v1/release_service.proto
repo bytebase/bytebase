@@ -77,6 +77,11 @@ message CreateReleaseRequest {
 }
 
 message Release {
+  option (google.api.resource) = {
+    type: "bytebase.com/Release"
+    pattern: "projects/{project}/releases/{release}"
+  };
+
   // Format: projects/{project}/releases/{release}
   string name = 1;
 
