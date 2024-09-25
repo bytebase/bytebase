@@ -13,6 +13,7 @@ import "google/protobuf/timestamp.proto";
 import "v1/annotation.proto";
 import "v1/common.proto";
 import "v1/instance_service.proto";
+import "v1/release_service.proto";
 
 option go_package = "generated-go/v1";
 
@@ -1453,16 +1454,11 @@ message Revision {
   // The SHA1 hash value of the sheet.
   string sheet_sha1 = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  Type type = 7;
+  ReleaseFileType type = 7;
   string version = 8;
 
   // The name of the file in the release.
   // Expressed as a path, e.g. `2.2/V0001_create_table.sql`
   // Can be empty.
   string file = 9;
-
-  enum Type {
-    TYPE_UNSPECIFIED = 0;
-    VERSIONED = 1;
-  }
 }

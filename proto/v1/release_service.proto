@@ -105,17 +105,17 @@ message Release {
     string sheet = 2 [(google.api.resource_reference) = {type: "bytebase.com/Sheet"}];
     // The SHA1 hash value of the sheet.
     string sheet_sha1 = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
-    Type type = 4;
+    ReleaseFileType type = 4;
     string version = 5;
-
-    enum Type {
-      TYPE_UNSPECIFIED = 0;
-      VERSIONED = 1;
-    }
   }
 
   message VCSSource {
     VCSType vcs_type = 1;
     string pull_request_url = 2;
   }
+}
+
+enum ReleaseFileType {
+  TYPE_UNSPECIFIED = 0;
+  VERSIONED = 1;
 }
