@@ -238,8 +238,9 @@ func (s *Service) sqlReviewWithPRInfo(ctx context.Context, project *store.Projec
 	content := []string{}
 	errorCount := 0
 	warnCount := 0
+	maximumCount := 30
 
-	for _, change := range prInfo.changes {
+	for i, change := range prInfo.changes {
 		changeType := v1pb.CheckRequest_DDL
 		switch change.changeType {
 		case v1pb.Plan_ChangeDatabaseConfig_DATA:
@@ -265,10 +266,16 @@ func (s *Service) sqlReviewWithPRInfo(ctx context.Context, project *store.Projec
 
 		adviceMessage := []string{}
 		for _, advice := range advices {
+			if advice.Status == v1pb.Advice_SUCCESS {
+				continue
+			}
 			if advice.Status == v1pb.Advice_ERROR {
 				errorCount++
 			} else if advice.Status == v1pb.Advice_WARNING {
 				warnCount++
+			}
+			if errorCount+warnCount >= maximumCount {
+				break
 			}
 			message := fmt.Sprintf("- **[%s]** %s ([line%d](%s))", advice.Status.String(), advice.Title, advice.Line, getFileWebURLInPR(change.webURL, advice.Line, vcsType))
 			adviceMessage = append(adviceMessage, message)
@@ -283,6 +290,11 @@ func (s *Service) sqlReviewWithPRInfo(ctx context.Context, project *store.Projec
 			// The API docs for Bitbucket sucks.
 			// https://community.atlassian.com/t5/Bitbucket-questions/How-to-post-html-comments-on-pull-request-via-2-0-api/qaq-p/1066809
 			content = append(content, strings.Join(adviceMessage, "\n\n"))
+		}
+
+		if errorCount+warnCount >= maximumCount && i < len(prInfo.changes)-1 {
+			content = append(content, "\nSQL review output reaches the maximum limit")
+			break
 		}
 	}
 
