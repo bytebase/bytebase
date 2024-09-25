@@ -110,6 +110,9 @@ const columns = computed(() => {
             onStartResizing: () => {
               tableResize.startResizing(colIndex);
             },
+            onAutoResize: () => {
+              tableResize.autoAdjustColumnWidth([colIndex]);
+            },
           });
         },
         render: (row, rowIndex) => {
@@ -127,7 +130,7 @@ const columns = computed(() => {
             colIndex,
           });
         },
-        width: tableResize.state.isAutoAdjusting
+        width: tableResize.state.autoAdjusting.has(colIndex)
           ? undefined
           : (tableResize.state.columns[colIndex]?.width ??
             DEFAULT_COLUMN_WIDTH),

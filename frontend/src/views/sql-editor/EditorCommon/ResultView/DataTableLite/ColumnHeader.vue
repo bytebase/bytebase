@@ -38,6 +38,7 @@
     <div
       class="group absolute w-[8px] right-0 top-0 bottom-0 cursor-col-resize"
       @pointerdown="$emit('start-resizing')"
+      @dblclick="$emit('auto-resize')"
     >
       <div
         class="absolute w-[3px] right-0 top-0 bottom-0 group-hover:bg-accent/30"
@@ -63,6 +64,7 @@ defineProps<{
 
 defineEmits<{
   (event: "start-resizing"): void;
+  (event: "auto-resize"): void;
 }>();
 
 const hasSensitiveFeature = featureToRef("bb.feature.sensitive-data");
