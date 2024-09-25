@@ -2509,7 +2509,7 @@ ProcedureMetadata is the metadata for procedures.
 | sheet_sha1 | [string](#string) |  | The SHA1 hash value of the sheet. |
 | type | [Revision.Type](#bytebase-v1-Revision-Type) |  |  |
 | version | [string](#string) |  |  |
-| file_title | [string](#string) |  | The filename. Can be empty. |
+| file | [string](#string) |  | The name of the file in the release. Expressed as a path, e.g. `2.2/V0001_create_table.sql` Can be empty. |
 
 
 
@@ -8848,7 +8848,7 @@ When paginating, all other parameters provided to `ListReleasesRequest` must mat
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| title | [string](#string) |  | The filename. |
+| name | [string](#string) |  | The name of the file. Expressed as a path, e.g. `2.2/V0001_create_table.sql` |
 | sheet | [string](#string) |  | The sheet that holds the content. Format: projects/{project}/sheets/{sheet} |
 | sheet_sha1 | [string](#string) |  | The SHA1 hash value of the sheet. |
 | type | [Release.File.Type](#bytebase-v1-Release-File-Type) |  |  |

@@ -1782,10 +1782,11 @@ export interface Revision {
   type: Revision_Type;
   version: string;
   /**
-   * The filename.
+   * The name of the file in the release.
+   * Expressed as a path, e.g. `2.2/V0001_create_table.sql`
    * Can be empty.
    */
-  fileTitle: string;
+  file: string;
 }
 
 export enum Revision_Type {
@@ -9530,7 +9531,7 @@ function createBaseRevision(): Revision {
     sheetSha1: "",
     type: Revision_Type.TYPE_UNSPECIFIED,
     version: "",
-    fileTitle: "",
+    file: "",
   };
 }
 
@@ -9560,8 +9561,8 @@ export const Revision = {
     if (message.version !== "") {
       writer.uint32(66).string(message.version);
     }
-    if (message.fileTitle !== "") {
-      writer.uint32(74).string(message.fileTitle);
+    if (message.file !== "") {
+      writer.uint32(74).string(message.file);
     }
     return writer;
   },
@@ -9634,7 +9635,7 @@ export const Revision = {
             break;
           }
 
-          message.fileTitle = reader.string();
+          message.file = reader.string();
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -9655,7 +9656,7 @@ export const Revision = {
       sheetSha1: isSet(object.sheetSha1) ? globalThis.String(object.sheetSha1) : "",
       type: isSet(object.type) ? revision_TypeFromJSON(object.type) : Revision_Type.TYPE_UNSPECIFIED,
       version: isSet(object.version) ? globalThis.String(object.version) : "",
-      fileTitle: isSet(object.fileTitle) ? globalThis.String(object.fileTitle) : "",
+      file: isSet(object.file) ? globalThis.String(object.file) : "",
     };
   },
 
@@ -9685,8 +9686,8 @@ export const Revision = {
     if (message.version !== "") {
       obj.version = message.version;
     }
-    if (message.fileTitle !== "") {
-      obj.fileTitle = message.fileTitle;
+    if (message.file !== "") {
+      obj.file = message.file;
     }
     return obj;
   },
@@ -9704,7 +9705,7 @@ export const Revision = {
     message.sheetSha1 = object.sheetSha1 ?? "";
     message.type = object.type ?? Revision_Type.TYPE_UNSPECIFIED;
     message.version = object.version ?? "";
-    message.fileTitle = object.fileTitle ?? "";
+    message.file = object.file ?? "";
     return message;
   },
 };

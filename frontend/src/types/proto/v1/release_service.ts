@@ -60,8 +60,11 @@ export interface Release {
 }
 
 export interface Release_File {
-  /** The filename. */
-  title: string;
+  /**
+   * The name of the file.
+   * Expressed as a path, e.g. `2.2/V0001_create_table.sql`
+   */
+  name: string;
   /**
    * The sheet that holds the content.
    * Format: projects/{project}/sheets/{sheet}
@@ -556,13 +559,13 @@ export const Release = {
 };
 
 function createBaseRelease_File(): Release_File {
-  return { title: "", sheet: "", sheetSha1: "", type: Release_File_Type.TYPE_UNSPECIFIED, version: "" };
+  return { name: "", sheet: "", sheetSha1: "", type: Release_File_Type.TYPE_UNSPECIFIED, version: "" };
 }
 
 export const Release_File = {
   encode(message: Release_File, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.title !== "") {
-      writer.uint32(10).string(message.title);
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
     }
     if (message.sheet !== "") {
       writer.uint32(18).string(message.sheet);
@@ -591,7 +594,7 @@ export const Release_File = {
             break;
           }
 
-          message.title = reader.string();
+          message.name = reader.string();
           continue;
         case 2:
           if (tag !== 18) {
@@ -632,7 +635,7 @@ export const Release_File = {
 
   fromJSON(object: any): Release_File {
     return {
-      title: isSet(object.title) ? globalThis.String(object.title) : "",
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
       sheet: isSet(object.sheet) ? globalThis.String(object.sheet) : "",
       sheetSha1: isSet(object.sheetSha1) ? globalThis.String(object.sheetSha1) : "",
       type: isSet(object.type) ? release_File_TypeFromJSON(object.type) : Release_File_Type.TYPE_UNSPECIFIED,
@@ -642,8 +645,8 @@ export const Release_File = {
 
   toJSON(message: Release_File): unknown {
     const obj: any = {};
-    if (message.title !== "") {
-      obj.title = message.title;
+    if (message.name !== "") {
+      obj.name = message.name;
     }
     if (message.sheet !== "") {
       obj.sheet = message.sheet;
@@ -665,7 +668,7 @@ export const Release_File = {
   },
   fromPartial(object: DeepPartial<Release_File>): Release_File {
     const message = createBaseRelease_File();
-    message.title = object.title ?? "";
+    message.name = object.name ?? "";
     message.sheet = object.sheet ?? "";
     message.sheetSha1 = object.sheetSha1 ?? "";
     message.type = object.type ?? Release_File_Type.TYPE_UNSPECIFIED;

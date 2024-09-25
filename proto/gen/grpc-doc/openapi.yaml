@@ -12085,9 +12085,11 @@ components:
         Release_File:
             type: object
             properties:
-                title:
+                name:
                     type: string
-                    description: The filename.
+                    description: |-
+                        The name of the file.
+                         Expressed as a path, e.g. `2.2/V0001_create_table.sql`
                 sheet:
                     type: string
                     description: |-
@@ -12293,10 +12295,11 @@ components:
                     format: enum
                 version:
                     type: string
-                fileTitle:
+                file:
                     type: string
                     description: |-
-                        The filename.
+                        The name of the file in the release.
+                         Expressed as a path, e.g. `2.2/V0001_create_table.sql`
                          Can be empty.
         Risk:
             type: object
