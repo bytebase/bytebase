@@ -1461,4 +1461,8 @@ message Revision {
   // Expressed as a path, e.g. `2.2/V0001_create_table.sql`
   // Can be empty.
   string file = 9;
+
+  // The task run associated with the revision.
+  // Can be empty.
+  string task_run = 10 [(google.api.resource_reference) = {type: "bytebase.com/TaskRun"}];
 }
