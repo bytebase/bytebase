@@ -12032,6 +12032,7 @@ components:
                         The sheet that holds the content.
                          Format: projects/{project}/sheets/{sheet}
                 sheetSha1:
+                    readOnly: true
                     type: string
                     description: The SHA1 hash value of the sheet.
                 type:
