@@ -583,6 +583,14 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.ListRevisionsRequest"><span class="badge">M</span>ListRevisionsRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.ListRevisionsResponse"><span class="badge">M</span>ListRevisionsResponse</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.ListSecretsRequest"><span class="badge">M</span>ListSecretsRequest</a>
                 </li>
               
@@ -608,6 +616,10 @@
               
                 <li>
                   <a href="#bytebase.v1.ProcedureMetadata"><span class="badge">M</span>ProcedureMetadata</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.Revision"><span class="badge">M</span>Revision</a>
                 </li>
               
                 <li>
@@ -705,6 +717,10 @@
               
                 <li>
                   <a href="#bytebase.v1.GenerationMetadata.Type"><span class="badge">E</span>GenerationMetadata.Type</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.Revision.Type"><span class="badge">E</span>Revision.Type</a>
                 </li>
               
                 <li>
@@ -7217,6 +7233,83 @@ If this field is omitted, there are no subsequent pages. </p></td>
 
         
       
+        <h3 id="bytebase.v1.ListRevisionsRequest">ListRevisionsRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>parent</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The parent of the revisions.
+Format: instances/{instance}/databases/{database} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>page_size</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>The maximum number of revisions to return. The service may return fewer than this value.
+If unspecified, at most 10 revisions will be returned.
+The maximum value is 1000; values above 1000 will be coerced to 1000. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>page_token</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>A page token, received from a previous `ListRevisions` call.
+Provide this to retrieve the subsequent page.
+
+When paginating, all other parameters provided to `ListRevisions` must match
+the call that provided the page token. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.ListRevisionsResponse">ListRevisionsResponse</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>revisions</td>
+                  <td><a href="#bytebase.v1.Revision">Revision</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>next_page_token</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>A token, which can be sent as `page_token` to retrieve the next page.
+If this field is omitted, there are no subsequent pages. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.ListSecretsRequest">ListSecretsRequest</h3>
         <p></p>
 
@@ -7486,6 +7579,89 @@ Format: projcets/{project}/branches/{branch} </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The definition is the definition of a procedure. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.Revision">Revision</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Format: instances/{instance}/databases/{database}/revisions/{revision} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>release</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Format: projects/{project}/releases/{release}
+Can be empty. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>creator</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Format: users/hello@world.com </p></td>
+                </tr>
+              
+                <tr>
+                  <td>create_time</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>sheet</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The sheet that holds the content.
+Format: projects/{project}/sheets/{sheet} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>sheet_sha1</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The SHA1 hash value of the sheet. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>type</td>
+                  <td><a href="#bytebase.v1.Revision.Type">Revision.Type</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>version</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>file_title</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The filename.
+Can be empty. </p></td>
                 </tr>
               
             </tbody>
@@ -8757,6 +8933,29 @@ The API will default to the BASIC view.</p></td>
           </tbody>
         </table>
       
+        <h3 id="bytebase.v1.Revision.Type">Revision.Type</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>TYPE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>VERSIONED</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
         <h3 id="bytebase.v1.StreamMetadata.Mode">StreamMetadata.Mode</h3>
         <p></p>
         <table class="enum-table">
@@ -9040,6 +9239,13 @@ The API will default to the BASIC view.</p></td>
                 <td><p></p></td>
               </tr>
             
+              <tr>
+                <td>ListRevisions</td>
+                <td><a href="#bytebase.v1.ListRevisionsRequest">ListRevisionsRequest</a></td>
+                <td><a href="#bytebase.v1.ListRevisionsResponse">ListRevisionsResponse</a></td>
+                <td><p></p></td>
+              </tr>
+            
           </tbody>
         </table>
 
@@ -9238,6 +9444,16 @@ The API will default to the BASIC view.</p></td>
                 <td>GetChangeHistory</td>
                 <td>GET</td>
                 <td>/v1/{name=instances/*/databases/*/changeHistories/*}</td>
+                <td></td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>ListRevisions</td>
+                <td>GET</td>
+                <td>/v1/{parent=instances/*/databases/*}/revisions</td>
                 <td></td>
               </tr>
               

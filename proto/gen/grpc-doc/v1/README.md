@@ -107,6 +107,8 @@
     - [ListDatabasesResponse](#bytebase-v1-ListDatabasesResponse)
     - [ListInstanceDatabasesRequest](#bytebase-v1-ListInstanceDatabasesRequest)
     - [ListInstanceDatabasesResponse](#bytebase-v1-ListInstanceDatabasesResponse)
+    - [ListRevisionsRequest](#bytebase-v1-ListRevisionsRequest)
+    - [ListRevisionsResponse](#bytebase-v1-ListRevisionsResponse)
     - [ListSecretsRequest](#bytebase-v1-ListSecretsRequest)
     - [ListSecretsResponse](#bytebase-v1-ListSecretsResponse)
     - [ListSlowQueriesRequest](#bytebase-v1-ListSlowQueriesRequest)
@@ -114,6 +116,7 @@
     - [MaterializedViewMetadata](#bytebase-v1-MaterializedViewMetadata)
     - [ProcedureConfig](#bytebase-v1-ProcedureConfig)
     - [ProcedureMetadata](#bytebase-v1-ProcedureMetadata)
+    - [Revision](#bytebase-v1-Revision)
     - [SchemaConfig](#bytebase-v1-SchemaConfig)
     - [SchemaMetadata](#bytebase-v1-SchemaMetadata)
     - [Secret](#bytebase-v1-Secret)
@@ -139,6 +142,7 @@
     - [ChangeHistoryView](#bytebase-v1-ChangeHistoryView)
     - [DatabaseMetadataView](#bytebase-v1-DatabaseMetadataView)
     - [GenerationMetadata.Type](#bytebase-v1-GenerationMetadata-Type)
+    - [Revision.Type](#bytebase-v1-Revision-Type)
     - [StreamMetadata.Mode](#bytebase-v1-StreamMetadata-Mode)
     - [StreamMetadata.Type](#bytebase-v1-StreamMetadata-Type)
     - [TablePartitionMetadata.Type](#bytebase-v1-TablePartitionMetadata-Type)
@@ -2335,6 +2339,41 @@ When paginating, all other parameters provided to `ListDatabases` must match the
 
 
 
+<a name="bytebase-v1-ListRevisionsRequest"></a>
+
+### ListRevisionsRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The parent of the revisions. Format: instances/{instance}/databases/{database} |
+| page_size | [int32](#int32) |  | The maximum number of revisions to return. The service may return fewer than this value. If unspecified, at most 10 revisions will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | A page token, received from a previous `ListRevisions` call. Provide this to retrieve the subsequent page.
+
+When paginating, all other parameters provided to `ListRevisions` must match the call that provided the page token. |
+
+
+
+
+
+
+<a name="bytebase-v1-ListRevisionsResponse"></a>
+
+### ListRevisionsResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| revisions | [Revision](#bytebase-v1-Revision) | repeated |  |
+| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
+
+
+
+
+
+
 <a name="bytebase-v1-ListSecretsRequest"></a>
 
 ### ListSecretsRequest
@@ -2448,6 +2487,29 @@ ProcedureMetadata is the metadata for procedures.
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name is the name of a procedure. |
 | definition | [string](#string) |  | The definition is the definition of a procedure. |
+
+
+
+
+
+
+<a name="bytebase-v1-Revision"></a>
+
+### Revision
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | Format: instances/{instance}/databases/{database}/revisions/{revision} |
+| release | [string](#string) |  | Format: projects/{project}/releases/{release} Can be empty. |
+| creator | [string](#string) |  | Format: users/hello@world.com |
+| create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| sheet | [string](#string) |  | The sheet that holds the content. Format: projects/{project}/sheets/{sheet} |
+| sheet_sha1 | [string](#string) |  | The SHA1 hash value of the sheet. |
+| type | [Revision.Type](#bytebase-v1-Revision-Type) |  |  |
+| version | [string](#string) |  |  |
+| file_title | [string](#string) |  | The filename. Can be empty. |
 
 
 
@@ -2896,6 +2958,18 @@ ViewMetadata is the metadata for views.
 
 
 
+<a name="bytebase-v1-Revision-Type"></a>
+
+### Revision.Type
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| TYPE_UNSPECIFIED | 0 |  |
+| VERSIONED | 1 |  |
+
+
+
 <a name="bytebase-v1-StreamMetadata-Mode"></a>
 
 ### StreamMetadata.Mode
@@ -2986,6 +3060,7 @@ PostgreSQL: RANGE, LIST, HASH (https://www.postgresql.org/docs/current/ddl-parti
 | AdviseIndex | [AdviseIndexRequest](#bytebase-v1-AdviseIndexRequest) | [AdviseIndexResponse](#bytebase-v1-AdviseIndexResponse) |  |
 | ListChangeHistories | [ListChangeHistoriesRequest](#bytebase-v1-ListChangeHistoriesRequest) | [ListChangeHistoriesResponse](#bytebase-v1-ListChangeHistoriesResponse) |  |
 | GetChangeHistory | [GetChangeHistoryRequest](#bytebase-v1-GetChangeHistoryRequest) | [ChangeHistory](#bytebase-v1-ChangeHistory) |  |
+| ListRevisions | [ListRevisionsRequest](#bytebase-v1-ListRevisionsRequest) | [ListRevisionsResponse](#bytebase-v1-ListRevisionsResponse) |  |
 
  
 
