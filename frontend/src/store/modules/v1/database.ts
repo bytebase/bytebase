@@ -22,8 +22,6 @@ import { useGracefulRequest } from "../utils";
 import { useEnvironmentV1Store } from "./environment";
 import { useProjectV1Store } from "./project";
 
-export const DEFAULT_DATABASE_PAGE_SIZE = 1000000;
-
 export const useDatabaseV1Store = defineStore("database_v1", () => {
   const databaseMapByName = reactive(new Map<string, ComposedDatabase>());
 
