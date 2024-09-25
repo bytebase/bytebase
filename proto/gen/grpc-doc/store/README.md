@@ -225,7 +225,7 @@
     - [ReleasePayload.File](#bytebase-store-ReleasePayload-File)
     - [ReleasePayload.VCSSource](#bytebase-store-ReleasePayload-VCSSource)
   
-    - [ReleasePayload.File.Type](#bytebase-store-ReleasePayload-File-Type)
+    - [ReleaseFileType](#bytebase-store-ReleaseFileType)
   
 - [store/review_config.proto](#store_review_config-proto)
     - [ReviewConfigPayload](#bytebase-store-ReviewConfigPayload)
@@ -3494,10 +3494,10 @@ SlowQueryPolicy is the policy configuration for slow query.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| title | [string](#string) |  | The filename. |
+| name | [string](#string) |  | The name of the file. Expressed as a path, e.g. `2.2/V0001_create_table.sql` |
 | sheet | [string](#string) |  | The sheet that holds the content. Format: projects/{project}/sheets/{sheet} |
 | sheet_sha1 | [string](#string) |  | The SHA1 hash value of the sheet. |
-| type | [ReleasePayload.File.Type](#bytebase-store-ReleasePayload-File-Type) |  |  |
+| type | [ReleaseFileType](#bytebase-store-ReleaseFileType) |  |  |
 | version | [string](#string) |  |  |
 
 
@@ -3523,9 +3523,9 @@ SlowQueryPolicy is the policy configuration for slow query.
  
 
 
-<a name="bytebase-store-ReleasePayload-File-Type"></a>
+<a name="bytebase-store-ReleaseFileType"></a>
 
-### ReleasePayload.File.Type
+### ReleaseFileType
 
 
 | Name | Number | Description |
