@@ -39,13 +39,13 @@ func BuildAffectedRowsResult(affectedRows int64) *v1pb.QueryResult {
 	}
 }
 
-var nullRowValue = &v1pb.RowValue{
+var NullRowValue = &v1pb.RowValue{
 	Kind: &v1pb.RowValue_NullValue{
 		NullValue: structpb.NullValue_NULL_VALUE,
 	},
 }
 
-func RowsToQueryResult(rows *sql.Rows, limit int64) (*v1pb.QueryResult, error) {
+func RowsToQueryResult(rows *sql.Rows, valueMaker func(string, *sql.ColumnType) any, rowValueConverter func(any) *v1pb.RowValue, limit int64) (*v1pb.QueryResult, error) {
 	columnNames, err := rows.Columns()
 	if err != nil {
 		return nil, err
@@ -70,7 +70,7 @@ func RowsToQueryResult(rows *sql.Rows, limit int64) (*v1pb.QueryResult, error) {
 		for rows.Next() {
 			values := make([]any, columnLength)
 			for i, v := range columnTypeNames {
-				values[i] = makeValueByTypeName(v)
+				values[i] = valueMaker(v, columnTypes[i])
 			}
 
 			if err := rows.Scan(values...); err != nil {
@@ -79,51 +79,7 @@ func RowsToQueryResult(rows *sql.Rows, limit int64) (*v1pb.QueryResult, error) {
 
 			row := &v1pb.QueryRow{}
 			for i := 0; i < columnLength; i++ {
-				rowValue := nullRowValue
-				switch raw := values[i].(type) {
-				case *sql.NullString:
-					if raw.Valid {
-						rowValue = &v1pb.RowValue{
-							Kind: &v1pb.RowValue_StringValue{
-								StringValue: raw.String,
-							},
-						}
-					}
-				case *sql.NullInt64:
-					if raw.Valid {
-						rowValue = &v1pb.RowValue{
-							Kind: &v1pb.RowValue_Int64Value{
-								Int64Value: raw.Int64,
-							},
-						}
-					}
-				case *[]byte:
-					if len(*raw) > 0 {
-						rowValue = &v1pb.RowValue{
-							Kind: &v1pb.RowValue_BytesValue{
-								BytesValue: *raw,
-							},
-						}
-					}
-				case *sql.NullBool:
-					if raw.Valid {
-						rowValue = &v1pb.RowValue{
-							Kind: &v1pb.RowValue_BoolValue{
-								BoolValue: raw.Bool,
-							},
-						}
-					}
-				case *sql.NullFloat64:
-					if raw.Valid {
-						rowValue = &v1pb.RowValue{
-							Kind: &v1pb.RowValue_DoubleValue{
-								DoubleValue: raw.Float64,
-							},
-						}
-					}
-				}
-
-				row.Values = append(row.Values, rowValue)
+				row.Values = append(row.Values, rowValueConverter(values[i]))
 			}
 
 			result.Rows = append(result.Rows, row)
@@ -142,7 +98,7 @@ func RowsToQueryResult(rows *sql.Rows, limit int64) (*v1pb.QueryResult, error) {
 	return result, nil
 }
 
-func makeValueByTypeName(typeName string) any {
+func MakeCommonValueByTypeName(typeName string, _ *sql.ColumnType) any {
 	switch typeName {
 	case "VARCHAR", "TEXT", "UUID", "TIMESTAMP":
 		return new(sql.NullString)
@@ -157,6 +113,52 @@ func makeValueByTypeName(typeName string) any {
 	default:
 		return new(sql.NullString)
 	}
+}
+
+func ConvertCommonValue(value any) *v1pb.RowValue {
+	switch raw := value.(type) {
+	case *sql.NullString:
+		if raw.Valid {
+			return &v1pb.RowValue{
+				Kind: &v1pb.RowValue_StringValue{
+					StringValue: raw.String,
+				},
+			}
+		}
+	case *sql.NullInt64:
+		if raw.Valid {
+			return &v1pb.RowValue{
+				Kind: &v1pb.RowValue_Int64Value{
+					Int64Value: raw.Int64,
+				},
+			}
+		}
+	case *[]byte:
+		if len(*raw) > 0 {
+			return &v1pb.RowValue{
+				Kind: &v1pb.RowValue_BytesValue{
+					BytesValue: *raw,
+				},
+			}
+		}
+	case *sql.NullBool:
+		if raw.Valid {
+			return &v1pb.RowValue{
+				Kind: &v1pb.RowValue_BoolValue{
+					BoolValue: raw.Bool,
+				},
+			}
+		}
+	case *sql.NullFloat64:
+		if raw.Valid {
+			return &v1pb.RowValue{
+				Kind: &v1pb.RowValue_DoubleValue{
+					DoubleValue: raw.Float64,
+				},
+			}
+		}
+	}
+	return NullRowValue
 }
 
 // TrimStatement trims the unused characters from the statement for making getStatementWithResultLimit() happy.
