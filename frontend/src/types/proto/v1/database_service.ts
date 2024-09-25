@@ -17,6 +17,12 @@ import {
   stateToNumber,
 } from "./common";
 import { InstanceResource } from "./instance_service";
+import {
+  ReleaseFileType,
+  releaseFileTypeFromJSON,
+  releaseFileTypeToJSON,
+  releaseFileTypeToNumber,
+} from "./release_service";
 
 export const protobufPackage = "bytebase.v1";
 
@@ -1779,7 +1785,7 @@ export interface Revision {
   sheet: string;
   /** The SHA1 hash value of the sheet. */
   sheetSha1: string;
-  type: Revision_Type;
+  type: ReleaseFileType;
   version: string;
   /**
    * The name of the file in the release.
@@ -1787,51 +1793,11 @@ export interface Revision {
    * Can be empty.
    */
   file: string;
-}
-
-export enum Revision_Type {
-  TYPE_UNSPECIFIED = "TYPE_UNSPECIFIED",
-  VERSIONED = "VERSIONED",
-  UNRECOGNIZED = "UNRECOGNIZED",
-}
-
-export function revision_TypeFromJSON(object: any): Revision_Type {
-  switch (object) {
-    case 0:
-    case "TYPE_UNSPECIFIED":
-      return Revision_Type.TYPE_UNSPECIFIED;
-    case 1:
-    case "VERSIONED":
-      return Revision_Type.VERSIONED;
-    case -1:
-    case "UNRECOGNIZED":
-    default:
-      return Revision_Type.UNRECOGNIZED;
-  }
-}
-
-export function revision_TypeToJSON(object: Revision_Type): string {
-  switch (object) {
-    case Revision_Type.TYPE_UNSPECIFIED:
-      return "TYPE_UNSPECIFIED";
-    case Revision_Type.VERSIONED:
-      return "VERSIONED";
-    case Revision_Type.UNRECOGNIZED:
-    default:
-      return "UNRECOGNIZED";
-  }
-}
-
-export function revision_TypeToNumber(object: Revision_Type): number {
-  switch (object) {
-    case Revision_Type.TYPE_UNSPECIFIED:
-      return 0;
-    case Revision_Type.VERSIONED:
-      return 1;
-    case Revision_Type.UNRECOGNIZED:
-    default:
-      return -1;
-  }
+  /**
+   * The task run associated with the revision.
+   * Can be empty.
+   */
+  taskRun: string;
 }
 
 function createBaseGetDatabaseRequest(): GetDatabaseRequest {
@@ -9529,9 +9495,10 @@ function createBaseRevision(): Revision {
     createTime: undefined,
     sheet: "",
     sheetSha1: "",
-    type: Revision_Type.TYPE_UNSPECIFIED,
+    type: ReleaseFileType.TYPE_UNSPECIFIED,
     version: "",
     file: "",
+    taskRun: "",
   };
 }
 
@@ -9555,14 +9522,17 @@ export const Revision = {
     if (message.sheetSha1 !== "") {
       writer.uint32(50).string(message.sheetSha1);
     }
-    if (message.type !== Revision_Type.TYPE_UNSPECIFIED) {
-      writer.uint32(56).int32(revision_TypeToNumber(message.type));
+    if (message.type !== ReleaseFileType.TYPE_UNSPECIFIED) {
+      writer.uint32(56).int32(releaseFileTypeToNumber(message.type));
     }
     if (message.version !== "") {
       writer.uint32(66).string(message.version);
     }
     if (message.file !== "") {
       writer.uint32(74).string(message.file);
+    }
+    if (message.taskRun !== "") {
+      writer.uint32(82).string(message.taskRun);
     }
     return writer;
   },
@@ -9621,7 +9591,7 @@ export const Revision = {
             break;
           }
 
-          message.type = revision_TypeFromJSON(reader.int32());
+          message.type = releaseFileTypeFromJSON(reader.int32());
           continue;
         case 8:
           if (tag !== 66) {
@@ -9636,6 +9606,13 @@ export const Revision = {
           }
 
           message.file = reader.string();
+          continue;
+        case 10:
+          if (tag !== 82) {
+            break;
+          }
+
+          message.taskRun = reader.string();
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -9654,9 +9631,10 @@ export const Revision = {
       createTime: isSet(object.createTime) ? fromJsonTimestamp(object.createTime) : undefined,
       sheet: isSet(object.sheet) ? globalThis.String(object.sheet) : "",
       sheetSha1: isSet(object.sheetSha1) ? globalThis.String(object.sheetSha1) : "",
-      type: isSet(object.type) ? revision_TypeFromJSON(object.type) : Revision_Type.TYPE_UNSPECIFIED,
+      type: isSet(object.type) ? releaseFileTypeFromJSON(object.type) : ReleaseFileType.TYPE_UNSPECIFIED,
       version: isSet(object.version) ? globalThis.String(object.version) : "",
       file: isSet(object.file) ? globalThis.String(object.file) : "",
+      taskRun: isSet(object.taskRun) ? globalThis.String(object.taskRun) : "",
     };
   },
 
@@ -9680,14 +9658,17 @@ export const Revision = {
     if (message.sheetSha1 !== "") {
       obj.sheetSha1 = message.sheetSha1;
     }
-    if (message.type !== Revision_Type.TYPE_UNSPECIFIED) {
-      obj.type = revision_TypeToJSON(message.type);
+    if (message.type !== ReleaseFileType.TYPE_UNSPECIFIED) {
+      obj.type = releaseFileTypeToJSON(message.type);
     }
     if (message.version !== "") {
       obj.version = message.version;
     }
     if (message.file !== "") {
       obj.file = message.file;
+    }
+    if (message.taskRun !== "") {
+      obj.taskRun = message.taskRun;
     }
     return obj;
   },
@@ -9703,9 +9684,10 @@ export const Revision = {
     message.createTime = object.createTime ?? undefined;
     message.sheet = object.sheet ?? "";
     message.sheetSha1 = object.sheetSha1 ?? "";
-    message.type = object.type ?? Revision_Type.TYPE_UNSPECIFIED;
+    message.type = object.type ?? ReleaseFileType.TYPE_UNSPECIFIED;
     message.version = object.version ?? "";
     message.file = object.file ?? "";
+    message.taskRun = object.taskRun ?? "";
     return message;
   },
 };

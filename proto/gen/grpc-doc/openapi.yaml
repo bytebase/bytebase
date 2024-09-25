@@ -12301,6 +12301,11 @@ components:
                         The name of the file in the release.
                          Expressed as a path, e.g. `2.2/V0001_create_table.sql`
                          Can be empty.
+                taskRun:
+                    type: string
+                    description: |-
+                        The task run associated with the revision.
+                         Can be empty.
         Risk:
             type: object
             properties:
