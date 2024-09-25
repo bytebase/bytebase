@@ -13,6 +13,7 @@ import "google/protobuf/timestamp.proto";
 import "v1/annotation.proto";
 import "v1/common.proto";
 import "v1/instance_service.proto";
+import "v1/release_service.proto";
 
 option go_package = "generated-go/v1";
 
@@ -159,6 +160,11 @@ service DatabaseService {
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.changeHistories.get";
     option (bytebase.v1.auth_method) = IAM;
+  }
+
+  rpc ListRevisions(ListRevisionsRequest) returns (ListRevisionsResponse) {
+    option (google.api.http) = {get: "/v1/{parent=instances/*/databases/*}/revisions"};
+    option (google.api.method_signature) = "parent";
   }
 }
 
@@ -1393,4 +1399,70 @@ message GetChangeHistoryRequest {
 
   // When true, the schema dump will be concise.
   bool concise = 4;
+}
+
+message ListRevisionsRequest {
+  // The parent of the revisions.
+  // Format: instances/{instance}/databases/{database}
+  string parent = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Database"}
+  ];
+
+  // The maximum number of revisions to return. The service may return fewer than this value.
+  // If unspecified, at most 10 revisions will be returned.
+  // The maximum value is 1000; values above 1000 will be coerced to 1000.
+  int32 page_size = 2;
+
+  // A page token, received from a previous `ListRevisions` call.
+  // Provide this to retrieve the subsequent page.
+  //
+  // When paginating, all other parameters provided to `ListRevisions` must match
+  // the call that provided the page token.
+  string page_token = 3;
+}
+
+message ListRevisionsResponse {
+  repeated Revision revisions = 1;
+
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+message Revision {
+  option (google.api.resource) = {
+    type: "bytebase.com/Revision"
+    pattern: "instances/{instance}/databases/{database}/revisions/{revision}"
+  };
+
+  // Format: instances/{instance}/databases/{database}/revisions/{revision}
+  string name = 1;
+
+  // Format: projects/{project}/releases/{release}
+  // Can be empty.
+  string release = 2 [(google.api.resource_reference) = {type: "bytebase.com/Release"}];
+
+  // Format: users/hello@world.com
+  string creator = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  google.protobuf.Timestamp create_time = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The sheet that holds the content.
+  // Format: projects/{project}/sheets/{sheet}
+  string sheet = 5 [(google.api.resource_reference) = {type: "bytebase.com/Sheet"}];
+  // The SHA1 hash value of the sheet.
+  string sheet_sha1 = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  ReleaseFileType type = 7;
+  string version = 8;
+
+  // The name of the file in the release.
+  // Expressed as a path, e.g. `2.2/V0001_create_table.sql`
+  // Can be empty.
+  string file = 9;
+
+  // The task run associated with the revision.
+  // Can be empty.
+  string task_run = 10 [(google.api.resource_reference) = {type: "bytebase.com/TaskRun"}];
 }

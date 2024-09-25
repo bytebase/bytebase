@@ -6,6 +6,51 @@ import { VCSType, vCSTypeFromJSON, vCSTypeToJSON, vCSTypeToNumber } from "./comm
 
 export const protobufPackage = "bytebase.v1";
 
+export enum ReleaseFileType {
+  TYPE_UNSPECIFIED = "TYPE_UNSPECIFIED",
+  VERSIONED = "VERSIONED",
+  UNRECOGNIZED = "UNRECOGNIZED",
+}
+
+export function releaseFileTypeFromJSON(object: any): ReleaseFileType {
+  switch (object) {
+    case 0:
+    case "TYPE_UNSPECIFIED":
+      return ReleaseFileType.TYPE_UNSPECIFIED;
+    case 1:
+    case "VERSIONED":
+      return ReleaseFileType.VERSIONED;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return ReleaseFileType.UNRECOGNIZED;
+  }
+}
+
+export function releaseFileTypeToJSON(object: ReleaseFileType): string {
+  switch (object) {
+    case ReleaseFileType.TYPE_UNSPECIFIED:
+      return "TYPE_UNSPECIFIED";
+    case ReleaseFileType.VERSIONED:
+      return "VERSIONED";
+    case ReleaseFileType.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+export function releaseFileTypeToNumber(object: ReleaseFileType): number {
+  switch (object) {
+    case ReleaseFileType.TYPE_UNSPECIFIED:
+      return 0;
+    case ReleaseFileType.VERSIONED:
+      return 1;
+    case ReleaseFileType.UNRECOGNIZED:
+    default:
+      return -1;
+  }
+}
+
 export interface GetReleaseRequest {
   /** Format: projects/{project}/releases/{release} */
   name: string;
@@ -60,8 +105,11 @@ export interface Release {
 }
 
 export interface Release_File {
-  /** The filename. */
-  title: string;
+  /**
+   * The name of the file.
+   * Expressed as a path, e.g. `2.2/V0001_create_table.sql`
+   */
+  name: string;
   /**
    * The sheet that holds the content.
    * Format: projects/{project}/sheets/{sheet}
@@ -69,53 +117,8 @@ export interface Release_File {
   sheet: string;
   /** The SHA1 hash value of the sheet. */
   sheetSha1: string;
-  type: Release_File_Type;
+  type: ReleaseFileType;
   version: string;
-}
-
-export enum Release_File_Type {
-  TYPE_UNSPECIFIED = "TYPE_UNSPECIFIED",
-  VERSIONED = "VERSIONED",
-  UNRECOGNIZED = "UNRECOGNIZED",
-}
-
-export function release_File_TypeFromJSON(object: any): Release_File_Type {
-  switch (object) {
-    case 0:
-    case "TYPE_UNSPECIFIED":
-      return Release_File_Type.TYPE_UNSPECIFIED;
-    case 1:
-    case "VERSIONED":
-      return Release_File_Type.VERSIONED;
-    case -1:
-    case "UNRECOGNIZED":
-    default:
-      return Release_File_Type.UNRECOGNIZED;
-  }
-}
-
-export function release_File_TypeToJSON(object: Release_File_Type): string {
-  switch (object) {
-    case Release_File_Type.TYPE_UNSPECIFIED:
-      return "TYPE_UNSPECIFIED";
-    case Release_File_Type.VERSIONED:
-      return "VERSIONED";
-    case Release_File_Type.UNRECOGNIZED:
-    default:
-      return "UNRECOGNIZED";
-  }
-}
-
-export function release_File_TypeToNumber(object: Release_File_Type): number {
-  switch (object) {
-    case Release_File_Type.TYPE_UNSPECIFIED:
-      return 0;
-    case Release_File_Type.VERSIONED:
-      return 1;
-    case Release_File_Type.UNRECOGNIZED:
-    default:
-      return -1;
-  }
 }
 
 export interface Release_VCSSource {
@@ -556,13 +559,13 @@ export const Release = {
 };
 
 function createBaseRelease_File(): Release_File {
-  return { title: "", sheet: "", sheetSha1: "", type: Release_File_Type.TYPE_UNSPECIFIED, version: "" };
+  return { name: "", sheet: "", sheetSha1: "", type: ReleaseFileType.TYPE_UNSPECIFIED, version: "" };
 }
 
 export const Release_File = {
   encode(message: Release_File, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.title !== "") {
-      writer.uint32(10).string(message.title);
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
     }
     if (message.sheet !== "") {
       writer.uint32(18).string(message.sheet);
@@ -570,8 +573,8 @@ export const Release_File = {
     if (message.sheetSha1 !== "") {
       writer.uint32(26).string(message.sheetSha1);
     }
-    if (message.type !== Release_File_Type.TYPE_UNSPECIFIED) {
-      writer.uint32(32).int32(release_File_TypeToNumber(message.type));
+    if (message.type !== ReleaseFileType.TYPE_UNSPECIFIED) {
+      writer.uint32(32).int32(releaseFileTypeToNumber(message.type));
     }
     if (message.version !== "") {
       writer.uint32(42).string(message.version);
@@ -591,7 +594,7 @@ export const Release_File = {
             break;
           }
 
-          message.title = reader.string();
+          message.name = reader.string();
           continue;
         case 2:
           if (tag !== 18) {
@@ -612,7 +615,7 @@ export const Release_File = {
             break;
           }
 
-          message.type = release_File_TypeFromJSON(reader.int32());
+          message.type = releaseFileTypeFromJSON(reader.int32());
           continue;
         case 5:
           if (tag !== 42) {
@@ -632,18 +635,18 @@ export const Release_File = {
 
   fromJSON(object: any): Release_File {
     return {
-      title: isSet(object.title) ? globalThis.String(object.title) : "",
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
       sheet: isSet(object.sheet) ? globalThis.String(object.sheet) : "",
       sheetSha1: isSet(object.sheetSha1) ? globalThis.String(object.sheetSha1) : "",
-      type: isSet(object.type) ? release_File_TypeFromJSON(object.type) : Release_File_Type.TYPE_UNSPECIFIED,
+      type: isSet(object.type) ? releaseFileTypeFromJSON(object.type) : ReleaseFileType.TYPE_UNSPECIFIED,
       version: isSet(object.version) ? globalThis.String(object.version) : "",
     };
   },
 
   toJSON(message: Release_File): unknown {
     const obj: any = {};
-    if (message.title !== "") {
-      obj.title = message.title;
+    if (message.name !== "") {
+      obj.name = message.name;
     }
     if (message.sheet !== "") {
       obj.sheet = message.sheet;
@@ -651,8 +654,8 @@ export const Release_File = {
     if (message.sheetSha1 !== "") {
       obj.sheetSha1 = message.sheetSha1;
     }
-    if (message.type !== Release_File_Type.TYPE_UNSPECIFIED) {
-      obj.type = release_File_TypeToJSON(message.type);
+    if (message.type !== ReleaseFileType.TYPE_UNSPECIFIED) {
+      obj.type = releaseFileTypeToJSON(message.type);
     }
     if (message.version !== "") {
       obj.version = message.version;
@@ -665,10 +668,10 @@ export const Release_File = {
   },
   fromPartial(object: DeepPartial<Release_File>): Release_File {
     const message = createBaseRelease_File();
-    message.title = object.title ?? "";
+    message.name = object.name ?? "";
     message.sheet = object.sheet ?? "";
     message.sheetSha1 = object.sheetSha1 ?? "";
-    message.type = object.type ?? Release_File_Type.TYPE_UNSPECIFIED;
+    message.type = object.type ?? ReleaseFileType.TYPE_UNSPECIFIED;
     message.version = object.version ?? "";
     return message;
   },
