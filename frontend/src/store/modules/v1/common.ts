@@ -29,6 +29,8 @@ export const planCheckRunPrefix = "planCheckRuns/";
 export const rolloutNamePrefix = "rollouts/";
 export const stageNamePrefix = "stages/";
 export const taskNamePrefix = "tasks/";
+export const releaseNamePrefix = "releases/";
+export const revisionNamePrefix = "revisions/";
 
 export const getNameParentTokens = (
   name: string,
@@ -223,6 +225,17 @@ export const getInstanceIdPolicyId = (name: string): string[] => {
   const tokens = getNameParentTokens(name, [
     instanceNamePrefix,
     policyNamePrefix,
+  ]);
+  if (tokens.length !== 2) {
+    return ["", ""];
+  }
+  return tokens;
+};
+
+export const getProjectNameReleaseId = (name: string): string[] => {
+  const tokens = getNameParentTokens(name, [
+    projectNamePrefix,
+    releaseNamePrefix,
   ]);
   if (tokens.length !== 2) {
     return ["", ""];
