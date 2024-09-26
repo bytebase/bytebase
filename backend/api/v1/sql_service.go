@@ -306,8 +306,18 @@ func getSchemaMetadata(engine storepb.Engine, dbSchema *model.DBSchema) *model.S
 
 func replaceBackupTableWithSource(ctx context.Context, stores *store.Store, instance *store.InstanceMessage, database *store.DatabaseMessage, spans []*base.QuerySpan) ([]*base.QuerySpan, error) {
 	var result []*base.QuerySpan
-	if instance.Engine != storepb.Engine_POSTGRES && database.DatabaseName != backupDatabaseName {
-		return spans, nil
+	switch instance.Engine {
+	case storepb.Engine_POSTGRES:
+		// Don't need to check the database name for postgres here.
+		// We backup the table to the same database with bbdataarchive schema for Postgres.
+	case storepb.Engine_ORACLE:
+		if database.DatabaseName != oracleBackupDatabaseName {
+			return spans, nil
+		}
+	default:
+		if database.DatabaseName != backupDatabaseName {
+			return spans, nil
+		}
 	}
 	dbSchema, err := stores.GetDBSchema(ctx, database.UID)
 	if err != nil {
