@@ -5,7 +5,6 @@ import { computed, onBeforeUnmount, reactive, watch } from "vue";
 import { minmax } from "@/utils";
 
 const MAX_AUTO_ADJUST_SCAN_ROWS = 20;
-const MAX_AUTO_ADJUST_COLUMNS = 20;
 
 export type TableResizeOptions = {
   containerWidth: Ref<number>;
@@ -61,7 +60,7 @@ const useTableResize = (options: TableResizeOptions) => {
     for (let i = 0; i < state.columns.length; i++) {
       indexList.push(i);
       state.columns[i] = {
-        width: options.defaultWidth,
+        width: options.minWidth,
       };
     }
 
@@ -81,13 +80,17 @@ const useTableResize = (options: TableResizeOptions) => {
           return scanner(n + 1);
         }
 
-        autoAdjustColumnWidth(
-          indexList.slice(0, MAX_AUTO_ADJUST_COLUMNS)
-        ).catch(() => {
-          for (let i = 0; i < state.columns.length; i++) {
-            state.columns[i].width = options.defaultWidth;
+        const maxAutoAdjustColumns = Math.ceil(
+          options.containerWidth.value / options.minWidth
+        );
+        console.log("maxAutoAdjustColumns", maxAutoAdjustColumns);
+        autoAdjustColumnWidth(indexList.slice(0, maxAutoAdjustColumns)).catch(
+          () => {
+            for (let i = 0; i < state.columns.length; i++) {
+              state.columns[i].width = options.defaultWidth;
+            }
           }
-        });
+        );
       });
     };
     scanner();
@@ -106,29 +109,38 @@ const useTableResize = (options: TableResizeOptions) => {
         ...Array.from(headerTable?.querySelectorAll("tr") || []),
         ...Array.from(bodyTable?.querySelectorAll("tr.n-data-table-tr") || []),
       ] as HTMLElement[];
-      console.log("autoAdjustColumnWidth", indexList.join("|"), trList.length);
+      console.log(
+        "autoAdjustColumnWidth",
+        indexList.join("|"),
+        `${trList.length} rows`
+      );
       if (!headerTable || !bodyTable || trList.length === 0) {
         return reject(undefined);
       }
 
       const numScanRows = Math.min(trList.length, MAX_AUTO_ADJUST_SCAN_ROWS);
-      const cellsMapByColumn = new Map<
-        number,
-        Array<HTMLElement | undefined>
-      >();
+      const cellsMapByColumn = new Map<number, Array<HTMLElement>>();
       indexList.forEach((index) => {
-        const cells: Array<HTMLElement | undefined> = [];
+        const cells: Array<HTMLElement> = [];
         let found = false;
         for (let row = 0; row < numScanRows; row++) {
           const tr = trList[row];
           const children = Array.from(tr.children).filter((child) => {
             return isNDataTableCell(child);
           });
-          const cell = children[index];
+          if (children.length === 0) {
+            return;
+          }
+          const first = children[0];
+          const offset = parseInt(
+            first.getAttribute("data-col-key") || "0",
+            10
+          );
+          const cell = children[index - offset];
           if (cell) {
             found = true;
+            cells.push(cell);
           }
-          cells.push(cell);
         }
         if (found) {
           cellsMapByColumn.set(index, cells);
@@ -147,7 +159,6 @@ const useTableResize = (options: TableResizeOptions) => {
 
       for (const [_index, cells] of cellsMapByColumn.entries()) {
         cells.forEach((cell) => {
-          if (!cell) return;
           cell.style.whiteSpace = "nowrap";
           cell.style.overflow = "visible";
           cell.style.width = "auto";
@@ -306,12 +317,12 @@ const toggleDragStyle = (
 ) => {
   if (on) {
     // Prevent text selection while dragging.
-    element.value?.classList.add("select-none");
+    document.body.classList.add("select-none");
     // Set the cursor style.
     document.body.classList.add("cursor-col-resize");
   } else {
     requestAnimationFrame(() => {
-      element.value?.classList.remove("select-none");
+      document.body.classList.remove("select-none");
       document.body.classList.remove("cursor-col-resize");
     });
   }
