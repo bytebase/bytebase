@@ -652,6 +652,10 @@ type TableMetadata struct {
 	proto           *storepb.TableMetadata
 }
 
+func (t *TableMetadata) GetTableComment() string {
+	return t.proto.Comment
+}
+
 // GetColumn gets the column by name.
 func (t *TableMetadata) GetColumn(name string) *storepb.ColumnMetadata {
 	return t.internalColumn[name]
