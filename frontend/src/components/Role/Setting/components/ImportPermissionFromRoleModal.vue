@@ -16,12 +16,12 @@
         <div>
           <p class="textlabel mb-1">
             {{ $t("common.permissions") }} ({{
-              selectedRole.permissions.length
+              filterDisplayPermissions.length
             }})
           </p>
           <div class="max-h-[10em] overflow-auto border rounded p-2">
             <p
-              v-for="permission in selectedRole.permissions"
+              v-for="permission in filterDisplayPermissions"
               :key="permission"
               class="text-sm leading-5"
             >
@@ -76,6 +76,14 @@ const availableRoleOptions = computed(() => {
 
 const selectedRole = computed(() => {
   return roleStore.roleList.find((role) => role.name === state.selectedRole);
+});
+
+const filterDisplayPermissions = computed(() => {
+  return (
+    selectedRole.value?.permissions.filter(
+      (p) => !p.startsWith("bb.branches") // Filter branch related permissions.
+    ) || []
+  );
 });
 
 const allowConfirm = computed(() => {
