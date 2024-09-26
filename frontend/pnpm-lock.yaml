@@ -105,8 +105,8 @@ importers:
         specifier: 7.3.0
         version: 7.3.0(@codingame/monaco-vscode-api@1.85.6)(monaco-editor@0.45.0)
       naive-ui:
-        specifier: 2.39.0
-        version: 2.39.0(vue@3.4.31(typescript@5.5.4))
+        specifier: 2.40.1
+        version: 2.40.1(vue@3.4.31(typescript@5.5.4))
       nice-grpc-common:
         specifier: ^2.0.2
         version: 2.0.2
@@ -1982,14 +1982,13 @@ packages:
     resolution: {integrity: sha512-ZYP5VBHshaDAiVZxjbRVcFJpc+4xGgT0bK3vzy1HLN8jTO975HEbuYzZJcHoQEY5K1a0z8YayJkyVETa08eNTg==}
     engines: {node: '>=18'}
 
-  date-fns-tz@2.0.1:
-    resolution: {integrity: sha512-fJCG3Pwx8HUoLhkepdsP7Z5RsucUi+ZBOxyM5d0ZZ6c4SdYustq0VMmOu6Wf7bli+yS/Jwp91TOCqn9jMcVrUA==}
+  date-fns-tz@3.1.3:
+    resolution: {integrity: sha512-ZfbMu+nbzW0mEzC8VZrLiSWvUIaI3aRHeq33mTe7Y38UctKukgqPR4nTDwcwS4d64Gf8GghnVsroBuMY3eiTeA==}
     peerDependencies:
-      date-fns: 2.x
+      date-fns: ^3.0.0
 
-  date-fns@2.30.0:
-    resolution: {integrity: sha512-fnULvOpxnC5/Vg3NCiWelDsLiUc9bRwAPs/+LfTLNvetFCtCTN+yQz15C/fs4AwX1R9K5GLtLfn8QW+dWisaAw==}
-    engines: {node: '>=0.11'}
+  date-fns@3.6.0:
+    resolution: {integrity: sha512-fRHTG8g/Gif+kSh50gaGEdToemgfj74aRX3swtiouboip5JDLAyDE9F11nHMIcvOaXeOC6D7SpNhi7uFyB7Uww==}
 
   dayjs@1.11.11:
     resolution: {integrity: sha512-okzr3f11N6WuqYtZSvm+F776mB41wRZMhKP+hc34YdW+KmtYYK9iqvHSwo2k9FEH3fhGXvOPV6yz2IcSrfRUDg==}
@@ -2916,8 +2915,8 @@ packages:
   mz@2.7.0:
     resolution: {integrity: sha512-z81GNO7nnYMEhrGh9LeymoE4+Yr0Wn5McHIZMK5cfQCl+NDX08sCZgUc9/6MHni9IWuFLm1Z3HTCXu2z9fN62Q==}
 
-  naive-ui@2.39.0:
-    resolution: {integrity: sha512-5oUJzRG+rtLSH8eRU+fJvVYiQids2BxF9jp+fwGoAqHOptEINrBlgBu9uy+95RHE5FLJ7Q/z41o+qkoGnUrKxQ==}
+  naive-ui@2.40.1:
+    resolution: {integrity: sha512-3NkL+vLRQZKQxCHXa+7xiD6oM74OrQELaehDkGYRYpr6kjT+JJB+Z7h+5LC70gn8VkbgCAETv0+uRWF+6MLlgQ==}
     peerDependencies:
       vue: ^3.0.0
 
@@ -3957,6 +3956,11 @@ packages:
 
   vueuc@0.4.58:
     resolution: {integrity: sha512-Wnj/N8WbPRSxSt+9ji1jtDHPzda5h2OH/0sFBhvdxDRuyCZbjGg3/cKMaKqEoe+dErTexG2R+i6Q8S/Toq1MYg==}
+    peerDependencies:
+      vue: ^3.0.11
+
+  vueuc@0.4.63:
+    resolution: {integrity: sha512-QJT0z9yYWXdKpUq6f6IrAgJ83e34iTYMCVHjcAP8lCjldG0JzHnDfJYMpPWkNuLB5SdBZCbYGmYTKnTR+ff7CQ==}
     peerDependencies:
       vue: ^3.0.11
 
@@ -5845,13 +5849,11 @@ snapshots:
       whatwg-mimetype: 4.0.0
       whatwg-url: 14.0.0
 
-  date-fns-tz@2.0.1(date-fns@2.30.0):
+  date-fns-tz@3.1.3(date-fns@3.6.0):
     dependencies:
-      date-fns: 2.30.0
+      date-fns: 3.6.0
 
-  date-fns@2.30.0:
-    dependencies:
-      '@babel/runtime': 7.24.6
+  date-fns@3.6.0: {}
 
   dayjs@1.11.11: {}
 
@@ -6771,7 +6773,7 @@ snapshots:
       object-assign: 4.1.1
       thenify-all: 1.6.0
 
-  naive-ui@2.39.0(vue@3.4.31(typescript@5.5.4)):
+  naive-ui@2.40.1(vue@3.4.31(typescript@5.5.4)):
     dependencies:
       '@css-render/plugin-bem': 0.15.14(css-render@0.15.14)
       '@css-render/vue3-ssr': 0.15.14(vue@3.4.31(typescript@5.5.4))
@@ -6781,8 +6783,8 @@ snapshots:
       async-validator: 4.2.5
       css-render: 0.15.14
       csstype: 3.1.3
-      date-fns: 2.30.0
-      date-fns-tz: 2.0.1(date-fns@2.30.0)
+      date-fns: 3.6.0
+      date-fns-tz: 3.1.3(date-fns@3.6.0)
       evtd: 0.2.4
       highlight.js: 11.10.0
       lodash: 4.17.21
@@ -6792,7 +6794,7 @@ snapshots:
       vdirs: 0.1.8(vue@3.4.31(typescript@5.5.4))
       vooks: 0.2.12(vue@3.4.31(typescript@5.5.4))
       vue: 3.4.31(typescript@5.5.4)
-      vueuc: 0.4.58(vue@3.4.31(typescript@5.5.4))
+      vueuc: 0.4.63(vue@3.4.31(typescript@5.5.4))
 
   nanoid@3.3.7: {}
 
@@ -7865,6 +7867,17 @@ snapshots:
       vue: 3.4.31(typescript@5.5.4)
 
   vueuc@0.4.58(vue@3.4.31(typescript@5.5.4)):
+    dependencies:
+      '@css-render/vue3-ssr': 0.15.14(vue@3.4.31(typescript@5.5.4))
+      '@juggle/resize-observer': 3.4.0
+      css-render: 0.15.14
+      evtd: 0.2.4
+      seemly: 0.3.8
+      vdirs: 0.1.8(vue@3.4.31(typescript@5.5.4))
+      vooks: 0.2.12(vue@3.4.31(typescript@5.5.4))
+      vue: 3.4.31(typescript@5.5.4)
+
+  vueuc@0.4.63(vue@3.4.31(typescript@5.5.4)):
     dependencies:
       '@css-render/vue3-ssr': 0.15.14(vue@3.4.31(typescript@5.5.4))
       '@juggle/resize-observer': 3.4.0

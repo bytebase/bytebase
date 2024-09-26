@@ -11,12 +11,19 @@
     />
 
     <NDataTable
+      v-if="containerWidth > 0"
       ref="dataTableRef"
       :columns="columns"
-      :data="layoutReady ? rows : []"
-      :max-height="tableBodyHeight"
+      :data="rows"
       :row-props="rowProps"
       :virtual-scroll="true"
+      :virtual-scroll-x="true"
+      :virtual-scroll-header="true"
+      :header-height="33"
+      :max-height="containerHeight - 35"
+      :min-row-height="27"
+      :height-for-row="() => 27"
+      :scroll-x="tableResize.getTableScrollWidth()"
       table-layout="fixed"
       size="small"
       class="relative z-[1]"
@@ -26,7 +33,9 @@
         --n-border-radius: 0;
         --n-border-color: rgb(var(--color-block-border));
       "
-      v-bind="tableResize.getTableProps()"
+      :style="{
+        width: `${tableResize.getTableRenderWidth()}px`,
+      }"
     />
   </div>
 </template>
@@ -34,14 +43,10 @@
 <script lang="ts" setup>
 import type { Header, Row, Table } from "@tanstack/vue-table";
 import { useElementSize } from "@vueuse/core";
-import { type DataTableColumn, NDataTable } from "naive-ui";
-import { computed, h, nextTick, watch } from "vue";
+import { type DataTableColumn, type DataTableInst, NDataTable } from "naive-ui";
+import { computed, h, nextTick, ref, watch, watchEffect } from "vue";
 import { QueryRow, type RowValue } from "@/types/proto/v1/sql_service";
-import {
-  nextAnimationFrame,
-  useAutoHeightDataTable,
-  usePreventBackAndForward,
-} from "@/utils";
+import { nextAnimationFrame, usePreventBackAndForward } from "@/utils";
 import { useSQLResultViewContext } from "../context";
 import ColumnHeader from "./ColumnHeader.vue";
 import TableCell from "./TableCell.vue";
@@ -65,13 +70,16 @@ const headers = computed(() => {
 const rows = computed(() => {
   return props.table.getRowModel().rows;
 });
-const {
-  dataTableRef,
-  containerElRef,
-  tableBodyHeight,
-  scrollerRef,
-  layoutReady,
-} = useAutoHeightDataTable(rows);
+const dataTableRef = ref<DataTableInst>();
+const containerElRef = ref<HTMLElement>();
+const scrollerRef = computed(() => {
+  const getter = (dataTableRef.value as any)?.$refs.mainTableInstRef.$refs
+    .bodyInstRef.virtualListContainer;
+  if (typeof getter === "function") {
+    return getter() as HTMLElement | undefined;
+  }
+  return undefined;
+});
 const { height: containerHeight, width: containerWidth } =
   useElementSize(containerElRef);
 usePreventBackAndForward(scrollerRef);
@@ -88,6 +96,7 @@ const queryTableBodyElement = () => {
 };
 
 const tableResize = useTableColumnWidthLogic({
+  containerWidth,
   scrollerRef,
   queryTableHeaderElement,
   queryTableBodyElement,
@@ -102,6 +111,13 @@ const columns = computed(() => {
     (header, colIndex) => {
       return {
         key: header.id,
+        cellProps: (row, rowIndex) => {
+          return {
+            class: "truncate",
+            "data-row-index": row.index,
+            "data-col-index": colIndex,
+          };
+        },
         title: () => {
           return h(ColumnHeader, {
             header,
@@ -121,9 +137,7 @@ const columns = computed(() => {
           return h(TableCell, {
             table: props.table,
             value,
-            width:
-              tableResize.state.columns[colIndex]?.width ??
-              DEFAULT_COLUMN_WIDTH,
+            width: tableResize.getColumnWidth(colIndex),
             keyword: keyword.value,
             setIndex: props.setIndex,
             rowIndex: props.offset + rowIndex,
@@ -131,9 +145,8 @@ const columns = computed(() => {
           });
         },
         width: tableResize.state.autoAdjusting.has(colIndex)
-          ? undefined
-          : (tableResize.state.columns[colIndex]?.width ??
-            DEFAULT_COLUMN_WIDTH),
+          ? DEFAULT_COLUMN_WIDTH
+          : tableResize.getColumnWidth(colIndex),
       };
     }
   );
@@ -175,6 +188,13 @@ watch(
     scrollTo(0, 0);
   }
 );
+
+watchEffect(() => {
+  console.log(
+    `render:${tableResize.getTableRenderWidth()}`,
+    `scroll:${tableResize.getTableScrollWidth()}`
+  );
+});
 </script>
 
 <style lang="postcss" scoped>
