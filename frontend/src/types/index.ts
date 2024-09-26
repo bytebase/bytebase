@@ -31,5 +31,6 @@ export * from "./semanticTypes";
 export * from "./iam";
 export * from "./misc";
 export * from "./appProfile";
+export * from "./release";
 
 export * from "./v1";

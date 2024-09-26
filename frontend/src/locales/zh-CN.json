@@ -1270,7 +1270,7 @@
         "admin": "{environment} 环境没有配置 SQL 审核策略。{link}",
         "developer": "{environment} 环境没有配置 SQL 审核策略，请让您的 DBA 配置。"
       },
-      "statement-is-too-large": "语句过大",
+      "statement-is-too-large": "当前语句大小超过 1MB，将跳过 SQL 检查。",
       "back-to-edit": "返回编辑",
       "continue-anyway": "仍然继续",
       "sql-review-violations": "违反的 SQL 审核规则"
@@ -1918,7 +1918,7 @@
   "repository": {
     "our-webhook-link": "Bytebase 创建的 webhook 可以在 {webhookLink} 中找到。",
     "branch-observe-file-change": "Bytebase 跟踪文件变更的分支。",
-    "database-group-description": "默认情况下，更改将应用于项目中的所有数据库。或者，它们可以应用于数据库组。",
+    "database-group-description": "默认情况下，更改将应用于项目中的所有数据库。或者，也可以应用于指定的数据库分组。",
     "base-directory": "根目录",
     "base-directory-description": "Bytebase 观察文件变化的根目录。如果文件存储在存储库根目录中，请使用“/”。",
     "merge-request": "合并请求",

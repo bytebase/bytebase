@@ -15,24 +15,25 @@ message ReleasePayload {
   VCSSource vcs_source = 3;
 
   message File {
-    // The filename.
-    string title = 1;
+    // The name of the file.
+    // Expressed as a path, e.g. `2.2/V0001_create_table.sql`
+    string name = 1;
     // The sheet that holds the content.
     // Format: projects/{project}/sheets/{sheet}
     string sheet = 2 [(google.api.resource_reference) = {type: "bytebase.com/Sheet"}];
     // The SHA1 hash value of the sheet.
     string sheet_sha1 = 3;
-    Type type = 4;
+    ReleaseFileType type = 4;
     string version = 5;
-
-    enum Type {
-      TYPE_UNSPECIFIED = 0;
-      VERSIONED = 1;
-    }
   }
 
   message VCSSource {
     VCSType vcs_type = 1;
     string pull_request_url = 2;
   }
+}
+
+enum ReleaseFileType {
+  TYPE_UNSPECIFIED = 0;
+  VERSIONED = 1;
 }

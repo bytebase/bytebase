@@ -72,18 +72,9 @@ func (sm *Manager) CreateSheet(ctx context.Context, sheet *store.SheetMessage) (
 }
 
 func getSheetCommands(engine storepb.Engine, statement string) []*storepb.SheetCommand {
-	switch engine {
-	case
-		storepb.Engine_MYSQL,
-		storepb.Engine_TIDB:
-		if len(statement) > common.MaxSheetCheckSize {
-			return nil
-		}
-	case storepb.Engine_POSTGRES:
-	case storepb.Engine_ORACLE:
-	case storepb.Engine_MSSQL:
-	case storepb.Engine_DYNAMODB:
-	default:
+	// Burnout for large SQL. This could cause issue for Oracle and MSSQL that requires sending one command at a time.
+	// But we do what we can do.
+	if len(statement) > common.MaxSheetCheckSize {
 		return nil
 	}
 

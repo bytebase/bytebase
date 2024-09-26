@@ -17,6 +17,12 @@ import {
   stateToNumber,
 } from "./common";
 import { InstanceResource } from "./instance_service";
+import {
+  ReleaseFileType,
+  releaseFileTypeFromJSON,
+  releaseFileTypeToJSON,
+  releaseFileTypeToNumber,
+} from "./release_service";
 
 export const protobufPackage = "bytebase.v1";
 
@@ -1726,6 +1732,72 @@ export interface GetChangeHistoryRequest {
   sdlFormat: boolean;
   /** When true, the schema dump will be concise. */
   concise: boolean;
+}
+
+export interface ListRevisionsRequest {
+  /**
+   * The parent of the revisions.
+   * Format: instances/{instance}/databases/{database}
+   */
+  parent: string;
+  /**
+   * The maximum number of revisions to return. The service may return fewer than this value.
+   * If unspecified, at most 10 revisions will be returned.
+   * The maximum value is 1000; values above 1000 will be coerced to 1000.
+   */
+  pageSize: number;
+  /**
+   * A page token, received from a previous `ListRevisions` call.
+   * Provide this to retrieve the subsequent page.
+   *
+   * When paginating, all other parameters provided to `ListRevisions` must match
+   * the call that provided the page token.
+   */
+  pageToken: string;
+}
+
+export interface ListRevisionsResponse {
+  revisions: Revision[];
+  /**
+   * A token, which can be sent as `page_token` to retrieve the next page.
+   * If this field is omitted, there are no subsequent pages.
+   */
+  nextPageToken: string;
+}
+
+export interface Revision {
+  /** Format: instances/{instance}/databases/{database}/revisions/{revision} */
+  name: string;
+  /**
+   * Format: projects/{project}/releases/{release}
+   * Can be empty.
+   */
+  release: string;
+  /** Format: users/hello@world.com */
+  creator: string;
+  createTime:
+    | Date
+    | undefined;
+  /**
+   * The sheet that holds the content.
+   * Format: projects/{project}/sheets/{sheet}
+   */
+  sheet: string;
+  /** The SHA1 hash value of the sheet. */
+  sheetSha1: string;
+  type: ReleaseFileType;
+  version: string;
+  /**
+   * The name of the file in the release.
+   * Expressed as a path, e.g. `2.2/V0001_create_table.sql`
+   * Can be empty.
+   */
+  file: string;
+  /**
+   * The task run associated with the revision.
+   * Can be empty.
+   */
+  taskRun: string;
 }
 
 function createBaseGetDatabaseRequest(): GetDatabaseRequest {
@@ -9250,6 +9322,376 @@ export const GetChangeHistoryRequest = {
   },
 };
 
+function createBaseListRevisionsRequest(): ListRevisionsRequest {
+  return { parent: "", pageSize: 0, pageToken: "" };
+}
+
+export const ListRevisionsRequest = {
+  encode(message: ListRevisionsRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.parent !== "") {
+      writer.uint32(10).string(message.parent);
+    }
+    if (message.pageSize !== 0) {
+      writer.uint32(16).int32(message.pageSize);
+    }
+    if (message.pageToken !== "") {
+      writer.uint32(26).string(message.pageToken);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ListRevisionsRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseListRevisionsRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.parent = reader.string();
+          continue;
+        case 2:
+          if (tag !== 16) {
+            break;
+          }
+
+          message.pageSize = reader.int32();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.pageToken = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ListRevisionsRequest {
+    return {
+      parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
+      pageSize: isSet(object.pageSize) ? globalThis.Number(object.pageSize) : 0,
+      pageToken: isSet(object.pageToken) ? globalThis.String(object.pageToken) : "",
+    };
+  },
+
+  toJSON(message: ListRevisionsRequest): unknown {
+    const obj: any = {};
+    if (message.parent !== "") {
+      obj.parent = message.parent;
+    }
+    if (message.pageSize !== 0) {
+      obj.pageSize = Math.round(message.pageSize);
+    }
+    if (message.pageToken !== "") {
+      obj.pageToken = message.pageToken;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ListRevisionsRequest>): ListRevisionsRequest {
+    return ListRevisionsRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ListRevisionsRequest>): ListRevisionsRequest {
+    const message = createBaseListRevisionsRequest();
+    message.parent = object.parent ?? "";
+    message.pageSize = object.pageSize ?? 0;
+    message.pageToken = object.pageToken ?? "";
+    return message;
+  },
+};
+
+function createBaseListRevisionsResponse(): ListRevisionsResponse {
+  return { revisions: [], nextPageToken: "" };
+}
+
+export const ListRevisionsResponse = {
+  encode(message: ListRevisionsResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    for (const v of message.revisions) {
+      Revision.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.nextPageToken !== "") {
+      writer.uint32(18).string(message.nextPageToken);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ListRevisionsResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseListRevisionsResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.revisions.push(Revision.decode(reader, reader.uint32()));
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.nextPageToken = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ListRevisionsResponse {
+    return {
+      revisions: globalThis.Array.isArray(object?.revisions)
+        ? object.revisions.map((e: any) => Revision.fromJSON(e))
+        : [],
+      nextPageToken: isSet(object.nextPageToken) ? globalThis.String(object.nextPageToken) : "",
+    };
+  },
+
+  toJSON(message: ListRevisionsResponse): unknown {
+    const obj: any = {};
+    if (message.revisions?.length) {
+      obj.revisions = message.revisions.map((e) => Revision.toJSON(e));
+    }
+    if (message.nextPageToken !== "") {
+      obj.nextPageToken = message.nextPageToken;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ListRevisionsResponse>): ListRevisionsResponse {
+    return ListRevisionsResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ListRevisionsResponse>): ListRevisionsResponse {
+    const message = createBaseListRevisionsResponse();
+    message.revisions = object.revisions?.map((e) => Revision.fromPartial(e)) || [];
+    message.nextPageToken = object.nextPageToken ?? "";
+    return message;
+  },
+};
+
+function createBaseRevision(): Revision {
+  return {
+    name: "",
+    release: "",
+    creator: "",
+    createTime: undefined,
+    sheet: "",
+    sheetSha1: "",
+    type: ReleaseFileType.TYPE_UNSPECIFIED,
+    version: "",
+    file: "",
+    taskRun: "",
+  };
+}
+
+export const Revision = {
+  encode(message: Revision, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    if (message.release !== "") {
+      writer.uint32(18).string(message.release);
+    }
+    if (message.creator !== "") {
+      writer.uint32(26).string(message.creator);
+    }
+    if (message.createTime !== undefined) {
+      Timestamp.encode(toTimestamp(message.createTime), writer.uint32(34).fork()).ldelim();
+    }
+    if (message.sheet !== "") {
+      writer.uint32(42).string(message.sheet);
+    }
+    if (message.sheetSha1 !== "") {
+      writer.uint32(50).string(message.sheetSha1);
+    }
+    if (message.type !== ReleaseFileType.TYPE_UNSPECIFIED) {
+      writer.uint32(56).int32(releaseFileTypeToNumber(message.type));
+    }
+    if (message.version !== "") {
+      writer.uint32(66).string(message.version);
+    }
+    if (message.file !== "") {
+      writer.uint32(74).string(message.file);
+    }
+    if (message.taskRun !== "") {
+      writer.uint32(82).string(message.taskRun);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): Revision {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseRevision();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.release = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.creator = reader.string();
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.createTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.sheet = reader.string();
+          continue;
+        case 6:
+          if (tag !== 50) {
+            break;
+          }
+
+          message.sheetSha1 = reader.string();
+          continue;
+        case 7:
+          if (tag !== 56) {
+            break;
+          }
+
+          message.type = releaseFileTypeFromJSON(reader.int32());
+          continue;
+        case 8:
+          if (tag !== 66) {
+            break;
+          }
+
+          message.version = reader.string();
+          continue;
+        case 9:
+          if (tag !== 74) {
+            break;
+          }
+
+          message.file = reader.string();
+          continue;
+        case 10:
+          if (tag !== 82) {
+            break;
+          }
+
+          message.taskRun = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): Revision {
+    return {
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      release: isSet(object.release) ? globalThis.String(object.release) : "",
+      creator: isSet(object.creator) ? globalThis.String(object.creator) : "",
+      createTime: isSet(object.createTime) ? fromJsonTimestamp(object.createTime) : undefined,
+      sheet: isSet(object.sheet) ? globalThis.String(object.sheet) : "",
+      sheetSha1: isSet(object.sheetSha1) ? globalThis.String(object.sheetSha1) : "",
+      type: isSet(object.type) ? releaseFileTypeFromJSON(object.type) : ReleaseFileType.TYPE_UNSPECIFIED,
+      version: isSet(object.version) ? globalThis.String(object.version) : "",
+      file: isSet(object.file) ? globalThis.String(object.file) : "",
+      taskRun: isSet(object.taskRun) ? globalThis.String(object.taskRun) : "",
+    };
+  },
+
+  toJSON(message: Revision): unknown {
+    const obj: any = {};
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.release !== "") {
+      obj.release = message.release;
+    }
+    if (message.creator !== "") {
+      obj.creator = message.creator;
+    }
+    if (message.createTime !== undefined) {
+      obj.createTime = message.createTime.toISOString();
+    }
+    if (message.sheet !== "") {
+      obj.sheet = message.sheet;
+    }
+    if (message.sheetSha1 !== "") {
+      obj.sheetSha1 = message.sheetSha1;
+    }
+    if (message.type !== ReleaseFileType.TYPE_UNSPECIFIED) {
+      obj.type = releaseFileTypeToJSON(message.type);
+    }
+    if (message.version !== "") {
+      obj.version = message.version;
+    }
+    if (message.file !== "") {
+      obj.file = message.file;
+    }
+    if (message.taskRun !== "") {
+      obj.taskRun = message.taskRun;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<Revision>): Revision {
+    return Revision.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<Revision>): Revision {
+    const message = createBaseRevision();
+    message.name = object.name ?? "";
+    message.release = object.release ?? "";
+    message.creator = object.creator ?? "";
+    message.createTime = object.createTime ?? undefined;
+    message.sheet = object.sheet ?? "";
+    message.sheetSha1 = object.sheetSha1 ?? "";
+    message.type = object.type ?? ReleaseFileType.TYPE_UNSPECIFIED;
+    message.version = object.version ?? "";
+    message.file = object.file ?? "";
+    message.taskRun = object.taskRun ?? "";
+    return message;
+  },
+};
+
 export type DatabaseServiceDefinition = typeof DatabaseServiceDefinition;
 export const DatabaseServiceDefinition = {
   name: "DatabaseService",
@@ -10775,6 +11217,71 @@ export const DatabaseServiceDefinition = {
               47,
               42,
               125,
+            ]),
+          ],
+        },
+      },
+    },
+    listRevisions: {
+      name: "ListRevisions",
+      requestType: ListRevisionsRequest,
+      requestStream: false,
+      responseType: ListRevisionsResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          8410: [new Uint8Array([6, 112, 97, 114, 101, 110, 116])],
+          578365826: [
+            new Uint8Array([
+              48,
+              18,
+              46,
+              47,
+              118,
+              49,
+              47,
+              123,
+              112,
+              97,
+              114,
+              101,
+              110,
+              116,
+              61,
+              105,
+              110,
+              115,
+              116,
+              97,
+              110,
+              99,
+              101,
+              115,
+              47,
+              42,
+              47,
+              100,
+              97,
+              116,
+              97,
+              98,
+              97,
+              115,
+              101,
+              115,
+              47,
+              42,
+              125,
+              47,
+              114,
+              101,
+              118,
+              105,
+              115,
+              105,
+              111,
+              110,
+              115,
             ]),
           ],
         },

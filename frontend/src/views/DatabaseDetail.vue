@@ -89,9 +89,7 @@
             @click.prevent="tryTransferProject"
           >
             <span>{{ $t("database.transfer-project") }}</span>
-            <heroicons-outline:switch-horizontal
-              class="-mr-1 ml-2 h-5 w-5 text-control-light"
-            />
+            <ArrowRightLeftIcon class="ml-1" :size="16" />
           </NButton>
           <NButton
             v-if="allowChangeData"
@@ -191,6 +189,7 @@
 <script lang="ts" setup>
 import { useTitle } from "@vueuse/core";
 import dayjs from "dayjs";
+import { ArrowRightLeftIcon } from "lucide-vue-next";
 import { NButton, NTabPane, NTabs } from "naive-ui";
 import { computed, reactive, watch, ref, onMounted } from "vue";
 import { useRouter } from "vue-router";

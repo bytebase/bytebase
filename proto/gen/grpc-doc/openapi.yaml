@@ -1903,6 +1903,56 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
+    /v1/instances/{instance}/databases/{database}/revisions:
+        get:
+            tags:
+                - DatabaseService
+            operationId: DatabaseService_ListRevisions
+            parameters:
+                - name: instance
+                  in: path
+                  description: The instance id.
+                  required: true
+                  schema:
+                    type: string
+                - name: database
+                  in: path
+                  description: The database id.
+                  required: true
+                  schema:
+                    type: string
+                - name: pageSize
+                  in: query
+                  description: |-
+                    The maximum number of revisions to return. The service may return fewer than this value.
+                     If unspecified, at most 10 revisions will be returned.
+                     The maximum value is 1000; values above 1000 will be coerced to 1000.
+                  schema:
+                    type: integer
+                    format: int32
+                - name: pageToken
+                  in: query
+                  description: |-
+                    A page token, received from a previous `ListRevisions` call.
+                     Provide this to retrieve the subsequent page.
+
+                     When paginating, all other parameters provided to `ListRevisions` must match
+                     the call that provided the page token.
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ListRevisionsResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
     /v1/instances/{instance}/databases/{database}/schema:
         get:
             tags:
@@ -10827,6 +10877,18 @@ components:
                     description: |-
                         A token, which can be sent as `page_token` to retrieve the next page.
                          If this field is omitted, there are no subsequent pages.
+        ListRevisionsResponse:
+            type: object
+            properties:
+                revisions:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/Revision'
+                nextPageToken:
+                    type: string
+                    description: |-
+                        A token, which can be sent as `page_token` to retrieve the next page.
+                         If this field is omitted, there are no subsequent pages.
         ListRisksResponse:
             type: object
             properties:
@@ -12023,15 +12085,18 @@ components:
         Release_File:
             type: object
             properties:
-                title:
+                name:
                     type: string
-                    description: The filename.
+                    description: |-
+                        The name of the file.
+                         Expressed as a path, e.g. `2.2/V0001_create_table.sql`
                 sheet:
                     type: string
                     description: |-
                         The sheet that holds the content.
                          Format: projects/{project}/sheets/{sheet}
                 sheetSha1:
+                    readOnly: true
                     type: string
                     description: The SHA1 hash value of the sheet.
                 type:
@@ -12194,6 +12259,53 @@ components:
                     description: |-
                         resources using the config.
                          Format: {resurce}/{resource id}, for example, environments/test.
+        Revision:
+            type: object
+            properties:
+                name:
+                    type: string
+                    description: 'Format: instances/{instance}/databases/{database}/revisions/{revision}'
+                release:
+                    type: string
+                    description: |-
+                        Format: projects/{project}/releases/{release}
+                         Can be empty.
+                creator:
+                    readOnly: true
+                    type: string
+                    description: 'Format: users/hello@world.com'
+                createTime:
+                    readOnly: true
+                    type: string
+                    format: date-time
+                sheet:
+                    type: string
+                    description: |-
+                        The sheet that holds the content.
+                         Format: projects/{project}/sheets/{sheet}
+                sheetSha1:
+                    readOnly: true
+                    type: string
+                    description: The SHA1 hash value of the sheet.
+                type:
+                    enum:
+                        - TYPE_UNSPECIFIED
+                        - VERSIONED
+                    type: string
+                    format: enum
+                version:
+                    type: string
+                file:
+                    type: string
+                    description: |-
+                        The name of the file in the release.
+                         Expressed as a path, e.g. `2.2/V0001_create_table.sql`
+                         Can be empty.
+                taskRun:
+                    type: string
+                    description: |-
+                        The task run associated with the revision.
+                         Can be empty.
         Risk:
             type: object
             properties:
