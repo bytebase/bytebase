@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"time"
+	"unicode"
 
 	"cloud.google.com/go/bigquery"
 	"google.golang.org/api/iterator"
@@ -124,9 +125,8 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 		queryResult, err := func() (*v1pb.QueryResult, error) {
 			if util.IsSelect(statement) {
 				q := d.client.Query(statement)
-				// TODO(d): replace invalid characters.
-				if queryContext.UserEmail != "" {
-					q.Labels = map[string]string{"user_email": queryContext.UserEmail}
+				if queryContext.OperatorEmail != "" {
+					q.Labels = map[string]string{"operator_email": encodeOperatorEmail(queryContext.OperatorEmail)}
 				}
 				q.DefaultDatasetID = d.databaseName
 				it, err := q.Read(ctx)
@@ -208,6 +208,26 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 	}
 
 	return results, nil
+}
+
+// encodeOperatorEmail encodes email to valid format of resource label value.
+// https://cloud.google.com/compute/docs/labeling-resources#requirements
+func encodeOperatorEmail(email string) string {
+	var values []rune
+	for _, c := range email {
+		switch {
+		case unicode.IsDigit(c) || c == '_' || c == '-':
+			values = append(values, c)
+		case unicode.IsLetter(c):
+			values = append(values, unicode.ToLower(c))
+		default:
+			values = append(values, '_')
+		}
+	}
+	if len(values) > 63 {
+		return string(values[:63])
+	}
+	return string(values)
 }
 
 func getStatementWithResultLimit(statement string, limit int) string {

@@ -124,7 +124,7 @@ func (s *SQLService) AdminExecute(server v1pb.SQLService_AdminExecuteServer) err
 			}
 		}
 
-		queryContext := db.QueryContext{UserEmail: user.Email}
+		queryContext := db.QueryContext{OperatorEmail: user.Email}
 		if request.Schema != nil {
 			queryContext.Schema = *request.Schema
 		}
@@ -174,7 +174,7 @@ func (s *SQLService) Execute(ctx context.Context, request *v1pb.ExecuteRequest) 
 		defer conn.Close()
 	}
 
-	queryContext := db.QueryContext{UserEmail: user.Email}
+	queryContext := db.QueryContext{OperatorEmail: user.Email}
 	if request.Schema != nil {
 		queryContext.Schema = *request.Schema
 	}
@@ -237,7 +237,7 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 		defer conn.Close()
 	}
 
-	queryContext := db.QueryContext{Explain: request.Explain, Limit: int(request.Limit), UserEmail: user.Email}
+	queryContext := db.QueryContext{Explain: request.Explain, Limit: int(request.Limit), OperatorEmail: user.Email}
 	if request.Schema != nil {
 		queryContext.Schema = *request.Schema
 	}
@@ -530,7 +530,7 @@ func DoExport(
 		}
 		defer conn.Close()
 	}
-	queryContext := db.QueryContext{Limit: int(request.Limit), UserEmail: user.Email}
+	queryContext := db.QueryContext{Limit: int(request.Limit), OperatorEmail: user.Email}
 	results, spans, duration, queryErr := queryRetry(ctx, storeInstance, user, instance, database, driver, conn, request.Statement, nil /* timeDuration */, queryContext, true, licenseService, optionalAccessCheck, schemaSyncer)
 	if queryErr != nil {
 		return nil, duration, err
