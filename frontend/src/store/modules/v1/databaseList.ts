@@ -1,12 +1,13 @@
 import { computed, unref, watch, type MaybeRef } from "vue";
 import { databaseServiceClient } from "@/grpcweb";
+import { DEFAULT_PAGE_SIZE } from "../common";
 import { useListCache } from "./cache";
 import {
   instanceNamePrefix,
   projectNamePrefix,
   workspaceNamePrefix,
 } from "./common";
-import { DEFAULT_DATABASE_PAGE_SIZE, useDatabaseV1Store } from "./database";
+import { useDatabaseV1Store } from "./database";
 
 const formatDatabaseParent = (parent: string) => {
   if (
@@ -52,7 +53,7 @@ export const useDatabaseV1List = (
         : databaseServiceClient.listDatabases;
       const { databases } = await request({
         parent: formatParent.value,
-        pageSize: DEFAULT_DATABASE_PAGE_SIZE,
+        pageSize: DEFAULT_PAGE_SIZE,
       });
       await store.upsertDatabaseMap(databases);
       listCache.cacheMap.set(cacheKey.value, {

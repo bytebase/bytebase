@@ -13,8 +13,7 @@ import {
   ChangeHistory_Type,
 } from "@/types/proto/v1/database_service";
 import { extractChangeHistoryUID } from "@/utils";
-
-export const DEFAULT_CHANGE_HISTORY_PAGE_SIZE = 1000000;
+import { DEFAULT_PAGE_SIZE } from "../common";
 
 type CacheKeyType = [string /* name */, ChangeHistoryView];
 
@@ -61,7 +60,7 @@ export const useChangeHistoryStore = defineStore("changeHistory_v1", () => {
     }
     return fetchChangeHistoryList({
       parent: databaseName,
-      pageSize: DEFAULT_CHANGE_HISTORY_PAGE_SIZE,
+      pageSize: DEFAULT_PAGE_SIZE,
     });
   };
   const changeHistoryListByDatabase = (name: string) => {
