@@ -43,7 +43,6 @@ func splitByParser(lexer *parser.PostgreSQLLexer, stream *antlr.CommonTokenStrea
 	p.AddErrorListener(parserErrorListener)
 
 	p.BuildParseTrees = true
-	p.SetErrorHandler(antlr.NewBailErrorStrategy())
 
 	tree := p.Root()
 	if lexerErrorListener.Err != nil {
