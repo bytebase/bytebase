@@ -21,6 +21,7 @@ import (
 
 	plsql "github.com/bytebase/plsql-parser"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
@@ -111,14 +112,26 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 		return 0, errors.New("create database is not supported for Oracle")
 	}
 
-	// Use Oracle sql parser.
-	singleSQLs, err := plsqlparser.SplitSQL(statement)
-	if err != nil {
-		return 0, err
-	}
-	singleSQLs = base.FilterEmptySQL(singleSQLs)
-	if len(singleSQLs) == 0 {
-		return 0, nil
+	var commands []base.SingleSQL
+	var originalIndex []int32
+	if len(statement) <= common.MaxSheetCheckSize {
+		// Use Oracle sql parser.
+		singleSQLs, err := plsqlparser.SplitSQL(statement)
+		if err != nil {
+			return 0, errors.Wrapf(err, "failed to split sql")
+		}
+		singleSQLs, originalIndex = base.FilterEmptySQLWithIndexes(singleSQLs)
+		if len(singleSQLs) == 0 {
+			return 0, nil
+		}
+		commands = singleSQLs
+	} else {
+		commands = []base.SingleSQL{
+			{
+				Text: statement,
+			},
+		}
+		originalIndex = []int32{0}
 	}
 
 	conn, err := driver.db.Conn(ctx)
@@ -148,22 +161,22 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 	}()
 
 	totalRowsAffected := int64(0)
-	for i, singleSQL := range singleSQLs {
-		indexes := []int32{int32(i)}
+	for i, command := range commands {
+		indexes := []int32{originalIndex[i]}
 		opts.LogCommandExecute(indexes)
 
-		sqlResult, err := tx.ExecContext(ctx, singleSQL.Text)
+		sqlResult, err := tx.ExecContext(ctx, command.Text)
 		if err != nil {
 			opts.LogCommandResponse(indexes, 0, nil, err.Error())
 			return 0, &db.ErrorWithPosition{
 				Err: errors.Wrapf(err, "failed to execute context in a transaction"),
 				Start: &storepb.TaskRunResult_Position{
-					Line:   int32(singleSQL.FirstStatementLine),
-					Column: int32(singleSQL.FirstStatementColumn),
+					Line:   int32(command.FirstStatementLine),
+					Column: int32(command.FirstStatementColumn),
 				},
 				End: &storepb.TaskRunResult_Position{
-					Line:   int32(singleSQL.LastLine),
-					Column: int32(singleSQL.LastColumn),
+					Line:   int32(command.LastLine),
+					Column: int32(command.LastColumn),
 				},
 			}
 		}
