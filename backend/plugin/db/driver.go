@@ -247,8 +247,9 @@ type QueryContext struct {
 	// Mainly used for the search path of PostgreSQL.
 	Schema string
 	// Limit is the maximum row count returned. No limit enforced if limit <= 0
-	Limit   int
-	Explain bool
+	Limit         int
+	Explain       bool
+	OperatorEmail string
 }
 
 // DatabaseRoleMessage is the API message for database role.
