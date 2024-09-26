@@ -50,3 +50,8 @@ const makeUnknown = (type: ResourceType) => {
 };
 
 export const unknown = makeUnknown as ResourceMaker;
+
+export interface Pagination {
+  pageSize?: number;
+  pageToken?: string;
+}

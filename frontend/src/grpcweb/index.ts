@@ -15,12 +15,14 @@ import { ChangelistServiceDefinition } from "@/types/proto/v1/changelist_service
 import { DatabaseGroupServiceDefinition } from "@/types/proto/v1/database_group_service";
 import { DatabaseServiceDefinition } from "@/types/proto/v1/database_service";
 import { EnvironmentServiceDefinition } from "@/types/proto/v1/environment_service";
+import { GroupServiceDefinition } from "@/types/proto/v1/group";
 import { IdentityProviderServiceDefinition } from "@/types/proto/v1/idp_service";
 import { InstanceServiceDefinition } from "@/types/proto/v1/instance_service";
 import { IssueServiceDefinition } from "@/types/proto/v1/issue_service";
 import { OrgPolicyServiceDefinition } from "@/types/proto/v1/org_policy_service";
 import { PlanServiceDefinition } from "@/types/proto/v1/plan_service";
 import { ProjectServiceDefinition } from "@/types/proto/v1/project_service";
+import { ReleaseServiceDefinition } from "@/types/proto/v1/release_service";
 import { ReviewConfigServiceDefinition } from "@/types/proto/v1/review_config_service";
 import { RiskServiceDefinition } from "@/types/proto/v1/risk_service";
 import { RoleServiceDefinition } from "@/types/proto/v1/role_service";
@@ -29,7 +31,6 @@ import { SettingServiceDefinition } from "@/types/proto/v1/setting_service";
 import { SheetServiceDefinition } from "@/types/proto/v1/sheet_service";
 import { SQLServiceDefinition } from "@/types/proto/v1/sql_service";
 import { SubscriptionServiceDefinition } from "@/types/proto/v1/subscription_service";
-import { GroupServiceDefinition } from "@/types/proto/v1/group";
 import { VCSConnectorServiceDefinition } from "@/types/proto/v1/vcs_connector_service";
 import { VCSProviderServiceDefinition } from "@/types/proto/v1/vcs_provider_service";
 import { WorksheetServiceDefinition } from "@/types/proto/v1/worksheet_service";
@@ -218,6 +219,11 @@ export const reviewConfigServiceClient = clientFactory.create(
 
 export const workspaceServiceClient = clientFactory.create(
   WorkspaceServiceDefinition,
+  channel
+);
+
+export const releaseServiceClient = clientFactory.create(
+  ReleaseServiceDefinition,
   channel
 );
 
