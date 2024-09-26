@@ -21,8 +21,8 @@
       :virtual-scroll-header="true"
       :header-height="33"
       :max-height="containerHeight - 35"
-      :min-row-height="27"
-      :height-for-row="() => 27"
+      :min-row-height="28"
+      :height-for-row="() => 28"
       :scroll-x="tableResize.getTableScrollWidth()"
       table-layout="fixed"
       size="small"
@@ -44,7 +44,7 @@
 import type { Header, Row, Table } from "@tanstack/vue-table";
 import { useElementSize } from "@vueuse/core";
 import { type DataTableColumn, type DataTableInst, NDataTable } from "naive-ui";
-import { computed, h, nextTick, ref, watch, watchEffect } from "vue";
+import { computed, h, nextTick, ref, watch } from "vue";
 import { QueryRow, type RowValue } from "@/types/proto/v1/sql_service";
 import { nextAnimationFrame, usePreventBackAndForward } from "@/utils";
 import { useSQLResultViewContext } from "../context";
@@ -110,8 +110,8 @@ const columns = computed(() => {
   return headers.value.map<DataTableColumn<Row<QueryRow>>>(
     (header, colIndex) => {
       return {
-        key: header.id,
-        cellProps: (row, rowIndex) => {
+        key: colIndex,
+        cellProps: (row) => {
           return {
             class: "truncate",
             "data-row-index": row.index,
@@ -131,7 +131,7 @@ const columns = computed(() => {
             },
           });
         },
-        render: (row, rowIndex) => {
+        render: (row) => {
           const cell = row.getVisibleCells()[colIndex];
           const value = cell.getValue() as RowValue;
           return h(TableCell, {
@@ -140,8 +140,9 @@ const columns = computed(() => {
             width: tableResize.getColumnWidth(colIndex),
             keyword: keyword.value,
             setIndex: props.setIndex,
-            rowIndex: props.offset + rowIndex,
+            rowIndex: props.offset + row.index,
             colIndex,
+            class: row.index % 2 === 0 && "bg-gray-100/50 dark:bg-gray-700/50",
           });
         },
         width: tableResize.state.autoAdjusting.has(colIndex)
@@ -188,13 +189,6 @@ watch(
     scrollTo(0, 0);
   }
 );
-
-watchEffect(() => {
-  console.log(
-    `render:${tableResize.getTableRenderWidth()}`,
-    `scroll:${tableResize.getTableScrollWidth()}`
-  );
-});
 </script>
 
 <style lang="postcss" scoped>

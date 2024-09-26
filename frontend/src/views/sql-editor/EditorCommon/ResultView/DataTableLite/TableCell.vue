@@ -1,7 +1,7 @@
 <!-- eslint-disable vue/no-v-html -->
 <template>
   <div
-    class="relative px-2 py-1 text-sm dark:text-gray-100 leading-5 whitespace-nowrap break-all group-even:bg-gray-50/50 dark:group-even:bg-gray-700/50"
+    class="relative px-2 py-1 text-sm dark:text-gray-100 leading-5 whitespace-nowrap break-all"
     :class="classes"
     @click="handleClick"
   >
