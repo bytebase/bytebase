@@ -124,6 +124,10 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 		queryResult, err := func() (*v1pb.QueryResult, error) {
 			if util.IsSelect(statement) {
 				q := d.client.Query(statement)
+				// TODO(d): replace invalid characters.
+				if queryContext.UserEmail != "" {
+					q.Labels = map[string]string{"user_email": queryContext.UserEmail}
+				}
 				q.DefaultDatasetID = d.databaseName
 				it, err := q.Read(ctx)
 				if err != nil {
