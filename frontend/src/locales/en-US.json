@@ -290,7 +290,8 @@
     "back-to-workspace": "Back to workspace",
     "override": "Override",
     "encoding": "Encoding",
-    "finish": "Finish"
+    "finish": "Finish",
+    "title": "Title"
   },
   "error-page": {
     "go-back-home": "Go back home"

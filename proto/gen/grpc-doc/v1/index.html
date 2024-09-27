@@ -442,6 +442,10 @@
                   <a href="#bytebase.v1.Release.VCSSource"><span class="badge">M</span>Release.VCSSource</a>
                 </li>
               
+                <li>
+                  <a href="#bytebase.v1.UpdateReleaseRequest"><span class="badge">M</span>UpdateReleaseRequest</a>
+                </li>
+              
               
                 <li>
                   <a href="#bytebase.v1.ReleaseFileType"><span class="badge">E</span>ReleaseFileType</a>
@@ -5570,6 +5574,37 @@ Format: projects/{project}/sheets/{sheet} </p></td>
 
         
       
+        <h3 id="bytebase.v1.UpdateReleaseRequest">UpdateReleaseRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>release</td>
+                  <td><a href="#bytebase.v1.Release">Release</a></td>
+                  <td></td>
+                  <td><p>The release to update. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>update_mask</td>
+                  <td><a href="#google.protobuf.FieldMask">google.protobuf.FieldMask</a></td>
+                  <td></td>
+                  <td><p>The list of fields to be updated. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
 
       
         <h3 id="bytebase.v1.ReleaseFileType">ReleaseFileType</h3>
@@ -5628,6 +5663,13 @@ Format: projects/{project}/sheets/{sheet} </p></td>
                 <td><p></p></td>
               </tr>
             
+              <tr>
+                <td>UpdateRelease</td>
+                <td><a href="#bytebase.v1.UpdateReleaseRequest">UpdateReleaseRequest</a></td>
+                <td><a href="#bytebase.v1.Release">Release</a></td>
+                <td><p></p></td>
+              </tr>
+            
           </tbody>
         </table>
 
@@ -5672,6 +5714,16 @@ Format: projects/{project}/sheets/{sheet} </p></td>
                 <td>CreateRelease</td>
                 <td>POST</td>
                 <td>/v1/{parent=projects/*}/releases</td>
+                <td>release</td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>UpdateRelease</td>
+                <td>PATCH</td>
+                <td>/v1/{release.name=projects/*/releases/*}</td>
                 <td>release</td>
               </tr>
               

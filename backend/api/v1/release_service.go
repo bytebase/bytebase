@@ -125,6 +125,11 @@ func (s *ReleaseService) ListReleases(ctx context.Context, request *v1pb.ListRel
 	}, nil
 }
 
+func (*ReleaseService) UpdateRelease(_ context.Context, _ *v1pb.UpdateReleaseRequest) (*v1pb.Release, error) {
+	// TODO(p0ny): implement me please.
+	return nil, status.Errorf(codes.Unimplemented, "implement me")
+}
+
 func convertToReleases(ctx context.Context, s *store.Store, releases []*store.ReleaseMessage) ([]*v1pb.Release, error) {
 	var rs []*v1pb.Release
 	for _, release := range releases {

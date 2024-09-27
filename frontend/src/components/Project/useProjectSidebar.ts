@@ -10,6 +10,7 @@ import {
   SearchCodeIcon,
   DownloadIcon,
   SquareGanttChartIcon,
+  PackageIcon,
 } from "lucide-vue-next";
 import { computed, h, unref } from "vue";
 import type { RouteLocationNormalizedLoaded, RouteRecordRaw } from "vue-router";
@@ -32,12 +33,13 @@ import projectV1Routes, {
   PROJECT_V1_ROUTE_EXPORT_CENTER,
   PROJECT_V1_ROUTE_AUDIT_LOGS,
   PROJECT_V1_ROUTE_REVIEW_CENTER,
+  PROJECT_V1_ROUTE_RELEASES,
 } from "@/router/dashboard/projectV1";
 import { useAppFeature } from "@/store";
 import type { ComposedProject, MaybeRef, Permission } from "@/types";
 import { DEFAULT_PROJECT_NAME } from "@/types";
 import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
-import { hasProjectPermissionV2 } from "@/utils";
+import { hasProjectPermissionV2, isDev } from "@/utils";
 
 interface ProjectSidebarItem extends SidebarItem {
   title: string;
@@ -179,6 +181,16 @@ export const useProjectSidebar = (
         icon: () => h(PencilRuler),
         type: "div",
         hide:
+          isDefaultProject.value ||
+          databaseChangeMode.value === DatabaseChangeMode.EDITOR,
+      },
+      {
+        title: "Releases",
+        path: PROJECT_V1_ROUTE_RELEASES,
+        icon: () => h(PackageIcon),
+        type: "div",
+        hide:
+          !isDev() ||
           isDefaultProject.value ||
           databaseChangeMode.value === DatabaseChangeMode.EDITOR,
       },

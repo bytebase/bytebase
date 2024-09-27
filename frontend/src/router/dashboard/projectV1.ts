@@ -34,6 +34,8 @@ export const PROJECT_V1_ROUTE_MEMBERS = `${PROJECT_V1_ROUTE_DASHBOARD}.members`;
 export const PROJECT_V1_ROUTE_SETTINGS = `${PROJECT_V1_ROUTE_DASHBOARD}.settings`;
 export const PROJECT_V1_ROUTE_EXPORT_CENTER = `${PROJECT_V1_ROUTE_DASHBOARD}.export-center`;
 export const PROJECT_V1_ROUTE_REVIEW_CENTER = `${PROJECT_V1_ROUTE_DASHBOARD}.review-center`;
+export const PROJECT_V1_ROUTE_RELEASES = `${PROJECT_V1_ROUTE_DASHBOARD}.releases`;
+export const PROJECT_V1_ROUTE_RELEASE_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.release.detail`;
 
 const projectV1Routes: RouteRecordRaw[] = [
   {
@@ -476,6 +478,39 @@ const projectV1Routes: RouteRecordRaw[] = [
         },
         component: () => import("@/views/ReviewCenter/index.vue"),
         props: true,
+      },
+      {
+        path: "releases",
+        meta: {
+          overrideTitle: true,
+        },
+        props: true,
+        children: [
+          {
+            path: "",
+            name: PROJECT_V1_ROUTE_RELEASES,
+            meta: {
+              overrideTitle: true,
+              requiredProjectPermissionList: () => [
+                "bb.projects.get",
+                "bb.issues.list", // TODO(steven): use release related permission instead.
+              ],
+            },
+            component: () =>
+              import("@/views/project/ProjectReleaseDashboard.vue"),
+            props: true,
+          },
+          {
+            path: ":releaseId",
+            name: PROJECT_V1_ROUTE_RELEASE_DETAIL,
+            meta: {
+              overrideTitle: true,
+              requiredProjectPermissionList: () => ["bb.projects.get"],
+            },
+            component: () => import("@/views/project/ProjectReleaseDetail.vue"),
+            props: true,
+          },
+        ],
       },
     ],
   },
