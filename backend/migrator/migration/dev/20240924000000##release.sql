@@ -1,4 +1,4 @@
-CREATE TABLE release (
+CREATE TABLE IF NOT EXISTS release (
     id BIGSERIAL PRIMARY KEY,
     project_id INTEGER NOT NULL REFERENCES project (id),
     creator_id INTEGER NOT NULL REFERENCES principal (id),
