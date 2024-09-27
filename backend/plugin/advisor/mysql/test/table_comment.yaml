@@ -4,7 +4,7 @@
   changeType: 0
   want:
     - status: 2
-      code: 606
+      code: 1301
       title: table.comment
       content: The length of table `t` comment should be within 10 characters
       detail: ""
@@ -18,7 +18,7 @@
   changeType: 0
   want:
     - status: 2
-      code: 605
+      code: 1032
       title: table.comment
       content: Table `t` requires comments
       detail: ""
@@ -32,7 +32,7 @@
   changeType: 0
   want:
     - status: 2
-      code: 606
+      code: 1301
       title: table.comment
       content: The length of table `t` comment should be within 10 characters
       detail: ""

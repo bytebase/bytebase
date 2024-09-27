@@ -82,11 +82,15 @@
       "description": "It is recommended to set the charset at the database level. Setting the charset at finer granularity can bring unnecessary complexities. Suggested error level: Error."
     },
     "table-comment": {
-      "title": "Comment convention",
+      "title": "Table comment convention",
       "description": "Configure whether the table requires comments and the maximum comment length.",
       "component": {
         "required": {
           "title": "Require comment"
+        },
+        "requiredClassification": {
+          "title": "Require classification",
+          "tooltip": "The comment should follow {'{'}classification id{'}'}-{'{'}comment{'}'} format."
         },
         "maxLength": {
           "title": "Max length"
@@ -302,11 +306,15 @@
       "description": "Unsigned types do not store negative numbers, and the range of values that can be stored by the same type is doubled, which can avoid auto-increment columns overflow. Suggested error level: Warning"
     },
     "column-comment": {
-      "title": "Enforce adding comments to columns",
-      "description": "Adding comments to columns is a good development practice, but excessively long comments can decrease the readability of the schema.Suggested error level: Warning",
+      "title": "Table comment convention",
+      "description": "Adding comments to columns is a good development practice, but excessively long comments can decrease the readability of the schema. Suggested error level: Warning",
       "component": {
         "required": {
           "title": "Require comment"
+        },
+        "requiredClassification": {
+          "title": "Require classification",
+          "tooltip": "The comment should follow {'{'}classification id{'}'}-{'{'}comment{'}'} format."
         },
         "maxLength": {
           "title": "Max length"

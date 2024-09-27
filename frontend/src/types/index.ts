@@ -12,7 +12,6 @@ export * from "./notification";
 export * from "./oauth";
 export * from "./plan";
 export * from "./member";
-export * from "./sqlAdvice";
 export * from "./store";
 export * from "./vcs";
 export * from "./sqlEditor";

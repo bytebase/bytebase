@@ -150,7 +150,7 @@
         "content":  "Table `userTable` requires comments",
         "sqlReviewReport":  {
           "line":  1,
-          "code":  605,
+          "code":  1032,
           "startPosition":  {
             "line":  1
           }
@@ -215,7 +215,7 @@
         "content":  "Column `userTable`.`id` requires comments",
         "sqlReviewReport":  {
           "line":  1,
-          "code":  408,
+          "code":  1032,
           "startPosition":  {
             "line":  1
           }
@@ -228,7 +228,7 @@
         "content":  "Column `userTable`.`name` requires comments",
         "sqlReviewReport":  {
           "line":  1,
-          "code":  408,
+          "code":  1032,
           "startPosition":  {
             "line":  1
           }
@@ -241,7 +241,7 @@
         "content":  "Column `userTable`.`roomId` requires comments",
         "sqlReviewReport":  {
           "line":  1,
-          "code":  408,
+          "code":  1032,
           "startPosition":  {
             "line":  1
           }
