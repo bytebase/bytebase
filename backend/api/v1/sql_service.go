@@ -1230,6 +1230,28 @@ func (s *SQLService) Check(ctx context.Context, request *v1pb.CheckRequest) (*v1
 	}, nil
 }
 
+func GetClassificationByProject(ctx context.Context, stores *store.Store, projectID string) *storepb.DataClassificationSetting_DataClassificationConfig {
+	project, err := stores.GetProjectV2(ctx, &store.FindProjectMessage{
+		ResourceID: &projectID,
+	})
+	if err != nil {
+		slog.Warn("failed to find project", slog.String("project", projectID), log.BBError(err))
+		return nil
+	}
+	if project == nil {
+		return nil
+	}
+	if project.DataClassificationConfigID == "" {
+		return nil
+	}
+	classificationConfig, err := stores.GetDataClassificationConfigByID(ctx, project.DataClassificationConfigID)
+	if err != nil {
+		slog.Warn("failed to find classification", slog.String("project", projectID), slog.String("classification", project.DataClassificationConfigID), log.BBError(err))
+		return nil
+	}
+	return classificationConfig
+}
+
 // SQLReviewCheck checks the SQL statement against the SQL review policy bind to given environment,
 // against the database schema bind to the given database, if the overrideMetadata is provided,
 // it will be used instead of fetching the database schema from the store.
@@ -1278,16 +1300,18 @@ func (s *SQLService) SQLReviewCheck(
 	defer driver.Close(ctx)
 	connection := driver.GetDB()
 
+	classificationConfig := GetClassificationByProject(ctx, s.store, database.ProjectID)
 	context := advisor.SQLReviewCheckContext{
-		Charset:         dbMetadata.CharacterSet,
-		Collation:       dbMetadata.Collation,
-		ChangeType:      convertChangeType(changeType),
-		DBSchema:        dbMetadata,
-		DbType:          instance.Engine,
-		Catalog:         catalog,
-		Driver:          connection,
-		Context:         ctx,
-		CurrentDatabase: database.DatabaseName,
+		Charset:              dbMetadata.CharacterSet,
+		Collation:            dbMetadata.Collation,
+		ChangeType:           convertChangeType(changeType),
+		DBSchema:             dbMetadata,
+		DbType:               instance.Engine,
+		Catalog:              catalog,
+		Driver:               connection,
+		Context:              ctx,
+		CurrentDatabase:      database.DatabaseName,
+		ClassificationConfig: classificationConfig,
 	}
 
 	reviewConfig, err := s.store.GetReviewConfigForDatabase(ctx, database)

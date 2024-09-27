@@ -50,6 +50,7 @@ type Context struct {
 	SyntaxMode            SyntaxMode
 	ChangeType            storepb.PlanCheckRunConfig_ChangeDatabaseType
 	PreUpdateBackupDetail *storepb.PreUpdateBackupDetail
+	ClassificationConfig  *storepb.DataClassificationSetting_DataClassificationConfig
 
 	// SQL review rule special fields.
 	AST     any

@@ -5,14 +5,25 @@
       :key="index"
       class="space-y-1"
     >
-      <p
-        :class="[
-          'font-medium',
-          size !== 'small' && 'text-lg text-control mb-2',
-        ]"
+      <div
+        v-if="config.payload.type !== 'BOOLEAN'"
+        class="flex items-center space-x-1"
       >
-        {{ configTitle(config) }}
-      </p>
+        <p
+          :class="[
+            'font-medium',
+            size !== 'small' && 'text-lg text-control mb-2',
+          ]"
+        >
+          {{ configTitle(config) }}
+        </p>
+        <NTooltip v-if="configTooltip(config)">
+          <template #trigger>
+            <CircleHelpIcon class="w-4" />
+          </template>
+          <span>{{ configTooltip(config) }}</span>
+        </NTooltip>
+      </div>
       <StringComponent
         v-if="config.payload.type === 'STRING'"
         :value="payload[index] as string"
@@ -28,8 +39,9 @@
         @update:value="payload[index] = $event"
       />
       <BooleanComponent
-        v-else-if="config.payload.type == 'BOOLEAN'"
+        v-else-if="config.payload.type === 'BOOLEAN'"
         :title="configTitle(config)"
+        :tooltip="configTooltip(config)"
         :value="payload[index] as boolean"
         :config="config"
         :disabled="disabled"
@@ -37,7 +49,8 @@
       />
       <StringArrayComponent
         v-else-if="
-          config.payload.type == 'STRING_ARRAY' && Array.isArray(payload[index])
+          config.payload.type === 'STRING_ARRAY' &&
+          Array.isArray(payload[index])
         "
         :value="payload[index] as string[]"
         :config="config"
@@ -45,7 +58,7 @@
         @update:value="payload[index] = $event"
       />
       <TemplateComponent
-        v-else-if="config.payload.type == 'TEMPLATE'"
+        v-else-if="config.payload.type === 'TEMPLATE'"
         :rule-type="rule.type"
         :value="payload[index] as string"
         :config="config"
@@ -57,6 +70,8 @@
 </template>
 
 <script setup lang="ts">
+import { CircleHelpIcon } from "lucide-vue-next";
+import { NTooltip } from "naive-ui";
 import { ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import type { RuleConfigComponent, RuleTemplateV2 } from "@/types/sqlReview";
@@ -75,7 +90,7 @@ const props = defineProps<{
   size: "small" | "medium";
 }>();
 
-const { t } = useI18n();
+const { t, te } = useI18n();
 const payload = ref<PayloadValueType[]>([]);
 
 const configTitle = (config: RuleConfigComponent): string => {
@@ -83,6 +98,13 @@ const configTitle = (config: RuleConfigComponent): string => {
     props.rule.type
   )}.component.${config.key}.title`;
   return t(key);
+};
+
+const configTooltip = (config: RuleConfigComponent): string => {
+  const key = `sql-review.rule.${getRuleLocalizationKey(
+    props.rule.type
+  )}.component.${config.key}.tooltip`;
+  return te(key) ? t(key) : "";
 };
 
 watch(
