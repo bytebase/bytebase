@@ -448,22 +448,6 @@ func getSimpleStatementResult(data []byte) (*v1pb.QueryResult, error) {
 	return result, nil
 }
 
-func convertIDString(idObj any) (string, error) {
-	objIDObj, ok := idObj.(map[string]any)
-	if ok {
-		idStr, ok := objIDObj["$oid"].(string)
-		if ok {
-			return idStr, nil
-		}
-	}
-
-	r, err := json.MarshalIndent(idObj, "", "	")
-	if err != nil {
-		return "", err
-	}
-	return string(r), nil
-}
-
 func getColumns(rows []any) ([]string, map[string]int, bool) {
 	columnSet := make(map[string]bool)
 	for _, v := range rows {
