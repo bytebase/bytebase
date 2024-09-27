@@ -26,7 +26,7 @@
         column: 0
       endposition: null
     - status: 2
-      code: 4010328
+      code: 1032
       title: column.comment
       content: Column `t`.`c` requires comments
       detail: ""
