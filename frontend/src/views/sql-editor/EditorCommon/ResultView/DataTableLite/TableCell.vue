@@ -1,7 +1,7 @@
 <!-- eslint-disable vue/no-v-html -->
 <template>
   <div
-    class="relative px-2 py-1 text-sm dark:text-gray-100 leading-5 whitespace-nowrap break-all group-even:bg-gray-50/50 dark:group-even:bg-gray-700/50"
+    class="relative px-2 py-1 text-sm dark:text-gray-100 leading-5 whitespace-nowrap break-all"
     :class="classes"
     @click="handleClick"
   >
@@ -29,6 +29,7 @@
 import { type Table } from "@tanstack/vue-table";
 import { escape } from "lodash-es";
 import { NButton } from "naive-ui";
+import stringWidth from "string-width";
 import { computed, ref } from "vue";
 import { useConnectionOfCurrentSQLEditorTab } from "@/store";
 import { Engine } from "@/types/proto/v1/common";
@@ -53,9 +54,12 @@ const plainValue = computed(() => {
 });
 const truncated = computed(() => {
   // not that accurate
-  const xPadding = 8;
-  const availChars = (props.width - xPadding * 2) / 8;
-  return String(plainValue.value).length >= availChars;
+  const content = String(plainValue.value);
+  const em = 8;
+  const padding = 8;
+  const guessedContentWidth = stringWidth(content) * em + padding * 2;
+
+  return guessedContentWidth > props.width;
 });
 
 const { database } = useConnectionOfCurrentSQLEditorTab();
