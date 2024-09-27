@@ -138,13 +138,9 @@ func TestIsMongoStatement(t *testing.T) {
 
 func TestGetSimpleStatementResult(t *testing.T) {
 	groupsValue := `[
-	"basketball",
-	"swimming"
+	"123",
+	"222"
 ]`
-	treeValue := `{
-	"a": "a",
-	"b": 1
-}`
 
 	tests := []struct {
 		data string
@@ -187,17 +183,46 @@ func TestGetSimpleStatementResult(t *testing.T) {
   }
 ]`,
 			want: &v1pb.QueryResult{
-				ColumnNames:     []string{"_id", "a", "name", "wew", "groups"},
+				ColumnNames:     []string{"_id", "a", "groups", "name", "wew"},
 				ColumnTypeNames: []string{"TEXT", "TEXT", "TEXT", "TEXT", "TEXT"},
-				Rows: []*v1pb.QueryRow{{
-					Values: []*v1pb.RowValue{
-						{Kind: &v1pb.RowValue_StringValue{StringValue: "64c0b8c4e65c51195e0584b2"}},
-						{Kind: &v1pb.RowValue_StringValue{StringValue: "13"}},
-						{Kind: &v1pb.RowValue_StringValue{StringValue: groupsValue}},
-						{Kind: &v1pb.RowValue_StringValue{StringValue: `"danny"`}},
-						{Kind: &v1pb.RowValue_StringValue{StringValue: treeValue}},
+				Rows: []*v1pb.QueryRow{
+					{
+						Values: []*v1pb.RowValue{
+							{Kind: &v1pb.RowValue_StringValue{StringValue: `ObjectID("66f62cad7195ccc0dbdfafbb")`}},
+							{Kind: &v1pb.RowValue_Int64Value{Int64Value: 1546786128982089728}},
+							{Kind: &v1pb.RowValue_NullValue{}},
+							{Kind: &v1pb.RowValue_NullValue{}},
+							{Kind: &v1pb.RowValue_NullValue{}},
+						},
 					},
-				}},
+					{
+						Values: []*v1pb.RowValue{
+							{Kind: &v1pb.RowValue_StringValue{StringValue: "ObjectId(66f670827941d8cb2bac29d3)"}},
+							{Kind: &v1pb.RowValue_Int64Value{Int64Value: 1546786122282089721}},
+							{Kind: &v1pb.RowValue_NullValue{}},
+							{Kind: &v1pb.RowValue_NullValue{}},
+							{Kind: &v1pb.RowValue_NullValue{}},
+						},
+					},
+					{
+						Values: []*v1pb.RowValue{
+							{Kind: &v1pb.RowValue_StringValue{StringValue: `ObjectID("66f675627ed80fb207320dd9")`}},
+							{Kind: &v1pb.RowValue_NullValue{}},
+							{Kind: &v1pb.RowValue_NullValue{}},
+							{Kind: &v1pb.RowValue_StringValue{StringValue: "danny"}},
+							{Kind: &v1pb.RowValue_StringValue{StringValue: "iii"}},
+						},
+					},
+					{
+						Values: []*v1pb.RowValue{
+							{Kind: &v1pb.RowValue_StringValue{StringValue: `ObjectID("66f6758c30daae815ac8784f")`}},
+							{Kind: &v1pb.RowValue_NullValue{}},
+							{Kind: &v1pb.RowValue_StringValue{StringValue: groupsValue}},
+							{Kind: &v1pb.RowValue_StringValue{StringValue: "dannyyy"}},
+							{Kind: &v1pb.RowValue_StringValue{StringValue: "iii"}},
+						},
+					},
+				},
 			},
 		},
 		{
@@ -218,25 +243,17 @@ func TestGetSimpleStatementResult(t *testing.T) {
 			want: &v1pb.QueryResult{
 				ColumnNames:     []string{"_id", "age", "flower", "groups", "name", "tree"},
 				ColumnTypeNames: []string{"TEXT", "TEXT", "TEXT", "TEXT", "TEXT", "TEXT"},
-				Rows: []*v1pb.QueryRow{{
-					Values: []*v1pb.RowValue{
-						{Kind: &v1pb.RowValue_StringValue{StringValue: "64c0b8c4e65c51195e0584b2"}},
-						{Kind: &v1pb.RowValue_StringValue{StringValue: "13"}},
-						{Kind: &v1pb.RowValue_NullValue{}},
-						{Kind: &v1pb.RowValue_StringValue{StringValue: groupsValue}},
-						{Kind: &v1pb.RowValue_StringValue{StringValue: `"danny"`}},
-						{Kind: &v1pb.RowValue_StringValue{StringValue: treeValue}},
+				Rows: []*v1pb.QueryRow{
+					{
+						Values: []*v1pb.RowValue{
+							{Kind: &v1pb.RowValue_StringValue{StringValue: `ObjectID("66f6758c30daae815ac8784f")`}},
+							{Kind: &v1pb.RowValue_Int64Value{Int64Value: 1546786122282089721}},
+							{Kind: &v1pb.RowValue_StringValue{StringValue: groupsValue}},
+							{Kind: &v1pb.RowValue_StringValue{StringValue: "dannyyy"}},
+							{Kind: &v1pb.RowValue_StringValue{StringValue: "iii"}},
+						},
 					},
-				}, {
-					Values: []*v1pb.RowValue{
-						{Kind: &v1pb.RowValue_StringValue{StringValue: "64c1de7e85c563e625f217d5"}},
-						{Kind: &v1pb.RowValue_NullValue{}},
-						{Kind: &v1pb.RowValue_StringValue{StringValue: "123"}},
-						{Kind: &v1pb.RowValue_NullValue{}},
-						{Kind: &v1pb.RowValue_NullValue{}},
-						{Kind: &v1pb.RowValue_NullValue{}},
-					},
-				}},
+				},
 			},
 		},
 	}
