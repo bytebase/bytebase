@@ -5,7 +5,6 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/mongo-driver/bson"
 	"google.golang.org/protobuf/testing/protocmp"
 	"google.golang.org/protobuf/types/known/durationpb"
 
@@ -197,7 +196,7 @@ func TestGetSimpleStatementResult(t *testing.T) {
 					},
 					{
 						Values: []*v1pb.RowValue{
-							{Kind: &v1pb.RowValue_StringValue{StringValue: "ObjectId(66f670827941d8cb2bac29d3)"}},
+							{Kind: &v1pb.RowValue_StringValue{StringValue: `ObjectID("66f670827941d8cb2bac29d3")`}},
 							{Kind: &v1pb.RowValue_Int64Value{Int64Value: 1546786122282089721}},
 							{Kind: &v1pb.RowValue_NullValue{}},
 							{Kind: &v1pb.RowValue_NullValue{}},
@@ -219,7 +218,7 @@ func TestGetSimpleStatementResult(t *testing.T) {
 							{Kind: &v1pb.RowValue_NullValue{}},
 							{Kind: &v1pb.RowValue_StringValue{StringValue: groupsValue}},
 							{Kind: &v1pb.RowValue_StringValue{StringValue: "dannyyy"}},
-							{Kind: &v1pb.RowValue_StringValue{StringValue: "iii"}},
+							{Kind: &v1pb.RowValue_NullValue{}},
 						},
 					},
 				},
@@ -241,8 +240,8 @@ func TestGetSimpleStatementResult(t *testing.T) {
     ]
 }`,
 			want: &v1pb.QueryResult{
-				ColumnNames:     []string{"_id", "age", "flower", "groups", "name", "tree"},
-				ColumnTypeNames: []string{"TEXT", "TEXT", "TEXT", "TEXT", "TEXT", "TEXT"},
+				ColumnNames:     []string{"_id", "a", "groups", "name"},
+				ColumnTypeNames: []string{"TEXT", "TEXT", "TEXT", "TEXT"},
 				Rows: []*v1pb.QueryRow{
 					{
 						Values: []*v1pb.RowValue{
@@ -250,7 +249,6 @@ func TestGetSimpleStatementResult(t *testing.T) {
 							{Kind: &v1pb.RowValue_Int64Value{Int64Value: 1546786122282089721}},
 							{Kind: &v1pb.RowValue_StringValue{StringValue: groupsValue}},
 							{Kind: &v1pb.RowValue_StringValue{StringValue: "dannyyy"}},
-							{Kind: &v1pb.RowValue_StringValue{StringValue: "iii"}},
 						},
 					},
 				},
@@ -304,24 +302,5 @@ func TestGetOrderedColumns(t *testing.T) {
 		gotColumns, gotMap := getOrderedColumns(tt.input)
 		a.ElementsMatch(tt.wantColumns, gotColumns)
 		a.Equal(tt.wantColumnIndexMap, gotMap)
-	}
-}
-
-func TestUnmarshalExtJSON(t *testing.T) {
-	content := []byte("[\n  {\n    \"_id\": {\n      \"$oid\": \"66f62cad7195ccc0dbdfafbb\"\n    },\n    \"a\": {\n      \"$numberLong\": \"1546786128982089728\"\n    }\n  },\n  {\n    \"_id\": {\n      \"$oid\": \"66f670827941d8cb2bac29d3\"\n    },\n    \"a\": {\n      \"$numberLong\": \"1546786122282089721\"\n    }\n  }\n]\n")
-
-	a := require.New(t)
-	var r any
-	err := bson.UnmarshalExtJSON(content, true, &r)
-	a.NoError(err)
-
-	rr := r.(bson.A)
-
-	t.Logf("%+v", rr)
-
-	d := rr[0].(bson.D)
-
-	for i, e := range d {
-		t.Logf("%d: %v, %v, %T\n", i, e.Key, e.Value, e.Value)
 	}
 }
