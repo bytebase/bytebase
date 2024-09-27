@@ -18,6 +18,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"google.golang.org/protobuf/types/known/durationpb"
@@ -254,7 +255,7 @@ func (driver *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement stri
 		if queryContext.Limit > 0 {
 			limit = fmt.Sprintf(".slice(0, %d)", queryContext.Limit)
 		}
-		evalArg = fmt.Sprintf(`a = %s; if (typeof a.toArray === 'function') {print(EJSON.stringify(a.toArray()%s));} else {print(EJSON.stringify(a));}`, statement, limit)
+		evalArg = fmt.Sprintf(`a = %s; if (typeof a.toArray === 'function') {a.toArray()%s;} else {a;}`, statement, limit)
 	}
 	// We will use single quotes for the evalArg, so we need to escape the single quotes in the statement.
 	evalArg = strings.ReplaceAll(evalArg, `'`, `'"'`)
@@ -265,6 +266,8 @@ func (driver *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement stri
 		// quote the connectionURI because we execute the mongosh via sh, and the multi-queries part contains '&', which will be translated to the background process.
 		fmt.Sprintf(`"%s"`, connectionURI),
 		"--quiet",
+		"--json",
+		"canonical",
 		"--eval",
 		evalArg,
 		// DocumentDB do not support retryWrites, so we set it to false.
@@ -463,11 +466,12 @@ func convertIDString(idObj any) (string, error) {
 func getColumns(rows []any) ([]string, map[string]int, bool) {
 	columnSet := make(map[string]bool)
 	for _, v := range rows {
-		m, ok := v.(map[string]any)
+		d, ok := v.(bson.D)
 		if !ok {
 			return []string{"result"}, map[string]int{"result": 0}, true
 		}
-		for k := range m {
+		for _, e := range d {
+			k := e.Key
 			if _, ok := columnSet[k]; ok {
 				continue
 			}
@@ -503,17 +507,14 @@ func getOrderedColumns(columnSet map[string]bool) ([]string, map[string]int) {
 
 func convertRows(data []byte) ([]any, error) {
 	var a any
-	if err := json.Unmarshal(data, &a); err != nil {
+	if err := bson.UnmarshalExtJSON(data, true, &a); err != nil {
 		return nil, err
 	}
-	var rows []any
-	aa, ok := a.([]any)
-	if ok {
-		rows = aa
-	} else {
-		rows = []any{a}
+
+	if aa, ok := a.(bson.A); ok {
+		return []any(aa), nil
 	}
-	return rows, nil
+	return []any{a}, nil
 }
 
 func isMongoStatement(statement string) bool {
