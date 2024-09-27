@@ -25,9 +25,17 @@
         </div>
       </template>
       <template #default>
-        <div class="inline-flex gap-1">
-          <span>Language server</span>
-          <span>{{ connectionStateText }}</span>
+        <div class="flex flex-col gap-1">
+          <div class="inline-flex gap-1">
+            <span>Language server</span>
+            <span>{{ connectionStateText }}</span>
+          </div>
+          <div
+            v-if="connectionHeartbeatText"
+            class="text-xs text-control-placeholder"
+          >
+            {{ connectionHeartbeatText }}
+          </div>
         </div>
       </template>
     </NPopover>
@@ -35,6 +43,7 @@
 </template>
 
 <script lang="ts" setup>
+import dayjs from "dayjs";
 import { NPopover } from "naive-ui";
 import {
   onMounted,
@@ -117,7 +126,7 @@ const containerRef = ref<HTMLDivElement>();
 const editorRef = shallowRef<IStandaloneCodeEditor>();
 const ready = ref(false);
 const contentRef = ref("");
-const { connectionState } = useLSPConnectionState();
+const { connectionState, connectionHeartbeat } = useLSPConnectionState();
 const connectionStateIndicatorClass = computed(() => {
   const state = connectionState.value;
   if (state === "ready") {
@@ -137,6 +146,13 @@ const connectionStateText = computed(() => {
     return "connecting";
   }
   return "disconnected";
+});
+const connectionHeartbeatText = computed(() => {
+  if (connectionState.value !== "ready") return "";
+  const timestamp = connectionHeartbeat.value?.timestamp;
+  if (!timestamp) return "";
+  const time = dayjs(timestamp).format("YYYY-MM-DD HH:mm:ss.SSS UTCZZ");
+  return `Last heartbeat at ${time}`;
 });
 
 onMounted(async () => {

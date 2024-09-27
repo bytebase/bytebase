@@ -19,6 +19,7 @@ export const RECONNECTION_DELAY = {
 };
 // Timeout to setup connection in EACH attempt
 export const WEBSOCKET_TIMEOUT = 5000;
+export const WEBSOCKET_HEARTBEAT_INTERVAL = 10 * 1000; // 10 seconds
 
 export const messages = {
   title: () => t("sql-editor.web-socket.errors.title"),

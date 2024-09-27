@@ -1,3 +1,5 @@
+import dayjs from "dayjs";
+import { omit } from "lodash-es";
 import {
   MonacoLanguageClient,
   type IConnectionProvider,
@@ -17,6 +19,7 @@ import {
   MAX_RETRIES,
   messages,
   progressiveDelay,
+  WEBSOCKET_HEARTBEAT_INTERVAL,
   WEBSOCKET_TIMEOUT,
 } from "./utils";
 
@@ -26,6 +29,11 @@ export type ConnectionState = {
   ws: Promise<WebSocket> | undefined;
   lastCommand: ExecuteCommandParams | undefined;
   retries: number;
+  heartbeat: {
+    timer: NodeJS.Timeout | undefined;
+    counter: number;
+    timestamp: number;
+  };
 };
 
 const conn = shallowReactive<ConnectionState>({
@@ -34,6 +42,11 @@ const conn = shallowReactive<ConnectionState>({
   ws: undefined,
   lastCommand: undefined,
   retries: 0,
+  heartbeat: shallowReactive({
+    timer: undefined,
+    counter: 0,
+    timestamp: 0,
+  }),
 });
 
 const connectWebSocket = () => {
@@ -91,6 +104,7 @@ const connectWebSocket = () => {
         }
         conn.state = "ready";
         conn.retries = 0; // reset retry counter
+        useHeartbeat(ws);
         resolve(ws);
       });
       ws.addEventListener("close", (e) => {
@@ -239,4 +253,40 @@ export const executeCommand = async (
   return result;
 };
 
+const useHeartbeat = (ws: WebSocket) => {
+  const cleanup = () => {
+    clearTimeout(conn.heartbeat.timer);
+    conn.heartbeat = {
+      timer: undefined,
+      counter: 0,
+      timestamp: 0,
+    };
+  };
+
+  ws.addEventListener("error", cleanup);
+  ws.addEventListener("close", cleanup);
+
+  const ping = () => {
+    conn.heartbeat.counter++;
+    conn.heartbeat.timestamp = Date.now();
+    ws.send(
+      JSON.stringify({
+        jsonrpc: "2.0",
+        method: "$ping",
+        params: {
+          state: omit(conn.heartbeat, "timer"),
+        },
+      })
+    );
+    console.debug(
+      `[LSP-Client] counter:${conn.heartbeat.counter} timestamp:${conn.heartbeat.timestamp}(${dayjs(conn.heartbeat.timestamp).toString()})`
+    );
+
+    conn.heartbeat.timer = setTimeout(ping, WEBSOCKET_HEARTBEAT_INTERVAL);
+  };
+
+  ping();
+};
+
 export const connectionState = toRef(conn, "state");
+export const connectionHeartbeat = toRef(conn, "heartbeat");
