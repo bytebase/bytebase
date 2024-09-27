@@ -49,6 +49,11 @@ func (exec *DataExportExecutor) RunOnce(ctx context.Context, _ context.Context, 
 		return true, nil, errors.Wrap(err, "invalid database data export payload")
 	}
 
+	issue, err := exec.store.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &task.PipelineID})
+	if err != nil {
+		return true, nil, errors.Wrapf(err, "failed to get issue")
+	}
+
 	database, err := exec.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{UID: task.DatabaseID, ShowDeleted: true})
 	if err != nil {
 		return true, nil, errors.Wrapf(err, "failed to get database")
@@ -75,7 +80,7 @@ func (exec *DataExportExecutor) RunOnce(ctx context.Context, _ context.Context, 
 		Format:    v1pb.ExportFormat(payload.Format),
 		Password:  payload.Password,
 	}
-	bytes, _, exportErr := apiv1.DoExport(ctx, exec.store, exec.dbFactory, exec.license, exportRequest, nil /* user */, instance, database, nil, exec.schemaSyncer)
+	bytes, _, exportErr := apiv1.DoExport(ctx, exec.store, exec.dbFactory, exec.license, exportRequest, issue.Creator /* user */, instance, database, nil, exec.schemaSyncer)
 	if exportErr != nil {
 		return true, nil, errors.Wrap(exportErr, "failed to export data")
 	}

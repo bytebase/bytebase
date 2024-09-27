@@ -210,23 +210,31 @@ func (exec *DataUpdateExecutor) backupData(
 		}
 		switch instance.Engine {
 		case storepb.Engine_TIDB:
-			if _, err := driver.Execute(driverCtx, fmt.Sprintf("ALTER TABLE `%s`.`%s` COMMENT = 'issue %d'", backupDatabaseName, statement.TargetTableName, issue.UID), db.ExecuteOptions{}); err != nil {
+			if _, err := driver.Execute(driverCtx, fmt.Sprintf("ALTER TABLE `%s`.`%s` COMMENT = 'issue %d, source table (%s, %s)'", backupDatabaseName, statement.TargetTableName, issue.UID, database.DatabaseName, statement.SourceTableName), db.ExecuteOptions{}); err != nil {
 				return nil, errors.Wrap(err, "failed to set table comment")
 			}
 		case storepb.Engine_MYSQL:
-			if _, err := driver.Execute(driverCtx, fmt.Sprintf("ALTER TABLE `%s`.`%s` COMMENT = 'issue %d'", backupDatabaseName, statement.TargetTableName, issue.UID), db.ExecuteOptions{}); err != nil {
+			if _, err := driver.Execute(driverCtx, fmt.Sprintf("ALTER TABLE `%s`.`%s` COMMENT = 'issue %d, source table (%s, %s)'", backupDatabaseName, statement.TargetTableName, issue.UID, database.DatabaseName, statement.SourceTableName), db.ExecuteOptions{}); err != nil {
 				return nil, errors.Wrap(err, "failed to set table comment")
 			}
 		case storepb.Engine_MSSQL:
-			if _, err := backupDriver.Execute(driverCtx, fmt.Sprintf("EXEC sp_addextendedproperty 'MS_Description', 'issue %d', 'SCHEMA', 'dbo', 'TABLE', '%s'", issue.UID, statement.TargetTableName), db.ExecuteOptions{}); err != nil {
+			schemaName := statement.SourceSchema
+			if schemaName == "" {
+				schemaName = "dbo"
+			}
+			if _, err := backupDriver.Execute(driverCtx, fmt.Sprintf("EXEC sp_addextendedproperty 'MS_Description', 'issue %d, source table (%s, %s, %s)', 'SCHEMA', 'dbo', 'TABLE', '%s'", issue.UID, database.DatabaseName, schemaName, statement.SourceTableName, statement.TargetTableName), db.ExecuteOptions{}); err != nil {
 				return nil, errors.Wrap(err, "failed to set table comment")
 			}
 		case storepb.Engine_POSTGRES:
-			if _, err := driver.Execute(driverCtx, fmt.Sprintf(`COMMENT ON TABLE "%s"."%s" IS 'issue %d'`, backupDatabaseName, statement.TargetTableName, issue.UID), db.ExecuteOptions{}); err != nil {
+			schemaName := statement.SourceSchema
+			if schemaName == "" {
+				schemaName = "public"
+			}
+			if _, err := driver.Execute(driverCtx, fmt.Sprintf(`COMMENT ON TABLE "%s"."%s" IS 'issue %d, source table (%s, %s)'`, backupDatabaseName, statement.TargetTableName, issue.UID, schemaName, statement.SourceTableName), db.ExecuteOptions{}); err != nil {
 				return nil, errors.Wrap(err, "failed to set table comment")
 			}
 		case storepb.Engine_ORACLE:
-			if _, err := driver.Execute(driverCtx, fmt.Sprintf(`COMMENT ON TABLE "%s"."%s" IS 'issue %d'`, backupDatabaseName, statement.TargetTableName, issue.UID), db.ExecuteOptions{}); err != nil {
+			if _, err := driver.Execute(driverCtx, fmt.Sprintf(`COMMENT ON TABLE "%s"."%s" IS 'issue %d, source table (%s, %s)'`, backupDatabaseName, statement.TargetTableName, issue.UID, database.DatabaseName, statement.SourceTableName), db.ExecuteOptions{}); err != nil {
 				return nil, errors.Wrap(err, "failed to set table comment")
 			}
 		}

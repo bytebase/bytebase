@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"fmt"
 	"io"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -124,7 +125,7 @@ func (s *SQLService) AdminExecute(server v1pb.SQLService_AdminExecuteServer) err
 			}
 		}
 
-		queryContext := db.QueryContext{}
+		queryContext := db.QueryContext{OperatorEmail: user.Email}
 		if request.Schema != nil {
 			queryContext.Schema = *request.Schema
 		}
@@ -174,7 +175,7 @@ func (s *SQLService) Execute(ctx context.Context, request *v1pb.ExecuteRequest) 
 		defer conn.Close()
 	}
 
-	queryContext := db.QueryContext{}
+	queryContext := db.QueryContext{OperatorEmail: user.Email}
 	if request.Schema != nil {
 		queryContext.Schema = *request.Schema
 	}
@@ -237,7 +238,7 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 		defer conn.Close()
 	}
 
-	queryContext := db.QueryContext{Explain: request.Explain, Limit: int(request.Limit)}
+	queryContext := db.QueryContext{Explain: request.Explain, Limit: int(request.Limit), OperatorEmail: user.Email}
 	if request.Schema != nil {
 		queryContext.Schema = *request.Schema
 	}
@@ -271,6 +272,134 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 }
 
 type accessCheckFunc func(context.Context, *store.InstanceMessage, *store.UserMessage, []*base.QuerySpan, bool) error
+
+func extractSourceTable(comment string) (string, string, string, error) {
+	pattern := `\((\w+),\s*(\w+)(?:,\s*(\w+))?\)`
+	re := regexp.MustCompile(pattern)
+
+	matches := re.FindStringSubmatch(comment)
+
+	if len(matches) == 3 || (len(matches) == 4 && matches[3] == "") {
+		databaseName := matches[1]
+		tableName := matches[2]
+		return databaseName, "", tableName, nil
+	} else if len(matches) == 4 {
+		databaseName := matches[1]
+		schemaName := matches[2]
+		tableName := matches[3]
+		return databaseName, schemaName, tableName, nil
+	}
+
+	return "", "", "", errors.Errorf("failed to extract source table from comment: %s", comment)
+}
+
+func getSchemaMetadata(engine storepb.Engine, dbSchema *model.DBSchema) *model.SchemaMetadata {
+	switch engine {
+	case storepb.Engine_POSTGRES:
+		return dbSchema.GetDatabaseMetadata().GetSchema(backupDatabaseName)
+	case storepb.Engine_MSSQL:
+		return dbSchema.GetDatabaseMetadata().GetSchema("dbo")
+	default:
+		return dbSchema.GetDatabaseMetadata().GetSchema("")
+	}
+}
+
+func replaceBackupTableWithSource(ctx context.Context, stores *store.Store, instance *store.InstanceMessage, database *store.DatabaseMessage, spans []*base.QuerySpan) ([]*base.QuerySpan, error) {
+	var result []*base.QuerySpan
+	switch instance.Engine {
+	case storepb.Engine_POSTGRES:
+		// Don't need to check the database name for postgres here.
+		// We backup the table to the same database with bbdataarchive schema for Postgres.
+	case storepb.Engine_ORACLE:
+		if database.DatabaseName != oracleBackupDatabaseName {
+			return spans, nil
+		}
+	default:
+		if database.DatabaseName != backupDatabaseName {
+			return spans, nil
+		}
+	}
+	dbSchema, err := stores.GetDBSchema(ctx, database.UID)
+	if err != nil {
+		return spans, err
+	}
+	schema := getSchemaMetadata(instance.Engine, dbSchema)
+	if schema == nil {
+		return spans, nil
+	}
+
+	for _, span := range spans {
+		newSpan := &base.QuerySpan{
+			NotFoundError: span.NotFoundError,
+			SourceColumns: generateNewSourceColumnSet(instance.Engine, span.SourceColumns, schema),
+		}
+		for _, result := range span.Results {
+			newResult := base.QuerySpanResult{
+				Name:          result.Name,
+				SourceColumns: generateNewSourceColumnSet(instance.Engine, result.SourceColumns, schema),
+			}
+			newSpan.Results = append(newSpan.Results, newResult)
+		}
+		result = append(result, newSpan)
+	}
+	return result, nil
+}
+
+func generateNewSourceColumnSet(engine storepb.Engine, origin base.SourceColumnSet, schema *model.SchemaMetadata) base.SourceColumnSet {
+	result := make(base.SourceColumnSet)
+	for column := range origin {
+		if isBackupTable(engine, column) {
+			tableSchema := schema.GetTable(column.Table)
+			if tableSchema == nil {
+				result[column] = true
+				continue
+			}
+			sourceDatabase, sourceSchema, sourceTable, err := extractSourceTable(tableSchema.GetTableComment())
+			if err != nil {
+				slog.Debug("failed to extract source table", log.BBError(err))
+				result[column] = true
+				continue
+			}
+			newColumn := generateNewColumn(engine, column, sourceDatabase, sourceSchema, sourceTable)
+			result[newColumn] = true
+		} else {
+			result[column] = true
+		}
+	}
+	return result
+}
+
+func generateNewColumn(engine storepb.Engine, column base.ColumnResource, database, schema, table string) base.ColumnResource {
+	switch engine {
+	case storepb.Engine_POSTGRES:
+		return base.ColumnResource{
+			Server:   column.Server,
+			Database: column.Database,
+			Schema:   database,
+			Table:    table,
+			Column:   column.Column,
+		}
+	default:
+		return base.ColumnResource{
+			Server:   column.Server,
+			Database: database,
+			Schema:   schema,
+			Table:    table,
+			Column:   column.Column,
+		}
+	}
+}
+
+func isBackupTable(engine storepb.Engine, column base.ColumnResource) bool {
+	switch engine {
+	case storepb.Engine_POSTGRES:
+		return column.Schema == backupDatabaseName
+	case storepb.Engine_ORACLE:
+		return column.Database == oracleBackupDatabaseName
+	default:
+		return column.Database == backupDatabaseName
+	}
+}
 
 func queryRetry(
 	ctx context.Context,
@@ -307,6 +436,12 @@ func queryRetry(
 		)
 		if err != nil {
 			return nil, nil, time.Duration(0), status.Errorf(codes.Internal, "failed to get query span: %v", err.Error())
+		}
+		// After replacing backup table with source, we can apply the original access check and mask sensitive data for backup table.
+		// If err != nil, this function will return the original spans.
+		spans, err = replaceBackupTableWithSource(ctx, stores, instance, database, spans)
+		if err != nil {
+			slog.Debug("failed to replace backup table with source", log.BBError(err))
 		}
 		if licenseService.IsFeatureEnabled(api.FeatureAccessControl) == nil && optionalAccessCheck != nil {
 			if err := optionalAccessCheck(ctx, instance, user, spans, isExport); err != nil {
@@ -363,6 +498,12 @@ func queryRetry(
 		)
 		if err != nil {
 			return nil, nil, duration, status.Errorf(codes.Internal, "failed to get query span: %v", err.Error())
+		}
+		// After replacing backup table with source, we can apply the original access check and mask sensitive data for backup table.
+		// If err != nil, this function will return the original spans.
+		spans, err = replaceBackupTableWithSource(ctx, stores, instance, database, spans)
+		if err != nil {
+			slog.Debug("failed to replace backup table with source", log.BBError(err))
 		}
 	}
 	// The second query span should not tolerate any error, but we should retail the original error from database if possible.
@@ -530,7 +671,8 @@ func DoExport(
 		}
 		defer conn.Close()
 	}
-	results, spans, duration, queryErr := queryRetry(ctx, storeInstance, user, instance, database, driver, conn, request.Statement, nil /* timeDuration */, db.QueryContext{Limit: int(request.Limit)}, true, licenseService, optionalAccessCheck, schemaSyncer)
+	queryContext := db.QueryContext{Limit: int(request.Limit), OperatorEmail: user.Email}
+	results, spans, duration, queryErr := queryRetry(ctx, storeInstance, user, instance, database, driver, conn, request.Statement, nil /* timeDuration */, queryContext, true, licenseService, optionalAccessCheck, schemaSyncer)
 	if queryErr != nil {
 		return nil, duration, err
 	}
