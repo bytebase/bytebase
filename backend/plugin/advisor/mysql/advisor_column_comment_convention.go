@@ -150,6 +150,7 @@ func (checker *columnCommentConventionChecker) EnterAlterTable(ctx *mysql.AlterT
 }
 
 func (checker *columnCommentConventionChecker) checkFieldDefinition(tableName, columnName string, ctx mysql.IFieldDefinitionContext) {
+	comment := ""
 	for _, attribute := range ctx.AllColumnAttribute() {
 		if attribute == nil || attribute.GetValue() == nil {
 			continue
@@ -160,25 +161,13 @@ func (checker *columnCommentConventionChecker) checkFieldDefinition(tableName, c
 		if attribute.TextLiteral() == nil {
 			continue
 		}
-		comment := mysqlparser.NormalizeMySQLTextLiteral(attribute.TextLiteral())
+		comment = mysqlparser.NormalizeMySQLTextLiteral(attribute.TextLiteral())
 		if checker.payload.MaxLength >= 0 && len(comment) > checker.payload.MaxLength {
 			checker.adviceList = append(checker.adviceList, &storepb.Advice{
 				Status:  checker.level,
 				Code:    advisor.CommentTooLong.Int32(),
 				Title:   checker.title,
 				Content: fmt.Sprintf("The length of column `%s`.`%s` comment should be within %d characters", tableName, columnName, checker.payload.MaxLength),
-				StartPosition: &storepb.Position{
-					Line: int32(checker.baseLine + ctx.GetStart().GetLine()),
-				},
-			})
-		}
-
-		if len(comment) == 0 && checker.payload.Required {
-			checker.adviceList = append(checker.adviceList, &storepb.Advice{
-				Status:  checker.level,
-				Code:    advisor.CommentEmpty.Int32(),
-				Title:   checker.title,
-				Content: fmt.Sprintf("Column `%s`.`%s` requires comments", tableName, columnName),
 				StartPosition: &storepb.Position{
 					Line: int32(checker.baseLine + ctx.GetStart().GetLine()),
 				},
@@ -200,5 +189,17 @@ func (checker *columnCommentConventionChecker) checkFieldDefinition(tableName, c
 		}
 
 		break
+	}
+
+	if len(comment) == 0 && checker.payload.Required {
+		checker.adviceList = append(checker.adviceList, &storepb.Advice{
+			Status:  checker.level,
+			Code:    advisor.CommentEmpty.Int32(),
+			Title:   checker.title,
+			Content: fmt.Sprintf("Column `%s`.`%s` requires comments", tableName, columnName),
+			StartPosition: &storepb.Position{
+				Line: int32(checker.baseLine + ctx.GetStart().GetLine()),
+			},
+		})
 	}
 }
