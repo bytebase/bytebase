@@ -14,7 +14,7 @@
   changeType: 0
   want:
     - status: 2
-      code: 408
+      code: 1032
       title: column.comment
       content: Column `userTable`.`id` requires comments
       detail: ""
@@ -23,7 +23,7 @@
         column: 0
       endposition: null
     - status: 2
-      code: 408
+      code: 1032
       title: column.comment
       content: Column `userTable`.`name` requires comments
       detail: ""
@@ -32,7 +32,7 @@
         column: 0
       endposition: null
     - status: 2
-      code: 408
+      code: 1032
       title: column.comment
       content: Column `userTable`.`roomId` requires comments
       detail: ""
@@ -64,7 +64,7 @@
   changeType: 0
   want:
     - status: 2
-      code: 409
+      code: 1301
       title: column.comment
       content: The length of column `t`.`a` comment should be within 10 characters
       detail: ""
@@ -73,7 +73,7 @@
         column: 0
       endposition: null
     - status: 2
-      code: 408
+      code: 1032
       title: column.comment
       content: Column `t`.`b` requires comments
       detail: ""
@@ -82,7 +82,7 @@
         column: 0
       endposition: null
     - status: 2
-      code: 408
+      code: 1032
       title: column.comment
       content: Column `t`.`c` requires comments
       detail: ""
@@ -96,7 +96,7 @@
   changeType: 0
   want:
     - status: 2
-      code: 408
+      code: 1032
       title: column.comment
       content: Column `t`.`b` requires comments
       detail: ""
@@ -110,7 +110,7 @@
   changeType: 0
   want:
     - status: 2
-      code: 408
+      code: 1032
       title: column.comment
       content: Column `t`.`b` requires comments
       detail: ""
@@ -119,7 +119,7 @@
         column: 0
       endposition: null
     - status: 2
-      code: 408
+      code: 1032
       title: column.comment
       content: Column `t`.`c` requires comments
       detail: ""
@@ -133,7 +133,7 @@
   changeType: 0
   want:
     - status: 2
-      code: 409
+      code: 1301
       title: column.comment
       content: The length of column `t`.`a` comment should be within 10 characters
       detail: ""
@@ -142,7 +142,7 @@
         column: 0
       endposition: null
     - status: 2
-      code: 408
+      code: 1032
       title: column.comment
       content: Column `t`.`b` requires comments
       detail: ""
@@ -156,7 +156,7 @@
   changeType: 0
   want:
     - status: 2
-      code: 409
+      code: 1301
       title: column.comment
       content: The length of column `t`.`b` comment should be within 10 characters
       detail: ""
@@ -165,7 +165,7 @@
         column: 0
       endposition: null
     - status: 2
-      code: 408
+      code: 1032
       title: column.comment
       content: Column `t`.`b` requires comments
       detail: ""
@@ -179,7 +179,7 @@
   changeType: 0
   want:
     - status: 2
-      code: 409
+      code: 1301
       title: column.comment
       content: The length of column `t`.`b` comment should be within 10 characters
       detail: ""
@@ -188,7 +188,7 @@
         column: 0
       endposition: null
     - status: 2
-      code: 409
+      code: 1301
       title: column.comment
       content: The length of column `t`.`b` comment should be within 10 characters
       detail: ""
