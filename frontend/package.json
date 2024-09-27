@@ -52,7 +52,7 @@
     "monaco-editor": "0.45.0",
     "monaco-editor-workers": "0.45.0",
     "monaco-languageclient": "7.3.0",
-    "naive-ui": "2.39.0",
+    "naive-ui": "2.40.1",
     "nice-grpc-common": "^2.0.2",
     "nice-grpc-error-details": "^0.2.4",
     "nice-grpc-web": "^3.3.2",
@@ -71,6 +71,7 @@
     "slug": "9.1.0",
     "splitpanes": "3.1.5",
     "sql-formatter": "15.4.1",
+    "string-width": "^7.2.0",
     "uuid": "10.0.0",
     "vdirs": "^0.1.8",
     "vscode": "npm:@codingame/monaco-vscode-api@1.85.6",
@@ -82,7 +83,7 @@
     "vscode-ws-jsonrpc": "3.3.2",
     "vue": "3.4.31",
     "vuedraggable": "^4.1.0",
-    "vueuc": "0.4.58"
+    "vueuc": "0.4.64"
   },
   "devDependencies": {
     "@iconify/json": "2.2.232",
