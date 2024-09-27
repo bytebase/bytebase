@@ -47,14 +47,6 @@ const workspaceRoutes: RouteRecordRaw[] = [
   {
     path: "issues",
     name: WORKSPACE_ROUTE_MY_ISSUES,
-    meta: {
-      getQuickActionList: () => {
-        return [
-          "quickaction.bb.issue.grant.request.querier",
-          "quickaction.bb.issue.grant.request.exporter",
-        ];
-      },
-    },
     components: {
       content: MyIssues,
       leftSidebar: () => import("@/views/DashboardSidebar.vue"),
