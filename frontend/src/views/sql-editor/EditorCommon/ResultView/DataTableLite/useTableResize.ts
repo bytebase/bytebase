@@ -1,12 +1,17 @@
+import type { Header, Table } from "@tanstack/vue-table";
 import { useEventListener, usePointer } from "@vueuse/core";
 import { reject } from "lodash-es";
-import type { Ref } from "vue";
-import { computed, onBeforeUnmount, reactive, watch } from "vue";
-import { minmax } from "@/utils";
+import stringWidth from "string-width";
+import type { MaybeRef, Ref } from "vue";
+import { computed, onBeforeUnmount, reactive, unref, watch } from "vue";
+import type { QueryRow, RowValue } from "@/types/proto/v1/sql_service";
+import { extractSQLRowValue, minmax, wrapRefAsPromise } from "@/utils";
 
-const MAX_AUTO_ADJUST_SCAN_ROWS = 20;
+const MAX_AUTO_ADJUST_ROW_COUNT = 20;
+const MAX_AUTO_ADJUST_COL_COUNT = 50;
 
 export type TableResizeOptions = {
+  table: MaybeRef<Table<QueryRow>>;
   containerWidth: Ref<number>;
   scrollerRef: Ref<HTMLElement | undefined>;
   queryTableHeaderElement: () => HTMLElement | undefined;
@@ -41,6 +46,10 @@ const useTableResize = (options: TableResizeOptions) => {
   });
   const pointer = usePointer();
   const scroller = options.scrollerRef;
+  const layoutReady = wrapRefAsPromise(
+    computed(() => options.containerWidth.value > 0),
+    true
+  );
 
   const normalizeWidth = (width: number) => {
     if (state.columns.length === 1) {
@@ -51,49 +60,71 @@ const useTableResize = (options: TableResizeOptions) => {
     return minmax(width, options.minWidth, options.maxWidth);
   };
 
+  const maxAutoAdjustColCount = computed(() => {
+    return Math.min(
+      options.columnCount.value,
+      Math.ceil(options.containerWidth.value / options.minWidth),
+      MAX_AUTO_ADJUST_COL_COUNT
+    );
+  });
+  const maxAutoAdjustRowCount = computed(() => {
+    return Math.min(
+      unref(options.table).getRowCount(),
+      MAX_AUTO_ADJUST_ROW_COUNT
+    );
+  });
+
   const reset = () => {
-    state.drag = undefined;
-    state.autoAdjusting.clear();
-    state.columns = new Array(options.columnCount.value);
+    layoutReady.then(() => {
+      // reset state
+      state.drag = undefined;
+      state.autoAdjusting.clear();
+      state.columns = new Array(options.columnCount.value);
 
-    const indexList: number[] = [];
-    for (let i = 0; i < state.columns.length; i++) {
-      indexList.push(i);
-      state.columns[i] = {
-        width: options.minWidth,
-      };
-    }
-
-    // Calculate a friendly width for every column when the first render happened.
-    const scanner = async (n = 0) => {
-      // Wait for several frames for the initial render of the table
-      requestAnimationFrame(() => {
-        const headerTable = options.queryTableHeaderElement();
-        const bodyTable = options.queryTableBodyElement();
-        const trList = [
-          ...Array.from(headerTable?.querySelectorAll("tr") || []),
-          ...Array.from(
-            bodyTable?.querySelectorAll("tr.n-data-table-tr") || []
-          ),
-        ] as HTMLElement[];
-        if (!headerTable || !bodyTable || trList.length === 0) {
-          return scanner(n + 1);
+      // set initial column widths
+      const indexList: number[] = [];
+      for (let index = 0; index < options.columnCount.value; index++) {
+        if (index < maxAutoAdjustColCount.value) {
+          // for columns that will be rendered in the first screen
+          // set their widths to minWidth for further render-based auto-width
+          state.columns[index] = {
+            width: options.minWidth,
+          };
+          indexList.push(index);
+        } else {
+          // for columns that won't be rendered in the first screen
+          // guess their widths by characters
+          state.columns[index] = {
+            width: guessColumnWidth(index),
+          };
         }
+      }
 
-        const maxAutoAdjustColumns = Math.ceil(
-          options.containerWidth.value / options.minWidth
-        );
-        console.log("maxAutoAdjustColumns", maxAutoAdjustColumns);
-        autoAdjustColumnWidth(indexList.slice(0, maxAutoAdjustColumns)).catch(
-          () => {
-            for (let i = 0; i < state.columns.length; i++) {
-              state.columns[i].width = options.defaultWidth;
-            }
+      // Calculate a friendly width for every column when the first render happened.
+      const scanner = async (n = 0) => {
+        // Wait for several frames for the initial render of the table
+        requestAnimationFrame(() => {
+          const headerTable = options.queryTableHeaderElement();
+          const bodyTable = options.queryTableBodyElement();
+          const trList = [
+            ...Array.from(headerTable?.querySelectorAll("tr") || []),
+            ...Array.from(
+              bodyTable?.querySelectorAll("tr.n-data-table-tr") || []
+            ),
+          ] as HTMLElement[];
+          if (!headerTable || !bodyTable || trList.length === 0) {
+            return scanner(n + 1);
           }
-        );
-      });
-    };
-    scanner();
+          autoAdjustColumnWidth(indexList).catch(() => {
+            // auto adjust failed, fallback to guessing column width.
+            for (let index = 0; index < state.columns.length; index++) {
+              state.columns[index].width = guessColumnWidth(index);
+            }
+          });
+        });
+      };
+      scanner();
+    });
   };
 
   // Automatically estimate the width of a column.
@@ -103,27 +134,31 @@ const useTableResize = (options: TableResizeOptions) => {
     indexList: number[]
   ): Promise<Map<number, number>> => {
     return new Promise((resolve) => {
+      if (indexList.length === 0) {
+        return resolve(new Map());
+      }
+
       const headerTable = options.queryTableHeaderElement();
       const bodyTable = options.queryTableBodyElement();
       const trList = [
         ...Array.from(headerTable?.querySelectorAll("tr") || []),
-        ...Array.from(bodyTable?.querySelectorAll("tr.n-data-table-tr") || []),
+        ...Array.from(
+          bodyTable?.querySelectorAll("tr.n-data-table-tr") || []
+        ).slice(0, maxAutoAdjustRowCount.value), // Do not adjust too many rows
       ] as HTMLElement[];
-      console.log(
-        "autoAdjustColumnWidth",
+      console.debug(
+        "[autoAdjustColumnWidth]",
         indexList.join("|"),
-        `${trList.length} rows`
+        `(${trList.length} rows)`
       );
       if (!headerTable || !bodyTable || trList.length === 0) {
         return reject(undefined);
       }
 
-      const numScanRows = Math.min(trList.length, MAX_AUTO_ADJUST_SCAN_ROWS);
       const cellsMapByColumn = new Map<number, Array<HTMLElement>>();
       indexList.forEach((index) => {
         const cells: Array<HTMLElement> = [];
-        let found = false;
-        for (let row = 0; row < numScanRows; row++) {
+        for (let row = 0; row < trList.length; row++) {
           const tr = trList[row];
           const children = Array.from(tr.children).filter((child) => {
             return isNDataTableCell(child);
@@ -131,6 +166,10 @@ const useTableResize = (options: TableResizeOptions) => {
           if (children.length === 0) {
             return;
           }
+          // When the table is scrolled horizontally, some left columns will not
+          // be actually rendered.
+          // So we need to find out the col index of the first rendered column
+          // to get the column with offset.
           const first = children[0];
           const offset = parseInt(
             first.getAttribute("data-col-key") || "0",
@@ -138,15 +177,15 @@ const useTableResize = (options: TableResizeOptions) => {
           );
           const cell = children[index - offset];
           if (cell) {
-            found = true;
             cells.push(cell);
           }
         }
-        if (found) {
+        if (cells.length > 0) {
           cellsMapByColumn.set(index, cells);
         }
       });
-      console.log(
+      console.debug(
+        "[autoAdjustColumnWidth] found cells",
         Array.from(cellsMapByColumn.entries())
           .map(([index, cells]) => `${index}(${cells.length})`)
           .join("|")
@@ -181,19 +220,19 @@ const useTableResize = (options: TableResizeOptions) => {
 
         const stretchedWidths = cells.map((cell) => getElementWidth(cell));
         const finalWidth = normalizeWidth(Math.max(...stretchedWidths));
-        console.log(`col#${index}`, stretchedWidths.join("|"), finalWidth);
+        console.debug(`col#${index}`, stretchedWidths.join("|"), finalWidth);
 
         widthMapByColumn.set(index, finalWidth);
       });
 
-      console.log(
+      console.debug(
         Array.from(widthMapByColumn.entries())
           .map(([index, width]) => `${index}:${width}`)
           .join("|")
       );
 
       indexList.forEach((index) => {
-        const width = widthMapByColumn.get(index) ?? options.defaultWidth;
+        const width = widthMapByColumn.get(index) ?? guessColumnWidth(index);
 
         const column = state.columns[index];
         if (!column) {
@@ -282,13 +321,53 @@ const useTableResize = (options: TableResizeOptions) => {
     return totalWidth.value;
   };
 
+  const guessColumnWidth = (
+    index: number,
+    opts = {
+      em: 8,
+      padding: 8,
+    }
+  ) => {
+    const table = unref(options.table);
+    const maxAutoAdjustRowCount = Math.min(
+      table.getRowCount(),
+      MAX_AUTO_ADJUST_ROW_COUNT
+    );
+
+    const charsWidth = (content: string) => {
+      return stringWidth(content) * opts.em + opts.padding * 2;
+    };
+
+    const widths: number[] = [];
+
+    const header = table.getFlatHeaders()[index] as Header<QueryRow, RowValue>;
+    if (header) {
+      const content = String(header.column.columnDef.header);
+      const width = charsWidth(content) + 4 + 16; // plus sort icon and gap
+      widths.push(width);
+    }
+
+    for (let r = 0; r < maxAutoAdjustRowCount; r++) {
+      const row = table.getRowModel().rows[r];
+      const cell = row?.getVisibleCells()[index];
+      if (!cell) continue;
+      const value = cell.getValue() as RowValue;
+      const content = String(extractSQLRowValue(value).plain);
+      widths.push(charsWidth(content));
+    }
+
+    const guessed = Math.max(...widths);
+    return normalizeWidth(guessed);
+  };
+
   onBeforeUnmount(() => {
     toggleDragStyle(scroller, false);
   });
 
   return {
-    reset,
     state,
+    layoutReady,
+    reset,
     getColumnWidth,
     getTableRenderWidth,
     getTableScrollWidth,

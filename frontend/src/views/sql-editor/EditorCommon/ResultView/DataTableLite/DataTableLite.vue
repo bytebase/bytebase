@@ -1,17 +1,16 @@
 <template>
   <div
-    ref="containerElRef"
+    ref="containerRef"
     class="relative w-full flex-1 overflow-hidden flex flex-col"
     :data-width="containerWidth"
     :data-height="containerHeight"
   >
     <div
       tag="div"
-      class="header-track absolute z-0 left-0 top-0 right-0 h-[34px] border border-block-border bg-gray-50 dark:bg-gray-700"
+      class="header-track absolute z-0 left-0 top-0 right-0 h-[34px] border border-block-border rounded-t-sm bg-gray-50 dark:bg-gray-700"
     />
 
     <NDataTable
-      v-if="containerWidth > 0"
       ref="dataTableRef"
       :columns="columns"
       :data="rows"
@@ -19,10 +18,10 @@
       :virtual-scroll="true"
       :virtual-scroll-x="true"
       :virtual-scroll-header="true"
-      :header-height="33"
-      :max-height="containerHeight - 35"
-      :min-row-height="28"
-      :height-for-row="() => 28"
+      :header-height="HEADER_HEIGHT"
+      :max-height="maxTableHeight"
+      :min-row-height="ROW_HEIGHT"
+      :height-for-row="() => ROW_HEIGHT"
       :scroll-x="tableResize.getTableScrollWidth()"
       table-layout="fixed"
       size="small"
@@ -30,7 +29,7 @@
       style="
         --n-th-padding: 0;
         --n-td-padding: 0;
-        --n-border-radius: 0;
+        --n-border-radius: 2px;
         --n-border-color: rgb(var(--color-block-border));
       "
       :style="{
@@ -44,7 +43,7 @@
 import type { Header, Row, Table } from "@tanstack/vue-table";
 import { useElementSize } from "@vueuse/core";
 import { type DataTableColumn, type DataTableInst, NDataTable } from "naive-ui";
-import { computed, h, nextTick, ref, watch } from "vue";
+import { computed, h, nextTick, ref, toRef, watch } from "vue";
 import { QueryRow, type RowValue } from "@/types/proto/v1/sql_service";
 import { nextAnimationFrame, usePreventBackAndForward } from "@/utils";
 import { useSQLResultViewContext } from "../context";
@@ -52,7 +51,13 @@ import ColumnHeader from "./ColumnHeader.vue";
 import TableCell from "./TableCell.vue";
 import useTableColumnWidthLogic from "./useTableResize";
 
-const DEFAULT_COLUMN_WIDTH = 128; // 8rem
+const COLUMN_WIDTH = {
+  DEFAULT: 128, // 8rem
+  MIN: 64, // 4rem
+  MAX: 640, // 40rem
+};
+const HEADER_HEIGHT = 33;
+const ROW_HEIGHT = 28;
 
 const props = defineProps<{
   table: Table<QueryRow>;
@@ -71,7 +76,7 @@ const rows = computed(() => {
   return props.table.getRowModel().rows;
 });
 const dataTableRef = ref<DataTableInst>();
-const containerElRef = ref<HTMLElement>();
+const containerRef = ref<HTMLElement>();
 const scrollerRef = computed(() => {
   const getter = (dataTableRef.value as any)?.$refs.mainTableInstRef.$refs
     .bodyInstRef.virtualListContainer;
@@ -81,29 +86,35 @@ const scrollerRef = computed(() => {
   return undefined;
 });
 const { height: containerHeight, width: containerWidth } =
-  useElementSize(containerElRef);
+  useElementSize(containerRef);
 usePreventBackAndForward(scrollerRef);
 
+const maxTableHeight = computed(() => {
+  const GAP_AND_BORDER_HEIGHT = 2;
+  return containerHeight.value - HEADER_HEIGHT - GAP_AND_BORDER_HEIGHT;
+});
+
 const queryTableHeaderElement = () => {
-  return containerElRef.value?.querySelector(
+  return containerRef.value?.querySelector(
     ".n-data-table-base-table-header table.n-data-table-table"
   ) as HTMLElement | undefined;
 };
 const queryTableBodyElement = () => {
-  return containerElRef.value?.querySelector(
+  return containerRef.value?.querySelector(
     ".n-data-table-base-table-body table.n-data-table-table"
   ) as HTMLElement | undefined;
 };
 
 const tableResize = useTableColumnWidthLogic({
+  table: toRef(props, "table"),
   containerWidth,
   scrollerRef,
   queryTableHeaderElement,
   queryTableBodyElement,
   columnCount: computed(() => headers.value.length),
-  defaultWidth: DEFAULT_COLUMN_WIDTH,
-  minWidth: 64, // 4rem
-  maxWidth: 640, // 40rem
+  defaultWidth: COLUMN_WIDTH.DEFAULT,
+  minWidth: COLUMN_WIDTH.MIN,
+  maxWidth: COLUMN_WIDTH.MAX,
 });
 
 const columns = computed(() => {
@@ -146,7 +157,7 @@ const columns = computed(() => {
           });
         },
         width: tableResize.state.autoAdjusting.has(colIndex)
-          ? DEFAULT_COLUMN_WIDTH
+          ? COLUMN_WIDTH.DEFAULT
           : tableResize.getColumnWidth(colIndex),
       };
     }
@@ -194,5 +205,11 @@ watch(
 <style lang="postcss" scoped>
 :deep(.n-data-table-th .n-data-table-resize-button::after) {
   @apply bg-control-bg h-2/3;
+}
+:deep(.n-data-table-th:not(.n-data-table-th--last)) {
+  border-right: 1px solid var(--n-merged-border-color);
+}
+:deep(.n-data-table-td:not(.n-data-table-td--last-col)) {
+  border-right: 1px solid var(--n-merged-border-color);
 }
 </style>
