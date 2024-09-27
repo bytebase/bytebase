@@ -90,8 +90,6 @@ const (
 	ColumnNotExists                            Code = 405
 	UseChangeColumnStatement                   Code = 406
 	ChangeColumnOrder                          Code = 407
-	NoColumnComment                            Code = 408
-	ColumnCommentTooLong                       Code = 409
 	AutoIncrementColumnNotInteger              Code = 410
 	DisabledColumnType                         Code = 411
 	ColumnExists                               Code = 412
@@ -117,8 +115,6 @@ const (
 	TableHasFK                        Code = 602
 	TableDropNamingConventionMismatch Code = 603
 	TableNotExists                    Code = 604
-	NoTableComment                    Code = 605
-	TableCommentTooLong               Code = 606
 	TableExists                       Code = 607
 	CreateTablePartition              Code = 608
 	TableIsReferencedByView           Code = 609
@@ -171,7 +167,9 @@ const (
 	DisabledCollation Code = 1201
 
 	// 1301 ~ 1399 comment error code.
-	CommentTooLong Code = 1301
+	CommentTooLong               Code = 1301
+	CommentEmpty                 Code = 1032
+	CommentMissingClassification Code = 1303
 
 	// 1401 ~ 1499 procedure error code.
 	DisallowCreateProcedure Code = 1401

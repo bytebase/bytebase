@@ -82,11 +82,15 @@
       "description": "建议在数据库层面设置字符集。在更细粒度设置字符集会带来不必要的复杂性。建议错误等级：错误。"
     },
     "table-comment": {
-      "title": "注释检查",
+      "title": "表注释检查",
       "description": "配置表是否需要注释和最大注释长度。",
       "component": {
         "required": {
           "title": "必须注释"
+        },
+        "requiredClassification": {
+          "title": "需要分类",
+          "tooltip": "评论应遵循{'{'}分类 ID{'}'}-{'{'}评论{'}'}格式。"
         },
         "maxLength": {
           "title": "长度限制"
@@ -302,11 +306,15 @@
       "description": "无符号类型不存储负数，同样的类型存放的数值范围增加一倍，可以避免自增列超出上限。建议错误等级：警告"
     },
     "column-comment": {
-      "title": "强制列增加注释并限制长度",
+      "title": "列注释检查",
       "description": "对列添加注释是良好的开发习惯，但过长的注释将导致 Schema 易读性降低。建议错误等级：警告",
       "component": {
         "required": {
           "title": "必须注释"
+        },
+        "requiredClassification": {
+          "title": "需要分类",
+          "tooltip": "评论应遵循{'{'}分类 ID{'}'}-{'{'}评论{'}'}格式。"
         },
         "maxLength": {
           "title": "长度限制"

@@ -8,6 +8,7 @@ import (
 	"github.com/pingcap/tidb/pkg/parser/ast"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -41,10 +42,10 @@ func (*TableCommentConventionAdvisor) Check(ctx advisor.Context, _ string) ([]*s
 		return nil, err
 	}
 	checker := &tableCommentConventionChecker{
-		level:     level,
-		title:     string(ctx.Rule.Type),
-		required:  payload.Required,
-		maxLength: payload.MaxLength,
+		level:                level,
+		title:                string(ctx.Rule.Type),
+		payload:              payload,
+		classificationConfig: ctx.ClassificationConfig,
 	}
 
 	for _, stmt := range stmtList {
@@ -57,23 +58,23 @@ func (*TableCommentConventionAdvisor) Check(ctx advisor.Context, _ string) ([]*s
 }
 
 type tableCommentConventionChecker struct {
-	adviceList []*storepb.Advice
-	level      storepb.Advice_Status
-	title      string
-	text       string
-	line       int
-	required   bool
-	maxLength  int
+	adviceList           []*storepb.Advice
+	level                storepb.Advice_Status
+	title                string
+	text                 string
+	line                 int
+	payload              *advisor.CommentConventionRulePayload
+	classificationConfig *storepb.DataClassificationSetting_DataClassificationConfig
 }
 
 // Enter implements the ast.Visitor interface.
 func (checker *tableCommentConventionChecker) Enter(in ast.Node) (ast.Node, bool) {
 	if node, ok := in.(*ast.CreateTableStmt); ok {
 		exist, comment := tableComment(node.Options)
-		if checker.required && !exist {
+		if checker.payload.Required && !exist {
 			checker.adviceList = append(checker.adviceList, &storepb.Advice{
 				Status:  checker.level,
-				Code:    advisor.NoTableComment.Int32(),
+				Code:    advisor.CommentEmpty.Int32(),
 				Title:   checker.title,
 				Content: fmt.Sprintf("Table `%s` requires comments", node.Table.Name.O),
 				StartPosition: &storepb.Position{
@@ -81,16 +82,29 @@ func (checker *tableCommentConventionChecker) Enter(in ast.Node) (ast.Node, bool
 				},
 			})
 		}
-		if checker.maxLength >= 0 && len(comment) > checker.maxLength {
+		if checker.payload.MaxLength >= 0 && len(comment) > checker.payload.MaxLength {
 			checker.adviceList = append(checker.adviceList, &storepb.Advice{
 				Status:  checker.level,
-				Code:    advisor.TableCommentTooLong.Int32(),
+				Code:    advisor.CommentTooLong.Int32(),
 				Title:   checker.title,
-				Content: fmt.Sprintf("The length of table `%s` comment should be within %d characters", node.Table.Name.O, checker.maxLength),
+				Content: fmt.Sprintf("The length of table `%s` comment should be within %d characters", node.Table.Name.O, checker.payload.MaxLength),
 				StartPosition: &storepb.Position{
 					Line: int32(checker.line),
 				},
 			})
+		}
+		if checker.payload.RequiredClassification {
+			if classification, _ := common.GetClassificationAndUserComment(comment, checker.classificationConfig); classification == "" {
+				checker.adviceList = append(checker.adviceList, &storepb.Advice{
+					Status:  checker.level,
+					Code:    advisor.CommentMissingClassification.Int32(),
+					Title:   checker.title,
+					Content: fmt.Sprintf("Tolumn `%s` comment requires classification", node.Table.Name.O),
+					StartPosition: &storepb.Position{
+						Line: int32(checker.line),
+					},
+				})
+			}
 		}
 	}
 

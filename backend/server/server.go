@@ -346,7 +346,7 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 		}
 		return nil
 	}
-	planService, rolloutService, issueService, sqlService, err := configureGrpcRouters(ctx, mux, s.grpcServer, s.store, s.sheetManager, s.dbFactory, s.licenseService, s.profile, s.metricReporter, s.stateCfg, s.schemaSyncer, s.webhookManager, s.iamManager, s.relayRunner, s.planCheckScheduler, postCreateUser, s.secret)
+	planService, rolloutService, issueService, sqlService, err := configureGrpcRouters(ctx, mux, s.grpcServer, s.store, s.sheetManager, s.dbFactory, s.licenseService, s.profile, s.metricReporter, s.stateCfg, s.schemaSyncer, s.webhookManager, s.iamManager, s.relayRunner, postCreateUser, s.secret)
 	if err != nil {
 		return nil, err
 	}

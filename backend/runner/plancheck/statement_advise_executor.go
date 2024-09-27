@@ -9,6 +9,8 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/sheet"
+
+	v1api "github.com/bytebase/bytebase/backend/api/v1"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
@@ -181,6 +183,8 @@ func (e *StatementAdviseExecutor) runReview(
 	materials := utils.GetSecretMapFromDatabaseMessage(database)
 	// To avoid leaking the rendered statement, the error message should use the original statement and not the rendered statement.
 	renderedStatement := utils.RenderStatement(statement, materials)
+	classificationConfig := v1api.GetClassificationByProject(ctx, e.store, database.ProjectID)
+
 	adviceList, err := advisor.SQLReviewCheck(e.sheetManager, renderedStatement, reviewConfig.SqlReviewRules, advisor.SQLReviewCheckContext{
 		Charset:               dbSchema.GetMetadata().CharacterSet,
 		Collation:             dbSchema.GetMetadata().Collation,
@@ -191,6 +195,7 @@ func (e *StatementAdviseExecutor) runReview(
 		Driver:                connection,
 		Context:               ctx,
 		PreUpdateBackupDetail: preUpdateBackupDetail,
+		ClassificationConfig:  classificationConfig,
 	})
 	if err != nil {
 		return nil, err

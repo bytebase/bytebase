@@ -303,8 +303,9 @@ type RequiredColumnRulePayload struct {
 
 // CommentConventionRulePayload is the payload for comment convention rule.
 type CommentConventionRulePayload struct {
-	Required  bool `json:"required"`
-	MaxLength int  `json:"maxLength"`
+	Required               bool `json:"required"`
+	RequiredClassification bool `json:"requiredClassification"`
+	MaxLength              int  `json:"maxLength"`
 }
 
 // NumberTypeRulePayload is the number type payload.
@@ -485,6 +486,7 @@ type SQLReviewCheckContext struct {
 	Driver                *sql.DB
 	Context               context.Context
 	PreUpdateBackupDetail *storepb.PreUpdateBackupDetail
+	ClassificationConfig  *storepb.DataClassificationSetting_DataClassificationConfig
 
 	// Snowflake specific fields
 	CurrentDatabase string
@@ -556,6 +558,7 @@ func SQLReviewCheck(
 				Driver:                checkContext.Driver,
 				Context:               checkContext.Context,
 				CurrentDatabase:       checkContext.CurrentDatabase,
+				ClassificationConfig:  checkContext.ClassificationConfig,
 			},
 			statements,
 		)

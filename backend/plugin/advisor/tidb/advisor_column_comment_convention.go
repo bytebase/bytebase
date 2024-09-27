@@ -9,6 +9,7 @@ import (
 	"github.com/pingcap/tidb/pkg/parser/format"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/advisor"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
@@ -42,10 +43,10 @@ func (*ColumnCommentConventionAdvisor) Check(ctx advisor.Context, _ string) ([]*
 		return nil, err
 	}
 	checker := &columnCommentConventionChecker{
-		level:     level,
-		title:     string(ctx.Rule.Type),
-		required:  payload.Required,
-		maxLength: payload.MaxLength,
+		level:                level,
+		title:                string(ctx.Rule.Type),
+		payload:              payload,
+		classificationConfig: ctx.ClassificationConfig,
 	}
 
 	for _, stmt := range stmtList {
@@ -58,13 +59,13 @@ func (*ColumnCommentConventionAdvisor) Check(ctx advisor.Context, _ string) ([]*
 }
 
 type columnCommentConventionChecker struct {
-	adviceList []*storepb.Advice
-	level      storepb.Advice_Status
-	title      string
-	text       string
-	line       int
-	required   bool
-	maxLength  int
+	adviceList           []*storepb.Advice
+	level                storepb.Advice_Status
+	title                string
+	text                 string
+	line                 int
+	payload              *advisor.CommentConventionRulePayload
+	classificationConfig *storepb.DataClassificationSetting_DataClassificationConfig
 }
 
 type columnCommentData struct {
@@ -119,10 +120,10 @@ func (checker *columnCommentConventionChecker) Enter(in ast.Node) (ast.Node, boo
 	}
 
 	for _, column := range columnList {
-		if checker.required && !column.exist {
+		if checker.payload.Required && !column.exist {
 			checker.adviceList = append(checker.adviceList, &storepb.Advice{
 				Status:  checker.level,
-				Code:    advisor.NoColumnComment.Int32(),
+				Code:    advisor.CommentEmpty.Int32(),
 				Title:   checker.title,
 				Content: fmt.Sprintf("Column `%s`.`%s` requires comments", column.table, column.column),
 				StartPosition: &storepb.Position{
@@ -130,16 +131,29 @@ func (checker *columnCommentConventionChecker) Enter(in ast.Node) (ast.Node, boo
 				},
 			})
 		}
-		if checker.maxLength >= 0 && len(column.comment) > checker.maxLength {
+		if checker.payload.MaxLength >= 0 && len(column.comment) > checker.payload.MaxLength {
 			checker.adviceList = append(checker.adviceList, &storepb.Advice{
 				Status:  checker.level,
-				Code:    advisor.ColumnCommentTooLong.Int32(),
+				Code:    advisor.CommentTooLong.Int32(),
 				Title:   checker.title,
-				Content: fmt.Sprintf("The length of column `%s`.`%s` comment should be within %d characters", column.table, column.column, checker.maxLength),
+				Content: fmt.Sprintf("The length of column `%s`.`%s` comment should be within %d characters", column.table, column.column, checker.payload.MaxLength),
 				StartPosition: &storepb.Position{
 					Line: int32(column.line),
 				},
 			})
+		}
+		if checker.payload.RequiredClassification {
+			if classification, _ := common.GetClassificationAndUserComment(column.comment, checker.classificationConfig); classification == "" {
+				checker.adviceList = append(checker.adviceList, &storepb.Advice{
+					Status:  checker.level,
+					Code:    advisor.CommentMissingClassification.Int32(),
+					Title:   checker.title,
+					Content: fmt.Sprintf("Column `%s`.`%s` comment requires classification", column.table, column.column),
+					StartPosition: &storepb.Position{
+						Line: int32(column.line),
+					},
+				})
+			}
 		}
 	}
 
