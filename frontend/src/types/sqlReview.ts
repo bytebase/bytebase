@@ -461,7 +461,7 @@ export const convertPolicyRuleToRuleTemplate = (
     }
     // Following rules require BOOLEAN and NUMBER component.
     case "column.comment":
-    case "table.comment":
+    case "table.comment": {
       const requireComponent = componentList.find((c) => c.key === "required");
       const requiredClassificationComponent = componentList.find(
         (c) => c.key === "requiredClassification"
@@ -501,6 +501,7 @@ export const convertPolicyRuleToRuleTemplate = (
           },
         ],
       };
+    }
     // Following rules require NUMBER component.
     case "statement.insert.row-limit":
     case "statement.affected-row-limit":
@@ -653,7 +654,7 @@ const mergeIndividualConfigAsRule = (
     }
     // Following rules require BOOLEAN and NUMBER component.
     case "column.comment":
-    case "table.comment":
+    case "table.comment": {
       const requirePayload = componentList.find((c) => c.key === "required")
         ?.payload as BooleanPayload | undefined;
       const requiredClassificationPayload = componentList.find(
@@ -674,6 +675,7 @@ const mergeIndividualConfigAsRule = (
             false,
         },
       };
+    }
     // Following rules require NUMBER component.
     case "statement.insert.row-limit":
     case "statement.affected-row-limit":
