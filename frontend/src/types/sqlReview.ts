@@ -81,6 +81,7 @@ interface StringArrayLimitPayload {
 // Used by the backend.
 interface CommentFormatPayload {
   required: boolean;
+  requiredClassification: boolean;
   maxLength: number;
 }
 
@@ -461,7 +462,16 @@ export const convertPolicyRuleToRuleTemplate = (
     // Following rules require BOOLEAN and NUMBER component.
     case "column.comment":
     case "table.comment":
-      if (!booleanComponent || !numberComponent) {
+      const requireComponent = componentList.find((c) => c.key === "required");
+      const requiredClassificationComponent = componentList.find(
+        (c) => c.key === "requiredClassification"
+      );
+
+      if (
+        !requireComponent ||
+        !requiredClassificationComponent ||
+        !numberComponent
+      ) {
         throw new Error(`Invalid rule ${ruleTemplate.type}`);
       }
 
@@ -469,10 +479,17 @@ export const convertPolicyRuleToRuleTemplate = (
         ...res,
         componentList: [
           {
-            ...booleanComponent,
+            ...requireComponent,
             payload: {
-              ...booleanComponent.payload,
+              ...requireComponent.payload,
               value: (payload as CommentFormatPayload).required,
+            } as BooleanPayload,
+          },
+          {
+            ...requiredClassificationComponent,
+            payload: {
+              ...requiredClassificationComponent.payload,
+              value: (payload as CommentFormatPayload).requiredClassification,
             } as BooleanPayload,
           },
           {
@@ -637,14 +654,24 @@ const mergeIndividualConfigAsRule = (
     // Following rules require BOOLEAN and NUMBER component.
     case "column.comment":
     case "table.comment":
-      if (!booleanPayload || !numberPayload) {
+      const requirePayload = componentList.find((c) => c.key === "required")
+        ?.payload as BooleanPayload | undefined;
+      const requiredClassificationPayload = componentList.find(
+        (c) => c.key === "requiredClassification"
+      )?.payload as BooleanPayload | undefined;
+
+      if (!requirePayload || !numberPayload) {
         throw new Error(`Invalid rule ${template.type}`);
       }
       return {
         ...base,
         payload: {
-          required: booleanPayload.value ?? booleanPayload.default,
+          required: requirePayload.value ?? requirePayload.default,
           maxLength: numberPayload.value ?? numberPayload.default,
+          requiredClassification:
+            requiredClassificationPayload?.value ??
+            requiredClassificationPayload?.default ??
+            false,
         },
       };
     // Following rules require NUMBER component.

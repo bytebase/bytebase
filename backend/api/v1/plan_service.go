@@ -25,7 +25,6 @@ import (
 	"github.com/bytebase/bytebase/backend/component/state"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
-	"github.com/bytebase/bytebase/backend/runner/plancheck"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -34,27 +33,25 @@ import (
 // PlanService represents a service for managing plan.
 type PlanService struct {
 	v1pb.UnimplementedPlanServiceServer
-	store              *store.Store
-	sheetManager       *sheet.Manager
-	licenseService     enterprise.LicenseService
-	dbFactory          *dbfactory.DBFactory
-	planCheckScheduler *plancheck.Scheduler
-	stateCfg           *state.State
-	profile            *config.Profile
-	iamManager         *iam.Manager
+	store          *store.Store
+	sheetManager   *sheet.Manager
+	licenseService enterprise.LicenseService
+	dbFactory      *dbfactory.DBFactory
+	stateCfg       *state.State
+	profile        *config.Profile
+	iamManager     *iam.Manager
 }
 
 // NewPlanService returns a plan service instance.
-func NewPlanService(store *store.Store, sheetManager *sheet.Manager, licenseService enterprise.LicenseService, dbFactory *dbfactory.DBFactory, planCheckScheduler *plancheck.Scheduler, stateCfg *state.State, profile *config.Profile, iamManager *iam.Manager) *PlanService {
+func NewPlanService(store *store.Store, sheetManager *sheet.Manager, licenseService enterprise.LicenseService, dbFactory *dbfactory.DBFactory, stateCfg *state.State, profile *config.Profile, iamManager *iam.Manager) *PlanService {
 	return &PlanService{
-		store:              store,
-		sheetManager:       sheetManager,
-		licenseService:     licenseService,
-		dbFactory:          dbFactory,
-		planCheckScheduler: planCheckScheduler,
-		stateCfg:           stateCfg,
-		profile:            profile,
-		iamManager:         iamManager,
+		store:          store,
+		sheetManager:   sheetManager,
+		licenseService: licenseService,
+		dbFactory:      dbFactory,
+		stateCfg:       stateCfg,
+		profile:        profile,
+		iamManager:     iamManager,
 	}
 }
 
