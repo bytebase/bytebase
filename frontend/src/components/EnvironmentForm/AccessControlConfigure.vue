@@ -27,7 +27,7 @@
             @update:value="switchDataSourceQueryPolicyEnabled"
           />
           <span class="textlabel">{{
-            $t("environment.access-control.restrict-admin-data-sources.self")
+            $t("environment.access-control.restrict-admin-connection.self")
           }}</span>
         </div>
         <div v-if="adminDataSourceQueruRestrictionEnabled" class="ml-12">
@@ -42,7 +42,7 @@
             >
               {{
                 $t(
-                  "environment.access-control.restrict-admin-data-sources.disallow"
+                  "environment.access-control.restrict-admin-connection.disallow"
                 )
               }}
             </NRadio>
@@ -52,7 +52,7 @@
             >
               {{
                 $t(
-                  "environment.access-control.restrict-admin-data-sources.fallback"
+                  "environment.access-control.restrict-admin-connection.fallback"
                 )
               }}
             </NRadio>

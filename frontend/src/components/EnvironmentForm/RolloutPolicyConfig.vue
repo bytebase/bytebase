@@ -51,7 +51,7 @@
           "
         >
           <div class="textlabel">
-            {{ $t("policy.rollout.manual-by-workspace-admin") }}
+            {{ $t("role.workspace-admin.self") }}
           </div>
         </NCheckbox>
         <NCheckbox
@@ -65,7 +65,7 @@
           "
         >
           <div class="textlabel">
-            {{ $t("policy.rollout.manual-by-dba") }}
+            {{ $t("role.workspace-dba.self") }}
           </div>
         </NCheckbox>
         <NCheckbox
@@ -79,7 +79,7 @@
           "
         >
           <div class="textlabel">
-            {{ $t("policy.rollout.manual-by-project-owner") }}
+            {{ $t("role.project-owner.self") }}
           </div>
         </NCheckbox>
         <NCheckbox
@@ -93,7 +93,7 @@
           "
         >
           <div class="textlabel">
-            {{ $t("policy.rollout.manual-by-project-releaser") }}
+            {{ $t("role.project-releaser.self") }}
           </div>
         </NCheckbox>
         <NCheckbox
@@ -105,7 +105,7 @@
           "
         >
           <div class="textlabel">
-            {{ $t("policy.rollout.manual-by-issue-creator") }}
+            {{ $t("role.issue-creator.self") }}
           </div>
         </NCheckbox>
         <div class="flex flex-col gap-y-1">
@@ -116,7 +116,7 @@
             @update:checked="toggleCustomProjectRoles($event)"
           >
             <div class="textlabel">
-              {{ $t("policy.rollout.manual-by-custom-project-roles") }}
+              {{ $t("role.custom-roles.self") }}
             </div>
           </NCheckbox>
           <div v-if="customProjectRoles.checked" class="pl-8">

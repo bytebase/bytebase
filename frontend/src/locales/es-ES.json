@@ -225,7 +225,7 @@
     "will-lose-unsaved-data": "Se perderán los datos no guardados.",
     "deleted": "Eliminado",
     "will-override-current-data": "Se sobrescribirán los datos actuales.",
-    "rollout": "Implementar",
+    "roll-out": "Implementar",
     "uploading": "Subiendo",
     "active": "Activo",
     "added": "Agregado",
@@ -371,7 +371,7 @@
     "skip": "Saltar",
     "skip-modal-title": "¿Saltar tarea [{name}]?",
     "task-checks": "Comprobaciones de tarea",
-    "prior-backup": "Respaldo Previo",
+    "prior-backup": "Respaldo previo",
     "skip-failed-in-current-stage": "Saltar tareas fallidas en la etapa actual",
     "apply-change-to-all-pending-tasks": {
       "title": "¿Aplicar cambio a todas las tareas pendientes?",
@@ -1618,12 +1618,12 @@
     "successfully-updated-environment": "entorno '{name}' actualizado exitosamente.",
     "production-environment": "Entorno de producción",
     "access-control": {
-      "title": "Control de acceso",
+      "title": "Control de Acceso",
       "disable-copy-data-from-sql-editor": "Restringir la copia de datos en el editor SQL (permitido para administradores/DBA)",
-      "restrict-admin-data-sources": {
-        "self": "Restringir fuentes de datos de administrador",
-        "disallow": "No permitir consultar datos de la fuente de datos del administrador",
-        "fallback": "Recurrir a la fuente de datos del administrador si no hay ninguna fuente de datos de solo lectura disponible"
+      "restrict-admin-connection": {
+        "self": "Restricciones de consulta de conexión de administrador",
+        "disallow": "Prohibir consultar datos desde la conexión de administrador",
+        "fallback": "Volver a la conexión de administrador si no hay una conexión de solo lectura disponible"
       }
     }
   },
@@ -1690,23 +1690,17 @@
   },
   "policy": {
     "rollout": {
-      "name": "Política de implementación",
+      "name": "Política de Implementación",
       "tip": "La política se aplica retrospectivamente a las incidencias.",
       "info": "Para implementar cambios en la base de datos, esta configuración controla si la implementación requiere aprobación manual.",
       "auto": "Implementar automático",
       "auto-info": "Si se aprueban todas las comprobaciones, el cambio se implementará y ejecutará automáticamente.",
-      "manual-by-project-owner": "Dueño del proyecto",
-      "manual-by-project-releaser": "Liberador de proyecto",
-      "manual-by-issue-creator": "Creador del problema",
       "manual-by-last-approver": "Implementación manual por parte del último aprobador de la aprobación personalizada",
       "manual-by-dedicated-roles": "Implementación manual por roles especializados",
-      "manual-by-dedicated-roles-info": "Permita que cualquiera de los siguientes roles seleccionados haga clic en el botón \"Implementar\" y luego se ejecutará el cambio.",
-      "manual-by-dba": "DBA",
-      "manual-by-workspace-admin": "Administrador del espacio de trabajo",
-      "manual-by-custom-project-roles": "Roles de proyecto personalizados"
+      "manual-by-dedicated-roles-info": "Permita que cualquiera de los siguientes roles seleccionados haga clic en el botón \"Implementar\" y luego se ejecutará el cambio."
     },
     "environment-tier": {
-      "name": "Nivel de entorno",
+      "name": "Nivel de Entorno",
       "description": "El entorno aparecerá de manera diferente a otros entornos.",
       "mark-env-as-production": "Marcar como entorno de producción"
     }
@@ -2099,7 +2093,7 @@
         "only-apply-to-main-branches": "Sólo aplica en sucursales principales"
       },
       "issue-related": {
-        "self": "Problema relacionado",
+        "self": "Problema Relacionado",
         "labels": {
           "self": "Etiquetas",
           "configure-labels": "Configurar etiquetas",
@@ -3470,12 +3464,16 @@
     "select-role": "Seleccionar rol",
     "expired-tip": "El papel puede haber expirado.",
     "import-from-role": "Importar desde el rol",
-    "workspace-roles": "Roles de espacio de trabajo",
+    "workspace-roles": {
+      "self": "Roles de espacio de trabajo"
+    },
     "project-roles": {
       "self": "Roles de proyecto",
       "apply-to-all-projects": "Aplicar a todos los proyectos"
     },
-    "custom-roles": "Roles personalizados",
+    "custom-roles": {
+      "self": "Roles personalizados"
+    },
     "workspace-admin": {
       "self": "Administrador del espacio de trabajo",
       "description": "El administrador del espacio de trabajo tiene todos los permisos dentro del espacio de trabajo."
@@ -3511,6 +3509,9 @@
     "project-viewer": {
       "self": "Espectador del proyecto",
       "description": "El espectador del proyecto tiene todos los permisos dentro del proyecto, excepto la gestión de miembros del proyecto."
+    },
+    "issue-creator": {
+      "self": "Creador del problema"
     }
   },
   "database-group": {
