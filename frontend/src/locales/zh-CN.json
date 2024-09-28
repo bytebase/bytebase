@@ -225,7 +225,7 @@
     "will-lose-unsaved-data": "这会丢失当前所有未保存的数据。",
     "deleted": "已删除",
     "will-override-current-data": "将会覆盖当前数据。",
-    "rollout": "发布",
+    "roll-out": "发布",
     "uploading": "上传中",
     "active": "开启",
     "added": "已创建",
@@ -371,7 +371,7 @@
     "skip": "跳过",
     "skip-modal-title": "跳过任务[{name}]？",
     "task-checks": "任务检查项",
-    "prior-backup": "受影响数据预备份",
+    "prior-backup": "预备份受影响数据",
     "skip-failed-in-current-stage": "跳过当前阶段失败的任务",
     "apply-change-to-all-pending-tasks": {
       "title": "应用到所有未执行任务？",
@@ -1620,10 +1620,10 @@
     "access-control": {
       "title": "访问控制",
       "disable-copy-data-from-sql-editor": "限制 SQL 编辑器中的数据复制 (管理员/DBA 可以复制)",
-      "restrict-admin-data-sources": {
-        "self": "管理员数据源查询限制",
-        "disallow": "禁止从管理员数据源查询数据",
-        "fallback": "如果没有只读数据源，则可以对管理员数据源进行查询"
+      "restrict-admin-connection": {
+        "self": "管理员连接查询限制",
+        "disallow": "禁止用管理员连接查询数据",
+        "fallback": "如果没有只读连接可用，则回退到管理员连接"
       }
     }
   },
@@ -1695,15 +1695,9 @@
       "info": "当要发布对数据库的变更时，该选项控制了是否需要人工发布。",
       "auto": "自动发布",
       "auto-info": "如果预检查都通过的话，会自动发布，执行变更。",
-      "manual-by-project-owner": "项目所有者",
-      "manual-by-project-releaser": "项目的发布者",
-      "manual-by-issue-creator": "工单的创建者",
       "manual-by-last-approver": "自定义审批的最后一个审批人发布",
       "manual-by-dedicated-roles": "特定角色手工发布",
       "manual-by-dedicated-roles-info": "允许以下任一选中角色，点击「发布」按钮后，执行变更。",
-      "manual-by-dba": "DBA",
-      "manual-by-workspace-admin": "Bytebase 工作空间管理员",
-      "manual-by-custom-project-roles": "自定义项目角色"
     },
     "environment-tier": {
       "name": "环境级别",
@@ -3470,12 +3464,16 @@
     "select-role": "选择角色",
     "expired-tip": "该角色可能已经过期。",
     "import-from-role": "从角色导入",
-    "workspace-roles": "工作空间角色",
+    "workspace-roles": {
+      "self": "工作空间角色"
+    },
     "project-roles": {
       "self": "项目角色",
       "apply-to-all-projects": "应用到所有项目"
     },
-    "custom-roles": "自定义角色",
+    "custom-roles": {
+      "self": "自定义角色"
+    },
     "workspace-admin": {
       "self": "工作空间管理员",
       "description": "工作空间内的所有权限。"
@@ -3511,6 +3509,9 @@
     "project-viewer": {
       "self": "项目查看者",
       "description": "可查看项目基本信息，并可自助发起数据查询、数据导出请求。"
+    },
+    "issue-creator": {
+      "self": "工单创建者"
     }
   },
   "database-group": {

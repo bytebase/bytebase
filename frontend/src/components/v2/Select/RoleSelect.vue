@@ -54,7 +54,7 @@ const availableRoleOptions = computed(
       {
         type: "group",
         key: "workspace-roles",
-        label: t("role.workspace-roles"),
+        label: t("role.workspace-roles.self"),
         children: PRESET_WORKSPACE_ROLES.filter(
           (role) => role !== PresetRoleType.WORKSPACE_MEMBER
         ).map((role) => ({
@@ -84,7 +84,7 @@ const availableRoleOptions = computed(
       roleGroups.push({
         type: "group",
         key: "custom-roles",
-        label: `${t("role.custom-roles")} (${t("common.optional")}, ${t(
+        label: `${t("role.custom-roles.self")} (${t("common.optional")}, ${t(
           "role.project-roles.apply-to-all-projects"
         ).toLocaleLowerCase()})`,
         children: customRoles.map((role) => ({

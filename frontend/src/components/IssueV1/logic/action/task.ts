@@ -87,7 +87,7 @@ export const taskRolloutActionDisplayName = (
     case "ROLLOUT":
       return task?.type === Task_Type.DATABASE_DATA_EXPORT
         ? t("common.export")
-        : t("common.rollout");
+        : t("common.roll-out");
     case "CANCEL":
       return t("common.cancel");
     case "RETRY":
