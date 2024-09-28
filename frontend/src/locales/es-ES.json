@@ -773,12 +773,12 @@
           "self": "Modo de cambio de base de datos",
           "description": "Controla cómo los usuarios realizan migraciones de esquemas de bases de datos",
           "issue-mode": {
-            "self": "Modo de emisión (Equipo)",
-            "description": "Utilice emisión para solicitar, revisar, implementar y crear versiones de cambios en la base de datos. Adecuado para la colaboración en equipo.."
+            "self": "Modo de emisión (Gobernado)",
+            "description": "Utilice issues para solicitar, revisar, implementar y versionar cambios en la base de datos. Adecuado para la colaboración en equipo y entornos de producción."
           },
           "sql-editor-mode": {
-            "self": "Modo de edición SQL (Individual)",
-            "description": "Permite la ejecución directa de SQL en un editor de SQL para realizar cambios rápidos y sencillos."
+            "self": "Modo de edición SQL (Directo)",
+            "description": "Utilice el Editor SQL para ejecutar cambios en la base de datos directamente. Adecuado para uso individual y entornos no productivos."
           },
           "can-be-changed-later": "Utilice el Editor SQL para ejecutar cambios en la base de datos directamente. Adecuado para particulares.",
           "default-view-changed-to-sql-editor": "La vista predeterminada del espacio de trabajo se ha cambiado al Editor SQL.",
