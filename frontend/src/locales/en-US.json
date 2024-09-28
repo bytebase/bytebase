@@ -225,7 +225,7 @@
     "will-lose-unsaved-data": "Will lose any unsaved data.",
     "deleted": "Deleted",
     "will-override-current-data": "Will override current data.",
-    "rollout": "Rollout",
+    "roll-out": "Roll out",
     "uploading": "Uploading",
     "active": "Active",
     "added": "Added",
@@ -371,7 +371,7 @@
     "skip": "Skip",
     "skip-modal-title": "Skip task [{name}]?",
     "task-checks": "Task checks",
-    "prior-backup": "Prior Backup",
+    "prior-backup": "Prior backup",
     "skip-failed-in-current-stage": "Skip failed tasks in current stage",
     "apply-change-to-all-pending-tasks": {
       "title": "Apply change to all pending tasks?",
@@ -1226,7 +1226,7 @@
       "moderate": "Moderate",
       "high": "High"
     },
-    "waiting-to-rollout": "Waiting to rollout",
+    "waiting-to-rollout": "Waiting to roll out",
     "waiting-for-review": "Waiting for review",
     "issue-name": "Issue name",
     "grant-request": {
@@ -1618,12 +1618,12 @@
     "successfully-updated-environment": "Successfully updated environment '{name}'.",
     "production-environment": "Production environment",
     "access-control": {
-      "title": "Access control",
+      "title": "Access Control",
       "disable-copy-data-from-sql-editor": "Restrict data copying in SQL Editor (Admins/DBAs allowed)",
-      "restrict-admin-data-sources": {
-        "self": "Admin Data Source Query Restrictions",
-        "disallow": "Disallow querying data from the admin data source",
-        "fallback": "Fallback to the admin data source if no read-only data source is available"
+      "restrict-admin-connection": {
+        "self": "Admin connection query restrictions",
+        "disallow": "Disallow querying data from the admin connection",
+        "fallback": "Fallback to the admin connection if no read-only connection is available"
       }
     }
   },
@@ -1690,23 +1690,17 @@
   },
   "policy": {
     "rollout": {
-      "name": "Rollout policy",
+      "name": "Rollout Policy",
       "tip": "The policy is applied to issues retroactively.",
       "info": "For rolling out database change, this setting controls whether the rollout requires manual approval.",
       "auto": "Automatic rollout",
       "auto-info": "If all check pass, the change will be rolled out and executed automatically.",
-      "manual-by-project-owner": "Project owner",
-      "manual-by-project-releaser": "Project releaser",
-      "manual-by-issue-creator": "Issue creator",
       "manual-by-last-approver": "Manual rollout by the last approver from the custom approval",
       "manual-by-dedicated-roles": "Manual rollout by dedicated roles",
-      "manual-by-dedicated-roles-info": "Allow any of the following selected roles to click the \"Rollout\" button, and then the change will be executed.",
-      "manual-by-dba": "DBA",
-      "manual-by-workspace-admin": "Workspace admin",
-      "manual-by-custom-project-roles": "Custom project roles"
+      "manual-by-dedicated-roles-info": "Allow any of the following selected roles to click the \"Rollout\" button, and then the change will be executed."
     },
     "environment-tier": {
-      "name": "Environment tier",
+      "name": "Environment Tier",
       "description": "The environment will appear differently from other environments.",
       "mark-env-as-production": "Mark as production environment"
     }
@@ -2099,7 +2093,7 @@
         "only-apply-to-main-branches": "Only apply to main branches"
       },
       "issue-related": {
-        "self": "Issue related",
+        "self": "Issue Related",
         "labels": {
           "self": "Labels",
           "configure-labels": "Configure labels",
@@ -3470,12 +3464,16 @@
     "select-role": "Select role",
     "expired-tip": "The role might has been expired.",
     "import-from-role": "Import from role",
-    "workspace-roles": "Workspace roles",
+    "workspace-roles": {
+      "self": "Workspace roles"
+    },
     "project-roles": {
       "self": "Project roles",
       "apply-to-all-projects": "Apply to all projects"
     },
-    "custom-roles": "Custom roles",
+    "custom-roles": {
+      "self":"Custom roles"
+    },
     "workspace-admin": {
       "self": "Workspace Admin",
       "description": "Workspace Admin has all permissions within the workspace."
@@ -3511,6 +3509,9 @@
     "project-viewer": {
       "self": "Project Viewer",
       "description": "Read-only permissions for viewing basic project information, accessing databases, and initiating privilege requests."
+    },
+    "issue-creator": {
+      "self": "Issue Creator"
     }
   },
   "database-group": {
