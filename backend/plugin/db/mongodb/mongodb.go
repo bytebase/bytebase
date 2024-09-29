@@ -455,6 +455,14 @@ func getSimpleStatementResult(data []byte) (*v1pb.QueryResult, error) {
 				values[index] = &v1pb.RowValue{Kind: &v1pb.RowValue_DoubleValue{DoubleValue: value}}
 			case bool:
 				values[index] = &v1pb.RowValue{Kind: &v1pb.RowValue_BoolValue{BoolValue: value}}
+			case primitive.D:
+				r, err := json.MarshalIndent(value.Map(), "", "	")
+				if err != nil {
+					return nil, err
+				}
+				index := columnIndexMap[k]
+				values[index] = &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: string(r)}}
+
 			// primitive.A, primitive.D, primitive.M
 			// primitive.Timestamp
 			// primitive.MinKey, primitive.MaxKey
