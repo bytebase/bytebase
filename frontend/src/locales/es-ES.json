@@ -290,7 +290,8 @@
     "back-to-workspace": "Volver al espacio de trabajo",
     "override": "Anular",
     "encoding": "Codificación",
-    "finish": "Finalizar"
+    "finish": "Finalizar",
+    "title": "Título"
   },
   "error-page": {
     "go-back-home": "Volver al inicio"
