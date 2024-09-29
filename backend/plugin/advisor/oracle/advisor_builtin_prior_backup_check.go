@@ -232,12 +232,12 @@ func extractColumnsInEqualCondition(databaseName string, table *tableRef, ctx an
 		}
 		return nil
 	case *plsql.AtomContext:
-		return extractColumnsInEqualCondition(databaseName, table, n.General_element_part())
-	case *plsql.General_element_partContext:
+		return extractColumnsInEqualCondition(databaseName, table, n.General_element())
+	case *plsql.General_elementContext:
 		if table == nil {
 			return nil
 		}
-		ids := plsqlparser.NormalizeGeneralElementPart(n)
+		ids := plsqlparser.NormalizeGeneralElement(n)
 		switch len(ids) {
 		case 0:
 			return nil
