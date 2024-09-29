@@ -33,7 +33,11 @@ export const allowUserToEditStatementForTask = (
   task: Task
 ): string[] => {
   const user = useCurrentUserV1();
-  const { getPlanCheckRunsForTask } = useIssueContext();
+  const issueContext = useIssueContext();
+  if (!issueContext) {
+    return [];
+  }
+  const { getPlanCheckRunsForTask } = issueContext;
   const denyReasons: string[] = [];
 
   if (isTaskV1TriggeredByVCS(issue, task)) {

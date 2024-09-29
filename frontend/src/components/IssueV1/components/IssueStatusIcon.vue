@@ -1,5 +1,5 @@
 <template>
-  <NTooltip :disabled="!isUnfinishedResolvedIssue">
+  <NTooltip>
     <template #trigger>
       <span
         class="flex items-center justify-center rounded-full select-none overflow-hidden shrink-0"
@@ -43,8 +43,14 @@
     </template>
 
     <template #default>
-      <div v-if="isUnfinishedResolvedIssue" class="max-w-[24rem]">
-        {{ $t("issue.unfinished-resolved-issue-tips") }}
+      <div class="max-w-[24rem]">
+        {{
+          isUnfinishedResolvedIssue
+            ? $t("issue.unfinished-resolved-issue-tips")
+            : $t(
+                `issue.status.${issueStatusToJSON(props.issueStatus).toLowerCase()}`
+              )
+        }}
       </div>
     </template>
   </NTooltip>
@@ -55,7 +61,7 @@ import { NTooltip } from "naive-ui";
 import type { PropType } from "vue";
 import { computed } from "vue";
 import type { ComposedIssue } from "@/types";
-import { IssueStatus } from "@/types/proto/v1/issue_service";
+import { IssueStatus, issueStatusToJSON } from "@/types/proto/v1/issue_service";
 import { Task_Status } from "@/types/proto/v1/rollout_service";
 import { isUnfinishedResolvedTask as checkUnfinishedResolvedTask } from "../logic";
 

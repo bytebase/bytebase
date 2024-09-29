@@ -37,15 +37,3 @@ export const QuickActionPermissionMap: Map<QuickActionType, Permission[]> =
       ["bb.instances.list", "bb.issues.create"],
     ],
   ]);
-
-// Permission check for project level quick actions.
-export const QuickActionProjectPermissionMap: Map<
-  QuickActionType,
-  Permission[]
-> = new Map([
-  ["quickaction.bb.project.database.transfer", ["bb.projects.update"]],
-  ["quickaction.bb.database.create", ["bb.instances.list", "bb.issues.create"]],
-  ["quickaction.bb.group.database-group.create", ["bb.projects.update"]],
-  ["quickaction.bb.issue.grant.request.querier", ["bb.issues.create"]],
-  ["quickaction.bb.issue.grant.request.exporter", ["bb.issues.create"]],
-]);

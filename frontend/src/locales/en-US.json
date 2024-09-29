@@ -1048,6 +1048,11 @@
     "waiting-rollout": "Waiting for Rollout",
     "opened-by-at": "opened by {creator} at {time}",
     "commit-by-at": "commit {id} {title} by {author} at {time}",
+    "status": {
+      "open": "Open",
+      "done": "Done",
+      "canceled": "Canceled"
+    },
     "status-transition": {
       "modal": {
         "resolve": "Resolve issue?",
@@ -3473,7 +3478,7 @@
       "apply-to-all-projects": "Apply to all projects"
     },
     "custom-roles": {
-      "self":"Custom roles"
+      "self": "Custom roles"
     },
     "workspace-admin": {
       "self": "Workspace Admin",
