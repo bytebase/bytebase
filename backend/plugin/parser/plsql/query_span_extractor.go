@@ -426,8 +426,8 @@ func (q *querySpanExtractor) plsqlExtractSourceColumnSetFromExpression(ctx antlr
 		parts := rule.AllGeneral_element_part()
 
 		// This case is for functions, such as CONCAT(a, b)
-		if parts[len(parts)].Function_argument() != nil {
-			_, maskingLevel, err := q.plsqlExtractSourceColumnSetFromExpression(parts[len(parts)].Function_argument())
+		if parts[len(parts)-1].Function_argument() != nil {
+			_, maskingLevel, err := q.plsqlExtractSourceColumnSetFromExpression(parts[len(parts)-1].Function_argument())
 			return "", maskingLevel, err
 		}
 
