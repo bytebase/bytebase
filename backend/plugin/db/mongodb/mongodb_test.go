@@ -137,9 +137,9 @@ func TestIsMongoStatement(t *testing.T) {
 
 func TestGetSimpleStatementResult(t *testing.T) {
 	groupsValue := `[
-	"123",
-	"222"
-]`
+		"123",
+		"222"
+	]`
 
 	tests := []struct {
 		data string

@@ -16,6 +16,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/buger/jsonparser"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"go.mongodb.org/mongo-driver/bson"
@@ -455,15 +456,30 @@ func getSimpleStatementResult(data []byte) (*v1pb.QueryResult, error) {
 				values[index] = &v1pb.RowValue{Kind: &v1pb.RowValue_DoubleValue{DoubleValue: value}}
 			case bool:
 				values[index] = &v1pb.RowValue{Kind: &v1pb.RowValue_BoolValue{BoolValue: value}}
-			case primitive.D:
-				r, err := bson.MarshalExtJSONIndent(value, false, false, "", "	")
+			case primitive.D, primitive.M:
+				r, err := bson.MarshalExtJSONIndent(value, true, false, "", "	")
 				if err != nil {
-					return nil, err
+					return nil, errors.Wrapf(err, "failed to marshal ejson for document")
 				}
 				index := columnIndexMap[k]
 				values[index] = &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: string(r)}}
 
-			// primitive.A, primitive.M
+			case primitive.A:
+				// bson.MarshalExtJSONIndent doesn't allow marshal array directly.
+				// we compose the array into a document, marshal the document,
+				// then extract the array using jsonparser library.
+				ejson, err := bson.MarshalExtJSONIndent(primitive.D{{Key: "array", Value: value}}, true, false, "", "	")
+				if err != nil {
+					return nil, errors.Wrapf(err, "failed to marshal ejson for array")
+				}
+
+				s, _, _, err := jsonparser.Get(ejson, "array")
+				if err != nil {
+					return nil, errors.Wrapf(err, "failed to get string")
+				}
+
+				values[index] = &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: string(s)}}
+
 			// primitive.Timestamp
 			// primitive.MinKey, primitive.MaxKey
 			default:
@@ -474,7 +490,6 @@ func getSimpleStatementResult(data []byte) (*v1pb.QueryResult, error) {
 				index := columnIndexMap[k]
 				values[index] = &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: string(r)}}
 			}
-
 		}
 		for i := 0; i < len(values); i++ {
 			if values[i] == nil {
