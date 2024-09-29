@@ -1,4 +1,6 @@
-<template></template>
+<template>
+  <div />
+</template>
 
 <script lang="ts" setup>
 import { watchEffect, computed } from "vue";
