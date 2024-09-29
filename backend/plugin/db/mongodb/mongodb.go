@@ -23,6 +23,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"google.golang.org/protobuf/types/known/durationpb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -403,7 +404,7 @@ func getSimpleStatementResult(data []byte) (*v1pb.QueryResult, error) {
 	}
 
 	for _, v := range rows {
-		m, ok := v.(map[string]any)
+		d, ok := v.(bson.D)
 		if !ok || illegal {
 			r, err := json.MarshalIndent(v, "", "	")
 			if err != nil {
@@ -418,22 +419,54 @@ func getSimpleStatementResult(data []byte) (*v1pb.QueryResult, error) {
 		}
 
 		values := make([]*v1pb.RowValue, len(columns))
-		for k, v := range m {
-			if k == "_id" {
-				id, err := convertIDString(v)
+		for _, e := range d {
+			k := e.Key
+			v := e.Value
+			index := columnIndexMap[k]
+
+			switch value := v.(type) {
+			case primitive.Binary:
+				values[index] = &v1pb.RowValue{Kind: &v1pb.RowValue_BytesValue{BytesValue: value.Data}}
+			case primitive.DateTime:
+				values[index] = &v1pb.RowValue{Kind: &v1pb.RowValue_TimestampValue{TimestampValue: timestamppb.New(value.Time())}}
+			case primitive.Decimal128:
+				values[index] = &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: value.String()}}
+			case primitive.ObjectID:
+				values[index] = &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: value.String()}}
+			case primitive.Regex:
+				values[index] = &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: value.String()}}
+			case primitive.JavaScript:
+				values[index] = &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: string(value)}}
+			case primitive.CodeWithScope:
+				values[index] = &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: value.String()}}
+			case primitive.Undefined, primitive.Null:
+				values[index] = &v1pb.RowValue{Kind: &v1pb.RowValue_NullValue{}}
+			case primitive.Symbol:
+				values[index] = &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: string(value)}}
+			case primitive.DBPointer:
+				values[index] = &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: value.String()}}
+			case int32:
+				values[index] = &v1pb.RowValue{Kind: &v1pb.RowValue_Int32Value{Int32Value: value}}
+			case int64:
+				values[index] = &v1pb.RowValue{Kind: &v1pb.RowValue_Int64Value{Int64Value: value}}
+			case string:
+				values[index] = &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: value}}
+			case float64:
+				values[index] = &v1pb.RowValue{Kind: &v1pb.RowValue_DoubleValue{DoubleValue: value}}
+			case bool:
+				values[index] = &v1pb.RowValue{Kind: &v1pb.RowValue_BoolValue{BoolValue: value}}
+			// primitive.A, primitive.D, primitive.M
+			// primitive.Timestamp
+			// primitive.MinKey, primitive.MaxKey
+			default:
+				r, err := json.MarshalIndent(v, "", "	")
 				if err != nil {
 					return nil, err
 				}
-				values[0] = &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: id}}
-				continue
+				index := columnIndexMap[k]
+				values[index] = &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: string(r)}}
 			}
 
-			r, err := json.MarshalIndent(v, "", "	")
-			if err != nil {
-				return nil, err
-			}
-			index := columnIndexMap[k]
-			values[index] = &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: string(r)}}
 		}
 		for i := 0; i < len(values); i++ {
 			if values[i] == nil {
