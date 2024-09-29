@@ -239,7 +239,7 @@ func (s *Syncer) SyncAllDatabases(ctx context.Context, instance *store.InstanceM
 	}
 }
 
-func (s *Syncer) AsyncDatabases(databases []*store.DatabaseMessage) {
+func (s *Syncer) SyncDatabasesAsync(databases []*store.DatabaseMessage) {
 	for _, database := range databases {
 		// Skip deleted databases.
 		if database.SyncState != api.OK {

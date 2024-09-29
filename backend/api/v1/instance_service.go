@@ -568,7 +568,7 @@ func (s *InstanceService) SyncInstance(ctx context.Context, request *v1pb.SyncIn
 		// Sync all databases in the instance asynchronously.
 		s.schemaSyncer.SyncAllDatabases(ctx, updatedInstance)
 	} else {
-		s.schemaSyncer.AsyncDatabases(newDatabases)
+		s.schemaSyncer.SyncDatabasesAsync(newDatabases)
 	}
 	return &v1pb.SyncInstanceResponse{}, nil
 }
@@ -592,7 +592,7 @@ func (s *InstanceService) BatchSyncInstances(ctx context.Context, request *v1pb.
 			// Sync all databases in the instance asynchronously.
 			s.schemaSyncer.SyncAllDatabases(ctx, updatedInstance)
 		} else {
-			s.schemaSyncer.AsyncDatabases(newDatabases)
+			s.schemaSyncer.SyncDatabasesAsync(newDatabases)
 		}
 	}
 
