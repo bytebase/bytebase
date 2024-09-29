@@ -259,7 +259,7 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 	allowExport := true
 	// AllowExport is a validate only check.
 	if s.licenseService.IsFeatureEnabled(api.FeatureAccessControl) == nil {
-		err := s.accessCheck(ctx, instance, user, spans, true /* isExport */)
+		err := s.accessCheck(ctx, instance, user, spans, queryContext.Limit, true /* isExport */)
 		allowExport = (err == nil)
 	}
 
@@ -271,7 +271,7 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 	return response, nil
 }
 
-type accessCheckFunc func(context.Context, *store.InstanceMessage, *store.UserMessage, []*base.QuerySpan, bool) error
+type accessCheckFunc func(context.Context, *store.InstanceMessage, *store.UserMessage, []*base.QuerySpan, int, bool) error
 
 func extractSourceTable(comment string) (string, string, string, error) {
 	pattern := `\((\w+),\s*(\w+)(?:,\s*(\w+))?\)`
@@ -444,7 +444,7 @@ func queryRetry(
 			slog.Debug("failed to replace backup table with source", log.BBError(err))
 		}
 		if licenseService.IsFeatureEnabled(api.FeatureAccessControl) == nil && optionalAccessCheck != nil {
-			if err := optionalAccessCheck(ctx, instance, user, spans, isExport); err != nil {
+			if err := optionalAccessCheck(ctx, instance, user, spans, queryContext.Limit, isExport); err != nil {
 				return nil, nil, time.Duration(0), err
 			}
 		}
@@ -1014,11 +1014,13 @@ func (s *SQLService) accessCheck(
 	instance *store.InstanceMessage,
 	user *store.UserMessage,
 	spans []*base.QuerySpan,
+	limit int,
 	isExport bool) error {
 	for _, span := range spans {
 		for column := range span.SourceColumns {
 			attributes := map[string]any{
 				"request.time":      time.Now(),
+				"request.row_limit": limit,
 				"resource.database": common.FormatDatabase(instance.ResourceID, column.Database),
 				"resource.schema":   column.Schema,
 				"resource.table":    column.Table,
