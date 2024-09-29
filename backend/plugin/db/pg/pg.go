@@ -682,7 +682,7 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 					return nil, err
 				}
 				defer rows.Close()
-				r, err := util.RowsToQueryResult(rows, util.MakeCommonValueByTypeName, util.ConvertCommonValue, driver.config.MaximumSQLResultSize)
+				r, err := util.RowsToQueryResult(rows, makeCommonValueByTypeName, util.ConvertCommonValue, driver.config.MaximumSQLResultSize)
 				if err != nil {
 					return nil, err
 				}
@@ -719,6 +719,25 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 	}
 
 	return results, nil
+}
+
+func makeCommonValueByTypeName(typeName string, _ *sql.ColumnType) any {
+	switch typeName {
+	case "VARCHAR", "TEXT", "UUID", "TIMESTAMP":
+		return new(sql.NullString)
+	case "BOOL":
+		return new(sql.NullBool)
+	case "INT", "INTEGER", "TINYINT", "SMALLINT", "MEDIUMINT", "BIGINT", "INT2", "INT4", "INT8":
+		return new(sql.NullInt64)
+	case "FLOAT", "DOUBLE", "FLOAT4", "FLOAT8":
+		return new(sql.NullFloat64)
+	case "TIMESTAMPTZ":
+		return new(sql.NullTime)
+	case "BIT", "VARBIT":
+		return new([]byte)
+	default:
+		return new(sql.NullString)
+	}
 }
 
 func getPgError(e error) *v1pb.QueryResult_PostgresError_ {

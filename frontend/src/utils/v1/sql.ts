@@ -47,6 +47,13 @@ export const extractSQLRowValue = (
       raw: byteArray,
     };
   }
+  if (value.timestampValue) {
+    const timestampValue = value.timestampValue;
+    return {
+      plain: dayjs(timestampValue).format("YYYY-MM-DDTHH:mm:ss.SSSZ"),
+      raw: timestampValue,
+    };
+  }
   const key = keys[0];
   return {
     plain: plainObject[key],
