@@ -422,17 +422,18 @@ func (q *querySpanExtractor) plsqlExtractSourceColumnSetFromExpression(ctx antlr
 		default:
 			return "", nil, nil
 		}
-	case plsql.IGeneral_element_partContext:
+	case plsql.IGeneral_elementContext:
+		parts := rule.AllGeneral_element_part()
+
 		// This case is for functions, such as CONCAT(a, b)
-		if rule.Function_argument() != nil {
-			_, maskingLevel, err := q.plsqlExtractSourceColumnSetFromExpression(rule.Function_argument())
+		if parts[len(parts)].Function_argument() != nil {
+			_, maskingLevel, err := q.plsqlExtractSourceColumnSetFromExpression(parts[len(parts)].Function_argument())
 			return "", maskingLevel, err
 		}
 
-		// This case is for column names, such as root.a.b
 		var list []string
-		for _, item := range rule.AllId_expression() {
-			list = append(list, NormalizeIDExpression(item))
+		for _, item := range rule.AllGeneral_element_part() {
+			list = append(list, NormalizeIDExpression(item.Id_expression()))
 		}
 		switch len(list) {
 		case 1:
@@ -878,8 +879,8 @@ func (q *querySpanExtractor) plsqlExtractSourceColumnSetFromExpression(ctx antlr
 		if rule.Constant_without_variable() != nil {
 			list = append(list, rule.Constant_without_variable())
 		}
-		if rule.General_element_part() != nil {
-			list = append(list, rule.General_element_part())
+		if rule.General_element() != nil {
+			list = append(list, rule.General_element())
 		}
 		return q.plsqlExtractSourceColumnSetFromExpressionList(list)
 	case plsql.IConstant_without_variableContext:
