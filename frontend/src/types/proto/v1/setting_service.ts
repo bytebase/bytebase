@@ -519,8 +519,8 @@ export interface SchemaTemplateSetting_TableTemplate {
 
 export interface WorkspaceTrialSetting {
   instanceCount: number;
-  expireTime: Date | undefined;
-  issuedTime: Date | undefined;
+  expireTime: Timestamp | undefined;
+  issuedTime: Timestamp | undefined;
   subject: string;
   orgName: string;
   plan: PlanType;
@@ -3276,10 +3276,10 @@ export const WorkspaceTrialSetting = {
       writer.uint32(8).int32(message.instanceCount);
     }
     if (message.expireTime !== undefined) {
-      Timestamp.encode(toTimestamp(message.expireTime), writer.uint32(18).fork()).ldelim();
+      Timestamp.encode(message.expireTime, writer.uint32(18).fork()).ldelim();
     }
     if (message.issuedTime !== undefined) {
-      Timestamp.encode(toTimestamp(message.issuedTime), writer.uint32(26).fork()).ldelim();
+      Timestamp.encode(message.issuedTime, writer.uint32(26).fork()).ldelim();
     }
     if (message.subject !== "") {
       writer.uint32(34).string(message.subject);
@@ -3312,14 +3312,14 @@ export const WorkspaceTrialSetting = {
             break;
           }
 
-          message.expireTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          message.expireTime = Timestamp.decode(reader, reader.uint32());
           continue;
         case 3:
           if (tag !== 26) {
             break;
           }
 
-          message.issuedTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          message.issuedTime = Timestamp.decode(reader, reader.uint32());
           continue;
         case 4:
           if (tag !== 34) {
@@ -3368,10 +3368,10 @@ export const WorkspaceTrialSetting = {
       obj.instanceCount = Math.round(message.instanceCount);
     }
     if (message.expireTime !== undefined) {
-      obj.expireTime = message.expireTime.toISOString();
+      obj.expireTime = message.expireTime;
     }
     if (message.issuedTime !== undefined) {
-      obj.issuedTime = message.issuedTime.toISOString();
+      obj.issuedTime = message.issuedTime;
     }
     if (message.subject !== "") {
       obj.subject = message.subject;
@@ -3391,8 +3391,12 @@ export const WorkspaceTrialSetting = {
   fromPartial(object: DeepPartial<WorkspaceTrialSetting>): WorkspaceTrialSetting {
     const message = createBaseWorkspaceTrialSetting();
     message.instanceCount = object.instanceCount ?? 0;
-    message.expireTime = object.expireTime ?? undefined;
-    message.issuedTime = object.issuedTime ?? undefined;
+    message.expireTime = (object.expireTime !== undefined && object.expireTime !== null)
+      ? Timestamp.fromPartial(object.expireTime)
+      : undefined;
+    message.issuedTime = (object.issuedTime !== undefined && object.issuedTime !== null)
+      ? Timestamp.fromPartial(object.issuedTime)
+      : undefined;
     message.subject = object.subject ?? "";
     message.orgName = object.orgName ?? "";
     message.plan = object.plan ?? PlanType.PLAN_TYPE_UNSPECIFIED;
@@ -5169,19 +5173,13 @@ function toTimestamp(date: Date): Timestamp {
   return { seconds, nanos };
 }
 
-function fromTimestamp(t: Timestamp): Date {
-  let millis = (t.seconds.toNumber() || 0) * 1_000;
-  millis += (t.nanos || 0) / 1_000_000;
-  return new globalThis.Date(millis);
-}
-
-function fromJsonTimestamp(o: any): Date {
+function fromJsonTimestamp(o: any): Timestamp {
   if (o instanceof globalThis.Date) {
-    return o;
+    return toTimestamp(o);
   } else if (typeof o === "string") {
-    return new globalThis.Date(o);
+    return toTimestamp(new globalThis.Date(o));
   } else {
-    return fromTimestamp(Timestamp.fromJSON(o));
+    return Timestamp.fromJSON(o);
   }
 }
 

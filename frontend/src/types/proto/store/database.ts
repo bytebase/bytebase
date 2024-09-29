@@ -9,7 +9,7 @@ export const protobufPackage = "bytebase.store";
 /** DatabaseMetadata is the metadata for databases. */
 export interface DatabaseMetadata {
   labels: { [key: string]: string };
-  lastSyncTime: Date | undefined;
+  lastSyncTime: Timestamp | undefined;
 }
 
 export interface DatabaseMetadata_LabelsEntry {
@@ -741,7 +741,7 @@ export interface TableConfig {
    */
   sourceBranch: string;
   /** The timestamp when the table is updated in branch. */
-  updateTime: Date | undefined;
+  updateTime: Timestamp | undefined;
 }
 
 export interface FunctionConfig {
@@ -758,7 +758,7 @@ export interface FunctionConfig {
    */
   sourceBranch: string;
   /** The timestamp when the function is updated in branch. */
-  updateTime: Date | undefined;
+  updateTime: Timestamp | undefined;
 }
 
 export interface ProcedureConfig {
@@ -775,7 +775,7 @@ export interface ProcedureConfig {
    */
   sourceBranch: string;
   /** The timestamp when the procedure is updated in branch. */
-  updateTime: Date | undefined;
+  updateTime: Timestamp | undefined;
 }
 
 export interface ViewConfig {
@@ -792,7 +792,7 @@ export interface ViewConfig {
    */
   sourceBranch: string;
   /** The timestamp when the view is updated in branch. */
-  updateTime: Date | undefined;
+  updateTime: Timestamp | undefined;
 }
 
 export interface ColumnConfig {
@@ -833,7 +833,7 @@ export const DatabaseMetadata = {
       DatabaseMetadata_LabelsEntry.encode({ key: key as any, value }, writer.uint32(10).fork()).ldelim();
     });
     if (message.lastSyncTime !== undefined) {
-      Timestamp.encode(toTimestamp(message.lastSyncTime), writer.uint32(18).fork()).ldelim();
+      Timestamp.encode(message.lastSyncTime, writer.uint32(18).fork()).ldelim();
     }
     return writer;
   },
@@ -860,7 +860,7 @@ export const DatabaseMetadata = {
             break;
           }
 
-          message.lastSyncTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          message.lastSyncTime = Timestamp.decode(reader, reader.uint32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -895,7 +895,7 @@ export const DatabaseMetadata = {
       }
     }
     if (message.lastSyncTime !== undefined) {
-      obj.lastSyncTime = message.lastSyncTime.toISOString();
+      obj.lastSyncTime = message.lastSyncTime;
     }
     return obj;
   },
@@ -911,7 +911,9 @@ export const DatabaseMetadata = {
       }
       return acc;
     }, {});
-    message.lastSyncTime = object.lastSyncTime ?? undefined;
+    message.lastSyncTime = (object.lastSyncTime !== undefined && object.lastSyncTime !== null)
+      ? Timestamp.fromPartial(object.lastSyncTime)
+      : undefined;
     return message;
   },
 };
@@ -4166,7 +4168,7 @@ export const TableConfig = {
       writer.uint32(50).string(message.sourceBranch);
     }
     if (message.updateTime !== undefined) {
-      Timestamp.encode(toTimestamp(message.updateTime), writer.uint32(42).fork()).ldelim();
+      Timestamp.encode(message.updateTime, writer.uint32(42).fork()).ldelim();
     }
     return writer;
   },
@@ -4218,7 +4220,7 @@ export const TableConfig = {
             break;
           }
 
-          message.updateTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          message.updateTime = Timestamp.decode(reader, reader.uint32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -4260,7 +4262,7 @@ export const TableConfig = {
       obj.sourceBranch = message.sourceBranch;
     }
     if (message.updateTime !== undefined) {
-      obj.updateTime = message.updateTime.toISOString();
+      obj.updateTime = message.updateTime;
     }
     return obj;
   },
@@ -4275,7 +4277,9 @@ export const TableConfig = {
     message.classificationId = object.classificationId ?? "";
     message.updater = object.updater ?? "";
     message.sourceBranch = object.sourceBranch ?? "";
-    message.updateTime = object.updateTime ?? undefined;
+    message.updateTime = (object.updateTime !== undefined && object.updateTime !== null)
+      ? Timestamp.fromPartial(object.updateTime)
+      : undefined;
     return message;
   },
 };
@@ -4296,7 +4300,7 @@ export const FunctionConfig = {
       writer.uint32(34).string(message.sourceBranch);
     }
     if (message.updateTime !== undefined) {
-      Timestamp.encode(toTimestamp(message.updateTime), writer.uint32(26).fork()).ldelim();
+      Timestamp.encode(message.updateTime, writer.uint32(26).fork()).ldelim();
     }
     return writer;
   },
@@ -4334,7 +4338,7 @@ export const FunctionConfig = {
             break;
           }
 
-          message.updateTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          message.updateTime = Timestamp.decode(reader, reader.uint32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -4366,7 +4370,7 @@ export const FunctionConfig = {
       obj.sourceBranch = message.sourceBranch;
     }
     if (message.updateTime !== undefined) {
-      obj.updateTime = message.updateTime.toISOString();
+      obj.updateTime = message.updateTime;
     }
     return obj;
   },
@@ -4379,7 +4383,9 @@ export const FunctionConfig = {
     message.name = object.name ?? "";
     message.updater = object.updater ?? "";
     message.sourceBranch = object.sourceBranch ?? "";
-    message.updateTime = object.updateTime ?? undefined;
+    message.updateTime = (object.updateTime !== undefined && object.updateTime !== null)
+      ? Timestamp.fromPartial(object.updateTime)
+      : undefined;
     return message;
   },
 };
@@ -4400,7 +4406,7 @@ export const ProcedureConfig = {
       writer.uint32(34).string(message.sourceBranch);
     }
     if (message.updateTime !== undefined) {
-      Timestamp.encode(toTimestamp(message.updateTime), writer.uint32(26).fork()).ldelim();
+      Timestamp.encode(message.updateTime, writer.uint32(26).fork()).ldelim();
     }
     return writer;
   },
@@ -4438,7 +4444,7 @@ export const ProcedureConfig = {
             break;
           }
 
-          message.updateTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          message.updateTime = Timestamp.decode(reader, reader.uint32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -4470,7 +4476,7 @@ export const ProcedureConfig = {
       obj.sourceBranch = message.sourceBranch;
     }
     if (message.updateTime !== undefined) {
-      obj.updateTime = message.updateTime.toISOString();
+      obj.updateTime = message.updateTime;
     }
     return obj;
   },
@@ -4483,7 +4489,9 @@ export const ProcedureConfig = {
     message.name = object.name ?? "";
     message.updater = object.updater ?? "";
     message.sourceBranch = object.sourceBranch ?? "";
-    message.updateTime = object.updateTime ?? undefined;
+    message.updateTime = (object.updateTime !== undefined && object.updateTime !== null)
+      ? Timestamp.fromPartial(object.updateTime)
+      : undefined;
     return message;
   },
 };
@@ -4504,7 +4512,7 @@ export const ViewConfig = {
       writer.uint32(34).string(message.sourceBranch);
     }
     if (message.updateTime !== undefined) {
-      Timestamp.encode(toTimestamp(message.updateTime), writer.uint32(26).fork()).ldelim();
+      Timestamp.encode(message.updateTime, writer.uint32(26).fork()).ldelim();
     }
     return writer;
   },
@@ -4542,7 +4550,7 @@ export const ViewConfig = {
             break;
           }
 
-          message.updateTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          message.updateTime = Timestamp.decode(reader, reader.uint32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -4574,7 +4582,7 @@ export const ViewConfig = {
       obj.sourceBranch = message.sourceBranch;
     }
     if (message.updateTime !== undefined) {
-      obj.updateTime = message.updateTime.toISOString();
+      obj.updateTime = message.updateTime;
     }
     return obj;
   },
@@ -4587,7 +4595,9 @@ export const ViewConfig = {
     message.name = object.name ?? "";
     message.updater = object.updater ?? "";
     message.sourceBranch = object.sourceBranch ?? "";
-    message.updateTime = object.updateTime ?? undefined;
+    message.updateTime = (object.updateTime !== undefined && object.updateTime !== null)
+      ? Timestamp.fromPartial(object.updateTime)
+      : undefined;
     return message;
   },
 };
@@ -4966,19 +4976,13 @@ function toTimestamp(date: Date): Timestamp {
   return { seconds, nanos };
 }
 
-function fromTimestamp(t: Timestamp): Date {
-  let millis = (t.seconds.toNumber() || 0) * 1_000;
-  millis += (t.nanos || 0) / 1_000_000;
-  return new globalThis.Date(millis);
-}
-
-function fromJsonTimestamp(o: any): Date {
+function fromJsonTimestamp(o: any): Timestamp {
   if (o instanceof globalThis.Date) {
-    return o;
+    return toTimestamp(o);
   } else if (typeof o === "string") {
-    return new globalThis.Date(o);
+    return toTimestamp(new globalThis.Date(o));
   } else {
-    return fromTimestamp(Timestamp.fromJSON(o));
+    return Timestamp.fromJSON(o);
   }
 }
 

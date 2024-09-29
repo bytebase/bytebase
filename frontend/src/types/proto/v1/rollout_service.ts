@@ -455,8 +455,8 @@ export interface TaskRun {
   creator: string;
   /** Format: user/hello@world.com */
   updater: string;
-  createTime: Date | undefined;
-  updateTime: Date | undefined;
+  createTime: Timestamp | undefined;
+  updateTime: Timestamp | undefined;
   title: string;
   status: TaskRun_Status;
   /** Below are the results of a task run. */
@@ -467,7 +467,7 @@ export interface TaskRun {
    */
   changeHistory: string;
   schemaVersion: string;
-  startTime: Date | undefined;
+  startTime: Timestamp | undefined;
   exportArchiveStatus: TaskRun_ExportArchiveStatus;
   /** The prior backup detail that will be used to rollback the task run. */
   priorBackupDetail: TaskRun_PriorBackupDetail | undefined;
@@ -630,7 +630,7 @@ export interface TaskRun_PriorBackupDetail_Item_Table {
 }
 
 export interface TaskRun_SchedulerInfo {
-  reportTime: Date | undefined;
+  reportTime: Timestamp | undefined;
   waitingCause: TaskRun_SchedulerInfo_WaitingCause | undefined;
 }
 
@@ -654,7 +654,7 @@ export interface TaskRunLog {
 
 export interface TaskRunLogEntry {
   type: TaskRunLogEntry_Type;
-  logTime: Date | undefined;
+  logTime: Timestamp | undefined;
   deployId: string;
   schemaDump: TaskRunLogEntry_SchemaDump | undefined;
   commandExecute: TaskRunLogEntry_CommandExecute | undefined;
@@ -741,14 +741,14 @@ export function taskRunLogEntry_TypeToNumber(object: TaskRunLogEntry_Type): numb
 }
 
 export interface TaskRunLogEntry_SchemaDump {
-  startTime: Date | undefined;
-  endTime: Date | undefined;
+  startTime: Timestamp | undefined;
+  endTime: Timestamp | undefined;
   error: string;
 }
 
 export interface TaskRunLogEntry_CommandExecute {
   logTime:
-    | Date
+    | Timestamp
     | undefined;
   /** The indexes of the executed commands. */
   commandIndexes: number[];
@@ -756,7 +756,7 @@ export interface TaskRunLogEntry_CommandExecute {
 }
 
 export interface TaskRunLogEntry_CommandExecute_CommandResponse {
-  logTime: Date | undefined;
+  logTime: Timestamp | undefined;
   error: string;
   affectedRows: number;
   /**
@@ -767,8 +767,8 @@ export interface TaskRunLogEntry_CommandExecute_CommandResponse {
 }
 
 export interface TaskRunLogEntry_DatabaseSync {
-  startTime: Date | undefined;
-  endTime: Date | undefined;
+  startTime: Timestamp | undefined;
+  endTime: Timestamp | undefined;
   error: string;
 }
 
@@ -940,9 +940,9 @@ export interface TaskRunSession_Postgres_Session {
   applicationName: string;
   clientAddr?: string | undefined;
   clientPort?: string | undefined;
-  backendStart: Date | undefined;
-  xactStart?: Date | undefined;
-  queryStart?: Date | undefined;
+  backendStart: Timestamp | undefined;
+  xactStart?: Timestamp | undefined;
+  queryStart?: Timestamp | undefined;
 }
 
 export interface PreviewTaskRunRollbackRequest {
@@ -2850,10 +2850,10 @@ export const TaskRun = {
       writer.uint32(34).string(message.updater);
     }
     if (message.createTime !== undefined) {
-      Timestamp.encode(toTimestamp(message.createTime), writer.uint32(42).fork()).ldelim();
+      Timestamp.encode(message.createTime, writer.uint32(42).fork()).ldelim();
     }
     if (message.updateTime !== undefined) {
-      Timestamp.encode(toTimestamp(message.updateTime), writer.uint32(50).fork()).ldelim();
+      Timestamp.encode(message.updateTime, writer.uint32(50).fork()).ldelim();
     }
     if (message.title !== "") {
       writer.uint32(58).string(message.title);
@@ -2871,7 +2871,7 @@ export const TaskRun = {
       writer.uint32(90).string(message.schemaVersion);
     }
     if (message.startTime !== undefined) {
-      Timestamp.encode(toTimestamp(message.startTime), writer.uint32(114).fork()).ldelim();
+      Timestamp.encode(message.startTime, writer.uint32(114).fork()).ldelim();
     }
     if (message.exportArchiveStatus !== TaskRun_ExportArchiveStatus.EXPORT_ARCHIVE_STATUS_UNSPECIFIED) {
       writer.uint32(128).int32(taskRun_ExportArchiveStatusToNumber(message.exportArchiveStatus));
@@ -2918,14 +2918,14 @@ export const TaskRun = {
             break;
           }
 
-          message.createTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          message.createTime = Timestamp.decode(reader, reader.uint32());
           continue;
         case 6:
           if (tag !== 50) {
             break;
           }
 
-          message.updateTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          message.updateTime = Timestamp.decode(reader, reader.uint32());
           continue;
         case 7:
           if (tag !== 58) {
@@ -2967,7 +2967,7 @@ export const TaskRun = {
             break;
           }
 
-          message.startTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          message.startTime = Timestamp.decode(reader, reader.uint32());
           continue;
         case 16:
           if (tag !== 128) {
@@ -3034,10 +3034,10 @@ export const TaskRun = {
       obj.updater = message.updater;
     }
     if (message.createTime !== undefined) {
-      obj.createTime = message.createTime.toISOString();
+      obj.createTime = message.createTime;
     }
     if (message.updateTime !== undefined) {
-      obj.updateTime = message.updateTime.toISOString();
+      obj.updateTime = message.updateTime;
     }
     if (message.title !== "") {
       obj.title = message.title;
@@ -3055,7 +3055,7 @@ export const TaskRun = {
       obj.schemaVersion = message.schemaVersion;
     }
     if (message.startTime !== undefined) {
-      obj.startTime = message.startTime.toISOString();
+      obj.startTime = message.startTime;
     }
     if (message.exportArchiveStatus !== TaskRun_ExportArchiveStatus.EXPORT_ARCHIVE_STATUS_UNSPECIFIED) {
       obj.exportArchiveStatus = taskRun_ExportArchiveStatusToJSON(message.exportArchiveStatus);
@@ -3077,14 +3077,20 @@ export const TaskRun = {
     message.name = object.name ?? "";
     message.creator = object.creator ?? "";
     message.updater = object.updater ?? "";
-    message.createTime = object.createTime ?? undefined;
-    message.updateTime = object.updateTime ?? undefined;
+    message.createTime = (object.createTime !== undefined && object.createTime !== null)
+      ? Timestamp.fromPartial(object.createTime)
+      : undefined;
+    message.updateTime = (object.updateTime !== undefined && object.updateTime !== null)
+      ? Timestamp.fromPartial(object.updateTime)
+      : undefined;
     message.title = object.title ?? "";
     message.status = object.status ?? TaskRun_Status.STATUS_UNSPECIFIED;
     message.detail = object.detail ?? "";
     message.changeHistory = object.changeHistory ?? "";
     message.schemaVersion = object.schemaVersion ?? "";
-    message.startTime = object.startTime ?? undefined;
+    message.startTime = (object.startTime !== undefined && object.startTime !== null)
+      ? Timestamp.fromPartial(object.startTime)
+      : undefined;
     message.exportArchiveStatus = object.exportArchiveStatus ??
       TaskRun_ExportArchiveStatus.EXPORT_ARCHIVE_STATUS_UNSPECIFIED;
     message.priorBackupDetail = (object.priorBackupDetail !== undefined && object.priorBackupDetail !== null)
@@ -3370,7 +3376,7 @@ function createBaseTaskRun_SchedulerInfo(): TaskRun_SchedulerInfo {
 export const TaskRun_SchedulerInfo = {
   encode(message: TaskRun_SchedulerInfo, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.reportTime !== undefined) {
-      Timestamp.encode(toTimestamp(message.reportTime), writer.uint32(10).fork()).ldelim();
+      Timestamp.encode(message.reportTime, writer.uint32(10).fork()).ldelim();
     }
     if (message.waitingCause !== undefined) {
       TaskRun_SchedulerInfo_WaitingCause.encode(message.waitingCause, writer.uint32(18).fork()).ldelim();
@@ -3390,7 +3396,7 @@ export const TaskRun_SchedulerInfo = {
             break;
           }
 
-          message.reportTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          message.reportTime = Timestamp.decode(reader, reader.uint32());
           continue;
         case 2:
           if (tag !== 18) {
@@ -3420,7 +3426,7 @@ export const TaskRun_SchedulerInfo = {
   toJSON(message: TaskRun_SchedulerInfo): unknown {
     const obj: any = {};
     if (message.reportTime !== undefined) {
-      obj.reportTime = message.reportTime.toISOString();
+      obj.reportTime = message.reportTime;
     }
     if (message.waitingCause !== undefined) {
       obj.waitingCause = TaskRun_SchedulerInfo_WaitingCause.toJSON(message.waitingCause);
@@ -3433,7 +3439,9 @@ export const TaskRun_SchedulerInfo = {
   },
   fromPartial(object: DeepPartial<TaskRun_SchedulerInfo>): TaskRun_SchedulerInfo {
     const message = createBaseTaskRun_SchedulerInfo();
-    message.reportTime = object.reportTime ?? undefined;
+    message.reportTime = (object.reportTime !== undefined && object.reportTime !== null)
+      ? Timestamp.fromPartial(object.reportTime)
+      : undefined;
     message.waitingCause = (object.waitingCause !== undefined && object.waitingCause !== null)
       ? TaskRun_SchedulerInfo_WaitingCause.fromPartial(object.waitingCause)
       : undefined;
@@ -3686,7 +3694,7 @@ export const TaskRunLogEntry = {
       writer.uint32(8).int32(taskRunLogEntry_TypeToNumber(message.type));
     }
     if (message.logTime !== undefined) {
-      Timestamp.encode(toTimestamp(message.logTime), writer.uint32(50).fork()).ldelim();
+      Timestamp.encode(message.logTime, writer.uint32(50).fork()).ldelim();
     }
     if (message.deployId !== "") {
       writer.uint32(98).string(message.deployId);
@@ -3728,7 +3736,7 @@ export const TaskRunLogEntry = {
             break;
           }
 
-          message.logTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          message.logTime = Timestamp.decode(reader, reader.uint32());
           continue;
         case 12:
           if (tag !== 98) {
@@ -3806,7 +3814,7 @@ export const TaskRunLogEntry = {
       obj.type = taskRunLogEntry_TypeToJSON(message.type);
     }
     if (message.logTime !== undefined) {
-      obj.logTime = message.logTime.toISOString();
+      obj.logTime = message.logTime;
     }
     if (message.deployId !== "") {
       obj.deployId = message.deployId;
@@ -3835,7 +3843,9 @@ export const TaskRunLogEntry = {
   fromPartial(object: DeepPartial<TaskRunLogEntry>): TaskRunLogEntry {
     const message = createBaseTaskRunLogEntry();
     message.type = object.type ?? TaskRunLogEntry_Type.TYPE_UNSPECIFIED;
-    message.logTime = object.logTime ?? undefined;
+    message.logTime = (object.logTime !== undefined && object.logTime !== null)
+      ? Timestamp.fromPartial(object.logTime)
+      : undefined;
     message.deployId = object.deployId ?? "";
     message.schemaDump = (object.schemaDump !== undefined && object.schemaDump !== null)
       ? TaskRunLogEntry_SchemaDump.fromPartial(object.schemaDump)
@@ -3863,10 +3873,10 @@ function createBaseTaskRunLogEntry_SchemaDump(): TaskRunLogEntry_SchemaDump {
 export const TaskRunLogEntry_SchemaDump = {
   encode(message: TaskRunLogEntry_SchemaDump, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.startTime !== undefined) {
-      Timestamp.encode(toTimestamp(message.startTime), writer.uint32(10).fork()).ldelim();
+      Timestamp.encode(message.startTime, writer.uint32(10).fork()).ldelim();
     }
     if (message.endTime !== undefined) {
-      Timestamp.encode(toTimestamp(message.endTime), writer.uint32(18).fork()).ldelim();
+      Timestamp.encode(message.endTime, writer.uint32(18).fork()).ldelim();
     }
     if (message.error !== "") {
       writer.uint32(26).string(message.error);
@@ -3886,14 +3896,14 @@ export const TaskRunLogEntry_SchemaDump = {
             break;
           }
 
-          message.startTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          message.startTime = Timestamp.decode(reader, reader.uint32());
           continue;
         case 2:
           if (tag !== 18) {
             break;
           }
 
-          message.endTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          message.endTime = Timestamp.decode(reader, reader.uint32());
           continue;
         case 3:
           if (tag !== 26) {
@@ -3922,10 +3932,10 @@ export const TaskRunLogEntry_SchemaDump = {
   toJSON(message: TaskRunLogEntry_SchemaDump): unknown {
     const obj: any = {};
     if (message.startTime !== undefined) {
-      obj.startTime = message.startTime.toISOString();
+      obj.startTime = message.startTime;
     }
     if (message.endTime !== undefined) {
-      obj.endTime = message.endTime.toISOString();
+      obj.endTime = message.endTime;
     }
     if (message.error !== "") {
       obj.error = message.error;
@@ -3938,8 +3948,12 @@ export const TaskRunLogEntry_SchemaDump = {
   },
   fromPartial(object: DeepPartial<TaskRunLogEntry_SchemaDump>): TaskRunLogEntry_SchemaDump {
     const message = createBaseTaskRunLogEntry_SchemaDump();
-    message.startTime = object.startTime ?? undefined;
-    message.endTime = object.endTime ?? undefined;
+    message.startTime = (object.startTime !== undefined && object.startTime !== null)
+      ? Timestamp.fromPartial(object.startTime)
+      : undefined;
+    message.endTime = (object.endTime !== undefined && object.endTime !== null)
+      ? Timestamp.fromPartial(object.endTime)
+      : undefined;
     message.error = object.error ?? "";
     return message;
   },
@@ -3952,7 +3966,7 @@ function createBaseTaskRunLogEntry_CommandExecute(): TaskRunLogEntry_CommandExec
 export const TaskRunLogEntry_CommandExecute = {
   encode(message: TaskRunLogEntry_CommandExecute, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.logTime !== undefined) {
-      Timestamp.encode(toTimestamp(message.logTime), writer.uint32(10).fork()).ldelim();
+      Timestamp.encode(message.logTime, writer.uint32(10).fork()).ldelim();
     }
     writer.uint32(18).fork();
     for (const v of message.commandIndexes) {
@@ -3977,7 +3991,7 @@ export const TaskRunLogEntry_CommandExecute = {
             break;
           }
 
-          message.logTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          message.logTime = Timestamp.decode(reader, reader.uint32());
           continue;
         case 2:
           if (tag === 16) {
@@ -4027,7 +4041,7 @@ export const TaskRunLogEntry_CommandExecute = {
   toJSON(message: TaskRunLogEntry_CommandExecute): unknown {
     const obj: any = {};
     if (message.logTime !== undefined) {
-      obj.logTime = message.logTime.toISOString();
+      obj.logTime = message.logTime;
     }
     if (message.commandIndexes?.length) {
       obj.commandIndexes = message.commandIndexes.map((e) => Math.round(e));
@@ -4043,7 +4057,9 @@ export const TaskRunLogEntry_CommandExecute = {
   },
   fromPartial(object: DeepPartial<TaskRunLogEntry_CommandExecute>): TaskRunLogEntry_CommandExecute {
     const message = createBaseTaskRunLogEntry_CommandExecute();
-    message.logTime = object.logTime ?? undefined;
+    message.logTime = (object.logTime !== undefined && object.logTime !== null)
+      ? Timestamp.fromPartial(object.logTime)
+      : undefined;
     message.commandIndexes = object.commandIndexes?.map((e) => e) || [];
     message.response = (object.response !== undefined && object.response !== null)
       ? TaskRunLogEntry_CommandExecute_CommandResponse.fromPartial(object.response)
@@ -4062,7 +4078,7 @@ export const TaskRunLogEntry_CommandExecute_CommandResponse = {
     writer: _m0.Writer = _m0.Writer.create(),
   ): _m0.Writer {
     if (message.logTime !== undefined) {
-      Timestamp.encode(toTimestamp(message.logTime), writer.uint32(10).fork()).ldelim();
+      Timestamp.encode(message.logTime, writer.uint32(10).fork()).ldelim();
     }
     if (message.error !== "") {
       writer.uint32(18).string(message.error);
@@ -4090,7 +4106,7 @@ export const TaskRunLogEntry_CommandExecute_CommandResponse = {
             break;
           }
 
-          message.logTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          message.logTime = Timestamp.decode(reader, reader.uint32());
           continue;
         case 2:
           if (tag !== 18) {
@@ -4146,7 +4162,7 @@ export const TaskRunLogEntry_CommandExecute_CommandResponse = {
   toJSON(message: TaskRunLogEntry_CommandExecute_CommandResponse): unknown {
     const obj: any = {};
     if (message.logTime !== undefined) {
-      obj.logTime = message.logTime.toISOString();
+      obj.logTime = message.logTime;
     }
     if (message.error !== "") {
       obj.error = message.error;
@@ -4169,7 +4185,9 @@ export const TaskRunLogEntry_CommandExecute_CommandResponse = {
     object: DeepPartial<TaskRunLogEntry_CommandExecute_CommandResponse>,
   ): TaskRunLogEntry_CommandExecute_CommandResponse {
     const message = createBaseTaskRunLogEntry_CommandExecute_CommandResponse();
-    message.logTime = object.logTime ?? undefined;
+    message.logTime = (object.logTime !== undefined && object.logTime !== null)
+      ? Timestamp.fromPartial(object.logTime)
+      : undefined;
     message.error = object.error ?? "";
     message.affectedRows = object.affectedRows ?? 0;
     message.allAffectedRows = object.allAffectedRows?.map((e) => e) || [];
@@ -4184,10 +4202,10 @@ function createBaseTaskRunLogEntry_DatabaseSync(): TaskRunLogEntry_DatabaseSync 
 export const TaskRunLogEntry_DatabaseSync = {
   encode(message: TaskRunLogEntry_DatabaseSync, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.startTime !== undefined) {
-      Timestamp.encode(toTimestamp(message.startTime), writer.uint32(10).fork()).ldelim();
+      Timestamp.encode(message.startTime, writer.uint32(10).fork()).ldelim();
     }
     if (message.endTime !== undefined) {
-      Timestamp.encode(toTimestamp(message.endTime), writer.uint32(18).fork()).ldelim();
+      Timestamp.encode(message.endTime, writer.uint32(18).fork()).ldelim();
     }
     if (message.error !== "") {
       writer.uint32(26).string(message.error);
@@ -4207,14 +4225,14 @@ export const TaskRunLogEntry_DatabaseSync = {
             break;
           }
 
-          message.startTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          message.startTime = Timestamp.decode(reader, reader.uint32());
           continue;
         case 2:
           if (tag !== 18) {
             break;
           }
 
-          message.endTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          message.endTime = Timestamp.decode(reader, reader.uint32());
           continue;
         case 3:
           if (tag !== 26) {
@@ -4243,10 +4261,10 @@ export const TaskRunLogEntry_DatabaseSync = {
   toJSON(message: TaskRunLogEntry_DatabaseSync): unknown {
     const obj: any = {};
     if (message.startTime !== undefined) {
-      obj.startTime = message.startTime.toISOString();
+      obj.startTime = message.startTime;
     }
     if (message.endTime !== undefined) {
-      obj.endTime = message.endTime.toISOString();
+      obj.endTime = message.endTime;
     }
     if (message.error !== "") {
       obj.error = message.error;
@@ -4259,8 +4277,12 @@ export const TaskRunLogEntry_DatabaseSync = {
   },
   fromPartial(object: DeepPartial<TaskRunLogEntry_DatabaseSync>): TaskRunLogEntry_DatabaseSync {
     const message = createBaseTaskRunLogEntry_DatabaseSync();
-    message.startTime = object.startTime ?? undefined;
-    message.endTime = object.endTime ?? undefined;
+    message.startTime = (object.startTime !== undefined && object.startTime !== null)
+      ? Timestamp.fromPartial(object.startTime)
+      : undefined;
+    message.endTime = (object.endTime !== undefined && object.endTime !== null)
+      ? Timestamp.fromPartial(object.endTime)
+      : undefined;
     message.error = object.error ?? "";
     return message;
   },
@@ -4687,13 +4709,13 @@ export const TaskRunSession_Postgres_Session = {
       writer.uint32(90).string(message.clientPort);
     }
     if (message.backendStart !== undefined) {
-      Timestamp.encode(toTimestamp(message.backendStart), writer.uint32(98).fork()).ldelim();
+      Timestamp.encode(message.backendStart, writer.uint32(98).fork()).ldelim();
     }
     if (message.xactStart !== undefined) {
-      Timestamp.encode(toTimestamp(message.xactStart), writer.uint32(106).fork()).ldelim();
+      Timestamp.encode(message.xactStart, writer.uint32(106).fork()).ldelim();
     }
     if (message.queryStart !== undefined) {
-      Timestamp.encode(toTimestamp(message.queryStart), writer.uint32(114).fork()).ldelim();
+      Timestamp.encode(message.queryStart, writer.uint32(114).fork()).ldelim();
     }
     return writer;
   },
@@ -4787,21 +4809,21 @@ export const TaskRunSession_Postgres_Session = {
             break;
           }
 
-          message.backendStart = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          message.backendStart = Timestamp.decode(reader, reader.uint32());
           continue;
         case 13:
           if (tag !== 106) {
             break;
           }
 
-          message.xactStart = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          message.xactStart = Timestamp.decode(reader, reader.uint32());
           continue;
         case 14:
           if (tag !== 114) {
             break;
           }
 
-          message.queryStart = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          message.queryStart = Timestamp.decode(reader, reader.uint32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -4869,13 +4891,13 @@ export const TaskRunSession_Postgres_Session = {
       obj.clientPort = message.clientPort;
     }
     if (message.backendStart !== undefined) {
-      obj.backendStart = message.backendStart.toISOString();
+      obj.backendStart = message.backendStart;
     }
     if (message.xactStart !== undefined) {
-      obj.xactStart = message.xactStart.toISOString();
+      obj.xactStart = message.xactStart;
     }
     if (message.queryStart !== undefined) {
-      obj.queryStart = message.queryStart.toISOString();
+      obj.queryStart = message.queryStart;
     }
     return obj;
   },
@@ -4896,9 +4918,15 @@ export const TaskRunSession_Postgres_Session = {
     message.applicationName = object.applicationName ?? "";
     message.clientAddr = object.clientAddr ?? undefined;
     message.clientPort = object.clientPort ?? undefined;
-    message.backendStart = object.backendStart ?? undefined;
-    message.xactStart = object.xactStart ?? undefined;
-    message.queryStart = object.queryStart ?? undefined;
+    message.backendStart = (object.backendStart !== undefined && object.backendStart !== null)
+      ? Timestamp.fromPartial(object.backendStart)
+      : undefined;
+    message.xactStart = (object.xactStart !== undefined && object.xactStart !== null)
+      ? Timestamp.fromPartial(object.xactStart)
+      : undefined;
+    message.queryStart = (object.queryStart !== undefined && object.queryStart !== null)
+      ? Timestamp.fromPartial(object.queryStart)
+      : undefined;
     return message;
   },
 };
@@ -5873,19 +5901,13 @@ function toTimestamp(date: Date): Timestamp {
   return { seconds, nanos };
 }
 
-function fromTimestamp(t: Timestamp): Date {
-  let millis = (t.seconds.toNumber() || 0) * 1_000;
-  millis += (t.nanos || 0) / 1_000_000;
-  return new globalThis.Date(millis);
-}
-
-function fromJsonTimestamp(o: any): Date {
+function fromJsonTimestamp(o: any): Timestamp {
   if (o instanceof globalThis.Date) {
-    return o;
+    return toTimestamp(o);
   } else if (typeof o === "string") {
-    return new globalThis.Date(o);
+    return toTimestamp(new globalThis.Date(o));
   } else {
-    return fromTimestamp(Timestamp.fromJSON(o));
+    return Timestamp.fromJSON(o);
   }
 }
 

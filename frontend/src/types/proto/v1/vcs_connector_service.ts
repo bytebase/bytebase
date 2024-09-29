@@ -111,11 +111,11 @@ export interface VCSConnector {
   updater: string;
   /** The create time of the vcsConnector. */
   createTime:
-    | Date
+    | Timestamp
     | undefined;
   /** The last update time of the vcsConnector. */
   updateTime:
-    | Date
+    | Timestamp
     | undefined;
   /**
    * The name of the VCS.
@@ -621,10 +621,10 @@ export const VCSConnector = {
       writer.uint32(34).string(message.updater);
     }
     if (message.createTime !== undefined) {
-      Timestamp.encode(toTimestamp(message.createTime), writer.uint32(42).fork()).ldelim();
+      Timestamp.encode(message.createTime, writer.uint32(42).fork()).ldelim();
     }
     if (message.updateTime !== undefined) {
-      Timestamp.encode(toTimestamp(message.updateTime), writer.uint32(50).fork()).ldelim();
+      Timestamp.encode(message.updateTime, writer.uint32(50).fork()).ldelim();
     }
     if (message.vcsProvider !== "") {
       writer.uint32(58).string(message.vcsProvider);
@@ -690,14 +690,14 @@ export const VCSConnector = {
             break;
           }
 
-          message.createTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          message.createTime = Timestamp.decode(reader, reader.uint32());
           continue;
         case 6:
           if (tag !== 50) {
             break;
           }
 
-          message.updateTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          message.updateTime = Timestamp.decode(reader, reader.uint32());
           continue;
         case 7:
           if (tag !== 58) {
@@ -790,10 +790,10 @@ export const VCSConnector = {
       obj.updater = message.updater;
     }
     if (message.createTime !== undefined) {
-      obj.createTime = message.createTime.toISOString();
+      obj.createTime = message.createTime;
     }
     if (message.updateTime !== undefined) {
-      obj.updateTime = message.updateTime.toISOString();
+      obj.updateTime = message.updateTime;
     }
     if (message.vcsProvider !== "") {
       obj.vcsProvider = message.vcsProvider;
@@ -828,8 +828,12 @@ export const VCSConnector = {
     message.title = object.title ?? "";
     message.creator = object.creator ?? "";
     message.updater = object.updater ?? "";
-    message.createTime = object.createTime ?? undefined;
-    message.updateTime = object.updateTime ?? undefined;
+    message.createTime = (object.createTime !== undefined && object.createTime !== null)
+      ? Timestamp.fromPartial(object.createTime)
+      : undefined;
+    message.updateTime = (object.updateTime !== undefined && object.updateTime !== null)
+      ? Timestamp.fromPartial(object.updateTime)
+      : undefined;
     message.vcsProvider = object.vcsProvider ?? "";
     message.externalId = object.externalId ?? "";
     message.baseDirectory = object.baseDirectory ?? "";
@@ -1379,19 +1383,13 @@ function toTimestamp(date: Date): Timestamp {
   return { seconds, nanos };
 }
 
-function fromTimestamp(t: Timestamp): Date {
-  let millis = (t.seconds.toNumber() || 0) * 1_000;
-  millis += (t.nanos || 0) / 1_000_000;
-  return new globalThis.Date(millis);
-}
-
-function fromJsonTimestamp(o: any): Date {
+function fromJsonTimestamp(o: any): Timestamp {
   if (o instanceof globalThis.Date) {
-    return o;
+    return toTimestamp(o);
   } else if (typeof o === "string") {
-    return new globalThis.Date(o);
+    return toTimestamp(new globalThis.Date(o));
   } else {
-    return fromTimestamp(Timestamp.fromJSON(o));
+    return Timestamp.fromJSON(o);
   }
 }
 

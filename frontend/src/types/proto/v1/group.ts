@@ -149,7 +149,7 @@ export interface Group {
   members: GroupMember[];
   /** The timestamp when the group was created. */
   createTime:
-    | Date
+    | Timestamp
     | undefined;
   /** source means where the group comes from. For now we support Entra ID SCIM sync, so the source could be Entra ID. */
   source: string;
@@ -644,7 +644,7 @@ export const Group = {
       GroupMember.encode(v!, writer.uint32(42).fork()).ldelim();
     }
     if (message.createTime !== undefined) {
-      Timestamp.encode(toTimestamp(message.createTime), writer.uint32(50).fork()).ldelim();
+      Timestamp.encode(message.createTime, writer.uint32(50).fork()).ldelim();
     }
     if (message.source !== "") {
       writer.uint32(58).string(message.source);
@@ -699,7 +699,7 @@ export const Group = {
             break;
           }
 
-          message.createTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          message.createTime = Timestamp.decode(reader, reader.uint32());
           continue;
         case 7:
           if (tag !== 58) {
@@ -747,7 +747,7 @@ export const Group = {
       obj.members = message.members.map((e) => GroupMember.toJSON(e));
     }
     if (message.createTime !== undefined) {
-      obj.createTime = message.createTime.toISOString();
+      obj.createTime = message.createTime;
     }
     if (message.source !== "") {
       obj.source = message.source;
@@ -765,7 +765,9 @@ export const Group = {
     message.description = object.description ?? "";
     message.creator = object.creator ?? "";
     message.members = object.members?.map((e) => GroupMember.fromPartial(e)) || [];
-    message.createTime = object.createTime ?? undefined;
+    message.createTime = (object.createTime !== undefined && object.createTime !== null)
+      ? Timestamp.fromPartial(object.createTime)
+      : undefined;
     message.source = object.source ?? "";
     return message;
   },
@@ -962,19 +964,13 @@ function toTimestamp(date: Date): Timestamp {
   return { seconds, nanos };
 }
 
-function fromTimestamp(t: Timestamp): Date {
-  let millis = (t.seconds.toNumber() || 0) * 1_000;
-  millis += (t.nanos || 0) / 1_000_000;
-  return new globalThis.Date(millis);
-}
-
-function fromJsonTimestamp(o: any): Date {
+function fromJsonTimestamp(o: any): Timestamp {
   if (o instanceof globalThis.Date) {
-    return o;
+    return toTimestamp(o);
   } else if (typeof o === "string") {
-    return new globalThis.Date(o);
+    return toTimestamp(new globalThis.Date(o));
   } else {
-    return fromTimestamp(Timestamp.fromJSON(o));
+    return Timestamp.fromJSON(o);
   }
 }
 
