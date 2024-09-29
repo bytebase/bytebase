@@ -395,12 +395,12 @@ func getSimpleStatementResult(data []byte) (*v1pb.QueryResult, error) {
 		return nil, err
 	}
 
-	columns, columnIndexMap, illegal := getColumns(rows)
+	columns, columnTypeMap, columnIndexMap, illegal := getColumns(rows)
 	result := &v1pb.QueryResult{
 		ColumnNames: columns,
 	}
-	for range columns {
-		result.ColumnTypeNames = append(result.ColumnTypeNames, "TEXT")
+	for _, column := range columns {
+		result.ColumnTypeNames = append(result.ColumnTypeNames, columnTypeMap[column])
 	}
 
 	for _, v := range rows {
@@ -481,24 +481,27 @@ func getSimpleStatementResult(data []byte) (*v1pb.QueryResult, error) {
 	return result, nil
 }
 
-func getColumns(rows []any) ([]string, map[string]int, bool) {
+func getColumns(rows []any) ([]string, map[string]string, map[string]int, bool) {
 	columnSet := make(map[string]bool)
-	for _, v := range rows {
-		d, ok := v.(bson.D)
+	columnType := make(map[string]string)
+	for _, row := range rows {
+		d, ok := row.(bson.D)
 		if !ok {
-			return []string{"result"}, map[string]int{"result": 0}, true
+			return []string{"result"}, map[string]string{"result": "TEXT"}, map[string]int{"result": 0}, true
 		}
 		for _, e := range d {
 			k := e.Key
+			v := e.Value
 			if _, ok := columnSet[k]; ok {
 				continue
 			}
 			columnSet[k] = true
+			columnType[k] = getTypeName(v)
 		}
 	}
 
 	columns, columnIndexMap := getOrderedColumns(columnSet)
-	return columns, columnIndexMap, false
+	return columns, columnType, columnIndexMap, false
 }
 
 func getOrderedColumns(columnSet map[string]bool) ([]string, map[string]int) {
@@ -541,4 +544,55 @@ func isMongoStatement(statement string) bool {
 		return true
 	}
 	return strings.HasPrefix(statement, `db["`)
+}
+
+func getTypeName(v any) string {
+	switch v.(type) {
+	case primitive.Binary:
+		return "Binary"
+	case primitive.DateTime:
+		return "Date"
+	case primitive.Decimal128:
+		return "Decimal128"
+	case primitive.ObjectID:
+		return "ObjectId"
+	case primitive.Regex:
+		return "Regular Expression"
+	case primitive.JavaScript:
+		return "Javascript"
+	case primitive.CodeWithScope:
+		return "Javascript with Scope"
+	case primitive.Undefined:
+		return "Undefined"
+	case primitive.Null:
+		return "Null"
+	case primitive.Symbol:
+		return "Symbol"
+	case primitive.DBPointer:
+		return "DBPointer"
+	case int32:
+		return "Int32"
+	case int64:
+		return "Int64"
+	case string:
+		return "String"
+	case float64:
+		return "Double"
+	case bool:
+		return "Boolean"
+	case primitive.A:
+		return "Array"
+	case primitive.D:
+		return "Object"
+	case primitive.M:
+		return "Object"
+	case primitive.Timestamp:
+		return "Timestamp"
+	case primitive.MinKey:
+		return "MinKey"
+	case primitive.MaxKey:
+		return "MaxKey"
+	default:
+		return "UNKNOWN"
+	}
 }
