@@ -183,7 +183,7 @@ func TestGetSimpleStatementResult(t *testing.T) {
 ]`,
 			want: &v1pb.QueryResult{
 				ColumnNames:     []string{"_id", "a", "groups", "name", "wew"},
-				ColumnTypeNames: []string{"TEXT", "TEXT", "TEXT", "TEXT", "TEXT"},
+				ColumnTypeNames: []string{"ObjectId", "Int64", "Array", "String", "String"},
 				Rows: []*v1pb.QueryRow{
 					{
 						Values: []*v1pb.RowValue{
@@ -241,7 +241,7 @@ func TestGetSimpleStatementResult(t *testing.T) {
 }`,
 			want: &v1pb.QueryResult{
 				ColumnNames:     []string{"_id", "a", "groups", "name"},
-				ColumnTypeNames: []string{"TEXT", "TEXT", "TEXT", "TEXT"},
+				ColumnTypeNames: []string{"ObjectId", "Int64", "Array", "String"},
 				Rows: []*v1pb.QueryRow{
 					{
 						Values: []*v1pb.RowValue{
