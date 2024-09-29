@@ -139,44 +139,41 @@ func (s *Store) ListDatabases(ctx context.Context, find *FindDatabaseMessage) ([
 }
 
 // CreateDatabaseDefault creates a new database in the default project.
-func (s *Store) CreateDatabaseDefault(ctx context.Context, create *DatabaseMessage) error {
+func (s *Store) CreateDatabaseDefault(ctx context.Context, create *DatabaseMessage) (*DatabaseMessage, error) {
 	project, err := s.GetProjectV2(ctx, &FindProjectMessage{ResourceID: &create.ProjectID})
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if project == nil {
-		return errors.Errorf("project %q not found", create.ProjectID)
+		return nil, errors.Errorf("project %q not found", create.ProjectID)
 	}
 	instance, err := s.GetInstanceV2(ctx, &FindInstanceMessage{ResourceID: &create.InstanceID})
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if instance == nil {
-		return errors.Errorf("instance %q not found", create.InstanceID)
+		return nil, errors.Errorf("instance %q not found", create.InstanceID)
 	}
 
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer tx.Rollback()
 
 	databaseUID, err := s.createDatabaseDefaultImpl(ctx, tx, project.UID, instance.UID, create)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if err := tx.Commit(); err != nil {
-		return err
+		return nil, err
 	}
 
 	// Invalidate an update the cache.
 	s.databaseCache.Remove(getDatabaseCacheKey(instance.ResourceID, create.DatabaseName))
 	s.databaseIDCache.Remove(databaseUID)
-	if _, err = s.GetDatabaseV2(ctx, &FindDatabaseMessage{UID: &databaseUID}); err != nil {
-		return err
-	}
-	return nil
+	return s.GetDatabaseV2(ctx, &FindDatabaseMessage{UID: &databaseUID})
 }
 
 // createDatabaseDefault only creates a default database with charset, collation only in the default project.
