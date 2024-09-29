@@ -16,11 +16,15 @@ import (
 	"strings"
 	"time"
 
+	"github.com/buger/jsonparser"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"google.golang.org/protobuf/types/known/durationpb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
@@ -254,7 +258,7 @@ func (driver *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement stri
 		if queryContext.Limit > 0 {
 			limit = fmt.Sprintf(".slice(0, %d)", queryContext.Limit)
 		}
-		evalArg = fmt.Sprintf(`a = %s; if (typeof a.toArray === 'function') {print(EJSON.stringify(a.toArray()%s));} else {print(EJSON.stringify(a));}`, statement, limit)
+		evalArg = fmt.Sprintf(`a = %s; if (typeof a.toArray === 'function') {a.toArray()%s;} else {a;}`, statement, limit)
 	}
 	// We will use single quotes for the evalArg, so we need to escape the single quotes in the statement.
 	evalArg = strings.ReplaceAll(evalArg, `'`, `'"'`)
@@ -265,6 +269,8 @@ func (driver *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement stri
 		// quote the connectionURI because we execute the mongosh via sh, and the multi-queries part contains '&', which will be translated to the background process.
 		fmt.Sprintf(`"%s"`, connectionURI),
 		"--quiet",
+		"--json",
+		"canonical",
 		"--eval",
 		evalArg,
 		// DocumentDB do not support retryWrites, so we set it to false.
@@ -390,16 +396,16 @@ func getSimpleStatementResult(data []byte) (*v1pb.QueryResult, error) {
 		return nil, err
 	}
 
-	columns, columnIndexMap, illegal := getColumns(rows)
+	columns, columnTypeMap, columnIndexMap, illegal := getColumns(rows)
 	result := &v1pb.QueryResult{
 		ColumnNames: columns,
 	}
-	for range columns {
-		result.ColumnTypeNames = append(result.ColumnTypeNames, "TEXT")
+	for _, column := range columns {
+		result.ColumnTypeNames = append(result.ColumnTypeNames, columnTypeMap[column])
 	}
 
 	for _, v := range rows {
-		m, ok := v.(map[string]any)
+		d, ok := v.(bson.D)
 		if !ok || illegal {
 			r, err := json.MarshalIndent(v, "", "	")
 			if err != nil {
@@ -414,22 +420,76 @@ func getSimpleStatementResult(data []byte) (*v1pb.QueryResult, error) {
 		}
 
 		values := make([]*v1pb.RowValue, len(columns))
-		for k, v := range m {
-			if k == "_id" {
-				id, err := convertIDString(v)
+		for _, e := range d {
+			k := e.Key
+			v := e.Value
+			index := columnIndexMap[k]
+
+			switch value := v.(type) {
+			case primitive.Binary:
+				values[index] = &v1pb.RowValue{Kind: &v1pb.RowValue_BytesValue{BytesValue: value.Data}}
+			case primitive.DateTime:
+				values[index] = &v1pb.RowValue{Kind: &v1pb.RowValue_TimestampValue{TimestampValue: timestamppb.New(value.Time())}}
+			case primitive.Decimal128:
+				values[index] = &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: value.String()}}
+			case primitive.ObjectID:
+				values[index] = &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: value.String()}}
+			case primitive.Regex:
+				values[index] = &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: value.String()}}
+			case primitive.JavaScript:
+				values[index] = &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: string(value)}}
+			case primitive.CodeWithScope:
+				values[index] = &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: value.String()}}
+			case primitive.Undefined, primitive.Null:
+				values[index] = &v1pb.RowValue{Kind: &v1pb.RowValue_NullValue{}}
+			case primitive.Symbol:
+				values[index] = &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: string(value)}}
+			case primitive.DBPointer:
+				values[index] = &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: value.String()}}
+			case int32:
+				values[index] = &v1pb.RowValue{Kind: &v1pb.RowValue_Int32Value{Int32Value: value}}
+			case int64:
+				values[index] = &v1pb.RowValue{Kind: &v1pb.RowValue_Int64Value{Int64Value: value}}
+			case string:
+				values[index] = &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: value}}
+			case float64:
+				values[index] = &v1pb.RowValue{Kind: &v1pb.RowValue_DoubleValue{DoubleValue: value}}
+			case bool:
+				values[index] = &v1pb.RowValue{Kind: &v1pb.RowValue_BoolValue{BoolValue: value}}
+			case primitive.D, primitive.M:
+				r, err := bson.MarshalExtJSONIndent(value, true, false, "", "	")
+				if err != nil {
+					return nil, errors.Wrapf(err, "failed to marshal ejson for document")
+				}
+				index := columnIndexMap[k]
+				values[index] = &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: string(r)}}
+
+			case primitive.A:
+				// bson.MarshalExtJSONIndent doesn't allow marshal array directly.
+				// we compose the array into a document, marshal the document,
+				// then extract the array using jsonparser library.
+				ejson, err := bson.MarshalExtJSONIndent(primitive.D{{Key: "array", Value: value}}, true, false, "", "	")
+				if err != nil {
+					return nil, errors.Wrapf(err, "failed to marshal ejson for array")
+				}
+
+				s, _, _, err := jsonparser.Get(ejson, "array")
+				if err != nil {
+					return nil, errors.Wrapf(err, "failed to get string")
+				}
+
+				values[index] = &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: string(s)}}
+
+			// primitive.Timestamp
+			// primitive.MinKey, primitive.MaxKey
+			default:
+				r, err := json.MarshalIndent(v, "", "	")
 				if err != nil {
 					return nil, err
 				}
-				values[0] = &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: id}}
-				continue
+				index := columnIndexMap[k]
+				values[index] = &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: string(r)}}
 			}
-
-			r, err := json.MarshalIndent(v, "", "	")
-			if err != nil {
-				return nil, err
-			}
-			index := columnIndexMap[k]
-			values[index] = &v1pb.RowValue{Kind: &v1pb.RowValue_StringValue{StringValue: string(r)}}
 		}
 		for i := 0; i < len(values); i++ {
 			if values[i] == nil {
@@ -444,39 +504,27 @@ func getSimpleStatementResult(data []byte) (*v1pb.QueryResult, error) {
 	return result, nil
 }
 
-func convertIDString(idObj any) (string, error) {
-	objIDObj, ok := idObj.(map[string]any)
-	if ok {
-		idStr, ok := objIDObj["$oid"].(string)
-		if ok {
-			return idStr, nil
-		}
-	}
-
-	r, err := json.MarshalIndent(idObj, "", "	")
-	if err != nil {
-		return "", err
-	}
-	return string(r), nil
-}
-
-func getColumns(rows []any) ([]string, map[string]int, bool) {
+func getColumns(rows []any) ([]string, map[string]string, map[string]int, bool) {
 	columnSet := make(map[string]bool)
-	for _, v := range rows {
-		m, ok := v.(map[string]any)
+	columnType := make(map[string]string)
+	for _, row := range rows {
+		d, ok := row.(bson.D)
 		if !ok {
-			return []string{"result"}, map[string]int{"result": 0}, true
+			return []string{"result"}, map[string]string{"result": "TEXT"}, map[string]int{"result": 0}, true
 		}
-		for k := range m {
+		for _, e := range d {
+			k := e.Key
+			v := e.Value
 			if _, ok := columnSet[k]; ok {
 				continue
 			}
 			columnSet[k] = true
+			columnType[k] = getTypeName(v)
 		}
 	}
 
 	columns, columnIndexMap := getOrderedColumns(columnSet)
-	return columns, columnIndexMap, false
+	return columns, columnType, columnIndexMap, false
 }
 
 func getOrderedColumns(columnSet map[string]bool) ([]string, map[string]int) {
@@ -503,17 +551,14 @@ func getOrderedColumns(columnSet map[string]bool) ([]string, map[string]int) {
 
 func convertRows(data []byte) ([]any, error) {
 	var a any
-	if err := json.Unmarshal(data, &a); err != nil {
+	if err := bson.UnmarshalExtJSON(data, true, &a); err != nil {
 		return nil, err
 	}
-	var rows []any
-	aa, ok := a.([]any)
-	if ok {
-		rows = aa
-	} else {
-		rows = []any{a}
+
+	if aa, ok := a.(bson.A); ok {
+		return []any(aa), nil
 	}
-	return rows, nil
+	return []any{a}, nil
 }
 
 func isMongoStatement(statement string) bool {
@@ -522,4 +567,55 @@ func isMongoStatement(statement string) bool {
 		return true
 	}
 	return strings.HasPrefix(statement, `db["`)
+}
+
+func getTypeName(v any) string {
+	switch v.(type) {
+	case primitive.Binary:
+		return "Binary"
+	case primitive.DateTime:
+		return "Date"
+	case primitive.Decimal128:
+		return "Decimal128"
+	case primitive.ObjectID:
+		return "ObjectId"
+	case primitive.Regex:
+		return "Regular Expression"
+	case primitive.JavaScript:
+		return "Javascript"
+	case primitive.CodeWithScope:
+		return "Javascript with Scope"
+	case primitive.Undefined:
+		return "Undefined"
+	case primitive.Null:
+		return "Null"
+	case primitive.Symbol:
+		return "Symbol"
+	case primitive.DBPointer:
+		return "DBPointer"
+	case int32:
+		return "Int32"
+	case int64:
+		return "Int64"
+	case string:
+		return "String"
+	case float64:
+		return "Double"
+	case bool:
+		return "Boolean"
+	case primitive.A:
+		return "Array"
+	case primitive.D:
+		return "Object"
+	case primitive.M:
+		return "Object"
+	case primitive.Timestamp:
+		return "Timestamp"
+	case primitive.MinKey:
+		return "MinKey"
+	case primitive.MaxKey:
+		return "MaxKey"
+	default:
+		return "UNKNOWN"
+	}
 }

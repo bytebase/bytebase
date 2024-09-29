@@ -137,58 +137,121 @@ func TestIsMongoStatement(t *testing.T) {
 
 func TestGetSimpleStatementResult(t *testing.T) {
 	groupsValue := `[
-	"basketball",
-	"swimming"
-]`
-	treeValue := `{
-	"a": "a",
-	"b": 1
-}`
+		"123",
+		"222"
+	]`
 
 	tests := []struct {
 		data string
 		want *v1pb.QueryResult
 	}{
 		{
-			data: `{"_id":{"$oid":"64c0b8c4e65c51195e0584b2"},"name":"danny","age":13,"groups":["basketball","swimming"],"tree":{"a":"a","b":1}}`,
+			data: `[
+  {
+    "_id": {
+      "$oid": "66f62cad7195ccc0dbdfafbb"
+    },
+    "a": {
+      "$numberLong": "1546786128982089728"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "66f670827941d8cb2bac29d3"
+    },
+    "a": {
+      "$numberLong": "1546786122282089721"
+    }
+  },
+  {
+    "_id": {
+      "$oid": "66f675627ed80fb207320dd9"
+    },
+    "name": "danny",
+    "wew": "iii"
+  },
+  {
+    "_id": {
+      "$oid": "66f6758c30daae815ac8784f"
+    },
+    "name": "dannyyy",
+    "groups": [
+      "123",
+      "222"
+    ]
+  }
+]`,
 			want: &v1pb.QueryResult{
-				ColumnNames:     []string{"_id", "age", "groups", "name", "tree"},
-				ColumnTypeNames: []string{"TEXT", "TEXT", "TEXT", "TEXT", "TEXT"},
-				Rows: []*v1pb.QueryRow{{
-					Values: []*v1pb.RowValue{
-						{Kind: &v1pb.RowValue_StringValue{StringValue: "64c0b8c4e65c51195e0584b2"}},
-						{Kind: &v1pb.RowValue_StringValue{StringValue: "13"}},
-						{Kind: &v1pb.RowValue_StringValue{StringValue: groupsValue}},
-						{Kind: &v1pb.RowValue_StringValue{StringValue: `"danny"`}},
-						{Kind: &v1pb.RowValue_StringValue{StringValue: treeValue}},
+				ColumnNames:     []string{"_id", "a", "groups", "name", "wew"},
+				ColumnTypeNames: []string{"ObjectId", "Int64", "Array", "String", "String"},
+				Rows: []*v1pb.QueryRow{
+					{
+						Values: []*v1pb.RowValue{
+							{Kind: &v1pb.RowValue_StringValue{StringValue: `ObjectID("66f62cad7195ccc0dbdfafbb")`}},
+							{Kind: &v1pb.RowValue_Int64Value{Int64Value: 1546786128982089728}},
+							{Kind: &v1pb.RowValue_NullValue{}},
+							{Kind: &v1pb.RowValue_NullValue{}},
+							{Kind: &v1pb.RowValue_NullValue{}},
+						},
 					},
-				}},
+					{
+						Values: []*v1pb.RowValue{
+							{Kind: &v1pb.RowValue_StringValue{StringValue: `ObjectID("66f670827941d8cb2bac29d3")`}},
+							{Kind: &v1pb.RowValue_Int64Value{Int64Value: 1546786122282089721}},
+							{Kind: &v1pb.RowValue_NullValue{}},
+							{Kind: &v1pb.RowValue_NullValue{}},
+							{Kind: &v1pb.RowValue_NullValue{}},
+						},
+					},
+					{
+						Values: []*v1pb.RowValue{
+							{Kind: &v1pb.RowValue_StringValue{StringValue: `ObjectID("66f675627ed80fb207320dd9")`}},
+							{Kind: &v1pb.RowValue_NullValue{}},
+							{Kind: &v1pb.RowValue_NullValue{}},
+							{Kind: &v1pb.RowValue_StringValue{StringValue: "danny"}},
+							{Kind: &v1pb.RowValue_StringValue{StringValue: "iii"}},
+						},
+					},
+					{
+						Values: []*v1pb.RowValue{
+							{Kind: &v1pb.RowValue_StringValue{StringValue: `ObjectID("66f6758c30daae815ac8784f")`}},
+							{Kind: &v1pb.RowValue_NullValue{}},
+							{Kind: &v1pb.RowValue_StringValue{StringValue: groupsValue}},
+							{Kind: &v1pb.RowValue_StringValue{StringValue: "dannyyy"}},
+							{Kind: &v1pb.RowValue_NullValue{}},
+						},
+					},
+				},
 			},
 		},
 		{
-			data: `[{"_id":{"$oid":"64c0b8c4e65c51195e0584b2"},"name":"danny","age":13,"groups":["basketball","swimming"],"tree":{"a":"a","b":1}},{"_id":{"$oid":"64c1de7e85c563e625f217d5"},"flower":123}]`,
+			data: `
+{
+    "_id": {
+      "$oid": "66f6758c30daae815ac8784f"
+    },
+    "a": {
+      "$numberLong": "1546786122282089721"
+    },
+    "name": "dannyyy",
+    "groups": [
+      "123",
+      "222"
+    ]
+}`,
 			want: &v1pb.QueryResult{
-				ColumnNames:     []string{"_id", "age", "flower", "groups", "name", "tree"},
-				ColumnTypeNames: []string{"TEXT", "TEXT", "TEXT", "TEXT", "TEXT", "TEXT"},
-				Rows: []*v1pb.QueryRow{{
-					Values: []*v1pb.RowValue{
-						{Kind: &v1pb.RowValue_StringValue{StringValue: "64c0b8c4e65c51195e0584b2"}},
-						{Kind: &v1pb.RowValue_StringValue{StringValue: "13"}},
-						{Kind: &v1pb.RowValue_NullValue{}},
-						{Kind: &v1pb.RowValue_StringValue{StringValue: groupsValue}},
-						{Kind: &v1pb.RowValue_StringValue{StringValue: `"danny"`}},
-						{Kind: &v1pb.RowValue_StringValue{StringValue: treeValue}},
+				ColumnNames:     []string{"_id", "a", "groups", "name"},
+				ColumnTypeNames: []string{"ObjectId", "Int64", "Array", "String"},
+				Rows: []*v1pb.QueryRow{
+					{
+						Values: []*v1pb.RowValue{
+							{Kind: &v1pb.RowValue_StringValue{StringValue: `ObjectID("66f6758c30daae815ac8784f")`}},
+							{Kind: &v1pb.RowValue_Int64Value{Int64Value: 1546786122282089721}},
+							{Kind: &v1pb.RowValue_StringValue{StringValue: groupsValue}},
+							{Kind: &v1pb.RowValue_StringValue{StringValue: "dannyyy"}},
+						},
 					},
-				}, {
-					Values: []*v1pb.RowValue{
-						{Kind: &v1pb.RowValue_StringValue{StringValue: "64c1de7e85c563e625f217d5"}},
-						{Kind: &v1pb.RowValue_NullValue{}},
-						{Kind: &v1pb.RowValue_StringValue{StringValue: "123"}},
-						{Kind: &v1pb.RowValue_NullValue{}},
-						{Kind: &v1pb.RowValue_NullValue{}},
-						{Kind: &v1pb.RowValue_NullValue{}},
-					},
-				}},
+				},
 			},
 		},
 	}
