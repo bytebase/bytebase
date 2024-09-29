@@ -3,10 +3,12 @@ import { defineStore } from "pinia";
 import { computed, reactive, ref, unref, watch } from "vue";
 import { releaseServiceClient } from "@/grpcweb";
 import type { MaybeRef, ComposedRelease, Pagination } from "@/types";
-import { isValidDatabaseName, unknownRelease } from "@/types";
+import { isValidDatabaseName, unknownRelease, unknownUser } from "@/types";
 import { DEFAULT_PROJECT_NAME } from "@/types";
-import type { Release } from "@/types/proto/v1/release_service";
+import type { DeepPartial, Release } from "@/types/proto/v1/release_service";
+import { extractUserResourceName } from "@/utils";
 import { DEFAULT_PAGE_SIZE } from "./common";
+import { useUserStore } from "./user";
 import { useProjectV1Store } from "./v1";
 import { getProjectNameReleaseId, projectNamePrefix } from "./v1/common";
 
@@ -51,12 +53,26 @@ export const useReleaseStore = defineStore("release", () => {
     return releaseMapByName.get(name) ?? unknownRelease();
   };
 
+  const updateRelase = async (
+    release: DeepPartial<Release>,
+    updateMask: string[]
+  ) => {
+    const resp = await releaseServiceClient.updateRelease({
+      release,
+      updateMask,
+    });
+    const composedRelease = await batchComposeRelease([resp]);
+    releaseMapByName.set(composedRelease[0].name, composedRelease[0]);
+    return composedRelease[0];
+  };
+
   return {
     releaseList,
     fetchReleasesByProject,
     fetchReleaseByName,
     getReleasesByProject,
     getReleaseByName,
+    updateRelase,
   };
 });
 
@@ -84,9 +100,13 @@ export const useReleaseByName = (name: MaybeRef<string>) => {
 };
 
 export const batchComposeRelease = async (releaseList: Release[]) => {
+  const userStore = useUserStore();
   const composedReleaseList = releaseList.map((release) => {
     const composed = release as ComposedRelease;
     composed.project = `${projectNamePrefix}${head(getProjectNameReleaseId(release.name))}`;
+    composed.creatorEntity =
+      userStore.getUserByEmail(extractUserResourceName(composed.creator)) ??
+      unknownUser();
     return composed;
   });
   const distinctProjectList = uniq(

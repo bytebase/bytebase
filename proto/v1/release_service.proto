@@ -6,6 +6,7 @@ import "google/api/annotations.proto";
 import "google/api/client.proto";
 import "google/api/field_behavior.proto";
 import "google/api/resource.proto";
+import "google/protobuf/field_mask.proto";
 import "google/protobuf/timestamp.proto";
 import "v1/common.proto";
 
@@ -26,6 +27,13 @@ service ReleaseService {
       body: "release"
     };
     option (google.api.method_signature) = "parent,release";
+  }
+  rpc UpdateRelease(UpdateReleaseRequest) returns (Release) {
+    option (google.api.http) = {
+      patch: "/v1/{release.name=projects/*/releases/*}"
+      body: "release"
+    };
+    option (google.api.method_signature) = "release,update_mask";
   }
 }
 
@@ -74,6 +82,14 @@ message CreateReleaseRequest {
 
   // The release to create.
   Release release = 2 [(google.api.field_behavior) = REQUIRED];
+}
+
+message UpdateReleaseRequest {
+  // The release to update.
+  Release release = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The list of fields to be updated.
+  google.protobuf.FieldMask update_mask = 2;
 }
 
 message Release {

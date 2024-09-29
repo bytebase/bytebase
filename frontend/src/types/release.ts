@@ -1,6 +1,8 @@
 import { getProjectNameReleaseId } from "@/store/modules/v1/common";
 import { EMPTY_ID, UNKNOWN_ID } from "./const";
+import type { User } from "./proto/v1/auth_service";
 import { Release } from "./proto/v1/release_service";
+import { emptyUser, unknownUser } from "./v1";
 import {
   emptyProject,
   unknownProject,
@@ -11,6 +13,7 @@ export interface ComposedRelease extends Release {
   // Format: projects/{project}
   project: string;
   projectEntity: ComposedProject;
+  creatorEntity: User;
 }
 
 export const UNKNOWN_RELEASE_NAME = `${unknownProject().name}/releases/${UNKNOWN_ID}`;
@@ -26,6 +29,7 @@ export const emptyRelease = (): ComposedRelease => {
     ...release,
     project: projectEntity.name,
     projectEntity,
+    creatorEntity: emptyUser(),
   };
 };
 
@@ -40,6 +44,7 @@ export const unknownRelease = (): ComposedRelease => {
     ...release,
     project: projectEntity.name,
     projectEntity,
+    creatorEntity: unknownUser(),
   };
 };
 
