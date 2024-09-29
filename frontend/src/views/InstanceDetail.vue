@@ -12,18 +12,26 @@
     <NTabs>
       <template #suffix>
         <div class="space-x-2">
-          <NButton
+          <NDropdown
             v-if="allowSyncInstance"
-            :loading="state.syncingSchema"
-            @click.prevent="syncSchema"
+            :trigger="'click'"
+            :options="syncInstnceOptions"
+            :render-label="renderDropdownLabel"
+            :disabled="state.syncingSchema"
+            @select="syncSchema"
           >
-            <template v-if="state.syncingSchema">
-              {{ $t("instance.syncing") }}
-            </template>
-            <template v-else>
-              {{ $t("common.sync-now") }}
-            </template>
-          </NButton>
+            <NButton icon-placement="right" :loading="state.syncingSchema">
+              <template #icon>
+                <ChevronDownIcon class="w-4" />
+              </template>
+              <template v-if="state.syncingSchema">
+                {{ $t("instance.syncing") }}
+              </template>
+              <template v-else>
+                {{ $t("instance.sync.self") }}
+              </template>
+            </NButton>
+          </NDropdown>
           <NButton
             v-if="allowCreateDatabase"
             type="primary"
@@ -71,9 +79,11 @@
   </Drawer>
 </template>
 
-<script lang="ts" setup>
+<script lang="tsx" setup>
 import { useTitle } from "@vueuse/core";
-import { NButton, NTabPane, NTabs } from "naive-ui";
+import { ChevronDownIcon } from "lucide-vue-next";
+import type { DropdownOption } from "naive-ui";
+import { NButton, NTabPane, NTabs, NDropdown, NTooltip } from "naive-ui";
 import type { ClientError } from "nice-grpc-web";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
@@ -148,10 +158,44 @@ const instance = computed(() => {
     `${instanceNamePrefix}${props.instanceId}`
   );
 });
+
 const environment = computed(() => {
   return useEnvironmentV1Store().getEnvironmentByName(
     instance.value.environment
   );
+});
+
+type syncInstanceKey = "sync-all" | "sync-new";
+
+const renderDropdownLabel = (option: DropdownOption) => {
+  if (option.key === "sync-new") {
+    return <span>{option.label}</span>;
+  }
+  return (
+    <NTooltip placement="top-start">
+      {{
+        trigger: () => option.label,
+        default: () => (
+          <span class="text-sm text-nowrap">
+            {t("instance.sync.sync-all-tip")}
+          </span>
+        ),
+      }}
+    </NTooltip>
+  );
+};
+
+const syncInstnceOptions = computed((): DropdownOption[] => {
+  return [
+    {
+      key: "sync-all",
+      label: t("instance.sync.sync-all"),
+    },
+    {
+      key: "sync-new",
+      label: t("instance.sync.sync-new"),
+    },
+  ];
 });
 
 const { databaseList, listCache, ready } = useDatabaseV1List(
@@ -178,10 +222,20 @@ const allowCreateDatabase = computed(() => {
   );
 });
 
-const syncSchema = async () => {
+const syncSchema = async (key: syncInstanceKey) => {
   state.syncingSchema = true;
   try {
-    await instanceV1Store.syncInstance(instance.value);
+    await instanceV1Store.syncInstance(
+      instance.value,
+      key === "sync-all" /* enable full sync */
+    );
+    if (key === "sync-all") {
+      pushNotification({
+        module: "bytebase",
+        style: "SUCCESS",
+        title: t("instance.sync.sync-all-tip"),
+      });
+    }
     // Remove the database list cache for the instance.
     listCache.cacheMap.delete(listCache.getCacheKey(instance.value.name));
     await wrapRefAsPromise(ready, true);
