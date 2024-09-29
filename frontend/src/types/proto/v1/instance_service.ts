@@ -164,6 +164,11 @@ export interface SyncInstanceRequest {
    * Format: instances/{instance}
    */
   name: string;
+  /**
+   * When full sync is enabled, all databases in the instance will be synchronized. Otherwise, only
+   * the instance metadata (such as the database list) and any newly discovered instances will be synced.
+   */
+  enableFullSync: boolean;
 }
 
 export interface SyncInstanceResponse {
@@ -1225,13 +1230,16 @@ export const UndeleteInstanceRequest = {
 };
 
 function createBaseSyncInstanceRequest(): SyncInstanceRequest {
-  return { name: "" };
+  return { name: "", enableFullSync: false };
 }
 
 export const SyncInstanceRequest = {
   encode(message: SyncInstanceRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
+    }
+    if (message.enableFullSync === true) {
+      writer.uint32(16).bool(message.enableFullSync);
     }
     return writer;
   },
@@ -1250,6 +1258,13 @@ export const SyncInstanceRequest = {
 
           message.name = reader.string();
           continue;
+        case 2:
+          if (tag !== 16) {
+            break;
+          }
+
+          message.enableFullSync = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1260,13 +1275,19 @@ export const SyncInstanceRequest = {
   },
 
   fromJSON(object: any): SyncInstanceRequest {
-    return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
+    return {
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      enableFullSync: isSet(object.enableFullSync) ? globalThis.Boolean(object.enableFullSync) : false,
+    };
   },
 
   toJSON(message: SyncInstanceRequest): unknown {
     const obj: any = {};
     if (message.name !== "") {
       obj.name = message.name;
+    }
+    if (message.enableFullSync === true) {
+      obj.enableFullSync = message.enableFullSync;
     }
     return obj;
   },
@@ -1277,6 +1298,7 @@ export const SyncInstanceRequest = {
   fromPartial(object: DeepPartial<SyncInstanceRequest>): SyncInstanceRequest {
     const message = createBaseSyncInstanceRequest();
     message.name = object.name ?? "";
+    message.enableFullSync = object.enableFullSync ?? false;
     return message;
   },
 };
