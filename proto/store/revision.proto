@@ -3,7 +3,6 @@ syntax = "proto3";
 package bytebase.store;
 
 import "google/api/resource.proto";
-import "store/common.proto";
 import "store/release.proto";
 
 option go_package = "generated-go/store";
