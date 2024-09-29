@@ -82,8 +82,8 @@ export interface PatchSubscription {
 
 export interface Subscription {
   instanceCount: number;
-  expiresTime: Timestamp | undefined;
-  startedTime: Timestamp | undefined;
+  expiresTime: Date | undefined;
+  startedTime: Date | undefined;
   plan: PlanType;
   trialing: boolean;
   orgId: string;
@@ -326,10 +326,10 @@ export const Subscription = {
       writer.uint32(16).int32(message.instanceCount);
     }
     if (message.expiresTime !== undefined) {
-      Timestamp.encode(message.expiresTime, writer.uint32(26).fork()).ldelim();
+      Timestamp.encode(toTimestamp(message.expiresTime), writer.uint32(26).fork()).ldelim();
     }
     if (message.startedTime !== undefined) {
-      Timestamp.encode(message.startedTime, writer.uint32(34).fork()).ldelim();
+      Timestamp.encode(toTimestamp(message.startedTime), writer.uint32(34).fork()).ldelim();
     }
     if (message.plan !== PlanType.PLAN_TYPE_UNSPECIFIED) {
       writer.uint32(40).int32(planTypeToNumber(message.plan));
@@ -365,14 +365,14 @@ export const Subscription = {
             break;
           }
 
-          message.expiresTime = Timestamp.decode(reader, reader.uint32());
+          message.expiresTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           continue;
         case 4:
           if (tag !== 34) {
             break;
           }
 
-          message.startedTime = Timestamp.decode(reader, reader.uint32());
+          message.startedTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           continue;
         case 5:
           if (tag !== 40) {
@@ -429,10 +429,10 @@ export const Subscription = {
       obj.instanceCount = Math.round(message.instanceCount);
     }
     if (message.expiresTime !== undefined) {
-      obj.expiresTime = message.expiresTime;
+      obj.expiresTime = message.expiresTime.toISOString();
     }
     if (message.startedTime !== undefined) {
-      obj.startedTime = message.startedTime;
+      obj.startedTime = message.startedTime.toISOString();
     }
     if (message.plan !== PlanType.PLAN_TYPE_UNSPECIFIED) {
       obj.plan = planTypeToJSON(message.plan);
@@ -455,12 +455,8 @@ export const Subscription = {
   fromPartial(object: DeepPartial<Subscription>): Subscription {
     const message = createBaseSubscription();
     message.instanceCount = object.instanceCount ?? 0;
-    message.expiresTime = (object.expiresTime !== undefined && object.expiresTime !== null)
-      ? Timestamp.fromPartial(object.expiresTime)
-      : undefined;
-    message.startedTime = (object.startedTime !== undefined && object.startedTime !== null)
-      ? Timestamp.fromPartial(object.startedTime)
-      : undefined;
+    message.expiresTime = object.expiresTime ?? undefined;
+    message.startedTime = object.startedTime ?? undefined;
     message.plan = object.plan ?? PlanType.PLAN_TYPE_UNSPECIFIED;
     message.trialing = object.trialing ?? false;
     message.orgId = object.orgId ?? "";
@@ -791,13 +787,19 @@ function toTimestamp(date: Date): Timestamp {
   return { seconds, nanos };
 }
 
-function fromJsonTimestamp(o: any): Timestamp {
+function fromTimestamp(t: Timestamp): Date {
+  let millis = (t.seconds.toNumber() || 0) * 1_000;
+  millis += (t.nanos || 0) / 1_000_000;
+  return new globalThis.Date(millis);
+}
+
+function fromJsonTimestamp(o: any): Date {
   if (o instanceof globalThis.Date) {
-    return toTimestamp(o);
+    return o;
   } else if (typeof o === "string") {
-    return toTimestamp(new globalThis.Date(o));
+    return new globalThis.Date(o);
   } else {
-    return Timestamp.fromJSON(o);
+    return fromTimestamp(Timestamp.fromJSON(o));
   }
 }
 

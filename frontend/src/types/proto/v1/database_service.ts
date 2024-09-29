@@ -352,7 +352,7 @@ export interface Database {
   syncState: State;
   /** The latest synchronization time. */
   successfulSyncTime:
-    | Timestamp
+    | Date
     | undefined;
   /**
    * The project for a database.
@@ -1094,7 +1094,7 @@ export interface TableConfig {
    */
   sourceBranch: string;
   /** The timestamp when the table is updated in branch. */
-  updateTime: Timestamp | undefined;
+  updateTime: Date | undefined;
 }
 
 export interface FunctionConfig {
@@ -1111,7 +1111,7 @@ export interface FunctionConfig {
    */
   sourceBranch: string;
   /** The timestamp when the function is updated in branch. */
-  updateTime: Timestamp | undefined;
+  updateTime: Date | undefined;
 }
 
 export interface ProcedureConfig {
@@ -1128,7 +1128,7 @@ export interface ProcedureConfig {
    */
   sourceBranch: string;
   /** The timestamp when the procedure is updated in branch. */
-  updateTime: Timestamp | undefined;
+  updateTime: Date | undefined;
 }
 
 export interface ViewConfig {
@@ -1145,7 +1145,7 @@ export interface ViewConfig {
    */
   sourceBranch: string;
   /** The timestamp when the view is updated in branch. */
-  updateTime: Timestamp | undefined;
+  updateTime: Date | undefined;
 }
 
 export interface ColumnConfig {
@@ -1227,7 +1227,7 @@ export interface SlowQueryStatistics {
   count: number;
   /** The latest log time of the slow query log. */
   latestLogTime:
-    | Timestamp
+    | Date
     | undefined;
   /** The average query time of the slow query log. */
   averageQueryTime:
@@ -1257,7 +1257,7 @@ export interface SlowQueryStatistics {
 export interface SlowQueryDetails {
   /** The start time of the slow query log. */
   startTime:
-    | Timestamp
+    | Date
     | undefined;
   /** The query time of the slow query log. */
   queryTime:
@@ -1340,11 +1340,11 @@ export interface Secret {
   name: string;
   /** Not used. The timestamp when the secret resource was created initially. */
   createdTime:
-    | Timestamp
+    | Date
     | undefined;
   /** Not used. The timestamp when the secret resource was updated. */
   updatedTime:
-    | Timestamp
+    | Date
     | undefined;
   /** The value of the secret. */
   value: string;
@@ -1377,9 +1377,9 @@ export interface ChangeHistory {
   creator: string;
   /** Format: users/hello@world.com */
   updater: string;
-  createTime: Timestamp | undefined;
+  createTime: Date | undefined;
   updateTime:
-    | Timestamp
+    | Date
     | undefined;
   /** release version of Bytebase */
   releaseVersion: string;
@@ -1776,7 +1776,7 @@ export interface Revision {
   /** Format: users/hello@world.com */
   creator: string;
   createTime:
-    | Timestamp
+    | Date
     | undefined;
   /**
    * The sheet that holds the content.
@@ -2956,7 +2956,7 @@ export const Database = {
       writer.uint32(24).int32(stateToNumber(message.syncState));
     }
     if (message.successfulSyncTime !== undefined) {
-      Timestamp.encode(message.successfulSyncTime, writer.uint32(34).fork()).ldelim();
+      Timestamp.encode(toTimestamp(message.successfulSyncTime), writer.uint32(34).fork()).ldelim();
     }
     if (message.project !== "") {
       writer.uint32(42).string(message.project);
@@ -3008,7 +3008,7 @@ export const Database = {
             break;
           }
 
-          message.successfulSyncTime = Timestamp.decode(reader, reader.uint32());
+          message.successfulSyncTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           continue;
         case 5:
           if (tag !== 42) {
@@ -3100,7 +3100,7 @@ export const Database = {
       obj.syncState = stateToJSON(message.syncState);
     }
     if (message.successfulSyncTime !== undefined) {
-      obj.successfulSyncTime = message.successfulSyncTime;
+      obj.successfulSyncTime = message.successfulSyncTime.toISOString();
     }
     if (message.project !== "") {
       obj.project = message.project;
@@ -3139,9 +3139,7 @@ export const Database = {
     const message = createBaseDatabase();
     message.name = object.name ?? "";
     message.syncState = object.syncState ?? State.STATE_UNSPECIFIED;
-    message.successfulSyncTime = (object.successfulSyncTime !== undefined && object.successfulSyncTime !== null)
-      ? Timestamp.fromPartial(object.successfulSyncTime)
-      : undefined;
+    message.successfulSyncTime = object.successfulSyncTime ?? undefined;
     message.project = object.project ?? "";
     message.schemaVersion = object.schemaVersion ?? "";
     message.environment = object.environment ?? "";
@@ -6165,7 +6163,7 @@ export const TableConfig = {
       writer.uint32(50).string(message.sourceBranch);
     }
     if (message.updateTime !== undefined) {
-      Timestamp.encode(message.updateTime, writer.uint32(42).fork()).ldelim();
+      Timestamp.encode(toTimestamp(message.updateTime), writer.uint32(42).fork()).ldelim();
     }
     return writer;
   },
@@ -6217,7 +6215,7 @@ export const TableConfig = {
             break;
           }
 
-          message.updateTime = Timestamp.decode(reader, reader.uint32());
+          message.updateTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -6259,7 +6257,7 @@ export const TableConfig = {
       obj.sourceBranch = message.sourceBranch;
     }
     if (message.updateTime !== undefined) {
-      obj.updateTime = message.updateTime;
+      obj.updateTime = message.updateTime.toISOString();
     }
     return obj;
   },
@@ -6274,9 +6272,7 @@ export const TableConfig = {
     message.classificationId = object.classificationId ?? "";
     message.updater = object.updater ?? "";
     message.sourceBranch = object.sourceBranch ?? "";
-    message.updateTime = (object.updateTime !== undefined && object.updateTime !== null)
-      ? Timestamp.fromPartial(object.updateTime)
-      : undefined;
+    message.updateTime = object.updateTime ?? undefined;
     return message;
   },
 };
@@ -6297,7 +6293,7 @@ export const FunctionConfig = {
       writer.uint32(34).string(message.sourceBranch);
     }
     if (message.updateTime !== undefined) {
-      Timestamp.encode(message.updateTime, writer.uint32(26).fork()).ldelim();
+      Timestamp.encode(toTimestamp(message.updateTime), writer.uint32(26).fork()).ldelim();
     }
     return writer;
   },
@@ -6335,7 +6331,7 @@ export const FunctionConfig = {
             break;
           }
 
-          message.updateTime = Timestamp.decode(reader, reader.uint32());
+          message.updateTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -6367,7 +6363,7 @@ export const FunctionConfig = {
       obj.sourceBranch = message.sourceBranch;
     }
     if (message.updateTime !== undefined) {
-      obj.updateTime = message.updateTime;
+      obj.updateTime = message.updateTime.toISOString();
     }
     return obj;
   },
@@ -6380,9 +6376,7 @@ export const FunctionConfig = {
     message.name = object.name ?? "";
     message.updater = object.updater ?? "";
     message.sourceBranch = object.sourceBranch ?? "";
-    message.updateTime = (object.updateTime !== undefined && object.updateTime !== null)
-      ? Timestamp.fromPartial(object.updateTime)
-      : undefined;
+    message.updateTime = object.updateTime ?? undefined;
     return message;
   },
 };
@@ -6403,7 +6397,7 @@ export const ProcedureConfig = {
       writer.uint32(34).string(message.sourceBranch);
     }
     if (message.updateTime !== undefined) {
-      Timestamp.encode(message.updateTime, writer.uint32(26).fork()).ldelim();
+      Timestamp.encode(toTimestamp(message.updateTime), writer.uint32(26).fork()).ldelim();
     }
     return writer;
   },
@@ -6441,7 +6435,7 @@ export const ProcedureConfig = {
             break;
           }
 
-          message.updateTime = Timestamp.decode(reader, reader.uint32());
+          message.updateTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -6473,7 +6467,7 @@ export const ProcedureConfig = {
       obj.sourceBranch = message.sourceBranch;
     }
     if (message.updateTime !== undefined) {
-      obj.updateTime = message.updateTime;
+      obj.updateTime = message.updateTime.toISOString();
     }
     return obj;
   },
@@ -6486,9 +6480,7 @@ export const ProcedureConfig = {
     message.name = object.name ?? "";
     message.updater = object.updater ?? "";
     message.sourceBranch = object.sourceBranch ?? "";
-    message.updateTime = (object.updateTime !== undefined && object.updateTime !== null)
-      ? Timestamp.fromPartial(object.updateTime)
-      : undefined;
+    message.updateTime = object.updateTime ?? undefined;
     return message;
   },
 };
@@ -6509,7 +6501,7 @@ export const ViewConfig = {
       writer.uint32(34).string(message.sourceBranch);
     }
     if (message.updateTime !== undefined) {
-      Timestamp.encode(message.updateTime, writer.uint32(26).fork()).ldelim();
+      Timestamp.encode(toTimestamp(message.updateTime), writer.uint32(26).fork()).ldelim();
     }
     return writer;
   },
@@ -6547,7 +6539,7 @@ export const ViewConfig = {
             break;
           }
 
-          message.updateTime = Timestamp.decode(reader, reader.uint32());
+          message.updateTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -6579,7 +6571,7 @@ export const ViewConfig = {
       obj.sourceBranch = message.sourceBranch;
     }
     if (message.updateTime !== undefined) {
-      obj.updateTime = message.updateTime;
+      obj.updateTime = message.updateTime.toISOString();
     }
     return obj;
   },
@@ -6592,9 +6584,7 @@ export const ViewConfig = {
     message.name = object.name ?? "";
     message.updater = object.updater ?? "";
     message.sourceBranch = object.sourceBranch ?? "";
-    message.updateTime = (object.updateTime !== undefined && object.updateTime !== null)
-      ? Timestamp.fromPartial(object.updateTime)
-      : undefined;
+    message.updateTime = object.updateTime ?? undefined;
     return message;
   },
 };
@@ -7120,7 +7110,7 @@ export const SlowQueryStatistics = {
       writer.uint32(16).int32(message.count);
     }
     if (message.latestLogTime !== undefined) {
-      Timestamp.encode(message.latestLogTime, writer.uint32(26).fork()).ldelim();
+      Timestamp.encode(toTimestamp(message.latestLogTime), writer.uint32(26).fork()).ldelim();
     }
     if (message.averageQueryTime !== undefined) {
       Duration.encode(message.averageQueryTime, writer.uint32(34).fork()).ldelim();
@@ -7178,7 +7168,7 @@ export const SlowQueryStatistics = {
             break;
           }
 
-          message.latestLogTime = Timestamp.decode(reader, reader.uint32());
+          message.latestLogTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           continue;
         case 4:
           if (tag !== 34) {
@@ -7280,7 +7270,7 @@ export const SlowQueryStatistics = {
       obj.count = Math.round(message.count);
     }
     if (message.latestLogTime !== undefined) {
-      obj.latestLogTime = message.latestLogTime;
+      obj.latestLogTime = message.latestLogTime.toISOString();
     }
     if (message.averageQueryTime !== undefined) {
       obj.averageQueryTime = Duration.toJSON(message.averageQueryTime);
@@ -7319,9 +7309,7 @@ export const SlowQueryStatistics = {
     const message = createBaseSlowQueryStatistics();
     message.sqlFingerprint = object.sqlFingerprint ?? "";
     message.count = object.count ?? 0;
-    message.latestLogTime = (object.latestLogTime !== undefined && object.latestLogTime !== null)
-      ? Timestamp.fromPartial(object.latestLogTime)
-      : undefined;
+    message.latestLogTime = object.latestLogTime ?? undefined;
     message.averageQueryTime = (object.averageQueryTime !== undefined && object.averageQueryTime !== null)
       ? Duration.fromPartial(object.averageQueryTime)
       : undefined;
@@ -7346,7 +7334,7 @@ function createBaseSlowQueryDetails(): SlowQueryDetails {
 export const SlowQueryDetails = {
   encode(message: SlowQueryDetails, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.startTime !== undefined) {
-      Timestamp.encode(message.startTime, writer.uint32(10).fork()).ldelim();
+      Timestamp.encode(toTimestamp(message.startTime), writer.uint32(10).fork()).ldelim();
     }
     if (message.queryTime !== undefined) {
       Duration.encode(message.queryTime, writer.uint32(18).fork()).ldelim();
@@ -7378,7 +7366,7 @@ export const SlowQueryDetails = {
             break;
           }
 
-          message.startTime = Timestamp.decode(reader, reader.uint32());
+          message.startTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           continue;
         case 2:
           if (tag !== 18) {
@@ -7438,7 +7426,7 @@ export const SlowQueryDetails = {
   toJSON(message: SlowQueryDetails): unknown {
     const obj: any = {};
     if (message.startTime !== undefined) {
-      obj.startTime = message.startTime;
+      obj.startTime = message.startTime.toISOString();
     }
     if (message.queryTime !== undefined) {
       obj.queryTime = Duration.toJSON(message.queryTime);
@@ -7463,9 +7451,7 @@ export const SlowQueryDetails = {
   },
   fromPartial(object: DeepPartial<SlowQueryDetails>): SlowQueryDetails {
     const message = createBaseSlowQueryDetails();
-    message.startTime = (object.startTime !== undefined && object.startTime !== null)
-      ? Timestamp.fromPartial(object.startTime)
-      : undefined;
+    message.startTime = object.startTime ?? undefined;
     message.queryTime = (object.queryTime !== undefined && object.queryTime !== null)
       ? Duration.fromPartial(object.queryTime)
       : undefined;
@@ -7800,10 +7786,10 @@ export const Secret = {
       writer.uint32(10).string(message.name);
     }
     if (message.createdTime !== undefined) {
-      Timestamp.encode(message.createdTime, writer.uint32(18).fork()).ldelim();
+      Timestamp.encode(toTimestamp(message.createdTime), writer.uint32(18).fork()).ldelim();
     }
     if (message.updatedTime !== undefined) {
-      Timestamp.encode(message.updatedTime, writer.uint32(26).fork()).ldelim();
+      Timestamp.encode(toTimestamp(message.updatedTime), writer.uint32(26).fork()).ldelim();
     }
     if (message.value !== "") {
       writer.uint32(34).string(message.value);
@@ -7833,14 +7819,14 @@ export const Secret = {
             break;
           }
 
-          message.createdTime = Timestamp.decode(reader, reader.uint32());
+          message.createdTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           continue;
         case 3:
           if (tag !== 26) {
             break;
           }
 
-          message.updatedTime = Timestamp.decode(reader, reader.uint32());
+          message.updatedTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           continue;
         case 4:
           if (tag !== 34) {
@@ -7881,10 +7867,10 @@ export const Secret = {
       obj.name = message.name;
     }
     if (message.createdTime !== undefined) {
-      obj.createdTime = message.createdTime;
+      obj.createdTime = message.createdTime.toISOString();
     }
     if (message.updatedTime !== undefined) {
-      obj.updatedTime = message.updatedTime;
+      obj.updatedTime = message.updatedTime.toISOString();
     }
     if (message.value !== "") {
       obj.value = message.value;
@@ -7901,12 +7887,8 @@ export const Secret = {
   fromPartial(object: DeepPartial<Secret>): Secret {
     const message = createBaseSecret();
     message.name = object.name ?? "";
-    message.createdTime = (object.createdTime !== undefined && object.createdTime !== null)
-      ? Timestamp.fromPartial(object.createdTime)
-      : undefined;
-    message.updatedTime = (object.updatedTime !== undefined && object.updatedTime !== null)
-      ? Timestamp.fromPartial(object.updatedTime)
-      : undefined;
+    message.createdTime = object.createdTime ?? undefined;
+    message.updatedTime = object.updatedTime ?? undefined;
     message.value = object.value ?? "";
     message.description = object.description ?? "";
     return message;
@@ -8114,10 +8096,10 @@ export const ChangeHistory = {
       writer.uint32(34).string(message.updater);
     }
     if (message.createTime !== undefined) {
-      Timestamp.encode(message.createTime, writer.uint32(42).fork()).ldelim();
+      Timestamp.encode(toTimestamp(message.createTime), writer.uint32(42).fork()).ldelim();
     }
     if (message.updateTime !== undefined) {
-      Timestamp.encode(message.updateTime, writer.uint32(50).fork()).ldelim();
+      Timestamp.encode(toTimestamp(message.updateTime), writer.uint32(50).fork()).ldelim();
     }
     if (message.releaseVersion !== "") {
       writer.uint32(58).string(message.releaseVersion);
@@ -8203,14 +8185,14 @@ export const ChangeHistory = {
             break;
           }
 
-          message.createTime = Timestamp.decode(reader, reader.uint32());
+          message.createTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           continue;
         case 6:
           if (tag !== 50) {
             break;
           }
 
-          message.updateTime = Timestamp.decode(reader, reader.uint32());
+          message.updateTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           continue;
         case 7:
           if (tag !== 58) {
@@ -8375,10 +8357,10 @@ export const ChangeHistory = {
       obj.updater = message.updater;
     }
     if (message.createTime !== undefined) {
-      obj.createTime = message.createTime;
+      obj.createTime = message.createTime.toISOString();
     }
     if (message.updateTime !== undefined) {
-      obj.updateTime = message.updateTime;
+      obj.updateTime = message.updateTime.toISOString();
     }
     if (message.releaseVersion !== "") {
       obj.releaseVersion = message.releaseVersion;
@@ -8439,12 +8421,8 @@ export const ChangeHistory = {
     message.name = object.name ?? "";
     message.creator = object.creator ?? "";
     message.updater = object.updater ?? "";
-    message.createTime = (object.createTime !== undefined && object.createTime !== null)
-      ? Timestamp.fromPartial(object.createTime)
-      : undefined;
-    message.updateTime = (object.updateTime !== undefined && object.updateTime !== null)
-      ? Timestamp.fromPartial(object.updateTime)
-      : undefined;
+    message.createTime = object.createTime ?? undefined;
+    message.updateTime = object.updateTime ?? undefined;
     message.releaseVersion = object.releaseVersion ?? "";
     message.source = object.source ?? ChangeHistory_Source.SOURCE_UNSPECIFIED;
     message.type = object.type ?? ChangeHistory_Type.TYPE_UNSPECIFIED;
@@ -9536,7 +9514,7 @@ export const Revision = {
       writer.uint32(26).string(message.creator);
     }
     if (message.createTime !== undefined) {
-      Timestamp.encode(message.createTime, writer.uint32(34).fork()).ldelim();
+      Timestamp.encode(toTimestamp(message.createTime), writer.uint32(34).fork()).ldelim();
     }
     if (message.sheet !== "") {
       writer.uint32(42).string(message.sheet);
@@ -9592,7 +9570,7 @@ export const Revision = {
             break;
           }
 
-          message.createTime = Timestamp.decode(reader, reader.uint32());
+          message.createTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           continue;
         case 5:
           if (tag !== 42) {
@@ -9672,7 +9650,7 @@ export const Revision = {
       obj.creator = message.creator;
     }
     if (message.createTime !== undefined) {
-      obj.createTime = message.createTime;
+      obj.createTime = message.createTime.toISOString();
     }
     if (message.sheet !== "") {
       obj.sheet = message.sheet;
@@ -9703,9 +9681,7 @@ export const Revision = {
     message.name = object.name ?? "";
     message.release = object.release ?? "";
     message.creator = object.creator ?? "";
-    message.createTime = (object.createTime !== undefined && object.createTime !== null)
-      ? Timestamp.fromPartial(object.createTime)
-      : undefined;
+    message.createTime = object.createTime ?? undefined;
     message.sheet = object.sheet ?? "";
     message.sheetSha1 = object.sheetSha1 ?? "";
     message.type = object.type ?? ReleaseFileType.TYPE_UNSPECIFIED;
@@ -11328,13 +11304,19 @@ function toTimestamp(date: Date): Timestamp {
   return { seconds, nanos };
 }
 
-function fromJsonTimestamp(o: any): Timestamp {
+function fromTimestamp(t: Timestamp): Date {
+  let millis = (t.seconds.toNumber() || 0) * 1_000;
+  millis += (t.nanos || 0) / 1_000_000;
+  return new globalThis.Date(millis);
+}
+
+function fromJsonTimestamp(o: any): Date {
   if (o instanceof globalThis.Date) {
-    return toTimestamp(o);
+    return o;
   } else if (typeof o === "string") {
-    return toTimestamp(new globalThis.Date(o));
+    return new globalThis.Date(o);
   } else {
-    return Timestamp.fromJSON(o);
+    return fromTimestamp(Timestamp.fromJSON(o));
   }
 }
 

@@ -171,7 +171,7 @@ export interface RowValue {
     | undefined;
   /** value_value is used for Spanner and TUPLE ARRAY MAP in Clickhouse only. */
   valueValue?: any | undefined;
-  timestampValue?: Timestamp | undefined;
+  timestampValue?: Date | undefined;
 }
 
 export interface Advice {
@@ -480,7 +480,7 @@ export interface QueryHistory {
    */
   database: string;
   creator: string;
-  createTime: Timestamp | undefined;
+  createTime: Date | undefined;
   statement: string;
   error?: string | undefined;
   duration: Duration | undefined;
@@ -1833,7 +1833,7 @@ export const RowValue = {
       Value.encode(Value.wrap(message.valueValue), writer.uint32(90).fork()).ldelim();
     }
     if (message.timestampValue !== undefined) {
-      Timestamp.encode(message.timestampValue, writer.uint32(98).fork()).ldelim();
+      Timestamp.encode(toTimestamp(message.timestampValue), writer.uint32(98).fork()).ldelim();
     }
     return writer;
   },
@@ -1927,7 +1927,7 @@ export const RowValue = {
             break;
           }
 
-          message.timestampValue = Timestamp.decode(reader, reader.uint32());
+          message.timestampValue = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -1991,7 +1991,7 @@ export const RowValue = {
       obj.valueValue = message.valueValue;
     }
     if (message.timestampValue !== undefined) {
-      obj.timestampValue = message.timestampValue;
+      obj.timestampValue = message.timestampValue.toISOString();
     }
     return obj;
   },
@@ -2016,9 +2016,7 @@ export const RowValue = {
       ? Long.fromValue(object.uint64Value)
       : undefined;
     message.valueValue = object.valueValue ?? undefined;
-    message.timestampValue = (object.timestampValue !== undefined && object.timestampValue !== null)
-      ? Timestamp.fromPartial(object.timestampValue)
-      : undefined;
+    message.timestampValue = object.timestampValue ?? undefined;
     return message;
   },
 };
@@ -3366,7 +3364,7 @@ export const QueryHistory = {
       writer.uint32(26).string(message.creator);
     }
     if (message.createTime !== undefined) {
-      Timestamp.encode(message.createTime, writer.uint32(34).fork()).ldelim();
+      Timestamp.encode(toTimestamp(message.createTime), writer.uint32(34).fork()).ldelim();
     }
     if (message.statement !== "") {
       writer.uint32(42).string(message.statement);
@@ -3416,7 +3414,7 @@ export const QueryHistory = {
             break;
           }
 
-          message.createTime = Timestamp.decode(reader, reader.uint32());
+          message.createTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           continue;
         case 5:
           if (tag !== 42) {
@@ -3480,7 +3478,7 @@ export const QueryHistory = {
       obj.creator = message.creator;
     }
     if (message.createTime !== undefined) {
-      obj.createTime = message.createTime;
+      obj.createTime = message.createTime.toISOString();
     }
     if (message.statement !== "") {
       obj.statement = message.statement;
@@ -3505,9 +3503,7 @@ export const QueryHistory = {
     message.name = object.name ?? "";
     message.database = object.database ?? "";
     message.creator = object.creator ?? "";
-    message.createTime = (object.createTime !== undefined && object.createTime !== null)
-      ? Timestamp.fromPartial(object.createTime)
-      : undefined;
+    message.createTime = object.createTime ?? undefined;
     message.statement = object.statement ?? "";
     message.error = object.error ?? undefined;
     message.duration = (object.duration !== undefined && object.duration !== null)
@@ -4367,13 +4363,19 @@ function toTimestamp(date: Date): Timestamp {
   return { seconds, nanos };
 }
 
-function fromJsonTimestamp(o: any): Timestamp {
+function fromTimestamp(t: Timestamp): Date {
+  let millis = (t.seconds.toNumber() || 0) * 1_000;
+  millis += (t.nanos || 0) / 1_000_000;
+  return new globalThis.Date(millis);
+}
+
+function fromJsonTimestamp(o: any): Date {
   if (o instanceof globalThis.Date) {
-    return toTimestamp(o);
+    return o;
   } else if (typeof o === "string") {
-    return toTimestamp(new globalThis.Date(o));
+    return new globalThis.Date(o);
   } else {
-    return Timestamp.fromJSON(o);
+    return fromTimestamp(Timestamp.fromJSON(o));
   }
 }
 

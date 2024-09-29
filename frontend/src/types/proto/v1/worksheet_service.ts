@@ -144,11 +144,11 @@ export interface Worksheet {
   creator: string;
   /** The create time of the worksheet. */
   createTime:
-    | Timestamp
+    | Date
     | undefined;
   /** The last update time of the worksheet. */
   updateTime:
-    | Timestamp
+    | Date
     | undefined;
   /**
    * The content of the worksheet.
@@ -825,10 +825,10 @@ export const Worksheet = {
       writer.uint32(42).string(message.creator);
     }
     if (message.createTime !== undefined) {
-      Timestamp.encode(message.createTime, writer.uint32(50).fork()).ldelim();
+      Timestamp.encode(toTimestamp(message.createTime), writer.uint32(50).fork()).ldelim();
     }
     if (message.updateTime !== undefined) {
-      Timestamp.encode(message.updateTime, writer.uint32(58).fork()).ldelim();
+      Timestamp.encode(toTimestamp(message.updateTime), writer.uint32(58).fork()).ldelim();
     }
     if (message.content.length !== 0) {
       writer.uint32(66).bytes(message.content);
@@ -892,14 +892,14 @@ export const Worksheet = {
             break;
           }
 
-          message.createTime = Timestamp.decode(reader, reader.uint32());
+          message.createTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           continue;
         case 7:
           if (tag !== 58) {
             break;
           }
 
-          message.updateTime = Timestamp.decode(reader, reader.uint32());
+          message.updateTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           continue;
         case 8:
           if (tag !== 66) {
@@ -974,10 +974,10 @@ export const Worksheet = {
       obj.creator = message.creator;
     }
     if (message.createTime !== undefined) {
-      obj.createTime = message.createTime;
+      obj.createTime = message.createTime.toISOString();
     }
     if (message.updateTime !== undefined) {
-      obj.updateTime = message.updateTime;
+      obj.updateTime = message.updateTime.toISOString();
     }
     if (message.content.length !== 0) {
       obj.content = base64FromBytes(message.content);
@@ -1004,12 +1004,8 @@ export const Worksheet = {
     message.database = object.database ?? "";
     message.title = object.title ?? "";
     message.creator = object.creator ?? "";
-    message.createTime = (object.createTime !== undefined && object.createTime !== null)
-      ? Timestamp.fromPartial(object.createTime)
-      : undefined;
-    message.updateTime = (object.updateTime !== undefined && object.updateTime !== null)
-      ? Timestamp.fromPartial(object.updateTime)
-      : undefined;
+    message.createTime = object.createTime ?? undefined;
+    message.updateTime = object.updateTime ?? undefined;
     message.content = object.content ?? new Uint8Array(0);
     message.contentSize = (object.contentSize !== undefined && object.contentSize !== null)
       ? Long.fromValue(object.contentSize)
@@ -1462,13 +1458,19 @@ function toTimestamp(date: Date): Timestamp {
   return { seconds, nanos };
 }
 
-function fromJsonTimestamp(o: any): Timestamp {
+function fromTimestamp(t: Timestamp): Date {
+  let millis = (t.seconds.toNumber() || 0) * 1_000;
+  millis += (t.nanos || 0) / 1_000_000;
+  return new globalThis.Date(millis);
+}
+
+function fromJsonTimestamp(o: any): Date {
   if (o instanceof globalThis.Date) {
-    return toTimestamp(o);
+    return o;
   } else if (typeof o === "string") {
-    return toTimestamp(new globalThis.Date(o));
+    return new globalThis.Date(o);
   } else {
-    return Timestamp.fromJSON(o);
+    return fromTimestamp(Timestamp.fromJSON(o));
   }
 }
 

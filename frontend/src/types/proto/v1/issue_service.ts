@@ -250,9 +250,9 @@ export interface Issue {
   subscribers: string[];
   /** Format: users/hello@world.com */
   creator: string;
-  createTime: Timestamp | undefined;
+  createTime: Date | undefined;
   updateTime:
-    | Timestamp
+    | Date
     | undefined;
   /**
    * The plan associated with the issue.
@@ -780,9 +780,9 @@ export interface IssueComment {
   comment: string;
   /** TODO: use struct message instead. */
   payload: string;
-  createTime: Timestamp | undefined;
+  createTime: Date | undefined;
   updateTime:
-    | Timestamp
+    | Date
     | undefined;
   /** Format: users/{email} */
   creator: string;
@@ -881,8 +881,8 @@ export interface IssueComment_TaskUpdate {
     | undefined;
   /** Format: projects/{project}/sheets/{sheet} */
   toSheet?: string | undefined;
-  fromEarliestAllowedTime?: Timestamp | undefined;
-  toEarliestAllowedTime?: Timestamp | undefined;
+  fromEarliestAllowedTime?: Date | undefined;
+  toEarliestAllowedTime?: Date | undefined;
   toStatus?: IssueComment_TaskUpdate_Status | undefined;
 }
 
@@ -2022,10 +2022,10 @@ export const Issue = {
       writer.uint32(114).string(message.creator);
     }
     if (message.createTime !== undefined) {
-      Timestamp.encode(message.createTime, writer.uint32(122).fork()).ldelim();
+      Timestamp.encode(toTimestamp(message.createTime), writer.uint32(122).fork()).ldelim();
     }
     if (message.updateTime !== undefined) {
-      Timestamp.encode(message.updateTime, writer.uint32(130).fork()).ldelim();
+      Timestamp.encode(toTimestamp(message.updateTime), writer.uint32(130).fork()).ldelim();
     }
     if (message.plan !== "") {
       writer.uint32(138).string(message.plan);
@@ -2140,14 +2140,14 @@ export const Issue = {
             break;
           }
 
-          message.createTime = Timestamp.decode(reader, reader.uint32());
+          message.createTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           continue;
         case 16:
           if (tag !== 130) {
             break;
           }
 
-          message.updateTime = Timestamp.decode(reader, reader.uint32());
+          message.updateTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           continue;
         case 17:
           if (tag !== 138) {
@@ -2288,10 +2288,10 @@ export const Issue = {
       obj.creator = message.creator;
     }
     if (message.createTime !== undefined) {
-      obj.createTime = message.createTime;
+      obj.createTime = message.createTime.toISOString();
     }
     if (message.updateTime !== undefined) {
-      obj.updateTime = message.updateTime;
+      obj.updateTime = message.updateTime.toISOString();
     }
     if (message.plan !== "") {
       obj.plan = message.plan;
@@ -2339,12 +2339,8 @@ export const Issue = {
     message.approvalFindingError = object.approvalFindingError ?? "";
     message.subscribers = object.subscribers?.map((e) => e) || [];
     message.creator = object.creator ?? "";
-    message.createTime = (object.createTime !== undefined && object.createTime !== null)
-      ? Timestamp.fromPartial(object.createTime)
-      : undefined;
-    message.updateTime = (object.updateTime !== undefined && object.updateTime !== null)
-      ? Timestamp.fromPartial(object.updateTime)
-      : undefined;
+    message.createTime = object.createTime ?? undefined;
+    message.updateTime = object.updateTime ?? undefined;
     message.plan = object.plan ?? "";
     message.rollout = object.rollout ?? "";
     message.grantRequest = (object.grantRequest !== undefined && object.grantRequest !== null)
@@ -3332,10 +3328,10 @@ export const IssueComment = {
       writer.uint32(26).string(message.payload);
     }
     if (message.createTime !== undefined) {
-      Timestamp.encode(message.createTime, writer.uint32(34).fork()).ldelim();
+      Timestamp.encode(toTimestamp(message.createTime), writer.uint32(34).fork()).ldelim();
     }
     if (message.updateTime !== undefined) {
-      Timestamp.encode(message.updateTime, writer.uint32(42).fork()).ldelim();
+      Timestamp.encode(toTimestamp(message.updateTime), writer.uint32(42).fork()).ldelim();
     }
     if (message.creator !== "") {
       writer.uint32(58).string(message.creator);
@@ -3391,14 +3387,14 @@ export const IssueComment = {
             break;
           }
 
-          message.createTime = Timestamp.decode(reader, reader.uint32());
+          message.createTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           continue;
         case 5:
           if (tag !== 42) {
             break;
           }
 
-          message.updateTime = Timestamp.decode(reader, reader.uint32());
+          message.updateTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           continue;
         case 7:
           if (tag !== 58) {
@@ -3481,10 +3477,10 @@ export const IssueComment = {
       obj.payload = message.payload;
     }
     if (message.createTime !== undefined) {
-      obj.createTime = message.createTime;
+      obj.createTime = message.createTime.toISOString();
     }
     if (message.updateTime !== undefined) {
-      obj.updateTime = message.updateTime;
+      obj.updateTime = message.updateTime.toISOString();
     }
     if (message.creator !== "") {
       obj.creator = message.creator;
@@ -3515,12 +3511,8 @@ export const IssueComment = {
     message.name = object.name ?? "";
     message.comment = object.comment ?? "";
     message.payload = object.payload ?? "";
-    message.createTime = (object.createTime !== undefined && object.createTime !== null)
-      ? Timestamp.fromPartial(object.createTime)
-      : undefined;
-    message.updateTime = (object.updateTime !== undefined && object.updateTime !== null)
-      ? Timestamp.fromPartial(object.updateTime)
-      : undefined;
+    message.createTime = object.createTime ?? undefined;
+    message.updateTime = object.updateTime ?? undefined;
     message.creator = object.creator ?? "";
     message.approval = (object.approval !== undefined && object.approval !== null)
       ? IssueComment_Approval.fromPartial(object.approval)
@@ -3857,10 +3849,10 @@ export const IssueComment_TaskUpdate = {
       writer.uint32(26).string(message.toSheet);
     }
     if (message.fromEarliestAllowedTime !== undefined) {
-      Timestamp.encode(message.fromEarliestAllowedTime, writer.uint32(34).fork()).ldelim();
+      Timestamp.encode(toTimestamp(message.fromEarliestAllowedTime), writer.uint32(34).fork()).ldelim();
     }
     if (message.toEarliestAllowedTime !== undefined) {
-      Timestamp.encode(message.toEarliestAllowedTime, writer.uint32(42).fork()).ldelim();
+      Timestamp.encode(toTimestamp(message.toEarliestAllowedTime), writer.uint32(42).fork()).ldelim();
     }
     if (message.toStatus !== undefined) {
       writer.uint32(48).int32(issueComment_TaskUpdate_StatusToNumber(message.toStatus));
@@ -3901,14 +3893,14 @@ export const IssueComment_TaskUpdate = {
             break;
           }
 
-          message.fromEarliestAllowedTime = Timestamp.decode(reader, reader.uint32());
+          message.fromEarliestAllowedTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           continue;
         case 5:
           if (tag !== 42) {
             break;
           }
 
-          message.toEarliestAllowedTime = Timestamp.decode(reader, reader.uint32());
+          message.toEarliestAllowedTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           continue;
         case 6:
           if (tag !== 48) {
@@ -3953,10 +3945,10 @@ export const IssueComment_TaskUpdate = {
       obj.toSheet = message.toSheet;
     }
     if (message.fromEarliestAllowedTime !== undefined) {
-      obj.fromEarliestAllowedTime = message.fromEarliestAllowedTime;
+      obj.fromEarliestAllowedTime = message.fromEarliestAllowedTime.toISOString();
     }
     if (message.toEarliestAllowedTime !== undefined) {
-      obj.toEarliestAllowedTime = message.toEarliestAllowedTime;
+      obj.toEarliestAllowedTime = message.toEarliestAllowedTime.toISOString();
     }
     if (message.toStatus !== undefined) {
       obj.toStatus = issueComment_TaskUpdate_StatusToJSON(message.toStatus);
@@ -3972,14 +3964,8 @@ export const IssueComment_TaskUpdate = {
     message.tasks = object.tasks?.map((e) => e) || [];
     message.fromSheet = object.fromSheet ?? undefined;
     message.toSheet = object.toSheet ?? undefined;
-    message.fromEarliestAllowedTime =
-      (object.fromEarliestAllowedTime !== undefined && object.fromEarliestAllowedTime !== null)
-        ? Timestamp.fromPartial(object.fromEarliestAllowedTime)
-        : undefined;
-    message.toEarliestAllowedTime =
-      (object.toEarliestAllowedTime !== undefined && object.toEarliestAllowedTime !== null)
-        ? Timestamp.fromPartial(object.toEarliestAllowedTime)
-        : undefined;
+    message.fromEarliestAllowedTime = object.fromEarliestAllowedTime ?? undefined;
+    message.toEarliestAllowedTime = object.toEarliestAllowedTime ?? undefined;
     message.toStatus = object.toStatus ?? undefined;
     return message;
   },
@@ -5107,13 +5093,19 @@ function toTimestamp(date: Date): Timestamp {
   return { seconds, nanos };
 }
 
-function fromJsonTimestamp(o: any): Timestamp {
+function fromTimestamp(t: Timestamp): Date {
+  let millis = (t.seconds.toNumber() || 0) * 1_000;
+  millis += (t.nanos || 0) / 1_000_000;
+  return new globalThis.Date(millis);
+}
+
+function fromJsonTimestamp(o: any): Date {
   if (o instanceof globalThis.Date) {
-    return toTimestamp(o);
+    return o;
   } else if (typeof o === "string") {
-    return toTimestamp(new globalThis.Date(o));
+    return new globalThis.Date(o);
   } else {
-    return Timestamp.fromJSON(o);
+    return fromTimestamp(Timestamp.fromJSON(o));
   }
 }
 

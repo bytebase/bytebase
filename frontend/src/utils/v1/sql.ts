@@ -50,10 +50,7 @@ export const extractSQLRowValue = (
   if (value.timestampValue) {
     const timestampValue = value.timestampValue;
     return {
-      plain: dayjs(
-        timestampValue.seconds.toNumber() * 1000 +
-          timestampValue.nanos / 1000000
-      ).format("YYYY-MM-DDTHH:mm:ss.SSSZ"),
+      plain: dayjs(timestampValue).format("YYYY-MM-DDTHH:mm:ss.SSSZ"),
       raw: timestampValue,
     };
   }

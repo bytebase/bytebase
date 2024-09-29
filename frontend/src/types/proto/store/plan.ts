@@ -33,7 +33,7 @@ export interface PlanConfig_Step {
 export interface PlanConfig_Spec {
   /** earliest_allowed_time the earliest execution time of the change. */
   earliestAllowedTime:
-    | Timestamp
+    | Date
     | undefined;
   /** A UUID4 string that uniquely identifies the Spec. */
   id: string;
@@ -406,7 +406,7 @@ function createBasePlanConfig_Spec(): PlanConfig_Spec {
 export const PlanConfig_Spec = {
   encode(message: PlanConfig_Spec, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.earliestAllowedTime !== undefined) {
-      Timestamp.encode(message.earliestAllowedTime, writer.uint32(34).fork()).ldelim();
+      Timestamp.encode(toTimestamp(message.earliestAllowedTime), writer.uint32(34).fork()).ldelim();
     }
     if (message.id !== "") {
       writer.uint32(42).string(message.id);
@@ -438,7 +438,7 @@ export const PlanConfig_Spec = {
             break;
           }
 
-          message.earliestAllowedTime = Timestamp.decode(reader, reader.uint32());
+          message.earliestAllowedTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           continue;
         case 5:
           if (tag !== 42) {
@@ -508,7 +508,7 @@ export const PlanConfig_Spec = {
   toJSON(message: PlanConfig_Spec): unknown {
     const obj: any = {};
     if (message.earliestAllowedTime !== undefined) {
-      obj.earliestAllowedTime = message.earliestAllowedTime;
+      obj.earliestAllowedTime = message.earliestAllowedTime.toISOString();
     }
     if (message.id !== "") {
       obj.id = message.id;
@@ -533,9 +533,7 @@ export const PlanConfig_Spec = {
   },
   fromPartial(object: DeepPartial<PlanConfig_Spec>): PlanConfig_Spec {
     const message = createBasePlanConfig_Spec();
-    message.earliestAllowedTime = (object.earliestAllowedTime !== undefined && object.earliestAllowedTime !== null)
-      ? Timestamp.fromPartial(object.earliestAllowedTime)
-      : undefined;
+    message.earliestAllowedTime = object.earliestAllowedTime ?? undefined;
     message.id = object.id ?? "";
     message.dependsOnSpecs = object.dependsOnSpecs?.map((e) => e) || [];
     message.createDatabaseConfig = (object.createDatabaseConfig !== undefined && object.createDatabaseConfig !== null)
@@ -1310,13 +1308,19 @@ function toTimestamp(date: Date): Timestamp {
   return { seconds, nanos };
 }
 
-function fromJsonTimestamp(o: any): Timestamp {
+function fromTimestamp(t: Timestamp): Date {
+  let millis = (t.seconds.toNumber() || 0) * 1_000;
+  millis += (t.nanos || 0) / 1_000_000;
+  return new globalThis.Date(millis);
+}
+
+function fromJsonTimestamp(o: any): Date {
   if (o instanceof globalThis.Date) {
-    return toTimestamp(o);
+    return o;
   } else if (typeof o === "string") {
-    return toTimestamp(new globalThis.Date(o));
+    return new globalThis.Date(o);
   } else {
-    return Timestamp.fromJSON(o);
+    return fromTimestamp(Timestamp.fromJSON(o));
   }
 }
 

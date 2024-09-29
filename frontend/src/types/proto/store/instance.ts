@@ -26,7 +26,7 @@ export interface InstanceMetadata {
    * It is used to determine whether the table names and database names are case sensitive.
    */
   mysqlLowerCaseTableNames: number;
-  lastSyncTime: Timestamp | undefined;
+  lastSyncTime: Date | undefined;
   roles: InstanceRole[];
 }
 
@@ -136,7 +136,7 @@ export const InstanceMetadata = {
       writer.uint32(8).int32(message.mysqlLowerCaseTableNames);
     }
     if (message.lastSyncTime !== undefined) {
-      Timestamp.encode(message.lastSyncTime, writer.uint32(18).fork()).ldelim();
+      Timestamp.encode(toTimestamp(message.lastSyncTime), writer.uint32(18).fork()).ldelim();
     }
     for (const v of message.roles) {
       InstanceRole.encode(v!, writer.uint32(26).fork()).ldelim();
@@ -163,7 +163,7 @@ export const InstanceMetadata = {
             break;
           }
 
-          message.lastSyncTime = Timestamp.decode(reader, reader.uint32());
+          message.lastSyncTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           continue;
         case 3:
           if (tag !== 26) {
@@ -197,7 +197,7 @@ export const InstanceMetadata = {
       obj.mysqlLowerCaseTableNames = Math.round(message.mysqlLowerCaseTableNames);
     }
     if (message.lastSyncTime !== undefined) {
-      obj.lastSyncTime = message.lastSyncTime;
+      obj.lastSyncTime = message.lastSyncTime.toISOString();
     }
     if (message.roles?.length) {
       obj.roles = message.roles.map((e) => InstanceRole.toJSON(e));
@@ -211,9 +211,7 @@ export const InstanceMetadata = {
   fromPartial(object: DeepPartial<InstanceMetadata>): InstanceMetadata {
     const message = createBaseInstanceMetadata();
     message.mysqlLowerCaseTableNames = object.mysqlLowerCaseTableNames ?? 0;
-    message.lastSyncTime = (object.lastSyncTime !== undefined && object.lastSyncTime !== null)
-      ? Timestamp.fromPartial(object.lastSyncTime)
-      : undefined;
+    message.lastSyncTime = object.lastSyncTime ?? undefined;
     message.roles = object.roles?.map((e) => InstanceRole.fromPartial(e)) || [];
     return message;
   },
@@ -337,13 +335,19 @@ function toTimestamp(date: Date): Timestamp {
   return { seconds, nanos };
 }
 
-function fromJsonTimestamp(o: any): Timestamp {
+function fromTimestamp(t: Timestamp): Date {
+  let millis = (t.seconds.toNumber() || 0) * 1_000;
+  millis += (t.nanos || 0) / 1_000_000;
+  return new globalThis.Date(millis);
+}
+
+function fromJsonTimestamp(o: any): Date {
   if (o instanceof globalThis.Date) {
-    return toTimestamp(o);
+    return o;
   } else if (typeof o === "string") {
-    return toTimestamp(new globalThis.Date(o));
+    return new globalThis.Date(o);
   } else {
-    return Timestamp.fromJSON(o);
+    return fromTimestamp(Timestamp.fromJSON(o));
   }
 }
 

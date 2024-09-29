@@ -116,10 +116,10 @@ export interface Branch {
   updater: string;
   /** The timestamp when the branch was created. */
   createTime:
-    | Timestamp
+    | Date
     | undefined;
   /** The timestamp when the branch was last updated. */
-  updateTime: Timestamp | undefined;
+  updateTime: Date | undefined;
 }
 
 export interface GetBranchRequest {
@@ -393,10 +393,10 @@ export const Branch = {
       writer.uint32(98).string(message.updater);
     }
     if (message.createTime !== undefined) {
-      Timestamp.encode(message.createTime, writer.uint32(106).fork()).ldelim();
+      Timestamp.encode(toTimestamp(message.createTime), writer.uint32(106).fork()).ldelim();
     }
     if (message.updateTime !== undefined) {
-      Timestamp.encode(message.updateTime, writer.uint32(114).fork()).ldelim();
+      Timestamp.encode(toTimestamp(message.updateTime), writer.uint32(114).fork()).ldelim();
     }
     return writer;
   },
@@ -497,14 +497,14 @@ export const Branch = {
             break;
           }
 
-          message.createTime = Timestamp.decode(reader, reader.uint32());
+          message.createTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           continue;
         case 14:
           if (tag !== 114) {
             break;
           }
 
-          message.updateTime = Timestamp.decode(reader, reader.uint32());
+          message.updateTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -575,10 +575,10 @@ export const Branch = {
       obj.updater = message.updater;
     }
     if (message.createTime !== undefined) {
-      obj.createTime = message.createTime;
+      obj.createTime = message.createTime.toISOString();
     }
     if (message.updateTime !== undefined) {
-      obj.updateTime = message.updateTime;
+      obj.updateTime = message.updateTime.toISOString();
     }
     return obj;
   },
@@ -605,12 +605,8 @@ export const Branch = {
     message.etag = object.etag ?? "";
     message.creator = object.creator ?? "";
     message.updater = object.updater ?? "";
-    message.createTime = (object.createTime !== undefined && object.createTime !== null)
-      ? Timestamp.fromPartial(object.createTime)
-      : undefined;
-    message.updateTime = (object.updateTime !== undefined && object.updateTime !== null)
-      ? Timestamp.fromPartial(object.updateTime)
-      : undefined;
+    message.createTime = object.createTime ?? undefined;
+    message.updateTime = object.updateTime ?? undefined;
     return message;
   },
 };
@@ -2260,13 +2256,19 @@ function toTimestamp(date: Date): Timestamp {
   return { seconds, nanos };
 }
 
-function fromJsonTimestamp(o: any): Timestamp {
+function fromTimestamp(t: Timestamp): Date {
+  let millis = (t.seconds.toNumber() || 0) * 1_000;
+  millis += (t.nanos || 0) / 1_000_000;
+  return new globalThis.Date(millis);
+}
+
+function fromJsonTimestamp(o: any): Date {
   if (o instanceof globalThis.Date) {
-    return toTimestamp(o);
+    return o;
   } else if (typeof o === "string") {
-    return toTimestamp(new globalThis.Date(o));
+    return new globalThis.Date(o);
   } else {
-    return Timestamp.fromJSON(o);
+    return fromTimestamp(Timestamp.fromJSON(o));
   }
 }
 
