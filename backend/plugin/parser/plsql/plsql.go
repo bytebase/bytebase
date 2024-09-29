@@ -225,10 +225,10 @@ func NormalizeTableName(tableName parser.ITable_nameContext) string {
 	return NormalizeIdentifierContext(tableName.Identifier())
 }
 
-func NormalizeGeneralElementPart(element parser.IGeneral_element_partContext) []string {
+func NormalizeGeneralElement(element parser.IGeneral_elementContext) []string {
 	var result []string
-	for _, child := range element.AllId_expression() {
-		result = append(result, NormalizeIDExpression(child))
+	for _, child := range element.AllGeneral_element_part() {
+		result = append(result, NormalizeIDExpression(child.Id_expression()))
 	}
 	return result
 }

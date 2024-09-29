@@ -21,7 +21,7 @@ require (
 	github.com/buger/jsonparser v1.1.1
 	github.com/bytebase/bq-parser v0.0.0-20240529032606-614a0230b8f7
 	github.com/bytebase/mysql-parser v0.0.0-20240810145851-ab2c11629c24
-	github.com/bytebase/plsql-parser v0.0.0-20240911085848-8653012513ab
+	github.com/bytebase/plsql-parser v0.0.0-20240929073008-6b57c2e2525d
 	github.com/bytebase/postgresql-parser v0.0.0-20231221075352-cf5025e0d56f
 	github.com/bytebase/snowsql-parser v0.0.0-20240304100801-bb357ccb5535
 	github.com/bytebase/tidb-parser v0.0.0-20240821091609-162fffe2a839
