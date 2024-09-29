@@ -3,6 +3,6 @@ CREATE TABLE IF NOT EXISTS revision (
     instance_id INTEGER NOT NULL REFERENCES instance (id),
     database_id INTEGER NOT NULL REFERENCES db (id),
     creator_id INTEGER NOT NULL REFERENCES principal (id),
-    created_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
+    created_ts TIMESTAMPTZ NOT NULL DEFAULT now(),
     payload JSONB NOT NULL DEFAULT '{}'
 );

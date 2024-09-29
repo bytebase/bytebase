@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"time"
 
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -19,7 +20,7 @@ type ReleaseMessage struct {
 	// output only
 	UID        int64
 	CreatorUID int
-	CreatedTs  int64
+	CreatedTs  time.Time
 }
 
 type FindReleaseMessage struct {
@@ -52,7 +53,8 @@ func (s *Store) CreateRelease(ctx context.Context, release *ReleaseMessage, crea
 	}
 	defer tx.Rollback()
 
-	var id, createdTs int64
+	var id int64
+	var createdTs time.Time
 	if err := tx.QueryRowContext(ctx, query,
 		creatorUID,
 		release.ProjectUID,
