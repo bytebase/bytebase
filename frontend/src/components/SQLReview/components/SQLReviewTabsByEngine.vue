@@ -1,7 +1,7 @@
 <template>
   <NTabs v-model:value="selectedEngine" :type="'line'" :size="'large'">
     <NTabPane
-      v-for="[engine, ruleMap] in ruleMapByEngine.entries()"
+      v-for="[engine, ruleMap] in sortedData"
       :key="engine"
       :name="engine"
     >
@@ -29,11 +29,12 @@
 
 <script setup lang="ts">
 import { NTabs, NTabPane } from "naive-ui";
-import { ref, watch } from "vue";
+import { ref, watch, computed } from "vue";
 import { EngineIcon } from "@/components/Icon";
 import { RichEngineName } from "@/components/v2";
 import type { RuleTemplateV2 } from "@/types";
 import { Engine } from "@/types/proto/v1/common";
+import { supportedEngineV1List } from "@/utils";
 
 const selectedEngine = ref<Engine>(Engine.UNRECOGNIZED);
 
@@ -46,4 +47,20 @@ watch(
   (engine) => (selectedEngine.value = engine),
   { immediate: true }
 );
+
+const engineWithOrderRank = computed(() => {
+  return supportedEngineV1List().reduce((map, engine, index) => {
+    map.set(engine, index);
+    return map;
+  }, new Map<Engine, number>());
+});
+
+const sortedData = computed((): [Engine, Map<string, RuleTemplateV2>][] => {
+  return [...props.ruleMapByEngine.entries()].sort(([e1, d1], [e2, d2]) => {
+    return (
+      (engineWithOrderRank.value.get(e1) ?? 0) -
+      (engineWithOrderRank.value.get(e2) ?? 0)
+    );
+  });
+});
 </script>
