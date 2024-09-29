@@ -1,6 +1,7 @@
 /* eslint-disable */
 import Long from "long";
 import _m0 from "protobufjs/minimal";
+import { FieldMask } from "../google/protobuf/field_mask";
 import { Timestamp } from "../google/protobuf/timestamp";
 import { VCSType, vCSTypeFromJSON, vCSTypeToJSON, vCSTypeToNumber } from "./common";
 
@@ -89,6 +90,15 @@ export interface CreateReleaseRequest {
   parent: string;
   /** The release to create. */
   release: Release | undefined;
+}
+
+export interface UpdateReleaseRequest {
+  /** The release to update. */
+  release:
+    | Release
+    | undefined;
+  /** The list of fields to be updated. */
+  updateMask: string[] | undefined;
 }
 
 export interface Release {
@@ -418,6 +428,82 @@ export const CreateReleaseRequest = {
     message.release = (object.release !== undefined && object.release !== null)
       ? Release.fromPartial(object.release)
       : undefined;
+    return message;
+  },
+};
+
+function createBaseUpdateReleaseRequest(): UpdateReleaseRequest {
+  return { release: undefined, updateMask: undefined };
+}
+
+export const UpdateReleaseRequest = {
+  encode(message: UpdateReleaseRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.release !== undefined) {
+      Release.encode(message.release, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.updateMask !== undefined) {
+      FieldMask.encode(FieldMask.wrap(message.updateMask), writer.uint32(18).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): UpdateReleaseRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseUpdateReleaseRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.release = Release.decode(reader, reader.uint32());
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.updateMask = FieldMask.unwrap(FieldMask.decode(reader, reader.uint32()));
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): UpdateReleaseRequest {
+    return {
+      release: isSet(object.release) ? Release.fromJSON(object.release) : undefined,
+      updateMask: isSet(object.updateMask) ? FieldMask.unwrap(FieldMask.fromJSON(object.updateMask)) : undefined,
+    };
+  },
+
+  toJSON(message: UpdateReleaseRequest): unknown {
+    const obj: any = {};
+    if (message.release !== undefined) {
+      obj.release = Release.toJSON(message.release);
+    }
+    if (message.updateMask !== undefined) {
+      obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask));
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<UpdateReleaseRequest>): UpdateReleaseRequest {
+    return UpdateReleaseRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<UpdateReleaseRequest>): UpdateReleaseRequest {
+    const message = createBaseUpdateReleaseRequest();
+    message.release = (object.release !== undefined && object.release !== null)
+      ? Release.fromPartial(object.release)
+      : undefined;
+    message.updateMask = object.updateMask ?? undefined;
     return message;
   },
 };
@@ -913,6 +999,97 @@ export const ReleaseServiceDefinition = {
               115,
               101,
               115,
+            ]),
+          ],
+        },
+      },
+    },
+    updateRelease: {
+      name: "UpdateRelease",
+      requestType: UpdateReleaseRequest,
+      requestStream: false,
+      responseType: Release,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          8410: [
+            new Uint8Array([
+              19,
+              114,
+              101,
+              108,
+              101,
+              97,
+              115,
+              101,
+              44,
+              117,
+              112,
+              100,
+              97,
+              116,
+              101,
+              95,
+              109,
+              97,
+              115,
+              107,
+            ]),
+          ],
+          578365826: [
+            new Uint8Array([
+              51,
+              58,
+              7,
+              114,
+              101,
+              108,
+              101,
+              97,
+              115,
+              101,
+              50,
+              40,
+              47,
+              118,
+              49,
+              47,
+              123,
+              114,
+              101,
+              108,
+              101,
+              97,
+              115,
+              101,
+              46,
+              110,
+              97,
+              109,
+              101,
+              61,
+              112,
+              114,
+              111,
+              106,
+              101,
+              99,
+              116,
+              115,
+              47,
+              42,
+              47,
+              114,
+              101,
+              108,
+              101,
+              97,
+              115,
+              101,
+              115,
+              47,
+              42,
+              125,
             ]),
           ],
         },

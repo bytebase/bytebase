@@ -44,6 +44,7 @@
 import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute } from "vue-router";
+import { BBSpin } from "@/bbkit";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import { PROJECT_V1_ROUTE_CHANGELIST_DETAIL } from "@/router/dashboard/projectV1";
 import { pushNotification, useChangelistStore } from "@/store";
@@ -59,7 +60,6 @@ import DeleteChangelistButton from "./DeleteChangelistButton.vue";
 import NavBar from "./NavBar";
 import RawSQLPanel from "./RawSQLPanel";
 import { provideChangelistDetailContext } from "./context";
-import { BBSpin } from "@/bbkit";
 
 const { t } = useI18n();
 const route = useRoute();

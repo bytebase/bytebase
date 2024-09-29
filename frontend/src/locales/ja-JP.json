@@ -290,7 +290,8 @@
     "back-to-workspace": "ワークスペースに戻る",
     "override": "オーバーライド",
     "encoding": "エンコーディング",
-    "finish": "仕上げる"
+    "finish": "仕上げる",
+    "title": "タイトル"
   },
   "error-page": {
     "go-back-home": "ホームページに戻る"

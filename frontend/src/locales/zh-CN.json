@@ -290,7 +290,8 @@
     "back-to-workspace": "返回工作空间",
     "override": "覆盖",
     "encoding": "编码",
-    "finish": "完成"
+    "finish": "完成",
+    "title": "标题"
   },
   "error-page": {
     "go-back-home": "回到主页"
