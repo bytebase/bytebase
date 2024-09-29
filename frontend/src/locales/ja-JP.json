@@ -1415,6 +1415,12 @@
     "select-database-user": "データベースユーザーの選択",
     "new-database": "@:common.new@:common.database",
     "syncing": "同期中 ...",
+    "sync": {
+      "self": "同期インスタンス",
+      "sync-all": "すべてのデータベースを同期する",
+      "sync-new": "新しいデータベースのみを同期する",
+      "sync-all-tip": "データベースの同期は非同期で、数秒から数分かかる場合があります。"
+    },
     "selected-n-instances": "{n} 個のインスタンスが選択されました",
     "create-migration-schema": "@:common.create@:common.migration @:{'common.schema'}",
     "missing-migration-schema": "@:common.migration @:common.schema がありません",
