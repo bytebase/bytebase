@@ -49,7 +49,9 @@ const projectV1Routes: RouteRecordRaw[] = [
       {
         path: "",
         name: PROJECT_V1_ROUTE_DETAIL,
-        redirect: { name: PROJECT_V1_ROUTE_ISSUES },
+        // We will check user's permission to decide the redirect page.
+        component: () => import("@/views/project/ProjectLandingPage.vue"),
+        props: true,
       },
       {
         path: "databases",

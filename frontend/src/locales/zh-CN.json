@@ -1048,6 +1048,11 @@
     "waiting-rollout": "等待发布",
     "opened-by-at": "{id} 由 {creator} 开启于 {time}",
     "commit-by-at": "{id} {title} 由 {author} 提交于 {time}",
+    "status": {
+      "open": "开启中",
+      "done": "已完成",
+      "canceled": "已关闭"
+    },
     "status-transition": {
       "modal": {
         "resolve": "完成工单?",

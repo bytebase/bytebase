@@ -56,8 +56,8 @@ import {
   type QuickActionType,
   UNKNOWN_PROJECT_NAME,
   DEFAULT_PROJECT_NAME,
-  QuickActionProjectPermissionMap,
 } from "@/types";
+import type { Permission } from "@/types/iam/permission";
 import { State } from "@/types/proto/v1/common";
 import { hasProjectPermissionV2 } from "@/utils";
 
@@ -137,14 +137,29 @@ const allowEdit = computed(() => {
   return hasProjectPermissionV2(project.value, "bb.projects.update");
 });
 
+// Permission check for project level quick actions.
+const quickActionProjectPermissionMap: Map<QuickActionType, Permission[]> =
+  new Map([
+    ["quickaction.bb.project.database.transfer", ["bb.projects.update"]],
+    [
+      "quickaction.bb.database.create",
+      ["bb.instances.list", "bb.issues.create"],
+    ],
+    ["quickaction.bb.group.database-group.create", ["bb.projects.update"]],
+    ["quickaction.bb.issue.grant.request.querier", ["bb.issues.create"]],
+    ["quickaction.bb.issue.grant.request.exporter", ["bb.issues.create"]],
+  ]);
+
 const getQuickActionList = (list: QuickActionType[]): QuickActionType[] => {
   return list.filter((action) => {
-    if (!QuickActionProjectPermissionMap.has(action)) {
+    if (!quickActionProjectPermissionMap.has(action)) {
       return false;
     }
-    const hasPermission = QuickActionProjectPermissionMap.get(action)?.every(
-      (permission) => hasProjectPermissionV2(project.value, permission)
-    );
+    const hasPermission = quickActionProjectPermissionMap
+      .get(action)
+      ?.every((permission) =>
+        hasProjectPermissionV2(project.value, permission)
+      );
     return hasPermission;
   });
 };
@@ -162,12 +177,21 @@ const quickActionListForDatabase = computed((): QuickActionType[] => {
     return [];
   }
 
-  return [
+  const actions: QuickActionType[] = [
     "quickaction.bb.database.create",
     "quickaction.bb.project.database.transfer",
     "quickaction.bb.issue.grant.request.querier",
     "quickaction.bb.issue.grant.request.exporter",
   ];
+
+  if (!hasProjectPermissionV2(project.value, "bb.databases.query")) {
+    actions.push("quickaction.bb.issue.grant.request.querier");
+  }
+  if (!hasProjectPermissionV2(project.value, "bb.databases.export")) {
+    actions.push("quickaction.bb.issue.grant.request.exporter");
+  }
+
+  return actions;
 });
 
 const quickActionList = computed(() => {
