@@ -1048,6 +1048,11 @@
     "waiting-rollout": "リリース待ち",
     "opened-by-at": "{id} は {creator} から {time} まで始まりました",
     "commit-by-at": "{id} {title} は {time} に {author} によって送信されました",
+    "status": {
+      "open": "開ける",
+      "done": "終わり",
+      "canceled": "キャンセル"
+    },
     "status-transition": {
       "modal": {
         "resolve": "作業指示は完了しましたか?",

@@ -656,8 +656,6 @@
     - [Advice](#bytebase-v1-Advice)
     - [CheckRequest](#bytebase-v1-CheckRequest)
     - [CheckResponse](#bytebase-v1-CheckResponse)
-    - [DifferPreviewRequest](#bytebase-v1-DifferPreviewRequest)
-    - [DifferPreviewResponse](#bytebase-v1-DifferPreviewResponse)
     - [ExecuteRequest](#bytebase-v1-ExecuteRequest)
     - [ExecuteResponse](#bytebase-v1-ExecuteResponse)
     - [ExportRequest](#bytebase-v1-ExportRequest)
@@ -10439,38 +10437,6 @@ Type of the SheetPayload.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | advices | [Advice](#bytebase-v1-Advice) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-v1-DifferPreviewRequest"></a>
-
-### DifferPreviewRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| engine | [Engine](#bytebase-v1-Engine) |  |  |
-| old_schema | [string](#string) |  |  |
-| new_metadata | [DatabaseMetadata](#bytebase-v1-DatabaseMetadata) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-DifferPreviewResponse"></a>
-
-### DifferPreviewResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| schema | [string](#string) |  |  |
 
 
 

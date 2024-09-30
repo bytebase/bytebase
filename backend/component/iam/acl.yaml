@@ -379,6 +379,7 @@ roles:
   - name: roles/projectExporter
     title: Project exporter
     permissions:
+      - bb.databases.check
       - bb.databases.export
       - bb.databases.get
       - bb.databases.getSchema
@@ -421,3 +422,4 @@ roles:
       - bb.issues.create
       - bb.projects.get
       - bb.projects.getIamPolicy
+      - bb.issues.get

@@ -298,16 +298,6 @@ export interface ExportResponse {
   content: Uint8Array;
 }
 
-export interface DifferPreviewRequest {
-  engine: Engine;
-  oldSchema: string;
-  newMetadata: DatabaseMetadata | undefined;
-}
-
-export interface DifferPreviewResponse {
-  schema: string;
-}
-
 export interface PrettyRequest {
   engine: Engine;
   /**
