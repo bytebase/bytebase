@@ -9,7 +9,7 @@
     <div class="textinfolabel">
       {{ $t("anomaly.attention-desc") }}
       <a
-        href="https://www.bytebase.com/docs/administration/anomaly-center/"
+        href="https://www.bytebase.com/docs/change-database/drift-detection?source=console"
         target="_blank"
         class="normal-link inline-flex flex-row items-center"
       >
