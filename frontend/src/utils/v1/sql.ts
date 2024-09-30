@@ -52,7 +52,10 @@ export const extractSQLRowValue = (
     const timestampValue = value.timestampValue;
     const fullDayjs = dayjs(getDateForPbTimestamp(timestampValue));
     const microseconds = Math.floor(timestampValue.nanos / 1000);
-    const timezoneOffset = fullDayjs.format("Z");
+    let timezoneOffset = fullDayjs.format("Z");
+    if (timezoneOffset.endsWith(":00")) {
+      timezoneOffset = timezoneOffset.slice(0, -3);
+    }
     // Format the timestamp into a human-readable string, including microseconds if present
     const formattedTimestamp =
       microseconds > 0
