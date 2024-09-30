@@ -73,7 +73,6 @@ func (s *IssueService) GetIssue(ctx context.Context, request *v1pb.GetIssueReque
 	if err != nil {
 		return nil, err
 	}
-
 	if request.Force {
 		externalApprovalType := api.ExternalApprovalTypeRelay
 		approvals, err := s.store.ListExternalApprovalV2(ctx, &store.ListExternalApprovalMessage{
