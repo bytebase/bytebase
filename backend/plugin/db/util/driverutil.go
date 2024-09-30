@@ -79,7 +79,7 @@ func RowsToQueryResult(rows *sql.Rows, valueMaker func(string, *sql.ColumnType) 
 
 			row := &v1pb.QueryRow{}
 			for i := 0; i < columnLength; i++ {
-				row.Values = append(row.Values, rowValueConverter(columnNames[i], values[i]))
+				row.Values = append(row.Values, rowValueConverter(columnTypeNames[i], values[i]))
 			}
 
 			result.Rows = append(result.Rows, row)
