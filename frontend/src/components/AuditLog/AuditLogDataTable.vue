@@ -16,6 +16,7 @@ import { useI18n } from "vue-i18n";
 import BBAvatar from "@/bbkit/BBAvatar.vue";
 import { extractUserEmail, useProjectV1Store, useUserStore } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
+import { getDateForPbTimestamp } from "@/types";
 import { AuditData, type AuditLog } from "@/types/proto/v1/audit_log_service";
 import { Setting } from "@/types/proto/v1/setting_service";
 import { extractProjectResourceName } from "@/utils";
@@ -47,7 +48,9 @@ const columnList = computed((): ProjectDataTableColumn[] => {
         title: t("audit-log.table.created-ts"),
         width: 240,
         render: (auditLog) =>
-          dayjs(auditLog.createTime).format("YYYY-MM-DD HH:mm:ss Z"),
+          dayjs(getDateForPbTimestamp(auditLog.createTime)).format(
+            "YYYY-MM-DD HH:mm:ss Z"
+          ),
       },
       {
         key: "severity",

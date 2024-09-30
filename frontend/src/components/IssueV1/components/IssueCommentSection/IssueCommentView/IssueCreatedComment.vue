@@ -23,7 +23,7 @@
               <ActionCreator :creator="issue.creator" />
               <span>{{ $t("activity.sentence.created-issue") }}</span>
               <HumanizeTs
-                :ts="(issue.createTime?.getTime() ?? 0) / 1000"
+                :ts="getTimeForPbTimestamp(issue.createTime, 0) / 1000"
                 class="ml-1 text-gray-400"
               />
             </div>
@@ -36,7 +36,7 @@
 
 <script lang="ts" setup>
 import HumanizeTs from "@/components/misc/HumanizeTs.vue";
-import type { ComposedIssue } from "@/types";
+import { getTimeForPbTimestamp, type ComposedIssue } from "@/types";
 import ActionCreator from "./ActionCreator.vue";
 import type { DistinctIssueComment } from "./common";
 

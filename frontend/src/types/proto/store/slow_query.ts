@@ -26,7 +26,7 @@ export interface SlowQueryStatisticsItem {
   count: number;
   /** latest_log_time is the time of the latest slow query with the same fingerprint. */
   latestLogTime:
-    | Date
+    | Timestamp
     | undefined;
   /** The total query time of the slow query log. */
   totalQueryTime:
@@ -52,7 +52,7 @@ export interface SlowQueryStatisticsItem {
 export interface SlowQueryDetails {
   /** start_time is the start time of the slow query. */
   startTime:
-    | Date
+    | Timestamp
     | undefined;
   /** query_time is the query time of the slow query. */
   queryTime:
@@ -155,7 +155,7 @@ export const SlowQueryStatisticsItem: MessageFns<SlowQueryStatisticsItem> = {
       writer.uint32(16).int32(message.count);
     }
     if (message.latestLogTime !== undefined) {
-      Timestamp.encode(toTimestamp(message.latestLogTime), writer.uint32(26).fork()).join();
+      Timestamp.encode(message.latestLogTime, writer.uint32(26).fork()).join();
     }
     if (message.totalQueryTime !== undefined) {
       Duration.encode(message.totalQueryTime, writer.uint32(34).fork()).join();
@@ -207,7 +207,7 @@ export const SlowQueryStatisticsItem: MessageFns<SlowQueryStatisticsItem> = {
             break;
           }
 
-          message.latestLogTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          message.latestLogTime = Timestamp.decode(reader, reader.uint32());
           continue;
         case 4:
           if (tag !== 34) {
@@ -293,7 +293,7 @@ export const SlowQueryStatisticsItem: MessageFns<SlowQueryStatisticsItem> = {
       obj.count = Math.round(message.count);
     }
     if (message.latestLogTime !== undefined) {
-      obj.latestLogTime = message.latestLogTime.toISOString();
+      obj.latestLogTime = fromTimestamp(message.latestLogTime).toISOString();
     }
     if (message.totalQueryTime !== undefined) {
       obj.totalQueryTime = Duration.toJSON(message.totalQueryTime);
@@ -326,7 +326,9 @@ export const SlowQueryStatisticsItem: MessageFns<SlowQueryStatisticsItem> = {
     const message = createBaseSlowQueryStatisticsItem();
     message.sqlFingerprint = object.sqlFingerprint ?? "";
     message.count = object.count ?? 0;
-    message.latestLogTime = object.latestLogTime ?? undefined;
+    message.latestLogTime = (object.latestLogTime !== undefined && object.latestLogTime !== null)
+      ? Timestamp.fromPartial(object.latestLogTime)
+      : undefined;
     message.totalQueryTime = (object.totalQueryTime !== undefined && object.totalQueryTime !== null)
       ? Duration.fromPartial(object.totalQueryTime)
       : undefined;
@@ -349,7 +351,7 @@ function createBaseSlowQueryDetails(): SlowQueryDetails {
 export const SlowQueryDetails: MessageFns<SlowQueryDetails> = {
   encode(message: SlowQueryDetails, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.startTime !== undefined) {
-      Timestamp.encode(toTimestamp(message.startTime), writer.uint32(10).fork()).join();
+      Timestamp.encode(message.startTime, writer.uint32(10).fork()).join();
     }
     if (message.queryTime !== undefined) {
       Duration.encode(message.queryTime, writer.uint32(18).fork()).join();
@@ -381,7 +383,7 @@ export const SlowQueryDetails: MessageFns<SlowQueryDetails> = {
             break;
           }
 
-          message.startTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          message.startTime = Timestamp.decode(reader, reader.uint32());
           continue;
         case 2:
           if (tag !== 18) {
@@ -441,7 +443,7 @@ export const SlowQueryDetails: MessageFns<SlowQueryDetails> = {
   toJSON(message: SlowQueryDetails): unknown {
     const obj: any = {};
     if (message.startTime !== undefined) {
-      obj.startTime = message.startTime.toISOString();
+      obj.startTime = fromTimestamp(message.startTime).toISOString();
     }
     if (message.queryTime !== undefined) {
       obj.queryTime = Duration.toJSON(message.queryTime);
@@ -466,7 +468,9 @@ export const SlowQueryDetails: MessageFns<SlowQueryDetails> = {
   },
   fromPartial(object: DeepPartial<SlowQueryDetails>): SlowQueryDetails {
     const message = createBaseSlowQueryDetails();
-    message.startTime = object.startTime ?? undefined;
+    message.startTime = (object.startTime !== undefined && object.startTime !== null)
+      ? Timestamp.fromPartial(object.startTime)
+      : undefined;
     message.queryTime = (object.queryTime !== undefined && object.queryTime !== null)
       ? Duration.fromPartial(object.queryTime)
       : undefined;
@@ -500,13 +504,13 @@ function fromTimestamp(t: Timestamp): Date {
   return new globalThis.Date(millis);
 }
 
-function fromJsonTimestamp(o: any): Date {
+function fromJsonTimestamp(o: any): Timestamp {
   if (o instanceof globalThis.Date) {
-    return o;
+    return toTimestamp(o);
   } else if (typeof o === "string") {
-    return new globalThis.Date(o);
+    return toTimestamp(new globalThis.Date(o));
   } else {
-    return fromTimestamp(Timestamp.fromJSON(o));
+    return Timestamp.fromJSON(o);
   }
 }
 

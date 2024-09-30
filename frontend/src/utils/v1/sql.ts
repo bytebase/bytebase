@@ -1,5 +1,6 @@
 import dayjs from "dayjs";
 import Long from "long";
+import { getDateForPbTimestamp } from "@/types";
 import { NullValue } from "@/types/proto/google/protobuf/struct";
 import { Engine } from "@/types/proto/v1/common";
 import { RowValue } from "@/types/proto/v1/sql_service";
@@ -50,7 +51,9 @@ export const extractSQLRowValue = (
   if (value.timestampValue) {
     const timestampValue = value.timestampValue;
     return {
-      plain: dayjs(timestampValue).format("YYYY-MM-DDTHH:mm:ss.SSSZ"),
+      plain: dayjs(getDateForPbTimestamp(timestampValue)).format(
+        "YYYY-MM-DDTHH:mm:ss.SSSZ"
+      ),
       raw: timestampValue,
     };
   }

@@ -24,9 +24,9 @@ export interface MFAConfig {
 }
 
 export interface UserProfile {
-  lastLoginTime: Date | undefined;
+  lastLoginTime: Timestamp | undefined;
   lastChangePasswordTime:
-    | Date
+    | Timestamp
     | undefined;
   /** source means where the user comes from. For now we support Entra ID SCIM sync, so the source could be Entra ID. */
   source: string;
@@ -147,10 +147,10 @@ function createBaseUserProfile(): UserProfile {
 export const UserProfile: MessageFns<UserProfile> = {
   encode(message: UserProfile, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.lastLoginTime !== undefined) {
-      Timestamp.encode(toTimestamp(message.lastLoginTime), writer.uint32(10).fork()).join();
+      Timestamp.encode(message.lastLoginTime, writer.uint32(10).fork()).join();
     }
     if (message.lastChangePasswordTime !== undefined) {
-      Timestamp.encode(toTimestamp(message.lastChangePasswordTime), writer.uint32(18).fork()).join();
+      Timestamp.encode(message.lastChangePasswordTime, writer.uint32(18).fork()).join();
     }
     if (message.source !== "") {
       writer.uint32(26).string(message.source);
@@ -170,14 +170,14 @@ export const UserProfile: MessageFns<UserProfile> = {
             break;
           }
 
-          message.lastLoginTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          message.lastLoginTime = Timestamp.decode(reader, reader.uint32());
           continue;
         case 2:
           if (tag !== 18) {
             break;
           }
 
-          message.lastChangePasswordTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          message.lastChangePasswordTime = Timestamp.decode(reader, reader.uint32());
           continue;
         case 3:
           if (tag !== 26) {
@@ -208,10 +208,10 @@ export const UserProfile: MessageFns<UserProfile> = {
   toJSON(message: UserProfile): unknown {
     const obj: any = {};
     if (message.lastLoginTime !== undefined) {
-      obj.lastLoginTime = message.lastLoginTime.toISOString();
+      obj.lastLoginTime = fromTimestamp(message.lastLoginTime).toISOString();
     }
     if (message.lastChangePasswordTime !== undefined) {
-      obj.lastChangePasswordTime = message.lastChangePasswordTime.toISOString();
+      obj.lastChangePasswordTime = fromTimestamp(message.lastChangePasswordTime).toISOString();
     }
     if (message.source !== "") {
       obj.source = message.source;
@@ -224,8 +224,13 @@ export const UserProfile: MessageFns<UserProfile> = {
   },
   fromPartial(object: DeepPartial<UserProfile>): UserProfile {
     const message = createBaseUserProfile();
-    message.lastLoginTime = object.lastLoginTime ?? undefined;
-    message.lastChangePasswordTime = object.lastChangePasswordTime ?? undefined;
+    message.lastLoginTime = (object.lastLoginTime !== undefined && object.lastLoginTime !== null)
+      ? Timestamp.fromPartial(object.lastLoginTime)
+      : undefined;
+    message.lastChangePasswordTime =
+      (object.lastChangePasswordTime !== undefined && object.lastChangePasswordTime !== null)
+        ? Timestamp.fromPartial(object.lastChangePasswordTime)
+        : undefined;
     message.source = object.source ?? "";
     return message;
   },
@@ -251,13 +256,13 @@ function fromTimestamp(t: Timestamp): Date {
   return new globalThis.Date(millis);
 }
 
-function fromJsonTimestamp(o: any): Date {
+function fromJsonTimestamp(o: any): Timestamp {
   if (o instanceof globalThis.Date) {
-    return o;
+    return toTimestamp(o);
   } else if (typeof o === "string") {
-    return new globalThis.Date(o);
+    return toTimestamp(new globalThis.Date(o));
   } else {
-    return fromTimestamp(Timestamp.fromJSON(o));
+    return Timestamp.fromJSON(o);
   }
 }
 
