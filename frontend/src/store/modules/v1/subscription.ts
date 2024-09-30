@@ -4,7 +4,7 @@ import type { Ref } from "vue";
 import { computed } from "vue";
 import { subscriptionServiceClient } from "@/grpcweb";
 import type { FeatureType } from "@/types";
-import { PLANS, instanceLimitFeature } from "@/types";
+import { PLANS, getDateForPbTimestamp, instanceLimitFeature } from "@/types";
 import type {
   Instance,
   InstanceResource,
@@ -73,9 +73,9 @@ export const useSubscriptionV1Store = defineStore("subscription_v1", {
         return "";
       }
 
-      return dayjs(state.subscription.expiresTime).format(
-        "YYYY-MM-DD HH:mm:ss"
-      );
+      return dayjs(
+        getDateForPbTimestamp(state.subscription.expiresTime)
+      ).format("YYYY-MM-DD HH:mm:ss");
     },
     isTrialing(state): boolean {
       return !!state.subscription?.trialing;
@@ -88,7 +88,9 @@ export const useSubscriptionV1Store = defineStore("subscription_v1", {
       ) {
         return false;
       }
-      return dayjs(state.subscription.expiresTime).isBefore(new Date());
+      return dayjs(
+        getDateForPbTimestamp(state.subscription.expiresTime)
+      ).isBefore(new Date());
     },
     daysBeforeExpire(state): number {
       if (
@@ -99,7 +101,9 @@ export const useSubscriptionV1Store = defineStore("subscription_v1", {
         return -1;
       }
 
-      const expiresTime = dayjs(state.subscription.expiresTime);
+      const expiresTime = dayjs(
+        getDateForPbTimestamp(state.subscription.expiresTime)
+      );
       return Math.max(expiresTime.diff(new Date(), "day"), 0);
     },
     isNearExpireTime(state): boolean {
@@ -114,8 +118,13 @@ export const useSubscriptionV1Store = defineStore("subscription_v1", {
       const daysBeforeExpire = this.daysBeforeExpire;
       if (daysBeforeExpire <= 0) return false;
 
-      const trialEndTime = dayjs(state.subscription.expiresTime);
-      const total = trialEndTime.diff(state.subscription.startedTime, "day");
+      const trialEndTime = dayjs(
+        getDateForPbTimestamp(state.subscription.expiresTime)
+      );
+      const total = trialEndTime.diff(
+        getDateForPbTimestamp(state.subscription.startedTime),
+        "day"
+      );
       return daysBeforeExpire / total < 0.5;
     },
     existTrialLicense(): boolean {

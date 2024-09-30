@@ -31,7 +31,7 @@ import { ProjectNameCell } from "@/components/v2/Model/DatabaseV1Table/cells";
 import { emitWindowEvent } from "@/plugins";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { useSheetV1Store } from "@/store";
-import { type ComposedIssue } from "@/types";
+import { getTimeForPbTimestamp, type ComposedIssue } from "@/types";
 import {
   extractProjectResourceName,
   humanizeTs,
@@ -134,7 +134,8 @@ const columnList = computed((): DataTableColumn<ComposedIssue>[] => {
       width: 150,
       resizable: true,
       hide: !showExtendedColumns.value,
-      render: (issue) => humanizeTs((issue.updateTime?.getTime() ?? 0) / 1000),
+      render: (issue) =>
+        humanizeTs(getTimeForPbTimestamp(issue.updateTime, 0) / 1000),
     },
   ];
   return columns.filter((column) => !column.hide);

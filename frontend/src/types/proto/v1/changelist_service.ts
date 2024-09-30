@@ -116,10 +116,10 @@ export interface Changelist {
   updater: string;
   /** The create time of the changelist. */
   createTime:
-    | Date
+    | Timestamp
     | undefined;
   /** The last update time of the changelist. */
-  updateTime: Date | undefined;
+  updateTime: Timestamp | undefined;
   changes: Changelist_Change[];
 }
 
@@ -610,10 +610,10 @@ export const Changelist: MessageFns<Changelist> = {
       writer.uint32(34).string(message.updater);
     }
     if (message.createTime !== undefined) {
-      Timestamp.encode(toTimestamp(message.createTime), writer.uint32(42).fork()).join();
+      Timestamp.encode(message.createTime, writer.uint32(42).fork()).join();
     }
     if (message.updateTime !== undefined) {
-      Timestamp.encode(toTimestamp(message.updateTime), writer.uint32(50).fork()).join();
+      Timestamp.encode(message.updateTime, writer.uint32(50).fork()).join();
     }
     for (const v of message.changes) {
       Changelist_Change.encode(v!, writer.uint32(58).fork()).join();
@@ -661,14 +661,14 @@ export const Changelist: MessageFns<Changelist> = {
             break;
           }
 
-          message.createTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          message.createTime = Timestamp.decode(reader, reader.uint32());
           continue;
         case 6:
           if (tag !== 50) {
             break;
           }
 
-          message.updateTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          message.updateTime = Timestamp.decode(reader, reader.uint32());
           continue;
         case 7:
           if (tag !== 58) {
@@ -715,10 +715,10 @@ export const Changelist: MessageFns<Changelist> = {
       obj.updater = message.updater;
     }
     if (message.createTime !== undefined) {
-      obj.createTime = message.createTime.toISOString();
+      obj.createTime = fromTimestamp(message.createTime).toISOString();
     }
     if (message.updateTime !== undefined) {
-      obj.updateTime = message.updateTime.toISOString();
+      obj.updateTime = fromTimestamp(message.updateTime).toISOString();
     }
     if (message.changes?.length) {
       obj.changes = message.changes.map((e) => Changelist_Change.toJSON(e));
@@ -735,8 +735,12 @@ export const Changelist: MessageFns<Changelist> = {
     message.description = object.description ?? "";
     message.creator = object.creator ?? "";
     message.updater = object.updater ?? "";
-    message.createTime = object.createTime ?? undefined;
-    message.updateTime = object.updateTime ?? undefined;
+    message.createTime = (object.createTime !== undefined && object.createTime !== null)
+      ? Timestamp.fromPartial(object.createTime)
+      : undefined;
+    message.updateTime = (object.updateTime !== undefined && object.updateTime !== null)
+      ? Timestamp.fromPartial(object.updateTime)
+      : undefined;
     message.changes = object.changes?.map((e) => Changelist_Change.fromPartial(e)) || [];
     return message;
   },
@@ -1300,13 +1304,13 @@ function fromTimestamp(t: Timestamp): Date {
   return new globalThis.Date(millis);
 }
 
-function fromJsonTimestamp(o: any): Date {
+function fromJsonTimestamp(o: any): Timestamp {
   if (o instanceof globalThis.Date) {
-    return o;
+    return toTimestamp(o);
   } else if (typeof o === "string") {
-    return new globalThis.Date(o);
+    return toTimestamp(new globalThis.Date(o));
   } else {
-    return fromTimestamp(Timestamp.fromJSON(o));
+    return Timestamp.fromJSON(o);
   }
 }
 

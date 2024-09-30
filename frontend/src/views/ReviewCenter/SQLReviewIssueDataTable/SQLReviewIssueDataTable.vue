@@ -30,7 +30,7 @@ import IssueStatusIconWithTaskSummary from "@/components/IssueV1/components/Issu
 import { ProjectNameCell } from "@/components/v2/Model/DatabaseV1Table/cells";
 import { emitWindowEvent } from "@/plugins";
 import { useSheetV1Store } from "@/store";
-import { type ComposedIssue } from "@/types";
+import { getTimeForPbTimestamp, type ComposedIssue } from "@/types";
 import { humanizeTs, flattenSpecList, extractIssueUID } from "@/utils";
 
 const { t } = useI18n();
@@ -127,7 +127,8 @@ const columnList = computed((): DataTableColumn<ComposedIssue>[] => {
       width: 150,
       resizable: true,
       hide: !showExtendedColumns.value,
-      render: (issue) => humanizeTs((issue.updateTime?.getTime() ?? 0) / 1000),
+      render: (issue) =>
+        humanizeTs(getTimeForPbTimestamp(issue.updateTime, 0) / 1000),
     },
   ];
   return columns.filter((column) => !column.hide);

@@ -117,7 +117,7 @@ export interface Release {
     | undefined;
   /** Format: users/hello@world.com */
   creator: string;
-  createTime: Date | undefined;
+  createTime: Timestamp | undefined;
 }
 
 export interface Release_File {
@@ -536,7 +536,7 @@ export const Release: MessageFns<Release> = {
       writer.uint32(42).string(message.creator);
     }
     if (message.createTime !== undefined) {
-      Timestamp.encode(toTimestamp(message.createTime), writer.uint32(50).fork()).join();
+      Timestamp.encode(message.createTime, writer.uint32(50).fork()).join();
     }
     return writer;
   },
@@ -588,7 +588,7 @@ export const Release: MessageFns<Release> = {
             break;
           }
 
-          message.createTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          message.createTime = Timestamp.decode(reader, reader.uint32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -628,7 +628,7 @@ export const Release: MessageFns<Release> = {
       obj.creator = message.creator;
     }
     if (message.createTime !== undefined) {
-      obj.createTime = message.createTime.toISOString();
+      obj.createTime = fromTimestamp(message.createTime).toISOString();
     }
     return obj;
   },
@@ -645,7 +645,9 @@ export const Release: MessageFns<Release> = {
       ? Release_VCSSource.fromPartial(object.vcsSource)
       : undefined;
     message.creator = object.creator ?? "";
-    message.createTime = object.createTime ?? undefined;
+    message.createTime = (object.createTime !== undefined && object.createTime !== null)
+      ? Timestamp.fromPartial(object.createTime)
+      : undefined;
     return message;
   },
 };
@@ -1124,13 +1126,13 @@ function fromTimestamp(t: Timestamp): Date {
   return new globalThis.Date(millis);
 }
 
-function fromJsonTimestamp(o: any): Date {
+function fromJsonTimestamp(o: any): Timestamp {
   if (o instanceof globalThis.Date) {
-    return o;
+    return toTimestamp(o);
   } else if (typeof o === "string") {
-    return new globalThis.Date(o);
+    return toTimestamp(new globalThis.Date(o));
   } else {
-    return fromTimestamp(Timestamp.fromJSON(o));
+    return Timestamp.fromJSON(o);
   }
 }
 

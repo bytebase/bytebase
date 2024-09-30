@@ -22,6 +22,7 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { ProjectNameCell } from "@/components/v2/Model/DatabaseV1Table/cells";
 import { PROJECT_V1_ROUTE_PLAN_DETAIL } from "@/router/dashboard/projectV1";
+import { getTimeForPbTimestamp } from "@/types";
 import type { ComposedPlan } from "@/types/v1/issue/plan";
 import {
   extractPlanUID,
@@ -83,7 +84,8 @@ const columnList = computed((): DataTableColumn<ComposedPlan>[] => {
       width: 150,
       resizable: true,
       hide: !showExtendedColumns.value,
-      render: (plan) => humanizeTs((plan.updateTime?.getTime() ?? 0) / 1000),
+      render: (plan) =>
+        humanizeTs(getTimeForPbTimestamp(plan.updateTime, 0) / 1000),
     },
   ];
   return columns.filter((column) => !column.hide);

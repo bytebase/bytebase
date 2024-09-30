@@ -71,6 +71,8 @@ import ErrorList from "@/components/misc/ErrorList.vue";
 import { planServiceClient } from "@/grpcweb";
 import { emitWindowEvent } from "@/plugins";
 import { hasFeature, pushNotification, useCurrentUserV1 } from "@/store";
+import { getTimeForPbTimestamp } from "@/types";
+import { Timestamp } from "@/types/proto/google/protobuf/timestamp";
 import { IssueStatus } from "@/types/proto/v1/issue_service";
 import type { Plan_Spec } from "@/types/proto/v1/plan_service";
 import {
@@ -107,7 +109,9 @@ const shouldShowEarliestAllowedTime = computed(() => {
 // `null` to "Unset"
 const earliestAllowedTime = computed(() => {
   const spec = specForTask(issue.value.planEntity, selectedTask.value);
-  return spec?.earliestAllowedTime ? spec.earliestAllowedTime.getTime() : null;
+  return spec?.earliestAllowedTime
+    ? getTimeForPbTimestamp(spec.earliestAllowedTime)
+    : null;
 });
 
 const disallowEditReasons = computed(() => {
@@ -270,8 +274,9 @@ const handleUpdateEarliestAllowedTime = async (timestampMS: number | null) => {
     if (!timestampMS) {
       spec.earliestAllowedTime = undefined;
     } else {
-      spec.earliestAllowedTime = new Date();
-      spec.earliestAllowedTime.setTime(timestampMS);
+      spec.earliestAllowedTime = Timestamp.fromPartial({
+        seconds: Math.floor(timestampMS / 1000),
+      });
     }
   } else {
     const { target, tasks } = await chooseUpdateStatementTarget();
@@ -310,8 +315,9 @@ const handleUpdateEarliestAllowedTime = async (timestampMS: number | null) => {
         if (!timestampMS) {
           spec.earliestAllowedTime = undefined;
         } else {
-          spec.earliestAllowedTime = new Date();
-          spec.earliestAllowedTime.setTime(timestampMS);
+          spec.earliestAllowedTime = Timestamp.fromPartial({
+            seconds: Math.floor(timestampMS / 1000),
+          });
         }
       }
 
