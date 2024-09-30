@@ -50,10 +50,17 @@ export const extractSQLRowValue = (
   }
   if (value.timestampValue) {
     const timestampValue = value.timestampValue;
+    const fullDayjs = dayjs(getDateForPbTimestamp(timestampValue));
+    const microseconds = Math.floor(timestampValue.nanos / 1000);
+    const timezoneOffset = fullDayjs.format("Z");
+    const formattedTimestamp =
+      microseconds > 0
+        ? `${fullDayjs.format("YYYY-MM-DDTHH:mm:ss")}.${microseconds.toString().padStart(6, "0")}${timezoneOffset}`
+        : `${fullDayjs.format("YYYY-MM-DDTHH:mm:ss")}${timezoneOffset}`;
+
     return {
-      plain: dayjs(getDateForPbTimestamp(timestampValue)).format(
-        "YYYY-MM-DDTHH:mm:ss.SSSZ"
-      ),
+      // Use the conditionally formatted timestamp
+      plain: formattedTimestamp,
       raw: timestampValue,
     };
   }
