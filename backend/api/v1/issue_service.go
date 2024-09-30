@@ -74,20 +74,6 @@ func (s *IssueService) GetIssue(ctx context.Context, request *v1pb.GetIssueReque
 		return nil, err
 	}
 
-	callerUser, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
-	if !ok {
-		return nil, status.Errorf(codes.PermissionDenied, "missing api caller")
-	}
-	if callerUser.ID != issue.Creator.ID {
-		ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionIssuesGet, callerUser)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to check permission %v", iam.PermissionIssuesGet)
-		}
-		if !ok {
-			return nil, status.Errorf(codes.PermissionDenied, "missing permission %v", iam.PermissionIssuesGet)
-		}
-	}
-
 	if request.Force {
 		externalApprovalType := api.ExternalApprovalTypeRelay
 		approvals, err := s.store.ListExternalApprovalV2(ctx, &store.ListExternalApprovalMessage{
