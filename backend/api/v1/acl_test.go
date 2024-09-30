@@ -19,7 +19,9 @@ func TestGetResourceFromRequest(t *testing.T) {
 		{
 			request: &v1pb.LoginRequest{Email: "hello@world.com"},
 			method:  "/bytebase.v1.AuthService/Login",
-			want:    nil,
+			want: []*common.Resource{
+				{Workspace: true},
+			},
 		},
 		{
 			request: &v1pb.CreateProjectRequest{
