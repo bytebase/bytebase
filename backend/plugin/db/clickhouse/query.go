@@ -59,7 +59,7 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 					return nil, err
 				}
 				defer rows.Close()
-				r, err := util.RowsToQueryResult(rows, makeValueByTypeName, convertCommonValue, driver.maximumSQLResultSize)
+				r, err := util.RowsToQueryResult(rows, makeValueByTypeName, convertValue, driver.maximumSQLResultSize)
 				if err != nil {
 					return nil, err
 				}
@@ -112,7 +112,7 @@ func makeValueByTypeName(typeName string, columnType *sql.ColumnType) any {
 	return reflect.New(columnType.ScanType()).Interface()
 }
 
-func convertCommonValue(value any) *v1pb.RowValue {
+func convertValue(_ string, value any) *v1pb.RowValue {
 	// handle TUPLE ARRAY MAP
 	if v, ok := value.(*any); ok && v != nil {
 		value, err := json.Marshal(v)

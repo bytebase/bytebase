@@ -22,6 +22,7 @@ import (
 	"go.uber.org/multierr"
 	"golang.org/x/crypto/ssh"
 	"google.golang.org/protobuf/types/known/durationpb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	pgquery "github.com/pganalyze/pg_query_go/v5"
 
@@ -682,7 +683,7 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 					return nil, err
 				}
 				defer rows.Close()
-				r, err := util.RowsToQueryResult(rows, makeCommonValueByTypeName, util.ConvertCommonValue, driver.config.MaximumSQLResultSize)
+				r, err := util.RowsToQueryResult(rows, makeValueByTypeName, convertValue, driver.config.MaximumSQLResultSize)
 				if err != nil {
 					return nil, err
 				}
@@ -721,7 +722,7 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 	return results, nil
 }
 
-func makeCommonValueByTypeName(typeName string, _ *sql.ColumnType) any {
+func makeValueByTypeName(typeName string, _ *sql.ColumnType) any {
 	switch typeName {
 	case "VARCHAR", "TEXT", "UUID", "TIMESTAMP":
 		return new(sql.NullString)
@@ -738,6 +739,67 @@ func makeCommonValueByTypeName(typeName string, _ *sql.ColumnType) any {
 	default:
 		return new(sql.NullString)
 	}
+}
+
+func convertValue(typeName string, value any) *v1pb.RowValue {
+	switch raw := value.(type) {
+	case *sql.NullString:
+		if raw.Valid {
+			if typeName == "TIMESTAMP" {
+				// Convert "2024-09-24T03:23:28.921281Z" to "2024-09-24 03:23:28.921281"
+				timestampWithoutTimezone := strings.ReplaceAll(strings.ReplaceAll(raw.String, "T", " "), "Z", "")
+				return &v1pb.RowValue{
+					Kind: &v1pb.RowValue_StringValue{
+						StringValue: timestampWithoutTimezone,
+					},
+				}
+			}
+			return &v1pb.RowValue{
+				Kind: &v1pb.RowValue_StringValue{
+					StringValue: raw.String,
+				},
+			}
+		}
+	case *sql.NullInt64:
+		if raw.Valid {
+			return &v1pb.RowValue{
+				Kind: &v1pb.RowValue_Int64Value{
+					Int64Value: raw.Int64,
+				},
+			}
+		}
+	case *[]byte:
+		if len(*raw) > 0 {
+			return &v1pb.RowValue{
+				Kind: &v1pb.RowValue_BytesValue{
+					BytesValue: *raw,
+				},
+			}
+		}
+	case *sql.NullBool:
+		if raw.Valid {
+			return &v1pb.RowValue{
+				Kind: &v1pb.RowValue_BoolValue{
+					BoolValue: raw.Bool,
+				},
+			}
+		}
+	case *sql.NullFloat64:
+		if raw.Valid {
+			return &v1pb.RowValue{
+				Kind: &v1pb.RowValue_DoubleValue{
+					DoubleValue: raw.Float64,
+				},
+			}
+		}
+	case *sql.NullTime:
+		if raw.Valid {
+			return &v1pb.RowValue{
+				Kind: &v1pb.RowValue_TimestampValue{TimestampValue: timestamppb.New(raw.Time)},
+			}
+		}
+	}
+	return util.NullRowValue
 }
 
 func getPgError(e error) *v1pb.QueryResult_PostgresError_ {
