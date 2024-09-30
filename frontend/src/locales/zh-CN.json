@@ -1756,7 +1756,6 @@
   "database": {
     "sync-database": "同步数据库",
     "select": "选择数据库",
-    "the-list-might-be-out-of-date-and-is-refreshed-roughly-every-10-minutes": "该表每隔约10分钟刷新一次，所以展示的可能不是最新信息。",
     "no-anomalies-detected": "没有检测到异常",
     "sync-status": "同步状态",
     "last-successful-sync": "最后一次成功的同步",
