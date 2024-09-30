@@ -234,12 +234,6 @@ var projectRegex = regexp.MustCompile(`^projects/[^/]+`)
 var databaseRegex = regexp.MustCompile(`^instances/[^/]+/databases/[^/]+`)
 
 func populateRawResources(ctx context.Context, stores *store.Store, authContext *common.AuthContext, request any, method string) error {
-	if authContext.AllowWithoutCredential {
-		return nil
-	}
-	if authContext.AuthMethod != common.AuthMethodIAM {
-		return nil
-	}
 	resources, err := getResourceFromRequest(request, method)
 	if err != nil {
 		return err
@@ -367,9 +361,6 @@ func getResourceFromSingleRequest(mr protoreflect.Message, shortMethod string) *
 	isUpdate := strings.HasPrefix(shortMethod, "Update")
 	isRemove := strings.HasPrefix(shortMethod, "Remove")
 	isTest := strings.HasPrefix(shortMethod, "Test")
-	if !isCreate && !isUpdate && !isRemove && !isTest {
-		return nil
-	}
 	var resourceName string
 	if isCreate {
 		resourceName = strings.TrimPrefix(shortMethod, "Create")
