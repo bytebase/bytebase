@@ -33,7 +33,7 @@
     "canvas-confetti": "1.9.3",
     "crypto-js": "^4.2.0",
     "d3-shape": "^3.2.0",
-    "dayjs": "1.11.11",
+    "dayjs": "1.11.13",
     "dompurify": "3.1.6",
     "downloadjs": "1.4.7",
     "elkjs": "^0.9.1",
