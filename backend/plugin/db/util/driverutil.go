@@ -10,7 +10,6 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/structpb"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/utils"
@@ -46,7 +45,7 @@ var NullRowValue = &v1pb.RowValue{
 	},
 }
 
-func RowsToQueryResult(rows *sql.Rows, valueMaker func(string, *sql.ColumnType) any, rowValueConverter func(any) *v1pb.RowValue, limit int64) (*v1pb.QueryResult, error) {
+func RowsToQueryResult(rows *sql.Rows, valueMaker func(string, *sql.ColumnType) any, rowValueConverter func(string, any) *v1pb.RowValue, limit int64) (*v1pb.QueryResult, error) {
 	columnNames, err := rows.Columns()
 	if err != nil {
 		return nil, err
@@ -80,7 +79,7 @@ func RowsToQueryResult(rows *sql.Rows, valueMaker func(string, *sql.ColumnType) 
 
 			row := &v1pb.QueryRow{}
 			for i := 0; i < columnLength; i++ {
-				row.Values = append(row.Values, rowValueConverter(values[i]))
+				row.Values = append(row.Values, rowValueConverter(columnTypeNames[i], values[i]))
 			}
 
 			result.Rows = append(result.Rows, row)
@@ -116,7 +115,7 @@ func MakeCommonValueByTypeName(typeName string, _ *sql.ColumnType) any {
 	}
 }
 
-func ConvertCommonValue(value any) *v1pb.RowValue {
+func ConvertCommonValue(_ string, value any) *v1pb.RowValue {
 	switch raw := value.(type) {
 	case *sql.NullString:
 		if raw.Valid {
@@ -155,14 +154,6 @@ func ConvertCommonValue(value any) *v1pb.RowValue {
 			return &v1pb.RowValue{
 				Kind: &v1pb.RowValue_DoubleValue{
 					DoubleValue: raw.Float64,
-				},
-			}
-		}
-	case *sql.NullTime:
-		if raw.Valid {
-			return &v1pb.RowValue{
-				Kind: &v1pb.RowValue_TimestampValue{
-					TimestampValue: timestamppb.New(raw.Time.UTC()),
 				},
 			}
 		}
