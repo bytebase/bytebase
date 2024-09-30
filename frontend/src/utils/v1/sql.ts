@@ -53,13 +53,17 @@ export const extractSQLRowValue = (
     const fullDayjs = dayjs(getDateForPbTimestamp(timestampValue));
     const microseconds = Math.floor(timestampValue.nanos / 1000);
     const timezoneOffset = fullDayjs.format("Z");
+    // Format the timestamp into a human-readable string, including microseconds if present
     const formattedTimestamp =
       microseconds > 0
-        ? `${fullDayjs.format("YYYY-MM-DDTHH:mm:ss")}.${microseconds.toString().padStart(6, "0")}${timezoneOffset}`
-        : `${fullDayjs.format("YYYY-MM-DDTHH:mm:ss")}${timezoneOffset}`;
+        ? // If there are microseconds, append them to the formatted string with 6 digits.
+          // Example: 2021-01-01T00:00:00.123456+0000
+          `${fullDayjs.format("YYYY-MM-DDTHH:mm:ss")}.${microseconds.toString().padStart(6, "0")}${timezoneOffset}`
+        : // Otherwise, just format the date and time without microseconds
+          // Example: 2021-01-01T00:00:00+0000
+          `${fullDayjs.format("YYYY-MM-DDTHH:mm:ss")}${timezoneOffset}`;
 
     return {
-      // Use the conditionally formatted timestamp
       plain: formattedTimestamp,
       raw: timestampValue,
     };
