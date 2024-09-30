@@ -32,7 +32,12 @@ import { NEllipsis } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { getProjectIdRolloutUidStageUidTaskUid } from "@/store/modules/v1/common";
-import { unknownTask, isPostgresFamily, type ComposedTaskRun } from "@/types";
+import {
+  unknownTask,
+  isPostgresFamily,
+  type ComposedTaskRun,
+  getTimeForPbTimestamp,
+} from "@/types";
 import { TaskRun_Status, Task_Type } from "@/types/proto/v1/rollout_service";
 import {
   databaseV1Url,
@@ -66,7 +71,9 @@ const task = computed(() => {
 
 const earliestAllowedTime = computed(() => {
   const spec = specForTask(issue.value.planEntity, task.value);
-  return spec?.earliestAllowedTime ? spec.earliestAllowedTime.getTime() : null;
+  return spec?.earliestAllowedTime
+    ? getTimeForPbTimestamp(spec.earliestAllowedTime)
+    : null;
 });
 
 const comment = computed(() => {

@@ -43,10 +43,10 @@
         </span>
       </BBTableCell>
       <BBTableCell>
-        {{ humanizeTs((anomaly.updateTime?.getTime() ?? 0) / 1000) }}
+        {{ humanizeTs(getTimeForPbTimestamp(anomaly.updateTime, 0) / 1000) }}
       </BBTableCell>
       <BBTableCell>
-        {{ humanizeTs((anomaly.createTime?.getTime() ?? 0) / 1000) }}
+        {{ humanizeTs(getTimeForPbTimestamp(anomaly.createTime, 0) / 1000) }}
       </BBTableCell>
     </template>
   </BBTable>
@@ -85,6 +85,7 @@ import { BBModal, BBTable, BBTableCell, BBTableHeaderCell } from "@/bbkit";
 import type { BBTableSectionDataSource } from "@/bbkit/types";
 import { INSTANCE_ROUTE_DETAIL } from "@/router/dashboard/instance";
 import { useDatabaseV1Store } from "@/store";
+import { getTimeForPbTimestamp } from "@/types";
 import type { Anomaly } from "@/types/proto/v1/anomaly_service";
 import {
   Anomaly_AnomalyType,

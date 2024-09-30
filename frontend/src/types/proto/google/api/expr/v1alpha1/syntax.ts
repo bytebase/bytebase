@@ -325,7 +325,7 @@ export interface Constant {
    *
    * @deprecated
    */
-  timestampValue?: Date | undefined;
+  timestampValue?: Timestamp | undefined;
 }
 
 /** Source information collected at parse time. */
@@ -1392,7 +1392,7 @@ export const Constant: MessageFns<Constant> = {
       Duration.encode(message.durationValue, writer.uint32(66).fork()).join();
     }
     if (message.timestampValue !== undefined) {
-      Timestamp.encode(toTimestamp(message.timestampValue), writer.uint32(74).fork()).join();
+      Timestamp.encode(message.timestampValue, writer.uint32(74).fork()).join();
     }
     return writer;
   },
@@ -1465,7 +1465,7 @@ export const Constant: MessageFns<Constant> = {
             break;
           }
 
-          message.timestampValue = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          message.timestampValue = Timestamp.decode(reader, reader.uint32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -1517,7 +1517,7 @@ export const Constant: MessageFns<Constant> = {
       obj.durationValue = Duration.toJSON(message.durationValue);
     }
     if (message.timestampValue !== undefined) {
-      obj.timestampValue = message.timestampValue.toISOString();
+      obj.timestampValue = fromTimestamp(message.timestampValue).toISOString();
     }
     return obj;
   },
@@ -1541,7 +1541,9 @@ export const Constant: MessageFns<Constant> = {
     message.durationValue = (object.durationValue !== undefined && object.durationValue !== null)
       ? Duration.fromPartial(object.durationValue)
       : undefined;
-    message.timestampValue = object.timestampValue ?? undefined;
+    message.timestampValue = (object.timestampValue !== undefined && object.timestampValue !== null)
+      ? Timestamp.fromPartial(object.timestampValue)
+      : undefined;
     return message;
   },
 };
@@ -2006,13 +2008,13 @@ function fromTimestamp(t: Timestamp): Date {
   return new globalThis.Date(millis);
 }
 
-function fromJsonTimestamp(o: any): Date {
+function fromJsonTimestamp(o: any): Timestamp {
   if (o instanceof globalThis.Date) {
-    return o;
+    return toTimestamp(o);
   } else if (typeof o === "string") {
-    return new globalThis.Date(o);
+    return toTimestamp(new globalThis.Date(o));
   } else {
-    return fromTimestamp(Timestamp.fromJSON(o));
+    return Timestamp.fromJSON(o);
   }
 }
 

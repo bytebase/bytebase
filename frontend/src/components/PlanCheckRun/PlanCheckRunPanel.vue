@@ -27,7 +27,7 @@ import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import type { TabFilterItem } from "@/components/v2";
 import { TabFilter } from "@/components/v2";
-import { type ComposedDatabase } from "@/types";
+import { getDateForPbTimestamp, type ComposedDatabase } from "@/types";
 import {
   PlanCheckRun_Result_Status,
   PlanCheckRun_Type,
@@ -102,7 +102,7 @@ const tabItemList = computed(() => {
         i === 0
           ? t("common.latest")
           : planCheckRun.createTime
-            ? humanizeDate(planCheckRun.createTime)
+            ? humanizeDate(getDateForPbTimestamp(planCheckRun.createTime))
             : `UID(${extractPlanCheckRunUID(planCheckRun.name)})`;
       return {
         label,

@@ -85,8 +85,8 @@ export interface ReviewConfig {
   enabled: boolean;
   /** Format: users/hello@world.com */
   creator: string;
-  createTime: Date | undefined;
-  updateTime: Date | undefined;
+  createTime: Timestamp | undefined;
+  updateTime: Timestamp | undefined;
   rules: SQLReviewRule[];
   /**
    * resources using the config.
@@ -522,10 +522,10 @@ export const ReviewConfig: MessageFns<ReviewConfig> = {
       writer.uint32(34).string(message.creator);
     }
     if (message.createTime !== undefined) {
-      Timestamp.encode(toTimestamp(message.createTime), writer.uint32(42).fork()).join();
+      Timestamp.encode(message.createTime, writer.uint32(42).fork()).join();
     }
     if (message.updateTime !== undefined) {
-      Timestamp.encode(toTimestamp(message.updateTime), writer.uint32(50).fork()).join();
+      Timestamp.encode(message.updateTime, writer.uint32(50).fork()).join();
     }
     for (const v of message.rules) {
       SQLReviewRule.encode(v!, writer.uint32(58).fork()).join();
@@ -576,14 +576,14 @@ export const ReviewConfig: MessageFns<ReviewConfig> = {
             break;
           }
 
-          message.createTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          message.createTime = Timestamp.decode(reader, reader.uint32());
           continue;
         case 6:
           if (tag !== 50) {
             break;
           }
 
-          message.updateTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          message.updateTime = Timestamp.decode(reader, reader.uint32());
           continue;
         case 7:
           if (tag !== 58) {
@@ -638,10 +638,10 @@ export const ReviewConfig: MessageFns<ReviewConfig> = {
       obj.creator = message.creator;
     }
     if (message.createTime !== undefined) {
-      obj.createTime = message.createTime.toISOString();
+      obj.createTime = fromTimestamp(message.createTime).toISOString();
     }
     if (message.updateTime !== undefined) {
-      obj.updateTime = message.updateTime.toISOString();
+      obj.updateTime = fromTimestamp(message.updateTime).toISOString();
     }
     if (message.rules?.length) {
       obj.rules = message.rules.map((e) => SQLReviewRule.toJSON(e));
@@ -661,8 +661,12 @@ export const ReviewConfig: MessageFns<ReviewConfig> = {
     message.title = object.title ?? "";
     message.enabled = object.enabled ?? false;
     message.creator = object.creator ?? "";
-    message.createTime = object.createTime ?? undefined;
-    message.updateTime = object.updateTime ?? undefined;
+    message.createTime = (object.createTime !== undefined && object.createTime !== null)
+      ? Timestamp.fromPartial(object.createTime)
+      : undefined;
+    message.updateTime = (object.updateTime !== undefined && object.updateTime !== null)
+      ? Timestamp.fromPartial(object.updateTime)
+      : undefined;
     message.rules = object.rules?.map((e) => SQLReviewRule.fromPartial(e)) || [];
     message.resources = object.resources?.map((e) => e) || [];
     return message;
@@ -1117,13 +1121,13 @@ function fromTimestamp(t: Timestamp): Date {
   return new globalThis.Date(millis);
 }
 
-function fromJsonTimestamp(o: any): Date {
+function fromJsonTimestamp(o: any): Timestamp {
   if (o instanceof globalThis.Date) {
-    return o;
+    return toTimestamp(o);
   } else if (typeof o === "string") {
-    return new globalThis.Date(o);
+    return toTimestamp(new globalThis.Date(o));
   } else {
-    return fromTimestamp(Timestamp.fromJSON(o));
+    return Timestamp.fromJSON(o);
   }
 }
 

@@ -146,9 +146,9 @@ export interface Plan {
     | undefined;
   /** Format: users/hello@world.com */
   creator: string;
-  createTime: Date | undefined;
+  createTime: Timestamp | undefined;
   updateTime:
-    | Date
+    | Timestamp
     | undefined;
   /**
    * The status count of the latest plan check runs.
@@ -168,7 +168,7 @@ export interface Plan_Step {
 export interface Plan_Spec {
   /** earliest_allowed_time the earliest execution time of the change. */
   earliestAllowedTime:
-    | Date
+    | Timestamp
     | undefined;
   /** A UUID4 string that uniquely identifies the Spec. */
   id: string;
@@ -451,7 +451,7 @@ export interface PlanCheckRun {
   results: PlanCheckRun_Result[];
   /** error is set if the Status is FAILED. */
   error: string;
-  createTime: Date | undefined;
+  createTime: Timestamp | undefined;
 }
 
 export enum PlanCheckRun_Type {
@@ -1277,10 +1277,10 @@ export const Plan: MessageFns<Plan> = {
       writer.uint32(66).string(message.creator);
     }
     if (message.createTime !== undefined) {
-      Timestamp.encode(toTimestamp(message.createTime), writer.uint32(74).fork()).join();
+      Timestamp.encode(message.createTime, writer.uint32(74).fork()).join();
     }
     if (message.updateTime !== undefined) {
-      Timestamp.encode(toTimestamp(message.updateTime), writer.uint32(82).fork()).join();
+      Timestamp.encode(message.updateTime, writer.uint32(82).fork()).join();
     }
     Object.entries(message.planCheckRunStatusCount).forEach(([key, value]) => {
       Plan_PlanCheckRunStatusCountEntry.encode({ key: key as any, value }, writer.uint32(90).fork()).join();
@@ -1349,14 +1349,14 @@ export const Plan: MessageFns<Plan> = {
             break;
           }
 
-          message.createTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          message.createTime = Timestamp.decode(reader, reader.uint32());
           continue;
         case 10:
           if (tag !== 82) {
             break;
           }
 
-          message.updateTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          message.updateTime = Timestamp.decode(reader, reader.uint32());
           continue;
         case 11:
           if (tag !== 90) {
@@ -1421,10 +1421,10 @@ export const Plan: MessageFns<Plan> = {
       obj.creator = message.creator;
     }
     if (message.createTime !== undefined) {
-      obj.createTime = message.createTime.toISOString();
+      obj.createTime = fromTimestamp(message.createTime).toISOString();
     }
     if (message.updateTime !== undefined) {
-      obj.updateTime = message.updateTime.toISOString();
+      obj.updateTime = fromTimestamp(message.updateTime).toISOString();
     }
     if (message.planCheckRunStatusCount) {
       const entries = Object.entries(message.planCheckRunStatusCount);
@@ -1452,8 +1452,12 @@ export const Plan: MessageFns<Plan> = {
       ? Plan_VCSSource.fromPartial(object.vcsSource)
       : undefined;
     message.creator = object.creator ?? "";
-    message.createTime = object.createTime ?? undefined;
-    message.updateTime = object.updateTime ?? undefined;
+    message.createTime = (object.createTime !== undefined && object.createTime !== null)
+      ? Timestamp.fromPartial(object.createTime)
+      : undefined;
+    message.updateTime = (object.updateTime !== undefined && object.updateTime !== null)
+      ? Timestamp.fromPartial(object.updateTime)
+      : undefined;
     message.planCheckRunStatusCount = Object.entries(object.planCheckRunStatusCount ?? {}).reduce<
       { [key: string]: number }
     >((acc, [key, value]) => {
@@ -1554,7 +1558,7 @@ function createBasePlan_Spec(): Plan_Spec {
 export const Plan_Spec: MessageFns<Plan_Spec> = {
   encode(message: Plan_Spec, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.earliestAllowedTime !== undefined) {
-      Timestamp.encode(toTimestamp(message.earliestAllowedTime), writer.uint32(34).fork()).join();
+      Timestamp.encode(message.earliestAllowedTime, writer.uint32(34).fork()).join();
     }
     if (message.id !== "") {
       writer.uint32(42).string(message.id);
@@ -1586,7 +1590,7 @@ export const Plan_Spec: MessageFns<Plan_Spec> = {
             break;
           }
 
-          message.earliestAllowedTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          message.earliestAllowedTime = Timestamp.decode(reader, reader.uint32());
           continue;
         case 5:
           if (tag !== 42) {
@@ -1656,7 +1660,7 @@ export const Plan_Spec: MessageFns<Plan_Spec> = {
   toJSON(message: Plan_Spec): unknown {
     const obj: any = {};
     if (message.earliestAllowedTime !== undefined) {
-      obj.earliestAllowedTime = message.earliestAllowedTime.toISOString();
+      obj.earliestAllowedTime = fromTimestamp(message.earliestAllowedTime).toISOString();
     }
     if (message.id !== "") {
       obj.id = message.id;
@@ -1681,7 +1685,9 @@ export const Plan_Spec: MessageFns<Plan_Spec> = {
   },
   fromPartial(object: DeepPartial<Plan_Spec>): Plan_Spec {
     const message = createBasePlan_Spec();
-    message.earliestAllowedTime = object.earliestAllowedTime ?? undefined;
+    message.earliestAllowedTime = (object.earliestAllowedTime !== undefined && object.earliestAllowedTime !== null)
+      ? Timestamp.fromPartial(object.earliestAllowedTime)
+      : undefined;
     message.id = object.id ?? "";
     message.dependsOnSpecs = object.dependsOnSpecs?.map((e) => e) || [];
     message.createDatabaseConfig = (object.createDatabaseConfig !== undefined && object.createDatabaseConfig !== null)
@@ -2998,7 +3004,7 @@ export const PlanCheckRun: MessageFns<PlanCheckRun> = {
       writer.uint32(66).string(message.error);
     }
     if (message.createTime !== undefined) {
-      Timestamp.encode(toTimestamp(message.createTime), writer.uint32(74).fork()).join();
+      Timestamp.encode(message.createTime, writer.uint32(74).fork()).join();
     }
     return writer;
   },
@@ -3064,7 +3070,7 @@ export const PlanCheckRun: MessageFns<PlanCheckRun> = {
             break;
           }
 
-          message.createTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          message.createTime = Timestamp.decode(reader, reader.uint32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -3116,7 +3122,7 @@ export const PlanCheckRun: MessageFns<PlanCheckRun> = {
       obj.error = message.error;
     }
     if (message.createTime !== undefined) {
-      obj.createTime = message.createTime.toISOString();
+      obj.createTime = fromTimestamp(message.createTime).toISOString();
     }
     return obj;
   },
@@ -3133,7 +3139,9 @@ export const PlanCheckRun: MessageFns<PlanCheckRun> = {
     message.sheet = object.sheet ?? "";
     message.results = object.results?.map((e) => PlanCheckRun_Result.fromPartial(e)) || [];
     message.error = object.error ?? "";
-    message.createTime = object.createTime ?? undefined;
+    message.createTime = (object.createTime !== undefined && object.createTime !== null)
+      ? Timestamp.fromPartial(object.createTime)
+      : undefined;
     return message;
   },
 };
@@ -4132,13 +4140,13 @@ function fromTimestamp(t: Timestamp): Date {
   return new globalThis.Date(millis);
 }
 
-function fromJsonTimestamp(o: any): Date {
+function fromJsonTimestamp(o: any): Timestamp {
   if (o instanceof globalThis.Date) {
-    return o;
+    return toTimestamp(o);
   } else if (typeof o === "string") {
-    return new globalThis.Date(o);
+    return toTimestamp(new globalThis.Date(o));
   } else {
-    return fromTimestamp(Timestamp.fromJSON(o));
+    return Timestamp.fromJSON(o);
   }
 }
 

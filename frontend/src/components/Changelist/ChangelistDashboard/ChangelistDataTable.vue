@@ -22,6 +22,7 @@ import { I18nT, useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import HumanizeDate from "@/components/misc/HumanizeDate.vue";
 import { useUserStore } from "@/store";
+import { getDateForPbTimestamp } from "@/types";
 import type { Changelist } from "@/types/proto/v1/changelist_service";
 import {
   extractUserResourceName,
@@ -78,7 +79,11 @@ const columnList = computed((): ChangelistDataTableColumn[] => {
           return (
             <I18nT keypath="common.updated-at-by">
               {{
-                time: () => <HumanizeDate date={changelist.createTime} />,
+                time: () => (
+                  <HumanizeDate
+                    date={getDateForPbTimestamp(changelist.createTime)}
+                  />
+                ),
                 user: () => getUser(changelist.creator)?.title,
               }}
             </I18nT>
@@ -93,7 +98,11 @@ const columnList = computed((): ChangelistDataTableColumn[] => {
           return (
             <I18nT keypath="common.created-at-by">
               {{
-                time: () => <HumanizeDate date={changelist.createTime} />,
+                time: () => (
+                  <HumanizeDate
+                    date={getDateForPbTimestamp(changelist.createTime)}
+                  />
+                ),
                 user: () => getUser(changelist.creator)?.title,
               }}
             </I18nT>

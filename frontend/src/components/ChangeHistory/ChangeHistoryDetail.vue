@@ -55,7 +55,7 @@
               <span class="textlabel"
                 >{{ $t("common.created-at") }}&nbsp;-&nbsp;</span
               >
-              {{ humanizeDate(changeHistory.createTime) }} by
+              {{ humanizeDate(getDateForPbTimestamp(changeHistory.createTime)) }} by
               {{ `version ${changeHistory.releaseVersion}` }}
             </dd>
           </dl>
@@ -317,6 +317,7 @@ import {
   extractChangeHistoryUID,
 } from "@/utils";
 import NoPermissionPlaceholder from "../misc/NoPermissionPlaceholder.vue";
+import { getDateForPbTimestamp } from "@/types";
 
 interface LocalState {
   showDiff: boolean;

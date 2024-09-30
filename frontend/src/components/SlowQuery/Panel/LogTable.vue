@@ -39,7 +39,11 @@ import {
   InstanceV1Name,
   EnvironmentV1Name,
 } from "@/components/v2";
-import type { ComposedSlowQueryLog } from "@/types";
+import {
+  getDateForPbTimestamp,
+  getTimeForPbTimestamp,
+  type ComposedSlowQueryLog,
+} from "@/types";
 import type { Duration } from "@/types/proto/google/protobuf/duration";
 import { instanceV1HasSlowQueryDetail } from "@/utils";
 
@@ -218,10 +222,12 @@ const dataTableColumns = computed(
       title: t("slow-query.last-query-time"),
       key: "last_query_time",
       sorter: (rowA, rowB) =>
-        (rowA.log.statistics?.latestLogTime?.getTime() ?? 0) -
-        (rowB.log.statistics?.latestLogTime?.getTime() ?? 0),
+        getTimeForPbTimestamp(rowA.log.statistics?.latestLogTime, 0) -
+        getTimeForPbTimestamp(rowB.log.statistics?.latestLogTime, 0),
       render: (item) =>
-        dayjs(item.log.statistics?.latestLogTime).format("YYYY-MM-DD HH:mm:ss"),
+        dayjs(getDateForPbTimestamp(item.log.statistics?.latestLogTime)).format(
+          "YYYY-MM-DD HH:mm:ss"
+        ),
     });
 
     return columns;

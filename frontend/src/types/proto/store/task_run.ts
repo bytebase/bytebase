@@ -59,7 +59,7 @@ export interface PriorBackupDetail_Item_Table {
 }
 
 export interface SchedulerInfo {
-  reportTime: Date | undefined;
+  reportTime: Timestamp | undefined;
   waitingCause: SchedulerInfo_WaitingCause | undefined;
 }
 
@@ -576,7 +576,7 @@ function createBaseSchedulerInfo(): SchedulerInfo {
 export const SchedulerInfo: MessageFns<SchedulerInfo> = {
   encode(message: SchedulerInfo, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.reportTime !== undefined) {
-      Timestamp.encode(toTimestamp(message.reportTime), writer.uint32(10).fork()).join();
+      Timestamp.encode(message.reportTime, writer.uint32(10).fork()).join();
     }
     if (message.waitingCause !== undefined) {
       SchedulerInfo_WaitingCause.encode(message.waitingCause, writer.uint32(18).fork()).join();
@@ -596,7 +596,7 @@ export const SchedulerInfo: MessageFns<SchedulerInfo> = {
             break;
           }
 
-          message.reportTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          message.reportTime = Timestamp.decode(reader, reader.uint32());
           continue;
         case 2:
           if (tag !== 18) {
@@ -624,7 +624,7 @@ export const SchedulerInfo: MessageFns<SchedulerInfo> = {
   toJSON(message: SchedulerInfo): unknown {
     const obj: any = {};
     if (message.reportTime !== undefined) {
-      obj.reportTime = message.reportTime.toISOString();
+      obj.reportTime = fromTimestamp(message.reportTime).toISOString();
     }
     if (message.waitingCause !== undefined) {
       obj.waitingCause = SchedulerInfo_WaitingCause.toJSON(message.waitingCause);
@@ -637,7 +637,9 @@ export const SchedulerInfo: MessageFns<SchedulerInfo> = {
   },
   fromPartial(object: DeepPartial<SchedulerInfo>): SchedulerInfo {
     const message = createBaseSchedulerInfo();
-    message.reportTime = object.reportTime ?? undefined;
+    message.reportTime = (object.reportTime !== undefined && object.reportTime !== null)
+      ? Timestamp.fromPartial(object.reportTime)
+      : undefined;
     message.waitingCause = (object.waitingCause !== undefined && object.waitingCause !== null)
       ? SchedulerInfo_WaitingCause.fromPartial(object.waitingCause)
       : undefined;
@@ -739,13 +741,13 @@ function fromTimestamp(t: Timestamp): Date {
   return new globalThis.Date(millis);
 }
 
-function fromJsonTimestamp(o: any): Date {
+function fromJsonTimestamp(o: any): Timestamp {
   if (o instanceof globalThis.Date) {
-    return o;
+    return toTimestamp(o);
   } else if (typeof o === "string") {
-    return new globalThis.Date(o);
+    return toTimestamp(new globalThis.Date(o));
   } else {
-    return fromTimestamp(Timestamp.fromJSON(o));
+    return Timestamp.fromJSON(o);
   }
 }
 

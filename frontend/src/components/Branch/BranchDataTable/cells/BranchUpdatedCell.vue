@@ -16,6 +16,7 @@ import { computed } from "vue";
 import UserAvatar from "@/components/User/UserAvatar.vue";
 import { useUserStore } from "@/store";
 import { getUserEmailFromIdentifier } from "@/store/modules/v1/common";
+import { getTimeForPbTimestamp } from "@/types";
 import type { Branch } from "@/types/proto/v1/branch_service";
 
 const props = defineProps<{
@@ -31,7 +32,7 @@ const updater = computed(() => {
 
 const updateTimeStr = computed(() => {
   return dayjs
-    .duration((props.branch.updateTime ?? new Date()).getTime() - Date.now())
+    .duration(getTimeForPbTimestamp(props.branch.updateTime) - Date.now())
     .humanize(true);
 });
 </script>

@@ -88,7 +88,11 @@
                 </NButton>
               </div>
               <div class="bb-grid-cell whitespace-nowrap !pr-4">
-                {{ dayjs(detail.startTime).format("YYYY-MM-DD HH:mm:ss") }}
+                {{
+                  dayjs(getDateForPbTimestamp(detail.startTime)).format(
+                    "YYYY-MM-DD HH:mm:ss"
+                  )
+                }}
               </div>
               <div class="bb-grid-cell text-xs font-mono">
                 <div class="truncate">
@@ -138,7 +142,7 @@ import {
   Drawer,
   DrawerContent,
 } from "@/components/v2";
-import type { ComposedSlowQueryLog } from "@/types";
+import { getDateForPbTimestamp, type ComposedSlowQueryLog } from "@/types";
 import type { SlowQueryDetails } from "@/types/proto/v1/database_service";
 import { instanceV1HasSlowQueryDetail } from "@/utils";
 import { hasProjectPermissionV2 } from "@/utils";

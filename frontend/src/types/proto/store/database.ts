@@ -15,7 +15,7 @@ export const protobufPackage = "bytebase.store";
 /** DatabaseMetadata is the metadata for databases. */
 export interface DatabaseMetadata {
   labels: { [key: string]: string };
-  lastSyncTime: Date | undefined;
+  lastSyncTime: Timestamp | undefined;
 }
 
 export interface DatabaseMetadata_LabelsEntry {
@@ -747,7 +747,7 @@ export interface TableConfig {
    */
   sourceBranch: string;
   /** The timestamp when the table is updated in branch. */
-  updateTime: Date | undefined;
+  updateTime: Timestamp | undefined;
 }
 
 export interface FunctionConfig {
@@ -764,7 +764,7 @@ export interface FunctionConfig {
    */
   sourceBranch: string;
   /** The timestamp when the function is updated in branch. */
-  updateTime: Date | undefined;
+  updateTime: Timestamp | undefined;
 }
 
 export interface ProcedureConfig {
@@ -781,7 +781,7 @@ export interface ProcedureConfig {
    */
   sourceBranch: string;
   /** The timestamp when the procedure is updated in branch. */
-  updateTime: Date | undefined;
+  updateTime: Timestamp | undefined;
 }
 
 export interface ViewConfig {
@@ -798,7 +798,7 @@ export interface ViewConfig {
    */
   sourceBranch: string;
   /** The timestamp when the view is updated in branch. */
-  updateTime: Date | undefined;
+  updateTime: Timestamp | undefined;
 }
 
 export interface ColumnConfig {
@@ -839,7 +839,7 @@ export const DatabaseMetadata: MessageFns<DatabaseMetadata> = {
       DatabaseMetadata_LabelsEntry.encode({ key: key as any, value }, writer.uint32(10).fork()).join();
     });
     if (message.lastSyncTime !== undefined) {
-      Timestamp.encode(toTimestamp(message.lastSyncTime), writer.uint32(18).fork()).join();
+      Timestamp.encode(message.lastSyncTime, writer.uint32(18).fork()).join();
     }
     return writer;
   },
@@ -866,7 +866,7 @@ export const DatabaseMetadata: MessageFns<DatabaseMetadata> = {
             break;
           }
 
-          message.lastSyncTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          message.lastSyncTime = Timestamp.decode(reader, reader.uint32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -901,7 +901,7 @@ export const DatabaseMetadata: MessageFns<DatabaseMetadata> = {
       }
     }
     if (message.lastSyncTime !== undefined) {
-      obj.lastSyncTime = message.lastSyncTime.toISOString();
+      obj.lastSyncTime = fromTimestamp(message.lastSyncTime).toISOString();
     }
     return obj;
   },
@@ -917,7 +917,9 @@ export const DatabaseMetadata: MessageFns<DatabaseMetadata> = {
       }
       return acc;
     }, {});
-    message.lastSyncTime = object.lastSyncTime ?? undefined;
+    message.lastSyncTime = (object.lastSyncTime !== undefined && object.lastSyncTime !== null)
+      ? Timestamp.fromPartial(object.lastSyncTime)
+      : undefined;
     return message;
   },
 };
@@ -4172,7 +4174,7 @@ export const TableConfig: MessageFns<TableConfig> = {
       writer.uint32(50).string(message.sourceBranch);
     }
     if (message.updateTime !== undefined) {
-      Timestamp.encode(toTimestamp(message.updateTime), writer.uint32(42).fork()).join();
+      Timestamp.encode(message.updateTime, writer.uint32(42).fork()).join();
     }
     return writer;
   },
@@ -4224,7 +4226,7 @@ export const TableConfig: MessageFns<TableConfig> = {
             break;
           }
 
-          message.updateTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          message.updateTime = Timestamp.decode(reader, reader.uint32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -4266,7 +4268,7 @@ export const TableConfig: MessageFns<TableConfig> = {
       obj.sourceBranch = message.sourceBranch;
     }
     if (message.updateTime !== undefined) {
-      obj.updateTime = message.updateTime.toISOString();
+      obj.updateTime = fromTimestamp(message.updateTime).toISOString();
     }
     return obj;
   },
@@ -4281,7 +4283,9 @@ export const TableConfig: MessageFns<TableConfig> = {
     message.classificationId = object.classificationId ?? "";
     message.updater = object.updater ?? "";
     message.sourceBranch = object.sourceBranch ?? "";
-    message.updateTime = object.updateTime ?? undefined;
+    message.updateTime = (object.updateTime !== undefined && object.updateTime !== null)
+      ? Timestamp.fromPartial(object.updateTime)
+      : undefined;
     return message;
   },
 };
@@ -4302,7 +4306,7 @@ export const FunctionConfig: MessageFns<FunctionConfig> = {
       writer.uint32(34).string(message.sourceBranch);
     }
     if (message.updateTime !== undefined) {
-      Timestamp.encode(toTimestamp(message.updateTime), writer.uint32(26).fork()).join();
+      Timestamp.encode(message.updateTime, writer.uint32(26).fork()).join();
     }
     return writer;
   },
@@ -4340,7 +4344,7 @@ export const FunctionConfig: MessageFns<FunctionConfig> = {
             break;
           }
 
-          message.updateTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          message.updateTime = Timestamp.decode(reader, reader.uint32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -4372,7 +4376,7 @@ export const FunctionConfig: MessageFns<FunctionConfig> = {
       obj.sourceBranch = message.sourceBranch;
     }
     if (message.updateTime !== undefined) {
-      obj.updateTime = message.updateTime.toISOString();
+      obj.updateTime = fromTimestamp(message.updateTime).toISOString();
     }
     return obj;
   },
@@ -4385,7 +4389,9 @@ export const FunctionConfig: MessageFns<FunctionConfig> = {
     message.name = object.name ?? "";
     message.updater = object.updater ?? "";
     message.sourceBranch = object.sourceBranch ?? "";
-    message.updateTime = object.updateTime ?? undefined;
+    message.updateTime = (object.updateTime !== undefined && object.updateTime !== null)
+      ? Timestamp.fromPartial(object.updateTime)
+      : undefined;
     return message;
   },
 };
@@ -4406,7 +4412,7 @@ export const ProcedureConfig: MessageFns<ProcedureConfig> = {
       writer.uint32(34).string(message.sourceBranch);
     }
     if (message.updateTime !== undefined) {
-      Timestamp.encode(toTimestamp(message.updateTime), writer.uint32(26).fork()).join();
+      Timestamp.encode(message.updateTime, writer.uint32(26).fork()).join();
     }
     return writer;
   },
@@ -4444,7 +4450,7 @@ export const ProcedureConfig: MessageFns<ProcedureConfig> = {
             break;
           }
 
-          message.updateTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          message.updateTime = Timestamp.decode(reader, reader.uint32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -4476,7 +4482,7 @@ export const ProcedureConfig: MessageFns<ProcedureConfig> = {
       obj.sourceBranch = message.sourceBranch;
     }
     if (message.updateTime !== undefined) {
-      obj.updateTime = message.updateTime.toISOString();
+      obj.updateTime = fromTimestamp(message.updateTime).toISOString();
     }
     return obj;
   },
@@ -4489,7 +4495,9 @@ export const ProcedureConfig: MessageFns<ProcedureConfig> = {
     message.name = object.name ?? "";
     message.updater = object.updater ?? "";
     message.sourceBranch = object.sourceBranch ?? "";
-    message.updateTime = object.updateTime ?? undefined;
+    message.updateTime = (object.updateTime !== undefined && object.updateTime !== null)
+      ? Timestamp.fromPartial(object.updateTime)
+      : undefined;
     return message;
   },
 };
@@ -4510,7 +4518,7 @@ export const ViewConfig: MessageFns<ViewConfig> = {
       writer.uint32(34).string(message.sourceBranch);
     }
     if (message.updateTime !== undefined) {
-      Timestamp.encode(toTimestamp(message.updateTime), writer.uint32(26).fork()).join();
+      Timestamp.encode(message.updateTime, writer.uint32(26).fork()).join();
     }
     return writer;
   },
@@ -4548,7 +4556,7 @@ export const ViewConfig: MessageFns<ViewConfig> = {
             break;
           }
 
-          message.updateTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          message.updateTime = Timestamp.decode(reader, reader.uint32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -4580,7 +4588,7 @@ export const ViewConfig: MessageFns<ViewConfig> = {
       obj.sourceBranch = message.sourceBranch;
     }
     if (message.updateTime !== undefined) {
-      obj.updateTime = message.updateTime.toISOString();
+      obj.updateTime = fromTimestamp(message.updateTime).toISOString();
     }
     return obj;
   },
@@ -4593,7 +4601,9 @@ export const ViewConfig: MessageFns<ViewConfig> = {
     message.name = object.name ?? "";
     message.updater = object.updater ?? "";
     message.sourceBranch = object.sourceBranch ?? "";
-    message.updateTime = object.updateTime ?? undefined;
+    message.updateTime = (object.updateTime !== undefined && object.updateTime !== null)
+      ? Timestamp.fromPartial(object.updateTime)
+      : undefined;
     return message;
   },
 };
@@ -4978,13 +4988,13 @@ function fromTimestamp(t: Timestamp): Date {
   return new globalThis.Date(millis);
 }
 
-function fromJsonTimestamp(o: any): Date {
+function fromJsonTimestamp(o: any): Timestamp {
   if (o instanceof globalThis.Date) {
-    return o;
+    return toTimestamp(o);
   } else if (typeof o === "string") {
-    return new globalThis.Date(o);
+    return toTimestamp(new globalThis.Date(o));
   } else {
-    return fromTimestamp(Timestamp.fromJSON(o));
+    return Timestamp.fromJSON(o);
   }
 }
 
