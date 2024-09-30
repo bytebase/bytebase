@@ -1481,7 +1481,6 @@ export enum ChangeHistory_Type {
   MIGRATE = "MIGRATE",
   MIGRATE_SDL = "MIGRATE_SDL",
   MIGRATE_GHOST = "MIGRATE_GHOST",
-  BRANCH = "BRANCH",
   DATA = "DATA",
   UNRECOGNIZED = "UNRECOGNIZED",
 }
@@ -1503,9 +1502,6 @@ export function changeHistory_TypeFromJSON(object: any): ChangeHistory_Type {
     case 4:
     case "MIGRATE_GHOST":
       return ChangeHistory_Type.MIGRATE_GHOST;
-    case 5:
-    case "BRANCH":
-      return ChangeHistory_Type.BRANCH;
     case 6:
     case "DATA":
       return ChangeHistory_Type.DATA;
@@ -1528,8 +1524,6 @@ export function changeHistory_TypeToJSON(object: ChangeHistory_Type): string {
       return "MIGRATE_SDL";
     case ChangeHistory_Type.MIGRATE_GHOST:
       return "MIGRATE_GHOST";
-    case ChangeHistory_Type.BRANCH:
-      return "BRANCH";
     case ChangeHistory_Type.DATA:
       return "DATA";
     case ChangeHistory_Type.UNRECOGNIZED:
@@ -1550,8 +1544,6 @@ export function changeHistory_TypeToNumber(object: ChangeHistory_Type): number {
       return 3;
     case ChangeHistory_Type.MIGRATE_GHOST:
       return 4;
-    case ChangeHistory_Type.BRANCH:
-      return 5;
     case ChangeHistory_Type.DATA:
       return 6;
     case ChangeHistory_Type.UNRECOGNIZED:
