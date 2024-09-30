@@ -23,7 +23,7 @@
         {{ creatorForSheet(sheet) }}
       </div>
       <div class="bb-grid-cell">
-        <HumanizeDate :date="sheet.updateTime" />
+        <HumanizeDate :date="getDateForPbTimestamp(sheet.updateTime)" />
       </div>
       <div class="bb-grid-cell" @click.stop>
         <Dropdown :sheet="sheet" :view="view" />
@@ -41,6 +41,7 @@ import { BBGrid } from "@/bbkit";
 import HumanizeDate from "@/components/misc/HumanizeDate.vue";
 import { ProjectV1Name } from "@/components/v2";
 import { useUserStore, useProjectV1Store } from "@/store";
+import { getDateForPbTimestamp } from "@/types";
 import type { Worksheet } from "@/types/proto/v1/worksheet_service";
 import { Worksheet_Visibility } from "@/types/proto/v1/worksheet_service";
 import { getHighlightHTMLByRegExp } from "@/utils";

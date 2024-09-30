@@ -12,7 +12,7 @@ import {
   IssueCommentType,
   type ComposedIssueComment,
 } from "@/store";
-import type { ComposedIssue } from "@/types";
+import { getDateForPbTimestamp, type ComposedIssue } from "@/types";
 import {
   IssueComment_Approval,
   IssueComment_Approval_Status,
@@ -174,8 +174,12 @@ const renderActionSentence = () => {
       const timeFormat = "YYYY-MM-DD HH:mm:ss UTCZZ";
       return t("activity.sentence.changed-from-to", {
         name: t("task.rollout-time"),
-        oldValue: oldVal ? dayjs(oldVal).format(timeFormat) : "Unset",
-        newValue: newVal ? dayjs(newVal).format(timeFormat) : "Unset",
+        oldValue: oldVal
+          ? dayjs(getDateForPbTimestamp(oldVal)).format(timeFormat)
+          : "Unset",
+        newValue: newVal
+          ? dayjs(getDateForPbTimestamp(newVal)).format(timeFormat)
+          : "Unset",
       });
     }
   } else if (issueComment.type === IssueCommentType.TASK_PRIOR_BACKUP) {

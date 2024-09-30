@@ -22,7 +22,7 @@ import { reactive, computed, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBAvatar } from "@/bbkit";
-import { type ComposedRelease } from "@/types";
+import { getTimeForPbTimestamp, type ComposedRelease } from "@/types";
 import { humanizeTs } from "@/utils";
 
 interface LocalState {
@@ -76,7 +76,7 @@ const columnList = computed((): DataTableColumn<ComposedRelease>[] => {
       title: t("common.created-at"),
       width: 150,
       render: (release) =>
-        humanizeTs((release.createTime?.getTime() ?? 0) / 1000),
+        humanizeTs(getTimeForPbTimestamp(release.createTime, 0) / 1000),
     },
     {
       key: "creator",

@@ -66,7 +66,7 @@ export interface ActuatorInfo {
   disallowSignup: boolean;
   /** last_active_time is the service last active time in UTC Time Format, any API calls will refresh this value. */
   lastActiveTime:
-    | Date
+    | Timestamp
     | undefined;
   /** require_2fa is the flag to require 2FA for all users. */
   require2fa: boolean;
@@ -409,7 +409,7 @@ export const ActuatorInfo: MessageFns<ActuatorInfo> = {
       writer.uint32(80).bool(message.disallowSignup);
     }
     if (message.lastActiveTime !== undefined) {
-      Timestamp.encode(toTimestamp(message.lastActiveTime), writer.uint32(90).fork()).join();
+      Timestamp.encode(message.lastActiveTime, writer.uint32(90).fork()).join();
     }
     if (message.require2fa !== false) {
       writer.uint32(96).bool(message.require2fa);
@@ -526,7 +526,7 @@ export const ActuatorInfo: MessageFns<ActuatorInfo> = {
             break;
           }
 
-          message.lastActiveTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          message.lastActiveTime = Timestamp.decode(reader, reader.uint32());
           continue;
         case 12:
           if (tag !== 96) {
@@ -672,7 +672,7 @@ export const ActuatorInfo: MessageFns<ActuatorInfo> = {
       obj.disallowSignup = message.disallowSignup;
     }
     if (message.lastActiveTime !== undefined) {
-      obj.lastActiveTime = message.lastActiveTime.toISOString();
+      obj.lastActiveTime = fromTimestamp(message.lastActiveTime).toISOString();
     }
     if (message.require2fa !== false) {
       obj.require2fa = message.require2fa;
@@ -722,7 +722,9 @@ export const ActuatorInfo: MessageFns<ActuatorInfo> = {
     message.externalUrl = object.externalUrl ?? "";
     message.needAdminSetup = object.needAdminSetup ?? false;
     message.disallowSignup = object.disallowSignup ?? false;
-    message.lastActiveTime = object.lastActiveTime ?? undefined;
+    message.lastActiveTime = (object.lastActiveTime !== undefined && object.lastActiveTime !== null)
+      ? Timestamp.fromPartial(object.lastActiveTime)
+      : undefined;
     message.require2fa = object.require2fa ?? false;
     message.workspaceId = object.workspaceId ?? "";
     message.gitopsWebhookUrl = object.gitopsWebhookUrl ?? "";
@@ -951,13 +953,13 @@ function fromTimestamp(t: Timestamp): Date {
   return new globalThis.Date(millis);
 }
 
-function fromJsonTimestamp(o: any): Date {
+function fromJsonTimestamp(o: any): Timestamp {
   if (o instanceof globalThis.Date) {
-    return o;
+    return toTimestamp(o);
   } else if (typeof o === "string") {
-    return new globalThis.Date(o);
+    return toTimestamp(new globalThis.Date(o));
   } else {
-    return fromTimestamp(Timestamp.fromJSON(o));
+    return Timestamp.fromJSON(o);
   }
 }
 

@@ -94,7 +94,7 @@ export interface AuditLog {
    */
   name: string;
   createTime:
-    | Date
+    | Timestamp
     | undefined;
   /** Format: users/d@d.com */
   user: string;
@@ -615,7 +615,7 @@ export const AuditLog: MessageFns<AuditLog> = {
       writer.uint32(10).string(message.name);
     }
     if (message.createTime !== undefined) {
-      Timestamp.encode(toTimestamp(message.createTime), writer.uint32(18).fork()).join();
+      Timestamp.encode(message.createTime, writer.uint32(18).fork()).join();
     }
     if (message.user !== "") {
       writer.uint32(26).string(message.user);
@@ -666,7 +666,7 @@ export const AuditLog: MessageFns<AuditLog> = {
             break;
           }
 
-          message.createTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          message.createTime = Timestamp.decode(reader, reader.uint32());
           continue;
         case 3:
           if (tag !== 26) {
@@ -762,7 +762,7 @@ export const AuditLog: MessageFns<AuditLog> = {
       obj.name = message.name;
     }
     if (message.createTime !== undefined) {
-      obj.createTime = message.createTime.toISOString();
+      obj.createTime = fromTimestamp(message.createTime).toISOString();
     }
     if (message.user !== "") {
       obj.user = message.user;
@@ -800,7 +800,9 @@ export const AuditLog: MessageFns<AuditLog> = {
   fromPartial(object: DeepPartial<AuditLog>): AuditLog {
     const message = createBaseAuditLog();
     message.name = object.name ?? "";
-    message.createTime = object.createTime ?? undefined;
+    message.createTime = (object.createTime !== undefined && object.createTime !== null)
+      ? Timestamp.fromPartial(object.createTime)
+      : undefined;
     message.user = object.user ?? "";
     message.method = object.method ?? "";
     message.severity = object.severity ?? AuditLog_Severity.DEFAULT;
@@ -1205,13 +1207,13 @@ function fromTimestamp(t: Timestamp): Date {
   return new globalThis.Date(millis);
 }
 
-function fromJsonTimestamp(o: any): Date {
+function fromJsonTimestamp(o: any): Timestamp {
   if (o instanceof globalThis.Date) {
-    return o;
+    return toTimestamp(o);
   } else if (typeof o === "string") {
-    return new globalThis.Date(o);
+    return toTimestamp(new globalThis.Date(o));
   } else {
-    return fromTimestamp(Timestamp.fromJSON(o));
+    return Timestamp.fromJSON(o);
   }
 }
 

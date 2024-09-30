@@ -30,7 +30,11 @@ import type { BBGridRow } from "@/bbkit";
 import HumanizeDate from "@/components/misc/HumanizeDate.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { useSheetV1Store } from "@/store";
-import type { ComposedTaskRun } from "@/types";
+import {
+  getDateForPbTimestamp,
+  getTimeForPbTimestamp,
+  type ComposedTaskRun,
+} from "@/types";
 import { Duration } from "@/types/proto/google/protobuf/duration";
 import { TaskRun_Status } from "@/types/proto/v1/rollout_service";
 import { humanizeDurationV1, sheetNameOfTaskV1 } from "@/utils";
@@ -118,7 +122,7 @@ const columnList = computed((): DataTableColumn<ComposedTaskRun>[] => {
       title: t("task.created"),
       width: 100,
       render: (taskRun: ComposedTaskRun) => (
-        <HumanizeDate date={taskRun.createTime} />
+        <HumanizeDate date={getDateForPbTimestamp(taskRun.createTime)} />
       ),
     },
     {
@@ -126,7 +130,7 @@ const columnList = computed((): DataTableColumn<ComposedTaskRun>[] => {
       title: t("task.started"),
       width: 100,
       render: (taskRun: ComposedTaskRun) => (
-        <HumanizeDate date={taskRun.startTime} />
+        <HumanizeDate date={getDateForPbTimestamp(taskRun.startTime)} />
       ),
     },
     {
@@ -161,18 +165,18 @@ const executionDurationOfTaskRun = (
   if (!startTime || !updateTime) {
     return undefined;
   }
-  if (startTime.getTime() === 0) {
+  if (startTime.seconds.isZero()) {
     return undefined;
   }
   if (taskRun.status === TaskRun_Status.RUNNING) {
-    const elapsedMS = Date.now() - startTime.getTime();
+    const elapsedMS = Date.now() - getTimeForPbTimestamp(startTime);
     return Duration.fromPartial({
       seconds: Math.floor(elapsedMS / 1000),
       nanos: (elapsedMS % 1000) * 1e6,
     });
   }
-  const startMS = startTime.getTime();
-  const updateMS = updateTime.getTime();
+  const startMS = getTimeForPbTimestamp(startTime);
+  const updateMS = getTimeForPbTimestamp(updateTime);
   const elapsedMS = updateMS - startMS;
   return Duration.fromPartial({
     seconds: Math.floor(elapsedMS / 1000),

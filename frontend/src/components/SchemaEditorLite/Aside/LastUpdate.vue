@@ -34,7 +34,11 @@
           </div>
         </div>
         <div v-if="updateTime" class="flex justify-end gap-1 text-xs">
-          {{ dayjs(updateTime).format("YYYY-MM-DD HH:mm:ss UTCZZ") }}
+          {{
+            dayjs(getDateForPbTimestamp(updateTime)).format(
+              "YYYY-MM-DD HH:mm:ss UTCZZ"
+            )
+          }}
         </div>
       </div>
     </template>
@@ -47,6 +51,7 @@ import { computed } from "vue";
 import { watchEffect } from "vue";
 import UserAvatar from "@/components/User/UserAvatar.vue";
 import { extractUserEmail, useBranchStore, useUserStore } from "@/store";
+import { getDateForPbTimestamp } from "@/types";
 import type {
   TreeNodeForFunction,
   TreeNodeForProcedure,

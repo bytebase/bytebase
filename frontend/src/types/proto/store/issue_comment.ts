@@ -175,8 +175,8 @@ export interface IssueCommentPayload_TaskUpdate {
     | undefined;
   /** Format: projects/{project}/sheets/{sheet} */
   toSheet?: string | undefined;
-  fromEarliestAllowedTime?: Date | undefined;
-  toEarliestAllowedTime?: Date | undefined;
+  fromEarliestAllowedTime?: Timestamp | undefined;
+  toEarliestAllowedTime?: Timestamp | undefined;
   toStatus?: IssueCommentPayload_TaskUpdate_Status | undefined;
 }
 
@@ -751,10 +751,10 @@ export const IssueCommentPayload_TaskUpdate: MessageFns<IssueCommentPayload_Task
       writer.uint32(26).string(message.toSheet);
     }
     if (message.fromEarliestAllowedTime !== undefined) {
-      Timestamp.encode(toTimestamp(message.fromEarliestAllowedTime), writer.uint32(34).fork()).join();
+      Timestamp.encode(message.fromEarliestAllowedTime, writer.uint32(34).fork()).join();
     }
     if (message.toEarliestAllowedTime !== undefined) {
-      Timestamp.encode(toTimestamp(message.toEarliestAllowedTime), writer.uint32(42).fork()).join();
+      Timestamp.encode(message.toEarliestAllowedTime, writer.uint32(42).fork()).join();
     }
     if (message.toStatus !== undefined) {
       writer.uint32(48).int32(issueCommentPayload_TaskUpdate_StatusToNumber(message.toStatus));
@@ -795,14 +795,14 @@ export const IssueCommentPayload_TaskUpdate: MessageFns<IssueCommentPayload_Task
             break;
           }
 
-          message.fromEarliestAllowedTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          message.fromEarliestAllowedTime = Timestamp.decode(reader, reader.uint32());
           continue;
         case 5:
           if (tag !== 42) {
             break;
           }
 
-          message.toEarliestAllowedTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          message.toEarliestAllowedTime = Timestamp.decode(reader, reader.uint32());
           continue;
         case 6:
           if (tag !== 48) {
@@ -847,10 +847,10 @@ export const IssueCommentPayload_TaskUpdate: MessageFns<IssueCommentPayload_Task
       obj.toSheet = message.toSheet;
     }
     if (message.fromEarliestAllowedTime !== undefined) {
-      obj.fromEarliestAllowedTime = message.fromEarliestAllowedTime.toISOString();
+      obj.fromEarliestAllowedTime = fromTimestamp(message.fromEarliestAllowedTime).toISOString();
     }
     if (message.toEarliestAllowedTime !== undefined) {
-      obj.toEarliestAllowedTime = message.toEarliestAllowedTime.toISOString();
+      obj.toEarliestAllowedTime = fromTimestamp(message.toEarliestAllowedTime).toISOString();
     }
     if (message.toStatus !== undefined) {
       obj.toStatus = issueCommentPayload_TaskUpdate_StatusToJSON(message.toStatus);
@@ -866,8 +866,14 @@ export const IssueCommentPayload_TaskUpdate: MessageFns<IssueCommentPayload_Task
     message.tasks = object.tasks?.map((e) => e) || [];
     message.fromSheet = object.fromSheet ?? undefined;
     message.toSheet = object.toSheet ?? undefined;
-    message.fromEarliestAllowedTime = object.fromEarliestAllowedTime ?? undefined;
-    message.toEarliestAllowedTime = object.toEarliestAllowedTime ?? undefined;
+    message.fromEarliestAllowedTime =
+      (object.fromEarliestAllowedTime !== undefined && object.fromEarliestAllowedTime !== null)
+        ? Timestamp.fromPartial(object.fromEarliestAllowedTime)
+        : undefined;
+    message.toEarliestAllowedTime =
+      (object.toEarliestAllowedTime !== undefined && object.toEarliestAllowedTime !== null)
+        ? Timestamp.fromPartial(object.toEarliestAllowedTime)
+        : undefined;
     message.toStatus = object.toStatus ?? undefined;
     return message;
   },
@@ -1090,13 +1096,13 @@ function fromTimestamp(t: Timestamp): Date {
   return new globalThis.Date(millis);
 }
 
-function fromJsonTimestamp(o: any): Date {
+function fromJsonTimestamp(o: any): Timestamp {
   if (o instanceof globalThis.Date) {
-    return o;
+    return toTimestamp(o);
   } else if (typeof o === "string") {
-    return new globalThis.Date(o);
+    return toTimestamp(new globalThis.Date(o));
   } else {
-    return fromTimestamp(Timestamp.fromJSON(o));
+    return Timestamp.fromJSON(o);
   }
 }
 

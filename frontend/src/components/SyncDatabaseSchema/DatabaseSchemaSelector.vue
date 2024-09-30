@@ -93,7 +93,12 @@ import {
   useSubscriptionV1Store,
   useDBSchemaV1Store,
 } from "@/store";
-import { UNKNOWN_ID, isValidDatabaseName, isValidProjectName } from "@/types";
+import {
+  UNKNOWN_ID,
+  getDateForPbTimestamp,
+  isValidDatabaseName,
+  isValidProjectName,
+} from "@/types";
 import { Engine } from "@/types/proto/v1/common";
 import type { ChangeHistory } from "@/types/proto/v1/database_service";
 import {
@@ -273,7 +278,7 @@ const renderSchemaVersionLabel = (option: SelectOption) => {
   if (updateTime) {
     children.push(
       h(HumanizeDate, {
-        date: updateTime,
+        date: getDateForPbTimestamp(updateTime),
         class: "text-control-light",
       })
     );

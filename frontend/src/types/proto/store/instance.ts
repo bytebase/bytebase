@@ -32,7 +32,7 @@ export interface InstanceMetadata {
    * It is used to determine whether the table names and database names are case sensitive.
    */
   mysqlLowerCaseTableNames: number;
-  lastSyncTime: Date | undefined;
+  lastSyncTime: Timestamp | undefined;
   roles: InstanceRole[];
 }
 
@@ -142,7 +142,7 @@ export const InstanceMetadata: MessageFns<InstanceMetadata> = {
       writer.uint32(8).int32(message.mysqlLowerCaseTableNames);
     }
     if (message.lastSyncTime !== undefined) {
-      Timestamp.encode(toTimestamp(message.lastSyncTime), writer.uint32(18).fork()).join();
+      Timestamp.encode(message.lastSyncTime, writer.uint32(18).fork()).join();
     }
     for (const v of message.roles) {
       InstanceRole.encode(v!, writer.uint32(26).fork()).join();
@@ -169,7 +169,7 @@ export const InstanceMetadata: MessageFns<InstanceMetadata> = {
             break;
           }
 
-          message.lastSyncTime = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          message.lastSyncTime = Timestamp.decode(reader, reader.uint32());
           continue;
         case 3:
           if (tag !== 26) {
@@ -203,7 +203,7 @@ export const InstanceMetadata: MessageFns<InstanceMetadata> = {
       obj.mysqlLowerCaseTableNames = Math.round(message.mysqlLowerCaseTableNames);
     }
     if (message.lastSyncTime !== undefined) {
-      obj.lastSyncTime = message.lastSyncTime.toISOString();
+      obj.lastSyncTime = fromTimestamp(message.lastSyncTime).toISOString();
     }
     if (message.roles?.length) {
       obj.roles = message.roles.map((e) => InstanceRole.toJSON(e));
@@ -217,7 +217,9 @@ export const InstanceMetadata: MessageFns<InstanceMetadata> = {
   fromPartial(object: DeepPartial<InstanceMetadata>): InstanceMetadata {
     const message = createBaseInstanceMetadata();
     message.mysqlLowerCaseTableNames = object.mysqlLowerCaseTableNames ?? 0;
-    message.lastSyncTime = object.lastSyncTime ?? undefined;
+    message.lastSyncTime = (object.lastSyncTime !== undefined && object.lastSyncTime !== null)
+      ? Timestamp.fromPartial(object.lastSyncTime)
+      : undefined;
     message.roles = object.roles?.map((e) => InstanceRole.fromPartial(e)) || [];
     return message;
   },
@@ -347,13 +349,13 @@ function fromTimestamp(t: Timestamp): Date {
   return new globalThis.Date(millis);
 }
 
-function fromJsonTimestamp(o: any): Date {
+function fromJsonTimestamp(o: any): Timestamp {
   if (o instanceof globalThis.Date) {
-    return o;
+    return toTimestamp(o);
   } else if (typeof o === "string") {
-    return new globalThis.Date(o);
+    return toTimestamp(new globalThis.Date(o));
   } else {
-    return fromTimestamp(Timestamp.fromJSON(o));
+    return Timestamp.fromJSON(o);
   }
 }
 
