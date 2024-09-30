@@ -60,10 +60,10 @@ export const extractSQLRowValue = (
     const formattedTimestamp =
       microseconds > 0
         ? // If there are microseconds, append them to the formatted string with 6 digits.
-          // Example: 2021-01-01T00:00:00.123456+0000
+          // Example: 2021-01-01 00:00:00.123456-07
           `${fullDayjs.format("YYYY-MM-DD HH:mm:ss")}.${microseconds.toString().padStart(6, "0")}${timezoneOffset}`
         : // Otherwise, just format the date and time without microseconds
-          // Example: 2021-01-01T00:00:00+0000
+          // Example: 2021-01-01 00:00:00-07
           `${fullDayjs.format("YYYY-MM-DD HH:mm:ss")}${timezoneOffset}`;
 
     return {
