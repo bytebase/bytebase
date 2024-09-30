@@ -1756,7 +1756,6 @@
   "database": {
     "sync-database": "データベースを同期",
     "select": "データベースの選択",
-    "the-list-might-be-out-of-date-and-is-refreshed-roughly-every-10-minutes": "表は約10分ごとに更新されるため、表示される情報は最新ではない場合があります。",
     "no-anomalies-detected": "例外は検出されませんでした",
     "sync-status": "同期ステータス",
     "last-successful-sync": "最後に成功した同期",
