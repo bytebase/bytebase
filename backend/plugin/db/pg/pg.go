@@ -745,7 +745,6 @@ func convertValue(typeName string, value any) *v1pb.RowValue {
 	switch raw := value.(type) {
 	case *sql.NullString:
 		if raw.Valid {
-			fmt.Printf("Barny1: %s, %s\n", typeName, raw.String)
 			if typeName == "TIMESTAMP" {
 				// Convert "2024-09-24T03:23:28.921281Z" to "2024-09-24 03:23:28.921281"
 				timestampWithoutTimezone := strings.ReplaceAll(strings.ReplaceAll(raw.String, "T", " "), "Z", "")
