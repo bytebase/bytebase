@@ -1,13 +1,19 @@
-version: v1
+version: v2
 name: buf.build/bytebase/bytebase
-breaking:
-  use:
-    - FILE
+deps:
+  - buf.build/googleapis/googleapis
+  - buf.build/grpc-ecosystem/grpc-gateway
 lint:
   use:
     - BASIC
   except:
+    - FIELD_NOT_REQUIRED
     - PACKAGE_DIRECTORY_MATCH
-deps:
-  - buf.build/googleapis/googleapis
-  - buf.build/grpc-ecosystem/grpc-gateway
+    - PACKAGE_NO_IMPORT_CYCLE
+  disallow_comment_ignores: true
+breaking:
+  use:
+    - FILE
+  except:
+    - EXTENSION_NO_DELETE
+    - FIELD_SAME_DEFAULT
