@@ -6,7 +6,11 @@
     @update:show="(show: boolean) => !show && $emit('close')"
   >
     <DrawerContent
-      :title="$t('custom-approval.risk-rule.risk.namespace.request_query')"
+      :title="
+        props.role === PresetRoleType.PROJECT_QUERIER
+          ? $t('custom-approval.risk-rule.risk.namespace.request_query')
+          : $t('custom-approval.risk-rule.risk.namespace.request_export')
+      "
       :closable="true"
       class="w-[50rem] max-w-[100vw] relative"
     >
