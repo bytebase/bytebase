@@ -156,7 +156,7 @@ func (s *InstanceService) CreateInstance(ctx context.Context, request *v1pb.Crea
 	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, nil /* database */, db.ConnectionContext{})
 	if err == nil {
 		defer driver.Close(ctx)
-		updatedInstance, err := s.schemaSyncer.SyncInstance(ctx, instance)
+		updatedInstance, _, err := s.schemaSyncer.SyncInstance(ctx, instance)
 		if err != nil {
 			slog.Warn("Failed to sync instance",
 				slog.String("instance", instance.ResourceID),
@@ -560,13 +560,16 @@ func (s *InstanceService) SyncInstance(ctx context.Context, request *v1pb.SyncIn
 		return nil, status.Errorf(codes.NotFound, "instance %q has been deleted", request.Name)
 	}
 
-	updatedInstance, err := s.schemaSyncer.SyncInstance(ctx, instance)
+	updatedInstance, newDatabases, err := s.schemaSyncer.SyncInstance(ctx, instance)
 	if err != nil {
 		return nil, err
 	}
-	// Sync all databases in the instance asynchronously.
-	s.schemaSyncer.SyncAllDatabases(ctx, updatedInstance)
-
+	if request.EnableFullSync {
+		// Sync all databases in the instance asynchronously.
+		s.schemaSyncer.SyncAllDatabases(ctx, updatedInstance)
+	} else {
+		s.schemaSyncer.SyncDatabasesAsync(newDatabases)
+	}
 	return &v1pb.SyncInstanceResponse{}, nil
 }
 
@@ -581,12 +584,16 @@ func (s *InstanceService) BatchSyncInstances(ctx context.Context, request *v1pb.
 			return nil, status.Errorf(codes.NotFound, "instance %q has been deleted", r.Name)
 		}
 
-		updatedInstance, err := s.schemaSyncer.SyncInstance(ctx, instance)
+		updatedInstance, newDatabases, err := s.schemaSyncer.SyncInstance(ctx, instance)
 		if err != nil {
 			return nil, err
 		}
-		// Sync all databases in the instance asynchronously.
-		s.schemaSyncer.SyncAllDatabases(ctx, updatedInstance)
+		if r.EnableFullSync {
+			// Sync all databases in the instance asynchronously.
+			s.schemaSyncer.SyncAllDatabases(ctx, updatedInstance)
+		} else {
+			s.schemaSyncer.SyncDatabasesAsync(newDatabases)
+		}
 	}
 
 	return &v1pb.BatchSyncInstancesResponse{}, nil

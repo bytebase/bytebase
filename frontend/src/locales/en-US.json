@@ -1420,6 +1420,12 @@
     "select-database-user": "Select database user",
     "new-database": "New Database",
     "syncing": "Syncing ...",
+    "sync": {
+      "self": "Sync instance",
+      "sync-all": "Sync all databases",
+      "sync-new": "Only sync new databases",
+      "sync-all-tip": "Database sync is asynchronous and might take a few seconds to minutes"
+    },
     "selected-n-instances": "{n} instance selected | {n} instances selected",
     "create-migration-schema": "Create migration schema",
     "missing-migration-schema": "Missing migration schema",

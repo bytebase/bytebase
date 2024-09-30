@@ -1420,6 +1420,12 @@
     "select-database-user": "Seleccionar usuario de base de datos",
     "new-database": "Nueva base de datos",
     "syncing": "Sincronizando...",
+    "sync": {
+      "self": "Instancia de sincronización",
+      "sync-all": "Sincronizar todas las bases de datos",
+      "sync-new": "Sincronizar únicamente bases de datos nuevas",
+      "sync-all-tip": "La sincronización de la base de datos es asincrónica y puede tardar entre unos segundos y minutos."
+    },
     "selected-n-instances": "{n} instancia seleccionada | {n} instancias seleccionadas",
     "create-migration-schema": "Crear esquema de migración",
     "missing-migration-schema": "Falta el esquema de migración",

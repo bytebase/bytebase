@@ -10,6 +10,7 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/structpb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/utils"
@@ -154,6 +155,14 @@ func ConvertCommonValue(value any) *v1pb.RowValue {
 			return &v1pb.RowValue{
 				Kind: &v1pb.RowValue_DoubleValue{
 					DoubleValue: raw.Float64,
+				},
+			}
+		}
+	case *sql.NullTime:
+		if raw.Valid {
+			return &v1pb.RowValue{
+				Kind: &v1pb.RowValue_TimestampValue{
+					TimestampValue: timestamppb.New(raw.Time.UTC()),
 				},
 			}
 		}
