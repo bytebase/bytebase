@@ -141,8 +141,8 @@ importers:
         specifier: ^1.5.4
         version: 1.5.4
       qs:
-        specifier: 6.12.3
-        version: 6.12.3
+        specifier: 6.13.0
+        version: 6.13.0
       rxjs:
         specifier: ^7.8.1
         version: 7.8.1
@@ -271,8 +271,8 @@ importers:
         specifier: ^1.5.5
         version: 1.5.5
       '@types/qs':
-        specifier: 6.9.15
-        version: 6.9.15
+        specifier: 6.9.16
+        version: 6.9.16
       '@types/scrollparent':
         specifier: ^2.0.3
         version: 2.0.3
@@ -1310,8 +1310,8 @@ packages:
   '@types/qrcode@1.5.5':
     resolution: {integrity: sha512-CdfBi/e3Qk+3Z/fXYShipBT13OJ2fDO2Q2w5CIP5anLTLIndQG9z6P1cnm+8zCWSpm5dnxMFd/uREtb0EXuQzg==}
 
-  '@types/qs@6.9.15':
-    resolution: {integrity: sha512-uXHQKES6DQKKCLh441Xv/dwxOq1TVS3JPUMlEqoEglvlhR6Mxnlew/Xq/LRVHpLyk7iK3zODe1qYHIMltO7XGg==}
+  '@types/qs@6.9.16':
+    resolution: {integrity: sha512-7i+zxXdPD0T4cKDuxCUXJ4wHcsJLwENa6Z3dCu8cfCK743OGy5Nu1RmAGqDPsoTDINVEcdXKRvR/zre+P2Ku1A==}
 
   '@types/scrollparent@2.0.3':
     resolution: {integrity: sha512-hnZEChVDSDCVngnl8j+Dq0/sOzRuoHyqqR5Wc1dF7TFsWO4uQtIKBkrzTb+lakIH+XrR8mlLMHfWR8hfjqc/WA==}
@@ -3324,8 +3324,8 @@ packages:
     engines: {node: '>=10.13.0'}
     hasBin: true
 
-  qs@6.12.3:
-    resolution: {integrity: sha512-AWJm14H1vVaO/iNZ4/hO+HyaTehuy9nRqVdkTqlJt0HWvBiBIEXFmb4C0DGeYo3Xes9rrEW+TxHsaigCbN5ICQ==}
+  qs@6.13.0:
+    resolution: {integrity: sha512-+38qI9SOr8tfZ4QmJNplMUxqjbe7LKvvZgWdExBOmd+egZTtjLB67Gu0HRX3u/XOq7UU2Nx6nsjvS16Z9uwfpg==}
     engines: {node: '>=0.6'}
 
   querystringify@2.2.0:
@@ -5101,7 +5101,7 @@ snapshots:
     dependencies:
       '@types/node': 20.14.10
 
-  '@types/qs@6.9.15': {}
+  '@types/qs@6.9.16': {}
 
   '@types/scrollparent@2.0.3': {}
 
@@ -7286,7 +7286,7 @@ snapshots:
       pngjs: 5.0.0
       yargs: 15.4.1
 
-  qs@6.12.3:
+  qs@6.13.0:
     dependencies:
       side-channel: 1.0.6
 
