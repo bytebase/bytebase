@@ -11,9 +11,9 @@ require (
 	github.com/ClickHouse/clickhouse-go/v2 v2.28.2
 	github.com/alexmullins/zip v0.0.0-20180717182244-4affb64b04d0
 	github.com/antlr4-go/antlr/v4 v4.13.1
-	github.com/aws/aws-sdk-go-v2 v1.30.4
+	github.com/aws/aws-sdk-go-v2 v1.31.0
 	github.com/aws/aws-sdk-go-v2/config v1.27.26
-	github.com/aws/aws-sdk-go-v2/feature/rds/auth v1.4.15
+	github.com/aws/aws-sdk-go-v2/feature/rds/auth v1.4.18
 	github.com/aws/aws-sdk-go-v2/service/licensemanager v1.27.3
 	github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.32.6
 	github.com/beltran/gohive v1.7.0
@@ -236,7 +236,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sso v1.22.3 // indirect
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.26.4 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sts v1.30.3
-	github.com/aws/smithy-go v1.20.4 // indirect
+	github.com/aws/smithy-go v1.21.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869 // indirect
 	github.com/bytebase/partiql-parser v0.0.0-20240531101102-1962ff456f2c
