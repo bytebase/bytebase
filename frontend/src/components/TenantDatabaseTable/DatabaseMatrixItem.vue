@@ -53,7 +53,9 @@
 
       <div class="px-4 py-2 flex items-center justify-between space-x-1">
         <span>{{ $t("db.last-successful-sync") }}</span>
-        <span>{{ humanizeDate(database.successfulSyncTime) }}</span>
+        <span>{{
+          humanizeDate(getDateForPbTimestamp(database.successfulSyncTime))
+        }}</span>
       </div>
 
       <div
@@ -82,7 +84,7 @@
 import { NPopover } from "naive-ui";
 import type { PropType } from "vue";
 import { computed } from "vue";
-import type { ComposedDatabase } from "@/types";
+import { getDateForPbTimestamp, type ComposedDatabase } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import {
   convertLabelsToKVList,

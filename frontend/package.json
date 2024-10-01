@@ -20,6 +20,7 @@
     "i18n": "TS_NODE_PROJECT='./tsconfig.i18n.json' ts-node i18n.ts"
   },
   "dependencies": {
+    "@bufbuild/protobuf": "^2.1.0",
     "@bytebase/vue-kbar": "0.1.8",
     "@joe-re/sql-parser": "^1.7.0",
     "@markdoc/markdoc": "0.4.0",
@@ -32,7 +33,7 @@
     "canvas-confetti": "1.9.3",
     "crypto-js": "^4.2.0",
     "d3-shape": "^3.2.0",
-    "dayjs": "1.11.11",
+    "dayjs": "1.11.13",
     "dompurify": "3.1.6",
     "downloadjs": "1.4.7",
     "elkjs": "^0.9.1",
@@ -86,10 +87,10 @@
     "vueuc": "0.4.64"
   },
   "devDependencies": {
-    "@iconify/json": "2.2.232",
+    "@iconify/json": "2.2.255",
     "@intlify/unplugin-vue-i18n": "4.0.0",
     "@rollup/plugin-yaml": "4.1.2",
-    "@tailwindcss/forms": "0.5.8",
+    "@tailwindcss/forms": "0.5.9",
     "@tailwindcss/typography": "0.5.13",
     "@trivago/prettier-plugin-sort-imports": "^4.3.0",
     "@tsconfig/node20": "20.1.4",

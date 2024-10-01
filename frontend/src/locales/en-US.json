@@ -1048,6 +1048,11 @@
     "waiting-rollout": "Waiting for Rollout",
     "opened-by-at": "opened by {creator} at {time}",
     "commit-by-at": "commit {id} {title} by {author} at {time}",
+    "status": {
+      "open": "Open",
+      "done": "Done",
+      "canceled": "Canceled"
+    },
     "status-transition": {
       "modal": {
         "resolve": "Resolve issue?",
@@ -1751,7 +1756,6 @@
   "database": {
     "sync-database": "Sync database",
     "select": "Select database",
-    "the-list-might-be-out-of-date-and-is-refreshed-roughly-every-10-minutes": "The list might be out of date and is refreshed roughly every 10 minutes",
     "no-anomalies-detected": "No anomalies detected",
     "sync-status": "Sync status",
     "last-successful-sync": "Last successful sync",

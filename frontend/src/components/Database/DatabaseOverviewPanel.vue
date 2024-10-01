@@ -4,11 +4,15 @@
       <div class="text-lg leading-6 font-medium text-main mb-4 flex flex-row">
         {{ $t("common.anomalies") }}
         <span class="ml-2 textinfolabel items-center flex">
-          {{
-            $t(
-              "database.the-list-might-be-out-of-date-and-is-refreshed-roughly-every-10-minutes"
-            )
-          }}
+          {{ $t("anomaly.attention-desc") }}
+          <a
+            href="https://www.bytebase.com/docs/change-database/drift-detection?source=console"
+            target="_blank"
+            class="ml-1 normal-link inline-flex flex-row items-center"
+          >
+            {{ $t("common.learn-more") }}
+            <heroicons-outline:external-link class="w-4 h-4" />
+          </a>
         </span>
       </div>
       <AnomalyTable :anomaly-section-list="anomalySectionList" />

@@ -67,7 +67,7 @@ import {
   useSQLEditorQueryHistoryStore,
   useSQLEditorTabStore,
 } from "@/store";
-import type { SQLEditorTab } from "@/types";
+import { getDateForPbTimestamp, type SQLEditorTab } from "@/types";
 import type { QueryHistory } from "@/types/proto/v1/sql_service";
 import { getHighlightHTMLByKeyWords, defer } from "@/utils";
 
@@ -117,7 +117,9 @@ const data = computed(() => {
 });
 
 const titleOfQueryHistory = (history: QueryHistory) => {
-  return dayjs(history.createTime).format("YYYY-MM-DD HH:mm:ss");
+  return dayjs(getDateForPbTimestamp(history.createTime)).format(
+    "YYYY-MM-DD HH:mm:ss"
+  );
 };
 
 const notifyMessage = computed(() => {

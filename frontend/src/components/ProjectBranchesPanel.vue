@@ -45,7 +45,7 @@ import { PROJECT_V1_ROUTE_BRANCH_DETAIL } from "@/router/dashboard/projectV1";
 import { useCurrentUserV1 } from "@/store";
 import { useBranchListByProject } from "@/store/modules/branch";
 import { userNamePrefix } from "@/store/modules/v1/common";
-import type { ComposedProject } from "@/types";
+import { getTimeForPbTimestamp, type ComposedProject } from "@/types";
 import { hasProjectPermissionV2 } from "@/utils";
 import { SearchBox } from "./v2";
 
@@ -102,7 +102,8 @@ const currentUserBranches = computed(() => {
 const activeBranches = computed(() => {
   return filteredBranches.value.filter((branch) => {
     return (
-      branch.updateTime!.getTime() > Date.now() - BRANCH_DEFAULT_ACTIVE_DURATION
+      getTimeForPbTimestamp(branch.updateTime) >
+      Date.now() - BRANCH_DEFAULT_ACTIVE_DURATION
     );
   });
 });

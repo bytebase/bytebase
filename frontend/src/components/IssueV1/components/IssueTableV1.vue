@@ -51,7 +51,7 @@ import CurrentApproverV1 from "@/components/IssueV1/components/CurrentApproverV1
 import { useElementVisibilityInScrollParent } from "@/composables/useElementVisibilityInScrollParent";
 import { emitWindowEvent } from "@/plugins";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
-import { type ComposedIssue } from "@/types";
+import { getTimeForPbTimestamp, type ComposedIssue } from "@/types";
 import {
   getHighlightHTMLByRegExp,
   extractProjectResourceName,
@@ -141,7 +141,8 @@ const columnList = computed((): DataTableColumn<ComposedIssue>[] => {
       title: t("issue.table.updated"),
       width: 150,
       hide: !showExtendedColumns.value,
-      render: (issue) => humanizeTs((issue.updateTime?.getTime() ?? 0) / 1000),
+      render: (issue) =>
+        humanizeTs(getTimeForPbTimestamp(issue.updateTime, 0) / 1000),
     },
     {
       key: "approver",

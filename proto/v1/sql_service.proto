@@ -367,18 +367,6 @@ message ExportResponse {
   bytes content = 1;
 }
 
-message DifferPreviewRequest {
-  Engine engine = 1;
-
-  string old_schema = 2;
-
-  DatabaseMetadata new_metadata = 3;
-}
-
-message DifferPreviewResponse {
-  string schema = 1;
-}
-
 message PrettyRequest {
   Engine engine = 1;
 

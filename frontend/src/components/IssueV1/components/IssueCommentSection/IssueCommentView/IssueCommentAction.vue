@@ -14,20 +14,20 @@
         <ActionSentence :issue="issue" :issue-comment="issueComment" />
 
         <HumanizeTs
-          :ts="(issueComment.createTime?.getTime() ?? 0) / 1000"
+          :ts="getTimeForPbTimestamp(issueComment.createTime, 0) / 1000"
           class="ml-1 text-gray-400"
         />
 
         <span
           v-if="
-            issueComment.createTime?.getTime() !==
-              issueComment.updateTime?.getTime() &&
+            getTimeForPbTimestamp(issueComment.createTime) !==
+              getTimeForPbTimestamp(issueComment.updateTime) &&
             issueComment.type === IssueCommentType.USER_COMMENT
           "
         >
           <span>({{ $t("common.edited") }}</span>
           <HumanizeTs
-            :ts="(issueComment.updateTime?.getTime() ?? 0) / 1000"
+            :ts="getTimeForPbTimestamp(issueComment.updateTime, 0) / 1000"
             class="ml-1"
           />)
         </span>
@@ -56,7 +56,7 @@
 import HumanizeTs from "@/components/misc/HumanizeTs.vue";
 import { IssueCommentType, type ComposedIssueComment } from "@/store";
 import { useUserStore } from "@/store";
-import type { ComposedIssue } from "@/types";
+import { getTimeForPbTimestamp, type ComposedIssue } from "@/types";
 import { extractUserResourceName } from "@/utils";
 import ActionCreator from "./ActionCreator.vue";
 import ActionSentence from "./ActionSentence.vue";

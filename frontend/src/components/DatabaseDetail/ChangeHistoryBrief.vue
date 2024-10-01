@@ -86,7 +86,7 @@ import { NPopover } from "naive-ui";
 import type { PropType } from "vue";
 import { computed } from "vue";
 import { useUserStore } from "@/store";
-import type { ComposedDatabase } from "@/types";
+import { getDateForPbTimestamp, type ComposedDatabase } from "@/types";
 import type { ChangeHistory } from "@/types/proto/v1/database_service";
 import {
   extractUserResourceName,
@@ -112,8 +112,9 @@ const link = computed(() => {
 });
 
 const createdAt = computed(() => {
-  const date = props.changeHistory.createTime ?? new Date(0);
-  return dayjs(date).format("YYYY-MM-DD HH:mm:ss");
+  return dayjs(getDateForPbTimestamp(props.changeHistory.createTime)).format(
+    "YYYY-MM-DD HH:mm:ss"
+  );
 });
 const timezone = computed(() => "UTC" + dayjs().format("ZZ"));
 

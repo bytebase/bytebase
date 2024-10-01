@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@bufbuild/protobuf':
+        specifier: ^2.1.0
+        version: 2.1.0
       '@bytebase/vue-kbar':
         specifier: 0.1.8
         version: 0.1.8(vue@3.4.31(typescript@5.5.4))
@@ -45,8 +48,8 @@ importers:
         specifier: ^3.2.0
         version: 3.2.0
       dayjs:
-        specifier: 1.11.11
-        version: 1.11.11
+        specifier: 1.11.13
+        version: 1.11.13
       dompurify:
         specifier: 3.1.6
         version: 3.1.6
@@ -202,8 +205,8 @@ importers:
         version: 0.4.64(vue@3.4.31(typescript@5.5.4))
     devDependencies:
       '@iconify/json':
-        specifier: 2.2.232
-        version: 2.2.232
+        specifier: 2.2.255
+        version: 2.2.255
       '@intlify/unplugin-vue-i18n':
         specifier: 4.0.0
         version: 4.0.0(rollup@4.22.4)(vue-i18n@9.13.1(vue@3.4.31(typescript@5.5.4)))
@@ -211,8 +214,8 @@ importers:
         specifier: 4.1.2
         version: 4.1.2(rollup@4.22.4)
       '@tailwindcss/forms':
-        specifier: 0.5.8
-        version: 0.5.8(tailwindcss@3.4.7(ts-node@10.9.2(@types/node@20.14.10)(typescript@5.5.4)))
+        specifier: 0.5.9
+        version: 0.5.9(tailwindcss@3.4.7(ts-node@10.9.2(@types/node@20.14.10)(typescript@5.5.4)))
       '@tailwindcss/typography':
         specifier: 0.5.13
         version: 0.5.13(tailwindcss@3.4.7(ts-node@10.9.2(@types/node@20.14.10)(typescript@5.5.4)))
@@ -590,8 +593,8 @@ packages:
     resolution: {integrity: sha512-XEFXSlxiG5td2EJRe8vOmRbaXVgfcBlszKujvVmWIK/UpywWljQCfzAv3RQCGujWQ1RD4YYWEAqDXfuJiy8f5Q==}
     engines: {node: '>=6.9.0'}
 
-  '@bufbuild/protobuf@2.0.0':
-    resolution: {integrity: sha512-sw2JhwJyvyL0zlhG61aDzOVryEfJg2PDZFSV7i7IdC7nAE41WuXCru3QWLGiP87At0BMzKOoKO/FqEGoKygGZQ==}
+  '@bufbuild/protobuf@2.1.0':
+    resolution: {integrity: sha512-+2Mx67Y3skJ4NCD/qNSdBJNWtu6x6Qr53jeNg+QcwiL6mt0wK+3jwHH2x1p7xaYH6Ve2JKOVn0OxU35WsmqI9A==}
 
   '@bytebase/vue-kbar@0.1.8':
     resolution: {integrity: sha512-XfF3JadEvWzFngpu1U6C3RvseBEoWXF51Y0D3gL2R7T8Lx+OHEoPCR8jxCMXzROCCJ+eheerKqEiFl5WXrWw4w==}
@@ -843,8 +846,8 @@ packages:
     resolution: {integrity: sha512-d2CGZR2o7fS6sWB7DG/3a95bGKQyHMACZ5aW8qGkkqQpUoZV6C0X7Pc7l4ZNMZkfNBf4VWNe9E1jRsf0G146Ew==}
     engines: {node: '>=18.18'}
 
-  '@iconify/json@2.2.232':
-    resolution: {integrity: sha512-o1W5bNDuXTd3ugywfX9uRmhuJTKYOLhH4qk+eUpkR8WEYdTmMW+FSiFO5R2KqD94Tzoi8Ef8u/R7felU5xk3eQ==}
+  '@iconify/json@2.2.255':
+    resolution: {integrity: sha512-wtBKGYrKHOmRlbai6cd4yTfHakLQ4lLD68w5pb1RDf1+6o0QcvLdun1sWZNcqkOvZOZAUOUPVISqKkYDlWY6YA==}
 
   '@iconify/types@2.0.0':
     resolution: {integrity: sha512-+wluvCrRhXrhyOmRDJ3q8mux9JkKy5SJ/v8ol2tu4FVjyYvtEzkc/3pK15ET6RKg4b4w4BmTk1+gsCUhf21Ykg==}
@@ -1103,8 +1106,8 @@ packages:
   '@soerenmartius/vue3-clipboard@0.1.2':
     resolution: {integrity: sha512-a5er6cFGcFIQ/3qg6kWvU0yFqIz9iWoQGEVs9azjevyRyMAKvj1w3JuLH9y6+u0WhMNby3kn7nuR8nktSnDesg==}
 
-  '@tailwindcss/forms@0.5.8':
-    resolution: {integrity: sha512-DJs7B7NPD0JH7BVvdHWNviWmunlFhuEkz7FyFxE4japOWYMLl9b1D6+Z9mivJJPWr6AEbmlPqgiFRyLwFB1SgQ==}
+  '@tailwindcss/forms@0.5.9':
+    resolution: {integrity: sha512-tM4XVr2+UVTxXJzey9Twx48c1gcxFStqn1pQz0tRsX8o3DvxhN5oY5pvyAbUx7VTaZxpej4Zzvc6h+1RJBzpIg==}
     peerDependencies:
       tailwindcss: '>=3.0.0 || >= 3.0.0-alpha.1 || >= 4.0.0-alpha.20'
 
@@ -1993,8 +1996,8 @@ packages:
   date-fns@3.6.0:
     resolution: {integrity: sha512-fRHTG8g/Gif+kSh50gaGEdToemgfj74aRX3swtiouboip5JDLAyDE9F11nHMIcvOaXeOC6D7SpNhi7uFyB7Uww==}
 
-  dayjs@1.11.11:
-    resolution: {integrity: sha512-okzr3f11N6WuqYtZSvm+F776mB41wRZMhKP+hc34YdW+KmtYYK9iqvHSwo2k9FEH3fhGXvOPV6yz2IcSrfRUDg==}
+  dayjs@1.11.13:
+    resolution: {integrity: sha512-oaMBel6gjolK862uaPQOVTA7q3TZhuSvuMQAAglQDOWYO9A91IrAOUJEyKVlqJlHE0vq5p5UXxzdPfMH/x6xNg==}
 
   de-indent@1.0.2:
     resolution: {integrity: sha512-e/1zu3xH5MQryN2zdVaF0OrdNLUbvWxzMbi+iNA6Bky7l1RoP8a2fIbRocyHclXt/arDrrR6lL3TqFD9pMQTsg==}
@@ -4367,7 +4370,7 @@ snapshots:
       '@babel/helper-validator-identifier': 7.24.7
       to-fast-properties: 2.0.0
 
-  '@bufbuild/protobuf@2.0.0': {}
+  '@bufbuild/protobuf@2.1.0': {}
 
   '@bytebase/vue-kbar@0.1.8(vue@3.4.31(typescript@5.5.4))':
     dependencies:
@@ -4580,7 +4583,7 @@ snapshots:
 
   '@humanwhocodes/retry@0.3.0': {}
 
-  '@iconify/json@2.2.232':
+  '@iconify/json@2.2.255':
     dependencies:
       '@iconify/types': 2.0.0
       pathe: 1.1.2
@@ -4811,7 +4814,7 @@ snapshots:
     dependencies:
       clipboard: 2.0.11
 
-  '@tailwindcss/forms@0.5.8(tailwindcss@3.4.7(ts-node@10.9.2(@types/node@20.14.10)(typescript@5.5.4)))':
+  '@tailwindcss/forms@0.5.9(tailwindcss@3.4.7(ts-node@10.9.2(@types/node@20.14.10)(typescript@5.5.4)))':
     dependencies:
       mini-svg-data-uri: 1.4.4
       tailwindcss: 3.4.7(ts-node@10.9.2(@types/node@20.14.10)(typescript@5.5.4))
@@ -5864,7 +5867,7 @@ snapshots:
 
   date-fns@3.6.0: {}
 
-  dayjs@1.11.11: {}
+  dayjs@1.11.13: {}
 
   de-indent@1.0.2: {}
 
@@ -7604,7 +7607,7 @@ snapshots:
 
   ts-proto@2.0.3:
     dependencies:
-      '@bufbuild/protobuf': 2.0.0
+      '@bufbuild/protobuf': 2.1.0
       case-anything: 2.1.13
       ts-poet: 6.9.0
       ts-proto-descriptors: 1.16.0

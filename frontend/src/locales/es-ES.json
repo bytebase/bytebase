@@ -1048,6 +1048,11 @@
     "waiting-rollout": "Esperando el lanzamiento",
     "opened-by-at": "abierta por {creator} a las {time}",
     "commit-by-at": "commit {id} {title} por {author} a las {time}",
+    "status": {
+      "open": "Abierto",
+      "done": "Hecho",
+      "canceled": "Cancelado"
+    },
     "status-transition": {
       "modal": {
         "resolve": "¿Resolver incidencia?",
@@ -1751,7 +1756,6 @@
   "database": {
     "sync-database": "Sincronizar base de datos",
     "select": "Seleccionar base de datos",
-    "the-list-might-be-out-of-date-and-is-refreshed-roughly-every-10-minutes": "La lista podría estar desactualizada y se actualiza aproximadamente cada 10 minutos",
     "no-anomalies-detected": "No se detectaron anomalías",
     "sync-status": "Estado de sincronización",
     "last-successful-sync": "Última sincronización exitosa",

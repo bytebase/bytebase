@@ -19,7 +19,9 @@
       <div class="flex flex-col gap-1">
         <i18n-t tag="div" keypath="sql-editor.last-synced">
           <template #time>
-            <HumanizeDate :date="database.successfulSyncTime" />
+            <HumanizeDate
+              :date="getDateForPbTimestamp(database.successfulSyncTime)"
+            />
           </template>
         </i18n-t>
         <div v-if="!isSyncing">{{ $t("sql-editor.click-to-sync-now") }}</div>
@@ -39,7 +41,7 @@ import {
   useDBSchemaV1Store,
   useDatabaseV1Store,
 } from "@/store";
-import { isValidDatabaseName } from "@/types";
+import { getDateForPbTimestamp, isValidDatabaseName } from "@/types";
 import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
 
 defineOptions({
