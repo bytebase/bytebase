@@ -936,8 +936,8 @@ github.com/danieljoos/wincred v1.2.1 h1:dl9cBrupW8+r5250DYkYxocLeZ1Y4vB1kxgtjxw8
 github.com/danieljoos/wincred v1.2.1/go.mod h1:uGaFL9fDn3OLTvzCGulzE+SzjEe5NGlh5FdCcyfPwps=
 github.com/danjacques/gofslock v0.0.0-20220131014315-6e321f4509c8 h1:+4P40F8AqFAW4/ft2WXiZXrgtRbS8RLb61D8e6NcMw0=
 github.com/danjacques/gofslock v0.0.0-20220131014315-6e321f4509c8/go.mod h1:VT5Ecrx/r1oHkQbiEBwkLiuQ51igUBmxXuiw9tnSLqY=
-github.com/databricks/databricks-sdk-go v0.43.2 h1:4B+sHAYO5kFqwZNQRmsF70eecqsFX6i/0KfXoDFQT/E=
-github.com/databricks/databricks-sdk-go v0.43.2/go.mod h1:nlzeOEgJ1Tmb5HyknBJ3GEorCZKWqEBoHprvPmTSNq8=
+github.com/databricks/databricks-sdk-go v0.47.0 h1:eE7dN9axviL8+s10jnQAayOYDaR+Mfu7E9COGjO4lrQ=
+github.com/databricks/databricks-sdk-go v0.47.0/go.mod h1:ds+zbv5mlQG7nFEU5ojLtgN/u0/9YzZmKQES/CfedzU=
 github.com/dave/dst v0.27.2 h1:4Y5VFTkhGLC1oddtNwuxxe36pnyLxMFXT51FOzH8Ekc=
 github.com/dave/dst v0.27.2/go.mod h1:jHh6EOibnHgcUW3WjKHisiooEkYwqpHLBSX1iOBhEyc=
 github.com/dave/jennifer v1.5.0 h1:HmgPN93bVDpkQyYbqhCHj5QlgvUkvEOzMyEvKLgCRrg=
