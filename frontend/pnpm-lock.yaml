@@ -27,8 +27,8 @@ importers:
         specifier: ^5.51.21
         version: 5.51.21(vue@3.4.31(typescript@5.5.4))
       '@tanstack/vue-table':
-        specifier: 8.19.3
-        version: 8.19.3(vue@3.4.31(typescript@5.5.4))
+        specifier: 8.20.5
+        version: 8.20.5(vue@3.4.31(typescript@5.5.4))
       '@vueuse/core':
         specifier: 10.11.1
         version: 10.11.1(vue@3.4.31(typescript@5.5.4))
@@ -1150,8 +1150,8 @@ packages:
   '@tanstack/query-core@5.51.21':
     resolution: {integrity: sha512-POQxm42IUp6n89kKWF4IZi18v3fxQWFRolvBA6phNVmA8psdfB1MvDnGacCJdS+EOX12w/CyHM62z//rHmYmvw==}
 
-  '@tanstack/table-core@8.19.3':
-    resolution: {integrity: sha512-IqREj9ADoml9zCAouIG/5kCGoyIxPFdqdyoxis9FisXFi5vT+iYfEfLosq4xkU/iDbMcEuAj+X8dWRLvKYDNoQ==}
+  '@tanstack/table-core@8.20.5':
+    resolution: {integrity: sha512-P9dF7XbibHph2PFRz8gfBKEXEY/HJPOhym8CHmjF8y3q5mWpKx9xtZapXQUWCgkqvsK0R46Azuz+VaxD4Xl+Tg==}
     engines: {node: '>=12'}
 
   '@tanstack/vue-query@5.51.21':
@@ -1163,8 +1163,8 @@ packages:
       '@vue/composition-api':
         optional: true
 
-  '@tanstack/vue-table@8.19.3':
-    resolution: {integrity: sha512-vSgrV1HikfenUDyCWbsA8Mw6+Zr3OhTFi6D6Ictj4hrPLc/UeixjaEU6ccNw59zomyNIT+qBSP+/5iCE10oC6A==}
+  '@tanstack/vue-table@8.20.5':
+    resolution: {integrity: sha512-2xixT3BEgSDw+jOSqPt6ylO/eutDI107t2WdFMVYIZZ45UmTHLySqNriNs0+dMaKR56K5z3t+97P6VuVnI2L+Q==}
     engines: {node: '>=12'}
     peerDependencies:
       vue: '>=3.2'
@@ -4973,7 +4973,7 @@ snapshots:
 
   '@tanstack/query-core@5.51.21': {}
 
-  '@tanstack/table-core@8.19.3': {}
+  '@tanstack/table-core@8.20.5': {}
 
   '@tanstack/vue-query@5.51.21(vue@3.4.31(typescript@5.5.4))':
     dependencies:
@@ -4983,9 +4983,9 @@ snapshots:
       vue: 3.4.31(typescript@5.5.4)
       vue-demi: 0.14.10(vue@3.4.31(typescript@5.5.4))
 
-  '@tanstack/vue-table@8.19.3(vue@3.4.31(typescript@5.5.4))':
+  '@tanstack/vue-table@8.20.5(vue@3.4.31(typescript@5.5.4))':
     dependencies:
-      '@tanstack/table-core': 8.19.3
+      '@tanstack/table-core': 8.20.5
       vue: 3.4.31(typescript@5.5.4)
 
   '@trivago/prettier-plugin-sort-imports@4.3.0(@vue/compiler-sfc@3.4.31)(prettier@3.3.3)':
