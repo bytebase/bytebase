@@ -215,10 +215,10 @@ importers:
         version: 4.1.2(rollup@4.22.4)
       '@tailwindcss/forms':
         specifier: 0.5.9
-        version: 0.5.9(tailwindcss@3.4.7(ts-node@10.9.2(@types/node@20.16.10)(typescript@5.5.4)))
+        version: 0.5.9(tailwindcss@3.4.13(ts-node@10.9.2(@types/node@20.16.10)(typescript@5.5.4)))
       '@tailwindcss/typography':
         specifier: 0.5.15
-        version: 0.5.15(tailwindcss@3.4.7(ts-node@10.9.2(@types/node@20.16.10)(typescript@5.5.4)))
+        version: 0.5.15(tailwindcss@3.4.13(ts-node@10.9.2(@types/node@20.16.10)(typescript@5.5.4)))
       '@trivago/prettier-plugin-sort-imports':
         specifier: ^4.3.0
         version: 4.3.0(@vue/compiler-sfc@3.4.31)(prettier@3.3.3)
@@ -358,8 +358,8 @@ importers:
         specifier: 4.22.4
         version: 4.22.4
       tailwindcss:
-        specifier: 3.4.7
-        version: 3.4.7(ts-node@10.9.2(@types/node@20.16.10)(typescript@5.5.4))
+        specifier: 3.4.13
+        version: 3.4.13(ts-node@10.9.2(@types/node@20.16.10)(typescript@5.5.4))
       ts-node:
         specifier: ^10.9.2
         version: 10.9.2(@types/node@20.16.10)(typescript@5.5.4)
@@ -3661,8 +3661,8 @@ packages:
     resolution: {integrity: sha512-HwOKAP7Wc5aRGYdKH+dw0PRRpbO841v2DENBtjnR5HFWoiNByAl7vrx3p0G/rCyYXQsrxqtX48TImFtPcIHSpQ==}
     engines: {node: ^14.18.0 || >=16.0.0}
 
-  tailwindcss@3.4.7:
-    resolution: {integrity: sha512-rxWZbe87YJb4OcSopb7up2Ba4U82BoiSGUdoDr3Ydrg9ckxFS/YWsvhN323GMcddgU65QRy7JndC7ahhInhvlQ==}
+  tailwindcss@3.4.13:
+    resolution: {integrity: sha512-KqjHOJKogOUt5Bs752ykCeiwvi0fKVkr5oqsFNt/8px/tA8scFPIlkygsf6jXrfCqGHz7VflA6+yytWuM+XhFw==}
     engines: {node: '>=14.0.0'}
     hasBin: true
 
@@ -4229,7 +4229,7 @@ snapshots:
   '@babel/code-frame@7.24.6':
     dependencies:
       '@babel/highlight': 7.24.6
-      picocolors: 1.0.1
+      picocolors: 1.1.0
 
   '@babel/compat-data@7.24.6': {}
 
@@ -4920,18 +4920,18 @@ snapshots:
     dependencies:
       clipboard: 2.0.11
 
-  '@tailwindcss/forms@0.5.9(tailwindcss@3.4.7(ts-node@10.9.2(@types/node@20.16.10)(typescript@5.5.4)))':
+  '@tailwindcss/forms@0.5.9(tailwindcss@3.4.13(ts-node@10.9.2(@types/node@20.16.10)(typescript@5.5.4)))':
     dependencies:
       mini-svg-data-uri: 1.4.4
-      tailwindcss: 3.4.7(ts-node@10.9.2(@types/node@20.16.10)(typescript@5.5.4))
+      tailwindcss: 3.4.13(ts-node@10.9.2(@types/node@20.16.10)(typescript@5.5.4))
 
-  '@tailwindcss/typography@0.5.15(tailwindcss@3.4.7(ts-node@10.9.2(@types/node@20.16.10)(typescript@5.5.4)))':
+  '@tailwindcss/typography@0.5.15(tailwindcss@3.4.13(ts-node@10.9.2(@types/node@20.16.10)(typescript@5.5.4)))':
     dependencies:
       lodash.castarray: 4.4.0
       lodash.isplainobject: 4.0.6
       lodash.merge: 4.6.2
       postcss-selector-parser: 6.0.10
-      tailwindcss: 3.4.7(ts-node@10.9.2(@types/node@20.16.10)(typescript@5.5.4))
+      tailwindcss: 3.4.13(ts-node@10.9.2(@types/node@20.16.10)(typescript@5.5.4))
 
   '@tanstack/match-sorter-utils@8.19.4':
     dependencies:
@@ -7649,7 +7649,7 @@ snapshots:
       '@pkgr/core': 0.1.1
       tslib: 2.6.2
 
-  tailwindcss@3.4.7(ts-node@10.9.2(@types/node@20.16.10)(typescript@5.5.4)):
+  tailwindcss@3.4.13(ts-node@10.9.2(@types/node@20.16.10)(typescript@5.5.4)):
     dependencies:
       '@alloc/quick-lru': 5.2.0
       arg: 5.0.2
@@ -7664,7 +7664,7 @@ snapshots:
       micromatch: 4.0.7
       normalize-path: 3.0.0
       object-hash: 3.0.0
-      picocolors: 1.0.1
+      picocolors: 1.1.0
       postcss: 8.4.39
       postcss-import: 15.1.0(postcss@8.4.39)
       postcss-js: 4.0.1(postcss@8.4.39)
@@ -7888,7 +7888,7 @@ snapshots:
       cac: 6.7.14
       debug: 4.3.5
       pathe: 1.1.2
-      picocolors: 1.0.1
+      picocolors: 1.1.0
       vite: 5.4.8(@types/node@20.16.10)(sass@1.77.4)
     transitivePeerDependencies:
       - '@types/node'
