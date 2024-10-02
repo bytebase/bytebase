@@ -31,7 +31,7 @@ require (
 	github.com/databricks/databricks-sdk-go v0.47.0
 	github.com/epiclabs-io/diff3 v0.0.0-20240325112732-ba77e92bf0e4
 	github.com/github/gh-ost v1.1.6
-	github.com/go-ego/gse v0.80.2
+	github.com/go-ego/gse v0.80.3
 	github.com/go-ldap/ldap/v3 v3.4.8
 	github.com/go-sql-driver/mysql v1.8.1
 	github.com/golang-jwt/jwt/v5 v5.2.1
@@ -195,7 +195,7 @@ require (
 	github.com/twmb/murmur3 v1.1.6 // indirect
 	github.com/twpayne/go-geom v1.4.1 // indirect
 	github.com/twpayne/go-kml v1.5.2 // indirect
-	github.com/vcaesar/cedar v0.20.1 // indirect
+	github.com/vcaesar/cedar v0.20.2 // indirect
 	github.com/xuri/efp v0.0.0-20231025114914-d1ff6096ae53 // indirect
 	github.com/xuri/nfp v0.0.0-20230919160717-d98342af3f05 // indirect
 	go.etcd.io/etcd/api/v3 v3.5.10 // indirect
