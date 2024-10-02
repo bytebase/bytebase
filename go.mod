@@ -68,7 +68,7 @@ require (
 	github.com/sashabaranov/go-openai v1.26.3
 	github.com/segmentio/analytics-go v3.1.0+incompatible
 	github.com/shopspring/decimal v1.4.0
-	github.com/sijms/go-ora/v2 v2.8.19
+	github.com/sijms/go-ora/v2 v2.8.21
 	github.com/snowflakedb/gosnowflake v1.11.0
 	github.com/soheilhy/cmux v0.1.5
 	github.com/sourcegraph/conc v0.3.0
