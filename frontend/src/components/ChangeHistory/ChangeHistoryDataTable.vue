@@ -101,8 +101,7 @@ const columnList = computed(() => {
       resizable: true,
       render: (history) => {
         const historyType =
-          history.type === ChangeHistory_Type.BASELINE ||
-          history.type === ChangeHistory_Type.BRANCH ? (
+          history.type === ChangeHistory_Type.BASELINE ? (
             <span class="textinfolabel">
               ({changeHistory_TypeToJSON(history.type)})
             </span>

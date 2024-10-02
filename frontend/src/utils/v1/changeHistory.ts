@@ -116,7 +116,6 @@ export const getHistoryChangeType = (type: ChangeHistory_Type) => {
     case ChangeHistory_Type.BASELINE:
     case ChangeHistory_Type.MIGRATE:
     case ChangeHistory_Type.MIGRATE_SDL:
-    case ChangeHistory_Type.BRANCH:
     case ChangeHistory_Type.MIGRATE_GHOST:
       return "DDL";
     case ChangeHistory_Type.DATA:

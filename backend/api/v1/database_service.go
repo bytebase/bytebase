@@ -1140,8 +1140,6 @@ func convertToChangeHistoryType(t db.MigrationType) v1pb.ChangeHistory_Type {
 		return v1pb.ChangeHistory_MIGRATE
 	case db.MigrateSDL:
 		return v1pb.ChangeHistory_MIGRATE_SDL
-	case db.Branch:
-		return v1pb.ChangeHistory_BRANCH
 	case db.Data:
 		return v1pb.ChangeHistory_DATA
 	default:

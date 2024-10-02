@@ -3092,7 +3092,6 @@ ViewMetadata is the metadata for views.
 | MIGRATE | 2 |  |
 | MIGRATE_SDL | 3 |  |
 | MIGRATE_GHOST | 4 |  |
-| BRANCH | 5 |  |
 | DATA | 6 |  |
 
 

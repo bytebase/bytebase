@@ -8849,7 +8849,6 @@ components:
                         - MIGRATE
                         - MIGRATE_SDL
                         - MIGRATE_GHOST
-                        - BRANCH
                         - DATA
                     type: string
                     format: enum

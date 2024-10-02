@@ -133,7 +133,6 @@ export const useChangeHistoryStore = defineStore("changeHistory_v1", () => {
         changeHistory.type === ChangeHistory_Type.MIGRATE ||
         changeHistory.type === ChangeHistory_Type.MIGRATE_SDL ||
         changeHistory.type === ChangeHistory_Type.MIGRATE_GHOST ||
-        changeHistory.type === ChangeHistory_Type.BRANCH ||
         changeHistory.type === ChangeHistory_Type.DATA
       ) {
         return {

@@ -101,9 +101,6 @@ const (
 	// MigrateSDL is the migration type via state-based schema migration.
 	// Used for schema change including CREATE DATABASE.
 	MigrateSDL MigrationType = "MIGRATE_SDL"
-	// Branch is the migration type for BRANCH.
-	// Used when restoring from a backup (the restored database branched from the original backup).
-	Branch MigrationType = "BRANCH"
 	// Data is the migration type for DATA.
 	// Used for DML change.
 	Data MigrationType = "DATA"
