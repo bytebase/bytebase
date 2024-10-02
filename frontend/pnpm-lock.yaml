@@ -87,11 +87,11 @@ importers:
         specifier: 4.17.21
         version: 4.17.21
       lucide-static:
-        specifier: ^0.424.0
-        version: 0.424.0
+        specifier: ^0.447.0
+        version: 0.447.0
       lucide-vue-next:
-        specifier: ^0.408.0
-        version: 0.408.0(vue@3.4.31(typescript@5.5.4))
+        specifier: ^0.447.0
+        version: 0.447.0(vue@3.4.31(typescript@5.5.4))
       markdown-it:
         specifier: ^14.0.0
         version: 14.1.0
@@ -2885,11 +2885,11 @@ packages:
   ltgt@2.2.1:
     resolution: {integrity: sha512-AI2r85+4MquTw9ZYqabu4nMwy9Oftlfa/e/52t9IjtfG+mGBbTNdAoZ3RQKLHR6r0wQnwZnPIEh/Ya6XTWAKNA==}
 
-  lucide-static@0.424.0:
-    resolution: {integrity: sha512-KUsIoKeIZF/rc5dttI/bZmd3+zQ/V9YA/G/NsGALA3QWqVncuZsyJ+IrM+jI0BTHiARwVZfp7zOEhc7gqn5x7A==}
+  lucide-static@0.447.0:
+    resolution: {integrity: sha512-6QcrGIs8sgQn5DzQzLjBtV8mLh0WeYZo31SK2xt58vygpUtYRUmtZ+e+/Lan3K49ZNE40VFV+oqYNhpTULrqJA==}
 
-  lucide-vue-next@0.408.0:
-    resolution: {integrity: sha512-X2w4IDKs6O/R+vPdyMl5VvXS0mhuTqXtw6/NQOOIfCHvMz6vWa1Q2XvYT3oQGzyU94uVZw16jcdC1LwI5XbOdg==}
+  lucide-vue-next@0.447.0:
+    resolution: {integrity: sha512-NXD61EHwgdIHZsVxFGYHowrPZnhWJOByVJ23LJB28BnXII29Cg157DmIbvrJ7idwbfhwYhCZ2moRfKOCwIvNiw==}
     peerDependencies:
       vue: '>=3.0.1'
 
@@ -4739,7 +4739,7 @@ snapshots:
   '@intlify/message-compiler@10.0.0':
     dependencies:
       '@intlify/shared': 10.0.0
-      source-map-js: 1.2.0
+      source-map-js: 1.2.1
 
   '@intlify/message-compiler@9.13.1':
     dependencies:
@@ -6860,9 +6860,9 @@ snapshots:
 
   ltgt@2.2.1: {}
 
-  lucide-static@0.424.0: {}
+  lucide-static@0.447.0: {}
 
-  lucide-vue-next@0.408.0(vue@3.4.31(typescript@5.5.4)):
+  lucide-vue-next@0.447.0(vue@3.4.31(typescript@5.5.4)):
     dependencies:
       vue: 3.4.31(typescript@5.5.4)
 
