@@ -10,14 +10,16 @@
     }}
     <div class="flex items-center">
       <template v-for="action in actions" :key="action.text">
+        <component :is="action.render()" v-if="action.render" />
         <NButton
+          v-else
           quaternary
           size="small"
           type="primary"
           :disabled="action.disabled"
           @click="action.click"
         >
-          <template #icon>
+          <template v-if="action.icon" #icon>
             <component :is="action.icon" class="h-4 w-4" />
           </template>
           <span class="text-sm">{{ action.text }}</span>
@@ -32,22 +34,24 @@
   />
 </template>
 
-<script setup lang="ts">
-import { GraduationCapIcon, RefreshCwIcon } from "lucide-vue-next";
+<script setup lang="tsx">
+import { GraduationCapIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import type { VNode } from "vue";
 import { computed, h, reactive } from "vue";
 import { useI18n } from "vue-i18n";
+import InstanceSyncButton from "@/components/Instance/InstanceSyncButton.vue";
 import InstanceAssignment from "@/components/InstanceAssignment.vue";
 import { useInstanceV1Store, pushNotification } from "@/store";
 import type { ComposedInstance } from "@/types";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
 interface Action {
-  icon: VNode;
+  icon?: VNode;
+  render?: () => VNode;
   text: string;
-  disabled: boolean;
-  click: () => void;
+  disabled?: boolean;
+  click?: () => void;
 }
 
 interface LocalState {
@@ -71,13 +75,16 @@ const actions = computed((): Action[] => {
     // We'll always show the sync button, even if the user doesn't have the permission to sync.
     // If the user doesn't have the permission, the button will be disabled.
     {
-      icon: h(RefreshCwIcon),
-      text: t("common.sync"),
-      disabled:
-        props.instanceList.length < 1 ||
-        state.loading ||
-        !hasWorkspacePermissionV2("bb.instances.sync"),
-      click: syncSchema,
+      render: () => (
+        <InstanceSyncButton
+          size={"small"}
+          type={"primary"}
+          quaternary={true}
+          disabled={props.instanceList.length < 1}
+          onSync-schema={syncSchema}
+        />
+      ),
+      text: "",
     },
   ];
 
@@ -92,25 +99,15 @@ const actions = computed((): Action[] => {
   return list;
 });
 
-const syncSchema = async () => {
-  try {
-    state.loading = true;
-    await instanceStore.batchSyncInstances(
-      props.instanceList.map((instance) => instance.name)
-    );
-    pushNotification({
-      module: "bytebase",
-      style: "INFO",
-      title: t("db.start-to-sync-schema"),
-    });
-  } catch {
-    pushNotification({
-      module: "bytebase",
-      style: "CRITICAL",
-      title: t("db.failed-to-sync-schema"),
-    });
-  } finally {
-    state.loading = false;
-  }
+const syncSchema = async (enableFullSync: boolean) => {
+  await instanceStore.batchSyncInstances(
+    props.instanceList.map((instance) => instance.name),
+    enableFullSync
+  );
+  pushNotification({
+    module: "bytebase",
+    style: "INFO",
+    title: t("db.start-to-sync-schema"),
+  });
 };
 </script>
