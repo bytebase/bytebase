@@ -293,10 +293,10 @@ importers:
         version: 1.90.0
       '@vitejs/plugin-vue':
         specifier: 5.1.3
-        version: 5.1.3(vite@5.3.6(@types/node@20.14.10)(sass@1.77.4))(vue@3.4.31(typescript@5.5.4))
+        version: 5.1.3(vite@5.4.8(@types/node@20.14.10)(sass@1.77.4))(vue@3.4.31(typescript@5.5.4))
       '@vitejs/plugin-vue-jsx':
         specifier: 4.0.0
-        version: 4.0.0(vite@5.3.6(@types/node@20.14.10)(sass@1.77.4))(vue@3.4.31(typescript@5.5.4))
+        version: 4.0.0(vite@5.4.8(@types/node@20.14.10)(sass@1.77.4))(vue@3.4.31(typescript@5.5.4))
       '@vue/compiler-sfc':
         specifier: 3.4.31
         version: 3.4.31
@@ -376,8 +376,8 @@ importers:
         specifier: 0.27.2
         version: 0.27.2(@babel/parser@7.24.7)(rollup@4.22.4)(vue@3.4.31(typescript@5.5.4))
       vite:
-        specifier: 5.3.6
-        version: 5.3.6(@types/node@20.14.10)(sass@1.77.4)
+        specifier: 5.4.8
+        version: 5.4.8(@types/node@20.14.10)(sass@1.77.4)
       vite-bundle-visualizer:
         specifier: ^1.0.1
         version: 1.2.1(rollup@4.22.4)
@@ -3157,6 +3157,9 @@ packages:
   picocolors@1.0.1:
     resolution: {integrity: sha512-anP1Z8qwhkbmu7MFP5iTt+wQKXgwzf7zTyGlcdzabySa9vd0Xt392U0rVmz9poOaBj0uHJKyyo9/upk0HrEQew==}
 
+  picocolors@1.1.0:
+    resolution: {integrity: sha512-TQ92mBOW0l3LeMeyLV6mzy/kWr8lkd/hp3mTg7wYK7zJhuBStmGMBG0BdeDZS/dZx1IukaX6Bk11zcln25o1Aw==}
+
   picomatch@2.3.1:
     resolution: {integrity: sha512-JU3teHTNjmE2VCGFzuY8EXzCDVwEqB2a8fsIvwaStHhAWJEeVd1o1QD80CU6+ZdEXXSLbSsuLwJjkCBWqRQUVA==}
     engines: {node: '>=8.6'}
@@ -3235,6 +3238,10 @@ packages:
 
   postcss@8.4.39:
     resolution: {integrity: sha512-0vzE+lAiG7hZl1/9I8yzKLx3aR9Xbof3fBHKunvMfOCYAtMhrsnccJY2iTURb9EZd5+pLuiNV9/c/GZJOHsgIw==}
+    engines: {node: ^10 || ^12 || >=14}
+
+  postcss@8.4.47:
+    resolution: {integrity: sha512-56rxCq7G/XfB4EkXq9Egn5GCqugWvDFjafDOThIdMBsI15iqPqR5r15TfSr1YPYeEI19YeaXMCbY6u88Y76GLQ==}
     engines: {node: ^10 || ^12 || >=14}
 
   pouchdb-abstract-mapreduce@9.0.0:
@@ -3524,6 +3531,10 @@ packages:
 
   source-map-js@1.2.0:
     resolution: {integrity: sha512-itJW8lvSA0TXEphiRoawsCksnlf8SyvmFzIhltqAHluXd88pkCd+cXJVHTDwdCr0IzwptSm035IHQktUu1QUMg==}
+    engines: {node: '>=0.10.0'}
+
+  source-map-js@1.2.1:
+    resolution: {integrity: sha512-UXWMKhLOwVKb728IUtQPXxfYU+usdybtUrK/8uGE8CQMvrhOpwvzDBwj0QhSL7MQc7vIsISBG8VQ8+IDQxpfQA==}
     engines: {node: '>=0.10.0'}
 
   source-map@0.5.7:
@@ -3847,8 +3858,8 @@ packages:
     engines: {node: ^18.0.0 || >=20.0.0}
     hasBin: true
 
-  vite@5.3.6:
-    resolution: {integrity: sha512-es78AlrylO8mTVBygC0gTC0FENv0C6T496vvd33ydbjF/mIi9q3XQ9A3NWo5qLGFKywvz10J26813OkLvcQleA==}
+  vite@5.4.8:
+    resolution: {integrity: sha512-FqrItQ4DT1NC4zCUqMB4c4AZORMKIa0m8/URVCZ77OZ/QSNeJ54bU1vrFADbDsuwfIPcgknRkmqakQcgnL4GiQ==}
     engines: {node: ^18.0.0 || >=20.0.0}
     hasBin: true
     peerDependencies:
@@ -3856,6 +3867,7 @@ packages:
       less: '*'
       lightningcss: ^1.21.0
       sass: '*'
+      sass-embedded: '*'
       stylus: '*'
       sugarss: '*'
       terser: ^5.4.0
@@ -3867,6 +3879,8 @@ packages:
       lightningcss:
         optional: true
       sass:
+        optional: true
+      sass-embedded:
         optional: true
       stylus:
         optional: true
@@ -5231,19 +5245,19 @@ snapshots:
       '@typescript-eslint/types': 7.18.0
       eslint-visitor-keys: 3.4.3
 
-  '@vitejs/plugin-vue-jsx@4.0.0(vite@5.3.6(@types/node@20.14.10)(sass@1.77.4))(vue@3.4.31(typescript@5.5.4))':
+  '@vitejs/plugin-vue-jsx@4.0.0(vite@5.4.8(@types/node@20.14.10)(sass@1.77.4))(vue@3.4.31(typescript@5.5.4))':
     dependencies:
       '@babel/core': 7.24.6
       '@babel/plugin-transform-typescript': 7.24.6(@babel/core@7.24.6)
       '@vue/babel-plugin-jsx': 1.2.2(@babel/core@7.24.6)
-      vite: 5.3.6(@types/node@20.14.10)(sass@1.77.4)
+      vite: 5.4.8(@types/node@20.14.10)(sass@1.77.4)
       vue: 3.4.31(typescript@5.5.4)
     transitivePeerDependencies:
       - supports-color
 
-  '@vitejs/plugin-vue@5.1.3(vite@5.3.6(@types/node@20.14.10)(sass@1.77.4))(vue@3.4.31(typescript@5.5.4))':
+  '@vitejs/plugin-vue@5.1.3(vite@5.4.8(@types/node@20.14.10)(sass@1.77.4))(vue@3.4.31(typescript@5.5.4))':
     dependencies:
-      vite: 5.3.6(@types/node@20.14.10)(sass@1.77.4)
+      vite: 5.4.8(@types/node@20.14.10)(sass@1.77.4)
       vue: 3.4.31(typescript@5.5.4)
 
   '@vitest/expect@1.6.0':
@@ -7085,6 +7099,8 @@ snapshots:
 
   picocolors@1.0.1: {}
 
+  picocolors@1.1.0: {}
+
   picomatch@2.3.1: {}
 
   pify@2.3.0: {}
@@ -7157,6 +7173,12 @@ snapshots:
       nanoid: 3.3.7
       picocolors: 1.0.1
       source-map-js: 1.2.0
+
+  postcss@8.4.47:
+    dependencies:
+      nanoid: 3.3.7
+      picocolors: 1.1.0
+      source-map-js: 1.2.1
 
   pouchdb-abstract-mapreduce@9.0.0:
     dependencies:
@@ -7480,6 +7502,8 @@ snapshots:
   source-map-generator@0.8.0: {}
 
   source-map-js@1.2.0: {}
+
+  source-map-js@1.2.1: {}
 
   source-map@0.5.7: {}
 
@@ -7812,21 +7836,22 @@ snapshots:
       debug: 4.3.5
       pathe: 1.1.2
       picocolors: 1.0.1
-      vite: 5.3.6(@types/node@20.14.10)(sass@1.77.4)
+      vite: 5.4.8(@types/node@20.14.10)(sass@1.77.4)
     transitivePeerDependencies:
       - '@types/node'
       - less
       - lightningcss
       - sass
+      - sass-embedded
       - stylus
       - sugarss
       - supports-color
       - terser
 
-  vite@5.3.6(@types/node@20.14.10)(sass@1.77.4):
+  vite@5.4.8(@types/node@20.14.10)(sass@1.77.4):
     dependencies:
       esbuild: 0.21.5
-      postcss: 8.4.39
+      postcss: 8.4.47
       rollup: 4.22.4
     optionalDependencies:
       '@types/node': 20.14.10
@@ -7852,7 +7877,7 @@ snapshots:
       strip-literal: 2.1.0
       tinybench: 2.8.0
       tinypool: 0.8.4
-      vite: 5.3.6(@types/node@20.14.10)(sass@1.77.4)
+      vite: 5.4.8(@types/node@20.14.10)(sass@1.77.4)
       vite-node: 1.6.0(@types/node@20.14.10)(sass@1.77.4)
       why-is-node-running: 2.2.2
     optionalDependencies:
@@ -7862,6 +7887,7 @@ snapshots:
       - less
       - lightningcss
       - sass
+      - sass-embedded
       - stylus
       - sugarss
       - supports-color
