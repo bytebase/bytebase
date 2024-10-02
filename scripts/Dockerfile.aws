@@ -25,7 +25,7 @@ RUN go mod download
 ARG TARGETARCH
 ARG VERSION="development"
 ARG VERSION_SUFFIX=""
-ARG GO_VERSION="1.23.0"
+ARG GO_VERSION="1.23.2"
 ARG GIT_COMMIT="unknown"
 ARG BUILD_TIME="unknown"
 ARG BUILD_USER="unknown"
