@@ -16,7 +16,7 @@ COPY . .
 ENV BB_GIT_COMMIT_ID_FE="${RENDER_GIT_COMMIT}"
 RUN cd frontend && pnpm install --frozen-lockfile && pnpm release-docker
 
-FROM golang:1.23.0 as backend
+FROM golang:1.23.2 as backend
 ADD go.mod go.sum /
 RUN go mod download
 
