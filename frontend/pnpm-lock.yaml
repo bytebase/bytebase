@@ -115,7 +115,7 @@ importers:
         version: 2.0.2
       nice-grpc-error-details:
         specifier: ^0.2.4
-        version: 0.2.6
+        version: 0.2.7
       nice-grpc-web:
         specifier: ^3.3.2
         version: 3.3.4(ws@8.18.0)
@@ -3031,8 +3031,8 @@ packages:
   nice-grpc-common@2.0.2:
     resolution: {integrity: sha512-7RNWbls5kAL1QVUOXvBsv1uO0wPQK3lHv+cY1gwkTzirnG1Nop4cBJZubpgziNbaVc/bl9QJcyvsf/NQxa3rjQ==}
 
-  nice-grpc-error-details@0.2.6:
-    resolution: {integrity: sha512-a/cTnwoCYGlWuj2s21WVPDcVvpRLjbChKACc1sCrXBeCvslpZAzoeXJBTKdLMpGlHY7WtfUM6cKWR7SX4Kl72g==}
+  nice-grpc-error-details@0.2.7:
+    resolution: {integrity: sha512-EadCzRbDgGMgwgUxB/Wivy9mWq0gJ4fj6MaWgKcNcw7MzyVaeS+JEIvtOnO//z+c5JKIJCh51JKsp/2SmrysIA==}
 
   nice-grpc-web@3.3.4:
     resolution: {integrity: sha512-L8UQC/jQ8jAXmPM76On2CDDSDPxIfV8ltXu2anEUKYUdrqMMYZwnUVw3s2fo5p6dotIR6qyVLR9qSXvDOeMmPA==}
@@ -4739,7 +4739,7 @@ snapshots:
   '@intlify/message-compiler@10.0.0':
     dependencies:
       '@intlify/shared': 10.0.0
-      source-map-js: 1.2.1
+      source-map-js: 1.2.0
 
   '@intlify/message-compiler@9.13.1':
     dependencies:
@@ -7022,7 +7022,7 @@ snapshots:
     dependencies:
       ts-error: 1.0.6
 
-  nice-grpc-error-details@0.2.6:
+  nice-grpc-error-details@0.2.7:
     dependencies:
       long: 5.2.3
       nice-grpc-common: 2.0.2
