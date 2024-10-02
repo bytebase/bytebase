@@ -60,7 +60,7 @@
     "node-sql-parser": "5.3.2",
     "normalize-wheel": "^1.0.1",
     "pev2": "1.12.1",
-    "pinia": "2.1.7",
+    "pinia": "2.2.4",
     "pouchdb": "^9.0.0",
     "pouchdb-find": "^9.0.0",
     "qrcode": "^1.5.4",
