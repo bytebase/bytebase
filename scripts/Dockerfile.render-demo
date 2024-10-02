@@ -16,11 +16,11 @@ COPY . .
 ENV BB_GIT_COMMIT_ID_FE="${RENDER_GIT_COMMIT}"
 RUN cd frontend && pnpm install --frozen-lockfile && pnpm release-docker
 
-FROM golang:1.23.0 as backend
+FROM golang:1.23.2 as backend
 ADD go.mod go.sum /
 RUN go mod download
 
-ARG GO_VERSION="1.23.0"
+ARG GO_VERSION="1.23.2"
 # RENDER_GIT_COMMIT is a render.com provided env var during build.
 # https://render.com/docs/environment-variables
 ARG RENDER_GIT_COMMIT="unknown"
