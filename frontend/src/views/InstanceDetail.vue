@@ -12,26 +12,10 @@
     <NTabs>
       <template #suffix>
         <div class="space-x-2">
-          <NDropdown
-            v-if="allowSyncInstance"
-            :trigger="'click'"
-            :options="syncInstnceOptions"
-            :render-label="renderDropdownLabel"
-            :disabled="state.syncingSchema"
-            @select="syncSchema"
-          >
-            <NButton icon-placement="right" :loading="state.syncingSchema">
-              <template #icon>
-                <ChevronDownIcon class="w-4" />
-              </template>
-              <template v-if="state.syncingSchema">
-                {{ $t("instance.syncing") }}
-              </template>
-              <template v-else>
-                {{ $t("instance.sync.self") }}
-              </template>
-            </NButton>
-          </NDropdown>
+          <InstanceSyncButton
+            v-if="instance.state === State.ACTIVE"
+            @sync-schema="syncSchema"
+          />
           <NButton
             v-if="allowCreateDatabase"
             type="primary"
@@ -81,16 +65,14 @@
 
 <script lang="tsx" setup>
 import { useTitle } from "@vueuse/core";
-import { ChevronDownIcon } from "lucide-vue-next";
-import type { DropdownOption } from "naive-ui";
-import { NButton, NTabPane, NTabs, NDropdown, NTooltip } from "naive-ui";
-import type { ClientError } from "nice-grpc-web";
+import { NButton, NTabPane, NTabs } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import ArchiveBanner from "@/components/ArchiveBanner.vue";
 import { CreateDatabasePrepPanel } from "@/components/CreateDatabasePrepForm";
 import { EngineIcon } from "@/components/Icon";
+import InstanceSyncButton from "@/components/Instance/InstanceSyncButton.vue";
 import {
   InstanceForm,
   Form as InstanceFormBody,
@@ -116,7 +98,6 @@ import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
 import {
   instanceV1HasCreateDatabase,
   instanceV1Name,
-  hasWorkspacePermissionV2,
   hasWorkspaceLevelProjectPermissionInAnyProject,
   wrapRefAsPromise,
   autoDatabaseRoute,
@@ -165,52 +146,12 @@ const environment = computed(() => {
   );
 });
 
-type syncInstanceKey = "sync-all" | "sync-new";
-
-const renderDropdownLabel = (option: DropdownOption) => {
-  if (option.key === "sync-new") {
-    return <span>{option.label}</span>;
-  }
-  return (
-    <NTooltip placement="top-start">
-      {{
-        trigger: () => option.label,
-        default: () => (
-          <span class="text-sm text-nowrap">
-            {t("instance.sync.sync-all-tip")}
-          </span>
-        ),
-      }}
-    </NTooltip>
-  );
-};
-
-const syncInstnceOptions = computed((): DropdownOption[] => {
-  return [
-    {
-      key: "sync-all",
-      label: t("instance.sync.sync-all"),
-    },
-    {
-      key: "sync-new",
-      label: t("instance.sync.sync-new"),
-    },
-  ];
-});
-
 const { databaseList, listCache, ready } = useDatabaseV1List(
   instance.value.name
 );
 
 const instanceRoleList = computed(() => {
   return instance.value.roles;
-});
-
-const allowSyncInstance = computed(() => {
-  return (
-    instance.value.state === State.ACTIVE &&
-    hasWorkspacePermissionV2("bb.instances.sync")
-  );
 });
 
 const allowCreateDatabase = computed(() => {
@@ -222,50 +163,25 @@ const allowCreateDatabase = computed(() => {
   );
 });
 
-const syncSchema = async (key: syncInstanceKey) => {
-  state.syncingSchema = true;
-  try {
-    await instanceV1Store.syncInstance(
-      instance.value,
-      key === "sync-all" /* enable full sync */
-    );
-    if (key === "sync-all") {
-      pushNotification({
-        module: "bytebase",
-        style: "SUCCESS",
-        title: t("instance.sync.sync-all-tip"),
-      });
-    }
-    // Remove the database list cache for the instance.
-    listCache.cacheMap.delete(listCache.getCacheKey(instance.value.name));
-    await wrapRefAsPromise(ready, true);
-    // Clear the db schema metadata cache entities.
-    // So we will re-fetch new values when needed.
-    const dbSchemaStore = useDBSchemaV1Store();
-    databaseList.value.forEach((database) =>
-      dbSchemaStore.removeCache(database.name)
-    );
-    pushNotification({
-      module: "bytebase",
-      style: "SUCCESS",
-      title: t(
-        "instance.successfully-synced-schema-for-instance-instance-value-name",
-        [instance.value.title]
-      ),
-    });
-  } catch (error) {
-    pushNotification({
-      module: "bytebase",
-      style: "CRITICAL",
-      title: t(
-        "instance.failed-to-sync-schema-for-instance-instance-value-name",
-        [instance.value.title]
-      ),
-      description: (error as ClientError).details,
-    });
-  } finally {
-    state.syncingSchema = false;
-  }
+const syncSchema = async (enableFullSync: boolean) => {
+  await instanceV1Store.syncInstance(instance.value, enableFullSync);
+  // Remove the database list cache for the instance.
+  listCache.cacheMap.delete(listCache.getCacheKey(instance.value.name));
+  await wrapRefAsPromise(ready, true);
+  // Clear the db schema metadata cache entities.
+  // So we will re-fetch new values when needed.
+  const dbSchemaStore = useDBSchemaV1Store();
+  databaseList.value.forEach((database) =>
+    dbSchemaStore.removeCache(database.name)
+  );
+  pushNotification({
+    module: "bytebase",
+    style: "SUCCESS",
+    title: t(
+      "instance.successfully-synced-schema-for-instance-instance-value-name",
+      [instance.value.title]
+    ),
+  });
 };
 
 const createDatabase = () => {
