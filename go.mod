@@ -65,7 +65,7 @@ require (
 	github.com/pingcap/tidb/pkg/parser v0.0.0-20221101143359-5b0be9af540e
 	github.com/pkg/errors v0.9.1
 	github.com/redis/go-redis/v9 v9.6.1
-	github.com/sashabaranov/go-openai v1.26.3
+	github.com/sashabaranov/go-openai v1.31.0
 	github.com/segmentio/analytics-go v3.1.0+incompatible
 	github.com/shopspring/decimal v1.4.0
 	github.com/sijms/go-ora/v2 v2.8.19
