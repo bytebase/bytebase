@@ -58,7 +58,7 @@ require (
 	github.com/mattn/go-oci8 v0.1.1
 	github.com/mattn/go-sqlite3 v1.14.22
 	github.com/microsoft/go-mssqldb v1.7.2
-	github.com/nyaruka/phonenumbers v1.3.6
+	github.com/nyaruka/phonenumbers v1.4.0
 	github.com/paulmach/orb v0.11.1
 	github.com/pganalyze/pg_query_go/v5 v5.1.0
 	github.com/pingcap/tidb v1.1.0-beta.0.20220825063022-5263a0abda61
