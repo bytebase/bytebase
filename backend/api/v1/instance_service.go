@@ -586,7 +586,7 @@ func (s *InstanceService) BatchSyncInstances(ctx context.Context, request *v1pb.
 
 		updatedInstance, newDatabases, err := s.schemaSyncer.SyncInstance(ctx, instance)
 		if err != nil {
-			return nil, status.Errorf(codes.Internal, err.Error())
+			return nil, status.Errorf(codes.Internal, "failed to sync instance, %v", err)
 		}
 		if r.EnableFullSync {
 			// Sync all databases in the instance asynchronously.
