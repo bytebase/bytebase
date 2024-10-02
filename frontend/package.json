@@ -134,7 +134,7 @@
     "jquery": "3.7.1",
     "jsdom": "25.0.1",
     "long": "^5.2.3",
-    "postcss": "8.4.39",
+    "postcss": "8.4.47",
     "prettier": "3.3.3",
     "protobufjs": "^7.2.5",
     "rollup": "4.24.0",
