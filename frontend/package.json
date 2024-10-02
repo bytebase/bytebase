@@ -132,7 +132,7 @@
     "eslint-plugin-vue": "9.28.0",
     "events": "^3.3.0",
     "jquery": "3.7.1",
-    "jsdom": "24.1.1",
+    "jsdom": "25.0.1",
     "long": "^5.2.3",
     "postcss": "8.4.39",
     "prettier": "3.3.3",
