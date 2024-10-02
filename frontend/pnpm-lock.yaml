@@ -126,8 +126,8 @@ importers:
         specifier: ^1.0.1
         version: 1.0.1
       pev2:
-        specifier: 1.11.0
-        version: 1.11.0(@popperjs/core@2.11.8)(typescript@5.5.4)
+        specifier: 1.12.1
+        version: 1.12.1(@popperjs/core@2.11.8)(typescript@5.5.4)
       pinia:
         specifier: 2.1.7
         version: 2.1.7(typescript@5.5.4)(vue@3.4.31(typescript@5.5.4))
@@ -3198,8 +3198,8 @@ packages:
     engines: {node: '>=14'}
     hasBin: true
 
-  pev2@1.11.0:
-    resolution: {integrity: sha512-OKsUdUL7JhUQVC9IhpGozXfkeSb3HGvLIth3YoGmKgwTv8UO3/OqU2gfuNjs2NlbArGx4cJYIs/R3NHOTxtu7Q==}
+  pev2@1.12.1:
+    resolution: {integrity: sha512-ZnevxICC7Z04vOk/rif3KylQH9SQ8yxhEyxTbGCHmDNgeKSkoV4qG4XfXmzfy+zApbTvmsSbuclS66h/222UZA==}
 
   picocolors@1.0.1:
     resolution: {integrity: sha512-anP1Z8qwhkbmu7MFP5iTt+wQKXgwzf7zTyGlcdzabySa9vd0Xt392U0rVmz9poOaBj0uHJKyyo9/upk0HrEQew==}
@@ -7175,7 +7175,7 @@ snapshots:
       commander: 10.0.1
       source-map-generator: 0.8.0
 
-  pev2@1.11.0(@popperjs/core@2.11.8)(typescript@5.5.4):
+  pev2@1.12.1(@popperjs/core@2.11.8)(typescript@5.5.4):
     dependencies:
       '@fortawesome/fontawesome-svg-core': 6.5.2
       '@fortawesome/free-solid-svg-icons': 6.5.2
@@ -7538,7 +7538,7 @@ snapshots:
     dependencies:
       chokidar: 3.6.0
       immutable: 4.3.6
-      source-map-js: 1.2.0
+      source-map-js: 1.2.1
 
   saxes@6.0.0:
     dependencies:
