@@ -365,7 +365,7 @@ importers:
         version: 10.9.2(@types/node@20.16.10)(typescript@5.5.4)
       ts-proto:
         specifier: ^2.0.3
-        version: 2.0.3
+        version: 2.2.1
       typescript:
         specifier: 5.5.4
         version: 5.5.4
@@ -3784,11 +3784,11 @@ packages:
   ts-poet@6.9.0:
     resolution: {integrity: sha512-roe6W6MeZmCjRmppyfOURklO5tQFQ6Sg7swURKkwYJvV7dbGCrK28um5+51iW3twdPRKtwarqFAVMU6G1mvnuQ==}
 
-  ts-proto-descriptors@1.16.0:
-    resolution: {integrity: sha512-3yKuzMLpltdpcyQji1PJZRfoo4OJjNieKTYkQY8pF7xGKsYz/RHe3aEe4KiRxcinoBmnEhmuI+yJTxLb922ULA==}
+  ts-proto-descriptors@2.0.0:
+    resolution: {integrity: sha512-wHcTH3xIv11jxgkX5OyCSFfw27agpInAd6yh89hKG6zqIXnjW9SYqSER2CVQxdPj4czeOhGagNvZBEbJPy7qkw==}
 
-  ts-proto@2.0.3:
-    resolution: {integrity: sha512-nh1pCkdWy5gKGjNaYQZcKMDlWqaeQ8Kg6kma8b/EkLbI1zzg3fhIBu4KA+dR5NqosLkqcZxLMGDZJ/0T1b3prw==}
+  ts-proto@2.2.1:
+    resolution: {integrity: sha512-EiPj34febZLbLdEyo//J20ix44kFFRZJYGuEx43cOBZ0pLSGiBKLwy2ORfkeJTlhHFqZKPoaWdiRyI4pYqdR4Q==}
     hasBin: true
 
   tslib@2.6.2:
@@ -4745,7 +4745,7 @@ snapshots:
   '@intlify/message-compiler@10.0.0':
     dependencies:
       '@intlify/shared': 10.0.0
-      source-map-js: 1.2.1
+      source-map-js: 1.2.0
 
   '@intlify/message-compiler@9.13.1':
     dependencies:
@@ -7814,17 +7814,16 @@ snapshots:
     dependencies:
       dprint-node: 1.0.8
 
-  ts-proto-descriptors@1.16.0:
+  ts-proto-descriptors@2.0.0:
     dependencies:
-      long: 5.2.3
-      protobufjs: 7.4.0
+      '@bufbuild/protobuf': 2.1.0
 
-  ts-proto@2.0.3:
+  ts-proto@2.2.1:
     dependencies:
       '@bufbuild/protobuf': 2.1.0
       case-anything: 2.1.13
       ts-poet: 6.9.0
-      ts-proto-descriptors: 1.16.0
+      ts-proto-descriptors: 2.0.0
 
   tslib@2.6.2: {}
 
