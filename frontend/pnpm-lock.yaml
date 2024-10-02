@@ -280,8 +280,8 @@ importers:
         specifier: 7.5.8
         version: 7.5.8
       '@types/slug':
-        specifier: 5.0.8
-        version: 5.0.8
+        specifier: 5.0.9
+        version: 5.0.9
       '@types/splitpanes':
         specifier: 2.2.6
         version: 2.2.6
@@ -1319,8 +1319,8 @@ packages:
   '@types/semver@7.5.8':
     resolution: {integrity: sha512-I8EUhyrgfLrcTkzV3TSsGyl1tSuPrEDzr0yd5m90UgNxQkyDXULk3b6MlQqTCpZpNtWe1K0hzclnZkTcLBe2UQ==}
 
-  '@types/slug@5.0.8':
-    resolution: {integrity: sha512-mblTWR1OST257k1gZ3QvqG+ERSr8Ea6dyM1FH6Jtm4jeXi0/r0/95VNctofuiywPxCVQuE8AuFoqmvJ4iVUlXQ==}
+  '@types/slug@5.0.9':
+    resolution: {integrity: sha512-6Yp8BSplP35Esa/wOG1wLNKiqXevpQTEF/RcL/NV6BBQaMmZh4YlDwCgrrFSoUE4xAGvnKd5c+lkQJmPrBAzfQ==}
 
   '@types/splitpanes@2.2.6':
     resolution: {integrity: sha512-3dV5sO1Ht74iER4jJU03mreL3f+Q2h47ZqXS6Sfbqc6hkCvsDrX1GA0NbYWRdNvZemPyTDzUoApWKeoGbALwkQ==}
@@ -5124,7 +5124,7 @@ snapshots:
 
   '@types/semver@7.5.8': {}
 
-  '@types/slug@5.0.8': {}
+  '@types/slug@5.0.9': {}
 
   '@types/splitpanes@2.2.6':
     dependencies:
