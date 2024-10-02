@@ -164,7 +164,6 @@ const hasSyncSchemaFeature = computed(() => {
 const allowedMigrationTypeList: ChangeHistory_Type[] = [
   ChangeHistory_Type.BASELINE,
   ChangeHistory_Type.MIGRATE,
-  ChangeHistory_Type.BRANCH,
 ];
 
 const allowedEngineTypeList: Engine[] = [
