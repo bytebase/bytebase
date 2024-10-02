@@ -3,7 +3,7 @@ module github.com/bytebase/bytebase
 go 1.23.0
 
 require (
-	cloud.google.com/go/bigquery v1.63.0
+	cloud.google.com/go/bigquery v1.63.1
 	cloud.google.com/go/cloudsqlconn v1.12.1
 	cloud.google.com/go/secretmanager v1.14.1
 	cloud.google.com/go/spanner v1.68.0
