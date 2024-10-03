@@ -366,6 +366,7 @@ func isMaskingSupported(e storepb.Engine) bool {
 		storepb.Engine_MSSQL:     true,
 		storepb.Engine_MARIADB:   true,
 		storepb.Engine_OCEANBASE: true,
+		storepb.Engine_TIDB:      true,
 	}
 
 	if _, ok := supportedEngines[e]; !ok {
