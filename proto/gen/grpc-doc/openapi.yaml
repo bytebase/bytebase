@@ -12466,7 +12466,27 @@ components:
                     description: value_value is used for Spanner and TUPLE ARRAY MAP in Clickhouse only.
                 timestampValue:
                     type: string
+                    description: |-
+                        timestamp_value is used for the timestamp without time zone data type, meaning it only includes the timestamp without any time zone or location info.
+                         Although it may be expressed as a UTC value, it should be seen as a timestamp missing location context.
                     format: date-time
+                timestampTz:
+                    allOf:
+                        - $ref: '#/components/schemas/RowValue_TimestampTZ'
+                    description: timestamp_tz is used for the timestamptz data type, which accurately represents the timestamp with location information.
+        RowValue_TimestampTZ:
+            type: object
+            properties:
+                timestamp:
+                    type: string
+                    format: date-time
+                location:
+                    type: string
+                    description: |-
+                        Location is the TZ identifier name in timezone database such as "America/Los_Angeles".
+                         https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
+                         A timestamp is in UTC or epoch time, and with location info, we can convert it to a local time string.
+                         Avoid using UTC offsets or time zone abbreviations due to daylight saving changes.
         RunPlanChecksRequest:
             required:
                 - name

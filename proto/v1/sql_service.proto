@@ -277,6 +277,15 @@ message QueryRow {
 }
 
 message RowValue {
+  message TimestampTZ {
+    google.protobuf.Timestamp timestamp = 1;
+    // Location is the TZ identifier name in timezone database such as "America/Los_Angeles".
+    // https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
+    // A timestamp is in UTC or epoch time, and with location info, we can convert it to a local time string.
+    // Avoid using UTC offsets or time zone abbreviations due to daylight saving changes.
+    string location = 2;
+  }
+
   oneof kind {
     google.protobuf.NullValue null_value = 1;
     bool bool_value = 2;
@@ -290,7 +299,11 @@ message RowValue {
     uint64 uint64_value = 10;
     // value_value is used for Spanner and TUPLE ARRAY MAP in Clickhouse only.
     google.protobuf.Value value_value = 11;
+    // timestamp_value is used for the timestamp without time zone data type, meaning it only includes the timestamp without any time zone or location info.
+    // Although it may be expressed as a UTC value, it should be seen as a timestamp missing location context.
     google.protobuf.Timestamp timestamp_value = 12;
+    // timestamp_tz is used for the timestamptz data type, which accurately represents the timestamp with location information.
+    TimestampTZ timestamp_tz = 13;
   }
 }
 
