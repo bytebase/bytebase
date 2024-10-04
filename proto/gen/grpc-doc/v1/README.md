@@ -10760,7 +10760,7 @@ for field description.
 | uint64_value | [uint64](#uint64) |  |  |
 | value_value | [google.protobuf.Value](#google-protobuf-Value) |  | value_value is used for Spanner and TUPLE ARRAY MAP in Clickhouse only. |
 | timestamp_value | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | timestamp_value is used for the timestamp without time zone data type, meaning it only includes the timestamp without any time zone or location info. Although it may be expressed as a UTC value, it should be seen as a timestamp missing location context. |
-| timestamp_tz | [RowValue.TimestampTZ](#bytebase-v1-RowValue-TimestampTZ) |  | timestamp_tz is used for the timestamptz data type, which accurately represents the timestamp with location information. |
+| timestamp_tz_value | [RowValue.TimestampTZ](#bytebase-v1-RowValue-TimestampTZ) |  | timestamp_tz_value is used for the timestamptz data type, which accurately represents the timestamp with location information. |
 
 
 
