@@ -88,8 +88,15 @@ func convertValue(_ string, value any) *v1pb.RowValue {
 		}
 	case *sql.NullTime:
 		if raw.Valid {
+			zone, offset := raw.Time.Zone()
 			return &v1pb.RowValue{
-				Kind: &v1pb.RowValue_TimestampValue{TimestampValue: timestamppb.New(raw.Time)},
+				Kind: &v1pb.RowValue_TimestampTzValue{
+					TimestampTzValue: &v1pb.RowValue_TimestampTZ{
+						Timestamp: timestamppb.New(raw.Time),
+						Zone:      zone,
+						Offset:    int32(offset),
+					},
+				},
 			}
 		}
 	}
