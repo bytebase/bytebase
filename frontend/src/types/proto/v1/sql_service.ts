@@ -186,8 +186,8 @@ export interface RowValue {
   timestampValue?:
     | Timestamp
     | undefined;
-  /** timestamp_tz is used for the timestamptz data type, which accurately represents the timestamp with location information. */
-  timestampTz?: RowValue_TimestampTZ | undefined;
+  /** timestamp_tz_value is used for the timestamptz data type, which accurately represents the timestamp with location information. */
+  timestampTzValue?: RowValue_TimestampTZ | undefined;
 }
 
 export interface RowValue_TimestampTZ {
@@ -1813,7 +1813,7 @@ function createBaseRowValue(): RowValue {
     uint64Value: undefined,
     valueValue: undefined,
     timestampValue: undefined,
-    timestampTz: undefined,
+    timestampTzValue: undefined,
   };
 }
 
@@ -1855,8 +1855,8 @@ export const RowValue: MessageFns<RowValue> = {
     if (message.timestampValue !== undefined) {
       Timestamp.encode(message.timestampValue, writer.uint32(98).fork()).join();
     }
-    if (message.timestampTz !== undefined) {
-      RowValue_TimestampTZ.encode(message.timestampTz, writer.uint32(106).fork()).join();
+    if (message.timestampTzValue !== undefined) {
+      RowValue_TimestampTZ.encode(message.timestampTzValue, writer.uint32(106).fork()).join();
     }
     return writer;
   },
@@ -1957,7 +1957,7 @@ export const RowValue: MessageFns<RowValue> = {
             break;
           }
 
-          message.timestampTz = RowValue_TimestampTZ.decode(reader, reader.uint32());
+          message.timestampTzValue = RowValue_TimestampTZ.decode(reader, reader.uint32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -1982,7 +1982,9 @@ export const RowValue: MessageFns<RowValue> = {
       uint64Value: isSet(object.uint64Value) ? Long.fromValue(object.uint64Value) : undefined,
       valueValue: isSet(object?.valueValue) ? object.valueValue : undefined,
       timestampValue: isSet(object.timestampValue) ? fromJsonTimestamp(object.timestampValue) : undefined,
-      timestampTz: isSet(object.timestampTz) ? RowValue_TimestampTZ.fromJSON(object.timestampTz) : undefined,
+      timestampTzValue: isSet(object.timestampTzValue)
+        ? RowValue_TimestampTZ.fromJSON(object.timestampTzValue)
+        : undefined,
     };
   },
 
@@ -2024,8 +2026,8 @@ export const RowValue: MessageFns<RowValue> = {
     if (message.timestampValue !== undefined) {
       obj.timestampValue = fromTimestamp(message.timestampValue).toISOString();
     }
-    if (message.timestampTz !== undefined) {
-      obj.timestampTz = RowValue_TimestampTZ.toJSON(message.timestampTz);
+    if (message.timestampTzValue !== undefined) {
+      obj.timestampTzValue = RowValue_TimestampTZ.toJSON(message.timestampTzValue);
     }
     return obj;
   },
@@ -2053,8 +2055,8 @@ export const RowValue: MessageFns<RowValue> = {
     message.timestampValue = (object.timestampValue !== undefined && object.timestampValue !== null)
       ? Timestamp.fromPartial(object.timestampValue)
       : undefined;
-    message.timestampTz = (object.timestampTz !== undefined && object.timestampTz !== null)
-      ? RowValue_TimestampTZ.fromPartial(object.timestampTz)
+    message.timestampTzValue = (object.timestampTzValue !== undefined && object.timestampTzValue !== null)
+      ? RowValue_TimestampTZ.fromPartial(object.timestampTzValue)
       : undefined;
     return message;
   },
