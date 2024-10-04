@@ -199,8 +199,11 @@ export interface RowValue_TimestampTZ {
    * https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
    * We retrieve the time zone information from the timestamptz field in the database.
    * A timestamp is in UTC or epoch time, and with zone info, we can convert it to a local time string.
+   * Zone and offset are returned by time.Time.Zone()
    */
   zone: string;
+  /** The offset is in seconds east of UTC */
+  offset: number;
 }
 
 export interface Advice {
@@ -2063,7 +2066,7 @@ export const RowValue: MessageFns<RowValue> = {
 };
 
 function createBaseRowValue_TimestampTZ(): RowValue_TimestampTZ {
-  return { timestamp: undefined, zone: "" };
+  return { timestamp: undefined, zone: "", offset: 0 };
 }
 
 export const RowValue_TimestampTZ: MessageFns<RowValue_TimestampTZ> = {
@@ -2073,6 +2076,9 @@ export const RowValue_TimestampTZ: MessageFns<RowValue_TimestampTZ> = {
     }
     if (message.zone !== "") {
       writer.uint32(18).string(message.zone);
+    }
+    if (message.offset !== 0) {
+      writer.uint32(24).int32(message.offset);
     }
     return writer;
   },
@@ -2098,6 +2104,13 @@ export const RowValue_TimestampTZ: MessageFns<RowValue_TimestampTZ> = {
 
           message.zone = reader.string();
           continue;
+        case 3:
+          if (tag !== 24) {
+            break;
+          }
+
+          message.offset = reader.int32();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2111,6 +2124,7 @@ export const RowValue_TimestampTZ: MessageFns<RowValue_TimestampTZ> = {
     return {
       timestamp: isSet(object.timestamp) ? fromJsonTimestamp(object.timestamp) : undefined,
       zone: isSet(object.zone) ? globalThis.String(object.zone) : "",
+      offset: isSet(object.offset) ? globalThis.Number(object.offset) : 0,
     };
   },
 
@@ -2121,6 +2135,9 @@ export const RowValue_TimestampTZ: MessageFns<RowValue_TimestampTZ> = {
     }
     if (message.zone !== "") {
       obj.zone = message.zone;
+    }
+    if (message.offset !== 0) {
+      obj.offset = Math.round(message.offset);
     }
     return obj;
   },
@@ -2134,6 +2151,7 @@ export const RowValue_TimestampTZ: MessageFns<RowValue_TimestampTZ> = {
       ? Timestamp.fromPartial(object.timestamp)
       : undefined;
     message.zone = object.zone ?? "";
+    message.offset = object.offset ?? 0;
     return message;
   },
 };
