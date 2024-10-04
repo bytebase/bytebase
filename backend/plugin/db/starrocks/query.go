@@ -1,19 +1,98 @@
 package starrocks
 
 import (
+	"database/sql"
 	"fmt"
 	"log/slog"
 	"strconv"
+	"time"
 
 	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	mysql "github.com/bytebase/mysql-parser"
 
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
+	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
+
+func makeValueByTypeName(typeName string, _ *sql.ColumnType) any {
+	switch typeName {
+	case "VARCHAR", "TEXT", "UUID", "DATETIME", "TIMESTAMP":
+		return new(sql.NullString)
+	case "BOOL":
+		return new(sql.NullBool)
+	case "INT", "INTEGER", "TINYINT", "SMALLINT", "MEDIUMINT", "BIGINT", "INT2", "INT4", "INT8":
+		return new(sql.NullInt64)
+	case "FLOAT", "DOUBLE", "FLOAT4", "FLOAT8":
+		return new(sql.NullFloat64)
+	case "BIT", "VARBIT":
+		return new([]byte)
+	default:
+		return new(sql.NullString)
+	}
+}
+
+func convertValue(typeName string, value any) *v1pb.RowValue {
+	switch raw := value.(type) {
+	case *sql.NullString:
+		if raw.Valid {
+			if typeName == "TIMESTAMP" || typeName == "DATETIME" {
+				t, err := time.Parse(time.DateTime, raw.String)
+				if err != nil {
+					slog.Error("failed to parse time value", log.BBError(err))
+					return util.NullRowValue
+				}
+				return &v1pb.RowValue{
+					Kind: &v1pb.RowValue_TimestampValue{
+						TimestampValue: timestamppb.New(t),
+					},
+				}
+			}
+			return &v1pb.RowValue{
+				Kind: &v1pb.RowValue_StringValue{
+					StringValue: raw.String,
+				},
+			}
+		}
+	case *sql.NullInt64:
+		if raw.Valid {
+			return &v1pb.RowValue{
+				Kind: &v1pb.RowValue_Int64Value{
+					Int64Value: raw.Int64,
+				},
+			}
+		}
+	case *[]byte:
+		if len(*raw) > 0 {
+			return &v1pb.RowValue{
+				Kind: &v1pb.RowValue_BytesValue{
+					BytesValue: *raw,
+				},
+			}
+		}
+	case *sql.NullBool:
+		if raw.Valid {
+			return &v1pb.RowValue{
+				Kind: &v1pb.RowValue_BoolValue{
+					BoolValue: raw.Bool,
+				},
+			}
+		}
+	case *sql.NullFloat64:
+		if raw.Valid {
+			return &v1pb.RowValue{
+				Kind: &v1pb.RowValue_DoubleValue{
+					DoubleValue: raw.Float64,
+				},
+			}
+		}
+	}
+	return util.NullRowValue
+}
 
 func getStatementWithResultLimit(statement string, limit int) string {
 	stmt, err := getStatementWithResultLimitForMySQL(statement, limit)

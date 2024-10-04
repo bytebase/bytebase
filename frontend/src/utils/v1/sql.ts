@@ -48,6 +48,25 @@ export const extractSQLRowValue = (
       raw: byteArray,
     };
   }
+  if (value.timestampValue) {
+    // Timezone-less timestamps are converted using UTC but they are not UTC timestamps.
+    const fullDayjs = dayjs(getDateForPbTimestamp(value.timestampValue)).utc();
+    const microseconds = Math.floor(value.timestampValue.nanos / 1000);
+    // Format the timestamp into a human-readable string, including microseconds if present
+    const formattedTimestamp =
+      microseconds > 0
+        ? // If there are microseconds, append them to the formatted string with 6 digits.
+          // Example: 2021-01-01 00:00:00.123456
+          `${fullDayjs.format("YYYY-MM-DD HH:mm:ss")}.${microseconds.toString().padStart(6, "0")}`
+        : // Otherwise, just format the date and time without microseconds
+          // Example: 2021-01-01 00:00:00
+          `${fullDayjs.format("YYYY-MM-DD HH:mm:ss")}`;
+
+    return {
+      plain: formattedTimestamp,
+      raw: value.timestampValue,
+    };
+  }
   if (value.timestampTzValue && value.timestampTzValue.timestamp) {
     const fullDayjs = dayjs(getDateForPbTimestamp(value.timestampTzValue.timestamp));
     const microseconds = Math.floor(value.timestampTzValue.timestamp.nanos / 1000);
