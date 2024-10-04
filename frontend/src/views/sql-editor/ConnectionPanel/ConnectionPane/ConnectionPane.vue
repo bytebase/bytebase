@@ -1,7 +1,7 @@
 <template>
   <div class="sql-editor-tree gap-y-1 h-full flex flex-col relative">
     <div class="flex flex-row gap-x-0.5 px-1 items-center">
-      <SearchBox v-model:searchPattern="searchPattern" class="flex-1" />
+      <SearchBox v-model:search-pattern="searchPattern" class="flex-1" />
       <GroupingBar class="shrink-0" />
     </div>
     <div

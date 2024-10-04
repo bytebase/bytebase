@@ -176,8 +176,31 @@ export interface RowValue {
     | Long
     | undefined;
   /** value_value is used for Spanner and TUPLE ARRAY MAP in Clickhouse only. */
-  valueValue?: any | undefined;
-  timestampValue?: Timestamp | undefined;
+  valueValue?:
+    | any
+    | undefined;
+  /**
+   * timestamp_value is used for the timestamp without time zone data type, meaning it only includes the timestamp without any time zone or location info.
+   * Although it may be expressed as a UTC value, it should be seen as a timestamp missing location context.
+   */
+  timestampValue?:
+    | Timestamp
+    | undefined;
+  /** timestamp_tz_value is used for the timestamptz data type, which accurately represents the timestamp with location information. */
+  timestampTzValue?: RowValue_TimestampTZ | undefined;
+}
+
+export interface RowValue_TimestampTZ {
+  timestamp:
+    | Timestamp
+    | undefined;
+  /**
+   * Location is the TZ identifier name in timezone database such as "America/Los_Angeles".
+   * https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
+   * A timestamp is in UTC or epoch time, and with location info, we can convert it to a local time string.
+   * Avoid using UTC offsets or time zone abbreviations due to daylight saving changes.
+   */
+  location: string;
 }
 
 export interface Advice {
@@ -1790,6 +1813,7 @@ function createBaseRowValue(): RowValue {
     uint64Value: undefined,
     valueValue: undefined,
     timestampValue: undefined,
+    timestampTzValue: undefined,
   };
 }
 
@@ -1830,6 +1854,9 @@ export const RowValue: MessageFns<RowValue> = {
     }
     if (message.timestampValue !== undefined) {
       Timestamp.encode(message.timestampValue, writer.uint32(98).fork()).join();
+    }
+    if (message.timestampTzValue !== undefined) {
+      RowValue_TimestampTZ.encode(message.timestampTzValue, writer.uint32(106).fork()).join();
     }
     return writer;
   },
@@ -1925,6 +1952,13 @@ export const RowValue: MessageFns<RowValue> = {
 
           message.timestampValue = Timestamp.decode(reader, reader.uint32());
           continue;
+        case 13:
+          if (tag !== 106) {
+            break;
+          }
+
+          message.timestampTzValue = RowValue_TimestampTZ.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1948,6 +1982,9 @@ export const RowValue: MessageFns<RowValue> = {
       uint64Value: isSet(object.uint64Value) ? Long.fromValue(object.uint64Value) : undefined,
       valueValue: isSet(object?.valueValue) ? object.valueValue : undefined,
       timestampValue: isSet(object.timestampValue) ? fromJsonTimestamp(object.timestampValue) : undefined,
+      timestampTzValue: isSet(object.timestampTzValue)
+        ? RowValue_TimestampTZ.fromJSON(object.timestampTzValue)
+        : undefined,
     };
   },
 
@@ -1989,6 +2026,9 @@ export const RowValue: MessageFns<RowValue> = {
     if (message.timestampValue !== undefined) {
       obj.timestampValue = fromTimestamp(message.timestampValue).toISOString();
     }
+    if (message.timestampTzValue !== undefined) {
+      obj.timestampTzValue = RowValue_TimestampTZ.toJSON(message.timestampTzValue);
+    }
     return obj;
   },
 
@@ -2015,6 +2055,85 @@ export const RowValue: MessageFns<RowValue> = {
     message.timestampValue = (object.timestampValue !== undefined && object.timestampValue !== null)
       ? Timestamp.fromPartial(object.timestampValue)
       : undefined;
+    message.timestampTzValue = (object.timestampTzValue !== undefined && object.timestampTzValue !== null)
+      ? RowValue_TimestampTZ.fromPartial(object.timestampTzValue)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseRowValue_TimestampTZ(): RowValue_TimestampTZ {
+  return { timestamp: undefined, location: "" };
+}
+
+export const RowValue_TimestampTZ: MessageFns<RowValue_TimestampTZ> = {
+  encode(message: RowValue_TimestampTZ, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.timestamp !== undefined) {
+      Timestamp.encode(message.timestamp, writer.uint32(10).fork()).join();
+    }
+    if (message.location !== "") {
+      writer.uint32(18).string(message.location);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): RowValue_TimestampTZ {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseRowValue_TimestampTZ();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.timestamp = Timestamp.decode(reader, reader.uint32());
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.location = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): RowValue_TimestampTZ {
+    return {
+      timestamp: isSet(object.timestamp) ? fromJsonTimestamp(object.timestamp) : undefined,
+      location: isSet(object.location) ? globalThis.String(object.location) : "",
+    };
+  },
+
+  toJSON(message: RowValue_TimestampTZ): unknown {
+    const obj: any = {};
+    if (message.timestamp !== undefined) {
+      obj.timestamp = fromTimestamp(message.timestamp).toISOString();
+    }
+    if (message.location !== "") {
+      obj.location = message.location;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<RowValue_TimestampTZ>): RowValue_TimestampTZ {
+    return RowValue_TimestampTZ.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<RowValue_TimestampTZ>): RowValue_TimestampTZ {
+    const message = createBaseRowValue_TimestampTZ();
+    message.timestamp = (object.timestamp !== undefined && object.timestamp !== null)
+      ? Timestamp.fromPartial(object.timestamp)
+      : undefined;
+    message.location = object.location ?? "";
     return message;
   },
 };
