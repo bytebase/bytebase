@@ -279,11 +279,11 @@ message QueryRow {
 message RowValue {
   message TimestampTZ {
     google.protobuf.Timestamp timestamp = 1;
-    // Location is the TZ identifier name in timezone database such as "America/Los_Angeles".
+    // Zone is the TZ identifier name in timezone database such as "America/Los_Angeles".
     // https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
     // A timestamp is in UTC or epoch time, and with location info, we can convert it to a local time string.
     // Avoid using UTC offsets or time zone abbreviations due to daylight saving changes.
-    string location = 2;
+    string zone = 2;
   }
 
   oneof kind {

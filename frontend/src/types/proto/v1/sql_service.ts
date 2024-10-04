@@ -195,12 +195,12 @@ export interface RowValue_TimestampTZ {
     | Timestamp
     | undefined;
   /**
-   * Location is the TZ identifier name in timezone database such as "America/Los_Angeles".
+   * Zone is the TZ identifier name in timezone database such as "America/Los_Angeles".
    * https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
    * A timestamp is in UTC or epoch time, and with location info, we can convert it to a local time string.
    * Avoid using UTC offsets or time zone abbreviations due to daylight saving changes.
    */
-  location: string;
+  zone: string;
 }
 
 export interface Advice {
@@ -2063,7 +2063,7 @@ export const RowValue: MessageFns<RowValue> = {
 };
 
 function createBaseRowValue_TimestampTZ(): RowValue_TimestampTZ {
-  return { timestamp: undefined, location: "" };
+  return { timestamp: undefined, zone: "" };
 }
 
 export const RowValue_TimestampTZ: MessageFns<RowValue_TimestampTZ> = {
@@ -2071,8 +2071,8 @@ export const RowValue_TimestampTZ: MessageFns<RowValue_TimestampTZ> = {
     if (message.timestamp !== undefined) {
       Timestamp.encode(message.timestamp, writer.uint32(10).fork()).join();
     }
-    if (message.location !== "") {
-      writer.uint32(18).string(message.location);
+    if (message.zone !== "") {
+      writer.uint32(18).string(message.zone);
     }
     return writer;
   },
@@ -2096,7 +2096,7 @@ export const RowValue_TimestampTZ: MessageFns<RowValue_TimestampTZ> = {
             break;
           }
 
-          message.location = reader.string();
+          message.zone = reader.string();
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -2110,7 +2110,7 @@ export const RowValue_TimestampTZ: MessageFns<RowValue_TimestampTZ> = {
   fromJSON(object: any): RowValue_TimestampTZ {
     return {
       timestamp: isSet(object.timestamp) ? fromJsonTimestamp(object.timestamp) : undefined,
-      location: isSet(object.location) ? globalThis.String(object.location) : "",
+      zone: isSet(object.zone) ? globalThis.String(object.zone) : "",
     };
   },
 
@@ -2119,8 +2119,8 @@ export const RowValue_TimestampTZ: MessageFns<RowValue_TimestampTZ> = {
     if (message.timestamp !== undefined) {
       obj.timestamp = fromTimestamp(message.timestamp).toISOString();
     }
-    if (message.location !== "") {
-      obj.location = message.location;
+    if (message.zone !== "") {
+      obj.zone = message.zone;
     }
     return obj;
   },
@@ -2133,7 +2133,7 @@ export const RowValue_TimestampTZ: MessageFns<RowValue_TimestampTZ> = {
     message.timestamp = (object.timestamp !== undefined && object.timestamp !== null)
       ? Timestamp.fromPartial(object.timestamp)
       : undefined;
-    message.location = object.location ?? "";
+    message.zone = object.zone ?? "";
     return message;
   },
 };
