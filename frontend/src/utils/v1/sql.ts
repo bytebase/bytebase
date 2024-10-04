@@ -48,10 +48,9 @@ export const extractSQLRowValue = (
       raw: byteArray,
     };
   }
-  if (value.timestampValue) {
-    const timestampValue = value.timestampValue;
-    const fullDayjs = dayjs(getDateForPbTimestamp(timestampValue));
-    const microseconds = Math.floor(timestampValue.nanos / 1000);
+  if (value.timestampTzValue && value.timestampTzValue.timestamp) {
+    const fullDayjs = dayjs(getDateForPbTimestamp(value.timestampTzValue.timestamp));
+    const microseconds = Math.floor(value.timestampTzValue.timestamp.nanos / 1000);
     let timezoneOffset = fullDayjs.format("Z");
     if (timezoneOffset.endsWith(":00")) {
       timezoneOffset = timezoneOffset.slice(0, -3);
@@ -68,7 +67,7 @@ export const extractSQLRowValue = (
 
     return {
       plain: formattedTimestamp,
-      raw: timestampValue,
+      raw: value.timestampTzValue,
     };
   }
   const key = keys[0];
