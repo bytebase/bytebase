@@ -2,7 +2,6 @@ package cockroachdb
 
 import (
 	"database/sql"
-	"strings"
 
 	"google.golang.org/protobuf/types/known/timestamppb"
 
@@ -12,7 +11,7 @@ import (
 
 func makeValueByTypeName(typeName string, _ *sql.ColumnType) any {
 	switch typeName {
-	case "VARCHAR", "TEXT", "UUID", "TIMESTAMP":
+	case "VARCHAR", "TEXT", "UUID":
 		return new(sql.NullString)
 	case "BOOL":
 		return new(sql.NullBool)
@@ -20,7 +19,7 @@ func makeValueByTypeName(typeName string, _ *sql.ColumnType) any {
 		return new(sql.NullInt64)
 	case "FLOAT", "DOUBLE", "FLOAT4", "FLOAT8":
 		return new(sql.NullFloat64)
-	case "TIMESTAMPTZ":
+	case "TIMESTAMP", "TIMESTAMPTZ":
 		return new(sql.NullTime)
 	case "BIT", "VARBIT":
 		return new([]byte)
@@ -33,15 +32,6 @@ func convertValue(typeName string, value any) *v1pb.RowValue {
 	switch raw := value.(type) {
 	case *sql.NullString:
 		if raw.Valid {
-			if typeName == "TIMESTAMP" {
-				// Convert "2024-09-24T03:23:28.921281Z" to "2024-09-24 03:23:28.921281"
-				timestampWithoutTimezone := strings.ReplaceAll(strings.ReplaceAll(raw.String, "T", " "), "Z", "")
-				return &v1pb.RowValue{
-					Kind: &v1pb.RowValue_StringValue{
-						StringValue: timestampWithoutTimezone,
-					},
-				}
-			}
 			return &v1pb.RowValue{
 				Kind: &v1pb.RowValue_StringValue{
 					StringValue: raw.String,
@@ -82,6 +72,13 @@ func convertValue(typeName string, value any) *v1pb.RowValue {
 		}
 	case *sql.NullTime:
 		if raw.Valid {
+			if typeName == "TIMESTAMP" {
+				return &v1pb.RowValue{
+					Kind: &v1pb.RowValue_TimestampValue{
+						TimestampValue: timestamppb.New(raw.Time),
+					},
+				}
+			}
 			zone, offset := raw.Time.Zone()
 			return &v1pb.RowValue{
 				Kind: &v1pb.RowValue_TimestampTzValue{
