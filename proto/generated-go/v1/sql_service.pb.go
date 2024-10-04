@@ -2334,10 +2334,10 @@ type RowValue_TimestampTZ struct {
 	unknownFields protoimpl.UnknownFields
 
 	Timestamp *timestamppb.Timestamp `protobuf:"bytes,1,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
-	// Zone is the TZ identifier name in timezone database such as "America/Los_Angeles".
+	// Zone is the time zone abbreviations in timezone database such as "PDT", "PST".
 	// https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
-	// A timestamp is in UTC or epoch time, and with location info, we can convert it to a local time string.
-	// Avoid using UTC offsets or time zone abbreviations due to daylight saving changes.
+	// We retrieve the time zone information from the timestamptz field in the database.
+	// A timestamp is in UTC or epoch time, and with zone info, we can convert it to a local time string.
 	Zone string `protobuf:"bytes,2,opt,name=zone,proto3" json:"zone,omitempty"`
 }
 

@@ -86,7 +86,6 @@ func convertValue(_ string, value any) *v1pb.RowValue {
 					},
 				},
 			}
-
 		}
 	}
 	return util.NullRowValue
