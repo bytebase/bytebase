@@ -48,7 +48,7 @@ func makeValueByTypeName(typeName string, _ *sql.ColumnType) any {
 	// *time.Time, *interface{}, *string, or *[]byte. When converting to
 	// the latter two, [time.RFC3339Nano] is used.
 	case "SMALLDATETIME", "DATETIME", "DATETIME2", "DATE", "TIME":
-		return new(sql.NullString)
+		return new(sql.NullTime)
 	case "DATETIMEOFFSET":
 		return new(sql.NullTime)
 	case "IMAGE":
@@ -65,15 +65,6 @@ func convertValue(typeName string, value any) *v1pb.RowValue {
 	switch raw := value.(type) {
 	case *sql.NullString:
 		if raw.Valid {
-			if typeName == "DATETIME" || typeName == "DATETIME2" || typeName == "SMALLDATETIME" {
-				// Convert "2024-09-24T03:23:28.921281Z" to "2024-09-24 03:23:28.921281"
-				timestampWithoutTimezone := strings.ReplaceAll(strings.ReplaceAll(raw.String, "T", " "), "Z", "")
-				return &v1pb.RowValue{
-					Kind: &v1pb.RowValue_StringValue{
-						StringValue: timestampWithoutTimezone,
-					},
-				}
-			}
 			return &v1pb.RowValue{
 				Kind: &v1pb.RowValue_StringValue{
 					StringValue: raw.String,
@@ -126,6 +117,13 @@ func convertValue(typeName string, value any) *v1pb.RowValue {
 		}
 	case *sql.NullTime:
 		if raw.Valid {
+			if typeName == "DATETIME" || typeName == "DATETIME2" || typeName == "SMALLDATETIME" {
+				return &v1pb.RowValue{
+					Kind: &v1pb.RowValue_TimestampValue{
+						TimestampValue: timestamppb.New(raw.Time),
+					},
+				}
+			}
 			zone, offset := raw.Time.Zone()
 			return &v1pb.RowValue{
 				Kind: &v1pb.RowValue_TimestampTzValue{
