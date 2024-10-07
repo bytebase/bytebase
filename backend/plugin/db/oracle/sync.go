@@ -648,7 +648,7 @@ func getRoutines(txn *sql.Tx, schemaName string) ([]*storepb.FunctionMetadata, [
 			TEXT
 		FROM ALL_SOURCE
 		WHERE
-			TYPE IN ('FUNCTION', 'PROCEDURE', 'PACKAGE BODY')
+			TYPE IN ('FUNCTION', 'PROCEDURE', 'PACKAGE')
 			AND
 			OWNER = '%s'
 		ORDER BY NAME, TYPE, LINE`, schemaName)
@@ -681,7 +681,7 @@ func getRoutines(txn *sql.Tx, schemaName string) ([]*storepb.FunctionMetadata, [
 					Name:       currentName,
 					Definition: strings.Join(defText, ""),
 				})
-			case "PACKAGE BODY":
+			case "PACKAGE":
 				packages = append(packages, &storepb.PackageMetadata{
 					Name:       currentName,
 					Definition: strings.Join(defText, ""),
@@ -703,7 +703,7 @@ func getRoutines(txn *sql.Tx, schemaName string) ([]*storepb.FunctionMetadata, [
 			Name:       currentName,
 			Definition: strings.Join(defText, ""),
 		})
-	case "PACKAGE BODY":
+	case "PACKAGE":
 		packages = append(packages, &storepb.PackageMetadata{
 			Name:       currentName,
 			Definition: strings.Join(defText, ""),
