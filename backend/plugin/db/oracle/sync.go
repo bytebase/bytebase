@@ -102,7 +102,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get db links from database %q", driver.databaseName)
 	}
-	functions, procedures, err := getRoutines(txn, driver.databaseName)
+	functions, procedures, packages, err := getRoutines(txn, driver.databaseName)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get routines from database %q", driver.databaseName)
 	}
@@ -123,6 +123,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 		Sequences:  sequences,
 		Functions:  functions,
 		Procedures: procedures,
+		Packages:   packages,
 	})
 	return databaseMetadata, nil
 }
@@ -635,10 +636,10 @@ func getSequences(txn *sql.Tx, schemaName string) ([]*storepb.SequenceMetadata, 
 	return sequences, nil
 }
 
-func getRoutines(txn *sql.Tx, schemaName string) ([]*storepb.FunctionMetadata, []*storepb.ProcedureMetadata, error) {
-	// TODO(d): implement PACKAGE later.
+func getRoutines(txn *sql.Tx, schemaName string) ([]*storepb.FunctionMetadata, []*storepb.ProcedureMetadata, []*storepb.PackageMetadata, error) {
 	var functions []*storepb.FunctionMetadata
 	var procedures []*storepb.ProcedureMetadata
+	var packages []*storepb.PackageMetadata
 
 	query := fmt.Sprintf(`
 		SELECT
@@ -647,7 +648,7 @@ func getRoutines(txn *sql.Tx, schemaName string) ([]*storepb.FunctionMetadata, [
 			TEXT
 		FROM ALL_SOURCE
 		WHERE
-			TYPE IN ('FUNCTION', 'PROCEDURE')
+			TYPE IN ('FUNCTION', 'PROCEDURE', 'PACKAGE BODY')
 			AND
 			OWNER = '%s'
 		ORDER BY NAME, TYPE, LINE`, schemaName)
@@ -655,7 +656,7 @@ func getRoutines(txn *sql.Tx, schemaName string) ([]*storepb.FunctionMetadata, [
 	slog.Debug("running get routines query")
 	rows, err := txn.Query(query)
 	if err != nil {
-		return nil, nil, util.FormatErrorWithQuery(err, query)
+		return nil, nil, nil, util.FormatErrorWithQuery(err, query)
 	}
 	defer rows.Close()
 
@@ -664,7 +665,7 @@ func getRoutines(txn *sql.Tx, schemaName string) ([]*storepb.FunctionMetadata, [
 	for rows.Next() {
 		var name, t, def string
 		if err := rows.Scan(&name, &t, &def); err != nil {
-			return nil, nil, err
+			return nil, nil, nil, err
 		}
 		if name == currentName && t == currentType {
 			defText = append(defText, def)
@@ -677,6 +678,11 @@ func getRoutines(txn *sql.Tx, schemaName string) ([]*storepb.FunctionMetadata, [
 				})
 			case "PROCEDURE":
 				procedures = append(procedures, &storepb.ProcedureMetadata{
+					Name:       currentName,
+					Definition: strings.Join(defText, ""),
+				})
+			case "PACKAGE BODY":
+				packages = append(packages, &storepb.PackageMetadata{
 					Name:       currentName,
 					Definition: strings.Join(defText, ""),
 				})
@@ -697,15 +703,20 @@ func getRoutines(txn *sql.Tx, schemaName string) ([]*storepb.FunctionMetadata, [
 			Name:       currentName,
 			Definition: strings.Join(defText, ""),
 		})
+	case "PACKAGE BODY":
+		packages = append(packages, &storepb.PackageMetadata{
+			Name:       currentName,
+			Definition: strings.Join(defText, ""),
+		})
 	}
 	if err := rows.Err(); err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 	if err := rows.Close(); err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
-	return functions, procedures, nil
+	return functions, procedures, packages, nil
 }
 
 // SyncSlowQuery syncs the slow query.
