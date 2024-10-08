@@ -18,9 +18,9 @@ type ReleaseMessage struct {
 	Payload    *storepb.ReleasePayload
 
 	// output only
-	UID        int64
-	CreatorUID int
-	CreatedTs  time.Time
+	UID         int64
+	CreatorUID  int
+	CreatedTime time.Time
 }
 
 type FindReleaseMessage struct {
@@ -54,12 +54,12 @@ func (s *Store) CreateRelease(ctx context.Context, release *ReleaseMessage, crea
 	defer tx.Rollback()
 
 	var id int64
-	var createdTs time.Time
+	var createdTime time.Time
 	if err := tx.QueryRowContext(ctx, query,
 		creatorUID,
 		release.ProjectUID,
 		p,
-	).Scan(&id, &createdTs); err != nil {
+	).Scan(&id, &createdTime); err != nil {
 		return nil, errors.Wrapf(err, "failed to insert release")
 	}
 
@@ -69,7 +69,7 @@ func (s *Store) CreateRelease(ctx context.Context, release *ReleaseMessage, crea
 
 	release.UID = id
 	release.CreatorUID = creatorUID
-	release.CreatedTs = createdTs
+	release.CreatedTime = createdTime
 
 	return release, nil
 }
@@ -115,7 +115,7 @@ func (s *Store) ListReleases(ctx context.Context, find *FindReleaseMessage) ([]*
 			&r.UID,
 			&r.ProjectUID,
 			&r.CreatorUID,
-			&r.CreatedTs,
+			&r.CreatedTime,
 			&payload,
 		); err != nil {
 			return nil, errors.Wrapf(err, "failed to scan rows")

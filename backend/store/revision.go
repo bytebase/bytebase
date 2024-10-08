@@ -20,9 +20,9 @@ type RevisionMessage struct {
 	Payload *storepb.RevisionPayload
 
 	// output only
-	UID        int64
-	CreatorUID int
-	CreatedTs  time.Time
+	UID         int64
+	CreatorUID  int
+	CreatedTime time.Time
 }
 
 type FindRevisionMessage struct {
@@ -77,7 +77,7 @@ func (s *Store) ListRevisions(ctx context.Context, find *FindRevisionMessage) ([
 			&r.InstanceUID,
 			&r.DatabaseUID,
 			&r.CreatorUID,
-			&r.CreatedTs,
+			&r.CreatedTime,
 			&p,
 		); err != nil {
 			return nil, errors.Wrapf(err, "failed to scan")
@@ -129,13 +129,13 @@ func (s *Store) CreateRevision(ctx context.Context, revision *RevisionMessage, c
 	defer tx.Rollback()
 
 	var id int64
-	var createdTs time.Time
+	var createdTime time.Time
 	if err := tx.QueryRowContext(ctx, query,
 		revision.InstanceUID,
 		revision.DatabaseUID,
 		creatorUID,
 		p,
-	).Scan(&id, &createdTs); err != nil {
+	).Scan(&id, &createdTime); err != nil {
 		return nil, errors.Wrapf(err, "failed to query and scan")
 	}
 
@@ -144,7 +144,7 @@ func (s *Store) CreateRevision(ctx context.Context, revision *RevisionMessage, c
 	}
 
 	revision.UID = id
-	revision.CreatedTs = createdTs
+	revision.CreatedTime = createdTime
 
 	return revision, nil
 }

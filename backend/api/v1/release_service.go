@@ -144,7 +144,7 @@ func convertToReleases(ctx context.Context, s *store.Store, releases []*store.Re
 func convertToRelease(ctx context.Context, s *store.Store, release *store.ReleaseMessage) (*v1pb.Release, error) {
 	r := &v1pb.Release{
 		Title:      release.Payload.Title,
-		CreateTime: timestamppb.New(release.CreatedTs),
+		CreateTime: timestamppb.New(release.CreatedTime),
 		Files:      convertToReleaseFiles(release.Payload.Files),
 		VcsSource:  convertToReleaseVcsSource(release.Payload.VcsSource),
 	}

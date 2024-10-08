@@ -100,7 +100,7 @@ func convertToRevision(ctx context.Context, s *store.Store, parent string, revis
 	return &v1pb.Revision{
 		Name:       fmt.Sprintf("%s/%s%d", parent, common.RevisionNamePrefix, revision.UID),
 		Release:    revision.Payload.Release,
-		CreateTime: timestamppb.New(revision.CreatedTs),
+		CreateTime: timestamppb.New(revision.CreatedTime),
 		Creator:    common.FormatUserEmail(creator.Email),
 		Sheet:      revision.Payload.Sheet,
 		SheetSha1:  revision.Payload.SheetSha1,
