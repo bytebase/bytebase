@@ -36,12 +36,8 @@ import { head } from "lodash-es";
 import { storeToRefs } from "pinia";
 import { computed, reactive, watch } from "vue";
 import { useSQLEditorTabStore } from "@/store";
-import {
-  databaseMetadataToText,
-  onConnectionChanged,
-  useAIContext,
-  useCurrentChat,
-} from "../logic";
+import { onConnectionChanged, useAIContext, useCurrentChat } from "../logic";
+import * as promptUtils from "../logic/prompt";
 import { useConversationStore } from "../store";
 import type { OpenAIMessage, OpenAIResponse } from "../types";
 import ActionBar from "./ActionBar.vue";
@@ -83,15 +79,10 @@ const requestAI = async (query: string) => {
     // add extra database schema metadata info if possible
     const engine = context.engine.value;
     const databaseMetadata = context.databaseMetadata.value;
+
     const prompts: string[] = [];
-    prompts.push(`### You are a db and SQL expert.`);
-    prompts.push(
-      `### Your responses should be informative and terse. For example, "Find all the data in the table", you should only return query statements.`
-    );
-    prompts.push(databaseMetadataToText(databaseMetadata, engine));
-    prompts.push(`### Write a SQL statement to solve the question below`);
-    prompts.push(`### ${query}`);
-    prompts.push(`### PLEASE ADD NECESSARY QUOTES IN YOUR RESPONSE STATEMENT.`);
+    prompts.push(promptUtils.declaration(databaseMetadata, engine));
+    prompts.push(query);
     const prompt = prompts.join("\n");
     await store.createMessage({
       conversation_id: conversation.id,
@@ -101,6 +92,7 @@ const requestAI = async (query: string) => {
       error: "",
       status: "DONE",
     });
+    console.log(prompt);
   } else {
     await store.createMessage({
       conversation_id: conversation.id,
@@ -169,6 +161,7 @@ const requestAI = async (query: string) => {
     if (text) {
       answer.content = text;
       answer.prompt = text;
+      console.log(answer.content);
     }
 
     answer.status = "DONE";

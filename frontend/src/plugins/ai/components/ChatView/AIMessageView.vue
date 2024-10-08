@@ -1,6 +1,6 @@
 <template>
   <div
-    class="border rounded shadow py-1 px-1 bg-gray-100 border-gray-400"
+    class="border rounded shadow py-1 px-1 bg-gray-50 border-gray-400"
     :class="[
       message.status === 'DONE'
         ? 'w-[80%]'
@@ -9,7 +9,7 @@
           : 'w-auto',
     ]"
   >
-    <CodeView v-if="message.status === 'DONE'" :message="message" />
+    <Markdown v-if="message.status === 'DONE'" :content="message.content" />
     <template v-else-if="message.status === 'LOADING'">
       <BBSpin class="mx-1" />
     </template>
@@ -29,7 +29,7 @@
 <script lang="ts" setup>
 import { BBSpin } from "@/bbkit";
 import type { Message } from "../../types";
-import CodeView from "./CodeView.vue";
+import Markdown from "./Markdown";
 
 defineProps<{
   message: Message;

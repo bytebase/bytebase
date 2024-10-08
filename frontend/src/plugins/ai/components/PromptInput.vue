@@ -25,6 +25,7 @@
 <script lang="ts" setup>
 import { NButton, NInput } from "naive-ui";
 import { reactive } from "vue";
+import { findProblems, useAIContext } from "../logic";
 
 type LocalState = {
   value: string;
@@ -46,6 +47,7 @@ const emit = defineEmits<{
 const state = reactive<LocalState>({
   value: "",
 });
+const context = useAIContext();
 
 const applyValue = (value: string) => {
   state.value = "";
@@ -53,6 +55,6 @@ const applyValue = (value: string) => {
 };
 
 const handlePressEnter = () => {
-  applyValue(state.value);
+  applyValue(findProblems(state.value, context.engine.value));
 };
 </script>

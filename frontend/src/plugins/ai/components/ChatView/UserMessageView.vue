@@ -2,12 +2,13 @@
   <div
     class="max-w-[60%] border rounded shadow py-1 px-2 bg-indigo-100 border-indigo-400"
   >
-    {{ message.content }}
+    <Markdown :content="message.content" />
   </div>
 </template>
 
 <script lang="ts" setup>
 import type { Message } from "../../types";
+import Markdown from "./Markdown";
 
 defineProps<{
   message: Message;
