@@ -22,6 +22,7 @@ import (
 type Method string
 
 const (
+	LSPMethodPing           Method = "$ping"
 	LSPMethodInitialize     Method = "initialize"
 	LSPMethodInitialized    Method = "initialized"
 	LSPMethodShutdown       Method = "shutdown"
@@ -39,6 +40,10 @@ const (
 	// See https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocument_publishDiagnostics.
 	LSPMethodPublishDiagnostics Method = "textDocument/publishDiagnostics"
 )
+
+type PingResult struct {
+	Result string `json:"result"`
+}
 
 // NewHandler creates a new Language Server Protocol handler.
 func NewHandler(s *store.Store, profile *config.Profile) jsonrpc2.Handler {
@@ -188,6 +193,11 @@ func (h *Handler) handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonrpc2
 			slog.Error("Panic in LSP handler", log.BBError(err), slog.String("method", req.Method), log.BBStack("panic-stack"))
 		}
 	}()
+
+	// Handle ping request before checking if the server is initialized.
+	if Method(req.Method) == LSPMethodPing {
+		return PingResult{Result: "pong"}, nil
+	}
 
 	if err := h.checkInitialized(req); err != nil {
 		return nil, err
