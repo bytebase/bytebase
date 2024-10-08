@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+package bytebase.store;
+
+import "google/api/resource.proto";
+import "store/release.proto";
+
+option go_package = "generated-go/store";
+
+message RevisionPayload {
+  // Format: projects/{project}/releases/{release}
+  // Can be empty.
+  string release = 1 [(google.api.resource_reference) = {type: "bytebase.com/Release"}];
+
+  // The sheet that holds the content.
+  // Format: projects/{project}/sheets/{sheet}
+  string sheet = 2 [(google.api.resource_reference) = {type: "bytebase.com/Sheet"}];
+  // The SHA1 hash value of the sheet.
+  string sheet_sha1 = 3;
+
+  ReleaseFileType type = 4;
+  string version = 5;
+
+  // The name of the file in the release.
+  // Expressed as a path, e.g. `2.2/V0001_create_table.sql`
+  // Can be empty.
+  string file = 6;
+
+  // The task run associated with the revision.
+  // Can be empty.
+  string task_run = 7 [(google.api.resource_reference) = {type: "bytebase.com/TaskRun"}];
+}

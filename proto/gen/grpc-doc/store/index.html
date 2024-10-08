@@ -1110,6 +1110,21 @@
         
           
           <li>
+            <a href="#store%2frevision.proto">store/revision.proto</a>
+            <ul>
+              
+                <li>
+                  <a href="#bytebase.store.RevisionPayload"><span class="badge">M</span>RevisionPayload</a>
+                </li>
+              
+              
+              
+              
+            </ul>
+          </li>
+        
+          
+          <li>
             <a href="#store%2frole.proto">store/role.proto</a>
             <ul>
               
@@ -9054,6 +9069,91 @@ Format: projects/{project}/sheets/{sheet} </p></td>
                   <td><a href="#bytebase.store.SQLReviewRule">SQLReviewRule</a></td>
                   <td>repeated</td>
                   <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+
+      
+
+      
+
+      
+    
+      
+      <div class="file-heading">
+        <h2 id="store/revision.proto">store/revision.proto</h2><a href="#title">Top</a>
+      </div>
+      <p></p>
+
+      
+        <h3 id="bytebase.store.RevisionPayload">RevisionPayload</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>release</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Format: projects/{project}/releases/{release}
+Can be empty. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>sheet</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The sheet that holds the content.
+Format: projects/{project}/sheets/{sheet} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>sheet_sha1</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The SHA1 hash value of the sheet. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>type</td>
+                  <td><a href="#bytebase.store.ReleaseFileType">ReleaseFileType</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>version</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>file</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of the file in the release.
+Expressed as a path, e.g. `2.2/V0001_create_table.sql`
+Can be empty. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>task_run</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The task run associated with the revision.
+Can be empty. </p></td>
                 </tr>
               
             </tbody>

@@ -50,6 +50,7 @@ const (
 	GroupPrefix                = "groups/"
 	ReviewConfigPrefix         = "reviewConfigs/"
 	ReleaseNamePrefix          = "releases/"
+	RevisionNamePrefix         = "revisions/"
 
 	SchemaSuffix     = "/schema"
 	MetadataSuffix   = "/metadata"
