@@ -2073,6 +2073,14 @@
         type: NUMBER
         default: 100000000
   engine: MYSQL
+- type: advice.online-migration
+  category: ADVICE
+  componentList:
+    - key: number
+      payload:
+        type: NUMBER
+        default: 100000000
+  engine: MARIADB
 - type: statement.add-foreign-key-not-valid
   category: STATEMENT
   engine: POSTGRES
