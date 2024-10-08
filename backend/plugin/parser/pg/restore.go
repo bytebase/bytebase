@@ -142,7 +142,8 @@ func (g *generator) EnterUpdatestmt(ctx *parser.UpdatestmtContext) {
 					return
 				}
 			}
-			if _, err := fmt.Fprintf(&buf, `"%s" = EXCLUDED."%s"`, field, field); err != nil {
+			// The field is written by user and no need to escape.
+			if _, err := fmt.Fprintf(&buf, `%s = EXCLUDED.%s`, field, field); err != nil {
 				g.err = errors.Wrapf(err, "failed to generate update statement")
 				return
 			}
