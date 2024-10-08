@@ -65,14 +65,17 @@ import { storeToRefs } from "pinia";
 import { Pane, Splitpanes } from "splitpanes";
 import { computed, defineAsyncComponent } from "vue";
 import { BBSpin } from "@/bbkit";
+import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import { useExecuteSQL } from "@/composables/useExecuteSQL";
 import { AIChatToSQL } from "@/plugins/ai";
+import { useAIContext } from "@/plugins/ai/logic";
 import {
   useConnectionOfCurrentSQLEditorTab,
+  useDatabaseV1Store,
   useSQLEditorTabStore,
 } from "@/store";
 import type { SQLEditorQueryParams } from "@/types";
-import { instanceV1HasReadonlyMode } from "@/utils";
+import { instanceV1HasReadonlyMode, nextAnimationFrame } from "@/utils";
 import {
   EditorAction,
   ExecutingHintModal,
@@ -89,6 +92,7 @@ const tabStore = useSQLEditorTabStore();
 const { currentTab: tab, isDisconnected } = storeToRefs(tabStore);
 const { instance } = useConnectionOfCurrentSQLEditorTab();
 const { showAIPanel } = useSQLEditorContext();
+const { events: AIEvents } = useAIContext();
 
 const allowReadonlyMode = computed(() => {
   if (isDisconnected.value) return false;
@@ -102,27 +106,19 @@ const handleExecute = (params: SQLEditorQueryParams) => {
   execute(params);
 };
 
-// const handleApplyStatement = async (
-//   statement: string,
-//   connection: SQLEditorConnection,
-//   run: boolean
-// ) => {
-//   if (!tab.value) {
-//     return;
-//   }
-//   tab.value.statement = statement;
-//   if (run) {
-//     await nextAnimationFrame();
-//     const database = useDatabaseV1Store().getDatabaseByName(
-//       connection.database
-//     );
-//     handleExecute({
-//       connection,
-//       statement,
-//       engine: database.instanceResource.engine,
-//       explain: false,
-//       selection: tab.value.editorState.selection,
-//     });
-//   }
-// };
+useEmitteryEventListener(AIEvents, "run-statement", async ({ statement }) => {
+  if (!tab.value) {
+    return;
+  }
+  const connection = tab.value.connection;
+  await nextAnimationFrame();
+  const database = useDatabaseV1Store().getDatabaseByName(connection.database);
+  handleExecute({
+    connection,
+    statement,
+    engine: database.instanceResource.engine,
+    explain: false,
+    selection: tab.value.editorState.selection,
+  });
+});
 </script>

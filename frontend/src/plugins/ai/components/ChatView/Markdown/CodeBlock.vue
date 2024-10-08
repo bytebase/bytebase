@@ -29,7 +29,7 @@
       />
     </div>
     <div class="flex flex-col gap-y-2 ml-0.5 mt-1">
-      <NTooltip placement="right">
+      <NPopover placement="right">
         <template #trigger>
           <button
             class="inline-flex items-center justify-center hover:text-accent cursor-pointer"
@@ -41,8 +41,8 @@
         <div class="whitespace-nowrap">
           {{ $t("common.run") }}
         </div>
-      </NTooltip>
-      <NTooltip placement="right">
+      </NPopover>
+      <NPopover placement="right">
         <template #trigger>
           <button
             class="inline-flex items-center justify-center hover:text-accent cursor-pointer"
@@ -54,13 +54,13 @@
         <div class="whitespace-nowrap">
           {{ $t("common.copy") }}
         </div>
-      </NTooltip>
+      </NPopover>
     </div>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { NTooltip } from "naive-ui";
+import { NPopover } from "naive-ui";
 import { useI18n } from "vue-i18n";
 import { MonacoEditor } from "@/components/MonacoEditor";
 import { useAIContext } from "@/plugins/ai/logic";
@@ -75,9 +75,8 @@ const { t } = useI18n();
 const { events, showHistoryDialog } = useAIContext();
 
 const handleExecute = () => {
-  events.emit("apply-statement", {
+  events.emit("run-statement", {
     statement: props.code,
-    run: true,
   });
   showHistoryDialog.value = false;
 };

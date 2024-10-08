@@ -5,7 +5,7 @@ import type { DatabaseMetadata } from "@/types/proto/v1/database_service";
 import type { Conversation } from "./conversation";
 
 export type AIContextEvents = Emittery<{
-  "apply-statement": { statement: string; run: boolean };
+  "run-statement": { statement: string };
   error: string;
   "new-conversation": any;
 }>;
