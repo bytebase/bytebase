@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -312,6 +313,22 @@ func (m *RangeMasker) Mask(data *MaskData) *v1pb.RowValue {
 				ValueValue: maskProtoValue(m, kind.ValueValue),
 			},
 		}
+	case *v1pb.RowValue_TimestampValue:
+		s := kind.TimestampValue.AsTime().Format("2006-01-02 15:04:05.000000")
+		return &v1pb.RowValue{
+			Kind: &v1pb.RowValue_StringValue{
+				StringValue: string(fRune([]rune(s))),
+			},
+		}
+	case *v1pb.RowValue_TimestampTzValue:
+		t := kind.TimestampTzValue.Timestamp.AsTime()
+		z := time.FixedZone(kind.TimestampTzValue.GetZone(), int(kind.TimestampTzValue.GetOffset()))
+		s := t.In(z).Format(time.RFC3339Nano)
+		return &v1pb.RowValue{
+			Kind: &v1pb.RowValue_StringValue{
+				StringValue: string(fRune([]rune(s))),
+			},
+		}
 	}
 	return nil
 }
@@ -389,6 +406,22 @@ func (*DefaultRangeMasker) Mask(data *MaskData) *v1pb.RowValue {
 		return &v1pb.RowValue{
 			Kind: &v1pb.RowValue_ValueValue{
 				ValueValue: maskProtoValue(&DefaultRangeMasker{}, kind.ValueValue),
+			},
+		}
+	case *v1pb.RowValue_TimestampValue:
+		s := kind.TimestampValue.AsTime().Format("2006-01-02 15:04:05.000000")
+		return &v1pb.RowValue{
+			Kind: &v1pb.RowValue_StringValue{
+				StringValue: string((middle([]byte(s)))),
+			},
+		}
+	case *v1pb.RowValue_TimestampTzValue:
+		t := kind.TimestampTzValue.Timestamp.AsTime()
+		z := time.FixedZone(kind.TimestampTzValue.GetZone(), int(kind.TimestampTzValue.GetOffset()))
+		s := t.In(z).Format(time.RFC3339Nano)
+		return &v1pb.RowValue{
+			Kind: &v1pb.RowValue_StringValue{
+				StringValue: string(middle([]byte(s))),
 			},
 		}
 	}
@@ -483,6 +516,22 @@ func (m *MD5Masker) Mask(data *MaskData) *v1pb.RowValue {
 		return &v1pb.RowValue{
 			Kind: &v1pb.RowValue_ValueValue{
 				ValueValue: maskProtoValue(m, kind.ValueValue),
+			},
+		}
+	case *v1pb.RowValue_TimestampValue:
+		s := kind.TimestampValue.AsTime().Format("2006-01-02 15:04:05.000000")
+		return &v1pb.RowValue{
+			Kind: &v1pb.RowValue_StringValue{
+				StringValue: f(s),
+			},
+		}
+	case *v1pb.RowValue_TimestampTzValue:
+		t := kind.TimestampTzValue.Timestamp.AsTime()
+		z := time.FixedZone(kind.TimestampTzValue.GetZone(), int(kind.TimestampTzValue.GetOffset()))
+		s := t.In(z).Format(time.RFC3339Nano)
+		return &v1pb.RowValue{
+			Kind: &v1pb.RowValue_StringValue{
+				StringValue: string(middle([]byte(s))),
 			},
 		}
 	}
@@ -649,6 +698,14 @@ func (m *InnerOuterMasker) Mask(data *MaskData) *v1pb.RowValue {
 				ValueValue: maskProtoValue(m, kind.ValueValue),
 			},
 		}
+	case *v1pb.RowValue_TimestampValue:
+		s := kind.TimestampValue.AsTime().Format("2006-01-02 15:04:05.000000")
+		unmaskedData = s
+	case *v1pb.RowValue_TimestampTzValue:
+		t := kind.TimestampTzValue.Timestamp.AsTime()
+		z := time.FixedZone(kind.TimestampTzValue.GetZone(), int(kind.TimestampTzValue.GetOffset()))
+		s := t.In(z).Format(time.RFC3339Nano)
+		unmaskedData = s
 	}
 	if isDataNullOrBool {
 		return &v1pb.RowValue{

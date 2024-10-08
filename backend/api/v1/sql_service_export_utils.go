@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/labstack/echo/v4"
 	"github.com/lib/pq"
@@ -85,6 +86,21 @@ func convertValueToBytesInCSV(value *v1pb.RowValue) []byte {
 		return result
 	case *v1pb.RowValue_NullValue:
 		return []byte("")
+	case *v1pb.RowValue_TimestampValue:
+		var result []byte
+		result = append(result, '"')
+		result = append(result, []byte(value.GetTimestampValue().AsTime().Format("2006-01-02 15:04:05.000000"))...)
+		result = append(result, '"')
+		return result
+	case *v1pb.RowValue_TimestampTzValue:
+		t := value.GetTimestampTzValue().Timestamp.AsTime()
+		z := time.FixedZone(value.GetTimestampTzValue().GetZone(), int(value.GetTimestampTzValue().GetOffset()))
+		s := t.In(z).Format(time.RFC3339Nano)
+		var result []byte
+		result = append(result, '"')
+		result = append(result, []byte(s)...)
+		result = append(result, '"')
+		return result
 	case *v1pb.RowValue_ValueValue:
 		// This is used by ClickHouse and Spanner only.
 		return convertValueValueToBytes(value.GetValueValue())
@@ -183,6 +199,13 @@ func convertValueToBytesInSQL(engine storepb.Engine, value *v1pb.RowValue) []byt
 		return escapeSQLBytes(engine, value.GetBytesValue())
 	case *v1pb.RowValue_NullValue:
 		return []byte("NULL")
+	case *v1pb.RowValue_TimestampValue:
+		return escapeSQLString(engine, []byte(value.GetTimestampValue().AsTime().Format("2006-01-02 15:04:05.000000")))
+	case *v1pb.RowValue_TimestampTzValue:
+		t := value.GetTimestampTzValue().Timestamp.AsTime()
+		z := time.FixedZone(value.GetTimestampTzValue().GetZone(), int(value.GetTimestampTzValue().GetOffset()))
+		s := t.In(z).Format(time.RFC3339Nano)
+		return escapeSQLString(engine, []byte(s))
 	case *v1pb.RowValue_ValueValue:
 		// This is used by ClickHouse and Spanner only.
 		return convertValueValueToBytes(value.GetValueValue())
@@ -656,6 +679,13 @@ func convertValueToStringInJSON(value *v1pb.RowValue) string {
 		return value
 	case *v1pb.RowValue_NullValue:
 		return "null"
+	case *v1pb.RowValue_TimestampValue:
+		return `"` + value.GetTimestampValue().AsTime().Format("2006-01-02 15:04:05.000000") + `"`
+	case *v1pb.RowValue_TimestampTzValue:
+		t := value.GetTimestampTzValue().Timestamp.AsTime()
+		z := time.FixedZone(value.GetTimestampTzValue().GetZone(), int(value.GetTimestampTzValue().GetOffset()))
+		s := t.In(z).Format(time.RFC3339Nano)
+		return `"` + s + `"`
 	case *v1pb.RowValue_ValueValue:
 		// This is used by ClickHouse and Spanner only.
 		return value.GetValueValue().String()
@@ -764,6 +794,13 @@ func convertValueToStringInXLSX(value *v1pb.RowValue) string {
 		return base64.StdEncoding.EncodeToString(value.GetBytesValue())
 	case *v1pb.RowValue_NullValue:
 		return ""
+	case *v1pb.RowValue_TimestampValue:
+		return value.GetTimestampValue().AsTime().Format("2006-01-02 15:04:05.000000")
+	case *v1pb.RowValue_TimestampTzValue:
+		t := value.GetTimestampTzValue().Timestamp.AsTime()
+		z := time.FixedZone(value.GetTimestampTzValue().GetZone(), int(value.GetTimestampTzValue().GetOffset()))
+		s := t.In(z).Format(time.RFC3339Nano)
+		return s
 	case *v1pb.RowValue_ValueValue:
 		// This is used by ClickHouse and Spanner only.
 		return value.GetValueValue().String()
