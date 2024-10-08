@@ -48,6 +48,7 @@ const props = withDefaults(
     showProject?: boolean;
     customClick?: boolean;
     showSelection?: boolean;
+    showActions?: boolean;
     singleSelection?: boolean;
     selectedDatabaseGroupNames?: string[];
   }>(),
@@ -113,6 +114,7 @@ const columnList = computed((): DatabaseGroupDataTableColumn[] => {
     key: "actions",
     title: "",
     width: 150,
+    hide: !props.showActions,
     render: (data) => {
       return (
         <div class="flex justify-end gap-2">
