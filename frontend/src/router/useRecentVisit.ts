@@ -46,6 +46,8 @@ export function useRecentVisit() {
     while (recentVisit.value.length > MAX_HISTORY + 1) {
       recentVisit.value.pop();
     }
+
+    recentVisit.value.unshift(path);
   };
 
   return {
