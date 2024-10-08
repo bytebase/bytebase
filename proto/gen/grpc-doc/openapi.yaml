@@ -6355,6 +6355,37 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
+    /v1/projects/{project}:previewPlan:
+        post:
+            tags:
+                - PlanService
+            operationId: PlanService_PreviewPlan
+            parameters:
+                - name: project
+                  in: path
+                  description: The project id.
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/PreviewPlanRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/PreviewPlanResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
     /v1/projects/{project}:previewRollout:
         post:
             tags:
@@ -11395,6 +11426,8 @@ components:
                          - SUCCESS
                          - WARNING
                          - ERROR
+                releaseSource:
+                    $ref: '#/components/schemas/Plan_ReleaseSource'
         PlanCheckRun:
             type: object
             properties:
@@ -11565,6 +11598,14 @@ components:
                     description: |-
                         The zip password provide by users.
                          Leave it empty if no needs to encrypt the zip file.
+        Plan_ReleaseSource:
+            type: object
+            properties:
+                release:
+                    type: string
+                    description: |-
+                        The release.
+                         Format: projects/{project}/releases/{release}
         Plan_Spec:
             type: object
             properties:
@@ -11773,6 +11814,52 @@ components:
                 expectedSchema:
                     type: string
                     description: The expected SDL schema after normalizing.
+        PreviewPlanRequest:
+            required:
+                - project
+                - release
+                - targets
+            type: object
+            properties:
+                project:
+                    type: string
+                    description: |-
+                        The name of the project.
+                         Format: projects/{project}
+                release:
+                    type: string
+                    description: The release used for preview.
+                targets:
+                    type: array
+                    items:
+                        type: string
+                    description: |-
+                        The targets to deploy.
+                         Can be database or databaseGroup.
+                         Format:
+                         projects/{project}/databaseGroups/{databaseGroup}
+                         instances/{instance}/databases/{database}
+                allowOutOfOrder:
+                    type: boolean
+        PreviewPlanResponse:
+            type: object
+            properties:
+                plan:
+                    $ref: '#/components/schemas/Plan'
+                outOfOrderFiles:
+                    type: array
+                    items:
+                        type: string
+                    description: |-
+                        Format: projects/{project}/releases/{release}/files/{path}
+                         Example: `projects/tnt/releases/0801/files/2.2/V0001_create_table.sql`
+                appliedButModifiedFiles:
+                    type: array
+                    items:
+                        type: string
+                    description: |-
+                        Format: projects/{project}/releases/{release}/files/{path}
+                         Example: `projects/tnt/releases/0801/files/2.2/V0001_create_table.sql`
         PreviewRolloutRequest:
             required:
                 - project

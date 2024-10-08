@@ -158,6 +158,7 @@ export interface Plan {
    * - ERROR
    */
   planCheckRunStatusCount: { [key: string]: number };
+  releaseSource: Plan_ReleaseSource | undefined;
 }
 
 export interface Plan_Step {
@@ -376,6 +377,14 @@ export interface Plan_VCSSource {
   pullRequestUrl: string;
 }
 
+export interface Plan_ReleaseSource {
+  /**
+   * The release.
+   * Format: projects/{project}/releases/{release}
+   */
+  release: string;
+}
+
 export interface ListPlanCheckRunsRequest {
   /**
    * The parent, which owns this collection of plan check runs.
@@ -437,6 +446,41 @@ export interface BatchCancelPlanCheckRunsRequest {
 }
 
 export interface BatchCancelPlanCheckRunsResponse {
+}
+
+export interface PreviewPlanRequest {
+  /**
+   * The name of the project.
+   * Format: projects/{project}
+   */
+  project: string;
+  /** The release used for preview. */
+  release: string;
+  /**
+   * The targets to deploy.
+   * Can be database or databaseGroup.
+   * Format:
+   * projects/{project}/databaseGroups/{databaseGroup}
+   * instances/{instance}/databases/{database}
+   */
+  targets: string[];
+  allowOutOfOrder: boolean;
+}
+
+export interface PreviewPlanResponse {
+  plan:
+    | Plan
+    | undefined;
+  /**
+   * Format: projects/{project}/releases/{release}/files/{path}
+   * Example: `projects/tnt/releases/0801/files/2.2/V0001_create_table.sql`
+   */
+  outOfOrderFiles: string[];
+  /**
+   * Format: projects/{project}/releases/{release}/files/{path}
+   * Example: `projects/tnt/releases/0801/files/2.2/V0001_create_table.sql`
+   */
+  appliedButModifiedFiles: string[];
 }
 
 export interface PlanCheckRun {
@@ -1250,6 +1294,7 @@ function createBasePlan(): Plan {
     createTime: undefined,
     updateTime: undefined,
     planCheckRunStatusCount: {},
+    releaseSource: undefined,
   };
 }
 
@@ -1285,6 +1330,9 @@ export const Plan: MessageFns<Plan> = {
     Object.entries(message.planCheckRunStatusCount).forEach(([key, value]) => {
       Plan_PlanCheckRunStatusCountEntry.encode({ key: key as any, value }, writer.uint32(90).fork()).join();
     });
+    if (message.releaseSource !== undefined) {
+      Plan_ReleaseSource.encode(message.releaseSource, writer.uint32(98).fork()).join();
+    }
     return writer;
   },
 
@@ -1368,6 +1416,13 @@ export const Plan: MessageFns<Plan> = {
             message.planCheckRunStatusCount[entry11.key] = entry11.value;
           }
           continue;
+        case 12:
+          if (tag !== 98) {
+            break;
+          }
+
+          message.releaseSource = Plan_ReleaseSource.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1394,6 +1449,7 @@ export const Plan: MessageFns<Plan> = {
           return acc;
         }, {})
         : {},
+      releaseSource: isSet(object.releaseSource) ? Plan_ReleaseSource.fromJSON(object.releaseSource) : undefined,
     };
   },
 
@@ -1435,6 +1491,9 @@ export const Plan: MessageFns<Plan> = {
         });
       }
     }
+    if (message.releaseSource !== undefined) {
+      obj.releaseSource = Plan_ReleaseSource.toJSON(message.releaseSource);
+    }
     return obj;
   },
 
@@ -1466,6 +1525,9 @@ export const Plan: MessageFns<Plan> = {
       }
       return acc;
     }, {});
+    message.releaseSource = (object.releaseSource !== undefined && object.releaseSource !== null)
+      ? Plan_ReleaseSource.fromPartial(object.releaseSource)
+      : undefined;
     return message;
   },
 };
@@ -2568,6 +2630,63 @@ export const Plan_VCSSource: MessageFns<Plan_VCSSource> = {
   },
 };
 
+function createBasePlan_ReleaseSource(): Plan_ReleaseSource {
+  return { release: "" };
+}
+
+export const Plan_ReleaseSource: MessageFns<Plan_ReleaseSource> = {
+  encode(message: Plan_ReleaseSource, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.release !== "") {
+      writer.uint32(10).string(message.release);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): Plan_ReleaseSource {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBasePlan_ReleaseSource();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.release = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): Plan_ReleaseSource {
+    return { release: isSet(object.release) ? globalThis.String(object.release) : "" };
+  },
+
+  toJSON(message: Plan_ReleaseSource): unknown {
+    const obj: any = {};
+    if (message.release !== "") {
+      obj.release = message.release;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<Plan_ReleaseSource>): Plan_ReleaseSource {
+    return Plan_ReleaseSource.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<Plan_ReleaseSource>): Plan_ReleaseSource {
+    const message = createBasePlan_ReleaseSource();
+    message.release = object.release ?? "";
+    return message;
+  },
+};
+
 function createBaseListPlanCheckRunsRequest(): ListPlanCheckRunsRequest {
   return { parent: "", pageSize: 0, pageToken: "", latestOnly: false };
 }
@@ -2963,6 +3082,203 @@ export const BatchCancelPlanCheckRunsResponse: MessageFns<BatchCancelPlanCheckRu
   },
   fromPartial(_: DeepPartial<BatchCancelPlanCheckRunsResponse>): BatchCancelPlanCheckRunsResponse {
     const message = createBaseBatchCancelPlanCheckRunsResponse();
+    return message;
+  },
+};
+
+function createBasePreviewPlanRequest(): PreviewPlanRequest {
+  return { project: "", release: "", targets: [], allowOutOfOrder: false };
+}
+
+export const PreviewPlanRequest: MessageFns<PreviewPlanRequest> = {
+  encode(message: PreviewPlanRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.project !== "") {
+      writer.uint32(10).string(message.project);
+    }
+    if (message.release !== "") {
+      writer.uint32(18).string(message.release);
+    }
+    for (const v of message.targets) {
+      writer.uint32(26).string(v!);
+    }
+    if (message.allowOutOfOrder !== false) {
+      writer.uint32(32).bool(message.allowOutOfOrder);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): PreviewPlanRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBasePreviewPlanRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.project = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.release = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.targets.push(reader.string());
+          continue;
+        case 4:
+          if (tag !== 32) {
+            break;
+          }
+
+          message.allowOutOfOrder = reader.bool();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): PreviewPlanRequest {
+    return {
+      project: isSet(object.project) ? globalThis.String(object.project) : "",
+      release: isSet(object.release) ? globalThis.String(object.release) : "",
+      targets: globalThis.Array.isArray(object?.targets) ? object.targets.map((e: any) => globalThis.String(e)) : [],
+      allowOutOfOrder: isSet(object.allowOutOfOrder) ? globalThis.Boolean(object.allowOutOfOrder) : false,
+    };
+  },
+
+  toJSON(message: PreviewPlanRequest): unknown {
+    const obj: any = {};
+    if (message.project !== "") {
+      obj.project = message.project;
+    }
+    if (message.release !== "") {
+      obj.release = message.release;
+    }
+    if (message.targets?.length) {
+      obj.targets = message.targets;
+    }
+    if (message.allowOutOfOrder !== false) {
+      obj.allowOutOfOrder = message.allowOutOfOrder;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<PreviewPlanRequest>): PreviewPlanRequest {
+    return PreviewPlanRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<PreviewPlanRequest>): PreviewPlanRequest {
+    const message = createBasePreviewPlanRequest();
+    message.project = object.project ?? "";
+    message.release = object.release ?? "";
+    message.targets = object.targets?.map((e) => e) || [];
+    message.allowOutOfOrder = object.allowOutOfOrder ?? false;
+    return message;
+  },
+};
+
+function createBasePreviewPlanResponse(): PreviewPlanResponse {
+  return { plan: undefined, outOfOrderFiles: [], appliedButModifiedFiles: [] };
+}
+
+export const PreviewPlanResponse: MessageFns<PreviewPlanResponse> = {
+  encode(message: PreviewPlanResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.plan !== undefined) {
+      Plan.encode(message.plan, writer.uint32(10).fork()).join();
+    }
+    for (const v of message.outOfOrderFiles) {
+      writer.uint32(18).string(v!);
+    }
+    for (const v of message.appliedButModifiedFiles) {
+      writer.uint32(26).string(v!);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): PreviewPlanResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBasePreviewPlanResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.plan = Plan.decode(reader, reader.uint32());
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.outOfOrderFiles.push(reader.string());
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.appliedButModifiedFiles.push(reader.string());
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): PreviewPlanResponse {
+    return {
+      plan: isSet(object.plan) ? Plan.fromJSON(object.plan) : undefined,
+      outOfOrderFiles: globalThis.Array.isArray(object?.outOfOrderFiles)
+        ? object.outOfOrderFiles.map((e: any) => globalThis.String(e))
+        : [],
+      appliedButModifiedFiles: globalThis.Array.isArray(object?.appliedButModifiedFiles)
+        ? object.appliedButModifiedFiles.map((e: any) => globalThis.String(e))
+        : [],
+    };
+  },
+
+  toJSON(message: PreviewPlanResponse): unknown {
+    const obj: any = {};
+    if (message.plan !== undefined) {
+      obj.plan = Plan.toJSON(message.plan);
+    }
+    if (message.outOfOrderFiles?.length) {
+      obj.outOfOrderFiles = message.outOfOrderFiles;
+    }
+    if (message.appliedButModifiedFiles?.length) {
+      obj.appliedButModifiedFiles = message.appliedButModifiedFiles;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<PreviewPlanResponse>): PreviewPlanResponse {
+    return PreviewPlanResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<PreviewPlanResponse>): PreviewPlanResponse {
+    const message = createBasePreviewPlanResponse();
+    message.plan = (object.plan !== undefined && object.plan !== null) ? Plan.fromPartial(object.plan) : undefined;
+    message.outOfOrderFiles = object.outOfOrderFiles?.map((e) => e) || [];
+    message.appliedButModifiedFiles = object.appliedButModifiedFiles?.map((e) => e) || [];
     return message;
   },
 };
@@ -4112,6 +4428,63 @@ export const PlanServiceDefinition = {
               99,
               101,
               108,
+            ]),
+          ],
+        },
+      },
+    },
+    previewPlan: {
+      name: "PreviewPlan",
+      requestType: PreviewPlanRequest,
+      requestStream: false,
+      responseType: PreviewPlanResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              41,
+              58,
+              1,
+              42,
+              34,
+              36,
+              47,
+              118,
+              49,
+              47,
+              123,
+              112,
+              114,
+              111,
+              106,
+              101,
+              99,
+              116,
+              61,
+              112,
+              114,
+              111,
+              106,
+              101,
+              99,
+              116,
+              115,
+              47,
+              42,
+              125,
+              58,
+              112,
+              114,
+              101,
+              118,
+              105,
+              101,
+              119,
+              80,
+              108,
+              97,
+              110,
             ]),
           ],
         },
