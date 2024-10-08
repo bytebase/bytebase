@@ -291,7 +291,8 @@
     "override": "オーバーライド",
     "encoding": "エンコーディング",
     "finish": "仕上げる",
-    "title": "タイトル"
+    "title": "タイトル",
+    "hide": "隠れる"
   },
   "error-page": {
     "go-back-home": "ホームページに戻る"

@@ -291,7 +291,8 @@
     "override": "Anular",
     "encoding": "Codificación",
     "finish": "Finalizar",
-    "title": "Título"
+    "title": "Título",
+    "hide": "Esconder"
   },
   "error-page": {
     "go-back-home": "Volver al inicio"

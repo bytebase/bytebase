@@ -15,7 +15,7 @@
           fontSize: 12,
           lineHeight: 14,
           lineNumbers: 'off',
-          wordWrap: 'off',
+          wordWrap: 'true',
           scrollbar: {
             vertical: 'hidden',
             horizontal: 'hidden',
@@ -72,13 +72,13 @@ const props = defineProps<{
 }>();
 
 const { t } = useI18n();
-const { showHistoryDialog } = useAIContext();
+const { events, showHistoryDialog } = useAIContext();
 
 const handleExecute = () => {
-  // events.emit("apply-statement", {
-  //   statement: props.message.content,
-  //   run: true,
-  // });
+  events.emit("apply-statement", {
+    statement: props.code,
+    run: true,
+  });
   showHistoryDialog.value = false;
 };
 

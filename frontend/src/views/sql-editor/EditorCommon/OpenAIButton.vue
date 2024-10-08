@@ -7,9 +7,11 @@
     @update:value="handleSelect"
   >
     <NButton
-      :active="showAIPanel"
       tag="div"
-      v-bind="$attrs"
+      v-bind="{
+        ...buttonProps,
+        ...$attrs,
+      }"
       style="--n-icon-size: 16px; --n-padding: 0 6px"
       @click="handleClickButton"
     >
@@ -32,7 +34,12 @@
 
 <script setup lang="ts">
 import { head } from "lodash-es";
-import { NButton, NPopselect, type SelectOption } from "naive-ui";
+import {
+  NButton,
+  NPopselect,
+  type ButtonProps,
+  type SelectOption,
+} from "naive-ui";
 import { computed } from "vue";
 import { useSettingV1Store, useSQLEditorTabStore } from "@/store";
 import { useSQLEditorContext } from "../context";
@@ -58,6 +65,19 @@ const showButton = computed(() => {
     !tabStore.isDisconnected &&
     tabStore.currentTab?.mode === "WORKSHEET"
   );
+});
+
+const buttonProps = computed(() => {
+  const buttonProps: ButtonProps = {
+    tag: "div",
+  };
+  if (showAIPanel.value) {
+    buttonProps.ghost = true;
+    buttonProps.type = "primary";
+  } else {
+    buttonProps.type = "default";
+  }
+  return buttonProps;
 });
 
 const options = computed(() => {

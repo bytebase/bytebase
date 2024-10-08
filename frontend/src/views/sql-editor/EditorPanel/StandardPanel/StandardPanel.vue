@@ -5,27 +5,28 @@
     class="default-theme"
     :dbl-click-splitter="false"
   >
-    <Pane class="flex flex-col overflow-hidden">
-      <div
-        v-if="isDisconnected || allowReadonlyMode"
-        class="flex-1 h-full w-full flex flex-col justify-start items-stretch"
-      >
+    <Pane class="flex flex-col overflow-hidden justify-start items-stretch">
+      <template v-if="isDisconnected || allowReadonlyMode">
         <EditorAction @execute="handleExecute" />
-        <div
-          v-if="tab"
-          class="w-full flex-1 flex flex-row items-stretch overflow-hidden"
-        >
-          <Suspense>
-            <SQLEditor @execute="handleExecute" />
-            <template #fallback>
-              <div
-                class="w-full h-auto flex-grow flex flex-col items-center justify-center"
-              >
-                <BBSpin />
-              </div>
-            </template>
-          </Suspense>
-          <div v-if="showAIPanel" class="w-[25%] h-full bg-red-200">
+
+        <Splitpanes v-if="tab" class="default-theme">
+          <Pane class="">
+            <Suspense>
+              <SQLEditor @execute="handleExecute" />
+              <template #fallback>
+                <div
+                  class="w-full h-auto flex-grow flex flex-col items-center justify-center"
+                >
+                  <BBSpin />
+                </div>
+              </template>
+            </Suspense>
+          </Pane>
+          <Pane
+            v-if="showAIPanel"
+            :size="33"
+            class="overflow-hidden flex flex-col"
+          >
             <Suspense>
               <AIChatToSQL />
               <template #fallback>
@@ -36,8 +37,8 @@
                 </div>
               </template>
             </Suspense>
-          </div>
-        </div>
+          </Pane>
+        </Splitpanes>
         <template v-else>
           <Welcome />
         </template>
@@ -45,7 +46,7 @@
         <ExecutingHintModal />
 
         <SaveSheetModal />
-      </div>
+      </template>
 
       <ReadonlyModeNotSupported v-else />
     </Pane>

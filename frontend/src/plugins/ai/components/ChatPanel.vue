@@ -1,16 +1,20 @@
 <template>
-  <div v-if="openAIKey" class="w-full flex flex-col flex-1 overflow-hidden">
+  <div
+    v-if="openAIKey"
+    class="w-full h-full flex-1 flex flex-col overflow-hidden"
+  >
     <ActionBar />
+
     <ChatView :conversation="selectedConversation" @enter="requestAI" />
 
-    <div class="px-2 py-2 flex flex-col gap-2">
+    <div class="px-2 pb-2 flex flex-col gap-2">
       <div class="flex items-center gap-2 w-full">
         <DynamicSuggestions class="flex-1" @enter="requestAI" />
       </div>
       <PromptInput v-if="tab" @enter="requestAI" />
     </div>
 
-    <HistoryPanel v-if="showHistoryDialog" />
+    <HistoryPanel />
   </div>
 </template>
 
@@ -20,6 +24,7 @@ import { Axios } from "axios";
 import { head } from "lodash-es";
 import { storeToRefs } from "pinia";
 import { reactive, watch } from "vue";
+import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import { useSQLEditorTabStore } from "@/store";
 import { onConnectionChanged, useAIContext, useCurrentChat } from "../logic";
 import * as promptUtils from "../logic/prompt";
@@ -43,8 +48,7 @@ const { currentTab: tab } = storeToRefs(useSQLEditorTabStore());
 const store = useConversationStore();
 
 const context = useAIContext();
-const { events, openAIKey, openAIEndpoint, autoRun, showHistoryDialog } =
-  context;
+const { events, openAIKey, openAIEndpoint, showHistoryDialog } = context;
 const {
   list: conversationList,
   ready,
@@ -158,18 +162,6 @@ const requestAI = async (query: string) => {
     if (conversation.id === conversation.id) {
       if (answer.status === "FAILED") {
         context.events.emit("error", answer.error);
-      } else {
-        if (
-          autoRun.value &&
-          t.id === tab.value.id &&
-          conversation.id === selectedConversation.value?.id
-        ) {
-          // If the chat is still active, emit 'apply-statement' event
-          context.events.emit("apply-statement", {
-            statement: answer.content,
-            run: autoRun.value,
-          });
-        }
       }
     }
   }
@@ -179,7 +171,7 @@ onConnectionChanged(() => {
   showHistoryDialog.value = false;
 });
 
-events.on("new-conversation", async () => {
+useEmitteryEventListener(events, "new-conversation", async () => {
   if (!tab.value) return;
   showHistoryDialog.value = false;
   const c = await store.createConversation({

@@ -291,7 +291,8 @@
     "override": "Override",
     "encoding": "Encoding",
     "finish": "Finish",
-    "title": "Title"
+    "title": "Title",
+    "hide": "Hide"
   },
   "error-page": {
     "go-back-home": "Go back home"
