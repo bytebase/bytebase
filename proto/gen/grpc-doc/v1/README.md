@@ -494,6 +494,7 @@
     - [Plan.CreateDatabaseConfig.LabelsEntry](#bytebase-v1-Plan-CreateDatabaseConfig-LabelsEntry)
     - [Plan.ExportDataConfig](#bytebase-v1-Plan-ExportDataConfig)
     - [Plan.PlanCheckRunStatusCountEntry](#bytebase-v1-Plan-PlanCheckRunStatusCountEntry)
+    - [Plan.ReleaseSource](#bytebase-v1-Plan-ReleaseSource)
     - [Plan.Spec](#bytebase-v1-Plan-Spec)
     - [Plan.Step](#bytebase-v1-Plan-Step)
     - [Plan.VCSSource](#bytebase-v1-Plan-VCSSource)
@@ -501,6 +502,8 @@
     - [PlanCheckRun.Result](#bytebase-v1-PlanCheckRun-Result)
     - [PlanCheckRun.Result.SqlReviewReport](#bytebase-v1-PlanCheckRun-Result-SqlReviewReport)
     - [PlanCheckRun.Result.SqlSummaryReport](#bytebase-v1-PlanCheckRun-Result-SqlSummaryReport)
+    - [PreviewPlanRequest](#bytebase-v1-PreviewPlanRequest)
+    - [PreviewPlanResponse](#bytebase-v1-PreviewPlanResponse)
     - [RunPlanChecksRequest](#bytebase-v1-RunPlanChecksRequest)
     - [RunPlanChecksResponse](#bytebase-v1-RunPlanChecksResponse)
     - [SearchPlansRequest](#bytebase-v1-SearchPlansRequest)
@@ -7904,6 +7907,7 @@ When paginating, all other parameters provided to `ListPlans` must match the cal
 | create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | plan_check_run_status_count | [Plan.PlanCheckRunStatusCountEntry](#bytebase-v1-Plan-PlanCheckRunStatusCountEntry) | repeated | The status count of the latest plan check runs. Keys are: - SUCCESS - WARNING - ERROR |
+| release_source | [Plan.ReleaseSource](#bytebase-v1-Plan-ReleaseSource) |  |  |
 
 
 
@@ -8028,6 +8032,21 @@ When paginating, all other parameters provided to `ListPlans` must match the cal
 | ----- | ---- | ----- | ----------- |
 | key | [string](#string) |  |  |
 | value | [int32](#int32) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-Plan-ReleaseSource"></a>
+
+### Plan.ReleaseSource
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| release | [string](#string) |  | The release. Format: projects/{project}/releases/{release} |
 
 
 
@@ -8161,6 +8180,41 @@ When paginating, all other parameters provided to `ListPlans` must match the cal
 | statement_types | [string](#string) | repeated | statement_types are the types of statements that are found in the sql. |
 | affected_rows | [int32](#int32) |  |  |
 | changed_resources | [ChangedResources](#bytebase-v1-ChangedResources) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-PreviewPlanRequest"></a>
+
+### PreviewPlanRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| project | [string](#string) |  | The name of the project. Format: projects/{project} |
+| release | [string](#string) |  | The release used for preview. |
+| targets | [string](#string) | repeated | The targets to deploy. Can be database or databaseGroup. Format: projects/{project}/databaseGroups/{databaseGroup} instances/{instance}/databases/{database} |
+| allow_out_of_order | [bool](#bool) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-PreviewPlanResponse"></a>
+
+### PreviewPlanResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| plan | [Plan](#bytebase-v1-Plan) |  |  |
+| out_of_order_files | [string](#string) | repeated | Format: projects/{project}/releases/{release}/files/{path} Example: `projects/tnt/releases/0801/files/2.2/V0001_create_table.sql` |
+| applied_but_modified_files | [string](#string) | repeated | Format: projects/{project}/releases/{release}/files/{path} Example: `projects/tnt/releases/0801/files/2.2/V0001_create_table.sql` |
 
 
 
@@ -8328,6 +8382,7 @@ Type is the database change type.
 | ListPlanCheckRuns | [ListPlanCheckRunsRequest](#bytebase-v1-ListPlanCheckRunsRequest) | [ListPlanCheckRunsResponse](#bytebase-v1-ListPlanCheckRunsResponse) |  |
 | RunPlanChecks | [RunPlanChecksRequest](#bytebase-v1-RunPlanChecksRequest) | [RunPlanChecksResponse](#bytebase-v1-RunPlanChecksResponse) |  |
 | BatchCancelPlanCheckRuns | [BatchCancelPlanCheckRunsRequest](#bytebase-v1-BatchCancelPlanCheckRunsRequest) | [BatchCancelPlanCheckRunsResponse](#bytebase-v1-BatchCancelPlanCheckRunsResponse) |  |
+| PreviewPlan | [PreviewPlanRequest](#bytebase-v1-PreviewPlanRequest) | [PreviewPlanResponse](#bytebase-v1-PreviewPlanResponse) |  |
 
  
 
