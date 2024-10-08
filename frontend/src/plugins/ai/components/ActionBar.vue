@@ -4,14 +4,7 @@
   >
     <div
       class="action-left gap-x-2 flex overflow-x-auto sm:overflow-x-hidden items-center"
-    >
-      <NButton size="small" @click="tab!.editMode = 'SQL-EDITOR'">
-        <template #icon>
-          <heroicons:chevron-left />
-        </template>
-        <span>{{ $t("plugin.ai.conversation.exit-conversation-mode") }}</span>
-      </NButton>
-    </div>
+    ></div>
 
     <div
       class="action-right gap-x-2 flex overflow-x-auto sm:overflow-x-hidden sm:justify-end items-center"
@@ -36,10 +29,7 @@
 
 <script lang="ts" setup>
 import { NButton } from "naive-ui";
-import { useCurrentSQLEditorTab } from "@/store";
 import { useAIContext } from "../logic";
-
-const tab = useCurrentSQLEditorTab();
 
 const { events, showHistoryDialog } = useAIContext();
 </script>

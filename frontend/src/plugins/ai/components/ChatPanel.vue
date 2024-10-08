@@ -1,31 +1,16 @@
 <template>
-  <div
-    v-if="openAIKey"
-    class="w-full flex flex-col"
-    :class="[
-      !isChatMode && 'px-4 py-2 border-t',
-      isChatMode && 'flex-1 overflow-hidden',
-    ]"
-  >
-    <template v-if="isChatMode">
-      <ActionBar />
-      <ChatView :conversation="selectedConversation" @enter="requestAI" />
-    </template>
+  <div v-if="openAIKey" class="w-full flex flex-col flex-1 overflow-hidden">
+    <ActionBar />
+    <ChatView :conversation="selectedConversation" @enter="requestAI" />
 
-    <div :class="[isChatMode && 'px-2 py-2 flex flex-col gap-2']">
-      <div v-if="isChatMode" class="flex items-center gap-2 w-full">
+    <div class="px-2 py-2 flex flex-col gap-2">
+      <div class="flex items-center gap-2 w-full">
         <DynamicSuggestions class="flex-1" @enter="requestAI" />
       </div>
-      <PromptInput
-        v-if="tab"
-        @focus="tab.editMode = 'CHAT-TO-SQL'"
-        @enter="requestAI"
-      />
+      <PromptInput v-if="tab" @enter="requestAI" />
     </div>
 
-    <template v-if="isChatMode">
-      <HistoryPanel v-if="showHistoryDialog" />
-    </template>
+    <HistoryPanel v-if="showHistoryDialog" />
   </div>
 </template>
 
@@ -34,7 +19,7 @@ import type { AxiosResponse } from "axios";
 import { Axios } from "axios";
 import { head } from "lodash-es";
 import { storeToRefs } from "pinia";
-import { computed, reactive, watch } from "vue";
+import { reactive, watch } from "vue";
 import { useSQLEditorTabStore } from "@/store";
 import { onConnectionChanged, useAIContext, useCurrentChat } from "../logic";
 import * as promptUtils from "../logic/prompt";
@@ -56,7 +41,6 @@ const state = reactive<LocalState>({
 
 const { currentTab: tab } = storeToRefs(useSQLEditorTabStore());
 const store = useConversationStore();
-const isChatMode = computed(() => tab.value?.editMode === "CHAT-TO-SQL");
 
 const context = useAIContext();
 const { events, openAIKey, openAIEndpoint, autoRun, showHistoryDialog } =

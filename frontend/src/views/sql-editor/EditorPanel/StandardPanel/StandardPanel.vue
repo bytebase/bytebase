@@ -10,14 +10,24 @@
         v-if="isDisconnected || allowReadonlyMode"
         class="flex-1 h-full w-full flex flex-col justify-start items-stretch"
       >
-        <template v-if="!tab || tab.editMode === 'SQL-EDITOR'">
-          <EditorAction @execute="handleExecute" />
-          <div
-            v-if="tab"
-            class="w-full flex-1 flex flex-row items-stretch overflow-hidden"
-          >
+        <EditorAction @execute="handleExecute" />
+        <div
+          v-if="tab"
+          class="w-full flex-1 flex flex-row items-stretch overflow-hidden"
+        >
+          <Suspense>
+            <SQLEditor @execute="handleExecute" />
+            <template #fallback>
+              <div
+                class="w-full h-auto flex-grow flex flex-col items-center justify-center"
+              >
+                <BBSpin />
+              </div>
+            </template>
+          </Suspense>
+          <div v-if="showAIPanel" class="w-[25%] h-full bg-red-200">
             <Suspense>
-              <SQLEditor @execute="handleExecute" />
+              <AIChatToSQL />
               <template #fallback>
                 <div
                   class="w-full h-auto flex-grow flex flex-col items-center justify-center"
@@ -27,17 +37,10 @@
               </template>
             </Suspense>
           </div>
-          <template v-else>
-            <Welcome />
-          </template>
+        </div>
+        <template v-else>
+          <Welcome />
         </template>
-
-        <Suspense>
-          <AIChatToSQL
-            v-if="tab && !isDisconnected && showAIChatBox"
-            @apply-statement="handleApplyStatement"
-          />
-        </Suspense>
 
         <ExecutingHintModal />
 
@@ -65,11 +68,10 @@ import { useExecuteSQL } from "@/composables/useExecuteSQL";
 import { AIChatToSQL } from "@/plugins/ai";
 import {
   useConnectionOfCurrentSQLEditorTab,
-  useDatabaseV1Store,
   useSQLEditorTabStore,
 } from "@/store";
-import type { SQLEditorConnection, SQLEditorQueryParams } from "@/types";
-import { instanceV1HasReadonlyMode, nextAnimationFrame } from "@/utils";
+import type { SQLEditorQueryParams } from "@/types";
+import { instanceV1HasReadonlyMode } from "@/utils";
 import {
   EditorAction,
   ExecutingHintModal,
@@ -84,8 +86,8 @@ const SQLEditor = defineAsyncComponent(() => import("./SQLEditor.vue"));
 
 const tabStore = useSQLEditorTabStore();
 const { currentTab: tab, isDisconnected } = storeToRefs(tabStore);
-const { showAIChatBox } = useSQLEditorContext();
 const { instance } = useConnectionOfCurrentSQLEditorTab();
+const { showAIPanel } = useSQLEditorContext();
 
 const allowReadonlyMode = computed(() => {
   if (isDisconnected.value) return false;
@@ -99,27 +101,27 @@ const handleExecute = (params: SQLEditorQueryParams) => {
   execute(params);
 };
 
-const handleApplyStatement = async (
-  statement: string,
-  connection: SQLEditorConnection,
-  run: boolean
-) => {
-  if (!tab.value) {
-    return;
-  }
-  tab.value.statement = statement;
-  if (run) {
-    await nextAnimationFrame();
-    const database = useDatabaseV1Store().getDatabaseByName(
-      connection.database
-    );
-    handleExecute({
-      connection,
-      statement,
-      engine: database.instanceResource.engine,
-      explain: false,
-      selection: tab.value.editorState.selection,
-    });
-  }
-};
+// const handleApplyStatement = async (
+//   statement: string,
+//   connection: SQLEditorConnection,
+//   run: boolean
+// ) => {
+//   if (!tab.value) {
+//     return;
+//   }
+//   tab.value.statement = statement;
+//   if (run) {
+//     await nextAnimationFrame();
+//     const database = useDatabaseV1Store().getDatabaseByName(
+//       connection.database
+//     );
+//     handleExecute({
+//       connection,
+//       statement,
+//       engine: database.instanceResource.engine,
+//       explain: false,
+//       selection: tab.value.editorState.selection,
+//     });
+//   }
+// };
 </script>
