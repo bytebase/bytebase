@@ -91,7 +91,7 @@ service PlanService {
 
   rpc PreviewPlan(PreviewPlanRequest) returns (PreviewPlanResponse) {
     option (google.api.http) = {
-      post: "/v1/{project=projects/*}/:previewPlan"
+      post: "/v1/{project=projects/*}:previewPlan"
       body: "*"
     };
   }

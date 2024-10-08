@@ -2057,6 +2057,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.Plan.ReleaseSource"><span class="badge">M</span>Plan.ReleaseSource</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.Plan.Spec"><span class="badge">M</span>Plan.Spec</a>
                 </li>
               
@@ -2082,6 +2086,14 @@
               
                 <li>
                   <a href="#bytebase.v1.PlanCheckRun.Result.SqlSummaryReport"><span class="badge">M</span>PlanCheckRun.Result.SqlSummaryReport</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.PreviewPlanRequest"><span class="badge">M</span>PreviewPlanRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.PreviewPlanResponse"><span class="badge">M</span>PreviewPlanResponse</a>
                 </li>
               
                 <li>
@@ -21865,6 +21877,13 @@ Keys are:
 - ERROR </p></td>
                 </tr>
               
+                <tr>
+                  <td>release_source</td>
+                  <td><a href="#bytebase.v1.Plan.ReleaseSource">Plan.ReleaseSource</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -22175,6 +22194,31 @@ Leave it empty if no needs to encrypt the zip file. </p></td>
                   <td><a href="#int32">int32</a></td>
                   <td></td>
                   <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.Plan.ReleaseSource">Plan.ReleaseSource</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>release</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The release.
+Format: projects/{project}/releases/{release} </p></td>
                 </tr>
               
             </tbody>
@@ -22543,6 +22587,96 @@ To supersede `line` and `column` above. </p></td>
                   <td><a href="#bytebase.v1.ChangedResources">ChangedResources</a></td>
                   <td></td>
                   <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.PreviewPlanRequest">PreviewPlanRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>project</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of the project.
+Format: projects/{project} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>release</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The release used for preview. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>targets</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
+                  <td><p>The targets to deploy.
+Can be database or databaseGroup.
+Format:
+projects/{project}/databaseGroups/{databaseGroup}
+instances/{instance}/databases/{database} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>allow_out_of_order</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.PreviewPlanResponse">PreviewPlanResponse</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>plan</td>
+                  <td><a href="#bytebase.v1.Plan">Plan</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>out_of_order_files</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
+                  <td><p>Format: projects/{project}/releases/{release}/files/{path}
+Example: `projects/tnt/releases/0801/files/2.2/V0001_create_table.sql` </p></td>
+                </tr>
+              
+                <tr>
+                  <td>applied_but_modified_files</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
+                  <td><p>Format: projects/{project}/releases/{release}/files/{path}
+Example: `projects/tnt/releases/0801/files/2.2/V0001_create_table.sql` </p></td>
                 </tr>
               
             </tbody>
@@ -22947,6 +23081,13 @@ The plan creator and the user with bb.plans.update permission on the project can
                 <td><p></p></td>
               </tr>
             
+              <tr>
+                <td>PreviewPlan</td>
+                <td><a href="#bytebase.v1.PreviewPlanRequest">PreviewPlanRequest</a></td>
+                <td><a href="#bytebase.v1.PreviewPlanResponse">PreviewPlanResponse</a></td>
+                <td><p></p></td>
+              </tr>
+            
           </tbody>
         </table>
 
@@ -23041,6 +23182,16 @@ The plan creator and the user with bb.plans.update permission on the project can
                 <td>BatchCancelPlanCheckRuns</td>
                 <td>POST</td>
                 <td>/v1/{parent=projects/*/plans/*}/planCheckRuns:batchCancel</td>
+                <td>*</td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>PreviewPlan</td>
+                <td>POST</td>
+                <td>/v1/{project=projects/*}:previewPlan</td>
                 <td>*</td>
               </tr>
               
