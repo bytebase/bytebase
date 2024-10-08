@@ -1,5 +1,8 @@
 <template>
-  <div class="flex items-center overflow-hidden h-[22px]">
+  <div
+    v-if="!ready || suggestions.length > 0"
+    class="flex items-center overflow-hidden h-[22px]"
+  >
     <template v-if="dynamicSuggestions && !ready">
       <BBSpin :size="20" class="mr-2" />
       <span class="text-sm">{{

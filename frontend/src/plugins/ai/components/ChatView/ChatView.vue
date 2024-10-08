@@ -1,5 +1,5 @@
 <template>
-  <div ref="scrollerRef" class="flex-1 py-4 overflow-y-auto">
+  <div ref="scrollerRef" class="flex-1 py-2 overflow-y-auto">
     <template v-if="conversation">
       <template v-if="conversation.messageList.length === 0">
         <EmptyView v-if="mode === 'VIEW'" />
@@ -7,7 +7,7 @@
       <div
         v-else
         ref="containerRef"
-        class="flex flex-col justify-end px-4 gap-y-8"
+        class="flex flex-col justify-end px-2 gap-y-4"
       >
         <div
           v-for="message in conversation?.messageList"

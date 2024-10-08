@@ -2,14 +2,14 @@
   <Splitpanes
     v-if="!tab || tab.mode === 'WORKSHEET'"
     horizontal
-    class="default-theme"
+    class="default-theme overflow-hidden"
     :dbl-click-splitter="false"
   >
     <Pane class="flex flex-col overflow-hidden justify-start items-stretch">
       <template v-if="isDisconnected || allowReadonlyMode">
         <EditorAction @execute="handleExecute" />
 
-        <Splitpanes v-if="tab" class="default-theme">
+        <Splitpanes v-if="tab" class="default-theme overflow-hidden">
           <Pane class="">
             <Suspense>
               <SQLEditor @execute="handleExecute" />

@@ -8,9 +8,11 @@
     <ChatView :conversation="selectedConversation" @enter="requestAI" />
 
     <div class="px-2 pb-2 flex flex-col gap-2">
-      <div class="flex items-center gap-2 w-full">
-        <DynamicSuggestions class="flex-1" @enter="requestAI" />
-      </div>
+      <DynamicSuggestions
+        v-if="false"
+        class="flex-1 w-full"
+        @enter="requestAI"
+      />
       <PromptInput v-if="tab" @enter="requestAI" />
     </div>
 
