@@ -470,6 +470,9 @@ message SchemaMetadata {
 
   // The materialized_views is the list of materialized views in a schema.
   repeated MaterializedViewMetadata materialized_views = 9;
+
+  // The packages is the list of packages in a schema.
+  repeated PackageMetadata packages = 10;
 }
 
 message ExternalTableMetadata {
@@ -716,6 +719,15 @@ message ProcedureMetadata {
   string name = 1;
 
   // The definition is the definition of a procedure.
+  string definition = 2;
+}
+
+// PackageMetadata is the metadata for packages.
+message PackageMetadata {
+  // The name is the name of a package.
+  string name = 1;
+
+  // The definition is the definition of a package.
   string definition = 2;
 }
 

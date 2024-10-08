@@ -320,6 +320,7 @@ func NewDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata) *DatabaseMeta
 			internalMaterializedView: make(map[string]*MaterializedViewMetadata),
 			internalFunctions:        make([]*FunctionMetadata, 0),
 			internalProcedures:       make(map[string]*ProcedureMetadata),
+			internalPackages:         make(map[string]*PackageMetadata),
 			internalSequences:        make(map[string]*SequenceMetadata),
 			proto:                    schema,
 		}
@@ -360,6 +361,12 @@ func NewDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata) *DatabaseMeta
 			schemaMetadata.internalProcedures[procedure.Name] = &ProcedureMetadata{
 				Definition: procedure.Definition,
 				proto:      procedure,
+			}
+		}
+		for _, p := range schema.Packages {
+			schemaMetadata.internalPackages[p.Name] = &PackageMetadata{
+				Definition: p.Definition,
+				proto:      p,
 			}
 		}
 		for _, sequence := range schema.Sequences {
@@ -430,6 +437,7 @@ type SchemaMetadata struct {
 	internalFunctions  []*FunctionMetadata
 	internalProcedures map[string]*ProcedureMetadata
 	internalSequences  map[string]*SequenceMetadata
+	internalPackages   map[string]*PackageMetadata
 
 	proto *storepb.SchemaMetadata
 }
@@ -456,6 +464,10 @@ func (s *SchemaMetadata) GetView(name string) *ViewMetadata {
 
 func (s *SchemaMetadata) GetProcedure(name string) *ProcedureMetadata {
 	return s.internalProcedures[name]
+}
+
+func (s *SchemaMetadata) GetPackage(name string) *PackageMetadata {
+	return s.internalPackages[name]
 }
 
 // GetMaterializedView gets the materialized view by name.
@@ -745,6 +757,15 @@ type ProcedureMetadata struct {
 }
 
 func (p *ProcedureMetadata) GetProto() *storepb.ProcedureMetadata {
+	return p.proto
+}
+
+type PackageMetadata struct {
+	Definition string
+	proto      *storepb.PackageMetadata
+}
+
+func (p *PackageMetadata) GetProto() *storepb.PackageMetadata {
 	return p.proto
 }
 

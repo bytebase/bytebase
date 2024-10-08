@@ -128,6 +128,7 @@
     - [ListSlowQueriesRequest](#bytebase-v1-ListSlowQueriesRequest)
     - [ListSlowQueriesResponse](#bytebase-v1-ListSlowQueriesResponse)
     - [MaterializedViewMetadata](#bytebase-v1-MaterializedViewMetadata)
+    - [PackageMetadata](#bytebase-v1-PackageMetadata)
     - [ProcedureConfig](#bytebase-v1-ProcedureConfig)
     - [ProcedureMetadata](#bytebase-v1-ProcedureMetadata)
     - [Revision](#bytebase-v1-Revision)
@@ -2637,6 +2638,22 @@ MaterializedViewMetadata is the metadata for materialized views.
 
 
 
+<a name="bytebase-v1-PackageMetadata"></a>
+
+### PackageMetadata
+PackageMetadata is the metadata for packages.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name is the name of a package. |
+| definition | [string](#string) |  | The definition is the definition of a package. |
+
+
+
+
+
+
 <a name="bytebase-v1-ProcedureConfig"></a>
 
 ### ProcedureConfig
@@ -2732,6 +2749,7 @@ This is the concept of schema in Postgres, but it&#39;s a no-op for MySQL.
 | streams | [StreamMetadata](#bytebase-v1-StreamMetadata) | repeated | The streams is the list of streams in a schema, currently, only used for Snowflake. |
 | tasks | [TaskMetadata](#bytebase-v1-TaskMetadata) | repeated | The routines is the list of routines in a schema, currently, only used for Snowflake. |
 | materialized_views | [MaterializedViewMetadata](#bytebase-v1-MaterializedViewMetadata) | repeated | The materialized_views is the list of materialized views in a schema. |
+| packages | [PackageMetadata](#bytebase-v1-PackageMetadata) | repeated | The packages is the list of packages in a schema. |
 
 
 

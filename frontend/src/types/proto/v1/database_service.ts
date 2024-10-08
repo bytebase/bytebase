@@ -438,6 +438,8 @@ export interface SchemaMetadata {
   tasks: TaskMetadata[];
   /** The materialized_views is the list of materialized views in a schema. */
   materializedViews: MaterializedViewMetadata[];
+  /** The packages is the list of packages in a schema. */
+  packages: PackageMetadata[];
 }
 
 export interface ExternalTableMetadata {
@@ -788,6 +790,14 @@ export interface ProcedureMetadata {
   /** The name is the name of a procedure. */
   name: string;
   /** The definition is the definition of a procedure. */
+  definition: string;
+}
+
+/** PackageMetadata is the metadata for packages. */
+export interface PackageMetadata {
+  /** The name is the name of a package. */
+  name: string;
+  /** The definition is the definition of a package. */
   definition: string;
 }
 
@@ -3383,6 +3393,7 @@ function createBaseSchemaMetadata(): SchemaMetadata {
     streams: [],
     tasks: [],
     materializedViews: [],
+    packages: [],
   };
 }
 
@@ -3414,6 +3425,9 @@ export const SchemaMetadata: MessageFns<SchemaMetadata> = {
     }
     for (const v of message.materializedViews) {
       MaterializedViewMetadata.encode(v!, writer.uint32(74).fork()).join();
+    }
+    for (const v of message.packages) {
+      PackageMetadata.encode(v!, writer.uint32(82).fork()).join();
     }
     return writer;
   },
@@ -3488,6 +3502,13 @@ export const SchemaMetadata: MessageFns<SchemaMetadata> = {
 
           message.materializedViews.push(MaterializedViewMetadata.decode(reader, reader.uint32()));
           continue;
+        case 10:
+          if (tag !== 82) {
+            break;
+          }
+
+          message.packages.push(PackageMetadata.decode(reader, reader.uint32()));
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3517,6 +3538,9 @@ export const SchemaMetadata: MessageFns<SchemaMetadata> = {
       tasks: globalThis.Array.isArray(object?.tasks) ? object.tasks.map((e: any) => TaskMetadata.fromJSON(e)) : [],
       materializedViews: globalThis.Array.isArray(object?.materializedViews)
         ? object.materializedViews.map((e: any) => MaterializedViewMetadata.fromJSON(e))
+        : [],
+      packages: globalThis.Array.isArray(object?.packages)
+        ? object.packages.map((e: any) => PackageMetadata.fromJSON(e))
         : [],
     };
   },
@@ -3550,6 +3574,9 @@ export const SchemaMetadata: MessageFns<SchemaMetadata> = {
     if (message.materializedViews?.length) {
       obj.materializedViews = message.materializedViews.map((e) => MaterializedViewMetadata.toJSON(e));
     }
+    if (message.packages?.length) {
+      obj.packages = message.packages.map((e) => PackageMetadata.toJSON(e));
+    }
     return obj;
   },
 
@@ -3567,6 +3594,7 @@ export const SchemaMetadata: MessageFns<SchemaMetadata> = {
     message.streams = object.streams?.map((e) => StreamMetadata.fromPartial(e)) || [];
     message.tasks = object.tasks?.map((e) => TaskMetadata.fromPartial(e)) || [];
     message.materializedViews = object.materializedViews?.map((e) => MaterializedViewMetadata.fromPartial(e)) || [];
+    message.packages = object.packages?.map((e) => PackageMetadata.fromPartial(e)) || [];
     return message;
   },
 };
@@ -5040,6 +5068,80 @@ export const ProcedureMetadata: MessageFns<ProcedureMetadata> = {
   },
   fromPartial(object: DeepPartial<ProcedureMetadata>): ProcedureMetadata {
     const message = createBaseProcedureMetadata();
+    message.name = object.name ?? "";
+    message.definition = object.definition ?? "";
+    return message;
+  },
+};
+
+function createBasePackageMetadata(): PackageMetadata {
+  return { name: "", definition: "" };
+}
+
+export const PackageMetadata: MessageFns<PackageMetadata> = {
+  encode(message: PackageMetadata, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    if (message.definition !== "") {
+      writer.uint32(18).string(message.definition);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): PackageMetadata {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBasePackageMetadata();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.definition = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): PackageMetadata {
+    return {
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      definition: isSet(object.definition) ? globalThis.String(object.definition) : "",
+    };
+  },
+
+  toJSON(message: PackageMetadata): unknown {
+    const obj: any = {};
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.definition !== "") {
+      obj.definition = message.definition;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<PackageMetadata>): PackageMetadata {
+    return PackageMetadata.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<PackageMetadata>): PackageMetadata {
+    const message = createBasePackageMetadata();
     message.name = object.name ?? "";
     message.definition = object.definition ?? "";
     return message;
