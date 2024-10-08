@@ -96,6 +96,16 @@ func convertStoreDatabaseMetadata(ctx context.Context, metadata *storepb.Databas
 			}
 			s.Procedures = append(s.Procedures, v1Procedure)
 		}
+		for _, p := range schema.Packages {
+			if p == nil {
+				continue
+			}
+			v1Package := &v1pb.PackageMetadata{
+				Name:       p.Name,
+				Definition: p.Definition,
+			}
+			s.Packages = append(s.Packages, v1Package)
+		}
 		for _, task := range schema.Tasks {
 			if task == nil {
 				continue
@@ -511,6 +521,16 @@ func convertV1DatabaseMetadata(ctx context.Context, metadata *v1pb.DatabaseMetad
 				Definition: procedure.Definition,
 			}
 			s.Procedures = append(s.Procedures, storeProcedure)
+		}
+		for _, p := range schema.Packages {
+			if p == nil {
+				continue
+			}
+			storePackage := &storepb.PackageMetadata{
+				Name:       p.Name,
+				Definition: p.Definition,
+			}
+			s.Packages = append(s.Packages, storePackage)
 		}
 		for _, task := range schema.Tasks {
 			if task == nil {

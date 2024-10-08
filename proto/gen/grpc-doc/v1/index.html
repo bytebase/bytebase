@@ -662,6 +662,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.PackageMetadata"><span class="badge">M</span>PackageMetadata</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.ProcedureConfig"><span class="badge">M</span>ProcedureConfig</a>
                 </li>
               
@@ -7955,6 +7959,37 @@ Default: order by average_query_time desc. </p></td>
 
         
       
+        <h3 id="bytebase.v1.PackageMetadata">PackageMetadata</h3>
+        <p>PackageMetadata is the metadata for packages.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name is the name of a package. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>definition</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The definition is the definition of a package. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.ProcedureConfig">ProcedureConfig</h3>
         <p></p>
 
@@ -8250,6 +8285,13 @@ It is an empty string for databases without such concept such as MySQL. </p></td
                   <td><a href="#bytebase.v1.MaterializedViewMetadata">MaterializedViewMetadata</a></td>
                   <td>repeated</td>
                   <td><p>The materialized_views is the list of materialized views in a schema. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>packages</td>
+                  <td><a href="#bytebase.v1.PackageMetadata">PackageMetadata</a></td>
+                  <td>repeated</td>
+                  <td><p>The packages is the list of packages in a schema. </p></td>
                 </tr>
               
             </tbody>

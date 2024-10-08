@@ -131,6 +131,23 @@ func equalSchema(s, t *storepb.SchemaMetadata) bool {
 		}
 	}
 
+	if len(s.GetPackages()) != len(t.GetPackages()) {
+		return false
+	}
+	oldPackageMap := make(map[string]*storepb.PackageMetadata)
+	for _, p := range s.GetPackages() {
+		oldPackageMap[p.GetName()] = p
+	}
+	for _, p := range t.GetPackages() {
+		oldPackage, ok := oldPackageMap[p.GetName()]
+		if !ok {
+			return false
+		}
+		if oldPackage.GetDefinition() != p.GetDefinition() {
+			return false
+		}
+	}
+
 	return true
 }
 
