@@ -6,6 +6,7 @@
       :database-group-list="dbGroupList"
       :custom-click="true"
       :loading="!ready"
+      :show-actions="true"
       @row-click="handleDatabaseGroupClick"
     />
   </div>
