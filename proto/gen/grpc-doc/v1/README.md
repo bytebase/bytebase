@@ -7314,12 +7314,14 @@ The identity provider&#39;s `name` field is used to identify the identity provid
 <a name="bytebase-v1-DataSourceQueryPolicy"></a>
 
 ### DataSourceQueryPolicy
-
+DataSourceQueryPolicy is the policy configuration for running statements in the SQL editor.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | admin_data_source_restriction | [DataSourceQueryPolicy.Restriction](#bytebase-v1-DataSourceQueryPolicy-Restriction) |  |  |
+| enable_ddl | [bool](#bool) |  | Allow running DDL statements in the SQL editor. |
+| enable_dml | [bool](#bool) |  | Allow running DML statements in the SQL editor. |
 
 
 

@@ -20270,7 +20270,7 @@ Database resource name: instances/instance-id/databases/database-name. </p></td>
         
       
         <h3 id="bytebase.v1.DataSourceQueryPolicy">DataSourceQueryPolicy</h3>
-        <p></p>
+        <p>DataSourceQueryPolicy is the policy configuration for running statements in the SQL editor.</p>
 
         
           <table class="field-table">
@@ -20284,6 +20284,20 @@ Database resource name: instances/instance-id/databases/database-name. </p></td>
                   <td><a href="#bytebase.v1.DataSourceQueryPolicy.Restriction">DataSourceQueryPolicy.Restriction</a></td>
                   <td></td>
                   <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>enable_ddl</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>Allow running DDL statements in the SQL editor. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>enable_dml</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>Allow running DML statements in the SQL editor. </p></td>
                 </tr>
               
             </tbody>
