@@ -158,11 +158,11 @@ import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
 import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
 import {
   TinyTimer,
+  allowGhostMigrationV1,
   defer,
   extractProjectResourceName,
   generateIssueTitle,
 } from "@/utils";
-import { allowGhostForDatabase } from "../IssueV1/components/Sidebar/GhostSection/common";
 import { MonacoEditor } from "../MonacoEditor";
 import { provideSQLCheckContext } from "../SQLCheck";
 import type { EditTarget, GenerateDiffDDLResult } from "../SchemaEditorLite";
@@ -270,7 +270,7 @@ const editTargetsKey = computed(() => {
 const allowUseOnlineSchemaMigration = computed(() => {
   return (
     databaseChangeMode.value === DatabaseChangeMode.PIPELINE &&
-    databaseList.value.every((db) => allowGhostForDatabase(db))
+    allowGhostMigrationV1(databaseList.value)
   );
 });
 

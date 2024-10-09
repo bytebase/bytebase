@@ -1,21 +1,17 @@
 import { orderBy } from "lodash-es";
-import {
-  checkQuerierPermission,
-  hasFeature,
-  useSubscriptionV1Store,
-} from "@/store";
+import { allowGhostForDatabase } from "@/components/IssueV1/components/Sidebar/GhostSection/common";
+import { checkQuerierPermission, hasFeature } from "@/store";
 import {
   databaseNamePrefix,
   instanceNamePrefix,
 } from "@/store/modules/v1/common";
 import { UNKNOWN_ID } from "@/types";
 import type { ComposedDatabase } from "@/types";
-import { Engine, State } from "@/types/proto/v1/common";
+import { State } from "@/types/proto/v1/common";
 import {
   hasPermissionToCreateChangeDatabaseIssue,
   hasWorkspacePermissionV2,
 } from "../iam";
-import { semverCompare } from "../util";
 import { extractProjectResourceName } from "./project";
 
 export const databaseV1Url = (db: ComposedDatabase) => {
@@ -156,22 +152,10 @@ export function filterDatabaseV1ByKeyword(
 
 export const MIN_GHOST_SUPPORT_MYSQL_VERSION = "5.6.0";
 
+export const MIN_GHOST_SUPPORT_MARIADB_VERSION = "10.6.0";
+
 export function allowGhostMigrationV1(
   databaseList: ComposedDatabase[]
 ): boolean {
-  const subscriptionV1Store = useSubscriptionV1Store();
-  return databaseList.every((db) => {
-    return (
-      db.instanceResource.engine === Engine.MYSQL &&
-      subscriptionV1Store.hasInstanceFeature(
-        "bb.feature.online-migration",
-        db.instanceResource
-      ) &&
-      semverCompare(
-        db.instanceResource.engineVersion,
-        MIN_GHOST_SUPPORT_MYSQL_VERSION,
-        "gte"
-      )
-    );
-  });
+  return databaseList.every((db) => allowGhostForDatabase(db));
 }
