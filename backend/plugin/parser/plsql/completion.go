@@ -1085,7 +1085,7 @@ func skipHeadingSQLs(statement string, caretLine int, caretOffset int) (string, 
 			start = i
 			if i == 0 {
 				// The caret is in the first SQL statement, so we don't need to skip any SQL statement.
-				continue
+				break
 			}
 			newCaretLine = caretLine - list[i-1].LastLine + 1 // Convert to 1-based.
 			if caretLine == list[i-1].LastLine {
