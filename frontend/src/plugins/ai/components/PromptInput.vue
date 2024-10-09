@@ -3,7 +3,6 @@
     v-model:value="state.value"
     :disabled="disabled"
     :placeholder="$t('plugin.ai.text-to-sql-placeholder')"
-    type="textarea"
     :autosize="{
       minRows: 1,
       maxRows: 10,
@@ -11,13 +10,16 @@
     :input-props="{
       style: 'box-shadow: none !important',
     }"
+    size="small"
+    type="textarea"
+    style="--n-padding-right: 4px"
     @keypress.enter="handlePressEnter"
   >
     <template #prefix>
       <heroicons-outline:sparkles class="w-4 h-4 text-accent" />
     </template>
     <template #suffix>
-      <NPopover placement="bottom" style="--n-padding: 4px 6px">
+      <NPopover placement="bottom" style="--n-padding: 6px 8px">
         <template #trigger>
           <NButton
             :quaternary="true"
@@ -30,7 +32,7 @@
           </NButton>
         </template>
         <template #default>
-          <div class="text-sm">
+          <div class="text-xs flex flex-col gap-1">
             <p class="flex items-center gap-1">
               <span>{{ $t("plugin.ai.send") }}</span>
               <span>({{ keyboardShortcutStr("⏎") }})</span>
