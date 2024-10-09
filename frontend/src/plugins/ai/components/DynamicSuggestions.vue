@@ -21,21 +21,22 @@
             v-for="(sug, i) in suggestions"
             :key="i"
             style="max-width: 20rem"
-            class="border shrink-0 py-0.5 px-2 cursor-pointer hover:bg-indigo-100 hover:border-indigo-500"
+            class="border rounded-sm shrink-0 py-0.5 px-2 cursor-pointer hover:bg-indigo-100 hover:border-indigo-500"
             @click.capture="consume(sug)"
           >
             {{ sug }}
           </NEllipsis>
 
           <div class="shrink-0 flex items-center">
-            <BBSpin v-if="state === 'LOADING'" :size="20" />
-            <button
+            <BBSpin v-if="state === 'LOADING'" :size="16" />
+            <NButton
               v-if="state === 'IDLE'"
-              class="text-gray-500 cursor-pointer py-0.5 px-1 rounded-md hover:bg-gray-200"
+              size="tiny"
+              quaternary
               @click="dynamicSuggestions?.fetch()"
             >
               {{ $t("plugin.ai.conversation.tips.more") }}
-            </button>
+            </NButton>
             <span v-if="state === 'ENDED'" class="text-gray-500">
               {{ $t("plugin.ai.conversation.tips.no-more") }}
             </span>
@@ -47,7 +48,7 @@
 </template>
 
 <script lang="ts" setup>
-import { NEllipsis } from "naive-ui";
+import { NButton, NEllipsis } from "naive-ui";
 import { computed } from "vue";
 import { BBSpin } from "@/bbkit";
 import { useDynamicSuggestions } from "../logic";

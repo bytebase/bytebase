@@ -10,14 +10,12 @@
     ]"
   >
     <Markdown v-if="message.status === 'DONE'" :content="message.content" />
-    <template v-else-if="message.status === 'LOADING'">
-      <BBSpin class="mx-1" />
-    </template>
+    <div v-else-if="message.status === 'LOADING'" class="flex items-center">
+      <BBSpin class="mx-1" :size="18" />
+    </div>
     <template v-else>
       <div class="text-warning flex items-center gap-x-1">
-        <heroicons-outline:exclaimation-triangle
-          class="inline-block w-4 h-4 shrink-0"
-        />
+        <TriangleAlertIcon class="inline-block w-4 h-4 shrink-0" />
         <span class="text-sm">
           {{ message.error }}
         </span>
@@ -27,6 +25,7 @@
 </template>
 
 <script lang="ts" setup>
+import { TriangleAlertIcon } from "lucide-vue-next";
 import { BBSpin } from "@/bbkit";
 import type { Message } from "../../types";
 import Markdown from "./Markdown";

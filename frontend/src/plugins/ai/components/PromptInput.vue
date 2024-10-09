@@ -12,11 +12,11 @@
     }"
     size="small"
     type="textarea"
-    style="--n-padding-right: 4px"
+    style="--n-padding-left: 8px; --n-padding-right: 4px;"
     @keypress.enter="handlePressEnter"
   >
     <template #prefix>
-      <heroicons-outline:sparkles class="w-4 h-4 text-accent" />
+      <heroicons-outline:sparkles class="w-3.5 h-3.5 text-accent" />
     </template>
     <template #suffix>
       <NPopover placement="bottom" style="--n-padding: 6px 8px">
@@ -26,6 +26,7 @@
             :disabled="!state.value"
             type="primary"
             size="small"
+            style="--n-padding: 0 6px;"
             @click="handlePressEnter()"
           >
             ⏎

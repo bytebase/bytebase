@@ -35,7 +35,7 @@
             class="inline-flex items-center justify-center hover:text-accent cursor-pointer"
             @click="handleExecute"
           >
-            <heroicons:play-circle class="w-4 h-4" />
+            <PlayIcon class="w-3.5 h-3.5" />
           </button>
         </template>
         <div class="whitespace-nowrap">
@@ -48,7 +48,7 @@
             class="inline-flex items-center justify-center hover:text-accent cursor-pointer"
             @click="handleCopy"
           >
-            <heroicons:clipboard class="w-4 h-4" />
+            <ClipboardIcon class="w-3.5 h-3.5" />
           </button>
         </template>
         <div class="whitespace-nowrap">
@@ -60,6 +60,7 @@
 </template>
 
 <script lang="ts" setup>
+import { ClipboardIcon, PlayIcon } from "lucide-vue-next";
 import { NPopover } from "naive-ui";
 import { useI18n } from "vue-i18n";
 import { MonacoEditor } from "@/components/MonacoEditor";
