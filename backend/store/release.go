@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -24,11 +25,13 @@ type ReleaseMessage struct {
 }
 
 type FindReleaseMessage struct {
-	ProjectUID int
+	ProjectUID *int
+	UID        *int64
 	Limit      *int
 	Offset     *int
 }
 
+// TODO(p0ny): enforce file order by version.
 func (s *Store) CreateRelease(ctx context.Context, release *ReleaseMessage, creatorUID int) (*ReleaseMessage, error) {
 	query := `
 		INSERT INTO release (
@@ -74,8 +77,32 @@ func (s *Store) CreateRelease(ctx context.Context, release *ReleaseMessage, crea
 	return release, nil
 }
 
+func (s *Store) GetRelease(ctx context.Context, uid int64) (*ReleaseMessage, error) {
+	releases, err := s.ListReleases(ctx, &FindReleaseMessage{UID: &uid})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to list releases")
+	}
+	if len(releases) == 0 {
+		return nil, nil
+	}
+	if len(releases) > 1 {
+		return nil, errors.Errorf("found %d releases with uid=%v, expect 1", len(releases), uid)
+	}
+	return releases[0], nil
+}
+
 func (s *Store) ListReleases(ctx context.Context, find *FindReleaseMessage) ([]*ReleaseMessage, error) {
-	query := `
+	where, args := []string{"TRUE"}, []any{}
+	if v := find.ProjectUID; v != nil {
+		where = append(where, fmt.Sprintf("release.project_id = $%d", len(args)+1))
+		args = append(args, *v)
+	}
+	if v := find.UID; v != nil {
+		where = append(where, fmt.Sprintf("release.id= $%d", len(args)+1))
+		args = append(args, *v)
+	}
+
+	query := fmt.Sprintf(`
 		SELECT
 			id,
 			project_id,
@@ -83,8 +110,9 @@ func (s *Store) ListReleases(ctx context.Context, find *FindReleaseMessage) ([]*
 			created_ts,
 			payload
 		FROM release
-		WHERE project_id = $1
-	`
+		WHERE %s
+	`, strings.Join(where, " AND "))
+
 	if v := find.Limit; v != nil {
 		query += fmt.Sprintf(" LIMIT %d", *v)
 	}
@@ -98,7 +126,7 @@ func (s *Store) ListReleases(ctx context.Context, find *FindReleaseMessage) ([]*
 	}
 	defer tx.Rollback()
 
-	rows, err := tx.QueryContext(ctx, query, find.ProjectUID)
+	rows, err := tx.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to query rows")
 	}
