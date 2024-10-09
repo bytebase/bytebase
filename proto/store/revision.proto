@@ -15,8 +15,8 @@ message RevisionPayload {
   // The sheet that holds the content.
   // Format: projects/{project}/sheets/{sheet}
   string sheet = 2 [(google.api.resource_reference) = {type: "bytebase.com/Sheet"}];
-  // The SHA1 hash value of the sheet.
-  string sheet_sha1 = 3;
+  // The SHA256 hash value of the sheet.
+  string sheet_sha256 = 3;
 
   ReleaseFileType type = 4;
   string version = 5;
