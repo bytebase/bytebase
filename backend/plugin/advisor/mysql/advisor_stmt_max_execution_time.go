@@ -73,7 +73,6 @@ type maxExecutionTimeChecker struct {
 	adviceList []*storepb.Advice
 	level      storepb.Advice_Status
 	title      string
-	text       string
 }
 
 func (checker *maxExecutionTimeChecker) EnterSimpleStatement(ctx *mysql.SimpleStatementContext) {
