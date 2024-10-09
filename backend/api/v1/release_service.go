@@ -196,7 +196,6 @@ func convertToReleaseVcsSource(vs *storepb.ReleasePayload_VCSSource) *v1pb.Relea
 func convertReleaseFiles(ctx context.Context, s *store.Store, files []*v1pb.Release_File) ([]*storepb.ReleasePayload_File, error) {
 	var rFiles []*storepb.ReleasePayload_File
 	for _, f := range files {
-
 		_, sheetUID, err := common.GetProjectResourceIDSheetUID(f.Sheet)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get sheetUID from %q", f.Sheet)
