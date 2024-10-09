@@ -110,7 +110,7 @@ func (checker *tableCommentConventionChecker) EnterCreateTable(ctx *mysql.Create
 				Status:  checker.level,
 				Code:    advisor.CommentMissingClassification.Int32(),
 				Title:   checker.title,
-				Content: fmt.Sprintf("Tolumn `%s` comment requires classification", tableName),
+				Content: fmt.Sprintf("Table `%s` comment requires classification", tableName),
 				StartPosition: &storepb.Position{
 					Line: int32(checker.baseLine + ctx.GetStart().GetLine()),
 				},
