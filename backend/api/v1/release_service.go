@@ -93,7 +93,7 @@ func (s *ReleaseService) ListReleases(ctx context.Context, request *v1pb.ListRel
 	limitPlusOne := limit + 1
 
 	releaseFind := &store.FindReleaseMessage{
-		ProjectUID: project.UID,
+		ProjectUID: &project.UID,
 		Limit:      &limitPlusOne,
 		Offset:     &offset,
 	}
