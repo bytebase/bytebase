@@ -59,6 +59,7 @@ const (
 	StatementOfflineDDL                       Code = 232
 	StatementDisallowCrossDBQueries           Code = 233
 	StatementDisallowFunctionsAndCalculations Code = 234
+	StatementNoMaxExecutionTime               Code = 235
 
 	// 301 ～ 399 naming error code
 	// 301 table naming advisor error code.
@@ -446,6 +447,9 @@ const (
 
 	// MySQLStatementAddColumnWithoutPosition is an advisor type for MySQL checking no position in ADD COLUMN clause.
 	MySQLStatementAddColumnWithoutPosition Type = "bb.plugin.advisor.mysql.statement.add-column-without-position"
+
+	// MySQLStatementMaxExecutionTime is an advisor type for MySQL statement max execution time.
+	MySQLStatementMaxExecutionTime Type = "bb.plugin.advisor.mysql.statement.max-execution-time"
 
 	// MySQLProcedureDisallowCreate is an advisor type for MySQL disallow create procedure.
 	MySQLProcedureDisallowCreate Type = "bb.plugin.advisor.mysql.procedure.disallow-create"

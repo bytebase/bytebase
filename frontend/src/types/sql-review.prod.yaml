@@ -521,6 +521,12 @@ ruleList:
   - type: statement.disallow-cross-db-queries
     level: WARNING
     engine: MSSQL
+  - type: statement.max-execution-time
+    level: ERROR
+    engine: MYSQL
+  - type: statement.max-execution-time
+    level: ERROR
+    engine: MARIADB
   - type: naming.fully-qualified
     level: WARNING
     engine: POSTGRES
