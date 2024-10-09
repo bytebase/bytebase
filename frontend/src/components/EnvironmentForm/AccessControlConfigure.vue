@@ -69,6 +69,7 @@ import { computed, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import { hasFeature, pushNotification, usePolicyV1Store } from "@/store";
 import {
+  DataSourceQueryPolicy,
   DataSourceQueryPolicy_Restriction,
   PolicyType,
 } from "@/types/proto/v1/org_policy_service";
@@ -158,11 +159,15 @@ const switchDataSourceQueryPolicyEnabled = async (on: boolean) => {
 const updateAdminDataSourceQueryRestrctionPolicy = async (
   restrction: DataSourceQueryPolicy_Restriction
 ) => {
-  await policyStore.createPolicy(props.resource, {
-    type: PolicyType.DATA_SOURCE_QUERY,
-    dataSourceQueryPolicy: {
-      adminDataSourceRestriction: restrction,
+  await policyStore.upsertPolicy({
+    parentPath: props.resource,
+    policy: {
+      type: PolicyType.DATA_SOURCE_QUERY,
+      dataSourceQueryPolicy: DataSourceQueryPolicy.fromPartial({
+        adminDataSourceRestriction: restrction,
+      }),
     },
+    updateMask: [],
   });
   pushNotification({
     module: "bytebase",
