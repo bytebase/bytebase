@@ -1101,6 +1101,9 @@ func (s *PlanService) PreviewPlan(ctx context.Context, request *v1pb.PreviewPlan
 			return nil, errors.Errorf("database group %q not found", databaseGroupID)
 		}
 		matchedDatabases, _, err := utils.GetMatchedAndUnmatchedDatabasesInDatabaseGroup(ctx, databaseGroup, allDatabases)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to find matched databases")
+		}
 		for _, db := range matchedDatabases {
 			name := common.FormatDatabase(db.InstanceID, db.DatabaseName)
 			databasesToDeploy[name] = true
@@ -1175,7 +1178,6 @@ func getSpecs(database *store.DatabaseMessage, revisions []*store.RevisionMessag
 
 	for _, file := range release.Payload.Files {
 		r, ok := revisionByVersion[file.Version]
-
 		if ok {
 			// applied
 			if r.Payload.SheetSha1 != file.SheetSha1 {
@@ -1187,7 +1189,6 @@ func getSpecs(database *store.DatabaseMessage, revisions []*store.RevisionMessag
 		// not applied before
 		// 1. should be applied
 		// 2. out of order
-
 		if lastVersion != "" && lastVersion >= file.Version {
 			// out of order detected
 			continue
