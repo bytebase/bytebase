@@ -3,6 +3,7 @@ package v1
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"slices"
 	"sort"
@@ -10,6 +11,7 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -26,6 +28,7 @@ import (
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
+	"github.com/bytebase/bytebase/backend/utils"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
@@ -1030,4 +1033,179 @@ func (s *PlanService) getUserByIdentifier(ctx context.Context, identifier string
 		return nil, errors.Errorf("cannot found user %s", email)
 	}
 	return user, nil
+}
+
+func (s *PlanService) PreviewPlan(ctx context.Context, request *v1pb.PreviewPlanRequest) (*v1pb.PreviewPlanResponse, error) {
+	projectID, err := common.GetProjectID(request.Project)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "failed to get project from %v, err: %v", request.Project, err)
+	}
+
+	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{ResourceID: &projectID})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get project, err: %v", err)
+	}
+
+	releaseUID, err := common.GetReleaseUID(request.Release)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "failed to get releaseUID from %q, err: %v", request.Release, err)
+	}
+	release, err := s.store.GetRelease(ctx, releaseUID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get release, err: %v", err)
+	}
+	if release == nil {
+		return nil, status.Errorf(codes.NotFound, "release %q not found", request.Release)
+	}
+
+	allDatabases, err := s.store.ListDatabases(ctx, &store.FindDatabaseMessage{ProjectID: &projectID})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to list databases, err: %v", err)
+	}
+	allDatabasesByName := map[string]*store.DatabaseMessage{}
+
+	for _, db := range allDatabases {
+		name := common.FormatDatabase(db.InstanceID, db.DatabaseName)
+		allDatabasesByName[name] = db
+	}
+
+	var databaseTargets, databaseGroupTargets [][]string
+	for _, target := range request.Targets {
+		if instance, database, err := common.GetInstanceDatabaseID(target); err == nil {
+			databaseTargets = append(databaseTargets, []string{instance, database})
+		} else if projectID, databaseGroupID, err := common.GetProjectIDDatabaseGroupID(target); err == nil {
+			databaseGroupTargets = append(databaseGroupTargets, []string{projectID, databaseGroupID})
+		} else {
+			return nil, status.Errorf(codes.InvalidArgument, "unknown target %v", target)
+		}
+	}
+
+	databasesToDeploy := map[string]bool{}
+
+	for _, databaseTarget := range databaseTargets {
+		name := common.FormatDatabase(databaseTarget[0], databaseTarget[1])
+		databasesToDeploy[name] = true
+	}
+
+	for _, databaseGroupTarget := range databaseGroupTargets {
+		projectID, databaseGroupID := databaseGroupTarget[0], databaseGroupTarget[1]
+		if projectID != project.ResourceID {
+			return nil, status.Errorf(codes.InvalidArgument, "databaseGroup target projectID %q doesn't match the projectID of request.project %q", projectID, request.Project)
+		}
+
+		databaseGroup, err := s.store.GetDatabaseGroup(ctx, &store.FindDatabaseGroupMessage{ProjectUID: &project.UID, ResourceID: &databaseGroupID})
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get database group %q", databaseGroupID)
+		}
+		if databaseGroup == nil {
+			return nil, errors.Errorf("database group %q not found", databaseGroupID)
+		}
+		matchedDatabases, _, err := utils.GetMatchedAndUnmatchedDatabasesInDatabaseGroup(ctx, databaseGroup, allDatabases)
+		for _, db := range matchedDatabases {
+			name := common.FormatDatabase(db.InstanceID, db.DatabaseName)
+			databasesToDeploy[name] = true
+		}
+	}
+
+	var allSpecs []*v1pb.Plan_Spec
+	for database := range databasesToDeploy {
+		db, ok := allDatabasesByName[database]
+		if !ok {
+			continue
+		}
+		specs, err := s.getSpecsForDatabase(ctx, db, release)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to get specs for database, err: %v", err)
+		}
+		allSpecs = append(allSpecs, specs...)
+	}
+
+	// TODO(p0ny): prettify step/spec.
+	plan := &v1pb.Plan{
+		Title: fmt.Sprintf("preview plan from release %q", request.Release),
+		Steps: []*v1pb.Plan_Step{
+			{
+				Title: "flattened!",
+				Specs: allSpecs,
+			},
+		},
+		ReleaseSource: &v1pb.Plan_ReleaseSource{
+			Release: request.Release,
+		},
+	}
+
+	// TODO(p0ny): out of order migrations
+	return &v1pb.PreviewPlanResponse{
+		Plan: plan,
+	}, nil
+}
+
+func (s *PlanService) getSpecsForDatabase(ctx context.Context, database *store.DatabaseMessage, release *store.ReleaseMessage) ([]*v1pb.Plan_Spec, error) {
+	revisions, err := s.store.ListRevisions(ctx, &store.FindRevisionMessage{DatabaseUID: database.UID})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to list revisions")
+	}
+	return getSpecs(ctx, database, revisions, release)
+}
+
+func getSpecs(ctx context.Context, database *store.DatabaseMessage, revisions []*store.RevisionMessage, release *store.ReleaseMessage) ([]*v1pb.Plan_Spec, error) {
+	var specs []*v1pb.Plan_Spec
+
+	var lastVersion string
+	revisionByVersion := map[string]*store.RevisionMessage{}
+
+	for _, r := range revisions {
+		if lastVersion == "" {
+			lastVersion = r.Payload.Version
+		} else if lastVersion < r.Payload.Version {
+			lastVersion = r.Payload.Version
+		}
+		revisionByVersion[r.Payload.Version] = r
+	}
+
+	slices.SortFunc(release.Payload.Files, func(a, b *storepb.ReleasePayload_File) int {
+		if a.Version < b.Version {
+			return -1
+		}
+		if a.Version > b.Version {
+			return 1
+		}
+		return 0
+	})
+
+	for _, file := range release.Payload.Files {
+		r, ok := revisionByVersion[file.Version]
+
+		if ok {
+			// applied
+			if r.Payload.SheetSha1 != file.SheetSha1 {
+				// modified
+			}
+			continue
+		}
+
+		// not applied before
+		// 1. should be applied
+		// 2. out of order
+
+		if lastVersion != "" && lastVersion >= file.Version {
+			// out of order detected
+			continue
+		}
+
+		spec := &v1pb.Plan_Spec{
+			Id: uuid.NewString(),
+			Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
+				ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
+					Type:          v1pb.Plan_ChangeDatabaseConfig_MIGRATE,
+					Target:        common.FormatDatabase(database.InstanceID, database.DatabaseName),
+					Sheet:         file.Sheet,
+					SchemaVersion: file.Version,
+				},
+			},
+		}
+		specs = append(specs, spec)
+	}
+
+	return specs, nil
 }
