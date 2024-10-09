@@ -48,7 +48,6 @@ func (s *DatabaseService) ListRevisions(ctx context.Context, request *v1pb.ListR
 
 	find := &store.FindRevisionMessage{
 		DatabaseUID: database.UID,
-		InstanceUID: instance.UID,
 		Limit:       &limitPlusOne,
 		Offset:      &offset,
 	}
