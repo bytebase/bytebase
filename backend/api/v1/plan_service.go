@@ -1145,10 +1145,10 @@ func (s *PlanService) getSpecsForDatabase(ctx context.Context, database *store.D
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to list revisions")
 	}
-	return getSpecs(ctx, database, revisions, release)
+	return getSpecs(database, revisions, release)
 }
 
-func getSpecs(ctx context.Context, database *store.DatabaseMessage, revisions []*store.RevisionMessage, release *store.ReleaseMessage) ([]*v1pb.Plan_Spec, error) {
+func getSpecs(database *store.DatabaseMessage, revisions []*store.RevisionMessage, release *store.ReleaseMessage) ([]*v1pb.Plan_Spec, error) {
 	var specs []*v1pb.Plan_Spec
 
 	var lastVersion string
