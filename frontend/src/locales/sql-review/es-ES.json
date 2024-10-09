@@ -306,7 +306,7 @@
       "description": "Los tipos no signados no almacenan números negativos, y el rango de valores que pueden almacenar se duplica, lo que puede evitar que las columnas de autoincremento desborden. Nivel de error sugerido: Advertencia"
     },
     "column-comment": {
-      "title": "Convención de comentarios de tabla",
+      "title": "Convención de comentarios de columnas",
       "description": "Agregar comentarios a las columnas es una buena práctica de desarrollo, pero comentarios demasiado largos pueden disminuir la legibilidad del esquema. Nivel de error sugerido: Advertencia",
       "component": {
         "required": {

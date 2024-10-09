@@ -99,7 +99,7 @@ func (checker *tableCommentConventionChecker) Enter(in ast.Node) (ast.Node, bool
 					Status:  checker.level,
 					Code:    advisor.CommentMissingClassification.Int32(),
 					Title:   checker.title,
-					Content: fmt.Sprintf("Tolumn `%s` comment requires classification", node.Table.Name.O),
+					Content: fmt.Sprintf("Table `%s` comment requires classification", node.Table.Name.O),
 					StartPosition: &storepb.Position{
 						Line: int32(checker.line),
 					},
