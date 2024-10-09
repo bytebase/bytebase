@@ -1495,6 +1495,11 @@ ruleList:
     payload:
       number: 100000000
     engine: MYSQL
+  - type: advice.online-migration
+    level: ERROR
+    payload:
+      number: 100000000
+    engine: MARIADB
   - type: statement.add-foreign-key-not-valid
     level: WARNING
     engine: POSTGRES
