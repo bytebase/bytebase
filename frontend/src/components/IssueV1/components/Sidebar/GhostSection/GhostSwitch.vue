@@ -39,6 +39,7 @@ import { default as ErrorList } from "@/components/misc/ErrorList.vue";
 import { hasFeature } from "@/store";
 import { Engine } from "@/types/proto/v1/common";
 import {
+  MIN_GHOST_SUPPORT_MARIADB_VERSION,
   MIN_GHOST_SUPPORT_MYSQL_VERSION,
   engineNameV1,
   flattenTaskV1List,
@@ -87,9 +88,7 @@ const errors = computed(() => {
       )
     );
     errors.push({
-      error: `${engineNameV1(
-        Engine.MYSQL
-      )} >= ${MIN_GHOST_SUPPORT_MYSQL_VERSION}`,
+      error: `${engineNameV1(Engine.MYSQL)} >= ${MIN_GHOST_SUPPORT_MYSQL_VERSION}, ${engineNameV1(Engine.MARIADB)} >= ${MIN_GHOST_SUPPORT_MARIADB_VERSION}`,
       indent: 1,
     });
   }

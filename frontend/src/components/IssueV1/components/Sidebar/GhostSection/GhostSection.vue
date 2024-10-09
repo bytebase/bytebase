@@ -15,8 +15,9 @@
               class="whitespace-pre-line max-w-[20rem]"
             >
               <template #link>
+                <!-- TODO: update docs for mariadb -->
                 <LearnMoreLink
-                  url="https://www.bytebase.com/docs/change-database/online-schema-migration-for-mysql"
+                  url="https://www.bytebase.com/docs/change-database/online-schema-migration-for-mysql?source=console"
                   color="light"
                   hide-when-embedded
                 />
@@ -57,12 +58,15 @@ import FeatureBadgeForInstanceLicense from "@/components/FeatureGuard/FeatureBad
 import { databaseForTask, useIssueContext } from "@/components/IssueV1/logic";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import { featureToRef } from "@/store";
-import { Engine } from "@/types/proto/v1/common";
 import { flattenTaskV1List, isDatabaseChangeRelatedIssue } from "@/utils";
 import GhostConfigButton from "./GhostConfigButton.vue";
 import GhostFlagsPanel from "./GhostFlagsPanel.vue";
 import GhostSwitch from "./GhostSwitch.vue";
-import { ghostViewTypeForTask, provideIssueGhostContext } from "./common";
+import {
+  allowGhostForDatabase,
+  ghostViewTypeForTask,
+  provideIssueGhostContext,
+} from "./common";
 
 const { isCreating, issue, selectedTask: task } = useIssueContext();
 
@@ -79,12 +83,10 @@ const shouldShowGhostSection = computed(() => {
   if (isCreating.value) {
     // When an issue is pending create, we should show the gh-ost section
     // whenever gh-ost is on or off.
-    // But only show the gh-ost section when at least one of the tasks
-    // is MySQL
     return (
       tasks.some((task) => {
         const database = databaseForTask(issue.value, task);
-        return database.instanceResource.engine === Engine.MYSQL;
+        return allowGhostForDatabase(database);
       }) &&
       tasks.every((task) => ghostViewTypeForTask(issue.value, task) !== "NONE")
     );
