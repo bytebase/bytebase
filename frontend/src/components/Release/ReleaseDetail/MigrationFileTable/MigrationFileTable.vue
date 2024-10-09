@@ -33,16 +33,16 @@ const columnList = computed(() => {
       render: (file) => file.name,
     },
     {
-      key: "sheeSha1",
+      key: "sheetSha256",
       width: 150,
       title: "Hash",
-      render: (file) => file.sheetSha1,
+      render: (file) => file.sheetSha256,
     },
     {
       key: "actions",
       width: 150,
       title: "Actions",
-      render: (file) => file.sheetSha1,
+      render: (file) => file.sheetSha256,
     },
   ];
   return columns;

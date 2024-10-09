@@ -47,11 +47,16 @@ func (s *ReleaseService) CreateRelease(ctx context.Context, request *v1pb.Create
 		return nil, status.Errorf(codes.NotFound, "project %v not found", projectID)
 	}
 
+	files, err := convertReleaseFiles(ctx, s.store, request.Release.Files)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to convert files, err: %v", err)
+	}
+
 	releaseMessage := &store.ReleaseMessage{
 		ProjectUID: project.UID,
 		Payload: &storepb.ReleasePayload{
 			Title:     request.Release.Title,
-			Files:     convertReleaseFiles(request.Release.Files),
+			Files:     files,
 			VcsSource: convertReleaseVcsSource(request.Release.VcsSource),
 		},
 	}
@@ -171,11 +176,11 @@ func convertToReleaseFiles(files []*storepb.ReleasePayload_File) []*v1pb.Release
 	var rFiles []*v1pb.Release_File
 	for _, f := range files {
 		rFiles = append(rFiles, &v1pb.Release_File{
-			Name:      f.Name,
-			Sheet:     f.Sheet,
-			SheetSha1: f.SheetSha1,
-			Type:      v1pb.ReleaseFileType(f.Type),
-			Version:   f.Version,
+			Name:        f.Name,
+			Sheet:       f.Sheet,
+			SheetSha256: f.SheetSha256,
+			Type:        v1pb.ReleaseFileType(f.Type),
+			Version:     f.Version,
 		})
 	}
 	return rFiles
@@ -188,18 +193,33 @@ func convertToReleaseVcsSource(vs *storepb.ReleasePayload_VCSSource) *v1pb.Relea
 	}
 }
 
-func convertReleaseFiles(files []*v1pb.Release_File) []*storepb.ReleasePayload_File {
+func convertReleaseFiles(ctx context.Context, s *store.Store, files []*v1pb.Release_File) ([]*storepb.ReleasePayload_File, error) {
 	var rFiles []*storepb.ReleasePayload_File
 	for _, f := range files {
+		_, sheetUID, err := common.GetProjectResourceIDSheetUID(f.Sheet)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get sheetUID from %q", f.Sheet)
+		}
+		sheet, err := s.GetSheet(ctx, &store.FindSheetMessage{
+			UID:      &sheetUID,
+			LoadFull: false,
+		})
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get sheet %q", f.Sheet)
+		}
+		if sheet == nil {
+			return nil, errors.Errorf("sheet %q not found", f.Sheet)
+		}
+
 		rFiles = append(rFiles, &storepb.ReleasePayload_File{
-			Name:      f.Name,
-			Sheet:     f.Sheet,
-			SheetSha1: f.SheetSha1,
-			Type:      storepb.ReleaseFileType(f.Type),
-			Version:   f.Version,
+			Name:        f.Name,
+			Sheet:       f.Sheet,
+			SheetSha256: sheet.Sha256,
+			Type:        storepb.ReleaseFileType(f.Type),
+			Version:     f.Version,
 		})
 	}
-	return rFiles
+	return rFiles, nil
 }
 
 func convertReleaseVcsSource(vs *v1pb.Release_VCSSource) *storepb.ReleasePayload_VCSSource {
