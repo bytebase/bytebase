@@ -1,3 +1,70 @@
+- description: Function with variables
+  statement: SELECT plpgsql_t(1);
+  defaultDatabase: db
+  metadata: |-
+    {
+      "name":  "db",
+      "schemas":  [
+        {
+          "name": "public",
+          "tables":  [
+            {
+              "name":  "t",
+              "columns":  [
+                {
+                  "name":  "a"
+                },
+                {
+                  "name":  "b"
+                }
+              ]
+            },
+            {
+              "name":  "t2",
+              "columns":  [
+                {
+                  "name":  "c"
+                },
+                {
+                  "name":  "d"
+                }
+              ]
+            }
+          ],
+          "functions": [
+            {
+              "name": "plpgsql_t",
+              "definition": "CREATE OR REPLACE FUNCTION plpgsql_t (x int) RETURNS TABLE(a int, b int) LANGUAGE plpgsql AS $$ DECLARE v_1 int := 0; v_2 int := 0; BEGIN v_1 := (select sum(a) from t where b = x group by b); v_2 := (select sum(c) from t2 where d = x group by d); RETURN QUERY select v_1, v_2; END; $$"
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    results:
+        - name: plpgsql_t
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: public
+              table: t
+              column: a
+            - server: ""
+              database: db
+              schema: public
+              table: t2
+              column: c
+    sourcecolumns:
+        - server: ""
+          database: db
+          schema: public
+          table: t
+          column: ""
+        - server: ""
+          database: db
+          schema: public
+          table: t2
+          column: ""
 - description: Function Overloading
   statement: SELECT plpgsql_t(1, 2);
   defaultDatabase: db
