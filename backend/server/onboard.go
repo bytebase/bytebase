@@ -22,10 +22,15 @@ import (
 // generateOnboardingData generates onboarding data after the first signup.
 func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMessage) error {
 	userID := user.ID
+	setting := &storepb.Project{
+		AllowModifyStatement: true,
+		AutoResolveIssue:     true,
+	}
 	project, err := s.store.CreateProjectV2(ctx, &store.ProjectMessage{
 		ResourceID: "project-sample",
 		Title:      "Sample Project",
 		Key:        "SAM",
+		Setting:    setting,
 	}, userID)
 	if err != nil {
 		return errors.Wrapf(err, "failed to create onboarding project")
