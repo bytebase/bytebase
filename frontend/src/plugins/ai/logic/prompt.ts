@@ -74,7 +74,6 @@ export const explainCode = (statement: string, engine?: Engine) => {
   const prompts: string[] = [];
   prompts.push("Explain the following SQL code");
   prompts.push(wrapStatementMarkdown(statement, engine));
-  prompts.push(`and try to give the correct statement.`);
   return prompts.join("\n");
 };
 
