@@ -12,6 +12,23 @@
             </template>
           </i18n-t>
         </p>
+        <p v-if="database">
+          <i18n-t keypath="sql-editor.enable-ddl-for-environment">
+            <template #environment>
+              <RouterLink
+                class="normal-link"
+                :to="{
+                  name: disallowNavigateToConsole
+                    ? SQL_EDITOR_SETTING_ENVIRONMENT_MODULE
+                    : ENVIRONMENT_V1_ROUTE_DASHBOARD,
+                  hash: `#${extractEnvironmentResourceName(database.effectiveEnvironmentEntity.name)}`,
+                }"
+              >
+                {{ database.effectiveEnvironmentEntity.title }}
+              </RouterLink>
+            </template>
+          </i18n-t>
+        </p>
         <p v-if="descriptions.action && descriptions.reaction">
           <i18n-t keypath="sql-editor.want-to-action">
             <template #want>
@@ -61,14 +78,28 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { parseSQL, isDDLStatement } from "@/components/MonacoEditor/sqlParser";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
+import { ENVIRONMENT_V1_ROUTE_DASHBOARD } from "@/router/dashboard/workspaceRoutes";
+import { SQL_EDITOR_SETTING_ENVIRONMENT_MODULE } from "@/router/sqlEditor";
 import {
   pushNotification,
   useAppFeature,
   useDatabaseV1Store,
   useSQLEditorTabStore,
 } from "@/store";
-import { extractProjectResourceName, hasWorkspacePermissionV2 } from "@/utils";
+import type { ComposedDatabase } from "@/types";
+import {
+  extractProjectResourceName,
+  hasWorkspacePermissionV2,
+  extractEnvironmentResourceName,
+} from "@/utils";
 import AdminModeButton from "./AdminModeButton.vue";
+
+withDefaults(
+  defineProps<{
+    database?: ComposedDatabase | undefined;
+  }>(),
+  { database: undefined }
+);
 
 const emit = defineEmits<{
   (e: "close"): void;

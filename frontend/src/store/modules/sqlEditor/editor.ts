@@ -34,6 +34,7 @@ export const useSQLEditorStore = defineStore("sqlEditor", () => {
   });
 
   const isShowExecutingHint = ref(false);
+  const executingHintDatabase = ref<ComposedDatabase | undefined>();
 
   return {
     resultRowsLimit,
@@ -44,5 +45,6 @@ export const useSQLEditorStore = defineStore("sqlEditor", () => {
     allowViewALLProjects,
     databaseList,
     isShowExecutingHint,
+    executingHintDatabase,
   };
 });
