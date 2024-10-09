@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"strings"
 
+	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
 
 	pgquery "github.com/pganalyze/pg_query_go/v5"
@@ -14,6 +15,8 @@ import (
 	parsererror "github.com/bytebase/bytebase/backend/plugin/parser/errors"
 	"github.com/bytebase/bytebase/backend/plugin/parser/sql/ast"
 	pgrawparser "github.com/bytebase/bytebase/backend/plugin/parser/sql/engine/pg"
+
+	pgparser "github.com/bytebase/postgresql-parser"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store/model"
@@ -63,6 +66,9 @@ type querySpanExtractor struct {
 	// sourceColumnsInFunction is the source columns in the function.
 	// It's used to resolve defined functions body as a table source.
 	sourceColumnsInFunction base.SourceColumnSet
+
+	// variables are variables declared in the function.
+	variables map[string]*base.QuerySpanResult
 }
 
 // newQuerySpanExtractor creates a new query span extractor, the databaseMetadata and the ast are in the read guard.
@@ -661,6 +667,111 @@ func (q *querySpanExtractor) extractTableSourceFromPLPGSQLFunction(createFunc *p
 		return nil, errors.Wrapf(err, "failed to unmarshal JSON")
 	}
 
+	simpleResult, err := q.extractTableSourceFromSimplePLPGSQL(name, jsonData, columnNames)
+	if err == nil {
+		return simpleResult, nil
+	}
+
+	return q.extractTableSourceFromComplexPLPGSQL(name, columnNames, definition)
+}
+
+func (q *querySpanExtractor) extractTableSourceFromComplexPLPGSQL(name string, columnNames []string, definition string) ([]base.QuerySpanResult, error) {
+	res, err := ParsePostgreSQL(definition)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to parse PLpgSQL function body for function %s", name)
+	}
+
+	listener := &plpgSQLListener{
+		q:         q,
+		variables: make(map[string]*base.QuerySpanResult),
+	}
+	antlr.ParseTreeWalkerDefault.Walk(listener, res.Tree)
+	if listener.err != nil {
+		return nil, errors.Wrapf(listener.err, "failed to extract table source from PLpgSQL function body for function %s", name)
+	}
+	if listener.span == nil {
+		return nil, errors.Errorf("failed to extract table source from PLpgSQL function body for function %s", name)
+	}
+	if len(columnNames) != len(listener.span.Results) {
+		return nil, errors.Errorf("expecting %d columns but got %d for function: %s", len(columnNames), len(listener.span.Results), name)
+	}
+	var result []base.QuerySpanResult
+	for i, columnName := range columnNames {
+		result = append(result, base.QuerySpanResult{
+			Name:          columnName,
+			SourceColumns: listener.span.Results[i].SourceColumns,
+		})
+	}
+	return result, nil
+}
+
+type plpgSQLListener struct {
+	*pgparser.BasePostgreSQLParserListener
+	q *querySpanExtractor
+
+	variables map[string]*base.QuerySpanResult
+
+	span *base.QuerySpan
+	err  error
+}
+
+func (l *plpgSQLListener) EnterFunc_as(ctx *pgparser.Func_asContext) {
+	antlr.ParseTreeWalkerDefault.Walk(l, ctx.Definition)
+}
+
+func (l *plpgSQLListener) EnterDecl_statement(ctx *pgparser.Decl_statementContext) {
+	vName := normalizePostgreSQLAnyIdentifier(ctx.Decl_varname().Any_identifier())
+	l.variables[vName] = &base.QuerySpanResult{
+		SourceColumns: base.SourceColumnSet{},
+	}
+}
+
+func (l *plpgSQLListener) EnterStmt_assign(ctx *pgparser.Stmt_assignContext) {
+	names := NormalizePostgreSQLAnyName(ctx.Assign_var().Any_name())
+	if len(names) != 1 {
+		return
+	}
+	assignVar := names[0]
+
+	newQ := newQuerySpanExtractor(l.q.defaultDatabase, l.q.defaultSchema, l.q.gCtx)
+	span, err := newQ.getQuerySpan(l.q.ctx, fmt.Sprintf("SELECT %s", ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.Sql_expression())))
+	if err != nil {
+		return
+	}
+	for source := range span.SourceColumns {
+		l.q.sourceColumnsInFunction[source] = true
+	}
+	leftVarQuerySpan, exists := l.variables[assignVar]
+	if !exists {
+		leftVarQuerySpan = &base.QuerySpanResult{
+			SourceColumns: base.SourceColumnSet{},
+		}
+		l.variables[assignVar] = leftVarQuerySpan
+	}
+	if len(span.Results) != 1 {
+		return
+	}
+	newResourceColumns, _ := base.MergeSourceColumnSet(leftVarQuerySpan.SourceColumns, span.Results[0].SourceColumns)
+	l.variables[assignVar] = &base.QuerySpanResult{
+		SourceColumns: newResourceColumns,
+	}
+}
+
+func (l *plpgSQLListener) EnterStmt_return(ctx *pgparser.Stmt_returnContext) {
+	if ctx.QUERY() == nil {
+		return
+	}
+
+	if ctx.Selectstmt() == nil {
+		return
+	}
+
+	newQ := newQuerySpanExtractor(l.q.defaultDatabase, l.q.defaultSchema, l.q.gCtx)
+	newQ.variables = l.variables
+	l.span, l.err = newQ.getQuerySpan(l.q.ctx, ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.Selectstmt()))
+}
+
+func (q *querySpanExtractor) extractTableSourceFromSimplePLPGSQL(name string, jsonData []any, columnNames []string) ([]base.QuerySpanResult, error) {
 	var sqlList []string
 	for _, value := range jsonData {
 		switch value := value.(type) {
@@ -688,13 +799,13 @@ func (q *querySpanExtractor) extractTableSourceFromPLPGSQLFunction(createFunc *p
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get query span for function: %s", name)
 		}
-		for source := range span.SourceColumns {
-			q.sourceColumnsInFunction[source] = true
-		}
 
 		rightQuerySpanResult := span.Results
 		if len(leftQuerySpanResult) != len(rightQuerySpanResult) {
 			return nil, errors.Errorf("expecting %d columns but got %d for function: %s", len(leftQuerySpanResult), len(rightQuerySpanResult), name)
+		}
+		for source := range span.SourceColumns {
+			q.sourceColumnsInFunction[source] = true
 		}
 		var result []base.QuerySpanResult
 		for i, leftSpanResult := range leftQuerySpanResult {
@@ -1554,6 +1665,12 @@ func (q *querySpanExtractor) getFieldColumnSource(schemaName, tableName, fieldNa
 	for _, tableSource := range q.tableSourcesFrom {
 		if sourceColumnSet, ok := findInTableSource(tableSource); ok {
 			return sourceColumnSet, true
+		}
+	}
+
+	if schemaName == "" && tableName == "" && q.variables != nil {
+		if v, exists := q.variables[fieldName]; exists {
+			return v.SourceColumns, true
 		}
 	}
 
