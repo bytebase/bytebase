@@ -25,6 +25,7 @@ import {
   task_StatusToJSON,
 } from "@/types/proto/v1/rollout_service";
 import {
+  MIN_GHOST_SUPPORT_MARIADB_VERSION,
   MIN_GHOST_SUPPORT_MYSQL_VERSION,
   extractUserResourceName,
   flattenTaskV1List,
@@ -162,13 +163,28 @@ export const allowChangeTaskGhostFlags = (issue: ComposedIssue, task: Task) => {
 };
 
 export const allowGhostForDatabase = (database: ComposedDatabase) => {
-  return (
-    database.instanceResource.engine === Engine.MYSQL &&
-    semverCompare(
-      database.instanceResource.engineVersion,
-      MIN_GHOST_SUPPORT_MYSQL_VERSION,
-      "gte"
+  if (
+    !useSubscriptionV1Store().hasInstanceFeature(
+      "bb.feature.online-migration",
+      database.instanceResource
     )
+  ) {
+    return false;
+  }
+
+  return (
+    (database.instanceResource.engine === Engine.MYSQL &&
+      semverCompare(
+        database.instanceResource.engineVersion,
+        MIN_GHOST_SUPPORT_MYSQL_VERSION,
+        "gte"
+      )) ||
+    (database.instanceResource.engine === Engine.MARIADB &&
+      semverCompare(
+        database.instanceResource.engineVersion,
+        MIN_GHOST_SUPPORT_MARIADB_VERSION,
+        "gte"
+      ))
   );
 };
 
