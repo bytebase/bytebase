@@ -1462,8 +1462,8 @@ message Revision {
   // The sheet that holds the content.
   // Format: projects/{project}/sheets/{sheet}
   string sheet = 5 [(google.api.resource_reference) = {type: "bytebase.com/Sheet"}];
-  // The SHA1 hash value of the sheet.
-  string sheet_sha1 = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // The SHA256 hash value of the sheet.
+  string sheet_sha256 = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   ReleaseFileType type = 7;
   string version = 8;
