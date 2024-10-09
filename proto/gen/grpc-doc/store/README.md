@@ -3517,7 +3517,7 @@ SlowQueryPolicy is the policy configuration for slow query.
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name of the file. Expressed as a path, e.g. `2.2/V0001_create_table.sql` |
 | sheet | [string](#string) |  | The sheet that holds the content. Format: projects/{project}/sheets/{sheet} |
-| sheet_sha1 | [string](#string) |  | The SHA1 hash value of the sheet. |
+| sheet_sha256 | [string](#string) |  | The SHA256 hash value of the sheet. |
 | type | [ReleaseFileType](#bytebase-store-ReleaseFileType) |  |  |
 | version | [string](#string) |  |  |
 
@@ -3611,7 +3611,7 @@ SlowQueryPolicy is the policy configuration for slow query.
 | ----- | ---- | ----- | ----------- |
 | release | [string](#string) |  | Format: projects/{project}/releases/{release} Can be empty. |
 | sheet | [string](#string) |  | The sheet that holds the content. Format: projects/{project}/sheets/{sheet} |
-| sheet_sha1 | [string](#string) |  | The SHA1 hash value of the sheet. |
+| sheet_sha256 | [string](#string) |  | The SHA256 hash value of the sheet. |
 | type | [ReleaseFileType](#bytebase-store-ReleaseFileType) |  |  |
 | version | [string](#string) |  |  |
 | file | [string](#string) |  | The name of the file in the release. Expressed as a path, e.g. `2.2/V0001_create_table.sql` Can be empty. |

@@ -29,6 +29,11 @@ type SheetMessage struct {
 	Statement string
 	Payload   *storepb.SheetPayload
 
+	// Sha256 is the Sha256 hash of the statement in hexadecimal format.
+	// This field is available in dev.
+	// TODO(p0ny): move to prod and backfill.
+	Sha256 string
+
 	// Output only fields
 	UID         int
 	Size        int64
@@ -133,6 +138,11 @@ func (s *Store) listSheets(ctx context.Context, find *FindSheetMessage) ([]*Shee
 		statementField = "sheet.statement"
 	}
 
+	sha256Field := "''"
+	if common.IsDev() {
+		sha256Field = "encode(sha256(sheet.statement::bytea), 'hex')"
+	}
+
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, err
@@ -150,10 +160,11 @@ func (s *Store) listSheets(ctx context.Context, find *FindSheetMessage) ([]*Shee
 			sheet.database_id,
 			sheet.name,
 			%s,
+			%s,
 			sheet.payload,
 			OCTET_LENGTH(sheet.statement)
 		FROM sheet
-		WHERE %s`, statementField, strings.Join(where, " AND ")),
+		WHERE %s`, statementField, sha256Field, strings.Join(where, " AND ")),
 		args...,
 	)
 	if err != nil {
@@ -175,6 +186,7 @@ func (s *Store) listSheets(ctx context.Context, find *FindSheetMessage) ([]*Shee
 			&sheet.DatabaseUID,
 			&sheet.Title,
 			&sheet.Statement,
+			&sheet.Sha256,
 			&payload,
 			&sheet.Size,
 		); err != nil {
