@@ -27,7 +27,7 @@ func init() {
 type MaxExecutionTimeAdvisor struct {
 }
 
-func (a *MaxExecutionTimeAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
+func (*MaxExecutionTimeAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	stmtList, ok := ctx.AST.([]*mysqlparser.ParseResult)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to stmt list")
