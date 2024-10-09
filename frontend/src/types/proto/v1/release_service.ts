@@ -131,8 +131,8 @@ export interface Release_File {
    * Format: projects/{project}/sheets/{sheet}
    */
   sheet: string;
-  /** The SHA1 hash value of the sheet. */
-  sheetSha1: string;
+  /** The SHA256 hash value of the sheet. */
+  sheetSha256: string;
   type: ReleaseFileType;
   version: string;
 }
@@ -653,7 +653,7 @@ export const Release: MessageFns<Release> = {
 };
 
 function createBaseRelease_File(): Release_File {
-  return { name: "", sheet: "", sheetSha1: "", type: ReleaseFileType.TYPE_UNSPECIFIED, version: "" };
+  return { name: "", sheet: "", sheetSha256: "", type: ReleaseFileType.TYPE_UNSPECIFIED, version: "" };
 }
 
 export const Release_File: MessageFns<Release_File> = {
@@ -664,8 +664,8 @@ export const Release_File: MessageFns<Release_File> = {
     if (message.sheet !== "") {
       writer.uint32(18).string(message.sheet);
     }
-    if (message.sheetSha1 !== "") {
-      writer.uint32(26).string(message.sheetSha1);
+    if (message.sheetSha256 !== "") {
+      writer.uint32(26).string(message.sheetSha256);
     }
     if (message.type !== ReleaseFileType.TYPE_UNSPECIFIED) {
       writer.uint32(32).int32(releaseFileTypeToNumber(message.type));
@@ -702,7 +702,7 @@ export const Release_File: MessageFns<Release_File> = {
             break;
           }
 
-          message.sheetSha1 = reader.string();
+          message.sheetSha256 = reader.string();
           continue;
         case 4:
           if (tag !== 32) {
@@ -731,7 +731,7 @@ export const Release_File: MessageFns<Release_File> = {
     return {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
       sheet: isSet(object.sheet) ? globalThis.String(object.sheet) : "",
-      sheetSha1: isSet(object.sheetSha1) ? globalThis.String(object.sheetSha1) : "",
+      sheetSha256: isSet(object.sheetSha256) ? globalThis.String(object.sheetSha256) : "",
       type: isSet(object.type) ? releaseFileTypeFromJSON(object.type) : ReleaseFileType.TYPE_UNSPECIFIED,
       version: isSet(object.version) ? globalThis.String(object.version) : "",
     };
@@ -745,8 +745,8 @@ export const Release_File: MessageFns<Release_File> = {
     if (message.sheet !== "") {
       obj.sheet = message.sheet;
     }
-    if (message.sheetSha1 !== "") {
-      obj.sheetSha1 = message.sheetSha1;
+    if (message.sheetSha256 !== "") {
+      obj.sheetSha256 = message.sheetSha256;
     }
     if (message.type !== ReleaseFileType.TYPE_UNSPECIFIED) {
       obj.type = releaseFileTypeToJSON(message.type);
@@ -764,7 +764,7 @@ export const Release_File: MessageFns<Release_File> = {
     const message = createBaseRelease_File();
     message.name = object.name ?? "";
     message.sheet = object.sheet ?? "";
-    message.sheetSha1 = object.sheetSha1 ?? "";
+    message.sheetSha256 = object.sheetSha256 ?? "";
     message.type = object.type ?? ReleaseFileType.TYPE_UNSPECIFIED;
     message.version = object.version ?? "";
     return message;
