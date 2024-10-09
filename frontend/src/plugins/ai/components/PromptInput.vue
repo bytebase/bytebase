@@ -8,6 +8,9 @@
       minRows: 1,
       maxRows: 10,
     }"
+    :input-props="{
+      style: 'box-shadow: none !important',
+    }"
     @keypress.enter="handlePressEnter"
   >
     <template #prefix>
@@ -79,5 +82,6 @@ const handlePressEnter = (e?: KeyboardEvent) => {
     return;
   }
   applyValue(state.value);
+  e?.preventDefault();
 };
 </script>
