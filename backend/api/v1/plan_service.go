@@ -1177,7 +1177,7 @@ func getSpecs(database *store.DatabaseMessage, revisions []*store.RevisionMessag
 	})
 
 	for _, file := range release.Payload.Files {
-		r, ok := revisionByVersion[file.Version]
+		_, ok := revisionByVersion[file.Version]
 		if ok {
 			// applied
 			// if r.Payload.SheetSha1 != file.SheetSha1 {
