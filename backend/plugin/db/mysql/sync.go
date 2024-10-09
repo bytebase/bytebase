@@ -627,10 +627,7 @@ func (driver *Driver) getCreateFunctionStmt(ctx context.Context, databaseName, f
 	}
 	defer rows.Close()
 
-	type ResultRow struct {
-		CreateFunction string
-	}
-	resultRow := ResultRow{}
+	var createFunction sql.NullString
 
 	columns, err := rows.Columns()
 	if err != nil {
@@ -652,7 +649,7 @@ func (driver *Driver) getCreateFunctionStmt(ctx context.Context, databaseName, f
 		dests := make([]any, len(columns))
 		for i := 0; i < len(columns); i++ {
 			if i == defIdx {
-				dests[i] = &resultRow.CreateFunction
+				dests[i] = &createFunction
 				continue
 			}
 			dests[i] = new(string)
@@ -667,18 +664,23 @@ func (driver *Driver) getCreateFunctionStmt(ctx context.Context, databaseName, f
 		return "", err
 	}
 
-	functionSymbolIdx := strings.Index(resultRow.CreateFunction, " FUNCTION ")
-	if functionSymbolIdx >= 0 {
-		resultRow.CreateFunction = fmt.Sprintf("CREATE%s", resultRow.CreateFunction[functionSymbolIdx:])
-	}
+	if createFunction.Valid {
+		f := createFunction.String
 
-	if charsetIdx := strings.Index(resultRow.CreateFunction, " CHARSET "); charsetIdx != -1 {
-		if newLineIdx := strings.Index(resultRow.CreateFunction, "\n"); newLineIdx != -1 {
-			resultRow.CreateFunction = resultRow.CreateFunction[:charsetIdx] + resultRow.CreateFunction[newLineIdx:]
+		functionSymbolIdx := strings.Index(f, " FUNCTION ")
+		if functionSymbolIdx >= 0 {
+			f = fmt.Sprintf("CREATE%s", f[functionSymbolIdx:])
 		}
-	}
 
-	return resultRow.CreateFunction, nil
+		if charsetIdx := strings.Index(f, " CHARSET "); charsetIdx != -1 {
+			if newLineIdx := strings.Index(f, "\n"); newLineIdx != -1 {
+				f = f[:charsetIdx] + f[newLineIdx:]
+			}
+		}
+
+		return f, nil
+	}
+	return "", nil
 }
 
 func (driver *Driver) getCreateProcedureStmt(ctx context.Context, databaseName, functionName string) (string, error) {
@@ -689,10 +691,7 @@ func (driver *Driver) getCreateProcedureStmt(ctx context.Context, databaseName, 
 	}
 	defer rows.Close()
 
-	type ResultRow struct {
-		CreateProcedure string
-	}
-	resultRow := ResultRow{}
+	var createProcedure sql.NullString
 
 	columns, err := rows.Columns()
 	if err != nil {
@@ -714,7 +713,7 @@ func (driver *Driver) getCreateProcedureStmt(ctx context.Context, databaseName, 
 		dests := make([]any, len(columns))
 		for i := 0; i < len(columns); i++ {
 			if i == defIdx {
-				dests[i] = &resultRow.CreateProcedure
+				dests[i] = &createProcedure
 				continue
 			}
 			dests[i] = new(string)
@@ -729,12 +728,17 @@ func (driver *Driver) getCreateProcedureStmt(ctx context.Context, databaseName, 
 		return "", err
 	}
 
-	procedureSymbolIdx := strings.Index(resultRow.CreateProcedure, " PROCEDURE ")
-	if procedureSymbolIdx >= 0 {
-		resultRow.CreateProcedure = fmt.Sprintf("CREATE%s", resultRow.CreateProcedure[procedureSymbolIdx:])
-	}
+	if createProcedure.Valid {
+		p := createProcedure.String
 
-	return resultRow.CreateProcedure, nil
+		procedureSymbolIdx := strings.Index(p, " PROCEDURE ")
+		if procedureSymbolIdx >= 0 {
+			p = fmt.Sprintf("CREATE%s", p[procedureSymbolIdx:])
+		}
+
+		return p, nil
+	}
+	return "", nil
 }
 
 func setColumnMetadataDefault(column *storepb.ColumnMetadata, defaultStr sql.NullString, nullableBool bool, extra string) {
