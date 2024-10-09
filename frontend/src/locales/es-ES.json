@@ -3223,7 +3223,9 @@
         "chat": "Charlar",
         "explain-code": "Explicar el código",
         "find-problems": "encontrar problemas"
-      }
+      },
+      "send": "Enviar",
+      "new-line": "Nueva linea"
     }
   },
   "custom-approval": {

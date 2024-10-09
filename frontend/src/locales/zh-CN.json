@@ -3223,7 +3223,9 @@
         "chat": "对话",
         "explain-code": "解释代码",
         "find-problems": "找出问题"
-      }
+      },
+      "send": "发送",
+      "new-line": "换行"
     }
   },
   "custom-approval": {

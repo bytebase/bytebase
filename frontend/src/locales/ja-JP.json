@@ -3223,7 +3223,9 @@
         "chat": "チャット",
         "explain-code": "コードの説明",
         "find-problems": "問題を見つける"
-      }
+      },
+      "send": "送信",
+      "new-line": "改行"
     }
   },
   "custom-approval": {

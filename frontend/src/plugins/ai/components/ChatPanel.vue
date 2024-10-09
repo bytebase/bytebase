@@ -13,7 +13,6 @@
 
     <div class="px-2 py-2 flex flex-col gap-2">
       <DynamicSuggestions
-        v-if="false"
         class="flex-1 w-full"
         @enter="requestAI"
       />

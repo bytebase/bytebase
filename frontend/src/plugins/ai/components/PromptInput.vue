@@ -3,29 +3,50 @@
     v-model:value="state.value"
     :disabled="disabled"
     :placeholder="$t('plugin.ai.text-to-sql-placeholder')"
+    type="textarea"
+    :autosize="{
+      minRows: 1,
+      maxRows: 10,
+    }"
     @keypress.enter="handlePressEnter"
   >
     <template #prefix>
       <heroicons-outline:sparkles class="w-4 h-4 text-accent" />
     </template>
     <template #suffix>
-      <NButton
-        :quaternary="true"
-        :disabled="!state.value"
-        type="primary"
-        size="small"
-        @click="handlePressEnter"
-      >
-        ⏎
-      </NButton>
+      <NPopover placement="bottom" style="--n-padding: 4px 6px">
+        <template #trigger>
+          <NButton
+            :quaternary="true"
+            :disabled="!state.value"
+            type="primary"
+            size="small"
+            @click="handlePressEnter()"
+          >
+            ⏎
+          </NButton>
+        </template>
+        <template #default>
+          <div class="text-sm">
+            <p class="flex items-center gap-1">
+              <span>{{ $t("plugin.ai.send") }}</span>
+              <span>({{ keyboardShortcutStr("⏎") }})</span>
+            </p>
+            <p class="flex items-center gap-1">
+              <span>{{ $t("plugin.ai.new-line") }}</span>
+              <span>({{ keyboardShortcutStr("shift+⏎") }})</span>
+            </p>
+          </div>
+        </template>
+      </NPopover>
     </template>
   </NInput>
 </template>
 
 <script lang="ts" setup>
-import { NButton, NInput } from "naive-ui";
+import { NButton, NInput, NPopover } from "naive-ui";
 import { reactive } from "vue";
-import { findProblems, useAIContext } from "../logic";
+import { keyboardShortcutStr } from "@/utils";
 
 type LocalState = {
   value: string;
@@ -47,14 +68,16 @@ const emit = defineEmits<{
 const state = reactive<LocalState>({
   value: "",
 });
-const context = useAIContext();
 
 const applyValue = (value: string) => {
   state.value = "";
   emit("enter", value);
 };
 
-const handlePressEnter = () => {
-  applyValue(findProblems(state.value, context.engine.value));
+const handlePressEnter = (e?: KeyboardEvent) => {
+  if (e?.shiftKey) {
+    return;
+  }
+  applyValue(state.value);
 };
 </script>
