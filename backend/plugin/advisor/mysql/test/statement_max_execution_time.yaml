@@ -1,0 +1,14 @@
+- statement: SET MAX_EXECUTION_TIME = 1000; SELECT * FROM employee;
+- statement: SET GLOBAL max_execution_time = 10; SELECT * FROM employee;
+- statement: SELECT * FROM employee; SET max_execution_time = 1000;
+  want:
+    - status: 2
+      code: 235
+      title: statement.max-execution-time
+      content: "The max_execution_time is not set"
+- statement: SELECT * FROM t;
+  want:
+    - status: 2
+      code: 235
+      title: statement.max-execution-time
+      content: "The max_execution_time is not set"

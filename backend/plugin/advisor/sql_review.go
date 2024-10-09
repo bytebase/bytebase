@@ -131,6 +131,8 @@ const (
 	SchemaRuleStatementDisallowOfflineDDL = "statement.disallow-offline-ddl"
 	// SchemaRuleStatementDisallowCrossDBQueries disallow cross database queries.
 	SchemaRuleStatementDisallowCrossDBQueries = "statement.disallow-cross-db-queries"
+	// SchemaRuleStatementMaxExecutionTime enforce the maximum execution time.
+	SchemaRuleStatementMaxExecutionTime = "statement.max-execution-time"
 	// SchemaRuleTableRequirePK require the table to have a primary key.
 	SchemaRuleTableRequirePK SQLReviewRuleType = "table.require-pk"
 	// SchemaRuleTableNoFK require the table disallow the foreign key.
@@ -1479,6 +1481,10 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 	case SchemaRuleStatementDisallowCrossDBQueries:
 		if engine == storepb.Engine_MSSQL {
 			return MSSQLStatementDisallowCrossDBQueries, nil
+		}
+	case SchemaRuleStatementMaxExecutionTime:
+		if engine == storepb.Engine_MYSQL || engine == storepb.Engine_MARIADB {
+			return MySQLStatementMaxExecutionTime, nil
 		}
 	case SchemaRuleCommentLength:
 		if engine == storepb.Engine_POSTGRES {
