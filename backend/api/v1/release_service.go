@@ -173,6 +173,9 @@ func convertToRelease(ctx context.Context, s *store.Store, release *store.Releas
 }
 
 func convertToReleaseFiles(files []*storepb.ReleasePayload_File) []*v1pb.Release_File {
+	if files == nil {
+		return nil
+	}
 	var rFiles []*v1pb.Release_File
 	for _, f := range files {
 		rFiles = append(rFiles, &v1pb.Release_File{
@@ -187,6 +190,9 @@ func convertToReleaseFiles(files []*storepb.ReleasePayload_File) []*v1pb.Release
 }
 
 func convertToReleaseVcsSource(vs *storepb.ReleasePayload_VCSSource) *v1pb.Release_VCSSource {
+	if vs == nil {
+		return nil
+	}
 	return &v1pb.Release_VCSSource{
 		VcsType:        v1pb.VCSType(vs.VcsType),
 		PullRequestUrl: vs.PullRequestUrl,
@@ -194,6 +200,9 @@ func convertToReleaseVcsSource(vs *storepb.ReleasePayload_VCSSource) *v1pb.Relea
 }
 
 func convertReleaseFiles(ctx context.Context, s *store.Store, files []*v1pb.Release_File) ([]*storepb.ReleasePayload_File, error) {
+	if files == nil {
+		return nil, nil
+	}
 	var rFiles []*storepb.ReleasePayload_File
 	for _, f := range files {
 		_, sheetUID, err := common.GetProjectResourceIDSheetUID(f.Sheet)
@@ -223,6 +232,9 @@ func convertReleaseFiles(ctx context.Context, s *store.Store, files []*v1pb.Rele
 }
 
 func convertReleaseVcsSource(vs *v1pb.Release_VCSSource) *storepb.ReleasePayload_VCSSource {
+	if vs == nil {
+		return nil
+	}
 	return &storepb.ReleasePayload_VCSSource{
 		VcsType:        storepb.VCSType(vs.VcsType),
 		PullRequestUrl: vs.PullRequestUrl,
