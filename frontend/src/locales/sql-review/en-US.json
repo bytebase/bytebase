@@ -306,7 +306,7 @@
       "description": "Unsigned types do not store negative numbers, and the range of values that can be stored by the same type is doubled, which can avoid auto-increment columns overflow. Suggested error level: Warning"
     },
     "column-comment": {
-      "title": "Table comment convention",
+      "title": "Column comment convention",
       "description": "Adding comments to columns is a good development practice, but excessively long comments can decrease the readability of the schema. Suggested error level: Warning",
       "component": {
         "required": {
