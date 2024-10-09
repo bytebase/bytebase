@@ -65,6 +65,8 @@ func TestMySQLRules(t *testing.T) {
 		advisor.SchemaRuleStatementWhereDisallowFunctionsAndCaculations,
 		// advisor.SchemaRuleStatementWhereMaximumLogicalOperatorCount enforces maximum number of logical operators in the where clause.
 		advisor.SchemaRuleStatementWhereMaximumLogicalOperatorCount,
+		// advisor.SchemaRuleStatementMaxExecutionTime enforce the maximum execution time.
+		advisor.SchemaRuleStatementMaxExecutionTime,
 
 		// Database related rules.
 		// advisor.SchemaRuleDropEmptyDatabase enforce the MySQL support check if the database is empty before users drop it.

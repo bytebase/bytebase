@@ -244,6 +244,9 @@ func RunSQLReviewRuleTest(t *testing.T, rule SQLReviewRuleType, dbType storepb.E
 		adviceList, err := SQLReviewCheck(sm, tc.Statement, ruleList, ctx)
 		// Sort adviceList by (line, content)
 		sort.Slice(adviceList, func(i, j int) bool {
+			if adviceList[i].GetStartPosition() == nil || adviceList[j].GetStartPosition() == nil {
+				return adviceList[i].GetStartPosition() == nil
+			}
 			if adviceList[i].GetStartPosition().Line != adviceList[j].GetStartPosition().Line {
 				return adviceList[i].GetStartPosition().Line < adviceList[j].GetStartPosition().Line
 			}
@@ -401,6 +404,7 @@ func SetDefaultSQLReviewRulePayload(ruleTp SQLReviewRuleType, dbType storepb.Eng
 		SchemaRuleStatementDisallowMixDDLDML,
 		SchemaRuleStatementPriorBackupCheck,
 		SchemaRuleStatementJoinStrictColumnAttrs,
+		SchemaRuleStatementMaxExecutionTime,
 		SchemaRuleTableDisallowSetCharset,
 		SchemaRuleStatementDisallowCrossDBQueries,
 		SchemaRuleIndexNotRedundant:

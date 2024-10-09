@@ -652,6 +652,12 @@
 - type: statement.disallow-cross-db-queries
   category: STATEMENT
   engine: MSSQL
+- type: statement.max-execution-time
+  category: STATEMENT
+  engine: MYSQL
+- type: statement.max-execution-time
+  category: STATEMENT
+  engine: MARIADB
 - type: naming.fully-qualified
   category: NAMING
   engine: POSTGRES
