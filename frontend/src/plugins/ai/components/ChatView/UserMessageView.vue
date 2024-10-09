@@ -1,6 +1,6 @@
 <template>
   <div
-    class="max-w-[60%] border rounded shadow py-1 px-2 bg-indigo-100 border-indigo-400"
+    class="max-w-[80%] border rounded shadow py-1 px-2 bg-indigo-100 border-indigo-400"
   >
     <Markdown :content="message.content" />
   </div>

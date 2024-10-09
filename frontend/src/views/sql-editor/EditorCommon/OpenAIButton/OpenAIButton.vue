@@ -7,7 +7,10 @@
   >
     <Button v-bind="$attrs" @click="handleClickButton" />
   </NPopselect>
-  <NPopover v-else-if="showButton && options.length > 0" placement="bottom-start">
+  <NPopover
+    v-else-if="showButton && options.length > 0"
+    placement="bottom-start"
+  >
     <template #trigger>
       <Button v-bind="$attrs" @click="handleSelect(options[0].value)" />
     </template>
