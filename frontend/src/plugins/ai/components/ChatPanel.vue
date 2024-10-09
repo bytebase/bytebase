@@ -83,7 +83,7 @@ const requestAI = async (query: string) => {
       error: "",
       status: "DONE",
     });
-    console.debug(prompt);
+    console.debug("[AI Assistant] init chat", prompt);
   } else {
     await store.createMessage({
       conversation_id: conversation.id,
@@ -149,10 +149,10 @@ const requestAI = async (query: string) => {
     }
 
     const text = head(data?.choices)?.message.content?.trim();
+    console.debug("[AI Assistant] answer", text);
     if (text) {
       answer.content = text;
       answer.prompt = text;
-      console.debug(answer.content);
     }
 
     answer.status = "DONE";
