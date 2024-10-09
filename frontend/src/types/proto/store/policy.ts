@@ -318,9 +318,13 @@ export interface RestrictIssueCreationForSQLReviewPolicy {
   disallow: boolean;
 }
 
-/** DataSourceQueryPolicy is the policy configuration for data source query. */
+/** DataSourceQueryPolicy is the policy configuration for running statements in the SQL editor. */
 export interface DataSourceQueryPolicy {
   adminDataSourceRestriction: DataSourceQueryPolicy_Restriction;
+  /** Allow running DDL statements in the SQL editor. */
+  enableDdl: boolean;
+  /** Allow running DML statements in the SQL editor. */
+  enableDml: boolean;
 }
 
 export enum DataSourceQueryPolicy_Restriction {
@@ -1686,13 +1690,23 @@ export const RestrictIssueCreationForSQLReviewPolicy: MessageFns<RestrictIssueCr
 };
 
 function createBaseDataSourceQueryPolicy(): DataSourceQueryPolicy {
-  return { adminDataSourceRestriction: DataSourceQueryPolicy_Restriction.RESTRICTION_UNSPECIFIED };
+  return {
+    adminDataSourceRestriction: DataSourceQueryPolicy_Restriction.RESTRICTION_UNSPECIFIED,
+    enableDdl: false,
+    enableDml: false,
+  };
 }
 
 export const DataSourceQueryPolicy: MessageFns<DataSourceQueryPolicy> = {
   encode(message: DataSourceQueryPolicy, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.adminDataSourceRestriction !== DataSourceQueryPolicy_Restriction.RESTRICTION_UNSPECIFIED) {
       writer.uint32(8).int32(dataSourceQueryPolicy_RestrictionToNumber(message.adminDataSourceRestriction));
+    }
+    if (message.enableDdl !== false) {
+      writer.uint32(16).bool(message.enableDdl);
+    }
+    if (message.enableDml !== false) {
+      writer.uint32(24).bool(message.enableDml);
     }
     return writer;
   },
@@ -1711,6 +1725,20 @@ export const DataSourceQueryPolicy: MessageFns<DataSourceQueryPolicy> = {
 
           message.adminDataSourceRestriction = dataSourceQueryPolicy_RestrictionFromJSON(reader.int32());
           continue;
+        case 2:
+          if (tag !== 16) {
+            break;
+          }
+
+          message.enableDdl = reader.bool();
+          continue;
+        case 3:
+          if (tag !== 24) {
+            break;
+          }
+
+          message.enableDml = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1725,6 +1753,8 @@ export const DataSourceQueryPolicy: MessageFns<DataSourceQueryPolicy> = {
       adminDataSourceRestriction: isSet(object.adminDataSourceRestriction)
         ? dataSourceQueryPolicy_RestrictionFromJSON(object.adminDataSourceRestriction)
         : DataSourceQueryPolicy_Restriction.RESTRICTION_UNSPECIFIED,
+      enableDdl: isSet(object.enableDdl) ? globalThis.Boolean(object.enableDdl) : false,
+      enableDml: isSet(object.enableDml) ? globalThis.Boolean(object.enableDml) : false,
     };
   },
 
@@ -1732,6 +1762,12 @@ export const DataSourceQueryPolicy: MessageFns<DataSourceQueryPolicy> = {
     const obj: any = {};
     if (message.adminDataSourceRestriction !== DataSourceQueryPolicy_Restriction.RESTRICTION_UNSPECIFIED) {
       obj.adminDataSourceRestriction = dataSourceQueryPolicy_RestrictionToJSON(message.adminDataSourceRestriction);
+    }
+    if (message.enableDdl !== false) {
+      obj.enableDdl = message.enableDdl;
+    }
+    if (message.enableDml !== false) {
+      obj.enableDml = message.enableDml;
     }
     return obj;
   },
@@ -1743,6 +1779,8 @@ export const DataSourceQueryPolicy: MessageFns<DataSourceQueryPolicy> = {
     const message = createBaseDataSourceQueryPolicy();
     message.adminDataSourceRestriction = object.adminDataSourceRestriction ??
       DataSourceQueryPolicy_Restriction.RESTRICTION_UNSPECIFIED;
+    message.enableDdl = object.enableDdl ?? false;
+    message.enableDml = object.enableDml ?? false;
     return message;
   },
 };

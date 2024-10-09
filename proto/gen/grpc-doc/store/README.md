@@ -3047,12 +3047,14 @@ Type is the database change type.
 <a name="bytebase-store-DataSourceQueryPolicy"></a>
 
 ### DataSourceQueryPolicy
-DataSourceQueryPolicy is the policy configuration for data source query.
+DataSourceQueryPolicy is the policy configuration for running statements in the SQL editor.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | admin_data_source_restriction | [DataSourceQueryPolicy.Restriction](#bytebase-store-DataSourceQueryPolicy-Restriction) |  |  |
+| enable_ddl | [bool](#bool) |  | Allow running DDL statements in the SQL editor. |
+| enable_dml | [bool](#bool) |  | Allow running DML statements in the SQL editor. |
 
 
 
