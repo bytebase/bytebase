@@ -12,10 +12,7 @@
     />
 
     <div class="px-2 py-2 flex flex-col gap-2">
-      <DynamicSuggestions
-        class="flex-1 w-full"
-        @enter="requestAI"
-      />
+      <DynamicSuggestions class="flex-1 w-full" @enter="requestAI" />
       <PromptInput v-if="tab" @enter="requestAI" />
     </div>
 
@@ -197,11 +194,6 @@ watch(
     if (!ready) return;
 
     await nextAnimationFrame();
-    console.log(
-      selectedConversation.value?.name,
-      selectedConversation.value?.messageList.length
-    );
-    console.log("pending", pendingSendChat.value);
     if (!pendingSendChat.value) return;
     requestAI(pendingSendChat.value.content);
     pendingSendChat.value = undefined;

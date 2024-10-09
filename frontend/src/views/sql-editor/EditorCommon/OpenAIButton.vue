@@ -112,7 +112,6 @@ const options = computed(() => {
 });
 
 const handleSelect = async (action: ChatAction) => {
-  console.log("handleSelect", action);
   showAIPanel.value = true;
   if (action === "explain-code" || action === "find-problems") {
     const tab = tabStore.currentTab;
@@ -139,7 +138,6 @@ const handleClickButton = () => {
   if (options.value.length > 1) return;
   const option = head(options.value);
   if (!option) return;
-  console.log("handleClick", option);
   showAIPanel.value = true;
 };
 </script>

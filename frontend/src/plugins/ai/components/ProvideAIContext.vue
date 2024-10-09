@@ -69,7 +69,6 @@ provideAIContext(context);
 const { ready, selected: selectedConversation } = useCurrentChat(context);
 
 useEmitteryEventListener(events, "new-conversation", async () => {
-  console.log("handle event new conversation");
   if (!tab.value) return;
   await wrapRefAsPromise(ready, /* expected */ true);
   showHistoryDialog.value = false;
@@ -84,7 +83,6 @@ useEmitteryEventListener(events, "send-chat", async ({ content }) => {
   if (!tab.value) return;
   await wrapRefAsPromise(ready, /* expected */ true);
   requestAnimationFrame(() => {
-    console.log("should send chat", content);
     pendingSendChat.value = { content };
   });
 });
