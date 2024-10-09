@@ -226,6 +226,21 @@ func NormalizePostgreSQLColid(ctx parser.IColidContext) string {
 	return strings.ToLower(ctx.GetText())
 }
 
+func normalizePostgreSQLAnyIdentifier(ctx parser.IAny_identifierContext) string {
+	if ctx == nil {
+		return ""
+	}
+
+	switch {
+	case ctx.Colid() != nil:
+		return NormalizePostgreSQLColid(ctx.Colid())
+	case ctx.Plsql_unreserved_keyword() != nil:
+		return strings.ToLower(ctx.Plsql_unreserved_keyword().GetText())
+	}
+
+	return ""
+}
+
 func normalizePostgreSQLIdentifier(ctx parser.IIdentifierContext) string {
 	if ctx == nil {
 		return ""
