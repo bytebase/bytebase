@@ -5,9 +5,13 @@
   >
     <ActionBar />
 
-    <ChatView :conversation="selectedConversation" @enter="requestAI" />
+    <ChatView
+      :conversation="selectedConversation"
+      class="pt-2"
+      @enter="requestAI"
+    />
 
-    <div class="px-2 pb-2 flex flex-col gap-2">
+    <div class="px-2 py-2 flex flex-col gap-2">
       <DynamicSuggestions
         v-if="false"
         class="flex-1 w-full"
@@ -26,8 +30,8 @@ import { Axios } from "axios";
 import { head } from "lodash-es";
 import { storeToRefs } from "pinia";
 import { reactive, watch } from "vue";
-import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import { useSQLEditorTabStore } from "@/store";
+import { nextAnimationFrame } from "@/utils";
 import { onConnectionChanged, useAIContext, useCurrentChat } from "../logic";
 import * as promptUtils from "../logic/prompt";
 import { useConversationStore } from "../store";
@@ -50,7 +54,8 @@ const { currentTab: tab } = storeToRefs(useSQLEditorTabStore());
 const store = useConversationStore();
 
 const context = useAIContext();
-const { events, openAIKey, openAIEndpoint, showHistoryDialog } = context;
+const { openAIKey, openAIEndpoint, showHistoryDialog, pendingSendChat } =
+  context;
 const {
   list: conversationList,
   ready,
@@ -82,7 +87,7 @@ const requestAI = async (query: string) => {
       error: "",
       status: "DONE",
     });
-    console.log(prompt);
+    console.debug(prompt);
   } else {
     await store.createMessage({
       conversation_id: conversation.id,
@@ -151,7 +156,7 @@ const requestAI = async (query: string) => {
     if (text) {
       answer.content = text;
       answer.prompt = text;
-      console.log(answer.content);
+      console.debug(answer.content);
     }
 
     answer.status = "DONE";
@@ -173,16 +178,6 @@ onConnectionChanged(() => {
   showHistoryDialog.value = false;
 });
 
-useEmitteryEventListener(events, "new-conversation", async () => {
-  if (!tab.value) return;
-  showHistoryDialog.value = false;
-  const c = await store.createConversation({
-    name: "",
-    ...tab.value.connection,
-  });
-  selectedConversation.value = c;
-});
-
 watch(
   [ready, conversationList],
   async ([ready, list]) => {
@@ -195,5 +190,26 @@ watch(
     }
   },
   { immediate: true }
+);
+
+watch(
+  [ready, pendingSendChat],
+  async ([ready]) => {
+    if (!ready) return;
+
+    await nextAnimationFrame();
+    console.log(
+      selectedConversation.value?.name,
+      selectedConversation.value?.messageList.length
+    );
+    console.log("pending", pendingSendChat.value);
+    if (!pendingSendChat.value) return;
+    requestAI(pendingSendChat.value.content);
+    pendingSendChat.value = undefined;
+  },
+  {
+    immediate: true,
+    flush: "post",
+  }
 );
 </script>

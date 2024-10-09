@@ -3218,7 +3218,12 @@
       "dont-show-again": "再び表示しない",
       "text2sql": "Text2SQL",
       "disable-text2sql": "Text2SQLを閉じる",
-      "enable-text2sql": "Text2SQLを開く"
+      "enable-text2sql": "Text2SQLを開く",
+      "actions": {
+        "chat": "チャット",
+        "explain-code": "コードの説明",
+        "find-problems": "問題を見つける"
+      }
     }
   },
   "custom-approval": {

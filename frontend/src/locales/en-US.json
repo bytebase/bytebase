@@ -3218,7 +3218,12 @@
       "dont-show-again": "Don't show again",
       "text2sql": "Text2SQL",
       "disable-text2sql": "Disable Text2SQL",
-      "enable-text2sql": "Enable Text2SQL"
+      "enable-text2sql": "Enable Text2SQL",
+      "actions": {
+        "chat": "Chat",
+        "explain-code": "Explain code",
+        "find-problems": "Find problems"
+      }
     }
   },
   "custom-approval": {

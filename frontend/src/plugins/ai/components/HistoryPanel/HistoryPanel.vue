@@ -10,7 +10,7 @@
           <ConversationList />
         </aside>
 
-        <div class="flex-1 flex flex-col bg-gray-100">
+        <div class="flex-1 flex flex-col bg-gray-100 overflow-hidden">
           <ChatView mode="VIEW" :conversation="selected" />
         </div>
       </div>

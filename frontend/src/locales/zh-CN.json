@@ -3218,7 +3218,12 @@
       "dont-show-again": "不再显示",
       "text2sql": "Text2SQL",
       "disable-text2sql": "关闭 Text2SQL",
-      "enable-text2sql": "开启 Text2SQL"
+      "enable-text2sql": "开启 Text2SQL",
+      "actions": {
+        "chat": "对话",
+        "explain-code": "解释代码",
+        "find-problems": "找出问题"
+      }
     }
   },
   "custom-approval": {

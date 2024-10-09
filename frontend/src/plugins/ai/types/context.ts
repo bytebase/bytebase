@@ -8,6 +8,7 @@ export type AIContextEvents = Emittery<{
   "run-statement": { statement: string };
   error: string;
   "new-conversation": any;
+  "send-chat": { content: string };
 }>;
 
 export type AIChatInfo = {
@@ -24,6 +25,7 @@ export type AIContext = {
   showHistoryDialog: Ref<boolean>;
 
   chat: Ref<AIChatInfo>;
+  pendingSendChat: Ref<{ content: string } | undefined>;
 
   // Events
   events: AIContextEvents;

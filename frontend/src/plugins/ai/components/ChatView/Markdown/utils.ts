@@ -407,7 +407,7 @@ function listToVNode(
   return h(
     node.ordered ? "ol" : "ul",
     {
-      style: "list-style: auto; margin-left: 1rem; line-height: 1.25rem;",
+      style: "list-style: auto; margin-left: 1rem;",
       ...properties,
     },
     children

@@ -15,7 +15,7 @@
           fontSize: 12,
           lineHeight: 14,
           lineNumbers: 'off',
-          wordWrap: 'true',
+          wordWrap: 'on',
           scrollbar: {
             vertical: 'hidden',
             horizontal: 'hidden',

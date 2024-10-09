@@ -41,13 +41,23 @@ import {
   type SelectOption,
 } from "naive-ui";
 import { computed } from "vue";
-import { useSettingV1Store, useSQLEditorTabStore } from "@/store";
+import { useI18n } from "vue-i18n";
+import type { ChatAction } from "@/plugins/ai";
+import { useAIContext } from "@/plugins/ai/logic";
+import * as promptUtils from "@/plugins/ai/logic/prompt";
+import {
+  useConnectionOfCurrentSQLEditorTab,
+  useSettingV1Store,
+  useSQLEditorTabStore,
+} from "@/store";
+import { nextAnimationFrame } from "@/utils";
 import { useSQLEditorContext } from "../context";
 
 defineOptions({
   inheritAttrs: false,
 });
 
+const { t } = useI18n();
 const tabStore = useSQLEditorTabStore();
 const settingV1Store = useSettingV1Store();
 const openAIKeySetting = computed(() =>
@@ -58,6 +68,8 @@ const openAIKey = computed(
 );
 
 const { showAIPanel } = useSQLEditorContext();
+const { instance } = useConnectionOfCurrentSQLEditorTab();
+const { events } = useAIContext();
 
 const showButton = computed(() => {
   return (
@@ -83,25 +95,44 @@ const buttonProps = computed(() => {
 const options = computed(() => {
   const tab = tabStore.currentTab;
   const statement = tab?.selectedStatement || tab?.statement;
-  const options: (SelectOption & { hide?: boolean })[] = [
+  const options: (SelectOption & { value: ChatAction; hide?: boolean })[] = [
     {
       value: "explain-code",
-      label: "Explain code",
+      label: t("plugin.ai.actions.explain-code"),
       hide: !statement,
     },
     {
       value: "find-problems",
-      label: "Find problems",
+      label: t("plugin.ai.actions.find-problems"),
       hide: !statement,
     },
-    { value: "start-chatting", label: "Start chatting" },
+    { value: "chat", label: t("plugin.ai.actions.chat") },
   ];
   return options.filter((opt) => !opt.hide);
 });
 
-const handleSelect = (option: SelectOption) => {
-  console.log("handleSelect", option);
+const handleSelect = async (action: ChatAction) => {
+  console.log("handleSelect", action);
   showAIPanel.value = true;
+  if (action === "explain-code" || action === "find-problems") {
+    const tab = tabStore.currentTab;
+    const statement = tab?.selectedStatement || tab?.statement;
+    if (!statement) return;
+
+    await nextAnimationFrame();
+    events.emit("new-conversation");
+    await nextAnimationFrame();
+    if (action === "explain-code") {
+      events.emit("send-chat", {
+        content: promptUtils.explainCode(statement, instance.value.engine),
+      });
+    }
+    if (action === "find-problems") {
+      events.emit("send-chat", {
+        content: promptUtils.findProblems(statement, instance.value.engine),
+      });
+    }
+  }
 };
 
 const handleClickButton = () => {

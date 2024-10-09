@@ -1,10 +1,10 @@
 <template>
-  <AstToMarkdown :ast="mdast" class="text-sm leading-6">
+  <AstToMarkdown :ast="mdast" class="text-sm">
     <template #code="parsedAst">
       <CodeBlock :code="parsedAst.value" />
     </template>
     <template #inlineCode="parsedAst">
-      <code>{{ parsedAst.value }}</code>
+      <HighlightCodeBlock :code="parsedAst.value" class="inline-block bg-gray-200 px-0.5 mx-0.5" />
     </template>
     <template #image="parsedAst">
       <img :src="parsedAst.url" />
@@ -17,6 +17,7 @@ import remarkGfm from "remark-gfm";
 import remarkParse from "remark-parse";
 import { unified } from "unified";
 import { computed } from "vue";
+import HighlightCodeBlock from "@/components/HighlightCodeBlock";
 import AstToMarkdown from "./AstToVNode.vue";
 import CodeBlock from "./CodeBlock.vue";
 

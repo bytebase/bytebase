@@ -4,15 +4,20 @@
 
 <script lang="ts" setup>
 import Emittery from "emittery";
-import { computed, reactive, toRef } from "vue";
+import { storeToRefs } from "pinia";
+import { computed, reactive, ref, toRef } from "vue";
+import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import {
   useConnectionOfCurrentSQLEditorTab,
   useMetadata,
   useSettingV1Store,
+  useSQLEditorTabStore,
 } from "@/store";
 import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
-import { provideAIContext, useChatByTab } from "../logic";
-import type { AIContextEvents } from "../types";
+import { wrapRefAsPromise } from "@/utils";
+import { provideAIContext, useChatByTab, useCurrentChat } from "../logic";
+import { useConversationStore } from "../store";
+import type { AIContext, AIContextEvents } from "../types";
 
 type LocalState = {
   showHistoryDialog: boolean;
@@ -43,14 +48,44 @@ const databaseMetadata = useMetadata(
 
 const events: AIContextEvents = new Emittery();
 const chat = useChatByTab();
+const showHistoryDialog = toRef(state, "showHistoryDialog");
+const pendingSendChat = ref<{ content: string }>();
 
-provideAIContext({
+const { currentTab: tab } = storeToRefs(useSQLEditorTabStore());
+const store = useConversationStore();
+
+const context: AIContext = {
   openAIKey,
   openAIEndpoint,
   engine: computed(() => instance.value.engine),
   databaseMetadata,
-  showHistoryDialog: toRef(state, "showHistoryDialog"),
+  showHistoryDialog,
   chat,
+  pendingSendChat,
   events,
+};
+provideAIContext(context);
+
+const { ready, selected: selectedConversation } = useCurrentChat(context);
+
+useEmitteryEventListener(events, "new-conversation", async () => {
+  console.log("handle event new conversation");
+  if (!tab.value) return;
+  await wrapRefAsPromise(ready, /* expected */ true);
+  showHistoryDialog.value = false;
+  const c = await store.createConversation({
+    name: "",
+    ...tab.value.connection,
+  });
+  selectedConversation.value = c;
+});
+
+useEmitteryEventListener(events, "send-chat", async ({ content }) => {
+  if (!tab.value) return;
+  await wrapRefAsPromise(ready, /* expected */ true);
+  requestAnimationFrame(() => {
+    console.log("should send chat", content);
+    pendingSendChat.value = { content };
+  });
 });
 </script>
