@@ -1637,6 +1637,11 @@
         "disallow": "Prohibir consultar datos desde la conexión de administrador",
         "fallback": "Volver a la conexión de administrador si no hay una conexión de solo lectura disponible"
       }
+    },
+    "statement-execution": {
+      "title": "Ejecución de la declaración",
+      "allow-ddl": "Permitir la ejecución de sentencias DDL en el editor SQL",
+      "allow-dml": "Permitir la ejecución de sentencias DML en el editor SQL"
     }
   },
   "quick-start": {
