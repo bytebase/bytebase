@@ -17,7 +17,7 @@
       class="flex flex-col gap-y-2 items-start md:items-center gap-x-2 justify-center md:flex-row"
     >
       <BBTextField
-        class="flex-1 !text-xl md:!text-2xl py-0.5 px-0.5 font-bold truncate"
+        class="flex-1 !text-xl md:!text-2xl py-0.5 !pl-0 px-0.5 font-bold truncate sql-review-title"
         :disabled="!hasPermission"
         :required="true"
         :focus-on-mount="false"
@@ -365,3 +365,9 @@ const onRemove = () => {
 
 useTitle(computed(() => reviewPolicy.value.name));
 </script>
+
+<style lang="postcss" scoped>
+.sql-review-title :deep(.n-input-wrapper) {
+  padding-left: 0.3rem !important;
+}
+</style>

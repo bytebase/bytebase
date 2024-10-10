@@ -12,6 +12,15 @@
             </template>
           </i18n-t>
         </p>
+        <p v-if="database">
+          <i18n-t keypath="sql-editor.enable-ddl-for-environment">
+            <template #environment>
+              <EnvironmentV1Name
+                :environment="database.effectiveEnvironmentEntity"
+              />
+            </template>
+          </i18n-t>
+        </p>
         <p v-if="descriptions.action && descriptions.reaction">
           <i18n-t keypath="sql-editor.want-to-action">
             <template #want>
@@ -60,6 +69,7 @@ import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { parseSQL, isDDLStatement } from "@/components/MonacoEditor/sqlParser";
+import { EnvironmentV1Name } from "@/components/v2";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import {
   pushNotification,
@@ -67,8 +77,16 @@ import {
   useDatabaseV1Store,
   useSQLEditorTabStore,
 } from "@/store";
+import type { ComposedDatabase } from "@/types";
 import { extractProjectResourceName, hasWorkspacePermissionV2 } from "@/utils";
 import AdminModeButton from "./AdminModeButton.vue";
+
+withDefaults(
+  defineProps<{
+    database?: ComposedDatabase | undefined;
+  }>(),
+  { database: undefined }
+);
 
 const emit = defineEmits<{
   (e: "close"): void;
