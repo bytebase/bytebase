@@ -69,9 +69,8 @@ import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { parseSQL, isDDLStatement } from "@/components/MonacoEditor/sqlParser";
+import { EnvironmentV1Name } from "@/components/v2";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
-import { ENVIRONMENT_V1_ROUTE_DASHBOARD } from "@/router/dashboard/workspaceRoutes";
-import { SQL_EDITOR_SETTING_ENVIRONMENT_MODULE } from "@/router/sqlEditor";
 import {
   pushNotification,
   useAppFeature,
@@ -79,11 +78,7 @@ import {
   useSQLEditorTabStore,
 } from "@/store";
 import type { ComposedDatabase } from "@/types";
-import {
-  extractProjectResourceName,
-  hasWorkspacePermissionV2,
-  extractEnvironmentResourceName,
-} from "@/utils";
+import { extractProjectResourceName, hasWorkspacePermissionV2 } from "@/utils";
 import AdminModeButton from "./AdminModeButton.vue";
 
 withDefaults(
