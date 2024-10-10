@@ -1,6 +1,6 @@
 <template>
   <div
-    class="w-full h-auto flex-grow flex flex-col justify-start items-start overflow-auto"
+    class="w-full h-full flex-grow flex flex-col justify-start items-start overflow-auto"
   >
     <MonacoEditor
       class="w-full h-full"
@@ -28,6 +28,7 @@
 import { storeToRefs } from "pinia";
 import { v1 as uuidv1 } from "uuid";
 import { computed, nextTick, ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import type {
   AdviceOption,
   IStandaloneCodeEditor,
@@ -42,6 +43,9 @@ import {
 } from "@/components/MonacoEditor/utils";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import { useExecuteSQL } from "@/composables/useExecuteSQL";
+import { useAIActions } from "@/plugins/ai";
+import { useAIContext } from "@/plugins/ai/logic";
+import * as promptUtils from "@/plugins/ai/logic/prompt";
 import {
   useUIStateStore,
   useWorkSheetAndTabStore,
@@ -51,18 +55,20 @@ import {
 import type { SQLDialect, SQLEditorQueryParams, SQLEditorTab } from "@/types";
 import { dialectOfEngineV1 } from "@/types";
 import { Advice_Status, type Advice } from "@/types/proto/v1/sql_service";
-import { useInstanceV1EditorLanguage } from "@/utils";
+import { nextAnimationFrame, useInstanceV1EditorLanguage } from "@/utils";
 import { useSQLEditorContext } from "../../context";
 
 const emit = defineEmits<{
   (e: "execute", params: SQLEditorQueryParams): void;
 }>();
 
+const { t } = useI18n();
 const tabStore = useSQLEditorTabStore();
 const sheetAndTabStore = useWorkSheetAndTabStore();
 const uiStateStore = useUIStateStore();
-const { events: editorEvents } = useSQLEditorContext();
+const { showAIPanel, events: editorEvents } = useSQLEditorContext();
 const { currentTab, isSwitchingTab } = storeToRefs(tabStore);
+const AIContext = useAIContext();
 const pendingFormatContentCommand = ref(false);
 const pendingSetSelectionCommand = ref<{
   start: { line: number; column: number };
@@ -183,6 +189,44 @@ const handleEditorReady = (
   });
   editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
     handleSaveSheet();
+  });
+  useAIActions(monaco, editor, AIContext, {
+    actions: ["explain-code", "find-problems", "new-chat"],
+    callback: async (action) => {
+      // start new chat if AI panel is not open
+      // continue current chat otherwise
+      const newChat = !showAIPanel.value;
+
+      showAIPanel.value = true;
+      const tab = tabStore.currentTab;
+      const statement = tab?.selectedStatement || tab?.statement;
+      if (!statement) return;
+
+      await nextAnimationFrame();
+      if (action === "explain-code") {
+        AIContext.events.emit("send-chat", {
+          content: promptUtils.explainCode(statement, instance.value.engine),
+          newChat,
+        });
+      }
+      if (action === "find-problems") {
+        AIContext.events.emit("send-chat", {
+          content: promptUtils.findProblems(statement, instance.value.engine),
+          newChat,
+        });
+      }
+      if (action === "new-chat") {
+        const statement = tab?.selectedStatement ?? "";
+        const inputs: string[] = [];
+        if (statement) {
+          inputs.push(`// ${t("plugin.ai.text-to-sql-placeholder")}`);
+          inputs.push(promptUtils.wrapStatementMarkdown(statement));
+        }
+        AIContext.events.emit("new-conversation", {
+          input: inputs.join("\n"),
+        });
+      }
+    },
   });
 
   watch(

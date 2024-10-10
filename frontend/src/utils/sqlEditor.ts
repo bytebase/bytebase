@@ -37,7 +37,6 @@ export const defaultSQLEditorTab = (): SQLEditorTab => {
     status: "NEW",
     mode: DEFAULT_SQL_EDITOR_TAB_MODE,
     worksheet: "",
-    editMode: "SQL-EDITOR",
     treeState: {
       database: UNKNOWN_DATABASE_NAME,
       keys: [],
