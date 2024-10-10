@@ -31,6 +31,7 @@
           callback: handleFormatContent,
         }"
         class="w-full h-full relative"
+        @ready="handleEditorReady"
       />
     </Pane>
     <Pane v-if="showAIPanel" :size="30" class="overflow-hidden flex flex-col">
@@ -55,11 +56,18 @@ import { NButton, NCheckbox } from "naive-ui";
 import { Pane, Splitpanes } from "splitpanes";
 import { computed } from "vue";
 import { BBSpin } from "@/bbkit";
-import { MonacoEditor } from "@/components/MonacoEditor";
+import {
+  MonacoEditor,
+  type IStandaloneCodeEditor,
+  type MonacoModule,
+} from "@/components/MonacoEditor";
 import formatSQL from "@/components/MonacoEditor/sqlFormatter";
-import { AIChatToSQL } from "@/plugins/ai";
+import { AIChatToSQL, useAIActions } from "@/plugins/ai";
+import { useAIContext } from "@/plugins/ai/logic";
+import * as promptUtils from "@/plugins/ai/logic/prompt";
 import type { ComposedDatabase } from "@/types";
 import { dialectOfEngineV1 } from "@/types";
+import { nextAnimationFrame } from "@/utils";
 import { useSQLEditorContext } from "@/views/sql-editor/context";
 import OpenAIButton from "./OpenAIButton.vue";
 
@@ -74,6 +82,7 @@ defineEmits<{
 }>();
 
 const { showAIPanel } = useSQLEditorContext();
+const AIContext = useAIContext();
 const format = useLocalStorage<boolean>(
   "bb.sql-editor.editor-panel.code-viewer.format",
   false
@@ -110,5 +119,28 @@ const content = computed(() => {
 
 const handleFormatContent = () => {
   format.value = true;
+};
+
+const handleEditorReady = (
+  monaco: MonacoModule,
+  editor: IStandaloneCodeEditor
+) => {
+  useAIActions(monaco, editor, AIContext, {
+    actions: ["explain-code"],
+    callback: async (action) => {
+      showAIPanel.value = true;
+      if (action !== "explain-code") return;
+
+      await nextAnimationFrame();
+      AIContext.events.emit("new-conversation");
+      await nextAnimationFrame();
+      AIContext.events.emit("send-chat", {
+        content: promptUtils.explainCode(
+          props.code,
+          props.db.instanceResource.engine
+        ),
+      });
+    },
+  });
 };
 </script>
