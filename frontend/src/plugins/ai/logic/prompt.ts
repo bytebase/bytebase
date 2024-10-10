@@ -64,9 +64,10 @@ export const declaration = (
 
 export const findProblems = (statement: string, engine?: Engine) => {
   const prompts: string[] = [];
-  prompts.push("Find potential problems in the following SQL code");
+  prompts.push(
+    "Find potential problems in the following SQL code. Explain and try to give the correct statement."
+  );
   prompts.push(wrapStatementMarkdown(statement, engine));
-  prompts.push(`and try to give the correct statement.`);
   return prompts.join("\n");
 };
 
