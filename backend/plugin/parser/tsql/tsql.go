@@ -252,3 +252,22 @@ func NormalizeFullTableName(ctx parser.IFull_table_nameContext) (*FullTableName,
 
 	return &fullTableName, nil
 }
+
+func NormalizeFullColumnName(ctx parser.IFull_column_nameContext) (*FullTableName, string, error) {
+	if ctx == nil {
+		return nil, "", nil
+	}
+	fullTableName := (*FullTableName)(nil)
+	var err error
+	if ctx.Full_table_name() != nil {
+		fullTableName, err = NormalizeFullTableName(ctx.Full_table_name())
+		if err != nil {
+			return nil, "", err
+		}
+	}
+	if ctx.GetColumn_name() == nil {
+		return fullTableName, "", nil
+	}
+	id, _ := NormalizeTSQLIdentifier(ctx.GetColumn_name())
+	return fullTableName, id, nil
+}
