@@ -2370,6 +2370,7 @@
     "no-data-available": "データなし",
     "download-as-file": "{file} 形式でダウンロード",
     "only-select-allowed": "{select} ステートメントのみが実行を許可されます",
+    "enable-ddl-for-environment": "環境 {environment} に対して DDL/DML ステートメントを有効にすることができます。",
     "want-to-action": "{want} が必要な場合は、「{action}」ボタン {reaction} をクリックしてください。",
     "and-submit-an-issue": "そしてチケットを提出してください",
     "to-enable-admin-mode": "管理者モードを有効にするには",

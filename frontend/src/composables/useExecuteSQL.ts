@@ -13,6 +13,7 @@ import {
   useSQLStore,
   useSQLEditorQueryHistoryStore,
   useAppFeature,
+  usePolicyV1Store,
 } from "@/store";
 import type {
   ComposedDatabase,
@@ -22,6 +23,7 @@ import type {
   SQLEditorTab,
 } from "@/types";
 import { isValidDatabaseName } from "@/types";
+import { PolicyType } from "@/types/proto/v1/org_policy_service";
 import {
   Advice,
   Advice_Status,
@@ -56,7 +58,9 @@ const useExecuteSQL = () => {
   const databaseStore = useDatabaseV1Store();
   const tabStore = useSQLEditorTabStore();
   const sqlEditorStore = useSQLEditorStore();
+  const policyStore = usePolicyV1Store();
   const sqlCheckStyle = useAppFeature("bb.feature.sql-editor.sql-check-style");
+
   const changeMode =
     useAppFeature("bb.feature.database-change-mode").value === "EDITOR"
       ? "RW"
@@ -307,9 +311,18 @@ const useExecuteSQL = () => {
         continue;
       }
 
+      const policy = await policyStore.getOrFetchPolicyByParentAndType({
+        parentPath: database.effectiveEnvironment,
+        policyType: PolicyType.DATA_SOURCE_QUERY,
+      });
+
       try {
         let resultSet: SQLResultSetV1;
-        if (changeMode === "RO") {
+        if (
+          changeMode === "RO" &&
+          !policy?.dataSourceQueryPolicy?.enableDdl &&
+          !policy?.dataSourceQueryPolicy?.enableDml
+        ) {
           const instance = isValidDatabaseName(database.name)
             ? database.instance
             : params.connection.instance;
@@ -358,10 +371,12 @@ const useExecuteSQL = () => {
             const database = databaseStore.getDatabaseByName(
               params.connection.database
             );
+
             // Show a tips to navigate to issue creation
             // if the user is allowed to create issue in the project.
             if (hasPermissionToCreateChangeDatabaseIssue(database)) {
               sqlEditorStore.isShowExecutingHint = true;
+              sqlEditorStore.executingHintDatabase = database;
               cleanup();
             }
             fail(database, resultSet);
