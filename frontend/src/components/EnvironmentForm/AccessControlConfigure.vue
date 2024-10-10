@@ -61,9 +61,14 @@
       </div>
     </div>
   </div>
-  <div v-if="isDev()" class="flex flex-col gap-y-2">
+  <div
+    v-if="isDev() && databaseChangeMode === 'PIPELINE'"
+    class="flex flex-col gap-y-2"
+  >
     <div class="textlabel flex items-center space-x-2">
-      <label> Statement execution </label>
+      <label>
+        {{ $t("environment.statement-execution.title") }}
+      </label>
     </div>
     <div>
       <div class="w-full inline-flex items-center gap-x-2">
@@ -78,7 +83,7 @@
           "
         />
         <span class="textlabel">
-          Allow running DDL statements in the SQL editor
+          {{ $t("environment.statement-execution.allow-ddl") }}
         </span>
       </div>
       <div class="w-full inline-flex items-center gap-x-2">
@@ -93,7 +98,7 @@
           "
         />
         <span class="textlabel">
-          Allow running DML statements in the SQL editor
+          {{ $t("environment.statement-execution.allow-dml") }}
         </span>
       </div>
     </div>
@@ -104,7 +109,12 @@
 import { NRadioGroup, NRadio } from "naive-ui";
 import { computed, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
-import { hasFeature, pushNotification, usePolicyV1Store } from "@/store";
+import {
+  hasFeature,
+  pushNotification,
+  usePolicyV1Store,
+  useAppFeature,
+} from "@/store";
 import {
   DataSourceQueryPolicy,
   DataSourceQueryPolicy_Restriction,
@@ -121,6 +131,7 @@ const props = defineProps<{
 
 const policyStore = usePolicyV1Store();
 const { t } = useI18n();
+const databaseChangeMode = useAppFeature("bb.feature.database-change-mode");
 
 watchEffect(async () => {
   await Promise.all([

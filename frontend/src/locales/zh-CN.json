@@ -1637,6 +1637,11 @@
         "disallow": "禁止用管理员连接查询数据",
         "fallback": "如果没有只读连接可用，则回退到管理员连接"
       }
+    },
+    "statement-execution": {
+      "title": "语句执行",
+      "allow-ddl": "允许在 SQL 编辑器中运行 DDL 语句",
+      "allow-dml": "允许在 SQL 编辑器中运行 DML 语句"
     }
   },
   "quick-start": {
