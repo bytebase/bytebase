@@ -1,6 +1,6 @@
 <template>
   <div
-    class="w-full h-[28px] flex flex-row gap-x-2 justify-between items-center"
+    class="w-full h-[44px] px-2 py-2 border-b flex flex-row justify-between items-center"
   >
     <NTabs
       v-model:value="state.mode"
@@ -32,9 +32,15 @@
           style="width: 10rem"
         />
 
-        <NCheckbox v-if="state.mode === 'DEFINITION'" v-model:checked="format">
-          {{ $t("sql-editor.format") }}
-        </NCheckbox>
+        <div v-if="state.mode === 'DEFINITION'" class="flex items-center gap-2">
+          <NCheckbox
+            v-if="state.mode === 'DEFINITION'"
+            v-model:checked="format"
+          >
+            {{ $t("sql-editor.format") }}
+          </NCheckbox>
+          <OpenAIButton size="small" :code="view.definition" />
+        </div>
       </template>
     </NTabs>
   </div>
@@ -77,6 +83,7 @@ import type {
   ViewMetadata,
 } from "@/types/proto/v1/database_service";
 import { useEditorPanelContext } from "../../context";
+import OpenAIButton from "../common/OpenAIButton.vue";
 import ColumnsTable from "./ColumnsTable.vue";
 import DefinitionViewer from "./DefinitionViewer.vue";
 import DependentColumnsTable from "./DependentColumnsTable.vue";
