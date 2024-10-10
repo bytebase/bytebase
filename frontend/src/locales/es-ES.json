@@ -2371,6 +2371,7 @@
     "no-data-available": "No hay datos disponibles",
     "download-as-file": "Descargar como {file}",
     "only-select-allowed": "Solo se permiten declaraciones {select} para ejecutar.",
+    "enable-ddl-for-environment": "Puede habilitar la declaración DDL/DML para el entorno {environment}.",
     "want-to-action": "Si desea {want}, haga clic en el botón {action} {reaction}.",
     "and-submit-an-issue": "y enviar un problema",
     "to-enable-admin-mode": "para habilitar el modo administrador",

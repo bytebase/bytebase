@@ -26,7 +26,6 @@ type RevisionMessage struct {
 }
 
 type FindRevisionMessage struct {
-	InstanceUID int
 	DatabaseUID int
 
 	Limit  *int
@@ -43,8 +42,7 @@ func (s *Store) ListRevisions(ctx context.Context, find *FindRevisionMessage) ([
 			created_ts,
 			payload
 		FROM revision
-		WHERE instance_id = $1
-		AND database_id = $2
+		WHERE database_id = $1
 	`
 
 	if v := find.Limit; v != nil {
@@ -60,7 +58,7 @@ func (s *Store) ListRevisions(ctx context.Context, find *FindRevisionMessage) ([
 	}
 	defer tx.Rollback()
 
-	rows, err := tx.QueryContext(ctx, query, find.InstanceUID, find.DatabaseUID)
+	rows, err := tx.QueryContext(ctx, query, find.DatabaseUID)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to query context")
 	}

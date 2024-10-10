@@ -306,7 +306,7 @@
       "description": "Los tipos no signados no almacenan números negativos, y el rango de valores que pueden almacenar se duplica, lo que puede evitar que las columnas de autoincremento desborden. Nivel de error sugerido: Advertencia"
     },
     "column-comment": {
-      "title": "Convención de comentarios de tabla",
+      "title": "Convención de comentarios de columnas",
       "description": "Agregar comentarios a las columnas es una buena práctica de desarrollo, pero comentarios demasiado largos pueden disminuir la legibilidad del esquema. Nivel de error sugerido: Advertencia",
       "component": {
         "required": {
@@ -542,6 +542,10 @@
     "schema-backward-compatibility": {
       "title": "Comprobación de la compatibilidad con versiones anteriores de la aplicación",
       "description": "Algunos cambios pueden afectar las aplicaciones en ejecución, como modificar el nombre del objeto de la base de datos, agregar nuevas restricciones, etc. Esta regla puede evitar cambios descuidados que lleven al fallo de la aplicación existente. Nivel de error sugerido: Advertencia"
+    },
+    "statement-max-execution-time": {
+      "title": "Tiempo máximo de ejecución",
+      "description": "Establezca el tiempo máximo de ejecución de las sentencias SQL. Si el tiempo de ejecución supera el límite, la sentencia finalizará. Nivel de error sugerido: Error"
     },
     "database-drop-empty-database": {
       "title": "Prohibir eliminar base de datos no vacía",

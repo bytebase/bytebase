@@ -2371,6 +2371,7 @@
     "no-data-available": "暂无数据",
     "download-as-file": "下载为 {file} 格式",
     "only-select-allowed": "只允许执行 {select} 语句",
+    "enable-ddl-for-environment": "您可以为环境 {environment} 启用 DDL/DML 语句。",
     "want-to-action": "如果您想要{want}，点击“{action}”按钮{reaction}。",
     "and-submit-an-issue": "并提交一个工单",
     "to-enable-admin-mode": "来开启管理员模式",

@@ -1676,7 +1676,7 @@ When paginating, all other parameters provided to `ListReleasesRequest` must mat
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name of the file. Expressed as a path, e.g. `2.2/V0001_create_table.sql` |
 | sheet | [string](#string) |  | The sheet that holds the content. Format: projects/{project}/sheets/{sheet} |
-| sheet_sha1 | [string](#string) |  | The SHA1 hash value of the sheet. |
+| sheet_sha256 | [string](#string) |  | The SHA256 hash value of the sheet. |
 | type | [ReleaseFileType](#bytebase-v1-ReleaseFileType) |  |  |
 | version | [string](#string) |  |  |
 
@@ -2704,7 +2704,7 @@ ProcedureMetadata is the metadata for procedures.
 | creator | [string](#string) |  | Format: users/hello@world.com |
 | create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | sheet | [string](#string) |  | The sheet that holds the content. Format: projects/{project}/sheets/{sheet} |
-| sheet_sha1 | [string](#string) |  | The SHA1 hash value of the sheet. |
+| sheet_sha256 | [string](#string) |  | The SHA256 hash value of the sheet. |
 | type | [ReleaseFileType](#bytebase-v1-ReleaseFileType) |  |  |
 | version | [string](#string) |  |  |
 | file | [string](#string) |  | The name of the file in the release. Expressed as a path, e.g. `2.2/V0001_create_table.sql` Can be empty. |
@@ -7314,12 +7314,14 @@ The identity provider&#39;s `name` field is used to identify the identity provid
 <a name="bytebase-v1-DataSourceQueryPolicy"></a>
 
 ### DataSourceQueryPolicy
-
+DataSourceQueryPolicy is the policy configuration for running statements in the SQL editor.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | admin_data_source_restriction | [DataSourceQueryPolicy.Restriction](#bytebase-v1-DataSourceQueryPolicy-Restriction) |  |  |
+| enable_ddl | [bool](#bool) |  | Allow running DDL statements in the SQL editor. |
+| enable_dml | [bool](#bool) |  | Allow running DML statements in the SQL editor. |
 
 
 

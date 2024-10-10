@@ -524,6 +524,18 @@ func GetReviewConfigID(name string) (string, error) {
 	return tokens[0], nil
 }
 
+func GetReleaseUID(name string) (int64, error) {
+	tokens, err := GetNameParentTokens(name, ProjectNamePrefix, ReleaseNamePrefix)
+	if err != nil {
+		return 0, err
+	}
+	releaseUID, err := strconv.ParseInt(tokens[1], 10, 64)
+	if err != nil {
+		return 0, errors.Wrapf(err, "failed to convert %q to int64", tokens[1])
+	}
+	return releaseUID, nil
+}
+
 var branchRegexp = regexp.MustCompile("^projects/([^/]+)/branches/(.+)$")
 
 // GetProjectAndBranchID returns the project and branch ID from a resource name.

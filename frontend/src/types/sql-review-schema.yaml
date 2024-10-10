@@ -652,6 +652,12 @@
 - type: statement.disallow-cross-db-queries
   category: STATEMENT
   engine: MSSQL
+- type: statement.max-execution-time
+  category: STATEMENT
+  engine: MYSQL
+- type: statement.max-execution-time
+  category: STATEMENT
+  engine: MARIADB
 - type: naming.fully-qualified
   category: NAMING
   engine: POSTGRES
@@ -2073,6 +2079,14 @@
         type: NUMBER
         default: 100000000
   engine: MYSQL
+- type: advice.online-migration
+  category: ADVICE
+  componentList:
+    - key: number
+      payload:
+        type: NUMBER
+        default: 100000000
+  engine: MARIADB
 - type: statement.add-foreign-key-not-valid
   category: STATEMENT
   engine: POSTGRES

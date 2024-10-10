@@ -9385,6 +9385,13 @@ components:
                         - DISALLOW
                     type: string
                     format: enum
+                enableDdl:
+                    type: boolean
+                    description: Allow running DDL statements in the SQL editor.
+                enableDml:
+                    type: boolean
+                    description: Allow running DML statements in the SQL editor.
+            description: DataSourceQueryPolicy is the policy configuration for running statements in the SQL editor.
         DataSource_Address:
             type: object
             properties:
@@ -12223,10 +12230,10 @@ components:
                     description: |-
                         The sheet that holds the content.
                          Format: projects/{project}/sheets/{sheet}
-                sheetSha1:
+                sheetSha256:
                     readOnly: true
                     type: string
-                    description: The SHA1 hash value of the sheet.
+                    description: The SHA256 hash value of the sheet.
                 type:
                     enum:
                         - TYPE_UNSPECIFIED
@@ -12411,10 +12418,10 @@ components:
                     description: |-
                         The sheet that holds the content.
                          Format: projects/{project}/sheets/{sheet}
-                sheetSha1:
+                sheetSha256:
                     readOnly: true
                     type: string
-                    description: The SHA1 hash value of the sheet.
+                    description: The SHA256 hash value of the sheet.
                 type:
                     enum:
                         - TYPE_UNSPECIFIED

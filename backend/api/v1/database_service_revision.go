@@ -48,7 +48,6 @@ func (s *DatabaseService) ListRevisions(ctx context.Context, request *v1pb.ListR
 
 	find := &store.FindRevisionMessage{
 		DatabaseUID: database.UID,
-		InstanceUID: instance.UID,
 		Limit:       &limitPlusOne,
 		Offset:      &offset,
 	}
@@ -98,15 +97,15 @@ func convertToRevision(ctx context.Context, s *store.Store, parent string, revis
 	}
 
 	return &v1pb.Revision{
-		Name:       fmt.Sprintf("%s/%s%d", parent, common.RevisionNamePrefix, revision.UID),
-		Release:    revision.Payload.Release,
-		CreateTime: timestamppb.New(revision.CreatedTime),
-		Creator:    common.FormatUserEmail(creator.Email),
-		Sheet:      revision.Payload.Sheet,
-		SheetSha1:  revision.Payload.SheetSha1,
-		Type:       v1pb.ReleaseFileType(revision.Payload.Type),
-		Version:    revision.Payload.Version,
-		File:       revision.Payload.File,
-		TaskRun:    revision.Payload.TaskRun,
+		Name:        fmt.Sprintf("%s/%s%d", parent, common.RevisionNamePrefix, revision.UID),
+		Release:     revision.Payload.Release,
+		CreateTime:  timestamppb.New(revision.CreatedTime),
+		Creator:     common.FormatUserEmail(creator.Email),
+		Sheet:       revision.Payload.Sheet,
+		SheetSha256: revision.Payload.SheetSha256,
+		Type:        v1pb.ReleaseFileType(revision.Payload.Type),
+		Version:     revision.Payload.Version,
+		File:        revision.Payload.File,
+		TaskRun:     revision.Payload.TaskRun,
 	}, nil
 }

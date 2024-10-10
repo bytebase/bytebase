@@ -143,7 +143,7 @@ func (g *generator) EnterUpdatestmt(ctx *parser.UpdatestmtContext) {
 				}
 			}
 			// The field is written by user and no need to escape.
-			if _, err := fmt.Fprintf(&buf, `%s = EXCLUDED.%s`, field, field); err != nil {
+			if _, err := fmt.Fprintf(&buf, `"%s" = EXCLUDED."%s"`, field, field); err != nil {
 				g.err = errors.Wrapf(err, "failed to generate update statement")
 				return
 			}
@@ -164,7 +164,10 @@ type setFieldListener struct {
 
 func (l *setFieldListener) EnterSet_clause(ctx *parser.Set_clauseContext) {
 	if ctx.Set_target() != nil {
-		l.result = append(l.result, ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.Set_target()))
+		names := normalizePostgreSQLSetTarget(ctx.Set_target())
+		if len(names) > 0 {
+			l.result = append(l.result, names[len(names)-1])
+		}
 	}
 }
 

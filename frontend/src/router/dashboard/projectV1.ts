@@ -509,7 +509,7 @@ const projectV1Routes: RouteRecordRaw[] = [
               overrideTitle: true,
               requiredProjectPermissionList: () => ["bb.projects.get"],
             },
-            component: () => import("@/views/project/ProjectReleaseDetail.vue"),
+            component: () => import("@/components/Release/ReleaseDetail/"),
             props: true,
           },
         ],

@@ -135,6 +135,7 @@
     "jquery": "3.7.1",
     "jsdom": "25.0.1",
     "long": "^5.2.3",
+    "micromark": "^4.0.0",
     "micromark-util-sanitize-uri": "^2.0.0",
     "postcss": "8.4.47",
     "prettier": "3.3.3",

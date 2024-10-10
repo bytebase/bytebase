@@ -306,7 +306,7 @@
       "description": "Unsigned types do not store negative numbers, and the range of values that can be stored by the same type is doubled, which can avoid auto-increment columns overflow. Suggested error level: Warning"
     },
     "column-comment": {
-      "title": "Table comment convention",
+      "title": "Column comment convention",
       "description": "Adding comments to columns is a good development practice, but excessively long comments can decrease the readability of the schema. Suggested error level: Warning",
       "component": {
         "required": {
@@ -542,6 +542,10 @@
     "schema-backward-compatibility": {
       "title": "Check application backward compatibility",
       "description": "Some changes may affect running applications, such as modifying the name of database object, adding new constraints, etc. This rule can avoid careless changes that lead to the failure of existing application. Suggestion error level: Warning"
+    },
+    "statement-max-execution-time": {
+      "title": "Max execution time",
+      "description": "Set the maximum execution time for SQL statements. If the execution time exceeds the limit, the statement will be terminated. Suggestion error level: Error"
     },
     "database-drop-empty-database": {
       "title": "Prohibit deleting non-empty database",

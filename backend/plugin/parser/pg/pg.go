@@ -172,6 +172,25 @@ func NormalizePostgreSQLQualifiedName(ctx parser.IQualified_nameContext) []strin
 	return res
 }
 
+func normalizePostgreSQLSetTarget(ctx parser.ISet_targetContext) []string {
+	if ctx == nil {
+		return []string{}
+	}
+
+	var res []string
+	res = append(res, NormalizePostgreSQLColid(ctx.Colid()))
+	res = append(res, normalizePostgreSQLOptIndirection(ctx.Opt_indirection())...)
+	return res
+}
+
+func normalizePostgreSQLOptIndirection(ctx parser.IOpt_indirectionContext) []string {
+	var res []string
+	for _, child := range ctx.AllIndirection_el() {
+		res = append(res, normalizePostgreSQLIndirectionEl(child))
+	}
+	return res
+}
+
 func normalizePostgreSQLIndirection(ctx parser.IIndirectionContext) []string {
 	if ctx == nil {
 		return []string{}
@@ -224,6 +243,21 @@ func NormalizePostgreSQLColid(ctx parser.IColidContext) string {
 
 	// For non-quote identifier, we just return the lower string for PostgreSQL.
 	return strings.ToLower(ctx.GetText())
+}
+
+func normalizePostgreSQLAnyIdentifier(ctx parser.IAny_identifierContext) string {
+	if ctx == nil {
+		return ""
+	}
+
+	switch {
+	case ctx.Colid() != nil:
+		return NormalizePostgreSQLColid(ctx.Colid())
+	case ctx.Plsql_unreserved_keyword() != nil:
+		return strings.ToLower(ctx.Plsql_unreserved_keyword().GetText())
+	}
+
+	return ""
 }
 
 func normalizePostgreSQLIdentifier(ctx parser.IIdentifierContext) string {

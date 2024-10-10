@@ -521,6 +521,12 @@ ruleList:
   - type: statement.disallow-cross-db-queries
     level: WARNING
     engine: MSSQL
+  - type: statement.max-execution-time
+    level: ERROR
+    engine: MYSQL
+  - type: statement.max-execution-time
+    level: ERROR
+    engine: MARIADB
   - type: naming.fully-qualified
     level: WARNING
     engine: POSTGRES
@@ -1495,6 +1501,11 @@ ruleList:
     payload:
       number: 100000000
     engine: MYSQL
+  - type: advice.online-migration
+    level: ERROR
+    payload:
+      number: 100000000
+    engine: MARIADB
   - type: statement.add-foreign-key-not-valid
     level: WARNING
     engine: POSTGRES

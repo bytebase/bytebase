@@ -11,7 +11,7 @@
         <Switch
           :value="disableCopyDataPolicy"
           :text="true"
-          :disabled="!allowUpdatePolicy"
+          :disabled="!allowUpdatePolicy || !hasAccessControlFeature"
           @update:value="updateDisableCopyDataPolicy"
         />
         <span class="textlabel">{{
@@ -23,7 +23,7 @@
           <Switch
             :value="adminDataSourceQueruRestrictionEnabled"
             :text="true"
-            :disabled="!allowUpdatePolicy"
+            :disabled="!allowUpdatePolicy || !hasAccessControlFeature"
             @update:value="switchDataSourceQueryPolicyEnabled"
           />
           <span class="textlabel">{{
@@ -33,7 +33,7 @@
         <div v-if="adminDataSourceQueruRestrictionEnabled" class="ml-12">
           <NRadioGroup
             :value="adminDataSourceQueruRestriction"
-            :disabled="!allowUpdatePolicy"
+            :disabled="!allowUpdatePolicy || !hasAccessControlFeature"
             @update:value="updateAdminDataSourceQueryRestrctionPolicy"
           >
             <NRadio
@@ -61,6 +61,43 @@
       </div>
     </div>
   </div>
+  <div v-if="isDev()" class="flex flex-col gap-y-2">
+    <div class="textlabel flex items-center space-x-2">
+      <label> Statement execution </label>
+    </div>
+    <div>
+      <div class="w-full inline-flex items-center gap-x-2">
+        <Switch
+          :value="dataSourceQueryPolicy?.enableDdl"
+          :text="true"
+          :disabled="!allowUpdatePolicy"
+          @update:value="
+            (on: boolean) => {
+              updateAdminDataSourceQueryRestrctionPolicy({ enableDdl: on });
+            }
+          "
+        />
+        <span class="textlabel">
+          Allow running DDL statements in the SQL editor
+        </span>
+      </div>
+      <div class="w-full inline-flex items-center gap-x-2">
+        <Switch
+          :value="dataSourceQueryPolicy?.enableDml"
+          :text="true"
+          :disabled="!allowUpdatePolicy"
+          @update:value="
+            (on: boolean) => {
+              updateAdminDataSourceQueryRestrctionPolicy({ enableDml: on });
+            }
+          "
+        />
+        <span class="textlabel">
+          Allow running DML statements in the SQL editor
+        </span>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -69,10 +106,11 @@ import { computed, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import { hasFeature, pushNotification, usePolicyV1Store } from "@/store";
 import {
+  DataSourceQueryPolicy,
   DataSourceQueryPolicy_Restriction,
   PolicyType,
 } from "@/types/proto/v1/org_policy_service";
-import { hasWorkspacePermissionV2 } from "@/utils";
+import { hasWorkspacePermissionV2, isDev } from "@/utils";
 import { FeatureBadge } from "../FeatureGuard";
 import { Switch } from "../v2";
 
@@ -125,12 +163,12 @@ const adminDataSourceQueruRestrictionEnabled = computed(() => {
   );
 });
 
+const hasAccessControlFeature = computed(() =>
+  hasFeature("bb.feature.access-control")
+);
+
 const allowUpdatePolicy = computed(() => {
-  return (
-    props.allowEdit &&
-    hasWorkspacePermissionV2("bb.policies.update") &&
-    hasFeature("bb.feature.access-control")
-  );
+  return props.allowEdit && hasWorkspacePermissionV2("bb.policies.update");
 });
 
 const updateDisableCopyDataPolicy = async (on: boolean) => {
@@ -148,21 +186,26 @@ const updateDisableCopyDataPolicy = async (on: boolean) => {
 };
 
 const switchDataSourceQueryPolicyEnabled = async (on: boolean) => {
-  await updateAdminDataSourceQueryRestrctionPolicy(
-    on
+  await updateAdminDataSourceQueryRestrctionPolicy({
+    adminDataSourceRestriction: on
       ? DataSourceQueryPolicy_Restriction.DISALLOW
-      : DataSourceQueryPolicy_Restriction.RESTRICTION_UNSPECIFIED
-  );
+      : DataSourceQueryPolicy_Restriction.RESTRICTION_UNSPECIFIED,
+  });
 };
 
 const updateAdminDataSourceQueryRestrctionPolicy = async (
-  restrction: DataSourceQueryPolicy_Restriction
+  policy: Partial<DataSourceQueryPolicy>
 ) => {
-  await policyStore.createPolicy(props.resource, {
-    type: PolicyType.DATA_SOURCE_QUERY,
-    dataSourceQueryPolicy: {
-      adminDataSourceRestriction: restrction,
+  await policyStore.upsertPolicy({
+    parentPath: props.resource,
+    policy: {
+      type: PolicyType.DATA_SOURCE_QUERY,
+      dataSourceQueryPolicy: DataSourceQueryPolicy.fromPartial({
+        ...(dataSourceQueryPolicy.value ?? {}),
+        ...policy,
+      }),
     },
+    updateMask: ["payload"],
   });
   pushNotification({
     module: "bytebase",

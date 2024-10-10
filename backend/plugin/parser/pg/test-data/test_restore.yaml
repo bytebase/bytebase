@@ -1,11 +1,11 @@
 - input: |-
-    UPDATE t_generated SET "a" = 1 WHERE b = 1;
-    UPDATE t_generated SET "a" = 2 WHERE b = 2;
-    UPDATE t_generated SET "a" = 3 WHERE b = 3;
-    UPDATE t_generated SET "a" = 4 WHERE b = 4;
-    UPDATE t_generated SET "a" = 5 WHERE b = 5;
-    UPDATE t_generated SET "a" = 6 WHERE b = 6;
-    UPDATE t_generated SET "a" = 7 WHERE b = 7;
+    UPDATE t_generated as t SET t."a" = 1 WHERE b = 1;
+    UPDATE t_generated as t SET t."a" = 2 WHERE b = 2;
+    UPDATE t_generated as t SET t."a" = 3 WHERE b = 3;
+    UPDATE t_generated as t SET t."a" = 4 WHERE b = 4;
+    UPDATE t_generated as t SET t."a" = 5 WHERE b = 5;
+    UPDATE t_generated as t SET t."a" = 6 WHERE b = 6;
+    UPDATE t_generated as t SET t."a" = 7 WHERE b = 7;
   backupdatabase: bbarchive
   backuptable: prefix_t_generated
   originaldatabase: db
@@ -13,13 +13,13 @@
   result: |-
     /*
     Original SQL:
-    UPDATE t_generated SET "a" = 1 WHERE b = 1;
-    UPDATE t_generated SET "a" = 2 WHERE b = 2;
-    UPDATE t_generated SET "a" = 3 WHERE b = 3;
-    UPDATE t_generated SET "a" = 4 WHERE b = 4;
-    UPDATE t_generated SET "a" = 5 WHERE b = 5;
-    UPDATE t_generated SET "a" = 6 WHERE b = 6;
-    UPDATE t_generated SET "a" = 7 WHERE b = 7
+    UPDATE t_generated as t SET t."a" = 1 WHERE b = 1;
+    UPDATE t_generated as t SET t."a" = 2 WHERE b = 2;
+    UPDATE t_generated as t SET t."a" = 3 WHERE b = 3;
+    UPDATE t_generated as t SET t."a" = 4 WHERE b = 4;
+    UPDATE t_generated as t SET t."a" = 5 WHERE b = 5;
+    UPDATE t_generated as t SET t."a" = 6 WHERE b = 6;
+    UPDATE t_generated as t SET t."a" = 7 WHERE b = 7
     */
     INSERT INTO "public"."t_generated" SELECT * FROM "bbarchive"."prefix_t_generated" ON CONFLICT ON CONSTRAINT "t_generated_pk" DO UPDATE SET "a" = EXCLUDED."a";
 - input: |-
@@ -45,7 +45,7 @@
     UPDATE t_generated SET A = 6 WHERE b = 6;
     UPDATE t_generated SET A = 7 WHERE b = 7
     */
-    INSERT INTO "public"."t_generated" SELECT * FROM "bbarchive"."prefix_t_generated" ON CONFLICT ON CONSTRAINT "t_generated_pk" DO UPDATE SET A = EXCLUDED.A;
+    INSERT INTO "public"."t_generated" SELECT * FROM "bbarchive"."prefix_t_generated" ON CONFLICT ON CONSTRAINT "t_generated_pk" DO UPDATE SET "a" = EXCLUDED."a";
 - input: DELETE FROM t_generated where a = 1;
   backupdatabase: bbarchive
   backuptable: prefix_1_t_generated
@@ -67,7 +67,7 @@
     Original SQL:
     UPDATE t_generated SET a = 1 WHERE a = 2
     */
-    INSERT INTO "public"."t_generated" SELECT * FROM "bbarchive"."prefix_1_t_generated" ON CONFLICT ON CONSTRAINT "t_generated_pk" DO UPDATE SET a = EXCLUDED.a;
+    INSERT INTO "public"."t_generated" SELECT * FROM "bbarchive"."prefix_1_t_generated" ON CONFLICT ON CONSTRAINT "t_generated_pk" DO UPDATE SET "a" = EXCLUDED."a";
 - input: UPDATE test x SET x.c = 1 WHERE x.a = 1;
   backupdatabase: bbarchive
   backuptable: prefix_1_test
@@ -78,7 +78,7 @@
     Original SQL:
     UPDATE test x SET x.c = 1 WHERE x.a = 1
     */
-    INSERT INTO "public"."test" SELECT * FROM "bbarchive"."prefix_1_test" ON CONFLICT ON CONSTRAINT "test_pk" DO UPDATE SET x.c = EXCLUDED.x.c;
+    INSERT INTO "public"."test" SELECT * FROM "bbarchive"."prefix_1_test" ON CONFLICT ON CONSTRAINT "test_pk" DO UPDATE SET "c" = EXCLUDED."c";
 - input: UPDATE test SET c = 1 WHERE a = 1;
   backupdatabase: bbarchive
   backuptable: prefix_1_test
@@ -89,4 +89,4 @@
     Original SQL:
     UPDATE test SET c = 1 WHERE a = 1
     */
-    INSERT INTO "public"."test" SELECT * FROM "bbarchive"."prefix_1_test" ON CONFLICT ON CONSTRAINT "test_pk" DO UPDATE SET c = EXCLUDED.c;
+    INSERT INTO "public"."test" SELECT * FROM "bbarchive"."prefix_1_test" ON CONFLICT ON CONSTRAINT "test_pk" DO UPDATE SET "c" = EXCLUDED."c";

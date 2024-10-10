@@ -369,6 +369,7 @@ message TagPolicy {
   map<string, string> tags = 1;
 }
 
+// DataSourceQueryPolicy is the policy configuration for running statements in the SQL editor.
 message DataSourceQueryPolicy {
   enum Restriction {
     RESTRICTION_UNSPECIFIED = 0;
@@ -378,4 +379,9 @@ message DataSourceQueryPolicy {
     DISALLOW = 2;
   }
   Restriction admin_data_source_restriction = 1;
+
+  // Allow running DDL statements in the SQL editor.
+  bool enable_ddl = 2;
+  // Allow running DML statements in the SQL editor.
+  bool enable_dml = 3;
 }
