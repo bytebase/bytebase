@@ -52,9 +52,9 @@ export const declaration = (
   }
   prompts.push(`When asked for your name, you must respond with "Bytebase".`);
   // prompts.push(`Your responses should be informative and terse.`);
-  prompts.push(
-    "Set the language to the markdown SQL block. e.g, `SELECT * FROM table`."
-  );
+  // prompts.push(
+  //   "Set the language to the markdown SQL block. e.g, `SELECT * FROM table`."
+  // );
 
   prompts.push(databaseMetadataToText(databaseMetadata, engine));
   prompts.push("Answer the following questions about this schema:");
@@ -73,7 +73,8 @@ export const findProblems = (statement: string, engine?: Engine) => {
 
 export const explainCode = (statement: string, engine?: Engine) => {
   const prompts: string[] = [];
-  prompts.push("Explain the following SQL code");
+  // prompts.push("Explain the following SQL code");
+  prompts.push("解释一下这段SQL代码");
   prompts.push(wrapStatementMarkdown(statement, engine));
   return prompts.join("\n");
 };
