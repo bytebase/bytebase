@@ -68,7 +68,26 @@ const columnList = computed((): DataTableColumn<ComposedRelease>[] => {
       title: t("common.title"),
       ellipsis: true,
       render: (release) => {
-        return <div class="flex items-center space-x-2">{release.title}</div>;
+        return release.title;
+      },
+    },
+    {
+      key: "files",
+      title: "Files",
+      ellipsis: true,
+      render: (release) => {
+        return (
+          <div class="flex items-center space-x-4">
+            {release.files.map((file) => (
+              <div class="flex items-center space-x-1">
+                <code class="text-sm">{file.name}</code>
+                <code class="text-sm text-gray-400">
+                  ({file.sheetSha256.slice(0, 8)})
+                </code>
+              </div>
+            ))}
+          </div>
+        );
       },
     },
     {
