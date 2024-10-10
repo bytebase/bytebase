@@ -2,7 +2,11 @@ import Emittery from "emittery";
 import { head, isEmpty } from "lodash-es";
 import { Status } from "nice-grpc-common";
 import { markRaw, reactive } from "vue";
-import { parseSQL } from "@/components/MonacoEditor/sqlParser";
+import {
+  parseSQL,
+  isDDLStatement,
+  isDMLStatement,
+} from "@/components/MonacoEditor/sqlParser";
 import { sqlServiceClient } from "@/grpcweb";
 import { t } from "@/plugins/i18n";
 import {
@@ -318,11 +322,20 @@ const useExecuteSQL = () => {
 
       try {
         let resultSet: SQLResultSetV1;
-        if (
-          changeMode === "RO" &&
-          !policy?.dataSourceQueryPolicy?.enableDdl &&
-          !policy?.dataSourceQueryPolicy?.enableDml
-        ) {
+
+        if (changeMode === "RO") {
+          const isDDL = isDDLStatement(data, "some");
+          const isDML = isDMLStatement(data, "some");
+
+          if (
+            (isDDL && !policy?.dataSourceQueryPolicy?.enableDdl) ||
+            (isDML && !policy?.dataSourceQueryPolicy?.enableDml)
+          ) {
+            sqlEditorStore.isShowExecutingHint = true;
+            sqlEditorStore.executingHintDatabase = database;
+            return cleanup();
+          }
+
           const instance = isValidDatabaseName(database.name)
             ? database.instance
             : params.connection.instance;

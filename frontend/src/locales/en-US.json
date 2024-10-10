@@ -1637,6 +1637,11 @@
         "disallow": "Disallow querying data from the admin connection",
         "fallback": "Fallback to the admin connection if no read-only connection is available"
       }
+    },
+    "statement-execution": {
+      "title": "Statement execution",
+      "allow-ddl": "Allow running DDL statements in the SQL editor",
+      "allow-dml": "Allow running DML statements in the SQL editor"
     }
   },
   "quick-start": {

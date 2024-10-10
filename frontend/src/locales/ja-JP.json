@@ -1637,6 +1637,11 @@
         "disallow": "管理者接続からのデータクエリを禁止する",
         "fallback": "読み取り専用接続が利用できない場合、管理者接続にフォールバックする"
       }
+    },
+    "statement-execution": {
+      "title": "ステートメントの実行",
+      "allow-ddl": "SQLエディタでDDL文を実行できるようにする",
+      "allow-dml": "SQL エディタで DML ステートメントを実行できるようにする"
     }
   },
   "quick-start": {
