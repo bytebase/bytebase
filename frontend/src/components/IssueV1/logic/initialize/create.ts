@@ -1,8 +1,8 @@
-import { cloneDeep, groupBy, orderBy } from "lodash-es";
+import { cloneDeep, groupBy, orderBy, uniq } from "lodash-es";
 import { v4 as uuidv4 } from "uuid";
 import { reactive } from "vue";
 import { useRoute } from "vue-router";
-import { rolloutServiceClient } from "@/grpcweb";
+import { planServiceClient, rolloutServiceClient } from "@/grpcweb";
 import type { TemplateType } from "@/plugins";
 import {
   useBranchStore,
@@ -91,7 +91,7 @@ export const createIssueSkeleton = async (
   issue.plan = plan.name;
   issue.planEntity = plan;
 
-  const rollout = await previewPlan(plan, params);
+  const rollout = await generateRolloutFromPlan(plan, params);
   issue.rollout = rollout.name;
   issue.rolloutEntity = rollout;
 
@@ -136,6 +136,7 @@ const buildIssue = async (params: CreateIssueParams) => {
 
 export const buildPlan = async (params: CreateIssueParams) => {
   const { project, query } = params;
+  const sheetStore = useSheetV1Store();
   let databaseNameList = (query.databaseList ?? "").split(",");
   const databaseGroupName = query.databaseGroupName;
   // Prepare database list if databaseGroupName and changelist are specified.
@@ -151,10 +152,30 @@ export const buildPlan = async (params: CreateIssueParams) => {
     }
   }
   await prepareDatabaseList(databaseNameList, project.name);
-  const plan = Plan.fromPartial({
+  let plan = Plan.fromPartial({
     name: `${project.name}/plans/${nextUID()}`,
   });
-  if (query.changelist) {
+  if (query.release) {
+    // TODO(steven): handle ghost mode.
+    const { plan: planPreview } = await planServiceClient.previewPlan({
+      project: project.name,
+      release: query.release,
+      targets: databaseNameList ?? [databaseGroupName],
+    });
+    if (planPreview) {
+      plan = {
+        ...planPreview,
+        name: plan.name,
+      };
+    }
+    // Prepare sheets for plan.
+    const sheets = uniq(
+      plan.steps.flatMap((step) => step.specs.map(sheetNameForSpec))
+    );
+    for (const sheetName of sheets) {
+      await sheetStore.getOrFetchSheetByName(sheetName);
+    }
+  } else if (query.changelist) {
     // build plan for changelist
     plan.steps = await buildStepsViaChangelist(
       databaseNameList,
@@ -391,7 +412,10 @@ export const buildSpecForTarget = async (
   return spec;
 };
 
-export const previewPlan = async (plan: Plan, params: CreateIssueParams) => {
+export const generateRolloutFromPlan = async (
+  plan: Plan,
+  params: CreateIssueParams
+) => {
   const project = useProjectV1Store().getProjectByName(
     `projects/${extractProjectResourceName(plan.name)}`
   );
