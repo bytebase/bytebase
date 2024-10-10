@@ -3228,7 +3228,12 @@
       },
       "send": "Send",
       "new-line": "New line",
-      "ai-assistant": "AI Assistant"
+      "ai-assistant": "AI Assistant",
+      "not-configured": {
+        "self": "AI Assistant is not configured.",
+        "contact-admin-to-configure": "Please contact your org administrator.",
+        "go-to-configure": "Go to configure"
+      }
     }
   },
   "custom-approval": {

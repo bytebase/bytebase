@@ -3228,7 +3228,12 @@
       },
       "send": "发送",
       "new-line": "换行",
-      "ai-assistant": "AI 助手"
+      "ai-assistant": "AI 助手",
+      "not-configured": {
+        "self": "AI 助手尚未配置。",
+        "contact-admin-to-configure": "请联系您的组织管理员。",
+        "go-to-configure": "前往配置"
+      }
     }
   },
   "custom-approval": {

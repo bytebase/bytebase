@@ -3228,7 +3228,12 @@
       },
       "send": "Enviar",
       "new-line": "Nueva linea",
-      "ai-assistant": "Asistente de IA"
+      "ai-assistant": "Asistente de IA",
+      "not-configured": {
+        "self": "El Asistente AI no está configurado.",
+        "contact-admin-to-configure": "Comuníquese con el administrador de su organización.",
+        "go-to-configure": "Ir a configurar"
+      }
     }
   },
   "custom-approval": {
