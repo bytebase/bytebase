@@ -15,17 +15,9 @@
         <p v-if="database">
           <i18n-t keypath="sql-editor.enable-ddl-for-environment">
             <template #environment>
-              <RouterLink
-                class="normal-link"
-                :to="{
-                  name: disallowNavigateToConsole
-                    ? SQL_EDITOR_SETTING_ENVIRONMENT_MODULE
-                    : ENVIRONMENT_V1_ROUTE_DASHBOARD,
-                  hash: `#${extractEnvironmentResourceName(database.effectiveEnvironmentEntity.name)}`,
-                }"
-              >
-                {{ database.effectiveEnvironmentEntity.title }}
-              </RouterLink>
+              <EnvironmentV1Name
+                :environment="database.effectiveEnvironmentEntity"
+              />
             </template>
           </i18n-t>
         </p>
