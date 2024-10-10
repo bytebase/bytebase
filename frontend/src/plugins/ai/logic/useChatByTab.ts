@@ -55,8 +55,8 @@ export const useChatByTab = () => {
   });
 };
 
-export const useCurrentChat = () => {
-  const { chat } = useAIContext();
+export const useCurrentChat = (context = useAIContext()) => {
+  const { chat } = context;
   const list = computed(() => chat.value.list.value);
   const ready = computed(() => chat.value.ready.value);
   const selected = computed({

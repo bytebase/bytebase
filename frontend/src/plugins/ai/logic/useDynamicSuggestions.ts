@@ -5,7 +5,7 @@ import { hashCode } from "@/bbkit/BBUtil";
 import { WebStorageHelper } from "@/utils";
 import type { OpenAIMessage, OpenAIResponse } from "../types";
 import { useAIContext } from "./context";
-import { databaseMetadataToText } from "./utils";
+import { databaseMetadataToText } from "./prompt";
 
 export type SuggestionContext = {
   schema: string; // schema text

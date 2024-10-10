@@ -44,8 +44,6 @@
         />
       </NButtonGroup>
 
-      <OpenAIButton size="small" />
-
       <NPopover placement="bottom">
         <template #trigger>
           <AdminModeButton
@@ -125,6 +123,11 @@
         <DatabaseChooser />
         <SchemaChooser />
       </NButtonGroup>
+
+      <OpenAIButton
+        size="small"
+        :statement="currentTab?.selectedStatement || currentTab?.statement"
+      />
     </div>
   </div>
 
@@ -165,7 +168,7 @@ import { useSQLEditorContext } from "../context";
 import AdminModeButton from "./AdminModeButton.vue";
 import BatchQueryDatabasesSelector from "./BatchQueryDatabasesSelector.vue";
 import DatabaseChooser from "./DatabaseChooser.vue";
-import OpenAIButton from "./OpenAIButton.vue";
+import OpenAIButton from "./OpenAIButton";
 import QueryContextSettingPopover from "./QueryContextSettingPopover.vue";
 import SchemaChooser from "./SchemaChooser.vue";
 import SharePopover from "./SharePopover.vue";
