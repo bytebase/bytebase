@@ -135,6 +135,9 @@ export interface Release_File {
   sheetSha256: string;
   type: ReleaseFileType;
   version: string;
+  /** The statement is used for preview purpose. */
+  statement: string;
+  statementSize: Long;
 }
 
 export interface Release_VCSSource {
@@ -653,7 +656,15 @@ export const Release: MessageFns<Release> = {
 };
 
 function createBaseRelease_File(): Release_File {
-  return { name: "", sheet: "", sheetSha256: "", type: ReleaseFileType.TYPE_UNSPECIFIED, version: "" };
+  return {
+    name: "",
+    sheet: "",
+    sheetSha256: "",
+    type: ReleaseFileType.TYPE_UNSPECIFIED,
+    version: "",
+    statement: "",
+    statementSize: Long.ZERO,
+  };
 }
 
 export const Release_File: MessageFns<Release_File> = {
@@ -672,6 +683,12 @@ export const Release_File: MessageFns<Release_File> = {
     }
     if (message.version !== "") {
       writer.uint32(42).string(message.version);
+    }
+    if (message.statement !== "") {
+      writer.uint32(50).string(message.statement);
+    }
+    if (!message.statementSize.equals(Long.ZERO)) {
+      writer.uint32(56).int64(message.statementSize.toString());
     }
     return writer;
   },
@@ -718,6 +735,20 @@ export const Release_File: MessageFns<Release_File> = {
 
           message.version = reader.string();
           continue;
+        case 6:
+          if (tag !== 50) {
+            break;
+          }
+
+          message.statement = reader.string();
+          continue;
+        case 7:
+          if (tag !== 56) {
+            break;
+          }
+
+          message.statementSize = Long.fromString(reader.int64().toString());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -734,6 +765,8 @@ export const Release_File: MessageFns<Release_File> = {
       sheetSha256: isSet(object.sheetSha256) ? globalThis.String(object.sheetSha256) : "",
       type: isSet(object.type) ? releaseFileTypeFromJSON(object.type) : ReleaseFileType.TYPE_UNSPECIFIED,
       version: isSet(object.version) ? globalThis.String(object.version) : "",
+      statement: isSet(object.statement) ? globalThis.String(object.statement) : "",
+      statementSize: isSet(object.statementSize) ? Long.fromValue(object.statementSize) : Long.ZERO,
     };
   },
 
@@ -754,6 +787,12 @@ export const Release_File: MessageFns<Release_File> = {
     if (message.version !== "") {
       obj.version = message.version;
     }
+    if (message.statement !== "") {
+      obj.statement = message.statement;
+    }
+    if (!message.statementSize.equals(Long.ZERO)) {
+      obj.statementSize = (message.statementSize || Long.ZERO).toString();
+    }
     return obj;
   },
 
@@ -767,6 +806,10 @@ export const Release_File: MessageFns<Release_File> = {
     message.sheetSha256 = object.sheetSha256 ?? "";
     message.type = object.type ?? ReleaseFileType.TYPE_UNSPECIFIED;
     message.version = object.version ?? "";
+    message.statement = object.statement ?? "";
+    message.statementSize = (object.statementSize !== undefined && object.statementSize !== null)
+      ? Long.fromValue(object.statementSize)
+      : Long.ZERO;
     return message;
   },
 };

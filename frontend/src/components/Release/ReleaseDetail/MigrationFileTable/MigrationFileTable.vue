@@ -2,7 +2,7 @@
   <NDataTable
     size="small"
     :columns="columnList"
-    :data="migrationFiles"
+    :data="release.files"
     :striped="true"
     :row-key="(file) => file.version"
   />
@@ -16,29 +16,34 @@ import { useReleaseDetailContext } from "../context";
 
 const { release } = useReleaseDetailContext();
 
-const migrationFiles = computed(() => release.value.files);
-
 const columnList = computed(() => {
   const columns: DataTableColumn<Release_File>[] = [
     {
       key: "version",
       title: "Version",
-      ellipsis: true,
+      width: 150,
       render: (file) => file.version,
     },
     {
       key: "title",
       title: "Filename",
+      width: 200,
       ellipsis: true,
       render: (file) => file.name,
     },
     {
       key: "sheetSha256",
-      width: 150,
       title: "Hash",
+      width: 150,
       render: (file) => {
         return <code class={"text-sm"}>{file.sheetSha256.slice(0, 8)}</code>;
       },
+    },
+    {
+      key: "statement",
+      title: "Statement",
+      ellipsis: true,
+      render: (file) => file.statement,
     },
   ];
   return columns;

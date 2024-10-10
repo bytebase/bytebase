@@ -12242,6 +12242,13 @@ components:
                     format: enum
                 version:
                     type: string
+                statement:
+                    readOnly: true
+                    type: string
+                    description: The statement is used for preview purpose.
+                statementSize:
+                    readOnly: true
+                    type: string
         Release_VCSSource:
             type: object
             properties:
