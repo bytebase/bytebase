@@ -15,7 +15,11 @@
       <NCheckbox v-model:checked="format">
         {{ $t("sql-editor.format") }}
       </NCheckbox>
-      <OpenAIButton size="small" :code="code" />
+      <OpenAIButton
+        size="small"
+        :statement="code"
+        :actions="['explain-code']"
+      />
     </div>
   </div>
 
@@ -68,8 +72,8 @@ import * as promptUtils from "@/plugins/ai/logic/prompt";
 import type { ComposedDatabase } from "@/types";
 import { dialectOfEngineV1 } from "@/types";
 import { nextAnimationFrame } from "@/utils";
+import { OpenAIButton } from "@/views/sql-editor/EditorCommon";
 import { useSQLEditorContext } from "@/views/sql-editor/context";
-import OpenAIButton from "./OpenAIButton.vue";
 
 const props = defineProps<{
   db: ComposedDatabase;

@@ -124,7 +124,10 @@
         <SchemaChooser />
       </NButtonGroup>
 
-      <OpenAIButton size="small" />
+      <OpenAIButton
+        size="small"
+        :statement="currentTab?.selectedStatement || currentTab?.statement"
+      />
     </div>
   </div>
 

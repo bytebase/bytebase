@@ -39,7 +39,11 @@
           >
             {{ $t("sql-editor.format") }}
           </NCheckbox>
-          <OpenAIButton size="small" :code="view.definition" />
+          <OpenAIButton
+            size="small"
+            :statement="view.definition"
+            :actions="['explain-code']"
+          />
         </div>
       </template>
     </NTabs>
@@ -82,8 +86,8 @@ import type {
   SchemaMetadata,
   ViewMetadata,
 } from "@/types/proto/v1/database_service";
+import { OpenAIButton } from "@/views/sql-editor/EditorCommon";
 import { useEditorPanelContext } from "../../context";
-import OpenAIButton from "../common/OpenAIButton.vue";
 import ColumnsTable from "./ColumnsTable.vue";
 import DefinitionViewer from "./DefinitionViewer.vue";
 import DependentColumnsTable from "./DependentColumnsTable.vue";

@@ -34,7 +34,7 @@ defineOptions({
 
 const props = defineProps<{
   actions?: ChatAction[];
-  customAction?: boolean;
+  statement?: string;
 }>();
 
 const { t } = useI18n();
@@ -52,8 +52,7 @@ const { instance } = useConnectionOfCurrentSQLEditorTab();
 const { events } = useAIContext();
 
 const options = computed(() => {
-  const tab = tabStore.currentTab;
-  const statement = tab?.selectedStatement || tab?.statement;
+  const { statement } = props;
   const options: (SelectOption & { value: ChatAction })[] = [
     {
       value: "explain-code",
@@ -89,8 +88,7 @@ const handleSelect = async (action: ChatAction) => {
 
   showAIPanel.value = true;
   if (action === "explain-code" || action === "find-problems") {
-    const tab = tabStore.currentTab;
-    const statement = tab?.selectedStatement || tab?.statement;
+    const { statement } = props;
     if (!statement) return;
 
     await nextAnimationFrame();
