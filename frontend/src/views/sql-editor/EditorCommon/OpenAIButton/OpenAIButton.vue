@@ -6,6 +6,9 @@
     @update:value="handleSelect"
   >
     <Button v-bind="$attrs" @click="handleClickButton" />
+    <template #header>
+      <span class="font-semibold">{{ $t("plugin.ai.ai-assistant") }}</span>
+    </template>
   </NPopselect>
 </template>
 
@@ -51,21 +54,20 @@ const { events } = useAIContext();
 const options = computed(() => {
   const tab = tabStore.currentTab;
   const statement = tab?.selectedStatement || tab?.statement;
-  const options: (SelectOption & { value: ChatAction; hide?: boolean })[] = [
+  const options: (SelectOption & { value: ChatAction })[] = [
     {
       value: "explain-code",
       label: t("plugin.ai.actions.explain-code"),
-      hide: !statement,
+      disabled: !statement,
     },
     {
       value: "find-problems",
       label: t("plugin.ai.actions.find-problems"),
-      hide: !statement,
+      disabled: !statement,
     },
-    { value: "chat", label: t("plugin.ai.actions.chat") },
+    { value: "new-chat", label: t("plugin.ai.actions.new-chat") },
   ];
   return options.filter((opt) => {
-    if (opt.hide) return false;
     if (props.actions && !props.actions.includes(opt.value)) return false;
     return true;
   });
@@ -81,6 +83,10 @@ const showButton = computed(() => {
 });
 
 const handleSelect = async (action: ChatAction) => {
+  // start new chat if AI panel is not open
+  // continue current chat otherwise
+  const newChat = !showAIPanel.value;
+
   showAIPanel.value = true;
   if (action === "explain-code" || action === "find-problems") {
     const tab = tabStore.currentTab;
@@ -88,18 +94,21 @@ const handleSelect = async (action: ChatAction) => {
     if (!statement) return;
 
     await nextAnimationFrame();
-    events.emit("new-conversation");
-    await nextAnimationFrame();
     if (action === "explain-code") {
       events.emit("send-chat", {
         content: promptUtils.explainCode(statement, instance.value.engine),
+        newChat,
       });
     }
     if (action === "find-problems") {
       events.emit("send-chat", {
         content: promptUtils.findProblems(statement, instance.value.engine),
+        newChat,
       });
     }
+  }
+  if (action === "new-chat") {
+    events.emit("new-conversation");
   }
 };
 

@@ -3222,7 +3222,8 @@
       "actions": {
         "chat": "チャット",
         "explain-code": "コードの説明",
-        "find-problems": "問題を見つける"
+        "find-problems": "問題を見つける",
+        "new-chat": "新しいチャット"
       },
       "send": "送信",
       "new-line": "改行"

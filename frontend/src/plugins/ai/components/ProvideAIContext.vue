@@ -79,9 +79,17 @@ useEmitteryEventListener(events, "new-conversation", async () => {
   selectedConversation.value = c;
 });
 
-useEmitteryEventListener(events, "send-chat", async ({ content }) => {
+useEmitteryEventListener(events, "send-chat", async ({ content, newChat }) => {
   if (!tab.value) return;
   await wrapRefAsPromise(ready, /* expected */ true);
+  if (newChat) {
+    showHistoryDialog.value = false;
+    const c = await store.createConversation({
+      name: "",
+      ...tab.value.connection,
+    });
+    selectedConversation.value = c;
+  }
   requestAnimationFrame(() => {
     pendingSendChat.value = { content };
   });

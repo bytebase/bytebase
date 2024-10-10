@@ -128,17 +128,20 @@ const handleEditorReady = (
   useAIActions(monaco, editor, AIContext, {
     actions: ["explain-code"],
     callback: async (action) => {
+      // start new chat if AI panel is not open
+      // continue current chat otherwise
+      const newChat = !showAIPanel.value;
+
       showAIPanel.value = true;
       if (action !== "explain-code") return;
 
-      await nextAnimationFrame();
-      AIContext.events.emit("new-conversation");
       await nextAnimationFrame();
       AIContext.events.emit("send-chat", {
         content: promptUtils.explainCode(
           props.code,
           props.db.instanceResource.engine
         ),
+        newChat,
       });
     },
   });

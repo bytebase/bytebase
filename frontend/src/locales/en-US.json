@@ -3222,7 +3222,8 @@
       "actions": {
         "chat": "Chat",
         "explain-code": "Explain code",
-        "find-problems": "Find problems"
+        "find-problems": "Find problems",
+        "new-chat": "New chat"
       },
       "send": "Send",
       "new-line": "New line"

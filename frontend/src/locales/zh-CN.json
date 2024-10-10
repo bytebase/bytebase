@@ -3222,7 +3222,8 @@
       "actions": {
         "chat": "对话",
         "explain-code": "解释代码",
-        "find-problems": "找出问题"
+        "find-problems": "找出问题",
+        "new-chat": "开启新对话"
       },
       "send": "发送",
       "new-line": "换行"

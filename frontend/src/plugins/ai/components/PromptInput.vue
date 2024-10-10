@@ -1,5 +1,6 @@
 <template>
   <NInput
+    ref="inputRef"
     v-model:value="state.value"
     :disabled="disabled"
     :placeholder="$t('plugin.ai.text-to-sql-placeholder')"
@@ -12,7 +13,7 @@
     }"
     size="small"
     type="textarea"
-    style="--n-padding-left: 8px; --n-padding-right: 4px;"
+    style="--n-padding-left: 8px; --n-padding-right: 4px"
     @keypress.enter="handlePressEnter"
   >
     <template #prefix>
@@ -26,7 +27,7 @@
             :disabled="!state.value"
             type="primary"
             size="small"
-            style="--n-padding: 0 6px;"
+            style="--n-padding: 0 6px"
             @click="handlePressEnter()"
           >
             ⏎
@@ -50,8 +51,8 @@
 </template>
 
 <script lang="ts" setup>
-import { NButton, NInput, NPopover } from "naive-ui";
-import { reactive } from "vue";
+import { NButton, NInput, NPopover, type InputInst } from "naive-ui";
+import { onMounted, reactive, ref } from "vue";
 import { keyboardShortcutStr } from "@/utils";
 
 type LocalState = {
@@ -75,6 +76,8 @@ const state = reactive<LocalState>({
   value: "",
 });
 
+const inputRef = ref<InputInst>();
+
 const applyValue = (value: string) => {
   state.value = "";
   emit("enter", value);
@@ -87,4 +90,8 @@ const handlePressEnter = (e?: KeyboardEvent) => {
   applyValue(state.value);
   e?.preventDefault();
 };
+
+onMounted(() => {
+  inputRef.value?.textareaElRef?.focus();
+});
 </script>

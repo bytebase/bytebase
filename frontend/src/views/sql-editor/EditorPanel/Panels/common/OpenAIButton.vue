@@ -6,6 +6,9 @@
     @update:value="handleSelect"
   >
     <Button v-bind="$attrs" @click="handleClickButton" />
+    <template #header>
+      <span class="font-semibold">{{ $t("plugin.ai.ai-assistant") }}</span>
+    </template>
   </NPopselect>
 </template>
 
@@ -48,7 +51,7 @@ const { instance } = useConnectionOfCurrentSQLEditorTab();
 const { events } = useAIContext();
 
 const options = computed(() => {
-  const options: SelectOption[] = [
+  const options: (SelectOption & { value: ChatAction })[] = [
     {
       value: "explain-code",
       label: t("plugin.ai.actions.explain-code"),
@@ -67,16 +70,19 @@ const showButton = computed(() => {
 });
 
 const handleSelect = async (action: ChatAction) => {
+  // start new chat if AI panel is not open
+  // continue current chat otherwise
+  const newChat = !showAIPanel.value;
+
   showAIPanel.value = true;
   if (action !== "explain-code") return;
   const { code } = props;
   if (!code) return;
 
   await nextAnimationFrame();
-  events.emit("new-conversation");
-  await nextAnimationFrame();
   events.emit("send-chat", {
     content: promptUtils.explainCode(code, instance.value.engine),
+    newChat,
   });
 };
 
