@@ -2,6 +2,7 @@
 package migrator
 
 import (
+	"bytes"
 	"context"
 	"embed"
 	"fmt"
@@ -17,7 +18,10 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/component/state"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
+	"github.com/bytebase/bytebase/backend/plugin/db"
 	dbdriver "github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/store/model"
@@ -323,7 +327,7 @@ func migrate(ctx context.Context, storeInstance *store.Store, metadataDriver dbd
 				Type:           dbdriver.Migrate,
 				Description:    fmt.Sprintf("Migrate version %s server version %s with files %s.", pv.version, serverVersion, pv.filename),
 			}
-			if _, _, err := utils.ExecuteMigrationDefault(ctx, ctx, storeInstance, nil, 0, metadataDriver, mi, string(buf), nil, dbdriver.ExecuteOptions{}); err != nil {
+			if _, _, err := executeMigrationDefault(ctx, ctx, storeInstance, nil, 0, metadataDriver, mi, string(buf), nil, dbdriver.ExecuteOptions{}); err != nil {
 				return false, err
 			}
 			retVersion = pv.version
@@ -409,7 +413,7 @@ func migrateDev(ctx context.Context, storeInstance *store.Store, metadataDriver 
 			Type:           dbdriver.Migrate,
 			Description:    fmt.Sprintf("Migrate version %s server version %s with files %s.", m.version, serverVersion, m.filename),
 		}
-		if _, _, err := utils.ExecuteMigrationDefault(ctx, ctx, storeInstance, nil, 0, metadataDriver, mi, m.statement, nil, dbdriver.ExecuteOptions{}); err != nil {
+		if _, _, err := executeMigrationDefault(ctx, ctx, storeInstance, nil, 0, metadataDriver, mi, m.statement, nil, dbdriver.ExecuteOptions{}); err != nil {
 			return err
 		}
 	}
@@ -579,4 +583,157 @@ func backfillOracleSchema(ctx context.Context, stores *store.Store) error {
 		}
 	}
 	return nil
+}
+
+// executeMigrationDefault executes migration.
+func executeMigrationDefault(ctx context.Context, driverCtx context.Context, store *store.Store, _ *state.State, taskRunUID int, driver db.Driver, mi *db.MigrationInfo, statement string, sheetID *int, opts db.ExecuteOptions) (migrationHistoryID string, updatedSchema string, resErr error) {
+	execFunc := func(ctx context.Context, execStatement string) error {
+		if _, err := driver.Execute(ctx, execStatement, opts); err != nil {
+			return err
+		}
+		return nil
+	}
+	return executeMigrationWithFunc(ctx, driverCtx, store, taskRunUID, driver, mi, statement, sheetID, execFunc, opts)
+}
+
+// executeMigrationWithFunc executes the migration with custom migration function.
+func executeMigrationWithFunc(ctx context.Context, driverCtx context.Context, s *store.Store, _ int, driver db.Driver, m *db.MigrationInfo, statement string, sheetID *int, execFunc func(ctx context.Context, execStatement string) error, opts db.ExecuteOptions) (migrationHistoryID string, updatedSchema string, resErr error) {
+	var prevSchemaBuf bytes.Buffer
+	if m.Type.NeedDump() {
+		opts.LogSchemaDumpStart()
+		// Don't record schema if the database hasn't existed yet or is schemaless, e.g. MongoDB.
+		// For baseline migration, we also record the live schema to detect the schema drift.
+		// See https://bytebase.com/blog/what-is-database-schema-drift
+		if err := driver.Dump(ctx, &prevSchemaBuf); err != nil {
+			opts.LogSchemaDumpEnd(err.Error())
+			return "", "", err
+		}
+		opts.LogSchemaDumpEnd("")
+	}
+
+	insertedID, err := beginMigration(ctx, s, m, prevSchemaBuf.String(), statement, sheetID)
+	if err != nil {
+		return "", "", errors.Wrapf(err, "failed to begin migration")
+	}
+
+	startedNs := time.Now().UnixNano()
+
+	defer func() {
+		if err := endMigration(ctx, s, startedNs, insertedID, updatedSchema, prevSchemaBuf.String(), sheetID, resErr == nil /* isDone */); err != nil {
+			slog.Error("Failed to update migration history record",
+				log.BBError(err),
+				slog.String("migration_id", migrationHistoryID),
+			)
+		}
+	}()
+
+	// Phase 3 - Executing migration
+	// Branch migration type always has empty sql.
+	// Baseline migration type could has non-empty sql but will not execute.
+	// https://github.com/bytebase/bytebase/issues/394
+	doMigrate := true
+	if statement == "" || m.Type == db.Baseline {
+		doMigrate = false
+	}
+	if doMigrate {
+		renderedStatement := statement
+		// The m.DatabaseID is nil means the migration is a instance level migration
+		if m.DatabaseID != nil {
+			database, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+				UID: m.DatabaseID,
+			})
+			if err != nil {
+				return "", "", err
+			}
+			if database == nil {
+				return "", "", errors.Errorf("database %d not found", *m.DatabaseID)
+			}
+			materials := utils.GetSecretMapFromDatabaseMessage(database)
+			// To avoid leak the rendered statement, the error message should use the original statement and not the rendered statement.
+			renderedStatement = utils.RenderStatement(statement, materials)
+		}
+
+		if err := execFunc(driverCtx, renderedStatement); err != nil {
+			return "", "", err
+		}
+	}
+
+	// Phase 4 - Dump the schema after migration
+	var afterSchemaBuf bytes.Buffer
+	if m.Type.NeedDump() {
+		opts.LogSchemaDumpStart()
+		if err := driver.Dump(ctx, &afterSchemaBuf); err != nil {
+			// We will ignore the dump error if the database is dropped.
+			if strings.Contains(err.Error(), "not found") {
+				return insertedID, "", nil
+			}
+			opts.LogSchemaDumpEnd(err.Error())
+			return "", "", err
+		}
+		opts.LogSchemaDumpEnd("")
+	}
+
+	return insertedID, afterSchemaBuf.String(), nil
+}
+
+// beginMigration checks before executing migration and inserts a migration history record with pending status.
+func beginMigration(ctx context.Context, stores *store.Store, m *db.MigrationInfo, prevSchema, statement string, sheetID *int) (string, error) {
+	// Phase 1 - Pre-check before executing migration
+	// Check if the same migration version has already been applied.
+	if list, err := stores.ListInstanceChangeHistory(ctx, &store.FindInstanceChangeHistoryMessage{
+		InstanceID: m.InstanceID,
+		DatabaseID: m.DatabaseID,
+		Version:    &m.Version,
+	}); err != nil {
+		return "", errors.Wrap(err, "failed to check duplicate version")
+	} else if len(list) > 0 {
+		migrationHistory := list[0]
+		switch migrationHistory.Status {
+		case db.Done:
+			return "", common.Errorf(common.MigrationAlreadyApplied, "database %q has already applied version %s, hint: the version might be duplicate, please check the version", m.Database, m.Version.Version)
+		case db.Pending:
+			err := errors.Errorf("database %q version %s migration is already in progress", m.Database, m.Version.Version)
+			slog.Debug(err.Error())
+			// For force migration, we will ignore the existing migration history and continue to migration.
+			return migrationHistory.UID, nil
+		case db.Failed:
+			err := errors.Errorf("database %q version %s migration has failed, please check your database to make sure things are fine and then start a new migration using a new version", m.Database, m.Version.Version)
+			slog.Debug(err.Error())
+			// For force migration, we will ignore the existing migration history and continue to migration.
+			return migrationHistory.UID, nil
+		}
+	}
+
+	// Phase 2 - Record migration history as PENDING.
+	statementRecord, _ := common.TruncateString(statement, common.MaxSheetSize)
+	insertedID, err := stores.CreatePendingInstanceChangeHistory(ctx, prevSchema, m, statementRecord, sheetID)
+	if err != nil {
+		return "", err
+	}
+
+	return insertedID, nil
+}
+
+// endMigration updates the migration history record to DONE or FAILED depending on migration is done or not.
+func endMigration(ctx context.Context, storeInstance *store.Store, startedNs int64, insertedID string, updatedSchema, schemaPrev string, sheetID *int, isDone bool) error {
+	migrationDurationNs := time.Now().UnixNano() - startedNs
+	update := &store.UpdateInstanceChangeHistoryMessage{
+		ID:                  insertedID,
+		ExecutionDurationNs: &migrationDurationNs,
+		// Update the sheet ID just in case it has been updated.
+		Sheet: sheetID,
+		// Update schemaPrev because we might be re-using a previous change history entry.
+		SchemaPrev: &schemaPrev,
+	}
+	if isDone {
+		// Upon success, update the migration history as 'DONE', execution_duration_ns, updated schema.
+		status := db.Done
+		update.Status = &status
+		update.Schema = &updatedSchema
+	} else {
+		// Otherwise, update the migration history as 'FAILED', execution_duration.
+		status := db.Failed
+		update.Status = &status
+	}
+	return storeInstance.UpdateInstanceChangeHistory(ctx, update)
 }
