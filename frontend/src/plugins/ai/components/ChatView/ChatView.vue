@@ -12,7 +12,7 @@
         <div
           v-for="message in conversation?.messageList"
           :key="message.id"
-          class="flex"
+          class="flex message"
           :class="[message.author === 'AI' ? 'justify-start' : 'justify-end']"
         >
           <UserMessageView

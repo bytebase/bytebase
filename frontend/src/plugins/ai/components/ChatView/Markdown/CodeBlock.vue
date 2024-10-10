@@ -1,5 +1,10 @@
 <template>
-  <div class="flex items-start w-full">
+  <div
+    ref="containerRef"
+    class="flex items-start"
+    :data-message-wrapper-width="messageWrapperWidth"
+    :style="`width: ${width}px`"
+  >
     <div class="flex-1 overflow-x-hidden">
       <MonacoEditor
         :content="code"
@@ -60,13 +65,15 @@
 </template>
 
 <script lang="ts" setup>
+import { useElementSize } from "@vueuse/core";
 import { ClipboardIcon, PlayIcon } from "lucide-vue-next";
 import { NPopover } from "naive-ui";
+import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { MonacoEditor } from "@/components/MonacoEditor";
 import { useAIContext } from "@/plugins/ai/logic";
 import { pushNotification } from "@/store";
-import { toClipboard } from "@/utils";
+import { findAncestor, toClipboard } from "@/utils";
 
 const props = defineProps<{
   code: string;
@@ -74,6 +81,17 @@ const props = defineProps<{
 
 const { t } = useI18n();
 const { events, showHistoryDialog } = useAIContext();
+const containerRef = ref<HTMLElement>();
+const messageWrapperRef = computed(() =>
+  findAncestor(containerRef.value, ".message")
+);
+const { width: messageWrapperWidth } = useElementSize(messageWrapperRef);
+const width = computed(() => {
+  const PADDING = 8;
+  const min = 8 * 16; /* 8rem */
+  const auto = messageWrapperWidth.value * 0.6 - PADDING * 2;
+  return Math.max(min, auto);
+});
 
 const handleExecute = () => {
   events.emit("run-statement", {

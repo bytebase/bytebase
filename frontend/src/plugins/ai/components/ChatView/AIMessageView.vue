@@ -1,11 +1,11 @@
 <template>
   <div
-    class="border rounded shadow py-1 px-1 bg-gray-50 border-gray-400"
+    class="min-w-[9rem] border rounded shadow py-1 px-1 bg-gray-50 border-gray-400"
     :class="[
       message.status === 'DONE'
-        ? 'w-[80%]'
+        ? 'w-[60%]'
         : message.status === 'FAILED'
-          ? 'max-w-[60%]'
+          ? 'max-w-[40%]'
           : 'w-auto',
     ]"
   >
