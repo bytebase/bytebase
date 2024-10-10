@@ -42,6 +42,9 @@ import {
 } from "@/components/MonacoEditor/utils";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import { useExecuteSQL } from "@/composables/useExecuteSQL";
+import { useAIActions } from "@/plugins/ai";
+import { useAIContext } from "@/plugins/ai/logic";
+import * as promptUtils from "@/plugins/ai/logic/prompt";
 import {
   useUIStateStore,
   useWorkSheetAndTabStore,
@@ -51,7 +54,7 @@ import {
 import type { SQLDialect, SQLEditorQueryParams, SQLEditorTab } from "@/types";
 import { dialectOfEngineV1 } from "@/types";
 import { Advice_Status, type Advice } from "@/types/proto/v1/sql_service";
-import { useInstanceV1EditorLanguage } from "@/utils";
+import { nextAnimationFrame, useInstanceV1EditorLanguage } from "@/utils";
 import { useSQLEditorContext } from "../../context";
 
 const emit = defineEmits<{
@@ -61,8 +64,9 @@ const emit = defineEmits<{
 const tabStore = useSQLEditorTabStore();
 const sheetAndTabStore = useWorkSheetAndTabStore();
 const uiStateStore = useUIStateStore();
-const { events: editorEvents } = useSQLEditorContext();
+const { showAIPanel, events: editorEvents } = useSQLEditorContext();
 const { currentTab, isSwitchingTab } = storeToRefs(tabStore);
+const AIContext = useAIContext();
 const pendingFormatContentCommand = ref(false);
 const pendingSetSelectionCommand = ref<{
   start: { line: number; column: number };
@@ -183,6 +187,29 @@ const handleEditorReady = (
   });
   editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
     handleSaveSheet();
+  });
+  useAIActions(monaco, editor, AIContext, {
+    actions: ["explain-code", "find-problems"],
+    callback: async (action) => {
+      showAIPanel.value = true;
+      const tab = tabStore.currentTab;
+      const statement = tab?.selectedStatement || tab?.statement;
+      if (!statement) return;
+
+      await nextAnimationFrame();
+      AIContext.events.emit("new-conversation");
+      await nextAnimationFrame();
+      if (action === "explain-code") {
+        AIContext.events.emit("send-chat", {
+          content: promptUtils.explainCode(statement, instance.value.engine),
+        });
+      }
+      if (action === "find-problems") {
+        AIContext.events.emit("send-chat", {
+          content: promptUtils.findProblems(statement, instance.value.engine),
+        });
+      }
+    },
   });
 
   watch(

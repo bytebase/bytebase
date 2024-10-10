@@ -26,6 +26,10 @@
       <MonacoEditor
         :content="content"
         :readonly="true"
+        :format-content-options="{
+          disabled: format,
+          callback: handleFormatContent,
+        }"
         class="w-full h-full relative"
       />
     </Pane>
@@ -103,4 +107,8 @@ const content = computed(() => {
     ? formatted.value.data
     : props.code;
 });
+
+const handleFormatContent = () => {
+  format.value = true;
+};
 </script>

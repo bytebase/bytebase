@@ -1,7 +1,7 @@
 <template>
   <NPopselect
     v-if="showButton"
-    placement="bottom-start"
+    placement="bottom-end"
     :options="options"
     @update:value="handleSelect"
   >
@@ -32,10 +32,6 @@ defineOptions({
 const props = defineProps<{
   actions?: ChatAction[];
   customAction?: boolean;
-}>();
-
-const emit = defineEmits<{
-  (event: "action", action: ChatAction): void;
 }>();
 
 const { t } = useI18n();
@@ -85,10 +81,6 @@ const showButton = computed(() => {
 });
 
 const handleSelect = async (action: ChatAction) => {
-  if (props.customAction) {
-    emit("action", action);
-    return;
-  }
   showAIPanel.value = true;
   if (action === "explain-code" || action === "find-problems") {
     const tab = tabStore.currentTab;

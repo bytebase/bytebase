@@ -44,8 +44,6 @@
         />
       </NButtonGroup>
 
-      <OpenAIButton size="small" />
-
       <NPopover placement="bottom">
         <template #trigger>
           <AdminModeButton
@@ -125,6 +123,8 @@
         <DatabaseChooser />
         <SchemaChooser />
       </NButtonGroup>
+
+      <OpenAIButton size="small" />
     </div>
   </div>
 
