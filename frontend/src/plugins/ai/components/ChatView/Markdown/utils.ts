@@ -385,29 +385,31 @@ function linkReferenceToVNode(
 }
 
 type ListProps = {
-  start: number;
+  start?: number;
 };
 
 function listToVNode(
   node: RootContentMap["list"],
   state?: State
 ): VNode | string {
-  const properties: ListProps = {
-    start: 1,
-  };
+  const properties: ListProps = {};
 
   const children = node.children.map((node) =>
     defaultMdNodeToVNode(node, state)
   );
 
-  if (typeof node.start === "number" && node.start !== 1) {
-    properties.start = node.start;
+  if (node.ordered) {
+    if (typeof node.start === "number" && node.start !== 1) {
+      properties.start = node.start;
+    } else {
+      properties.start = 1;
+    }
   }
 
   return h(
     node.ordered ? "ol" : "ul",
     {
-      style: "list-style: auto; margin-left: 1rem;",
+      style: `list-style: ${node.ordered ? "auto" : "initial"}; margin-left: 1rem;`,
       ...properties,
     },
     children
