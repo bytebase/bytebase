@@ -123,6 +123,10 @@ message Release {
     string sheet_sha256 = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
     ReleaseFileType type = 4;
     string version = 5;
+
+    // The statement is used for preview purpose.
+    string statement = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
+    int64 statement_size = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   }
 
   message VCSSource {
