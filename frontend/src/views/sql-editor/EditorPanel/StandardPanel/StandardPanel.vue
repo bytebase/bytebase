@@ -10,12 +10,12 @@
         <EditorAction @execute="handleExecute" />
 
         <Splitpanes v-if="tab" class="default-theme overflow-hidden">
-          <Pane class="">
+          <Pane>
             <Suspense>
               <SQLEditor @execute="handleExecute" />
               <template #fallback>
                 <div
-                  class="w-full h-auto flex-grow flex flex-col items-center justify-center"
+                  class="w-full h-full flex-grow flex flex-col items-center justify-center"
                 >
                   <BBSpin />
                 </div>
@@ -31,7 +31,7 @@
               <AIChatToSQL />
               <template #fallback>
                 <div
-                  class="w-full h-auto flex-grow flex flex-col items-center justify-center"
+                  class="w-full h-full flex-grow flex flex-col items-center justify-center"
                 >
                   <BBSpin />
                 </div>
