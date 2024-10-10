@@ -1080,9 +1080,12 @@ func convertToV1PBDataSourceQueryPolicy(payloadStr string) (*v1pb.Policy_DataSou
 	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(payloadStr), payload); err != nil {
 		return nil, err
 	}
+
 	return &v1pb.Policy_DataSourceQueryPolicy{
 		DataSourceQueryPolicy: &v1pb.DataSourceQueryPolicy{
 			AdminDataSourceRestriction: v1pb.DataSourceQueryPolicy_Restriction(payload.AdminDataSourceRestriction),
+			EnableDdl:                  payload.EnableDdl,
+			EnableDml:                  payload.EnableDml,
 		},
 	}, nil
 }
@@ -1090,6 +1093,8 @@ func convertToV1PBDataSourceQueryPolicy(payloadStr string) (*v1pb.Policy_DataSou
 func convertToDataSourceQueryPayload(policy *v1pb.DataSourceQueryPolicy) (*storepb.DataSourceQueryPolicy, error) {
 	return &storepb.DataSourceQueryPolicy{
 		AdminDataSourceRestriction: storepb.DataSourceQueryPolicy_Restriction(policy.AdminDataSourceRestriction),
+		EnableDdl:                  policy.EnableDdl,
+		EnableDml:                  policy.EnableDml,
 	}, nil
 }
 
