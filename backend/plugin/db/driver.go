@@ -164,6 +164,9 @@ type MigrationInfo struct {
 	Creator        string
 	// Payload contains JSON-encoded string of VCS push event if the migration is triggered by a VCS push event.
 	Payload *storepb.InstanceChangeHistoryPayload
+
+	SheetUID *int
+	Sheet    *string
 }
 
 // ConnectionConfig is the configuration for connections.
