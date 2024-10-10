@@ -61,7 +61,7 @@
       </div>
     </div>
   </div>
-  <div class="flex flex-col gap-y-2">
+  <div v-if="isDev()" class="flex flex-col gap-y-2">
     <div class="textlabel flex items-center space-x-2">
       <label> Statement execution </label>
     </div>
@@ -110,7 +110,7 @@ import {
   DataSourceQueryPolicy_Restriction,
   PolicyType,
 } from "@/types/proto/v1/org_policy_service";
-import { hasWorkspacePermissionV2 } from "@/utils";
+import { hasWorkspacePermissionV2, isDev } from "@/utils";
 import { FeatureBadge } from "../FeatureGuard";
 import { Switch } from "../v2";
 
