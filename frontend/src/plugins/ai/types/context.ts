@@ -5,9 +5,10 @@ import type { DatabaseMetadata } from "@/types/proto/v1/database_service";
 import type { Conversation } from "./conversation";
 
 export type AIContextEvents = Emittery<{
-  "apply-statement": { statement: string; run: boolean };
+  "run-statement": { statement: string };
   error: string;
-  "new-conversation": any;
+  "new-conversation": { input: string };
+  "send-chat": { content: string; newChat?: boolean };
 }>;
 
 export type AIChatInfo = {
@@ -21,10 +22,11 @@ export type AIContext = {
   openAIEndpoint: Ref<string>;
   engine: Ref<Engine | undefined>;
   databaseMetadata: Ref<DatabaseMetadata | undefined>;
-  autoRun: Ref<boolean>;
   showHistoryDialog: Ref<boolean>;
 
   chat: Ref<AIChatInfo>;
+  pendingSendChat: Ref<{ content: string } | undefined>;
+  pendingPreInput: Ref<string | undefined>;
 
   // Events
   events: AIContextEvents;

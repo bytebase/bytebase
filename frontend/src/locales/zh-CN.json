@@ -291,7 +291,8 @@
     "override": "覆盖",
     "encoding": "编码",
     "finish": "完成",
-    "title": "标题"
+    "title": "标题",
+    "hide": "隐藏"
   },
   "error-page": {
     "go-back-home": "回到主页"
@@ -3218,7 +3219,21 @@
       "dont-show-again": "不再显示",
       "text2sql": "Text2SQL",
       "disable-text2sql": "关闭 Text2SQL",
-      "enable-text2sql": "开启 Text2SQL"
+      "enable-text2sql": "开启 Text2SQL",
+      "actions": {
+        "chat": "对话",
+        "explain-code": "解释代码",
+        "find-problems": "找出问题",
+        "new-chat": "开启新对话"
+      },
+      "send": "发送",
+      "new-line": "换行",
+      "ai-assistant": "AI 助手",
+      "not-configured": {
+        "self": "AI 助手尚未配置。",
+        "contact-admin-to-configure": "请联系您的组织管理员。",
+        "go-to-configure": "前往配置"
+      }
     }
   },
   "custom-approval": {

@@ -1,9 +1,6 @@
 import { watch } from "vue";
 import { useCurrentSQLEditorTab } from "@/store";
 import type { SQLEditorConnection } from "@/types";
-import type { Engine } from "@/types/proto/v1/common";
-import type { DatabaseMetadata } from "@/types/proto/v1/database_service";
-import { engineNameV1 } from "@/utils";
 
 export const onConnectionChanged = (
   fn: (
@@ -28,42 +25,4 @@ export const onConnectionChanged = (
     },
     { immediate }
   );
-};
-
-export const databaseMetadataToText = (
-  databaseMetadata: DatabaseMetadata | undefined,
-  engine?: Engine
-) => {
-  const prompts: string[] = [];
-  if (engine) {
-    if (databaseMetadata) {
-      prompts.push(
-        `### ${engineNameV1(engine)} tables, with their properties:`
-      );
-    } else {
-      prompts.push(`### ${engineNameV1(engine)} database`);
-    }
-  } else {
-    if (databaseMetadata) {
-      prompts.push(`### Giving a database`);
-    }
-  }
-  if (databaseMetadata) {
-    databaseMetadata.schemas.forEach((schema) => {
-      schema.tables.forEach((table) => {
-        const name = schema.name ? `${schema.name}.${table.name}` : table.name;
-        const columns = table.columns
-          .map((column) => {
-            if (column.comment) {
-              return `${column.name}(${column.comment})`;
-            } else {
-              return column.name;
-            }
-          })
-          .join(", ");
-        prompts.push(`# ${name}(${columns})`);
-      });
-    });
-  }
-  return prompts.join("\n");
 };

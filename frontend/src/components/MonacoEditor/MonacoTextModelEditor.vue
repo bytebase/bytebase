@@ -75,6 +75,7 @@ import {
   useLineHighlights,
   useLSPConnectionState,
   useOverrideSuggestIcons,
+  type FormatContentOptions,
 } from "./composables";
 import monaco, { createMonacoEditor } from "./editor";
 import type {
@@ -98,6 +99,7 @@ const props = withDefaults(
     advices?: AdviceOption[];
     lineHighlights?: LineHighlightOption[];
     options?: IStandaloneEditorConstructionOptions;
+    formatContentOptions?: FormatContentOptions;
     placeholder?: string;
   }>(),
   {
@@ -110,6 +112,7 @@ const props = withDefaults(
     advices: () => [],
     lineHighlights: () => [],
     options: undefined,
+    formatContentOptions: undefined,
     placeholder: undefined,
   }
 );
@@ -181,7 +184,12 @@ onMounted(async () => {
     useOptions(monaco, editor, toRef(props, "options"));
     useModel(monaco, editor, toRef(props, "model"));
     useSuggestOptionByLanguage(monaco, editor);
-    useFormatContent(monaco, editor, toRef(props, "dialect"));
+    useFormatContent(
+      monaco,
+      editor,
+      toRef(props, "dialect"),
+      toRef(props, "formatContentOptions")
+    );
     const content = useContent(monaco, editor);
     const selectedContent = useSelectedContent(monaco, editor);
     const selection = useSelection(monaco, editor);

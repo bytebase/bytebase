@@ -1,31 +1,22 @@
 <template>
   <div
     v-if="openAIKey"
-    class="w-full flex flex-col"
-    :class="[
-      !isChatMode && 'px-4 py-2 border-t',
-      isChatMode && 'flex-1 overflow-hidden',
-    ]"
+    class="w-full h-full flex-1 flex flex-col overflow-hidden"
   >
-    <template v-if="isChatMode">
-      <ActionBar />
-      <ChatView :conversation="selectedConversation" @enter="requestAI" />
-    </template>
+    <ActionBar />
 
-    <div :class="[isChatMode && 'px-2 py-2 flex flex-col gap-2']">
-      <div v-if="isChatMode" class="flex items-center gap-2 w-full">
-        <DynamicSuggestions class="flex-1" @enter="requestAI" />
-      </div>
-      <PromptInput
-        v-if="tab"
-        @focus="tab.editMode = 'CHAT-TO-SQL'"
-        @enter="requestAI"
-      />
+    <ChatView
+      :conversation="selectedConversation"
+      class="pt-2"
+      @enter="requestAI"
+    />
+
+    <div class="px-2 py-2 flex flex-col gap-2">
+      <DynamicSuggestions class="flex-1 w-full" @enter="requestAI" />
+      <PromptInput v-if="tab" @enter="requestAI" />
     </div>
 
-    <template v-if="isChatMode">
-      <HistoryPanel v-if="showHistoryDialog" />
-    </template>
+    <HistoryPanel />
   </div>
 </template>
 
@@ -34,14 +25,11 @@ import type { AxiosResponse } from "axios";
 import { Axios } from "axios";
 import { head } from "lodash-es";
 import { storeToRefs } from "pinia";
-import { computed, reactive, watch } from "vue";
+import { reactive, watch } from "vue";
 import { useSQLEditorTabStore } from "@/store";
-import {
-  databaseMetadataToText,
-  onConnectionChanged,
-  useAIContext,
-  useCurrentChat,
-} from "../logic";
+import { nextAnimationFrame } from "@/utils";
+import { onConnectionChanged, useAIContext, useCurrentChat } from "../logic";
+import * as promptUtils from "../logic/prompt";
 import { useConversationStore } from "../store";
 import type { OpenAIMessage, OpenAIResponse } from "../types";
 import ActionBar from "./ActionBar.vue";
@@ -60,10 +48,9 @@ const state = reactive<LocalState>({
 
 const { currentTab: tab } = storeToRefs(useSQLEditorTabStore());
 const store = useConversationStore();
-const isChatMode = computed(() => tab.value?.editMode === "CHAT-TO-SQL");
 
 const context = useAIContext();
-const { events, openAIKey, openAIEndpoint, autoRun, showHistoryDialog } =
+const { openAIKey, openAIEndpoint, showHistoryDialog, pendingSendChat } =
   context;
 const {
   list: conversationList,
@@ -83,15 +70,10 @@ const requestAI = async (query: string) => {
     // add extra database schema metadata info if possible
     const engine = context.engine.value;
     const databaseMetadata = context.databaseMetadata.value;
+
     const prompts: string[] = [];
-    prompts.push(`### You are a db and SQL expert.`);
-    prompts.push(
-      `### Your responses should be informative and terse. For example, "Find all the data in the table", you should only return query statements.`
-    );
-    prompts.push(databaseMetadataToText(databaseMetadata, engine));
-    prompts.push(`### Write a SQL statement to solve the question below`);
-    prompts.push(`### ${query}`);
-    prompts.push(`### PLEASE ADD NECESSARY QUOTES IN YOUR RESPONSE STATEMENT.`);
+    prompts.push(promptUtils.declaration(databaseMetadata, engine));
+    prompts.push(query);
     const prompt = prompts.join("\n");
     await store.createMessage({
       conversation_id: conversation.id,
@@ -101,6 +83,7 @@ const requestAI = async (query: string) => {
       error: "",
       status: "DONE",
     });
+    console.debug("[AI Assistant] init chat:", prompt);
   } else {
     await store.createMessage({
       conversation_id: conversation.id,
@@ -166,6 +149,7 @@ const requestAI = async (query: string) => {
     }
 
     const text = head(data?.choices)?.message.content?.trim();
+    console.debug("[AI Assistant] answer:", text);
     if (text) {
       answer.content = text;
       answer.prompt = text;
@@ -181,18 +165,6 @@ const requestAI = async (query: string) => {
     if (conversation.id === conversation.id) {
       if (answer.status === "FAILED") {
         context.events.emit("error", answer.error);
-      } else {
-        if (
-          autoRun.value &&
-          t.id === tab.value.id &&
-          conversation.id === selectedConversation.value?.id
-        ) {
-          // If the chat is still active, emit 'apply-statement' event
-          context.events.emit("apply-statement", {
-            statement: answer.content,
-            run: autoRun.value,
-          });
-        }
       }
     }
   }
@@ -200,16 +172,6 @@ const requestAI = async (query: string) => {
 
 onConnectionChanged(() => {
   showHistoryDialog.value = false;
-});
-
-events.on("new-conversation", async () => {
-  if (!tab.value) return;
-  showHistoryDialog.value = false;
-  const c = await store.createConversation({
-    name: "",
-    ...tab.value.connection,
-  });
-  selectedConversation.value = c;
 });
 
 watch(
@@ -224,5 +186,21 @@ watch(
     }
   },
   { immediate: true }
+);
+
+watch(
+  [ready, pendingSendChat],
+  async ([ready]) => {
+    if (!ready) return;
+
+    await nextAnimationFrame();
+    if (!pendingSendChat.value) return;
+    requestAI(pendingSendChat.value.content);
+    pendingSendChat.value = undefined;
+  },
+  {
+    immediate: true,
+    flush: "post",
+  }
 );
 </script>

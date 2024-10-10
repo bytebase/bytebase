@@ -291,7 +291,8 @@
     "override": "Anular",
     "encoding": "Codificación",
     "finish": "Finalizar",
-    "title": "Título"
+    "title": "Título",
+    "hide": "Esconder"
   },
   "error-page": {
     "go-back-home": "Volver al inicio"
@@ -3218,7 +3219,21 @@
       "dont-show-again": "No mostrar de nuevo",
       "text2sql": "Text2SQL",
       "disable-text2sql": "Deshabilitar Text2SQL",
-      "enable-text2sql": "Habilitar Text2SQL"
+      "enable-text2sql": "Habilitar Text2SQL",
+      "actions": {
+        "chat": "Charlar",
+        "explain-code": "Explicar el código",
+        "find-problems": "encontrar problemas",
+        "new-chat": "Nuevo chat"
+      },
+      "send": "Enviar",
+      "new-line": "Nueva linea",
+      "ai-assistant": "Asistente de IA",
+      "not-configured": {
+        "self": "El Asistente AI no está configurado.",
+        "contact-admin-to-configure": "Comuníquese con el administrador de su organización.",
+        "go-to-configure": "Ir a configurar"
+      }
     }
   },
   "custom-approval": {

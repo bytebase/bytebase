@@ -1,11 +1,8 @@
 <template>
-  <div
-    v-if="metadata?.schema"
-    class="px-2 py-2 gap-y-2 h-full overflow-hidden flex flex-col"
-  >
+  <div v-if="metadata?.schema" class="h-full overflow-hidden flex flex-col">
     <div
       v-show="!metadata.procedure"
-      class="w-full flex flex-row gap-x-2 justify-between items-center"
+      class="w-full h-[44px] py-2 px-2 border-b flex flex-row gap-x-2 justify-between items-center"
     >
       <div class="flex items-center justify-start gap-2">
         <DatabaseChooser />

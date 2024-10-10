@@ -5,8 +5,6 @@ import type {
 import type { SQLResultSetV1 } from "../v1/sql";
 import type { SQLEditorConnection, SQLEditorQueryParams } from "./editor";
 
-export type SQLEditorEditMode = "SQL-EDITOR" | "CHAT-TO-SQL";
-
 export type SQLEditorTabStatus =
   | "NEW" // just created and untouched
   | "DIRTY" // edited
@@ -40,7 +38,6 @@ export type SQLEditorTab = {
   statement: string; // local editing statement, might be out-of-sync to ref sheet's statement
   selectedStatement: string;
   mode: SQLEditorTabMode;
-  editMode: SQLEditorEditMode;
 
   // SQL query related fields
   // won't be saved to localStorage
