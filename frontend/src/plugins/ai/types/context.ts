@@ -7,7 +7,7 @@ import type { Conversation } from "./conversation";
 export type AIContextEvents = Emittery<{
   "run-statement": { statement: string };
   error: string;
-  "new-conversation": any;
+  "new-conversation": { input: string };
   "send-chat": { content: string; newChat?: boolean };
 }>;
 

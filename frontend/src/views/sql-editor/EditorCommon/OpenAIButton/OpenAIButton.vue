@@ -108,7 +108,7 @@ const handleSelect = async (action: ChatAction) => {
     }
   }
   if (action === "new-chat") {
-    events.emit("new-conversation");
+    events.emit("new-conversation", { input: "" });
   }
 };
 

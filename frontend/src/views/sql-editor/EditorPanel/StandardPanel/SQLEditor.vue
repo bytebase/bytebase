@@ -201,8 +201,6 @@ const handleEditorReady = (
       if (!statement) return;
 
       await nextAnimationFrame();
-      AIContext.events.emit("new-conversation");
-      await nextAnimationFrame();
       if (action === "explain-code") {
         AIContext.events.emit("send-chat", {
           content: promptUtils.explainCode(statement, instance.value.engine),

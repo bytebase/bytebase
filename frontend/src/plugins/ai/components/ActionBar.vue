@@ -34,7 +34,7 @@
             size="small"
             quaternary
             style="--n-padding: 0 5px"
-            @click="events.emit('new-conversation')"
+            @click="events.emit('new-conversation', { input: '' })"
           >
             <template #icon>
               <PlusIcon class="w-4 h-4" />

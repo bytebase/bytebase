@@ -50,12 +50,12 @@
 
         <div
           class="sticky bottom-0 btn-normal items-center justify-center gap-x-1"
-          @click="events.emit('new-conversation')"
+          @click="events.emit('new-conversation', { input: '' })"
         >
           <PlusIcon class="w-4 h-4" />
-          <span class="pr-2">{{
-            $t("plugin.ai.conversation.new-conversation")
-          }}</span>
+          <span class="pr-2">
+            {{ $t("plugin.ai.conversation.new-conversation") }}
+          </span>
         </div>
       </template>
       <template v-else>

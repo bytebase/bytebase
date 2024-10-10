@@ -35,7 +35,7 @@
           <template #create>
             <button
               class="normal-link"
-              @click="events.emit('new-conversation')"
+              @click="events.emit('new-conversation', { input: '' })"
             >
               {{ $t("common.create") }}
             </button>

@@ -101,8 +101,6 @@ const handleEditorReady = (
       if (action !== "explain-code") return;
 
       await nextAnimationFrame();
-      AIContext.events.emit("new-conversation");
-      await nextAnimationFrame();
       AIContext.events.emit("send-chat", {
         content: promptUtils.explainCode(
           props.code,
