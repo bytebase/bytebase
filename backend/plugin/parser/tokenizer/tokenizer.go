@@ -592,6 +592,8 @@ func (t *Tokenizer) SplitStandardMultiSQL() ([]base.SingleSQL, error) {
 	t.skipBlank()
 	t.emptyStatement = true
 	startPos := t.cursor
+	firstStatementLine := t.line
+	firstStatementColumn := t.getColumn()
 	for {
 		switch {
 		case t.char(0) == '/' && t.char(1) == '*':
@@ -619,9 +621,11 @@ func (t *Tokenizer) SplitStandardMultiSQL() ([]base.SingleSQL, error) {
 			text := t.getString(startPos, t.pos()-startPos)
 			if t.f == nil {
 				res = append(res, base.SingleSQL{
-					Text:     text,
-					LastLine: t.line - 1, // Convert to 0-based.
-					Empty:    t.emptyStatement,
+					Text:                 text,
+					LastLine:             t.line - 1,             // Convert to 0-based.
+					FirstStatementLine:   firstStatementLine - 1, // Convert to 0-based.
+					FirstStatementColumn: firstStatementColumn,
+					Empty:                t.emptyStatement,
 				})
 			}
 			t.skipBlank()
@@ -629,6 +633,8 @@ func (t *Tokenizer) SplitStandardMultiSQL() ([]base.SingleSQL, error) {
 				return nil, err
 			}
 			startPos = t.pos()
+			firstStatementLine = t.line
+			firstStatementColumn = t.getColumn()
 			t.emptyStatement = true
 		case t.char(0) == eofRune:
 			s := t.getString(startPos, t.pos())
@@ -648,8 +654,10 @@ func (t *Tokenizer) SplitStandardMultiSQL() ([]base.SingleSQL, error) {
 						// but we want to get the line of last line of the SQL
 						// which means the line of ')'.
 						// So we need minus the aboveNonBlankLineDistance.
-						LastLine: t.line - t.aboveNonBlankLineDistance() - 1, // Convert to 0-based.
-						Empty:    t.emptyStatement,
+						LastLine:             t.line - t.aboveNonBlankLineDistance() - 1, // Convert to 0-based.
+						FirstStatementLine:   firstStatementLine - 1,                     // Convert to 0-based.
+						FirstStatementColumn: firstStatementColumn,
+						Empty:                t.emptyStatement,
 					})
 				}
 				if err := t.processStreaming(s); err != nil {
@@ -1045,6 +1053,15 @@ func (t *Tokenizer) skipToNewLine() {
 	}
 	t.line++
 	t.skip(1)
+}
+
+func (t *Tokenizer) getColumn() int {
+	for i := int(t.cursor) - 1; i >= 0; i-- {
+		if t.buffer[i] == '\n' {
+			return int(t.cursor) - i - 1
+		}
+	}
+	return int(t.cursor)
 }
 
 func (t *Tokenizer) pos() uint {
