@@ -3226,7 +3226,8 @@
         "new-chat": "New chat"
       },
       "send": "Send",
-      "new-line": "New line"
+      "new-line": "New line",
+      "ai-assistant": "AI Assistant"
     }
   },
   "custom-approval": {

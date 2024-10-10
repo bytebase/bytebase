@@ -5,7 +5,7 @@
     <div
       class="action-left gap-x-2 flex overflow-x-auto sm:overflow-x-hidden items-center pl-1"
     >
-      <h3>AI Assistant</h3>
+      <h3>{{ $t("plugin.ai.ai-assistant") }}</h3>
     </div>
 
     <div

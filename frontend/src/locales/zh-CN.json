@@ -3226,7 +3226,8 @@
         "new-chat": "开启新对话"
       },
       "send": "发送",
-      "new-line": "换行"
+      "new-line": "换行",
+      "ai-assistant": "AI 助手"
     }
   },
   "custom-approval": {

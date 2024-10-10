@@ -3226,7 +3226,8 @@
         "new-chat": "新しいチャット"
       },
       "send": "送信",
-      "new-line": "改行"
+      "new-line": "改行",
+      "ai-assistant": "AI助手"
     }
   },
   "custom-approval": {

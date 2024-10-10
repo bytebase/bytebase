@@ -92,6 +92,6 @@ const handlePressEnter = (e?: KeyboardEvent) => {
 };
 
 onMounted(() => {
-  inputRef.value?.textareaElRef?.focus();
+  inputRef.value?.focus();
 });
 </script>
