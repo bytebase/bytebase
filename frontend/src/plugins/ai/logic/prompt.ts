@@ -73,8 +73,7 @@ export const findProblems = (statement: string, engine?: Engine) => {
 
 export const explainCode = (statement: string, engine?: Engine) => {
   const prompts: string[] = [];
-  // prompts.push("Explain the following SQL code");
-  prompts.push("解释一下这段SQL代码");
+  prompts.push("Explain the following SQL code");
   prompts.push(wrapStatementMarkdown(statement, engine));
   return prompts.join("\n");
 };
