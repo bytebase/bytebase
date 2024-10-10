@@ -26,6 +26,7 @@ export type AIContext = {
 
   chat: Ref<AIChatInfo>;
   pendingSendChat: Ref<{ content: string } | undefined>;
+  pendingPreInput: Ref<string | undefined>;
 
   // Events
   events: AIContextEvents;

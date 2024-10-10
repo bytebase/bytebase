@@ -52,8 +52,9 @@
 
 <script lang="ts" setup>
 import { NButton, NInput, NPopover, type InputInst } from "naive-ui";
-import { onMounted, reactive, ref } from "vue";
-import { keyboardShortcutStr } from "@/utils";
+import { onMounted, reactive, ref, watch } from "vue";
+import { keyboardShortcutStr, nextAnimationFrame } from "@/utils";
+import { useAIContext } from "../logic";
 
 type LocalState = {
   value: string;
@@ -76,6 +77,7 @@ const state = reactive<LocalState>({
   value: "",
 });
 
+const { pendingPreInput } = useAIContext();
 const inputRef = ref<InputInst>();
 
 const applyValue = (value: string) => {
@@ -94,4 +96,18 @@ const handlePressEnter = (e?: KeyboardEvent) => {
 onMounted(() => {
   inputRef.value?.focus();
 });
+
+watch(
+  pendingPreInput,
+  async () => {
+    await nextAnimationFrame();
+    if (!pendingPreInput.value) return;
+    state.value = pendingPreInput.value;
+    pendingPreInput.value = undefined;
+  },
+  {
+    immediate: true,
+    flush: "post",
+  }
+);
 </script>

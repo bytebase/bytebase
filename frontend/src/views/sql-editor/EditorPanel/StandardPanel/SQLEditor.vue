@@ -28,6 +28,7 @@
 import { storeToRefs } from "pinia";
 import { v1 as uuidv1 } from "uuid";
 import { computed, nextTick, ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import type {
   AdviceOption,
   IStandaloneCodeEditor,
@@ -61,6 +62,7 @@ const emit = defineEmits<{
   (e: "execute", params: SQLEditorQueryParams): void;
 }>();
 
+const { t } = useI18n();
 const tabStore = useSQLEditorTabStore();
 const sheetAndTabStore = useWorkSheetAndTabStore();
 const uiStateStore = useUIStateStore();
@@ -189,7 +191,7 @@ const handleEditorReady = (
     handleSaveSheet();
   });
   useAIActions(monaco, editor, AIContext, {
-    actions: ["explain-code", "find-problems"],
+    actions: ["explain-code", "find-problems", "new-chat"],
     callback: async (action) => {
       // start new chat if AI panel is not open
       // continue current chat otherwise
@@ -211,6 +213,17 @@ const handleEditorReady = (
         AIContext.events.emit("send-chat", {
           content: promptUtils.findProblems(statement, instance.value.engine),
           newChat,
+        });
+      }
+      if (action === "new-chat") {
+        const statement = tab?.selectedStatement ?? "";
+        const inputs: string[] = [];
+        if (statement) {
+          inputs.push(`// ${t("plugin.ai.text-to-sql-placeholder")}`);
+          inputs.push(promptUtils.wrapStatementMarkdown(statement));
+        }
+        AIContext.events.emit("new-conversation", {
+          input: inputs.join("\n"),
         });
       }
     },

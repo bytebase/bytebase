@@ -50,6 +50,7 @@ const events: AIContextEvents = new Emittery();
 const chat = useChatByTab();
 const showHistoryDialog = toRef(state, "showHistoryDialog");
 const pendingSendChat = ref<{ content: string }>();
+const pendingPreInput = ref<string>();
 
 const { currentTab: tab } = storeToRefs(useSQLEditorTabStore());
 const store = useConversationStore();
@@ -62,21 +63,35 @@ const context: AIContext = {
   showHistoryDialog,
   chat,
   pendingSendChat,
+  pendingPreInput,
   events,
 };
 provideAIContext(context);
 
 const { ready, selected: selectedConversation } = useCurrentChat(context);
 
-useEmitteryEventListener(events, "new-conversation", async () => {
+useEmitteryEventListener(events, "new-conversation", async ({ input }) => {
   if (!tab.value) return;
   await wrapRefAsPromise(ready, /* expected */ true);
   showHistoryDialog.value = false;
-  const c = await store.createConversation({
-    name: "",
-    ...tab.value.connection,
-  });
-  selectedConversation.value = c;
+
+  if (
+    !selectedConversation.value ||
+    selectedConversation.value.messageList.length !== 0
+  ) {
+    // reuse if current chat is empty
+    // create new chat otherwise
+    const c = await store.createConversation({
+      name: "",
+      ...tab.value.connection,
+    });
+    selectedConversation.value = c;
+  }
+  if (input) {
+    requestAnimationFrame(() => {
+      pendingPreInput.value = input;
+    });
+  }
 });
 
 useEmitteryEventListener(events, "send-chat", async ({ content, newChat }) => {

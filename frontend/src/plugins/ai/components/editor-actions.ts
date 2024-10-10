@@ -1,8 +1,10 @@
 import type monaco from "monaco-editor";
 import type { MaybeRef } from "vue";
-import { shallowRef, unref, watchEffect } from "vue";
+import { computed, shallowRef, unref, watchEffect } from "vue";
 import type { MonacoModule } from "@/components/MonacoEditor";
+import { useSelectedContent } from "@/components/MonacoEditor/composables";
 import { useTextModelLanguage } from "@/components/MonacoEditor/composables/common";
+import { useEditorContextKey } from "@/components/MonacoEditor/utils";
 import type { AIContext, ChatAction } from "../types";
 
 type AIActionsOptions = {
@@ -23,6 +25,26 @@ export const useAIActions = async (
   const language = useTextModelLanguage(editor);
   const actions = shallowRef<monaco.IDisposable[]>([]);
 
+  const checkContentEmpty = () => {
+    const content = editor.getModel()?.getValue() ?? "";
+    return content.length === 0;
+  };
+  const contentEmpty = useEditorContextKey(
+    editor,
+    "bb.ai.contentEmpty",
+    checkContentEmpty()
+  );
+  editor.onDidChangeModelContent(() => {
+    contentEmpty.set(checkContentEmpty());
+  });
+
+  const selectedContent = useSelectedContent(monaco, editor);
+  useEditorContextKey(
+    editor,
+    "bb.ai.selectedContentEmpty",
+    computed(() => selectedContent.value.length === 0)
+  );
+
   watchEffect(() => {
     const opts = unref(options);
     actions.value.forEach((action) => {
@@ -39,6 +61,7 @@ export const useAIActions = async (
         const action = editor.addAction({
           id: "explain-code",
           label: "Explain code",
+          precondition: "!bb.ai.contentEmpty",
           contextMenuGroupId: "2_ai_assistant",
           contextMenuOrder: 1,
           run: async () => {
@@ -51,6 +74,7 @@ export const useAIActions = async (
         const action = editor.addAction({
           id: "find-problems",
           label: "Find problems",
+          precondition: "!bb.ai.contentEmpty",
           contextMenuGroupId: "2_ai_assistant",
           contextMenuOrder: 2,
           run: async () => {
@@ -58,6 +82,30 @@ export const useAIActions = async (
           },
         });
         actions.value.push(action);
+      }
+      if (opts.actions.includes("new-chat")) {
+        const action1 = editor.addAction({
+          id: "new-chat",
+          label: "New chat",
+          precondition: "bb.ai.selectedContentEmpty",
+          contextMenuGroupId: "2_ai_assistant",
+          contextMenuOrder: 2,
+          run: async () => {
+            opts.callback("new-chat", monaco, editor);
+          },
+        });
+        const action2 = editor.addAction({
+          id: "new-chat-using-selection",
+          label: "New chat using selection",
+          precondition: "!bb.ai.selectedContentEmpty",
+          contextMenuGroupId: "2_ai_assistant",
+          contextMenuOrder: 2,
+          run: async () => {
+            opts.callback("new-chat", monaco, editor);
+          },
+        });
+        actions.value.push(action1);
+        actions.value.push(action2);
       }
     } else {
       // When the language is "javascript" we do not have AI Assistant actions

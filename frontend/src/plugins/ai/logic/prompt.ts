@@ -78,7 +78,7 @@ export const explainCode = (statement: string, engine?: Engine) => {
   return prompts.join("\n");
 };
 
-const wrapStatementMarkdown = (statement: string, engine?: Engine) => {
+export const wrapStatementMarkdown = (statement: string, engine?: Engine) => {
   let openTag = "```";
   if (engine) {
     openTag += engineNameV1(engine).toLowerCase();
