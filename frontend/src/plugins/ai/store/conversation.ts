@@ -161,17 +161,35 @@ export const useConversationStore = defineStore("ai-conversation", () => {
       (m) => m.conversation_id
     );
     conversationEntityList.sort((a, b) => a.created_ts - b.created_ts);
-    const conversationList = conversationEntityList.map<Conversation>((c) => {
-      const conversation = convertConversation(c);
-      const messageEntityList = groupByConversationId[c._id] ?? [];
-      conversation.messageList = messageEntityList.map((m) =>
-        convertMessage(m, conversation)
-      );
-      conversation.messageList.sort((a, b) => a.created_ts - b.created_ts);
-      return conversation;
+    const rawConversationList = conversationEntityList.map<Conversation>(
+      (c) => {
+        const conversation = convertConversation(c);
+        const messageEntityList = groupByConversationId[c._id] ?? [];
+        conversation.messageList = messageEntityList.map((m) =>
+          convertMessage(m, conversation)
+        );
+        conversation.messageList.sort((a, b) => a.created_ts - b.created_ts);
+        return conversation;
+      }
+    );
+    await fixAbnormalMessages(
+      rawConversationList.flatMap((c) => c.messageList)
+    );
+    // cleanup empty conversations
+    const emptyConversationList: Conversation[] = [];
+    rawConversationList.forEach((conversation) => {
+      if (conversation.messageList.length === 0) {
+        emptyConversationList.push(conversation);
+      }
     });
-    await fixAbnormalMessages(conversationList.flatMap((c) => c.messageList));
-    return conversationList;
+    await Promise.all(
+      emptyConversationList.map((conversation) =>
+        deleteConversation(conversation.id)
+      )
+    );
+    return rawConversationList.filter(
+      (conversation) => conversation.messageList.length > 0
+    );
   };
 
   const createConversation = async (

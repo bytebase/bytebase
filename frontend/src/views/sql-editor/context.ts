@@ -33,7 +33,7 @@ type SQLEditorEvents = Emittery<{
 export type SQLEditorContext = {
   asidePanelTab: Ref<AsidePanelTab>;
   showConnectionPanel: Ref<boolean>;
-  showAIChatBox: Ref<boolean>;
+  showAIPanel: Ref<boolean>;
   schemaViewer: Ref<
     | {
         database: ComposedDatabase;
@@ -61,7 +61,7 @@ export const provideSQLEditorContext = () => {
   const context: SQLEditorContext = {
     asidePanelTab: ref("WORKSHEET"),
     showConnectionPanel: ref(false),
-    showAIChatBox: ref(false),
+    showAIPanel: ref(false),
     schemaViewer: ref(undefined),
     events: new Emittery(),
 
