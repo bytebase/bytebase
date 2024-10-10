@@ -74,6 +74,25 @@ func (s *ReleaseService) CreateRelease(ctx context.Context, request *v1pb.Create
 	return converted, nil
 }
 
+func (s *ReleaseService) GetRelease(ctx context.Context, request *v1pb.GetReleaseRequest) (*v1pb.Release, error) {
+	releaseUID, err := common.GetReleaseUID(request.Name)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "failed to get release uid, err: %v", err)
+	}
+	releaseMessage, err := s.store.GetRelease(ctx, releaseUID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get release, err: %v", err)
+	}
+	if releaseMessage == nil {
+		return nil, status.Errorf(codes.NotFound, "release %v not found", releaseUID)
+	}
+	release, err := convertToRelease(ctx, s.store, releaseMessage)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to convert to release, err: %v", err)
+	}
+	return release, nil
+}
+
 func (s *ReleaseService) ListReleases(ctx context.Context, request *v1pb.ListReleasesRequest) (*v1pb.ListReleasesResponse, error) {
 	if request.PageSize < 0 {
 		return nil, status.Errorf(codes.InvalidArgument, "page size must be non-negative: %d", request.PageSize)

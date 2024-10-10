@@ -36,13 +36,9 @@ const columnList = computed(() => {
       key: "sheetSha256",
       width: 150,
       title: "Hash",
-      render: (file) => file.sheetSha256,
-    },
-    {
-      key: "actions",
-      width: 150,
-      title: "Actions",
-      render: (file) => file.sheetSha256,
+      render: (file) => {
+        return <code class={"text-sm"}>{file.sheetSha256.slice(0, 8)}</code>;
+      },
     },
   ];
   return columns;

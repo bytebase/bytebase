@@ -9,6 +9,7 @@ import { extractSQLRowValue, minmax, wrapRefAsPromise } from "@/utils";
 
 const MAX_AUTO_ADJUST_ROW_COUNT = 20;
 const MAX_AUTO_ADJUST_COL_COUNT = 50;
+const MAX_SCAN_RETRIES = 60;
 
 export type TableResizeOptions = {
   table: MaybeRef<Table<QueryRow>>;
@@ -102,6 +103,13 @@ const useTableResize = (options: TableResizeOptions) => {
 
       // Calculate a friendly width for every column when the first render happened.
       const scanner = async (n = 0) => {
+        if (n > MAX_SCAN_RETRIES) {
+          console.warn(
+            "[useTableResize] MAX_SCAN_RETRIES exceeded",
+            MAX_SCAN_RETRIES
+          );
+          return;
+        }
         // Wait for several frames for the initial render of the table
         requestAnimationFrame(() => {
           const headerTable = options.queryTableHeaderElement();
@@ -112,7 +120,7 @@ const useTableResize = (options: TableResizeOptions) => {
               bodyTable?.querySelectorAll("tr.n-data-table-tr") || []
             ),
           ] as HTMLElement[];
-          if (!headerTable || !bodyTable || trList.length === 0) {
+          if (trList.length === 0) {
             return scanner(n + 1);
           }
           autoAdjustColumnWidth(indexList).catch(() => {
@@ -151,7 +159,7 @@ const useTableResize = (options: TableResizeOptions) => {
         indexList.join("|"),
         `(${trList.length} rows)`
       );
-      if (!headerTable || !bodyTable || trList.length === 0) {
+      if (trList.length === 0) {
         return reject(undefined);
       }
 
@@ -205,10 +213,10 @@ const useTableResize = (options: TableResizeOptions) => {
           cell.style.minWidth = `${options.minWidth}px`;
         });
       }
-      const headerTableWidthBackup = headerTable.style.width;
-      const bodyTableWidthBackup = bodyTable.style.width;
-      headerTable.style.width = "auto";
-      bodyTable.style.width = "auto";
+      const headerTableWidthBackup = headerTable?.style.width ?? "";
+      const bodyTableWidthBackup = bodyTable?.style.width ?? "";
+      if (headerTable) headerTable.style.width = "auto";
+      if (bodyTable) bodyTable.style.width = "auto";
 
       // Read the rendered widths.
       const widthMapByColumn = new Map<number, number>();
@@ -255,8 +263,12 @@ const useTableResize = (options: TableResizeOptions) => {
           cell.style.minWidth = "";
         });
       }
-      headerTable.style.width = headerTableWidthBackup;
-      bodyTable.style.width = bodyTableWidthBackup;
+      if (headerTable) {
+        headerTable.style.width = headerTableWidthBackup;
+      }
+      if (bodyTable) {
+        bodyTable.style.width = bodyTableWidthBackup;
+      }
       state.autoAdjusting.clear();
 
       resolve(widthMapByColumn);

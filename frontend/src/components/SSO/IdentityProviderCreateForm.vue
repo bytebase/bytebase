@@ -967,7 +967,16 @@ const testConnection = async () => {
     state.type === IdentityProviderType.OAUTH2 ||
     state.type === IdentityProviderType.OIDC
   ) {
-    openWindowForSSO(editedIdentityProvider.value);
+    try {
+      await openWindowForSSO(editedIdentityProvider.value);
+    } catch (error) {
+      pushNotification({
+        module: "bytebase",
+        style: "CRITICAL",
+        title: `Request error occurred`,
+        description: (error as any).message,
+      });
+    }
   } else if (state.type === IdentityProviderType.LDAP) {
     try {
       await identityProviderClient.testIdentityProvider({

@@ -182,6 +182,7 @@ import BytebaseLogo from "@/components/BytebaseLogo.vue";
 import PasswordSigninForm from "@/components/PasswordSigninForm.vue";
 import { AUTH_SIGNUP_MODULE } from "@/router/auth";
 import {
+  pushNotification,
   useActuatorV1Store,
   useAuthStore,
   useIdentityProviderStore,
@@ -283,10 +284,19 @@ const trySignin = async (idpName: string) => {
 const trySigninWithIdentityProvider = async (
   identityProvider: IdentityProvider
 ) => {
-  await openWindowForSSO(
-    identityProvider,
-    false /* !popup */,
-    route.query.redirect as string
-  );
+  try {
+    await openWindowForSSO(
+      identityProvider,
+      false /* !popup */,
+      route.query.redirect as string
+    );
+  } catch (error) {
+    pushNotification({
+      module: "bytebase",
+      style: "CRITICAL",
+      title: `Request error occurred`,
+      description: (error as any).message,
+    });
+  }
 };
 </script>
