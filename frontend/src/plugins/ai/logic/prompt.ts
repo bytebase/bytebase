@@ -82,6 +82,8 @@ export const wrapStatementMarkdown = (statement: string, engine?: Engine) => {
   let openTag = "```";
   if (engine) {
     openTag += engineNameV1(engine).toLowerCase();
+  } else {
+    openTag += "SQL";
   }
   const closeTag = "```";
   return [openTag, statement, closeTag].join("\n");

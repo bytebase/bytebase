@@ -28,7 +28,6 @@
 import { storeToRefs } from "pinia";
 import { v1 as uuidv1 } from "uuid";
 import { computed, nextTick, ref, watch } from "vue";
-import { useI18n } from "vue-i18n";
 import type {
   AdviceOption,
   IStandaloneCodeEditor,
@@ -62,7 +61,6 @@ const emit = defineEmits<{
   (e: "execute", params: SQLEditorQueryParams): void;
 }>();
 
-const { t } = useI18n();
 const tabStore = useSQLEditorTabStore();
 const sheetAndTabStore = useWorkSheetAndTabStore();
 const uiStateStore = useUIStateStore();
@@ -219,7 +217,7 @@ const handleEditorReady = (
         const statement = tab?.selectedStatement ?? "";
         if (!statement) return;
         const inputs = [
-          `// ${t("plugin.ai.text-to-sql-placeholder")}`,
+          "", // just an empty line
           promptUtils.wrapStatementMarkdown(statement),
         ];
         AIContext.events.emit("new-conversation", {
