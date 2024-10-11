@@ -11,8 +11,8 @@
       @enter="requestAI"
     />
 
-    <div class="px-2 py-2 flex flex-col gap-2">
-      <DynamicSuggestions class="flex-1 w-full" @enter="requestAI" />
+    <div class="px-2 pb-2 pt-1 flex flex-col gap-1">
+      <DynamicSuggestions class="w-full" @enter="requestAI" />
       <PromptInput v-if="tab" @enter="requestAI" />
     </div>
 

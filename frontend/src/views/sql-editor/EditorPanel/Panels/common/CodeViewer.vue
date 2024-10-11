@@ -17,7 +17,7 @@
       </NCheckbox>
       <OpenAIButton
         size="small"
-        :statement="code"
+        :statement="selectedStatement || content"
         :actions="['explain-code']"
       />
     </div>
@@ -25,6 +25,7 @@
 
   <Splitpanes
     class="default-theme flex flex-row items-stretch flex-1 w-full overflow-hidden"
+    @resized="handleAIPanelResize($event, 1)"
   >
     <Pane>
       <MonacoEditor
@@ -35,12 +36,17 @@
           callback: handleFormatContent,
         }"
         class="w-full h-full relative"
+        @select-content="selectedStatement = $event"
         @ready="handleEditorReady"
       />
     </Pane>
-    <Pane v-if="showAIPanel" :size="30" class="overflow-hidden flex flex-col">
+    <Pane
+      v-if="showAIPanel"
+      :size="AIPanelSize"
+      class="overflow-hidden flex flex-col"
+    >
       <Suspense>
-        <AIChatToSQL />
+        <AIChatToSQL key="ai-chat-to-sql" />
         <template #fallback>
           <div
             class="w-full h-full flex-grow flex flex-col items-center justify-center"
@@ -58,7 +64,7 @@ import { computedAsync, useLocalStorage } from "@vueuse/core";
 import { ChevronLeftIcon } from "lucide-vue-next";
 import { NButton, NCheckbox } from "naive-ui";
 import { Pane, Splitpanes } from "splitpanes";
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import { BBSpin } from "@/bbkit";
 import {
   MonacoEditor,
@@ -85,13 +91,14 @@ defineEmits<{
   (event: "back"): void;
 }>();
 
-const { showAIPanel } = useSQLEditorContext();
+const { showAIPanel, AIPanelSize, handleAIPanelResize } = useSQLEditorContext();
 const AIContext = useAIContext();
 const format = useLocalStorage<boolean>(
   "bb.sql-editor.editor-panel.code-viewer.format",
   false
 );
 const instanceEngine = computed(() => props.db.instanceResource.engine);
+const selectedStatement = ref("");
 
 const formatted = computedAsync(
   async () => {
@@ -139,10 +146,12 @@ const handleEditorReady = (
       showAIPanel.value = true;
       if (action !== "explain-code") return;
 
+      const statement = selectedStatement.value || content.value;
+
       await nextAnimationFrame();
       AIContext.events.emit("send-chat", {
         content: promptUtils.explainCode(
-          props.code,
+          statement,
           props.db.instanceResource.engine
         ),
         newChat,

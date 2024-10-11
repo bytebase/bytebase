@@ -45,33 +45,14 @@
           {{ $t("plugin.ai.conversation.new-conversation") }}
         </template>
       </NPopover>
-      <NPopover placement="bottom">
-        <template #trigger>
-          <NButton
-            size="small"
-            quaternary
-            style="--n-padding: 0 5px"
-            @click="showAIPanel = false"
-          >
-            <template #icon>
-              <XIcon class="w-4 h-4" />
-            </template>
-          </NButton>
-        </template>
-        <template #default>
-          {{ $t("common.hide") }}
-        </template>
-      </NPopover>
     </div>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { ClockIcon, XIcon, PlusIcon } from "lucide-vue-next";
+import { ClockIcon, PlusIcon } from "lucide-vue-next";
 import { NButton, NPopover } from "naive-ui";
-import { useSQLEditorContext } from "@/views/sql-editor/context";
 import { useAIContext } from "../logic";
 
 const { events, showHistoryDialog } = useAIContext();
-const { showAIPanel } = useSQLEditorContext();
 </script>

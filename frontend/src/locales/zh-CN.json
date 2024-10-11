@@ -3229,7 +3229,8 @@
         "chat": "对话",
         "explain-code": "解释代码",
         "find-problems": "找出问题",
-        "new-chat": "开启新对话"
+        "new-chat": "开启新对话",
+        "insert-at-caret": "在光标处插入"
       },
       "send": "发送",
       "new-line": "换行",

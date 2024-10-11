@@ -14,8 +14,10 @@ export type SuggestionContext = {
   ready: boolean;
   state: "LOADING" | "IDLE" | "ENDED";
   used: Set<string>;
-  consume: (sug: string) => void;
+  current: () => string | undefined;
+  consume: () => void;
   fetch: () => Promise<string[]>; // returns empty means reaches the end
+  next: () => Promise<string | undefined>; // returns next suggestion or empty (ended)
 };
 
 const cache = ref(new Map<string, SuggestionContext>());
@@ -38,6 +40,7 @@ export const useDynamicSuggestions = () => {
   });
 
   const requestAI = async (messages: OpenAIMessage[]) => {
+    await new Promise((resolve) => setTimeout(resolve, 1000));
     const body = {
       model: "gpt-3.5-turbo",
       messages,
@@ -86,22 +89,28 @@ export const useDynamicSuggestions = () => {
       schema,
       key: keyOf(schema),
       suggestions: [],
+      index: 0,
       state: "IDLE",
       ready: false,
       used: new Set(),
-      consume(sug) {
+      current() {
+        const { suggestions } = suggestion;
+        return head(suggestions);
+      },
+      consume() {
         const { suggestions, used } = suggestion;
-        const index = suggestions.indexOf(sug);
-        if (index >= 0) {
-          suggestions.splice(index, 1);
-        }
+        const sug = suggestion.current();
+        if (!sug) return;
+        suggestions.shift();
         used.add(sug);
         if (suggestions.length === 0) {
           suggestion.fetch();
         }
       },
       async fetch() {
-        const { used, suggestions, key } = suggestion;
+        const { state, used, suggestions, key } = suggestion;
+        if (state === "ENDED") return [];
+
         const commands = [
           `You are an assistant who works as a Magic: The Suggestion card designer. Create cards that are in the following card schema and JSON format. OUTPUT MUST FOLLOW THIS CARD SCHEMA AND JSON FORMAT. DO NOT EXPLAIN THE CARD.`,
           `{"suggestion-1": "What is the average salary of employees in each department?", "suggestion-2": "What is the average salary of employees in each department?", "suggestion-3": "What is the average salary of employees in each department?"}`,
@@ -131,11 +140,13 @@ export const useDynamicSuggestions = () => {
         ];
 
         suggestion.state = "LOADING";
-        const more = (await requestAI(messages)).filter((sug) => {
-          if (used.has(sug)) return false;
-          if (suggestions.includes(sug)) return false;
-          return true;
-        });
+        const more = uniq(
+          (await requestAI(messages)).filter((sug) => {
+            if (used.has(sug)) return false;
+            if (suggestions.includes(sug)) return false;
+            return true;
+          })
+        );
         suggestions.push(...more);
         suggestion.state = more.length === 0 ? "ENDED" : "IDLE";
 
@@ -148,6 +159,19 @@ export const useDynamicSuggestions = () => {
         }
 
         return more;
+      },
+      async next() {
+        const originalState = suggestion.state;
+        if (originalState === "ENDED") return;
+        const curr = suggestion.current();
+        if (curr) {
+          suggestion.used.add(curr);
+        }
+        if (suggestion.suggestions.length === 1) {
+          await suggestion.fetch();
+        }
+        suggestion.suggestions.shift();
+        return suggestion.current();
       },
     });
     const stored = storage.load<string[]>(suggestion.key, []);
