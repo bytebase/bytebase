@@ -178,6 +178,7 @@ export interface Plan_Spec {
    * Must be a subset of the specs in the same step.
    */
   dependsOnSpecs: string[];
+  specReleaseSource: Plan_SpecReleaseSource | undefined;
   createDatabaseConfig?: Plan_CreateDatabaseConfig | undefined;
   changeDatabaseConfig?: Plan_ChangeDatabaseConfig | undefined;
   exportDataConfig?: Plan_ExportDataConfig | undefined;
@@ -383,6 +384,11 @@ export interface Plan_ReleaseSource {
    * Format: projects/{project}/releases/{release}
    */
   release: string;
+}
+
+export interface Plan_SpecReleaseSource {
+  /** Format: projects/{project}/releases/{release}/files/{file} */
+  file: string;
 }
 
 export interface ListPlanCheckRunsRequest {
@@ -1611,6 +1617,7 @@ function createBasePlan_Spec(): Plan_Spec {
     earliestAllowedTime: undefined,
     id: "",
     dependsOnSpecs: [],
+    specReleaseSource: undefined,
     createDatabaseConfig: undefined,
     changeDatabaseConfig: undefined,
     exportDataConfig: undefined,
@@ -1627,6 +1634,9 @@ export const Plan_Spec: MessageFns<Plan_Spec> = {
     }
     for (const v of message.dependsOnSpecs) {
       writer.uint32(50).string(v!);
+    }
+    if (message.specReleaseSource !== undefined) {
+      Plan_SpecReleaseSource.encode(message.specReleaseSource, writer.uint32(66).fork()).join();
     }
     if (message.createDatabaseConfig !== undefined) {
       Plan_CreateDatabaseConfig.encode(message.createDatabaseConfig, writer.uint32(10).fork()).join();
@@ -1668,6 +1678,13 @@ export const Plan_Spec: MessageFns<Plan_Spec> = {
 
           message.dependsOnSpecs.push(reader.string());
           continue;
+        case 8:
+          if (tag !== 66) {
+            break;
+          }
+
+          message.specReleaseSource = Plan_SpecReleaseSource.decode(reader, reader.uint32());
+          continue;
         case 1:
           if (tag !== 10) {
             break;
@@ -1707,6 +1724,9 @@ export const Plan_Spec: MessageFns<Plan_Spec> = {
       dependsOnSpecs: globalThis.Array.isArray(object?.dependsOnSpecs)
         ? object.dependsOnSpecs.map((e: any) => globalThis.String(e))
         : [],
+      specReleaseSource: isSet(object.specReleaseSource)
+        ? Plan_SpecReleaseSource.fromJSON(object.specReleaseSource)
+        : undefined,
       createDatabaseConfig: isSet(object.createDatabaseConfig)
         ? Plan_CreateDatabaseConfig.fromJSON(object.createDatabaseConfig)
         : undefined,
@@ -1730,6 +1750,9 @@ export const Plan_Spec: MessageFns<Plan_Spec> = {
     if (message.dependsOnSpecs?.length) {
       obj.dependsOnSpecs = message.dependsOnSpecs;
     }
+    if (message.specReleaseSource !== undefined) {
+      obj.specReleaseSource = Plan_SpecReleaseSource.toJSON(message.specReleaseSource);
+    }
     if (message.createDatabaseConfig !== undefined) {
       obj.createDatabaseConfig = Plan_CreateDatabaseConfig.toJSON(message.createDatabaseConfig);
     }
@@ -1752,6 +1775,9 @@ export const Plan_Spec: MessageFns<Plan_Spec> = {
       : undefined;
     message.id = object.id ?? "";
     message.dependsOnSpecs = object.dependsOnSpecs?.map((e) => e) || [];
+    message.specReleaseSource = (object.specReleaseSource !== undefined && object.specReleaseSource !== null)
+      ? Plan_SpecReleaseSource.fromPartial(object.specReleaseSource)
+      : undefined;
     message.createDatabaseConfig = (object.createDatabaseConfig !== undefined && object.createDatabaseConfig !== null)
       ? Plan_CreateDatabaseConfig.fromPartial(object.createDatabaseConfig)
       : undefined;
@@ -2683,6 +2709,63 @@ export const Plan_ReleaseSource: MessageFns<Plan_ReleaseSource> = {
   fromPartial(object: DeepPartial<Plan_ReleaseSource>): Plan_ReleaseSource {
     const message = createBasePlan_ReleaseSource();
     message.release = object.release ?? "";
+    return message;
+  },
+};
+
+function createBasePlan_SpecReleaseSource(): Plan_SpecReleaseSource {
+  return { file: "" };
+}
+
+export const Plan_SpecReleaseSource: MessageFns<Plan_SpecReleaseSource> = {
+  encode(message: Plan_SpecReleaseSource, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.file !== "") {
+      writer.uint32(10).string(message.file);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): Plan_SpecReleaseSource {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBasePlan_SpecReleaseSource();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.file = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): Plan_SpecReleaseSource {
+    return { file: isSet(object.file) ? globalThis.String(object.file) : "" };
+  },
+
+  toJSON(message: Plan_SpecReleaseSource): unknown {
+    const obj: any = {};
+    if (message.file !== "") {
+      obj.file = message.file;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<Plan_SpecReleaseSource>): Plan_SpecReleaseSource {
+    return Plan_SpecReleaseSource.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<Plan_SpecReleaseSource>): Plan_SpecReleaseSource {
+    const message = createBasePlan_SpecReleaseSource();
+    message.file = object.file ?? "";
     return message;
   },
 };

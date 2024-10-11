@@ -229,6 +229,8 @@ message Plan {
     // Must be a subset of the specs in the same step.
     repeated string depends_on_specs = 6;
 
+    SpecReleaseSource spec_release_source = 8;
+
     oneof config {
       CreateDatabaseConfig create_database_config = 1;
       ChangeDatabaseConfig change_database_config = 2;
@@ -346,6 +348,11 @@ message Plan {
     // The release.
     // Format: projects/{project}/releases/{release}
     string release = 1 [(google.api.resource_reference) = {type: "bytebase.com/Release"}];
+  }
+
+  message SpecReleaseSource {
+    // Format: projects/{project}/releases/{release}/files/{file}
+    string file = 1;
   }
 }
 
