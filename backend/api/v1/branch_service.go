@@ -1109,9 +1109,8 @@ func trimDatabaseMetadata(sourceMetadata *storepb.DatabaseSchemaMetadata, target
 				continue
 			}
 		}
-		if len(trimSchema.Tables) > 0 || len(trimSchema.Views) > 0 || len(trimSchema.Functions) > 0 || len(trimSchema.Procedures) > 0 {
-			s.Schemas = append(s.Schemas, trimSchema)
-		}
+		// Always append empty schema to avoid creating schema duplicates.
+		s.Schemas = append(s.Schemas, trimSchema)
 	}
 
 	for _, schema := range targetMetadata.GetSchemas() {
@@ -1166,9 +1165,8 @@ func trimDatabaseMetadata(sourceMetadata *storepb.DatabaseSchemaMetadata, target
 				continue
 			}
 		}
-		if len(trimSchema.Tables) > 0 || len(trimSchema.Views) > 0 || len(trimSchema.Functions) > 0 || len(trimSchema.Procedures) > 0 {
-			t.Schemas = append(t.Schemas, trimSchema)
-		}
+		// Always append empty schema to avoid creating schema duplicates.
+		t.Schemas = append(t.Schemas, trimSchema)
 	}
 
 	return s, t
