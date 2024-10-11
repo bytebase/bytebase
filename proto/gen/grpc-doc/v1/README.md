@@ -496,6 +496,7 @@
     - [Plan.PlanCheckRunStatusCountEntry](#bytebase-v1-Plan-PlanCheckRunStatusCountEntry)
     - [Plan.ReleaseSource](#bytebase-v1-Plan-ReleaseSource)
     - [Plan.Spec](#bytebase-v1-Plan-Spec)
+    - [Plan.SpecReleaseSource](#bytebase-v1-Plan-SpecReleaseSource)
     - [Plan.Step](#bytebase-v1-Plan-Step)
     - [Plan.VCSSource](#bytebase-v1-Plan-VCSSource)
     - [PlanCheckRun](#bytebase-v1-PlanCheckRun)
@@ -8068,9 +8069,25 @@ When paginating, all other parameters provided to `ListPlans` must match the cal
 | earliest_allowed_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | earliest_allowed_time the earliest execution time of the change. |
 | id | [string](#string) |  | A UUID4 string that uniquely identifies the Spec. |
 | depends_on_specs | [string](#string) | repeated | IDs of the specs that this spec depends on. Must be a subset of the specs in the same step. |
+| spec_release_source | [Plan.SpecReleaseSource](#bytebase-v1-Plan-SpecReleaseSource) |  |  |
 | create_database_config | [Plan.CreateDatabaseConfig](#bytebase-v1-Plan-CreateDatabaseConfig) |  |  |
 | change_database_config | [Plan.ChangeDatabaseConfig](#bytebase-v1-Plan-ChangeDatabaseConfig) |  |  |
 | export_data_config | [Plan.ExportDataConfig](#bytebase-v1-Plan-ExportDataConfig) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-Plan-SpecReleaseSource"></a>
+
+### Plan.SpecReleaseSource
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| file | [string](#string) |  | Format: projects/{project}/releases/{release}/files/{file} |
 
 
 

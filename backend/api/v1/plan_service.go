@@ -247,9 +247,7 @@ func (s *PlanService) CreatePlan(ctx context.Context, request *v1pb.CreatePlanRe
 		PipelineUID: nil,
 		Name:        request.Plan.Title,
 		Description: request.Plan.Description,
-		Config: &storepb.PlanConfig{
-			Steps: convertPlanSteps(request.Plan.Steps),
-		},
+		Config:      convertPlan(request.Plan),
 	}
 	if request.GetPlan().VcsSource != nil {
 		planMessage.Config.VcsSource = &storepb.PlanConfig_VCSSource{
@@ -1116,7 +1114,7 @@ func (s *PlanService) PreviewPlan(ctx context.Context, request *v1pb.PreviewPlan
 		if !ok {
 			continue
 		}
-		specs, err := s.getSpecsForDatabase(ctx, db, release)
+		specs, err := s.getSpecsForDatabase(ctx, db, release, request.Release)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to get specs for database, err: %v", err)
 		}
@@ -1143,15 +1141,15 @@ func (s *PlanService) PreviewPlan(ctx context.Context, request *v1pb.PreviewPlan
 	}, nil
 }
 
-func (s *PlanService) getSpecsForDatabase(ctx context.Context, database *store.DatabaseMessage, release *store.ReleaseMessage) ([]*v1pb.Plan_Spec, error) {
+func (s *PlanService) getSpecsForDatabase(ctx context.Context, database *store.DatabaseMessage, release *store.ReleaseMessage, releaseName string) ([]*v1pb.Plan_Spec, error) {
 	revisions, err := s.store.ListRevisions(ctx, &store.FindRevisionMessage{DatabaseUID: database.UID})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to list revisions")
 	}
-	return getSpecs(database, revisions, release)
+	return getSpecs(database, revisions, release, releaseName)
 }
 
-func getSpecs(database *store.DatabaseMessage, revisions []*store.RevisionMessage, release *store.ReleaseMessage) ([]*v1pb.Plan_Spec, error) {
+func getSpecs(database *store.DatabaseMessage, revisions []*store.RevisionMessage, release *store.ReleaseMessage, releaseName string) ([]*v1pb.Plan_Spec, error) {
 	var specs []*v1pb.Plan_Spec
 
 	var lastVersion string
@@ -1196,6 +1194,9 @@ func getSpecs(database *store.DatabaseMessage, revisions []*store.RevisionMessag
 
 		spec := &v1pb.Plan_Spec{
 			Id: uuid.NewString(),
+			SpecReleaseSource: &v1pb.Plan_SpecReleaseSource{
+				File: fmt.Sprintf("%s/files/%s", releaseName, file.Name),
+			},
 			Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
 				ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
 					Type:          v1pb.Plan_ChangeDatabaseConfig_MIGRATE,
