@@ -324,6 +324,10 @@ const allowEditStatementWhenCreating = computed(() => {
     // E.g., rollback DML
     return false;
   }
+  // Do not allow to edit statement for the plan with release source.
+  if (issue.value.planEntity?.releaseSource) {
+    return false;
+  }
   if (selectedTask.value.type === Task_Type.DATABASE_SCHEMA_BASELINE) {
     // A baseline issue has actually no SQL statement.
     // "-- Establish baseline using current schema" is just a comment.

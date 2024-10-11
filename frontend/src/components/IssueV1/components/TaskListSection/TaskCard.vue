@@ -21,9 +21,9 @@
               class="w-5 h-5 inline-block mb-0.5"
             />
             <span>{{ databaseForTask(issue, task).databaseName }}</span>
-            <span v-if="schemaVersion" class="schema-version">
-              ({{ schemaVersion }})
-            </span>
+            <NTag v-if="schemaVersion" size="small" round>
+              {{ schemaVersion }}
+            </NTag>
           </div>
         </div>
         <TaskExtraActionsButton :task="task" />
@@ -47,13 +47,11 @@
         </div>
       </div>
     </div>
-    <div v-if="shouldShowTaskProgress" class="flex flex-col justify-center">
-      <TaskProgress :task="task" />
-    </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { NTag } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { InstanceV1Name } from "@/components/v2";
@@ -64,7 +62,6 @@ import { extractSchemaVersionFromTask } from "@/utils";
 import { databaseForTask, isTaskFinished, useIssueContext } from "../../logic";
 import TaskStatusIcon from "../TaskStatusIcon.vue";
 import TaskExtraActionsButton from "./TaskExtraActionsButton.vue";
-import TaskProgress from "./TaskProgress.vue";
 
 type SecondaryViewMode = "INSTANCE" | "TASK_TITLE";
 
@@ -98,12 +95,18 @@ const secondaryViewMode = computed((): SecondaryViewMode => {
 });
 
 const schemaVersion = computed(() => {
+  const v = extractSchemaVersionFromTask(props.task);
+
+  // Always show the schema version for tasks from a release source.
+  if (issue.value.planEntity?.releaseSource) {
+    return v;
+  }
+
   // show the schema version for a task if
   // the project is standard mode and VCS workflow
   if (isCreating.value) return "";
   if (project.value.workflow === Workflow.UI) return "";
-
-  return extractSchemaVersionFromTask(props.task);
+  return v;
 });
 
 const taskClass = computed(() => {
@@ -114,12 +117,6 @@ const taskClass = computed(() => {
   if (isCreating.value) classes.push("create");
   classes.push(`status_${task_StatusToJSON(task.status).toLowerCase()}`);
   return classes;
-});
-
-const shouldShowTaskProgress = computed(() => {
-  return false; // TODO: not implemented yet
-
-  // return TaskTypeListWithProgress.includes(props.task.type);
 });
 
 const taskTitle = computed(() => {
@@ -144,9 +141,6 @@ const onClickTask = (task: Task) => {
 }
 .task .name {
   @apply whitespace-pre-wrap break-all;
-}
-.task .schema-version {
-  @apply text-sm;
 }
 .task.active .name {
   @apply font-bold;

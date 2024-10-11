@@ -1,4 +1,3 @@
-import dayjs from "dayjs";
 import { omit } from "lodash-es";
 import {
   MonacoLanguageClient,
@@ -278,10 +277,6 @@ const useHeartbeat = (ws: WebSocket) => {
         },
       })
     );
-    console.debug(
-      `[LSP-Client] counter:${conn.heartbeat.counter} timestamp:${conn.heartbeat.timestamp}(${dayjs(conn.heartbeat.timestamp).toString()})`
-    );
-
     conn.heartbeat.timer = setTimeout(ping, WEBSOCKET_HEARTBEAT_INTERVAL);
   };
 
