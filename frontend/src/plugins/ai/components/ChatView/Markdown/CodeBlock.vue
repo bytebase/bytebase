@@ -3,7 +3,7 @@
     ref="containerRef"
     class="flex flex-col overflow-x-hidden border border-gray-500 rounded bg-white"
     :data-message-wrapper-width="messageWrapperWidth"
-    :style="`width: ${width}px`"
+    :style="`width: ${combinedWidth}px`"
   >
     <div class="flex items-center justify-between px-1 pt-1">
       <div class="text-xs">SQL</div>
@@ -77,9 +77,15 @@ import { useAIContext } from "@/plugins/ai/logic";
 import { pushNotification } from "@/store";
 import { findAncestor, toClipboard } from "@/utils";
 
-const props = defineProps<{
-  code: string;
-}>();
+export type CodeBlockProps = {
+  width: number;
+};
+
+const props = defineProps<
+  CodeBlockProps & {
+    code: string;
+  }
+>();
 
 const { t } = useI18n();
 const { events, showHistoryDialog } = useAIContext();
@@ -88,10 +94,10 @@ const messageWrapperRef = computed(() =>
   findAncestor(containerRef.value, ".message")
 );
 const { width: messageWrapperWidth } = useElementSize(messageWrapperRef);
-const width = computed(() => {
+const combinedWidth = computed(() => {
   const PADDING = 8;
   const min = 8 * 16; /* 8rem */
-  const auto = messageWrapperWidth.value * 0.6 - PADDING * 2;
+  const auto = messageWrapperWidth.value * props.width - PADDING * 2;
   return Math.max(min, auto);
 });
 
