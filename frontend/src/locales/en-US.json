@@ -3224,7 +3224,8 @@
         "chat": "Chat",
         "explain-code": "Explain code",
         "find-problems": "Find problems",
-        "new-chat": "New chat"
+        "new-chat": "New chat",
+        "insert-at-caret": "Insert at caret"
       },
       "send": "Send",
       "new-line": "New line",

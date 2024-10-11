@@ -106,7 +106,11 @@ const state = reactive<LocalState>({
 const router = useRouter();
 const databaseStore = useDatabaseV1Store();
 const tabStore = useSQLEditorTabStore();
-const { events: editorEvents, showConnectionPanel } = useSQLEditorContext();
+const {
+  events: editorEvents,
+  showConnectionPanel,
+  pendingInsertAtCaret,
+} = useSQLEditorContext();
 const { showPanel: showSheetPanel } = useSheetContext();
 
 const { currentTab, isDisconnected } = storeToRefs(tabStore);
@@ -146,9 +150,23 @@ useEmitteryEventListener(
   }
 );
 
-provideEditorPanelContext({
+const editorPanelContext = provideEditorPanelContext({
   tab: currentTab,
 });
+
+useEmitteryEventListener(
+  editorEvents,
+  "insert-at-caret",
+  async ({ content }) => {
+    if (!tabStore.currentTab) return;
+    editorPanelContext.updateViewState({
+      view: "CODE",
+    });
+    requestAnimationFrame(() => {
+      pendingInsertAtCaret.value = content;
+    });
+  }
+);
 </script>
 
 <style lang="postcss">

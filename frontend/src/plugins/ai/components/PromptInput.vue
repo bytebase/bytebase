@@ -13,12 +13,9 @@
     }"
     size="small"
     type="textarea"
-    style="--n-padding-left: 8px; --n-padding-right: 4px"
+    style="--n-padding-left: 6px; --n-padding-right: 0px"
     @keypress.enter="handlePressEnter"
   >
-    <template #prefix>
-      <heroicons-outline:sparkles class="w-3.5 h-3.5 text-accent" />
-    </template>
     <template #suffix>
       <NPopover placement="bottom" style="--n-padding: 6px 8px">
         <template #trigger>
@@ -53,6 +50,7 @@
 <script lang="ts" setup>
 import { NButton, NInput, NPopover, type InputInst } from "naive-ui";
 import { onMounted, reactive, ref, watch } from "vue";
+import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import { keyboardShortcutStr, nextAnimationFrame } from "@/utils";
 import { useAIContext } from "../logic";
 
@@ -77,7 +75,7 @@ const state = reactive<LocalState>({
   value: "",
 });
 
-const { pendingPreInput } = useAIContext();
+const { pendingPreInput, events } = useAIContext();
 const inputRef = ref<InputInst>();
 
 const applyValue = (value: string) => {
@@ -89,8 +87,9 @@ const handlePressEnter = (e?: KeyboardEvent) => {
   if (e?.shiftKey) {
     return;
   }
-  applyValue(state.value);
   e?.preventDefault();
+  if (!state.value.trim()) return;
+  applyValue(state.value);
 };
 
 onMounted(() => {
@@ -110,4 +109,8 @@ watch(
     flush: "post",
   }
 );
+
+useEmitteryEventListener(events, "new-conversation", () => {
+  inputRef.value?.focus();
+});
 </script>

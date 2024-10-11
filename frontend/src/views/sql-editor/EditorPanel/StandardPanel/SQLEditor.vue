@@ -28,7 +28,6 @@
 import { storeToRefs } from "pinia";
 import { v1 as uuidv1 } from "uuid";
 import { computed, nextTick, ref, watch } from "vue";
-import { useI18n } from "vue-i18n";
 import type {
   AdviceOption,
   IStandaloneCodeEditor,
@@ -62,11 +61,14 @@ const emit = defineEmits<{
   (e: "execute", params: SQLEditorQueryParams): void;
 }>();
 
-const { t } = useI18n();
 const tabStore = useSQLEditorTabStore();
 const sheetAndTabStore = useWorkSheetAndTabStore();
 const uiStateStore = useUIStateStore();
-const { showAIPanel, events: editorEvents } = useSQLEditorContext();
+const {
+  showAIPanel,
+  pendingInsertAtCaret,
+  events: editorEvents,
+} = useSQLEditorContext();
 const { currentTab, isSwitchingTab } = storeToRefs(tabStore);
 const AIContext = useAIContext();
 const pendingFormatContentCommand = ref(false);
@@ -217,11 +219,11 @@ const handleEditorReady = (
       }
       if (action === "new-chat") {
         const statement = tab?.selectedStatement ?? "";
-        const inputs: string[] = [];
-        if (statement) {
-          inputs.push(`// ${t("plugin.ai.text-to-sql-placeholder")}`);
-          inputs.push(promptUtils.wrapStatementMarkdown(statement));
-        }
+        if (!statement) return;
+        const inputs = [
+          "", // just an empty line
+          promptUtils.wrapStatementMarkdown(statement),
+        ];
         AIContext.events.emit("new-conversation", {
           input: inputs.join("\n"),
         });
@@ -260,6 +262,33 @@ const handleEditorReady = (
           pendingSetSelectionCommand.value = undefined;
         });
       }
+    },
+    { immediate: true }
+  );
+
+  watch(
+    pendingInsertAtCaret,
+    () => {
+      const text = pendingInsertAtCaret.value;
+      if (!text) return;
+      pendingInsertAtCaret.value = undefined;
+
+      requestAnimationFrame(() => {
+        const selection = editor.getSelection();
+        const maxLineNumber = editor.getModel()?.getLineCount() ?? 0;
+        const range =
+          selection ??
+          new monaco.Range(maxLineNumber + 1, 1, maxLineNumber + 1, 1);
+        editor.executeEdits("bb.event.insert-at-caret", [
+          {
+            forceMoveMarkers: true,
+            text,
+            range,
+          },
+        ]);
+        editor.focus();
+        editor.revealLine(range.startLineNumber);
+      });
     },
     { immediate: true }
   );
