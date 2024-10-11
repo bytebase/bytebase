@@ -1376,6 +1376,10 @@
                   <a href="#bytebase.store.TaskDatabaseUpdatePayload.FlagsEntry"><span class="badge">M</span>TaskDatabaseUpdatePayload.FlagsEntry</a>
                 </li>
               
+                <li>
+                  <a href="#bytebase.store.TaskReleaseSource"><span class="badge">M</span>TaskReleaseSource</a>
+                </li>
+              
               
               
               
@@ -11295,7 +11299,7 @@ Default to this mode.</p></td>
         
       
         <h3 id="bytebase.store.TaskDatabaseUpdatePayload">TaskDatabaseUpdatePayload</h3>
-        <p>TaskDatabaseDataUpdatePayload is the task payload for database data update (DML).</p>
+        <p>TaskDatabaseUpdatePayload is the task payload for updating database (DDL & DML).</p>
 
         
           <table class="field-table">
@@ -11353,6 +11357,13 @@ Default to this mode.</p></td>
                   <td><p>flags is used for ghost sync </p></td>
                 </tr>
               
+                <tr>
+                  <td>task_release_source</td>
+                  <td><a href="#bytebase.store.TaskReleaseSource">TaskReleaseSource</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -11382,6 +11393,30 @@ Default to this mode.</p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.TaskReleaseSource">TaskReleaseSource</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>file</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Format: projects/{project}/releases/{release}/files/{file} </p></td>
                 </tr>
               
             </tbody>

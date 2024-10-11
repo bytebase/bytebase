@@ -28,7 +28,7 @@ export interface TaskDatabaseCreatePayload {
   labels: string;
 }
 
-/** TaskDatabaseDataUpdatePayload is the task payload for database data update (DML). */
+/** TaskDatabaseUpdatePayload is the task payload for updating database (DDL & DML). */
 export interface TaskDatabaseUpdatePayload {
   /** common fields */
   skipped: boolean;
@@ -41,6 +41,7 @@ export interface TaskDatabaseUpdatePayload {
     | undefined;
   /** flags is used for ghost sync */
   flags: { [key: string]: string };
+  taskReleaseSource: TaskReleaseSource | undefined;
 }
 
 export interface TaskDatabaseUpdatePayload_FlagsEntry {
@@ -55,6 +56,11 @@ export interface TaskDatabaseDataExportPayload {
   sheetId: number;
   password: string;
   format: ExportFormat;
+}
+
+export interface TaskReleaseSource {
+  /** Format: projects/{project}/releases/{release}/files/{file} */
+  file: string;
 }
 
 function createBaseTaskDatabaseCreatePayload(): TaskDatabaseCreatePayload {
@@ -287,6 +293,7 @@ function createBaseTaskDatabaseUpdatePayload(): TaskDatabaseUpdatePayload {
     sheetId: 0,
     preUpdateBackupDetail: undefined,
     flags: {},
+    taskReleaseSource: undefined,
   };
 }
 
@@ -313,6 +320,9 @@ export const TaskDatabaseUpdatePayload: MessageFns<TaskDatabaseUpdatePayload> = 
     Object.entries(message.flags).forEach(([key, value]) => {
       TaskDatabaseUpdatePayload_FlagsEntry.encode({ key: key as any, value }, writer.uint32(58).fork()).join();
     });
+    if (message.taskReleaseSource !== undefined) {
+      TaskReleaseSource.encode(message.taskReleaseSource, writer.uint32(66).fork()).join();
+    }
     return writer;
   },
 
@@ -375,6 +385,13 @@ export const TaskDatabaseUpdatePayload: MessageFns<TaskDatabaseUpdatePayload> = 
             message.flags[entry7.key] = entry7.value;
           }
           continue;
+        case 8:
+          if (tag !== 66) {
+            break;
+          }
+
+          message.taskReleaseSource = TaskReleaseSource.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -400,6 +417,9 @@ export const TaskDatabaseUpdatePayload: MessageFns<TaskDatabaseUpdatePayload> = 
           return acc;
         }, {})
         : {},
+      taskReleaseSource: isSet(object.taskReleaseSource)
+        ? TaskReleaseSource.fromJSON(object.taskReleaseSource)
+        : undefined,
     };
   },
 
@@ -432,6 +452,9 @@ export const TaskDatabaseUpdatePayload: MessageFns<TaskDatabaseUpdatePayload> = 
         });
       }
     }
+    if (message.taskReleaseSource !== undefined) {
+      obj.taskReleaseSource = TaskReleaseSource.toJSON(message.taskReleaseSource);
+    }
     return obj;
   },
 
@@ -455,6 +478,9 @@ export const TaskDatabaseUpdatePayload: MessageFns<TaskDatabaseUpdatePayload> = 
       }
       return acc;
     }, {});
+    message.taskReleaseSource = (object.taskReleaseSource !== undefined && object.taskReleaseSource !== null)
+      ? TaskReleaseSource.fromPartial(object.taskReleaseSource)
+      : undefined;
     return message;
   },
 };
@@ -633,6 +659,63 @@ export const TaskDatabaseDataExportPayload: MessageFns<TaskDatabaseDataExportPay
     message.sheetId = object.sheetId ?? 0;
     message.password = object.password ?? "";
     message.format = object.format ?? ExportFormat.FORMAT_UNSPECIFIED;
+    return message;
+  },
+};
+
+function createBaseTaskReleaseSource(): TaskReleaseSource {
+  return { file: "" };
+}
+
+export const TaskReleaseSource: MessageFns<TaskReleaseSource> = {
+  encode(message: TaskReleaseSource, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.file !== "") {
+      writer.uint32(10).string(message.file);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): TaskReleaseSource {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseTaskReleaseSource();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.file = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): TaskReleaseSource {
+    return { file: isSet(object.file) ? globalThis.String(object.file) : "" };
+  },
+
+  toJSON(message: TaskReleaseSource): unknown {
+    const obj: any = {};
+    if (message.file !== "") {
+      obj.file = message.file;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<TaskReleaseSource>): TaskReleaseSource {
+    return TaskReleaseSource.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<TaskReleaseSource>): TaskReleaseSource {
+    const message = createBaseTaskReleaseSource();
+    message.file = object.file ?? "";
     return message;
   },
 };
