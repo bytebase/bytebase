@@ -13,9 +13,10 @@ var (
 		// aws
 		"rdsadmin": true,
 		// gcp
-		"cloudsql":      true,
-		"cloudsqladmin": true,
-		"alloydbadmin":  true,
+		"cloudsql":        true,
+		"cloudsqladmin":   true,
+		"alloydbadmin":    true,
+		"alloydbmetadata": true,
 		// system templates.
 		"template0": true,
 		"template1": true,
