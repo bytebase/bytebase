@@ -295,6 +295,7 @@
     - [TaskDatabaseDataExportPayload](#bytebase-store-TaskDatabaseDataExportPayload)
     - [TaskDatabaseUpdatePayload](#bytebase-store-TaskDatabaseUpdatePayload)
     - [TaskDatabaseUpdatePayload.FlagsEntry](#bytebase-store-TaskDatabaseUpdatePayload-FlagsEntry)
+    - [TaskReleaseSource](#bytebase-store-TaskReleaseSource)
   
 - [store/task_run.proto](#store_task_run-proto)
     - [PriorBackupDetail](#bytebase-store-PriorBackupDetail)
@@ -4554,7 +4555,7 @@ TaskDatabaseDataExportPayload is the task payload for database data export.
 <a name="bytebase-store-TaskDatabaseUpdatePayload"></a>
 
 ### TaskDatabaseUpdatePayload
-TaskDatabaseDataUpdatePayload is the task payload for database data update (DML).
+TaskDatabaseUpdatePayload is the task payload for updating database (DDL &amp; DML).
 
 
 | Field | Type | Label | Description |
@@ -4566,6 +4567,7 @@ TaskDatabaseDataUpdatePayload is the task payload for database data update (DML)
 | sheet_id | [int32](#int32) |  |  |
 | pre_update_backup_detail | [PreUpdateBackupDetail](#bytebase-store-PreUpdateBackupDetail) |  |  |
 | flags | [TaskDatabaseUpdatePayload.FlagsEntry](#bytebase-store-TaskDatabaseUpdatePayload-FlagsEntry) | repeated | flags is used for ghost sync |
+| task_release_source | [TaskReleaseSource](#bytebase-store-TaskReleaseSource) |  |  |
 
 
 
@@ -4582,6 +4584,21 @@ TaskDatabaseDataUpdatePayload is the task payload for database data update (DML)
 | ----- | ---- | ----- | ----------- |
 | key | [string](#string) |  |  |
 | value | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-TaskReleaseSource"></a>
+
+### TaskReleaseSource
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| file | [string](#string) |  | Format: projects/{project}/releases/{release}/files/{file} |
 
 
 
