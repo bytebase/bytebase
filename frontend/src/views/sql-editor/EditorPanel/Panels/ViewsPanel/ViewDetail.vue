@@ -41,7 +41,7 @@
           </NCheckbox>
           <OpenAIButton
             size="small"
-            :statement="view.definition"
+            :statement="selectedStatement || view.definition"
             :actions="['explain-code']"
           />
         </div>
@@ -53,6 +53,7 @@
     :db="db"
     :code="view.definition"
     :format="format"
+    @select-content="selectedStatement = $event"
   />
   <ColumnsTable
     v-show="state.mode === 'COLUMNS'"
@@ -76,7 +77,7 @@
 import { useLocalStorage } from "@vueuse/core";
 import { ChevronLeftIcon, CodeIcon, FileSymlinkIcon } from "lucide-vue-next";
 import { NButton, NCheckbox, NTab, NTabs } from "naive-ui";
-import { computed, h, reactive, watch } from "vue";
+import { computed, h, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { ColumnIcon, ViewIcon } from "@/components/Icon";
 import { SearchBox } from "@/components/v2";
@@ -115,6 +116,7 @@ const format = useLocalStorage<boolean>(
   "bb.sql-editor.editor-panel.code-viewer.format",
   false
 );
+const selectedStatement = ref("");
 
 const tabItems = computed(() => {
   const items = [

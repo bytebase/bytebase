@@ -3,13 +3,19 @@
     class="border rounded shadow py-1 px-1 bg-gray-50 border-gray-400"
     :class="[
       message.status === 'DONE'
-        ? 'w-[60%] min-w-[9rem]'
+        ? 'w-[100%] min-w-[9rem]'
         : message.status === 'FAILED'
           ? 'max-w-[40%] min-w-[9rem]'
           : 'w-auto',
     ]"
   >
-    <Markdown v-if="message.status === 'DONE'" :content="message.content" />
+    <Markdown
+      v-if="message.status === 'DONE'"
+      :content="message.content"
+      :code-block-props="{
+        width: 1.0,
+      }"
+    />
     <div v-else-if="message.status === 'LOADING'" class="flex items-center">
       <BBSpin class="mx-1" :size="18" />
     </div>
