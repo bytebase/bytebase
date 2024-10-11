@@ -109,7 +109,6 @@ const options = computed(() => {
       label: t("plugin.ai.actions.find-problems"),
       disabled: !statement,
     },
-    { value: "new-chat", label: t("plugin.ai.actions.new-chat") },
   ];
   return options.filter((opt) => {
     if (props.actions && !props.actions.includes(opt.value)) return false;
@@ -153,13 +152,10 @@ const handleSelect = async (action: ChatAction) => {
       });
     }
   }
-  if (action === "new-chat") {
-    events.emit("new-conversation", { input: "" });
-  }
 };
 
 const handleClickButton = () => {
-  showAIPanel.value = true;
+  showAIPanel.value = !showAIPanel.value;
 };
 
 const goConfigure = () => {

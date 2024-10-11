@@ -84,17 +84,7 @@ export const useAIActions = async (
         actions.value.push(action);
       }
       if (opts.actions.includes("new-chat")) {
-        const action1 = editor.addAction({
-          id: "new-chat",
-          label: "New chat",
-          precondition: "bb.ai.selectedContentEmpty",
-          contextMenuGroupId: "2_ai_assistant",
-          contextMenuOrder: 2,
-          run: async () => {
-            opts.callback("new-chat", monaco, editor);
-          },
-        });
-        const action2 = editor.addAction({
+        const action = editor.addAction({
           id: "new-chat-using-selection",
           label: "New chat using selection",
           precondition: "!bb.ai.selectedContentEmpty",
@@ -104,8 +94,7 @@ export const useAIActions = async (
             opts.callback("new-chat", monaco, editor);
           },
         });
-        actions.value.push(action1);
-        actions.value.push(action2);
+        actions.value.push(action);
       }
     } else {
       // When the language is "javascript" we do not have AI Assistant actions
