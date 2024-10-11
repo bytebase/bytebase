@@ -152,7 +152,7 @@ const handleClickNext = async () => {
           : [databaseGroup?.databasePlaceholder]
       ),
       release: release.value.name,
-      description: `Apply release [${release.value.title}]`,
+      description: `Apply release "${release.value.title}"`,
     };
     if (state.targetSelectState.changeSource === "DATABASE") {
       query.databaseList = databaseList.map((db) => db.name).join(",");
