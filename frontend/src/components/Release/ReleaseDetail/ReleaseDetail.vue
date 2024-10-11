@@ -1,8 +1,7 @@
 <template>
   <div class="flex flex-col items-stretch gap-y-4 relative">
     <NavBar />
-
-    <MigrationFileTable />
+    <ReleaseFileTable />
   </div>
 </template>
 
@@ -10,8 +9,8 @@
 import { computed, watch } from "vue";
 import { useRoute } from "vue-router";
 import { PROJECT_V1_ROUTE_RELEASE_DETAIL } from "@/router/dashboard/projectV1";
-import MigrationFileTable from "./MigrationFileTable";
 import NavBar from "./NavBar";
+import ReleaseFileTable from "./ReleaseFileTable";
 import { provideReleaseDetailContext } from "./context";
 
 const route = useRoute();
@@ -23,6 +22,7 @@ const documentTitle = computed(() => {
   }
   return release.value.title;
 });
+
 watch(
   documentTitle,
   (title) => {
