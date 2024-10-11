@@ -86,8 +86,9 @@ const handlePressEnter = (e?: KeyboardEvent) => {
   if (e?.shiftKey) {
     return;
   }
-  applyValue(state.value);
   e?.preventDefault();
+  if (!state.value.trim()) return;
+  applyValue(state.value);
 };
 
 onMounted(() => {
