@@ -217,11 +217,11 @@ const handleEditorReady = (
       }
       if (action === "new-chat") {
         const statement = tab?.selectedStatement ?? "";
-        const inputs: string[] = [];
-        if (statement) {
-          inputs.push(`// ${t("plugin.ai.text-to-sql-placeholder")}`);
-          inputs.push(promptUtils.wrapStatementMarkdown(statement));
-        }
+        if (!statement) return;
+        const inputs = [
+          `// ${t("plugin.ai.text-to-sql-placeholder")}`,
+          promptUtils.wrapStatementMarkdown(statement),
+        ];
         AIContext.events.emit("new-conversation", {
           input: inputs.join("\n"),
         });
