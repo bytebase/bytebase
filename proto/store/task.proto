@@ -24,7 +24,7 @@ message TaskDatabaseCreatePayload {
   string labels = 11;
 }
 
-// TaskDatabaseDataUpdatePayload is the task payload for database data update (DML).
+// TaskDatabaseUpdatePayload is the task payload for updating database (DDL & DML).
 message TaskDatabaseUpdatePayload {
   // common fields
   bool skipped = 1;
@@ -38,6 +38,8 @@ message TaskDatabaseUpdatePayload {
 
   // flags is used for ghost sync
   map<string, string> flags = 7;
+
+  TaskReleaseSource task_release_source = 8;
 }
 
 // TaskDatabaseDataExportPayload is the task payload for database data export.
@@ -48,4 +50,9 @@ message TaskDatabaseDataExportPayload {
   int32 sheet_id = 2;
   string password = 3;
   ExportFormat format = 4;
+}
+
+message TaskReleaseSource {
+  // Format: projects/{project}/releases/{release}/files/{file}
+  string file = 1;
 }
