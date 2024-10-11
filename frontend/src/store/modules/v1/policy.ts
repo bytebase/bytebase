@@ -1,3 +1,4 @@
+import { Status, type ServerError } from "nice-grpc-common";
 import { defineStore } from "pinia";
 import { computed, unref, watchEffect } from "vue";
 import { policyServiceClient } from "@/grpcweb";
@@ -128,8 +129,12 @@ export const usePolicyV1Store = defineStore("policy_v1", {
         );
         this.policyMapByName.set(policy.name, policy);
         return policy;
-      } catch {
-        return;
+      } catch (error) {
+        const se = error as ServerError;
+        if (se.code === Status.NOT_FOUND) {
+          // To prevent unnecessary requests, cache empty policies if not found.
+          this.policyMapByName.set(name, Policy.fromPartial({ name }));
+        }
       }
     },
     getPolicyByParentAndType({
