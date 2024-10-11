@@ -148,9 +148,40 @@ func (s *ReleaseService) ListReleases(ctx context.Context, request *v1pb.ListRel
 	}, nil
 }
 
-func (*ReleaseService) UpdateRelease(_ context.Context, _ *v1pb.UpdateReleaseRequest) (*v1pb.Release, error) {
-	// TODO(p0ny): implement me please.
-	return nil, status.Errorf(codes.Unimplemented, "implement me")
+func (s *ReleaseService) UpdateRelease(ctx context.Context, request *v1pb.UpdateReleaseRequest) (*v1pb.Release, error) {
+	if request.UpdateMask == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "update_mask must be set")
+	}
+
+	releaseUID, err := common.GetReleaseUID(request.Release.Name)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "failed to get release uid, err: %v", err)
+	}
+	release, err := s.store.GetRelease(ctx, releaseUID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get release, err: %v", err)
+	}
+
+	update := &store.UpdateReleaseMessage{
+		UID: releaseUID,
+	}
+	for _, path := range request.UpdateMask.Paths {
+		if path == "title" {
+			payload := release.Payload
+			payload.Title = request.Release.Title
+			update.Payload = payload
+		}
+	}
+
+	releaseMessage, err := s.store.UpdateRelease(ctx, update)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to update release, err: %v", err)
+	}
+	converted, err := convertToRelease(ctx, s.store, releaseMessage)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to convert release, err: %v", err)
+	}
+	return converted, nil
 }
 
 func convertToReleases(ctx context.Context, s *store.Store, releases []*store.ReleaseMessage) ([]*v1pb.Release, error) {

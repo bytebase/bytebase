@@ -1,5 +1,6 @@
 <template>
   <NInput
+    class="w-full"
     :value="state.title"
     :style="style"
     :loading="state.isUpdating"
@@ -34,7 +35,7 @@ const state = reactive({
 const style = computed(() => {
   const style: CSSProperties = {
     cursor: "default",
-    minWidth: "10rem",
+    minWidth: "12rem",
     "--n-color-disabled": "transparent",
     "--n-font-size": "20px",
   };
