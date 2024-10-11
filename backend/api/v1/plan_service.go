@@ -247,9 +247,7 @@ func (s *PlanService) CreatePlan(ctx context.Context, request *v1pb.CreatePlanRe
 		PipelineUID: nil,
 		Name:        request.Plan.Title,
 		Description: request.Plan.Description,
-		Config: &storepb.PlanConfig{
-			Steps: convertPlanSteps(request.Plan.Steps),
-		},
+		Config:      convertPlan(request.Plan),
 	}
 	if request.GetPlan().VcsSource != nil {
 		planMessage.Config.VcsSource = &storepb.PlanConfig_VCSSource{
