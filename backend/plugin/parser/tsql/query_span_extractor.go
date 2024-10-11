@@ -1079,6 +1079,7 @@ func (q *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleContext) (
 			defaultDatabase: q.defaultDatabase,
 			defaultSchema:   q.defaultSchema,
 			gCtx:            q.gCtx,
+			ctx:             q.ctx,
 			// outerTableSources: extractor.outerTableSources,
 			ctes:                q.ctes,
 			ignoreCaseSensitive: q.ignoreCaseSensitive,
