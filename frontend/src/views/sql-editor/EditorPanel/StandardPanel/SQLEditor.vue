@@ -64,7 +64,11 @@ const emit = defineEmits<{
 const tabStore = useSQLEditorTabStore();
 const sheetAndTabStore = useWorkSheetAndTabStore();
 const uiStateStore = useUIStateStore();
-const { showAIPanel, events: editorEvents } = useSQLEditorContext();
+const {
+  showAIPanel,
+  pendingInsertAtCaret,
+  events: editorEvents,
+} = useSQLEditorContext();
 const { currentTab, isSwitchingTab } = storeToRefs(tabStore);
 const AIContext = useAIContext();
 const pendingFormatContentCommand = ref(false);
@@ -258,6 +262,33 @@ const handleEditorReady = (
           pendingSetSelectionCommand.value = undefined;
         });
       }
+    },
+    { immediate: true }
+  );
+
+  watch(
+    pendingInsertAtCaret,
+    () => {
+      const text = pendingInsertAtCaret.value;
+      if (!text) return;
+      pendingInsertAtCaret.value = undefined;
+
+      requestAnimationFrame(() => {
+        const selection = editor.getSelection();
+        const maxLineNumber = editor.getModel()?.getLineCount() ?? 0;
+        const range =
+          selection ??
+          new monaco.Range(maxLineNumber + 1, 1, maxLineNumber + 1, 1);
+        editor.executeEdits("bb.event.insert-at-caret", [
+          {
+            forceMoveMarkers: true,
+            text,
+            range,
+          },
+        ]);
+        editor.focus();
+        editor.revealLine(range.startLineNumber);
+      });
     },
     { immediate: true }
   );

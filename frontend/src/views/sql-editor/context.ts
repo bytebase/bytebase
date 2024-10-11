@@ -9,10 +9,7 @@ import type { Worksheet } from "@/types/proto/v1/worksheet_service";
 export type AsidePanelTab = "SCHEMA" | "WORKSHEET" | "HISTORY";
 
 // 30% by default
-export const storedAIPanelSize = useLocalStorage(
-  "bb.plugin.ai.panel-size",
-  30
-);
+export const storedAIPanelSize = useLocalStorage("bb.plugin.ai.panel-size", 30);
 
 type SQLEditorEvents = Emittery<{
   "save-sheet": {
@@ -35,6 +32,9 @@ type SQLEditorEvents = Emittery<{
     start: { line: number; column: number };
     end?: { line: number; column: number };
   };
+  "insert-at-caret": {
+    content: string;
+  };
 }>;
 
 export type SQLEditorContext = {
@@ -50,6 +50,8 @@ export type SQLEditorContext = {
       }
     | undefined
   >;
+
+  pendingInsertAtCaret: Ref<string | undefined>;
 
   events: SQLEditorEvents;
 
@@ -73,6 +75,7 @@ export const provideSQLEditorContext = () => {
     showAIPanel: ref(false),
     AIPanelSize: storedAIPanelSize,
     schemaViewer: ref(undefined),
+    pendingInsertAtCaret: ref(),
     events: new Emittery(),
 
     maybeSwitchProject: (project) => {

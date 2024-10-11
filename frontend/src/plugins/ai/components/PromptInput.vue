@@ -50,6 +50,7 @@
 <script lang="ts" setup>
 import { NButton, NInput, NPopover, type InputInst } from "naive-ui";
 import { onMounted, reactive, ref, watch } from "vue";
+import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import { keyboardShortcutStr, nextAnimationFrame } from "@/utils";
 import { useAIContext } from "../logic";
 
@@ -74,7 +75,7 @@ const state = reactive<LocalState>({
   value: "",
 });
 
-const { pendingPreInput } = useAIContext();
+const { pendingPreInput, events } = useAIContext();
 const inputRef = ref<InputInst>();
 
 const applyValue = (value: string) => {
@@ -108,4 +109,8 @@ watch(
     flush: "post",
   }
 );
+
+useEmitteryEventListener(events, "new-conversation", () => {
+  inputRef.value?.focus();
+});
 </script>

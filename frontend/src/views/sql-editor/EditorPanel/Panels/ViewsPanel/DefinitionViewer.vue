@@ -18,7 +18,7 @@
       class="overflow-hidden flex flex-col"
     >
       <Suspense>
-        <AIChatToSQL />
+        <AIChatToSQL key="ai-chat-to-sql" />
         <template #fallback>
           <div
             class="w-full h-full flex-grow flex flex-col items-center justify-center"

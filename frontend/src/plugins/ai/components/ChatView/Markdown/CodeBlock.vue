@@ -25,6 +25,19 @@
           <template #trigger>
             <button
               class="inline-flex items-center justify-center hover:text-accent cursor-pointer"
+              @click.capture="handleInsertAtCaret"
+            >
+              <InsertAtCaretIcon :size="14" />
+            </button>
+          </template>
+          <div class="whitespace-nowrap">
+            {{ $t("plugin.ai.actions.insert-at-caret") }}
+          </div>
+        </NPopover>
+        <NPopover placement="bottom">
+          <template #trigger>
+            <button
+              class="inline-flex items-center justify-center hover:text-accent cursor-pointer"
               @click="handleCopy"
             >
               <ClipboardIcon class="w-3.5 h-3.5" />
@@ -76,6 +89,8 @@ import { MonacoEditor } from "@/components/MonacoEditor";
 import { useAIContext } from "@/plugins/ai/logic";
 import { pushNotification } from "@/store";
 import { findAncestor, toClipboard } from "@/utils";
+import { useSQLEditorContext } from "@/views/sql-editor/context";
+import InsertAtCaretIcon from "./InsertAtCaretIcon.vue";
 
 export type CodeBlockProps = {
   width: number;
@@ -89,6 +104,7 @@ const props = defineProps<
 
 const { t } = useI18n();
 const { events, showHistoryDialog } = useAIContext();
+const { events: editorEvents } = useSQLEditorContext();
 const containerRef = ref<HTMLElement>();
 const messageWrapperRef = computed(() =>
   findAncestor(containerRef.value, ".message")
@@ -104,6 +120,14 @@ const combinedWidth = computed(() => {
 const handleExecute = () => {
   events.emit("run-statement", {
     statement: props.code,
+  });
+  showHistoryDialog.value = false;
+};
+
+const handleInsertAtCaret = () => {
+  const { code } = props;
+  editorEvents.emit("insert-at-caret", {
+    content: code,
   });
   showHistoryDialog.value = false;
 };
