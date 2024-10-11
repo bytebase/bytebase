@@ -1,66 +1,68 @@
 <template>
   <div
     ref="containerRef"
-    class="flex items-start"
+    class="flex flex-col overflow-x-hidden border border-gray-500 rounded bg-white"
     :data-message-wrapper-width="messageWrapperWidth"
     :style="`width: ${width}px`"
   >
-    <div class="flex-1 overflow-x-hidden">
-      <MonacoEditor
-        :content="code"
-        :readonly="true"
-        :auto-focus="false"
-        :auto-height="{
-          min: 48,
-          max: 120,
-          padding: 2,
-        }"
-        :options="{
-          automaticLayout: true,
-          fontSize: 12,
-          lineHeight: 14,
-          lineNumbers: 'off',
-          wordWrap: 'on',
-          scrollbar: {
-            vertical: 'hidden',
-            horizontal: 'hidden',
-            useShadows: false,
-            verticalScrollbarSize: 0,
-            horizontalScrollbarSize: 0,
-            alwaysConsumeMouseWheel: false,
-          },
-        }"
-        class="border h-auto bg-white"
-      />
+    <div class="flex items-center justify-between px-1 pt-1">
+      <div class="text-xs">SQL</div>
+      <div class="flex items-center justify-end gap-2">
+        <NPopover placement="bottom">
+          <template #trigger>
+            <button
+              class="inline-flex items-center justify-center hover:text-accent cursor-pointer"
+              @click="handleExecute"
+            >
+              <PlayIcon class="w-3.5 h-3.5" />
+            </button>
+          </template>
+          <div class="whitespace-nowrap">
+            {{ $t("common.run") }}
+          </div>
+        </NPopover>
+        <NPopover placement="bottom">
+          <template #trigger>
+            <button
+              class="inline-flex items-center justify-center hover:text-accent cursor-pointer"
+              @click="handleCopy"
+            >
+              <ClipboardIcon class="w-3.5 h-3.5" />
+            </button>
+          </template>
+          <div class="whitespace-nowrap">
+            {{ $t("common.copy") }}
+          </div>
+        </NPopover>
+      </div>
     </div>
-    <div class="flex flex-col gap-y-2 ml-0.5 mt-1">
-      <NPopover placement="right">
-        <template #trigger>
-          <button
-            class="inline-flex items-center justify-center hover:text-accent cursor-pointer"
-            @click="handleExecute"
-          >
-            <PlayIcon class="w-3.5 h-3.5" />
-          </button>
-        </template>
-        <div class="whitespace-nowrap">
-          {{ $t("common.run") }}
-        </div>
-      </NPopover>
-      <NPopover placement="right">
-        <template #trigger>
-          <button
-            class="inline-flex items-center justify-center hover:text-accent cursor-pointer"
-            @click="handleCopy"
-          >
-            <ClipboardIcon class="w-3.5 h-3.5" />
-          </button>
-        </template>
-        <div class="whitespace-nowrap">
-          {{ $t("common.copy") }}
-        </div>
-      </NPopover>
-    </div>
+
+    <MonacoEditor
+      :content="code"
+      :readonly="true"
+      :auto-focus="false"
+      :auto-height="{
+        min: 20,
+        max: 120,
+        padding: 2,
+      }"
+      :options="{
+        automaticLayout: true,
+        fontSize: 12,
+        lineHeight: 14,
+        lineNumbers: 'off',
+        wordWrap: 'on',
+        scrollbar: {
+          vertical: 'hidden',
+          horizontal: 'hidden',
+          useShadows: false,
+          verticalScrollbarSize: 0,
+          horizontalScrollbarSize: 0,
+          alwaysConsumeMouseWheel: false,
+        },
+      }"
+      class="h-auto"
+    />
   </div>
 </template>
 
