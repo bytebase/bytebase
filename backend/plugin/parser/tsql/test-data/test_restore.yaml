@@ -1,0 +1,109 @@
+- input: |-
+    UPDATE t_generated SET a = 1 WHERE b = 1;
+    UPDATE t_generated SET a = 2 WHERE b = 2;
+    UPDATE t_generated SET a = 3 WHERE b = 3;
+    UPDATE t_generated SET a = 4 WHERE b = 4;
+    UPDATE t_generated SET a = 5 WHERE b = 5;
+    UPDATE t_generated SET a = 6 WHERE b = 6;
+    UPDATE t_generated SET a = 7 WHERE b = 7;
+  backupdatabase: bbarchive
+  backuptable: prefix_t_generated
+  originaldatabase: db
+  originalschema: dbo
+  originaltable: t_generated
+  result: |-
+    /*
+    Original SQL:
+    UPDATE t_generated SET a = 1 WHERE b = 1;
+    UPDATE t_generated SET a = 2 WHERE b = 2;
+    UPDATE t_generated SET a = 3 WHERE b = 3;
+    UPDATE t_generated SET a = 4 WHERE b = 4;
+    UPDATE t_generated SET a = 5 WHERE b = 5;
+    UPDATE t_generated SET a = 6 WHERE b = 6;
+    UPDATE t_generated SET a = 7 WHERE b = 7;
+    */
+    MERGE INTO [db].[dbo].[t_generated] AS t
+    USING [bbarchive].[dbo].[prefix_t_generated] AS b
+      ON t.[b] = b.[b]
+    WHEN MATCHED THEN
+      UPDATE SET t.[a] = b.[a]
+    WHEN NOT MATCHED THEN
+     INSERT ([a], [b]) VALUES (b.[a], b.[b]);
+- input: DELETE FROM t_generated where a = 1;
+  backupdatabase: bbarchive
+  backuptable: prefix_1_t_generated
+  originaldatabase: db
+  originalschema: dbo
+  originaltable: t_generated
+  result: |-
+    /*
+    Original SQL:
+    DELETE FROM t_generated where a = 1;
+    */
+    INSERT INTO [db].[dbo].[t_generated] SELECT * FROM [bbarchive].[dbo].[prefix_1_t_generated];
+- input: UPDATE t_generated SET a = 1 WHERE a = 2;
+  backupdatabase: bbarchive
+  backuptable: prefix_1_t_generated
+  originaldatabase: db
+  originalschema: dbo
+  originaltable: t_generated
+  result: |-
+    /*
+    Original SQL:
+    UPDATE t_generated SET a = 1 WHERE a = 2;
+    */
+    MERGE INTO [db].[dbo].[t_generated] AS t
+    USING [bbarchive].[dbo].[prefix_1_t_generated] AS b
+      ON t.[b] = b.[b]
+    WHEN MATCHED THEN
+      UPDATE SET t.[a] = b.[a]
+    WHEN NOT MATCHED THEN
+     INSERT ([a], [b]) VALUES (b.[a], b.[b]);
+- input: DELETE test FROM test, test2 as t2 where test.id = t2.id;
+  backupdatabase: bbarchive
+  backuptable: prefix_1_test
+  originaldatabase: db
+  originalschema: dbo
+  originaltable: test
+  result: |-
+    /*
+    Original SQL:
+    DELETE test FROM test, test2 as t2 where test.id = t2.id;
+    */
+    INSERT INTO [db].[dbo].[test] SELECT * FROM [bbarchive].[dbo].[prefix_1_test];
+- input: UPDATE test SET test.c1 = 1 WHERE test.c1 = 1;
+  backupdatabase: bbarchive
+  backuptable: prefix_1_test
+  originaldatabase: db
+  originalschema: dbo
+  originaltable: test
+  result: |-
+    /*
+    Original SQL:
+    UPDATE test SET test.c1 = 1 WHERE test.c1 = 1;
+    */
+    MERGE INTO [db].[dbo].[test] AS t
+    USING [bbarchive].[dbo].[prefix_1_test] AS b
+      ON t.[a] = b.[a]
+    WHEN MATCHED THEN
+      UPDATE SET t.[c1] = b.[c1]
+    WHEN NOT MATCHED THEN
+     INSERT ([a], [b], [c]) VALUES (b.[a], b.[b], b.[c]);
+- input: UPDATE test SET c1 = 1 WHERE c1 = 1;
+  backupdatabase: bbarchive
+  backuptable: prefix_1_test
+  originaldatabase: db
+  originalschema: dbo
+  originaltable: test
+  result: |-
+    /*
+    Original SQL:
+    UPDATE test SET c1 = 1 WHERE c1 = 1;
+    */
+    MERGE INTO [db].[dbo].[test] AS t
+    USING [bbarchive].[dbo].[prefix_1_test] AS b
+      ON t.[a] = b.[a]
+    WHEN MATCHED THEN
+      UPDATE SET t.[c1] = b.[c1]
+    WHEN NOT MATCHED THEN
+     INSERT ([a], [b], [c]) VALUES (b.[a], b.[b], b.[c]);
