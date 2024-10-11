@@ -1,3 +1,4 @@
+import { useLocalStorage } from "@vueuse/core";
 import Emittery from "emittery";
 import type { InjectionKey, Ref } from "vue";
 import { inject, provide, ref } from "vue";
@@ -6,6 +7,12 @@ import type { ComposedDatabase, SQLEditorTab } from "@/types";
 import type { Worksheet } from "@/types/proto/v1/worksheet_service";
 
 export type AsidePanelTab = "SCHEMA" | "WORKSHEET" | "HISTORY";
+
+// 30% by default
+export const storedAIPanelSize = useLocalStorage(
+  "bb.plugin.ai.panel-size",
+  30
+);
 
 type SQLEditorEvents = Emittery<{
   "save-sheet": {
@@ -34,6 +41,7 @@ export type SQLEditorContext = {
   asidePanelTab: Ref<AsidePanelTab>;
   showConnectionPanel: Ref<boolean>;
   showAIPanel: Ref<boolean>;
+  AIPanelSize: Ref<number>;
   schemaViewer: Ref<
     | {
         database: ComposedDatabase;
@@ -46,6 +54,7 @@ export type SQLEditorContext = {
   events: SQLEditorEvents;
 
   maybeSwitchProject: (project: string) => Promise<string>;
+  handleAIPanelResize: (panes: { size: number }[], index?: number) => void;
 };
 
 export const KEY = Symbol(
@@ -62,6 +71,7 @@ export const provideSQLEditorContext = () => {
     asidePanelTab: ref("WORKSHEET"),
     showConnectionPanel: ref(false),
     showAIPanel: ref(false),
+    AIPanelSize: storedAIPanelSize,
     schemaViewer: ref(undefined),
     events: new Emittery(),
 
@@ -71,6 +81,11 @@ export const provideSQLEditorContext = () => {
         return context.events.once("project-context-ready").then(() => project);
       }
       return Promise.resolve(editorStore.project);
+    },
+    handleAIPanelResize: (panes, index = 0) => {
+      if (panes.length <= index) return;
+      const { size } = panes[index];
+      storedAIPanelSize.value = size;
     },
   };
 

@@ -1,6 +1,7 @@
 <template>
   <Splitpanes
     class="default-theme flex flex-row items-stretch flex-1 w-full overflow-hidden"
+    @resized="handleAIPanelResize($event, 1)"
   >
     <Pane>
       <MonacoEditor
@@ -11,7 +12,11 @@
         @ready="handleEditorReady"
       />
     </Pane>
-    <Pane v-if="showAIPanel" :size="30" class="overflow-hidden flex flex-col">
+    <Pane
+      v-if="showAIPanel"
+      :size="AIPanelSize"
+      class="overflow-hidden flex flex-col"
+    >
       <Suspense>
         <AIChatToSQL />
         <template #fallback>
@@ -56,7 +61,7 @@ const emit = defineEmits<{
   (event: "back"): void;
 }>();
 
-const { showAIPanel } = useSQLEditorContext();
+const { showAIPanel, AIPanelSize, handleAIPanelResize } = useSQLEditorContext();
 const instanceEngine = computed(() => props.db.instanceResource.engine);
 const AIContext = useAIContext();
 const selectedStatement = ref("");
