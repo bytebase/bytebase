@@ -408,7 +408,17 @@ func (exec *DatabaseCreateExecutor) createInitialSchema(ctx context.Context, dri
 		mi.IssueUID = &issue.UID
 	}
 
-	if _, _, err := executeMigrationDefault(ctx, driverCtx, exec.store, exec.stateCfg, taskRunUID, driver, mi, schema, nil, db.ExecuteOptions{}); err != nil {
+	mc := &migrateContext{
+		instance:    instance,
+		database:    database,
+		sheet:       nil,
+		task:        task,
+		taskRunUID:  taskRunUID,
+		taskRunName: common.FormatTaskRun(project.ResourceID, task.PipelineID, task.StageID, task.ID, taskRunUID),
+		version:     schemaVersion.Version,
+	}
+
+	if _, _, err := executeMigrationDefault(ctx, driverCtx, exec.store, exec.stateCfg, driver, mi, mc, schema, db.ExecuteOptions{}); err != nil {
 		return nil, model.Version{}, "", err
 	}
 	return peerDatabase, schemaVersion, schema, nil
