@@ -17,7 +17,7 @@
       </NCheckbox>
       <OpenAIButton
         size="small"
-        :statement="code"
+        :statement="selectedStatement || content"
         :actions="['explain-code']"
       />
     </div>
@@ -35,6 +35,7 @@
           callback: handleFormatContent,
         }"
         class="w-full h-full relative"
+        @select-content="selectedStatement = $event"
         @ready="handleEditorReady"
       />
     </Pane>
@@ -58,7 +59,7 @@ import { computedAsync, useLocalStorage } from "@vueuse/core";
 import { ChevronLeftIcon } from "lucide-vue-next";
 import { NButton, NCheckbox } from "naive-ui";
 import { Pane, Splitpanes } from "splitpanes";
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import { BBSpin } from "@/bbkit";
 import {
   MonacoEditor,
@@ -92,6 +93,7 @@ const format = useLocalStorage<boolean>(
   false
 );
 const instanceEngine = computed(() => props.db.instanceResource.engine);
+const selectedStatement = ref("");
 
 const formatted = computedAsync(
   async () => {
@@ -139,10 +141,12 @@ const handleEditorReady = (
       showAIPanel.value = true;
       if (action !== "explain-code") return;
 
+      const statement = selectedStatement.value || content.value;
+
       await nextAnimationFrame();
       AIContext.events.emit("send-chat", {
         content: promptUtils.explainCode(
-          props.code,
+          statement,
           props.db.instanceResource.engine
         ),
         newChat,

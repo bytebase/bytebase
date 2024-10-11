@@ -7,6 +7,7 @@
         :content="content"
         :readonly="true"
         class="w-full h-full relative"
+        @select-content="handleSelectContent"
         @ready="handleEditorReady"
       />
     </Pane>
@@ -28,7 +29,7 @@
 <script setup lang="ts">
 import { computedAsync } from "@vueuse/core";
 import { Pane, Splitpanes } from "splitpanes";
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import { BBSpin } from "@/bbkit";
 import {
   MonacoEditor,
@@ -50,13 +51,15 @@ const props = defineProps<{
   format?: boolean;
 }>();
 
-defineEmits<{
+const emit = defineEmits<{
+  (event: "select-content", content: string): void;
   (event: "back"): void;
 }>();
 
 const { showAIPanel } = useSQLEditorContext();
 const instanceEngine = computed(() => props.db.instanceResource.engine);
 const AIContext = useAIContext();
+const selectedStatement = ref("");
 
 const formatted = computedAsync(
   async () => {
@@ -86,6 +89,11 @@ const content = computed(() => {
     : props.code;
 });
 
+const handleSelectContent = (selected: string) => {
+  selectedStatement.value = selected;
+  emit("select-content", selected);
+};
+
 const handleEditorReady = (
   monaco: MonacoModule,
   editor: IStandaloneCodeEditor
@@ -99,11 +107,12 @@ const handleEditorReady = (
 
       showAIPanel.value = true;
       if (action !== "explain-code") return;
+      const statement = selectedStatement.value || content.value;
 
       await nextAnimationFrame();
       AIContext.events.emit("send-chat", {
         content: promptUtils.explainCode(
-          props.code,
+          statement,
           props.db.instanceResource.engine
         ),
         newChat,
