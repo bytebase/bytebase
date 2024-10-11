@@ -13,12 +13,9 @@
     }"
     size="small"
     type="textarea"
-    style="--n-padding-left: 8px; --n-padding-right: 4px"
+    style="--n-padding-left: 6px; --n-padding-right: 0px"
     @keypress.enter="handlePressEnter"
   >
-    <template #prefix>
-      <heroicons-outline:sparkles class="w-3.5 h-3.5 text-accent" />
-    </template>
     <template #suffix>
       <NPopover placement="bottom" style="--n-padding: 6px 8px">
         <template #trigger>
