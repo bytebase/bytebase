@@ -29,9 +29,8 @@ export const useTaskSheet = () => {
       if (uid.startsWith("-")) {
         return getLocalSheetByName(name);
       }
-
-      // Use any (basic or full) view of sheets here to save data size
-      return sheetStore.getOrFetchSheetByName(name);
+      // Use any view(basic or full) of sheets here to save data size.
+      return await sheetStore.getOrFetchSheetByName(name);
     },
     undefined,
     {
