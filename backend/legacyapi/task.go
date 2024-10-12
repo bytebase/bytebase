@@ -52,7 +52,7 @@ const (
 	TaskDatabaseDataExport TaskType = "bb.task.database.data.export"
 )
 
-// Sequetial returns whether the task should be executed sequentially.
+// Sequential returns whether the task should be executed sequentially.
 func (t TaskType) Sequential() bool {
 	switch t {
 	case
