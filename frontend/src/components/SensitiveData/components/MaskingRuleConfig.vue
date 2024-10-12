@@ -96,7 +96,6 @@ import {
   validateSimpleExpr,
   emptySimpleExpr,
 } from "@/plugins/cel";
-import { ParsedExpr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
 import { Expr } from "@/types/proto/google/type/expr";
 import { MaskingLevel, maskingLevelToJSON } from "@/types/proto/v1/common";
 import type { MaskingRulePolicy_MaskingRule } from "@/types/proto/v1/org_policy_service";
@@ -143,7 +142,7 @@ const resetLocalState = async (rule: MaskingRulePolicy_MaskingRule) => {
     const parsedExprs = await batchConvertCELStringToParsedExpr([
       rule.condition.expression,
     ]);
-    const celExpr = head(parsedExprs)?.expr;
+    const celExpr = head(parsedExprs);
     if (celExpr) {
       expr = resolveCELExpr(celExpr);
     }
@@ -193,11 +192,11 @@ const isValid = computed(() => {
 });
 
 const onConfirm = async () => {
-  const expressions = await batchConvertParsedExprToCELString([
-    ParsedExpr.fromJSON({
-      expr: await buildCELExpr(state.expr),
-    }),
-  ]);
+  const celexpr = await buildCELExpr(state.expr);
+  if (!celexpr) {
+    return;
+  }
+  const expressions = await batchConvertParsedExprToCELString([celexpr]);
   emit("confirm", {
     ...props.maskingRule,
     maskingLevel: state.maskingLevel,

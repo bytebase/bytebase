@@ -7,7 +7,7 @@
 /* eslint-disable */
 import { BinaryReader, BinaryWriter } from "@bufbuild/protobuf/wire";
 import Long from "long";
-import { ParsedExpr } from "../google/api/expr/v1alpha1/syntax";
+import { Expr as Expr1 } from "../google/api/expr/v1alpha1/syntax";
 import { Expr } from "../google/type/expr";
 
 export const protobufPackage = "bytebase.v1";
@@ -70,7 +70,7 @@ export interface Binding {
     | Expr
     | undefined;
   /** The parsed expression of the condition. */
-  parsedExpr: ParsedExpr | undefined;
+  parsedExpr: Expr1 | undefined;
 }
 
 /** The difference delta between two policies. */
@@ -389,7 +389,7 @@ export const Binding: MessageFns<Binding> = {
       Expr.encode(message.condition, writer.uint32(26).fork()).join();
     }
     if (message.parsedExpr !== undefined) {
-      ParsedExpr.encode(message.parsedExpr, writer.uint32(34).fork()).join();
+      Expr1.encode(message.parsedExpr, writer.uint32(34).fork()).join();
     }
     return writer;
   },
@@ -427,7 +427,7 @@ export const Binding: MessageFns<Binding> = {
             break;
           }
 
-          message.parsedExpr = ParsedExpr.decode(reader, reader.uint32());
+          message.parsedExpr = Expr1.decode(reader, reader.uint32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -443,7 +443,7 @@ export const Binding: MessageFns<Binding> = {
       role: isSet(object.role) ? globalThis.String(object.role) : "",
       members: globalThis.Array.isArray(object?.members) ? object.members.map((e: any) => globalThis.String(e)) : [],
       condition: isSet(object.condition) ? Expr.fromJSON(object.condition) : undefined,
-      parsedExpr: isSet(object.parsedExpr) ? ParsedExpr.fromJSON(object.parsedExpr) : undefined,
+      parsedExpr: isSet(object.parsedExpr) ? Expr1.fromJSON(object.parsedExpr) : undefined,
     };
   },
 
@@ -459,7 +459,7 @@ export const Binding: MessageFns<Binding> = {
       obj.condition = Expr.toJSON(message.condition);
     }
     if (message.parsedExpr !== undefined) {
-      obj.parsedExpr = ParsedExpr.toJSON(message.parsedExpr);
+      obj.parsedExpr = Expr1.toJSON(message.parsedExpr);
     }
     return obj;
   },
@@ -475,7 +475,7 @@ export const Binding: MessageFns<Binding> = {
       ? Expr.fromPartial(object.condition)
       : undefined;
     message.parsedExpr = (object.parsedExpr !== undefined && object.parsedExpr !== null)
-      ? ParsedExpr.fromPartial(object.parsedExpr)
+      ? Expr1.fromPartial(object.parsedExpr)
       : undefined;
     return message;
   },

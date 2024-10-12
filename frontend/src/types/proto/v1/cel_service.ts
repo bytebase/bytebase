@@ -7,7 +7,7 @@
 /* eslint-disable */
 import { BinaryReader, BinaryWriter } from "@bufbuild/protobuf/wire";
 import Long from "long";
-import { ParsedExpr } from "../google/api/expr/v1alpha1/syntax";
+import { Expr } from "../google/api/expr/v1alpha1/syntax";
 
 export const protobufPackage = "bytebase.v1";
 
@@ -16,11 +16,11 @@ export interface BatchParseRequest {
 }
 
 export interface BatchParseResponse {
-  expressions: ParsedExpr[];
+  expressions: Expr[];
 }
 
 export interface BatchDeparseRequest {
-  expressions: ParsedExpr[];
+  expressions: Expr[];
 }
 
 export interface BatchDeparseResponse {
@@ -95,7 +95,7 @@ function createBaseBatchParseResponse(): BatchParseResponse {
 export const BatchParseResponse: MessageFns<BatchParseResponse> = {
   encode(message: BatchParseResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     for (const v of message.expressions) {
-      ParsedExpr.encode(v!, writer.uint32(10).fork()).join();
+      Expr.encode(v!, writer.uint32(10).fork()).join();
     }
     return writer;
   },
@@ -112,7 +112,7 @@ export const BatchParseResponse: MessageFns<BatchParseResponse> = {
             break;
           }
 
-          message.expressions.push(ParsedExpr.decode(reader, reader.uint32()));
+          message.expressions.push(Expr.decode(reader, reader.uint32()));
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -126,7 +126,7 @@ export const BatchParseResponse: MessageFns<BatchParseResponse> = {
   fromJSON(object: any): BatchParseResponse {
     return {
       expressions: globalThis.Array.isArray(object?.expressions)
-        ? object.expressions.map((e: any) => ParsedExpr.fromJSON(e))
+        ? object.expressions.map((e: any) => Expr.fromJSON(e))
         : [],
     };
   },
@@ -134,7 +134,7 @@ export const BatchParseResponse: MessageFns<BatchParseResponse> = {
   toJSON(message: BatchParseResponse): unknown {
     const obj: any = {};
     if (message.expressions?.length) {
-      obj.expressions = message.expressions.map((e) => ParsedExpr.toJSON(e));
+      obj.expressions = message.expressions.map((e) => Expr.toJSON(e));
     }
     return obj;
   },
@@ -144,7 +144,7 @@ export const BatchParseResponse: MessageFns<BatchParseResponse> = {
   },
   fromPartial(object: DeepPartial<BatchParseResponse>): BatchParseResponse {
     const message = createBaseBatchParseResponse();
-    message.expressions = object.expressions?.map((e) => ParsedExpr.fromPartial(e)) || [];
+    message.expressions = object.expressions?.map((e) => Expr.fromPartial(e)) || [];
     return message;
   },
 };
@@ -156,7 +156,7 @@ function createBaseBatchDeparseRequest(): BatchDeparseRequest {
 export const BatchDeparseRequest: MessageFns<BatchDeparseRequest> = {
   encode(message: BatchDeparseRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     for (const v of message.expressions) {
-      ParsedExpr.encode(v!, writer.uint32(10).fork()).join();
+      Expr.encode(v!, writer.uint32(10).fork()).join();
     }
     return writer;
   },
@@ -173,7 +173,7 @@ export const BatchDeparseRequest: MessageFns<BatchDeparseRequest> = {
             break;
           }
 
-          message.expressions.push(ParsedExpr.decode(reader, reader.uint32()));
+          message.expressions.push(Expr.decode(reader, reader.uint32()));
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -187,7 +187,7 @@ export const BatchDeparseRequest: MessageFns<BatchDeparseRequest> = {
   fromJSON(object: any): BatchDeparseRequest {
     return {
       expressions: globalThis.Array.isArray(object?.expressions)
-        ? object.expressions.map((e: any) => ParsedExpr.fromJSON(e))
+        ? object.expressions.map((e: any) => Expr.fromJSON(e))
         : [],
     };
   },
@@ -195,7 +195,7 @@ export const BatchDeparseRequest: MessageFns<BatchDeparseRequest> = {
   toJSON(message: BatchDeparseRequest): unknown {
     const obj: any = {};
     if (message.expressions?.length) {
-      obj.expressions = message.expressions.map((e) => ParsedExpr.toJSON(e));
+      obj.expressions = message.expressions.map((e) => Expr.toJSON(e));
     }
     return obj;
   },
@@ -205,7 +205,7 @@ export const BatchDeparseRequest: MessageFns<BatchDeparseRequest> = {
   },
   fromPartial(object: DeepPartial<BatchDeparseRequest>): BatchDeparseRequest {
     const message = createBaseBatchDeparseRequest();
-    message.expressions = object.expressions?.map((e) => ParsedExpr.fromPartial(e)) || [];
+    message.expressions = object.expressions?.map((e) => Expr.fromPartial(e)) || [];
     return message;
   },
 };

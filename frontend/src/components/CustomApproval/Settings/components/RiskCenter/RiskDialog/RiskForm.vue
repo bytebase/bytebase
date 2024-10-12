@@ -103,7 +103,6 @@ import {
   validateSimpleExpr,
   emptySimpleExpr,
 } from "@/plugins/cel";
-import { ParsedExpr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
 import { Expr } from "@/types/proto/google/type/expr";
 import { Risk } from "@/types/proto/v1/risk_service";
 import {
@@ -153,7 +152,7 @@ const resolveLocalState = async () => {
     const parsedExprs = await batchConvertCELStringToParsedExpr([
       risk.condition.expression,
     ]);
-    const celExpr = head(parsedExprs)?.expr;
+    const celExpr = head(parsedExprs);
     if (celExpr) {
       expr = resolveCELExpr(celExpr);
     }
@@ -198,11 +197,11 @@ const handleUpsert = async () => {
 
   const risk = cloneDeep(state.value.risk);
 
-  const expressions = await batchConvertParsedExprToCELString([
-    ParsedExpr.fromPartial({
-      expr: await buildCELExpr(state.value.expr),
-    }),
-  ]);
+  const celexpr = await buildCELExpr(state.value.expr);
+  if (!celexpr) {
+    return;
+  }
+  const expressions = await batchConvertParsedExprToCELString([celexpr]);
   risk.condition = Expr.fromPartial({
     expression: expressions[0],
   });
