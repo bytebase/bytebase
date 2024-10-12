@@ -46,7 +46,7 @@ const columnList = computed(() => {
       key: "version",
       title: "Version",
       width: 128,
-      render: (file) => file.version,
+      render: (file) => <span class="textlabel">{file.version}</span>,
     },
     {
       key: "title",
