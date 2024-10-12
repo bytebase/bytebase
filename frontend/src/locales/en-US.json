@@ -491,7 +491,7 @@
       "email": "Email",
       "role": "Role",
       "phone": "Phone",
-      "phone-tips": "Be sure to include the country code",
+      "phone-tips": "Be sure to include the country code +1xxxxxx",
       "country-code": "Country Code",
       "password": "Password",
       "password-hint": "Password should follow restriction setting",
