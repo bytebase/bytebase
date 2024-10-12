@@ -291,7 +291,8 @@
     "override": "Anular",
     "encoding": "Codificación",
     "finish": "Finalizar",
-    "title": "Título"
+    "title": "Título",
+    "hide": "Esconder"
   },
   "error-page": {
     "go-back-home": "Volver al inicio"
@@ -1637,6 +1638,11 @@
         "disallow": "Prohibir consultar datos desde la conexión de administrador",
         "fallback": "Volver a la conexión de administrador si no hay una conexión de solo lectura disponible"
       }
+    },
+    "statement-execution": {
+      "title": "Ejecución de la declaración",
+      "allow-ddl": "Permitir la ejecución de sentencias DDL en el editor SQL",
+      "allow-dml": "Permitir la ejecución de sentencias DML en el editor SQL"
     }
   },
   "quick-start": {
@@ -3218,7 +3224,22 @@
       "dont-show-again": "No mostrar de nuevo",
       "text2sql": "Text2SQL",
       "disable-text2sql": "Deshabilitar Text2SQL",
-      "enable-text2sql": "Habilitar Text2SQL"
+      "enable-text2sql": "Habilitar Text2SQL",
+      "actions": {
+        "chat": "Charlar",
+        "explain-code": "Explicar el código",
+        "find-problems": "encontrar problemas",
+        "new-chat": "Nuevo chat",
+        "insert-at-caret": "Insertar en el cursor"
+      },
+      "send": "Enviar",
+      "new-line": "Nueva linea",
+      "ai-assistant": "Asistente de IA",
+      "not-configured": {
+        "self": "El Asistente AI no está configurado.",
+        "contact-admin-to-configure": "Comuníquese con el administrador de su organización.",
+        "go-to-configure": "Ir a configurar"
+      }
     }
   },
   "custom-approval": {

@@ -291,7 +291,8 @@
     "override": "オーバーライド",
     "encoding": "エンコーディング",
     "finish": "仕上げる",
-    "title": "タイトル"
+    "title": "タイトル",
+    "hide": "隠れる"
   },
   "error-page": {
     "go-back-home": "ホームページに戻る"
@@ -1637,6 +1638,11 @@
         "disallow": "管理者接続からのデータクエリを禁止する",
         "fallback": "読み取り専用接続が利用できない場合、管理者接続にフォールバックする"
       }
+    },
+    "statement-execution": {
+      "title": "ステートメントの実行",
+      "allow-ddl": "SQLエディタでDDL文を実行できるようにする",
+      "allow-dml": "SQL エディタで DML ステートメントを実行できるようにする"
     }
   },
   "quick-start": {
@@ -3218,7 +3224,22 @@
       "dont-show-again": "再び表示しない",
       "text2sql": "Text2SQL",
       "disable-text2sql": "Text2SQLを閉じる",
-      "enable-text2sql": "Text2SQLを開く"
+      "enable-text2sql": "Text2SQLを開く",
+      "actions": {
+        "chat": "チャット",
+        "explain-code": "コードの説明",
+        "find-problems": "問題を見つける",
+        "new-chat": "新しいチャット",
+        "insert-at-caret": "キャレットに挿入"
+      },
+      "send": "送信",
+      "new-line": "改行",
+      "ai-assistant": "AI助手",
+      "not-configured": {
+        "self": "AI アシスタントが設定されていません。",
+        "contact-admin-to-configure": "組織の管理者に問い合わせてください。",
+        "go-to-configure": "設定に移動"
+      }
     }
   },
   "custom-approval": {

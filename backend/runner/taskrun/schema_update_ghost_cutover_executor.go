@@ -132,7 +132,7 @@ func cutover(ctx context.Context, taskContext context.Context, stores *store.Sto
 		return true, nil, err
 	}
 
-	mi, err := getMigrationInfo(ctx, stores, profile, task, db.Migrate, statement, schemaVersion, &sheetID)
+	mi, mc, err := getMigrationInfo(ctx, stores, profile, task, db.Migrate, statement, schemaVersion, &sheetID, taskRunUID)
 	if err != nil {
 		return true, nil, err
 	}
@@ -151,12 +151,12 @@ func cutover(ctx context.Context, taskContext context.Context, stores *store.Sto
 		return true, nil, err
 	}
 	defer driver.Close(ctx)
-	migrationID, _, err := utils.ExecuteMigrationWithFunc(ctx, ctx, stores, taskRunUID, driver, mi, statement, &sheetID, execFunc, db.ExecuteOptions{})
+	migrationID, _, err := executeMigrationWithFunc(ctx, ctx, stores, driver, mi, mc, statement, execFunc, db.ExecuteOptions{})
 	if err != nil {
 		return true, nil, err
 	}
 
-	return postMigration(ctx, stores, task, mi, migrationID, &sheetID)
+	return postMigration(ctx, stores, mi, mc, migrationID, &sheetID)
 }
 
 func waitForCutover(ctx context.Context, taskContext context.Context, migrationContext *base.MigrationContext) bool {

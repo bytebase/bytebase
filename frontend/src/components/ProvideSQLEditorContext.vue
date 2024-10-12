@@ -16,7 +16,9 @@
   </teleport>
 
   <Suspense>
-    <router-view />
+    <ProvideAIContext>
+      <router-view />
+    </ProvideAIContext>
   </Suspense>
 </template>
 
@@ -26,6 +28,7 @@ import { debounce, head, omit } from "lodash-es";
 import { computed, nextTick, onMounted, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
+import { ProvideAIContext } from "@/plugins/ai";
 import {
   SQL_EDITOR_HOME_MODULE,
   SQL_EDITOR_INSTANCE_MODULE,

@@ -44,6 +44,9 @@ func convertToPlan(ctx context.Context, s *store.Store, plan *store.PlanMessage)
 			VcsConnector:   plan.Config.GetVcsSource().GetVcsConnector(),
 			PullRequestUrl: plan.Config.GetVcsSource().GetPullRequestUrl(),
 		},
+		ReleaseSource: &v1pb.Plan_ReleaseSource{
+			Release: plan.Config.GetReleaseSource().GetRelease(),
+		},
 		CreateTime:              timestamppb.New(time.Unix(plan.CreatedTs, 0)),
 		UpdateTime:              timestamppb.New(time.Unix(plan.UpdatedTs, 0)),
 		PlanCheckRunStatusCount: plan.PlanCheckRunStatusCount,
@@ -93,6 +96,9 @@ func convertToPlanSpec(spec *storepb.PlanConfig_Spec) *v1pb.Plan_Spec {
 		EarliestAllowedTime: spec.EarliestAllowedTime,
 		Id:                  spec.Id,
 		DependsOnSpecs:      spec.DependsOnSpecs,
+		SpecReleaseSource: &v1pb.Plan_SpecReleaseSource{
+			File: spec.SpecReleaseSource.GetFile(),
+		},
 	}
 
 	switch v := spec.Config.(type) {
@@ -171,6 +177,37 @@ func convertToPlanSpecExportDataConfig(config *storepb.PlanConfig_Spec_ExportDat
 	}
 }
 
+func convertPlan(plan *v1pb.Plan) *storepb.PlanConfig {
+	if plan == nil {
+		return nil
+	}
+	return &storepb.PlanConfig{
+		Steps:         convertPlanSteps(plan.Steps),
+		VcsSource:     convertPlanVcsSource(plan.VcsSource),
+		ReleaseSource: convertPlanReleaseSource(plan.ReleaseSource),
+	}
+}
+
+func convertPlanVcsSource(s *v1pb.Plan_VCSSource) *storepb.PlanConfig_VCSSource {
+	if s == nil {
+		return nil
+	}
+	return &storepb.PlanConfig_VCSSource{
+		VcsType:        storepb.VCSType(s.VcsType),
+		VcsConnector:   s.VcsConnector,
+		PullRequestUrl: s.PullRequestUrl,
+	}
+}
+
+func convertPlanReleaseSource(s *v1pb.Plan_ReleaseSource) *storepb.PlanConfig_ReleaseSource {
+	if s == nil {
+		return nil
+	}
+	return &storepb.PlanConfig_ReleaseSource{
+		Release: s.Release,
+	}
+}
+
 func convertPlanSteps(steps []*v1pb.Plan_Step) []*storepb.PlanConfig_Step {
 	storeSteps := make([]*storepb.PlanConfig_Step, len(steps))
 	for i := range steps {
@@ -199,6 +236,9 @@ func convertPlanSpec(spec *v1pb.Plan_Spec) *storepb.PlanConfig_Spec {
 		EarliestAllowedTime: spec.EarliestAllowedTime,
 		Id:                  spec.Id,
 		DependsOnSpecs:      spec.DependsOnSpecs,
+		SpecReleaseSource: &storepb.PlanConfig_SpecReleaseSource{
+			File: spec.SpecReleaseSource.GetFile(),
+		},
 	}
 
 	switch v := spec.Config.(type) {

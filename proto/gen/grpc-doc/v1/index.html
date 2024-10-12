@@ -2065,6 +2065,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.Plan.SpecReleaseSource"><span class="badge">M</span>Plan.SpecReleaseSource</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.Plan.Step"><span class="badge">M</span>Plan.Step</a>
                 </li>
               
@@ -5552,6 +5556,20 @@ Format: projects/{project}/sheets/{sheet} </p></td>
                 <tr>
                   <td>version</td>
                   <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>statement</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The statement is used for preview purpose. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>statement_size</td>
+                  <td><a href="#int64">int64</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
@@ -22275,6 +22293,13 @@ Must be a subset of the specs in the same step. </p></td>
                 </tr>
               
                 <tr>
+                  <td>spec_release_source</td>
+                  <td><a href="#bytebase.v1.Plan.SpecReleaseSource">Plan.SpecReleaseSource</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
                   <td>create_database_config</td>
                   <td><a href="#bytebase.v1.Plan.CreateDatabaseConfig">Plan.CreateDatabaseConfig</a></td>
                   <td></td>
@@ -22293,6 +22318,30 @@ Must be a subset of the specs in the same step. </p></td>
                   <td><a href="#bytebase.v1.Plan.ExportDataConfig">Plan.ExportDataConfig</a></td>
                   <td></td>
                   <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.Plan.SpecReleaseSource">Plan.SpecReleaseSource</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>file</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Format: projects/{project}/releases/{release}/files/{file} </p></td>
                 </tr>
               
             </tbody>

@@ -1,6 +1,7 @@
 <template>
   <div class="flex flex-col gap-y-3 py-2 px-3">
     <VCSInfo ref="vcsInfoRef" />
+    <ReleaseInfo ref="releaseInfoRef" />
     <ReviewSection ref="reviewSectionRef" />
     <IssueLabels />
 
@@ -18,14 +19,16 @@ import EarliestAllowedTime from "./EarliestAllowedTime.vue";
 import GhostSection from "./GhostSection";
 import IssueLabels from "./IssueLabels.vue";
 import PreBackupSection from "./PreBackupSection";
+import ReleaseInfo from "./ReleaseInfo.vue";
 import ReviewSection from "./ReviewSection";
 import VCSInfo from "./VCSInfo.vue";
 
 const vcsInfoRef = ref<InstanceType<typeof VCSInfo>>();
+const releaseInfoRef = ref<InstanceType<typeof ReleaseInfo>>();
 const reviewSectionRef = ref<InstanceType<typeof ReviewSection>>();
 
 const isFirstSectionShown = computed(() => {
-  return [vcsInfoRef, reviewSectionRef].some(
+  return [vcsInfoRef, releaseInfoRef, reviewSectionRef].some(
     (elemRef) => elemRef.value?.shown
   );
 });

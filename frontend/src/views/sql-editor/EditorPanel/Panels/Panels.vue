@@ -3,7 +3,12 @@
     <GutterBar class="border-r border-control-border" :class="gutterBarClass" />
 
     <div class="flex-1 overflow-y-hidden overflow-x-auto" :class="contentClass">
-      <slot v-if="!viewState || viewState.view === 'CODE'" name="code-panel" />
+      <div
+        v-show="!viewState || viewState.view === 'CODE'"
+        class="w-full h-full overflow-hidden"
+      >
+        <slot name="code-panel" />
+      </div>
 
       <template v-if="viewState">
         <InfoPanel v-if="viewState.view === 'INFO'" :key="tab?.id" />
@@ -29,14 +34,22 @@ import { computedAsync } from "@vueuse/core";
 import { first } from "lodash-es";
 import { storeToRefs } from "pinia";
 import { watch } from "vue";
+import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
+import { useExecuteSQL } from "@/composables/useExecuteSQL";
+import { useAIContext } from "@/plugins/ai/logic";
 import {
   useConnectionOfCurrentSQLEditorTab,
+  useDatabaseV1Store,
   useDBSchemaV1Store,
   useSQLEditorTabStore,
 } from "@/store";
 import { isValidDatabaseName } from "@/types";
 import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
-import { extractDatabaseResourceName, type VueClass } from "@/utils";
+import {
+  extractDatabaseResourceName,
+  nextAnimationFrame,
+  type VueClass,
+} from "@/utils";
 import GutterBar from "../GutterBar";
 import { useEditorPanelContext } from "../context";
 import DiagramPanel from "./DiagramPanel";
@@ -53,8 +66,11 @@ defineProps<{
 }>();
 
 const { currentTab: tab } = storeToRefs(useSQLEditorTabStore());
-const { viewState, selectedSchemaName } = useEditorPanelContext();
+const { viewState, selectedSchemaName, updateViewState } =
+  useEditorPanelContext();
 const { database } = useConnectionOfCurrentSQLEditorTab();
+const { execute } = useExecuteSQL();
+const { events: AIEvents } = useAIContext();
 const databaseMetadata = computedAsync(() => {
   if (!isValidDatabaseName(database.value.name)) {
     return undefined;
@@ -82,4 +98,23 @@ watch(
   },
   { immediate: true, flush: "post" }
 );
+
+useEmitteryEventListener(AIEvents, "run-statement", async ({ statement }) => {
+  if (!tab.value) {
+    return;
+  }
+  updateViewState({
+    view: "CODE",
+  });
+  await nextAnimationFrame();
+  const connection = tab.value.connection;
+  const database = useDatabaseV1Store().getDatabaseByName(connection.database);
+  execute({
+    connection,
+    statement,
+    engine: database.instanceResource.engine,
+    explain: false,
+    selection: tab.value.editorState.selection,
+  });
+});
 </script>
