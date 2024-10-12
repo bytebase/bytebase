@@ -9,7 +9,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, watchEffect, ref, onMounted } from "vue";
+import { computed, ref, onMounted } from "vue";
 import { useRoute } from "vue-router";
 import SyncDatabaseSchema from "@/components/SyncDatabaseSchema/index.vue";
 import { type ChangeHistorySourceSchema } from "@/components/SyncDatabaseSchema/types";

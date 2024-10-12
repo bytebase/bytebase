@@ -284,7 +284,7 @@ const props = defineProps<{
   sourceSchemaType: SourceSchemaType;
   databaseSourceSchema?: DatabaseSourceSchema;
   rawSqlState?: RawSQLState;
-  targetDatabaseList?: string[];
+  targetDatabaseNameList?: string[];
 }>();
 
 const { t } = useI18n();
@@ -452,9 +452,9 @@ const handleSelectedDatabaseNameListChanged = (databaseNameList: string[]) => {
 };
 
 watch(
-  () => props.targetDatabaseList,
+  () => props.targetDatabaseNameList,
   () => {
-    handleSelectedDatabaseNameListChanged(props.targetDatabaseList ?? []);
+    handleSelectedDatabaseNameListChanged(props.targetDatabaseNameList ?? []);
   },
   {
     immediate: true,

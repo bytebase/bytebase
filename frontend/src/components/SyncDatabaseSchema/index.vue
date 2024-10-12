@@ -55,7 +55,7 @@
           :source-schema-type="state.sourceSchemaType"
           :database-source-schema="changeHistorySourceSchemaState as any"
           :raw-sql-state="rawSQLState"
-          :targetDatabaseList="targetDatabaseList"
+          :target-database-name-list="targetDatabaseList"
         />
       </template>
     </StepTab>
