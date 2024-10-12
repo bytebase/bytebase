@@ -387,7 +387,10 @@ export interface Plan_ReleaseSource {
 }
 
 export interface Plan_SpecReleaseSource {
-  /** Format: projects/{project}/releases/{release}/files/{file} */
+  /**
+   * Format: projects/{project}/releases/{release}/files/{file}
+   * {file} is URL path escaped.
+   */
   file: string;
 }
 

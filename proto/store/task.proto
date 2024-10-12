@@ -54,5 +54,6 @@ message TaskDatabaseDataExportPayload {
 
 message TaskReleaseSource {
   // Format: projects/{project}/releases/{release}/files/{file}
+  // {file} is URL path escaped.
   string file = 1;
 }
