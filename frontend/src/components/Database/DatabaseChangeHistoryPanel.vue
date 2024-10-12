@@ -41,7 +41,10 @@
         <TooltipButton
           v-if="allowAlterSchema"
           tooltip-mode="DISABLED-ONLY"
-          :disabled="state.selectedChangeHistoryNameList.length !== 1"
+          :disabled="
+            !selectedChangeHistory ||
+            getHistoryChangeType(selectedChangeHistory.type) !== 'DDL'
+          "
           @click="rollback"
         >
           <template #default>
@@ -168,7 +171,7 @@ import {
   ChangeHistory_Type,
   ChangeHistoryView,
 } from "@/types/proto/v1/database_service";
-import { extractProjectResourceName } from "@/utils";
+import { extractProjectResourceName, getHistoryChangeType } from "@/utils";
 
 interface LocalState {
   showBaselineModal: boolean;
@@ -228,11 +231,19 @@ const changeHistoryList = computed(() => {
   return changeHistoryStore.changeHistoryListByDatabase(props.database.name);
 });
 
-const rollback = () => {
+const selectedChangeHistory = computed(() => {
   if (state.selectedChangeHistoryNameList.length !== 1) {
     return;
   }
-  const changeHistory = state.selectedChangeHistoryNameList[0];
+  return changeHistoryStore.getChangeHistoryByName(
+    state.selectedChangeHistoryNameList[0]
+  );
+});
+
+const rollback = () => {
+  if (!selectedChangeHistory.value) {
+    return;
+  }
 
   router.push({
     name: PROJECT_V1_ROUTE_SYNC_SCHEMA,
@@ -240,7 +251,7 @@ const rollback = () => {
       projectId: extractProjectResourceName(props.database.project),
     },
     query: {
-      version: changeHistory,
+      version: selectedChangeHistory.value.name,
       target: props.database.name,
     },
   });

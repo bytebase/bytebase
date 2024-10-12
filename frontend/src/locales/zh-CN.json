@@ -1758,7 +1758,7 @@
     "affected-tables": "受影响的表",
     "select-affection-tables": "选择受影响的表",
     "view-full": "查看全部",
-    "rollback-tip": "选择要回滚的某个历史版本。"
+    "rollback-tip": "选择要回滚到的某个 DDL 历史记录。"
   },
   "database": {
     "sync-database": "同步数据库",

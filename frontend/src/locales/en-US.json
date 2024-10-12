@@ -1758,7 +1758,7 @@
     "affected-tables": "Affected Tables",
     "select-affection-tables": "Select affected tables",
     "view-full": "View full",
-    "rollback-tip": "Select a specific history version to rollback."
+    "rollback-tip": "Select a specific DDL history to rollback."
   },
   "database": {
     "sync-database": "Sync database",
