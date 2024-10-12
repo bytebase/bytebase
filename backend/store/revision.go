@@ -120,7 +120,7 @@ func (s *Store) CreateRevision(ctx context.Context, revision *RevisionMessage, c
 		return nil, errors.Wrapf(err, "failed to marshal revision payload")
 	}
 
-	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to begin tx")
 	}
