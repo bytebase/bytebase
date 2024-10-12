@@ -26,7 +26,7 @@
 </template>
 
 <script setup lang="tsx">
-import { NDataTable, type DataTableColumn } from "naive-ui";
+import { NDataTable, NTag, type DataTableColumn } from "naive-ui";
 import { computed, reactive } from "vue";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { Release_File } from "@/types/proto/v1/release_service";
@@ -45,22 +45,28 @@ const columnList = computed(() => {
     {
       key: "version",
       title: "Version",
-      width: 150,
+      width: 128,
       render: (file) => file.version,
     },
     {
       key: "title",
       title: "Filename",
-      width: 200,
+      width: 256,
       ellipsis: true,
-      render: (file) => file.name,
-    },
-    {
-      key: "sheetSha256",
-      title: "Hash",
-      width: 150,
       render: (file) => {
-        return <code class={"text-sm"}>{file.sheetSha256.slice(0, 8)}</code>;
+        return (
+          <div class="space-x-2">
+            <span>{file.name}</span>
+            <NTag
+              v-if="schemaVersion"
+              class="text-sm font-mono"
+              size="small"
+              round
+            >
+              {file.sheetSha256.slice(0, 8)}
+            </NTag>
+          </div>
+        );
       },
     },
     {

@@ -5,19 +5,10 @@
         <div
           class="w-[calc(100vw-8rem)] lg:w-[60rem] max-w-[calc(100vw-8rem)] overflow-x-auto"
         >
-          <div class="flex flex-col">
-            <div class="mb-4 flex flex-row justify-start items-center gap-2">
-              <span class="textlabel">{{ "Change type" }}:</span>
-              <NRadioGroup v-model:value="state.changeType">
-                <NRadio :value="'DDL'" :label="t('issue.title.edit-schema')" />
-                <NRadio :value="'DML'" :label="t('issue.title.change-data')" />
-              </NRadioGroup>
-            </div>
-            <DatabaseAndGroupSelector
-              :project="project"
-              @update="handleTargetChange"
-            />
-          </div>
+          <DatabaseAndGroupSelector
+            :project="project"
+            @update="handleTargetChange"
+          />
           <div
             v-if="state.isGenerating"
             v-zindexable="{ enabled: true }"
@@ -70,10 +61,8 @@
 
 <script lang="ts" setup>
 import { NButton } from "naive-ui";
-import { NRadioGroup, NRadio } from "naive-ui";
 import { zindexable as vZindexable } from "vdirs";
 import { computed, reactive } from "vue";
-import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBSpin } from "@/bbkit";
 import DatabaseAndGroupSelector, {
@@ -91,19 +80,16 @@ const emit = defineEmits<{
 }>();
 
 type LocalState = {
-  changeType: "DDL" | "DML";
   isGenerating: boolean;
   targetSelectState?: DatabaseSelectState;
 };
 
-const { t } = useI18n();
 const router = useRouter();
 const databaseStore = useDatabaseV1Store();
 const dbGroupStore = useDBGroupStore();
 const { release, project } = useReleaseDetailContext();
 
 const state = reactive<LocalState>({
-  changeType: "DDL",
   isGenerating: false,
 });
 
@@ -140,13 +126,11 @@ const handleClickNext = async () => {
         state.targetSelectState.selectedDatabaseGroup || ""
       ),
     });
+    const changeType = "bb.issue.database.schema.update";
     const query: Record<string, any> = {
-      template:
-        state.changeType === "DDL"
-          ? "bb.issue.database.schema.update"
-          : "bb.issue.database.data.update",
+      template: changeType,
       name: generateIssueTitle(
-        "bb.issue.database.schema.update",
+        changeType,
         state.targetSelectState.changeSource === "DATABASE"
           ? databaseList.map((db) => db.databaseName)
           : [databaseGroup?.databasePlaceholder]
