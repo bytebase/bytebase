@@ -40,7 +40,7 @@ type Candidate struct {
 }
 
 func (c Candidate) String() string {
-	return fmt.Sprintf("%s (%s)", c.Text, c.Type)
+	return fmt.Sprintf("%s (%s) %s", c.Text, c.Type, c.Definition)
 }
 
 type TableReference interface {
