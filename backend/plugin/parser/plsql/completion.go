@@ -352,7 +352,7 @@ func (m CompletionMap) insertAllColumns(c *Completer) {
 				continue
 			}
 			for _, column := range tableMeta.GetColumns() {
-				definition := fmt.Sprintf("%s | %s", table, column.Type)
+				definition := fmt.Sprintf("%s.%s | %s", schema, table, column.Type)
 				if !column.Nullable {
 					definition += ", NOT NULL"
 				}
@@ -398,7 +398,7 @@ func (m CompletionMap) insertColumns(c *Completer, schemas, tables map[string]bo
 				continue
 			}
 			for _, column := range tableMeta.GetColumns() {
-				definition := fmt.Sprintf("%s | %s", table, column.Type)
+				definition := fmt.Sprintf("%s.%s | %s", schema, table, column.Type)
 				if !column.Nullable {
 					definition += ", NOT NULL"
 				}
