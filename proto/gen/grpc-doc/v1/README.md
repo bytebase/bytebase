@@ -8087,7 +8087,7 @@ When paginating, all other parameters provided to `ListPlans` must match the cal
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| file | [string](#string) |  | Format: projects/{project}/releases/{release}/files/{file} |
+| file | [string](#string) |  | Format: projects/{project}/releases/{release}/files/{file} {file} is URL path escaped. |
 
 
 
