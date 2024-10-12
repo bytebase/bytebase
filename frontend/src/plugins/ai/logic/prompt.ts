@@ -61,7 +61,7 @@ export const declaration = (
     prompts.push(`You are a db and SQL expert.`);
   }
   // prompts.push(`When asked for your name, you must respond with "Bytebase".`);
-  // prompts.push(`Your responses should be informative and terse.`);
+  prompts.push(`Your responses should be informative and terse.`);
   // prompts.push(
   //   "Set the language to the markdown SQL block. e.g, `SELECT * FROM table`."
   // );
