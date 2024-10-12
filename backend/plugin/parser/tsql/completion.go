@@ -261,6 +261,41 @@ func (m CompletionMap) insertMetadataTables(c *Completer, linkedServer string, d
 	}
 }
 
+func (m CompletionMap) insertAllColumns(c *Completer) {
+	_, databaseMeta, err := c.metadataGetter(c.ctx, c.instanceID, c.defaultDatabase)
+	if err != nil {
+		return
+	}
+	for _, schema := range databaseMeta.ListSchemaNames() {
+		schemaMeta := databaseMeta.GetSchema(schema)
+		if schemaMeta == nil {
+			continue
+		}
+		for _, table := range schemaMeta.ListTableNames() {
+			tableMeta := schemaMeta.GetTable(table)
+			if tableMeta == nil {
+				continue
+			}
+			for _, column := range tableMeta.GetColumns() {
+				columnID := getColumnID(c.defaultDatabase, schema, table, column.Name)
+				if _, ok := m[columnID]; !ok {
+					definition := fmt.Sprintf("%s.%s.%s | %s", c.defaultDatabase, schema, table, column.Type)
+					if !column.Nullable {
+						definition += ", NOT NULL"
+					}
+					comment := column.UserComment
+					m[columnID] = base.Candidate{
+						Type:       base.CandidateTypeColumn,
+						Text:       c.quotedIdentifierIfNeeded(column.Name),
+						Definition: definition,
+						Comment:    comment,
+					}
+				}
+			}
+		}
+	}
+}
+
 func (m CompletionMap) insertMetadataColumns(c *Completer, linkedServer string, database string, schema string, table string) {
 	if linkedServer != "" {
 		return
@@ -317,13 +352,14 @@ func (m CompletionMap) insertMetadataColumns(c *Completer, linkedServer string, 
 	for _, table := range tableNames {
 		tableMetadata := schemaMetadata.GetTable(table)
 		for _, column := range tableMetadata.GetColumns() {
-			if _, ok := m[column.Name]; !ok {
-				definition := fmt.Sprintf("%s | %s", table, column.Type)
+			columnID := getColumnID(databaseName, schemaName, table, column.Name)
+			if _, ok := m[columnID]; !ok {
+				definition := fmt.Sprintf("%s.%s.%s | %s", databaseName, schemaName, table, column.Type)
 				if !column.Nullable {
 					definition += ", NOT NULL"
 				}
 				comment := column.UserComment
-				m[column.Name] = base.Candidate{
+				m[columnID] = base.Candidate{
 					Type:       base.CandidateTypeColumn,
 					Text:       c.quotedIdentifierIfNeeded(column.Name),
 					Definition: definition,
@@ -332,6 +368,10 @@ func (m CompletionMap) insertMetadataColumns(c *Completer, linkedServer string, 
 			}
 		}
 	}
+}
+
+func getColumnID(databaseName, schemaName, tableName, columnName string) string {
+	return fmt.Sprintf("%s.%s.%s.%s", databaseName, schemaName, tableName, columnName)
 }
 
 func (m CompletionMap) insertCTEs(c *Completer) {
@@ -798,6 +838,9 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 							}
 						}
 					}
+					if context.empty() {
+						columnEntries.insertAllColumns(c)
+					}
 				}
 			}
 		}
@@ -864,6 +907,10 @@ type objectRefContext struct {
 	column string
 
 	flags objectFlag
+}
+
+func (o *objectRefContext) empty() bool {
+	return o.linkedServer == "" && o.database == "" && o.schema == "" && o.object == "" && o.column == ""
 }
 
 func (o *objectRefContext) clone() *objectRefContext {
