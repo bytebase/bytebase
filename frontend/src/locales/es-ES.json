@@ -491,7 +491,7 @@
       "email": "Correo electrónico",
       "role": "Rol",
       "phone": "Número de móvil",
-      "phone-tips": "Asegúrese de incluir el código del país.",
+      "phone-tips": "Asegúrese de incluir el código del país +1xxxxxx",
       "country-code": "Códigos de país y de área",
       "password": "Contraseña",
       "password-hint": "La contraseña debe seguir la configuración de restricción",
