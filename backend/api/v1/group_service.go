@@ -224,7 +224,7 @@ func (s *GroupService) convertToGroupPayload(ctx context.Context, group *v1pb.Gr
 
 func (s *GroupService) convertToGroupMessage(ctx context.Context, request *v1pb.CreateGroupRequest) (*store.GroupMessage, error) {
 	if request.GroupEmail == "" {
-				return nil, status.Error(codes.InvalidArgument, "missing group_email in the request"))
+		return nil, status.Error(codes.InvalidArgument, "missing group_email in the request")
 	}
 
 	groupMessage := &store.GroupMessage{
