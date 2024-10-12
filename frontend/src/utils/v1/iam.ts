@@ -17,8 +17,8 @@ import type { IamPolicy, Binding } from "@/types/proto/v1/iam_policy";
 import { convertFromExpr } from "@/utils/issue/cel";
 
 export const isBindingPolicyExpired = (binding: Binding): boolean => {
-  if (binding.parsedExpr?.expr) {
-    const conditionExpr = convertFromExpr(binding.parsedExpr.expr);
+  if (binding.parsedExpr) {
+    const conditionExpr = convertFromExpr(binding.parsedExpr);
     if (conditionExpr.expiredTime) {
       const expiration = new Date(conditionExpr.expiredTime);
       if (expiration < new Date()) {

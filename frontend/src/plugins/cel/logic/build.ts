@@ -42,7 +42,7 @@ export const buildCELExpr = async (
             }
           )
         ).expressions
-      )?.expr;
+      );
       if (celExpr) {
         return celExpr;
       } else {

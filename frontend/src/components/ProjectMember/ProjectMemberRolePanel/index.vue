@@ -472,8 +472,8 @@ const handleDeleteCondition = async (singleBinding: SingleBinding) => {
           (binding) => !isEqual(binding, rawBinding)
         );
       } else {
-        if (rawBinding.parsedExpr?.expr) {
-          const conditionExpr = convertFromExpr(rawBinding.parsedExpr.expr);
+        if (rawBinding.parsedExpr) {
+          const conditionExpr = convertFromExpr(rawBinding.parsedExpr);
           if (conditionExpr.databaseResources) {
             conditionExpr.databaseResources =
               conditionExpr.databaseResources.filter(
@@ -601,8 +601,8 @@ watch(
         rawBinding: rawBinding,
       };
 
-      if (rawBinding.parsedExpr?.expr) {
-        const conditionExpr = convertFromExpr(rawBinding.parsedExpr.expr);
+      if (rawBinding.parsedExpr) {
+        const conditionExpr = convertFromExpr(rawBinding.parsedExpr);
         if (conditionExpr.expiredTime) {
           singleBinding.expiration = new Date(conditionExpr.expiredTime);
         }

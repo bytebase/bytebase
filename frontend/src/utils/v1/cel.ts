@@ -1,9 +1,9 @@
 import { celServiceClient } from "@/grpcweb";
-import { ParsedExpr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
+import { Expr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
 
 export const batchConvertCELStringToParsedExpr = async (
   celList: string[]
-): Promise<ParsedExpr[]> => {
+): Promise<Expr[]> => {
   try {
     const response = await celServiceClient.batchParse(
       {
@@ -18,13 +18,13 @@ export const batchConvertCELStringToParsedExpr = async (
   } catch (error) {
     console.error(error);
     return Array.from({ length: celList.length }).map((_) =>
-      ParsedExpr.fromJSON({})
+      Expr.fromJSON({})
     );
   }
 };
 
 export const batchConvertParsedExprToCELString = async (
-  parsedExprList: ParsedExpr[]
+  parsedExprList: Expr[]
 ): Promise<string[]> => {
   try {
     const response = await celServiceClient.batchDeparse(

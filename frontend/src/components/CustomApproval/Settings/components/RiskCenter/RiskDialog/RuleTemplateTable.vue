@@ -48,7 +48,6 @@ import { useI18n } from "vue-i18n";
 import { BBGrid, BBModal, type BBGridColumn } from "@/bbkit";
 import type { ConditionGroupExpr } from "@/plugins/cel";
 import { buildCELExpr } from "@/plugins/cel";
-import { ParsedExpr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
 import { Expr } from "@/types/proto/google/type/expr";
 import type { Risk } from "@/types/proto/v1/risk_service";
 import { Risk_Source } from "@/types/proto/v1/risk_service";
@@ -135,11 +134,11 @@ const applyTemplate = async (template: RuleTemplate) => {
   const { expr, source, level } = template;
   const title = titleOfTemplate(template);
   const { mode } = dialog.value!;
-  const expressions = await batchConvertParsedExprToCELString([
-    ParsedExpr.fromJSON({
-      expr: await buildCELExpr(expr),
-    }),
-  ]);
+  const celexpr = await buildCELExpr(expr);
+  if (!celexpr) {
+    return;
+  }
+  const expressions = await batchConvertParsedExprToCELString([celexpr]);
   const overrides: Partial<Risk> = {
     condition: Expr.fromJSON({ expression: expressions[0] }),
     level,
