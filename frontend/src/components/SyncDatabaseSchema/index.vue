@@ -55,6 +55,7 @@
           :source-schema-type="state.sourceSchemaType"
           :database-source-schema="changeHistorySourceSchemaState as any"
           :raw-sql-state="rawSQLState"
+          :targetDatabaseList="targetDatabaseList"
         />
       </template>
     </StepTab>
@@ -66,7 +67,7 @@ import { isUndefined } from "lodash-es";
 import type { ButtonProps } from "naive-ui";
 import { NRadioGroup, NRadio, useDialog } from "naive-ui";
 import { v4 as uuidv4 } from "uuid";
-import { computed, reactive, ref } from "vue";
+import { computed, reactive, ref, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { StepTab } from "@/components/v2";
@@ -104,6 +105,8 @@ interface LocalState {
 const props = defineProps<{
   project: ComposedProject;
   sourceSchemaType?: SourceSchemaType;
+  source?: ChangeHistorySourceSchema;
+  targetDatabaseList?: string[];
 }>();
 
 const { t } = useI18n();
@@ -134,6 +137,17 @@ const handleChangeHistorySchemaVersionChanges = (
 ) => {
   Object.assign(changeHistorySourceSchemaState, schemaVersion);
 };
+
+const autoNext = ref<boolean>(true);
+watchEffect(() => {
+  if (props.source) {
+    handleChangeHistorySchemaVersionChanges(props.source);
+    if (autoNext.value) {
+      state.currentStep = SELECT_TARGET_DATABASE_LIST;
+      autoNext.value = false;
+    }
+  }
+});
 
 const stepTabList = computed(() => {
   return [

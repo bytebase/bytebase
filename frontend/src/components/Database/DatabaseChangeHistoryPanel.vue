@@ -39,6 +39,21 @@
           </template>
         </TooltipButton>
         <TooltipButton
+          v-if="allowAlterSchema"
+          tooltip-mode="DISABLED-ONLY"
+          :disabled="state.selectedChangeHistoryNameList.length !== 1"
+          @click="rollback"
+        >
+          <template #default>
+            {{ $t("common.rollback") }}
+          </template>
+          <template #tooltip>
+            <div class="whitespace-pre-line">
+              {{ $t("change-history.rollback-tip") }}
+            </div>
+          </template>
+        </TooltipButton>
+        <TooltipButton
           v-if="allowEstablishBaseline"
           tooltip-mode="DISABLED-ONLY"
           :disabled="false"
@@ -139,7 +154,10 @@ import {
 import { useDatabaseDetailContext } from "@/components/Database/context";
 import { TooltipButton } from "@/components/v2";
 import { Drawer, DrawerContent } from "@/components/v2";
-import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
+import {
+  PROJECT_V1_ROUTE_ISSUE_DETAIL,
+  PROJECT_V1_ROUTE_SYNC_SCHEMA,
+} from "@/router/dashboard/projectV1";
 import { useChangeHistoryStore, useDBSchemaV1Store } from "@/store";
 import { DEFAULT_PAGE_SIZE } from "@/store/modules/common";
 import type { ComposedDatabase } from "@/types";
@@ -209,6 +227,24 @@ const allowEstablishBaseline = computed(() => {
 const changeHistoryList = computed(() => {
   return changeHistoryStore.changeHistoryListByDatabase(props.database.name);
 });
+
+const rollback = () => {
+  if (state.selectedChangeHistoryNameList.length !== 1) {
+    return;
+  }
+  const changeHistory = state.selectedChangeHistoryNameList[0];
+
+  router.push({
+    name: PROJECT_V1_ROUTE_SYNC_SCHEMA,
+    params: {
+      projectId: extractProjectResourceName(props.database.project),
+    },
+    query: {
+      version: changeHistory,
+      target: props.database.name,
+    },
+  });
+};
 
 const handleExportChangeHistory = async () => {
   if (state.isExporting) {
