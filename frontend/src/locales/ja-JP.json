@@ -491,7 +491,7 @@
       "email": "メールアドレス",
       "role": "役割",
       "phone": "電話番号",
-      "phone-tips": "国コードを必ず含めてください",
+      "phone-tips": "国コードを必ず含めてください +81xxxxxx",
       "country-code": "国または地域コード",
       "password": "パスワード",
       "password-hint": "パスワードは制限設定に従う必要があります",
