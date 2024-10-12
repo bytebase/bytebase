@@ -1757,7 +1757,8 @@
     "all-tables": "Todas las tablas",
     "affected-tables": "Tablas afectadas",
     "select-affection-tables": "Seleccionar tablas afectadas",
-    "view-full": "Ver completo"
+    "view-full": "Ver completo",
+    "rollback-tip": "Seleccione un historial de DDL específico para revertir."
   },
   "database": {
     "sync-database": "Sincronizar base de datos",

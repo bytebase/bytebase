@@ -361,126 +361,130 @@ const isInDefaultProject = computed(
 
 const actions = computed((): DatabaseAction[] => {
   const resp: DatabaseAction[] = [];
-  if (operations.value.has("EXPORT-DATA")) {
-    resp.push({
-      icon: h(DownloadIcon),
-      text: t("custom-approval.risk-rule.risk.namespace.data_export"),
-      disabled: !allowExportData.value || props.databases.length !== 1,
-      click: () => generateMultiDb("bb.issue.database.data.export"),
-      tooltip: (action) => {
-        if (!allowExportData.value) {
-          return t("database.batch-action-permission-denied", {
-            action,
+  for (const operation of operations.value) {
+    switch (operation) {
+      case "EXPORT-DATA":
+        resp.push({
+          icon: h(DownloadIcon),
+          text: t("custom-approval.risk-rule.risk.namespace.data_export"),
+          disabled: !allowExportData.value || props.databases.length !== 1,
+          click: () => generateMultiDb("bb.issue.database.data.export"),
+          tooltip: (action) => {
+            if (!allowExportData.value) {
+              return t("database.batch-action-permission-denied", {
+                action,
+              });
+            }
+            if (props.databases.length > 1) {
+              return t("database.data-export-action-disabled");
+            }
+            return "";
+          },
+        });
+        break;
+      case "SYNC-SCHEMA":
+        resp.push({
+          icon: h(RefreshCcwIcon),
+          text: t("common.sync"),
+          disabled: !allowSyncDatabases.value || props.databases.length < 1,
+          click: syncSchema,
+          tooltip: (action) => getDisabledTooltip(action),
+        });
+        break;
+      case "EDIT-LABELS":
+        resp.push({
+          icon: h(TagIcon),
+          text: t("database.edit-labels"),
+          disabled: !allowEditLabels.value || props.databases.length < 1,
+          click: () => (state.showLabelEditorDrawer = true),
+          tooltip: (action) => {
+            if (!allowEditLabels.value) {
+              return t("database.batch-action-permission-denied", {
+                action,
+              });
+            }
+            return getDisabledTooltip(action);
+          },
+        });
+        break;
+      case "TRANSFER":
+        if (!operationsInProjectDetail.value) {
+          resp.push({
+            icon: h(ArrowRightLeftIcon),
+            text: t("database.transfer-project"),
+            disabled: !allowTransferProject.value || props.databases.length < 1,
+            click: () => (state.showTransferOutDatabaseForm = true),
+            tooltip: (action) => {
+              if (!allowTransferProject.value) {
+                return t("database.batch-action-permission-denied", {
+                  action,
+                });
+              }
+              return getDisabledTooltip(action);
+            },
+          });
+        } else if (!isInDefaultProject.value) {
+          resp.push({
+            icon: h(UnlinkIcon),
+            text: t("database.unassign"),
+            disabled: !allowTransferProject.value || props.databases.length < 1,
+            click: () => (state.showUnassignAlert = true),
+            tooltip: (action) => {
+              if (!allowTransferProject.value) {
+                return t("database.batch-action-permission-denied", {
+                  action,
+                });
+              }
+              return getDisabledTooltip(action);
+            },
           });
         }
-        if (props.databases.length > 1) {
-          return t("database.data-export-action-disabled");
-        }
-        return "";
-      },
-    });
-  }
-  if (operations.value.has("SYNC-SCHEMA")) {
-    resp.push({
-      icon: h(RefreshCcwIcon),
-      text: t("common.sync"),
-      disabled: !allowSyncDatabases.value || props.databases.length < 1,
-      click: syncSchema,
-      tooltip: (action) => getDisabledTooltip(action),
-    });
-  }
-  if (operations.value.has("EDIT-LABELS")) {
-    resp.push({
-      icon: h(TagIcon),
-      text: t("database.edit-labels"),
-      disabled: !allowEditLabels.value || props.databases.length < 1,
-      click: () => (state.showLabelEditorDrawer = true),
-      tooltip: (action) => {
-        if (!allowEditLabels.value) {
-          return t("database.batch-action-permission-denied", {
-            action,
-          });
-        }
-        return getDisabledTooltip(action);
-      },
-    });
-  }
-  if (operations.value.has("TRANSFER")) {
-    if (!operationsInProjectDetail.value) {
-      resp.push({
-        icon: h(ArrowRightLeftIcon),
-        text: t("database.transfer-project"),
-        disabled: !allowTransferProject.value || props.databases.length < 1,
-        click: () => (state.showTransferOutDatabaseForm = true),
-        tooltip: (action) => {
-          if (!allowTransferProject.value) {
-            return t("database.batch-action-permission-denied", {
-              action,
-            });
-          }
-          return getDisabledTooltip(action);
-        },
-      });
-    } else if (!isInDefaultProject.value) {
-      resp.push({
-        icon: h(UnlinkIcon),
-        text: t("database.unassign"),
-        disabled: !allowTransferProject.value || props.databases.length < 1,
-        click: () => (state.showUnassignAlert = true),
-        tooltip: (action) => {
-          if (!allowTransferProject.value) {
-            return t("database.batch-action-permission-denied", {
-              action,
-            });
-          }
-          return getDisabledTooltip(action);
-        },
-      });
+        break;
+      case "CHANGE-DATA":
+        resp.push({
+          icon: h(PencilIcon),
+          text: t("database.change-data"),
+          disabled:
+            !allowChangeData.value ||
+            !selectedProjectName.value ||
+            props.databases.length < 1 ||
+            selectedProjectNames.value.has(DEFAULT_PROJECT_NAME),
+          click: () => generateMultiDb("bb.issue.database.data.update"),
+          tooltip: (action) => {
+            if (!allowChangeData.value) {
+              return t("database.batch-action-permission-denied", {
+                action,
+              });
+            }
+            return getDisabledTooltip(action);
+          },
+        });
+        break;
+      case "EDIT-SCHEMA":
+        resp.push({
+          icon: h(PenSquareIcon),
+          text: t("database.edit-schema"),
+          disabled:
+            !databaseSupportAlterSchema.value ||
+            !allowEditSchema.value ||
+            !selectedProjectName.value ||
+            props.databases.length < 1 ||
+            selectedProjectNames.value.has(DEFAULT_PROJECT_NAME),
+          click: () => generateMultiDb("bb.issue.database.schema.update"),
+          tooltip: (action) => {
+            if (!databaseSupportAlterSchema.value) {
+              return t("database.batch-action-not-support-alter-schema");
+            }
+            if (!allowEditSchema.value) {
+              return t("database.batch-action-permission-denied", {
+                action,
+              });
+            }
+            return getDisabledTooltip(action);
+          },
+        });
+        break;
     }
-  }
-  if (operations.value.has("CHANGE-DATA")) {
-    resp.unshift({
-      icon: h(PencilIcon),
-      text: t("database.change-data"),
-      disabled:
-        !allowChangeData.value ||
-        !selectedProjectName.value ||
-        props.databases.length < 1 ||
-        selectedProjectNames.value.has(DEFAULT_PROJECT_NAME),
-      click: () => generateMultiDb("bb.issue.database.data.update"),
-      tooltip: (action) => {
-        if (!allowChangeData.value) {
-          return t("database.batch-action-permission-denied", {
-            action,
-          });
-        }
-        return getDisabledTooltip(action);
-      },
-    });
-  }
-  if (operations.value.has("EDIT-SCHEMA")) {
-    resp.unshift({
-      icon: h(PenSquareIcon),
-      text: t("database.edit-schema"),
-      disabled:
-        !databaseSupportAlterSchema.value ||
-        !allowEditSchema.value ||
-        !selectedProjectName.value ||
-        props.databases.length < 1 ||
-        selectedProjectNames.value.has(DEFAULT_PROJECT_NAME),
-      click: () => generateMultiDb("bb.issue.database.schema.update"),
-      tooltip: (action) => {
-        if (!databaseSupportAlterSchema.value) {
-          return t("database.batch-action-not-support-alter-schema");
-        }
-        if (!allowEditSchema.value) {
-          return t("database.batch-action-permission-denied", {
-            action,
-          });
-        }
-        return getDisabledTooltip(action);
-      },
-    });
   }
 
   return resp;
