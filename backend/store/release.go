@@ -31,6 +31,12 @@ type FindReleaseMessage struct {
 	Offset     *int
 }
 
+type UpdateReleaseMessage struct {
+	UID int64
+
+	Payload *storepb.ReleasePayload
+}
+
 // TODO(p0ny): enforce file order by version.
 func (s *Store) CreateRelease(ctx context.Context, release *ReleaseMessage, creatorUID int) (*ReleaseMessage, error) {
 	query := `
@@ -165,4 +171,37 @@ func (s *Store) ListReleases(ctx context.Context, find *FindReleaseMessage) ([]*
 	}
 
 	return releases, nil
+}
+
+func (s *Store) UpdateRelease(ctx context.Context, update *UpdateReleaseMessage) (*ReleaseMessage, error) {
+	set, args := []string{}, []any{}
+
+	if v := update.Payload; v != nil {
+		payload, err := protojson.Marshal(update.Payload)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to marshal payload")
+		}
+		set, args = append(set, fmt.Sprintf("payload = $%d", len(args)+1)), append(args, payload)
+	}
+	if len(set) == 0 {
+		return nil, errors.New("no update field provided")
+	}
+
+	args = append(args, update.UID)
+
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	if _, err := tx.ExecContext(ctx, fmt.Sprintf(`UPDATE release SET %s WHERE id = $%d`, strings.Join(set, ", "), len(args)), args...); err != nil {
+		return nil, errors.Wrapf(err, "failed to query row")
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, errors.Wrapf(err, "failed to commit tx")
+	}
+
+	return s.GetRelease(ctx, update.UID)
 }

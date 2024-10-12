@@ -9,7 +9,11 @@
       <template v-if="isDisconnected || allowReadonlyMode">
         <EditorAction @execute="handleExecute" />
 
-        <Splitpanes v-if="tab" class="default-theme overflow-hidden">
+        <Splitpanes
+          v-if="tab"
+          class="default-theme overflow-hidden"
+          @resized="handleAIPanelResize($event, 1)"
+        >
           <Pane>
             <Suspense>
               <SQLEditor @execute="handleExecute" />
@@ -24,11 +28,11 @@
           </Pane>
           <Pane
             v-if="showAIPanel"
-            :size="33"
+            :size="AIPanelSize"
             class="overflow-hidden flex flex-col"
           >
             <Suspense>
-              <AIChatToSQL />
+              <AIChatToSQL key="ai-chat-to-sql" />
               <template #fallback>
                 <div
                   class="w-full h-full flex-grow flex flex-col items-center justify-center"
@@ -88,7 +92,7 @@ const SQLEditor = defineAsyncComponent(() => import("./SQLEditor.vue"));
 const tabStore = useSQLEditorTabStore();
 const { currentTab: tab, isDisconnected } = storeToRefs(tabStore);
 const { instance } = useConnectionOfCurrentSQLEditorTab();
-const { showAIPanel } = useSQLEditorContext();
+const { showAIPanel, AIPanelSize, handleAIPanelResize } = useSQLEditorContext();
 
 const allowReadonlyMode = computed(() => {
   if (isDisconnected.value) return false;

@@ -1182,7 +1182,7 @@ func convertToV1IamPolicy(ctx context.Context, stores *store.Store, iamPolicy *s
 			if err != nil {
 				return nil, status.Errorf(codes.Internal, "failed to convert ast to parsed expression with error: %v", err)
 			}
-			v1pbBinding.ParsedExpr = expr
+			v1pbBinding.ParsedExpr = expr.Expr
 		}
 		bindings = append(bindings, v1pbBinding)
 	}

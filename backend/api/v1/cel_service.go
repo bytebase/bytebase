@@ -3,6 +3,7 @@ package v1
 import (
 	"context"
 
+	expr "google.golang.org/genproto/googleapis/api/expr/v1alpha1"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -34,11 +35,11 @@ func (*CelService) BatchParse(_ context.Context, request *v1pb.BatchParseRequest
 		if issues != nil && issues.Err() != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "failed to parse expression: %v", issues.Err())
 		}
-		expr, err := cel.AstToParsedExpr(ast)
+		parsedExpr, err := cel.AstToParsedExpr(ast)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to convert ast to parsed expression: %v", err)
 		}
-		resp.Expressions = append(resp.Expressions, expr)
+		resp.Expressions = append(resp.Expressions, parsedExpr.Expr)
 	}
 	return resp, nil
 }
@@ -47,7 +48,7 @@ func (*CelService) BatchParse(_ context.Context, request *v1pb.BatchParseRequest
 func (*CelService) BatchDeparse(_ context.Context, request *v1pb.BatchDeparseRequest) (*v1pb.BatchDeparseResponse, error) {
 	resp := &v1pb.BatchDeparseResponse{}
 	for _, expression := range request.Expressions {
-		ast := cel.ParsedExprToAst(expression)
+		ast := cel.ParsedExprToAst(&expr.ParsedExpr{Expr: expression})
 		expressionStr, err := cel.AstToString(ast)
 		if err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "failed to deparse expression: %v", err)

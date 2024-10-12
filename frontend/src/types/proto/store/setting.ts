@@ -7,9 +7,9 @@
 /* eslint-disable */
 import { BinaryReader, BinaryWriter } from "@bufbuild/protobuf/wire";
 import Long from "long";
-import { ParsedExpr } from "../google/api/expr/v1alpha1/syntax";
+import { Expr } from "../google/api/expr/v1alpha1/syntax";
 import { Duration } from "../google/protobuf/duration";
-import { Expr } from "../google/type/expr";
+import { Expr as Expr1 } from "../google/type/expr";
 import { ApprovalTemplate } from "./approval";
 import { Engine, engineFromJSON, engineToJSON, engineToNumber } from "./common";
 import { ColumnConfig, ColumnMetadata, TableConfig, TableMetadata } from "./database";
@@ -198,9 +198,9 @@ export interface WorkspaceApprovalSetting {
 }
 
 export interface WorkspaceApprovalSetting_Rule {
-  expression: ParsedExpr | undefined;
+  expression: Expr | undefined;
   template: ApprovalTemplate | undefined;
-  condition: Expr | undefined;
+  condition: Expr1 | undefined;
 }
 
 export interface ExternalApprovalSetting {
@@ -1138,13 +1138,13 @@ function createBaseWorkspaceApprovalSetting_Rule(): WorkspaceApprovalSetting_Rul
 export const WorkspaceApprovalSetting_Rule: MessageFns<WorkspaceApprovalSetting_Rule> = {
   encode(message: WorkspaceApprovalSetting_Rule, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.expression !== undefined) {
-      ParsedExpr.encode(message.expression, writer.uint32(10).fork()).join();
+      Expr.encode(message.expression, writer.uint32(10).fork()).join();
     }
     if (message.template !== undefined) {
       ApprovalTemplate.encode(message.template, writer.uint32(18).fork()).join();
     }
     if (message.condition !== undefined) {
-      Expr.encode(message.condition, writer.uint32(26).fork()).join();
+      Expr1.encode(message.condition, writer.uint32(26).fork()).join();
     }
     return writer;
   },
@@ -1161,7 +1161,7 @@ export const WorkspaceApprovalSetting_Rule: MessageFns<WorkspaceApprovalSetting_
             break;
           }
 
-          message.expression = ParsedExpr.decode(reader, reader.uint32());
+          message.expression = Expr.decode(reader, reader.uint32());
           continue;
         case 2:
           if (tag !== 18) {
@@ -1175,7 +1175,7 @@ export const WorkspaceApprovalSetting_Rule: MessageFns<WorkspaceApprovalSetting_
             break;
           }
 
-          message.condition = Expr.decode(reader, reader.uint32());
+          message.condition = Expr1.decode(reader, reader.uint32());
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -1188,22 +1188,22 @@ export const WorkspaceApprovalSetting_Rule: MessageFns<WorkspaceApprovalSetting_
 
   fromJSON(object: any): WorkspaceApprovalSetting_Rule {
     return {
-      expression: isSet(object.expression) ? ParsedExpr.fromJSON(object.expression) : undefined,
+      expression: isSet(object.expression) ? Expr.fromJSON(object.expression) : undefined,
       template: isSet(object.template) ? ApprovalTemplate.fromJSON(object.template) : undefined,
-      condition: isSet(object.condition) ? Expr.fromJSON(object.condition) : undefined,
+      condition: isSet(object.condition) ? Expr1.fromJSON(object.condition) : undefined,
     };
   },
 
   toJSON(message: WorkspaceApprovalSetting_Rule): unknown {
     const obj: any = {};
     if (message.expression !== undefined) {
-      obj.expression = ParsedExpr.toJSON(message.expression);
+      obj.expression = Expr.toJSON(message.expression);
     }
     if (message.template !== undefined) {
       obj.template = ApprovalTemplate.toJSON(message.template);
     }
     if (message.condition !== undefined) {
-      obj.condition = Expr.toJSON(message.condition);
+      obj.condition = Expr1.toJSON(message.condition);
     }
     return obj;
   },
@@ -1214,13 +1214,13 @@ export const WorkspaceApprovalSetting_Rule: MessageFns<WorkspaceApprovalSetting_
   fromPartial(object: DeepPartial<WorkspaceApprovalSetting_Rule>): WorkspaceApprovalSetting_Rule {
     const message = createBaseWorkspaceApprovalSetting_Rule();
     message.expression = (object.expression !== undefined && object.expression !== null)
-      ? ParsedExpr.fromPartial(object.expression)
+      ? Expr.fromPartial(object.expression)
       : undefined;
     message.template = (object.template !== undefined && object.template !== null)
       ? ApprovalTemplate.fromPartial(object.template)
       : undefined;
     message.condition = (object.condition !== undefined && object.condition !== null)
-      ? Expr.fromPartial(object.condition)
+      ? Expr1.fromPartial(object.condition)
       : undefined;
     return message;
   },

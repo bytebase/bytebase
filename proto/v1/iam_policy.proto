@@ -61,7 +61,7 @@ message Binding {
   google.type.Expr condition = 3;
 
   // The parsed expression of the condition.
-  google.api.expr.v1alpha1.ParsedExpr parsed_expr = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
+  google.api.expr.v1alpha1.Expr parsed_expr = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 // The difference delta between two policies.

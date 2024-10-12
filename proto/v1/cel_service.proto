@@ -30,11 +30,11 @@ message BatchParseRequest {
 }
 
 message BatchParseResponse {
-  repeated google.api.expr.v1alpha1.ParsedExpr expressions = 1;
+  repeated google.api.expr.v1alpha1.Expr expressions = 1;
 }
 
 message BatchDeparseRequest {
-  repeated google.api.expr.v1alpha1.ParsedExpr expressions = 1;
+  repeated google.api.expr.v1alpha1.Expr expressions = 1;
 }
 
 message BatchDeparseResponse {

@@ -361,6 +361,9 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s
 		payload := &storepb.TaskDatabaseUpdatePayload{
 			SpecId:        spec.Id,
 			SchemaVersion: getOrDefaultSchemaVersion(c.SchemaVersion),
+			TaskReleaseSource: &storepb.TaskReleaseSource{
+				File: spec.SpecReleaseSource.GetFile(),
+			},
 		}
 		bytes, err := protojson.Marshal(payload)
 		if err != nil {
@@ -386,6 +389,9 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s
 			SpecId:        spec.Id,
 			SheetId:       int32(sheetUID),
 			SchemaVersion: getOrDefaultSchemaVersion(c.SchemaVersion),
+			TaskReleaseSource: &storepb.TaskReleaseSource{
+				File: spec.SpecReleaseSource.GetFile(),
+			},
 		}
 		bytes, err := protojson.Marshal(payload)
 		if err != nil {
@@ -411,6 +417,9 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s
 			SpecId:        spec.Id,
 			SheetId:       int32(sheetUID),
 			SchemaVersion: getOrDefaultSchemaVersion(c.SchemaVersion),
+			TaskReleaseSource: &storepb.TaskReleaseSource{
+				File: spec.SpecReleaseSource.GetFile(),
+			},
 		}
 		bytes, err := protojson.Marshal(payload)
 		if err != nil {
@@ -442,6 +451,9 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s
 			SheetId:       int32(sheetUID),
 			SchemaVersion: getOrDefaultSchemaVersion(c.SchemaVersion),
 			Flags:         c.GhostFlags,
+			TaskReleaseSource: &storepb.TaskReleaseSource{
+				File: spec.SpecReleaseSource.GetFile(),
+			},
 		}
 		bytesSync, err := json.Marshal(payloadSync)
 		if err != nil {
@@ -494,6 +506,9 @@ func getTaskCreatesFromChangeDatabaseConfigDatabaseTarget(ctx context.Context, s
 			SheetId:               int32(sheetUID),
 			SchemaVersion:         getOrDefaultSchemaVersion(c.SchemaVersion),
 			PreUpdateBackupDetail: preUpdateBackupDetail,
+			TaskReleaseSource: &storepb.TaskReleaseSource{
+				File: spec.SpecReleaseSource.GetFile(),
+			},
 		}
 		bytes, err := protojson.Marshal(payload)
 		if err != nil {

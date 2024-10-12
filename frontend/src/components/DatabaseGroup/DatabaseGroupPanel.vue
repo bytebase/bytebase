@@ -55,10 +55,7 @@ import {
 } from "@/router/dashboard/projectV1";
 import { pushNotification, useDBGroupStore } from "@/store";
 import type { ComposedDatabaseGroup, ComposedProject } from "@/types";
-import {
-  ParsedExpr,
-  Expr as CELExpr,
-} from "@/types/proto/google/api/expr/v1alpha1/syntax";
+import { Expr as CELExpr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
 import { Expr } from "@/types/proto/google/type/expr";
 import type { DatabaseGroup } from "@/types/proto/v1/database_group_service";
 import { batchConvertParsedExprToCELString } from "@/utils";
@@ -149,11 +146,7 @@ const doConfirm = async () => {
     return;
   }
 
-  const celStrings = await batchConvertParsedExprToCELString([
-    ParsedExpr.fromJSON({
-      expr: celExpr,
-    }),
-  ]);
+  const celStrings = await batchConvertParsedExprToCELString([celExpr!]);
   const celString = head(celStrings);
   if (!celString) {
     pushNotification({
