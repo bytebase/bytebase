@@ -78,6 +78,12 @@ const shouldShowGhostSection = computed(() => {
     return false;
   }
 
+  // Hide ghost section if the release source is set for now.
+  // TODO(steven): maybe we can support gh-ost for release source later.
+  if (issue.value.planEntity?.releaseSource) {
+    return false;
+  }
+
   // We need all tasks and specs to be gh-ost-able to enable gh-ost mode.
   const tasks = flattenTaskV1List(issue.value.rolloutEntity);
   if (isCreating.value) {
