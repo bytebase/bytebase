@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -62,12 +63,23 @@ type migrateContext struct {
 	database *store.DatabaseMessage
 	// nullable if type=baseline
 	sheet *store.SheetMessage
-	task  *store.TaskMessage
+	// empty if type=baseline
+	sheetName string
 
+	task        *store.TaskMessage
 	taskRunUID  int
 	taskRunName string
 
 	version string
+
+	release struct {
+		// The release
+		// Format: projects/{project}/releases/{release}
+		release string
+		// The file path
+		// e.g. `2.2/V001.sql`
+		file string
+	}
 }
 
 func getMigrationInfo(ctx context.Context, stores *store.Store, profile *config.Profile, task *store.TaskMessage, migrationType db.MigrationType, statement string, schemaVersion model.Version, sheetID *int, taskRunUID int) (*db.MigrationInfo, *migrateContext, error) {
@@ -130,6 +142,23 @@ func getMigrationInfo(ctx context.Context, stores *store.Store, profile *config.
 			return nil, nil, errors.Errorf("sheet not found")
 		}
 		mc.sheet = sheet
+		mc.sheetName = common.FormatSheet(pipeline.ProjectID, sheet.UID)
+	}
+
+	if common.IsDev() && slices.Index([]api.TaskType{api.TaskDatabaseSchemaBaseline, api.TaskDatabaseSchemaUpdate, api.TaskDatabaseSchemaUpdateGhostSync, api.TaskDatabaseSchemaUpdateSDL, api.TaskDatabaseDataUpdate}, task.Type) != -1 {
+		var p storepb.TaskDatabaseUpdatePayload
+		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(task.Payload), &p); err != nil {
+			return nil, nil, errors.Wrapf(err, "failed to unmarshal task payload")
+		}
+
+		if f := p.TaskReleaseSource.GetFile(); f != "" {
+			project, release, file, err := common.GetProjectReleaseUIDFile(f)
+			if err != nil {
+				return nil, nil, errors.Wrapf(err, "failed to parse file %s", f)
+			}
+			mc.release.release = common.FormatReleaseName(project, release)
+			mc.release.file = file
+		}
 	}
 
 	plans, err := stores.ListPlans(ctx, &store.FindPlanMessage{PipelineID: &task.PipelineID})
@@ -408,7 +437,7 @@ func executeMigrationWithFunc(ctx context.Context, driverCtx context.Context, s 
 	startedNs := time.Now().UnixNano()
 
 	defer func() {
-		if err := endMigration(ctx, s, startedNs, insertedID, updatedSchema, prevSchemaBuf.String(), sheetID, resErr == nil /* isDone */); err != nil {
+		if err := endMigration(ctx, s, startedNs, insertedID, updatedSchema, prevSchemaBuf.String(), mc, sheetID, resErr == nil /* isDone */); err != nil {
 			slog.Error("Failed to update migration history record",
 				log.BBError(err),
 				slog.String("migration_id", migrationHistoryID),
@@ -504,7 +533,27 @@ func beginMigration(ctx context.Context, stores *store.Store, m *db.MigrationInf
 }
 
 // endMigration updates the migration history record to DONE or FAILED depending on migration is done or not.
-func endMigration(ctx context.Context, storeInstance *store.Store, startedNs int64, insertedID string, updatedSchema, schemaPrev string, sheetID *int, isDone bool) error {
+func endMigration(ctx context.Context, storeInstance *store.Store, startedNs int64, insertedID string, updatedSchema, schemaPrev string, mc *migrateContext, sheetID *int, isDone bool) error {
+	if common.IsDev() && isDone {
+		_, err := storeInstance.CreateRevision(ctx, &store.RevisionMessage{
+			InstanceUID: mc.instance.UID,
+			DatabaseUID: mc.database.UID,
+			Payload: &storepb.RevisionPayload{
+				Release:     mc.release.release,
+				File:        mc.release.file,
+				Sheet:       mc.sheetName,
+				SheetSha256: mc.sheet.Sha256,
+				TaskRun:     mc.taskRunName,
+				Version:     mc.version,
+				// TODO(p0ny): maybe remove this field.
+				Type: storepb.ReleaseFileType_TYPE_UNSPECIFIED,
+			},
+		}, api.SystemBotID)
+		if err != nil {
+			return errors.Wrapf(err, "failed to create revision")
+		}
+	}
+
 	migrationDurationNs := time.Now().UnixNano() - startedNs
 	update := &store.UpdateInstanceChangeHistoryMessage{
 		ID:                  insertedID,
