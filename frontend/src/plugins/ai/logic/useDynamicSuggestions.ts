@@ -5,7 +5,7 @@ import { hashCode } from "@/bbkit/BBUtil";
 import { WebStorageHelper } from "@/utils";
 import type { OpenAIMessage, OpenAIResponse } from "../types";
 import { useAIContext } from "./context";
-import { databaseMetadataToText } from "./prompt";
+import * as promptUtils from "./prompt";
 
 export type SuggestionContext = {
   metadata: string; // schema text
@@ -33,10 +33,9 @@ export const useDynamicSuggestions = () => {
     const meta = context.databaseMetadata.value;
     const engine = context.engine.value;
     const schema = context.schema.value;
-    console.log("evaluate metadata", meta, engine, schema);
 
     if (meta && engine) {
-      return databaseMetadataToText(meta, engine, schema);
+      return promptUtils.databaseMetadataToText(meta, engine, schema);
     }
     return "";
   });
@@ -113,37 +112,29 @@ export const useDynamicSuggestions = () => {
         const { state, used, suggestions, key } = suggestion;
         if (state === "ENDED") return [];
 
-        const commands = [
-          `You are an assistant who works as a Magic: The Suggestion card designer. Create cards that are in the following card schema and JSON format. OUTPUT MUST FOLLOW THIS CARD SCHEMA AND JSON FORMAT. DO NOT EXPLAIN THE CARD.`,
-          `{"suggestion-1": "What is the average salary of employees in each department?", "suggestion-2": "What is the average salary of employees in each department?", "suggestion-3": "What is the average salary of employees in each department?"}`,
-        ];
-        const prompts = [
+        const { command, prompt } = promptUtils.dynamicSuggestions(
           metadata,
-          "Create a suggestion card about interesting queries to try in this database.",
-        ];
-        if (used.size > 0 || suggestions.length > 0) {
-          prompts.push("queries below should be ignored");
-          for (const sug of used.values()) {
-            prompts.push(sug);
-          }
-          for (const sug of suggestions) {
-            prompts.push(sug);
-          }
-        }
+          new Set([...used.values(), ...suggestions])
+        );
         const messages: OpenAIMessage[] = [
           {
             role: "system",
-            content: commands.join("\n"),
+            content: command,
           },
           {
             role: "user",
-            content: prompts.join("\n"),
+            content: prompt,
           },
         ];
+        console.debug("[DynamicSuggestions]");
+        console.debug(command);
+        console.debug(prompt);
 
         suggestion.state = "LOADING";
+        const response = await requestAI(messages);
+        console.debug("[DynamicSuggestions] response", response);
         const more = uniq(
-          (await requestAI(messages)).filter((sug) => {
+          response.filter((sug) => {
             if (used.has(sug)) return false;
             if (suggestions.includes(sug)) return false;
             return true;

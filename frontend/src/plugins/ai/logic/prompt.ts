@@ -98,3 +98,24 @@ export const wrapStatementMarkdown = (statement: string, engine?: Engine) => {
   const closeTag = "```";
   return [openTag, statement, closeTag].join("\n");
 };
+
+export const dynamicSuggestions = (metadata: string, ignores?: Set<string>) => {
+  const commands = [
+    `You are an assistant who works as a Magic: The Suggestion card designer. Create cards that are in the following card schema and JSON format. OUTPUT MUST FOLLOW THIS CARD SCHEMA AND JSON FORMAT. DO NOT EXPLAIN THE CARD.`,
+    `{"suggestion-1": "What is the average salary of employees in each department?", "suggestion-2": "What is the average salary of employees in each department?", "suggestion-3": "What is the average salary of employees in each department?"}`,
+  ];
+  const prompts = [
+    metadata,
+    "Create a suggestion card about interesting queries to try in this database.",
+  ];
+  if (ignores && ignores.size > 0) {
+    prompts.push("queries below should be ignored");
+    for (const sug of ignores.values()) {
+      prompts.push(sug);
+    }
+  }
+  return {
+    command: commands.join("\n"),
+    prompt: prompts.join("\n"),
+  };
+};
