@@ -42,7 +42,7 @@ export type IssueGhostContext = {
   denyEditGhostFlagsReasons: Ref<string[]>;
   showFeatureModal: Ref<boolean>;
   showMissingInstanceLicense: Ref<boolean>;
-  toggleGhost: (spec: Plan_Spec, on: boolean) => Promise<void>;
+  toggleGhost: (on: boolean) => Promise<void>;
 };
 
 export const KEY = Symbol(
@@ -113,7 +113,7 @@ export const provideIssueGhostContext = () => {
     });
   });
 
-  const toggleGhost = async (spec: Plan_Spec, on: boolean) => {
+  const toggleGhost = async (on: boolean) => {
     const overrides: Record<string, string> = {};
     if (on) {
       overrides["ghost"] = "1";
