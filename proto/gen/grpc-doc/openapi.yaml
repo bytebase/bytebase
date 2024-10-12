@@ -11630,12 +11630,20 @@ components:
                     description: |-
                         IDs of the specs that this spec depends on.
                          Must be a subset of the specs in the same step.
+                specReleaseSource:
+                    $ref: '#/components/schemas/Plan_SpecReleaseSource'
                 createDatabaseConfig:
                     $ref: '#/components/schemas/Plan_CreateDatabaseConfig'
                 changeDatabaseConfig:
                     $ref: '#/components/schemas/Plan_ChangeDatabaseConfig'
                 exportDataConfig:
                     $ref: '#/components/schemas/Plan_ExportDataConfig'
+        Plan_SpecReleaseSource:
+            type: object
+            properties:
+                file:
+                    type: string
+                    description: 'Format: projects/{project}/releases/{release}/files/{file}'
         Plan_Step:
             type: object
             properties:
@@ -12241,6 +12249,13 @@ components:
                     type: string
                     format: enum
                 version:
+                    type: string
+                statement:
+                    readOnly: true
+                    type: string
+                    description: The statement is used for preview purpose.
+                statementSize:
+                    readOnly: true
                     type: string
         Release_VCSSource:
             type: object

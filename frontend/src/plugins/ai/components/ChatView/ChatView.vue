@@ -1,5 +1,5 @@
 <template>
-  <div ref="scrollerRef" class="flex-1 py-4 overflow-y-auto">
+  <div ref="scrollerRef" class="flex-1 overflow-y-auto">
     <template v-if="conversation">
       <template v-if="conversation.messageList.length === 0">
         <EmptyView v-if="mode === 'VIEW'" />
@@ -7,12 +7,12 @@
       <div
         v-else
         ref="containerRef"
-        class="flex flex-col justify-end px-4 gap-y-8"
+        class="flex flex-col justify-end px-2 gap-y-4"
       >
         <div
           v-for="message in conversation?.messageList"
           :key="message.id"
-          class="flex"
+          class="flex message"
           :class="[message.author === 'AI' ? 'justify-start' : 'justify-end']"
         >
           <UserMessageView
@@ -35,7 +35,7 @@
           <template #create>
             <button
               class="normal-link"
-              @click="events.emit('new-conversation')"
+              @click="events.emit('new-conversation', { input: '' })"
             >
               {{ $t("common.create") }}
             </button>

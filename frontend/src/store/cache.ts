@@ -71,7 +71,7 @@ export const useCache = <K extends KeyType[], T>(namespace: string) => {
 
   const getEntity = (keys: K) => {
     const key = getKey(keys);
-    trace("getEntity", keys, entityCacheMap.has(key));
+    // trace("getEntity", keys, entityCacheMap.has(key));
     return entityCacheMap.get(key)?.entity;
   };
 

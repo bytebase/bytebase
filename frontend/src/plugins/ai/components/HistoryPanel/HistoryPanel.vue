@@ -1,26 +1,25 @@
 <template>
-  <BBModal
-    :title="$t('plugin.ai.conversation.history-conversations')"
-    class="!pb-0"
-    container-class="!p-0"
-    @close="showHistoryDialog = false"
-  >
-    <div
-      class="h-[calc(100vh-10rem)] w-[calc(100vw-8rem)] max-w-[72rem] px-8 pb-4 flex"
+  <Drawer v-model:show="showHistoryDialog">
+    <DrawerContent
+      :title="$t('plugin.ai.conversation.history-conversations')"
+      class="w-[calc(100vw-8rem)] max-w-[72rem]"
+      body-content-style="padding: 0"
     >
-      <aside class="hidden lg:flex lg:flex-col w-[14em] border-l border-b">
-        <ConversationList />
-      </aside>
+      <div class="flex h-full">
+        <aside class="hidden lg:flex lg:flex-col w-[14em] border-l border-b">
+          <ConversationList />
+        </aside>
 
-      <div class="flex-1 flex flex-col bg-gray-100">
-        <ChatView mode="VIEW" :conversation="selected" />
+        <div class="flex-1 flex flex-col py-2 bg-gray-100 overflow-hidden">
+          <ChatView mode="VIEW" :conversation="selected" />
+        </div>
       </div>
-    </div>
-  </BBModal>
+    </DrawerContent>
+  </Drawer>
 </template>
 
 <script lang="ts" setup>
-import { BBModal } from "@/bbkit";
+import { Drawer, DrawerContent } from "@/components/v2";
 import { useAIContext, useCurrentChat } from "../../logic";
 import ChatView from "../ChatView";
 import ConversationList from "./ConversationList.vue";

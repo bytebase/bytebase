@@ -1,6 +1,6 @@
 <template>
   <div
-    class="w-full h-auto flex-grow flex flex-col justify-start items-start overflow-auto"
+    class="w-full h-full flex-grow flex flex-col justify-start items-start overflow-auto"
   >
     <MonacoEditor
       class="w-full h-full"
@@ -42,6 +42,9 @@ import {
 } from "@/components/MonacoEditor/utils";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import { useExecuteSQL } from "@/composables/useExecuteSQL";
+import { useAIActions } from "@/plugins/ai";
+import { useAIContext } from "@/plugins/ai/logic";
+import * as promptUtils from "@/plugins/ai/logic/prompt";
 import {
   useUIStateStore,
   useWorkSheetAndTabStore,
@@ -51,7 +54,7 @@ import {
 import type { SQLDialect, SQLEditorQueryParams, SQLEditorTab } from "@/types";
 import { dialectOfEngineV1 } from "@/types";
 import { Advice_Status, type Advice } from "@/types/proto/v1/sql_service";
-import { useInstanceV1EditorLanguage } from "@/utils";
+import { nextAnimationFrame, useInstanceV1EditorLanguage } from "@/utils";
 import { useSQLEditorContext } from "../../context";
 
 const emit = defineEmits<{
@@ -61,8 +64,13 @@ const emit = defineEmits<{
 const tabStore = useSQLEditorTabStore();
 const sheetAndTabStore = useWorkSheetAndTabStore();
 const uiStateStore = useUIStateStore();
-const { events: editorEvents } = useSQLEditorContext();
+const {
+  showAIPanel,
+  pendingInsertAtCaret,
+  events: editorEvents,
+} = useSQLEditorContext();
 const { currentTab, isSwitchingTab } = storeToRefs(tabStore);
+const AIContext = useAIContext();
 const pendingFormatContentCommand = ref(false);
 const pendingSetSelectionCommand = ref<{
   start: { line: number; column: number };
@@ -184,6 +192,44 @@ const handleEditorReady = (
   editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
     handleSaveSheet();
   });
+  useAIActions(monaco, editor, AIContext, {
+    actions: ["explain-code", "find-problems", "new-chat"],
+    callback: async (action) => {
+      // start new chat if AI panel is not open
+      // continue current chat otherwise
+      const newChat = !showAIPanel.value;
+
+      showAIPanel.value = true;
+      const tab = tabStore.currentTab;
+      const statement = tab?.selectedStatement || tab?.statement;
+      if (!statement) return;
+
+      await nextAnimationFrame();
+      if (action === "explain-code") {
+        AIContext.events.emit("send-chat", {
+          content: promptUtils.explainCode(statement, instance.value.engine),
+          newChat,
+        });
+      }
+      if (action === "find-problems") {
+        AIContext.events.emit("send-chat", {
+          content: promptUtils.findProblems(statement, instance.value.engine),
+          newChat,
+        });
+      }
+      if (action === "new-chat") {
+        const statement = tab?.selectedStatement ?? "";
+        if (!statement) return;
+        const inputs = [
+          "", // just an empty line
+          promptUtils.wrapStatementMarkdown(statement),
+        ];
+        AIContext.events.emit("new-conversation", {
+          input: inputs.join("\n"),
+        });
+      }
+    },
+  });
 
   watch(
     pendingFormatContentCommand,
@@ -216,6 +262,33 @@ const handleEditorReady = (
           pendingSetSelectionCommand.value = undefined;
         });
       }
+    },
+    { immediate: true }
+  );
+
+  watch(
+    pendingInsertAtCaret,
+    () => {
+      const text = pendingInsertAtCaret.value;
+      if (!text) return;
+      pendingInsertAtCaret.value = undefined;
+
+      requestAnimationFrame(() => {
+        const selection = editor.getSelection();
+        const maxLineNumber = editor.getModel()?.getLineCount() ?? 0;
+        const range =
+          selection ??
+          new monaco.Range(maxLineNumber + 1, 1, maxLineNumber + 1, 1);
+        editor.executeEdits("bb.event.insert-at-caret", [
+          {
+            forceMoveMarkers: true,
+            text,
+            range,
+          },
+        ]);
+        editor.focus();
+        editor.revealLine(range.startLineNumber);
+      });
     },
     { immediate: true }
   );

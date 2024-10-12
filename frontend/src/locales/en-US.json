@@ -291,7 +291,8 @@
     "override": "Override",
     "encoding": "Encoding",
     "finish": "Finish",
-    "title": "Title"
+    "title": "Title",
+    "hide": "Hide"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -1637,6 +1638,11 @@
         "disallow": "Disallow querying data from the admin connection",
         "fallback": "Fallback to the admin connection if no read-only connection is available"
       }
+    },
+    "statement-execution": {
+      "title": "Statement execution",
+      "allow-ddl": "Allow running DDL statements in the SQL editor",
+      "allow-dml": "Allow running DML statements in the SQL editor"
     }
   },
   "quick-start": {
@@ -3218,7 +3224,22 @@
       "dont-show-again": "Don't show again",
       "text2sql": "Text2SQL",
       "disable-text2sql": "Disable Text2SQL",
-      "enable-text2sql": "Enable Text2SQL"
+      "enable-text2sql": "Enable Text2SQL",
+      "actions": {
+        "chat": "Chat",
+        "explain-code": "Explain code",
+        "find-problems": "Find problems",
+        "new-chat": "New chat",
+        "insert-at-caret": "Insert at caret"
+      },
+      "send": "Send",
+      "new-line": "New line",
+      "ai-assistant": "AI Assistant",
+      "not-configured": {
+        "self": "AI Assistant is not configured.",
+        "contact-admin-to-configure": "Please contact your org administrator.",
+        "go-to-configure": "Go to configure"
+      }
     }
   },
   "custom-approval": {

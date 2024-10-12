@@ -83,13 +83,14 @@ func (exec *SchemaUpdateExecutor) RunOnce(ctx context.Context, driverCtx context
 			slog.String("databaseName", database.DatabaseName),
 			log.BBError(err),
 		)
+	} else {
+		exec.store.CreateTaskRunLogS(ctx, taskRunUID, time.Now(), exec.profile.DeployID, &storepb.TaskRunLog{
+			Type: storepb.TaskRunLog_DATABASE_SYNC_END,
+			DatabaseSyncEnd: &storepb.TaskRunLog_DatabaseSyncEnd{
+				Error: "",
+			},
+		})
 	}
-	exec.store.CreateTaskRunLogS(ctx, taskRunUID, time.Now(), exec.profile.DeployID, &storepb.TaskRunLog{
-		Type: storepb.TaskRunLog_DATABASE_SYNC_END,
-		DatabaseSyncEnd: &storepb.TaskRunLog_DatabaseSyncEnd{
-			Error: "",
-		},
-	})
 
 	return terminated, result, err
 }

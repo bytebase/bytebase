@@ -148,9 +148,40 @@ func (s *ReleaseService) ListReleases(ctx context.Context, request *v1pb.ListRel
 	}, nil
 }
 
-func (*ReleaseService) UpdateRelease(_ context.Context, _ *v1pb.UpdateReleaseRequest) (*v1pb.Release, error) {
-	// TODO(p0ny): implement me please.
-	return nil, status.Errorf(codes.Unimplemented, "implement me")
+func (s *ReleaseService) UpdateRelease(ctx context.Context, request *v1pb.UpdateReleaseRequest) (*v1pb.Release, error) {
+	if request.UpdateMask == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "update_mask must be set")
+	}
+
+	releaseUID, err := common.GetReleaseUID(request.Release.Name)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "failed to get release uid, err: %v", err)
+	}
+	release, err := s.store.GetRelease(ctx, releaseUID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get release, err: %v", err)
+	}
+
+	update := &store.UpdateReleaseMessage{
+		UID: releaseUID,
+	}
+	for _, path := range request.UpdateMask.Paths {
+		if path == "title" {
+			payload := release.Payload
+			payload.Title = request.Release.Title
+			update.Payload = payload
+		}
+	}
+
+	releaseMessage, err := s.store.UpdateRelease(ctx, update)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to update release, err: %v", err)
+	}
+	converted, err := convertToRelease(ctx, s.store, releaseMessage)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to convert release, err: %v", err)
+	}
+	return converted, nil
 }
 
 func convertToReleases(ctx context.Context, s *store.Store, releases []*store.ReleaseMessage) ([]*v1pb.Release, error) {
@@ -169,9 +200,14 @@ func convertToRelease(ctx context.Context, s *store.Store, release *store.Releas
 	r := &v1pb.Release{
 		Title:      release.Payload.Title,
 		CreateTime: timestamppb.New(release.CreatedTime),
-		Files:      convertToReleaseFiles(release.Payload.Files),
 		VcsSource:  convertToReleaseVcsSource(release.Payload.VcsSource),
 	}
+
+	files, err := convertToReleaseFiles(ctx, s, release.Payload.Files)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to convert release files")
+	}
+	r.Files = files
 
 	project, err := s.GetProjectV2(ctx, &store.FindProjectMessage{UID: &release.ProjectUID})
 	if err != nil {
@@ -191,21 +227,34 @@ func convertToRelease(ctx context.Context, s *store.Store, release *store.Releas
 	return r, nil
 }
 
-func convertToReleaseFiles(files []*storepb.ReleasePayload_File) []*v1pb.Release_File {
+func convertToReleaseFiles(ctx context.Context, s *store.Store, files []*storepb.ReleasePayload_File) ([]*v1pb.Release_File, error) {
 	if files == nil {
-		return nil
+		return nil, nil
 	}
-	var rFiles []*v1pb.Release_File
+	var v1Files []*v1pb.Release_File
 	for _, f := range files {
-		rFiles = append(rFiles, &v1pb.Release_File{
-			Name:        f.Name,
-			Sheet:       f.Sheet,
-			SheetSha256: f.SheetSha256,
-			Type:        v1pb.ReleaseFileType(f.Type),
-			Version:     f.Version,
+		_, sheetUID, err := common.GetProjectResourceIDSheetUID(f.Sheet)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get sheetUID from %q", f.Sheet)
+		}
+		sheet, err := s.GetSheet(ctx, &store.FindSheetMessage{UID: &sheetUID})
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get sheet %q", f.Sheet)
+		}
+		if sheet == nil {
+			return nil, errors.Errorf("sheet %q not found", f.Sheet)
+		}
+		v1Files = append(v1Files, &v1pb.Release_File{
+			Name:          f.Name,
+			Sheet:         f.Sheet,
+			SheetSha256:   f.SheetSha256,
+			Type:          v1pb.ReleaseFileType(f.Type),
+			Version:       f.Version,
+			Statement:     sheet.Statement,
+			StatementSize: sheet.Size,
 		})
 	}
-	return rFiles
+	return v1Files, nil
 }
 
 func convertToReleaseVcsSource(vs *storepb.ReleasePayload_VCSSource) *v1pb.Release_VCSSource {

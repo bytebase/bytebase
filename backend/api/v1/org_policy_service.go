@@ -335,7 +335,7 @@ func (s *OrgPolicyService) findActiveProject(ctx context.Context, find *store.Fi
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 	if project == nil {
-		return nil, status.Errorf(codes.NotFound, "project %v not found", find)
+		return nil, status.Errorf(codes.NotFound, "project not found")
 	}
 	return project, nil
 }

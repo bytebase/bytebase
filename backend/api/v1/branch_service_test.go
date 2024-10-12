@@ -56,10 +56,16 @@ func TestTrimDatabaseMetadata(t *testing.T) {
 					{Name: "t1", Columns: []*storepb.ColumnMetadata{{Name: "t1-c1", Type: "int"}}},
 				},
 			},
+			{
+				Name: "same-schema",
+			},
 		},
 	}
 	wantTrimmedTarget := &storepb.DatabaseSchemaMetadata{
 		Schemas: []*storepb.SchemaMetadata{
+			{
+				Name: "same-schema",
+			},
 			{
 				Name: "schema1",
 				Tables: []*storepb.TableMetadata{
