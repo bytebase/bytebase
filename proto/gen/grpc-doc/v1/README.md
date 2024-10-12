@@ -6904,7 +6904,7 @@ When paginating, all other parameters provided to `ListGroups` must match the ca
 
 The group&#39;s `name` field is used to identify the group to update. Format: groups/{email} |
 | update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
-| allow_missing | [bool](#bool) |  | If set to true, and the role is not found, a new role will be created. In this situation, `update_mask` is ignored. |
+| allow_missing | [bool](#bool) |  | If set to true, and the group is not found, a new group will be created. In this situation, `update_mask` is ignored. |
 
 
 

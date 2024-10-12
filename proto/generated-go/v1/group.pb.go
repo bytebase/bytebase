@@ -306,7 +306,7 @@ type UpdateGroupRequest struct {
 	Group *Group `protobuf:"bytes,1,opt,name=group,proto3" json:"group,omitempty"`
 	// The list of fields to update.
 	UpdateMask *fieldmaskpb.FieldMask `protobuf:"bytes,2,opt,name=update_mask,json=updateMask,proto3" json:"update_mask,omitempty"`
-	// If set to true, and the role is not found, a new role will be created.
+	// If set to true, and the group is not found, a new group will be created.
 	// In this situation, `update_mask` is ignored.
 	AllowMissing bool `protobuf:"varint,3,opt,name=allow_missing,json=allowMissing,proto3" json:"allow_missing,omitempty"`
 }

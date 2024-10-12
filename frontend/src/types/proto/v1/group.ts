@@ -76,7 +76,7 @@ export interface UpdateGroupRequest {
     | string[]
     | undefined;
   /**
-   * If set to true, and the role is not found, a new role will be created.
+   * If set to true, and the group is not found, a new group will be created.
    * In this situation, `update_mask` is ignored.
    */
   allowMissing: boolean;
