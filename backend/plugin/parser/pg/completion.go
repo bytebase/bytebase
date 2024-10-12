@@ -398,6 +398,43 @@ func (m CompletionMap) insertColumns(c *Completer, schemas, tables map[string]bo
 	}
 }
 
+func (m CompletionMap) insertAllColumns(c *Completer) {
+	if _, exists := c.metadataCache[c.defaultDatabase]; !exists {
+		_, metadata, err := c.getMetadata(c.ctx, c.instanceID, c.defaultDatabase)
+		if err != nil || metadata == nil {
+			return
+		}
+		c.metadataCache[c.defaultDatabase] = metadata
+	}
+
+	metadata := c.metadataCache[c.defaultDatabase]
+	for _, schema := range metadata.ListSchemaNames() {
+		schemaMeta := metadata.GetSchema(schema)
+		if schemaMeta == nil {
+			continue
+		}
+		for _, table := range schemaMeta.ListTableNames() {
+			tableMeta := schemaMeta.GetTable(table)
+			if tableMeta == nil {
+				continue
+			}
+			for _, column := range tableMeta.GetColumns() {
+				definition := fmt.Sprintf("%s.%s | %s", schema, table, column.Type)
+				if !column.Nullable {
+					definition += ", NOT NULL"
+				}
+				comment := column.UserComment
+				m.Insert(base.Candidate{
+					Type:       base.CandidateTypeColumn,
+					Text:       c.quotedIdentifierIfNeeded(column.Name),
+					Definition: definition,
+					Comment:    comment,
+				})
+			}
+		}
+	}
+}
+
 func (m CompletionMap) toSlice() []base.Candidate {
 	var result []base.Candidate
 	for _, candidate := range m {
@@ -601,6 +638,9 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 							}
 						}
 					}
+				} else {
+					// No specified table, return all columns
+					columnEntries.insertAllColumns(c)
 				}
 
 				if len(tables) > 0 {
