@@ -84,7 +84,7 @@ message AgentPluginSetting {
 
 message WorkspaceApprovalSetting {
   message Rule {
-    google.api.expr.v1alpha1.ParsedExpr expression = 1;
+    google.api.expr.v1alpha1.Expr expression = 1;
     ApprovalTemplate template = 2;
     google.type.Expr condition = 3;
   }

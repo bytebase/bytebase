@@ -5273,7 +5273,7 @@ DATABASE_CONNECTION is the anomaly type for database connection, e.g. the databa
 | role | [string](#string) |  | The role that is assigned to the members. Format: roles/{role} |
 | members | [string](#string) | repeated | Specifies the principals requesting access for a Bytebase resource. For users, the member should be: user:{email} For groups, the member should be: group:{email} |
 | condition | [google.type.Expr](#google-type-Expr) |  | The condition that is associated with this binding. If the condition evaluates to true, then this binding applies to the current request. If the condition evaluates to false, then this binding does not apply to the current request. However, a different role binding might grant the same role to one or more of the principals in this binding. |
-| parsed_expr | [google.api.expr.v1alpha1.ParsedExpr](#google-api-expr-v1alpha1-ParsedExpr) |  | The parsed expression of the condition. |
+| parsed_expr | [google.api.expr.v1alpha1.Expr](#google-api-expr-v1alpha1-Expr) |  | The parsed expression of the condition. |
 
 
 
@@ -6163,7 +6163,7 @@ The branch&#39;s `name` field is used to identify the branch to update. Format: 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| expressions | [google.api.expr.v1alpha1.ParsedExpr](#google-api-expr-v1alpha1-ParsedExpr) | repeated |  |
+| expressions | [google.api.expr.v1alpha1.Expr](#google-api-expr-v1alpha1-Expr) | repeated |  |
 
 
 
@@ -6208,7 +6208,7 @@ The branch&#39;s `name` field is used to identify the branch to update. Format: 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| expressions | [google.api.expr.v1alpha1.ParsedExpr](#google-api-expr-v1alpha1-ParsedExpr) | repeated |  |
+| expressions | [google.api.expr.v1alpha1.Expr](#google-api-expr-v1alpha1-Expr) | repeated |  |
 
 
 
