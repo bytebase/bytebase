@@ -6,7 +6,7 @@ export const convertCELStringToExpr = async (cel: string) => {
   let expr: Expr | undefined;
   if (cel) {
     const celExpr = await batchConvertCELStringToParsedExpr([cel]);
-    expr = celExpr[0].expr;
+    expr = celExpr[0];
   }
   if (!expr) {
     return emptySimpleExpr();

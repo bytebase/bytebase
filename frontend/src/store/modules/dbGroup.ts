@@ -16,7 +16,6 @@ import type {
   ComposedDatabase,
   ComposedProject,
 } from "@/types";
-import { ParsedExpr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
 import { Expr } from "@/types/proto/google/type/expr";
 import { DatabaseGroup } from "@/types/proto/v1/database_group_service";
 import { DatabaseGroupView } from "@/types/proto/v1/database_group_service";
@@ -67,11 +66,9 @@ const batchComposeDatabaseGroup = async (
     const databaseGroupName = composedDatabaseGroupNameList[i];
 
     const celExpr = exprList[i];
-    if (celExpr.expr) {
-      const simpleExpr = resolveCELExpr(celExpr.expr);
-      composedDatabaseGroupMap.get(databaseGroupName)!.simpleExpr =
-        wrapAsGroup(simpleExpr);
-    }
+    const simpleExpr = resolveCELExpr(celExpr);
+    composedDatabaseGroupMap.get(databaseGroupName)!.simpleExpr =
+      wrapAsGroup(simpleExpr);
   }
 
   return [...composedDatabaseGroupMap.values()];
@@ -247,11 +244,14 @@ export const useDBGroupStore = defineStore("db-group", () => {
     projectName: string;
     expr: ConditionGroupExpr;
   }) => {
-    const celStrings = await batchConvertParsedExprToCELString([
-      ParsedExpr.fromJSON({
-        expr: await buildCELExpr(expr),
-      }),
-    ]);
+    const celexpr = await buildCELExpr(expr);
+    if (!celexpr) {
+      return {
+        matchedDatabaseList: [],
+        unmatchedDatabaseList: [],
+      };
+    }
+    const celStrings = await batchConvertParsedExprToCELString([celexpr]);
     const expression = head(celStrings) || "true"; // Fallback to true.
     const validateOnlyResourceId = `creating-database-group-${Date.now()}`;
 

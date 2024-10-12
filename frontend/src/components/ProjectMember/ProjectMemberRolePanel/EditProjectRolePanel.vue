@@ -192,8 +192,8 @@ onMounted(() => {
   state.title = binding.condition?.title || "";
   state.description = binding.condition?.description || "";
 
-  if (binding.parsedExpr?.expr) {
-    const conditionExpr = convertFromExpr(binding.parsedExpr.expr);
+  if (binding.parsedExpr) {
+    const conditionExpr = convertFromExpr(binding.parsedExpr);
     if (conditionExpr.expiredTime) {
       state.expirationTimestamp = new Date(conditionExpr.expiredTime).getTime();
     }
