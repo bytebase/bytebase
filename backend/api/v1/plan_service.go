@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"net/url"
 	"slices"
 	"sort"
 	"strings"
@@ -1195,7 +1196,7 @@ func getSpecs(database *store.DatabaseMessage, revisions []*store.RevisionMessag
 		spec := &v1pb.Plan_Spec{
 			Id: uuid.NewString(),
 			SpecReleaseSource: &v1pb.Plan_SpecReleaseSource{
-				File: fmt.Sprintf("%s/files/%s", releaseName, file.Name),
+				File: fmt.Sprintf("%s/files/%s", releaseName, url.PathEscape(file.Name)),
 			},
 			Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
 				ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{

@@ -11631,7 +11631,9 @@ components:
             properties:
                 file:
                     type: string
-                    description: 'Format: projects/{project}/releases/{release}/files/{file}'
+                    description: |-
+                        Format: projects/{project}/releases/{release}/files/{file}
+                         {file} is URL path escaped.
         Plan_Step:
             type: object
             properties:
