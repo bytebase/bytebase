@@ -327,25 +327,12 @@ const tryCreateOrUpdateGroup = async () => {
   state.isRequesting = true;
 
   try {
-    if (isCreating.value) {
-      await groupStore.createGroup(validGroup.value);
-      pushNotification({
-        module: "bytebase",
-        style: "SUCCESS",
-        title: t("common.created"),
-      });
-    } else {
-      await groupStore.updateGroup(validGroup.value, [
-        "title",
-        "description",
-        "members",
-      ]);
-      pushNotification({
-        module: "bytebase",
-        style: "SUCCESS",
-        title: t("common.updated"),
-      });
-    }
+    await groupStore.upsertGroup(validGroup.value);
+    pushNotification({
+      module: "bytebase",
+      style: "SUCCESS",
+      title: isCreating.value ? t("common.created") : t("common.updated"),
+    });
     emit("close");
   } finally {
     state.isRequesting = false;

@@ -55,7 +55,11 @@ export interface CreateRoleRequest {
 
 export interface UpdateRoleRequest {
   role: Role | undefined;
-  updateMask: string[] | undefined;
+  updateMask:
+    | string[]
+    | undefined;
+  /** If set to true, and the role is not found, a new role will be created. */
+  allowMissing: boolean;
 }
 
 export interface DeleteRoleRequest {
@@ -294,7 +298,7 @@ export const CreateRoleRequest: MessageFns<CreateRoleRequest> = {
 };
 
 function createBaseUpdateRoleRequest(): UpdateRoleRequest {
-  return { role: undefined, updateMask: undefined };
+  return { role: undefined, updateMask: undefined, allowMissing: false };
 }
 
 export const UpdateRoleRequest: MessageFns<UpdateRoleRequest> = {
@@ -304,6 +308,9 @@ export const UpdateRoleRequest: MessageFns<UpdateRoleRequest> = {
     }
     if (message.updateMask !== undefined) {
       FieldMask.encode(FieldMask.wrap(message.updateMask), writer.uint32(18).fork()).join();
+    }
+    if (message.allowMissing !== false) {
+      writer.uint32(24).bool(message.allowMissing);
     }
     return writer;
   },
@@ -329,6 +336,13 @@ export const UpdateRoleRequest: MessageFns<UpdateRoleRequest> = {
 
           message.updateMask = FieldMask.unwrap(FieldMask.decode(reader, reader.uint32()));
           continue;
+        case 3:
+          if (tag !== 24) {
+            break;
+          }
+
+          message.allowMissing = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -342,6 +356,7 @@ export const UpdateRoleRequest: MessageFns<UpdateRoleRequest> = {
     return {
       role: isSet(object.role) ? Role.fromJSON(object.role) : undefined,
       updateMask: isSet(object.updateMask) ? FieldMask.unwrap(FieldMask.fromJSON(object.updateMask)) : undefined,
+      allowMissing: isSet(object.allowMissing) ? globalThis.Boolean(object.allowMissing) : false,
     };
   },
 
@@ -353,6 +368,9 @@ export const UpdateRoleRequest: MessageFns<UpdateRoleRequest> = {
     if (message.updateMask !== undefined) {
       obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask));
     }
+    if (message.allowMissing !== false) {
+      obj.allowMissing = message.allowMissing;
+    }
     return obj;
   },
 
@@ -363,6 +381,7 @@ export const UpdateRoleRequest: MessageFns<UpdateRoleRequest> = {
     const message = createBaseUpdateRoleRequest();
     message.role = (object.role !== undefined && object.role !== null) ? Role.fromPartial(object.role) : undefined;
     message.updateMask = object.updateMask ?? undefined;
+    message.allowMissing = object.allowMissing ?? false;
     return message;
   },
 };

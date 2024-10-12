@@ -94,6 +94,10 @@ message ListGroupsResponse {
 message CreateGroupRequest {
   // The group to create.
   Group group = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // The email to use for the group, which will become the final component
+  // of the group's resource name.
+  string group_email = 2 [(google.api.field_behavior) = REQUIRED];
 }
 
 message UpdateGroupRequest {
@@ -105,6 +109,10 @@ message UpdateGroupRequest {
 
   // The list of fields to update.
   google.protobuf.FieldMask update_mask = 2;
+
+  // If set to true, and the role is not found, a new role will be created.
+  // In this situation, `update_mask` is ignored.
+  bool allow_missing = 3;
 }
 
 message DeleteGroupRequest {

@@ -105,6 +105,12 @@ func (s *RoleService) UpdateRole(ctx context.Context, request *v1pb.UpdateRoleRe
 		return nil, status.Errorf(codes.Internal, "failed to get role: %v", err)
 	}
 	if role == nil {
+		if request.AllowMissing {
+			return s.CreateRole(ctx, &v1pb.CreateRoleRequest{
+				Role:   request.Role,
+				RoleId: roleID,
+			})
+		}
 		return nil, status.Errorf(codes.NotFound, "role not found: %s", roleID)
 	}
 	patch := &store.UpdateRoleMessage{

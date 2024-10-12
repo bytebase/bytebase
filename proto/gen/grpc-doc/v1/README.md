@@ -6782,6 +6782,7 @@ The environment&#39;s `name` field is used to identify the environment to update
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | group | [Group](#bytebase-v1-Group) |  | The group to create. |
+| group_email | [string](#string) |  | The email to use for the group, which will become the final component of the group&#39;s resource name. |
 
 
 
@@ -6903,6 +6904,7 @@ When paginating, all other parameters provided to `ListGroups` must match the ca
 
 The group&#39;s `name` field is used to identify the group to update. Format: groups/{email} |
 | update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
+| allow_missing | [bool](#bool) |  | If set to true, and the role is not found, a new role will be created. In this situation, `update_mask` is ignored. |
 
 
 
@@ -9406,6 +9408,7 @@ When paginating, all other parameters provided to `ListRoles` must match the cal
 | ----- | ---- | ----- | ----------- |
 | role | [Role](#bytebase-v1-Role) |  |  |
 | update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  |  |
+| allow_missing | [bool](#bool) |  | If set to true, and the role is not found, a new role will be created. |
 
 
 

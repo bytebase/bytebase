@@ -51,7 +51,14 @@ export interface ListGroupsResponse {
 
 export interface CreateGroupRequest {
   /** The group to create. */
-  group: Group | undefined;
+  group:
+    | Group
+    | undefined;
+  /**
+   * The email to use for the group, which will become the final component
+   * of the group's resource name.
+   */
+  groupEmail: string;
 }
 
 export interface UpdateGroupRequest {
@@ -65,7 +72,14 @@ export interface UpdateGroupRequest {
     | Group
     | undefined;
   /** The list of fields to update. */
-  updateMask: string[] | undefined;
+  updateMask:
+    | string[]
+    | undefined;
+  /**
+   * If set to true, and the role is not found, a new role will be created.
+   * In this situation, `update_mask` is ignored.
+   */
+  allowMissing: boolean;
 }
 
 export interface DeleteGroupRequest {
@@ -367,13 +381,16 @@ export const ListGroupsResponse: MessageFns<ListGroupsResponse> = {
 };
 
 function createBaseCreateGroupRequest(): CreateGroupRequest {
-  return { group: undefined };
+  return { group: undefined, groupEmail: "" };
 }
 
 export const CreateGroupRequest: MessageFns<CreateGroupRequest> = {
   encode(message: CreateGroupRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.group !== undefined) {
       Group.encode(message.group, writer.uint32(10).fork()).join();
+    }
+    if (message.groupEmail !== "") {
+      writer.uint32(18).string(message.groupEmail);
     }
     return writer;
   },
@@ -392,6 +409,13 @@ export const CreateGroupRequest: MessageFns<CreateGroupRequest> = {
 
           message.group = Group.decode(reader, reader.uint32());
           continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.groupEmail = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -402,13 +426,19 @@ export const CreateGroupRequest: MessageFns<CreateGroupRequest> = {
   },
 
   fromJSON(object: any): CreateGroupRequest {
-    return { group: isSet(object.group) ? Group.fromJSON(object.group) : undefined };
+    return {
+      group: isSet(object.group) ? Group.fromJSON(object.group) : undefined,
+      groupEmail: isSet(object.groupEmail) ? globalThis.String(object.groupEmail) : "",
+    };
   },
 
   toJSON(message: CreateGroupRequest): unknown {
     const obj: any = {};
     if (message.group !== undefined) {
       obj.group = Group.toJSON(message.group);
+    }
+    if (message.groupEmail !== "") {
+      obj.groupEmail = message.groupEmail;
     }
     return obj;
   },
@@ -419,12 +449,13 @@ export const CreateGroupRequest: MessageFns<CreateGroupRequest> = {
   fromPartial(object: DeepPartial<CreateGroupRequest>): CreateGroupRequest {
     const message = createBaseCreateGroupRequest();
     message.group = (object.group !== undefined && object.group !== null) ? Group.fromPartial(object.group) : undefined;
+    message.groupEmail = object.groupEmail ?? "";
     return message;
   },
 };
 
 function createBaseUpdateGroupRequest(): UpdateGroupRequest {
-  return { group: undefined, updateMask: undefined };
+  return { group: undefined, updateMask: undefined, allowMissing: false };
 }
 
 export const UpdateGroupRequest: MessageFns<UpdateGroupRequest> = {
@@ -434,6 +465,9 @@ export const UpdateGroupRequest: MessageFns<UpdateGroupRequest> = {
     }
     if (message.updateMask !== undefined) {
       FieldMask.encode(FieldMask.wrap(message.updateMask), writer.uint32(18).fork()).join();
+    }
+    if (message.allowMissing !== false) {
+      writer.uint32(24).bool(message.allowMissing);
     }
     return writer;
   },
@@ -459,6 +493,13 @@ export const UpdateGroupRequest: MessageFns<UpdateGroupRequest> = {
 
           message.updateMask = FieldMask.unwrap(FieldMask.decode(reader, reader.uint32()));
           continue;
+        case 3:
+          if (tag !== 24) {
+            break;
+          }
+
+          message.allowMissing = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -472,6 +513,7 @@ export const UpdateGroupRequest: MessageFns<UpdateGroupRequest> = {
     return {
       group: isSet(object.group) ? Group.fromJSON(object.group) : undefined,
       updateMask: isSet(object.updateMask) ? FieldMask.unwrap(FieldMask.fromJSON(object.updateMask)) : undefined,
+      allowMissing: isSet(object.allowMissing) ? globalThis.Boolean(object.allowMissing) : false,
     };
   },
 
@@ -483,6 +525,9 @@ export const UpdateGroupRequest: MessageFns<UpdateGroupRequest> = {
     if (message.updateMask !== undefined) {
       obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask));
     }
+    if (message.allowMissing !== false) {
+      obj.allowMissing = message.allowMissing;
+    }
     return obj;
   },
 
@@ -493,6 +538,7 @@ export const UpdateGroupRequest: MessageFns<UpdateGroupRequest> = {
     const message = createBaseUpdateGroupRequest();
     message.group = (object.group !== undefined && object.group !== null) ? Group.fromPartial(object.group) : undefined;
     message.updateMask = object.updateMask ?? undefined;
+    message.allowMissing = object.allowMissing ?? false;
     return message;
   },
 };
