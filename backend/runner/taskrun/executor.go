@@ -74,7 +74,7 @@ type migrateContext struct {
 
 	release struct {
 		// The release
-		// Format: projects/{project}/sheets/{sheet}
+		// Format: projects/{project}/releases/{release}
 		release string
 		// The file path
 		// e.g. `2.2/V001.sql`
