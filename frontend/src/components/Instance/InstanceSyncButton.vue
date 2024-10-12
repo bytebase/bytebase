@@ -40,8 +40,8 @@ import { hasWorkspacePermissionV2 } from "@/utils";
 
 withDefaults(
   defineProps<{
-    type: "default" | "primary";
-    size: "small" | "medium";
+    type?: "default" | "primary";
+    size?: "small" | "medium";
     disabled?: boolean;
     quaternary?: boolean;
   }>(),

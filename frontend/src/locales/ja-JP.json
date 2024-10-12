@@ -1757,7 +1757,8 @@
     "all-tables": "すべてのテーブル",
     "affected-tables": "影響を受けるテーブル",
     "select-affection-tables": "影響を受けるテーブルを選択",
-    "view-full": "すべて見る"
+    "view-full": "すべて見る",
+    "rollback-tip": "ロールバックする特定の DDL 履歴を選択します。"
   },
   "database": {
     "sync-database": "データベースを同期",

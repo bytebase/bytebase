@@ -418,15 +418,17 @@ watch(
           allowedMigrationTypeList.includes(changeHistory.type)
         );
 
-        if (changeHistoryList.length > 0) {
-          // Default select the first migration history.
-          state.changeHistoryName = head(changeHistoryList)?.name;
-        } else {
-          // If database has no migration history, we will use its latest schema.
-          state.changeHistoryName = mockLatestSchemaChangeHistory(
-            database,
-            undefined
-          ).name;
+        if (!state.changeHistoryName) {
+          if (changeHistoryList.length > 0) {
+            // Default select the first migration history.
+            state.changeHistoryName = head(changeHistoryList)?.name;
+          } else {
+            // If database has no migration history, we will use its latest schema.
+            state.changeHistoryName = mockLatestSchemaChangeHistory(
+              database,
+              undefined
+            ).name;
+          }
         }
       } finally {
         isPreparingSchemaVersionOptions.value = false;
@@ -434,7 +436,8 @@ watch(
     } else {
       state.changeHistoryName = undefined;
     }
-  }
+  },
+  { immediate: true }
 );
 
 watch(
