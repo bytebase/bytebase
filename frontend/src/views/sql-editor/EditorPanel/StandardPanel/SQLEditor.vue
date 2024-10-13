@@ -27,7 +27,7 @@
 <script lang="ts" setup>
 import { storeToRefs } from "pinia";
 import { v1 as uuidv1 } from "uuid";
-import { computed, nextTick, ref, watch } from "vue";
+import { computed, nextTick, onBeforeUnmount, ref, watch } from "vue";
 import type {
   AdviceOption,
   IStandaloneCodeEditor,
@@ -56,6 +56,7 @@ import { dialectOfEngineV1 } from "@/types";
 import { Advice_Status, type Advice } from "@/types/proto/v1/sql_service";
 import { nextAnimationFrame, useInstanceV1EditorLanguage } from "@/utils";
 import { useSQLEditorContext } from "../../context";
+import { activeSQLEditorRef } from "./state";
 
 const emit = defineEmits<{
   (e: "execute", params: SQLEditorQueryParams): void;
@@ -173,6 +174,8 @@ const handleEditorReady = (
   monaco: MonacoModule,
   editor: IStandaloneCodeEditor
 ) => {
+  activeSQLEditorRef.value = editor;
+
   editor.addAction({
     id: "RunQuery",
     label: "Run Query",
@@ -269,6 +272,8 @@ const handleEditorReady = (
   watch(
     pendingInsertAtCaret,
     () => {
+      const editor = activeSQLEditorRef.value;
+      if (!editor) return;
       const text = pendingInsertAtCaret.value;
       if (!text) return;
       pendingInsertAtCaret.value = undefined;
@@ -346,4 +351,8 @@ useEmitteryEventListener(
     updateAdvices(tab, params, advices);
   }
 );
+
+onBeforeUnmount(() => {
+  activeSQLEditorRef.value = undefined;
+});
 </script>

@@ -70,9 +70,10 @@ const requestAI = async (query: string) => {
     // add extra database schema metadata info if possible
     const engine = context.engine.value;
     const databaseMetadata = context.databaseMetadata.value;
+    const schema = context.schema.value;
 
     const prompts: string[] = [];
-    prompts.push(promptUtils.declaration(databaseMetadata, engine));
+    prompts.push(promptUtils.declaration(databaseMetadata, engine, schema));
     prompts.push(query);
     const prompt = prompts.join("\n");
     await store.createMessage({
