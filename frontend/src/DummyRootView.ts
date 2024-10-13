@@ -19,6 +19,13 @@ export default defineComponent({
     watch(
       defaultWorkspaceView,
       () => {
+        if (defaultWorkspaceView.value === "EDITOR") {
+          router.replace({
+            name: SQL_EDITOR_HOME_MODULE,
+          });
+          return;
+        }
+
         const fallback = () => {
           router.replace({
             name: WORKSPACE_ROUTE_MY_ISSUES,
@@ -32,13 +39,6 @@ export default defineComponent({
         // Only turned on when isDev() is true
         if (!isDev()) {
           return fallback();
-        }
-
-        if (defaultWorkspaceView.value === "EDITOR") {
-          router.replace({
-            name: SQL_EDITOR_HOME_MODULE,
-          });
-          return;
         }
 
         if (!lastVisit.value) {
