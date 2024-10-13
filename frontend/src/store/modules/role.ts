@@ -2,7 +2,6 @@ import { defineStore } from "pinia";
 import { ref } from "vue";
 import { roleServiceClient } from "@/grpcweb";
 import type { Role } from "@/types/proto/v1/role_service";
-import { extractRoleResourceName } from "@/utils";
 import { useGracefulRequest } from "./utils";
 
 export const useRoleStore = defineStore("role", () => {
@@ -19,27 +18,18 @@ export const useRoleStore = defineStore("role", () => {
   };
 
   const upsertRole = async (role: Role) => {
-    const existedRole = roleList.value.find((r) => r.name === role.name);
-    if (existedRole) {
-      // update
-      const updated = await roleServiceClient.updateRole({
-        role,
-        updateMask: ["title", "description", "permissions"],
-      });
-      const index = roleList.value.findIndex((r) => r.name === role.name);
-      if (index >= 0) {
-        roleList.value.splice(index, 1, updated);
-      }
-      return updated;
+    const updated = await roleServiceClient.updateRole({
+      role,
+      updateMask: ["title", "description", "permissions"],
+      allowMissing: true,
+    });
+    const index = roleList.value.findIndex((r) => r.name === role.name);
+    if (index >= 0) {
+      roleList.value.splice(index, 1, updated);
     } else {
-      // create
-      const created = await roleServiceClient.createRole({
-        role,
-        roleId: extractRoleResourceName(role.name),
-      });
-      roleList.value.push(created);
-      return created;
+      roleList.value.push(updated);
     }
+    return updated;
   };
 
   const deleteRole = async (role: Role) => {
