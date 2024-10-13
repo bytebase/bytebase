@@ -17,7 +17,7 @@
         class="flex-1 overflow-hidden"
         @click.capture="consume"
       >
-        <div class="w-full truncate">
+        <div class="w-full truncate leading-[22px]">
           {{ current }}
         </div>
       </NButton>

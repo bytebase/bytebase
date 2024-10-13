@@ -3,12 +3,7 @@
     <GutterBar class="border-r border-control-border" :class="gutterBarClass" />
 
     <div class="flex-1 overflow-y-hidden overflow-x-auto" :class="contentClass">
-      <div
-        v-show="!viewState || viewState.view === 'CODE'"
-        class="w-full h-full overflow-hidden"
-      >
-        <slot name="code-panel" />
-      </div>
+      <slot v-if="!viewState || viewState.view === 'CODE'" name="code-panel" />
 
       <template v-if="viewState">
         <InfoPanel v-if="viewState.view === 'INFO'" :key="tab?.id" />
