@@ -3,7 +3,7 @@
     v-if="isValidReleaseName(release.name) && ready"
     class="text-sm text-control-light flex space-x-1 items-center"
   >
-    <PackageIcon class="w-5 h-auto" />
+    <PackageIcon class="w-4 h-auto" />
     <EllipsisText>
       <a :href="`/${release.name}`" target="_blank" class="normal-link">
         <span>{{ release.title }}</span>
