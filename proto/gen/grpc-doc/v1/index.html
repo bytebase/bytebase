@@ -18937,6 +18937,14 @@ Format: environments/{environment} </p></td>
                   <td><p>The group to create. </p></td>
                 </tr>
               
+                <tr>
+                  <td>group_email</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The email to use for the group, which will become the final component
+of the group&#39;s resource name. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -19190,6 +19198,14 @@ Format: groups/{email} </p></td>
                   <td><a href="#google.protobuf.FieldMask">google.protobuf.FieldMask</a></td>
                   <td></td>
                   <td><p>The list of fields to update. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>allow_missing</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>If set to true, and the group is not found, a new group will be created.
+In this situation, `update_mask` is ignored. </p></td>
                 </tr>
               
             </tbody>
@@ -25781,6 +25797,13 @@ If this field is omitted, there are no subsequent pages. </p></td>
                   <td><a href="#google.protobuf.FieldMask">google.protobuf.FieldMask</a></td>
                   <td></td>
                   <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>allow_missing</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>If set to true, and the role is not found, a new role will be created. </p></td>
                 </tr>
               
             </tbody>
