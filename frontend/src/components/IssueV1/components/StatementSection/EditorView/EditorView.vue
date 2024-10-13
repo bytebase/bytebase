@@ -384,6 +384,10 @@ const shouldShowEditButton = computed(() => {
   if (issue.value.status !== IssueStatus.OPEN) {
     return false;
   }
+  // Do not allow to edit statement for the plan with release source.
+  if (issue.value.planEntity?.releaseSource) {
+    return false;
+  }
   // Will show another button group as [Upload][Cancel][Save]
   // while editing
   if (state.isEditing) {
