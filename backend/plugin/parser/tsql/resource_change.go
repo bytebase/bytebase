@@ -253,6 +253,29 @@ func (l *tsqlChangedResourceExtractListener) EnterDrop_function(ctx *parser.Drop
 }
 
 func (l *tsqlChangedResourceExtractListener) EnterInsert_statement(ctx *parser.Insert_statementContext) {
+	if ctx.Ddl_object() != nil && ctx.Ddl_object().Full_table_name() != nil {
+		table, err := NormalizeFullTableName(ctx.Ddl_object().Full_table_name())
+		if err == nil && table != nil && table.Table != "" {
+			d := table.Database
+			if d == "" {
+				d = l.currentDatabase
+			}
+			s := table.Schema
+			if s == "" {
+				s = l.currentSchema
+			}
+			l.changedResources.AddTable(
+				d,
+				s,
+				&storepb.ChangedResourceTable{
+					Name:   table.Table,
+					Ranges: []*storepb.Range{base.NewRange(l.statement, trimStatement(l.text))},
+				},
+				false,
+			)
+		}
+	}
+
 	if ctx.Insert_statement_value() != nil && ctx.Insert_statement_value().Derived_table() != nil && ctx.Insert_statement_value().Derived_table().Table_value_constructor() != nil {
 		tvc := ctx.Insert_statement_value().Derived_table().Table_value_constructor()
 		l.insertCount += len(tvc.AllExpression_list_())
@@ -266,7 +289,30 @@ func (l *tsqlChangedResourceExtractListener) EnterInsert_statement(ctx *parser.I
 	}
 }
 
-func (l *tsqlChangedResourceExtractListener) EnterUpdate_statement(_ *parser.Update_statementContext) {
+func (l *tsqlChangedResourceExtractListener) EnterUpdate_statement(ctx *parser.Update_statementContext) {
+	if ctx.Ddl_object() != nil && ctx.Ddl_object().Full_table_name() != nil {
+		table, err := NormalizeFullTableName(ctx.Ddl_object().Full_table_name())
+		if err == nil && table != nil && table.Table != "" {
+			d := table.Database
+			if d == "" {
+				d = l.currentDatabase
+			}
+			s := table.Schema
+			if s == "" {
+				s = l.currentSchema
+			}
+			l.changedResources.AddTable(
+				d,
+				s,
+				&storepb.ChangedResourceTable{
+					Name:   table.Table,
+					Ranges: []*storepb.Range{base.NewRange(l.statement, trimStatement(l.text))},
+				},
+				false,
+			)
+		}
+	}
+
 	// Track DMLs.
 	l.dmlCount++
 	if len(l.sampleDMLs) < common.MaximumLintExplainSize {
@@ -274,7 +320,31 @@ func (l *tsqlChangedResourceExtractListener) EnterUpdate_statement(_ *parser.Upd
 	}
 }
 
-func (l *tsqlChangedResourceExtractListener) EnterDelete_statement(_ *parser.Delete_statementContext) {
+func (l *tsqlChangedResourceExtractListener) EnterDelete_statement(ctx *parser.Delete_statementContext) {
+	from := ctx.Delete_statement_from()
+	if from.Ddl_object() != nil && from.Ddl_object().Full_table_name() != nil {
+		table, err := NormalizeFullTableName(from.Ddl_object().Full_table_name())
+		if err == nil && table != nil && table.Table != "" {
+			d := table.Database
+			if d == "" {
+				d = l.currentDatabase
+			}
+			s := table.Schema
+			if s == "" {
+				s = l.currentSchema
+			}
+			l.changedResources.AddTable(
+				d,
+				s,
+				&storepb.ChangedResourceTable{
+					Name:   table.Table,
+					Ranges: []*storepb.Range{base.NewRange(l.statement, trimStatement(l.text))},
+				},
+				false,
+			)
+		}
+	}
+
 	// Track DMLs.
 	l.dmlCount++
 	if len(l.sampleDMLs) < common.MaximumLintExplainSize {
