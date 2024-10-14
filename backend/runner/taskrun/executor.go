@@ -536,7 +536,6 @@ func beginMigration(ctx context.Context, stores *store.Store, m *db.MigrationInf
 func endMigration(ctx context.Context, storeInstance *store.Store, startedNs int64, insertedID string, updatedSchema, schemaPrev string, mc *migrateContext, sheetID *int, isDone bool) error {
 	if common.IsDev() && isDone {
 		_, err := storeInstance.CreateRevision(ctx, &store.RevisionMessage{
-			InstanceUID: mc.instance.UID,
 			DatabaseUID: mc.database.UID,
 			Payload: &storepb.RevisionPayload{
 				Release:     mc.release.release,
