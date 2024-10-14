@@ -198,6 +198,83 @@ func getResourceChanges(database string, node tidbast.StmtNode, statement string
 				Ranges: []*storepb.Range{getRange(statement, node)},
 			},
 		)
+	case *tidbast.InsertStmt:
+		tables, err := extractTableRefs(node.Table)
+		if err != nil {
+			return errors.Wrap(err, "failed to extract table refs")
+		}
+		for _, table := range tables {
+			d := table.database
+			if d == "" {
+				d = database
+			}
+			changedResources.AddTable(
+				d,
+				"",
+				&storepb.ChangedResourceTable{
+					Name:   table.table,
+					Ranges: []*storepb.Range{getRange(statement, node)},
+				},
+				false,
+			)
+		}
+	case *tidbast.UpdateStmt:
+		tables, err := extractTableRefs(node.TableRefs)
+		if err != nil {
+			return errors.Wrap(err, "failed to extract table refs")
+		}
+		for _, table := range tables {
+			d := table.database
+			if d == "" {
+				d = database
+			}
+			changedResources.AddTable(
+				d,
+				"",
+				&storepb.ChangedResourceTable{
+					Name:   table.table,
+					Ranges: []*storepb.Range{getRange(statement, node)},
+				},
+				false,
+			)
+		}
+	case *tidbast.DeleteStmt:
+		tables, err := extractTableRefs(node.TableRefs)
+		if err != nil {
+			return errors.Wrap(err, "failed to extract table refs")
+		}
+		for _, table := range tables {
+			d := table.database
+			if d == "" {
+				d = database
+			}
+			changedResources.AddTable(
+				d,
+				"",
+				&storepb.ChangedResourceTable{
+					Name:   table.table,
+					Ranges: []*storepb.Range{getRange(statement, node)},
+				},
+				false,
+			)
+		}
+		if node.Tables != nil {
+			for _, table := range node.Tables.Tables {
+				d := table.Schema.O
+				if d == "" {
+					d = database
+				}
+				changedResources.AddTable(
+					d,
+					"",
+					&storepb.ChangedResourceTable{
+						Name:   table.Name.O,
+						Ranges: []*storepb.Range{getRange(statement, node)},
+					},
+					false,
+				)
+			}
+		}
 	default:
 	}
 	return nil
@@ -212,4 +289,72 @@ func getRange(statement string, node tidbast.StmtNode) *storepb.Range {
 
 func trimStatement(statement string) string {
 	return strings.TrimLeftFunc(strings.TrimRightFunc(statement, utils.IsSpaceOrSemicolon), unicode.IsSpace)
+}
+
+type table struct {
+	database string
+	table    string
+}
+
+func extractResultSetNode(n tidbast.ResultSetNode) ([]table, error) {
+	if n == nil {
+		return nil, nil
+	}
+	switch n := n.(type) {
+	case *tidbast.SelectStmt:
+		return nil, nil
+	case *tidbast.SubqueryExpr:
+		return nil, nil
+	case *tidbast.TableSource:
+		return extractTableSource(n)
+	case *tidbast.TableName:
+		return extractTableName(n)
+	case *tidbast.Join:
+		return extractJoin(n)
+	case *tidbast.SetOprStmt:
+		return nil, nil
+	}
+	return nil, nil
+}
+
+func extractTableRefs(n *tidbast.TableRefsClause) ([]table, error) {
+	if n == nil {
+		return nil, nil
+	}
+	return extractJoin(n.TableRefs)
+}
+
+func extractJoin(n *tidbast.Join) ([]table, error) {
+	if n == nil {
+		return nil, nil
+	}
+	l, err := extractResultSetNode(n.Left)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to extract left node in join")
+	}
+	r, err := extractResultSetNode(n.Right)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to extract right node in join")
+	}
+	l = append(l, r...)
+	return l, nil
+}
+
+func extractTableSource(n *tidbast.TableSource) ([]table, error) {
+	if n == nil {
+		return nil, nil
+	}
+	return extractResultSetNode(n.Source)
+}
+
+func extractTableName(n *tidbast.TableName) ([]table, error) {
+	if n == nil {
+		return nil, nil
+	}
+	return []table{
+		{
+			table:    n.Name.O,
+			database: n.Schema.O,
+		},
+	}, nil
 }
