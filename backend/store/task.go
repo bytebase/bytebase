@@ -61,6 +61,55 @@ func (s *Store) GetTaskV2ByID(ctx context.Context, id int) (*TaskMessage, error)
 	return tasks[0], nil
 }
 
+func (s *Store) FindLtVersionTasks(ctx context.Context, databaseUID int, version string) ([]int, error) {
+	query := `
+		SELECT
+			task.id,
+		FROM task
+		LEFT JOIN pipeline ON task.pipeline_id = pipeline.id
+		LEFT JOIN issue ON pipeline.id = issue.pipeline_id
+		LEFT JOIN LATERAL (
+			SELECT COALESCE(
+				(SELECT
+					task_run.status
+				FROM task_run
+				WHERE task_run.task_id = task.id
+				ORDER BY task_run.id DESC
+				LIMIT 1
+				), 'NOT_STARTED'
+			) AS status
+		) AS latest_task_run ON TRUE
+		WHERE task.database_id = $1
+		AND task.payload->>'version' IS NOT NULL
+		AND task.payload->>'version' < $2
+		AND (task.payload->>'skipped')::BOOLEAN IS NOT TRUE
+		AND latest_task_run.status != 'DONE'
+		AND COALESCE(issue.status, 'OPEN') = 'OPEN'
+		ORDER BY task.id ASC
+	`
+
+	rows, err := s.db.db.QueryContext(ctx, query, databaseUID, version)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to query rows")
+	}
+	defer rows.Close()
+
+	var ids []int
+	for rows.Next() {
+		var id int
+		if err := rows.Scan(&id); err != nil {
+			return nil, errors.Wrapf(err, "failed to scan")
+		}
+		ids = append(ids, id)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, errors.Wrapf(err, "rows err")
+	}
+
+	return ids, nil
+}
+
 // CreateTasksV2 creates a new task.
 func (s *Store) CreateTasksV2(ctx context.Context, creates ...*TaskMessage) ([]*TaskMessage, error) {
 	var query strings.Builder

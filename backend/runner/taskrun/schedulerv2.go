@@ -296,6 +296,11 @@ func (s *SchedulerV2) schedulePendingTaskRuns(ctx context.Context) error {
 }
 
 func (s *SchedulerV2) schedulePendingTaskRun(ctx context.Context, taskRun *store.TaskRunMessage) error {
+	// here, we move pending taskruns to running taskruns which means they are ready to be executed.
+	// pending taskruns remain pending if
+	// 1. blocked by other tasks via TaskDAG
+	// 2. for versioned tasks, there are other versioned tasks on the same database with
+	// a smaller version not finished yet. we need to wait for those first.
 	task, err := s.store.GetTaskV2ByID(ctx, taskRun.TaskUID)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get task")
@@ -320,6 +325,48 @@ func (s *SchedulerV2) schedulePendingTaskRun(ctx context.Context, taskRun *store
 		}
 
 		if blockingTask.LatestTaskRunStatus != api.TaskRunDone {
+			return nil
+		}
+	}
+
+	if common.IsDev() {
+		doSchedule, err := func() (bool, error) {
+			if task.DatabaseID == nil {
+				return true, nil
+			}
+
+			var Version struct {
+				Version string `json:"schema_version"`
+			}
+			if err := json.Unmarshal([]byte(task.Payload), &Version); err != nil {
+				return false, errors.Wrapf(err, "failed to unmarshal task payload")
+			}
+			if Version.Version == "" {
+				return true, nil
+			}
+
+			taskIDs, err := s.store.FindLtVersionTasks(ctx, *task.DatabaseID, Version.Version)
+			if err != nil {
+				return false, errors.Wrapf(err, "failed to find blocking versioned tasks")
+			}
+			if len(taskIDs) > 0 {
+				slog.Debug("irwojgoiejgoi blocking tasks", "task ids", taskIDs)
+				s.stateCfg.TaskRunSchedulerInfo.Store(taskRun.ID, &storepb.SchedulerInfo{
+					ReportTime: timestamppb.Now(),
+					WaitingCause: &storepb.SchedulerInfo_WaitingCause{
+						Cause: &storepb.SchedulerInfo_WaitingCause_TaskUid{
+							TaskUid: int32(taskIDs[0]),
+						},
+					},
+				})
+				return false, nil
+			}
+			return true, nil
+		}()
+		if err != nil {
+			return errors.Wrapf(err, "failed to check blocking versioned tasks")
+		}
+		if !doSchedule {
 			return nil
 		}
 	}
