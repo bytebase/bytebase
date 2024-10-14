@@ -1793,6 +1793,9 @@ export interface Revision {
   sheet: string;
   /** The SHA256 hash value of the sheet. */
   sheetSha256: string;
+  /** The statement is used for preview purpose. */
+  statement: string;
+  statementSize: Long;
   type: ReleaseFileType;
   version: string;
   /**
@@ -9617,6 +9620,8 @@ function createBaseRevision(): Revision {
     createTime: undefined,
     sheet: "",
     sheetSha256: "",
+    statement: "",
+    statementSize: Long.ZERO,
     type: ReleaseFileType.TYPE_UNSPECIFIED,
     version: "",
     file: "",
@@ -9644,17 +9649,23 @@ export const Revision: MessageFns<Revision> = {
     if (message.sheetSha256 !== "") {
       writer.uint32(50).string(message.sheetSha256);
     }
+    if (message.statement !== "") {
+      writer.uint32(58).string(message.statement);
+    }
+    if (!message.statementSize.equals(Long.ZERO)) {
+      writer.uint32(64).int64(message.statementSize.toString());
+    }
     if (message.type !== ReleaseFileType.TYPE_UNSPECIFIED) {
-      writer.uint32(56).int32(releaseFileTypeToNumber(message.type));
+      writer.uint32(72).int32(releaseFileTypeToNumber(message.type));
     }
     if (message.version !== "") {
-      writer.uint32(66).string(message.version);
+      writer.uint32(82).string(message.version);
     }
     if (message.file !== "") {
-      writer.uint32(74).string(message.file);
+      writer.uint32(90).string(message.file);
     }
     if (message.taskRun !== "") {
-      writer.uint32(82).string(message.taskRun);
+      writer.uint32(98).string(message.taskRun);
     }
     return writer;
   },
@@ -9709,28 +9720,42 @@ export const Revision: MessageFns<Revision> = {
           message.sheetSha256 = reader.string();
           continue;
         case 7:
-          if (tag !== 56) {
+          if (tag !== 58) {
+            break;
+          }
+
+          message.statement = reader.string();
+          continue;
+        case 8:
+          if (tag !== 64) {
+            break;
+          }
+
+          message.statementSize = Long.fromString(reader.int64().toString());
+          continue;
+        case 9:
+          if (tag !== 72) {
             break;
           }
 
           message.type = releaseFileTypeFromJSON(reader.int32());
           continue;
-        case 8:
-          if (tag !== 66) {
+        case 10:
+          if (tag !== 82) {
             break;
           }
 
           message.version = reader.string();
           continue;
-        case 9:
-          if (tag !== 74) {
+        case 11:
+          if (tag !== 90) {
             break;
           }
 
           message.file = reader.string();
           continue;
-        case 10:
-          if (tag !== 82) {
+        case 12:
+          if (tag !== 98) {
             break;
           }
 
@@ -9753,6 +9778,8 @@ export const Revision: MessageFns<Revision> = {
       createTime: isSet(object.createTime) ? fromJsonTimestamp(object.createTime) : undefined,
       sheet: isSet(object.sheet) ? globalThis.String(object.sheet) : "",
       sheetSha256: isSet(object.sheetSha256) ? globalThis.String(object.sheetSha256) : "",
+      statement: isSet(object.statement) ? globalThis.String(object.statement) : "",
+      statementSize: isSet(object.statementSize) ? Long.fromValue(object.statementSize) : Long.ZERO,
       type: isSet(object.type) ? releaseFileTypeFromJSON(object.type) : ReleaseFileType.TYPE_UNSPECIFIED,
       version: isSet(object.version) ? globalThis.String(object.version) : "",
       file: isSet(object.file) ? globalThis.String(object.file) : "",
@@ -9779,6 +9806,12 @@ export const Revision: MessageFns<Revision> = {
     }
     if (message.sheetSha256 !== "") {
       obj.sheetSha256 = message.sheetSha256;
+    }
+    if (message.statement !== "") {
+      obj.statement = message.statement;
+    }
+    if (!message.statementSize.equals(Long.ZERO)) {
+      obj.statementSize = (message.statementSize || Long.ZERO).toString();
     }
     if (message.type !== ReleaseFileType.TYPE_UNSPECIFIED) {
       obj.type = releaseFileTypeToJSON(message.type);
@@ -9808,6 +9841,10 @@ export const Revision: MessageFns<Revision> = {
       : undefined;
     message.sheet = object.sheet ?? "";
     message.sheetSha256 = object.sheetSha256 ?? "";
+    message.statement = object.statement ?? "";
+    message.statementSize = (object.statementSize !== undefined && object.statementSize !== null)
+      ? Long.fromValue(object.statementSize)
+      : Long.ZERO;
     message.type = object.type ?? ReleaseFileType.TYPE_UNSPECIFIED;
     message.version = object.version ?? "";
     message.file = object.file ?? "";

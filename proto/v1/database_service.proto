@@ -1464,16 +1464,19 @@ message Revision {
   string sheet = 5 [(google.api.resource_reference) = {type: "bytebase.com/Sheet"}];
   // The SHA256 hash value of the sheet.
   string sheet_sha256 = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // The statement is used for preview purpose.
+  string statement = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+  int64 statement_size = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  ReleaseFileType type = 7;
-  string version = 8;
+  ReleaseFileType type = 9;
+  string version = 10;
 
   // The name of the file in the release.
   // Expressed as a path, e.g. `2.2/V0001_create_table.sql`
   // Can be empty.
-  string file = 9;
+  string file = 11;
 
   // The task run associated with the revision.
   // Can be empty.
-  string task_run = 10 [(google.api.resource_reference) = {type: "bytebase.com/TaskRun"}];
+  string task_run = 12 [(google.api.resource_reference) = {type: "bytebase.com/TaskRun"}];
 }
