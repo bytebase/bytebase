@@ -116,7 +116,7 @@
       </div>
     </div>
 
-    <div class="flex-1 w-full flex flex-col overflow-y-auto">
+    <div class="flex-1 w-full flex flex-col overflow-hidden">
       <DataBlock
         v-if="state.vertical"
         :table="table"
