@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS revision (
 
 CREATE TABLE IF NOT EXISTS release (
     id BIGSERIAL PRIMARY KEY,
+    row_status row_status NOT NULL DEFAULT 'NORMAL',
     project_id INTEGER NOT NULL REFERENCES project (id),
     creator_id INTEGER NOT NULL REFERENCES principal (id),
     created_ts TIMESTAMPTZ NOT NULL DEFAULT now(),

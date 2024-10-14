@@ -515,7 +515,7 @@ func (s *InstanceService) DeleteInstance(ctx context.Context, request *v1pb.Dele
 	}
 	if _, err := s.store.UpdateInstanceV2(ctx, &store.UpdateInstanceMessage{
 		ResourceID: instance.ResourceID,
-		Delete:     &deletePatch,
+		Deleted:    &deletePatch,
 		UpdaterID:  principalID,
 	}, -1 /* don't need to pass the instance limition */); err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -540,7 +540,7 @@ func (s *InstanceService) UndeleteInstance(ctx context.Context, request *v1pb.Un
 	}
 	ins, err := s.store.UpdateInstanceV2(ctx, &store.UpdateInstanceMessage{
 		ResourceID: instance.ResourceID,
-		Delete:     &undeletePatch,
+		Deleted:    &undeletePatch,
 		UpdaterID:  principalID,
 	}, -1 /* don't need to pass the instance limition */)
 	if err != nil {
