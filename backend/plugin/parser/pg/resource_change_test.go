@@ -46,6 +46,18 @@ func TestExtractChangedResources(t *testing.T) {
 		},
 		false,
 	)
+	changedResources.AddTable(
+		"db",
+		"public",
+		&storepb.ChangedResourceTable{
+			Name: "t1",
+			Ranges: []*storepb.Range{
+				{Start: 168, End: 204},
+				{Start: 211, End: 232},
+			},
+		},
+		false,
+	)
 	want := &base.ChangeSummary{
 		ChangedResources: changedResources,
 		DMLCount:         1,

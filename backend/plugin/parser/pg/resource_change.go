@@ -258,6 +258,48 @@ func getResourceChanges(database, schema string, node ast.Node, statement string
 				},
 			)
 		}
+	case *ast.InsertStmt:
+		s := node.Table.Schema
+		if s == "" {
+			s = schema
+		}
+		changedResources.AddTable(
+			database,
+			s,
+			&storepb.ChangedResourceTable{
+				Name:   node.Table.Name,
+				Ranges: []*storepb.Range{base.NewRange(statement, node.Text())},
+			},
+			false, // no need to add all table rows as affected rows for DML
+		)
+	case *ast.UpdateStmt:
+		s := node.Table.Schema
+		if s == "" {
+			s = schema
+		}
+		changedResources.AddTable(
+			database,
+			s,
+			&storepb.ChangedResourceTable{
+				Name:   node.Table.Name,
+				Ranges: []*storepb.Range{base.NewRange(statement, node.Text())},
+			},
+			false, // no need to add all table rows as affected rows for DML
+		)
+	case *ast.DeleteStmt:
+		s := node.Table.Schema
+		if s == "" {
+			s = schema
+		}
+		changedResources.AddTable(
+			database,
+			s,
+			&storepb.ChangedResourceTable{
+				Name:   node.Table.Name,
+				Ranges: []*storepb.Range{base.NewRange(statement, node.Text())},
+			},
+			false, // no need to add all table rows as affected rows for DML
+		)
 	}
 
 	return nil
