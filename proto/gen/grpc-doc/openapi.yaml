@@ -12447,6 +12447,13 @@ components:
                     readOnly: true
                     type: string
                     description: The SHA256 hash value of the sheet.
+                statement:
+                    readOnly: true
+                    type: string
+                    description: The statement is used for preview purpose.
+                statementSize:
+                    readOnly: true
+                    type: string
                 type:
                     enum:
                         - TYPE_UNSPECIFIED
