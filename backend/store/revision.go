@@ -156,3 +156,23 @@ func (s *Store) CreateRevision(ctx context.Context, revision *RevisionMessage, c
 
 	return revision, nil
 }
+
+func (s *Store) DeleteRevision(ctx context.Context, uid int64) error {
+	query := `DELETE FROM revision WHERE id = $1`
+
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return errors.Wrapf(err, "failed to begin tx")
+	}
+	defer tx.Rollback()
+
+	if _, err := tx.ExecContext(ctx, query, uid); err != nil {
+		return errors.Wrapf(err, "failed to exec")
+	}
+
+	if err := tx.Commit(); err != nil {
+		return errors.Wrapf(err, "failed to commit tx")
+	}
+
+	return nil
+}
