@@ -431,6 +431,40 @@ func (l *plsqlChangedResourceExtractListener) EnterAlter_function(ctx *parser.Al
 }
 
 func (l *plsqlChangedResourceExtractListener) EnterInsert_statement(ctx *parser.Insert_statementContext) {
+	var resources []base.SchemaResource
+	if ctx.Single_table_insert() != nil {
+		resources = append(resources, l.extractTableReference(ctx.Single_table_insert().Insert_into_clause().General_table_ref())...)
+	}
+	if ctx.Multi_table_insert() != nil {
+		for _, item := range ctx.Multi_table_insert().AllMulti_table_element() {
+			resources = append(resources, l.extractTableReference(item.Insert_into_clause().General_table_ref())...)
+		}
+		if ctx.Multi_table_insert().Conditional_insert_clause() != nil {
+			conditionCtx := ctx.Multi_table_insert().Conditional_insert_clause()
+			for _, item := range conditionCtx.AllConditional_insert_when_part() {
+				for _, multiItem := range item.AllMulti_table_element() {
+					resources = append(resources, l.extractTableReference(multiItem.Insert_into_clause().General_table_ref())...)
+				}
+			}
+			if conditionCtx.Conditional_insert_else_part() != nil {
+				for _, item := range conditionCtx.Conditional_insert_else_part().AllMulti_table_element() {
+					resources = append(resources, l.extractTableReference(item.Insert_into_clause().General_table_ref())...)
+				}
+			}
+		}
+	}
+	for _, resource := range resources {
+		l.changedResources.AddTable(
+			resource.Database,
+			"",
+			&storepb.ChangedResourceTable{
+				Name:   resource.Table,
+				Ranges: []*storepb.Range{base.NewRange(l.statement, l.text)},
+			},
+			false,
+		)
+	}
+
 	if ctx.Single_table_insert() != nil && ctx.Single_table_insert().Values_clause() != nil {
 		// Oracle allows only one value.
 		// https://docs.oracle.com/en/database/other-databases/nosql-database/22.1/sqlreferencefornosql/insert-statement.html
@@ -444,18 +478,59 @@ func (l *plsqlChangedResourceExtractListener) EnterInsert_statement(ctx *parser.
 	}
 }
 
-func (l *plsqlChangedResourceExtractListener) EnterUpdate_statement(_ *parser.Update_statementContext) {
+func (l *plsqlChangedResourceExtractListener) EnterUpdate_statement(ctx *parser.Update_statementContext) {
 	// Track DMLs.
+	resources := l.extractTableReference(ctx.General_table_ref())
+	for _, resource := range resources {
+		l.changedResources.AddTable(
+			resource.Database,
+			"",
+			&storepb.ChangedResourceTable{
+				Name:   resource.Table,
+				Ranges: []*storepb.Range{base.NewRange(l.statement, l.text)},
+			},
+			false,
+		)
+	}
 	l.dmlCount++
 	if len(l.sampleDMLs) < common.MaximumLintExplainSize {
 		l.sampleDMLs = append(l.sampleDMLs, l.text)
 	}
 }
 
-func (l *plsqlChangedResourceExtractListener) EnterDelete_statement(_ *parser.Delete_statementContext) {
+func (l *plsqlChangedResourceExtractListener) EnterDelete_statement(ctx *parser.Delete_statementContext) {
 	// Track DMLs.
+	resources := l.extractTableReference(ctx.General_table_ref())
+	for _, resource := range resources {
+		l.changedResources.AddTable(
+			resource.Database,
+			"",
+			&storepb.ChangedResourceTable{
+				Name:   resource.Table,
+				Ranges: []*storepb.Range{base.NewRange(l.statement, l.text)},
+			},
+			false,
+		)
+	}
 	l.dmlCount++
 	if len(l.sampleDMLs) < common.MaximumLintExplainSize {
 		l.sampleDMLs = append(l.sampleDMLs, l.text)
 	}
+}
+
+func (l *plsqlChangedResourceExtractListener) extractTableReference(ctx parser.IGeneral_table_refContext) []base.SchemaResource {
+	resources := make([]base.SchemaResource, 0)
+	if ctx == nil {
+		return resources
+	}
+
+	if ctx.Dml_table_expression_clause() != nil && ctx.Dml_table_expression_clause().Tableview_name() != nil {
+		_, schema, table := NormalizeTableViewName(l.currentSchema, ctx.Dml_table_expression_clause().Tableview_name())
+		resources = append(resources, base.SchemaResource{
+			Database: schema,
+			Table:    table,
+		})
+	}
+
+	return resources
 }

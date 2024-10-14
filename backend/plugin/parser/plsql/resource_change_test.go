@@ -13,6 +13,7 @@ import (
 func TestExtractChangedResources(t *testing.T) {
 	statement := `CREATE TABLE t1 (c1 INT);
 	CREATE VIEW hello AS SELECT * FROM world;
+	INSERT INTO T1 (c1) VALUES (1);
 	`
 	changedResources := model.NewChangedResources(nil /* dbSchema */)
 	changedResources.AddTable(
@@ -22,6 +23,7 @@ func TestExtractChangedResources(t *testing.T) {
 			Name: "T1",
 			Ranges: []*storepb.Range{
 				{Start: 0, End: 25},
+				{Start: 70, End: 100},
 			},
 		},
 		false,
