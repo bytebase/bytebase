@@ -91,12 +91,13 @@
       }"
       session-key="bb.paged-change-history-table"
     >
-      <template #table="{ list }">
+      <template #table="{ list, loading }">
         <ChangeHistoryDataTable
           :key="`change-history-table.${database.name}`"
           v-model:selected-change-history-names="
             state.selectedChangeHistoryNameList
           "
+          :loading="loading"
           :change-histories="list"
           :custom-click="true"
           :show-selection="true"
