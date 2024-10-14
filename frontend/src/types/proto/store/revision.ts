@@ -35,6 +35,7 @@ export interface RevisionPayload {
   /**
    * The task run associated with the revision.
    * Can be empty.
+   * Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
    */
   taskRun: string;
 }
