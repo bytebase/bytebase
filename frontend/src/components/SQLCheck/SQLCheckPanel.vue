@@ -26,7 +26,7 @@
         {{ $t("issue.sql-check.back-to-edit") }}
       </NButton>
       <NButton
-        v-if="!restrictIssueCreationForSQLReview"
+        v-if="allowForceContinue && !restrictIssueCreationForSQLReview"
         type="primary"
         @click="confirm!.resolve(true)"
       >
@@ -55,13 +55,19 @@ import type { Advice } from "@/types/proto/v1/sql_service";
 import { Advice_Status } from "@/types/proto/v1/sql_service";
 import type { Defer } from "@/utils";
 
-const props = defineProps<{
-  database: ComposedDatabase;
-  advices: Advice[];
-  overrideTitle?: string;
-  confirm?: Defer<boolean>;
-  showCodeLocation?: boolean;
-}>();
+const props = withDefaults(
+  defineProps<{
+    database: ComposedDatabase;
+    advices: Advice[];
+    overrideTitle?: string;
+    confirm?: Defer<boolean>;
+    showCodeLocation?: boolean;
+    allowForceContinue?: boolean;
+  }>(),
+  {
+    allowForceContinue: true,
+  }
+);
 
 defineEmits<{
   (event: "close"): void;

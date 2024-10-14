@@ -359,7 +359,7 @@ const handleSaveBranch = async () => {
   const editing = branch.schemaMetadata
     ? cloneDeep(branch.schemaMetadata)
     : DatabaseMetadata.fromPartial({});
-  await applyMetadataEdit(database.value, editing);
+  applyMetadataEdit(database.value, editing);
 
   const validationMessages = validateDatabaseMetadata(editing);
   if (validationMessages.length > 0) {
