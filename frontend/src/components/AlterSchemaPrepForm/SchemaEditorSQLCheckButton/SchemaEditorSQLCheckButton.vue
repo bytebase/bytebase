@@ -35,7 +35,11 @@ import { useSchemaEditorSQLCheck } from "./useSchemaEditorSQLCheck";
 
 const props = defineProps<{
   databaseList: ComposedDatabase[];
-  getStatement: () => Promise<{ statement: string; errors: string[] }>;
+  getStatement: () => Promise<{
+    statement: string;
+    errors: string[];
+    fatal: boolean;
+  }>;
   useOnlineSchemaMigration: boolean;
 }>();
 
