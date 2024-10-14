@@ -111,7 +111,7 @@ func convertToRevision(ctx context.Context, s *store.Store, parent string, revis
 	if taskRunName != "" {
 		_, rolloutUID, _, _, _, err := common.GetProjectIDRolloutIDStageIDTaskIDTaskRunID(taskRunName)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get task run UID from %q", taskRunName)
+			return nil, errors.Wrapf(err, "failed to get rollout UID from %q", taskRunName)
 		}
 		issue, err := s.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &rolloutUID})
 		if err != nil {
