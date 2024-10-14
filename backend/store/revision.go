@@ -14,7 +14,6 @@ import (
 )
 
 type RevisionMessage struct {
-	InstanceUID int
 	DatabaseUID int
 
 	Payload *storepb.RevisionPayload
@@ -36,7 +35,6 @@ func (s *Store) ListRevisions(ctx context.Context, find *FindRevisionMessage) ([
 	query := `
 		SELECT
 			id,
-			instance_id,
 			database_id,
 			creator_id,
 			created_ts,
@@ -72,7 +70,6 @@ func (s *Store) ListRevisions(ctx context.Context, find *FindRevisionMessage) ([
 		var p []byte
 		if err := rows.Scan(
 			&r.UID,
-			&r.InstanceUID,
 			&r.DatabaseUID,
 			&r.CreatorUID,
 			&r.CreatedTime,
@@ -102,15 +99,13 @@ func (s *Store) ListRevisions(ctx context.Context, find *FindRevisionMessage) ([
 func (s *Store) CreateRevision(ctx context.Context, revision *RevisionMessage, creatorUID int) (*RevisionMessage, error) {
 	query := `
 		INSERT INTO revision (
-			instance_id,
 			database_id,
 			creator_id,
 			payload
 		) VALUES (
 		 	$1,
 			$2,
-			$3,
-			$4
+			$3
 		)
 		RETURNING id, created_ts
 	`
@@ -129,7 +124,6 @@ func (s *Store) CreateRevision(ctx context.Context, revision *RevisionMessage, c
 	var id int64
 	var createdTime time.Time
 	if err := tx.QueryRowContext(ctx, query,
-		revision.InstanceUID,
 		revision.DatabaseUID,
 		creatorUID,
 		p,
