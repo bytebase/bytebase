@@ -29,6 +29,8 @@ func TestExtractChangedResources(t *testing.T) {
 				{Start: 27, End: 41},
 				{Start: 43, End: 76},
 				{Start: 78, End: 100},
+				{Start: 102, End: 138},
+				{Start: 140, End: 161},
 			},
 		},
 		true,
