@@ -62,8 +62,8 @@ func (s *Store) ListRevisions(ctx context.Context, find *FindRevisionMessage) ([
 			payload
 		FROM revision
 		WHERE %s
-		%s
 		ORDER BY payload->>'version' DESC
+		%s
 	`, strings.Join(where, " AND "), limitOffsetClause)
 
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
