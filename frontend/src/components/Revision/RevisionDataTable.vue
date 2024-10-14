@@ -85,9 +85,9 @@ const columnList = computed(() => {
       },
     },
     {
-      key: "SQL",
-      title: "SQL",
-      minWidth: "13rem",
+      key: "statement",
+      title: "Statement",
+      minWidth: "12rem",
       render: (revision) => {
         return <p class="truncate whitespace-nowrap">{revision.statement}</p>;
       },
