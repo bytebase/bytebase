@@ -1805,8 +1805,15 @@ export interface Revision {
    */
   file: string;
   /**
+   * The issue associated with the revision.
+   * Can be empty.
+   * Format: projects/{project}/issues/{issue}
+   */
+  issue: string;
+  /**
    * The task run associated with the revision.
    * Can be empty.
+   * Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
    */
   taskRun: string;
 }
@@ -9625,6 +9632,7 @@ function createBaseRevision(): Revision {
     type: ReleaseFileType.TYPE_UNSPECIFIED,
     version: "",
     file: "",
+    issue: "",
     taskRun: "",
   };
 }
@@ -9664,8 +9672,11 @@ export const Revision: MessageFns<Revision> = {
     if (message.file !== "") {
       writer.uint32(90).string(message.file);
     }
+    if (message.issue !== "") {
+      writer.uint32(98).string(message.issue);
+    }
     if (message.taskRun !== "") {
-      writer.uint32(98).string(message.taskRun);
+      writer.uint32(106).string(message.taskRun);
     }
     return writer;
   },
@@ -9759,6 +9770,13 @@ export const Revision: MessageFns<Revision> = {
             break;
           }
 
+          message.issue = reader.string();
+          continue;
+        case 13:
+          if (tag !== 106) {
+            break;
+          }
+
           message.taskRun = reader.string();
           continue;
       }
@@ -9783,6 +9801,7 @@ export const Revision: MessageFns<Revision> = {
       type: isSet(object.type) ? releaseFileTypeFromJSON(object.type) : ReleaseFileType.TYPE_UNSPECIFIED,
       version: isSet(object.version) ? globalThis.String(object.version) : "",
       file: isSet(object.file) ? globalThis.String(object.file) : "",
+      issue: isSet(object.issue) ? globalThis.String(object.issue) : "",
       taskRun: isSet(object.taskRun) ? globalThis.String(object.taskRun) : "",
     };
   },
@@ -9822,6 +9841,9 @@ export const Revision: MessageFns<Revision> = {
     if (message.file !== "") {
       obj.file = message.file;
     }
+    if (message.issue !== "") {
+      obj.issue = message.issue;
+    }
     if (message.taskRun !== "") {
       obj.taskRun = message.taskRun;
     }
@@ -9848,6 +9870,7 @@ export const Revision: MessageFns<Revision> = {
     message.type = object.type ?? ReleaseFileType.TYPE_UNSPECIFIED;
     message.version = object.version ?? "";
     message.file = object.file ?? "";
+    message.issue = object.issue ?? "";
     message.taskRun = object.taskRun ?? "";
     return message;
   },

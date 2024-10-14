@@ -3652,7 +3652,7 @@ SlowQueryPolicy is the policy configuration for slow query.
 | type | [ReleaseFileType](#bytebase-store-ReleaseFileType) |  |  |
 | version | [string](#string) |  |  |
 | file | [string](#string) |  | The name of the file in the release. Expressed as a path, e.g. `2.2/V0001_create_table.sql` Can be empty. |
-| task_run | [string](#string) |  | The task run associated with the revision. Can be empty. |
+| task_run | [string](#string) |  | The task run associated with the revision. Can be empty. Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun} |
 
 
 
