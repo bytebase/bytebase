@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -27,12 +28,24 @@ type RevisionMessage struct {
 type FindRevisionMessage struct {
 	DatabaseUID int
 
+	Version *string
+
 	Limit  *int
 	Offset *int
 }
 
 func (s *Store) ListRevisions(ctx context.Context, find *FindRevisionMessage) ([]*RevisionMessage, error) {
-	query := `
+	where, args := []string{"TRUE"}, []any{}
+
+	where = append(where, fmt.Sprintf("database_id = $%d", len(args)+1))
+	args = append(args, find.DatabaseUID)
+
+	if v := find.Version; v != nil {
+		where = append(where, fmt.Sprintf("payload->>'version' = $%d", len(args)+1))
+		args = append(args, *v)
+	}
+
+	query := fmt.Sprintf(`
 		SELECT
 			id,
 			database_id,
@@ -40,8 +53,8 @@ func (s *Store) ListRevisions(ctx context.Context, find *FindRevisionMessage) ([
 			created_ts,
 			payload
 		FROM revision
-		WHERE database_id = $1
-	`
+		WHERE %s
+	`, strings.Join(where, " AND "))
 
 	if v := find.Limit; v != nil {
 		query += fmt.Sprintf(" LIMIT %d", *v)
@@ -56,7 +69,7 @@ func (s *Store) ListRevisions(ctx context.Context, find *FindRevisionMessage) ([
 	}
 	defer tx.Rollback()
 
-	rows, err := tx.QueryContext(ctx, query, find.DatabaseUID)
+	rows, err := tx.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to query context")
 	}
