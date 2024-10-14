@@ -40,6 +40,7 @@ func TestExtractChangedResources(t *testing.T) {
 	)
 	want := &base.ChangeSummary{
 		ChangedResources: changedResources,
+		InsertCount:      1,
 	}
 
 	asts, _, err := ParsePLSQL(statement)
