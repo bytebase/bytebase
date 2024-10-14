@@ -45,6 +45,14 @@ func (s *Store) ListRevisions(ctx context.Context, find *FindRevisionMessage) ([
 		args = append(args, *v)
 	}
 
+	limitOffsetClause := ""
+	if v := find.Limit; v != nil {
+		limitOffsetClause += fmt.Sprintf(" LIMIT %d", *v)
+	}
+	if v := find.Offset; v != nil {
+		limitOffsetClause += fmt.Sprintf(" OFFSET %d", *v)
+	}
+
 	query := fmt.Sprintf(`
 		SELECT
 			id,
@@ -54,14 +62,9 @@ func (s *Store) ListRevisions(ctx context.Context, find *FindRevisionMessage) ([
 			payload
 		FROM revision
 		WHERE %s
-	`, strings.Join(where, " AND "))
-
-	if v := find.Limit; v != nil {
-		query += fmt.Sprintf(" LIMIT %d", *v)
-	}
-	if v := find.Offset; v != nil {
-		query += fmt.Sprintf(" OFFSET %d", *v)
-	}
+		%s
+		ORDER BY payload->>'version' DESC
+	`, strings.Join(where, " AND "), limitOffsetClause)
 
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
