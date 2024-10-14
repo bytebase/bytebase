@@ -61,6 +61,7 @@
       :confirm="confirmDialog"
       :override-title="$t('issue.sql-check.sql-review-violations')"
       :show-code-location="showCodeLocation"
+      :allow-force-continue="allowForceContinue"
       :ignore-issue-creation-restriction="ignoreIssueCreationRestriction"
       @close="onPanelClose"
     >
@@ -95,7 +96,11 @@ import { useSQLCheckContext } from "./context";
 
 const props = withDefaults(
   defineProps<{
-    getStatement: () => Promise<{ errors: string[]; statement: string }>;
+    getStatement: () => Promise<{
+      errors: string[];
+      statement: string;
+      fatal?: boolean;
+    }>;
     database: ComposedDatabase;
     databaseMetadata?: DatabaseMetadata;
     buttonProps?: ButtonProps;
@@ -125,6 +130,7 @@ const { t } = useI18n();
 const SKIP_CHECK_THRESHOLD = 1024 * 1024;
 const isRunning = ref(false);
 const showDetailPanel = ref(false);
+const allowForceContinue = ref(true);
 const rawAdvices = ref<Advice[]>();
 const context = useSQLCheckContext();
 const confirmDialog = ref<Defer<boolean>>();
@@ -209,7 +215,7 @@ const runChecks = async () => {
     rawAdvices.value = errors.map((err) =>
       Advice.fromPartial({
         title: "Pre check",
-        status: Advice_Status.WARNING,
+        status: Advice_Status.ERROR,
         content: err,
       })
     );
@@ -220,7 +226,9 @@ const runChecks = async () => {
   if (!rawAdvices.value) {
     rawAdvices.value = [];
   }
-  const { statement, errors } = await props.getStatement();
+  const { statement, errors, fatal } = await props.getStatement();
+  allowForceContinue.value = !fatal;
+
   if (statement.length > SKIP_CHECK_THRESHOLD) {
     return handleErrors([t("issue.sql-check.statement-is-too-large")]);
   }

@@ -1,11 +1,8 @@
 <template>
-  <NEllipsis
-    class="space-x-1"
-    expand-trigger="click"
-    line-clamp="2"
-    :tooltip="false"
-  >
-    <span>{{ comment }}</span>
+  <div class="flex flex-col xl:flex-row xl:items-center xl:space-x-1">
+    <NEllipsis expand-trigger="click" line-clamp="2" :tooltip="false">
+      <span>{{ comment }}</span>
+    </NEllipsis>
     <template v-if="commentLink.link">
       <template v-if="commentLink.link.startsWith('/')">
         <router-link class="inline normal-link" :to="commentLink.link">
@@ -23,7 +20,7 @@
         </a>
       </template>
     </template>
-  </NEllipsis>
+  </div>
 </template>
 
 <script setup lang="tsx">

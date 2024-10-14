@@ -135,7 +135,7 @@ const generateDDL = async (silent: boolean) => {
   const editing = props.branch.schemaMetadata
     ? cloneDeep(props.branch.schemaMetadata)
     : DatabaseMetadata.fromPartial({});
-  await applyMetadataEdit(database.value, editing);
+  applyMetadataEdit(database.value, editing);
 
   const result = await generateDiffDDL(database.value, source, editing);
   if (result.fatal && !silent) {

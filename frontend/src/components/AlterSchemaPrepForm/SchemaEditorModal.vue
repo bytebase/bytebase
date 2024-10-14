@@ -361,26 +361,19 @@ const generateOrGetEditingDDL = async () => {
     return {
       statement: state.editStatement,
       errors: [],
+      fatal: false,
     };
   }
 
   const statementMap = await generateDiffDDLMap(/* silent */ true);
   const results = Array.from(statementMap.values());
   const statement = results.map((result) => result.statement).join("\n\n");
-  results.forEach((result) => {
-    if (result.errors.length > 0) {
-      pushNotification({
-        module: "bytebase",
-        style: result.fatal ? "CRITICAL" : "WARN",
-        title: t("common.error"),
-        description: result.errors.join("\n"),
-      });
-    }
-  });
+
   const errors = results.flatMap((result) => result.errors);
   return {
     statement,
     errors,
+    fatal: results.some((result) => result.fatal),
   };
 };
 
@@ -398,7 +391,7 @@ const generateDiffDDLMap = async (silent: boolean) => {
   for (let i = 0; i < state.targets.length; i++) {
     const target = state.targets[i];
     const { database, baselineMetadata: source, metadata } = target;
-    await applyMetadataEdit(database, metadata);
+    applyMetadataEdit(database, metadata);
     const result = await generateSingleDiffDDL(
       database,
       source,
@@ -534,7 +527,7 @@ const renderEmptyGeneratedDDLContent = (databases: ComposedDatabase[]) => {
         keypath: "schema-editor.nothing-changed-for-database",
       },
       {
-        database: database.databaseName,
+        database: () => database.databaseName,
       }
     );
   });
