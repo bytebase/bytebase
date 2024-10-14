@@ -37,7 +37,7 @@ type FindReleaseMessage struct {
 type UpdateReleaseMessage struct {
 	UID int64
 
-	Delete  *bool
+	Deleted *bool
 	Payload *storepb.ReleasePayload
 }
 
@@ -187,7 +187,7 @@ func (s *Store) ListReleases(ctx context.Context, find *FindReleaseMessage) ([]*
 func (s *Store) UpdateRelease(ctx context.Context, update *UpdateReleaseMessage) (*ReleaseMessage, error) {
 	set, args := []string{}, []any{}
 
-	if v := update.Delete; v != nil {
+	if v := update.Deleted; v != nil {
 		rowStatus := api.Normal
 		if *v {
 			rowStatus = api.Archived
