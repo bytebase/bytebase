@@ -42,6 +42,7 @@ type RevisionPayload struct {
 	File string `protobuf:"bytes,6,opt,name=file,proto3" json:"file,omitempty"`
 	// The task run associated with the revision.
 	// Can be empty.
+	// Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
 	TaskRun string `protobuf:"bytes,7,opt,name=task_run,json=taskRun,proto3" json:"task_run,omitempty"`
 }
 

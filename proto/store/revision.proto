@@ -28,5 +28,6 @@ message RevisionPayload {
 
   // The task run associated with the revision.
   // Can be empty.
+  // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
   string task_run = 7 [(google.api.resource_reference) = {type: "bytebase.com/TaskRun"}];
 }

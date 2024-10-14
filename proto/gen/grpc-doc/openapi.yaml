@@ -12468,11 +12468,18 @@ components:
                         The name of the file in the release.
                          Expressed as a path, e.g. `2.2/V0001_create_table.sql`
                          Can be empty.
+                issue:
+                    type: string
+                    description: |-
+                        The issue associated with the revision.
+                         Can be empty.
+                         Format: projects/{project}/issues/{issue}
                 taskRun:
                     type: string
                     description: |-
                         The task run associated with the revision.
                          Can be empty.
+                         Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
         Risk:
             type: object
             properties:

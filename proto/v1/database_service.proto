@@ -1476,7 +1476,13 @@ message Revision {
   // Can be empty.
   string file = 11;
 
+  // The issue associated with the revision.
+  // Can be empty.
+  // Format: projects/{project}/issues/{issue}
+  string issue = 12 [(google.api.resource_reference) = {type: "bytebase.com/Issue"}];
+
   // The task run associated with the revision.
   // Can be empty.
-  string task_run = 12 [(google.api.resource_reference) = {type: "bytebase.com/TaskRun"}];
+  // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
+  string task_run = 13 [(google.api.resource_reference) = {type: "bytebase.com/TaskRun"}];
 }
