@@ -336,17 +336,17 @@ func (s *SchedulerV2) schedulePendingTaskRun(ctx context.Context, taskRun *store
 				return true, nil
 			}
 
-			var Version struct {
+			var version struct {
 				Version string `json:"schemaVersion"`
 			}
-			if err := json.Unmarshal([]byte(task.Payload), &Version); err != nil {
+			if err := json.Unmarshal([]byte(task.Payload), &version); err != nil {
 				return false, errors.Wrapf(err, "failed to unmarshal task payload")
 			}
-			if Version.Version == "" {
+			if version.Version == "" {
 				return true, nil
 			}
 
-			taskIDs, err := s.store.FindBlockingTasksByVersion(ctx, *task.DatabaseID, Version.Version)
+			taskIDs, err := s.store.FindBlockingTasksByVersion(ctx, *task.DatabaseID, version.Version)
 			if err != nil {
 				return false, errors.Wrapf(err, "failed to find blocking versioned tasks")
 			}
