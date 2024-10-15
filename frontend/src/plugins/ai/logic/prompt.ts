@@ -4,7 +4,8 @@ import { engineNameV1 } from "@/utils";
 
 export const databaseMetadataToText = (
   databaseMetadata: DatabaseMetadata | undefined,
-  engine?: Engine
+  engine?: Engine,
+  schema?: string
 ) => {
   const prompts: string[] = [];
   if (engine) {
@@ -21,9 +22,17 @@ export const databaseMetadataToText = (
     }
   }
   if (databaseMetadata) {
-    databaseMetadata.schemas.forEach((schema) => {
+    const schemas = schema
+      ? databaseMetadata.schemas.filter((s) => s.name === schema)
+      : databaseMetadata.schemas;
+
+    const schemaScoped = !!schema;
+    schemas.forEach((schema) => {
       schema.tables.forEach((table) => {
-        const name = schema.name ? `${schema.name}.${table.name}` : table.name;
+        const tableNameParts = [table.name];
+        if (schema.name && !schemaScoped) {
+          tableNameParts.unshift(schema.name);
+        }
         const columns = table.columns
           .map((column) => {
             if (column.comment) {
@@ -33,7 +42,7 @@ export const databaseMetadataToText = (
             }
           })
           .join(", ");
-        prompts.push(`# ${name}(${columns})`);
+        prompts.push(`# ${tableNameParts.join(".")}(${columns})`);
       });
     });
   }
@@ -42,7 +51,8 @@ export const databaseMetadataToText = (
 
 export const declaration = (
   databaseMetadata?: DatabaseMetadata,
-  engine?: Engine
+  engine?: Engine,
+  schema?: string
 ) => {
   const prompts: string[] = [];
   if (engine) {
@@ -50,13 +60,13 @@ export const declaration = (
   } else {
     prompts.push(`You are a db and SQL expert.`);
   }
-  prompts.push(`When asked for your name, you must respond with "Bytebase".`);
-  // prompts.push(`Your responses should be informative and terse.`);
+  // prompts.push(`When asked for your name, you must respond with "Bytebase".`);
+  prompts.push(`Your responses should be informative and terse.`);
   // prompts.push(
   //   "Set the language to the markdown SQL block. e.g, `SELECT * FROM table`."
   // );
 
-  prompts.push(databaseMetadataToText(databaseMetadata, engine));
+  prompts.push(databaseMetadataToText(databaseMetadata, engine, schema));
   prompts.push("Answer the following questions about this schema:");
 
   return prompts.join("\n");
@@ -73,7 +83,7 @@ export const findProblems = (statement: string, engine?: Engine) => {
 
 export const explainCode = (statement: string, engine?: Engine) => {
   const prompts: string[] = [];
-  prompts.push("Explain the following SQL code");
+  prompts.push("Explain the following SQL code：");
   prompts.push(wrapStatementMarkdown(statement, engine));
   return prompts.join("\n");
 };
@@ -87,4 +97,25 @@ export const wrapStatementMarkdown = (statement: string, engine?: Engine) => {
   }
   const closeTag = "```";
   return [openTag, statement, closeTag].join("\n");
+};
+
+export const dynamicSuggestions = (metadata: string, ignores?: Set<string>) => {
+  const commands = [
+    `You are an assistant who works as a Magic: The Suggestion card designer. Create cards that are in the following card schema and JSON format. OUTPUT MUST FOLLOW THIS CARD SCHEMA AND JSON FORMAT. DO NOT EXPLAIN THE CARD.`,
+    `{"suggestion-1": "What is the average salary of employees in each department?", "suggestion-2": "What is the average salary of employees in each department?", "suggestion-3": "What is the average salary of employees in each department?"}`,
+  ];
+  const prompts = [
+    metadata,
+    "Create a suggestion card about interesting queries to try in this database.",
+  ];
+  if (ignores && ignores.size > 0) {
+    prompts.push("queries below should be ignored");
+    for (const sug of ignores.values()) {
+      prompts.push(sug);
+    }
+  }
+  return {
+    command: commands.join("\n"),
+    prompt: prompts.join("\n"),
+  };
 };
