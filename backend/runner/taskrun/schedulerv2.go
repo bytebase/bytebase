@@ -296,6 +296,12 @@ func (s *SchedulerV2) schedulePendingTaskRuns(ctx context.Context) error {
 }
 
 func (s *SchedulerV2) schedulePendingTaskRun(ctx context.Context, taskRun *store.TaskRunMessage) error {
+	// here, we move pending taskruns to running taskruns which means they are ready to be executed.
+	// pending taskruns remain pending if
+	// 1. earliestAllowedTs not met.
+	// 2. blocked by other tasks via TaskDAG
+	// 3. for versioned tasks, there are other versioned tasks on the same database with
+	// a smaller version not finished yet. we need to wait for those first.
 	task, err := s.store.GetTaskV2ByID(ctx, taskRun.TaskUID)
 	if err != nil {
 		return errors.Wrapf(err, "failed to get task")
@@ -320,6 +326,47 @@ func (s *SchedulerV2) schedulePendingTaskRun(ctx context.Context, taskRun *store
 		}
 
 		if blockingTask.LatestTaskRunStatus != api.TaskRunDone {
+			return nil
+		}
+	}
+
+	if common.IsDev() && s.profile.DevelopmentVersioned {
+		doSchedule, err := func() (bool, error) {
+			if task.DatabaseID == nil {
+				return true, nil
+			}
+
+			var version struct {
+				Version string `json:"schemaVersion"`
+			}
+			if err := json.Unmarshal([]byte(task.Payload), &version); err != nil {
+				return false, errors.Wrapf(err, "failed to unmarshal task payload")
+			}
+			if version.Version == "" {
+				return true, nil
+			}
+
+			taskIDs, err := s.store.FindBlockingTasksByVersion(ctx, *task.DatabaseID, version.Version)
+			if err != nil {
+				return false, errors.Wrapf(err, "failed to find blocking versioned tasks")
+			}
+			if len(taskIDs) > 0 {
+				s.stateCfg.TaskRunSchedulerInfo.Store(taskRun.ID, &storepb.SchedulerInfo{
+					ReportTime: timestamppb.Now(),
+					WaitingCause: &storepb.SchedulerInfo_WaitingCause{
+						Cause: &storepb.SchedulerInfo_WaitingCause_TaskUid{
+							TaskUid: int32(taskIDs[0]),
+						},
+					},
+				})
+				return false, nil
+			}
+			return true, nil
+		}()
+		if err != nil {
+			return errors.Wrapf(err, "failed to check blocking versioned tasks")
+		}
+		if !doSchedule {
 			return nil
 		}
 	}
