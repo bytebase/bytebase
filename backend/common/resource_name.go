@@ -209,8 +209,7 @@ func GetInstanceDatabaseIDSecretName(name string) (string, string, string, error
 
 // GetInstanceDatabaseRevisionID returns the instance ID, database ID, and revision UID from a resource name.
 func GetInstanceDatabaseRevisionID(name string) (string, string, int64, error) {
-	// the name should be instances/{instance-id}/databases/{database-id}/changeHistories/{changeHistory-id}
-	tokens, err := GetNameParentTokens(name, InstanceNamePrefix, DatabaseIDPrefix, ChangeHistoryPrefix)
+	tokens, err := GetNameParentTokens(name, InstanceNamePrefix, DatabaseIDPrefix, RevisionNamePrefix)
 	if err != nil {
 		return "", "", 0, err
 	}
