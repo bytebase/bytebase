@@ -298,8 +298,9 @@ func (s *SchedulerV2) schedulePendingTaskRuns(ctx context.Context) error {
 func (s *SchedulerV2) schedulePendingTaskRun(ctx context.Context, taskRun *store.TaskRunMessage) error {
 	// here, we move pending taskruns to running taskruns which means they are ready to be executed.
 	// pending taskruns remain pending if
-	// 1. blocked by other tasks via TaskDAG
-	// 2. for versioned tasks, there are other versioned tasks on the same database with
+	// 1. earliestAllowedTs not met.
+	// 2. blocked by other tasks via TaskDAG
+	// 3. for versioned tasks, there are other versioned tasks on the same database with
 	// a smaller version not finished yet. we need to wait for those first.
 	task, err := s.store.GetTaskV2ByID(ctx, taskRun.TaskUID)
 	if err != nil {
@@ -336,7 +337,7 @@ func (s *SchedulerV2) schedulePendingTaskRun(ctx context.Context, taskRun *store
 			}
 
 			var Version struct {
-				Version string `json:"schema_version"`
+				Version string `json:"schemaVersion"`
 			}
 			if err := json.Unmarshal([]byte(task.Payload), &Version); err != nil {
 				return false, errors.Wrapf(err, "failed to unmarshal task payload")
@@ -350,7 +351,6 @@ func (s *SchedulerV2) schedulePendingTaskRun(ctx context.Context, taskRun *store
 				return false, errors.Wrapf(err, "failed to find blocking versioned tasks")
 			}
 			if len(taskIDs) > 0 {
-				slog.Debug("irwojgoiejgoi blocking tasks", "task ids", taskIDs)
 				s.stateCfg.TaskRunSchedulerInfo.Store(taskRun.ID, &storepb.SchedulerInfo{
 					ReportTime: timestamppb.Now(),
 					WaitingCause: &storepb.SchedulerInfo_WaitingCause{
