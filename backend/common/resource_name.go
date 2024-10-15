@@ -207,6 +207,18 @@ func GetInstanceDatabaseIDSecretName(name string) (string, string, string, error
 	return tokens[0], tokens[1], tokens[2], nil
 }
 
+func GetRevisionUID(name string) (int64, error) {
+	tokens, err := GetNameParentTokens(name, InstanceNamePrefix, DatabaseIDPrefix, RevisionNamePrefix)
+	if err != nil {
+		return 0, err
+	}
+	revisionUID, err := strconv.ParseInt(tokens[2], 10, 64)
+	if err != nil {
+		return 0, errors.Wrapf(err, "failed to convert %q to int64", tokens[1])
+	}
+	return revisionUID, nil
+}
+
 // GetUserID returns the user ID from a resource name.
 func GetUserID(name string) (int, error) {
 	return GetUIDFromName(name, UserNamePrefix)
