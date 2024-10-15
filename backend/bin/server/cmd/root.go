@@ -80,6 +80,8 @@ var (
 		// disableSample is the flag to disable the sample instance.
 		disableSample bool
 		lsp           bool
+
+		developmentVersioned bool
 	}
 
 	rootCmd = &cobra.Command{
@@ -124,6 +126,8 @@ func init() {
 	rootCmd.PersistentFlags().BoolVar(&flags.lsp, "lsp", true, "whether to enable lsp in SQL Editor")
 	rootCmd.PersistentFlags().BoolVar(&flags.disableMetric, "disable-metric", false, "disable the metric collector")
 	rootCmd.PersistentFlags().BoolVar(&flags.disableSample, "disable-sample", false, "disable the sample instance")
+
+	rootCmd.PersistentFlags().BoolVar(&flags.developmentVersioned, "development-versioned", false, "(WIP) versioned workflow")
 }
 
 // -----------------------------------Command Line Config END--------------------------------------
