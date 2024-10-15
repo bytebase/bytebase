@@ -53,6 +53,7 @@ const pendingSendChat = ref<{ content: string }>();
 const pendingPreInput = ref<string>();
 
 const { currentTab: tab } = storeToRefs(useSQLEditorTabStore());
+const schema = computed(() => tab.value?.connection.schema);
 const store = useConversationStore();
 
 const context: AIContext = {
@@ -60,6 +61,7 @@ const context: AIContext = {
   openAIEndpoint,
   engine: computed(() => instance.value.engine),
   databaseMetadata,
+  schema,
   showHistoryDialog,
   chat,
   pendingSendChat,
