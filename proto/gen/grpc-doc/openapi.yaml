@@ -5422,6 +5422,33 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
+        delete:
+            tags:
+                - ReleaseService
+            operationId: ReleaseService_DeleteRelease
+            parameters:
+                - name: project
+                  in: path
+                  description: The project id.
+                  required: true
+                  schema:
+                    type: string
+                - name: release
+                  in: path
+                  description: The release id.
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content: {}
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
         patch:
             tags:
                 - ReleaseService
@@ -5450,6 +5477,43 @@ paths:
                     application/json:
                         schema:
                             $ref: '#/components/schemas/Release'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Release'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v1/projects/{project}/releases/{release}:undelete:
+        post:
+            tags:
+                - ReleaseService
+            operationId: ReleaseService_UndeleteRelease
+            parameters:
+                - name: project
+                  in: path
+                  description: The project id.
+                  required: true
+                  schema:
+                    type: string
+                - name: release
+                  in: path
+                  description: The release id.
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/UndeleteReleaseRequest'
                 required: true
             responses:
                 "200":
@@ -14274,6 +14338,16 @@ components:
                     description: |-
                         The name of the deleted project.
                          Format: projects/{project}
+        UndeleteReleaseRequest:
+            required:
+                - name
+            type: object
+            properties:
+                name:
+                    type: string
+                    description: |-
+                        The name of the deleted release.
+                         Format: projects/{project}/releases/{release}
         UndeleteUserRequest:
             required:
                 - name

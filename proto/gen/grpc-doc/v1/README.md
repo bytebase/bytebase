@@ -66,12 +66,14 @@
   
 - [v1/release_service.proto](#v1_release_service-proto)
     - [CreateReleaseRequest](#bytebase-v1-CreateReleaseRequest)
+    - [DeleteReleaseRequest](#bytebase-v1-DeleteReleaseRequest)
     - [GetReleaseRequest](#bytebase-v1-GetReleaseRequest)
     - [ListReleasesRequest](#bytebase-v1-ListReleasesRequest)
     - [ListReleasesResponse](#bytebase-v1-ListReleasesResponse)
     - [Release](#bytebase-v1-Release)
     - [Release.File](#bytebase-v1-Release-File)
     - [Release.VCSSource](#bytebase-v1-Release-VCSSource)
+    - [UndeleteReleaseRequest](#bytebase-v1-UndeleteReleaseRequest)
     - [UpdateReleaseRequest](#bytebase-v1-UpdateReleaseRequest)
   
     - [ReleaseFileType](#bytebase-v1-ReleaseFileType)
@@ -1597,6 +1599,21 @@ The instance&#39;s `name` field is used to identify the instance to update. Form
 
 
 
+<a name="bytebase-v1-DeleteReleaseRequest"></a>
+
+### DeleteReleaseRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the release to delete. Format: projects/{project}/releases/{release} |
+
+
+
+
+
+
 <a name="bytebase-v1-GetReleaseRequest"></a>
 
 ### GetReleaseRequest
@@ -1704,6 +1721,21 @@ When paginating, all other parameters provided to `ListReleasesRequest` must mat
 
 
 
+<a name="bytebase-v1-UndeleteReleaseRequest"></a>
+
+### UndeleteReleaseRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the deleted release. Format: projects/{project}/releases/{release} |
+
+
+
+
+
+
 <a name="bytebase-v1-UpdateReleaseRequest"></a>
 
 ### UpdateReleaseRequest
@@ -1749,6 +1781,8 @@ When paginating, all other parameters provided to `ListReleasesRequest` must mat
 | ListReleases | [ListReleasesRequest](#bytebase-v1-ListReleasesRequest) | [ListReleasesResponse](#bytebase-v1-ListReleasesResponse) |  |
 | CreateRelease | [CreateReleaseRequest](#bytebase-v1-CreateReleaseRequest) | [Release](#bytebase-v1-Release) |  |
 | UpdateRelease | [UpdateReleaseRequest](#bytebase-v1-UpdateReleaseRequest) | [Release](#bytebase-v1-Release) |  |
+| DeleteRelease | [DeleteReleaseRequest](#bytebase-v1-DeleteReleaseRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
+| UndeleteRelease | [UndeleteReleaseRequest](#bytebase-v1-UndeleteReleaseRequest) | [Release](#bytebase-v1-Release) |  |
 
  
 

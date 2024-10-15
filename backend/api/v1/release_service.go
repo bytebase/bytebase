@@ -6,6 +6,7 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -182,6 +183,39 @@ func (s *ReleaseService) UpdateRelease(ctx context.Context, request *v1pb.Update
 		return nil, status.Errorf(codes.Internal, "failed to convert release, err: %v", err)
 	}
 	return converted, nil
+}
+
+func (s *ReleaseService) DeleteRelease(ctx context.Context, request *v1pb.DeleteReleaseRequest) (*emptypb.Empty, error) {
+	releaseUID, err := common.GetReleaseUID(request.Name)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "failed to get release uid, err: %v", err)
+	}
+	if _, err := s.store.UpdateRelease(ctx, &store.UpdateReleaseMessage{
+		UID:     releaseUID,
+		Deleted: &deletePatch,
+	}); err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to delete release, err: %v", err)
+	}
+	return &emptypb.Empty{}, nil
+}
+
+func (s *ReleaseService) UndeleteRelease(ctx context.Context, request *v1pb.UndeleteReleaseRequest) (*v1pb.Release, error) {
+	releaseUID, err := common.GetReleaseUID(request.Name)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "failed to get release uid, err: %v", err)
+	}
+	releaseMessage, err := s.store.UpdateRelease(ctx, &store.UpdateReleaseMessage{
+		UID:     releaseUID,
+		Deleted: &undeletePatch,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to undelete release, err: %v", err)
+	}
+	release, err := convertToRelease(ctx, s.store, releaseMessage)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to convert release, err: %v", err)
+	}
+	return release, nil
 }
 
 func convertToReleases(ctx context.Context, s *store.Store, releases []*store.ReleaseMessage) ([]*v1pb.Release, error) {
