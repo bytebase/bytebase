@@ -1773,6 +1773,14 @@ export interface ListRevisionsResponse {
   nextPageToken: string;
 }
 
+export interface GetRevisionRequest {
+  /**
+   * The name of the revision.
+   * Format: instances/{instance}/databases/{database}/revisions/{revision}
+   */
+  name: string;
+}
+
 export interface DeleteRevisionRequest {
   /**
    * The name of the revision to delete.
@@ -9627,6 +9635,63 @@ export const ListRevisionsResponse: MessageFns<ListRevisionsResponse> = {
   },
 };
 
+function createBaseGetRevisionRequest(): GetRevisionRequest {
+  return { name: "" };
+}
+
+export const GetRevisionRequest: MessageFns<GetRevisionRequest> = {
+  encode(message: GetRevisionRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GetRevisionRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetRevisionRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetRevisionRequest {
+    return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
+  },
+
+  toJSON(message: GetRevisionRequest): unknown {
+    const obj: any = {};
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<GetRevisionRequest>): GetRevisionRequest {
+    return GetRevisionRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<GetRevisionRequest>): GetRevisionRequest {
+    const message = createBaseGetRevisionRequest();
+    message.name = object.name ?? "";
+    return message;
+  },
+};
+
 function createBaseDeleteRevisionRequest(): DeleteRevisionRequest {
   return { name: "" };
 }
@@ -11531,6 +11596,71 @@ export const DatabaseServiceDefinition = {
               111,
               110,
               115,
+            ]),
+          ],
+        },
+      },
+    },
+    getRevision: {
+      name: "GetRevision",
+      requestType: GetRevisionRequest,
+      requestStream: false,
+      responseType: Revision,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          8410: [new Uint8Array([4, 110, 97, 109, 101])],
+          578365826: [
+            new Uint8Array([
+              48,
+              18,
+              46,
+              47,
+              118,
+              49,
+              47,
+              123,
+              110,
+              97,
+              109,
+              101,
+              61,
+              105,
+              110,
+              115,
+              116,
+              97,
+              110,
+              99,
+              101,
+              115,
+              47,
+              42,
+              47,
+              100,
+              97,
+              116,
+              97,
+              98,
+              97,
+              115,
+              101,
+              115,
+              47,
+              42,
+              47,
+              114,
+              101,
+              118,
+              105,
+              115,
+              105,
+              111,
+              110,
+              115,
+              47,
+              42,
+              125,
             ]),
           ],
         },

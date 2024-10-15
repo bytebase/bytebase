@@ -369,10 +369,6 @@ func request_ReleaseService_UndeleteRelease_0(ctx context.Context, marshaler run
 	var protoReq UndeleteReleaseRequest
 	var metadata runtime.ServerMetadata
 
-	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && err != io.EOF {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
-
 	var (
 		val string
 		ok  bool
@@ -398,10 +394,6 @@ func request_ReleaseService_UndeleteRelease_0(ctx context.Context, marshaler run
 func local_request_ReleaseService_UndeleteRelease_0(ctx context.Context, marshaler runtime.Marshaler, server ReleaseServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq UndeleteReleaseRequest
 	var metadata runtime.ServerMetadata
-
-	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && err != io.EOF {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
 
 	var (
 		val string
