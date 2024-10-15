@@ -346,7 +346,7 @@ func (s *SchedulerV2) schedulePendingTaskRun(ctx context.Context, taskRun *store
 				return true, nil
 			}
 
-			taskIDs, err := s.store.FindLtVersionTasks(ctx, *task.DatabaseID, Version.Version)
+			taskIDs, err := s.store.FindBlockingTasksByVersion(ctx, *task.DatabaseID, Version.Version)
 			if err != nil {
 				return false, errors.Wrapf(err, "failed to find blocking versioned tasks")
 			}

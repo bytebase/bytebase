@@ -61,7 +61,7 @@ func (s *Store) GetTaskV2ByID(ctx context.Context, id int) (*TaskMessage, error)
 	return tasks[0], nil
 }
 
-func (s *Store) FindLtVersionTasks(ctx context.Context, databaseUID int, version string) ([]int, error) {
+func (s *Store) FindBlockingTasksByVersion(ctx context.Context, databaseUID int, version string) ([]int, error) {
 	query := `
 		SELECT
 			task.id
