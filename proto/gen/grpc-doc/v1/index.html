@@ -2476,6 +2476,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.GetTaskRunRequest"><span class="badge">M</span>GetTaskRunRequest</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.GetTaskRunSessionRequest"><span class="badge">M</span>GetTaskRunSessionRequest</a>
                 </li>
               
@@ -26357,6 +26361,30 @@ TODO(d): check the resource_reference. </p></td>
 
         
       
+        <h3 id="bytebase.v1.GetTaskRunRequest">GetTaskRunRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun} </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.GetTaskRunSessionRequest">GetTaskRunSessionRequest</h3>
         <p></p>
 
@@ -28154,6 +28182,13 @@ Format: instances/{instance}/databases/{database} </p></td>
               </tr>
             
               <tr>
+                <td>GetTaskRun</td>
+                <td><a href="#bytebase.v1.GetTaskRunRequest">GetTaskRunRequest</a></td>
+                <td><a href="#bytebase.v1.TaskRun">TaskRun</a></td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
                 <td>GetTaskRunLog</td>
                 <td><a href="#bytebase.v1.GetTaskRunLogRequest">GetTaskRunLogRequest</a></td>
                 <td><a href="#bytebase.v1.TaskRunLog">TaskRunLog</a></td>
@@ -28254,6 +28289,16 @@ The access is the same as BatchRunTasks().</p></td>
                 <td>ListTaskRuns</td>
                 <td>GET</td>
                 <td>/v1/{parent=projects/*/rollouts/*/stages/*/tasks/*}/taskRuns</td>
+                <td></td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>GetTaskRun</td>
+                <td>GET</td>
+                <td>/v1/{name=projects/*/rollouts/*/stages/*/tasks/*/taskRuns/*}</td>
                 <td></td>
               </tr>
               

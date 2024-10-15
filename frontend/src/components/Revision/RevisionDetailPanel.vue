@@ -1,5 +1,5 @@
 <template>
-  <div v-if="revision" class="w-full border-b pb-4 mb-4">
+  <div v-if="revision" class="w-full">
     <h1 class="text-xl font-bold text-main truncate">
       {{ revision.file }}
     </h1>
@@ -18,6 +18,8 @@
     </div>
   </div>
 
+  <NDivider />
+
   <div class="flex flex-col">
     <p class="w-auto flex items-center text-base text-main mb-2">
       <span>{{ $t("common.statement") }}</span>
@@ -33,13 +35,24 @@
       :auto-height="{ min: 120, max: 480 }"
     />
   </div>
+
+  <NDivider />
+
+  <div v-if="taskRun">
+    <p class="w-auto flex items-center text-base text-main mb-2">
+      Task run logs
+    </p>
+    <TaskRunLogTable :task-run="taskRun" :sheet="sheet" />
+  </div>
 </template>
 
 <script lang="ts" setup>
 import { ClipboardIcon } from "lucide-vue-next";
-import { computed, reactive, watch } from "vue";
+import { NDivider } from "naive-ui";
+import { computed, reactive, ref, watch } from "vue";
 import BBAvatar from "@/bbkit/BBAvatar.vue";
 import { MonacoEditor } from "@/components/MonacoEditor";
+import { rolloutServiceClient } from "@/grpcweb";
 import {
   pushNotification,
   useUserStore,
@@ -47,11 +60,13 @@ import {
   useSheetV1Store,
 } from "@/store";
 import { type ComposedDatabase } from "@/types";
+import type { TaskRun } from "@/types/proto/v1/rollout_service";
 import {
   extractUserResourceName,
   getSheetStatement,
   toClipboard,
 } from "@/utils";
+import TaskRunLogTable from "../IssueV1/components/TaskRunSection/TaskRunLogTable/TaskRunLogTable.vue";
 
 interface LocalState {
   loading: boolean;
@@ -68,6 +83,7 @@ const state = reactive<LocalState>({
 
 const revisionStore = useRevisionStore();
 const sheetStore = useSheetV1Store();
+const taskRun = ref<TaskRun | undefined>(undefined);
 
 watch(
   () => props.revisionName,
@@ -80,6 +96,10 @@ watch(
     const revision = await revisionStore.getOrFetchRevisionByName(revisionName);
     if (revision) {
       await sheetStore.getOrFetchSheetByName(revision.sheet, "FULL");
+      const taskRunData = await rolloutServiceClient.getTaskRun({
+        name: revision.taskRun,
+      });
+      taskRun.value = taskRunData;
     }
     state.loading = false;
   },

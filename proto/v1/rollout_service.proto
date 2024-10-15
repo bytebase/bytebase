@@ -48,6 +48,13 @@ service RolloutService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  rpc GetTaskRun(GetTaskRunRequest) returns (TaskRun) {
+    option (google.api.http) = {get: "/v1/{name=projects/*/rollouts/*/stages/*/tasks/*/taskRuns/*}"};
+    option (google.api.method_signature) = "name";
+    option (bytebase.v1.permission) = "bb.taskRuns.list";
+    option (bytebase.v1.auth_method) = IAM;
+  }
+
   rpc GetTaskRunLog(GetTaskRunLogRequest) returns (TaskRunLog) {
     option (google.api.http) = {get: "/v1/{parent=projects/*/rollouts/*/stages/*/tasks/*/taskRuns/*}/log"};
     option (google.api.method_signature) = "parent";
@@ -211,6 +218,14 @@ message ListTaskRunsResponse {
   // A token, which can be sent as `page_token` to retrieve the next page.
   // If this field is omitted, there are no subsequent pages.
   string next_page_token = 2;
+}
+
+message GetTaskRunRequest {
+  // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/TaskRun"}
+  ];
 }
 
 message GetTaskRunLogRequest {

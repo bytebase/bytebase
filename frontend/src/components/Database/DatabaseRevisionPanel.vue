@@ -20,7 +20,7 @@
     :show="!!state.selectedRevisionName"
     @close="state.selectedRevisionName = undefined"
   >
-    <DrawerContent class="w-192 max-w-[80vw]" :title="'Revision'">
+    <DrawerContent class="w-320 max-w-[80vw]" :title="'Revision'">
       <RevisionDetailPanel
         :database="database"
         :revision-name="state.selectedRevisionName!"
