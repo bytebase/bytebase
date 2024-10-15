@@ -5717,6 +5717,55 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
+    /v1/projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}:
+        get:
+            tags:
+                - RolloutService
+            operationId: RolloutService_GetTaskRun
+            parameters:
+                - name: project
+                  in: path
+                  description: The project id.
+                  required: true
+                  schema:
+                    type: string
+                - name: rollout
+                  in: path
+                  description: The rollout id.
+                  required: true
+                  schema:
+                    type: string
+                - name: stage
+                  in: path
+                  description: The stage id.
+                  required: true
+                  schema:
+                    type: string
+                - name: task
+                  in: path
+                  description: The task id.
+                  required: true
+                  schema:
+                    type: string
+                - name: taskRun
+                  in: path
+                  description: The taskRun id.
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/TaskRun'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
     /v1/projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}/log:
         get:
             tags:
