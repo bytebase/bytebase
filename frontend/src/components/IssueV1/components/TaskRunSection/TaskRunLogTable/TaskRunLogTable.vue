@@ -15,14 +15,12 @@ import { CircleAlertIcon } from "lucide-vue-next";
 import { NTooltip, NDataTable, type DataTableColumn } from "naive-ui";
 import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
-import { useIssueContext } from "@/components/IssueV1";
 import { rolloutServiceClient } from "@/grpcweb";
-import { useSheetV1Store } from "@/store";
 import {
   type TaskRun,
   TaskRunLogEntry_Type,
 } from "@/types/proto/v1/rollout_service";
-import { sheetNameOfTaskV1 } from "@/utils";
+import type { Sheet } from "@/types/proto/v1/sheet_service";
 import DetailCell, { detailCellRowSpan } from "./DetailCell";
 import DurationCell from "./DurationCell.vue";
 import LogTimeCell from "./LogTimeCell.vue";
@@ -35,10 +33,10 @@ import {
 
 const props = defineProps<{
   taskRun: TaskRun;
+  sheet?: Sheet;
 }>();
 
 const { t } = useI18n();
-const { selectedTask } = useIssueContext();
 const isLoading = ref(false);
 
 const taskRunLog = computedAsync(
@@ -52,12 +50,9 @@ const taskRunLog = computedAsync(
     evaluating: isLoading,
   }
 );
-const sheet = computed(() =>
-  useSheetV1Store().getSheetByName(sheetNameOfTaskV1(selectedTask.value))
-);
 const logEntries = computed(() => {
   if (isLoading.value) return [];
-  if (!sheet.value) return [];
+  if (!props.sheet) return [];
   return taskRunLog.value?.entries ?? [];
 });
 const flattenLogEntries = computed(() => {
@@ -167,7 +162,7 @@ const columns = computed(() => {
       render: (entry) => {
         return (
           <div class="flex flex-row justify-start items-center">
-            <DetailCell entry={entry} sheet={sheet.value} />
+            <DetailCell entry={entry} sheet={props.sheet} />
           </div>
         );
       },
@@ -177,7 +172,7 @@ const columns = computed(() => {
       title: () => t("common.statement"),
       width: "60%",
       render: (entry) => {
-        return <StatementCell entry={entry} sheet={sheet.value} />;
+        return <StatementCell entry={entry} sheet={props.sheet} />;
       },
     },
     {

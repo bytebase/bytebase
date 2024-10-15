@@ -1,7 +1,7 @@
 <template>
   <NTabs v-model:value="state.currentTab" type="line">
     <NTabPane name="LOG" :tab="$t('issue.task-run.logs')">
-      <TaskRunLogTable :key="componentId" :task-run="taskRun" />
+      <TaskRunLogTable :key="componentId" :task-run="taskRun" :sheet="sheet" />
     </NTabPane>
     <NTabPane
       v-if="showTaskRunSessionTab"
@@ -27,8 +27,10 @@ import { uniqueId } from "lodash-es";
 import { RefreshCcwIcon } from "lucide-vue-next";
 import { NButton, NTabs, NTabPane } from "naive-ui";
 import { computed, reactive, ref } from "vue";
+import { useSheetV1Store } from "@/store";
 import { Engine } from "@/types/proto/v1/common";
 import { TaskRun_Status, type TaskRun } from "@/types/proto/v1/rollout_service";
+import { sheetNameOfTaskV1 } from "@/utils";
 import { databaseForTask, useIssueContext } from "../../logic";
 import TaskRunLogTable from "./TaskRunLogTable";
 import TaskRunSession from "./TaskRunSession";
@@ -50,6 +52,10 @@ const state = reactive<LocalState>({
 });
 // Mainly using to force re-render of TaskRunSession component which will re-fetch the session data.
 const componentId = ref<string>(uniqueId());
+
+const sheet = computed(() =>
+  useSheetV1Store().getSheetByName(sheetNameOfTaskV1(selectedTask.value))
+);
 
 const showTaskRunSessionTab = computed(() =>
   TASK_RUN_SESSION_SUPPORTED_ENGINES.includes(

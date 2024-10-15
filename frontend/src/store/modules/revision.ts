@@ -34,14 +34,25 @@ export const useRevisionStore = defineStore("revision", () => {
     );
   };
 
+  const getOrFetchRevisionByName = async (name: string) => {
+    if (revisionMapByName.has(name)) {
+      return revisionMapByName.get(name);
+    }
+
+    const revision = await databaseServiceClient.getRevision({ name });
+    revisionMapByName.set(revision.name, revision);
+    return revision;
+  };
+
   const getRevisionByName = (name: string) => {
-    return revisionMapByName.get(name) ?? Revision.fromPartial({});
+    return revisionMapByName.get(name);
   };
 
   return {
     revisionList,
     fetchRevisionsByDatabase,
     getRevisionsByDatabase,
+    getOrFetchRevisionByName,
     getRevisionByName,
   };
 });
