@@ -1773,6 +1773,14 @@ export interface ListRevisionsResponse {
   nextPageToken: string;
 }
 
+export interface DeleteRevisionRequest {
+  /**
+   * The name of the revision to delete.
+   * Format: instances/{instance}/databases/{database}/revisions/{revision}
+   */
+  name: string;
+}
+
 export interface Revision {
   /** Format: instances/{instance}/databases/{database}/revisions/{revision} */
   name: string;
@@ -9619,6 +9627,63 @@ export const ListRevisionsResponse: MessageFns<ListRevisionsResponse> = {
   },
 };
 
+function createBaseDeleteRevisionRequest(): DeleteRevisionRequest {
+  return { name: "" };
+}
+
+export const DeleteRevisionRequest: MessageFns<DeleteRevisionRequest> = {
+  encode(message: DeleteRevisionRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): DeleteRevisionRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDeleteRevisionRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DeleteRevisionRequest {
+    return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
+  },
+
+  toJSON(message: DeleteRevisionRequest): unknown {
+    const obj: any = {};
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<DeleteRevisionRequest>): DeleteRevisionRequest {
+    return DeleteRevisionRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<DeleteRevisionRequest>): DeleteRevisionRequest {
+    const message = createBaseDeleteRevisionRequest();
+    message.name = object.name ?? "";
+    return message;
+  },
+};
+
 function createBaseRevision(): Revision {
   return {
     name: "",
@@ -11466,6 +11531,71 @@ export const DatabaseServiceDefinition = {
               111,
               110,
               115,
+            ]),
+          ],
+        },
+      },
+    },
+    deleteRevision: {
+      name: "DeleteRevision",
+      requestType: DeleteRevisionRequest,
+      requestStream: false,
+      responseType: Empty,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          8410: [new Uint8Array([4, 110, 97, 109, 101])],
+          578365826: [
+            new Uint8Array([
+              48,
+              42,
+              46,
+              47,
+              118,
+              49,
+              47,
+              123,
+              110,
+              97,
+              109,
+              101,
+              61,
+              105,
+              110,
+              115,
+              116,
+              97,
+              110,
+              99,
+              101,
+              115,
+              47,
+              42,
+              47,
+              100,
+              97,
+              116,
+              97,
+              98,
+              97,
+              115,
+              101,
+              115,
+              47,
+              42,
+              47,
+              114,
+              101,
+              118,
+              105,
+              115,
+              105,
+              111,
+              110,
+              115,
+              47,
+              42,
+              125,
             ]),
           ],
         },
