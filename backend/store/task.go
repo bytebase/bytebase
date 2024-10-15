@@ -64,7 +64,7 @@ func (s *Store) GetTaskV2ByID(ctx context.Context, id int) (*TaskMessage, error)
 func (s *Store) FindLtVersionTasks(ctx context.Context, databaseUID int, version string) ([]int, error) {
 	query := `
 		SELECT
-			task.id,
+			task.id
 		FROM task
 		LEFT JOIN pipeline ON task.pipeline_id = pipeline.id
 		LEFT JOIN issue ON pipeline.id = issue.pipeline_id
@@ -80,8 +80,8 @@ func (s *Store) FindLtVersionTasks(ctx context.Context, databaseUID int, version
 			) AS status
 		) AS latest_task_run ON TRUE
 		WHERE task.database_id = $1
-		AND task.payload->>'version' IS NOT NULL
-		AND task.payload->>'version' < $2
+		AND task.payload->>'schemaVersion' IS NOT NULL
+		AND task.payload->>'schemaVersion' < $2
 		AND (task.payload->>'skipped')::BOOLEAN IS NOT TRUE
 		AND latest_task_run.status != 'DONE'
 		AND COALESCE(issue.status, 'OPEN') = 'OPEN'
