@@ -38,6 +38,7 @@ const (
 	DatabaseService_ListChangeHistories_FullMethodName    = "/bytebase.v1.DatabaseService/ListChangeHistories"
 	DatabaseService_GetChangeHistory_FullMethodName       = "/bytebase.v1.DatabaseService/GetChangeHistory"
 	DatabaseService_ListRevisions_FullMethodName          = "/bytebase.v1.DatabaseService/ListRevisions"
+	DatabaseService_DeleteRevision_FullMethodName         = "/bytebase.v1.DatabaseService/DeleteRevision"
 )
 
 // DatabaseServiceClient is the client API for DatabaseService service.
@@ -62,6 +63,7 @@ type DatabaseServiceClient interface {
 	ListChangeHistories(ctx context.Context, in *ListChangeHistoriesRequest, opts ...grpc.CallOption) (*ListChangeHistoriesResponse, error)
 	GetChangeHistory(ctx context.Context, in *GetChangeHistoryRequest, opts ...grpc.CallOption) (*ChangeHistory, error)
 	ListRevisions(ctx context.Context, in *ListRevisionsRequest, opts ...grpc.CallOption) (*ListRevisionsResponse, error)
+	DeleteRevision(ctx context.Context, in *DeleteRevisionRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
 
 type databaseServiceClient struct {
@@ -252,6 +254,16 @@ func (c *databaseServiceClient) ListRevisions(ctx context.Context, in *ListRevis
 	return out, nil
 }
 
+func (c *databaseServiceClient) DeleteRevision(ctx context.Context, in *DeleteRevisionRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, DatabaseService_DeleteRevision_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // DatabaseServiceServer is the server API for DatabaseService service.
 // All implementations must embed UnimplementedDatabaseServiceServer
 // for forward compatibility.
@@ -274,6 +286,7 @@ type DatabaseServiceServer interface {
 	ListChangeHistories(context.Context, *ListChangeHistoriesRequest) (*ListChangeHistoriesResponse, error)
 	GetChangeHistory(context.Context, *GetChangeHistoryRequest) (*ChangeHistory, error)
 	ListRevisions(context.Context, *ListRevisionsRequest) (*ListRevisionsResponse, error)
+	DeleteRevision(context.Context, *DeleteRevisionRequest) (*emptypb.Empty, error)
 	mustEmbedUnimplementedDatabaseServiceServer()
 }
 
@@ -337,6 +350,9 @@ func (UnimplementedDatabaseServiceServer) GetChangeHistory(context.Context, *Get
 }
 func (UnimplementedDatabaseServiceServer) ListRevisions(context.Context, *ListRevisionsRequest) (*ListRevisionsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListRevisions not implemented")
+}
+func (UnimplementedDatabaseServiceServer) DeleteRevision(context.Context, *DeleteRevisionRequest) (*emptypb.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteRevision not implemented")
 }
 func (UnimplementedDatabaseServiceServer) mustEmbedUnimplementedDatabaseServiceServer() {}
 func (UnimplementedDatabaseServiceServer) testEmbeddedByValue()                         {}
@@ -683,6 +699,24 @@ func _DatabaseService_ListRevisions_Handler(srv interface{}, ctx context.Context
 	return interceptor(ctx, in, info, handler)
 }
 
+func _DatabaseService_DeleteRevision_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteRevisionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DatabaseServiceServer).DeleteRevision(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: DatabaseService_DeleteRevision_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DatabaseServiceServer).DeleteRevision(ctx, req.(*DeleteRevisionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // DatabaseService_ServiceDesc is the grpc.ServiceDesc for DatabaseService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -761,6 +795,10 @@ var DatabaseService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListRevisions",
 			Handler:    _DatabaseService_ListRevisions_Handler,
+		},
+		{
+			MethodName: "DeleteRevision",
+			Handler:    _DatabaseService_DeleteRevision_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

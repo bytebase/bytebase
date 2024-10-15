@@ -6,6 +6,7 @@ import (
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/pkg/errors"
@@ -76,6 +77,17 @@ func (s *DatabaseService) ListRevisions(ctx context.Context, request *v1pb.ListR
 		Revisions:     converted,
 		NextPageToken: nextPageToken,
 	}, nil
+}
+
+func (s *DatabaseService) DeleteRevision(ctx context.Context, request *v1pb.DeleteRevisionRequest) (*emptypb.Empty, error) {
+	revisionUID, err := common.GetRevisionUID(request.Name)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "failed to get revision UID from %v, err: %v", request.Name, err)
+	}
+	if err := s.store.DeleteRevision(ctx, revisionUID); err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to delete revision %v, err: %v", revisionUID, err)
+	}
+	return &emptypb.Empty{}, nil
 }
 
 func convertToRevisions(ctx context.Context, s *store.Store, parent string, revisions []*store.RevisionMessage) ([]*v1pb.Revision, error) {

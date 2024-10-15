@@ -550,6 +550,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.DeleteRevisionRequest"><span class="badge">M</span>DeleteRevisionRequest</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.DeleteSecretRequest"><span class="badge">M</span>DeleteSecretRequest</a>
                 </li>
               
@@ -6773,6 +6777,31 @@ Format: instances/{instance}/databases/{database}/metadata </p></td>
 
         
       
+        <h3 id="bytebase.v1.DeleteRevisionRequest">DeleteRevisionRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The name of the revision to delete.
+Format: instances/{instance}/databases/{database}/revisions/{revision} </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.DeleteSecretRequest">DeleteSecretRequest</h3>
         <p></p>
 
@@ -9767,6 +9796,13 @@ The API will default to the BASIC view.</p></td>
                 <td><p></p></td>
               </tr>
             
+              <tr>
+                <td>DeleteRevision</td>
+                <td><a href="#bytebase.v1.DeleteRevisionRequest">DeleteRevisionRequest</a></td>
+                <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
+                <td><p></p></td>
+              </tr>
+            
           </tbody>
         </table>
 
@@ -9975,6 +10011,16 @@ The API will default to the BASIC view.</p></td>
                 <td>ListRevisions</td>
                 <td>GET</td>
                 <td>/v1/{parent=instances/*/databases/*}/revisions</td>
+                <td></td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>DeleteRevision</td>
+                <td>DELETE</td>
+                <td>/v1/{name=instances/*/databases/*/revisions/*}</td>
                 <td></td>
               </tr>
               
