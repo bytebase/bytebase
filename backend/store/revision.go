@@ -26,7 +26,8 @@ type RevisionMessage struct {
 }
 
 type FindRevisionMessage struct {
-	DatabaseUID int
+	UID         *int64
+	DatabaseUID *int
 
 	Version *string
 
@@ -37,9 +38,14 @@ type FindRevisionMessage struct {
 func (s *Store) ListRevisions(ctx context.Context, find *FindRevisionMessage) ([]*RevisionMessage, error) {
 	where, args := []string{"TRUE"}, []any{}
 
-	where = append(where, fmt.Sprintf("database_id = $%d", len(args)+1))
-	args = append(args, find.DatabaseUID)
-
+	if v := find.UID; v != nil {
+		where = append(where, fmt.Sprintf("id = $%d", len(args)+1))
+		args = append(args, *v)
+	}
+	if v := find.DatabaseUID; v != nil {
+		where = append(where, fmt.Sprintf("database_id = $%d", len(args)+1))
+		args = append(args, *v)
+	}
 	if v := find.Version; v != nil {
 		where = append(where, fmt.Sprintf("payload->>'version' = $%d", len(args)+1))
 		args = append(args, *v)
@@ -110,6 +116,20 @@ func (s *Store) ListRevisions(ctx context.Context, find *FindRevisionMessage) ([
 	}
 
 	return revisions, nil
+}
+
+func (s *Store) GetRevision(ctx context.Context, uid int64) (*RevisionMessage, error) {
+	revisions, err := s.ListRevisions(ctx, &FindRevisionMessage{UID: &uid})
+	if err != nil {
+		return nil, err
+	}
+	if len(revisions) == 0 {
+		return nil, errors.Errorf("revision not found: %d", uid)
+	}
+	if len(revisions) > 1 {
+		return nil, errors.Errorf("found multiple revisions for uid: %d", uid)
+	}
+	return revisions[0], nil
 }
 
 func (s *Store) CreateRevision(ctx context.Context, revision *RevisionMessage, creatorUID int) (*RevisionMessage, error) {

@@ -38,6 +38,7 @@ const (
 	DatabaseService_ListChangeHistories_FullMethodName    = "/bytebase.v1.DatabaseService/ListChangeHistories"
 	DatabaseService_GetChangeHistory_FullMethodName       = "/bytebase.v1.DatabaseService/GetChangeHistory"
 	DatabaseService_ListRevisions_FullMethodName          = "/bytebase.v1.DatabaseService/ListRevisions"
+	DatabaseService_GetRevision_FullMethodName            = "/bytebase.v1.DatabaseService/GetRevision"
 	DatabaseService_DeleteRevision_FullMethodName         = "/bytebase.v1.DatabaseService/DeleteRevision"
 )
 
@@ -63,6 +64,7 @@ type DatabaseServiceClient interface {
 	ListChangeHistories(ctx context.Context, in *ListChangeHistoriesRequest, opts ...grpc.CallOption) (*ListChangeHistoriesResponse, error)
 	GetChangeHistory(ctx context.Context, in *GetChangeHistoryRequest, opts ...grpc.CallOption) (*ChangeHistory, error)
 	ListRevisions(ctx context.Context, in *ListRevisionsRequest, opts ...grpc.CallOption) (*ListRevisionsResponse, error)
+	GetRevision(ctx context.Context, in *GetRevisionRequest, opts ...grpc.CallOption) (*Revision, error)
 	DeleteRevision(ctx context.Context, in *DeleteRevisionRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
 
@@ -254,6 +256,16 @@ func (c *databaseServiceClient) ListRevisions(ctx context.Context, in *ListRevis
 	return out, nil
 }
 
+func (c *databaseServiceClient) GetRevision(ctx context.Context, in *GetRevisionRequest, opts ...grpc.CallOption) (*Revision, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Revision)
+	err := c.cc.Invoke(ctx, DatabaseService_GetRevision_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *databaseServiceClient) DeleteRevision(ctx context.Context, in *DeleteRevisionRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(emptypb.Empty)
@@ -286,6 +298,7 @@ type DatabaseServiceServer interface {
 	ListChangeHistories(context.Context, *ListChangeHistoriesRequest) (*ListChangeHistoriesResponse, error)
 	GetChangeHistory(context.Context, *GetChangeHistoryRequest) (*ChangeHistory, error)
 	ListRevisions(context.Context, *ListRevisionsRequest) (*ListRevisionsResponse, error)
+	GetRevision(context.Context, *GetRevisionRequest) (*Revision, error)
 	DeleteRevision(context.Context, *DeleteRevisionRequest) (*emptypb.Empty, error)
 	mustEmbedUnimplementedDatabaseServiceServer()
 }
@@ -350,6 +363,9 @@ func (UnimplementedDatabaseServiceServer) GetChangeHistory(context.Context, *Get
 }
 func (UnimplementedDatabaseServiceServer) ListRevisions(context.Context, *ListRevisionsRequest) (*ListRevisionsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListRevisions not implemented")
+}
+func (UnimplementedDatabaseServiceServer) GetRevision(context.Context, *GetRevisionRequest) (*Revision, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetRevision not implemented")
 }
 func (UnimplementedDatabaseServiceServer) DeleteRevision(context.Context, *DeleteRevisionRequest) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteRevision not implemented")
@@ -699,6 +715,24 @@ func _DatabaseService_ListRevisions_Handler(srv interface{}, ctx context.Context
 	return interceptor(ctx, in, info, handler)
 }
 
+func _DatabaseService_GetRevision_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetRevisionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DatabaseServiceServer).GetRevision(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: DatabaseService_GetRevision_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DatabaseServiceServer).GetRevision(ctx, req.(*GetRevisionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _DatabaseService_DeleteRevision_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(DeleteRevisionRequest)
 	if err := dec(in); err != nil {
@@ -795,6 +829,10 @@ var DatabaseService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListRevisions",
 			Handler:    _DatabaseService_ListRevisions_Handler,
+		},
+		{
+			MethodName: "GetRevision",
+			Handler:    _DatabaseService_GetRevision_Handler,
 		},
 		{
 			MethodName: "DeleteRevision",

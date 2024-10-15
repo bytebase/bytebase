@@ -117,6 +117,7 @@
     - [GetDatabaseMetadataRequest](#bytebase-v1-GetDatabaseMetadataRequest)
     - [GetDatabaseRequest](#bytebase-v1-GetDatabaseRequest)
     - [GetDatabaseSchemaRequest](#bytebase-v1-GetDatabaseSchemaRequest)
+    - [GetRevisionRequest](#bytebase-v1-GetRevisionRequest)
     - [IndexMetadata](#bytebase-v1-IndexMetadata)
     - [ListChangeHistoriesRequest](#bytebase-v1-ListChangeHistoriesRequest)
     - [ListChangeHistoriesResponse](#bytebase-v1-ListChangeHistoriesResponse)
@@ -2436,6 +2437,21 @@ FunctionMetadata is the metadata for functions.
 
 
 
+<a name="bytebase-v1-GetRevisionRequest"></a>
+
+### GetRevisionRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the revision. Format: instances/{instance}/databases/{database}/revisions/{revision} |
+
+
+
+
+
+
 <a name="bytebase-v1-IndexMetadata"></a>
 
 ### IndexMetadata
@@ -3304,6 +3320,7 @@ PostgreSQL: RANGE, LIST, HASH (https://www.postgresql.org/docs/current/ddl-parti
 | ListChangeHistories | [ListChangeHistoriesRequest](#bytebase-v1-ListChangeHistoriesRequest) | [ListChangeHistoriesResponse](#bytebase-v1-ListChangeHistoriesResponse) |  |
 | GetChangeHistory | [GetChangeHistoryRequest](#bytebase-v1-GetChangeHistoryRequest) | [ChangeHistory](#bytebase-v1-ChangeHistory) |  |
 | ListRevisions | [ListRevisionsRequest](#bytebase-v1-ListRevisionsRequest) | [ListRevisionsResponse](#bytebase-v1-ListRevisionsResponse) |  |
+| GetRevision | [GetRevisionRequest](#bytebase-v1-GetRevisionRequest) | [Revision](#bytebase-v1-Revision) |  |
 | DeleteRevision | [DeleteRevisionRequest](#bytebase-v1-DeleteRevisionRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
 
  

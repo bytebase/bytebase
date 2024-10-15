@@ -1969,6 +1969,42 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/Status'
     /v1/instances/{instance}/databases/{database}/revisions/{revision}:
+        get:
+            tags:
+                - DatabaseService
+            operationId: DatabaseService_GetRevision
+            parameters:
+                - name: instance
+                  in: path
+                  description: The instance id.
+                  required: true
+                  schema:
+                    type: string
+                - name: database
+                  in: path
+                  description: The database id.
+                  required: true
+                  schema:
+                    type: string
+                - name: revision
+                  in: path
+                  description: The revision id.
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Revision'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
         delete:
             tags:
                 - DatabaseService
@@ -5543,12 +5579,6 @@ paths:
                   required: true
                   schema:
                     type: string
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/UndeleteReleaseRequest'
-                required: true
             responses:
                 "200":
                     description: OK
@@ -14372,16 +14402,6 @@ components:
                     description: |-
                         The name of the deleted project.
                          Format: projects/{project}
-        UndeleteReleaseRequest:
-            required:
-                - name
-            type: object
-            properties:
-                name:
-                    type: string
-                    description: |-
-                        The name of the deleted release.
-                         Format: projects/{project}/releases/{release}
         UndeleteUserRequest:
             required:
                 - name

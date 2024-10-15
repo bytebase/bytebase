@@ -506,7 +506,7 @@ func beginMigration(ctx context.Context, stores *store.Store, mi *db.MigrationIn
 	// what they are doing
 	if common.IsDev() {
 		list, err := stores.ListRevisions(ctx, &store.FindRevisionMessage{
-			DatabaseUID: mc.database.UID,
+			DatabaseUID: &mc.database.UID,
 			Version:     &mc.version,
 		})
 		if err != nil {

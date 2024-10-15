@@ -48,7 +48,7 @@ func (s *DatabaseService) ListRevisions(ctx context.Context, request *v1pb.ListR
 	limitPlusOne := limit + 1
 
 	find := &store.FindRevisionMessage{
-		DatabaseUID: database.UID,
+		DatabaseUID: &database.UID,
 		Limit:       &limitPlusOne,
 		Offset:      &offset,
 	}
@@ -79,8 +79,25 @@ func (s *DatabaseService) ListRevisions(ctx context.Context, request *v1pb.ListR
 	}, nil
 }
 
+func (s *DatabaseService) GetRevision(ctx context.Context, request *v1pb.GetRevisionRequest) (*v1pb.Revision, error) {
+	instanceName, databaseName, revisionUID, err := common.GetInstanceDatabaseRevisionID(request.Name)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "failed to get revision UID from %v, err: %v", request.Name, err)
+	}
+	revision, err := s.store.GetRevision(ctx, revisionUID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to delete revision %v, err: %v", revisionUID, err)
+	}
+	parent := fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, instanceName, common.DatabaseIDPrefix, databaseName)
+	converted, err := convertToRevision(ctx, s.store, parent, revision)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to convert to revision, err: %v", err)
+	}
+	return converted, nil
+}
+
 func (s *DatabaseService) DeleteRevision(ctx context.Context, request *v1pb.DeleteRevisionRequest) (*emptypb.Empty, error) {
-	revisionUID, err := common.GetRevisionUID(request.Name)
+	_, _, revisionUID, err := common.GetInstanceDatabaseRevisionID(request.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to get revision UID from %v, err: %v", request.Name, err)
 	}
