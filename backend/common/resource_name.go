@@ -207,16 +207,18 @@ func GetInstanceDatabaseIDSecretName(name string) (string, string, string, error
 	return tokens[0], tokens[1], tokens[2], nil
 }
 
-func GetRevisionUID(name string) (int64, error) {
-	tokens, err := GetNameParentTokens(name, InstanceNamePrefix, DatabaseIDPrefix, RevisionNamePrefix)
+// GetInstanceDatabaseRevisionID returns the instance ID, database ID, and revision UID from a resource name.
+func GetInstanceDatabaseRevisionID(name string) (string, string, int64, error) {
+	// the name should be instances/{instance-id}/databases/{database-id}/changeHistories/{changeHistory-id}
+	tokens, err := GetNameParentTokens(name, InstanceNamePrefix, DatabaseIDPrefix, ChangeHistoryPrefix)
 	if err != nil {
-		return 0, err
+		return "", "", 0, err
 	}
 	revisionUID, err := strconv.ParseInt(tokens[2], 10, 64)
 	if err != nil {
-		return 0, errors.Wrapf(err, "failed to convert %q to int64", tokens[1])
+		return "", "", 0, errors.Wrapf(err, "failed to convert %q to int64", tokens[2])
 	}
-	return revisionUID, nil
+	return tokens[0], tokens[1], revisionUID, nil
 }
 
 // GetUserID returns the user ID from a resource name.
