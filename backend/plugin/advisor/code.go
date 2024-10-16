@@ -60,6 +60,8 @@ const (
 	StatementDisallowCrossDBQueries           Code = 233
 	StatementDisallowFunctionsAndCalculations Code = 234
 	StatementNoMaxExecutionTime               Code = 235
+	StatementNoAlgorithmOption                Code = 236
+	StatementNoLockOption                     Code = 237
 
 	// 301 ～ 399 naming error code
 	// 301 table naming advisor error code.
@@ -450,6 +452,12 @@ const (
 
 	// MySQLStatementMaxExecutionTime is an advisor type for MySQL statement max execution time.
 	MySQLStatementMaxExecutionTime Type = "bb.plugin.advisor.mysql.statement.max-execution-time"
+
+	// MySQLStatementRequireAlgorithmOption is an advisor type for MySQL statement require algorithm option for online DDL.
+	MySQLStatementRequireAlgorithmOption Type = "bb.plugin.advisor.mysql.statement.require-algorithm-option"
+
+	// MySQLStatementRequireLockOption is an advisor type for MySQL statement require lock option for online DDL.
+	MySQLStatementRequireLockOption Type = "bb.plugin.advisor.mysql.statement.require-lock-option"
 
 	// MySQLProcedureDisallowCreate is an advisor type for MySQL disallow create procedure.
 	MySQLProcedureDisallowCreate Type = "bb.plugin.advisor.mysql.procedure.disallow-create"

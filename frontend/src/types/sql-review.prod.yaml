@@ -527,6 +527,18 @@ ruleList:
   - type: statement.max-execution-time
     level: ERROR
     engine: MARIADB
+  - type: statement.require-algorithm-option
+    level: ERROR
+    engine: MYSQL
+  - type: statement.require-algorithm-option
+    level: ERROR
+    engine: MARIADB
+  - type: statement.require-lock-option
+    level: ERROR
+    engine: MYSQL
+  - type: statement.require-lock-option
+    level: ERROR
+    engine: MARIADB
   - type: naming.fully-qualified
     level: WARNING
     engine: POSTGRES
