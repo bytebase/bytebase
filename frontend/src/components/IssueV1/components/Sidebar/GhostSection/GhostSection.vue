@@ -80,7 +80,7 @@ const shouldShowGhostSection = computed(() => {
 
   // Hide ghost section if the release source is set for now.
   // TODO(steven): maybe we can support gh-ost for release source later.
-  if (issue.value.planEntity?.releaseSource) {
+  if (issue.value.planEntity?.releaseSource?.release) {
     return false;
   }
 
