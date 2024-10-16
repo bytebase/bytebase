@@ -77,7 +77,7 @@ func (checker *RequireAlgorithmOptionChecker) EnterAlterTable(ctx *mysql.AlterTa
 	checker.line = ctx.GetStart().GetLine()
 }
 
-func (checker *RequireAlgorithmOptionChecker) ExitAlterTable(ctx *mysql.AlterTableContext) {
+func (checker *RequireAlgorithmOptionChecker) ExitAlterTable(*mysql.AlterTableContext) {
 	if !checker.hasOption {
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{
 			Status:  checker.level,
