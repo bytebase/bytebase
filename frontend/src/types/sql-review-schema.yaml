@@ -649,12 +649,30 @@
 - type: statement.disallow-mix-in-ddl
   category: STATEMENT
   engine: TIDB
+- type: statement.disallow-mix-in-ddl
+  category: STATEMENT
+  engine: POSTGRES
+- type: statement.disallow-mix-in-ddl
+  category: STATEMENT
+  engine: ORACLE
+- type: statement.disallow-mix-in-ddl
+  category: STATEMENT
+  engine: MSSQL
 - type: statement.disallow-mix-in-dml
   category: STATEMENT
   engine: MYSQL
 - type: statement.disallow-mix-in-dml
   category: STATEMENT
   engine: TIDB
+- type: statement.disallow-mix-in-dml
+  category: STATEMENT
+  engine: POSTGRES
+- type: statement.disallow-mix-in-dml
+  category: STATEMENT
+  engine: ORACLE
+- type: statement.disallow-mix-in-dml
+  category: STATEMENT
+  engine: MSSQL
 - type: statement.add-column-without-position
   category: STATEMENT
   engine: OCEANBASE
