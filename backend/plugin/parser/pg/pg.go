@@ -88,6 +88,39 @@ func normalizePostgreSQLName(ctx parser.INameContext) string {
 	return ""
 }
 
+func normalizePostgreSQLFuncName(ctx parser.IFunc_nameContext) []string {
+	if ctx == nil {
+		return nil
+	}
+
+	switch {
+	case ctx.Builtin_function_name() != nil:
+		return []string{strings.ToLower(ctx.Builtin_function_name().GetText())}
+	case ctx.Type_function_name() != nil:
+		return []string{normalizePostgreSQLTypeFunctionName(ctx.Type_function_name())}
+	case ctx.Colid() != nil:
+		var result []string
+		result = append(result, NormalizePostgreSQLColid(ctx.Colid()))
+		result = append(result, normalizePostgreSQLIndirection(ctx.Indirection())...)
+		return result
+	default:
+		return []string{strings.ToLower(ctx.GetText())}
+	}
+}
+
+func normalizePostgreSQLTypeFunctionName(ctx parser.IType_function_nameContext) string {
+	if ctx == nil {
+		return ""
+	}
+
+	switch {
+	case ctx.Identifier() != nil:
+		return normalizePostgreSQLIdentifier(ctx.Identifier())
+	default:
+		return strings.ToLower(ctx.GetText())
+	}
+}
+
 // NormalizePostgreSQLAnyName normalizes the given any name.
 func NormalizePostgreSQLAnyName(ctx parser.IAny_nameContext) []string {
 	if ctx == nil {
