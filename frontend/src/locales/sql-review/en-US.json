@@ -547,6 +547,14 @@
       "title": "Max execution time",
       "description": "Set the maximum execution time for SQL statements. If the execution time exceeds the limit, the statement will be terminated. Suggestion error level: Error"
     },
+    "statement-require-algorithm-option": {
+      "title": "Require specifying the ALGORITHM option in ALTER TABLE statements",
+      "description": "Specifying the ALGORITHM option in ALTER TABLE statements ensures more control over how table changes are applied, minimizing potential disruptions by avoiding full table copies or locks. It helps optimize performance and reduce downtime during schema modifications. Suggested error level: Warning."
+    },
+    "statement-require-lock-option": {
+      "title": "Require specifying the LOCK option in ALTER TABLE statements",
+      "description": "The LOCK option in ALTER TABLE statements allows you to control the level of locking during schema changes, helping to prevent unnecessary table locks and ensuring better concurrency. Proper use of this option can significantly reduce the impact of DDL operations on active queries. Suggested error level: Warning."
+    },
     "database-drop-empty-database": {
       "title": "Prohibit deleting non-empty database",
       "description": "Deletion is only allowed when there are no tables in the database, which can greatly avoid accidental deletion. Suggested error level: Error"

@@ -547,6 +547,14 @@
       "title": "最大执行时间",
       "description": "设置SQL语句的最大执行时间，如果执行时间超过限制，语句将被终止。建议错误级别：错误"
     },
+    "statement-require-algorithm-option": {
+      "title": "需要在 ALTER TABLE 语句中指定 ALGORITHM 选项",
+      "description": "在 ALTER TABLE 语句中指定 ALGORITHM 选项可确保更好地控制表更改的应用方式，通过避免全表复制或锁定来最大限度地减少潜在的中断。它有助于优化性能并减少 ALTER TABLE 操作的停机时间。建议的错误级别：警告。"
+    },
+    "statement-require-lock-option": {
+      "title": "需要在 ALTER TABLE 语句中指定 LOCK 选项",
+      "description": "ALTER TABLE 语句中的 LOCK 选项允许您控制架构更改期间的锁定级别，有助于防止不必要的表锁定并确保更好的并发性。正确使用此选项可以显著减少 ALTER TABLE 操作对活动查询的影响。建议的错误级别：警告。"
+    },
     "database-drop-empty-database": {
       "title": "禁止删除非空数据库",
       "description": "只有当数据库中不包含任何表时才允许被删除，这能最大程度避免误删除的发生。建议错误等级：错误"

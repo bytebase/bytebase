@@ -17,14 +17,13 @@
       class="flex flex-col gap-y-2 items-start md:items-center gap-x-2 justify-center md:flex-row"
     >
       <BBTextField
-        class="flex-1 !text-xl md:!text-2xl py-0.5 !pl-0 px-0.5 font-bold truncate sql-review-title"
+        class="flex-1 !text-xl !pl-0 px-0.5 font-bold truncate sql-review-title"
         :disabled="!hasPermission"
         :required="true"
         :focus-on-mount="false"
         :ends-on-enter="true"
         :bordered="state.editingTitle"
         :value="reviewPolicy.name"
-        size="large"
         @on-focus="state.editingTitle = true"
         @end-editing="changeName"
       />
