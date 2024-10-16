@@ -98,7 +98,7 @@ const schemaVersion = computed(() => {
   const v = extractSchemaVersionFromTask(props.task);
 
   // Always show the schema version for tasks from a release source.
-  if (issue.value.planEntity?.releaseSource) {
+  if (issue.value.planEntity?.releaseSource?.release) {
     return v;
   }
 
