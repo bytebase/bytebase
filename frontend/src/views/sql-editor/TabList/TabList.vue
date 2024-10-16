@@ -142,7 +142,11 @@ const handleAddTab = () => {
   );
   const newTab = tabStore.addTab(clonedTab);
   if (fromTab) {
-    cloneViewState(fromTab.id, newTab.id);
+    const vs = cloneViewState(fromTab.id, newTab.id);
+    if (vs) {
+      vs.view = "CODE";
+      vs.detail = {};
+    }
   }
   nextTick(recalculateScrollState);
   sheetEvents.emit("add-sheet");
