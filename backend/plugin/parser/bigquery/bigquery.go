@@ -1,8 +1,9 @@
 package bigquery
 
 import (
-	"github.com/antlr4-go/antlr/v4"
 	"strings"
+
+	"github.com/antlr4-go/antlr/v4"
 
 	parser "github.com/bytebase/google-sql-parser"
 
