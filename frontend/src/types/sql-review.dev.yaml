@@ -501,6 +501,18 @@ ruleList:
   - type: statement.disallow-mix-ddl-dml
     level: WARNING
     engine: MSSQL
+  - type: statement.disallow-mix-in-ddl
+    level: WARNING
+    engine: MYSQL
+  - type: statement.disallow-mix-in-ddl
+    level: WARNING
+    engine: TIDB
+  - type: statement.disallow-mix-in-dml
+    level: WARNING
+    engine: MYSQL
+  - type: statement.disallow-mix-in-dml
+    level: WARNING
+    engine: TIDB
   - type: statement.disallow-cross-db-queries
     level: WARNING
     engine: MSSQL
