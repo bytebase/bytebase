@@ -133,6 +133,10 @@ const (
 	SchemaRuleStatementDisallowCrossDBQueries = "statement.disallow-cross-db-queries"
 	// SchemaRuleStatementMaxExecutionTime enforce the maximum execution time.
 	SchemaRuleStatementMaxExecutionTime = "statement.max-execution-time"
+	// SchemaRuleStatementRequireAlgorithmOption require set ALGORITHM option in ALTER TABLE statement.
+	SchemaRuleStatementRequireAlgorithmOption = "statement.require-algorithm-option"
+	// SchemaRuleStatementRequireLockOption require set LOCK option in ALTER TABLE statement.
+	SchemaRuleStatementRequireLockOption = "statement.require-lock-option"
 	// SchemaRuleTableRequirePK require the table to have a primary key.
 	SchemaRuleTableRequirePK SQLReviewRuleType = "table.require-pk"
 	// SchemaRuleTableNoFK require the table disallow the foreign key.
@@ -1485,6 +1489,14 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 	case SchemaRuleStatementMaxExecutionTime:
 		if engine == storepb.Engine_MYSQL || engine == storepb.Engine_MARIADB {
 			return MySQLStatementMaxExecutionTime, nil
+		}
+	case SchemaRuleStatementRequireAlgorithmOption:
+		if engine == storepb.Engine_MYSQL || engine == storepb.Engine_MARIADB {
+			return MySQLStatementRequireAlgorithmOption, nil
+		}
+	case SchemaRuleStatementRequireLockOption:
+		if engine == storepb.Engine_MYSQL || engine == storepb.Engine_MARIADB {
+			return MySQLStatementRequireLockOption, nil
 		}
 	case SchemaRuleCommentLength:
 		if engine == storepb.Engine_POSTGRES {
