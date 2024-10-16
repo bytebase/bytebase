@@ -1258,6 +1258,7 @@ type GetDatabaseSchemaRequest struct {
 	SdlFormat bool `protobuf:"varint,2,opt,name=sdl_format,json=sdlFormat,proto3" json:"sdl_format,omitempty"`
 	// When true, the schema dump will be concise.
 	// For Oracle, there will be tables and indexes only for Sync Schema.
+	// For Postgres, we'll filter the backup schema.
 	Concise bool `protobuf:"varint,3,opt,name=concise,proto3" json:"concise,omitempty"`
 }
 
@@ -5679,6 +5680,8 @@ type GetChangeHistoryRequest struct {
 	// Format the schema dump into SDL format.
 	SdlFormat bool `protobuf:"varint,3,opt,name=sdl_format,json=sdlFormat,proto3" json:"sdl_format,omitempty"`
 	// When true, the schema dump will be concise.
+	// For Oracle, there will be tables and indexes only for Sync Schema.
+	// For Postgres, we'll filter the backup schema.
 	Concise bool `protobuf:"varint,4,opt,name=concise,proto3" json:"concise,omitempty"`
 }
 

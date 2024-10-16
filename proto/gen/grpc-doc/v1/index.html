@@ -7354,7 +7354,9 @@ Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory
                   <td>concise</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
-                  <td><p>When true, the schema dump will be concise. </p></td>
+                  <td><p>When true, the schema dump will be concise.
+For Oracle, there will be tables and indexes only for Sync Schema.
+For Postgres, we&#39;ll filter the backup schema. </p></td>
                 </tr>
               
             </tbody>
@@ -7460,7 +7462,8 @@ Format: instances/{instance}/databases/{database}/schema </p></td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
                   <td><p>When true, the schema dump will be concise.
-For Oracle, there will be tables and indexes only for Sync Schema. </p></td>
+For Oracle, there will be tables and indexes only for Sync Schema.
+For Postgres, we&#39;ll filter the backup schema. </p></td>
                 </tr>
               
             </tbody>

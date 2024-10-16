@@ -346,6 +346,7 @@ message GetDatabaseSchemaRequest {
 
   // When true, the schema dump will be concise.
   // For Oracle, there will be tables and indexes only for Sync Schema.
+  // For Postgres, we'll filter the backup schema.
   bool concise = 3;
 }
 
@@ -1417,6 +1418,8 @@ message GetChangeHistoryRequest {
   bool sdl_format = 3;
 
   // When true, the schema dump will be concise.
+  // For Oracle, there will be tables and indexes only for Sync Schema.
+  // For Postgres, we'll filter the backup schema.
   bool concise = 4;
 }
 
