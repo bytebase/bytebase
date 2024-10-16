@@ -291,7 +291,8 @@
     "override": "Override",
     "encoding": "Encoding",
     "finish": "Finish",
-    "title": "Title"
+    "title": "Title",
+    "hide": "Hide"
   },
   "error-page": {
     "go-back-home": "Go back home"
@@ -490,7 +491,7 @@
       "email": "Email",
       "role": "Role",
       "phone": "Phone",
-      "phone-tips": "Be sure to include the country code",
+      "phone-tips": "Be sure to include the country code +1xxxxxx",
       "country-code": "Country Code",
       "password": "Password",
       "password-hint": "Password should follow restriction setting",
@@ -1756,7 +1757,8 @@
     "all-tables": "All tables",
     "affected-tables": "Affected Tables",
     "select-affection-tables": "Select affected tables",
-    "view-full": "View full"
+    "view-full": "View full",
+    "rollback-tip": "Select a specific DDL history to rollback."
   },
   "database": {
     "sync-database": "Sync database",
@@ -3223,7 +3225,22 @@
       "dont-show-again": "Don't show again",
       "text2sql": "Text2SQL",
       "disable-text2sql": "Disable Text2SQL",
-      "enable-text2sql": "Enable Text2SQL"
+      "enable-text2sql": "Enable Text2SQL",
+      "actions": {
+        "chat": "Chat",
+        "explain-code": "Explain code",
+        "find-problems": "Find problems",
+        "new-chat": "New chat",
+        "insert-at-caret": "Insert at caret"
+      },
+      "send": "Send",
+      "new-line": "New line",
+      "ai-assistant": "AI Assistant",
+      "not-configured": {
+        "self": "AI Assistant is not configured.",
+        "contact-admin-to-configure": "Please contact your org administrator.",
+        "go-to-configure": "Go to configure"
+      }
     }
   },
   "custom-approval": {

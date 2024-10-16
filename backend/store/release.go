@@ -11,6 +11,7 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
+	api "github.com/bytebase/bytebase/backend/legacyapi"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -20,15 +21,24 @@ type ReleaseMessage struct {
 
 	// output only
 	UID         int64
+	Deleted     bool
 	CreatorUID  int
 	CreatedTime time.Time
 }
 
 type FindReleaseMessage struct {
-	ProjectUID *int
-	UID        *int64
-	Limit      *int
-	Offset     *int
+	ProjectUID  *int
+	UID         *int64
+	Limit       *int
+	Offset      *int
+	ShowDeleted bool
+}
+
+type UpdateReleaseMessage struct {
+	UID int64
+
+	Deleted *bool
+	Payload *storepb.ReleasePayload
 }
 
 // TODO(p0ny): enforce file order by version.
@@ -101,10 +111,14 @@ func (s *Store) ListReleases(ctx context.Context, find *FindReleaseMessage) ([]*
 		where = append(where, fmt.Sprintf("release.id= $%d", len(args)+1))
 		args = append(args, *v)
 	}
+	if !find.ShowDeleted {
+		where, args = append(where, fmt.Sprintf("release.row_status = $%d", len(args)+1)), append(args, api.Normal)
+	}
 
 	query := fmt.Sprintf(`
 		SELECT
 			id,
+			row_status,
 			project_id,
 			creator_id,
 			created_ts,
@@ -137,10 +151,12 @@ func (s *Store) ListReleases(ctx context.Context, find *FindReleaseMessage) ([]*
 		r := ReleaseMessage{
 			Payload: &storepb.ReleasePayload{},
 		}
+		var rowStatus string
 		var payload []byte
 
 		if err := rows.Scan(
 			&r.UID,
+			&rowStatus,
 			&r.ProjectUID,
 			&r.CreatorUID,
 			&r.CreatedTime,
@@ -149,6 +165,7 @@ func (s *Store) ListReleases(ctx context.Context, find *FindReleaseMessage) ([]*
 			return nil, errors.Wrapf(err, "failed to scan rows")
 		}
 
+		r.Deleted = convertRowStatusToDeleted(rowStatus)
 		if err := common.ProtojsonUnmarshaler.Unmarshal(payload, r.Payload); err != nil {
 			return nil, errors.Wrapf(err, "failed to unmarshal payload")
 		}
@@ -165,4 +182,44 @@ func (s *Store) ListReleases(ctx context.Context, find *FindReleaseMessage) ([]*
 	}
 
 	return releases, nil
+}
+
+func (s *Store) UpdateRelease(ctx context.Context, update *UpdateReleaseMessage) (*ReleaseMessage, error) {
+	set, args := []string{}, []any{}
+
+	if v := update.Deleted; v != nil {
+		rowStatus := api.Normal
+		if *v {
+			rowStatus = api.Archived
+		}
+		set, args = append(set, fmt.Sprintf(`row_status = $%d`, len(args)+1)), append(args, rowStatus)
+	}
+	if v := update.Payload; v != nil {
+		payload, err := protojson.Marshal(update.Payload)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to marshal payload")
+		}
+		set, args = append(set, fmt.Sprintf("payload = $%d", len(args)+1)), append(args, payload)
+	}
+	if len(set) == 0 {
+		return nil, errors.New("no update field provided")
+	}
+
+	args = append(args, update.UID)
+
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	if _, err := tx.ExecContext(ctx, fmt.Sprintf(`UPDATE release SET %s WHERE id = $%d`, strings.Join(set, ", "), len(args)), args...); err != nil {
+		return nil, errors.Wrapf(err, "failed to query row")
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, errors.Wrapf(err, "failed to commit tx")
+	}
+
+	return s.GetRelease(ctx, update.UID)
 }

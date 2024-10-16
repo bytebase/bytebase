@@ -160,7 +160,7 @@ const checkProjectIAMPolicyWithExpr = (
       continue;
     }
     // If binding expr check passes, then return true.
-    if (bindingExprCheck(binding.parsedExpr?.expr)) {
+    if (bindingExprCheck(binding.parsedExpr)) {
       return true;
     }
   }

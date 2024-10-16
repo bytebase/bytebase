@@ -30,7 +30,7 @@
               class="flex items-center p-0.5 border border-transparent rounded text-gray-500 hover:text-accent hover:bg-indigo-50 hover:border-accent cursor-pointer"
               @click.stop="state.rename = conversation"
             >
-              <heroicons-outline:pencil class="w-3 h-3" />
+              <PencilIcon class="w-3 h-3" />
             </button>
             <NPopconfirm
               @positive-click="handleDeleteConversation(conversation)"
@@ -40,7 +40,7 @@
                   class="flex items-center p-0.5 border border-transparent rounded text-gray-500 hover:text-accent hover:bg-indigo-50 hover:border-accent cursor-pointer"
                   @click.stop=""
                 >
-                  <heroicons-outline:trash class="w-3 h-3" />
+                  <TrashIcon class="w-3 h-3" />
                 </button>
               </template>
               <span>{{ $t("plugin.ai.conversation.delete") }}</span>
@@ -50,12 +50,12 @@
 
         <div
           class="sticky bottom-0 btn-normal items-center justify-center gap-x-1"
-          @click="events.emit('new-conversation')"
+          @click="events.emit('new-conversation', { input: '' })"
         >
-          <heroicons-outline:plus class="w-4 h-4" />
-          <span class="pr-2">{{
-            $t("plugin.ai.conversation.new-conversation")
-          }}</span>
+          <PlusIcon class="w-4 h-4" />
+          <span class="pr-2">
+            {{ $t("plugin.ai.conversation.new-conversation") }}
+          </span>
         </div>
       </template>
       <template v-else>
@@ -74,6 +74,7 @@
 
 <script lang="ts" setup>
 import { head } from "lodash-es";
+import { PencilIcon, PlusIcon, TrashIcon } from "lucide-vue-next";
 import { NPopconfirm } from "naive-ui";
 import scrollIntoView from "scroll-into-view-if-needed";
 import { reactive, watch } from "vue";

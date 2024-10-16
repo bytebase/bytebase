@@ -1,5 +1,5 @@
 <template>
-  <div ref="containerElRef" class="w-full h-full overflow-x-auto">
+  <div ref="containerElRef" class="w-full h-full px-2 py-2 overflow-x-auto">
     <NDataTable
       v-bind="$attrs"
       ref="dataTableRef"

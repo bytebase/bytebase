@@ -755,6 +755,14 @@ paths:
             tags:
                 - GroupService
             operationId: GroupService_CreateGroup
+            parameters:
+                - name: groupEmail
+                  in: query
+                  description: |-
+                    The email to use for the group, which will become the final component
+                     of the group's resource name.
+                  schema:
+                    type: string
             requestBody:
                 content:
                     application/json:
@@ -840,6 +848,13 @@ paths:
                   schema:
                     type: string
                     format: field-mask
+                - name: allowMissing
+                  in: query
+                  description: |-
+                    If set to true, and the group is not found, a new group will be created.
+                     In this situation, `update_mask` is ignored.
+                  schema:
+                    type: boolean
             requestBody:
                 content:
                     application/json:
@@ -1947,6 +1962,76 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/ListRevisionsResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v1/instances/{instance}/databases/{database}/revisions/{revision}:
+        get:
+            tags:
+                - DatabaseService
+            operationId: DatabaseService_GetRevision
+            parameters:
+                - name: instance
+                  in: path
+                  description: The instance id.
+                  required: true
+                  schema:
+                    type: string
+                - name: database
+                  in: path
+                  description: The database id.
+                  required: true
+                  schema:
+                    type: string
+                - name: revision
+                  in: path
+                  description: The revision id.
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Revision'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+        delete:
+            tags:
+                - DatabaseService
+            operationId: DatabaseService_DeleteRevision
+            parameters:
+                - name: instance
+                  in: path
+                  description: The instance id.
+                  required: true
+                  schema:
+                    type: string
+                - name: database
+                  in: path
+                  description: The database id.
+                  required: true
+                  schema:
+                    type: string
+                - name: revision
+                  in: path
+                  description: The revision id.
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content: {}
                 default:
                     description: Default error response
                     content:
@@ -5407,6 +5492,33 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
+        delete:
+            tags:
+                - ReleaseService
+            operationId: ReleaseService_DeleteRelease
+            parameters:
+                - name: project
+                  in: path
+                  description: The project id.
+                  required: true
+                  schema:
+                    type: string
+                - name: release
+                  in: path
+                  description: The release id.
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content: {}
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
         patch:
             tags:
                 - ReleaseService
@@ -5436,6 +5548,37 @@ paths:
                         schema:
                             $ref: '#/components/schemas/Release'
                 required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Release'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v1/projects/{project}/releases/{release}:undelete:
+        post:
+            tags:
+                - ReleaseService
+            operationId: ReleaseService_UndeleteRelease
+            parameters:
+                - name: project
+                  in: path
+                  description: The project id.
+                  required: true
+                  schema:
+                    type: string
+                - name: release
+                  in: path
+                  description: The release id.
+                  required: true
+                  schema:
+                    type: string
             responses:
                 "200":
                     description: OK
@@ -5568,6 +5711,55 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/ListTaskRunsResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v1/projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}:
+        get:
+            tags:
+                - RolloutService
+            operationId: RolloutService_GetTaskRun
+            parameters:
+                - name: project
+                  in: path
+                  description: The project id.
+                  required: true
+                  schema:
+                    type: string
+                - name: rollout
+                  in: path
+                  description: The rollout id.
+                  required: true
+                  schema:
+                    type: string
+                - name: stage
+                  in: path
+                  description: The stage id.
+                  required: true
+                  schema:
+                    type: string
+                - name: task
+                  in: path
+                  description: The task id.
+                  required: true
+                  schema:
+                    type: string
+                - name: taskRun
+                  in: path
+                  description: The taskRun id.
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/TaskRun'
                 default:
                     description: Default error response
                     content:
@@ -6961,6 +7153,11 @@ paths:
                   schema:
                     type: string
                     format: field-mask
+                - name: allowMissing
+                  in: query
+                  description: If set to true, and the role is not found, a new role will be created.
+                  schema:
+                    type: boolean
             requestBody:
                 content:
                     application/json:
@@ -8561,7 +8758,7 @@ components:
                 expressions:
                     type: array
                     items:
-                        $ref: '#/components/schemas/ParsedExpr'
+                        $ref: '#/components/schemas/Expr'
         BatchDeparseResponse:
             type: object
             properties:
@@ -8596,7 +8793,7 @@ components:
                 expressions:
                     type: array
                     items:
-                        $ref: '#/components/schemas/ParsedExpr'
+                        $ref: '#/components/schemas/Expr'
         BatchRunTasksRequest:
             type: object
             properties:
@@ -8738,7 +8935,7 @@ components:
                 parsedExpr:
                     readOnly: true
                     allOf:
-                        - $ref: '#/components/schemas/ParsedExpr'
+                        - $ref: '#/components/schemas/Expr'
                     description: The parsed expression of the condition.
         Branch:
             type: object
@@ -11342,18 +11539,6 @@ components:
                     type: array
                     items:
                         type: string
-        ParsedExpr:
-            type: object
-            properties:
-                expr:
-                    allOf:
-                        - $ref: '#/components/schemas/Expr'
-                    description: The parsed expression.
-                sourceInfo:
-                    allOf:
-                        - $ref: '#/components/schemas/SourceInfo'
-                    description: The source info derived from input that generated the parsed `expr`.
-            description: An expression together with source information as returned by the parser.
         PasswordRestrictionSetting:
             type: object
             properties:
@@ -11630,12 +11815,22 @@ components:
                     description: |-
                         IDs of the specs that this spec depends on.
                          Must be a subset of the specs in the same step.
+                specReleaseSource:
+                    $ref: '#/components/schemas/Plan_SpecReleaseSource'
                 createDatabaseConfig:
                     $ref: '#/components/schemas/Plan_CreateDatabaseConfig'
                 changeDatabaseConfig:
                     $ref: '#/components/schemas/Plan_ChangeDatabaseConfig'
                 exportDataConfig:
                     $ref: '#/components/schemas/Plan_ExportDataConfig'
+        Plan_SpecReleaseSource:
+            type: object
+            properties:
+                file:
+                    type: string
+                    description: |-
+                        Format: projects/{project}/releases/{release}/files/{file}
+                         {file} is URL path escaped.
         Plan_Step:
             type: object
             properties:
@@ -11856,17 +12051,26 @@ components:
                 outOfOrderFiles:
                     type: array
                     items:
-                        type: string
-                    description: |-
-                        Format: projects/{project}/releases/{release}/files/{path}
-                         Example: `projects/tnt/releases/0801/files/2.2/V0001_create_table.sql`
+                        $ref: '#/components/schemas/PreviewPlanResponse_DatabaseFiles'
+                    description: The out of order files of each database.
                 appliedButModifiedFiles:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/PreviewPlanResponse_DatabaseFiles'
+                    description: The applied but modified files of each database.
+        PreviewPlanResponse_DatabaseFiles:
+            type: object
+            properties:
+                database:
+                    type: string
+                files:
                     type: array
                     items:
                         type: string
                     description: |-
                         Format: projects/{project}/releases/{release}/files/{path}
-                         Example: `projects/tnt/releases/0801/files/2.2/V0001_create_table.sql`
+                         {path} is URL path escaped.
+                         Example: `projects/tnt/releases/0801/files/2.2%2FV0001_create_table.sql`
         PreviewRolloutRequest:
             required:
                 - project
@@ -12242,6 +12446,13 @@ components:
                     format: enum
                 version:
                     type: string
+                statement:
+                    readOnly: true
+                    type: string
+                    description: The statement is used for preview purpose.
+                statementSize:
+                    readOnly: true
+                    type: string
         Release_VCSSource:
             type: object
             properties:
@@ -12422,6 +12633,13 @@ components:
                     readOnly: true
                     type: string
                     description: The SHA256 hash value of the sheet.
+                statement:
+                    readOnly: true
+                    type: string
+                    description: The statement is used for preview purpose.
+                statementSize:
+                    readOnly: true
+                    type: string
                 type:
                     enum:
                         - TYPE_UNSPECIFIED
@@ -12436,11 +12654,18 @@ components:
                         The name of the file in the release.
                          Expressed as a path, e.g. `2.2/V0001_create_table.sql`
                          Can be empty.
+                issue:
+                    type: string
+                    description: |-
+                        The issue associated with the revision.
+                         Can be empty.
+                         Format: projects/{project}/issues/{issue}
                 taskRun:
                     type: string
                     description: |-
                         The task run associated with the revision.
                          Can be empty.
+                         Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
         Risk:
             type: object
             properties:
@@ -13492,54 +13717,6 @@ components:
                         $ref: '#/components/schemas/SlowQueryDetails'
                     description: Samples are details of the sample slow query logs with the same fingerprint.
             description: SlowQueryStatistics is the statistics of the slow query log.
-        SourceInfo:
-            type: object
-            properties:
-                syntaxVersion:
-                    type: string
-                    description: The syntax version of the source, e.g. `cel1`.
-                location:
-                    type: string
-                    description: |-
-                        The location name. All position information attached to an expression is
-                         relative to this location.
-
-                         The location could be a file, UI element, or similar. For example,
-                         `acme/app/AnvilPolicy.cel`.
-                lineOffsets:
-                    type: array
-                    items:
-                        type: integer
-                        format: int32
-                    description: |-
-                        Monotonically increasing list of code point offsets where newlines
-                         `\n` appear.
-
-                         The line number of a given position is the index `i` where for a given
-                         `id` the `line_offsets[i] < id_positions[id] < line_offsets[i+1]`. The
-                         column may be derivd from `id_positions[id] - line_offsets[i]`.
-                positions:
-                    type: object
-                    additionalProperties:
-                        type: integer
-                        format: int32
-                    description: |-
-                        A map from the parse node id (e.g. `Expr.id`) to the code point offset
-                         within the source.
-                macroCalls:
-                    type: object
-                    additionalProperties:
-                        $ref: '#/components/schemas/Expr'
-                    description: |-
-                        A map from the parse node id where a macro replacement was made to the
-                         call `Expr` that resulted in a macro expansion.
-
-                         For example, `has(value.field)` is a function call that is replaced by a
-                         `test_only` field selection in the AST. Likewise, the call
-                         `list.exists(e, e > 10)` translates to a comprehension expression. The key
-                         in the map corresponds to the expression id of the expanded macro, and the
-                         value is the call `Expr` that was replaced.
-            description: Source information collected at parse time.
         Stage:
             type: object
             properties:
@@ -14731,7 +14908,7 @@ components:
             type: object
             properties:
                 expression:
-                    $ref: '#/components/schemas/ParsedExpr'
+                    $ref: '#/components/schemas/Expr'
                 template:
                     $ref: '#/components/schemas/ApprovalTemplate'
                 condition:

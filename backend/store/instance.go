@@ -39,7 +39,7 @@ type InstanceMessage struct {
 type UpdateInstanceMessage struct {
 	Title         *string
 	ExternalLink  *string
-	Delete        *bool
+	Deleted       *bool
 	DataSources   *[]*DataSourceMessage
 	EngineVersion *string
 	Activation    *bool
@@ -255,12 +255,12 @@ func (s *Store) UpdateInstanceV2(ctx context.Context, patch *UpdateInstanceMessa
 			where = append(where, fmt.Sprintf("(%s) < %d", countActivateInstanceQuery, maximumActivation))
 		}
 	}
-	if v := patch.Delete; v != nil {
+	if v := patch.Deleted; v != nil {
 		if patch.Activation != nil {
 			return nil, errors.Errorf(`cannot set "activation" and "row_status" at the same time`)
 		}
 		rowStatus := api.Normal
-		if *patch.Delete {
+		if *patch.Deleted {
 			rowStatus = api.Archived
 			set, args = append(set, fmt.Sprintf("activation = $%d", len(args)+1)), append(args, false)
 		}

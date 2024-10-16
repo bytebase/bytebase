@@ -229,6 +229,8 @@ message Plan {
     // Must be a subset of the specs in the same step.
     repeated string depends_on_specs = 6;
 
+    SpecReleaseSource spec_release_source = 8;
+
     oneof config {
       CreateDatabaseConfig create_database_config = 1;
       ChangeDatabaseConfig change_database_config = 2;
@@ -347,6 +349,12 @@ message Plan {
     // Format: projects/{project}/releases/{release}
     string release = 1 [(google.api.resource_reference) = {type: "bytebase.com/Release"}];
   }
+
+  message SpecReleaseSource {
+    // Format: projects/{project}/releases/{release}/files/{file}
+    // {file} is URL path escaped.
+    string file = 1;
+  }
 }
 
 message ListPlanCheckRunsRequest {
@@ -436,13 +444,18 @@ message PreviewPlanRequest {
 message PreviewPlanResponse {
   Plan plan = 1;
 
-  // Format: projects/{project}/releases/{release}/files/{path}
-  // Example: `projects/tnt/releases/0801/files/2.2/V0001_create_table.sql`
-  repeated string out_of_order_files = 2;
+  // The out of order files of each database.
+  repeated DatabaseFiles out_of_order_files = 2;
+  // The applied but modified files of each database.
+  repeated DatabaseFiles applied_but_modified_files = 3;
 
-  // Format: projects/{project}/releases/{release}/files/{path}
-  // Example: `projects/tnt/releases/0801/files/2.2/V0001_create_table.sql`
-  repeated string applied_but_modified_files = 3;
+  message DatabaseFiles {
+    string database = 1;
+    // Format: projects/{project}/releases/{release}/files/{path}
+    // {path} is URL path escaped.
+    // Example: `projects/tnt/releases/0801/files/2.2%2FV0001_create_table.sql`
+    repeated string files = 2;
+  }
 }
 
 message PlanCheckRun {

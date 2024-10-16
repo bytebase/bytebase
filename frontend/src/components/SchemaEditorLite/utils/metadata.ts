@@ -15,11 +15,11 @@ export const validateDatabaseMetadata = (
 
       for (const column of table.columns) {
         if (!column.name) {
-          messages.push(`Column name is required.`);
+          messages.push(`Column name is required in table ${table.name}`);
           continue;
         }
         if (!column.type) {
-          messages.push(`Column ${column.name} type is required.`);
+          messages.push(`Missing column type in ${table.name}.${column.name}`);
         }
       }
     }

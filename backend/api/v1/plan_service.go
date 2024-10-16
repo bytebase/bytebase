@@ -247,9 +247,7 @@ func (s *PlanService) CreatePlan(ctx context.Context, request *v1pb.CreatePlanRe
 		PipelineUID: nil,
 		Name:        request.Plan.Title,
 		Description: request.Plan.Description,
-		Config: &storepb.PlanConfig{
-			Steps: convertPlanSteps(request.Plan.Steps),
-		},
+		Config:      convertPlan(request.Plan),
 	}
 	if request.GetPlan().VcsSource != nil {
 		planMessage.Config.VcsSource = &storepb.PlanConfig_VCSSource{
@@ -1110,13 +1108,17 @@ func (s *PlanService) PreviewPlan(ctx context.Context, request *v1pb.PreviewPlan
 		}
 	}
 
+	response := &v1pb.PreviewPlanResponse{}
+
 	var allSpecs []*v1pb.Plan_Spec
 	for database := range databasesToDeploy {
 		db, ok := allDatabasesByName[database]
 		if !ok {
 			continue
 		}
-		specs, err := s.getSpecsForDatabase(ctx, db, release)
+		specs, ooo, abm, err := s.getSpecsForDatabase(ctx, db, release, request.Release, request.AllowOutOfOrder)
+		response.OutOfOrderFiles = append(response.OutOfOrderFiles, ooo)
+		response.AppliedButModifiedFiles = append(response.AppliedButModifiedFiles, abm)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to get specs for database, err: %v", err)
 		}
@@ -1124,7 +1126,7 @@ func (s *PlanService) PreviewPlan(ctx context.Context, request *v1pb.PreviewPlan
 	}
 
 	// TODO(p0ny): prettify step/spec.
-	plan := &v1pb.Plan{
+	response.Plan = &v1pb.Plan{
 		Title: fmt.Sprintf("preview plan from release %q", request.Release),
 		Steps: []*v1pb.Plan_Step{
 			{
@@ -1137,22 +1139,21 @@ func (s *PlanService) PreviewPlan(ctx context.Context, request *v1pb.PreviewPlan
 		},
 	}
 
-	// TODO(p0ny): out of order migrations
-	return &v1pb.PreviewPlanResponse{
-		Plan: plan,
-	}, nil
+	return response, nil
 }
 
-func (s *PlanService) getSpecsForDatabase(ctx context.Context, database *store.DatabaseMessage, release *store.ReleaseMessage) ([]*v1pb.Plan_Spec, error) {
-	revisions, err := s.store.ListRevisions(ctx, &store.FindRevisionMessage{DatabaseUID: database.UID})
+func (s *PlanService) getSpecsForDatabase(ctx context.Context, database *store.DatabaseMessage, release *store.ReleaseMessage, releaseName string, allowOoo bool) ([]*v1pb.Plan_Spec, *v1pb.PreviewPlanResponse_DatabaseFiles, *v1pb.PreviewPlanResponse_DatabaseFiles, error) {
+	revisions, err := s.store.ListRevisions(ctx, &store.FindRevisionMessage{DatabaseUID: &database.UID})
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to list revisions")
+		return nil, nil, nil, errors.Wrapf(err, "failed to list revisions")
 	}
-	return getSpecs(database, revisions, release)
+	return getSpecs(database, revisions, release, releaseName, allowOoo)
 }
 
-func getSpecs(database *store.DatabaseMessage, revisions []*store.RevisionMessage, release *store.ReleaseMessage) ([]*v1pb.Plan_Spec, error) {
+func getSpecs(database *store.DatabaseMessage, revisions []*store.RevisionMessage, release *store.ReleaseMessage, releaseName string, allowOoo bool) ([]*v1pb.Plan_Spec, *v1pb.PreviewPlanResponse_DatabaseFiles, *v1pb.PreviewPlanResponse_DatabaseFiles, error) {
 	var specs []*v1pb.Plan_Spec
+	var outOfOrderFiles []string
+	var modifiedFiles []string
 
 	var lastVersion string
 	revisionByVersion := map[string]*store.RevisionMessage{}
@@ -1177,25 +1178,32 @@ func getSpecs(database *store.DatabaseMessage, revisions []*store.RevisionMessag
 	})
 
 	for _, file := range release.Payload.Files {
-		_, ok := revisionByVersion[file.Version]
+		r, ok := revisionByVersion[file.Version]
 		if ok {
-			// applied
-			// if r.Payload.SheetSha1 != file.SheetSha1 {
-			// modified
-			// }
+			// applied, so we will not deploy it.
+			if r.Payload.SheetSha256 != file.SheetSha256 {
+				// It's been modified! warn users.
+				modifiedFiles = append(modifiedFiles, common.FormatReleaseFile(releaseName, file.Name))
+			}
 			continue
 		}
 
-		// not applied before
-		// 1. should be applied
-		// 2. out of order
 		if lastVersion != "" && lastVersion >= file.Version {
 			// out of order detected
-			continue
+			outOfOrderFiles = append(outOfOrderFiles, common.FormatReleaseFile(releaseName, file.Name))
+
+			// allowOutOfOrder=false
+			// continue so that we don't add it into the plan.
+			if !allowOoo {
+				continue
+			}
 		}
 
 		spec := &v1pb.Plan_Spec{
 			Id: uuid.NewString(),
+			SpecReleaseSource: &v1pb.Plan_SpecReleaseSource{
+				File: common.FormatReleaseFile(releaseName, file.Name),
+			},
 			Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
 				ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
 					Type:          v1pb.Plan_ChangeDatabaseConfig_MIGRATE,
@@ -1208,5 +1216,14 @@ func getSpecs(database *store.DatabaseMessage, revisions []*store.RevisionMessag
 		specs = append(specs, spec)
 	}
 
-	return specs, nil
+	return specs,
+		&v1pb.PreviewPlanResponse_DatabaseFiles{
+			Database: common.FormatDatabase(database.InstanceID, database.DatabaseName),
+			Files:    outOfOrderFiles,
+		},
+		&v1pb.PreviewPlanResponse_DatabaseFiles{
+			Database: common.FormatDatabase(database.InstanceID, database.DatabaseName),
+			Files:    modifiedFiles,
+		},
+		nil
 }

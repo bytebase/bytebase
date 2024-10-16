@@ -3,6 +3,7 @@ syntax = "proto3";
 package bytebase.store;
 
 import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
 import "google/protobuf/timestamp.proto";
 import "store/common.proto";
 import "store/plan_check_run.proto";
@@ -27,6 +28,8 @@ message PlanConfig {
     // Must be a subset of the specs in the same step.
     repeated string depends_on_specs = 6;
 
+    SpecReleaseSource spec_release_source = 8;
+
     oneof config {
       CreateDatabaseConfig create_database_config = 1;
       ChangeDatabaseConfig change_database_config = 2;
@@ -35,6 +38,8 @@ message PlanConfig {
   }
 
   VCSSource vcs_source = 8;
+
+  ReleaseSource release_source = 9;
 
   message CreateDatabaseConfig {
     // The resource name of the instance on which the database is created.
@@ -123,5 +128,17 @@ message PlanConfig {
     // Format: projects/{project-ID}/vcsConnectors/{vcs-connector}
     string vcs_connector = 2;
     string pull_request_url = 3;
+  }
+
+  message ReleaseSource {
+    // The release.
+    // Format: projects/{project}/releases/{release}
+    string release = 1 [(google.api.resource_reference) = {type: "bytebase.com/Release"}];
+  }
+
+  message SpecReleaseSource {
+    // Format: projects/{project}/releases/{release}/files/{file}
+    // {file} is URL path escaped.
+    string file = 1;
   }
 }

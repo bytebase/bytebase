@@ -7,6 +7,7 @@
 /* eslint-disable */
 import { BinaryReader, BinaryWriter } from "@bufbuild/protobuf/wire";
 import Long from "long";
+import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
 import { Timestamp } from "../google/protobuf/timestamp";
 import { VCSType, vCSTypeFromJSON, vCSTypeToJSON, vCSTypeToNumber } from "./common";
@@ -107,6 +108,22 @@ export interface UpdateReleaseRequest {
   updateMask: string[] | undefined;
 }
 
+export interface DeleteReleaseRequest {
+  /**
+   * The name of the release to delete.
+   * Format: projects/{project}/releases/{release}
+   */
+  name: string;
+}
+
+export interface UndeleteReleaseRequest {
+  /**
+   * The name of the deleted release.
+   * Format: projects/{project}/releases/{release}
+   */
+  name: string;
+}
+
 export interface Release {
   /** Format: projects/{project}/releases/{release} */
   name: string;
@@ -135,6 +152,9 @@ export interface Release_File {
   sheetSha256: string;
   type: ReleaseFileType;
   version: string;
+  /** The statement is used for preview purpose. */
+  statement: string;
+  statementSize: Long;
 }
 
 export interface Release_VCSSource {
@@ -514,6 +534,120 @@ export const UpdateReleaseRequest: MessageFns<UpdateReleaseRequest> = {
   },
 };
 
+function createBaseDeleteReleaseRequest(): DeleteReleaseRequest {
+  return { name: "" };
+}
+
+export const DeleteReleaseRequest: MessageFns<DeleteReleaseRequest> = {
+  encode(message: DeleteReleaseRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): DeleteReleaseRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDeleteReleaseRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DeleteReleaseRequest {
+    return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
+  },
+
+  toJSON(message: DeleteReleaseRequest): unknown {
+    const obj: any = {};
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<DeleteReleaseRequest>): DeleteReleaseRequest {
+    return DeleteReleaseRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<DeleteReleaseRequest>): DeleteReleaseRequest {
+    const message = createBaseDeleteReleaseRequest();
+    message.name = object.name ?? "";
+    return message;
+  },
+};
+
+function createBaseUndeleteReleaseRequest(): UndeleteReleaseRequest {
+  return { name: "" };
+}
+
+export const UndeleteReleaseRequest: MessageFns<UndeleteReleaseRequest> = {
+  encode(message: UndeleteReleaseRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): UndeleteReleaseRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseUndeleteReleaseRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): UndeleteReleaseRequest {
+    return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
+  },
+
+  toJSON(message: UndeleteReleaseRequest): unknown {
+    const obj: any = {};
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<UndeleteReleaseRequest>): UndeleteReleaseRequest {
+    return UndeleteReleaseRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<UndeleteReleaseRequest>): UndeleteReleaseRequest {
+    const message = createBaseUndeleteReleaseRequest();
+    message.name = object.name ?? "";
+    return message;
+  },
+};
+
 function createBaseRelease(): Release {
   return { name: "", title: "", files: [], vcsSource: undefined, creator: "", createTime: undefined };
 }
@@ -653,7 +787,15 @@ export const Release: MessageFns<Release> = {
 };
 
 function createBaseRelease_File(): Release_File {
-  return { name: "", sheet: "", sheetSha256: "", type: ReleaseFileType.TYPE_UNSPECIFIED, version: "" };
+  return {
+    name: "",
+    sheet: "",
+    sheetSha256: "",
+    type: ReleaseFileType.TYPE_UNSPECIFIED,
+    version: "",
+    statement: "",
+    statementSize: Long.ZERO,
+  };
 }
 
 export const Release_File: MessageFns<Release_File> = {
@@ -672,6 +814,12 @@ export const Release_File: MessageFns<Release_File> = {
     }
     if (message.version !== "") {
       writer.uint32(42).string(message.version);
+    }
+    if (message.statement !== "") {
+      writer.uint32(50).string(message.statement);
+    }
+    if (!message.statementSize.equals(Long.ZERO)) {
+      writer.uint32(56).int64(message.statementSize.toString());
     }
     return writer;
   },
@@ -718,6 +866,20 @@ export const Release_File: MessageFns<Release_File> = {
 
           message.version = reader.string();
           continue;
+        case 6:
+          if (tag !== 50) {
+            break;
+          }
+
+          message.statement = reader.string();
+          continue;
+        case 7:
+          if (tag !== 56) {
+            break;
+          }
+
+          message.statementSize = Long.fromString(reader.int64().toString());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -734,6 +896,8 @@ export const Release_File: MessageFns<Release_File> = {
       sheetSha256: isSet(object.sheetSha256) ? globalThis.String(object.sheetSha256) : "",
       type: isSet(object.type) ? releaseFileTypeFromJSON(object.type) : ReleaseFileType.TYPE_UNSPECIFIED,
       version: isSet(object.version) ? globalThis.String(object.version) : "",
+      statement: isSet(object.statement) ? globalThis.String(object.statement) : "",
+      statementSize: isSet(object.statementSize) ? Long.fromValue(object.statementSize) : Long.ZERO,
     };
   },
 
@@ -754,6 +918,12 @@ export const Release_File: MessageFns<Release_File> = {
     if (message.version !== "") {
       obj.version = message.version;
     }
+    if (message.statement !== "") {
+      obj.statement = message.statement;
+    }
+    if (!message.statementSize.equals(Long.ZERO)) {
+      obj.statementSize = (message.statementSize || Long.ZERO).toString();
+    }
     return obj;
   },
 
@@ -767,6 +937,10 @@ export const Release_File: MessageFns<Release_File> = {
     message.sheetSha256 = object.sheetSha256 ?? "";
     message.type = object.type ?? ReleaseFileType.TYPE_UNSPECIFIED;
     message.version = object.version ?? "";
+    message.statement = object.statement ?? "";
+    message.statementSize = (object.statementSize !== undefined && object.statementSize !== null)
+      ? Long.fromValue(object.statementSize)
+      : Long.ZERO;
     return message;
   },
 };
@@ -1098,6 +1272,116 @@ export const ReleaseServiceDefinition = {
               47,
               42,
               125,
+            ]),
+          ],
+        },
+      },
+    },
+    deleteRelease: {
+      name: "DeleteRelease",
+      requestType: DeleteReleaseRequest,
+      requestStream: false,
+      responseType: Empty,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          8410: [new Uint8Array([4, 110, 97, 109, 101])],
+          578365826: [
+            new Uint8Array([
+              34,
+              42,
+              32,
+              47,
+              118,
+              49,
+              47,
+              123,
+              110,
+              97,
+              109,
+              101,
+              61,
+              112,
+              114,
+              111,
+              106,
+              101,
+              99,
+              116,
+              115,
+              47,
+              42,
+              47,
+              114,
+              101,
+              108,
+              101,
+              97,
+              115,
+              101,
+              115,
+              47,
+              42,
+              125,
+            ]),
+          ],
+        },
+      },
+    },
+    undeleteRelease: {
+      name: "UndeleteRelease",
+      requestType: UndeleteReleaseRequest,
+      requestStream: false,
+      responseType: Release,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              43,
+              34,
+              41,
+              47,
+              118,
+              49,
+              47,
+              123,
+              110,
+              97,
+              109,
+              101,
+              61,
+              112,
+              114,
+              111,
+              106,
+              101,
+              99,
+              116,
+              115,
+              47,
+              42,
+              47,
+              114,
+              101,
+              108,
+              101,
+              97,
+              115,
+              101,
+              115,
+              47,
+              42,
+              125,
+              58,
+              117,
+              110,
+              100,
+              101,
+              108,
+              101,
+              116,
+              101,
             ]),
           ],
         },

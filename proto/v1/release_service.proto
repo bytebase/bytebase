@@ -6,6 +6,7 @@ import "google/api/annotations.proto";
 import "google/api/client.proto";
 import "google/api/field_behavior.proto";
 import "google/api/resource.proto";
+import "google/protobuf/empty.proto";
 import "google/protobuf/field_mask.proto";
 import "google/protobuf/timestamp.proto";
 import "v1/common.proto";
@@ -34,6 +35,13 @@ service ReleaseService {
       body: "release"
     };
     option (google.api.method_signature) = "release,update_mask";
+  }
+  rpc DeleteRelease(DeleteReleaseRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {delete: "/v1/{name=projects/*/releases/*}"};
+    option (google.api.method_signature) = "name";
+  }
+  rpc UndeleteRelease(UndeleteReleaseRequest) returns (Release) {
+    option (google.api.http) = {post: "/v1/{name=projects/*/releases/*}:undelete"};
   }
 }
 
@@ -92,6 +100,24 @@ message UpdateReleaseRequest {
   google.protobuf.FieldMask update_mask = 2;
 }
 
+message DeleteReleaseRequest {
+  // The name of the release to delete.
+  // Format: projects/{project}/releases/{release}
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Release"}
+  ];
+}
+
+message UndeleteReleaseRequest {
+  // The name of the deleted release.
+  // Format: projects/{project}/releases/{release}
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Release"}
+  ];
+}
+
 message Release {
   option (google.api.resource) = {
     type: "bytebase.com/Release"
@@ -123,6 +149,10 @@ message Release {
     string sheet_sha256 = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
     ReleaseFileType type = 4;
     string version = 5;
+
+    // The statement is used for preview purpose.
+    string statement = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
+    int64 statement_size = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
   }
 
   message VCSSource {

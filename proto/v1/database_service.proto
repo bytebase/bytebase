@@ -166,6 +166,14 @@ service DatabaseService {
     option (google.api.http) = {get: "/v1/{parent=instances/*/databases/*}/revisions"};
     option (google.api.method_signature) = "parent";
   }
+  rpc GetRevision(GetRevisionRequest) returns (Revision) {
+    option (google.api.http) = {get: "/v1/{name=instances/*/databases/*/revisions/*}"};
+    option (google.api.method_signature) = "name";
+  }
+  rpc DeleteRevision(DeleteRevisionRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {delete: "/v1/{name=instances/*/databases/*/revisions/*}"};
+    option (google.api.method_signature) = "name";
+  }
 }
 
 message GetDatabaseRequest {
@@ -1441,6 +1449,24 @@ message ListRevisionsResponse {
   string next_page_token = 2;
 }
 
+message GetRevisionRequest {
+  // The name of the revision.
+  // Format: instances/{instance}/databases/{database}/revisions/{revision}
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Revision"}
+  ];
+}
+
+message DeleteRevisionRequest {
+  // The name of the revision to delete.
+  // Format: instances/{instance}/databases/{database}/revisions/{revision}
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Revision"}
+  ];
+}
+
 message Revision {
   option (google.api.resource) = {
     type: "bytebase.com/Revision"
@@ -1464,16 +1490,25 @@ message Revision {
   string sheet = 5 [(google.api.resource_reference) = {type: "bytebase.com/Sheet"}];
   // The SHA256 hash value of the sheet.
   string sheet_sha256 = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // The statement is used for preview purpose.
+  string statement = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+  int64 statement_size = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  ReleaseFileType type = 7;
-  string version = 8;
+  ReleaseFileType type = 9;
+  string version = 10;
 
   // The name of the file in the release.
   // Expressed as a path, e.g. `2.2/V0001_create_table.sql`
   // Can be empty.
-  string file = 9;
+  string file = 11;
+
+  // The issue associated with the revision.
+  // Can be empty.
+  // Format: projects/{project}/issues/{issue}
+  string issue = 12 [(google.api.resource_reference) = {type: "bytebase.com/Issue"}];
 
   // The task run associated with the revision.
   // Can be empty.
-  string task_run = 10 [(google.api.resource_reference) = {type: "bytebase.com/TaskRun"}];
+  // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
+  string task_run = 13 [(google.api.resource_reference) = {type: "bytebase.com/TaskRun"}];
 }

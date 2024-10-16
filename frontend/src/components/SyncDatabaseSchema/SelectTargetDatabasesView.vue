@@ -185,7 +185,7 @@
           v-show="selectedDatabase"
           :statement="
             state.selectedDatabaseName
-              ? databaseDiffCache[state.selectedDatabaseName].edited
+              ? (databaseDiffCache[state.selectedDatabaseName]?.edited ?? '')
               : ''
           "
           :engine="engine"
@@ -284,6 +284,7 @@ const props = defineProps<{
   sourceSchemaType: SourceSchemaType;
   databaseSourceSchema?: DatabaseSourceSchema;
   rawSqlState?: RawSQLState;
+  targetDatabaseNameList?: string[];
 }>();
 
 const { t } = useI18n();
@@ -449,6 +450,16 @@ const handleSelectedDatabaseNameListChanged = (databaseNameList: string[]) => {
   state.selectedDatabaseNameList = databaseNameList;
   state.showSelectDatabasePanel = false;
 };
+
+watch(
+  () => props.targetDatabaseNameList,
+  () => {
+    handleSelectedDatabaseNameListChanged(props.targetDatabaseNameList ?? []);
+  },
+  {
+    immediate: true,
+  }
+);
 
 const handleUnselectDatabase = (database: ComposedDatabase) => {
   state.selectedDatabaseNameList = state.selectedDatabaseNameList.filter(

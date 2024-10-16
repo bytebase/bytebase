@@ -4,7 +4,7 @@
   </NButton>
 
   <ApplyToDatabasePanel
-    v-if="state.showApplyToDatabasePanel"
+    :show="state.showApplyToDatabasePanel"
     @close="state.showApplyToDatabasePanel = false"
   />
 </template>

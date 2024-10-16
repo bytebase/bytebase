@@ -5,39 +5,43 @@ import { hashCode } from "@/bbkit/BBUtil";
 import { WebStorageHelper } from "@/utils";
 import type { OpenAIMessage, OpenAIResponse } from "../types";
 import { useAIContext } from "./context";
-import { databaseMetadataToText } from "./utils";
+import * as promptUtils from "./prompt";
 
 export type SuggestionContext = {
-  schema: string; // schema text
+  metadata: string; // schema text
   key: string; // a hash key used by storage
   suggestions: string[];
   ready: boolean;
   state: "LOADING" | "IDLE" | "ENDED";
   used: Set<string>;
-  consume: (sug: string) => void;
+  current: () => string | undefined;
+  consume: () => void;
   fetch: () => Promise<string[]>; // returns empty means reaches the end
+  next: () => Promise<string | undefined>; // returns next suggestion or empty (ended)
 };
 
 const cache = ref(new Map<string, SuggestionContext>());
 const storage = new WebStorageHelper("bb.plugin.open-ai.suggestions");
 const MAX_STORED_SUGGESTIONS = 10;
 
-const keyOf = (schema: string) => String(hashCode(schema));
+const keyOf = (metadata: string) => String(hashCode(metadata));
 
 export const useDynamicSuggestions = () => {
   const context = useAIContext();
 
-  const text = computed(() => {
+  const metadata = computed(() => {
     const meta = context.databaseMetadata.value;
     const engine = context.engine.value;
+    const schema = context.schema.value;
 
     if (meta && engine) {
-      return databaseMetadataToText(meta, engine);
+      return promptUtils.databaseMetadataToText(meta, engine, schema);
     }
     return "";
   });
 
   const requestAI = async (messages: OpenAIMessage[]) => {
+    await new Promise((resolve) => setTimeout(resolve, 1000));
     const body = {
       model: "gpt-3.5-turbo",
       messages,
@@ -81,61 +85,61 @@ export const useDynamicSuggestions = () => {
     }
   };
 
-  const createSuggestion = (schema: string) => {
+  const createSuggestion = (metadata: string) => {
     const suggestion: SuggestionContext = reactive({
-      schema,
-      key: keyOf(schema),
+      metadata,
+      key: keyOf(metadata),
       suggestions: [],
+      index: 0,
       state: "IDLE",
       ready: false,
       used: new Set(),
-      consume(sug) {
+      current() {
+        const { suggestions } = suggestion;
+        return head(suggestions);
+      },
+      consume() {
         const { suggestions, used } = suggestion;
-        const index = suggestions.indexOf(sug);
-        if (index >= 0) {
-          suggestions.splice(index, 1);
-        }
+        const sug = suggestion.current();
+        if (!sug) return;
+        suggestions.shift();
         used.add(sug);
         if (suggestions.length === 0) {
           suggestion.fetch();
         }
       },
       async fetch() {
-        const { used, suggestions, key } = suggestion;
-        const commands = [
-          `You are an assistant who works as a Magic: The Suggestion card designer. Create cards that are in the following card schema and JSON format. OUTPUT MUST FOLLOW THIS CARD SCHEMA AND JSON FORMAT. DO NOT EXPLAIN THE CARD.`,
-          `{"suggestion-1": "What is the average salary of employees in each department?", "suggestion-2": "What is the average salary of employees in each department?", "suggestion-3": "What is the average salary of employees in each department?"}`,
-        ];
-        const prompts = [
-          schema,
-          "Create a suggestion card about interesting queries to try in this database.",
-        ];
-        if (used.size > 0 || suggestions.length > 0) {
-          prompts.push("queries below should be ignored");
-          for (const sug of used.values()) {
-            prompts.push(sug);
-          }
-          for (const sug of suggestions) {
-            prompts.push(sug);
-          }
-        }
+        const { state, used, suggestions, key } = suggestion;
+        if (state === "ENDED") return [];
+
+        const { command, prompt } = promptUtils.dynamicSuggestions(
+          metadata,
+          new Set([...used.values(), ...suggestions])
+        );
         const messages: OpenAIMessage[] = [
           {
             role: "system",
-            content: commands.join("\n"),
+            content: command,
           },
           {
             role: "user",
-            content: prompts.join("\n"),
+            content: prompt,
           },
         ];
+        console.debug("[DynamicSuggestions]");
+        console.debug(command);
+        console.debug(prompt);
 
         suggestion.state = "LOADING";
-        const more = (await requestAI(messages)).filter((sug) => {
-          if (used.has(sug)) return false;
-          if (suggestions.includes(sug)) return false;
-          return true;
-        });
+        const response = await requestAI(messages);
+        console.debug("[DynamicSuggestions] response", response);
+        const more = uniq(
+          response.filter((sug) => {
+            if (used.has(sug)) return false;
+            if (suggestions.includes(sug)) return false;
+            return true;
+          })
+        );
         suggestions.push(...more);
         suggestion.state = more.length === 0 ? "ENDED" : "IDLE";
 
@@ -149,6 +153,19 @@ export const useDynamicSuggestions = () => {
 
         return more;
       },
+      async next() {
+        const originalState = suggestion.state;
+        if (originalState === "ENDED") return;
+        const curr = suggestion.current();
+        if (curr) {
+          suggestion.used.add(curr);
+        }
+        if (suggestion.suggestions.length === 1) {
+          await suggestion.fetch();
+        }
+        suggestion.suggestions.shift();
+        return suggestion.current();
+      },
     });
     const stored = storage.load<string[]>(suggestion.key, []);
     if (stored && stored.length > 0) {
@@ -159,18 +176,18 @@ export const useDynamicSuggestions = () => {
         suggestion.ready = true;
       });
     }
-    cache.value.set(schema, suggestion);
+    cache.value.set(metadata, suggestion);
     return suggestion;
   };
 
-  const getOrCreateSuggestion = (schema: string) => {
-    const cached = cache.value.get(schema);
+  const getOrCreateSuggestion = (metadata: string) => {
+    const cached = cache.value.get(metadata);
     if (cached) return cached;
-    return createSuggestion(schema);
+    return createSuggestion(metadata);
   };
 
   return computed(() => {
-    if (!text.value) return undefined;
-    return getOrCreateSuggestion(text.value);
+    if (!metadata.value) return undefined;
+    return getOrCreateSuggestion(metadata.value);
   });
 };

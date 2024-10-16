@@ -1773,6 +1773,22 @@ export interface ListRevisionsResponse {
   nextPageToken: string;
 }
 
+export interface GetRevisionRequest {
+  /**
+   * The name of the revision.
+   * Format: instances/{instance}/databases/{database}/revisions/{revision}
+   */
+  name: string;
+}
+
+export interface DeleteRevisionRequest {
+  /**
+   * The name of the revision to delete.
+   * Format: instances/{instance}/databases/{database}/revisions/{revision}
+   */
+  name: string;
+}
+
 export interface Revision {
   /** Format: instances/{instance}/databases/{database}/revisions/{revision} */
   name: string;
@@ -1793,6 +1809,9 @@ export interface Revision {
   sheet: string;
   /** The SHA256 hash value of the sheet. */
   sheetSha256: string;
+  /** The statement is used for preview purpose. */
+  statement: string;
+  statementSize: Long;
   type: ReleaseFileType;
   version: string;
   /**
@@ -1802,8 +1821,15 @@ export interface Revision {
    */
   file: string;
   /**
+   * The issue associated with the revision.
+   * Can be empty.
+   * Format: projects/{project}/issues/{issue}
+   */
+  issue: string;
+  /**
    * The task run associated with the revision.
    * Can be empty.
+   * Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
    */
   taskRun: string;
 }
@@ -9609,6 +9635,120 @@ export const ListRevisionsResponse: MessageFns<ListRevisionsResponse> = {
   },
 };
 
+function createBaseGetRevisionRequest(): GetRevisionRequest {
+  return { name: "" };
+}
+
+export const GetRevisionRequest: MessageFns<GetRevisionRequest> = {
+  encode(message: GetRevisionRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GetRevisionRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetRevisionRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetRevisionRequest {
+    return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
+  },
+
+  toJSON(message: GetRevisionRequest): unknown {
+    const obj: any = {};
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<GetRevisionRequest>): GetRevisionRequest {
+    return GetRevisionRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<GetRevisionRequest>): GetRevisionRequest {
+    const message = createBaseGetRevisionRequest();
+    message.name = object.name ?? "";
+    return message;
+  },
+};
+
+function createBaseDeleteRevisionRequest(): DeleteRevisionRequest {
+  return { name: "" };
+}
+
+export const DeleteRevisionRequest: MessageFns<DeleteRevisionRequest> = {
+  encode(message: DeleteRevisionRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): DeleteRevisionRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDeleteRevisionRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DeleteRevisionRequest {
+    return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
+  },
+
+  toJSON(message: DeleteRevisionRequest): unknown {
+    const obj: any = {};
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<DeleteRevisionRequest>): DeleteRevisionRequest {
+    return DeleteRevisionRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<DeleteRevisionRequest>): DeleteRevisionRequest {
+    const message = createBaseDeleteRevisionRequest();
+    message.name = object.name ?? "";
+    return message;
+  },
+};
+
 function createBaseRevision(): Revision {
   return {
     name: "",
@@ -9617,9 +9757,12 @@ function createBaseRevision(): Revision {
     createTime: undefined,
     sheet: "",
     sheetSha256: "",
+    statement: "",
+    statementSize: Long.ZERO,
     type: ReleaseFileType.TYPE_UNSPECIFIED,
     version: "",
     file: "",
+    issue: "",
     taskRun: "",
   };
 }
@@ -9644,17 +9787,26 @@ export const Revision: MessageFns<Revision> = {
     if (message.sheetSha256 !== "") {
       writer.uint32(50).string(message.sheetSha256);
     }
+    if (message.statement !== "") {
+      writer.uint32(58).string(message.statement);
+    }
+    if (!message.statementSize.equals(Long.ZERO)) {
+      writer.uint32(64).int64(message.statementSize.toString());
+    }
     if (message.type !== ReleaseFileType.TYPE_UNSPECIFIED) {
-      writer.uint32(56).int32(releaseFileTypeToNumber(message.type));
+      writer.uint32(72).int32(releaseFileTypeToNumber(message.type));
     }
     if (message.version !== "") {
-      writer.uint32(66).string(message.version);
+      writer.uint32(82).string(message.version);
     }
     if (message.file !== "") {
-      writer.uint32(74).string(message.file);
+      writer.uint32(90).string(message.file);
+    }
+    if (message.issue !== "") {
+      writer.uint32(98).string(message.issue);
     }
     if (message.taskRun !== "") {
-      writer.uint32(82).string(message.taskRun);
+      writer.uint32(106).string(message.taskRun);
     }
     return writer;
   },
@@ -9709,28 +9861,49 @@ export const Revision: MessageFns<Revision> = {
           message.sheetSha256 = reader.string();
           continue;
         case 7:
-          if (tag !== 56) {
+          if (tag !== 58) {
+            break;
+          }
+
+          message.statement = reader.string();
+          continue;
+        case 8:
+          if (tag !== 64) {
+            break;
+          }
+
+          message.statementSize = Long.fromString(reader.int64().toString());
+          continue;
+        case 9:
+          if (tag !== 72) {
             break;
           }
 
           message.type = releaseFileTypeFromJSON(reader.int32());
           continue;
-        case 8:
-          if (tag !== 66) {
+        case 10:
+          if (tag !== 82) {
             break;
           }
 
           message.version = reader.string();
           continue;
-        case 9:
-          if (tag !== 74) {
+        case 11:
+          if (tag !== 90) {
             break;
           }
 
           message.file = reader.string();
           continue;
-        case 10:
-          if (tag !== 82) {
+        case 12:
+          if (tag !== 98) {
+            break;
+          }
+
+          message.issue = reader.string();
+          continue;
+        case 13:
+          if (tag !== 106) {
             break;
           }
 
@@ -9753,9 +9926,12 @@ export const Revision: MessageFns<Revision> = {
       createTime: isSet(object.createTime) ? fromJsonTimestamp(object.createTime) : undefined,
       sheet: isSet(object.sheet) ? globalThis.String(object.sheet) : "",
       sheetSha256: isSet(object.sheetSha256) ? globalThis.String(object.sheetSha256) : "",
+      statement: isSet(object.statement) ? globalThis.String(object.statement) : "",
+      statementSize: isSet(object.statementSize) ? Long.fromValue(object.statementSize) : Long.ZERO,
       type: isSet(object.type) ? releaseFileTypeFromJSON(object.type) : ReleaseFileType.TYPE_UNSPECIFIED,
       version: isSet(object.version) ? globalThis.String(object.version) : "",
       file: isSet(object.file) ? globalThis.String(object.file) : "",
+      issue: isSet(object.issue) ? globalThis.String(object.issue) : "",
       taskRun: isSet(object.taskRun) ? globalThis.String(object.taskRun) : "",
     };
   },
@@ -9780,6 +9956,12 @@ export const Revision: MessageFns<Revision> = {
     if (message.sheetSha256 !== "") {
       obj.sheetSha256 = message.sheetSha256;
     }
+    if (message.statement !== "") {
+      obj.statement = message.statement;
+    }
+    if (!message.statementSize.equals(Long.ZERO)) {
+      obj.statementSize = (message.statementSize || Long.ZERO).toString();
+    }
     if (message.type !== ReleaseFileType.TYPE_UNSPECIFIED) {
       obj.type = releaseFileTypeToJSON(message.type);
     }
@@ -9788,6 +9970,9 @@ export const Revision: MessageFns<Revision> = {
     }
     if (message.file !== "") {
       obj.file = message.file;
+    }
+    if (message.issue !== "") {
+      obj.issue = message.issue;
     }
     if (message.taskRun !== "") {
       obj.taskRun = message.taskRun;
@@ -9808,9 +9993,14 @@ export const Revision: MessageFns<Revision> = {
       : undefined;
     message.sheet = object.sheet ?? "";
     message.sheetSha256 = object.sheetSha256 ?? "";
+    message.statement = object.statement ?? "";
+    message.statementSize = (object.statementSize !== undefined && object.statementSize !== null)
+      ? Long.fromValue(object.statementSize)
+      : Long.ZERO;
     message.type = object.type ?? ReleaseFileType.TYPE_UNSPECIFIED;
     message.version = object.version ?? "";
     message.file = object.file ?? "";
+    message.issue = object.issue ?? "";
     message.taskRun = object.taskRun ?? "";
     return message;
   },
@@ -11406,6 +11596,136 @@ export const DatabaseServiceDefinition = {
               111,
               110,
               115,
+            ]),
+          ],
+        },
+      },
+    },
+    getRevision: {
+      name: "GetRevision",
+      requestType: GetRevisionRequest,
+      requestStream: false,
+      responseType: Revision,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          8410: [new Uint8Array([4, 110, 97, 109, 101])],
+          578365826: [
+            new Uint8Array([
+              48,
+              18,
+              46,
+              47,
+              118,
+              49,
+              47,
+              123,
+              110,
+              97,
+              109,
+              101,
+              61,
+              105,
+              110,
+              115,
+              116,
+              97,
+              110,
+              99,
+              101,
+              115,
+              47,
+              42,
+              47,
+              100,
+              97,
+              116,
+              97,
+              98,
+              97,
+              115,
+              101,
+              115,
+              47,
+              42,
+              47,
+              114,
+              101,
+              118,
+              105,
+              115,
+              105,
+              111,
+              110,
+              115,
+              47,
+              42,
+              125,
+            ]),
+          ],
+        },
+      },
+    },
+    deleteRevision: {
+      name: "DeleteRevision",
+      requestType: DeleteRevisionRequest,
+      requestStream: false,
+      responseType: Empty,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          8410: [new Uint8Array([4, 110, 97, 109, 101])],
+          578365826: [
+            new Uint8Array([
+              48,
+              42,
+              46,
+              47,
+              118,
+              49,
+              47,
+              123,
+              110,
+              97,
+              109,
+              101,
+              61,
+              105,
+              110,
+              115,
+              116,
+              97,
+              110,
+              99,
+              101,
+              115,
+              47,
+              42,
+              47,
+              100,
+              97,
+              116,
+              97,
+              98,
+              97,
+              115,
+              101,
+              115,
+              47,
+              42,
+              47,
+              114,
+              101,
+              118,
+              105,
+              115,
+              105,
+              111,
+              110,
+              115,
+              47,
+              42,
+              125,
             ]),
           ],
         },

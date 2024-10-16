@@ -3,6 +3,30 @@
     select count(1) from t1 where id; SELECT * FROM |
     select * from QRTZ_J0B_DETAILS qjd where J0B_NAME like '%gray';
   want:
+    - text: EmployeeId
+      type: COLUMN
+      definition: Company.dbo.Address | int, NOT NULL
+      comment: ""
+    - text: Id
+      type: COLUMN
+      definition: Company.MySchema.SalaryLevel | int, NOT NULL
+      comment: ""
+    - text: Id
+      type: COLUMN
+      definition: Company.dbo.Employees | int, NOT NULL
+      comment: ""
+    - text: Name
+      type: COLUMN
+      definition: Company.dbo.Employees | varchar, NOT NULL
+      comment: ""
+    - text: SalaryUpBound
+      type: COLUMN
+      definition: Company.MySchema.SalaryLevel | int, NOT NULL
+      comment: ""
+    - text: Street
+      type: COLUMN
+      definition: Company.dbo.Address | varchar, NOT NULL
+      comment: ""
     - text: Company
       type: DATABASE
       definition: ""
@@ -31,25 +55,37 @@
       type: TABLE
       definition: ""
       comment: ""
-    - text: EmployeeId
-      type: COLUMN
-      definition: Address | int, NOT NULL
-      comment: ""
-    - text: Id
-      type: COLUMN
-      definition: Employees | int, NOT NULL
-      comment: ""
-    - text: Name
-      type: COLUMN
-      definition: Employees | varchar, NOT NULL
-      comment: ""
-    - text: Street
-      type: COLUMN
-      definition: Address | varchar, NOT NULL
-      comment: ""
 - description: Column alias can be used in order by clause
   input: SELECT Id AS IdAlias, Name FROM Employees ORDER BY |;
   want:
+    - text: EmployeeId
+      type: COLUMN
+      definition: Company.dbo.Address | int, NOT NULL
+      comment: ""
+    - text: Id
+      type: COLUMN
+      definition: Company.MySchema.SalaryLevel | int, NOT NULL
+      comment: ""
+    - text: Id
+      type: COLUMN
+      definition: Company.dbo.Employees | int, NOT NULL
+      comment: ""
+    - text: IdAlias
+      type: COLUMN
+      definition: ""
+      comment: ""
+    - text: Name
+      type: COLUMN
+      definition: Company.dbo.Employees | varchar, NOT NULL
+      comment: ""
+    - text: SalaryUpBound
+      type: COLUMN
+      definition: Company.MySchema.SalaryLevel | int, NOT NULL
+      comment: ""
+    - text: Street
+      type: COLUMN
+      definition: Company.dbo.Address | varchar, NOT NULL
+      comment: ""
     - text: Company
       type: DATABASE
       definition: ""
@@ -74,36 +110,16 @@
       type: TABLE
       definition: ""
       comment: ""
-    - text: EmployeeId
-      type: COLUMN
-      definition: Address | int, NOT NULL
-      comment: ""
-    - text: Id
-      type: COLUMN
-      definition: Employees | int, NOT NULL
-      comment: ""
-    - text: IdAlias
-      type: COLUMN
-      definition: ""
-      comment: ""
-    - text: Name
-      type: COLUMN
-      definition: Employees | varchar, NOT NULL
-      comment: ""
-    - text: Street
-      type: COLUMN
-      definition: Address | varchar, NOT NULL
-      comment: ""
 - description: Table alias referenced by select item
   input: SELECT tableAlias.| FROM Employees AS tableAlias;
   want:
     - text: Id
       type: COLUMN
-      definition: Employees | int, NOT NULL
+      definition: Company.dbo.Employees | int, NOT NULL
       comment: ""
     - text: Name
       type: COLUMN
-      definition: Employees | varchar, NOT NULL
+      definition: Company.dbo.Employees | varchar, NOT NULL
       comment: ""
 - description: Full column name considering CTE
   input: WITH MyCTE_01 AS (SELECT * FROM dbo.Employees) SELECT MyCTE_01.| FROM MyCTE_01;
@@ -119,6 +135,30 @@
 - description: Full column name
   input: SELECT | FROM Employees;
   want:
+    - text: EmployeeId
+      type: COLUMN
+      definition: Company.dbo.Address | int, NOT NULL
+      comment: ""
+    - text: Id
+      type: COLUMN
+      definition: Company.MySchema.SalaryLevel | int, NOT NULL
+      comment: ""
+    - text: Id
+      type: COLUMN
+      definition: Company.dbo.Employees | int, NOT NULL
+      comment: ""
+    - text: Name
+      type: COLUMN
+      definition: Company.dbo.Employees | varchar, NOT NULL
+      comment: ""
+    - text: SalaryUpBound
+      type: COLUMN
+      definition: Company.MySchema.SalaryLevel | int, NOT NULL
+      comment: ""
+    - text: Street
+      type: COLUMN
+      definition: Company.dbo.Address | varchar, NOT NULL
+      comment: ""
     - text: Company
       type: DATABASE
       definition: ""
@@ -142,26 +182,34 @@
     - text: Employees
       type: TABLE
       definition: ""
-      comment: ""
-    - text: EmployeeId
-      type: COLUMN
-      definition: Address | int, NOT NULL
-      comment: ""
-    - text: Id
-      type: COLUMN
-      definition: Employees | int, NOT NULL
-      comment: ""
-    - text: Name
-      type: COLUMN
-      definition: Employees | varchar, NOT NULL
-      comment: ""
-    - text: Street
-      type: COLUMN
-      definition: Address | varchar, NOT NULL
       comment: ""
 - description: Asterisk appearred in select item list
   input: WITH MyCTE_01 AS (SELECT * FROM dbo.Employees) SELECT |.* FROM MyCTE_01 JOIN dbo.Address ON MyCTE_01.EmployeeID = dbo.Address.EmployeeID
   want:
+    - text: EmployeeId
+      type: COLUMN
+      definition: Company.dbo.Address | int, NOT NULL
+      comment: ""
+    - text: Id
+      type: COLUMN
+      definition: Company.MySchema.SalaryLevel | int, NOT NULL
+      comment: ""
+    - text: Id
+      type: COLUMN
+      definition: Company.dbo.Employees | int, NOT NULL
+      comment: ""
+    - text: Name
+      type: COLUMN
+      definition: Company.dbo.Employees | varchar, NOT NULL
+      comment: ""
+    - text: SalaryUpBound
+      type: COLUMN
+      definition: Company.MySchema.SalaryLevel | int, NOT NULL
+      comment: ""
+    - text: Street
+      type: COLUMN
+      definition: Company.dbo.Address | varchar, NOT NULL
+      comment: ""
     - text: Company
       type: DATABASE
       definition: ""
@@ -189,41 +237,49 @@
     - text: MyCTE_01
       type: TABLE
       definition: ""
-      comment: ""
-    - text: EmployeeId
-      type: COLUMN
-      definition: Address | int, NOT NULL
-      comment: ""
-    - text: Id
-      type: COLUMN
-      definition: Employees | int, NOT NULL
-      comment: ""
-    - text: Name
-      type: COLUMN
-      definition: Employees | varchar, NOT NULL
-      comment: ""
-    - text: Street
-      type: COLUMN
-      definition: Address | varchar, NOT NULL
       comment: ""
 - description: Completion should not consider CTE if no schema specified
   input: WITH MyCTE_01 AS (SELECT * FROM dbo.Employees) SELECT * FROM MySchema.|
   want:
+    - text: Id
+      type: COLUMN
+      definition: Company.MySchema.SalaryLevel | int, NOT NULL
+      comment: ""
+    - text: SalaryUpBound
+      type: COLUMN
+      definition: Company.MySchema.SalaryLevel | int, NOT NULL
+      comment: ""
     - text: SalaryLevel
       type: TABLE
       definition: ""
       comment: ""
-    - text: Id
-      type: COLUMN
-      definition: SalaryLevel | int, NOT NULL
-      comment: ""
-    - text: SalaryUpBound
-      type: COLUMN
-      definition: SalaryLevel | int, NOT NULL
-      comment: ""
 - description: Completion should consider CTE if no schema specified
   input: WITH MyCTE_01 AS (SELECT * FROM dbo.Employees) SELECT * FROM |
   want:
+    - text: EmployeeId
+      type: COLUMN
+      definition: Company.dbo.Address | int, NOT NULL
+      comment: ""
+    - text: Id
+      type: COLUMN
+      definition: Company.MySchema.SalaryLevel | int, NOT NULL
+      comment: ""
+    - text: Id
+      type: COLUMN
+      definition: Company.dbo.Employees | int, NOT NULL
+      comment: ""
+    - text: Name
+      type: COLUMN
+      definition: Company.dbo.Employees | varchar, NOT NULL
+      comment: ""
+    - text: SalaryUpBound
+      type: COLUMN
+      definition: Company.MySchema.SalaryLevel | int, NOT NULL
+      comment: ""
+    - text: Street
+      type: COLUMN
+      definition: Company.dbo.Address | varchar, NOT NULL
+      comment: ""
     - text: Company
       type: DATABASE
       definition: ""
@@ -252,25 +308,25 @@
       type: TABLE
       definition: ""
       comment: ""
-    - text: EmployeeId
-      type: COLUMN
-      definition: Address | int, NOT NULL
-      comment: ""
-    - text: Id
-      type: COLUMN
-      definition: Employees | int, NOT NULL
-      comment: ""
-    - text: Name
-      type: COLUMN
-      definition: Employees | varchar, NOT NULL
-      comment: ""
-    - text: Street
-      type: COLUMN
-      definition: Address | varchar, NOT NULL
-      comment: ""
 - description: Completion table in specify schema
   input: SELECT * FROM dbo.|
   want:
+    - text: EmployeeId
+      type: COLUMN
+      definition: Company.dbo.Address | int, NOT NULL
+      comment: ""
+    - text: Id
+      type: COLUMN
+      definition: Company.dbo.Employees | int, NOT NULL
+      comment: ""
+    - text: Name
+      type: COLUMN
+      definition: Company.dbo.Employees | varchar, NOT NULL
+      comment: ""
+    - text: Street
+      type: COLUMN
+      definition: Company.dbo.Address | varchar, NOT NULL
+      comment: ""
     - text: Address
       type: TABLE
       definition: ""
@@ -279,25 +335,33 @@
       type: TABLE
       definition: ""
       comment: ""
-    - text: EmployeeId
-      type: COLUMN
-      definition: Address | int, NOT NULL
-      comment: ""
-    - text: Id
-      type: COLUMN
-      definition: Employees | int, NOT NULL
-      comment: ""
-    - text: Name
-      type: COLUMN
-      definition: Employees | varchar, NOT NULL
-      comment: ""
-    - text: Street
-      type: COLUMN
-      definition: Address | varchar, NOT NULL
-      comment: ""
 - description: Completion table for simple select
   input: SELECT * FROM |
   want:
+    - text: EmployeeId
+      type: COLUMN
+      definition: Company.dbo.Address | int, NOT NULL
+      comment: ""
+    - text: Id
+      type: COLUMN
+      definition: Company.MySchema.SalaryLevel | int, NOT NULL
+      comment: ""
+    - text: Id
+      type: COLUMN
+      definition: Company.dbo.Employees | int, NOT NULL
+      comment: ""
+    - text: Name
+      type: COLUMN
+      definition: Company.dbo.Employees | varchar, NOT NULL
+      comment: ""
+    - text: SalaryUpBound
+      type: COLUMN
+      definition: Company.MySchema.SalaryLevel | int, NOT NULL
+      comment: ""
+    - text: Street
+      type: COLUMN
+      definition: Company.dbo.Address | varchar, NOT NULL
+      comment: ""
     - text: Company
       type: DATABASE
       definition: ""
@@ -321,20 +385,4 @@
     - text: Employees
       type: TABLE
       definition: ""
-      comment: ""
-    - text: EmployeeId
-      type: COLUMN
-      definition: Address | int, NOT NULL
-      comment: ""
-    - text: Id
-      type: COLUMN
-      definition: Employees | int, NOT NULL
-      comment: ""
-    - text: Name
-      type: COLUMN
-      definition: Employees | varchar, NOT NULL
-      comment: ""
-    - text: Street
-      type: COLUMN
-      definition: Address | varchar, NOT NULL
       comment: ""

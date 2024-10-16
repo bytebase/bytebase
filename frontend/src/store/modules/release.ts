@@ -3,7 +3,7 @@ import { defineStore } from "pinia";
 import { computed, reactive, ref, unref, watch } from "vue";
 import { releaseServiceClient } from "@/grpcweb";
 import type { MaybeRef, ComposedRelease, Pagination } from "@/types";
-import { isValidDatabaseName, unknownRelease, unknownUser } from "@/types";
+import { isValidReleaseName, unknownRelease, unknownUser } from "@/types";
 import { DEFAULT_PROJECT_NAME } from "@/types";
 import type { DeepPartial, Release } from "@/types/proto/v1/release_service";
 import { extractUserResourceName } from "@/utils";
@@ -81,12 +81,16 @@ export const useReleaseByName = (name: MaybeRef<string>) => {
   const ready = ref(true);
   watch(
     () => unref(name),
-    (name) => {
-      if (!isValidDatabaseName(store.getReleaseByName(name).name)) {
+    async (name) => {
+      if (!isValidReleaseName(name)) {
+        return;
+      }
+
+      const cachedRelease = store.getReleaseByName(name);
+      if (!isValidReleaseName(cachedRelease.name)) {
         ready.value = false;
-        store.fetchReleaseByName(name).then(() => {
-          ready.value = true;
-        });
+        await store.fetchReleaseByName(name);
+        ready.value = true;
       }
     },
     { immediate: true }

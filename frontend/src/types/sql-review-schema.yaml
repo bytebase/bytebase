@@ -658,6 +658,18 @@
 - type: statement.max-execution-time
   category: STATEMENT
   engine: MARIADB
+- type: statement.require-algorithm-option
+  category: STATEMENT
+  engine: MYSQL
+- type: statement.require-algorithm-option
+  category: STATEMENT
+  engine: MARIADB
+- type: statement.require-lock-option
+  category: STATEMENT
+  engine: MYSQL
+- type: statement.require-lock-option
+  category: STATEMENT
+  engine: MARIADB
 - type: naming.fully-qualified
   category: NAMING
   engine: POSTGRES

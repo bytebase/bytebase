@@ -20,10 +20,7 @@ import {
 } from "@/types";
 import type { LocalApprovalConfig, LocalApprovalRule } from "@/types";
 import { PresetRiskLevelList, useSupportedSourceList } from "@/types";
-import {
-  ParsedExpr,
-  Expr as CELExpr,
-} from "@/types/proto/google/api/expr/v1alpha1/syntax";
+import { Expr as CELExpr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
 import { Expr } from "@/types/proto/google/type/expr";
 import type { ApprovalNode } from "@/types/proto/v1/issue_service";
 import {
@@ -120,7 +117,7 @@ export const resolveLocalApprovalConfig = async (
   for (let i = 0; i < exprList.length; i++) {
     const ruleId = ruleIdList[i];
     ruleMap.get(ruleId)!.expr = resolveCELExpr(
-      exprList[i].expr ?? CELExpr.fromJSON({})
+      exprList[i] ?? CELExpr.fromJSON({})
     );
   }
 
@@ -204,7 +201,7 @@ export const buildWorkspaceApprovalSetting = async (
   const parsedMap = toMap(parsed);
 
   const approvalRuleMap: Map<number, ApprovalRule> = new Map();
-  const exprList: ParsedExpr[] = [];
+  const exprList: CELExpr[] = [];
   const ruleIndexList: number[] = [];
 
   for (let i = 0; i < rules.length; i++) {
@@ -219,7 +216,7 @@ export const buildWorkspaceApprovalSetting = async (
 
     const parsed = parsedMap.get(uid) ?? [];
     const parsedExpr = await buildParsedExpression(parsed);
-    if (parsedExpr.expr) {
+    if (parsedExpr) {
       exprList.push(parsedExpr);
       ruleIndexList.push(i);
     }
@@ -289,7 +286,7 @@ const toMap = <T extends { rule: string }>(items: T[]): Map<string, T[]> => {
 
 const buildParsedExpression = async (parsed: ParsedApprovalRule[]) => {
   if (parsed.length === 0) {
-    return ParsedExpr.fromJSON({});
+    return CELExpr.fromJSON({});
   }
   const args = parsed.map(({ source, level }) => {
     const sourceExpr: EqualityExpr = {
@@ -315,9 +312,7 @@ const buildParsedExpression = async (parsed: ParsedApprovalRule[]) => {
   };
   // expr will be unwrapped to an "&&" expr if listedOrExpr.length === 0
   const expr = await buildCELExpr(listedOrExpr);
-  return ParsedExpr.fromJSON({
-    expr,
-  });
+  return expr;
 };
 
 // Create seed (SYSTEM preset) approval flows

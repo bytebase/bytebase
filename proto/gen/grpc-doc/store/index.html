@@ -901,7 +901,15 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.store.PlanConfig.ReleaseSource"><span class="badge">M</span>PlanConfig.ReleaseSource</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.store.PlanConfig.Spec"><span class="badge">M</span>PlanConfig.Spec</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.PlanConfig.SpecReleaseSource"><span class="badge">M</span>PlanConfig.SpecReleaseSource</a>
                 </li>
               
                 <li>
@@ -1366,6 +1374,10 @@
               
                 <li>
                   <a href="#bytebase.store.TaskDatabaseUpdatePayload.FlagsEntry"><span class="badge">M</span>TaskDatabaseUpdatePayload.FlagsEntry</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.TaskReleaseSource"><span class="badge">M</span>TaskReleaseSource</a>
                 </li>
               
               
@@ -7525,6 +7537,13 @@ Format: instances/{instance}/databases/{database} </p></td>
                   <td><p> </p></td>
                 </tr>
               
+                <tr>
+                  <td>release_source</td>
+                  <td><a href="#bytebase.store.PlanConfig.ReleaseSource">PlanConfig.ReleaseSource</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -7796,6 +7815,31 @@ Leave it empty if no needs to encrypt the zip file. </p></td>
 
         
       
+        <h3 id="bytebase.store.PlanConfig.ReleaseSource">PlanConfig.ReleaseSource</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>release</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The release.
+Format: projects/{project}/releases/{release} </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.store.PlanConfig.Spec">PlanConfig.Spec</h3>
         <p></p>
 
@@ -7829,6 +7873,13 @@ Must be a subset of the specs in the same step. </p></td>
                 </tr>
               
                 <tr>
+                  <td>spec_release_source</td>
+                  <td><a href="#bytebase.store.PlanConfig.SpecReleaseSource">PlanConfig.SpecReleaseSource</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
                   <td>create_database_config</td>
                   <td><a href="#bytebase.store.PlanConfig.CreateDatabaseConfig">PlanConfig.CreateDatabaseConfig</a></td>
                   <td></td>
@@ -7847,6 +7898,31 @@ Must be a subset of the specs in the same step. </p></td>
                   <td><a href="#bytebase.store.PlanConfig.ExportDataConfig">PlanConfig.ExportDataConfig</a></td>
                   <td></td>
                   <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.PlanConfig.SpecReleaseSource">PlanConfig.SpecReleaseSource</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>file</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Format: projects/{project}/releases/{release}/files/{file}
+{file} is URL path escaped. </p></td>
                 </tr>
               
             </tbody>
@@ -9167,7 +9243,8 @@ Can be empty. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The task run associated with the revision.
-Can be empty. </p></td>
+Can be empty.
+Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun} </p></td>
                 </tr>
               
             </tbody>
@@ -10493,7 +10570,7 @@ use the default full mask algorithm. </p></td>
               
                 <tr>
                   <td>expression</td>
-                  <td><a href="#google.api.expr.v1alpha1.ParsedExpr">google.api.expr.v1alpha1.ParsedExpr</a></td>
+                  <td><a href="#google.api.expr.v1alpha1.Expr">google.api.expr.v1alpha1.Expr</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
@@ -11224,7 +11301,7 @@ Default to this mode.</p></td>
         
       
         <h3 id="bytebase.store.TaskDatabaseUpdatePayload">TaskDatabaseUpdatePayload</h3>
-        <p>TaskDatabaseDataUpdatePayload is the task payload for database data update (DML).</p>
+        <p>TaskDatabaseUpdatePayload is the task payload for updating database (DDL & DML).</p>
 
         
           <table class="field-table">
@@ -11282,6 +11359,13 @@ Default to this mode.</p></td>
                   <td><p>flags is used for ghost sync </p></td>
                 </tr>
               
+                <tr>
+                  <td>task_release_source</td>
+                  <td><a href="#bytebase.store.TaskReleaseSource">TaskReleaseSource</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -11311,6 +11395,31 @@ Default to this mode.</p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.store.TaskReleaseSource">TaskReleaseSource</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>file</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Format: projects/{project}/releases/{release}/files/{file}
+{file} is URL path escaped. </p></td>
                 </tr>
               
             </tbody>

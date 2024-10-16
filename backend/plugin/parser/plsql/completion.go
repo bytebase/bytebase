@@ -336,6 +336,38 @@ func (m CompletionMap) insertTables(c *Completer, schemas map[string]bool) {
 	}
 }
 
+func (m CompletionMap) insertAllColumns(c *Completer) {
+	for _, schema := range c.listAllDatabases() {
+		if _, exists := c.metadataCache[schema]; !exists {
+			_, metadata, err := c.getMetadata(c.ctx, c.instanceID, schema)
+			if err != nil || metadata == nil {
+				continue
+			}
+			c.metadataCache[schema] = metadata
+		}
+		schemaMeta := c.metadataCache[schema].GetSchema("")
+		for _, table := range schemaMeta.ListTableNames() {
+			tableMeta := schemaMeta.GetTable(table)
+			if tableMeta == nil {
+				continue
+			}
+			for _, column := range tableMeta.GetColumns() {
+				definition := fmt.Sprintf("%s.%s | %s", schema, table, column.Type)
+				if !column.Nullable {
+					definition += ", NOT NULL"
+				}
+				comment := column.UserComment
+				m.Insert(base.Candidate{
+					Type:       base.CandidateTypeColumn,
+					Text:       c.quotedIdentifierIfNeeded(column.Name),
+					Definition: definition,
+					Comment:    comment,
+				})
+			}
+		}
+	}
+}
+
 func (m CompletionMap) insertColumns(c *Completer, schemas, tables map[string]bool) {
 	for schema := range schemas {
 		if len(schema) == 0 {
@@ -366,7 +398,7 @@ func (m CompletionMap) insertColumns(c *Completer, schemas, tables map[string]bo
 				continue
 			}
 			for _, column := range tableMeta.GetColumns() {
-				definition := fmt.Sprintf("%s | %s", table, column.Type)
+				definition := fmt.Sprintf("%s.%s | %s", schema, table, column.Type)
 				if !column.Nullable {
 					definition += ", NOT NULL"
 				}
@@ -599,6 +631,9 @@ func (c *Completer) convertCandidates(candidates *base.CandidatesCollection) ([]
 							}
 						}
 					}
+				} else {
+					// User didn't specify the table, so we return all columns from all tables.
+					columnEntries.insertAllColumns(c)
 				}
 
 				if len(tables) > 0 {

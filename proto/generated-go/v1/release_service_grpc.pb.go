@@ -11,6 +11,7 @@ import (
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -19,10 +20,12 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	ReleaseService_GetRelease_FullMethodName    = "/bytebase.v1.ReleaseService/GetRelease"
-	ReleaseService_ListReleases_FullMethodName  = "/bytebase.v1.ReleaseService/ListReleases"
-	ReleaseService_CreateRelease_FullMethodName = "/bytebase.v1.ReleaseService/CreateRelease"
-	ReleaseService_UpdateRelease_FullMethodName = "/bytebase.v1.ReleaseService/UpdateRelease"
+	ReleaseService_GetRelease_FullMethodName      = "/bytebase.v1.ReleaseService/GetRelease"
+	ReleaseService_ListReleases_FullMethodName    = "/bytebase.v1.ReleaseService/ListReleases"
+	ReleaseService_CreateRelease_FullMethodName   = "/bytebase.v1.ReleaseService/CreateRelease"
+	ReleaseService_UpdateRelease_FullMethodName   = "/bytebase.v1.ReleaseService/UpdateRelease"
+	ReleaseService_DeleteRelease_FullMethodName   = "/bytebase.v1.ReleaseService/DeleteRelease"
+	ReleaseService_UndeleteRelease_FullMethodName = "/bytebase.v1.ReleaseService/UndeleteRelease"
 )
 
 // ReleaseServiceClient is the client API for ReleaseService service.
@@ -33,6 +36,8 @@ type ReleaseServiceClient interface {
 	ListReleases(ctx context.Context, in *ListReleasesRequest, opts ...grpc.CallOption) (*ListReleasesResponse, error)
 	CreateRelease(ctx context.Context, in *CreateReleaseRequest, opts ...grpc.CallOption) (*Release, error)
 	UpdateRelease(ctx context.Context, in *UpdateReleaseRequest, opts ...grpc.CallOption) (*Release, error)
+	DeleteRelease(ctx context.Context, in *DeleteReleaseRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	UndeleteRelease(ctx context.Context, in *UndeleteReleaseRequest, opts ...grpc.CallOption) (*Release, error)
 }
 
 type releaseServiceClient struct {
@@ -83,6 +88,26 @@ func (c *releaseServiceClient) UpdateRelease(ctx context.Context, in *UpdateRele
 	return out, nil
 }
 
+func (c *releaseServiceClient) DeleteRelease(ctx context.Context, in *DeleteReleaseRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, ReleaseService_DeleteRelease_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *releaseServiceClient) UndeleteRelease(ctx context.Context, in *UndeleteReleaseRequest, opts ...grpc.CallOption) (*Release, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Release)
+	err := c.cc.Invoke(ctx, ReleaseService_UndeleteRelease_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ReleaseServiceServer is the server API for ReleaseService service.
 // All implementations must embed UnimplementedReleaseServiceServer
 // for forward compatibility.
@@ -91,6 +116,8 @@ type ReleaseServiceServer interface {
 	ListReleases(context.Context, *ListReleasesRequest) (*ListReleasesResponse, error)
 	CreateRelease(context.Context, *CreateReleaseRequest) (*Release, error)
 	UpdateRelease(context.Context, *UpdateReleaseRequest) (*Release, error)
+	DeleteRelease(context.Context, *DeleteReleaseRequest) (*emptypb.Empty, error)
+	UndeleteRelease(context.Context, *UndeleteReleaseRequest) (*Release, error)
 	mustEmbedUnimplementedReleaseServiceServer()
 }
 
@@ -112,6 +139,12 @@ func (UnimplementedReleaseServiceServer) CreateRelease(context.Context, *CreateR
 }
 func (UnimplementedReleaseServiceServer) UpdateRelease(context.Context, *UpdateReleaseRequest) (*Release, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateRelease not implemented")
+}
+func (UnimplementedReleaseServiceServer) DeleteRelease(context.Context, *DeleteReleaseRequest) (*emptypb.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteRelease not implemented")
+}
+func (UnimplementedReleaseServiceServer) UndeleteRelease(context.Context, *UndeleteReleaseRequest) (*Release, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UndeleteRelease not implemented")
 }
 func (UnimplementedReleaseServiceServer) mustEmbedUnimplementedReleaseServiceServer() {}
 func (UnimplementedReleaseServiceServer) testEmbeddedByValue()                        {}
@@ -206,6 +239,42 @@ func _ReleaseService_UpdateRelease_Handler(srv interface{}, ctx context.Context,
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ReleaseService_DeleteRelease_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteReleaseRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ReleaseServiceServer).DeleteRelease(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ReleaseService_DeleteRelease_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ReleaseServiceServer).DeleteRelease(ctx, req.(*DeleteReleaseRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ReleaseService_UndeleteRelease_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UndeleteReleaseRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ReleaseServiceServer).UndeleteRelease(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ReleaseService_UndeleteRelease_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ReleaseServiceServer).UndeleteRelease(ctx, req.(*UndeleteReleaseRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ReleaseService_ServiceDesc is the grpc.ServiceDesc for ReleaseService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -228,6 +297,14 @@ var ReleaseService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UpdateRelease",
 			Handler:    _ReleaseService_UpdateRelease_Handler,
+		},
+		{
+			MethodName: "DeleteRelease",
+			Handler:    _ReleaseService_DeleteRelease_Handler,
+		},
+		{
+			MethodName: "UndeleteRelease",
+			Handler:    _ReleaseService_UndeleteRelease_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -291,7 +291,8 @@
     "override": "Anular",
     "encoding": "Codificación",
     "finish": "Finalizar",
-    "title": "Título"
+    "title": "Título",
+    "hide": "Esconder"
   },
   "error-page": {
     "go-back-home": "Volver al inicio"
@@ -490,7 +491,7 @@
       "email": "Correo electrónico",
       "role": "Rol",
       "phone": "Número de móvil",
-      "phone-tips": "Asegúrese de incluir el código del país.",
+      "phone-tips": "Asegúrese de incluir el código del país +1xxxxxx",
       "country-code": "Códigos de país y de área",
       "password": "Contraseña",
       "password-hint": "La contraseña debe seguir la configuración de restricción",
@@ -1756,7 +1757,8 @@
     "all-tables": "Todas las tablas",
     "affected-tables": "Tablas afectadas",
     "select-affection-tables": "Seleccionar tablas afectadas",
-    "view-full": "Ver completo"
+    "view-full": "Ver completo",
+    "rollback-tip": "Seleccione un historial de DDL específico para revertir."
   },
   "database": {
     "sync-database": "Sincronizar base de datos",
@@ -3223,7 +3225,22 @@
       "dont-show-again": "No mostrar de nuevo",
       "text2sql": "Text2SQL",
       "disable-text2sql": "Deshabilitar Text2SQL",
-      "enable-text2sql": "Habilitar Text2SQL"
+      "enable-text2sql": "Habilitar Text2SQL",
+      "actions": {
+        "chat": "Charlar",
+        "explain-code": "Explicar el código",
+        "find-problems": "encontrar problemas",
+        "new-chat": "Nuevo chat",
+        "insert-at-caret": "Insertar en el cursor"
+      },
+      "send": "Enviar",
+      "new-line": "Nueva linea",
+      "ai-assistant": "Asistente de IA",
+      "not-configured": {
+        "self": "El Asistente AI no está configurado.",
+        "contact-admin-to-configure": "Comuníquese con el administrador de su organización.",
+        "go-to-configure": "Ir a configurar"
+      }
     }
   },
   "custom-approval": {

@@ -20,6 +20,7 @@ import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { RouterLink } from "vue-router";
+import { BBAvatar } from "@/bbkit";
 import { useUserStore } from "@/store";
 import { getDateForPbTimestamp } from "@/types";
 import type { ChangeHistory } from "@/types/proto/v1/database_service";
@@ -198,11 +199,18 @@ const columnList = computed(() => {
     {
       key: "creator",
       title: t("common.creator"),
-      width: "7rem",
+      width: "8rem",
       resizable: true,
       ellipsis: true,
       render: (history) => {
-        return creatorOfChangeHistory(history)?.title;
+        const creator = creatorOfChangeHistory(history);
+        if (!creator) return null;
+        return (
+          <div class="flex flex-row items-center overflow-hidden gap-x-1">
+            <BBAvatar size="SMALL" username={creator.title} />
+            <span class="truncate">{creator.title}</span>
+          </div>
+        );
       },
     },
   ];

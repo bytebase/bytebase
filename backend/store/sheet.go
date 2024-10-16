@@ -140,7 +140,7 @@ func (s *Store) listSheets(ctx context.Context, find *FindSheetMessage) ([]*Shee
 
 	sha256Field := "''"
 	if common.IsDev() {
-		sha256Field = "encode(sha256(sheet.statement::bytea), 'hex')"
+		sha256Field = "encode(sha256(convert_to(sheet.statement, 'UTF8')), 'hex')"
 	}
 
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})

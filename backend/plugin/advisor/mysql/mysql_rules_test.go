@@ -67,6 +67,10 @@ func TestMySQLRules(t *testing.T) {
 		advisor.SchemaRuleStatementWhereMaximumLogicalOperatorCount,
 		// advisor.SchemaRuleStatementMaxExecutionTime enforce the maximum execution time.
 		advisor.SchemaRuleStatementMaxExecutionTime,
+		// advisor.SchemaRuleStatementRequireAlgorithmOption require the algorithm option in the alter table statement.
+		advisor.SchemaRuleStatementRequireAlgorithmOption,
+		// advisor.SchemaRuleStatementRequireLockOption require the lock option in the alter table statement.
+		advisor.SchemaRuleStatementRequireLockOption,
 
 		// Database related rules.
 		// advisor.SchemaRuleDropEmptyDatabase enforce the MySQL support check if the database is empty before users drop it.

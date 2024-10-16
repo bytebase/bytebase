@@ -2,47 +2,55 @@
   <Splitpanes
     v-if="!tab || tab.mode === 'WORKSHEET'"
     horizontal
-    class="default-theme"
+    class="default-theme overflow-hidden"
     :dbl-click-splitter="false"
   >
-    <Pane class="flex flex-col overflow-hidden">
-      <div
-        v-if="isDisconnected || allowReadonlyMode"
-        class="flex-1 h-full w-full flex flex-col justify-start items-stretch"
-      >
-        <template v-if="!tab || tab.editMode === 'SQL-EDITOR'">
-          <EditorAction @execute="handleExecute" />
-          <div
-            v-if="tab"
-            class="w-full flex-1 flex flex-row items-stretch overflow-hidden"
-          >
+    <Pane class="flex flex-col overflow-hidden justify-start items-stretch">
+      <template v-if="isDisconnected || allowReadonlyMode">
+        <EditorAction @execute="handleExecute" />
+
+        <Splitpanes
+          v-if="tab"
+          class="default-theme overflow-hidden"
+          @resized="handleAIPanelResize($event, 1)"
+        >
+          <Pane>
             <Suspense>
               <SQLEditor @execute="handleExecute" />
               <template #fallback>
                 <div
-                  class="w-full h-auto flex-grow flex flex-col items-center justify-center"
+                  class="w-full h-full flex-grow flex flex-col items-center justify-center"
                 >
                   <BBSpin />
                 </div>
               </template>
             </Suspense>
-          </div>
-          <template v-else>
-            <Welcome />
-          </template>
+          </Pane>
+          <Pane
+            v-if="showAIPanel"
+            :size="AIPanelSize"
+            class="overflow-hidden flex flex-col"
+          >
+            <Suspense>
+              <AIChatToSQL key="ai-chat-to-sql" />
+              <template #fallback>
+                <div
+                  class="w-full h-full flex-grow flex flex-col items-center justify-center"
+                >
+                  <BBSpin />
+                </div>
+              </template>
+            </Suspense>
+          </Pane>
+        </Splitpanes>
+        <template v-else>
+          <Welcome />
         </template>
-
-        <Suspense>
-          <AIChatToSQL
-            v-if="tab && !isDisconnected && showAIChatBox"
-            @apply-statement="handleApplyStatement"
-          />
-        </Suspense>
 
         <ExecutingHintModal />
 
         <SaveSheetModal />
-      </div>
+      </template>
 
       <ReadonlyModeNotSupported v-else />
     </Pane>
@@ -65,11 +73,10 @@ import { useExecuteSQL } from "@/composables/useExecuteSQL";
 import { AIChatToSQL } from "@/plugins/ai";
 import {
   useConnectionOfCurrentSQLEditorTab,
-  useDatabaseV1Store,
   useSQLEditorTabStore,
 } from "@/store";
-import type { SQLEditorConnection, SQLEditorQueryParams } from "@/types";
-import { instanceV1HasReadonlyMode, nextAnimationFrame } from "@/utils";
+import type { SQLEditorQueryParams } from "@/types";
+import { instanceV1HasReadonlyMode } from "@/utils";
 import {
   EditorAction,
   ExecutingHintModal,
@@ -84,8 +91,8 @@ const SQLEditor = defineAsyncComponent(() => import("./SQLEditor.vue"));
 
 const tabStore = useSQLEditorTabStore();
 const { currentTab: tab, isDisconnected } = storeToRefs(tabStore);
-const { showAIChatBox } = useSQLEditorContext();
 const { instance } = useConnectionOfCurrentSQLEditorTab();
+const { showAIPanel, AIPanelSize, handleAIPanelResize } = useSQLEditorContext();
 
 const allowReadonlyMode = computed(() => {
   if (isDisconnected.value) return false;
@@ -97,29 +104,5 @@ const { execute } = useExecuteSQL();
 
 const handleExecute = (params: SQLEditorQueryParams) => {
   execute(params);
-};
-
-const handleApplyStatement = async (
-  statement: string,
-  connection: SQLEditorConnection,
-  run: boolean
-) => {
-  if (!tab.value) {
-    return;
-  }
-  tab.value.statement = statement;
-  if (run) {
-    await nextAnimationFrame();
-    const database = useDatabaseV1Store().getDatabaseByName(
-      connection.database
-    );
-    handleExecute({
-      connection,
-      statement,
-      engine: database.instanceResource.engine,
-      explain: false,
-      selection: tab.value.editorState.selection,
-    });
-  }
 };
 </script>
