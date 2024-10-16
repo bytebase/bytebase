@@ -687,6 +687,14 @@
     "builtin-prior-backup-check": {
       "title": "Comprobación previa de viabilidad de la copia de seguridad",
       "description": "Esta regla verifica si se puede crear una copia de seguridad antes de que se modifiquen los datos. Verifica la existencia de la base de datos de destino de la copia de seguridad y rechaza los escenarios no admitidos. Está incorporada y no se puede omitir."
+    },
+    "statement-disallow-mix-in-ddl": {
+      "description": "Para un rendimiento óptimo y la integridad de los datos, evite combinar declaraciones DDL y DML dentro del mismo script.",
+      "title": "No permitir declaraciones mixtas en tareas de actualización de esquemas"
+    },
+    "statement-disallow-mix-in-dml": {
+      "description": "Para un rendimiento óptimo y la integridad de los datos, evite combinar declaraciones DDL y DML dentro del mismo script.",
+      "title": "No permitir la combinación de declaraciones en tareas de actualización de datos"
     }
   },
   "level": {
