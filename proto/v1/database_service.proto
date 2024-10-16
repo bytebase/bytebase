@@ -370,9 +370,6 @@ message DiffSchemaRequest {
 
   // Format the schema dump into SDL format.
   bool sdl_format = 4;
-
-  // When true, the differ will ignore the backup schema.
-  bool ignore_backup_schema = 5;
 }
 
 message DiffSchemaResponse {

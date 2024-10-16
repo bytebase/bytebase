@@ -82,7 +82,6 @@ export const useSDLState = () => {
         name: database.name,
         schema: expectedSDL,
         sdlFormat: true,
-        ignoreBackupSchema: true,
       });
       return diff ?? "";
     };

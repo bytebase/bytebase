@@ -9815,9 +9815,6 @@ components:
                 sdlFormat:
                     type: boolean
                     description: Format the schema dump into SDL format.
-                ignoreBackupSchema:
-                    type: boolean
-                    description: When true, the differ will ignore the backup schema.
         DiffSchemaResponse:
             type: object
             properties:
