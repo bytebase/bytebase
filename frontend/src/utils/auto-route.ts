@@ -17,6 +17,7 @@ import {
   SQL_EDITOR_SETTING_SUBSCRIPTION_MODULE,
   SQL_EDITOR_SETTING_USERS_MODULE,
 } from "@/router/sqlEditor";
+import { useAppFeature } from "@/store";
 import type { User } from "@/types/proto/v1/auth_service";
 import type { Database } from "@/types/proto/v1/database_service";
 import type { Environment } from "@/types/proto/v1/environment_service";
@@ -25,6 +26,7 @@ import type {
   InstanceResource,
 } from "@/types/proto/v1/instance_service";
 import type { Project } from "@/types/proto/v1/project_service";
+import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
 import {
   extractDatabaseResourceName,
   extractEnvironmentResourceName,
@@ -36,8 +38,19 @@ export const isSQLEditorRoute = (router: Router) => {
   return router.currentRoute.value.name?.toString().startsWith("sql-editor");
 };
 
+// should use SQL Editor route if
+// - isSQLEditorRoute
+// - && databaseChangeMode === EDITOR
+export const shouldUseSQLEditorRoute = (router: Router) => {
+  const databaseChangeMode = useAppFeature("bb.feature.database-change-mode");
+  return (
+    isSQLEditorRoute(router) &&
+    databaseChangeMode.value === DatabaseChangeMode.EDITOR
+  );
+};
+
 export const autoDatabaseRoute = (router: Router, database: Database) => {
-  const name = isSQLEditorRoute(router)
+  const name = shouldUseSQLEditorRoute(router)
     ? SQL_EDITOR_SETTING_DATABASE_DETAIL_MODULE
     : PROJECT_V1_ROUTE_DATABASE_DETAIL;
 
@@ -58,7 +71,7 @@ export const autoInstanceRoute = (
   router: Router,
   instance: Instance | InstanceResource
 ) => {
-  if (isSQLEditorRoute(router)) {
+  if (shouldUseSQLEditorRoute(router)) {
     return {
       name: SQL_EDITOR_SETTING_INSTANCE_MODULE,
       hash: `#${instance.name}`,
@@ -73,7 +86,7 @@ export const autoInstanceRoute = (
 };
 
 export const autoProjectRoute = (router: Router, project: Project) => {
-  if (isSQLEditorRoute(router)) {
+  if (shouldUseSQLEditorRoute(router)) {
     return {
       name: SQL_EDITOR_SETTING_PROJECT_MODULE,
       hash: `#${project.name}`,
@@ -91,7 +104,7 @@ export const autoEnvironmentRoute = (
   router: Router,
   environment: Environment
 ) => {
-  if (isSQLEditorRoute(router)) {
+  if (shouldUseSQLEditorRoute(router)) {
     return {
       name: SQL_EDITOR_SETTING_ENVIRONMENT_MODULE,
       hash: `#${extractEnvironmentResourceName(environment.name)}`,
@@ -103,14 +116,14 @@ export const autoEnvironmentRoute = (
 };
 
 export const autoSubscriptionRoute = (router: Router) => {
-  if (isSQLEditorRoute(router)) {
+  if (shouldUseSQLEditorRoute(router)) {
     return { name: SQL_EDITOR_SETTING_SUBSCRIPTION_MODULE };
   }
   return { name: SETTING_ROUTE_WORKSPACE_SUBSCRIPTION };
 };
 
 export const autoProfileLink = (router: Router, user?: User) => {
-  if (isSQLEditorRoute(router)) {
+  if (shouldUseSQLEditorRoute(router)) {
     if (user) {
       return {
         name: SQL_EDITOR_SETTING_USERS_MODULE,
