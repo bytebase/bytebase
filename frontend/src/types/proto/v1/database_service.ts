@@ -341,6 +341,8 @@ export interface DiffSchemaRequest {
     | undefined;
   /** Format the schema dump into SDL format. */
   sdlFormat: boolean;
+  /** When true, the differ will ignore the backup schema. */
+  ignoreBackupSchema: boolean;
 }
 
 export interface DiffSchemaResponse {
@@ -2806,7 +2808,7 @@ export const GetDatabaseSchemaRequest: MessageFns<GetDatabaseSchemaRequest> = {
 };
 
 function createBaseDiffSchemaRequest(): DiffSchemaRequest {
-  return { name: "", schema: undefined, changeHistory: undefined, sdlFormat: false };
+  return { name: "", schema: undefined, changeHistory: undefined, sdlFormat: false, ignoreBackupSchema: false };
 }
 
 export const DiffSchemaRequest: MessageFns<DiffSchemaRequest> = {
@@ -2822,6 +2824,9 @@ export const DiffSchemaRequest: MessageFns<DiffSchemaRequest> = {
     }
     if (message.sdlFormat !== false) {
       writer.uint32(32).bool(message.sdlFormat);
+    }
+    if (message.ignoreBackupSchema !== false) {
+      writer.uint32(40).bool(message.ignoreBackupSchema);
     }
     return writer;
   },
@@ -2861,6 +2866,13 @@ export const DiffSchemaRequest: MessageFns<DiffSchemaRequest> = {
 
           message.sdlFormat = reader.bool();
           continue;
+        case 5:
+          if (tag !== 40) {
+            break;
+          }
+
+          message.ignoreBackupSchema = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2876,6 +2888,7 @@ export const DiffSchemaRequest: MessageFns<DiffSchemaRequest> = {
       schema: isSet(object.schema) ? globalThis.String(object.schema) : undefined,
       changeHistory: isSet(object.changeHistory) ? globalThis.String(object.changeHistory) : undefined,
       sdlFormat: isSet(object.sdlFormat) ? globalThis.Boolean(object.sdlFormat) : false,
+      ignoreBackupSchema: isSet(object.ignoreBackupSchema) ? globalThis.Boolean(object.ignoreBackupSchema) : false,
     };
   },
 
@@ -2893,6 +2906,9 @@ export const DiffSchemaRequest: MessageFns<DiffSchemaRequest> = {
     if (message.sdlFormat !== false) {
       obj.sdlFormat = message.sdlFormat;
     }
+    if (message.ignoreBackupSchema !== false) {
+      obj.ignoreBackupSchema = message.ignoreBackupSchema;
+    }
     return obj;
   },
 
@@ -2905,6 +2921,7 @@ export const DiffSchemaRequest: MessageFns<DiffSchemaRequest> = {
     message.schema = object.schema ?? undefined;
     message.changeHistory = object.changeHistory ?? undefined;
     message.sdlFormat = object.sdlFormat ?? false;
+    message.ignoreBackupSchema = object.ignoreBackupSchema ?? false;
     return message;
   },
 };
