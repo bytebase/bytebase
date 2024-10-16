@@ -316,6 +316,7 @@ export interface GetDatabaseSchemaRequest {
   /**
    * When true, the schema dump will be concise.
    * For Oracle, there will be tables and indexes only for Sync Schema.
+   * For Postgres, we'll filter the backup schema.
    */
   concise: boolean;
 }
@@ -1738,7 +1739,11 @@ export interface GetChangeHistoryRequest {
   view: ChangeHistoryView;
   /** Format the schema dump into SDL format. */
   sdlFormat: boolean;
-  /** When true, the schema dump will be concise. */
+  /**
+   * When true, the schema dump will be concise.
+   * For Oracle, there will be tables and indexes only for Sync Schema.
+   * For Postgres, we'll filter the backup schema.
+   */
   concise: boolean;
 }
 
