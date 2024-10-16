@@ -1323,11 +1323,21 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 			return MySQLStatementDisallowMixInDDL, nil
 		case storepb.Engine_POSTGRES:
 			return PostgreSQLStatementDisallowMixInDDL, nil
+		case storepb.Engine_ORACLE, storepb.Engine_DM, storepb.Engine_OCEANBASE_ORACLE:
+			return OracleStatementDisallowMixInDDL, nil
+		case storepb.Engine_MSSQL:
+			return MSSQLStatementDisallowMixInDDL, nil
 		}
 	case SchemaRuleStatementDisallowMixInDML:
 		switch engine {
 		case storepb.Engine_MYSQL, storepb.Engine_TIDB:
 			return MySQLStatementDisallowMixInDML, nil
+		case storepb.Engine_POSTGRES:
+			return PostgreSQLStatementDisallowMixInDML, nil
+		case storepb.Engine_ORACLE, storepb.Engine_DM, storepb.Engine_OCEANBASE_ORACLE:
+			return OracleStatementDisallowMixInDML, nil
+		case storepb.Engine_MSSQL:
+			return MSSQLStatementDisallowMixInDML, nil
 		}
 	case SchemaRuleStatementAddColumnWithoutPosition:
 		if engine == storepb.Engine_OCEANBASE {
