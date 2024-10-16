@@ -36,7 +36,7 @@ func TestFilter(t *testing.T) {
 		if record {
 			testCases[i].Output = result
 		} else {
-			a.Equal(tc.Input, result, "Input: %s", tc.Input)
+			a.Equal(tc.Output, result, "Input: %s", tc.Input)
 		}
 	}
 
