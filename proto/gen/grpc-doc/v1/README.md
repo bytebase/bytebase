@@ -2242,7 +2242,6 @@ DependentColumn is the metadata for dependent columns.
 | schema | [string](#string) |  | The target schema. |
 | change_history | [string](#string) |  | The resource name of the change history Format: instances/{instance}/databases/{database}/changeHistories/{changeHistory} |
 | sdl_format | [bool](#bool) |  | Format the schema dump into SDL format. |
-| ignore_backup_schema | [bool](#bool) |  | When true, the differ will ignore the backup schema. |
 
 
 
