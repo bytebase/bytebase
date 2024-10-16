@@ -534,6 +534,7 @@ watch(
           name: db.name,
           schema: sourceDatabaseSchema.value,
           sdlFormat: false,
+          ignoreBackupSchema: true,
         });
         const schemaDiff = diffResp.diff ?? "";
         databaseDiffCache[name] = {
