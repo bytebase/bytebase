@@ -509,6 +509,7 @@
     - [PlanCheckRun.Result.SqlSummaryReport](#bytebase-v1-PlanCheckRun-Result-SqlSummaryReport)
     - [PreviewPlanRequest](#bytebase-v1-PreviewPlanRequest)
     - [PreviewPlanResponse](#bytebase-v1-PreviewPlanResponse)
+    - [PreviewPlanResponse.DatabaseFiles](#bytebase-v1-PreviewPlanResponse-DatabaseFiles)
     - [RunPlanChecksRequest](#bytebase-v1-RunPlanChecksRequest)
     - [RunPlanChecksResponse](#bytebase-v1-RunPlanChecksResponse)
     - [SearchPlansRequest](#bytebase-v1-SearchPlansRequest)
@@ -8308,8 +8309,24 @@ When paginating, all other parameters provided to `ListPlans` must match the cal
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | plan | [Plan](#bytebase-v1-Plan) |  |  |
-| out_of_order_files | [string](#string) | repeated | Format: projects/{project}/releases/{release}/files/{path} Example: `projects/tnt/releases/0801/files/2.2/V0001_create_table.sql` |
-| applied_but_modified_files | [string](#string) | repeated | Format: projects/{project}/releases/{release}/files/{path} Example: `projects/tnt/releases/0801/files/2.2/V0001_create_table.sql` |
+| out_of_order_files | [PreviewPlanResponse.DatabaseFiles](#bytebase-v1-PreviewPlanResponse-DatabaseFiles) | repeated | The out of order files of each database. |
+| applied_but_modified_files | [PreviewPlanResponse.DatabaseFiles](#bytebase-v1-PreviewPlanResponse-DatabaseFiles) | repeated | The applied but modified files of each database. |
+
+
+
+
+
+
+<a name="bytebase-v1-PreviewPlanResponse-DatabaseFiles"></a>
+
+### PreviewPlanResponse.DatabaseFiles
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| database | [string](#string) |  |  |
+| files | [string](#string) | repeated | Format: projects/{project}/releases/{release}/files/{path} {path} is URL path escaped. Example: `projects/tnt/releases/0801/files/2.2%2FV0001_create_table.sql` |
 
 
 

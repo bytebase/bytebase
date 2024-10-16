@@ -480,16 +480,20 @@ export interface PreviewPlanResponse {
   plan:
     | Plan
     | undefined;
+  /** The out of order files of each database. */
+  outOfOrderFiles: PreviewPlanResponse_DatabaseFiles[];
+  /** The applied but modified files of each database. */
+  appliedButModifiedFiles: PreviewPlanResponse_DatabaseFiles[];
+}
+
+export interface PreviewPlanResponse_DatabaseFiles {
+  database: string;
   /**
    * Format: projects/{project}/releases/{release}/files/{path}
-   * Example: `projects/tnt/releases/0801/files/2.2/V0001_create_table.sql`
+   * {path} is URL path escaped.
+   * Example: `projects/tnt/releases/0801/files/2.2%2FV0001_create_table.sql`
    */
-  outOfOrderFiles: string[];
-  /**
-   * Format: projects/{project}/releases/{release}/files/{path}
-   * Example: `projects/tnt/releases/0801/files/2.2/V0001_create_table.sql`
-   */
-  appliedButModifiedFiles: string[];
+  files: string[];
 }
 
 export interface PlanCheckRun {
@@ -3286,10 +3290,10 @@ export const PreviewPlanResponse: MessageFns<PreviewPlanResponse> = {
       Plan.encode(message.plan, writer.uint32(10).fork()).join();
     }
     for (const v of message.outOfOrderFiles) {
-      writer.uint32(18).string(v!);
+      PreviewPlanResponse_DatabaseFiles.encode(v!, writer.uint32(18).fork()).join();
     }
     for (const v of message.appliedButModifiedFiles) {
-      writer.uint32(26).string(v!);
+      PreviewPlanResponse_DatabaseFiles.encode(v!, writer.uint32(26).fork()).join();
     }
     return writer;
   },
@@ -3313,14 +3317,14 @@ export const PreviewPlanResponse: MessageFns<PreviewPlanResponse> = {
             break;
           }
 
-          message.outOfOrderFiles.push(reader.string());
+          message.outOfOrderFiles.push(PreviewPlanResponse_DatabaseFiles.decode(reader, reader.uint32()));
           continue;
         case 3:
           if (tag !== 26) {
             break;
           }
 
-          message.appliedButModifiedFiles.push(reader.string());
+          message.appliedButModifiedFiles.push(PreviewPlanResponse_DatabaseFiles.decode(reader, reader.uint32()));
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -3335,10 +3339,10 @@ export const PreviewPlanResponse: MessageFns<PreviewPlanResponse> = {
     return {
       plan: isSet(object.plan) ? Plan.fromJSON(object.plan) : undefined,
       outOfOrderFiles: globalThis.Array.isArray(object?.outOfOrderFiles)
-        ? object.outOfOrderFiles.map((e: any) => globalThis.String(e))
+        ? object.outOfOrderFiles.map((e: any) => PreviewPlanResponse_DatabaseFiles.fromJSON(e))
         : [],
       appliedButModifiedFiles: globalThis.Array.isArray(object?.appliedButModifiedFiles)
-        ? object.appliedButModifiedFiles.map((e: any) => globalThis.String(e))
+        ? object.appliedButModifiedFiles.map((e: any) => PreviewPlanResponse_DatabaseFiles.fromJSON(e))
         : [],
     };
   },
@@ -3349,10 +3353,12 @@ export const PreviewPlanResponse: MessageFns<PreviewPlanResponse> = {
       obj.plan = Plan.toJSON(message.plan);
     }
     if (message.outOfOrderFiles?.length) {
-      obj.outOfOrderFiles = message.outOfOrderFiles;
+      obj.outOfOrderFiles = message.outOfOrderFiles.map((e) => PreviewPlanResponse_DatabaseFiles.toJSON(e));
     }
     if (message.appliedButModifiedFiles?.length) {
-      obj.appliedButModifiedFiles = message.appliedButModifiedFiles;
+      obj.appliedButModifiedFiles = message.appliedButModifiedFiles.map((e) =>
+        PreviewPlanResponse_DatabaseFiles.toJSON(e)
+      );
     }
     return obj;
   },
@@ -3363,8 +3369,84 @@ export const PreviewPlanResponse: MessageFns<PreviewPlanResponse> = {
   fromPartial(object: DeepPartial<PreviewPlanResponse>): PreviewPlanResponse {
     const message = createBasePreviewPlanResponse();
     message.plan = (object.plan !== undefined && object.plan !== null) ? Plan.fromPartial(object.plan) : undefined;
-    message.outOfOrderFiles = object.outOfOrderFiles?.map((e) => e) || [];
-    message.appliedButModifiedFiles = object.appliedButModifiedFiles?.map((e) => e) || [];
+    message.outOfOrderFiles = object.outOfOrderFiles?.map((e) => PreviewPlanResponse_DatabaseFiles.fromPartial(e)) ||
+      [];
+    message.appliedButModifiedFiles =
+      object.appliedButModifiedFiles?.map((e) => PreviewPlanResponse_DatabaseFiles.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBasePreviewPlanResponse_DatabaseFiles(): PreviewPlanResponse_DatabaseFiles {
+  return { database: "", files: [] };
+}
+
+export const PreviewPlanResponse_DatabaseFiles: MessageFns<PreviewPlanResponse_DatabaseFiles> = {
+  encode(message: PreviewPlanResponse_DatabaseFiles, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.database !== "") {
+      writer.uint32(10).string(message.database);
+    }
+    for (const v of message.files) {
+      writer.uint32(18).string(v!);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): PreviewPlanResponse_DatabaseFiles {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBasePreviewPlanResponse_DatabaseFiles();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.database = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.files.push(reader.string());
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): PreviewPlanResponse_DatabaseFiles {
+    return {
+      database: isSet(object.database) ? globalThis.String(object.database) : "",
+      files: globalThis.Array.isArray(object?.files) ? object.files.map((e: any) => globalThis.String(e)) : [],
+    };
+  },
+
+  toJSON(message: PreviewPlanResponse_DatabaseFiles): unknown {
+    const obj: any = {};
+    if (message.database !== "") {
+      obj.database = message.database;
+    }
+    if (message.files?.length) {
+      obj.files = message.files;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<PreviewPlanResponse_DatabaseFiles>): PreviewPlanResponse_DatabaseFiles {
+    return PreviewPlanResponse_DatabaseFiles.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<PreviewPlanResponse_DatabaseFiles>): PreviewPlanResponse_DatabaseFiles {
+    const message = createBasePreviewPlanResponse_DatabaseFiles();
+    message.database = object.database ?? "";
+    message.files = object.files?.map((e) => e) || [];
     return message;
   },
 };
