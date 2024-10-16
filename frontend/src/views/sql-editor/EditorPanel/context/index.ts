@@ -74,7 +74,9 @@ export const provideEditorPanelContext = (base: {
   const cloneViewState = (from: string, to: string) => {
     const vs = viewStateByTab.get(from);
     if (!vs) return;
-    viewStateByTab.set(to, cloneDeep(vs));
+    const cloned = cloneDeep(vs);
+    viewStateByTab.set(to, cloned);
+    return cloned;
   };
 
   watch(
