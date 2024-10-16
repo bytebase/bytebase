@@ -29,6 +29,8 @@ const (
 	PermissionDatabasesGetSchema         Permission = "bb.databases.getSchema"
 	PermissionDatabasesList              Permission = "bb.databases.list"
 	PermissionDatabasesQuery             Permission = "bb.databases.query"
+	PermissionDatabasesQueryExplain      Permission = "bb.databases.queryExplain"
+	PermissionDatabasesQueryInfo         Permission = "bb.databases.queryInfo"
 	PermissionDatabasesSync              Permission = "bb.databases.sync"
 	PermissionDatabasesUpdate            Permission = "bb.databases.update"
 	PermissionEnvironmentsCreate         Permission = "bb.environments.create"
