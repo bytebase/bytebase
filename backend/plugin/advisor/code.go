@@ -631,6 +631,9 @@ const (
 	// PostgreSQLStatementDisallowMixDDLDML is an advisor type for PostgreSQL disallow mix DDL and DML.
 	PostgreSQLStatementDisallowMixDDLDML Type = "bb.plugin.advisor.postgresql.statement.disallow-mix-ddl-dml"
 
+	PostgreSQLStatementDisallowMixInDDL Type = "bb.plugin.advisor.postgresql.statement.disallow-mix-in-ddl"
+	PostgreSQLStatementDisallowMixInDML Type = "bb.plugin.advisor.postgresql.statement.disallow-mix-in-dml"
+
 	// PostgreSQLBuiltinPriorBackupCheck is an advisor type for PostgreSQL do prior backup check.
 	PostgreSQLBuiltinPriorBackupCheck Type = "bb.plugin.advisor.postgresql.builtin.prior-backup-check"
 
@@ -707,6 +710,8 @@ const (
 
 	// OracleStatementDisallowMixDDLDML is an advisor type for Oracle disallow mix DDL and DML.
 	OracleStatementDisallowMixDDLDML Type = "bb.plugin.advisor.oracle.statement.disallow-mix-ddl-dml"
+	OracleStatementDisallowMixInDDL  Type = "bb.plugin.advisor.oracle.statement.disallow-mix-in-ddl"
+	OracleStatementDisallowMixInDML  Type = "bb.plugin.advisor.oracle.statement.disallow-mix-in-dml"
 
 	// Snowflake Advisor.
 
@@ -830,4 +835,6 @@ const (
 
 	// MSSQLStatementDisallowMixDDLDML is an advisor type for MSSQL disallow mix DDL and DML.
 	MSSQLStatementDisallowMixDDLDML Type = "bb.plugin.advisor.mssql.statement.disallow-mix-ddl-dml"
+	MSSQLStatementDisallowMixInDDL  Type = "bb.plugin.advisor.mssql.statement.disallow-mix-in-ddl"
+	MSSQLStatementDisallowMixInDML  Type = "bb.plugin.advisor.mssql.statement.disallow-mix-in-dml"
 )
