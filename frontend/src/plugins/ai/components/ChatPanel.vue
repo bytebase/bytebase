@@ -6,10 +6,14 @@
     <ActionBar />
 
     <ChatView
+      v-if="ready"
       :conversation="selectedConversation"
       class="pt-2"
       @enter="requestAI"
     />
+    <div v-else class="flex-1 overflow-hidden relative flex items-center justify-center">
+      <NSpin size="small" />
+    </div>
 
     <div class="px-2 pb-2 pt-1 flex flex-col gap-1">
       <DynamicSuggestions class="w-full" @enter="requestAI" />
@@ -24,6 +28,7 @@
 import type { AxiosResponse } from "axios";
 import { Axios } from "axios";
 import { head } from "lodash-es";
+import { NSpin } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { reactive, watch } from "vue";
 import { useSQLEditorTabStore } from "@/store";
