@@ -66,6 +66,8 @@ const props = withDefaults(
   }>(),
   {
     allowForceContinue: true,
+    overrideTitle: undefined,
+    confirm: undefined,
   }
 );
 
