@@ -2117,6 +2117,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.PreviewPlanResponse.DatabaseFiles"><span class="badge">M</span>PreviewPlanResponse.DatabaseFiles</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.RunPlanChecksRequest"><span class="badge">M</span>RunPlanChecksRequest</a>
                 </li>
               
@@ -22957,18 +22961,49 @@ instances/{instance}/databases/{database} </p></td>
               
                 <tr>
                   <td>out_of_order_files</td>
-                  <td><a href="#string">string</a></td>
+                  <td><a href="#bytebase.v1.PreviewPlanResponse.DatabaseFiles">PreviewPlanResponse.DatabaseFiles</a></td>
                   <td>repeated</td>
-                  <td><p>Format: projects/{project}/releases/{release}/files/{path}
-Example: `projects/tnt/releases/0801/files/2.2/V0001_create_table.sql` </p></td>
+                  <td><p>The out of order files of each database. </p></td>
                 </tr>
               
                 <tr>
                   <td>applied_but_modified_files</td>
+                  <td><a href="#bytebase.v1.PreviewPlanResponse.DatabaseFiles">PreviewPlanResponse.DatabaseFiles</a></td>
+                  <td>repeated</td>
+                  <td><p>The applied but modified files of each database. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.PreviewPlanResponse.DatabaseFiles">PreviewPlanResponse.DatabaseFiles</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>database</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>files</td>
                   <td><a href="#string">string</a></td>
                   <td>repeated</td>
                   <td><p>Format: projects/{project}/releases/{release}/files/{path}
-Example: `projects/tnt/releases/0801/files/2.2/V0001_create_table.sql` </p></td>
+{path} is URL path escaped.
+Example: `projects/tnt/releases/0801/files/2.2%2FV0001_create_table.sql` </p></td>
                 </tr>
               
             </tbody>
