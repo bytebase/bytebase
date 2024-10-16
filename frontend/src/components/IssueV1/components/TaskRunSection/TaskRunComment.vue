@@ -81,6 +81,12 @@ const comment = computed(() => {
         time: new Date(earliestAllowedTime.value).toLocaleString(),
       });
     }
+    if (taskRun.schedulerInfo) {
+      const cause = taskRun.schedulerInfo.waitingCause;
+      if (cause?.task) {
+        return t("task-run.status.waiting-task");
+      }
+    }
     return t("task-run.status.enqueued");
   } else if (taskRun.status === TaskRun_Status.RUNNING) {
     if (taskRun.schedulerInfo) {
@@ -109,7 +115,7 @@ const commentLink = computed((): CommentLink => {
     flattenTaskV1List(issue.value.rolloutEntity).find(
       (task) => extractTaskUID(task.name) === taskUID
     ) ?? unknownTask();
-  if (taskRun.status === TaskRun_Status.RUNNING) {
+  if (taskRun.status === TaskRun_Status.PENDING || taskRun.status === TaskRun_Status.RUNNING) {
     const task = taskRun.schedulerInfo?.waitingCause?.task;
     if (task) {
       const [, , stageUid, taskUid] = getProjectIdRolloutUidStageUidTaskUid(
