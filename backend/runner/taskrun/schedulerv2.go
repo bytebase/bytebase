@@ -361,6 +361,7 @@ func (s *SchedulerV2) schedulePendingTaskRun(ctx context.Context, taskRun *store
 				})
 				return false, nil
 			}
+			s.stateCfg.TaskRunSchedulerInfo.Delete(taskRun.ID)
 			return true, nil
 		}()
 		if err != nil {
