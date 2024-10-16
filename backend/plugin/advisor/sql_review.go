@@ -121,6 +121,10 @@ const (
 	SchemaRuleStatementJoinStrictColumnAttrs = "statement.join-strict-column-attrs"
 	// SchemaRuleStatementDisallowMixDDLDML disallow mix DDL and DML on the same table.
 	SchemaRuleStatementDisallowMixDDLDML = "statement.disallow-mix-ddl-dml"
+	// SchemaRuleStatementDisallowMixInDDL disallows DML statements in DDL statements.
+	SchemaRuleStatementDisallowMixInDDL = "statement.disallow-mix-in-ddl"
+	// SchemaRuleStatementDisallowMixInDML disallows DDL statements in DML statements.
+	SchemaRuleStatementDisallowMixInDML = "statement.disallow-mix-in-dml"
 	// SchemaRuleStatementPriorBackupCheck checks for prior backup.
 	SchemaRuleStatementPriorBackupCheck = "statement.prior-backup-check"
 	// SchemaRuleStatementNonTransactional checks for non-transactional statements.
@@ -1312,6 +1316,16 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 			return OracleStatementDisallowMixDDLDML, nil
 		case storepb.Engine_MSSQL:
 			return MSSQLStatementDisallowMixDDLDML, nil
+		}
+	case SchemaRuleStatementDisallowMixInDDL:
+		switch engine {
+		case storepb.Engine_MYSQL, storepb.Engine_TIDB:
+			return MySQLStatementDisallowMixInDDL, nil
+		}
+	case SchemaRuleStatementDisallowMixInDML:
+		switch engine {
+		case storepb.Engine_MYSQL, storepb.Engine_TIDB:
+			return MySQLStatementDisallowMixInDML, nil
 		}
 	case SchemaRuleStatementAddColumnWithoutPosition:
 		if engine == storepb.Engine_OCEANBASE {

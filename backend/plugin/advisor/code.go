@@ -444,6 +444,11 @@ const (
 	// MySQLStatementDisallowMixDDLDML is an advisor type for MySQL disallow mix DDL and DML.
 	MySQLStatementDisallowMixDDLDML Type = "bb.plugin.advisor.mysql.statement.disallow-mix-ddl-dml"
 
+	// MySQLStatementDisallowMixInDDL is the advisor for MySQL that checks no DML statements are mixed in the DDL statements.
+	MySQLStatementDisallowMixInDDL Type = "bb.plugin.advisor.mysql.statement.disallow-mix-in-ddl"
+	// MySQLStatementDisallowMixInDML is the advisor for MySQL that checks no DDL statements are mixed in the DML statements.
+	MySQLStatementDisallowMixInDML Type = "bb.plugin.advisor.mysql.statement.disallow-mix-in-dml"
+
 	// MySQLBuiltinPriorBackupCheck is an advisor type for MySQL prior backup check.
 	MySQLBuiltinPriorBackupCheck Type = "bb.plugin.advisor.mysql.builtin.prior-backup-check"
 
