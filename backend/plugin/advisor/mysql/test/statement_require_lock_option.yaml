@@ -1,0 +1,24 @@
+- statement: |
+    CREATE TABLE t(b int); 
+    ALTER TABLE t ADD COLUMN c INT, ALGORITHM=INSTANT, LOCK=NONE;
+- statement: |
+    CREATE TABLE t(b int); 
+    ALTER TABLE t ADD COLUMN c INT;
+  want:
+    - status: 2
+      code: 237
+      title: statement.require-lock-option
+      content: "ALTER TABLE statement should include LOCK option"
+      startposition:
+        line: 2
+- statement: |
+    CREATE TABLE t(b int); 
+    ALTER TABLE t ADD COLUMN c INT, LOCK=NONE;
+    ALTER TABLE t ADD COLUMN d INT;
+  want:
+    - status: 2
+      code: 237
+      title: statement.require-lock-option
+      content: "ALTER TABLE statement should include LOCK option"
+      startposition:
+        line: 3

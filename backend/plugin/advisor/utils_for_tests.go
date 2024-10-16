@@ -405,6 +405,8 @@ func SetDefaultSQLReviewRulePayload(ruleTp SQLReviewRuleType, dbType storepb.Eng
 		SchemaRuleStatementPriorBackupCheck,
 		SchemaRuleStatementJoinStrictColumnAttrs,
 		SchemaRuleStatementMaxExecutionTime,
+		SchemaRuleStatementRequireAlgorithmOption,
+		SchemaRuleStatementRequireLockOption,
 		SchemaRuleTableDisallowSetCharset,
 		SchemaRuleStatementDisallowCrossDBQueries,
 		SchemaRuleIndexNotRedundant:

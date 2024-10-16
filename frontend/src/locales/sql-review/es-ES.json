@@ -547,6 +547,14 @@
       "title": "Tiempo máximo de ejecución",
       "description": "Establezca el tiempo máximo de ejecución de las sentencias SQL. Si el tiempo de ejecución supera el límite, la sentencia finalizará. Nivel de error sugerido: Error"
     },
+    "statement-require-algorithm-option": {
+      "title": "Requiere especificar la opción ALGORITMO en las instrucciones ALTER TABLE",
+      "description": "La especificación de la opción ALGORITHM en las instrucciones ALTER TABLE garantiza un mayor control sobre cómo se aplican los cambios en las tablas, lo que minimiza las posibles interrupciones al evitar copias o bloqueos completos de las tablas. Ayuda a optimizar el rendimiento y reducir el tiempo de inactividad durante las modificaciones del esquema. Nivel de error sugerido: Advertencia."
+    },
+    "statement-require-lock-option": {
+      "title": "Requerir especificar la opción LOCK en las instrucciones ALTER TABLE",
+      "description": "La opción LOCK en las instrucciones ALTER TABLE le permite controlar el nivel de bloqueo durante los cambios de esquema, lo que ayuda a evitar bloqueos de tablas innecesarios y garantiza una mejor concurrencia. El uso adecuado de esta opción puede reducir significativamente el impacto de las operaciones DDL en las consultas activas. Nivel de error sugerido: Advertencia."
+    },
     "database-drop-empty-database": {
       "title": "Prohibir eliminar base de datos no vacía",
       "description": "Solo se permite la eliminación cuando no hay tablas en la base de datos, lo que puede evitar la eliminación accidental. Nivel de error sugerido: Error"
