@@ -239,6 +239,7 @@ func RunSQLReviewRuleTest(t *testing.T, rule SQLReviewRuleType, dbType storepb.E
 			PreUpdateBackupDetail: &storepb.PreUpdateBackupDetail{
 				Database: "instances/instanceName/databases/bbdataarchive",
 			},
+			NoAppendBuiltin: true,
 		}
 
 		adviceList, err := SQLReviewCheck(sm, tc.Statement, ruleList, ctx)
@@ -402,6 +403,8 @@ func SetDefaultSQLReviewRulePayload(ruleTp SQLReviewRuleType, dbType storepb.Eng
 		SchemaRuleStatementCheckSetRoleVariable,
 		SchemaRuleStatementWhereDisallowFunctionsAndCaculations,
 		SchemaRuleStatementDisallowMixDDLDML,
+		SchemaRuleStatementDisallowMixInDDL,
+		SchemaRuleStatementDisallowMixInDML,
 		SchemaRuleStatementPriorBackupCheck,
 		SchemaRuleStatementJoinStrictColumnAttrs,
 		SchemaRuleStatementMaxExecutionTime,
