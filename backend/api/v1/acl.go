@@ -305,6 +305,16 @@ func getResourceFromRequest(request any, method string) ([]*common.Resource, err
 		}
 	}
 
+	// HACK(p0ny): unfortunately, BatchUpdateIssues doesn't comply to aip.
+	if r, ok := request.(*v1pb.BatchUpdateIssuesStatusRequest); ok {
+		for _, issue := range r.Issues {
+			resources = append(resources, &common.Resource{
+				Name: issue,
+			})
+		}
+		return resources, nil
+	}
+
 	if strings.HasPrefix(shortMethod, "Batch") {
 		requestsDesc := mr.Descriptor().Fields().ByName("requests")
 		if requestsDesc != nil {
