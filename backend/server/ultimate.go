@@ -26,6 +26,7 @@ import (
 	_ "github.com/bytebase/bytebase/backend/plugin/db/tidb"
 
 	// Parsers.
+	_ "github.com/bytebase/bytebase/backend/plugin/parser/bigquery"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/partiql"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
