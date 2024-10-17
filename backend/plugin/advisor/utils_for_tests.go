@@ -222,10 +222,6 @@ func RunSQLReviewRuleTest(t *testing.T, rule SQLReviewRuleType, dbType storepb.E
 			},
 		}
 
-		if isBuiltinRule(rule) {
-			ruleList = []*storepb.SQLReviewRule{}
-		}
-
 		ctx := SQLReviewCheckContext{
 			Charset:         "",
 			Collation:       "",
@@ -239,6 +235,7 @@ func RunSQLReviewRuleTest(t *testing.T, rule SQLReviewRuleType, dbType storepb.E
 			PreUpdateBackupDetail: &storepb.PreUpdateBackupDetail{
 				Database: "instances/instanceName/databases/bbdataarchive",
 			},
+			NoAppendBuiltin: true,
 		}
 
 		adviceList, err := SQLReviewCheck(sm, tc.Statement, ruleList, ctx)
@@ -268,15 +265,6 @@ func RunSQLReviewRuleTest(t *testing.T, rule SQLReviewRuleType, dbType storepb.E
 		require.NoError(t, err)
 		err = os.WriteFile(filepath, byteValue, 0644)
 		require.NoError(t, err)
-	}
-}
-
-func isBuiltinRule(rule SQLReviewRuleType) bool {
-	switch rule {
-	case BuiltinRulePriorBackupCheck:
-		return true
-	default:
-		return false
 	}
 }
 
@@ -402,6 +390,8 @@ func SetDefaultSQLReviewRulePayload(ruleTp SQLReviewRuleType, dbType storepb.Eng
 		SchemaRuleStatementCheckSetRoleVariable,
 		SchemaRuleStatementWhereDisallowFunctionsAndCaculations,
 		SchemaRuleStatementDisallowMixDDLDML,
+		SchemaRuleStatementDisallowMixInDDL,
+		SchemaRuleStatementDisallowMixInDML,
 		SchemaRuleStatementPriorBackupCheck,
 		SchemaRuleStatementJoinStrictColumnAttrs,
 		SchemaRuleStatementMaxExecutionTime,
