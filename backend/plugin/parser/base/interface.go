@@ -190,6 +190,7 @@ func GetQuerySpan(ctx context.Context, gCtx GetQuerySpanContext, engine storepb.
 	if !ok {
 		return nil, nil
 	}
+	gCtx.Engine = engine
 	statements, err := SplitMultiSQL(engine, statement)
 	if err != nil {
 		return nil, err
