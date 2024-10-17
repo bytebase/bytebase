@@ -672,11 +672,11 @@ func convert(node *pgquery.Node, statement base.SingleSQL) (res ast.Node, err er
 			commentStmt.Type = ast.ObjectTypeColumn
 			switch node := in.CommentStmt.Object.Node.(type) {
 			case *pgquery.Node_List:
-				columnDef, err := ConvertNodeListToColumnNameDef(node.List.Items)
+				columnNameDef, err := ConvertNodeListToColumnNameDef(node.List.Items)
 				if err != nil {
 					return nil, err
 				}
-				commentStmt.Object = columnDef
+				commentStmt.Object = columnNameDef
 			default:
 				return nil, errors.Errorf("expect to get a list node but got %T", node)
 			}

@@ -137,6 +137,18 @@ ruleList:
       required: true
       maxLength: 64
     engine: MARIADB
+  - type: table.comment
+    level: ERROR
+    payload:
+      required: true
+      maxLength: 64
+    engine: POSTGRES
+  - type: table.comment
+    level: ERROR
+    payload:
+      required: true
+      maxLength: 64
+    engine: ORACLE
   - type: table.no-duplicate-index
     level: WARNING
     engine: MYSQL
@@ -1132,6 +1144,12 @@ ruleList:
       required: true
       maxLength: 64
     engine: MARIADB
+  - type: column.comment
+    level: ERROR
+    payload:
+      required: true
+      maxLength: 64
+    engine: POSTGRES
   - type: column.maximum-character-length
     level: WARNING
     payload:

@@ -514,6 +514,9 @@ const (
 	// PostgreSQLColumnRequirement is an advisor type for PostgreSQL column requirement.
 	PostgreSQLColumnRequirement Type = "bb.plugin.advisor.postgresql.column.require"
 
+	// PostgreSQLColumnCommentConvention is an advisor type for PostgreSQL column comment convention.
+	PostgreSQLColumnCommentConvention Type = "bb.plugin.advisor.postgresql.column.comment"
+
 	// PostgreSQLCommentConvention is an advisor type for PostgreSQL comment convention.
 	PostgreSQLCommentConvention Type = "bb.plugin.advisor.postgresql.comment"
 
@@ -640,6 +643,9 @@ const (
 	// PostgreSQLStatementMaximumLimitValue is an advisor type for PostgreSQL statement maximum limit value.
 	PostgreSQLStatementMaximumLimitValue Type = "bb.plugin.advisor.postgresql.statement.maximum-limit-value"
 
+	// PostgreSQLTableCommentConvention is an advisor type for PostgreSQL table comment convention.
+	PostgreSQLTableCommentConvention Type = "bb.plugin.advisor.postgresql.table.comment"
+
 	// Oracle Advisor.
 
 	// OracleSyntax is an advisor type for Oracle syntax.
@@ -712,6 +718,9 @@ const (
 	OracleStatementDisallowMixDDLDML Type = "bb.plugin.advisor.oracle.statement.disallow-mix-ddl-dml"
 	OracleStatementDisallowMixInDDL  Type = "bb.plugin.advisor.oracle.statement.disallow-mix-in-ddl"
 	OracleStatementDisallowMixInDML  Type = "bb.plugin.advisor.oracle.statement.disallow-mix-in-dml"
+
+	// OracleTableCommentConvention is an advisor type for Oracle table comment convention.
+	OracleTableCommentConvention Type = "bb.plugin.advisor.oracle.table.comment"
 
 	// Snowflake Advisor.
 

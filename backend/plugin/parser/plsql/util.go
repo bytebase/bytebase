@@ -55,6 +55,16 @@ func NormalizeTableAlias(ctx plsql.ITable_aliasContext) string {
 	return ""
 }
 
+// NormalizeQuotedString returns the string without the quotes.
+func NormalizeQuotedString(ctx plsql.IQuoted_stringContext) string {
+	if ctx == nil {
+		return ""
+	}
+
+	raw := ctx.GetText()
+	return raw[1 : len(raw)-1]
+}
+
 func normalizeClusterName(ctx plsql.ICluster_nameContext) (string, string) {
 	var list []string
 	for _, idExpression := range ctx.AllId_expression() {
