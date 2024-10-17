@@ -10,6 +10,7 @@ import (
 
 	parsererror "github.com/bytebase/bytebase/backend/plugin/parser/errors"
 	"github.com/bytebase/bytebase/backend/store/model"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
@@ -1197,6 +1198,7 @@ func (q *querySpanExtractor) getAllTableColumnSources(databaseName, tableName st
 }
 
 func (q *querySpanExtractor) getFieldColumnSource(databaseName, tableName, fieldName string) (base.SourceColumnSet, error) {
+	databaseName = q.filterClusterName(databaseName)
 	findInTableSource := func(tableSource base.TableSource) (base.SourceColumnSet, bool) {
 		if q.ignoreCaseSensitive {
 			if databaseName != "" && !strings.EqualFold(databaseName, tableSource.GetDatabaseName()) {
@@ -1263,6 +1265,18 @@ func (q *querySpanExtractor) getFieldColumnSource(databaseName, tableName, field
 	}
 }
 
+func (q *querySpanExtractor) filterClusterName(databaseName string) string {
+	if q.gCtx.Engine == storepb.Engine_STARROCKS {
+		// For StarRocks, user can use `cluster_name:database_name` as the database name.
+		// But for the query span in Bytebase, we only care about the database name.
+		list := strings.Split(databaseName, ":")
+		if len(list) > 1 {
+			databaseName = list[len(list)-1]
+		}
+	}
+	return databaseName
+}
+
 func (q *querySpanExtractor) findTableSchema(databaseName, tableName string) (base.TableSource, error) {
 	// Each CTE name in one WITH clause must be unique, but we can use the same name in the different level CTE, such as:
 	//
@@ -1285,6 +1299,8 @@ func (q *querySpanExtractor) findTableSchema(databaseName, tableName string) (ba
 	if databaseName == "" {
 		databaseName = q.defaultDatabase
 	}
+
+	databaseName = q.filterClusterName(databaseName)
 
 	var dbSchema *model.DatabaseMetadata
 	allDatabaseNames, err := q.gCtx.ListDatabaseNamesFunc(q.ctx, q.gCtx.InstanceID)
