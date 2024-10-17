@@ -50,6 +50,14 @@
       comment: ""
 - input: WITH x(x1, x2) AS (SELECT * FROM t2) SELECT | FROM x
   want:
+    - text: x1
+      type: COLUMN
+      definition: ""
+      comment: ""
+    - text: x2
+      type: COLUMN
+      definition: ""
+      comment: ""
     - text: public
       type: SCHEMA
       definition: ""
@@ -70,32 +78,8 @@
       type: VIEW
       definition: ""
       comment: ""
-    - text: x1
-      type: COLUMN
-      definition: ""
-      comment: ""
-    - text: x2
-      type: COLUMN
-      definition: ""
-      comment: ""
 - input: SELECT c1 as eid, c2 as xid FROM t2 ORDER BY |
   want:
-    - text: public
-      type: SCHEMA
-      definition: ""
-      comment: ""
-    - text: t1
-      type: TABLE
-      definition: ""
-      comment: ""
-    - text: t2
-      type: TABLE
-      definition: ""
-      comment: ""
-    - text: v1
-      type: VIEW
-      definition: ""
-      comment: ""
     - text: c1
       type: COLUMN
       definition: public.t2 | int, NOT NULL
@@ -112,8 +96,6 @@
       type: COLUMN
       definition: ""
       comment: ""
-- input: SELECT c1 as eid FROM t1 ORDER BY |
-  want:
     - text: public
       type: SCHEMA
       definition: ""
@@ -130,6 +112,8 @@
       type: VIEW
       definition: ""
       comment: ""
+- input: SELECT c1 as eid FROM t1 ORDER BY |
+  want:
     - text: c1
       type: COLUMN
       definition: public.t1 | int, NOT NULL
@@ -138,8 +122,6 @@
       type: COLUMN
       definition: ""
       comment: ""
-- input: SELECT FROM basdkfjasldf;SELECT | FROM t1
-  want:
     - text: public
       type: SCHEMA
       definition: ""
@@ -156,12 +138,34 @@
       type: VIEW
       definition: ""
       comment: ""
+- input: SELECT FROM basdkfjasldf;SELECT | FROM t1
+  want:
     - text: c1
       type: COLUMN
       definition: public.t1 | int, NOT NULL
       comment: ""
+    - text: public
+      type: SCHEMA
+      definition: ""
+      comment: ""
+    - text: t1
+      type: TABLE
+      definition: ""
+      comment: ""
+    - text: t2
+      type: TABLE
+      definition: ""
+      comment: ""
+    - text: v1
+      type: VIEW
+      definition: ""
+      comment: ""
 - input: SELECT | FROM (SELECT c1 FROM t1) cc1
   want:
+    - text: c1
+      type: COLUMN
+      definition: ""
+      comment: ""
     - text: public
       type: SCHEMA
       definition: ""
@@ -180,10 +184,6 @@
       comment: ""
     - text: v1
       type: VIEW
-      definition: ""
-      comment: ""
-    - text: c1
-      type: COLUMN
       definition: ""
       comment: ""
 - input: SELECT cc1.| FROM t1 cc1 JOIN t2 on NOT cc1.c1 = t2.c1
@@ -248,6 +248,10 @@
       comment: ""
 - input: SELECT | FROM t1 x
   want:
+    - text: c1
+      type: COLUMN
+      definition: public.t1 | int, NOT NULL
+      comment: ""
     - text: public
       type: SCHEMA
       definition: ""
@@ -268,12 +272,12 @@
       type: VIEW
       definition: ""
       comment: ""
+- input: SELECT | FROM public.t1
+  want:
     - text: c1
       type: COLUMN
       definition: public.t1 | int, NOT NULL
       comment: ""
-- input: SELECT | FROM public.t1
-  want:
     - text: public
       type: SCHEMA
       definition: ""
@@ -289,8 +293,4 @@
     - text: v1
       type: VIEW
       definition: ""
-      comment: ""
-    - text: c1
-      type: COLUMN
-      definition: public.t1 | int, NOT NULL
       comment: ""
