@@ -143,6 +143,12 @@ ruleList:
       required: true
       maxLength: 64
     engine: POSTGRES
+  - type: table.comment
+    level: ERROR
+    payload:
+      required: true
+      maxLength: 64
+    engine: ORACLE
   - type: table.no-duplicate-index
     level: WARNING
     engine: MYSQL

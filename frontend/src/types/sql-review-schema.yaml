@@ -193,6 +193,22 @@
         type: NUMBER
         default: 64
   engine: POSTGRES
+- type: table.comment
+  category: TABLE
+  componentList:
+    - key: required
+      payload:
+        type: BOOLEAN
+        default: false
+    - key: requiredClassification
+      payload:
+        type: BOOLEAN
+        default: false
+    - key: maxLength
+      payload:
+        type: NUMBER
+        default: 64
+  engine: ORACLE
 - type: table.disallow-partition
   category: TABLE
   engine: MYSQL
