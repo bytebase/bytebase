@@ -49,7 +49,7 @@ func getAccessTables(defaultDatabase string, tree antlr.Tree) (base.SourceColumn
 		return nil, l.err
 	}
 	result, _ = base.MergeSourceColumnSet(result, l.sourceColumnSet)
-	return l.sourceColumnSet, nil
+	return result, nil
 }
 
 type accessTableListener struct {
@@ -108,7 +108,6 @@ func (l *accessTableListener) EnterTable_path_expression(ctx *parser.Table_path_
 	}
 
 	l.sourceColumnSet[columnSource] = true
-	return
 }
 
 func unquoteIdentifier(identifier parser.IIdentifierContext) string {
