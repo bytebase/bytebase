@@ -38,13 +38,14 @@
             "roomId" INT,
             CONSTRAINT uk1 UNIQUE (id, name),
             CONSTRAINT fk1 FOREIGN KEY ("roomId") REFERENCES room(id)
-            )
+            );
+    COMMENT ON TABLE "userTable" IS 'User table';
   result:
     - |-
       {
         "status":  "ERROR",
         "title":  "table.require-pk",
-        "content":  "Table \"public\".\"userTable\" requires PRIMARY KEY, related statement: \"CREATE TABLE \\\"userTable\\\"(\\n        id INT,\\n        name VARCHAR(255),\\n        \\\"roomId\\\" INT,\\n        CONSTRAINT uk1 UNIQUE (id, name),\\n        CONSTRAINT fk1 FOREIGN KEY (\\\"roomId\\\") REFERENCES room(id)\\n        )\"",
+        "content":  "Table \"public\".\"userTable\" requires PRIMARY KEY, related statement: \"CREATE TABLE \\\"userTable\\\"(\\n        id INT,\\n        name VARCHAR(255),\\n        \\\"roomId\\\" INT,\\n        CONSTRAINT uk1 UNIQUE (id, name),\\n        CONSTRAINT fk1 FOREIGN KEY (\\\"roomId\\\") REFERENCES room(id)\\n        );\"",
         "sqlReviewReport":  {
           "line":  7,
           "code":  601,
@@ -57,7 +58,7 @@
       {
         "status":  "ERROR",
         "title":  "table.no-foreign-key",
-        "content":  "Foreign key is not allowed in the table \"public\".\"userTable\", related statement: \"CREATE TABLE \"userTable\"(\n        id INT,\n        name VARCHAR(255),\n        \"roomId\" INT,\n        CONSTRAINT uk1 UNIQUE (id, name),\n        CONSTRAINT fk1 FOREIGN KEY (\"roomId\") REFERENCES room(id)\n        )\"",
+        "content":  "Foreign key is not allowed in the table \"public\".\"userTable\", related statement: \"CREATE TABLE \"userTable\"(\n        id INT,\n        name VARCHAR(255),\n        \"roomId\" INT,\n        CONSTRAINT uk1 UNIQUE (id, name),\n        CONSTRAINT fk1 FOREIGN KEY (\"roomId\") REFERENCES room(id)\n        );\"",
         "sqlReviewReport":  {
           "line":  7,
           "code":  602,
@@ -227,7 +228,8 @@
       updater_id INT NOT NULL,
       updated_ts TIMESTAMP NOT NULL,
       CONSTRAINT pk_tech_book_id PRIMARY KEY (id)
-    )
+    );
+    COMMENT ON TABLE tech_book IS 'tech_book';
   result:
     - |-
       {
