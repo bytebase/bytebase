@@ -12,19 +12,19 @@ import (
 )
 
 var (
-	_ advisor.Advisor = (*TableCommentConventionAdvisor)(nil)
-	_ ast.Visitor     = (*tableCommentConventionChecker)(nil)
+	_ advisor.Advisor = (*ColumnCommentConventionAdvisor)(nil)
+	_ ast.Visitor     = (*columnCommentConventionChecker)(nil)
 )
 
 func init() {
-	advisor.Register(storepb.Engine_POSTGRES, advisor.PostgreSQLTableCommentConvention, &TableCommentConventionAdvisor{})
+	advisor.Register(storepb.Engine_POSTGRES, advisor.PostgreSQLColumnCommentConvention, &ColumnCommentConventionAdvisor{})
 }
 
-// TableCommentConventionAdvisor is the advisor checking for table comment convention.
-type TableCommentConventionAdvisor struct {
+// ColumnCommentConventionAdvisor is the advisor checking for column comment convention.
+type ColumnCommentConventionAdvisor struct {
 }
 
-func (*TableCommentConventionAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
+func (*ColumnCommentConventionAdvisor) Check(ctx advisor.Context, _ string) ([]*storepb.Advice, error) {
 	stmtList, ok := ctx.AST.([]ast.Node)
 	if !ok {
 		return nil, errors.Errorf("failed to convert to Node")
@@ -38,7 +38,7 @@ func (*TableCommentConventionAdvisor) Check(ctx advisor.Context, _ string) ([]*s
 	if err != nil {
 		return nil, err
 	}
-	checker := &tableCommentConventionChecker{
+	checker := &columnCommentConventionChecker{
 		level:                level,
 		title:                string(ctx.Rule.Type),
 		payload:              payload,
@@ -49,14 +49,14 @@ func (*TableCommentConventionAdvisor) Check(ctx advisor.Context, _ string) ([]*s
 		ast.Walk(checker, stmt)
 	}
 
-	for _, createTableStmt := range checker.createdTableStmtList {
+	for _, columnName := range checker.columnNameList {
 		var commentStmt *ast.CommentStmt
 		for _, stmt := range checker.commentStmtList {
-			tableDef, ok := stmt.Object.(*ast.TableDef)
+			columnNameDef, ok := stmt.Object.(*ast.ColumnNameDef)
 			if !ok {
 				continue
 			}
-			if tableDef.Name == createTableStmt.Name.Name && tableDef.Schema == createTableStmt.Name.Schema && tableDef.Database == createTableStmt.Name.Database {
+			if columnNameDef.ColumnName == columnName.ColumnName && columnNameDef.Table.Name == columnName.Table.Name {
 				commentStmt = stmt
 				// continue and find the last comment statement.
 			}
@@ -66,9 +66,9 @@ func (*TableCommentConventionAdvisor) Check(ctx advisor.Context, _ string) ([]*s
 				Status:  checker.level,
 				Code:    advisor.CommentEmpty.Int32(),
 				Title:   checker.title,
-				Content: fmt.Sprintf("Comment is required for table `%s`", stringifyTableDef(createTableStmt.Name)),
+				Content: fmt.Sprintf("Comment is required for column `%s`", stringifyColumnNameDef(columnName)),
 				StartPosition: &storepb.Position{
-					Line: int32(createTableStmt.LastLine()),
+					Line: int32(columnName.LastLine()),
 				},
 			})
 		} else {
@@ -78,7 +78,7 @@ func (*TableCommentConventionAdvisor) Check(ctx advisor.Context, _ string) ([]*s
 					Status:  checker.level,
 					Code:    advisor.CommentTooLong.Int32(),
 					Title:   checker.title,
-					Content: fmt.Sprintf("Table `%s` comment is too long. The length of comment should be within %d characters", stringifyTableDef(createTableStmt.Name), checker.payload.MaxLength),
+					Content: fmt.Sprintf("Column `%s` comment is too long. The length of comment should be within %d characters", stringifyColumnNameDef(columnName), checker.payload.MaxLength),
 					StartPosition: &storepb.Position{
 						Line: int32(commentStmt.LastLine()),
 					},
@@ -90,7 +90,7 @@ func (*TableCommentConventionAdvisor) Check(ctx advisor.Context, _ string) ([]*s
 						Status:  checker.level,
 						Code:    advisor.CommentMissingClassification.Int32(),
 						Title:   checker.title,
-						Content: fmt.Sprintf("Table `%s` comment requires classification", stringifyTableDef(createTableStmt.Name)),
+						Content: fmt.Sprintf("Column `%s` comment requires classification", stringifyColumnNameDef(columnName)),
 						StartPosition: &storepb.Position{
 							Line: int32(commentStmt.LastLine()),
 						},
@@ -103,35 +103,52 @@ func (*TableCommentConventionAdvisor) Check(ctx advisor.Context, _ string) ([]*s
 	return checker.adviceList, nil
 }
 
-type tableCommentConventionChecker struct {
+type columnCommentConventionChecker struct {
 	adviceList           []*storepb.Advice
 	level                storepb.Advice_Status
 	title                string
 	payload              *advisor.CommentConventionRulePayload
 	classificationConfig *storepb.DataClassificationSetting_DataClassificationConfig
 
-	createdTableStmtList []*ast.CreateTableStmt
-	commentStmtList      []*ast.CommentStmt
+	columnNameList  []*ast.ColumnNameDef
+	commentStmtList []*ast.CommentStmt
 }
 
-func (checker *tableCommentConventionChecker) Visit(node ast.Node) ast.Visitor {
+func (checker *columnCommentConventionChecker) Visit(node ast.Node) ast.Visitor {
 	if createTableStmt, ok := node.(*ast.CreateTableStmt); ok {
-		checker.createdTableStmtList = append(checker.createdTableStmtList, createTableStmt)
-	} else if commentStmt, ok := node.(*ast.CommentStmt); ok && commentStmt.Type == ast.ObjectTypeTable {
+		for _, columnDef := range createTableStmt.ColumnList {
+			columnName := &ast.ColumnNameDef{
+				Table:      createTableStmt.Name,
+				ColumnName: columnDef.ColumnName,
+			}
+			columnName.SetLastLine(createTableStmt.LastLine())
+			checker.columnNameList = append(checker.columnNameList, columnName)
+		}
+	} else if alterTableStmt, ok := node.(*ast.AlterTableStmt); ok {
+		for _, alterItem := range alterTableStmt.AlterItemList {
+			if addColumnListStmt, ok := alterItem.(*ast.AddColumnListStmt); ok {
+				for _, columnDef := range addColumnListStmt.ColumnList {
+					columnName := &ast.ColumnNameDef{
+						Table:      alterTableStmt.Table,
+						ColumnName: columnDef.ColumnName,
+					}
+					columnName.SetLastLine(alterTableStmt.LastLine())
+					checker.columnNameList = append(checker.columnNameList, columnName)
+				}
+			}
+		}
+	} else if commentStmt, ok := node.(*ast.CommentStmt); ok && commentStmt.Type == ast.ObjectTypeColumn {
 		checker.commentStmtList = append(checker.commentStmtList, commentStmt)
 	}
 	return checker
 }
 
-func stringifyTableDef(tableDef *ast.TableDef) string {
-	if tableDef == nil {
+func stringifyColumnNameDef(columnName *ast.ColumnNameDef) string {
+	if columnName == nil {
 		return ""
 	}
-	if tableDef.Database == "" && tableDef.Schema == "" {
-		return tableDef.Name
+	if columnName.Table == nil {
+		return columnName.ColumnName
 	}
-	if tableDef.Database == "" {
-		return fmt.Sprintf("%s.%s", tableDef.Schema, tableDef.Name)
-	}
-	return fmt.Sprintf("%s.%s.%s", tableDef.Database, tableDef.Schema, tableDef.Name)
+	return fmt.Sprintf("%s.%s", columnName.Table.Name, columnName.ColumnName)
 }
