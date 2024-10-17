@@ -1214,6 +1214,8 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 			return MySQLTableCommentConvention, nil
 		case storepb.Engine_POSTGRES:
 			return PostgreSQLTableCommentConvention, nil
+		case storepb.Engine_ORACLE, storepb.Engine_DM, storepb.Engine_OCEANBASE_ORACLE:
+			return OracleTableCommentConvention, nil
 		}
 	case SchemaRuleTableDisallowPartition:
 		switch engine {

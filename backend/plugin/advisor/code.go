@@ -719,6 +719,9 @@ const (
 	OracleStatementDisallowMixInDDL  Type = "bb.plugin.advisor.oracle.statement.disallow-mix-in-ddl"
 	OracleStatementDisallowMixInDML  Type = "bb.plugin.advisor.oracle.statement.disallow-mix-in-dml"
 
+	// OracleTableCommentConvention is an advisor type for Oracle table comment convention.
+	OracleTableCommentConvention Type = "bb.plugin.advisor.oracle.table.comment"
+
 	// Snowflake Advisor.
 
 	// SnowflakeSyntax is an advisor type for Snowflake syntax.
