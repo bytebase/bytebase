@@ -59,6 +59,8 @@ func TestPostgreSQLRules(t *testing.T) {
 		advisor.SchemaRuleStatementCheckSetRoleVariable,
 		advisor.SchemaRuleStatementMaximumLimitValue,
 		advisor.SchemaRuleTableCommentConvention,
+		advisor.SchemaRuleStatementDisallowMixInDDL,
+		advisor.SchemaRuleStatementDisallowMixInDML,
 	}
 
 	for _, rule := range pgRules {

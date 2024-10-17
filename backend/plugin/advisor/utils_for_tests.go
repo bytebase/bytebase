@@ -222,10 +222,6 @@ func RunSQLReviewRuleTest(t *testing.T, rule SQLReviewRuleType, dbType storepb.E
 			},
 		}
 
-		if isBuiltinRule(rule) {
-			ruleList = []*storepb.SQLReviewRule{}
-		}
-
 		ctx := SQLReviewCheckContext{
 			Charset:         "",
 			Collation:       "",
@@ -269,15 +265,6 @@ func RunSQLReviewRuleTest(t *testing.T, rule SQLReviewRuleType, dbType storepb.E
 		require.NoError(t, err)
 		err = os.WriteFile(filepath, byteValue, 0644)
 		require.NoError(t, err)
-	}
-}
-
-func isBuiltinRule(rule SQLReviewRuleType) bool {
-	switch rule {
-	case BuiltinRulePriorBackupCheck:
-		return true
-	default:
-		return false
 	}
 }
 
