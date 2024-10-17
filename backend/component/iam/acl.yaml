@@ -373,6 +373,7 @@ roles:
       - bb.databases.getSchema
       - bb.databases.list
       - bb.databases.query
+      - bb.databases.execute
       - bb.projects.get
       - bb.projects.getIamPolicy
       - bb.worksheets.get
