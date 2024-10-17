@@ -9,7 +9,8 @@
             updated_ts TIMESTAMP NOT NULL,
             CONSTRAINT pk_user_id PRIMARY KEY (id),
             CONSTRAINT uk_user_id_name UNIQUE (id, name)
-            )
+            );
+    COMMENT ON TABLE "user" IS 'User table';
   result:
     - |-
       {
