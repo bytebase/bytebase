@@ -305,7 +305,7 @@ func getResourceFromRequest(request any, method string) ([]*common.Resource, err
 		}
 	}
 
-	// HACK(p0ny): unfortunately, BatchUpdateIssues doesn't comply to aip.
+	// HACK(p0ny): unfortunately, BatchUpdateIssuesStatus doesn't comply to aip.
 	if r, ok := request.(*v1pb.BatchUpdateIssuesStatusRequest); ok {
 		for _, issue := range r.Issues {
 			resources = append(resources, &common.Resource{
