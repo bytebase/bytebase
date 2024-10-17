@@ -31,6 +31,8 @@ func TestOracleRules(t *testing.T) {
 		advisor.SchemaRuleIdentifierCase,
 		advisor.SchemaRuleStatementDisallowMixDDLDML,
 		advisor.SchemaRuleTableCommentConvention,
+		advisor.SchemaRuleStatementDisallowMixInDDL,
+		advisor.SchemaRuleStatementDisallowMixInDML,
 	}
 
 	for _, rule := range oracleRules {
