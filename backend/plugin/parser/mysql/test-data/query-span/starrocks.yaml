@@ -1,0 +1,90 @@
+- description: Test For cluster name
+  statement: SELECT * FROM v2
+  defaultDatabase: db
+  metadata: |-
+    {
+      "name":  "db",
+      "schemas":  [
+        {
+          "name": "",
+          "tables":  [
+            {
+              "name":  "products",
+              "columns":  [
+                {
+                  "name":  "product_info"
+                }
+              ]
+            }
+          ],
+          "views": [
+            {
+              "name": "v1",
+              "definition": "SELECT `cluster_name:db`.`products`.`product_info` FROM `cluster_name:db`.`products`"
+            },
+            {
+              "name": "v2",
+              "definition": "SELECT `cluster_name:db`.`v1`.`product_info` FROM `cluster_name:db`.`v1`"
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    results:
+        - name: product_info
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: ""
+              table: products
+              column: product_info
+    sourcecolumns:
+        - server: ""
+          database: db
+          schema: ""
+          table: v2
+          column: ""
+- description: Test For cluster name
+  statement: SELECT * FROM v1
+  defaultDatabase: db
+  metadata: |-
+    {
+      "name":  "db",
+      "schemas":  [
+        {
+          "name": "",
+          "tables":  [
+            {
+              "name":  "products",
+              "columns":  [
+                {
+                  "name":  "product_info"
+                }
+              ]
+            }
+          ],
+          "views": [
+            {
+              "name": "v1",
+              "definition": "SELECT `cluster_name:db`.`products`.`product_info` FROM `cluster_name:db`.`products`"
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    results:
+        - name: product_info
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: ""
+              table: products
+              column: product_info
+    sourcecolumns:
+        - server: ""
+          database: db
+          schema: ""
+          table: v1
+          column: ""

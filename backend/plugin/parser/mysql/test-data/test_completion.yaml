@@ -20,6 +20,10 @@
       comment: ""
 - input: INSERT INTO t1(|);
   want:
+    - text: c1
+      type: COLUMN
+      definition: t1 | , NOT NULL
+      comment: ""
     - text: db
       type: DATABASE
       definition: ""
@@ -31,10 +35,6 @@
     - text: t2
       type: TABLE
       definition: ""
-      comment: ""
-    - text: c1
-      type: COLUMN
-      definition: t1 | , NOT NULL
       comment: ""
     - text: v1
       type: VIEW
@@ -42,6 +42,14 @@
       comment: ""
 - input: INSERT INTO t2(c1, |);
   want:
+    - text: c1
+      type: COLUMN
+      definition: t2 | , NOT NULL
+      comment: ""
+    - text: c2
+      type: COLUMN
+      definition: t2 | , NOT NULL
+      comment: ""
     - text: db
       type: DATABASE
       definition: ""
@@ -53,14 +61,6 @@
     - text: t2
       type: TABLE
       definition: ""
-      comment: ""
-    - text: c1
-      type: COLUMN
-      definition: t2 | , NOT NULL
-      comment: ""
-    - text: c2
-      type: COLUMN
-      definition: t2 | , NOT NULL
       comment: ""
     - text: v1
       type: VIEW
@@ -78,6 +78,14 @@
       comment: ""
 - input: WITH x(x1, x2) AS (SELECT * FROM t2) SELECT | FROM x
   want:
+    - text: x1
+      type: COLUMN
+      definition: ""
+      comment: ""
+    - text: x2
+      type: COLUMN
+      definition: ""
+      comment: ""
     - text: db
       type: DATABASE
       definition: ""
@@ -94,32 +102,12 @@
       type: TABLE
       definition: ""
       comment: ""
-    - text: x1
-      type: COLUMN
-      definition: ""
-      comment: ""
-    - text: x2
-      type: COLUMN
-      definition: ""
-      comment: ""
     - text: v1
       type: VIEW
       definition: ""
       comment: ""
 - input: SELECT c1 as eid, c2 as xid FROM t2 ORDER BY |
   want:
-    - text: db
-      type: DATABASE
-      definition: ""
-      comment: ""
-    - text: t1
-      type: TABLE
-      definition: ""
-      comment: ""
-    - text: t2
-      type: TABLE
-      definition: ""
-      comment: ""
     - text: c1
       type: COLUMN
       definition: t2 | , NOT NULL
@@ -136,12 +124,6 @@
       type: COLUMN
       definition: ""
       comment: ""
-    - text: v1
-      type: VIEW
-      definition: ""
-      comment: ""
-- input: SELECT c1 as eid FROM t1 ORDER BY |
-  want:
     - text: db
       type: DATABASE
       definition: ""
@@ -154,6 +136,12 @@
       type: TABLE
       definition: ""
       comment: ""
+    - text: v1
+      type: VIEW
+      definition: ""
+      comment: ""
+- input: SELECT c1 as eid FROM t1 ORDER BY |
+  want:
     - text: c1
       type: COLUMN
       definition: t1 | , NOT NULL
@@ -162,12 +150,6 @@
       type: COLUMN
       definition: ""
       comment: ""
-    - text: v1
-      type: VIEW
-      definition: ""
-      comment: ""
-- input: SELECT FROM basdkfjasldf;SELECT | FROM t1
-  want:
     - text: db
       type: DATABASE
       definition: ""
@@ -180,9 +162,27 @@
       type: TABLE
       definition: ""
       comment: ""
+    - text: v1
+      type: VIEW
+      definition: ""
+      comment: ""
+- input: SELECT FROM basdkfjasldf;SELECT | FROM t1
+  want:
     - text: c1
       type: COLUMN
       definition: t1 | , NOT NULL
+      comment: ""
+    - text: db
+      type: DATABASE
+      definition: ""
+      comment: ""
+    - text: t1
+      type: TABLE
+      definition: ""
+      comment: ""
+    - text: t2
+      type: TABLE
+      definition: ""
       comment: ""
     - text: v1
       type: VIEW
@@ -190,6 +190,10 @@
       comment: ""
 - input: SELECT | FROM (SELECT c1 FROM t1) cc1(cc1c1)
   want:
+    - text: cc1c1
+      type: COLUMN
+      definition: ""
+      comment: ""
     - text: db
       type: DATABASE
       definition: ""
@@ -204,10 +208,6 @@
       comment: ""
     - text: t2
       type: TABLE
-      definition: ""
-      comment: ""
-    - text: cc1c1
-      type: COLUMN
       definition: ""
       comment: ""
     - text: v1
@@ -216,6 +216,10 @@
       comment: ""
 - input: SELECT | FROM (SELECT c1 FROM t1) cc1
   want:
+    - text: c1
+      type: COLUMN
+      definition: ""
+      comment: ""
     - text: db
       type: DATABASE
       definition: ""
@@ -230,10 +234,6 @@
       comment: ""
     - text: t2
       type: TABLE
-      definition: ""
-      comment: ""
-    - text: c1
-      type: COLUMN
       definition: ""
       comment: ""
     - text: v1
@@ -276,6 +276,10 @@
       comment: ""
 - input: SELECT | FROM t1
   want:
+    - text: c1
+      type: COLUMN
+      definition: t1 | , NOT NULL
+      comment: ""
     - text: db
       type: DATABASE
       definition: ""
@@ -288,16 +292,20 @@
       type: TABLE
       definition: ""
       comment: ""
-    - text: c1
-      type: COLUMN
-      definition: t1 | , NOT NULL
-      comment: ""
     - text: v1
       type: VIEW
       definition: ""
       comment: ""
 - input: SELECT | FROM t2 x
   want:
+    - text: c1
+      type: COLUMN
+      definition: t2 | , NOT NULL
+      comment: ""
+    - text: c2
+      type: COLUMN
+      definition: t2 | , NOT NULL
+      comment: ""
     - text: db
       type: DATABASE
       definition: ""
@@ -313,14 +321,6 @@
     - text: x
       type: TABLE
       definition: ""
-      comment: ""
-    - text: c1
-      type: COLUMN
-      definition: t2 | , NOT NULL
-      comment: ""
-    - text: c2
-      type: COLUMN
-      definition: t2 | , NOT NULL
       comment: ""
     - text: v1
       type: VIEW
