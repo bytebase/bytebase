@@ -8,6 +8,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/store/model"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
 var (
@@ -287,6 +288,14 @@ type GetQuerySpanContext struct {
 	GetDatabaseMetadataFunc       GetDatabaseMetadataFunc
 	ListDatabaseNamesFunc         ListDatabaseNamesFunc
 	GetLinkedDatabaseMetadataFunc GetLinkedDatabaseMetadataFunc
+
+	// Adding the engine information here is a trade-off between the copy-pasted and shared code.
+	// For engines with more different, we implement the getQuerySpan separately.
+	// For some similar engines, we can share the same getQuerySpan implementation.
+	// But they may have some differences, so we need to pass the engine information here.
+	// No need to set this field when call GetQuerySpan, because the base.GetQuerySpan already has the engine information.
+	// We'll deal this field in the base.GetQuerySpan.
+	Engine storepb.Engine
 }
 
 // GetDatabaseMetadataFunc is the function to get database metadata.
