@@ -62,15 +62,17 @@ func (*ColumnCommentConventionAdvisor) Check(ctx advisor.Context, _ string) ([]*
 			}
 		}
 		if commentStmt == nil || commentStmt.Comment == "" {
-			checker.adviceList = append(checker.adviceList, &storepb.Advice{
-				Status:  checker.level,
-				Code:    advisor.CommentEmpty.Int32(),
-				Title:   checker.title,
-				Content: fmt.Sprintf("Comment is required for column `%s`", stringifyColumnNameDef(columnName)),
-				StartPosition: &storepb.Position{
-					Line: int32(columnName.LastLine()),
-				},
-			})
+			if checker.payload.Required {
+				checker.adviceList = append(checker.adviceList, &storepb.Advice{
+					Status:  checker.level,
+					Code:    advisor.CommentEmpty.Int32(),
+					Title:   checker.title,
+					Content: fmt.Sprintf("Comment is required for column `%s`", stringifyColumnNameDef(columnName)),
+					StartPosition: &storepb.Position{
+						Line: int32(columnName.LastLine()),
+					},
+				})
+			}
 		} else {
 			comment := commentStmt.Comment
 			if checker.payload.MaxLength > 0 && len(comment) > checker.payload.MaxLength {
