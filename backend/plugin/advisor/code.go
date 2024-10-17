@@ -640,6 +640,9 @@ const (
 	// PostgreSQLStatementMaximumLimitValue is an advisor type for PostgreSQL statement maximum limit value.
 	PostgreSQLStatementMaximumLimitValue Type = "bb.plugin.advisor.postgresql.statement.maximum-limit-value"
 
+	// PostgreSQLTableCommentConvention is an advisor type for PostgreSQL table comment convention.
+	PostgreSQLTableCommentConvention Type = "bb.plugin.advisor.postgresql.table.comment"
+
 	// Oracle Advisor.
 
 	// OracleSyntax is an advisor type for Oracle syntax.
