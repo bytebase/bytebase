@@ -501,6 +501,7 @@ type SQLReviewCheckContext struct {
 	// Snowflake specific fields
 	CurrentDatabase string
 
+	// Used for test only.
 	NoAppendBuiltin bool
 }
 
