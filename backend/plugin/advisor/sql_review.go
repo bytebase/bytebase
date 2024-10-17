@@ -500,6 +500,9 @@ type SQLReviewCheckContext struct {
 
 	// Snowflake specific fields
 	CurrentDatabase string
+
+	// Used for test only.
+	NoAppendBuiltin bool
 }
 
 // SQLReviewCheck checks the statements with sql review rules.
@@ -513,8 +516,10 @@ func SQLReviewCheck(
 
 	builtinOnly := len(ruleList) == 0
 
-	// Append builtin rules to the rule list.
-	ruleList = append(ruleList, GetBuiltinRules(checkContext.DbType)...)
+	if !checkContext.NoAppendBuiltin {
+		// Append builtin rules to the rule list.
+		ruleList = append(ruleList, GetBuiltinRules(checkContext.DbType)...)
+	}
 
 	if asts == nil || len(ruleList) == 0 {
 		return parseResult, nil
