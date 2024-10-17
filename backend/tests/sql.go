@@ -185,11 +185,6 @@ func prodTemplateReviewConfigForPostgreSQL() (*v1pb.ReviewConfig, error) {
 				Engine: v1pb.Engine_POSTGRES,
 			},
 			{
-				Type:   string(advisor.SchemaRuleColumnCommentConvention),
-				Level:  v1pb.SQLReviewRuleLevel_WARNING,
-				Engine: v1pb.Engine_POSTGRES,
-			},
-			{
 				Type:   string(advisor.SchemaRuleColumnAutoIncrementMustInteger),
 				Level:  v1pb.SQLReviewRuleLevel_ERROR,
 				Engine: v1pb.Engine_POSTGRES,
