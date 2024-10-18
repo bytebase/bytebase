@@ -139,7 +139,7 @@ export const useProjectIamPolicy = (project: MaybeRef<string>) => {
 const checkProjectIAMPolicyWithExpr = (
   user: User,
   project: ComposedProject,
-  permission: Permission,
+  wantedPermissions: Permission[],
   bindingExprCheck: (expr?: Expr) => boolean
 ): boolean => {
   const roleStore = useRoleStore();
@@ -156,7 +156,7 @@ const checkProjectIAMPolicyWithExpr = (
     // If the role does not have the permission, then skip.
     const permissions =
       roleStore.getRoleByName(binding.role)?.permissions || [];
-    if (!permissions.includes(permission)) {
+    if (wantedPermissions.every((p) => !permissions.includes(p))) {
       continue;
     }
     // If binding expr check passes, then return true.
@@ -176,7 +176,7 @@ export const checkQuerierPermission = (
   return checkProjectIAMPolicyWithExpr(
     useCurrentUserV1().value,
     database.projectEntity,
-    "bb.databases.query",
+    ["bb.databases.query", "bb.databases.execute"],
     (expr?: Expr): boolean => {
       // If no condition is set, then return true.
       if (!expr) {
