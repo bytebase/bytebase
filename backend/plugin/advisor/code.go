@@ -721,6 +721,8 @@ const (
 
 	// OracleTableCommentConvention is an advisor type for Oracle table comment convention.
 	OracleTableCommentConvention Type = "bb.plugin.advisor.oracle.table.comment"
+	// OracleColumnCommentConvention is an advisor type for Oracle column comment convention.
+	OracleColumnCommentConvention Type = "bb.plugin.advisor.oracle.column.comment"
 
 	// Snowflake Advisor.
 
