@@ -149,6 +149,12 @@ ruleList:
       required: true
       maxLength: 64
     engine: ORACLE
+  - type: table.comment
+    level: ERROR
+    payload:
+      required: true
+      maxLength: 64
+    engine: OCEANBASE_ORACLE
   - type: table.no-duplicate-index
     level: WARNING
     engine: MYSQL
