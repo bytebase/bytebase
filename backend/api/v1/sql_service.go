@@ -43,6 +43,14 @@ import (
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
+type AccessOperation string
+
+const (
+	AccessOperationQuery   AccessOperation = "QUERY"
+	AccessOperationExport  AccessOperation = "EXPORT"
+	AccessOperationExecute AccessOperation = "EXECUTE"
+)
+
 const (
 	// defaultTimeout is the default timeout for query and admin execution.
 	defaultTimeout = 10 * time.Minute
@@ -160,6 +168,12 @@ func (s *SQLService) Execute(ctx context.Context, request *v1pb.ExecuteRequest) 
 		return nil, err
 	}
 
+	statement := request.Statement
+	// In Redshift datashare, Rewrite query used for parser.
+	if database.DataShare {
+		statement = strings.ReplaceAll(statement, fmt.Sprintf("%s.", database.DatabaseName), "")
+	}
+
 	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get database driver: %v", err)
@@ -179,7 +193,7 @@ func (s *SQLService) Execute(ctx context.Context, request *v1pb.ExecuteRequest) 
 	if request.Schema != nil {
 		queryContext.Schema = *request.Schema
 	}
-	results, duration, queryErr := executeWithTimeout(ctx, driver, conn, request.Statement, request.Timeout, queryContext)
+	results, _, duration, queryErr := executeRetry(ctx, s.store, user, instance, database, driver, conn, statement, request.Timeout, queryContext, s.licenseService, s.accessCheck, s.schemaSyncer)
 
 	if err := s.createQueryHistory(ctx, database, store.QueryHistoryTypeQuery, request.Statement, user.ID, duration, queryErr); err != nil {
 		slog.Error("failed to post admin execute activity", log.BBError(err))
@@ -242,7 +256,7 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 	if request.Schema != nil {
 		queryContext.Schema = *request.Schema
 	}
-	results, spans, duration, queryErr := queryRetry(ctx, s.store, user, instance, database, driver, conn, statement, request.Timeout, queryContext, false, s.licenseService, s.accessCheck, s.schemaSyncer)
+	results, spans, duration, queryErr := queryRetry(ctx, s.store, user, instance, database, driver, conn, statement, request.Timeout, queryContext, AccessOperationQuery, s.licenseService, s.accessCheck, s.schemaSyncer)
 
 	// Update activity.
 	if err = s.createQueryHistory(ctx, database, store.QueryHistoryTypeQuery, statement, user.ID, duration, queryErr); err != nil {
@@ -259,7 +273,7 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 	allowExport := true
 	// AllowExport is a validate only check.
 	if s.licenseService.IsFeatureEnabled(api.FeatureAccessControl) == nil {
-		err := s.accessCheck(ctx, instance, user, spans, queryContext.Limit, true /* isExport */)
+		err := s.accessCheck(ctx, instance, user, spans, queryContext.Limit, AccessOperationExport)
 		allowExport = (err == nil)
 	}
 
@@ -271,7 +285,7 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 	return response, nil
 }
 
-type accessCheckFunc func(context.Context, *store.InstanceMessage, *store.UserMessage, []*base.QuerySpan, int, bool) error
+type accessCheckFunc func(context.Context, *store.InstanceMessage, *store.UserMessage, []*base.QuerySpan, int, AccessOperation) error
 
 func extractSourceTable(comment string) (string, string, string, error) {
 	pattern := `\((\w+),\s*(\w+)(?:,\s*(\w+))?\)`
@@ -401,7 +415,7 @@ func isBackupTable(engine storepb.Engine, column base.ColumnResource) bool {
 	}
 }
 
-func queryRetry(
+func executeRetry(
 	ctx context.Context,
 	stores *store.Store,
 	user *store.UserMessage,
@@ -412,7 +426,6 @@ func queryRetry(
 	statement string,
 	timeout *durationpb.Duration,
 	queryContext db.QueryContext,
-	isExport bool,
 	licenseService enterprise.LicenseService,
 	optionalAccessCheck accessCheckFunc,
 	schemaSyncer *schemasync.Syncer,
@@ -444,7 +457,128 @@ func queryRetry(
 			slog.Debug("failed to replace backup table with source", log.BBError(err))
 		}
 		if licenseService.IsFeatureEnabled(api.FeatureAccessControl) == nil && optionalAccessCheck != nil {
-			if err := optionalAccessCheck(ctx, instance, user, spans, queryContext.Limit, isExport); err != nil {
+			if err := optionalAccessCheck(ctx, instance, user, spans, queryContext.Limit, AccessOperationExecute); err != nil {
+				return nil, nil, time.Duration(0), err
+			}
+		}
+	}
+
+	results, duration, queryErr := executeWithTimeout(ctx, driver, conn, statement, timeout, queryContext)
+	if queryErr != nil {
+		return nil, nil, duration, queryErr
+	}
+	if queryContext.Explain {
+		return results, nil, duration, nil
+	}
+	syncDatabaseMap := make(map[string]bool)
+	for i, r := range results {
+		if r.Error != "" {
+			continue
+		}
+		if i < len(spans) && spans[i].NotFoundError != nil {
+			for k := range spans[i].SourceColumns {
+				syncDatabaseMap[k.Database] = true
+			}
+		}
+	}
+
+	// Sync database metadata.
+	for accessDatabaseName := range syncDatabaseMap {
+		d, err := stores.GetDatabaseV2(ctx, &store.FindDatabaseMessage{InstanceID: &instance.ResourceID, DatabaseName: &accessDatabaseName})
+		if err != nil {
+			return nil, nil, duration, err
+		}
+		if err := schemaSyncer.SyncDatabaseSchema(ctx, d, false /* force */); err != nil {
+			return nil, nil, duration, errors.Wrapf(err, "failed to sync database schema for database %q", accessDatabaseName)
+		}
+	}
+
+	// Retry getting query span.
+	if len(syncDatabaseMap) > 0 {
+		spans, err = base.GetQuerySpan(
+			ctx,
+			base.GetQuerySpanContext{
+				InstanceID:                    instance.ResourceID,
+				GetDatabaseMetadataFunc:       BuildGetDatabaseMetadataFunc(stores),
+				ListDatabaseNamesFunc:         BuildListDatabaseNamesFunc(stores),
+				GetLinkedDatabaseMetadataFunc: BuildGetLinkedDatabaseMetadataFunc(stores, instance.Engine),
+			},
+			instance.Engine,
+			statement,
+			database.DatabaseName,
+			queryContext.Schema,
+			store.IgnoreDatabaseAndTableCaseSensitive(instance),
+		)
+		if err != nil {
+			return nil, nil, duration, status.Errorf(codes.Internal, "failed to get query span: %v", err.Error())
+		}
+		// After replacing backup table with source, we can apply the original access check and mask sensitive data for backup table.
+		// If err != nil, this function will return the original spans.
+		spans, err = replaceBackupTableWithSource(ctx, stores, instance, database, spans)
+		if err != nil {
+			slog.Debug("failed to replace backup table with source", log.BBError(err))
+		}
+	}
+	// The second query span should not tolerate any error, but we should retail the original error from database if possible.
+	for i, result := range results {
+		if i < len(spans) && result.Error == "" && spans[i].NotFoundError != nil {
+			return nil, nil, duration, status.Errorf(codes.Internal, "failed to get query span: %v", spans[i].NotFoundError)
+		}
+	}
+
+	if licenseService.IsFeatureEnabledForInstance(api.FeatureSensitiveData, instance) == nil && !queryContext.Explain {
+		masker := NewQueryResultMasker(stores)
+		if err := masker.MaskResults(ctx, spans, results, instance, storepb.MaskingExceptionPolicy_MaskingException_QUERY); err != nil {
+			return nil, nil, duration, status.Error(codes.Internal, err.Error())
+		}
+	}
+	return results, spans, duration, nil
+}
+
+func queryRetry(
+	ctx context.Context,
+	stores *store.Store,
+	user *store.UserMessage,
+	instance *store.InstanceMessage,
+	database *store.DatabaseMessage,
+	driver db.Driver,
+	conn *sql.Conn,
+	statement string,
+	timeout *durationpb.Duration,
+	queryContext db.QueryContext,
+	accessOperation AccessOperation,
+	licenseService enterprise.LicenseService,
+	optionalAccessCheck accessCheckFunc,
+	schemaSyncer *schemasync.Syncer,
+) ([]*v1pb.QueryResult, []*base.QuerySpan, time.Duration, error) {
+	var spans []*base.QuerySpan
+	var err error
+	if !queryContext.Explain {
+		spans, err = base.GetQuerySpan(
+			ctx,
+			base.GetQuerySpanContext{
+				InstanceID:                    instance.ResourceID,
+				GetDatabaseMetadataFunc:       BuildGetDatabaseMetadataFunc(stores),
+				ListDatabaseNamesFunc:         BuildListDatabaseNamesFunc(stores),
+				GetLinkedDatabaseMetadataFunc: BuildGetLinkedDatabaseMetadataFunc(stores, instance.Engine),
+			},
+			instance.Engine,
+			statement,
+			database.DatabaseName,
+			queryContext.Schema,
+			store.IgnoreDatabaseAndTableCaseSensitive(instance),
+		)
+		if err != nil {
+			return nil, nil, time.Duration(0), status.Errorf(codes.Internal, "failed to get query span: %v", err.Error())
+		}
+		// After replacing backup table with source, we can apply the original access check and mask sensitive data for backup table.
+		// If err != nil, this function will return the original spans.
+		spans, err = replaceBackupTableWithSource(ctx, stores, instance, database, spans)
+		if err != nil {
+			slog.Debug("failed to replace backup table with source", log.BBError(err))
+		}
+		if licenseService.IsFeatureEnabled(api.FeatureAccessControl) == nil && optionalAccessCheck != nil {
+			if err := optionalAccessCheck(ctx, instance, user, spans, queryContext.Limit, accessOperation); err != nil {
 				return nil, nil, time.Duration(0), err
 			}
 		}
@@ -672,7 +806,7 @@ func DoExport(
 		defer conn.Close()
 	}
 	queryContext := db.QueryContext{Limit: int(request.Limit), OperatorEmail: user.Email}
-	results, spans, duration, queryErr := queryRetry(ctx, storeInstance, user, instance, database, driver, conn, request.Statement, nil /* timeDuration */, queryContext, true, licenseService, optionalAccessCheck, schemaSyncer)
+	results, spans, duration, queryErr := queryRetry(ctx, storeInstance, user, instance, database, driver, conn, request.Statement, nil /* timeDuration */, queryContext, AccessOperationExecute, licenseService, optionalAccessCheck, schemaSyncer)
 	if queryErr != nil {
 		return nil, duration, err
 	}
@@ -1015,7 +1149,8 @@ func (s *SQLService) accessCheck(
 	user *store.UserMessage,
 	spans []*base.QuerySpan,
 	limit int,
-	isExport bool) error {
+	accessOperation AccessOperation,
+) error {
 	for _, span := range spans {
 		for column := range span.SourceColumns {
 			attributes := map[string]any{
@@ -1055,7 +1190,7 @@ func (s *SQLService) accessCheck(
 				return status.Error(codes.Internal, err.Error())
 			}
 
-			ok, err := s.hasDatabaseAccessRights(ctx, user, []*storepb.IamPolicy{workspacePolicy.Policy, projectPolicy.Policy}, attributes, isExport)
+			ok, err := s.hasDatabaseAccessRights(ctx, user, []*storepb.IamPolicy{workspacePolicy.Policy, projectPolicy.Policy}, attributes, accessOperation)
 			if err != nil {
 				return status.Errorf(codes.Internal, "failed to check access control for database: %q, error %v", column.Database, err)
 			}
@@ -1145,11 +1280,14 @@ func validateQueryRequest(instance *store.InstanceMessage, statement string) err
 	return nil
 }
 
-func (s *SQLService) hasDatabaseAccessRights(ctx context.Context, user *store.UserMessage, iamPolicies []*storepb.IamPolicy, attributes map[string]any, isExport bool) (bool, error) {
-	wantPermission := iam.PermissionDatabasesQuery
-	if isExport {
-		wantPermission = iam.PermissionDatabasesExport
+func (s *SQLService) hasDatabaseAccessRights(ctx context.Context, user *store.UserMessage, iamPolicies []*storepb.IamPolicy, attributes map[string]any, accessOperation AccessOperation) (bool, error) {
+
+	AccessOperationRequiredPermissionsMap := map[AccessOperation]string{
+		AccessOperationQuery:   iam.PermissionDatabasesQuery,
+		AccessOperationExport:  iam.PermissionDatabasesExport,
+		AccessOperationExecute: iam.PermissionDatabasesExecute,
 	}
+	wantPermission := AccessOperationRequiredPermissionsMap[accessOperation]
 
 	bindings := utils.GetUserIAMPolicyBindings(ctx, s.store, user, iamPolicies...)
 	for _, binding := range bindings {
