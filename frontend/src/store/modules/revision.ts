@@ -48,11 +48,17 @@ export const useRevisionStore = defineStore("revision", () => {
     return revisionMapByName.get(name);
   };
 
+  const deleteRevision = async (name: string) => {
+    await databaseServiceClient.deleteRevision({ name });
+    revisionMapByName.delete(name);
+  };
+
   return {
     revisionList,
     fetchRevisionsByDatabase,
     getRevisionsByDatabase,
     getOrFetchRevisionByName,
     getRevisionByName,
+    deleteRevision,
   };
 });

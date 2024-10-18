@@ -1925,7 +1925,16 @@
     "foreign-key": {
       "reference": "Referencia"
     },
-    "create-target-database-or-schema-for-backup": "Primero cree la base de datos o el esquema de destino para la copia de seguridad"
+    "create-target-database-or-schema-for-backup": "Primero cree la base de datos o el esquema de destino para la copia de seguridad",
+    "revision": {
+      "self": "Revisión",
+      "applied-at": "Aplicado en",
+      "filename": "Nombre del archivo",
+      "delete-confirm-dialog": {
+        "title": "¿Estas seguro de eliminarlo?",
+        "content": "Esto eliminará las revisiones aplicadas y el esquema de la base de datos no se modificará. Esta acción no se puede deshacer."
+      }
+    }
   },
   "repository": {
     "our-webhook-link": "El webhook creado por Bytebase se puede encontrar en {webhookLink}.",
@@ -3709,6 +3718,11 @@
       "optional-upload-sql-or-zip-file": "(Opcional) Cargue el archivo .sql o .zip"
     },
     "change-type": "Cambiar tipo"
+  },
+  "release": {
+    "self": "Liberar",
+    "releases": "Lanzamientos",
+    "files": "Archivos"
   },
   "export-data": {
     "export-rows": "Exportar filas",
