@@ -322,9 +322,7 @@ const useExecuteSQL = () => {
 
       try {
         let resultSet: SQLResultSetV1;
-
         let useExec = changeMode !== "RO";
-
         if (changeMode === "RO") {
           const isDDL = isDDLStatement(data, "some") || false;
           const isDML = isDMLStatement(data, "some") || false;
