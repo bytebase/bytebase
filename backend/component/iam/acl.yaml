@@ -395,6 +395,17 @@ roles:
       - bb.projects.get
       - bb.projects.getIamPolicy
       - bb.worksheets.get
+  - name: roles/projectExecutor
+    title: Project executor
+    permissions:
+      - bb.databases.check
+      - bb.databases.get
+      - bb.databases.getSchema
+      - bb.databases.list
+      - bb.databases.execute
+      - bb.projects.get
+      - bb.projects.getIamPolicy
+      - bb.worksheets.get
   - name: roles/projectReleaser
     title: Project releaser
     permissions:

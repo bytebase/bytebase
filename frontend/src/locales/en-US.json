@@ -3540,6 +3540,10 @@
       "self": "Project Exporter",
       "description": "Permissions for exporting database data."
     },
+    "project-executor": {
+      "self": "Project Executor",
+      "description": "Permissions for executing DML/DDLs to database."
+    },
     "project-viewer": {
       "self": "Project Viewer",
       "description": "Read-only permissions for viewing basic project information, accessing databases, and initiating privilege requests."
