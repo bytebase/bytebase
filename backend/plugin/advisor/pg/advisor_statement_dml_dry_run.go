@@ -65,14 +65,21 @@ type statementDmlDryRunChecker struct {
 	driver       *sql.DB
 	ctx          context.Context
 	explainCount int
+	setRoles     []string
 }
 
 // Visit implements ast.Visitor interface.
 func (checker *statementDmlDryRunChecker) Visit(in ast.Node) ast.Visitor {
 	switch node := in.(type) {
+	case *ast.VariableSetStmt:
+		if node.Name == "role" {
+			checker.setRoles = append(checker.setRoles, node.Text())
+		}
 	case *ast.InsertStmt, *ast.UpdateStmt, *ast.DeleteStmt:
 		checker.explainCount++
-		if _, err := advisor.Query(checker.ctx, checker.driver, storepb.Engine_POSTGRES, fmt.Sprintf("EXPLAIN %s", node.Text())); err != nil {
+		if _, err := advisor.Query(checker.ctx, advisor.QueryContext{
+			PreExecutions: checker.setRoles,
+		}, checker.driver, storepb.Engine_POSTGRES, fmt.Sprintf("EXPLAIN %s", node.Text())); err != nil {
 			checker.adviceList = append(checker.adviceList, &storepb.Advice{
 				Status:  checker.level,
 				Code:    advisor.StatementDMLDryRunFailed.Int32(),

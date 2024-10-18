@@ -75,6 +75,7 @@ type insertRowLimitChecker struct {
 	driver       *sql.DB
 	ctx          context.Context
 	explainCount int
+	setRoles     []string
 }
 
 // Visit implements the ast.Visitor interface.
@@ -82,8 +83,12 @@ func (checker *insertRowLimitChecker) Visit(node ast.Node) ast.Visitor {
 	code := advisor.Ok
 	rows := int64(0)
 
-	n, ok := node.(*ast.InsertStmt)
-	if ok {
+	switch n := node.(type) {
+	case *ast.VariableSetStmt:
+		if n.Name == "role" {
+			checker.setRoles = append(checker.setRoles, node.Text())
+		}
+	case *ast.InsertStmt:
 		if len(n.ValueList) > 0 {
 			// For INSERT INTO ... VALUES ... statements, use parser only.
 			if len(n.ValueList) > checker.maxRow {
@@ -93,7 +98,9 @@ func (checker *insertRowLimitChecker) Visit(node ast.Node) ast.Visitor {
 		} else if checker.driver != nil {
 			// For INSERT INTO ... SELECT statements, use EXPLAIN.
 			checker.explainCount++
-			res, err := advisor.Query(checker.ctx, checker.driver, storepb.Engine_POSTGRES, fmt.Sprintf("EXPLAIN %s", node.Text()))
+			res, err := advisor.Query(checker.ctx, advisor.QueryContext{
+				PreExecutions: checker.setRoles,
+			}, checker.driver, storepb.Engine_POSTGRES, fmt.Sprintf("EXPLAIN %s", node.Text()))
 			if err != nil {
 				checker.adviceList = append(checker.adviceList, &storepb.Advice{
 					Status:  checker.level,

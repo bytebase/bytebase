@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/pkg/errors"
+
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -18,8 +20,12 @@ func NormalizeStatement(statement string) string {
 	return statement
 }
 
+type QueryContext struct {
+	PreExecutions []string
+}
+
 // Query runs the EXPLAIN or SELECT statements for advisors.
-func Query(ctx context.Context, connection *sql.DB, engine storepb.Engine, statement string) ([]any, error) {
+func Query(ctx context.Context, qCtx QueryContext, connection *sql.DB, engine storepb.Engine, statement string) ([]any, error) {
 	tx, err := connection.BeginTx(ctx, &sql.TxOptions{})
 	if err != nil {
 		return nil, err
@@ -41,6 +47,14 @@ func Query(ctx context.Context, connection *sql.DB, engine storepb.Engine, state
 		}
 		if _, err := tx.ExecContext(ctx, fmt.Sprintf("SET ROLE '%s';", owner)); err != nil {
 			return nil, err
+		}
+	}
+
+	for _, preExec := range qCtx.PreExecutions {
+		if preExec != "" {
+			if _, err := tx.ExecContext(ctx, preExec); err != nil {
+				return nil, errors.Wrapf(err, "failed to execute pre-execution: %s", preExec)
+			}
 		}
 	}
 

@@ -104,7 +104,7 @@ func (checker *statementAffectedRowLimitChecker) EnterDeleteStatement(ctx *mysql
 func (checker *statementAffectedRowLimitChecker) handleStmt(lineNumber int) {
 	lineNumber += checker.baseLine
 	checker.explainCount++
-	res, err := advisor.Query(checker.ctx, checker.driver, storepb.Engine_MYSQL, fmt.Sprintf("EXPLAIN %s", checker.text))
+	res, err := advisor.Query(checker.ctx, advisor.QueryContext{}, checker.driver, storepb.Engine_MYSQL, fmt.Sprintf("EXPLAIN %s", checker.text))
 	if err != nil {
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{
 			Status:  checker.level,
