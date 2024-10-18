@@ -7,34 +7,74 @@
     :row-key="(revision: Revision) => revision.name"
     :striped="true"
     :row-props="rowProps"
+    @update:checked-row-keys="
+      (val) => (state.selectedRevisionNameList = new Set(val as string[]))
+    "
   />
+
+  <div
+    v-if="state.selectedRevisionNameList.size > 0"
+    class="sticky w-full flex items-center gap-x-2"
+  >
+    <NButton size="small" quaternary @click="onDelete">
+      <template #icon>
+        <Undo2Icon class="w-4 h-auto" />
+      </template>
+      {{ $t("common.delete") }}
+    </NButton>
+  </div>
 </template>
 
 <script lang="tsx" setup>
-import { type DataTableColumn, NDataTable } from "naive-ui";
-import { computed } from "vue";
+import { Undo2Icon } from "lucide-vue-next";
+import { type DataTableColumn, NDataTable, NButton, useDialog } from "naive-ui";
+import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { RouterLink } from "vue-router";
 import { BBAvatar } from "@/bbkit";
-import { useUserStore } from "@/store";
+import { useRevisionStore, useUserStore } from "@/store";
 import { getDateForPbTimestamp } from "@/types";
 import type { Revision } from "@/types/proto/v1/database_service";
 import { extractIssueUID, extractUserResourceName } from "@/utils";
+import { useDatabaseDetailContext } from "../Database/context";
 import HumanizeDate from "../misc/HumanizeDate.vue";
 
 const props = defineProps<{
   revisions: Revision[];
   customClick?: boolean;
+  showSelection?: boolean;
 }>();
+
+interface LocalState {
+  selectedRevisionNameList: Set<string>;
+}
 
 const emit = defineEmits<{
   (event: "row-click", name: string): void;
 }>();
 
 const { t } = useI18n();
+const dialog = useDialog();
+const revisionStore = useRevisionStore();
+const { pagedRevisionTableSessionKey } = useDatabaseDetailContext();
+const state = reactive<LocalState>({
+  selectedRevisionNameList: new Set(),
+});
 
 const columnList = computed(() => {
   const columns: (DataTableColumn<Revision> & { hide?: boolean })[] = [
+    {
+      type: "selection",
+      width: 40,
+      cellProps: () => {
+        return {
+          onClick: (e: MouseEvent) => {
+            e.stopPropagation();
+          },
+        };
+      },
+      hide: !props.showSelection,
+    },
     {
       key: "applied-at",
       title: "Applied at",
@@ -125,5 +165,20 @@ const rowProps = (revision: Revision) => {
 const creatorOfRevision = (revision: Revision) => {
   const email = extractUserResourceName(revision.creator);
   return useUserStore().getUserByEmail(email);
+};
+
+const onDelete = () => {
+  dialog.warning({
+    title: t("database.revision.delete-confirm-dialog.title"),
+    content: t("database.revision.delete-confirm-dialog.content"),
+    negativeText: t("common.cancel"),
+    positiveText: t("common.confirm"),
+    onPositiveClick: async () => {
+      for (const name of state.selectedRevisionNameList) {
+        await revisionStore.deleteRevision(name);
+      }
+      pagedRevisionTableSessionKey.value = `bb.paged-revision-table.${Date.now()}`;
+    },
+  });
 };
 </script>
