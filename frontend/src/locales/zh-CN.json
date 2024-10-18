@@ -3540,6 +3540,10 @@
       "self": "项目导出者",
       "description": "可导出指定范围的数据。"
     },
+    "project-executor": {
+      "self": "项目执行者",
+      "description": "可对指定范围的数据库执行 DML/DDL。"
+    },
     "project-viewer": {
       "self": "项目查看者",
       "description": "可查看项目基本信息，并可自助发起数据查询、数据导出请求。"

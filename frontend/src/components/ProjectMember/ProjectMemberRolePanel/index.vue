@@ -256,6 +256,10 @@ interface LocalState {
   showAddMemberPanel: boolean;
 }
 
+defineOptions({
+  name: "ProjectMemberRolePanel",
+});
+
 const props = defineProps<{
   project: ComposedProject;
   binding: MemberBinding;
@@ -306,7 +310,8 @@ const allowRevokeMember = computed(() => {
 const isRoleShouldShowDatabaseRelatedColumns = (role: string) => {
   return (
     role === PresetRoleType.PROJECT_QUERIER ||
-    role === PresetRoleType.PROJECT_EXPORTER
+    role === PresetRoleType.PROJECT_EXPORTER ||
+    role === PresetRoleType.PROJECT_EXECUTOR
   );
 };
 
