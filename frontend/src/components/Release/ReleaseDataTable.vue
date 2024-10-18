@@ -74,7 +74,7 @@ const columnList = computed((): DataTableColumn<ComposedRelease>[] => {
     },
     {
       key: "files",
-      title: "Files",
+      title: t("release.files"),
       ellipsis: true,
       render: (release) => {
         return (
@@ -88,7 +88,7 @@ const columnList = computed((): DataTableColumn<ComposedRelease>[] => {
                   size="small"
                   round
                 >
-                  {file.sheetSha256.slice(0, 8)}
+                  {file.version}
                 </NTag>
               </div>
             ))}

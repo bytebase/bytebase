@@ -1928,6 +1928,8 @@
     "create-target-database-or-schema-for-backup": "Primero cree la base de datos o el esquema de destino para la copia de seguridad",
     "revision": {
       "self": "Revisión",
+      "applied-at": "Aplicado en",
+      "filename": "Nombre del archivo",
       "delete-confirm-dialog": {
         "title": "¿Estas seguro de eliminarlo?",
         "content": "Esto eliminará las revisiones aplicadas y el esquema de la base de datos no se modificará. Esta acción no se puede deshacer."
@@ -3715,7 +3717,8 @@
   },
   "release": {
     "self": "Liberar",
-    "releases": "Lanzamientos"
+    "releases": "Lanzamientos",
+    "files": "Archivos"
   },
   "export-data": {
     "export-rows": "Exportar filas",

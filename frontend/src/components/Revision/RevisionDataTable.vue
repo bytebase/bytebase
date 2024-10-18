@@ -18,7 +18,7 @@
   >
     <NButton size="small" quaternary @click="onDelete">
       <template #icon>
-        <Undo2Icon class="w-4 h-auto" />
+        <TrashIcon class="w-4 h-auto" />
       </template>
       {{ $t("common.delete") }}
     </NButton>
@@ -26,7 +26,7 @@
 </template>
 
 <script lang="tsx" setup>
-import { Undo2Icon } from "lucide-vue-next";
+import { TrashIcon } from "lucide-vue-next";
 import { type DataTableColumn, NDataTable, NButton, useDialog } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
@@ -77,7 +77,7 @@ const columnList = computed(() => {
     },
     {
       key: "applied-at",
-      title: "Applied at",
+      title: t("database.revision.applied-at"),
       width: 128,
       render: (revision) => (
         <HumanizeDate date={getDateForPbTimestamp(revision.createTime)} />
@@ -91,7 +91,7 @@ const columnList = computed(() => {
     },
     {
       key: "filename",
-      title: "Filename",
+      title: t("database.revision.filename"),
       width: 128,
       render: (revision) => revision.file,
     },
@@ -126,7 +126,7 @@ const columnList = computed(() => {
     },
     {
       key: "statement",
-      title: "Statement",
+      title: t("common.statement"),
       minWidth: "12rem",
       render: (revision) => {
         return <p class="truncate whitespace-nowrap">{revision.statement}</p>;
