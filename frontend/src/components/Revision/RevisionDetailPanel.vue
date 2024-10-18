@@ -1,13 +1,16 @@
 <template>
   <div v-if="revision" class="w-full">
-    <h1 class="text-xl font-bold text-main truncate">
-      {{ revision.file }}
-    </h1>
+    <div class="flex flex-row items-center gap-2">
+      <NTag round>
+        {{ revision.version }}
+      </NTag>
+      <h2 class="text-xl font-bold text-main truncate">
+        {{ revision.file }}
+      </h2>
+    </div>
     <div
-      class="mt-2 text-control text-base space-x-4 flex flex-row items-center flex-wrap"
+      class="mt-3 text-control text-base space-x-4 flex flex-row items-center flex-wrap"
     >
-      <span>{{ "Version" }}: {{ revision.version }}</span>
-      <span>{{ "Hash" }}: {{ revision.sheetSha256.slice(0, 8) }}</span>
       <div
         v-if="creator"
         class="flex flex-row items-center overflow-hidden gap-x-1"
@@ -15,6 +18,16 @@
         <BBAvatar size="SMALL" :username="creator.title" />
         <span class="truncate">{{ creator.title }}</span>
       </div>
+      <span>
+        {{ $t("database.revision.applied-at") }}:
+        <HumanizeDate :date="getDateForPbTimestamp(revision.createTime)" />
+      </span>
+      <span v-if="relatedIssueUID">
+        {{ $t("common.issue") }}:
+        <RouterLink class="normal-link" :to="`/${revision.issue}`"
+          >#{{ relatedIssueUID }}</RouterLink
+        >
+      </span>
     </div>
   </div>
 
@@ -40,7 +53,7 @@
 
   <div v-if="taskRun">
     <p class="w-auto flex items-center text-base text-main mb-2">
-      Task run logs
+      {{ $t("issue.task-run.logs") }}
     </p>
     <TaskRunLogTable :task-run="taskRun" :sheet="sheet" />
   </div>
@@ -48,7 +61,7 @@
 
 <script lang="ts" setup>
 import { ClipboardIcon } from "lucide-vue-next";
-import { NDivider } from "naive-ui";
+import { NDivider, NTag } from "naive-ui";
 import { computed, reactive, ref, watch } from "vue";
 import BBAvatar from "@/bbkit/BBAvatar.vue";
 import { MonacoEditor } from "@/components/MonacoEditor";
@@ -59,14 +72,16 @@ import {
   useRevisionStore,
   useSheetV1Store,
 } from "@/store";
-import { type ComposedDatabase } from "@/types";
+import { getDateForPbTimestamp, type ComposedDatabase } from "@/types";
 import type { TaskRun } from "@/types/proto/v1/rollout_service";
 import {
+  extractIssueUID,
   extractUserResourceName,
   getSheetStatement,
   toClipboard,
 } from "@/utils";
 import TaskRunLogTable from "../IssueV1/components/TaskRunSection/TaskRunLogTable/TaskRunLogTable.vue";
+import HumanizeDate from "../misc/HumanizeDate.vue";
 
 interface LocalState {
   loading: boolean;
@@ -109,6 +124,7 @@ watch(
 const revision = computed(() =>
   revisionStore.getRevisionByName(props.revisionName)
 );
+
 const sheet = computed(() =>
   revision.value ? sheetStore.getSheetByName(revision.value.sheet) : undefined
 );
@@ -116,6 +132,12 @@ const sheet = computed(() =>
 const statement = computed(() =>
   sheet.value ? getSheetStatement(sheet.value) : ""
 );
+
+const relatedIssueUID = computed(() => {
+  const uid = extractIssueUID(revision.value?.issue || "");
+  if (!uid) return null;
+  return uid;
+});
 
 const creator = computed(() => {
   if (!revision.value) {

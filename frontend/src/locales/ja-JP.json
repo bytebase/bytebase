@@ -1928,6 +1928,8 @@
     "create-target-database-or-schema-for-backup": "まずバックアップのターゲットデータベースまたはスキーマを作成してください",
     "revision": {
       "self": "リビジョン",
+      "applied-at": "申請先",
+      "filename": "ファイル名",
       "delete-confirm-dialog": {
         "title": "本当に削除しますか?",
         "content": "これにより、適用されたリビジョンが削除され、データベース スキーマは変更されません。このアクションは元に戻せません。"
