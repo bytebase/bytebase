@@ -128,7 +128,7 @@
       <NTabPane
         v-if="isDev() && databaseChangeMode === DatabaseChangeMode.PIPELINE"
         name="revision"
-        :tab="'Revision'"
+        :tab="$t('database.revision.self')"
       >
         <DatabaseRevisionPanel class="mt-2" :database="database" />
       </NTabPane>
