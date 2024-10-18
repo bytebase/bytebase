@@ -65,14 +65,16 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 				updated_ts TIMESTAMP NOT NULL,
 				CONSTRAINT pk_user_id PRIMARY KEY (id),
 				CONSTRAINT uk_user_id_name UNIQUE (id, name)
-				)`,
+				);
+				COMMENT ON TABLE "user" IS 'comment';`,
 			`CREATE TABLE "userTable"(
 				id INT,
 				name VARCHAR(255),
 				"roomId" INT,
 				CONSTRAINT uk1 UNIQUE (id, name),
 				CONSTRAINT fk1 FOREIGN KEY ("roomId") REFERENCES room(id)
-				)`,
+				);
+				COMMENT ON TABLE "userTable" IS 'comment';`,
 		}
 		databaseName = "testsqlreview"
 	)

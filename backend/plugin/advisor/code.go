@@ -444,6 +444,11 @@ const (
 	// MySQLStatementDisallowMixDDLDML is an advisor type for MySQL disallow mix DDL and DML.
 	MySQLStatementDisallowMixDDLDML Type = "bb.plugin.advisor.mysql.statement.disallow-mix-ddl-dml"
 
+	// MySQLStatementDisallowMixInDDL is the advisor for MySQL that checks no DML statements are mixed in the DDL statements.
+	MySQLStatementDisallowMixInDDL Type = "bb.plugin.advisor.mysql.statement.disallow-mix-in-ddl"
+	// MySQLStatementDisallowMixInDML is the advisor for MySQL that checks no DDL statements are mixed in the DML statements.
+	MySQLStatementDisallowMixInDML Type = "bb.plugin.advisor.mysql.statement.disallow-mix-in-dml"
+
 	// MySQLBuiltinPriorBackupCheck is an advisor type for MySQL prior backup check.
 	MySQLBuiltinPriorBackupCheck Type = "bb.plugin.advisor.mysql.builtin.prior-backup-check"
 
@@ -508,6 +513,9 @@ const (
 
 	// PostgreSQLColumnRequirement is an advisor type for PostgreSQL column requirement.
 	PostgreSQLColumnRequirement Type = "bb.plugin.advisor.postgresql.column.require"
+
+	// PostgreSQLColumnCommentConvention is an advisor type for PostgreSQL column comment convention.
+	PostgreSQLColumnCommentConvention Type = "bb.plugin.advisor.postgresql.column.comment"
 
 	// PostgreSQLCommentConvention is an advisor type for PostgreSQL comment convention.
 	PostgreSQLCommentConvention Type = "bb.plugin.advisor.postgresql.comment"
@@ -626,11 +634,17 @@ const (
 	// PostgreSQLStatementDisallowMixDDLDML is an advisor type for PostgreSQL disallow mix DDL and DML.
 	PostgreSQLStatementDisallowMixDDLDML Type = "bb.plugin.advisor.postgresql.statement.disallow-mix-ddl-dml"
 
+	PostgreSQLStatementDisallowMixInDDL Type = "bb.plugin.advisor.postgresql.statement.disallow-mix-in-ddl"
+	PostgreSQLStatementDisallowMixInDML Type = "bb.plugin.advisor.postgresql.statement.disallow-mix-in-dml"
+
 	// PostgreSQLBuiltinPriorBackupCheck is an advisor type for PostgreSQL do prior backup check.
 	PostgreSQLBuiltinPriorBackupCheck Type = "bb.plugin.advisor.postgresql.builtin.prior-backup-check"
 
 	// PostgreSQLStatementMaximumLimitValue is an advisor type for PostgreSQL statement maximum limit value.
 	PostgreSQLStatementMaximumLimitValue Type = "bb.plugin.advisor.postgresql.statement.maximum-limit-value"
+
+	// PostgreSQLTableCommentConvention is an advisor type for PostgreSQL table comment convention.
+	PostgreSQLTableCommentConvention Type = "bb.plugin.advisor.postgresql.table.comment"
 
 	// Oracle Advisor.
 
@@ -702,6 +716,11 @@ const (
 
 	// OracleStatementDisallowMixDDLDML is an advisor type for Oracle disallow mix DDL and DML.
 	OracleStatementDisallowMixDDLDML Type = "bb.plugin.advisor.oracle.statement.disallow-mix-ddl-dml"
+	OracleStatementDisallowMixInDDL  Type = "bb.plugin.advisor.oracle.statement.disallow-mix-in-ddl"
+	OracleStatementDisallowMixInDML  Type = "bb.plugin.advisor.oracle.statement.disallow-mix-in-dml"
+
+	// OracleTableCommentConvention is an advisor type for Oracle table comment convention.
+	OracleTableCommentConvention Type = "bb.plugin.advisor.oracle.table.comment"
 
 	// Snowflake Advisor.
 
@@ -825,4 +844,6 @@ const (
 
 	// MSSQLStatementDisallowMixDDLDML is an advisor type for MSSQL disallow mix DDL and DML.
 	MSSQLStatementDisallowMixDDLDML Type = "bb.plugin.advisor.mssql.statement.disallow-mix-ddl-dml"
+	MSSQLStatementDisallowMixInDDL  Type = "bb.plugin.advisor.mssql.statement.disallow-mix-in-ddl"
+	MSSQLStatementDisallowMixInDML  Type = "bb.plugin.advisor.mssql.statement.disallow-mix-in-dml"
 )

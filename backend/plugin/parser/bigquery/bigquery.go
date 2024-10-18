@@ -4,7 +4,8 @@ import (
 	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
-	parser "github.com/bytebase/bq-parser"
+
+	parser "github.com/bytebase/google-sql-parser"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/utils"
@@ -19,9 +20,9 @@ type ParseResult struct {
 func ParseBigQuerySQL(statement string) (*ParseResult, error) {
 	statement = strings.TrimRightFunc(statement, utils.IsSpaceOrSemicolon) + "\n;"
 	inputStream := antlr.NewInputStream(statement)
-	lexer := parser.NewBigQueryLexer(inputStream)
+	lexer := parser.NewGoogleSQLLexer(inputStream)
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
-	p := parser.NewBigQueryParser(stream)
+	p := parser.NewGoogleSQLParser(stream)
 
 	// Remove default error listener and add our own error listener.
 	lexer.RemoveErrorListeners()

@@ -7,7 +7,7 @@
     UPDATE abc SET id = 4 WHERE id = 4 and name = 'test';
   changeType: 2
   want:
-    - status: 3
+    - status: 2
       code: 2001
       title: builtin.prior-backup-check
       content: Prior backup is feasible only with up to 5 statements that are either UPDATE or DELETE, or if all UPDATEs target the same table with a PRIMARY or UNIQUE KEY in the WHERE clause
@@ -35,7 +35,7 @@
     UPDATE tech_book SET id = 7 WHERE id = 7;
   changeType: 2
   want:
-    - status: 3
+    - status: 2
       code: 2001
       title: builtin.prior-backup-check
       content: Prior backup is feasible only with up to 5 statements that are either UPDATE or DELETE, or if all UPDATEs target the same table with a PRIMARY or UNIQUE KEY in the WHERE clause
@@ -51,7 +51,7 @@
 - statement: CREATE TABLE t_test_backup(a int);DELETE FROM tech_book WHERE a > 1;
   changeType: 2
   want:
-    - status: 3
+    - status: 2
       code: 2001
       title: builtin.prior-backup-check
       content: Data change can only run DML, "CREATE TABLE t_test_backup(a int);" is not DML
@@ -63,7 +63,7 @@
 - statement: SET ROLE role1;DELETE FROM tech_book WHERE a > 1;
   changeType: 2
   want:
-    - status: 3
+    - status: 2
       code: 2001
       title: builtin.prior-backup-check
       content: Backup cannot deal with SET ROLE statement

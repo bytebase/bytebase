@@ -121,6 +121,10 @@ const (
 	SchemaRuleStatementJoinStrictColumnAttrs = "statement.join-strict-column-attrs"
 	// SchemaRuleStatementDisallowMixDDLDML disallow mix DDL and DML on the same table.
 	SchemaRuleStatementDisallowMixDDLDML = "statement.disallow-mix-ddl-dml"
+	// SchemaRuleStatementDisallowMixInDDL disallows DML statements in DDL statements.
+	SchemaRuleStatementDisallowMixInDDL = "statement.disallow-mix-in-ddl"
+	// SchemaRuleStatementDisallowMixInDML disallows DDL statements in DML statements.
+	SchemaRuleStatementDisallowMixInDML = "statement.disallow-mix-in-dml"
 	// SchemaRuleStatementPriorBackupCheck checks for prior backup.
 	SchemaRuleStatementPriorBackupCheck = "statement.prior-backup-check"
 	// SchemaRuleStatementNonTransactional checks for non-transactional statements.
@@ -496,6 +500,9 @@ type SQLReviewCheckContext struct {
 
 	// Snowflake specific fields
 	CurrentDatabase string
+
+	// Used for test only.
+	NoAppendBuiltin bool
 }
 
 // SQLReviewCheck checks the statements with sql review rules.
@@ -509,8 +516,10 @@ func SQLReviewCheck(
 
 	builtinOnly := len(ruleList) == 0
 
-	// Append builtin rules to the rule list.
-	ruleList = append(ruleList, GetBuiltinRules(checkContext.DbType)...)
+	if !checkContext.NoAppendBuiltin {
+		// Append builtin rules to the rule list.
+		ruleList = append(ruleList, GetBuiltinRules(checkContext.DbType)...)
+	}
 
 	if asts == nil || len(ruleList) == 0 {
 		return parseResult, nil
@@ -1091,6 +1100,8 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 		switch engine {
 		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLColumnCommentConvention, nil
+		case storepb.Engine_POSTGRES:
+			return PostgreSQLColumnCommentConvention, nil
 		}
 	case SchemaRuleColumnAutoIncrementMustInteger:
 		switch engine {
@@ -1206,6 +1217,10 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 		switch engine {
 		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLTableCommentConvention, nil
+		case storepb.Engine_POSTGRES:
+			return PostgreSQLTableCommentConvention, nil
+		case storepb.Engine_ORACLE, storepb.Engine_DM, storepb.Engine_OCEANBASE_ORACLE:
+			return OracleTableCommentConvention, nil
 		}
 	case SchemaRuleTableDisallowPartition:
 		switch engine {
@@ -1312,6 +1327,28 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 			return OracleStatementDisallowMixDDLDML, nil
 		case storepb.Engine_MSSQL:
 			return MSSQLStatementDisallowMixDDLDML, nil
+		}
+	case SchemaRuleStatementDisallowMixInDDL:
+		switch engine {
+		case storepb.Engine_MYSQL, storepb.Engine_TIDB:
+			return MySQLStatementDisallowMixInDDL, nil
+		case storepb.Engine_POSTGRES:
+			return PostgreSQLStatementDisallowMixInDDL, nil
+		case storepb.Engine_ORACLE, storepb.Engine_DM, storepb.Engine_OCEANBASE_ORACLE:
+			return OracleStatementDisallowMixInDDL, nil
+		case storepb.Engine_MSSQL:
+			return MSSQLStatementDisallowMixInDDL, nil
+		}
+	case SchemaRuleStatementDisallowMixInDML:
+		switch engine {
+		case storepb.Engine_MYSQL, storepb.Engine_TIDB:
+			return MySQLStatementDisallowMixInDML, nil
+		case storepb.Engine_POSTGRES:
+			return PostgreSQLStatementDisallowMixInDML, nil
+		case storepb.Engine_ORACLE, storepb.Engine_DM, storepb.Engine_OCEANBASE_ORACLE:
+			return OracleStatementDisallowMixInDML, nil
+		case storepb.Engine_MSSQL:
+			return MSSQLStatementDisallowMixInDML, nil
 		}
 	case SchemaRuleStatementAddColumnWithoutPosition:
 		if engine == storepb.Engine_OCEANBASE {

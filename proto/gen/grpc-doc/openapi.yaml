@@ -1519,7 +1519,10 @@ paths:
                     type: boolean
                 - name: concise
                   in: query
-                  description: When true, the schema dump will be concise.
+                  description: |-
+                    When true, the schema dump will be concise.
+                     For Oracle, there will be tables and indexes only for Sync Schema.
+                     For Postgres, we'll filter the backup schema.
                   schema:
                     type: boolean
             responses:
@@ -2066,6 +2069,7 @@ paths:
                   description: |-
                     When true, the schema dump will be concise.
                      For Oracle, there will be tables and indexes only for Sync Schema.
+                     For Postgres, we'll filter the backup schema.
                   schema:
                     type: boolean
             responses:

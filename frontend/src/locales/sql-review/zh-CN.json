@@ -687,6 +687,14 @@
     "builtin-prior-backup-check": {
       "title": "事先备份可行性检查",
       "description": "此规则检查是否可以在数据更改之前创建备份。它会验证备份目标数据库是否存在，并禁止不支持的方案。它是内置的，无法跳过。"
+    },
+    "statement-disallow-mix-in-ddl": {
+      "description": "为了获得最佳性能和数据完整性，请避免在同一脚本中组合 DDL 和 DML 语句。",
+      "title": "禁止在 schema 更新任务中混合语句"
+    },
+    "statement-disallow-mix-in-dml": {
+      "description": "为了获得最佳性能和数据完整性，请避免在同一脚本中组合 DDL 和 DML 语句。",
+      "title": "禁止在数据更新任务中混合语句"
     }
   },
   "level": {

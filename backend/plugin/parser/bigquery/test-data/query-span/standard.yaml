@@ -1,0 +1,33 @@
+- description: Simple select asterisk statement
+  statement: SELECT * FROM people;
+  defaultDatabase: db
+  metadata: |-
+    {
+      "name":  "ds1",
+      "schemas":  [
+        {
+          "name": "",
+          "tables":  [
+            {
+              "name":  "people",
+              "columns":  [
+                {
+                  "name":  "ID"
+                },
+                {
+                  "name":  "NAME"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    results: []
+    sourcecolumns:
+        - server: ""
+          database: db
+          schema: ""
+          table: people
+          column: ""
