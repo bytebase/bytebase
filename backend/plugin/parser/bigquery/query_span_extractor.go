@@ -36,9 +36,24 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*ba
 	if err != nil {
 		return nil, err
 	}
+	allSystems, mixed := isMixedQuery(accessTables)
+	if mixed {
+		return nil, base.MixUserSystemTablesError
+	}
+	if allSystems {
+		return &base.QuerySpan{
+			SourceColumns: base.SourceColumnSet{},
+			Results:       []base.QuerySpanResult{},
+		}, nil
+	}
+
 	return &base.QuerySpan{
 		SourceColumns: accessTables,
 	}, nil
+}
+
+func getQuerySpanResult(tree *parser.StmtContext) ([]base.QuerySpanResult, error) {
+	return nil, nil
 }
 
 func getAccessTables(defaultDatabase string, tree antlr.Tree) (base.SourceColumnSet, error) {
@@ -91,6 +106,10 @@ func (l *accessTableListener) EnterTable_path_expression(ctx *parser.Table_path_
 	}
 
 	// Table name syntax: https://cloud.google.com/bigquery/docs/reference/standard-sql/lexical
+	// Most of the time, the syntax can be [project_id.][dataset_id.]table_id.
+	// One difference is that the user access INFORMATION_SCHEMA in dataset,
+	// the syntax would be [project_id.]([region_id.]|[dataset_id.])INFORMATION_SCHEMA.VIEW_NAME.
+	// In this case, we treat the INFORMATION_SCHEMA as schema name.
 	allIdentifiers := pathExpr.AllIdentifier()
 	if len(allIdentifiers) == 0 {
 		return
@@ -104,7 +123,12 @@ func (l *accessTableListener) EnterTable_path_expression(ctx *parser.Table_path_
 	columnSource.Table = tableName
 
 	if len(allIdentifiers) >= 2 {
-		columnSource.Database = unquoteIdentifier(allIdentifiers[len(allIdentifiers)-2])
+		identifier := unquoteIdentifier(allIdentifiers[len(allIdentifiers)-2])
+		if strings.EqualFold(identifier, "INFORMATION_SCHEMA") {
+			columnSource.Schema = identifier
+		} else {
+			columnSource.Database = identifier
+		}
 	}
 
 	l.sourceColumnSet[columnSource] = true
@@ -115,4 +139,28 @@ func unquoteIdentifier(identifier parser.IIdentifierContext) string {
 		return identifier.GetText()[1 : len(identifier.GetText())-1]
 	}
 	return identifier.GetText()
+}
+
+func isMixedQuery(m base.SourceColumnSet) (bool, bool) {
+	hasSystem, hasUser := false, false
+	for table := range m {
+		if isSystemResource(table) {
+			hasSystem = true
+		} else {
+			hasUser = true
+		}
+	}
+
+	if hasSystem && hasUser {
+		return false, true
+	}
+
+	return !hasUser && hasSystem, false
+}
+
+func isSystemResource(resource base.ColumnResource) bool {
+	if strings.EqualFold(resource.Schema, "INFORMATION_SCHEMA") {
+		return true
+	}
+	return false
 }
