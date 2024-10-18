@@ -863,6 +863,7 @@ func getIndexMethodType(stmt string) string {
 var listFunctionQuery = `
 select n.nspname as function_schema,
 	p.proname as function_name,
+	pg_catalog.pg_get_function_identity_arguments(p.oid) as arguments,
 	case when l.lanname = 'internal' then p.prosrc
 			else pg_get_functiondef(p.oid)
 			end as definition
@@ -884,8 +885,8 @@ func getFunctions(txn *sql.Tx) (map[string][]*storepb.FunctionMetadata, error) {
 	defer rows.Close()
 	for rows.Next() {
 		function := &storepb.FunctionMetadata{}
-		var schemaName string
-		if err := rows.Scan(&schemaName, &function.Name, &function.Definition); err != nil {
+		var schemaName, arguments string
+		if err := rows.Scan(&schemaName, &function.Name, &arguments, &function.Definition); err != nil {
 			return nil, err
 		}
 		// Skip internal functions.
@@ -893,6 +894,7 @@ func getFunctions(txn *sql.Tx) (map[string][]*storepb.FunctionMetadata, error) {
 			continue
 		}
 
+		function.Signature = fmt.Sprintf("%s(%s)", function.Name, arguments)
 		functionMap[schemaName] = append(functionMap[schemaName], function)
 	}
 	if err := rows.Err(); err != nil {
