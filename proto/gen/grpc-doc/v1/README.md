@@ -2350,6 +2350,7 @@ FunctionMetadata is the metadata for functions.
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name is the name of a function. |
 | definition | [string](#string) |  | The definition is the definition of a function. |
+| signature | [string](#string) |  | The signature is the name with the number and type of input arguments the function takes. |
 
 
 
