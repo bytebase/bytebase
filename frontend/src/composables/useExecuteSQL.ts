@@ -336,10 +336,10 @@ const useExecuteSQL = () => {
             return cleanup();
           }
 
-          useExec = isDDL || isDDL;
+          useExec = isDDL || isDML;
         }
 
-        if (useExec) {
+        if (!useExec) {
           const instance = isValidDatabaseName(database.name)
             ? database.instance
             : params.connection.instance;
