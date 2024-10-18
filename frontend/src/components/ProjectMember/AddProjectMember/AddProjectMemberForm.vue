@@ -35,7 +35,8 @@
     <div
       v-if="
         state.role === PresetRoleType.PROJECT_QUERIER ||
-        state.role === PresetRoleType.PROJECT_EXPORTER
+        state.role === PresetRoleType.PROJECT_EXPORTER ||
+        state.role === PresetRoleType.PROJECT_EXECUTOR
       "
       class="w-full"
     >
@@ -160,7 +161,10 @@ watch(
       const expiresAt = now.add(state.expireDays, "days");
       expression.push(`request.time < timestamp("${expiresAt.toISOString()}")`);
     }
-    if (state.role === PresetRoleType.PROJECT_QUERIER) {
+    if (
+      state.role === PresetRoleType.PROJECT_QUERIER ||
+      state.role === PresetRoleType.PROJECT_EXECUTOR
+    ) {
       if (state.databaseResourceCondition) {
         expression.push(state.databaseResourceCondition);
       }
@@ -192,7 +196,8 @@ const generateConditionTitle = () => {
   const title = [displayRoleTitle(state.role)];
   if (
     state.role === PresetRoleType.PROJECT_QUERIER ||
-    state.role === PresetRoleType.PROJECT_EXPORTER
+    state.role === PresetRoleType.PROJECT_EXPORTER ||
+    state.role === PresetRoleType.PROJECT_EXECUTOR
   ) {
     let conditionSuffix = "";
     if (!state.databaseResources || state.databaseResources.length === 0) {
