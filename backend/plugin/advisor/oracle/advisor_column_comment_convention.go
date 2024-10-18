@@ -99,7 +99,7 @@ func (l *columnCommentConventionListener) EnterAlter_table(ctx *parser.Alter_tab
 	l.tableName = normalizeIdentifier(ctx.Tableview_name(), l.currentDatabase)
 }
 
-func (l *columnCommentConventionListener) ExitAdd_column_clause(ctx *parser.Add_column_clauseContext) {
+func (l *columnCommentConventionListener) ExitAdd_column_clause(_ *parser.Add_column_clauseContext) {
 	l.tableName = ""
 }
 
