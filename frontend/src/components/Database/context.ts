@@ -1,5 +1,5 @@
 import type { InjectionKey, Ref } from "vue";
-import { computed, inject, provide } from "vue";
+import { computed, inject, provide, ref } from "vue";
 import { useAppFeature, useDatabaseV1Store } from "@/store";
 import {
   databaseNamePrefix,
@@ -17,6 +17,7 @@ import {
 
 export type DatabaseDetailContext = {
   database: Ref<ComposedDatabase>;
+  pagedRevisionTableSessionKey: Ref<string>;
   allowGetDatabase: Ref<boolean>;
   allowUpdateDatabase: Ref<boolean>;
   allowSyncDatabase: Ref<boolean>;
@@ -52,6 +53,10 @@ export const provideDatabaseDetailContext = (
       `${instanceNamePrefix}${instanceId.value}/${databaseNamePrefix}${databaseName.value}`
     );
   });
+
+  const pagedRevisionTableSessionKey = ref(
+    `bb.paged-revision-table.${Date.now()}`
+  );
 
   const checkPermission = (permission: Permission): boolean => {
     return hasProjectPermissionV2(database.value.projectEntity, permission);
@@ -119,6 +124,7 @@ export const provideDatabaseDetailContext = (
 
   const context: DatabaseDetailContext = {
     database,
+    pagedRevisionTableSessionKey,
     allowGetDatabase,
     allowUpdateDatabase,
     allowSyncDatabase,
