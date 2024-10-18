@@ -1,8 +1,9 @@
 <template>
-  <div class="flex flex-col space-y-4" v-bind="$attrs">
+  <div class="flex flex-col space-y-2" v-bind="$attrs">
     <PagedRevisionTable
+      :key="pagedRevisionTableSessionKey"
       :database="database"
-      session-key="bb.paged-revision-table"
+      :session-key="pagedRevisionTableSessionKey"
     >
       <template #table="{ list, loading }">
         <RevisionDataTable
@@ -10,6 +11,7 @@
           :loading="loading"
           :revisions="list"
           :custom-click="true"
+          :show-selection="true"
           @row-click="state.selectedRevisionName = $event"
         />
       </template>
@@ -35,6 +37,7 @@ import { PagedRevisionTable, RevisionDataTable } from "@/components/Revision";
 import type { ComposedDatabase } from "@/types";
 import RevisionDetailPanel from "../Revision/RevisionDetailPanel.vue";
 import { Drawer, DrawerContent } from "../v2";
+import { useDatabaseDetailContext } from "./context";
 
 interface LocalState {
   selectedRevisionName?: string;
@@ -44,5 +47,6 @@ defineProps<{
   database: ComposedDatabase;
 }>();
 
+const { pagedRevisionTableSessionKey } = useDatabaseDetailContext();
 const state: LocalState = reactive({});
 </script>
