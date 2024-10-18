@@ -20,7 +20,6 @@ var (
 
 func init() {
 	advisor.Register(storepb.Engine_ORACLE, advisor.OracleTableCommentConvention, &TableCommentConventionAdvisor{})
-	advisor.Register(storepb.Engine_DM, advisor.OracleTableCommentConvention, &TableCommentConventionAdvisor{})
 	advisor.Register(storepb.Engine_OCEANBASE_ORACLE, advisor.OracleTableCommentConvention, &TableCommentConventionAdvisor{})
 }
 
@@ -104,7 +103,7 @@ func (l *tableCommentConventionListener) generateAdvices() ([]*storepb.Advice, e
 					Status:  l.level,
 					Code:    advisor.CommentEmpty.Int32(),
 					Title:   l.title,
-					Content: fmt.Sprintf("Comment is required for table %s", normalizeTableName(tableName)),
+					Content: fmt.Sprintf("Comment is required for table %s", normalizeIdentifierName(tableName)),
 					StartPosition: &storepb.Position{
 						Line: int32(l.tableLine[tableName]),
 					},
@@ -116,7 +115,7 @@ func (l *tableCommentConventionListener) generateAdvices() ([]*storepb.Advice, e
 					Status:  l.level,
 					Code:    advisor.CommentTooLong.Int32(),
 					Title:   l.title,
-					Content: fmt.Sprintf("Table %s comment is too long. The length of comment should be within %d characters", normalizeTableName(tableName), l.payload.MaxLength),
+					Content: fmt.Sprintf("Table %s comment is too long. The length of comment should be within %d characters", normalizeIdentifierName(tableName), l.payload.MaxLength),
 					StartPosition: &storepb.Position{
 						Line: int32(l.tableLine[tableName]),
 					},
@@ -128,7 +127,7 @@ func (l *tableCommentConventionListener) generateAdvices() ([]*storepb.Advice, e
 						Status:  l.level,
 						Code:    advisor.CommentMissingClassification.Int32(),
 						Title:   l.title,
-						Content: fmt.Sprintf("Table %s comment requires classification", normalizeTableName(tableName)),
+						Content: fmt.Sprintf("Table %s comment requires classification", normalizeIdentifierName(tableName)),
 						StartPosition: &storepb.Position{
 							Line: int32(l.tableLine[tableName]),
 						},

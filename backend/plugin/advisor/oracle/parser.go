@@ -66,7 +66,9 @@ func normalizeIDExpression(idExpression plsql.IId_expressionContext) string {
 	return ""
 }
 
-func normalizeTableName(name string) string {
+// normalizeIdentifierName normalizes the identifier name to the format of "schema"."table"."column".
+// Including table name and column name.
+func normalizeIdentifierName(name string) string {
 	list := strings.Split(name, ".")
 	var result []string
 	for _, item := range list {
