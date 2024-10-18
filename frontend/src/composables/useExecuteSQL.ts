@@ -322,10 +322,10 @@ const useExecuteSQL = () => {
 
       try {
         let resultSet: SQLResultSetV1;
-
+        let useExec = changeMode !== "RO";
         if (changeMode === "RO") {
-          const isDDL = isDDLStatement(data, "some");
-          const isDML = isDMLStatement(data, "some");
+          const isDDL = isDDLStatement(data, "some") || false;
+          const isDML = isDMLStatement(data, "some") || false;
 
           if (
             (isDDL && !policy?.dataSourceQueryPolicy?.enableDdl) ||
@@ -336,6 +336,10 @@ const useExecuteSQL = () => {
             return cleanup();
           }
 
+          useExec = isDDL || isDML;
+        }
+
+        if (!useExec) {
           const instance = isValidDatabaseName(database.name)
             ? database.instance
             : params.connection.instance;
