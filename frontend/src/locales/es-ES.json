@@ -3713,6 +3713,10 @@
     },
     "change-type": "Cambiar tipo"
   },
+  "release": {
+    "self": "Liberar",
+    "releases": "Lanzamientos"
+  },
   "export-data": {
     "export-rows": "Exportar filas",
     "error": {

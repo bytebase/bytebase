@@ -3713,6 +3713,10 @@
     },
     "change-type": "タイプを変更"
   },
+  "release": {
+    "self": "リリース",
+    "releases": "リリース"
+  },
   "export-data": {
     "export-rows": "エクスポート行数",
     "error": {

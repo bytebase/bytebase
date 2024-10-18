@@ -3713,6 +3713,10 @@
     },
     "change-type": "Change type"
   },
+  "release": {
+    "self": "Release",
+    "releases": "Releases"
+  },
   "export-data": {
     "export-rows": "Export rows",
     "error": {

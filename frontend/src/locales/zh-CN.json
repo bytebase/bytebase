@@ -3713,6 +3713,10 @@
     },
     "change-type": "更改类型"
   },
+  "release": {
+    "self": "发布",
+    "releases": "发布"
+  },
   "export-data": {
     "export-rows": "导出行数",
     "error": {
