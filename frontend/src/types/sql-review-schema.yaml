@@ -1537,6 +1537,38 @@
         type: NUMBER
         default: 64
   engine: POSTGRES
+- type: column.comment
+  category: COLUMN
+  componentList:
+    - key: required
+      payload:
+        type: BOOLEAN
+        default: false
+    - key: requiredClassification
+      payload:
+        type: BOOLEAN
+        default: false
+    - key: maxLength
+      payload:
+        type: NUMBER
+        default: 64
+  engine: ORACLE
+- type: column.comment
+  category: COLUMN
+  componentList:
+    - key: required
+      payload:
+        type: BOOLEAN
+        default: false
+    - key: requiredClassification
+      payload:
+        type: BOOLEAN
+        default: false
+    - key: maxLength
+      payload:
+        type: NUMBER
+        default: 64
+  engine: OCEANBASE_ORACLE
 - type: column.auto-increment-must-integer
   category: COLUMN
   engine: MYSQL

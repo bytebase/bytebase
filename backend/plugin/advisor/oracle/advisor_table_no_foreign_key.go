@@ -71,7 +71,7 @@ func (l *tableNoForeignKeyListener) generateAdvice() ([]*storepb.Advice, error) 
 				Status:  l.level,
 				Code:    advisor.TableHasFK.Int32(),
 				Title:   l.title,
-				Content: fmt.Sprintf("Foreign key is not allowed in the table %s.", normalizeTableName(tableName)),
+				Content: fmt.Sprintf("Foreign key is not allowed in the table %s.", normalizeIdentifierName(tableName)),
 				StartPosition: &storepb.Position{
 					Line: int32(l.tableLine[tableName]),
 				},
