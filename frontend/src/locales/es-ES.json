@@ -3717,7 +3717,8 @@
   },
   "release": {
     "self": "Liberar",
-    "releases": "Lanzamientos"
+    "releases": "Lanzamientos",
+    "files": "Archivos"
   },
   "export-data": {
     "export-rows": "Exportar filas",

@@ -3717,7 +3717,8 @@
   },
   "release": {
     "self": "发布",
-    "releases": "发布"
+    "releases": "发布",
+    "files": "文件"
   },
   "export-data": {
     "export-rows": "导出行数",

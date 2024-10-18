@@ -3717,7 +3717,8 @@
   },
   "release": {
     "self": "リリース",
-    "releases": "リリース"
+    "releases": "リリース",
+    "files": "ファイル"
   },
   "export-data": {
     "export-rows": "エクスポート行数",
