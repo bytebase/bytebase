@@ -22,7 +22,10 @@
     :show="!!state.selectedRevisionName"
     @close="state.selectedRevisionName = undefined"
   >
-    <DrawerContent class="w-320 max-w-[80vw]" :title="'Revision'">
+    <DrawerContent
+      class="w-320 max-w-[80vw]"
+      :title="$t('database.revision.self')"
+    >
       <RevisionDetailPanel
         :database="database"
         :revision-name="state.selectedRevisionName!"

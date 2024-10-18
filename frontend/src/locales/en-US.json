@@ -1928,6 +1928,8 @@
     "create-target-database-or-schema-for-backup": "Please create the target database or schema for the backup first",
     "revision": {
       "self": "Revision",
+      "applied-at": "Applied at",
+      "filename": "Filename",
       "delete-confirm-dialog": {
         "title": "Are you sure to delete?",
         "content": "This will delete these applied revisions and the database schema will not be changed. This action cannot be undone."
@@ -3715,7 +3717,8 @@
   },
   "release": {
     "self": "Release",
-    "releases": "Releases"
+    "releases": "Releases",
+    "files": "Files"
   },
   "export-data": {
     "export-rows": "Export rows",

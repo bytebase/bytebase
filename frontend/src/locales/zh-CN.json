@@ -1928,6 +1928,8 @@
     "create-target-database-or-schema-for-backup": "请先创建备份的目标数据库或 Schema",
     "revision": {
       "self": "修改",
+      "applied-at": "应用时间",
+      "filename": "文件名",
       "delete-confirm-dialog": {
         "title": "确定要删除吗？",
         "content": "这将删除这些已应用的修改，但不会影响数据库 Schema。此操作无法撤消。"
@@ -3715,7 +3717,8 @@
   },
   "release": {
     "self": "发布",
-    "releases": "发布"
+    "releases": "发布",
+    "files": "文件"
   },
   "export-data": {
     "export-rows": "导出行数",
