@@ -1,6 +1,6 @@
 <template>
   <CommonNode
-    :text="target.function.name"
+    :text="target.function.signature || target.function.name"
     :keyword="keyword"
     :highlight="true"
     :indent="0"

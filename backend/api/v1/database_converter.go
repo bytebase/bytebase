@@ -83,6 +83,7 @@ func convertStoreDatabaseMetadata(ctx context.Context, metadata *storepb.Databas
 			v1Func := &v1pb.FunctionMetadata{
 				Name:       function.Name,
 				Definition: function.Definition,
+				Signature:  function.Signature,
 			}
 			s.Functions = append(s.Functions, v1Func)
 		}
@@ -509,6 +510,7 @@ func convertV1DatabaseMetadata(ctx context.Context, metadata *v1pb.DatabaseMetad
 			storeFunc := &storepb.FunctionMetadata{
 				Name:       function.Name,
 				Definition: function.Definition,
+				Signature:  function.Signature,
 			}
 			s.Functions = append(s.Functions, storeFunc)
 		}

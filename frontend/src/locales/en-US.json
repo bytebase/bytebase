@@ -1926,7 +1926,16 @@
     "foreign-key": {
       "reference": "Reference"
     },
-    "create-target-database-or-schema-for-backup": "Please create the target database or schema for the backup first"
+    "create-target-database-or-schema-for-backup": "Please create the target database or schema for the backup first",
+    "revision": {
+      "self": "Revision",
+      "applied-at": "Applied at",
+      "filename": "Filename",
+      "delete-confirm-dialog": {
+        "title": "Are you sure to delete?",
+        "content": "This will delete these applied revisions and the database schema will not be changed. This action cannot be undone."
+      }
+    }
   },
   "repository": {
     "our-webhook-link": "The webhook created by Bytebase can be found at {webhookLink}.",
@@ -3706,6 +3715,11 @@
       "optional-upload-sql-or-zip-file": "(Optional) Upload .sql or .zip file"
     },
     "change-type": "Change type"
+  },
+  "release": {
+    "self": "Release",
+    "releases": "Releases",
+    "files": "Files"
   },
   "export-data": {
     "export-rows": "Export rows",

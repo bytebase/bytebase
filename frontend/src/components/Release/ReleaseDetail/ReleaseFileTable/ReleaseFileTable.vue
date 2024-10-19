@@ -28,6 +28,7 @@
 <script setup lang="tsx">
 import { NDataTable, NTag, type DataTableColumn } from "naive-ui";
 import { computed, reactive } from "vue";
+import { useI18n } from "vue-i18n";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { Release_File } from "@/types/proto/v1/release_service";
 import { useReleaseDetailContext } from "../context";
@@ -37,6 +38,7 @@ interface LocalState {
   selectedReleaseFile?: Release_File;
 }
 
+const { t } = useI18n();
 const { release } = useReleaseDetailContext();
 const state = reactive<LocalState>({});
 
@@ -44,13 +46,13 @@ const columnList = computed(() => {
   const columns: DataTableColumn<Release_File>[] = [
     {
       key: "version",
-      title: "Version",
+      title: t("common.version"),
       width: 128,
       render: (file) => <span class="textlabel">{file.version}</span>,
     },
     {
       key: "title",
-      title: "Filename",
+      title: t("database.revision.filename"),
       width: 256,
       ellipsis: true,
       render: (file) => {
@@ -71,7 +73,7 @@ const columnList = computed(() => {
     },
     {
       key: "statement",
-      title: "Statement",
+      title: t("common.statement"),
       ellipsis: true,
       render: (file) => file.statement,
     },
