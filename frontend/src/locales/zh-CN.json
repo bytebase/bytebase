@@ -593,6 +593,7 @@
       "grant-access": "授予访问权限",
       "select-user": "选择用户 | 选择用户",
       "select-group": "选择组 | 选择组",
+      "select-in-project": "选择 {project} 内的用户或群组",
       "select-role": "选择角色 | 选择角色",
       "assign-role": "分配角色 | 分配角色"
     },

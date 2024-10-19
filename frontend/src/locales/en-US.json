@@ -593,6 +593,7 @@
       "grant-access": "Grant Access",
       "select-user": "Select user | Select users",
       "select-group": "Select group | Select groups",
+      "select-in-project": "Select users or groups in {project}",
       "select-role": "Select role | Select roles",
       "assign-role": "Assign role | Assign roles"
     },

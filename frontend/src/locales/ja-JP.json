@@ -593,6 +593,7 @@
       "grant-access": "アクセスを許可する",
       "select-user": "ユーザーを選択 | ユーザーを選択",
       "select-group": "グループを選択 | グループを選択",
+      "select-in-project": "{project} 内のユーザーまたはグループを選択してください",
       "select-role": "役割を選択 | 役割を選択",
       "assign-role": "役割の割り当て | 役割の割り当て"
     },

@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full flex flex-col gap-4 py-4 px-2 overflow-y-auto">
+  <div class="w-full flex flex-col gap-4 py-4 px-4 overflow-y-auto">
     <div
       class="flex flex-col items-start gap-2 sm:flex-row sm:justify-between sm:items-center"
     >
