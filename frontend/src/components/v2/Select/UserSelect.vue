@@ -60,7 +60,6 @@ const props = withDefaults(
     includeServiceAccount?: boolean;
     includeArchived?: boolean;
     allowedWorkspaceRoleList?: string[];
-    allowedProjectMemberRoleList?: string[];
     autoReset?: boolean;
     filter?: (user: User, index: number) => boolean;
     mapOptions?: (users: User[]) => (UserSelectOption | SelectGroupOption)[];
