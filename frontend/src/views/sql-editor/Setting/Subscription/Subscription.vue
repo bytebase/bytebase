@@ -1,6 +1,6 @@
 <template>
   <div
-    class="w-full h-full flex flex-col py-4 px-4 gap-4 divide-block-border overflow-y-auto"
+    class="flex flex-col py-4 px-4 gap-4 divide-block-border"
     v-bind="$attrs"
   >
     <SettingWorkspaceSubscription :allow-edit="allowEdit" />

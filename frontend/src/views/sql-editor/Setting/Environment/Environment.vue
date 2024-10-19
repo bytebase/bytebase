@@ -1,6 +1,6 @@
 <template>
   <div
-    class="w-full h-full flex flex-col gap-4 pt-4 px-2 overflow-hidden relative"
+    class="w-full h-full flex flex-col gap-4 pt-4 px-4 overflow-hidden relative"
   >
     <div
       v-if="allowCreate || allowReorder"
