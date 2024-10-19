@@ -16,12 +16,15 @@
 </template>
 
 <script lang="tsx" setup>
-import { intersection } from "lodash-es";
 import type { SelectGroupOption, SelectOption, SelectProps } from "naive-ui";
 import { NSelect } from "naive-ui";
 import { computed, watch, watchEffect } from "vue";
 import { useI18n } from "vue-i18n";
 import UserIcon from "~icons/heroicons-outline/user";
+import {
+  getMemberBindingsByRole,
+  getMemberBindings,
+} from "@/components/Member/utils";
 import UserAvatar from "@/components/User/UserAvatar.vue";
 import ServiceAccountTag from "@/components/misc/ServiceAccountTag.vue";
 import { useProjectV1Store, useUserStore, useWorkspaceV1Store } from "@/store";
@@ -33,10 +36,11 @@ import {
   unknownUser,
   PresetRoleType,
   isValidProjectName,
+  PRESET_WORKSPACE_ROLES,
 } from "@/types";
 import { UserType, type User } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
-import { extractUserUID, memberListInProjectIAM } from "@/utils";
+import { extractUserUID } from "@/utils";
 
 export interface UserSelectOption extends SelectOption {
   value: string;
@@ -78,10 +82,6 @@ const props = withDefaults(
       PresetRoleType.WORKSPACE_DBA,
       PresetRoleType.WORKSPACE_MEMBER,
     ],
-    allowedProjectMemberRoleList: () => [
-      PresetRoleType.PROJECT_OWNER,
-      PresetRoleType.PROJECT_DEVELOPER,
-    ],
     autoReset: true,
     filter: undefined,
     mapOptions: undefined,
@@ -120,18 +120,24 @@ watchEffect(prepare);
 
 const getUserListFromProject = (projectName: string) => {
   const project = projectV1Store.getProjectByName(projectName);
-  return memberListInProjectIAM(project.iamPolicy)
-    .filter((member) => {
-      if (props.allowedProjectMemberRoleList.length === 0) {
-        // Need not to filter by project member role
-        return true;
-      }
-      return (
-        intersection(member.roleList, props.allowedProjectMemberRoleList)
-          .length > 0
-      );
-    })
-    .map((member) => member.user);
+  const memberMap = getMemberBindingsByRole({
+    policies: [
+      {
+        level: "WORKSPACE",
+        policy: workspaceStore.workspaceIamPolicy,
+      },
+      {
+        level: "PROJECT",
+        policy: project.iamPolicy,
+      },
+    ],
+    searchText: "",
+    ignoreRoles: new Set(PRESET_WORKSPACE_ROLES),
+  });
+
+  return getMemberBindings(memberMap)
+    .map((binding) => binding.user)
+    .filter((u) => u) as User[];
 };
 
 const getUserListFromWorkspace = () => {

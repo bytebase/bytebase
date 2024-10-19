@@ -1,6 +1,6 @@
 <template>
   <div
-    class="w-full h-full flex flex-col gap-4 py-4 px-2 overflow-y-auto"
+    class="w-full h-full flex flex-col gap-4 py-4 overflow-y-auto"
     v-bind="$attrs"
   >
     <DatabaseDashboard
