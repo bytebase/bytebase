@@ -12,6 +12,12 @@
         <GlobalMaskingRulesView :embedded="embedded" />
       </NTabPane>
       <NTabPane
+        name="sensitive-column-list"
+        :tab="$t('settings.sensitive-data.sensitive-column-list')"
+      >
+        <SensitiveColumnView />
+      </NTabPane>
+      <NTabPane
         name="semantic-types"
         :tab="$t('settings.sensitive-data.semantic-types.self')"
       >
@@ -36,11 +42,13 @@ import {
   GlobalMaskingRulesView,
   SemanticTypesView,
 } from "@/components/SensitiveData";
+import { SensitiveColumnView } from "@/components/SensitiveData";
 import MaskingAlgorithmsView from "@/components/SensitiveData/MaskingAlgorithmsView.vue";
 import { featureToRef } from "@/store";
 
 const dataMaskingTabList = [
   "global-masking-rule",
+  "sensitive-column-list",
   "semantic-types",
   "masking-algorithms",
 ] as const;
