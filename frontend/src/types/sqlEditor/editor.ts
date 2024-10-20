@@ -75,5 +75,5 @@ export type SQLEditorQueryParams = {
   explain: boolean;
   selection: monaco.Selection | null;
   skipCheck?: boolean;
-  queryMode?: SQLEditorQueryMode;
+  queryMode: SQLEditorQueryMode;
 };

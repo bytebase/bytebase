@@ -14,11 +14,8 @@
       v-bind="$attrs"
     >
       <template #icon>
+        <LockKeyholeIcon v-if="currentQueryMode === 'QUERY'" class="w-4 h-4" />
         <LockKeyholeOpenIcon
-          v-if="currentQueryMode === 'QUERY'"
-          class="w-4 h-4"
-        />
-        <LockKeyholeIcon
           v-if="currentQueryMode === 'EXECUTE'"
           class="w-4 h-4"
         />

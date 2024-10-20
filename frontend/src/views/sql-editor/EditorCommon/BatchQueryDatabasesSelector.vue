@@ -146,7 +146,6 @@ const hasBatchQueryFeature = hasFeature("bb.feature.batch-query");
 const disallowBatchQuery = useAppFeature(
   "bb.feature.sql-editor.disallow-batch-query"
 );
-const { database } = useConnectionOfCurrentSQLEditorTab();
 
 const project = computed(() => selectedDatabase.value.projectEntity);
 
@@ -173,12 +172,11 @@ const showBatchQuerySelector = computed(() => {
   }
 
   const tab = currentTab.value;
-  return (
-    tab &&
-    // Only show entry when user selected a database.
-    isValidDatabaseName(database.value.name) &&
-    tab.mode !== "ADMIN"
-  );
+  if (!tab) return false;
+
+  if (tab.mode === "ADMIN") return false;
+  if (tab.queryMode === "EXECUTE") return false;
+  return isValidDatabaseName(tab.connection.database);
 });
 
 const filteredDatabaseList = computed(() => {

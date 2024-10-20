@@ -163,6 +163,7 @@ const runQueryAction = (explain = false) => {
     engine: instance.value.engine,
     explain,
     selection: tab.editorState.selection,
+    queryMode: tab.queryMode,
   });
   uiStateStore.saveIntroStateByKey({
     key: "data.query",

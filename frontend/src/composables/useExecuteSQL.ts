@@ -25,9 +25,11 @@ import type {
   BBNotificationStyle,
   SQLEditorQueryParams,
   SQLEditorTab,
+  SQLEditorQueryMode,
 } from "@/types";
 import { isValidDatabaseName } from "@/types";
 import { PolicyType } from "@/types/proto/v1/org_policy_service";
+import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
 import {
   Advice,
   Advice_Status,
@@ -64,11 +66,8 @@ const useExecuteSQL = () => {
   const sqlEditorStore = useSQLEditorStore();
   const policyStore = usePolicyV1Store();
   const sqlCheckStyle = useAppFeature("bb.feature.sql-editor.sql-check-style");
+  const databaseChangeMode = useAppFeature("bb.feature.database-change-mode");
 
-  const changeMode =
-    useAppFeature("bb.feature.database-change-mode").value === "EDITOR"
-      ? "RW"
-      : "RO";
   const notify = (
     type: BBNotificationStyle,
     title: string,
@@ -220,8 +219,14 @@ const useExecuteSQL = () => {
       : "";
     const batchQueryDatabases: ComposedDatabase[] = [selectedDatabase];
 
+    const queryMode = await unifyQueryMode(
+      selectedDatabase,
+      params.queryMode ?? "QUERY"
+    );
+
     // Check if the user selects multiple databases to query.
     if (
+      queryMode === "QUERY" &&
       databaseName &&
       batchQueryContext &&
       batchQueryContext.databases.length > 0
@@ -315,31 +320,20 @@ const useExecuteSQL = () => {
         continue;
       }
 
-      const policy = await policyStore.getOrFetchPolicyByParentAndType({
-        parentPath: database.effectiveEnvironment,
-        policyType: PolicyType.DATA_SOURCE_QUERY,
-      });
-
       try {
         let resultSet: SQLResultSetV1;
-        let useExec = changeMode !== "RO";
-        if (changeMode === "RO") {
+        if (queryMode === "QUERY") {
           const isDDL = isDDLStatement(data, "some") || false;
           const isDML = isDMLStatement(data, "some") || false;
 
-          if (
-            (isDDL && !policy?.dataSourceQueryPolicy?.enableDdl) ||
-            (isDML && !policy?.dataSourceQueryPolicy?.enableDml)
-          ) {
+          if (isDDL || isDML) {
             sqlEditorStore.isShowExecutingHint = true;
             sqlEditorStore.executingHintDatabase = database;
             return cleanup();
           }
-
-          useExec = isDDL || isDML;
         }
 
-        if (!useExec) {
+        if (queryMode === "QUERY") {
           const instance = isValidDatabaseName(database.name)
             ? database.instance
             : params.connection.instance;
@@ -413,6 +407,31 @@ const useExecuteSQL = () => {
     // (with or without warnings).
     useSQLEditorQueryHistoryStore().fetchQueryHistoryList();
     cleanup();
+  };
+
+  const unifyQueryMode = async (
+    database: ComposedDatabase,
+    queryMode: SQLEditorQueryMode
+  ) => {
+    if (queryMode === "QUERY") {
+      return "QUERY";
+    }
+
+    if (databaseChangeMode.value === DatabaseChangeMode.EDITOR) {
+      return queryMode;
+    }
+
+    const policy = (
+      await policyStore.getOrFetchPolicyByParentAndType({
+        parentPath: database.effectiveEnvironment,
+        policyType: PolicyType.DATA_SOURCE_QUERY,
+      })
+    )?.dataSourceQueryPolicy;
+
+    if (policy?.enableDdl || policy?.enableDml) {
+      return policy;
+    }
+    return "QUERY";
   };
 
   return {
