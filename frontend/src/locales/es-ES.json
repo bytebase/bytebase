@@ -2544,7 +2544,7 @@
         "description": "Permitir declaraciones SELECT, SHOW y SET."
       },
       "execute": {
-        "self": "Execute (Leer/Escribir)",
+        "self": "Execute (Leer / Escribir)",
         "description": "Permitir declaraciones DDL y DML.",
         "disabled-by-policy": "Inhabilitado por la política medioambiental."
       }

@@ -2544,7 +2544,7 @@
         "description": "支持 SELECT、SHOW 和 SET 语句。"
       },
       "execute": {
-        "self": "Execute（读/写）",
+        "self": "Execute（读 / 写）",
         "description": "支持 DDL 和 DML 语句。",
         "disabled-by-policy": "因环境策略被禁用"
       }

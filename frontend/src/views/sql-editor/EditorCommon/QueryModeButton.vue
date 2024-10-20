@@ -88,10 +88,14 @@ const options = computed(() => {
     value: "QUERY",
     label: () => {
       return h("div", { class: "text-sm flex flex-col" }, [
-        h("h3", { class: "font-medium" }, [
+        h("h3", { class: "font-medium mb-1" }, [
           t("sql-editor.query-mode.query.self"),
         ]),
-        h("div", {}, t("sql-editor.query-mode.query.description")),
+        h(
+          "div",
+          { class: "text-xs" },
+          t("sql-editor.query-mode.query.description")
+        ),
       ]);
     },
   };
@@ -99,24 +103,18 @@ const options = computed(() => {
     value: "EXECUTE",
     disabled: !allowChangeQueryMode.value,
     label: () => {
-      const children = [
-        h(
-          "h3",
-          { class: "font-medium" },
-          t("sql-editor.query-mode.execute.self")
-        ),
-        h("div", {}, t("sql-editor.query-mode.execute.description")),
-      ];
-      if (!allowChangeQueryMode.value) {
-        children.push(
-          h(
-            "div",
-            { class: "text-control-placeholder" },
-            t("sql-editor.query-mode.execute.disabled-by-policy")
-          )
-        );
-      }
-      return h("div", { class: "text-sm flex flex-col" }, children);
+      const label = h(
+        "h3",
+        { class: "font-medium mb-1" },
+        t("sql-editor.query-mode.execute.self")
+      );
+
+      const description = h("div", { class: "text-xs" }, [
+        t("sql-editor.query-mode.execute.description"),
+        !allowChangeQueryMode.value &&
+          t("sql-editor.query-mode.execute.disabled-by-policy"),
+      ]);
+      return h("div", { class: "text-sm flex flex-col" }, [label, description]);
     },
   };
 

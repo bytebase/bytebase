@@ -2544,7 +2544,7 @@
         "description": "Allow SELECT, SHOW and SET statements."
       },
       "execute": {
-        "self": "Execute (Read/Write)",
+        "self": "Execute (Read / Write)",
         "description": "Allow DDL and DML statements.",
         "disabled-by-policy": "Disabled by the envnrionment policy"
       }

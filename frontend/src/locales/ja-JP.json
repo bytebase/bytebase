@@ -2544,7 +2544,7 @@
         "description": "SELECT、SHOW、SET ステートメントを許可します。"
       },
       "execute": {
-        "self": "Execute (読み取り/書き込み)",
+        "self": "Execute (読み取り / 書き込み)",
         "description": "DDL および DML ステートメントを許可します。",
         "disabled-by-policy": "環境ポリシーにより無効になっています"
       }
