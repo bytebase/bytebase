@@ -1281,13 +1281,12 @@ func validateQueryRequest(instance *store.InstanceMessage, statement string) err
 }
 
 func (s *SQLService) hasDatabaseAccessRights(ctx context.Context, user *store.UserMessage, iamPolicies []*storepb.IamPolicy, attributes map[string]any, accessOperation AccessOperation) (bool, error) {
-
-	AccessOperationRequiredPermissionsMap := map[AccessOperation]string{
+	accessOperationRequiredPermissionsMap := map[AccessOperation]string{
 		AccessOperationQuery:   iam.PermissionDatabasesQuery,
 		AccessOperationExport:  iam.PermissionDatabasesExport,
 		AccessOperationExecute: iam.PermissionDatabasesExecute,
 	}
-	wantPermission := AccessOperationRequiredPermissionsMap[accessOperation]
+	wantPermission := accessOperationRequiredPermissionsMap[accessOperation]
 
 	bindings := utils.GetUserIAMPolicyBindings(ctx, s.store, user, iamPolicies...)
 	for _, binding := range bindings {
