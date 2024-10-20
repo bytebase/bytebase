@@ -2537,6 +2537,17 @@
       "not-member-of-any-projects": "你不是任何项目的成员。",
       "go-to-create": "去创建",
       "contact-the-admin-to-grant-access": "联系管理员以授予访问权限。"
+    },
+    "query-mode": {
+      "query": {
+        "self": "Query（只读）",
+        "description": "支持 SELECT、SHOW 和 SET 语句。"
+      },
+      "execute": {
+        "self": "Execute（读/写）",
+        "description": "支持 DDL 和 DML 语句。",
+        "disabled-by-policy": "因环境策略被禁用"
+      }
     }
   },
   "schema-editor": {

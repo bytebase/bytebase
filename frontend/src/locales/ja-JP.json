@@ -2537,6 +2537,17 @@
       "not-member-of-any-projects": "あなたはどのプロジェクトのメンバーでもありません。",
       "go-to-create": "作成に行く",
       "contact-the-admin-to-grant-access": "管理者に連絡してアクセスを許可してください。"
+    },
+    "query-mode": {
+      "query": {
+        "self": "Query (読み取り専用)",
+        "description": "SELECT、SHOW、SET ステートメントを許可します。"
+      },
+      "execute": {
+        "self": "Execute (読み取り/書き込み)",
+        "description": "DDL および DML ステートメントを許可します。",
+        "disabled-by-policy": "環境ポリシーにより無効になっています"
+      }
     }
   },
   "schema-editor": {

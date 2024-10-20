@@ -2537,6 +2537,17 @@
       "not-member-of-any-projects": "No eres miembro de ningún proyecto.",
       "go-to-create": "ir a crear",
       "contact-the-admin-to-grant-access": "Póngase en contacto con el administrador para otorgar acceso."
+    },
+    "query-mode": {
+      "query": {
+        "self": "Query (solo lectura)",
+        "description": "Permitir declaraciones SELECT, SHOW y SET."
+      },
+      "execute": {
+        "self": "Execute (Leer/Escribir)",
+        "description": "Permitir declaraciones DDL y DML.",
+        "disabled-by-policy": "Inhabilitado por la política medioambiental."
+      }
     }
   },
   "schema-editor": {
