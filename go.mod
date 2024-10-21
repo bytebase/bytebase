@@ -19,7 +19,7 @@ require (
 	github.com/beltran/gohive v1.7.0
 	github.com/blang/semver/v4 v4.0.0
 	github.com/buger/jsonparser v1.1.1
-	github.com/bytebase/google-sql-parser v0.0.0-20241018073137-9350c10f58f1
+	github.com/bytebase/google-sql-parser v0.0.0-20241018075546-9b64719ac75b
 	github.com/bytebase/mysql-parser v0.0.0-20240810145851-ab2c11629c24
 	github.com/bytebase/plsql-parser v0.0.0-20240929073008-6b57c2e2525d
 	github.com/bytebase/postgresql-parser v0.0.0-20241008085234-a95eacac994a
@@ -361,5 +361,3 @@ replace (
 replace github.com/microsoft/go-mssqldb => github.com/bytebase/go-mssqldb v0.0.0-20240801091126-3ff3ca07d898
 
 replace github.com/youmark/pkcs8 => github.com/bytebase/pkcs8 v0.0.0-20240612095628-fcd0a7484c94
-
-replace github.com/bytebase/google-sql-parser => /Users/h3n4l/OpenSource/google-sql-parser
