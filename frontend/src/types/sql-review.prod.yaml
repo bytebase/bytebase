@@ -515,21 +515,6 @@ ruleList:
   - type: statement.join-strict-column-attrs
     level: WARNING
     engine: MYSQL
-  - type: statement.disallow-mix-ddl-dml
-    level: WARNING
-    engine: MYSQL
-  - type: statement.disallow-mix-ddl-dml
-    level: WARNING
-    engine: POSTGRES
-  - type: statement.disallow-mix-ddl-dml
-    level: WARNING
-    engine: TIDB
-  - type: statement.disallow-mix-ddl-dml
-    level: WARNING
-    engine: ORACLE
-  - type: statement.disallow-mix-ddl-dml
-    level: WARNING
-    engine: MSSQL
   - type: statement.disallow-mix-in-ddl
     level: WARNING
     engine: MYSQL

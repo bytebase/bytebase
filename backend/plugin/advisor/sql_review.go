@@ -119,8 +119,6 @@ const (
 	SchemaRuleStatementMaximumStatementsInTransaction = "statement.maximum-statements-in-transaction"
 	// SchemaRuleStatementJoinStrictColumnAttrs enforce the join strict column attributes.
 	SchemaRuleStatementJoinStrictColumnAttrs = "statement.join-strict-column-attrs"
-	// SchemaRuleStatementDisallowMixDDLDML disallow mix DDL and DML on the same table.
-	SchemaRuleStatementDisallowMixDDLDML = "statement.disallow-mix-ddl-dml"
 	// SchemaRuleStatementDisallowMixInDDL disallows DML statements in DDL statements.
 	SchemaRuleStatementDisallowMixInDDL = "statement.disallow-mix-in-ddl"
 	// SchemaRuleStatementDisallowMixInDML disallows DDL statements in DML statements.
@@ -1318,17 +1316,6 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 	case SchemaRuleStatementDisallowUsingTemporary:
 		if engine == storepb.Engine_MYSQL {
 			return MySQLStatementDisallowUsingTemporary, nil
-		}
-	case SchemaRuleStatementDisallowMixDDLDML:
-		switch engine {
-		case storepb.Engine_MYSQL, storepb.Engine_TIDB:
-			return MySQLStatementDisallowMixDDLDML, nil
-		case storepb.Engine_POSTGRES:
-			return PostgreSQLStatementDisallowMixDDLDML, nil
-		case storepb.Engine_ORACLE, storepb.Engine_DM, storepb.Engine_OCEANBASE_ORACLE:
-			return OracleStatementDisallowMixDDLDML, nil
-		case storepb.Engine_MSSQL:
-			return MSSQLStatementDisallowMixDDLDML, nil
 		}
 	case SchemaRuleStatementDisallowMixInDDL:
 		switch engine {
