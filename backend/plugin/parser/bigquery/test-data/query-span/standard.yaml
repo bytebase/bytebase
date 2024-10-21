@@ -1,6 +1,6 @@
 - description: Simple select asterisk statement
   statement: SELECT * FROM people;
-  defaultDatabase: db
+  defaultDatabase: ds1
   metadata: |-
     {
       "name":  "ds1",
@@ -24,10 +24,24 @@
       ]
     }
   querySpan:
-    results: []
+    results:
+        - name: ID
+          sourcecolumns:
+            - server: ""
+              database: ds1
+              schema: ""
+              table: people
+              column: ID
+        - name: NAME
+          sourcecolumns:
+            - server: ""
+              database: ds1
+              schema: ""
+              table: people
+              column: NAME
     sourcecolumns:
         - server: ""
-          database: db
+          database: ds1
           schema: ""
           table: people
           column: ""
