@@ -300,7 +300,6 @@ const handleRunQuery = () => {
     engine: instance.value.engine,
     explain: false,
     selection: tab.editorState.selection,
-    queryMode: tab.queryMode,
   });
   uiStateStore.saveIntroStateByKey({
     key: "data.query",

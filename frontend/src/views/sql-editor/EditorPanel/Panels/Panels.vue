@@ -110,7 +110,6 @@ useEmitteryEventListener(AIEvents, "run-statement", async ({ statement }) => {
     engine: database.instanceResource.engine,
     explain: false,
     selection: tab.value.editorState.selection,
-    queryMode: tab.value.queryMode,
   });
 });
 </script>

@@ -739,7 +739,6 @@ const runQuery = async (
     explain: false,
     engine: database.instanceResource.engine,
     selection: tab.editorState.selection,
-    queryMode: tab.queryMode,
   });
 };
 

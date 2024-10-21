@@ -1,6 +1,5 @@
 import type * as monaco from "monaco-editor";
 import { Engine } from "../proto/v1/common";
-import type { SQLEditorQueryMode } from "./tab";
 
 export type EditorModel = monaco.editor.ITextModel;
 export type EditorPosition = monaco.Position;
@@ -75,5 +74,4 @@ export type SQLEditorQueryParams = {
   explain: boolean;
   selection: monaco.Selection | null;
   skipCheck?: boolean;
-  queryMode: SQLEditorQueryMode;
 };
