@@ -124,6 +124,14 @@
         }
       }
     },
+    "table-require-charset": {
+      "title": "需要指定字符集",
+      "description": "必须指定表格的字符集。建议错误级别：警告"
+    },
+    "table-require-collation": {
+      "title": "需要指定排序规则",
+      "description": "必须指定表的排序规则。建议错误级别：警告"
+    },
     "naming-fully-qualified": {
       "title": "完全限定对象名称",
       "description": "强制使用完全限定的对象名称。例如 “schema.table”，建议错误级别：警告"

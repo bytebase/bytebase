@@ -266,6 +266,12 @@
         type: NUMBER
         default: 10000000
   engine: MYSQL
+- type: table.require-charset
+  category: TABLE
+  engine: MYSQL
+- type: table.require-collation
+  category: TABLE
+  engine: MYSQL
 - type: statement.select.no-select-all
   category: STATEMENT
   engine: MYSQL

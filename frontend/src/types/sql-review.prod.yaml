@@ -177,6 +177,12 @@ ruleList:
     payload:
       number: 10000000
     engine: MYSQL
+  - type: table.require-charset
+    level: WARNING
+    engine: MYSQL
+  - type: table.require-collation
+    level: WARNING
+    engine: MYSQL
   - type: statement.select.no-select-all
     level: ERROR
     engine: MYSQL
