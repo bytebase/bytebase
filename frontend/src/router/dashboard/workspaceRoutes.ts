@@ -18,7 +18,6 @@ export const WORKSPACE_ROUTE_RISK_CENTER = "workspace.risk-center";
 export const WORKSPACE_ROUTE_DATA_MASKING = "workspace.data-masking";
 export const WORKSPACE_ROUTE_DATA_CLASSIFICATION =
   "workspace.data-classification";
-export const WORKSPACE_ROUTE_DATA_ACCESS_CONTROL = "workspace.access-control";
 export const WORKSPACE_ROUTE_AUDIT_LOG = "workspace.audit-log";
 export const WORKSPACE_ROUTE_MAIL_DELIVERY = "workspace.mail-delivery";
 export const WORKSPACE_ROUTE_USERS = "workspace.users";

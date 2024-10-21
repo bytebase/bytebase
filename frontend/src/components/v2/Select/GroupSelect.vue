@@ -18,8 +18,13 @@
 import { NCheckbox, NSelect, NTag, type SelectOption } from "naive-ui";
 import type { SelectBaseOption } from "naive-ui/lib/select/src/interface";
 import { computed } from "vue";
+import {
+  getMemberBindingsByRole,
+  getMemberBindings,
+} from "@/components/Member/utils";
 import GroupNameCell from "@/components/User/Settings/UserDataTableByGroup/cells/GroupNameCell.vue";
-import { useGroupStore } from "@/store";
+import { useGroupStore, useProjectV1Store, useWorkspaceV1Store } from "@/store";
+import { PRESET_WORKSPACE_ROLES } from "@/types";
 import type { Group } from "@/types/proto/v1/group";
 
 export interface GroupSelectOption extends SelectOption {
@@ -33,6 +38,7 @@ const props = withDefaults(
     disabled?: boolean;
     clearable?: boolean;
     multiple?: boolean;
+    projectName?: string;
     selectFirstAsDefault?: boolean;
     size?: "tiny" | "small" | "medium" | "large";
   }>(),
@@ -40,6 +46,7 @@ const props = withDefaults(
     clearable: false,
     value: undefined,
     multiple: false,
+    projectName: undefined,
     selectFirstAsDefault: true,
     size: "medium",
   }
@@ -50,9 +57,39 @@ defineEmits<{
 }>();
 
 const groupStore = useGroupStore();
+const projectV1Store = useProjectV1Store();
+const workspaceStore = useWorkspaceV1Store();
+
+const getGroupListFromProject = (projectName: string) => {
+  const project = projectV1Store.getProjectByName(projectName);
+  const memberMap = getMemberBindingsByRole({
+    policies: [
+      {
+        level: "WORKSPACE",
+        policy: workspaceStore.workspaceIamPolicy,
+      },
+      {
+        level: "PROJECT",
+        policy: project.iamPolicy,
+      },
+    ],
+    searchText: "",
+    ignoreRoles: new Set(PRESET_WORKSPACE_ROLES),
+  });
+
+  return getMemberBindings(memberMap)
+    .map((binding) => binding.group)
+    .filter((g) => g) as Group[];
+};
+
+const groupList = computed(() =>
+  props.projectName
+    ? getGroupListFromProject(props.projectName)
+    : groupStore.groupList
+);
 
 const options = computed(() => {
-  return groupStore.groupList.map<GroupSelectOption>((group) => ({
+  return groupList.value.map<GroupSelectOption>((group) => ({
     value: group.name,
     label: group.title,
     group,

@@ -185,7 +185,7 @@ export const useProjectSidebar = (
           databaseChangeMode.value === DatabaseChangeMode.EDITOR,
       },
       {
-        title: "Releases",
+        title: t("release.releases"),
         path: PROJECT_V1_ROUTE_RELEASES,
         icon: () => h(PackageIcon),
         type: "div",

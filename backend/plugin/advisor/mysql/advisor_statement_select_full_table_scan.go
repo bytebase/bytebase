@@ -82,7 +82,7 @@ func (checker *statementSelectFullTableScanChecker) EnterSelectStatement(ctx *my
 
 	query := ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx)
 	checker.explainCount++
-	res, err := advisor.Query(checker.ctx, checker.driver, storepb.Engine_MYSQL, fmt.Sprintf("EXPLAIN %s", query))
+	res, err := advisor.Query(checker.ctx, advisor.QueryContext{}, checker.driver, storepb.Engine_MYSQL, fmt.Sprintf("EXPLAIN %s", query))
 	if err != nil {
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{
 			Status:  checker.level,

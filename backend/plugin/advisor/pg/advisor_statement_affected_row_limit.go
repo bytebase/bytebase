@@ -73,6 +73,7 @@ type statementAffectedRowLimitChecker struct {
 	driver       *sql.DB
 	ctx          context.Context
 	explainCount int
+	setRoles     []string
 }
 
 // Visit implements ast.Visitor interface.
@@ -80,9 +81,15 @@ func (checker *statementAffectedRowLimitChecker) Visit(in ast.Node) ast.Visitor 
 	code := advisor.Ok
 	rows := int64(0)
 	switch node := in.(type) {
+	case *ast.VariableSetStmt:
+		if node.Name == "role" {
+			checker.setRoles = append(checker.setRoles, node.Text())
+		}
 	case *ast.UpdateStmt, *ast.DeleteStmt:
 		checker.explainCount++
-		res, err := advisor.Query(checker.ctx, checker.driver, storepb.Engine_POSTGRES, fmt.Sprintf("EXPLAIN %s", node.Text()))
+		res, err := advisor.Query(checker.ctx, advisor.QueryContext{
+			PreExecutions: checker.setRoles,
+		}, checker.driver, storepb.Engine_POSTGRES, fmt.Sprintf("EXPLAIN %s", node.Text()))
 		if err != nil {
 			checker.adviceList = append(checker.adviceList, &storepb.Advice{
 				Status:  checker.level,

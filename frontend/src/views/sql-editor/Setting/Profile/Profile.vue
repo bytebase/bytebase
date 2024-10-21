@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full flex flex-col gap-4 py-4 px-2 overflow-y-auto">
+  <div class="flex flex-col py-4">
     <ProfileDashboard />
   </div>
 </template>
