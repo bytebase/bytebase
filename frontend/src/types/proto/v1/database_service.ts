@@ -411,6 +411,7 @@ export interface DatabaseMetadata {
   extensions: ExtensionMetadata[];
   /** The schema_configs is the list of configs for schemas in a database. */
   schemaConfigs: SchemaConfig[];
+  owner: string;
 }
 
 /**
@@ -441,6 +442,7 @@ export interface SchemaMetadata {
   materializedViews: MaterializedViewMetadata[];
   /** The packages is the list of packages in a schema. */
   packages: PackageMetadata[];
+  owner: string;
 }
 
 export interface ExternalTableMetadata {
@@ -3276,7 +3278,7 @@ export const Database_LabelsEntry: MessageFns<Database_LabelsEntry> = {
 };
 
 function createBaseDatabaseMetadata(): DatabaseMetadata {
-  return { name: "", schemas: [], characterSet: "", collation: "", extensions: [], schemaConfigs: [] };
+  return { name: "", schemas: [], characterSet: "", collation: "", extensions: [], schemaConfigs: [], owner: "" };
 }
 
 export const DatabaseMetadata: MessageFns<DatabaseMetadata> = {
@@ -3298,6 +3300,9 @@ export const DatabaseMetadata: MessageFns<DatabaseMetadata> = {
     }
     for (const v of message.schemaConfigs) {
       SchemaConfig.encode(v!, writer.uint32(50).fork()).join();
+    }
+    if (message.owner !== "") {
+      writer.uint32(58).string(message.owner);
     }
     return writer;
   },
@@ -3351,6 +3356,13 @@ export const DatabaseMetadata: MessageFns<DatabaseMetadata> = {
 
           message.schemaConfigs.push(SchemaConfig.decode(reader, reader.uint32()));
           continue;
+        case 7:
+          if (tag !== 58) {
+            break;
+          }
+
+          message.owner = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3374,6 +3386,7 @@ export const DatabaseMetadata: MessageFns<DatabaseMetadata> = {
       schemaConfigs: globalThis.Array.isArray(object?.schemaConfigs)
         ? object.schemaConfigs.map((e: any) => SchemaConfig.fromJSON(e))
         : [],
+      owner: isSet(object.owner) ? globalThis.String(object.owner) : "",
     };
   },
 
@@ -3397,6 +3410,9 @@ export const DatabaseMetadata: MessageFns<DatabaseMetadata> = {
     if (message.schemaConfigs?.length) {
       obj.schemaConfigs = message.schemaConfigs.map((e) => SchemaConfig.toJSON(e));
     }
+    if (message.owner !== "") {
+      obj.owner = message.owner;
+    }
     return obj;
   },
 
@@ -3411,6 +3427,7 @@ export const DatabaseMetadata: MessageFns<DatabaseMetadata> = {
     message.collation = object.collation ?? "";
     message.extensions = object.extensions?.map((e) => ExtensionMetadata.fromPartial(e)) || [];
     message.schemaConfigs = object.schemaConfigs?.map((e) => SchemaConfig.fromPartial(e)) || [];
+    message.owner = object.owner ?? "";
     return message;
   },
 };
@@ -3427,6 +3444,7 @@ function createBaseSchemaMetadata(): SchemaMetadata {
     tasks: [],
     materializedViews: [],
     packages: [],
+    owner: "",
   };
 }
 
@@ -3461,6 +3479,9 @@ export const SchemaMetadata: MessageFns<SchemaMetadata> = {
     }
     for (const v of message.packages) {
       PackageMetadata.encode(v!, writer.uint32(82).fork()).join();
+    }
+    if (message.owner !== "") {
+      writer.uint32(90).string(message.owner);
     }
     return writer;
   },
@@ -3542,6 +3563,13 @@ export const SchemaMetadata: MessageFns<SchemaMetadata> = {
 
           message.packages.push(PackageMetadata.decode(reader, reader.uint32()));
           continue;
+        case 11:
+          if (tag !== 90) {
+            break;
+          }
+
+          message.owner = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3575,6 +3603,7 @@ export const SchemaMetadata: MessageFns<SchemaMetadata> = {
       packages: globalThis.Array.isArray(object?.packages)
         ? object.packages.map((e: any) => PackageMetadata.fromJSON(e))
         : [],
+      owner: isSet(object.owner) ? globalThis.String(object.owner) : "",
     };
   },
 
@@ -3610,6 +3639,9 @@ export const SchemaMetadata: MessageFns<SchemaMetadata> = {
     if (message.packages?.length) {
       obj.packages = message.packages.map((e) => PackageMetadata.toJSON(e));
     }
+    if (message.owner !== "") {
+      obj.owner = message.owner;
+    }
     return obj;
   },
 
@@ -3628,6 +3660,7 @@ export const SchemaMetadata: MessageFns<SchemaMetadata> = {
     message.tasks = object.tasks?.map((e) => TaskMetadata.fromPartial(e)) || [];
     message.materializedViews = object.materializedViews?.map((e) => MaterializedViewMetadata.fromPartial(e)) || [];
     message.packages = object.packages?.map((e) => PackageMetadata.fromPartial(e)) || [];
+    message.owner = object.owner ?? "";
     return message;
   },
 };
