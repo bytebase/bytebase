@@ -78,7 +78,7 @@ func (checker *tableRequireCharsetChecker) EnterCreateTable(ctx *mysql.CreateTab
 	if !hasCharset {
 		checker.adviceList = append(checker.adviceList, &storepb.Advice{
 			Status:  checker.level,
-			Code:    advisor.NoCollation.Int32(),
+			Code:    advisor.NoCharset.Int32(),
 			Title:   checker.title,
 			Content: fmt.Sprintf("Table %s does not have a character set specified", tableName),
 			StartPosition: &storepb.Position{
