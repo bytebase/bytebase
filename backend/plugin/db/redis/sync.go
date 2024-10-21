@@ -23,7 +23,7 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 		return nil, errors.Wrap(err, "failed to get database number")
 	}
 	var databases []*storepb.DatabaseSchemaMetadata
-	for i := range dbNumber {
+	for _, n := range dbNumber {
 		databases = append(databases, &storepb.DatabaseSchemaMetadata{
 			Name: strconv.Itoa(i),
 		})
