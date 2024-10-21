@@ -2546,7 +2546,8 @@
       "execute": {
         "self": "Execute（读 / 写）",
         "description": "支持 DDL 和 DML 语句。",
-        "disabled-by-policy": "因环境策略被禁用"
+        "disabled-by-policy": "因{policy}被禁用。",
+        "environment-policy": "环境策略"
       }
     }
   },

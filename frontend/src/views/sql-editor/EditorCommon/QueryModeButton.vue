@@ -5,6 +5,7 @@
     class="bb-query-mode-select-menu"
     :options="options"
     :value="currentQueryMode"
+    show
     @update:value="handleSelect"
   >
     <NButton
@@ -29,7 +30,8 @@ import { LockKeyholeIcon, LockKeyholeOpenIcon } from "lucide-vue-next";
 import { NButton, NPopselect, type SelectOption } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { computed, h } from "vue";
-import { useI18n } from "vue-i18n";
+import { I18nT, useI18n } from "vue-i18n";
+import { RouterLink, useRouter } from "vue-router";
 import {
   useAppFeature,
   useConnectionOfCurrentSQLEditorTab,
@@ -39,6 +41,7 @@ import {
 import { isValidDatabaseName, type SQLEditorQueryMode } from "@/types";
 import { PolicyType } from "@/types/proto/v1/org_policy_service";
 import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
+import { autoEnvironmentRoute, hasWorkspacePermissionV2 } from "@/utils";
 
 type QueryModeSelectOption = SelectOption & {
   value: SQLEditorQueryMode;
@@ -49,6 +52,7 @@ defineOptions({
 });
 
 const { t } = useI18n();
+const router = useRouter();
 const tabStore = useSQLEditorTabStore();
 const { currentTab, isDisconnected } = storeToRefs(tabStore);
 const { database } = useConnectionOfCurrentSQLEditorTab();
@@ -71,6 +75,10 @@ const allowChangeQueryMode = computed(() => {
     dataSourceQueryPolicy.value?.enableDdl ||
     dataSourceQueryPolicy.value?.enableDml
   );
+});
+
+const allowChangePolicy = computed(() => {
+  return hasWorkspacePermissionV2("bb.environments.update");
 });
 
 const currentQueryMode = computed((): SQLEditorQueryMode => {
@@ -106,10 +114,43 @@ const options = computed(() => {
         t("sql-editor.query-mode.execute.self")
       );
 
+      // t("sql-editor.query-mode.execute.disabled-by-policy")
+      const tipsForDisallowed = allowChangeQueryMode.value
+        ? null
+        : h(
+            I18nT,
+            {
+              tag: "div",
+              keypath: "sql-editor.query-mode.execute.disabled-by-policy",
+              class: "inline",
+            },
+            {
+              policy: () => {
+                const text = t(
+                  "sql-editor.query-mode.execute.environment-policy"
+                );
+                if (allowChangePolicy.value) {
+                  return h(
+                    RouterLink,
+                    {
+                      to: autoEnvironmentRoute(
+                        router,
+                        database.value.effectiveEnvironmentEntity
+                      ),
+                      class: "normal-link",
+                      target: "_blank",
+                    },
+                    text
+                  );
+                }
+                return h("span", {}, text);
+              },
+            }
+          );
+
       const description = h("div", { class: "text-xs" }, [
         t("sql-editor.query-mode.execute.description"),
-        !allowChangeQueryMode.value &&
-          t("sql-editor.query-mode.execute.disabled-by-policy"),
+        tipsForDisallowed,
       ]);
       return h("div", { class: "text-sm flex flex-col" }, [label, description]);
     },

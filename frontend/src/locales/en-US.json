@@ -2546,7 +2546,8 @@
       "execute": {
         "self": "Execute (Read / Write)",
         "description": "Allow DDL and DML statements.",
-        "disabled-by-policy": "Disabled by the envnrionment policy"
+        "disabled-by-policy": "Disabled by the {policy}.",
+        "environment-policy": "environment policy"
       }
     }
   },

@@ -2546,7 +2546,8 @@
       "execute": {
         "self": "Execute (読み取り / 書き込み)",
         "description": "DDL および DML ステートメントを許可します。",
-        "disabled-by-policy": "環境ポリシーにより無効になっています"
+        "disabled-by-policy": "{policy}によって無効になっています。",
+        "environment-policy": "環境方針"
       }
     }
   },

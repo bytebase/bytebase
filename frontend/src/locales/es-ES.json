@@ -2546,7 +2546,8 @@
       "execute": {
         "self": "Execute (Leer / Escribir)",
         "description": "Permitir declaraciones DDL y DML.",
-        "disabled-by-policy": "Inhabilitado por la política medioambiental."
+        "disabled-by-policy": "Deshabilitado por la {policy}.",
+        "environment-policy": "política ambiental"
       }
     }
   },
