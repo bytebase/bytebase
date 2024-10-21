@@ -524,11 +524,11 @@
       "description": "为了获得最佳性能和数据完整性，请避免在同一个脚本中混合使用 DDL 和 DML 语句。"
     },
     "statement-disallow-mix-in-ddl": {
-      "title": "禁止在 schema 更新任务中混合语句",
+      "title": "禁止在 schema 更新 (DDL) 任务中混合语句",
       "description": "为了获得最佳性能和数据完整性，请避免在同一脚本中组合 DDL 和 DML 语句。"
     },
     "statement-disallow-mix-in-dml": {
-      "title": "禁止在数据更新任务中混合语句",
+      "title": "禁止在数据更新 (DML) 任务中混合语句",
       "description": "为了获得最佳性能和数据完整性，请避免在同一脚本中组合 DDL 和 DML 语句。"
     },
     "statement-prior-backup-check": {
