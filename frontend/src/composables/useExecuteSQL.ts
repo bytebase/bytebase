@@ -221,7 +221,7 @@ const useExecuteSQL = () => {
 
     const queryMode = await unifyQueryMode(
       selectedDatabase,
-      params.queryMode ?? "QUERY"
+      tab.queryMode ?? "QUERY"
     );
 
     // Check if the user selects multiple databases to query.
