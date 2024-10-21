@@ -250,6 +250,23 @@ func (s *RolloutService) ListTaskRuns(ctx context.Context, request *v1pb.ListTas
 	}, nil
 }
 
+// GetTaskRun gets a task run.
+func (s *RolloutService) GetTaskRun(ctx context.Context, request *v1pb.GetTaskRunRequest) (*v1pb.TaskRun, error) {
+	_, _, _, _, taskRunUID, err := common.GetProjectIDRolloutIDStageIDTaskIDTaskRunID(request.Name)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+	taskRun, err := s.store.GetTaskRun(ctx, taskRunUID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get task run, error: %v", err)
+	}
+	taskRunV1, err := convertToTaskRun(ctx, s.store, s.stateCfg, taskRun)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to convert to task run, error: %v", err)
+	}
+	return taskRunV1, nil
+}
+
 func (s *RolloutService) GetTaskRunLog(ctx context.Context, request *v1pb.GetTaskRunLogRequest) (*v1pb.TaskRunLog, error) {
 	_, _, _, _, taskRunUID, err := common.GetProjectIDRolloutIDStageIDTaskIDTaskRunID(request.Parent)
 	if err != nil {

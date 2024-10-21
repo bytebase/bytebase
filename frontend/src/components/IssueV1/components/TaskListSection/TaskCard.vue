@@ -21,7 +21,7 @@
               class="w-5 h-5 inline-block mb-0.5"
             />
             <span>{{ databaseForTask(issue, task).databaseName }}</span>
-            <NTag v-if="schemaVersion" size="small" round>
+            <NTag v-if="schemaVersion" class="font-normal" size="small" round>
               {{ schemaVersion }}
             </NTag>
           </div>
@@ -98,7 +98,7 @@ const schemaVersion = computed(() => {
   const v = extractSchemaVersionFromTask(props.task);
 
   // Always show the schema version for tasks from a release source.
-  if (issue.value.planEntity?.releaseSource) {
+  if (issue.value.planEntity?.releaseSource?.release) {
     return v;
   }
 

@@ -65,7 +65,7 @@ func (s *GroupService) ListGroups(ctx context.Context, _ *v1pb.ListGroupsRequest
 
 // CreateGroup creates a group.
 func (s *GroupService) CreateGroup(ctx context.Context, request *v1pb.CreateGroupRequest) (*v1pb.Group, error) {
-	groupMessage, err := s.convertToGroupMessage(ctx, request.Group)
+	groupMessage, err := s.convertToGroupMessage(ctx, request)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -116,6 +116,12 @@ func (s *GroupService) UpdateGroup(ctx context.Context, request *v1pb.UpdateGrou
 		return nil, status.Errorf(codes.Internal, "failed to get group %q with error: %v", groupEmail, err)
 	}
 	if group == nil {
+		if request.AllowMissing {
+			return s.CreateGroup(ctx, &v1pb.CreateGroupRequest{
+				Group:      request.Group,
+				GroupEmail: groupEmail,
+			})
+		}
 		return nil, status.Errorf(codes.NotFound, "group %q not found", groupEmail)
 	}
 
@@ -216,20 +222,19 @@ func (s *GroupService) convertToGroupPayload(ctx context.Context, group *v1pb.Gr
 	return payload, nil
 }
 
-func (s *GroupService) convertToGroupMessage(ctx context.Context, group *v1pb.Group) (*store.GroupMessage, error) {
-	email, err := common.GetGroupEmail(group.Name)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+func (s *GroupService) convertToGroupMessage(ctx context.Context, request *v1pb.CreateGroupRequest) (*store.GroupMessage, error) {
+	if request.GroupEmail == "" {
+		return nil, status.Error(codes.InvalidArgument, "missing group_email in the request")
 	}
 
 	groupMessage := &store.GroupMessage{
-		Email:       email,
-		Title:       group.Title,
-		Description: group.Description,
+		Email:       request.GroupEmail,
+		Title:       request.Group.Title,
+		Description: request.Group.Description,
 		Payload:     &storepb.GroupPayload{},
 	}
 
-	payload, err := s.convertToGroupPayload(ctx, group)
+	payload, err := s.convertToGroupPayload(ctx, request.Group)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}

@@ -67,6 +67,10 @@ func TestMySQLRules(t *testing.T) {
 		advisor.SchemaRuleStatementWhereMaximumLogicalOperatorCount,
 		// advisor.SchemaRuleStatementMaxExecutionTime enforce the maximum execution time.
 		advisor.SchemaRuleStatementMaxExecutionTime,
+		// advisor.SchemaRuleStatementRequireAlgorithmOption require the algorithm option in the alter table statement.
+		advisor.SchemaRuleStatementRequireAlgorithmOption,
+		// advisor.SchemaRuleStatementRequireLockOption require the lock option in the alter table statement.
+		advisor.SchemaRuleStatementRequireLockOption,
 
 		// Database related rules.
 		// advisor.SchemaRuleDropEmptyDatabase enforce the MySQL support check if the database is empty before users drop it.
@@ -123,8 +127,6 @@ func TestMySQLRules(t *testing.T) {
 		advisor.SchemaRuleColumnAutoIncrementMustUnsigned,
 		// advisor.SchemaRuleColumnRequireDefault enforce the column default.
 		advisor.SchemaRuleColumnRequireDefault,
-		// advisor.SchemaRuleColumnDisallowMixDML disallows mixing different types of DML statements.
-		advisor.SchemaRuleStatementDisallowMixDDLDML,
 
 		// Index related rules.
 		// advisor.SchemaRuleIndexNoDuplicateColumn require the index no duplicate column.
@@ -161,6 +163,8 @@ func TestMySQLRules(t *testing.T) {
 		advisor.SchemaRuleFunctionDisallowCreate,
 		// advisor.SchemaRuleFunctionDisallowList enforce the function disallow list.
 		advisor.SchemaRuleFunctionDisallowList,
+		advisor.SchemaRuleStatementDisallowMixInDDL,
+		advisor.SchemaRuleStatementDisallowMixInDML,
 	}
 
 	for _, rule := range mysqlRules {

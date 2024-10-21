@@ -7,6 +7,7 @@
 /* eslint-disable */
 import { BinaryReader, BinaryWriter } from "@bufbuild/protobuf/wire";
 import Long from "long";
+import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
 import { Timestamp } from "../google/protobuf/timestamp";
 import { VCSType, vCSTypeFromJSON, vCSTypeToJSON, vCSTypeToNumber } from "./common";
@@ -105,6 +106,22 @@ export interface UpdateReleaseRequest {
     | undefined;
   /** The list of fields to be updated. */
   updateMask: string[] | undefined;
+}
+
+export interface DeleteReleaseRequest {
+  /**
+   * The name of the release to delete.
+   * Format: projects/{project}/releases/{release}
+   */
+  name: string;
+}
+
+export interface UndeleteReleaseRequest {
+  /**
+   * The name of the deleted release.
+   * Format: projects/{project}/releases/{release}
+   */
+  name: string;
 }
 
 export interface Release {
@@ -513,6 +530,120 @@ export const UpdateReleaseRequest: MessageFns<UpdateReleaseRequest> = {
       ? Release.fromPartial(object.release)
       : undefined;
     message.updateMask = object.updateMask ?? undefined;
+    return message;
+  },
+};
+
+function createBaseDeleteReleaseRequest(): DeleteReleaseRequest {
+  return { name: "" };
+}
+
+export const DeleteReleaseRequest: MessageFns<DeleteReleaseRequest> = {
+  encode(message: DeleteReleaseRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): DeleteReleaseRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDeleteReleaseRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DeleteReleaseRequest {
+    return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
+  },
+
+  toJSON(message: DeleteReleaseRequest): unknown {
+    const obj: any = {};
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<DeleteReleaseRequest>): DeleteReleaseRequest {
+    return DeleteReleaseRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<DeleteReleaseRequest>): DeleteReleaseRequest {
+    const message = createBaseDeleteReleaseRequest();
+    message.name = object.name ?? "";
+    return message;
+  },
+};
+
+function createBaseUndeleteReleaseRequest(): UndeleteReleaseRequest {
+  return { name: "" };
+}
+
+export const UndeleteReleaseRequest: MessageFns<UndeleteReleaseRequest> = {
+  encode(message: UndeleteReleaseRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): UndeleteReleaseRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseUndeleteReleaseRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): UndeleteReleaseRequest {
+    return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
+  },
+
+  toJSON(message: UndeleteReleaseRequest): unknown {
+    const obj: any = {};
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<UndeleteReleaseRequest>): UndeleteReleaseRequest {
+    return UndeleteReleaseRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<UndeleteReleaseRequest>): UndeleteReleaseRequest {
+    const message = createBaseUndeleteReleaseRequest();
+    message.name = object.name ?? "";
     return message;
   },
 };
@@ -1141,6 +1272,116 @@ export const ReleaseServiceDefinition = {
               47,
               42,
               125,
+            ]),
+          ],
+        },
+      },
+    },
+    deleteRelease: {
+      name: "DeleteRelease",
+      requestType: DeleteReleaseRequest,
+      requestStream: false,
+      responseType: Empty,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          8410: [new Uint8Array([4, 110, 97, 109, 101])],
+          578365826: [
+            new Uint8Array([
+              34,
+              42,
+              32,
+              47,
+              118,
+              49,
+              47,
+              123,
+              110,
+              97,
+              109,
+              101,
+              61,
+              112,
+              114,
+              111,
+              106,
+              101,
+              99,
+              116,
+              115,
+              47,
+              42,
+              47,
+              114,
+              101,
+              108,
+              101,
+              97,
+              115,
+              101,
+              115,
+              47,
+              42,
+              125,
+            ]),
+          ],
+        },
+      },
+    },
+    undeleteRelease: {
+      name: "UndeleteRelease",
+      requestType: UndeleteReleaseRequest,
+      requestStream: false,
+      responseType: Release,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              43,
+              34,
+              41,
+              47,
+              118,
+              49,
+              47,
+              123,
+              110,
+              97,
+              109,
+              101,
+              61,
+              112,
+              114,
+              111,
+              106,
+              101,
+              99,
+              116,
+              115,
+              47,
+              42,
+              47,
+              114,
+              101,
+              108,
+              101,
+              97,
+              115,
+              101,
+              115,
+              47,
+              42,
+              125,
+              58,
+              117,
+              110,
+              100,
+              101,
+              108,
+              101,
+              116,
+              101,
             ]),
           ],
         },

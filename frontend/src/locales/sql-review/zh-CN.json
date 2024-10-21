@@ -523,6 +523,14 @@
       "title": "禁止混合 DDL 和 DML 操作",
       "description": "为了获得最佳性能和数据完整性，请避免在同一个脚本中混合使用 DDL 和 DML 语句。"
     },
+    "statement-disallow-mix-in-ddl": {
+      "title": "禁止在 schema 更新 (DDL) 任务中混合语句",
+      "description": "为了获得最佳性能和数据完整性，请避免在同一脚本中组合 DDL 和 DML 语句。"
+    },
+    "statement-disallow-mix-in-dml": {
+      "title": "禁止在数据更新 (DML) 任务中混合语句",
+      "description": "为了获得最佳性能和数据完整性，请避免在同一脚本中组合 DDL 和 DML 语句。"
+    },
     "statement-prior-backup-check": {
       "title": "检查能否预先备份数据",
       "description": "此规则将检查是否可以在数据更改前创建备份。该规则要求备份目标数据库存在且不存在DDL语句。"
@@ -546,6 +554,14 @@
     "statement-max-execution-time": {
       "title": "最大执行时间",
       "description": "设置SQL语句的最大执行时间，如果执行时间超过限制，语句将被终止。建议错误级别：错误"
+    },
+    "statement-require-algorithm-option": {
+      "title": "需要在 ALTER TABLE 语句中指定 ALGORITHM 选项",
+      "description": "在 ALTER TABLE 语句中指定 ALGORITHM 选项可确保更好地控制表更改的应用方式，通过避免全表复制或锁定来最大限度地减少潜在的中断。它有助于优化性能并减少 ALTER TABLE 操作的停机时间。建议的错误级别：警告。"
+    },
+    "statement-require-lock-option": {
+      "title": "需要在 ALTER TABLE 语句中指定 LOCK 选项",
+      "description": "ALTER TABLE 语句中的 LOCK 选项允许您控制架构更改期间的锁定级别，有助于防止不必要的表锁定并确保更好的并发性。正确使用此选项可以显著减少 ALTER TABLE 操作对活动查询的影响。建议的错误级别：警告。"
     },
     "database-drop-empty-database": {
       "title": "禁止删除非空数据库",

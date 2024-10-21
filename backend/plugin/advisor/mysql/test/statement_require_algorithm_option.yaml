@@ -1,0 +1,13 @@
+- statement: |
+    CREATE TABLE t(b int); 
+    ALTER TABLE t ADD COLUMN c INT, ALGORITHM=INSTANT, LOCK=NONE;
+- statement: |
+    CREATE TABLE t(b int); 
+    ALTER TABLE t ADD COLUMN c INT;
+  want:
+    - status: 2
+      code: 236
+      title: statement.require-algorithm-option
+      content: "ALTER TABLE statement should include ALGORITHM option"
+      startposition:
+        line: 2

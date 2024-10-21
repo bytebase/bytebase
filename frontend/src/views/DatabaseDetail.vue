@@ -29,7 +29,7 @@
             </div>
           </div>
           <dl
-            class="flex flex-col space-y-1 md:space-y-0 md:flex-row md:flex-wrap"
+            class="flex flex-col space-y-1 md:flex-row md:flex-wrap"
             data-label="bb-database-detail-info-block"
           >
             <dt class="sr-only">{{ $t("common.environment") }}</dt>
@@ -126,6 +126,13 @@
         <DatabaseChangeHistoryPanel class="mt-2" :database="database" />
       </NTabPane>
       <NTabPane
+        v-if="isDev() && databaseChangeMode === DatabaseChangeMode.PIPELINE"
+        name="revision"
+        :tab="$t('database.revision.self')"
+      >
+        <DatabaseRevisionPanel class="mt-2" :database="database" />
+      </NTabPane>
+      <NTabPane
         v-if="allowListSlowQueries"
         name="slow-query"
         :tab="$t('slow-query.slow-queries')"
@@ -198,6 +205,7 @@ import { BBModal } from "@/bbkit";
 import SchemaEditorModal from "@/components/AlterSchemaPrepForm/SchemaEditorModal.vue";
 import DatabaseChangeHistoryPanel from "@/components/Database/DatabaseChangeHistoryPanel.vue";
 import DatabaseOverviewPanel from "@/components/Database/DatabaseOverviewPanel.vue";
+import DatabaseRevisionPanel from "@/components/Database/DatabaseRevisionPanel.vue";
 import DatabaseSlowQueryPanel from "@/components/Database/DatabaseSlowQueryPanel.vue";
 import { useDatabaseDetailContext } from "@/components/Database/context";
 import {
@@ -234,11 +242,13 @@ import {
   isDatabaseV1Queryable,
   allowUsingSchemaEditor,
   extractProjectResourceName,
+  isDev,
 } from "@/utils";
 
 const databaseHashList = [
   "overview",
   "change-history",
+  "revision",
   "slow-query",
   "setting",
 ] as const;

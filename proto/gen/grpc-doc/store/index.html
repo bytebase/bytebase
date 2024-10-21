@@ -3419,6 +3419,13 @@ Format: projcets/{project}/branches/{branch} </p></td>
                   <td><p>The definition is the definition of a function. </p></td>
                 </tr>
               
+                <tr>
+                  <td>signature</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The signature is the name with the number and type of input arguments the function takes. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -7921,7 +7928,8 @@ Must be a subset of the specs in the same step. </p></td>
                   <td>file</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>Format: projects/{project}/releases/{release}/files/{file} </p></td>
+                  <td><p>Format: projects/{project}/releases/{release}/files/{file}
+{file} is URL path escaped. </p></td>
                 </tr>
               
             </tbody>
@@ -9242,7 +9250,8 @@ Can be empty. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The task run associated with the revision.
-Can be empty. </p></td>
+Can be empty.
+Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun} </p></td>
                 </tr>
               
             </tbody>
@@ -11416,7 +11425,8 @@ Default to this mode.</p></td>
                   <td>file</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>Format: projects/{project}/releases/{release}/files/{file} </p></td>
+                  <td><p>Format: projects/{project}/releases/{release}/files/{file}
+{file} is URL path escaped. </p></td>
                 </tr>
               
             </tbody>

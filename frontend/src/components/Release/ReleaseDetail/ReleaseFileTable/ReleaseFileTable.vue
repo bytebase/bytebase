@@ -26,8 +26,9 @@
 </template>
 
 <script setup lang="tsx">
-import { NDataTable, type DataTableColumn } from "naive-ui";
+import { NDataTable, NTag, type DataTableColumn } from "naive-ui";
 import { computed, reactive } from "vue";
+import { useI18n } from "vue-i18n";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { Release_File } from "@/types/proto/v1/release_service";
 import { useReleaseDetailContext } from "../context";
@@ -37,6 +38,7 @@ interface LocalState {
   selectedReleaseFile?: Release_File;
 }
 
+const { t } = useI18n();
 const { release } = useReleaseDetailContext();
 const state = reactive<LocalState>({});
 
@@ -44,28 +46,34 @@ const columnList = computed(() => {
   const columns: DataTableColumn<Release_File>[] = [
     {
       key: "version",
-      title: "Version",
-      width: 150,
-      render: (file) => file.version,
+      title: t("common.version"),
+      width: 128,
+      render: (file) => <span class="textlabel">{file.version}</span>,
     },
     {
       key: "title",
-      title: "Filename",
-      width: 200,
+      title: t("database.revision.filename"),
+      width: 256,
       ellipsis: true,
-      render: (file) => file.name,
-    },
-    {
-      key: "sheetSha256",
-      title: "Hash",
-      width: 150,
       render: (file) => {
-        return <code class={"text-sm"}>{file.sheetSha256.slice(0, 8)}</code>;
+        return (
+          <div class="space-x-2">
+            <span>{file.name}</span>
+            <NTag
+              v-if="schemaVersion"
+              class="text-sm font-mono"
+              size="small"
+              round
+            >
+              {file.sheetSha256.slice(0, 8)}
+            </NTag>
+          </div>
+        );
       },
     },
     {
       key: "statement",
-      title: "Statement",
+      title: t("common.statement"),
       ellipsis: true,
       render: (file) => file.statement,
     },

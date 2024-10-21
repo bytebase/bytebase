@@ -22,6 +22,7 @@ export type AIContext = {
   openAIEndpoint: Ref<string>;
   engine: Ref<Engine | undefined>;
   databaseMetadata: Ref<DatabaseMetadata | undefined>;
+  schema: Ref<string | undefined>;
   showHistoryDialog: Ref<boolean>;
 
   chat: Ref<AIChatInfo>;

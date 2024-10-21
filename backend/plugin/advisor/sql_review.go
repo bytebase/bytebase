@@ -119,8 +119,10 @@ const (
 	SchemaRuleStatementMaximumStatementsInTransaction = "statement.maximum-statements-in-transaction"
 	// SchemaRuleStatementJoinStrictColumnAttrs enforce the join strict column attributes.
 	SchemaRuleStatementJoinStrictColumnAttrs = "statement.join-strict-column-attrs"
-	// SchemaRuleStatementDisallowMixDDLDML disallow mix DDL and DML on the same table.
-	SchemaRuleStatementDisallowMixDDLDML = "statement.disallow-mix-ddl-dml"
+	// SchemaRuleStatementDisallowMixInDDL disallows DML statements in DDL statements.
+	SchemaRuleStatementDisallowMixInDDL = "statement.disallow-mix-in-ddl"
+	// SchemaRuleStatementDisallowMixInDML disallows DDL statements in DML statements.
+	SchemaRuleStatementDisallowMixInDML = "statement.disallow-mix-in-dml"
 	// SchemaRuleStatementPriorBackupCheck checks for prior backup.
 	SchemaRuleStatementPriorBackupCheck = "statement.prior-backup-check"
 	// SchemaRuleStatementNonTransactional checks for non-transactional statements.
@@ -133,6 +135,10 @@ const (
 	SchemaRuleStatementDisallowCrossDBQueries = "statement.disallow-cross-db-queries"
 	// SchemaRuleStatementMaxExecutionTime enforce the maximum execution time.
 	SchemaRuleStatementMaxExecutionTime = "statement.max-execution-time"
+	// SchemaRuleStatementRequireAlgorithmOption require set ALGORITHM option in ALTER TABLE statement.
+	SchemaRuleStatementRequireAlgorithmOption = "statement.require-algorithm-option"
+	// SchemaRuleStatementRequireLockOption require set LOCK option in ALTER TABLE statement.
+	SchemaRuleStatementRequireLockOption = "statement.require-lock-option"
 	// SchemaRuleTableRequirePK require the table to have a primary key.
 	SchemaRuleTableRequirePK SQLReviewRuleType = "table.require-pk"
 	// SchemaRuleTableNoFK require the table disallow the foreign key.
@@ -492,6 +498,9 @@ type SQLReviewCheckContext struct {
 
 	// Snowflake specific fields
 	CurrentDatabase string
+
+	// Used for test only.
+	NoAppendBuiltin bool
 }
 
 // SQLReviewCheck checks the statements with sql review rules.
@@ -505,8 +514,10 @@ func SQLReviewCheck(
 
 	builtinOnly := len(ruleList) == 0
 
-	// Append builtin rules to the rule list.
-	ruleList = append(ruleList, GetBuiltinRules(checkContext.DbType)...)
+	if !checkContext.NoAppendBuiltin {
+		// Append builtin rules to the rule list.
+		ruleList = append(ruleList, GetBuiltinRules(checkContext.DbType)...)
+	}
 
 	if asts == nil || len(ruleList) == 0 {
 		return parseResult, nil
@@ -1087,6 +1098,10 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 		switch engine {
 		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLColumnCommentConvention, nil
+		case storepb.Engine_POSTGRES:
+			return PostgreSQLColumnCommentConvention, nil
+		case storepb.Engine_ORACLE, storepb.Engine_OCEANBASE_ORACLE:
+			return OracleColumnCommentConvention, nil
 		}
 	case SchemaRuleColumnAutoIncrementMustInteger:
 		switch engine {
@@ -1202,6 +1217,10 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 		switch engine {
 		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 			return MySQLTableCommentConvention, nil
+		case storepb.Engine_POSTGRES:
+			return PostgreSQLTableCommentConvention, nil
+		case storepb.Engine_ORACLE, storepb.Engine_OCEANBASE_ORACLE:
+			return OracleTableCommentConvention, nil
 		}
 	case SchemaRuleTableDisallowPartition:
 		switch engine {
@@ -1298,16 +1317,27 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 		if engine == storepb.Engine_MYSQL {
 			return MySQLStatementDisallowUsingTemporary, nil
 		}
-	case SchemaRuleStatementDisallowMixDDLDML:
+	case SchemaRuleStatementDisallowMixInDDL:
 		switch engine {
 		case storepb.Engine_MYSQL, storepb.Engine_TIDB:
-			return MySQLStatementDisallowMixDDLDML, nil
+			return MySQLStatementDisallowMixInDDL, nil
 		case storepb.Engine_POSTGRES:
-			return PostgreSQLStatementDisallowMixDDLDML, nil
+			return PostgreSQLStatementDisallowMixInDDL, nil
 		case storepb.Engine_ORACLE, storepb.Engine_DM, storepb.Engine_OCEANBASE_ORACLE:
-			return OracleStatementDisallowMixDDLDML, nil
+			return OracleStatementDisallowMixInDDL, nil
 		case storepb.Engine_MSSQL:
-			return MSSQLStatementDisallowMixDDLDML, nil
+			return MSSQLStatementDisallowMixInDDL, nil
+		}
+	case SchemaRuleStatementDisallowMixInDML:
+		switch engine {
+		case storepb.Engine_MYSQL, storepb.Engine_TIDB:
+			return MySQLStatementDisallowMixInDML, nil
+		case storepb.Engine_POSTGRES:
+			return PostgreSQLStatementDisallowMixInDML, nil
+		case storepb.Engine_ORACLE, storepb.Engine_DM, storepb.Engine_OCEANBASE_ORACLE:
+			return OracleStatementDisallowMixInDML, nil
+		case storepb.Engine_MSSQL:
+			return MSSQLStatementDisallowMixInDML, nil
 		}
 	case SchemaRuleStatementAddColumnWithoutPosition:
 		if engine == storepb.Engine_OCEANBASE {
@@ -1485,6 +1515,14 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 	case SchemaRuleStatementMaxExecutionTime:
 		if engine == storepb.Engine_MYSQL || engine == storepb.Engine_MARIADB {
 			return MySQLStatementMaxExecutionTime, nil
+		}
+	case SchemaRuleStatementRequireAlgorithmOption:
+		if engine == storepb.Engine_MYSQL || engine == storepb.Engine_MARIADB {
+			return MySQLStatementRequireAlgorithmOption, nil
+		}
+	case SchemaRuleStatementRequireLockOption:
+		if engine == storepb.Engine_MYSQL || engine == storepb.Engine_MARIADB {
+			return MySQLStatementRequireLockOption, nil
 		}
 	case SchemaRuleCommentLength:
 		if engine == storepb.Engine_POSTGRES {

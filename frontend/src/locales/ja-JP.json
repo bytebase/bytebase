@@ -491,7 +491,7 @@
       "email": "メールアドレス",
       "role": "役割",
       "phone": "電話番号",
-      "phone-tips": "国コードを必ず含めてください",
+      "phone-tips": "国コードを必ず含めてください +81xxxxxx",
       "country-code": "国または地域コード",
       "password": "パスワード",
       "password-hint": "パスワードは制限設定に従う必要があります",
@@ -593,6 +593,7 @@
       "grant-access": "アクセスを許可する",
       "select-user": "ユーザーを選択 | ユーザーを選択",
       "select-group": "グループを選択 | グループを選択",
+      "select-in-project": "{project} 内のユーザーまたはグループを選択してください",
       "select-role": "役割を選択 | 役割を選択",
       "assign-role": "役割の割り当て | 役割の割り当て"
     },
@@ -1757,7 +1758,8 @@
     "all-tables": "すべてのテーブル",
     "affected-tables": "影響を受けるテーブル",
     "select-affection-tables": "影響を受けるテーブルを選択",
-    "view-full": "すべて見る"
+    "view-full": "すべて見る",
+    "rollback-tip": "ロールバックする特定の DDL 履歴を選択します。"
   },
   "database": {
     "sync-database": "データベースを同期",
@@ -1924,7 +1926,16 @@
     "foreign-key": {
       "reference": "参照"
     },
-    "create-target-database-or-schema-for-backup": "まずバックアップのターゲットデータベースまたはスキーマを作成してください"
+    "create-target-database-or-schema-for-backup": "まずバックアップのターゲットデータベースまたはスキーマを作成してください",
+    "revision": {
+      "self": "リビジョン",
+      "applied-at": "申請先",
+      "filename": "ファイル名",
+      "delete-confirm-dialog": {
+        "title": "本当に削除しますか?",
+        "content": "これにより、適用されたリビジョンが削除され、データベース スキーマは変更されません。このアクションは元に戻せません。"
+      }
+    }
   },
   "repository": {
     "our-webhook-link": "Bytebase によって作成された Webhook は、{webhookLink} にあります。",
@@ -3704,6 +3715,11 @@
       "optional-upload-sql-or-zip-file": "(オプション) .sql または .zip ファイルをアップロードします"
     },
     "change-type": "タイプを変更"
+  },
+  "release": {
+    "self": "リリース",
+    "releases": "リリース",
+    "files": "ファイル"
   },
   "export-data": {
     "export-rows": "エクスポート行数",

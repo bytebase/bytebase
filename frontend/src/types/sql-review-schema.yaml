@@ -177,7 +177,39 @@
       payload:
         type: NUMBER
         default: 64
-  engine: MARIADB
+  engine: POSTGRES
+- type: table.comment
+  category: TABLE
+  componentList:
+    - key: required
+      payload:
+        type: BOOLEAN
+        default: false
+    - key: requiredClassification
+      payload:
+        type: BOOLEAN
+        default: false
+    - key: maxLength
+      payload:
+        type: NUMBER
+        default: 64
+  engine: ORACLE
+- type: table.comment
+  category: TABLE
+  componentList:
+    - key: required
+      payload:
+        type: BOOLEAN
+        default: false
+    - key: requiredClassification
+      payload:
+        type: BOOLEAN
+        default: false
+    - key: maxLength
+      payload:
+        type: NUMBER
+        default: 64
+  engine: OCEANBASE_ORACLE
 - type: table.disallow-partition
   category: TABLE
   engine: MYSQL
@@ -628,19 +660,34 @@
 - type: statement.join-strict-column-attrs
   category: STATEMENT
   engine: MYSQL
-- type: statement.disallow-mix-ddl-dml
+- type: statement.disallow-mix-in-ddl
   category: STATEMENT
   engine: MYSQL
-- type: statement.disallow-mix-ddl-dml
-  category: STATEMENT
-  engine: POSTGRES
-- type: statement.disallow-mix-ddl-dml
+- type: statement.disallow-mix-in-ddl
   category: STATEMENT
   engine: TIDB
-- type: statement.disallow-mix-ddl-dml
+- type: statement.disallow-mix-in-ddl
+  category: STATEMENT
+  engine: POSTGRES
+- type: statement.disallow-mix-in-ddl
   category: STATEMENT
   engine: ORACLE
-- type: statement.disallow-mix-ddl-dml
+- type: statement.disallow-mix-in-ddl
+  category: STATEMENT
+  engine: MSSQL
+- type: statement.disallow-mix-in-dml
+  category: STATEMENT
+  engine: MYSQL
+- type: statement.disallow-mix-in-dml
+  category: STATEMENT
+  engine: TIDB
+- type: statement.disallow-mix-in-dml
+  category: STATEMENT
+  engine: POSTGRES
+- type: statement.disallow-mix-in-dml
+  category: STATEMENT
+  engine: ORACLE
+- type: statement.disallow-mix-in-dml
   category: STATEMENT
   engine: MSSQL
 - type: statement.add-column-without-position
@@ -656,6 +703,18 @@
   category: STATEMENT
   engine: MYSQL
 - type: statement.max-execution-time
+  category: STATEMENT
+  engine: MARIADB
+- type: statement.require-algorithm-option
+  category: STATEMENT
+  engine: MYSQL
+- type: statement.require-algorithm-option
+  category: STATEMENT
+  engine: MARIADB
+- type: statement.require-lock-option
+  category: STATEMENT
+  engine: MYSQL
+- type: statement.require-lock-option
   category: STATEMENT
   engine: MARIADB
 - type: naming.fully-qualified
@@ -1462,7 +1521,39 @@
       payload:
         type: NUMBER
         default: 64
-  engine: MARIADB
+  engine: POSTGRES
+- type: column.comment
+  category: COLUMN
+  componentList:
+    - key: required
+      payload:
+        type: BOOLEAN
+        default: false
+    - key: requiredClassification
+      payload:
+        type: BOOLEAN
+        default: false
+    - key: maxLength
+      payload:
+        type: NUMBER
+        default: 64
+  engine: ORACLE
+- type: column.comment
+  category: COLUMN
+  componentList:
+    - key: required
+      payload:
+        type: BOOLEAN
+        default: false
+    - key: requiredClassification
+      payload:
+        type: BOOLEAN
+        default: false
+    - key: maxLength
+      payload:
+        type: NUMBER
+        default: 64
+  engine: OCEANBASE_ORACLE
 - type: column.auto-increment-must-integer
   category: COLUMN
   engine: MYSQL

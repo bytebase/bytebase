@@ -185,7 +185,7 @@
           v-show="selectedDatabase"
           :statement="
             state.selectedDatabaseName
-              ? databaseDiffCache[state.selectedDatabaseName].edited
+              ? (databaseDiffCache[state.selectedDatabaseName]?.edited ?? '')
               : ''
           "
           :engine="engine"
@@ -254,6 +254,7 @@ import {
   changeHistoryLink,
   databaseV1Url,
   getSheetStatement,
+  instanceV1SupportsConciseSchema,
   isValidChangeHistoryName,
   toClipboard,
 } from "@/utils";
@@ -284,6 +285,7 @@ const props = defineProps<{
   sourceSchemaType: SourceSchemaType;
   databaseSourceSchema?: DatabaseSourceSchema;
   rawSqlState?: RawSQLState;
+  targetDatabaseNameList?: string[];
 }>();
 
 const { t } = useI18n();
@@ -316,7 +318,7 @@ const project = computed(() => {
 
 const displayOnlySourceDatabaseSchema = computed(() => {
   if (props.sourceSchemaType === "SCHEMA_HISTORY_VERSION") {
-    if (engine.value === Engine.ORACLE) {
+    if (instanceV1SupportsConciseSchema(engine.value)) {
       return props.databaseSourceSchema?.conciseHistory || "";
     }
   }
@@ -359,7 +361,7 @@ const targetDatabaseList = computed(() => {
   });
 });
 const targetDatabaseSchema = computed(() => {
-  if (engine.value === Engine.ORACLE) {
+  if (instanceV1SupportsConciseSchema(engine.value)) {
     return state.selectedDatabaseName
       ? conciseSchemaCache[state.selectedDatabaseName]
       : "";
@@ -450,6 +452,16 @@ const handleSelectedDatabaseNameListChanged = (databaseNameList: string[]) => {
   state.showSelectDatabasePanel = false;
 };
 
+watch(
+  () => props.targetDatabaseNameList,
+  () => {
+    handleSelectedDatabaseNameListChanged(props.targetDatabaseNameList ?? []);
+  },
+  {
+    immediate: true,
+  }
+);
+
 const handleUnselectDatabase = (database: ComposedDatabase) => {
   state.selectedDatabaseNameList = state.selectedDatabaseNameList.filter(
     (name) => name !== database.name
@@ -508,7 +520,7 @@ watch(
         `${db.name}/schema`
       );
       databaseSchemaCache[name] = schema.schema;
-      if (engine.value === Engine.ORACLE) {
+      if (instanceV1SupportsConciseSchema(engine.value)) {
         const conciseSchema = await databaseStore.fetchDatabaseSchema(
           `${db.name}/schema`,
           false /* sdlFormat */,

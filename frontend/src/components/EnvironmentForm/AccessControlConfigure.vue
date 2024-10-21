@@ -61,10 +61,7 @@
       </div>
     </div>
   </div>
-  <div
-    v-if="isDev() && databaseChangeMode === 'PIPELINE'"
-    class="flex flex-col gap-y-2"
-  >
+  <div v-if="databaseChangeMode === 'PIPELINE'" class="flex flex-col gap-y-2">
     <div class="textlabel flex items-center space-x-2">
       <label>
         {{ $t("environment.statement-execution.title") }}
@@ -120,7 +117,7 @@ import {
   DataSourceQueryPolicy_Restriction,
   PolicyType,
 } from "@/types/proto/v1/org_policy_service";
-import { hasWorkspacePermissionV2, isDev } from "@/utils";
+import { hasWorkspacePermissionV2 } from "@/utils";
 import { FeatureBadge } from "../FeatureGuard";
 import { Switch } from "../v2";
 

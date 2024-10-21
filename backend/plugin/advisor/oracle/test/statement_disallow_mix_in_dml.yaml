@@ -1,14 +1,16 @@
 - statement: DELETE FROM tech_book WHERE a > 1;
-  changeType: 0
+  changeType: 2
 - statement: UPDATE tech_book SET id = 1;
-  changeType: 0
+  changeType: 2
 - statement: ALTER TABLE tech_book ADD author VARCHAR2(250); UPDATE tech_book SET id = 1;DELETE FROM tech_book WHERE a > 1;
-  changeType: 0
+  changeType: 2
   want:
     - status: 2
       code: 227
-      title: statement.disallow-mix-ddl-dml
-      content: Mixing DDL with DML is not allowed
+      title: statement.disallow-mix-in-dml
+      content: Data change can only run DML
       detail: ""
-      startposition: null
+      startposition:
+        line: 1
+        column: 0
       endposition: null

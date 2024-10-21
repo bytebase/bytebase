@@ -1,0 +1,43 @@
+- statement: |-
+    CREATE TABLE t(a int);
+    COMMENT ON COLUMN t.a IS 'comments';
+- statement: |-
+    CREATE TABLE t(a int);
+  want:
+    - status: 2
+      code: 1032
+      title: column.comment
+      content: Comment is required for column `t.a`
+      startposition:
+        line: 1
+- statement: |-
+    CREATE TABLE t(a int);
+    COMMENT ON COLUMN t.a IS 'loooooooong comments';
+  want:
+    - status: 2
+      code: 1301
+      title: column.comment
+      content: Column `t.a` comment is too long. The length of comment should be within 10 characters
+      startposition:
+        line: 2
+- statement: |-
+    CREATE TABLE t(a int, d text);
+    COMMENT ON COLUMN t.a IS 'comments';
+  want:
+    - status: 2
+      code: 1032
+      title: column.comment
+      content: Comment is required for column `t.d`
+      startposition:
+        line: 1
+- statement: |-
+    CREATE TABLE t(a int);
+    COMMENT ON COLUMN t.a IS 'loooooooong comments';
+    COMMENT ON COLUMN t.a IS NULL;
+  want:
+    - status: 2
+      code: 1032
+      title: column.comment
+      content: Comment is required for column `t.a`
+      startposition:
+        line: 1

@@ -325,7 +325,7 @@ const allowEditStatementWhenCreating = computed(() => {
     return false;
   }
   // Do not allow to edit statement for the plan with release source.
-  if (issue.value.planEntity?.releaseSource) {
+  if (issue.value.planEntity?.releaseSource?.release) {
     return false;
   }
   if (selectedTask.value.type === Task_Type.DATABASE_SCHEMA_BASELINE) {
@@ -382,6 +382,10 @@ const shouldShowEditButton = computed(() => {
   }
   // If the issue is not open, don't show the edit button.
   if (issue.value.status !== IssueStatus.OPEN) {
+    return false;
+  }
+  // Do not allow to edit statement for the plan with release source.
+  if (issue.value.planEntity?.releaseSource?.release) {
     return false;
   }
   // Will show another button group as [Upload][Cancel][Save]

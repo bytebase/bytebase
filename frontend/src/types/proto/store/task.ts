@@ -59,7 +59,10 @@ export interface TaskDatabaseDataExportPayload {
 }
 
 export interface TaskReleaseSource {
-  /** Format: projects/{project}/releases/{release}/files/{file} */
+  /**
+   * Format: projects/{project}/releases/{release}/files/{file}
+   * {file} is URL path escaped.
+   */
   file: string;
 }
 

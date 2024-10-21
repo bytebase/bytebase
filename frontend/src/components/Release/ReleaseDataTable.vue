@@ -17,7 +17,7 @@
 
 <script lang="tsx" setup>
 import type { DataTableColumn } from "naive-ui";
-import { NDataTable } from "naive-ui";
+import { NDataTable, NTag } from "naive-ui";
 import { reactive, computed, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
@@ -65,6 +65,7 @@ const columnList = computed((): DataTableColumn<ComposedRelease>[] => {
     },
     {
       key: "title",
+      width: 160,
       title: t("common.title"),
       ellipsis: true,
       render: (release) => {
@@ -73,17 +74,22 @@ const columnList = computed((): DataTableColumn<ComposedRelease>[] => {
     },
     {
       key: "files",
-      title: "Files",
+      title: t("release.files"),
       ellipsis: true,
       render: (release) => {
         return (
-          <div class="flex items-center space-x-4">
+          <div class="flex items-center space-x-3">
             {release.files.map((file) => (
               <div class="flex items-center space-x-1">
-                <code class="text-sm">{file.name}</code>
-                <code class="text-sm text-gray-400">
-                  ({file.sheetSha256.slice(0, 8)})
-                </code>
+                <span>{file.name}</span>
+                <NTag
+                  v-if="schemaVersion"
+                  class="text-sm font-mono"
+                  size="small"
+                  round
+                >
+                  {file.version}
+                </NTag>
               </div>
             ))}
           </div>
@@ -93,14 +99,14 @@ const columnList = computed((): DataTableColumn<ComposedRelease>[] => {
     {
       key: "createTime",
       title: t("common.created-at"),
-      width: 150,
+      width: 128,
       render: (release) =>
         humanizeTs(getTimeForPbTimestamp(release.createTime, 0) / 1000),
     },
     {
       key: "creator",
       title: t("common.creator"),
-      width: 150,
+      width: 128,
       render: (release) => (
         <div class="flex flex-row items-center overflow-hidden gap-x-2">
           <BBAvatar size="SMALL" username={release.creatorEntity.title} />

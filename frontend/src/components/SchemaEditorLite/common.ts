@@ -42,7 +42,7 @@ export const generateDiffDDL = async (
     return finish(
       "",
       [t("schema-editor.message.invalid-schema"), ...validationMessages],
-      false
+      true
     );
   }
   try {

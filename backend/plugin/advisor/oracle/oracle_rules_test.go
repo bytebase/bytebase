@@ -29,7 +29,10 @@ func TestOracleRules(t *testing.T) {
 		advisor.SchemaRuleTableNameNoKeyword,
 		advisor.SchemaRuleIdentifierNoKeyword,
 		advisor.SchemaRuleIdentifierCase,
-		advisor.SchemaRuleStatementDisallowMixDDLDML,
+		advisor.SchemaRuleStatementDisallowMixInDDL,
+		advisor.SchemaRuleStatementDisallowMixInDML,
+		advisor.SchemaRuleTableCommentConvention,
+		advisor.SchemaRuleColumnCommentConvention,
 	}
 
 	for _, rule := range oracleRules {

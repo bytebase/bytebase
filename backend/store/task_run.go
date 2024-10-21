@@ -181,6 +181,21 @@ func (s *Store) ListTaskRunsV2(ctx context.Context, find *FindTaskRunMessage) ([
 	return taskRuns, nil
 }
 
+// GetTaskRun gets a task run by uid.
+func (s *Store) GetTaskRun(ctx context.Context, uid int) (*TaskRunMessage, error) {
+	taskRuns, err := s.ListTaskRunsV2(ctx, &FindTaskRunMessage{UID: &uid})
+	if err != nil {
+		return nil, err
+	}
+	if len(taskRuns) == 0 {
+		return nil, errors.Errorf("task run not found: %d", uid)
+	}
+	if len(taskRuns) > 1 {
+		return nil, errors.Errorf("found multiple task runs for uid: %d", uid)
+	}
+	return taskRuns[0], nil
+}
+
 // UpdateTaskRunStatus updates task run status.
 func (s *Store) UpdateTaskRunStatus(ctx context.Context, patch *TaskRunStatusPatch) (*TaskRunMessage, error) {
 	tx, err := s.db.BeginTx(ctx, nil)

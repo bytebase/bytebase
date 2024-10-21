@@ -58,6 +58,7 @@
         <MembersBindingSelect
           v-model:value="state.memberList"
           :required="true"
+          :project-name="projectName"
           :include-all-users="false"
           :include-service-account="false"
         />
@@ -111,6 +112,7 @@ import { getExpressionsForSensitiveColumn } from "./utils";
 
 const props = defineProps<{
   columnList: SensitiveColumn[];
+  projectName: string;
 }>();
 
 const emit = defineEmits(["dismiss"]);

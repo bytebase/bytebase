@@ -755,6 +755,14 @@ paths:
             tags:
                 - GroupService
             operationId: GroupService_CreateGroup
+            parameters:
+                - name: groupEmail
+                  in: query
+                  description: |-
+                    The email to use for the group, which will become the final component
+                     of the group's resource name.
+                  schema:
+                    type: string
             requestBody:
                 content:
                     application/json:
@@ -840,6 +848,13 @@ paths:
                   schema:
                     type: string
                     format: field-mask
+                - name: allowMissing
+                  in: query
+                  description: |-
+                    If set to true, and the group is not found, a new group will be created.
+                     In this situation, `update_mask` is ignored.
+                  schema:
+                    type: boolean
             requestBody:
                 content:
                     application/json:
@@ -1504,7 +1519,10 @@ paths:
                     type: boolean
                 - name: concise
                   in: query
-                  description: When true, the schema dump will be concise.
+                  description: |-
+                    When true, the schema dump will be concise.
+                     For Oracle, there will be tables and indexes only for Sync Schema.
+                     For Postgres, we'll filter the backup schema.
                   schema:
                     type: boolean
             responses:
@@ -1953,6 +1971,76 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
+    /v1/instances/{instance}/databases/{database}/revisions/{revision}:
+        get:
+            tags:
+                - DatabaseService
+            operationId: DatabaseService_GetRevision
+            parameters:
+                - name: instance
+                  in: path
+                  description: The instance id.
+                  required: true
+                  schema:
+                    type: string
+                - name: database
+                  in: path
+                  description: The database id.
+                  required: true
+                  schema:
+                    type: string
+                - name: revision
+                  in: path
+                  description: The revision id.
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Revision'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+        delete:
+            tags:
+                - DatabaseService
+            operationId: DatabaseService_DeleteRevision
+            parameters:
+                - name: instance
+                  in: path
+                  description: The instance id.
+                  required: true
+                  schema:
+                    type: string
+                - name: database
+                  in: path
+                  description: The database id.
+                  required: true
+                  schema:
+                    type: string
+                - name: revision
+                  in: path
+                  description: The revision id.
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content: {}
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
     /v1/instances/{instance}/databases/{database}/schema:
         get:
             tags:
@@ -1981,6 +2069,7 @@ paths:
                   description: |-
                     When true, the schema dump will be concise.
                      For Oracle, there will be tables and indexes only for Sync Schema.
+                     For Postgres, we'll filter the backup schema.
                   schema:
                     type: boolean
             responses:
@@ -5407,6 +5496,33 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
+        delete:
+            tags:
+                - ReleaseService
+            operationId: ReleaseService_DeleteRelease
+            parameters:
+                - name: project
+                  in: path
+                  description: The project id.
+                  required: true
+                  schema:
+                    type: string
+                - name: release
+                  in: path
+                  description: The release id.
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content: {}
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
         patch:
             tags:
                 - ReleaseService
@@ -5436,6 +5552,37 @@ paths:
                         schema:
                             $ref: '#/components/schemas/Release'
                 required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Release'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v1/projects/{project}/releases/{release}:undelete:
+        post:
+            tags:
+                - ReleaseService
+            operationId: ReleaseService_UndeleteRelease
+            parameters:
+                - name: project
+                  in: path
+                  description: The project id.
+                  required: true
+                  schema:
+                    type: string
+                - name: release
+                  in: path
+                  description: The release id.
+                  required: true
+                  schema:
+                    type: string
             responses:
                 "200":
                     description: OK
@@ -5568,6 +5715,55 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/ListTaskRunsResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v1/projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}:
+        get:
+            tags:
+                - RolloutService
+            operationId: RolloutService_GetTaskRun
+            parameters:
+                - name: project
+                  in: path
+                  description: The project id.
+                  required: true
+                  schema:
+                    type: string
+                - name: rollout
+                  in: path
+                  description: The rollout id.
+                  required: true
+                  schema:
+                    type: string
+                - name: stage
+                  in: path
+                  description: The stage id.
+                  required: true
+                  schema:
+                    type: string
+                - name: task
+                  in: path
+                  description: The task id.
+                  required: true
+                  schema:
+                    type: string
+                - name: taskRun
+                  in: path
+                  description: The taskRun id.
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/TaskRun'
                 default:
                     description: Default error response
                     content:
@@ -6961,6 +7157,11 @@ paths:
                   schema:
                     type: string
                     format: field-mask
+                - name: allowMissing
+                  in: query
+                  description: If set to true, and the role is not found, a new role will be created.
+                  schema:
+                    type: boolean
             requestBody:
                 content:
                     application/json:
@@ -11631,7 +11832,9 @@ components:
             properties:
                 file:
                     type: string
-                    description: 'Format: projects/{project}/releases/{release}/files/{file}'
+                    description: |-
+                        Format: projects/{project}/releases/{release}/files/{file}
+                         {file} is URL path escaped.
         Plan_Step:
             type: object
             properties:
@@ -11852,17 +12055,26 @@ components:
                 outOfOrderFiles:
                     type: array
                     items:
-                        type: string
-                    description: |-
-                        Format: projects/{project}/releases/{release}/files/{path}
-                         Example: `projects/tnt/releases/0801/files/2.2/V0001_create_table.sql`
+                        $ref: '#/components/schemas/PreviewPlanResponse_DatabaseFiles'
+                    description: The out of order files of each database.
                 appliedButModifiedFiles:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/PreviewPlanResponse_DatabaseFiles'
+                    description: The applied but modified files of each database.
+        PreviewPlanResponse_DatabaseFiles:
+            type: object
+            properties:
+                database:
+                    type: string
+                files:
                     type: array
                     items:
                         type: string
                     description: |-
                         Format: projects/{project}/releases/{release}/files/{path}
-                         Example: `projects/tnt/releases/0801/files/2.2/V0001_create_table.sql`
+                         {path} is URL path escaped.
+                         Example: `projects/tnt/releases/0801/files/2.2%2FV0001_create_table.sql`
         PreviewRolloutRequest:
             required:
                 - project
@@ -12425,6 +12637,13 @@ components:
                     readOnly: true
                     type: string
                     description: The SHA256 hash value of the sheet.
+                statement:
+                    readOnly: true
+                    type: string
+                    description: The statement is used for preview purpose.
+                statementSize:
+                    readOnly: true
+                    type: string
                 type:
                     enum:
                         - TYPE_UNSPECIFIED
@@ -12439,11 +12658,18 @@ components:
                         The name of the file in the release.
                          Expressed as a path, e.g. `2.2/V0001_create_table.sql`
                          Can be empty.
+                issue:
+                    type: string
+                    description: |-
+                        The issue associated with the revision.
+                         Can be empty.
+                         Format: projects/{project}/issues/{issue}
                 taskRun:
                     type: string
                     description: |-
                         The task run associated with the revision.
                          Can be empty.
+                         Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
         Risk:
             type: object
             properties:

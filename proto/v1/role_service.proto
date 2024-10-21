@@ -83,6 +83,8 @@ message CreateRoleRequest {
 message UpdateRoleRequest {
   Role role = 1;
   google.protobuf.FieldMask update_mask = 2;
+  // If set to true, and the role is not found, a new role will be created.
+  bool allow_missing = 3;
 }
 
 message DeleteRoleRequest {

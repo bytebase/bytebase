@@ -40,17 +40,25 @@
           @update:database-name="onDatabaseSelect($event)"
         />
       </NInputGroup>
-      <NButton
-        type="primary"
-        :disabled="
-          state.pendingGrantAccessColumn.length === 0 ||
-          !hasPermission ||
-          !hasSensitiveDataFeature
-        "
-        @click="onGrantAccessButtonClick"
-      >
-        {{ $t("settings.sensitive-data.grant-access") }}
-      </NButton>
+      <NTooltip :disabled="selectedProjects.size <= 1">
+        <template #trigger>
+          <NButton
+            type="primary"
+            :disabled="
+              state.pendingGrantAccessColumn.length === 0 ||
+              !hasPermission ||
+              !hasSensitiveDataFeature ||
+              selectedProjects.size !== 1
+            "
+            @click="onGrantAccessButtonClick"
+          >
+            {{ $t("settings.sensitive-data.grant-access") }}
+          </NButton>
+        </template>
+        <span class="textinfolabel">
+          {{ $t("database.select-databases-from-same-project") }}
+        </span>
+      </NTooltip>
     </div>
 
     <div class="textinfolabel">
@@ -91,6 +99,7 @@
       state.showGrantAccessDrawer && state.pendingGrantAccessColumn.length > 0
     "
     :column-list="state.pendingGrantAccessColumn"
+    :project-name="[...selectedProjects][0]"
     @dismiss="
       () => {
         state.showGrantAccessDrawer = false;
@@ -121,7 +130,7 @@
 
 <script lang="ts" setup>
 import { uniq } from "lodash-es";
-import { NButton, NInputGroup } from "naive-ui";
+import { NButton, NInputGroup, NTooltip } from "naive-ui";
 import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
@@ -212,6 +221,12 @@ const state = reactive<LocalState>({
 
 const hasPermission = computed(() => {
   return hasWorkspacePermissionV2("bb.policies.update");
+});
+
+const selectedProjects = computed(() => {
+  return new Set(
+    state.pendingGrantAccessColumn.map((data) => data.database.project)
+  );
 });
 
 const updateList = async () => {

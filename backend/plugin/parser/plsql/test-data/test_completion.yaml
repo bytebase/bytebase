@@ -58,6 +58,14 @@
       comment: ""
 - input: WITH x(x1, x2) AS (SELECT * FROM t2) SELECT | FROM x
   want:
+    - text: X1
+      type: COLUMN
+      definition: ""
+      comment: ""
+    - text: X2
+      type: COLUMN
+      definition: ""
+      comment: ""
     - text: SCHEMA1
       type: SCHEMA
       definition: ""
@@ -82,20 +90,28 @@
       type: TABLE
       definition: ""
       comment: ""
-    - text: X1
-      type: COLUMN
-      definition: ""
-      comment: ""
-    - text: X2
-      type: COLUMN
-      definition: ""
-      comment: ""
     - text: V1
       type: VIEW
       definition: ""
       comment: ""
 - input: SELECT c1 as eid, c2 as xid FROM t2 GROUP BY |
   want:
+    - text: C1
+      type: COLUMN
+      definition: SCHEMA1.T2 | int, NOT NULL
+      comment: ""
+    - text: C2
+      type: COLUMN
+      definition: SCHEMA1.T2 | int, NOT NULL
+      comment: ""
+    - text: EID
+      type: COLUMN
+      definition: ""
+      comment: ""
+    - text: XID
+      type: COLUMN
+      definition: ""
+      comment: ""
     - text: SCHEMA1
       type: SCHEMA
       definition: ""
@@ -114,22 +130,6 @@
       comment: ""
     - text: T2
       type: TABLE
-      definition: ""
-      comment: ""
-    - text: C1
-      type: COLUMN
-      definition: T2 | int, NOT NULL
-      comment: ""
-    - text: C2
-      type: COLUMN
-      definition: T2 | int, NOT NULL
-      comment: ""
-    - text: EID
-      type: COLUMN
-      definition: ""
-      comment: ""
-    - text: XID
-      type: COLUMN
       definition: ""
       comment: ""
     - text: V1
@@ -138,33 +138,13 @@
       comment: ""
 - input: SELECT c1 as eid, c2 as xid FROM t2 ORDER BY |
   want:
-    - text: SCHEMA1
-      type: SCHEMA
-      definition: ""
-      comment: ""
-    - text: SCHEMA2
-      type: SCHEMA
-      definition: ""
-      comment: ""
-    - text: SCHEMA3
-      type: SCHEMA
-      definition: ""
-      comment: ""
-    - text: T1
-      type: TABLE
-      definition: ""
-      comment: ""
-    - text: T2
-      type: TABLE
-      definition: ""
-      comment: ""
     - text: C1
       type: COLUMN
-      definition: T2 | int, NOT NULL
+      definition: SCHEMA1.T2 | int, NOT NULL
       comment: ""
     - text: C2
       type: COLUMN
-      definition: T2 | int, NOT NULL
+      definition: SCHEMA1.T2 | int, NOT NULL
       comment: ""
     - text: EID
       type: COLUMN
@@ -174,12 +154,6 @@
       type: COLUMN
       definition: ""
       comment: ""
-    - text: V1
-      type: VIEW
-      definition: ""
-      comment: ""
-- input: SELECT c1 as eid FROM t1 ORDER BY |
-  want:
     - text: SCHEMA1
       type: SCHEMA
       definition: ""
@@ -200,12 +174,38 @@
       type: TABLE
       definition: ""
       comment: ""
+    - text: V1
+      type: VIEW
+      definition: ""
+      comment: ""
+- input: SELECT c1 as eid FROM t1 ORDER BY |
+  want:
     - text: C1
       type: COLUMN
-      definition: T1 | int, NOT NULL
+      definition: SCHEMA1.T1 | int, NOT NULL
       comment: ""
     - text: EID
       type: COLUMN
+      definition: ""
+      comment: ""
+    - text: SCHEMA1
+      type: SCHEMA
+      definition: ""
+      comment: ""
+    - text: SCHEMA2
+      type: SCHEMA
+      definition: ""
+      comment: ""
+    - text: SCHEMA3
+      type: SCHEMA
+      definition: ""
+      comment: ""
+    - text: T1
+      type: TABLE
+      definition: ""
+      comment: ""
+    - text: T2
+      type: TABLE
       definition: ""
       comment: ""
     - text: V1
@@ -216,6 +216,10 @@
     SELECT FROM basdkfjasldf;
     SELECT | FROM t1
   want:
+    - text: C1
+      type: COLUMN
+      definition: SCHEMA1.T1 | int, NOT NULL
+      comment: ""
     - text: SCHEMA1
       type: SCHEMA
       definition: ""
@@ -236,16 +240,20 @@
       type: TABLE
       definition: ""
       comment: ""
-    - text: C1
-      type: COLUMN
-      definition: T1 | int, NOT NULL
-      comment: ""
     - text: V1
       type: VIEW
       definition: ""
       comment: ""
 - input: SELECT | FROM (SELECT c1 FROM t1) cc1
   want:
+    - text: C1
+      type: COLUMN
+      definition: ""
+      comment: ""
+    - text: C1
+      type: COLUMN
+      definition: SCHEMA1.T1 | int, NOT NULL
+      comment: ""
     - text: SCHEMA1
       type: SCHEMA
       definition: ""
@@ -270,10 +278,6 @@
       type: TABLE
       definition: ""
       comment: ""
-    - text: C1
-      type: COLUMN
-      definition: T1 | int, NOT NULL
-      comment: ""
     - text: V1
       type: VIEW
       definition: ""
@@ -282,43 +286,43 @@
   want:
     - text: C1
       type: COLUMN
-      definition: T1 | int, NOT NULL
+      definition: SCHEMA1.T1 | int, NOT NULL
       comment: ""
 - input: SELECT * from t1 cc1 JOIN t2 on cc1.c1 = t2.|
   want:
     - text: C1
       type: COLUMN
-      definition: T2 | int, NOT NULL
+      definition: SCHEMA1.T2 | int, NOT NULL
       comment: ""
     - text: C2
       type: COLUMN
-      definition: T2 | int, NOT NULL
+      definition: SCHEMA1.T2 | int, NOT NULL
       comment: ""
 - input: SELECT * from t1 cc1 JOIN t2 on cc1.|
   want:
     - text: C1
       type: COLUMN
-      definition: T1 | int, NOT NULL
+      definition: SCHEMA1.T1 | int, NOT NULL
       comment: ""
 - input: SELECT MAX(cc1.|) FROM t2 cc1
   want:
     - text: C1
       type: COLUMN
-      definition: T2 | int, NOT NULL
+      definition: SCHEMA1.T2 | int, NOT NULL
       comment: ""
     - text: C2
       type: COLUMN
-      definition: T2 | int, NOT NULL
+      definition: SCHEMA1.T2 | int, NOT NULL
       comment: ""
 - input: SELECT cc1.| FROM t2 cc1
   want:
     - text: C1
       type: COLUMN
-      definition: T2 | int, NOT NULL
+      definition: SCHEMA1.T2 | int, NOT NULL
       comment: ""
     - text: C2
       type: COLUMN
-      definition: T2 | int, NOT NULL
+      definition: SCHEMA1.T2 | int, NOT NULL
       comment: ""
 - input: SELECT * FROM |
   want:
@@ -348,6 +352,10 @@
       comment: ""
 - input: SELECT | FROM t1 x
   want:
+    - text: C1
+      type: COLUMN
+      definition: SCHEMA1.T1 | int, NOT NULL
+      comment: ""
     - text: SCHEMA1
       type: SCHEMA
       definition: ""
@@ -372,16 +380,16 @@
       type: TABLE
       definition: ""
       comment: ""
-    - text: C1
-      type: COLUMN
-      definition: T1 | int, NOT NULL
-      comment: ""
     - text: V1
       type: VIEW
       definition: ""
       comment: ""
 - input: SELECT | FROM schema1.t1
   want:
+    - text: C1
+      type: COLUMN
+      definition: SCHEMA1.T1 | int, NOT NULL
+      comment: ""
     - text: SCHEMA1
       type: SCHEMA
       definition: ""
@@ -401,10 +409,6 @@
     - text: T2
       type: TABLE
       definition: ""
-      comment: ""
-    - text: C1
-      type: COLUMN
-      definition: T1 | int, NOT NULL
       comment: ""
     - text: V1
       type: VIEW

@@ -70,6 +70,9 @@ type Profile struct {
 
 	// can be set in runtime
 	RuntimeDebug atomic.Bool
+
+	// Development flag, enables the versioned workflow.
+	DevelopmentVersioned bool
 }
 
 // UseEmbedDB returns whether to use embedDB.

@@ -5,10 +5,10 @@ import { hashCode } from "@/bbkit/BBUtil";
 import { WebStorageHelper } from "@/utils";
 import type { OpenAIMessage, OpenAIResponse } from "../types";
 import { useAIContext } from "./context";
-import { databaseMetadataToText } from "./prompt";
+import * as promptUtils from "./prompt";
 
 export type SuggestionContext = {
-  schema: string; // schema text
+  metadata: string; // schema text
   key: string; // a hash key used by storage
   suggestions: string[];
   ready: boolean;
@@ -24,17 +24,18 @@ const cache = ref(new Map<string, SuggestionContext>());
 const storage = new WebStorageHelper("bb.plugin.open-ai.suggestions");
 const MAX_STORED_SUGGESTIONS = 10;
 
-const keyOf = (schema: string) => String(hashCode(schema));
+const keyOf = (metadata: string) => String(hashCode(metadata));
 
 export const useDynamicSuggestions = () => {
   const context = useAIContext();
 
-  const text = computed(() => {
+  const metadata = computed(() => {
     const meta = context.databaseMetadata.value;
     const engine = context.engine.value;
+    const schema = context.schema.value;
 
     if (meta && engine) {
-      return databaseMetadataToText(meta, engine);
+      return promptUtils.databaseMetadataToText(meta, engine, schema);
     }
     return "";
   });
@@ -84,10 +85,10 @@ export const useDynamicSuggestions = () => {
     }
   };
 
-  const createSuggestion = (schema: string) => {
+  const createSuggestion = (metadata: string) => {
     const suggestion: SuggestionContext = reactive({
-      schema,
-      key: keyOf(schema),
+      metadata,
+      key: keyOf(metadata),
       suggestions: [],
       index: 0,
       state: "IDLE",
@@ -111,37 +112,29 @@ export const useDynamicSuggestions = () => {
         const { state, used, suggestions, key } = suggestion;
         if (state === "ENDED") return [];
 
-        const commands = [
-          `You are an assistant who works as a Magic: The Suggestion card designer. Create cards that are in the following card schema and JSON format. OUTPUT MUST FOLLOW THIS CARD SCHEMA AND JSON FORMAT. DO NOT EXPLAIN THE CARD.`,
-          `{"suggestion-1": "What is the average salary of employees in each department?", "suggestion-2": "What is the average salary of employees in each department?", "suggestion-3": "What is the average salary of employees in each department?"}`,
-        ];
-        const prompts = [
-          schema,
-          "Create a suggestion card about interesting queries to try in this database.",
-        ];
-        if (used.size > 0 || suggestions.length > 0) {
-          prompts.push("queries below should be ignored");
-          for (const sug of used.values()) {
-            prompts.push(sug);
-          }
-          for (const sug of suggestions) {
-            prompts.push(sug);
-          }
-        }
+        const { command, prompt } = promptUtils.dynamicSuggestions(
+          metadata,
+          new Set([...used.values(), ...suggestions])
+        );
         const messages: OpenAIMessage[] = [
           {
             role: "system",
-            content: commands.join("\n"),
+            content: command,
           },
           {
             role: "user",
-            content: prompts.join("\n"),
+            content: prompt,
           },
         ];
+        console.debug("[DynamicSuggestions]");
+        console.debug(command);
+        console.debug(prompt);
 
         suggestion.state = "LOADING";
+        const response = await requestAI(messages);
+        console.debug("[DynamicSuggestions] response", response);
         const more = uniq(
-          (await requestAI(messages)).filter((sug) => {
+          response.filter((sug) => {
             if (used.has(sug)) return false;
             if (suggestions.includes(sug)) return false;
             return true;
@@ -183,18 +176,18 @@ export const useDynamicSuggestions = () => {
         suggestion.ready = true;
       });
     }
-    cache.value.set(schema, suggestion);
+    cache.value.set(metadata, suggestion);
     return suggestion;
   };
 
-  const getOrCreateSuggestion = (schema: string) => {
-    const cached = cache.value.get(schema);
+  const getOrCreateSuggestion = (metadata: string) => {
+    const cached = cache.value.get(metadata);
     if (cached) return cached;
-    return createSuggestion(schema);
+    return createSuggestion(metadata);
   };
 
   return computed(() => {
-    if (!text.value) return undefined;
-    return getOrCreateSuggestion(text.value);
+    if (!metadata.value) return undefined;
+    return getOrCreateSuggestion(metadata.value);
   });
 };

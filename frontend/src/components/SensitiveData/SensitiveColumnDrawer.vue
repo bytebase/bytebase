@@ -262,6 +262,7 @@
   <GrantAccessDrawer
     v-if="state.showGrantAccessDrawer"
     :column-list="[props.column]"
+    :project-name="props.column.database.project"
     @dismiss="state.showGrantAccessDrawer = false"
   />
 </template>
@@ -708,6 +709,12 @@ const updateExceptionPolicy = async () => {
           accessUser.expirationTimestamp
         ).toISOString()}")`;
       }
+    } else if (accessUser.expirationTimestamp) {
+      expressions.push(
+        `request.time < timestamp("${new Date(
+          accessUser.expirationTimestamp
+        ).toISOString()}")`
+      );
     }
     for (const action of accessUser.supportActions) {
       exceptions.push({

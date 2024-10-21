@@ -127,6 +127,11 @@ export interface ListTaskRunsResponse {
   nextPageToken: string;
 }
 
+export interface GetTaskRunRequest {
+  /** Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun} */
+  name: string;
+}
+
 export interface GetTaskRunLogRequest {
   /**
    * Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
@@ -1722,6 +1727,63 @@ export const ListTaskRunsResponse: MessageFns<ListTaskRunsResponse> = {
     const message = createBaseListTaskRunsResponse();
     message.taskRuns = object.taskRuns?.map((e) => TaskRun.fromPartial(e)) || [];
     message.nextPageToken = object.nextPageToken ?? "";
+    return message;
+  },
+};
+
+function createBaseGetTaskRunRequest(): GetTaskRunRequest {
+  return { name: "" };
+}
+
+export const GetTaskRunRequest: MessageFns<GetTaskRunRequest> = {
+  encode(message: GetTaskRunRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GetTaskRunRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetTaskRunRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetTaskRunRequest {
+    return { name: isSet(object.name) ? globalThis.String(object.name) : "" };
+  },
+
+  toJSON(message: GetTaskRunRequest): unknown {
+    const obj: any = {};
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<GetTaskRunRequest>): GetTaskRunRequest {
+    return GetTaskRunRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<GetTaskRunRequest>): GetTaskRunRequest {
+    const message = createBaseGetTaskRunRequest();
+    message.name = object.name ?? "";
     return message;
   },
 };
@@ -5337,6 +5399,87 @@ export const RolloutServiceDefinition = {
               117,
               110,
               115,
+            ]),
+          ],
+        },
+      },
+    },
+    getTaskRun: {
+      name: "GetTaskRun",
+      requestType: GetTaskRunRequest,
+      requestStream: false,
+      responseType: TaskRun,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          8410: [new Uint8Array([4, 110, 97, 109, 101])],
+          800010: [new Uint8Array([16, 98, 98, 46, 116, 97, 115, 107, 82, 117, 110, 115, 46, 108, 105, 115, 116])],
+          800016: [new Uint8Array([1])],
+          578365826: [
+            new Uint8Array([
+              62,
+              18,
+              60,
+              47,
+              118,
+              49,
+              47,
+              123,
+              110,
+              97,
+              109,
+              101,
+              61,
+              112,
+              114,
+              111,
+              106,
+              101,
+              99,
+              116,
+              115,
+              47,
+              42,
+              47,
+              114,
+              111,
+              108,
+              108,
+              111,
+              117,
+              116,
+              115,
+              47,
+              42,
+              47,
+              115,
+              116,
+              97,
+              103,
+              101,
+              115,
+              47,
+              42,
+              47,
+              116,
+              97,
+              115,
+              107,
+              115,
+              47,
+              42,
+              47,
+              116,
+              97,
+              115,
+              107,
+              82,
+              117,
+              110,
+              115,
+              47,
+              42,
+              125,
             ]),
           ],
         },
