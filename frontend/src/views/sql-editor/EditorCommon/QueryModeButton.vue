@@ -5,7 +5,6 @@
     class="bb-query-mode-select-menu"
     :options="options"
     :value="currentQueryMode"
-    show
     @update:value="handleSelect"
   >
     <NButton
