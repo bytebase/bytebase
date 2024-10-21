@@ -660,21 +660,6 @@
 - type: statement.join-strict-column-attrs
   category: STATEMENT
   engine: MYSQL
-- type: statement.disallow-mix-ddl-dml
-  category: STATEMENT
-  engine: MYSQL
-- type: statement.disallow-mix-ddl-dml
-  category: STATEMENT
-  engine: POSTGRES
-- type: statement.disallow-mix-ddl-dml
-  category: STATEMENT
-  engine: TIDB
-- type: statement.disallow-mix-ddl-dml
-  category: STATEMENT
-  engine: ORACLE
-- type: statement.disallow-mix-ddl-dml
-  category: STATEMENT
-  engine: MSSQL
 - type: statement.disallow-mix-in-ddl
   category: STATEMENT
   engine: MYSQL
