@@ -2,7 +2,6 @@ package bigquery
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
@@ -83,13 +82,6 @@ func (q *querySpanExtractor) extractTableSourceFromQuery(query parser.IQueryCont
 
 func (q *querySpanExtractor) extractTableSourceFromQueryWithoutPipe(queryWithoutPipe parser.IQuery_without_pipe_operatorsContext) (base.TableSource, error) {
 	// TODO(zp): handle CTE.
-	var withClause parser.IWith_clauseContext
-	if queryWithoutPipe.With_clause() != nil {
-		withClause = queryWithoutPipe.With_clause()
-	} else if queryWithoutPipe.With_clause_with_trailing_comma() != nil {
-		withClause = queryWithoutPipe.With_clause_with_trailing_comma().With_clause()
-	}
-	fmt.Println(withClause)
 
 	return q.extractTableSourceFromQueryPrimaryOrSetOperation(queryWithoutPipe.Query_primary_or_set_operation())
 }
@@ -110,18 +102,18 @@ func (q *querySpanExtractor) extractTableSourceFromQueryPrimary(queryPrimary par
 	return nil, nil
 }
 
-func (q *querySpanExtractor) extractTableSourceFromSelect(select_ parser.ISelectContext) (base.TableSource, error) {
+func (q *querySpanExtractor) extractTableSourceFromSelect(selectCtx parser.ISelectContext) (base.TableSource, error) {
 	var fromFields []base.QuerySpanResult
 	var resultFields []base.QuerySpanResult
-	if select_.From_clause() != nil {
-		tableSource, err := q.extractTableSourceFromFromClause(select_.From_clause())
+	if selectCtx.From_clause() != nil {
+		tableSource, err := q.extractTableSourceFromFromClause(selectCtx.From_clause())
 		if err != nil {
 			return nil, err
 		}
 		fromFields = tableSource.GetQuerySpanResult()
 	}
 
-	itemList := select_.Select_clause().Select_list().AllSelect_list_item()
+	itemList := selectCtx.Select_clause().Select_list().AllSelect_list_item()
 	for _, item := range itemList {
 		// TODO(zp): handle other select item.
 		if item.Select_column_star() != nil {
@@ -333,8 +325,5 @@ func isMixedQuery(m base.SourceColumnSet) (bool, bool) {
 }
 
 func isSystemResource(resource base.ColumnResource) bool {
-	if strings.EqualFold(resource.Schema, "INFORMATION_SCHEMA") {
-		return true
-	}
-	return false
+	return strings.EqualFold(resource.Schema, "INFORMATION_SCHEMA")
 }
