@@ -124,6 +124,14 @@
         }
       }
     },
+    "table-require-charset": {
+      "title": "Require charset",
+      "description": "The charset of the table must be specified. Suggestion error level: Warning"
+    },
+    "table-require-collation": {
+      "title": "Require collation",
+      "description": "The collation of the table must be specified. Suggestion error level: Warning"
+    },
     "naming-fully-qualified": {
       "title": "Fully qualified object name",
       "description": "Enforce the use of fully qualified object names. For example, “schema.table”, suggested error level: Warning"

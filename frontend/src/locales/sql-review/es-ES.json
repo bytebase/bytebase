@@ -124,6 +124,14 @@
         }
       }
     },
+    "table-require-charset": {
+      "title": "Requerir juego de caracteres",
+      "description": "Se debe especificar el conjunto de caracteres de la tabla. Nivel de error sugerido: Advertencia"
+    },
+    "table-require-collation": {
+      "title": "Requerir intercalación",
+      "description": "Se debe especificar la intercalación de la tabla. Nivel de error sugerido: Advertencia"
+    },
     "naming-fully-qualified": {
       "title": "Nombre de objeto completo",
       "description": "Forzar el uso de nombres de objetos completamente calificados. Por ejemplo, “schema.table”, nivel de error sugerido: Advertencia"

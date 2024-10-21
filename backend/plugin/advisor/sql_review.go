@@ -163,6 +163,10 @@ const (
 	SchemaRuleTableDisallowDML SQLReviewRuleType = "table.disallow-dml"
 	// SchemaRuleTableLimitSize  restrict access to tables based on size.
 	SchemaRuleTableLimitSize SQLReviewRuleType = "table.limit-size"
+	// SchemaRuleTableRequireCharset enforce the table charset.
+	SchemaRuleTableRequireCharset SQLReviewRuleType = "table.require-charset"
+	// SchemaRuleTableRequireCollation enforce the table collation.
+	SchemaRuleTableRequireCollation SQLReviewRuleType = "table.require-collation"
 	// SchemaRuleRequiredColumn enforce the required columns in each table.
 	SchemaRuleRequiredColumn SQLReviewRuleType = "column.required"
 	// SchemaRuleColumnNotNull enforce the columns cannot have NULL value.
@@ -1256,6 +1260,14 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 	case SchemaRuleTableLimitSize:
 		if engine == storepb.Engine_MYSQL {
 			return MySQLTableLimitSize, nil
+		}
+	case SchemaRuleTableRequireCharset:
+		if engine == storepb.Engine_MYSQL {
+			return MySQLTableRequireCharset, nil
+		}
+	case SchemaRuleTableRequireCollation:
+		if engine == storepb.Engine_MYSQL {
+			return MySQLTableRequireCollation, nil
 		}
 	case SchemaRuleMySQLEngine:
 		switch engine {
