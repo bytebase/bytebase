@@ -2538,6 +2538,18 @@
       "not-member-of-any-projects": "あなたはどのプロジェクトのメンバーでもありません。",
       "go-to-create": "作成に行く",
       "contact-the-admin-to-grant-access": "管理者に連絡してアクセスを許可してください。"
+    },
+    "query-mode": {
+      "query": {
+        "self": "Query (読み取り専用)",
+        "description": "SELECT、SHOW、SET ステートメントを許可します。"
+      },
+      "execute": {
+        "self": "Execute (読み取り / 書き込み)",
+        "description": "DDL および DML ステートメントを許可します。",
+        "disabled-by-policy": "{policy}によって無効になっています。",
+        "environment-policy": "環境方針"
+      }
     }
   },
   "schema-editor": {
@@ -3549,6 +3561,10 @@
     "project-exporter": {
       "self": "プロジェクトエクスポーター",
       "description": "指定した範囲のデータをエクスポートできます。"
+    },
+    "project-executor": {
+      "self": "プロジェクト実行者",
+      "description": "データベースに対して DML/DDL を実行するための権限。"
     },
     "project-viewer": {
       "self": "プロジェクトビューア",

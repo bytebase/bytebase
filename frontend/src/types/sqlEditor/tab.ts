@@ -13,6 +13,8 @@ export type SQLEditorTabStatus =
 export type SQLEditorTabMode = "WORKSHEET" | "ADMIN";
 export const DEFAULT_SQL_EDITOR_TAB_MODE: SQLEditorTabMode = "WORKSHEET";
 
+export type SQLEditorQueryMode = "QUERY" | "EXECUTE";
+
 export type BatchQueryContext = {
   // databases is used to store the selected database names.
   // Format: instances/{instance}/databases/{database}
@@ -53,6 +55,7 @@ export type SQLEditorTab = {
     selection: MonacoSelection | null;
     advices: AdviceOption[];
   };
+  queryMode: SQLEditorQueryMode;
 };
 
 export type CoreSQLEditorTab = Pick<

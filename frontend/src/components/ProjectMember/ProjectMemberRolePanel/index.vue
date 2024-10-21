@@ -256,6 +256,10 @@ interface LocalState {
   showAddMemberPanel: boolean;
 }
 
+defineOptions({
+  name: "ProjectMemberRolePanel",
+});
+
 const props = defineProps<{
   project: ComposedProject;
   binding: MemberBinding;

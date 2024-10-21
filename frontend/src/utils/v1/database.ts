@@ -95,7 +95,10 @@ export const isDatabaseV1Queryable = (
     return true;
   }
 
-  if (hasWorkspacePermissionV2("bb.databases.query")) {
+  if (
+    hasWorkspacePermissionV2("bb.databases.query") ||
+    hasWorkspacePermissionV2("bb.databases.execute")
+  ) {
     return true;
   }
 
