@@ -316,6 +316,7 @@ export interface TableMetadata {
   partitions: TablePartitionMetadata[];
   /** The check_constraints is the list of check constraints in a table. */
   checkConstraints: CheckConstraintMetadata[];
+  owner: string;
 }
 
 export interface CheckConstraintMetadata {
@@ -1856,6 +1857,7 @@ function createBaseTableMetadata(): TableMetadata {
     foreignKeys: [],
     partitions: [],
     checkConstraints: [],
+    owner: "",
   };
 }
 
@@ -1908,6 +1910,9 @@ export const TableMetadata: MessageFns<TableMetadata> = {
     }
     for (const v of message.checkConstraints) {
       CheckConstraintMetadata.encode(v!, writer.uint32(130).fork()).join();
+    }
+    if (message.owner !== "") {
+      writer.uint32(146).string(message.owner);
     }
     return writer;
   },
@@ -2031,6 +2036,13 @@ export const TableMetadata: MessageFns<TableMetadata> = {
 
           message.checkConstraints.push(CheckConstraintMetadata.decode(reader, reader.uint32()));
           continue;
+        case 18:
+          if (tag !== 146) {
+            break;
+          }
+
+          message.owner = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2068,6 +2080,7 @@ export const TableMetadata: MessageFns<TableMetadata> = {
       checkConstraints: globalThis.Array.isArray(object?.checkConstraints)
         ? object.checkConstraints.map((e: any) => CheckConstraintMetadata.fromJSON(e))
         : [],
+      owner: isSet(object.owner) ? globalThis.String(object.owner) : "",
     };
   },
 
@@ -2121,6 +2134,9 @@ export const TableMetadata: MessageFns<TableMetadata> = {
     if (message.checkConstraints?.length) {
       obj.checkConstraints = message.checkConstraints.map((e) => CheckConstraintMetadata.toJSON(e));
     }
+    if (message.owner !== "") {
+      obj.owner = message.owner;
+    }
     return obj;
   },
 
@@ -2153,6 +2169,7 @@ export const TableMetadata: MessageFns<TableMetadata> = {
     message.foreignKeys = object.foreignKeys?.map((e) => ForeignKeyMetadata.fromPartial(e)) || [];
     message.partitions = object.partitions?.map((e) => TablePartitionMetadata.fromPartial(e)) || [];
     message.checkConstraints = object.checkConstraints?.map((e) => CheckConstraintMetadata.fromPartial(e)) || [];
+    message.owner = object.owner ?? "";
     return message;
   },
 };
