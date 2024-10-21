@@ -22,10 +22,15 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get database number")
 	}
+	version, err := d.getVersion(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get server version")
+	}
+	instance.Version = version
 	var databases []*storepb.DatabaseSchemaMetadata
 	for _, n := range dbNumber {
 		databases = append(databases, &storepb.DatabaseSchemaMetadata{
-			Name: strconv.Itoa(i),
+			Name: strconv.Itoa(n),
 		})
 	}
 	instance.Databases = databases
