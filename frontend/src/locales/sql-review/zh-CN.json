@@ -124,6 +124,14 @@
         }
       }
     },
+    "table-require-charset": {
+      "title": "需要指定字符集",
+      "description": "必须指定表格的字符集。建议错误级别：警告"
+    },
+    "table-require-collation": {
+      "title": "需要指定排序规则",
+      "description": "必须指定表的排序规则。建议错误级别：警告"
+    },
     "naming-fully-qualified": {
       "title": "完全限定对象名称",
       "description": "强制使用完全限定的对象名称。例如 “schema.table”，建议错误级别：警告"
@@ -359,6 +367,14 @@
     "column-default-disallow-volatile": {
       "title": "禁止在列上设置易变的默认值",
       "description": "易变函数（例如，clock_timestamp()）会在执行 ALTER TABLE 时更新每一行的值，可能导致更新操作时间过长。"
+    },
+    "column-require-charset": {
+      "title": "要求列设置字符集",
+      "description": "必须指定字符数据类型的列的字符集。建议错误级别：警告"
+    },
+    "column-require-collation": {
+      "title": "要求对列设置排序规则",
+      "description": "必须指定字符数据类型的列的排序规则。建议错误级别：警告"
     },
     "statement-select-no-select-all": {
       "title": "禁止使用 \"SELECT *\"",

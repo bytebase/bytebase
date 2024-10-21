@@ -124,6 +124,14 @@
         }
       }
     },
+    "table-require-charset": {
+      "title": "Require charset",
+      "description": "The charset of the table must be specified. Suggestion error level: Warning"
+    },
+    "table-require-collation": {
+      "title": "Require collation",
+      "description": "The collation of the table must be specified. Suggestion error level: Warning"
+    },
     "naming-fully-qualified": {
       "title": "Fully qualified object name",
       "description": "Enforce the use of fully qualified object names. For example, “schema.table”, suggested error level: Warning"
@@ -359,6 +367,14 @@
     "column-default-disallow-volatile": {
       "title": "Disallow setting volatile default value on columns",
       "description": "Volatile functions (e.g., clock_timestamp()) update each row with the value at the time of ALTER TABLE execution, potentially causing lengthy updates."
+    },
+    "column-require-charset": {
+      "title": "Require charset for text columns",
+      "description": "The charset of columns with text data types must be specified. Suggestion error level: Warning"
+    },
+    "column-require-collation": {
+      "title": "Require collation for text columns",
+      "description": "The collation of columns with text data types must be specified. Suggestion error level: Warning"
     },
     "statement-select-no-select-all": {
       "title": "Prohibit using \"SELECT *\"",

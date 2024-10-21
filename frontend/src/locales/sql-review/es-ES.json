@@ -124,6 +124,14 @@
         }
       }
     },
+    "table-require-charset": {
+      "title": "Requerir juego de caracteres",
+      "description": "Se debe especificar el conjunto de caracteres de la tabla. Nivel de error sugerido: Advertencia"
+    },
+    "table-require-collation": {
+      "title": "Requerir intercalación",
+      "description": "Se debe especificar la intercalación de la tabla. Nivel de error sugerido: Advertencia"
+    },
     "naming-fully-qualified": {
       "title": "Nombre de objeto completo",
       "description": "Forzar el uso de nombres de objetos completamente calificados. Por ejemplo, “schema.table”, nivel de error sugerido: Advertencia"
@@ -359,6 +367,14 @@
     "column-default-disallow-volatile": {
       "title": "No permitir establecer valores predeterminados volátiles en las columnas",
       "description": "Las funciones volátiles (por ejemplo, clock_timestamp()) actualizan cada fila con el valor en el momento de la ejecución de ALTER TABLE, lo que puede causar actualizaciones prolongadas."
+    },
+    "column-require-charset": {
+      "title": "Requerir juego de caracteres para columnas de texto",
+      "description": "Se debe especificar el conjunto de caracteres de las columnas con tipos de datos de texto. Nivel de error sugerido: Advertencia"
+    },
+    "column-require-collation": {
+      "title": "Requerir intercalación para columnas de texto",
+      "description": "Se debe especificar la intercalación de columnas con tipos de datos de texto. Nivel de error sugerido: Advertencia"
     },
     "statement-select-no-select-all": {
       "title": "Prohibir el uso de \"SELECT *\"",
