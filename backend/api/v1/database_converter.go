@@ -15,6 +15,7 @@ func convertStoreDatabaseMetadata(ctx context.Context, metadata *storepb.Databas
 	m := &v1pb.DatabaseMetadata{
 		CharacterSet: metadata.CharacterSet,
 		Collation:    metadata.Collation,
+		Owner:        metadata.Owner,
 	}
 	for _, schema := range metadata.Schemas {
 		if schema == nil {
@@ -24,7 +25,8 @@ func convertStoreDatabaseMetadata(ctx context.Context, metadata *storepb.Databas
 			continue
 		}
 		s := &v1pb.SchemaMetadata{
-			Name: schema.Name,
+			Name:  schema.Name,
+			Owner: schema.Owner,
 		}
 		for _, table := range schema.Tables {
 			if table == nil {
@@ -175,6 +177,7 @@ func convertStoreTableMetadata(table *storepb.TableMetadata) *v1pb.TableMetadata
 		Comment:       table.Comment,
 		UserComment:   table.UserComment,
 		Charset:       table.Charset,
+		Owner:         table.Owner,
 	}
 	for _, partition := range table.Partitions {
 		if partition == nil {
@@ -438,13 +441,15 @@ func convertV1DatabaseMetadata(ctx context.Context, metadata *v1pb.DatabaseMetad
 		Name:         metadata.Name,
 		CharacterSet: metadata.CharacterSet,
 		Collation:    metadata.Collation,
+		Owner:        metadata.Owner,
 	}
 	for _, schema := range metadata.Schemas {
 		if schema == nil {
 			continue
 		}
 		s := &storepb.SchemaMetadata{
-			Name: schema.Name,
+			Name:  schema.Name,
+			Owner: schema.Owner,
 		}
 		for _, table := range schema.Tables {
 			if table == nil {
@@ -606,6 +611,7 @@ func convertV1TableMetadata(table *v1pb.TableMetadata) *storepb.TableMetadata {
 		Comment:       table.Comment,
 		UserComment:   table.UserComment,
 		Charset:       table.Charset,
+		Owner:         table.Owner,
 	}
 	for _, column := range table.Columns {
 		if column == nil {

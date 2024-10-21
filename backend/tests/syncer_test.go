@@ -41,14 +41,17 @@ func TestSyncerForPostgreSQL(t *testing.T) {
 	)
 	wantDatabaseMetadata := &v1pb.DatabaseMetadata{
 		Name:         "instances/instance-syncer-postgres/databases/test_sync_postgresql_schema_db/metadata",
+		Owner:        "bytebase",
 		CharacterSet: "UTF8",
 		Collation:    "en_US.UTF-8",
 		Schemas: []*v1pb.SchemaMetadata{
 			{
-				Name: "public",
+				Name:  "public",
+				Owner: "pg_database_owner",
 				Tables: []*v1pb.TableMetadata{
 					{
-						Name: "TFK",
+						Name:  "TFK",
+						Owner: "bytebase",
 						Columns: []*v1pb.ColumnMetadata{
 							{
 								Name:     "a",
@@ -133,10 +136,12 @@ func TestSyncerForPostgreSQL(t *testing.T) {
 				},
 			},
 			{
-				Name: "schema1",
+				Name:  "schema1",
+				Owner: "bytebase",
 				Tables: []*v1pb.TableMetadata{
 					{
-						Name: "trd",
+						Name:  "trd",
+						Owner: "bytebase",
 						Columns: []*v1pb.ColumnMetadata{
 							{
 								Name:     "A",
