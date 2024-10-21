@@ -16,9 +16,6 @@ type querySpanExtractor struct {
 	ctx             context.Context
 	defaultDatabase string
 
-	// ctes is the list of common table expressions.
-	ctes []*base.PseudoTable
-
 	gCtx base.GetQuerySpanContext
 }
 
@@ -51,12 +48,19 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*ba
 		}, nil
 	}
 
+	// TODO(zp): statement type check.
+	querySpanResult, err := q.getQuerySpanResult(tree.(*parser.RootContext).Stmts().AllStmt()[0])
+	if err != nil {
+		return nil, err
+	}
+
 	return &base.QuerySpan{
+		Results:       querySpanResult,
 		SourceColumns: accessTables,
 	}, nil
 }
 
-func (q *querySpanExtractor) getQuerySpanResult(tree *parser.StmtContext) ([]base.QuerySpanResult, error) {
+func (q *querySpanExtractor) getQuerySpanResult(tree parser.IStmtContext) ([]base.QuerySpanResult, error) {
 	if tree.Query_statement() == nil {
 		return nil, errors.Errorf("unsupported non-query statement")
 	}
@@ -108,15 +112,36 @@ func (q *querySpanExtractor) extractTableSourceFromQueryPrimary(queryPrimary par
 
 func (q *querySpanExtractor) extractTableSourceFromSelect(select_ parser.ISelectContext) (base.TableSource, error) {
 	var fromFields []base.QuerySpanResult
+	var resultFields []base.QuerySpanResult
 	if select_.From_clause() != nil {
-
+		tableSource, err := q.extractTableSourceFromFromClause(select_.From_clause())
+		if err != nil {
+			return nil, err
+		}
+		fromFields = tableSource.GetQuerySpanResult()
 	}
+
+	itemList := select_.Select_clause().Select_list().AllSelect_list_item()
+	for _, item := range itemList {
+		// TODO(zp): handle other select item.
+		if item.Select_column_star() != nil {
+			resultFields = append(resultFields, fromFields...)
+		}
+	}
+	return &base.PseudoTable{
+		Name:    "",
+		Columns: resultFields,
+	}, nil
 }
 
-func (q *querySpanExtractor) extractTableSourceFromFromClause(fromClause parser.IFrom_clauseContext) (*base.PseudoTable, error) {
+func (q *querySpanExtractor) extractTableSourceFromFromClause(fromClause parser.IFrom_clauseContext) (base.TableSource, error) {
 	contents := fromClause.From_clause_contents()
-	// TODO(zp): handle suffix.
-
+	tableSource, err := q.extractTableSourceFromTablePrimary(contents.Table_primary())
+	if err != nil {
+		return nil, err
+	}
+	return tableSource, nil
+	// TODO(zp): handle suffix, alias.
 }
 
 func (q *querySpanExtractor) extractTableSourceFromTablePrimary(tablePrimary parser.ITable_primaryContext) (base.TableSource, error) {
