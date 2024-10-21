@@ -368,6 +368,14 @@
       "title": "Disallow setting volatile default value on columns",
       "description": "Volatile functions (e.g., clock_timestamp()) update each row with the value at the time of ALTER TABLE execution, potentially causing lengthy updates."
     },
+    "column-require-charset": {
+      "title": "Require charset for text columns",
+      "description": "The charset of columns with text data types must be specified. Suggestion error level: Warning"
+    },
+    "column-require-collation": {
+      "title": "Require collation for text columns",
+      "description": "The collation of columns with text data types must be specified. Suggestion error level: Warning"
+    },
     "statement-select-no-select-all": {
       "title": "Prohibit using \"SELECT *\"",
       "description": "SELECT * to fetch entire row data may cause unnecessary resource overhead and may also cause unexpected results in applications once the table adds or removes columns. Suggestion error level: Error"

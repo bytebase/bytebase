@@ -1840,6 +1840,12 @@
 - type: column.default-disallow-volatile
   category: COLUMN
   engine: POSTGRES
+- type: column.require-charset
+  category: COLUMN
+  engine: MYSQL
+- type: column.require-collation
+  category: COLUMN
+  engine: MYSQL
 - type: schema.backward-compatibility
   category: SCHEMA
   engine: MYSQL

@@ -368,6 +368,14 @@
       "title": "禁止在列上设置易变的默认值",
       "description": "易变函数（例如，clock_timestamp()）会在执行 ALTER TABLE 时更新每一行的值，可能导致更新操作时间过长。"
     },
+    "column-require-charset": {
+      "title": "要求列设置字符集",
+      "description": "必须指定字符数据类型的列的字符集。建议错误级别：警告"
+    },
+    "column-require-collation": {
+      "title": "要求对列设置排序规则",
+      "description": "必须指定字符数据类型的列的排序规则。建议错误级别：警告"
+    },
     "statement-select-no-select-all": {
       "title": "禁止使用 \"SELECT *\"",
       "description": "SELECT * 拉取整行数据可能造成不必要的资源开销，同时一旦表增减列，也可能造成应用出现不符合预期的结果。建议错误等级：错误"
