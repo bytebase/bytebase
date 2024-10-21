@@ -127,6 +127,8 @@ const (
 	TableDisallowDDL                  Code = 613
 	TableDisallowDML                  Code = 614
 	TableExceedLimitSize              Code = 615
+	NoCharset                         Code = 616
+	NoCollation                       Code = 617
 
 	// 701 ~ 799 database advisor error code.
 	DatabaseNotEmpty   Code = 701
@@ -350,6 +352,12 @@ const (
 
 	// MySQLTableFieldsMaximumCount is an advisor type for limiting MySQL table size.
 	MySQLTableLimitSize Type = "bb.plugin.advisor.mysql.table.limit-size"
+
+	// MySQLTableRequireCharset is an advisor type for MySQL table require charset.
+	MySQLTableRequireCharset Type = "bb.plugin.advisor.mysql.table.require-charset"
+
+	// MySQLTableRequireCollation is an advisor type for MySQL table require collation.
+	MySQLTableRequireCollation Type = "bb.plugin.advisor.mysql.table.require-collation"
 
 	// MySQLDatabaseAllowDropIfEmpty is an advisor type for MySQL only allow drop empty database.
 	MySQLDatabaseAllowDropIfEmpty Type = "bb.plugin.advisor.mysql.database.drop-empty-database"
