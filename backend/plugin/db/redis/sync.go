@@ -69,7 +69,7 @@ func (d *Driver) getDatabaseNumber(ctx context.Context) ([]int, error) {
 		}
 		return nil, errors.Wrapf(err, "failed to run `INFO KEYSPACE`")
 	}
-	//get the db number
+	// get the db number
 	re := regexp.MustCompile(`db(\d+)`)
 	matches := re.FindAllStringSubmatch(val, -1)
 	var dbs []int
