@@ -119,8 +119,6 @@ const (
 	SchemaRuleStatementMaximumStatementsInTransaction = "statement.maximum-statements-in-transaction"
 	// SchemaRuleStatementJoinStrictColumnAttrs enforce the join strict column attributes.
 	SchemaRuleStatementJoinStrictColumnAttrs = "statement.join-strict-column-attrs"
-	// SchemaRuleStatementDisallowMixDDLDML disallow mix DDL and DML on the same table.
-	SchemaRuleStatementDisallowMixDDLDML = "statement.disallow-mix-ddl-dml"
 	// SchemaRuleStatementDisallowMixInDDL disallows DML statements in DDL statements.
 	SchemaRuleStatementDisallowMixInDDL = "statement.disallow-mix-in-ddl"
 	// SchemaRuleStatementDisallowMixInDML disallows DDL statements in DML statements.
@@ -165,6 +163,10 @@ const (
 	SchemaRuleTableDisallowDML SQLReviewRuleType = "table.disallow-dml"
 	// SchemaRuleTableLimitSize  restrict access to tables based on size.
 	SchemaRuleTableLimitSize SQLReviewRuleType = "table.limit-size"
+	// SchemaRuleTableRequireCharset enforce the table charset.
+	SchemaRuleTableRequireCharset SQLReviewRuleType = "table.require-charset"
+	// SchemaRuleTableRequireCollation enforce the table collation.
+	SchemaRuleTableRequireCollation SQLReviewRuleType = "table.require-collation"
 	// SchemaRuleRequiredColumn enforce the required columns in each table.
 	SchemaRuleRequiredColumn SQLReviewRuleType = "column.required"
 	// SchemaRuleColumnNotNull enforce the columns cannot have NULL value.
@@ -1102,6 +1104,8 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 			return MySQLColumnCommentConvention, nil
 		case storepb.Engine_POSTGRES:
 			return PostgreSQLColumnCommentConvention, nil
+		case storepb.Engine_ORACLE, storepb.Engine_OCEANBASE_ORACLE:
+			return OracleColumnCommentConvention, nil
 		}
 	case SchemaRuleColumnAutoIncrementMustInteger:
 		switch engine {
@@ -1219,7 +1223,7 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 			return MySQLTableCommentConvention, nil
 		case storepb.Engine_POSTGRES:
 			return PostgreSQLTableCommentConvention, nil
-		case storepb.Engine_ORACLE, storepb.Engine_DM, storepb.Engine_OCEANBASE_ORACLE:
+		case storepb.Engine_ORACLE, storepb.Engine_OCEANBASE_ORACLE:
 			return OracleTableCommentConvention, nil
 		}
 	case SchemaRuleTableDisallowPartition:
@@ -1256,6 +1260,14 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 	case SchemaRuleTableLimitSize:
 		if engine == storepb.Engine_MYSQL {
 			return MySQLTableLimitSize, nil
+		}
+	case SchemaRuleTableRequireCharset:
+		if engine == storepb.Engine_MYSQL {
+			return MySQLTableRequireCharset, nil
+		}
+	case SchemaRuleTableRequireCollation:
+		if engine == storepb.Engine_MYSQL {
+			return MySQLTableRequireCollation, nil
 		}
 	case SchemaRuleMySQLEngine:
 		switch engine {
@@ -1316,17 +1328,6 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 	case SchemaRuleStatementDisallowUsingTemporary:
 		if engine == storepb.Engine_MYSQL {
 			return MySQLStatementDisallowUsingTemporary, nil
-		}
-	case SchemaRuleStatementDisallowMixDDLDML:
-		switch engine {
-		case storepb.Engine_MYSQL, storepb.Engine_TIDB:
-			return MySQLStatementDisallowMixDDLDML, nil
-		case storepb.Engine_POSTGRES:
-			return PostgreSQLStatementDisallowMixDDLDML, nil
-		case storepb.Engine_ORACLE, storepb.Engine_DM, storepb.Engine_OCEANBASE_ORACLE:
-			return OracleStatementDisallowMixDDLDML, nil
-		case storepb.Engine_MSSQL:
-			return MSSQLStatementDisallowMixDDLDML, nil
 		}
 	case SchemaRuleStatementDisallowMixInDDL:
 		switch engine {

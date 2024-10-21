@@ -262,6 +262,7 @@
   <GrantAccessDrawer
     v-if="state.showGrantAccessDrawer"
     :column-list="[props.column]"
+    :project-name="props.column.database.project"
     @dismiss="state.showGrantAccessDrawer = false"
   />
 </template>

@@ -30,8 +30,6 @@ export const SQL_EDITOR_SETTING_DATA_CLASSIFICATION_MODULE =
   "sql-editor.setting.data-classification";
 export const SQL_EDITOR_SETTING_DATA_MASKING_MODULE =
   "sql-editor.setting.data-masking";
-export const SQL_EDITOR_SETTING_ACCESS_CONTROL_MODULE =
-  "sql-editor.setting.access-control";
 export const SQL_EDITOR_SETTING_PROFILE_MODULE = "sql-editor.setting.profile";
 
 const sqlEditorRoutes: RouteRecordRaw[] = [
@@ -203,15 +201,6 @@ const sqlEditorRoutes: RouteRecordRaw[] = [
               requiredWorkspacePermissionList: () => ["bb.policies.get"],
             },
             component: () => import("../views/sql-editor/Setting/DataMasking"),
-          },
-          {
-            path: "data-access-control",
-            name: SQL_EDITOR_SETTING_ACCESS_CONTROL_MODULE,
-            meta: {
-              requiredWorkspacePermissionList: () => ["bb.policies.get"],
-            },
-            component: () =>
-              import("../views/sql-editor/Setting/AccessControl"),
           },
           {
             path: "profile",

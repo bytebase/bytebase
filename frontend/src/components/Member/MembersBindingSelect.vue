@@ -17,6 +17,16 @@
       </NRadioGroup>
       <slot name="suffix" />
     </div>
+    <i18n-t
+      v-if="projectName"
+      keypath="settings.members.select-in-project"
+      tag="span"
+      class="textinfolabel"
+    >
+      <template #project>
+        <span class="font-semibold">{{ projectName }}</span>
+      </template>
+    </i18n-t>
     <div :class="['w-full space-y-2', memberType !== 'USERS' ? 'hidden' : '']">
       <div class="flex items-center gap-x-1">
         {{ $t("settings.members.select-user", 2 /* multiply*/) }}
@@ -27,6 +37,7 @@
         :users="memberList"
         :multiple="true"
         :disabled="disabled"
+        :project-name="projectName"
         :include-all-users="includeAllUsers"
         :include-service-account="includeServiceAccount"
         :allowed-workspace-role-list="[]"
@@ -44,6 +55,7 @@
         :value="memberList"
         :disabled="disabled"
         :multiple="true"
+        :project-name="projectName"
         @update:value="onMemberListUpdate($event as string[])"
       />
     </div>
@@ -72,6 +84,7 @@ const props = withDefaults(
     // We don't support mixed data.
     value: string[];
     required: boolean;
+    projectName?: string;
     disabled?: boolean;
     allowChangeType?: boolean;
     includeAllUsers?: boolean;
@@ -79,6 +92,7 @@ const props = withDefaults(
   }>(),
   {
     disabled: false,
+    projectName: undefined,
     allowChangeType: true,
     includeAllUsers: false,
     includeServiceAccount: false,

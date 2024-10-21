@@ -71,7 +71,7 @@ func (l *TableRequirePKListener) generateAdvice() ([]*storepb.Advice, error) {
 				Status:  l.level,
 				Code:    advisor.TableNoPK.Int32(),
 				Title:   l.title,
-				Content: fmt.Sprintf("Table %s requires PRIMARY KEY.", normalizeTableName(tableName)),
+				Content: fmt.Sprintf("Table %s requires PRIMARY KEY.", normalizeIdentifierName(tableName)),
 				StartPosition: &storepb.Position{
 					Line: int32(l.tableLine[tableName]),
 				},

@@ -1032,6 +1032,7 @@ func filterDatabaseMetadataByEngine(metadata *storepb.DatabaseSchemaMetadata, en
 				filteredFunction := &storepb.FunctionMetadata{
 					Name:       function.Name,
 					Definition: function.Definition,
+					Signature:  function.Signature,
 				}
 				filteredSchema.Functions = append(filteredSchema.Functions, filteredFunction)
 			}

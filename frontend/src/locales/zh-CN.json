@@ -593,6 +593,7 @@
       "grant-access": "授予访问权限",
       "select-user": "选择用户 | 选择用户",
       "select-group": "选择组 | 选择组",
+      "select-in-project": "选择 {project} 内的用户或群组",
       "select-role": "选择角色 | 选择角色",
       "assign-role": "分配角色 | 分配角色"
     },
@@ -1925,7 +1926,16 @@
     "foreign-key": {
       "reference": "引用"
     },
-    "create-target-database-or-schema-for-backup": "请先创建备份的目标数据库或 Schema"
+    "create-target-database-or-schema-for-backup": "请先创建备份的目标数据库或 Schema",
+    "revision": {
+      "self": "修改",
+      "applied-at": "应用时间",
+      "filename": "文件名",
+      "delete-confirm-dialog": {
+        "title": "确定要删除吗？",
+        "content": "这将删除这些已应用的修改，但不会影响数据库 Schema。此操作无法撤消。"
+      }
+    }
   },
   "repository": {
     "our-webhook-link": "Bytebase 创建的 webhook 可以在 {webhookLink} 中找到。",
@@ -3705,6 +3715,11 @@
       "optional-upload-sql-or-zip-file": "（可选）上传 .sql 或 .zip 文件"
     },
     "change-type": "更改类型"
+  },
+  "release": {
+    "self": "发布",
+    "releases": "发布",
+    "files": "文件"
   },
   "export-data": {
     "export-rows": "导出行数",

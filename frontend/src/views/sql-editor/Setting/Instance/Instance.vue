@@ -1,6 +1,8 @@
 <template>
-  <div class="w-full flex flex-col gap-4 py-4 px-2 overflow-y-auto">
-    <div class="grid grid-cols-3 gap-x-2 gap-y-4 md:inline-flex items-stretch">
+  <div class="w-full flex flex-col gap-4 py-4 overflow-y-auto">
+    <div
+      class="grid grid-cols-3 px-4 gap-x-2 gap-y-4 md:inline-flex items-stretch"
+    >
       <NButton @click="handleClickAddInstance">
         <template #icon>
           <PlusIcon class="h-4 w-4" />
@@ -19,6 +21,7 @@
     <AdvancedSearch
       v-model:params="state.params"
       :autofocus="false"
+      class="px-4"
       :placeholder="$t('instance.filter-instance-name')"
       :scope-options="scopeOptions"
     />

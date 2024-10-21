@@ -13,7 +13,6 @@ import { useRoute, type RouteRecordRaw } from "vue-router";
 import type { SidebarItem } from "@/components/CommonSidebar.vue";
 import { DatabaseIcon } from "@/components/Icon";
 import sqlEditorRoutes, {
-  SQL_EDITOR_SETTING_ACCESS_CONTROL_MODULE,
   SQL_EDITOR_SETTING_AUDIT_LOG_MODULE,
   SQL_EDITOR_SETTING_DATA_CLASSIFICATION_MODULE,
   SQL_EDITOR_SETTING_DATA_MASKING_MODULE,
@@ -227,11 +226,6 @@ export const useSidebarItems = (ignoreModeCheck?: MaybeRef<boolean>) => {
           {
             title: t("settings.sidebar.data-masking"),
             name: SQL_EDITOR_SETTING_DATA_MASKING_MODULE,
-            type: "route",
-          },
-          {
-            title: t("settings.sidebar.access-control"),
-            name: SQL_EDITOR_SETTING_ACCESS_CONTROL_MODULE,
             type: "route",
           },
         ],

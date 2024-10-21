@@ -266,6 +266,12 @@
         type: NUMBER
         default: 10000000
   engine: MYSQL
+- type: table.require-charset
+  category: TABLE
+  engine: MYSQL
+- type: table.require-collation
+  category: TABLE
+  engine: MYSQL
 - type: statement.select.no-select-all
   category: STATEMENT
   engine: MYSQL
@@ -660,21 +666,6 @@
 - type: statement.join-strict-column-attrs
   category: STATEMENT
   engine: MYSQL
-- type: statement.disallow-mix-ddl-dml
-  category: STATEMENT
-  engine: MYSQL
-- type: statement.disallow-mix-ddl-dml
-  category: STATEMENT
-  engine: POSTGRES
-- type: statement.disallow-mix-ddl-dml
-  category: STATEMENT
-  engine: TIDB
-- type: statement.disallow-mix-ddl-dml
-  category: STATEMENT
-  engine: ORACLE
-- type: statement.disallow-mix-ddl-dml
-  category: STATEMENT
-  engine: MSSQL
 - type: statement.disallow-mix-in-ddl
   category: STATEMENT
   engine: MYSQL
@@ -1537,6 +1528,38 @@
         type: NUMBER
         default: 64
   engine: POSTGRES
+- type: column.comment
+  category: COLUMN
+  componentList:
+    - key: required
+      payload:
+        type: BOOLEAN
+        default: false
+    - key: requiredClassification
+      payload:
+        type: BOOLEAN
+        default: false
+    - key: maxLength
+      payload:
+        type: NUMBER
+        default: 64
+  engine: ORACLE
+- type: column.comment
+  category: COLUMN
+  componentList:
+    - key: required
+      payload:
+        type: BOOLEAN
+        default: false
+    - key: requiredClassification
+      payload:
+        type: BOOLEAN
+        default: false
+    - key: maxLength
+      payload:
+        type: NUMBER
+        default: 64
+  engine: OCEANBASE_ORACLE
 - type: column.auto-increment-must-integer
   category: COLUMN
   engine: MYSQL

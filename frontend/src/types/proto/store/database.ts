@@ -612,6 +612,8 @@ export interface FunctionMetadata {
   name: string;
   /** The definition is the definition of a function. */
   definition: string;
+  /** The signature is the name with the number and type of input arguments the function takes. */
+  signature: string;
 }
 
 /** ProcedureMetadata is the metadata for procedures. */
@@ -3096,7 +3098,7 @@ export const MaterializedViewMetadata: MessageFns<MaterializedViewMetadata> = {
 };
 
 function createBaseFunctionMetadata(): FunctionMetadata {
-  return { name: "", definition: "" };
+  return { name: "", definition: "", signature: "" };
 }
 
 export const FunctionMetadata: MessageFns<FunctionMetadata> = {
@@ -3106,6 +3108,9 @@ export const FunctionMetadata: MessageFns<FunctionMetadata> = {
     }
     if (message.definition !== "") {
       writer.uint32(18).string(message.definition);
+    }
+    if (message.signature !== "") {
+      writer.uint32(26).string(message.signature);
     }
     return writer;
   },
@@ -3131,6 +3136,13 @@ export const FunctionMetadata: MessageFns<FunctionMetadata> = {
 
           message.definition = reader.string();
           continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.signature = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -3144,6 +3156,7 @@ export const FunctionMetadata: MessageFns<FunctionMetadata> = {
     return {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
       definition: isSet(object.definition) ? globalThis.String(object.definition) : "",
+      signature: isSet(object.signature) ? globalThis.String(object.signature) : "",
     };
   },
 
@@ -3155,6 +3168,9 @@ export const FunctionMetadata: MessageFns<FunctionMetadata> = {
     if (message.definition !== "") {
       obj.definition = message.definition;
     }
+    if (message.signature !== "") {
+      obj.signature = message.signature;
+    }
     return obj;
   },
 
@@ -3165,6 +3181,7 @@ export const FunctionMetadata: MessageFns<FunctionMetadata> = {
     const message = createBaseFunctionMetadata();
     message.name = object.name ?? "";
     message.definition = object.definition ?? "";
+    message.signature = object.signature ?? "";
     return message;
   },
 };
