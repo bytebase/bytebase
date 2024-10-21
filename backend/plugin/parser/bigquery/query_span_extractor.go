@@ -119,11 +119,92 @@ func (q *querySpanExtractor) extractTableSourceFromSelect(selectCtx parser.ISele
 		if item.Select_column_star() != nil {
 			resultFields = append(resultFields, fromFields...)
 		}
+
 	}
 	return &base.PseudoTable{
 		Name:    "",
 		Columns: resultFields,
 	}, nil
+}
+
+func (q *querySpanExtractor) extractSourceColumnSetFromExpr(ctx antlr.ParserRuleContext) (base.SourceColumnSet, error) {
+	if ctx == nil {
+		return make(base.SourceColumnSet), nil
+	}
+
+	// BigQuery support project the field from json, for example, SELECT a.b.c FROM ..., the AST looks like:
+	// /
+	// └── expression
+	//     └── expression_higher_prec_than_and
+	//         ├── expression_higher_prec_than_and
+	//         │   ├── expression_higher_prec_than_and
+	//         │   │   ├── expression_higher_prec_than_and
+	//         │   │   ├── DOT_SYMBOL
+	//         │   │   └── identifier(a)
+	//         │   ├── DOT_SYMBOL
+	//         │   └── identifier(b)
+	//         ├── DOT_SYMBOL
+	//         └── identifier(c)
+	// We use DFS algorithm here to find the tallest [expression_higher_prec_than_and DOT_SYMBOL identifier] subtree and
+	// treat it as identifier.
+	return nil, nil
+}
+
+func getPossibleColumnResources(ctx antlr.ParserRuleContext) [][]string {
+	// We find all the subtree which root is expression_higher_prec_than_and and all the terminal node is identifier and dot symbol.
+	var result [][]string
+
+	path := make([]antlr.Tree, 0)
+	path = append(path, ctx)
+	for len(path) > 0 {
+		appendChild := true
+		root := path[len(path)-1]
+		path = path[:len(path)-1]
+		if childRuleCtx, ok := root.(antlr.ParserRuleContext); ok {
+			if exprHigherPrecThanAnd, ok := childRuleCtx.(*parser.ExpressionContext); ok {
+				subResult := getAllChildTerminalNode(exprHigherPrecThanAnd)
+				var subResultText []string
+				for _, terminalNode := range subResult {
+					if terminalNode.GetSymbol().GetTokenType() == parser.GoogleSQLParserIDENTIFIER {
+						subResultText = append(subResultText, unquoteIdentifierByText(terminalNode.GetText()))
+						continue
+					}
+					if terminalNode.GetSymbol().GetTokenType() == parser.GoogleSQLParserDOT_SYMBOL {
+						continue
+					}
+					subResultText = []string{}
+					break
+				}
+				if len(subResultText) > 0 {
+					result = append(result, subResultText)
+					appendChild = false
+				}
+			}
+		}
+
+		if appendChild {
+			children := root.GetChildren()
+			path = append(path, children...)
+		}
+	}
+
+	return result
+}
+
+func getAllChildTerminalNode(ctx antlr.ParserRuleContext) []antlr.TerminalNode {
+	allChilds := ctx.GetChildren()
+	var result []antlr.TerminalNode
+	for _, child := range allChilds {
+		if childTerminal, ok := child.(antlr.TerminalNode); ok {
+			result = append(result, childTerminal)
+			continue
+		}
+		if childRuleCtx, ok := child.(antlr.ParserRuleContext); ok {
+			subResult := getAllChildTerminalNode(childRuleCtx)
+			result = append(result, subResult...)
+		}
+	}
+	return result
 }
 
 func (q *querySpanExtractor) extractTableSourceFromFromClause(fromClause parser.IFrom_clauseContext) (base.TableSource, error) {
@@ -168,9 +249,9 @@ func (q *querySpanExtractor) extractTableSourceFromTablePathExpression(tablePath
 				// REFACTOR(zp): refactor the code to extract table name and dataset name.
 				allIdentifiers := maybeDashedPathExpr.Path_expression().AllIdentifier()
 				if len(allIdentifiers) > 0 {
-					tableName = unquoteIdentifier(allIdentifiers[len(allIdentifiers)-1])
+					tableName = unquoteIdentifierByRule(allIdentifiers[len(allIdentifiers)-1])
 					if len(allIdentifiers) > 1 {
-						datasetName = unquoteIdentifier(allIdentifiers[len(allIdentifiers)-2])
+						datasetName = unquoteIdentifierByRule(allIdentifiers[len(allIdentifiers)-2])
 					}
 				}
 			}
@@ -285,11 +366,11 @@ func (l *accessTableListener) EnterTable_path_expression(ctx *parser.Table_path_
 		Database: l.currentDatabase,
 	}
 	lastIdentifier := allIdentifiers[len(allIdentifiers)-1]
-	tableName := unquoteIdentifier(lastIdentifier)
+	tableName := unquoteIdentifierByRule(lastIdentifier)
 	columnSource.Table = tableName
 
 	if len(allIdentifiers) >= 2 {
-		identifier := unquoteIdentifier(allIdentifiers[len(allIdentifiers)-2])
+		identifier := unquoteIdentifierByRule(allIdentifiers[len(allIdentifiers)-2])
 		if strings.EqualFold(identifier, "INFORMATION_SCHEMA") {
 			columnSource.Schema = identifier
 		} else {
@@ -300,11 +381,18 @@ func (l *accessTableListener) EnterTable_path_expression(ctx *parser.Table_path_
 	l.sourceColumnSet[columnSource] = true
 }
 
-func unquoteIdentifier(identifier parser.IIdentifierContext) string {
+func unquoteIdentifierByRule(identifier parser.IIdentifierContext) string {
 	if len(identifier.GetText()) >= 3 && strings.HasPrefix(identifier.GetText(), "`") && strings.HasSuffix(identifier.GetText(), "`") {
 		return identifier.GetText()[1 : len(identifier.GetText())-1]
 	}
 	return identifier.GetText()
+}
+
+func unquoteIdentifierByText(identifier string) string {
+	if len(identifier) >= 3 && strings.HasPrefix(identifier, "`") && strings.HasSuffix(identifier, "`") {
+		return identifier[1 : len(identifier)-1]
+	}
+	return identifier
 }
 
 func isMixedQuery(m base.SourceColumnSet) (bool, bool) {
