@@ -286,7 +286,7 @@ func (driver *Driver) GetDB() *sql.DB {
 // getDatabases gets all databases of an instance.
 func (driver *Driver) getDatabases(ctx context.Context) ([]*storepb.DatabaseSchemaMetadata, error) {
 	var databases []*storepb.DatabaseSchemaMetadata
-	rows, err := driver.db.QueryContext(ctx, "SELECT datname, pg_encoding_to_char(encoding), datcollate FROM pg_database;")
+	rows, err := driver.db.QueryContext(ctx, "SELECT datname, pg_encoding_to_char(encoding), datcollate, pg_catalog.pg_get_userbyid(datdba) as db_owner FROM pg_database;")
 	if err != nil {
 		return nil, err
 	}
@@ -294,7 +294,7 @@ func (driver *Driver) getDatabases(ctx context.Context) ([]*storepb.DatabaseSche
 
 	for rows.Next() {
 		database := &storepb.DatabaseSchemaMetadata{}
-		if err := rows.Scan(&database.Name, &database.CharacterSet, &database.Collation); err != nil {
+		if err := rows.Scan(&database.Name, &database.CharacterSet, &database.Collation, &database.Owner); err != nil {
 			return nil, err
 		}
 		databases = append(databases, database)

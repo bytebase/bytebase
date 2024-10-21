@@ -207,6 +207,8 @@ message TableMetadata {
 
   // The check_constraints is the list of check constraints in a table.
   repeated CheckConstraintMetadata check_constraints = 16;
+
+  string owner = 18;
 }
 
 message CheckConstraintMetadata {
