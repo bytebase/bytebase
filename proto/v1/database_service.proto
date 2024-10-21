@@ -447,6 +447,8 @@ message DatabaseMetadata {
 
   // The schema_configs is the list of configs for schemas in a database.
   repeated SchemaConfig schema_configs = 6;
+
+  string owner = 7;
 }
 
 // SchemaMetadata is the metadata for schemas.
@@ -482,6 +484,8 @@ message SchemaMetadata {
 
   // The packages is the list of packages in a schema.
   repeated PackageMetadata packages = 10;
+
+  string owner = 11;
 }
 
 message ExternalTableMetadata {
