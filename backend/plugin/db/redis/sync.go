@@ -62,7 +62,7 @@ func (d *Driver) getDatabaseNumber(ctx context.Context) ([]int, error) {
 		if strings.Contains(err.Error(), "unknown command") {
 			return []int{0}, nil
 		}
-		return []int{}, err
+		return nil, errors.Wrapf(err, "failed to run `INFO KEYSPACE`")
 	}
 	//get the db number
 	re := regexp.MustCompile(`db(\d+)`)
