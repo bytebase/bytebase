@@ -308,6 +308,12 @@ const (
 	// MySQLColumnMaximumVarcharLength is an advisor type for MySQL maximum varchar length.
 	MySQLColumnMaximumVarcharLength Type = "bb.plugin.advisor.mysql.column.maximum-varchar-length"
 
+	// MySQLColumnRequireCharset is an advisor type for MySQL column require charset.
+	MySQLColumnRequireCharset Type = "bb.plugin.advisor.mysql.column.require-charset"
+
+	// MySQLColumnRequireCollation is an advisor type for MySQL column require collation.
+	MySQLColumnRequireCollation Type = "bb.plugin.advisor.mysql.column.require-collation"
+
 	// MySQLAutoIncrementColumnInitialValue is an advisor type for MySQL auto-increment column initial value.
 	MySQLAutoIncrementColumnInitialValue Type = "bb.plugin.advisor.mysql.column.auto-increment-initial-value"
 

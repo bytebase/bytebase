@@ -207,6 +207,10 @@ const (
 	SchemaRuleColumnDefaultDisallowVolatile SQLReviewRuleType = "column.default-disallow-volatile"
 	// SchemaRuleAddNotNullColumnRequireDefault enforce the adding not null column requires default.
 	SchemaRuleAddNotNullColumnRequireDefault SQLReviewRuleType = "column.add-not-null-require-default"
+	// SchemaRuleColumnRequireCharset enforce the column require charset.
+	SchemaRuleColumnRequireCharset SQLReviewRuleType = "column.require-charset"
+	// SchemaRuleColumnRequireCollation enforce the column require collation.
+	SchemaRuleColumnRequireCollation SQLReviewRuleType = "column.require-collation"
 
 	// SchemaRuleSchemaBackwardCompatibility enforce the MySQL and TiDB support check whether the schema change is backward compatible.
 	SchemaRuleSchemaBackwardCompatibility SQLReviewRuleType = "schema.backward-compatibility"
@@ -1179,6 +1183,14 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 	case SchemaRuleAddNotNullColumnRequireDefault:
 		if engine == storepb.Engine_ORACLE {
 			return OracleAddNotNullColumnRequireDefault, nil
+		}
+	case SchemaRuleColumnRequireCharset:
+		if engine == storepb.Engine_MYSQL {
+			return MySQLColumnRequireCharset, nil
+		}
+	case SchemaRuleColumnRequireCollation:
+		if engine == storepb.Engine_MYSQL {
+			return MySQLColumnRequireCollation, nil
 		}
 	case SchemaRuleTableRequirePK:
 		switch engine {
