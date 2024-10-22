@@ -202,6 +202,7 @@ const (
 
 	// 2001 ~ 2099 builtin error code.
 	BuiltinPriorBackupCheck Code = 2001
+	BuiltinObjectOwnerCheck Code = 2002
 )
 
 // Int returns the int type of code.
