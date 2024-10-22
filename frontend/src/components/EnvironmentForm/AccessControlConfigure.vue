@@ -61,7 +61,13 @@
       </div>
     </div>
   </div>
-  <div v-if="databaseChangeMode === 'PIPELINE'" class="flex flex-col gap-y-2">
+  <div
+    v-if="
+      databaseChangeMode === 'PIPELINE' &&
+      resource.startsWith(environmentNamePrefix)
+    "
+    class="flex flex-col gap-y-2"
+  >
     <div class="textlabel flex items-center space-x-2">
       <label>
         {{ $t("environment.statement-execution.title") }}
@@ -112,6 +118,7 @@ import {
   usePolicyV1Store,
   useAppFeature,
 } from "@/store";
+import { environmentNamePrefix } from "@/store/modules/v1/common";
 import {
   DataSourceQueryPolicy,
   DataSourceQueryPolicy_Restriction,
