@@ -2204,6 +2204,10 @@
       "update-success": "GitOps 连接已更新",
       "create-success": "GitOps 连接已创建",
       "delete-success": "GitOps 连接已删除"
+    },
+    "masking-access": {
+      "self": "数据访问",
+      "grant-access": "授予访问权限"
     }
   },
   "gitops": {

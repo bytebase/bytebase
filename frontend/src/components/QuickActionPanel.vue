@@ -97,6 +97,7 @@ import {
   ChevronsDownIcon,
   FileSearchIcon,
   FileDownIcon,
+  ShieldCheckIcon,
 } from "lucide-vue-next";
 import { NButton, NEllipsis } from "naive-ui";
 import type { PropType, VNode } from "vue";
@@ -168,6 +169,10 @@ const databaseChangeMode = useAppFeature("bb.feature.database-change-mode");
 
 const hasDBAWorkflowFeature = computed(() => {
   return subscriptionStore.hasFeature("bb.feature.dba-workflow");
+});
+
+const hasSensitiveDataFeature = computed(() => {
+  return subscriptionStore.hasFeature("bb.feature.sensitive-data");
 });
 
 const state = reactive<LocalState>({
@@ -306,6 +311,14 @@ const availableQuickActionList = computed((): QuickAction[] => {
       action: () =>
         (state.quickActionType = "quickaction.bb.issue.grant.request.exporter"),
       icon: h(FileDownIcon),
+    },
+    {
+      type: "quickaction.bb.database.masking-access",
+      title: t("project.masking-access.grant-access"),
+      hide: !hasSensitiveDataFeature.value,
+      action: () =>
+        (state.quickActionType = "quickaction.bb.database.masking-access"),
+      icon: h(ShieldCheckIcon),
     },
   ];
 
