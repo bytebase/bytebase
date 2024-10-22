@@ -1,3 +1,51 @@
+- description: Simple projecter
+  statement: SELECT ID, NAME FROM people;
+  defaultDatabase: ds1
+  metadata: |-
+    {
+      "name":  "ds1",
+      "schemas":  [
+        {
+          "name": "",
+          "tables":  [
+            {
+              "name":  "people",
+              "columns":  [
+                {
+                  "name":  "ID"
+                },
+                {
+                  "name":  "NAME"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    results:
+      - name: ID
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: people
+            column: ID
+      - name: NAME
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: people
+            column: NAME
+    sourcecolumns:
+      - server: ""
+        database: ds1
+        schema: ""
+        table: people
+        column: ""
+
 - description: Simple select asterisk statement
   statement: SELECT * FROM people;
   defaultDatabase: ds1
@@ -25,23 +73,23 @@
     }
   querySpan:
     results:
-        - name: ID
-          sourcecolumns:
-            - server: ""
-              database: ds1
-              schema: ""
-              table: people
-              column: ID
-        - name: NAME
-          sourcecolumns:
-            - server: ""
-              database: ds1
-              schema: ""
-              table: people
-              column: NAME
+      - name: ID
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: people
+            column: ID
+      - name: NAME
+        sourcecolumns:
+          - server: ""
+            database: ds1
+            schema: ""
+            table: people
+            column: NAME
     sourcecolumns:
-        - server: ""
-          database: ds1
-          schema: ""
-          table: people
-          column: ""
+      - server: ""
+        database: ds1
+        schema: ""
+        table: people
+        column: ""
