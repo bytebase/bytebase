@@ -30,13 +30,15 @@ defineProps<{
   disabled?: boolean;
 }>();
 
+const emit = defineEmits<{
+  (event: "upload", content: string): void;
+}>();
+
 const { currentTab } = storeToRefs(useSQLEditorTabStore());
 
 const handleUploadSQL = (content: string) => {
   const tab = currentTab.value;
   if (!tab) return;
-  if (tab.statement.trim() === "") {
-    tab.statement = content;
-  } else tab.statement = tab.statement + "\n" + content;
+  emit("upload", content);
 };
 </script>
