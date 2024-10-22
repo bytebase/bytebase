@@ -42,6 +42,7 @@ import type { DatabaseSelectState } from "./types";
 
 const props = defineProps<{
   project: ComposedProject;
+  databaseSelectState?: DatabaseSelectState;
 }>();
 
 const emit = defineEmits<{
@@ -51,10 +52,12 @@ const emit = defineEmits<{
 
 const databaseStore = useDatabaseV1Store();
 
-const state = reactive<DatabaseSelectState>({
-  changeSource: "DATABASE",
-  selectedDatabaseNameList: [],
-});
+const state = reactive<DatabaseSelectState>(
+  props.databaseSelectState || {
+    changeSource: "DATABASE",
+    selectedDatabaseNameList: [],
+  }
+);
 
 useDatabaseV1List(props.project.name);
 const { dbGroupList } = useDBGroupListByProject(props.project.name);

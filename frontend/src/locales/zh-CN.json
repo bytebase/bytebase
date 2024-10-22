@@ -3724,7 +3724,13 @@
   "release": {
     "self": "发布",
     "releases": "发布",
-    "files": "文件"
+    "files": "文件",
+    "tasks-to-apply": "待应用的任务",
+    "out-of-order-files": "无序文件",
+    "applied-but-modifed-files": "已应用但已修改的文件",
+    "no-tasks-to-apply": {
+      "self": "没有可应用的任务"
+    }
   },
   "export-data": {
     "export-rows": "导出行数",

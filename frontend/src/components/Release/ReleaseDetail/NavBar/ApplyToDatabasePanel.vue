@@ -2,20 +2,27 @@
   <Drawer v-bind="$attrs" @close="emit('close')">
     <DrawerContent :title="$t('changelist.apply-to-database')">
       <template #default>
-        <div
-          class="w-[calc(100vw-8rem)] lg:w-[60rem] max-w-[calc(100vw-8rem)] overflow-x-auto"
-        >
-          <DatabaseAndGroupSelector
-            :project="project"
-            @update="handleTargetChange"
-          />
-          <div
-            v-if="state.isGenerating"
-            v-zindexable="{ enabled: true }"
-            class="absolute inset-0 flex flex-col items-center justify-center bg-white/50"
+        <div class="w-[calc(100vw-8rem)] lg:w-[60rem] max-w-[calc(100vw-8rem)]">
+          <StepTab
+            :step-list="stepList"
+            :current-index="state.currentStep"
+            :show-footer="false"
           >
-            <BBSpin />
-          </div>
+            <template #0>
+              <DatabaseAndGroupSelector
+                :project="project"
+                :database-select-state="state.targetSelectState"
+                @update="handleTargetChange"
+              />
+            </template>
+            <template #1>
+              <div v-if="state.previewPlanResult" class="space-y-4">
+                <PreviewPlanDetail
+                  :preview-plan-result="state.previewPlanResult"
+                />
+              </div>
+            </template>
+          </StepTab>
         </div>
       </template>
 
@@ -24,6 +31,7 @@
           <div>
             <div
               v-if="
+                state.currentStep === 0 &&
                 state.targetSelectState?.changeSource === 'DATABASE' &&
                 state.targetSelectState?.selectedDatabaseNameList.length > 0
               "
@@ -38,8 +46,15 @@
           </div>
 
           <div class="flex items-center justify-end gap-x-3">
-            <NButton @click.prevent="emit('close')">
-              {{ $t("common.cancel") }}
+            <NButton @click.prevent="handleCancelClick">
+              <template v-if="state.currentStep === 1" #icon>
+                <Undo2Icon class="w-4 h-auto" />
+              </template>
+              {{
+                state.currentStep === 0
+                  ? $t("common.cancel")
+                  : $t("common.back")
+              }}
             </NButton>
 
             <ErrorTipsButton
@@ -60,49 +75,85 @@
 </template>
 
 <script lang="ts" setup>
+import { Undo2Icon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
-import { zindexable as vZindexable } from "vdirs";
 import { computed, reactive } from "vue";
+import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import { BBSpin } from "@/bbkit";
 import DatabaseAndGroupSelector, {
   type DatabaseSelectState,
 } from "@/components/DatabaseAndGroupSelector/";
 import { Drawer, DrawerContent, ErrorTipsButton } from "@/components/v2";
+import { StepTab } from "@/components/v2";
+import { planServiceClient } from "@/grpcweb";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
 import { useDatabaseV1Store, useDBGroupStore } from "@/store";
 import { DatabaseGroup } from "@/types/proto/v1/database_group_service";
-import { extractProjectResourceName, generateIssueTitle } from "@/utils";
+import {
+  PreviewPlanResponse,
+  type Plan_Spec,
+} from "@/types/proto/v1/plan_service";
+import {
+  extractProjectResourceName,
+  generateIssueTitle,
+  issueV1Slug,
+} from "@/utils";
 import { useReleaseDetailContext } from "../context";
+import PreviewPlanDetail from "./PreviewPlanDetail.vue";
+import { createIssueFromPlan } from "./utils";
 
 const emit = defineEmits<{
   (event: "close"): void;
 }>();
 
 type LocalState = {
-  isGenerating: boolean;
+  currentStep: number;
   targetSelectState?: DatabaseSelectState;
+  previewPlanResult?: PreviewPlanResponse;
 };
 
+const { t } = useI18n();
 const router = useRouter();
 const databaseStore = useDatabaseV1Store();
 const dbGroupStore = useDBGroupStore();
 const { release, project } = useReleaseDetailContext();
 
 const state = reactive<LocalState>({
-  isGenerating: false,
+  currentStep: 0,
+});
+
+const stepList = computed(() => [
+  { title: t("database.sync-schema.select-target-databases") },
+  { title: t("common.preview") },
+]);
+
+const flattenSpecList = computed((): Plan_Spec[] => {
+  return (
+    state.previewPlanResult?.plan?.steps.flatMap((step) => {
+      return step.specs;
+    }) || []
+  );
 });
 
 const nextButtonErrors = computed(() => {
   const errors: string[] = [];
-  if (
-    !state.targetSelectState ||
-    (state.targetSelectState.changeSource === "DATABASE" &&
-      state.targetSelectState.selectedDatabaseNameList.length === 0) ||
-    (state.targetSelectState.changeSource === "GROUP" &&
-      !state.targetSelectState.selectedDatabaseGroup)
-  ) {
-    errors.push("Please select at least one database");
+  if (state.currentStep === 0) {
+    if (
+      !state.targetSelectState ||
+      (state.targetSelectState.changeSource === "DATABASE" &&
+        state.targetSelectState.selectedDatabaseNameList.length === 0) ||
+      (state.targetSelectState.changeSource === "GROUP" &&
+        !state.targetSelectState.selectedDatabaseGroup)
+    ) {
+      errors.push("Please select at least one database");
+    }
+  } else if (state.currentStep === 1) {
+    if (!state.previewPlanResult) {
+      errors.push("Failed to preview plan");
+    }
+    if (flattenSpecList.value.length === 0) {
+      errors.push("No plan to apply");
+    }
   }
   return errors;
 });
@@ -111,13 +162,36 @@ const handleTargetChange = (databaseSelectState: DatabaseSelectState) => {
   state.targetSelectState = databaseSelectState;
 };
 
-const handleClickNext = async () => {
-  if (!state.targetSelectState) {
-    return;
+const handleCancelClick = () => {
+  if (state.currentStep === 0) {
+    emit("close");
+  } else {
+    state.currentStep = 0;
+    state.previewPlanResult = undefined;
   }
+};
 
-  state.isGenerating = true;
-  try {
+const handleClickNext = async () => {
+  if (state.currentStep === 0) {
+    if (!state.targetSelectState) {
+      return;
+    }
+
+    const resp = await planServiceClient.previewPlan({
+      project: project.value.name,
+      release: release.value.name,
+      targets:
+        state.targetSelectState.changeSource === "DATABASE"
+          ? state.targetSelectState.selectedDatabaseNameList
+          : [state.targetSelectState.selectedDatabaseGroup!],
+      allowOutOfOrder: true,
+    });
+    state.previewPlanResult = resp;
+    state.currentStep = 1;
+  } else if (state.currentStep === 1) {
+    if (!state.targetSelectState || !state.previewPlanResult) {
+      return;
+    }
     const databaseList = state.targetSelectState.selectedDatabaseNameList.map(
       (name) => databaseStore.getDatabaseByName(name)
     );
@@ -126,34 +200,28 @@ const handleClickNext = async () => {
         state.targetSelectState.selectedDatabaseGroup || ""
       ),
     });
-    const changeType = "bb.issue.database.schema.update";
-    const query: Record<string, any> = {
-      template: changeType,
-      name: generateIssueTitle(
-        changeType,
+    const createdPlan = await planServiceClient.createPlan({
+      parent: project.value.name,
+      plan: state.previewPlanResult.plan,
+    });
+    const createdIssue = await createIssueFromPlan(project.value.name, {
+      ...createdPlan,
+      // Override title and description.
+      title: generateIssueTitle(
+        "bb.issue.database.schema.update",
         state.targetSelectState.changeSource === "DATABASE"
           ? databaseList.map((db) => db.databaseName)
           : [databaseGroup?.databasePlaceholder]
       ),
-      release: release.value.name,
       description: `Apply release "${release.value.title}"`,
-    };
-    if (state.targetSelectState.changeSource === "DATABASE") {
-      query.databaseList = databaseList.map((db) => db.name).join(",");
-    } else {
-      query.databaseGroupName = state.targetSelectState.selectedDatabaseGroup;
-    }
-
+    });
     router.push({
       name: PROJECT_V1_ROUTE_ISSUE_DETAIL,
       params: {
-        projectId: extractProjectResourceName(project.value.name),
-        issueSlug: "create",
+        projectId: extractProjectResourceName(release.value.project),
+        issueSlug: issueV1Slug(createdIssue),
       },
-      query,
     });
-  } catch {
-    state.isGenerating = false;
   }
 };
 </script>
