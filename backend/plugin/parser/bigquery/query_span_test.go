@@ -104,8 +104,12 @@ func TestGetPossibleColumnResources(t *testing.T) {
 		want      [][]string
 	}{
 		{
-			inputExpr: "a.b.c",
-			want:      [][]string{{"a", "b", "c"}},
+			inputExpr: "a",
+			want:      [][]string{{"a"}},
+		},
+		{
+			inputExpr: "a.b",
+			want:      [][]string{{"a", "b"}},
 		},
 		{
 			inputExpr: "function_return_json(a.b).c.d",
@@ -113,7 +117,7 @@ func TestGetPossibleColumnResources(t *testing.T) {
 		},
 		{
 			inputExpr: "a.b + c.d",
-			want:      [][]string{{"a", "b"}, {"c", "d"}},
+			want:      [][]string{{"c", "d"}, {"a", "b"}},
 		},
 	}
 

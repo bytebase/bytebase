@@ -150,11 +150,48 @@ func (q *querySpanExtractor) extractSourceColumnSetFromExpr(ctx antlr.ParserRule
 	return nil, nil
 }
 
+func isValidExpressionHigherPrecThanAnd(ctx antlr.ParserRuleContext) bool {
+	if _, ok := ctx.(*parser.Expression_higher_prec_than_andContext); !ok {
+		return false
+	}
+
+	terminalNodes := getAllChildTerminalNode(ctx)
+	if len(terminalNodes) == 1 && terminalNodes[0].GetSymbol().GetTokenType() == parser.GoogleSQLParserIDENTIFIER {
+		return true
+	}
+	child := ctx.GetChildren()
+	if len(child) == 3 {
+		first := child[0]
+		_, ok := first.(*parser.Expression_higher_prec_than_andContext)
+		if !ok {
+			return false
+		}
+		if !isValidExpressionHigherPrecThanAnd(first.(*parser.Expression_higher_prec_than_andContext)) {
+			return false
+		}
+		second := child[1]
+		_, ok = second.(*antlr.TerminalNodeImpl)
+		if !ok {
+			return false
+		}
+		if second.(*antlr.TerminalNodeImpl).GetSymbol().GetTokenType() != parser.GoogleSQLParserDOT_SYMBOL {
+			return false
+		}
+		third := child[2]
+		_, ok = third.(*parser.IdentifierContext)
+		if !ok {
+			return false
+		}
+		return true
+	}
+	return false
+}
+
 func getPossibleColumnResources(ctx antlr.ParserRuleContext) [][]string {
 	// Traverse the tree to find the tallest subtree which matches the pattern:
 	// [expression_higher_prec_than_and DOT_SYMBOL identifier]
 	// The result is the possible column resources.
-	var path []antlr.ParserRuleContext
+	var path []antlr.Tree
 	path = append(path, ctx)
 
 	var result [][]string
@@ -162,48 +199,21 @@ func getPossibleColumnResources(ctx antlr.ParserRuleContext) [][]string {
 		element := path[len(path)-1]
 		path = path[:len(path)-1]
 		appendChild := true
-		if element, ok := element.(*parser.Expression_higher_prec_than_andContext); ok {
-			// If all the terminal node in the subtree is IDENTIFIER, DOT_SYMBOL, we treat is as a possible column resource.
-			terminalNodes := getAllChildTerminalNode(element)
-			valid := true
-			if len(terminalNodes) == 0 {
-				valid = false
-			}
-			firstNode := terminalNodes[0]
-			lastNode := terminalNodes[len(terminalNodes)-1]
-			if firstNode.GetSymbol().GetTokenType() != parser.GoogleSQLParserIDENTIFIER {
-				valid = false
-			}
-			if lastNode.GetSymbol().GetTokenType() != parser.GoogleSQLParserIDENTIFIER {
-				valid = false
-			}
-			previousType := parser.GoogleSQLParserDOT_SYMBOL
-			for _, terminalNode := range terminalNodes {
-				switch previousType {
-				case parser.GoogleSQLParserIDENTIFIER:
-					if terminalNode.GetSymbol().GetTokenType() != parser.GoogleSQLParserDOT_SYMBOL {
-						valid = false
-						break
-					}
-					previousType = parser.GoogleSQLParserIDENTIFIER
-					if terminalNode.GetSymbol().GetTokenType() != parser.GoogleSQLParserIDENTIFIER {
-						valid = false
-						break
-					}
-					previousType = parser.GoogleSQLParserDOT_SYMBOL
-				}
-			}
+		if element, ok := element.(antlr.ParserRuleContext); ok {
+			valid := isValidExpressionHigherPrecThanAnd(element.(antlr.ParserRuleContext))
 			if valid {
 				appendChild = false
-				var identifierPath []string
-				for _, terminalNode := range terminalNodes {
+				allTerminalNodes := getAllChildTerminalNode(element)
+				var columnResources []string
+				for _, terminalNode := range allTerminalNodes {
 					if terminalNode.GetSymbol().GetTokenType() == parser.GoogleSQLParserIDENTIFIER {
-						identifierPath = append(identifierPath, unquoteIdentifierByText(terminalNode.GetText()))
+						columnResources = append(columnResources, unquoteIdentifierByText(terminalNode.GetText()))
 					}
 				}
-				result = append(result, identifierPath)
+				result = append(result, columnResources)
 			}
 		}
+
 		if appendChild {
 			for _, child := range element.GetChildren() {
 				if child, ok := child.(antlr.ParserRuleContext); ok {
