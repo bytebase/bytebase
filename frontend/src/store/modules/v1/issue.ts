@@ -14,7 +14,7 @@ import {
   ApprovalNode_GroupValue,
 } from "@/types/proto/v1/issue_service";
 import { extractProjectResourceName, memberListInProjectIAM } from "@/utils";
-import { useUserStore } from "../user";
+import { extractUserEmail, useUserStore } from "../user";
 import {
   shallowComposeIssue,
   type ComposeIssueConfig,
@@ -154,52 +154,61 @@ export const candidatesOfApprovalStepV1 = (
     (member) => member.user.userType === UserType.USER
   );
 
-  const candidates = step.nodes.flatMap((node) => {
-    const {
-      type,
-      groupValue = ApprovalNode_GroupValue.UNRECOGNIZED,
-      role,
-    } = node;
-    if (type !== ApprovalNode_Type.ANY_IN_GROUP) return [];
+  const candidates = step.nodes
+    .flatMap((node) => {
+      const {
+        type,
+        groupValue = ApprovalNode_GroupValue.UNRECOGNIZED,
+        role,
+      } = node;
+      if (type !== ApprovalNode_Type.ANY_IN_GROUP) return [];
 
-    const candidatesForSystemRoles = (groupValue: ApprovalNode_GroupValue) => {
-      if (
-        groupValue === ApprovalNode_GroupValue.PROJECT_MEMBER ||
-        groupValue === ApprovalNode_GroupValue.PROJECT_OWNER
-      ) {
-        const targetRole = convertApprovalNodeGroupToRole(groupValue);
-        return projectMemberList
-          .filter((member) => member.roleList.includes(targetRole))
+      const candidatesForSystemRoles = (
+        groupValue: ApprovalNode_GroupValue
+      ) => {
+        if (
+          groupValue === ApprovalNode_GroupValue.PROJECT_MEMBER ||
+          groupValue === ApprovalNode_GroupValue.PROJECT_OWNER
+        ) {
+          const targetRole = convertApprovalNodeGroupToRole(groupValue);
+          return projectMemberList
+            .filter((member) => member.roleList.includes(targetRole))
+            .map((member) => member.user);
+        }
+        if (
+          groupValue === ApprovalNode_GroupValue.WORKSPACE_DBA ||
+          groupValue === ApprovalNode_GroupValue.WORKSPACE_OWNER
+        ) {
+          return workspaceMemberList.filter(
+            (member) =>
+              workspaceStore.emailMapToRoles
+                .get(member.email)
+                ?.has(convertApprovalNodeGroupToRole(groupValue)) ?? false
+          );
+        }
+        return [];
+      };
+      const candidatesForCustomRoles = (role: string) => {
+        const memberList = memberListInProjectIAM(project.iamPolicy, role);
+        return memberList
+          .filter((member) => member.user.userType === UserType.USER)
           .map((member) => member.user);
+      };
+
+      if (groupValue !== ApprovalNode_GroupValue.UNRECOGNIZED) {
+        return candidatesForSystemRoles(groupValue);
       }
-      if (
-        groupValue === ApprovalNode_GroupValue.WORKSPACE_DBA ||
-        groupValue === ApprovalNode_GroupValue.WORKSPACE_OWNER
-      ) {
-        return workspaceMemberList.filter(
-          (member) =>
-            workspaceStore.emailMapToRoles
-              .get(member.email)
-              ?.has(convertApprovalNodeGroupToRole(groupValue)) ?? false
-        );
+      if (role) {
+        return candidatesForCustomRoles(role);
       }
       return [];
-    };
-    const candidatesForCustomRoles = (role: string) => {
-      const memberList = memberListInProjectIAM(project.iamPolicy, role);
-      return memberList
-        .filter((member) => member.user.userType === UserType.USER)
-        .map((member) => member.user);
-    };
-
-    if (groupValue !== ApprovalNode_GroupValue.UNRECOGNIZED) {
-      return candidatesForSystemRoles(groupValue);
-    }
-    if (role) {
-      return candidatesForCustomRoles(role);
-    }
-    return [];
-  });
+    })
+    // do not show the creator in the candidate list unless the creator is a workspace admin or DBA.
+    .filter(
+      (user) =>
+        user.email !== extractUserEmail(issue.creator) ||
+        isUserWorkspaceAdminOrDBA(user.email)
+    );
 
   return uniq(candidates.map((user) => user.name));
 };
@@ -211,4 +220,12 @@ export const refreshIssueList = () => {
 };
 export const useRefreshIssueList = (callback: WatchCallback) => {
   watch(REFRESH_ISSUE_LIST, callback);
+};
+
+const isUserWorkspaceAdminOrDBA = (email: string) => {
+  const roles = useWorkspaceV1Store().emailMapToRoles.get(email);
+  return (
+    roles?.has(PresetRoleType.WORKSPACE_ADMIN) ||
+    roles?.has(PresetRoleType.WORKSPACE_DBA)
+  );
 };
