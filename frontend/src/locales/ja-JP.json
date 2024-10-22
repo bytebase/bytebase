@@ -3724,7 +3724,13 @@
   "release": {
     "self": "リリース",
     "releases": "リリース",
-    "files": "ファイル"
+    "files": "ファイル",
+    "tasks-to-apply": "適用するタスク",
+    "out-of-order-files": "順序が間違っているファイル",
+    "applied-but-modifed-files": "適用済みだが変更されたファイル",
+    "no-tasks-to-apply": {
+      "self": "適用するタスクはありません"
+    }
   },
   "export-data": {
     "export-rows": "エクスポート行数",
