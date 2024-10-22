@@ -62,16 +62,6 @@
           :include-all-users="false"
           :include-service-account="false"
         />
-
-        <div class="w-full">
-          <p class="mb-2">Resources</p>
-          <DatabaseResourceForm
-            v-model:database-resources="state.databaseResources"
-            :project-name="projectName"
-            :required-feature="'bb.feature.sensitive-data'"
-            :include-cloumn="true"
-          />
-        </div>
       </div>
 
       <template #footer>
@@ -99,7 +89,6 @@ import { groupBy } from "lodash-es";
 import { NButton, NCheckbox, NDatePicker } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
-import DatabaseResourceForm from "@/components/GrantRequestPanel/DatabaseResourceForm/index.vue";
 import MembersBindingSelect from "@/components/Member/MembersBindingSelect.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { usePolicyV1Store, pushNotification } from "@/store";
