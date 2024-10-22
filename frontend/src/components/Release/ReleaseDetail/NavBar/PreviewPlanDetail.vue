@@ -23,6 +23,9 @@
         :show-not-found="true"
       />
     </div>
+    <p v-if="flattenSpecList.length === 0" class="text-gray-400 italic">
+      {{ $t("release.no-tasks-to-apply.self") }}
+    </p>
   </div>
   <div v-if="previewPlanResult.outOfOrderFiles.length > 0">
     <p>

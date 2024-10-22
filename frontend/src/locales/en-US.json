@@ -3722,7 +3722,10 @@
     "files": "Files",
     "tasks-to-apply": "Tasks to apply",
     "out-of-order-files": "Out of order files",
-    "applied-but-modifed-files": "Applied but modified files"
+    "applied-but-modifed-files": "Applied but modified files",
+    "no-tasks-to-apply": {
+      "self": "No tasks to apply"
+    }
   },
   "export-data": {
     "export-rows": "Export rows",
