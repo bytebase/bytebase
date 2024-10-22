@@ -13,6 +13,11 @@ func TestGetStatementWithResultLimit(t *testing.T) {
 		want  string
 	}{
 		{
+			stmt:  "SELECT * FROM t LIMIT 0,20;",
+			count: 10,
+			want:  "SELECT * FROM t LIMIT 0,10;",
+		},
+		{
 			stmt:  "SELECT * FROM t;",
 			count: 10,
 			want:  "SELECT * FROM t LIMIT 10;",
