@@ -5,7 +5,6 @@
         <div class="w-[calc(100vw-8rem)] lg:w-[60rem] max-w-[calc(100vw-8rem)]">
           <StepTab
             :step-list="stepList"
-            :finish-title="$t('two-factor.setup-steps.recovery-codes-saved')"
             :current-index="state.currentStep"
             :show-footer="false"
           >
@@ -79,6 +78,7 @@
 import { Undo2Icon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { computed, reactive } from "vue";
+import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import DatabaseAndGroupSelector, {
   type DatabaseSelectState,
@@ -112,6 +112,7 @@ type LocalState = {
   previewPlanResult?: PreviewPlanResponse;
 };
 
+const { t } = useI18n();
 const router = useRouter();
 const databaseStore = useDatabaseV1Store();
 const dbGroupStore = useDBGroupStore();
@@ -122,8 +123,8 @@ const state = reactive<LocalState>({
 });
 
 const stepList = computed(() => [
-  { title: "Select targets" },
-  { title: "Preview plan" },
+  { title: t("database.sync-schema.select-target-databases") },
+  { title: t("common.preview") },
 ]);
 
 const flattenSpecList = computed((): Plan_Spec[] => {
