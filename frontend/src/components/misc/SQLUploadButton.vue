@@ -12,18 +12,18 @@
         class="hidden"
         @change="handleUpload"
       />
+
+      <FileContentPreviewModal
+        v-if="selectedFile"
+        :file="selectedFile"
+        @cancel="cleanup"
+        @confirm="handleStatementConfirm"
+      />
     </template>
 
     <span v-if="!iconOnly">
       <slot />
     </span>
-
-    <FileContentPreviewModal
-      v-if="selectedFile"
-      :file="selectedFile"
-      @cancel="cleanup"
-      @confirm="handleStatementConfirm"
-    />
   </NButton>
 </template>
 
