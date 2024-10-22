@@ -278,6 +278,7 @@
     "connection": "Connection",
     "permission-denied": "Permission denied",
     "resource": "Resource",
+    "resources": "Resources",
     "closed": "Closed",
     "options": "Options",
     "reset": "Reset",

@@ -1,6 +1,8 @@
 <template>
   <div class="w-full mb-2">
     <NRadioGroup
+      v-if="allowSelectAll"
+      :disabled="disabled"
       v-model:value="state.allDatabases"
       class="w-full !flex flex-row justify-start items-center gap-4"
     >
@@ -28,6 +30,7 @@
     <DatabaseResourceSelector
       v-if="project"
       v-model:database-resources="state.databaseResources"
+      :disabled="disabled"
       :project-name="project.name"
       :include-cloumn="includeCloumn"
     />
@@ -53,12 +56,21 @@ interface LocalState {
   databaseResources: DatabaseResource[];
 }
 
-const props = defineProps<{
-  projectName: string;
-  requiredFeature: FeatureType;
-  includeCloumn: boolean;
-  databaseResources?: DatabaseResource[];
-}>();
+const props = withDefaults(
+  defineProps<{
+    disabled?: boolean;
+    projectName: string;
+    requiredFeature: FeatureType;
+    includeCloumn: boolean;
+    allowSelectAll?: boolean;
+    databaseResources?: DatabaseResource[];
+  }>(),
+  {
+    disabled: false,
+    allowSelectAll: true,
+    databaseResources: undefined,
+  }
+);
 
 const emit = defineEmits<{
   (
@@ -68,7 +80,8 @@ const emit = defineEmits<{
 }>();
 
 const state = reactive<LocalState>({
-  allDatabases: (props.databaseResources || []).length === 0,
+  allDatabases:
+    props.allowSelectAll && (props.databaseResources || []).length === 0,
   showFeatureModal: false,
   databaseResources: props.databaseResources || [],
 });

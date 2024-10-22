@@ -278,6 +278,7 @@
     "connection": "连接",
     "permission-denied": "您没有权限执行此操作",
     "resource": "资源",
+    "resources": "资源",
     "closed": "已关闭",
     "options": "配置项",
     "reset": "重置",
