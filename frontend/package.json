@@ -90,7 +90,6 @@
     "@iconify/json": "2.2.255",
     "@intlify/unplugin-vue-i18n": "4.0.0",
     "@rollup/plugin-yaml": "4.1.2",
-    "@rollup/rollup-darwin-arm64": "^4.24.0",
     "@tailwindcss/forms": "0.5.9",
     "@tailwindcss/typography": "0.5.15",
     "@trivago/prettier-plugin-sort-imports": "^4.3.0",
