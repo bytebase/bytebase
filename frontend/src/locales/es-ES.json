@@ -3724,7 +3724,13 @@
   "release": {
     "self": "Liberar",
     "releases": "Lanzamientos",
-    "files": "Archivos"
+    "files": "Archivos",
+    "tasks-to-apply": "Tareas a aplicar",
+    "out-of-order-files": "Archivos fuera de servicio",
+    "applied-but-modifed-files": "Archivos aplicados pero modificados",
+    "no-tasks-to-apply": {
+      "self": "No hay tareas para aplicar"
+    }
   },
   "export-data": {
     "export-rows": "Exportar filas",

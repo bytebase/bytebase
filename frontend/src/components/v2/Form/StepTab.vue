@@ -32,6 +32,7 @@
     </div>
 
     <div
+      v-if="showFooter"
       class="pt-4 border-t border-block-border flex items-center space-x-2 justify-between"
       :class="[sticky && 'pb-4 bg-white sticky bottom-0 z-10', footerClass]"
     >
@@ -85,6 +86,7 @@ withDefaults(
     currentIndex: number;
     showCancel?: boolean;
     allowNext?: boolean;
+    showFooter?: boolean;
     sticky?: boolean;
     finishTitle?: string;
     paneClass?: VueClass;
@@ -98,6 +100,7 @@ withDefaults(
   {
     showCancel: true,
     allowNext: true,
+    showFooter: true,
     sticky: false,
     finishTitle: "bbkit.common.finish",
     paneClass: undefined,
