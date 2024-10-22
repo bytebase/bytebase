@@ -2313,7 +2313,6 @@
     "search-name-database": "搜索名称，数据库",
     "successfully-created-data-source-datasource-name": "成功创建数据源 '{0}'。",
     "select-database-first": "先选择数据库",
-    "select-data-source": "选择数据源",
     "search-user": "搜索用户",
     "user-list": "用户列表",
     "revoke-access": "您确定要取消 '{0}' 对 '{1}' 的访问权限？",
@@ -2364,7 +2363,8 @@
     "replica-set": "副本集",
     "admin": "管理员",
     "read-only": "只读",
-    "direct-connection": "Direct Connection"
+    "direct-connection": "Direct Connection",
+    "select-query-data-source": "选择查询数据源"
   },
   "setting": {
     "project": {

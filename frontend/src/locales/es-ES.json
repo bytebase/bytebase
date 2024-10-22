@@ -2313,7 +2313,6 @@
     "search-name-database": "Buscar nombre, base de datos",
     "successfully-created-data-source-datasource-name": "Se creó correctamente el origen de datos '{0}'.",
     "select-database-first": "Seleccione la base de datos primero",
-    "select-data-source": "Seleccionar origen de datos",
     "search-user": "Buscar usuario",
     "user-list": "Lista de usuarios",
     "revoke-access": "¿Está seguro de revocar el acceso de '{0}' de '{1}'?",
@@ -2364,7 +2363,8 @@
     "replica-set": "Conjunto de réplicas",
     "admin": "Admin",
     "read-only": "Solo lectura",
-    "direct-connection": "Direct Connection"
+    "direct-connection": "Direct Connection",
+    "select-query-data-source": "Seleccionar fuente de datos de consulta"
   },
   "setting": {
     "project": {
