@@ -92,7 +92,7 @@ import { useI18n } from "vue-i18n";
 import MembersBindingSelect from "@/components/Member/MembersBindingSelect.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { usePolicyV1Store, pushNotification } from "@/store";
-import type { ComposedProject } from "@/types";
+import type { ComposedProject, DatabaseResource } from "@/types";
 import { Expr } from "@/types/proto/google/type/expr";
 import { MaskingLevel } from "@/types/proto/v1/common";
 import type {
@@ -123,6 +123,7 @@ interface LocalState {
   maskingLevel: MaskingLevel;
   processing: boolean;
   supportActions: Set<MaskingExceptionPolicy_MaskingException_Action>;
+  databaseResources?: DatabaseResource[];
 }
 
 const ACTIONS = [

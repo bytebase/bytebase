@@ -2204,6 +2204,10 @@
       "update-success": "Conector GitOps actualizado correctamente",
       "create-success": "Conector GitOps creado correctamente",
       "delete-success": "Se elimina el conector GitOps"
+    },
+    "masking-access": {
+      "self": "Enmascaramiento de acceso",
+      "grant-access": "Conceder acceso"
     }
   },
   "gitops": {

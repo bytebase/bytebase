@@ -2204,6 +2204,10 @@
       "update-success": "GitOps 接続が更新されました",
       "create-success": "GitOps 接続が作成されました",
       "delete-success": "GitOps 接続が削除されました"
+    },
+    "masking-access": {
+      "self": "アクセスマスキング",
+      "grant-access": "アクセスを許可する"
     }
   },
   "gitops": {
