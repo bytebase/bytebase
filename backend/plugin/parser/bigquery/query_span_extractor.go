@@ -157,7 +157,6 @@ func (q *querySpanExtractor) extractTableSourceFromSelect(selectCtx parser.ISele
 				SourceColumns: sourceColumnSet,
 			})
 		}
-
 	}
 	return &base.PseudoTable{
 		Name:    "",
@@ -228,7 +227,7 @@ func (q *querySpanExtractor) extractSourceColumnSetFromExpr(ctx antlr.ParserRule
 		if !ok {
 			continue
 		}
-		fieldName, sourceColumnSet, err := q.extractSourceColumnSetFromExpr(child.(antlr.ParserRuleContext))
+		fieldName, sourceColumnSet, err := q.extractSourceColumnSetFromExpr(child)
 		if err != nil {
 			return "", nil, err
 		}
@@ -324,10 +323,7 @@ func isValidExpressionHigherPrecThanAnd(ctx antlr.ParserRuleContext) bool {
 		}
 		third := child[2]
 		_, ok = third.(*parser.IdentifierContext)
-		if !ok {
-			return false
-		}
-		return true
+		return ok
 	}
 	return false
 }
@@ -349,7 +345,7 @@ func getPossibleColumnResources(ctx antlr.ParserRuleContext) [][]string {
 		path = path[:len(path)-1]
 		appendChild := true
 		if element, ok := element.(antlr.ParserRuleContext); ok {
-			valid := isValidExpressionHigherPrecThanAnd(element.(antlr.ParserRuleContext))
+			valid := isValidExpressionHigherPrecThanAnd(element)
 			if valid {
 				appendChild = false
 				allTerminalNodes := getAllChildTerminalNode(element)
