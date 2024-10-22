@@ -2538,7 +2538,8 @@
       "not-member-of-any-projects": "You are not any member of any projects.",
       "go-to-create": "Go to create",
       "contact-the-admin-to-grant-access": "Contact to the admin to grant access."
-    }
+    },
+    "upload-file": "Upload file"
   },
   "schema-editor": {
     "self": "Schema Editor",

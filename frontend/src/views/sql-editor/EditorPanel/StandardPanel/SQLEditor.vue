@@ -20,7 +20,11 @@
       @select-content="handleUpdateSelectedStatement"
       @update:selection="handleUpdateSelection"
       @ready="handleEditorReady"
-    />
+    >
+      <template #corner-prefix>
+        <UploadFileButton />
+      </template>
+    </MonacoEditor>
   </div>
 </template>
 
@@ -56,6 +60,7 @@ import { dialectOfEngineV1 } from "@/types";
 import { Advice_Status, type Advice } from "@/types/proto/v1/sql_service";
 import { nextAnimationFrame, useInstanceV1EditorLanguage } from "@/utils";
 import { useSQLEditorContext } from "../../context";
+import UploadFileButton from "./UploadFileButton.vue";
 import { activeSQLEditorRef } from "./state";
 
 const emit = defineEmits<{
