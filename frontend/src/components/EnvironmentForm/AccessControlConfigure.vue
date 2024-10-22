@@ -61,7 +61,12 @@
       </div>
     </div>
   </div>
-  <div v-if="databaseChangeMode === 'PIPELINE'" class="flex flex-col gap-y-2">
+  <div
+    v-if="
+      databaseChangeMode === 'PIPELINE' && resource.startsWith('environments/')
+    "
+    class="flex flex-col gap-y-2"
+  >
     <div class="textlabel flex items-center space-x-2">
       <label>
         {{ $t("environment.statement-execution.title") }}
