@@ -2314,7 +2314,6 @@
     "search-name-database": "Search name, database",
     "successfully-created-data-source-datasource-name": "Successfully created data source '{0}'.",
     "select-database-first": "Select database first",
-    "select-data-source": "Select data source",
     "search-user": "Search user",
     "user-list": "User list",
     "revoke-access": "Are you sure to revoke '{0}' access from '{1}'?",
@@ -2365,7 +2364,8 @@
     "replica-set": "Replica Set",
     "admin": "Admin",
     "read-only": "RO",
-    "direct-connection": "Direct Connection"
+    "direct-connection": "Direct Connection",
+    "select-query-data-source": "Select query data source"
   },
   "setting": {
     "project": {

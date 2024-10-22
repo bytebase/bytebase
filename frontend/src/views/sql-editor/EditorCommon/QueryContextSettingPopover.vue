@@ -21,7 +21,7 @@
       <div class="flex flex-col gap-1">
         <div>
           <p class="mb-1 textinfolabel">
-            {{ $t("data-source.select-data-source") }}
+            {{ $t("data-source.select-query-data-source") }}
           </p>
           <NRadioGroup
             class="max-w-44"
