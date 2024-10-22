@@ -23,7 +23,9 @@ export const databaseV1Url = (db: ComposedDatabase) => {
 export const extractDatabaseResourceName = (
   resource: string
 ): {
+  // instance full name
   instance: string;
+  // database full name
   database: string;
   databaseName: string;
   instanceName: string;

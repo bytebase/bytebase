@@ -1,8 +1,9 @@
+import type { DatabaseResource } from "@/types";
 import type {
   MaskData,
   MaskingExceptionPolicy_MaskingException,
 } from "@/types/proto/v1/org_policy_service";
-import { extractInstanceResourceName } from "@/utils";
+import { extractDatabaseResourceName } from "@/utils";
 import type { SensitiveColumn } from "./types";
 
 export const getMaskDataIdentifier = (maskData: MaskData): string => {
@@ -14,7 +15,12 @@ export const isCurrentColumnException = (
   sensitiveColumn: SensitiveColumn
 ): boolean => {
   const expression = exception.condition?.expression ?? "";
-  const matches = getExpressionsForSensitiveColumn(sensitiveColumn);
+  const matches = getExpressionsForDatabaseResource({
+    databaseName: sensitiveColumn.database.name,
+    schema: sensitiveColumn.maskData.schema,
+    table: sensitiveColumn.maskData.table,
+    column: sensitiveColumn.maskData.column,
+  });
   for (const match of matches) {
     if (!expression.includes(match)) {
       return false;
@@ -23,21 +29,24 @@ export const isCurrentColumnException = (
   return true;
 };
 
-export const getExpressionsForSensitiveColumn = (
-  sensitiveColumn: SensitiveColumn
+export const getExpressionsForDatabaseResource = (
+  databaseResource: DatabaseResource
 ): string[] => {
+  const resourceName = extractDatabaseResourceName(
+    databaseResource.databaseName
+  );
   const expressions = [
-    `resource.database_name == "${sensitiveColumn.database.databaseName}"`,
-    `resource.instance_id == "${extractInstanceResourceName(
-      sensitiveColumn.database.instance
-    )}"`,
-    `resource.table_name == "${sensitiveColumn.maskData.table}"`,
-    `resource.column_name == "${sensitiveColumn.maskData.column}"`,
+    `resource.database_name == "${resourceName.databaseName}"`,
+    `resource.instance_id == "${resourceName.instanceName}"`,
   ];
-  if (sensitiveColumn.maskData.schema) {
-    expressions.push(
-      `resource.schema_name == "${sensitiveColumn.maskData.schema}"`
-    );
+  if (databaseResource.schema) {
+    expressions.push(`resource.schema_name == "${databaseResource.schema}"`);
+  }
+  if (databaseResource.table) {
+    expressions.push(`resource.table_name == "${databaseResource.table}"`);
+  }
+  if (databaseResource.column) {
+    expressions.push(`resource.column_name == "${databaseResource.column}"`);
   }
   return expressions;
 };
