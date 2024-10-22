@@ -39,12 +39,15 @@
       "
       class="w-full"
     >
-      <span class="block mb-2">{{ $t("common.databases") }}</span>
+      <div class="flex items-center gap-x-1 mb-2">
+        <span>{{ $t("common.databases") }}</span>
+        <span class="text-red-600">*</span>
+      </div>
       <QuerierDatabaseResourceForm
+        v-model:database-resources="state.databaseResources"
         :project-name="project.name"
-        :database-resources="state.databaseResources"
-        @update:condition="state.databaseResourceCondition = $event"
-        @update:database-resources="state.databaseResources = $event"
+        :required-feature="'bb.feature.access-control'"
+        :include-cloumn="false"
       />
     </div>
     <template v-if="state.role === PresetRoleType.PROJECT_EXPORTER">
@@ -70,7 +73,7 @@
 <script lang="ts" setup>
 /* eslint-disable vue/no-mutating-props */
 import dayjs from "dayjs";
-import { head } from "lodash-es";
+import { head, isUndefined } from "lodash-es";
 import { NInput, NButton } from "naive-ui";
 import { computed, reactive, watch } from "vue";
 import ExpirationSelector from "@/components/ExpirationSelector.vue";
@@ -84,6 +87,7 @@ import { PresetRoleType } from "@/types";
 import { Expr } from "@/types/proto/google/type/expr";
 import type { Binding } from "@/types/proto/v1/iam_policy";
 import { displayRoleTitle, extractDatabaseResourceName } from "@/utils";
+import { stringifyDatabaseResources } from "@/utils/issue/cel";
 
 const props = defineProps<{
   project: ComposedProject;
@@ -101,7 +105,6 @@ interface LocalState {
   reason: string;
   expireDays: number;
   // Querier and exporter options.
-  databaseResourceCondition?: string;
   databaseResources?: DatabaseResource[];
   // Exporter options.
   maxRowCount: number;
@@ -138,7 +141,6 @@ const state = reactive<LocalState>(getInitialState());
 watch(
   () => state.role,
   () => {
-    state.databaseResourceCondition = undefined;
     state.databaseResources = undefined;
   },
   {
@@ -160,15 +162,15 @@ watch(
       const expiresAt = now.add(state.expireDays, "days");
       expression.push(`request.time < timestamp("${expiresAt.toISOString()}")`);
     }
-    if (state.role === PresetRoleType.PROJECT_QUERIER) {
-      if (state.databaseResourceCondition) {
-        expression.push(state.databaseResourceCondition);
+    if (
+      state.role === PresetRoleType.PROJECT_QUERIER ||
+      state.role === PresetRoleType.PROJECT_EXPORTER
+    ) {
+      if (state.databaseResources) {
+        expression.push(stringifyDatabaseResources(state.databaseResources));
       }
     }
     if (state.role === PresetRoleType.PROJECT_EXPORTER) {
-      if (state.databaseResourceCondition) {
-        expression.push(state.databaseResourceCondition);
-      }
       if (state.maxRowCount) {
         expression.push(`request.row_limit <= ${state.maxRowCount}`);
       }
@@ -246,7 +248,13 @@ defineExpose({
     if ((!state.expireDays && state.expireDays !== 0) || state.expireDays < 0) {
       return false;
     }
-    // TODO: use parsed expression to check if the expression is valid.
+    // undefined databaseResources means all databases
+    if (
+      !isUndefined(state.databaseResources) &&
+      state.databaseResources.length === 0
+    ) {
+      return false;
+    }
     return true;
   }),
 });

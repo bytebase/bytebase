@@ -2204,6 +2204,10 @@
       "update-success": "Successfully updated GitOps connector",
       "create-success": "Successfully created GitOps connector",
       "delete-success": "The GitOps connector is removed"
+    },
+    "masking-access": {
+      "self": "Masking Access",
+      "grant-access": "Grant Access"
     }
   },
   "gitops": {

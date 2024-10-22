@@ -15,7 +15,7 @@
       </NTooltip>
       <NRadio class="!leading-6" :value="false" :disabled="!project">
         <div class="flex items-center space-x-2">
-          <FeatureBadge feature="bb.feature.access-control" />
+          <FeatureBadge :feature="requiredFeature" />
           <span>{{ $t("issue.grant-request.manually-select") }}</span>
         </div>
       </NRadio>
@@ -28,13 +28,13 @@
     <DatabaseResourceSelector
       v-if="project"
       :project-name="project.name"
-      :database-resources="state.databaseResources"
-      @update="handleSelectedDatabaseResourceChanged"
+      v-model:database-resources="state.databaseResources"
+      :include-cloumn="includeCloumn"
     />
   </div>
   <FeatureModal
     :open="state.showFeatureModal"
-    :feature="'bb.feature.access-control'"
+    :feature="requiredFeature"
     @cancel="state.showFeatureModal = false"
   />
 </template>
@@ -43,9 +43,8 @@
 import { NRadioGroup, NRadio, NTooltip } from "naive-ui";
 import { computed, onMounted, reactive, watch } from "vue";
 import { FeatureBadge, FeatureModal } from "@/components/FeatureGuard";
-import { useProjectByName, featureToRef } from "@/store";
-import type { DatabaseResource } from "@/types";
-import { stringifyDatabaseResources } from "@/utils/issue/cel";
+import { useProjectByName, hasFeature } from "@/store";
+import type { DatabaseResource, FeatureType } from "@/types";
 import DatabaseResourceSelector from "./DatabaseResourceSelector.vue";
 
 interface LocalState {
@@ -56,14 +55,15 @@ interface LocalState {
 
 const props = defineProps<{
   projectName: string;
+  requiredFeature: FeatureType;
+  includeCloumn: boolean;
   databaseResources?: DatabaseResource[];
 }>();
 
 const emit = defineEmits<{
-  (event: "update:condition", value?: string): void;
   (
     event: "update:database-resources",
-    databaseResources: DatabaseResource[]
+    databaseResources?: DatabaseResource[]
   ): void;
 }>();
 
@@ -74,13 +74,7 @@ const state = reactive<LocalState>({
 });
 
 const { project } = useProjectByName(computed(() => props.projectName));
-const hasAccessControlFeature = featureToRef("bb.feature.access-control");
-
-const handleSelectedDatabaseResourceChanged = (
-  databaseResourceList: DatabaseResource[]
-) => {
-  state.databaseResources = databaseResourceList;
-};
+const hasRequiredFeature = computed(() => hasFeature(props.requiredFeature));
 
 onMounted(() => {
   if (props.databaseResources && props.databaseResources.length > 0) {
@@ -92,18 +86,12 @@ watch(
   () => [state.allDatabases, state.databaseResources],
   () => {
     if (state.allDatabases) {
-      emit("update:condition", "");
+      emit("update:database-resources", undefined);
     } else {
-      if (!hasAccessControlFeature.value) {
+      if (!hasRequiredFeature.value) {
         state.showFeatureModal = true;
         state.allDatabases = true;
         return;
-      }
-      if (state.databaseResources.length === 0) {
-        emit("update:condition", undefined);
-      } else {
-        const condition = stringifyDatabaseResources(state.databaseResources);
-        emit("update:condition", condition);
       }
       emit("update:database-resources", state.databaseResources);
     }
