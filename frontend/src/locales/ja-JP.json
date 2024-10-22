@@ -2314,7 +2314,6 @@
     "search-name-database": "検索名、データベース",
     "successfully-created-data-source-datasource-name": "データ ソース '{0}' が正常に作成されました。",
     "select-database-first": "最初にデータベースを選択してください",
-    "select-data-source": "データソースの選択",
     "search-user": "ユーザーを検索する",
     "user-list": "ユーザーリスト",
     "revoke-access": "「{0}」の「{1}」へのアクセスを削除してもよろしいですか?",
@@ -2365,7 +2364,8 @@
     "replica-set": "レプリカセット",
     "admin": "メインライブラリ",
     "read-only": "図書館から",
-    "direct-connection": "Direct Connection"
+    "direct-connection": "Direct Connection",
+    "select-query-data-source": "クエリデータソースの選択"
   },
   "setting": {
     "project": {
