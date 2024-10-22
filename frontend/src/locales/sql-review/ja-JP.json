@@ -124,6 +124,14 @@
         }
       }
     },
+    "table-require-charset": {
+      "title": "文字セットを要求する",
+      "description": "テーブルの文字セットを指定する必要があります。提案エラーレベル: 警告"
+    },
+    "table-require-collation": {
+      "title": "照合を要求する",
+      "description": "テーブルの照合順序を指定する必要があります。提案エラー レベル: 警告"
+    },
     "naming-fully-qualified": {
       "title": "完全修飾オブジェクト名",
       "description": "完全修飾オブジェクト名の使用を強制します。 例えば、「schema.table」、推奨エラーレベル：警告"
@@ -359,6 +367,14 @@
     "column-default-disallow-volatile": {
       "title": "列に対して揮発性のあるデフォルト値の設定を禁止します",
       "description": "ボラタイル関数（例: clock_timestamp()）は、ALTER TABLE 実行時の値で各行を更新し、更新が長引く可能性があります。"
+    },
+    "column-require-charset": {
+      "title": "テキスト列に文字セットを要求する",
+      "description": "テキスト データ型の列の文字セットを指定する必要があります。提案エラー レベル: 警告"
+    },
+    "column-require-collation": {
+      "title": "テキスト列の照合を要求する",
+      "description": "テキスト データ型の列の照合を指定する必要があります。提案エラー レベル: 警告"
     },
     "statement-select-no-select-all": {
       "title": "「SELECT *」の使用を禁止する",

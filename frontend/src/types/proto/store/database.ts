@@ -39,6 +39,7 @@ export interface DatabaseSchemaMetadata {
   /** The service name of the database. It's the Oracle specific concept. */
   serviceName: string;
   linkedDatabases: LinkedDatabaseMetadata[];
+  owner: string;
 }
 
 /**
@@ -71,6 +72,7 @@ export interface SchemaMetadata {
   sequences: SequenceMetadata[];
   /** The packages is the list of packages in a schema. */
   packages: PackageMetadata[];
+  owner: string;
 }
 
 export interface TaskMetadata {
@@ -314,6 +316,7 @@ export interface TableMetadata {
   partitions: TablePartitionMetadata[];
   /** The check_constraints is the list of check constraints in a table. */
   checkConstraints: CheckConstraintMetadata[];
+  owner: string;
 }
 
 export interface CheckConstraintMetadata {
@@ -1020,6 +1023,7 @@ function createBaseDatabaseSchemaMetadata(): DatabaseSchemaMetadata {
     datashare: false,
     serviceName: "",
     linkedDatabases: [],
+    owner: "",
   };
 }
 
@@ -1048,6 +1052,9 @@ export const DatabaseSchemaMetadata: MessageFns<DatabaseSchemaMetadata> = {
     }
     for (const v of message.linkedDatabases) {
       LinkedDatabaseMetadata.encode(v!, writer.uint32(66).fork()).join();
+    }
+    if (message.owner !== "") {
+      writer.uint32(74).string(message.owner);
     }
     return writer;
   },
@@ -1115,6 +1122,13 @@ export const DatabaseSchemaMetadata: MessageFns<DatabaseSchemaMetadata> = {
 
           message.linkedDatabases.push(LinkedDatabaseMetadata.decode(reader, reader.uint32()));
           continue;
+        case 9:
+          if (tag !== 74) {
+            break;
+          }
+
+          message.owner = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1140,6 +1154,7 @@ export const DatabaseSchemaMetadata: MessageFns<DatabaseSchemaMetadata> = {
       linkedDatabases: globalThis.Array.isArray(object?.linkedDatabases)
         ? object.linkedDatabases.map((e: any) => LinkedDatabaseMetadata.fromJSON(e))
         : [],
+      owner: isSet(object.owner) ? globalThis.String(object.owner) : "",
     };
   },
 
@@ -1169,6 +1184,9 @@ export const DatabaseSchemaMetadata: MessageFns<DatabaseSchemaMetadata> = {
     if (message.linkedDatabases?.length) {
       obj.linkedDatabases = message.linkedDatabases.map((e) => LinkedDatabaseMetadata.toJSON(e));
     }
+    if (message.owner !== "") {
+      obj.owner = message.owner;
+    }
     return obj;
   },
 
@@ -1185,6 +1203,7 @@ export const DatabaseSchemaMetadata: MessageFns<DatabaseSchemaMetadata> = {
     message.datashare = object.datashare ?? false;
     message.serviceName = object.serviceName ?? "";
     message.linkedDatabases = object.linkedDatabases?.map((e) => LinkedDatabaseMetadata.fromPartial(e)) || [];
+    message.owner = object.owner ?? "";
     return message;
   },
 };
@@ -1202,6 +1221,7 @@ function createBaseSchemaMetadata(): SchemaMetadata {
     materializedViews: [],
     sequences: [],
     packages: [],
+    owner: "",
   };
 }
 
@@ -1239,6 +1259,9 @@ export const SchemaMetadata: MessageFns<SchemaMetadata> = {
     }
     for (const v of message.packages) {
       PackageMetadata.encode(v!, writer.uint32(90).fork()).join();
+    }
+    if (message.owner !== "") {
+      writer.uint32(98).string(message.owner);
     }
     return writer;
   },
@@ -1327,6 +1350,13 @@ export const SchemaMetadata: MessageFns<SchemaMetadata> = {
 
           message.packages.push(PackageMetadata.decode(reader, reader.uint32()));
           continue;
+        case 12:
+          if (tag !== 98) {
+            break;
+          }
+
+          message.owner = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1363,6 +1393,7 @@ export const SchemaMetadata: MessageFns<SchemaMetadata> = {
       packages: globalThis.Array.isArray(object?.packages)
         ? object.packages.map((e: any) => PackageMetadata.fromJSON(e))
         : [],
+      owner: isSet(object.owner) ? globalThis.String(object.owner) : "",
     };
   },
 
@@ -1401,6 +1432,9 @@ export const SchemaMetadata: MessageFns<SchemaMetadata> = {
     if (message.packages?.length) {
       obj.packages = message.packages.map((e) => PackageMetadata.toJSON(e));
     }
+    if (message.owner !== "") {
+      obj.owner = message.owner;
+    }
     return obj;
   },
 
@@ -1420,6 +1454,7 @@ export const SchemaMetadata: MessageFns<SchemaMetadata> = {
     message.materializedViews = object.materializedViews?.map((e) => MaterializedViewMetadata.fromPartial(e)) || [];
     message.sequences = object.sequences?.map((e) => SequenceMetadata.fromPartial(e)) || [];
     message.packages = object.packages?.map((e) => PackageMetadata.fromPartial(e)) || [];
+    message.owner = object.owner ?? "";
     return message;
   },
 };
@@ -1822,6 +1857,7 @@ function createBaseTableMetadata(): TableMetadata {
     foreignKeys: [],
     partitions: [],
     checkConstraints: [],
+    owner: "",
   };
 }
 
@@ -1874,6 +1910,9 @@ export const TableMetadata: MessageFns<TableMetadata> = {
     }
     for (const v of message.checkConstraints) {
       CheckConstraintMetadata.encode(v!, writer.uint32(130).fork()).join();
+    }
+    if (message.owner !== "") {
+      writer.uint32(146).string(message.owner);
     }
     return writer;
   },
@@ -1997,6 +2036,13 @@ export const TableMetadata: MessageFns<TableMetadata> = {
 
           message.checkConstraints.push(CheckConstraintMetadata.decode(reader, reader.uint32()));
           continue;
+        case 18:
+          if (tag !== 146) {
+            break;
+          }
+
+          message.owner = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2034,6 +2080,7 @@ export const TableMetadata: MessageFns<TableMetadata> = {
       checkConstraints: globalThis.Array.isArray(object?.checkConstraints)
         ? object.checkConstraints.map((e: any) => CheckConstraintMetadata.fromJSON(e))
         : [],
+      owner: isSet(object.owner) ? globalThis.String(object.owner) : "",
     };
   },
 
@@ -2087,6 +2134,9 @@ export const TableMetadata: MessageFns<TableMetadata> = {
     if (message.checkConstraints?.length) {
       obj.checkConstraints = message.checkConstraints.map((e) => CheckConstraintMetadata.toJSON(e));
     }
+    if (message.owner !== "") {
+      obj.owner = message.owner;
+    }
     return obj;
   },
 
@@ -2119,6 +2169,7 @@ export const TableMetadata: MessageFns<TableMetadata> = {
     message.foreignKeys = object.foreignKeys?.map((e) => ForeignKeyMetadata.fromPartial(e)) || [];
     message.partitions = object.partitions?.map((e) => TablePartitionMetadata.fromPartial(e)) || [];
     message.checkConstraints = object.checkConstraints?.map((e) => CheckConstraintMetadata.fromPartial(e)) || [];
+    message.owner = object.owner ?? "";
     return message;
   },
 };

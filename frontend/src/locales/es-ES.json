@@ -1643,7 +1643,7 @@
     "statement-execution": {
       "title": "Ejecución de la declaración",
       "allow-ddl": "Permitir la ejecución de sentencias DDL en el editor SQL",
-      "allow-dml": "Permitir la ejecución de sentencias DML en el editor SQL"
+      "allow-dml": "Permitir ejecutar sentencias DML que modifiquen datos en el Editor SQL"
     }
   },
   "quick-start": {

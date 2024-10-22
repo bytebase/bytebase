@@ -235,14 +235,17 @@ CREATE TABLE public.book (
 			wantSDL: ``,
 			wantDatabaseMetadata: &v1pb.DatabaseMetadata{
 				Name:         "instances/latest-schema-postgres/databases/latestSchema/metadata",
+				Owner:        "root",
 				CharacterSet: "UTF8",
 				Collation:    "en_US.UTF-8",
 				Schemas: []*v1pb.SchemaMetadata{
 					{
-						Name: "public",
+						Name:  "public",
+						Owner: "pg_database_owner",
 						Tables: []*v1pb.TableMetadata{
 							{
 								Name:     "book",
+								Owner:    "root",
 								DataSize: 8192,
 								Columns: []*v1pb.ColumnMetadata{
 									{Name: "id", Position: 1, Nullable: true, Type: "integer"},
