@@ -4,7 +4,14 @@
     class="bb-monaco-editor"
     :model="model"
     @update:content="handleChange"
-  />
+  >
+    <template v-if="$slots['corner-prefix']" #corner-prefix>
+      <slot name="corner-prefix" />
+    </template>
+    <template v-if="$slots['corner-suffix']" #corner-suffix>
+      <slot name="corner-suffix" />
+    </template>
+  </MonacoTextModelEditor>
 </template>
 
 <script setup lang="ts">
