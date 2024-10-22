@@ -151,43 +151,67 @@ func (q *querySpanExtractor) extractSourceColumnSetFromExpr(ctx antlr.ParserRule
 }
 
 func getPossibleColumnResources(ctx antlr.ParserRuleContext) [][]string {
-	// We find all the subtree which root is expression_higher_prec_than_and and all the terminal node is identifier and dot symbol.
-	var result [][]string
-
-	path := make([]antlr.Tree, 0)
+	// Traverse the tree to find the tallest subtree which matches the pattern:
+	// [expression_higher_prec_than_and DOT_SYMBOL identifier]
+	// The result is the possible column resources.
+	var path []antlr.ParserRuleContext
 	path = append(path, ctx)
+
+	var result [][]string
 	for len(path) > 0 {
-		appendChild := true
-		root := path[len(path)-1]
+		element := path[len(path)-1]
 		path = path[:len(path)-1]
-		if childRuleCtx, ok := root.(antlr.ParserRuleContext); ok {
-			if exprHigherPrecThanAnd, ok := childRuleCtx.(*parser.ExpressionContext); ok {
-				subResult := getAllChildTerminalNode(exprHigherPrecThanAnd)
-				var subResultText []string
-				for _, terminalNode := range subResult {
-					if terminalNode.GetSymbol().GetTokenType() == parser.GoogleSQLParserIDENTIFIER {
-						subResultText = append(subResultText, unquoteIdentifierByText(terminalNode.GetText()))
-						continue
+		appendChild := true
+		if element, ok := element.(*parser.Expression_higher_prec_than_andContext); ok {
+			// If all the terminal node in the subtree is IDENTIFIER, DOT_SYMBOL, we treat is as a possible column resource.
+			terminalNodes := getAllChildTerminalNode(element)
+			valid := true
+			if len(terminalNodes) == 0 {
+				valid = false
+			}
+			firstNode := terminalNodes[0]
+			lastNode := terminalNodes[len(terminalNodes)-1]
+			if firstNode.GetSymbol().GetTokenType() != parser.GoogleSQLParserIDENTIFIER {
+				valid = false
+			}
+			if lastNode.GetSymbol().GetTokenType() != parser.GoogleSQLParserIDENTIFIER {
+				valid = false
+			}
+			previousType := parser.GoogleSQLParserDOT_SYMBOL
+			for _, terminalNode := range terminalNodes {
+				switch previousType {
+				case parser.GoogleSQLParserIDENTIFIER:
+					if terminalNode.GetSymbol().GetTokenType() != parser.GoogleSQLParserDOT_SYMBOL {
+						valid = false
+						break
 					}
-					if terminalNode.GetSymbol().GetTokenType() == parser.GoogleSQLParserDOT_SYMBOL {
-						continue
+					previousType = parser.GoogleSQLParserIDENTIFIER
+					if terminalNode.GetSymbol().GetTokenType() != parser.GoogleSQLParserIDENTIFIER {
+						valid = false
+						break
 					}
-					subResultText = []string{}
-					break
+					previousType = parser.GoogleSQLParserDOT_SYMBOL
 				}
-				if len(subResultText) > 0 {
-					result = append(result, subResultText)
-					appendChild = false
+			}
+			if valid {
+				appendChild = false
+				var identifierPath []string
+				for _, terminalNode := range terminalNodes {
+					if terminalNode.GetSymbol().GetTokenType() == parser.GoogleSQLParserIDENTIFIER {
+						identifierPath = append(identifierPath, unquoteIdentifierByText(terminalNode.GetText()))
+					}
+				}
+				result = append(result, identifierPath)
+			}
+		}
+		if appendChild {
+			for _, child := range element.GetChildren() {
+				if child, ok := child.(antlr.ParserRuleContext); ok {
+					path = append(path, child)
 				}
 			}
 		}
-
-		if appendChild {
-			children := root.GetChildren()
-			path = append(path, children...)
-		}
 	}
-
 	return result
 }
 

@@ -113,7 +113,7 @@ func TestGetPossibleColumnResources(t *testing.T) {
 		},
 		{
 			inputExpr: "a.b + c.d",
-			want:      [][]string{{"a", "b"}},
+			want:      [][]string{{"a", "b"}, {"c", "d"}},
 		},
 	}
 

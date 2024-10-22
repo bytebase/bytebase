@@ -361,3 +361,5 @@ replace (
 replace github.com/microsoft/go-mssqldb => github.com/bytebase/go-mssqldb v0.0.0-20240801091126-3ff3ca07d898
 
 replace github.com/youmark/pkcs8 => github.com/bytebase/pkcs8 v0.0.0-20240612095628-fcd0a7484c94
+
+replace github.com/bytebase/google-sql-parser => /home/h3n4l/OpenSource/google-sql-parser
