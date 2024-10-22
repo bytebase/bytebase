@@ -2,8 +2,8 @@
   <div class="w-full mb-2">
     <NRadioGroup
       v-if="allowSelectAll"
-      :disabled="disabled"
       v-model:value="state.allDatabases"
+      :disabled="disabled"
       class="w-full !flex flex-row justify-start items-center gap-4"
     >
       <NTooltip trigger="hover">

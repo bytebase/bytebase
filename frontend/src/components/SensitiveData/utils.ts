@@ -3,10 +3,7 @@ import type {
   MaskData,
   MaskingExceptionPolicy_MaskingException,
 } from "@/types/proto/v1/org_policy_service";
-import {
-  extractInstanceResourceName,
-  extractDatabaseResourceName,
-} from "@/utils";
+import { extractDatabaseResourceName } from "@/utils";
 import type { SensitiveColumn } from "./types";
 
 export const getMaskDataIdentifier = (maskData: MaskData): string => {
