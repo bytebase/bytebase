@@ -2543,7 +2543,8 @@
       "not-member-of-any-projects": "你不是任何项目的成员。",
       "go-to-create": "去创建",
       "contact-the-admin-to-grant-access": "联系管理员以授予访问权限。"
-    }
+    },
+    "upload-file": "上传文件"
   },
   "schema-editor": {
     "self": "Schema 编辑器",
