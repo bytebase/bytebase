@@ -3,6 +3,7 @@
     <NTransfer
       v-model:value="selectedValueList"
       style="height: 512px"
+      :disabled="disabled"
       :options="sourceTransferOptions"
       :render-source-list="renderSourceList"
       :render-target-list="renderTargetList"
@@ -42,6 +43,7 @@ import {
 } from "./common";
 
 const props = defineProps<{
+  disabled?: boolean;
   projectName: string;
   includeCloumn: boolean;
   databaseResources: DatabaseResource[];
@@ -57,15 +59,34 @@ const emit = defineEmits<{
 const databaseStore = useDatabaseV1Store();
 const dbSchemaStore = useDBSchemaV1Store();
 const { project } = useProjectByName(props.projectName);
+
+const parseResourceToKey = (resource: DatabaseResource): string => {
+  const data = [
+    resource.databaseName,
+    "schemas",
+    resource.schema,
+    "tables",
+    resource.table,
+    "columns",
+    resource.column,
+  ];
+
+  while (data.length > 0) {
+    const item = data.pop();
+    if (!item) {
+      data.pop();
+      continue;
+    }
+    data.push(item);
+    break;
+  }
+
+  return data.join("/");
+};
+
 const selectedValueList = ref<string[]>(
   props.databaseResources.map((databaseResource) => {
-    if (databaseResource.table !== undefined) {
-      return `${databaseResource.databaseName}/schemas/${databaseResource.schema}/tables/${databaseResource.table}`;
-    } else if (databaseResource.schema !== undefined) {
-      return `${databaseResource.databaseName}/schemas/${databaseResource.schema}`;
-    } else {
-      return databaseResource.databaseName;
-    }
+    return parseResourceToKey(databaseResource);
   })
 );
 const defaultExpandedKeys = ref<string[]>([]);
@@ -158,6 +179,7 @@ const renderSourceList: TransferRenderSourceList = ({ onCheck, pattern }) => {
     checkable: true,
     selectable: false,
     checkOnClick: true,
+    disabled: props.disabled,
     data: sourceTreeOptions.value,
     blockLine: true,
     virtualScroll: true,
@@ -223,6 +245,7 @@ const renderTargetList: TransferRenderSourceList = () => {
     checkable: false,
     selectable: false,
     defaultExpandAll: true,
+    disabled: props.disabled,
     data: targetTreeOptions.value,
     blockLine: true,
     virtualScroll: true,
