@@ -21,7 +21,7 @@ import {
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { UNKNOWN_DATABASE_NAME } from "@/types";
 import { ChangeHistoryView } from "@/types/proto/v1/database_service";
-import { extractDatabaseNameAndChangeHistoryUID } from "@/utils";
+import { extractDatabaseNameAndChangeHistoryUID, instanceV1SupportsConciseSchema } from "@/utils";
 
 const props = defineProps<{
   projectId: string;
@@ -31,6 +31,7 @@ const route = useRoute();
 const changeHistoryStore = useChangeHistoryStore();
 const databaseStore = useDatabaseV1Store();
 const targetDatabaseList = ref<string[]>([]);
+const conciseHistory = ref<string | undefined>(undefined);
 
 const changeHistoryVersion = computed(() => {
   const version = route.query.version as string;
@@ -56,7 +57,15 @@ onMounted(async () => {
     return;
   }
   const { databaseName } = extractDatabaseNameAndChangeHistoryUID(history.name);
-  await databaseStore.getOrFetchDatabaseByName(databaseName);
+  const database = await databaseStore.getOrFetchDatabaseByName(databaseName);
+  if (instanceV1SupportsConciseSchema(database.instanceResource)) {
+    const conciseSchema = await changeHistoryStore.fetchChangeHistory({
+     name: history.name, 
+     view: ChangeHistoryView.CHANGE_HISTORY_VIEW_FULL,
+     concise: true,
+    });
+    conciseHistory.value = conciseSchema?.schema;
+  }
 
   const target = route.query.target as string;
   const databaseList = (target || "").split(",").filter((n) => n);
@@ -82,6 +91,7 @@ const source = computed((): ChangeHistorySourceSchema | undefined => {
   return {
     databaseName,
     changeHistory: changeHistory.value,
+    conciseHistory: conciseHistory.value,
     environmentName: database.effectiveEnvironment,
     projectName: database.project,
   };
