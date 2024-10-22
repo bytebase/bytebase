@@ -27,8 +27,8 @@
   >
     <DatabaseResourceSelector
       v-if="project"
-      :project-name="project.name"
       v-model:database-resources="state.databaseResources"
+      :project-name="project.name"
       :include-cloumn="includeCloumn"
     />
   </div>
