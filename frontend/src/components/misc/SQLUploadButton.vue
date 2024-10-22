@@ -1,28 +1,30 @@
 <template>
   <NButton tag="div" v-bind="$attrs" @click="handleClick">
     <template #icon>
-      <UploadIcon class="w-4 h-4" />
+      <slot name="icon">
+        <UploadIcon class="w-4 h-4" />
+      </slot>
+
+      <input
+        ref="inputRef"
+        type="file"
+        accept=".sql,.txt,application/sql,text/plain"
+        class="hidden"
+        @change="handleUpload"
+      />
+
+      <FileContentPreviewModal
+        v-if="selectedFile"
+        :file="selectedFile"
+        @cancel="cleanup"
+        @confirm="handleStatementConfirm"
+      />
     </template>
 
-    <span>
+    <span v-if="!iconOnly">
       <slot />
     </span>
-
-    <input
-      ref="inputRef"
-      type="file"
-      accept=".sql,.txt,application/sql,text/plain"
-      class="hidden"
-      @change="handleUpload"
-    />
   </NButton>
-
-  <FileContentPreviewModal
-    v-if="selectedFile"
-    :file="selectedFile"
-    @cancel="cleanup"
-    @confirm="handleStatementConfirm"
-  />
 </template>
 
 <script lang="ts" setup>
@@ -33,6 +35,10 @@ import { useI18n } from "vue-i18n";
 import FileContentPreviewModal from "@/components/FileContentPreviewModal.vue";
 import { pushNotification } from "@/store";
 import { MAX_UPLOAD_FILE_SIZE_MB } from "@/utils";
+
+defineProps<{
+  iconOnly?: boolean;
+}>();
 
 const emit = defineEmits<{
   (event: "update:sql", text: string, filename: string): void;

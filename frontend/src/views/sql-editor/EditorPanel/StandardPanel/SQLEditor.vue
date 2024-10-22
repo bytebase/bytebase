@@ -20,7 +20,11 @@
       @select-content="handleUpdateSelectedStatement"
       @update:selection="handleUpdateSelection"
       @ready="handleEditorReady"
-    />
+    >
+      <template #corner-prefix>
+        <UploadFileButton @upload="handleUploadFile" />
+      </template>
+    </MonacoEditor>
   </div>
 </template>
 
@@ -56,6 +60,7 @@ import { dialectOfEngineV1 } from "@/types";
 import { Advice_Status, type Advice } from "@/types/proto/v1/sql_service";
 import { nextAnimationFrame, useInstanceV1EditorLanguage } from "@/utils";
 import { useSQLEditorContext } from "../../context";
+import UploadFileButton from "./UploadFileButton.vue";
 import { activeSQLEditorRef } from "./state";
 
 const emit = defineEmits<{
@@ -334,6 +339,30 @@ const updateAdvices = (
       endColumn: endColumn,
     };
   });
+};
+const handleUploadFile = (content: string) => {
+  const editor = activeSQLEditorRef.value;
+  if (!editor) return;
+  const tab = currentTab.value;
+  if (!tab) return;
+  if (tab.statement.trim() !== "") {
+    content = "\n" + content;
+  }
+  const maxLineNumber = editor.getModel()?.getLineCount() ?? 0;
+  editor.executeEdits("bb.event.upload-file", [
+    {
+      forceMoveMarkers: true,
+      text: content,
+      range: {
+        startLineNumber: maxLineNumber + 1,
+        startColumn: 1,
+        endLineNumber: maxLineNumber + 1,
+        endColumn: 1,
+      },
+    },
+  ]);
+  const newMaxLineNumber = editor.getModel()?.getLineCount() ?? 0;
+  editor.revealLine(newMaxLineNumber);
 };
 
 useEmitteryEventListener(editorEvents, "format-content", () => {

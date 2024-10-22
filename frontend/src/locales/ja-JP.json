@@ -2314,7 +2314,6 @@
     "search-name-database": "検索名、データベース",
     "successfully-created-data-source-datasource-name": "データ ソース '{0}' が正常に作成されました。",
     "select-database-first": "最初にデータベースを選択してください",
-    "select-data-source": "データソースの選択",
     "search-user": "ユーザーを検索する",
     "user-list": "ユーザーリスト",
     "revoke-access": "「{0}」の「{1}」へのアクセスを削除してもよろしいですか?",
@@ -2365,7 +2364,8 @@
     "replica-set": "レプリカセット",
     "admin": "メインライブラリ",
     "read-only": "図書館から",
-    "direct-connection": "Direct Connection"
+    "direct-connection": "Direct Connection",
+    "select-query-data-source": "クエリデータソースの選択"
   },
   "setting": {
     "project": {
@@ -2543,7 +2543,8 @@
       "not-member-of-any-projects": "あなたはどのプロジェクトのメンバーでもありません。",
       "go-to-create": "作成に行く",
       "contact-the-admin-to-grant-access": "管理者に連絡してアクセスを許可してください。"
-    }
+    },
+    "upload-file": "ファイルをアップロードする"
   },
   "schema-editor": {
     "self": "スキーマエディタ",
@@ -3724,7 +3725,13 @@
   "release": {
     "self": "リリース",
     "releases": "リリース",
-    "files": "ファイル"
+    "files": "ファイル",
+    "tasks-to-apply": "適用するタスク",
+    "out-of-order-files": "順序が間違っているファイル",
+    "applied-but-modifed-files": "適用済みだが変更されたファイル",
+    "no-tasks-to-apply": {
+      "self": "適用するタスクはありません"
+    }
   },
   "export-data": {
     "export-rows": "エクスポート行数",

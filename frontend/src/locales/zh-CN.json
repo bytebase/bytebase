@@ -2314,7 +2314,6 @@
     "search-name-database": "搜索名称，数据库",
     "successfully-created-data-source-datasource-name": "成功创建数据源 '{0}'。",
     "select-database-first": "先选择数据库",
-    "select-data-source": "选择数据源",
     "search-user": "搜索用户",
     "user-list": "用户列表",
     "revoke-access": "您确定要取消 '{0}' 对 '{1}' 的访问权限？",
@@ -2365,7 +2364,8 @@
     "replica-set": "副本集",
     "admin": "管理员",
     "read-only": "只读",
-    "direct-connection": "Direct Connection"
+    "direct-connection": "Direct Connection",
+    "select-query-data-source": "选择查询数据源"
   },
   "setting": {
     "project": {
@@ -2543,7 +2543,8 @@
       "not-member-of-any-projects": "你不是任何项目的成员。",
       "go-to-create": "去创建",
       "contact-the-admin-to-grant-access": "联系管理员以授予访问权限。"
-    }
+    },
+    "upload-file": "上传文件"
   },
   "schema-editor": {
     "self": "Schema 编辑器",
@@ -3724,7 +3725,13 @@
   "release": {
     "self": "发布",
     "releases": "发布",
-    "files": "文件"
+    "files": "文件",
+    "tasks-to-apply": "待应用的任务",
+    "out-of-order-files": "无序文件",
+    "applied-but-modifed-files": "已应用但已修改的文件",
+    "no-tasks-to-apply": {
+      "self": "没有可应用的任务"
+    }
   },
   "export-data": {
     "export-rows": "导出行数",
