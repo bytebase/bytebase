@@ -368,6 +368,14 @@
       "title": "No permitir establecer valores predeterminados volátiles en las columnas",
       "description": "Las funciones volátiles (por ejemplo, clock_timestamp()) actualizan cada fila con el valor en el momento de la ejecución de ALTER TABLE, lo que puede causar actualizaciones prolongadas."
     },
+    "column-require-charset": {
+      "title": "Requerir juego de caracteres para columnas de texto",
+      "description": "Se debe especificar el conjunto de caracteres de las columnas con tipos de datos de texto. Nivel de error sugerido: Advertencia"
+    },
+    "column-require-collation": {
+      "title": "Requerir intercalación para columnas de texto",
+      "description": "Se debe especificar la intercalación de columnas con tipos de datos de texto. Nivel de error sugerido: Advertencia"
+    },
     "statement-select-no-select-all": {
       "title": "Prohibir el uso de \"SELECT *\"",
       "description": "El uso de SELECT * para obtener todos los datos de una fila puede causar una sobrecarga de recursos innecesaria y también puede causar resultados inesperados en las aplicaciones una vez que la tabla agrega o elimina columnas. Nivel de sugerencia de error: Error"

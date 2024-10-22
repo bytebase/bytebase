@@ -368,6 +368,14 @@
       "title": "列に対して揮発性のあるデフォルト値の設定を禁止します",
       "description": "ボラタイル関数（例: clock_timestamp()）は、ALTER TABLE 実行時の値で各行を更新し、更新が長引く可能性があります。"
     },
+    "column-require-charset": {
+      "title": "テキスト列に文字セットを要求する",
+      "description": "テキスト データ型の列の文字セットを指定する必要があります。提案エラー レベル: 警告"
+    },
+    "column-require-collation": {
+      "title": "テキスト列の照合を要求する",
+      "description": "テキスト データ型の列の照合を指定する必要があります。提案エラー レベル: 警告"
+    },
     "statement-select-no-select-all": {
       "title": "「SELECT *」の使用を禁止する",
       "description": "「SELECT *」を使用して全行データを取得すると、不必要なリソースのオーバーヘッドが発生し、テーブルに列を追加または削除した場合にアプリケーションで予期しない結果が発生する可能性があります。提案エラーレベル：エラー"

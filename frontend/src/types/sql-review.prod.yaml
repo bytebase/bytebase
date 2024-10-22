@@ -1293,6 +1293,12 @@ ruleList:
   - type: column.default-disallow-volatile
     level: WARNING
     engine: POSTGRES
+  - type: column.require-charset
+    level: WARNING
+    engine: MYSQL
+  - type: column.require-collation
+    level: WARNING
+    engine: MYSQL
   - type: schema.backward-compatibility
     level: WARNING
     engine: MYSQL
