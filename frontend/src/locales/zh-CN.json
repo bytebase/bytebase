@@ -3719,7 +3719,10 @@
   "release": {
     "self": "发布",
     "releases": "发布",
-    "files": "文件"
+    "files": "文件",
+    "tasks-to-apply": "带应用的任务",
+    "out-of-order-files": "无序文件",
+    "applied-but-modifed-files": "已应用但已修改的文件"
   },
   "export-data": {
     "export-rows": "导出行数",

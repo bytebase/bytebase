@@ -3719,7 +3719,10 @@
   "release": {
     "self": "Release",
     "releases": "Releases",
-    "files": "Files"
+    "files": "Files",
+    "tasks-to-apply": "Tasks to apply",
+    "out-of-order-files": "Out of order files",
+    "applied-but-modifed-files": "Applied but modified files"
   },
   "export-data": {
     "export-rows": "Export rows",
