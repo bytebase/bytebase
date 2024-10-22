@@ -42,9 +42,6 @@ export const mapTreeOptions = ({
         includeCloumn,
       }),
     };
-    // if (databaseNode.children && databaseNode.children.length > 0) {
-    //   databaseNode.isLeaf = false;
-    // }
     if (!isUndefined(databaseNode.children)) {
       databaseNode.isLeaf = databaseNode.children.length === 0;
     }

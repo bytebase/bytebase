@@ -2206,7 +2206,7 @@
       "delete-success": "The GitOps connector is removed"
     },
     "masking-access": {
-      "self": "Masking Access",
+      "self": "Access Masking",
       "grant-access": "Grant Access"
     }
   },
