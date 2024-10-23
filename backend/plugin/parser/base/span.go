@@ -328,6 +328,7 @@ type GetLinkedDatabaseMetadataFunc func(context.Context, string, string, string)
 
 func (s *QuerySpan) ToYaml() *YamlQuerySpan {
 	y := &YamlQuerySpan{
+		Type:          s.Type,
 		Results:       []YamlQuerySpanResult{},
 		SourceColumns: []ColumnResource{},
 	}
@@ -356,6 +357,7 @@ func (s *QuerySpan) ToYaml() *YamlQuerySpan {
 }
 
 type YamlQuerySpan struct {
+	Type          QueryType
 	Results       []YamlQuerySpanResult
 	SourceColumns []ColumnResource
 }
