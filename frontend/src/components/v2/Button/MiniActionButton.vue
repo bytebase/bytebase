@@ -1,5 +1,5 @@
 <template>
-  <NButton quaternary size="tiny" style="--n-padding: 4px">
+  <NButton quaternary size="tiny" style="--n-padding: 4px" :disabled="disabled">
     <template #icon>
       <slot />
     </template>
@@ -11,4 +11,8 @@
 
 <script setup lang="ts">
 import { NButton } from "naive-ui";
+
+defineProps<{
+  disabled?: boolean;
+}>();
 </script>

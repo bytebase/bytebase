@@ -15,8 +15,6 @@
             :project-name="projectName"
             :required-feature="'bb.feature.sensitive-data'"
             :include-cloumn="true"
-            :allow-select-all="false"
-            :disabled="true"
           />
         </div>
 
@@ -122,7 +120,10 @@ import {
 } from "@/types/proto/v1/org_policy_service";
 import MaskingLevelRadioGroup from "./components/MaskingLevelRadioGroup.vue";
 import type { SensitiveColumn } from "./types";
-import { getExpressionsForDatabaseResource } from "./utils";
+import {
+  getExpressionsForDatabaseResource,
+  convertSensitiveColumnToDatabaseResource,
+} from "./utils";
 
 const props = defineProps<{
   columnList: SensitiveColumn[];
@@ -151,12 +152,9 @@ const state = reactive<LocalState>({
   maskingLevel: MaskingLevel.PARTIAL,
   processing: false,
   supportActions: new Set(ACTIONS),
-  databaseResources: props.columnList.map((col) => ({
-    databaseName: col.database.name,
-    schema: col.maskData.schema,
-    table: col.maskData.table,
-    column: col.maskData.column,
-  })),
+  databaseResources: props.columnList.map(
+    convertSensitiveColumnToDatabaseResource
+  ),
 });
 
 const policyStore = usePolicyV1Store();
@@ -167,6 +165,8 @@ const resetState = () => {
   state.maskingLevel = MaskingLevel.PARTIAL;
   state.supportActions = new Set(ACTIONS);
   state.memberList = [];
+  state.databaseResources = undefined;
+  state.processing = false;
 };
 
 const onDismiss = () => {
@@ -233,7 +233,8 @@ const getPendingUpdatePolicy = async (
           action,
           maskingLevel: state.maskingLevel,
           condition: Expr.fromPartial({
-            expression: expressions.join(" && "),
+            expression:
+              expressions.length > 0 ? expressions.join(" && ") : undefined,
           }),
         });
       } else {
