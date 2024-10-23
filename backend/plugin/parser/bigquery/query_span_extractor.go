@@ -515,6 +515,9 @@ func (q *querySpanExtractor) extractTableSourceFromFromClause(fromClause parser.
 	for _, suffix := range allSuffixes {
 		joinType := getJoinTypeFromFromClauseContentsSuffix(suffix)
 		tableSource, err = q.extractTableSourceFromTablePrimary(suffix.Table_primary())
+		if err != nil {
+			return nil, err
+		}
 		switch joinType {
 		case crossJoin, innerJoin, fullOuterJoin, leftOuterJoin, rightOuterJoin:
 			using := make(map[string]bool)
