@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net"
+	"net/http"
 	"os"
 	"sync"
 	"time"
@@ -255,7 +256,23 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	// Note: the gateway response modifier takes the token duration on server startup. If the value is changed,
 	// the user has to restart the server to take the latest value.
 	gatewayModifier := auth.GatewayResponseModifier{Store: s.store}
-	mux := grpcruntime.NewServeMux(grpcruntime.WithForwardResponseOption(gatewayModifier.Modify))
+	mux := grpcruntime.NewServeMux(
+		grpcruntime.WithForwardResponseOption(gatewayModifier.Modify),
+		grpcruntime.WithRoutingErrorHandler(func(ctx context.Context, sm *grpcruntime.ServeMux, m grpcruntime.Marshaler, w http.ResponseWriter, r *http.Request, httpStatus int) {
+			if httpStatus != http.StatusNotFound {
+				grpcruntime.DefaultRoutingErrorHandler(ctx, sm, m, w, r, httpStatus)
+				return
+			}
+
+			err := &grpcruntime.HTTPStatusError{
+				HTTPStatus: httpStatus,
+				Err:        status.Errorf(codes.NotFound, fmt.Sprintf("Routing error. Please check the request URI %v", r.RequestURI)),
+			}
+
+			grpcruntime.DefaultHTTPErrorHandler(ctx, sm, m, w, r, err)
+			return
+		}),
+	)
 
 	s.metricReporter = metricreport.NewReporter(s.store, s.licenseService, s.profile, false)
 	s.schemaSyncer = schemasync.NewSyncer(storeInstance, s.dbFactory, s.stateCfg, profile, s.licenseService)
