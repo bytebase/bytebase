@@ -1,0 +1,49 @@
+syntax = "proto3";
+
+package bytebase.store;
+
+import "store/instance_change_history.proto";
+
+option go_package = "generated-go/store";
+
+message ChangelogPayload {
+  ChangelogTask task = 1;
+  ChangelogRevision revision = 2;
+}
+
+message ChangelogTask {
+  string task_run = 1;
+  string issue = 2;
+
+  // optional
+  int64 revision = 3;
+
+  ChangedResources changed_resources = 4;
+
+  enum Status {
+    STATUS_UNSPECIFIED = 0;
+    PENDING = 1;
+    DONE = 2;
+    FAILED = 3;
+  }
+
+  Status status = 5;
+
+  int64 prev_sync_history_id = 6;
+  int64 sync_history_id = 7;
+
+  // The sheet that holds the content.
+  // Format: projects/{project}/sheets/{sheet}
+  string sheet = 8;
+}
+
+message ChangelogRevision {
+  enum Op {
+    OP_UNSPECIFIED = 0;
+    CREATE = 1;
+    DELETE = 2;
+  }
+  // Marshalled revision for display
+  string revision = 1;
+  Op operation = 2;
+}

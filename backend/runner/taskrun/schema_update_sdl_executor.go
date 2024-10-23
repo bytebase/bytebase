@@ -74,7 +74,7 @@ func (exec *SchemaUpdateSDLExecutor) RunOnce(ctx context.Context, driverCtx cont
 	if err != nil {
 		return true, nil, errors.Wrap(err, "invalid database schema diff")
 	}
-	terminated, result, err := runMigration(ctx, driverCtx, exec.store, exec.dbFactory, exec.stateCfg, exec.profile, task, taskRunUID, db.MigrateSDL, ddl, version, &sheetID)
+	terminated, result, err := runMigration(ctx, driverCtx, exec.store, exec.dbFactory, exec.stateCfg, exec.schemaSyncer, exec.profile, task, taskRunUID, db.MigrateSDL, ddl, version, &sheetID)
 
 	if err := exec.schemaSyncer.SyncDatabaseSchema(ctx, database, false /* force */); err != nil {
 		slog.Error("failed to sync database schema",
