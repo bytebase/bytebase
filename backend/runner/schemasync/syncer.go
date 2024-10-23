@@ -340,6 +340,124 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessa
 }
 
 // SyncDatabaseSchema will sync the schema for a database.
+func (s *Syncer) SyncDatabaseSchemaToHistory(ctx context.Context, database *store.DatabaseMessage, force bool) (int64, error) {
+	if s.profile.Readonly {
+		return 0, nil
+	}
+
+	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{ResourceID: &database.InstanceID})
+	if err != nil {
+		return 0, errors.Wrapf(err, "failed to get instance %q", database.InstanceID)
+	}
+	if instance == nil {
+		return 0, errors.Errorf("instance %q not found", database.InstanceID)
+	}
+	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{})
+	if err != nil {
+		s.upsertDatabaseConnectionAnomaly(ctx, instance, database, err)
+		return 0, err
+	}
+	defer driver.Close(ctx)
+	s.upsertDatabaseConnectionAnomaly(ctx, instance, database, nil)
+	// Sync database schema
+	deadlineCtx, cancelFunc := context.WithDeadline(ctx, time.Now().Add(syncTimeout))
+	defer cancelFunc()
+	databaseMetadata, err := driver.SyncDBSchema(deadlineCtx)
+	if err != nil {
+		return 0, errors.Wrapf(err, "failed to sync database schema for database %q", database.DatabaseName)
+	}
+
+	dbSchema, err := s.store.GetDBSchema(ctx, database.UID)
+	if err != nil {
+		return 0, errors.Wrapf(err, "failed to get database schema for database %q", database.DatabaseName)
+	}
+
+	dbModelConfig := model.NewDatabaseConfig(nil)
+	if dbSchema != nil {
+		dbModelConfig = dbSchema.GetInternalConfig()
+	}
+
+	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+		ResourceID: &database.ProjectID,
+	})
+	if err != nil {
+		return 0, errors.Wrapf(err, `failed to get project by id "%s"`, database.ProjectID)
+	}
+	classificationConfig, err := s.store.GetDataClassificationConfigByID(ctx, project.DataClassificationConfigID)
+	if err != nil {
+		return 0, errors.Wrapf(err, `failed to get classification config by id "%s"`, project.DataClassificationConfigID)
+	}
+
+	if instance.Engine != storepb.Engine_MYSQL && instance.Engine != storepb.Engine_POSTGRES {
+		// Force to disable classification from comment if the engine is not MYSQL or PG.
+		classificationConfig.ClassificationFromConfig = true
+	}
+	if classificationConfig.ClassificationFromConfig {
+		// Only set the user comment.
+		setUserCommentFromComment(databaseMetadata)
+	} else {
+		// Get classification from the comment.
+		setClassificationAndUserCommentFromComment(databaseMetadata, dbModelConfig, classificationConfig)
+	}
+
+	syncStatus := api.OK
+	ts := time.Now().Unix()
+	if _, err := s.store.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
+		InstanceID:           database.InstanceID,
+		DatabaseName:         database.DatabaseName,
+		SyncState:            &syncStatus,
+		SuccessfulSyncTimeTs: &ts,
+		MetadataUpsert: &storepb.DatabaseMetadata{
+			LastSyncTime: timestamppb.New(time.Unix(ts, 0)),
+		},
+	}, api.SystemBotID); err != nil {
+		return 0, errors.Wrapf(err, "failed to update database %q for instance %q", database.DatabaseName, database.InstanceID)
+	}
+
+	var oldDatabaseMetadata *storepb.DatabaseSchemaMetadata
+	var rawDump []byte
+	if dbSchema != nil {
+		oldDatabaseMetadata = dbSchema.GetMetadata()
+		rawDump = dbSchema.GetSchema()
+	}
+
+	// Avoid updating dump everytime by dumping the schema only when the database metadata is changed.
+	// if oldDatabaseMetadata is nil and databaseMetadata is not, they are not equal resulting a sync.
+	if force || !common.EqualDatabaseSchemaMetadataFast(oldDatabaseMetadata, databaseMetadata) {
+		var schemaBuf bytes.Buffer
+		if err := driver.Dump(ctx, &schemaBuf); err != nil {
+			return 0, errors.Wrapf(err, "failed to dump database schema for database %q", database.DatabaseName)
+		}
+		rawDump = schemaBuf.Bytes()
+	}
+
+	if err := s.store.UpsertDBSchema(ctx,
+		database.UID,
+		model.NewDBSchema(databaseMetadata, rawDump, dbModelConfig.BuildDatabaseConfig()),
+		api.SystemBotID,
+	); err != nil {
+		if strings.Contains(err.Error(), "escape sequence") {
+			if metadataBytes, err := protojson.Marshal(databaseMetadata); err == nil {
+				slog.Error("unsupported Unicode escape sequence", slog.String("metadata", string(metadataBytes)), slog.String("raw_dump", string(rawDump)))
+			}
+		}
+		return 0, errors.Wrapf(err, "failed to upsert database schema for database %q", database.DatabaseName)
+	}
+
+	id, err := s.store.CreateSyncHistory(ctx, database.UID, databaseMetadata, string(rawDump), api.SystemBotID)
+	if err != nil {
+		if strings.Contains(err.Error(), "escape sequence") {
+			if metadataBytes, err := protojson.Marshal(databaseMetadata); err == nil {
+				slog.Error("unsupported Unicode escape sequence", slog.String("metadata", string(metadataBytes)), slog.String("raw_dump", string(rawDump)))
+			}
+		}
+		return 0, errors.Wrapf(err, "failed to insert sync history for database %q", database.DatabaseName)
+	}
+
+	return id, nil
+}
+
+// SyncDatabaseSchema will sync the schema for a database.
 func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.DatabaseMessage, force bool) (retErr error) {
 	if s.profile.Readonly {
 		return nil
