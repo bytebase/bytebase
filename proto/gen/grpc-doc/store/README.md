@@ -93,6 +93,24 @@
     - [Changelist](#bytebase-store-Changelist)
     - [Changelist.Change](#bytebase-store-Changelist-Change)
   
+- [store/instance_change_history.proto](#store_instance_change_history-proto)
+    - [ChangedResourceDatabase](#bytebase-store-ChangedResourceDatabase)
+    - [ChangedResourceFunction](#bytebase-store-ChangedResourceFunction)
+    - [ChangedResourceProcedure](#bytebase-store-ChangedResourceProcedure)
+    - [ChangedResourceSchema](#bytebase-store-ChangedResourceSchema)
+    - [ChangedResourceTable](#bytebase-store-ChangedResourceTable)
+    - [ChangedResourceView](#bytebase-store-ChangedResourceView)
+    - [ChangedResources](#bytebase-store-ChangedResources)
+    - [InstanceChangeHistoryPayload](#bytebase-store-InstanceChangeHistoryPayload)
+  
+- [store/changelog.proto](#store_changelog-proto)
+    - [ChangelogPayload](#bytebase-store-ChangelogPayload)
+    - [ChangelogRevision](#bytebase-store-ChangelogRevision)
+    - [ChangelogTask](#bytebase-store-ChangelogTask)
+  
+    - [ChangelogRevision.Op](#bytebase-store-ChangelogRevision-Op)
+    - [ChangelogTask.Status](#bytebase-store-ChangelogTask-Status)
+  
 - [store/data_source.proto](#store_data_source-proto)
     - [DataSourceExternalSecret](#bytebase-store-DataSourceExternalSecret)
     - [DataSourceExternalSecret.AppRoleAuthOption](#bytebase-store-DataSourceExternalSecret-AppRoleAuthOption)
@@ -134,16 +152,6 @@
     - [InstanceMetadata](#bytebase-store-InstanceMetadata)
     - [InstanceOptions](#bytebase-store-InstanceOptions)
     - [InstanceRole](#bytebase-store-InstanceRole)
-  
-- [store/instance_change_history.proto](#store_instance_change_history-proto)
-    - [ChangedResourceDatabase](#bytebase-store-ChangedResourceDatabase)
-    - [ChangedResourceFunction](#bytebase-store-ChangedResourceFunction)
-    - [ChangedResourceProcedure](#bytebase-store-ChangedResourceProcedure)
-    - [ChangedResourceSchema](#bytebase-store-ChangedResourceSchema)
-    - [ChangedResourceTable](#bytebase-store-ChangedResourceTable)
-    - [ChangedResourceView](#bytebase-store-ChangedResourceView)
-    - [ChangedResources](#bytebase-store-ChangedResources)
-    - [InstanceChangeHistoryPayload](#bytebase-store-InstanceChangeHistoryPayload)
   
 - [store/issue.proto](#store_issue-proto)
     - [GrantRequest](#bytebase-store-GrantRequest)
@@ -1699,6 +1707,249 @@ PostgreSQL: RANGE, LIST, HASH (https://www.postgresql.org/docs/current/ddl-parti
 
 
 
+<a name="store_instance_change_history-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## store/instance_change_history.proto
+
+
+
+<a name="bytebase-store-ChangedResourceDatabase"></a>
+
+### ChangedResourceDatabase
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  |  |
+| schemas | [ChangedResourceSchema](#bytebase-store-ChangedResourceSchema) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-store-ChangedResourceFunction"></a>
+
+### ChangedResourceFunction
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  |  |
+| ranges | [Range](#bytebase-store-Range) | repeated | The ranges of sub-strings correspond to the statements on the sheet. |
+
+
+
+
+
+
+<a name="bytebase-store-ChangedResourceProcedure"></a>
+
+### ChangedResourceProcedure
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  |  |
+| ranges | [Range](#bytebase-store-Range) | repeated | The ranges of sub-strings correspond to the statements on the sheet. |
+
+
+
+
+
+
+<a name="bytebase-store-ChangedResourceSchema"></a>
+
+### ChangedResourceSchema
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  |  |
+| tables | [ChangedResourceTable](#bytebase-store-ChangedResourceTable) | repeated |  |
+| views | [ChangedResourceView](#bytebase-store-ChangedResourceView) | repeated |  |
+| functions | [ChangedResourceFunction](#bytebase-store-ChangedResourceFunction) | repeated |  |
+| procedures | [ChangedResourceProcedure](#bytebase-store-ChangedResourceProcedure) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-store-ChangedResourceTable"></a>
+
+### ChangedResourceTable
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  |  |
+| table_rows | [int64](#int64) |  | estimated row count of the table |
+| ranges | [Range](#bytebase-store-Range) | repeated | The ranges of sub-strings correspond to the statements on the sheet. |
+
+
+
+
+
+
+<a name="bytebase-store-ChangedResourceView"></a>
+
+### ChangedResourceView
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  |  |
+| ranges | [Range](#bytebase-store-Range) | repeated | The ranges of sub-strings correspond to the statements on the sheet. |
+
+
+
+
+
+
+<a name="bytebase-store-ChangedResources"></a>
+
+### ChangedResources
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| databases | [ChangedResourceDatabase](#bytebase-store-ChangedResourceDatabase) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-store-InstanceChangeHistoryPayload"></a>
+
+### InstanceChangeHistoryPayload
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| changed_resources | [ChangedResources](#bytebase-store-ChangedResources) |  |  |
+
+
+
+
+
+ 
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="store_changelog-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## store/changelog.proto
+
+
+
+<a name="bytebase-store-ChangelogPayload"></a>
+
+### ChangelogPayload
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| task | [ChangelogTask](#bytebase-store-ChangelogTask) |  |  |
+| revision | [ChangelogRevision](#bytebase-store-ChangelogRevision) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-ChangelogRevision"></a>
+
+### ChangelogRevision
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| revision | [string](#string) |  | Marshalled revision for display |
+| operation | [ChangelogRevision.Op](#bytebase-store-ChangelogRevision-Op) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-ChangelogTask"></a>
+
+### ChangelogTask
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| task_run | [string](#string) |  |  |
+| issue | [string](#string) |  |  |
+| revision | [int64](#int64) |  | optional |
+| changed_resources | [ChangedResources](#bytebase-store-ChangedResources) |  |  |
+| status | [ChangelogTask.Status](#bytebase-store-ChangelogTask-Status) |  |  |
+| prev_sync_history_id | [int64](#int64) |  |  |
+| sync_history_id | [int64](#int64) |  |  |
+| sheet | [string](#string) |  | The sheet that holds the content. Format: projects/{project}/sheets/{sheet} |
+
+
+
+
+
+ 
+
+
+<a name="bytebase-store-ChangelogRevision-Op"></a>
+
+### ChangelogRevision.Op
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| OP_UNSPECIFIED | 0 |  |
+| CREATE | 1 |  |
+| DELETE | 2 |  |
+
+
+
+<a name="bytebase-store-ChangelogTask-Status"></a>
+
+### ChangelogTask.Status
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| STATUS_UNSPECIFIED | 0 |  |
+| PENDING | 1 |  |
+| DONE | 2 |  |
+| FAILED | 3 |  |
+
+
+ 
+
+ 
+
+ 
+
+
+
 <a name="store_data_source-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
@@ -2259,152 +2510,6 @@ InstanceRole is the API message for instance role.
 | connection_limit | [int32](#int32) | optional | The connection count limit for this role. |
 | valid_until | [string](#string) | optional | The expiration for the role&#39;s password. |
 | attribute | [string](#string) | optional | The role attribute. For PostgreSQL, it containt super_user, no_inherit, create_role, create_db, can_login, replication and bypass_rls. Docs: https://www.postgresql.org/docs/current/role-attributes.html For MySQL, it&#39;s the global privileges as GRANT statements, which means it only contains &#34;GRANT ... ON *.* TO ...&#34;. Docs: https://dev.mysql.com/doc/refman/8.0/en/grant.html |
-
-
-
-
-
- 
-
- 
-
- 
-
- 
-
-
-
-<a name="store_instance_change_history-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## store/instance_change_history.proto
-
-
-
-<a name="bytebase-store-ChangedResourceDatabase"></a>
-
-### ChangedResourceDatabase
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  |  |
-| schemas | [ChangedResourceSchema](#bytebase-store-ChangedResourceSchema) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-store-ChangedResourceFunction"></a>
-
-### ChangedResourceFunction
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  |  |
-| ranges | [Range](#bytebase-store-Range) | repeated | The ranges of sub-strings correspond to the statements on the sheet. |
-
-
-
-
-
-
-<a name="bytebase-store-ChangedResourceProcedure"></a>
-
-### ChangedResourceProcedure
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  |  |
-| ranges | [Range](#bytebase-store-Range) | repeated | The ranges of sub-strings correspond to the statements on the sheet. |
-
-
-
-
-
-
-<a name="bytebase-store-ChangedResourceSchema"></a>
-
-### ChangedResourceSchema
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  |  |
-| tables | [ChangedResourceTable](#bytebase-store-ChangedResourceTable) | repeated |  |
-| views | [ChangedResourceView](#bytebase-store-ChangedResourceView) | repeated |  |
-| functions | [ChangedResourceFunction](#bytebase-store-ChangedResourceFunction) | repeated |  |
-| procedures | [ChangedResourceProcedure](#bytebase-store-ChangedResourceProcedure) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-store-ChangedResourceTable"></a>
-
-### ChangedResourceTable
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  |  |
-| table_rows | [int64](#int64) |  | estimated row count of the table |
-| ranges | [Range](#bytebase-store-Range) | repeated | The ranges of sub-strings correspond to the statements on the sheet. |
-
-
-
-
-
-
-<a name="bytebase-store-ChangedResourceView"></a>
-
-### ChangedResourceView
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  |  |
-| ranges | [Range](#bytebase-store-Range) | repeated | The ranges of sub-strings correspond to the statements on the sheet. |
-
-
-
-
-
-
-<a name="bytebase-store-ChangedResources"></a>
-
-### ChangedResources
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| databases | [ChangedResourceDatabase](#bytebase-store-ChangedResourceDatabase) | repeated |  |
-
-
-
-
-
-
-<a name="bytebase-store-InstanceChangeHistoryPayload"></a>
-
-### InstanceChangeHistoryPayload
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| changed_resources | [ChangedResources](#bytebase-store-ChangedResources) |  |  |
 
 
 
