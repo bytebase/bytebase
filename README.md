@@ -126,8 +126,7 @@ Bytebase is a Database CI/CD solution for the Developers and DBAs. It's the **on
 
 - [Bytebase Console](https://bytebase.com/?source=github): A web-based GUI for developers and DBAs to manage the database development lifecycle.
 - [Bytebase API](https://www.bytebase.com/docs/api/overview): Provide both gRPC and RESTful API to manipulate every aspect of Bytebase.
-- [Bytebase CLI (bb)](https://www.bytebase.com/docs/cli/overview): The CLI to help developers integrate database changes into the existing CI/CD workflow.
-- [Bytebase GitHub App](https://github.com/marketplace/bytebase) and [SQL Review GitHub Action](https://github.com/marketplace/actions/sql-review): The GitHub App and GitHub Action to detect SQL anti-patterns and enforce a consistent SQL style guide during Pull Request.
+- [SQL Review GitHub Action](https://github.com/bytebase/sql-review-action): The GitHub Action to detect SQL anti-patterns and enforce a consistent SQL style guide during Pull Request.
 - [Terraform Bytebase Provider](https://registry.terraform.io/providers/bytebase/bytebase/latest/docs): The Terraform
   provider enables team to manage Bytebase resources via Terraform. A typical setup involves teams using
   Terraform to provision database instances from Cloud vendors, followed by using Bytebase provider to
