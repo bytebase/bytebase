@@ -170,7 +170,7 @@ import {
   NDatePicker,
   NPopconfirm,
 } from "naive-ui";
-import { computed, reactive, watch, ref, h } from "vue";
+import { computed, reactive, watch, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { RouterLink } from "vue-router";
 import { useSemanticType } from "@/components/SensitiveData/useSemanticType";
@@ -463,7 +463,7 @@ const accessUserTableColumns = computed(
               checked={item.supportActions.has(
                 MaskingExceptionPolicy_MaskingException_Action.EXPORT
               )}
-              disabled={!hasPermission || state.processing}
+              disabled={!hasPermission.value || state.processing}
               onUpdateChecked={(e) =>
                 onAccessControlUpdate(row, (item) =>
                   toggleAction(
@@ -487,7 +487,7 @@ const accessUserTableColumns = computed(
               checked={item.supportActions.has(
                 MaskingExceptionPolicy_MaskingException_Action.QUERY
               )}
-              disabled={!hasPermission || state.processing}
+              disabled={!hasPermission.value || state.processing}
               onUpdate:checked={(e) =>
                 onAccessControlUpdate(row, (item) =>
                   toggleAction(
@@ -507,7 +507,7 @@ const accessUserTableColumns = computed(
         render: (item: AccessUser, row: number) => {
           return (
             <MaskingLevelDropdown
-              disabled={!hasPermission || state.processing}
+              disabled={!hasPermission.value || state.processing}
               level={item.maskingLevel}
               levelList={[MaskingLevel.PARTIAL, MaskingLevel.NONE]}
               onUpdate:level={(e) =>
@@ -528,7 +528,7 @@ const accessUserTableColumns = computed(
               type={"datetime"}
               isDateDisabled={(date: number) => date < Date.now()}
               clearable={true}
-              disabled={!hasPermission || state.processing}
+              disabled={!hasPermission.value || state.processing}
               onUpdate:value={(val: number | undefined) =>
                 onAccessControlUpdate(
                   row,
@@ -551,7 +551,7 @@ const accessUserTableColumns = computed(
                 trigger: () => {
                   return (
                     <MiniActionButton
-                      disabled={!hasPermission || state.processing}
+                      disabled={!hasPermission.value || state.processing}
                     >
                       {{
                         default: () => <TrashIcon class="w-4 h-4" />,
