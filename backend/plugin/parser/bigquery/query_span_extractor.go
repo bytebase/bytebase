@@ -94,8 +94,46 @@ func (q *querySpanExtractor) extractTableSourceFromQuery(query parser.IQueryCont
 
 func (q *querySpanExtractor) extractTableSourceFromQueryWithoutPipe(queryWithoutPipe parser.IQuery_without_pipe_operatorsContext) (base.TableSource, error) {
 	// TODO(zp): handle CTE.
-
+	if queryWithoutPipe.With_clause() != nil {
+		if err := q.recordCTE(queryWithoutPipe.With_clause()); err != nil {
+			return nil, err
+		}
+	}
 	return q.extractTableSourceFromQueryPrimaryOrSetOperation(queryWithoutPipe.Query_primary_or_set_operation())
+}
+
+func (q *querySpanExtractor) recordCTE(withClause parser.IWith_clauseContext) error {
+	allAliasedQuery := withClause.AllAliased_query()
+	for _, aliasedQuery := range allAliasedQuery {
+		// TODO(zp): Actually, BigQuery do not rely on the RECURSIVE keyword, instead, it detects the recursive CTE
+		// by the reference of the CTE itself in the CTE body. Also, check other engines.
+		// TODO(zp): Handle recursive cte.
+		cteName := unquoteIdentifierByRule(aliasedQuery.Identifier())
+		query := aliasedQuery.Parenthesized_query().Query()
+		tableSource, err := q.extractNormalCTE(query)
+		if err != nil {
+			return err
+		}
+		q.ctes = append(q.ctes, &base.PseudoTable{
+			Name:    cteName,
+			Columns: tableSource.GetQuerySpanResult(),
+		})
+	}
+	return nil
+}
+
+func (q *querySpanExtractor) extractNormalCTE(query parser.IQueryContext) (base.TableSource, error) {
+	querySpanExtractor := &querySpanExtractor{
+		ctx:             q.ctx,
+		defaultDatabase: q.defaultDatabase,
+		gCtx:            q.gCtx,
+		ctes:            q.ctes,
+	}
+	tableSource, err := querySpanExtractor.extractTableSourceFromQuery(query)
+	if err != nil {
+		return nil, err
+	}
+	return tableSource, nil
 }
 
 func (q *querySpanExtractor) extractTableSourceFromQueryPrimaryOrSetOperation(queryPrimaryOrSetOperation parser.IQuery_primary_or_set_operationContext) (base.TableSource, error) {
@@ -442,7 +480,7 @@ func (q *querySpanExtractor) extractTableSourceFromTablePathExpression(tablePath
 		return nil, errors.Errorf("unsupported unnest expression: %s", tablePathExprBase.GetText())
 	}
 	var tableName string
-	datasetName := q.defaultDatabase
+	var datasetName string
 
 	if slashedOrDashedPathExpression := tablePathExprBase.Maybe_slashed_or_dashed_path_expression(); slashedOrDashedPathExpression != nil {
 		if slashedOrDashedPathExpression.Maybe_dashed_path_expression() != nil {
@@ -486,6 +524,19 @@ func (q *querySpanExtractor) extractTableSourceFromTablePathExpression(tablePath
 func (q *querySpanExtractor) findTableSchema(datasetName string, tableName string) (base.TableSource, error) {
 	// https://cloud.google.com/bigquery/docs/reference/standard-sql/lexical#case_sensitivity
 	// Dataset and table names are case-sensitive unless the is_case_insensitive option is set to TRUE.
+	if datasetName == "" {
+		for i := len(q.ctes) - 1; i >= 0; i-- {
+			table := q.ctes[i]
+			if strings.EqualFold(table.Name, tableName) {
+				return table, nil
+			}
+		}
+	}
+
+	if datasetName == "" {
+		datasetName = q.defaultDatabase
+	}
+
 	_, databaseMetadata, err := q.gCtx.GetDatabaseMetadataFunc(q.ctx, q.gCtx.InstanceID, datasetName)
 	if err != nil {
 		return nil, err
