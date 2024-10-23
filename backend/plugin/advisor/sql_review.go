@@ -1602,6 +1602,10 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 		case storepb.Engine_ORACLE:
 			return OracleBuiltinPriorBackupCheck, nil
 		}
+	case BuiltinRuleObjectOwnerCheck:
+		if engine == storepb.Engine_POSTGRES {
+			return PostgreSQLBuiltinObjectOwnerCheck, nil
+		}
 	}
 	return "", errors.Errorf("unknown SQL review rule type %v for %v", ruleType, engine)
 }

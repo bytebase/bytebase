@@ -301,6 +301,7 @@ func (t *TableConfig) IsEmpty() bool {
 // DatabaseMetadata is the metadata for a database.
 type DatabaseMetadata struct {
 	name           string
+	owner          string
 	internal       map[string]*SchemaMetadata
 	linkedDatabase map[string]*LinkedDatabaseMetadata
 }
@@ -309,6 +310,7 @@ type DatabaseMetadata struct {
 func NewDatabaseMetadata(metadata *storepb.DatabaseSchemaMetadata) *DatabaseMetadata {
 	databaseMetadata := &DatabaseMetadata{
 		name:           metadata.Name,
+		owner:          metadata.Owner,
 		internal:       make(map[string]*SchemaMetadata),
 		linkedDatabase: make(map[string]*LinkedDatabaseMetadata),
 	}
@@ -408,6 +410,10 @@ func (d *DatabaseMetadata) GetLinkedDatabase(name string) *LinkedDatabaseMetadat
 	return d.linkedDatabase[name]
 }
 
+func (d *DatabaseMetadata) GetOwner() string {
+	return d.owner
+}
+
 // LinkedDatabaseMetadata is the metadata for a linked database.
 type LinkedDatabaseMetadata struct {
 	name     string
@@ -440,6 +446,10 @@ type SchemaMetadata struct {
 	internalPackages   map[string]*PackageMetadata
 
 	proto *storepb.SchemaMetadata
+}
+
+func (s *SchemaMetadata) GetOwner() string {
+	return s.proto.Owner
 }
 
 // GetTable gets the schema by name.
@@ -662,6 +672,10 @@ type TableMetadata struct {
 	columns         []*storepb.ColumnMetadata
 	rowCount        int64
 	proto           *storepb.TableMetadata
+}
+
+func (t *TableMetadata) GetOwner() string {
+	return t.proto.Owner
 }
 
 func (t *TableMetadata) GetTableComment() string {
