@@ -20,6 +20,8 @@ type querySpanExtractor struct {
 
 	gCtx base.GetQuerySpanContext
 
+	ctes []*base.PseudoTable
+
 	// outerTableSources is the table sources from the outer query span.
 	// it's used to resolve the column name in the correlated sub-query.
 	outerTableSources []base.TableSource
@@ -164,6 +166,10 @@ func (q *querySpanExtractor) extractTableSourceFromSelect(selectCtx parser.ISele
 	}, nil
 }
 
+func (q *querySpanExtractor) extractTableSourceFromParenthesizedQuery(parenthesizedQuery parser.IParenthesized_queryContext) (base.TableSource, error) {
+	return q.extractTableSourceFromQuery(parenthesizedQuery.Query())
+}
+
 func (q *querySpanExtractor) extractSourceColumnSetFromExpr(ctx antlr.ParserRuleContext) (string, base.SourceColumnSet, error) {
 	if ctx == nil {
 		return "", make(base.SourceColumnSet), nil
@@ -187,6 +193,25 @@ func (q *querySpanExtractor) extractSourceColumnSetFromExpr(ctx antlr.ParserRule
 	var name string
 	switch ctx := ctx.(type) {
 	// TODO(zp): handle subquery
+	case *parser.Parenthesized_queryContext:
+		baseSet := make(base.SourceColumnSet)
+		subqueryExtractor := &querySpanExtractor{
+			ctx:               q.ctx,
+			defaultDatabase:   q.defaultDatabase,
+			gCtx:              q.gCtx,
+			ctes:              q.ctes,
+			outerTableSources: append(q.outerTableSources, q.tableSourceFrom...),
+			tableSourceFrom:   []base.TableSource{},
+		}
+		tableSource, err := subqueryExtractor.extractTableSourceFromParenthesizedQuery(ctx)
+		if err != nil {
+			return "", nil, err
+		}
+		spanResult := tableSource.GetQuerySpanResult()
+		for _, field := range spanResult {
+			baseSet, _ = base.MergeSourceColumnSet(field.SourceColumns, field.SourceColumns)
+		}
+		return "", baseSet, nil
 	case *parser.Expression_higher_prec_than_andContext:
 		baseSet := make(base.SourceColumnSet)
 		possibleColumnResources := getPossibleColumnResources(ctx)
@@ -332,10 +357,6 @@ func getPossibleColumnResources(ctx antlr.ParserRuleContext) [][]string {
 	// Traverse the tree to find the tallest subtree which matches the pattern:
 	// [expression_higher_prec_than_and DOT_SYMBOL identifier]
 	// The result is the possible column resources.
-	if _, ok := ctx.(*parser.Parenthesized_queryContext); ok {
-		// NOTE: while adding the case in extractSourceColumnSetFromExpr, we should skip the case here.
-		return nil
-	}
 	var path []antlr.Tree
 	path = append(path, ctx)
 
@@ -343,6 +364,10 @@ func getPossibleColumnResources(ctx antlr.ParserRuleContext) [][]string {
 	for len(path) > 0 {
 		element := path[len(path)-1]
 		path = path[:len(path)-1]
+		if _, ok := element.(*parser.Parenthesized_queryContext); ok {
+			// NOTE: while adding the case in extractSourceColumnSetFromExpr, we should skip the case here.
+			continue
+		}
 		appendChild := true
 		if element, ok := element.(antlr.ParserRuleContext); ok {
 			valid := isValidExpressionHigherPrecThanAnd(element)
@@ -411,20 +436,20 @@ func (q *querySpanExtractor) extractTableSourceFromTablePrimary(tablePrimary par
 }
 
 func (q *querySpanExtractor) extractTableSourceFromTablePathExpression(tablePathExpression parser.ITable_path_expressionContext) (base.TableSource, error) {
-	base := tablePathExpression.Table_path_expression_base()
-	if base.Unnest_expression() != nil {
+	tablePathExprBase := tablePathExpression.Table_path_expression_base()
+	if tablePathExprBase.Unnest_expression() != nil {
 		// We do not support unnest expression because we do not have the returnning columns information.
-		return nil, errors.Errorf("unsupported unnest expression: %s", base.GetText())
+		return nil, errors.Errorf("unsupported unnest expression: %s", tablePathExprBase.GetText())
 	}
 	var tableName string
 	datasetName := q.defaultDatabase
 
-	if slashedOrDashedPathExpression := base.Maybe_slashed_or_dashed_path_expression(); slashedOrDashedPathExpression != nil {
+	if slashedOrDashedPathExpression := tablePathExprBase.Maybe_slashed_or_dashed_path_expression(); slashedOrDashedPathExpression != nil {
 		if slashedOrDashedPathExpression.Maybe_dashed_path_expression() != nil {
 			if maybeDashedPathExpr := slashedOrDashedPathExpression.Maybe_dashed_path_expression(); maybeDashedPathExpr != nil {
 				// TODO(zp): support dashed path expression, for example, REGION-us
 				if maybeDashedPathExpr.Dashed_path_expression() != nil {
-					return nil, errors.Errorf("unsupported dashed path expression: %s", base.GetText())
+					return nil, errors.Errorf("unsupported dashed path expression: %s", tablePathExprBase.GetText())
 				}
 				// REFACTOR(zp): refactor the code to extract table name and dataset name.
 				allIdentifiers := maybeDashedPathExpr.Path_expression().AllIdentifier()
@@ -436,17 +461,26 @@ func (q *querySpanExtractor) extractTableSourceFromTablePathExpression(tablePath
 				}
 			}
 			if slashedOrDashedPathExpression.Slashed_path_expression() != nil {
-				return nil, errors.Errorf("unsupported slashed path expression: %s", base.GetText())
+				return nil, errors.Errorf("unsupported slashed path expression: %s", tablePathExprBase.GetText())
 			}
 		}
 	}
 
-	tabelSource, err := q.findTableSchema(datasetName, tableName)
+	tableSource, err := q.findTableSchema(datasetName, tableName)
 	if err != nil {
 		return nil, err
 	}
+
+	if o := tablePathExpression.Opt_pivot_or_unpivot_clause_and_alias(); o != nil {
+		if o.Identifier() != nil {
+			tableSource = &base.PseudoTable{
+				Name:    unquoteIdentifierByRule(o.Identifier()),
+				Columns: tableSource.GetQuerySpanResult(),
+			}
+		}
+	}
 	// TODO(zp): add in q.from
-	return tabelSource, nil
+	return tableSource, nil
 }
 
 func (q *querySpanExtractor) findTableSchema(datasetName string, tableName string) (base.TableSource, error) {
@@ -465,7 +499,18 @@ func (q *querySpanExtractor) findTableSchema(datasetName string, tableName strin
 		return nil, errors.Errorf("table %q not found", tableName)
 	}
 
-	table := schema.GetTable(tableName)
+	tables := schema.ListTableNames()
+	var originalTableName string
+	for _, t := range tables {
+		if strings.EqualFold(t, tableName) {
+			originalTableName = t
+			break
+		}
+	}
+	if originalTableName == "" {
+		return nil, errors.Errorf("table %q not found", tableName)
+	}
+	table := schema.GetTable(originalTableName)
 	if table == nil {
 		return nil, errors.Errorf("table %q not found", tableName)
 	}

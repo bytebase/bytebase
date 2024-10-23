@@ -32,7 +32,7 @@ func TestGetQuerySpan(t *testing.T) {
 	}
 
 	var (
-		record        = false
+		record        = true
 		testDataPaths = []string{
 			"test-data/query-span/standard.yaml",
 		}
@@ -103,6 +103,11 @@ func TestGetPossibleColumnResources(t *testing.T) {
 		inputExpr string
 		want      [][]string
 	}{
+		// Skip the subquery.
+		{
+			inputExpr: "(SELECT a FROM t)",
+			want:      nil,
+		},
 		{
 			inputExpr: "a",
 			want:      [][]string{{"a"}},
