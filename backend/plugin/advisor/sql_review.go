@@ -119,8 +119,6 @@ const (
 	SchemaRuleStatementMaximumStatementsInTransaction = "statement.maximum-statements-in-transaction"
 	// SchemaRuleStatementJoinStrictColumnAttrs enforce the join strict column attributes.
 	SchemaRuleStatementJoinStrictColumnAttrs = "statement.join-strict-column-attrs"
-	// SchemaRuleStatementDisallowMixDDLDML disallow mix DDL and DML on the same table.
-	SchemaRuleStatementDisallowMixDDLDML = "statement.disallow-mix-ddl-dml"
 	// SchemaRuleStatementDisallowMixInDDL disallows DML statements in DDL statements.
 	SchemaRuleStatementDisallowMixInDDL = "statement.disallow-mix-in-ddl"
 	// SchemaRuleStatementDisallowMixInDML disallows DDL statements in DML statements.
@@ -165,6 +163,10 @@ const (
 	SchemaRuleTableDisallowDML SQLReviewRuleType = "table.disallow-dml"
 	// SchemaRuleTableLimitSize  restrict access to tables based on size.
 	SchemaRuleTableLimitSize SQLReviewRuleType = "table.limit-size"
+	// SchemaRuleTableRequireCharset enforce the table charset.
+	SchemaRuleTableRequireCharset SQLReviewRuleType = "table.require-charset"
+	// SchemaRuleTableRequireCollation enforce the table collation.
+	SchemaRuleTableRequireCollation SQLReviewRuleType = "table.require-collation"
 	// SchemaRuleRequiredColumn enforce the required columns in each table.
 	SchemaRuleRequiredColumn SQLReviewRuleType = "column.required"
 	// SchemaRuleColumnNotNull enforce the columns cannot have NULL value.
@@ -205,6 +207,10 @@ const (
 	SchemaRuleColumnDefaultDisallowVolatile SQLReviewRuleType = "column.default-disallow-volatile"
 	// SchemaRuleAddNotNullColumnRequireDefault enforce the adding not null column requires default.
 	SchemaRuleAddNotNullColumnRequireDefault SQLReviewRuleType = "column.add-not-null-require-default"
+	// SchemaRuleColumnRequireCharset enforce the column require charset.
+	SchemaRuleColumnRequireCharset SQLReviewRuleType = "column.require-charset"
+	// SchemaRuleColumnRequireCollation enforce the column require collation.
+	SchemaRuleColumnRequireCollation SQLReviewRuleType = "column.require-collation"
 
 	// SchemaRuleSchemaBackwardCompatibility enforce the MySQL and TiDB support check whether the schema change is backward compatible.
 	SchemaRuleSchemaBackwardCompatibility SQLReviewRuleType = "schema.backward-compatibility"
@@ -1178,6 +1184,14 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 		if engine == storepb.Engine_ORACLE {
 			return OracleAddNotNullColumnRequireDefault, nil
 		}
+	case SchemaRuleColumnRequireCharset:
+		if engine == storepb.Engine_MYSQL {
+			return MySQLColumnRequireCharset, nil
+		}
+	case SchemaRuleColumnRequireCollation:
+		if engine == storepb.Engine_MYSQL {
+			return MySQLColumnRequireCollation, nil
+		}
 	case SchemaRuleTableRequirePK:
 		switch engine {
 		case storepb.Engine_MYSQL, storepb.Engine_TIDB, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
@@ -1259,6 +1273,14 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 		if engine == storepb.Engine_MYSQL {
 			return MySQLTableLimitSize, nil
 		}
+	case SchemaRuleTableRequireCharset:
+		if engine == storepb.Engine_MYSQL {
+			return MySQLTableRequireCharset, nil
+		}
+	case SchemaRuleTableRequireCollation:
+		if engine == storepb.Engine_MYSQL {
+			return MySQLTableRequireCollation, nil
+		}
 	case SchemaRuleMySQLEngine:
 		switch engine {
 		case storepb.Engine_MYSQL, storepb.Engine_MARIADB:
@@ -1318,17 +1340,6 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 	case SchemaRuleStatementDisallowUsingTemporary:
 		if engine == storepb.Engine_MYSQL {
 			return MySQLStatementDisallowUsingTemporary, nil
-		}
-	case SchemaRuleStatementDisallowMixDDLDML:
-		switch engine {
-		case storepb.Engine_MYSQL, storepb.Engine_TIDB:
-			return MySQLStatementDisallowMixDDLDML, nil
-		case storepb.Engine_POSTGRES:
-			return PostgreSQLStatementDisallowMixDDLDML, nil
-		case storepb.Engine_ORACLE, storepb.Engine_DM, storepb.Engine_OCEANBASE_ORACLE:
-			return OracleStatementDisallowMixDDLDML, nil
-		case storepb.Engine_MSSQL:
-			return MSSQLStatementDisallowMixDDLDML, nil
 		}
 	case SchemaRuleStatementDisallowMixInDDL:
 		switch engine {

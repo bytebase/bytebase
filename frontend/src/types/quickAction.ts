@@ -7,7 +7,9 @@ export type ProjectQuickActionType =
   | "quickaction.bb.project.create"
   | "quickaction.bb.project.database.transfer";
 export type InstanceQuickActionType = "quickaction.bb.instance.create";
-export type DatabaseQuickActionType = "quickaction.bb.database.create";
+export type DatabaseQuickActionType =
+  | "quickaction.bb.database.create"
+  | "quickaction.bb.database.masking-access";
 export type DatabaseGroupQuickActionType =
   "quickaction.bb.group.database-group.create";
 export type IssueQuickActionType =

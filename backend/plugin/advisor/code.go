@@ -127,6 +127,8 @@ const (
 	TableDisallowDDL                  Code = 613
 	TableDisallowDML                  Code = 614
 	TableExceedLimitSize              Code = 615
+	NoCharset                         Code = 616
+	NoCollation                       Code = 617
 
 	// 701 ~ 799 database advisor error code.
 	DatabaseNotEmpty   Code = 701
@@ -306,6 +308,12 @@ const (
 	// MySQLColumnMaximumVarcharLength is an advisor type for MySQL maximum varchar length.
 	MySQLColumnMaximumVarcharLength Type = "bb.plugin.advisor.mysql.column.maximum-varchar-length"
 
+	// MySQLColumnRequireCharset is an advisor type for MySQL column require charset.
+	MySQLColumnRequireCharset Type = "bb.plugin.advisor.mysql.column.require-charset"
+
+	// MySQLColumnRequireCollation is an advisor type for MySQL column require collation.
+	MySQLColumnRequireCollation Type = "bb.plugin.advisor.mysql.column.require-collation"
+
 	// MySQLAutoIncrementColumnInitialValue is an advisor type for MySQL auto-increment column initial value.
 	MySQLAutoIncrementColumnInitialValue Type = "bb.plugin.advisor.mysql.column.auto-increment-initial-value"
 
@@ -350,6 +358,12 @@ const (
 
 	// MySQLTableFieldsMaximumCount is an advisor type for limiting MySQL table size.
 	MySQLTableLimitSize Type = "bb.plugin.advisor.mysql.table.limit-size"
+
+	// MySQLTableRequireCharset is an advisor type for MySQL table require charset.
+	MySQLTableRequireCharset Type = "bb.plugin.advisor.mysql.table.require-charset"
+
+	// MySQLTableRequireCollation is an advisor type for MySQL table require collation.
+	MySQLTableRequireCollation Type = "bb.plugin.advisor.mysql.table.require-collation"
 
 	// MySQLDatabaseAllowDropIfEmpty is an advisor type for MySQL only allow drop empty database.
 	MySQLDatabaseAllowDropIfEmpty Type = "bb.plugin.advisor.mysql.database.drop-empty-database"
@@ -440,9 +454,6 @@ const (
 
 	// MySQLStatementJoinStrictColumnAttrs is an advisor type for MySQL statement strict column attrs(type, charset) in join.
 	MySQLStatementJoinStrictColumnAttrs Type = "bb.plugin.advisor.mysql.statement.join-strict-column-attrs"
-
-	// MySQLStatementDisallowMixDDLDML is an advisor type for MySQL disallow mix DDL and DML.
-	MySQLStatementDisallowMixDDLDML Type = "bb.plugin.advisor.mysql.statement.disallow-mix-ddl-dml"
 
 	// MySQLStatementDisallowMixInDDL is the advisor for MySQL that checks no DML statements are mixed in the DDL statements.
 	MySQLStatementDisallowMixInDDL Type = "bb.plugin.advisor.mysql.statement.disallow-mix-in-ddl"
@@ -631,9 +642,6 @@ const (
 	// PostgreSQLStatementCheckSetRoleVariable is an advisor type for PostgreSQL to check set role variable.
 	PostgreSQLStatementCheckSetRoleVariable Type = "bb.plugin.advisor.postgresql.statement.check-set-role-variable"
 
-	// PostgreSQLStatementDisallowMixDDLDML is an advisor type for PostgreSQL disallow mix DDL and DML.
-	PostgreSQLStatementDisallowMixDDLDML Type = "bb.plugin.advisor.postgresql.statement.disallow-mix-ddl-dml"
-
 	PostgreSQLStatementDisallowMixInDDL Type = "bb.plugin.advisor.postgresql.statement.disallow-mix-in-ddl"
 	PostgreSQLStatementDisallowMixInDML Type = "bb.plugin.advisor.postgresql.statement.disallow-mix-in-dml"
 
@@ -714,10 +722,8 @@ const (
 	// OracleStatementDMLDryRun is an advisor type for Oracle DML dry run.
 	OracleStatementDMLDryRun Type = "bb.plugin.advisor.oracle.statement.dml-dry-run"
 
-	// OracleStatementDisallowMixDDLDML is an advisor type for Oracle disallow mix DDL and DML.
-	OracleStatementDisallowMixDDLDML Type = "bb.plugin.advisor.oracle.statement.disallow-mix-ddl-dml"
-	OracleStatementDisallowMixInDDL  Type = "bb.plugin.advisor.oracle.statement.disallow-mix-in-ddl"
-	OracleStatementDisallowMixInDML  Type = "bb.plugin.advisor.oracle.statement.disallow-mix-in-dml"
+	OracleStatementDisallowMixInDDL Type = "bb.plugin.advisor.oracle.statement.disallow-mix-in-ddl"
+	OracleStatementDisallowMixInDML Type = "bb.plugin.advisor.oracle.statement.disallow-mix-in-dml"
 
 	// OracleTableCommentConvention is an advisor type for Oracle table comment convention.
 	OracleTableCommentConvention Type = "bb.plugin.advisor.oracle.table.comment"
@@ -844,8 +850,6 @@ const (
 
 	MSSQLIndexNotRedundant Type = "bb.plugin.advisor.mssql.index.not-redundant"
 
-	// MSSQLStatementDisallowMixDDLDML is an advisor type for MSSQL disallow mix DDL and DML.
-	MSSQLStatementDisallowMixDDLDML Type = "bb.plugin.advisor.mssql.statement.disallow-mix-ddl-dml"
-	MSSQLStatementDisallowMixInDDL  Type = "bb.plugin.advisor.mssql.statement.disallow-mix-in-ddl"
-	MSSQLStatementDisallowMixInDML  Type = "bb.plugin.advisor.mssql.statement.disallow-mix-in-dml"
+	MSSQLStatementDisallowMixInDDL Type = "bb.plugin.advisor.mssql.statement.disallow-mix-in-ddl"
+	MSSQLStatementDisallowMixInDML Type = "bb.plugin.advisor.mssql.statement.disallow-mix-in-dml"
 )

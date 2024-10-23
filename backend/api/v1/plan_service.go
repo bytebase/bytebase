@@ -1117,10 +1117,14 @@ func (s *PlanService) PreviewPlan(ctx context.Context, request *v1pb.PreviewPlan
 			continue
 		}
 		specs, ooo, abm, err := s.getSpecsForDatabase(ctx, db, release, request.Release, request.AllowOutOfOrder)
-		response.OutOfOrderFiles = append(response.OutOfOrderFiles, ooo)
-		response.AppliedButModifiedFiles = append(response.AppliedButModifiedFiles, abm)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to get specs for database, err: %v", err)
+		}
+		if len(ooo.Files) > 0 {
+			response.OutOfOrderFiles = append(response.OutOfOrderFiles, ooo)
+		}
+		if len(abm.Files) > 0 {
+			response.AppliedButModifiedFiles = append(response.AppliedButModifiedFiles, abm)
 		}
 		allSpecs = append(allSpecs, specs...)
 	}

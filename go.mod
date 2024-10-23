@@ -2,6 +2,10 @@ module github.com/bytebase/bytebase
 
 go 1.23.2
 
+// workaround mssql-docker default TLS cert negative serial number problem
+// https://github.com/microsoft/mssql-docker/issues/895
+godebug x509negativeserial=1
+
 require (
 	cloud.google.com/go/bigquery v1.63.1
 	cloud.google.com/go/cloudsqlconn v1.12.1
@@ -19,7 +23,7 @@ require (
 	github.com/beltran/gohive v1.7.0
 	github.com/blang/semver/v4 v4.0.0
 	github.com/buger/jsonparser v1.1.1
-	github.com/bytebase/google-sql-parser v0.0.0-20241016165455-798a47e89841
+	github.com/bytebase/google-sql-parser v0.0.0-20241018075546-9b64719ac75b
 	github.com/bytebase/mysql-parser v0.0.0-20240810145851-ab2c11629c24
 	github.com/bytebase/plsql-parser v0.0.0-20240929073008-6b57c2e2525d
 	github.com/bytebase/postgresql-parser v0.0.0-20241008085234-a95eacac994a

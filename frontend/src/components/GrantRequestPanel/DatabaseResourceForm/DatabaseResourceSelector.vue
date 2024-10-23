@@ -3,6 +3,7 @@
     <NTransfer
       v-model:value="selectedValueList"
       style="height: 512px"
+      :disabled="disabled"
       :options="sourceTransferOptions"
       :render-source-list="renderSourceList"
       :render-target-list="renderTargetList"
@@ -42,26 +43,50 @@ import {
 } from "./common";
 
 const props = defineProps<{
+  disabled?: boolean;
   projectName: string;
+  includeCloumn: boolean;
   databaseResources: DatabaseResource[];
 }>();
 
 const emit = defineEmits<{
-  (e: "update", databaseResourceList: DatabaseResource[]): void;
+  (
+    e: "update:databaseResources",
+    databaseResourceList: DatabaseResource[]
+  ): void;
 }>();
 
 const databaseStore = useDatabaseV1Store();
 const dbSchemaStore = useDBSchemaV1Store();
 const { project } = useProjectByName(props.projectName);
+
+const parseResourceToKey = (resource: DatabaseResource): string => {
+  const data = [
+    resource.databaseName,
+    "schemas",
+    resource.schema,
+    "tables",
+    resource.table,
+    "columns",
+    resource.column,
+  ];
+
+  while (data.length > 0) {
+    const item = data.pop();
+    if (!item) {
+      data.pop();
+      continue;
+    }
+    data.push(item);
+    break;
+  }
+
+  return data.join("/");
+};
+
 const selectedValueList = ref<string[]>(
   props.databaseResources.map((databaseResource) => {
-    if (databaseResource.table !== undefined) {
-      return `${databaseResource.databaseName}/schemas/${databaseResource.schema}/tables/${databaseResource.table}`;
-    } else if (databaseResource.schema !== undefined) {
-      return `${databaseResource.databaseName}/schemas/${databaseResource.schema}`;
-    } else {
-      return databaseResource.databaseName;
-    }
+    return parseResourceToKey(databaseResource);
   })
 );
 const defaultExpandedKeys = ref<string[]>([]);
@@ -79,22 +104,48 @@ onMounted(async () => {
       });
     })
   );
+
   defaultExpandedKeys.value = selectedValueList.value
     .map((key) => {
-      if (key.includes("/tables/")) {
-        const schemaName = key.split("/tables/")[0];
-        const databaseName = schemaName.split("/schemas/")[0];
-        return [databaseName, schemaName];
-      } else if (key.includes("/schemas/")) {
-        const databaseName = key.split("/schemas/")[0];
-        return [databaseName];
-      } else {
-        return [];
-      }
+      const pathes = parseKeyToPathes(key);
+      // key: {db}/schemas/{schema}
+      // expaned: [{db}]
+      //
+      // key: {db}/schemas/{schema}/tables/{table}
+      // expaned: [{db}, {db}/schemas/{schema}]
+      //
+      // key: {db}/schemas/{schema}/tables/{table}/columns/{column}
+      // expaned: [{db}, {db}/schemas/{schema}, {db}/schemas/{schema}/tables/{table}]
+      pathes.pop();
+      return pathes;
     })
     .flat();
   loading.value = false;
 });
+
+const parseKeyToPathes = (key: string): string[] => {
+  if (!key) {
+    return [];
+  }
+
+  const sections = key.split("/");
+  const nodePrefx = new Set(["schemas", "tables", "columns"]);
+  const resp: string[] = [];
+  const tmp: string[] = [];
+
+  for (const section of sections) {
+    if (nodePrefx.has(section)) {
+      resp.push(tmp.join("/"));
+    }
+    tmp.push(section);
+  }
+
+  if (tmp.length > 0) {
+    resp.push(tmp.join("/"));
+  }
+
+  return resp;
+};
 
 const databaseList = computed(() => {
   const list = orderBy(
@@ -111,7 +162,10 @@ const databaseList = computed(() => {
 });
 
 const sourceTreeOptions = computed(() => {
-  return mapTreeOptions(databaseList.value);
+  return mapTreeOptions({
+    databaseList: databaseList.value,
+    includeCloumn: props.includeCloumn,
+  });
 });
 
 const sourceTransferOptions = computed(() => {
@@ -125,6 +179,7 @@ const renderSourceList: TransferRenderSourceList = ({ onCheck, pattern }) => {
     checkable: true,
     selectable: false,
     checkOnClick: true,
+    disabled: props.disabled,
     data: sourceTreeOptions.value,
     blockLine: true,
     virtualScroll: true,
@@ -147,7 +202,10 @@ const renderSourceList: TransferRenderSourceList = ({ onCheck, pattern }) => {
           view: DatabaseMetadataView.DATABASE_METADATA_VIEW_BASIC,
         });
         const database = databaseStore.getDatabaseByName(treeNode.value);
-        const children = getSchemaOrTableTreeOptions(database);
+        const children = getSchemaOrTableTreeOptions({
+          database,
+          includeCloumn: props.includeCloumn,
+        });
         if (children && children.length > 0) {
           treeNode.children = children;
           treeNode.isLeaf = false;
@@ -166,29 +224,28 @@ const targetTreeOptions = computed(() => {
   if (selectedValueList.value.length === 0) {
     return [];
   }
-  const nodes = mapTreeOptions(databaseList.value, selectedValueList.value);
+
+  const nodes = mapTreeOptions({
+    databaseList: databaseList.value,
+    filterValueList: selectedValueList.value,
+    includeCloumn: props.includeCloumn,
+  });
+
   for (const databaseNode of nodes) {
     if (!databaseNode.children || databaseNode.children.length === 0) {
       databaseNode.isLeaf = true;
-      continue;
-    } else {
-      for (const childNode of databaseNode.children) {
-        if (!childNode.children || childNode.children.length === 0) {
-          childNode.isLeaf = true;
-        }
-      }
     }
   }
   return nodes;
 });
 
-const renderTargetList: TransferRenderSourceList = ({ onCheck }) => {
+const renderTargetList: TransferRenderSourceList = () => {
   return h(NTree, {
     keyField: "value",
-    checkable: true,
+    checkable: false,
     selectable: false,
-    checkOnClick: true,
     defaultExpandAll: true,
+    disabled: props.disabled,
     data: targetTreeOptions.value,
     blockLine: true,
     virtualScroll: true,
@@ -200,27 +257,37 @@ const renderTargetList: TransferRenderSourceList = ({ onCheck }) => {
     },
     showIrrelevantNodes: false,
     checkedKeys: selectedValueList.value,
-    onUpdateCheckedKeys: (checkedKeys: string[]) => {
-      onCheck(checkedKeys);
-    },
   });
 };
 
-watch(selectedValueList, () => {
+watch(selectedValueList, (selectedValueList) => {
+  const orderedList = orderBy(selectedValueList, (item) => item.length, "asc");
+  const filteredKeyList: string[] = [];
+  for (const key of orderedList) {
+    const parentExisted = filteredKeyList.some((parent) =>
+      key.startsWith(`${parent}/`)
+    );
+    if (!parentExisted) {
+      filteredKeyList.push(key);
+    }
+  }
+
   emit(
-    "update",
-    selectedValueList.value.map((key) => {
+    "update:databaseResources",
+    filteredKeyList.map((key) => {
       const [databaseName, schemaAndTable] = key.split("/schemas/");
       const databaseResource: DatabaseResource = {
         databaseName,
       };
       if (schemaAndTable) {
-        const [schema, table] = schemaAndTable.split("/tables/");
-        if (table) {
-          databaseResource.schema = schema;
+        const [schema, tableAndColumn] = schemaAndTable.split("/tables/");
+        databaseResource.schema = schema;
+        if (tableAndColumn) {
+          const [table, column] = tableAndColumn.split("/columns/");
           databaseResource.table = table;
-        } else {
-          databaseResource.schema = schema;
+          if (column) {
+            databaseResource.column = column;
+          }
         }
       }
       return databaseResource;

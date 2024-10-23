@@ -1,21 +1,32 @@
 <template>
-  <div v-if="database" class="flex flex-row justify-start items-center">
+  <div class="flex flex-row justify-start items-center gap-x-1" v-bind="$attrs">
     <FeatureBadge
       feature="bb.feature.database-grouping"
       custom-class="mr-2"
       :instance="database.instanceResource"
     />
     <InstanceV1EngineIcon :instance="database.instanceResource" />
-    <span class="text-sm ml-0.5 text-gray-500">{{
-      database.databaseName
-    }}</span>
+    <EnvironmentV1Name
+      text-class="text-control-light"
+      :environment="database.effectiveEnvironmentEntity"
+      :plain="true"
+      :show-icon="false"
+      :link="false"
+    />
+    <DatabaseV1Name
+      :database="database"
+      :plain="true"
+      :show-icon="false"
+      :link="false"
+    />
   </div>
 </template>
 
 <script lang="ts" setup>
+import { FeatureBadge } from "@/components/FeatureGuard";
+import { DatabaseV1Name, EnvironmentV1Name } from "@/components/v2";
 import type { ComposedDatabase } from "@/types";
 import { InstanceV1EngineIcon } from "./Instance";
-import { FeatureBadge } from "@/components/FeatureGuard";
 
 defineProps<{
   database: ComposedDatabase;

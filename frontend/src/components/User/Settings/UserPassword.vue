@@ -1,7 +1,7 @@
 <template>
   <div class="space-y-6" v-bind="$attrs">
     <div :label="$t('settings.profile.password')">
-      <div class="flex items-center space-x-2">
+      <div>
         <label class="block text-sm font-medium leading-5 text-control">
           {{ $t("settings.profile.password") }}
         </label>

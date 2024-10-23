@@ -177,6 +177,12 @@ ruleList:
     payload:
       number: 10000000
     engine: MYSQL
+  - type: table.require-charset
+    level: WARNING
+    engine: MYSQL
+  - type: table.require-collation
+    level: WARNING
+    engine: MYSQL
   - type: statement.select.no-select-all
     level: ERROR
     engine: MYSQL
@@ -515,21 +521,6 @@ ruleList:
   - type: statement.join-strict-column-attrs
     level: WARNING
     engine: MYSQL
-  - type: statement.disallow-mix-ddl-dml
-    level: WARNING
-    engine: MYSQL
-  - type: statement.disallow-mix-ddl-dml
-    level: WARNING
-    engine: POSTGRES
-  - type: statement.disallow-mix-ddl-dml
-    level: WARNING
-    engine: TIDB
-  - type: statement.disallow-mix-ddl-dml
-    level: WARNING
-    engine: ORACLE
-  - type: statement.disallow-mix-ddl-dml
-    level: WARNING
-    engine: MSSQL
   - type: statement.disallow-mix-in-ddl
     level: WARNING
     engine: MYSQL
@@ -1302,6 +1293,12 @@ ruleList:
   - type: column.default-disallow-volatile
     level: WARNING
     engine: POSTGRES
+  - type: column.require-charset
+    level: WARNING
+    engine: MYSQL
+  - type: column.require-collation
+    level: WARNING
+    engine: MYSQL
   - type: schema.backward-compatibility
     level: WARNING
     engine: MYSQL

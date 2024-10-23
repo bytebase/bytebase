@@ -278,6 +278,7 @@
     "connection": "接続する",
     "permission-denied": "許可が拒否されました",
     "resource": "リソース",
+    "resources": "リソース",
     "closed": "閉まっている",
     "options": "オプション",
     "reset": "リセット",
@@ -593,6 +594,7 @@
       "grant-access": "アクセスを許可する",
       "select-user": "ユーザーを選択 | ユーザーを選択",
       "select-group": "グループを選択 | グループを選択",
+      "select-in-project": "{project} 内のユーザーまたはグループを選択してください",
       "select-role": "役割を選択 | 役割を選択",
       "assign-role": "役割の割り当て | 役割の割り当て"
     },
@@ -1642,7 +1644,7 @@
     "statement-execution": {
       "title": "ステートメントの実行",
       "allow-ddl": "SQLエディタでDDL文を実行できるようにする",
-      "allow-dml": "SQL エディタで DML ステートメントを実行できるようにする"
+      "allow-dml": "SQL エディタでデータ変更 DML ステートメントを実行できるようにする"
     }
   },
   "quick-start": {
@@ -2203,6 +2205,10 @@
       "update-success": "GitOps 接続が更新されました",
       "create-success": "GitOps 接続が作成されました",
       "delete-success": "GitOps 接続が削除されました"
+    },
+    "masking-access": {
+      "self": "アクセスマスキング",
+      "grant-access": "アクセスを許可する"
     }
   },
   "gitops": {
@@ -2308,7 +2314,6 @@
     "search-name-database": "検索名、データベース",
     "successfully-created-data-source-datasource-name": "データ ソース '{0}' が正常に作成されました。",
     "select-database-first": "最初にデータベースを選択してください",
-    "select-data-source": "データソースの選択",
     "search-user": "ユーザーを検索する",
     "user-list": "ユーザーリスト",
     "revoke-access": "「{0}」の「{1}」へのアクセスを削除してもよろしいですか?",
@@ -2359,7 +2364,8 @@
     "replica-set": "レプリカセット",
     "admin": "メインライブラリ",
     "read-only": "図書館から",
-    "direct-connection": "Direct Connection"
+    "direct-connection": "Direct Connection",
+    "select-query-data-source": "クエリデータソースの選択"
   },
   "setting": {
     "project": {
@@ -2549,7 +2555,8 @@
         "disabled-by-policy": "{policy}によって無効になっています。",
         "environment-policy": "環境方針"
       }
-    }
+    },
+    "upload-file": "ファイルをアップロードする"
   },
   "schema-editor": {
     "self": "スキーマエディタ",
@@ -3734,7 +3741,13 @@
   "release": {
     "self": "リリース",
     "releases": "リリース",
-    "files": "ファイル"
+    "files": "ファイル",
+    "tasks-to-apply": "適用するタスク",
+    "out-of-order-files": "順序が間違っているファイル",
+    "applied-but-modifed-files": "適用済みだが変更されたファイル",
+    "no-tasks-to-apply": {
+      "self": "適用するタスクはありません"
+    }
   },
   "export-data": {
     "export-rows": "エクスポート行数",

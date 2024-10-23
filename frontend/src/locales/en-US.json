@@ -278,6 +278,7 @@
     "connection": "Connection",
     "permission-denied": "Permission denied",
     "resource": "Resource",
+    "resources": "Resources",
     "closed": "Closed",
     "options": "Options",
     "reset": "Reset",
@@ -593,6 +594,7 @@
       "grant-access": "Grant Access",
       "select-user": "Select user | Select users",
       "select-group": "Select group | Select groups",
+      "select-in-project": "Select users or groups in {project}",
       "select-role": "Select role | Select roles",
       "assign-role": "Assign role | Assign roles"
     },
@@ -1642,7 +1644,7 @@
     "statement-execution": {
       "title": "Statement execution",
       "allow-ddl": "Allow running DDL statements in the SQL editor",
-      "allow-dml": "Allow running DML statements in the SQL editor"
+      "allow-dml": "Allow running data-modifying DML statements in the SQL Editor"
     }
   },
   "quick-start": {
@@ -2203,6 +2205,10 @@
       "update-success": "Successfully updated GitOps connector",
       "create-success": "Successfully created GitOps connector",
       "delete-success": "The GitOps connector is removed"
+    },
+    "masking-access": {
+      "self": "Access Masking",
+      "grant-access": "Grant Access"
     }
   },
   "gitops": {
@@ -2308,7 +2314,6 @@
     "search-name-database": "Search name, database",
     "successfully-created-data-source-datasource-name": "Successfully created data source '{0}'.",
     "select-database-first": "Select database first",
-    "select-data-source": "Select data source",
     "search-user": "Search user",
     "user-list": "User list",
     "revoke-access": "Are you sure to revoke '{0}' access from '{1}'?",
@@ -2359,7 +2364,8 @@
     "replica-set": "Replica Set",
     "admin": "Admin",
     "read-only": "RO",
-    "direct-connection": "Direct Connection"
+    "direct-connection": "Direct Connection",
+    "select-query-data-source": "Select query data source"
   },
   "setting": {
     "project": {
@@ -2549,7 +2555,8 @@
         "disabled-by-policy": "Disabled by the {policy}.",
         "environment-policy": "environment policy"
       }
-    }
+    },
+    "upload-file": "Upload file"
   },
   "schema-editor": {
     "self": "Schema Editor",
@@ -3734,7 +3741,13 @@
   "release": {
     "self": "Release",
     "releases": "Releases",
-    "files": "Files"
+    "files": "Files",
+    "tasks-to-apply": "Tasks to apply",
+    "out-of-order-files": "Out of order files",
+    "applied-but-modifed-files": "Applied but modified files",
+    "no-tasks-to-apply": {
+      "self": "No tasks to apply"
+    }
   },
   "export-data": {
     "export-rows": "Export rows",

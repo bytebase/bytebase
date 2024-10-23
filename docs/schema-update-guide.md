@@ -6,13 +6,13 @@ All schemas are located at [store/migration](https://github.com/bytebase/bytebas
 
 Prod
 
-- [prod](https://github.com/bytebase/bytebase/tree/main/store/migration/prod) schema.
+- [prod](https://github.com/bytebase/bytebase/tree/main/backend/migrator/migration/prod) schema.
 - `LATEST.sql` and `LATEST_DATA.sql` will be the schema and data to initialize a new database. 
 - The version directory such as `1.1` contains all the DDL statements used to migrate from previous version of schema such as `1.0`. When a prod release binary starts, it will apply all the schema migrations from current version up to the latest schema release version.
 
 Dev
 
-- [dev](https://github.com/bytebase/bytebase/tree/main/store/migration/dev) schema.
+- [dev](https://github.com/bytebase/bytebase/tree/main/backend/migrator/migration/dev) schema.
 - `LATEST.sql` and `LATEST_DATA.sql` will only be used to view the latest schema and data. This is different from the Prod.
 - When a dev release binary starts, it will use the `LATEST.sql` in the release directory to initialize the database and then apply all the DDLs in the dev directory if not yet applied.
 

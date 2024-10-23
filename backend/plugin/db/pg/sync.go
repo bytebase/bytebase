@@ -86,7 +86,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 	}
 	defer txn.Rollback()
 
-	schemas, err := getSchemas(txn)
+	schemas, schemaOwners, err := getSchemas(txn)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get schemas from database %q", driver.databaseName)
 	}
@@ -131,7 +131,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 		return nil, err
 	}
 
-	for _, schemaName := range schemas {
+	for i, schemaName := range schemas {
 		tables := tableMap[schemaName]
 		for _, table := range tables {
 			if isAtLeastPG10 {
@@ -146,6 +146,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 			Functions:         functionMap[schemaName],
 			Sequences:         sequenceMap[schemaName],
 			MaterializedViews: materializedViewMap[schemaName],
+			Owner:             schemaOwners[i],
 		})
 	}
 	databaseMetadata.Extensions = extensions
@@ -297,34 +298,35 @@ func formatTableNameFromRegclass(name string) string {
 }
 
 var listSchemaQuery = fmt.Sprintf(`
-SELECT nspname
+SELECT nspname, pg_catalog.pg_get_userbyid(nspowner) as schema_owner
 FROM pg_catalog.pg_namespace
 WHERE nspname NOT IN (%s)
 ORDER BY nspname;
 `, pgparser.SystemSchemaWhereClause)
 
-func getSchemas(txn *sql.Tx) ([]string, error) {
+func getSchemas(txn *sql.Tx) ([]string, []string, error) {
 	rows, err := txn.Query(listSchemaQuery)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	defer rows.Close()
 
-	var schemaNames []string
+	var schemaNames, schemaOwners []string
 	for rows.Next() {
-		var schemaName string
-		if err := rows.Scan(&schemaName); err != nil {
-			return nil, err
+		var schemaName, schemaOwner string
+		if err := rows.Scan(&schemaName, &schemaOwner); err != nil {
+			return nil, nil, err
 		}
 		if pgparser.IsSystemSchema(schemaName) {
 			continue
 		}
 		schemaNames = append(schemaNames, schemaName)
+		schemaOwners = append(schemaOwners, schemaOwner)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	return schemaNames, nil
+	return schemaNames, schemaOwners, nil
 }
 
 func getListForeignTableQuery() string {
@@ -345,7 +347,8 @@ func getListTableQuery(isAtLeastPG10 bool) string {
 		pg_table_size(format('%s.%s', quote_ident(tbl.schemaname), quote_ident(tbl.tablename))::regclass),
 		pg_indexes_size(format('%s.%s', quote_ident(tbl.schemaname), quote_ident(tbl.tablename))::regclass),
 		GREATEST(pc.reltuples::bigint, 0::BIGINT) AS estimate,
-		obj_description(format('%s.%s', quote_ident(tbl.schemaname), quote_ident(tbl.tablename))::regclass) AS comment
+		obj_description(format('%s.%s', quote_ident(tbl.schemaname), quote_ident(tbl.tablename))::regclass) AS comment,
+		tbl.tableowner
 	FROM pg_catalog.pg_tables tbl
 	LEFT JOIN pg_class as pc ON pc.oid = format('%s.%s', quote_ident(tbl.schemaname), quote_ident(tbl.tablename))::regclass` + fmt.Sprintf(`
 	WHERE tbl.schemaname NOT IN (%s)%s
@@ -379,7 +382,7 @@ func getTables(txn *sql.Tx, isAtLeastPG10 bool, columnMap map[db.TableKey][]*sto
 		table := &storepb.TableMetadata{}
 		var schemaName string
 		var comment sql.NullString
-		if err := rows.Scan(&schemaName, &table.Name, &table.DataSize, &table.IndexSize, &table.RowCount, &comment); err != nil {
+		if err := rows.Scan(&schemaName, &table.Name, &table.DataSize, &table.IndexSize, &table.RowCount, &comment, &table.Owner); err != nil {
 			return nil, nil, err
 		}
 		if pgparser.IsSystemTable(table.Name) {

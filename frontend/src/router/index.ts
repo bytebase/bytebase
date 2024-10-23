@@ -133,13 +133,17 @@ router.beforeEach((to, from, next) => {
     return;
   } else {
     if (!isLoggedIn) {
-      const query: any = {};
+      const query: any = {
+        ...(to.query || {}),
+      };
       if (to.fullPath !== "/") {
         if (to.query["idp"]) {
           // TODO: remove query param `idp` from fullPath.
           query["idp"] = to.query["idp"];
         }
-        query["redirect"] = to.fullPath;
+        if (!to.query["redirect"]) {
+          query["redirect"] = to.fullPath;
+        }
       }
 
       next({

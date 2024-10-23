@@ -278,6 +278,7 @@
     "connection": "Conexión",
     "permission-denied": "Permiso denegado",
     "resource": "Recurso",
+    "resources": "Recursos",
     "closed": "Cerrado",
     "options": "Opciones",
     "reset": "Reiniciar",
@@ -593,6 +594,7 @@
       "grant-access": "Conceder acceso",
       "select-user": "Seleccionar usuario | Seleccionar usuarios",
       "select-group": "Seleccionar grupo | Seleccionar grupos",
+      "select-in-project": "Seleccione usuarios o grupos en {project}",
       "select-role": "Seleccionar rol | Seleccionar roles",
       "assign-role": "Asignar rol | Asignar roles"
     },
@@ -1642,7 +1644,7 @@
     "statement-execution": {
       "title": "Ejecución de la declaración",
       "allow-ddl": "Permitir la ejecución de sentencias DDL en el editor SQL",
-      "allow-dml": "Permitir la ejecución de sentencias DML en el editor SQL"
+      "allow-dml": "Permitir ejecutar sentencias DML que modifiquen datos en el Editor SQL"
     }
   },
   "quick-start": {
@@ -2203,6 +2205,10 @@
       "update-success": "Conector GitOps actualizado correctamente",
       "create-success": "Conector GitOps creado correctamente",
       "delete-success": "Se elimina el conector GitOps"
+    },
+    "masking-access": {
+      "self": "Enmascaramiento de acceso",
+      "grant-access": "Conceder acceso"
     }
   },
   "gitops": {
@@ -2308,7 +2314,6 @@
     "search-name-database": "Buscar nombre, base de datos",
     "successfully-created-data-source-datasource-name": "Se creó correctamente el origen de datos '{0}'.",
     "select-database-first": "Seleccione la base de datos primero",
-    "select-data-source": "Seleccionar origen de datos",
     "search-user": "Buscar usuario",
     "user-list": "Lista de usuarios",
     "revoke-access": "¿Está seguro de revocar el acceso de '{0}' de '{1}'?",
@@ -2359,7 +2364,8 @@
     "replica-set": "Conjunto de réplicas",
     "admin": "Admin",
     "read-only": "Solo lectura",
-    "direct-connection": "Direct Connection"
+    "direct-connection": "Direct Connection",
+    "select-query-data-source": "Seleccionar fuente de datos de consulta"
   },
   "setting": {
     "project": {
@@ -2549,7 +2555,8 @@
         "disabled-by-policy": "Deshabilitado por la {policy}.",
         "environment-policy": "política ambiental"
       }
-    }
+    },
+    "upload-file": "Subir archivo"
   },
   "schema-editor": {
     "self": "Editor de esquema",
@@ -3734,7 +3741,13 @@
   "release": {
     "self": "Liberar",
     "releases": "Lanzamientos",
-    "files": "Archivos"
+    "files": "Archivos",
+    "tasks-to-apply": "Tareas a aplicar",
+    "out-of-order-files": "Archivos fuera de servicio",
+    "applied-but-modifed-files": "Archivos aplicados pero modificados",
+    "no-tasks-to-apply": {
+      "self": "No hay tareas para aplicar"
+    }
   },
   "export-data": {
     "export-rows": "Exportar filas",
