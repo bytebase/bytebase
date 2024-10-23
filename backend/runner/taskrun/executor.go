@@ -19,6 +19,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/state"
 	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/plugin/db"
+	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
 	"github.com/bytebase/bytebase/backend/store/model"
 	"github.com/bytebase/bytebase/backend/utils"
@@ -59,6 +60,9 @@ func RunExecutorOnce(ctx context.Context, driverCtx context.Context, exec Execut
 
 // Pointer fields are not nullable unless mentioned otherwise.
 type migrateContext struct {
+	syncer  *schemasync.Syncer
+	profile *config.Profile
+
 	instance *store.InstanceMessage
 	database *store.DatabaseMessage
 	// nullable if type=baseline
@@ -69,6 +73,7 @@ type migrateContext struct {
 	task        *store.TaskMessage
 	taskRunUID  int
 	taskRunName string
+	issueName   string
 
 	version string
 
@@ -80,9 +85,15 @@ type migrateContext struct {
 		// e.g. `2.2/V001.sql`
 		file string
 	}
+
+	// mutable
+	changelog int64
+
+	syncHistoryPrev int64
+	syncHistory     int64
 }
 
-func getMigrationInfo(ctx context.Context, stores *store.Store, profile *config.Profile, task *store.TaskMessage, migrationType db.MigrationType, statement string, schemaVersion model.Version, sheetID *int, taskRunUID int) (*db.MigrationInfo, *migrateContext, error) {
+func getMigrationInfo(ctx context.Context, stores *store.Store, profile *config.Profile, syncer *schemasync.Syncer, task *store.TaskMessage, migrationType db.MigrationType, statement string, schemaVersion model.Version, sheetID *int, taskRunUID int) (*db.MigrationInfo, *migrateContext, error) {
 	if schemaVersion.Version == "" {
 		return nil, nil, errors.Errorf("empty schema version")
 	}
@@ -125,6 +136,8 @@ func getMigrationInfo(ctx context.Context, stores *store.Store, profile *config.
 	}
 
 	mc := &migrateContext{
+		syncer:      syncer,
+		profile:     profile,
 		instance:    instance,
 		database:    database,
 		task:        task,
@@ -219,6 +232,8 @@ func getMigrationInfo(ctx context.Context, stores *store.Store, profile *config.
 		mi.Description = fmt.Sprintf("%s - %s", issue.Title, task.Name)
 		mi.ProjectUID = &issue.Project.UID
 		mi.IssueUID = &issue.UID
+
+		mc.issueName = common.FormatIssue(issue.Project.ResourceID, issue.UID)
 	}
 
 	mi.Source = db.UI
@@ -385,8 +400,8 @@ func postMigration(ctx context.Context, stores *store.Store, mi *db.MigrationInf
 	}, nil
 }
 
-func runMigration(ctx context.Context, driverCtx context.Context, store *store.Store, dbFactory *dbfactory.DBFactory, stateCfg *state.State, profile *config.Profile, task *store.TaskMessage, taskRunUID int, migrationType db.MigrationType, statement string, schemaVersion model.Version, sheetID *int) (terminated bool, result *storepb.TaskRunResult, err error) {
-	mi, mc, err := getMigrationInfo(ctx, store, profile, task, migrationType, statement, schemaVersion, sheetID, taskRunUID)
+func runMigration(ctx context.Context, driverCtx context.Context, store *store.Store, dbFactory *dbfactory.DBFactory, stateCfg *state.State, syncer *schemasync.Syncer, profile *config.Profile, task *store.TaskMessage, taskRunUID int, migrationType db.MigrationType, statement string, schemaVersion model.Version, sheetID *int) (terminated bool, result *storepb.TaskRunResult, err error) {
+	mi, mc, err := getMigrationInfo(ctx, store, profile, syncer, task, migrationType, statement, schemaVersion, sheetID, taskRunUID)
 	if err != nil {
 		return true, nil, err
 	}
@@ -504,17 +519,45 @@ func beginMigration(ctx context.Context, stores *store.Store, mi *db.MigrationIn
 	// users can create revisions though via API
 	// however we can warn users not to unless they know
 	// what they are doing
-	if common.IsDev() {
-		list, err := stores.ListRevisions(ctx, &store.FindRevisionMessage{
-			DatabaseUID: &mc.database.UID,
-			Version:     &mc.version,
-		})
+	if common.IsDev() && mc.profile.DevelopmentVersioned {
+		if mc.version != "" {
+			list, err := stores.ListRevisions(ctx, &store.FindRevisionMessage{
+				DatabaseUID: &mc.database.UID,
+				Version:     &mc.version,
+			})
+			if err != nil {
+				return "", errors.Wrapf(err, "failed to list revisions")
+			}
+			if len(list) > 0 {
+				return "", errors.Errorf("database %q has already applied version %s, hint: please check the database revisions and the version", mc.database.DatabaseName, mc.version)
+			}
+		}
+
+		// sync history
+		syncHistoryPrev, err := mc.syncer.SyncDatabaseSchemaToHistory(ctx, mc.database, false)
 		if err != nil {
-			return "", errors.Wrapf(err, "failed to list revisions")
+			return "", errors.Wrapf(err, "failed to sync database metadata and schema")
 		}
-		if len(list) > 0 {
-			return "", errors.Errorf("database %q has already applied version %s, hint: please check the database revisions and the version", mc.database.DatabaseName, mc.version)
+		mc.syncHistoryPrev = syncHistoryPrev
+
+		// changelog
+		changelogUID, err := stores.CreateChangelog(ctx, &store.ChangelogMessage{DatabaseUID: mc.database.UID, Payload: &storepb.ChangelogPayload{
+			Task: &storepb.ChangelogTask{
+				TaskRun:           mc.taskRunName,
+				Issue:             mc.issueName,
+				Revision:          0,
+				ChangedResources:  nil,
+				Status:            storepb.ChangelogTask_PENDING,
+				PrevSyncHistoryId: syncHistoryPrev,
+				SyncHistoryId:     0,
+			},
+		}}, api.SystemBotID)
+		if err != nil {
+			return "", errors.Wrapf(err, "failed to create changelog")
 		}
+		mc.changelog = changelogUID
+
+		return "", nil
 	}
 
 	// Phase 1 - Pre-check before executing migration
@@ -555,23 +598,51 @@ func beginMigration(ctx context.Context, stores *store.Store, mi *db.MigrationIn
 
 // endMigration updates the migration history record to DONE or FAILED depending on migration is done or not.
 func endMigration(ctx context.Context, storeInstance *store.Store, startedNs int64, insertedID string, updatedSchema, schemaPrev string, mc *migrateContext, sheetID *int, isDone bool) error {
-	if common.IsDev() && isDone {
-		_, err := storeInstance.CreateRevision(ctx, &store.RevisionMessage{
-			DatabaseUID: mc.database.UID,
-			Payload: &storepb.RevisionPayload{
-				Release:     mc.release.release,
-				File:        mc.release.file,
-				Sheet:       mc.sheetName,
-				SheetSha256: mc.sheet.Sha256,
-				TaskRun:     mc.taskRunName,
-				Version:     mc.version,
-				// TODO(p0ny): maybe remove this field.
-				Type: storepb.ReleaseFileType_TYPE_UNSPECIFIED,
-			},
-		}, mc.task.CreatorID)
+	if common.IsDev() && mc.profile.DevelopmentVersioned {
+		syncHistory, err := mc.syncer.SyncDatabaseSchemaToHistory(ctx, mc.database, false)
 		if err != nil {
-			return errors.Wrapf(err, "failed to create revision")
+			return errors.Wrapf(err, "failed to sync database metadata and schema")
 		}
+		mc.syncHistory = syncHistory
+
+		update := &store.UpdateChangelogMessage{
+			UID:            mc.changelog,
+			SyncHistoryUID: &mc.syncHistory,
+		}
+
+		if isDone {
+			// if isDone, record in revision
+			if mc.version != "" {
+				revision, err := storeInstance.CreateRevision(ctx, &store.RevisionMessage{
+					DatabaseUID: mc.database.UID,
+					Payload: &storepb.RevisionPayload{
+						Release:     mc.release.release,
+						File:        mc.release.file,
+						Sheet:       mc.sheetName,
+						SheetSha256: mc.sheet.Sha256,
+						TaskRun:     mc.taskRunName,
+						Version:     mc.version,
+						// TODO(p0ny): maybe remove this field.
+						Type: storepb.ReleaseFileType_TYPE_UNSPECIFIED,
+					},
+				}, mc.task.CreatorID)
+				if err != nil {
+					return errors.Wrapf(err, "failed to create revision")
+				}
+				update.RevisionUID = &revision.UID
+			}
+			status := storepb.ChangelogTask_DONE
+			update.Status = &status
+		} else {
+			status := storepb.ChangelogTask_FAILED
+			update.Status = &status
+		}
+
+		if err := storeInstance.UpdateChangelog(ctx, update); err != nil {
+			return errors.Wrapf(err, "failed to update changelog")
+		}
+
+		return nil
 	}
 
 	migrationDurationNs := time.Now().UnixNano() - startedNs
