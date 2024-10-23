@@ -711,6 +711,10 @@
     "builtin-prior-backup-check": {
       "title": "Prior backup feasibility check",
       "description": "This rule checks whether a backup can be created before data changes. It verifies the existence of the backup target database and disallows non-supported scenarios. It's builtin and cannot skip."
+    },
+    "builtin-object-owner-check": {
+      "title": "Object owner check",
+      "description": "This rule checks whether the object owner for DDL is the same as the current user. It's builtin and cannot skip."
     }
   },
   "level": {
