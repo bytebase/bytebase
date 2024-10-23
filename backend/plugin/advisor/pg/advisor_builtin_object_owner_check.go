@@ -11,6 +11,14 @@ import (
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
+var (
+	_ advisor.Advisor = (*BuiltinObjectOwnerCheckAdvisor)(nil)
+)
+
+func init() {
+	advisor.Register(storepb.Engine_POSTGRES, advisor.PostgreSQLBuiltinObjectOwnerCheck, &BuiltinObjectOwnerCheckAdvisor{})
+}
+
 const (
 	pgDatabaseOwner = "pg_database_owner"
 )
@@ -43,6 +51,9 @@ func (*BuiltinObjectOwnerCheckAdvisor) Check(ctx advisor.Context, _ string) ([]*
 			}
 		case *ast.AlterSequenceStmt:
 			// todo: use sequence owner instead of schema owner
+			if n.Name == nil {
+				continue
+			}
 			schemaName := n.Name.Schema
 			if schemaName == "" {
 				schemaName = defaultSchema
@@ -67,6 +78,9 @@ func (*BuiltinObjectOwnerCheckAdvisor) Check(ctx advisor.Context, _ string) ([]*
 				})
 			}
 		case *ast.AlterTableStmt:
+			if n.Table == nil {
+				continue
+			}
 			schemaName := n.Table.Schema
 			if schemaName == "" {
 				schemaName = defaultSchema
@@ -96,6 +110,9 @@ func (*BuiltinObjectOwnerCheckAdvisor) Check(ctx advisor.Context, _ string) ([]*
 			}
 		case *ast.AlterTypeStmt:
 			// todo: use type owner instead of schema owner
+			if n.Type == nil {
+				continue
+			}
 			schemaName := n.Type.Schema
 			if schemaName == "" {
 				schemaName = defaultSchema
@@ -144,6 +161,9 @@ func (*BuiltinObjectOwnerCheckAdvisor) Check(ctx advisor.Context, _ string) ([]*
 				})
 			}
 		case *ast.CreateFunctionStmt:
+			if n.Function == nil {
+				continue
+			}
 			schemaName := n.Function.Schema
 			if schemaName == "" {
 				schemaName = defaultSchema
@@ -168,6 +188,9 @@ func (*BuiltinObjectOwnerCheckAdvisor) Check(ctx advisor.Context, _ string) ([]*
 				})
 			}
 		case *ast.CreateIndexStmt:
+			if n.Index == nil || n.Index.Table == nil {
+				continue
+			}
 			schemaName := n.Index.Table.Schema
 			if schemaName == "" {
 				schemaName = defaultSchema
@@ -205,6 +228,9 @@ func (*BuiltinObjectOwnerCheckAdvisor) Check(ctx advisor.Context, _ string) ([]*
 				})
 			}
 		case *ast.CreateSequenceStmt:
+			if n.SequenceDef.SequenceName == nil {
+				continue
+			}
 			schemaName := n.SequenceDef.SequenceName.Schema
 			if schemaName == "" {
 				schemaName = defaultSchema
@@ -229,6 +255,9 @@ func (*BuiltinObjectOwnerCheckAdvisor) Check(ctx advisor.Context, _ string) ([]*
 				})
 			}
 		case *ast.CreateTableStmt:
+			if n.Name == nil {
+				continue
+			}
 			schemaName := n.Name.Schema
 			if schemaName == "" {
 				schemaName = defaultSchema
@@ -253,6 +282,9 @@ func (*BuiltinObjectOwnerCheckAdvisor) Check(ctx advisor.Context, _ string) ([]*
 				})
 			}
 		case *ast.CreateTriggerStmt:
+			if n.Trigger == nil || n.Trigger.Table == nil {
+				continue
+			}
 			schemaName := n.Trigger.Table.Schema
 			if schemaName == "" {
 				schemaName = defaultSchema
@@ -277,6 +309,9 @@ func (*BuiltinObjectOwnerCheckAdvisor) Check(ctx advisor.Context, _ string) ([]*
 				})
 			}
 		case *ast.CreateTypeStmt:
+			if n.Type == nil || n.Type.TypeName() == nil {
+				continue
+			}
 			schemaName := n.Type.TypeName().Schema
 			if schemaName == "" {
 				schemaName = defaultSchema
@@ -301,6 +336,9 @@ func (*BuiltinObjectOwnerCheckAdvisor) Check(ctx advisor.Context, _ string) ([]*
 				})
 			}
 		case *ast.CreateViewStmt:
+			if n.Name == nil {
+				continue
+			}
 			schemaName := n.Name.Schema
 			if schemaName == "" {
 				schemaName = defaultSchema
@@ -358,9 +396,9 @@ func (*BuiltinObjectOwnerCheckAdvisor) Check(ctx advisor.Context, _ string) ([]*
 				if indexDef == nil {
 					continue
 				}
-				schemaName := indexDef.Table.Schema
-				if schemaName == "" {
-					schemaName = defaultSchema
+				schemaName := defaultSchema
+				if indexDef.Table != nil && indexDef.Table.Schema != "" {
+					schemaName = indexDef.Table.Schema
 				}
 				schemaMeta := dbMetadata.GetSchema(schemaName)
 				if schemaMeta == nil {
@@ -556,7 +594,7 @@ func (*BuiltinObjectOwnerCheckAdvisor) Check(ctx advisor.Context, _ string) ([]*
 				adviceList = append(adviceList, &storepb.Advice{
 					Status:  level,
 					Title:   title,
-					Content: fmt.Sprintf("Schema \"%s\" is owned by \"%s\", but the current role is \"%s\".", schemaName, owner, currentRole),
+					Content: fmt.Sprintf("Schema \"%s\" is owned by \"%s\", but the current role is \"%s\".", n.Schema, owner, currentRole),
 					Code:    advisor.BuiltinObjectOwnerCheck.Int32(),
 					StartPosition: &storepb.Position{
 						Line: int32(stmt.LastLine()),
@@ -565,4 +603,6 @@ func (*BuiltinObjectOwnerCheckAdvisor) Check(ctx advisor.Context, _ string) ([]*
 			}
 		}
 	}
+
+	return adviceList, nil
 }

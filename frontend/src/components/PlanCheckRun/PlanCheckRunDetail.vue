@@ -362,6 +362,17 @@ const isBuiltinRule = (type: string) => {
   return type.startsWith("builtin.");
 };
 
+const builtinRuleLevel = (type: string): SQLReviewRuleLevel => {
+  switch (type) {
+    case "builtin.prior-backup-check":
+      return SQLReviewRuleLevel.ERROR;
+    case "builtin.object-owner-check":
+      return SQLReviewRuleLevel.WARNING
+    default:
+      return SQLReviewRuleLevel.ERROR;
+  }
+};
+
 const categoryAndTitle = (
   checkResult: PlanCheckRun_Result
 ): [string, string] => {
@@ -478,7 +489,7 @@ const getActiveRule = (type: string): RuleTemplateV2 | undefined => {
       type,
       category: "BUILTIN",
       engine,
-      level: SQLReviewRuleLevel.ERROR,
+      level: builtinRuleLevel(type),
       componentList: [],
     };
   }

@@ -14,7 +14,7 @@ func (s *VariableSetStmt) GetRoleName() string {
 	}
 
 	if v, ok := s.Args[0].(*StringDef); ok {
-		return v.text
+		return v.Value
 	}
 
 	return ""
