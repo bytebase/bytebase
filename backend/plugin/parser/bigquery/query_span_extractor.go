@@ -449,6 +449,16 @@ func getAllChildTerminalNode(ctx antlr.ParserRuleContext) []antlr.TerminalNode {
 	return result
 }
 
+type joinType int
+
+const (
+	crossJoin = iota
+	innerJoin
+	fullOuterJoin
+	leftOuterJoin
+	rightOuterJoin
+)
+
 func (q *querySpanExtractor) extractTableSourceFromFromClause(fromClause parser.IFrom_clauseContext) (base.TableSource, error) {
 	contents := fromClause.From_clause_contents()
 	tableSource, err := q.extractTableSourceFromTablePrimary(contents.Table_primary())
@@ -456,8 +466,93 @@ func (q *querySpanExtractor) extractTableSourceFromFromClause(fromClause parser.
 	if err != nil {
 		return nil, err
 	}
-	return tableSource, nil
-	// TODO(zp): handle suffix, alias.
+	anchor := &base.PseudoTable{
+		Name:    "",
+		Columns: tableSource.GetQuerySpanResult(),
+	}
+	allSuffixes := contents.AllFrom_clause_contents_suffix()
+	for _, suffix := range allSuffixes {
+		joinType := getJoinTypeFromFromClauseContentsSuffix(suffix)
+		tableSource, err = q.extractTableSourceFromTablePrimary(suffix.Table_primary())
+		switch joinType {
+		case crossJoin, innerJoin, fullOuterJoin, leftOuterJoin, rightOuterJoin:
+			using := make(map[string]bool)
+			if suffix.On_or_using_clause_list() != nil {
+				allJoinOnOrUsingClause := suffix.On_or_using_clause_list().AllOn_or_using_clause()
+				for _, joinOnOrUsingClause := range allJoinOnOrUsingClause {
+					if usingClause := joinOnOrUsingClause.Using_clause(); usingClause != nil {
+						identifiers := usingClause.AllIdentifier()
+						for _, identifier := range identifiers {
+							using[unquoteIdentifierByRule(identifier)] = true
+						}
+					}
+				}
+			}
+			var lFields []base.QuerySpanResult
+			var rFields []base.QuerySpanResult
+			usingMerge := make(map[string][]base.QuerySpanResult)
+			for _, rField := range tableSource.GetQuerySpanResult() {
+				if _, ok := using[strings.ToUpper(rField.Name)]; ok {
+					usingMerge[strings.ToUpper(rField.Name)] = append(usingMerge[strings.ToUpper(rField.Name)], rField)
+				} else {
+					rFields = append(rFields, rField)
+				}
+			}
+			for _, lField := range anchor.GetQuerySpanResult() {
+				lFields = append(lFields, lField)
+			}
+
+			var resultField []base.QuerySpanResult
+			for _, lField := range lFields {
+				columnSet := lField.SourceColumns
+				if _, ok := using[strings.ToUpper(lField.Name)]; ok {
+					mergeItems := usingMerge[strings.ToUpper(lField.Name)]
+					for _, mergeItem := range mergeItems {
+						columnSet, _ = base.MergeSourceColumnSet(columnSet, mergeItem.SourceColumns)
+					}
+				}
+				resultField = append(resultField, base.QuerySpanResult{
+					Name:          lField.Name,
+					SourceColumns: columnSet,
+				})
+			}
+
+			for _, rField := range rFields {
+				resultField = append(resultField, rField)
+			}
+
+			anchor = &base.PseudoTable{
+				Name:    "",
+				Columns: resultField,
+			}
+		}
+		q.tableSourceFrom = append(q.tableSourceFrom, tableSource)
+	}
+	q.tableSourceFrom = append(q.tableSourceFrom, anchor)
+	return anchor, nil
+}
+
+func getJoinTypeFromFromClauseContentsSuffix(fromClauseContentsSuffix parser.IFrom_clause_contents_suffixContext) joinType {
+	if fromClauseContentsSuffix.COMMA_SYMBOL() != nil {
+		return crossJoin
+	}
+	if fromClauseContentsSuffix.JOIN_SYMBOL() != nil {
+		if fromClauseContentsSuffix.Join_type() == nil {
+			return innerJoin
+		}
+		jt := fromClauseContentsSuffix.Join_type()
+		switch {
+		case jt.CROSS_SYMBOL() != nil:
+			return crossJoin
+		case jt.INNER_SYMBOL() != nil:
+			return innerJoin
+		case jt.LEFT_SYMBOL() != nil:
+			return leftOuterJoin
+		case jt.RIGHT_SYMBOL() != nil:
+			return rightOuterJoin
+		}
+	}
+	return crossJoin
 }
 
 func (q *querySpanExtractor) extractTableSourceFromTablePrimary(tablePrimary parser.ITable_primaryContext) (base.TableSource, error) {
