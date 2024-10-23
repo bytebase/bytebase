@@ -94,16 +94,95 @@ func (q *querySpanExtractor) extractTableSourceFromQuery(query parser.IQueryCont
 
 func (q *querySpanExtractor) extractTableSourceFromQueryWithoutPipe(queryWithoutPipe parser.IQuery_without_pipe_operatorsContext) (base.TableSource, error) {
 	// TODO(zp): handle CTE.
-
+	if queryWithoutPipe.With_clause() != nil {
+		if err := q.recordCTE(queryWithoutPipe.With_clause()); err != nil {
+			return nil, err
+		}
+	}
 	return q.extractTableSourceFromQueryPrimaryOrSetOperation(queryWithoutPipe.Query_primary_or_set_operation())
+}
+
+func (q *querySpanExtractor) recordCTE(withClause parser.IWith_clauseContext) error {
+	allAliasedQuery := withClause.AllAliased_query()
+	for _, aliasedQuery := range allAliasedQuery {
+		// TODO(zp): Actually, BigQuery do not rely on the RECURSIVE keyword, instead, it detects the recursive CTE
+		// by the reference of the CTE itself in the CTE body. Also, check other engines.
+		// TODO(zp): Handle recursive cte.
+		cteName := unquoteIdentifierByRule(aliasedQuery.Identifier())
+		query := aliasedQuery.Parenthesized_query().Query()
+		tableSource, err := q.extractNormalCTE(query)
+		if err != nil {
+			return err
+		}
+		q.ctes = append(q.ctes, &base.PseudoTable{
+			Name:    cteName,
+			Columns: tableSource.GetQuerySpanResult(),
+		})
+	}
+	return nil
+}
+
+func (q *querySpanExtractor) extractNormalCTE(query parser.IQueryContext) (base.TableSource, error) {
+	querySpanExtractor := &querySpanExtractor{
+		ctx:             q.ctx,
+		defaultDatabase: q.defaultDatabase,
+		gCtx:            q.gCtx,
+		ctes:            q.ctes,
+	}
+	tableSource, err := querySpanExtractor.extractTableSourceFromQuery(query)
+	if err != nil {
+		return nil, err
+	}
+	return tableSource, nil
 }
 
 func (q *querySpanExtractor) extractTableSourceFromQueryPrimaryOrSetOperation(queryPrimaryOrSetOperation parser.IQuery_primary_or_set_operationContext) (base.TableSource, error) {
 	if queryPrimaryOrSetOperation.Query_primary() != nil {
 		return q.extractTableSourceFromQueryPrimary(queryPrimaryOrSetOperation.Query_primary())
 	}
-	// TODO(zp): handle set operation.
+	if queryPrimaryOrSetOperation.Query_set_operation() != nil {
+		return q.extractTableSourceFromQuerySetOperation(queryPrimaryOrSetOperation.Query_set_operation())
+	}
 	return nil, nil
+}
+
+func (q *querySpanExtractor) extractTableSourceFromQuerySetOperation(querySetOperation parser.IQuery_set_operationContext) (base.TableSource, error) {
+	tableSource, err := q.extractTableSourceFromQueryPrimary(querySetOperation.Query_set_operation_prefix().Query_primary())
+	if err != nil {
+		return nil, err
+	}
+	leftSpanResults := tableSource
+	for _, item := range querySetOperation.Query_set_operation_prefix().AllQuery_set_operation_item() {
+		newQ := &querySpanExtractor{
+			ctx:             q.ctx,
+			defaultDatabase: q.defaultDatabase,
+			gCtx:            q.gCtx,
+			ctes:            q.ctes,
+		}
+		rightSpanResults, err := newQ.extractTableSourceFromQueryPrimary(item.Query_primary())
+		if err != nil {
+			return nil, err
+		}
+		leftQuerySpanResult, rightQuerySpanResult := leftSpanResults.GetQuerySpanResult(), rightSpanResults.GetQuerySpanResult()
+		if len(leftQuerySpanResult) != len(rightQuerySpanResult) {
+			return nil, errors.Errorf("left select has %d columns, but right select has %d columns", len(leftQuerySpanResult), len(rightQuerySpanResult))
+		}
+		var result []base.QuerySpanResult
+		for i, leftSpanResult := range leftQuerySpanResult {
+			rightSpanResult := rightQuerySpanResult[i]
+			newResourceColumns, _ := base.MergeSourceColumnSet(leftSpanResult.SourceColumns, rightSpanResult.SourceColumns)
+			result = append(result, base.QuerySpanResult{
+				Name:          leftSpanResult.Name,
+				SourceColumns: newResourceColumns,
+			})
+		}
+		leftSpanResults = &base.PseudoTable{
+			Name:    "",
+			Columns: result,
+		}
+		// FIXME(zp): Consider UNION alias.
+	}
+	return leftSpanResults, nil
 }
 
 func (q *querySpanExtractor) extractTableSourceFromQueryPrimary(queryPrimary parser.IQuery_primaryContext) (base.TableSource, error) {
@@ -411,6 +490,16 @@ func getAllChildTerminalNode(ctx antlr.ParserRuleContext) []antlr.TerminalNode {
 	return result
 }
 
+type joinType int
+
+const (
+	crossJoin = iota
+	innerJoin
+	fullOuterJoin
+	leftOuterJoin
+	rightOuterJoin
+)
+
 func (q *querySpanExtractor) extractTableSourceFromFromClause(fromClause parser.IFrom_clauseContext) (base.TableSource, error) {
 	contents := fromClause.From_clause_contents()
 	tableSource, err := q.extractTableSourceFromTablePrimary(contents.Table_primary())
@@ -418,8 +507,92 @@ func (q *querySpanExtractor) extractTableSourceFromFromClause(fromClause parser.
 	if err != nil {
 		return nil, err
 	}
-	return tableSource, nil
-	// TODO(zp): handle suffix, alias.
+	anchor := &base.PseudoTable{
+		Name:    "",
+		Columns: tableSource.GetQuerySpanResult(),
+	}
+	allSuffixes := contents.AllFrom_clause_contents_suffix()
+	for _, suffix := range allSuffixes {
+		joinType := getJoinTypeFromFromClauseContentsSuffix(suffix)
+		tableSource, err = q.extractTableSourceFromTablePrimary(suffix.Table_primary())
+		if err != nil {
+			return nil, err
+		}
+		switch joinType {
+		case crossJoin, innerJoin, fullOuterJoin, leftOuterJoin, rightOuterJoin:
+			using := make(map[string]bool)
+			if suffix.On_or_using_clause_list() != nil {
+				allJoinOnOrUsingClause := suffix.On_or_using_clause_list().AllOn_or_using_clause()
+				for _, joinOnOrUsingClause := range allJoinOnOrUsingClause {
+					if usingClause := joinOnOrUsingClause.Using_clause(); usingClause != nil {
+						identifiers := usingClause.AllIdentifier()
+						for _, identifier := range identifiers {
+							using[unquoteIdentifierByRule(identifier)] = true
+						}
+					}
+				}
+			}
+			var lFields []base.QuerySpanResult
+			var rFields []base.QuerySpanResult
+			usingMerge := make(map[string][]base.QuerySpanResult)
+			for _, rField := range tableSource.GetQuerySpanResult() {
+				if _, ok := using[strings.ToUpper(rField.Name)]; ok {
+					usingMerge[strings.ToUpper(rField.Name)] = append(usingMerge[strings.ToUpper(rField.Name)], rField)
+				} else {
+					rFields = append(rFields, rField)
+				}
+			}
+			lFields = append(lFields, anchor.GetQuerySpanResult()...)
+
+			var resultField []base.QuerySpanResult
+			for _, lField := range lFields {
+				columnSet := lField.SourceColumns
+				if _, ok := using[strings.ToUpper(lField.Name)]; ok {
+					mergeItems := usingMerge[strings.ToUpper(lField.Name)]
+					for _, mergeItem := range mergeItems {
+						columnSet, _ = base.MergeSourceColumnSet(columnSet, mergeItem.SourceColumns)
+					}
+				}
+				resultField = append(resultField, base.QuerySpanResult{
+					Name:          lField.Name,
+					SourceColumns: columnSet,
+				})
+			}
+
+			resultField = append(resultField, rFields...)
+
+			anchor = &base.PseudoTable{
+				Name:    "",
+				Columns: resultField,
+			}
+		}
+		q.tableSourceFrom = append(q.tableSourceFrom, tableSource)
+	}
+	q.tableSourceFrom = append(q.tableSourceFrom, anchor)
+	return anchor, nil
+}
+
+func getJoinTypeFromFromClauseContentsSuffix(fromClauseContentsSuffix parser.IFrom_clause_contents_suffixContext) joinType {
+	if fromClauseContentsSuffix.COMMA_SYMBOL() != nil {
+		return crossJoin
+	}
+	if fromClauseContentsSuffix.JOIN_SYMBOL() != nil {
+		if fromClauseContentsSuffix.Join_type() == nil {
+			return innerJoin
+		}
+		jt := fromClauseContentsSuffix.Join_type()
+		switch {
+		case jt.CROSS_SYMBOL() != nil:
+			return crossJoin
+		case jt.INNER_SYMBOL() != nil:
+			return innerJoin
+		case jt.LEFT_SYMBOL() != nil:
+			return leftOuterJoin
+		case jt.RIGHT_SYMBOL() != nil:
+			return rightOuterJoin
+		}
+	}
+	return crossJoin
 }
 
 func (q *querySpanExtractor) extractTableSourceFromTablePrimary(tablePrimary parser.ITable_primaryContext) (base.TableSource, error) {
@@ -442,7 +615,7 @@ func (q *querySpanExtractor) extractTableSourceFromTablePathExpression(tablePath
 		return nil, errors.Errorf("unsupported unnest expression: %s", tablePathExprBase.GetText())
 	}
 	var tableName string
-	datasetName := q.defaultDatabase
+	var datasetName string
 
 	if slashedOrDashedPathExpression := tablePathExprBase.Maybe_slashed_or_dashed_path_expression(); slashedOrDashedPathExpression != nil {
 		if slashedOrDashedPathExpression.Maybe_dashed_path_expression() != nil {
@@ -486,6 +659,19 @@ func (q *querySpanExtractor) extractTableSourceFromTablePathExpression(tablePath
 func (q *querySpanExtractor) findTableSchema(datasetName string, tableName string) (base.TableSource, error) {
 	// https://cloud.google.com/bigquery/docs/reference/standard-sql/lexical#case_sensitivity
 	// Dataset and table names are case-sensitive unless the is_case_insensitive option is set to TRUE.
+	if datasetName == "" {
+		for i := len(q.ctes) - 1; i >= 0; i-- {
+			table := q.ctes[i]
+			if strings.EqualFold(table.Name, tableName) {
+				return table, nil
+			}
+		}
+	}
+
+	if datasetName == "" {
+		datasetName = q.defaultDatabase
+	}
+
 	_, databaseMetadata, err := q.gCtx.GetDatabaseMetadataFunc(q.ctx, q.gCtx.InstanceID, datasetName)
 	if err != nil {
 		return nil, err
