@@ -156,30 +156,20 @@ func ValidateMaskingRuleCELExpr(expr string) (cel.Program, error) {
 }
 
 // ValidateMaskingExceptionCELExpr validates masking exception expr.
-func ValidateMaskingExceptionCELExpr(expr string) (cel.Program, error) {
-	e, err := cel.NewEnv(
-		MaskingExceptionPolicyCELAttributes...,
-	)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-	ast, issues := e.Compile(expr)
-	if issues != nil && issues.Err() != nil {
-		return nil, status.Error(codes.InvalidArgument, issues.Err().Error())
-	}
-	prog, err := e.Program(ast)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-	return prog, nil
+func ValidateMaskingExceptionCELExpr(expression *expr.Expr) (cel.Program, error) {
+	return validateCELExpr(expression, MaskingExceptionPolicyCELAttributes)
 }
 
 func ValidateProjectMemberCELExpr(expression *expr.Expr) (cel.Program, error) {
+	return validateCELExpr(expression, IAMPolicyConditionCELAttributes)
+}
+
+func validateCELExpr(expression *expr.Expr, conditionCELAttributes []cel.EnvOption) (cel.Program, error) {
 	if expression == nil || expression.Expression == "" {
 		return nil, nil
 	}
 	e, err := cel.NewEnv(
-		IAMPolicyConditionCELAttributes...,
+		conditionCELAttributes...,
 	)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())

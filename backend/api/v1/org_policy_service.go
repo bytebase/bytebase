@@ -525,7 +525,7 @@ func validatePolicyPayload(policyType api.PolicyType, policy *v1pb.Policy) error
 			if exception.MaskingLevel == v1pb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED {
 				return status.Errorf(codes.InvalidArgument, "masking exception must have masking level set")
 			}
-			if _, err := common.ValidateMaskingExceptionCELExpr(exception.Condition.Expression); err != nil {
+			if _, err := common.ValidateMaskingExceptionCELExpr(exception.Condition); err != nil {
 				return status.Error(codes.InvalidArgument, fmt.Sprintf("invalid masking exception expression: %v", err))
 			}
 			if err := validateMember(exception.Member); err != nil {
