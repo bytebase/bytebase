@@ -1,3 +1,286 @@
+- description: Set operation
+  statement: WITH CTE_1 AS (SELECT * FROM people), CTE_2 AS (SELECT * FROM address) SELECT * FROM CTE_1 UNION ALL SELECT * FROM CTE_2;
+  defaultDatabase: ds1
+  metadata: |-
+    {
+      "name":  "ds1",
+      "schemas":  [
+        {
+          "name": "",
+          "tables":  [
+            {
+              "name":  "PEOPLE",
+              "columns":  [
+                {
+                  "name":  "ID"
+                },
+                {
+                  "name":  "NAME"
+                }
+              ]
+            },
+            {
+              "name":  "ADDRESS",
+              "columns":  [
+                {
+                  "name":  "PEOPLE_ID"
+                },
+                {
+                  "name":  "ADDRESS"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    results:
+        - name: ID
+          sourcecolumns:
+            - server: ""
+              database: ds1
+              schema: ""
+              table: address
+              column: PEOPLE_ID
+            - server: ""
+              database: ds1
+              schema: ""
+              table: people
+              column: ID
+        - name: NAME
+          sourcecolumns:
+            - server: ""
+              database: ds1
+              schema: ""
+              table: address
+              column: ADDRESS
+            - server: ""
+              database: ds1
+              schema: ""
+              table: people
+              column: NAME
+    sourcecolumns:
+        - server: ""
+          database: ds1
+          schema: ""
+          table: CTE_1
+          column: ""
+        - server: ""
+          database: ds1
+          schema: ""
+          table: CTE_2
+          column: ""
+        - server: ""
+          database: ds1
+          schema: ""
+          table: address
+          column: ""
+        - server: ""
+          database: ds1
+          schema: ""
+          table: people
+          column: ""
+- description: Join using
+  statement: SELECT ID, NAME, ADDRESS FROM people JOIN address ON people.ID = address.PEOPLE_ID USING (ID);
+  defaultDatabase: ds1
+  metadata: |-
+    {
+      "name":  "ds1",
+      "schemas":  [
+        {
+          "name": "",
+          "tables":  [
+            {
+              "name":  "PEOPLE",
+              "columns":  [
+                {
+                  "name":  "ID"
+                },
+                {
+                  "name":  "NAME"
+                }
+              ]
+            },
+            {
+              "name":  "ADDRESS",
+              "columns":  [
+                {
+                  "name": "ID"
+                },
+                {
+                  "name":  "PEOPLE_ID"
+                },
+                {
+                  "name":  "ADDRESS"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    results:
+        - name: ID
+          sourcecolumns:
+            - server: ""
+              database: ds1
+              schema: ""
+              table: address
+              column: ID
+            - server: ""
+              database: ds1
+              schema: ""
+              table: people
+              column: ID
+        - name: NAME
+          sourcecolumns:
+            - server: ""
+              database: ds1
+              schema: ""
+              table: people
+              column: NAME
+        - name: ADDRESS
+          sourcecolumns:
+            - server: ""
+              database: ds1
+              schema: ""
+              table: address
+              column: ADDRESS
+    sourcecolumns:
+        - server: ""
+          database: ds1
+          schema: ""
+          table: address
+          column: ""
+        - server: ""
+          database: ds1
+          schema: ""
+          table: people
+          column: ""
+- description: Simple join
+  statement: SELECT ID, NAME, ADDRESS FROM people JOIN address ON people.ID = address.PEOPLE_ID;
+  defaultDatabase: ds1
+  metadata: |-
+    {
+      "name":  "ds1",
+      "schemas":  [
+        {
+          "name": "",
+          "tables":  [
+            {
+              "name":  "PEOPLE",
+              "columns":  [
+                {
+                  "name":  "ID"
+                },
+                {
+                  "name":  "NAME"
+                }
+              ]
+            },
+            {
+              "name":  "ADDRESS",
+              "columns":  [
+                {
+                  "name":  "PEOPLE_ID"
+                },
+                {
+                  "name":  "ADDRESS"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    results:
+        - name: ID
+          sourcecolumns:
+            - server: ""
+              database: ds1
+              schema: ""
+              table: people
+              column: ID
+        - name: NAME
+          sourcecolumns:
+            - server: ""
+              database: ds1
+              schema: ""
+              table: people
+              column: NAME
+        - name: ADDRESS
+          sourcecolumns:
+            - server: ""
+              database: ds1
+              schema: ""
+              table: address
+              column: ADDRESS
+    sourcecolumns:
+        - server: ""
+          database: ds1
+          schema: ""
+          table: address
+          column: ""
+        - server: ""
+          database: ds1
+          schema: ""
+          table: people
+          column: ""
+- description: Simple normal cte
+  statement: WITH CTE_1 AS (SELECT ID, NAME FROM people) SELECT * FROM CTE_1;
+  defaultDatabase: ds1
+  metadata: |-
+    {
+      "name":  "ds1",
+      "schemas":  [
+        {
+          "name": "",
+          "tables":  [
+            {
+              "name":  "people",
+              "columns":  [
+                {
+                  "name":  "ID"
+                },
+                {
+                  "name":  "NAME"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    results:
+        - name: ID
+          sourcecolumns:
+            - server: ""
+              database: ds1
+              schema: ""
+              table: people
+              column: ID
+        - name: NAME
+          sourcecolumns:
+            - server: ""
+              database: ds1
+              schema: ""
+              table: people
+              column: NAME
+    sourcecolumns:
+        - server: ""
+          database: ds1
+          schema: ""
+          table: CTE_1
+          column: ""
+        - server: ""
+          database: ds1
+          schema: ""
+          table: people
+          column: ""
 - description: Correlated subquery in the target field clause.
   statement: SELECT city, (SELECT COUNT(*) FROM paintings p WHERE g.id = p.gallery_id) AS total_paintings FROM galleries g;
   defaultDatabase: ds1
