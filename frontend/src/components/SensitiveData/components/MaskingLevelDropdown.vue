@@ -2,6 +2,7 @@
   <NSelect
     :value="level"
     :options="options"
+    :disabled="disabled"
     @update:value="$emit('update:level', $event)"
   />
 </template>
@@ -15,6 +16,7 @@ import type { MaskingLevel } from "@/types/proto/v1/common";
 import { maskingLevelToJSON } from "@/types/proto/v1/common";
 
 const props = defineProps<{
+  disabled?: boolean;
   level: MaskingLevel;
   levelList: MaskingLevel[];
 }>();

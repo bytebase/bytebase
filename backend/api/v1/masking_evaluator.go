@@ -8,6 +8,7 @@ import (
 
 	"github.com/google/cel-go/cel"
 	"github.com/pkg/errors"
+	"google.golang.org/genproto/googleapis/type/expr"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/store"
@@ -234,7 +235,7 @@ func (m *maskingLevelEvaluator) evaluateMaskingLevelOfColumn(databaseMessage *st
 				"time": time.Now(),
 			},
 		}
-		hit, err := evaluateMaskingExceptionPolicyCondition(filteredMaskingException.Condition.Expression, maskingExceptionAttributes)
+		hit, err := evaluateMaskingExceptionPolicyCondition(filteredMaskingException.Condition, maskingExceptionAttributes)
 		if err != nil {
 			return storepb.MaskingLevel_MASKING_LEVEL_UNSPECIFIED, errors.Wrapf(err, "failed to evaluate masking exception policy condition")
 		}
@@ -266,8 +267,9 @@ func getClassificationLevelOfColumn(columnClassificationID string, classificatio
 	return *classification.LevelId
 }
 
-func evaluateMaskingExceptionPolicyCondition(expression string, attributes map[string]any) (bool, error) {
-	if expression == "" {
+func evaluateMaskingExceptionPolicyCondition(expression *expr.Expr, attributes map[string]any) (bool, error) {
+	// nil expression means allow to access all databases
+	if expression == nil || expression.Expression == "" {
 		return true, nil
 	}
 	maskingExceptionPolicyEnv, err := cel.NewEnv(
@@ -277,7 +279,7 @@ func evaluateMaskingExceptionPolicyCondition(expression string, attributes map[s
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to create CEL environment for masking exception policy")
 	}
-	ast, issues := maskingExceptionPolicyEnv.Compile(expression)
+	ast, issues := maskingExceptionPolicyEnv.Compile(expression.Expression)
 	if issues != nil && issues.Err() != nil {
 		return false, errors.Wrapf(issues.Err(), "failed to get the ast of CEL program for masking exception policy")
 	}
