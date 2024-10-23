@@ -32,7 +32,7 @@ func TestGetQuerySpan(t *testing.T) {
 	}
 
 	var (
-		record        = true
+		record        = false
 		testDataPaths = []string{
 			"test-data/query-span/standard.yaml",
 		}

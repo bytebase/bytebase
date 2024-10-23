@@ -140,8 +140,49 @@ func (q *querySpanExtractor) extractTableSourceFromQueryPrimaryOrSetOperation(qu
 	if queryPrimaryOrSetOperation.Query_primary() != nil {
 		return q.extractTableSourceFromQueryPrimary(queryPrimaryOrSetOperation.Query_primary())
 	}
-	// TODO(zp): handle set operation.
+	if queryPrimaryOrSetOperation.Query_set_operation() != nil {
+		return q.extractTableSourceFromQuerySetOperation(queryPrimaryOrSetOperation.Query_set_operation())
+	}
 	return nil, nil
+}
+
+func (q *querySpanExtractor) extractTableSourceFromQuerySetOperation(querySetOperation parser.IQuery_set_operationContext) (base.TableSource, error) {
+	tableSource, err := q.extractTableSourceFromQueryPrimary(querySetOperation.Query_set_operation_prefix().Query_primary())
+	if err != nil {
+		return nil, err
+	}
+	leftSpanResults := tableSource
+	for _, item := range querySetOperation.Query_set_operation_prefix().AllQuery_set_operation_item() {
+		newQ := &querySpanExtractor{
+			ctx:             q.ctx,
+			defaultDatabase: q.defaultDatabase,
+			gCtx:            q.gCtx,
+			ctes:            q.ctes,
+		}
+		rightSpanResults, err := newQ.extractTableSourceFromQueryPrimary(item.Query_primary())
+		if err != nil {
+			return nil, err
+		}
+		leftQuerySpanResult, rightQuerySpanResult := leftSpanResults.GetQuerySpanResult(), rightSpanResults.GetQuerySpanResult()
+		if len(leftQuerySpanResult) != len(rightQuerySpanResult) {
+			return nil, errors.Errorf("left select has %d columns, but right select has %d columns", len(leftQuerySpanResult), len(rightQuerySpanResult))
+		}
+		var result []base.QuerySpanResult
+		for i, leftSpanResult := range leftQuerySpanResult {
+			rightSpanResult := rightQuerySpanResult[i]
+			newResourceColumns, _ := base.MergeSourceColumnSet(leftSpanResult.SourceColumns, rightSpanResult.SourceColumns)
+			result = append(result, base.QuerySpanResult{
+				Name:          leftSpanResult.Name,
+				SourceColumns: newResourceColumns,
+			})
+		}
+		leftSpanResults = &base.PseudoTable{
+			Name:    "",
+			Columns: result,
+		}
+		// FIXME(zp): Consider UNION alias.
+	}
+	return leftSpanResults, nil
 }
 
 func (q *querySpanExtractor) extractTableSourceFromQueryPrimary(queryPrimary parser.IQuery_primaryContext) (base.TableSource, error) {
