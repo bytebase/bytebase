@@ -2,8 +2,6 @@ syntax = "proto3";
 
 package bytebase.store;
 
-import "google/protobuf/duration.proto";
-import "store/common.proto";
 import "store/instance_change_history.proto";
 
 option go_package = "generated-go/store";
