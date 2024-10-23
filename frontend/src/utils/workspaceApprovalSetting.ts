@@ -286,7 +286,7 @@ const toMap = <T extends { rule: string }>(items: T[]): Map<string, T[]> => {
 
 const buildParsedExpression = async (parsed: ParsedApprovalRule[]) => {
   if (parsed.length === 0) {
-    return CELExpr.fromJSON({});
+    return undefined;
   }
   const args = parsed.map(({ source, level }) => {
     const sourceExpr: EqualityExpr = {

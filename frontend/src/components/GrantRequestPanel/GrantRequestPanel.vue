@@ -21,10 +21,10 @@
             <RequiredStar />
           </span>
           <DatabaseResourceForm
+            v-model:database-resources="state.databaseResources"
             :project-name="props.projectName"
-            :database-resources="state.databaseResources"
-            @update:condition="state.databaseResourceCondition = $event"
-            @update:database-resources="state.databaseResources = $event"
+            :include-cloumn="false"
+            :required-feature="'bb.feature.access-control'"
           />
         </div>
         <div
@@ -98,11 +98,11 @@ import {
   Issue_Type,
 } from "@/types/proto/v1/issue_service";
 import { generateIssueTitle } from "@/utils";
+import { stringifyDatabaseResources } from "@/utils/issue/cel";
 import DatabaseResourceForm from "./DatabaseResourceForm/index.vue";
 import MaxRowCountSelect from "./MaxRowCountSelect.vue";
 
 interface LocalState {
-  databaseResourceCondition?: string;
   databaseResources: DatabaseResource[];
   expireDays: number;
   description: string;
@@ -157,7 +157,10 @@ const allowCreate = computed(() => {
   // If all database selected, the condition is an empty string.
   // If some databases selected, the condition is a string.
   // If no database selected, the condition is undefined.
-  if (isUndefined(state.databaseResourceCondition)) {
+  if (
+    !isUndefined(state.databaseResources) &&
+    state.databaseResources.length === 0
+  ) {
     return false;
   }
   return true;
@@ -186,8 +189,8 @@ const doCreateIssue = async () => {
     props.projectName
   );
   const expression: string[] = [];
-  if (state.databaseResourceCondition) {
-    expression.push(state.databaseResourceCondition);
+  if (state.databaseResources) {
+    expression.push(stringifyDatabaseResources(state.databaseResources));
   }
   const expireDays = state.expireDays;
   if (expireDays > 0) {

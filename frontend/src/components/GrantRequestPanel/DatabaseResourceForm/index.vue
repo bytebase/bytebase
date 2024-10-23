@@ -1,7 +1,9 @@
 <template>
   <div class="w-full mb-2">
     <NRadioGroup
+      v-if="allowSelectAll"
       v-model:value="state.allDatabases"
+      :disabled="disabled"
       class="w-full !flex flex-row justify-start items-center gap-4"
     >
       <NTooltip trigger="hover">
@@ -15,7 +17,7 @@
       </NTooltip>
       <NRadio class="!leading-6" :value="false" :disabled="!project">
         <div class="flex items-center space-x-2">
-          <FeatureBadge feature="bb.feature.access-control" />
+          <FeatureBadge :feature="requiredFeature" />
           <span>{{ $t("issue.grant-request.manually-select") }}</span>
         </div>
       </NRadio>
@@ -27,14 +29,15 @@
   >
     <DatabaseResourceSelector
       v-if="project"
+      v-model:database-resources="state.databaseResources"
+      :disabled="disabled"
       :project-name="project.name"
-      :database-resources="state.databaseResources"
-      @update="handleSelectedDatabaseResourceChanged"
+      :include-cloumn="includeCloumn"
     />
   </div>
   <FeatureModal
     :open="state.showFeatureModal"
-    :feature="'bb.feature.access-control'"
+    :feature="requiredFeature"
     @cancel="state.showFeatureModal = false"
   />
 </template>
@@ -43,9 +46,8 @@
 import { NRadioGroup, NRadio, NTooltip } from "naive-ui";
 import { computed, onMounted, reactive, watch } from "vue";
 import { FeatureBadge, FeatureModal } from "@/components/FeatureGuard";
-import { useProjectByName, featureToRef } from "@/store";
-import type { DatabaseResource } from "@/types";
-import { stringifyDatabaseResources } from "@/utils/issue/cel";
+import { useProjectByName, hasFeature } from "@/store";
+import type { DatabaseResource, FeatureType } from "@/types";
 import DatabaseResourceSelector from "./DatabaseResourceSelector.vue";
 
 interface LocalState {
@@ -54,33 +56,38 @@ interface LocalState {
   databaseResources: DatabaseResource[];
 }
 
-const props = defineProps<{
-  projectName: string;
-  databaseResources?: DatabaseResource[];
-}>();
+const props = withDefaults(
+  defineProps<{
+    disabled?: boolean;
+    projectName: string;
+    requiredFeature: FeatureType;
+    includeCloumn: boolean;
+    allowSelectAll?: boolean;
+    databaseResources?: DatabaseResource[];
+  }>(),
+  {
+    disabled: false,
+    allowSelectAll: true,
+    databaseResources: undefined,
+  }
+);
 
 const emit = defineEmits<{
-  (event: "update:condition", value?: string): void;
   (
     event: "update:database-resources",
-    databaseResources: DatabaseResource[]
+    databaseResources?: DatabaseResource[]
   ): void;
 }>();
 
 const state = reactive<LocalState>({
-  allDatabases: (props.databaseResources || []).length === 0,
+  allDatabases:
+    props.allowSelectAll && (props.databaseResources || []).length === 0,
   showFeatureModal: false,
   databaseResources: props.databaseResources || [],
 });
 
 const { project } = useProjectByName(computed(() => props.projectName));
-const hasAccessControlFeature = featureToRef("bb.feature.access-control");
-
-const handleSelectedDatabaseResourceChanged = (
-  databaseResourceList: DatabaseResource[]
-) => {
-  state.databaseResources = databaseResourceList;
-};
+const hasRequiredFeature = computed(() => hasFeature(props.requiredFeature));
 
 onMounted(() => {
   if (props.databaseResources && props.databaseResources.length > 0) {
@@ -92,18 +99,12 @@ watch(
   () => [state.allDatabases, state.databaseResources],
   () => {
     if (state.allDatabases) {
-      emit("update:condition", "");
+      emit("update:database-resources", undefined);
     } else {
-      if (!hasAccessControlFeature.value) {
+      if (!hasRequiredFeature.value) {
         state.showFeatureModal = true;
         state.allDatabases = true;
         return;
-      }
-      if (state.databaseResources.length === 0) {
-        emit("update:condition", undefined);
-      } else {
-        const condition = stringifyDatabaseResources(state.databaseResources);
-        emit("update:condition", condition);
       }
       emit("update:database-resources", state.databaseResources);
     }

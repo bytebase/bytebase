@@ -13,32 +13,40 @@
       {{ placeholder }}
     </div>
 
-    <NPopover v-if="ready && !readonly" placement="left">
-      <template #trigger>
-        <div
-          class="absolute top-[3px] right-[18px] w-4 h-4 flex items-center justify-center cursor-pointer z-50 opacity-50 hover:opacity-100 transition-all"
-        >
+    <div
+      class="absolute top-[3px] right-[18px] flex gap-1 items-center justify-end z-50"
+    >
+      <slot name="corner-prefix" />
+
+      <NPopover v-if="ready && !readonly" placement="bottom-end">
+        <template #trigger>
           <div
-            class="w-3 h-3 rounded-full"
-            :class="connectionStateIndicatorClass"
-          />
-        </div>
-      </template>
-      <template #default>
-        <div class="flex flex-col gap-1">
-          <div class="inline-flex gap-1">
-            <span>Language server</span>
-            <span>{{ connectionStateText }}</span>
-          </div>
-          <div
-            v-if="connectionHeartbeatText"
-            class="text-xs text-control-placeholder"
+            class="w-4 h-4 flex justify-center items-center cursor-pointer opacity-50 hover:opacity-100 transition-all"
           >
-            {{ connectionHeartbeatText }}
+            <div
+              class="w-3 h-3 rounded-full"
+              :class="connectionStateIndicatorClass"
+            />
           </div>
-        </div>
-      </template>
-    </NPopover>
+        </template>
+        <template #default>
+          <div class="flex flex-col gap-1">
+            <div class="inline-flex gap-1">
+              <span>Language server</span>
+              <span>{{ connectionStateText }}</span>
+            </div>
+            <div
+              v-if="connectionHeartbeatText"
+              class="text-xs text-control-placeholder"
+            >
+              {{ connectionHeartbeatText }}
+            </div>
+          </div>
+        </template>
+      </NPopover>
+
+      <slot name="corner-suffix" />
+    </div>
   </div>
 </template>
 

@@ -29,12 +29,15 @@
             "
             class="w-full"
           >
-            <p class="mb-2">{{ $t("common.databases") }}</p>
+            <div class="flex items-center gap-x-1 mb-2">
+              <span>{{ $t("common.databases") }}</span>
+              <span class="text-red-600">*</span>
+            </div>
             <QuerierDatabaseResourceForm
+              v-model:database-resources="state.databaseResources"
               :project-name="project.name"
-              :database-resources="state.databaseResources"
-              @update:condition="state.databaseResourceCondition = $event"
-              @update:database-resources="state.databaseResources = $event"
+              :include-cloumn="false"
+              :required-feature="'bb.feature.access-control'"
             />
           </div>
 
@@ -109,7 +112,7 @@
 </template>
 
 <script lang="ts" setup>
-import { cloneDeep, isEqual } from "lodash-es";
+import { cloneDeep, isEqual, isUndefined } from "lodash-es";
 import { NButton, NDatePicker, NInput } from "naive-ui";
 import { computed, reactive, ref, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
@@ -130,6 +133,7 @@ import { State } from "@/types/proto/v1/common";
 import type { Binding } from "@/types/proto/v1/iam_policy";
 import { displayRoleTitle } from "@/utils";
 import { convertFromExpr } from "@/utils/issue/cel";
+import { stringifyDatabaseResources } from "@/utils/issue/cel";
 import { getBindingIdentifier } from "../utils";
 
 const props = defineProps<{
@@ -146,7 +150,6 @@ interface LocalState {
   description: string;
   expirationTimestamp?: number;
   // Querier and exporter options.
-  databaseResourceCondition?: string;
   databaseResources?: DatabaseResource[];
   // Exporter options.
   maxRowCount: number;
@@ -182,6 +185,12 @@ const allowRemoveRole = () => {
 };
 
 const allowConfirm = computed(() => {
+  if (
+    !isUndefined(state.databaseResources) &&
+    state.databaseResources.length === 0
+  ) {
+    return false;
+  }
   // only allow update current single user.
   return props.binding.members.length === 1;
 });
@@ -253,15 +262,15 @@ const handleUpdateRole = async () => {
       ).toISOString()}")`
     );
   }
-  if (props.binding.role === PresetRoleType.PROJECT_QUERIER) {
-    if (state.databaseResourceCondition) {
-      expression.push(state.databaseResourceCondition);
+  if (
+    props.binding.role === PresetRoleType.PROJECT_QUERIER ||
+    props.binding.role === PresetRoleType.PROJECT_EXPORTER
+  ) {
+    if (state.databaseResources) {
+      expression.push(stringifyDatabaseResources(state.databaseResources));
     }
   }
   if (props.binding.role === PresetRoleType.PROJECT_EXPORTER) {
-    if (state.databaseResourceCondition) {
-      expression.push(state.databaseResourceCondition);
-    }
     if (state.maxRowCount) {
       expression.push(`request.row_limit <= ${state.maxRowCount}`);
     }

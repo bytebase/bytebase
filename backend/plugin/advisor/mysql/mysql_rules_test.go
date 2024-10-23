@@ -127,8 +127,6 @@ func TestMySQLRules(t *testing.T) {
 		advisor.SchemaRuleColumnAutoIncrementMustUnsigned,
 		// advisor.SchemaRuleColumnRequireDefault enforce the column default.
 		advisor.SchemaRuleColumnRequireDefault,
-		// advisor.SchemaRuleColumnDisallowMixDML disallows mixing different types of DML statements.
-		advisor.SchemaRuleStatementDisallowMixDDLDML,
 
 		// Index related rules.
 		// advisor.SchemaRuleIndexNoDuplicateColumn require the index no duplicate column.

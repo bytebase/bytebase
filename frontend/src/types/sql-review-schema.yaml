@@ -266,6 +266,12 @@
         type: NUMBER
         default: 10000000
   engine: MYSQL
+- type: table.require-charset
+  category: TABLE
+  engine: MYSQL
+- type: table.require-collation
+  category: TABLE
+  engine: MYSQL
 - type: statement.select.no-select-all
   category: STATEMENT
   engine: MYSQL
@@ -660,21 +666,6 @@
 - type: statement.join-strict-column-attrs
   category: STATEMENT
   engine: MYSQL
-- type: statement.disallow-mix-ddl-dml
-  category: STATEMENT
-  engine: MYSQL
-- type: statement.disallow-mix-ddl-dml
-  category: STATEMENT
-  engine: POSTGRES
-- type: statement.disallow-mix-ddl-dml
-  category: STATEMENT
-  engine: TIDB
-- type: statement.disallow-mix-ddl-dml
-  category: STATEMENT
-  engine: ORACLE
-- type: statement.disallow-mix-ddl-dml
-  category: STATEMENT
-  engine: MSSQL
 - type: statement.disallow-mix-in-ddl
   category: STATEMENT
   engine: MYSQL
@@ -1849,6 +1840,12 @@
 - type: column.default-disallow-volatile
   category: COLUMN
   engine: POSTGRES
+- type: column.require-charset
+  category: COLUMN
+  engine: MYSQL
+- type: column.require-collation
+  category: COLUMN
+  engine: MYSQL
 - type: schema.backward-compatibility
   category: SCHEMA
   engine: MYSQL

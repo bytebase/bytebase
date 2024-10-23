@@ -34,6 +34,7 @@ import projectV1Routes, {
   PROJECT_V1_ROUTE_AUDIT_LOGS,
   PROJECT_V1_ROUTE_REVIEW_CENTER,
   PROJECT_V1_ROUTE_RELEASES,
+  PROJECT_V1_ROUTE_MASKING_ACCESS,
 } from "@/router/dashboard/projectV1";
 import { useAppFeature } from "@/store";
 import type { ComposedProject, MaybeRef, Permission } from "@/types";
@@ -138,6 +139,12 @@ export const useProjectSidebar = (
             title: t("common.databases"),
             path: PROJECT_V1_ROUTE_DATABASES,
             type: "div",
+          },
+          {
+            title: t("project.masking-access.self"),
+            path: PROJECT_V1_ROUTE_MASKING_ACCESS,
+            type: "div",
+            hide: !isDev(),
           },
           {
             title: t("common.groups"),

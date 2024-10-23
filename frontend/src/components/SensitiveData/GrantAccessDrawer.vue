@@ -1,17 +1,30 @@
 <template>
   <Drawer :show="true" @close="onDismiss">
-    <DrawerContent :title="$t('settings.sensitive-data.grant-access')">
+    <DrawerContent
+      :title="$t('settings.sensitive-data.grant-access')"
+      class="w-[64rem] max-w-[100vw] relative"
+    >
       <div class="divide-block-border space-y-8 h-full">
-        <SensitiveColumnTable
-          :row-clickable="false"
-          :show-operation="false"
-          :row-selectable="false"
-          :column-list="columnList"
-          :checked-column-index-list="[]"
-        />
+        <div class="w-full">
+          <div class="flex items-center gap-x-1 mb-2">
+            <span>{{ $t("common.resources") }}</span>
+            <span class="text-red-600">*</span>
+          </div>
+          <DatabaseResourceForm
+            v-model:database-resources="state.databaseResources"
+            :project-name="projectName"
+            :required-feature="'bb.feature.sensitive-data'"
+            :include-cloumn="true"
+            :allow-select-all="false"
+            :disabled="true"
+          />
+        </div>
 
         <div class="w-full">
-          <p class="mb-2">{{ $t("settings.sensitive-data.action.self") }}</p>
+          <div class="flex items-center gap-x-1 mb-2">
+            <span>{{ $t("settings.sensitive-data.action.self") }}</span>
+            <span class="text-red-600">*</span>
+          </div>
           <div class="flex space-x-4">
             <NCheckbox
               v-for="action in ACTIONS"
@@ -31,9 +44,10 @@
         </div>
 
         <div class="w-full">
-          <p class="mb-2">
-            {{ $t("settings.sensitive-data.masking-level.self") }}
-          </p>
+          <div class="flex items-center gap-x-1 mb-2">
+            <span>{{ $t("settings.sensitive-data.masking-level.self") }}</span>
+            <span class="text-red-600">*</span>
+          </div>
           <MaskingLevelRadioGroup
             :level="state.maskingLevel"
             :level-list="MASKING_LEVELS"
@@ -85,14 +99,15 @@
 </template>
 
 <script lang="ts" setup>
-import { groupBy } from "lodash-es";
+import { isUndefined } from "lodash-es";
 import { NButton, NCheckbox, NDatePicker } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
+import DatabaseResourceForm from "@/components/GrantRequestPanel/DatabaseResourceForm/index.vue";
 import MembersBindingSelect from "@/components/Member/MembersBindingSelect.vue";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { usePolicyV1Store, pushNotification } from "@/store";
-import type { ComposedProject } from "@/types";
+import type { DatabaseResource } from "@/types";
 import { Expr } from "@/types/proto/google/type/expr";
 import { MaskingLevel } from "@/types/proto/v1/common";
 import type {
@@ -106,9 +121,8 @@ import {
   maskingExceptionPolicy_MaskingException_ActionToJSON,
 } from "@/types/proto/v1/org_policy_service";
 import MaskingLevelRadioGroup from "./components/MaskingLevelRadioGroup.vue";
-import SensitiveColumnTable from "./components/SensitiveColumnTable.vue";
 import type { SensitiveColumn } from "./types";
-import { getExpressionsForSensitiveColumn } from "./utils";
+import { getExpressionsForDatabaseResource } from "./utils";
 
 const props = defineProps<{
   columnList: SensitiveColumn[];
@@ -123,6 +137,7 @@ interface LocalState {
   maskingLevel: MaskingLevel;
   processing: boolean;
   supportActions: Set<MaskingExceptionPolicy_MaskingException_Action>;
+  databaseResources?: DatabaseResource[];
 }
 
 const ACTIONS = [
@@ -136,6 +151,12 @@ const state = reactive<LocalState>({
   maskingLevel: MaskingLevel.PARTIAL,
   processing: false,
   supportActions: new Set(ACTIONS),
+  databaseResources: props.columnList.map((col) => ({
+    databaseName: col.database.name,
+    schema: col.maskData.schema,
+    table: col.maskData.table,
+    column: col.maskData.column,
+  })),
 });
 
 const policyStore = usePolicyV1Store();
@@ -160,31 +181,25 @@ const submitDisabled = computed(() => {
   if (state.supportActions.size === 0) {
     return true;
   }
+  if (
+    !isUndefined(state.databaseResources) &&
+    state.databaseResources.length === 0
+  ) {
+    return true;
+  }
   return false;
 });
 
 const onSubmit = async () => {
   state.processing = true;
 
-  const groupByProject = groupBy(
-    props.columnList,
-    (item) => item.database.project
-  );
   try {
-    for (const [project, columnList] of Object.entries(groupByProject)) {
-      if (columnList.length === 0) {
-        continue;
-      }
-      const pendingUpdate = await getPendingUpdatePolicy(
-        columnList[0].database.projectEntity,
-        columnList
-      );
-      await policyStore.upsertPolicy({
-        parentPath: project,
-        policy: pendingUpdate,
-        updateMask: ["payload"],
-      });
-    }
+    const pendingUpdate = await getPendingUpdatePolicy(props.projectName);
+    await policyStore.upsertPolicy({
+      parentPath: props.projectName,
+      policy: pendingUpdate,
+      updateMask: ["payload"],
+    });
     pushNotification({
       module: "bytebase",
       style: "SUCCESS",
@@ -197,23 +212,22 @@ const onSubmit = async () => {
 };
 
 const getPendingUpdatePolicy = async (
-  project: ComposedProject,
-  columnList: SensitiveColumn[]
+  parentPath: string
 ): Promise<Partial<Policy>> => {
   const maskingExceptions: MaskingExceptionPolicy_MaskingException[] = [];
 
-  for (const column of columnList) {
-    const expressions = getExpressionsForSensitiveColumn(column);
-    if (state.expirationTimestamp) {
-      expressions.push(
-        `request.time < timestamp("${new Date(
-          state.expirationTimestamp
-        ).toISOString()}")`
-      );
-    }
+  const expressions = [];
+  if (state.expirationTimestamp) {
+    expressions.push(
+      `request.time < timestamp("${new Date(
+        state.expirationTimestamp
+      ).toISOString()}")`
+    );
+  }
 
-    for (const action of state.supportActions.values()) {
-      for (const member of state.memberList) {
+  for (const action of state.supportActions.values()) {
+    for (const member of state.memberList) {
+      if (!state.databaseResources) {
         maskingExceptions.push({
           member,
           action,
@@ -222,12 +236,26 @@ const getPendingUpdatePolicy = async (
             expression: expressions.join(" && "),
           }),
         });
+      } else {
+        for (const databaseResource of state.databaseResources) {
+          const resourceExpressions =
+            getExpressionsForDatabaseResource(databaseResource);
+          resourceExpressions.push(...expressions);
+          maskingExceptions.push({
+            member,
+            action,
+            maskingLevel: state.maskingLevel,
+            condition: Expr.fromPartial({
+              expression: resourceExpressions.join(" && "),
+            }),
+          });
+        }
       }
     }
   }
 
   const policy = await policyStore.getOrFetchPolicyByParentAndType({
-    parentPath: project.name,
+    parentPath,
     policyType: PolicyType.MASKING_EXCEPTION,
   });
   const existed = policy?.maskingExceptionPolicy?.maskingExceptions ?? [];

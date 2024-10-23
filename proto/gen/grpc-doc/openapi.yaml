@@ -13964,6 +13964,8 @@ components:
                     items:
                         $ref: '#/components/schemas/CheckConstraintMetadata'
                     description: The check_constraints is the list of check constraints in a table.
+                owner:
+                    type: string
             description: TableMetadata is the metadata for tables.
         TablePartitionMetadata:
             type: object

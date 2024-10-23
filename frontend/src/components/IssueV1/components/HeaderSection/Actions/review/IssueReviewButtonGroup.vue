@@ -30,7 +30,7 @@ import {
   taskRolloutActionDisplayName,
   useIssueContext,
 } from "@/components/IssueV1";
-import { useCurrentUserV1, useAppFeature } from "@/store";
+import { useCurrentUserV1, useAppFeature, extractUserEmail } from "@/store";
 import { PresetRoleType } from "@/types";
 import {
   IssueStatus,
@@ -60,6 +60,17 @@ const shouldShowApproveOrReject = computed(() => {
     issue.value.status === IssueStatus.DONE
   ) {
     return false;
+  }
+
+  // Do not show approve/reject buttons for the creator.
+  // Except for workspace admins and DBAs.
+  if (
+    !hasWorkspaceLevelRole(PresetRoleType.WORKSPACE_ADMIN) &&
+    !hasWorkspaceLevelRole(PresetRoleType.WORKSPACE_DBA)
+  ) {
+    if (currentUser.value.email === extractUserEmail(issue.value.creator)) {
+      return false;
+    }
   }
 
   if (phase.value !== "REVIEW") {
@@ -154,7 +165,7 @@ const forceRolloutActionList = computed((): ExtraActionOption[] => {
 });
 
 const displayMode = computed(() => {
-  if (forceRolloutActionList.value.length > 0) return "DROPDOWN";
+  if (hideIssueReviewActions.value) return "BUTTON";
   return issueReviewActionList.value.length > 0 ? "DROPDOWN" : "BUTTON";
 });
 </script>

@@ -16,6 +16,7 @@ import (
 var (
 	mux                     sync.Mutex
 	queryValidators         = make(map[storepb.Engine]ValidateSQLForEditorFunc)
+	getQueryTypes           = make(map[storepb.Engine]GetQueryTypeFunc)
 	changedResourcesGetters = make(map[storepb.Engine]ExtractChangedResourcesFunc)
 	resourcesGetters        = make(map[storepb.Engine]ExtractResourceListFunc)
 	splitters               = make(map[storepb.Engine]SplitMultiSQLFunc)
@@ -27,7 +28,27 @@ var (
 	generateRestoreSQL      = make(map[storepb.Engine]GenerateRestoreSQLFunc)
 )
 
+// QueryType is the type of a query.
+// The query type determines the permission to use.
+type QueryType int
+
+const (
+	// The read-only query.
+	QueryTypeUnknown QueryType = iota
+	// The read-only select query.
+	Select
+	// The explain query.
+	Explain
+	// The read-only select query for reading information schema and system objects.
+	SelectInfoSchema
+	// The DDL query that changes schema.
+	DDL
+	// The DML query that changes table data.
+	DML
+)
+
 type ValidateSQLForEditorFunc func(string) (bool, bool, error)
+type GetQueryTypeFunc func(string) (QueryType, error)
 type ExtractChangedResourcesFunc func(string, string, *model.DBSchema, any, string) (*ChangeSummary, error)
 type ExtractResourceListFunc func(string, string, string) ([]SchemaResource, error)
 type SplitMultiSQLFunc func(string) ([]SingleSQL, error)
@@ -62,6 +83,23 @@ func ValidateSQLForEditor(engine storepb.Engine, statement string) (bool, bool, 
 	f, ok := queryValidators[engine]
 	if !ok {
 		return true, true, nil
+	}
+	return f(statement)
+}
+
+func RegisterGetQueryType(engine storepb.Engine, f GetQueryTypeFunc) {
+	mux.Lock()
+	defer mux.Unlock()
+	if _, dup := getQueryTypes[engine]; dup {
+		panic(fmt.Sprintf("Register called twice %s", engine))
+	}
+	getQueryTypes[engine] = f
+}
+
+func GetQueryType(engine storepb.Engine, statement string) (QueryType, error) {
+	f, ok := getQueryTypes[engine]
+	if !ok {
+		return QueryTypeUnknown, nil
 	}
 	return f(statement)
 }

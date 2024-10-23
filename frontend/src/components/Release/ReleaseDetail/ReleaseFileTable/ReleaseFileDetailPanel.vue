@@ -1,13 +1,19 @@
 <template>
-  <div class="w-full border-b pb-4 mb-4">
-    <h1 class="text-xl font-bold text-main truncate">
-      {{ releaseFile.name }}
-    </h1>
-    <p class="mt-2 text-control text-base space-x-4">
-      <span>{{ $t("common.version") }}: {{ releaseFile.version }}</span>
+  <div class="w-full">
+    <div class="flex flex-row items-center gap-2">
+      <NTag round>
+        {{ releaseFile.version }}
+      </NTag>
+      <h2 class="text-xl font-bold text-main truncate">
+        {{ releaseFile.name }}
+      </h2>
+    </div>
+    <p class="mt-3 text-control text-base space-x-4">
       <span>{{ "Hash" }}: {{ releaseFile.sheetSha256.slice(0, 8) }}</span>
     </p>
   </div>
+
+  <NDivider />
 
   <div class="flex flex-col gap-y-2">
     <a
@@ -35,6 +41,7 @@
 
 <script lang="ts" setup>
 import { ClipboardIcon } from "lucide-vue-next";
+import { NDivider, NTag } from "naive-ui";
 import { MonacoEditor } from "@/components/MonacoEditor";
 import { pushNotification } from "@/store";
 import { type ComposedRelease } from "@/types";
