@@ -101,7 +101,7 @@ func (e *SchemaUpdateGhostCutoverExecutor) RunOnce(ctx context.Context, taskCont
 
 	// not using the rendered statement here because we want to avoid leaking the rendered statement
 	version := model.Version{Version: payload.SchemaVersion}
-	terminated, result, err := cutover(ctx, taskContext, e.store, e.dbFactory, e.profile, task, taskRunUID, statement, sheetID, version, postponeFilename, sharedGhost.migrationContext, sharedGhost.errCh)
+	terminated, result, err := cutover(ctx, taskContext, e.store, e.dbFactory, e.profile, e.schemaSyncer, task, taskRunUID, statement, sheetID, version, postponeFilename, sharedGhost.migrationContext, sharedGhost.errCh)
 	if err := e.schemaSyncer.SyncDatabaseSchema(ctx, database, false /* force */); err != nil {
 		slog.Error("failed to sync database schema",
 			slog.String("instanceName", instance.ResourceID),
@@ -113,7 +113,7 @@ func (e *SchemaUpdateGhostCutoverExecutor) RunOnce(ctx context.Context, taskCont
 	return terminated, result, err
 }
 
-func cutover(ctx context.Context, taskContext context.Context, stores *store.Store, dbFactory *dbfactory.DBFactory, profile *config.Profile, task *store.TaskMessage, taskRunUID int, statement string, sheetID int, schemaVersion model.Version, postponeFilename string, migrationContext *base.MigrationContext, errCh <-chan error) (terminated bool, result *storepb.TaskRunResult, err error) {
+func cutover(ctx context.Context, taskContext context.Context, stores *store.Store, dbFactory *dbfactory.DBFactory, profile *config.Profile, syncer *schemasync.Syncer, task *store.TaskMessage, taskRunUID int, statement string, sheetID int, schemaVersion model.Version, postponeFilename string, migrationContext *base.MigrationContext, errCh <-chan error) (terminated bool, result *storepb.TaskRunResult, err error) {
 	statement = strings.TrimSpace(statement)
 	instance, err := stores.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
 	if err != nil {
@@ -132,7 +132,7 @@ func cutover(ctx context.Context, taskContext context.Context, stores *store.Sto
 		return true, nil, err
 	}
 
-	mi, mc, err := getMigrationInfo(ctx, stores, profile, task, db.Migrate, statement, schemaVersion, &sheetID, taskRunUID)
+	mi, mc, err := getMigrationInfo(ctx, stores, profile, syncer, task, db.Migrate, statement, schemaVersion, &sheetID, taskRunUID)
 	if err != nil {
 		return true, nil, err
 	}
