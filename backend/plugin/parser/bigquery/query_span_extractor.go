@@ -539,9 +539,7 @@ func (q *querySpanExtractor) extractTableSourceFromFromClause(fromClause parser.
 					rFields = append(rFields, rField)
 				}
 			}
-			for _, lField := range anchor.GetQuerySpanResult() {
-				lFields = append(lFields, lField)
-			}
+			lFields = append(lFields, anchor.GetQuerySpanResult()...)
 
 			var resultField []base.QuerySpanResult
 			for _, lField := range lFields {
@@ -558,9 +556,7 @@ func (q *querySpanExtractor) extractTableSourceFromFromClause(fromClause parser.
 				})
 			}
 
-			for _, rField := range rFields {
-				resultField = append(resultField, rField)
-			}
+			resultField = append(resultField, rFields...)
 
 			anchor = &base.PseudoTable{
 				Name:    "",
