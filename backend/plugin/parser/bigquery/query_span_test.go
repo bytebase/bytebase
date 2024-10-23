@@ -6,9 +6,12 @@ import (
 	"os"
 	"testing"
 
+	"github.com/antlr4-go/antlr/v4"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
+
+	parser "github.com/bytebase/google-sql-parser"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
@@ -93,4 +96,56 @@ func buildMockDatabaseMetadataGetter(databaseMetadata []*storepb.DatabaseSchemaM
 			}
 			return names, nil
 		}
+}
+
+func TestGetPossibleColumnResources(t *testing.T) {
+	testCases := []struct {
+		inputExpr string
+		want      [][]string
+	}{
+		// Skip the subquery.
+		{
+			inputExpr: "(SELECT a FROM t)",
+			want:      nil,
+		},
+		{
+			inputExpr: "a",
+			want:      [][]string{{"a"}},
+		},
+		{
+			inputExpr: "a.b",
+			want:      [][]string{{"a", "b"}},
+		},
+		{
+			inputExpr: "function_return_json(a.b).c.d",
+			want:      [][]string{{"a", "b"}},
+		},
+		{
+			inputExpr: "a.b + c.d",
+			want:      [][]string{{"c", "d"}, {"a", "b"}},
+		},
+	}
+
+	for _, tc := range testCases {
+		inputStream := antlr.NewInputStream(tc.inputExpr)
+		lexer := parser.NewGoogleSQLLexer(inputStream)
+		stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
+		p := parser.NewGoogleSQLParser(stream)
+		// Remove default error listener and add our own error listener.
+		lexer.RemoveErrorListeners()
+		lexerErrorListener := &base.ParseErrorListener{}
+		lexer.AddErrorListener(lexerErrorListener)
+
+		p.RemoveErrorListeners()
+		parserErrorListener := &base.ParseErrorListener{}
+		p.AddErrorListener(parserErrorListener)
+
+		p.BuildParseTrees = true
+
+		tree := p.Expression()
+		require.Nil(t, lexerErrorListener.Err, "input: %s", tc.inputExpr)
+		require.Nil(t, parserErrorListener.Err, "input: %s", tc.inputExpr)
+		got := getPossibleColumnResources(tree)
+		require.Equal(t, tc.want, got, "input: %s", tc.inputExpr)
+	}
 }
