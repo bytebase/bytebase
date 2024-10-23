@@ -266,11 +266,10 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 
 			err := &grpcruntime.HTTPStatusError{
 				HTTPStatus: httpStatus,
-				Err:        status.Errorf(codes.NotFound, fmt.Sprintf("Routing error. Please check the request URI %v", r.RequestURI)),
+				Err:        status.Errorf(codes.NotFound, "Routing error. Please check the request URI %v", r.RequestURI),
 			}
 
 			grpcruntime.DefaultHTTPErrorHandler(ctx, sm, m, w, r, err)
-			return
 		}),
 	)
 
