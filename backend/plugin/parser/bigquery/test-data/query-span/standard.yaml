@@ -151,6 +151,70 @@
           schema: ""
           table: people
           column: ""
+- description: Expression in target field
+  statement: SELECT ID+1, ID+NAME, foo(bar(ID), NAME) FROM people;
+  defaultDatabase: ds1
+  metadata: |-
+    {
+      "name":  "ds1",
+      "schemas":  [
+        {
+          "name": "",
+          "tables":  [
+            {
+              "name":  "people",
+              "columns":  [
+                {
+                  "name":  "ID"
+                },
+                {
+                  "name":  "NAME"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    results:
+        - name: ID
+          sourcecolumns:
+            - server: ""
+              database: ds1
+              schema: ""
+              table: people
+              column: ID
+        - name: ID
+          sourcecolumns:
+            - server: ""
+              database: ds1
+              schema: ""
+              table: people
+              column: ID
+            - server: ""
+              database: ds1
+              schema: ""
+              table: people
+              column: NAME
+        - name: ID
+          sourcecolumns:
+            - server: ""
+              database: ds1
+              schema: ""
+              table: people
+              column: ID
+            - server: ""
+              database: ds1
+              schema: ""
+              table: people
+              column: NAME
+    sourcecolumns:
+        - server: ""
+          database: ds1
+          schema: ""
+          table: people
+          column: ""
 - description: Simple select asterisk statement
   statement: SELECT * FROM people;
   defaultDatabase: ds1
