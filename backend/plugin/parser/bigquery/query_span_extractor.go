@@ -6,6 +6,9 @@ import (
 
 	"github.com/antlr4-go/antlr/v4"
 	parser "github.com/bytebase/google-sql-parser"
+
+	parsererror "github.com/bytebase/bytebase/backend/plugin/parser/errors"
+
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
@@ -16,6 +19,15 @@ type querySpanExtractor struct {
 	defaultDatabase string
 
 	gCtx base.GetQuerySpanContext
+
+	ctes []*base.PseudoTable
+
+	// outerTableSources is the table sources from the outer query span.
+	// it's used to resolve the column name in the correlated sub-query.
+	outerTableSources []base.TableSource
+
+	// tableSourceFrom is the table sources from the from clause.
+	tableSourceFrom []base.TableSource
 }
 
 func newQuerySpanExtractor(defaultDatabase string, gCtx base.GetQuerySpanContext, _ bool) *querySpanExtractor {
@@ -119,6 +131,34 @@ func (q *querySpanExtractor) extractTableSourceFromSelect(selectCtx parser.ISele
 		if item.Select_column_star() != nil {
 			resultFields = append(resultFields, fromFields...)
 		}
+		if v := item.Select_column_expr(); v != nil {
+			var expression parser.IExpressionContext
+			if v.Expression() != nil {
+				expression = v.Expression()
+			} else if v.Select_column_expr_with_as_alias() != nil {
+				expression = v.Select_column_expr_with_as_alias().Expression()
+			}
+
+			var alias parser.IIdentifierContext
+			if v.Select_column_expr_with_as_alias() != nil {
+				alias = v.Select_column_expr_with_as_alias().Identifier()
+			} else if v.Identifier() != nil {
+				alias = v.Identifier()
+			}
+
+			name, sourceColumnSet, err := q.extractSourceColumnSetFromExpr(expression)
+			if err != nil {
+				return nil, err
+			}
+			aliasName := strings.ToUpper(name)
+			if alias != nil {
+				aliasName = strings.ToUpper(unquoteIdentifierByRule(alias))
+			}
+			resultFields = append(resultFields, base.QuerySpanResult{
+				Name:          aliasName,
+				SourceColumns: sourceColumnSet,
+			})
+		}
 	}
 	return &base.PseudoTable{
 		Name:    "",
@@ -126,9 +166,255 @@ func (q *querySpanExtractor) extractTableSourceFromSelect(selectCtx parser.ISele
 	}, nil
 }
 
+func (q *querySpanExtractor) extractTableSourceFromParenthesizedQuery(parenthesizedQuery parser.IParenthesized_queryContext) (base.TableSource, error) {
+	return q.extractTableSourceFromQuery(parenthesizedQuery.Query())
+}
+
+func (q *querySpanExtractor) extractSourceColumnSetFromExpr(ctx antlr.ParserRuleContext) (string, base.SourceColumnSet, error) {
+	if ctx == nil {
+		return "", make(base.SourceColumnSet), nil
+	}
+
+	// BigQuery support project the field from json, for example, SELECT a.b.c FROM ..., the AST looks like:
+	// /
+	// └── expression
+	//     └── expression_higher_prec_than_and
+	//         ├── expression_higher_prec_than_and
+	//         │   ├── expression_higher_prec_than_and
+	//         │   │   ├── expression_higher_prec_than_and
+	//         │   │   ├── DOT_SYMBOL
+	//         │   │   └── identifier(a)
+	//         │   ├── DOT_SYMBOL
+	//         │   └── identifier(b)
+	//         ├── DOT_SYMBOL
+	//         └── identifier(c)
+	// We use DFS algorithm here to find the tallest [expression_higher_prec_than_and DOT_SYMBOL identifier] subtree and
+	// treat it as identifier.
+	var name string
+	switch ctx := ctx.(type) {
+	// TODO(zp): handle subquery
+	case *parser.Parenthesized_queryContext:
+		baseSet := make(base.SourceColumnSet)
+		subqueryExtractor := &querySpanExtractor{
+			ctx:               q.ctx,
+			defaultDatabase:   q.defaultDatabase,
+			gCtx:              q.gCtx,
+			ctes:              q.ctes,
+			outerTableSources: append(q.outerTableSources, q.tableSourceFrom...),
+			tableSourceFrom:   []base.TableSource{},
+		}
+		tableSource, err := subqueryExtractor.extractTableSourceFromParenthesizedQuery(ctx)
+		if err != nil {
+			return "", nil, err
+		}
+		spanResult := tableSource.GetQuerySpanResult()
+		for _, field := range spanResult {
+			baseSet, _ = base.MergeSourceColumnSet(field.SourceColumns, field.SourceColumns)
+		}
+		return "", baseSet, nil
+	case *parser.Expression_higher_prec_than_andContext:
+		baseSet := make(base.SourceColumnSet)
+		possibleColumnResources := getPossibleColumnResources(ctx)
+		for _, columnResources := range possibleColumnResources {
+			l := len(columnResources)
+			if l == 1 {
+				sourceColumnSet, err := q.getFieldColumnSource("", "", columnResources[0])
+				if err != nil {
+					return "", nil, err
+				}
+				baseSet, _ = base.MergeSourceColumnSet(baseSet, sourceColumnSet)
+				name = columnResources[0]
+			}
+			if l >= 2 {
+				// a.b, a can be the table name or the field name.
+				sourceColumnSet, err := q.getFieldColumnSource("", "", columnResources[0])
+				if err != nil {
+					sourceColumnSet, err = q.getFieldColumnSource("", columnResources[0], columnResources[1])
+					if err != nil {
+						return "", nil, err
+					}
+					baseSet, _ = base.MergeSourceColumnSet(baseSet, sourceColumnSet)
+					name = columnResources[1]
+				} else {
+					baseSet, _ = base.MergeSourceColumnSet(baseSet, sourceColumnSet)
+					name = columnResources[0]
+				}
+			}
+		}
+		return name, baseSet, nil
+	default:
+	}
+
+	baseSet := make(base.SourceColumnSet)
+	children := ctx.GetChildren()
+	for _, child := range children {
+		child, ok := child.(antlr.ParserRuleContext)
+		if !ok {
+			continue
+		}
+		fieldName, sourceColumnSet, err := q.extractSourceColumnSetFromExpr(child)
+		if err != nil {
+			return "", nil, err
+		}
+		name = fieldName
+		baseSet, _ = base.MergeSourceColumnSet(baseSet, sourceColumnSet)
+	}
+	if len(children) > 1 {
+		name = ""
+	}
+
+	return name, baseSet, nil
+}
+
+func (q *querySpanExtractor) getFieldColumnSource(databaseName, tableName, fieldName string) (base.SourceColumnSet, error) {
+	// Bigquery column name is case-insensitive.
+	findInTableSource := func(tableSource base.TableSource) (base.SourceColumnSet, bool) {
+		if databaseName != "" && !strings.EqualFold(databaseName, tableSource.GetDatabaseName()) {
+			return nil, false
+		}
+		if tableName != "" && !strings.EqualFold(tableName, tableSource.GetTableName()) {
+			return nil, false
+		}
+		// If the table name is empty, we should check if there are ambiguous fields,
+		// but we delegate this responsibility to the db-server, we do the fail-open strategy here.
+
+		querySpanResult := tableSource.GetQuerySpanResult()
+		for _, column := range querySpanResult {
+			if strings.EqualFold(column.Name, fieldName) {
+				return column.SourceColumns, true
+			}
+		}
+		return nil, false
+	}
+
+	// One sub-query may have multi-outer schemas and the multi-outer schemas can use the same name, such as:
+	//
+	//  select (
+	//    select (
+	//      select max(a) > x1.a from t
+	//    )
+	//    from t1 as x1
+	//    limit 1
+	//  )
+	//  from t as x1;
+	//
+	// This query has two tables can be called `x1`, and the expression x1.a uses the closer x1 table.
+	// This is the reason we loop the slice in reversed order.
+	for i := len(q.outerTableSources) - 1; i >= 0; i-- {
+		if sourceColumnSet, ok := findInTableSource(q.outerTableSources[i]); ok {
+			return sourceColumnSet, nil
+		}
+	}
+
+	for i := len(q.tableSourceFrom) - 1; i >= 0; i-- {
+		if sourceColumnSet, ok := findInTableSource(q.tableSourceFrom[i]); ok {
+			return sourceColumnSet, nil
+		}
+	}
+
+	return nil, &parsererror.ResourceNotFoundError{
+		Database: &databaseName,
+		Table:    &tableName,
+		Column:   &fieldName,
+	}
+}
+
+func isValidExpressionHigherPrecThanAnd(ctx antlr.ParserRuleContext) bool {
+	if _, ok := ctx.(*parser.Expression_higher_prec_than_andContext); !ok {
+		return false
+	}
+
+	terminalNodes := getAllChildTerminalNode(ctx)
+	if len(terminalNodes) == 1 && terminalNodes[0].GetSymbol().GetTokenType() == parser.GoogleSQLParserIDENTIFIER {
+		return true
+	}
+	child := ctx.GetChildren()
+	if len(child) == 3 {
+		first := child[0]
+		_, ok := first.(*parser.Expression_higher_prec_than_andContext)
+		if !ok {
+			return false
+		}
+		if !isValidExpressionHigherPrecThanAnd(first.(*parser.Expression_higher_prec_than_andContext)) {
+			return false
+		}
+		second := child[1]
+		_, ok = second.(*antlr.TerminalNodeImpl)
+		if !ok {
+			return false
+		}
+		if second.(*antlr.TerminalNodeImpl).GetSymbol().GetTokenType() != parser.GoogleSQLParserDOT_SYMBOL {
+			return false
+		}
+		third := child[2]
+		_, ok = third.(*parser.IdentifierContext)
+		return ok
+	}
+	return false
+}
+
+func getPossibleColumnResources(ctx antlr.ParserRuleContext) [][]string {
+	// Traverse the tree to find the tallest subtree which matches the pattern:
+	// [expression_higher_prec_than_and DOT_SYMBOL identifier]
+	// The result is the possible column resources.
+	var path []antlr.Tree
+	path = append(path, ctx)
+
+	var result [][]string
+	for len(path) > 0 {
+		element := path[len(path)-1]
+		path = path[:len(path)-1]
+		if _, ok := element.(*parser.Parenthesized_queryContext); ok {
+			// NOTE: while adding the case in extractSourceColumnSetFromExpr, we should skip the case here.
+			continue
+		}
+		appendChild := true
+		if element, ok := element.(antlr.ParserRuleContext); ok {
+			valid := isValidExpressionHigherPrecThanAnd(element)
+			if valid {
+				appendChild = false
+				allTerminalNodes := getAllChildTerminalNode(element)
+				var columnResources []string
+				for _, terminalNode := range allTerminalNodes {
+					if terminalNode.GetSymbol().GetTokenType() == parser.GoogleSQLParserIDENTIFIER {
+						columnResources = append(columnResources, unquoteIdentifierByText(terminalNode.GetText()))
+					}
+				}
+				result = append(result, columnResources)
+			}
+		}
+
+		if appendChild {
+			for _, child := range element.GetChildren() {
+				if child, ok := child.(antlr.ParserRuleContext); ok {
+					path = append(path, child)
+				}
+			}
+		}
+	}
+	return result
+}
+
+func getAllChildTerminalNode(ctx antlr.ParserRuleContext) []antlr.TerminalNode {
+	allChilds := ctx.GetChildren()
+	var result []antlr.TerminalNode
+	for _, child := range allChilds {
+		if childTerminal, ok := child.(antlr.TerminalNode); ok {
+			result = append(result, childTerminal)
+			continue
+		}
+		if childRuleCtx, ok := child.(antlr.ParserRuleContext); ok {
+			subResult := getAllChildTerminalNode(childRuleCtx)
+			result = append(result, subResult...)
+		}
+	}
+	return result
+}
+
 func (q *querySpanExtractor) extractTableSourceFromFromClause(fromClause parser.IFrom_clauseContext) (base.TableSource, error) {
 	contents := fromClause.From_clause_contents()
 	tableSource, err := q.extractTableSourceFromTablePrimary(contents.Table_primary())
+	q.tableSourceFrom = append(q.tableSourceFrom, tableSource)
 	if err != nil {
 		return nil, err
 	}
@@ -150,42 +436,51 @@ func (q *querySpanExtractor) extractTableSourceFromTablePrimary(tablePrimary par
 }
 
 func (q *querySpanExtractor) extractTableSourceFromTablePathExpression(tablePathExpression parser.ITable_path_expressionContext) (base.TableSource, error) {
-	base := tablePathExpression.Table_path_expression_base()
-	if base.Unnest_expression() != nil {
+	tablePathExprBase := tablePathExpression.Table_path_expression_base()
+	if tablePathExprBase.Unnest_expression() != nil {
 		// We do not support unnest expression because we do not have the returnning columns information.
-		return nil, errors.Errorf("unsupported unnest expression: %s", base.GetText())
+		return nil, errors.Errorf("unsupported unnest expression: %s", tablePathExprBase.GetText())
 	}
 	var tableName string
 	datasetName := q.defaultDatabase
 
-	if slashedOrDashedPathExpression := base.Maybe_slashed_or_dashed_path_expression(); slashedOrDashedPathExpression != nil {
+	if slashedOrDashedPathExpression := tablePathExprBase.Maybe_slashed_or_dashed_path_expression(); slashedOrDashedPathExpression != nil {
 		if slashedOrDashedPathExpression.Maybe_dashed_path_expression() != nil {
 			if maybeDashedPathExpr := slashedOrDashedPathExpression.Maybe_dashed_path_expression(); maybeDashedPathExpr != nil {
 				// TODO(zp): support dashed path expression, for example, REGION-us
 				if maybeDashedPathExpr.Dashed_path_expression() != nil {
-					return nil, errors.Errorf("unsupported dashed path expression: %s", base.GetText())
+					return nil, errors.Errorf("unsupported dashed path expression: %s", tablePathExprBase.GetText())
 				}
 				// REFACTOR(zp): refactor the code to extract table name and dataset name.
 				allIdentifiers := maybeDashedPathExpr.Path_expression().AllIdentifier()
 				if len(allIdentifiers) > 0 {
-					tableName = unquoteIdentifier(allIdentifiers[len(allIdentifiers)-1])
+					tableName = unquoteIdentifierByRule(allIdentifiers[len(allIdentifiers)-1])
 					if len(allIdentifiers) > 1 {
-						datasetName = unquoteIdentifier(allIdentifiers[len(allIdentifiers)-2])
+						datasetName = unquoteIdentifierByRule(allIdentifiers[len(allIdentifiers)-2])
 					}
 				}
 			}
 			if slashedOrDashedPathExpression.Slashed_path_expression() != nil {
-				return nil, errors.Errorf("unsupported slashed path expression: %s", base.GetText())
+				return nil, errors.Errorf("unsupported slashed path expression: %s", tablePathExprBase.GetText())
 			}
 		}
 	}
 
-	tabelSource, err := q.findTableSchema(datasetName, tableName)
+	tableSource, err := q.findTableSchema(datasetName, tableName)
 	if err != nil {
 		return nil, err
 	}
+
+	if o := tablePathExpression.Opt_pivot_or_unpivot_clause_and_alias(); o != nil {
+		if o.Identifier() != nil {
+			tableSource = &base.PseudoTable{
+				Name:    unquoteIdentifierByRule(o.Identifier()),
+				Columns: tableSource.GetQuerySpanResult(),
+			}
+		}
+	}
 	// TODO(zp): add in q.from
-	return tabelSource, nil
+	return tableSource, nil
 }
 
 func (q *querySpanExtractor) findTableSchema(datasetName string, tableName string) (base.TableSource, error) {
@@ -204,7 +499,18 @@ func (q *querySpanExtractor) findTableSchema(datasetName string, tableName strin
 		return nil, errors.Errorf("table %q not found", tableName)
 	}
 
-	table := schema.GetTable(tableName)
+	tables := schema.ListTableNames()
+	var originalTableName string
+	for _, t := range tables {
+		if strings.EqualFold(t, tableName) {
+			originalTableName = t
+			break
+		}
+	}
+	if originalTableName == "" {
+		return nil, errors.Errorf("table %q not found", tableName)
+	}
+	table := schema.GetTable(originalTableName)
 	if table == nil {
 		return nil, errors.Errorf("table %q not found", tableName)
 	}
@@ -285,11 +591,11 @@ func (l *accessTableListener) EnterTable_path_expression(ctx *parser.Table_path_
 		Database: l.currentDatabase,
 	}
 	lastIdentifier := allIdentifiers[len(allIdentifiers)-1]
-	tableName := unquoteIdentifier(lastIdentifier)
+	tableName := unquoteIdentifierByRule(lastIdentifier)
 	columnSource.Table = tableName
 
 	if len(allIdentifiers) >= 2 {
-		identifier := unquoteIdentifier(allIdentifiers[len(allIdentifiers)-2])
+		identifier := unquoteIdentifierByRule(allIdentifiers[len(allIdentifiers)-2])
 		if strings.EqualFold(identifier, "INFORMATION_SCHEMA") {
 			columnSource.Schema = identifier
 		} else {
@@ -300,11 +606,18 @@ func (l *accessTableListener) EnterTable_path_expression(ctx *parser.Table_path_
 	l.sourceColumnSet[columnSource] = true
 }
 
-func unquoteIdentifier(identifier parser.IIdentifierContext) string {
+func unquoteIdentifierByRule(identifier parser.IIdentifierContext) string {
 	if len(identifier.GetText()) >= 3 && strings.HasPrefix(identifier.GetText(), "`") && strings.HasSuffix(identifier.GetText(), "`") {
 		return identifier.GetText()[1 : len(identifier.GetText())-1]
 	}
 	return identifier.GetText()
+}
+
+func unquoteIdentifierByText(identifier string) string {
+	if len(identifier) >= 3 && strings.HasPrefix(identifier, "`") && strings.HasSuffix(identifier, "`") {
+		return identifier[1 : len(identifier)-1]
+	}
+	return identifier
 }
 
 func isMixedQuery(m base.SourceColumnSet) (bool, bool) {
