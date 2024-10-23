@@ -10,23 +10,32 @@ export const getMaskDataIdentifier = (maskData: MaskData): string => {
   return `${maskData.schema}.${maskData.table}.${maskData.column}`;
 };
 
+export const convertSensitiveColumnToDatabaseResource = (
+  sensitiveColumn: SensitiveColumn
+): DatabaseResource => ({
+  databaseName: sensitiveColumn.database.name,
+  schema: sensitiveColumn.maskData.schema,
+  table: sensitiveColumn.maskData.table,
+  column: sensitiveColumn.maskData.column,
+});
+
 export const isCurrentColumnException = (
   exception: MaskingExceptionPolicy_MaskingException,
   sensitiveColumn: SensitiveColumn
 ): boolean => {
   const expression = exception.condition?.expression ?? "";
-  const matches = getExpressionsForDatabaseResource({
-    databaseName: sensitiveColumn.database.name,
-    schema: sensitiveColumn.maskData.schema,
-    table: sensitiveColumn.maskData.table,
-    column: sensitiveColumn.maskData.column,
-  });
-  for (const match of matches) {
-    if (!expression.includes(match)) {
-      return false;
-    }
+  if (!expression) {
+    // no expression means can access all databases.
+    return true;
   }
-  return true;
+  const databaseExpression = expression
+    .split(" && ")
+    .filter((expr) => !expr.startsWith("request.time"))
+    .join(" && ");
+  const matches = getExpressionsForDatabaseResource(
+    convertSensitiveColumnToDatabaseResource(sensitiveColumn)
+  );
+  return matches.join(" && ").includes(databaseExpression);
 };
 
 export const getExpressionsForDatabaseResource = (
@@ -36,8 +45,8 @@ export const getExpressionsForDatabaseResource = (
     databaseResource.databaseName
   );
   const expressions = [
-    `resource.database_name == "${resourceName.databaseName}"`,
     `resource.instance_id == "${resourceName.instanceName}"`,
+    `resource.database_name == "${resourceName.databaseName}"`,
   ];
   if (databaseResource.schema) {
     expressions.push(`resource.schema_name == "${databaseResource.schema}"`);

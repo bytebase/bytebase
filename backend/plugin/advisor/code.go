@@ -202,6 +202,7 @@ const (
 
 	// 2001 ~ 2099 builtin error code.
 	BuiltinPriorBackupCheck Code = 2001
+	BuiltinObjectOwnerCheck Code = 2002
 )
 
 // Int returns the int type of code.
@@ -647,6 +648,9 @@ const (
 
 	// PostgreSQLBuiltinPriorBackupCheck is an advisor type for PostgreSQL do prior backup check.
 	PostgreSQLBuiltinPriorBackupCheck Type = "bb.plugin.advisor.postgresql.builtin.prior-backup-check"
+
+	// PostgreSQLBuiltinObjectOwnerCheck is an advisor type for PostgreSQL do object owner check.
+	PostgreSQLBuiltinObjectOwnerCheck Type = "bb.plugin.advisor.postgresql.builtin.object-owner-check"
 
 	// PostgreSQLStatementMaximumLimitValue is an advisor type for PostgreSQL statement maximum limit value.
 	PostgreSQLStatementMaximumLimitValue Type = "bb.plugin.advisor.postgresql.statement.maximum-limit-value"
