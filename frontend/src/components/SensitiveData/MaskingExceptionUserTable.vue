@@ -1,8 +1,8 @@
 <template>
   <NDataTable
     :size="size"
-    :columns="accessUserTableColumns"
-    :data="accessUserList"
+    :columns="accessTableColumns"
+    :data="accessList"
     :row-key="(row: AccessUser) => row.key"
     :bordered="true"
     :striped="true"
@@ -31,7 +31,7 @@ import { type AccessUser } from "./types";
 
 const props = defineProps<{
   size: "small" | "medium";
-  accessUserList: AccessUser[];
+  accessList: AccessUser[];
   disabled: boolean;
   showDatabaseColumn: boolean;
 }>();
@@ -46,7 +46,7 @@ const hasPermission = computed(() => {
   return hasWorkspacePermissionV2("bb.policies.update");
 });
 
-const accessUserTableColumns = computed(
+const accessTableColumns = computed(
   (): DataTableColumn<AccessUser & { hide?: boolean }>[] => {
     return [
       {
@@ -263,7 +263,7 @@ const onAccessControlUpdate = async (
   index: number,
   callback: (item: AccessUser) => void
 ) => {
-  const item = cloneDeep(props.accessUserList[index]);
+  const item = cloneDeep(props.accessList[index]);
   if (!item) {
     return;
   }

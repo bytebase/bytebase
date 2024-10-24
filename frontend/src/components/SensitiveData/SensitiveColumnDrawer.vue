@@ -126,7 +126,7 @@
           </div>
           <MaskingExceptionUserTable
             size="small"
-            :access-user-list="accessUserList"
+            :access-list="accessUserList"
             :disabled="state.processing"
             :show-database-column="true"
             @remove:access="onRemove"
