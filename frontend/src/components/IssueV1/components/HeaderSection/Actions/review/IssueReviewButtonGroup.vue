@@ -62,7 +62,7 @@ const shouldShowApproveOrReject = computed(() => {
     return false;
   }
 
-  // Do not show approve/reject buttons for the creator.
+  // Do not show review actions for the creator.
   if (currentUser.value.email === extractUserEmail(issue.value.creator)) {
     return false;
   }
