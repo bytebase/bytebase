@@ -81,7 +81,11 @@
               <div
                 class="flex flex-row justify-start items-start flex-wrap gap-2"
               >
-                <NTag v-for="role in sortRoles(userRoles)" :key="role">
+                <NTag
+                  v-for="role in sortRoles(userRoles)"
+                  :key="role"
+                  size="large"
+                >
                   {{ displayRoleTitle(role) }}
                 </NTag>
               </div>
@@ -103,7 +107,6 @@
               <EmailInput
                 v-if="state.editing"
                 v-model:value="state.editingUser!.email"
-                size="large"
                 :domain="workspaceDomain"
               />
               <template v-else>
@@ -119,7 +122,6 @@
             <dd class="mt-1 text-sm text-main">
               <NInput
                 v-if="state.editing"
-                size="large"
                 :value="state.editingUser?.phone"
                 :placeholder="$t('settings.profile.phone-tips')"
                 :input-props="{ autocomplete: 'off', type: 'tel' }"
