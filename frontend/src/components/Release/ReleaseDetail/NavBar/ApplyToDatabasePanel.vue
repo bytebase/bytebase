@@ -19,6 +19,7 @@
               <div v-if="state.previewPlanResult" class="space-y-4">
                 <PreviewPlanDetail
                   :preview-plan-result="state.previewPlanResult"
+                  :allow-out-of-order="state.allowOutOfOrder"
                 />
               </div>
             </template>
@@ -46,6 +47,12 @@
           </div>
 
           <div class="flex items-center justify-end gap-x-3">
+            <NCheckbox
+              v-model:checked="state.allowOutOfOrder"
+              :disabled="state.currentStep !== 0"
+            >
+              {{ $t("release.allow-out-of-order") }}
+            </NCheckbox>
             <NButton @click.prevent="handleCancelClick">
               <template v-if="state.currentStep === 1" #icon>
                 <Undo2Icon class="w-4 h-auto" />
@@ -76,7 +83,7 @@
 
 <script lang="ts" setup>
 import { Undo2Icon } from "lucide-vue-next";
-import { NButton } from "naive-ui";
+import { NButton, NCheckbox } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
@@ -108,6 +115,7 @@ const emit = defineEmits<{
 
 type LocalState = {
   currentStep: number;
+  allowOutOfOrder: boolean;
   targetSelectState?: DatabaseSelectState;
   previewPlanResult?: PreviewPlanResponse;
 };
@@ -120,6 +128,7 @@ const { release, project } = useReleaseDetailContext();
 
 const state = reactive<LocalState>({
   currentStep: 0,
+  allowOutOfOrder: false,
 });
 
 const stepList = computed(() => [
@@ -184,8 +193,7 @@ const handleClickNext = async () => {
         state.targetSelectState.changeSource === "DATABASE"
           ? state.targetSelectState.selectedDatabaseNameList
           : [state.targetSelectState.selectedDatabaseGroup!],
-      // TODO: let user choose whether to allow out of order.
-      allowOutOfOrder: true,
+      allowOutOfOrder: state.allowOutOfOrder,
     });
     state.previewPlanResult = resp;
     state.currentStep = 1;
