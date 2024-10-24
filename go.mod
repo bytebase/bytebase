@@ -349,7 +349,7 @@ replace github.com/pingcap/tidb => github.com/bytebase/tidb2 v0.0.0-202311290022
 
 replace github.com/pingcap/tidb/pkg/parser => github.com/bytebase/tidb2/pkg/parser v0.0.0-20231129002249-5bbb6bb83940
 
-replace github.com/pganalyze/pg_query_go/v5 => github.com/bytebase/pg_query_go2/v5 v5.0.0-20240429070353-41837024e3d6
+replace github.com/pganalyze/pg_query_go/v5 => github.com/bytebase/pg_query_go2/v5 v5.0.0-20241024030058-bbe7104c5b4b
 
 replace github.com/mattn/go-oci8 => github.com/bytebase/go-obo v0.0.0-20231026081615-705a7fffbfd2
 
