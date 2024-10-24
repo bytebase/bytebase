@@ -124,15 +124,13 @@
               {{ $t("settings.sensitive-data.grant-access") }}
             </NButton>
           </div>
-          <NDataTable
+          <MaskingExceptionUserTable
             size="small"
-            :columns="accessUserTableColumns"
-            :data="accessUserList"
-            :row-key="(row: AccessUser) => row.key"
-            :bordered="true"
-            :striped="true"
-            :max-height="'calc(100vh - 15rem)'"
-            virtual-scroll
+            :access-list="accessUserList"
+            :disabled="state.processing"
+            :show-database-column="true"
+            @remove:access="onRemove"
+            @update:access="onAccessControlUpdate"
           />
         </div>
       </div>
@@ -160,23 +158,12 @@
 <script lang="tsx" setup>
 import { computedAsync } from "@vueuse/core";
 import { orderBy } from "lodash-es";
-import { TrashIcon } from "lucide-vue-next";
-import { NDataTable } from "naive-ui";
-import type { SelectOption, DataTableColumn } from "naive-ui";
-import {
-  NSelect,
-  NButton,
-  NCheckbox,
-  NDatePicker,
-  NPopconfirm,
-} from "naive-ui";
+import type { SelectOption } from "naive-ui";
+import { NSelect, NButton } from "naive-ui";
 import { computed, reactive, watch, ref } from "vue";
 import { useI18n } from "vue-i18n";
-import { RouterLink } from "vue-router";
 import { useSemanticType } from "@/components/SensitiveData/useSemanticType";
-import GroupNameCell from "@/components/User/Settings/UserDataTableByGroup/cells/GroupNameCell.vue";
-import { Drawer, DrawerContent, MiniActionButton } from "@/components/v2";
-import { WORKSPACE_ROUTE_USER_PROFILE } from "@/router/dashboard/workspaceRoutes";
+import { Drawer, DrawerContent } from "@/components/v2";
 import {
   useSettingV1Store,
   usePolicyV1Store,
@@ -193,9 +180,7 @@ import {
   groupBindingPrefix,
 } from "@/types";
 import { Expr } from "@/types/proto/google/type/expr";
-import { type User } from "@/types/proto/v1/auth_service";
 import { MaskingLevel, maskingLevelToJSON } from "@/types/proto/v1/common";
-import type { Group } from "@/types/proto/v1/group";
 import type {
   Policy,
   MaskData,
@@ -204,26 +189,13 @@ import type {
 import {
   PolicyType,
   PolicyResourceType,
-  MaskingExceptionPolicy_MaskingException_Action,
 } from "@/types/proto/v1/org_policy_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
-import UserAvatar from "../User/UserAvatar.vue";
 import GrantAccessDrawer from "./GrantAccessDrawer.vue";
-import MaskingLevelDropdown from "./components/MaskingLevelDropdown.vue";
+import MaskingExceptionUserTable from "./MaskingExceptionUserTable.vue";
 import MaskingLevelRadioGroup from "./components/MaskingLevelRadioGroup.vue";
-import type { SensitiveColumn } from "./types";
+import type { SensitiveColumn, AccessUser } from "./types";
 import { getMaskDataIdentifier, isCurrentColumnException } from "./utils";
-
-interface AccessUser {
-  type: "user" | "group";
-  key: string;
-  group?: Group;
-  user?: User;
-  supportActions: Set<MaskingExceptionPolicy_MaskingException_Action>;
-  maskingLevel: MaskingLevel;
-  expirationTimestamp?: number;
-  rawExpression: string;
-}
 
 interface LocalState {
   dirty: boolean;
@@ -307,7 +279,7 @@ const getAccessUsers = (
     maskingLevel: exception.maskingLevel,
     expirationTimestamp,
     supportActions: new Set([exception.action]),
-    rawExpression: exception.condition?.expression ?? "",
+    rawExpression: expression,
   };
 
   if (exception.member.startsWith(groupBindingPrefix)) {
@@ -398,183 +370,6 @@ const updateAccessUserList = (policy: Policy | undefined) => {
   );
 };
 
-const accessUserTableColumns = computed(
-  (): DataTableColumn<AccessUser & { hide?: boolean }>[] => {
-    return [
-      {
-        type: "expand",
-        expandable: (_: AccessUser) => true,
-        renderExpand: (item: AccessUser) => {
-          const expressions = item.rawExpression.split(" && ");
-          if (
-            expressions.length === 0 ||
-            (expressions.length === 1 &&
-              expressions[0].startsWith("request.time"))
-          ) {
-            expressions.push("all databases");
-          }
-
-          return (
-            <ul class="list-disc pl-6 textinfolabel">
-              {expressions.map((expression, i) => (
-                <li key={`${item.key}.${i}`}>{expression}</li>
-              ))}
-            </ul>
-          );
-        },
-      },
-      {
-        key: "member",
-        title: t("common.members"),
-        resizable: true,
-        render: (item: AccessUser) => {
-          if (item.type === "group") {
-            return <GroupNameCell group={item.group!} />;
-          }
-
-          return (
-            <div class="flex items-center gap-x-2">
-              <UserAvatar size="SMALL" user={item.user} />
-              <div class="flex flex-col">
-                <RouterLink
-                  to={{
-                    name: WORKSPACE_ROUTE_USER_PROFILE,
-                    params: {
-                      principalEmail: item.user!.email,
-                    },
-                  }}
-                  class="normal-link"
-                >
-                  {item.user!.title}
-                </RouterLink>
-                <span class="textinfolabel">{item.user!.email}</span>
-              </div>
-            </div>
-          );
-        },
-      },
-      {
-        key: "export",
-        title: t("settings.sensitive-data.action.export"),
-        width: "5rem",
-        render: (item: AccessUser, row: number) => {
-          return (
-            <NCheckbox
-              checked={item.supportActions.has(
-                MaskingExceptionPolicy_MaskingException_Action.EXPORT
-              )}
-              disabled={!hasPermission.value || state.processing}
-              onUpdateChecked={(e) =>
-                onAccessControlUpdate(row, (item) =>
-                  toggleAction(
-                    item,
-                    MaskingExceptionPolicy_MaskingException_Action.EXPORT,
-                    e
-                  )
-                )
-              }
-            />
-          );
-        },
-      },
-      {
-        key: "query",
-        title: t("settings.sensitive-data.action.query"),
-        width: "5rem",
-        render: (item: AccessUser, row: number) => {
-          return (
-            <NCheckbox
-              checked={item.supportActions.has(
-                MaskingExceptionPolicy_MaskingException_Action.QUERY
-              )}
-              disabled={!hasPermission.value || state.processing}
-              onUpdate:checked={(e) =>
-                onAccessControlUpdate(row, (item) =>
-                  toggleAction(
-                    item,
-                    MaskingExceptionPolicy_MaskingException_Action.QUERY,
-                    e
-                  )
-                )
-              }
-            />
-          );
-        },
-      },
-      {
-        key: "level",
-        title: t("settings.sensitive-data.masking-level.self"),
-        render: (item: AccessUser, row: number) => {
-          return (
-            <MaskingLevelDropdown
-              disabled={!hasPermission.value || state.processing}
-              level={item.maskingLevel}
-              levelList={[MaskingLevel.PARTIAL, MaskingLevel.NONE]}
-              onUpdate:level={(e) =>
-                onAccessControlUpdate(row, (item) => (item.maskingLevel = e))
-              }
-            />
-          );
-        },
-      },
-      {
-        key: "expire",
-        title: t("common.expiration"),
-        render: (item: AccessUser, row: number) => {
-          return (
-            <NDatePicker
-              value={item.expirationTimestamp}
-              style={"width: 100%"}
-              type={"datetime"}
-              isDateDisabled={(date: number) => date < Date.now()}
-              clearable={true}
-              disabled={!hasPermission.value || state.processing}
-              onUpdate:value={(val: number | undefined) =>
-                onAccessControlUpdate(
-                  row,
-                  (item) => (item.expirationTimestamp = val)
-                )
-              }
-            />
-          );
-        },
-      },
-      {
-        key: "operation",
-        title: "",
-        hide: !hasPermission.value,
-        width: "4rem",
-        render: (_: AccessUser, row: number) => {
-          return (
-            <NPopconfirm onPositiveClick={() => onRemove(row)}>
-              {{
-                trigger: () => {
-                  return (
-                    <MiniActionButton
-                      disabled={!hasPermission.value || state.processing}
-                    >
-                      {{
-                        default: () => <TrashIcon class="w-4 h-4" />,
-                      }}
-                    </MiniActionButton>
-                  );
-                },
-                default: () => (
-                  <div class="whitespace-nowrap">
-                    {t(
-                      "settings.sensitive-data.column-detail.remove-user-permission"
-                    )}
-                  </div>
-                ),
-              }}
-            </NPopconfirm>
-          );
-        },
-      },
-    ].filter((column) => !column.hide) as DataTableColumn<AccessUser>[];
-  }
-);
-
 watch(
   () => [props.show, policy.value],
   () => {
@@ -601,27 +396,8 @@ const onRemove = async (index: number) => {
   await onSubmit();
 };
 
-const toggleAction = (
-  item: AccessUser,
-  action: MaskingExceptionPolicy_MaskingException_Action,
-  checked: boolean
-) => {
-  if (checked) {
-    item.supportActions.add(action);
-  } else {
-    item.supportActions.delete(action);
-  }
-};
-
-const onAccessControlUpdate = async (
-  index: number,
-  callback: (item: AccessUser) => void
-) => {
-  const item = accessUserList.value[index];
-  if (!item) {
-    return;
-  }
-  callback(item);
+const onAccessControlUpdate = async (index: number, access: AccessUser) => {
+  accessUserList.value[index] = access;
   state.dirty = true;
   await onSubmit();
 };
