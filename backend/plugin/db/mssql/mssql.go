@@ -13,7 +13,7 @@ import (
 	"time"
 
 	// Import MSSQL driver.
-	_ "github.com/microsoft/go-mssqldb"
+	gomssqldb "github.com/microsoft/go-mssqldb"
 	_ "github.com/microsoft/go-mssqldb/integratedauth/krb5"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/durationpb"
@@ -225,6 +225,9 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 
 func execute(ctx context.Context, tx *sql.Tx, statement string) (int64, error) {
 	sqlResult, err := tx.ExecContext(ctx, statement)
+	if e, ok := err.(gomssqldb.Error); ok {
+		err = unpackGoMSSQLDBError(e)
+	}
 	if err != nil {
 		return 0, errors.Wrap(err, "failed to execute statement")
 	}
@@ -235,6 +238,14 @@ func execute(ctx context.Context, tx *sql.Tx, statement string) (int64, error) {
 		return 0, nil
 	}
 	return rowsAffected, nil
+}
+
+func unpackGoMSSQLDBError(err gomssqldb.Error) error {
+	var msgs []string
+	for _, e := range err.All {
+		msgs = append(msgs, e.Message)
+	}
+	return errors.Errorf("%s", strings.Join(msgs, "\n"))
 }
 
 // QueryConn queries a SQL statement in a given connection.
