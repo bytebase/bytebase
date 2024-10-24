@@ -46,6 +46,16 @@ const hasPermission = computed(() => {
   return hasWorkspacePermissionV2("bb.policies.update");
 });
 
+const getDatabaseAccessResource = (expr: string) => {
+  const expressions = expr
+    .split(" && ")
+    .filter((expr) => !expr.startsWith("request.time"));
+  if (expressions.length === 0) {
+    expressions.push("all databases");
+  }
+  return expressions;
+};
+
 const accessTableColumns = computed(
   (): DataTableColumn<AccessUser & { hide?: boolean }>[] => {
     return [
@@ -54,14 +64,7 @@ const accessTableColumns = computed(
         expandable: (_: AccessUser) => true,
         hide: props.showDatabaseColumn,
         renderExpand: (item: AccessUser) => {
-          const expressions = item.rawExpression.split(" && ");
-          if (
-            expressions.length === 0 ||
-            (expressions.length === 1 &&
-              expressions[0].startsWith("request.time"))
-          ) {
-            expressions.push("all databases");
-          }
+          const expressions = getDatabaseAccessResource(item.rawExpression);
 
           return (
             <ul class="list-disc pl-6 textinfolabel">
@@ -107,17 +110,10 @@ const accessTableColumns = computed(
         title: t("common.resource"),
         hide: !props.showDatabaseColumn,
         render: (item: AccessUser) => {
-          const expressions = item.rawExpression.split(" && ");
-          if (
-            expressions.length === 0 ||
-            (expressions.length === 1 &&
-              expressions[0].startsWith("request.time"))
-          ) {
-            expressions.push("all databases");
-          }
+          const expressions = getDatabaseAccessResource(item.rawExpression);
 
           return (
-            <ul class="list-disc pl-6 textinfolabel">
+            <ul class="list-disc">
               {expressions.map((expression, i) => (
                 <li key={`${item.key}.${i}`}>{expression}</li>
               ))}
