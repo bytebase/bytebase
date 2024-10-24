@@ -2157,6 +2157,10 @@
         "skip-backup-errors": {
           "self": "Omitir errores de copia de seguridad",
           "description": "Se omitirán los errores de copia de seguridad y las tareas de cambio de datos continuarán ejecutándose."
+        },
+        "postgres-database-tenant-mode": {
+          "description": "El modo de inquilino para la base de datos Postgres. Si está habilitado, el usuario de la base de datos ejecutará el problema.",
+          "self": "Modo inquilino de base de datos Postgres"
         }
       }
     },

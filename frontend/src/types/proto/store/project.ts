@@ -30,6 +30,11 @@ export interface Project {
   autoEnableBackup: boolean;
   /** Whether to skip backup errors and continue the data migration. */
   skipBackupErrors: boolean;
+  /**
+   * Whether to enable the database tenant mode for PostgreSQL.
+   * If enabled, the issue will be created with the pre-appended "set role <db_owner>" statement.
+   */
+  postgresDatabaseTenantMode: boolean;
 }
 
 function createBaseLabel(): Label {
@@ -130,6 +135,7 @@ function createBaseProject(): Project {
     enforceIssueTitle: false,
     autoEnableBackup: false,
     skipBackupErrors: false,
+    postgresDatabaseTenantMode: false,
   };
 }
 
@@ -155,6 +161,9 @@ export const Project: MessageFns<Project> = {
     }
     if (message.skipBackupErrors !== false) {
       writer.uint32(64).bool(message.skipBackupErrors);
+    }
+    if (message.postgresDatabaseTenantMode !== false) {
+      writer.uint32(72).bool(message.postgresDatabaseTenantMode);
     }
     return writer;
   },
@@ -215,6 +224,13 @@ export const Project: MessageFns<Project> = {
 
           message.skipBackupErrors = reader.bool();
           continue;
+        case 9:
+          if (tag !== 72) {
+            break;
+          }
+
+          message.postgresDatabaseTenantMode = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -237,6 +253,9 @@ export const Project: MessageFns<Project> = {
       enforceIssueTitle: isSet(object.enforceIssueTitle) ? globalThis.Boolean(object.enforceIssueTitle) : false,
       autoEnableBackup: isSet(object.autoEnableBackup) ? globalThis.Boolean(object.autoEnableBackup) : false,
       skipBackupErrors: isSet(object.skipBackupErrors) ? globalThis.Boolean(object.skipBackupErrors) : false,
+      postgresDatabaseTenantMode: isSet(object.postgresDatabaseTenantMode)
+        ? globalThis.Boolean(object.postgresDatabaseTenantMode)
+        : false,
     };
   },
 
@@ -263,6 +282,9 @@ export const Project: MessageFns<Project> = {
     if (message.skipBackupErrors !== false) {
       obj.skipBackupErrors = message.skipBackupErrors;
     }
+    if (message.postgresDatabaseTenantMode !== false) {
+      obj.postgresDatabaseTenantMode = message.postgresDatabaseTenantMode;
+    }
     return obj;
   },
 
@@ -278,6 +300,7 @@ export const Project: MessageFns<Project> = {
     message.enforceIssueTitle = object.enforceIssueTitle ?? false;
     message.autoEnableBackup = object.autoEnableBackup ?? false;
     message.skipBackupErrors = object.skipBackupErrors ?? false;
+    message.postgresDatabaseTenantMode = object.postgresDatabaseTenantMode ?? false;
     return message;
   },
 };
