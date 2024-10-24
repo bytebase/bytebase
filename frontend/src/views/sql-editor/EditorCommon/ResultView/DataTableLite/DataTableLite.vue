@@ -19,7 +19,7 @@
       :virtual-scroll-x="true"
       :virtual-scroll-header="true"
       :header-height="HEADER_HEIGHT"
-      :max-height="maxTableHeight"
+      :max-height="tableBodyHeight"
       :min-row-height="ROW_HEIGHT"
       :height-for-row="() => ROW_HEIGHT"
       :scroll-x="tableResize.getTableScrollWidth()"
@@ -41,7 +41,7 @@
 
 <script lang="ts" setup>
 import type { Header, Row, Table } from "@tanstack/vue-table";
-import { useElementSize } from "@vueuse/core";
+import { pausableWatch, useElementSize } from "@vueuse/core";
 import { type DataTableColumn, type DataTableInst, NDataTable } from "naive-ui";
 import { computed, h, nextTick, ref, toRef, watch } from "vue";
 import { QueryRow, type RowValue } from "@/types/proto/v1/sql_service";
@@ -57,6 +57,7 @@ const COLUMN_WIDTH = {
   MAX: 640, // 40rem
 };
 const HEADER_HEIGHT = 33;
+const GAP_AND_BORDER_HEIGHT = 2;
 const ROW_HEIGHT = 28;
 
 const props = defineProps<{
@@ -65,6 +66,7 @@ const props = defineProps<{
   offset: number;
   isSensitiveColumn: (index: number) => boolean;
   isColumnMissingSensitive: (index: number) => boolean;
+  maxHeight?: number;
 }>();
 
 const { keyword } = useSQLResultViewContext();
@@ -89,10 +91,30 @@ const { height: containerHeight, width: containerWidth } =
   useElementSize(containerRef);
 usePreventBackAndForward(scrollerRef);
 
-const maxTableHeight = computed(() => {
-  const GAP_AND_BORDER_HEIGHT = 2;
-  return containerHeight.value - HEADER_HEIGHT - GAP_AND_BORDER_HEIGHT;
-});
+const tableBodyHeight = ref(0);
+const { pause: pauseWatch, resume: resumeWatch } = pausableWatch(
+  [() => props.table.getRowCount(), containerHeight],
+  async () => {
+    if (containerHeight.value === 0) return;
+    if (!props.maxHeight) {
+      // The table height is always limited by the container height
+      // and need not to be adjusted automatically
+      const experimentalMaxBodyHeight =
+        containerHeight.value - HEADER_HEIGHT - GAP_AND_BORDER_HEIGHT;
+
+      tableBodyHeight.value = Math.max(0, experimentalMaxBodyHeight);
+      return;
+    }
+
+    pauseWatch();
+    const experimentalMaxBodyHeight =
+      props.maxHeight - HEADER_HEIGHT - GAP_AND_BORDER_HEIGHT;
+    tableBodyHeight.value = Math.max(0, experimentalMaxBodyHeight);
+    await nextAnimationFrame();
+    resumeWatch();
+  },
+  { immediate: true }
+);
 
 const queryTableHeaderElement = () => {
   return containerRef.value?.querySelector(

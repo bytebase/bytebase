@@ -132,6 +132,7 @@
         :offset="pageIndex * pageSize"
         :is-sensitive-column="isSensitiveColumn"
         :is-column-missing-sensitive="isColumnMissingSensitive"
+        :max-height="maxDataTableHeight"
       />
     </div>
 
@@ -253,6 +254,7 @@ const props = defineProps<{
   sqlResultSet: SQLResultSetV1;
   result: QueryResult;
   setIndex: number;
+  maxDataTableHeight?: number;
 }>();
 
 const state = reactive<LocalState>({

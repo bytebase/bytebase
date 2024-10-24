@@ -39,7 +39,7 @@
           </Suspense>
           <ResultViewV1
             v-if="query.params && query.resultSet"
-            class="max-h-[20rem] flex-1 flex flex-col overflow-hidden"
+            class="flex-1 flex flex-col overflow-hidden"
             :execute-params="query.params"
             :result-set="query.resultSet"
             :database="
@@ -47,6 +47,7 @@
             "
             :loading="query.status === 'RUNNING'"
             :dark="true"
+            :max-data-table-height="320"
           />
 
           <div
