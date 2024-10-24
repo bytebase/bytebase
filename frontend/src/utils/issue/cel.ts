@@ -1,6 +1,10 @@
 import { cloneDeep, last } from "lodash-es";
 import type { SimpleExpr } from "@/plugins/cel";
 import { isRawStringExpr, resolveCELExpr } from "@/plugins/cel";
+import {
+  databaseNamePrefix,
+  instanceNamePrefix,
+} from "@/store/modules/v1/common";
 import type { DatabaseResource } from "@/types";
 import type { Expr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
 import { batchConvertCELStringToParsedExpr } from "@/utils";
@@ -170,94 +174,7 @@ export const convertFromCELString = async (
     return {};
   }
 
-  const simpleExpr = resolveCELExpr(expr);
-  const conditionExpression: ConditionExpression = {
-    databaseResources: [],
-  };
-
-  async function processCondition(expr: SimpleExpr) {
-    // Do not process raw string expression.
-    if (isRawStringExpr(expr)) {
-      return;
-    }
-
-    if (expr.operator === "_&&_" || expr.operator === "_||_") {
-      for (const arg of expr.args) {
-        await processCondition(arg);
-      }
-    } else if (expr.operator === "@in") {
-      const [property, values] = expr.args;
-      if (typeof property === "string" && Array.isArray(values)) {
-        if (property === "resource.database") {
-          for (const value of values) {
-            const databaseResource: DatabaseResource = {
-              databaseName: value as string,
-            };
-            conditionExpression.databaseResources!.push(databaseResource);
-          }
-        } else if (property === "resource.schema") {
-          const databaseResource = conditionExpression.databaseResources?.pop();
-          if (databaseResource) {
-            for (const value of values) {
-              const temp: DatabaseResource = cloneDeep(
-                databaseResource
-              ) as DatabaseResource;
-              temp.schema = value as string;
-              conditionExpression.databaseResources!.push(temp);
-            }
-          }
-        } else if (property === "resource.table") {
-          const databaseResource = conditionExpression.databaseResources?.pop();
-          if (databaseResource) {
-            for (const value of values) {
-              const temp: DatabaseResource = cloneDeep(
-                databaseResource
-              ) as DatabaseResource;
-              temp.table = value as string;
-              conditionExpression.databaseResources!.push(temp);
-            }
-          }
-        }
-      }
-    } else if (expr.operator === "_==_") {
-      const [left, right] = expr.args;
-      if (typeof left === "string") {
-        if (typeof right === "string") {
-          if (left === "resource.database") {
-            const databaseResource: DatabaseResource = {
-              databaseName: right,
-            };
-            conditionExpression.databaseResources!.push(databaseResource);
-          } else if (left === "resource.schema") {
-            const databaseResource = last(
-              conditionExpression.databaseResources
-            );
-            if (databaseResource) {
-              databaseResource.schema = right;
-            }
-          }
-        } else if (typeof right === "number") {
-          if (left === "request.row_limit") {
-            conditionExpression.rowLimit = right;
-          }
-        }
-      }
-    } else if (expr.operator === "_<_") {
-      const [left, right] = expr.args;
-      if (left === "request.time") {
-        conditionExpression.expiredTime = (right as Date).toISOString();
-      }
-    } else if (expr.operator === "_<=_") {
-      const [left, right] = expr.args;
-      if (typeof right === "number") {
-        if (left === "request.row_limit") {
-          conditionExpression.rowLimit = right;
-        }
-      }
-    }
-  }
-  await processCondition(simpleExpr);
-  return conditionExpression;
+  return convertFromExpr(expr);
 };
 
 export const convertFromExpr = (expr: Expr): ConditionExpression => {
@@ -314,17 +231,49 @@ export const convertFromExpr = (expr: Expr): ConditionExpression => {
       const [left, right] = expr.args;
       if (typeof left === "string") {
         if (typeof right === "string") {
-          if (left === "resource.database") {
-            const databaseResource: DatabaseResource = {
-              databaseName: right,
-            };
-            conditionExpression.databaseResources!.push(databaseResource);
-          } else if (left === "resource.schema") {
-            const databaseResource = last(
-              conditionExpression.databaseResources
-            );
-            if (databaseResource) {
-              databaseResource.schema = right;
+          const databaseResource = last(conditionExpression.databaseResources);
+          switch (left) {
+            case "resource.instance_id": {
+              const databaseResource: DatabaseResource = {
+                instanceResourceId: right,
+                databaseName: "",
+              };
+              conditionExpression.databaseResources!.push(databaseResource);
+              break;
+            }
+            case "resource.database_name": {
+              if (!databaseResource?.instanceResourceId) {
+                return;
+              }
+              databaseResource.databaseName = `${instanceNamePrefix}${databaseResource.instanceResourceId}/${databaseNamePrefix}${right}`;
+              break;
+            }
+            case "resource.database": {
+              const databaseResource: DatabaseResource = {
+                databaseName: right,
+              };
+              conditionExpression.databaseResources!.push(databaseResource);
+              break;
+            }
+            case "resource.schema":
+            case "resource.schema_name": {
+              if (databaseResource) {
+                databaseResource.schema = right;
+              }
+              break;
+            }
+            case "resource.table":
+            case "resource.table_name": {
+              if (databaseResource) {
+                databaseResource.table = right;
+              }
+              break;
+            }
+            case "resource.column_name": {
+              if (databaseResource) {
+                databaseResource.column = right;
+              }
+              break;
             }
           }
         } else if (typeof right === "number") {
