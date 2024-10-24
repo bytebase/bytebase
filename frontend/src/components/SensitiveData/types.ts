@@ -1,4 +1,4 @@
-import type { ComposedDatabase } from "@/types";
+import type { ComposedDatabase, DatabaseResource } from "@/types";
 import { type User } from "@/types/proto/v1/auth_service";
 import { MaskingLevel } from "@/types/proto/v1/common";
 import type { Group } from "@/types/proto/v1/group";
@@ -21,4 +21,5 @@ export interface AccessUser {
   maskingLevel: MaskingLevel;
   expirationTimestamp?: number;
   rawExpression: string;
+  databaseResource?: DatabaseResource;
 }
