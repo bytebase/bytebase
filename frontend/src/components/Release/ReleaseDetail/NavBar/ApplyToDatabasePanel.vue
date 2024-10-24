@@ -184,6 +184,7 @@ const handleClickNext = async () => {
         state.targetSelectState.changeSource === "DATABASE"
           ? state.targetSelectState.selectedDatabaseNameList
           : [state.targetSelectState.selectedDatabaseGroup!],
+      // TODO: let user choose whether to allow out of order.
       allowOutOfOrder: true,
     });
     state.previewPlanResult = resp;
