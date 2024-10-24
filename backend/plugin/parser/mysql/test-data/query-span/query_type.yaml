@@ -1,0 +1,71 @@
+- description: system query
+  statement: select * from mysql.user
+  defaultDatabase: db
+  metadata: |-
+    {
+      "name":  "db"
+    }
+  querySpan:
+    type: 3
+    results: []
+    sourcecolumns: []
+- description: show query
+  statement: show databases
+  defaultDatabase: db
+  metadata: |-
+    {
+      "name":  "db"
+    }
+  querySpan:
+    type: 3
+    results: []
+    sourcecolumns: []
+- description: explain query
+  statement: explain select * from t
+  defaultDatabase: db
+  metadata: |-
+    {
+      "name":  "db"
+    }
+  querySpan:
+    type: 2
+    results: []
+    sourcecolumns: []
+- description: standard query
+  statement: select * from t where a > 0
+  defaultDatabase: db
+  metadata: |-
+    {
+      "name":  "db"
+    }
+  querySpan:
+    type: 1
+    results: []
+    sourcecolumns:
+        - server: ""
+          database: db
+          schema: ""
+          table: t
+          column: ""
+- description: ddl
+  statement: create table t(a int);
+  defaultDatabase: db
+  metadata: |-
+    {
+      "name":  "db"
+    }
+  querySpan:
+    type: 4
+    results: []
+    sourcecolumns: []
+- description: dml
+  statement: insert into t values(1);
+  defaultDatabase: db
+  metadata: |-
+    {
+      "name":  "db"
+    }
+  querySpan:
+    type: 5
+    results: []
+    sourcecolumns: []
