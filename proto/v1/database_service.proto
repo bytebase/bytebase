@@ -180,7 +180,7 @@ service DatabaseService {
     option (google.api.method_signature) = "parent";
   }
 
-    rpc GetChangelog(GetChangelogRequest) returns (Changelog) {
+  rpc GetChangelog(GetChangelogRequest) returns (Changelog) {
     option (google.api.http) = {get: "/v1/{name=instances/*/databases/*/changelogs/*}"};
     option (google.api.method_signature) = "name";
   }
