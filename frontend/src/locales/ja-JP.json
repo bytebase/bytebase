@@ -2157,6 +2157,10 @@
         "skip-backup-errors": {
           "self": "バックアップエラーをスキップ",
           "description": "バックアップ エラーをスキップすると、データの変更タスクは引き続き実行されます。"
+        },
+        "postgres-database-tenant-mode": {
+          "description": "Postgres データベースのテナント モード。有効にすると、問題はデータベース ユーザーによって実行されます。",
+          "self": "Postgres データベーステナントモード"
         }
       }
     },

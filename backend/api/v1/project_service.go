@@ -181,6 +181,7 @@ func (s *ProjectService) UpdateProject(ctx context.Context, request *v1pb.Update
 		"enforce_issue_title",
 		"auto_enable_backup",
 		"skip_backup_errors",
+		"postgres_database_tenant_mode",
 	}
 	for _, path := range request.UpdateMask.Paths {
 		if slices.Contains(issueProjectSettingFeatureRelatedPaths, path) {
@@ -246,6 +247,10 @@ func (s *ProjectService) UpdateProject(ctx context.Context, request *v1pb.Update
 		case "skip_backup_errors":
 			projectSettings := project.Setting
 			projectSettings.SkipBackupErrors = request.Project.SkipBackupErrors
+			patch.Setting = projectSettings
+		case "postgres_database_tenant_mode":
+			projectSettings := project.Setting
+			projectSettings.PostgresDatabaseTenantMode = request.Project.PostgresDatabaseTenantMode
 			patch.Setting = projectSettings
 		default:
 			return nil, status.Errorf(codes.InvalidArgument, `unsupport update_mask "%s"`, path)
@@ -1283,6 +1288,7 @@ func convertToProject(projectMessage *store.ProjectMessage) *v1pb.Project {
 		EnforceIssueTitle:          projectMessage.Setting.EnforceIssueTitle,
 		AutoEnableBackup:           projectMessage.Setting.AutoEnableBackup,
 		SkipBackupErrors:           projectMessage.Setting.SkipBackupErrors,
+		PostgresDatabaseTenantMode: projectMessage.Setting.PostgresDatabaseTenantMode,
 	}
 }
 

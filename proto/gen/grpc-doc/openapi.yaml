@@ -12172,6 +12172,11 @@ components:
                 skipBackupErrors:
                     type: boolean
                     description: Whether to skip backup errors and continue the data migration.
+                postgresDatabaseTenantMode:
+                    type: boolean
+                    description: |-
+                        Whether to enable the database tenant mode for PostgreSQL.
+                         If enabled, the issue will be created with the pre-appended "set role <db_owner>" statement.
         QueryHistory:
             type: object
             properties:

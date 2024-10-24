@@ -107,6 +107,19 @@
           }}
         </p>
       </div>
+      <div>
+        <NCheckbox
+          v-model:checked="state.postgresDatabaseTenantMode"
+          size="large"
+          :disabled="!allowUpdateIssueProjectSetting"
+          :label="$t('project.settings.issue-related.postgres-database-tenant-mode.self')"
+        />
+        <p class="text-sm text-gray-400 pl-6 ml-0.5">
+          {{
+            $t("project.settings.issue-related.postgres-database-tenant-mode.description")
+          }}
+        </p>
+      </div>
     </div>
     <div class="w-full flex justify-end gap-x-3">
       <NButton
@@ -138,6 +151,7 @@ interface LocalState {
   enforceIssueTitle: boolean;
   autoEnableBackup: boolean;
   skipBackupErrors: boolean;
+  postgresDatabaseTenantMode: string;
 }
 
 const getInitialLocalState = (): LocalState => {
@@ -150,6 +164,7 @@ const getInitialLocalState = (): LocalState => {
     enforceIssueTitle: project.enforceIssueTitle,
     autoEnableBackup: project.autoEnableBackup,
     skipBackupErrors: project.skipBackupErrors,
+    postgresDatabaseTenantMode: project.postgresDatabaseTenantMode,
   };
 };
 
@@ -262,6 +277,9 @@ const getUpdateMask = () => {
   }
   if (!isEqual(state.skipBackupErrors, props.project.skipBackupErrors)) {
     mask.push("skip_backup_errors");
+  }
+  if (!isEqual(state.postgresDatabaseTenantMode, props.project.postgresDatabaseTenantMode)) {
+    mask.push("postgres_database_tenant_mode");
   }
   return mask;
 };
