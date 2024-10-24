@@ -3729,6 +3729,7 @@
     "tasks-to-apply": "Tasks to apply",
     "out-of-order-files": "Out of order files",
     "applied-but-modifed-files": "Applied but modified files",
+    "allow-out-of-order": "Allow out of order",
     "no-tasks-to-apply": {
       "self": "No tasks to apply"
     }

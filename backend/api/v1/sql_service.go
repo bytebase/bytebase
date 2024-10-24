@@ -1638,7 +1638,7 @@ func checkAndGetDataSourceQueriable(ctx context.Context, storeInstance *store.St
 
 	// If any of the policy is DISALLOW, then return false.
 	if envAdminDataSourceRestriction == v1pb.DataSourceQueryPolicy_DISALLOW || projectAdminDataSourceRestriction == v1pb.DataSourceQueryPolicy_DISALLOW {
-		return nil, status.Errorf(codes.PermissionDenied, "data source %q is not queriable", dataSourceID)
+		return nil, status.Errorf(codes.PermissionDenied, "data source %q is not queryable", dataSourceID)
 	} else if envAdminDataSourceRestriction == v1pb.DataSourceQueryPolicy_FALLBACK || projectAdminDataSourceRestriction == v1pb.DataSourceQueryPolicy_FALLBACK {
 		readOnlyDataSourceType := api.RO
 		readOnlyDataSources, err := storeInstance.ListDataSourcesV2(ctx, &store.FindDataSourceMessage{
@@ -1650,7 +1650,7 @@ func checkAndGetDataSourceQueriable(ctx context.Context, storeInstance *store.St
 		}
 		// If there is any read-only data source, then return false.
 		if len(readOnlyDataSources) > 0 {
-			return nil, status.Errorf(codes.PermissionDenied, "data source %q is not queriable", dataSourceID)
+			return nil, status.Errorf(codes.PermissionDenied, "data source %q is not queryable", dataSourceID)
 		}
 	}
 

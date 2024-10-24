@@ -31,6 +31,7 @@
       ]
     }
   querySpan:
+    type: 1
     results:
         - name: product_info
           sourcecolumns:
@@ -74,6 +75,7 @@
       ]
     }
   querySpan:
+    type: 1
     results:
         - name: product_info
           sourcecolumns:

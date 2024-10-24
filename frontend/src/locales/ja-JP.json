@@ -3729,6 +3729,7 @@
     "tasks-to-apply": "適用するタスク",
     "out-of-order-files": "順序が間違っているファイル",
     "applied-but-modifed-files": "適用済みだが変更されたファイル",
+    "allow-out-of-order": "順序外を許可する",
     "no-tasks-to-apply": {
       "self": "適用するタスクはありません"
     }
