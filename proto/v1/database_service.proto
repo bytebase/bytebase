@@ -174,6 +174,15 @@ service DatabaseService {
     option (google.api.http) = {delete: "/v1/{name=instances/*/databases/*/revisions/*}"};
     option (google.api.method_signature) = "name";
   }
+
+  rpc ListChangelogs(ListChangelogsRequest) returns (ListChangelogsResponse) {
+    option (google.api.http) = {get: "/v1/{parent=instances/*/databases/*}/changelogs"};
+    option (google.api.method_signature) = "parent";
+  }
+  rpc GetChangelog(GetChangelogRequest) returns (Changelog) {
+    option (google.api.http) = {get: "/v1/{name=instances/*/databases/*/changelogs/*}"};
+    option (google.api.method_signature) = "name";
+  }
 }
 
 message GetDatabaseRequest {
@@ -1523,4 +1532,141 @@ message Revision {
   // Can be empty.
   // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
   string task_run = 13 [(google.api.resource_reference) = {type: "bytebase.com/TaskRun"}];
+}
+
+enum ChangelogView {
+  // The default / unset value.
+  // The API will default to the BASIC view.
+  CHANGELOG_VIEW_UNSPECIFIED = 0;
+  CHANGELOG_VIEW_BASIC = 1;
+  CHANGELOG_VIEW_FULL = 2;
+}
+
+message ListChangelogsRequest {
+  // The parent of the changelogs.
+  // Format: instances/{instance}/databases/{database}
+  string parent = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Database"}
+  ];
+
+  // The maximum number of changelogs to return. The service may return fewer than this value.
+  // If unspecified, at most 10 changelogs will be returned.
+  // The maximum value is 1000; values above 1000 will be coerced to 1000.
+  int32 page_size = 2;
+
+  // A page token, received from the previous call.
+  // Provide this to retrieve the subsequent page.
+  //
+  // When paginating, all other parameters provided must match
+  // the call that provided the page token.
+  string page_token = 3;
+
+  ChangelogView view = 4;
+
+  // The filter of the changelogs.
+  // follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax.
+  // Support filter by type, source or table.
+  // For example:
+  // table = "tableExists('{database}', '{schema}', '{table}')"
+  // table = "tableExists('db', 'public', 'table1') || tableExists('db', 'public', 'table2')"
+  // type = "MIGRATE | DATA"
+  // source = "UI"
+  // source = "VCS"
+  //
+  // The table filter follow the CEL syntax.
+  // currently, we have one function for CEL:
+  // - tableExists(database, schema, table): return true if the table exists in changed resources.
+  //
+  // examples:
+  // Use
+  //   tableExists("db", "public", "table1")
+  // to filter the changelogs which have the table "table1" in the schema "public" of the database "db".
+  // For MySQL, the schema is always "", such as tableExists("db", "", "table1").
+  //
+  // Combine multiple functions with "&&" and "||", we MUST use the Disjunctive Normal Form(DNF).
+  // In other words, the CEL expression consists of several parts connected by OR operators.
+  // For example, the following expression is valid:
+  // (
+  //  tableExists("db", "public", "table1") &&
+  //  tableExists("db", "public", "table2")
+  // ) || (
+  //  tableExists("db", "public", "table3")
+  // )
+  string filter = 5;
+}
+
+message ListChangelogsResponse {
+  // The list of changelogs.
+  repeated Changelog changelogs = 1;
+
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
+}
+
+message GetChangelogRequest {
+  // The name of the changelog to retrieve.
+  // Format: instances/{instance}/databases/{database}/changelogs/{changelog}
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/DatabaseChangelog"}
+  ];
+
+  ChangeHistoryView view = 2;
+
+  // Format the schema dump into SDL format.
+  bool sdl_format = 3;
+
+  // When true, the schema dump will be concise.
+  // For Oracle, there will be tables and indexes only for Sync Schema.
+  // For Postgres, we'll filter the backup schema.
+  bool concise = 4;
+}
+
+message Changelog {
+  option (google.api.resource) = {
+    type: "bytebase.com/DatabaseChangelog"
+    pattern: "instances/{instance}/databases/{database}/changelogs/{changelog}"
+  };
+
+  // Format: instances/{instance}/databases/{database}/changelogs/{changelog}
+  string name = 1;
+
+  // Format: users/hello@world.com
+  string creator = 2;
+  google.protobuf.Timestamp create_time = 3;
+
+  enum Status {
+    STATUS_UNSPECIFIED = 0;
+    PENDING = 1;
+    DONE = 2;
+    FAILED = 3;
+  }
+  Status status = 4;
+
+  // The statement is used for preview purpose.
+  string statement = 5;
+  int64 statement_size = 6;
+  // The name of the sheet resource.
+  // Format: projects/{project}/sheets/{sheet}
+  string statement_sheet = 7;
+  string schema = 8;
+  int64 schema_size = 9;
+  string prev_schema = 10;
+  int64 prev_schema_size = 11;
+
+  // Format: projects/{project}/issues/{issue}
+  string issue = 12;
+  // Could be empty
+  // TODO(p0ny): We will migrate ChangeHistory to Changelog, and they won't have task_run.
+  string task_run = 13;
+
+  // Could be empty
+  string version = 14;
+  // Could be empty
+  // Or present but not found if deleted
+  string revision = 15;
+
+  ChangedResources changed_resources = 16;
 }
