@@ -93,6 +93,7 @@
     - [ChangedResourceTable](#bytebase-v1-ChangedResourceTable)
     - [ChangedResourceView](#bytebase-v1-ChangedResourceView)
     - [ChangedResources](#bytebase-v1-ChangedResources)
+    - [Changelog](#bytebase-v1-Changelog)
     - [CheckConstraintMetadata](#bytebase-v1-CheckConstraintMetadata)
     - [ColumnConfig](#bytebase-v1-ColumnConfig)
     - [ColumnConfig.LabelsEntry](#bytebase-v1-ColumnConfig-LabelsEntry)
@@ -114,6 +115,7 @@
     - [FunctionMetadata](#bytebase-v1-FunctionMetadata)
     - [GenerationMetadata](#bytebase-v1-GenerationMetadata)
     - [GetChangeHistoryRequest](#bytebase-v1-GetChangeHistoryRequest)
+    - [GetChangelogRequest](#bytebase-v1-GetChangelogRequest)
     - [GetDatabaseMetadataRequest](#bytebase-v1-GetDatabaseMetadataRequest)
     - [GetDatabaseRequest](#bytebase-v1-GetDatabaseRequest)
     - [GetDatabaseSchemaRequest](#bytebase-v1-GetDatabaseSchemaRequest)
@@ -121,6 +123,8 @@
     - [IndexMetadata](#bytebase-v1-IndexMetadata)
     - [ListChangeHistoriesRequest](#bytebase-v1-ListChangeHistoriesRequest)
     - [ListChangeHistoriesResponse](#bytebase-v1-ListChangeHistoriesResponse)
+    - [ListChangelogsRequest](#bytebase-v1-ListChangelogsRequest)
+    - [ListChangelogsResponse](#bytebase-v1-ListChangelogsResponse)
     - [ListDatabasesRequest](#bytebase-v1-ListDatabasesRequest)
     - [ListDatabasesResponse](#bytebase-v1-ListDatabasesResponse)
     - [ListInstanceDatabasesRequest](#bytebase-v1-ListInstanceDatabasesRequest)
@@ -159,6 +163,8 @@
     - [ChangeHistory.Status](#bytebase-v1-ChangeHistory-Status)
     - [ChangeHistory.Type](#bytebase-v1-ChangeHistory-Type)
     - [ChangeHistoryView](#bytebase-v1-ChangeHistoryView)
+    - [Changelog.Status](#bytebase-v1-Changelog-Status)
+    - [ChangelogView](#bytebase-v1-ChangelogView)
     - [DatabaseMetadataView](#bytebase-v1-DatabaseMetadataView)
     - [GenerationMetadata.Type](#bytebase-v1-GenerationMetadata-Type)
     - [StreamMetadata.Mode](#bytebase-v1-StreamMetadata-Mode)
@@ -2012,6 +2018,36 @@ AdviseIndexResponse is the response of advising index.
 
 
 
+<a name="bytebase-v1-Changelog"></a>
+
+### Changelog
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | Format: instances/{instance}/databases/{database}/changelogs/{changelog} |
+| creator | [string](#string) |  | Format: users/hello@world.com |
+| create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| status | [Changelog.Status](#bytebase-v1-Changelog-Status) |  |  |
+| statement | [string](#string) |  | The statement is used for preview purpose. |
+| statement_size | [int64](#int64) |  |  |
+| statement_sheet | [string](#string) |  | The name of the sheet resource. Format: projects/{project}/sheets/{sheet} |
+| schema | [string](#string) |  |  |
+| schema_size | [int64](#int64) |  |  |
+| prev_schema | [string](#string) |  |  |
+| prev_schema_size | [int64](#int64) |  |  |
+| issue | [string](#string) |  | Format: projects/{project}/issues/{issue} |
+| task_run | [string](#string) |  | Could be empty TODO(p0ny): We will migrate ChangeHistory to Changelog, and they won&#39;t have task_run. |
+| version | [string](#string) |  | Could be empty |
+| revision | [string](#string) |  | Could be empty Or present but not found if deleted |
+| changed_resources | [ChangedResources](#bytebase-v1-ChangedResources) |  |  |
+
+
+
+
+
+
 <a name="bytebase-v1-CheckConstraintMetadata"></a>
 
 ### CheckConstraintMetadata
@@ -2392,6 +2428,24 @@ FunctionMetadata is the metadata for functions.
 
 
 
+<a name="bytebase-v1-GetChangelogRequest"></a>
+
+### GetChangelogRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the changelog to retrieve. Format: instances/{instance}/databases/{database}/changelogs/{changelog} |
+| view | [ChangeHistoryView](#bytebase-v1-ChangeHistoryView) |  |  |
+| sdl_format | [bool](#bool) |  | Format the schema dump into SDL format. |
+| concise | [bool](#bool) |  | When true, the schema dump will be concise. For Oracle, there will be tables and indexes only for Sync Schema. For Postgres, we&#39;ll filter the backup schema. |
+
+
+
+
+
+
 <a name="bytebase-v1-GetDatabaseMetadataRequest"></a>
 
 ### GetDatabaseMetadataRequest
@@ -2516,6 +2570,49 @@ Combine multiple functions with &#34;&amp;&amp;&#34; and &#34;||&#34;, we MUST u
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | change_histories | [ChangeHistory](#bytebase-v1-ChangeHistory) | repeated | The list of change histories. |
+| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
+
+
+
+
+
+
+<a name="bytebase-v1-ListChangelogsRequest"></a>
+
+### ListChangelogsRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The parent of the changelogs. Format: instances/{instance}/databases/{database} |
+| page_size | [int32](#int32) |  | The maximum number of changelogs to return. The service may return fewer than this value. If unspecified, at most 10 changelogs will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | A page token, received from the previous call. Provide this to retrieve the subsequent page.
+
+When paginating, all other parameters provided must match the call that provided the page token. |
+| view | [ChangelogView](#bytebase-v1-ChangelogView) |  |  |
+| filter | [string](#string) |  | The filter of the changelogs. follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax. Support filter by type, source or table. For example: table = &#34;tableExists(&#39;{database}&#39;, &#39;{schema}&#39;, &#39;{table}&#39;)&#34; table = &#34;tableExists(&#39;db&#39;, &#39;public&#39;, &#39;table1&#39;) || tableExists(&#39;db&#39;, &#39;public&#39;, &#39;table2&#39;)&#34; type = &#34;MIGRATE | DATA&#34; source = &#34;UI&#34; source = &#34;VCS&#34;
+
+The table filter follow the CEL syntax. currently, we have one function for CEL: - tableExists(database, schema, table): return true if the table exists in changed resources.
+
+examples: Use tableExists(&#34;db&#34;, &#34;public&#34;, &#34;table1&#34;) to filter the changelogs which have the table &#34;table1&#34; in the schema &#34;public&#34; of the database &#34;db&#34;. For MySQL, the schema is always &#34;&#34;, such as tableExists(&#34;db&#34;, &#34;&#34;, &#34;table1&#34;).
+
+Combine multiple functions with &#34;&amp;&amp;&#34; and &#34;||&#34;, we MUST use the Disjunctive Normal Form(DNF). In other words, the CEL expression consists of several parts connected by OR operators. For example, the following expression is valid: ( tableExists(&#34;db&#34;, &#34;public&#34;, &#34;table1&#34;) &amp;&amp; tableExists(&#34;db&#34;, &#34;public&#34;, &#34;table2&#34;) ) || ( tableExists(&#34;db&#34;, &#34;public&#34;, &#34;table3&#34;) ) |
+
+
+
+
+
+
+<a name="bytebase-v1-ListChangelogsResponse"></a>
+
+### ListChangelogsResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| changelogs | [Changelog](#bytebase-v1-Changelog) | repeated | The list of changelogs. |
 | next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
 
 
@@ -3209,6 +3306,33 @@ ViewMetadata is the metadata for views.
 
 
 
+<a name="bytebase-v1-Changelog-Status"></a>
+
+### Changelog.Status
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| STATUS_UNSPECIFIED | 0 |  |
+| PENDING | 1 |  |
+| DONE | 2 |  |
+| FAILED | 3 |  |
+
+
+
+<a name="bytebase-v1-ChangelogView"></a>
+
+### ChangelogView
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| CHANGELOG_VIEW_UNSPECIFIED | 0 | The default / unset value. The API will default to the BASIC view. |
+| CHANGELOG_VIEW_BASIC | 1 |  |
+| CHANGELOG_VIEW_FULL | 2 |  |
+
+
+
 <a name="bytebase-v1-DatabaseMetadataView"></a>
 
 ### DatabaseMetadataView
@@ -3328,6 +3452,8 @@ PostgreSQL: RANGE, LIST, HASH (https://www.postgresql.org/docs/current/ddl-parti
 | ListRevisions | [ListRevisionsRequest](#bytebase-v1-ListRevisionsRequest) | [ListRevisionsResponse](#bytebase-v1-ListRevisionsResponse) |  |
 | GetRevision | [GetRevisionRequest](#bytebase-v1-GetRevisionRequest) | [Revision](#bytebase-v1-Revision) |  |
 | DeleteRevision | [DeleteRevisionRequest](#bytebase-v1-DeleteRevisionRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
+| ListChangelogs | [ListChangelogsRequest](#bytebase-v1-ListChangelogsRequest) | [ListChangelogsResponse](#bytebase-v1-ListChangelogsResponse) |  |
+| GetChangelog | [GetChangelogRequest](#bytebase-v1-GetChangelogRequest) | [Changelog](#bytebase-v1-Changelog) |  |
 
  
 
