@@ -67,23 +67,30 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*ba
 	}
 	tree := parseResults[0].Tree
 
-	q.ctx = ctx
+	// TODO(d): refactor to combine the accessible table check.
 	accessTables := getAccessTables(q.defaultDatabase, tree)
 	// We do not support simultaneous access to the system table and the user table
 	// because we do not synchronize the schema of the system table.
 	// This causes an error (NOT_FOUND) when using querySpanExtractor.findTableSchema.
 	// As a result, we exclude getting query span results for accessing only the system table.
-	allSystems, mixed := isMixedQuery(accessTables, q.ignoreCaseSensitive)
-	if mixed {
+	if _, mixed := isMixedQuery(accessTables, q.ignoreCaseSensitive); mixed {
 		return nil, base.MixUserSystemTablesError
 	}
-	if allSystems {
+
+	queryTypeListener := &queryTypeListener{
+		result: base.QueryTypeUnknown,
+	}
+	antlr.ParseTreeWalkerDefault.Walk(queryTypeListener, tree)
+
+	if queryTypeListener.result != base.Select {
 		return &base.QuerySpan{
+			Type:          queryTypeListener.result,
 			SourceColumns: base.SourceColumnSet{},
 			Results:       []base.QuerySpanResult{},
 		}, nil
 	}
 
+	q.ctx = ctx
 	// We assumes the caller had handled the statement type case,
 	// so we only need to handle the determined statement type here.
 	// In order to decrease the maintenance cost, we use listener to handle
@@ -95,6 +102,7 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*ba
 		var resourceNotFound *parsererror.ResourceNotFoundError
 		if errors.As(err, &resourceNotFound) {
 			return &base.QuerySpan{
+				Type:          base.Select,
 				SourceColumns: accessTables,
 				Results:       []base.QuerySpanResult{},
 				NotFoundError: resourceNotFound,
@@ -104,6 +112,7 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*ba
 		return nil, err
 	}
 	return &base.QuerySpan{
+		Type:          base.Select,
 		SourceColumns: accessTables,
 		Results:       listener.querySpan.Results,
 	}, nil
