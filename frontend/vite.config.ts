@@ -103,4 +103,7 @@ export default defineConfig({
     dedupe: ["vscode"],
   },
   envPrefix: "BB_",
+  define: {
+    global: "({})",
+  },
 });
