@@ -14,6 +14,11 @@ func TestValidateSQLForEditor(t *testing.T) {
 		err         bool
 	}{
 		{
+			statement:   "SELECT 1 UNION ALL SELECT 2;",
+			valid:       true,
+			gotAllQuery: true,
+		},
+		{
 			statement:   "SHOW CREATE TABLE bytebase;",
 			valid:       true,
 			gotAllQuery: true,

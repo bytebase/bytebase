@@ -30,6 +30,7 @@ func validateQuery(statement string) (bool, bool, error) {
 	for _, stmt := range stmtList {
 		switch stmt := stmt.(type) {
 		case *tidbast.SelectStmt:
+		case *tidbast.SetOprStmt:
 		case *tidbast.SetStmt:
 			hasExecute = true
 		case *tidbast.ShowStmt:
