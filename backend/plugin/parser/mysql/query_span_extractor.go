@@ -67,18 +67,19 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*ba
 	}
 	tree := parseResults[0].Tree
 
-	// TODO(d): refactor to combine the accessible table check.
 	accessTables := getAccessTables(q.defaultDatabase, tree)
 	// We do not support simultaneous access to the system table and the user table
 	// because we do not synchronize the schema of the system table.
 	// This causes an error (NOT_FOUND) when using querySpanExtractor.findTableSchema.
 	// As a result, we exclude getting query span results for accessing only the system table.
-	if _, mixed := isMixedQuery(accessTables, q.ignoreCaseSensitive); mixed {
+	allSystems, mixed := isMixedQuery(accessTables, q.ignoreCaseSensitive)
+	if mixed {
 		return nil, base.MixUserSystemTablesError
 	}
 
 	queryTypeListener := &queryTypeListener{
-		result: base.QueryTypeUnknown,
+		allSystems: allSystems,
+		result:     base.QueryTypeUnknown,
 	}
 	antlr.ParseTreeWalkerDefault.Walk(queryTypeListener, tree)
 
