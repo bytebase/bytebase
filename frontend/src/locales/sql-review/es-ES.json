@@ -711,6 +711,10 @@
     "builtin-prior-backup-check": {
       "title": "Comprobación previa de viabilidad de la copia de seguridad",
       "description": "Esta regla verifica si se puede crear una copia de seguridad antes de que se modifiquen los datos. Verifica la existencia de la base de datos de destino de la copia de seguridad y rechaza los escenarios no admitidos. Está incorporada y no se puede omitir."
+    },
+    "builtin-object-owner-check": {
+      "title": "Verificación del propietario del objeto",
+      "description": "Esta regla verifica si el propietario del objeto para DDL es el mismo que el usuario actual. Está incorporada y no se puede omitir."
     }
   },
   "level": {
