@@ -40,6 +40,8 @@ const (
 	DatabaseService_ListRevisions_FullMethodName          = "/bytebase.v1.DatabaseService/ListRevisions"
 	DatabaseService_GetRevision_FullMethodName            = "/bytebase.v1.DatabaseService/GetRevision"
 	DatabaseService_DeleteRevision_FullMethodName         = "/bytebase.v1.DatabaseService/DeleteRevision"
+	DatabaseService_ListChangelogs_FullMethodName         = "/bytebase.v1.DatabaseService/ListChangelogs"
+	DatabaseService_GetChangelog_FullMethodName           = "/bytebase.v1.DatabaseService/GetChangelog"
 )
 
 // DatabaseServiceClient is the client API for DatabaseService service.
@@ -66,6 +68,8 @@ type DatabaseServiceClient interface {
 	ListRevisions(ctx context.Context, in *ListRevisionsRequest, opts ...grpc.CallOption) (*ListRevisionsResponse, error)
 	GetRevision(ctx context.Context, in *GetRevisionRequest, opts ...grpc.CallOption) (*Revision, error)
 	DeleteRevision(ctx context.Context, in *DeleteRevisionRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	ListChangelogs(ctx context.Context, in *ListChangelogsRequest, opts ...grpc.CallOption) (*ListChangelogsResponse, error)
+	GetChangelog(ctx context.Context, in *GetChangelogRequest, opts ...grpc.CallOption) (*Changelog, error)
 }
 
 type databaseServiceClient struct {
@@ -276,6 +280,26 @@ func (c *databaseServiceClient) DeleteRevision(ctx context.Context, in *DeleteRe
 	return out, nil
 }
 
+func (c *databaseServiceClient) ListChangelogs(ctx context.Context, in *ListChangelogsRequest, opts ...grpc.CallOption) (*ListChangelogsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListChangelogsResponse)
+	err := c.cc.Invoke(ctx, DatabaseService_ListChangelogs_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *databaseServiceClient) GetChangelog(ctx context.Context, in *GetChangelogRequest, opts ...grpc.CallOption) (*Changelog, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Changelog)
+	err := c.cc.Invoke(ctx, DatabaseService_GetChangelog_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // DatabaseServiceServer is the server API for DatabaseService service.
 // All implementations must embed UnimplementedDatabaseServiceServer
 // for forward compatibility.
@@ -300,6 +324,8 @@ type DatabaseServiceServer interface {
 	ListRevisions(context.Context, *ListRevisionsRequest) (*ListRevisionsResponse, error)
 	GetRevision(context.Context, *GetRevisionRequest) (*Revision, error)
 	DeleteRevision(context.Context, *DeleteRevisionRequest) (*emptypb.Empty, error)
+	ListChangelogs(context.Context, *ListChangelogsRequest) (*ListChangelogsResponse, error)
+	GetChangelog(context.Context, *GetChangelogRequest) (*Changelog, error)
 	mustEmbedUnimplementedDatabaseServiceServer()
 }
 
@@ -369,6 +395,12 @@ func (UnimplementedDatabaseServiceServer) GetRevision(context.Context, *GetRevis
 }
 func (UnimplementedDatabaseServiceServer) DeleteRevision(context.Context, *DeleteRevisionRequest) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteRevision not implemented")
+}
+func (UnimplementedDatabaseServiceServer) ListChangelogs(context.Context, *ListChangelogsRequest) (*ListChangelogsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListChangelogs not implemented")
+}
+func (UnimplementedDatabaseServiceServer) GetChangelog(context.Context, *GetChangelogRequest) (*Changelog, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetChangelog not implemented")
 }
 func (UnimplementedDatabaseServiceServer) mustEmbedUnimplementedDatabaseServiceServer() {}
 func (UnimplementedDatabaseServiceServer) testEmbeddedByValue()                         {}
@@ -751,6 +783,42 @@ func _DatabaseService_DeleteRevision_Handler(srv interface{}, ctx context.Contex
 	return interceptor(ctx, in, info, handler)
 }
 
+func _DatabaseService_ListChangelogs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListChangelogsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DatabaseServiceServer).ListChangelogs(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: DatabaseService_ListChangelogs_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DatabaseServiceServer).ListChangelogs(ctx, req.(*ListChangelogsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _DatabaseService_GetChangelog_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetChangelogRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DatabaseServiceServer).GetChangelog(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: DatabaseService_GetChangelog_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DatabaseServiceServer).GetChangelog(ctx, req.(*GetChangelogRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // DatabaseService_ServiceDesc is the grpc.ServiceDesc for DatabaseService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -837,6 +905,14 @@ var DatabaseService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DeleteRevision",
 			Handler:    _DatabaseService_DeleteRevision_Handler,
+		},
+		{
+			MethodName: "ListChangelogs",
+			Handler:    _DatabaseService_ListChangelogs_Handler,
+		},
+		{
+			MethodName: "GetChangelog",
+			Handler:    _DatabaseService_GetChangelog_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

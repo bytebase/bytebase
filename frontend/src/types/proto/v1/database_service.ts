@@ -148,6 +148,63 @@ export function changeHistoryViewToNumber(object: ChangeHistoryView): number {
   }
 }
 
+export enum ChangelogView {
+  /**
+   * CHANGELOG_VIEW_UNSPECIFIED - The default / unset value.
+   * The API will default to the BASIC view.
+   */
+  CHANGELOG_VIEW_UNSPECIFIED = "CHANGELOG_VIEW_UNSPECIFIED",
+  CHANGELOG_VIEW_BASIC = "CHANGELOG_VIEW_BASIC",
+  CHANGELOG_VIEW_FULL = "CHANGELOG_VIEW_FULL",
+  UNRECOGNIZED = "UNRECOGNIZED",
+}
+
+export function changelogViewFromJSON(object: any): ChangelogView {
+  switch (object) {
+    case 0:
+    case "CHANGELOG_VIEW_UNSPECIFIED":
+      return ChangelogView.CHANGELOG_VIEW_UNSPECIFIED;
+    case 1:
+    case "CHANGELOG_VIEW_BASIC":
+      return ChangelogView.CHANGELOG_VIEW_BASIC;
+    case 2:
+    case "CHANGELOG_VIEW_FULL":
+      return ChangelogView.CHANGELOG_VIEW_FULL;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return ChangelogView.UNRECOGNIZED;
+  }
+}
+
+export function changelogViewToJSON(object: ChangelogView): string {
+  switch (object) {
+    case ChangelogView.CHANGELOG_VIEW_UNSPECIFIED:
+      return "CHANGELOG_VIEW_UNSPECIFIED";
+    case ChangelogView.CHANGELOG_VIEW_BASIC:
+      return "CHANGELOG_VIEW_BASIC";
+    case ChangelogView.CHANGELOG_VIEW_FULL:
+      return "CHANGELOG_VIEW_FULL";
+    case ChangelogView.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+export function changelogViewToNumber(object: ChangelogView): number {
+  switch (object) {
+    case ChangelogView.CHANGELOG_VIEW_UNSPECIFIED:
+      return 0;
+    case ChangelogView.CHANGELOG_VIEW_BASIC:
+      return 1;
+    case ChangelogView.CHANGELOG_VIEW_FULL:
+      return 2;
+    case ChangelogView.UNRECOGNIZED:
+    default:
+      return -1;
+  }
+}
+
 export interface GetDatabaseRequest {
   /**
    * The name of the database to retrieve.
@@ -1842,6 +1899,185 @@ export interface Revision {
    * Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
    */
   taskRun: string;
+}
+
+export interface ListChangelogsRequest {
+  /**
+   * The parent of the changelogs.
+   * Format: instances/{instance}/databases/{database}
+   */
+  parent: string;
+  /**
+   * The maximum number of changelogs to return. The service may return fewer than this value.
+   * If unspecified, at most 10 changelogs will be returned.
+   * The maximum value is 1000; values above 1000 will be coerced to 1000.
+   */
+  pageSize: number;
+  /**
+   * A page token, received from the previous call.
+   * Provide this to retrieve the subsequent page.
+   *
+   * When paginating, all other parameters provided must match
+   * the call that provided the page token.
+   */
+  pageToken: string;
+  view: ChangelogView;
+  /**
+   * The filter of the changelogs.
+   * follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax.
+   * Support filter by type, source or table.
+   * For example:
+   * table = "tableExists('{database}', '{schema}', '{table}')"
+   * table = "tableExists('db', 'public', 'table1') || tableExists('db', 'public', 'table2')"
+   * type = "MIGRATE | DATA"
+   * source = "UI"
+   * source = "VCS"
+   *
+   * The table filter follow the CEL syntax.
+   * currently, we have one function for CEL:
+   * - tableExists(database, schema, table): return true if the table exists in changed resources.
+   *
+   * examples:
+   * Use
+   *   tableExists("db", "public", "table1")
+   * to filter the changelogs which have the table "table1" in the schema "public" of the database "db".
+   * For MySQL, the schema is always "", such as tableExists("db", "", "table1").
+   *
+   * Combine multiple functions with "&&" and "||", we MUST use the Disjunctive Normal Form(DNF).
+   * In other words, the CEL expression consists of several parts connected by OR operators.
+   * For example, the following expression is valid:
+   * (
+   *  tableExists("db", "public", "table1") &&
+   *  tableExists("db", "public", "table2")
+   * ) || (
+   *  tableExists("db", "public", "table3")
+   * )
+   */
+  filter: string;
+}
+
+export interface ListChangelogsResponse {
+  /** The list of changelogs. */
+  changelogs: Changelog[];
+  /**
+   * A token, which can be sent as `page_token` to retrieve the next page.
+   * If this field is omitted, there are no subsequent pages.
+   */
+  nextPageToken: string;
+}
+
+export interface GetChangelogRequest {
+  /**
+   * The name of the changelog to retrieve.
+   * Format: instances/{instance}/databases/{database}/changelogs/{changelog}
+   */
+  name: string;
+  view: ChangeHistoryView;
+  /** Format the schema dump into SDL format. */
+  sdlFormat: boolean;
+  /**
+   * When true, the schema dump will be concise.
+   * For Oracle, there will be tables and indexes only for Sync Schema.
+   * For Postgres, we'll filter the backup schema.
+   */
+  concise: boolean;
+}
+
+export interface Changelog {
+  /** Format: instances/{instance}/databases/{database}/changelogs/{changelog} */
+  name: string;
+  /** Format: users/hello@world.com */
+  creator: string;
+  createTime: Timestamp | undefined;
+  status: Changelog_Status;
+  /** The statement is used for preview purpose. */
+  statement: string;
+  statementSize: Long;
+  /**
+   * The name of the sheet resource.
+   * Format: projects/{project}/sheets/{sheet}
+   */
+  statementSheet: string;
+  schema: string;
+  schemaSize: Long;
+  prevSchema: string;
+  prevSchemaSize: Long;
+  /** Format: projects/{project}/issues/{issue} */
+  issue: string;
+  /**
+   * Could be empty
+   * TODO(p0ny): We will migrate ChangeHistory to Changelog, and they won't have task_run.
+   */
+  taskRun: string;
+  /** Could be empty */
+  version: string;
+  /**
+   * Could be empty
+   * Or present but not found if deleted
+   */
+  revision: string;
+  changedResources: ChangedResources | undefined;
+}
+
+export enum Changelog_Status {
+  STATUS_UNSPECIFIED = "STATUS_UNSPECIFIED",
+  PENDING = "PENDING",
+  DONE = "DONE",
+  FAILED = "FAILED",
+  UNRECOGNIZED = "UNRECOGNIZED",
+}
+
+export function changelog_StatusFromJSON(object: any): Changelog_Status {
+  switch (object) {
+    case 0:
+    case "STATUS_UNSPECIFIED":
+      return Changelog_Status.STATUS_UNSPECIFIED;
+    case 1:
+    case "PENDING":
+      return Changelog_Status.PENDING;
+    case 2:
+    case "DONE":
+      return Changelog_Status.DONE;
+    case 3:
+    case "FAILED":
+      return Changelog_Status.FAILED;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return Changelog_Status.UNRECOGNIZED;
+  }
+}
+
+export function changelog_StatusToJSON(object: Changelog_Status): string {
+  switch (object) {
+    case Changelog_Status.STATUS_UNSPECIFIED:
+      return "STATUS_UNSPECIFIED";
+    case Changelog_Status.PENDING:
+      return "PENDING";
+    case Changelog_Status.DONE:
+      return "DONE";
+    case Changelog_Status.FAILED:
+      return "FAILED";
+    case Changelog_Status.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+export function changelog_StatusToNumber(object: Changelog_Status): number {
+  switch (object) {
+    case Changelog_Status.STATUS_UNSPECIFIED:
+      return 0;
+    case Changelog_Status.PENDING:
+      return 1;
+    case Changelog_Status.DONE:
+      return 2;
+    case Changelog_Status.FAILED:
+      return 3;
+    case Changelog_Status.UNRECOGNIZED:
+    default:
+      return -1;
+  }
 }
 
 function createBaseGetDatabaseRequest(): GetDatabaseRequest {
@@ -10078,6 +10314,618 @@ export const Revision: MessageFns<Revision> = {
   },
 };
 
+function createBaseListChangelogsRequest(): ListChangelogsRequest {
+  return { parent: "", pageSize: 0, pageToken: "", view: ChangelogView.CHANGELOG_VIEW_UNSPECIFIED, filter: "" };
+}
+
+export const ListChangelogsRequest: MessageFns<ListChangelogsRequest> = {
+  encode(message: ListChangelogsRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.parent !== "") {
+      writer.uint32(10).string(message.parent);
+    }
+    if (message.pageSize !== 0) {
+      writer.uint32(16).int32(message.pageSize);
+    }
+    if (message.pageToken !== "") {
+      writer.uint32(26).string(message.pageToken);
+    }
+    if (message.view !== ChangelogView.CHANGELOG_VIEW_UNSPECIFIED) {
+      writer.uint32(32).int32(changelogViewToNumber(message.view));
+    }
+    if (message.filter !== "") {
+      writer.uint32(42).string(message.filter);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ListChangelogsRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseListChangelogsRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.parent = reader.string();
+          continue;
+        case 2:
+          if (tag !== 16) {
+            break;
+          }
+
+          message.pageSize = reader.int32();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.pageToken = reader.string();
+          continue;
+        case 4:
+          if (tag !== 32) {
+            break;
+          }
+
+          message.view = changelogViewFromJSON(reader.int32());
+          continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.filter = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ListChangelogsRequest {
+    return {
+      parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
+      pageSize: isSet(object.pageSize) ? globalThis.Number(object.pageSize) : 0,
+      pageToken: isSet(object.pageToken) ? globalThis.String(object.pageToken) : "",
+      view: isSet(object.view) ? changelogViewFromJSON(object.view) : ChangelogView.CHANGELOG_VIEW_UNSPECIFIED,
+      filter: isSet(object.filter) ? globalThis.String(object.filter) : "",
+    };
+  },
+
+  toJSON(message: ListChangelogsRequest): unknown {
+    const obj: any = {};
+    if (message.parent !== "") {
+      obj.parent = message.parent;
+    }
+    if (message.pageSize !== 0) {
+      obj.pageSize = Math.round(message.pageSize);
+    }
+    if (message.pageToken !== "") {
+      obj.pageToken = message.pageToken;
+    }
+    if (message.view !== ChangelogView.CHANGELOG_VIEW_UNSPECIFIED) {
+      obj.view = changelogViewToJSON(message.view);
+    }
+    if (message.filter !== "") {
+      obj.filter = message.filter;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ListChangelogsRequest>): ListChangelogsRequest {
+    return ListChangelogsRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ListChangelogsRequest>): ListChangelogsRequest {
+    const message = createBaseListChangelogsRequest();
+    message.parent = object.parent ?? "";
+    message.pageSize = object.pageSize ?? 0;
+    message.pageToken = object.pageToken ?? "";
+    message.view = object.view ?? ChangelogView.CHANGELOG_VIEW_UNSPECIFIED;
+    message.filter = object.filter ?? "";
+    return message;
+  },
+};
+
+function createBaseListChangelogsResponse(): ListChangelogsResponse {
+  return { changelogs: [], nextPageToken: "" };
+}
+
+export const ListChangelogsResponse: MessageFns<ListChangelogsResponse> = {
+  encode(message: ListChangelogsResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    for (const v of message.changelogs) {
+      Changelog.encode(v!, writer.uint32(10).fork()).join();
+    }
+    if (message.nextPageToken !== "") {
+      writer.uint32(18).string(message.nextPageToken);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ListChangelogsResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseListChangelogsResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.changelogs.push(Changelog.decode(reader, reader.uint32()));
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.nextPageToken = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ListChangelogsResponse {
+    return {
+      changelogs: globalThis.Array.isArray(object?.changelogs)
+        ? object.changelogs.map((e: any) => Changelog.fromJSON(e))
+        : [],
+      nextPageToken: isSet(object.nextPageToken) ? globalThis.String(object.nextPageToken) : "",
+    };
+  },
+
+  toJSON(message: ListChangelogsResponse): unknown {
+    const obj: any = {};
+    if (message.changelogs?.length) {
+      obj.changelogs = message.changelogs.map((e) => Changelog.toJSON(e));
+    }
+    if (message.nextPageToken !== "") {
+      obj.nextPageToken = message.nextPageToken;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ListChangelogsResponse>): ListChangelogsResponse {
+    return ListChangelogsResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ListChangelogsResponse>): ListChangelogsResponse {
+    const message = createBaseListChangelogsResponse();
+    message.changelogs = object.changelogs?.map((e) => Changelog.fromPartial(e)) || [];
+    message.nextPageToken = object.nextPageToken ?? "";
+    return message;
+  },
+};
+
+function createBaseGetChangelogRequest(): GetChangelogRequest {
+  return { name: "", view: ChangeHistoryView.CHANGE_HISTORY_VIEW_UNSPECIFIED, sdlFormat: false, concise: false };
+}
+
+export const GetChangelogRequest: MessageFns<GetChangelogRequest> = {
+  encode(message: GetChangelogRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    if (message.view !== ChangeHistoryView.CHANGE_HISTORY_VIEW_UNSPECIFIED) {
+      writer.uint32(16).int32(changeHistoryViewToNumber(message.view));
+    }
+    if (message.sdlFormat !== false) {
+      writer.uint32(24).bool(message.sdlFormat);
+    }
+    if (message.concise !== false) {
+      writer.uint32(32).bool(message.concise);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GetChangelogRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetChangelogRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        case 2:
+          if (tag !== 16) {
+            break;
+          }
+
+          message.view = changeHistoryViewFromJSON(reader.int32());
+          continue;
+        case 3:
+          if (tag !== 24) {
+            break;
+          }
+
+          message.sdlFormat = reader.bool();
+          continue;
+        case 4:
+          if (tag !== 32) {
+            break;
+          }
+
+          message.concise = reader.bool();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetChangelogRequest {
+    return {
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      view: isSet(object.view)
+        ? changeHistoryViewFromJSON(object.view)
+        : ChangeHistoryView.CHANGE_HISTORY_VIEW_UNSPECIFIED,
+      sdlFormat: isSet(object.sdlFormat) ? globalThis.Boolean(object.sdlFormat) : false,
+      concise: isSet(object.concise) ? globalThis.Boolean(object.concise) : false,
+    };
+  },
+
+  toJSON(message: GetChangelogRequest): unknown {
+    const obj: any = {};
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.view !== ChangeHistoryView.CHANGE_HISTORY_VIEW_UNSPECIFIED) {
+      obj.view = changeHistoryViewToJSON(message.view);
+    }
+    if (message.sdlFormat !== false) {
+      obj.sdlFormat = message.sdlFormat;
+    }
+    if (message.concise !== false) {
+      obj.concise = message.concise;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<GetChangelogRequest>): GetChangelogRequest {
+    return GetChangelogRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<GetChangelogRequest>): GetChangelogRequest {
+    const message = createBaseGetChangelogRequest();
+    message.name = object.name ?? "";
+    message.view = object.view ?? ChangeHistoryView.CHANGE_HISTORY_VIEW_UNSPECIFIED;
+    message.sdlFormat = object.sdlFormat ?? false;
+    message.concise = object.concise ?? false;
+    return message;
+  },
+};
+
+function createBaseChangelog(): Changelog {
+  return {
+    name: "",
+    creator: "",
+    createTime: undefined,
+    status: Changelog_Status.STATUS_UNSPECIFIED,
+    statement: "",
+    statementSize: Long.ZERO,
+    statementSheet: "",
+    schema: "",
+    schemaSize: Long.ZERO,
+    prevSchema: "",
+    prevSchemaSize: Long.ZERO,
+    issue: "",
+    taskRun: "",
+    version: "",
+    revision: "",
+    changedResources: undefined,
+  };
+}
+
+export const Changelog: MessageFns<Changelog> = {
+  encode(message: Changelog, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    if (message.creator !== "") {
+      writer.uint32(18).string(message.creator);
+    }
+    if (message.createTime !== undefined) {
+      Timestamp.encode(message.createTime, writer.uint32(26).fork()).join();
+    }
+    if (message.status !== Changelog_Status.STATUS_UNSPECIFIED) {
+      writer.uint32(32).int32(changelog_StatusToNumber(message.status));
+    }
+    if (message.statement !== "") {
+      writer.uint32(42).string(message.statement);
+    }
+    if (!message.statementSize.equals(Long.ZERO)) {
+      writer.uint32(48).int64(message.statementSize.toString());
+    }
+    if (message.statementSheet !== "") {
+      writer.uint32(58).string(message.statementSheet);
+    }
+    if (message.schema !== "") {
+      writer.uint32(66).string(message.schema);
+    }
+    if (!message.schemaSize.equals(Long.ZERO)) {
+      writer.uint32(72).int64(message.schemaSize.toString());
+    }
+    if (message.prevSchema !== "") {
+      writer.uint32(82).string(message.prevSchema);
+    }
+    if (!message.prevSchemaSize.equals(Long.ZERO)) {
+      writer.uint32(88).int64(message.prevSchemaSize.toString());
+    }
+    if (message.issue !== "") {
+      writer.uint32(98).string(message.issue);
+    }
+    if (message.taskRun !== "") {
+      writer.uint32(106).string(message.taskRun);
+    }
+    if (message.version !== "") {
+      writer.uint32(114).string(message.version);
+    }
+    if (message.revision !== "") {
+      writer.uint32(122).string(message.revision);
+    }
+    if (message.changedResources !== undefined) {
+      ChangedResources.encode(message.changedResources, writer.uint32(130).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): Changelog {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseChangelog();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.creator = reader.string();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.createTime = Timestamp.decode(reader, reader.uint32());
+          continue;
+        case 4:
+          if (tag !== 32) {
+            break;
+          }
+
+          message.status = changelog_StatusFromJSON(reader.int32());
+          continue;
+        case 5:
+          if (tag !== 42) {
+            break;
+          }
+
+          message.statement = reader.string();
+          continue;
+        case 6:
+          if (tag !== 48) {
+            break;
+          }
+
+          message.statementSize = Long.fromString(reader.int64().toString());
+          continue;
+        case 7:
+          if (tag !== 58) {
+            break;
+          }
+
+          message.statementSheet = reader.string();
+          continue;
+        case 8:
+          if (tag !== 66) {
+            break;
+          }
+
+          message.schema = reader.string();
+          continue;
+        case 9:
+          if (tag !== 72) {
+            break;
+          }
+
+          message.schemaSize = Long.fromString(reader.int64().toString());
+          continue;
+        case 10:
+          if (tag !== 82) {
+            break;
+          }
+
+          message.prevSchema = reader.string();
+          continue;
+        case 11:
+          if (tag !== 88) {
+            break;
+          }
+
+          message.prevSchemaSize = Long.fromString(reader.int64().toString());
+          continue;
+        case 12:
+          if (tag !== 98) {
+            break;
+          }
+
+          message.issue = reader.string();
+          continue;
+        case 13:
+          if (tag !== 106) {
+            break;
+          }
+
+          message.taskRun = reader.string();
+          continue;
+        case 14:
+          if (tag !== 114) {
+            break;
+          }
+
+          message.version = reader.string();
+          continue;
+        case 15:
+          if (tag !== 122) {
+            break;
+          }
+
+          message.revision = reader.string();
+          continue;
+        case 16:
+          if (tag !== 130) {
+            break;
+          }
+
+          message.changedResources = ChangedResources.decode(reader, reader.uint32());
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): Changelog {
+    return {
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      creator: isSet(object.creator) ? globalThis.String(object.creator) : "",
+      createTime: isSet(object.createTime) ? fromJsonTimestamp(object.createTime) : undefined,
+      status: isSet(object.status) ? changelog_StatusFromJSON(object.status) : Changelog_Status.STATUS_UNSPECIFIED,
+      statement: isSet(object.statement) ? globalThis.String(object.statement) : "",
+      statementSize: isSet(object.statementSize) ? Long.fromValue(object.statementSize) : Long.ZERO,
+      statementSheet: isSet(object.statementSheet) ? globalThis.String(object.statementSheet) : "",
+      schema: isSet(object.schema) ? globalThis.String(object.schema) : "",
+      schemaSize: isSet(object.schemaSize) ? Long.fromValue(object.schemaSize) : Long.ZERO,
+      prevSchema: isSet(object.prevSchema) ? globalThis.String(object.prevSchema) : "",
+      prevSchemaSize: isSet(object.prevSchemaSize) ? Long.fromValue(object.prevSchemaSize) : Long.ZERO,
+      issue: isSet(object.issue) ? globalThis.String(object.issue) : "",
+      taskRun: isSet(object.taskRun) ? globalThis.String(object.taskRun) : "",
+      version: isSet(object.version) ? globalThis.String(object.version) : "",
+      revision: isSet(object.revision) ? globalThis.String(object.revision) : "",
+      changedResources: isSet(object.changedResources) ? ChangedResources.fromJSON(object.changedResources) : undefined,
+    };
+  },
+
+  toJSON(message: Changelog): unknown {
+    const obj: any = {};
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.creator !== "") {
+      obj.creator = message.creator;
+    }
+    if (message.createTime !== undefined) {
+      obj.createTime = fromTimestamp(message.createTime).toISOString();
+    }
+    if (message.status !== Changelog_Status.STATUS_UNSPECIFIED) {
+      obj.status = changelog_StatusToJSON(message.status);
+    }
+    if (message.statement !== "") {
+      obj.statement = message.statement;
+    }
+    if (!message.statementSize.equals(Long.ZERO)) {
+      obj.statementSize = (message.statementSize || Long.ZERO).toString();
+    }
+    if (message.statementSheet !== "") {
+      obj.statementSheet = message.statementSheet;
+    }
+    if (message.schema !== "") {
+      obj.schema = message.schema;
+    }
+    if (!message.schemaSize.equals(Long.ZERO)) {
+      obj.schemaSize = (message.schemaSize || Long.ZERO).toString();
+    }
+    if (message.prevSchema !== "") {
+      obj.prevSchema = message.prevSchema;
+    }
+    if (!message.prevSchemaSize.equals(Long.ZERO)) {
+      obj.prevSchemaSize = (message.prevSchemaSize || Long.ZERO).toString();
+    }
+    if (message.issue !== "") {
+      obj.issue = message.issue;
+    }
+    if (message.taskRun !== "") {
+      obj.taskRun = message.taskRun;
+    }
+    if (message.version !== "") {
+      obj.version = message.version;
+    }
+    if (message.revision !== "") {
+      obj.revision = message.revision;
+    }
+    if (message.changedResources !== undefined) {
+      obj.changedResources = ChangedResources.toJSON(message.changedResources);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<Changelog>): Changelog {
+    return Changelog.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<Changelog>): Changelog {
+    const message = createBaseChangelog();
+    message.name = object.name ?? "";
+    message.creator = object.creator ?? "";
+    message.createTime = (object.createTime !== undefined && object.createTime !== null)
+      ? Timestamp.fromPartial(object.createTime)
+      : undefined;
+    message.status = object.status ?? Changelog_Status.STATUS_UNSPECIFIED;
+    message.statement = object.statement ?? "";
+    message.statementSize = (object.statementSize !== undefined && object.statementSize !== null)
+      ? Long.fromValue(object.statementSize)
+      : Long.ZERO;
+    message.statementSheet = object.statementSheet ?? "";
+    message.schema = object.schema ?? "";
+    message.schemaSize = (object.schemaSize !== undefined && object.schemaSize !== null)
+      ? Long.fromValue(object.schemaSize)
+      : Long.ZERO;
+    message.prevSchema = object.prevSchema ?? "";
+    message.prevSchemaSize = (object.prevSchemaSize !== undefined && object.prevSchemaSize !== null)
+      ? Long.fromValue(object.prevSchemaSize)
+      : Long.ZERO;
+    message.issue = object.issue ?? "";
+    message.taskRun = object.taskRun ?? "";
+    message.version = object.version ?? "";
+    message.revision = object.revision ?? "";
+    message.changedResources = (object.changedResources !== undefined && object.changedResources !== null)
+      ? ChangedResources.fromPartial(object.changedResources)
+      : undefined;
+    return message;
+  },
+};
+
 export type DatabaseServiceDefinition = typeof DatabaseServiceDefinition;
 export const DatabaseServiceDefinition = {
   name: "DatabaseService",
@@ -11794,6 +12642,138 @@ export const DatabaseServiceDefinition = {
               105,
               111,
               110,
+              115,
+              47,
+              42,
+              125,
+            ]),
+          ],
+        },
+      },
+    },
+    listChangelogs: {
+      name: "ListChangelogs",
+      requestType: ListChangelogsRequest,
+      requestStream: false,
+      responseType: ListChangelogsResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          8410: [new Uint8Array([6, 112, 97, 114, 101, 110, 116])],
+          578365826: [
+            new Uint8Array([
+              49,
+              18,
+              47,
+              47,
+              118,
+              49,
+              47,
+              123,
+              112,
+              97,
+              114,
+              101,
+              110,
+              116,
+              61,
+              105,
+              110,
+              115,
+              116,
+              97,
+              110,
+              99,
+              101,
+              115,
+              47,
+              42,
+              47,
+              100,
+              97,
+              116,
+              97,
+              98,
+              97,
+              115,
+              101,
+              115,
+              47,
+              42,
+              125,
+              47,
+              99,
+              104,
+              97,
+              110,
+              103,
+              101,
+              108,
+              111,
+              103,
+              115,
+            ]),
+          ],
+        },
+      },
+    },
+    getChangelog: {
+      name: "GetChangelog",
+      requestType: GetChangelogRequest,
+      requestStream: false,
+      responseType: Changelog,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          8410: [new Uint8Array([4, 110, 97, 109, 101])],
+          578365826: [
+            new Uint8Array([
+              49,
+              18,
+              47,
+              47,
+              118,
+              49,
+              47,
+              123,
+              110,
+              97,
+              109,
+              101,
+              61,
+              105,
+              110,
+              115,
+              116,
+              97,
+              110,
+              99,
+              101,
+              115,
+              47,
+              42,
+              47,
+              100,
+              97,
+              116,
+              97,
+              98,
+              97,
+              115,
+              101,
+              115,
+              47,
+              42,
+              47,
+              99,
+              104,
+              97,
+              110,
+              103,
+              101,
+              108,
+              111,
+              103,
               115,
               47,
               42,
