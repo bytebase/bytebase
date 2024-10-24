@@ -2159,8 +2159,8 @@
           "description": "Se omitirán los errores de copia de seguridad y las tareas de cambio de datos continuarán ejecutándose."
         },
         "postgres-database-tenant-mode": {
-          "description": "El modo de inquilino para la base de datos Postgres. Si está habilitado, el usuario de la base de datos ejecutará el problema.",
-          "self": "Modo inquilino de base de datos Postgres"
+          "self": "Modo inquilino de base de datos Postgres",
+          "description": "El modo de inquilino para la base de datos Postgres. Si está habilitado, el usuario de la base de datos ejecutará el problema."
         }
       }
     },
@@ -2212,7 +2212,8 @@
     },
     "masking-access": {
       "self": "Enmascaramiento de acceso",
-      "grant-access": "Conceder acceso"
+      "grant-access": "Conceder acceso",
+      "revoke-access-title": "¿Eliminar el acceso de exportación y consulta para {member}?"
     }
   },
   "gitops": {

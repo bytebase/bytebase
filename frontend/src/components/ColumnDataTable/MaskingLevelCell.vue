@@ -56,7 +56,6 @@
 
   <SensitiveColumnDrawer
     v-if="state.showSensitiveDataDrawer"
-    :show="true"
     :column="{
       maskData: columnMasking,
       database: props.database,

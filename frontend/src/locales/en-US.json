@@ -2212,7 +2212,8 @@
     },
     "masking-access": {
       "self": "Access Masking",
-      "grant-access": "Grant Access"
+      "grant-access": "Grant Access",
+      "revoke-access-title": "Remove both export and query access for {member}?"
     }
   },
   "gitops": {

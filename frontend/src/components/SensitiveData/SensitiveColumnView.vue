@@ -109,8 +109,8 @@
   />
 
   <SensitiveColumnDrawer
-    v-if="filteredColumnList.length > 0"
-    :show="
+    v-if="
+      filteredColumnList.length > 0 &&
       state.showSensitiveColumnDrawer &&
       state.pendingGrantAccessColumn.length === 1
     "
