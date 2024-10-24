@@ -104,6 +104,6 @@ export default defineConfig({
   },
   envPrefix: "BB_",
   define: {
-    global: "({})",
+    _global: {},
   },
 });
