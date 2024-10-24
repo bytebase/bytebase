@@ -27,7 +27,7 @@
       {{ $t("release.no-tasks-to-apply.self") }}
     </p>
   </div>
-  <div v-if="previewPlanResult.outOfOrderFiles.length > 0">
+  <div v-if="previewPlanResult.outOfOrderFiles.length > 0 && !allowOutOfOrder">
     <p>
       {{ $t("release.out-of-order-files") }}
     </p>
@@ -74,7 +74,7 @@
           <th class="w-64">
             {{ $t("common.database") }}
           </th>
-          <th>Files</th>
+          <th>{{ $t("release.files") }}</th>
         </tr>
       </thead>
       <tbody>
@@ -117,6 +117,7 @@ import type {
 
 const props = defineProps<{
   previewPlanResult: PreviewPlanResponse;
+  allowOutOfOrder?: boolean;
 }>();
 
 const databaseStore = useDatabaseV1Store();
