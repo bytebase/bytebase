@@ -59,7 +59,7 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx advisor.Context, _ string) ([
 				Content: "Prior backup cannot deal with mixed DDL and DML statements",
 				Code:    advisor.BuiltinPriorBackupCheck.Int32(),
 				StartPosition: &storepb.Position{
-					Line: int32(stmt.BaseLine),
+					Line: int32(stmt.BaseLine) + 1,
 				},
 			})
 		}
@@ -72,7 +72,7 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx advisor.Context, _ string) ([
 			Content: fmt.Sprintf("Need database %q to do prior backup but it does not exist", ctx.PreUpdateBackupDetail.Database),
 			Code:    advisor.DatabaseNotExists.Int32(),
 			StartPosition: &storepb.Position{
-				Line: 0,
+				Line: 1,
 			},
 		})
 	}
@@ -90,7 +90,7 @@ func (*StatementPriorBackupCheckAdvisor) Check(ctx advisor.Context, _ string) ([
 			Content: fmt.Sprintf("Prior backup is feasible only with up to %d statements that are either UPDATE or DELETE, or if all UPDATEs target the same table with a PRIMARY or UNIQUE KEY in the WHERE clause", maxMixedDMLCount),
 			Code:    advisor.BuiltinPriorBackupCheck.Int32(),
 			StartPosition: &storepb.Position{
-				Line: 0,
+				Line: 1,
 			},
 		})
 	}

@@ -52,7 +52,7 @@ func (*StatementDisallowMixInDDLAdvisor) Check(ctx advisor.Context, _ string) ([
 				Content: fmt.Sprintf("Alter schema can only run DDL, \"%s\" is not DDL", checker.Text),
 				Code:    advisor.StatementDisallowMixDDLDML.Int32(),
 				StartPosition: &storepb.Position{
-					Line: int32(stmt.BaseLine),
+					Line: int32(stmt.BaseLine) + 1,
 				},
 			})
 		}
