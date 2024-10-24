@@ -191,7 +191,6 @@ import {
   PolicyResourceType,
 } from "@/types/proto/v1/org_policy_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
-import { convertFromCELString } from "@/utils/issue/cel";
 import GrantAccessDrawer from "./GrantAccessDrawer.vue";
 import MaskingExceptionUserTable from "./MaskingExceptionUserTable.vue";
 import MaskingLevelRadioGroup from "./components/MaskingLevelRadioGroup.vue";
