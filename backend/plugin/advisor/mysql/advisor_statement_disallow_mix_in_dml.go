@@ -52,7 +52,7 @@ func (*StatementDisallowMixInDMLAdvisor) Check(ctx advisor.Context, _ string) ([
 				Content: fmt.Sprintf("Data change can only run DML, \"%s\" is not DML", checker.Text),
 				Code:    advisor.StatementDisallowMixDDLDML.Int32(),
 				StartPosition: &storepb.Position{
-					Line: int32(stmt.BaseLine),
+					Line: int32(stmt.BaseLine) + 1,
 				},
 			})
 		}
