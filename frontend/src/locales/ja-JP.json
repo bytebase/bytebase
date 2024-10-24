@@ -2159,8 +2159,8 @@
           "description": "バックアップ エラーをスキップすると、データの変更タスクは引き続き実行されます。"
         },
         "postgres-database-tenant-mode": {
-          "description": "Postgres データベースのテナント モード。有効にすると、問題はデータベース ユーザーによって実行されます。",
-          "self": "Postgres データベーステナントモード"
+          "self": "Postgres データベーステナントモード",
+          "description": "Postgres データベースのテナント モード。有効にすると、問題はデータベース ユーザーによって実行されます。"
         }
       }
     },
@@ -2212,7 +2212,8 @@
     },
     "masking-access": {
       "self": "アクセスマスキング",
-      "grant-access": "アクセスを許可する"
+      "grant-access": "アクセスを許可する",
+      "revoke-access-title": "{member} のエクスポート アクセスとクエリ アクセスの両方を削除しますか?"
     }
   },
   "gitops": {

@@ -1,5 +1,5 @@
 <template>
-  <Drawer :show="show" @close="$emit('dismiss')">
+  <Drawer :show="true" @close="$emit('dismiss')">
     <DrawerContent
       :title="
         $t('settings.sensitive-data.column-detail.masking-setting-for-column', {
@@ -126,11 +126,12 @@
           </div>
           <MaskingExceptionUserTable
             size="small"
-            :access-list="accessUserList"
+            :project="column.database.project"
             :disabled="state.processing"
             :show-database-column="false"
-            @remove:access="onRemove"
-            @update:access="onAccessControlUpdate"
+            :filter-exception="
+              (exception) => isCurrentColumnException(exception, column)
+            "
           />
         </div>
       </div>
@@ -157,35 +158,20 @@
 
 <script lang="tsx" setup>
 import { computedAsync } from "@vueuse/core";
-import { orderBy } from "lodash-es";
 import type { SelectOption } from "naive-ui";
 import { NSelect, NButton } from "naive-ui";
-import { computed, reactive, watch, ref } from "vue";
+import { computed, reactive, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { useSemanticType } from "@/components/SensitiveData/useSemanticType";
 import { Drawer, DrawerContent } from "@/components/v2";
 import {
   useSettingV1Store,
   usePolicyV1Store,
-  usePolicyByParentAndType,
-  useUserStore,
-  useGroupStore,
   pushNotification,
   useDBSchemaV1Store,
-  extractGroupEmail,
 } from "@/store";
-import {
-  getUserEmailInBinding,
-  getGroupEmailInBinding,
-  groupBindingPrefix,
-} from "@/types";
-import { Expr } from "@/types/proto/google/type/expr";
-import { MaskingLevel, maskingLevelToJSON } from "@/types/proto/v1/common";
-import type {
-  Policy,
-  MaskData,
-  MaskingExceptionPolicy_MaskingException,
-} from "@/types/proto/v1/org_policy_service";
+import { MaskingLevel } from "@/types/proto/v1/common";
+import type { Policy, MaskData } from "@/types/proto/v1/org_policy_service";
 import {
   PolicyType,
   PolicyResourceType,
@@ -194,11 +180,10 @@ import { hasWorkspacePermissionV2 } from "@/utils";
 import GrantAccessDrawer from "./GrantAccessDrawer.vue";
 import MaskingExceptionUserTable from "./MaskingExceptionUserTable.vue";
 import MaskingLevelRadioGroup from "./components/MaskingLevelRadioGroup.vue";
-import type { SensitiveColumn, AccessUser } from "./types";
+import type { SensitiveColumn } from "./types";
 import { getMaskDataIdentifier, isCurrentColumnException } from "./utils";
 
 interface LocalState {
-  dirty: boolean;
   processing: boolean;
   maskingLevel: MaskingLevel;
   showGrantAccessDrawer: boolean;
@@ -207,14 +192,12 @@ interface LocalState {
 }
 
 const props = defineProps<{
-  show: boolean;
   column: SensitiveColumn;
 }>();
 
 defineEmits(["dismiss"]);
 
 const state = reactive<LocalState>({
-  dirty: false,
   processing: false,
   maskingLevel: props.column.maskData.maskingLevel,
   fullMaskingAlgorithmId: props.column.maskData.fullMaskingAlgorithmId,
@@ -230,9 +213,6 @@ const MASKING_LEVELS = [
 ];
 
 const { t } = useI18n();
-const userStore = useUserStore();
-const groupStore = useGroupStore();
-const accessUserList = ref<AccessUser[]>([]);
 const policyStore = usePolicyV1Store();
 const dbSchemaStore = useDBSchemaV1Store();
 const settingStore = useSettingV1Store();
@@ -250,157 +230,16 @@ const columnDefaultMaskingAlgorithm = computed(() => {
   return t("settings.sensitive-data.algorithms.default");
 });
 
-const policy = usePolicyByParentAndType(
-  computed(() => ({
-    parentPath: props.column.database.project,
-    policyType: PolicyType.MASKING_EXCEPTION,
-  }))
-);
-
 const hasPermission = computed(() => {
   return hasWorkspacePermissionV2("bb.policies.update");
 });
 
-const expirationTimeRegex = /request.time < timestamp\("(.+)?"\)/;
-
-const getAccessUsers = (
-  exception: MaskingExceptionPolicy_MaskingException
-): AccessUser | undefined => {
-  let expirationTimestamp: number | undefined;
-  const expression = exception.condition?.expression ?? "";
-  const matches = expirationTimeRegex.exec(expression);
-  if (matches) {
-    expirationTimestamp = new Date(matches[1]).getTime();
-  }
-
-  const access: AccessUser = {
-    type: "user",
-    key: exception.member,
-    maskingLevel: exception.maskingLevel,
-    expirationTimestamp,
-    supportActions: new Set([exception.action]),
-    rawExpression: expression,
-  };
-
-  if (exception.member.startsWith(groupBindingPrefix)) {
-    access.type = "group";
-    access.group = groupStore.getGroupByIdentifier(exception.member);
-  } else {
-    access.type = "user";
-    access.user = userStore.getUserByIdentifier(exception.member);
-  }
-
-  if (!access.group && !access.user) {
-    return;
-  }
-
-  return access;
-};
-
-const getMemberBinding = (access: AccessUser): string => {
-  if (access.type === "user") {
-    return getUserEmailInBinding(access.user!.email);
-  }
-  const email = extractGroupEmail(access.group!.name);
-  return getGroupEmailInBinding(email);
-};
-
-const getExceptionIdentifier = (
-  exception: MaskingExceptionPolicy_MaskingException
-): string => {
-  const expression = exception.condition?.expression ?? "";
-  const res: string[] = [
-    `level:"${maskingLevelToJSON(exception.maskingLevel)}"`,
-    expression,
-  ];
-  return res.join(" && ");
-};
-
-const updateAccessUserList = (policy: Policy | undefined) => {
-  if (!policy || !policy.maskingExceptionPolicy) {
-    return [];
-  }
-
-  // Exec data merge, we will merge data with same expiration time and level.
-  // For example, the exception list and merge exec should be:
-  // - 1. user1, action:export, level:FULL, expires at 2023-09-03
-  // - 2. user1, action:export, level:FULL, expires at 2023-09-04
-  // - 3. user1, action:export, level:PARTIAL, expires at 2023-09-04
-  // - 4. user1, action:query, level:PARTIAL, expires at 2023-09-04
-  // - 5. user1, action:query, level:FULL, expires at 2023-09-03
-  // After the merge we should get:
-  // - 1 & 5 is merged: user1, action:export+action, level:FULL, expires at 2023-09-03
-  // - 2 cannot merge: user1, action:export, level:FULL, expires at 2023-09-04
-  // - 3 & 4 is merged: user1, action:export+action, level:PARTIAL, expires at 2023-09-04
-  const memberMap = new Map<string, AccessUser>();
-  for (const exception of policy.maskingExceptionPolicy.maskingExceptions) {
-    if (!isCurrentColumnException(exception, props.column)) {
-      continue;
-    }
-    const identifier = getExceptionIdentifier(exception);
-    const item = getAccessUsers(exception);
-    if (!item) {
-      continue;
-    }
-    const id = `${getMemberBinding(item)}:${identifier}`;
-    item.key = id;
-    const target = memberMap.get(id) ?? item;
-    if (memberMap.has(id)) {
-      for (const action of item.supportActions) {
-        target.supportActions.add(action);
-      }
-    }
-    memberMap.set(id, target);
-  }
-
-  accessUserList.value = orderBy(
-    [...memberMap.values()],
-    [
-      (access) => (access.type === "user" ? 1 : 0),
-      (access) => {
-        if (access.group) {
-          return access.group.name;
-        } else if (access.user) {
-          return access.user.name;
-        }
-        return "";
-      },
-    ],
-    ["desc", "desc"]
-  );
-};
-
-watch(
-  () => [props.show, policy.value],
-  () => {
-    if (props.show) {
-      state.maskingLevel = props.column.maskData.maskingLevel;
-      state.fullMaskingAlgorithmId =
-        props.column.maskData.fullMaskingAlgorithmId;
-      state.partialMaskingAlgorithmId =
-        props.column.maskData.partialMaskingAlgorithmId;
-    }
-    if (props.show && policy.value) {
-      updateAccessUserList(policy.value);
-    }
-  },
-  {
-    immediate: true,
-    deep: true,
-  }
-);
-
-const onRemove = async (index: number) => {
-  accessUserList.value.splice(index, 1);
-  state.dirty = true;
-  await onSubmit();
-};
-
-const onAccessControlUpdate = async (index: number, access: AccessUser) => {
-  accessUserList.value[index] = access;
-  state.dirty = true;
-  await onSubmit();
-};
+onMounted(() => {
+  state.maskingLevel = props.column.maskData.maskingLevel;
+  state.fullMaskingAlgorithmId = props.column.maskData.fullMaskingAlgorithmId;
+  state.partialMaskingAlgorithmId =
+    props.column.maskData.partialMaskingAlgorithmId;
+});
 
 const onMaskingLevelUpdate = async (level: MaskingLevel) => {
   state.maskingLevel = level;
@@ -424,24 +263,6 @@ const onColumnMaskingUpdate = async () => {
 
   try {
     await upsertMaskingPolicy();
-    pushNotification({
-      module: "bytebase",
-      style: "SUCCESS",
-      title: t("common.updated"),
-    });
-  } finally {
-    state.processing = false;
-  }
-};
-
-const onSubmit = async () => {
-  state.processing = true;
-
-  try {
-    if (state.dirty) {
-      await updateExceptionPolicy();
-      state.dirty = false;
-    }
     pushNotification({
       module: "bytebase",
       style: "SUCCESS",
@@ -489,58 +310,6 @@ const upsertMaskingPolicy = async () => {
     policy: upsert,
     updateMask: ["payload"],
   });
-};
-
-const updateExceptionPolicy = async () => {
-  const policy = await policyStore.getOrFetchPolicyByParentAndType({
-    parentPath: props.column.database.project,
-    policyType: PolicyType.MASKING_EXCEPTION,
-  });
-  if (!policy) {
-    return;
-  }
-
-  const exceptions = (
-    policy.maskingExceptionPolicy?.maskingExceptions ?? []
-  ).filter((exception) => !isCurrentColumnException(exception, props.column));
-
-  for (const accessUser of accessUserList.value) {
-    const expressions = accessUser.rawExpression.split(" && ");
-    const index = expressions.findIndex((exp) =>
-      exp.startsWith("request.time")
-    );
-    if (index >= 0) {
-      if (!accessUser.expirationTimestamp) {
-        expressions.splice(index, 1);
-      } else {
-        expressions[index] = `request.time < timestamp("${new Date(
-          accessUser.expirationTimestamp
-        ).toISOString()}")`;
-      }
-    } else if (accessUser.expirationTimestamp) {
-      expressions.push(
-        `request.time < timestamp("${new Date(
-          accessUser.expirationTimestamp
-        ).toISOString()}")`
-      );
-    }
-    for (const action of accessUser.supportActions) {
-      exceptions.push({
-        maskingLevel: accessUser.maskingLevel,
-        action,
-        member: getMemberBinding(accessUser),
-        condition: Expr.fromPartial({
-          expression: expressions.join(" && "),
-        }),
-      });
-    }
-  }
-
-  policy.maskingExceptionPolicy = {
-    ...(policy.maskingExceptionPolicy ?? {}),
-    maskingExceptions: exceptions,
-  };
-  await policyStore.updatePolicy(["payload"], policy);
 };
 
 const columnMetadata = computedAsync(async () => {

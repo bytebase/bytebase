@@ -78,6 +78,15 @@
       "
       @close="state.quickActionType = undefined"
     />
+    <GrantAccessDrawer
+      v-if="
+        project &&
+        state.quickActionType === 'quickaction.bb.database.masking-access'
+      "
+      :column-list="[]"
+      :project-name="project.name"
+      @close="state.quickActionType = undefined"
+    />
   </template>
 
   <FeatureModal
@@ -112,6 +121,7 @@ import {
   Buttons as InstanceFormButtons,
 } from "@/components/InstanceForm/";
 import ProjectCreatePanel from "@/components/Project/ProjectCreatePanel.vue";
+import GrantAccessDrawer from "@/components/SensitiveData/GrantAccessDrawer.vue";
 import { TransferDatabaseForm } from "@/components/TransferDatabaseForm";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL } from "@/router/dashboard/projectV1";

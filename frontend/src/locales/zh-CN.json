@@ -2159,8 +2159,8 @@
           "description": "当备份失败时，跳过错误并且变更数据任务将继续执行。"
         },
         "postgres-database-tenant-mode": {
-          "description": "Postgres 数据库租户模式。如果启用，工单将以数据库所有者角色执行。",
-          "self": "Postgres 数据库租户模式"
+          "self": "Postgres 数据库租户模式",
+          "description": "Postgres 数据库租户模式。如果启用，工单将以数据库所有者角色执行。"
         }
       }
     },
@@ -2212,7 +2212,8 @@
     },
     "masking-access": {
       "self": "数据访问",
-      "grant-access": "授予访问权限"
+      "grant-access": "授予访问权限",
+      "revoke-access-title": "是否删除 {member} 的导出和查询访问权限？"
     }
   },
   "gitops": {
