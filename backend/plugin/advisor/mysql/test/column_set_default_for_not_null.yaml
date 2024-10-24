@@ -123,6 +123,6 @@
       c9 json not null,
       c10 serial not null,
       c11 long varbinary not null,
-      c12 long varchar not null 
+      c12 long varchar not null
     );
   changeType: 0
