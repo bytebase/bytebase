@@ -203,12 +203,8 @@ export const candidatesOfApprovalStepV1 = (
       }
       return [];
     })
-    // do not show the creator in the candidate list unless the creator is a workspace admin or DBA.
-    .filter(
-      (user) =>
-        user.email !== extractUserEmail(issue.creator) ||
-        isUserWorkspaceAdminOrDBA(user.email)
-    );
+    // do not show the creator in the candidate list.
+    .filter((user) => user.email !== extractUserEmail(issue.creator));
 
   return uniq(candidates.map((user) => user.name));
 };
@@ -220,12 +216,4 @@ export const refreshIssueList = () => {
 };
 export const useRefreshIssueList = (callback: WatchCallback) => {
   watch(REFRESH_ISSUE_LIST, callback);
-};
-
-const isUserWorkspaceAdminOrDBA = (email: string) => {
-  const roles = useWorkspaceV1Store().emailMapToRoles.get(email);
-  return (
-    roles?.has(PresetRoleType.WORKSPACE_ADMIN) ||
-    roles?.has(PresetRoleType.WORKSPACE_DBA)
-  );
 };
