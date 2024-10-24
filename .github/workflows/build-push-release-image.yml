@@ -84,6 +84,7 @@ jobs:
           build-args: |
             VERSION=${{ env.RELEASE_VERSION }}
             GIT_COMMIT=${{ env.GIT_COMMIT }}
+            RENDER_GIT_COMMIT=${{ env.GIT_COMMIT }}
             BUILD_TIME=${{ env.BUILD_TIME }}
             BUILD_USER=${{ env.BUILD_USER }}
       - name: Image digest
