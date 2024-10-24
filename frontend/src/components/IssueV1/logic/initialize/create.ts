@@ -1,8 +1,8 @@
-import { cloneDeep, groupBy, orderBy, uniq } from "lodash-es";
+import { cloneDeep, groupBy, orderBy } from "lodash-es";
 import { v4 as uuidv4 } from "uuid";
 import { reactive } from "vue";
 import { useRoute } from "vue-router";
-import { planServiceClient, rolloutServiceClient } from "@/grpcweb";
+import { rolloutServiceClient } from "@/grpcweb";
 import type { TemplateType } from "@/plugins";
 import {
   useBranchStore,
@@ -136,7 +136,6 @@ const buildIssue = async (params: CreateIssueParams) => {
 
 export const buildPlan = async (params: CreateIssueParams) => {
   const { project, query } = params;
-  const sheetStore = useSheetV1Store();
   let databaseNameList = (query.databaseList ?? "").split(",");
   const databaseGroupName = query.databaseGroupName;
   // Prepare database list if databaseGroupName and changelist are specified.
@@ -152,30 +151,10 @@ export const buildPlan = async (params: CreateIssueParams) => {
     }
   }
   await prepareDatabaseList(databaseNameList, project.name);
-  let plan = Plan.fromPartial({
+  const plan = Plan.fromPartial({
     name: `${project.name}/plans/${nextUID()}`,
   });
-  if (query.release) {
-    // TODO(steven): handle ghost mode.
-    const { plan: planPreview } = await planServiceClient.previewPlan({
-      project: project.name,
-      release: query.release,
-      targets: databaseNameList ?? [databaseGroupName],
-    });
-    if (planPreview) {
-      plan = {
-        ...planPreview,
-        name: plan.name,
-      };
-    }
-    // Prepare sheets for plan.
-    const sheets = uniq(
-      plan.steps.flatMap((step) => step.specs.map(sheetNameForSpec))
-    );
-    for (const sheetName of sheets) {
-      await sheetStore.getOrFetchSheetByName(sheetName);
-    }
-  } else if (query.changelist) {
+  if (query.changelist) {
     // build plan for changelist
     plan.steps = await buildStepsViaChangelist(
       databaseNameList,
