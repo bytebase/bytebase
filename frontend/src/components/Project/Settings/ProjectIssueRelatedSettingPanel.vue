@@ -151,7 +151,7 @@ interface LocalState {
   enforceIssueTitle: boolean;
   autoEnableBackup: boolean;
   skipBackupErrors: boolean;
-  postgresDatabaseTenantMode: string;
+  postgresDatabaseTenantMode: bool;
 }
 
 const getInitialLocalState = (): LocalState => {
