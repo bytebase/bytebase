@@ -97,7 +97,7 @@ func (d *DBFactory) GetDataSourceDriver(ctx context.Context, instance *store.Ins
 	if err != nil {
 		return nil, err
 	}
-	masterPassword, err := common.Unobfuscate(dataSource.MasterName, d.secret)
+	masterPassword, err := common.Unobfuscate(dataSource.MasterObfuscatedPassword, d.secret)
 	if err != nil {
 		return nil, err
 	}
