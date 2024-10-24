@@ -546,7 +546,7 @@ func beginMigration(ctx context.Context, stores *store.Store, mi *db.MigrationIn
 				TaskRun:           mc.taskRunName,
 				Issue:             mc.issueName,
 				Revision:          0,
-				ChangedResources:  nil,
+				ChangedResources:  mi.Payload.ChangedResources,
 				Status:            storepb.ChangelogTask_PENDING,
 				PrevSyncHistoryId: syncHistoryPrev,
 				SyncHistoryId:     0,
