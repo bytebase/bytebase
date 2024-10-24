@@ -225,7 +225,8 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 
 func execute(ctx context.Context, tx *sql.Tx, statement string) (int64, error) {
 	sqlResult, err := tx.ExecContext(ctx, statement)
-	if e, ok := err.(gomssqldb.Error); ok {
+	var e gomssqldb.Error
+	if errors.As(err, &e) {
 		err = unpackGoMSSQLDBError(e)
 	}
 	if err != nil {
