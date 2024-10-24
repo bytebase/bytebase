@@ -317,6 +317,10 @@ message Project {
 
   // Whether to skip backup errors and continue the data migration.
   bool skip_backup_errors = 19;
+
+  // Whether to enable the database tenant mode for PostgreSQL.
+  // If enabled, the issue will be created with the pre-appended "set role <db_owner>" statement.
+  bool postgres_database_tenant_mode = 20;
 }
 
 enum Workflow {

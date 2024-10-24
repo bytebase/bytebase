@@ -16,11 +16,20 @@
               />
             </template>
             <template #1>
-              <div v-if="state.previewPlanResult" class="space-y-4">
+              <div
+                v-if="!isRequesting && state.previewPlanResult"
+                class="space-y-4"
+              >
                 <PreviewPlanDetail
                   :preview-plan-result="state.previewPlanResult"
                   :allow-out-of-order="state.allowOutOfOrder"
                 />
+              </div>
+              <div
+                v-else
+                class="flex items-center justify-center py-4 text-gray-400 text-sm"
+              >
+                <BBSpin />
               </div>
             </template>
           </StepTab>
@@ -47,10 +56,7 @@
           </div>
 
           <div class="flex items-center justify-end gap-x-3">
-            <NCheckbox
-              v-model:checked="state.allowOutOfOrder"
-              :disabled="state.currentStep !== 0"
-            >
+            <NCheckbox v-model:checked="state.allowOutOfOrder">
               {{ $t("release.allow-out-of-order") }}
             </NCheckbox>
             <NButton @click.prevent="handleCancelClick">
@@ -84,9 +90,10 @@
 <script lang="ts" setup>
 import { Undo2Icon } from "lucide-vue-next";
 import { NButton, NCheckbox } from "naive-ui";
-import { computed, reactive } from "vue";
+import { computed, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
+import { BBSpin } from "@/bbkit";
 import DatabaseAndGroupSelector, {
   type DatabaseSelectState,
 } from "@/components/DatabaseAndGroupSelector/";
@@ -125,6 +132,7 @@ const router = useRouter();
 const databaseStore = useDatabaseV1Store();
 const dbGroupStore = useDBGroupStore();
 const { release, project } = useReleaseDetailContext();
+const isRequesting = ref(false);
 
 const state = reactive<LocalState>({
   currentStep: 0,
@@ -182,21 +190,7 @@ const handleCancelClick = () => {
 
 const handleClickNext = async () => {
   if (state.currentStep === 0) {
-    if (!state.targetSelectState) {
-      return;
-    }
-
-    const resp = await planServiceClient.previewPlan({
-      project: project.value.name,
-      release: release.value.name,
-      targets:
-        state.targetSelectState.changeSource === "DATABASE"
-          ? state.targetSelectState.selectedDatabaseNameList
-          : [state.targetSelectState.selectedDatabaseGroup!],
-      allowOutOfOrder: state.allowOutOfOrder,
-    });
-    state.previewPlanResult = resp;
-    state.currentStep = 1;
+    await previewPlan();
   } else if (state.currentStep === 1) {
     if (!state.targetSelectState || !state.previewPlanResult) {
       return;
@@ -233,4 +227,33 @@ const handleClickNext = async () => {
     });
   }
 };
+
+const previewPlan = async () => {
+  if (!state.targetSelectState) {
+    return;
+  }
+
+  isRequesting.value = true;
+  const resp = await planServiceClient.previewPlan({
+    project: project.value.name,
+    release: release.value.name,
+    targets:
+      state.targetSelectState.changeSource === "DATABASE"
+        ? state.targetSelectState.selectedDatabaseNameList
+        : [state.targetSelectState.selectedDatabaseGroup!],
+    allowOutOfOrder: state.allowOutOfOrder,
+  });
+  state.previewPlanResult = resp;
+  state.currentStep = 1;
+  isRequesting.value = false;
+};
+
+watch(
+  () => state.allowOutOfOrder,
+  async () => {
+    if (state.currentStep === 1) {
+      await previewPlan();
+    }
+  }
+);
 </script>

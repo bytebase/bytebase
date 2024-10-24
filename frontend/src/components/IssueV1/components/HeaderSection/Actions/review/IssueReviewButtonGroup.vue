@@ -62,15 +62,9 @@ const shouldShowApproveOrReject = computed(() => {
     return false;
   }
 
-  // Do not show approve/reject buttons for the creator.
-  // Except for workspace admins and DBAs.
-  if (
-    !hasWorkspaceLevelRole(PresetRoleType.WORKSPACE_ADMIN) &&
-    !hasWorkspaceLevelRole(PresetRoleType.WORKSPACE_DBA)
-  ) {
-    if (currentUser.value.email === extractUserEmail(issue.value.creator)) {
-      return false;
-    }
+  // Do not show review actions for the creator.
+  if (currentUser.value.email === extractUserEmail(issue.value.creator)) {
+    return false;
   }
 
   if (phase.value !== "REVIEW") {

@@ -9,7 +9,8 @@ import (
 type queryTypeListener struct {
 	*mysql.BaseMySQLParserListener
 
-	result base.QueryType
+	allSystems bool
+	result     base.QueryType
 }
 
 func (l *queryTypeListener) EnterSimpleStatement(ctx *mysql.SimpleStatementContext) {
@@ -57,9 +58,7 @@ func (l *queryTypeListener) EnterSelectStatement(ctx *mysql.SelectStatementConte
 	// MySQL cannot use SELECT ... INTO .. FROM ... syntax to create a new table or insert into an existing table.
 	// So we can safely assume it's a SELECT statement.
 
-	accessTables := getAccessTables("", ctx)
-	allSystems, _ := isMixedQuery(accessTables, true)
-	if allSystems {
+	if l.allSystems {
 		l.result = base.SelectInfoSchema
 	} else {
 		l.result = base.Select

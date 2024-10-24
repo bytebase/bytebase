@@ -1581,6 +1581,158 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
+    /v1/instances/{instance}/databases/{database}/changelogs:
+        get:
+            tags:
+                - DatabaseService
+            operationId: DatabaseService_ListChangelogs
+            parameters:
+                - name: instance
+                  in: path
+                  description: The instance id.
+                  required: true
+                  schema:
+                    type: string
+                - name: database
+                  in: path
+                  description: The database id.
+                  required: true
+                  schema:
+                    type: string
+                - name: pageSize
+                  in: query
+                  description: |-
+                    The maximum number of changelogs to return. The service may return fewer than this value.
+                     If unspecified, at most 10 changelogs will be returned.
+                     The maximum value is 1000; values above 1000 will be coerced to 1000.
+                  schema:
+                    type: integer
+                    format: int32
+                - name: pageToken
+                  in: query
+                  description: |-
+                    A page token, received from the previous call.
+                     Provide this to retrieve the subsequent page.
+
+                     When paginating, all other parameters provided must match
+                     the call that provided the page token.
+                  schema:
+                    type: string
+                - name: view
+                  in: query
+                  schema:
+                    enum:
+                        - CHANGELOG_VIEW_UNSPECIFIED
+                        - CHANGELOG_VIEW_BASIC
+                        - CHANGELOG_VIEW_FULL
+                    type: string
+                    format: enum
+                - name: filter
+                  in: query
+                  description: |-
+                    The filter of the changelogs.
+                     follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax.
+                     Support filter by type, source or table.
+                     For example:
+                     table = "tableExists('{database}', '{schema}', '{table}')"
+                     table = "tableExists('db', 'public', 'table1') || tableExists('db', 'public', 'table2')"
+                     type = "MIGRATE | DATA"
+                     source = "UI"
+                     source = "VCS"
+
+                     The table filter follow the CEL syntax.
+                     currently, we have one function for CEL:
+                     - tableExists(database, schema, table): return true if the table exists in changed resources.
+
+                     examples:
+                     Use
+                       tableExists("db", "public", "table1")
+                     to filter the changelogs which have the table "table1" in the schema "public" of the database "db".
+                     For MySQL, the schema is always "", such as tableExists("db", "", "table1").
+
+                     Combine multiple functions with "&&" and "||", we MUST use the Disjunctive Normal Form(DNF).
+                     In other words, the CEL expression consists of several parts connected by OR operators.
+                     For example, the following expression is valid:
+                     (
+                      tableExists("db", "public", "table1") &&
+                      tableExists("db", "public", "table2")
+                     ) || (
+                      tableExists("db", "public", "table3")
+                     )
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ListChangelogsResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v1/instances/{instance}/databases/{database}/changelogs/{changelog}:
+        get:
+            tags:
+                - DatabaseService
+            operationId: DatabaseService_GetChangelog
+            parameters:
+                - name: instance
+                  in: path
+                  description: The instance id.
+                  required: true
+                  schema:
+                    type: string
+                - name: database
+                  in: path
+                  description: The database id.
+                  required: true
+                  schema:
+                    type: string
+                - name: changelog
+                  in: path
+                  description: The changelog id.
+                  required: true
+                  schema:
+                    type: string
+                - name: view
+                  in: query
+                  schema:
+                    enum:
+                        - CHANGE_HISTORY_VIEW_UNSPECIFIED
+                        - CHANGE_HISTORY_VIEW_BASIC
+                        - CHANGE_HISTORY_VIEW_FULL
+                    type: string
+                    format: enum
+                - name: sdlFormat
+                  in: query
+                  description: Format the schema dump into SDL format.
+                  schema:
+                    type: boolean
+                - name: concise
+                  in: query
+                  description: |-
+                    When true, the schema dump will be concise.
+                     For Oracle, there will be tables and indexes only for Sync Schema.
+                     For Postgres, we'll filter the backup schema.
+                  schema:
+                    type: boolean
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Changelog'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
     /v1/instances/{instance}/databases/{database}/metadata:
         get:
             tags:
@@ -9224,6 +9376,62 @@ components:
                 version:
                     type: string
                     description: The migration version for a change.
+        Changelog:
+            type: object
+            properties:
+                name:
+                    type: string
+                    description: 'Format: instances/{instance}/databases/{database}/changelogs/{changelog}'
+                creator:
+                    type: string
+                    description: 'Format: users/hello@world.com'
+                createTime:
+                    type: string
+                    format: date-time
+                status:
+                    enum:
+                        - STATUS_UNSPECIFIED
+                        - PENDING
+                        - DONE
+                        - FAILED
+                    type: string
+                    format: enum
+                statement:
+                    type: string
+                    description: The statement is used for preview purpose.
+                statementSize:
+                    type: string
+                statementSheet:
+                    type: string
+                    description: |-
+                        The name of the sheet resource.
+                         Format: projects/{project}/sheets/{sheet}
+                schema:
+                    type: string
+                schemaSize:
+                    type: string
+                prevSchema:
+                    type: string
+                prevSchemaSize:
+                    type: string
+                issue:
+                    type: string
+                    description: 'Format: projects/{project}/issues/{issue}'
+                taskRun:
+                    type: string
+                    description: |-
+                        Could be empty
+                         TODO(p0ny): We will migrate ChangeHistory to Changelog, and they won't have task_run.
+                version:
+                    type: string
+                    description: Could be empty
+                revision:
+                    type: string
+                    description: |-
+                        Could be empty
+                         Or present but not found if deleted
+                changedResources:
+                    $ref: '#/components/schemas/ChangedResources'
         CheckConstraintMetadata:
             type: object
             properties:
@@ -10951,6 +11159,19 @@ components:
                     description: |-
                         A token, which can be sent as `page_token` to retrieve the next page.
                          If this field is omitted, there are no subsequent pages.
+        ListChangelogsResponse:
+            type: object
+            properties:
+                changelogs:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/Changelog'
+                    description: The list of changelogs.
+                nextPageToken:
+                    type: string
+                    description: |-
+                        A token, which can be sent as `page_token` to retrieve the next page.
+                         If this field is omitted, there are no subsequent pages.
         ListDatabaseGroupsResponse:
             type: object
             properties:
@@ -12172,6 +12393,11 @@ components:
                 skipBackupErrors:
                     type: boolean
                     description: Whether to skip backup errors and continue the data migration.
+                postgresDatabaseTenantMode:
+                    type: boolean
+                    description: |-
+                        Whether to enable the database tenant mode for PostgreSQL.
+                         If enabled, the issue will be created with the pre-appended "set role <db_owner>" statement.
         QueryHistory:
             type: object
             properties:
