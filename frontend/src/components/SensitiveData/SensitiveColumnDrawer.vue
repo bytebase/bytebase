@@ -128,7 +128,7 @@
             size="small"
             :access-list="accessUserList"
             :disabled="state.processing"
-            :show-database-column="true"
+            :show-database-column="false"
             @remove:access="onRemove"
             @update:access="onAccessControlUpdate"
           />
