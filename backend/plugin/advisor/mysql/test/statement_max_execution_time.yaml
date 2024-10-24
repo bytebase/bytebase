@@ -1,14 +1,24 @@
 - statement: SET MAX_EXECUTION_TIME = 1000; SELECT * FROM employee;
+  changeType: 0
 - statement: SET GLOBAL max_execution_time = 10; SELECT * FROM employee;
+  changeType: 0
 - statement: SELECT * FROM employee; SET max_execution_time = 1000;
+  changeType: 0
   want:
     - status: 2
       code: 235
       title: statement.max-execution-time
-      content: "The max_execution_time is not set"
+      content: The max_execution_time is not set
+      detail: ""
+      startposition: null
+      endposition: null
 - statement: SELECT * FROM t;
+  changeType: 0
   want:
     - status: 2
       code: 235
       title: statement.max-execution-time
-      content: "The max_execution_time is not set"
+      content: The max_execution_time is not set
+      detail: ""
+      startposition: null
+      endposition: null
