@@ -64,6 +64,30 @@ func newExpression(expression ast.ExpressionNode, text string) ast.ExpressionNod
 	return expression
 }
 
+func TestPGConvertCreateMaterializedViewStmt(t *testing.T) {
+	tests := []testData{
+		{
+			stmt: `CREATE MATERIALIZED VIEW tech_book(a, b) AS SELECT * FROM book`,
+			want: []ast.Node{
+				&ast.CreateMaterializedViewStmt{
+					Name: &ast.TableDef{
+						Type: ast.TableTypeMaterializedView,
+						Name: "tech_book",
+					},
+				},
+			},
+			statementList: []base.SingleSQL{
+				{
+					Text:     `CREATE MATERIALIZED VIEW tech_book(a, b) AS SELECT * FROM book`,
+					LastLine: 1,
+				},
+			},
+		},
+	}
+
+	runTests(t, tests)
+}
+
 func TestPGVariableShowStmt(t *testing.T) {
 	tests := []testData{
 		{
