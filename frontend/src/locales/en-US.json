@@ -461,7 +461,9 @@
     },
     "confirm-button": {
       "sure-to-delete": "Are you sure to delete?",
-      "cannot-undo": "You cannot undo this action."
+      "sure-to-archive": "Are you sure to archive?",
+      "cannot-undo": "You cannot undo this action.",
+      "can-undo": "You can undo this action later."
     }
   },
   "settings": {
@@ -3735,6 +3737,8 @@
     "out-of-order-files": "Out of order files",
     "applied-but-modifed-files": "Applied but modified files",
     "allow-out-of-order": "Allow out of order",
+    "show-archived": "Show archived",
+    "archive-this-release": "Archive this release",
     "no-tasks-to-apply": {
       "self": "No tasks to apply"
     }

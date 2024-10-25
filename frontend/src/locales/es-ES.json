@@ -461,7 +461,9 @@
     },
     "confirm-button": {
       "sure-to-delete": "¿Estás seguro de que deseas eliminar?",
-      "cannot-undo": "Esta acción no se puede deshacer."
+      "sure-to-archive": "¿Estás seguro de archivar?",
+      "cannot-undo": "Esta acción no se puede deshacer.",
+      "can-undo": "Podrás deshacer esta acción más tarde."
     }
   },
   "settings": {
@@ -3735,6 +3737,8 @@
     "out-of-order-files": "Archivos fuera de servicio",
     "applied-but-modifed-files": "Archivos aplicados pero modificados",
     "allow-out-of-order": "Permitir fuera de servicio",
+    "show-archived": "Mostrar archivado",
+    "archive-this-release": "Archivar este comunicado",
     "no-tasks-to-apply": {
       "self": "No hay tareas para aplicar"
     }
