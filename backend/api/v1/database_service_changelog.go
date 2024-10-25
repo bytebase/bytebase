@@ -91,7 +91,6 @@ func (s *DatabaseService) convertToChangelogs(ctx context.Context, d *store.Data
 }
 
 func (s *DatabaseService) convertToChangelog(ctx context.Context, d *store.DatabaseMessage, c *store.ChangelogMessage) (*v1pb.Changelog, error) {
-	// TODO(p0ny): convert other fields
 	cl := &v1pb.Changelog{
 		Name:             common.FormatChangelog(d.InstanceID, d.DatabaseName, c.UID),
 		Creator:          "",
@@ -106,7 +105,7 @@ func (s *DatabaseService) convertToChangelog(ctx context.Context, d *store.Datab
 		PrevSchemaSize:   0,
 		Issue:            c.Payload.GetTask().GetIssue(),
 		TaskRun:          c.Payload.GetTask().GetTaskRun(),
-		Version:          "",
+		Version:          c.Payload.GetTask().GetVersion(),
 		Revision:         "",
 		ChangedResources: convertToChangedResources(c.Payload.GetTask().GetChangedResources()),
 	}
