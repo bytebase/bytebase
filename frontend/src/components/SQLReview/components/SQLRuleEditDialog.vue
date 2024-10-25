@@ -1,6 +1,6 @@
 <template>
   <BBModal
-    :title="getRuleLocalization(rule.type).title"
+    :title="getRuleLocalization(rule.type, rule.engine).title"
     @close="$emit('cancel')"
   >
     <div class="space-y-4 w-[calc(100vw-5rem)] sm:w-[40rem] pb-1">
@@ -19,7 +19,7 @@
           </div>
         </div>
         <div class="textinfolabel flex items-center gap-x-2">
-          {{ getRuleLocalization(rule.type).title }}
+          {{ getRuleLocalization(rule.type, rule.engine).title }}
           <a
             :href="`https://www.bytebase.com/docs/sql-review/review-rules#${rule.type}`"
             target="__blank"
@@ -62,7 +62,7 @@
             v-model:value="state.comment"
             :disabled="disabled"
             :placeholder="
-              getRuleLocalization(rule.type).description ||
+              getRuleLocalization(rule.type, rule.engine).description ||
               $t('common.description')
             "
             type="textarea"
@@ -121,7 +121,8 @@ const ruleConfig = ref<InstanceType<typeof RuleConfig>>();
 const state = reactive<LocalState>({
   level: props.rule.level,
   comment:
-    props.rule.comment || getRuleLocalization(props.rule.type).description,
+    props.rule.comment ||
+    getRuleLocalization(props.rule.type, props.rule.engine).description,
 });
 
 const toggleActivity = (on: boolean) => {
