@@ -150,7 +150,7 @@
     >
       <BBButtonConfirm
         v-if="!create && allowEdit"
-        :style="'DELETE'"
+        :type="'DELETE'"
         :button-text="$t('project.webhook.deletion.btn-text')"
         :ok-text="$t('common.delete')"
         :confirm-title="
