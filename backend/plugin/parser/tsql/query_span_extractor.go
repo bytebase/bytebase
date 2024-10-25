@@ -690,6 +690,9 @@ func (q *querySpanExtractor) getColumnsForView(definition string) ([]base.QueryS
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get query span for view definition")
 	}
+	if span.NotFoundError != nil {
+		return nil, span.NotFoundError
+	}
 	return span.Results, nil
 }
 
