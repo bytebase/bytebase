@@ -801,6 +801,9 @@ func (q *querySpanExtractor) getColumnsForView(definition string) ([]base.QueryS
 	if err != nil {
 		return nil, err
 	}
+	if span.NotFoundError != nil {
+		return nil, span.NotFoundError
+	}
 	return span.Results, nil
 }
 
