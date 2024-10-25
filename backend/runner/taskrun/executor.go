@@ -613,19 +613,25 @@ func endMigration(ctx context.Context, storeInstance *store.Store, startedNs int
 		if isDone {
 			// if isDone, record in revision
 			if mc.version != "" {
-				revision, err := storeInstance.CreateRevision(ctx, &store.RevisionMessage{
+				r := &store.RevisionMessage{
 					DatabaseUID: mc.database.UID,
 					Payload: &storepb.RevisionPayload{
 						Release:     mc.release.release,
 						File:        mc.release.file,
-						Sheet:       mc.sheetName,
-						SheetSha256: mc.sheet.Sha256,
+						Sheet:       "",
+						SheetSha256: "",
 						TaskRun:     mc.taskRunName,
 						Version:     mc.version,
 						// TODO(p0ny): maybe remove this field.
 						Type: storepb.ReleaseFileType_TYPE_UNSPECIFIED,
 					},
-				}, mc.task.CreatorID)
+				}
+				if mc.sheet != nil {
+					r.Payload.Sheet = mc.sheetName
+					r.Payload.SheetSha256 = mc.sheet.Sha256
+				}
+
+				revision, err := storeInstance.CreateRevision(ctx, r, mc.task.CreatorID)
 				if err != nil {
 					return errors.Wrapf(err, "failed to create revision")
 				}
