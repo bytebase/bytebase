@@ -2,7 +2,7 @@
   <NButton
     v-bind="$attrs"
     class="text-sm"
-    :text="type === 'text'"
+    :text="text"
     :class="[!hideIcon && 'btn-icon']"
     @click.prevent.stop="
       () => {
@@ -15,15 +15,15 @@
     "
   >
     <template v-if="!hideIcon">
-      <heroicons-outline:trash v-if="style == 'DELETE'" class="w-4 h-4" />
-      <heroicons-outline:archive v-if="style == 'ARCHIVE'" class="w-4 h-4" />
-      <heroicons-outline:reply v-if="style == 'RESTORE'" class="w-4 h-4" />
+      <heroicons-outline:trash v-if="type == 'DELETE'" class="w-4 h-4" />
+      <heroicons-outline:archive v-if="type == 'ARCHIVE'" class="w-4 h-4" />
+      <heroicons-outline:reply v-if="type == 'RESTORE'" class="w-4 h-4" />
       <heroicons-outline:minus-circle
-        v-if="style == 'DISABLE'"
+        v-if="type == 'DISABLE'"
         class="w-4 h-4"
       />
-      <heroicons-outline:pencil v-if="style == 'EDIT'" class="w-4 h-4" />
-      <heroicons-outline:duplicate v-if="style == 'CLONE'" class="w-4 h-4" />
+      <heroicons-outline:pencil v-if="type == 'EDIT'" class="w-4 h-4" />
+      <heroicons-outline:duplicate v-if="type == 'CLONE'" class="w-4 h-4" />
     </template>
     <span v-if="buttonText" :class="[!hideIcon && 'ml-1']">
       {{ buttonText }}
@@ -32,7 +32,7 @@
   <BBAlert
     v-model:show="state.showModal"
     :type="
-      style == 'DELETE' || style == 'ARCHIVE' || style == 'DISABLE'
+      type == 'DELETE' || type == 'ARCHIVE' || type == 'DISABLE'
         ? 'warning'
         : 'info'
     "
@@ -56,12 +56,12 @@ import { NButton } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import BBAlert from "./BBAlert.vue";
-import type { BBButtonConfirmStyle } from "./types";
+import type { BBButtonConfirmType } from "./types";
 
 const props = withDefaults(
   defineProps<{
-    type?: "text" | "default";
-    style?: BBButtonConfirmStyle;
+    type?: BBButtonConfirmType;
+    text?: boolean;
     buttonText?: string;
     requireConfirm?: boolean;
     okText?: string;
@@ -70,8 +70,8 @@ const props = withDefaults(
     hideIcon?: boolean;
   }>(),
   {
-    type: "text",
-    style: "DELETE",
+    type: "DELETE",
+    text: true, // Default to display as a text button.
     buttonText: "",
     requireConfirm: false,
     okText: "",

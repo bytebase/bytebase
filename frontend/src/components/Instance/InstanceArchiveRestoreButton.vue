@@ -2,7 +2,7 @@
   <template v-if="allowArchiveOrRestore">
     <template v-if="instance.state === State.ACTIVE">
       <BBButtonConfirm
-        :style="'ARCHIVE'"
+        :type="'ARCHIVE'"
         :button-text="$t('instance.archive-this-instance')"
         :ok-text="$t('common.archive')"
         :require-confirm="true"
@@ -26,7 +26,7 @@
     </template>
     <template v-else-if="instance.state === State.DELETED">
       <BBButtonConfirm
-        :style="'RESTORE'"
+        :type="'RESTORE'"
         :button-text="$t('instance.restore-this-instance')"
         :ok-text="$t('instance.restore')"
         :require-confirm="true"

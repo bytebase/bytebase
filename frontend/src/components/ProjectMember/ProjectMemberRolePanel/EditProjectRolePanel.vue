@@ -89,7 +89,7 @@
           <div>
             <BBButtonConfirm
               v-if="allowRemoveRole()"
-              :style="'DELETE'"
+              :type="'DELETE'"
               :button-text="$t('common.delete')"
               :require-confirm="true"
               @confirm="handleDeleteRole"
