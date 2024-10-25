@@ -185,8 +185,6 @@ const quickActionListForDatabase = computed((): QuickActionType[] => {
   const actions: QuickActionType[] = [
     "quickaction.bb.database.create",
     "quickaction.bb.project.database.transfer",
-    "quickaction.bb.issue.grant.request.querier",
-    "quickaction.bb.issue.grant.request.exporter",
   ];
 
   if (!hasProjectPermissionV2(project.value, "bb.databases.query")) {
