@@ -39,6 +39,7 @@ const (
 	SchemaNamePrefix           = "schemas/"
 	TableNamePrefix            = "tables/"
 	ChangeHistoryPrefix        = "changeHistories/"
+	ChangelogPrefix            = "changelogs/"
 	IssueNamePrefix            = "issues/"
 	IssueCommentNamePrefix     = "issueComments/"
 	PipelineNamePrefix         = "pipelines/"
@@ -704,4 +705,12 @@ func FormatReleaseName(projectID string, releaseUID int64) string {
 // {path} is URL path escaped.
 func FormatReleaseFile(release string, file string) string {
 	return fmt.Sprintf("%s/%s%s", release, FileNamePrefix, url.PathEscape(file))
+}
+
+func FormatRevision(instanceID, databaseID string, revisionUID int64) string {
+	return fmt.Sprintf("%s/%s%d", FormatDatabase(instanceID, databaseID), RevisionNamePrefix, revisionUID)
+}
+
+func FormatChangelog(instanceID, databaseID string, changelogUID int64) string {
+	return fmt.Sprintf("%s/%s%d", FormatDatabase(instanceID, databaseID), ChangelogPrefix, changelogUID)
 }
