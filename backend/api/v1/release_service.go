@@ -118,9 +118,10 @@ func (s *ReleaseService) ListReleases(ctx context.Context, request *v1pb.ListRel
 	limitPlusOne := limit + 1
 
 	releaseFind := &store.FindReleaseMessage{
-		ProjectUID: &project.UID,
-		Limit:      &limitPlusOne,
-		Offset:     &offset,
+		ProjectUID:  &project.UID,
+		Limit:       &limitPlusOne,
+		Offset:      &offset,
+		ShowDeleted: request.ShowDeleted,
 	}
 
 	releaseMessages, err := s.store.ListReleases(ctx, releaseFind)
@@ -161,6 +162,12 @@ func (s *ReleaseService) UpdateRelease(ctx context.Context, request *v1pb.Update
 	release, err := s.store.GetRelease(ctx, releaseUID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get release, err: %v", err)
+	}
+	if release == nil {
+		return nil, status.Errorf(codes.NotFound, "release %v not found", releaseUID)
+	}
+	if release.Deleted {
+		return nil, status.Errorf(codes.FailedPrecondition, "release %d is deleted", releaseUID)
 	}
 
 	update := &store.UpdateReleaseMessage{
@@ -235,6 +242,7 @@ func convertToRelease(ctx context.Context, s *store.Store, release *store.Releas
 		Title:      release.Payload.Title,
 		CreateTime: timestamppb.New(release.CreatedTime),
 		VcsSource:  convertToReleaseVcsSource(release.Payload.VcsSource),
+		State:      convertDeletedToState(release.Deleted),
 	}
 
 	files, err := convertToReleaseFiles(ctx, s, release.Payload.Files)

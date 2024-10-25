@@ -461,7 +461,9 @@
     },
     "confirm-button": {
       "sure-to-delete": "本当に削除してもよろしいですか?",
-      "cannot-undo": "この操作は元に戻すことができません。"
+      "sure-to-archive": "本当にアーカイブしますか?",
+      "cannot-undo": "この操作は元に戻すことができません。",
+      "can-undo": "この操作は後で元に戻すことができます。"
     }
   },
   "settings": {
@@ -3735,6 +3737,8 @@
     "out-of-order-files": "順序が間違っているファイル",
     "applied-but-modifed-files": "適用済みだが変更されたファイル",
     "allow-out-of-order": "順序外を許可する",
+    "show-archived": "アーカイブを表示",
+    "archive-this-release": "このリリースをアーカイブする",
     "no-tasks-to-apply": {
       "self": "適用するタスクはありません"
     }
