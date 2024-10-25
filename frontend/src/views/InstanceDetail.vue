@@ -164,16 +164,18 @@ const allowCreateDatabase = computed(() => {
 });
 
 const syncSchema = async (enableFullSync: boolean) => {
-  await instanceV1Store.syncInstance(instance.value, enableFullSync);
+  await instanceV1Store.syncInstance(instance.value.name, enableFullSync);
   // Remove the database list cache for the instance.
-  listCache.cacheMap.delete(listCache.getCacheKey(instance.value.name));
+  listCache.deleteCache(instance.value.name);
   await wrapRefAsPromise(ready, true);
-  // Clear the db schema metadata cache entities.
-  // So we will re-fetch new values when needed.
-  const dbSchemaStore = useDBSchemaV1Store();
-  databaseList.value.forEach((database) =>
-    dbSchemaStore.removeCache(database.name)
-  );
+  if (enableFullSync) {
+    // Clear the db schema metadata cache entities.
+    // So we will re-fetch new values when needed.
+    const dbSchemaStore = useDBSchemaV1Store();
+    databaseList.value.forEach((database) =>
+      dbSchemaStore.removeCache(database.name)
+    );
+  }
   pushNotification({
     module: "bytebase",
     style: "SUCCESS",
