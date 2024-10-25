@@ -881,6 +881,15 @@ func convert(node *pgquery.Node, statement base.SingleSQL) (res ast.Node, err er
 			Name: in.VariableShowStmt.GetName(),
 		}
 		return variableShowStmt, nil
+	case *pgquery.Node_CreateTableAsStmt:
+		if in.CreateTableAsStmt.Objtype != pgquery.ObjectType_OBJECT_MATVIEW {
+			return &ast.UnconvertedStmt{}, nil
+		}
+		materializedViewStmt := &ast.CreateMaterializedViewStmt{
+			Name: convertRangeVarToTableName(in.CreateTableAsStmt.Into.Rel, ast.TableTypeMaterializedView),
+		}
+		materializedViewStmt.SetOriginalNode(in)
+		return materializedViewStmt, nil
 	default:
 		return &ast.UnconvertedStmt{}, nil
 	}
