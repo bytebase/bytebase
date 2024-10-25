@@ -10,7 +10,16 @@ import Long from "long";
 import { Empty } from "../google/protobuf/empty";
 import { FieldMask } from "../google/protobuf/field_mask";
 import { Timestamp } from "../google/protobuf/timestamp";
-import { VCSType, vCSTypeFromJSON, vCSTypeToJSON, vCSTypeToNumber } from "./common";
+import {
+  State,
+  stateFromJSON,
+  stateToJSON,
+  stateToNumber,
+  VCSType,
+  vCSTypeFromJSON,
+  vCSTypeToJSON,
+  vCSTypeToNumber,
+} from "./common";
 
 export const protobufPackage = "bytebase.v1";
 
@@ -81,6 +90,8 @@ export interface ListReleasesRequest {
    * the call that provided the page token.
    */
   pageToken: string;
+  /** Show deleted releases if specified. */
+  showDeleted: boolean;
 }
 
 export interface ListReleasesResponse {
@@ -135,6 +146,7 @@ export interface Release {
   /** Format: users/hello@world.com */
   creator: string;
   createTime: Timestamp | undefined;
+  state: State;
 }
 
 export interface Release_File {
@@ -220,7 +232,7 @@ export const GetReleaseRequest: MessageFns<GetReleaseRequest> = {
 };
 
 function createBaseListReleasesRequest(): ListReleasesRequest {
-  return { parent: "", pageSize: 0, pageToken: "" };
+  return { parent: "", pageSize: 0, pageToken: "", showDeleted: false };
 }
 
 export const ListReleasesRequest: MessageFns<ListReleasesRequest> = {
@@ -233,6 +245,9 @@ export const ListReleasesRequest: MessageFns<ListReleasesRequest> = {
     }
     if (message.pageToken !== "") {
       writer.uint32(26).string(message.pageToken);
+    }
+    if (message.showDeleted !== false) {
+      writer.uint32(32).bool(message.showDeleted);
     }
     return writer;
   },
@@ -265,6 +280,13 @@ export const ListReleasesRequest: MessageFns<ListReleasesRequest> = {
 
           message.pageToken = reader.string();
           continue;
+        case 4:
+          if (tag !== 32) {
+            break;
+          }
+
+          message.showDeleted = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -279,6 +301,7 @@ export const ListReleasesRequest: MessageFns<ListReleasesRequest> = {
       parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
       pageSize: isSet(object.pageSize) ? globalThis.Number(object.pageSize) : 0,
       pageToken: isSet(object.pageToken) ? globalThis.String(object.pageToken) : "",
+      showDeleted: isSet(object.showDeleted) ? globalThis.Boolean(object.showDeleted) : false,
     };
   },
 
@@ -293,6 +316,9 @@ export const ListReleasesRequest: MessageFns<ListReleasesRequest> = {
     if (message.pageToken !== "") {
       obj.pageToken = message.pageToken;
     }
+    if (message.showDeleted !== false) {
+      obj.showDeleted = message.showDeleted;
+    }
     return obj;
   },
 
@@ -304,6 +330,7 @@ export const ListReleasesRequest: MessageFns<ListReleasesRequest> = {
     message.parent = object.parent ?? "";
     message.pageSize = object.pageSize ?? 0;
     message.pageToken = object.pageToken ?? "";
+    message.showDeleted = object.showDeleted ?? false;
     return message;
   },
 };
@@ -649,7 +676,15 @@ export const UndeleteReleaseRequest: MessageFns<UndeleteReleaseRequest> = {
 };
 
 function createBaseRelease(): Release {
-  return { name: "", title: "", files: [], vcsSource: undefined, creator: "", createTime: undefined };
+  return {
+    name: "",
+    title: "",
+    files: [],
+    vcsSource: undefined,
+    creator: "",
+    createTime: undefined,
+    state: State.STATE_UNSPECIFIED,
+  };
 }
 
 export const Release: MessageFns<Release> = {
@@ -671,6 +706,9 @@ export const Release: MessageFns<Release> = {
     }
     if (message.createTime !== undefined) {
       Timestamp.encode(message.createTime, writer.uint32(50).fork()).join();
+    }
+    if (message.state !== State.STATE_UNSPECIFIED) {
+      writer.uint32(56).int32(stateToNumber(message.state));
     }
     return writer;
   },
@@ -724,6 +762,13 @@ export const Release: MessageFns<Release> = {
 
           message.createTime = Timestamp.decode(reader, reader.uint32());
           continue;
+        case 7:
+          if (tag !== 56) {
+            break;
+          }
+
+          message.state = stateFromJSON(reader.int32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -741,6 +786,7 @@ export const Release: MessageFns<Release> = {
       vcsSource: isSet(object.vcsSource) ? Release_VCSSource.fromJSON(object.vcsSource) : undefined,
       creator: isSet(object.creator) ? globalThis.String(object.creator) : "",
       createTime: isSet(object.createTime) ? fromJsonTimestamp(object.createTime) : undefined,
+      state: isSet(object.state) ? stateFromJSON(object.state) : State.STATE_UNSPECIFIED,
     };
   },
 
@@ -764,6 +810,9 @@ export const Release: MessageFns<Release> = {
     if (message.createTime !== undefined) {
       obj.createTime = fromTimestamp(message.createTime).toISOString();
     }
+    if (message.state !== State.STATE_UNSPECIFIED) {
+      obj.state = stateToJSON(message.state);
+    }
     return obj;
   },
 
@@ -782,6 +831,7 @@ export const Release: MessageFns<Release> = {
     message.createTime = (object.createTime !== undefined && object.createTime !== null)
       ? Timestamp.fromPartial(object.createTime)
       : undefined;
+    message.state = object.state ?? State.STATE_UNSPECIFIED;
     return message;
   },
 };

@@ -461,7 +461,9 @@
     },
     "confirm-button": {
       "sure-to-delete": "确定要删除吗？",
-      "cannot-undo": "此操作无法撤销。"
+      "sure-to-archive": "确定要归档吗？",
+      "cannot-undo": "此操作无法撤销。",
+      "can-undo": "此操作可以撤销。"
     }
   },
   "settings": {
@@ -3735,6 +3737,8 @@
     "out-of-order-files": "无序文件",
     "applied-but-modifed-files": "已应用但已修改的文件",
     "allow-out-of-order": "允许无序文件",
+    "show-archived": "显示已归档",
+    "archive-this-release": "归档此发布",
     "no-tasks-to-apply": {
       "self": "没有可应用的任务"
     }
