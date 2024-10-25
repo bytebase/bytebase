@@ -568,8 +568,16 @@
       "description": "Algunos cambios pueden afectar las aplicaciones en ejecución, como modificar el nombre del objeto de la base de datos, agregar nuevas restricciones, etc. Esta regla puede evitar cambios descuidados que lleven al fallo de la aplicación existente. Nivel de error sugerido: Advertencia"
     },
     "statement-max-execution-time": {
-      "title": "Tiempo máximo de ejecución",
-      "description": "Establezca el tiempo máximo de ejecución de las sentencias SQL. Si el tiempo de ejecución supera el límite, la sentencia finalizará. Nivel de error sugerido: Error"
+      "title": "Aplicar el parámetro de tiempo máximo de ejecución",
+      "description": "Establezca el tiempo máximo de ejecución de las sentencias SQL. Si el tiempo de ejecución supera el límite, la sentencia finalizará. Nivel de error sugerido: Advertencia",
+      "mysql": {
+        "title": "Exigir que se establezca el parámetro MAX_EXECUTION_TIME explícitamente",
+        "description": "Establezca el parámetro MAX_EXECUTION_TIME en el script de cambio para controlar explícitamente el tiempo máximo de ejecución de la instrucción. Nivel de error sugerido: Advertencia"
+      },
+      "mariadb": {
+        "title": "Exigir que se establezca el parámetro MAX_STATEMENT_TIME explícitamente",
+        "description": "Establezca el parámetro MAX_STATEMENT_TIME en el script de cambio para controlar explícitamente el tiempo máximo de ejecución de la declaración. Nivel de error sugerido: Advertencia"
+      }
     },
     "statement-require-algorithm-option": {
       "title": "Requiere especificar la opción ALGORITMO en las instrucciones ALTER TABLE",

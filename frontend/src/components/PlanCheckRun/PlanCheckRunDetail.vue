@@ -367,7 +367,7 @@ const builtinRuleLevel = (type: string): SQLReviewRuleLevel => {
     case "builtin.prior-backup-check":
       return SQLReviewRuleLevel.ERROR;
     case "builtin.object-owner-check":
-      return SQLReviewRuleLevel.WARNING
+      return SQLReviewRuleLevel.WARNING;
     default:
       return SQLReviewRuleLevel.ERROR;
   }
@@ -387,7 +387,7 @@ const categoryAndTitle = (
     }
     const rule = getRuleTemplateByType(checkResult.title);
     if (rule) {
-      const ruleLocalization = getRuleLocalization(rule.type);
+      const ruleLocalization = getRuleLocalization(rule.type, rule.engine);
       const key = `sql-review.category.${rule.category.toLowerCase()}`;
       const category = t(key);
       const title = messageWithCode(ruleLocalization.title, code);

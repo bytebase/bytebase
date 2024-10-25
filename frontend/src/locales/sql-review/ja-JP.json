@@ -568,8 +568,16 @@
       "description": "一部の変更は実行中のアプリケーションに影響を与える可能性があります。データベースオブジェクトの名前の変更や新しい制約の追加などが該当します。このルールにより、既存のアプリケーションの障害を防ぐことができます。提案されるエラーレベル：警告"
     },
     "statement-max-execution-time": {
-      "title": "最大実行時間",
-      "description": "SQL 文の最大実行時間を設定します。実行時間が制限を超えると、文は終了します。提案エラー レベル: エラー"
+      "title": "最大実行時間パラメータの設定を強制する",
+      "description": "SQL 文の最大実行時間を設定します。実行時間が制限を超えると、文は終了します。提案エラー レベル: 警告",
+      "mysql": {
+        "title": "MAX_EXECUTION_TIMEパラメータを明示的に設定する",
+        "description": "変更スクリプトで MAX_EXECUTION_TIME パラメータを設定して、ステートメントの最大実行時間を明示的に制御します。提案エラー レベル: 警告"
+      },
+      "mariadb": {
+        "title": "MAX_STATEMENT_TIMEパラメータを明示的に設定する",
+        "description": "変更スクリプトで MAX_STATEMENT_TIME パラメータを設定して、ステートメントの最大実行時間を明示的に制御します。提案エラー レベル: 警告"
+      }
     },
     "statement-require-algorithm-option": {
       "title": "ALTER TABLE文でALGORITHMオプションを指定する必要がある",
