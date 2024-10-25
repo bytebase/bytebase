@@ -97,8 +97,8 @@ func (s *DatabaseService) convertToChangelog(ctx context.Context, d *store.Datab
 		Creator:          "",
 		CreateTime:       timestamppb.New(c.CreatedTime),
 		Status:           v1pb.Changelog_Status(c.Payload.GetTask().GetStatus()),
-		Statement:        "TODO(p0ny): convert statement",
-		StatementSize:    100,
+		Statement:        "",
+		StatementSize:    0,
 		StatementSheet:   "",
 		Schema:           "",
 		SchemaSize:       0,
@@ -109,6 +109,24 @@ func (s *DatabaseService) convertToChangelog(ctx context.Context, d *store.Datab
 		Version:          "",
 		Revision:         "",
 		ChangedResources: convertToChangedResources(c.Payload.GetTask().GetChangedResources()),
+	}
+
+	if sheet := c.Payload.GetTask().GetSheet(); sheet != "" {
+		_, sheetUID, err := common.GetProjectResourceIDSheetUID(sheet)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get sheetUID from %q", sheet)
+		}
+		sheetM, err := s.store.GetSheet(ctx, &store.FindSheetMessage{UID: &sheetUID})
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get sheet %q", sheet)
+		}
+		if sheetM == nil {
+			return nil, errors.Errorf("sheet %q not found", sheet)
+		}
+
+		cl.StatementSheet = sheet
+		cl.Statement = sheetM.Statement
+		cl.StatementSize = sheetM.Size
 	}
 
 	if id := c.Payload.GetTask().GetRevision(); id != 0 {

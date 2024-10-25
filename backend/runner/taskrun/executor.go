@@ -550,6 +550,7 @@ func beginMigration(ctx context.Context, stores *store.Store, mi *db.MigrationIn
 				Status:            storepb.ChangelogTask_PENDING,
 				PrevSyncHistoryId: syncHistoryPrev,
 				SyncHistoryId:     0,
+				Sheet:             mc.sheetName,
 			},
 		}}, api.SystemBotID)
 		if err != nil {
