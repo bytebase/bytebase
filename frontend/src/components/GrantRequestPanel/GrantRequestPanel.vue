@@ -114,7 +114,7 @@ const props = withDefaults(
     projectName: string;
     role: PresetRoleType.PROJECT_QUERIER | PresetRoleType.PROJECT_EXPORTER;
     database?: ComposedDatabase;
-    placement: "left" | "right";
+    placement?: "left" | "right";
   }>(),
   {
     database: undefined,
@@ -176,9 +176,9 @@ const doCreateIssue = async () => {
       props.role === PresetRoleType.PROJECT_QUERIER
         ? "bb.issue.grant.request.querier"
         : "bb.issue.grant.request.exporter",
-      state.databaseResources.map(
+      state.databaseResources?.map(
         (databaseResource) => databaseResource.databaseName
-      )
+      ) ?? []
     ),
     description: state.description,
     type: Issue_Type.GRANT_REQUEST,
