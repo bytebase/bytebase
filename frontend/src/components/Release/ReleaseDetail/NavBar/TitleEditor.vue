@@ -5,6 +5,7 @@
     :style="style"
     :loading="state.isUpdating"
     :disabled="state.isUpdating"
+    :readonly="release.state !== State.ACTIVE"
     autosize
     required
     @focus="state.isEditing = true"
@@ -20,6 +21,7 @@ import type { CSSProperties } from "vue";
 import { computed, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { pushNotification, useReleaseStore } from "@/store";
+import { State } from "@/types/proto/v1/common";
 import { Release } from "@/types/proto/v1/release_service";
 import { useReleaseDetailContext } from "../context";
 

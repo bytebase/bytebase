@@ -5574,6 +5574,11 @@ paths:
                      the call that provided the page token.
                   schema:
                     type: string
+                - name: showDeleted
+                  in: query
+                  description: Show deleted releases if specified.
+                  schema:
+                    type: boolean
             responses:
                 "200":
                     description: OK
@@ -12651,6 +12656,13 @@ components:
                     readOnly: true
                     type: string
                     format: date-time
+                state:
+                    enum:
+                        - STATE_UNSPECIFIED
+                        - ACTIVE
+                        - DELETED
+                    type: string
+                    format: enum
         Release_File:
             type: object
             properties:

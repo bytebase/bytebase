@@ -88,7 +88,7 @@ func (s *Store) CreateRelease(ctx context.Context, release *ReleaseMessage, crea
 }
 
 func (s *Store) GetRelease(ctx context.Context, uid int64) (*ReleaseMessage, error) {
-	releases, err := s.ListReleases(ctx, &FindReleaseMessage{UID: &uid})
+	releases, err := s.ListReleases(ctx, &FindReleaseMessage{UID: &uid, ShowDeleted: true})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to list releases")
 	}

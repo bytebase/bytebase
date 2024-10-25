@@ -70,6 +70,10 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  showDeleted: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 const state = reactive<LocalState>({
@@ -121,7 +125,8 @@ const fetchData = (refresh = false) => {
 
   const request = releaseStore.fetchReleasesByProject(
     props.project,
-    latestPagination.value
+    latestPagination.value,
+    props.showDeleted
   );
 
   request
@@ -153,6 +158,12 @@ const resetSession = () => {
   };
 };
 
+const refresh = () => {
+  state.paginationToken = "";
+  resetSession();
+  fetchData(true);
+};
+
 const fetchNextPage = () => {
   fetchData(false);
 };
@@ -162,6 +173,8 @@ if (Date.now() - sessionState.value.updatedTs > SESSION_LIFE) {
   resetSession();
 }
 fetchData(true);
+
+watch(() => props.showDeleted, refresh);
 watch(isLoggedIn, () => {
   // Reset session when logged out.
   if (!isLoggedIn.value) {
