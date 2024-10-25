@@ -13,7 +13,7 @@
       </NButton>
       <BBButtonConfirm
         v-if="allowReactiveUser(user)"
-        :style="'RESTORE'"
+        :type="'RESTORE'"
         :require-confirm="true"
         :ok-text="$t('settings.members.action.reactivate')"
         :confirm-title="`${$t(

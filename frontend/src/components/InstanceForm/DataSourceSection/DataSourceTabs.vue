@@ -15,7 +15,7 @@
       <BBButtonConfirm
         v-if="hasReadOnlyDataSource"
         class="!ml-1"
-        :style="'DELETE'"
+        :type="'DELETE'"
         :disabled="!allowUpdate"
         :require-confirm="!ds.pendingCreate"
         :ok-text="$t('common.delete')"

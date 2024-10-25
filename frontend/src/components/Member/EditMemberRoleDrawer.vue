@@ -38,7 +38,7 @@
             <BBButtonConfirm
               v-if="!isCreating"
               ref="confirmRevokeAccessRef"
-              :style="'DELETE'"
+              :type="'DELETE'"
               :confirm-title="$t('settings.members.revoke-access-alert')"
               :ok-text="$t('settings.members.revoke-access')"
               :button-text="$t('settings.members.revoke-access')"

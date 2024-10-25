@@ -5,7 +5,7 @@
     <div class="pt-4 mt-2 flex border-t justify-between">
       <template v-if="connectorList.length == 0">
         <BBButtonConfirm
-          :style="'DELETE'"
+          :type="'DELETE'"
           :button-text="$t('gitops.setting.git-provider.delete')"
           :ok-text="$t('common.delete')"
           :confirm-title="

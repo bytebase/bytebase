@@ -131,8 +131,8 @@ const columns = computed(
               </NButton>
               {hasDeletePolicyPermission.value && (
                 <BBButtonConfirm
-                  type={"default"}
-                  style={"DELETE"}
+                  text={false}
+                  type={"DELETE"}
                   hideIcon={true}
                   buttonText={t("common.delete")}
                   okText={t("common.delete")}
