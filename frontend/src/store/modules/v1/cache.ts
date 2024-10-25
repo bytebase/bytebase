@@ -50,6 +50,10 @@ export const useListCache = (namespace: string) => {
     return undefined;
   };
 
+  const deleteCache = (attr: string) => {
+    listCache.delete(getCacheKey(attr));
+  };
+
   const clearCache = () => {
     LIST_CACHE.delete(namespace);
   };
@@ -59,6 +63,7 @@ export const useListCache = (namespace: string) => {
     getCacheKey,
     getCache,
     clearCache,
+    deleteCache,
   };
 };
 

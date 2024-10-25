@@ -24,13 +24,12 @@
                       {{ $t("common.cancel") }}
                     </NButton>
                     <NButton
+                      type="primary"
                       :disabled="!allowSaveEdit"
                       @click.prevent="saveEdit"
                     >
                       <template #icon>
-                        <heroicons-solid:save
-                          class="h-5 w-5 text-control-light"
-                        />
+                        <heroicons-solid:save class="h-5 w-5" />
                       </template>
                       {{ $t("common.save") }}
                     </NButton>
