@@ -692,6 +692,9 @@ func (q *querySpanExtractor) extractTableSourceFromComplexPLPGSQL(name string, c
 	if listener.span == nil {
 		return nil, errors.Errorf("failed to extract table source from PLpgSQL function body for function %s", name)
 	}
+	if listener.span.NotFoundError != nil {
+		return nil, errors.Wrapf(listener.span.NotFoundError, "failed to extract table source from PLpgSQL function body for function %s", name)
+	}
 	if len(columnNames) != len(listener.span.Results) {
 		return nil, errors.Errorf("expecting %d columns but got %d for function: %s", len(columnNames), len(listener.span.Results), name)
 	}
@@ -736,6 +739,10 @@ func (l *plpgSQLListener) EnterStmt_assign(ctx *pgparser.Stmt_assignContext) {
 	newQ := newQuerySpanExtractor(l.q.defaultDatabase, l.q.defaultSchema, l.q.gCtx)
 	span, err := newQ.getQuerySpan(l.q.ctx, fmt.Sprintf("SELECT %s", ctx.GetParser().GetTokenStream().GetTextFromRuleContext(ctx.Sql_expression())))
 	if err != nil {
+		return
+	}
+	if span.NotFoundError != nil {
+		l.err = span.NotFoundError
 		return
 	}
 	for source := range span.SourceColumns {
@@ -798,6 +805,9 @@ func (q *querySpanExtractor) extractTableSourceFromSimplePLPGSQL(name string, js
 		span, err := newQ.getQuerySpan(q.ctx, sql)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get query span for function: %s", name)
+		}
+		if span.NotFoundError != nil {
+			return nil, errors.Wrapf(span.NotFoundError, "failed to get query span for function: %s", name)
 		}
 
 		rightQuerySpanResult := span.Results
@@ -867,6 +877,9 @@ func (q *querySpanExtractor) extractTableSourceFromSQLFunction(createFunc *pgque
 	span, err := newQ.getQuerySpan(q.ctx, asBody)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get query span for function: %s", name)
+	}
+	if span.NotFoundError != nil {
+		return nil, errors.Wrapf(span.NotFoundError, "failed to get query span for function: %s", name)
 	}
 	for source := range span.SourceColumns {
 		q.sourceColumnsInFunction[source] = true
@@ -2153,6 +2166,9 @@ func (q *querySpanExtractor) getColumnsForView(definition string) ([]base.QueryS
 	if err != nil {
 		return nil, err
 	}
+	if span.NotFoundError != nil {
+		return nil, span.NotFoundError
+	}
 	return span.Results, nil
 }
 
@@ -2161,6 +2177,9 @@ func (q *querySpanExtractor) getColumnsForMaterializedView(definition string) ([
 	span, err := newQ.getQuerySpan(q.ctx, definition)
 	if err != nil {
 		return nil, err
+	}
+	if span.NotFoundError != nil {
+		return nil, span.NotFoundError
 	}
 	return span.Results, nil
 }
