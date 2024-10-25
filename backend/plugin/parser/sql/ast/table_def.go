@@ -10,6 +10,8 @@ const (
 	TableTypeBaseTable
 	// TableTypeView is the type for view.
 	TableTypeView
+	// TableTypeMaterializedView is the type for materialized view.
+	TableTypeMaterializedView
 )
 
 // TableDef is the strcut for table.
