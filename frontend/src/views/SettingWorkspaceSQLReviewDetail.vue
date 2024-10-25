@@ -87,7 +87,7 @@
     <BBButtonConfirm
       class="!my-4"
       :disabled="!hasPermission"
-      :style="'DELETE'"
+      :type="'DELETE'"
       :button-text="$t('sql-review.delete')"
       :ok-text="$t('common.delete')"
       :confirm-title="$t('common.delete') + ` '${reviewPolicy.name}'?`"

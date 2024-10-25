@@ -96,7 +96,7 @@
     <!-- Don't show delete button in view mode. -->
     <div v-if="allowDelete">
       <BBButtonConfirm
-        :style="'DELETE'"
+        :type="'DELETE'"
         :button-text="$t('database.delete-this-branch')"
         :require-confirm="true"
         @confirm="deleteBranch(false)"

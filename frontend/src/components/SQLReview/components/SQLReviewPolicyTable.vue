@@ -48,9 +48,9 @@
 
           <BBButtonConfirm
             v-if="hasDeletePolicyPermission"
-            type="default"
+            :text="false"
             :disabled="!hasUpdatePolicyPermission"
-            :style="'DELETE'"
+            :type="'DELETE'"
             :hide-icon="true"
             :button-text="$t('common.delete')"
             :ok-text="$t('common.delete')"

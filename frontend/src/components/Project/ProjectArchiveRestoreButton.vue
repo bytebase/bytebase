@@ -2,7 +2,7 @@
   <template v-if="allowArchiveOrRestore">
     <template v-if="project.state === State.ACTIVE">
       <BBButtonConfirm
-        :style="'ARCHIVE'"
+        :type="'ARCHIVE'"
         :button-text="$t('project.settings.archive.btn-text')"
         :ok-text="$t('common.archive')"
         :confirm-title="
@@ -23,7 +23,7 @@
     </template>
     <template v-else-if="project.state === State.DELETED">
       <BBButtonConfirm
-        :style="'RESTORE'"
+        :type="'RESTORE'"
         :button-text="$t('project.settings.restore.btn-text')"
         :ok-text="$t('common.restore')"
         :confirm-title="

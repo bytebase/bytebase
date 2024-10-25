@@ -8,7 +8,7 @@ export type BBButtonType =
   | "DANGER"
   | "SUCCESS";
 
-export type BBButtonConfirmStyle =
+export type BBButtonConfirmType =
   | "NORMAL"
   | "DELETE"
   | "ARCHIVE"
