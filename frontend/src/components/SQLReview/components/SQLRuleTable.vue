@@ -63,7 +63,7 @@
                 </span>
               </NTooltip>
               <span>
-                {{ getRuleLocalization(rule.type).title }}
+                {{ getRuleLocalization(rule.type, rule.engine).title }}
                 <a
                   :href="`https://www.bytebase.com/docs/sql-review/review-rules#${rule.type}`"
                   target="_blank"
@@ -100,7 +100,7 @@
             @level-change="updateLevel(rule, $event)"
           />
           <p class="textinfolabel">
-            {{ getRuleLocalization(rule.type).description }}
+            {{ getRuleLocalization(rule.type, rule.engine).description }}
           </p>
         </div>
       </div>
@@ -199,13 +199,14 @@ const columns = computed(() => {
       expandable: (rule: RuleTemplateV2) => {
         return !!(
           rule.comment ||
-          getRuleLocalization(rule.type).description ||
+          getRuleLocalization(rule.type, rule.engine).description ||
           rule.componentList.length > 0
         );
       },
       renderExpand: (rule: RuleTemplateV2) => {
         const comment =
-          rule.comment || getRuleLocalization(rule.type).description;
+          rule.comment ||
+          getRuleLocalization(rule.type, rule.engine).description;
         return (
           <div class="px-10">
             <p class="w-full text-left text-gray-500">{comment}</p>
@@ -254,7 +255,7 @@ const columns = computed(() => {
       render: (rule: RuleTemplateV2) => {
         return (
           <div class="flex items-center space-x-2">
-            <span>{getRuleLocalization(rule.type).title}</span>
+            <span>{getRuleLocalization(rule.type, rule.engine).title}</span>
             <a
               href={`https://www.bytebase.com/docs/sql-review/review-rules#${rule.type}`}
               target="_blank"

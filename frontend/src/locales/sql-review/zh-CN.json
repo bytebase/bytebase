@@ -568,8 +568,16 @@
       "description": "某些变更可能影响现有应用功能，例如修改数据库对象名，增加新的约束等，此规范可避免不谨慎变更导致现有应用运行失败。建议错误等级：警告"
     },
     "statement-max-execution-time": {
-      "title": "最大执行时间",
-      "description": "设置SQL语句的最大执行时间，如果执行时间超过限制，语句将被终止。建议错误级别：错误"
+      "title": "强制设置最大执行时间参数",
+      "description": "设置SQL语句的最大执行时间，如果执行时间超过限制，语句将被终止。建议错误级别：警告",
+      "mysql": {
+        "title": "强制明确设置 MAX_EXECUTION_TIME 参数",
+        "description": "在变更脚本中设置 MAX_EXECUTION_TIME 参数以显式控制语句最长执行时间。建议错误级别：警告"
+      },
+      "mariadb": {
+        "title": "强制明确设置 MAX_STATEMENT_TIME 参数",
+        "description": "在变更脚本中设置 MAX_STATEMENT_TIME 参数以显式控制语句最长执行时间。建议错误级别：警告"
+      }
     },
     "statement-require-algorithm-option": {
       "title": "需要在 ALTER TABLE 语句中指定 ALGORITHM 选项",
