@@ -568,8 +568,16 @@
       "description": "Some changes may affect running applications, such as modifying the name of database object, adding new constraints, etc. This rule can avoid careless changes that lead to the failure of existing application. Suggestion error level: Warning"
     },
     "statement-max-execution-time": {
-      "title": "Max execution time",
-      "description": "Set the maximum execution time for SQL statements. If the execution time exceeds the limit, the statement will be terminated. Suggestion error level: Error"
+      "title": "Enforce set the max execution time parameter",
+      "description": "Set the maximum execution time for SQL statements. If the execution time exceeds the limit, the statement will be terminated. Suggestion error level: Warning",
+      "mysql": {
+        "title": "Enforce set the MAX_EXECUTION_TIME parameter explicitly",
+        "description": "Set the MAX_EXECUTION_TIME parameter in the change script to explicitly control the maximum execution time of the statement. Suggestion error level: Warning"
+      },
+      "mariadb": {
+        "title": "Enforce set the MAX_STATEMENT_TIME parameter explicitly",
+        "description": "Set the MAX_STATEMENT_TIME parameter in the change script to explicitly control the maximum execution time of the statement. Suggestion error level: Warning"
+      }
     },
     "statement-require-algorithm-option": {
       "title": "Require specifying the ALGORITHM option in ALTER TABLE statements",

@@ -1,4 +1,4 @@
-import { t } from "@/plugins/i18n";
+import { t, te } from "@/plugins/i18n";
 import type { Engine } from "@/types/proto/v1/common";
 import { engineFromJSON } from "@/types/proto/v1/common";
 import {
@@ -743,12 +743,22 @@ export const getRuleLocalizationKey = (type: string): string => {
 };
 
 export const getRuleLocalization = (
-  type: string
+  type: string,
+  engine?: Engine
 ): { title: string; description: string } => {
   const key = getRuleLocalizationKey(type);
+  let title = t(`sql-review.rule.${key}.title`);
+  let description = t(`sql-review.rule.${key}.description`);
 
-  const title = t(`sql-review.rule.${key}.title`);
-  const description = t(`sql-review.rule.${key}.description`);
+  if (engine) {
+    const engineSpecificKey = `${key}.${engine.toLowerCase()}`;
+    if (te(`sql-review.rule.${engineSpecificKey}.title`)) {
+      title = t(`sql-review.rule.${engineSpecificKey}.title`);
+    }
+    if (te(`sql-review.rule.${engineSpecificKey}.description`)) {
+      description = t(`sql-review.rule.${engineSpecificKey}.description`);
+    }
+  }
 
   return {
     title,
