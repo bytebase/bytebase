@@ -1373,6 +1373,9 @@ func (q *querySpanExtractor) getColumnsForView(instanceID, defaultDatabase, defi
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get query span for view definition: %s", definition)
 	}
+	if span.NotFoundError != nil {
+		return nil, span.NotFoundError
+	}
 	return span.Results, nil
 }
 
@@ -1387,6 +1390,9 @@ func (q *querySpanExtractor) getColumnsForMaterializedView(instanceID, defaultDa
 	span, err := newQ.getQuerySpan(q.ctx, definition)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get query span for materialized view definition: %s", definition)
+	}
+	if span.NotFoundError != nil {
+		return nil, span.NotFoundError
 	}
 	return span.Results, nil
 }
