@@ -30,6 +30,7 @@ export interface ChangelogTask {
    * Format: projects/{project}/sheets/{sheet}
    */
   sheet: string;
+  version: string;
 }
 
 export enum ChangelogTask_Status {
@@ -240,6 +241,7 @@ function createBaseChangelogTask(): ChangelogTask {
     prevSyncHistoryId: Long.ZERO,
     syncHistoryId: Long.ZERO,
     sheet: "",
+    version: "",
   };
 }
 
@@ -268,6 +270,9 @@ export const ChangelogTask: MessageFns<ChangelogTask> = {
     }
     if (message.sheet !== "") {
       writer.uint32(66).string(message.sheet);
+    }
+    if (message.version !== "") {
+      writer.uint32(74).string(message.version);
     }
     return writer;
   },
@@ -335,6 +340,13 @@ export const ChangelogTask: MessageFns<ChangelogTask> = {
 
           message.sheet = reader.string();
           continue;
+        case 9:
+          if (tag !== 74) {
+            break;
+          }
+
+          message.version = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -356,6 +368,7 @@ export const ChangelogTask: MessageFns<ChangelogTask> = {
       prevSyncHistoryId: isSet(object.prevSyncHistoryId) ? Long.fromValue(object.prevSyncHistoryId) : Long.ZERO,
       syncHistoryId: isSet(object.syncHistoryId) ? Long.fromValue(object.syncHistoryId) : Long.ZERO,
       sheet: isSet(object.sheet) ? globalThis.String(object.sheet) : "",
+      version: isSet(object.version) ? globalThis.String(object.version) : "",
     };
   },
 
@@ -385,6 +398,9 @@ export const ChangelogTask: MessageFns<ChangelogTask> = {
     if (message.sheet !== "") {
       obj.sheet = message.sheet;
     }
+    if (message.version !== "") {
+      obj.version = message.version;
+    }
     return obj;
   },
 
@@ -409,6 +425,7 @@ export const ChangelogTask: MessageFns<ChangelogTask> = {
       ? Long.fromValue(object.syncHistoryId)
       : Long.ZERO;
     message.sheet = object.sheet ?? "";
+    message.version = object.version ?? "";
     return message;
   },
 };
