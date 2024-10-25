@@ -14,6 +14,7 @@ import (
 
 	// Import MSSQL driver.
 	gomssqldb "github.com/microsoft/go-mssqldb"
+	// Kerberos Active Directory authentication outside Windows.
 	_ "github.com/microsoft/go-mssqldb/integratedauth/krb5"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/durationpb"
