@@ -45,6 +45,7 @@ export const defaultSQLEditorTab = (): SQLEditorTab => {
       selection: null,
       advices: [],
     },
+    queryMode: "QUERY",
   };
 };
 

@@ -2549,6 +2549,18 @@
       "go-to-create": "ir a crear",
       "contact-the-admin-to-grant-access": "Póngase en contacto con el administrador para otorgar acceso."
     },
+    "query-mode": {
+      "query": {
+        "self": "Query (solo lectura)",
+        "description": "Permitir declaraciones SELECT, SHOW y SET."
+      },
+      "execute": {
+        "self": "Execute (Leer / Escribir)",
+        "description": "Permitir declaraciones DDL y DML.",
+        "disabled-by-policy": "Deshabilitado por la {policy}.",
+        "environment-policy": "política ambiental"
+      }
+    },
     "upload-file": "Subir archivo"
   },
   "schema-editor": {
@@ -3560,6 +3572,10 @@
     "project-exporter": {
       "self": "Exportador del proyecto",
       "description": "El exportador del proyecto tiene todos los permisos dentro del proyecto, excepto la gestión de miembros del proyecto."
+    },
+    "project-executor": {
+      "self": "Ejecutor del proyecto",
+      "description": "Permisos para ejecutar DML/DDL en la base de datos."
     },
     "project-viewer": {
       "self": "Espectador del proyecto",
