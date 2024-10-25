@@ -79,9 +79,9 @@ export const useInstanceV1Store = defineStore("instance_v1", () => {
     const composed = await upsertInstances([instance]);
     return composed[0];
   };
-  const syncInstance = async (instance: Instance, enableFullSync: boolean) => {
+  const syncInstance = async (instance: string, enableFullSync: boolean) => {
     await instanceServiceClient.syncInstance({
-      name: instance.name,
+      name: instance,
       enableFullSync,
     });
   };
