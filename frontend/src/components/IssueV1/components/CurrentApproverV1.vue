@@ -32,6 +32,9 @@
         {{ currentApprover.title }}
       </span>
     </template>
+    <template v-else>
+      <span>-</span>
+    </template>
   </div>
 </template>
 
