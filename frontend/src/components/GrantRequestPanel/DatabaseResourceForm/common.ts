@@ -5,9 +5,16 @@ import type { ComposedDatabase } from "@/types";
 import type { TableMetadata } from "@/types/proto/v1/database_service";
 import { hasSchemaProperty } from "@/utils";
 
-export interface DatabaseTreeOption<
-  L = "database" | "schema" | "table" | "column",
-> extends TreeOption {
+export type DatabaseResourceType =
+  | "databases"
+  | "schemas"
+  | "tables"
+  | "columns";
+
+export interface DatabaseTreeOption<L = DatabaseResourceType>
+  extends TreeOption,
+    TransferOption {
+  label: string;
   level: L;
   value: string;
   children?: DatabaseTreeOption[];
@@ -22,7 +29,7 @@ export const mapTreeOptions = ({
   filterValueList?: string[];
   includeCloumn: boolean;
 }) => {
-  const databaseNodes: DatabaseTreeOption<"database">[] = [];
+  const databaseNodes: DatabaseTreeOption<"databases">[] = [];
   const filteredDatabaseList = filterValueList
     ? databaseList.filter((database) =>
         filterValueList.some(
@@ -31,8 +38,8 @@ export const mapTreeOptions = ({
       )
     : databaseList;
   for (const database of filteredDatabaseList) {
-    const databaseNode: DatabaseTreeOption<"database"> = {
-      level: "database",
+    const databaseNode: DatabaseTreeOption<"databases"> = {
+      level: "databases",
       value: database.name,
       label: database.databaseName,
       isLeaf: false,
@@ -61,18 +68,18 @@ const getTableTreeOptions = ({
   tableList: TableMetadata[];
   filterValueList?: string[];
   includeCloumn: boolean;
-}): DatabaseTreeOption<"table">[] => {
-  const tableNodes = tableList.map((table): DatabaseTreeOption<"table"> => {
-    const option: DatabaseTreeOption<"table"> = {
-      level: "table",
+}): DatabaseTreeOption<"tables">[] => {
+  const tableNodes = tableList.map((table): DatabaseTreeOption<"tables"> => {
+    const option: DatabaseTreeOption<"tables"> = {
+      level: "tables",
       value: `${prefix}/tables/${table.name}`,
       label: table.name,
       isLeaf: true,
     };
     if (includeCloumn) {
       option.children = table.columns.map(
-        (column): DatabaseTreeOption<"column"> => ({
-          level: "column",
+        (column): DatabaseTreeOption<"columns"> => ({
+          level: "columns",
           value: `${option.value}/columns/${column.name}`,
           label: column.name,
           isLeaf: true,
@@ -116,10 +123,10 @@ export const getSchemaOrTableTreeOptions = ({
   }
   if (hasSchemaProperty(database.instanceResource.engine)) {
     const schemaNodes = databaseMetadata.schemas.map(
-      (schema): DatabaseTreeOption<"schema"> => {
+      (schema): DatabaseTreeOption<"schemas"> => {
         const value = `${database.name}/schemas/${schema.name}`;
-        const schemaNode: DatabaseTreeOption<"schema"> = {
-          level: "schema",
+        const schemaNode: DatabaseTreeOption<"schemas"> = {
+          level: "schemas",
           value,
           label: schema.name,
           children: getTableTreeOptions({
@@ -157,10 +164,10 @@ export const getSchemaOrTableTreeOptions = ({
 
 export const flattenTreeOptions = (
   options: DatabaseTreeOption[]
-): TransferOption[] => {
+): DatabaseTreeOption[] => {
   return options.flatMap((option) => {
     return [
-      option as TransferOption,
+      option,
       ...flattenTreeOptions(
         (option.children as DatabaseTreeOption[] | undefined) ?? []
       ),
