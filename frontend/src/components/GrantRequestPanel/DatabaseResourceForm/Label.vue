@@ -36,26 +36,26 @@ const option = computed(() => props.option);
 
 const database = computed(() => {
   const { option } = props;
-  if (option.level !== "database") return undefined;
+  if (option.level !== "databases") return undefined;
   return useDatabaseV1Store().getDatabaseByName(option.value);
 });
 
 const environment = computed(() => {
   const { option } = props;
-  if (option.level !== "database") return undefined;
+  if (option.level !== "databases") return undefined;
   return database.value?.effectiveEnvironmentEntity;
 });
 
 const Prefix = () => {
-  if (option.value.level === "database") {
+  if (option.value.level === "databases") {
     return h(DatabaseIcon, {
       class: "w-4 h-auto text-gray-400 shrink-0",
     });
-  } else if (option.value.level === "schema") {
+  } else if (option.value.level === "schemas") {
     return h(SchemaIcon, {
       class: "w-4 h-auto text-gray-400 shrink-0",
     });
-  } else if (option.value.level === "table") {
+  } else if (option.value.level === "tables") {
     return h(TableIcon, {
       class: "w-4 h-auto text-gray-400 shrink-0",
     });
