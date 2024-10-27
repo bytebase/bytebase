@@ -107,7 +107,7 @@
           }}
         </p>
       </div>
-      <div v-if="isDev()">
+      <div>
         <NCheckbox
           v-model:checked="state.postgresDatabaseTenantMode"
           size="large"
@@ -142,7 +142,6 @@ import { FeatureBadge } from "@/components/FeatureGuard";
 import { hasFeature, pushNotification, useProjectV1Store } from "@/store";
 import type { ComposedProject } from "@/types";
 import { Label } from "@/types/proto/v1/project_service";
-import { isDev } from "@/utils";
 
 interface LocalState {
   issueLabels: Label[];
