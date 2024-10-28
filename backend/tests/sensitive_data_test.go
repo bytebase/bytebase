@@ -155,6 +155,7 @@ func TestSensitiveData(t *testing.T) {
 		Statement:    "SELECT hello TO world;",
 		DataSourceId: "admin",
 	})
+	a.Error(err)
 	// TODO(d): deprecate the details with diagonose check. And the error is not reached anyway.
 	/*
 		st := status.Convert(err)
