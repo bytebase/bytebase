@@ -157,6 +157,8 @@ var allPermissions = []Permission{
 	PermissionDatabasesGetSchema,
 	PermissionDatabasesList,
 	PermissionDatabasesQuery,
+	PermissionDatabasesQueryDDL,
+	PermissionDatabasesQueryDML,
 	PermissionDatabasesQueryExplain,
 	PermissionDatabasesQueryInfo,
 	PermissionDatabasesSync,
