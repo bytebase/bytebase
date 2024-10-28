@@ -12,15 +12,15 @@
           :database-name="state.selectedDatabaseName"
         />
         <MaskingLevelDropdown
+          v-model:level="state.selectedMaskLevel"
           style="width: 12rem"
           :clearable="true"
-          v-model:level="state.selectedMaskLevel"
           :level-list="[MaskingLevel.PARTIAL, MaskingLevel.NONE]"
         />
         <MaskingActionDropdown
+          v-model:action="state.selectedAction"
           style="width: 12rem"
           :clearable="true"
-          v-model:action="state.selectedAction"
           :action-list="[Action.EXPORT, Action.QUERY]"
         />
       </NInputGroup>
