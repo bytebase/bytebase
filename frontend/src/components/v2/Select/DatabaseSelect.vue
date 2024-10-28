@@ -7,6 +7,7 @@
     :multiple="multiple"
     :filter="filterByDatabaseName"
     :filterable="true"
+    :clearable="clearable"
     class="bb-database-select"
     style="width: 12rem"
     v-bind="$attrs"
@@ -54,6 +55,7 @@ const props = withDefaults(
     placeholder?: string;
     filter?: (database: ComposedDatabase, index: number) => boolean;
     multiple?: boolean;
+    clearable?: boolean;
   }>(),
   {
     databaseName: undefined,
@@ -67,6 +69,7 @@ const props = withDefaults(
     placeholder: undefined,
     filter: undefined,
     multiple: false,
+    clearable: false,
   }
 );
 

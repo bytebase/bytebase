@@ -3,6 +3,8 @@
     :value="level"
     :options="options"
     :disabled="disabled"
+    :clearable="clearable"
+    :placeholder="$t('settings.sensitive-data.masking-level.selet-level')"
     @update:value="$emit('update:level', $event)"
   />
 </template>
@@ -17,12 +19,13 @@ import { maskingLevelToJSON } from "@/types/proto/v1/common";
 
 const props = defineProps<{
   disabled?: boolean;
-  level: MaskingLevel;
+  clearable?: boolean;
+  level?: MaskingLevel;
   levelList: MaskingLevel[];
 }>();
 
 defineEmits<{
-  (event: "update:level", level: MaskingLevel): void;
+  (event: "update:level", level: MaskingLevel | undefined): void;
 }>();
 
 const { t } = useI18n();

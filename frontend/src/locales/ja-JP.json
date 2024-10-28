@@ -931,7 +931,7 @@
       },
       "masking-level": {
         "self": "脱感作の程度",
-        "selet-level": "減感作のレベルを選択します",
+        "selet-level": "マスキングレベルを選択",
         "masking_level_unspecified": "全体像に従ってください",
         "none": "プレーンテキスト",
         "partial": "半鈍感症",
@@ -939,6 +939,7 @@
       },
       "action": {
         "self": "操作の種類",
+        "selet-action": "アクションを選択",
         "query": "お問い合わせ",
         "export": "輸出"
       },
