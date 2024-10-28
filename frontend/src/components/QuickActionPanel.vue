@@ -85,7 +85,7 @@
       "
       :column-list="[]"
       :project-name="project.name"
-      @close="state.quickActionType = undefined"
+      @dismiss="state.quickActionType = undefined"
     />
   </template>
 
