@@ -121,7 +121,6 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 		profile:   profile,
 		startedTs: time.Now().Unix(),
 	}
-	fmt.Printf("Barny1: %v\n", profile.IsDocker)
 
 	// Display config
 	slog.Info("-----Config BEGIN-----")
