@@ -93,6 +93,10 @@ func (q *querySpanExtractor) extractTableSourceFromQuery(query parser.IQueryCont
 }
 
 func (q *querySpanExtractor) extractTableSourceFromQueryWithoutPipe(queryWithoutPipe parser.IQuery_without_pipe_operatorsContext) (base.TableSource, error) {
+	originalCTELength := len(q.ctes)
+	defer func() {
+		q.ctes = q.ctes[:originalCTELength]
+	}()
 	// TODO(zp): handle CTE.
 	if queryWithoutPipe.With_clause() != nil {
 		if err := q.recordCTE(queryWithoutPipe.With_clause()); err != nil {
