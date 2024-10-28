@@ -1036,7 +1036,7 @@ func (s *SQLService) accessCheck(
 			var permission iam.Permission
 			switch span.Type {
 			case base.QueryTypeUnknown:
-				// Should never reach here.
+				// Skip ACL check for statements such as SET variable.
 			case base.DDL:
 				permission = iam.PermissionDatabasesQueryDDL
 			case base.DML:
