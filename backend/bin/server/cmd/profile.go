@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"os"
 	"time"
 
 	"github.com/google/uuid"
@@ -24,6 +25,7 @@ func getBaseProfile(dataDir string) *config.Profile {
 		Readonly:             flags.readonly,
 		SaaS:                 flags.saas,
 		Debug:                flags.debug,
+		IsDocker:             isDocker(),
 		DataDir:              dataDir,
 		ResourceDir:          common.GetResourceDir(dataDir),
 		DemoName:             flags.demoName,
@@ -35,4 +37,11 @@ func getBaseProfile(dataDir string) *config.Profile {
 		Lsp:                  flags.lsp,
 		DevelopmentVersioned: flags.developmentVersioned,
 	}
+}
+
+func isDocker() bool {
+	if _, err := os.Stat("/etc/bb.env"); err == nil {
+		return true
+	}
+	return false
 }
