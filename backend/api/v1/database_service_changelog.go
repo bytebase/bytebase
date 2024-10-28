@@ -93,7 +93,7 @@ func (s *DatabaseService) GetChangelog(ctx context.Context, request *v1pb.GetCha
 		return nil, status.Errorf(codes.NotFound, "changelog %q not found", changelogUID)
 	}
 
-	// Get related database to convert to changelog.
+	// Get related database to convert changelog from store.
 	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
 		ResourceID: &instanceID,
 	})
