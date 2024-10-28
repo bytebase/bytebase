@@ -10,6 +10,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -19,8 +20,16 @@ type ChangelogMessage struct {
 
 	// output only
 	UID         int64
-	CreatorUID  int64
+	CreatorUID  int
 	CreatedTime time.Time
+}
+
+type FindChangelogMessage struct {
+	UID         *int64
+	DatabaseUID *int
+
+	Limit  *int
+	Offset *int
 }
 
 type UpdateChangelogMessage struct {
@@ -73,7 +82,7 @@ func (s *Store) UpdateChangelog(ctx context.Context, update *UpdateChangelogMess
 	var payloadSet []string
 
 	if v := update.SyncHistoryUID; v != nil {
-		payloadSet = append(payloadSet, fmt.Sprintf("jsonb_build_object('syncHistoryUid', $%d::TEXT)", len(args)+1))
+		payloadSet = append(payloadSet, fmt.Sprintf("jsonb_build_object('syncHistoryId', $%d::TEXT)", len(args)+1))
 		args = append(args, fmt.Sprintf("%d", *v))
 	}
 	if v := update.RevisionUID; v != nil {
@@ -110,4 +119,84 @@ func (s *Store) UpdateChangelog(ctx context.Context, update *UpdateChangelogMess
 	}
 
 	return nil
+}
+
+func (s *Store) ListChangelogs(ctx context.Context, find *FindChangelogMessage) ([]*ChangelogMessage, error) {
+	where, args := []string{"TRUE"}, []any{}
+	if v := find.UID; v != nil {
+		where, args = append(where, fmt.Sprintf("changelog.id = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.DatabaseUID; v != nil {
+		where, args = append(where, fmt.Sprintf("changelog.database_id = $%d", len(args)+1)), append(args, *v)
+	}
+
+	query := fmt.Sprintf(`
+		SELECT
+			changelog.id,
+			changelog.creator_id,
+			changelog.created_ts,
+			changelog.database_id,
+			payload
+		FROM changelog
+		WHERE %s
+		ORDER BY changelog.id DESC
+	`, strings.Join(where, " AND "))
+	if v := find.Limit; v != nil {
+		query += fmt.Sprintf(" LIMIT %d", *v)
+	}
+	if v := find.Offset; v != nil {
+		query += fmt.Sprintf(" OFFSET %d", *v)
+	}
+
+	rows, err := s.db.db.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to query")
+	}
+	defer rows.Close()
+
+	var changelogs []*ChangelogMessage
+	for rows.Next() {
+		c := ChangelogMessage{
+			Payload: &storepb.ChangelogPayload{},
+		}
+		var payload []byte
+
+		if err := rows.Scan(
+			&c.UID,
+			&c.CreatorUID,
+			&c.CreatedTime,
+			&c.DatabaseUID,
+			&payload,
+		); err != nil {
+			return nil, errors.Wrapf(err, "failed to scan")
+		}
+
+		if err := common.ProtojsonUnmarshaler.Unmarshal(payload, c.Payload); err != nil {
+			return nil, errors.Wrapf(err, "failed to unmarshal")
+		}
+
+		changelogs = append(changelogs, &c)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, errors.Wrapf(err, "rows err")
+	}
+
+	return changelogs, nil
+}
+
+func (s *Store) GetChangelog(ctx context.Context, uid int64) (*ChangelogMessage, error) {
+	changelogs, err := s.ListChangelogs(ctx, &FindChangelogMessage{
+		UID: &uid,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if len(changelogs) == 0 {
+		return nil, nil
+	}
+	if len(changelogs) > 1 {
+		return nil, errors.Errorf("found %d changelogs with UID %d, expect 1", len(changelogs), uid)
+	}
+	return changelogs[0], nil
 }

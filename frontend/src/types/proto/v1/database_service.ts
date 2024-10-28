@@ -1972,7 +1972,7 @@ export interface GetChangelogRequest {
    * Format: instances/{instance}/databases/{database}/changelogs/{changelog}
    */
   name: string;
-  view: ChangeHistoryView;
+  view: ChangelogView;
   /** Format the schema dump into SDL format. */
   sdlFormat: boolean;
   /**
@@ -10510,7 +10510,7 @@ export const ListChangelogsResponse: MessageFns<ListChangelogsResponse> = {
 };
 
 function createBaseGetChangelogRequest(): GetChangelogRequest {
-  return { name: "", view: ChangeHistoryView.CHANGE_HISTORY_VIEW_UNSPECIFIED, sdlFormat: false, concise: false };
+  return { name: "", view: ChangelogView.CHANGELOG_VIEW_UNSPECIFIED, sdlFormat: false, concise: false };
 }
 
 export const GetChangelogRequest: MessageFns<GetChangelogRequest> = {
@@ -10518,8 +10518,8 @@ export const GetChangelogRequest: MessageFns<GetChangelogRequest> = {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
     }
-    if (message.view !== ChangeHistoryView.CHANGE_HISTORY_VIEW_UNSPECIFIED) {
-      writer.uint32(16).int32(changeHistoryViewToNumber(message.view));
+    if (message.view !== ChangelogView.CHANGELOG_VIEW_UNSPECIFIED) {
+      writer.uint32(16).int32(changelogViewToNumber(message.view));
     }
     if (message.sdlFormat !== false) {
       writer.uint32(24).bool(message.sdlFormat);
@@ -10549,7 +10549,7 @@ export const GetChangelogRequest: MessageFns<GetChangelogRequest> = {
             break;
           }
 
-          message.view = changeHistoryViewFromJSON(reader.int32());
+          message.view = changelogViewFromJSON(reader.int32());
           continue;
         case 3:
           if (tag !== 24) {
@@ -10577,9 +10577,7 @@ export const GetChangelogRequest: MessageFns<GetChangelogRequest> = {
   fromJSON(object: any): GetChangelogRequest {
     return {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
-      view: isSet(object.view)
-        ? changeHistoryViewFromJSON(object.view)
-        : ChangeHistoryView.CHANGE_HISTORY_VIEW_UNSPECIFIED,
+      view: isSet(object.view) ? changelogViewFromJSON(object.view) : ChangelogView.CHANGELOG_VIEW_UNSPECIFIED,
       sdlFormat: isSet(object.sdlFormat) ? globalThis.Boolean(object.sdlFormat) : false,
       concise: isSet(object.concise) ? globalThis.Boolean(object.concise) : false,
     };
@@ -10590,8 +10588,8 @@ export const GetChangelogRequest: MessageFns<GetChangelogRequest> = {
     if (message.name !== "") {
       obj.name = message.name;
     }
-    if (message.view !== ChangeHistoryView.CHANGE_HISTORY_VIEW_UNSPECIFIED) {
-      obj.view = changeHistoryViewToJSON(message.view);
+    if (message.view !== ChangelogView.CHANGELOG_VIEW_UNSPECIFIED) {
+      obj.view = changelogViewToJSON(message.view);
     }
     if (message.sdlFormat !== false) {
       obj.sdlFormat = message.sdlFormat;
@@ -10608,7 +10606,7 @@ export const GetChangelogRequest: MessageFns<GetChangelogRequest> = {
   fromPartial(object: DeepPartial<GetChangelogRequest>): GetChangelogRequest {
     const message = createBaseGetChangelogRequest();
     message.name = object.name ?? "";
-    message.view = object.view ?? ChangeHistoryView.CHANGE_HISTORY_VIEW_UNSPECIFIED;
+    message.view = object.view ?? ChangelogView.CHANGELOG_VIEW_UNSPECIFIED;
     message.sdlFormat = object.sdlFormat ?? false;
     message.concise = object.concise ?? false;
     return message;

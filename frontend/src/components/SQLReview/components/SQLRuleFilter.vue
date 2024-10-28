@@ -87,7 +87,7 @@ const filterRuleByKeyword = (rule: RuleTemplateV2, searchText: string) => {
   const keyword = searchText.trim().toLowerCase();
   if (!keyword) return true;
   if (rule.type.toLowerCase().includes(keyword)) return true;
-  const localization = getRuleLocalization(rule.type);
+  const localization = getRuleLocalization(rule.type, rule.engine);
   if (localization.title.toLowerCase().includes(keyword)) return true;
   if (localization.description.toLowerCase().includes(keyword)) return true;
   return false;

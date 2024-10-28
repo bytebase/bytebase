@@ -103,7 +103,7 @@
       <template v-if="state.environment.state === State.ACTIVE">
         <BBButtonConfirm
           v-if="allowArchive"
-          :style="'ARCHIVE'"
+          :type="'ARCHIVE'"
           :button-text="$t('environment.archive')"
           :ok-text="$t('common.archive')"
           :confirm-title="
@@ -117,7 +117,7 @@
       <template v-else-if="state.environment.state === State.DELETED">
         <BBButtonConfirm
           v-if="allowRestore"
-          :style="'RESTORE'"
+          :type="'RESTORE'"
           :button-text="$t('environment.restore')"
           :ok-text="$t('common.restore')"
           :confirm-title="

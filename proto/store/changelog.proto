@@ -35,6 +35,8 @@ message ChangelogTask {
   // The sheet that holds the content.
   // Format: projects/{project}/sheets/{sheet}
   string sheet = 8;
+
+  string version = 9;
 }
 
 message ChangelogRevision {

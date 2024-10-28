@@ -1702,9 +1702,9 @@ paths:
                   in: query
                   schema:
                     enum:
-                        - CHANGE_HISTORY_VIEW_UNSPECIFIED
-                        - CHANGE_HISTORY_VIEW_BASIC
-                        - CHANGE_HISTORY_VIEW_FULL
+                        - CHANGELOG_VIEW_UNSPECIFIED
+                        - CHANGELOG_VIEW_BASIC
+                        - CHANGELOG_VIEW_FULL
                     type: string
                     format: enum
                 - name: sdlFormat
@@ -5574,6 +5574,11 @@ paths:
                      the call that provided the page token.
                   schema:
                     type: string
+                - name: showDeleted
+                  in: query
+                  description: Show deleted releases if specified.
+                  schema:
+                    type: boolean
             responses:
                 "200":
                     description: OK
@@ -8458,6 +8463,9 @@ components:
                     description: disallow_password_signin is the flag to disallow user signin with email&password. (except workspace admins)
                 passwordRestriction:
                     $ref: '#/components/schemas/PasswordRestrictionSetting'
+                docker:
+                    type: boolean
+                    description: docker flag means if the Bytebase instance is running in docker.
             description: |-
                 ServerInfo is the API message for server info.
                  Actuator concept is similar to the Spring Boot Actuator.
@@ -12651,6 +12659,13 @@ components:
                     readOnly: true
                     type: string
                     format: date-time
+                state:
+                    enum:
+                        - STATE_UNSPECIFIED
+                        - ACTIVE
+                        - DELETED
+                    type: string
+                    format: enum
         Release_File:
             type: object
             properties:

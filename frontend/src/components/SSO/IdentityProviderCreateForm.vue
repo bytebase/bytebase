@@ -563,7 +563,7 @@
         <template v-if="!isCreating">
           <BBButtonConfirm
             v-if="!isDeleted"
-            :style="'ARCHIVE'"
+            :type="'ARCHIVE'"
             :button-text="$t('settings.sso.archive')"
             :ok-text="$t('common.archive')"
             :confirm-title="$t('settings.sso.archive')"
@@ -573,7 +573,7 @@
           />
           <BBButtonConfirm
             v-else
-            :style="'RESTORE'"
+            :type="'RESTORE'"
             :button-text="$t('settings.sso.restore')"
             :ok-text="$t('common.restore')"
             :confirm-title="$t('settings.sso.restore')"

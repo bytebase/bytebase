@@ -39,6 +39,7 @@ const (
 	SchemaNamePrefix           = "schemas/"
 	TableNamePrefix            = "tables/"
 	ChangeHistoryPrefix        = "changeHistories/"
+	ChangelogPrefix            = "changelogs/"
 	IssueNamePrefix            = "issues/"
 	IssueCommentNamePrefix     = "issueComments/"
 	PipelineNamePrefix         = "pipelines/"
@@ -218,6 +219,20 @@ func GetInstanceDatabaseRevisionID(name string) (string, string, int64, error) {
 		return "", "", 0, errors.Wrapf(err, "failed to convert %q to int64", tokens[2])
 	}
 	return tokens[0], tokens[1], revisionUID, nil
+}
+
+// GetInstanceDatabaseChangelogUID returns the instance ID, database ID, and changelog UID from a resource name.
+func GetInstanceDatabaseChangelogUID(name string) (string, string, int64, error) {
+	// the name should be instances/{instance-id}/databases/{database-id}/changelogs/{changelog-id}
+	tokens, err := GetNameParentTokens(name, InstanceNamePrefix, DatabaseIDPrefix, ChangelogPrefix)
+	if err != nil {
+		return "", "", 0, err
+	}
+	changelogUID, err := strconv.ParseInt(tokens[2], 10, 64)
+	if err != nil {
+		return "", "", 0, errors.Wrapf(err, "failed to convert %q to int64", tokens[2])
+	}
+	return tokens[0], tokens[1], changelogUID, nil
 }
 
 // GetUserID returns the user ID from a resource name.
@@ -704,4 +719,12 @@ func FormatReleaseName(projectID string, releaseUID int64) string {
 // {path} is URL path escaped.
 func FormatReleaseFile(release string, file string) string {
 	return fmt.Sprintf("%s/%s%s", release, FileNamePrefix, url.PathEscape(file))
+}
+
+func FormatRevision(instanceID, databaseID string, revisionUID int64) string {
+	return fmt.Sprintf("%s/%s%d", FormatDatabase(instanceID, databaseID), RevisionNamePrefix, revisionUID)
+}
+
+func FormatChangelog(instanceID, databaseID string, changelogUID int64) string {
+	return fmt.Sprintf("%s/%s%d", FormatDatabase(instanceID, databaseID), ChangelogPrefix, changelogUID)
 }

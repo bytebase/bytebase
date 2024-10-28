@@ -23,6 +23,7 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBAvatar } from "@/bbkit";
 import { getTimeForPbTimestamp, type ComposedRelease } from "@/types";
+import { State } from "@/types/proto/v1/common";
 import { humanizeTs } from "@/utils";
 
 interface LocalState {
@@ -67,9 +68,17 @@ const columnList = computed((): DataTableColumn<ComposedRelease>[] => {
       key: "title",
       width: 160,
       title: t("common.title"),
-      ellipsis: true,
       render: (release) => {
-        return release.title;
+        return (
+          <p class="inline-flex w-full">
+            <span class="shrink truncate">{release.title}</span>
+            {release.state === State.DELETED && (
+              <NTag class="shrink-0" type="warning" size="small" round>
+                {t("common.archived")}
+              </NTag>
+            )}
+          </p>
+        );
       },
     },
     {

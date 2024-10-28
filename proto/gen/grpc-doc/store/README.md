@@ -1908,6 +1908,7 @@ PostgreSQL: RANGE, LIST, HASH (https://www.postgresql.org/docs/current/ddl-parti
 | prev_sync_history_id | [int64](#int64) |  |  |
 | sync_history_id | [int64](#int64) |  |  |
 | sheet | [string](#string) |  | The sheet that holds the content. Format: projects/{project}/sheets/{sheet} |
+| version | [string](#string) |  |  |
 
 
 

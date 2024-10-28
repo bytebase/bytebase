@@ -603,9 +603,52 @@ func (q *querySpanExtractor) extractTableSourceFromTablePrimary(tablePrimary par
 	if tablePrimary.Table_path_expression() != nil {
 		return q.extractTableSourceFromTablePathExpression(tablePrimary.Table_path_expression())
 	}
+	if subquery := tablePrimary.Table_subquery(); subquery != nil {
+		return q.extractTableSourceFromTableSubquery(subquery)
+	}
 
 	// TODO(zp): handle other case
 	return nil, nil
+}
+
+func (q *querySpanExtractor) extractTableSourceFromTableSubquery(subquery parser.ITable_subqueryContext) (base.TableSource, error) {
+	parenthesizedQuery := subquery.Parenthesized_query()
+
+	// Table subquery shares the ctes of outer query. On the contrary,
+	// the subquery should not effect the outer query.
+	// https://cloud.google.com/bigquery/docs/reference/standard-sql/subqueries#correlated_subquery_concepts
+	originalCtesLength := len(q.ctes)
+	originalTableSourceFrom := len(q.tableSourceFrom)
+	defer func() {
+		q.ctes = q.ctes[:originalCtesLength]
+		q.tableSourceFrom = q.tableSourceFrom[:originalTableSourceFrom]
+	}()
+	subqueryExtractor := &querySpanExtractor{
+		ctx:               q.ctx,
+		defaultDatabase:   q.defaultDatabase,
+		ctes:              q.ctes,
+		outerTableSources: q.outerTableSources,
+		tableSourceFrom:   q.tableSourceFrom,
+	}
+	tableSource, err := subqueryExtractor.extractTableSourceFromParenthesizedQuery(parenthesizedQuery)
+	if err != nil {
+		return nil, err
+	}
+
+	var alias string
+	if v := subquery.Opt_pivot_or_unpivot_clause_and_alias(); v != nil {
+		if v.Identifier() != nil {
+			alias = unquoteIdentifierByRule(v.Identifier())
+		}
+	}
+	if alias != "" {
+		return &base.PseudoTable{
+			Name:    alias,
+			Columns: tableSource.GetQuerySpanResult(),
+		}, nil
+	}
+
+	return tableSource, nil
 }
 
 func (q *querySpanExtractor) extractTableSourceFromTablePathExpression(tablePathExpression parser.ITable_path_expressionContext) (base.TableSource, error) {

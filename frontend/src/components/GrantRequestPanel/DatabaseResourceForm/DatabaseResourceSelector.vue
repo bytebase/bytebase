@@ -19,7 +19,7 @@
   </div>
 </template>
 
-<script setup lang="ts">
+<script setup lang="tsx">
 import { orderBy } from "lodash-es";
 import type { TransferRenderSourceList, TreeOption } from "naive-ui";
 import { NTransfer, NTree } from "naive-ui";
@@ -30,12 +30,16 @@ import {
   useDBSchemaV1Store,
   useProjectByName,
 } from "@/store";
+import {
+  databaseNamePrefix,
+  instanceNamePrefix,
+} from "@/store/modules/v1/common";
 import { useDatabaseV1List } from "@/store/modules/v1/databaseList";
 import type { DatabaseResource } from "@/types";
 import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
 import { wrapRefAsPromise } from "@/utils";
 import Label from "./Label.vue";
-import type { DatabaseTreeOption } from "./common";
+import type { DatabaseTreeOption, DatabaseResourceType } from "./common";
 import {
   flattenTreeOptions,
   getSchemaOrTableTreeOptions,
@@ -59,6 +63,47 @@ const emit = defineEmits<{
 const databaseStore = useDatabaseV1Store();
 const dbSchemaStore = useDBSchemaV1Store();
 const { project } = useProjectByName(props.projectName);
+
+const parseKeyToResource = (key: string): DatabaseResource | undefined => {
+  const sections = key.split("/");
+  const resource: DatabaseResource = {
+    databaseName: "",
+  };
+
+  while (sections.length > 0) {
+    const keyword = sections.shift() as DatabaseResourceType | "instances";
+    const data = sections.shift() || "";
+
+    switch (keyword) {
+      case "instances":
+        resource.instanceResourceId = data;
+        break;
+      case "databases":
+        if (!resource.instanceResourceId) {
+          return;
+        }
+        resource.databaseName = `${instanceNamePrefix}${resource.instanceResourceId}/${databaseNamePrefix}${data}`;
+        break;
+      case "schemas":
+        resource.schema = data;
+        break;
+      case "tables":
+        resource.table = data;
+        break;
+      case "columns":
+        resource.column = data;
+        break;
+      default:
+        return;
+    }
+  }
+
+  if (!resource.databaseName) {
+    return;
+  }
+
+  return resource;
+};
 
 const parseResourceToKey = (resource: DatabaseResource): string => {
   const data = [
@@ -84,20 +129,30 @@ const parseResourceToKey = (resource: DatabaseResource): string => {
   return data.join("/");
 };
 
-const selectedValueList = ref<string[]>(
-  props.databaseResources.map((databaseResource) => {
-    return parseResourceToKey(databaseResource);
-  })
-);
-const defaultExpandedKeys = ref<string[]>([]);
+const selectedValueList = ref<string[]>([]);
+const expandedKeys = ref<string[]>([]);
+const indeterminateKeys = ref<string[]>([]);
 const loading = ref(true);
+
+const cascadeLoopTreeNode = (
+  treeNode: DatabaseTreeOption,
+  callback: (node: DatabaseTreeOption) => void
+) => {
+  callback(treeNode);
+  for (const child of treeNode?.children ?? []) {
+    cascadeLoopTreeNode(child, callback);
+  }
+};
 
 onMounted(async () => {
   await wrapRefAsPromise(useDatabaseV1List(props.projectName).ready, true);
 
+  const selectedKeys = props.databaseResources.map(parseResourceToKey);
+  const databaseNames = new Set(
+    selectedKeys.map((key) => key.split("/schemas/")[0]).filter((key) => key)
+  );
   await Promise.all(
-    selectedValueList.value.map(async (key) => {
-      const [databaseName] = key.split("/schemas/");
+    [...databaseNames].map(async (databaseName) => {
       await dbSchemaStore.getOrFetchDatabaseMetadata({
         database: databaseName,
         view: DatabaseMetadataView.DATABASE_METADATA_VIEW_BASIC,
@@ -105,21 +160,58 @@ onMounted(async () => {
     })
   );
 
-  defaultExpandedKeys.value = selectedValueList.value
-    .map((key) => {
-      const pathes = parseKeyToPathes(key);
-      // key: {db}/schemas/{schema}
-      // expaned: [{db}]
-      //
-      // key: {db}/schemas/{schema}/tables/{table}
-      // expaned: [{db}, {db}/schemas/{schema}]
-      //
-      // key: {db}/schemas/{schema}/tables/{table}/columns/{column}
-      // expaned: [{db}, {db}/schemas/{schema}, {db}/schemas/{schema}/tables/{table}]
-      pathes.pop();
-      return pathes;
-    })
-    .flat();
+  const newCheckedKeys = new Set(selectedKeys);
+  const newIndeterminateKeys = new Set<string>([]);
+  const newExpandedKeys = new Set(
+    // expand parents for selected keys
+    selectedKeys
+      .map((key) => {
+        const pathes = parseKeyToPathes(key);
+        // key: {db}/schemas/{schema}
+        // expaned: [{db}]
+        //
+        // key: {db}/schemas/{schema}/tables/{table}
+        // expaned: [{db}, {db}/schemas/{schema}]
+        //
+        // key: {db}/schemas/{schema}/tables/{table}/columns/{column}
+        // expaned: [{db}, {db}/schemas/{schema}, {db}/schemas/{schema}/tables/{table}]
+        pathes.pop();
+        return pathes;
+      })
+      .flat()
+  );
+
+  for (const selectedKey of selectedKeys) {
+    const checkedNode = sourceTransferOptions.value.find(
+      (option) => option.value === selectedKey
+    );
+    if (!checkedNode) {
+      continue;
+    }
+    // loop to check and expand all children
+    cascadeLoopTreeNode(checkedNode, (treeNode) => {
+      newCheckedKeys.add(treeNode.value);
+      if (treeNode.children) {
+        newExpandedKeys.add(treeNode.value);
+      }
+    });
+
+    // add parent pathes to indeterminate keys
+    const parentPathes = parseKeyToPathes(checkedNode.value);
+    parentPathes.pop();
+    while (parentPathes.length > 0) {
+      const parentPath = parentPathes.pop() as string;
+      // move the parent to the indeterminate keys.
+      if (!newCheckedKeys.has(parentPath)) {
+        newIndeterminateKeys.add(parentPath);
+      }
+    }
+  }
+
+  selectedValueList.value = [...newCheckedKeys];
+  expandedKeys.value = [...newExpandedKeys];
+  indeterminateKeys.value = [...newIndeterminateKeys];
+
   loading.value = false;
 });
 
@@ -168,14 +260,37 @@ const sourceTreeOptions = computed(() => {
   });
 });
 
-const sourceTransferOptions = computed(() => {
+const sourceTransferOptions = computed((): DatabaseTreeOption[] => {
   const options = flattenTreeOptions(sourceTreeOptions.value);
   return options;
 });
 
+const onTreeNodeLoad = async (node: TreeOption) => {
+  const treeNode = node as DatabaseTreeOption;
+  if (treeNode.level === "databases") {
+    await dbSchemaStore.getOrFetchDatabaseMetadata({
+      database: treeNode.value,
+      view: DatabaseMetadataView.DATABASE_METADATA_VIEW_BASIC,
+    });
+    const database = databaseStore.getDatabaseByName(treeNode.value);
+    const children = getSchemaOrTableTreeOptions({
+      database,
+      includeCloumn: props.includeCloumn,
+    });
+    if (children && children.length > 0) {
+      treeNode.children = children;
+      treeNode.isLeaf = false;
+    } else {
+      treeNode.isLeaf = true;
+    }
+  }
+};
+
 const renderSourceList: TransferRenderSourceList = ({ onCheck, pattern }) => {
   return h(NTree, {
     keyField: "value",
+    cascade: true,
+    allowCheckingNotLoaded: true,
     checkable: true,
     selectable: false,
     checkOnClick: true,
@@ -192,30 +307,88 @@ const renderSourceList: TransferRenderSourceList = ({ onCheck, pattern }) => {
     },
     pattern,
     showIrrelevantNodes: false,
-    defaultExpandedKeys: defaultExpandedKeys.value,
+    expandedKeys: expandedKeys.value,
     checkedKeys: selectedValueList.value,
-    onLoad: async (node: TreeOption) => {
-      const treeNode = node as DatabaseTreeOption;
-      if (treeNode.level === "database") {
-        await dbSchemaStore.getOrFetchDatabaseMetadata({
-          database: treeNode.value,
-          view: DatabaseMetadataView.DATABASE_METADATA_VIEW_BASIC,
-        });
-        const database = databaseStore.getDatabaseByName(treeNode.value);
-        const children = getSchemaOrTableTreeOptions({
-          database,
-          includeCloumn: props.includeCloumn,
-        });
-        if (children && children.length > 0) {
-          treeNode.children = children;
-          treeNode.isLeaf = false;
+    indeterminateKeys: indeterminateKeys.value,
+    onLoad: onTreeNodeLoad,
+    onUpdateExpandedKeys: (keys: string[]) => {
+      expandedKeys.value = keys;
+    },
+    onUpdateCheckedKeys: async (
+      checkedKeys: string[],
+      _: Array<TreeOption | null>,
+      meta: { node: TreeOption | null; action: "check" | "uncheck" }
+    ) => {
+      if (!meta.node) {
+        return;
+      }
+
+      const oldIndeterminateKeys = new Set(indeterminateKeys.value);
+      const newCheckedKeys = new Set(checkedKeys);
+      const oldCheckedKeys = new Set(selectedValueList.value);
+      const treeNode = meta.node as DatabaseTreeOption;
+
+      const checkNodeAndAllChildren = async () => {
+        await onTreeNodeLoad(treeNode);
+        // refresh node in case the schema is updated
+        const checkedNode = sourceTransferOptions.value.find(
+          (option) => option.value === treeNode.value
+        );
+        if (checkedNode) {
+          // check and expand all children
+          cascadeLoopTreeNode(checkedNode, (treeNode) => {
+            newCheckedKeys.add(treeNode.value);
+            if (treeNode.children) {
+              expandedKeys.value.push(treeNode.value);
+            }
+          });
+        }
+      };
+
+      if (meta.action === "check") {
+        oldIndeterminateKeys.delete(treeNode.value);
+        await checkNodeAndAllChildren();
+
+        const parentPathes = parseKeyToPathes(treeNode.value);
+        parentPathes.pop();
+        while (parentPathes.length > 0) {
+          const parentPath = parentPathes.pop() as string;
+          // If users not manually select the parent,
+          // then DONOT check the parent,
+          // move the parent to the indeterminate keys instead.
+          if (
+            !oldCheckedKeys.has(parentPath) &&
+            newCheckedKeys.has(parentPath)
+          ) {
+            newCheckedKeys.delete(parentPath);
+            oldIndeterminateKeys.add(parentPath);
+          }
+        }
+      } else {
+        if (oldIndeterminateKeys.has(treeNode.value)) {
+          // uncheck an indeterminate key should be check
+          oldIndeterminateKeys.delete(treeNode.value);
+
+          await checkNodeAndAllChildren();
         } else {
-          treeNode.isLeaf = true;
+          // loop parent pathes to check if we need to update the indeterminate keys
+          const parentPathes = parseKeyToPathes(treeNode.value);
+          parentPathes.pop();
+          while (parentPathes.length > 0) {
+            const parentPath = parentPathes.pop() as string;
+            if (!oldIndeterminateKeys.has(parentPath)) {
+              continue;
+            }
+            if (!checkedKeys.find((key) => key.startsWith(`${parentPath}/`))) {
+              oldIndeterminateKeys.delete(parentPath);
+            }
+          }
         }
       }
-    },
-    onUpdateCheckedKeys: (checkedKeys: string[]) => {
-      onCheck(checkedKeys);
+
+      selectedValueList.value = [...newCheckedKeys];
+      onCheck([...newCheckedKeys]);
+      indeterminateKeys.value = [...oldIndeterminateKeys];
     },
   });
 };
@@ -251,9 +424,17 @@ const renderTargetList: TransferRenderSourceList = () => {
     virtualScroll: true,
     style: "height: 468px", // since <NTransfer> height is 512
     renderLabel: ({ option }: { option: TreeOption }) => {
-      return h(Label, {
-        option: option as DatabaseTreeOption,
-      });
+      const node = option as DatabaseTreeOption;
+      return (
+        <Label
+          option={node}
+          class={
+            selectedValueList.value.includes(node.value)
+              ? "text-indigo-700 font-medium"
+              : "textinfolabel"
+          }
+        />
+      );
     },
     showIrrelevantNodes: false,
     checkedKeys: selectedValueList.value,
@@ -267,6 +448,11 @@ watch(selectedValueList, (selectedValueList) => {
     const parentExisted = filteredKeyList.some((parent) =>
       key.startsWith(`${parent}/`)
     );
+    // If the parent node is selected, means all children should be selected.
+    // So we can ignore the children.
+    // For example, select table "employee"."public"."employee" and all its fields "emp_no" & "name",
+    // we only need the "employee"."public"."employee" to build the database resource,
+    // and the expression only need table level too (ignore the column means column = "*")
     if (!parentExisted) {
       filteredKeyList.push(key);
     }
@@ -274,24 +460,9 @@ watch(selectedValueList, (selectedValueList) => {
 
   emit(
     "update:databaseResources",
-    filteredKeyList.map((key) => {
-      const [databaseName, schemaAndTable] = key.split("/schemas/");
-      const databaseResource: DatabaseResource = {
-        databaseName,
-      };
-      if (schemaAndTable) {
-        const [schema, tableAndColumn] = schemaAndTable.split("/tables/");
-        databaseResource.schema = schema;
-        if (tableAndColumn) {
-          const [table, column] = tableAndColumn.split("/columns/");
-          databaseResource.table = table;
-          if (column) {
-            databaseResource.column = column;
-          }
-        }
-      }
-      return databaseResource;
-    })
+    filteredKeyList
+      .map(parseKeyToResource)
+      .filter((data) => data) as DatabaseResource[]
   );
 });
 </script>

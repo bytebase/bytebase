@@ -1,21 +1,19 @@
 <template>
   <div class="flex flex-col gap-y-2">
-    <div class="relative min-h-[20rem]">
-      <PagedReleaseTable
-        :key="project.name"
-        :session-key="`project-${project.name}-releases`"
-        :project="project.name"
-        :page-size="50"
-      >
-        <template #table="{ releaseList, loading }">
-          <ReleaseDataTable
-            :bordered="true"
-            :loading="loading"
-            :release-list="releaseList"
-          />
-        </template>
-      </PagedReleaseTable>
-    </div>
+    <PagedReleaseTable
+      :key="project.name"
+      :session-key="`project-${project.name}-releases`"
+      :project="project.name"
+      :page-size="50"
+    >
+      <template #table="{ releaseList, loading }">
+        <ReleaseDataTable
+          :bordered="true"
+          :loading="loading"
+          :release-list="releaseList"
+        />
+      </template>
+    </PagedReleaseTable>
   </div>
 </template>
 

@@ -5,6 +5,7 @@ import { releaseServiceClient } from "@/grpcweb";
 import type { MaybeRef, ComposedRelease, Pagination } from "@/types";
 import { isValidReleaseName, unknownRelease, unknownUser } from "@/types";
 import { DEFAULT_PROJECT_NAME } from "@/types";
+import { State } from "@/types/proto/v1/common";
 import type { DeepPartial, Release } from "@/types/proto/v1/release_service";
 import { extractUserResourceName } from "@/utils";
 import { DEFAULT_PAGE_SIZE } from "./common";
@@ -21,12 +22,14 @@ export const useReleaseStore = defineStore("release", () => {
 
   const fetchReleasesByProject = async (
     project: string,
-    pagination?: Pagination
+    pagination?: Pagination,
+    showDeleted?: boolean
   ) => {
     const resp = await releaseServiceClient.listReleases({
       parent: project,
       pageSize: pagination?.pageSize || DEFAULT_PAGE_SIZE,
       pageToken: pagination?.pageToken,
+      showDeleted: Boolean(showDeleted),
     });
     const composedReleaseList = await batchComposeRelease(resp.releases);
     composedReleaseList.forEach((release) => {
@@ -66,6 +69,19 @@ export const useReleaseStore = defineStore("release", () => {
     return composedRelease[0];
   };
 
+  const deleteRelease = async (name: string) => {
+    await releaseServiceClient.deleteRelease({ name });
+    if (releaseMapByName.get(name)) {
+      releaseMapByName.get(name)!.state = State.DELETED;
+    }
+  };
+
+  const undeleteRelease = async (name: string) => {
+    const release = await releaseServiceClient.undeleteRelease({ name });
+    const composedRelease = await batchComposeRelease([release]);
+    releaseMapByName.set(composedRelease[0].name, composedRelease[0]);
+  };
+
   return {
     releaseList,
     fetchReleasesByProject,
@@ -73,6 +89,8 @@ export const useReleaseStore = defineStore("release", () => {
     getReleasesByProject,
     getReleaseByName,
     updateRelase,
+    deleteRelease,
+    undeleteRelease,
   };
 });
 

@@ -49,7 +49,7 @@
   >
     <BBButtonConfirm
       v-if="allowDelete"
-      :style="'DELETE'"
+      :type="'DELETE'"
       :button-text="$t('project.gitops-connector.delete')"
       :require-confirm="true"
       :ok-text="$t('common.delete')"

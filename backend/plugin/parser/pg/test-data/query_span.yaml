@@ -1,3 +1,101 @@
+- description: Function with if-else
+  statement: SELECT * from IF_QUERY();
+  defaultDatabase: db
+  metadata: |-
+    {
+      "name":  "db",
+      "schemas":  [
+        {
+          "name": "public",
+          "tables":  [
+            {
+              "name":  "t1",
+              "columns":  [
+                {
+                  "name":  "a"
+                },
+                {
+                  "name":  "b"
+                },
+                {
+                  "name": "c"
+                }
+              ]
+            },
+            {
+              "name":  "t2",
+              "columns":  [
+                {
+                  "name":  "c"
+                },
+                {
+                  "name":  "d"
+                },
+                {
+                  "name":  "e"
+                }
+              ]
+            }
+          ],
+          "functions": [
+            {
+              "name": "if_query",
+              "definition": "CREATE OR REPLACE FUNCTION public.IF_QUERY() RETURNS TABLE(x int, xx int, xxx int) LANGUAGE plpgsql AS $function$ declare data_count int; BEGIN data_count := (select count(*) from public.t where a = 1); if (count(data_count) > 0) then RETURN QUERY SELECT a, b, c FROM t1; else RETURN QUERY SELECT c, d, e FROM t2; end if; END; $function$;"
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 0
+    results:
+        - name: x
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: public
+              table: t1
+              column: a
+            - server: ""
+              database: db
+              schema: public
+              table: t2
+              column: c
+        - name: xx
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: public
+              table: t1
+              column: b
+            - server: ""
+              database: db
+              schema: public
+              table: t2
+              column: d
+        - name: xxx
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: public
+              table: t1
+              column: c
+            - server: ""
+              database: db
+              schema: public
+              table: t2
+              column: e
+    sourcecolumns:
+        - server: ""
+          database: db
+          schema: public
+          table: t1
+          column: ""
+        - server: ""
+          database: db
+          schema: public
+          table: t2
+          column: ""
 - description: Function with variables
   statement: SELECT plpgsql_t(1);
   defaultDatabase: db
@@ -41,6 +139,7 @@
       ]
     }
   querySpan:
+    type: 0
     results:
         - name: plpgsql_t
           sourcecolumns:
@@ -112,6 +211,7 @@
       ]
     }
   querySpan:
+    type: 0
     results:
         - name: plpgsql_t
           sourcecolumns:
@@ -542,6 +642,7 @@
       ]
     }
   querySpan:
+    type: 0
     results:
         - name: month
           sourcecolumns:
@@ -634,6 +735,7 @@
       ]
     }
   querySpan:
+    type: 0
     results:
         - name: plpgsql_t
           sourcecolumns:
@@ -676,6 +778,7 @@
       ]
     }
   querySpan:
+    type: 0
     results:
         - name: ?column?
           sourcecolumns:
@@ -713,6 +816,7 @@
       ]
     }
   querySpan:
+    type: 0
     results:
         - name: ?column?
           sourcecolumns:
@@ -750,6 +854,7 @@
       ]
     }
   querySpan:
+    type: 0
     results:
         - name: jsonb_each
           sourcecolumns:
@@ -787,6 +892,7 @@
       ]
     }
   querySpan:
+    type: 0
     results:
         - name: a
           sourcecolumns:
@@ -838,6 +944,7 @@
       ]
     }
   querySpan:
+    type: 0
     results:
         - name: to_jsonb
           sourcecolumns:
@@ -875,6 +982,7 @@
       ]
     }
   querySpan:
+    type: 0
     results:
         - name: row_to_json
           sourcecolumns:
@@ -912,6 +1020,7 @@
       ]
     }
   querySpan:
+    type: 0
     results:
         - name: unnest
           sourcecolumns: []
@@ -941,6 +1050,7 @@
       ]
     }
   querySpan:
+    type: 0
     results:
         - name: unnest
           sourcecolumns: []
@@ -968,6 +1078,7 @@
       ]
     }
   querySpan:
+    type: 0
     results:
         - name: generate_series
           sourcecolumns: []
@@ -995,6 +1106,7 @@
       ]
     }
   querySpan:
+    type: 0
     results:
         - name: generate_subscripts
           sourcecolumns: []
@@ -1022,6 +1134,7 @@
       ]
     }
   querySpan:
+    type: 0
     results:
         - name: a
           sourcecolumns:
@@ -1080,6 +1193,7 @@
       ]
     }
   querySpan:
+    type: 0
     results:
         - name: a
           sourcecolumns:
@@ -1133,6 +1247,7 @@
       ]
     }
   querySpan:
+    type: 0
     results:
         - name: a
           sourcecolumns:
@@ -1180,6 +1295,7 @@
       ]
     }
   querySpan:
+    type: 0
     results:
         - name: a
           sourcecolumns:
@@ -1223,6 +1339,7 @@
       ]
     }
   querySpan:
+    type: 0
     results:
         - name: a
           sourcecolumns:
@@ -1260,6 +1377,7 @@
       ]
     }
   querySpan:
+    type: 0
     results: []
     sourcecolumns: []
 - description: Test for simple select const
@@ -1285,6 +1403,7 @@
       ]
     }
   querySpan:
+    type: 0
     results:
         - name: ?column?
           sourcecolumns: []
@@ -1321,6 +1440,7 @@
       ]
     }
   querySpan:
+    type: 0
     results:
         - name: a
           sourcecolumns:
@@ -1395,6 +1515,7 @@
       ]
     }
   querySpan:
+    type: 0
     results:
         - name: a
           sourcecolumns:
@@ -1462,6 +1583,7 @@
       ]
     }
   querySpan:
+    type: 0
     results:
         - name: a
           sourcecolumns:
@@ -1529,6 +1651,7 @@
       ]
     }
   querySpan:
+    type: 0
     results:
         - name: col_1
           sourcecolumns: []
@@ -1589,6 +1712,7 @@
       ]
     }
   querySpan:
+    type: 0
     results:
         - name: ?column?
           sourcecolumns: []
@@ -1641,6 +1765,7 @@
       ]
     }
   querySpan:
+    type: 0
     results:
         - name: city
           sourcecolumns:
@@ -1694,6 +1819,7 @@
       ]
     }
   querySpan:
+    type: 0
     results:
         - name: max
           sourcecolumns:
@@ -1803,6 +1929,7 @@
       ]
     }
   querySpan:
+    type: 0
     results:
         - name: a
           sourcecolumns:
@@ -1870,6 +1997,7 @@
       ]
     }
   querySpan:
+    type: 0
     results:
         - name: a
           sourcecolumns:
@@ -1958,6 +2086,7 @@
       ]
     }
   querySpan:
+    type: 0
     results:
         - name: a
           sourcecolumns:
@@ -2025,6 +2154,7 @@
       ]
     }
   querySpan:
+    type: 0
     results:
         - name: max
           sourcecolumns:
@@ -2071,6 +2201,7 @@
       ]
     }
   querySpan:
+    type: 0
     results:
         - name: d
           sourcecolumns:
@@ -2138,6 +2269,7 @@
       ]
     }
   querySpan:
+    type: 0
     results:
         - name: cc1
           sourcecolumns:
@@ -2220,6 +2352,7 @@
       ]
     }
   querySpan:
+    type: 0
     results:
         - name: c1
           sourcecolumns:
@@ -2278,5 +2411,6 @@
       ]
     }
   querySpan:
+    type: 0
     results: []
     sourcecolumns: []

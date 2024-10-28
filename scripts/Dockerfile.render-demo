@@ -98,6 +98,8 @@ ENV PATH="${PATH}:/var/opt/bytebase/resources/postgres-linux-amd64-16/bin"
 # - Demo script to launch Bytebase in readonly demo mode
 COPY ./scripts /usr/local/bin/
 COPY ./scripts/.psqlrc /root/.psqlrc
+# The file indicates running in docker environment.
+RUN touch /etc/bb.env
 COPY --from=backend /backend-build/bytebase /usr/local/bin/
 COPY --from=backend /etc/ssl/certs /etc/ssl/certs
 COPY --from=decompressor /var/opt/bytebase/resources /bytebase/resources
