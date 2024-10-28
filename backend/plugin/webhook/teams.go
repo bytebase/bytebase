@@ -72,7 +72,7 @@ func (*TeamsReceiver) Post(context Context) error {
 		Title:      context.Title,
 		SectionList: []TeamsWebhookSection{
 			{
-				ActivityTitle: fmt.Sprintf("%s (%s)", context.CreatorName, context.CreatorEmail),
+				ActivityTitle: fmt.Sprintf("%s (%s)", context.ActorName, context.ActorEmail),
 				FactList:      factList,
 				Text:          context.Description,
 			},

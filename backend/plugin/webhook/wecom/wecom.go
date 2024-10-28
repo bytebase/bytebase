@@ -49,7 +49,7 @@ func getMessageCard(context webhook.Context) *WebhookMarkdown {
 	for _, meta := range context.GetMetaList() {
 		metaStrList = append(metaStrList, fmt.Sprintf("%s: <font color=\"comment\">%s</font>", meta.Name, meta.Value))
 	}
-	metaStrList = append(metaStrList, fmt.Sprintf("By: <font color=\"comment\">%s (%s)</font>", context.CreatorName, context.CreatorEmail))
+	metaStrList = append(metaStrList, fmt.Sprintf("Actor: <font color=\"comment\">%s (%s)</font>", context.ActorName, context.ActorEmail))
 
 	status := ""
 	switch context.Level {
