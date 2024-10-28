@@ -16,7 +16,7 @@ import { orderBy } from "lodash-es";
 import { TrashIcon } from "lucide-vue-next";
 import type { DataTableColumn } from "naive-ui";
 import { NCheckbox, NDatePicker, NDataTable, useDialog } from "naive-ui";
-import { computed, watch, reactive, h } from "vue";
+import { computed, reactive, h, watchEffect } from "vue";
 import type { VNodeChild } from "vue";
 import { useI18n } from "vue-i18n";
 import { RouterLink } from "vue-router";
@@ -254,16 +254,9 @@ const updateAccessUserList = async (policy: Policy | undefined) => {
   );
 };
 
-watch(
-  () => policy.value,
-  async (policy) => {
-    await updateAccessUserList(policy);
-  },
-  {
-    immediate: true,
-    deep: true,
-  }
-);
+watchEffect(async () => {
+  updateAccessUserList(policy.value);
+});
 
 const accessTableColumns = computed(
   (): DataTableColumn<AccessUser & { hide?: boolean }>[] => {
@@ -384,9 +377,11 @@ const accessTableColumns = computed(
               disabled={!hasPermission.value || props.disabled}
               level={item.maskingLevel}
               levelList={[MaskingLevel.PARTIAL, MaskingLevel.NONE]}
-              onUpdate:level={(e) =>
-                onAccessControlUpdate(row, (item) => (item.maskingLevel = e))
-              }
+              onUpdate:level={(e) => {
+                if (e) {
+                  onAccessControlUpdate(row, (item) => (item.maskingLevel = e));
+                }
+              }}
             />
           );
         },
