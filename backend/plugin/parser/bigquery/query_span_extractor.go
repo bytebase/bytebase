@@ -93,6 +93,10 @@ func (q *querySpanExtractor) extractTableSourceFromQuery(query parser.IQueryCont
 }
 
 func (q *querySpanExtractor) extractTableSourceFromQueryWithoutPipe(queryWithoutPipe parser.IQuery_without_pipe_operatorsContext) (base.TableSource, error) {
+	originalCTELength := len(q.ctes)
+	defer func() {
+		q.ctes = q.ctes[:originalCTELength]
+	}()
 	// TODO(zp): handle CTE.
 	if queryWithoutPipe.With_clause() != nil {
 		if err := q.recordCTE(queryWithoutPipe.With_clause()); err != nil {
@@ -102,22 +106,89 @@ func (q *querySpanExtractor) extractTableSourceFromQueryWithoutPipe(queryWithout
 	return q.extractTableSourceFromQueryPrimaryOrSetOperation(queryWithoutPipe.Query_primary_or_set_operation())
 }
 
-func (q *querySpanExtractor) recordCTE(withClause parser.IWith_clauseContext) error {
-	allAliasedQuery := withClause.AllAliased_query()
-	for _, aliasedQuery := range allAliasedQuery {
-		// TODO(zp): Actually, BigQuery do not rely on the RECURSIVE keyword, instead, it detects the recursive CTE
-		// by the reference of the CTE itself in the CTE body. Also, check other engines.
-		// TODO(zp): Handle recursive cte.
-		cteName := unquoteIdentifierByRule(aliasedQuery.Identifier())
-		query := aliasedQuery.Parenthesized_query().Query()
-		tableSource, err := q.extractNormalCTE(query)
+func (q *querySpanExtractor) recordRecursiveCTE(aliasedQuery parser.IAliased_queryContext) error {
+	cteName := unquoteIdentifierByRule(aliasedQuery.Identifier())
+	query := aliasedQuery.Parenthesized_query().Query().Query_without_pipe_operators()
+	if query.With_clause() != nil {
+		return errors.Errorf("WITH is not allowed inside WITH RECURSIVE")
+	}
+	if query.Query_primary_or_set_operation().Query_set_operation() == nil {
+		return q.recordNonRecursiveCTE(aliasedQuery)
+	}
+	prefix := query.Query_primary_or_set_operation().Query_set_operation().Query_set_operation_prefix()
+	anchor, err := q.extractTableSourceFromQueryPrimary(prefix.Query_primary())
+	if err != nil {
+		return err
+	}
+	// XXX(zp): How about two union?
+	recursiveItem := prefix.AllQuery_set_operation_item()[0]
+	tempCte := &base.PseudoTable{
+		Name:    cteName,
+		Columns: anchor.GetQuerySpanResult(),
+	}
+	q.ctes = append(q.ctes, tempCte)
+	originalSize := len(q.ctes)
+	for {
+		originalSize := len(q.ctes)
+		recursivePartTableSource, err := q.extractTableSourceFromQueryPrimary(recursiveItem.Query_primary())
 		if err != nil {
 			return err
 		}
-		q.ctes = append(q.ctes, &base.PseudoTable{
+		anchorQuerySpanResults := q.ctes[originalSize-1].GetQuerySpanResult()
+		recursivePartQuerySpanResults := recursivePartTableSource.GetQuerySpanResult()
+		if len(anchorQuerySpanResults) != len(recursivePartQuerySpanResults) {
+			return errors.Errorf("recursive cte %s clause returns %d fields, but anchor clause returns %d fields", cteName, len(anchorQuerySpanResults), len(recursivePartQuerySpanResults))
+		}
+		changed := false
+		for i := range anchorQuerySpanResults {
+			var hasChange bool
+			anchorQuerySpanResults[i].SourceColumns, hasChange = base.MergeSourceColumnSet(anchorQuerySpanResults[i].SourceColumns, recursivePartQuerySpanResults[i].SourceColumns)
+			changed = changed || hasChange
+		}
+		tempCte := &base.PseudoTable{
 			Name:    cteName,
-			Columns: tableSource.GetQuerySpanResult(),
-		})
+			Columns: anchorQuerySpanResults,
+		}
+		q.ctes = q.ctes[:originalSize-1]
+		if !changed {
+			break
+		}
+		q.ctes = append(q.ctes, tempCte)
+	}
+	q.ctes = q.ctes[:originalSize-1]
+	q.ctes = append(q.ctes, tempCte)
+	return nil
+}
+
+func (q *querySpanExtractor) recordNonRecursiveCTE(aliasedQuery parser.IAliased_queryContext) error {
+	cteName := unquoteIdentifierByRule(aliasedQuery.Identifier())
+	query := aliasedQuery.Parenthesized_query().Query()
+	tableSource, err := q.extractNormalCTE(query)
+	if err != nil {
+		return err
+	}
+	q.ctes = append(q.ctes, &base.PseudoTable{
+		Name:    cteName,
+		Columns: tableSource.GetQuerySpanResult(),
+	})
+	return nil
+}
+
+func (q *querySpanExtractor) recordCTE(withClause parser.IWith_clauseContext) error {
+	allAliasedQuery := withClause.AllAliased_query()
+	recursive := withClause.RECURSIVE_SYMBOL() != nil
+	for _, aliasedQuery := range allAliasedQuery {
+		// TODO(zp): Actually, BigQuery do not rely on the RECURSIVE keyword, instead, it detects the recursive CTE
+		// by the reference of the CTE itself in the CTE body. Also, check other engines.
+		if recursive {
+			if err := q.recordRecursiveCTE(aliasedQuery); err != nil {
+				return err
+			}
+		} else {
+			if err := q.recordNonRecursiveCTE(aliasedQuery); err != nil {
+				return err
+			}
+		}
 	}
 	return nil
 }
@@ -188,6 +259,44 @@ func (q *querySpanExtractor) extractTableSourceFromQuerySetOperation(querySetOpe
 func (q *querySpanExtractor) extractTableSourceFromQueryPrimary(queryPrimary parser.IQuery_primaryContext) (base.TableSource, error) {
 	if queryPrimary.Select_() != nil {
 		return q.extractTableSourceFromSelect(queryPrimary.Select_())
+	}
+	if parenthesizedQuery := queryPrimary.Parenthesized_query(); parenthesizedQuery != nil {
+		// Table subquery shares the ctes of outer query. On the contrary,
+		// the subquery should not effect the outer query.
+		// https://cloud.google.com/bigquery/docs/reference/standard-sql/subqueries#correlated_subquery_concepts
+		originalCtesLength := len(q.ctes)
+		originalTableSourceFrom := len(q.tableSourceFrom)
+		defer func() {
+			q.ctes = q.ctes[:originalCtesLength]
+			q.tableSourceFrom = q.tableSourceFrom[:originalTableSourceFrom]
+		}()
+		subqueryExtractor := &querySpanExtractor{
+			ctx:               q.ctx,
+			gCtx:              q.gCtx,
+			defaultDatabase:   q.defaultDatabase,
+			ctes:              q.ctes,
+			outerTableSources: q.outerTableSources,
+			tableSourceFrom:   q.tableSourceFrom,
+		}
+		tableSource, err := subqueryExtractor.extractTableSourceFromParenthesizedQuery(parenthesizedQuery)
+		if err != nil {
+			return nil, err
+		}
+
+		var alias string
+		if v := queryPrimary.Opt_as_alias_with_required_as(); v != nil {
+			if v.Identifier() != nil {
+				alias = unquoteIdentifierByRule(v.Identifier())
+			}
+		}
+		if alias != "" {
+			return &base.PseudoTable{
+				Name:    alias,
+				Columns: tableSource.GetQuerySpanResult(),
+			}, nil
+		}
+
+		return tableSource, nil
 	}
 	// TODO(zp): handle parenthesized query.
 	return nil, nil
@@ -626,6 +735,7 @@ func (q *querySpanExtractor) extractTableSourceFromTableSubquery(subquery parser
 	subqueryExtractor := &querySpanExtractor{
 		ctx:               q.ctx,
 		defaultDatabase:   q.defaultDatabase,
+		gCtx:              q.gCtx,
 		ctes:              q.ctes,
 		outerTableSources: q.outerTableSources,
 		tableSourceFrom:   q.tableSourceFrom,
