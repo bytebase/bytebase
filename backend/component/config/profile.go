@@ -34,6 +34,8 @@ type Profile struct {
 	Readonly bool
 	// When we are running in SaaS mode, some features are not allowed to edit by users.
 	SaaS bool
+	// Whether the server is running in a docker container.
+	IsDocker bool
 	// Debug is the startup time debug
 	Debug bool
 	// DataDir is the directory stores the data including Bytebase's own database, backups, etc.

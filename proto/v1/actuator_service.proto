@@ -126,4 +126,7 @@ message ActuatorInfo {
   bool disallow_password_signin = 20;
 
   PasswordRestrictionSetting password_restriction = 21;
+
+  // docker flag means if the Bytebase instance is running in docker.
+  bool docker = 22;
 }

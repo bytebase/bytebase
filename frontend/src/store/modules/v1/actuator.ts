@@ -69,6 +69,9 @@ export const useActuatorV1Store = defineStore("actuator_v1", {
     isDebug: (state) => {
       return state.serverInfo?.debug || false;
     },
+    isDocker: (state) => {
+      return state.serverInfo?.docker || false;
+    },
     isSaaSMode: (state) => {
       return state.serverInfo?.saas || false;
     },
