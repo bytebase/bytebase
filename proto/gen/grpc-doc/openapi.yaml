@@ -1702,9 +1702,9 @@ paths:
                   in: query
                   schema:
                     enum:
-                        - CHANGE_HISTORY_VIEW_UNSPECIFIED
-                        - CHANGE_HISTORY_VIEW_BASIC
-                        - CHANGE_HISTORY_VIEW_FULL
+                        - CHANGELOG_VIEW_UNSPECIFIED
+                        - CHANGELOG_VIEW_BASIC
+                        - CHANGELOG_VIEW_FULL
                     type: string
                     format: enum
                 - name: sdlFormat

@@ -221,6 +221,20 @@ func GetInstanceDatabaseRevisionID(name string) (string, string, int64, error) {
 	return tokens[0], tokens[1], revisionUID, nil
 }
 
+// GetInstanceDatabaseChangelogUID returns the instance ID, database ID, and changelog UID from a resource name.
+func GetInstanceDatabaseChangelogUID(name string) (string, string, int64, error) {
+	// the name should be instances/{instance-id}/databases/{database-id}/changelogs/{changelog-id}
+	tokens, err := GetNameParentTokens(name, InstanceNamePrefix, DatabaseIDPrefix, ChangelogPrefix)
+	if err != nil {
+		return "", "", 0, err
+	}
+	changelogUID, err := strconv.ParseInt(tokens[2], 10, 64)
+	if err != nil {
+		return "", "", 0, errors.Wrapf(err, "failed to convert %q to int64", tokens[2])
+	}
+	return tokens[0], tokens[1], changelogUID, nil
+}
+
 // GetUserID returns the user ID from a resource name.
 func GetUserID(name string) (int, error) {
 	return GetUIDFromName(name, UserNamePrefix)

@@ -25,7 +25,8 @@ type ChangelogMessage struct {
 }
 
 type FindChangelogMessage struct {
-	DatabaseUID int
+	UID         *int64
+	DatabaseUID *int
 
 	Limit  *int
 	Offset *int
@@ -121,7 +122,15 @@ func (s *Store) UpdateChangelog(ctx context.Context, update *UpdateChangelogMess
 }
 
 func (s *Store) ListChangelogs(ctx context.Context, find *FindChangelogMessage) ([]*ChangelogMessage, error) {
-	query := `
+	where, args := []string{"TRUE"}, []any{}
+	if v := find.UID; v != nil {
+		where, args = append(where, fmt.Sprintf("changelog.id = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.DatabaseUID; v != nil {
+		where, args = append(where, fmt.Sprintf("changelog.database_id = $%d", len(args)+1)), append(args, *v)
+	}
+
+	query := fmt.Sprintf(`
 		SELECT
 			changelog.id,
 			changelog.creator_id,
@@ -129,10 +138,9 @@ func (s *Store) ListChangelogs(ctx context.Context, find *FindChangelogMessage) 
 			changelog.database_id,
 			payload
 		FROM changelog
-		WHERE changelog.database_id = $1
+		WHERE %s
 		ORDER BY changelog.id DESC
-	`
-
+	`, strings.Join(where, " AND "))
 	if v := find.Limit; v != nil {
 		query += fmt.Sprintf(" LIMIT %d", *v)
 	}
@@ -140,7 +148,7 @@ func (s *Store) ListChangelogs(ctx context.Context, find *FindChangelogMessage) 
 		query += fmt.Sprintf(" OFFSET %d", *v)
 	}
 
-	rows, err := s.db.db.QueryContext(ctx, query, find.DatabaseUID)
+	rows, err := s.db.db.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to query")
 	}

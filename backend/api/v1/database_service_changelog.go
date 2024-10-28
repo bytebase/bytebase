@@ -48,7 +48,7 @@ func (s *DatabaseService) ListChangelogs(ctx context.Context, request *v1pb.List
 
 	// TODO(p0ny): support view and filter
 	find := &store.FindChangelogMessage{
-		DatabaseUID: database.UID,
+		DatabaseUID: &database.UID,
 		Limit:       &limitPlusOne,
 		Offset:      &offset,
 	}
@@ -70,12 +70,62 @@ func (s *DatabaseService) ListChangelogs(ctx context.Context, request *v1pb.List
 	// no subsequent pages
 	converted, err := s.convertToChangelogs(ctx, database, changelogs)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to convert change histories, error: %v", err)
+		return nil, status.Errorf(codes.Internal, "failed to convert changelogs, error: %v", err)
 	}
 	return &v1pb.ListChangelogsResponse{
 		Changelogs:    converted,
 		NextPageToken: nextPageToken,
 	}, nil
+}
+
+func (s *DatabaseService) GetChangelog(ctx context.Context, request *v1pb.GetChangelogRequest) (*v1pb.Changelog, error) {
+	instanceID, databaseName, changelogUID, err := common.GetInstanceDatabaseChangelogUID(request.Name)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	// TODO(p0ny): support view and filter
+	find := &store.FindChangelogMessage{
+		UID: &changelogUID,
+	}
+	changelogs, err := s.store.ListChangelogs(ctx, find)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to list changelogs, errors: %v", err)
+	}
+	if len(changelogs) == 0 {
+		return nil, status.Errorf(codes.NotFound, "changelog %q not found", changelogUID)
+	}
+	if len(changelogs) > 1 {
+		return nil, status.Errorf(codes.Internal, "found %d changelogs with UID %q, expect 1", len(changelogs), changelogUID)
+	}
+
+	// Get related database to convert to changelog.
+	instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
+		ResourceID: &instanceID,
+	})
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	if instance == nil {
+		return nil, status.Errorf(codes.NotFound, "instance %q not found", instanceID)
+	}
+	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+		InstanceID:          &instanceID,
+		DatabaseName:        &databaseName,
+		IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
+	})
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	if database == nil {
+		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
+	}
+
+	changelog, err := s.convertToChangelog(ctx, database, changelogs[0])
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to convert changelog, error: %v", err)
+	}
+	return changelog, nil
 }
 
 func (s *DatabaseService) convertToChangelogs(ctx context.Context, d *store.DatabaseMessage, cs []*store.ChangelogMessage) ([]*v1pb.Changelog, error) {
