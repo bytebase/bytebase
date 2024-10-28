@@ -869,9 +869,9 @@ func (s *ProjectService) TestWebhook(ctx context.Context, request *v1pb.TestWebh
 			TitleZh:      fmt.Sprintf("测试 webhook %q", webhook.Title),
 			Description:  "This is a test",
 			Link:         fmt.Sprintf("%s/project/%s/webhook/%s", setting.ExternalUrl, fmt.Sprintf("%s-%d", slug.Make(project.Title), project.UID), fmt.Sprintf("%s-%d", slug.Make(webhook.Title), webhook.ID)),
-			CreatorID:    api.SystemBotID,
-			CreatorName:  "Bytebase",
-			CreatorEmail: s.store.GetSystemBotUser(ctx).Email,
+			ActorID:      api.SystemBotID,
+			ActorName:    "Bytebase",
+			ActorEmail:   s.store.GetSystemBotUser(ctx).Email,
 			CreatedTs:    time.Now().Unix(),
 			Issue: &webhookplugin.Issue{
 				ID:          1,
