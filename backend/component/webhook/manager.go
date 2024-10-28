@@ -326,6 +326,7 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, acti
 			Status:      e.Issue.Status,
 			Type:        e.Issue.Type,
 			Description: e.Issue.Description,
+			Creator:     e.Issue.Creator,
 		},
 		Project: &webhook.Project{
 			ID:   e.Project.UID,
@@ -335,9 +336,9 @@ func (m *Manager) getWebhookContextFromEvent(ctx context.Context, e *Event, acti
 		TaskResult:          nil,
 		Description:         e.Comment,
 		Link:                link,
-		CreatorID:           e.Actor.ID,
-		CreatorName:         e.Actor.Name,
-		CreatorEmail:        e.Actor.Email,
+		ActorID:             e.Actor.ID,
+		ActorName:           e.Actor.Name,
+		ActorEmail:          e.Actor.Email,
 		MentionEndUsers:     mentionEndUsers,
 		MentionUsersByPhone: mentions,
 	}
