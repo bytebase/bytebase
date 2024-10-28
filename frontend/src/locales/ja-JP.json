@@ -2,7 +2,7 @@
   "common": {
     "view": "チェック",
     "you": "あなた",
-    "general": "ユニバーサル",
+    "general": "全般",
     "slack": "スラック",
     "discord": "不和",
     "teams": "チーム",
@@ -53,7 +53,7 @@
     "quick-action": "素早い操作",
     "archive": "アーカイブ",
     "archived": "アーカイブ済み",
-    "no-license": "証明書がありません",
+    "no-license": "ライセンスがありません",
     "logout": "サインアウト",
     "close": "閉じる",
     "latest": "最新の",
@@ -217,8 +217,8 @@
     "error-message": "エラーメッセージ",
     "demo-mode": "デモモード",
     "operations": "操作する",
-    "on": "開ける",
-    "off": "近い",
+    "on": "オン",
+    "off": "オフ",
     "verify": "確認する",
     "regenerate": "再生する",
     "download": "ダウンロード",
@@ -260,7 +260,7 @@
     "created-at-by": "{time} に {user} によって作成されました",
     "filter-by-name": "名前でフィルタリングする",
     "tenant": "テナント",
-    "license": "証明書",
+    "license": "ライセンス",
     "show-all": "すべて表示",
     "view-details": "詳細を確認する",
     "force-verb": "フォース{verb}",
@@ -431,8 +431,8 @@
     }
   },
   "banner": {
-    "update-license": "証明書を更新する",
-    "license-expires": "{plan} 証明書は {expireAt} に期限切れになりました",
+    "update-license": "ライセンスを更新する",
+    "license-expires": "{plan} ライセンスは {expireAt} に期限切れになりました",
     "trial-expires": "{plan} トライアルは {days} 日後に期限切れになります",
     "trial-expired": "{plan} のトライアル期間が終了しました",
     "extend-trial": "トライアル延長を申請する",
@@ -445,7 +445,7 @@
   "intro": {
     "doc": "書類",
     "issue": "作業命令",
-    "quickstart": "初心者のタスク"
+    "quickstart": "クイックスタート"
   },
   "bbkit": {
     "common": {
@@ -473,7 +473,7 @@
       "workspace": "ワークスペース",
       "security-and-policy": "セキュリティポリシー",
       "integration": "インテグレーション",
-      "general": "ユニバーサル",
+      "general": "全般",
       "members": "メンバー",
       "users-and-groups": "ユーザーとグループ",
       "iam-and-admin": "IAM と管理",
@@ -665,7 +665,7 @@
         "drag-logo": "またはファイルをドラッグ アンド ドロップします",
         "logo-upload-tip": "{extension} タイプのファイルをサポートします。{size} MiB より大きくすることはできません",
         "logo-upload-succeed": "ロゴ更新完了",
-        "security": "安全性",
+        "security": "セキュリティ",
         "account": "アカウント",
         "watermark": {
           "self": "透かし",
@@ -688,10 +688,10 @@
           "description": "ユーザーはメールとパスワードでサインインすることはできず、SSO のみが許可されます。",
           "require-sso-setup": "最初に機能的な SSO を作成する必要があります。そうしないと、ユーザーはログインできません。"
         },
-        "network": "通信網",
+        "network": "ネットワーク",
         "external-url": {
           "self": "外部URL",
-          "description": "ユーザーまたはコールバックがアクセスできるバイトベース URL は、http:// または https:// で始まる必要があります。"
+          "description": "ユーザーまたはコールバックがアクセスできる Bytebase URL は、http:// または https:// で始まる必要があります。"
         },
         "gitops-webhook-url": {
           "self": "GitOps Webhook URL",
@@ -702,12 +702,12 @@
           "self": "ログイン頻度",
           "description": "サインイン頻度は、ユーザーが再認証する必要がある間隔を定義します。設定の更新は、変更を反映させるためにユーザーが再度サインインする必要があります。",
           "hours": "時間",
-          "days": "日々"
+          "days": "日"
         },
         "maximum-role-expiration": {
           "self": "最大ロール有効期限",
           "description": "最大ロール有効期限は、ユーザーにロールを付与できる最大期間です。",
-          "days": "日々）",
+          "days": "日",
           "never-expires": "期限切れなし"
         },
         "maximum-sql-result": {
@@ -735,7 +735,7 @@
         },
         "config-updated": "構成が更新されました。",
         "ai-assistant": {
-          "self": "AI助手",
+          "self": "AI アシスタント",
           "description": "OpenAPI を使用してデータベース開発タスクを支援します。",
           "openai-key": {
             "self": "OpenAI APIキー",
@@ -749,15 +749,15 @@
           }
         },
         "announcement": {
-          "self": "発表",
-          "update-success": "アナウンス設定が更新されました。",
-          "admin-or-dba-can-edit": "管理者または DBA のみがアナウンス設定を更新できます。"
+          "self": "お知らせ",
+          "update-success": "お知らせの設定が更新されました。",
+          "admin-or-dba-can-edit": "管理者または DBA のみがお知らせの設定を更新できます。"
         },
         "announcement-alert-level": {
-          "description": "学年",
+          "description": "レベル",
           "field": {
-            "info": "普通",
-            "warning": "警告する",
+            "info": "情報",
+            "warning": "警告",
             "critical": "重要"
           }
         },
@@ -768,7 +768,7 @@
         },
         "extra-link": {
           "self": "リンク",
-          "placeholder": "お知らせリンクを入力してください"
+          "placeholder": "お知らせのリンクを入力してください"
         },
         "confirm-delete-custom-logo": "カスタム ブランド ロゴを削除しますか?",
         "restrict-issue-creation-for-sql-review": {
@@ -1651,19 +1651,19 @@
     }
   },
   "quick-start": {
-    "self": "初心者のタスク",
-    "guide": "手順をクリックして試してください",
+    "self": "クイックスタート",
+    "guide": "クリックしてステップを試してみましょう",
     "view-an-issue": "作業指示を表示する",
-    "visit-project": "@:common.visit@:common.projects",
-    "visit-instance": "@:common.visit@:common.instances",
-    "visit-database": "@:common.visit@:common.databases",
-    "visit-environment": "@:common.visit@:common.environments",
-    "visit-member": "@:common.visit@:common.members",
+    "visit-project": "@:{'common.projects'}に@:{'common.visit'}する",
+    "visit-instance": "@:{'common.instances'}に@:{'common.visit'}する",
+    "visit-database": "@:{'common.databases'}に@:{'common.visit'}する",
+    "visit-environment": "@:{'common.environments'}に@:{'common.visit'}する",
+    "visit-member": "@:{'common.members'}に@:{'common.visit'}する",
     "use-kbar": "kbar ({shortcut}) を使用する",
     "query-data": "クエリデータ",
     "notice": {
-      "title": "初心者向けタスクは終了しました",
-      "desc": "右上隅のメニューから後でもう一度初心者ミッションを開くこともできます"
+      "title": "クイックスタートガイドを終了しました",
+      "desc": "後から右上のメニューから元に戻すことができます"
     }
   },
   "auth": {
@@ -2726,14 +2726,14 @@
       "subscription-page": "購読ページ",
       "subscription": "サブスクリプション プランと有料機能は {page} でご覧いただけます。"
     },
-    "description": "ここで購入した Bytebase 証明書をアップロードして、プロフェッショナル/エンタープライズ機能のロックを解除できます。",
-    "upload-license": "証明書のアップロード",
+    "description": "ここで購入した Bytebase ライセンスをアップロードして、プロフェッショナル/エンタープライズ機能のロックを解除できます。",
+    "upload-license": "ライセンスのアップロード",
     "upgrade-trial-button": "アップグレードトライアル",
     "request-n-days-trial": "{days} 日間のトライアルをリクエストします (クレジット カードは必要ありません)",
     "request-with-qr": "QRコードを読み取ってトライアルを申し込みます",
     "successfully-start-trial": "{days} 日間の無料トライアルが正常に開始されました",
     "successfully-upgrade-trial": "{plan} 試用版に正常にアップグレードされました",
-    "require-subscription": "この機能には、{requiredPlan} のサブスクリプションが必要です。この機能のロックを解除するには、Bytebase 証明書を購入してください。",
+    "require-subscription": "この機能には、{requiredPlan} のサブスクリプションが必要です。この機能のロックを解除するには、Bytebase ライセンスを購入してください。",
     "feature-require-subscription": "{feature} には {requiredPlan} が必要です。",
     "required-plan-with-trial": "この機能には、{requiredPlan} のサブスクリプション、{startTrial} が必要です",
     "trial-for-plan": "{plan} の {days} 日間の無料トライアルを開始できます。クレジット カードや前払いは必要ありません。",
@@ -2742,25 +2742,25 @@
     "contact-to-upgrade": "試用版にアップグレードするには、ワークスペースの所有者に問い合わせてください。",
     "upgrade-now": "今すぐアップグレード",
     "instance-assignment": {
-      "license": "証明書",
-      "assign-license": "証明書の割り当て",
-      "require-license": "インスタンス証明書が必要です",
-      "missing-license-attention": "この機能のロックを解除するには、インスタンスに証明書を割り当ててください。",
+      "license": "ライセンス",
+      "assign-license": "ライセンスの割り当て",
+      "require-license": "インスタンスライセンスが必要です",
+      "missing-license-attention": "この機能のロックを解除するには、インスタンスにライセンスを割り当ててください。",
       "n-license-remain": "残り {n}",
-      "manage-license": "証明書の管理",
-      "used-and-total-license": "割り当てられた/合計インスタンス証明書",
-      "success-notification": "証明書の割り当てが正常に更新されました",
-      "missing-license-for-instances": "この機能を有効にするための証明書が不足しているインスタンス ({count}) があります。",
-      "missing-license-for-feature": "{feature} を有効にするためのインスタンス証明書がありません。クリックして証明書を割り当てます。"
+      "manage-license": "ライセンスの管理",
+      "used-and-total-license": "割り当てられた/合計インスタンスライセンス",
+      "success-notification": "ライセンスの割り当てが正常に更新されました",
+      "missing-license-for-instances": "この機能を有効にするためのライセンスが不足しているインスタンス ({count}) があります。",
+      "missing-license-for-feature": "{feature} を有効にするためのインスタンスライセンスがありません。クリックしてライセンスを割り当てます。"
     },
     "update": {
       "success": {
-        "title": "証明書が正常に更新されました",
+        "title": "ライセンスが正常に更新されました",
         "description": "サブスクリプション版のプレミアム機能がロック解除されました"
       },
       "failure": {
-        "title": "証明書の更新に失敗しました",
-        "description": "証明書が有効かどうかを確認してください"
+        "title": "ライセンスの更新に失敗しました",
+        "description": "ライセンスが有効かどうかを確認してください"
       }
     },
     "plan-features": "{plan} 関数",
@@ -2886,7 +2886,7 @@
       },
       "bb-feature-2fa": {
         "title": "二要素認証",
-        "desc": "2 要素認証は、システム メンバーに追加のセキュリティ層を提供します。ログインするとき、ユーザーは認証アプリケーションによって生成されたセキュリティ コードを入力する必要があります。"
+        "desc": "2 要素認証は、システム メンバーに追加のセキュリティレイヤーを提供します。ログインするとき、ユーザーは認証アプリケーションによって生成されたセキュリティ コードを入力する必要があります。"
       },
       "bb-feature-plugin-openai": {
         "title": "AIの強化",
@@ -3259,7 +3259,7 @@
       },
       "send": "送信",
       "new-line": "改行",
-      "ai-assistant": "AI助手",
+      "ai-assistant": "AI アシスタント",
       "not-configured": {
         "self": "AI アシスタントが設定されていません。",
         "contact-admin-to-configure": "組織の管理者に問い合わせてください。",

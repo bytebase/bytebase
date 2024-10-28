@@ -232,6 +232,97 @@
           schema: ""
           table: people
           column: ""
+- description: Recursive cte
+  statement: |-
+    WITH RECURSIVE CTE_01 AS (
+      (SELECT a AS c1, b AS c2, c AS c3, 1 AS n FROM T1)
+      UNION ALL
+      SELECT c1 * c2, c2 + c1, c3 * c2, n + 1 FROM CTE_01 WHERE n < 5
+    )
+    SELECT * FROM CTE_01;
+  defaultDatabase: ds1
+  metadata: |-
+    {
+      "name":  "ds1",
+      "schemas":  [
+        {
+          "name": "",
+          "tables":  [
+            {
+              "name":  "T1",
+              "columns":  [
+                {
+                  "name":  "a"
+                },
+                {
+                  "name":  "b"
+                },
+                {
+                  "name":  "c"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 0
+    results:
+        - name: C1
+          sourcecolumns:
+            - server: ""
+              database: ds1
+              schema: ""
+              table: T1
+              column: a
+            - server: ""
+              database: ds1
+              schema: ""
+              table: T1
+              column: b
+        - name: C2
+          sourcecolumns:
+            - server: ""
+              database: ds1
+              schema: ""
+              table: T1
+              column: a
+            - server: ""
+              database: ds1
+              schema: ""
+              table: T1
+              column: b
+        - name: C3
+          sourcecolumns:
+            - server: ""
+              database: ds1
+              schema: ""
+              table: T1
+              column: a
+            - server: ""
+              database: ds1
+              schema: ""
+              table: T1
+              column: b
+            - server: ""
+              database: ds1
+              schema: ""
+              table: T1
+              column: c
+        - name: "N"
+          sourcecolumns: []
+    sourcecolumns:
+        - server: ""
+          database: ds1
+          schema: ""
+          table: CTE_01
+          column: ""
+        - server: ""
+          database: ds1
+          schema: ""
+          table: T1
+          column: ""
 - description: Simple normal cte
   statement: WITH CTE_1 AS (SELECT ID, NAME FROM people) SELECT * FROM CTE_1;
   defaultDatabase: ds1
@@ -350,7 +441,7 @@
           schema: ""
           table: paintings
           column: ""
-- description: Non associated subquery in target field
+- description: Expression subquery
   statement: SELECT (SELECT NAME FROM people), ID FROM people;
   defaultDatabase: ds1
   metadata: |-
