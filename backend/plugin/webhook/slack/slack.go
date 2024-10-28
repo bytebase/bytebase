@@ -101,7 +101,7 @@ func GetBlocks(context webhook.Context) []Block {
 		Type: "section",
 		Text: &BlockMarkdown{
 			Type: "mrkdwn",
-			Text: fmt.Sprintf("By: %s (%s)", context.CreatorName, context.CreatorEmail),
+			Text: fmt.Sprintf("Actor: %s (%s)", context.ActorName, context.ActorEmail),
 		},
 	})
 
