@@ -189,7 +189,6 @@ func (q *querySpanExtractor) recordCTE(withClause parser.IWith_clauseContext) er
 				return err
 			}
 		}
-
 	}
 	return nil
 }
