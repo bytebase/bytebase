@@ -184,3 +184,19 @@ func (s *Store) ListChangelogs(ctx context.Context, find *FindChangelogMessage) 
 
 	return changelogs, nil
 }
+
+func (s *Store) GetChangelog(ctx context.Context, uid int64) (*ChangelogMessage, error) {
+	changelogs, err := s.ListChangelogs(ctx, &FindChangelogMessage{
+		UID: &uid,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if len(changelogs) == 0 {
+		return nil, nil
+	}
+	if len(changelogs) > 1 {
+		return nil, errors.Errorf("found %d changelogs with UID %d, expect 1", len(changelogs), uid)
+	}
+	return changelogs[0], nil
+}

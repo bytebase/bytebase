@@ -84,19 +84,13 @@ func (s *DatabaseService) GetChangelog(ctx context.Context, request *v1pb.GetCha
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	// TODO(p0ny): support view and filter
-	find := &store.FindChangelogMessage{
-		UID: &changelogUID,
-	}
-	changelogs, err := s.store.ListChangelogs(ctx, find)
+	// TODO(p0ny): support view and filter.
+	changelog, err := s.store.GetChangelog(ctx, changelogUID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to list changelogs, errors: %v", err)
 	}
-	if len(changelogs) == 0 {
+	if changelog == nil {
 		return nil, status.Errorf(codes.NotFound, "changelog %q not found", changelogUID)
-	}
-	if len(changelogs) > 1 {
-		return nil, status.Errorf(codes.Internal, "found %d changelogs with UID %q, expect 1", len(changelogs), changelogUID)
 	}
 
 	// Get related database to convert to changelog.
@@ -121,11 +115,11 @@ func (s *DatabaseService) GetChangelog(ctx context.Context, request *v1pb.GetCha
 		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
 	}
 
-	changelog, err := s.convertToChangelog(ctx, database, changelogs[0])
+	converted, err := s.convertToChangelog(ctx, database, changelog)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to convert changelog, error: %v", err)
 	}
-	return changelog, nil
+	return converted, nil
 }
 
 func (s *DatabaseService) convertToChangelogs(ctx context.Context, d *store.DatabaseMessage, cs []*store.ChangelogMessage) ([]*v1pb.Changelog, error) {
