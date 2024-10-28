@@ -85,7 +85,11 @@ export interface ActuatorInfo {
   unlicensedFeatures: string[];
   /** disallow_password_signin is the flag to disallow user signin with email&password. (except workspace admins) */
   disallowPasswordSignin: boolean;
-  passwordRestriction: PasswordRestrictionSetting | undefined;
+  passwordRestriction:
+    | PasswordRestrictionSetting
+    | undefined;
+  /** docker flag means if the Bytebase instance is running in docker. */
+  docker: boolean;
 }
 
 function createBaseGetResourcePackageRequest(): GetResourcePackageRequest {
@@ -373,6 +377,7 @@ function createBaseActuatorInfo(): ActuatorInfo {
     unlicensedFeatures: [],
     disallowPasswordSignin: false,
     passwordRestriction: undefined,
+    docker: false,
   };
 }
 
@@ -440,6 +445,9 @@ export const ActuatorInfo: MessageFns<ActuatorInfo> = {
     }
     if (message.passwordRestriction !== undefined) {
       PasswordRestrictionSetting.encode(message.passwordRestriction, writer.uint32(170).fork()).join();
+    }
+    if (message.docker !== false) {
+      writer.uint32(176).bool(message.docker);
     }
     return writer;
   },
@@ -598,6 +606,13 @@ export const ActuatorInfo: MessageFns<ActuatorInfo> = {
 
           message.passwordRestriction = PasswordRestrictionSetting.decode(reader, reader.uint32());
           continue;
+        case 22:
+          if (tag !== 176) {
+            break;
+          }
+
+          message.docker = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -636,6 +651,7 @@ export const ActuatorInfo: MessageFns<ActuatorInfo> = {
       passwordRestriction: isSet(object.passwordRestriction)
         ? PasswordRestrictionSetting.fromJSON(object.passwordRestriction)
         : undefined,
+      docker: isSet(object.docker) ? globalThis.Boolean(object.docker) : false,
     };
   },
 
@@ -704,6 +720,9 @@ export const ActuatorInfo: MessageFns<ActuatorInfo> = {
     if (message.passwordRestriction !== undefined) {
       obj.passwordRestriction = PasswordRestrictionSetting.toJSON(message.passwordRestriction);
     }
+    if (message.docker !== false) {
+      obj.docker = message.docker;
+    }
     return obj;
   },
 
@@ -737,6 +756,7 @@ export const ActuatorInfo: MessageFns<ActuatorInfo> = {
     message.passwordRestriction = (object.passwordRestriction !== undefined && object.passwordRestriction !== null)
       ? PasswordRestrictionSetting.fromPartial(object.passwordRestriction)
       : undefined;
+    message.docker = object.docker ?? false;
     return message;
   },
 };

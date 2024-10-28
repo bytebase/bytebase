@@ -131,6 +131,7 @@ func (s *ActuatorService) getServerInfo(ctx context.Context) (*v1pb.ActuatorInfo
 		WorkspaceId:            workspaceID,
 		GitopsWebhookUrl:       setting.GitopsWebhookUrl,
 		Debug:                  s.profile.RuntimeDebug.Load(),
+		Docker:                 s.profile.IsDocker,
 		Lsp:                    s.profile.Lsp,
 		PreUpdateBackup:        true,
 		UnlicensedFeatures:     unlicensedFeaturesString,

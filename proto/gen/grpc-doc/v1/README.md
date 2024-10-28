@@ -5204,6 +5204,7 @@ Actuator concept is similar to the Spring Boot Actuator.
 | unlicensed_features | [string](#string) | repeated |  |
 | disallow_password_signin | [bool](#bool) |  | disallow_password_signin is the flag to disallow user signin with email&amp;password. (except workspace admins) |
 | password_restriction | [PasswordRestrictionSetting](#bytebase-v1-PasswordRestrictionSetting) |  |  |
+| docker | [bool](#bool) |  | docker flag means if the Bytebase instance is running in docker. |
 
 
 

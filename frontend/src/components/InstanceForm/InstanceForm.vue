@@ -13,10 +13,9 @@
 <script lang="ts" setup>
 import { watch, onMounted, toRef } from "vue";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
-import { useSettingV1Store } from "@/store";
+import { useActuatorV1Store, useSettingV1Store } from "@/store";
 import { Engine } from "@/types/proto/v1/common";
 import { Instance } from "@/types/proto/v1/instance_service";
-import { isDev } from "@/utils";
 import { FeatureModal } from "../FeatureGuard";
 import { defaultPortForEngine } from "./constants";
 import { provideInstanceFormContext } from "./context";
@@ -31,6 +30,7 @@ const emit = defineEmits<{
 }>();
 
 const settingV1Store = useSettingV1Store();
+const actuatorStore = useActuatorV1Store();
 
 const instance = toRef(props, "instance");
 const hideAdvancedFeatures = toRef(props, "hideAdvancedFeatures");
@@ -39,7 +39,7 @@ const { events, isCreating, basicInfo, adminDataSource, missingFeature } =
   context;
 onMounted(async () => {
   if (isCreating.value) {
-    adminDataSource.value.host = isDev() ? "127.0.0.1" : "host.docker.internal";
+    adminDataSource.value.host = actuatorStore.isDocker ? "host.docker.internal" : "127.0.0.1";
     if (basicInfo.value.engine === Engine.DYNAMODB) {
       adminDataSource.value.host = "";
     }

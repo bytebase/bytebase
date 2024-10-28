@@ -8463,6 +8463,9 @@ components:
                     description: disallow_password_signin is the flag to disallow user signin with email&password. (except workspace admins)
                 passwordRestriction:
                     $ref: '#/components/schemas/PasswordRestrictionSetting'
+                docker:
+                    type: boolean
+                    description: docker flag means if the Bytebase instance is running in docker.
             description: |-
                 ServerInfo is the API message for server info.
                  Actuator concept is similar to the Spring Boot Actuator.
