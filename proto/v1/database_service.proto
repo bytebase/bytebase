@@ -1614,7 +1614,7 @@ message GetChangelogRequest {
     (google.api.resource_reference) = {type: "bytebase.com/DatabaseChangelog"}
   ];
 
-  ChangeHistoryView view = 2;
+  ChangelogView view = 2;
 
   // Format the schema dump into SDL format.
   bool sdl_format = 3;
