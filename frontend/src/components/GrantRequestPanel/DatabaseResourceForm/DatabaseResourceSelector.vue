@@ -19,7 +19,7 @@
   </div>
 </template>
 
-<script setup lang="ts">
+<script setup lang="tsx">
 import { orderBy } from "lodash-es";
 import type { TransferRenderSourceList, TreeOption } from "naive-ui";
 import { NTransfer, NTree } from "naive-ui";
@@ -131,6 +131,7 @@ const parseResourceToKey = (resource: DatabaseResource): string => {
 
 const selectedValueList = ref<string[]>([]);
 const expandedKeys = ref<string[]>([]);
+const indeterminateKeys = ref<string[]>([]);
 const loading = ref(true);
 
 const cascadeLoopTreeNode = (
@@ -160,6 +161,7 @@ onMounted(async () => {
   );
 
   const newCheckedKeys = new Set(selectedKeys);
+  const newIndeterminateKeys = new Set<string>([]);
   const newExpandedKeys = new Set(
     // expand parents for selected keys
     selectedKeys
@@ -183,19 +185,32 @@ onMounted(async () => {
     const checkedNode = sourceTransferOptions.value.find(
       (option) => option.value === selectedKey
     );
-    if (checkedNode) {
-      // check and expand all children
-      cascadeLoopTreeNode(checkedNode, (treeNode) => {
-        newCheckedKeys.add(treeNode.value);
-        if (treeNode.children) {
-          newExpandedKeys.add(treeNode.value);
-        }
-      });
+    if (!checkedNode) {
+      continue;
+    }
+    // loop to check and expand all children
+    cascadeLoopTreeNode(checkedNode, (treeNode) => {
+      newCheckedKeys.add(treeNode.value);
+      if (treeNode.children) {
+        newExpandedKeys.add(treeNode.value);
+      }
+    });
+
+    // add parent pathes to indeterminate keys
+    const parentPathes = parseKeyToPathes(checkedNode.value);
+    parentPathes.pop();
+    while (parentPathes.length > 0) {
+      const parentPath = parentPathes.pop() as string;
+      // move the parent to the indeterminate keys.
+      if (!newCheckedKeys.has(parentPath)) {
+        newIndeterminateKeys.add(parentPath);
+      }
     }
   }
 
   selectedValueList.value = [...newCheckedKeys];
   expandedKeys.value = [...newExpandedKeys];
+  indeterminateKeys.value = [...newIndeterminateKeys];
 
   loading.value = false;
 });
@@ -294,6 +309,7 @@ const renderSourceList: TransferRenderSourceList = ({ onCheck, pattern }) => {
     showIrrelevantNodes: false,
     expandedKeys: expandedKeys.value,
     checkedKeys: selectedValueList.value,
+    indeterminateKeys: indeterminateKeys.value,
     onLoad: onTreeNodeLoad,
     onUpdateExpandedKeys: (keys: string[]) => {
       expandedKeys.value = keys;
@@ -307,10 +323,12 @@ const renderSourceList: TransferRenderSourceList = ({ onCheck, pattern }) => {
         return;
       }
 
+      const oldIndeterminateKeys = new Set(indeterminateKeys.value);
       const newCheckedKeys = new Set(checkedKeys);
-
+      const oldCheckedKeys = new Set(selectedValueList.value);
       const treeNode = meta.node as DatabaseTreeOption;
-      if (meta.action === "check") {
+
+      const checkNodeAndAllChildren = async () => {
         await onTreeNodeLoad(treeNode);
         // refresh node in case the schema is updated
         const checkedNode = sourceTransferOptions.value.find(
@@ -325,9 +343,52 @@ const renderSourceList: TransferRenderSourceList = ({ onCheck, pattern }) => {
             }
           });
         }
+      };
+
+      if (meta.action === "check") {
+        oldIndeterminateKeys.delete(treeNode.value);
+        await checkNodeAndAllChildren();
+
+        const parentPathes = parseKeyToPathes(treeNode.value);
+        parentPathes.pop();
+        while (parentPathes.length > 0) {
+          const parentPath = parentPathes.pop() as string;
+          // If users not manually select the parent,
+          // then DONOT check the parent,
+          // move the parent to the indeterminate keys instead.
+          if (
+            !oldCheckedKeys.has(parentPath) &&
+            newCheckedKeys.has(parentPath)
+          ) {
+            newCheckedKeys.delete(parentPath);
+            oldIndeterminateKeys.add(parentPath);
+          }
+        }
+      } else {
+        if (oldIndeterminateKeys.has(treeNode.value)) {
+          // uncheck an indeterminate key should be check
+          oldIndeterminateKeys.delete(treeNode.value);
+
+          await checkNodeAndAllChildren();
+        } else {
+          // loop parent pathes to check if we need to update the indeterminate keys
+          const parentPathes = parseKeyToPathes(treeNode.value);
+          parentPathes.pop();
+          while (parentPathes.length > 0) {
+            const parentPath = parentPathes.pop() as string;
+            if (!oldIndeterminateKeys.has(parentPath)) {
+              continue;
+            }
+            if (!checkedKeys.find((key) => key.startsWith(`${parentPath}/`))) {
+              oldIndeterminateKeys.delete(parentPath);
+            }
+          }
+        }
       }
 
+      selectedValueList.value = [...newCheckedKeys];
       onCheck([...newCheckedKeys]);
+      indeterminateKeys.value = [...oldIndeterminateKeys];
     },
   });
 };
@@ -363,9 +424,17 @@ const renderTargetList: TransferRenderSourceList = () => {
     virtualScroll: true,
     style: "height: 468px", // since <NTransfer> height is 512
     renderLabel: ({ option }: { option: TreeOption }) => {
-      return h(Label, {
-        option: option as DatabaseTreeOption,
-      });
+      const node = option as DatabaseTreeOption;
+      return (
+        <Label
+          option={node}
+          class={
+            selectedValueList.value.includes(node.value)
+              ? "text-indigo-700 font-medium"
+              : "textinfolabel"
+          }
+        />
+      );
     },
     showIrrelevantNodes: false,
     checkedKeys: selectedValueList.value,
