@@ -31,11 +31,6 @@ func configureEchoRouters(
 	mux *grpcruntime.ServeMux,
 	profile *config.Profile,
 ) {
-	// Embed frontend.
-	embedFrontend(e)
-
-	e.HideBanner = true
-	e.HidePort = true
 	e.Use(recoverMiddleware)
 
 	e.Use(middleware.RequestLoggerWithConfig(middleware.RequestLoggerConfig{
@@ -50,6 +45,12 @@ func configureEchoRouters(
 			return nil
 		},
 	}))
+
+	// Embed frontend.
+	embedFrontend(e)
+
+	e.HideBanner = true
+	e.HidePort = true
 
 	grpcSkipper := func(c echo.Context) bool {
 		// Skip grpc and webhook calls.
