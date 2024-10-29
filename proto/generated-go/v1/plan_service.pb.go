@@ -2060,9 +2060,7 @@ type PreviewPlanResponse_DatabaseFiles struct {
 	unknownFields protoimpl.UnknownFields
 
 	Database string `protobuf:"bytes,1,opt,name=database,proto3" json:"database,omitempty"`
-	// Format: projects/{project}/releases/{release}/files/{path}
-	// {path} is URL path escaped.
-	// Example: `projects/tnt/releases/0801/files/2.2%2FV0001_create_table.sql`
+	// Format: projects/{project}/releases/{release}/files/{file_id}
 	Files []string `protobuf:"bytes,2,rep,name=files,proto3" json:"files,omitempty"`
 }
 

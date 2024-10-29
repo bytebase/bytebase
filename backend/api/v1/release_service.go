@@ -3,6 +3,7 @@ package v1
 import (
 	"context"
 
+	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -51,6 +52,10 @@ func (s *ReleaseService) CreateRelease(ctx context.Context, request *v1pb.Create
 	files, err := convertReleaseFiles(ctx, s.store, request.Release.Files)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to convert files, err: %v", err)
+	}
+	// Generate UUID for each file.
+	for _, f := range files {
+		f.Id = uuid.NewString()
 	}
 
 	releaseMessage := &store.ReleaseMessage{
@@ -287,6 +292,7 @@ func convertToReleaseFiles(ctx context.Context, s *store.Store, files []*storepb
 			return nil, errors.Errorf("sheet %q not found", f.Sheet)
 		}
 		v1Files = append(v1Files, &v1pb.Release_File{
+			Id:            f.Id,
 			Name:          f.Name,
 			Sheet:         f.Sheet,
 			SheetSha256:   f.SheetSha256,
@@ -331,6 +337,7 @@ func convertReleaseFiles(ctx context.Context, s *store.Store, files []*v1pb.Rele
 		}
 
 		rFiles = append(rFiles, &storepb.ReleasePayload_File{
+			Id:          f.Id,
 			Name:        f.Name,
 			Sheet:       f.Sheet,
 			SheetSha256: sheet.Sha256,

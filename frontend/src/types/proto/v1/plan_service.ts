@@ -488,11 +488,7 @@ export interface PreviewPlanResponse {
 
 export interface PreviewPlanResponse_DatabaseFiles {
   database: string;
-  /**
-   * Format: projects/{project}/releases/{release}/files/{path}
-   * {path} is URL path escaped.
-   * Example: `projects/tnt/releases/0801/files/2.2%2FV0001_create_table.sql`
-   */
+  /** Format: projects/{project}/releases/{release}/files/{file_id} */
   files: string[];
 }
 
