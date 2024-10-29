@@ -3664,6 +3664,7 @@ SlowQueryPolicy is the policy configuration for slow query.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
+| id | [string](#string) |  | The unique identifier for the file. |
 | name | [string](#string) |  | The name of the file. Expressed as a path, e.g. `2.2/V0001_create_table.sql` |
 | sheet | [string](#string) |  | The sheet that holds the content. Format: projects/{project}/sheets/{sheet} |
 | sheet_sha256 | [string](#string) |  | The SHA256 hash value of the sheet. |

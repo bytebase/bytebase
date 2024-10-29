@@ -1704,6 +1704,7 @@ When paginating, all other parameters provided to `ListReleasesRequest` must mat
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
+| id | [string](#string) |  | The unique identifier for the file. |
 | name | [string](#string) |  | The name of the file. Expressed as a path, e.g. `2.2/V0001_create_table.sql` |
 | sheet | [string](#string) |  | The sheet that holds the content. Format: projects/{project}/sheets/{sheet} |
 | sheet_sha256 | [string](#string) |  | The SHA256 hash value of the sheet. |
@@ -8459,7 +8460,7 @@ When paginating, all other parameters provided to `ListPlans` must match the cal
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | database | [string](#string) |  |  |
-| files | [string](#string) | repeated | Format: projects/{project}/releases/{release}/files/{path} {path} is URL path escaped. Example: `projects/tnt/releases/0801/files/2.2%2FV0001_create_table.sql` |
+| files | [string](#string) | repeated | Format: projects/{project}/releases/{release}/files/{file_id} |
 
 
 
