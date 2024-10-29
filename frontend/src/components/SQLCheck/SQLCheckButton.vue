@@ -221,7 +221,7 @@ const runChecks = async () => {
     rawAdvices.value = [];
   }
   const { statement, errors } = await props.getStatement();
-  if (statement.length > SKIP_CHECK_THRESHOLD) {
+  if (new Blob([statement]).size > SKIP_CHECK_THRESHOLD) {
     return handleErrors([t("issue.sql-check.statement-is-too-large")]);
   }
   if (errors.length > 0) {
