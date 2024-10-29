@@ -74,7 +74,7 @@ func (*DiscordReceiver) Post(context Context) error {
 		Description: context.Description,
 		URL:         context.Link,
 		Author: DiscordWebhookEmbedAuthor{
-			Name: fmt.Sprintf("%s (%s)", context.CreatorName, context.CreatorEmail),
+			Name: fmt.Sprintf("%s (%s)", context.ActorName, context.ActorEmail),
 		},
 		FieldList: fieldList,
 	})

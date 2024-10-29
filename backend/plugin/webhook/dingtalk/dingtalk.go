@@ -51,7 +51,7 @@ func (*DingTalkReceiver) Post(context webhook.Context) error {
 	for _, meta := range context.GetMetaListZh() {
 		metaStrList = append(metaStrList, fmt.Sprintf("##### **%s:** %s", meta.Name, meta.Value))
 	}
-	metaStrList = append(metaStrList, fmt.Sprintf("##### **由:** %s (%s)", context.CreatorName, context.CreatorEmail))
+	metaStrList = append(metaStrList, fmt.Sprintf("##### **由:** %s (%s)", context.ActorName, context.ActorEmail))
 
 	text := fmt.Sprintf("# %s\n%s\n##### [在 Bytebase 中显示](%s)", context.TitleZh, strings.Join(metaStrList, "\n"), context.Link)
 	if context.Description != "" {

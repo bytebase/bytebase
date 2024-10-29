@@ -29,6 +29,8 @@ const (
 	PermissionDatabasesGetSchema         Permission = "bb.databases.getSchema"
 	PermissionDatabasesList              Permission = "bb.databases.list"
 	PermissionDatabasesQuery             Permission = "bb.databases.query"
+	PermissionDatabasesQueryDDL          Permission = "bb.databases.queryDDL"
+	PermissionDatabasesQueryDML          Permission = "bb.databases.queryDML"
 	PermissionDatabasesQueryExplain      Permission = "bb.databases.queryExplain"
 	PermissionDatabasesQueryInfo         Permission = "bb.databases.queryInfo"
 	PermissionDatabasesSync              Permission = "bb.databases.sync"
@@ -155,6 +157,8 @@ var allPermissions = []Permission{
 	PermissionDatabasesGetSchema,
 	PermissionDatabasesList,
 	PermissionDatabasesQuery,
+	PermissionDatabasesQueryDDL,
+	PermissionDatabasesQueryDML,
 	PermissionDatabasesQueryExplain,
 	PermissionDatabasesQueryInfo,
 	PermissionDatabasesSync,

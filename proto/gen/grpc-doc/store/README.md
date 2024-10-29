@@ -982,6 +982,7 @@ DatabaseMetadata is the metadata for databases.
 | ----- | ---- | ----- | ----------- |
 | labels | [DatabaseMetadata.LabelsEntry](#bytebase-store-DatabaseMetadata-LabelsEntry) | repeated |  |
 | last_sync_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| backup_available | [bool](#bool) |  |  |
 
 
 

@@ -2,6 +2,7 @@
 package webhook
 
 import (
+	"fmt"
 	"sync"
 	"time"
 
@@ -42,11 +43,12 @@ const (
 
 // Issue object of issue.
 type Issue struct {
-	ID          int    `json:"id"`
-	Name        string `json:"name"`
-	Status      string `json:"status"`
-	Type        string `json:"type"`
-	Description string `json:"description"`
+	ID          int                `json:"id"`
+	Name        string             `json:"name"`
+	Status      string             `json:"status"`
+	Type        string             `json:"type"`
+	Description string             `json:"description"`
+	Creator     *store.UserMessage `json:"-"`
 }
 
 type Stage struct {
@@ -78,9 +80,9 @@ type Context struct {
 	TitleZh      string
 	Description  string
 	Link         string
-	CreatorID    int
-	CreatorName  string
-	CreatorEmail string
+	ActorID      int
+	ActorName    string
+	ActorEmail   string
 	CreatedTs    int64
 	Issue        *Issue
 	Stage        *Stage
@@ -113,6 +115,9 @@ func (c *Context) GetMetaList() []Meta {
 		m = append(m, Meta{
 			Name:  "Issue",
 			Value: c.Issue.Name,
+		}, Meta{
+			Name:  "Issue Creator",
+			Value: fmt.Sprintf("%s (%s)", c.Issue.Creator.Name, c.Issue.Creator.Email),
 		})
 		// For VCS workflow, the generated issue description is composed of file names in the push event.
 		// So the description could be long, which is hard to display if merged into the issue name.
