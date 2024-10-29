@@ -449,7 +449,9 @@ const handleExportBtnClick = async (
     props.database && isValidDatabaseName(props.database.name)
       ? props.database.name
       : "";
-  const statement = props.result.statement;
+  // use props.params.statement which is the "snapshot" of the query statement
+  // not using props.result.statement because it might be rewritten by Query() API
+  const statement = props.params.statement;
   const admin = tabStore.currentTab?.mode === "ADMIN";
   const limit = options.limit ?? (admin ? 0 : editorStore.resultRowsLimit);
 
