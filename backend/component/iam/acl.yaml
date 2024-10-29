@@ -28,6 +28,8 @@ roles:
       - bb.databases.getSchema
       - bb.databases.list
       - bb.databases.query
+      - bb.databases.queryDDL
+      - bb.databases.queryDML
       - bb.databases.queryExplain
       - bb.databases.queryInfo
       - bb.databases.sync
@@ -154,6 +156,8 @@ roles:
       - bb.databases.getSchema
       - bb.databases.list
       - bb.databases.query
+      - bb.databases.queryDDL
+      - bb.databases.queryDML
       - bb.databases.queryExplain
       - bb.databases.queryInfo
       - bb.databases.sync
@@ -292,6 +296,8 @@ roles:
       - bb.databases.getSchema
       - bb.databases.list
       - bb.databases.query
+      - bb.databases.queryDDL
+      - bb.databases.queryDML
       - bb.databases.queryExplain
       - bb.databases.queryInfo
       - bb.databases.sync
@@ -379,6 +385,8 @@ roles:
       - bb.databases.getSchema
       - bb.databases.list
       - bb.databases.query
+      - bb.databases.queryDDL
+      - bb.databases.queryDML
       - bb.databases.queryExplain
       - bb.databases.queryInfo
       - bb.projects.get
