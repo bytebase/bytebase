@@ -776,13 +776,16 @@ func (q *querySpanExtractor) extractTableSourceFromFromClause(fromClause parser.
 				}
 			}
 		}
-		anchor, err = q.joinTable(anchor, joinType, usingColumns, tableSource)
+		anchor, err = joinTable(anchor, joinType, usingColumns, tableSource)
+		if err != nil {
+			return nil, err
+		}
 	}
 	q.tableSourceFrom = append(q.tableSourceFrom, anchor)
 	return anchor, nil
 }
 
-func (q *querySpanExtractor) joinTable(anchor base.TableSource, tp joinType, usingColumns []string, tableSource base.TableSource) (base.TableSource, error) {
+func joinTable(anchor base.TableSource, tp joinType, usingColumns []string, tableSource base.TableSource) (base.TableSource, error) {
 	var resultField []base.QuerySpanResult
 	switch tp {
 	case crossJoin, innerJoin, fullOuterJoin, leftOuterJoin, rightOuterJoin:
@@ -892,7 +895,10 @@ func (q *querySpanExtractor) extractTableSourceFromTablePrimary(tablePrimary par
 					}
 				}
 			}
-			anchor, err = q.joinTable(anchor, joinType, usingColumns, tableSource)
+			anchor, err = joinTable(anchor, joinType, usingColumns, tableSource)
+			if err != nil {
+				return nil, err
+			}
 		}
 		return anchor, nil
 	}
