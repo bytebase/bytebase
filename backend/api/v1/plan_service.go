@@ -1187,14 +1187,14 @@ func getSpecs(database *store.DatabaseMessage, revisions []*store.RevisionMessag
 			// applied, so we will not deploy it.
 			if r.Payload.SheetSha256 != file.SheetSha256 {
 				// It's been modified! warn users.
-				modifiedFiles = append(modifiedFiles, common.FormatReleaseFile(releaseName, file.Name))
+				modifiedFiles = append(modifiedFiles, common.FormatReleaseFile(releaseName, file.Id))
 			}
 			continue
 		}
 
 		if lastVersion != "" && lastVersion >= file.Version {
 			// out of order detected
-			outOfOrderFiles = append(outOfOrderFiles, common.FormatReleaseFile(releaseName, file.Name))
+			outOfOrderFiles = append(outOfOrderFiles, common.FormatReleaseFile(releaseName, file.Id))
 
 			// allowOutOfOrder=false
 			// continue so that we don't add it into the plan.
@@ -1206,7 +1206,7 @@ func getSpecs(database *store.DatabaseMessage, revisions []*store.RevisionMessag
 		spec := &v1pb.Plan_Spec{
 			Id: uuid.NewString(),
 			SpecReleaseSource: &v1pb.Plan_SpecReleaseSource{
-				File: common.FormatReleaseFile(releaseName, file.Name),
+				File: common.FormatReleaseFile(releaseName, file.Id),
 			},
 			Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
 				ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
