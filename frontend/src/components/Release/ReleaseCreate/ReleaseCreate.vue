@@ -69,7 +69,7 @@ const onCreateRelease = async () => {
 
   pushNotification({
     module: "bytebase",
-    style: "CRITICAL",
+    style: "SUCCESS",
     title: t("release.messages.succeed-to-create-release"),
   });
   // Redirect to the created release detail page.
