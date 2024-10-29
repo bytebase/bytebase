@@ -75,20 +75,6 @@
         </template>
         {{ $t("issue.my-issues") }}
       </NTooltip>
-      <NTooltip>
-        <template #trigger>
-          <router-link
-            v-if="hasGetSettingPermission"
-            :to="{ name: SETTING_ROUTE_WORKSPACE_GENERAL }"
-            exact-active-class=""
-          >
-            <NButton size="small">
-              <SettingsIcon class="w-4 h-auto" />
-            </NButton>
-          </router-link>
-        </template>
-        {{ $t("common.setting") }}
-      </NTooltip>
       <div class="ml-2">
         <ProfileBrandingLogo>
           <ProfileDropdown :link="true" />
@@ -115,7 +101,6 @@ import { defineAction, useRegisterActions } from "@bytebase/vue-kbar";
 import { useKBarHandler } from "@bytebase/vue-kbar";
 import { useLocalStorage } from "@vueuse/core";
 import {
-  SettingsIcon,
   CircleDotIcon,
   ChevronDownIcon,
   SearchIcon,

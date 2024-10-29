@@ -1,6 +1,5 @@
 import type { RouteRecordRaw } from "vue-router";
 import { t } from "@/plugins/i18n";
-import SettingSidebar from "@/views/SettingSidebar.vue";
 
 export const SETTING_ROUTE = "setting";
 export const SETTING_ROUTE_WORKSPACE = `${SETTING_ROUTE}.workspace`;
@@ -17,7 +16,7 @@ const workspaceSettingRoutes: RouteRecordRaw[] = [
     meta: { title: () => t("common.settings") },
     components: {
       content: () => import("@/layouts/SettingLayout.vue"),
-      leftSidebar: SettingSidebar,
+      leftSidebar: () => import("@/views/DashboardSidebar.vue"),
     },
     props: {
       content: true,
