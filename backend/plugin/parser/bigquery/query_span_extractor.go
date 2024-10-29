@@ -315,6 +315,10 @@ func (q *querySpanExtractor) extractTableSourceFromSelect(selectCtx parser.ISele
 	for _, item := range itemList {
 		switch {
 		case item.Select_column_star() != nil:
+			fields := append([]base.QuerySpanResult{}, fromFields...)
+			if item.Select_column_star().Star_modifiers() != nil {
+
+			}
 			resultFields = append(resultFields, fromFields...)
 		case item.Select_column_dot_star() != nil:
 			v := item.Select_column_dot_star()
@@ -456,6 +460,15 @@ func (q *querySpanExtractor) extractSourceColumnSetFromExpr(ctx antlr.ParserRule
 	}
 
 	return name, baseSet, nil
+}
+
+func starModify(fields []base.QuerySpanResult, starModifier parser.IStar_modifiersContext) []base.QuerySpanResult {
+	if starModifier == nil {
+		return fields
+	}
+	if except := starModifier.Star_except_list(); except != nil {
+
+	}
 }
 
 func (q *querySpanExtractor) extractWildFromExpr(ctx antlr.ParserRuleContext) ([]base.QuerySpanResult, error) {
