@@ -116,7 +116,7 @@ func (c *Context) GetMetaList() []Meta {
 			Name:  "Issue",
 			Value: c.Issue.Name,
 		}, Meta{
-			Name:  "Issue Ctrator",
+			Name:  "Issue Creator",
 			Value: fmt.Sprintf("%s (%s)", c.Issue.Creator.Name, c.Issue.Creator.Email),
 		})
 		// For VCS workflow, the generated issue description is composed of file names in the push event.
