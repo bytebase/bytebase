@@ -1,5 +1,5 @@
 <template>
-  <div ref="containerRef" class="py-6 lg:flex">
+  <div ref="containerRef" class="pb-6 lg:flex">
     <div class="text-left lg:w-1/4">
       <div class="flex items-center space-x-2">
         <h1 class="text-2xl font-bold">
@@ -61,7 +61,7 @@
           </NSpace>
         </NRadioGroup>
       </div>
-      <div class="mb-7 mt-4 lg:mt-0">
+      <div class="mt-4 lg:mt-0">
         <div class="flex justify-end">
           <NButton
             type="primary"
