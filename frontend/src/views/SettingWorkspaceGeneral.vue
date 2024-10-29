@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-0 divide-y divide-block-border">
+  <div class="space-y-0 divide-y divide-block-border pt-2">
     <DatabaseChangeModeSetting :allow-edit="allowEdit" />
     <NetworkSetting v-if="!isSaaSMode" :allow-edit="allowEdit" />
     <BrandingSetting :allow-edit="allowEdit" />

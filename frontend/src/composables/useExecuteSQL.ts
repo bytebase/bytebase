@@ -134,6 +134,7 @@ const useExecuteSQL = () => {
         changeType: CheckRequest_ChangeType.SQL_EDITOR,
       },
       {
+        ignoredCodes: [Status.PERMISSION_DENIED],
         signal: abortController?.signal,
       }
     );
