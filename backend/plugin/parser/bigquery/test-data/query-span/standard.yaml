@@ -1,3 +1,44 @@
+- description: Except and replace
+  statement: SELECT * EXCEPT (ID) REPLACE (ID/2 AS NAME) FROM people;
+  defaultDatabase: ds1
+  metadata: |-
+    {
+      "name":  "ds1",
+      "schemas":  [
+        {
+          "name": "",
+          "tables":  [
+            {
+              "name":  "people",
+              "columns":  [
+                {
+                  "name":  "ID"
+                },
+                {
+                  "name":  "NAME"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 0
+    results:
+        - name: NAME
+          sourcecolumns:
+            - server: ""
+              database: ds1
+              schema: ""
+              table: people
+              column: ID
+    sourcecolumns:
+        - server: ""
+          database: ds1
+          schema: ""
+          table: people
+          column: ""
 - description: Set operation
   statement: WITH CTE_1 AS (SELECT * FROM people), CTE_2 AS (SELECT * FROM address) SELECT * FROM CTE_1 UNION ALL SELECT * FROM CTE_2;
   defaultDatabase: ds1
