@@ -817,8 +817,8 @@ github.com/bytebase/go-obo v0.0.0-20231026081615-705a7fffbfd2 h1:nEHZi8S7PHT4GxP
 github.com/bytebase/go-obo v0.0.0-20231026081615-705a7fffbfd2/go.mod h1:wjDx6Xm9q7dFtHJvIlrI99JytznLw5wQ4R+9mNXJwGI=
 github.com/bytebase/gohive v0.0.0-20240422092929-d76993a958a4 h1:5o+GWOu+j68eAODMw7/lFJavWCCiPMeqEHuOGx0YmoU=
 github.com/bytebase/gohive v0.0.0-20240422092929-d76993a958a4/go.mod h1:sV29Oj7v/xsXJjJwLRYimdnEX6aZOA1ofAlZ+D/snOo=
-github.com/bytebase/google-sql-parser v0.0.0-20241028100034-870171a587ed h1:+tV1vP/PpUDQBX6etRgpVwwvvxljmf9mfw+Qv//Yicc=
-github.com/bytebase/google-sql-parser v0.0.0-20241028100034-870171a587ed/go.mod h1:edPCw84OriRDnBl+JdtruQ1XoX6dbYR/AkhxyGFRHwg=
+github.com/bytebase/google-sql-parser v0.0.0-20241029094628-5bcb7c1ff147 h1:P+SjAXrXdFD04XrdMJq1gHrZRxSoRDnjfQcNRKzDdUc=
+github.com/bytebase/google-sql-parser v0.0.0-20241029094628-5bcb7c1ff147/go.mod h1:edPCw84OriRDnBl+JdtruQ1XoX6dbYR/AkhxyGFRHwg=
 github.com/bytebase/gosasl v0.0.0-20240422091407-6b7481e86f08 h1:S1GgjJLspz4E4z4CvomGvKgxyv0ATfZm27qHM418jWc=
 github.com/bytebase/gosasl v0.0.0-20240422091407-6b7481e86f08/go.mod h1:Qx8cW6jkI8riyzmklj80kAIkv+iezFUTBiGU0qHhHes=
 github.com/bytebase/mysql-parser v0.0.0-20240810145851-ab2c11629c24 h1:tI2/dg8P5DkwVODgDtqzOoFhmhUBFxSKpMyoyGOq1YU=

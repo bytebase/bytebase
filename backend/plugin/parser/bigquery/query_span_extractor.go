@@ -2,6 +2,7 @@ package bigquery
 
 import (
 	"context"
+	"sort"
 	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
@@ -97,7 +98,6 @@ func (q *querySpanExtractor) extractTableSourceFromQueryWithoutPipe(queryWithout
 	defer func() {
 		q.ctes = q.ctes[:originalCTELength]
 	}()
-	// TODO(zp): handle CTE.
 	if queryWithoutPipe.With_clause() != nil {
 		if err := q.recordCTE(queryWithoutPipe.With_clause()); err != nil {
 			return nil, err
@@ -316,14 +316,23 @@ func (q *querySpanExtractor) extractTableSourceFromSelect(selectCtx parser.ISele
 	for _, item := range itemList {
 		switch {
 		case item.Select_column_star() != nil:
-			resultFields = append(resultFields, fromFields...)
+			fields := append([]base.QuerySpanResult{}, fromFields...)
+			fields, err := q.starModify(fields, item.Select_column_star().Star_modifiers())
+			if err != nil {
+				return nil, err
+			}
+			resultFields = append(resultFields, fields...)
 		case item.Select_column_dot_star() != nil:
 			v := item.Select_column_dot_star()
 			wildFields, err := q.extractWildFromExpr(v.Expression_higher_prec_than_and())
 			if err != nil {
 				return nil, err
 			}
-			resultFields = append(resultFields, wildFields...)
+			fields, err := q.starModify(wildFields, item.Select_column_dot_star().Star_modifiers())
+			if err != nil {
+				return nil, err
+			}
+			resultFields = append(resultFields, fields...)
 		case item.Select_column_expr() != nil:
 			v := item.Select_column_expr()
 			var expression parser.IExpressionContext
@@ -386,7 +395,6 @@ func (q *querySpanExtractor) extractSourceColumnSetFromExpr(ctx antlr.ParserRule
 	// treat it as identifier.
 	var name string
 	switch ctx := ctx.(type) {
-	// TODO(zp): handle subquery
 	case *parser.Parenthesized_queryContext:
 		baseSet := make(base.SourceColumnSet)
 		subqueryExtractor := &querySpanExtractor{
@@ -460,6 +468,75 @@ func (q *querySpanExtractor) extractSourceColumnSetFromExpr(ctx antlr.ParserRule
 	return name, baseSet, nil
 }
 
+func (q *querySpanExtractor) starModify(fields []base.QuerySpanResult, starModifier parser.IStar_modifiersContext) ([]base.QuerySpanResult, error) {
+	if starModifier == nil {
+		return fields, nil
+	}
+
+	type fieldItem struct {
+		id    int
+		field base.QuerySpanResult
+	}
+	var fieldItems []fieldItem
+	for i, field := range fields {
+		fieldItems = append(fieldItems, fieldItem{
+			id:    i,
+			field: field,
+		})
+	}
+	fieldItemMap := make(map[string]fieldItem)
+	for _, fieldItem := range fieldItems {
+		fieldItemMap[fieldItem.field.Name] = fieldItem
+	}
+
+	if except := starModifier.Star_except_list(); except != nil {
+		allIdentifiers := except.AllIdentifier()
+		for _, identifier := range allIdentifiers {
+			identifierNormalized := unquoteIdentifierByRule(identifier)
+			if _, ok := fieldItemMap[identifierNormalized]; !ok {
+				return nil, errors.Errorf("field %s does not exist in the select clause", identifierNormalized)
+			}
+			delete(fieldItemMap, identifierNormalized)
+		}
+	}
+
+	if replace := starModifier.Star_replace_list(); replace != nil {
+		allReplaceItems := replace.AllStar_replace_item()
+		for _, replaceItem := range allReplaceItems {
+			_, set, err := q.extractSourceColumnSetFromExpr(replaceItem.Expression())
+			if err != nil {
+				return nil, err
+			}
+			asIdentifier := unquoteIdentifierByRule(replaceItem.Identifier())
+			querySpanResult := base.QuerySpanResult{
+				Name:          asIdentifier,
+				SourceColumns: set,
+			}
+			if _, ok := fieldItemMap[asIdentifier]; !ok {
+				return nil, errors.Errorf("field %s does not exist in the select clause", asIdentifier)
+			}
+			fieldItemMap[asIdentifier] = fieldItem{
+				id:    fieldItemMap[asIdentifier].id,
+				field: querySpanResult,
+			}
+		}
+	}
+
+	fieldItems = nil
+	for _, fieldItem := range fieldItemMap {
+		fieldItems = append(fieldItems, fieldItem)
+	}
+	sort.Slice(fieldItems, func(i, j int) bool {
+		return fieldItems[i].id < fieldItems[j].id
+	})
+
+	var result []base.QuerySpanResult
+	for _, fieldItem := range fieldItems {
+		result = append(result, fieldItem.field)
+	}
+	return result, nil
+}
+
 func (q *querySpanExtractor) extractWildFromExpr(ctx antlr.ParserRuleContext) ([]base.QuerySpanResult, error) {
 	if ctx == nil {
 		return []base.QuerySpanResult{}, nil
@@ -481,7 +558,6 @@ func (q *querySpanExtractor) extractWildFromExpr(ctx antlr.ParserRuleContext) ([
 	// We use DFS algorithm here to find the tallest [expression_higher_prec_than_and DOT_SYMBOL identifier] subtree and
 	// treat it as identifier.
 	switch ctx := ctx.(type) {
-	// TODO(zp): handle subquery
 	case *parser.Parenthesized_queryContext:
 		subqueryExtractor := &querySpanExtractor{
 			ctx:               q.ctx,
@@ -754,7 +830,8 @@ func (q *querySpanExtractor) extractTableSourceFromFromClause(fromClause parser.
 	if err != nil {
 		return nil, err
 	}
-	anchor := &base.PseudoTable{
+	var anchor base.TableSource
+	anchor = &base.PseudoTable{
 		Name:    "",
 		Columns: tableSource.GetQuerySpanResult(),
 	}
@@ -765,58 +842,90 @@ func (q *querySpanExtractor) extractTableSourceFromFromClause(fromClause parser.
 		if err != nil {
 			return nil, err
 		}
-		switch joinType {
-		case crossJoin, innerJoin, fullOuterJoin, leftOuterJoin, rightOuterJoin:
-			using := make(map[string]bool)
-			if suffix.On_or_using_clause_list() != nil {
-				allJoinOnOrUsingClause := suffix.On_or_using_clause_list().AllOn_or_using_clause()
-				for _, joinOnOrUsingClause := range allJoinOnOrUsingClause {
-					if usingClause := joinOnOrUsingClause.Using_clause(); usingClause != nil {
-						identifiers := usingClause.AllIdentifier()
-						for _, identifier := range identifiers {
-							using[unquoteIdentifierByRule(identifier)] = true
-						}
+		q.tableSourceFrom = append(q.tableSourceFrom, tableSource)
+		var usingColumns []string
+		if suffix.On_or_using_clause_list() != nil {
+			allJoinOnOrUsingClause := suffix.On_or_using_clause_list().AllOn_or_using_clause()
+			for _, joinOnOrUsingClause := range allJoinOnOrUsingClause {
+				if usingClause := joinOnOrUsingClause.Using_clause(); usingClause != nil {
+					identifiers := usingClause.AllIdentifier()
+					for _, identifier := range identifiers {
+						usingColumns = append(usingColumns, unquoteIdentifierByRule(identifier))
 					}
 				}
-			}
-			var lFields []base.QuerySpanResult
-			var rFields []base.QuerySpanResult
-			usingMerge := make(map[string][]base.QuerySpanResult)
-			for _, rField := range tableSource.GetQuerySpanResult() {
-				if _, ok := using[strings.ToUpper(rField.Name)]; ok {
-					usingMerge[strings.ToUpper(rField.Name)] = append(usingMerge[strings.ToUpper(rField.Name)], rField)
-				} else {
-					rFields = append(rFields, rField)
-				}
-			}
-			lFields = append(lFields, anchor.GetQuerySpanResult()...)
-
-			var resultField []base.QuerySpanResult
-			for _, lField := range lFields {
-				columnSet := lField.SourceColumns
-				if _, ok := using[strings.ToUpper(lField.Name)]; ok {
-					mergeItems := usingMerge[strings.ToUpper(lField.Name)]
-					for _, mergeItem := range mergeItems {
-						columnSet, _ = base.MergeSourceColumnSet(columnSet, mergeItem.SourceColumns)
-					}
-				}
-				resultField = append(resultField, base.QuerySpanResult{
-					Name:          lField.Name,
-					SourceColumns: columnSet,
-				})
-			}
-
-			resultField = append(resultField, rFields...)
-
-			anchor = &base.PseudoTable{
-				Name:    "",
-				Columns: resultField,
 			}
 		}
-		q.tableSourceFrom = append(q.tableSourceFrom, tableSource)
+		anchor, err = joinTable(anchor, joinType, usingColumns, tableSource)
+		if err != nil {
+			return nil, err
+		}
 	}
 	q.tableSourceFrom = append(q.tableSourceFrom, anchor)
 	return anchor, nil
+}
+
+func joinTable(anchor base.TableSource, tp joinType, usingColumns []string, tableSource base.TableSource) (base.TableSource, error) {
+	var resultField []base.QuerySpanResult
+	switch tp {
+	case crossJoin, innerJoin, fullOuterJoin, leftOuterJoin, rightOuterJoin:
+		using := make(map[string]bool)
+		for _, usingColumn := range usingColumns {
+			using[usingColumn] = true
+		}
+		var lFields []base.QuerySpanResult
+		var rFields []base.QuerySpanResult
+		usingMerge := make(map[string][]base.QuerySpanResult)
+		for _, rField := range tableSource.GetQuerySpanResult() {
+			if _, ok := using[strings.ToUpper(rField.Name)]; ok {
+				usingMerge[strings.ToUpper(rField.Name)] = append(usingMerge[strings.ToUpper(rField.Name)], rField)
+			} else {
+				rFields = append(rFields, rField)
+			}
+		}
+		lFields = append(lFields, anchor.GetQuerySpanResult()...)
+
+		for _, lField := range lFields {
+			columnSet := lField.SourceColumns
+			if _, ok := using[strings.ToUpper(lField.Name)]; ok {
+				mergeItems := usingMerge[strings.ToUpper(lField.Name)]
+				for _, mergeItem := range mergeItems {
+					columnSet, _ = base.MergeSourceColumnSet(columnSet, mergeItem.SourceColumns)
+				}
+			}
+			resultField = append(resultField, base.QuerySpanResult{
+				Name:          lField.Name,
+				SourceColumns: columnSet,
+			})
+		}
+
+		resultField = append(resultField, rFields...)
+	}
+	return &base.PseudoTable{
+		Name:    "",
+		Columns: resultField,
+	}, nil
+}
+
+func getJoinTypeFromJoinType(joinType parser.IJoin_typeContext) joinType {
+	if joinType == nil {
+		return innerJoin
+	}
+	switch {
+	case joinType.CROSS_SYMBOL() != nil:
+		return crossJoin
+	case joinType.INNER_SYMBOL() != nil:
+		return innerJoin
+	case joinType.LEFT_SYMBOL() != nil:
+		return leftOuterJoin
+	case joinType.RIGHT_SYMBOL() != nil:
+		return rightOuterJoin
+	}
+
+	return crossJoin
+}
+
+func getJoinTypeFromJoinItem(joinItem parser.IJoin_itemContext) joinType {
+	return getJoinTypeFromJoinType(joinItem.Join_type())
 }
 
 func getJoinTypeFromFromClauseContentsSuffix(fromClauseContentsSuffix parser.IFrom_clause_contents_suffixContext) joinType {
@@ -824,20 +933,7 @@ func getJoinTypeFromFromClauseContentsSuffix(fromClauseContentsSuffix parser.IFr
 		return crossJoin
 	}
 	if fromClauseContentsSuffix.JOIN_SYMBOL() != nil {
-		if fromClauseContentsSuffix.Join_type() == nil {
-			return innerJoin
-		}
-		jt := fromClauseContentsSuffix.Join_type()
-		switch {
-		case jt.CROSS_SYMBOL() != nil:
-			return crossJoin
-		case jt.INNER_SYMBOL() != nil:
-			return innerJoin
-		case jt.LEFT_SYMBOL() != nil:
-			return leftOuterJoin
-		case jt.RIGHT_SYMBOL() != nil:
-			return rightOuterJoin
-		}
+		return getJoinTypeFromJoinType(fromClauseContentsSuffix.Join_type())
 	}
 	return crossJoin
 }
@@ -853,8 +949,42 @@ func (q *querySpanExtractor) extractTableSourceFromTablePrimary(tablePrimary par
 	if subquery := tablePrimary.Table_subquery(); subquery != nil {
 		return q.extractTableSourceFromTableSubquery(subquery)
 	}
+	if join := tablePrimary.Join(); join != nil {
+		anchor, err := q.extractTableSourceFromTablePrimary(join.Table_primary())
+		if err != nil {
+			return nil, err
+		}
+		q.tableSourceFrom = append(q.tableSourceFrom, anchor)
+		for _, item := range join.AllJoin_item() {
+			joinType := getJoinTypeFromJoinItem(item)
+			tableSource, err := q.extractTableSourceFromTablePrimary(item.Table_primary())
+			if err != nil {
+				return nil, err
+			}
+			q.tableSourceFrom = append(q.tableSourceFrom, tableSource)
+			var usingColumns []string
+			if item.On_or_using_clause_list() != nil {
+				allJoinOnOrUsingClause := item.On_or_using_clause_list().AllOn_or_using_clause()
+				for _, joinOnOrUsingClause := range allJoinOnOrUsingClause {
+					if usingClause := joinOnOrUsingClause.Using_clause(); usingClause != nil {
+						identifiers := usingClause.AllIdentifier()
+						for _, identifier := range identifiers {
+							usingColumns = append(usingColumns, unquoteIdentifierByRule(identifier))
+						}
+					}
+				}
+			}
+			anchor, err = joinTable(anchor, joinType, usingColumns, tableSource)
+			if err != nil {
+				return nil, err
+			}
+		}
+		return anchor, nil
+	}
+	if tablePrimary.Table_primary() != nil {
+		return q.extractTableSourceFromTablePrimary(tablePrimary.Table_primary())
+	}
 
-	// TODO(zp): handle other case
 	return nil, nil
 }
 
@@ -943,7 +1073,6 @@ func (q *querySpanExtractor) extractTableSourceFromTablePathExpression(tablePath
 			}
 		}
 	}
-	// TODO(zp): add in q.from
 	return tableSource, nil
 }
 
