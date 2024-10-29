@@ -16,6 +16,7 @@ export const protobufPackage = "bytebase.store";
 export interface DatabaseMetadata {
   labels: { [key: string]: string };
   lastSyncTime: Timestamp | undefined;
+  backupAvailable: boolean;
 }
 
 export interface DatabaseMetadata_LabelsEntry {
@@ -845,7 +846,7 @@ export interface SequenceMetadata {
 }
 
 function createBaseDatabaseMetadata(): DatabaseMetadata {
-  return { labels: {}, lastSyncTime: undefined };
+  return { labels: {}, lastSyncTime: undefined, backupAvailable: false };
 }
 
 export const DatabaseMetadata: MessageFns<DatabaseMetadata> = {
@@ -855,6 +856,9 @@ export const DatabaseMetadata: MessageFns<DatabaseMetadata> = {
     });
     if (message.lastSyncTime !== undefined) {
       Timestamp.encode(message.lastSyncTime, writer.uint32(18).fork()).join();
+    }
+    if (message.backupAvailable !== false) {
+      writer.uint32(24).bool(message.backupAvailable);
     }
     return writer;
   },
@@ -883,6 +887,13 @@ export const DatabaseMetadata: MessageFns<DatabaseMetadata> = {
 
           message.lastSyncTime = Timestamp.decode(reader, reader.uint32());
           continue;
+        case 3:
+          if (tag !== 24) {
+            break;
+          }
+
+          message.backupAvailable = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -901,6 +912,7 @@ export const DatabaseMetadata: MessageFns<DatabaseMetadata> = {
         }, {})
         : {},
       lastSyncTime: isSet(object.lastSyncTime) ? fromJsonTimestamp(object.lastSyncTime) : undefined,
+      backupAvailable: isSet(object.backupAvailable) ? globalThis.Boolean(object.backupAvailable) : false,
     };
   },
 
@@ -917,6 +929,9 @@ export const DatabaseMetadata: MessageFns<DatabaseMetadata> = {
     }
     if (message.lastSyncTime !== undefined) {
       obj.lastSyncTime = fromTimestamp(message.lastSyncTime).toISOString();
+    }
+    if (message.backupAvailable !== false) {
+      obj.backupAvailable = message.backupAvailable;
     }
     return obj;
   },
@@ -935,6 +950,7 @@ export const DatabaseMetadata: MessageFns<DatabaseMetadata> = {
     message.lastSyncTime = (object.lastSyncTime !== undefined && object.lastSyncTime !== null)
       ? Timestamp.fromPartial(object.lastSyncTime)
       : undefined;
+    message.backupAvailable = object.backupAvailable ?? false;
     return message;
   },
 };
