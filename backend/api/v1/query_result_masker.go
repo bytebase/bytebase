@@ -326,7 +326,7 @@ func convertRangeMaskSlices(slices []*storepb.MaskingAlgorithmSetting_Algorithm_
 	return result
 }
 
-func doMaskResult(maskers []masker.Masker, result *v1pb.QueryResult) error {
+func doMaskResult(maskers []masker.Masker, result *v1pb.QueryResult) {
 	sensitive := make([]bool, len(result.ColumnNames))
 	for i := range result.ColumnNames {
 		if i < len(maskers) {
