@@ -56,11 +56,8 @@
         >
           <template #suffix>
             <RequestQueryButton
-              v-if="
-                !disallowRequestQuery &&
-                resultSet.status === Status.PERMISSION_DENIED
-              "
-              :database="database ?? connectedDatabase"
+              v-if="!disallowRequestQuery && missingResource"
+              :database-resource="missingResource"
             />
             <SyncDatabaseButton
               v-else-if="
@@ -106,6 +103,7 @@ import { useI18n } from "vue-i18n";
 import { darkThemeOverrides } from "@/../naive-ui.config";
 import { BBSpin } from "@/bbkit";
 import SyncDatabaseButton from "@/components/DatabaseDetail/SyncDatabaseButton.vue";
+import { parseStringToResource } from "@/components/GrantRequestPanel/DatabaseResourceForm/common";
 import { Drawer } from "@/components/v2";
 import {
   useAppFeature,
@@ -116,6 +114,7 @@ import type {
   ComposedDatabase,
   SQLEditorQueryParams,
   SQLResultSetV1,
+  DatabaseResource,
 } from "@/types";
 import { PolicyType } from "@/types/proto/v1/org_policy_service";
 import type { QueryResult } from "@/types/proto/v1/sql_service";
@@ -174,6 +173,21 @@ const detail: SQLResultViewContext["detail"] = ref({
   row: 0,
   col: 0,
   table: undefined,
+});
+
+const missingResource = computed((): DatabaseResource | undefined => {
+  if (props.resultSet?.status !== Status.PERMISSION_DENIED) {
+    return;
+  }
+  const prefix = "permission denied to access resource: ";
+  if (!props.resultSet.error.includes(prefix)) {
+    return;
+  }
+  const resource = props.resultSet.error.split(prefix).pop();
+  if (!resource) {
+    return;
+  }
+  return parseStringToResource(resource);
 });
 
 const viewMode = computed((): ViewMode => {

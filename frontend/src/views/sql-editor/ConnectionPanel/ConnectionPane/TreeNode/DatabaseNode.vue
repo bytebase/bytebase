@@ -26,7 +26,9 @@
     </span>
     <RequestQueryButton
       v-if="!disallowRequestQuery && !canQuery"
-      :database="database"
+      :database-resource="{
+        databaseName: database.name,
+      }"
       :size="'tiny'"
     />
   </div>

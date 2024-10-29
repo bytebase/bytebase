@@ -1106,7 +1106,10 @@ func (s *SQLService) accessCheck(
 					return status.Errorf(codes.Internal, "failed to check access control for database: %q, error %v", column.Database, err)
 				}
 				if !ok {
-					return status.Errorf(codes.PermissionDenied, "permission denied to access resource: %q", column.String())
+					return status.Errorf(
+						codes.PermissionDenied,
+						"permission denied to access resource: %s", fmt.Sprintf("%s/schemas/%s/tables/%s", attributes["resource.database"], attributes["resource.schema"], attributes["resource.table"]),
+					)
 				}
 			}
 		}

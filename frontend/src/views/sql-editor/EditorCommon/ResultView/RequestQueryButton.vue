@@ -7,7 +7,7 @@
     <GrantRequestPanel
       v-if="showPanel"
       :project-name="database.project"
-      :database="database"
+      :database-resource="databaseResource"
       :placement="'right'"
       :role="PresetRoleType.PROJECT_QUERIER"
       @close="showPanel = false"
@@ -19,16 +19,17 @@
 import { NButton } from "naive-ui";
 import { computed, ref } from "vue";
 import GrantRequestPanel from "@/components/GrantRequestPanel";
+import { useDatabaseV1Store } from "@/store";
 import {
   isValidDatabaseName,
   PresetRoleType,
-  type ComposedDatabase,
+  type DatabaseResource,
 } from "@/types";
 import { hasPermissionToCreateRequestGrantIssue } from "@/utils";
 
 const props = withDefaults(
   defineProps<{
-    database: ComposedDatabase;
+    databaseResource: DatabaseResource;
     size?: "tiny" | "medium";
   }>(),
   {
@@ -37,13 +38,18 @@ const props = withDefaults(
 );
 
 const showPanel = ref(false);
+const dbStore = useDatabaseV1Store();
+
+const database = computed(() =>
+  dbStore.getDatabaseByName(props.databaseResource.databaseName)
+);
 
 const available = computed(() => {
-  if (!isValidDatabaseName(props.database.name)) {
+  if (!isValidDatabaseName(props.databaseResource.databaseName)) {
     return false;
   }
 
-  return hasPermissionToCreateRequestGrantIssue(props.database);
+  return hasPermissionToCreateRequestGrantIssue(database.value);
 });
 
 const onClick = (e: MouseEvent) => {
