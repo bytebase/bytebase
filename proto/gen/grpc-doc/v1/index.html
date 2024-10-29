@@ -5611,6 +5611,13 @@ If this field is omitted, there are no subsequent pages. </p></td>
             <tbody>
               
                 <tr>
+                  <td>id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The unique identifier for the file. </p></td>
+                </tr>
+              
+                <tr>
                   <td>name</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
@@ -23475,9 +23482,7 @@ instances/{instance}/databases/{database} </p></td>
                   <td>files</td>
                   <td><a href="#string">string</a></td>
                   <td>repeated</td>
-                  <td><p>Format: projects/{project}/releases/{release}/files/{path}
-{path} is URL path escaped.
-Example: `projects/tnt/releases/0801/files/2.2%2FV0001_create_table.sql` </p></td>
+                  <td><p>Format: projects/{project}/releases/{release}/files/{file_id} </p></td>
                 </tr>
               
             </tbody>

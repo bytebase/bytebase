@@ -12300,10 +12300,7 @@ components:
                     type: array
                     items:
                         type: string
-                    description: |-
-                        Format: projects/{project}/releases/{release}/files/{path}
-                         {path} is URL path escaped.
-                         Example: `projects/tnt/releases/0801/files/2.2%2FV0001_create_table.sql`
+                    description: 'Format: projects/{project}/releases/{release}/files/{file_id}'
         PreviewRolloutRequest:
             required:
                 - project
@@ -12669,6 +12666,10 @@ components:
         Release_File:
             type: object
             properties:
+                id:
+                    readOnly: true
+                    type: string
+                    description: The unique identifier for the file.
                 name:
                     type: string
                     description: |-
