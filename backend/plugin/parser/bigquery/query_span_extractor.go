@@ -314,7 +314,6 @@ func (q *querySpanExtractor) extractTableSourceFromSelect(selectCtx parser.ISele
 
 	itemList := selectCtx.Select_clause().Select_list().AllSelect_list_item()
 	for _, item := range itemList {
-		// TODO(zp): handle other select item.
 		switch {
 		case item.Select_column_star() != nil:
 			resultFields = append(resultFields, fromFields...)
