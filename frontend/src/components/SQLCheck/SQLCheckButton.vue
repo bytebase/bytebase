@@ -229,7 +229,7 @@ const runChecks = async () => {
   const { statement, errors, fatal } = await props.getStatement();
   allowForceContinue.value = !fatal;
 
-  if (statement.length > SKIP_CHECK_THRESHOLD) {
+  if (new Blob([statement]).size > SKIP_CHECK_THRESHOLD) {
     return handleErrors([t("issue.sql-check.statement-is-too-large")]);
   }
   if (errors.length > 0) {
