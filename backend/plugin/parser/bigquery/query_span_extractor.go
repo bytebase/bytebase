@@ -97,7 +97,6 @@ func (q *querySpanExtractor) extractTableSourceFromQueryWithoutPipe(queryWithout
 	defer func() {
 		q.ctes = q.ctes[:originalCTELength]
 	}()
-	// TODO(zp): handle CTE.
 	if queryWithoutPipe.With_clause() != nil {
 		if err := q.recordCTE(queryWithoutPipe.With_clause()); err != nil {
 			return nil, err
@@ -386,7 +385,6 @@ func (q *querySpanExtractor) extractSourceColumnSetFromExpr(ctx antlr.ParserRule
 	// treat it as identifier.
 	var name string
 	switch ctx := ctx.(type) {
-	// TODO(zp): handle subquery
 	case *parser.Parenthesized_queryContext:
 		baseSet := make(base.SourceColumnSet)
 		subqueryExtractor := &querySpanExtractor{
@@ -481,7 +479,6 @@ func (q *querySpanExtractor) extractWildFromExpr(ctx antlr.ParserRuleContext) ([
 	// We use DFS algorithm here to find the tallest [expression_higher_prec_than_and DOT_SYMBOL identifier] subtree and
 	// treat it as identifier.
 	switch ctx := ctx.(type) {
-	// TODO(zp): handle subquery
 	case *parser.Parenthesized_queryContext:
 		subqueryExtractor := &querySpanExtractor{
 			ctx:               q.ctx,
@@ -991,7 +988,6 @@ func (q *querySpanExtractor) extractTableSourceFromTablePathExpression(tablePath
 			}
 		}
 	}
-	// TODO(zp): add in q.from
 	return tableSource, nil
 }
 
