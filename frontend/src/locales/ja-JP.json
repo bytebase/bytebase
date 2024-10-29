@@ -89,7 +89,7 @@
     "issues": "作業命令",
     "duration": "間隔",
     "created-at": "内蔵",
-    "updated-at": "に更新されました",
+    "updated-at": "更新日時",
     "commit": "提出する",
     "statement": "声明",
     "sql-statement": "SQL@:{'common.statement'}",
@@ -173,13 +173,13 @@
     "tips": "プロンプトメッセージ",
     "template": "テンプレート",
     "delete": "消去",
-    "history": "歴史の記録",
+    "history": "履歴",
     "loading": "読み込み中",
     "from": "から",
     "copy": "コピー",
     "copied": "コピーされました",
     "manage": "管理",
-    "table": "表面",
+    "table": "テーブル",
     "search": "検索",
     "warning": "警告する",
     "edited": "編集日時",
@@ -1170,7 +1170,7 @@
       "environment": "環境",
       "db": "データベース",
       "progress": "スケジュール",
-      "updated": "に更新されました",
+      "updated": "更新日時",
       "approver": "承認者",
       "creator": "創設者",
       "current-approver": "現在の承認者"
@@ -1400,7 +1400,7 @@
     "select": "データベースの選択",
     "select-instance-first": "最初にインスタンスを選択します",
     "select-environment-first": "まずは環境を選ぶ",
-    "tables": "表面",
+    "tables": "テーブル",
     "collections": "集める",
     "views": "ビュー",
     "extensions": "プラグイン",
@@ -2414,7 +2414,7 @@
     "vertical-display": "縦型表示",
     "no-history-found": "まだ履歴がありません",
     "no-sheet-found": "ワークシートはまだありません",
-    "search-history": "検索履歴",
+    "search-history": "履歴の検索",
     "search-sheets": "ワークシートの検索",
     "hint-tips": {
       "confirm-to-delete-this-history": "このレコードを削除してもよろしいですか?",
@@ -2593,7 +2593,7 @@
       "select": "スキーマの選択",
       "name": "スキーマ名"
     },
-    "tables": "表面",
+    "tables": "テーブル",
     "table": {
       "select": "テーブルの選択",
       "name": "テーブル名"
@@ -2948,11 +2948,11 @@
   },
   "sheet": {
     "self": "ワークシート",
-    "my-sheets": "私のワークシート",
-    "mine": "私の",
+    "my-sheets": "マイワークシート",
+    "mine": "マイワークシート",
     "star": "お気に入りに追加",
     "unstar": "お気に入りをキャンセルする",
-    "starred": "集めました",
+    "starred": "お気に入り",
     "shared": "共有",
     "actions": {
       "sync-from-vcs": "VCS から SQL スクリプトを同期する"
@@ -3624,7 +3624,7 @@
       "duplicated-branch-name-found": "重複するブランチ名が見つかりました。",
       "discard-changes-confirm": "すべての変更を破棄してもよろしいですか?"
     },
-    "tables": "表面",
+    "tables": "テーブル",
     "search-tables": "検索テーブル",
     "use-tips": "デザインするテーブルを選択してください",
     "apply-to-database": "変更をデータベースに適用する",
@@ -3715,7 +3715,7 @@
       "self": "ソースを変更する",
       "raw-sql": "SQL文",
       "change-history": {
-        "tables": "表面"
+        "tables": "テーブル"
       },
       "source": "ソース",
       "filter": "チケットまたはバージョンでフィルタリングする"
