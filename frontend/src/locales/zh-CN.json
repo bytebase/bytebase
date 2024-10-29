@@ -3734,6 +3734,7 @@
     "self": "发布",
     "releases": "发布",
     "files": "文件",
+    "create": "创建发布",
     "tasks-to-apply": "待应用的任务",
     "out-of-order-files": "无序文件",
     "applied-but-modifed-files": "已应用但已修改的文件",
@@ -3742,6 +3743,14 @@
     "archive-this-release": "归档此发布",
     "no-tasks-to-apply": {
       "self": "没有可应用的任务"
+    },
+    "actions": {
+      "new-file": "新建文件"
+    },
+    "messages": {
+      "succeed-to-create-release": "成功创建发布",
+      "files-will-always-be-sorted-and-executed-in-version-order": "文件将始终按照版本顺序排序和执行。",
+      "cannot-modify-files-after-created": "发布创建后您无法修改文件。"
     }
   },
   "export-data": {

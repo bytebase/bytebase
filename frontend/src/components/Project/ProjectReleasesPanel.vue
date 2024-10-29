@@ -1,5 +1,15 @@
 <template>
-  <div class="flex flex-col gap-y-2">
+  <div class="w-full flex flex-col gap-y-2">
+    <div class="w-full flex flex-row justify-end items-center">
+      <router-link :to="`/${project.name}/releases/new`">
+        <NButton>
+          <template #icon>
+            <PlusIcon />
+          </template>
+          {{ $t("common.new") }}
+        </NButton>
+      </router-link>
+    </div>
     <PagedReleaseTable
       :key="project.name"
       :session-key="`project-${project.name}-releases`"
@@ -18,6 +28,8 @@
 </template>
 
 <script lang="ts" setup>
+import { PlusIcon } from "lucide-vue-next";
+import { NButton } from "naive-ui";
 import type { ComposedProject } from "@/types";
 import PagedReleaseTable from "../Release/PagedReleaseTable.vue";
 import ReleaseDataTable from "../Release/ReleaseDataTable.vue";

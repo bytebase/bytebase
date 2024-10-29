@@ -3734,6 +3734,7 @@
     "self": "リリース",
     "releases": "リリース",
     "files": "ファイル",
+    "create": "リリースを作成",
     "tasks-to-apply": "適用するタスク",
     "out-of-order-files": "順序が間違っているファイル",
     "applied-but-modifed-files": "適用済みだが変更されたファイル",
@@ -3742,6 +3743,14 @@
     "archive-this-release": "このリリースをアーカイブする",
     "no-tasks-to-apply": {
       "self": "適用するタスクはありません"
+    },
+    "actions": {
+      "new-file": "新しいファイル"
+    },
+    "messages": {
+      "succeed-to-create-release": "リリースの作成に成功",
+      "files-will-always-be-sorted-and-executed-in-version-order": "ファイルは常にバージョン順に並べ替えられ、実行されます。",
+      "cannot-modify-files-after-created": "リリースの作成後はファイルを変更できません。"
     }
   },
   "export-data": {

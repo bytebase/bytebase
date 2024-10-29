@@ -3734,6 +3734,7 @@
     "self": "Release",
     "releases": "Releases",
     "files": "Files",
+    "create": "Create release",
     "tasks-to-apply": "Tasks to apply",
     "out-of-order-files": "Out of order files",
     "applied-but-modifed-files": "Applied but modified files",
@@ -3742,6 +3743,14 @@
     "archive-this-release": "Archive this release",
     "no-tasks-to-apply": {
       "self": "No tasks to apply"
+    },
+    "actions": {
+      "new-file": "New file"
+    },
+    "messages": {
+      "succeed-to-create-release": "Succeed to create release",
+      "files-will-always-be-sorted-and-executed-in-version-order": "The files will always be sorted and executed in version order.",
+      "cannot-modify-files-after-created": "You cannot modify files after the release is created."
     }
   },
   "export-data": {
