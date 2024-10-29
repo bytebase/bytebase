@@ -754,7 +754,8 @@ func (q *querySpanExtractor) extractTableSourceFromFromClause(fromClause parser.
 	if err != nil {
 		return nil, err
 	}
-	anchor := &base.PseudoTable{
+	var anchor base.TableSource
+	anchor = &base.PseudoTable{
 		Name:    "",
 		Columns: tableSource.GetQuerySpanResult(),
 	}
@@ -765,58 +766,65 @@ func (q *querySpanExtractor) extractTableSourceFromFromClause(fromClause parser.
 		if err != nil {
 			return nil, err
 		}
-		switch joinType {
-		case crossJoin, innerJoin, fullOuterJoin, leftOuterJoin, rightOuterJoin:
-			using := make(map[string]bool)
-			if suffix.On_or_using_clause_list() != nil {
-				allJoinOnOrUsingClause := suffix.On_or_using_clause_list().AllOn_or_using_clause()
-				for _, joinOnOrUsingClause := range allJoinOnOrUsingClause {
-					if usingClause := joinOnOrUsingClause.Using_clause(); usingClause != nil {
-						identifiers := usingClause.AllIdentifier()
-						for _, identifier := range identifiers {
-							using[unquoteIdentifierByRule(identifier)] = true
-						}
+		q.tableSourceFrom = append(q.tableSourceFrom, tableSource)
+		var usingColumns []string
+		if suffix.On_or_using_clause_list() != nil {
+			allJoinOnOrUsingClause := suffix.On_or_using_clause_list().AllOn_or_using_clause()
+			for _, joinOnOrUsingClause := range allJoinOnOrUsingClause {
+				if usingClause := joinOnOrUsingClause.Using_clause(); usingClause != nil {
+					identifiers := usingClause.AllIdentifier()
+					for _, identifier := range identifiers {
+						usingColumns = append(usingColumns, unquoteIdentifierByRule(identifier))
 					}
 				}
-			}
-			var lFields []base.QuerySpanResult
-			var rFields []base.QuerySpanResult
-			usingMerge := make(map[string][]base.QuerySpanResult)
-			for _, rField := range tableSource.GetQuerySpanResult() {
-				if _, ok := using[strings.ToUpper(rField.Name)]; ok {
-					usingMerge[strings.ToUpper(rField.Name)] = append(usingMerge[strings.ToUpper(rField.Name)], rField)
-				} else {
-					rFields = append(rFields, rField)
-				}
-			}
-			lFields = append(lFields, anchor.GetQuerySpanResult()...)
-
-			var resultField []base.QuerySpanResult
-			for _, lField := range lFields {
-				columnSet := lField.SourceColumns
-				if _, ok := using[strings.ToUpper(lField.Name)]; ok {
-					mergeItems := usingMerge[strings.ToUpper(lField.Name)]
-					for _, mergeItem := range mergeItems {
-						columnSet, _ = base.MergeSourceColumnSet(columnSet, mergeItem.SourceColumns)
-					}
-				}
-				resultField = append(resultField, base.QuerySpanResult{
-					Name:          lField.Name,
-					SourceColumns: columnSet,
-				})
-			}
-
-			resultField = append(resultField, rFields...)
-
-			anchor = &base.PseudoTable{
-				Name:    "",
-				Columns: resultField,
 			}
 		}
-		q.tableSourceFrom = append(q.tableSourceFrom, tableSource)
+		anchor, err = q.joinTable(anchor, joinType, usingColumns, tableSource)
 	}
 	q.tableSourceFrom = append(q.tableSourceFrom, anchor)
 	return anchor, nil
+}
+
+func (q *querySpanExtractor) joinTable(anchor base.TableSource, tp joinType, usingColumns []string, tableSource base.TableSource) (base.TableSource, error) {
+	var resultField []base.QuerySpanResult
+	switch tp {
+	case crossJoin, innerJoin, fullOuterJoin, leftOuterJoin, rightOuterJoin:
+		using := make(map[string]bool)
+		for _, usingColumn := range usingColumns {
+			using[usingColumn] = true
+		}
+		var lFields []base.QuerySpanResult
+		var rFields []base.QuerySpanResult
+		usingMerge := make(map[string][]base.QuerySpanResult)
+		for _, rField := range tableSource.GetQuerySpanResult() {
+			if _, ok := using[strings.ToUpper(rField.Name)]; ok {
+				usingMerge[strings.ToUpper(rField.Name)] = append(usingMerge[strings.ToUpper(rField.Name)], rField)
+			} else {
+				rFields = append(rFields, rField)
+			}
+		}
+		lFields = append(lFields, anchor.GetQuerySpanResult()...)
+
+		for _, lField := range lFields {
+			columnSet := lField.SourceColumns
+			if _, ok := using[strings.ToUpper(lField.Name)]; ok {
+				mergeItems := usingMerge[strings.ToUpper(lField.Name)]
+				for _, mergeItem := range mergeItems {
+					columnSet, _ = base.MergeSourceColumnSet(columnSet, mergeItem.SourceColumns)
+				}
+			}
+			resultField = append(resultField, base.QuerySpanResult{
+				Name:          lField.Name,
+				SourceColumns: columnSet,
+			})
+		}
+
+		resultField = append(resultField, rFields...)
+	}
+	return &base.PseudoTable{
+		Name:    "",
+		Columns: resultField,
+	}, nil
 }
 
 func getJoinTypeFromFromClauseContentsSuffix(fromClauseContentsSuffix parser.IFrom_clause_contents_suffixContext) joinType {
