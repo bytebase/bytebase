@@ -899,8 +899,10 @@ func (q *querySpanExtractor) extractTableSourceFromTablePrimary(tablePrimary par
 		}
 		return anchor, nil
 	}
+	if tablePrimary.Table_primary() != nil {
+		return q.extractTableSourceFromTablePrimary(tablePrimary.Table_primary())
+	}
 
-	// TODO(zp): handle other case
 	return nil, nil
 }
 
