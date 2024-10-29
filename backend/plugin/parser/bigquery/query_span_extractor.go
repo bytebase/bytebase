@@ -315,10 +315,18 @@ func (q *querySpanExtractor) extractTableSourceFromSelect(selectCtx parser.ISele
 	itemList := selectCtx.Select_clause().Select_list().AllSelect_list_item()
 	for _, item := range itemList {
 		// TODO(zp): handle other select item.
-		if item.Select_column_star() != nil {
+		switch {
+		case item.Select_column_star() != nil:
 			resultFields = append(resultFields, fromFields...)
-		}
-		if v := item.Select_column_expr(); v != nil {
+		case item.Select_column_dot_star() != nil:
+			v := item.Select_column_dot_star()
+			wildFields, err := q.extractWildFromExpr(v.Expression_higher_prec_than_and())
+			if err != nil {
+				return nil, err
+			}
+			resultFields = append(resultFields, wildFields...)
+		case item.Select_column_expr() != nil:
+			v := item.Select_column_expr()
 			var expression parser.IExpressionContext
 			if v.Expression() != nil {
 				expression = v.Expression()
@@ -451,6 +459,138 @@ func (q *querySpanExtractor) extractSourceColumnSetFromExpr(ctx antlr.ParserRule
 	}
 
 	return name, baseSet, nil
+}
+
+func (q *querySpanExtractor) extractWildFromExpr(ctx antlr.ParserRuleContext) ([]base.QuerySpanResult, error) {
+	if ctx == nil {
+		return []base.QuerySpanResult{}, nil
+	}
+
+	// BigQuery support project the field from json, for example, SELECT a.b.c FROM ..., the AST looks like:
+	// /
+	// └── expression
+	//     └── expression_higher_prec_than_and
+	//         ├── expression_higher_prec_than_and
+	//         │   ├── expression_higher_prec_than_and
+	//         │   │   ├── expression_higher_prec_than_and
+	//         │   │   ├── DOT_SYMBOL
+	//         │   │   └── identifier(a)
+	//         │   ├── DOT_SYMBOL
+	//         │   └── identifier(b)
+	//         ├── DOT_SYMBOL
+	//         └── identifier(c)
+	// We use DFS algorithm here to find the tallest [expression_higher_prec_than_and DOT_SYMBOL identifier] subtree and
+	// treat it as identifier.
+	switch ctx := ctx.(type) {
+	// TODO(zp): handle subquery
+	case *parser.Parenthesized_queryContext:
+		subqueryExtractor := &querySpanExtractor{
+			ctx:               q.ctx,
+			defaultDatabase:   q.defaultDatabase,
+			gCtx:              q.gCtx,
+			ctes:              q.ctes,
+			outerTableSources: append(q.outerTableSources, q.tableSourceFrom...),
+			tableSourceFrom:   []base.TableSource{},
+		}
+		tableSource, err := subqueryExtractor.extractTableSourceFromParenthesizedQuery(ctx)
+		if err != nil {
+			return nil, err
+		}
+		spanResult := tableSource.GetQuerySpanResult()
+		return spanResult, nil
+	case *parser.Expression_higher_prec_than_andContext:
+		possibleColumnResources := getPossibleColumnResources(ctx)
+		for _, columnResources := range possibleColumnResources {
+			l := len(columnResources)
+			if l == 1 {
+				// a.*, a can be the table name or the field name.
+				results, ok := q.getAllTableColumnSources("", columnResources[0])
+				if !ok {
+					results, err := q.getFieldColumnSource("", "", columnResources[0])
+					if err != nil {
+						return nil, err
+					}
+					return []base.QuerySpanResult{
+						{
+							Name:          columnResources[0],
+							SourceColumns: results,
+						},
+					}, nil
+				}
+				return results, nil
+			}
+			if l >= 2 {
+				// a.b.*, can be resolved as
+				// 1. a is the table name, b is the field name.
+				// 2. a is the field name, b is the field name.
+				results, err := q.getFieldColumnSource("", columnResources[0], columnResources[1])
+				if err != nil {
+					results, err := q.getFieldColumnSource("", "", columnResources[0])
+					if err != nil {
+						return nil, err
+					}
+					return []base.QuerySpanResult{
+						{
+							Name:          columnResources[0],
+							SourceColumns: results,
+						},
+					}, nil
+				}
+				return []base.QuerySpanResult{
+					{
+						Name:          columnResources[1],
+						SourceColumns: results,
+					},
+				}, nil
+			}
+		}
+		return nil, nil
+	default:
+		return nil, errors.Errorf("unsupported type in wild expr: %T", ctx)
+	}
+}
+
+func (q *querySpanExtractor) getAllTableColumnSources(datasetName, tableName string) ([]base.QuerySpanResult, bool) {
+	findInTableSource := func(tableSource base.TableSource) ([]base.QuerySpanResult, bool) {
+		if datasetName != "" && !strings.EqualFold(datasetName, tableSource.GetDatabaseName()) {
+			return nil, false
+		}
+		if tableName != "" && !strings.EqualFold(tableName, tableSource.GetTableName()) {
+			return nil, false
+		}
+
+		// If the table name is empty, we should check if there are ambiguous fields,
+		// but we delegate this responsibility to the db-server, we do the fail-open strategy here.
+
+		return tableSource.GetQuerySpanResult(), true
+	}
+
+	// One sub-query may have multi-outer schemas and the multi-outer schemas can use the same name, such as:
+	//
+	//  select (
+	//    select (
+	//      select max(a) > x1.a from t
+	//    )
+	//    from t1 as x1
+	//    limit 1
+	//  )
+	//  from t as x1;
+	//
+	// This query has two tables can be called `x1`, and the expression x1.a uses the closer x1 table.
+	// This is the reason we loop the slice in reversed order.
+	for i := len(q.outerTableSources) - 1; i >= 0; i-- {
+		if querySpanResult, ok := findInTableSource(q.outerTableSources[i]); ok {
+			return querySpanResult, true
+		}
+	}
+
+	for i := len(q.tableSourceFrom) - 1; i >= 0; i-- {
+		if querySpanResult, ok := findInTableSource(q.tableSourceFrom[i]); ok {
+			return querySpanResult, true
+		}
+	}
+
+	return nil, false
 }
 
 func (q *querySpanExtractor) getFieldColumnSource(databaseName, tableName, fieldName string) (base.SourceColumnSet, error) {
