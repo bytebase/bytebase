@@ -827,25 +827,34 @@ func (q *querySpanExtractor) joinTable(anchor base.TableSource, tp joinType, usi
 	}, nil
 }
 
+func getJoinTypeFromJoinType(joinType parser.IJoin_typeContext) joinType {
+	if joinType == nil {
+		return innerJoin
+	}
+	switch {
+	case joinType.CROSS_SYMBOL() != nil:
+		return crossJoin
+	case joinType.INNER_SYMBOL() != nil:
+		return innerJoin
+	case joinType.LEFT_SYMBOL() != nil:
+		return leftOuterJoin
+	case joinType.RIGHT_SYMBOL() != nil:
+		return rightOuterJoin
+	}
+
+	return crossJoin
+}
+
+func getJoinTypeFromJoinItem(joinItem parser.IJoin_itemContext) joinType {
+	return getJoinTypeFromJoinType(joinItem.Join_type())
+}
+
 func getJoinTypeFromFromClauseContentsSuffix(fromClauseContentsSuffix parser.IFrom_clause_contents_suffixContext) joinType {
 	if fromClauseContentsSuffix.COMMA_SYMBOL() != nil {
 		return crossJoin
 	}
 	if fromClauseContentsSuffix.JOIN_SYMBOL() != nil {
-		if fromClauseContentsSuffix.Join_type() == nil {
-			return innerJoin
-		}
-		jt := fromClauseContentsSuffix.Join_type()
-		switch {
-		case jt.CROSS_SYMBOL() != nil:
-			return crossJoin
-		case jt.INNER_SYMBOL() != nil:
-			return innerJoin
-		case jt.LEFT_SYMBOL() != nil:
-			return leftOuterJoin
-		case jt.RIGHT_SYMBOL() != nil:
-			return rightOuterJoin
-		}
+		return getJoinTypeFromJoinType(fromClauseContentsSuffix.Join_type())
 	}
 	return crossJoin
 }
@@ -860,6 +869,35 @@ func (q *querySpanExtractor) extractTableSourceFromTablePrimary(tablePrimary par
 	}
 	if subquery := tablePrimary.Table_subquery(); subquery != nil {
 		return q.extractTableSourceFromTableSubquery(subquery)
+	}
+	if join := tablePrimary.Join(); join != nil {
+		anchor, err := q.extractTableSourceFromTablePrimary(join.Table_primary())
+		if err != nil {
+			return nil, err
+		}
+		q.tableSourceFrom = append(q.tableSourceFrom, anchor)
+		for _, item := range join.AllJoin_item() {
+			joinType := getJoinTypeFromJoinItem(item)
+			tableSource, err := q.extractTableSourceFromTablePrimary(item.Table_primary())
+			if err != nil {
+				return nil, err
+			}
+			q.tableSourceFrom = append(q.tableSourceFrom, tableSource)
+			var usingColumns []string
+			if item.On_or_using_clause_list() != nil {
+				allJoinOnOrUsingClause := item.On_or_using_clause_list().AllOn_or_using_clause()
+				for _, joinOnOrUsingClause := range allJoinOnOrUsingClause {
+					if usingClause := joinOnOrUsingClause.Using_clause(); usingClause != nil {
+						identifiers := usingClause.AllIdentifier()
+						for _, identifier := range identifiers {
+							usingColumns = append(usingColumns, unquoteIdentifierByRule(identifier))
+						}
+					}
+				}
+			}
+			anchor, err = q.joinTable(anchor, joinType, usingColumns, tableSource)
+		}
+		return anchor, nil
 	}
 
 	// TODO(zp): handle other case

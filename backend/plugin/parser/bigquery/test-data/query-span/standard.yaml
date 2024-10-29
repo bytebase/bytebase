@@ -82,6 +82,85 @@
           schema: ""
           table: people
           column: ""
+- description: Parenthesized join
+  statement: SELECT ID, NAME, ADDRESS FROM (people JOIN address ON people.ID = address.PEOPLE_ID USING (ID));
+  defaultDatabase: ds1
+  metadata: |-
+    {
+      "name":  "ds1",
+      "schemas":  [
+        {
+          "name": "",
+          "tables":  [
+            {
+              "name":  "PEOPLE",
+              "columns":  [
+                {
+                  "name":  "ID"
+                },
+                {
+                  "name":  "NAME"
+                }
+              ]
+            },
+            {
+              "name":  "ADDRESS",
+              "columns":  [
+                {
+                  "name": "ID"
+                },
+                {
+                  "name":  "PEOPLE_ID"
+                },
+                {
+                  "name":  "ADDRESS"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 0
+    results:
+        - name: ID
+          sourcecolumns:
+            - server: ""
+              database: ds1
+              schema: ""
+              table: address
+              column: ID
+            - server: ""
+              database: ds1
+              schema: ""
+              table: people
+              column: ID
+        - name: NAME
+          sourcecolumns:
+            - server: ""
+              database: ds1
+              schema: ""
+              table: people
+              column: NAME
+        - name: ADDRESS
+          sourcecolumns:
+            - server: ""
+              database: ds1
+              schema: ""
+              table: address
+              column: ADDRESS
+    sourcecolumns:
+        - server: ""
+          database: ds1
+          schema: ""
+          table: address
+          column: ""
+        - server: ""
+          database: ds1
+          schema: ""
+          table: people
+          column: ""
 - description: Join using
   statement: SELECT ID, NAME, ADDRESS FROM people JOIN address ON people.ID = address.PEOPLE_ID USING (ID);
   defaultDatabase: ds1
