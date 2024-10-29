@@ -2,6 +2,7 @@ package bigquery
 
 import (
 	"context"
+	"sort"
 	"strings"
 
 	"github.com/antlr4-go/antlr/v4"
@@ -316,17 +317,22 @@ func (q *querySpanExtractor) extractTableSourceFromSelect(selectCtx parser.ISele
 		switch {
 		case item.Select_column_star() != nil:
 			fields := append([]base.QuerySpanResult{}, fromFields...)
-			if item.Select_column_star().Star_modifiers() != nil {
-
+			fields, err := q.starModify(fields, item.Select_column_star().Star_modifiers())
+			if err != nil {
+				return nil, err
 			}
-			resultFields = append(resultFields, fromFields...)
+			resultFields = append(resultFields, fields...)
 		case item.Select_column_dot_star() != nil:
 			v := item.Select_column_dot_star()
 			wildFields, err := q.extractWildFromExpr(v.Expression_higher_prec_than_and())
 			if err != nil {
 				return nil, err
 			}
-			resultFields = append(resultFields, wildFields...)
+			fields, err := q.starModify(wildFields, item.Select_column_dot_star().Star_modifiers())
+			if err != nil {
+				return nil, err
+			}
+			resultFields = append(resultFields, fields...)
 		case item.Select_column_expr() != nil:
 			v := item.Select_column_expr()
 			var expression parser.IExpressionContext
@@ -462,13 +468,73 @@ func (q *querySpanExtractor) extractSourceColumnSetFromExpr(ctx antlr.ParserRule
 	return name, baseSet, nil
 }
 
-func starModify(fields []base.QuerySpanResult, starModifier parser.IStar_modifiersContext) []base.QuerySpanResult {
+func (q *querySpanExtractor) starModify(fields []base.QuerySpanResult, starModifier parser.IStar_modifiersContext) ([]base.QuerySpanResult, error) {
 	if starModifier == nil {
-		return fields
+		return fields, nil
 	}
-	if except := starModifier.Star_except_list(); except != nil {
 
+	type fieldItem struct {
+		id    int
+		field base.QuerySpanResult
 	}
+	var fieldItems []fieldItem
+	for i, field := range fields {
+		fieldItems = append(fieldItems, fieldItem{
+			id:    i,
+			field: field,
+		})
+	}
+	fieldItemMap := make(map[string]fieldItem)
+	for _, fieldItem := range fieldItems {
+		fieldItemMap[fieldItem.field.Name] = fieldItem
+	}
+
+	if except := starModifier.Star_except_list(); except != nil {
+		allIdentifiers := except.AllIdentifier()
+		for _, identifier := range allIdentifiers {
+			identifierNormalized := unquoteIdentifierByRule(identifier)
+			if _, ok := fieldItemMap[identifierNormalized]; !ok {
+				return nil, errors.Errorf("field %s does not exist in the select clause", identifierNormalized)
+			}
+			delete(fieldItemMap, identifierNormalized)
+		}
+	}
+
+	if replace := starModifier.Star_replace_list(); replace != nil {
+		allReplaceItems := replace.AllStar_replace_item()
+		for _, replaceItem := range allReplaceItems {
+			_, set, err := q.extractSourceColumnSetFromExpr(replaceItem.Expression())
+			if err != nil {
+				return nil, err
+			}
+			asIdentifier := unquoteIdentifierByRule(replaceItem.Identifier())
+			querySpanResult := base.QuerySpanResult{
+				Name:          asIdentifier,
+				SourceColumns: set,
+			}
+			if _, ok := fieldItemMap[asIdentifier]; !ok {
+				return nil, errors.Errorf("field %s does not exist in the select clause", asIdentifier)
+			}
+			fieldItemMap[asIdentifier] = fieldItem{
+				id:    fieldItemMap[asIdentifier].id,
+				field: querySpanResult,
+			}
+		}
+	}
+
+	fieldItems = nil
+	for _, fieldItem := range fieldItemMap {
+		fieldItems = append(fieldItems, fieldItem)
+	}
+	sort.Slice(fieldItems, func(i, j int) bool {
+		return fieldItems[i].id < fieldItems[j].id
+	})
+
+	var result []base.QuerySpanResult
+	for _, fieldItem := range fieldItems {
+		result = append(result, fieldItem.field)
+	}
+	return result, nil
 }
 
 func (q *querySpanExtractor) extractWildFromExpr(ctx antlr.ParserRuleContext) ([]base.QuerySpanResult, error) {
