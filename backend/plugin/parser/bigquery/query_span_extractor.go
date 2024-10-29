@@ -298,7 +298,6 @@ func (q *querySpanExtractor) extractTableSourceFromQueryPrimary(queryPrimary par
 
 		return tableSource, nil
 	}
-	// TODO(zp): handle parenthesized query.
 	return nil, nil
 }
 
