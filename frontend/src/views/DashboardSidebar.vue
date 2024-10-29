@@ -21,6 +21,7 @@ import {
   SquareStackIcon,
   ShieldCheck,
   UsersIcon,
+  SettingsIcon,
 } from "lucide-vue-next";
 import { computed, h } from "vue";
 import { useI18n } from "vue-i18n";
@@ -53,6 +54,11 @@ import {
   WORKSPACE_ROUTE_USER_PROFILE,
   WORKSPACE_ROUTE_IM,
 } from "@/router/dashboard/workspaceRoutes";
+import {
+  SETTING_ROUTE_WORKSPACE_GENERAL,
+  SETTING_ROUTE_WORKSPACE_SUBSCRIPTION,
+  SETTING_ROUTE_WORKSPACE_ARCHIVE,
+} from "@/router/dashboard/workspaceSetting";
 import { SQL_EDITOR_HOME_MODULE } from "@/router/sqlEditor";
 import { useAppFeature, usePermissionStore } from "@/store";
 import type { Permission } from "@/types";
@@ -302,6 +308,29 @@ const dashboardSidebarItemList = computed((): DashboardSidebarItem[] => {
         {
           title: t("settings.sidebar.im-integration"),
           name: WORKSPACE_ROUTE_IM,
+          type: "route",
+        },
+      ],
+    },
+    {
+      title: t("common.settings"),
+      icon: () => h(SettingsIcon),
+      type: "div",
+      hide: !hasWorkspacePermissionV2("bb.settings.get"),
+      children: [
+        {
+          title: t("settings.sidebar.general"),
+          name: SETTING_ROUTE_WORKSPACE_GENERAL,
+          type: "route",
+        },
+        {
+          title: t("settings.sidebar.subscription"),
+          name: SETTING_ROUTE_WORKSPACE_SUBSCRIPTION,
+          type: "route",
+        },
+        {
+          title: t("common.archived"),
+          name: SETTING_ROUTE_WORKSPACE_ARCHIVE,
           type: "route",
         },
       ],
