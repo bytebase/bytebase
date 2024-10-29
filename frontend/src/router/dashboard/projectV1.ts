@@ -36,6 +36,7 @@ export const PROJECT_V1_ROUTE_SETTINGS = `${PROJECT_V1_ROUTE_DASHBOARD}.settings
 export const PROJECT_V1_ROUTE_EXPORT_CENTER = `${PROJECT_V1_ROUTE_DASHBOARD}.export-center`;
 export const PROJECT_V1_ROUTE_REVIEW_CENTER = `${PROJECT_V1_ROUTE_DASHBOARD}.review-center`;
 export const PROJECT_V1_ROUTE_RELEASES = `${PROJECT_V1_ROUTE_DASHBOARD}.releases`;
+export const PROJECT_V1_ROUTE_RELEASE_CREATE = `${PROJECT_V1_ROUTE_DASHBOARD}.release.create`;
 export const PROJECT_V1_ROUTE_RELEASE_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.release.detail`;
 
 const projectV1Routes: RouteRecordRaw[] = [
@@ -516,6 +517,16 @@ const projectV1Routes: RouteRecordRaw[] = [
             },
             component: () =>
               import("@/views/project/ProjectReleaseDashboard.vue"),
+            props: true,
+          },
+          {
+            path: "new",
+            name: PROJECT_V1_ROUTE_RELEASE_CREATE,
+            meta: {
+              title: () => t("release.create"),
+              requiredProjectPermissionList: () => ["bb.projects.get"],
+            },
+            component: () => import("@/components/Release/ReleaseCreate/"),
             props: true,
           },
           {
