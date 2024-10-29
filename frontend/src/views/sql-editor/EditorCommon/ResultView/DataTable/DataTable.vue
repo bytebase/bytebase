@@ -1,6 +1,9 @@
 <template>
   <div
     class="bb-data-table relative w-full flex-1 overflow-hidden flex flex-col"
+    :style="{
+      maxHeight: maxHeight ? `${maxHeight}px` : undefined,
+    }"
   >
     <div class="w-full flex-1 flex flex-col overflow-hidden">
       <div
@@ -131,6 +134,7 @@ const props = defineProps<{
   offset: number;
   isSensitiveColumn: (index: number) => boolean;
   isColumnMissingSensitive: (index: number) => boolean;
+  maxHeight?: number;
 }>();
 
 const scrollerRef = ref<HTMLDivElement>();
