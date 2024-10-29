@@ -3734,6 +3734,7 @@
     "self": "Liberar",
     "releases": "Lanzamientos",
     "files": "Archivos",
+    "create": "Crear lanzamiento",
     "tasks-to-apply": "Tareas a aplicar",
     "out-of-order-files": "Archivos fuera de servicio",
     "applied-but-modifed-files": "Archivos aplicados pero modificados",
@@ -3742,6 +3743,14 @@
     "archive-this-release": "Archivar este comunicado",
     "no-tasks-to-apply": {
       "self": "No hay tareas para aplicar"
+    },
+    "actions": {
+      "new-file": "Nuevo archivo"
+    },
+    "messages": {
+      "succeed-to-create-release": "Tener éxito en crear el lanzamiento",
+      "files-will-always-be-sorted-and-executed-in-version-order": "Los archivos siempre se ordenarán y ejecutarán en orden de versión.",
+      "cannot-modify-files-after-created": "No es posible modificar archivos una vez creada la versión."
     }
   },
   "export-data": {
