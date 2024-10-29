@@ -9932,6 +9932,8 @@ components:
                 lastSyncTime:
                     type: string
                     format: date-time
+                backupAvailable:
+                    type: boolean
             description: DatabaseMetadata is the metadata for databases.
         DatabaseSchema:
             type: object
