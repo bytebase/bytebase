@@ -46,6 +46,9 @@ import (
 const (
 	// defaultTimeout is the default timeout for query and admin execution.
 	defaultTimeout = 10 * time.Minute
+
+	backupDatabaseName       = "bbdataarchive"
+	oracleBackupDatabaseName = "BBDATAARCHIVE"
 )
 
 // SQLService is the service for SQL.

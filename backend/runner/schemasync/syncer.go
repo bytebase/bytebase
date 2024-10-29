@@ -35,6 +35,9 @@ const (
 	// defaultSyncInterval means never sync.
 	defaultSyncInterval = 0 * time.Second
 	MaximumOutstanding  = 100
+
+	backupDatabaseName       = "bbdataarchive"
+	oracleBackupDatabaseName = "BBDATAARCHIVE"
 )
 
 // NewSyncer creates a schema syncer.
@@ -408,7 +411,8 @@ func (s *Syncer) SyncDatabaseSchemaToHistory(ctx context.Context, database *stor
 		SyncState:            &syncStatus,
 		SuccessfulSyncTimeTs: &ts,
 		MetadataUpsert: &storepb.DatabaseMetadata{
-			LastSyncTime: timestamppb.New(time.Unix(ts, 0)),
+			LastSyncTime:    timestamppb.New(time.Unix(ts, 0)),
+			BackupAvailable: s.hasBackupSchema(ctx, instance, databaseMetadata),
 		},
 	}, api.SystemBotID); err != nil {
 		return 0, errors.Wrapf(err, "failed to update database %q for instance %q", database.DatabaseName, database.InstanceID)
@@ -526,7 +530,8 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 		SyncState:            &syncStatus,
 		SuccessfulSyncTimeTs: &ts,
 		MetadataUpsert: &storepb.DatabaseMetadata{
-			LastSyncTime: timestamppb.New(time.Unix(ts, 0)),
+			LastSyncTime:    timestamppb.New(time.Unix(ts, 0)),
+			BackupAvailable: s.hasBackupSchema(ctx, instance, databaseMetadata),
 		},
 	}, api.SystemBotID); err != nil {
 		return errors.Wrapf(err, "failed to update database %q for instance %q", database.DatabaseName, database.InstanceID)
@@ -629,6 +634,43 @@ func (s *Syncer) SyncDatabaseSchema(ctx context.Context, database *store.Databas
 		}
 	}
 	return nil
+}
+
+func (s *Syncer) hasBackupSchema(ctx context.Context, instance *store.InstanceMessage, dbSchema *storepb.DatabaseSchemaMetadata) bool {
+	switch instance.Engine {
+	case storepb.Engine_POSTGRES:
+		if dbSchema == nil {
+			return false
+		}
+		for _, schema := range dbSchema.Schemas {
+			if schema.GetName() == backupDatabaseName {
+				return true
+			}
+		}
+	case storepb.Engine_MYSQL, storepb.Engine_MSSQL, storepb.Engine_TIDB:
+		dbName := backupDatabaseName
+		backupDB, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+			InstanceID:   &instance.ResourceID,
+			DatabaseName: &dbName,
+		})
+		if err != nil {
+			slog.Debug("Failed to get backup database", "err", err)
+			return false
+		}
+		return backupDB != nil
+	case storepb.Engine_ORACLE:
+		dbName := oracleBackupDatabaseName
+		backupDB, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+			InstanceID:   &instance.ResourceID,
+			DatabaseName: &dbName,
+		})
+		if err != nil {
+			slog.Debug("Failed to get backup database", "err", err)
+			return false
+		}
+		return backupDB != nil
+	}
+	return false
 }
 
 func (s *Syncer) upsertInstanceConnectionAnomaly(ctx context.Context, instance *store.InstanceMessage, connErr error) {

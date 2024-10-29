@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"log/slog"
 	"regexp"
 	"sort"
 	"strings"
@@ -56,9 +55,6 @@ const (
 	orderByKeyMaximumRowsSent     = "maximum_rows_sent"
 	orderByKeyAverageRowsExamined = "average_rows_examined"
 	orderByKeyMaximumRowsExamined = "maximum_rows_examined"
-
-	backupDatabaseName       = "bbdataarchive"
-	oracleBackupDatabaseName = "BBDATAARCHIVE"
 )
 
 // DatabaseService implements the database service.
@@ -1711,55 +1707,8 @@ func (s *DatabaseService) convertToDatabase(ctx context.Context, database *store
 		SchemaVersion:        database.SchemaVersion.Version,
 		Labels:               database.Metadata.Labels,
 		InstanceResource:     instanceResource,
-		BackupAvailable:      isBackupAvailable(ctx, s.store, instance, database),
+		BackupAvailable:      database.Metadata.GetBackupAvailable(),
 	}, nil
-}
-
-func isBackupAvailable(ctx context.Context, s *store.Store, instance *store.InstanceMessage, _ *store.DatabaseMessage) bool {
-	switch instance.Engine {
-	case storepb.Engine_POSTGRES:
-		// It's so slow for ListDatabases, so we comment it out.
-		// TODO(d/rebelice): check backup availability for postgres faster.
-		// dbSchema, err := s.GetDBSchema(ctx, database.UID)
-		// if err != nil {
-		// 	slog.Debug("Failed to get db schema for checking backup availability", "err", err)
-		// 	return false
-		// }
-		// if dbSchema == nil {
-		// 	return false
-		// }
-		// for _, schema := range dbSchema.GetMetadata().GetSchemas() {
-		// 	if schema.GetName() == backupDatabaseName {
-		// 		return true
-		// 	}
-		// }
-		//
-		// Return true for all postgres database, we'll truthfully check it in the sql review rules.
-		return true
-	case storepb.Engine_MYSQL, storepb.Engine_MSSQL, storepb.Engine_TIDB:
-		dbName := backupDatabaseName
-		backupDB, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-			InstanceID:   &instance.ResourceID,
-			DatabaseName: &dbName,
-		})
-		if err != nil {
-			slog.Debug("Failed to get backup database", "err", err)
-			return false
-		}
-		return backupDB != nil
-	case storepb.Engine_ORACLE:
-		dbName := oracleBackupDatabaseName
-		backupDB, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-			InstanceID:   &instance.ResourceID,
-			DatabaseName: &dbName,
-		})
-		if err != nil {
-			slog.Debug("Failed to get backup database", "err", err)
-			return false
-		}
-		return backupDB != nil
-	}
-	return false
 }
 
 type metadataFilter struct {

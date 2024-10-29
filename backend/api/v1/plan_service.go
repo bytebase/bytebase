@@ -527,7 +527,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 								if database == nil {
 									return status.Errorf(codes.NotFound, "database %q not found", databaseName)
 								}
-								if ok := isBackupAvailable(ctx, s.store, instance, database); !ok {
+								if database.Metadata == nil || !database.Metadata.GetBackupAvailable() {
 									return status.Errorf(codes.FailedPrecondition, "backup is not available for database %q", databaseName)
 								}
 							}
