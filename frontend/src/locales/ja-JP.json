@@ -11,7 +11,7 @@
     "wecom": "エンタープライズ WeChat",
     "system": "システム",
     "custom": "カスタマイズ",
-    "im": "私は",
+    "im": "IM",
     "overview": "概要",
     "change-history": "変更履歴",
     "webhook": "Webhook",
@@ -77,9 +77,9 @@
     "role": {
       "self": "役割"
     },
-    "revert": "回復する",
-    "apply": "応用",
-    "reorder": "選別",
+    "revert": "元に戻す",
+    "apply": "適用",
+    "reorder": "並び替え",
     "id": "ID",
     "name": "名前",
     "creator": "創設者",
@@ -102,7 +102,7 @@
     "sql": "SQL",
     "unassigned": "割り当てられていない",
     "new": "作成する",
-    "add": "を追加",
+    "add": "追加",
     "confirm-and-add": "確認して追加",
     "confirm-and-update": "確認して更新する",
     "query": "お問い合わせ",
@@ -124,7 +124,7 @@
     "enabled": "オンにする",
     "default": "デフォルト",
     "gitops": "GitOps",
-    "restore": "回復する",
+    "restore": "復元する",
     "detailed-guide": "詳細ガイド",
     "workspace": "ワークスペース",
     "application": "応用",
@@ -138,11 +138,11 @@
     "automatic": "自動",
     "Default": "デフォルト",
     "definition": "意味",
-    "empty": "ヌル",
+    "empty": "空欄",
     "connecting": "接続中...",
     "creating": "作成...",
     "updating": "更新中...",
-    "address": "住所",
+    "address": "接続先",
     "assigned": "割り当てられた",
     "subscribed": "購読済",
     "created": "作成済",
@@ -162,14 +162,14 @@
     "agents": "エージェント",
     "billings": "請求する",
     "all": "全て",
-    "recent": "最近の訪問",
+    "recent": "最近",
     "deployment-config": "導入構成",
     "by": "による",
     "ok": "わかりました",
     "share": "共有",
     "others": "他の",
     "or": "または",
-    "export": "輸出",
+    "export": "出力",
     "tips": "プロンプトメッセージ",
     "template": "テンプレート",
     "delete": "消去",
@@ -195,7 +195,7 @@
     "enable": "オンにする",
     "disable": "無効にする",
     "view-doc": "ドキュメントを見る",
-    "write-only": "書くだけ",
+    "write-only": "書き込み専用",
     "pitr": "PITR",
     "fix": "修理",
     "go-now": "今行く",
@@ -477,7 +477,7 @@
       "members": "メンバー",
       "users-and-groups": "ユーザーとグループ",
       "iam-and-admin": "IAM と管理",
-      "im-integration": "私は",
+      "im-integration": "IM",
       "sso": "SSO",
       "gitops": "GitOps",
       "subscription": "サブスクリプション",
@@ -803,7 +803,7 @@
         "self": "グローバルな減感作ルール",
         "description": "たとえば、列名が email のすべてのフィールドは、半鈍感化に設定されます。",
         "condition-order": "条件付きシーケンス",
-        "re-order": "選別",
+        "re-order": "並び替え",
         "delete-rule-tip": "このルールを削除しますか?",
         "check-rules": "グローバル構成を表示する"
       },
@@ -941,7 +941,7 @@
         "self": "操作の種類",
         "selet-action": "アクションを選択",
         "query": "お問い合わせ",
-        "export": "輸出"
+        "export": "出力"
       },
       "classification": {
         "self": "データの分類とグレーディング",
@@ -1049,7 +1049,7 @@
     "restore": "復元する"
   },
   "issue": {
-    "my-issues": "私のイシュー",
+    "my-issues": "マイイシュー",
     "waiting-approval": "承認待ち",
     "waiting-rollout": "リリース待ち",
     "opened-by-at": "{id} は {creator} から {time} まで始まりました",
@@ -1131,7 +1131,7 @@
           "description": "データベース変更タイプによる検索"
         },
         "creator": {
-          "title": "創設者",
+          "title": "作成者",
           "description": "チケット作成者で検索"
         },
         "subscriber": {
@@ -1172,7 +1172,7 @@
       "progress": "スケジュール",
       "updated": "更新日時",
       "approver": "承認者",
-      "creator": "創設者",
+      "creator": "作成者",
       "current-approver": "現在の承認者"
     },
     "stage-select": {
@@ -1427,7 +1427,7 @@
     "new-database": "@:common.new@:common.database",
     "syncing": "同期中 ...",
     "sync": {
-      "self": "同期インスタンス",
+      "self": "インスタンスの同期",
       "sync-all": "すべてのデータベースを同期する",
       "sync-new": "新しいデータベースのみを同期する",
       "sync-all-tip": "データベースの同期は非同期で、数秒から数分かかる場合があります。"
@@ -1450,7 +1450,7 @@
     "archive-instance-instance-name": "インスタンス '{0}' をアーカイブしますか?",
     "archived-instances-will-not-be-displayed": "アーカイブされたインスタンスは表示されなくなります。",
     "restore-this-instance": "インスタンスを復元する",
-    "restore": "回復する",
+    "restore": "復元する",
     "restore-instance-instance-name-to-normal-state": "インスタンス '{0}' を通常の状態に復元しますか?",
     "account-locator": "アカウントロケーター",
     "account": "アカウント",
@@ -1717,7 +1717,7 @@
       "tip": "新しいポリシーは古い作業指示にも適用されます",
       "info": "このオプションは、データベースへの変更を公開するときに手動で公開する必要があるかどうかを制御します。",
       "auto": "自動公開",
-      "auto-info": "すべての事前チェックに合格すると、自動的にリリースされ、変更が実装されます。",
+      "auto-info": "すべての事前チェックに合格すると、自動的にリリースされ、変更が反映されます。",
       "manual-by-last-approver": "カスタム承認の最終承認者が公開されます",
       "manual-by-dedicated-roles": "特定の役割の手動リリース",
       "manual-by-dedicated-roles-info": "以下の選択したロールのいずれかを許可し、「公開」ボタンをクリックして変更を実行します。"
@@ -1725,7 +1725,7 @@
     "environment-tier": {
       "name": "環境レベル",
       "description": "この環境を他の環境とは異なって見えるようにします。",
-      "mark-env-as-production": "実稼働環境としてマークする"
+      "mark-env-as-production": "本番環境としてマークする"
     }
   },
   "change-history": {
@@ -1773,7 +1773,7 @@
     "last-successful-sync": "最後に成功した同期",
     "filter-database": "フィルターデータベース",
     "filter-database-group": "データベースグループをフィルタリングする",
-    "transfer-project": "転送アイテム",
+    "transfer-project": "プロジェクトの転送",
     "unassign": "割り当てを解除する",
     "unassign-alert-title": "データベースの割り当てを解除する",
     "unassign-alert-description": "選択したデータベースがプロジェクトから削除されます",
@@ -1912,14 +1912,14 @@
     "transfer-database-to": "データベースをターゲットプロジェクトに転送します",
     "transfer-database-from-to": "データベースをソース プロジェクトからターゲット プロジェクトに転送する",
     "classification": {
-      "self": "分類と格付け",
+      "self": "分類",
       "description": "データ分類を使用して、少数の分類のみを制御することで、多数の列のマスキング ポリシーを管理します。",
       "sync-from-comment": "コメントからカテゴリと評価を同期する",
       "sync-from-comment-tip": "有効にすると、分類評価がテーブルまたは列のコメントから同期されます。コメントは「{format}」形式に従う必要があります。",
       "sync-from-comment-enable-warning": "分類評価は DDL とともに変更され、元の注釈と同期されます。",
       "sync-from-comment-disable-warning": "分類評価は DDL によって変更されません。データベースの詳細ページでいつでも変更できます。"
     },
-    "recent": "最近の訪問",
+    "recent": "最近",
     "partitioned": "パーティション",
     "partition-tables": "パーティションテーブル",
     "external-server-name": "外部サーバー名",
@@ -2340,7 +2340,7 @@
     "ssl-type": {
       "ca": "@:{'data-source.ssl.ca-cert'}",
       "ca-and-key-and-cert": "@:{'data-source.ssl.ca-cert'} + @:{'data-source.ssl.client-key'} + @:{'data-source.ssl.client-cert'}",
-      "none": "使ってはいけません"
+      "none": "なし"
     },
     "ssl": {
       "ca-cert": "CA証明書",
@@ -2350,7 +2350,7 @@
     "ssh-type": {
       "tunnel": "@:{'data-source.ssh.tunnel'}",
       "tunnel-and-private-key": "@:{'data-source.ssh.tunnel'} + @:{'data-source.ssh.private-key'}",
-      "none": "使ってはいけません"
+      "none": "なし"
     },
     "ssh": {
       "host": "サーバ",
@@ -2569,7 +2569,7 @@
       "create-table": "新しいテーブルを作成する",
       "rename": "名前の変更",
       "drop-table": "テーブルの削除",
-      "restore": "回復する",
+      "restore": "復元する",
       "add-column": "列の追加",
       "add-from-template": "テンプレートから追加",
       "drop-column": "列の削除",
@@ -2802,7 +2802,7 @@
       },
       "bb-feature-environment-tier-policy": {
         "title": "環境レベル",
-        "desc": "「環境レベル」では、環境を実稼働環境としてマークできます。"
+        "desc": "「環境レベル」では、環境を本番環境としてマークできます。"
       },
       "bb-feature-sensitive-data": {
         "title": "機密データ",
@@ -3299,7 +3299,7 @@
           "create_database": "データベースの作成",
           "data_export": "データのエクスポート",
           "request_query": "クエリ権限を申請する",
-          "request_export": "輸出許可を申請する"
+          "request_export": "出力権限を申請する"
         }
       },
       "template": {
