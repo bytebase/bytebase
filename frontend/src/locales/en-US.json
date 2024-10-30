@@ -3403,9 +3403,10 @@
       "re-request-review-issue": "Re-request review issue?",
       "sent-back-issue": "Sent back issue",
       "re-requested-review": "re-requested issue review",
-      "no-one-matches-role": "No one matches the role, contact project owner to assign one.",
+      "no-one-matched": "No one matched",
       "any-n-role-can-approve": "Any {role} can approve",
-      "approved-by-n": "Approved by {approver}"
+      "approved-by-n": "Approved by {approver}",
+      "issue-creators-cannot-approve-their-own-issue": "Issue creators cannot approve their own issue"
     },
     "send-back": "Send back"
   },
