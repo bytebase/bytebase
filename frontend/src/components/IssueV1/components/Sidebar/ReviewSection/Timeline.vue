@@ -9,16 +9,26 @@
 
           <template #default>
             <div class="flex flex-col gap-y-2 text-sm max-w-[16rem] truncate">
-              <i18n-t
-                keypath="custom-approval.issue-review.any-n-role-can-approve"
-                tag="div"
-              >
-                <template #role>
-                  <span class="textlabel">
-                    {{ approvalNodeText(step.step.nodes[0]) }}
-                  </span>
-                </template>
-              </i18n-t>
+              <ul class="w-full list-disc list-inside text-sm">
+                <i18n-t
+                  keypath="custom-approval.issue-review.any-n-role-can-approve"
+                  tag="li"
+                  class="whitespace-pre-wrap"
+                >
+                  <template #role>
+                    <span class="textlabel">
+                      {{ approvalNodeText(step.step.nodes[0]) }}
+                    </span>
+                  </template>
+                </i18n-t>
+                <li class="whitespace-pre-wrap">
+                  {{
+                    $t(
+                      "custom-approval.issue-review.issue-create-cannot-approve-their-own-issue"
+                    )
+                  }}
+                </li>
+              </ul>
               <hr />
               <template v-if="!isExternalApprovalStep(step.step)">
                 <Approver
