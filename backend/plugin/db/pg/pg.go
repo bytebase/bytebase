@@ -659,7 +659,11 @@ func (driver *Driver) QueryConn(ctx context.Context, conn *sql.Conn, statement s
 		if queryContext.Explain {
 			statement = fmt.Sprintf("EXPLAIN %s", statement)
 		} else if queryContext.Limit > 0 {
-			statement = getStatementWithResultLimit(statement, queryContext.Limit)
+			// Quick fix for do not add limit to non-select statement.
+			t := util.TrimStatement(statement)
+			if strings.HasPrefix(strings.ToUpper(t), "SELECT") || strings.HasPrefix(strings.ToUpper(t), "WITH") {
+				statement = getStatementWithResultLimit(statement, queryContext.Limit)
+			}
 		}
 
 		_, allQuery, err := base.ValidateSQLForEditor(storepb.Engine_POSTGRES, statement)
