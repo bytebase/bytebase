@@ -149,7 +149,7 @@ func (s *AuditLogService) ExportAuditLogs(ctx context.Context, request *v1pb.Exp
 		return nil, status.Errorf(codes.InvalidArgument, "unsupported export format: %s", request.Format.String())
 	}
 
-	return &v1pb.ExportAuditLogsResponse{Content: content}, nil
+	return &v1pb.ExportAuditLogsResponse{Content: content, NextPageToken: searchAuditLogsResult.NextPageToken}, nil
 }
 
 func convertToAuditLogs(ctx context.Context, stores *store.Store, auditLogs []*store.AuditLog) ([]*v1pb.AuditLog, error) {

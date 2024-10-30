@@ -3049,6 +3049,7 @@
   "audit-log": {
     "no-logs": "監査ログはまだありません",
     "audit-log-detail": "監査の詳細",
+    "export-finished": "エクスポートが完了しました",
     "table": {
       "created-ts": "時間",
       "created-time": "作成時間",
