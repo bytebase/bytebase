@@ -3403,9 +3403,10 @@
       "re-request-review-issue": "请求再次审批工单？",
       "sent-back-issue": "退回工单",
       "re-requested-review": "再次请求审批工单",
-      "no-one-matches-role": "没有符合这个角色的用户，请联系项目管理员分配角色。",
+      "no-one-matched": "没有匹配到用户",
       "any-n-role-can-approve": "任意 {role} 可审批",
-      "approved-by-n": "已由 {approver} 批准"
+      "approved-by-n": "已由 {approver} 批准",
+      "issue-creators-cannot-approve-their-own-issue": "工单创建者不能审批自己的工单"
     },
     "send-back": "退回"
   },
