@@ -983,10 +983,10 @@ InstanceRole is the API message for instance role.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | parent | [string](#string) |  | The parent, which owns this collection of roles. Format: instances/{instance} |
-| page_size | [int32](#int32) |  | The maximum number of roles to return. The service may return fewer than this value. If unspecified, at most 50 roles will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | A page token, received from a previous `ListRoles` call. Provide this to retrieve the subsequent page.
+| page_size | [int32](#int32) |  | Not used. The maximum number of roles to return. The service may return fewer than this value. If unspecified, at most 10 roles will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | Not used. A page token, received from a previous `ListInstanceRoles` call. Provide this to retrieve the subsequent page.
 
-When paginating, all other parameters provided to `ListRoles` must match the call that provided the page token. |
+When paginating, all other parameters provided to `ListInstanceRoles` must match the call that provided the page token. |
 | refresh | [bool](#bool) |  | Refresh will refresh and return the latest data. |
 
 
@@ -1325,8 +1325,8 @@ InstanceOptions is the option for instances.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| page_size | [int32](#int32) |  | The maximum number of instances to return. The service may return fewer than this value. If unspecified, at most 50 instances will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | A page token, received from a previous `ListInstances` call. Provide this to retrieve the subsequent page.
+| page_size | [int32](#int32) |  | Not used. The maximum number of instances to return. The service may return fewer than this value. If unspecified, at most 10 instances will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | Not used. A page token, received from a previous `ListInstances` call. Provide this to retrieve the subsequent page.
 
 When paginating, all other parameters provided to `ListInstances` must match the call that provided the page token. |
 | show_deleted | [bool](#bool) |  | Show deleted instances if specified. |
@@ -2332,7 +2332,7 @@ IndexMetadata is the metadata for indexes.
 | ----- | ---- | ----- | ----------- |
 | parent | [string](#string) |  | The parent of the change histories. Format: instances/{instance}/databases/{database} |
 | page_size | [int32](#int32) |  | The maximum number of change histories to return. The service may return fewer than this value. If unspecified, at most 10 change histories will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | Not used. A page token, received from a previous `ListChangeHistories` call. Provide this to retrieve the subsequent page.
+| page_token | [string](#string) |  | A page token, received from a previous `ListChangeHistories` call. Provide this to retrieve the subsequent page.
 
 When paginating, all other parameters provided to `ListChangeHistories` must match the call that provided the page token. |
 | view | [ChangeHistoryView](#bytebase-v1-ChangeHistoryView) |  |  |
@@ -2417,7 +2417,7 @@ Combine multiple functions with &#34;&amp;&amp;&#34; and &#34;||&#34;, we MUST u
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | parent | [string](#string) |  | The parent, which owns this collection of databases. - projects/{project}: list all databases in a project. - workspaces/{workspace}: list all databases in a workspace. |
-| page_size | [int32](#int32) |  | The maximum number of databases to return. The service may return fewer than this value. If unspecified, at most 50 databases will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_size | [int32](#int32) |  | The maximum number of databases to return. The service may return fewer than this value. If unspecified, at most 10 databases will be returned. |
 | page_token | [string](#string) |  | A page token, received from a previous `ListDatabases` call. Provide this to retrieve the subsequent page.
 
 When paginating, all other parameters provided to `ListDatabases` must match the call that provided the page token. |
@@ -2452,10 +2452,10 @@ When paginating, all other parameters provided to `ListDatabases` must match the
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | parent | [string](#string) |  | The parent, which owns this collection of databases. - instances/{instance}: list all databases for an instance. Use &#34;instances/-&#34; to list all databases. |
-| page_size | [int32](#int32) |  | The maximum number of databases to return. The service may return fewer than this value. If unspecified, at most 50 databases will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | A page token, received from a previous `ListDatabases` call. Provide this to retrieve the subsequent page.
+| page_size | [int32](#int32) |  | The maximum number of databases to return. The service may return fewer than this value. If unspecified, at most 10 databases will be returned. |
+| page_token | [string](#string) |  | A page token, received from a previous `ListInstanceDatabases` call. Provide this to retrieve the subsequent page.
 
-When paginating, all other parameters provided to `ListDatabases` must match the call that provided the page token. |
+When paginating, all other parameters provided to `ListInstanceDatabases` must match the call that provided the page token. |
 | filter | [string](#string) |  | Deprecated. Filter is used to filter databases returned in the list. For example, `project == &#34;projects/{project}&#34;` can be used to list databases in a project. Note: the project filter will be moved to parent. |
 
 
@@ -2523,7 +2523,7 @@ When paginating, all other parameters provided to `ListRevisions` must match the
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | parent | [string](#string) |  | The parent of the secret. Format: instances/{instance}/databases/{database} |
-| page_size | [int32](#int32) |  | Not used. The maximum number of databases to return. The service may return fewer than this value. If unspecified, at most 50 databases will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_size | [int32](#int32) |  | Not used. The maximum number of secrets to return. The service may return fewer than this value. If unspecified, at most 10 secrets will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
 | page_token | [string](#string) |  | Not used. A page token, received from a previous `ListSecrets` call. Provide this to retrieve the subsequent page.
 
 When paginating, all other parameters provided to `ListSecrets` must match the call that provided the page token. |
@@ -3637,10 +3637,10 @@ PostgreSQL: RANGE, LIST, HASH (https://www.postgresql.org/docs/current/ddl-parti
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | parent | [string](#string) |  | Format: projects/{projects}/issues/{issue} |
-| page_size | [int32](#int32) |  | The maximum number of issues to return. The service may return fewer than this value. If unspecified, at most 50 issues will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | A page token, received from a previous `ListIssues` call. Provide this to retrieve the subsequent page.
+| page_size | [int32](#int32) |  | The maximum number of issue comments to return. The service may return fewer than this value. If unspecified, at most 10 issue comments will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | A page token, received from a previous `ListIssueComments` call. Provide this to retrieve the subsequent page.
 
-When paginating, all other parameters provided to `ListIssues` must match the call that provided the page token. |
+When paginating, all other parameters provided to `ListIssueComments` must match the call that provided the page token. |
 
 
 
@@ -3672,7 +3672,7 @@ When paginating, all other parameters provided to `ListIssues` must match the ca
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | parent | [string](#string) |  | The parent, which owns this collection of issues. Format: projects/{project} |
-| page_size | [int32](#int32) |  | The maximum number of issues to return. The service may return fewer than this value. If unspecified, at most 50 issues will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_size | [int32](#int32) |  | The maximum number of issues to return. The service may return fewer than this value. If unspecified, at most 10 issues will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
 | page_token | [string](#string) |  | A page token, received from a previous `ListIssues` call. Provide this to retrieve the subsequent page.
 
 When paginating, all other parameters provided to `ListIssues` must match the call that provided the page token. |
@@ -3741,10 +3741,10 @@ When paginating, all other parameters provided to `ListIssues` must match the ca
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | parent | [string](#string) |  | The parent, which owns this collection of issues. Format: projects/{project} Use &#34;projects/-&#34; to list all issues from all projects. |
-| page_size | [int32](#int32) |  | The maximum number of issues to return. The service may return fewer than this value. If unspecified, at most 50 issues will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | A page token, received from a previous `ListIssues` call. Provide this to retrieve the subsequent page.
+| page_size | [int32](#int32) |  | The maximum number of issues to return. The service may return fewer than this value. If unspecified, at most 10 issues will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | A page token, received from a previous `SearchIssues` call. Provide this to retrieve the subsequent page.
 
-When paginating, all other parameters provided to `ListIssues` must match the call that provided the page token. |
+When paginating, all other parameters provided to `SearchIssues` must match the call that provided the page token. |
 | filter | [string](#string) |  | Filter is used to filter issues returned in the list. |
 | query | [string](#string) |  | Query is the query statement. |
 
@@ -4393,8 +4393,8 @@ The response message for getting a setting.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| page_size | [int32](#int32) |  | The maximum number of settings to return. The service may return fewer than this value. If unspecified, at most 50 settings will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | A page token, received from a previous `ListSettings` call. Provide this to retrieve the subsequent page.
+| page_size | [int32](#int32) |  | Not used. The maximum number of settings to return. The service may return fewer than this value. If unspecified, at most 10 settings will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | Not used. A page token, received from a previous `ListSettings` call. Provide this to retrieve the subsequent page.
 
 When paginating, all other parameters provided to `ListSettings` must match the call that provided the page token. |
 
@@ -5434,6 +5434,8 @@ The type of action performed on a Binding in a policy.
 | filter | [string](#string) |  | The filter of the log. It should be a valid CEL expression. For example: - filter = &#34;method == &#39;/bytebase.v1.SQLService/Query&#39;&#34; - filter = &#34;method == &#39;/bytebase.v1.SQLService/Query&#39; &amp;&amp; severity == &#39;ERROR&#39;&#34; - filter = &#34;method == &#39;/bytebase.v1.SQLService/Query&#39; &amp;&amp; severity == &#39;ERROR&#39; &amp;&amp; user == &#39;users/bb@bytebase.com&#39;&#34; - filter = &#34;method == &#39;/bytebase.v1.SQLService/Query&#39; &amp;&amp; severity == &#39;ERROR&#39; &amp;&amp; create_time &lt;= &#39;2021-01-01T00:00:00Z&#39; &amp;&amp; create_time &gt;= &#39;2020-01-01T00:00:00Z&#39;&#34; |
 | order_by | [string](#string) |  | The order by of the log. Only support order by create_time. For example: - order_by = &#34;create_time asc&#34; - order_by = &#34;create_time desc&#34; |
 | format | [ExportFormat](#bytebase-v1-ExportFormat) |  | The export format. |
+| page_size | [int32](#int32) |  | The maximum number of logs to return. The service may return fewer than this value. If unspecified, at most 100 log entries will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | A page token, received from a previous `ExportAuditLogs` call. Provide this to retrieve the subsequent page. |
 
 
 
@@ -5449,6 +5451,7 @@ The type of action performed on a Binding in a policy.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | content | [bytes](#bytes) |  |  |
+| next_page_token | [string](#string) |  | A token to retrieve next page of log entities. Pass this value in the page_token field in the subsequent call to retrieve the next page of log entities. |
 
 
 
@@ -5621,8 +5624,8 @@ Metadata about the request.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| page_size | [int32](#int32) |  | The maximum number of users to return. The service may return fewer than this value. If unspecified, at most 50 users will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | A page token, received from a previous `ListUsers` call. Provide this to retrieve the subsequent page.
+| page_size | [int32](#int32) |  | Not used. The maximum number of users to return. The service may return fewer than this value. If unspecified, at most 50 users will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | Not used. A page token, received from a previous `ListUsers` call. Provide this to retrieve the subsequent page.
 
 When paginating, all other parameters provided to `ListUsers` must match the call that provided the page token. |
 | show_deleted | [bool](#bool) |  | Show deleted users if specified. |
@@ -6000,8 +6003,8 @@ The user&#39;s `name` field is used to identify the user to update. Format: user
 | ----- | ---- | ----- | ----------- |
 | parent | [string](#string) |  | The parent resource of the branch. Format: projects/{project} |
 | filter | [string](#string) |  | To filter the search result. |
-| page_size | [int32](#int32) |  | The maximum number of branches to return. The service may return fewer than this value. If unspecified, at most 50 branches will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | A page token, received from a previous `ListBranches` call. Provide this to retrieve the subsequent page.
+| page_size | [int32](#int32) |  | Not used. The maximum number of branches to return. The service may return fewer than this value. If unspecified, at most 50 branches will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | Not used. A page token, received from a previous `ListBranches` call. Provide this to retrieve the subsequent page.
 
 When paginating, all other parameters provided to `ListBranches` must match the call that provided the page token. |
 | view | [BranchView](#bytebase-v1-BranchView) |  |  |
@@ -6329,8 +6332,8 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | parent | [string](#string) |  | The parent, which owns this collection of changelists. Format: projects/{project} |
-| page_size | [int32](#int32) |  | The maximum number of databases to return. The service may return fewer than this value. If unspecified, at most 50 databases will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | A page token, received from a previous `ListDatabases` call. Provide this to retrieve the subsequent page.
+| page_size | [int32](#int32) |  | Not used. The maximum number of databases to return. The service may return fewer than this value. If unspecified, at most 50 databases will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | Not used. A page token, received from a previous `ListDatabases` call. Provide this to retrieve the subsequent page.
 
 When paginating, all other parameters provided to `ListDatabases` must match the call that provided the page token. |
 
@@ -6498,7 +6501,7 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | parent | [string](#string) |  | The parent resource whose database groups are to be listed. Format: projects/{project} |
-| page_size | [int32](#int32) |  | Not used. The maximum number of anomalies to return. The service may return fewer than this value. If unspecified, at most 50 anomalies will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_size | [int32](#int32) |  | Not used. The maximum number of database groups to return. The service may return fewer than this value. If unspecified, at most 50 database groups will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
 | page_token | [string](#string) |  | Not used. A page token, received from a previous `ListDatabaseGroups` call. Provide this to retrieve the subsequent page.
 
 When paginating, all other parameters provided to `ListDatabaseGroups` must match the call that provided the page token. |
@@ -6660,8 +6663,8 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| page_size | [int32](#int32) |  | The maximum number of environments to return. The service may return fewer than this value. If unspecified, at most 50 environments will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | A page token, received from a previous `ListEnvironments` call. Provide this to retrieve the subsequent page.
+| page_size | [int32](#int32) |  | Not used. The maximum number of environments to return. The service may return fewer than this value. If unspecified, at most 10 environments will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | Not used. A page token, received from a previous `ListEnvironments` call. Provide this to retrieve the subsequent page.
 
 When paginating, all other parameters provided to `ListEnvironments` must match the call that provided the page token. |
 | show_deleted | [bool](#bool) |  | Show deleted environments if specified. |
@@ -6857,8 +6860,8 @@ Format: users/hello@world.com |
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| page_size | [int32](#int32) |  | The maximum number of groups to return. The service may return fewer than this value. If unspecified, at most 50 groups will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | A page token, received from a previous `ListGroups` call. Provide this to retrieve the subsequent page.
+| page_size | [int32](#int32) |  | Not used. The maximum number of groups to return. The service may return fewer than this value. If unspecified, at most 10 groups will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | Not used. A page token, received from a previous `ListGroups` call. Provide this to retrieve the subsequent page.
 
 When paginating, all other parameters provided to `ListGroups` must match the call that provided the page token. |
 
@@ -7086,8 +7089,8 @@ LDAPIdentityProviderConfig is the structure for LDAP identity provider config.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| page_size | [int32](#int32) |  | The maximum number of identity providers to return. The service may return fewer than this value. If unspecified, at most 50 will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | A page token, received from a previous `ListIdentityProviders` call. Provide this to retrieve the subsequent page.
+| page_size | [int32](#int32) |  | Not used. The maximum number of identity providers to return. The service may return fewer than this value. If unspecified, at most 10 will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | Not used. A page token, received from a previous `ListIdentityProviders` call. Provide this to retrieve the subsequent page.
 
 When paginating, all other parameters provided to `ListIdentityProviders` must match the call that provided the page token. |
 | show_deleted | [bool](#bool) |  | Show deleted identity providers if specified. |
@@ -7379,10 +7382,10 @@ DataSourceQueryPolicy is the policy configuration for running statements in the 
 | ----- | ---- | ----- | ----------- |
 | parent | [string](#string) |  | The parent, which owns this collection of policies. Format: {resource type}/{resource id} |
 | policy_type | [PolicyType](#bytebase-v1-PolicyType) | optional |  |
-| page_size | [int32](#int32) |  | The maximum number of policies to return. The service may return fewer than this value. If unspecified, at most 50 policies will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | A page token, received from a previous `GetPolicies` call. Provide this to retrieve the subsequent page.
+| page_size | [int32](#int32) |  | Not used. The maximum number of policies to return. The service may return fewer than this value. If unspecified, at most 10 policies will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | Not used. A page token, received from a previous `ListPolicies` call. Provide this to retrieve the subsequent page.
 
-When paginating, all other parameters provided to `GetPolicies` must match the call that provided the page token. |
+When paginating, all other parameters provided to `ListPolicies` must match the call that provided the page token. |
 | show_deleted | [bool](#bool) |  | Show deleted policies if specified. |
 
 
@@ -7825,8 +7828,8 @@ The policy&#39;s `name` field is used to identify the instance to update. Format
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | parent | [string](#string) |  | The parent, which owns this collection of plan check runs. Format: projects/{project}/plans/{plan} |
-| page_size | [int32](#int32) |  | The maximum number of plan check runs to return. The service may return fewer than this value. If unspecified, at most 50 plans will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | A page token, received from a previous `ListPlanCheckRuns` call. Provide this to retrieve the subsequent page.
+| page_size | [int32](#int32) |  | Not used. The maximum number of plan check runs to return. The service may return fewer than this value. If unspecified, at most 10 plan check runs will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | Not used. A page token, received from a previous `ListPlanCheckRuns` call. Provide this to retrieve the subsequent page.
 
 When paginating, all other parameters provided to `ListPlanCheckRuns` must match the call that provided the page token. |
 | latest_only | [bool](#bool) |  | If set to true, only the latest plan check run will be returned. |
@@ -7861,7 +7864,7 @@ When paginating, all other parameters provided to `ListPlanCheckRuns` must match
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | parent | [string](#string) |  | The parent, which owns this collection of plans. Format: projects/{project} Use &#34;projects/-&#34; to list all plans from all projects. |
-| page_size | [int32](#int32) |  | The maximum number of plans to return. The service may return fewer than this value. If unspecified, at most 50 plans will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_size | [int32](#int32) |  | The maximum number of plans to return. The service may return fewer than this value. If unspecified, at most 10 plans will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
 | page_token | [string](#string) |  | A page token, received from a previous `ListPlans` call. Provide this to retrieve the subsequent page.
 
 When paginating, all other parameters provided to `ListPlans` must match the call that provided the page token. |
@@ -8285,10 +8288,10 @@ When paginating, all other parameters provided to `ListPlans` must match the cal
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | parent | [string](#string) |  | The parent, which owns this collection of plans. Format: projects/{project} Use &#34;projects/-&#34; to list all plans from all projects. |
-| page_size | [int32](#int32) |  | The maximum number of plans to return. The service may return fewer than this value. If unspecified, at most 50 plans will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | A page token, received from a previous `ListPlans` call. Provide this to retrieve the subsequent page.
+| page_size | [int32](#int32) |  | The maximum number of plans to return. The service may return fewer than this value. If unspecified, at most 10 plans will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | A page token, received from a previous `SearchPlans` call. Provide this to retrieve the subsequent page.
 
-When paginating, all other parameters provided to `ListPlans` must match the call that provided the page token. |
+When paginating, all other parameters provided to `SearchPlans` must match the call that provided the page token. |
 | filter | [string](#string) |  | Filter is used to filter plans returned in the list. |
 
 
@@ -8651,8 +8654,8 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| page_size | [int32](#int32) |  | The maximum number of projects to return. The service may return fewer than this value. If unspecified, at most 50 projects will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | A page token, received from a previous `ListProjects` call. Provide this to retrieve the subsequent page.
+| page_size | [int32](#int32) |  | Not used. The maximum number of projects to return. The service may return fewer than this value. If unspecified, at most 10 projects will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | Not used. A page token, received from a previous `ListProjects` call. Provide this to retrieve the subsequent page.
 
 When paginating, all other parameters provided to `ListProjects` must match the call that provided the page token. |
 | show_deleted | [bool](#bool) |  | Show deleted projects if specified. |
@@ -9079,10 +9082,10 @@ TYPE_PROJECT_REPOSITORY_PUSH represents Bytebase receiving a push event from the
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | parent | [string](#string) |  | Format: projects/{project} |
-| page_size | [int32](#int32) |  | The maximum number of change histories to return. The service may return fewer than this value. If unspecified, at most 10 change histories will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | Not used. A page token, received from a previous `ListReleasesRequest` call. Provide this to retrieve the subsequent page.
+| page_size | [int32](#int32) |  | The maximum number of releases to return. The service may return fewer than this value. If unspecified, at most 10 releases will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | Not used. A page token, received from a previous `ListReleases` call. Provide this to retrieve the subsequent page.
 
-When paginating, all other parameters provided to `ListReleasesRequest` must match the call that provided the page token. |
+When paginating, all other parameters provided to `ListReleases` must match the call that provided the page token. |
 | show_deleted | [bool](#bool) |  | Show deleted releases if specified. |
 
 
@@ -9292,10 +9295,10 @@ When paginating, all other parameters provided to `ListReleasesRequest` must mat
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| page_size | [int32](#int32) |  | The maximum number of sql review to return. The service may return fewer than this value. If unspecified, at most 50 sql review will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | A page token, provide this to retrieve the subsequent page.
+| page_size | [int32](#int32) |  | Not used. The maximum number of sql review to return. The service may return fewer than this value. If unspecified, at most 10 sql review will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | Not used. A page token, provide this to retrieve the subsequent page.
 
-When paginating, all other parameters provided to `ListSQLReviews` must match the call that provided the page token. |
+When paginating, all other parameters provided to `ListReviewConfigs` must match the call that provided the page token. |
 
 
 
@@ -9426,8 +9429,8 @@ The name field is used to identify the sql review to update. |
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| page_size | [int32](#int32) |  | The maximum number of risks to return. The service may return fewer than this value. If unspecified, at most 50 risks will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | A page token, received from a previous `ListRisks` call. Provide this to retrieve the subsequent page.
+| page_size | [int32](#int32) |  | Not used. The maximum number of risks to return. The service may return fewer than this value. If unspecified, at most 10 risks will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | Not used. A page token, received from a previous `ListRisks` call. Provide this to retrieve the subsequent page.
 
 When paginating, all other parameters provided to `LiskRisks` must match the call that provided the page token. |
 
@@ -9577,8 +9580,8 @@ This value should be 4-63 characters, and valid characters are /[a-z][A-Z][0-9]/
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| page_size | [int32](#int32) |  | The maximum number of roles to return. The service may return fewer than this value. If unspecified, at most 50 reviews will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | A page token, received from a previous `ListRoles` call. Provide this to retrieve the subsequent page.
+| page_size | [int32](#int32) |  | Not used. The maximum number of roles to return. The service may return fewer than this value. If unspecified, at most 10 reviews will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | Not used. A page token, received from a previous `ListRoles` call. Provide this to retrieve the subsequent page.
 
 When paginating, all other parameters provided to `ListRoles` must match the call that provided the page token. |
 
@@ -9833,10 +9836,10 @@ When paginating, all other parameters provided to `ListRoles` must match the cal
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | parent | [string](#string) |  | The parent, which owns this collection of plans. Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task} Use &#34;projects/{project}/rollouts/{rollout}/stages/-/tasks/-&#34; to list all taskRuns from a rollout. |
-| page_size | [int32](#int32) |  | The maximum number of taskRuns to return. The service may return fewer than this value. If unspecified, at most 50 taskRuns will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | A page token, received from a previous `ListRolloutTaskRuns` call. Provide this to retrieve the subsequent page.
+| page_size | [int32](#int32) |  | Not used. The maximum number of taskRuns to return. The service may return fewer than this value. If unspecified, at most 10 taskRuns will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | Not used. A page token, received from a previous `ListTaskRuns` call. Provide this to retrieve the subsequent page.
 
-When paginating, all other parameters provided to `ListRolloutTaskRuns` must match the call that provided the page token. |
+When paginating, all other parameters provided to `ListTaskRuns` must match the call that provided the page token. |
 
 
 
@@ -11128,8 +11131,8 @@ for field description.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| page_size | [int32](#int32) |  | Not used. The maximum number of histories to return. The service may return fewer than this value. If unspecified, at most 100 history entries will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | Not used. A page token, received from a previous `ListQueryHistory` call. Provide this to retrieve the subsequent page. |
+| page_size | [int32](#int32) |  | The maximum number of histories to return. The service may return fewer than this value. If unspecified, at most 10 history entries will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | A page token, received from a previous `ListQueryHistory` call. Provide this to retrieve the subsequent page. |
 | filter | [string](#string) |  | filter is the filter to apply on the search query history, follow the [ebnf](https://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_form) syntax. Support filter by: - database, for example: database = &#34;instances/{instance}/databases/{database}&#34; - instance, for example: instance = &#34;instance/{instance}&#34; - type, for example: type = &#34;QUERY&#34; |
 
 
@@ -11320,10 +11323,10 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | parent | [string](#string) |  | The parent, which owns this collection of vcsConnectors. Format: projects/{project} |
-| page_size | [int32](#int32) |  | The maximum number of databases to return. The service may return fewer than this value. If unspecified, at most 50 databases will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | A page token, received from a previous `ListDatabases` call. Provide this to retrieve the subsequent page.
+| page_size | [int32](#int32) |  | Not used. The maximum number of vcs connectors to return. The service may return fewer than this value. If unspecified, at most 10 vcs connectors will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | Not used. A page token, received from a previous `ListVCSConnectors` call. Provide this to retrieve the subsequent page.
 
-When paginating, all other parameters provided to `ListDatabases` must match the call that provided the page token. |
+When paginating, all other parameters provided to `ListVCSConnectors` must match the call that provided the page token. |
 
 
 
@@ -11507,7 +11510,7 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| page_size | [int32](#int32) |  | Not used. The maximum number of vcs provider to return. The service may return fewer than this value. If unspecified, at most 100 vcs provider will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_size | [int32](#int32) |  | Not used. The maximum number of vcs provider to return. The service may return fewer than this value. If unspecified, at most 10 vcs provider will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
 | page_token | [string](#string) |  | Not used. A page token, received from a previous `ListVCSProviders` call. Provide this to retrieve the subsequent page. |
 
 
@@ -11700,7 +11703,7 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | filter | [string](#string) |  | To filter the search result. Format: only support the following spec for now: - `creator = users/{email}`, `creator != users/{email}` - `starred = true`, `starred = false`. - `visibility = &#34;VISIBILITY_PRIVATE&#34;`, `visibility = &#34;VISIBILITY_PROJECT_READ | VISIBILITY_PROJECT_WRITE&#34;`, etc. Not support empty filter for now. |
-| page_size | [int32](#int32) |  | Not used. The maximum number of worksheets to return. The service may return fewer than this value. If unspecified, at most 50 worksheets will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_size | [int32](#int32) |  | Not used. The maximum number of worksheets to return. The service may return fewer than this value. If unspecified, at most 10 worksheets will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
 | page_token | [string](#string) |  | Not used. A page token, received from a previous `SearchWorksheets` call. Provide this to retrieve the subsequent page.
 
 When paginating, all other parameters provided to `SearchWorksheets` must match the call that provided the page token. |
