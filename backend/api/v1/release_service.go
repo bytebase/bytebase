@@ -59,10 +59,6 @@ func (s *ReleaseService) CreateRelease(ctx context.Context, request *v1pb.Create
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to convert files, err: %v", err)
 	}
-	// Generate UUID for each file.
-	for _, f := range files {
-		f.Id = uuid.NewString()
-	}
 
 	releaseMessage := &store.ReleaseMessage{
 		ProjectUID: project.UID,
@@ -301,7 +297,7 @@ func convertToReleaseFiles(ctx context.Context, s *store.Store, files []*storepb
 		}
 		v1Files = append(v1Files, &v1pb.Release_File{
 			Id:            f.Id,
-			Name:          f.Name,
+			Path:          f.Path,
 			Sheet:         f.Sheet,
 			SheetSha256:   f.SheetSha256,
 			Type:          v1pb.ReleaseFileType(f.Type),
@@ -346,7 +342,7 @@ func convertReleaseFiles(ctx context.Context, s *store.Store, files []*v1pb.Rele
 
 		rFiles = append(rFiles, &storepb.ReleasePayload_File{
 			Id:          f.Id,
-			Name:        f.Name,
+			Path:        f.Path,
 			Sheet:       f.Sheet,
 			SheetSha256: sheet.Sha256,
 			Type:        storepb.ReleaseFileType(f.Type),

@@ -153,11 +153,8 @@ export interface Release {
 export interface Release_File {
   /** The unique identifier for the file. */
   id: string;
-  /**
-   * The name of the file.
-   * Expressed as a path, e.g. `2.2/V0001_create_table.sql`
-   */
-  name: string;
+  /** The path of the file. e.g. `2.2/V0001_create_table.sql`. */
+  path: string;
   /**
    * The sheet that holds the content.
    * Format: projects/{project}/sheets/{sheet}
@@ -842,7 +839,7 @@ export const Release: MessageFns<Release> = {
 function createBaseRelease_File(): Release_File {
   return {
     id: "",
-    name: "",
+    path: "",
     sheet: "",
     sheetSha256: "",
     type: ReleaseFileType.TYPE_UNSPECIFIED,
@@ -857,8 +854,8 @@ export const Release_File: MessageFns<Release_File> = {
     if (message.id !== "") {
       writer.uint32(10).string(message.id);
     }
-    if (message.name !== "") {
-      writer.uint32(18).string(message.name);
+    if (message.path !== "") {
+      writer.uint32(18).string(message.path);
     }
     if (message.sheet !== "") {
       writer.uint32(26).string(message.sheet);
@@ -900,7 +897,7 @@ export const Release_File: MessageFns<Release_File> = {
             break;
           }
 
-          message.name = reader.string();
+          message.path = reader.string();
           continue;
         case 3:
           if (tag !== 26) {
@@ -956,7 +953,7 @@ export const Release_File: MessageFns<Release_File> = {
   fromJSON(object: any): Release_File {
     return {
       id: isSet(object.id) ? globalThis.String(object.id) : "",
-      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      path: isSet(object.path) ? globalThis.String(object.path) : "",
       sheet: isSet(object.sheet) ? globalThis.String(object.sheet) : "",
       sheetSha256: isSet(object.sheetSha256) ? globalThis.String(object.sheetSha256) : "",
       type: isSet(object.type) ? releaseFileTypeFromJSON(object.type) : ReleaseFileType.TYPE_UNSPECIFIED,
@@ -971,8 +968,8 @@ export const Release_File: MessageFns<Release_File> = {
     if (message.id !== "") {
       obj.id = message.id;
     }
-    if (message.name !== "") {
-      obj.name = message.name;
+    if (message.path !== "") {
+      obj.path = message.path;
     }
     if (message.sheet !== "") {
       obj.sheet = message.sheet;
@@ -1001,7 +998,7 @@ export const Release_File: MessageFns<Release_File> = {
   fromPartial(object: DeepPartial<Release_File>): Release_File {
     const message = createBaseRelease_File();
     message.id = object.id ?? "";
-    message.name = object.name ?? "";
+    message.path = object.path ?? "";
     message.sheet = object.sheet ?? "";
     message.sheetSha256 = object.sheetSha256 ?? "";
     message.type = object.type ?? ReleaseFileType.TYPE_UNSPECIFIED;

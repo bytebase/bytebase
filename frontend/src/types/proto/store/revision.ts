@@ -7,7 +7,6 @@
 /* eslint-disable */
 import { BinaryReader, BinaryWriter } from "@bufbuild/protobuf/wire";
 import Long from "long";
-import { ReleaseFileType, releaseFileTypeFromJSON, releaseFileTypeToJSON, releaseFileTypeToNumber } from "./release";
 
 export const protobufPackage = "bytebase.store";
 
@@ -18,20 +17,18 @@ export interface RevisionPayload {
    */
   release: string;
   /**
+   * Format: projects/{project}/releases/{release}/files/{id}
+   * Can be empty.
+   */
+  file: string;
+  version: string;
+  /**
    * The sheet that holds the content.
    * Format: projects/{project}/sheets/{sheet}
    */
   sheet: string;
   /** The SHA256 hash value of the sheet. */
   sheetSha256: string;
-  type: ReleaseFileType;
-  version: string;
-  /**
-   * The name of the file in the release.
-   * Expressed as a path, e.g. `2.2/V0001_create_table.sql`
-   * Can be empty.
-   */
-  file: string;
   /**
    * The task run associated with the revision.
    * Can be empty.
@@ -41,15 +38,7 @@ export interface RevisionPayload {
 }
 
 function createBaseRevisionPayload(): RevisionPayload {
-  return {
-    release: "",
-    sheet: "",
-    sheetSha256: "",
-    type: ReleaseFileType.TYPE_UNSPECIFIED,
-    version: "",
-    file: "",
-    taskRun: "",
-  };
+  return { release: "", file: "", version: "", sheet: "", sheetSha256: "", taskRun: "" };
 }
 
 export const RevisionPayload: MessageFns<RevisionPayload> = {
@@ -57,23 +46,20 @@ export const RevisionPayload: MessageFns<RevisionPayload> = {
     if (message.release !== "") {
       writer.uint32(10).string(message.release);
     }
-    if (message.sheet !== "") {
-      writer.uint32(18).string(message.sheet);
-    }
-    if (message.sheetSha256 !== "") {
-      writer.uint32(26).string(message.sheetSha256);
-    }
-    if (message.type !== ReleaseFileType.TYPE_UNSPECIFIED) {
-      writer.uint32(32).int32(releaseFileTypeToNumber(message.type));
+    if (message.file !== "") {
+      writer.uint32(18).string(message.file);
     }
     if (message.version !== "") {
-      writer.uint32(42).string(message.version);
+      writer.uint32(26).string(message.version);
     }
-    if (message.file !== "") {
-      writer.uint32(50).string(message.file);
+    if (message.sheet !== "") {
+      writer.uint32(34).string(message.sheet);
+    }
+    if (message.sheetSha256 !== "") {
+      writer.uint32(42).string(message.sheetSha256);
     }
     if (message.taskRun !== "") {
-      writer.uint32(58).string(message.taskRun);
+      writer.uint32(50).string(message.taskRun);
     }
     return writer;
   },
@@ -97,38 +83,31 @@ export const RevisionPayload: MessageFns<RevisionPayload> = {
             break;
           }
 
-          message.sheet = reader.string();
+          message.file = reader.string();
           continue;
         case 3:
           if (tag !== 26) {
             break;
           }
 
-          message.sheetSha256 = reader.string();
+          message.version = reader.string();
           continue;
         case 4:
-          if (tag !== 32) {
+          if (tag !== 34) {
             break;
           }
 
-          message.type = releaseFileTypeFromJSON(reader.int32());
+          message.sheet = reader.string();
           continue;
         case 5:
           if (tag !== 42) {
             break;
           }
 
-          message.version = reader.string();
+          message.sheetSha256 = reader.string();
           continue;
         case 6:
           if (tag !== 50) {
-            break;
-          }
-
-          message.file = reader.string();
-          continue;
-        case 7:
-          if (tag !== 58) {
             break;
           }
 
@@ -146,11 +125,10 @@ export const RevisionPayload: MessageFns<RevisionPayload> = {
   fromJSON(object: any): RevisionPayload {
     return {
       release: isSet(object.release) ? globalThis.String(object.release) : "",
+      file: isSet(object.file) ? globalThis.String(object.file) : "",
+      version: isSet(object.version) ? globalThis.String(object.version) : "",
       sheet: isSet(object.sheet) ? globalThis.String(object.sheet) : "",
       sheetSha256: isSet(object.sheetSha256) ? globalThis.String(object.sheetSha256) : "",
-      type: isSet(object.type) ? releaseFileTypeFromJSON(object.type) : ReleaseFileType.TYPE_UNSPECIFIED,
-      version: isSet(object.version) ? globalThis.String(object.version) : "",
-      file: isSet(object.file) ? globalThis.String(object.file) : "",
       taskRun: isSet(object.taskRun) ? globalThis.String(object.taskRun) : "",
     };
   },
@@ -160,20 +138,17 @@ export const RevisionPayload: MessageFns<RevisionPayload> = {
     if (message.release !== "") {
       obj.release = message.release;
     }
+    if (message.file !== "") {
+      obj.file = message.file;
+    }
+    if (message.version !== "") {
+      obj.version = message.version;
+    }
     if (message.sheet !== "") {
       obj.sheet = message.sheet;
     }
     if (message.sheetSha256 !== "") {
       obj.sheetSha256 = message.sheetSha256;
-    }
-    if (message.type !== ReleaseFileType.TYPE_UNSPECIFIED) {
-      obj.type = releaseFileTypeToJSON(message.type);
-    }
-    if (message.version !== "") {
-      obj.version = message.version;
-    }
-    if (message.file !== "") {
-      obj.file = message.file;
     }
     if (message.taskRun !== "") {
       obj.taskRun = message.taskRun;
@@ -187,11 +162,10 @@ export const RevisionPayload: MessageFns<RevisionPayload> = {
   fromPartial(object: DeepPartial<RevisionPayload>): RevisionPayload {
     const message = createBaseRevisionPayload();
     message.release = object.release ?? "";
+    message.file = object.file ?? "";
+    message.version = object.version ?? "";
     message.sheet = object.sheet ?? "";
     message.sheetSha256 = object.sheetSha256 ?? "";
-    message.type = object.type ?? ReleaseFileType.TYPE_UNSPECIFIED;
-    message.version = object.version ?? "";
-    message.file = object.file ?? "";
     message.taskRun = object.taskRun ?? "";
     return message;
   },

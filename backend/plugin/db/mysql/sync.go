@@ -1017,22 +1017,25 @@ func convertToStorepbTablePartitionType(tp string) storepb.TablePartitionMetadat
 func (driver *Driver) getForeignKeyList(ctx context.Context, databaseName string) (map[db.TableKey][]*storepb.ForeignKeyMetadata, error) {
 	fkQuery := `
 		SELECT
-			fks.TABLE_NAME,
-			fks.CONSTRAINT_NAME,
-			kcu.COLUMN_NAME,
-			'',
-			fks.REFERENCED_TABLE_NAME,
-			kcu.REFERENCED_COLUMN_NAME,
-			fks.DELETE_RULE,
-			fks.UPDATE_RULE,
-			fks.MATCH_OPTION
-		FROM INFORMATION_SCHEMA.REFERENTIAL_CONSTRAINTS fks
-			JOIN INFORMATION_SCHEMA.KEY_COLUMN_USAGE kcu
-			ON fks.CONSTRAINT_SCHEMA = kcu.TABLE_SCHEMA
-				AND fks.TABLE_NAME = kcu.TABLE_NAME
-				AND fks.CONSTRAINT_NAME = kcu.CONSTRAINT_NAME
-		WHERE kcu.POSITION_IN_UNIQUE_CONSTRAINT IS NOT NULL AND LOWER(fks.CONSTRAINT_SCHEMA) = ?
-		ORDER BY fks.TABLE_NAME, fks.CONSTRAINT_NAME, kcu.ORDINAL_POSITION;
+			TABLE_NAME,
+			CONSTRAINT_NAME,
+			REFERENCED_TABLE_NAME,
+			DELETE_RULE,
+			UPDATE_RULE,
+			MATCH_OPTION
+		FROM INFORMATION_SCHEMA.REFERENTIAL_CONSTRAINTS
+		WHERE LOWER(CONSTRAINT_SCHEMA) = ?;
+	`
+
+	kcuQuery := `
+		SELECT
+			TABLE_NAME,
+			CONSTRAINT_NAME,
+			COLUMN_NAME,
+			REFERENCED_COLUMN_NAME
+		FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE
+		WHERE POSITION_IN_UNIQUE_CONSTRAINT IS NOT NULL AND LOWER(CONSTRAINT_SCHEMA) = ?
+		ORDER BY TABLE_NAME, CONSTRAINT_NAME, ORDINAL_POSITION;
 	`
 
 	fkRows, err := driver.db.QueryContext(ctx, fkQuery, databaseName)
@@ -1040,54 +1043,65 @@ func (driver *Driver) getForeignKeyList(ctx context.Context, databaseName string
 		return nil, util.FormatErrorWithQuery(err, fkQuery)
 	}
 	defer fkRows.Close()
-	foreignKeysMap := make(map[db.TableKey][]*storepb.ForeignKeyMetadata)
-	var buildingFk *storepb.ForeignKeyMetadata
-	var buildingTable string
+	fkMap := make(map[db.IndexKey]*storepb.ForeignKeyMetadata)
 	for fkRows.Next() {
 		var tableName string
 		var fk storepb.ForeignKeyMetadata
-		var column, referencedColumn string
 		if err := fkRows.Scan(
 			&tableName,
 			&fk.Name,
-			&column,
-			&fk.ReferencedSchema,
 			&fk.ReferencedTable,
-			&referencedColumn,
 			&fk.OnDelete,
 			&fk.OnUpdate,
 			&fk.MatchType,
 		); err != nil {
 			return nil, err
 		}
-
-		fk.Columns = append(fk.Columns, column)
-		fk.ReferencedColumns = append(fk.ReferencedColumns, referencedColumn)
-		if buildingFk == nil {
-			buildingTable = tableName
-			buildingFk = &fk
-		} else {
-			if tableName == buildingTable && buildingFk.Name == fk.Name {
-				buildingFk.Columns = append(buildingFk.Columns, fk.Columns[0])
-				buildingFk.ReferencedColumns = append(buildingFk.ReferencedColumns, fk.ReferencedColumns[0])
-			} else {
-				key := db.TableKey{Schema: "", Table: buildingTable}
-				foreignKeysMap[key] = append(foreignKeysMap[key], buildingFk)
-				buildingTable = tableName
-				buildingFk = &fk
-			}
-		}
+		key := db.IndexKey{Schema: "", Table: tableName, Index: fk.Name}
+		fkMap[key] = &fk
 	}
 	if err := fkRows.Err(); err != nil {
 		return nil, util.FormatErrorWithQuery(err, fkQuery)
 	}
 
-	if buildingFk != nil {
-		key := db.TableKey{Schema: "", Table: buildingTable}
-		foreignKeysMap[key] = append(foreignKeysMap[key], buildingFk)
+	kcuQueryRows, err := driver.db.QueryContext(ctx, kcuQuery, databaseName)
+	if err != nil {
+		return nil, util.FormatErrorWithQuery(err, kcuQuery)
+	}
+	defer kcuQueryRows.Close()
+	for kcuQueryRows.Next() {
+		var tableName, fkName, column, referencedColumn string
+		if err := kcuQueryRows.Scan(
+			&tableName,
+			&fkName,
+			&column,
+			&referencedColumn,
+		); err != nil {
+			return nil, err
+		}
+		key := db.IndexKey{Schema: "", Table: tableName, Index: fkName}
+		if fk, ok := fkMap[key]; ok {
+			fk.Columns = append(fk.Columns, column)
+			fk.ReferencedColumns = append(fk.ReferencedColumns, referencedColumn)
+		}
+	}
+	if err := kcuQueryRows.Err(); err != nil {
+		return nil, util.FormatErrorWithQuery(err, kcuQuery)
+	}
+	unordered := make(map[db.TableKey][]*storepb.ForeignKeyMetadata)
+	for key, fk := range fkMap {
+		tableKey := db.TableKey{Schema: "", Table: key.Table}
+		unordered[tableKey] = append(unordered[tableKey], fk)
 	}
 
-	return foreignKeysMap, nil
+	orderedResult := make(map[db.TableKey][]*storepb.ForeignKeyMetadata)
+	for key, fks := range unordered {
+		sort.Slice(fks, func(i, j int) bool {
+			return fks[i].Name < fks[j].Name
+		})
+		orderedResult[key] = fks
+	}
+	return orderedResult, nil
 }
 
 type slowLog struct {

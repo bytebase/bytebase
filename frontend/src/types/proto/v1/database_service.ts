@@ -23,12 +23,6 @@ import {
   stateToNumber,
 } from "./common";
 import { InstanceResource } from "./instance_service";
-import {
-  ReleaseFileType,
-  releaseFileTypeFromJSON,
-  releaseFileTypeToJSON,
-  releaseFileTypeToNumber,
-} from "./release_service";
 
 export const protobufPackage = "bytebase.v1";
 
@@ -1870,6 +1864,12 @@ export interface Revision {
     | Timestamp
     | undefined;
   /**
+   * Format: projects/{project}/releases/{release}/files/{id}
+   * Can be empty.
+   */
+  file: string;
+  version: string;
+  /**
    * The sheet that holds the content.
    * Format: projects/{project}/sheets/{sheet}
    */
@@ -1879,14 +1879,6 @@ export interface Revision {
   /** The statement is used for preview purpose. */
   statement: string;
   statementSize: Long;
-  type: ReleaseFileType;
-  version: string;
-  /**
-   * The name of the file in the release.
-   * Expressed as a path, e.g. `2.2/V0001_create_table.sql`
-   * Can be empty.
-   */
-  file: string;
   /**
    * The issue associated with the revision.
    * Can be empty.
@@ -10063,13 +10055,12 @@ function createBaseRevision(): Revision {
     release: "",
     creator: "",
     createTime: undefined,
+    file: "",
+    version: "",
     sheet: "",
     sheetSha256: "",
     statement: "",
     statementSize: Long.ZERO,
-    type: ReleaseFileType.TYPE_UNSPECIFIED,
-    version: "",
-    file: "",
     issue: "",
     taskRun: "",
   };
@@ -10089,32 +10080,29 @@ export const Revision: MessageFns<Revision> = {
     if (message.createTime !== undefined) {
       Timestamp.encode(message.createTime, writer.uint32(34).fork()).join();
     }
-    if (message.sheet !== "") {
-      writer.uint32(42).string(message.sheet);
-    }
-    if (message.sheetSha256 !== "") {
-      writer.uint32(50).string(message.sheetSha256);
-    }
-    if (message.statement !== "") {
-      writer.uint32(58).string(message.statement);
-    }
-    if (!message.statementSize.equals(Long.ZERO)) {
-      writer.uint32(64).int64(message.statementSize.toString());
-    }
-    if (message.type !== ReleaseFileType.TYPE_UNSPECIFIED) {
-      writer.uint32(72).int32(releaseFileTypeToNumber(message.type));
+    if (message.file !== "") {
+      writer.uint32(42).string(message.file);
     }
     if (message.version !== "") {
-      writer.uint32(82).string(message.version);
+      writer.uint32(50).string(message.version);
     }
-    if (message.file !== "") {
-      writer.uint32(90).string(message.file);
+    if (message.sheet !== "") {
+      writer.uint32(58).string(message.sheet);
+    }
+    if (message.sheetSha256 !== "") {
+      writer.uint32(66).string(message.sheetSha256);
+    }
+    if (message.statement !== "") {
+      writer.uint32(74).string(message.statement);
+    }
+    if (!message.statementSize.equals(Long.ZERO)) {
+      writer.uint32(80).int64(message.statementSize.toString());
     }
     if (message.issue !== "") {
-      writer.uint32(98).string(message.issue);
+      writer.uint32(90).string(message.issue);
     }
     if (message.taskRun !== "") {
-      writer.uint32(106).string(message.taskRun);
+      writer.uint32(98).string(message.taskRun);
     }
     return writer;
   },
@@ -10159,59 +10147,52 @@ export const Revision: MessageFns<Revision> = {
             break;
           }
 
-          message.sheet = reader.string();
+          message.file = reader.string();
           continue;
         case 6:
           if (tag !== 50) {
             break;
           }
 
-          message.sheetSha256 = reader.string();
+          message.version = reader.string();
           continue;
         case 7:
           if (tag !== 58) {
             break;
           }
 
-          message.statement = reader.string();
+          message.sheet = reader.string();
           continue;
         case 8:
-          if (tag !== 64) {
+          if (tag !== 66) {
+            break;
+          }
+
+          message.sheetSha256 = reader.string();
+          continue;
+        case 9:
+          if (tag !== 74) {
+            break;
+          }
+
+          message.statement = reader.string();
+          continue;
+        case 10:
+          if (tag !== 80) {
             break;
           }
 
           message.statementSize = Long.fromString(reader.int64().toString());
-          continue;
-        case 9:
-          if (tag !== 72) {
-            break;
-          }
-
-          message.type = releaseFileTypeFromJSON(reader.int32());
-          continue;
-        case 10:
-          if (tag !== 82) {
-            break;
-          }
-
-          message.version = reader.string();
           continue;
         case 11:
           if (tag !== 90) {
             break;
           }
 
-          message.file = reader.string();
+          message.issue = reader.string();
           continue;
         case 12:
           if (tag !== 98) {
-            break;
-          }
-
-          message.issue = reader.string();
-          continue;
-        case 13:
-          if (tag !== 106) {
             break;
           }
 
@@ -10232,13 +10213,12 @@ export const Revision: MessageFns<Revision> = {
       release: isSet(object.release) ? globalThis.String(object.release) : "",
       creator: isSet(object.creator) ? globalThis.String(object.creator) : "",
       createTime: isSet(object.createTime) ? fromJsonTimestamp(object.createTime) : undefined,
+      file: isSet(object.file) ? globalThis.String(object.file) : "",
+      version: isSet(object.version) ? globalThis.String(object.version) : "",
       sheet: isSet(object.sheet) ? globalThis.String(object.sheet) : "",
       sheetSha256: isSet(object.sheetSha256) ? globalThis.String(object.sheetSha256) : "",
       statement: isSet(object.statement) ? globalThis.String(object.statement) : "",
       statementSize: isSet(object.statementSize) ? Long.fromValue(object.statementSize) : Long.ZERO,
-      type: isSet(object.type) ? releaseFileTypeFromJSON(object.type) : ReleaseFileType.TYPE_UNSPECIFIED,
-      version: isSet(object.version) ? globalThis.String(object.version) : "",
-      file: isSet(object.file) ? globalThis.String(object.file) : "",
       issue: isSet(object.issue) ? globalThis.String(object.issue) : "",
       taskRun: isSet(object.taskRun) ? globalThis.String(object.taskRun) : "",
     };
@@ -10258,6 +10238,12 @@ export const Revision: MessageFns<Revision> = {
     if (message.createTime !== undefined) {
       obj.createTime = fromTimestamp(message.createTime).toISOString();
     }
+    if (message.file !== "") {
+      obj.file = message.file;
+    }
+    if (message.version !== "") {
+      obj.version = message.version;
+    }
     if (message.sheet !== "") {
       obj.sheet = message.sheet;
     }
@@ -10269,15 +10255,6 @@ export const Revision: MessageFns<Revision> = {
     }
     if (!message.statementSize.equals(Long.ZERO)) {
       obj.statementSize = (message.statementSize || Long.ZERO).toString();
-    }
-    if (message.type !== ReleaseFileType.TYPE_UNSPECIFIED) {
-      obj.type = releaseFileTypeToJSON(message.type);
-    }
-    if (message.version !== "") {
-      obj.version = message.version;
-    }
-    if (message.file !== "") {
-      obj.file = message.file;
     }
     if (message.issue !== "") {
       obj.issue = message.issue;
@@ -10299,15 +10276,14 @@ export const Revision: MessageFns<Revision> = {
     message.createTime = (object.createTime !== undefined && object.createTime !== null)
       ? Timestamp.fromPartial(object.createTime)
       : undefined;
+    message.file = object.file ?? "";
+    message.version = object.version ?? "";
     message.sheet = object.sheet ?? "";
     message.sheetSha256 = object.sheetSha256 ?? "";
     message.statement = object.statement ?? "";
     message.statementSize = (object.statementSize !== undefined && object.statementSize !== null)
       ? Long.fromValue(object.statementSize)
       : Long.ZERO;
-    message.type = object.type ?? ReleaseFileType.TYPE_UNSPECIFIED;
-    message.version = object.version ?? "";
-    message.file = object.file ?? "";
     message.issue = object.issue ?? "";
     message.taskRun = object.taskRun ?? "";
     return message;

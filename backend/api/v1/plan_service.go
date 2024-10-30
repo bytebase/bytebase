@@ -1133,12 +1133,11 @@ func (s *PlanService) PreviewPlan(ctx context.Context, request *v1pb.PreviewPlan
 		allSpecs = append(allSpecs, specs...)
 	}
 
-	// TODO(p0ny): prettify step/spec.
 	response.Plan = &v1pb.Plan{
-		Title: fmt.Sprintf("preview plan from release %q", request.Release),
+		Title: fmt.Sprintf("Preview plan for release %q", request.Release),
 		Steps: []*v1pb.Plan_Step{
 			{
-				Title: "flattened!",
+				Title: "",
 				Specs: allSpecs,
 			},
 		},
