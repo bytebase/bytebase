@@ -3410,7 +3410,7 @@
       "no-one-matched": "没有匹配到用户",
       "any-n-role-can-approve": "任意 {role} 可审批",
       "approved-by-n": "已由 {approver} 批准",
-      "issue-creaters-cannot-approve-their-own-issue": "问题创建者不能批准自己的问题"
+      "issue-creators-cannot-approve-their-own-issue": "问题创建者不能批准自己的问题"
     },
     "send-back": "退回"
   },

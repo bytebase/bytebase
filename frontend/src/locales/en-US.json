@@ -3410,7 +3410,7 @@
       "no-one-matched": "No one matched",
       "any-n-role-can-approve": "Any {role} can approve",
       "approved-by-n": "Approved by {approver}",
-      "issue-creaters-cannot-approve-their-own-issue": "Issue creaters cannot approve their own issue"
+      "issue-creators-cannot-approve-their-own-issue": "Issue creators cannot approve their own issue"
     },
     "send-back": "Send back"
   },

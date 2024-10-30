@@ -3410,7 +3410,7 @@
       "no-one-matched": "一致する人はいませんでした",
       "any-n-role-can-approve": "任意の {role} を承認できます",
       "approved-by-n": "{approver} によって承認されました",
-      "issue-creaters-cannot-approve-their-own-issue": "問題作成者は自分の問題を承認できません"
+      "issue-creators-cannot-approve-their-own-issue": "問題作成者は自分の問題を承認できません"
     },
     "send-back": "戻る"
   },
