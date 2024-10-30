@@ -83,7 +83,8 @@ export interface ListReleasesRequest {
    */
   pageSize: number;
   /**
-   * Not used. A page token, received from a previous `ListReleaListReleasessesRequest` call.
+   * Not used.
+   * A page token, received from a previous `ListReleases` call.
    * Provide this to retrieve the subsequent page.
    *
    * When paginating, all other parameters provided to `ListReleases` must match
