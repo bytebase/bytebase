@@ -26,17 +26,19 @@ export interface ListInstanceRolesRequest {
    */
   parent: string;
   /**
+   * Not used.
    * The maximum number of roles to return. The service may return fewer than
    * this value.
-   * If unspecified, at most 50 roles will be returned.
+   * If unspecified, at most 10 roles will be returned.
    * The maximum value is 1000; values above 1000 will be coerced to 1000.
    */
   pageSize: number;
   /**
-   * A page token, received from a previous `ListRoles` call.
+   * Not used.
+   * A page token, received from a previous `ListInstanceRoles` call.
    * Provide this to retrieve the subsequent page.
    *
-   * When paginating, all other parameters provided to `ListRoles` must match
+   * When paginating, all other parameters provided to `ListInstanceRoles` must match
    * the call that provided the page token.
    */
   pageToken: string;

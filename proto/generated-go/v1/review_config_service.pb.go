@@ -29,14 +29,16 @@ type ListReviewConfigsRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// Not used.
 	// The maximum number of sql review to return. The service may return fewer than
 	// this value.
-	// If unspecified, at most 50 sql review will be returned.
+	// If unspecified, at most 10 sql review will be returned.
 	// The maximum value is 1000; values above 1000 will be coerced to 1000.
 	PageSize int32 `protobuf:"varint,1,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
+	// Not used.
 	// A page token, provide this to retrieve the subsequent page.
 	//
-	// When paginating, all other parameters provided to `ListSQLReviews` must match
+	// When paginating, all other parameters provided to `ListReviewConfigs` must match
 	// the call that provided the page token.
 	PageToken string `protobuf:"bytes,2,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
 }

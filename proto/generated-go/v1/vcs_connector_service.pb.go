@@ -148,15 +148,17 @@ type ListVCSConnectorsRequest struct {
 	// The parent, which owns this collection of vcsConnectors.
 	// Format: projects/{project}
 	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
-	// The maximum number of databases to return. The service may return fewer than
+	// Not used.
+	// The maximum number of vcs connectors to return. The service may return fewer than
 	// this value.
-	// If unspecified, at most 50 databases will be returned.
+	// If unspecified, at most 10 vcs connectors will be returned.
 	// The maximum value is 1000; values above 1000 will be coerced to 1000.
 	PageSize int32 `protobuf:"varint,2,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
-	// A page token, received from a previous `ListDatabases` call.
+	// Not used.
+	// A page token, received from a previous `ListVCSConnectors` call.
 	// Provide this to retrieve the subsequent page.
 	//
-	// When paginating, all other parameters provided to `ListDatabases` must match
+	// When paginating, all other parameters provided to `ListVCSConnectors` must match
 	// the call that provided the page token.
 	PageToken string `protobuf:"bytes,3,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
 }

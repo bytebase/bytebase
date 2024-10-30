@@ -79,10 +79,28 @@ export interface ExportAuditLogsRequest {
   orderBy: string;
   /** The export format. */
   format: ExportFormat;
+  /**
+   * The maximum number of logs to return.
+   * The service may return fewer than this value.
+   * If unspecified, at most 100 log entries will be returned.
+   * The maximum value is 1000; values above 1000 will be coerced to 1000.
+   */
+  pageSize: number;
+  /**
+   * A page token, received from a previous `ExportAuditLogs` call.
+   * Provide this to retrieve the subsequent page.
+   */
+  pageToken: string;
 }
 
 export interface ExportAuditLogsResponse {
   content: Uint8Array;
+  /**
+   * A token to retrieve next page of log entities.
+   * Pass this value in the page_token field in the subsequent call
+   * to retrieve the next page of log entities.
+   */
+  nextPageToken: string;
 }
 
 export interface AuditLog {
@@ -433,7 +451,7 @@ export const SearchAuditLogsResponse: MessageFns<SearchAuditLogsResponse> = {
 };
 
 function createBaseExportAuditLogsRequest(): ExportAuditLogsRequest {
-  return { parent: "", filter: "", orderBy: "", format: ExportFormat.FORMAT_UNSPECIFIED };
+  return { parent: "", filter: "", orderBy: "", format: ExportFormat.FORMAT_UNSPECIFIED, pageSize: 0, pageToken: "" };
 }
 
 export const ExportAuditLogsRequest: MessageFns<ExportAuditLogsRequest> = {
@@ -449,6 +467,12 @@ export const ExportAuditLogsRequest: MessageFns<ExportAuditLogsRequest> = {
     }
     if (message.format !== ExportFormat.FORMAT_UNSPECIFIED) {
       writer.uint32(24).int32(exportFormatToNumber(message.format));
+    }
+    if (message.pageSize !== 0) {
+      writer.uint32(40).int32(message.pageSize);
+    }
+    if (message.pageToken !== "") {
+      writer.uint32(50).string(message.pageToken);
     }
     return writer;
   },
@@ -488,6 +512,20 @@ export const ExportAuditLogsRequest: MessageFns<ExportAuditLogsRequest> = {
 
           message.format = exportFormatFromJSON(reader.int32());
           continue;
+        case 5:
+          if (tag !== 40) {
+            break;
+          }
+
+          message.pageSize = reader.int32();
+          continue;
+        case 6:
+          if (tag !== 50) {
+            break;
+          }
+
+          message.pageToken = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -503,6 +541,8 @@ export const ExportAuditLogsRequest: MessageFns<ExportAuditLogsRequest> = {
       filter: isSet(object.filter) ? globalThis.String(object.filter) : "",
       orderBy: isSet(object.orderBy) ? globalThis.String(object.orderBy) : "",
       format: isSet(object.format) ? exportFormatFromJSON(object.format) : ExportFormat.FORMAT_UNSPECIFIED,
+      pageSize: isSet(object.pageSize) ? globalThis.Number(object.pageSize) : 0,
+      pageToken: isSet(object.pageToken) ? globalThis.String(object.pageToken) : "",
     };
   },
 
@@ -520,6 +560,12 @@ export const ExportAuditLogsRequest: MessageFns<ExportAuditLogsRequest> = {
     if (message.format !== ExportFormat.FORMAT_UNSPECIFIED) {
       obj.format = exportFormatToJSON(message.format);
     }
+    if (message.pageSize !== 0) {
+      obj.pageSize = Math.round(message.pageSize);
+    }
+    if (message.pageToken !== "") {
+      obj.pageToken = message.pageToken;
+    }
     return obj;
   },
 
@@ -532,18 +578,23 @@ export const ExportAuditLogsRequest: MessageFns<ExportAuditLogsRequest> = {
     message.filter = object.filter ?? "";
     message.orderBy = object.orderBy ?? "";
     message.format = object.format ?? ExportFormat.FORMAT_UNSPECIFIED;
+    message.pageSize = object.pageSize ?? 0;
+    message.pageToken = object.pageToken ?? "";
     return message;
   },
 };
 
 function createBaseExportAuditLogsResponse(): ExportAuditLogsResponse {
-  return { content: new Uint8Array(0) };
+  return { content: new Uint8Array(0), nextPageToken: "" };
 }
 
 export const ExportAuditLogsResponse: MessageFns<ExportAuditLogsResponse> = {
   encode(message: ExportAuditLogsResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.content.length !== 0) {
       writer.uint32(10).bytes(message.content);
+    }
+    if (message.nextPageToken !== "") {
+      writer.uint32(18).string(message.nextPageToken);
     }
     return writer;
   },
@@ -562,6 +613,13 @@ export const ExportAuditLogsResponse: MessageFns<ExportAuditLogsResponse> = {
 
           message.content = reader.bytes();
           continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.nextPageToken = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -572,13 +630,19 @@ export const ExportAuditLogsResponse: MessageFns<ExportAuditLogsResponse> = {
   },
 
   fromJSON(object: any): ExportAuditLogsResponse {
-    return { content: isSet(object.content) ? bytesFromBase64(object.content) : new Uint8Array(0) };
+    return {
+      content: isSet(object.content) ? bytesFromBase64(object.content) : new Uint8Array(0),
+      nextPageToken: isSet(object.nextPageToken) ? globalThis.String(object.nextPageToken) : "",
+    };
   },
 
   toJSON(message: ExportAuditLogsResponse): unknown {
     const obj: any = {};
     if (message.content.length !== 0) {
       obj.content = base64FromBytes(message.content);
+    }
+    if (message.nextPageToken !== "") {
+      obj.nextPageToken = message.nextPageToken;
     }
     return obj;
   },
@@ -589,6 +653,7 @@ export const ExportAuditLogsResponse: MessageFns<ExportAuditLogsResponse> = {
   fromPartial(object: DeepPartial<ExportAuditLogsResponse>): ExportAuditLogsResponse {
     const message = createBaseExportAuditLogsResponse();
     message.content = object.content ?? new Uint8Array(0);
+    message.nextPageToken = object.nextPageToken ?? "";
     return message;
   },
 };

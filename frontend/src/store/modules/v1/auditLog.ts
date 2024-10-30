@@ -62,6 +62,8 @@ export const useAuditLogStore = defineStore("audit_log", () => {
       filter: buildFilter(search),
       orderBy: search.order ? `create_time ${search.order}` : undefined,
       format,
+      // TODO: pagination
+      pageSize: 1000,
     });
     return content;
   };

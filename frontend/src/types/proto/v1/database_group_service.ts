@@ -79,14 +79,16 @@ export interface ListDatabaseGroupsRequest {
    */
   parent: string;
   /**
-   * Not used. The maximum number of anomalies to return. The service may return fewer than
+   * Not used.
+   * The maximum number of database groups to return. The service may return fewer than
    * this value.
-   * If unspecified, at most 50 anomalies will be returned.
+   * If unspecified, at most 50 database groups will be returned.
    * The maximum value is 1000; values above 1000 will be coerced to 1000.
    */
   pageSize: number;
   /**
-   * Not used. A page token, received from a previous `ListDatabaseGroups` call.
+   * Not used.
+   * A page token, received from a previous `ListDatabaseGroups` call.
    * Provide this to retrieve the subsequent page.
    *
    * When paginating, all other parameters provided to `ListDatabaseGroups` must match

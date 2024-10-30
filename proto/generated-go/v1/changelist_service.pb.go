@@ -148,11 +148,13 @@ type ListChangelistsRequest struct {
 	// The parent, which owns this collection of changelists.
 	// Format: projects/{project}
 	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
+	// Not used.
 	// The maximum number of databases to return. The service may return fewer than
 	// this value.
 	// If unspecified, at most 50 databases will be returned.
 	// The maximum value is 1000; values above 1000 will be coerced to 1000.
 	PageSize int32 `protobuf:"varint,2,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
+	// Not used.
 	// A page token, received from a previous `ListDatabases` call.
 	// Provide this to retrieve the subsequent page.
 	//

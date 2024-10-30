@@ -85,6 +85,7 @@ export interface GetUserRequest {
 
 export interface ListUsersRequest {
   /**
+   * Not used.
    * The maximum number of users to return. The service may return fewer than
    * this value.
    * If unspecified, at most 50 users will be returned.
@@ -92,6 +93,7 @@ export interface ListUsersRequest {
    */
   pageSize: number;
   /**
+   * Not used.
    * A page token, received from a previous `ListUsers` call.
    * Provide this to retrieve the subsequent page.
    *

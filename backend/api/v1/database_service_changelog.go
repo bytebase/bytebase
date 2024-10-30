@@ -40,17 +40,21 @@ func (s *DatabaseService) ListChangelogs(ctx context.Context, request *v1pb.List
 		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
 	}
 
-	limit, offset, err := parseLimitAndOffset(request.PageToken, int(request.PageSize))
+	offset, err := parseLimitAndOffset(&pageSize{
+		token:   request.PageToken,
+		limit:   int(request.PageSize),
+		maximum: 1000,
+	})
 	if err != nil {
 		return nil, err
 	}
-	limitPlusOne := limit + 1
+	limitPlusOne := offset.limit + 1
 
 	// TODO(p0ny): support view and filter
 	find := &store.FindChangelogMessage{
 		DatabaseUID: &database.UID,
 		Limit:       &limitPlusOne,
-		Offset:      &offset,
+		Offset:      &offset.offset,
 	}
 
 	changelogs, err := s.store.ListChangelogs(ctx, find)
@@ -60,11 +64,10 @@ func (s *DatabaseService) ListChangelogs(ctx context.Context, request *v1pb.List
 
 	nextPageToken := ""
 	if len(changelogs) == limitPlusOne {
-		nextPageToken, err = getPageToken(limit, offset+limit)
-		if err != nil {
+		if nextPageToken, err = offset.getPageToken(); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to get next page token, error: %v", err)
 		}
-		changelogs = changelogs[:limit]
+		changelogs = changelogs[:offset.limit]
 	}
 
 	// no subsequent pages
