@@ -1,6 +1,6 @@
 <template>
   <Drawer v-bind="$attrs" @close="emit('close')">
-    <DrawerContent class="w-176" :title="$t('release.files')">
+    <DrawerContent class="w-176" :title="$t('release.actions.new-file')">
       <template #default>
         <div class="w-full flex flex-col gap-4">
           <div v-for="f in state.files" :key="f.id" class="w-full relative">
@@ -61,7 +61,7 @@
               }"
               @click="onConfirm"
             >
-              {{ $t("common.confirm") }}
+              {{ $t("common.next") }}
             </ErrorTipsButton>
           </div>
         </div>
@@ -76,7 +76,6 @@ import { TrashIcon, XIcon, PlusIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { computed, reactive, watch } from "vue";
 import { Drawer, DrawerContent, ErrorTipsButton } from "@/components/v2";
-import { ReleaseFileType } from "@/types/proto/v1/release_service";
 import { useReleaseCreateContext, type FileToCreate } from "../context";
 import ReleaseFileDetailPanel from "./ReleaseFileDetailPanel.vue";
 
@@ -123,7 +122,6 @@ const onAddFile = () => {
     version: "",
     path: "",
     statement: "",
-    type: ReleaseFileType.VERSIONED,
   });
 };
 

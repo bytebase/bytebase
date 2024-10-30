@@ -5,7 +5,6 @@ import { useProjectV1Store } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import type { ComposedProject } from "@/types";
 import { unknownProject } from "@/types";
-import type { ReleaseFileType } from "@/types/proto/v1/release_service";
 
 export interface FileToCreate {
   // id is the temporary id for the file, mainly using in frontend.
@@ -13,7 +12,6 @@ export interface FileToCreate {
   path: string;
   version: string;
   statement: string;
-  type: ReleaseFileType;
   /**
    * The sheet that holds the content.
    * Format: projects/{project}/sheets/{sheet}
