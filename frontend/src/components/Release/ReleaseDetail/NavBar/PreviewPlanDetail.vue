@@ -13,7 +13,9 @@
           {{ specReleaseVersion(spec) }}
         </NTag>
         <span class="text-sm">
-          {{ extractFilename(spec.specReleaseSource?.file || "") }}
+          {{
+            getFileByName(spec.specReleaseSource?.file || "")?.statement || "-"
+          }}
         </span>
       </div>
       <DatabaseView
@@ -55,9 +57,14 @@
           </td>
           <td>
             <div class="flex flex-row items-center gap-2">
-              <span v-for="file in temp.files" :key="file">
-                {{ extractFilename(file) }}
-              </span>
+              <NTag
+                v-for="file in temp.files"
+                :key="file"
+                round
+                :size="'small'"
+              >
+                {{ getFileByName(file)?.version }}
+              </NTag>
             </div>
           </td>
         </tr>
@@ -93,7 +100,7 @@
           <td>
             <div class="flex flex-row items-center gap-2">
               <span v-for="file in temp.files" :key="file">
-                {{ extractFilename(file) }}
+                {{ getFileByName(file)?.version }}
               </span>
             </div>
           </td>
@@ -104,18 +111,18 @@
 </template>
 
 <script lang="ts" setup>
-import { unescape } from "lodash-es";
 import { NTag, NTable } from "naive-ui";
 import { computed } from "vue";
 import DatabaseView from "@/components/v2/Model/DatabaseView.vue";
 import { useDatabaseV1Store } from "@/store";
-import type { ComposedDatabase } from "@/types";
+import type { ComposedDatabase, ComposedRelease } from "@/types";
 import type {
   Plan_Spec,
   PreviewPlanResponse,
 } from "@/types/proto/v1/plan_service";
 
 const props = defineProps<{
+  release: ComposedRelease;
   previewPlanResult: PreviewPlanResponse;
   allowOutOfOrder?: boolean;
 }>();
@@ -138,12 +145,7 @@ const specReleaseVersion = (spec: Plan_Spec): string => {
   return spec.changeDatabaseConfig!.schemaVersion;
 };
 
-const extractFilename = (file: string): string => {
-  const pattern = /(?:^|\/)files\/(.+)(?:$|\/)/;
-  const matches = file.match(pattern);
-  if (!matches) {
-    return "";
-  }
-  return unescape(matches[1]);
+const getFileByName = (name: string) => {
+  return props.release.files.find((file) => name.endsWith(`files/${file.id}`));
 };
 </script>

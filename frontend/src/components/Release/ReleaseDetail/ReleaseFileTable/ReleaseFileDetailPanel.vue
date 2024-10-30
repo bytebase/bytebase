@@ -1,14 +1,15 @@
 <template>
   <div class="w-full">
     <div class="flex flex-row items-center gap-2">
-      <NTag round>
-        {{ releaseFile.version }}
-      </NTag>
-      <h2 class="text-xl font-bold text-main truncate">
-        {{ releaseFile.path}}
-      </h2>
+      <p class="text-lg space-x-1">
+        <span class="text-control">{{ $t("common.version") }}:</span>
+        <span class="font-bold text-main">{{ releaseFile.version }}</span>
+      </p>
     </div>
-    <p class="mt-3 text-control text-base space-x-4">
+    <p class="mt-3 text-control text-sm space-x-4">
+      <span v-if="releaseFile.path"
+        >{{ $t("database.revision.filename") }}: {{ releaseFile.path }}</span
+      >
       <span>{{ "Hash" }}: {{ releaseFile.sheetSha256.slice(0, 8) }}</span>
     </p>
   </div>
@@ -16,11 +17,7 @@
   <NDivider />
 
   <div class="flex flex-col gap-y-2">
-    <a
-      id="statement"
-      href="#statement"
-      class="w-auto flex items-center text-base text-main mb-2 hover:underline"
-    >
+    <p class="w-auto flex items-center text-base text-main mb-2">
       {{ $t("common.statement") }}
       <button
         tabindex="-1"
@@ -29,7 +26,7 @@
       >
         <ClipboardIcon class="w-4 h-4" />
       </button>
-    </a>
+    </p>
     <MonacoEditor
       class="h-auto max-h-[480px] min-h-[120px] border rounded-[3px] text-sm overflow-clip relative"
       :content="releaseFile.statement"
@@ -41,7 +38,7 @@
 
 <script lang="ts" setup>
 import { ClipboardIcon } from "lucide-vue-next";
-import { NDivider, NTag } from "naive-ui";
+import { NDivider } from "naive-ui";
 import { MonacoEditor } from "@/components/MonacoEditor";
 import { pushNotification } from "@/store";
 import { type ComposedRelease } from "@/types";
@@ -57,7 +54,7 @@ const copyStatement = async () => {
   toClipboard(props.releaseFile.statement).then(() => {
     pushNotification({
       module: "bytebase",
-      style: "INFO",
+      style: "SUCCESS",
       title: `Statement copied to clipboard.`,
     });
   });

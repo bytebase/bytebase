@@ -21,6 +21,7 @@
                 class="space-y-4"
               >
                 <PreviewPlanDetail
+                  :release="release"
                   :preview-plan-result="state.previewPlanResult"
                   :allow-out-of-order="state.allowOutOfOrder"
                 />
@@ -56,7 +57,10 @@
           </div>
 
           <div class="flex items-center justify-end gap-x-3">
-            <NCheckbox v-model:checked="state.allowOutOfOrder">
+            <NCheckbox
+              v-if="state.currentStep === 1"
+              v-model:checked="state.allowOutOfOrder"
+            >
               {{ $t("release.allow-out-of-order") }}
             </NCheckbox>
             <NButton @click.prevent="handleCancelClick">
