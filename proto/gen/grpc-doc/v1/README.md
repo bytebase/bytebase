@@ -1705,7 +1705,7 @@ When paginating, all other parameters provided to `ListReleasesRequest` must mat
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | id | [string](#string) |  | The unique identifier for the file. |
-| name | [string](#string) |  | The name of the file. Expressed as a path, e.g. `2.2/V0001_create_table.sql` |
+| path | [string](#string) |  | The path of the file. e.g. `2.2/V0001_create_table.sql`. |
 | sheet | [string](#string) |  | The sheet that holds the content. Format: projects/{project}/sheets/{sheet} |
 | sheet_sha256 | [string](#string) |  | The SHA256 hash value of the sheet. |
 | type | [ReleaseFileType](#bytebase-v1-ReleaseFileType) |  |  |
@@ -2876,13 +2876,12 @@ ProcedureMetadata is the metadata for procedures.
 | release | [string](#string) |  | Format: projects/{project}/releases/{release} Can be empty. |
 | creator | [string](#string) |  | Format: users/hello@world.com |
 | create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| file | [string](#string) |  | Format: projects/{project}/releases/{release}/files/{id} Can be empty. |
+| version | [string](#string) |  |  |
 | sheet | [string](#string) |  | The sheet that holds the content. Format: projects/{project}/sheets/{sheet} |
 | sheet_sha256 | [string](#string) |  | The SHA256 hash value of the sheet. |
 | statement | [string](#string) |  | The statement is used for preview purpose. |
 | statement_size | [int64](#int64) |  |  |
-| type | [ReleaseFileType](#bytebase-v1-ReleaseFileType) |  |  |
-| version | [string](#string) |  |  |
-| file | [string](#string) |  | The name of the file in the release. Expressed as a path, e.g. `2.2/V0001_create_table.sql` Can be empty. |
 | issue | [string](#string) |  | The issue associated with the revision. Can be empty. Format: projects/{project}/issues/{issue} |
 | task_run | [string](#string) |  | The task run associated with the revision. Can be empty. Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun} |
 

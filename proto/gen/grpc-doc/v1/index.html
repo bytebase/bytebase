@@ -5618,11 +5618,10 @@ If this field is omitted, there are no subsequent pages. </p></td>
                 </tr>
               
                 <tr>
-                  <td>name</td>
+                  <td>path</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The name of the file.
-Expressed as a path, e.g. `2.2/V0001_create_table.sql` </p></td>
+                  <td><p>The path of the file. e.g. `2.2/V0001_create_table.sql`. </p></td>
                 </tr>
               
                 <tr>
@@ -8657,6 +8656,21 @@ Can be empty. </p></td>
                 </tr>
               
                 <tr>
+                  <td>file</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Format: projects/{project}/releases/{release}/files/{id}
+Can be empty. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>version</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
                   <td>sheet</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
@@ -8683,29 +8697,6 @@ Format: projects/{project}/sheets/{sheet} </p></td>
                   <td><a href="#int64">int64</a></td>
                   <td></td>
                   <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>type</td>
-                  <td><a href="#bytebase.v1.ReleaseFileType">ReleaseFileType</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>version</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>file</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The name of the file in the release.
-Expressed as a path, e.g. `2.2/V0001_create_table.sql`
-Can be empty. </p></td>
                 </tr>
               
                 <tr>
