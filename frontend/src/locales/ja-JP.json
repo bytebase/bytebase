@@ -3407,9 +3407,10 @@
       "re-request-review-issue": "作業指示書の承認を再度リクエストしますか?",
       "sent-back-issue": "作業指示書を返却する",
       "re-requested-review": "作業指示書の承認を再度リクエストします",
-      "no-one-matches-role": "このロールに一致するユーザーはいません。プロジェクト管理者に連絡してロールを割り当ててください。",
+      "no-one-matched": "一致する人はいませんでした",
       "any-n-role-can-approve": "任意の {role} を承認できます",
-      "approved-by-n": "{approver} によって承認されました"
+      "approved-by-n": "{approver} によって承認されました",
+      "issue-creators-cannot-approve-their-own-issue": "問題作成者は自分の問題を承認できません"
     },
     "send-back": "戻る"
   },
