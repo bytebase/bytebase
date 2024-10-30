@@ -3049,6 +3049,7 @@
   "audit-log": {
     "no-logs": "Sin registros de auditoría",
     "audit-log-detail": "Detalles del registro de auditoría",
+    "export-finished": "Exportación finalizada",
     "table": {
       "created-ts": "Hora",
       "created-time": "Hora de creación",
