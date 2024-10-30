@@ -137,8 +137,7 @@ message PlanConfig {
   }
 
   message SpecReleaseSource {
-    // Format: projects/{project}/releases/{release}/files/{file}
-    // {file} is URL path escaped.
+    // Format: projects/{project}/releases/{release}/files/{id}
     string file = 1;
   }
 }

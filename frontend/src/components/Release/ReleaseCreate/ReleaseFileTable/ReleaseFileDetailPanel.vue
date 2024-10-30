@@ -12,7 +12,7 @@
         <NInputGroupLabel>
           {{ $t("database.revision.filename") }}
         </NInputGroupLabel>
-        <NInput v-model:value="state.name" class="!w-56" />
+        <NInput v-model:value="state.path" class="!w-56" />
       </NInputGroup>
     </div>
 

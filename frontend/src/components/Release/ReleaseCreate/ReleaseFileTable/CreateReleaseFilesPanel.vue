@@ -121,7 +121,7 @@ const onAddFile = () => {
   state.files.push({
     id: uniqueId("file"),
     version: "",
-    name: "",
+    path: "",
     statement: "",
     type: ReleaseFileType.VERSIONED,
   });

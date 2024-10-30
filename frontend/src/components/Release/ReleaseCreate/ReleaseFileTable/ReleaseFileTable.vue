@@ -81,7 +81,7 @@ const columnList = computed(() => {
       render: (file) => {
         return (
           <div class="space-x-2">
-            <span>{file.name}</span>
+            <span>{file.path}</span>
           </div>
         );
       },

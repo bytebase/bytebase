@@ -161,7 +161,6 @@ func convertToRevision(ctx context.Context, s *store.Store, parent string, revis
 		SheetSha256:   revision.Payload.SheetSha256,
 		Statement:     sheet.Statement,
 		StatementSize: sheet.Size,
-		Type:          v1pb.ReleaseFileType(revision.Payload.Type),
 		Version:       revision.Payload.Version,
 		File:          revision.Payload.File,
 		Issue:         issueName,
