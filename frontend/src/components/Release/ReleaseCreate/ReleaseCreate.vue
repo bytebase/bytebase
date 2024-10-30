@@ -50,12 +50,12 @@ const onCreateRelease = async () => {
   });
   for (const file of files.value) {
     const sheet = await sheetStore.createSheet(project.value.name, {
-      title: file.name,
+      title: file.path,
       content: new TextEncoder().encode(file.statement),
     });
     release.files.push(
       Release_File.fromPartial({
-        name: file.name,
+        path: file.path,
         version: file.version,
         sheet: sheet.name,
         type: file.type,
