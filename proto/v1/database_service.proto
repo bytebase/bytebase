@@ -1507,32 +1507,30 @@ message Revision {
 
   google.protobuf.Timestamp create_time = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
 
+  // Format: projects/{project}/releases/{release}/files/{id}
+  // Can be empty.
+  string file = 5;
+
+  string version = 6;
+
   // The sheet that holds the content.
   // Format: projects/{project}/sheets/{sheet}
-  string sheet = 5 [(google.api.resource_reference) = {type: "bytebase.com/Sheet"}];
+  string sheet = 7 [(google.api.resource_reference) = {type: "bytebase.com/Sheet"}];
   // The SHA256 hash value of the sheet.
-  string sheet_sha256 = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string sheet_sha256 = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
   // The statement is used for preview purpose.
-  string statement = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
-  int64 statement_size = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
-
-  ReleaseFileType type = 9;
-  string version = 10;
-
-  // The name of the file in the release.
-  // Expressed as a path, e.g. `2.2/V0001_create_table.sql`
-  // Can be empty.
-  string file = 11;
+  string statement = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+  int64 statement_size = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The issue associated with the revision.
   // Can be empty.
   // Format: projects/{project}/issues/{issue}
-  string issue = 12 [(google.api.resource_reference) = {type: "bytebase.com/Issue"}];
+  string issue = 11 [(google.api.resource_reference) = {type: "bytebase.com/Issue"}];
 
   // The task run associated with the revision.
   // Can be empty.
   // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun}
-  string task_run = 13 [(google.api.resource_reference) = {type: "bytebase.com/TaskRun"}];
+  string task_run = 12 [(google.api.resource_reference) = {type: "bytebase.com/TaskRun"}];
 }
 
 enum ChangelogView {
