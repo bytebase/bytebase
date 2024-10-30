@@ -90,7 +90,7 @@ const columnList = computed((): DataTableColumn<ComposedRelease>[] => {
           <div class="flex items-center space-x-3">
             {release.files.map((file) => (
               <div class="flex items-center space-x-1">
-                <span>{file.name}</span>
+                <span>{file.path}</span>
                 <NTag
                   v-if="schemaVersion"
                   class="text-sm font-mono"

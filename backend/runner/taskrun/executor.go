@@ -81,8 +81,8 @@ type migrateContext struct {
 		// The release
 		// Format: projects/{project}/releases/{release}
 		release string
-		// The file path
-		// e.g. `2.2/V001.sql`
+		// The file
+		// Format: projects/{project}/releases/{release}/files/{id}
 		file string
 	}
 
@@ -165,12 +165,12 @@ func getMigrationInfo(ctx context.Context, stores *store.Store, profile *config.
 		}
 
 		if f := p.TaskReleaseSource.GetFile(); f != "" {
-			project, release, file, err := common.GetProjectReleaseUIDFile(f)
+			project, release, _, err := common.GetProjectReleaseUIDFile(f)
 			if err != nil {
 				return nil, nil, errors.Wrapf(err, "failed to parse file %s", f)
 			}
 			mc.release.release = common.FormatReleaseName(project, release)
-			mc.release.file = file
+			mc.release.file = f
 		}
 	}
 
@@ -624,8 +624,6 @@ func endMigration(ctx context.Context, storeInstance *store.Store, startedNs int
 						SheetSha256: "",
 						TaskRun:     mc.taskRunName,
 						Version:     mc.version,
-						// TODO(p0ny): maybe remove this field.
-						Type: storepb.ReleaseFileType_TYPE_UNSPECIFIED,
 					},
 				}
 				if mc.sheet != nil {

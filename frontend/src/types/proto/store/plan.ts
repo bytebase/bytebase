@@ -259,10 +259,7 @@ export interface PlanConfig_ReleaseSource {
 }
 
 export interface PlanConfig_SpecReleaseSource {
-  /**
-   * Format: projects/{project}/releases/{release}/files/{file}
-   * {file} is URL path escaped.
-   */
+  /** Format: projects/{project}/releases/{release}/files/{id} */
   file: string;
 }
 
