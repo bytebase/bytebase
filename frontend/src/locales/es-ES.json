@@ -3407,9 +3407,10 @@
       "re-request-review-issue": "¿Volver a solicitar revisión?",
       "sent-back-issue": "Problema devuelto",
       "re-requested-review": "revisión de problema nuevamente solicitada",
-      "no-one-matches-role": "Nadie coincide con el rol, comuníquese con el propietario del proyecto para asignar uno.",
+      "no-one-matched": "Nadie igualó",
       "any-n-role-can-approve": "Cualquier {role} puede aprobar",
-      "approved-by-n": "Aprobado por {approver}"
+      "approved-by-n": "Aprobado por {approver}",
+      "issue-creators-cannot-approve-their-own-issue": "El creador del problema no puede aprobar su propio problema."
     },
     "send-back": "Enviar de vuelta"
   },
