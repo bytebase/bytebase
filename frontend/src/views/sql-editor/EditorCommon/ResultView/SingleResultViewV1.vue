@@ -188,6 +188,7 @@ import {
   useVueTable,
 } from "@tanstack/vue-table";
 import { useDebounceFn, useLocalStorage } from "@vueuse/core";
+import dayjs from "dayjs";
 import { isEmpty } from "lodash-es";
 import { ExternalLinkIcon } from "lucide-vue-next";
 import {
@@ -439,7 +440,7 @@ const pageSizeOptions = computed(() => {
 
 const handleExportBtnClick = async (
   options: ExportOption,
-  callback: (content: BinaryLike | Blob, options: ExportOption) => void
+  callback: (content: BinaryLike | Blob, filename: string) => void
 ) => {
   // If props.database is specified and it's not unknown database
   // the query is executed on database level
@@ -466,7 +467,10 @@ const handleExportBtnClick = async (
     password: options.password,
   });
 
-  callback(content, options);
+  callback(
+    content,
+    `export-data.${dayjs(new Date()).format("YYYY-MM-DDTHH-mm-ss")}`
+  );
 };
 
 const handleRequestExport = async () => {

@@ -33,8 +33,10 @@
 </template>
 
 <script lang="ts" setup>
+import dayjs from "dayjs";
 import type { BinaryLike } from "node:crypto";
 import { reactive, computed } from "vue";
+import { useI18n } from "vue-i18n";
 import AuditLogDataTable from "@/components/AuditLog/AuditLogDataTable.vue";
 import AuditLogSearch from "@/components/AuditLog/AuditLogSearch";
 import { buildSearchAuditLogParams } from "@/components/AuditLog/AuditLogSearch/utils";
@@ -42,7 +44,7 @@ import type { ExportOption } from "@/components/DataExportButton.vue";
 import DataExportButton from "@/components/DataExportButton.vue";
 import { FeatureAttention } from "@/components/FeatureGuard";
 import PagedAuditLogTable from "@/components/PagedAuditLogTable.vue";
-import { featureToRef, useAuditLogStore } from "@/store";
+import { featureToRef, useAuditLogStore, pushNotification } from "@/store";
 import type { SearchAuditLogsParams } from "@/types";
 import { ExportFormat } from "@/types/proto/v1/common";
 import { type SearchParams } from "@/utils";
@@ -62,7 +64,7 @@ const defaultSearchParams = () => {
 const state = reactive<LocalState>({
   params: defaultSearchParams(),
 });
-
+const { t } = useI18n();
 const auditLogStore = useAuditLogStore();
 
 const hasAuditLogFeature = featureToRef("bb.feature.audit-log");
@@ -76,12 +78,29 @@ const searchAuditLogs = computed((): SearchAuditLogsParams => {
 
 const handleExport = async (
   options: ExportOption,
-  callback: (content: BinaryLike | Blob, options: ExportOption) => void
+  callback: (content: BinaryLike | Blob, filename: string) => void
 ) => {
-  const content = await auditLogStore.exportAuditLogs(
-    searchAuditLogs.value,
-    options.format
-  );
-  callback(content, options);
+  let pageToken = "";
+  let i = 0;
+
+  while (i === 0 || pageToken !== "") {
+    i++;
+    const { content, nextPageToken } = await auditLogStore.exportAuditLogs(
+      searchAuditLogs.value,
+      options.format
+    );
+    pageToken = nextPageToken;
+    callback(
+      content,
+      `audit-log.file${i}.${dayjs(new Date()).format("YYYY-MM-DDTHH-mm-ss")}`
+    );
+  }
+
+  pushNotification({
+    module: "bytebase",
+    style: "SUCCESS",
+    title: t("common.success"),
+    description: t("audit-log.export-finished"),
+  });
 };
 </script>
