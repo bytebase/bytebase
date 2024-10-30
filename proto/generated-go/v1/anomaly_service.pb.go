@@ -157,12 +157,14 @@ type SearchAnomaliesRequest struct {
 	// Search the anomalies of a specific resource: 'resource="instances/{instance}".'
 	// Search the specified types of anomalies: 'type="MIGRATION_SCHEMA".'
 	Filter string `protobuf:"bytes,1,opt,name=filter,proto3" json:"filter,omitempty"`
-	// Not used. The maximum number of anomalies to return. The service may return fewer than
+	// Not used.
+	// The maximum number of anomalies to return. The service may return fewer than
 	// this value.
 	// If unspecified, at most 50 anomalies will be returned.
 	// The maximum value is 1000; values above 1000 will be coerced to 1000.
 	PageSize int32 `protobuf:"varint,2,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
-	// Not used. A page token, received from a previous `SearchAnomalies` call.
+	// Not used.
+	// A page token, received from a previous `SearchAnomalies` call.
 	// Provide this to retrieve the subsequent page.
 	//
 	// When paginating, all other parameters provided to `SearchAnomalies` must match

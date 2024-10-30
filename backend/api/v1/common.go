@@ -406,13 +406,6 @@ func convertEngine(engine v1pb.Engine) storepb.Engine {
 	return storepb.Engine_ENGINE_UNSPECIFIED
 }
 
-func getPageToken(limit int, offset int) (string, error) {
-	return marshalPageToken(&storepb.PageToken{
-		Limit:  int32(limit),
-		Offset: int32(offset),
-	})
-}
-
 func marshalPageToken(pageToken *storepb.PageToken) (string, error) {
 	b, err := proto.Marshal(pageToken)
 	if err != nil {
@@ -432,25 +425,46 @@ func unmarshalPageToken(s string, pageToken *storepb.PageToken) error {
 	return nil
 }
 
-func parseLimitAndOffset(pageToken string, pageSize int) (int, int, error) {
-	var limit, offset int
-	if pageToken != "" {
+type pageSize struct {
+	token   string
+	limit   int
+	maximum int
+}
+
+type pageOffset struct {
+	limit  int
+	offset int
+}
+
+func (p *pageOffset) getPageToken() (string, error) {
+	return marshalPageToken(&storepb.PageToken{
+		Limit:  int32(p.limit),
+		Offset: int32(p.offset),
+	})
+}
+
+func parseLimitAndOffset(size *pageSize) (*pageOffset, error) {
+	offset := &pageOffset{}
+	if size.token != "" {
 		var token storepb.PageToken
-		if err := unmarshalPageToken(pageToken, &token); err != nil {
-			return limit, offset, status.Errorf(codes.InvalidArgument, "invalid page token: %v", err)
+		if err := unmarshalPageToken(size.token, &token); err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "invalid page token: %v", err)
 		}
 		if token.Limit < 0 {
-			return limit, offset, status.Errorf(codes.InvalidArgument, "page size cannot be negative")
+			return nil, status.Errorf(codes.InvalidArgument, "page size cannot be negative")
 		}
-		limit = int(token.Limit)
-		offset = int(token.Offset)
+		offset.limit = int(token.Limit)
+		offset.offset = int(token.Offset)
 	} else {
-		limit = int(pageSize)
+		offset.limit = int(size.limit)
 	}
-	if limit <= 0 {
-		limit = 10
+	if offset.limit <= 0 {
+		offset.limit = 10
 	}
-	return limit, offset, nil
+	if offset.limit > size.maximum {
+		offset.limit = size.maximum
+	}
+	return offset, nil
 }
 
 // isValidUUID validates that the id is the valid UUID format.

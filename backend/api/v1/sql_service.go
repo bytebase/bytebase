@@ -804,11 +804,15 @@ func (s *SQLService) createQueryHistory(ctx context.Context, database *store.Dat
 
 // SearchQueryHistories lists query histories.
 func (s *SQLService) SearchQueryHistories(ctx context.Context, request *v1pb.SearchQueryHistoriesRequest) (*v1pb.SearchQueryHistoriesResponse, error) {
-	limit, offset, err := parseLimitAndOffset(request.PageToken, int(request.PageSize))
+	offset, err := parseLimitAndOffset(&pageSize{
+		token:   request.PageToken,
+		limit:   int(request.PageSize),
+		maximum: 1000,
+	})
 	if err != nil {
 		return nil, err
 	}
-	limitPlusOne := limit + 1
+	limitPlusOne := offset.limit + 1
 
 	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
 	if !ok {
@@ -818,7 +822,7 @@ func (s *SQLService) SearchQueryHistories(ctx context.Context, request *v1pb.Sea
 	find := &store.FindQueryHistoryMessage{
 		CreatorUID: &principalID,
 		Limit:      &limitPlusOne,
-		Offset:     &offset,
+		Offset:     &offset.offset,
 	}
 
 	filters, err := ParseFilter(request.Filter)
@@ -852,11 +856,8 @@ func (s *SQLService) SearchQueryHistories(ctx context.Context, request *v1pb.Sea
 
 	nextPageToken := ""
 	if len(historyList) == limitPlusOne {
-		historyList = historyList[:limit]
-		if nextPageToken, err = marshalPageToken(&storepb.PageToken{
-			Limit:  int32(limit),
-			Offset: int32(limit + offset),
-		}); err != nil {
+		historyList = historyList[:offset.limit]
+		if nextPageToken, err = offset.getPageToken(); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to marshal next page token, error: %v", err)
 		}
 	}

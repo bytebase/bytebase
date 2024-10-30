@@ -101,17 +101,19 @@ export interface ListTaskRunsRequest {
    */
   parent: string;
   /**
+   * Not used.
    * The maximum number of taskRuns to return. The service may return fewer than
    * this value.
-   * If unspecified, at most 50 taskRuns will be returned.
+   * If unspecified, at most 10 taskRuns will be returned.
    * The maximum value is 1000; values above 1000 will be coerced to 1000.
    */
   pageSize: number;
   /**
-   * A page token, received from a previous `ListRolloutTaskRuns` call.
+   * Not used.
+   * A page token, received from a previous `ListTaskRuns` call.
    * Provide this to retrieve the subsequent page.
    *
-   * When paginating, all other parameters provided to `ListRolloutTaskRuns` must match
+   * When paginating, all other parameters provided to `ListTaskRuns` must match
    * the call that provided the page token.
    */
   pageToken: string;

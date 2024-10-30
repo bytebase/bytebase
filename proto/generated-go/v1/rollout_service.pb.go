@@ -904,15 +904,17 @@ type ListTaskRunsRequest struct {
 	// Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}
 	// Use "projects/{project}/rollouts/{rollout}/stages/-/tasks/-" to list all taskRuns from a rollout.
 	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
+	// Not used.
 	// The maximum number of taskRuns to return. The service may return fewer than
 	// this value.
-	// If unspecified, at most 50 taskRuns will be returned.
+	// If unspecified, at most 10 taskRuns will be returned.
 	// The maximum value is 1000; values above 1000 will be coerced to 1000.
 	PageSize int32 `protobuf:"varint,2,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
-	// A page token, received from a previous `ListRolloutTaskRuns` call.
+	// Not used.
+	// A page token, received from a previous `ListTaskRuns` call.
 	// Provide this to retrieve the subsequent page.
 	//
-	// When paginating, all other parameters provided to `ListRolloutTaskRuns` must match
+	// When paginating, all other parameters provided to `ListTaskRuns` must match
 	// the call that provided the page token.
 	PageToken string `protobuf:"bytes,3,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
 }

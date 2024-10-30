@@ -145,6 +145,7 @@ export interface ListBranchesRequest {
   /** To filter the search result. */
   filter: string;
   /**
+   * Not used.
    * The maximum number of branches to return. The service may return fewer than
    * this value.
    * If unspecified, at most 50 branches will be returned.
@@ -152,6 +153,7 @@ export interface ListBranchesRequest {
    */
   pageSize: number;
   /**
+   * Not used.
    * A page token, received from a previous `ListBranches` call.
    * Provide this to retrieve the subsequent page.
    *

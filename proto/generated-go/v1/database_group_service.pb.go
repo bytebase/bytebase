@@ -85,12 +85,14 @@ type ListDatabaseGroupsRequest struct {
 	// The parent resource whose database groups are to be listed.
 	// Format: projects/{project}
 	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
-	// Not used. The maximum number of anomalies to return. The service may return fewer than
+	// Not used.
+	// The maximum number of database groups to return. The service may return fewer than
 	// this value.
-	// If unspecified, at most 50 anomalies will be returned.
+	// If unspecified, at most 50 database groups will be returned.
 	// The maximum value is 1000; values above 1000 will be coerced to 1000.
 	PageSize int32 `protobuf:"varint,2,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
-	// Not used. A page token, received from a previous `ListDatabaseGroups` call.
+	// Not used.
+	// A page token, received from a previous `ListDatabaseGroups` call.
 	// Provide this to retrieve the subsequent page.
 	//
 	// When paginating, all other parameters provided to `ListDatabaseGroups` must match

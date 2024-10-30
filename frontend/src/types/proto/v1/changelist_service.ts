@@ -48,6 +48,7 @@ export interface ListChangelistsRequest {
    */
   parent: string;
   /**
+   * Not used.
    * The maximum number of databases to return. The service may return fewer than
    * this value.
    * If unspecified, at most 50 databases will be returned.
@@ -55,6 +56,7 @@ export interface ListChangelistsRequest {
    */
   pageSize: number;
   /**
+   * Not used.
    * A page token, received from a previous `ListDatabases` call.
    * Provide this to retrieve the subsequent page.
    *
