@@ -10,7 +10,7 @@ import type { ReleaseFileType } from "@/types/proto/v1/release_service";
 export interface FileToCreate {
   // id is the temporary id for the file, mainly using in frontend.
   id: string;
-  name: string;
+  path: string;
   version: string;
   statement: string;
   type: ReleaseFileType;

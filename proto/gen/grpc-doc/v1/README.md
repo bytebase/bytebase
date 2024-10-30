@@ -64,22 +64,6 @@
   
     - [InstanceService](#bytebase-v1-InstanceService)
   
-- [v1/release_service.proto](#v1_release_service-proto)
-    - [CreateReleaseRequest](#bytebase-v1-CreateReleaseRequest)
-    - [DeleteReleaseRequest](#bytebase-v1-DeleteReleaseRequest)
-    - [GetReleaseRequest](#bytebase-v1-GetReleaseRequest)
-    - [ListReleasesRequest](#bytebase-v1-ListReleasesRequest)
-    - [ListReleasesResponse](#bytebase-v1-ListReleasesResponse)
-    - [Release](#bytebase-v1-Release)
-    - [Release.File](#bytebase-v1-Release-File)
-    - [Release.VCSSource](#bytebase-v1-Release-VCSSource)
-    - [UndeleteReleaseRequest](#bytebase-v1-UndeleteReleaseRequest)
-    - [UpdateReleaseRequest](#bytebase-v1-UpdateReleaseRequest)
-  
-    - [ReleaseFileType](#bytebase-v1-ReleaseFileType)
-  
-    - [ReleaseService](#bytebase-v1-ReleaseService)
-  
 - [v1/database_service.proto](#v1_database_service-proto)
     - [AdviseIndexRequest](#bytebase-v1-AdviseIndexRequest)
     - [AdviseIndexResponse](#bytebase-v1-AdviseIndexResponse)
@@ -566,6 +550,22 @@
     - [Workflow](#bytebase-v1-Workflow)
   
     - [ProjectService](#bytebase-v1-ProjectService)
+  
+- [v1/release_service.proto](#v1_release_service-proto)
+    - [CreateReleaseRequest](#bytebase-v1-CreateReleaseRequest)
+    - [DeleteReleaseRequest](#bytebase-v1-DeleteReleaseRequest)
+    - [GetReleaseRequest](#bytebase-v1-GetReleaseRequest)
+    - [ListReleasesRequest](#bytebase-v1-ListReleasesRequest)
+    - [ListReleasesResponse](#bytebase-v1-ListReleasesResponse)
+    - [Release](#bytebase-v1-Release)
+    - [Release.File](#bytebase-v1-Release-File)
+    - [Release.VCSSource](#bytebase-v1-Release-VCSSource)
+    - [UndeleteReleaseRequest](#bytebase-v1-UndeleteReleaseRequest)
+    - [UpdateReleaseRequest](#bytebase-v1-UpdateReleaseRequest)
+  
+    - [ReleaseFileType](#bytebase-v1-ReleaseFileType)
+  
+    - [ReleaseService](#bytebase-v1-ReleaseService)
   
 - [v1/review_config_service.proto](#v1_review_config_service-proto)
     - [CreateReviewConfigRequest](#bytebase-v1-CreateReviewConfigRequest)
@@ -1581,221 +1581,6 @@ The instance&#39;s `name` field is used to identify the instance to update. Form
 | RemoveDataSource | [RemoveDataSourceRequest](#bytebase-v1-RemoveDataSourceRequest) | [Instance](#bytebase-v1-Instance) |  |
 | UpdateDataSource | [UpdateDataSourceRequest](#bytebase-v1-UpdateDataSourceRequest) | [Instance](#bytebase-v1-Instance) |  |
 | SyncSlowQueries | [SyncSlowQueriesRequest](#bytebase-v1-SyncSlowQueriesRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
-
- 
-
-
-
-<a name="v1_release_service-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## v1/release_service.proto
-
-
-
-<a name="bytebase-v1-CreateReleaseRequest"></a>
-
-### CreateReleaseRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | Format: projects/{project} |
-| release | [Release](#bytebase-v1-Release) |  | The release to create. |
-
-
-
-
-
-
-<a name="bytebase-v1-DeleteReleaseRequest"></a>
-
-### DeleteReleaseRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the release to delete. Format: projects/{project}/releases/{release} |
-
-
-
-
-
-
-<a name="bytebase-v1-GetReleaseRequest"></a>
-
-### GetReleaseRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | Format: projects/{project}/releases/{release} |
-
-
-
-
-
-
-<a name="bytebase-v1-ListReleasesRequest"></a>
-
-### ListReleasesRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | Format: projects/{project} |
-| page_size | [int32](#int32) |  | The maximum number of change histories to return. The service may return fewer than this value. If unspecified, at most 10 change histories will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
-| page_token | [string](#string) |  | Not used. A page token, received from a previous `ListReleasesRequest` call. Provide this to retrieve the subsequent page.
-
-When paginating, all other parameters provided to `ListReleasesRequest` must match the call that provided the page token. |
-| show_deleted | [bool](#bool) |  | Show deleted releases if specified. |
-
-
-
-
-
-
-<a name="bytebase-v1-ListReleasesResponse"></a>
-
-### ListReleasesResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| releases | [Release](#bytebase-v1-Release) | repeated |  |
-| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
-
-
-
-
-
-
-<a name="bytebase-v1-Release"></a>
-
-### Release
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | Format: projects/{project}/releases/{release} |
-| title | [string](#string) |  |  |
-| files | [Release.File](#bytebase-v1-Release-File) | repeated |  |
-| vcs_source | [Release.VCSSource](#bytebase-v1-Release-VCSSource) |  |  |
-| creator | [string](#string) |  | Format: users/hello@world.com |
-| create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
-| state | [State](#bytebase-v1-State) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-Release-File"></a>
-
-### Release.File
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| id | [string](#string) |  | The unique identifier for the file. |
-| name | [string](#string) |  | The name of the file. Expressed as a path, e.g. `2.2/V0001_create_table.sql` |
-| sheet | [string](#string) |  | The sheet that holds the content. Format: projects/{project}/sheets/{sheet} |
-| sheet_sha256 | [string](#string) |  | The SHA256 hash value of the sheet. |
-| type | [ReleaseFileType](#bytebase-v1-ReleaseFileType) |  |  |
-| version | [string](#string) |  |  |
-| statement | [string](#string) |  | The statement is used for preview purpose. |
-| statement_size | [int64](#int64) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-Release-VCSSource"></a>
-
-### Release.VCSSource
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| vcs_type | [VCSType](#bytebase-v1-VCSType) |  |  |
-| pull_request_url | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-UndeleteReleaseRequest"></a>
-
-### UndeleteReleaseRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the deleted release. Format: projects/{project}/releases/{release} |
-
-
-
-
-
-
-<a name="bytebase-v1-UpdateReleaseRequest"></a>
-
-### UpdateReleaseRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| release | [Release](#bytebase-v1-Release) |  | The release to update. |
-| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to be updated. |
-
-
-
-
-
- 
-
-
-<a name="bytebase-v1-ReleaseFileType"></a>
-
-### ReleaseFileType
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| TYPE_UNSPECIFIED | 0 |  |
-| VERSIONED | 1 |  |
-
-
- 
-
- 
-
-
-<a name="bytebase-v1-ReleaseService"></a>
-
-### ReleaseService
-
-
-| Method Name | Request Type | Response Type | Description |
-| ----------- | ------------ | ------------- | ------------|
-| GetRelease | [GetReleaseRequest](#bytebase-v1-GetReleaseRequest) | [Release](#bytebase-v1-Release) |  |
-| ListReleases | [ListReleasesRequest](#bytebase-v1-ListReleasesRequest) | [ListReleasesResponse](#bytebase-v1-ListReleasesResponse) |  |
-| CreateRelease | [CreateReleaseRequest](#bytebase-v1-CreateReleaseRequest) | [Release](#bytebase-v1-Release) |  |
-| UpdateRelease | [UpdateReleaseRequest](#bytebase-v1-UpdateReleaseRequest) | [Release](#bytebase-v1-Release) |  |
-| DeleteRelease | [DeleteReleaseRequest](#bytebase-v1-DeleteReleaseRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
-| UndeleteRelease | [UndeleteReleaseRequest](#bytebase-v1-UndeleteReleaseRequest) | [Release](#bytebase-v1-Release) |  |
 
  
 
@@ -2876,13 +2661,12 @@ ProcedureMetadata is the metadata for procedures.
 | release | [string](#string) |  | Format: projects/{project}/releases/{release} Can be empty. |
 | creator | [string](#string) |  | Format: users/hello@world.com |
 | create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| file | [string](#string) |  | Format: projects/{project}/releases/{release}/files/{id} Can be empty. |
+| version | [string](#string) |  |  |
 | sheet | [string](#string) |  | The sheet that holds the content. Format: projects/{project}/sheets/{sheet} |
 | sheet_sha256 | [string](#string) |  | The SHA256 hash value of the sheet. |
 | statement | [string](#string) |  | The statement is used for preview purpose. |
 | statement_size | [int64](#int64) |  |  |
-| type | [ReleaseFileType](#bytebase-v1-ReleaseFileType) |  |  |
-| version | [string](#string) |  |  |
-| file | [string](#string) |  | The name of the file in the release. Expressed as a path, e.g. `2.2/V0001_create_table.sql` Can be empty. |
 | issue | [string](#string) |  | The issue associated with the revision. Can be empty. Format: projects/{project}/issues/{issue} |
 | task_run | [string](#string) |  | The task run associated with the revision. Can be empty. Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun} |
 
@@ -9228,6 +9012,221 @@ TYPE_PROJECT_REPOSITORY_PUSH represents Bytebase receiving a push event from the
 | UpdateWebhook | [UpdateWebhookRequest](#bytebase-v1-UpdateWebhookRequest) | [Project](#bytebase-v1-Project) |  |
 | RemoveWebhook | [RemoveWebhookRequest](#bytebase-v1-RemoveWebhookRequest) | [Project](#bytebase-v1-Project) |  |
 | TestWebhook | [TestWebhookRequest](#bytebase-v1-TestWebhookRequest) | [TestWebhookResponse](#bytebase-v1-TestWebhookResponse) |  |
+
+ 
+
+
+
+<a name="v1_release_service-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v1/release_service.proto
+
+
+
+<a name="bytebase-v1-CreateReleaseRequest"></a>
+
+### CreateReleaseRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | Format: projects/{project} |
+| release | [Release](#bytebase-v1-Release) |  | The release to create. |
+
+
+
+
+
+
+<a name="bytebase-v1-DeleteReleaseRequest"></a>
+
+### DeleteReleaseRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the release to delete. Format: projects/{project}/releases/{release} |
+
+
+
+
+
+
+<a name="bytebase-v1-GetReleaseRequest"></a>
+
+### GetReleaseRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | Format: projects/{project}/releases/{release} |
+
+
+
+
+
+
+<a name="bytebase-v1-ListReleasesRequest"></a>
+
+### ListReleasesRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | Format: projects/{project} |
+| page_size | [int32](#int32) |  | The maximum number of change histories to return. The service may return fewer than this value. If unspecified, at most 10 change histories will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | Not used. A page token, received from a previous `ListReleasesRequest` call. Provide this to retrieve the subsequent page.
+
+When paginating, all other parameters provided to `ListReleasesRequest` must match the call that provided the page token. |
+| show_deleted | [bool](#bool) |  | Show deleted releases if specified. |
+
+
+
+
+
+
+<a name="bytebase-v1-ListReleasesResponse"></a>
+
+### ListReleasesResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| releases | [Release](#bytebase-v1-Release) | repeated |  |
+| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
+
+
+
+
+
+
+<a name="bytebase-v1-Release"></a>
+
+### Release
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | Format: projects/{project}/releases/{release} |
+| title | [string](#string) |  |  |
+| files | [Release.File](#bytebase-v1-Release-File) | repeated |  |
+| vcs_source | [Release.VCSSource](#bytebase-v1-Release-VCSSource) |  |  |
+| creator | [string](#string) |  | Format: users/hello@world.com |
+| create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| state | [State](#bytebase-v1-State) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-Release-File"></a>
+
+### Release.File
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| id | [string](#string) |  | The unique identifier for the file. |
+| path | [string](#string) |  | The path of the file. e.g. `2.2/V0001_create_table.sql`. |
+| sheet | [string](#string) |  | The sheet that holds the content. Format: projects/{project}/sheets/{sheet} |
+| sheet_sha256 | [string](#string) |  | The SHA256 hash value of the sheet. |
+| type | [ReleaseFileType](#bytebase-v1-ReleaseFileType) |  |  |
+| version | [string](#string) |  |  |
+| statement | [string](#string) |  | The statement is used for preview purpose. |
+| statement_size | [int64](#int64) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-Release-VCSSource"></a>
+
+### Release.VCSSource
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| vcs_type | [VCSType](#bytebase-v1-VCSType) |  |  |
+| pull_request_url | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-UndeleteReleaseRequest"></a>
+
+### UndeleteReleaseRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the deleted release. Format: projects/{project}/releases/{release} |
+
+
+
+
+
+
+<a name="bytebase-v1-UpdateReleaseRequest"></a>
+
+### UpdateReleaseRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| release | [Release](#bytebase-v1-Release) |  | The release to update. |
+| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to be updated. |
+
+
+
+
+
+ 
+
+
+<a name="bytebase-v1-ReleaseFileType"></a>
+
+### ReleaseFileType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| TYPE_UNSPECIFIED | 0 |  |
+| VERSIONED | 1 |  |
+
+
+ 
+
+ 
+
+
+<a name="bytebase-v1-ReleaseService"></a>
+
+### ReleaseService
+
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| GetRelease | [GetReleaseRequest](#bytebase-v1-GetReleaseRequest) | [Release](#bytebase-v1-Release) |  |
+| ListReleases | [ListReleasesRequest](#bytebase-v1-ListReleasesRequest) | [ListReleasesResponse](#bytebase-v1-ListReleasesResponse) |  |
+| CreateRelease | [CreateReleaseRequest](#bytebase-v1-CreateReleaseRequest) | [Release](#bytebase-v1-Release) |  |
+| UpdateRelease | [UpdateReleaseRequest](#bytebase-v1-UpdateReleaseRequest) | [Release](#bytebase-v1-Release) |  |
+| DeleteRelease | [DeleteReleaseRequest](#bytebase-v1-DeleteReleaseRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
+| UndeleteRelease | [UndeleteReleaseRequest](#bytebase-v1-UndeleteReleaseRequest) | [Release](#bytebase-v1-Release) |  |
 
  
 

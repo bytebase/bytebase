@@ -12672,11 +12672,9 @@ components:
                     readOnly: true
                     type: string
                     description: The unique identifier for the file.
-                name:
+                path:
                     type: string
-                    description: |-
-                        The name of the file.
-                         Expressed as a path, e.g. `2.2/V0001_create_table.sql`
+                    description: The path of the file. e.g. `2.2/V0001_create_table.sql`.
                 sheet:
                     type: string
                     description: |-
@@ -12872,6 +12870,13 @@ components:
                     readOnly: true
                     type: string
                     format: date-time
+                file:
+                    type: string
+                    description: |-
+                        Format: projects/{project}/releases/{release}/files/{id}
+                         Can be empty.
+                version:
+                    type: string
                 sheet:
                     type: string
                     description: |-
@@ -12888,20 +12893,6 @@ components:
                 statementSize:
                     readOnly: true
                     type: string
-                type:
-                    enum:
-                        - TYPE_UNSPECIFIED
-                        - VERSIONED
-                    type: string
-                    format: enum
-                version:
-                    type: string
-                file:
-                    type: string
-                    description: |-
-                        The name of the file in the release.
-                         Expressed as a path, e.g. `2.2/V0001_create_table.sql`
-                         Can be empty.
                 issue:
                     type: string
                     description: |-

@@ -5,7 +5,7 @@
         {{ releaseFile.version }}
       </NTag>
       <h2 class="text-xl font-bold text-main truncate">
-        {{ releaseFile.name }}
+        {{ releaseFile.path}}
       </h2>
     </div>
     <p class="mt-3 text-control text-base space-x-4">
