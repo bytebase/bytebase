@@ -77,16 +77,17 @@ export interface ListReleasesRequest {
   /** Format: projects/{project} */
   parent: string;
   /**
-   * The maximum number of change histories to return. The service may return fewer than this value.
-   * If unspecified, at most 10 change histories will be returned.
+   * The maximum number of releases to return. The service may return fewer than this value.
+   * If unspecified, at most 10 releases will be returned.
    * The maximum value is 1000; values above 1000 will be coerced to 1000.
    */
   pageSize: number;
   /**
-   * Not used. A page token, received from a previous `ListReleasesRequest` call.
+   * Not used.
+   * A page token, received from a previous `ListReleases` call.
    * Provide this to retrieve the subsequent page.
    *
-   * When paginating, all other parameters provided to `ListReleasesRequest` must match
+   * When paginating, all other parameters provided to `ListReleases` must match
    * the call that provided the page token.
    */
   pageToken: string;

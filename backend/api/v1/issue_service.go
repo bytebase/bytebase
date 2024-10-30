@@ -270,13 +270,17 @@ func (s *IssueService) ListIssues(ctx context.Context, request *v1pb.ListIssuesR
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	limit, offset, err := parseLimitAndOffset(request.PageToken, int(request.PageSize))
+	offset, err := parseLimitAndOffset(&pageSize{
+		token:   request.PageToken,
+		limit:   int(request.PageSize),
+		maximum: 1000,
+	})
 	if err != nil {
 		return nil, err
 	}
-	limitPlusOne := limit + 1
+	limitPlusOne := offset.limit + 1
 
-	issueFind, err := s.getIssueFind(ctx, request.Filter, request.Query, &limitPlusOne, &offset)
+	issueFind, err := s.getIssueFind(ctx, request.Filter, request.Query, &limitPlusOne, &offset.offset)
 	if err != nil {
 		return nil, err
 	}
@@ -289,12 +293,10 @@ func (s *IssueService) ListIssues(ctx context.Context, request *v1pb.ListIssuesR
 
 	var nextPageToken string
 	if len(issues) == limitPlusOne {
-		pageToken, err := getPageToken(limit, offset+limit)
-		if err != nil {
+		if nextPageToken, err = offset.getPageToken(); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to get next page token, error: %v", err)
 		}
-		nextPageToken = pageToken
-		issues = issues[:limit]
+		issues = issues[:offset.limit]
 	}
 
 	converted, err := s.convertToIssues(ctx, issues)
@@ -317,13 +319,17 @@ func (s *IssueService) SearchIssues(ctx context.Context, request *v1pb.SearchIss
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	limit, offset, err := parseLimitAndOffset(request.PageToken, int(request.PageSize))
+	offset, err := parseLimitAndOffset(&pageSize{
+		token:   request.PageToken,
+		limit:   int(request.PageSize),
+		maximum: 1000,
+	})
 	if err != nil {
 		return nil, err
 	}
-	limitPlusOne := limit + 1
+	limitPlusOne := offset.limit + 1
 
-	issueFind, err := s.getIssueFind(ctx, request.Filter, request.Query, &limitPlusOne, &offset)
+	issueFind, err := s.getIssueFind(ctx, request.Filter, request.Query, &limitPlusOne, &offset.offset)
 	if err != nil {
 		return nil, err
 	}
@@ -345,29 +351,21 @@ func (s *IssueService) SearchIssues(ctx context.Context, request *v1pb.SearchIss
 		return nil, status.Errorf(codes.Internal, "failed to search issue, error: %v", err)
 	}
 
+	var nextPageToken string
 	if len(issues) == limitPlusOne {
-		nextPageToken, err := getPageToken(limit, offset+limit)
-		if err != nil {
+		if nextPageToken, err = offset.getPageToken(); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to get next page token, error: %v", err)
 		}
-		converted, err := s.convertToIssues(ctx, issues[:limit])
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to convert to issue, error: %v", err)
-		}
-		return &v1pb.SearchIssuesResponse{
-			Issues:        converted,
-			NextPageToken: nextPageToken,
-		}, nil
+		issues = issues[:offset.limit]
 	}
 
-	// No subsequent pages.
 	converted, err := s.convertToIssues(ctx, issues)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to convert to issue, error: %v", err)
 	}
 	return &v1pb.SearchIssuesResponse{
 		Issues:        converted,
-		NextPageToken: "",
+		NextPageToken: nextPageToken,
 	}, nil
 }
 
@@ -1390,28 +1388,30 @@ func (s *IssueService) ListIssueComments(ctx context.Context, request *v1pb.List
 		return nil, status.Errorf(codes.Internal, "failed to get issue, err: %v", err)
 	}
 
-	limit, offset, err := parseLimitAndOffset(request.PageToken, int(request.PageSize))
+	offset, err := parseLimitAndOffset(&pageSize{
+		token:   request.PageToken,
+		limit:   int(request.PageSize),
+		maximum: 1000,
+	})
 	if err != nil {
 		return nil, err
 	}
-	limitPlusOne := limit + 1
+	limitPlusOne := offset.limit + 1
 
 	issueComments, err := s.store.ListIssueComment(ctx, &store.FindIssueCommentMessage{
 		IssueUID: &issue.UID,
 		Limit:    &limitPlusOne,
-		Offset:   &offset,
+		Offset:   &offset.offset,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to list issue comments, err: %v", err)
 	}
 	var nextPageToken string
 	if len(issueComments) == limitPlusOne {
-		pageToken, err := getPageToken(limit, offset+limit)
-		if err != nil {
+		if nextPageToken, err = offset.getPageToken(); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to get next page token, error: %v", err)
 		}
-		nextPageToken = pageToken
-		issueComments = issueComments[:limit]
+		issueComments = issueComments[:offset.limit]
 	}
 
 	return &v1pb.ListIssueCommentsResponse{
