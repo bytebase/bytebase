@@ -101,12 +101,14 @@ message GetUserRequest {
 }
 
 message ListUsersRequest {
+  // Not used.
   // The maximum number of users to return. The service may return fewer than
   // this value.
   // If unspecified, at most 50 users will be returned.
   // The maximum value is 1000; values above 1000 will be coerced to 1000.
   int32 page_size = 1;
 
+  // Not used.
   // A page token, received from a previous `ListUsers` call.
   // Provide this to retrieve the subsequent page.
   //

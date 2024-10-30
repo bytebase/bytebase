@@ -119,16 +119,21 @@ func (s *DatabaseService) ListInstanceDatabases(ctx context.Context, request *v1
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	limit, offset, err := parseLimitAndOffset(request.PageToken, int(request.PageSize))
+	offset, err := parseLimitAndOffset(&pageSize{
+		token: request.PageToken,
+		limit: int(request.PageSize),
+		// TODO: the frontend not support pagination yet.
+		maximum: 1000000,
+	})
 	if err != nil {
 		return nil, err
 	}
-	limitPlusOne := limit + 1
+	limitPlusOne := offset.limit + 1
 
 	find := &store.FindDatabaseMessage{
 		InstanceID: &instanceID,
 		Limit:      &limitPlusOne,
-		Offset:     &offset,
+		Offset:     &offset.offset,
 	}
 
 	// Deprecated. Remove this later.
@@ -154,11 +159,8 @@ func (s *DatabaseService) ListInstanceDatabases(ctx context.Context, request *v1
 
 	nextPageToken := ""
 	if len(databaseMessages) == limitPlusOne {
-		databaseMessages = databaseMessages[:limit]
-		if nextPageToken, err = marshalPageToken(&storepb.PageToken{
-			Limit:  int32(limit),
-			Offset: int32(limit + offset),
-		}); err != nil {
+		databaseMessages = databaseMessages[:offset.limit]
+		if nextPageToken, err = offset.getPageToken(); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to marshal next page token, error: %v", err)
 		}
 	}
@@ -192,16 +194,22 @@ func (s *DatabaseService) ListDatabases(ctx context.Context, request *v1pb.ListD
 		return nil, status.Errorf(codes.InvalidArgument, "invalid parent %q", request.Parent)
 	}
 
-	limit, offset, err := parseLimitAndOffset(request.PageToken, int(request.PageSize))
+	offset, err := parseLimitAndOffset(&pageSize{
+		token: request.PageToken,
+		limit: int(request.PageSize),
+		// TODO: the frontend not support pagination yet.
+		maximum: 1000,
+	})
 	if err != nil {
 		return nil, err
 	}
-	limitPlusOne := limit + 1
+	limitPlusOne := offset.limit + 1
 
 	find := &store.FindDatabaseMessage{
 		ProjectID: projectID,
 		Limit:     &limitPlusOne,
-		Offset:    &offset}
+		Offset:    &offset.offset,
+	}
 
 	databaseMessages, err := s.store.ListDatabases(ctx, find)
 	if err != nil {
@@ -210,11 +218,8 @@ func (s *DatabaseService) ListDatabases(ctx context.Context, request *v1pb.ListD
 
 	nextPageToken := ""
 	if len(databaseMessages) == limitPlusOne {
-		databaseMessages = databaseMessages[:limit]
-		if nextPageToken, err = marshalPageToken(&storepb.PageToken{
-			Limit:  int32(limit),
-			Offset: int32(limit + offset),
-		}); err != nil {
+		databaseMessages = databaseMessages[:offset.limit]
+		if nextPageToken, err = offset.getPageToken(); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to marshal next page token, error: %v", err)
 		}
 	}
@@ -743,11 +748,16 @@ func (s *DatabaseService) ListChangeHistories(ctx context.Context, request *v1pb
 		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
 	}
 
-	limit, offset, err := parseLimitAndOffset(request.PageToken, int(request.PageSize))
+	offset, err := parseLimitAndOffset(&pageSize{
+		token: request.PageToken,
+		limit: int(request.PageSize),
+		// TODO:
+		maximum: 1000,
+	})
 	if err != nil {
 		return nil, err
 	}
-	limitPlusOne := limit + 1
+	limitPlusOne := offset.limit + 1
 
 	truncateSize := 512
 	// We apply small truncate size in dev environment (not demo) for finding incorrect usage of views
@@ -758,7 +768,7 @@ func (s *DatabaseService) ListChangeHistories(ctx context.Context, request *v1pb
 		InstanceID:   &instance.UID,
 		DatabaseID:   &database.UID,
 		Limit:        &limitPlusOne,
-		Offset:       &offset,
+		Offset:       &offset.offset,
 		TruncateSize: truncateSize,
 	}
 	if request.View == v1pb.ChangeHistoryView_CHANGE_HISTORY_VIEW_FULL {
@@ -796,11 +806,10 @@ func (s *DatabaseService) ListChangeHistories(ctx context.Context, request *v1pb
 
 	nextPageToken := ""
 	if len(changeHistories) == limitPlusOne {
-		nextPageToken, err = getPageToken(limit, offset+limit)
-		if err != nil {
+		if nextPageToken, err = offset.getPageToken(); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to get next page token, error: %v", err)
 		}
-		changeHistories = changeHistories[:limit]
+		changeHistories = changeHistories[:offset.limit]
 	}
 
 	// no subsequent pages

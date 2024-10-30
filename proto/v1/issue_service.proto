@@ -160,7 +160,7 @@ message ListIssuesRequest {
 
   // The maximum number of issues to return. The service may return fewer than
   // this value.
-  // If unspecified, at most 50 issues will be returned.
+  // If unspecified, at most 10 issues will be returned.
   // The maximum value is 1000; values above 1000 will be coerced to 1000.
   int32 page_size = 2;
 
@@ -195,14 +195,14 @@ message SearchIssuesRequest {
 
   // The maximum number of issues to return. The service may return fewer than
   // this value.
-  // If unspecified, at most 50 issues will be returned.
+  // If unspecified, at most 10 issues will be returned.
   // The maximum value is 1000; values above 1000 will be coerced to 1000.
   int32 page_size = 2;
 
-  // A page token, received from a previous `ListIssues` call.
+  // A page token, received from a previous `SearchIssues` call.
   // Provide this to retrieve the subsequent page.
   //
-  // When paginating, all other parameters provided to `ListIssues` must match
+  // When paginating, all other parameters provided to `SearchIssues` must match
   // the call that provided the page token.
   string page_token = 3;
 
@@ -476,16 +476,16 @@ message ListIssueCommentsRequest {
     (google.api.resource_reference) = {type: "bytebase.com/Issue"}
   ];
 
-  // The maximum number of issues to return. The service may return fewer than
+  // The maximum number of issue comments to return. The service may return fewer than
   // this value.
-  // If unspecified, at most 50 issues will be returned.
+  // If unspecified, at most 10 issue comments will be returned.
   // The maximum value is 1000; values above 1000 will be coerced to 1000.
   int32 page_size = 2;
 
-  // A page token, received from a previous `ListIssues` call.
+  // A page token, received from a previous `ListIssueComments` call.
   // Provide this to retrieve the subsequent page.
   //
-  // When paginating, all other parameters provided to `ListIssues` must match
+  // When paginating, all other parameters provided to `ListIssueComments` must match
   // the call that provided the page token.
   string page_token = 3;
 }

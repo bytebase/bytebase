@@ -312,7 +312,7 @@ type ListPlansRequest struct {
 	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
 	// The maximum number of plans to return. The service may return fewer than
 	// this value.
-	// If unspecified, at most 50 plans will be returned.
+	// If unspecified, at most 10 plans will be returned.
 	// The maximum value is 1000; values above 1000 will be coerced to 1000.
 	PageSize int32 `protobuf:"varint,2,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
 	// A page token, received from a previous `ListPlans` call.
@@ -441,13 +441,13 @@ type SearchPlansRequest struct {
 	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
 	// The maximum number of plans to return. The service may return fewer than
 	// this value.
-	// If unspecified, at most 50 plans will be returned.
+	// If unspecified, at most 10 plans will be returned.
 	// The maximum value is 1000; values above 1000 will be coerced to 1000.
 	PageSize int32 `protobuf:"varint,2,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
-	// A page token, received from a previous `ListPlans` call.
+	// A page token, received from a previous `SearchPlans` call.
 	// Provide this to retrieve the subsequent page.
 	//
-	// When paginating, all other parameters provided to `ListPlans` must match
+	// When paginating, all other parameters provided to `SearchPlans` must match
 	// the call that provided the page token.
 	PageToken string `protobuf:"bytes,3,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
 	// Filter is used to filter plans returned in the list.
@@ -826,11 +826,13 @@ type ListPlanCheckRunsRequest struct {
 	// The parent, which owns this collection of plan check runs.
 	// Format: projects/{project}/plans/{plan}
 	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
+	// Not used.
 	// The maximum number of plan check runs to return. The service may return fewer than
 	// this value.
-	// If unspecified, at most 50 plans will be returned.
+	// If unspecified, at most 10 plan check runs will be returned.
 	// The maximum value is 1000; values above 1000 will be coerced to 1000.
 	PageSize int32 `protobuf:"varint,2,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
+	// Not used.
 	// A page token, received from a previous `ListPlanCheckRuns` call.
 	// Provide this to retrieve the subsequent page.
 	//

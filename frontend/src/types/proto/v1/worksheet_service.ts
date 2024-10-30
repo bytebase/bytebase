@@ -97,14 +97,16 @@ export interface SearchWorksheetsRequest {
    */
   filter: string;
   /**
-   * Not used. The maximum number of worksheets to return. The service may return fewer than
+   * Not used.
+   * The maximum number of worksheets to return. The service may return fewer than
    * this value.
-   * If unspecified, at most 50 worksheets will be returned.
+   * If unspecified, at most 10 worksheets will be returned.
    * The maximum value is 1000; values above 1000 will be coerced to 1000.
    */
   pageSize: number;
   /**
-   * Not used. A page token, received from a previous `SearchWorksheets` call.
+   * Not used.
+   * A page token, received from a previous `SearchWorksheets` call.
    * Provide this to retrieve the subsequent page.
    *
    * When paginating, all other parameters provided to `SearchWorksheets` must match

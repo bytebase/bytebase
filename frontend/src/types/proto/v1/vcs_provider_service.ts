@@ -38,13 +38,15 @@ export interface GetVCSProviderRequest {
 
 export interface ListVCSProvidersRequest {
   /**
-   * Not used. The maximum number of vcs provider to return. The service may return fewer than this value.
-   * If unspecified, at most 100 vcs provider will be returned.
+   * Not used.
+   * The maximum number of vcs provider to return. The service may return fewer than this value.
+   * If unspecified, at most 10 vcs provider will be returned.
    * The maximum value is 1000; values above 1000 will be coerced to 1000.
    */
   pageSize: number;
   /**
-   * Not used. A page token, received from a previous `ListVCSProviders` call.
+   * Not used.
+   * A page token, received from a previous `ListVCSProviders` call.
    * Provide this to retrieve the subsequent page.
    */
   pageToken: string;

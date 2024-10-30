@@ -116,16 +116,20 @@ func (s *ReleaseService) ListReleases(ctx context.Context, request *v1pb.ListRel
 		return nil, status.Errorf(codes.NotFound, "project %v not found", projectID)
 	}
 
-	limit, offset, err := parseLimitAndOffset(request.PageToken, int(request.PageSize))
+	offset, err := parseLimitAndOffset(&pageSize{
+		token:   request.PageToken,
+		limit:   int(request.PageSize),
+		maximum: 1000,
+	})
 	if err != nil {
 		return nil, err
 	}
-	limitPlusOne := limit + 1
+	limitPlusOne := offset.limit + 1
 
 	releaseFind := &store.FindReleaseMessage{
 		ProjectUID:  &project.UID,
 		Limit:       &limitPlusOne,
-		Offset:      &offset,
+		Offset:      &offset.offset,
 		ShowDeleted: request.ShowDeleted,
 	}
 
@@ -136,12 +140,10 @@ func (s *ReleaseService) ListReleases(ctx context.Context, request *v1pb.ListRel
 
 	var nextPageToken string
 	if len(releaseMessages) == limitPlusOne {
-		pageToken, err := getPageToken(limit, offset+limit)
-		if err != nil {
+		if nextPageToken, err = offset.getPageToken(); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to get next page token, error: %v", err)
 		}
-		nextPageToken = pageToken
-		releaseMessages = releaseMessages[:limit]
+		releaseMessages = releaseMessages[:offset.limit]
 	}
 
 	releases, err := convertToReleases(ctx, s.store, releaseMessages)

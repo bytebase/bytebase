@@ -15,13 +15,15 @@ export const protobufPackage = "bytebase.v1";
 
 export interface ListRisksRequest {
   /**
+   * Not used.
    * The maximum number of risks to return. The service may return fewer than
    * this value.
-   * If unspecified, at most 50 risks will be returned.
+   * If unspecified, at most 10 risks will be returned.
    * The maximum value is 1000; values above 1000 will be coerced to 1000.
    */
   pageSize: number;
   /**
+   * Not used.
    * A page token, received from a previous `ListRisks` call.
    * Provide this to retrieve the subsequent page.
    *

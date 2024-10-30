@@ -222,15 +222,14 @@ export interface ListInstanceDatabasesRequest {
   /**
    * The maximum number of databases to return. The service may return fewer than
    * this value.
-   * If unspecified, at most 50 databases will be returned.
-   * The maximum value is 1000; values above 1000 will be coerced to 1000.
+   * If unspecified, at most 10 databases will be returned.
    */
   pageSize: number;
   /**
-   * A page token, received from a previous `ListDatabases` call.
+   * A page token, received from a previous `ListInstanceDatabases` call.
    * Provide this to retrieve the subsequent page.
    *
-   * When paginating, all other parameters provided to `ListDatabases` must match
+   * When paginating, all other parameters provided to `ListInstanceDatabases` must match
    * the call that provided the page token.
    */
   pageToken: string;
@@ -263,8 +262,7 @@ export interface ListDatabasesRequest {
   /**
    * The maximum number of databases to return. The service may return fewer than
    * this value.
-   * If unspecified, at most 50 databases will be returned.
-   * The maximum value is 1000; values above 1000 will be coerced to 1000.
+   * If unspecified, at most 10 databases will be returned.
    */
   pageSize: number;
   /**
@@ -1361,14 +1359,16 @@ export interface ListSecretsRequest {
    */
   parent: string;
   /**
-   * Not used. The maximum number of databases to return. The service may return fewer than
+   * Not used.
+   * The maximum number of secrets to return. The service may return fewer than
    * this value.
-   * If unspecified, at most 50 databases will be returned.
+   * If unspecified, at most 10 secrets will be returned.
    * The maximum value is 1000; values above 1000 will be coerced to 1000.
    */
   pageSize: number;
   /**
-   * Not used. A page token, received from a previous `ListSecrets` call.
+   * Not used.
+   * A page token, received from a previous `ListSecrets` call.
    * Provide this to retrieve the subsequent page.
    *
    * When paginating, all other parameters provided to `ListSecrets` must match
@@ -1740,7 +1740,7 @@ export interface ListChangeHistoriesRequest {
    */
   pageSize: number;
   /**
-   * Not used. A page token, received from a previous `ListChangeHistories` call.
+   * A page token, received from a previous `ListChangeHistories` call.
    * Provide this to retrieve the subsequent page.
    *
    * When paginating, all other parameters provided to `ListChangeHistories` must match
