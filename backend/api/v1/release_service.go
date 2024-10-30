@@ -2,6 +2,7 @@ package v1
 
 import (
 	"context"
+	"slices"
 
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
@@ -47,6 +48,11 @@ func (s *ReleaseService) CreateRelease(ctx context.Context, request *v1pb.Create
 	}
 	if project == nil {
 		return nil, status.Errorf(codes.NotFound, "project %v not found", projectID)
+	}
+
+	request.Release.Files, err = validateAndSanitizeReleaseFiles(request.Release.Files)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid release files, err: %v", err)
 	}
 
 	files, err := convertReleaseFiles(ctx, s.store, request.Release.Files)
@@ -356,4 +362,40 @@ func convertReleaseVcsSource(vs *v1pb.Release_VCSSource) *storepb.ReleasePayload
 		VcsType:        storepb.VCSType(vs.VcsType),
 		PullRequestUrl: vs.PullRequestUrl,
 	}
+}
+
+func validateAndSanitizeReleaseFiles(files []*v1pb.Release_File) ([]*v1pb.Release_File, error) {
+	versionSet := map[string]struct{}{}
+
+	for _, f := range files {
+		f.Id = uuid.NewString()
+
+		if f.Version == "" {
+			return nil, errors.Errorf("file version cannot be empty")
+		}
+		switch f.Type {
+		case v1pb.ReleaseFileType_VERSIONED:
+		case v1pb.ReleaseFileType_TYPE_UNSPECIFIED:
+			return nil, errors.Errorf("unexpected file type %q", f.Type.String())
+		default:
+			return nil, errors.Errorf("unexpected file type %q", f.Type.String())
+		}
+
+		if _, ok := versionSet[f.Version]; ok {
+			return nil, errors.Errorf("found duplicate version %q", f.Version)
+		}
+		versionSet[f.Version] = struct{}{}
+	}
+
+	slices.SortFunc(files, func(a, b *v1pb.Release_File) int {
+		if a.Version < b.Version {
+			return -1
+		}
+		if a.Version > b.Version {
+			return 1
+		}
+		return 0
+	})
+
+	return files, nil
 }
