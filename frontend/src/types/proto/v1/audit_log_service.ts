@@ -95,6 +95,12 @@ export interface ExportAuditLogsRequest {
 
 export interface ExportAuditLogsResponse {
   content: Uint8Array;
+  /**
+   * A token to retrieve next page of log entities.
+   * Pass this value in the page_token field in the subsequent call
+   * to retrieve the next page of log entities.
+   */
+  nextPageToken: string;
 }
 
 export interface AuditLog {
@@ -579,13 +585,16 @@ export const ExportAuditLogsRequest: MessageFns<ExportAuditLogsRequest> = {
 };
 
 function createBaseExportAuditLogsResponse(): ExportAuditLogsResponse {
-  return { content: new Uint8Array(0) };
+  return { content: new Uint8Array(0), nextPageToken: "" };
 }
 
 export const ExportAuditLogsResponse: MessageFns<ExportAuditLogsResponse> = {
   encode(message: ExportAuditLogsResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.content.length !== 0) {
       writer.uint32(10).bytes(message.content);
+    }
+    if (message.nextPageToken !== "") {
+      writer.uint32(18).string(message.nextPageToken);
     }
     return writer;
   },
@@ -604,6 +613,13 @@ export const ExportAuditLogsResponse: MessageFns<ExportAuditLogsResponse> = {
 
           message.content = reader.bytes();
           continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.nextPageToken = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -614,13 +630,19 @@ export const ExportAuditLogsResponse: MessageFns<ExportAuditLogsResponse> = {
   },
 
   fromJSON(object: any): ExportAuditLogsResponse {
-    return { content: isSet(object.content) ? bytesFromBase64(object.content) : new Uint8Array(0) };
+    return {
+      content: isSet(object.content) ? bytesFromBase64(object.content) : new Uint8Array(0),
+      nextPageToken: isSet(object.nextPageToken) ? globalThis.String(object.nextPageToken) : "",
+    };
   },
 
   toJSON(message: ExportAuditLogsResponse): unknown {
     const obj: any = {};
     if (message.content.length !== 0) {
       obj.content = base64FromBytes(message.content);
+    }
+    if (message.nextPageToken !== "") {
+      obj.nextPageToken = message.nextPageToken;
     }
     return obj;
   },
@@ -631,6 +653,7 @@ export const ExportAuditLogsResponse: MessageFns<ExportAuditLogsResponse> = {
   fromPartial(object: DeepPartial<ExportAuditLogsResponse>): ExportAuditLogsResponse {
     const message = createBaseExportAuditLogsResponse();
     message.content = object.content ?? new Uint8Array(0);
+    message.nextPageToken = object.nextPageToken ?? "";
     return message;
   },
 };

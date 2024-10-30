@@ -119,6 +119,11 @@ message ExportAuditLogsRequest {
 
 message ExportAuditLogsResponse {
   bytes content = 1;
+
+  // A token to retrieve next page of log entities.
+  // Pass this value in the page_token field in the subsequent call
+  // to retrieve the next page of log entities.
+  string next_page_token = 2;
 }
 
 message AuditLog {
