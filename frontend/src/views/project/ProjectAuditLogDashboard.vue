@@ -112,7 +112,7 @@ const handleExport = async (
     pageToken = nextPageToken;
     callback(
       content,
-      `audit-log.file${i}.${dayjs(new Date()).format("YYYY-MM-DDTHH-mm-ss")}`
+      `audit-log${!pageToken && i === 1 ? "" : `.file${i}`}.${dayjs(new Date()).format("YYYY-MM-DDTHH-mm-ss")}`
     );
   }
 
