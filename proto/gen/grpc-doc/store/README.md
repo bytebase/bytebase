@@ -3100,7 +3100,7 @@ InstanceRole is the API message for instance role.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| file | [string](#string) |  | Format: projects/{project}/releases/{release}/files/{file} {file} is URL path escaped. |
+| file | [string](#string) |  | Format: projects/{project}/releases/{release}/files/{id} |
 
 
 
@@ -4710,7 +4710,7 @@ TaskDatabaseUpdatePayload is the task payload for updating database (DDL &amp; D
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| file | [string](#string) |  | Format: projects/{project}/releases/{release}/files/{file} {file} is URL path escaped. |
+| file | [string](#string) |  | Format: projects/{project}/releases/{release}/files/{id} |
 
 
 
