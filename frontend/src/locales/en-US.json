@@ -3049,6 +3049,7 @@
   "audit-log": {
     "no-logs": "No audit logs",
     "audit-log-detail": "Audit Log Details",
+    "export-finished": "Export finished",
     "table": {
       "created-ts": "Time",
       "created-time": "Created Time",

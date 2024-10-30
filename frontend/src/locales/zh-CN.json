@@ -3049,6 +3049,7 @@
   "audit-log": {
     "no-logs": "暂无审计日志",
     "audit-log-detail": "审计详情",
+    "export-finished": "导出完成",
     "table": {
       "created-ts": "时间",
       "created-time": "创建时间",
