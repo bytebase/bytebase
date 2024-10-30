@@ -2,12 +2,18 @@
   <div class="w-full flex flex-row items-center justify-between">
     <span class="textlabel !text-base">{{ $t("release.files") }}</span>
     <div>
-      <NButton size="small" @click="onCreateFileClick">
-        <template #icon>
-          <PlusIcon />
-        </template>
-        {{ $t("release.actions.new-file") }}
-      </NButton>
+      <NDropdown
+        trigger="hover"
+        :options="addFileButtonOptions"
+        @select="state.selectedNewFileOption = $event"
+      >
+        <NButton size="small">
+          <template #icon>
+            <PlusIcon />
+          </template>
+          {{ $t("release.actions.new-file") }}
+        </NButton>
+      </NDropdown>
     </div>
   </div>
   <NDataTable
@@ -34,39 +40,48 @@
   </div>
 
   <CreateReleaseFilesPanel
-    :show="state.showCreatePanel"
+    :show="state.selectedNewFileOption === 'raw-sql'"
     :file="state.selectedFile"
-    @close="state.showCreatePanel = false"
+    @close="state.selectedNewFileOption = undefined"
+  />
+
+  <ImportFilesFromReleasePanel
+    :show="state.selectedNewFileOption === 'import-from-release'"
+    @close="state.selectedNewFileOption = undefined"
   />
 </template>
 
 <script setup lang="tsx">
 import { orderBy } from "lodash-es";
 import { PlusIcon } from "lucide-vue-next";
-import { NButton, NDataTable, type DataTableColumn } from "naive-ui";
+import {
+  NButton,
+  NDropdown,
+  NDataTable,
+  type DataTableColumn,
+  type DropdownOption,
+} from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
-import { Release_File } from "@/types/proto/v1/release_service";
 import { useReleaseCreateContext, type FileToCreate } from "../context";
 import CreateReleaseFilesPanel from "./CreateReleaseFilesPanel.vue";
+import ImportFilesFromReleasePanel from "./ImportFilesFromReleasePanel.vue";
 
 interface LocalState {
-  showCreatePanel: boolean;
+  selectedNewFileOption?: "raw-sql" | "import-from-release";
   selectedFile?: FileToCreate;
 }
 
 const { t } = useI18n();
 const { files } = useReleaseCreateContext();
-const state = reactive<LocalState>({
-  showCreatePanel: false,
-});
+const state = reactive<LocalState>({});
 
 const sortedFiles = computed(() => {
   return orderBy(files.value, "version", "desc");
 });
 
 const columnList = computed(() => {
-  const columns: DataTableColumn<Release_File>[] = [
+  const columns: DataTableColumn<FileToCreate>[] = [
     {
       key: "version",
       title: t("common.version"),
@@ -76,14 +91,10 @@ const columnList = computed(() => {
     {
       key: "title",
       title: t("database.revision.filename"),
-      width: 256,
+      width: 160,
       ellipsis: true,
       render: (file) => {
-        return (
-          <div class="space-x-2">
-            <span>{file.path}</span>
-          </div>
-        );
+        return file.path || "-";
       },
     },
     {
@@ -96,18 +107,26 @@ const columnList = computed(() => {
   return columns;
 });
 
+const addFileButtonOptions = computed((): DropdownOption[] => {
+  return [
+    {
+      label: t("schema-editor.raw-sql"),
+      key: "raw-sql",
+    },
+    {
+      label: t("release.actions.import-from-release"),
+      key: "import-from-release",
+    },
+  ];
+});
+
 const rowProps = (row: FileToCreate) => {
   return {
     style: "cursor: pointer;",
     onClick: () => {
-      state.showCreatePanel = true;
+      state.selectedNewFileOption = "raw-sql";
       state.selectedFile = row;
     },
   };
-};
-
-const onCreateFileClick = () => {
-  state.showCreatePanel = true;
-  state.selectedFile = undefined;
 };
 </script>
