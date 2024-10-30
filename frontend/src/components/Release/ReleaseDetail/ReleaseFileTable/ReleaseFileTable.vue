@@ -2,73 +2,81 @@
   <NDataTable
     size="small"
     :columns="columnList"
-    :data="release.files"
+    :data="files"
     :row-props="rowProps"
     :striped="true"
-    :row-key="(file) => file.version"
+    :row-key="(file) => file.id"
+    @update:checked-row-keys="
+        (val) => onRowSelected(val as string[])
+      "
   />
-
-  <Drawer
-    :show="!!state.selectedReleaseFile"
-    @close="state.selectedReleaseFile = undefined"
-  >
-    <DrawerContent
-      style="width: 75vw; max-width: calc(100vw - 8rem)"
-      :title="'Release File'"
-    >
-      <ReleaseFileDetailPanel
-        v-if="state.selectedReleaseFile"
-        :release="release"
-        :release-file="state.selectedReleaseFile"
-      />
-    </DrawerContent>
-  </Drawer>
 </template>
 
 <script setup lang="tsx">
-import { NDataTable, NTag, type DataTableColumn } from "naive-ui";
-import { computed, reactive } from "vue";
+import { NDataTable, type DataTableColumn } from "naive-ui";
+import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { Drawer, DrawerContent } from "@/components/v2";
 import { Release_File } from "@/types/proto/v1/release_service";
-import { useReleaseDetailContext } from "../context";
-import ReleaseFileDetailPanel from "./ReleaseFileDetailPanel.vue";
+import { bytesToString } from "@/utils";
 
-interface LocalState {
-  selectedReleaseFile?: Release_File;
-}
+const props = withDefaults(
+  defineProps<{
+    files: Release_File[];
+    showSelection?: boolean;
+    rowClickable?: boolean;
+  }>(),
+  {
+    showSelection: false,
+    rowClickable: true,
+  }
+);
+
+const emit = defineEmits<{
+  (event: "row-click", e: MouseEvent, val: Release_File): void;
+  (event: "update:selected-files", val: Release_File[]): void;
+}>();
 
 const { t } = useI18n();
-const { release } = useReleaseDetailContext();
-const state = reactive<LocalState>({});
 
 const columnList = computed(() => {
-  const columns: DataTableColumn<Release_File>[] = [
+  const columns: (DataTableColumn<Release_File> & {
+    hide?: boolean;
+  })[] = [
+    {
+      type: "selection",
+      hide: !props.showSelection,
+      cellProps: () => {
+        return {
+          onClick: (e: MouseEvent) => {
+            e.stopPropagation();
+          },
+        };
+      },
+    },
     {
       key: "version",
       title: t("common.version"),
-      width: 128,
-      render: (file) => <span class="textlabel">{file.version}</span>,
+      width: 160,
+      ellipsis: true,
+      className: "textlabel",
+      render: (file) => file.version,
     },
     {
-      key: "title",
+      key: "filename",
       title: t("database.revision.filename"),
-      width: 256,
+      width: 128,
       ellipsis: true,
       render: (file) => {
-        return (
-          <div class="space-x-2">
-            <span>{file.path}</span>
-            <NTag
-              v-if="schemaVersion"
-              class="text-sm font-mono"
-              size="small"
-              round
-            >
-              {file.sheetSha256.slice(0, 8)}
-            </NTag>
-          </div>
-        );
+        return file.path || "-";
+      },
+    },
+    {
+      key: "statement-size",
+      title: t("common.statement-size"),
+      width: 128,
+      ellipsis: true,
+      render: (file) => {
+        return bytesToString(file.statementSize.toNumber());
       },
     },
     {
@@ -78,15 +86,26 @@ const columnList = computed(() => {
       render: (file) => file.statement,
     },
   ];
-  return columns;
+  return columns.filter((column) => !column.hide);
 });
 
-const rowProps = (row: Release_File) => {
+const rowProps = (file: Release_File) => {
   return {
-    style: "cursor: pointer;",
-    onClick: () => {
-      state.selectedReleaseFile = row;
+    style: props.rowClickable ? "cursor: pointer;" : "",
+    onClick: (e: MouseEvent) => {
+      if (!props.rowClickable) {
+        return;
+      }
+
+      emit("row-click", e, file);
     },
   };
+};
+
+const onRowSelected = (val: string[]) => {
+  emit(
+    "update:selected-files",
+    val.map((id) => props.files.find((f) => f.id === id)!)
+  );
 };
 </script>

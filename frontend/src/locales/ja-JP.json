@@ -92,6 +92,7 @@
     "updated-at": "更新日時",
     "commit": "提出する",
     "statement": "声明",
+    "statement-size": "ステートメントサイズ",
     "sql-statement": "SQL@:{'common.statement'}",
     "snapshot": "スナップショット",
     "status": "州",
@@ -3736,17 +3737,20 @@
     "releases": "リリース",
     "files": "ファイル",
     "create": "リリースを作成",
+    "select": "リリースを選択",
     "tasks-to-apply": "適用するタスク",
     "out-of-order-files": "順序が間違っているファイル",
     "applied-but-modifed-files": "適用済みだが変更されたファイル",
     "allow-out-of-order": "順序外を許可する",
     "show-archived": "アーカイブを表示",
     "archive-this-release": "このリリースをアーカイブする",
+    "total-files": "合計 {count} ファイル",
     "no-tasks-to-apply": {
       "self": "適用するタスクはありません"
     },
     "actions": {
-      "new-file": "新しいファイル"
+      "new-file": "新しいファイル",
+      "import-from-release": "リリースからのインポート"
     },
     "messages": {
       "succeed-to-create-release": "リリースの作成に成功",

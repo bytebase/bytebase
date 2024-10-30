@@ -92,6 +92,7 @@
     "updated-at": "更新于",
     "commit": "提交",
     "statement": "语句",
+    "statement-size": "语句大小",
     "sql-statement": "SQL @:{'common.statement'}",
     "snapshot": "快照",
     "status": "状态",
@@ -3736,17 +3737,20 @@
     "releases": "发布",
     "files": "文件",
     "create": "创建发布",
+    "select": "选择发布",
     "tasks-to-apply": "待应用的任务",
     "out-of-order-files": "无序文件",
     "applied-but-modifed-files": "已应用但已修改的文件",
     "allow-out-of-order": "允许无序文件",
     "show-archived": "显示已归档",
     "archive-this-release": "归档此发布",
+    "total-files": "共 {count} 个文件",
     "no-tasks-to-apply": {
       "self": "没有可应用的任务"
     },
     "actions": {
-      "new-file": "新建文件"
+      "new-file": "新建文件",
+      "import-from-release": "从发布导入"
     },
     "messages": {
       "succeed-to-create-release": "成功创建发布",

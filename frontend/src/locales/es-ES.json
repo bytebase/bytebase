@@ -92,6 +92,7 @@
     "updated-at": "Actualizado",
     "commit": "Confirmar",
     "statement": "Declaración",
+    "statement-size": "Tamaño de la declaración",
     "sql-statement": "Declaración SQL",
     "snapshot": "Instantánea",
     "status": "Estado",
@@ -3736,17 +3737,20 @@
     "releases": "Lanzamientos",
     "files": "Archivos",
     "create": "Crear lanzamiento",
+    "select": "Seleccionar versión",
     "tasks-to-apply": "Tareas a aplicar",
     "out-of-order-files": "Archivos fuera de servicio",
     "applied-but-modifed-files": "Archivos aplicados pero modificados",
     "allow-out-of-order": "Permitir fuera de servicio",
     "show-archived": "Mostrar archivado",
     "archive-this-release": "Archivar este comunicado",
+    "total-files": "Total de {count} archivos",
     "no-tasks-to-apply": {
       "self": "No hay tareas para aplicar"
     },
     "actions": {
-      "new-file": "Nuevo archivo"
+      "new-file": "Nuevo archivo",
+      "import-from-release": "Importar desde la versión"
     },
     "messages": {
       "succeed-to-create-release": "Tener éxito en crear el lanzamiento",

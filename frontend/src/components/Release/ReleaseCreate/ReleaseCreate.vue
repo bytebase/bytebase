@@ -4,28 +4,40 @@
       <p class="textlabel !text-base">{{ $t("common.title") }}</p>
       <NInput v-model:value="title" class="w-full" size="large" />
     </div>
-    <ReleaseFileTable />
+    <FileToCreateTable />
     <div class="w-full flex justify-end">
-      <NButton type="primary" :disabled="!allowCreate" @click="onCreateRelease">
+      <ErrorTipsButton
+        style="--n-padding: 0 10px"
+        :errors="createButtonErrors"
+        :button-props="{
+          type: 'primary',
+        }"
+        @click="onCreateRelease"
+      >
         <template #icon>
           <PlusIcon />
         </template>
         {{ $t("common.create") }}
-      </NButton>
+      </ErrorTipsButton>
     </div>
   </div>
 </template>
 
 <script lang="ts" setup>
 import { PlusIcon } from "lucide-vue-next";
-import { NButton, NInput } from "naive-ui";
+import { NInput } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
+import { ErrorTipsButton } from "@/components/v2";
 import { releaseServiceClient } from "@/grpcweb";
 import { pushNotification, useSheetV1Store } from "@/store";
-import { Release, Release_File } from "@/types/proto/v1/release_service";
-import ReleaseFileTable from "./ReleaseFileTable/ReleaseFileTable.vue";
+import {
+  Release,
+  Release_File,
+  ReleaseFileType,
+} from "@/types/proto/v1/release_service";
+import FileToCreateTable from "./FileToCreateTable";
 import { provideReleaseCreateContext } from "./context";
 
 const router = useRouter();
@@ -33,15 +45,23 @@ const { t } = useI18n();
 const { title, files, project } = provideReleaseCreateContext();
 const sheetStore = useSheetV1Store();
 
-const allowCreate = computed(() => {
+const createButtonErrors = computed(() => {
+  const errors: string[] = [];
   if (title.value.trim() === "") {
-    return false;
+    errors.push("Title is required");
   }
   if (files.value.length === 0) {
-    return false;
+    errors.push("No files to create");
   }
-  // TODO(steven): check file's version and statement in frontend.
-  return true;
+  const duplicatedVersions = new Set<string>();
+  for (const file of files.value) {
+    if (duplicatedVersions.has(file.version)) {
+      errors.push(`Duplicated version: ${file.version}`);
+      break;
+    }
+    duplicatedVersions.add(file.version);
+  }
+  return errors;
 });
 
 const onCreateRelease = async () => {
@@ -58,7 +78,7 @@ const onCreateRelease = async () => {
         path: file.path,
         version: file.version,
         sheet: sheet.name,
-        type: file.type,
+        type: ReleaseFileType.VERSIONED,
       })
     );
   }
