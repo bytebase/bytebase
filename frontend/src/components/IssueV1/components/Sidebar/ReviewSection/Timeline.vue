@@ -24,7 +24,7 @@
                 <li class="whitespace-pre-wrap">
                   {{
                     $t(
-                      "custom-approval.issue-review.issue-create-cannot-approve-their-own-issue"
+                      "custom-approval.issue-review.issue-creaters-cannot-approve-their-own-issue"
                     )
                   }}
                 </li>

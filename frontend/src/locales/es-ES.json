@@ -3410,7 +3410,7 @@
       "no-one-matched": "Nadie igualó",
       "any-n-role-can-approve": "Cualquier {role} puede aprobar",
       "approved-by-n": "Aprobado por {approver}",
-      "issue-create-cannot-approve-their-own-issue": "El creador del problema no puede aprobar su propio problema."
+      "issue-creaters-cannot-approve-their-own-issue": "El creador del problema no puede aprobar su propio problema."
     },
     "send-back": "Enviar de vuelta"
   },
