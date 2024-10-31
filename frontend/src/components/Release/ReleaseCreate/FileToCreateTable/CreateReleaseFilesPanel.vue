@@ -26,12 +26,25 @@
             </NButton>
           </div>
         </div>
-        <div v-if="isCreating" class="w-full flex flex-row justify-end mt-4">
+        <div
+          v-if="isCreating"
+          class="w-full flex flex-row justify-end mt-4 gap-2"
+        >
+          <UploadFilesButton @update="onUploadFiles">
+            <template #trigger="{ onClick }">
+              <NButton size="small" @click="onClick">
+                <template #icon>
+                  <UploadIcon class="w-4 h-4" />
+                </template>
+                {{ $t("common.upload") }}
+              </NButton>
+            </template>
+          </UploadFilesButton>
           <NButton size="small" @click="onAddFile">
             <template #icon>
-              <PlusIcon />
+              <PlusIcon class="w-4 h-4" />
             </template>
-            {{ $t("release.actions.new-file") }}
+            {{ $t("common.new") }}
           </NButton>
         </div>
       </template>
@@ -72,12 +85,13 @@
 
 <script lang="ts" setup>
 import { uniqueId } from "lodash-es";
-import { TrashIcon, XIcon, PlusIcon } from "lucide-vue-next";
+import { TrashIcon, XIcon, PlusIcon, UploadIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { computed, reactive, watch } from "vue";
 import { Drawer, DrawerContent, ErrorTipsButton } from "@/components/v2";
 import { useReleaseCreateContext, type FileToCreate } from "../context";
 import ReleaseFileDetailPanel from "./ReleaseFileDetailPanel.vue";
+import UploadFilesButton from "./UploadFilesButton.vue";
 
 interface LocalState {
   files: FileToCreate[];
@@ -136,6 +150,18 @@ const onDeletePropsFile = () => {
     );
     emit("close");
   }
+};
+
+const onUploadFiles = (
+  statementMap: { filename: string; statement: string }[]
+) => {
+  const files: FileToCreate[] = statementMap.map(({ filename, statement }) => ({
+    id: uniqueId(),
+    version: "",
+    path: filename,
+    statement,
+  }));
+  state.files = [...state.files, ...files];
 };
 
 const onConfirm = () => {
