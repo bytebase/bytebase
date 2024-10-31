@@ -45,8 +45,6 @@ import NoPermissionPlaceholder from "@/components/misc/NoPermissionPlaceholder.v
 import {
   PROJECT_V1_ROUTE_DETAIL,
   PROJECT_V1_ROUTE_DATABASES,
-  PROJECT_V1_ROUTE_DATABASE_GROUPS,
-  PROJECT_V1_ROUTE_MASKING_ACCESS,
 } from "@/router/dashboard/projectV1";
 import { WORKSPACE_ROUTE_MY_ISSUES } from "@/router/dashboard/workspaceRoutes";
 import { useRecentVisit } from "@/router/useRecentVisit";
@@ -146,13 +144,8 @@ const quickActionProjectPermissionMap: Map<QuickActionType, Permission[]> =
       "quickaction.bb.database.create",
       ["bb.instances.list", "bb.issues.create"],
     ],
-    ["quickaction.bb.group.database-group.create", ["bb.projects.update"]],
     ["quickaction.bb.issue.grant.request.querier", ["bb.issues.create"]],
     ["quickaction.bb.issue.grant.request.exporter", ["bb.issues.create"]],
-    [
-      "quickaction.bb.database.masking-access",
-      ["bb.databases.list", "bb.policies.create"],
-    ],
   ]);
 
 const getQuickActionList = (list: QuickActionType[]): QuickActionType[] => {
@@ -168,14 +161,6 @@ const getQuickActionList = (list: QuickActionType[]): QuickActionType[] => {
     return hasPermission;
   });
 };
-
-const quickActionListForDatabaseGroup = computed((): QuickActionType[] => {
-  if (project.value.state !== State.ACTIVE) {
-    return [];
-  }
-
-  return ["quickaction.bb.group.database-group.create"];
-});
 
 const quickActionListForDatabase = computed((): QuickActionType[] => {
   if (project.value.state !== State.ACTIVE) {
@@ -197,22 +182,10 @@ const quickActionListForDatabase = computed((): QuickActionType[] => {
   return actions;
 });
 
-const quickActionListForMaskingAccess = computed((): QuickActionType[] => {
-  if (project.value.state !== State.ACTIVE) {
-    return [];
-  }
-
-  return ["quickaction.bb.database.masking-access"];
-});
-
 const quickActionList = computed(() => {
   switch (route.name) {
     case PROJECT_V1_ROUTE_DATABASES:
       return getQuickActionList(quickActionListForDatabase.value);
-    case PROJECT_V1_ROUTE_MASKING_ACCESS:
-      return getQuickActionList(quickActionListForMaskingAccess.value);
-    case PROJECT_V1_ROUTE_DATABASE_GROUPS:
-      return getQuickActionList(quickActionListForDatabaseGroup.value);
   }
   return [];
 });
