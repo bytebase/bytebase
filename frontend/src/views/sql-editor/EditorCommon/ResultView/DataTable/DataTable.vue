@@ -1,9 +1,11 @@
 <template>
   <div
+    ref="containerRef"
     class="bb-data-table relative w-full flex-1 overflow-hidden flex flex-col"
     :style="{
       maxHeight: maxHeight ? `${maxHeight}px` : undefined,
     }"
+    :data-container-height="containerHeight"
   >
     <div class="w-full flex-1 flex flex-col overflow-hidden">
       <div
@@ -13,7 +15,7 @@
       <div
         ref="scrollerRef"
         class="inner-wrapper max-h-full w-full overflow-auto border-y border-r border-block-border fix-scrollbar-z-index"
-        :class="rows.length === 0 && 'border-b-0 border-r-0'"
+        :class="rows.length === 0 && 'border-r-0 hide-scrollbar'"
       >
         <table
           ref="tableRef"
@@ -81,7 +83,7 @@
               <td
                 v-for="(cell, cellIndex) of row.getVisibleCells()"
                 :key="cellIndex"
-                class="p-0 text-sm dark:text-gray-100 leading-5 whitespace-nowrap break-all border border-block-border group-last:border-b-0 group-even:bg-gray-50/50 dark:group-even:bg-gray-700/50"
+                class="p-0 text-sm dark:text-gray-100 leading-5 whitespace-nowrap break-all border border-block-border border-y-0 group-even:bg-gray-100/50 dark:group-even:bg-gray-700/50"
                 :data-col-index="cellIndex"
               >
                 <TableCell
@@ -96,11 +98,21 @@
             </tr>
           </tbody>
         </table>
+      </div>
+
+      <div
+        v-if="rows.length === 0"
+        class="w-full border border-block-border absolute pointer-events-none"
+        style="padding-top: 33px"
+      >
         <div
-          v-if="rows.length === 0"
-          class="text-center w-full my-12 textinfolabel"
+          class="w-full flex items-center justify-center border-t border-block-border"
+          style="padding-top: 48px; padding-bottom: 48px"
+          :style="{
+            maxHeight: `${Math.max(0, containerHeight - 34)}px`,
+          }"
         >
-          {{ $t("sql-editor.no-data-available") }}
+          <NEmpty />
         </div>
       </div>
     </div>
@@ -109,6 +121,8 @@
 
 <script lang="ts" setup>
 import type { Table } from "@tanstack/vue-table";
+import { useElementSize } from "@vueuse/core";
+import { NEmpty } from "naive-ui";
 import { computed, nextTick, ref, watch } from "vue";
 import {
   FeatureBadge,
@@ -137,10 +151,11 @@ const props = defineProps<{
   maxHeight?: number;
 }>();
 
+const containerRef = ref<HTMLDivElement>();
 const scrollerRef = ref<HTMLDivElement>();
 const tableRef = ref<HTMLTableElement>();
 const subscriptionStore = useSubscriptionV1Store();
-
+const { height: containerHeight } = useElementSize(containerRef);
 usePreventBackAndForward(scrollerRef);
 
 const tableResize = useTableColumnWidthLogic({
