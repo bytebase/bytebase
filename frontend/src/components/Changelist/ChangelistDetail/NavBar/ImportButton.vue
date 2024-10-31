@@ -1,10 +1,5 @@
 <template>
-  <UploadFilesButton
-    icon
-    style="--n-padding: 0 10px"
-    :size="'medium'"
-    @update="onUploadFiles"
-  >
+  <UploadFilesButton @update="onUploadFiles">
     <template #trigger="{ onClick }">
       <NTooltip>
         <template #trigger>
