@@ -78,15 +78,6 @@
       "
       @close="state.quickActionType = undefined"
     />
-    <GrantAccessDrawer
-      v-if="
-        project &&
-        state.quickActionType === 'quickaction.bb.database.masking-access'
-      "
-      :column-list="[]"
-      :project-name="project.name"
-      @close="state.quickActionType = undefined"
-    />
   </template>
 
   <FeatureModal
@@ -121,10 +112,12 @@ import {
   Buttons as InstanceFormButtons,
 } from "@/components/InstanceForm/";
 import ProjectCreatePanel from "@/components/Project/ProjectCreatePanel.vue";
-import GrantAccessDrawer from "@/components/SensitiveData/GrantAccessDrawer.vue";
 import { TransferDatabaseForm } from "@/components/TransferDatabaseForm";
 import { Drawer, DrawerContent } from "@/components/v2";
-import { PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL } from "@/router/dashboard/projectV1";
+import {
+  PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL,
+  PROJECT_V1_ROUTE_MASKING_ACCESS_CREATE,
+} from "@/router/dashboard/projectV1";
 import { PROJECT_V1_ROUTE_DASHBOARD } from "@/router/dashboard/workspaceRoutes";
 import {
   useCommandStore,
@@ -326,8 +319,11 @@ const availableQuickActionList = computed((): QuickAction[] => {
       type: "quickaction.bb.database.masking-access",
       title: t("project.masking-access.grant-access"),
       hide: !hasSensitiveDataFeature.value,
-      action: () =>
-        (state.quickActionType = "quickaction.bb.database.masking-access"),
+      action: () => {
+        router.push({
+          name: PROJECT_V1_ROUTE_MASKING_ACCESS_CREATE,
+        });
+      },
       icon: h(ShieldCheckIcon),
     },
   ];
