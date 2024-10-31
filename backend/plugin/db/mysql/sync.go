@@ -376,20 +376,16 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 		columnMap[key] = append(columnMap[key], column)
 		invisible := containsInvisibleChars(generationExpr)
 		iso88591Text, convertedErr := utf8ToISO88591(string(generationExpr))
+		text := string(generationExpr)
+		if invisible && convertedErr == nil {
+			text = iso88591Text
+		}
 		if extra != "" && strings.Contains(strings.ToUpper(extra), virtualGenerated) && len(generationExpr) != 0 {
-			text := string(generationExpr)
-			if invisible && convertedErr == nil {
-				text = iso88591Text
-			}
 			column.Generation = &storepb.GenerationMetadata{
 				Type:       storepb.GenerationMetadata_TYPE_VIRTUAL,
 				Expression: text,
 			}
 		} else if extra != "" && strings.Contains(strings.ToUpper(extra), storedGenerated) && len(generationExpr) != 0 {
-			text := string(generationExpr)
-			if invisible && convertedErr == nil {
-				text = iso88591Text
-			}
 			column.Generation = &storepb.GenerationMetadata{
 				Type:       storepb.GenerationMetadata_TYPE_STORED,
 				Expression: text,
