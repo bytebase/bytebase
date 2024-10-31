@@ -3,6 +3,7 @@ package gitops
 
 import (
 	v1pb "github.com/bytebase/bytebase/backend/api/v1"
+	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/sheet"
 	enterprise "github.com/bytebase/bytebase/backend/enterprise/api"
 	"github.com/bytebase/bytebase/backend/store"
@@ -17,6 +18,7 @@ type Service struct {
 	issueService   *v1pb.IssueService
 	sqlService     *v1pb.SQLService
 	sheetManager   *sheet.Manager
+	profile        *config.Profile
 }
 
 // NewService creates a GitOps service.
@@ -28,6 +30,7 @@ func NewService(
 	issueService *v1pb.IssueService,
 	sqlService *v1pb.SQLService,
 	sheetManager *sheet.Manager,
+	profile *config.Profile,
 ) *Service {
 	return &Service{
 		store:          store,
@@ -37,5 +40,6 @@ func NewService(
 		issueService:   issueService,
 		sqlService:     sqlService,
 		sheetManager:   sheetManager,
+		profile:        profile,
 	}
 }

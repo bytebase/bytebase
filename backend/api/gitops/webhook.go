@@ -29,6 +29,17 @@ import (
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
+type createReleaseContext struct {
+	user         *store.UserMessage
+	setting      *storepb.WorkspaceProfileSetting
+	project      *store.ProjectMessage
+	vcsConnector *store.VCSConnectorMessage
+	vcsProvider  *store.VCSProviderMessage
+	header       http.Header
+	body         []byte
+	prInfo       *pullRequestInfo
+}
+
 func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 	g.POST(":id", func(c echo.Context) error {
 		ctx := c.Request().Context()
@@ -103,7 +114,7 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 				return c.String(http.StatusOK, fmt.Sprintf(`skip webhook event "%v"`, eventType))
 			}
 
-			prInfo, err = getGitHubPullRequestInfo(ctx, vcsProvider, vcsConnector, body)
+			prInfo, err = getGitHubPullRequestInfo(ctx, vcsProvider, vcsConnector, body, s.profile)
 			if err != nil {
 				return c.String(http.StatusOK, fmt.Sprintf("failed to get pr info from pull request, error %v", err))
 			}
@@ -169,6 +180,18 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 		var commentPrefix string
 		var createCommentIfNotExist bool
 		switch prInfo.action {
+		case webhookActionCreateRelease:
+			go s.createRelease(&createReleaseContext{
+				user:         user,
+				setting:      setting,
+				project:      project,
+				vcsConnector: vcsConnector,
+				vcsProvider:  vcsProvider,
+				header:       c.Request().Header,
+				body:         body,
+				prInfo:       prInfo,
+			})
+
 		case webhookActionCreateIssue:
 			issue, err := s.createIssueFromPRInfo(childCtx, project, vcsProvider, vcsConnector, prInfo)
 			if err != nil {
@@ -211,6 +234,45 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 
 		return c.String(http.StatusOK, fmt.Sprintf("successfully handle the pull request %v", prInfo.url))
 	})
+}
+
+func (s *Service) createRelease(t *createReleaseContext) {
+	ctx := context.Background()
+	ctx = context.WithValue(ctx, common.PrincipalIDContextKey, t.user.ID)
+	ctx = context.WithValue(ctx, common.UserContextKey, t.user)
+
+	err := func() error {
+		if f := t.prInfo.getAllFiles; f != nil {
+			err := f(ctx)
+			if err != nil {
+				return errors.Wrapf(err, "failed to get all files")
+			}
+		}
+
+		release, err := s.createReleaseFromPRInfo(ctx, t.project, t.vcsProvider, t.prInfo)
+		if err != nil {
+			return errors.Wrapf(err, "failed to create release from pull request %s", t.prInfo.url)
+		}
+		comment := fmt.Sprintf("This pull request has triggered a Bytebase rollout 🚀. Check out the status at %s/%s", t.setting.ExternalUrl, common.FormatReleaseName(t.project.ResourceID, release.UID))
+		commentPrefix := commentPrefixBytebaseBot
+		createCommentIfNotExist := true
+
+		if err := upsertPullRequestComment(
+			ctx,
+			t.vcsProvider,
+			t.vcsConnector,
+			t.prInfo,
+			fmt.Sprintf("%s\n\n%s", commentPrefix, comment),
+			func(content string) bool { return strings.HasPrefix(content, commentPrefix) },
+			createCommentIfNotExist,
+		); err != nil {
+			return errors.Wrapf(err, "failed to upsert comment")
+		}
+		return nil
+	}()
+	if err != nil {
+		slog.Error("failed to create release from pull request", log.BBError(err))
+	}
 }
 
 // validateGitHubWebhookSignature256 returns true if the signature matches the
@@ -303,6 +365,63 @@ func (s *Service) sqlReviewWithPRInfo(ctx context.Context, project *store.Projec
 	}
 
 	return fmt.Sprintf("\n%d errors, %d warnings\n\n---\n\n%s", errorCount, warnCount, strings.Join(content, "\n")), nil
+}
+
+func (s *Service) createReleaseFromPRInfo(ctx context.Context, project *store.ProjectMessage, vcsProvider *store.VCSProviderMessage, prInfo *pullRequestInfo) (*store.ReleaseMessage, error) {
+	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+	if !ok {
+		return nil, errors.Errorf("cannot found user in context")
+	}
+
+	var sheetNames []string
+	var sheets []*store.SheetMessage
+	for _, f := range prInfo.allFiles {
+		sheet, err := s.store.CreateSheet(ctx, &store.SheetMessage{
+			ProjectUID: project.UID,
+			CreatorID:  user.ID,
+			UpdaterID:  user.ID,
+			Title:      "",
+			Statement:  f.content,
+		})
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to create sheet")
+		}
+
+		sheets = append(sheets, sheet)
+		sheetNames = append(sheetNames, common.FormatSheet(project.ResourceID, sheet.UID))
+	}
+
+	var files []*storepb.ReleasePayload_File
+	for i, f := range prInfo.allFiles {
+		file := &storepb.ReleasePayload_File{
+			Id:          uuid.NewString(),
+			Path:        f.path,
+			Sheet:       sheetNames[i],
+			SheetSha256: sheets[i].Sha256,
+			Type:        storepb.ReleaseFileType_VERSIONED,
+			Version:     f.version,
+		}
+		files = append(files, file)
+	}
+
+	releaseMessage := &store.ReleaseMessage{
+		ProjectUID: project.UID,
+		Payload: &storepb.ReleasePayload{
+			Title: fmt.Sprintf("release for PR %s", prInfo.title),
+			Files: files,
+			VcsSource: &storepb.ReleasePayload_VCSSource{
+				VcsType:        vcsProvider.Type,
+				PullRequestUrl: prInfo.url,
+			},
+		},
+	}
+
+	release, err := s.store.CreateRelease(ctx, releaseMessage, user.ID)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to create release")
+	}
+
+	return release, nil
 }
 
 func (s *Service) createIssueFromPRInfo(ctx context.Context, project *store.ProjectMessage, vcsProvider *store.VCSProviderMessage, vcsConnector *store.VCSConnectorMessage, prInfo *pullRequestInfo) (*v1pb.Issue, error) {
