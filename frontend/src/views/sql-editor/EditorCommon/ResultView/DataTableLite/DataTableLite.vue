@@ -6,8 +6,15 @@
     :data-height="containerHeight"
   >
     <div
-      tag="div"
-      class="header-track absolute z-0 left-0 top-0 right-0 h-[34px] border border-block-border rounded-t-sm bg-gray-50 dark:bg-gray-700"
+      class="header-track absolute z-[1] left-0 top-0 right-0 h-[34px] border border-block-border bg-gray-50 dark:bg-gray-700"
+    />
+    <div
+      class="absolute z-[0] left-0 right-0 border-b border-r border-block-border"
+      :style="padStyle"
+      :data-container-width="containerWidth"
+      :data-container-height="containerHeight"
+      :data-table-body-height="tableBodyHeight"
+      :data-rendered-table-body-height="renderedTableBodyHeight"
     />
 
     <NDataTable
@@ -25,11 +32,11 @@
       :scroll-x="tableResize.getTableScrollWidth()"
       table-layout="fixed"
       size="small"
-      class="relative z-[1]"
+      class="relative z-[1] -mr-px"
       style="
         --n-th-padding: 0;
         --n-td-padding: 0;
-        --n-border-radius: 2px;
+        --n-border-radius: 0;
         --n-border-color: rgb(var(--color-block-border));
       "
       :style="{
@@ -43,7 +50,7 @@
 import type { Header, Row, Table } from "@tanstack/vue-table";
 import { pausableWatch, useElementSize } from "@vueuse/core";
 import { type DataTableColumn, type DataTableInst, NDataTable } from "naive-ui";
-import { computed, h, nextTick, ref, toRef, watch } from "vue";
+import { computed, h, nextTick, ref, toRef, watch, type StyleValue } from "vue";
 import { QueryRow, type RowValue } from "@/types/proto/v1/sql_service";
 import { nextAnimationFrame, usePreventBackAndForward } from "@/utils";
 import { useSQLResultViewContext } from "../context";
@@ -139,6 +146,19 @@ const tableResize = useTableColumnWidthLogic({
   maxWidth: COLUMN_WIDTH.MAX,
 });
 
+const tableBodyElemRef = computed(() => {
+  return queryTableBodyElement();
+});
+const { height: renderedTableBodyHeight } = useElementSize(tableBodyElemRef);
+const padStyle = computed(() => {
+  const style: StyleValue = {
+    top: `${HEADER_HEIGHT}px`,
+  };
+  const height = Math.min(renderedTableBodyHeight.value, tableBodyHeight.value);
+  style.height = `${height + GAP_AND_BORDER_HEIGHT}px`;
+  return style;
+});
+
 const columns = computed(() => {
   return headers.value.map<DataTableColumn<Row<QueryRow>>>(
     (header, colIndex) => {
@@ -175,7 +195,7 @@ const columns = computed(() => {
             setIndex: props.setIndex,
             rowIndex: props.offset + row.index,
             colIndex,
-            class: row.index % 2 === 0 && "bg-gray-100/50 dark:bg-gray-700/50",
+            class: row.index % 2 === 1 && "bg-gray-100/50 dark:bg-gray-700/50",
           });
         },
         width: tableResize.state.autoAdjusting.has(colIndex)
