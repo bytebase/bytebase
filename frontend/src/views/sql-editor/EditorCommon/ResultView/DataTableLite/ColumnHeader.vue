@@ -1,9 +1,9 @@
 <template>
   <div
-    class="relative px-2 py-2 min-w-[2rem] whitespace-nowrap text-left bg-gray-50 dark:bg-gray-700 text-xs font-medium text-gray-500 dark:text-gray-300 tracking-wider"
+    class="relative px-2 h-[32px] min-w-[2rem] whitespace-nowrap text-left bg-gray-50 dark:bg-gray-700 text-xs font-medium text-gray-500 dark:text-gray-300 tracking-wider"
   >
     <div
-      class="flex items-center overflow-hidden cursor-pointer"
+      class="h-full flex items-center overflow-hidden cursor-pointer"
       @click="header.column.getToggleSortingHandler()?.($event)"
     >
       <span class="flex flex-row items-center select-none">
