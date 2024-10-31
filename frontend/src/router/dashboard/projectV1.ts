@@ -6,6 +6,7 @@ import { PROJECT_V1_ROUTE_DASHBOARD } from "./workspaceRoutes";
 export const PROJECT_V1_ROUTE_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.detail`;
 export const PROJECT_V1_ROUTE_DATABASES = `${PROJECT_V1_ROUTE_DASHBOARD}.database`;
 export const PROJECT_V1_ROUTE_MASKING_ACCESS = `${PROJECT_V1_ROUTE_DASHBOARD}.masking-access`;
+export const PROJECT_V1_ROUTE_MASKING_ACCESS_CREATE = `${PROJECT_V1_ROUTE_DASHBOARD}.masking-access.create`;
 export const PROJECT_V1_ROUTE_DATABASE_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.database.detail`;
 export const PROJECT_V1_ROUTE_DATABASE_CHANGE_HISTORY_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.database.change-history.detail`;
 export const PROJECT_V1_ROUTE_DATABASE_GROUPS = `${PROJECT_V1_ROUTE_DASHBOARD}.database-group`;
@@ -70,7 +71,6 @@ const projectV1Routes: RouteRecordRaw[] = [
       },
       {
         path: "masking-access",
-        name: PROJECT_V1_ROUTE_MASKING_ACCESS,
         meta: {
           overrideTitle: true,
           requiredProjectPermissionList: () => [
@@ -79,9 +79,26 @@ const projectV1Routes: RouteRecordRaw[] = [
             "bb.policies.get",
           ],
         },
-        component: () =>
-          import("@/views/project/ProjectDatabaseMaskingAccess.vue"),
         props: true,
+        children: [
+          {
+            path: "",
+            name: PROJECT_V1_ROUTE_MASKING_ACCESS,
+            component: () =>
+              import("@/views/project/ProjectDatabaseMaskingAccess.vue"),
+            props: true,
+          },
+          {
+            path: "create",
+            name: PROJECT_V1_ROUTE_MASKING_ACCESS_CREATE,
+            component: () =>
+              import("@/views/project/ProjectDatabaseMaskingAccessCreate.vue"),
+            props: true,
+            meta: {
+              requiredProjectPermissionList: () => ["bb.policies.create"],
+            },
+          },
+        ],
       },
       {
         path: "database-groups",
