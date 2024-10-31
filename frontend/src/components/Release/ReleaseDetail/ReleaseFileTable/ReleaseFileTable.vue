@@ -6,9 +6,7 @@
     :row-props="rowProps"
     :striped="true"
     :row-key="(file) => file.id"
-    @update:checked-row-keys="
-        (val) => onRowSelected(val as string[])
-      "
+    @update:checked-row-keys="(val) => onRowSelected(val as string[])"
   />
 </template>
 
@@ -66,18 +64,14 @@ const columnList = computed(() => {
       title: t("database.revision.filename"),
       width: 128,
       ellipsis: true,
-      render: (file) => {
-        return file.path || "-";
-      },
+      render: (file) => file.path || "-",
     },
     {
       key: "statement-size",
       title: t("common.statement-size"),
       width: 128,
       ellipsis: true,
-      render: (file) => {
-        return bytesToString(file.statementSize.toNumber());
-      },
+      render: (file) => bytesToString(file.statementSize.toNumber()),
     },
     {
       key: "statement",
