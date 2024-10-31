@@ -714,11 +714,8 @@ func FormatReleaseName(projectID string, releaseUID int64) string {
 	return fmt.Sprintf("%s%s/%s%d", ProjectNamePrefix, projectID, ReleaseNamePrefix, releaseUID)
 }
 
-// input release=`projects/{project}/releases/{release}` and file=`{path}`.
-// return the file resource name `projects/{project}/releases/{release}/files/{path}`,
-// {path} is URL path escaped.
-func FormatReleaseFile(release string, file string) string {
-	return fmt.Sprintf("%s/%s%s", release, FileNamePrefix, url.PathEscape(file))
+func FormatReleaseFile(release string, fileID string) string {
+	return fmt.Sprintf("%s/%s%s", release, FileNamePrefix, fileID)
 }
 
 func FormatRevision(instanceID, databaseID string, revisionUID int64) string {

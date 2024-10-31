@@ -9,7 +9,7 @@
       </span>
     </div>
     <div class="flex-1 lg:px-4">
-      <div class="mb-7 mt-4 lg:mt-0">
+      <div class="mt-4 lg:mt-0">
         <label class="flex items-center gap-x-2">
           <span class="font-medium">{{
             $t("settings.general.workspace.external-url.self")

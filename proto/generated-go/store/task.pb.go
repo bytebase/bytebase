@@ -327,8 +327,7 @@ type TaskReleaseSource struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// Format: projects/{project}/releases/{release}/files/{file}
-	// {file} is URL path escaped.
+	// Format: projects/{project}/releases/{release}/files/{id}
 	File string `protobuf:"bytes,1,opt,name=file,proto3" json:"file,omitempty"`
 }
 

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"log/slog"
 	"regexp"
 	"sort"
 	"strings"
@@ -56,9 +55,6 @@ const (
 	orderByKeyMaximumRowsSent     = "maximum_rows_sent"
 	orderByKeyAverageRowsExamined = "average_rows_examined"
 	orderByKeyMaximumRowsExamined = "maximum_rows_examined"
-
-	backupDatabaseName       = "bbdataarchive"
-	oracleBackupDatabaseName = "BBDATAARCHIVE"
 )
 
 // DatabaseService implements the database service.
@@ -123,16 +119,21 @@ func (s *DatabaseService) ListInstanceDatabases(ctx context.Context, request *v1
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	limit, offset, err := parseLimitAndOffset(request.PageToken, int(request.PageSize))
+	offset, err := parseLimitAndOffset(&pageSize{
+		token: request.PageToken,
+		limit: int(request.PageSize),
+		// TODO: the frontend not support pagination yet.
+		maximum: 1000000,
+	})
 	if err != nil {
 		return nil, err
 	}
-	limitPlusOne := limit + 1
+	limitPlusOne := offset.limit + 1
 
 	find := &store.FindDatabaseMessage{
 		InstanceID: &instanceID,
 		Limit:      &limitPlusOne,
-		Offset:     &offset,
+		Offset:     &offset.offset,
 	}
 
 	// Deprecated. Remove this later.
@@ -158,11 +159,8 @@ func (s *DatabaseService) ListInstanceDatabases(ctx context.Context, request *v1
 
 	nextPageToken := ""
 	if len(databaseMessages) == limitPlusOne {
-		databaseMessages = databaseMessages[:limit]
-		if nextPageToken, err = marshalPageToken(&storepb.PageToken{
-			Limit:  int32(limit),
-			Offset: int32(limit + offset),
-		}); err != nil {
+		databaseMessages = databaseMessages[:offset.limit]
+		if nextPageToken, err = offset.getPageToken(); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to marshal next page token, error: %v", err)
 		}
 	}
@@ -196,16 +194,22 @@ func (s *DatabaseService) ListDatabases(ctx context.Context, request *v1pb.ListD
 		return nil, status.Errorf(codes.InvalidArgument, "invalid parent %q", request.Parent)
 	}
 
-	limit, offset, err := parseLimitAndOffset(request.PageToken, int(request.PageSize))
+	offset, err := parseLimitAndOffset(&pageSize{
+		token: request.PageToken,
+		limit: int(request.PageSize),
+		// TODO: the frontend not support pagination yet.
+		maximum: 1000,
+	})
 	if err != nil {
 		return nil, err
 	}
-	limitPlusOne := limit + 1
+	limitPlusOne := offset.limit + 1
 
 	find := &store.FindDatabaseMessage{
 		ProjectID: projectID,
 		Limit:     &limitPlusOne,
-		Offset:    &offset}
+		Offset:    &offset.offset,
+	}
 
 	databaseMessages, err := s.store.ListDatabases(ctx, find)
 	if err != nil {
@@ -214,11 +218,8 @@ func (s *DatabaseService) ListDatabases(ctx context.Context, request *v1pb.ListD
 
 	nextPageToken := ""
 	if len(databaseMessages) == limitPlusOne {
-		databaseMessages = databaseMessages[:limit]
-		if nextPageToken, err = marshalPageToken(&storepb.PageToken{
-			Limit:  int32(limit),
-			Offset: int32(limit + offset),
-		}); err != nil {
+		databaseMessages = databaseMessages[:offset.limit]
+		if nextPageToken, err = offset.getPageToken(); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to marshal next page token, error: %v", err)
 		}
 	}
@@ -747,11 +748,16 @@ func (s *DatabaseService) ListChangeHistories(ctx context.Context, request *v1pb
 		return nil, status.Errorf(codes.NotFound, "database %q not found", databaseName)
 	}
 
-	limit, offset, err := parseLimitAndOffset(request.PageToken, int(request.PageSize))
+	offset, err := parseLimitAndOffset(&pageSize{
+		token: request.PageToken,
+		limit: int(request.PageSize),
+		// TODO:
+		maximum: 1000,
+	})
 	if err != nil {
 		return nil, err
 	}
-	limitPlusOne := limit + 1
+	limitPlusOne := offset.limit + 1
 
 	truncateSize := 512
 	// We apply small truncate size in dev environment (not demo) for finding incorrect usage of views
@@ -762,7 +768,7 @@ func (s *DatabaseService) ListChangeHistories(ctx context.Context, request *v1pb
 		InstanceID:   &instance.UID,
 		DatabaseID:   &database.UID,
 		Limit:        &limitPlusOne,
-		Offset:       &offset,
+		Offset:       &offset.offset,
 		TruncateSize: truncateSize,
 	}
 	if request.View == v1pb.ChangeHistoryView_CHANGE_HISTORY_VIEW_FULL {
@@ -800,11 +806,10 @@ func (s *DatabaseService) ListChangeHistories(ctx context.Context, request *v1pb
 
 	nextPageToken := ""
 	if len(changeHistories) == limitPlusOne {
-		nextPageToken, err = getPageToken(limit, offset+limit)
-		if err != nil {
+		if nextPageToken, err = offset.getPageToken(); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to get next page token, error: %v", err)
 		}
-		changeHistories = changeHistories[:limit]
+		changeHistories = changeHistories[:offset.limit]
 	}
 
 	// no subsequent pages
@@ -1711,55 +1716,8 @@ func (s *DatabaseService) convertToDatabase(ctx context.Context, database *store
 		SchemaVersion:        database.SchemaVersion.Version,
 		Labels:               database.Metadata.Labels,
 		InstanceResource:     instanceResource,
-		BackupAvailable:      isBackupAvailable(ctx, s.store, instance, database),
+		BackupAvailable:      database.Metadata.GetBackupAvailable(),
 	}, nil
-}
-
-func isBackupAvailable(ctx context.Context, s *store.Store, instance *store.InstanceMessage, _ *store.DatabaseMessage) bool {
-	switch instance.Engine {
-	case storepb.Engine_POSTGRES:
-		// It's so slow for ListDatabases, so we comment it out.
-		// TODO(d/rebelice): check backup availability for postgres faster.
-		// dbSchema, err := s.GetDBSchema(ctx, database.UID)
-		// if err != nil {
-		// 	slog.Debug("Failed to get db schema for checking backup availability", "err", err)
-		// 	return false
-		// }
-		// if dbSchema == nil {
-		// 	return false
-		// }
-		// for _, schema := range dbSchema.GetMetadata().GetSchemas() {
-		// 	if schema.GetName() == backupDatabaseName {
-		// 		return true
-		// 	}
-		// }
-		//
-		// Return true for all postgres database, we'll truthfully check it in the sql review rules.
-		return true
-	case storepb.Engine_MYSQL, storepb.Engine_MSSQL, storepb.Engine_TIDB:
-		dbName := backupDatabaseName
-		backupDB, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-			InstanceID:   &instance.ResourceID,
-			DatabaseName: &dbName,
-		})
-		if err != nil {
-			slog.Debug("Failed to get backup database", "err", err)
-			return false
-		}
-		return backupDB != nil
-	case storepb.Engine_ORACLE:
-		dbName := oracleBackupDatabaseName
-		backupDB, err := s.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-			InstanceID:   &instance.ResourceID,
-			DatabaseName: &dbName,
-		})
-		if err != nil {
-			slog.Debug("Failed to get backup database", "err", err)
-			return false
-		}
-		return backupDB != nil
-	}
-	return false
 }
 
 type metadataFilter struct {

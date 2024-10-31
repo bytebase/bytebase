@@ -3064,6 +3064,13 @@ classification and user_comment is parsed from the comment. </p></td>
                   <td><p> </p></td>
                 </tr>
               
+                <tr>
+                  <td>backup_available</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -8201,8 +8208,7 @@ Must be a subset of the specs in the same step. </p></td>
                   <td>file</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>Format: projects/{project}/releases/{release}/files/{file}
-{file} is URL path escaped. </p></td>
+                  <td><p>Format: projects/{project}/releases/{release}/files/{id} </p></td>
                 </tr>
               
             </tbody>
@@ -9321,11 +9327,17 @@ IM integration setting should be set for this function to work. </p></td>
             <tbody>
               
                 <tr>
-                  <td>name</td>
+                  <td>id</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The name of the file.
-Expressed as a path, e.g. `2.2/V0001_create_table.sql` </p></td>
+                  <td><p>The unique identifier for the file. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>path</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The path of the file. e.g. `2.2/V0001_create_table.sql`. </p></td>
                 </tr>
               
                 <tr>
@@ -9489,6 +9501,21 @@ Can be empty. </p></td>
                 </tr>
               
                 <tr>
+                  <td>file</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Format: projects/{project}/releases/{release}/files/{id}
+Can be empty. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>version</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
                   <td>sheet</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
@@ -9501,29 +9528,6 @@ Format: projects/{project}/sheets/{sheet} </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The SHA256 hash value of the sheet. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>type</td>
-                  <td><a href="#bytebase.store.ReleaseFileType">ReleaseFileType</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>version</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>file</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The name of the file in the release.
-Expressed as a path, e.g. `2.2/V0001_create_table.sql`
-Can be empty. </p></td>
                 </tr>
               
                 <tr>
@@ -11706,8 +11710,7 @@ Default to this mode.</p></td>
                   <td>file</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>Format: projects/{project}/releases/{release}/files/{file}
-{file} is URL path escaped. </p></td>
+                  <td><p>Format: projects/{project}/releases/{release}/files/{id} </p></td>
                 </tr>
               
             </tbody>

@@ -94,15 +94,19 @@ func (s *PlanService) ListPlans(ctx context.Context, request *v1pb.ListPlansRequ
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	limit, offset, err := parseLimitAndOffset(request.PageToken, int(request.PageSize))
+	offset, err := parseLimitAndOffset(&pageSize{
+		token:   request.PageToken,
+		limit:   int(request.PageSize),
+		maximum: 1000,
+	})
 	if err != nil {
 		return nil, err
 	}
-	limitPlusOne := limit + 1
+	limitPlusOne := offset.limit + 1
 
 	find := &store.FindPlanMessage{
 		Limit:     &limitPlusOne,
-		Offset:    &offset,
+		Offset:    &offset.offset,
 		ProjectID: &projectID,
 	}
 	plans, err := s.store.ListPlans(ctx, find)
@@ -113,12 +117,10 @@ func (s *PlanService) ListPlans(ctx context.Context, request *v1pb.ListPlansRequ
 	var nextPageToken string
 	// has more pages
 	if len(plans) == limitPlusOne {
-		pageToken, err := getPageToken(limit, offset+limit)
-		if err != nil {
+		if nextPageToken, err = offset.getPageToken(); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to get next page token, error: %v", err)
 		}
-		nextPageToken = pageToken
-		plans = plans[:limit]
+		plans = plans[:offset.limit]
 	}
 
 	convertedPlans, err := convertToPlans(ctx, s.store, plans)
@@ -148,15 +150,19 @@ func (s *PlanService) SearchPlans(ctx context.Context, request *v1pb.SearchPlans
 		return nil, status.Errorf(codes.Internal, "failed to get projectIDs, error: %v", err)
 	}
 
-	limit, offset, err := parseLimitAndOffset(request.PageToken, int(request.PageSize))
+	offset, err := parseLimitAndOffset(&pageSize{
+		token:   request.PageToken,
+		limit:   int(request.PageSize),
+		maximum: 1000,
+	})
 	if err != nil {
 		return nil, err
 	}
-	limitPlusOne := limit + 1
+	limitPlusOne := offset.limit + 1
 
 	find := &store.FindPlanMessage{
 		Limit:      &limitPlusOne,
-		Offset:     &offset,
+		Offset:     &offset.offset,
 		ProjectIDs: projectIDsFilter,
 	}
 	if projectID != "-" {
@@ -174,12 +180,10 @@ func (s *PlanService) SearchPlans(ctx context.Context, request *v1pb.SearchPlans
 	var nextPageToken string
 	// has more pages
 	if len(plans) == limitPlusOne {
-		pageToken, err := getPageToken(limit, offset+limit)
-		if err != nil {
+		if nextPageToken, err = offset.getPageToken(); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to get next page token, error: %v", err)
 		}
-		nextPageToken = pageToken
-		plans = plans[:limit]
+		plans = plans[:offset.limit]
 	}
 
 	convertedPlans, err := convertToPlans(ctx, s.store, plans)
@@ -527,7 +531,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *v1pb.UpdatePlanRe
 								if database == nil {
 									return status.Errorf(codes.NotFound, "database %q not found", databaseName)
 								}
-								if ok := isBackupAvailable(ctx, s.store, instance, database); !ok {
+								if database.Metadata == nil || !database.Metadata.GetBackupAvailable() {
 									return status.Errorf(codes.FailedPrecondition, "backup is not available for database %q", databaseName)
 								}
 							}
@@ -1129,12 +1133,11 @@ func (s *PlanService) PreviewPlan(ctx context.Context, request *v1pb.PreviewPlan
 		allSpecs = append(allSpecs, specs...)
 	}
 
-	// TODO(p0ny): prettify step/spec.
 	response.Plan = &v1pb.Plan{
-		Title: fmt.Sprintf("preview plan from release %q", request.Release),
+		Title: fmt.Sprintf("Preview plan for release %q", request.Release),
 		Steps: []*v1pb.Plan_Step{
 			{
-				Title: "flattened!",
+				Title: "",
 				Specs: allSpecs,
 			},
 		},
@@ -1187,14 +1190,14 @@ func getSpecs(database *store.DatabaseMessage, revisions []*store.RevisionMessag
 			// applied, so we will not deploy it.
 			if r.Payload.SheetSha256 != file.SheetSha256 {
 				// It's been modified! warn users.
-				modifiedFiles = append(modifiedFiles, common.FormatReleaseFile(releaseName, file.Name))
+				modifiedFiles = append(modifiedFiles, common.FormatReleaseFile(releaseName, file.Id))
 			}
 			continue
 		}
 
 		if lastVersion != "" && lastVersion >= file.Version {
 			// out of order detected
-			outOfOrderFiles = append(outOfOrderFiles, common.FormatReleaseFile(releaseName, file.Name))
+			outOfOrderFiles = append(outOfOrderFiles, common.FormatReleaseFile(releaseName, file.Id))
 
 			// allowOutOfOrder=false
 			// continue so that we don't add it into the plan.
@@ -1206,7 +1209,7 @@ func getSpecs(database *store.DatabaseMessage, revisions []*store.RevisionMessag
 		spec := &v1pb.Plan_Spec{
 			Id: uuid.NewString(),
 			SpecReleaseSource: &v1pb.Plan_SpecReleaseSource{
-				File: common.FormatReleaseFile(releaseName, file.Name),
+				File: common.FormatReleaseFile(releaseName, file.Id),
 			},
 			Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
 				ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{

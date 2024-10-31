@@ -982,6 +982,7 @@ DatabaseMetadata is the metadata for databases.
 | ----- | ---- | ----- | ----------- |
 | labels | [DatabaseMetadata.LabelsEntry](#bytebase-store-DatabaseMetadata-LabelsEntry) | repeated |  |
 | last_sync_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| backup_available | [bool](#bool) |  |  |
 
 
 
@@ -3099,7 +3100,7 @@ InstanceRole is the API message for instance role.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| file | [string](#string) |  | Format: projects/{project}/releases/{release}/files/{file} {file} is URL path escaped. |
+| file | [string](#string) |  | Format: projects/{project}/releases/{release}/files/{id} |
 
 
 
@@ -3663,7 +3664,8 @@ SlowQueryPolicy is the policy configuration for slow query.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the file. Expressed as a path, e.g. `2.2/V0001_create_table.sql` |
+| id | [string](#string) |  | The unique identifier for the file. |
+| path | [string](#string) |  | The path of the file. e.g. `2.2/V0001_create_table.sql`. |
 | sheet | [string](#string) |  | The sheet that holds the content. Format: projects/{project}/sheets/{sheet} |
 | sheet_sha256 | [string](#string) |  | The SHA256 hash value of the sheet. |
 | type | [ReleaseFileType](#bytebase-store-ReleaseFileType) |  |  |
@@ -3758,11 +3760,10 @@ SlowQueryPolicy is the policy configuration for slow query.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | release | [string](#string) |  | Format: projects/{project}/releases/{release} Can be empty. |
+| file | [string](#string) |  | Format: projects/{project}/releases/{release}/files/{id} Can be empty. |
+| version | [string](#string) |  |  |
 | sheet | [string](#string) |  | The sheet that holds the content. Format: projects/{project}/sheets/{sheet} |
 | sheet_sha256 | [string](#string) |  | The SHA256 hash value of the sheet. |
-| type | [ReleaseFileType](#bytebase-store-ReleaseFileType) |  |  |
-| version | [string](#string) |  |  |
-| file | [string](#string) |  | The name of the file in the release. Expressed as a path, e.g. `2.2/V0001_create_table.sql` Can be empty. |
 | task_run | [string](#string) |  | The task run associated with the revision. Can be empty. Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskRuns/{taskRun} |
 
 
@@ -4709,7 +4710,7 @@ TaskDatabaseUpdatePayload is the task payload for updating database (DDL &amp; D
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| file | [string](#string) |  | Format: projects/{project}/releases/{release}/files/{file} {file} is URL path escaped. |
+| file | [string](#string) |  | Format: projects/{project}/releases/{release}/files/{id} |
 
 
 

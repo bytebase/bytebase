@@ -1,7 +1,11 @@
 import { flatten, isUndefined } from "lodash-es";
 import type { TransferOption, TreeOption } from "naive-ui";
 import { useDBSchemaV1Store } from "@/store";
-import type { ComposedDatabase } from "@/types";
+import {
+  databaseNamePrefix,
+  instanceNamePrefix,
+} from "@/store/modules/v1/common";
+import type { ComposedDatabase, DatabaseResource } from "@/types";
 import type { TableMetadata } from "@/types/proto/v1/database_service";
 import { hasSchemaProperty } from "@/utils";
 
@@ -173,4 +177,47 @@ export const flattenTreeOptions = (
       ),
     ];
   });
+};
+
+export const parseStringToResource = (
+  key: string
+): DatabaseResource | undefined => {
+  const sections = key.split("/");
+  const resource: DatabaseResource = {
+    databaseName: "",
+  };
+
+  while (sections.length > 0) {
+    const keyword = sections.shift() as DatabaseResourceType | "instances";
+    const data = sections.shift() || "";
+
+    switch (keyword) {
+      case "instances":
+        resource.instanceResourceId = data;
+        break;
+      case "databases":
+        if (!resource.instanceResourceId) {
+          return;
+        }
+        resource.databaseName = `${instanceNamePrefix}${resource.instanceResourceId}/${databaseNamePrefix}${data}`;
+        break;
+      case "schemas":
+        resource.schema = data;
+        break;
+      case "tables":
+        resource.table = data;
+        break;
+      case "columns":
+        resource.column = data;
+        break;
+      default:
+        return;
+    }
+  }
+
+  if (!resource.databaseName) {
+    return;
+  }
+
+  return resource;
 };

@@ -1,6 +1,9 @@
 <template>
-  <div v-if="candidates.length === 0" class="w-[14rem] text-wrap text-warning">
-    {{ $t("custom-approval.issue-review.no-one-matches-role") }}
+  <div
+    v-if="candidates.length === 0"
+    class="w-[14rem] text-wrap text-warning italic"
+  >
+    {{ $t("custom-approval.issue-review.no-one-matched") }}
   </div>
 
   <div

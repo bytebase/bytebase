@@ -60,15 +60,16 @@ message ListReleasesRequest {
     (google.api.resource_reference) = {type: "bytebase.com/Project"}
   ];
 
-  // The maximum number of change histories to return. The service may return fewer than this value.
-  // If unspecified, at most 10 change histories will be returned.
+  // The maximum number of releases to return. The service may return fewer than this value.
+  // If unspecified, at most 10 releases will be returned.
   // The maximum value is 1000; values above 1000 will be coerced to 1000.
   int32 page_size = 2;
 
-  // Not used. A page token, received from a previous `ListReleasesRequest` call.
+  // Not used.
+  // A page token, received from a previous `ListReleases` call.
   // Provide this to retrieve the subsequent page.
   //
-  // When paginating, all other parameters provided to `ListReleasesRequest` must match
+  // When paginating, all other parameters provided to `ListReleases` must match
   // the call that provided the page token.
   string page_token = 3;
 
@@ -144,20 +145,21 @@ message Release {
   State state = 7;
 
   message File {
-    // The name of the file.
-    // Expressed as a path, e.g. `2.2/V0001_create_table.sql`
-    string name = 1;
+    // The unique identifier for the file.
+    string id = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+    // The path of the file. e.g. `2.2/V0001_create_table.sql`.
+    string path = 2;
     // The sheet that holds the content.
     // Format: projects/{project}/sheets/{sheet}
-    string sheet = 2 [(google.api.resource_reference) = {type: "bytebase.com/Sheet"}];
+    string sheet = 3 [(google.api.resource_reference) = {type: "bytebase.com/Sheet"}];
     // The SHA256 hash value of the sheet.
-    string sheet_sha256 = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
-    ReleaseFileType type = 4;
-    string version = 5;
+    string sheet_sha256 = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
+    ReleaseFileType type = 5;
+    string version = 6;
 
     // The statement is used for preview purpose.
-    string statement = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
-    int64 statement_size = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+    string statement = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+    int64 statement_size = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
   }
 
   message VCSSource {

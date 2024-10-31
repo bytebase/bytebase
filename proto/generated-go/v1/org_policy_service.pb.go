@@ -550,15 +550,17 @@ type ListPoliciesRequest struct {
 	// Format: {resource type}/{resource id}
 	Parent     string      `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
 	PolicyType *PolicyType `protobuf:"varint,2,opt,name=policy_type,json=policyType,proto3,enum=bytebase.v1.PolicyType,oneof" json:"policy_type,omitempty"`
+	// Not used.
 	// The maximum number of policies to return. The service may return fewer than
 	// this value.
-	// If unspecified, at most 50 policies will be returned.
+	// If unspecified, at most 10 policies will be returned.
 	// The maximum value is 1000; values above 1000 will be coerced to 1000.
 	PageSize int32 `protobuf:"varint,3,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
-	// A page token, received from a previous `GetPolicies` call.
+	// Not used.
+	// A page token, received from a previous `ListPolicies` call.
 	// Provide this to retrieve the subsequent page.
 	//
-	// When paginating, all other parameters provided to `GetPolicies` must match
+	// When paginating, all other parameters provided to `ListPolicies` must match
 	// the call that provided the page token.
 	PageToken string `protobuf:"bytes,4,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
 	// Show deleted policies if specified.

@@ -384,11 +384,13 @@ type ListInstancesRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// Not used.
 	// The maximum number of instances to return. The service may return fewer than
 	// this value.
-	// If unspecified, at most 50 instances will be returned.
+	// If unspecified, at most 10 instances will be returned.
 	// The maximum value is 1000; values above 1000 will be coerced to 1000.
 	PageSize int32 `protobuf:"varint,1,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
+	// Not used.
 	// A page token, received from a previous `ListInstances` call.
 	// Provide this to retrieve the subsequent page.
 	//

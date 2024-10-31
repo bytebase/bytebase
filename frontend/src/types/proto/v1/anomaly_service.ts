@@ -22,14 +22,16 @@ export interface SearchAnomaliesRequest {
    */
   filter: string;
   /**
-   * Not used. The maximum number of anomalies to return. The service may return fewer than
+   * Not used.
+   * The maximum number of anomalies to return. The service may return fewer than
    * this value.
    * If unspecified, at most 50 anomalies will be returned.
    * The maximum value is 1000; values above 1000 will be coerced to 1000.
    */
   pageSize: number;
   /**
-   * Not used. A page token, received from a previous `SearchAnomalies` call.
+   * Not used.
+   * A page token, received from a previous `SearchAnomalies` call.
    * Provide this to retrieve the subsequent page.
    *
    * When paginating, all other parameters provided to `SearchAnomalies` must match

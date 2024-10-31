@@ -92,6 +92,7 @@
     "updated-at": "Actualizado",
     "commit": "Confirmar",
     "statement": "Declaración",
+    "statement-size": "Tamaño de la declaración",
     "sql-statement": "Declaración SQL",
     "snapshot": "Instantánea",
     "status": "Estado",
@@ -3049,6 +3050,7 @@
   "audit-log": {
     "no-logs": "Sin registros de auditoría",
     "audit-log-detail": "Detalles del registro de auditoría",
+    "export-finished": "Exportación finalizada",
     "table": {
       "created-ts": "Hora",
       "created-time": "Hora de creación",
@@ -3407,9 +3409,10 @@
       "re-request-review-issue": "¿Volver a solicitar revisión?",
       "sent-back-issue": "Problema devuelto",
       "re-requested-review": "revisión de problema nuevamente solicitada",
-      "no-one-matches-role": "Nadie coincide con el rol, comuníquese con el propietario del proyecto para asignar uno.",
+      "no-one-matched": "Nadie igualó",
       "any-n-role-can-approve": "Cualquier {role} puede aprobar",
-      "approved-by-n": "Aprobado por {approver}"
+      "approved-by-n": "Aprobado por {approver}",
+      "issue-creators-cannot-approve-their-own-issue": "El creador del problema no puede aprobar su propio problema."
     },
     "send-back": "Enviar de vuelta"
   },
@@ -3734,14 +3737,26 @@
     "self": "Liberar",
     "releases": "Lanzamientos",
     "files": "Archivos",
+    "create": "Crear lanzamiento",
+    "select": "Seleccionar versión",
     "tasks-to-apply": "Tareas a aplicar",
     "out-of-order-files": "Archivos fuera de servicio",
     "applied-but-modifed-files": "Archivos aplicados pero modificados",
     "allow-out-of-order": "Permitir fuera de servicio",
     "show-archived": "Mostrar archivado",
     "archive-this-release": "Archivar este comunicado",
+    "total-files": "Total de {count} archivos",
     "no-tasks-to-apply": {
       "self": "No hay tareas para aplicar"
+    },
+    "actions": {
+      "new-file": "Nuevo archivo",
+      "import-from-release": "Importar desde la versión"
+    },
+    "messages": {
+      "succeed-to-create-release": "Tener éxito en crear el lanzamiento",
+      "files-will-always-be-sorted-and-executed-in-version-order": "Los archivos siempre se ordenarán y ejecutarán en orden de versión.",
+      "cannot-modify-files-after-created": "No es posible modificar archivos una vez creada la versión."
     }
   },
   "export-data": {

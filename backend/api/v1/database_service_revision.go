@@ -41,16 +41,20 @@ func (s *DatabaseService) ListRevisions(ctx context.Context, request *v1pb.ListR
 		return nil, status.Errorf(codes.NotFound, "database %v not found", request.Parent)
 	}
 
-	limit, offset, err := parseLimitAndOffset(request.PageToken, int(request.PageSize))
+	offset, err := parseLimitAndOffset(&pageSize{
+		token:   request.PageToken,
+		limit:   int(request.PageSize),
+		maximum: 1000,
+	})
 	if err != nil {
 		return nil, err
 	}
-	limitPlusOne := limit + 1
+	limitPlusOne := offset.limit + 1
 
 	find := &store.FindRevisionMessage{
 		DatabaseUID: &database.UID,
 		Limit:       &limitPlusOne,
-		Offset:      &offset,
+		Offset:      &offset.offset,
 	}
 
 	revisions, err := s.store.ListRevisions(ctx, find)
@@ -60,12 +64,10 @@ func (s *DatabaseService) ListRevisions(ctx context.Context, request *v1pb.ListR
 
 	var nextPageToken string
 	if len(revisions) == limitPlusOne {
-		pageToken, err := getPageToken(limit, offset+limit)
-		if err != nil {
+		if nextPageToken, err = offset.getPageToken(); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to get next page token, error: %v", err)
 		}
-		nextPageToken = pageToken
-		revisions = revisions[:limit]
+		revisions = revisions[:offset.limit]
 	}
 
 	converted, err := convertToRevisions(ctx, s.store, request.Parent, revisions)
@@ -161,7 +163,6 @@ func convertToRevision(ctx context.Context, s *store.Store, parent string, revis
 		SheetSha256:   revision.Payload.SheetSha256,
 		Statement:     sheet.Statement,
 		StatementSize: sheet.Size,
-		Type:          v1pb.ReleaseFileType(revision.Payload.Type),
 		Version:       revision.Payload.Version,
 		File:          revision.Payload.File,
 		Issue:         issueName,

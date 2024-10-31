@@ -52,11 +52,15 @@ func (s *AuditLogService) SearchAuditLogs(ctx context.Context, request *v1pb.Sea
 		return nil, status.Errorf(codes.InvalidArgument, "failed to get order by keys, error: %v", err)
 	}
 
-	limit, offset, err := parseLimitAndOffset(request.PageToken, int(request.PageSize))
+	offset, err := parseLimitAndOffset(&pageSize{
+		token:   request.PageToken,
+		limit:   int(request.PageSize),
+		maximum: 1000,
+	})
 	if err != nil {
 		return nil, err
 	}
-	limitPlusOne := limit + 1
+	limitPlusOne := offset.limit + 1
 
 	var project *string
 	if request.Parent != "" {
@@ -65,7 +69,7 @@ func (s *AuditLogService) SearchAuditLogs(ctx context.Context, request *v1pb.Sea
 	auditLogFind := &store.AuditLogFind{
 		Project:     project,
 		Limit:       &limitPlusOne,
-		Offset:      &offset,
+		Offset:      &offset.offset,
 		Filter:      filter,
 		OrderByKeys: orderByKeys,
 	}
@@ -76,12 +80,10 @@ func (s *AuditLogService) SearchAuditLogs(ctx context.Context, request *v1pb.Sea
 
 	var nextPageToken string
 	if len(auditLogs) == limitPlusOne {
-		auditLogs = auditLogs[:limit]
-		token, err := getPageToken(limit, offset+limit)
-		if err != nil {
+		auditLogs = auditLogs[:offset.limit]
+		if nextPageToken, err = offset.getPageToken(); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to get next page token, error: %v", err)
 		}
-		nextPageToken = token
 	}
 
 	v1AuditLogs, err := convertToAuditLogs(ctx, s.store, auditLogs)
@@ -99,10 +101,10 @@ func (s *AuditLogService) ExportAuditLogs(ctx context.Context, request *v1pb.Exp
 		return nil, status.Error(codes.PermissionDenied, err.Error())
 	}
 	searchAuditLogsResult, err := s.SearchAuditLogs(ctx, &v1pb.SearchAuditLogsRequest{
-		Filter:  request.Filter,
-		OrderBy: request.OrderBy,
-		// Default 1000 rows to avoid OOM for now.
-		PageSize: 1000,
+		Filter:    request.Filter,
+		OrderBy:   request.OrderBy,
+		PageSize:  request.PageSize,
+		PageToken: request.PageToken,
 	})
 	if err != nil {
 		return nil, err
@@ -147,7 +149,7 @@ func (s *AuditLogService) ExportAuditLogs(ctx context.Context, request *v1pb.Exp
 		return nil, status.Errorf(codes.InvalidArgument, "unsupported export format: %s", request.Format.String())
 	}
 
-	return &v1pb.ExportAuditLogsResponse{Content: content}, nil
+	return &v1pb.ExportAuditLogsResponse{Content: content, NextPageToken: searchAuditLogsResult.NextPageToken}, nil
 }
 
 func convertToAuditLogs(ctx context.Context, stores *store.Store, auditLogs []*store.AuditLog) ([]*v1pb.AuditLog, error) {

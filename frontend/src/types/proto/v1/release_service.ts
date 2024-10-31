@@ -77,16 +77,17 @@ export interface ListReleasesRequest {
   /** Format: projects/{project} */
   parent: string;
   /**
-   * The maximum number of change histories to return. The service may return fewer than this value.
-   * If unspecified, at most 10 change histories will be returned.
+   * The maximum number of releases to return. The service may return fewer than this value.
+   * If unspecified, at most 10 releases will be returned.
    * The maximum value is 1000; values above 1000 will be coerced to 1000.
    */
   pageSize: number;
   /**
-   * Not used. A page token, received from a previous `ListReleasesRequest` call.
+   * Not used.
+   * A page token, received from a previous `ListReleases` call.
    * Provide this to retrieve the subsequent page.
    *
-   * When paginating, all other parameters provided to `ListReleasesRequest` must match
+   * When paginating, all other parameters provided to `ListReleases` must match
    * the call that provided the page token.
    */
   pageToken: string;
@@ -150,11 +151,10 @@ export interface Release {
 }
 
 export interface Release_File {
-  /**
-   * The name of the file.
-   * Expressed as a path, e.g. `2.2/V0001_create_table.sql`
-   */
-  name: string;
+  /** The unique identifier for the file. */
+  id: string;
+  /** The path of the file. e.g. `2.2/V0001_create_table.sql`. */
+  path: string;
   /**
    * The sheet that holds the content.
    * Format: projects/{project}/sheets/{sheet}
@@ -838,7 +838,8 @@ export const Release: MessageFns<Release> = {
 
 function createBaseRelease_File(): Release_File {
   return {
-    name: "",
+    id: "",
+    path: "",
     sheet: "",
     sheetSha256: "",
     type: ReleaseFileType.TYPE_UNSPECIFIED,
@@ -850,26 +851,29 @@ function createBaseRelease_File(): Release_File {
 
 export const Release_File: MessageFns<Release_File> = {
   encode(message: Release_File, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.name !== "") {
-      writer.uint32(10).string(message.name);
+    if (message.id !== "") {
+      writer.uint32(10).string(message.id);
+    }
+    if (message.path !== "") {
+      writer.uint32(18).string(message.path);
     }
     if (message.sheet !== "") {
-      writer.uint32(18).string(message.sheet);
+      writer.uint32(26).string(message.sheet);
     }
     if (message.sheetSha256 !== "") {
-      writer.uint32(26).string(message.sheetSha256);
+      writer.uint32(34).string(message.sheetSha256);
     }
     if (message.type !== ReleaseFileType.TYPE_UNSPECIFIED) {
-      writer.uint32(32).int32(releaseFileTypeToNumber(message.type));
+      writer.uint32(40).int32(releaseFileTypeToNumber(message.type));
     }
     if (message.version !== "") {
-      writer.uint32(42).string(message.version);
+      writer.uint32(50).string(message.version);
     }
     if (message.statement !== "") {
-      writer.uint32(50).string(message.statement);
+      writer.uint32(58).string(message.statement);
     }
     if (!message.statementSize.equals(Long.ZERO)) {
-      writer.uint32(56).int64(message.statementSize.toString());
+      writer.uint32(64).int64(message.statementSize.toString());
     }
     return writer;
   },
@@ -886,45 +890,52 @@ export const Release_File: MessageFns<Release_File> = {
             break;
           }
 
-          message.name = reader.string();
+          message.id = reader.string();
           continue;
         case 2:
           if (tag !== 18) {
             break;
           }
 
-          message.sheet = reader.string();
+          message.path = reader.string();
           continue;
         case 3:
           if (tag !== 26) {
             break;
           }
 
-          message.sheetSha256 = reader.string();
+          message.sheet = reader.string();
           continue;
         case 4:
-          if (tag !== 32) {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.sheetSha256 = reader.string();
+          continue;
+        case 5:
+          if (tag !== 40) {
             break;
           }
 
           message.type = releaseFileTypeFromJSON(reader.int32());
-          continue;
-        case 5:
-          if (tag !== 42) {
-            break;
-          }
-
-          message.version = reader.string();
           continue;
         case 6:
           if (tag !== 50) {
             break;
           }
 
-          message.statement = reader.string();
+          message.version = reader.string();
           continue;
         case 7:
-          if (tag !== 56) {
+          if (tag !== 58) {
+            break;
+          }
+
+          message.statement = reader.string();
+          continue;
+        case 8:
+          if (tag !== 64) {
             break;
           }
 
@@ -941,7 +952,8 @@ export const Release_File: MessageFns<Release_File> = {
 
   fromJSON(object: any): Release_File {
     return {
-      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      id: isSet(object.id) ? globalThis.String(object.id) : "",
+      path: isSet(object.path) ? globalThis.String(object.path) : "",
       sheet: isSet(object.sheet) ? globalThis.String(object.sheet) : "",
       sheetSha256: isSet(object.sheetSha256) ? globalThis.String(object.sheetSha256) : "",
       type: isSet(object.type) ? releaseFileTypeFromJSON(object.type) : ReleaseFileType.TYPE_UNSPECIFIED,
@@ -953,8 +965,11 @@ export const Release_File: MessageFns<Release_File> = {
 
   toJSON(message: Release_File): unknown {
     const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
+    if (message.id !== "") {
+      obj.id = message.id;
+    }
+    if (message.path !== "") {
+      obj.path = message.path;
     }
     if (message.sheet !== "") {
       obj.sheet = message.sheet;
@@ -982,7 +997,8 @@ export const Release_File: MessageFns<Release_File> = {
   },
   fromPartial(object: DeepPartial<Release_File>): Release_File {
     const message = createBaseRelease_File();
-    message.name = object.name ?? "";
+    message.id = object.id ?? "";
+    message.path = object.path ?? "";
     message.sheet = object.sheet ?? "";
     message.sheetSha256 = object.sheetSha256 ?? "";
     message.type = object.type ?? ReleaseFileType.TYPE_UNSPECIFIED;

@@ -30,20 +30,17 @@ import {
   useDBSchemaV1Store,
   useProjectByName,
 } from "@/store";
-import {
-  databaseNamePrefix,
-  instanceNamePrefix,
-} from "@/store/modules/v1/common";
 import { useDatabaseV1List } from "@/store/modules/v1/databaseList";
 import type { DatabaseResource } from "@/types";
 import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
 import { wrapRefAsPromise } from "@/utils";
 import Label from "./Label.vue";
-import type { DatabaseTreeOption, DatabaseResourceType } from "./common";
+import type { DatabaseTreeOption } from "./common";
 import {
   flattenTreeOptions,
   getSchemaOrTableTreeOptions,
   mapTreeOptions,
+  parseStringToResource,
 } from "./common";
 
 const props = defineProps<{
@@ -63,47 +60,6 @@ const emit = defineEmits<{
 const databaseStore = useDatabaseV1Store();
 const dbSchemaStore = useDBSchemaV1Store();
 const { project } = useProjectByName(props.projectName);
-
-const parseKeyToResource = (key: string): DatabaseResource | undefined => {
-  const sections = key.split("/");
-  const resource: DatabaseResource = {
-    databaseName: "",
-  };
-
-  while (sections.length > 0) {
-    const keyword = sections.shift() as DatabaseResourceType | "instances";
-    const data = sections.shift() || "";
-
-    switch (keyword) {
-      case "instances":
-        resource.instanceResourceId = data;
-        break;
-      case "databases":
-        if (!resource.instanceResourceId) {
-          return;
-        }
-        resource.databaseName = `${instanceNamePrefix}${resource.instanceResourceId}/${databaseNamePrefix}${data}`;
-        break;
-      case "schemas":
-        resource.schema = data;
-        break;
-      case "tables":
-        resource.table = data;
-        break;
-      case "columns":
-        resource.column = data;
-        break;
-      default:
-        return;
-    }
-  }
-
-  if (!resource.databaseName) {
-    return;
-  }
-
-  return resource;
-};
 
 const parseResourceToKey = (resource: DatabaseResource): string => {
   const data = [
@@ -461,7 +417,7 @@ watch(selectedValueList, (selectedValueList) => {
   emit(
     "update:databaseResources",
     filteredKeyList
-      .map(parseKeyToResource)
+      .map(parseStringToResource)
       .filter((data) => data) as DatabaseResource[]
   );
 });

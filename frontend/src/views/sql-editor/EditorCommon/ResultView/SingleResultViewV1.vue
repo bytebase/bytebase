@@ -125,15 +125,26 @@
         :is-sensitive-column="isSensitiveColumn"
         :is-column-missing-sensitive="isColumnMissingSensitive"
       />
-      <DataTableLite
-        v-else
-        :table="table"
-        :set-index="setIndex"
-        :offset="pageIndex * pageSize"
-        :is-sensitive-column="isSensitiveColumn"
-        :is-column-missing-sensitive="isColumnMissingSensitive"
-        :max-height="maxDataTableHeight"
-      />
+      <template v-else>
+        <DataTableLite
+          v-if="useDataTableLite"
+          :table="table"
+          :set-index="setIndex"
+          :offset="pageIndex * pageSize"
+          :is-sensitive-column="isSensitiveColumn"
+          :is-column-missing-sensitive="isColumnMissingSensitive"
+          :max-height="maxDataTableHeight"
+        />
+        <DataTable
+          v-else
+          :table="table"
+          :set-index="setIndex"
+          :offset="pageIndex * pageSize"
+          :is-sensitive-column="isSensitiveColumn"
+          :is-column-missing-sensitive="isColumnMissingSensitive"
+          :max-height="maxDataTableHeight"
+        />
+      </template>
     </div>
 
     <div
@@ -177,6 +188,7 @@ import {
   useVueTable,
 } from "@tanstack/vue-table";
 import { useDebounceFn, useLocalStorage } from "@vueuse/core";
+import dayjs from "dayjs";
 import { isEmpty } from "lodash-es";
 import { ExternalLinkIcon } from "lucide-vue-next";
 import {
@@ -231,6 +243,7 @@ import {
   isNullOrUndefined,
 } from "@/utils";
 import DataBlock from "./DataBlock.vue";
+import DataTable from "./DataTable";
 import DataTableLite from "./DataTableLite";
 import EmptyView from "./EmptyView.vue";
 import ErrorView from "./ErrorView";
@@ -369,6 +382,18 @@ const data = computed(() => {
   return temp;
 });
 
+const useDataTableLite = computed(() => {
+  // In admin mode, always use DataTableLite to keep consistent
+  if (currentTab.value?.mode === "ADMIN") return true;
+
+  // Otherwise, use DataTableLite if the result set has too many columns
+  // or too many rows in a page.
+  const colCount = table.getFlatHeaders().length;
+  const rowCount = Math.min(pageSize.value, props.result.rows.length);
+
+  return colCount >= 50 || rowCount >= 200;
+});
+
 const isSensitiveColumn = (columnIndex: number): boolean => {
   return props.result.masked[columnIndex] ?? false;
 };
@@ -415,7 +440,7 @@ const pageSizeOptions = computed(() => {
 
 const handleExportBtnClick = async (
   options: ExportOption,
-  callback: (content: BinaryLike | Blob, options: ExportOption) => void
+  callback: (content: BinaryLike | Blob, filename: string) => void
 ) => {
   // If props.database is specified and it's not unknown database
   // the query is executed on database level
@@ -425,7 +450,9 @@ const handleExportBtnClick = async (
     props.database && isValidDatabaseName(props.database.name)
       ? props.database.name
       : "";
-  const statement = props.result.statement;
+  // use props.params.statement which is the "snapshot" of the query statement
+  // not using props.result.statement because it might be rewritten by Query() API
+  const statement = props.params.statement;
   const admin = tabStore.currentTab?.mode === "ADMIN";
   const limit = options.limit ?? (admin ? 0 : editorStore.resultRowsLimit);
 
@@ -440,7 +467,10 @@ const handleExportBtnClick = async (
     password: options.password,
   });
 
-  callback(content, options);
+  callback(
+    content,
+    `export-data.${dayjs(new Date()).format("YYYY-MM-DDTHH-mm-ss")}`
+  );
 };
 
 const handleRequestExport = async () => {

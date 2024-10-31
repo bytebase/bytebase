@@ -92,6 +92,7 @@
     "updated-at": "更新于",
     "commit": "提交",
     "statement": "语句",
+    "statement-size": "语句大小",
     "sql-statement": "SQL @:{'common.statement'}",
     "snapshot": "快照",
     "status": "状态",
@@ -3049,6 +3050,7 @@
   "audit-log": {
     "no-logs": "暂无审计日志",
     "audit-log-detail": "审计详情",
+    "export-finished": "导出完成",
     "table": {
       "created-ts": "时间",
       "created-time": "创建时间",
@@ -3407,9 +3409,10 @@
       "re-request-review-issue": "请求再次审批工单？",
       "sent-back-issue": "退回工单",
       "re-requested-review": "再次请求审批工单",
-      "no-one-matches-role": "没有符合这个角色的用户，请联系项目管理员分配角色。",
+      "no-one-matched": "没有匹配到用户",
       "any-n-role-can-approve": "任意 {role} 可审批",
-      "approved-by-n": "已由 {approver} 批准"
+      "approved-by-n": "已由 {approver} 批准",
+      "issue-creators-cannot-approve-their-own-issue": "工单创建者不能审批自己的工单"
     },
     "send-back": "退回"
   },
@@ -3734,14 +3737,26 @@
     "self": "发布",
     "releases": "发布",
     "files": "文件",
+    "create": "创建发布",
+    "select": "选择发布",
     "tasks-to-apply": "待应用的任务",
     "out-of-order-files": "无序文件",
     "applied-but-modifed-files": "已应用但已修改的文件",
     "allow-out-of-order": "允许无序文件",
     "show-archived": "显示已归档",
     "archive-this-release": "归档此发布",
+    "total-files": "共 {count} 个文件",
     "no-tasks-to-apply": {
       "self": "没有可应用的任务"
+    },
+    "actions": {
+      "new-file": "新建文件",
+      "import-from-release": "从发布导入"
+    },
+    "messages": {
+      "succeed-to-create-release": "成功创建发布",
+      "files-will-always-be-sorted-and-executed-in-version-order": "文件将始终按照版本顺序排序和执行。",
+      "cannot-modify-files-after-created": "发布创建后您无法修改文件。"
     }
   },
   "export-data": {

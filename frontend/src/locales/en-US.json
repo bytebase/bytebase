@@ -92,6 +92,7 @@
     "updated-at": "Updated",
     "commit": "Commit",
     "statement": "Statement",
+    "statement-size": "Statement size",
     "sql-statement": "SQL statement",
     "snapshot": "Snapshot",
     "status": "Status",
@@ -3049,6 +3050,7 @@
   "audit-log": {
     "no-logs": "No audit logs",
     "audit-log-detail": "Audit Log Details",
+    "export-finished": "Export finished",
     "table": {
       "created-ts": "Time",
       "created-time": "Created Time",
@@ -3407,9 +3409,10 @@
       "re-request-review-issue": "Re-request review issue?",
       "sent-back-issue": "Sent back issue",
       "re-requested-review": "re-requested issue review",
-      "no-one-matches-role": "No one matches the role, contact project owner to assign one.",
+      "no-one-matched": "No one matched",
       "any-n-role-can-approve": "Any {role} can approve",
-      "approved-by-n": "Approved by {approver}"
+      "approved-by-n": "Approved by {approver}",
+      "issue-creators-cannot-approve-their-own-issue": "Issue creators cannot approve their own issue"
     },
     "send-back": "Send back"
   },
@@ -3734,14 +3737,26 @@
     "self": "Release",
     "releases": "Releases",
     "files": "Files",
+    "create": "Create release",
+    "select": "Select release",
     "tasks-to-apply": "Tasks to apply",
     "out-of-order-files": "Out of order files",
     "applied-but-modifed-files": "Applied but modified files",
     "allow-out-of-order": "Allow out of order",
     "show-archived": "Show archived",
     "archive-this-release": "Archive this release",
+    "total-files": "Total {count} files",
     "no-tasks-to-apply": {
       "self": "No tasks to apply"
+    },
+    "actions": {
+      "new-file": "New file",
+      "import-from-release": "Import from release"
+    },
+    "messages": {
+      "succeed-to-create-release": "Succeed to create release",
+      "files-will-always-be-sorted-and-executed-in-version-order": "The files will always be sorted and executed in version order.",
+      "cannot-modify-files-after-created": "You cannot modify files after the release is created."
     }
   },
   "export-data": {

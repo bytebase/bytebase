@@ -1745,12 +1745,12 @@ type SearchQueryHistoriesRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// Not used. The maximum number of histories to return.
+	// The maximum number of histories to return.
 	// The service may return fewer than this value.
-	// If unspecified, at most 100 history entries will be returned.
+	// If unspecified, at most 10 history entries will be returned.
 	// The maximum value is 1000; values above 1000 will be coerced to 1000.
 	PageSize int32 `protobuf:"varint,1,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
-	// Not used. A page token, received from a previous `ListQueryHistory` call.
+	// A page token, received from a previous `ListQueryHistory` call.
 	// Provide this to retrieve the subsequent page.
 	PageToken string `protobuf:"bytes,2,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
 	// filter is the filter to apply on the search query history,

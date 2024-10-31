@@ -9,7 +9,6 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/testing/protocmp"
 	"google.golang.org/protobuf/types/known/durationpb"
 
@@ -156,13 +155,17 @@ func TestSensitiveData(t *testing.T) {
 		Statement:    "SELECT hello TO world;",
 		DataSourceId: "admin",
 	})
-	st := status.Convert(err)
-	a.Len(st.Details(), 1)
-	report, ok := st.Details()[0].(*v1pb.PlanCheckRun_Result_SqlReviewReport)
-	a.True(ok)
-	a.Equal(int32(1), report.Line)
-	a.Equal(int32(13), report.Column)
-	a.Equal("Syntax error at line 1:13 \nrelated text: SELECT hello TO", report.Detail)
+	a.Error(err)
+	// TODO(d): deprecate the details with diagonose check. And the error is not reached anyway.
+	/*
+		st := status.Convert(err)
+		a.Len(st.Details(), 1)
+		report, ok := st.Details()[0].(*v1pb.PlanCheckRun_Result_SqlReviewReport)
+		a.True(ok)
+		a.Equal(int32(1), report.Line)
+		a.Equal(int32(13), report.Column)
+		a.Equal("Syntax error at line 1:13 \nrelated text: SELECT hello TO", report.Detail)
+	*/
 
 	sheet, err := ctl.sheetServiceClient.CreateSheet(ctx, &v1pb.CreateSheetRequest{
 		Parent: ctl.project.Name,

@@ -107,7 +107,6 @@
 
 <script lang="ts" setup>
 import { asyncComputed } from "@vueuse/core";
-import dayjs from "dayjs";
 import type { FormInst, FormRules } from "naive-ui";
 import {
   NButton,
@@ -123,7 +122,7 @@ import { useI18n } from "vue-i18n";
 import { BBModal, BBTextField } from "@/bbkit";
 import { pushNotification } from "@/store";
 import { ExportFormat, exportFormatToJSON } from "@/types/proto/v1/common";
-import { defer, isNullOrUndefined } from "@/utils";
+import { isNullOrUndefined } from "@/utils";
 import MaxRowCountSelect from "./GrantRequestPanel/MaxRowCountSelect.vue";
 import { Drawer, DrawerContent, ErrorTipsButton } from "./v2";
 
@@ -164,7 +163,7 @@ const emit = defineEmits<{
   (
     event: "export",
     options: ExportOption,
-    download: (content: BinaryLike | Blob, options: ExportOption) => void
+    download: (content: BinaryLike | Blob, filename: string) => void
   ): Promise<void>;
 }>();
 
@@ -252,33 +251,21 @@ const handleClickExportButton = (e: MouseEvent) => {
   state.showDrawer = true;
 };
 
-const emitExportEventAsPromise = (
-  options: ExportOption,
-  download: (content: BinaryLike | Blob, options: ExportOption) => void
-) => {
-  const d = defer<void>();
-
-  emit(
-    "export",
-    options,
-    (content: BinaryLike | Blob, options: ExportOption) => {
-      d.resolve();
-      download(content, options);
-    }
-  );
-
-  return d.promise;
-};
-
 const doExport = async () => {
   if (state.isRequesting) {
     return;
   }
 
   state.isRequesting = true;
-
+  const options = { ...formData.value };
   try {
-    await emitExportEventAsPromise({ ...formData.value }, doDownload);
+    await emit(
+      "export",
+      options,
+      (content: BinaryLike | Blob, filename: string) => {
+        doDownload(content, options, filename);
+      }
+    );
   } catch (error) {
     pushNotification({
       module: "bytebase",
@@ -309,7 +296,11 @@ const getExportFileType = (format: ExportFormat) => {
   }
 };
 
-const doDownload = (content: BinaryLike | Blob, options: ExportOption) => {
+const doDownload = (
+  content: BinaryLike | Blob,
+  options: ExportOption,
+  filename: string
+) => {
   const isZip = downloadFileAsZip(options);
   const fileType = isZip
     ? "application/zip"
@@ -320,8 +311,6 @@ const doDownload = (content: BinaryLike | Blob, options: ExportOption) => {
   const url = window.URL.createObjectURL(blob);
 
   const fileFormat = exportFormatToJSON(options.format).toLowerCase();
-  const formattedDateString = dayjs(new Date()).format("YYYY-MM-DDTHH-mm-ss");
-  const filename = `export-data-${formattedDateString}`;
   const link = document.createElement("a");
   link.download = `${filename}.${isZip ? "zip" : fileFormat}`;
   link.href = url;

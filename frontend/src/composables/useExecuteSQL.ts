@@ -124,7 +124,7 @@ const useExecuteSQL = () => {
     if (!params) {
       return { passed: false };
     }
-    if (params.statement.length > SKIP_CHECK_THRESHOLD) {
+    if (new Blob([params.statement]).size> SKIP_CHECK_THRESHOLD) {
       return { passed: true };
     }
     const response = await sqlServiceClient.check(
@@ -134,6 +134,7 @@ const useExecuteSQL = () => {
         changeType: CheckRequest_ChangeType.SQL_EDITOR,
       },
       {
+        ignoredCodes: [Status.PERMISSION_DENIED],
         signal: abortController?.signal,
       }
     );

@@ -1,5 +1,6 @@
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
+import type { BinaryLike } from "node:crypto";
 import { defineStore } from "pinia";
 import { reactive } from "vue";
 import { auditLogServiceClient } from "@/grpcweb";
@@ -56,14 +57,17 @@ export const useAuditLogStore = defineStore("audit_log", () => {
   const exportAuditLogs = async (
     search: SearchAuditLogsParams,
     format: ExportFormat
-  ) => {
-    const { content } = await auditLogServiceClient.exportAuditLogs({
+  ): Promise<{
+    content: BinaryLike | Blob;
+    nextPageToken: string;
+  }> => {
+    return await auditLogServiceClient.exportAuditLogs({
       parent: search.parent,
       filter: buildFilter(search),
       orderBy: search.order ? `create_time ${search.order}` : undefined,
       format,
+      pageSize: 1000,
     });
-    return content;
   };
 
   return {

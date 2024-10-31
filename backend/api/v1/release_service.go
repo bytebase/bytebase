@@ -2,7 +2,9 @@ package v1
 
 import (
 	"context"
+	"slices"
 
+	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -46,6 +48,11 @@ func (s *ReleaseService) CreateRelease(ctx context.Context, request *v1pb.Create
 	}
 	if project == nil {
 		return nil, status.Errorf(codes.NotFound, "project %v not found", projectID)
+	}
+
+	request.Release.Files, err = validateAndSanitizeReleaseFiles(request.Release.Files)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid release files, err: %v", err)
 	}
 
 	files, err := convertReleaseFiles(ctx, s.store, request.Release.Files)
@@ -111,16 +118,20 @@ func (s *ReleaseService) ListReleases(ctx context.Context, request *v1pb.ListRel
 		return nil, status.Errorf(codes.NotFound, "project %v not found", projectID)
 	}
 
-	limit, offset, err := parseLimitAndOffset(request.PageToken, int(request.PageSize))
+	offset, err := parseLimitAndOffset(&pageSize{
+		token:   request.PageToken,
+		limit:   int(request.PageSize),
+		maximum: 1000,
+	})
 	if err != nil {
 		return nil, err
 	}
-	limitPlusOne := limit + 1
+	limitPlusOne := offset.limit + 1
 
 	releaseFind := &store.FindReleaseMessage{
 		ProjectUID:  &project.UID,
 		Limit:       &limitPlusOne,
-		Offset:      &offset,
+		Offset:      &offset.offset,
 		ShowDeleted: request.ShowDeleted,
 	}
 
@@ -131,12 +142,10 @@ func (s *ReleaseService) ListReleases(ctx context.Context, request *v1pb.ListRel
 
 	var nextPageToken string
 	if len(releaseMessages) == limitPlusOne {
-		pageToken, err := getPageToken(limit, offset+limit)
-		if err != nil {
+		if nextPageToken, err = offset.getPageToken(); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to get next page token, error: %v", err)
 		}
-		nextPageToken = pageToken
-		releaseMessages = releaseMessages[:limit]
+		releaseMessages = releaseMessages[:offset.limit]
 	}
 
 	releases, err := convertToReleases(ctx, s.store, releaseMessages)
@@ -287,7 +296,8 @@ func convertToReleaseFiles(ctx context.Context, s *store.Store, files []*storepb
 			return nil, errors.Errorf("sheet %q not found", f.Sheet)
 		}
 		v1Files = append(v1Files, &v1pb.Release_File{
-			Name:          f.Name,
+			Id:            f.Id,
+			Path:          f.Path,
 			Sheet:         f.Sheet,
 			SheetSha256:   f.SheetSha256,
 			Type:          v1pb.ReleaseFileType(f.Type),
@@ -331,7 +341,8 @@ func convertReleaseFiles(ctx context.Context, s *store.Store, files []*v1pb.Rele
 		}
 
 		rFiles = append(rFiles, &storepb.ReleasePayload_File{
-			Name:        f.Name,
+			Id:          f.Id,
+			Path:        f.Path,
 			Sheet:       f.Sheet,
 			SheetSha256: sheet.Sha256,
 			Type:        storepb.ReleaseFileType(f.Type),
@@ -349,4 +360,40 @@ func convertReleaseVcsSource(vs *v1pb.Release_VCSSource) *storepb.ReleasePayload
 		VcsType:        storepb.VCSType(vs.VcsType),
 		PullRequestUrl: vs.PullRequestUrl,
 	}
+}
+
+func validateAndSanitizeReleaseFiles(files []*v1pb.Release_File) ([]*v1pb.Release_File, error) {
+	versionSet := map[string]struct{}{}
+
+	for _, f := range files {
+		f.Id = uuid.NewString()
+
+		if f.Version == "" {
+			return nil, errors.Errorf("file version cannot be empty")
+		}
+		switch f.Type {
+		case v1pb.ReleaseFileType_VERSIONED:
+		case v1pb.ReleaseFileType_TYPE_UNSPECIFIED:
+			return nil, errors.Errorf("unexpected file type %q", f.Type.String())
+		default:
+			return nil, errors.Errorf("unexpected file type %q", f.Type.String())
+		}
+
+		if _, ok := versionSet[f.Version]; ok {
+			return nil, errors.Errorf("found duplicate version %q", f.Version)
+		}
+		versionSet[f.Version] = struct{}{}
+	}
+
+	slices.SortFunc(files, func(a, b *v1pb.Release_File) int {
+		if a.Version < b.Version {
+			return -1
+		}
+		if a.Version > b.Version {
+			return 1
+		}
+		return 0
+	})
+
+	return files, nil
 }

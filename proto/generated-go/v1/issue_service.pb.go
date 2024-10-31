@@ -629,7 +629,7 @@ type ListIssuesRequest struct {
 	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
 	// The maximum number of issues to return. The service may return fewer than
 	// this value.
-	// If unspecified, at most 50 issues will be returned.
+	// If unspecified, at most 10 issues will be returned.
 	// The maximum value is 1000; values above 1000 will be coerced to 1000.
 	PageSize int32 `protobuf:"varint,2,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
 	// A page token, received from a previous `ListIssues` call.
@@ -776,13 +776,13 @@ type SearchIssuesRequest struct {
 	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
 	// The maximum number of issues to return. The service may return fewer than
 	// this value.
-	// If unspecified, at most 50 issues will be returned.
+	// If unspecified, at most 10 issues will be returned.
 	// The maximum value is 1000; values above 1000 will be coerced to 1000.
 	PageSize int32 `protobuf:"varint,2,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
-	// A page token, received from a previous `ListIssues` call.
+	// A page token, received from a previous `SearchIssues` call.
 	// Provide this to retrieve the subsequent page.
 	//
-	// When paginating, all other parameters provided to `ListIssues` must match
+	// When paginating, all other parameters provided to `SearchIssues` must match
 	// the call that provided the page token.
 	PageToken string `protobuf:"bytes,3,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
 	// Filter is used to filter issues returned in the list.
@@ -1827,15 +1827,15 @@ type ListIssueCommentsRequest struct {
 
 	// Format: projects/{projects}/issues/{issue}
 	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
-	// The maximum number of issues to return. The service may return fewer than
+	// The maximum number of issue comments to return. The service may return fewer than
 	// this value.
-	// If unspecified, at most 50 issues will be returned.
+	// If unspecified, at most 10 issue comments will be returned.
 	// The maximum value is 1000; values above 1000 will be coerced to 1000.
 	PageSize int32 `protobuf:"varint,2,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
-	// A page token, received from a previous `ListIssues` call.
+	// A page token, received from a previous `ListIssueComments` call.
 	// Provide this to retrieve the subsequent page.
 	//
-	// When paginating, all other parameters provided to `ListIssues` must match
+	// When paginating, all other parameters provided to `ListIssueComments` must match
 	// the call that provided the page token.
 	PageToken string `protobuf:"bytes,3,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
 }

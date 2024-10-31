@@ -304,11 +304,13 @@ type ListBranchesRequest struct {
 	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
 	// To filter the search result.
 	Filter string `protobuf:"bytes,2,opt,name=filter,proto3" json:"filter,omitempty"`
+	// Not used.
 	// The maximum number of branches to return. The service may return fewer than
 	// this value.
 	// If unspecified, at most 50 branches will be returned.
 	// The maximum value is 1000; values above 1000 will be coerced to 1000.
 	PageSize int32 `protobuf:"varint,3,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
+	// Not used.
 	// A page token, received from a previous `ListBranches` call.
 	// Provide this to retrieve the subsequent page.
 	//
