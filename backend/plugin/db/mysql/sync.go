@@ -1088,13 +1088,20 @@ func (driver *Driver) getForeignKeyList(ctx context.Context, databaseName string
 	if err := kcuQueryRows.Err(); err != nil {
 		return nil, util.FormatErrorWithQuery(err, kcuQuery)
 	}
-
-	result := make(map[db.TableKey][]*storepb.ForeignKeyMetadata)
+	unordered := make(map[db.TableKey][]*storepb.ForeignKeyMetadata)
 	for key, fk := range fkMap {
 		tableKey := db.TableKey{Schema: "", Table: key.Table}
-		result[tableKey] = append(result[tableKey], fk)
+		unordered[tableKey] = append(unordered[tableKey], fk)
 	}
-	return result, nil
+
+	orderedResult := make(map[db.TableKey][]*storepb.ForeignKeyMetadata)
+	for key, fks := range unordered {
+		sort.Slice(fks, func(i, j int) bool {
+			return fks[i].Name < fks[j].Name
+		})
+		orderedResult[key] = fks
+	}
+	return orderedResult, nil
 }
 
 type slowLog struct {
