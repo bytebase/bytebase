@@ -31,7 +31,9 @@ func SplitSQL(statement string) ([]base.SingleSQL, error) {
 			empty := true
 
 			for _, b := range buf {
-				bufStr.WriteString(b.GetText())
+				if _, err := bufStr.WriteString(b.GetText()); err != nil {
+					return nil, err
+				}
 				if b.GetChannel() != antlr.TokenHiddenChannel {
 					empty = false
 				}
