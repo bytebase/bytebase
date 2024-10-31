@@ -11,7 +11,11 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
+	"unicode/utf8"
 
+	"golang.org/x/text/encoding/charmap"
+	"golang.org/x/text/transform"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
@@ -138,6 +142,37 @@ func (driver *Driver) getServerVariable(ctx context.Context, varName string) (st
 		return "", errors.Errorf("expecting variable %s, but got %s", varName, varNameFound)
 	}
 	return value, nil
+}
+
+func containsInvisibleChars(data []byte) bool {
+	// Iterate over the byte slice as runes
+	for len(data) > 0 {
+		r, size := utf8.DecodeRune(data)
+		if r == utf8.RuneError && size == 1 {
+			// If the byte slice contains invalid UTF-8 characters, treat it as invisible
+			return true
+		}
+		// Check if the rune is not printable
+		if !unicode.IsPrint(r) {
+			return true
+		}
+		// Move to the next rune
+		data = data[size:]
+	}
+	return false
+}
+
+func utf8ToISO88591(utf8Str string) (string, error) {
+	// Create a transformer that encodes UTF-8 to ISO-8859-1
+	encoder := charmap.ISO8859_1.NewEncoder()
+
+	// Transform the input UTF-8 string into ISO-8859-1
+	isoBytes, _, err := transform.String(encoder, utf8Str)
+	if err != nil {
+		return "", err
+	}
+
+	return isoBytes, nil
 }
 
 // SyncDBSchema syncs a single database schema.
@@ -275,7 +310,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 			IFNULL(CHARACTER_SET_NAME, ''),
 			IFNULL(COLLATION_NAME, ''),
 			QUOTE(COLUMN_COMMENT),
-			GENERATION_EXPRESSION,
+			convert(GENERATION_EXPRESSION using BINARY),
 			EXTRA
 		FROM information_schema.COLUMNS
 		WHERE TABLE_SCHEMA = ?
@@ -308,7 +343,7 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 		column := &storepb.ColumnMetadata{}
 		var tableName, nullable, extra, tp string
 		var defaultStr sql.NullString
-		var generationExpr sql.NullString
+		var generationExpr []byte
 		if err := columnRows.Scan(
 			&tableName,
 			&column.Name,
@@ -339,15 +374,25 @@ func (driver *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchema
 		setColumnMetadataDefault(column, defaultStr, nullableBool, extra)
 		key := db.TableKey{Schema: "", Table: tableName}
 		columnMap[key] = append(columnMap[key], column)
-		if extra != "" && strings.Contains(strings.ToUpper(extra), virtualGenerated) && generationExpr.Valid && generationExpr.String != "" {
+		invisible := containsInvisibleChars(generationExpr)
+		iso88591Text, convertedErr := utf8ToISO88591(string(generationExpr))
+		if extra != "" && strings.Contains(strings.ToUpper(extra), virtualGenerated) && len(generationExpr) != 0 {
+			text := string(generationExpr)
+			if invisible && convertedErr == nil {
+				text = iso88591Text
+			}
 			column.Generation = &storepb.GenerationMetadata{
 				Type:       storepb.GenerationMetadata_TYPE_VIRTUAL,
-				Expression: generationExpr.String,
+				Expression: text,
 			}
-		} else if extra != "" && strings.Contains(strings.ToUpper(extra), storedGenerated) && generationExpr.Valid && generationExpr.String != "" {
+		} else if extra != "" && strings.Contains(strings.ToUpper(extra), storedGenerated) && len(generationExpr) != 0 {
+			text := string(generationExpr)
+			if invisible && convertedErr == nil {
+				text = iso88591Text
+			}
 			column.Generation = &storepb.GenerationMetadata{
 				Type:       storepb.GenerationMetadata_TYPE_STORED,
-				Expression: generationExpr.String,
+				Expression: text,
 			}
 		}
 	}
