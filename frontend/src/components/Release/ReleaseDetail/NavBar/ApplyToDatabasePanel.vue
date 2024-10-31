@@ -63,17 +63,13 @@
             >
               {{ $t("release.allow-out-of-order") }}
             </NCheckbox>
-            <NButton @click.prevent="handleCancelClick">
-              <template v-if="state.currentStep === 1" #icon>
-                <Undo2Icon class="w-4 h-auto" />
-              </template>
+            <NButton quaternary @click.prevent="handleCancelClick">
               {{
                 state.currentStep === 0
                   ? $t("common.cancel")
                   : $t("common.back")
               }}
             </NButton>
-
             <ErrorTipsButton
               style="--n-padding: 0 10px"
               :errors="nextButtonErrors"
@@ -92,7 +88,6 @@
 </template>
 
 <script lang="ts" setup>
-import { Undo2Icon } from "lucide-vue-next";
 import { NButton, NCheckbox } from "naive-ui";
 import { computed, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
