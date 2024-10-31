@@ -6,8 +6,14 @@
     <div
       v-for="spec in flattenSpecList"
       :key="spec.id"
-      class="max-w-52 flex flex-row items-center flex-wrap gap-1 border px-2 py-1 rounded-md"
+      class="max-w-52 flex flex-row items-center flex-wrap border px-2 py-1 rounded-md"
     >
+      <DatabaseView
+        class="text-sm"
+        :database="databaseForPlanSpec(spec)"
+        :link="false"
+        :show-not-found="true"
+      />
       <div class="w-full truncate space-x-1">
         <NTag round :size="'small'">
           {{ specReleaseVersion(spec) }}
@@ -18,12 +24,6 @@
           }}
         </span>
       </div>
-      <DatabaseView
-        class="text-sm"
-        :database="databaseForPlanSpec(spec)"
-        :link="false"
-        :show-not-found="true"
-      />
     </div>
     <p v-if="flattenSpecList.length === 0" class="text-gray-400 italic">
       {{ $t("release.no-tasks-to-apply.self") }}
@@ -99,9 +99,14 @@
           </td>
           <td>
             <div class="flex flex-row items-center gap-2">
-              <span v-for="file in temp.files" :key="file">
+              <NTag
+                v-for="file in temp.files"
+                :key="file"
+                round
+                :size="'small'"
+              >
                 {{ getFileByName(file)?.version }}
-              </span>
+              </NTag>
             </div>
           </td>
         </tr>
