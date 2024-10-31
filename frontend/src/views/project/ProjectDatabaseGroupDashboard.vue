@@ -45,6 +45,7 @@
 
 <script setup lang="ts">
 import { PlusIcon } from "lucide-vue-next";
+import { NButton } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useRouter } from "vue-router";
 import ProjectDatabaseGroupPanel from "@/components/DatabaseGroup/ProjectDatabaseGroupPanel.vue";
@@ -53,6 +54,7 @@ import {
   FeatureModal,
   FeatureBadge,
 } from "@/components/FeatureGuard";
+import { SearchBox } from "@/components/v2";
 import { PROJECT_V1_ROUTE_DATABASE_GROUPS_CREATE } from "@/router/dashboard/projectV1";
 import { useProjectByName, hasFeature } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";

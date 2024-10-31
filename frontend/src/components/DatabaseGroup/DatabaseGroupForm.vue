@@ -100,7 +100,8 @@
 <script lang="ts" setup>
 import { useDebounceFn } from "@vueuse/core";
 import { cloneDeep, head, isEqual } from "lodash-es";
-import { NCheckbox, NInput, NDivider, useDialog } from "naive-ui";
+import { Trash2Icon } from "lucide-vue-next";
+import { NCheckbox, NButton, NInput, NDivider, useDialog } from "naive-ui";
 import { ClientError, Status } from "nice-grpc-web";
 import { computed, onMounted, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
