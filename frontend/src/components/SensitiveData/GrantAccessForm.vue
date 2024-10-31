@@ -1,6 +1,6 @@
 <template>
-  <div class="space-y-6 h-full relative">
-    <div class="space-y-8 mb-8">
+  <div class="h-full flex flex-col">
+    <div class="space-y-8 flex-1">
       <div class="w-full">
         <div class="flex items-center gap-x-1 mb-2">
           <span>{{ $t("common.resources") }}</span>
