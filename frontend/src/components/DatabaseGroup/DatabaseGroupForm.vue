@@ -1,75 +1,97 @@
 <template>
-  <div class="w-full">
-    <FeatureAttentionForInstanceLicense
-      v-if="existMatchedUnactivateInstance"
-      custom-class="mb-4"
-      type="warning"
-      feature="bb.feature.database-grouping"
-    />
-    <div class="w-full grid grid-cols-3 gap-x-6">
-      <div>
-        <p class="text-lg mb-2">{{ $t("common.name") }}</p>
-        <NInput v-model:value="state.placeholder" />
-        <div class="mt-2">
-          <ResourceIdField
-            ref="resourceIdField"
-            editing-class="mt-4"
-            resource-type="database-group"
-            :readonly="!isCreating"
-            :value="state.resourceId"
-            :resource-title="state.placeholder"
-            :validate="validateResourceId"
+  <div class="w-full h-full flex flex-col">
+    <div class="flex-1">
+      <FeatureAttentionForInstanceLicense
+        v-if="existMatchedUnactivateInstance"
+        custom-class="mb-4"
+        type="warning"
+        feature="bb.feature.database-grouping"
+      />
+      <div class="w-full grid grid-cols-3 gap-x-6">
+        <div>
+          <p class="text-lg mb-2">{{ $t("common.name") }}</p>
+          <NInput v-model:value="state.placeholder" />
+          <div class="mt-2">
+            <ResourceIdField
+              ref="resourceIdField"
+              editing-class="mt-4"
+              resource-type="database-group"
+              :readonly="!isCreating"
+              :value="state.resourceId"
+              :resource-title="state.placeholder"
+              :validate="validateResourceId"
+            />
+          </div>
+        </div>
+      </div>
+      <NDivider />
+      <div class="w-full grid grid-cols-5 gap-x-6">
+        <div class="col-span-3">
+          <p class="pl-1 text-lg mb-2">
+            {{ $t("database-group.condition.self") }}
+          </p>
+          <ExprEditor
+            :expr="state.expr"
+            :allow-admin="true"
+            :enable-raw-expression="true"
+            :factor-list="FactorList"
+            :factor-support-dropdown="factorSupportDropdown"
+            :factor-options-map="DatabaseGroupFactorOptionsMap(project)"
+          />
+          <p
+            v-if="matchingError"
+            class="mt-2 text-sm border border-red-600 px-2 py-1 rounded-lg bg-red-50 text-red-600"
+          >
+            {{ matchingError }}
+          </p>
+        </div>
+        <div class="col-span-2">
+          <MatchedDatabaseView
+            :loading="state.isRequesting"
+            :matched-database-list="matchedDatabaseList"
+            :unmatched-database-list="unmatchedDatabaseList"
           />
         </div>
       </div>
-    </div>
-    <NDivider />
-    <div class="w-full grid grid-cols-5 gap-x-6">
-      <div class="col-span-3">
-        <p class="pl-1 text-lg mb-2">
-          {{ $t("database-group.condition.self") }}
+      <NDivider />
+      <div class="w-full pl-1">
+        <p class="text-lg mb-2">
+          {{ $t("common.options") }}
         </p>
-        <ExprEditor
-          :expr="state.expr"
-          :allow-admin="true"
-          :enable-raw-expression="true"
-          :factor-list="FactorList"
-          :factor-support-dropdown="factorSupportDropdown"
-          :factor-options-map="DatabaseGroupFactorOptionsMap(project)"
-        />
-        <p
-          v-if="matchingError"
-          class="mt-2 text-sm border border-red-600 px-2 py-1 rounded-lg bg-red-50 text-red-600"
-        >
-          {{ matchingError }}
-        </p>
-      </div>
-      <div class="col-span-2">
-        <MatchedDatabaseView
-          :loading="state.isRequesting"
-          :matched-database-list="matchedDatabaseList"
-          :unmatched-database-list="unmatchedDatabaseList"
-        />
-      </div>
-    </div>
-    <NDivider />
-    <div class="w-full pl-1">
-      <p class="text-lg mb-2">
-        {{ $t("common.options") }}
-      </p>
-      <div>
-        <NCheckbox
-          v-model:checked="state.multitenancy"
-          size="large"
-          :label="$t('database-group.multitenancy.self')"
-        />
-        <p class="text-sm text-gray-400 pl-6 ml-0.5">
-          {{ $t("database-group.multitenancy.description") }}
-          <LearnMoreLink
-            url="https://www.bytebase.com/docs/change-database/batch-change/?source=console#multitenancy"
-            class="text-sm"
+        <div>
+          <NCheckbox
+            v-model:checked="state.multitenancy"
+            size="large"
+            :label="$t('database-group.multitenancy.self')"
           />
-        </p>
+          <p class="text-sm text-gray-400 pl-6 ml-0.5">
+            {{ $t("database-group.multitenancy.description") }}
+            <LearnMoreLink
+              url="https://www.bytebase.com/docs/change-database/batch-change/?source=console#multitenancy"
+              class="text-sm"
+            />
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="space-y-6 w-full sticky bottom-0 bg-white">
+      <NDivider />
+      <div class="w-full flex justify-between items-center">
+        <div>
+          <NButton v-if="!isCreating" text @click="doDelete">
+            <template #icon>
+              <Trash2Icon class="w-4 h-auto" />
+            </template>
+            {{ $t("common.delete") }}
+          </NButton>
+        </div>
+        <div class="flex flex-row justify-end items-center gap-x-2">
+          <NButton @click="$emit('dismiss')">{{ $t("common.cancel") }}</NButton>
+          <NButton type="primary" :disabled="!allowConfirm" @click="doConfirm">
+            {{ isCreating ? $t("common.save") : $t("common.confirm") }}
+          </NButton>
+        </div>
       </div>
     </div>
   </div>
@@ -77,20 +99,31 @@
 
 <script lang="ts" setup>
 import { useDebounceFn } from "@vueuse/core";
-import { cloneDeep } from "lodash-es";
-import { NCheckbox, NInput, NDivider } from "naive-ui";
+import { cloneDeep, head, isEqual } from "lodash-es";
+import { Trash2Icon } from "lucide-vue-next";
+import { NCheckbox, NButton, NInput, NDivider, useDialog } from "naive-ui";
 import { ClientError, Status } from "nice-grpc-web";
 import { computed, onMounted, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
+import { useRouter } from "vue-router";
 import ExprEditor from "@/components/ExprEditor";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
 import type { ConditionGroupExpr } from "@/plugins/cel";
 import {
   emptySimpleExpr,
   validateSimpleExpr,
+  buildCELExpr,
   wrapAsGroup,
 } from "@/plugins/cel";
-import { useDBGroupStore, useSubscriptionV1Store } from "@/store";
+import {
+  PROJECT_V1_ROUTE_DATABASE_GROUPS,
+  PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL,
+} from "@/router/dashboard/projectV1";
+import {
+  useDBGroupStore,
+  useSubscriptionV1Store,
+  pushNotification,
+} from "@/store";
 import {
   databaseGroupNamePrefix,
   getProjectNameAndDatabaseGroupName,
@@ -102,7 +135,10 @@ import type {
   ResourceId,
   ValidatedMessage,
 } from "@/types";
+import { Expr as CELExpr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
+import { Expr } from "@/types/proto/google/type/expr";
 import type { DatabaseGroup } from "@/types/proto/v1/database_group_service";
+import { batchConvertParsedExprToCELString } from "@/utils";
 import { getErrorCode } from "@/utils/grpcweb";
 import { FeatureAttentionForInstanceLicense } from "../FeatureGuard";
 import { ResourceIdField } from "../v2";
@@ -113,6 +149,11 @@ import { FactorList } from "./utils";
 const props = defineProps<{
   project: ComposedProject;
   databaseGroup?: DatabaseGroup;
+}>();
+
+const emit = defineEmits<{
+  (event: "dismiss"): void;
+  (event: "created", databaseGroupName: string): void;
 }>();
 
 type LocalState = {
@@ -136,6 +177,8 @@ const state = reactive<LocalState>({
 });
 const { databaseList } = useDatabaseV1List(props.project.name);
 const resourceIdField = ref<InstanceType<typeof ResourceIdField>>();
+const router = useRouter();
+const dialog = useDialog();
 
 const isCreating = computed(() => props.databaseGroup === undefined);
 
@@ -245,6 +288,133 @@ const existMatchedUnactivateInstance = computed(() => {
       )
   );
 });
+
+const doDelete = () => {
+  dialog.error({
+    title: "Confirm to delete",
+    positiveText: t("common.confirm"),
+    negativeText: t("common.cancel"),
+    onPositiveClick: async () => {
+      const databaseGroup = props.databaseGroup as DatabaseGroup;
+      await dbGroupStore.deleteDatabaseGroup(databaseGroup.name);
+      if (
+        router.currentRoute.value.name ===
+        PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL
+      ) {
+        router.replace({
+          name: PROJECT_V1_ROUTE_DATABASE_GROUPS,
+        });
+      }
+      emit("dismiss");
+    },
+  });
+};
+
+const allowConfirm = computed(() => {
+  if (existMatchedUnactivateInstance.value) {
+    return false;
+  }
+  return (
+    resourceIdField.value?.resourceId &&
+    state.placeholder &&
+    validateSimpleExpr(state.expr)
+  );
+});
+
+const doConfirm = async () => {
+  const formState = {
+    ...state,
+    resourceId: resourceIdField.value?.resourceId || "",
+    existMatchedUnactivateInstance: existMatchedUnactivateInstance.value,
+  };
+  if (!formState || !allowConfirm.value) {
+    return;
+  }
+
+  let celExpr: CELExpr | undefined = undefined;
+  try {
+    celExpr = await buildCELExpr(formState.expr);
+  } catch (error) {
+    pushNotification({
+      module: "bytebase",
+      style: "CRITICAL",
+      title: `CEL expression error occurred`,
+      description: (error as Error).message,
+    });
+    return;
+  }
+
+  const celStrings = await batchConvertParsedExprToCELString([celExpr!]);
+  const celString = head(celStrings);
+  if (!celString) {
+    pushNotification({
+      module: "bytebase",
+      style: "CRITICAL",
+      title: `CEL expression error occurred`,
+      description: "CEL expression is empty",
+    });
+    return;
+  }
+
+  if (isCreating.value) {
+    const resourceId = formState.resourceId;
+    await dbGroupStore.createDatabaseGroup({
+      projectName: props.project.name,
+      databaseGroup: {
+        name: `${props.project.name}/databaseGroups/${resourceId}`,
+        databasePlaceholder: formState.placeholder,
+        databaseExpr: Expr.fromPartial({
+          expression: celString,
+        }),
+        multitenancy: formState.multitenancy,
+      },
+      databaseGroupId: resourceId,
+    });
+    emit("created", resourceId);
+  } else {
+    if (!props.databaseGroup) {
+      return;
+    }
+
+    const updateMask: string[] = [];
+    if (
+      !isEqual(props.databaseGroup.databasePlaceholder, formState.placeholder)
+    ) {
+      updateMask.push("database_placeholder");
+    }
+    if (
+      !isEqual(
+        props.databaseGroup.databaseExpr,
+        Expr.fromPartial({
+          expression: celString,
+        })
+      )
+    ) {
+      updateMask.push("database_expr");
+    }
+    if (!isEqual(props.databaseGroup.multitenancy, formState.multitenancy)) {
+      updateMask.push("multitenancy");
+    }
+    await dbGroupStore.updateDatabaseGroup(
+      {
+        ...props.databaseGroup!,
+        databasePlaceholder: formState.placeholder,
+        databaseExpr: Expr.fromPartial({
+          expression: celString,
+        }),
+        multitenancy: formState.multitenancy,
+      },
+      updateMask
+    );
+  }
+
+  pushNotification({
+    module: "bytebase",
+    style: "SUCCESS",
+    title: isCreating.value ? t("common.created") : t("common.updated"),
+  });
+  emit("dismiss");
+};
 
 defineExpose({
   getFormState: () => {
