@@ -55,8 +55,8 @@ const useTableResize = (options: TableResizeOptions) => {
   const normalizeWidth = (width: number) => {
     if (state.columns.length === 1) {
       // When there is only one column, display it with full width.
-      // minus 1px to avoid unexpected horizontal scrollbar.
-      return options.containerWidth.value - 1;
+      // minus 2px to avoid unexpected horizontal scrollbar.
+      return options.containerWidth.value - 2;
     }
     return minmax(width, options.minWidth, options.maxWidth);
   };
