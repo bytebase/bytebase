@@ -1,12 +1,10 @@
 <template>
   <div v-if="revision" class="w-full">
     <div class="flex flex-row items-center gap-2">
-      <NTag round>
-        {{ revision.version }}
-      </NTag>
-      <h2 class="text-xl font-bold text-main truncate">
-        {{ revision.file }}
-      </h2>
+      <p class="text-lg space-x-1">
+        <span class="text-control">{{ $t("common.version") }}:</span>
+        <span class="font-bold text-main">{{ revision.version }}</span>
+      </p>
     </div>
     <div
       class="mt-3 text-control text-base space-x-4 flex flex-row items-center flex-wrap"
@@ -61,7 +59,7 @@
 
 <script lang="ts" setup>
 import { ClipboardIcon } from "lucide-vue-next";
-import { NDivider, NTag } from "naive-ui";
+import { NDivider } from "naive-ui";
 import { computed, reactive, ref, watch } from "vue";
 import BBAvatar from "@/bbkit/BBAvatar.vue";
 import { MonacoEditor } from "@/components/MonacoEditor";
