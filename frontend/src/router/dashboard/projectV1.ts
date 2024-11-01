@@ -134,7 +134,8 @@ const projectV1Routes: RouteRecordRaw[] = [
           {
             path: ":databaseGroupName",
             name: PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL,
-            component: () => import("@/views/DatabaseGroupDetail.vue"),
+            component: () =>
+              import("@/views/project/ProjectDatabaseGroupDetail.vue"),
             props: true,
           },
         ],

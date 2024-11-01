@@ -1,23 +1,5 @@
 <template>
   <div class="w-full mx-auto space-y-4">
-    <FeatureAttention feature="bb.feature.rbac" />
-
-    <div v-if="allowEdit" class="flex justify-end gap-x-3">
-      <NButton
-        v-if="state.selectedTab === 'users'"
-        :disabled="state.selectedMembers.length === 0"
-        @click="handleRevokeSelectedMembers"
-      >
-        {{ $t("settings.members.revoke-access") }}
-      </NButton>
-      <NButton type="primary" @click="state.showAddMemberPanel = true">
-        <template #icon>
-          <heroicons-outline:user-add class="w-4 h-4" />
-        </template>
-        {{ $t("settings.members.grant-access") }}
-      </NButton>
-    </div>
-
     <div class="textinfolabel">
       {{ $t("project.members.description") }}
       <a
@@ -30,14 +12,40 @@
       </a>
     </div>
 
+    <FeatureAttention feature="bb.feature.rbac" />
+
     <NTabs v-model:value="state.selectedTab" type="bar" animated>
       <template #suffix>
-        <SearchBox
-          v-model:value="state.searchText"
-          :placeholder="$t('settings.members.search-member')"
-        />
+        <div class="flex justify-end gap-x-2">
+          <SearchBox
+            v-model:value="state.searchText"
+            :placeholder="$t('settings.members.search-member')"
+          />
+          <NButton
+            v-if="state.selectedTab === 'users' && allowEdit"
+            :disabled="state.selectedMembers.length === 0"
+            @click="handleRevokeSelectedMembers"
+          >
+            {{ $t("settings.members.revoke-access") }}
+          </NButton>
+          <NButton
+            v-if="allowEdit"
+            type="primary"
+            @click="state.showAddMemberPanel = true"
+          >
+            <template #icon>
+              <heroicons-outline:user-add class="w-4 h-4" />
+            </template>
+            {{ $t("settings.members.grant-access") }}
+          </NButton>
+        </div>
       </template>
-      <NTabPane name="users" :tab="$t('project.members.view-by-members')">
+      <NTabPane name="users">
+        <template #tab>
+          <p class="text-base font-medium leading-7 text-main">
+            {{ $t("project.members.view-by-members") }}
+          </p>
+        </template>
         <MemberDataTable
           :allow-edit="allowEdit"
           :bindings="memberBindings"
@@ -49,7 +57,12 @@
           @update-selected-bindings="state.selectedMembers = $event"
         />
       </NTabPane>
-      <NTabPane name="roles" :tab="$t('project.members.view-by-roles')">
+      <NTabPane name="roles">
+        <template #tab>
+          <p class="text-base font-medium leading-7 text-main">
+            {{ $t("project.members.view-by-roles") }}
+          </p>
+        </template>
         <MemberDataTableByRole
           :allow-edit="allowEdit"
           :bindings-by-role="memberBindingsByRole"

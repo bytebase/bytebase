@@ -10,7 +10,7 @@
       <NTabPane name="USERS">
         <template #tab>
           <div class="flex-1 flex space-x-2">
-            <p class="text-lg font-medium leading-7 text-main">
+            <p class="text-base font-medium leading-7 text-main">
               <span>{{ $t("common.users") }}</span>
               <span class="ml-1 font-normal text-control-light">
                 ({{ userStore.activeUserList.length }})
@@ -31,7 +31,7 @@
       <NTabPane name="GROUPS">
         <template #tab>
           <div>
-            <p class="text-lg font-medium leading-7 text-main">
+            <p class="text-base font-medium leading-7 text-main">
               <span>{{ $t("settings.members.groups.self") }}</span>
               <span class="ml-1 font-normal text-control-light">
                 ({{ groupStore.groupList.length }})

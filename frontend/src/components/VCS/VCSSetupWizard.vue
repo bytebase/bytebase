@@ -1,11 +1,10 @@
 <template>
-  <div class="flex flex-col">
-    <div class="flex-1">
+  <FormLayout>
+    <template #body>
       <VCSProviderBasicInfoPanel :create="true" :config="state.config" />
-    </div>
-    <div class="w-full sticky bottom-0 bg-white">
-      <NDivider />
-      <div class="flex justify-end items-center pb-2">
+    </template>
+    <template #footer>
+      <div class="flex justify-end items-center">
         <div class="space-x-3">
           <NButton v-if="showCancel" @click.prevent="cancelSetup">
             {{ $t("common.cancel") }}
@@ -19,15 +18,16 @@
           </NButton>
         </div>
       </div>
-    </div>
-  </div>
+    </template>
+  </FormLayout>
 </template>
 
 <script lang="ts" setup>
-import { NButton, NDivider } from "naive-ui";
+import { NButton } from "naive-ui";
 import { reactive, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
+import FormLayout from "@/components/v2/Form/FormLayout.vue";
 import { WORKSPACE_ROUTE_GITOPS } from "@/router/dashboard/workspaceRoutes";
 import { pushNotification, useVCSProviderStore } from "@/store";
 import type { VCSConfig } from "@/types";

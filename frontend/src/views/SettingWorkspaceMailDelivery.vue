@@ -1,168 +1,169 @@
 <template>
-  <div class="h-full flex flex-col">
-    <div class="w-full space-y-4 flex-1">
-      <div class="textinfolabel">
-        {{ $t("settings.mail-delivery.description") }}
-        <a
-          class="normal-link inline-flex items-center"
-          href="https://www.bytebase.com/docs/administration/mail-delivery?source=console"
-          target="__BLANK"
-        >
-          {{ $t("common.learn-more") }}
-          <heroicons-outline:external-link class="w-4 h-4 ml-1" />
-        </a>
-      </div>
-      <div class="w-full flex flex-col gap-y-6">
-        <!-- Host and Port -->
-        <div class="w-full flex flex-row gap-4">
-          <div class="min-w-max w-80">
-            <div class="textlabel pl-1">
-              {{ $t("settings.mail-delivery.field.smtp-server-host") }}
-              <span class="text-red-600">*</span>
-            </div>
-            <NInput
-              v-model:value="state.mailDeliverySetting.server"
-              class="text-main w-full h-max mt-2"
-              :placeholder="'smtp.gmail.com'"
-            />
-          </div>
-          <div class="min-w-max w-48">
-            <div class="textlabel pl-1">
-              {{ $t("settings.mail-delivery.field.smtp-server-port") }}
-              <span class="text-red-600">*</span>
-            </div>
-            <NInputNumber
-              id="port"
-              v-model:value="state.mailDeliverySetting.port"
-              :show-button="false"
-              :placeholder="'587'"
-              :required="true"
-              name="port"
-              class="text-main w-full h-max mt-2 rounded-md border-control-border focus:ring-control focus:border-control disabled:bg-gray-50"
-            />
-          </div>
+  <FormLayout>
+    <template #body>
+      <div class="w-full space-y-4">
+        <div class="textinfolabel">
+          {{ $t("settings.mail-delivery.description") }}
+          <a
+            class="normal-link inline-flex items-center"
+            href="https://www.bytebase.com/docs/administration/mail-delivery?source=console"
+            target="__BLANK"
+          >
+            {{ $t("common.learn-more") }}
+            <heroicons-outline:external-link class="w-4 h-4 ml-1" />
+          </a>
         </div>
-        <div class="w-full flex flex-row gap-4">
-          <div class="min-w-max w-80">
-            <div class="textlabel pl-1">
-              {{ $t("settings.mail-delivery.field.from") }}
-              <span class="text-red-600">*</span>
-            </div>
-            <NInput
-              v-model:value="state.mailDeliverySetting.from"
-              class="text-main w-full h-max mt-2"
-              :placeholder="'from@gmail.com'"
-            />
-          </div>
-        </div>
-        <!-- Authentication Related -->
-        <div class="w-full gap-4">
-          <div class="min-w-max w-80">
-            <div class="textlabel pl-1">
-              {{ $t("settings.mail-delivery.field.authentication-method") }}
-            </div>
-            <NSelect
-              class="mt-2"
-              :value="getSelectedAuthenticationTypeItem"
-              :options="authenticationTypeOptions"
-              :virtual-scroll="true"
-              :fallback-option="false"
-              @update:value="handleSelectAuthenticationType"
-            />
-          </div>
-        </div>
-        <!-- Not NONE Authentication-->
-        <template
-          v-if="
-            state.mailDeliverySetting.authentication !==
-            SMTPMailDeliverySettingValue_Authentication.AUTHENTICATION_NONE
-          "
-        >
+        <div class="w-full flex flex-col gap-y-6">
+          <!-- Host and Port -->
           <div class="w-full flex flex-row gap-4">
             <div class="min-w-max w-80">
-              <div class="flex flex-row">
-                <label class="textlabel pl-1">
-                  {{ $t("settings.mail-delivery.field.smtp-username") }}
-                  <span class="text-red-600">*</span>
-                </label>
+              <div class="textlabel pl-1">
+                {{ $t("settings.mail-delivery.field.smtp-server-host") }}
+                <span class="text-red-600">*</span>
               </div>
               <NInput
-                v-model:value="state.mailDeliverySetting.username"
+                v-model:value="state.mailDeliverySetting.server"
                 class="text-main w-full h-max mt-2"
-                :placeholder="'support@bytebase.com'"
+                :placeholder="'smtp.gmail.com'"
               />
             </div>
+            <div class="min-w-max w-48">
+              <div class="textlabel pl-1">
+                {{ $t("settings.mail-delivery.field.smtp-server-port") }}
+                <span class="text-red-600">*</span>
+              </div>
+              <NInputNumber
+                id="port"
+                v-model:value="state.mailDeliverySetting.port"
+                :show-button="false"
+                :placeholder="'587'"
+                :required="true"
+                name="port"
+                class="text-main w-full h-max mt-2 rounded-md border-control-border focus:ring-control focus:border-control disabled:bg-gray-50"
+              />
+            </div>
+          </div>
+          <div class="w-full flex flex-row gap-4">
             <div class="min-w-max w-80">
-              <div class="flex flex-row space-x-2">
-                <label class="textlabel pl-1">
-                  {{ $t("settings.mail-delivery.field.smtp-password") }}
-                  <span class="text-red-600">*</span>
-                </label>
-                <NCheckbox
-                  :label="$t('common.empty')"
-                  :checked="state.useEmptyPassword"
-                  @update:checked="handleToggleUseEmptyPassword"
+              <div class="textlabel pl-1">
+                {{ $t("settings.mail-delivery.field.from") }}
+                <span class="text-red-600">*</span>
+              </div>
+              <NInput
+                v-model:value="state.mailDeliverySetting.from"
+                class="text-main w-full h-max mt-2"
+                :placeholder="'from@gmail.com'"
+              />
+            </div>
+          </div>
+          <!-- Authentication Related -->
+          <div class="w-full gap-4">
+            <div class="min-w-max w-80">
+              <div class="textlabel pl-1">
+                {{ $t("settings.mail-delivery.field.authentication-method") }}
+              </div>
+              <NSelect
+                class="mt-2"
+                :value="getSelectedAuthenticationTypeItem"
+                :options="authenticationTypeOptions"
+                :virtual-scroll="true"
+                :fallback-option="false"
+                @update:value="handleSelectAuthenticationType"
+              />
+            </div>
+          </div>
+          <!-- Not NONE Authentication-->
+          <template
+            v-if="
+              state.mailDeliverySetting.authentication !==
+              SMTPMailDeliverySettingValue_Authentication.AUTHENTICATION_NONE
+            "
+          >
+            <div class="w-full flex flex-row gap-4">
+              <div class="min-w-max w-80">
+                <div class="flex flex-row">
+                  <label class="textlabel pl-1">
+                    {{ $t("settings.mail-delivery.field.smtp-username") }}
+                    <span class="text-red-600">*</span>
+                  </label>
+                </div>
+                <NInput
+                  v-model:value="state.mailDeliverySetting.username"
+                  class="text-main w-full h-max mt-2"
+                  :placeholder="'support@bytebase.com'"
                 />
               </div>
-              <BBTextField
-                v-model:value="state.mailDeliverySetting.password"
-                class="text-main w-full h-max mt-2"
-                :disabled="state.useEmptyPassword"
-                :required="isCreating"
-                :placeholder="'PASSWORD - INPUT_ONLY'"
+              <div class="min-w-max w-80">
+                <div class="flex flex-row space-x-2">
+                  <label class="textlabel pl-1">
+                    {{ $t("settings.mail-delivery.field.smtp-password") }}
+                    <span class="text-red-600">*</span>
+                  </label>
+                  <NCheckbox
+                    :label="$t('common.empty')"
+                    :checked="state.useEmptyPassword"
+                    @update:checked="handleToggleUseEmptyPassword"
+                  />
+                </div>
+                <BBTextField
+                  v-model:value="state.mailDeliverySetting.password"
+                  class="text-main w-full h-max mt-2"
+                  :disabled="state.useEmptyPassword"
+                  :required="isCreating"
+                  :placeholder="'PASSWORD - INPUT_ONLY'"
+                />
+              </div>
+            </div>
+          </template>
+          <!-- Encryption Related -->
+          <div class="w-full gap-4">
+            <div class="min-w-max w-80">
+              <div class="textlabel pl-1">
+                {{ $t("settings.mail-delivery.field.encryption") }}
+              </div>
+              <NSelect
+                class="mt-2"
+                :value="getSelectedEncryptionTypeItem"
+                :options="encryptionTypeOptions"
+                :virtual-scroll="true"
+                :fallback-option="false"
+                @update:value="handleSelectEncryptionType"
               />
             </div>
           </div>
-        </template>
-        <!-- Encryption Related -->
-        <div class="w-full gap-4">
-          <div class="min-w-max w-80">
-            <div class="textlabel pl-1">
-              {{ $t("settings.mail-delivery.field.encryption") }}
-            </div>
-            <NSelect
-              class="mt-2"
-              :value="getSelectedEncryptionTypeItem"
-              :options="encryptionTypeOptions"
-              :virtual-scroll="true"
-              :fallback-option="false"
-              @update:value="handleSelectEncryptionType"
-            />
-          </div>
-        </div>
-        <!-- Test Send Email To Someone -->
-        <div class="w-full gap-4 flex flex-row">
-          <div class="min-w-max w-160">
-            <div class="textlabel pl-1">
-              {{ $t("settings.mail-delivery.field.send-test-email-to") }}
-            </div>
-            <div
-              class="flex flex-row justify-start items-center mt-2 space-x-4"
-            >
-              <NInput
-                v-model:value="state.testMailTo"
-                class="text-main h-max w-80"
-                :placeholder="'someone@gmail.com'"
-              />
-              <NButton
-                type="primary"
-                :disabled="
-                  state.testMailTo === '' || state.isCreateOrUpdateLoading
-                "
-                :loading="state.isSendLoading"
-                @click.prevent="testMailDeliverySetting"
+          <!-- Test Send Email To Someone -->
+          <div class="w-full gap-4 flex flex-row">
+            <div class="min-w-max w-160">
+              <div class="textlabel pl-1">
+                {{ $t("settings.mail-delivery.field.send-test-email-to") }}
+              </div>
+              <div
+                class="flex flex-row justify-start items-center mt-2 space-x-4"
               >
-                {{ $t("settings.mail-delivery.field.send") }}
-              </NButton>
-              <BBSpin v-if="state.isSendLoading" class="ml-2" />
+                <NInput
+                  v-model:value="state.testMailTo"
+                  class="text-main h-max w-80"
+                  :placeholder="'someone@gmail.com'"
+                />
+                <NButton
+                  type="primary"
+                  :disabled="
+                    state.testMailTo === '' || state.isCreateOrUpdateLoading
+                  "
+                  :loading="state.isSendLoading"
+                  @click.prevent="testMailDeliverySetting"
+                >
+                  {{ $t("settings.mail-delivery.field.send") }}
+                </NButton>
+                <BBSpin v-if="state.isSendLoading" class="ml-2" />
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
-    <div class="space-y-6 w-full sticky bottom-0 bg-white">
-      <NDivider />
-      <div class="flex justify-end items-center pb-2">
+    </template>
+    <template #footer>
+      <div class="flex justify-end items-center">
         <NButton
           v-if="
             !isCreating &&
@@ -181,25 +182,19 @@
           {{ mailDeliverySettingButtonText }}
         </NButton>
       </div>
-    </div>
-  </div>
+    </template>
+  </FormLayout>
 </template>
 
 <script lang="ts" setup>
 import { cloneDeep, isEqual } from "lodash-es";
 import type { SelectOption } from "naive-ui";
-import {
-  NButton,
-  NCheckbox,
-  NInput,
-  NInputNumber,
-  NSelect,
-  NDivider,
-} from "naive-ui";
+import { NButton, NCheckbox, NInput, NInputNumber, NSelect } from "naive-ui";
 import type { ClientError } from "nice-grpc-web";
 import { computed, onMounted, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBSpin, BBTextField } from "@/bbkit";
+import FormLayout from "@/components/v2/Form/FormLayout.vue";
 import { pushNotification } from "@/store";
 import { useWorkspaceMailDeliverySettingStore } from "@/store/modules/workspaceMailDeliverySetting";
 import type { SMTPMailDeliverySettingValue } from "@/types/proto/v1/setting_service";

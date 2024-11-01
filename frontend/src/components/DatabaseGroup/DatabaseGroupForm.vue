@@ -1,83 +1,83 @@
 <template>
-  <div class="w-full h-full flex flex-col">
-    <div class="flex-1">
-      <FeatureAttentionForInstanceLicense
-        v-if="existMatchedUnactivateInstance"
-        custom-class="mb-4"
-        type="warning"
-        feature="bb.feature.database-grouping"
-      />
-      <div class="w-full grid grid-cols-3 gap-x-6">
-        <div>
-          <p class="font-medium text-main mb-2">{{ $t("common.name") }}</p>
-          <NInput v-model:value="state.placeholder" />
-          <div class="mt-2">
-            <ResourceIdField
-              ref="resourceIdField"
-              editing-class="mt-4"
-              resource-type="database-group"
-              :readonly="!isCreating"
-              :value="state.resourceId"
-              :resource-title="state.placeholder"
-              :validate="validateResourceId"
+  <FormLayout :title="title">
+    <template #body>
+      <div>
+        <FeatureAttentionForInstanceLicense
+          v-if="existMatchedUnactivateInstance"
+          custom-class="mb-4"
+          type="warning"
+          feature="bb.feature.database-grouping"
+        />
+        <div class="w-full grid grid-cols-3 gap-x-6">
+          <div>
+            <p class="font-medium text-main mb-2">{{ $t("common.name") }}</p>
+            <NInput v-model:value="state.placeholder" />
+            <div class="mt-2">
+              <ResourceIdField
+                ref="resourceIdField"
+                editing-class="mt-4"
+                resource-type="database-group"
+                :readonly="!isCreating"
+                :value="state.resourceId"
+                :resource-title="state.placeholder"
+                :validate="validateResourceId"
+              />
+            </div>
+          </div>
+        </div>
+        <NDivider />
+        <div class="w-full grid grid-cols-5 gap-x-6">
+          <div class="col-span-3">
+            <p class="pl-1 font-medium text-main mb-2">
+              {{ $t("database-group.condition.self") }}
+            </p>
+            <ExprEditor
+              :expr="state.expr"
+              :allow-admin="true"
+              :enable-raw-expression="true"
+              :factor-list="FactorList"
+              :factor-support-dropdown="factorSupportDropdown"
+              :factor-options-map="DatabaseGroupFactorOptionsMap(project)"
+            />
+            <p
+              v-if="matchingError"
+              class="mt-2 text-sm border border-red-600 px-2 py-1 rounded-lg bg-red-50 text-red-600"
+            >
+              {{ matchingError }}
+            </p>
+          </div>
+          <div class="col-span-2">
+            <MatchedDatabaseView
+              :loading="state.isRequesting"
+              :matched-database-list="matchedDatabaseList"
+              :unmatched-database-list="unmatchedDatabaseList"
             />
           </div>
         </div>
-      </div>
-      <NDivider />
-      <div class="w-full grid grid-cols-5 gap-x-6">
-        <div class="col-span-3">
-          <p class="pl-1 font-medium text-main mb-2">
-            {{ $t("database-group.condition.self") }}
+        <NDivider />
+        <div class="w-full pl-1">
+          <p class="font-medium text-main mb-2">
+            {{ $t("common.options") }}
           </p>
-          <ExprEditor
-            :expr="state.expr"
-            :allow-admin="true"
-            :enable-raw-expression="true"
-            :factor-list="FactorList"
-            :factor-support-dropdown="factorSupportDropdown"
-            :factor-options-map="DatabaseGroupFactorOptionsMap(project)"
-          />
-          <p
-            v-if="matchingError"
-            class="mt-2 text-sm border border-red-600 px-2 py-1 rounded-lg bg-red-50 text-red-600"
-          >
-            {{ matchingError }}
-          </p>
-        </div>
-        <div class="col-span-2">
-          <MatchedDatabaseView
-            :loading="state.isRequesting"
-            :matched-database-list="matchedDatabaseList"
-            :unmatched-database-list="unmatchedDatabaseList"
-          />
-        </div>
-      </div>
-      <NDivider />
-      <div class="w-full pl-1">
-        <p class="font-medium text-main mb-2">
-          {{ $t("common.options") }}
-        </p>
-        <div>
-          <NCheckbox
-            v-model:checked="state.multitenancy"
-            size="medium"
-            :label="$t('database-group.multitenancy.self')"
-          />
-          <p class="text-sm text-gray-400 pl-6 ml-0.5">
-            {{ $t("database-group.multitenancy.description") }}
-            <LearnMoreLink
-              url="https://www.bytebase.com/docs/change-database/batch-change/?source=console#multitenancy"
-              class="text-sm"
+          <div>
+            <NCheckbox
+              v-model:checked="state.multitenancy"
+              size="medium"
+              :label="$t('database-group.multitenancy.self')"
             />
-          </p>
+            <p class="text-sm text-gray-400 pl-6 ml-0.5">
+              {{ $t("database-group.multitenancy.description") }}
+              <LearnMoreLink
+                url="https://www.bytebase.com/docs/change-database/batch-change/?source=console#multitenancy"
+                class="text-sm"
+              />
+            </p>
+          </div>
         </div>
       </div>
-    </div>
-
-    <div class="w-full sticky bottom-0 bg-white">
-      <NDivider />
-      <div class="w-full flex justify-between items-center pb-2">
+    </template>
+    <template #footer>
+      <div class="w-full flex justify-between items-center">
         <div>
           <NButton v-if="!isCreating" text @click="doDelete">
             <template #icon>
@@ -93,8 +93,8 @@
           </NButton>
         </div>
       </div>
-    </div>
-  </div>
+    </template>
+  </FormLayout>
 </template>
 
 <script lang="ts" setup>
@@ -108,6 +108,7 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import ExprEditor from "@/components/ExprEditor";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
+import FormLayout from "@/components/v2/Form/FormLayout.vue";
 import type { ConditionGroupExpr } from "@/plugins/cel";
 import {
   emptySimpleExpr,
@@ -149,6 +150,7 @@ import { FactorList } from "./utils";
 const props = defineProps<{
   project: ComposedProject;
   databaseGroup?: DatabaseGroup;
+  title?: string;
 }>();
 
 const emit = defineEmits<{
