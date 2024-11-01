@@ -1,5 +1,17 @@
 <template>
   <div class="mx-auto space-y-4">
+    <div class="textinfolabel">
+      {{ $t("sql-review.description") }}
+      <a
+        href="https://www.bytebase.com/docs/sql-review/review-rules"
+        target="_blank"
+        class="normal-link inline-flex flex-row items-center"
+      >
+        {{ $t("common.learn-more") }}
+        <heroicons-outline:external-link class="w-4 h-4" />
+      </a>
+    </div>
+
     <div class="flex justify-end items-center space-x-2">
       <SearchBox
         v-model:value="searchText"
@@ -13,18 +25,6 @@
       >
         {{ $t("common.add") }}
       </NButton>
-    </div>
-
-    <div class="textinfolabel">
-      {{ $t("sql-review.description") }}
-      <a
-        href="https://www.bytebase.com/docs/sql-review/review-rules"
-        target="_blank"
-        class="normal-link inline-flex flex-row items-center"
-      >
-        {{ $t("common.learn-more") }}
-        <heroicons-outline:external-link class="w-4 h-4" />
-      </a>
     </div>
 
     <SQLReviewPolicyTable

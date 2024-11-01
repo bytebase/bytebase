@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-4 divide-y divide-block-border">
+  <div class="space-y-4 h-full flex flex-col">
     <BBAttention type="info">
       <div class="textinfolabel">
         {{ $t("gitops.setting.add-git-provider.description") }}
@@ -9,9 +9,7 @@
         />
       </div>
     </BBAttention>
-    <div class="pt-4">
-      <VCSSetupWizard />
-    </div>
+    <VCSSetupWizard class="flex-1" :show-cancel="true" />
   </div>
 </template>
 

@@ -1,10 +1,11 @@
 <template>
-  <div class="space-y-4 divide-y divide-block-border">
-    <div class="text-xl leading-6 font-medium text-main">
+  <div class="h-full flex flex-col">
+    <div class="text-lg leading-6 font-medium text-main">
       {{ $t("project.webhook.creation.title") }}
     </div>
+    <NDivider />
     <ProjectWebhookForm
-      class="pt-4"
+      class="flex-1"
       :create="true"
       :project="project"
       :webhook="defaultNewWebhook"
@@ -13,6 +14,7 @@
 </template>
 
 <script lang="ts" setup>
+import { NDivider } from "naive-ui";
 import { computed } from "vue";
 import ProjectWebhookForm from "@/components/ProjectWebhookForm.vue";
 import { useProjectByName } from "@/store";
