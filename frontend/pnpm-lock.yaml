@@ -205,8 +205,8 @@ importers:
         version: 0.4.64(vue@3.4.31(typescript@5.5.4))
     devDependencies:
       '@iconify/json':
-        specifier: 2.2.255
-        version: 2.2.255
+        specifier: 2.2.266
+        version: 2.2.266
       '@intlify/unplugin-vue-i18n':
         specifier: 4.0.0
         version: 4.0.0(rollup@4.24.0)(vue-i18n@9.13.1(vue@3.4.31(typescript@5.5.4)))(webpack-sources@3.2.3)
@@ -903,8 +903,8 @@ packages:
     resolution: {integrity: sha512-d2CGZR2o7fS6sWB7DG/3a95bGKQyHMACZ5aW8qGkkqQpUoZV6C0X7Pc7l4ZNMZkfNBf4VWNe9E1jRsf0G146Ew==}
     engines: {node: '>=18.18'}
 
-  '@iconify/json@2.2.255':
-    resolution: {integrity: sha512-wtBKGYrKHOmRlbai6cd4yTfHakLQ4lLD68w5pb1RDf1+6o0QcvLdun1sWZNcqkOvZOZAUOUPVISqKkYDlWY6YA==}
+  '@iconify/json@2.2.266':
+    resolution: {integrity: sha512-lv+lmPjhDh5/sCaom8AX39USmneRMcQRT/SKoDsxizOjVKycZ8PRk7kNKi776YkKzuksb0Xv5Tfi/Mrr3YLQgQ==}
 
   '@iconify/types@2.0.0':
     resolution: {integrity: sha512-+wluvCrRhXrhyOmRDJ3q8mux9JkKy5SJ/v8ol2tu4FVjyYvtEzkc/3pK15ET6RKg4b4w4BmTk1+gsCUhf21Ykg==}
@@ -4864,7 +4864,7 @@ snapshots:
 
   '@humanwhocodes/retry@0.3.0': {}
 
-  '@iconify/json@2.2.255':
+  '@iconify/json@2.2.266':
     dependencies:
       '@iconify/types': 2.0.0
       pathe: 1.1.2
