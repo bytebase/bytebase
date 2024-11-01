@@ -90,7 +90,7 @@
       />
 
       <AccessControlConfigure
-        v-if="features.includes('ACCESS_CONTROL') && !create"
+        v-if="features.includes('ACCESS_CONTROL')"
         :resource="environment.name"
         :allow-edit="allowEdit"
       />
