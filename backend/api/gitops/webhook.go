@@ -253,7 +253,7 @@ func (s *Service) createRelease(t *createReleaseContext) {
 		if err != nil {
 			return errors.Wrapf(err, "failed to create release from pull request %s", t.prInfo.url)
 		}
-		comment := fmt.Sprintf("This pull request has triggered a Bytebase rollout 🚀. Check out the status at %s/%s", t.setting.ExternalUrl, common.FormatReleaseName(t.project.ResourceID, release.UID))
+		comment := fmt.Sprintf("This pull request has created a Bytebase release 🚀. Check out at %s/%s", t.setting.ExternalUrl, release.Name)
 		commentPrefix := commentPrefixBytebaseBot
 		createCommentIfNotExist := true
 
@@ -367,7 +367,7 @@ func (s *Service) sqlReviewWithPRInfo(ctx context.Context, project *store.Projec
 	return fmt.Sprintf("\n%d errors, %d warnings\n\n---\n\n%s", errorCount, warnCount, strings.Join(content, "\n")), nil
 }
 
-func (s *Service) createReleaseFromPRInfo(ctx context.Context, project *store.ProjectMessage, vcsProvider *store.VCSProviderMessage, prInfo *pullRequestInfo) (*store.ReleaseMessage, error) {
+func (s *Service) createReleaseFromPRInfo(ctx context.Context, project *store.ProjectMessage, vcsProvider *store.VCSProviderMessage, prInfo *pullRequestInfo) (*v1pb.Release, error) {
 	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
 	if !ok {
 		return nil, errors.Errorf("cannot found user in context")
@@ -391,32 +391,32 @@ func (s *Service) createReleaseFromPRInfo(ctx context.Context, project *store.Pr
 		sheetNames = append(sheetNames, common.FormatSheet(project.ResourceID, sheet.UID))
 	}
 
-	var files []*storepb.ReleasePayload_File
+	var files []*v1pb.Release_File
 	for i, f := range prInfo.allFiles {
-		file := &storepb.ReleasePayload_File{
-			Id:          uuid.NewString(),
+		file := &v1pb.Release_File{
+			Id:          "",
 			Path:        f.path,
 			Sheet:       sheetNames[i],
-			SheetSha256: sheets[i].Sha256,
-			Type:        storepb.ReleaseFileType_VERSIONED,
+			SheetSha256: "",
+			Type:        v1pb.ReleaseFileType_VERSIONED,
 			Version:     f.version,
 		}
 		files = append(files, file)
 	}
 
-	releaseMessage := &store.ReleaseMessage{
-		ProjectUID: project.UID,
-		Payload: &storepb.ReleasePayload{
-			Title: fmt.Sprintf("release for PR %s", prInfo.title),
-			Files: files,
-			VcsSource: &storepb.ReleasePayload_VCSSource{
-				VcsType:        vcsProvider.Type,
-				PullRequestUrl: prInfo.url,
-			},
+	release1 := &v1pb.Release{
+		Title: fmt.Sprintf("release for PR %s", prInfo.title),
+		Files: files,
+		VcsSource: &v1pb.Release_VCSSource{
+			VcsType:        v1pb.VCSType(vcsProvider.Type),
+			PullRequestUrl: prInfo.url,
 		},
 	}
 
-	release, err := s.store.CreateRelease(ctx, releaseMessage, user.ID)
+	release, err := s.releaseService.CreateRelease(ctx, &v1pb.CreateReleaseRequest{
+		Parent:  common.FormatProject(project.ResourceID),
+		Release: release1,
+	})
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create release")
 	}

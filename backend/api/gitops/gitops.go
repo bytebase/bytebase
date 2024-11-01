@@ -13,6 +13,7 @@ import (
 type Service struct {
 	store          *store.Store
 	licenseService enterprise.LicenseService
+	releaseService *v1pb.ReleaseService
 	planService    *v1pb.PlanService
 	rolloutService *v1pb.RolloutService
 	issueService   *v1pb.IssueService
@@ -25,6 +26,7 @@ type Service struct {
 func NewService(
 	store *store.Store,
 	licenseService enterprise.LicenseService,
+	releaseService *v1pb.ReleaseService,
 	planService *v1pb.PlanService,
 	rolloutService *v1pb.RolloutService,
 	issueService *v1pb.IssueService,
@@ -35,6 +37,7 @@ func NewService(
 	return &Service{
 		store:          store,
 		licenseService: licenseService,
+		releaseService: releaseService,
 		planService:    planService,
 		rolloutService: rolloutService,
 		issueService:   issueService,
