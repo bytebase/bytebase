@@ -1485,3 +1485,6 @@ ruleList:
         - UUID
         - SLEEP
     engine: MYSQL
+  - type: statement.object-owner-check
+    level: WARNING
+    engine: POSTGRES
