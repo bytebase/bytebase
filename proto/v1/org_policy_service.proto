@@ -382,8 +382,8 @@ message DataSourceQueryPolicy {
   }
   Restriction admin_data_source_restriction = 1;
 
-  // Allow running DDL statements in the SQL editor.
-  bool enable_ddl = 2;
-  // Allow running DML statements in the SQL editor.
-  bool enable_dml = 3;
+  // Disallow running DDL statements in the SQL editor.
+  bool disallow_ddl = 2;
+  // Disallow running DML statements in the SQL editor.
+  bool disallow_dml = 3;
 }

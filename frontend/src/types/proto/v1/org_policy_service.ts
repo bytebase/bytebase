@@ -546,10 +546,10 @@ export interface TagPolicy_TagsEntry {
 /** DataSourceQueryPolicy is the policy configuration for running statements in the SQL editor. */
 export interface DataSourceQueryPolicy {
   adminDataSourceRestriction: DataSourceQueryPolicy_Restriction;
-  /** Allow running DDL statements in the SQL editor. */
-  enableDdl: boolean;
-  /** Allow running DML statements in the SQL editor. */
-  enableDml: boolean;
+  /** Disallow running DDL statements in the SQL editor. */
+  disallowDdl: boolean;
+  /** Disallow running DML statements in the SQL editor. */
+  disallowDml: boolean;
 }
 
 export enum DataSourceQueryPolicy_Restriction {
@@ -2506,8 +2506,8 @@ export const TagPolicy_TagsEntry: MessageFns<TagPolicy_TagsEntry> = {
 function createBaseDataSourceQueryPolicy(): DataSourceQueryPolicy {
   return {
     adminDataSourceRestriction: DataSourceQueryPolicy_Restriction.RESTRICTION_UNSPECIFIED,
-    enableDdl: false,
-    enableDml: false,
+    disallowDdl: false,
+    disallowDml: false,
   };
 }
 
@@ -2516,11 +2516,11 @@ export const DataSourceQueryPolicy: MessageFns<DataSourceQueryPolicy> = {
     if (message.adminDataSourceRestriction !== DataSourceQueryPolicy_Restriction.RESTRICTION_UNSPECIFIED) {
       writer.uint32(8).int32(dataSourceQueryPolicy_RestrictionToNumber(message.adminDataSourceRestriction));
     }
-    if (message.enableDdl !== false) {
-      writer.uint32(16).bool(message.enableDdl);
+    if (message.disallowDdl !== false) {
+      writer.uint32(16).bool(message.disallowDdl);
     }
-    if (message.enableDml !== false) {
-      writer.uint32(24).bool(message.enableDml);
+    if (message.disallowDml !== false) {
+      writer.uint32(24).bool(message.disallowDml);
     }
     return writer;
   },
@@ -2544,14 +2544,14 @@ export const DataSourceQueryPolicy: MessageFns<DataSourceQueryPolicy> = {
             break;
           }
 
-          message.enableDdl = reader.bool();
+          message.disallowDdl = reader.bool();
           continue;
         case 3:
           if (tag !== 24) {
             break;
           }
 
-          message.enableDml = reader.bool();
+          message.disallowDml = reader.bool();
           continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
@@ -2567,8 +2567,8 @@ export const DataSourceQueryPolicy: MessageFns<DataSourceQueryPolicy> = {
       adminDataSourceRestriction: isSet(object.adminDataSourceRestriction)
         ? dataSourceQueryPolicy_RestrictionFromJSON(object.adminDataSourceRestriction)
         : DataSourceQueryPolicy_Restriction.RESTRICTION_UNSPECIFIED,
-      enableDdl: isSet(object.enableDdl) ? globalThis.Boolean(object.enableDdl) : false,
-      enableDml: isSet(object.enableDml) ? globalThis.Boolean(object.enableDml) : false,
+      disallowDdl: isSet(object.disallowDdl) ? globalThis.Boolean(object.disallowDdl) : false,
+      disallowDml: isSet(object.disallowDml) ? globalThis.Boolean(object.disallowDml) : false,
     };
   },
 
@@ -2577,11 +2577,11 @@ export const DataSourceQueryPolicy: MessageFns<DataSourceQueryPolicy> = {
     if (message.adminDataSourceRestriction !== DataSourceQueryPolicy_Restriction.RESTRICTION_UNSPECIFIED) {
       obj.adminDataSourceRestriction = dataSourceQueryPolicy_RestrictionToJSON(message.adminDataSourceRestriction);
     }
-    if (message.enableDdl !== false) {
-      obj.enableDdl = message.enableDdl;
+    if (message.disallowDdl !== false) {
+      obj.disallowDdl = message.disallowDdl;
     }
-    if (message.enableDml !== false) {
-      obj.enableDml = message.enableDml;
+    if (message.disallowDml !== false) {
+      obj.disallowDml = message.disallowDml;
     }
     return obj;
   },
@@ -2593,8 +2593,8 @@ export const DataSourceQueryPolicy: MessageFns<DataSourceQueryPolicy> = {
     const message = createBaseDataSourceQueryPolicy();
     message.adminDataSourceRestriction = object.adminDataSourceRestriction ??
       DataSourceQueryPolicy_Restriction.RESTRICTION_UNSPECIFIED;
-    message.enableDdl = object.enableDdl ?? false;
-    message.enableDml = object.enableDml ?? false;
+    message.disallowDdl = object.disallowDdl ?? false;
+    message.disallowDml = object.disallowDml ?? false;
     return message;
   },
 };

@@ -329,8 +329,8 @@ const useExecuteSQL = () => {
           const isDML = isDMLStatement(data, "some") || false;
 
           if (
-            (isDDL && !policy?.dataSourceQueryPolicy?.enableDdl) ||
-            (isDML && !policy?.dataSourceQueryPolicy?.enableDml)
+            (isDDL && policy?.dataSourceQueryPolicy?.disallowDdl) ||
+            (isDML && policy?.dataSourceQueryPolicy?.disallowDml)
           ) {
             sqlEditorStore.isShowExecutingHint = true;
             sqlEditorStore.executingHintDatabase = database;
