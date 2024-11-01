@@ -782,11 +782,11 @@
           "description": "Control how users perform database changes",
           "issue-mode": {
             "self": "Issue Mode (Governed)",
-            "description": "Use issue to request, review, roll out, and version database changes. Suitable for team collaboration and prod environments."
+            "description": "Use issue to request, review, roll out, and version database changes."
           },
           "sql-editor-mode": {
             "self": "SQL Editor Mode (Direct)",
-            "description": "Use SQL Editor to execute database changes directly. Suitable for the individual and non-prod environments."
+            "description": "Use SQL Editor to execute database changes directly."
           },
           "can-be-changed-later": "This setting can be changed anytime later.",
           "default-view-changed-to-sql-editor": "The workspace's default view has been changed to SQL Editor.",
