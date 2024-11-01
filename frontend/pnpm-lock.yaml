@@ -296,10 +296,10 @@ importers:
         version: 1.90.0
       '@vitejs/plugin-vue':
         specifier: 5.1.4
-        version: 5.1.4(vite@5.4.8(@types/node@20.16.10)(sass@1.77.4))(vue@3.4.31(typescript@5.5.4))
+        version: 5.1.4(vite@5.4.10(@types/node@20.16.10)(sass@1.77.4))(vue@3.4.31(typescript@5.5.4))
       '@vitejs/plugin-vue-jsx':
         specifier: 4.0.1
-        version: 4.0.1(vite@5.4.8(@types/node@20.16.10)(sass@1.77.4))(vue@3.4.31(typescript@5.5.4))
+        version: 4.0.1(vite@5.4.10(@types/node@20.16.10)(sass@1.77.4))(vue@3.4.31(typescript@5.5.4))
       '@vue/compiler-sfc':
         specifier: 3.4.31
         version: 3.4.31
@@ -394,8 +394,8 @@ importers:
         specifier: 0.27.4
         version: 0.27.4(@babel/parser@7.25.7)(rollup@4.24.3)(vue@3.4.31(typescript@5.5.4))(webpack-sources@3.2.3)
       vite:
-        specifier: 5.4.8
-        version: 5.4.8(@types/node@20.16.10)(sass@1.77.4)
+        specifier: 5.4.10
+        version: 5.4.10(@types/node@20.16.10)(sass@1.77.4)
       vite-bundle-visualizer:
         specifier: ^1.0.1
         version: 1.2.1(rollup@4.24.3)
@@ -4037,8 +4037,8 @@ packages:
     engines: {node: ^18.0.0 || >=20.0.0}
     hasBin: true
 
-  vite@5.4.8:
-    resolution: {integrity: sha512-FqrItQ4DT1NC4zCUqMB4c4AZORMKIa0m8/URVCZ77OZ/QSNeJ54bU1vrFADbDsuwfIPcgknRkmqakQcgnL4GiQ==}
+  vite@5.4.10:
+    resolution: {integrity: sha512-1hvaPshuPUtxeQ0hsVH3Mud0ZanOLwVTneA1EgbAM5LhaZEqyPWGRQ7BtaMvUrTDeEaC8pxtj6a6jku3x4z6SQ==}
     engines: {node: ^18.0.0 || >=20.0.0}
     hasBin: true
     peerDependencies:
@@ -5446,19 +5446,19 @@ snapshots:
       '@typescript-eslint/types': 7.11.0
       eslint-visitor-keys: 3.4.3
 
-  '@vitejs/plugin-vue-jsx@4.0.1(vite@5.4.8(@types/node@20.16.10)(sass@1.77.4))(vue@3.4.31(typescript@5.5.4))':
+  '@vitejs/plugin-vue-jsx@4.0.1(vite@5.4.10(@types/node@20.16.10)(sass@1.77.4))(vue@3.4.31(typescript@5.5.4))':
     dependencies:
       '@babel/core': 7.25.7
       '@babel/plugin-transform-typescript': 7.25.7(@babel/core@7.25.7)
       '@vue/babel-plugin-jsx': 1.2.2(@babel/core@7.25.7)
-      vite: 5.4.8(@types/node@20.16.10)(sass@1.77.4)
+      vite: 5.4.10(@types/node@20.16.10)(sass@1.77.4)
       vue: 3.4.31(typescript@5.5.4)
     transitivePeerDependencies:
       - supports-color
 
-  '@vitejs/plugin-vue@5.1.4(vite@5.4.8(@types/node@20.16.10)(sass@1.77.4))(vue@3.4.31(typescript@5.5.4))':
+  '@vitejs/plugin-vue@5.1.4(vite@5.4.10(@types/node@20.16.10)(sass@1.77.4))(vue@3.4.31(typescript@5.5.4))':
     dependencies:
-      vite: 5.4.8(@types/node@20.16.10)(sass@1.77.4)
+      vite: 5.4.10(@types/node@20.16.10)(sass@1.77.4)
       vue: 3.4.31(typescript@5.5.4)
 
   '@vitest/expect@2.1.4':
@@ -5468,13 +5468,13 @@ snapshots:
       chai: 5.1.2
       tinyrainbow: 1.2.0
 
-  '@vitest/mocker@2.1.4(vite@5.4.8(@types/node@20.16.10)(sass@1.77.4))':
+  '@vitest/mocker@2.1.4(vite@5.4.10(@types/node@20.16.10)(sass@1.77.4))':
     dependencies:
       '@vitest/spy': 2.1.4
       estree-walker: 3.0.3
       magic-string: 0.30.12
     optionalDependencies:
-      vite: 5.4.8(@types/node@20.16.10)(sass@1.77.4)
+      vite: 5.4.10(@types/node@20.16.10)(sass@1.77.4)
 
   '@vitest/pretty-format@2.1.4':
     dependencies:
@@ -8375,7 +8375,7 @@ snapshots:
       cac: 6.7.14
       debug: 4.3.7
       pathe: 1.1.2
-      vite: 5.4.8(@types/node@20.16.10)(sass@1.77.4)
+      vite: 5.4.10(@types/node@20.16.10)(sass@1.77.4)
     transitivePeerDependencies:
       - '@types/node'
       - less
@@ -8387,7 +8387,7 @@ snapshots:
       - supports-color
       - terser
 
-  vite@5.4.8(@types/node@20.16.10)(sass@1.77.4):
+  vite@5.4.10(@types/node@20.16.10)(sass@1.77.4):
     dependencies:
       esbuild: 0.21.5
       postcss: 8.4.47
@@ -8400,7 +8400,7 @@ snapshots:
   vitest@2.1.4(@types/node@20.16.10)(jsdom@25.0.1)(sass@1.77.4):
     dependencies:
       '@vitest/expect': 2.1.4
-      '@vitest/mocker': 2.1.4(vite@5.4.8(@types/node@20.16.10)(sass@1.77.4))
+      '@vitest/mocker': 2.1.4(vite@5.4.10(@types/node@20.16.10)(sass@1.77.4))
       '@vitest/pretty-format': 2.1.4
       '@vitest/runner': 2.1.4
       '@vitest/snapshot': 2.1.4
@@ -8416,7 +8416,7 @@ snapshots:
       tinyexec: 0.3.1
       tinypool: 1.0.1
       tinyrainbow: 1.2.0
-      vite: 5.4.8(@types/node@20.16.10)(sass@1.77.4)
+      vite: 5.4.10(@types/node@20.16.10)(sass@1.77.4)
       vite-node: 2.1.4(@types/node@20.16.10)(sass@1.77.4)
       why-is-node-running: 2.3.0
     optionalDependencies:
