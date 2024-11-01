@@ -26,7 +26,7 @@
       :striped="true"
       :bordered="true"
     />
-    <VCSSetupWizard class="flex-1" v-else :show-cancel="false" />
+    <VCSSetupWizard v-else class="flex-1" :show-cancel="false" />
   </div>
 </template>
 
