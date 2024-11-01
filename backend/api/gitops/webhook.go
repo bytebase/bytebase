@@ -35,8 +35,6 @@ type createReleaseContext struct {
 	project      *store.ProjectMessage
 	vcsConnector *store.VCSConnectorMessage
 	vcsProvider  *store.VCSProviderMessage
-	header       http.Header
-	body         []byte
 	prInfo       *pullRequestInfo
 }
 
@@ -187,8 +185,6 @@ func (s *Service) RegisterWebhookRoutes(g *echo.Group) {
 				project:      project,
 				vcsConnector: vcsConnector,
 				vcsProvider:  vcsProvider,
-				header:       c.Request().Header,
-				body:         body,
 				prInfo:       prInfo,
 			})
 
