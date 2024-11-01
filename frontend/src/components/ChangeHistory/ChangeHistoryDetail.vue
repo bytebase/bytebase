@@ -55,7 +55,10 @@
               <span class="textlabel"
                 >{{ $t("common.created-at") }}&nbsp;-&nbsp;</span
               >
-              {{ humanizeDate(getDateForPbTimestamp(changeHistory.createTime)) }} by
+              {{
+                humanizeDate(getDateForPbTimestamp(changeHistory.createTime))
+              }}
+              by
               {{ `version ${changeHistory.releaseVersion}` }}
             </dd>
           </dl>
@@ -283,7 +286,7 @@
 import { useTitle } from "@vueuse/core";
 import { ChevronDownIcon } from "lucide-vue-next";
 import { NButton, NSwitch } from "naive-ui";
-import { computed, reactive, watch, ref } from "vue";
+import { computed, reactive, watch, ref, unref } from "vue";
 import { BBModal, BBSpin } from "@/bbkit";
 import ChangeHistoryStatusIcon from "@/components/ChangeHistory/ChangeHistoryStatusIcon.vue";
 import { DiffEditor, MonacoEditor } from "@/components/MonacoEditor";
@@ -292,10 +295,11 @@ import {
   pushNotification,
   useChangeHistoryStore,
   useDBSchemaV1Store,
-  useDatabaseV1Store,
   useUserStore,
   useSettingV1Store,
+  useDatabaseV1ByName,
 } from "@/store";
+import { getDateForPbTimestamp } from "@/types";
 import type { AffectedTable } from "@/types/changeHistory";
 import { Engine } from "@/types/proto/v1/common";
 import type { ChangeHistory } from "@/types/proto/v1/database_service";
@@ -317,7 +321,6 @@ import {
   extractChangeHistoryUID,
 } from "@/utils";
 import NoPermissionPlaceholder from "../misc/NoPermissionPlaceholder.vue";
-import { getDateForPbTimestamp } from "@/types";
 
 interface LocalState {
   showDiff: boolean;
@@ -337,16 +340,12 @@ const state = reactive<LocalState>({
   loading: false,
 });
 
-const databaseStore = useDatabaseV1Store();
 const dbSchemaStore = useDBSchemaV1Store();
 const settingStore = useSettingV1Store();
 const changeHistoryStore = useChangeHistoryStore();
 const selectedAffectedTable = ref<AffectedTable | undefined>();
 
-// eslint-disable-next-line vue/no-dupe-keys
-const database = computed(() => {
-  return databaseStore.getDatabaseByName(changeHistoryParent.value);
-});
+const { database } = useDatabaseV1ByName(props.database);
 
 const hasPermission = computed(() =>
   hasProjectPermissionV2(database.value.projectEntity, "bb.changeHistories.get")
@@ -358,12 +357,8 @@ const classificationConfig = computed(() => {
   );
 });
 
-const changeHistoryParent = computed(() => {
-  return props.database;
-});
-
 const changeHistoryName = computed(() => {
-  return `${changeHistoryParent.value}/changeHistories/${props.changeHistoryId}`;
+  return `${props.database}/changeHistories/${props.changeHistoryId}`;
 });
 
 const affectedTables = computed(() => {
@@ -378,16 +373,15 @@ const showSchemaSnapshot = computed(() => {
 });
 
 watch(
-  [changeHistoryParent, changeHistoryName],
-  async ([parent, name]) => {
-    const database = await databaseStore.getOrFetchDatabaseByName(parent);
+  [database.value.name, changeHistoryName],
+  async ([_, name]) => {
     await Promise.all([
       dbSchemaStore.getOrFetchDatabaseMetadata({
-        database: database.name,
+        database: database.value.name,
         skipCache: false,
       }),
       changeHistoryStore.getOrFetchChangeHistoryByName(
-        name,
+        unref(name),
         ChangeHistoryView.CHANGE_HISTORY_VIEW_FULL
       ),
     ]);
@@ -410,7 +404,7 @@ const handleAffectedTableClick = (affectedTable: AffectedTable): void => {
 // get all change histories before (include) the one of given id, ordered by descending version.
 const prevChangeHistoryList = computed(() => {
   const changeHistoryList = changeHistoryStore.changeHistoryListByDatabase(
-    changeHistoryParent.value
+    database.value.name
   );
 
   // The returned change history list has been ordered by `id` DESC or (`namespace` ASC, `sequence` DESC) .
