@@ -139,6 +139,8 @@ const (
 	SchemaRuleStatementRequireAlgorithmOption = "statement.require-algorithm-option"
 	// SchemaRuleStatementRequireLockOption require set LOCK option in ALTER TABLE statement.
 	SchemaRuleStatementRequireLockOption = "statement.require-lock-option"
+	// SchemaRuleStatementObjectOwnerCheck checks the object owner for the statement.
+	SchemaRuleStatementObjectOwnerCheck = "statement.object-owner-check"
 	// SchemaRuleTableRequirePK require the table to have a primary key.
 	SchemaRuleTableRequirePK SQLReviewRuleType = "table.require-pk"
 	// SchemaRuleTableNoFK require the table disallow the foreign key.
@@ -1548,6 +1550,10 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 		if engine == storepb.Engine_MYSQL || engine == storepb.Engine_MARIADB {
 			return MySQLStatementRequireLockOption, nil
 		}
+	case SchemaRuleStatementObjectOwnerCheck:
+		if engine == storepb.Engine_POSTGRES {
+			return PostgreSQLStatementObjectOwnerCheck, nil
+		}
 	case SchemaRuleCommentLength:
 		if engine == storepb.Engine_POSTGRES {
 			return PostgreSQLCommentConvention, nil
@@ -1601,10 +1607,6 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 			return MSSQLBuiltinPriorBackupCheck, nil
 		case storepb.Engine_ORACLE:
 			return OracleBuiltinPriorBackupCheck, nil
-		}
-	case BuiltinRuleObjectOwnerCheck:
-		if engine == storepb.Engine_POSTGRES {
-			return PostgreSQLBuiltinObjectOwnerCheck, nil
 		}
 	}
 	return "", errors.Errorf("unknown SQL review rule type %v for %v", ruleType, engine)
