@@ -65,24 +65,28 @@ func getGitHubPullRequestInfo(ctx context.Context, vcsProvider *store.VCSProvide
 	}
 
 	if actionType == webhookActionCreateRelease {
-		prInfo.getAllFiles = func(ctx context.Context) error {
+		prInfo.getAllFiles = func(ctx context.Context) ([]*fileChange, error) {
 			p := vcs.Get(storepb.VCSType_GITHUB, vcs.ProviderConfig{InstanceURL: vcsProvider.InstanceURL, AuthToken: vcsProvider.AccessToken}).(*github.Provider)
 
 			mergeCommitSha, err := p.GetPullRequestMergedCommit(ctx, vcsConnector.Payload.ExternalId, fmt.Sprintf("%d", pushEvent.Number))
 			if err != nil {
-				return errors.Wrapf(err, "failed to get pull request %d", pushEvent.Number)
+				return nil, errors.Wrapf(err, "failed to get pull request %d", pushEvent.Number)
 			}
 
-			allFiles, err := p.GetDirectoryFiles(ctx, vcsConnector.Payload.ExternalId, mergeCommitSha, vcsConnector.Payload.BaseDirectory)
-			for _, f := range allFiles {
+			dirFiles, err := p.GetDirectoryFiles(ctx, vcsConnector.Payload.ExternalId, mergeCommitSha, vcsConnector.Payload.BaseDirectory)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to get directory files")
+			}
+			var allFiles []*fileChange
+			for _, f := range dirFiles {
 				f.Content = convertFileContentToUTF8String(f.Content)
 				converted, err := convertVcsFile(f)
 				if err != nil {
-					return errors.Wrapf(err, "failed to convert vcs file")
+					return nil, errors.Wrapf(err, "failed to convert vcs file")
 				}
-				prInfo.allFiles = append(prInfo.allFiles, converted)
+				allFiles = append(allFiles, converted)
 			}
-			return nil
+			return allFiles, nil
 		}
 	}
 

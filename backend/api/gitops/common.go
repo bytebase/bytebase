@@ -35,9 +35,8 @@ type pullRequestInfo struct {
 	url         string
 	changes     []*fileChange
 
-	getAllFiles func(context.Context) error
 	// all files directly (non-recursive) under the base directory.
-	allFiles []*fileChange
+	getAllFiles func(context.Context) ([]*fileChange, error)
 }
 
 type fileChange struct {

@@ -238,13 +238,6 @@ func (s *Service) createRelease(t *createReleaseContext) {
 	ctx = context.WithValue(ctx, common.UserContextKey, t.user)
 
 	err := func() error {
-		if f := t.prInfo.getAllFiles; f != nil {
-			err := f(ctx)
-			if err != nil {
-				return errors.Wrapf(err, "failed to get all files")
-			}
-		}
-
 		release, err := s.createReleaseFromPRInfo(ctx, t.project, t.vcsProvider, t.prInfo)
 		if err != nil {
 			return errors.Wrapf(err, "failed to create release from pull request %s", t.prInfo.url)
@@ -369,9 +362,18 @@ func (s *Service) createReleaseFromPRInfo(ctx context.Context, project *store.Pr
 		return nil, errors.Errorf("cannot found user in context")
 	}
 
+	if prInfo.getAllFiles == nil {
+		return nil, errors.Errorf("getAllFiles is nil")
+	}
+
+	allFiles, err := prInfo.getAllFiles(ctx)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get all files")
+	}
+
 	var sheetNames []string
 	var sheets []*store.SheetMessage
-	for _, f := range prInfo.allFiles {
+	for _, f := range allFiles {
 		sheet, err := s.store.CreateSheet(ctx, &store.SheetMessage{
 			ProjectUID: project.UID,
 			CreatorID:  user.ID,
@@ -388,7 +390,7 @@ func (s *Service) createReleaseFromPRInfo(ctx context.Context, project *store.Pr
 	}
 
 	var files []*v1pb.Release_File
-	for i, f := range prInfo.allFiles {
+	for i, f := range allFiles {
 		file := &v1pb.Release_File{
 			Id:          "",
 			Path:        f.path,
