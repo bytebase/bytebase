@@ -2,11 +2,11 @@
   <div class="w-full flex flex-col gap-y-2">
     <div class="w-full flex flex-row justify-end items-center">
       <router-link :to="`/${project.name}/releases/new`">
-        <NButton>
+        <NButton type="primary">
           <template #icon>
             <PlusIcon />
           </template>
-          {{ $t("common.new") }}
+          {{ $t("release.create") }}
         </NButton>
       </router-link>
     </div>

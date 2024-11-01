@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-4">
+  <div class="space-y-4 h-full flex flex-col">
     <div class="textinfolabel">
       {{ $t("gitops.setting.description") }}
       <LearnMoreLink
@@ -26,7 +26,7 @@
       :striped="true"
       :bordered="true"
     />
-    <VCSSetupWizard v-else :show-cancel="false" />
+    <VCSSetupWizard v-else class="flex-1" :show-cancel="false" />
   </div>
 </template>
 

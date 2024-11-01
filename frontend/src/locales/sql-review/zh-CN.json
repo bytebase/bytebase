@@ -720,9 +720,9 @@
       "title": "事先备份可行性检查",
       "description": "此规则检查是否可以在数据更改之前创建备份。它会验证备份目标数据库是否存在，并禁止不支持的方案。它是内置的，无法跳过。"
     },
-    "builtin-object-owner-check": {
+    "statement-object-owner-check": {
       "title": "对象所有者检查",
-      "description": "此规则检查 DDL 的对象所有者是否与当前用户相同。内置规则，无法跳过。"
+      "description": "此规则检查 DDL 的对象所有者是否与当前用户相同。"
     }
   },
   "level": {

@@ -5,7 +5,10 @@
       <NInput v-model:value="title" class="w-full" size="large" />
     </div>
     <FileToCreateTable />
-    <div class="w-full flex justify-end">
+    <div class="w-full flex justify-end gap-x-3">
+      <NButton @click.prevent="() => router.back()">
+        {{ $t("common.cancel") }}
+      </NButton>
       <ErrorTipsButton
         style="--n-padding: 0 10px"
         :errors="createButtonErrors"
@@ -14,18 +17,14 @@
         }"
         @click="onCreateRelease"
       >
-        <template #icon>
-          <PlusIcon />
-        </template>
-        {{ $t("common.create") }}
+        {{ $t("release.create") }}
       </ErrorTipsButton>
     </div>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { PlusIcon } from "lucide-vue-next";
-import { NInput } from "naive-ui";
+import { NInput, NButton } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";

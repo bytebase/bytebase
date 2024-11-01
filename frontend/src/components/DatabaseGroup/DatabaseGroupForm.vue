@@ -9,7 +9,7 @@
       />
       <div class="w-full grid grid-cols-3 gap-x-6">
         <div>
-          <p class="text-lg mb-2">{{ $t("common.name") }}</p>
+          <p class="font-medium text-main mb-2">{{ $t("common.name") }}</p>
           <NInput v-model:value="state.placeholder" />
           <div class="mt-2">
             <ResourceIdField
@@ -27,7 +27,7 @@
       <NDivider />
       <div class="w-full grid grid-cols-5 gap-x-6">
         <div class="col-span-3">
-          <p class="pl-1 text-lg mb-2">
+          <p class="pl-1 font-medium text-main mb-2">
             {{ $t("database-group.condition.self") }}
           </p>
           <ExprEditor
@@ -55,13 +55,13 @@
       </div>
       <NDivider />
       <div class="w-full pl-1">
-        <p class="text-lg mb-2">
+        <p class="font-medium text-main mb-2">
           {{ $t("common.options") }}
         </p>
         <div>
           <NCheckbox
             v-model:checked="state.multitenancy"
-            size="large"
+            size="medium"
             :label="$t('database-group.multitenancy.self')"
           />
           <p class="text-sm text-gray-400 pl-6 ml-0.5">
@@ -75,9 +75,9 @@
       </div>
     </div>
 
-    <div class="space-y-6 w-full sticky bottom-0 bg-white">
+    <div class="w-full sticky bottom-0 bg-white">
       <NDivider />
-      <div class="w-full flex justify-between items-center">
+      <div class="w-full flex justify-between items-center pb-2">
         <div>
           <NButton v-if="!isCreating" text @click="doDelete">
             <template #icon>
