@@ -15,6 +15,7 @@ import { Drawer, DrawerContent } from "@/components/v2";
 import { useChangeHistoryStore } from "@/store";
 import { extractChangeHistoryUID, extractDatabaseResourceName } from "@/utils";
 import ChangeHistoryDetail from "@/views/ChangeHistoryDetail.vue";
+import { provideChangelistDetailContext } from "../context";
 
 const props = defineProps<{
   changeHistoryName?: string;
@@ -23,6 +24,8 @@ const props = defineProps<{
 defineEmits<{
   (event: "close"): void;
 }>();
+
+const { project } = provideChangelistDetailContext();
 
 const changeHistory = computed(() => {
   const { changeHistoryName } = props;
@@ -40,6 +43,7 @@ const detailBindings = computed(() => {
     changeHistory.value.name
   );
   return {
+    project: project.value.name,
     instance,
     database,
     changeHistoryId: extractChangeHistoryUID(changeHistory.value.name),
