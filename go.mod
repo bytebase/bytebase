@@ -10,7 +10,7 @@ require (
 	cloud.google.com/go/bigquery v1.63.1
 	cloud.google.com/go/cloudsqlconn v1.12.1
 	cloud.google.com/go/secretmanager v1.14.1
-	cloud.google.com/go/spanner v1.68.0
+	cloud.google.com/go/spanner v1.70.0
 	gitee.com/chunanyong/dm v1.8.16
 	github.com/ClickHouse/clickhouse-go/v2 v2.29.0
 	github.com/alexmullins/zip v0.0.0-20180717182244-4affb64b04d0
@@ -92,11 +92,11 @@ require (
 	golang.org/x/oauth2 v0.23.0
 	golang.org/x/text v0.18.0
 	google.golang.org/api v0.199.0
-	google.golang.org/genproto v0.0.0-20240930140551-af27646dc61f
-	google.golang.org/genproto/googleapis/api v0.0.0-20240930140551-af27646dc61f
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20240930140551-af27646dc61f
+	google.golang.org/genproto v0.0.0-20241021214115-324edc3d5d38
+	google.golang.org/genproto/googleapis/api v0.0.0-20241015192408-796eee8c2d53
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20241015192408-796eee8c2d53
 	google.golang.org/grpc v1.67.1
-	google.golang.org/protobuf v1.34.2
+	google.golang.org/protobuf v1.35.1
 	gopkg.in/yaml.v3 v3.0.1
 )
 
@@ -219,7 +219,7 @@ require (
 )
 
 require (
-	cloud.google.com/go v0.115.1 // indirect
+	cloud.google.com/go v0.116.0 // indirect
 	cloud.google.com/go/compute/metadata v0.5.2 // indirect
 	cloud.google.com/go/iam v1.2.1 // indirect
 	cloud.google.com/go/longrunning v0.6.1 // indirect
