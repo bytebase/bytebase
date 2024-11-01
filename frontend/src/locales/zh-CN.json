@@ -782,7 +782,7 @@
           "description": "控制用户如何变更数据库",
           "issue-mode": {
             "self": "工单模式（管控）",
-            "description": "使用工单来提交，审核，发布，版本化数据库变更。适合团队协同及需要管控的环境。"
+            "description": "使用工单来提交，审核，发布，版本化数据库变更。"
           },
           "sql-editor-mode": {
             "self": "SQL 编辑器模式（直接）",
