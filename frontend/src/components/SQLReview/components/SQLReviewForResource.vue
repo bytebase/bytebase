@@ -71,7 +71,7 @@ const toggleSQLReviewPolicy = async (on: boolean) => {
   if (!policy) return;
   const originalOn = policy.enforce;
   if (on === originalOn) return;
-  await reviewStore.updateReviewPolicy({
+  await reviewStore.upsertReviewPolicy({
     id: policy.id,
     enforce: on,
   });
