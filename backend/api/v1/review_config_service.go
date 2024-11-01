@@ -109,6 +109,19 @@ func (s *ReviewConfigService) UpdateReviewConfig(ctx context.Context, request *v
 		return nil, status.Errorf(codes.Internal, "principal ID not found")
 	}
 
+	existed, err := s.store.GetReviewConfig(ctx, id)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get review config %q with error: %v", id, err)
+	}
+	if existed == nil {
+		if request.AllowMissing {
+			return s.CreateReviewConfig(ctx, &v1pb.CreateReviewConfigRequest{
+				ReviewConfig: request.ReviewConfig,
+			})
+		}
+		return nil, status.Errorf(codes.NotFound, "review config %q not found", id)
+	}
+
 	patch := &store.PatchReviewConfigMessage{
 		ID:        id,
 		UpdaterID: principalID,
@@ -118,7 +131,7 @@ func (s *ReviewConfigService) UpdateReviewConfig(ctx context.Context, request *v
 		switch path {
 		case "title":
 			patch.Name = &request.ReviewConfig.Title
-		case "payload":
+		case "rules":
 			ruleList, err := convertToSQLReviewRules(request.ReviewConfig.Rules)
 			if err != nil {
 				return nil, status.Errorf(codes.Internal, "failed to convert rules, error %v", err)
