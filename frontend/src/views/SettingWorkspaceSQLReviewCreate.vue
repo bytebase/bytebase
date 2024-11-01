@@ -1,8 +1,8 @@
 <template>
-  <div class="space-y-4">
-    <FeatureAttention custom-class="mb-4" feature="bb.feature.sql-review" />
+  <div class="space-y-4 h-full flex flex-col">
+    <FeatureAttention feature="bb.feature.sql-review" />
     <SQLReviewCreation
-      class="mt-1"
+      class="flex-1"
       :selected-rule-list="[]"
       :selected-resources="attachedResources"
     />

@@ -1,23 +1,30 @@
 <template>
-  <VCSProviderBasicInfoPanel :create="true" :config="state.config" />
-  <div class="pt-4 mt-6 flex border-t justify-end">
-    <div class="space-x-3">
-      <NButton @click.prevent="cancelSetup">
-        {{ $t("common.cancel") }}
-      </NButton>
-      <NButton
-        type="primary"
-        :disabled="!allowCreate"
-        @click.prevent="tryFinishSetup"
-      >
-        {{ $t("common.confirm-and-add") }}
-      </NButton>
+  <div class="flex flex-col">
+    <div class="flex-1">
+      <VCSProviderBasicInfoPanel :create="true" :config="state.config" />
+    </div>
+    <div class="w-full sticky bottom-0 bg-white">
+      <NDivider />
+      <div class="flex justify-end items-center pb-2">
+        <div class="space-x-3">
+          <NButton v-if="showCancel" @click.prevent="cancelSetup">
+            {{ $t("common.cancel") }}
+          </NButton>
+          <NButton
+            type="primary"
+            :disabled="!allowCreate"
+            @click.prevent="tryFinishSetup"
+          >
+            {{ $t("common.confirm-and-add") }}
+          </NButton>
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { NButton } from "naive-ui";
+import { NButton, NDivider } from "naive-ui";
 import { reactive, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
@@ -29,14 +36,9 @@ import type { VCSProvider } from "@/types/proto/v1/vcs_provider_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import VCSProviderBasicInfoPanel from "./VCSProviderBasicInfoPanel.vue";
 
-withDefaults(
-  defineProps<{
-    showCancel?: boolean;
-  }>(),
-  {
-    showCancel: true,
-  }
-);
+defineProps<{
+  showCancel: boolean;
+}>();
 
 interface LocalState {
   config: VCSConfig;
@@ -90,8 +92,6 @@ const tryFinishSetup = () => {
 };
 
 const cancelSetup = () => {
-  router.push({
-    name: WORKSPACE_ROUTE_GITOPS,
-  });
+  router.back();
 };
 </script>
