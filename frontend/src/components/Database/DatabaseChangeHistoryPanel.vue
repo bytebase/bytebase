@@ -99,29 +99,11 @@
           "
           :loading="loading"
           :change-histories="list"
-          :custom-click="true"
           :show-selection="true"
-          @row-click="(id: string) => (state.selectedChangeHistoryId = id)"
         />
       </template>
     </PagedChangeHistoryTable>
   </div>
-
-  <Drawer
-    :show="!!state.selectedChangeHistoryId"
-    @close="state.selectedChangeHistoryId = ''"
-  >
-    <DrawerContent
-      class="w-[80vw] max-w-[100vw] relative"
-      :title="$t('change-history.self')"
-    >
-      <ChangeHistoryDetail
-        :instance="database.instance"
-        :database="database.name"
-        :change-history-id="state.selectedChangeHistoryId"
-      />
-    </DrawerContent>
-  </Drawer>
 
   <BBAlert
     v-model:show="state.showBaselineModal"
@@ -150,14 +132,12 @@ import { useRouter } from "vue-router";
 import { BBAlert, BBSpin } from "@/bbkit";
 import {
   ChangeHistoryDataTable,
-  ChangeHistoryDetail,
   PagedChangeHistoryTable,
   ChangeTypeSelect,
   AffectedTablesSelect,
 } from "@/components/ChangeHistory";
 import { useDatabaseDetailContext } from "@/components/Database/context";
 import { TooltipButton } from "@/components/v2";
-import { Drawer, DrawerContent } from "@/components/v2";
 import {
   PROJECT_V1_ROUTE_ISSUE_DETAIL,
   PROJECT_V1_ROUTE_SYNC_SCHEMA,
@@ -181,7 +161,6 @@ interface LocalState {
   isExporting: boolean;
   selectedAffectedTables: Table[];
   selectedChangeType?: string;
-  selectedChangeHistoryId: string;
 }
 
 const props = defineProps<{
@@ -199,7 +178,6 @@ const state = reactive<LocalState>({
   selectedChangeHistoryNameList: [],
   isExporting: false,
   selectedAffectedTables: [],
-  selectedChangeHistoryId: "",
 });
 
 const { allowAlterSchema } = useDatabaseDetailContext();
