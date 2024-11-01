@@ -2994,6 +2994,7 @@
     "policy-created": "監査ポリシーが作成されました",
     "policy-create-failed": "監査ポリシーの作成に失敗しました",
     "policy-updated": "監査ポリシーが更新されました",
+    "policy-update-failed": "レビューポリシーの更新に失敗しました。",
     "policy-duplicated": "監査ポリシーがコピーされました",
     "rules": "ルール",
     "add-rules": "ルールを追加する",

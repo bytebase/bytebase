@@ -58,7 +58,14 @@ export interface UpdateReviewConfigRequest {
     | ReviewConfig
     | undefined;
   /** The list of fields to update. */
-  updateMask: string[] | undefined;
+  updateMask:
+    | string[]
+    | undefined;
+  /**
+   * If set to true, and the config is not found, a new config will be created.
+   * In this situation, `update_mask` is ignored.
+   */
+  allowMissing: boolean;
 }
 
 export interface GetReviewConfigRequest {
@@ -307,7 +314,7 @@ export const CreateReviewConfigRequest: MessageFns<CreateReviewConfigRequest> = 
 };
 
 function createBaseUpdateReviewConfigRequest(): UpdateReviewConfigRequest {
-  return { reviewConfig: undefined, updateMask: undefined };
+  return { reviewConfig: undefined, updateMask: undefined, allowMissing: false };
 }
 
 export const UpdateReviewConfigRequest: MessageFns<UpdateReviewConfigRequest> = {
@@ -317,6 +324,9 @@ export const UpdateReviewConfigRequest: MessageFns<UpdateReviewConfigRequest> = 
     }
     if (message.updateMask !== undefined) {
       FieldMask.encode(FieldMask.wrap(message.updateMask), writer.uint32(18).fork()).join();
+    }
+    if (message.allowMissing !== false) {
+      writer.uint32(24).bool(message.allowMissing);
     }
     return writer;
   },
@@ -342,6 +352,13 @@ export const UpdateReviewConfigRequest: MessageFns<UpdateReviewConfigRequest> = 
 
           message.updateMask = FieldMask.unwrap(FieldMask.decode(reader, reader.uint32()));
           continue;
+        case 3:
+          if (tag !== 24) {
+            break;
+          }
+
+          message.allowMissing = reader.bool();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -355,6 +372,7 @@ export const UpdateReviewConfigRequest: MessageFns<UpdateReviewConfigRequest> = 
     return {
       reviewConfig: isSet(object.reviewConfig) ? ReviewConfig.fromJSON(object.reviewConfig) : undefined,
       updateMask: isSet(object.updateMask) ? FieldMask.unwrap(FieldMask.fromJSON(object.updateMask)) : undefined,
+      allowMissing: isSet(object.allowMissing) ? globalThis.Boolean(object.allowMissing) : false,
     };
   },
 
@@ -365,6 +383,9 @@ export const UpdateReviewConfigRequest: MessageFns<UpdateReviewConfigRequest> = 
     }
     if (message.updateMask !== undefined) {
       obj.updateMask = FieldMask.toJSON(FieldMask.wrap(message.updateMask));
+    }
+    if (message.allowMissing !== false) {
+      obj.allowMissing = message.allowMissing;
     }
     return obj;
   },
@@ -378,6 +399,7 @@ export const UpdateReviewConfigRequest: MessageFns<UpdateReviewConfigRequest> = 
       ? ReviewConfig.fromPartial(object.reviewConfig)
       : undefined;
     message.updateMask = object.updateMask ?? undefined;
+    message.allowMissing = object.allowMissing ?? false;
     return message;
   },
 };

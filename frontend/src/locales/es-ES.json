@@ -2994,6 +2994,7 @@
     "policy-created": "La política de revisión se creó correctamente.",
     "policy-create-failed": "No se pudo crear la política de revisión.",
     "policy-updated": "La política de revisión se actualizó correctamente.",
+    "policy-update-failed": "No se pudo actualizar la política de revisión.",
     "policy-duplicated": "La política de revisión se duplicó correctamente.",
     "rules": "Reglas",
     "add-rules": "Agregar reglas",

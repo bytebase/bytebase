@@ -7101,6 +7101,13 @@ paths:
                   schema:
                     type: string
                     format: field-mask
+                - name: allowMissing
+                  in: query
+                  description: |-
+                    If set to true, and the config is not found, a new config will be created.
+                     In this situation, `update_mask` is ignored.
+                  schema:
+                    type: boolean
             requestBody:
                 content:
                     application/json:

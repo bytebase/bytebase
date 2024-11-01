@@ -139,51 +139,6 @@ export const useSQLReviewStore = defineStore("sqlReview", {
         reviewPolicy.resources = newResources;
       }
     },
-    async createReviewPolicy({
-      id,
-      title,
-      resources,
-      ruleList,
-    }: {
-      id: string;
-      title: string;
-      resources: string[];
-      ruleList: SchemaPolicyRule[];
-    }) {
-      const reviewConfig = await reviewConfigServiceClient.createReviewConfig({
-        reviewConfig: {
-          name: id,
-          title,
-          rules: ruleList.map((r) => {
-            return {
-              type: r.type as string,
-              level: r.level,
-              engine: r.engine,
-              comment: r.comment,
-              payload: r.payload ? JSON.stringify(r.payload) : "{}",
-            };
-          }),
-          enabled: true,
-        },
-      });
-
-      await this.upsertReviewConfigTag({
-        oldResources: [],
-        newResources: resources,
-        review: reviewConfig.name,
-      });
-
-      reviewConfig.resources = resources;
-      const reviewPolicy = convertToSQLReviewPolicy(reviewConfig);
-      if (!reviewPolicy) {
-        throw new Error(
-          `invalid review config ${JSON.stringify(reviewConfig)}`
-        );
-      }
-
-      this.setReviewPolicy(reviewPolicy);
-      return reviewPolicy;
-    },
     async removeReviewPolicy(id: string) {
       const index = this.reviewPolicyList.findIndex((g) => g.id === id);
       if (index < 0) {
@@ -199,26 +154,21 @@ export const useSQLReviewStore = defineStore("sqlReview", {
 
       pullAt(this.reviewPolicyList, index);
     },
-    async updateReviewPolicy({
+    async upsertReviewPolicy({
       id,
       title,
       enforce,
       ruleList,
+      resources,
     }: {
       id: string;
       title?: string;
       enforce?: boolean;
       ruleList?: SchemaPolicyRule[];
+      resources?: string[];
     }) {
-      const index = this.reviewPolicyList.findIndex((g) => g.id === id);
-      if (index < 0) {
-        return;
-      }
-
-      const targetPolicy = this.reviewPolicyList[index];
-
       const patch: Partial<ReviewConfig> = {
-        name: targetPolicy.id,
+        name: id,
       };
       const updateMask: string[] = [];
       if (enforce !== undefined) {
@@ -230,7 +180,7 @@ export const useSQLReviewStore = defineStore("sqlReview", {
         patch.title = title;
       }
       if (ruleList) {
-        updateMask.push("payload");
+        updateMask.push("rules");
         patch.rules = ruleList.map((r) => {
           return {
             type: r.type as string,
@@ -245,12 +195,24 @@ export const useSQLReviewStore = defineStore("sqlReview", {
       const updated = await reviewConfigServiceClient.updateReviewConfig({
         reviewConfig: patch,
         updateMask,
+        allowMissing: true,
       });
 
-      const reviewPolicy = convertToSQLReviewPolicy(updated);
-      if (reviewPolicy) {
-        this.setReviewPolicy(reviewPolicy);
+      if (resources) {
+        await this.upsertReviewConfigTag({
+          oldResources: [],
+          newResources: resources,
+          review: updated.name,
+        });
+        updated.resources = resources;
       }
+
+      const reviewPolicy = convertToSQLReviewPolicy(updated);
+      if (!reviewPolicy) {
+        throw new Error(`invalid review config ${JSON.stringify(updated)}`);
+      }
+      this.setReviewPolicy(reviewPolicy);
+      return reviewPolicy;
     },
     getReviewPolicyByName(name: string) {
       return this.reviewPolicyList.find((g) => g.id === name);

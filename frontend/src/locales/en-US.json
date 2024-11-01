@@ -2994,6 +2994,7 @@
     "policy-created": "Successfully created the review policy.",
     "policy-create-failed": "Failed to create the review policy.",
     "policy-updated": "Successfully updated the review policy.",
+    "policy-update-failed": "Failed to update the review policy.",
     "policy-duplicated": "Successfully duplicated the review policy.",
     "rules": "Rules",
     "add-rules": "Add rules",
