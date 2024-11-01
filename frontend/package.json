@@ -87,7 +87,7 @@
     "vueuc": "0.4.64"
   },
   "devDependencies": {
-    "@iconify/json": "2.2.255",
+    "@iconify/json": "2.2.266",
     "@intlify/unplugin-vue-i18n": "4.0.0",
     "@rollup/plugin-yaml": "4.1.2",
     "@tailwindcss/forms": "0.5.9",
@@ -142,7 +142,7 @@
     "protobufjs": "^7.2.5",
     "remark-gfm": "^4.0.0",
     "remark-parse": "^11.0.0",
-    "rollup": "4.24.0",
+    "rollup": "4.24.3",
     "tailwindcss": "3.4.13",
     "ts-node": "^10.9.2",
     "ts-proto": "^2.0.3",
