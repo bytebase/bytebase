@@ -66,7 +66,10 @@ func getGitHubPullRequestInfo(ctx context.Context, vcsProvider *store.VCSProvide
 
 	if actionType == webhookActionCreateRelease {
 		prInfo.getAllFiles = func(ctx context.Context) ([]*fileChange, error) {
-			p := vcs.Get(storepb.VCSType_GITHUB, vcs.ProviderConfig{InstanceURL: vcsProvider.InstanceURL, AuthToken: vcsProvider.AccessToken}).(*github.Provider)
+			p, ok := vcs.Get(storepb.VCSType_GITHUB, vcs.ProviderConfig{InstanceURL: vcsProvider.InstanceURL, AuthToken: vcsProvider.AccessToken}).(*github.Provider)
+			if !ok {
+				return nil, errors.Errorf("expect github.Provider, got %T", p)
+			}
 
 			mergeCommitSha, err := p.GetPullRequestMergedCommit(ctx, vcsConnector.Payload.ExternalId, fmt.Sprintf("%d", pushEvent.Number))
 			if err != nil {

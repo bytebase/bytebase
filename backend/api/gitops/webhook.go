@@ -372,7 +372,6 @@ func (s *Service) createReleaseFromPRInfo(ctx context.Context, project *store.Pr
 	}
 
 	var sheetNames []string
-	var sheets []*store.SheetMessage
 	for _, f := range allFiles {
 		sheet, err := s.store.CreateSheet(ctx, &store.SheetMessage{
 			ProjectUID: project.UID,
@@ -385,7 +384,6 @@ func (s *Service) createReleaseFromPRInfo(ctx context.Context, project *store.Pr
 			return nil, errors.Wrapf(err, "failed to create sheet")
 		}
 
-		sheets = append(sheets, sheet)
 		sheetNames = append(sheetNames, common.FormatSheet(project.ResourceID, sheet.UID))
 	}
 
