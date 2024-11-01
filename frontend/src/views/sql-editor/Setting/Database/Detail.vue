@@ -12,7 +12,7 @@ import {
   extractDatabaseResourceName,
   extractProjectResourceName,
 } from "@/utils";
-import DatabaseDetail from "@/views/DatabaseDetail.vue";
+import DatabaseDetail from "@/views/DatabaseDetail";
 
 const props = defineProps<{
   database: ComposedDatabase;
