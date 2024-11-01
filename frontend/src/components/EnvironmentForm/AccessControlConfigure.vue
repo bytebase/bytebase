@@ -76,12 +76,12 @@
     <div>
       <div class="w-full inline-flex items-center gap-x-2">
         <Switch
-          :value="dataSourceQueryPolicy?.disallowDdl"
+          :value="!dataSourceQueryPolicy?.disallowDdl"
           :text="true"
           :disabled="!allowUpdatePolicy"
           @update:value="
             (on: boolean) => {
-              updateAdminDataSourceQueryRestrctionPolicy({ disallowDdl: on });
+              updateAdminDataSourceQueryRestrctionPolicy({ disallowDdl: !on });
             }
           "
         />
@@ -91,12 +91,12 @@
       </div>
       <div class="w-full inline-flex items-center gap-x-2">
         <Switch
-          :value="dataSourceQueryPolicy?.disallowDml"
+          :value="!dataSourceQueryPolicy?.disallowDml"
           :text="true"
           :disabled="!allowUpdatePolicy"
           @update:value="
             (on: boolean) => {
-              updateAdminDataSourceQueryRestrctionPolicy({ disallowDml: on });
+              updateAdminDataSourceQueryRestrctionPolicy({ disallowDml: !on });
             }
           "
         />
