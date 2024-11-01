@@ -1,192 +1,204 @@
 <template>
-  <div class="flex flex-col gap-y-4">
-    <div v-if="create">
-      <div>
-        <label for="name" class="font-medium text-main">
-          {{ $t("project.webhook.destination") }}
-          <span class="text-red-600">*</span>
-        </label>
-      </div>
-      <NRadioGroup class="w-full mt-1" :value="state.webhook.type">
-        <div class="grid grid-cols-1 gap-4 sm:grid-cols-7">
-          <template v-for="(item, index) in webhookTypeItemList" :key="index">
-            <div
-              class="flex justify-center px-2 py-4 rounded border border-control-border hover:bg-control-bg-hover cursor-pointer"
-              @click.capture="state.webhook.type = item.type"
-            >
-              <div class="flex flex-col items-center">
-                <WebhookTypeIcon :type="item.type" class="h-10 w-10" />
-                <p class="mt-1 text-center textlabel">
-                  {{ item.name }}
-                </p>
-                <div class="mt-3 radio text-sm">
-                  <NRadio :value="item.type" />
+  <div class="w-full h-full flex flex-col">
+    <div class="flex-1 pb-4">
+      <div class="flex flex-col gap-y-4">
+        <div v-if="create">
+          <div>
+            <label for="name" class="font-medium text-main">
+              {{ $t("project.webhook.destination") }}
+              <span class="text-red-600">*</span>
+            </label>
+          </div>
+          <NRadioGroup class="w-full mt-1" :value="state.webhook.type">
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-7">
+              <template
+                v-for="(item, index) in webhookTypeItemList"
+                :key="index"
+              >
+                <div
+                  class="flex justify-center px-2 py-4 rounded border border-control-border hover:bg-control-bg-hover cursor-pointer"
+                  @click.capture="state.webhook.type = item.type"
+                >
+                  <div class="flex flex-col items-center">
+                    <WebhookTypeIcon :type="item.type" class="h-10 w-10" />
+                    <p class="mt-1 text-center textlabel">
+                      {{ item.name }}
+                    </p>
+                    <div class="mt-3 radio text-sm">
+                      <NRadio :value="item.type" />
+                    </div>
+                  </div>
                 </div>
+              </template>
+            </div>
+          </NRadioGroup>
+        </div>
+        <div>
+          <label for="name" class="font-medium text-main">
+            {{ $t("common.name") }} <span class="text-red-600">*</span>
+          </label>
+          <NInput
+            id="name"
+            v-model:value="state.webhook.title"
+            name="name"
+            class="mt-1 w-full"
+            :placeholder="`${selectedWebhook?.name ?? 'My'} Webhook`"
+            :disabled="!allowEdit"
+          />
+        </div>
+        <div>
+          <label for="url" class="font-medium text-main">
+            {{ $t("project.webhook.webhook-url") }}
+            <span class="text-red-600">*</span>
+          </label>
+          <div class="mt-1 textinfolabel">
+            {{
+              $t("project.webhook.creation.desc", {
+                destination: selectedWebhook?.name,
+              })
+            }}
+            <a
+              :href="selectedWebhook?.docUrl"
+              target="__blank"
+              class="normal-link"
+              >{{
+                $t("project.webhook.creation.view-doc", {
+                  destination: selectedWebhook?.name,
+                })
+              }}</a
+            >.
+          </div>
+          <NInput
+            id="url"
+            v-model:value="state.webhook.url"
+            name="url"
+            class="mt-1 w-full"
+            :placeholder="selectedWebhook?.urlPlaceholder"
+            :disabled="!allowEdit"
+          />
+        </div>
+        <div>
+          <div class="text-md leading-6 font-medium text-main">
+            {{ $t("project.webhook.triggering-activity") }}
+            <span class="text-red-600">*</span>
+          </div>
+          <div class="flex flex-col space-y-4 mt-2">
+            <div v-for="(item, index) in webhookActivityItemList" :key="index">
+              <div>
+                <div class="flex items-center">
+                  <NCheckbox
+                    :label="item.title"
+                    :checked="isEventOn(item.activity)"
+                    @update:checked="
+                      (on: boolean) => {
+                        toggleEvent(item.activity, on);
+                      }
+                    "
+                  />
+                  <NTooltip
+                    v-if="
+                      webhookSupportDirectMessage && item.supportDirectMessage
+                    "
+                  >
+                    <template #trigger>
+                      <InfoIcon class="w-4 h-auto text-gray-500" />
+                    </template>
+                    {{ $t("project.webhook.activity-support-direct-message") }}
+                  </NTooltip>
+                </div>
+                <div class="textinfolabel">{{ item.label }}</div>
               </div>
             </div>
+          </div>
+          <div class="mt-4">
+            <NButton @click.prevent="testWebhook">
+              {{ $t("project.webhook.test-webhook") }}
+            </NButton>
+          </div>
+        </div>
+        <div v-if="webhookSupportDirectMessage && activitySupportDirectMessage">
+          <div class="text-md leading-6 font-medium text-main">
+            {{ $t("project.webhook.direct-messages") }}
+          </div>
+          <span class="mt-1 textinfolabel">
+            {{ $t("project.webhook.direct-messages-tip") }}
+          </span>
+          <BBAttention v-if="!imApp?.enabled" class="mt-2 mb-4" type="warning">
+            <template #default>
+              <i18n-t
+                class="textinfolabel"
+                tag="div"
+                keypath="project.webhook.direct-messages-warning"
+              >
+                <template #im>
+                  <router-link
+                    target="_blank"
+                    class="normal-link"
+                    :to="{ name: WORKSPACE_ROUTE_IM }"
+                  >
+                    {{ $t("settings.sidebar.im-integration") }}
+                  </router-link>
+                </template>
+              </i18n-t>
+            </template>
+          </BBAttention>
+          <div class="flex items-center mt-2">
+            <NCheckbox
+              v-model:checked="state.webhook.directMessage"
+              :label="$t('project.webhook.enable-direct-messages')"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="w-full sticky bottom-0 bg-white">
+      <NDivider />
+      <div
+        class="flex pb-2"
+        :class="!create && allowEdit ? 'justify-between' : 'justify-end'"
+      >
+        <BBButtonConfirm
+          v-if="!create && allowEdit"
+          :type="'DELETE'"
+          :button-text="$t('project.webhook.deletion.btn-text')"
+          :ok-text="$t('common.delete')"
+          :confirm-title="
+            $t('project.webhook.deletion.confirm-title', {
+              title: webhook.title,
+            })
+          "
+          :confirm-description="$t('common.cannot-undo-this-action')"
+          :require-confirm="true"
+          @confirm="deleteWebhook"
+        />
+        <div class="space-x-3">
+          <NButton v-if="create" @click.prevent="cancel">
+            {{ $t("common.cancel") }}
+          </NButton>
+          <NButton v-else-if="valueChanged" @click.prevent="discardChanges">
+            {{ $t("common.discard-changes") }}
+          </NButton>
+          <template v-if="allowEdit">
+            <NButton
+              v-if="create"
+              type="primary"
+              :disabled="!allowCreate"
+              @click.prevent="createWebhook"
+            >
+              {{ $t("common.create") }}
+            </NButton>
+            <NButton
+              v-else
+              type="primary"
+              :disabled="
+                !valueChanged || state.webhook.notificationTypes.length === 0
+              "
+              @click.prevent="updateWebhook"
+            >
+              {{ $t("common.update") }}
+            </NButton>
           </template>
         </div>
-      </NRadioGroup>
-    </div>
-    <div>
-      <label for="name" class="font-medium text-main">
-        {{ $t("common.name") }} <span class="text-red-600">*</span>
-      </label>
-      <NInput
-        id="name"
-        v-model:value="state.webhook.title"
-        name="name"
-        class="mt-1 w-full"
-        :placeholder="`${selectedWebhook?.name ?? 'My'} Webhook`"
-        :disabled="!allowEdit"
-      />
-    </div>
-    <div>
-      <label for="url" class="font-medium text-main">
-        {{ $t("project.webhook.webhook-url") }}
-        <span class="text-red-600">*</span>
-      </label>
-      <div class="mt-1 textinfolabel">
-        {{
-          $t("project.webhook.creation.desc", {
-            destination: selectedWebhook?.name,
-          })
-        }}
-        <a
-          :href="selectedWebhook?.docUrl"
-          target="__blank"
-          class="normal-link"
-          >{{
-            $t("project.webhook.creation.view-doc", {
-              destination: selectedWebhook?.name,
-            })
-          }}</a
-        >.
-      </div>
-      <NInput
-        id="url"
-        v-model:value="state.webhook.url"
-        name="url"
-        class="mt-1 w-full"
-        :placeholder="selectedWebhook?.urlPlaceholder"
-        :disabled="!allowEdit"
-      />
-    </div>
-    <div>
-      <div class="text-md leading-6 font-medium text-main">
-        {{ $t("project.webhook.triggering-activity") }}
-        <span class="text-red-600">*</span>
-      </div>
-      <div
-        v-for="(item, index) in webhookActivityItemList"
-        :key="index"
-        class="mt-4 space-y-4"
-      >
-        <div>
-          <div class="flex items-center">
-            <NCheckbox
-              :label="item.title"
-              :checked="isEventOn(item.activity)"
-              @update:checked="
-                (on: boolean) => {
-                  toggleEvent(item.activity, on);
-                }
-              "
-            />
-            <NTooltip
-              v-if="webhookSupportDirectMessage && item.supportDirectMessage"
-            >
-              <template #trigger>
-                <InfoIcon class="w-4 h-auto text-gray-500" />
-              </template>
-              {{ $t("project.webhook.activity-support-direct-message") }}
-            </NTooltip>
-          </div>
-          <div class="textinfolabel">{{ item.label }}</div>
-        </div>
-      </div>
-      <div class="mt-4">
-        <NButton @click.prevent="testWebhook">
-          {{ $t("project.webhook.test-webhook") }}
-        </NButton>
-      </div>
-    </div>
-    <div v-if="webhookSupportDirectMessage && activitySupportDirectMessage">
-      <div class="text-md leading-6 font-medium text-main">
-        {{ $t("project.webhook.direct-messages") }}
-      </div>
-      <span class="mt-1 textinfolabel">
-        {{ $t("project.webhook.direct-messages-tip") }}
-      </span>
-      <BBAttention v-if="!imApp?.enabled" class="mt-2 mb-4" type="warning">
-        <template #default>
-          <i18n-t
-            class="textinfolabel"
-            tag="div"
-            keypath="project.webhook.direct-messages-warning"
-          >
-            <template #im>
-              <router-link
-                target="_blank"
-                class="normal-link"
-                :to="{ name: WORKSPACE_ROUTE_IM }"
-              >
-                {{ $t("settings.sidebar.im-integration") }}
-              </router-link>
-            </template>
-          </i18n-t>
-        </template>
-      </BBAttention>
-      <div class="flex items-center mt-2">
-        <NCheckbox
-          v-model:checked="state.webhook.directMessage"
-          :label="$t('project.webhook.enable-direct-messages')"
-        />
-      </div>
-    </div>
-    <div
-      class="flex mt-2 pt-4 border-t"
-      :class="!create && allowEdit ? 'justify-between' : 'justify-end'"
-    >
-      <BBButtonConfirm
-        v-if="!create && allowEdit"
-        :type="'DELETE'"
-        :button-text="$t('project.webhook.deletion.btn-text')"
-        :ok-text="$t('common.delete')"
-        :confirm-title="
-          $t('project.webhook.deletion.confirm-title', { title: webhook.title })
-        "
-        :confirm-description="$t('common.cannot-undo-this-action')"
-        :require-confirm="true"
-        @confirm="deleteWebhook"
-      />
-      <div class="space-x-3">
-        <NButton v-if="create" @click.prevent="cancel">
-          {{ $t("common.cancel") }}
-        </NButton>
-        <NButton v-else-if="valueChanged" @click.prevent="discardChanges">
-          {{ $t("common.discard-changes") }}
-        </NButton>
-        <template v-if="allowEdit">
-          <NButton
-            v-if="create"
-            type="primary"
-            :disabled="!allowCreate"
-            @click.prevent="createWebhook"
-          >
-            {{ $t("common.create") }}
-          </NButton>
-          <NButton
-            v-else
-            type="primary"
-            :disabled="
-              !valueChanged || state.webhook.notificationTypes.length === 0
-            "
-            @click.prevent="updateWebhook"
-          >
-            {{ $t("common.update") }}
-          </NButton>
-        </template>
       </div>
     </div>
   </div>
@@ -202,6 +214,7 @@ import {
   NRadio,
   NRadioGroup,
   NTooltip,
+  NDivider,
 } from "naive-ui";
 import { reactive, computed, watch } from "vue";
 import { useI18n } from "vue-i18n";
