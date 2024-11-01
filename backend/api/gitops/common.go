@@ -1,6 +1,7 @@
 package gitops
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"path/filepath"
@@ -23,6 +24,7 @@ type webhookAction int
 const (
 	webhookActionCreateIssue webhookAction = iota
 	webhookActionSQLReview
+	webhookActionCreateRelease
 )
 
 type pullRequestInfo struct {
@@ -32,6 +34,9 @@ type pullRequestInfo struct {
 	description string
 	url         string
 	changes     []*fileChange
+
+	// all files directly (non-recursive) under the base directory.
+	getAllFiles func(context.Context) ([]*fileChange, error)
 }
 
 type fileChange struct {
@@ -65,6 +70,41 @@ func getChangesByFileList(files []*vcs.PullRequestFile, rootDir string) []*fileC
 		}
 	}
 	return changes
+}
+
+func convertVcsFile(f *vcs.File) (*fileChange, error) {
+	if filepath.Ext(f.Name) != ".sql" {
+		return nil, nil
+	}
+
+	matches := versionRE.FindAllString(f.Name, -1)
+	if len(matches) == 0 {
+		return nil, nil
+	}
+	version := matches[0]
+	description := strings.TrimPrefix(f.Name, version)
+	description = strings.TrimLeft(description, "_")
+	changeType := v1pb.Plan_ChangeDatabaseConfig_MIGRATE
+	switch {
+	case strings.HasPrefix(description, "ddl"):
+		description = strings.TrimPrefix(description, "ddl")
+		changeType = v1pb.Plan_ChangeDatabaseConfig_MIGRATE
+	case strings.HasPrefix(description, "dml"):
+		description = strings.TrimPrefix(description, "dml")
+		changeType = v1pb.Plan_ChangeDatabaseConfig_DATA
+	case strings.HasPrefix(description, "ghost"):
+		description = strings.TrimPrefix(description, "ghost")
+		changeType = v1pb.Plan_ChangeDatabaseConfig_MIGRATE_GHOST
+	}
+	description = strings.TrimLeft(description, "_")
+	return &fileChange{
+		path:        f.Path,
+		version:     version,
+		changeType:  changeType,
+		description: description,
+		content:     f.Content,
+		webURL:      "",
+	}, nil
 }
 
 func getFileChange(file *vcs.PullRequestFile) (*fileChange, error) {

@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -555,4 +556,140 @@ func (p *Provider) DeleteWebhook(ctx context.Context, repositoryID, webhookID st
 
 func (p *Provider) getAuthorization() string {
 	return fmt.Sprintf("Bearer %s", p.authToken)
+}
+
+// https://docs.github.com/en/rest/pulls/pulls?apiVersion=2022-11-28#get-a-pull-request
+func (p *Provider) GetPullRequestMergedCommit(ctx context.Context, repoID string, prID string) (string, error) {
+	url := fmt.Sprintf("%s/repos/%s/pulls/%s", p.APIURL(p.instanceURL), repoID, prID)
+	code, body, err := internal.Get(ctx, url, p.getAuthorization())
+	if err != nil {
+		return "", errors.Wrapf(err, "GET %s", url)
+	}
+
+	if code == http.StatusNotFound {
+		return "", common.Errorf(common.NotFound, "failed to get pull request from URL %s", url)
+	} else if code >= 300 {
+		return "", errors.Errorf("failed to get pull request from URL %s, status code: %d, body: %s",
+			url,
+			code,
+			body,
+		)
+	}
+
+	var pr struct {
+		MergeCommitSha string `json:"merge_commit_sha"`
+	}
+
+	if err := json.Unmarshal([]byte(body), &pr); err != nil {
+		return "", errors.Wrapf(err, "failed to unmarshal")
+	}
+
+	return pr.MergeCommitSha, nil
+}
+
+func (p *Provider) GetDirectoryFiles(ctx context.Context, repoID string, commitSha string, path string) ([]*vcs.File, error) {
+	path = strings.TrimLeft(path, "/")
+	path = url.PathEscape(path)
+
+	files, err := p.getDirectory(ctx, repoID, commitSha, path)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get directory")
+	}
+
+	for _, f := range files {
+		content, err := p.getBlob(ctx, repoID, f.Sha)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to get blob")
+		}
+		f.Content = content
+	}
+
+	return files, nil
+}
+
+// https://docs.github.com/en/rest/git/blobs?apiVersion=2022-11-28#get-a-blob
+func (p *Provider) getBlob(ctx context.Context, repoID string, sha string) (string, error) {
+	url := fmt.Sprintf("%s/repos/%s/git/blobs/%s", p.APIURL(p.instanceURL), repoID, sha)
+	code, body, err := internal.GetWithHeader(ctx, url, p.getAuthorization(),
+		map[string]string{
+			"Accept": "application/vnd.github.raw+json",
+		},
+	)
+	if err != nil {
+		return "", errors.Wrapf(err, "GET %s", url)
+	}
+
+	if code == http.StatusNotFound {
+		return "", common.Errorf(common.NotFound, "failed to get blob from URL %s", url)
+	} else if code >= 300 {
+		return "",
+			errors.Errorf("failed to get blob from URL %s, status code: %d, body: %s",
+				url,
+				code,
+				body,
+			)
+	}
+
+	return body, nil
+}
+
+// https://docs.github.com/en/rest/repos/contents?apiVersion=2022-11-28#get-repository-content
+func (p *Provider) getDirectory(ctx context.Context, repoID string, commitSha string, path string) ([]*vcs.File, error) {
+	path = strings.TrimLeft(path, "/")
+	path = url.PathEscape(path)
+
+	url := fmt.Sprintf("%s/repos/%s/contents/%s?ref=%s", p.APIURL(p.instanceURL), repoID, path, commitSha)
+	code, body, err := internal.GetWithHeader(ctx, url, p.getAuthorization(),
+		map[string]string{
+			"Accept": "application/vnd.github.object+json",
+		},
+	)
+	if err != nil {
+		return nil, errors.Wrapf(err, "GET %s", url)
+	}
+
+	if code == http.StatusNotFound {
+		return nil, common.Errorf(common.NotFound, "failed to get directory from URL %s", url)
+	} else if code >= 300 {
+		return nil,
+			errors.Errorf("failed to get directory from URL %s, status code: %d, body: %s",
+				url,
+				code,
+				body,
+			)
+	}
+
+	var dir struct {
+		Type    string `json:"type"`
+		Name    string `json:"name"`
+		Path    string `json:"path"`
+		Sha     string `json:"sha"`
+		Entries []struct {
+			Type string `json:"type"`
+			Name string `json:"name"`
+			Path string `json:"path"`
+			Sha  string `json:"sha"`
+		} `json:"entries"`
+	}
+
+	if err := json.Unmarshal([]byte(body), &dir); err != nil {
+		return nil, errors.Wrapf(err, "failed to unmarshal")
+	}
+
+	if dir.Type != "dir" {
+		return nil, errors.Errorf("expecting %q to be of type `dir`, but found %s", path, dir.Type)
+	}
+
+	var files []*vcs.File
+	for _, e := range dir.Entries {
+		if e.Type == "file" {
+			files = append(files, &vcs.File{
+				Path: e.Path,
+				Name: e.Name,
+				Sha:  e.Sha,
+			})
+		}
+	}
+
+	return files, nil
 }
