@@ -366,8 +366,6 @@ const builtinRuleLevel = (type: string): SQLReviewRuleLevel => {
   switch (type) {
     case "builtin.prior-backup-check":
       return SQLReviewRuleLevel.ERROR;
-    case "builtin.object-owner-check":
-      return SQLReviewRuleLevel.WARNING;
     default:
       return SQLReviewRuleLevel.ERROR;
   }
