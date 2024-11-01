@@ -1,6 +1,6 @@
 <template>
   <div v-if="!hideTitle" class="mb-2 flex flex-row items-center">
-    <span class="text-base mr-2">{{ $t("common.databases") }}</span>
+    <span class="font-medium text-main mr-2">{{ $t("common.databases") }}</span>
     <BBSpin v-if="loading" class="opacity-60" />
   </div>
 
