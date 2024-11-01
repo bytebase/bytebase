@@ -1,27 +1,21 @@
 <template>
-  <div class="h-full flex flex-col">
-    <div class="text-lg leading-6 font-medium text-main">
-      {{ $t("database-group.create") }}
-    </div>
-    <NDivider />
-    <DatabaseGroupForm
-      class="flex-1"
-      :project="project"
-      @dismiss="() => router.back()"
-      @created="(databaseGroupName: string) => {
-      router.push({
-        name: PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL,
-        params: {
-          databaseGroupName,
-        },
-      });
-    }"
-    />
-  </div>
+  <DatabaseGroupForm
+    class="flex-1"
+    :project="project"
+    :title="$t('database-group.create')"
+    @dismiss="() => router.back()"
+    @created="(databaseGroupName: string) => {
+        router.push({
+          name: PROJECT_V1_ROUTE_DATABASE_GROUP_DETAIL,
+          params: {
+            databaseGroupName,
+          },
+        });
+      }"
+  />
 </template>
 
 <script lang="tsx" setup>
-import { NDivider } from "naive-ui";
 import { computed } from "vue";
 import { useRouter } from "vue-router";
 import DatabaseGroupForm from "@/components/DatabaseGroup/DatabaseGroupForm.vue";

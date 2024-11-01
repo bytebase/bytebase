@@ -1,6 +1,15 @@
 <template>
-  <div class="w-full h-full flex flex-col">
-    <div class="flex-1 pb-4">
+  <FormLayout :title="create ? $t('project.webhook.creation.title') : ''">
+    <template v-if="!create" #title>
+      <div class="flex flex-row space-x-2 items-center">
+        <WebhookTypeIcon :type="props.webhook.type" class="h-6 w-6" />
+        <h3 class="text-lg leading-6 font-medium text-main">
+          {{ props.webhook.title }}
+        </h3>
+      </div>
+      <NDivider />
+    </template>
+    <template #body>
       <div class="flex flex-col gap-y-4">
         <div v-if="create">
           <div>
@@ -150,11 +159,10 @@
           </div>
         </div>
       </div>
-    </div>
-    <div class="w-full sticky bottom-0 bg-white">
-      <NDivider />
+    </template>
+    <template #footer>
       <div
-        class="flex pb-2"
+        class="flex"
         :class="!create && allowEdit ? 'justify-between' : 'justify-end'"
       >
         <BBButtonConfirm
@@ -200,8 +208,8 @@
           </template>
         </div>
       </div>
-    </div>
-  </div>
+    </template>
+  </FormLayout>
 </template>
 
 <script lang="ts" setup>
@@ -220,6 +228,7 @@ import { reactive, computed, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { BBAttention, BBButtonConfirm } from "@/bbkit";
+import FormLayout from "@/components/v2/Form/FormLayout.vue";
 import {
   PROJECT_V1_ROUTE_WEBHOOKS,
   PROJECT_V1_ROUTE_WEBHOOK_DETAIL,
