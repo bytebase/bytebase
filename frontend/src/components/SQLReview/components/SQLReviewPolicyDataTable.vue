@@ -179,7 +179,7 @@ const hasDeletePolicyPermission = computed(() => {
 });
 
 const toggleReviewEnabled = async (review: SQLReviewPolicy, on: boolean) => {
-  await sqlReviewStore.updateReviewPolicy({
+  await sqlReviewStore.upsertReviewPolicy({
     id: review.id,
     enforce: on,
   });

@@ -2994,6 +2994,7 @@
     "policy-created": "审核策略已创建",
     "policy-create-failed": "审核策略创建失败",
     "policy-updated": "审核策略已更新",
+    "policy-update-failed": "审核策略更新失败",
     "policy-duplicated": "审核策略已复制",
     "rules": "规则",
     "add-rules": "添加规则",
