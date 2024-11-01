@@ -14,7 +14,7 @@ import { computed } from "vue";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { useChangeHistoryStore } from "@/store";
 import { extractChangeHistoryUID, extractDatabaseResourceName } from "@/utils";
-import ChangeHistoryDetail from "@/views/ChangeHistoryDetail.vue";
+import ChangeHistoryDetail from "@/views/DatabaseDetail/ChangeHistoryDetail.vue";
 import { provideChangelistDetailContext } from "../context";
 
 const props = defineProps<{

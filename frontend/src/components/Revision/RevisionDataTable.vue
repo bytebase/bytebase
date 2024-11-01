@@ -30,7 +30,7 @@ import { TrashIcon } from "lucide-vue-next";
 import { type DataTableColumn, NDataTable, NButton, useDialog } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
-import { RouterLink } from "vue-router";
+import { RouterLink, useRouter } from "vue-router";
 import { BBAvatar } from "@/bbkit";
 import { useRevisionStore, useUserStore } from "@/store";
 import { getDateForPbTimestamp } from "@/types";
@@ -54,9 +54,10 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
+const router = useRouter();
 const dialog = useDialog();
 const revisionStore = useRevisionStore();
-const { pagedRevisionTableSessionKey } = useDatabaseDetailContext();
+const { pagedRevisionTableSessionKey, database } = useDatabaseDetailContext();
 const state = reactive<LocalState>({
   selectedRevisionNameList: new Set(),
 });
@@ -88,12 +89,6 @@ const columnList = computed(() => {
       title: t("common.version"),
       width: 128,
       render: (revision) => revision.version,
-    },
-    {
-      key: "filename",
-      title: t("database.revision.filename"),
-      width: 128,
-      render: (revision) => revision.file,
     },
     {
       key: "issue",
@@ -157,6 +152,13 @@ const rowProps = (revision: Revision) => {
       if (props.customClick) {
         emit("row-click", revision.name);
         return;
+      }
+
+      const url = `/${database.value.project}/${revision.name}`;
+      if (e.ctrlKey || e.metaKey) {
+        window.open(url, "_blank");
+      } else {
+        router.push(url);
       }
     },
   };
