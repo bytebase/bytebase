@@ -7,25 +7,22 @@
       {{ database.databaseName }}
     </NBreadcrumbItem>
     <NBreadcrumbItem
-      @click="`${router.push(databaseV1Url(database))}#change-history`"
+      @click="router.push(`${databaseV1Url(database)}#revision`)"
     >
-      {{ $t("change-history.self") }}
+      {{ $t("database.revision.self") }}
     </NBreadcrumbItem>
     <NBreadcrumbItem :clickable="false">
-      {{ changeHistoryId }}
+      {{ revisionId }}
     </NBreadcrumbItem>
   </NBreadcrumb>
-  <ChangeHistoryDetail
-    :instance="instance"
-    :database="database.name"
-    :change-history-id="changeHistoryId"
-  />
+  <RevisionDetailPanel :database="database" :revision-name="revision" />
 </template>
 
 <script lang="ts" setup>
 import { NBreadcrumb, NBreadcrumbItem } from "naive-ui";
+import { computed } from "vue";
 import { useRouter } from "vue-router";
-import { ChangeHistoryDetail } from "@/components/ChangeHistory";
+import RevisionDetailPanel from "@/components/Revision/RevisionDetailPanel.vue";
 import { useDatabaseV1ByName } from "@/store";
 import { databaseV1Url } from "@/utils";
 
@@ -33,10 +30,20 @@ const props = defineProps<{
   project: string;
   instance: string;
   database: string;
-  changeHistoryId: string;
+  revision: string;
 }>();
 
 const router = useRouter();
 
 const { database } = useDatabaseV1ByName(props.database);
+
+const revisionId = computed(() => {
+  return extractRevisionUID(props.revision);
+});
+
+const extractRevisionUID = (name: string) => {
+  const pattern = /(?:^|\/)revisions\/([^/]+)(?:$|\/)/;
+  const matches = name.match(pattern);
+  return matches?.[1] ?? "";
+};
 </script>
