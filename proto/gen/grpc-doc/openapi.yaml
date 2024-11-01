@@ -9848,12 +9848,12 @@ components:
                         - DISALLOW
                     type: string
                     format: enum
-                enableDdl:
+                disallowDdl:
                     type: boolean
-                    description: Allow running DDL statements in the SQL editor.
-                enableDml:
+                    description: Disallow running DDL statements in the SQL editor.
+                disallowDml:
                     type: boolean
-                    description: Allow running DML statements in the SQL editor.
+                    description: Disallow running DML statements in the SQL editor.
             description: DataSourceQueryPolicy is the policy configuration for running statements in the SQL editor.
         DataSource_Address:
             type: object
