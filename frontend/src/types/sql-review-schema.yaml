@@ -2196,3 +2196,6 @@
 - type: statement.non-transactional
   category: STATEMENT
   engine: POSTGRES
+- type: statement.object-owner-check
+  category: STATEMENT
+  engine: POSTGRES
