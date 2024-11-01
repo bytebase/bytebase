@@ -238,7 +238,7 @@ func (s *Store) CreateSheet(ctx context.Context, create *SheetMessage) (*SheetMe
 			payload
 		)
 		VALUES ($1, $2, $3, $4, $5, $6, $7)
-		RETURNING id, created_ts, updated_ts, OCTET_LENGTH(statement)
+		RETURNING id, created_ts, updated_ts, OCTET_LENGTH(statement), encode(sha256(convert_to(sheet.statement, 'UTF8')), 'hex')
 	`
 
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -260,6 +260,7 @@ func (s *Store) CreateSheet(ctx context.Context, create *SheetMessage) (*SheetMe
 		&create.createdTs,
 		&create.updatedTs,
 		&create.Size,
+		&create.Sha256,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
