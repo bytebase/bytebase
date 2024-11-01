@@ -216,6 +216,7 @@ export const useProjectSidebar = (
         hide:
           isDefaultProject.value ||
           databaseChangeMode.value === DatabaseChangeMode.EDITOR,
+        expand: true,
         children: [
           {
             title: t("common.gitops"),

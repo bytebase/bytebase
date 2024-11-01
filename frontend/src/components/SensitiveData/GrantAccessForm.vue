@@ -3,7 +3,9 @@
     <div class="space-y-8 flex-1">
       <div class="w-full">
         <div class="flex items-center gap-x-1 mb-2">
-          <span>{{ $t("common.resources") }}</span>
+          <span class="font-medium text-main">
+            {{ $t("common.resources") }}
+          </span>
           <span class="text-red-600">*</span>
         </div>
         <DatabaseResourceForm
@@ -16,7 +18,9 @@
 
       <div class="w-full">
         <div class="flex items-center gap-x-1 mb-2">
-          <span>{{ $t("settings.sensitive-data.action.self") }}</span>
+          <span class="font-medium text-main">
+            {{ $t("settings.sensitive-data.action.self") }}
+          </span>
           <span class="text-red-600">*</span>
         </div>
         <div class="flex space-x-4">
@@ -39,7 +43,9 @@
 
       <div class="w-full">
         <div class="flex items-center gap-x-1 mb-2">
-          <span>{{ $t("settings.sensitive-data.masking-level.self") }}</span>
+          <span class="font-medium text-main">
+            {{ $t("settings.sensitive-data.masking-level.self") }}
+          </span>
           <span class="text-red-600">*</span>
         </div>
         <MaskingLevelRadioGroup
@@ -50,7 +56,9 @@
       </div>
 
       <div class="w-full">
-        <p class="mb-2">{{ $t("common.expiration") }}</p>
+        <p class="mb-2 font-medium text-main">
+          {{ $t("common.expiration") }}
+        </p>
         <NDatePicker
           v-model:value="state.expirationTimestamp"
           style="width: 100%"
@@ -72,9 +80,9 @@
       />
     </div>
 
-    <div class="space-y-6 w-full sticky bottom-0 bg-white">
+    <div class="w-full sticky bottom-0 bg-white">
       <NDivider />
-      <div class="flex justify-end items-center pb-4">
+      <div class="flex justify-end items-center pb-2">
         <div class="flex items-center gap-x-3">
           <NButton @click.prevent="onDismiss">
             {{ $t("common.cancel") }}

@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="w-full h-full overflow-hidden flex flex-col space-y-4">
     <BBAttention type="info">
       <div class="textinfolabel">
         <i18n-t keypath="repository.setup-wizard-guide">
@@ -17,7 +17,8 @@
     </BBAttention>
 
     <StepTab
-      class="mt-4 mb-8"
+      class="pt-4 flex-1 overflow-hidden flex flex-col"
+      pane-class="flex-1 overflow-y-auto"
       :current-index="state.currentStep"
       :step-list="stepList"
       :allow-next="allowNext"
