@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full px-4">
+  <div class="w-full">
     <div
       class="w-full flex flex-col lg:flex-row items-start lg:items-center justify-between gap-2"
     >

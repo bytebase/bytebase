@@ -6,7 +6,7 @@
     <NTabs v-else v-model:value="state.selectedTab" type="line" animated>
       <NTabPane name="MEMBERS">
         <template #tab>
-          <p class="text-lg font-medium leading-7 text-main">
+          <p class="text-base font-medium leading-7 text-main">
             {{ $t("settings.members.view-by-members") }}
           </p>
         </template>
@@ -25,7 +25,7 @@
       </NTabPane>
       <NTabPane name="ROLES">
         <template #tab>
-          <p class="text-lg font-medium leading-7 text-main">
+          <p class="text-base font-medium leading-7 text-main">
             {{ $t("settings.members.view-by-roles") }}
           </p>
         </template>
