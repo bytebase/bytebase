@@ -1587,3 +1587,6 @@ ruleList:
   - type: statement.non-transactional
     level: WARNING
     engine: POSTGRES
+  - type: statement.object-owner-check
+    level: ERROR
+    engine: POSTGRES
