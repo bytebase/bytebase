@@ -320,7 +320,7 @@ var FeatureMatrix = map[FeatureType][3]bool{
 	FeatureSQLReview:           {true, true, true},
 	FeatureTaskScheduleTime:    {false, true, true},
 	FeatureEncryptedSecrets:    {false, true, true},
-	FeatureDatabaseGrouping:    {false, false, true},
+	FeatureDatabaseGrouping:    {false, true, true},
 	FeatureSchemaTemplate:      {false, false, true},
 	FeatureIssueProjectSetting: {false, true, true},
 	// Database management

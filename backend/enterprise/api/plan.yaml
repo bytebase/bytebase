@@ -158,6 +158,7 @@ planList:
         tooltip: sync-schema-advanced-tooltip
       - type: terraform-provider
       - type: schedule-change
+      - type: database-group
       - type: rollout-policy
         content: rollout-policy-advanced
         tooltip: rollout-policy-advanced-tooltip
