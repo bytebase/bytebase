@@ -1,4 +1,4 @@
-import { useI18n } from "vue-i18n";
+import { t } from "@/plugins/i18n";
 import {
   PlanType,
   planTypeFromJSON,
@@ -125,7 +125,6 @@ export const PLANS: Plan[] = planData.planList.map((raw: Plan) => ({
 }));
 
 export const getFeatureLocalization = (feature: PlanFeature): PlanFeature => {
-  const { t } = useI18n();
   for (const section of FEATURE_SECTIONS) {
     if (new Set(section.featureList).has(feature.type)) {
       const res: PlanFeature = {
