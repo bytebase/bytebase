@@ -1,7 +1,6 @@
 import { keyBy, orderBy } from "lodash-es";
 import { computed, unref } from "vue";
-import { useI18n } from "vue-i18n";
-import { t } from "@/plugins/i18n";
+import { t, locale } from "@/plugins/i18n";
 import { useEnvironmentV1Store, useSubscriptionV1Store } from "@/store";
 import type { ComposedInstance, MaybeRef } from "@/types";
 import { isValidProjectName, languageOfEngineV1 } from "@/types";
@@ -99,7 +98,6 @@ export const sortInstanceV1ListByEnvironmentV1 = <T extends Instance>(
 };
 
 export const supportedEngineV1List = () => {
-  const { locale } = useI18n();
   const engines: Engine[] = [
     Engine.MYSQL,
     Engine.POSTGRES,
@@ -249,10 +247,7 @@ export const instanceV1SupportsConciseSchema = (
   instanceOrEngine: Instance | InstanceResource | Engine
 ) => {
   const engine = engineOfInstanceV1(instanceOrEngine);
-  return [
-    Engine.ORACLE,
-    Engine.POSTGRES,
-  ].includes(engine);
+  return [Engine.ORACLE, Engine.POSTGRES].includes(engine);
 };
 
 export const instanceV1SupportsTablePartition = (

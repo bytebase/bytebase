@@ -65,4 +65,6 @@ export const t = i18n.global.t;
 
 export const te = i18n.global.te;
 
+export const locale = i18n.global.locale;
+
 export default i18n;

@@ -1,5 +1,5 @@
 import { computed } from "vue";
-import { useI18n } from "vue-i18n";
+import { t } from "@/plugins/i18n";
 import type { VCSUIType } from "@/types";
 import { VCSType } from "@/types/proto/v1/common";
 
@@ -9,8 +9,6 @@ export const vcsListByUIType = computed(
     uiType: VCSUIType;
     title: string;
   }[] => {
-    const { t } = useI18n();
-
     return [
       {
         type: VCSType.GITLAB,
