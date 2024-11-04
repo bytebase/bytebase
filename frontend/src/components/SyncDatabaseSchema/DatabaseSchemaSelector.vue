@@ -22,7 +22,7 @@
         {{ $t("common.database") }}
       </span>
       <EnvironmentSelect
-        class="!w-60 mr-4 shrink-0"
+        class="!w-60 mr-3 shrink-0"
         name="environment"
         :environment-name="state.environmentName"
         @update:environment-name="handleEnvironmentSelect"
