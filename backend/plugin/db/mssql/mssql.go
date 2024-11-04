@@ -243,9 +243,19 @@ func execute(ctx context.Context, tx *sql.Tx, statement string) (int64, error) {
 }
 
 func unpackGoMSSQLDBError(err gomssqldb.Error) error {
+	if len(err.All) == 0 {
+		return nil
+	}
+	if len(err.All) == 1 {
+		return errors.Errorf("%s", err.Message)
+	}
 	var msgs []string
 	for _, e := range err.All {
-		msgs = append(msgs, e.Message)
+		cerr := unpackGoMSSQLDBError(e)
+		if cerr == nil {
+			continue
+		}
+		msgs = append(msgs, cerr.Error())
 	}
 	return errors.Errorf("%s", strings.Join(msgs, "\n"))
 }
