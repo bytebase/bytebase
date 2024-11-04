@@ -71,6 +71,7 @@ type migrateContext struct {
 	sheetName string
 
 	task        *store.TaskMessage
+	taskType    storepb.ChangelogTask_Type
 	taskRunUID  int
 	taskRunName string
 	issueName   string
@@ -552,6 +553,7 @@ func beginMigration(ctx context.Context, stores *store.Store, mi *db.MigrationIn
 				SyncHistoryId:     0,
 				Sheet:             mc.sheetName,
 				Version:           mc.version,
+				Type:              convertTaskType(mc.task.Type),
 			},
 		}}, api.SystemBotID)
 		if err != nil {
@@ -671,4 +673,24 @@ func endMigration(ctx context.Context, storeInstance *store.Store, startedNs int
 		update.Status = &status
 	}
 	return storeInstance.UpdateInstanceChangeHistory(ctx, update)
+}
+
+func convertTaskType(t api.TaskType) storepb.ChangelogTask_Type {
+	switch t {
+	case api.TaskDatabaseDataUpdate:
+		return storepb.ChangelogTask_DATA
+	case api.TaskDatabaseSchemaBaseline:
+		return storepb.ChangelogTask_BASELINE
+	case api.TaskDatabaseSchemaUpdate:
+		return storepb.ChangelogTask_MIGRATE
+	case api.TaskDatabaseSchemaUpdateSDL:
+		return storepb.ChangelogTask_MIGRATE_SDL
+	case api.TaskDatabaseSchemaUpdateGhostCutover, api.TaskDatabaseSchemaUpdateGhostSync:
+		return storepb.ChangelogTask_MIGRATE_GHOST
+
+	case api.TaskGeneral:
+	case api.TaskDatabaseCreate:
+	case api.TaskDatabaseDataExport:
+	}
+	return storepb.ChangelogTask_TYPE_UNSPECIFIED
 }
