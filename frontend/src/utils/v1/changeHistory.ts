@@ -1,7 +1,7 @@
 import { isEqual, isUndefined, orderBy, uniqBy } from "lodash-es";
 import Long from "long";
 import { t } from "@/plugins/i18n";
-import { useDBSchemaV1Store, useDatabaseV1Store } from "@/store";
+import { useDBSchemaV1Store, useDatabaseV1Store, useUserStore } from "@/store";
 import type { ComposedDatabase } from "@/types";
 import { EMPTY_ID, UNKNOWN_ID } from "@/types";
 import type { AffectedTable } from "@/types/changeHistory";
@@ -11,6 +11,7 @@ import {
   ChangeHistory,
   ChangeHistory_Type,
 } from "@/types/proto/v1/database_service";
+import { extractUserResourceName } from ".";
 import { databaseV1Url, extractDatabaseResourceName } from "./database";
 
 export const extractChangeHistoryUID = (name: string) => {
@@ -136,6 +137,10 @@ export const mockLatestSchemaChangeHistory = (
       new TextEncoder().encode(schema?.schema).length
     ),
     version: "Latest version",
-    description: "the latest schema of database",
   });
+};
+
+export const creatorOfChangeHistory = (history: ChangeHistory) => {
+  const email = extractUserResourceName(history.creator);
+  return useUserStore().getUserByEmail(email);
 };

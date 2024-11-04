@@ -13,12 +13,10 @@
             <h1 class="text-xl font-bold leading-6 text-main truncate">
               {{ $t("common.version") }} {{ changeHistory.version }}
             </h1>
+            <NTag round>
+              {{ changeHistory_TypeToJSON(changeHistory.type) }}
+            </NTag>
           </div>
-          <p class="text-control">
-            {{ changeHistory_SourceToJSON(changeHistory.source) }}
-            {{ changeHistory_TypeToJSON(changeHistory.type) }} -
-            {{ changeHistory.description }}
-          </p>
           <dl
             class="flex flex-col space-y-1 md:space-y-0 md:flex-row md:flex-wrap"
           >
@@ -36,13 +34,6 @@
                 #{{ extractIssueUID(changeHistory.issue) }}
               </router-link>
             </dd>
-            <dt class="sr-only">{{ $t("common.duration") }}</dt>
-            <dd class="flex items-center text-sm md:mr-4">
-              <span class="textlabel"
-                >{{ $t("common.duration") }}&nbsp;-&nbsp;</span
-              >
-              {{ humanizeDurationV1(changeHistory.executionDuration) }}
-            </dd>
             <dt class="sr-only">{{ $t("common.creator") }}</dt>
             <dd v-if="creator" class="flex items-center text-sm md:mr-4">
               <span class="textlabel"
@@ -58,8 +49,6 @@
               {{
                 humanizeDate(getDateForPbTimestamp(changeHistory.createTime))
               }}
-              by
-              {{ `version ${changeHistory.releaseVersion}` }}
             </dd>
           </dl>
         </div>
@@ -285,7 +274,7 @@
 <script lang="ts" setup>
 import { useTitle } from "@vueuse/core";
 import { ChevronDownIcon } from "lucide-vue-next";
-import { NButton, NSwitch } from "naive-ui";
+import { NButton, NSwitch, NTag } from "naive-ui";
 import { computed, reactive, watch, ref, unref } from "vue";
 import { BBModal, BBSpin } from "@/bbkit";
 import ChangeHistoryStatusIcon from "@/components/ChangeHistory/ChangeHistoryStatusIcon.vue";
@@ -305,7 +294,6 @@ import { Engine } from "@/types/proto/v1/common";
 import type { ChangeHistory } from "@/types/proto/v1/database_service";
 import {
   ChangeHistory_Type,
-  changeHistory_SourceToJSON,
   changeHistory_TypeToJSON,
   ChangeHistoryView,
 } from "@/types/proto/v1/database_service";

@@ -15,7 +15,7 @@
             <div>
               <div class="flex items-center">
                 <h1
-                  class="pb-2.5 text-xl font-bold leading-6 text-main truncate flex items-center gap-x-3"
+                  class="text-xl font-bold text-main truncate flex items-center gap-x-3"
                 >
                   {{ database.databaseName }}
 
