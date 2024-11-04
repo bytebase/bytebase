@@ -274,14 +274,10 @@ const changeName = async (title: string) => {
   if (title === policy.name) {
     return;
   }
-  const upsert = {
-    title,
-    ruleList: policy.ruleList,
-  };
 
-  await store.updateReviewPolicy({
+  await store.upsertReviewPolicy({
     id: policy.id,
-    ...upsert,
+    title,
   });
   pushUpdatedNotify();
 };
@@ -317,7 +313,7 @@ const onApplyChanges = async () => {
 
   state.updating = true;
   try {
-    await store.updateReviewPolicy({
+    await store.upsertReviewPolicy({
       id: policy.id,
       title: policy.name,
       ruleList: convertRuleMapToPolicyRuleList(state.ruleMapByEngine),
@@ -334,7 +330,7 @@ const onEdit = () => {
 };
 
 const onArchive = async () => {
-  await store.updateReviewPolicy({
+  await store.upsertReviewPolicy({
     id: reviewPolicy.value.id,
     enforce: false,
   });
@@ -342,7 +338,7 @@ const onArchive = async () => {
 };
 
 const onRestore = async () => {
-  await store.updateReviewPolicy({
+  await store.upsertReviewPolicy({
     id: reviewPolicy.value.id,
     enforce: true,
   });

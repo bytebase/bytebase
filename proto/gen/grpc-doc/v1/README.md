@@ -9355,6 +9355,7 @@ When paginating, all other parameters provided to `ListReviewConfigs` must match
 
 The name field is used to identify the sql review to update. |
 | update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
+| allow_missing | [bool](#bool) |  | If set to true, and the config is not found, a new config will be created. In this situation, `update_mask` is ignored. |
 
 
 

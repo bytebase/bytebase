@@ -782,7 +782,7 @@
           "description": "控制用户如何变更数据库",
           "issue-mode": {
             "self": "工单模式（管控）",
-            "description": "使用工单来提交，审核，发布，版本化数据库变更。适合团队协同及需要管控的环境。"
+            "description": "使用工单来提交，审核，发布，版本化数据库变更。"
           },
           "sql-editor-mode": {
             "self": "SQL 编辑器模式（直接）",
@@ -2994,6 +2994,7 @@
     "policy-created": "审核策略已创建",
     "policy-create-failed": "审核策略创建失败",
     "policy-updated": "审核策略已更新",
+    "policy-update-failed": "审核策略更新失败",
     "policy-duplicated": "审核策略已复制",
     "rules": "规则",
     "add-rules": "添加规则",

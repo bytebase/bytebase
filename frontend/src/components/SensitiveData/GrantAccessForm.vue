@@ -1,88 +1,88 @@
 <template>
-  <div class="h-full flex flex-col">
-    <div class="space-y-8 flex-1">
-      <div class="w-full">
-        <div class="flex items-center gap-x-1 mb-2">
-          <span class="font-medium text-main">
-            {{ $t("common.resources") }}
-          </span>
-          <span class="text-red-600">*</span>
+  <FormLayout :title="title">
+    <template #body>
+      <div class="space-y-8">
+        <div class="w-full">
+          <div class="flex items-center gap-x-1 mb-2">
+            <span class="font-medium text-main">
+              {{ $t("common.resources") }}
+            </span>
+            <span class="text-red-600">*</span>
+          </div>
+          <DatabaseResourceForm
+            v-model:database-resources="state.databaseResources"
+            :project-name="projectName"
+            :required-feature="'bb.feature.sensitive-data'"
+            :include-cloumn="true"
+          />
         </div>
-        <DatabaseResourceForm
-          v-model:database-resources="state.databaseResources"
+
+        <div class="w-full">
+          <div class="flex items-center gap-x-1 mb-2">
+            <span class="font-medium text-main">
+              {{ $t("settings.sensitive-data.action.self") }}
+            </span>
+            <span class="text-red-600">*</span>
+          </div>
+          <div class="flex space-x-4">
+            <NCheckbox
+              v-for="action in ACTIONS"
+              :key="action"
+              :checked="state.supportActions.has(action)"
+              @update:checked="toggleAction(action, $event)"
+            >
+              {{
+                $t(
+                  `settings.sensitive-data.action.${maskingExceptionPolicy_MaskingException_ActionToJSON(
+                    action
+                  ).toLowerCase()}`
+                )
+              }}
+            </NCheckbox>
+          </div>
+        </div>
+
+        <div class="w-full">
+          <div class="flex items-center gap-x-1 mb-2">
+            <span class="font-medium text-main">
+              {{ $t("settings.sensitive-data.masking-level.self") }}
+            </span>
+            <span class="text-red-600">*</span>
+          </div>
+          <MaskingLevelRadioGroup
+            :level="state.maskingLevel"
+            :level-list="MASKING_LEVELS"
+            @update:level="state.maskingLevel = $event"
+          />
+        </div>
+
+        <div class="w-full">
+          <p class="mb-2 font-medium text-main">
+            {{ $t("common.expiration") }}
+          </p>
+          <NDatePicker
+            v-model:value="state.expirationTimestamp"
+            style="width: 100%"
+            type="datetime"
+            :is-date-disabled="(date: number) => date < Date.now()"
+            clearable
+          />
+          <span v-if="!state.expirationTimestamp" class="textinfolabel">{{
+            $t("settings.sensitive-data.never-expires")
+          }}</span>
+        </div>
+
+        <MembersBindingSelect
+          v-model:value="state.memberList"
+          :required="true"
           :project-name="projectName"
-          :required-feature="'bb.feature.sensitive-data'"
-          :include-cloumn="true"
+          :include-all-users="false"
+          :include-service-account="false"
         />
       </div>
-
-      <div class="w-full">
-        <div class="flex items-center gap-x-1 mb-2">
-          <span class="font-medium text-main">
-            {{ $t("settings.sensitive-data.action.self") }}
-          </span>
-          <span class="text-red-600">*</span>
-        </div>
-        <div class="flex space-x-4">
-          <NCheckbox
-            v-for="action in ACTIONS"
-            :key="action"
-            :checked="state.supportActions.has(action)"
-            @update:checked="toggleAction(action, $event)"
-          >
-            {{
-              $t(
-                `settings.sensitive-data.action.${maskingExceptionPolicy_MaskingException_ActionToJSON(
-                  action
-                ).toLowerCase()}`
-              )
-            }}
-          </NCheckbox>
-        </div>
-      </div>
-
-      <div class="w-full">
-        <div class="flex items-center gap-x-1 mb-2">
-          <span class="font-medium text-main">
-            {{ $t("settings.sensitive-data.masking-level.self") }}
-          </span>
-          <span class="text-red-600">*</span>
-        </div>
-        <MaskingLevelRadioGroup
-          :level="state.maskingLevel"
-          :level-list="MASKING_LEVELS"
-          @update:level="state.maskingLevel = $event"
-        />
-      </div>
-
-      <div class="w-full">
-        <p class="mb-2 font-medium text-main">
-          {{ $t("common.expiration") }}
-        </p>
-        <NDatePicker
-          v-model:value="state.expirationTimestamp"
-          style="width: 100%"
-          type="datetime"
-          :is-date-disabled="(date: number) => date < Date.now()"
-          clearable
-        />
-        <span v-if="!state.expirationTimestamp" class="textinfolabel">{{
-          $t("settings.sensitive-data.never-expires")
-        }}</span>
-      </div>
-
-      <MembersBindingSelect
-        v-model:value="state.memberList"
-        :required="true"
-        :project-name="projectName"
-        :include-all-users="false"
-        :include-service-account="false"
-      />
-    </div>
-
-    <div class="w-full sticky bottom-0 bg-white">
-      <NDivider />
-      <div class="flex justify-end items-center pb-2">
+    </template>
+    <template #footer>
+      <div class="flex justify-end items-center">
         <div class="flex items-center gap-x-3">
           <NButton @click.prevent="onDismiss">
             {{ $t("common.cancel") }}
@@ -96,17 +96,18 @@
           </NButton>
         </div>
       </div>
-    </div>
-  </div>
+    </template>
+  </FormLayout>
 </template>
 
 <script lang="tsx" setup>
 import { isUndefined } from "lodash-es";
-import { NButton, NCheckbox, NDivider, NDatePicker } from "naive-ui";
+import { NButton, NCheckbox, NDatePicker } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";
 import DatabaseResourceForm from "@/components/GrantRequestPanel/DatabaseResourceForm/index.vue";
 import MembersBindingSelect from "@/components/Member/MembersBindingSelect.vue";
+import FormLayout from "@/components/v2/Form/FormLayout.vue";
 import { usePolicyV1Store, pushNotification } from "@/store";
 import type { DatabaseResource } from "@/types";
 import { Expr } from "@/types/proto/google/type/expr";
@@ -131,6 +132,7 @@ import {
 const props = defineProps<{
   columnList: SensitiveColumn[];
   projectName: string;
+  title?: string;
 }>();
 
 const emit = defineEmits(["dismiss"]);
@@ -186,7 +188,7 @@ const submitDisabled = computed(() => {
   }
   if (
     !isUndefined(state.databaseResources) &&
-    state.databaseResources.length === 0
+    state.databaseResources?.length === 0
   ) {
     return true;
   }

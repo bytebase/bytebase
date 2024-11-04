@@ -782,11 +782,11 @@
           "description": "ユーザーがデータベース スキーマの移行を実行する方法を制御します",
           "issue-mode": {
             "self": "作業モード（ガバナンス）",
-            "description": "データベースの変更をリクエスト、レビュー、展開、バージョン管理するためにIssueを使用します。チームでの協力および本番環境に適しています。"
+            "description": "データベースの変更をリクエスト、レビュー、展開、バージョン管理するためにIssueを使用します。"
           },
           "sql-editor-mode": {
             "self": "SQL エディター モード (直接)",
-            "description": "SQLエディターを使用してデータベースの変更を直接実行します。個人利用および非本番環境に適しています。"
+            "description": "SQLエディターを使用してデータベースの変更を直接実行します。"
           },
           "can-be-changed-later": "この設定は後でいつでも変更できます。",
           "default-view-changed-to-sql-editor": "ワークスペースのデフォルトのビューが SQL エディターに変更されました。",
@@ -2994,6 +2994,7 @@
     "policy-created": "監査ポリシーが作成されました",
     "policy-create-failed": "監査ポリシーの作成に失敗しました",
     "policy-updated": "監査ポリシーが更新されました",
+    "policy-update-failed": "レビューポリシーの更新に失敗しました。",
     "policy-duplicated": "監査ポリシーがコピーされました",
     "rules": "ルール",
     "add-rules": "ルールを追加する",

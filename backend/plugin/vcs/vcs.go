@@ -75,6 +75,13 @@ type PullRequestComment struct {
 	Content string
 }
 
+type File struct {
+	Path    string
+	Name    string
+	Sha     string
+	Content string
+}
+
 // Provider is the interface for VCS provider.
 type Provider interface {
 	// Returns the API URL for a given VCS instance URL
