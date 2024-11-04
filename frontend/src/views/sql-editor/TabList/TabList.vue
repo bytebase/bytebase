@@ -1,9 +1,14 @@
 <template>
   <div
-    class="flex justify-between items-center box-border text-gray-500 text-sm border-b pr-2 gap-1"
+    class="bb-sql-editor-tab-list flex justify-between items-center box-border text-gray-500 text-sm border-b pr-2 gap-1"
   >
-    <div
-      class="relative flex flex-1 flex-nowrap overflow-hidden h-[36px] pt-0.5"
+    <NScrollbar
+      ref="scrollbarRef"
+      :x-scrollable="true"
+      trigger="hover"
+      class="scrollbar"
+      content-class="flex"
+      @scroll="recalculateScrollState"
     >
       <Draggable
         id="tab-list"
@@ -11,7 +16,7 @@
         v-model="tabStore.tabIdList"
         item-key="id"
         animation="300"
-        class="tab-list hide-scrollbar"
+        class="relative flex flex-nowrap overflow-hidden h-[36px] pt-0.5 hide-scrollbar"
         :class="{
           'more-left': scrollState.moreLeft,
           'more-right': scrollState.moreRight,
@@ -19,7 +24,6 @@
         ghost-class="ghost"
         @start="state.dragging = true"
         @end="state.dragging = false"
-        @scroll="recalculateScrollState"
       >
         <template
           #item="{ element: id, index }: { element: string; index: number }"
@@ -43,7 +47,7 @@
       >
         <PlusIcon class="h-5 w-5" stroke-width="2.5" />
       </button>
-    </div>
+    </NScrollbar>
 
     <div class="flex items-center gap-2">
       <SettingButton v-if="!hideSettingButton" size="small" />
@@ -60,7 +64,7 @@
 import { useResizeObserver } from "@vueuse/core";
 import { cloneDeep } from "lodash-es";
 import { PlusIcon } from "lucide-vue-next";
-import { useDialog } from "naive-ui";
+import { NScrollbar, useDialog } from "naive-ui";
 import { storeToRefs } from "pinia";
 import scrollIntoView from "scroll-into-view-if-needed";
 import { ref, reactive, nextTick, computed, onMounted, watch } from "vue";
@@ -78,6 +82,7 @@ import {
   defaultSQLEditorTab,
   defer,
   suggestedTabTitleForSQLEditorConnection,
+  usePreventBackAndForward,
 } from "@/utils";
 import { useEditorPanelContext } from "../EditorPanel";
 import { SettingButton } from "../Setting";
@@ -104,6 +109,7 @@ const state = reactive<LocalState>({
 const hideProfile = useAppFeature("bb.feature.sql-editor.hide-profile");
 const disableSetting = useAppFeature("bb.feature.sql-editor.disable-setting");
 const { events: sheetEvents } = useSheetContext();
+const scrollbarRef = ref<InstanceType<typeof NScrollbar>>();
 const tabListRef = ref<InstanceType<typeof Draggable>>();
 const { strictProject } = storeToRefs(useSQLEditorStore());
 const { cloneViewState } = useEditorPanelContext();
@@ -202,13 +208,11 @@ const handleRemoveTab = async (
   return _defer.promise;
 };
 
-const tabListElement = computed((): HTMLElement | undefined => {
-  const list = tabListRef.value;
-  if (!list) return undefined;
-  const element = list.$el as HTMLElement;
-  return element;
+const scrollElement = computed((): HTMLElement | null | undefined => {
+  return scrollbarRef.value?.scrollbarInstRef?.containerRef;
 });
 
+usePreventBackAndForward(scrollElement);
 useResizeObserver(tabListRef, () => {
   recalculateScrollState();
 });
@@ -216,7 +220,7 @@ useResizeObserver(tabListRef, () => {
 const recalculateScrollState = () => {
   contextMenuRef.value?.hide();
 
-  const element = tabListElement.value;
+  const element = scrollElement.value;
   if (!element) {
     return;
   }
@@ -312,12 +316,11 @@ useEmitteryEventListener(
 );
 </script>
 
-<style scoped lang="postcss">
-.ghost {
-  @apply opacity-50 bg-white;
+<style lang="postcss">
+.bb-sql-editor-tab-list .ghost {
+  @apply opacity-30 bg-white;
 }
-
-.tab-list {
-  @apply flex flex-nowrap overflow-x-auto max-w-full overscroll-none;
+.bb-sql-editor-tab-list .scrollbar .n-scrollbar-rail--horizontal--bottom {
+  inset: auto 2px 2px 2px !important;
 }
 </style>
