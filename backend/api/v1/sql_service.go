@@ -1056,13 +1056,18 @@ func (s *SQLService) accessCheck(
 				permission = iam.PermissionDatabasesQueryExplain
 			}
 			// TODO(d): DDL and DML org policy check.
+			if span.Type == base.DDL || span.Type == base.DML {
+				if err := checkDataSourceQueryPolicy(ctx, s.store, database, span.Type); err != nil {
+					return err
+				}
+			}
 			if permission != "" {
 				ok, err := s.iamManager.CheckPermission(ctx, permission, user, project.ResourceID)
 				if err != nil {
 					return err
 				}
 				if !ok {
-					return status.Errorf(codes.InvalidArgument, "only users with %s permission can create a main branch", iam.PermissionBranchesAdmin)
+					return status.Errorf(codes.PermissionDenied, "user %q does not have permission %q on project %q", user.Email, permission, project.ResourceID)
 				}
 			}
 		}
@@ -1716,4 +1721,43 @@ func checkAndGetDataSourceQueriable(ctx context.Context, storeInstance *store.St
 	}
 
 	return dataSource, nil
+}
+
+func checkDataSourceQueryPolicy(ctx context.Context, storeInstance *store.Store, database *store.DatabaseMessage, statementTp base.QueryType) error {
+	environment, err := storeInstance.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{
+		ResourceID: &database.EffectiveEnvironmentID,
+	})
+	if err != nil {
+		return err
+	}
+	if environment == nil {
+		return status.Errorf(codes.NotFound, "environment %q not found", database.EffectiveEnvironmentID)
+	}
+	resourceType := api.PolicyResourceTypeEnvironment
+	policyType := api.PolicyTypeDataSourceQuery
+	dataSourceQueryPolicy, err := storeInstance.GetPolicyV2(ctx, &store.FindPolicyMessage{
+		ResourceUID:  &environment.UID,
+		ResourceType: &resourceType,
+		Type:         &policyType,
+	})
+	if err != nil {
+		return err
+	}
+	if dataSourceQueryPolicy != nil {
+		policy := &v1pb.DataSourceQueryPolicy{}
+		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(dataSourceQueryPolicy.Payload), policy); err != nil {
+			return status.Errorf(codes.Internal, "failed to unmarshal data source query policy payload")
+		}
+		switch statementTp {
+		case base.DDL:
+			if policy.DisallowDdl {
+				return status.Errorf(codes.PermissionDenied, "disallow execute DDL statement in environment %q", environment.Title)
+			}
+		case base.DML:
+			if policy.DisallowDml {
+				return status.Errorf(codes.PermissionDenied, "disallow execute DML statement in environment %q", environment.Title)
+			}
+		}
+	}
+	return nil
 }
