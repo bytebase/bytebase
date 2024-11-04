@@ -449,6 +449,9 @@ type SchemaMetadata struct {
 }
 
 func (s *SchemaMetadata) GetOwner() string {
+	if s.proto == nil {
+		return ""
+	}
 	return s.proto.Owner
 }
 
