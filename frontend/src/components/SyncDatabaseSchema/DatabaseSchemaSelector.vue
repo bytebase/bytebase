@@ -105,6 +105,7 @@ import { Engine } from "@/types/proto/v1/common";
 import type { ChangeHistory } from "@/types/proto/v1/database_service";
 import {
   ChangeHistoryView,
+  ChangeHistory_Source,
   ChangeHistory_Type,
   DatabaseMetadataView,
   changeHistory_SourceToJSON,
@@ -272,12 +273,16 @@ const renderSchemaVersionLabel = (option: SelectOption) => {
   children.push(
     <NEllipsis class="flex-1 pr-2" tooltip={false}>
       <span class="space-x-1 mr-1">
-        <NTag round size="small">
-          {changeHistory_SourceToJSON(changeHistory.source)}
-        </NTag>
-        <NTag round size="small">
-          {changeHistory_TypeToJSON(changeHistory.type)}
-        </NTag>
+        {changeHistory.source !== ChangeHistory_Source.SOURCE_UNSPECIFIED && (
+          <NTag round size="small">
+            {changeHistory_SourceToJSON(changeHistory.source)}
+          </NTag>
+        )}
+        {changeHistory.type !== ChangeHistory_Type.TYPE_UNSPECIFIED && (
+          <NTag round size="small">
+            {changeHistory_TypeToJSON(changeHistory.type)}
+          </NTag>
+        )}
       </span>
       {version}
     </NEllipsis>
