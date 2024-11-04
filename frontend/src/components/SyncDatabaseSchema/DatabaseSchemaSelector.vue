@@ -287,11 +287,11 @@ const renderSchemaVersionLabel = (option: SelectOption) => {
       {changeHistory.version}
     </NEllipsis>
   );
-  if (changeHistory.updateTime) {
+  if (changeHistory.createTime) {
     children.push(
       <HumanizeDate
         class="text-control-light"
-        date={getDateForPbTimestamp(changeHistory.updateTime)}
+        date={getDateForPbTimestamp(changeHistory.createTime)}
       />
     );
   }
