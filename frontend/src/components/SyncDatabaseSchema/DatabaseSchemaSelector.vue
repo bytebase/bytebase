@@ -105,10 +105,8 @@ import { Engine } from "@/types/proto/v1/common";
 import type { ChangeHistory } from "@/types/proto/v1/database_service";
 import {
   ChangeHistoryView,
-  ChangeHistory_Source,
   ChangeHistory_Type,
   DatabaseMetadataView,
-  changeHistory_SourceToJSON,
   changeHistory_TypeToJSON,
 } from "@/types/proto/v1/database_service";
 import {
@@ -266,13 +264,6 @@ const renderSchemaVersionLabel = (option: SelectOption) => {
         customClass="mr-1"
         instance={database.value?.instanceResource}
       />
-    );
-  }
-  if (changeHistory.source !== ChangeHistory_Source.SOURCE_UNSPECIFIED) {
-    children.push(
-      <NTag class="mr-1" round size="small">
-        {changeHistory_SourceToJSON(changeHistory.source)}
-      </NTag>
     );
   }
   if (changeHistory.type !== ChangeHistory_Type.TYPE_UNSPECIFIED) {

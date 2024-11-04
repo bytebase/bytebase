@@ -14,9 +14,6 @@
               {{ $t("common.version") }} {{ changeHistory.version }}
             </h1>
             <NTag round>
-              {{ changeHistory_SourceToJSON(changeHistory.source) }}
-            </NTag>
-            <NTag round>
               {{ changeHistory_TypeToJSON(changeHistory.type) }}
             </NTag>
           </div>
@@ -36,13 +33,6 @@
               >
                 #{{ extractIssueUID(changeHistory.issue) }}
               </router-link>
-            </dd>
-            <dt class="sr-only">{{ $t("common.duration") }}</dt>
-            <dd class="flex items-center text-sm md:mr-4">
-              <span class="textlabel"
-                >{{ $t("common.duration") }}&nbsp;-&nbsp;</span
-              >
-              {{ humanizeDurationV1(changeHistory.executionDuration) }}
             </dd>
             <dt class="sr-only">{{ $t("common.creator") }}</dt>
             <dd v-if="creator" class="flex items-center text-sm md:mr-4">
@@ -304,7 +294,6 @@ import { Engine } from "@/types/proto/v1/common";
 import type { ChangeHistory } from "@/types/proto/v1/database_service";
 import {
   ChangeHistory_Type,
-  changeHistory_SourceToJSON,
   changeHistory_TypeToJSON,
   ChangeHistoryView,
 } from "@/types/proto/v1/database_service";

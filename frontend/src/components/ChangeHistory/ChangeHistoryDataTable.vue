@@ -31,7 +31,6 @@ import {
   changeHistoryLink,
   getAffectedTablesOfChangeHistory,
   getHistoryChangeType,
-  humanizeDurationV1,
   getAffectedTableDisplayName,
   extractChangeHistoryUID,
   creatorOfChangeHistory,
@@ -169,16 +168,6 @@ const columnList = computed(() => {
       ellipsis: true,
       render: (history) => {
         return <p class="truncate whitespace-nowrap">{history.statement}</p>;
-      },
-    },
-    {
-      key: "duration",
-      title: t("common.duration"),
-      width: "7rem",
-      resizable: true,
-      ellipsis: true,
-      render: (history) => {
-        return humanizeDurationV1(history.executionDuration);
       },
     },
     {
