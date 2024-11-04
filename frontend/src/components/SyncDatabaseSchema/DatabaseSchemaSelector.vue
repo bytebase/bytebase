@@ -268,30 +268,30 @@ const renderSchemaVersionLabel = (option: SelectOption) => {
       />
     );
   }
-  const { version, updateTime } = changeHistory;
-
+  if (changeHistory.source !== ChangeHistory_Source.SOURCE_UNSPECIFIED) {
+    children.push(
+      <NTag class="mr-1" round size="small">
+        {changeHistory_SourceToJSON(changeHistory.source)}
+      </NTag>
+    );
+  }
+  if (changeHistory.type !== ChangeHistory_Type.TYPE_UNSPECIFIED) {
+    children.push(
+      <NTag class="mr-1" round size="small">
+        {changeHistory_TypeToJSON(changeHistory.type)}
+      </NTag>
+    );
+  }
   children.push(
     <NEllipsis class="flex-1 pr-2" tooltip={false}>
-      <span class="space-x-1 mr-1">
-        {changeHistory.source !== ChangeHistory_Source.SOURCE_UNSPECIFIED && (
-          <NTag round size="small">
-            {changeHistory_SourceToJSON(changeHistory.source)}
-          </NTag>
-        )}
-        {changeHistory.type !== ChangeHistory_Type.TYPE_UNSPECIFIED && (
-          <NTag round size="small">
-            {changeHistory_TypeToJSON(changeHistory.type)}
-          </NTag>
-        )}
-      </span>
-      {version}
+      {changeHistory.version}
     </NEllipsis>
   );
-  if (updateTime) {
+  if (changeHistory.updateTime) {
     children.push(
       <HumanizeDate
         class="text-control-light"
-        date={getDateForPbTimestamp(updateTime)}
+        date={getDateForPbTimestamp(changeHistory.updateTime)}
       />
     );
   }
