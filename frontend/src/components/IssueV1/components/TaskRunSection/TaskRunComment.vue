@@ -115,7 +115,10 @@ const commentLink = computed((): CommentLink => {
     flattenTaskV1List(issue.value.rolloutEntity).find(
       (task) => extractTaskUID(task.name) === taskUID
     ) ?? unknownTask();
-  if (taskRun.status === TaskRun_Status.PENDING || taskRun.status === TaskRun_Status.RUNNING) {
+  if (
+    taskRun.status === TaskRun_Status.PENDING ||
+    taskRun.status === TaskRun_Status.RUNNING
+  ) {
     const task = taskRun.schedulerInfo?.waitingCause?.task;
     if (task) {
       const [, , stageUid, taskUid] = getProjectIdRolloutUidStageUidTaskUid(

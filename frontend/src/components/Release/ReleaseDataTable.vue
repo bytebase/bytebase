@@ -9,9 +9,7 @@
     :row-key="(release: ComposedRelease) => release.name"
     :checked-row-keys="Array.from(state.selectedReleaseNameList)"
     :row-props="rowProps"
-    @update:checked-row-keys="
-        (val) => (state.selectedReleaseNameList = new Set(val as string[]))
-      "
+    @update:checked-row-keys="(val) => (state.selectedReleaseNameList = new Set(val as string[]))"
   />
 </template>
 

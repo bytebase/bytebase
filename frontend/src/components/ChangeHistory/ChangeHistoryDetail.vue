@@ -13,12 +13,13 @@
             <h1 class="text-xl font-bold leading-6 text-main truncate">
               {{ $t("common.version") }} {{ changeHistory.version }}
             </h1>
+            <NTag round>
+              {{ changeHistory_SourceToJSON(changeHistory.source) }}
+            </NTag>
+            <NTag round>
+              {{ changeHistory_TypeToJSON(changeHistory.type) }}
+            </NTag>
           </div>
-          <p class="text-control">
-            {{ changeHistory_SourceToJSON(changeHistory.source) }}
-            {{ changeHistory_TypeToJSON(changeHistory.type) }} -
-            {{ changeHistory.description }}
-          </p>
           <dl
             class="flex flex-col space-y-1 md:space-y-0 md:flex-row md:flex-wrap"
           >
@@ -58,8 +59,6 @@
               {{
                 humanizeDate(getDateForPbTimestamp(changeHistory.createTime))
               }}
-              by
-              {{ `version ${changeHistory.releaseVersion}` }}
             </dd>
           </dl>
         </div>
@@ -285,7 +284,7 @@
 <script lang="ts" setup>
 import { useTitle } from "@vueuse/core";
 import { ChevronDownIcon } from "lucide-vue-next";
-import { NButton, NSwitch } from "naive-ui";
+import { NButton, NSwitch, NTag } from "naive-ui";
 import { computed, reactive, watch, ref, unref } from "vue";
 import { BBModal, BBSpin } from "@/bbkit";
 import ChangeHistoryStatusIcon from "@/components/ChangeHistory/ChangeHistoryStatusIcon.vue";

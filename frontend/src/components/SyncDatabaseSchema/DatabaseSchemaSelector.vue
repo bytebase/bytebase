@@ -44,7 +44,9 @@
       <span class="flex w-40 items-center shrink-0 text-sm">
         {{ $t("database.sync-schema.schema-version.self") }}
       </span>
-      <div class="w-192 flex flex-row justify-start items-center relative">
+      <div
+        class="w-192 max-w-full flex flex-row justify-start items-center relative"
+      >
         <NSelect
           :loading="isPreparingSchemaVersionOptions"
           :value="state.changeHistoryName"
@@ -74,12 +76,12 @@
   />
 </template>
 
-<script lang="ts" setup>
+<script lang="tsx" setup>
 import { computedAsync } from "@vueuse/core";
 import { head } from "lodash-es";
 import type { SelectOption } from "naive-ui";
-import { NEllipsis, NSelect } from "naive-ui";
-import { computed, h, reactive, ref, watch } from "vue";
+import { NEllipsis, NSelect, NTag } from "naive-ui";
+import { computed, reactive, ref, watch } from "vue";
 import type { VNodeArrayChildren } from "vue";
 import { useI18n } from "vue-i18n";
 import {
@@ -105,6 +107,8 @@ import {
   ChangeHistoryView,
   ChangeHistory_Type,
   DatabaseMetadataView,
+  changeHistory_SourceToJSON,
+  changeHistory_TypeToJSON,
 } from "@/types/proto/v1/database_service";
 import {
   extractChangeHistoryUID,
@@ -256,34 +260,37 @@ const renderSchemaVersionLabel = (option: SelectOption) => {
   const children: VNodeArrayChildren = [];
   if (index > 0) {
     children.push(
-      h(FeatureBadge, {
-        feature: "bb.feature.sync-schema-all-versions",
-        "custom-class": "mr-1",
-        instance: database.value?.instanceResource,
-      })
+      <FeatureBadge
+        feature="bb.feature.sync-schema-all-versions"
+        customClass="mr-1"
+        instance={database.value?.instanceResource}
+      />
     );
   }
-  const { version, description, updateTime } = changeHistory;
+  const { version, updateTime } = changeHistory;
 
   children.push(
-    h(
-      NEllipsis,
-      { class: "flex-1 pr-2", tooltip: false },
-      {
-        default: () => `${version} - ${description}`,
-      }
-    )
+    <NEllipsis class="flex-1 pr-2" tooltip={false}>
+      <span class="space-x-1 mr-1">
+        <NTag round size="small">
+          {changeHistory_SourceToJSON(changeHistory.source)}
+        </NTag>
+        <NTag round size="small">
+          {changeHistory_TypeToJSON(changeHistory.type)}
+        </NTag>
+      </span>
+      {version}
+    </NEllipsis>
   );
   if (updateTime) {
     children.push(
-      h(HumanizeDate, {
-        date: getDateForPbTimestamp(updateTime),
-        class: "text-control-light",
-      })
+      <HumanizeDate
+        class="text-control-light"
+        date={getDateForPbTimestamp(updateTime)}
+      />
     );
   }
-
-  return h("div", { class: "w-full flex justify-between" }, children);
+  return <div class="w-full flex justify-between">{...children}</div>;
 };
 const isMockLatestSchemaChangeHistorySelected = computed(() => {
   if (!state.changeHistoryName) return false;

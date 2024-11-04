@@ -8,9 +8,7 @@
     :striped="true"
     :row-props="rowProps"
     :checked-row-keys="selectedChangeHistoryNames"
-    @update:checked-row-keys="
-        (keys) => $emit('update:selected-change-history-names', keys as string[])
-      "
+    @update:checked-row-keys="(keys) => $emit('update:selected-change-history-names', keys as string[])"
   />
 </template>
 
@@ -21,7 +19,6 @@ import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import { RouterLink } from "vue-router";
 import { BBAvatar } from "@/bbkit";
-import { useUserStore } from "@/store";
 import { getDateForPbTimestamp } from "@/types";
 import type { ChangeHistory } from "@/types/proto/v1/database_service";
 import {
@@ -31,13 +28,13 @@ import {
 } from "@/types/proto/v1/database_service";
 import {
   extractIssueUID,
-  extractUserResourceName,
   changeHistoryLink,
   getAffectedTablesOfChangeHistory,
   getHistoryChangeType,
   humanizeDurationV1,
   getAffectedTableDisplayName,
   extractChangeHistoryUID,
+  creatorOfChangeHistory,
 } from "@/utils";
 import HumanizeDate from "../misc/HumanizeDate.vue";
 import ChangeHistoryStatusIcon from "./ChangeHistoryStatusIcon.vue";
@@ -233,11 +230,6 @@ const rowProps = (history: ChangeHistory) => {
       }
     },
   };
-};
-
-const creatorOfChangeHistory = (history: ChangeHistory) => {
-  const email = extractUserResourceName(history.creator);
-  return useUserStore().getUserByEmail(email);
 };
 
 const allowToSelectChangeHistory = (history: ChangeHistory) => {
