@@ -44,7 +44,6 @@
           </span>
         </div>
         <NPagination
-          v-if="showPagination"
           :simple="true"
           :item-count="table.getCoreRowModel().rows.length"
           :page="pageIndex + 1"
@@ -524,8 +523,6 @@ const visualizeExplain = () => {
     // nothing
   }
 };
-
-const showPagination = computed(() => data.value.length > pageSize.value);
 
 const handleChangePage = (page: number) => {
   table.setPageIndex(page - 1);
