@@ -16,7 +16,7 @@
         v-model="tabStore.tabIdList"
         item-key="id"
         animation="300"
-        class="relative flex flex-nowrap overflow-hidden h-[36px] pt-0.5 hide-scrollbar"
+        class="relative flex flex-nowrap overflow-hidden h-9 pt-0.5 hide-scrollbar"
         :class="{
           'more-left': scrollState.moreLeft,
           'more-right': scrollState.moreRight,
