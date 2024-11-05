@@ -3053,6 +3053,7 @@
     "no-logs": "No audit logs",
     "audit-log-detail": "Audit Log Details",
     "export-finished": "Export finished",
+    "export-tooltip": "Must select start time and end time within 30 days",
     "table": {
       "created-ts": "Time",
       "created-time": "Created Time",
