@@ -11,13 +11,6 @@ import (
 //go:embed plan.yaml
 var planConfigStr string
 
-const (
-	// InstanceLimitForTrial is the instance count limit for trialing.
-	InstanceLimitForTrial = 10
-	// TrialDaysLimit is the expiration limit for trialing.
-	TrialDaysLimit = 14
-)
-
 // PlanLimit is the type for plan limits.
 type PlanLimit int
 
