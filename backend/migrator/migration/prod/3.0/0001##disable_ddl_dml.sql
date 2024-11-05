@@ -13,7 +13,7 @@ INSERT INTO policy (
   'ENVIRONMENT',
   environment.id,
   false,
-  '{"enableDdl": true, "enableDml": true, "adminDataSourceRestriction": "FALLBACK"}'
+  '{"disableDdl": true, "disableDml": true, "adminDataSourceRestriction": "FALLBACK"}'
 FROM environment
 ON CONFLICT (resource_type, resource_id, type)
-DO UPDATE SET payload = policy.payload || '{"enableDdl": true, "enableDml": true}'
+DO UPDATE SET payload = policy.payload || '{"disableDdl": true, "disableDml": true}'
