@@ -72,9 +72,7 @@ func (s *DatabaseService) ListChangelogs(ctx context.Context, request *v1pb.List
 		}
 		switch expr.Key {
 		case "type":
-			for _, changeType := range strings.Split(expr.Value, " | ") {
-				find.TypeList = append(find.TypeList, changeType)
-			}
+			find.TypeList = strings.Split(expr.Value, " | ")
 		case "table":
 			resourcesFilter := expr.Value
 			find.ResourcesFilter = &resourcesFilter

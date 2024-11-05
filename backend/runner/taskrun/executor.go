@@ -71,7 +71,6 @@ type migrateContext struct {
 	sheetName string
 
 	task        *store.TaskMessage
-	taskType    storepb.ChangelogTask_Type
 	taskRunUID  int
 	taskRunName string
 	issueName   string
