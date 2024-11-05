@@ -2,23 +2,28 @@
   <NDropdown
     trigger="hover"
     :options="exportDropdownOptions"
-    :disabled="viewMode === 'DRAWER'"
+    :disabled="viewMode === 'DRAWER' || disabled"
     @select="tryExportViaDropdown"
   >
-    <NButton
-      :quaternary="size === 'tiny'"
-      :size="size"
-      :loading="state.isRequesting"
-      :disabled="state.isRequesting || disabled"
-      @click="handleClickExportButton"
-    >
-      <template #icon>
-        <heroicons-outline:download class="h-5 w-5" />
+    <NTooltip :disabled="!tooltip">
+      <template #trigger>
+        <NButton
+          :quaternary="size === 'tiny'"
+          :size="size"
+          :loading="state.isRequesting"
+          :disabled="state.isRequesting || disabled"
+          @click="handleClickExportButton"
+        >
+          <template #icon>
+            <heroicons-outline:download class="h-5 w-5" />
+          </template>
+          <span v-if="size !== 'tiny'">
+            {{ t("common.export") }}
+          </span>
+        </NButton>
       </template>
-      <span v-if="size !== 'tiny'">
-        {{ t("common.export") }}
-      </span>
-    </NButton>
+      <span class="text-sm"> {{ tooltip }} </span>
+    </NTooltip>
   </NDropdown>
 
   <Drawer v-if="viewMode === 'DRAWER'" v-model:show="state.showDrawer">
@@ -115,6 +120,7 @@ import {
   NFormItem,
   NRadio,
   NRadioGroup,
+  NTooltip,
 } from "naive-ui";
 import type { BinaryLike } from "node:crypto";
 import { computed, reactive, ref, watch } from "vue";
@@ -145,11 +151,13 @@ const props = withDefaults(
     supportFormats: ExportFormat[];
     allowSpecifyRowCount?: boolean;
     fileType: "zip" | "raw";
+    tooltip?: string;
   }>(),
   {
     size: "small",
     disabled: false,
     allowSpecifyRowCount: false,
+    tooltip: undefined,
   }
 );
 
