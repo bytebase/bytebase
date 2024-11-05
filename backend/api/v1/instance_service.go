@@ -1030,6 +1030,9 @@ func buildRoleName(b *strings.Builder, instanceID, roleName string) string {
 	if _, err := b.WriteString(common.RolePrefix); err != nil {
 		return ""
 	}
+	if _, err := b.WriteString(roleName); err != nil {
+		return ""
+	}
 	return b.String()
 }
 
