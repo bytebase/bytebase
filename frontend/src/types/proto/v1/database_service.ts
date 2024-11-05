@@ -1834,6 +1834,16 @@ export interface ListRevisionsResponse {
   nextPageToken: string;
 }
 
+export interface CreateRevisionRequest {
+  /**
+   * The parent, which owns this collection of issues.
+   * Format: projects/{project}
+   */
+  parent: string;
+  /** The revision to create. */
+  revision: Revision | undefined;
+}
+
 export interface GetRevisionRequest {
   /**
    * The name of the revision.
@@ -9935,6 +9945,82 @@ export const ListRevisionsResponse: MessageFns<ListRevisionsResponse> = {
   },
 };
 
+function createBaseCreateRevisionRequest(): CreateRevisionRequest {
+  return { parent: "", revision: undefined };
+}
+
+export const CreateRevisionRequest: MessageFns<CreateRevisionRequest> = {
+  encode(message: CreateRevisionRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.parent !== "") {
+      writer.uint32(10).string(message.parent);
+    }
+    if (message.revision !== undefined) {
+      Revision.encode(message.revision, writer.uint32(18).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): CreateRevisionRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCreateRevisionRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.parent = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.revision = Revision.decode(reader, reader.uint32());
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CreateRevisionRequest {
+    return {
+      parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
+      revision: isSet(object.revision) ? Revision.fromJSON(object.revision) : undefined,
+    };
+  },
+
+  toJSON(message: CreateRevisionRequest): unknown {
+    const obj: any = {};
+    if (message.parent !== "") {
+      obj.parent = message.parent;
+    }
+    if (message.revision !== undefined) {
+      obj.revision = Revision.toJSON(message.revision);
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<CreateRevisionRequest>): CreateRevisionRequest {
+    return CreateRevisionRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<CreateRevisionRequest>): CreateRevisionRequest {
+    const message = createBaseCreateRevisionRequest();
+    message.parent = object.parent ?? "";
+    message.revision = (object.revision !== undefined && object.revision !== null)
+      ? Revision.fromPartial(object.revision)
+      : undefined;
+    return message;
+  },
+};
+
 function createBaseGetRevisionRequest(): GetRevisionRequest {
   return { name: "" };
 }
@@ -12555,6 +12641,67 @@ export const DatabaseServiceDefinition = {
               47,
               42,
               125,
+            ]),
+          ],
+        },
+      },
+    },
+    createRevision: {
+      name: "CreateRevision",
+      requestType: CreateRevisionRequest,
+      requestStream: false,
+      responseType: Revision,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          578365826: [
+            new Uint8Array([
+              45,
+              58,
+              8,
+              114,
+              101,
+              118,
+              105,
+              115,
+              105,
+              111,
+              110,
+              34,
+              33,
+              47,
+              118,
+              49,
+              47,
+              123,
+              112,
+              97,
+              114,
+              101,
+              110,
+              116,
+              61,
+              112,
+              114,
+              111,
+              106,
+              101,
+              99,
+              116,
+              115,
+              47,
+              42,
+              125,
+              47,
+              114,
+              101,
+              118,
+              105,
+              115,
+              105,
+              111,
+              110,
+              115,
             ]),
           ],
         },
