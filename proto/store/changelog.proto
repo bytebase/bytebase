@@ -12,9 +12,12 @@ message ChangelogPayload {
 }
 
 message ChangelogTask {
+  // Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskruns/{taskrun}
   string task_run = 1;
+  // Format: projects/{project}/issues/{issue}
   string issue = 2;
 
+  // The revision uid.
   // optional
   int64 revision = 3;
 
@@ -37,6 +40,16 @@ message ChangelogTask {
   string sheet = 8;
 
   string version = 9;
+
+  enum Type {
+    TYPE_UNSPECIFIED = 0;
+    BASELINE = 1;
+    MIGRATE = 2;
+    MIGRATE_SDL = 3;
+    MIGRATE_GHOST = 4;
+    DATA = 6;
+  }
+  Type type = 10;
 }
 
 message ChangelogRevision {

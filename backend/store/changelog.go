@@ -28,6 +28,9 @@ type FindChangelogMessage struct {
 	UID         *int64
 	DatabaseUID *int
 
+	TypeList        []string
+	ResourcesFilter *string
+
 	Limit  *int
 	Offset *int
 }
@@ -128,6 +131,19 @@ func (s *Store) ListChangelogs(ctx context.Context, find *FindChangelogMessage) 
 	}
 	if v := find.DatabaseUID; v != nil {
 		where, args = append(where, fmt.Sprintf("changelog.database_id = $%d", len(args)+1)), append(args, *v)
+	}
+	if v := find.ResourcesFilter; v != nil {
+		text, err := generateResourceFilter(*v, "(changelog.payload->'task')")
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to generate resource filter from %q", *v)
+		}
+		if text != "" {
+			where = append(where, text)
+		}
+	}
+	if len(find.TypeList) > 0 {
+		where = append(where, fmt.Sprintf("changelog.payload->'task'->>'type' = ANY($%d)", len(args)+1))
+		args = append(args, find.TypeList)
 	}
 
 	query := fmt.Sprintf(`

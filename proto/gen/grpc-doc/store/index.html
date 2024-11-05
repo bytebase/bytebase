@@ -606,6 +606,10 @@
                   <a href="#bytebase.store.ChangelogTask.Status"><span class="badge">E</span>ChangelogTask.Status</a>
                 </li>
               
+                <li>
+                  <a href="#bytebase.store.ChangelogTask.Type"><span class="badge">E</span>ChangelogTask.Type</a>
+                </li>
+              
               
               
             </ul>
@@ -5311,21 +5315,22 @@ Example: projects/project-id/branches/branch-id. </p></td>
                   <td>task_run</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskruns/{taskrun} </p></td>
                 </tr>
               
                 <tr>
                   <td>issue</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>Format: projects/{project}/issues/{issue} </p></td>
                 </tr>
               
                 <tr>
                   <td>revision</td>
                   <td><a href="#int64">int64</a></td>
                   <td></td>
-                  <td><p>optional </p></td>
+                  <td><p>The revision uid.
+optional </p></td>
                 </tr>
               
                 <tr>
@@ -5367,6 +5372,13 @@ Format: projects/{project}/sheets/{sheet} </p></td>
                 <tr>
                   <td>version</td>
                   <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>type</td>
+                  <td><a href="#bytebase.store.ChangelogTask.Type">ChangelogTask.Type</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
@@ -5438,6 +5450,53 @@ Format: projects/{project}/sheets/{sheet} </p></td>
               <tr>
                 <td>FAILED</td>
                 <td>3</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="bytebase.store.ChangelogTask.Type">ChangelogTask.Type</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>TYPE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>BASELINE</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>MIGRATE</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>MIGRATE_SDL</td>
+                <td>3</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>MIGRATE_GHOST</td>
+                <td>4</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>DATA</td>
+                <td>6</td>
                 <td><p></p></td>
               </tr>
             
