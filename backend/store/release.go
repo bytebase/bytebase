@@ -41,7 +41,6 @@ type UpdateReleaseMessage struct {
 	Payload *storepb.ReleasePayload
 }
 
-// TODO(p0ny): enforce file order by version.
 func (s *Store) CreateRelease(ctx context.Context, release *ReleaseMessage, creatorUID int) (*ReleaseMessage, error) {
 	query := `
 		INSERT INTO release (
