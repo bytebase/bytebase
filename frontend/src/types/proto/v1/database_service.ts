@@ -1835,10 +1835,7 @@ export interface ListRevisionsResponse {
 }
 
 export interface CreateRevisionRequest {
-  /**
-   * The parent, which owns this collection of issues.
-   * Format: projects/{project}
-   */
+  /** Format: instances/{instance}/databases/{database} */
   parent: string;
   /** The revision to create. */
   revision: Revision | undefined;
@@ -12656,7 +12653,7 @@ export const DatabaseServiceDefinition = {
         _unknownFields: {
           578365826: [
             new Uint8Array([
-              45,
+              58,
               58,
               8,
               114,
@@ -12668,7 +12665,7 @@ export const DatabaseServiceDefinition = {
               111,
               110,
               34,
-              33,
+              46,
               47,
               118,
               49,
@@ -12681,13 +12678,26 @@ export const DatabaseServiceDefinition = {
               110,
               116,
               61,
-              112,
-              114,
-              111,
-              106,
-              101,
-              99,
+              105,
+              110,
+              115,
               116,
+              97,
+              110,
+              99,
+              101,
+              115,
+              47,
+              42,
+              47,
+              100,
+              97,
+              116,
+              97,
+              98,
+              97,
+              115,
+              101,
               115,
               47,
               42,

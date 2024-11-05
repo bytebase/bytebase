@@ -6281,8 +6281,7 @@ column masking data and global masking rules. </p></td>
                   <td>parent</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The parent, which owns this collection of issues.
-Format: projects/{project} </p></td>
+                  <td><p>Format: instances/{instance}/databases/{database} </p></td>
                 </tr>
               
                 <tr>
@@ -10099,7 +10098,7 @@ The API will default to the BASIC view.</p></td>
               <tr>
                 <td>CreateRevision</td>
                 <td>POST</td>
-                <td>/v1/{parent=projects/*}/revisions</td>
+                <td>/v1/{parent=instances/*/databases/*}/revisions</td>
                 <td>revision</td>
               </tr>
               

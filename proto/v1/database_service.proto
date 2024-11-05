@@ -171,7 +171,7 @@ service DatabaseService {
   }
   rpc CreateRevision(CreateRevisionRequest) returns (Revision) {
     option (google.api.http) = {
-      post: "/v1/{parent=projects/*}/revisions"
+      post: "/v1/{parent=instances/*/databases/*}/revisions"
       body: "revision"
     };
   }
@@ -1477,11 +1477,10 @@ message ListRevisionsResponse {
 }
 
 message CreateRevisionRequest {
-  // The parent, which owns this collection of issues.
-  // Format: projects/{project}
+  // Format: instances/{instance}/databases/{database}
   string parent = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference) = {type: "bytebase.com/Project"}
+    (google.api.resource_reference) = {type: "bytebase.com/Database"}
   ];
 
   // The revision to create.

@@ -1924,7 +1924,7 @@ ColumnMetadata is the metadata for columns.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent, which owns this collection of issues. Format: projects/{project} |
+| parent | [string](#string) |  | Format: instances/{instance}/databases/{database} |
 | revision | [Revision](#bytebase-v1-Revision) |  | The revision to create. |
 
 
