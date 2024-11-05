@@ -2,7 +2,6 @@ package v1
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"strings"
 
@@ -968,6 +967,24 @@ func getInstanceMessage(ctx context.Context, stores *store.Store, name string) (
 	return instance, nil
 }
 
+// buildInstanceName builds the instance name with the given instance ID.
+func buildInstanceName(instanceID string) string {
+	var b strings.Builder
+	b.Grow(len(common.InstanceNamePrefix) + len(instanceID))
+	_, _ = b.WriteString(common.InstanceNamePrefix)
+	_, _ = b.WriteString(instanceID)
+	return b.String()
+}
+
+// buildEnvironmentName builds the environment name with the given environment ID.
+func buildEnvironmentName(environmentID string) string {
+	var b strings.Builder
+	b.Grow(len("environments/") + len(environmentID))
+	_, _ = b.WriteString("environments/")
+	_, _ = b.WriteString(environmentID)
+	return b.String()
+}
+
 func convertToInstance(instance *store.InstanceMessage) (*v1pb.Instance, error) {
 	engine := convertToEngine(instance.Engine)
 	dataSourceList, err := convertToV1DataSources(instance.DataSources)
@@ -976,25 +993,41 @@ func convertToInstance(instance *store.InstanceMessage) (*v1pb.Instance, error) 
 	}
 
 	return &v1pb.Instance{
-		Name:          fmt.Sprintf("%s%s", common.InstanceNamePrefix, instance.ResourceID),
+		Name:          buildInstanceName(instance.ResourceID),
 		Title:         instance.Title,
 		Engine:        engine,
 		EngineVersion: instance.EngineVersion,
 		ExternalLink:  instance.ExternalLink,
 		DataSources:   dataSourceList,
 		State:         convertDeletedToState(instance.Deleted),
-		Environment:   fmt.Sprintf("environments/%s", instance.EnvironmentID),
+		Environment:   buildEnvironmentName(instance.EnvironmentID),
 		Activation:    instance.Activation,
 		Options:       convertToInstanceOptions(instance.Options),
 		Roles:         convertToInstanceRoles(instance, instance.Metadata.GetRoles()),
 	}, nil
 }
 
+// buildRoleName builds the role name with the given instance ID and role name.
+func buildRoleName(b *strings.Builder, instanceID, roleName string) string {
+	b.Reset()
+	_, _ = b.WriteString(common.InstanceNamePrefix)
+	_, _ = b.WriteString(instanceID)
+	_, _ = b.WriteString("/")
+	_, _ = b.WriteString(common.RolePrefix)
+	_, _ = b.WriteString(roleName)
+	return b.String()
+}
+
 func convertToInstanceRoles(instance *store.InstanceMessage, roles []*storepb.InstanceRole) []*v1pb.InstanceRole {
 	var v1Roles []*v1pb.InstanceRole
+	var b strings.Builder
+
+	// preallocate memory for the builder
+	b.Grow(len(common.InstanceNamePrefix) + len(instance.ResourceID) + 1 + len(common.RolePrefix) + 20)
+
 	for _, role := range roles {
 		v1Roles = append(v1Roles, &v1pb.InstanceRole{
-			Name:      fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, instance.ResourceID, common.RolePrefix, role.Name),
+			Name:      buildRoleName(&b, instance.ResourceID, role.Name),
 			RoleName:  role.Name,
 			Attribute: role.Attribute,
 		})
