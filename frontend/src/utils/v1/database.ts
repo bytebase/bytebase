@@ -5,8 +5,8 @@ import {
   databaseNamePrefix,
   instanceNamePrefix,
 } from "@/store/modules/v1/common";
-import { UNKNOWN_ID } from "@/types";
-import type { ComposedDatabase } from "@/types";
+import { QueryPermissionQueryAny, UNKNOWN_ID } from "@/types";
+import type { ComposedDatabase, QueryPermission } from "@/types";
 import { State } from "@/types/proto/v1/common";
 import {
   hasPermissionToCreateChangeDatabaseIssue,
@@ -88,6 +88,7 @@ export const isDatabaseV1Alterable = (database: ComposedDatabase): boolean => {
 // isDatabaseV1Queryable checks if database allowed to query in SQL Editor.
 export const isDatabaseV1Queryable = (
   database: ComposedDatabase,
+  permissions: QueryPermission[] = QueryPermissionQueryAny,
   schema?: string,
   table?: string
 ): boolean => {
@@ -97,11 +98,11 @@ export const isDatabaseV1Queryable = (
     return true;
   }
 
-  if (hasWorkspacePermissionV2("bb.databases.query")) {
+  if (permissions.some((permission) => hasWorkspacePermissionV2(permission))) {
     return true;
   }
 
-  if (checkQuerierPermission(database, schema, table)) {
+  if (checkQuerierPermission(database, permissions, schema, table)) {
     return true;
   }
 
