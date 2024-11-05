@@ -122,7 +122,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 // SKIP_CHECK_THRESHOLD is the MaxSheetCheckSize in the backend.
-const SKIP_CHECK_THRESHOLD = 1024 * 1024;
+const SKIP_CHECK_THRESHOLD = 2 * 1024 * 1024;
 const isRunning = ref(false);
 const showDetailPanel = ref(false);
 const rawAdvices = ref<Advice[]>();
