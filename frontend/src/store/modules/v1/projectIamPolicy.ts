@@ -158,8 +158,7 @@ const checkProjectIAMPolicyWithExpr = (
     const permissions =
       roleStore.getRoleByName(binding.role)?.permissions || [];
 
-    for (let i = 0; i < permissions.length; i++) {
-      const permission = permissions[i];
+    for (const permission of permissions) {
       if (requiredPermissions.includes(permission as QueryPermission)) {
         // If binding expr check passes, then return true.
         if (bindingExprCheck(binding.parsedExpr)) {
