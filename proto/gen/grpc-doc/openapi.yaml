@@ -14110,6 +14110,10 @@ components:
         Subscription:
             type: object
             properties:
+                seatCount:
+                    readOnly: true
+                    type: integer
+                    format: int32
                 instanceCount:
                     readOnly: true
                     type: integer

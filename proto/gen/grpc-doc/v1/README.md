@@ -4067,6 +4067,7 @@ ANY means approving any node will proceed.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
+| seat_count | [int32](#int32) |  |  |
 | instance_count | [int32](#int32) |  |  |
 | expires_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | started_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
