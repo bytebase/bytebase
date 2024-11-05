@@ -65,7 +65,7 @@ message SearchAuditLogsRequest {
   // The maximum number of logs to return.
   // The service may return fewer than this value.
   // If unspecified, at most 100 log entries will be returned.
-  // The maximum value is 1000; values above 1000 will be coerced to 1000.
+  // The maximum value is 10000; values above 10000 will be coerced to 10000.
   int32 page_size = 3;
 
   // A page token, received from a previous `SearchLogs` call.
@@ -109,7 +109,7 @@ message ExportAuditLogsRequest {
   // The maximum number of logs to return.
   // The service may return fewer than this value.
   // If unspecified, at most 100 log entries will be returned.
-  // The maximum value is 1000; values above 1000 will be coerced to 1000.
+  // The maximum value is 10000; values above 10000 will be coerced to 10000.
   int32 page_size = 5;
 
   // A page token, received from a previous `ExportAuditLogs` call.

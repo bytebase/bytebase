@@ -113,7 +113,7 @@ type SearchAuditLogsRequest struct {
 	// The maximum number of logs to return.
 	// The service may return fewer than this value.
 	// If unspecified, at most 100 log entries will be returned.
-	// The maximum value is 1000; values above 1000 will be coerced to 1000.
+	// The maximum value is 10000; values above 10000 will be coerced to 10000.
 	PageSize int32 `protobuf:"varint,3,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
 	// A page token, received from a previous `SearchLogs` call.
 	// Provide this to retrieve the subsequent page.
@@ -265,7 +265,7 @@ type ExportAuditLogsRequest struct {
 	// The maximum number of logs to return.
 	// The service may return fewer than this value.
 	// If unspecified, at most 100 log entries will be returned.
-	// The maximum value is 1000; values above 1000 will be coerced to 1000.
+	// The maximum value is 10000; values above 10000 will be coerced to 10000.
 	PageSize int32 `protobuf:"varint,5,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
 	// A page token, received from a previous `ExportAuditLogs` call.
 	// Provide this to retrieve the subsequent page.

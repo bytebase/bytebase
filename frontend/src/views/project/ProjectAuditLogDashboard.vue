@@ -14,7 +14,8 @@
             ExportFormat.JSON,
             ExportFormat.XLSX,
           ]"
-          :disabled="!hasAuditLogFeature"
+          :tooltip="disableExportTip"
+          :disabled="!hasAuditLogFeature || !!disableExportTip"
           @export="handleExport"
         />
       </template>
@@ -24,7 +25,7 @@
       v-if="hasAuditLogFeature"
       :search-audit-logs="searchAuditLogs"
       :session-key="`bb.page-audit-log-table.settings-audit-log-v1-table.${projectId}`"
-      :page-size="10"
+      :page-size="1000"
     >
       <template #table="{ list }">
         <AuditLogDataTable
@@ -96,6 +97,23 @@ const searchAuditLogs = computed((): SearchAuditLogsParams => {
   };
 });
 
+const disableExportTip = computed(() => {
+  if (
+    !searchAuditLogs.value.createdTsAfter ||
+    !searchAuditLogs.value.createdTsBefore
+  ) {
+    return t("audit-log.export-tooltip");
+  }
+  if (
+    searchAuditLogs.value.createdTsBefore -
+      searchAuditLogs.value.createdTsAfter >
+    30 * 24 * 60 * 60 * 1000
+  ) {
+    return t("audit-log.export-tooltip");
+  }
+  return "";
+});
+
 const handleExport = async (
   options: ExportOption,
   callback: (content: BinaryLike | Blob, filename: string) => void
@@ -105,10 +123,11 @@ const handleExport = async (
 
   while (i === 0 || pageToken !== "") {
     i++;
-    const { content, nextPageToken } = await auditLogStore.exportAuditLogs(
-      searchAuditLogs.value,
-      options.format
-    );
+    const { content, nextPageToken } = await auditLogStore.exportAuditLogs({
+      search: searchAuditLogs.value,
+      format: options.format,
+      pageSize: 10000,
+    });
     pageToken = nextPageToken;
     callback(
       content,
