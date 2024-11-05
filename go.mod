@@ -7,7 +7,7 @@ go 1.23.2
 godebug x509negativeserial=1
 
 require (
-	cloud.google.com/go/bigquery v1.63.1
+	cloud.google.com/go/bigquery v1.64.0
 	cloud.google.com/go/cloudsqlconn v1.12.1
 	cloud.google.com/go/secretmanager v1.14.2
 	cloud.google.com/go/spanner v1.70.0
