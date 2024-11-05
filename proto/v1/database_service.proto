@@ -169,6 +169,12 @@ service DatabaseService {
     option (google.api.http) = {get: "/v1/{name=instances/*/databases/*/revisions/*}"};
     option (google.api.method_signature) = "name";
   }
+  rpc CreateRevision(CreateRevisionRequest) returns (Revision) {
+    option (google.api.http) = {
+      post: "/v1/{parent=instances/*/databases/*}/revisions"
+      body: "revision"
+    };
+  }
   rpc DeleteRevision(DeleteRevisionRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {delete: "/v1/{name=instances/*/databases/*/revisions/*}"};
     option (google.api.method_signature) = "name";
@@ -1468,6 +1474,17 @@ message ListRevisionsResponse {
   // A token, which can be sent as `page_token` to retrieve the next page.
   // If this field is omitted, there are no subsequent pages.
   string next_page_token = 2;
+}
+
+message CreateRevisionRequest {
+  // Format: instances/{instance}/databases/{database}
+  string parent = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Database"}
+  ];
+
+  // The revision to create.
+  Revision revision = 2 [(google.api.field_behavior) = REQUIRED];
 }
 
 message GetRevisionRequest {
