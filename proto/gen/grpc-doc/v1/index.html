@@ -483,6 +483,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.CreateRevisionRequest"><span class="badge">M</span>CreateRevisionRequest</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.Database"><span class="badge">M</span>Database</a>
                 </li>
               
@@ -6263,6 +6267,37 @@ column masking data and global masking rules. </p></td>
 
         
       
+        <h3 id="bytebase.v1.CreateRevisionRequest">CreateRevisionRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>parent</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Format: instances/{instance}/databases/{database} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>revision</td>
+                  <td><a href="#bytebase.v1.Revision">Revision</a></td>
+                  <td></td>
+                  <td><p>The revision to create. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.Database">Database</h3>
         <p></p>
 
@@ -9809,6 +9844,13 @@ The API will default to the BASIC view.</p></td>
               </tr>
             
               <tr>
+                <td>CreateRevision</td>
+                <td><a href="#bytebase.v1.CreateRevisionRequest">CreateRevisionRequest</a></td>
+                <td><a href="#bytebase.v1.Revision">Revision</a></td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
                 <td>DeleteRevision</td>
                 <td><a href="#bytebase.v1.DeleteRevisionRequest">DeleteRevisionRequest</a></td>
                 <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
@@ -10048,6 +10090,16 @@ The API will default to the BASIC view.</p></td>
                 <td>GET</td>
                 <td>/v1/{name=instances/*/databases/*/revisions/*}</td>
                 <td></td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>CreateRevision</td>
+                <td>POST</td>
+                <td>/v1/{parent=instances/*/databases/*}/revisions</td>
+                <td>revision</td>
               </tr>
               
             
