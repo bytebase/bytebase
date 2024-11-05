@@ -1,3 +1,237 @@
+- description: DML
+  statement: INSERT INTO t (a, b, c, d) VALUES (1, 2, 3, 4);
+  defaultDatabase: db
+  metadata: |-
+    {
+      "name":  "db",
+      "schemas":  [
+        {
+          "name": "public",
+          "tables":  [
+            {
+              "name":  "t1",
+              "columns":  [
+                {
+                  "name":  "a"
+                },
+                {
+                  "name":  "b"
+                },
+                {
+                  "name": "c"
+                }
+              ]
+            },
+            {
+              "name":  "t2",
+              "columns":  [
+                {
+                  "name":  "c"
+                },
+                {
+                  "name":  "d"
+                },
+                {
+                  "name":  "e"
+                }
+              ]
+            }
+          ],
+          "functions": [
+            {
+              "name": "if_query",
+              "definition": "CREATE OR REPLACE FUNCTION public.IF_QUERY() RETURNS TABLE(x int, xx int, xxx int) LANGUAGE plpgsql AS $function$ declare data_count int; BEGIN data_count := (select count(*) from public.t where a = 1); if (count(data_count) > 0) then RETURN QUERY SELECT a, b, c FROM t1; else RETURN QUERY SELECT c, d, e FROM t2; end if; END; $function$;"
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 5
+    results: []
+    sourcecolumns: []
+- description: DDL
+  statement: create table t (a int, b int, c int, d int);
+  defaultDatabase: db
+  metadata: |-
+    {
+      "name":  "db",
+      "schemas":  [
+        {
+          "name": "public",
+          "tables":  [
+            {
+              "name":  "t1",
+              "columns":  [
+                {
+                  "name":  "a"
+                },
+                {
+                  "name":  "b"
+                },
+                {
+                  "name": "c"
+                }
+              ]
+            },
+            {
+              "name":  "t2",
+              "columns":  [
+                {
+                  "name":  "c"
+                },
+                {
+                  "name":  "d"
+                },
+                {
+                  "name":  "e"
+                }
+              ]
+            }
+          ],
+          "functions": [
+            {
+              "name": "if_query",
+              "definition": "CREATE OR REPLACE FUNCTION public.IF_QUERY() RETURNS TABLE(x int, xx int, xxx int) LANGUAGE plpgsql AS $function$ declare data_count int; BEGIN data_count := (select count(*) from public.t where a = 1); if (count(data_count) > 0) then RETURN QUERY SELECT a, b, c FROM t1; else RETURN QUERY SELECT c, d, e FROM t2; end if; END; $function$;"
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 4
+    results: []
+    sourcecolumns: []
+- description: Explain
+  statement: EXPLAIN SELECT * FROM t;
+  defaultDatabase: db
+  metadata: |-
+    {
+      "name":  "db",
+      "schemas":  [
+        {
+          "name": "public",
+          "tables":  [
+            {
+              "name":  "t1",
+              "columns":  [
+                {
+                  "name":  "a"
+                },
+                {
+                  "name":  "b"
+                },
+                {
+                  "name": "c"
+                }
+              ]
+            },
+            {
+              "name":  "t2",
+              "columns":  [
+                {
+                  "name":  "c"
+                },
+                {
+                  "name":  "d"
+                },
+                {
+                  "name":  "e"
+                }
+              ]
+            }
+          ],
+          "functions": [
+            {
+              "name": "if_query",
+              "definition": "CREATE OR REPLACE FUNCTION public.IF_QUERY() RETURNS TABLE(x int, xx int, xxx int) LANGUAGE plpgsql AS $function$ declare data_count int; BEGIN data_count := (select count(*) from public.t where a = 1); if (count(data_count) > 0) then RETURN QUERY SELECT a, b, c FROM t1; else RETURN QUERY SELECT c, d, e FROM t2; end if; END; $function$;"
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 2
+    results: []
+    sourcecolumns: []
+- description: Explain Analyze
+  statement: EXPLAIN ANALYZE SELECT * FROM t1;
+  defaultDatabase: db
+  metadata: |-
+    {
+      "name":  "db",
+      "schemas":  [
+        {
+          "name": "public",
+          "tables":  [
+            {
+              "name":  "t1",
+              "columns":  [
+                {
+                  "name":  "a"
+                },
+                {
+                  "name":  "b"
+                },
+                {
+                  "name": "c"
+                }
+              ]
+            },
+            {
+              "name":  "t2",
+              "columns":  [
+                {
+                  "name":  "c"
+                },
+                {
+                  "name":  "d"
+                },
+                {
+                  "name":  "e"
+                }
+              ]
+            }
+          ],
+          "functions": [
+            {
+              "name": "if_query",
+              "definition": "CREATE OR REPLACE FUNCTION public.IF_QUERY() RETURNS TABLE(x int, xx int, xxx int) LANGUAGE plpgsql AS $function$ declare data_count int; BEGIN data_count := (select count(*) from public.t where a = 1); if (count(data_count) > 0) then RETURN QUERY SELECT a, b, c FROM t1; else RETURN QUERY SELECT c, d, e FROM t2; end if; END; $function$;"
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 1
+    results:
+        - name: a
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: public
+              table: t1
+              column: a
+        - name: b
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: public
+              table: t1
+              column: b
+        - name: c
+          sourcecolumns:
+            - server: ""
+              database: db
+              schema: public
+              table: t1
+              column: c
+    sourcecolumns:
+        - server: ""
+          database: db
+          schema: public
+          table: t1
+          column: ""
 - description: Function with if-else
   statement: SELECT * from IF_QUERY();
   defaultDatabase: db
@@ -47,7 +281,7 @@
       ]
     }
   querySpan:
-    type: 0
+    type: 1
     results:
         - name: x
           sourcecolumns:
@@ -139,7 +373,7 @@
       ]
     }
   querySpan:
-    type: 0
+    type: 1
     results:
         - name: plpgsql_t
           sourcecolumns:
@@ -211,7 +445,7 @@
       ]
     }
   querySpan:
-    type: 0
+    type: 1
     results:
         - name: plpgsql_t
           sourcecolumns:
@@ -642,7 +876,7 @@
       ]
     }
   querySpan:
-    type: 0
+    type: 1
     results:
         - name: month
           sourcecolumns:
@@ -735,7 +969,7 @@
       ]
     }
   querySpan:
-    type: 0
+    type: 1
     results:
         - name: plpgsql_t
           sourcecolumns:
@@ -778,7 +1012,7 @@
       ]
     }
   querySpan:
-    type: 0
+    type: 1
     results:
         - name: ?column?
           sourcecolumns:
@@ -816,7 +1050,7 @@
       ]
     }
   querySpan:
-    type: 0
+    type: 1
     results:
         - name: ?column?
           sourcecolumns:
@@ -854,7 +1088,7 @@
       ]
     }
   querySpan:
-    type: 0
+    type: 1
     results:
         - name: jsonb_each
           sourcecolumns:
@@ -892,7 +1126,7 @@
       ]
     }
   querySpan:
-    type: 0
+    type: 1
     results:
         - name: a
           sourcecolumns:
@@ -944,7 +1178,7 @@
       ]
     }
   querySpan:
-    type: 0
+    type: 1
     results:
         - name: to_jsonb
           sourcecolumns:
@@ -982,7 +1216,7 @@
       ]
     }
   querySpan:
-    type: 0
+    type: 1
     results:
         - name: row_to_json
           sourcecolumns:
@@ -1020,7 +1254,7 @@
       ]
     }
   querySpan:
-    type: 0
+    type: 1
     results:
         - name: unnest
           sourcecolumns: []
@@ -1050,7 +1284,7 @@
       ]
     }
   querySpan:
-    type: 0
+    type: 1
     results:
         - name: unnest
           sourcecolumns: []
@@ -1078,7 +1312,7 @@
       ]
     }
   querySpan:
-    type: 0
+    type: 1
     results:
         - name: generate_series
           sourcecolumns: []
@@ -1106,7 +1340,7 @@
       ]
     }
   querySpan:
-    type: 0
+    type: 1
     results:
         - name: generate_subscripts
           sourcecolumns: []
@@ -1134,7 +1368,7 @@
       ]
     }
   querySpan:
-    type: 0
+    type: 1
     results:
         - name: a
           sourcecolumns:
@@ -1193,7 +1427,7 @@
       ]
     }
   querySpan:
-    type: 0
+    type: 1
     results:
         - name: a
           sourcecolumns:
@@ -1247,7 +1481,7 @@
       ]
     }
   querySpan:
-    type: 0
+    type: 1
     results:
         - name: a
           sourcecolumns:
@@ -1295,7 +1529,7 @@
       ]
     }
   querySpan:
-    type: 0
+    type: 1
     results:
         - name: a
           sourcecolumns:
@@ -1339,7 +1573,7 @@
       ]
     }
   querySpan:
-    type: 0
+    type: 1
     results:
         - name: a
           sourcecolumns:
@@ -1377,7 +1611,7 @@
       ]
     }
   querySpan:
-    type: 0
+    type: 2
     results: []
     sourcecolumns: []
 - description: Test for simple select const
@@ -1403,7 +1637,7 @@
       ]
     }
   querySpan:
-    type: 0
+    type: 1
     results:
         - name: ?column?
           sourcecolumns: []
@@ -1440,7 +1674,7 @@
       ]
     }
   querySpan:
-    type: 0
+    type: 1
     results:
         - name: a
           sourcecolumns:
@@ -1515,7 +1749,7 @@
       ]
     }
   querySpan:
-    type: 0
+    type: 1
     results:
         - name: a
           sourcecolumns:
@@ -1583,7 +1817,7 @@
       ]
     }
   querySpan:
-    type: 0
+    type: 1
     results:
         - name: a
           sourcecolumns:
@@ -1651,7 +1885,7 @@
       ]
     }
   querySpan:
-    type: 0
+    type: 1
     results:
         - name: col_1
           sourcecolumns: []
@@ -1712,7 +1946,7 @@
       ]
     }
   querySpan:
-    type: 0
+    type: 1
     results:
         - name: ?column?
           sourcecolumns: []
@@ -1765,7 +1999,7 @@
       ]
     }
   querySpan:
-    type: 0
+    type: 1
     results:
         - name: city
           sourcecolumns:
@@ -1819,7 +2053,7 @@
       ]
     }
   querySpan:
-    type: 0
+    type: 1
     results:
         - name: max
           sourcecolumns:
@@ -1929,7 +2163,7 @@
       ]
     }
   querySpan:
-    type: 0
+    type: 1
     results:
         - name: a
           sourcecolumns:
@@ -1997,7 +2231,7 @@
       ]
     }
   querySpan:
-    type: 0
+    type: 1
     results:
         - name: a
           sourcecolumns:
@@ -2086,7 +2320,7 @@
       ]
     }
   querySpan:
-    type: 0
+    type: 1
     results:
         - name: a
           sourcecolumns:
@@ -2154,7 +2388,7 @@
       ]
     }
   querySpan:
-    type: 0
+    type: 1
     results:
         - name: max
           sourcecolumns:
@@ -2201,7 +2435,7 @@
       ]
     }
   querySpan:
-    type: 0
+    type: 1
     results:
         - name: d
           sourcecolumns:
@@ -2269,7 +2503,7 @@
       ]
     }
   querySpan:
-    type: 0
+    type: 1
     results:
         - name: cc1
           sourcecolumns:
@@ -2352,7 +2586,7 @@
       ]
     }
   querySpan:
-    type: 0
+    type: 1
     results:
         - name: c1
           sourcecolumns:
@@ -2411,6 +2645,6 @@
       ]
     }
   querySpan:
-    type: 0
+    type: 3
     results: []
     sourcecolumns: []
