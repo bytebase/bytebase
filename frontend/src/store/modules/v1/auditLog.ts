@@ -39,8 +39,6 @@ export const useAuditLogStore = defineStore("audit_log", () => {
   const auditLogList = reactive(new Map<string, AuditLog[]>());
 
   const fetchAuditLogs = async (search: SearchAuditLogsParams) => {
-    console.log("fetchAuditLogs");
-    console.log(search);
     const resp = await auditLogServiceClient.searchAuditLogs({
       parent: search.parent,
       filter: buildFilter(search),
