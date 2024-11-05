@@ -25,10 +25,7 @@
       >
         <template v-if="isCreating">
           <template v-if="allowEditStatementWhenCreating">
-            <FormatOnSaveCheckbox
-              v-model:value="formatOnSave"
-              :language="language"
-            />
+            <EditorActionPopover />
             <SQLUploadButton
               size="tiny"
               :loading="state.isUploadingFile"
@@ -71,10 +68,7 @@
             </template>
           </template>
           <template v-else>
-            <FormatOnSaveCheckbox
-              v-model:value="formatOnSave"
-              :language="language"
-            />
+            <EditorActionPopover />
             <SQLUploadButton
               size="tiny"
               :loading="state.isUploadingFile"
@@ -258,7 +252,8 @@ import {
   sheetNameOfTaskV1,
 } from "@/utils";
 import { useSQLAdviceMarkers } from "../useSQLAdviceMarkers";
-import FormatOnSaveCheckbox from "./FormatOnSaveCheckbox.vue";
+import EditorActionPopover from "./EditorActionPopover.vue";
+import { provideEditorContext } from "./context";
 import type { EditState } from "./useTempEditState";
 import { useTempEditState } from "./useTempEditState";
 
@@ -275,14 +270,8 @@ const props = defineProps<{
 const { t } = useI18n();
 const route = useRoute();
 const context = useIssueContext();
-const {
-  events,
-  isCreating,
-  issue,
-  selectedTask,
-  formatOnSave,
-  getPlanCheckRunsForTask,
-} = context;
+const { events, isCreating, issue, selectedTask, getPlanCheckRunsForTask } =
+  context;
 const project = computed(() => issue.value.projectEntity);
 const dialog = useDialog();
 const editorContainerElRef = ref<HTMLElement>();
@@ -722,6 +711,11 @@ watch(isCreating, (curr, prev) => {
   if (!curr && prev) {
     state.isEditing = false;
   }
+});
+
+provideEditorContext({
+  statement: computed(() => state.statement),
+  setStatement: handleStatementChange,
 });
 
 defineExpose({
