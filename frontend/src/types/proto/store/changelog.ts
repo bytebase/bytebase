@@ -17,9 +17,14 @@ export interface ChangelogPayload {
 }
 
 export interface ChangelogTask {
+  /** Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskruns/{taskrun} */
   taskRun: string;
+  /** Format: projects/{project}/issues/{issue} */
   issue: string;
-  /** optional */
+  /**
+   * The revision uid.
+   * optional
+   */
   revision: Long;
   changedResources: ChangedResources | undefined;
   status: ChangelogTask_Status;
@@ -31,6 +36,7 @@ export interface ChangelogTask {
    */
   sheet: string;
   version: string;
+  type: ChangelogTask_Type;
 }
 
 export enum ChangelogTask_Status {
@@ -89,6 +95,83 @@ export function changelogTask_StatusToNumber(object: ChangelogTask_Status): numb
     case ChangelogTask_Status.FAILED:
       return 3;
     case ChangelogTask_Status.UNRECOGNIZED:
+    default:
+      return -1;
+  }
+}
+
+export enum ChangelogTask_Type {
+  TYPE_UNSPECIFIED = "TYPE_UNSPECIFIED",
+  BASELINE = "BASELINE",
+  MIGRATE = "MIGRATE",
+  MIGRATE_SDL = "MIGRATE_SDL",
+  MIGRATE_GHOST = "MIGRATE_GHOST",
+  DATA = "DATA",
+  UNRECOGNIZED = "UNRECOGNIZED",
+}
+
+export function changelogTask_TypeFromJSON(object: any): ChangelogTask_Type {
+  switch (object) {
+    case 0:
+    case "TYPE_UNSPECIFIED":
+      return ChangelogTask_Type.TYPE_UNSPECIFIED;
+    case 1:
+    case "BASELINE":
+      return ChangelogTask_Type.BASELINE;
+    case 2:
+    case "MIGRATE":
+      return ChangelogTask_Type.MIGRATE;
+    case 3:
+    case "MIGRATE_SDL":
+      return ChangelogTask_Type.MIGRATE_SDL;
+    case 4:
+    case "MIGRATE_GHOST":
+      return ChangelogTask_Type.MIGRATE_GHOST;
+    case 6:
+    case "DATA":
+      return ChangelogTask_Type.DATA;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return ChangelogTask_Type.UNRECOGNIZED;
+  }
+}
+
+export function changelogTask_TypeToJSON(object: ChangelogTask_Type): string {
+  switch (object) {
+    case ChangelogTask_Type.TYPE_UNSPECIFIED:
+      return "TYPE_UNSPECIFIED";
+    case ChangelogTask_Type.BASELINE:
+      return "BASELINE";
+    case ChangelogTask_Type.MIGRATE:
+      return "MIGRATE";
+    case ChangelogTask_Type.MIGRATE_SDL:
+      return "MIGRATE_SDL";
+    case ChangelogTask_Type.MIGRATE_GHOST:
+      return "MIGRATE_GHOST";
+    case ChangelogTask_Type.DATA:
+      return "DATA";
+    case ChangelogTask_Type.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
+export function changelogTask_TypeToNumber(object: ChangelogTask_Type): number {
+  switch (object) {
+    case ChangelogTask_Type.TYPE_UNSPECIFIED:
+      return 0;
+    case ChangelogTask_Type.BASELINE:
+      return 1;
+    case ChangelogTask_Type.MIGRATE:
+      return 2;
+    case ChangelogTask_Type.MIGRATE_SDL:
+      return 3;
+    case ChangelogTask_Type.MIGRATE_GHOST:
+      return 4;
+    case ChangelogTask_Type.DATA:
+      return 6;
+    case ChangelogTask_Type.UNRECOGNIZED:
     default:
       return -1;
   }
@@ -242,6 +325,7 @@ function createBaseChangelogTask(): ChangelogTask {
     syncHistoryId: Long.ZERO,
     sheet: "",
     version: "",
+    type: ChangelogTask_Type.TYPE_UNSPECIFIED,
   };
 }
 
@@ -273,6 +357,9 @@ export const ChangelogTask: MessageFns<ChangelogTask> = {
     }
     if (message.version !== "") {
       writer.uint32(74).string(message.version);
+    }
+    if (message.type !== ChangelogTask_Type.TYPE_UNSPECIFIED) {
+      writer.uint32(80).int32(changelogTask_TypeToNumber(message.type));
     }
     return writer;
   },
@@ -347,6 +434,13 @@ export const ChangelogTask: MessageFns<ChangelogTask> = {
 
           message.version = reader.string();
           continue;
+        case 10:
+          if (tag !== 80) {
+            break;
+          }
+
+          message.type = changelogTask_TypeFromJSON(reader.int32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -369,6 +463,7 @@ export const ChangelogTask: MessageFns<ChangelogTask> = {
       syncHistoryId: isSet(object.syncHistoryId) ? Long.fromValue(object.syncHistoryId) : Long.ZERO,
       sheet: isSet(object.sheet) ? globalThis.String(object.sheet) : "",
       version: isSet(object.version) ? globalThis.String(object.version) : "",
+      type: isSet(object.type) ? changelogTask_TypeFromJSON(object.type) : ChangelogTask_Type.TYPE_UNSPECIFIED,
     };
   },
 
@@ -401,6 +496,9 @@ export const ChangelogTask: MessageFns<ChangelogTask> = {
     if (message.version !== "") {
       obj.version = message.version;
     }
+    if (message.type !== ChangelogTask_Type.TYPE_UNSPECIFIED) {
+      obj.type = changelogTask_TypeToJSON(message.type);
+    }
     return obj;
   },
 
@@ -426,6 +524,7 @@ export const ChangelogTask: MessageFns<ChangelogTask> = {
       : Long.ZERO;
     message.sheet = object.sheet ?? "";
     message.version = object.version ?? "";
+    message.type = object.type ?? ChangelogTask_Type.TYPE_UNSPECIFIED;
     return message;
   },
 };

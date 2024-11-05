@@ -2,6 +2,7 @@ package v1
 
 import (
 	"context"
+	"strings"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -54,11 +55,30 @@ func (s *DatabaseService) ListChangelogs(ctx context.Context, request *v1pb.List
 	}
 	limitPlusOne := offset.limit + 1
 
-	// TODO(p0ny): support view and filter
+	// TODO(p0ny): support view.
 	find := &store.FindChangelogMessage{
 		DatabaseUID: &database.UID,
 		Limit:       &limitPlusOne,
 		Offset:      &offset.offset,
+	}
+
+	filters, err := ParseFilter(request.Filter)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+	for _, expr := range filters {
+		if expr.Operator != ComparatorTypeEqual {
+			return nil, status.Errorf(codes.InvalidArgument, `only support "=" operation for filter`)
+		}
+		switch expr.Key {
+		case "type":
+			find.TypeList = strings.Split(expr.Value, " | ")
+		case "table":
+			resourcesFilter := expr.Value
+			find.ResourcesFilter = &resourcesFilter
+		default:
+			return nil, status.Errorf(codes.InvalidArgument, "invalid filter key %q", expr.Key)
+		}
 	}
 
 	changelogs, err := s.store.ListChangelogs(ctx, find)
@@ -91,7 +111,7 @@ func (s *DatabaseService) GetChangelog(ctx context.Context, request *v1pb.GetCha
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	// TODO(p0ny): support view and filter.
+	// TODO(p0ny): support view.
 	changelog, err := s.store.GetChangelog(ctx, changelogUID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to list changelogs, errors: %v", err)
