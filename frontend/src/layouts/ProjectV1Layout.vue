@@ -170,14 +170,9 @@ const quickActionListForDatabase = computed((): QuickActionType[] => {
   const actions: QuickActionType[] = [
     "quickaction.bb.database.create",
     "quickaction.bb.project.database.transfer",
+    "quickaction.bb.issue.grant.request.querier",
+    "quickaction.bb.issue.grant.request.exporter",
   ];
-
-  if (!hasProjectPermissionV2(project.value, "bb.databases.query")) {
-    actions.push("quickaction.bb.issue.grant.request.querier");
-  }
-  if (!hasProjectPermissionV2(project.value, "bb.databases.export")) {
-    actions.push("quickaction.bb.issue.grant.request.exporter");
-  }
 
   return actions;
 });
