@@ -1,3 +1,5 @@
+import type { PickLiteral } from "../utils";
+
 export type Permission =
   | "bb.auditLogs.export"
   | "bb.auditLogs.search"
@@ -30,6 +32,10 @@ export type Permission =
   | "bb.databases.list"
   | "bb.databases.query"
   | "bb.databases.execute"
+  | "bb.databases.queryInfo"
+  | "bb.databases.queryExplain"
+  | "bb.databases.queryDML"
+  | "bb.databases.queryDDL"
   | "bb.databases.sync"
   | "bb.databases.update"
   | "bb.issueComments.list"
@@ -112,3 +118,25 @@ export type Permission =
   | "bb.settings.set"
   | "bb.worksheets.manage"
   | "bb.worksheets.get";
+
+export type QueryPermission = PickLiteral<
+  Permission,
+  | "bb.databases.query"
+  | "bb.databases.queryInfo"
+  | "bb.databases.queryExplain"
+  | "bb.databases.queryDDL"
+  | "bb.databases.queryDML"
+  | "bb.databases.execute"
+>;
+
+export const QueryPermissionQueryOnly: QueryPermission[] = [
+  "bb.databases.query",
+];
+export const QueryPermissionQueryAny: QueryPermission[] = [
+  "bb.databases.query",
+  "bb.databases.queryInfo",
+  "bb.databases.queryExplain",
+  "bb.databases.queryDDL",
+  "bb.databases.queryDML",
+  "bb.databases.execute",
+];
