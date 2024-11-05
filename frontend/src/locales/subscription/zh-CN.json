@@ -190,6 +190,5 @@
     "sso": "单点登录 (SSO)",
     "2fa": "双重认证 (2FA)",
     "custom-approval": "自定义审批"
-  },
-  "price-unit-for-team": "/ 实例 / 月"
+  }
 }

@@ -190,6 +190,5 @@
     "sso": "シングルサインオン（SSO）",
     "2fa": "二要素認証（2FA）",
     "custom-approval": "カスタム承認"
-  },
-  "price-unit-for-team": "/ インスタンス / 月"
+  }
 }

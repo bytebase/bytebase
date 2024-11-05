@@ -190,6 +190,5 @@
     "sso": "Inicio de Sesión Único (SSO)",
     "2fa": "Autenticación de dos factores (2FA)",
     "custom-approval": "Aprobación personalizada"
-  },
-  "price-unit-for-team": "/ instancia / mes"
+  }
 }
