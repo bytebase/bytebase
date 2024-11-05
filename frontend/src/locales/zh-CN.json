@@ -2216,7 +2216,7 @@
       "delete-success": "GitOps 连接已删除"
     },
     "masking-access": {
-      "self": "数据访问",
+      "self": "数据管控",
       "grant-access": "授予访问权限",
       "revoke-access-title": "是否删除 {member} 的导出和查询访问权限？"
     }
@@ -3053,6 +3053,7 @@
     "no-logs": "暂无审计日志",
     "audit-log-detail": "审计详情",
     "export-finished": "导出完成",
+    "export-tooltip": "必须选择 30 天范围内的开始和结束日期",
     "table": {
       "created-ts": "时间",
       "created-time": "创建时间",

@@ -3053,6 +3053,7 @@
     "no-logs": "Sin registros de auditoría",
     "audit-log-detail": "Detalles del registro de auditoría",
     "export-finished": "Exportación finalizada",
+    "export-tooltip": "Debe seleccionar la hora de inicio y la hora de finalización dentro de los 30 días",
     "table": {
       "created-ts": "Hora",
       "created-time": "Hora de creación",
