@@ -6,7 +6,7 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
-// no session, so we don't need to check prepare and execute
+// no session, so we don't need to check prepare and execute.
 func getQueryType(node *pgquery.Node, allSystems bool) base.QueryType {
 	switch n := node.Node.(type) {
 	case *pgquery.Node_InsertStmt,
