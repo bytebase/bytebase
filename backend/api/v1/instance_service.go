@@ -971,12 +971,8 @@ func getInstanceMessage(ctx context.Context, stores *store.Store, name string) (
 func buildInstanceName(instanceID string) string {
 	var b strings.Builder
 	b.Grow(len(common.InstanceNamePrefix) + len(instanceID))
-	if _, err := b.WriteString(common.InstanceNamePrefix); err != nil {
-		return ""
-	}
-	if _, err := b.WriteString(instanceID); err != nil {
-		return ""
-	}
+	_, _ = b.WriteString(common.InstanceNamePrefix)
+	_, _ = b.WriteString(instanceID)
 	return b.String()
 }
 
@@ -984,12 +980,8 @@ func buildInstanceName(instanceID string) string {
 func buildEnvironmentName(environmentID string) string {
 	var b strings.Builder
 	b.Grow(len("environments/") + len(environmentID))
-	if _, err := b.WriteString("environments/"); err != nil {
-		return ""
-	}
-	if _, err := b.WriteString(environmentID); err != nil {
-		return ""
-	}
+	_, _ = b.WriteString("environments/")
+	_, _ = b.WriteString(environmentID)
 	return b.String()
 }
 
@@ -1018,21 +1010,11 @@ func convertToInstance(instance *store.InstanceMessage) (*v1pb.Instance, error) 
 // buildRoleName builds the role name with the given instance ID and role name.
 func buildRoleName(b *strings.Builder, instanceID, roleName string) string {
 	b.Reset()
-	if _, err := b.WriteString(common.InstanceNamePrefix); err != nil {
-		return ""
-	}
-	if _, err := b.WriteString(instanceID); err != nil {
-		return ""
-	}
-	if _, err := b.WriteString("/"); err != nil {
-		return ""
-	}
-	if _, err := b.WriteString(common.RolePrefix); err != nil {
-		return ""
-	}
-	if _, err := b.WriteString(roleName); err != nil {
-		return ""
-	}
+	_, _ = b.WriteString(common.InstanceNamePrefix)
+	_, _ = b.WriteString(instanceID)
+	_, _ = b.WriteString("/")
+	_, _ = b.WriteString(common.RolePrefix)
+	_, _ = b.WriteString(roleName)
 	return b.String()
 }
 
