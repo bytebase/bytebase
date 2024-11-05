@@ -1354,7 +1354,7 @@ func (s *InstanceService) instanceCountGuard(ctx context.Context) error {
 	if err != nil {
 		return status.Error(codes.Internal, err.Error())
 	}
-	if int64(count) >= instanceLimit {
+	if count >= instanceLimit {
 		return status.Errorf(codes.ResourceExhausted, "reached the maximum instance count %d", instanceLimit)
 	}
 

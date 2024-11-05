@@ -12,12 +12,13 @@
   "disabled-feature": "这是一个订阅版高级功能",
   "upgrade": "升级订阅",
   "per-month": "/ 月",
-  "price-unit-for-team": "/ 实例 / 月",
+  "price-unit-for-instance": "/ 实例 / 月",
+  "price-unit-for-user": "/ 用户 / 月",
   "billed-annually": "按年付费",
   "billed-monthly": "按月付费",
   "per-instance": "每个实例",
   "free-price-intro": "最多 {users} 个用户，{instances} 个实例",
-  "team-price-intro": "最多购买 {instances} 个实例",
+  "team-price-intro": "{instances} 个免费实例，最多购买 {users} 个用户",
   "enterprise-price-intro": "自定义，按年付费",
   "deploy": "部署",
   "contact-us": "联系我们",
@@ -189,5 +190,6 @@
     "sso": "单点登录 (SSO)",
     "2fa": "双重认证 (2FA)",
     "custom-approval": "自定义审批"
-  }
+  },
+  "price-unit-for-team": "/ 实例 / 月"
 }

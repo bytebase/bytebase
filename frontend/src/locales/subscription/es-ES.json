@@ -12,12 +12,13 @@
   "disabled-feature": "Esta es una función premium en el plan de suscripción",
   "upgrade": "Actualizar suscripción",
   "per-month": "/ mes",
-  "price-unit-for-team": "/ instancia / mes",
+  "price-unit-for-instance": "/instancia/mes",
+  "price-unit-for-user": "/ usuario / mes",
   "billed-annually": "Facturado anualmente",
   "billed-monthly": "Facturado mensualmente",
   "per-instance": "Por instancia",
   "free-price-intro": "Hasta {users} usuarios y {instances} instancias",
-  "team-price-intro": "Compra hasta {instances} instancias",
+  "team-price-intro": "{instances} instancias gratuitas, compre hasta {users} usuarios",
   "enterprise-price-intro": "Personalizado, facturado anualmente",
   "deploy": "Desplegar",
   "contact-us": "Contáctenos",
@@ -189,5 +190,6 @@
     "sso": "Inicio de Sesión Único (SSO)",
     "2fa": "Autenticación de dos factores (2FA)",
     "custom-approval": "Aprobación personalizada"
-  }
+  },
+  "price-unit-for-team": "/ instancia / mes"
 }
