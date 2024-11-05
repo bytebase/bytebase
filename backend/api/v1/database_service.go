@@ -749,9 +749,8 @@ func (s *DatabaseService) ListChangeHistories(ctx context.Context, request *v1pb
 	}
 
 	offset, err := parseLimitAndOffset(&pageSize{
-		token: request.PageToken,
-		limit: int(request.PageSize),
-		// TODO:
+		token:   request.PageToken,
+		limit:   int(request.PageSize),
 		maximum: 1000,
 	})
 	if err != nil {

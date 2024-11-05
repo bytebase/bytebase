@@ -37,7 +37,7 @@ func TestGenerateResourceFilter(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		text, err := generateResourceFilter(test.filter)
+		text, err := generateResourceFilter(test.filter, "instance_change_history.payload")
 		require.NoError(t, err)
 		require.Equal(t, strings.ReplaceAll(test.expected, " ", ""), strings.ReplaceAll(text, " ", ""), test.filter)
 	}
