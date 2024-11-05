@@ -94,8 +94,10 @@ type migrateContext struct {
 }
 
 func getMigrationInfo(ctx context.Context, stores *store.Store, profile *config.Profile, syncer *schemasync.Syncer, task *store.TaskMessage, migrationType db.MigrationType, statement string, schemaVersion model.Version, sheetID *int, taskRunUID int) (*db.MigrationInfo, *migrateContext, error) {
-	if schemaVersion.Version == "" {
-		return nil, nil, errors.Errorf("empty schema version")
+	if !(common.IsDev() && profile.DevelopmentVersioned) {
+		if schemaVersion.Version == "" {
+			return nil, nil, errors.Errorf("empty schema version")
+		}
 	}
 	instance, err := stores.GetInstanceV2(ctx, &store.FindInstanceMessage{UID: &task.InstanceID})
 	if err != nil {
