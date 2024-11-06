@@ -21,6 +21,13 @@ service RolloutService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  rpc ListRollouts(ListRolloutsRequest) returns (ListRolloutsResponse) {
+    option (google.api.http) = {get: "/v1/{parent=projects/*}/rollouts"};
+    option (google.api.method_signature) = "parent";
+    option (bytebase.v1.permission) = "bb.rollouts.list";
+    option (bytebase.v1.auth_method) = IAM;
+  }
+
   rpc CreateRollout(CreateRolloutRequest) returns (Rollout) {
     option (google.api.http) = {
       post: "/v1/{parent=projects/*}/rollouts"
@@ -162,6 +169,38 @@ message GetRolloutRequest {
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference) = {type: "bytebase.com/Rollout"}
   ];
+}
+
+message ListRolloutsRequest {
+  // The parent, which owns this collection of rollouts.
+  // Format: projects/{project}
+  // Use "projects/-" to list all rollouts from all projects.
+  string parent = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Project"}
+  ];
+
+  // The maximum number of rollouts to return. The service may return fewer than
+  // this value.
+  // If unspecified, at most 10 rollouts will be returned.
+  // The maximum value is 1000; values above 1000 will be coerced to 1000.
+  int32 page_size = 2;
+
+  // A page token, received from a previous `ListRollouts` call.
+  // Provide this to retrieve the subsequent page.
+  //
+  // When paginating, all other parameters provided to `ListRollouts` must match
+  // the call that provided the page token.
+  string page_token = 3;
+}
+
+message ListRolloutsResponse {
+  // The rollouts from the specified request.
+  repeated Rollout rollouts = 1;
+
+  // A token, which can be sent as `page_token` to retrieve the next page.
+  // If this field is omitted, there are no subsequent pages.
+  string next_page_token = 2;
 }
 
 message CreateRolloutRequest {

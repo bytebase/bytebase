@@ -57,6 +57,7 @@ export type Permission =
   | "bb.projects.update"
   | "bb.rollouts.create"
   | "bb.rollouts.get"
+  | "bb.rollouts.list"
   | "bb.rollouts.preview"
   | "bb.slowQueries.list"
   | "bb.taskRuns.create"
