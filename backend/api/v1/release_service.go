@@ -83,7 +83,7 @@ func (s *ReleaseService) CreateRelease(ctx context.Context, request *v1pb.Create
 }
 
 func (s *ReleaseService) GetRelease(ctx context.Context, request *v1pb.GetReleaseRequest) (*v1pb.Release, error) {
-	releaseUID, err := common.GetReleaseUID(request.Name)
+	_, releaseUID, err := common.GetProjectReleaseUID(request.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to get release uid, err: %v", err)
 	}
@@ -164,7 +164,7 @@ func (s *ReleaseService) UpdateRelease(ctx context.Context, request *v1pb.Update
 		return nil, status.Errorf(codes.InvalidArgument, "update_mask must be set")
 	}
 
-	releaseUID, err := common.GetReleaseUID(request.Release.Name)
+	_, releaseUID, err := common.GetProjectReleaseUID(request.Release.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to get release uid, err: %v", err)
 	}
@@ -202,7 +202,7 @@ func (s *ReleaseService) UpdateRelease(ctx context.Context, request *v1pb.Update
 }
 
 func (s *ReleaseService) DeleteRelease(ctx context.Context, request *v1pb.DeleteReleaseRequest) (*emptypb.Empty, error) {
-	releaseUID, err := common.GetReleaseUID(request.Name)
+	_, releaseUID, err := common.GetProjectReleaseUID(request.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to get release uid, err: %v", err)
 	}
@@ -216,7 +216,7 @@ func (s *ReleaseService) DeleteRelease(ctx context.Context, request *v1pb.Delete
 }
 
 func (s *ReleaseService) UndeleteRelease(ctx context.Context, request *v1pb.UndeleteReleaseRequest) (*v1pb.Release, error) {
-	releaseUID, err := common.GetReleaseUID(request.Name)
+	_, releaseUID, err := common.GetProjectReleaseUID(request.Name)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to get release uid, err: %v", err)
 	}

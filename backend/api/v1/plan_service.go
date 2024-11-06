@@ -1048,7 +1048,7 @@ func (s *PlanService) PreviewPlan(ctx context.Context, request *v1pb.PreviewPlan
 		return nil, status.Errorf(codes.Internal, "failed to get project, err: %v", err)
 	}
 
-	releaseUID, err := common.GetReleaseUID(request.Release)
+	_, releaseUID, err := common.GetProjectReleaseUID(request.Release)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to get releaseUID from %q, err: %v", request.Release, err)
 	}
