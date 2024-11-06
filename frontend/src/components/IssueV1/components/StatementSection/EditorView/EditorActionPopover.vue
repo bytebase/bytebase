@@ -9,7 +9,7 @@
     </template>
 
     <div class="flex flex-col items-start justify-start">
-      <template v-if="shouldShowInstaneRoleSelect">
+      <template v-if="shouldShowInstanceRoleSelect">
         <InstanceRoleSelect />
         <NDivider class="!my-2" />
       </template>
@@ -39,7 +39,7 @@ const language = useInstanceV1EditorLanguage(
   computed(() => database.value.instanceResource)
 );
 
-const shouldShowInstaneRoleSelect = computed(() => {
+const shouldShowInstanceRoleSelect = computed(() => {
   // Only works for postgres.
   if (![Engine.POSTGRES].includes(database.value.instanceResource.engine)) {
     return false;
