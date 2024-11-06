@@ -138,6 +138,73 @@ func (s *RolloutService) GetRollout(ctx context.Context, request *v1pb.GetRollou
 	return rolloutV1, nil
 }
 
+// ListRollouts lists rollouts.
+func (s *RolloutService) ListRollouts(ctx context.Context, request *v1pb.ListRolloutsRequest) (*v1pb.ListRolloutsResponse, error) {
+	projectID, err := common.GetProjectID(request.Parent)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+		ResourceID: &projectID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get project, error: %v", err)
+	}
+	if project == nil {
+		return nil, status.Errorf(codes.NotFound, "project %q not found", projectID)
+	}
+
+	offset, err := parseLimitAndOffset(&pageSize{
+		token:   request.PageToken,
+		limit:   int(request.PageSize),
+		maximum: 1000,
+	})
+	if err != nil {
+		return nil, err
+	}
+	limitPlusOne := offset.limit + 1
+
+	find := &store.PipelineFind{
+		ProjectID: &projectID,
+		Limit:     &limitPlusOne,
+		Offset:    &offset.offset,
+	}
+	pipelines, err := s.store.ListPipelineV2(ctx, find)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to list pipelines, error: %v", err)
+	}
+
+	var nextPageToken string
+	// has more pages
+	if len(pipelines) == limitPlusOne {
+		if nextPageToken, err = offset.getPageToken(); err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to get next page token, error: %v", err)
+		}
+		pipelines = pipelines[:offset.limit]
+	}
+
+	rollouts := []*v1pb.Rollout{}
+	for _, pipeline := range pipelines {
+		rolloutMessage, err := s.store.GetRollout(ctx, pipeline.ID)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to get rollout, error: %v", err)
+		}
+		if rolloutMessage == nil {
+			return nil, status.Errorf(codes.Internal, "failed to get rollout %d", pipeline.ID)
+		}
+		rollout, err := convertToRollout(ctx, s.store, project, rolloutMessage)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to convert to rollout, error: %v", err)
+		}
+		rollouts = append(rollouts, rollout)
+	}
+
+	return &v1pb.ListRolloutsResponse{
+		Rollouts:      rollouts,
+		NextPageToken: nextPageToken,
+	}, nil
+}
+
 // CreateRollout creates a rollout from plan.
 func (s *RolloutService) CreateRollout(ctx context.Context, request *v1pb.CreateRolloutRequest) (*v1pb.Rollout, error) {
 	principalID, ok := ctx.Value(common.PrincipalIDContextKey).(int)
