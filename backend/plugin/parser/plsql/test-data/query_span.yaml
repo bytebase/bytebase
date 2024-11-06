@@ -1,3 +1,119 @@
+- description: Test for SELECT INFO
+  statement: SELECT * FROM sys.someTable;
+  defaultDatabase: PUBLIC
+  metadata: |-
+    {
+      "name":  "PUBLIC",
+      "schemas":  [
+        {
+          "name": "",
+          "tables":  [
+            {
+              "name":  "T1",
+              "columns":  [
+                {
+                  "name":  "A"
+                },
+                {
+                  "name":  "B"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 3
+    results: []
+    sourcecolumns: []
+- description: Test for Explain
+  statement: EXPLAIN PLAN FOR SELECT * FROM SCHEMA1.V1;
+  defaultDatabase: PUBLIC
+  metadata: |-
+    {
+      "name":  "PUBLIC",
+      "schemas":  [
+        {
+          "name": "",
+          "tables":  [
+            {
+              "name":  "T1",
+              "columns":  [
+                {
+                  "name":  "A"
+                },
+                {
+                  "name":  "B"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 2
+    results: []
+    sourcecolumns: []
+- description: Test for DDL
+  statement: create table t(a int);
+  defaultDatabase: PUBLIC
+  metadata: |-
+    {
+      "name":  "PUBLIC",
+      "schemas":  [
+        {
+          "name": "",
+          "tables":  [
+            {
+              "name":  "T1",
+              "columns":  [
+                {
+                  "name":  "A"
+                },
+                {
+                  "name":  "B"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 4
+    results: []
+    sourcecolumns: []
+- description: Test for DML
+  statement: insert into t values(1);
+  defaultDatabase: PUBLIC
+  metadata: |-
+    {
+      "name":  "PUBLIC",
+      "schemas":  [
+        {
+          "name": "",
+          "tables":  [
+            {
+              "name":  "T1",
+              "columns":  [
+                {
+                  "name":  "A"
+                },
+                {
+                  "name":  "B"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  querySpan:
+    type: 5
+    results: []
+    sourcecolumns: []
 - description: Test for cross-schema view
   statement: SELECT * FROM SCHEMA1.V1;
   defaultDatabase: PUBLIC
@@ -52,6 +168,7 @@
       ]
     }
   querySpan:
+    type: 1
     results:
         - name: A
           sourcecolumns:
@@ -99,6 +216,7 @@
       ]
     }
   querySpan:
+    type: 1
     results:
         - name: A
           sourcecolumns:
@@ -168,6 +286,7 @@
       ]
     }
   querySpan:
+    type: 1
     results:
         - name: A
           sourcecolumns:
@@ -223,6 +342,7 @@
       ]
     }
   querySpan:
+    type: 1
     results:
         - name: LC1
           sourcecolumns:
@@ -268,6 +388,7 @@
       ]
     }
   querySpan:
+    type: 1
     results:
         - name: LC1
           sourcecolumns:
@@ -300,6 +421,7 @@
       ]
     }
   querySpan:
+    type: 2
     results: []
     sourcecolumns: []
 - description: Test for simple select const
@@ -325,6 +447,7 @@
       ]
     }
   querySpan:
+    type: 1
     results:
         - name: "1"
           sourcecolumns: []
@@ -361,6 +484,7 @@
       ]
     }
   querySpan:
+    type: 1
     results:
         - name: A
           sourcecolumns:
@@ -435,6 +559,7 @@
       ]
     }
   querySpan:
+    type: 1
     results:
         - name: A
           sourcecolumns:
@@ -502,6 +627,7 @@
       ]
     }
   querySpan:
+    type: 1
     results:
         - name: A
           sourcecolumns:
@@ -569,6 +695,7 @@
       ]
     }
   querySpan:
+    type: 1
     results:
         - name: COL_1
           sourcecolumns: []
@@ -629,6 +756,7 @@
       ]
     }
   querySpan:
+    type: 1
     results:
         - name: "1"
           sourcecolumns: []
@@ -681,6 +809,7 @@
       ]
     }
   querySpan:
+    type: 1
     results:
         - name: CITY
           sourcecolumns:
@@ -734,6 +863,7 @@
       ]
     }
   querySpan:
+    type: 1
     results:
         - name: max(A)
           sourcecolumns:
@@ -843,6 +973,7 @@
       ]
     }
   querySpan:
+    type: 1
     results:
         - name: A
           sourcecolumns:
@@ -910,6 +1041,7 @@
       ]
     }
   querySpan:
+    type: 1
     results:
         - name: A
           sourcecolumns:
@@ -998,6 +1130,7 @@
       ]
     }
   querySpan:
+    type: 1
     results:
         - name: A
           sourcecolumns:
@@ -1065,6 +1198,7 @@
       ]
     }
   querySpan:
+    type: 1
     results:
         - name: MAX(A)
           sourcecolumns:
@@ -1111,6 +1245,7 @@
       ]
     }
   querySpan:
+    type: 1
     results:
         - name: D
           sourcecolumns:
@@ -1178,6 +1313,7 @@
       ]
     }
   querySpan:
+    type: 1
     results:
         - name: CC1
           sourcecolumns:
@@ -1260,6 +1396,7 @@
       ]
     }
   querySpan:
+    type: 1
     results:
         - name: C1
           sourcecolumns:
