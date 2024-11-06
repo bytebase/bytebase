@@ -404,7 +404,7 @@
   
     - [EnvironmentService](#bytebase-v1-EnvironmentService)
   
-- [v1/group.proto](#v1_group-proto)
+- [v1/group_service.proto](#v1_group_service-proto)
     - [CreateGroupRequest](#bytebase-v1-CreateGroupRequest)
     - [DeleteGroupRequest](#bytebase-v1-DeleteGroupRequest)
     - [GetGroupRequest](#bytebase-v1-GetGroupRequest)
@@ -6779,10 +6779,10 @@ The environment&#39;s `name` field is used to identify the environment to update
 
 
 
-<a name="v1_group-proto"></a>
+<a name="v1_group_service-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
-## v1/group.proto
+## v1/group_service.proto
 
 
 

@@ -44,13 +44,11 @@
 
       <div class="flex items-center justify-end gap-2">
         <NButton
+          type="primary"
           :disabled="!allowEdit || !hasSensitiveDataFeature"
           @click="onUpload"
         >
           {{ $t("settings.sensitive-data.classification.upload") }}
-        </NButton>
-        <NButton type="primary" :disabled="!allowSave" @click="saveChanges">
-          {{ $t("common.save") }}
         </NButton>
         <input
           ref="uploader"
@@ -288,11 +286,8 @@ const onFileSelect = (file: File) => {
         title: "Nothing changed",
       });
     }
-    if (
-      Object.keys(formerConfig.value.classification).length === 0 &&
-      allowSave.value
-    ) {
-      upsertSetting();
+    if (allowSave.value) {
+      saveChanges();
     }
   };
   fr.onerror = () => {

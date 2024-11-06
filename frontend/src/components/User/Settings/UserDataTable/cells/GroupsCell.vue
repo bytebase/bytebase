@@ -18,7 +18,7 @@ import { computed } from "vue";
 import { useGroupStore } from "@/store";
 import { getUserEmailFromIdentifier } from "@/store/modules/v1/common";
 import { type User } from "@/types/proto/v1/auth_service";
-import type { Group } from "@/types/proto/v1/group";
+import type { Group } from "@/types/proto/v1/group_service";
 
 const props = defineProps<{
   user: User;

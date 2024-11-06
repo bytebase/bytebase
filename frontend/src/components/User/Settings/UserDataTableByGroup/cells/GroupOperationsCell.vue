@@ -1,13 +1,13 @@
 <template>
   <div class="flex justify-end">
-    <RemoveGroupButton :group="group!">
+    <RemoveGroupButton v-if="allowDeleteGroup" :group="group!">
       <template #icon>
         <Trash2Icon class="w-4 h-auto" />
       </template>
     </RemoveGroupButton>
 
     <NButton
-      v-if="allowEdit"
+      v-if="allowEditGroup"
       quaternary
       size="small"
       @click="$emit('update-group')"
@@ -22,15 +22,37 @@
 <script lang="ts" setup>
 import { PencilIcon, Trash2Icon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
-import type { Group } from "@/types/proto/v1/group";
+import { computed } from "vue";
+import { useCurrentUserV1 } from "@/store";
+import { getUserEmailFromIdentifier } from "@/store/modules/v1/common";
+import type { Group } from "@/types/proto/v1/group_service";
+import { GroupMember_Role } from "@/types/proto/v1/group_service";
+import { hasWorkspacePermissionV2 } from "@/utils";
 import RemoveGroupButton from "../../RemoveGroupButton.vue";
 
-defineProps<{
+const props = defineProps<{
   group: Group;
-  allowEdit: boolean;
 }>();
 
 defineEmits<{
   (event: "update-group"): void;
 }>();
+
+const currentUser = useCurrentUserV1();
+
+const isGroupOwner = computed(() => {
+  return (
+    props.group.members.find(
+      (m) => getUserEmailFromIdentifier(m.member) === currentUser.value.email
+    )?.role === GroupMember_Role.OWNER
+  );
+});
+
+const allowEditGroup = computed(() => {
+  return isGroupOwner.value || hasWorkspacePermissionV2("bb.groups.update");
+});
+
+const allowDeleteGroup = computed(() => {
+  return isGroupOwner.value || hasWorkspacePermissionV2("bb.groups.update");
+});
 </script>
