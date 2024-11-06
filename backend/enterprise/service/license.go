@@ -6,7 +6,6 @@ import (
 	"math"
 	"time"
 
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -24,16 +23,6 @@ type LicenseService struct {
 	cachedSubscription *enterprise.Subscription
 
 	provider plugin.LicenseProvider
-}
-
-// Claims creates a struct that will be encoded to a JWT.
-// We add jwt.RegisteredClaims as an embedded type, to provide fields such as name.
-type Claims struct {
-	InstanceCount int    `json:"instanceCount"`
-	Trialing      bool   `json:"trialing"`
-	Plan          string `json:"plan"`
-	OrgName       string `json:"orgName"`
-	jwt.RegisteredClaims
 }
 
 // NewLicenseService will create a new enterprise license service.
@@ -127,17 +116,33 @@ func (s *LicenseService) GetEffectivePlan() api.PlanType {
 }
 
 // GetPlanLimitValue gets the limit value for the plan.
-func (s *LicenseService) GetPlanLimitValue(ctx context.Context, name enterprise.PlanLimit) int64 {
+func (s *LicenseService) GetPlanLimitValue(ctx context.Context, name enterprise.PlanLimit) int {
 	v, ok := enterprise.PlanLimitValues[name]
 	if !ok {
 		return 0
 	}
-
 	subscription := s.LoadSubscription(ctx)
 	limit := v[subscription.Plan]
 	if limit == -1 {
-		return math.MaxInt64
+		limit = math.MaxInt
 	}
+
+	switch subscription.Plan {
+	case api.FREE:
+		return limit
+	case api.TEAM, api.ENTERPRISE:
+		switch name {
+		case enterprise.PlanLimitMaximumInstance:
+			return limit
+		case enterprise.PlanLimitMaximumUser:
+			if subscription.Seat == 0 {
+				// to compatible with old license.
+				return limit
+			}
+			return subscription.Seat
+		}
+	}
+
 	return limit
 }
 

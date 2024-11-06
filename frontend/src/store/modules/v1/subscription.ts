@@ -39,14 +39,25 @@ export const useSubscriptionV1Store = defineStore("subscription_v1", {
       }
       return limit;
     },
-    userCountLimit(): number {
-      const limit =
+    userCountLimit(state): number {
+      let limit =
         PLANS.find((plan) => plan.type === this.currentPlan)
           ?.maximumSeatCount ?? 0;
       if (limit < 0) {
-        return Number.MAX_VALUE;
+        limit = Number.MAX_VALUE;
       }
-      return limit;
+
+      switch (this.currentPlan) {
+        case PlanType.FREE:
+          return limit;
+        default: {
+          const seatCount = state.subscription?.seatCount ?? 0;
+          if (seatCount === 0) {
+            return limit;
+          }
+          return seatCount;
+        }
+      }
     },
     instanceLicenseCount(state): number {
       const count = state.subscription?.instanceCount ?? 0;

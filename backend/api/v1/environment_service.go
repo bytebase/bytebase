@@ -74,7 +74,7 @@ func (s *EnvironmentService) CreateEnvironment(ctx context.Context, request *v1p
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 	maximumEnvironmentLimit := s.licenseService.GetPlanLimitValue(ctx, enterprise.PlanLimitMaximumEnvironment)
-	if int64(len(environments)) >= maximumEnvironmentLimit {
+	if len(environments) >= maximumEnvironmentLimit {
 		return nil, status.Errorf(codes.ResourceExhausted, "current plan can create up to %d environments.", maximumEnvironmentLimit)
 	}
 
