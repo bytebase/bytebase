@@ -2,7 +2,6 @@ package common
 
 import (
 	"fmt"
-	"net/url"
 	"regexp"
 	"strconv"
 	"strings"
@@ -554,19 +553,18 @@ func GetReviewConfigID(name string) (string, error) {
 	return tokens[0], nil
 }
 
-func GetReleaseUID(name string) (int64, error) {
+func GetProjectReleaseUID(name string) (string, int64, error) {
 	tokens, err := GetNameParentTokens(name, ProjectNamePrefix, ReleaseNamePrefix)
 	if err != nil {
-		return 0, err
+		return "", 0, err
 	}
 	releaseUID, err := strconv.ParseInt(tokens[1], 10, 64)
 	if err != nil {
-		return 0, errors.Wrapf(err, "failed to convert %q to int64", tokens[1])
+		return "", 0, errors.Wrapf(err, "failed to convert %q to int64", tokens[1])
 	}
-	return releaseUID, nil
+	return tokens[0], releaseUID, nil
 }
 
-// The returned File is path unescaped.
 func GetProjectReleaseUIDFile(name string) (string, int64, string, error) {
 	tokens, err := GetNameParentTokens(name, ProjectNamePrefix, ReleaseNamePrefix, FileNamePrefix)
 	if err != nil {
@@ -576,11 +574,7 @@ func GetProjectReleaseUIDFile(name string) (string, int64, string, error) {
 	if err != nil {
 		return "", 0, "", errors.Wrapf(err, "failed to convert %q to int64", tokens[1])
 	}
-	file, err := url.PathUnescape(tokens[2])
-	if err != nil {
-		return "", 0, "", errors.Wrapf(err, "failed to path unescape file %v", tokens[2])
-	}
-	return tokens[0], releaseUID, file, nil
+	return tokens[0], releaseUID, tokens[2], nil
 }
 
 var branchRegexp = regexp.MustCompile("^projects/([^/]+)/branches/(.+)$")

@@ -3,6 +3,7 @@ package v1
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -13,6 +14,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/store"
+	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
@@ -98,6 +100,113 @@ func (s *DatabaseService) GetRevision(ctx context.Context, request *v1pb.GetRevi
 	return converted, nil
 }
 
+func (s *DatabaseService) CreateRevision(ctx context.Context, request *v1pb.CreateRevisionRequest) (*v1pb.Revision, error) {
+	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "user not found")
+	}
+	instanceID, databaseID, err := common.GetInstanceDatabaseID(request.Parent)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "failed to get instance and database from %v, err: %v", request.Parent, err)
+	}
+	if request.Revision == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "request.Revision is not set")
+	}
+	database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
+		InstanceID:   &instanceID,
+		DatabaseName: &databaseID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get database, err: %v", err)
+	}
+	if database == nil {
+		return nil, status.Errorf(codes.NotFound, "database %q not found", request.Parent)
+	}
+	_, sheetUID, err := common.GetProjectResourceIDSheetUID(request.Revision.Sheet)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "failed to get sheet from %v, err: %v", request.Revision.Sheet, err)
+	}
+	sheet, err := s.store.GetSheet(ctx, &store.FindSheetMessage{UID: &sheetUID})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get sheet, err: %v", err)
+	}
+	if sheet == nil {
+		return nil, status.Errorf(codes.NotFound, "sheet %q not found", request.Revision.Sheet)
+	}
+
+	if request.Revision.TaskRun != "" {
+		projectID, rolloutID, stageID, taskID, taskRunID, err := common.GetProjectIDRolloutIDStageIDTaskIDTaskRunID(request.Revision.TaskRun)
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "failed to get taskRun from %q", request.Revision.TaskRun)
+		}
+		taskRun, err := s.store.GetTaskRun(ctx, taskRunID)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to get taskRun, err: %v", err)
+		}
+		if taskRun == nil {
+			return nil, status.Errorf(codes.NotFound, "taskRun %q not found", request.Revision.TaskRun)
+		}
+		if taskRun.ProjectID != projectID ||
+			taskRun.PipelineUID != rolloutID ||
+			taskRun.StageUID != stageID ||
+			taskRun.TaskUID != taskID {
+			return nil, status.Errorf(codes.NotFound, "taskRun %q not found", request.Revision.TaskRun)
+		}
+	}
+
+	if request.Revision.Issue != "" {
+		_, _, err := common.GetProjectIDIssueUID(request.Revision.Issue)
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "failed to get issue from %q", request.Revision.Issue)
+		}
+	}
+
+	if (request.Revision.Release == "") != (request.Revision.File == "") {
+		return nil, status.Errorf(codes.InvalidArgument, "revision.release and revision.file must be set or unset")
+	}
+	if request.Revision.Release != "" && request.Revision.File != "" {
+		if !strings.HasPrefix(request.Revision.File, request.Revision.Release) {
+			return nil, status.Errorf(codes.InvalidArgument, "file %q is not in release %q", request.Revision.File, request.Revision.Release)
+		}
+		_, releaseUID, fileID, err := common.GetProjectReleaseUIDFile(request.Revision.File)
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "failed to get release and file from %q", request.Revision.File)
+		}
+		release, err := s.store.GetRelease(ctx, releaseUID)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to get release, err: %v", err)
+		}
+		if release == nil {
+			return nil, status.Errorf(codes.NotFound, "release %q not found", request.Revision.Release)
+		}
+		foundFile := false
+		for _, f := range release.Payload.Files {
+			if f.Id == fileID {
+				foundFile = true
+				if f.Sheet != request.Revision.Sheet {
+					return nil, status.Errorf(codes.InvalidArgument, "The sheet in file %q is %q which is different from revision.sheet %q", fileID, f.Sheet, request.Revision.Sheet)
+				}
+				break
+			}
+		}
+		if !foundFile {
+			return nil, status.Errorf(codes.InvalidArgument, "file %q not found in release %q", fileID, request.Revision.Release)
+		}
+	}
+
+	converted := convertRevision(request.Revision, database, sheet)
+	revisionM, err := s.store.CreateRevision(ctx, converted, user.ID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to create revision, err: %v", err)
+	}
+	converted1, err := convertToRevision(ctx, s.store, request.Parent, revisionM)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to convert to revision, err: %v", err)
+	}
+
+	return converted1, nil
+}
+
 func (s *DatabaseService) DeleteRevision(ctx context.Context, request *v1pb.DeleteRevisionRequest) (*emptypb.Empty, error) {
 	_, _, revisionUID, err := common.GetInstanceDatabaseRevisionID(request.Name)
 	if err != nil {
@@ -168,4 +277,19 @@ func convertToRevision(ctx context.Context, s *store.Store, parent string, revis
 		Issue:         issueName,
 		TaskRun:       taskRunName,
 	}, nil
+}
+
+func convertRevision(revision *v1pb.Revision, database *store.DatabaseMessage, sheet *store.SheetMessage) *store.RevisionMessage {
+	r := &store.RevisionMessage{
+		DatabaseUID: database.UID,
+		Payload: &storepb.RevisionPayload{
+			Release:     revision.Release,
+			File:        revision.File,
+			Version:     revision.Version,
+			Sheet:       revision.Sheet,
+			SheetSha256: sheet.Sha256,
+			TaskRun:     revision.TaskRun,
+		},
+	}
+	return r
 }
