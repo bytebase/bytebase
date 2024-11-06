@@ -55,7 +55,6 @@ import { NTag } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { InstanceV1Name } from "@/components/v2";
-import { Workflow } from "@/types/proto/v1/project_service";
 import type { Task } from "@/types/proto/v1/rollout_service";
 import { Task_Type, task_StatusToJSON } from "@/types/proto/v1/rollout_service";
 import { extractSchemaVersionFromTask } from "@/utils";
@@ -72,7 +71,6 @@ const props = defineProps<{
 const { t } = useI18n();
 const { isCreating, issue, activeTask, selectedTask, events } =
   useIssueContext();
-const project = computed(() => issue.value.projectEntity);
 const active = computed(
   () =>
     !isCreating.value &&
@@ -95,18 +93,8 @@ const secondaryViewMode = computed((): SecondaryViewMode => {
 });
 
 const schemaVersion = computed(() => {
-  const v = extractSchemaVersionFromTask(props.task);
-
-  // Always show the schema version for tasks from a release source.
-  if (issue.value.planEntity?.releaseSource?.release) {
-    return v;
-  }
-
-  // show the schema version for a task if
-  // the project is standard mode and VCS workflow
-  if (isCreating.value) return "";
-  if (project.value.workflow === Workflow.UI) return "";
-  return v;
+  // For unversioned tasks, the schema version of task should be empty.
+  return extractSchemaVersionFromTask(props.task);
 });
 
 const taskClass = computed(() => {
