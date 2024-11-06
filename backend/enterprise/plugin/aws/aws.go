@@ -111,9 +111,15 @@ func (p *Provider) LoadSubscription(ctx context.Context) *enterprise.Subscriptio
 	}
 
 	for _, entitlement := range license.Entitlements {
-		if v := entitlement.Name; v != nil && *v == "instance" {
+		name := entitlement.Name
+		if name == nil {
+			continue
+		}
+		switch *name {
+		case "instance":
 			subscription.InstanceCount = int(aws.ToInt64(entitlement.MaxCount))
-			break
+		case "seat":
+			subscription.Seat = int(aws.ToInt64(entitlement.MaxCount))
 		}
 	}
 
