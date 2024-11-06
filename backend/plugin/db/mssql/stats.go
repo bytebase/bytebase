@@ -3,6 +3,7 @@ package mssql
 import (
 	"context"
 	"database/sql"
+	"math"
 
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
 )
@@ -39,14 +40,14 @@ func (driver *Driver) CountAffectedRows(ctx context.Context, statement string) (
 			var unused any
 			scanArgs[i] = &unused
 		}
-		var rowsColumn sql.NullInt64
+		var rowsColumn sql.NullFloat64
 		scanArgs[rowsIndex] = &rowsColumn
 		if err := rows.Scan(scanArgs...); err != nil {
 			return 0, err
 		}
 
 		if rowsColumn.Valid {
-			return rowsColumn.Int64, nil
+			return int64(math.Round(rowsColumn.Float64)), nil
 		}
 	}
 	if err := rows.Err(); err != nil {
