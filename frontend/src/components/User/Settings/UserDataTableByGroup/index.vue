@@ -18,7 +18,7 @@ import { useI18n } from "vue-i18n";
 import { useUserStore } from "@/store";
 import { getUserEmailFromIdentifier } from "@/store/modules/v1/common";
 import { type User } from "@/types/proto/v1/auth_service";
-import { Group, GroupMember_Role } from "@/types/proto/v1/group";
+import { Group, GroupMember_Role } from "@/types/proto/v1/group_service";
 import GroupMemberNameCell from "./cells/GroupMemberNameCell.vue";
 import GroupNameCell from "./cells/GroupNameCell.vue";
 import GroupOperationsCell from "./cells/GroupOperationsCell.vue";
@@ -41,7 +41,6 @@ const props = withDefaults(
   defineProps<{
     groups: Group[];
     showGroupRole?: boolean;
-    allowEdit: boolean;
     onClickUser?: (user: User, event: MouseEvent) => void;
   }>(),
   {
@@ -88,7 +87,6 @@ const columns = computed(() => {
         if (row.type === "group") {
           return h(GroupOperationsCell, {
             group: row.group,
-            allowEdit: props.allowEdit,
             "onUpdate-group": () => {
               emit("update-group", row.group);
             },
