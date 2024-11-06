@@ -2,11 +2,12 @@ import { isUndefined, uniq } from "lodash-es";
 import { defineStore } from "pinia";
 import { computed, ref, unref, watch } from "vue";
 import { projectServiceClient } from "@/grpcweb";
-import type {
-  ComposedDatabase,
-  ComposedProject,
-  MaybeRef,
-  Permission,
+import {
+  QueryPermissionQueryAny,
+  type ComposedDatabase,
+  type ComposedProject,
+  type MaybeRef,
+  type QueryPermission,
 } from "@/types";
 import type { Expr } from "@/types/proto/google/api/expr/v1alpha1/syntax";
 import type { User } from "@/types/proto/v1/auth_service";
@@ -139,7 +140,7 @@ export const useProjectIamPolicy = (project: MaybeRef<string>) => {
 const checkProjectIAMPolicyWithExpr = (
   user: User,
   project: ComposedProject,
-  permission: Permission,
+  requiredPermissions: QueryPermission[],
   bindingExprCheck: (expr?: Expr) => boolean
 ): boolean => {
   const roleStore = useRoleStore();
@@ -156,12 +157,14 @@ const checkProjectIAMPolicyWithExpr = (
     // If the role does not have the permission, then skip.
     const permissions =
       roleStore.getRoleByName(binding.role)?.permissions || [];
-    if (!permissions.includes(permission)) {
-      continue;
-    }
-    // If binding expr check passes, then return true.
-    if (bindingExprCheck(binding.parsedExpr)) {
-      return true;
+
+    for (const permission of permissions) {
+      if (requiredPermissions.includes(permission as QueryPermission)) {
+        // If binding expr check passes, then return true.
+        if (bindingExprCheck(binding.parsedExpr)) {
+          return true;
+        }
+      }
     }
   }
 
@@ -170,13 +173,14 @@ const checkProjectIAMPolicyWithExpr = (
 
 export const checkQuerierPermission = (
   database: ComposedDatabase,
+  permissions: QueryPermission[] = QueryPermissionQueryAny,
   schema?: string,
   table?: string
 ) => {
   return checkProjectIAMPolicyWithExpr(
     useCurrentUserV1().value,
     database.projectEntity,
-    "bb.databases.query",
+    permissions,
     (expr?: Expr): boolean => {
       // If no condition is set, then return true.
       if (!expr) {
