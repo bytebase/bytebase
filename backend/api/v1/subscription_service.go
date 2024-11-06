@@ -86,6 +86,7 @@ func (s *SubscriptionService) loadSubscription(ctx context.Context) (*v1pb.Subsc
 	sub := s.licenseService.LoadSubscription(ctx)
 
 	subscription := &v1pb.Subscription{
+		SeatCount:     int32(sub.Seat),
 		InstanceCount: int32(sub.InstanceCount),
 		Plan:          covertToV1PlanType(sub.Plan),
 		Trialing:      sub.Trialing,

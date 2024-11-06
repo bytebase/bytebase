@@ -11,13 +11,6 @@ import (
 //go:embed plan.yaml
 var planConfigStr string
 
-const (
-	// InstanceLimitForTrial is the instance count limit for trialing.
-	InstanceLimitForTrial = 10
-	// TrialDaysLimit is the expiration limit for trialing.
-	TrialDaysLimit = 14
-)
-
 // PlanLimit is the type for plan limits.
 type PlanLimit int
 
@@ -33,7 +26,7 @@ const (
 )
 
 // PlanLimitValues is the plan limit value mapping.
-var PlanLimitValues = map[PlanLimit]map[api.PlanType]int64{
+var PlanLimitValues = map[PlanLimit]map[api.PlanType]int{
 	PlanLimitMaximumTask:        {},
 	PlanLimitMaximumEnvironment: {},
 	PlanLimitMaximumInstance:    {},
@@ -42,10 +35,10 @@ var PlanLimitValues = map[PlanLimit]map[api.PlanType]int64{
 
 type planLimitConfig struct {
 	Type                    api.PlanType `yaml:"type"`
-	MaximumInstanceCount    int64        `yaml:"maximumInstanceCount"`
-	MaximumSeatCount        int64        `yaml:"maximumSeatCount"`
-	MaximumTaskCount        int64        `yaml:"maximumTaskCount"`
-	MaximumEnvironmentCount int64        `yaml:"maximumEnvironmentCount"`
+	MaximumInstanceCount    int          `yaml:"maximumInstanceCount"`
+	MaximumSeatCount        int          `yaml:"maximumSeatCount"`
+	MaximumTaskCount        int          `yaml:"maximumTaskCount"`
+	MaximumEnvironmentCount int          `yaml:"maximumEnvironmentCount"`
 }
 
 type planConfg struct {
