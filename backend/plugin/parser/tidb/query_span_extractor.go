@@ -38,8 +38,6 @@ func newQuerySpanExtractor(defaultDatabase string, gCtx base.GetQuerySpanContext
 func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string) (*base.QuerySpan, error) {
 	q.ctx = ctx
 
-	// TODO: check for query all system tables.
-
 	p := parser.New()
 	p.EnableWindowFunc(true)
 	nodeList, _, err := p.Parse(statement, "", "")
@@ -52,30 +50,81 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string)
 
 	node := nodeList[0]
 
-	switch node.(type) {
-	case *tidbast.SelectStmt:
-	case *tidbast.SetOprStmt:
-	case *tidbast.CreateViewStmt:
-	case *tidbast.ExplainStmt, *tidbast.ShowStmt:
-		// Skip the EXPLAIN and SHOW statement.
+	accessTables := q.getAccessTables(node)
+	allSystems, mixed := isMixedQuery(accessTables)
+	if mixed {
+		return nil, base.MixUserSystemTablesError
+	}
+
+	queryType := getQueryType(node, allSystems)
+	if skipQuerySpan(node, queryType) {
 		return &base.QuerySpan{
+			Type:          queryType,
 			Results:       []base.QuerySpanResult{},
 			SourceColumns: base.SourceColumnSet{},
 		}, nil
-	default:
-		return nil, errors.Errorf("expect a query statement but found %T", node)
+	}
+
+	if explain, ok := node.(*tidbast.ExplainStmt); ok && queryType == base.Select && explain.Analyze {
+		node = explain.Stmt
 	}
 
 	tableSource, err := q.extractTableSourceFromNode(node)
 	if err != nil {
-		// TODO: check for query all system tables.
 		return nil, err
 	}
 
 	return &base.QuerySpan{
+		Type:          queryType,
 		Results:       tableSource.GetQuerySpanResult(),
-		SourceColumns: q.getAccessTables(node),
+		SourceColumns: accessTables,
 	}, nil
+}
+
+func skipQuerySpan(node tidbast.Node, queryType base.QueryType) bool {
+	if queryType == base.Select {
+		return false
+	}
+
+	// This is for internal view in a SELECT statement.
+	if _, ok := node.(*tidbast.CreateViewStmt); ok {
+		return false
+	}
+
+	return true
+}
+
+func isMixedQuery(m base.SourceColumnSet) (bool, bool) {
+	hasSystem, hasUser := false, false
+
+	for table := range m {
+		if isSystemResource(table) {
+			hasSystem = true
+		} else {
+			hasUser = true
+		}
+	}
+
+	if hasSystem && hasUser {
+		return false, true
+	}
+
+	return !hasUser && hasSystem, false
+}
+
+func isSystemResource(resource base.ColumnResource) bool {
+	database := resource.Database
+	database = strings.ToLower(database)
+	return systemDatabases[database]
+}
+
+var systemDatabases = map[string]bool{
+	"information_schema": true,
+	"mysql":              true,
+	"performance_schema": true,
+	"sys":                true,
+	// TiDB only
+	"metrics_schema": true,
 }
 
 func (q *querySpanExtractor) getAccessTables(node tidbast.Node) base.SourceColumnSet {
