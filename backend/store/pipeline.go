@@ -22,7 +22,11 @@ type PipelineMessage struct {
 
 // PipelineFind is the API message for finding pipelines.
 type PipelineFind struct {
-	ID *int
+	ID        *int
+	ProjectID *string
+
+	Limit  *int
+	Offset *int
 }
 
 // CreatePipelineV2 creates a pipeline.
@@ -99,6 +103,9 @@ func (s *Store) ListPipelineV2(ctx context.Context, find *PipelineFind) ([]*Pipe
 	if v := find.ID; v != nil {
 		where, args = append(where, fmt.Sprintf("pipeline.id = $%d", len(args)+1)), append(args, *v)
 	}
+	if v := find.ProjectID; v != nil {
+		where, args = append(where, fmt.Sprintf("project.resource_id = $%d", len(args)+1)), append(args, *v)
+	}
 	query := fmt.Sprintf(`
 		SELECT
 			pipeline.id,
@@ -107,6 +114,12 @@ func (s *Store) ListPipelineV2(ctx context.Context, find *PipelineFind) ([]*Pipe
 		FROM pipeline
 		LEFT JOIN project ON pipeline.project_id = project.id
 		WHERE %s`, strings.Join(where, " AND "))
+	if v := find.Limit; v != nil {
+		query += fmt.Sprintf(" LIMIT %d", *v)
+	}
+	if v := find.Offset; v != nil {
+		query += fmt.Sprintf(" OFFSET %d", *v)
+	}
 
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
