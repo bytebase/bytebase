@@ -59,7 +59,7 @@ import { UserType, type User } from "@/types/proto/v1/auth_service";
 import {
   GroupMember_Role,
   groupMember_RoleToJSON,
-} from "@/types/proto/v1/group";
+} from "@/types/proto/v1/group_service";
 
 withDefaults(
   defineProps<{

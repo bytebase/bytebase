@@ -95,7 +95,7 @@
       <template #footer>
         <div class="w-full flex justify-between items-center">
           <RemoveGroupButton
-            v-if="!isCreating"
+            v-if="!isCreating && allowDelete"
             :group="group!"
             @removed="$emit('close')"
           >
@@ -151,7 +151,11 @@ import {
 } from "@/store";
 import { userNamePrefix, groupNamePrefix } from "@/store/modules/v1/common";
 import { getUserEmailFromIdentifier } from "@/store/modules/v1/common";
-import { Group, GroupMember, GroupMember_Role } from "@/types/proto/v1/group";
+import {
+  Group,
+  GroupMember,
+  GroupMember_Role,
+} from "@/types/proto/v1/group_service";
 import {
   isValidEmail,
   extractUserUID,
@@ -209,15 +213,21 @@ const workspaceDomain = computed(() =>
 
 const disallowEditMember = computed(() => !!props.group?.source);
 
-const selfMemberInGroup = computed(() => {
-  return props.group?.members.find(
-    (member) =>
-      getUserEmailFromIdentifier(member.member) === currentUserV1.value.email
+const isGroupOwner = computed(() => {
+  return (
+    props.group?.members.find(
+      (member) =>
+        getUserEmailFromIdentifier(member.member) === currentUserV1.value.email
+    )?.role === GroupMember_Role.OWNER
   );
 });
 
+const allowDelete = computed(() => {
+  return isGroupOwner.value || hasWorkspacePermissionV2("bb.groups.delete");
+});
+
 const allowEdit = computed(() => {
-  if (selfMemberInGroup.value?.role === GroupMember_Role.OWNER) {
+  if (isGroupOwner.value) {
     return true;
   }
   return hasWorkspacePermissionV2(

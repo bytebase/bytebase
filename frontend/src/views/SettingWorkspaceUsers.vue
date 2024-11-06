@@ -42,7 +42,6 @@
 
         <UserDataTableByGroup
           :groups="filteredGroupList"
-          :allow-edit="allowEditGroup"
           :on-click-user="onClickUser"
           @update-group="handleUpdateGroup"
         />
@@ -53,7 +52,7 @@
           <SearchBox v-model:value="state.activeUserFilterText" />
 
           <NButton
-            v-if="allowGetSCIMSetting"
+            v-if="allowGetSCIMSetting && allowCreateUser"
             class="capitalize"
             @click="
               () => {
@@ -193,7 +192,7 @@ import {
 } from "@/types";
 import { UserType, type User } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
-import type { Group } from "@/types/proto/v1/group";
+import type { Group } from "@/types/proto/v1/group_service";
 import { WorkspaceProfileSetting } from "@/types/proto/v1/setting_service";
 import { hasWorkspacePermissionV2, hasWorkspaceLevelRole } from "@/utils";
 
@@ -279,10 +278,6 @@ const allowCreateGroup = computed(() =>
 
 const allowCreateUser = computed(() => {
   return hasWorkspaceLevelRole(PresetRoleType.WORKSPACE_ADMIN);
-});
-
-const allowEditGroup = computed(() => {
-  return hasWorkspacePermissionV2("bb.groups.update");
 });
 
 onMounted(() => {

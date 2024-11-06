@@ -33,7 +33,7 @@ import {
 import { getProjectName } from "@/store/modules/v1/common";
 import { getUserEmailFromIdentifier } from "@/store/modules/v1/common";
 import { getGroupEmailInBinding } from "@/types";
-import { type Group, GroupMember_Role } from "@/types/proto/v1/group";
+import { type Group, GroupMember_Role } from "@/types/proto/v1/group_service";
 import { PolicyType } from "@/types/proto/v1/org_policy_service";
 import type { Project } from "@/types/proto/v1/project_service";
 import { hasWorkspacePermissionV2 } from "@/utils";
