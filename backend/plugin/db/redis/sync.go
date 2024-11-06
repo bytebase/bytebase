@@ -2,7 +2,6 @@ package redis
 
 import (
 	"context"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -18,22 +17,38 @@ import (
 // SyncInstance syncs the instance metadata.
 func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
 	var instance db.InstanceMetadata
-	dbNumber, err := d.getDatabaseNumber(ctx)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to get database number")
-	}
+	var databaseCount int
+
 	version, err := d.getVersion(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get server version")
 	}
 	instance.Version = version
+
+	clusterEnabled, err := d.getClusterEnabled(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to check if cluster is enabled")
+	}
+
+	// Redis cluster can only use database zero.
+	if clusterEnabled {
+		databaseCount = 1
+	} else {
+		count, err := d.getDatabaseCount(ctx)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to get databases")
+		}
+		databaseCount = count
+	}
+
 	var databases []*storepb.DatabaseSchemaMetadata
-	for _, n := range dbNumber {
+	for i := 0; i < databaseCount; i++ {
 		databases = append(databases, &storepb.DatabaseSchemaMetadata{
-			Name: strconv.Itoa(n),
+			Name: strconv.Itoa(i),
 		})
 	}
 	instance.Databases = databases
+
 	return &instance, nil
 }
 
@@ -61,26 +76,43 @@ func (d *Driver) getVersion(ctx context.Context) (string, error) {
 	return version, nil
 }
 
-func (d *Driver) getDatabaseNumber(ctx context.Context) ([]int, error) {
-	val, err := d.rdb.Info(ctx, "keyspace").Result()
+func (d *Driver) getClusterEnabled(ctx context.Context) (bool, error) {
+	val, err := d.rdb.Info(ctx, "cluster").Result()
 	if err != nil {
+		return false, err
+	}
+	var enabled string
+	for _, line := range strings.Split(val, "\n") {
+		if strings.HasPrefix(line, "cluster_enabled:") {
+			enabled = strings.TrimPrefix(line, "cluster_enabled:")
+			enabled = strings.Trim(enabled, " \n\t\r")
+			break
+		}
+	}
+	if enabled == "" {
+		return false, errors.New("failed to get cluster_enabled")
+	}
+	return enabled == "1", nil
+}
+
+func (d *Driver) getDatabaseCount(ctx context.Context) (int, error) {
+	val, err := d.rdb.ConfigGet(ctx, "databases").Result()
+	if err != nil {
+		// Cloud vendors may have disabled this command.
+		// In that case, we return 1.
 		if strings.Contains(err.Error(), "unknown command") {
-			return []int{0}, nil
+			return 1, nil
 		}
-		return nil, errors.Wrapf(err, "failed to run `INFO KEYSPACE`")
+		return 0, err
 	}
-	// get the db number
-	re := regexp.MustCompile(`db(\d+)`)
-	matches := re.FindAllStringSubmatch(val, -1)
-	var dbs []int
-	for _, match := range matches {
-		dbInt, err := strconv.Atoi(match[1])
-		if err != nil {
-			return nil, err
-		}
-		dbs = append(dbs, dbInt)
+	if _, ok := val["databases"]; !ok {
+		return 0, errors.New("The returned values of 'CONFIG GET databases' dont't have the 'databases' KEY")
 	}
-	return dbs, nil
+	count, err := strconv.Atoi(val["databases"])
+	if err != nil {
+		return 0, errors.Wrapf(err, "failed to convert to int from %v", val["databases"])
+	}
+	return count, nil
 }
 
 // SyncSlowQuery syncs the slow query.
