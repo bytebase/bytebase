@@ -17,7 +17,7 @@ import { useI18n } from "vue-i18n";
 import {
   GroupMember_Role,
   groupMember_RoleToJSON,
-} from "@/types/proto/v1/group";
+} from "@/types/proto/v1/group_service";
 
 defineProps<{
   value: GroupMember_Role;
@@ -31,14 +31,13 @@ defineEmits<{
 const { t } = useI18n();
 
 const options = computed(() => {
-  return [
-    GroupMember_Role.OWNER,
-    GroupMember_Role.MEMBER,
-  ].map<SelectOption>((role) => ({
-    value: role,
-    label: t(
-      `settings.members.groups.form.role.${groupMember_RoleToJSON(role).toLowerCase()}`
-    ),
-  }));
+  return [GroupMember_Role.OWNER, GroupMember_Role.MEMBER].map<SelectOption>(
+    (role) => ({
+      value: role,
+      label: t(
+        `settings.members.groups.form.role.${groupMember_RoleToJSON(role).toLowerCase()}`
+      ),
+    })
+  );
 });
 </script>

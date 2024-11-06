@@ -109,7 +109,6 @@ func (s *GroupService) UpdateGroup(ctx context.Context, request *v1pb.UpdateGrou
 	if !ok {
 		return nil, status.Errorf(codes.Internal, "user not found")
 	}
-	userName := common.FormatUserUID(user.ID)
 
 	group, err := s.store.GetGroup(ctx, groupEmail)
 	if err != nil {
@@ -117,6 +116,13 @@ func (s *GroupService) UpdateGroup(ctx context.Context, request *v1pb.UpdateGrou
 	}
 	if group == nil {
 		if request.AllowMissing {
+			ok, err := s.iamManager.CheckPermission(ctx, iam.PermissionGroupsCreate, user)
+			if err != nil {
+				return nil, err
+			}
+			if !ok {
+				return nil, status.Errorf(codes.PermissionDenied, "user does not have permission %q", iam.PermissionGroupsCreate)
+			}
 			return s.CreateGroup(ctx, &v1pb.CreateGroupRequest{
 				Group:      request.Group,
 				GroupEmail: groupEmail,
@@ -125,19 +131,8 @@ func (s *GroupService) UpdateGroup(ctx context.Context, request *v1pb.UpdateGrou
 		return nil, status.Errorf(codes.NotFound, "group %q not found", groupEmail)
 	}
 
-	ok, err = func() (bool, error) {
-		for _, member := range group.Payload.GetMembers() {
-			if member.Role == storepb.GroupMember_OWNER && member.Member == userName {
-				return true, nil
-			}
-		}
-		return s.iamManager.CheckPermission(ctx, iam.PermissionGroupsUpdate, user)
-	}()
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to check permission, error: %v", err)
-	}
-	if !ok {
-		return nil, status.Errorf(codes.PermissionDenied, "permission denied to update group")
+	if err := s.checkPermission(ctx, group, user, iam.PermissionGroupsUpdate); err != nil {
+		return nil, err
 	}
 
 	patch := &store.UpdateGroupMessage{}
@@ -180,6 +175,23 @@ func (s *GroupService) DeleteGroup(ctx context.Context, request *v1pb.DeleteGrou
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
+	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "user not found")
+	}
+
+	group, err := s.store.GetGroup(ctx, email)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get group %q with error: %v", email, err)
+	}
+	if group == nil {
+		return nil, status.Errorf(codes.NotFound, "cannot found the group %v", request.Name)
+	}
+
+	if err := s.checkPermission(ctx, group, user, iam.PermissionGroupsDelete); err != nil {
+		return nil, err
+	}
+
 	if err := s.store.DeleteGroup(ctx, email); err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -189,6 +201,26 @@ func (s *GroupService) DeleteGroup(ctx context.Context, request *v1pb.DeleteGrou
 	}
 
 	return &emptypb.Empty{}, nil
+}
+
+func (s *GroupService) checkPermission(ctx context.Context, group *store.GroupMessage, user *store.UserMessage, permission string) error {
+	userName := common.FormatUserUID(user.ID)
+
+	ok, err := func() (bool, error) {
+		for _, member := range group.Payload.GetMembers() {
+			if member.Role == storepb.GroupMember_OWNER && member.Member == userName {
+				return true, nil
+			}
+		}
+		return s.iamManager.CheckPermission(ctx, permission, user)
+	}()
+	if err != nil {
+		return status.Errorf(codes.Internal, "failed to check permission, error: %v", err)
+	}
+	if !ok {
+		return status.Errorf(codes.PermissionDenied, "user does not have permission %q", permission)
+	}
+	return nil
 }
 
 func (s *GroupService) convertToGroupPayload(ctx context.Context, group *v1pb.Group) (*storepb.GroupPayload, error) {
