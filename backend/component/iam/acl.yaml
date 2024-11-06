@@ -94,6 +94,7 @@ roles:
       - bb.roles.update
       - bb.rollouts.create
       - bb.rollouts.get
+      - bb.rollouts.list
       - bb.rollouts.preview
       - bb.settings.get
       - bb.settings.list
@@ -222,6 +223,7 @@ roles:
       - bb.roles.update
       - bb.rollouts.create
       - bb.rollouts.get
+      - bb.rollouts.list
       - bb.rollouts.preview
       - bb.settings.get
       - bb.settings.list
@@ -321,6 +323,7 @@ roles:
       - bb.projects.update
       - bb.rollouts.create
       - bb.rollouts.get
+      - bb.rollouts.list
       - bb.rollouts.preview
       - bb.sheets.create
       - bb.sheets.get
@@ -369,6 +372,7 @@ roles:
       - bb.projects.getIamPolicy
       - bb.rollouts.create
       - bb.rollouts.get
+      - bb.rollouts.list
       - bb.rollouts.preview
       - bb.sheets.create
       - bb.sheets.get
@@ -424,6 +428,7 @@ roles:
       - bb.projects.get
       - bb.projects.getIamPolicy
       - bb.rollouts.get
+      - bb.rollouts.list
       - bb.sheets.get
       - bb.taskRuns.list
   - name: roles/projectViewer
