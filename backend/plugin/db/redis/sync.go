@@ -2,6 +2,7 @@ package redis
 
 import (
 	"context"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -17,34 +18,20 @@ import (
 // SyncInstance syncs the instance metadata.
 func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error) {
 	var instance db.InstanceMetadata
-	var databaseCount int
-
 	version, err := d.getVersion(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get server version")
 	}
 	instance.Version = version
 
-	clusterEnabled, err := d.getClusterEnabled(ctx)
+	databaseNumbers, err := d.getDatabases(ctx)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to check if cluster is enabled")
+		return nil, errors.Wrap(err, "failed to get databases")
 	}
-
-	// Redis cluster can only use database zero.
-	if clusterEnabled {
-		databaseCount = 1
-	} else {
-		count, err := d.getDatabaseCount(ctx)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to get databases")
-		}
-		databaseCount = count
-	}
-
 	var databases []*storepb.DatabaseSchemaMetadata
-	for i := 0; i < databaseCount; i++ {
+	for _, n := range databaseNumbers {
 		databases = append(databases, &storepb.DatabaseSchemaMetadata{
-			Name: strconv.Itoa(i),
+			Name: strconv.Itoa(n),
 		})
 	}
 	instance.Databases = databases
@@ -76,43 +63,75 @@ func (d *Driver) getVersion(ctx context.Context) (string, error) {
 	return version, nil
 }
 
-func (d *Driver) getClusterEnabled(ctx context.Context) (bool, error) {
-	val, err := d.rdb.Info(ctx, "cluster").Result()
+func (d *Driver) getDatabases(ctx context.Context) ([]int, error) {
+	dbsFromConfig, failopenFromConfig, err := d.getDatabaseCountFromConfig(ctx)
 	if err != nil {
-		return false, err
+		return nil, err
 	}
-	var enabled string
-	for _, line := range strings.Split(val, "\n") {
-		if strings.HasPrefix(line, "cluster_enabled:") {
-			enabled = strings.TrimPrefix(line, "cluster_enabled:")
-			enabled = strings.Trim(enabled, " \n\t\r")
-			break
-		}
+	if len(dbsFromConfig) > 0 {
+		return dbsFromConfig, nil
 	}
-	if enabled == "" {
-		return false, errors.New("failed to get cluster_enabled")
+
+	dbsFromKeyspace, failopenFromKeyspace, err := d.getDatabaseNumberFromKeyspace(ctx)
+	if err != nil {
+		return nil, err
 	}
-	return enabled == "1", nil
+	if len(dbsFromKeyspace) > 0 {
+		return dbsFromKeyspace, nil
+	}
+
+	// Cloud vendors may have disabled this command. The default database is 0.
+	if failopenFromConfig || failopenFromKeyspace {
+		return []int{0}, nil
+	}
+
+	return nil, nil
 }
 
-func (d *Driver) getDatabaseCount(ctx context.Context) (int, error) {
+func (d *Driver) getDatabaseCountFromConfig(ctx context.Context) ([]int, bool, error) {
 	val, err := d.rdb.ConfigGet(ctx, "databases").Result()
 	if err != nil {
 		// Cloud vendors may have disabled this command.
-		// In that case, we return 1.
 		if strings.Contains(err.Error(), "unknown command") {
-			return 1, nil
+			return nil, true, nil
 		}
-		return 0, err
+		return nil, false, err
 	}
 	if _, ok := val["databases"]; !ok {
-		return 0, errors.New("The returned values of 'CONFIG GET databases' dont't have the 'databases' KEY")
+		return nil, false, errors.New("The returned values of 'CONFIG GET databases' dont't have the 'databases' KEY")
 	}
 	count, err := strconv.Atoi(val["databases"])
 	if err != nil {
-		return 0, errors.Wrapf(err, "failed to convert to int from %v", val["databases"])
+		return nil, false, errors.Wrapf(err, "failed to convert to int from %v", val["databases"])
 	}
-	return count, nil
+	var databases []int
+	for i := 0; i < count; i++ {
+		databases = append(databases, i)
+	}
+	return databases, false, nil
+}
+
+func (d *Driver) getDatabaseNumberFromKeyspace(ctx context.Context) ([]int, bool, error) {
+	val, err := d.rdb.Info(ctx, "keyspace").Result()
+	if err != nil {
+		// Cloud vendors may have disabled this command.
+		if strings.Contains(err.Error(), "unknown command") {
+			return nil, true, nil
+		}
+		return nil, false, err
+	}
+	// Get the db number.
+	re := regexp.MustCompile(`db(\d+)`)
+	matches := re.FindAllStringSubmatch(val, -1)
+	var dbs []int
+	for _, match := range matches {
+		dbInt, err := strconv.Atoi(match[1])
+		if err != nil {
+			return nil, false, err
+		}
+		dbs = append(dbs, dbInt)
+	}
+	return dbs, false, nil
 }
 
 // SyncSlowQuery syncs the slow query.
