@@ -243,6 +243,17 @@ export const getProjectNameReleaseId = (name: string): string[] => {
   return tokens;
 };
 
+export const getProjectNameRolloutId = (name: string): string[] => {
+  const tokens = getNameParentTokens(name, [
+    projectNamePrefix,
+    rolloutNamePrefix,
+  ]);
+  if (tokens.length !== 2) {
+    return ["", ""];
+  }
+  return tokens;
+};
+
 export const isDatabaseName = (name: string): boolean => {
   const regex = /^instances\/([^/]+)\/databases\/(.+)$/;
   return regex.test(name);
