@@ -54,10 +54,15 @@ export const useAuditLogStore = defineStore("audit_log", () => {
     return resp;
   };
 
-  const exportAuditLogs = async (
-    search: SearchAuditLogsParams,
-    format: ExportFormat
-  ): Promise<{
+  const exportAuditLogs = async ({
+    search,
+    format,
+    pageSize,
+  }: {
+    search: SearchAuditLogsParams;
+    format: ExportFormat;
+    pageSize: number;
+  }): Promise<{
     content: BinaryLike | Blob;
     nextPageToken: string;
   }> => {
@@ -66,7 +71,7 @@ export const useAuditLogStore = defineStore("audit_log", () => {
       filter: buildFilter(search),
       orderBy: search.order ? `create_time ${search.order}` : undefined,
       format,
-      pageSize: 1000,
+      pageSize,
     });
   };
 

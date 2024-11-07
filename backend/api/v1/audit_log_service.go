@@ -55,7 +55,7 @@ func (s *AuditLogService) SearchAuditLogs(ctx context.Context, request *v1pb.Sea
 	offset, err := parseLimitAndOffset(&pageSize{
 		token:   request.PageToken,
 		limit:   int(request.PageSize),
-		maximum: 1000,
+		maximum: 10000,
 	})
 	if err != nil {
 		return nil, err
@@ -99,6 +99,9 @@ func (s *AuditLogService) SearchAuditLogs(ctx context.Context, request *v1pb.Sea
 func (s *AuditLogService) ExportAuditLogs(ctx context.Context, request *v1pb.ExportAuditLogsRequest) (*v1pb.ExportAuditLogsResponse, error) {
 	if err := s.licenseService.IsFeatureEnabled(api.FeatureAuditLog); err != nil {
 		return nil, status.Error(codes.PermissionDenied, err.Error())
+	}
+	if request.Filter == "" {
+		return nil, status.Error(codes.InvalidArgument, "filter is required to export audit logs")
 	}
 	searchAuditLogsResult, err := s.SearchAuditLogs(ctx, &v1pb.SearchAuditLogsRequest{
 		Filter:    request.Filter,

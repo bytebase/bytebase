@@ -1122,7 +1122,7 @@ func (s *AuthService) userCountGuard(ctx context.Context) error {
 	if err != nil {
 		return status.Error(codes.Internal, err.Error())
 	}
-	if int64(count) >= userLimit {
+	if count >= userLimit {
 		return status.Errorf(codes.ResourceExhausted, "reached the maximum user count %d", userLimit)
 	}
 	return nil

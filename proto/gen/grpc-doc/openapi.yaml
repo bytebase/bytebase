@@ -2134,6 +2134,42 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
+        post:
+            tags:
+                - DatabaseService
+            operationId: DatabaseService_CreateRevision
+            parameters:
+                - name: instance
+                  in: path
+                  description: The instance id.
+                  required: true
+                  schema:
+                    type: string
+                - name: database
+                  in: path
+                  description: The database id.
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/Revision'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Revision'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
     /v1/instances/{instance}/databases/{database}/revisions/{revision}:
         get:
             tags:
@@ -5785,6 +5821,50 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/Status'
     /v1/projects/{project}/rollouts:
+        get:
+            tags:
+                - RolloutService
+            operationId: RolloutService_ListRollouts
+            parameters:
+                - name: project
+                  in: path
+                  description: The project id.
+                  required: true
+                  schema:
+                    type: string
+                - name: pageSize
+                  in: query
+                  description: |-
+                    The maximum number of rollouts to return. The service may return fewer than
+                     this value.
+                     If unspecified, at most 10 rollouts will be returned.
+                     The maximum value is 1000; values above 1000 will be coerced to 1000.
+                  schema:
+                    type: integer
+                    format: int32
+                - name: pageToken
+                  in: query
+                  description: |-
+                    A page token, received from a previous `ListRollouts` call.
+                     Provide this to retrieve the subsequent page.
+
+                     When paginating, all other parameters provided to `ListRollouts` must match
+                     the call that provided the page token.
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ListRolloutsResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
         post:
             tags:
                 - RolloutService
@@ -10204,7 +10284,7 @@ components:
                         The maximum number of logs to return.
                          The service may return fewer than this value.
                          If unspecified, at most 100 log entries will be returned.
-                         The maximum value is 1000; values above 1000 will be coerced to 1000.
+                         The maximum value is 10000; values above 10000 will be coerced to 10000.
                     format: int32
                 pageToken:
                     type: string
@@ -11491,6 +11571,19 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/Role'
+                nextPageToken:
+                    type: string
+                    description: |-
+                        A token, which can be sent as `page_token` to retrieve the next page.
+                         If this field is omitted, there are no subsequent pages.
+        ListRolloutsResponse:
+            type: object
+            properties:
+                rollouts:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/Rollout'
+                    description: The rollouts from the specified request.
                 nextPageToken:
                     type: string
                     description: |-
@@ -13039,6 +13132,18 @@ components:
                     items:
                         $ref: '#/components/schemas/Stage'
                     description: stages and thus tasks of the rollout.
+                creator:
+                    readOnly: true
+                    type: string
+                    description: 'Format: users/hello@world.com'
+                createTime:
+                    readOnly: true
+                    type: string
+                    format: date-time
+                updateTime:
+                    readOnly: true
+                    type: string
+                    format: date-time
         RolloutPolicy:
             type: object
             properties:
@@ -13497,7 +13602,7 @@ components:
                         The maximum number of logs to return.
                          The service may return fewer than this value.
                          If unspecified, at most 100 log entries will be returned.
-                         The maximum value is 1000; values above 1000 will be coerced to 1000.
+                         The maximum value is 10000; values above 10000 will be coerced to 10000.
                     format: int32
                 pageToken:
                     type: string
@@ -14110,6 +14215,10 @@ components:
         Subscription:
             type: object
             properties:
+                seatCount:
+                    readOnly: true
+                    type: integer
+                    format: int32
                 instanceCount:
                     readOnly: true
                     type: integer

@@ -87,6 +87,7 @@ export interface PatchSubscription {
 }
 
 export interface Subscription {
+  seatCount: number;
   instanceCount: number;
   expiresTime: Timestamp | undefined;
   startedTime: Timestamp | undefined;
@@ -316,6 +317,7 @@ export const PatchSubscription: MessageFns<PatchSubscription> = {
 
 function createBaseSubscription(): Subscription {
   return {
+    seatCount: 0,
     instanceCount: 0,
     expiresTime: undefined,
     startedTime: undefined,
@@ -328,6 +330,9 @@ function createBaseSubscription(): Subscription {
 
 export const Subscription: MessageFns<Subscription> = {
   encode(message: Subscription, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.seatCount !== 0) {
+      writer.uint32(8).int32(message.seatCount);
+    }
     if (message.instanceCount !== 0) {
       writer.uint32(16).int32(message.instanceCount);
     }
@@ -359,6 +364,13 @@ export const Subscription: MessageFns<Subscription> = {
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
+        case 1:
+          if (tag !== 8) {
+            break;
+          }
+
+          message.seatCount = reader.int32();
+          continue;
         case 2:
           if (tag !== 16) {
             break;
@@ -419,6 +431,7 @@ export const Subscription: MessageFns<Subscription> = {
 
   fromJSON(object: any): Subscription {
     return {
+      seatCount: isSet(object.seatCount) ? globalThis.Number(object.seatCount) : 0,
       instanceCount: isSet(object.instanceCount) ? globalThis.Number(object.instanceCount) : 0,
       expiresTime: isSet(object.expiresTime) ? fromJsonTimestamp(object.expiresTime) : undefined,
       startedTime: isSet(object.startedTime) ? fromJsonTimestamp(object.startedTime) : undefined,
@@ -431,6 +444,9 @@ export const Subscription: MessageFns<Subscription> = {
 
   toJSON(message: Subscription): unknown {
     const obj: any = {};
+    if (message.seatCount !== 0) {
+      obj.seatCount = Math.round(message.seatCount);
+    }
     if (message.instanceCount !== 0) {
       obj.instanceCount = Math.round(message.instanceCount);
     }
@@ -460,6 +476,7 @@ export const Subscription: MessageFns<Subscription> = {
   },
   fromPartial(object: DeepPartial<Subscription>): Subscription {
     const message = createBaseSubscription();
+    message.seatCount = object.seatCount ?? 0;
     message.instanceCount = object.instanceCount ?? 0;
     message.expiresTime = (object.expiresTime !== undefined && object.expiresTime !== null)
       ? Timestamp.fromPartial(object.expiresTime)

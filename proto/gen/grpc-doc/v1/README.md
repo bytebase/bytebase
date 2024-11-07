@@ -82,6 +82,7 @@
     - [ColumnConfig](#bytebase-v1-ColumnConfig)
     - [ColumnConfig.LabelsEntry](#bytebase-v1-ColumnConfig-LabelsEntry)
     - [ColumnMetadata](#bytebase-v1-ColumnMetadata)
+    - [CreateRevisionRequest](#bytebase-v1-CreateRevisionRequest)
     - [Database](#bytebase-v1-Database)
     - [Database.LabelsEntry](#bytebase-v1-Database-LabelsEntry)
     - [DatabaseConfig](#bytebase-v1-DatabaseConfig)
@@ -403,7 +404,7 @@
   
     - [EnvironmentService](#bytebase-v1-EnvironmentService)
   
-- [v1/group.proto](#v1_group-proto)
+- [v1/group_service.proto](#v1_group_service-proto)
     - [CreateGroupRequest](#bytebase-v1-CreateGroupRequest)
     - [DeleteGroupRequest](#bytebase-v1-DeleteGroupRequest)
     - [GetGroupRequest](#bytebase-v1-GetGroupRequest)
@@ -612,6 +613,8 @@
     - [GetTaskRunLogRequest](#bytebase-v1-GetTaskRunLogRequest)
     - [GetTaskRunRequest](#bytebase-v1-GetTaskRunRequest)
     - [GetTaskRunSessionRequest](#bytebase-v1-GetTaskRunSessionRequest)
+    - [ListRolloutsRequest](#bytebase-v1-ListRolloutsRequest)
+    - [ListRolloutsResponse](#bytebase-v1-ListRolloutsResponse)
     - [ListTaskRunsRequest](#bytebase-v1-ListTaskRunsRequest)
     - [ListTaskRunsResponse](#bytebase-v1-ListTaskRunsResponse)
     - [PreviewRolloutRequest](#bytebase-v1-PreviewRolloutRequest)
@@ -1909,6 +1912,22 @@ ColumnMetadata is the metadata for columns.
 | user_comment | [string](#string) |  | The user_comment is the user comment of a column parsed from the comment. |
 | effective_masking_level | [MaskingLevel](#bytebase-v1-MaskingLevel) |  | The effective_masking_level is the effective masking level of the column, evaluate from the column masking data and global masking rules. |
 | generation | [GenerationMetadata](#bytebase-v1-GenerationMetadata) |  | The generation is the generation of a column. |
+
+
+
+
+
+
+<a name="bytebase-v1-CreateRevisionRequest"></a>
+
+### CreateRevisionRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | Format: instances/{instance}/databases/{database} |
+| revision | [Revision](#bytebase-v1-Revision) |  | The revision to create. |
 
 
 
@@ -3238,6 +3257,7 @@ PostgreSQL: RANGE, LIST, HASH (https://www.postgresql.org/docs/current/ddl-parti
 | GetChangeHistory | [GetChangeHistoryRequest](#bytebase-v1-GetChangeHistoryRequest) | [ChangeHistory](#bytebase-v1-ChangeHistory) |  |
 | ListRevisions | [ListRevisionsRequest](#bytebase-v1-ListRevisionsRequest) | [ListRevisionsResponse](#bytebase-v1-ListRevisionsResponse) |  |
 | GetRevision | [GetRevisionRequest](#bytebase-v1-GetRevisionRequest) | [Revision](#bytebase-v1-Revision) |  |
+| CreateRevision | [CreateRevisionRequest](#bytebase-v1-CreateRevisionRequest) | [Revision](#bytebase-v1-Revision) |  |
 | DeleteRevision | [DeleteRevisionRequest](#bytebase-v1-DeleteRevisionRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) |  |
 | ListChangelogs | [ListChangelogsRequest](#bytebase-v1-ListChangelogsRequest) | [ListChangelogsResponse](#bytebase-v1-ListChangelogsResponse) |  |
 | GetChangelog | [GetChangelogRequest](#bytebase-v1-GetChangelogRequest) | [Changelog](#bytebase-v1-Changelog) |  |
@@ -4067,6 +4087,7 @@ ANY means approving any node will proceed.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
+| seat_count | [int32](#int32) |  |  |
 | instance_count | [int32](#int32) |  |  |
 | expires_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | started_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
@@ -5434,7 +5455,7 @@ The type of action performed on a Binding in a policy.
 | filter | [string](#string) |  | The filter of the log. It should be a valid CEL expression. For example: - filter = &#34;method == &#39;/bytebase.v1.SQLService/Query&#39;&#34; - filter = &#34;method == &#39;/bytebase.v1.SQLService/Query&#39; &amp;&amp; severity == &#39;ERROR&#39;&#34; - filter = &#34;method == &#39;/bytebase.v1.SQLService/Query&#39; &amp;&amp; severity == &#39;ERROR&#39; &amp;&amp; user == &#39;users/bb@bytebase.com&#39;&#34; - filter = &#34;method == &#39;/bytebase.v1.SQLService/Query&#39; &amp;&amp; severity == &#39;ERROR&#39; &amp;&amp; create_time &lt;= &#39;2021-01-01T00:00:00Z&#39; &amp;&amp; create_time &gt;= &#39;2020-01-01T00:00:00Z&#39;&#34; |
 | order_by | [string](#string) |  | The order by of the log. Only support order by create_time. For example: - order_by = &#34;create_time asc&#34; - order_by = &#34;create_time desc&#34; |
 | format | [ExportFormat](#bytebase-v1-ExportFormat) |  | The export format. |
-| page_size | [int32](#int32) |  | The maximum number of logs to return. The service may return fewer than this value. If unspecified, at most 100 log entries will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_size | [int32](#int32) |  | The maximum number of logs to return. The service may return fewer than this value. If unspecified, at most 100 log entries will be returned. The maximum value is 10000; values above 10000 will be coerced to 10000. |
 | page_token | [string](#string) |  | A page token, received from a previous `ExportAuditLogs` call. Provide this to retrieve the subsequent page. |
 
 
@@ -5485,7 +5506,7 @@ Metadata about the request.
 | parent | [string](#string) |  |  |
 | filter | [string](#string) |  | The filter of the log. It should be a valid CEL expression. For example: - filter = &#34;method == &#39;/bytebase.v1.SQLService/Query&#39;&#34; - filter = &#34;method == &#39;/bytebase.v1.SQLService/Query&#39; &amp;&amp; severity == &#39;ERROR&#39;&#34; - filter = &#34;method == &#39;/bytebase.v1.SQLService/Query&#39; &amp;&amp; severity == &#39;ERROR&#39; &amp;&amp; user == &#39;users/bb@bytebase.com&#39;&#34; - filter = &#34;method == &#39;/bytebase.v1.SQLService/Query&#39; &amp;&amp; severity == &#39;ERROR&#39; &amp;&amp; create_time &lt;= &#39;2021-01-01T00:00:00Z&#39; &amp;&amp; create_time &gt;= &#39;2020-01-01T00:00:00Z&#39;&#34; |
 | order_by | [string](#string) |  | The order by of the log. Only support order by create_time. For example: - order_by = &#34;create_time asc&#34; - order_by = &#34;create_time desc&#34; |
-| page_size | [int32](#int32) |  | The maximum number of logs to return. The service may return fewer than this value. If unspecified, at most 100 log entries will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_size | [int32](#int32) |  | The maximum number of logs to return. The service may return fewer than this value. If unspecified, at most 100 log entries will be returned. The maximum value is 10000; values above 10000 will be coerced to 10000. |
 | page_token | [string](#string) |  | A page token, received from a previous `SearchLogs` call. Provide this to retrieve the subsequent page. |
 
 
@@ -6760,10 +6781,10 @@ The environment&#39;s `name` field is used to identify the environment to update
 
 
 
-<a name="v1_group-proto"></a>
+<a name="v1_group_service-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
-## v1/group.proto
+## v1/group_service.proto
 
 
 
@@ -9828,6 +9849,41 @@ When paginating, all other parameters provided to `ListRoles` must match the cal
 
 
 
+<a name="bytebase-v1-ListRolloutsRequest"></a>
+
+### ListRolloutsRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The parent, which owns this collection of rollouts. Format: projects/{project} Use &#34;projects/-&#34; to list all rollouts from all projects. |
+| page_size | [int32](#int32) |  | The maximum number of rollouts to return. The service may return fewer than this value. If unspecified, at most 10 rollouts will be returned. The maximum value is 1000; values above 1000 will be coerced to 1000. |
+| page_token | [string](#string) |  | A page token, received from a previous `ListRollouts` call. Provide this to retrieve the subsequent page.
+
+When paginating, all other parameters provided to `ListRollouts` must match the call that provided the page token. |
+
+
+
+
+
+
+<a name="bytebase-v1-ListRolloutsResponse"></a>
+
+### ListRolloutsResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| rollouts | [Rollout](#bytebase-v1-Rollout) | repeated | The rollouts from the specified request. |
+| next_page_token | [string](#string) |  | A token, which can be sent as `page_token` to retrieve the next page. If this field is omitted, there are no subsequent pages. |
+
+
+
+
+
+
 <a name="bytebase-v1-ListTaskRunsRequest"></a>
 
 ### ListTaskRunsRequest
@@ -9921,6 +9977,9 @@ When paginating, all other parameters provided to `ListTaskRuns` must match the 
 | plan | [string](#string) |  | The plan that this rollout is based on. Format: projects/{project}/plans/{plan} |
 | title | [string](#string) |  |  |
 | stages | [Stage](#bytebase-v1-Stage) | repeated | stages and thus tasks of the rollout. |
+| creator | [string](#string) |  | Format: users/hello@world.com |
+| create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 
 
 
@@ -10523,6 +10582,7 @@ Read from `pg_stat_activity`
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
 | GetRollout | [GetRolloutRequest](#bytebase-v1-GetRolloutRequest) | [Rollout](#bytebase-v1-Rollout) |  |
+| ListRollouts | [ListRolloutsRequest](#bytebase-v1-ListRolloutsRequest) | [ListRolloutsResponse](#bytebase-v1-ListRolloutsResponse) |  |
 | CreateRollout | [CreateRolloutRequest](#bytebase-v1-CreateRolloutRequest) | [Rollout](#bytebase-v1-Rollout) |  |
 | PreviewRollout | [PreviewRolloutRequest](#bytebase-v1-PreviewRolloutRequest) | [Rollout](#bytebase-v1-Rollout) |  |
 | ListTaskRuns | [ListTaskRunsRequest](#bytebase-v1-ListTaskRunsRequest) | [ListTaskRunsResponse](#bytebase-v1-ListTaskRunsResponse) |  |

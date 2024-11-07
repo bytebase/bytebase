@@ -483,6 +483,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.CreateRevisionRequest"><span class="badge">M</span>CreateRevisionRequest</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.Database"><span class="badge">M</span>Database</a>
                 </li>
               
@@ -1713,7 +1717,7 @@
         
           
           <li>
-            <a href="#v1%2fgroup.proto">v1/group.proto</a>
+            <a href="#v1%2fgroup_service.proto">v1/group_service.proto</a>
             <ul>
               
                 <li>
@@ -2509,6 +2513,14 @@
               
                 <li>
                   <a href="#bytebase.v1.GetTaskRunSessionRequest"><span class="badge">M</span>GetTaskRunSessionRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.ListRolloutsRequest"><span class="badge">M</span>ListRolloutsRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.ListRolloutsResponse"><span class="badge">M</span>ListRolloutsResponse</a>
                 </li>
               
                 <li>
@@ -6263,6 +6275,37 @@ column masking data and global masking rules. </p></td>
 
         
       
+        <h3 id="bytebase.v1.CreateRevisionRequest">CreateRevisionRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>parent</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Format: instances/{instance}/databases/{database} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>revision</td>
+                  <td><a href="#bytebase.v1.Revision">Revision</a></td>
+                  <td></td>
+                  <td><p>The revision to create. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.Database">Database</h3>
         <p></p>
 
@@ -9809,6 +9852,13 @@ The API will default to the BASIC view.</p></td>
               </tr>
             
               <tr>
+                <td>CreateRevision</td>
+                <td><a href="#bytebase.v1.CreateRevisionRequest">CreateRevisionRequest</a></td>
+                <td><a href="#bytebase.v1.Revision">Revision</a></td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
                 <td>DeleteRevision</td>
                 <td><a href="#bytebase.v1.DeleteRevisionRequest">DeleteRevisionRequest</a></td>
                 <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
@@ -10048,6 +10098,16 @@ The API will default to the BASIC view.</p></td>
                 <td>GET</td>
                 <td>/v1/{name=instances/*/databases/*/revisions/*}</td>
                 <td></td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>CreateRevision</td>
+                <td>POST</td>
+                <td>/v1/{parent=instances/*/databases/*}/revisions</td>
+                <td>revision</td>
               </tr>
               
             
@@ -12173,6 +12233,13 @@ The access is based on approval flow.</p></td>
               <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
             </thead>
             <tbody>
+              
+                <tr>
+                  <td>seat_count</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
               
                 <tr>
                   <td>instance_count</td>
@@ -15577,7 +15644,7 @@ For example:
                   <td><p>The maximum number of logs to return.
 The service may return fewer than this value.
 If unspecified, at most 100 log entries will be returned.
-The maximum value is 1000; values above 1000 will be coerced to 1000. </p></td>
+The maximum value is 10000; values above 10000 will be coerced to 10000. </p></td>
                 </tr>
               
                 <tr>
@@ -15707,7 +15774,7 @@ For example:
                   <td><p>The maximum number of logs to return.
 The service may return fewer than this value.
 If unspecified, at most 100 log entries will be returned.
-The maximum value is 1000; values above 1000 will be coerced to 1000. </p></td>
+The maximum value is 10000; values above 10000 will be coerced to 10000. </p></td>
                 </tr>
               
                 <tr>
@@ -19089,7 +19156,7 @@ Format: environments/{environment} </p></td>
     
       
       <div class="file-heading">
-        <h2 id="v1/group.proto">v1/group.proto</h2><a href="#title">Top</a>
+        <h2 id="v1/group_service.proto">v1/group_service.proto</h2><a href="#title">Top</a>
       </div>
       <p></p>
 
@@ -26992,6 +27059,85 @@ TODO(d): check the resource_reference. </p></td>
 
         
       
+        <h3 id="bytebase.v1.ListRolloutsRequest">ListRolloutsRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>parent</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The parent, which owns this collection of rollouts.
+Format: projects/{project}
+Use &#34;projects/-&#34; to list all rollouts from all projects. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>page_size</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>The maximum number of rollouts to return. The service may return fewer than
+this value.
+If unspecified, at most 10 rollouts will be returned.
+The maximum value is 1000; values above 1000 will be coerced to 1000. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>page_token</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>A page token, received from a previous `ListRollouts` call.
+Provide this to retrieve the subsequent page.
+
+When paginating, all other parameters provided to `ListRollouts` must match
+the call that provided the page token. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.ListRolloutsResponse">ListRolloutsResponse</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>rollouts</td>
+                  <td><a href="#bytebase.v1.Rollout">Rollout</a></td>
+                  <td>repeated</td>
+                  <td><p>The rollouts from the specified request. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>next_page_token</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>A token, which can be sent as `page_token` to retrieve the next page.
+If this field is omitted, there are no subsequent pages. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.ListTaskRunsRequest">ListTaskRunsRequest</h3>
         <p></p>
 
@@ -27191,6 +27337,27 @@ Format: projects/{project}/plans/{plan} </p></td>
                   <td><a href="#bytebase.v1.Stage">Stage</a></td>
                   <td>repeated</td>
                   <td><p>stages and thus tasks of the rollout. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>creator</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Format: users/hello@world.com </p></td>
+                </tr>
+              
+                <tr>
+                  <td>create_time</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>update_time</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p> </p></td>
                 </tr>
               
             </tbody>
@@ -28746,6 +28913,13 @@ Format: instances/{instance}/databases/{database} </p></td>
               </tr>
             
               <tr>
+                <td>ListRollouts</td>
+                <td><a href="#bytebase.v1.ListRolloutsRequest">ListRolloutsRequest</a></td>
+                <td><a href="#bytebase.v1.ListRolloutsResponse">ListRolloutsResponse</a></td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
                 <td>CreateRollout</td>
                 <td><a href="#bytebase.v1.CreateRolloutRequest">CreateRolloutRequest</a></td>
                 <td><a href="#bytebase.v1.Rollout">Rollout</a></td>
@@ -28844,6 +29018,16 @@ The access is the same as BatchRunTasks().</p></td>
                 <td>GetRollout</td>
                 <td>GET</td>
                 <td>/v1/{name=projects/*/rollouts/*}</td>
+                <td></td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>ListRollouts</td>
+                <td>GET</td>
+                <td>/v1/{parent=projects/*}/rollouts</td>
                 <td></td>
               </tr>
               

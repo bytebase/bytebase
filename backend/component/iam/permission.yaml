@@ -96,6 +96,7 @@ permissions:
   - bb.roles.update
   - bb.rollouts.create
   - bb.rollouts.get
+  - bb.rollouts.list
   - bb.rollouts.preview
   - bb.settings.get
   - bb.settings.list

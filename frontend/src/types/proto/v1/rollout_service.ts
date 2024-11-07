@@ -73,6 +73,40 @@ export interface GetRolloutRequest {
   name: string;
 }
 
+export interface ListRolloutsRequest {
+  /**
+   * The parent, which owns this collection of rollouts.
+   * Format: projects/{project}
+   * Use "projects/-" to list all rollouts from all projects.
+   */
+  parent: string;
+  /**
+   * The maximum number of rollouts to return. The service may return fewer than
+   * this value.
+   * If unspecified, at most 10 rollouts will be returned.
+   * The maximum value is 1000; values above 1000 will be coerced to 1000.
+   */
+  pageSize: number;
+  /**
+   * A page token, received from a previous `ListRollouts` call.
+   * Provide this to retrieve the subsequent page.
+   *
+   * When paginating, all other parameters provided to `ListRollouts` must match
+   * the call that provided the page token.
+   */
+  pageToken: string;
+}
+
+export interface ListRolloutsResponse {
+  /** The rollouts from the specified request. */
+  rollouts: Rollout[];
+  /**
+   * A token, which can be sent as `page_token` to retrieve the next page.
+   * If this field is omitted, there are no subsequent pages.
+   */
+  nextPageToken: string;
+}
+
 export interface CreateRolloutRequest {
   /**
    * The parent project where this rollout will be created.
@@ -156,6 +190,10 @@ export interface Rollout {
   title: string;
   /** stages and thus tasks of the rollout. */
   stages: Stage[];
+  /** Format: users/hello@world.com */
+  creator: string;
+  createTime: Timestamp | undefined;
+  updateTime: Timestamp | undefined;
 }
 
 export interface Stage {
@@ -1420,6 +1458,169 @@ export const GetRolloutRequest: MessageFns<GetRolloutRequest> = {
   },
 };
 
+function createBaseListRolloutsRequest(): ListRolloutsRequest {
+  return { parent: "", pageSize: 0, pageToken: "" };
+}
+
+export const ListRolloutsRequest: MessageFns<ListRolloutsRequest> = {
+  encode(message: ListRolloutsRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.parent !== "") {
+      writer.uint32(10).string(message.parent);
+    }
+    if (message.pageSize !== 0) {
+      writer.uint32(16).int32(message.pageSize);
+    }
+    if (message.pageToken !== "") {
+      writer.uint32(26).string(message.pageToken);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ListRolloutsRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseListRolloutsRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.parent = reader.string();
+          continue;
+        case 2:
+          if (tag !== 16) {
+            break;
+          }
+
+          message.pageSize = reader.int32();
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.pageToken = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ListRolloutsRequest {
+    return {
+      parent: isSet(object.parent) ? globalThis.String(object.parent) : "",
+      pageSize: isSet(object.pageSize) ? globalThis.Number(object.pageSize) : 0,
+      pageToken: isSet(object.pageToken) ? globalThis.String(object.pageToken) : "",
+    };
+  },
+
+  toJSON(message: ListRolloutsRequest): unknown {
+    const obj: any = {};
+    if (message.parent !== "") {
+      obj.parent = message.parent;
+    }
+    if (message.pageSize !== 0) {
+      obj.pageSize = Math.round(message.pageSize);
+    }
+    if (message.pageToken !== "") {
+      obj.pageToken = message.pageToken;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ListRolloutsRequest>): ListRolloutsRequest {
+    return ListRolloutsRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ListRolloutsRequest>): ListRolloutsRequest {
+    const message = createBaseListRolloutsRequest();
+    message.parent = object.parent ?? "";
+    message.pageSize = object.pageSize ?? 0;
+    message.pageToken = object.pageToken ?? "";
+    return message;
+  },
+};
+
+function createBaseListRolloutsResponse(): ListRolloutsResponse {
+  return { rollouts: [], nextPageToken: "" };
+}
+
+export const ListRolloutsResponse: MessageFns<ListRolloutsResponse> = {
+  encode(message: ListRolloutsResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    for (const v of message.rollouts) {
+      Rollout.encode(v!, writer.uint32(10).fork()).join();
+    }
+    if (message.nextPageToken !== "") {
+      writer.uint32(18).string(message.nextPageToken);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ListRolloutsResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseListRolloutsResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.rollouts.push(Rollout.decode(reader, reader.uint32()));
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.nextPageToken = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ListRolloutsResponse {
+    return {
+      rollouts: globalThis.Array.isArray(object?.rollouts) ? object.rollouts.map((e: any) => Rollout.fromJSON(e)) : [],
+      nextPageToken: isSet(object.nextPageToken) ? globalThis.String(object.nextPageToken) : "",
+    };
+  },
+
+  toJSON(message: ListRolloutsResponse): unknown {
+    const obj: any = {};
+    if (message.rollouts?.length) {
+      obj.rollouts = message.rollouts.map((e) => Rollout.toJSON(e));
+    }
+    if (message.nextPageToken !== "") {
+      obj.nextPageToken = message.nextPageToken;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ListRolloutsResponse>): ListRolloutsResponse {
+    return ListRolloutsResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ListRolloutsResponse>): ListRolloutsResponse {
+    const message = createBaseListRolloutsResponse();
+    message.rollouts = object.rollouts?.map((e) => Rollout.fromPartial(e)) || [];
+    message.nextPageToken = object.nextPageToken ?? "";
+    return message;
+  },
+};
+
 function createBaseCreateRolloutRequest(): CreateRolloutRequest {
   return { parent: "", rollout: undefined };
 }
@@ -1848,7 +2049,7 @@ export const GetTaskRunLogRequest: MessageFns<GetTaskRunLogRequest> = {
 };
 
 function createBaseRollout(): Rollout {
-  return { name: "", plan: "", title: "", stages: [] };
+  return { name: "", plan: "", title: "", stages: [], creator: "", createTime: undefined, updateTime: undefined };
 }
 
 export const Rollout: MessageFns<Rollout> = {
@@ -1864,6 +2065,15 @@ export const Rollout: MessageFns<Rollout> = {
     }
     for (const v of message.stages) {
       Stage.encode(v!, writer.uint32(42).fork()).join();
+    }
+    if (message.creator !== "") {
+      writer.uint32(50).string(message.creator);
+    }
+    if (message.createTime !== undefined) {
+      Timestamp.encode(message.createTime, writer.uint32(58).fork()).join();
+    }
+    if (message.updateTime !== undefined) {
+      Timestamp.encode(message.updateTime, writer.uint32(66).fork()).join();
     }
     return writer;
   },
@@ -1903,6 +2113,27 @@ export const Rollout: MessageFns<Rollout> = {
 
           message.stages.push(Stage.decode(reader, reader.uint32()));
           continue;
+        case 6:
+          if (tag !== 50) {
+            break;
+          }
+
+          message.creator = reader.string();
+          continue;
+        case 7:
+          if (tag !== 58) {
+            break;
+          }
+
+          message.createTime = Timestamp.decode(reader, reader.uint32());
+          continue;
+        case 8:
+          if (tag !== 66) {
+            break;
+          }
+
+          message.updateTime = Timestamp.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1918,6 +2149,9 @@ export const Rollout: MessageFns<Rollout> = {
       plan: isSet(object.plan) ? globalThis.String(object.plan) : "",
       title: isSet(object.title) ? globalThis.String(object.title) : "",
       stages: globalThis.Array.isArray(object?.stages) ? object.stages.map((e: any) => Stage.fromJSON(e)) : [],
+      creator: isSet(object.creator) ? globalThis.String(object.creator) : "",
+      createTime: isSet(object.createTime) ? fromJsonTimestamp(object.createTime) : undefined,
+      updateTime: isSet(object.updateTime) ? fromJsonTimestamp(object.updateTime) : undefined,
     };
   },
 
@@ -1935,6 +2169,15 @@ export const Rollout: MessageFns<Rollout> = {
     if (message.stages?.length) {
       obj.stages = message.stages.map((e) => Stage.toJSON(e));
     }
+    if (message.creator !== "") {
+      obj.creator = message.creator;
+    }
+    if (message.createTime !== undefined) {
+      obj.createTime = fromTimestamp(message.createTime).toISOString();
+    }
+    if (message.updateTime !== undefined) {
+      obj.updateTime = fromTimestamp(message.updateTime).toISOString();
+    }
     return obj;
   },
 
@@ -1947,6 +2190,13 @@ export const Rollout: MessageFns<Rollout> = {
     message.plan = object.plan ?? "";
     message.title = object.title ?? "";
     message.stages = object.stages?.map((e) => Stage.fromPartial(e)) || [];
+    message.creator = object.creator ?? "";
+    message.createTime = (object.createTime !== undefined && object.createTime !== null)
+      ? Timestamp.fromPartial(object.createTime)
+      : undefined;
+    message.updateTime = (object.updateTime !== undefined && object.updateTime !== null)
+      ? Timestamp.fromPartial(object.updateTime)
+      : undefined;
     return message;
   },
 };
@@ -5170,6 +5420,59 @@ export const RolloutServiceDefinition = {
               47,
               42,
               125,
+            ]),
+          ],
+        },
+      },
+    },
+    listRollouts: {
+      name: "ListRollouts",
+      requestType: ListRolloutsRequest,
+      requestStream: false,
+      responseType: ListRolloutsResponse,
+      responseStream: false,
+      options: {
+        _unknownFields: {
+          8410: [new Uint8Array([6, 112, 97, 114, 101, 110, 116])],
+          800010: [new Uint8Array([16, 98, 98, 46, 114, 111, 108, 108, 111, 117, 116, 115, 46, 108, 105, 115, 116])],
+          800016: [new Uint8Array([1])],
+          578365826: [
+            new Uint8Array([
+              34,
+              18,
+              32,
+              47,
+              118,
+              49,
+              47,
+              123,
+              112,
+              97,
+              114,
+              101,
+              110,
+              116,
+              61,
+              112,
+              114,
+              111,
+              106,
+              101,
+              99,
+              116,
+              115,
+              47,
+              42,
+              125,
+              47,
+              114,
+              111,
+              108,
+              108,
+              111,
+              117,
+              116,
+              115,
             ]),
           ],
         },

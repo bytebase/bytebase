@@ -110,6 +110,7 @@
   
     - [ChangelogRevision.Op](#bytebase-store-ChangelogRevision-Op)
     - [ChangelogTask.Status](#bytebase-store-ChangelogTask-Status)
+    - [ChangelogTask.Type](#bytebase-store-ChangelogTask-Type)
   
 - [store/data_source.proto](#store_data_source-proto)
     - [DataSourceExternalSecret](#bytebase-store-DataSourceExternalSecret)
@@ -1901,15 +1902,16 @@ PostgreSQL: RANGE, LIST, HASH (https://www.postgresql.org/docs/current/ddl-parti
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| task_run | [string](#string) |  |  |
-| issue | [string](#string) |  |  |
-| revision | [int64](#int64) |  | optional |
+| task_run | [string](#string) |  | Format: projects/{project}/rollouts/{rollout}/stages/{stage}/tasks/{task}/taskruns/{taskrun} |
+| issue | [string](#string) |  | Format: projects/{project}/issues/{issue} |
+| revision | [int64](#int64) |  | The revision uid. optional |
 | changed_resources | [ChangedResources](#bytebase-store-ChangedResources) |  |  |
 | status | [ChangelogTask.Status](#bytebase-store-ChangelogTask-Status) |  |  |
 | prev_sync_history_id | [int64](#int64) |  |  |
 | sync_history_id | [int64](#int64) |  |  |
 | sheet | [string](#string) |  | The sheet that holds the content. Format: projects/{project}/sheets/{sheet} |
 | version | [string](#string) |  |  |
+| type | [ChangelogTask.Type](#bytebase-store-ChangelogTask-Type) |  |  |
 
 
 
@@ -1942,6 +1944,22 @@ PostgreSQL: RANGE, LIST, HASH (https://www.postgresql.org/docs/current/ddl-parti
 | PENDING | 1 |  |
 | DONE | 2 |  |
 | FAILED | 3 |  |
+
+
+
+<a name="bytebase-store-ChangelogTask-Type"></a>
+
+### ChangelogTask.Type
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| TYPE_UNSPECIFIED | 0 |  |
+| BASELINE | 1 |  |
+| MIGRATE | 2 |  |
+| MIGRATE_SDL | 3 |  |
+| MIGRATE_GHOST | 4 |  |
+| DATA | 6 |  |
 
 
  

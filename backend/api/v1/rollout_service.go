@@ -36,6 +36,10 @@ import (
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
 )
 
+var getProfile = func() *config.Profile {
+	return nil
+}
+
 // RolloutService represents a service for managing rollout.
 type RolloutService struct {
 	v1pb.UnimplementedRolloutServiceServer
@@ -51,6 +55,9 @@ type RolloutService struct {
 
 // NewRolloutService returns a rollout service instance.
 func NewRolloutService(store *store.Store, sheetManager *sheet.Manager, licenseService enterprise.LicenseService, dbFactory *dbfactory.DBFactory, stateCfg *state.State, webhookManager *webhook.Manager, profile *config.Profile, iamManager *iam.Manager) *RolloutService {
+	getProfile = func() *config.Profile {
+		return profile
+	}
 	return &RolloutService{
 		store:          store,
 		sheetManager:   sheetManager,
@@ -129,6 +136,73 @@ func (s *RolloutService) GetRollout(ctx context.Context, request *v1pb.GetRollou
 		return nil, status.Errorf(codes.Internal, "failed to convert to rollout, error: %v", err)
 	}
 	return rolloutV1, nil
+}
+
+// ListRollouts lists rollouts.
+func (s *RolloutService) ListRollouts(ctx context.Context, request *v1pb.ListRolloutsRequest) (*v1pb.ListRolloutsResponse, error) {
+	projectID, err := common.GetProjectID(request.Parent)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+		ResourceID: &projectID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get project, error: %v", err)
+	}
+	if project == nil {
+		return nil, status.Errorf(codes.NotFound, "project %q not found", projectID)
+	}
+
+	offset, err := parseLimitAndOffset(&pageSize{
+		token:   request.PageToken,
+		limit:   int(request.PageSize),
+		maximum: 1000,
+	})
+	if err != nil {
+		return nil, err
+	}
+	limitPlusOne := offset.limit + 1
+
+	find := &store.PipelineFind{
+		ProjectID: &projectID,
+		Limit:     &limitPlusOne,
+		Offset:    &offset.offset,
+	}
+	pipelines, err := s.store.ListPipelineV2(ctx, find)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to list pipelines, error: %v", err)
+	}
+
+	var nextPageToken string
+	// has more pages
+	if len(pipelines) == limitPlusOne {
+		if nextPageToken, err = offset.getPageToken(); err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to get next page token, error: %v", err)
+		}
+		pipelines = pipelines[:offset.limit]
+	}
+
+	rollouts := []*v1pb.Rollout{}
+	for _, pipeline := range pipelines {
+		rolloutMessage, err := s.store.GetRollout(ctx, pipeline.ID)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to get rollout, error: %v", err)
+		}
+		if rolloutMessage == nil {
+			return nil, status.Errorf(codes.Internal, "failed to get rollout %d", pipeline.ID)
+		}
+		rollout, err := convertToRollout(ctx, s.store, project, rolloutMessage)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to convert to rollout, error: %v", err)
+		}
+		rollouts = append(rollouts, rollout)
+	}
+
+	return &v1pb.ListRolloutsResponse{
+		Rollouts:      rollouts,
+		NextPageToken: nextPageToken,
+	}, nil
 }
 
 // CreateRollout creates a rollout from plan.

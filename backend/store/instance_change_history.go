@@ -264,7 +264,7 @@ type tableMap map[string]*resourceTable
 //
 // )
 // .
-func generateResourceFilter(filter string) (string, error) {
+func generateResourceFilter(filter string, jsonbFieldName string) (string, error) {
 	env, err := cel.NewEnv(
 		cel.Declarations(
 			decls.NewFunction("tableExists", decls.NewOverload("tableExists_string", []*exprpb.Type{decls.String, decls.String, decls.String}, decls.Bool)),
@@ -313,7 +313,7 @@ func generateResourceFilter(filter string) (string, error) {
 				return "", err
 			}
 		}
-		if _, err := buf.WriteString("(instance_change_history.payload @> '"); err != nil {
+		if _, err := buf.WriteString(fmt.Sprintf("(%s @> '", jsonbFieldName)); err != nil {
 			return "", err
 		}
 		if _, err := buf.WriteString(part); err != nil {
@@ -484,7 +484,7 @@ func (s *Store) ListInstanceChangeHistory(ctx context.Context, find *FindInstanc
 		where, args = append(where, fmt.Sprintf("instance_change_history.version = $%d", len(args)+1)), append(args, storedVersion)
 	}
 	if v := find.ResourcesFilter; v != nil {
-		text, err := generateResourceFilter(*v)
+		text, err := generateResourceFilter(*v, "instance_change_history.payload")
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to generate resource filter from %q", *v)
 		}

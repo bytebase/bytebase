@@ -118,12 +118,6 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*ba
 	if mixed {
 		return nil, base.MixUserSystemTablesError
 	}
-	if allSystems {
-		return &base.QuerySpan{
-			SourceColumns: base.SourceColumnSet{},
-			Results:       []base.QuerySpanResult{},
-		}, nil
-	}
 
 	res, err := pgquery.Parse(stmt)
 	if err != nil {
@@ -134,22 +128,13 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*ba
 	}
 	ast := res.Stmts[0]
 
-	switch ast.Stmt.Node.(type) {
-	case *pgquery.Node_SelectStmt:
-	case *pgquery.Node_ExplainStmt:
-		// Skip the EXPLAIN statement.
+	queryType := getQueryType(ast.Stmt, allSystems)
+	if queryType != base.Select {
 		return &base.QuerySpan{
+			Type:          queryType,
 			SourceColumns: base.SourceColumnSet{},
 			Results:       []base.QuerySpanResult{},
 		}, nil
-	case *pgquery.Node_VariableSetStmt, *pgquery.Node_VariableShowStmt:
-		// Skip the SET statement and VARIABLE SHOW statement.
-		return &base.QuerySpan{
-			SourceColumns: base.SourceColumnSet{},
-			Results:       []base.QuerySpanResult{},
-		}, nil
-	default:
-		return nil, errors.Errorf("expect a query statement but found %T", ast.Stmt.Node)
 	}
 
 	tableSource, err := q.extractTableSourceFromNode(ast.Stmt)
@@ -163,6 +148,7 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*ba
 				}] = true
 			}
 			return &base.QuerySpan{
+				Type:          base.Select,
 				SourceColumns: accessTables,
 				Results:       []base.QuerySpanResult{},
 				NotFoundError: resourceNotFound,
@@ -178,6 +164,7 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*ba
 	}
 
 	return &base.QuerySpan{
+		Type:          base.Select,
 		SourceColumns: accessTables,
 		Results:       tableSource.GetQuerySpanResult(),
 	}, nil
@@ -191,6 +178,8 @@ func (q *querySpanExtractor) extractTableSourceFromNode(node *pgquery.Node) (bas
 	}
 
 	switch node := node.Node.(type) {
+	case *pgquery.Node_ExplainStmt:
+		return q.extractTableSourceFromNode(node.ExplainStmt.Query)
 	case *pgquery.Node_SelectStmt:
 		return q.extractTableSourceFromSelect(node)
 	case *pgquery.Node_RangeVar:

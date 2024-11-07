@@ -95,6 +95,7 @@ const (
 	PermissionRolesUpdate                Permission = "bb.roles.update"
 	PermissionRolloutsCreate             Permission = "bb.rollouts.create"
 	PermissionRolloutsGet                Permission = "bb.rollouts.get"
+	PermissionRolloutsList               Permission = "bb.rollouts.list"
 	PermissionRolloutsPreview            Permission = "bb.rollouts.preview"
 	PermissionSettingsGet                Permission = "bb.settings.get"
 	PermissionSettingsList               Permission = "bb.settings.list"
@@ -223,6 +224,7 @@ var allPermissions = []Permission{
 	PermissionRolesUpdate,
 	PermissionRolloutsCreate,
 	PermissionRolloutsGet,
+	PermissionRolloutsList,
 	PermissionRolloutsPreview,
 	PermissionSettingsGet,
 	PermissionSettingsList,

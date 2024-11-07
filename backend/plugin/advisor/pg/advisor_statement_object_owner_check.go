@@ -484,21 +484,44 @@ func (*StatementObjectOwnerCheckAdvisor) Check(ctx advisor.Context, _ string) ([
 				if schemaMeta == nil {
 					continue
 				}
-				tableMeta := schemaMeta.GetTable(table.Name)
-				owner := tableMeta.GetOwner()
-				if owner == pgDatabaseOwner {
-					owner = dbMetadata.GetOwner()
-				}
-				if owner != currentRole {
-					adviceList = append(adviceList, &storepb.Advice{
-						Status:  level,
-						Title:   title,
-						Content: fmt.Sprintf("Table \"%s\" is owned by \"%s\", but the current role is \"%s\".", table.Name, owner, currentRole),
-						Code:    advisor.StatementObjectOwnerCheck.Int32(),
-						StartPosition: &storepb.Position{
-							Line: int32(stmt.LastLine()),
-						},
-					})
+				switch table.Type {
+				case ast.TableTypeBaseTable:
+					tableMeta := schemaMeta.GetTable(table.Name)
+					if tableMeta == nil {
+						continue
+					}
+					owner := tableMeta.GetOwner()
+					if owner == pgDatabaseOwner {
+						owner = dbMetadata.GetOwner()
+					}
+					if owner != currentRole {
+						adviceList = append(adviceList, &storepb.Advice{
+							Status:  level,
+							Title:   title,
+							Content: fmt.Sprintf("Table \"%s\" is owned by \"%s\", but the current role is \"%s\".", table.Name, owner, currentRole),
+							Code:    advisor.StatementObjectOwnerCheck.Int32(),
+							StartPosition: &storepb.Position{
+								Line: int32(stmt.LastLine()),
+							},
+						})
+					}
+				default:
+					// todo: use view owner instead of schema owner
+					owner := schemaMeta.GetOwner()
+					if owner == pgDatabaseOwner {
+						owner = dbMetadata.GetOwner()
+					}
+					if owner != currentRole {
+						adviceList = append(adviceList, &storepb.Advice{
+							Status:  level,
+							Title:   title,
+							Content: fmt.Sprintf("Schema \"%s\" is owned by \"%s\", but the current role is \"%s\".", schemaName, owner, currentRole),
+							Code:    advisor.StatementObjectOwnerCheck.Int32(),
+							StartPosition: &storepb.Position{
+								Line: int32(stmt.LastLine()),
+							},
+						})
+					}
 				}
 			}
 		case *ast.DropTriggerStmt:

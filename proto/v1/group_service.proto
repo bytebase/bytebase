@@ -54,7 +54,7 @@ service GroupService {
     option (google.api.http) = {delete: "/v1/{name=groups/*}"};
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.groups.delete";
-    option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.auth_method) = CUSTOM;
   }
 }
 

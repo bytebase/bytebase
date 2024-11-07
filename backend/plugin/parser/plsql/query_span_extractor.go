@@ -56,10 +56,6 @@ func (q *querySpanExtractor) getDatabaseMetadata(schema string) (*model.Database
 func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string) (*base.QuerySpan, error) {
 	q.ctx = ctx
 
-	// TODO: Implement the logic to extract access tables.
-
-	// TODO: Implement the logic to extract system tables.
-
 	tree, _, err := ParsePLSQL(statement)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to parse statement: %s", statement)
@@ -72,6 +68,26 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to extract resource list from statement: %s", statement)
 	}
+
+	allSystem, mixed := isMixedQuery(resources)
+	if mixed {
+		return nil, base.MixUserSystemTablesError
+	}
+
+	queryTypeListener := &queryTypeListener{
+		allSystems: allSystem,
+		result:     base.QueryTypeUnknown,
+	}
+	antlr.ParseTreeWalkerDefault.Walk(queryTypeListener, tree)
+
+	if queryTypeListener.result != base.Select {
+		return &base.QuerySpan{
+			Type:          queryTypeListener.result,
+			SourceColumns: base.SourceColumnSet{},
+			Results:       []base.QuerySpanResult{},
+		}, nil
+	}
+
 	columnSet := make(base.SourceColumnSet)
 	for _, resource := range resources {
 		if !q.existsTableMetadata(resource) {
@@ -98,6 +114,7 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string)
 				}] = true
 			}
 			return &base.QuerySpan{
+				Type:          base.Select,
 				SourceColumns: columnSet,
 				Results:       []base.QuerySpanResult{},
 				NotFoundError: resourceNotFound,
@@ -112,6 +129,7 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string)
 		results = listener.result.Results
 	}
 	return &base.QuerySpan{
+		Type:          base.Select,
 		SourceColumns: columnSet,
 		Results:       results,
 	}, nil
@@ -1579,4 +1597,73 @@ func (*querySpanExtractor) plsqlIsRecursiveCTE(ctx plsql.IFactoring_elementConte
 	}
 	lastPart := allParts[len(allParts)-1]
 	return lastPart.ALL() != nil, lastPart
+}
+
+func isMixedQuery(m []base.SchemaResource) (bool, bool) {
+	hasSystem, hasUser := false, false
+	for _, item := range m {
+		if systemSchemaMap[item.Database] {
+			hasSystem = true
+		} else {
+			hasUser = true
+		}
+	}
+
+	if hasSystem && hasUser {
+		return false, true
+	}
+
+	return !hasUser && hasSystem, false
+}
+
+var systemSchemaMap = map[string]bool{
+	"ANONYMOUS":              true,
+	"APPQOSSYS":              true,
+	"AUDSYS":                 true,
+	"CTXSYS":                 true,
+	"DBSFWUSER":              true,
+	"DBSNMP":                 true,
+	"DGPDB_INT":              true,
+	"DIP":                    true,
+	"DVF":                    true,
+	"DVSYS":                  true,
+	"GGSYS":                  true,
+	"GSMADMIN_INTERNAL":      true,
+	"GSMCATUSER":             true,
+	"GSMROOTUSER":            true,
+	"GSMUSER":                true,
+	"LBACSYS":                true,
+	"MDDATA":                 true,
+	"MDSYS":                  true,
+	"OPS$ORACLE":             true,
+	"ORACLE_OCM":             true,
+	"OUTLN":                  true,
+	"REMOTE_SCHEDULER_AGENT": true,
+	"SYS":                    true,
+	"SYS$UMF":                true,
+	"SYSBACKUP":              true,
+	"SYSDG":                  true,
+	"SYSKM":                  true,
+	"SYSRAC":                 true,
+	"SYSTEM":                 true,
+	"XDB":                    true,
+	"XS$NULL":                true,
+	"XS$$NULL":               true,
+	"FLOWS_FILES":            true,
+	"HR":                     true,
+	"EXFSYS":                 true,
+	"MGMT_VIEW":              true,
+	"OLAPSYS":                true,
+	"ORDDATA":                true,
+	"ORDPLUGINS":             true,
+	"ORDSYS":                 true,
+	"OWBSYS":                 true,
+	"OWBSYS_AUDIT":           true,
+	"SCOTT":                  true,
+	"SI_INFORMTN_SCHEMA":     true,
+	"SPATIAL_CSW_ADMIN_USR":  true,
+	"SPATIAL_WFS_ADMIN_USR":  true,
+	"SYSMAN":                 true,
+	"WMSYS":                  true,
+	"OJVMSYS":                true,
 }
