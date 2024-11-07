@@ -65,6 +65,9 @@ const props = withDefaults(
     allowForceContinue?: boolean;
   }>(),
   {
+    overrideTitle: "",
+    confirm: undefined,
+    showCodeLocation: false,
     allowForceContinue: true,
     overrideTitle: undefined,
     confirm: undefined,

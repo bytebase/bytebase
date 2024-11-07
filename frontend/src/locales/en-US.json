@@ -2987,6 +2987,8 @@
     "no-policy-set": "No SQL review policy",
     "create-policy": "Create policy",
     "select-review": "Select SQL review",
+    "select-review-rules": "Select SQL review rules",
+    "select-all": "Select all",
     "select-review-label": "You can attach an existed SQL review policy to the resource, or {create}.",
     "duplicate-policy": "Duplicate SQL Review Policy",
     "configure-policy": "Configure policy",
