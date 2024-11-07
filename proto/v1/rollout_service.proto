@@ -298,6 +298,13 @@ message Rollout {
 
   // stages and thus tasks of the rollout.
   repeated Stage stages = 5;
+
+  // Format: users/hello@world.com
+  string creator = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  google.protobuf.Timestamp create_time = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  google.protobuf.Timestamp update_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 message Stage {

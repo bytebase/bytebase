@@ -615,11 +615,19 @@ func convertToTaskRunPriorBackupDetail(priorBackupDetail *storepb.PriorBackupDet
 
 func convertToRollout(ctx context.Context, s *store.Store, project *store.ProjectMessage, rollout *store.PipelineMessage) (*v1pb.Rollout, error) {
 	rolloutV1 := &v1pb.Rollout{
-		Name:   fmt.Sprintf("%s%s/%s%d", common.ProjectNamePrefix, project.ResourceID, common.RolloutPrefix, rollout.ID),
-		Plan:   "",
-		Title:  rollout.Name,
-		Stages: nil,
+		Name:       fmt.Sprintf("%s%s/%s%d", common.ProjectNamePrefix, project.ResourceID, common.RolloutPrefix, rollout.ID),
+		Plan:       "",
+		Title:      rollout.Name,
+		Stages:     nil,
+		CreateTime: timestamppb.New(time.Unix(rollout.CreatedTs, 0)),
+		UpdateTime: timestamppb.New(time.Unix(rollout.UpdatedTs, 0)),
 	}
+
+	creator, err := s.GetUserByID(ctx, rollout.CreatorUID)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get rollout creator")
+	}
+	rolloutV1.Creator = fmt.Sprintf("users/%s", creator.Email)
 
 	plan, err := s.GetPlan(ctx, &store.FindPlanMessage{PipelineID: &rollout.ID})
 	if err != nil {
