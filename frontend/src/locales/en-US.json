@@ -2216,7 +2216,7 @@
       "delete-success": "The GitOps connector is removed"
     },
     "masking-access": {
-      "self": "Access Masking",
+      "self": "Masking Access",
       "grant-access": "Grant Access",
       "revoke-access-title": "Remove both export and query access for {member}?"
     }

@@ -2216,7 +2216,7 @@
       "delete-success": "GitOps 连接已删除"
     },
     "masking-access": {
-      "self": "数据管控",
+      "self": "脱敏管控",
       "grant-access": "授予访问权限",
       "revoke-access-title": "是否删除 {member} 的导出和查询访问权限？"
     }
