@@ -17,7 +17,11 @@ type PipelineMessage struct {
 	Name      string
 	Stages    []*StageMessage
 	// Output only.
-	ID int
+	ID         int
+	CreatorUID int
+	CreatedTs  int64
+	UpdaterUID int
+	UpdatedTs  int64
 }
 
 // PipelineFind is the API message for finding pipelines.
@@ -109,6 +113,9 @@ func (s *Store) ListPipelineV2(ctx context.Context, find *PipelineFind) ([]*Pipe
 	query := fmt.Sprintf(`
 		SELECT
 			pipeline.id,
+			pipeline.creator_id,
+			pipeline.created_ts,
+			pipeline.updated_ts,
 			project.resource_id,
 			pipeline.name
 		FROM pipeline
@@ -138,6 +145,9 @@ func (s *Store) ListPipelineV2(ctx context.Context, find *PipelineFind) ([]*Pipe
 		var pipeline PipelineMessage
 		if err := rows.Scan(
 			&pipeline.ID,
+			&pipeline.CreatorUID,
+			&pipeline.CreatedTs,
+			&pipeline.UpdatedTs,
 			&pipeline.ProjectID,
 			&pipeline.Name,
 		); err != nil {
