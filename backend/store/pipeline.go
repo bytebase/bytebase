@@ -54,10 +54,13 @@ func (s *Store) CreatePipelineV2(ctx context.Context, create *PipelineMessage, c
 			$3,
 			$4
 		)
-		RETURNING id, name
+		RETURNING id, created_ts
 	`
 	pipeline := &PipelineMessage{
-		ProjectID: create.ProjectID,
+		ProjectID:  create.ProjectID,
+		CreatorUID: creatorID,
+		UpdaterUID: creatorID,
+		Name:       create.Name,
 	}
 	if err := tx.QueryRowContext(ctx, query,
 		create.ProjectID,
@@ -66,7 +69,7 @@ func (s *Store) CreatePipelineV2(ctx context.Context, create *PipelineMessage, c
 		create.Name,
 	).Scan(
 		&pipeline.ID,
-		&pipeline.Name,
+		&pipeline.CreatedTs,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
@@ -78,6 +81,7 @@ func (s *Store) CreatePipelineV2(ctx context.Context, create *PipelineMessage, c
 		return nil, err
 	}
 
+	pipeline.UpdatedTs = pipeline.CreatedTs
 	s.pipelineCache.Add(pipeline.ID, pipeline)
 	return pipeline, nil
 }
@@ -115,6 +119,7 @@ func (s *Store) ListPipelineV2(ctx context.Context, find *PipelineFind) ([]*Pipe
 			pipeline.id,
 			pipeline.creator_id,
 			pipeline.created_ts,
+			pipeline.updater_id,
 			pipeline.updated_ts,
 			project.resource_id,
 			pipeline.name
@@ -147,6 +152,7 @@ func (s *Store) ListPipelineV2(ctx context.Context, find *PipelineFind) ([]*Pipe
 			&pipeline.ID,
 			&pipeline.CreatorUID,
 			&pipeline.CreatedTs,
+			&pipeline.UpdaterUID,
 			&pipeline.UpdatedTs,
 			&pipeline.ProjectID,
 			&pipeline.Name,
