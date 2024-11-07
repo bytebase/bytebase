@@ -56,7 +56,7 @@ func convertToPlan(ctx context.Context, s *store.Store, plan *store.PlanMessage)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get plan creator")
 	}
-	p.Creator = fmt.Sprintf("users/%s", creator.Email)
+	p.Creator = common.FormatUserEmail(creator.Email)
 
 	issue, err := s.GetIssueV2(ctx, &store.FindIssueMessage{PlanUID: &plan.UID})
 	if err != nil {
@@ -474,8 +474,8 @@ func convertToTaskRuns(ctx context.Context, s *store.Store, stateCfg *state.Stat
 func convertToTaskRun(ctx context.Context, s *store.Store, stateCfg *state.State, taskRun *store.TaskRunMessage) (*v1pb.TaskRun, error) {
 	t := &v1pb.TaskRun{
 		Name:          fmt.Sprintf("%s%s/%s%d/%s%d/%s%d/%s%d", common.ProjectNamePrefix, taskRun.ProjectID, common.RolloutPrefix, taskRun.PipelineUID, common.StagePrefix, taskRun.StageUID, common.TaskPrefix, taskRun.TaskUID, common.TaskRunPrefix, taskRun.ID),
-		Creator:       fmt.Sprintf("users/%s", taskRun.Creator.Email),
-		Updater:       fmt.Sprintf("users/%s", taskRun.Updater.Email),
+		Creator:       common.FormatUserEmail(taskRun.Creator.Email),
+		Updater:       common.FormatUserEmail(taskRun.Updater.Email),
 		CreateTime:    timestamppb.New(time.Unix(taskRun.CreatedTs, 0)),
 		UpdateTime:    timestamppb.New(time.Unix(taskRun.UpdatedTs, 0)),
 		StartTime:     timestamppb.New(time.Unix(taskRun.StartedTs, 0)),
@@ -629,7 +629,7 @@ func convertToRollout(ctx context.Context, s *store.Store, project *store.Projec
 	}
 	// For preview rollout, creator could be nil.
 	if creator != nil {
-		rolloutV1.Creator = fmt.Sprintf("users/%s", creator.Email)
+		rolloutV1.Creator = common.FormatUserEmail(creator.Email)
 	}
 
 	plan, err := s.GetPlan(ctx, &store.FindPlanMessage{PipelineID: &rollout.ID})
