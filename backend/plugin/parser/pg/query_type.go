@@ -110,7 +110,7 @@ func getQueryType(node *pgquery.Node, allSystems bool) base.QueryType {
 	case *pgquery.Node_ExplainStmt:
 		for _, option := range n.ExplainStmt.Options {
 			if defElem, ok := option.Node.(*pgquery.Node_DefElem); ok && defElem.DefElem.Defname == "analyze" {
-				return getQueryType(n.ExplainStmt.Query, allSystems)
+				return base.ExplainAnalyze
 			}
 		}
 
