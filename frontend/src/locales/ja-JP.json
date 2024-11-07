@@ -2216,7 +2216,7 @@
       "delete-success": "GitOps 接続が削除されました"
     },
     "masking-access": {
-      "self": "アクセスマスキング",
+      "self": "アクセスのマスキング",
       "grant-access": "アクセスを許可する",
       "revoke-access-title": "{member} のエクスポート アクセスとクエリ アクセスの両方を削除しますか?"
     }
