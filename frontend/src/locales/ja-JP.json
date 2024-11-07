@@ -2987,6 +2987,8 @@
     "no-policy-set": "SQL監査ポリシーなし",
     "create-policy": "監査ポリシーを作成する",
     "select-review": "SQLレビューを選択",
+    "select-review-rules": "SQLレビュールールを選択",
+    "select-all": "すべて選択",
     "select-review-label": "既存の SQL レビュー ポリシーをリソースまたは {create} に添付できます。",
     "duplicate-policy": "監査ポリシーをコピーする",
     "configure-policy": "監査ポリシーを構成する",

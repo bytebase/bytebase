@@ -1,8 +1,11 @@
 <template>
   <SQLRuleFilter
     :rule-list="ruleList"
+    :selected-rule-count="selectedRuleKeys.length"
     :params="filterParams"
     :hide-level-filter="hideLevel"
+    :support-select="supportSelect"
+    @toggle-select-all="toggleSelectAll"
     v-on="filterEvents"
   >
     <template
@@ -17,7 +20,7 @@
         :rule-list="filteredRuleList"
         :editable="editable"
         :hide-level="hideLevel"
-        :select-rule="selectRule"
+        :support-select="supportSelect"
         :selected-rule-keys="selectedRuleKeys"
         :size="size"
         @rule-upsert="onRuleChange"
@@ -39,6 +42,7 @@ import NoDataPlaceholder from "@/components/misc/NoDataPlaceholder.vue";
 import type { RuleTemplateV2 } from "@/types";
 import type { Engine } from "@/types/proto/v1/common";
 import type { RuleListWithCategory } from "./SQLReviewCategoryTabFilter.vue";
+import { getRuleKey } from "./utils";
 
 const props = withDefaults(
   defineProps<{
@@ -46,12 +50,12 @@ const props = withDefaults(
     ruleList: RuleTemplateV2[];
     editable: boolean;
     hideLevel?: boolean;
-    selectRule?: boolean;
+    supportSelect?: boolean;
     selectedRuleKeys?: string[];
     size?: "small" | "medium";
   }>(),
   {
-    selectRule: false,
+    supportSelect: false,
     hideLevel: false,
     selectedRuleKeys: () => [],
     size: "medium",
@@ -73,6 +77,14 @@ watch(
   () => props.engine,
   () => filterEvents.reset()
 );
+
+const toggleSelectAll = (select: boolean) => {
+  if (!select) {
+    emit("update:selectedRuleKeys", []);
+  } else {
+    emit("update:selectedRuleKeys", props.ruleList.map(getRuleKey));
+  }
+};
 
 const onRuleChange = (
   rule: RuleTemplateV2,

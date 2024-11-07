@@ -1,7 +1,7 @@
 <template>
   <Drawer :show="show" @close="$emit('close')">
     <DrawerContent
-      :title="$t('sql-review.select-review')"
+      :title="$t('sql-review.select-review-rules')"
       class="w-[70rem] max-w-[100vw] relative"
     >
       <template #default>
@@ -20,10 +20,13 @@
               :rule-list="ruleListFilteredByEngine"
               :editable="false"
               :hide-level="true"
-              :select-rule="true"
+              :support-select="true"
               :size="'small'"
-              :selected-rule-keys="selectedRuleKeys"
-              @update:selected-rule-keys="onSelectedRuleKeysUpdate"
+              :selected-rule-keys="getSelectedRuleKeys(engine)"
+              @update:selected-rule-keys="
+                (keys: string[]) =>
+                  onSelectedRuleKeysUpdateForEngine(engine, keys)
+              "
             />
           </template>
         </SQLReviewTabsByEngine>
@@ -41,7 +44,6 @@
 
 <script setup lang="ts">
 import { NButton } from "naive-ui";
-import { computed } from "vue";
 import { Drawer, DrawerContent } from "@/components/v2";
 import { type Engine, engineFromJSON } from "@/types/proto/v1/common";
 import { ruleTemplateMapV2 } from "@/types/sqlReview";
@@ -61,18 +63,20 @@ const emit = defineEmits<{
   (event: "rule-remove", rule: RuleTemplateV2): void;
 }>();
 
-const selectedRuleKeys = computed(() => {
-  const keys = [];
-  for (const map of props.selectedRuleMap.values()) {
-    for (const rule of map.values()) {
-      keys.push(getRuleKey(rule));
-    }
+const getSelectedRuleKeys = (engine: Engine) => {
+  const keys: string[] = [];
+  const map = props.selectedRuleMap.get(engine);
+  if (!map) {
+    return keys;
+  }
+  for (const rule of map.values()) {
+    keys.push(getRuleKey(rule));
   }
   return keys;
-});
+};
 
-const onSelectedRuleKeysUpdate = (keys: string[]) => {
-  const oldSelectedKeys = new Set([...selectedRuleKeys.value]);
+const onSelectedRuleKeysUpdateForEngine = (engine: Engine, keys: string[]) => {
+  const oldSelectedKeys = new Set(getSelectedRuleKeys(engine));
   const newSelectedKeys = new Set(keys);
 
   for (const key of newSelectedKeys) {
