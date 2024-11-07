@@ -2987,6 +2987,8 @@
     "no-policy-set": "Sin política de revisión de SQL",
     "create-policy": "Crear política",
     "select-review": "Seleccione revisión SQL",
+    "select-review-rules": "Seleccionar reglas de revisión de SQL",
+    "select-all": "Seleccionar todo",
     "select-review-label": "Puede adjuntar una política de revisión de SQL existente al recurso o {create}.",
     "duplicate-policy": "Duplicar política de revisión de SQL",
     "configure-policy": "Configurar política",
