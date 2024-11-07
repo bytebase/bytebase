@@ -203,35 +203,9 @@
       ]
     }
   querySpan:
-    type: 1
-    results:
-        - name: a
-          sourcecolumns:
-            - server: ""
-              database: db
-              schema: public
-              table: t1
-              column: a
-        - name: b
-          sourcecolumns:
-            - server: ""
-              database: db
-              schema: public
-              table: t1
-              column: b
-        - name: c
-          sourcecolumns:
-            - server: ""
-              database: db
-              schema: public
-              table: t1
-              column: c
-    sourcecolumns:
-        - server: ""
-          database: db
-          schema: public
-          table: t1
-          column: ""
+    type: 6
+    results: []
+    sourcecolumns: []
 - description: Function with if-else
   statement: SELECT * from IF_QUERY();
   defaultDatabase: db
