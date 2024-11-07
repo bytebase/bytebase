@@ -472,6 +472,12 @@ ruleList:
   - type: statement.where.no-equal-null
     level: WARNING
     engine: MYSQL
+  - type: statement.where.disallow-functions-and-calculations
+    level: WARNING
+    engine: MYSQL
+  - type: statement.where.disallow-functions-and-calculations
+    level: WARNING
+    engine: MSSQL
   - type: statement.query.minimum-plan-level
     level: WARNING
     payload:
