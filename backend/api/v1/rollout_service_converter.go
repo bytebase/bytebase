@@ -627,7 +627,10 @@ func convertToRollout(ctx context.Context, s *store.Store, project *store.Projec
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get rollout creator")
 	}
-	rolloutV1.Creator = fmt.Sprintf("users/%s", creator.Email)
+	// For preview rollout, creator could be nil.
+	if creator != nil {
+		rolloutV1.Creator = fmt.Sprintf("users/%s", creator.Email)
+	}
 
 	plan, err := s.GetPlan(ctx, &store.FindPlanMessage{PipelineID: &rollout.ID})
 	if err != nil {
