@@ -73,22 +73,8 @@
       ]
     }
   querySpan:
-    type: 1
-    results:
-        - name: a
-          sourcecolumns:
-            - server: ""
-              database: db
-              schema: ""
-              table: t
-              column: a
-        - name: a
-          sourcecolumns:
-            - server: ""
-              database: db
-              schema: ""
-              table: t
-              column: a
+    type: 6
+    results: []
     sourcecolumns: []
 - description: Test Explain
   statement: EXPLAIN SELECT t1.*, t2.* FROM t t1 JOIN (select * from t) t2 ON t1.a = t2.a;
