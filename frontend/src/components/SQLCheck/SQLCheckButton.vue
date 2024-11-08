@@ -215,7 +215,7 @@ const runChecks = async () => {
     rawAdvices.value = errors.map((err) =>
       Advice.fromPartial({
         title: "Pre check",
-        status: Advice_Status.ERROR,
+        status: Advice_Status.WARNING,
         content: err,
       })
     );
