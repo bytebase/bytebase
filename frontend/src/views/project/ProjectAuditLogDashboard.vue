@@ -25,7 +25,7 @@
       v-if="hasAuditLogFeature"
       :search-audit-logs="searchAuditLogs"
       :session-key="`bb.page-audit-log-table.settings-audit-log-v1-table.${projectId}`"
-      :page-size="1000"
+      :page-size="10"
     >
       <template #table="{ list }">
         <AuditLogDataTable
