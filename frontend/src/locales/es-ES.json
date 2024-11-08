@@ -3049,7 +3049,8 @@
     "enabled-rules": "Reglas habilitadas",
     "rule-detail": "Detalle de la regla",
     "view-definition": "Ver definición",
-    "other-engines": "Otros motores"
+    "other-engines": "Otros motores",
+    "all-checks-passed": "Todos los controles pasaron."
   },
   "audit-log": {
     "no-logs": "Sin registros de auditoría",

@@ -3049,7 +3049,8 @@
     "enabled-rules": "開かれたルールの数",
     "rule-detail": "ルールの詳細",
     "view-definition": "ビューの定義",
-    "other-engines": "他の種類のデータベース"
+    "other-engines": "他の種類のデータベース",
+    "all-checks-passed": "すべてのチェックに合格しました。"
   },
   "audit-log": {
     "no-logs": "監査ログはまだありません",
