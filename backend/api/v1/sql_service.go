@@ -432,16 +432,10 @@ func queryRetry(
 		if err != nil {
 			return nil, nil, time.Duration(0), status.Errorf(codes.Internal, "failed to get query span: %v", err.Error())
 		}
-		for _, span := range spans {
-			fmt.Printf("Banry2: %+v\n", span)
-		}
 		// After replacing backup table with source, we can apply the original access check and mask sensitive data for backup table.
 		// If err != nil, this function will return the original spans.
 		if err := replaceBackupTableWithSource(ctx, stores, instance, database, spans); err != nil {
 			slog.Debug("failed to replace backup table with source", log.BBError(err))
-		}
-		for _, span := range spans {
-			fmt.Printf("Banry3: %+v\n", span)
 		}
 		if licenseService.IsFeatureEnabled(api.FeatureAccessControl) == nil && optionalAccessCheck != nil {
 			if err := optionalAccessCheck(ctx, instance, database, user, spans, queryContext.Limit, queryContext.Explain, isExport); err != nil {
@@ -499,13 +493,11 @@ func queryRetry(
 		if err != nil {
 			return nil, nil, duration, status.Errorf(codes.Internal, "failed to get query span: %v", err.Error())
 		}
-		fmt.Printf("Banry4: %+v\n", spans)
 		// After replacing backup table with source, we can apply the original access check and mask sensitive data for backup table.
 		// If err != nil, this function will return the original spans.
 		if err := replaceBackupTableWithSource(ctx, stores, instance, database, spans); err != nil {
 			slog.Debug("failed to replace backup table with source", log.BBError(err))
 		}
-		fmt.Printf("Banry5: %+v\n", spans)
 	}
 	// The second query span should not tolerate any error, but we should retail the original error from database if possible.
 	for i, result := range results {
