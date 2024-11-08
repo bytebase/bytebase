@@ -163,17 +163,7 @@
         <div class="font-semibold">{{ row.title }}</div>
       </div>
       <div class="textinfolabel">
-        <span v-if="row.checkResult.content">
-          {{ row.checkResult.content }}
-        </span>
-        <span
-          v-if="
-            !row.checkResult.content &&
-            row.checkResult.status === PlanCheckRun_Result_Status.SUCCESS
-          "
-        >
-          {{ $t("sql-review.all-checks-passed") }}
-        </span>
+        <span>{{ row.checkResult.content }}</span>
         <template v-if="row.checkResult.sqlReviewReport?.detail">
           <span
             class="ml-1 normal-link"
