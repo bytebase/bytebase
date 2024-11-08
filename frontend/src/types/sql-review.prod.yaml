@@ -169,9 +169,15 @@ ruleList:
   - type: table.disallow-ddl
     level: WARNING
     engine: MSSQL
+  - type: table.disallow-ddl
+    level: WARNING
+    engine: MYSQL
   - type: table.disallow-dml
     level: WARNING
     engine: MSSQL
+  - type: table.disallow-dml
+    level: WARNING
+    engine: MYSQL
   - type: table.limit-size
     level: WARNING
     payload:
