@@ -37,8 +37,8 @@ export interface SearchAuditLogsRequest {
   /**
    * The maximum number of logs to return.
    * The service may return fewer than this value.
-   * If unspecified, at most 100 log entries will be returned.
-   * The maximum value is 10000; values above 10000 will be coerced to 10000.
+   * If unspecified, at most 10 log entries will be returned.
+   * The maximum value is 5000; values above 5000 will be coerced to 5000.
    */
   pageSize: number;
   /**
@@ -82,8 +82,8 @@ export interface ExportAuditLogsRequest {
   /**
    * The maximum number of logs to return.
    * The service may return fewer than this value.
-   * If unspecified, at most 100 log entries will be returned.
-   * The maximum value is 10000; values above 10000 will be coerced to 10000.
+   * If unspecified, at most 10 log entries will be returned.
+   * The maximum value is 5000; values above 5000 will be coerced to 5000.
    */
   pageSize: number;
   /**

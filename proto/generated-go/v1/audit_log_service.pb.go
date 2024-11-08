@@ -112,8 +112,8 @@ type SearchAuditLogsRequest struct {
 	OrderBy string `protobuf:"bytes,2,opt,name=order_by,json=orderBy,proto3" json:"order_by,omitempty"`
 	// The maximum number of logs to return.
 	// The service may return fewer than this value.
-	// If unspecified, at most 100 log entries will be returned.
-	// The maximum value is 10000; values above 10000 will be coerced to 10000.
+	// If unspecified, at most 10 log entries will be returned.
+	// The maximum value is 5000; values above 5000 will be coerced to 5000.
 	PageSize int32 `protobuf:"varint,3,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
 	// A page token, received from a previous `SearchLogs` call.
 	// Provide this to retrieve the subsequent page.
@@ -264,8 +264,8 @@ type ExportAuditLogsRequest struct {
 	Format ExportFormat `protobuf:"varint,3,opt,name=format,proto3,enum=bytebase.v1.ExportFormat" json:"format,omitempty"`
 	// The maximum number of logs to return.
 	// The service may return fewer than this value.
-	// If unspecified, at most 100 log entries will be returned.
-	// The maximum value is 10000; values above 10000 will be coerced to 10000.
+	// If unspecified, at most 10 log entries will be returned.
+	// The maximum value is 5000; values above 5000 will be coerced to 5000.
 	PageSize int32 `protobuf:"varint,5,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
 	// A page token, received from a previous `ExportAuditLogs` call.
 	// Provide this to retrieve the subsequent page.
