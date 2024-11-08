@@ -5,6 +5,7 @@ import { Release } from "./proto/v1/release_service";
 import { emptyUser, unknownUser } from "./v1";
 import {
   emptyProject,
+  UNKNOWN_PROJECT_NAME,
   unknownProject,
   type ComposedProject,
 } from "./v1/project";
@@ -16,7 +17,7 @@ export interface ComposedRelease extends Release {
   creatorEntity: User;
 }
 
-export const UNKNOWN_RELEASE_NAME = `${unknownProject().name}/releases/${UNKNOWN_ID}`;
+export const UNKNOWN_RELEASE_NAME = `${UNKNOWN_PROJECT_NAME}/releases/${UNKNOWN_ID}`;
 
 export const emptyRelease = (): ComposedRelease => {
   const projectEntity = emptyProject();

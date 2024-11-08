@@ -104,7 +104,8 @@
         "export": "CSV / JSONエクスポート",
         "saved-sql-script": "保存されたSQLスクリプト",
         "admin-mode": "管理者モード",
-        "read-replica": "読み取り専用操作用の別の接続"
+        "read-replica": "読み取り専用操作用の別の接続",
+        "batch-query": "バッチクエリ"
       }
     },
     "collaboration": {

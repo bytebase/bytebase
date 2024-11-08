@@ -15,7 +15,7 @@ func getQueryType(node tidbast.Node, allSystem bool) base.QueryType {
 		return base.Select
 	case *tidbast.ExplainStmt:
 		if n.Analyze {
-			return base.Select
+			return base.ExplainAnalyze
 		}
 		return base.Explain
 	case *tidbast.ShowStmt:

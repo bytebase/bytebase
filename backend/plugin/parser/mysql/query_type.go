@@ -45,7 +45,11 @@ func (l *queryTypeListener) EnterSimpleStatement(ctx *mysql.SimpleStatementConte
 			l.result = base.SelectInfoSchema
 		}
 		if ctx.UtilityStatement().ExplainStatement() != nil {
-			l.result = base.Explain
+			if ctx.UtilityStatement().ExplainStatement().ANALYZE_SYMBOL() != nil {
+				l.result = base.ExplainAnalyze
+			} else {
+				l.result = base.Explain
+			}
 		}
 	}
 }

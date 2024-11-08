@@ -190,6 +190,10 @@ export interface Rollout {
   title: string;
   /** stages and thus tasks of the rollout. */
   stages: Stage[];
+  /** Format: users/hello@world.com */
+  creator: string;
+  createTime: Timestamp | undefined;
+  updateTime: Timestamp | undefined;
 }
 
 export interface Stage {
@@ -2045,7 +2049,7 @@ export const GetTaskRunLogRequest: MessageFns<GetTaskRunLogRequest> = {
 };
 
 function createBaseRollout(): Rollout {
-  return { name: "", plan: "", title: "", stages: [] };
+  return { name: "", plan: "", title: "", stages: [], creator: "", createTime: undefined, updateTime: undefined };
 }
 
 export const Rollout: MessageFns<Rollout> = {
@@ -2061,6 +2065,15 @@ export const Rollout: MessageFns<Rollout> = {
     }
     for (const v of message.stages) {
       Stage.encode(v!, writer.uint32(42).fork()).join();
+    }
+    if (message.creator !== "") {
+      writer.uint32(50).string(message.creator);
+    }
+    if (message.createTime !== undefined) {
+      Timestamp.encode(message.createTime, writer.uint32(58).fork()).join();
+    }
+    if (message.updateTime !== undefined) {
+      Timestamp.encode(message.updateTime, writer.uint32(66).fork()).join();
     }
     return writer;
   },
@@ -2100,6 +2113,27 @@ export const Rollout: MessageFns<Rollout> = {
 
           message.stages.push(Stage.decode(reader, reader.uint32()));
           continue;
+        case 6:
+          if (tag !== 50) {
+            break;
+          }
+
+          message.creator = reader.string();
+          continue;
+        case 7:
+          if (tag !== 58) {
+            break;
+          }
+
+          message.createTime = Timestamp.decode(reader, reader.uint32());
+          continue;
+        case 8:
+          if (tag !== 66) {
+            break;
+          }
+
+          message.updateTime = Timestamp.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2115,6 +2149,9 @@ export const Rollout: MessageFns<Rollout> = {
       plan: isSet(object.plan) ? globalThis.String(object.plan) : "",
       title: isSet(object.title) ? globalThis.String(object.title) : "",
       stages: globalThis.Array.isArray(object?.stages) ? object.stages.map((e: any) => Stage.fromJSON(e)) : [],
+      creator: isSet(object.creator) ? globalThis.String(object.creator) : "",
+      createTime: isSet(object.createTime) ? fromJsonTimestamp(object.createTime) : undefined,
+      updateTime: isSet(object.updateTime) ? fromJsonTimestamp(object.updateTime) : undefined,
     };
   },
 
@@ -2132,6 +2169,15 @@ export const Rollout: MessageFns<Rollout> = {
     if (message.stages?.length) {
       obj.stages = message.stages.map((e) => Stage.toJSON(e));
     }
+    if (message.creator !== "") {
+      obj.creator = message.creator;
+    }
+    if (message.createTime !== undefined) {
+      obj.createTime = fromTimestamp(message.createTime).toISOString();
+    }
+    if (message.updateTime !== undefined) {
+      obj.updateTime = fromTimestamp(message.updateTime).toISOString();
+    }
     return obj;
   },
 
@@ -2144,6 +2190,13 @@ export const Rollout: MessageFns<Rollout> = {
     message.plan = object.plan ?? "";
     message.title = object.title ?? "";
     message.stages = object.stages?.map((e) => Stage.fromPartial(e)) || [];
+    message.creator = object.creator ?? "";
+    message.createTime = (object.createTime !== undefined && object.createTime !== null)
+      ? Timestamp.fromPartial(object.createTime)
+      : undefined;
+    message.updateTime = (object.updateTime !== undefined && object.updateTime !== null)
+      ? Timestamp.fromPartial(object.updateTime)
+      : undefined;
     return message;
   },
 };

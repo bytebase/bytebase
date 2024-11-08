@@ -219,6 +219,23 @@
         </template>
       </div>
     </div>
+
+    <div v-if="showPlaceholder" class="py-3 px-2 first:pt-2 space-y-2">
+      <div class="flex items-center space-x-3">
+        <div
+          class="relative w-5 h-5 flex flex-shrink-0 items-center justify-center rounded-full select-none"
+          :class="statusIconClass(PlanCheckRun_Result_Status.SUCCESS)"
+        >
+          <heroicons-solid:check class="w-4 h-4" />
+        </div>
+        <div class="font-semibold">OK</div>
+      </div>
+      <div class="textinfolabel">
+        <span>
+          {{ $t("sql-review.all-checks-passed") }}
+        </span>
+      </div>
+    </div>
   </div>
 
   <SQLRuleEditDialog
@@ -468,6 +485,13 @@ const highlightTableRows = computed(() => {
 
 const standardTableRows = computed(() => {
   return tableRows.value.filter((row) => !highlightRowFilter(row));
+});
+
+const showPlaceholder = computed(() => {
+  return (
+    highlightTableRows.value.length === 0 &&
+    standardTableRows.value.length === 0
+  );
 });
 
 const showCategoryColumn = computed((): boolean =>

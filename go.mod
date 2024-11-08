@@ -26,13 +26,14 @@ require (
 	github.com/bytebase/google-sql-parser v0.0.0-20241030063241-f3a4e61b6aed
 	github.com/bytebase/mysql-parser v0.0.0-20240810145851-ab2c11629c24
 	github.com/bytebase/plsql-parser v0.0.0-20240929073008-6b57c2e2525d
-	github.com/bytebase/postgresql-parser v0.0.0-20241008085234-a95eacac994a
+	github.com/bytebase/postgresql-parser v0.0.0-20241108072816-e932f744004a
 	github.com/bytebase/snowsql-parser v0.0.0-20240304100801-bb357ccb5535
 	github.com/bytebase/tidb-parser v0.0.0-20240821091609-162fffe2a839
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/cockroachdb/cockroachdb-parser v0.23.2
 	github.com/coreos/go-oidc v2.2.1+incompatible
 	github.com/databricks/databricks-sdk-go v0.50.0
+	github.com/elastic/go-elasticsearch/v7 v7.17.10
 	github.com/epiclabs-io/diff3 v0.0.0-20240325112732-ba77e92bf0e4
 	github.com/github/gh-ost v1.1.6
 	github.com/go-ego/gse v0.80.3
@@ -140,7 +141,6 @@ require (
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/dvsekhvalnov/jose2go v1.7.0 // indirect
-	github.com/elastic/elastic-transport-go/v8 v8.6.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/getsentry/sentry-go v0.12.0 // indirect
 	github.com/go-asn1-ber/asn1-ber v1.5.5 // indirect
@@ -255,7 +255,6 @@ require (
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.3.0 // indirect
 	github.com/desertbit/timer v0.0.0-20180107155436-c41aec40b27f // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
-	github.com/elastic/go-elasticsearch/v8 v8.15.0
 	github.com/envoyproxy/go-control-plane v0.13.0 // indirect
 	github.com/envoyproxy/protoc-gen-validate v1.1.0 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.4 // indirect

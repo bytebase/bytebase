@@ -97,6 +97,7 @@
     "snapshot": "スナップショット",
     "status": "州",
     "stage": "ステージ",
+    "stages": "ステージ",
     "task": "タスク",
     "tasks": "タスク",
     "blocking-task": "タスクをブロック中",
@@ -2216,7 +2217,7 @@
       "delete-success": "GitOps 接続が削除されました"
     },
     "masking-access": {
-      "self": "アクセスマスキング",
+      "self": "アクセスのマスキング",
       "grant-access": "アクセスを許可する",
       "revoke-access-title": "{member} のエクスポート アクセスとクエリ アクセスの両方を削除しますか?"
     }
@@ -2987,6 +2988,8 @@
     "no-policy-set": "SQL監査ポリシーなし",
     "create-policy": "監査ポリシーを作成する",
     "select-review": "SQLレビューを選択",
+    "select-review-rules": "SQLレビュールールを選択",
+    "select-all": "すべて選択",
     "select-review-label": "既存の SQL レビュー ポリシーをリソースまたは {create} に添付できます。",
     "duplicate-policy": "監査ポリシーをコピーする",
     "configure-policy": "監査ポリシーを構成する",
@@ -3047,7 +3050,8 @@
     "enabled-rules": "開かれたルールの数",
     "rule-detail": "ルールの詳細",
     "view-definition": "ビューの定義",
-    "other-engines": "他の種類のデータベース"
+    "other-engines": "他の種類のデータベース",
+    "all-checks-passed": "すべてのチェックに合格しました。"
   },
   "audit-log": {
     "no-logs": "監査ログはまだありません",
