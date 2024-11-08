@@ -26,6 +26,7 @@ categoryList:
       - admin-mode
       - saved-sql-script
       - read-replica
+      - batch-query
   - type: collaboration
     featureList:
       - ui-based-sql-review
@@ -171,6 +172,7 @@ planList:
       - type: export
       - type: admin-mode
       - type: saved-sql-script
+      - type: batch-query
       # Collaboration
       - type: ui-based-sql-review
       - type: shared-sql-script
@@ -244,6 +246,7 @@ planList:
       - type: admin-mode
       - type: read-replica
       - type: saved-sql-script
+      - type: batch-query
       # Collaboration
       - type: ui-based-sql-review
       - type: shared-sql-script
