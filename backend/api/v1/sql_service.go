@@ -308,45 +308,36 @@ func getSchemaMetadata(engine storepb.Engine, dbSchema *model.DBSchema) *model.S
 	}
 }
 
-func replaceBackupTableWithSource(ctx context.Context, stores *store.Store, instance *store.InstanceMessage, database *store.DatabaseMessage, spans []*base.QuerySpan) ([]*base.QuerySpan, error) {
-	var result []*base.QuerySpan
+func replaceBackupTableWithSource(ctx context.Context, stores *store.Store, instance *store.InstanceMessage, database *store.DatabaseMessage, spans []*base.QuerySpan) error {
 	switch instance.Engine {
 	case storepb.Engine_POSTGRES:
 		// Don't need to check the database name for postgres here.
 		// We backup the table to the same database with bbdataarchive schema for Postgres.
 	case storepb.Engine_ORACLE:
 		if database.DatabaseName != oracleBackupDatabaseName {
-			return spans, nil
+			return nil
 		}
 	default:
 		if database.DatabaseName != backupDatabaseName {
-			return spans, nil
+			return nil
 		}
 	}
 	dbSchema, err := stores.GetDBSchema(ctx, database.UID)
 	if err != nil {
-		return spans, err
+		return err
 	}
 	schema := getSchemaMetadata(instance.Engine, dbSchema)
 	if schema == nil {
-		return spans, nil
+		return nil
 	}
 
 	for _, span := range spans {
-		newSpan := &base.QuerySpan{
-			NotFoundError: span.NotFoundError,
-			SourceColumns: generateNewSourceColumnSet(instance.Engine, span.SourceColumns, schema),
-		}
+		span.SourceColumns = generateNewSourceColumnSet(instance.Engine, span.SourceColumns, schema)
 		for _, result := range span.Results {
-			newResult := base.QuerySpanResult{
-				Name:          result.Name,
-				SourceColumns: generateNewSourceColumnSet(instance.Engine, result.SourceColumns, schema),
-			}
-			newSpan.Results = append(newSpan.Results, newResult)
+			result.SourceColumns = generateNewSourceColumnSet(instance.Engine, result.SourceColumns, schema)
 		}
-		result = append(result, newSpan)
 	}
-	return result, nil
+	return nil
 }
 
 func generateNewSourceColumnSet(engine storepb.Engine, origin base.SourceColumnSet, schema *model.SchemaMetadata) base.SourceColumnSet {
@@ -441,11 +432,16 @@ func queryRetry(
 		if err != nil {
 			return nil, nil, time.Duration(0), status.Errorf(codes.Internal, "failed to get query span: %v", err.Error())
 		}
+		for _, span := range spans {
+			fmt.Printf("Banry2: %+v\n", span)
+		}
 		// After replacing backup table with source, we can apply the original access check and mask sensitive data for backup table.
 		// If err != nil, this function will return the original spans.
-		spans, err = replaceBackupTableWithSource(ctx, stores, instance, database, spans)
-		if err != nil {
+		if err := replaceBackupTableWithSource(ctx, stores, instance, database, spans); err != nil {
 			slog.Debug("failed to replace backup table with source", log.BBError(err))
+		}
+		for _, span := range spans {
+			fmt.Printf("Banry3: %+v\n", span)
 		}
 		if licenseService.IsFeatureEnabled(api.FeatureAccessControl) == nil && optionalAccessCheck != nil {
 			if err := optionalAccessCheck(ctx, instance, database, user, spans, queryContext.Limit, queryContext.Explain, isExport); err != nil {
@@ -503,12 +499,13 @@ func queryRetry(
 		if err != nil {
 			return nil, nil, duration, status.Errorf(codes.Internal, "failed to get query span: %v", err.Error())
 		}
+		fmt.Printf("Banry4: %+v\n", spans)
 		// After replacing backup table with source, we can apply the original access check and mask sensitive data for backup table.
 		// If err != nil, this function will return the original spans.
-		spans, err = replaceBackupTableWithSource(ctx, stores, instance, database, spans)
-		if err != nil {
+		if err := replaceBackupTableWithSource(ctx, stores, instance, database, spans); err != nil {
 			slog.Debug("failed to replace backup table with source", log.BBError(err))
 		}
+		fmt.Printf("Banry5: %+v\n", spans)
 	}
 	// The second query span should not tolerate any error, but we should retail the original error from database if possible.
 	for i, result := range results {
