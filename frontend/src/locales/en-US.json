@@ -97,6 +97,7 @@
     "snapshot": "Snapshot",
     "status": "Status",
     "stage": "Stage",
+    "stages": "Stages",
     "task": "Task",
     "tasks": "Tasks",
     "blocking-task": "Blocking task",
