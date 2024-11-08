@@ -1284,7 +1284,7 @@
         "admin": "{environment}環境には SQL 監査ポリシーが構成されていません。 {link}",
         "developer": "{environment} 環境には SQL 監査ポリシーが構成されていません。DBA に構成を依頼してください。"
       },
-      "statement-is-too-large": "現在のステートメント サイズが 1MB を超えているため、SQL チェックはスキップされます。",
+      "statement-is-too-large": "現在のステートメント サイズが 2MB を超えているため、SQL チェックはスキップされます。",
       "back-to-edit": "編集に戻る",
       "continue-anyway": "まだ続く",
       "sql-review-violations": "SQL監査ルール違反"

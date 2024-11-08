@@ -1284,7 +1284,7 @@
         "admin": "El entorno {environment} no ha configurado la política de revisión de SQL. {link}",
         "developer": "El entorno {environment} no ha configurado la política de revisión de SQL. \nSolicite a su DBA que configure."
       },
-      "statement-is-too-large": "Como el tamaño de la declaración actual supera 1 MB, se omitirá la comprobación de SQL.",
+      "statement-is-too-large": "Como el tamaño de la declaración actual supera 2MB, se omitirá la comprobación de SQL.",
       "back-to-edit": "Volver a editar",
       "continue-anyway": "De todas maneras, continúe",
       "sql-review-violations": "Infracciones de revisión de SQL"
