@@ -19,5 +19,6 @@ export * from "./utils";
 export * from "./branch";
 export * from "./release";
 export * from "./revision";
+export * from "./rollout";
 
 export * from "./v1";

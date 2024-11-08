@@ -37,9 +37,9 @@ import VCSIcon from "@/components/VCS/VCSIcon.vue";
 import { getDateForPbTimestamp } from "@/types";
 import { VCSType } from "@/types/proto/v1/common";
 import { humanizeDate } from "@/utils";
-import { provideReleaseDetailContext } from "./context";
+import { useReleaseDetailContext } from "./context";
 
-const { release } = provideReleaseDetailContext();
+const { release } = useReleaseDetailContext();
 
 const vcsSource = computed(() => release.value.vcsSource);
 

@@ -41,6 +41,9 @@ export const PROJECT_V1_ROUTE_REVIEW_CENTER = `${PROJECT_V1_ROUTE_DASHBOARD}.rev
 export const PROJECT_V1_ROUTE_RELEASES = `${PROJECT_V1_ROUTE_DASHBOARD}.release`;
 export const PROJECT_V1_ROUTE_RELEASE_CREATE = `${PROJECT_V1_ROUTE_DASHBOARD}.release.create`;
 export const PROJECT_V1_ROUTE_RELEASE_DETAIL = `${PROJECT_V1_ROUTE_DASHBOARD}.release.detail`;
+export const PROJECT_V1_ROUTE_ROLLOUTS = `${PROJECT_V1_ROUTE_DASHBOARD}.rollout`;
+export const PROJECT_V1_ROUTE_ROLLOUT_DETAIL = `${PROJECT_V1_ROUTE_ROLLOUTS}.detail`;
+export const PROJECT_V1_ROUTE_ROLLOUT_DETAIL_TASK_DETAIL = `${PROJECT_V1_ROUTE_ROLLOUT_DETAIL}.task.detail`;
 
 const projectV1Routes: RouteRecordRaw[] = [
   {
@@ -590,6 +593,56 @@ const projectV1Routes: RouteRecordRaw[] = [
             },
             component: () => import("@/components/Release/ReleaseDetail/"),
             props: true,
+          },
+        ],
+      },
+      {
+        path: "rollouts",
+        meta: {
+          overrideTitle: true,
+        },
+        props: true,
+        children: [
+          {
+            path: "",
+            name: PROJECT_V1_ROUTE_ROLLOUTS,
+            meta: {
+              overrideTitle: true,
+              requiredProjectPermissionList: () => ["bb.projects.get"],
+            },
+            component: () =>
+              import("@/views/project/ProjectRolloutDashboard.vue"),
+            props: true,
+          },
+          {
+            path: ":rolloutId",
+            component: () =>
+              import(
+                "@/components/Rollout/RolloutDetail/RolloutDetailLayout.vue"
+              ),
+            props: true,
+            children: [
+              {
+                path: "",
+                name: PROJECT_V1_ROUTE_ROLLOUT_DETAIL,
+                meta: {
+                  overrideTitle: true,
+                  requiredProjectPermissionList: () => ["bb.projects.get"],
+                },
+                component: () => import("@/components/Rollout/RolloutDetail/"),
+                props: true,
+              },
+              {
+                path: "stages/:stageId/tasks/:taskId",
+                name: PROJECT_V1_ROUTE_ROLLOUT_DETAIL_TASK_DETAIL,
+                meta: {
+                  overrideTitle: true,
+                },
+                component: () =>
+                  import("@/components/Rollout/RolloutDetail/TaskDetail/"),
+                props: true,
+              },
+            ],
           },
         ],
       },
