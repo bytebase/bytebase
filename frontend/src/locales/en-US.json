@@ -97,6 +97,7 @@
     "snapshot": "Snapshot",
     "status": "Status",
     "stage": "Stage",
+    "stages": "Stages",
     "task": "Task",
     "tasks": "Tasks",
     "blocking-task": "Blocking task",
@@ -2216,7 +2217,7 @@
       "delete-success": "The GitOps connector is removed"
     },
     "masking-access": {
-      "self": "Access Masking",
+      "self": "Masking Access",
       "grant-access": "Grant Access",
       "revoke-access-title": "Remove both export and query access for {member}?"
     }
@@ -2987,6 +2988,8 @@
     "no-policy-set": "No SQL review policy",
     "create-policy": "Create policy",
     "select-review": "Select SQL review",
+    "select-review-rules": "Select SQL review rules",
+    "select-all": "Select all",
     "select-review-label": "You can attach an existed SQL review policy to the resource, or {create}.",
     "duplicate-policy": "Duplicate SQL Review Policy",
     "configure-policy": "Configure policy",
@@ -3047,7 +3050,8 @@
     "enabled-rules": "Enabled rules",
     "rule-detail": "Rule detail",
     "view-definition": "View definition",
-    "other-engines": "Other engines"
+    "other-engines": "Other engines",
+    "all-checks-passed": "All checkes passed."
   },
   "audit-log": {
     "no-logs": "No audit logs",

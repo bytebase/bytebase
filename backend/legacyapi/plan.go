@@ -336,7 +336,7 @@ var FeatureMatrix = map[FeatureType][3]bool{
 	FeatureAccessControl:         {false, false, true},
 	FeatureCustomApproval:        {false, false, true},
 	// Efficiency
-	FeatureBatchQuery: {false, false, true},
+	FeatureBatchQuery: {false, true, true},
 	// Collaboration
 	FeatureSharedSQLScript: {false, true, true},
 	// Plugins

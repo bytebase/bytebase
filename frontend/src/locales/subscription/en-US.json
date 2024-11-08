@@ -104,7 +104,8 @@
         "export": "CSV / JSON export",
         "saved-sql-script": "Saved SQL script",
         "admin-mode": "Admin Mode",
-        "read-replica": "Separate connection for read-only operations"
+        "read-replica": "Separate connection for read-only operations",
+        "batch-query": "Batch query"
       }
     },
     "collaboration": {

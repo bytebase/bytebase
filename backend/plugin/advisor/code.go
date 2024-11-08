@@ -366,6 +366,12 @@ const (
 	// MySQLTableRequireCollation is an advisor type for MySQL table require collation.
 	MySQLTableRequireCollation Type = "bb.plugin.advisor.mysql.table.require-collation"
 
+	// MySQLTableDisallowDML is an advisor type for MySQL disallow DML.
+	MySQLTableDisallowDML Type = "bb.plugin.advisor.mysql.table.disallow-dml"
+
+	// MySQLTableDisallowDDL is an advisor type for MySQL disallow DDL.
+	MySQLTableDisallowDDL Type = "bb.plugin.advisor.mysql.table.disallow-ddl"
+
 	// MySQLDatabaseAllowDropIfEmpty is an advisor type for MySQL only allow drop empty database.
 	MySQLDatabaseAllowDropIfEmpty Type = "bb.plugin.advisor.mysql.database.drop-empty-database"
 

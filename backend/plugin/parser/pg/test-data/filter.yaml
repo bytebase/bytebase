@@ -88,6 +88,9 @@
 
     ALTER TABLE ONLY public.my_table
         ADD CONSTRAINT my_table_pkey PRIMARY KEY (id);
+
+    ALTER TABLE ONLY public.l_abc
+        ADD CONSTRAINT unique_lst_id UNIQUE NULLS NOT DISTINCT (lst_id);
   output: |-
     SET statement_timeout = 0;
     SET lock_timeout = 0;
@@ -148,3 +151,6 @@
 
     ALTER TABLE ONLY public.my_table
         ADD CONSTRAINT my_table_pkey PRIMARY KEY (id);
+
+    ALTER TABLE ONLY public.l_abc
+        ADD CONSTRAINT unique_lst_id UNIQUE NULLS NOT DISTINCT (lst_id);

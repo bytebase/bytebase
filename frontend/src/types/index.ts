@@ -31,6 +31,7 @@ export * from "./iam";
 export * from "./misc";
 export * from "./appProfile";
 export * from "./release";
+export * from "./rollout";
 
 export * from "./v1";
 export * from "./timestamp";

@@ -74,7 +74,7 @@
               </span>
             </div>
             <NCheckbox
-              v-if="selectRule"
+              v-if="supportSelect"
               :checked="selectedRuleKeys.includes(getRuleKey(rule))"
               @update:checked="(_) => toggleRule(rule)"
             />
@@ -151,7 +151,7 @@ const props = withDefaults(
   defineProps<{
     ruleList?: RuleListWithCategory[];
     editable: boolean;
-    selectRule?: boolean;
+    supportSelect?: boolean;
     hideLevel?: boolean;
     selectedRuleKeys?: string[];
     size?: "small" | "medium";
@@ -159,7 +159,7 @@ const props = withDefaults(
   {
     ruleList: () => [],
     editable: true,
-    selectRule: false,
+    supportSelect: false,
     hideLevel: false,
     selectedRuleKeys: () => [],
     size: "medium",
@@ -192,7 +192,7 @@ const columns = computed(() => {
           },
         };
       },
-      hide: !props.selectRule,
+      hide: !props.supportSelect,
     },
     {
       type: "expand",
@@ -283,7 +283,7 @@ const columns = computed(() => {
     },
     {
       title: t("common.operations"),
-      hide: props.selectRule,
+      hide: props.supportSelect,
       key: "operations",
       width: "10rem",
       render: (rule: RuleTemplateV2) => {
@@ -304,9 +304,9 @@ const columns = computed(() => {
 
 const rowProps = (rule: RuleTemplateV2) => {
   return {
-    style: props.selectRule ? "cursor: pointer;" : "",
+    style: props.supportSelect ? "cursor: pointer;" : "",
     onClick: (e: MouseEvent) => {
-      if (props.selectRule) {
+      if (props.supportSelect) {
         toggleRule(rule);
         return;
       }
