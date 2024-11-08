@@ -10283,8 +10283,8 @@ components:
                     description: |-
                         The maximum number of logs to return.
                          The service may return fewer than this value.
-                         If unspecified, at most 100 log entries will be returned.
-                         The maximum value is 10000; values above 10000 will be coerced to 10000.
+                         If unspecified, at most 10 log entries will be returned.
+                         The maximum value is 5000; values above 5000 will be coerced to 5000.
                     format: int32
                 pageToken:
                     type: string
@@ -13535,7 +13535,7 @@ components:
                         Not used.
                          The maximum number of anomalies to return. The service may return fewer than
                          this value.
-                         If unspecified, at most 50 anomalies will be returned.
+                         If unspecified, at most 10 anomalies will be returned.
                          The maximum value is 1000; values above 1000 will be coerced to 1000.
                     format: int32
                 pageToken:
@@ -13589,8 +13589,8 @@ components:
                     description: |-
                         The maximum number of logs to return.
                          The service may return fewer than this value.
-                         If unspecified, at most 100 log entries will be returned.
-                         The maximum value is 10000; values above 10000 will be coerced to 10000.
+                         If unspecified, at most 10 log entries will be returned.
+                         The maximum value is 5000; values above 5000 will be coerced to 5000.
                     format: int32
                 pageToken:
                     type: string
