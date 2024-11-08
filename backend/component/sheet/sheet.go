@@ -12,6 +12,7 @@ import (
 	"time"
 
 	lru "github.com/hashicorp/golang-lru/v2/expirable"
+	"github.com/pkg/errors"
 	"github.com/zeebo/xxh3"
 
 	tidbparser "github.com/pingcap/tidb/pkg/parser"
@@ -69,6 +70,21 @@ func (sm *Manager) CreateSheet(ctx context.Context, sheet *store.SheetMessage) (
 	sheet.Payload.Commands = getSheetCommands(sheet.Payload.Engine, sheet.Statement)
 
 	return sm.store.CreateSheet(ctx, sheet)
+}
+
+func (sm *Manager) BatchCreateSheet(ctx context.Context, sheets []*store.SheetMessage, projectUID int, creatorUID int) ([]*store.SheetMessage, error) {
+	for _, sheet := range sheets {
+		if sheet.Payload == nil {
+			sheet.Payload = &storepb.SheetPayload{}
+		}
+		sheet.Payload.Commands = getSheetCommands(sheet.Payload.Engine, sheet.Statement)
+	}
+
+	sheets, err := sm.store.BatchCreateSheet(ctx, projectUID, sheets, creatorUID)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to batch create sheets")
+	}
+	return sheets, nil
 }
 
 func getSheetCommands(engine storepb.Engine, statement string) []*storepb.SheetCommand {
