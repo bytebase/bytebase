@@ -1284,7 +1284,7 @@
         "admin": "{environment} environment has not configured SQL Review Policy. {link}",
         "developer": "{environment} environment has not configured SQL Review Policy. Please ask your DBA to configure."
       },
-      "statement-is-too-large": "As the current statement size exceeds 1MB, the SQL check will be skipped.",
+      "statement-is-too-large": "As the current statement size exceeds 2MB, the SQL check will be skipped.",
       "back-to-edit": "Back to edit",
       "continue-anyway": "Continue anyway",
       "sql-review-violations": "SQL Review Violations"
