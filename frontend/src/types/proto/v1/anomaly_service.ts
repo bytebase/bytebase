@@ -25,7 +25,7 @@ export interface SearchAnomaliesRequest {
    * Not used.
    * The maximum number of anomalies to return. The service may return fewer than
    * this value.
-   * If unspecified, at most 50 anomalies will be returned.
+   * If unspecified, at most 10 anomalies will be returned.
    * The maximum value is 1000; values above 1000 will be coerced to 1000.
    */
   pageSize: number;
