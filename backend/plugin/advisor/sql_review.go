@@ -1264,11 +1264,15 @@ func getAdvisorTypeByRule(ruleType SQLReviewRuleType, engine storepb.Engine) (Ty
 			return MySQLTableDisallowSetCharset, nil
 		}
 	case SchemaRuleTableDisallowDDL:
-		if engine == storepb.Engine_MSSQL {
+		if engine == storepb.Engine_MYSQL {
+			return MySQLTableDisallowDDL, nil
+		} else if engine == storepb.Engine_MSSQL {
 			return MSSQLTableDisallowDDL, nil
 		}
 	case SchemaRuleTableDisallowDML:
-		if engine == storepb.Engine_MSSQL {
+		if engine == storepb.Engine_MYSQL {
+			return MySQLTableDisallowDML, nil
+		} else if engine == storepb.Engine_MSSQL {
 			return MSSQLTableDisallowDML, nil
 		}
 	case SchemaRuleTableLimitSize:

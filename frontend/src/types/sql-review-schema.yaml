@@ -250,6 +250,14 @@
         type: STRING_ARRAY
         default: []
   engine: MSSQL
+- type: table.disallow-ddl
+  category: TABLE
+  componentList:
+    - key: list
+      payload:
+        type: STRING_ARRAY
+        default: []
+  engine: MYSQL
 - type: table.disallow-dml
   category: TABLE
   componentList:
@@ -258,6 +266,14 @@
         type: STRING_ARRAY
         default: []
   engine: MSSQL
+- type: table.disallow-dml
+  category: TABLE
+  componentList:
+    - key: list
+      payload:
+        type: STRING_ARRAY
+        default: []
+  engine: MYSQL
 - type: table.limit-size
   category: TABLE
   componentList:
