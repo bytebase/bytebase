@@ -90,6 +90,18 @@ func NormalizeMySQLIdentifier(identifier parser.IIdentifierContext) string {
 	return identifier.GetText()
 }
 
+func NormalizeMySQLPureIdentifier(pureIdentifier parser.IPureIdentifierContext) string {
+	if pureIdentifier.IDENTIFIER() != nil {
+		return pureIdentifier.IDENTIFIER().GetText()
+	}
+	if pureIdentifier.BACK_TICK_QUOTED_ID() == nil {
+		// For back tick quoted identifier, we need to remove the back tick.
+		text := pureIdentifier.BACK_TICK_QUOTED_ID().GetText()
+		return text[1 : len(text)-1]
+	}
+	return pureIdentifier.GetText()
+}
+
 // NormalizeMySQLTextOrIdentifier normalizes the given TextOrIdentifier.
 func NormalizeMySQLTextOrIdentifier(ctx parser.ITextOrIdentifierContext) string {
 	if ctx.Identifier() != nil {
