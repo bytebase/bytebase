@@ -4,11 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"strings"
 
-	"github.com/elastic/go-elasticsearch/v8/esapi"
+	"github.com/elastic/go-elasticsearch/v7/esapi"
 
+	"github.com/bytebase/bytebase/backend/common/log"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 )
 
@@ -27,12 +29,13 @@ func (d *Driver) getInstanceRoles() ([]*storepb.InstanceRole, error) {
 		return nil, err
 	}
 
+	var instanceRoles []*storepb.InstanceRole
 	results := map[string]UserResult{}
 	if err := json.Unmarshal(bytes, &results); err != nil {
-		return nil, err
+		slog.Error("failed list es roles", log.BBError(err))
+		return instanceRoles, nil
 	}
 
-	var instanceRoles []*storepb.InstanceRole
 	for name, userResult := range results {
 		privileges, err := d.getUserPrivileges(name)
 		if err != nil {
