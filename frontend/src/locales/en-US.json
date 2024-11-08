@@ -3049,7 +3049,8 @@
     "enabled-rules": "Enabled rules",
     "rule-detail": "Rule detail",
     "view-definition": "View definition",
-    "other-engines": "Other engines"
+    "other-engines": "Other engines",
+    "all-checks-passed": "All checkes passed."
   },
   "audit-log": {
     "no-logs": "No audit logs",
