@@ -6,13 +6,14 @@ import {
   unknownProject,
   emptyUser,
   unknownUser,
+  EMPTY_ROLLOUT_NAME,
+  UNKNOWN_ROLLOUT_NAME,
 } from "@/types";
 import type { Rollout } from "@/types//proto/v1/rollout_service";
 import { type User } from "@/types/proto/v1/auth_service";
 import { Issue, IssueStatus, Issue_Type } from "@/types/proto/v1/issue_service";
 import type { Plan, PlanCheckRun } from "@/types/proto/v1/plan_service";
 import { EMPTY_ID, UNKNOWN_ID } from "../../const";
-import { EMPTY_ROLLOUT_NAME, UNKNOWN_ROLLOUT_NAME } from "./rollout";
 
 // For grant request issue, it has no plan and rollout.
 // For sql review issue, it has no rollout.

@@ -69,7 +69,7 @@ export const databaseForTask = (issue: ComposedIssue, task: Task) => {
   return unknownDatabase();
 };
 
-const extractCoreDatabaseInfoFromDatabaseCreateTask = (
+export const extractCoreDatabaseInfoFromDatabaseCreateTask = (
   project: ComposedProject,
   task: Task
 ) => {
