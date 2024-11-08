@@ -75,7 +75,7 @@ func (checker *functionDisallowedListChecker) EnterQuery(ctx *mysql.QueryContext
 func (checker *functionDisallowedListChecker) EnterFunctionCall(ctx *mysql.FunctionCallContext) {
 	pi := ctx.PureIdentifier()
 	if pi != nil {
-		functionName := pi.IDENTIFIER().GetText()
+		functionName := mysqlparser.NormalizeMySQLPureIdentifier(pi)
 		if slices.Contains(checker.disallowList, strings.ToUpper(functionName)) {
 			checker.adviceList = append(checker.adviceList, &storepb.Advice{
 				Status:  checker.level,
