@@ -11,10 +11,11 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
-	"github.com/elastic/go-elasticsearch/v8"
+	"github.com/elastic/go-elasticsearch/v7"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/durationpb"
 
@@ -36,7 +37,7 @@ var (
 )
 
 type Driver struct {
-	typedClient     *elasticsearch.TypedClient
+	typedClient     *elasticsearch.Client
 	basicAuthClient *BasicAuthClient
 	config          db.ConnectionConfig
 }
@@ -73,51 +74,59 @@ func (scheduler *AddressScheduler) GetNewAddress() string {
 }
 
 func (*Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
-	// addresses.
-	addresses := []string{}
-	protocol := "http"
-	if config.TLSConfig.SslCert != "" {
-		protocol = "https"
-	}
-	if len(config.MultiHosts) == 0 {
-		addresses = append(addresses, fmt.Sprintf("%s://%s:%s", protocol, config.Host, config.Port))
-	} else {
-		for idx := range config.MultiHosts {
-			addresses = append(addresses, fmt.Sprintf("%s://%s:%s", protocol, config.MultiHosts[idx], config.MultiPorts[idx]))
+	addresse := fmt.Sprintf("%s:%s", config.Host, config.Port)
+	u, err := url.Parse(addresse)
+	if u.Scheme == "" {
+		protocol := "http"
+		if config.TLSConfig.UseSSL {
+			protocol = "https"
 		}
+		addresse = fmt.Sprintf("%s://%s", protocol, addresse)
 	}
 
 	esConfig := elasticsearch.Config{
 		Username:  config.Username,
 		Password:  config.Password,
-		Addresses: addresses,
+		Addresses: []string{addresse},
+		Transport: &http.Transport{
+			MaxIdleConnsPerHost:   10,
+			ResponseHeaderTimeout: time.Second,
+			TLSClientConfig: &tls.Config{
+				MinVersion:         tls.VersionTLS12,
+				InsecureSkipVerify: true,
+			},
+		},
 	}
-	if protocol == "https" {
-		esConfig.CACert = []byte(config.TLSConfig.SslCert)
-	}
-
-	// typed elasticsearch client.
-	typedClient, err := elasticsearch.NewTypedClient(esConfig)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to create elasticsearch client")
-	}
-
 	// default http client.
-	var httpClient *http.Client
+	httpClient := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				MinVersion:         tls.VersionTLS12,
+				InsecureSkipVerify: true,
+			},
+		},
+	}
+
 	if config.TLSConfig.SslCert != "" {
 		certPool := x509.NewCertPool()
 		if ok := certPool.AppendCertsFromPEM([]byte(config.TLSConfig.SslCert)); !ok {
 			return nil, errors.New("cannot add CA cert to pool")
 		}
-		httpClient = &http.Client{
-			Transport: &http.Transport{
-				TLSClientConfig: &tls.Config{
-					RootCAs: certPool,
-				},
+		esConfig.CACert = []byte(config.TLSConfig.SslCert)
+		esConfig.Transport = &http.Transport{
+			MaxIdleConnsPerHost:   10,
+			ResponseHeaderTimeout: time.Second,
+			TLSClientConfig: &tls.Config{
+				MinVersion: tls.VersionTLS12,
 			},
 		}
-	} else {
-		httpClient = http.DefaultClient
+		httpClient.Transport = esConfig.Transport
+	}
+
+	// typed elasticsearch client.
+	typedClient, err := elasticsearch.NewClient(esConfig)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to create elasticsearch client")
 	}
 
 	// generate basic authentication string for http client.
@@ -129,7 +138,7 @@ func (*Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionCon
 		basicAuthClient: &BasicAuthClient{
 			httpClient: httpClient,
 			addrScheduler: &AddressScheduler{
-				addresses: addresses,
+				addresses: []string{addresse},
 				count:     0,
 			},
 			basicAuthString: basicAuthString,
@@ -144,8 +153,7 @@ func (*Driver) Close(_ context.Context) error {
 }
 
 func (d *Driver) Ping(ctx context.Context) error {
-	_, err := d.typedClient.Ping().Do(ctx)
-	if err != nil {
+	if _, err := d.typedClient.Ping(); err != nil {
 		return errors.Wrapf(err, "failed to ping db")
 	}
 	return nil
