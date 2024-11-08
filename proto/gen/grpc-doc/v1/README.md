@@ -659,6 +659,8 @@
     - [RolloutService](#bytebase-v1-RolloutService)
   
 - [v1/sheet_service.proto](#v1_sheet_service-proto)
+    - [BatchCreateSheetRequest](#bytebase-v1-BatchCreateSheetRequest)
+    - [BatchCreateSheetResponse](#bytebase-v1-BatchCreateSheetResponse)
     - [CreateSheetRequest](#bytebase-v1-CreateSheetRequest)
     - [GetSheetRequest](#bytebase-v1-GetSheetRequest)
     - [Sheet](#bytebase-v1-Sheet)
@@ -10605,6 +10607,37 @@ Read from `pg_stat_activity`
 
 
 
+<a name="bytebase-v1-BatchCreateSheetRequest"></a>
+
+### BatchCreateSheetRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The parent resource where all sheets will be created. Format: projects/{project} |
+| requests | [CreateSheetRequest](#bytebase-v1-CreateSheetRequest) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-BatchCreateSheetResponse"></a>
+
+### BatchCreateSheetResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| sheets | [Sheet](#bytebase-v1-Sheet) | repeated |  |
+
+
+
+
+
+
 <a name="bytebase-v1-CreateSheetRequest"></a>
 
 ### CreateSheetRequest
@@ -10739,6 +10772,7 @@ Type of the SheetPayload.
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
 | CreateSheet | [CreateSheetRequest](#bytebase-v1-CreateSheetRequest) | [Sheet](#bytebase-v1-Sheet) |  |
+| BatchCreateSheet | [BatchCreateSheetRequest](#bytebase-v1-BatchCreateSheetRequest) | [BatchCreateSheetResponse](#bytebase-v1-BatchCreateSheetResponse) |  |
 | GetSheet | [GetSheetRequest](#bytebase-v1-GetSheetRequest) | [Sheet](#bytebase-v1-Sheet) |  |
 | UpdateSheet | [UpdateSheetRequest](#bytebase-v1-UpdateSheetRequest) | [Sheet](#bytebase-v1-Sheet) |  |
 
