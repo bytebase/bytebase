@@ -104,7 +104,8 @@
         "export": "CSV / JSON 导出",
         "saved-sql-script": "保存 SQL 脚本",
         "admin-mode": "管理员模式",
-        "read-replica": "为只读操作提供单独连接"
+        "read-replica": "为只读操作提供单独连接",
+        "batch-query": "批量查询"
       }
     },
     "collaboration": {
