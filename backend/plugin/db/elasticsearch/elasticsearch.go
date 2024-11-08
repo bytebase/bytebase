@@ -76,6 +76,9 @@ func (scheduler *AddressScheduler) GetNewAddress() string {
 func (*Driver) Open(_ context.Context, _ storepb.Engine, config db.ConnectionConfig) (db.Driver, error) {
 	addresse := fmt.Sprintf("%s:%s", config.Host, config.Port)
 	u, err := url.Parse(addresse)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to parse addresse: %v", addresse)
+	}
 	if u.Scheme == "" {
 		protocol := "http"
 		if config.TLSConfig.UseSSL {
@@ -152,7 +155,7 @@ func (*Driver) Close(_ context.Context) error {
 	return nil
 }
 
-func (d *Driver) Ping(ctx context.Context) error {
+func (d *Driver) Ping(_ context.Context) error {
 	if _, err := d.typedClient.Ping(); err != nil {
 		return errors.Wrapf(err, "failed to ping db")
 	}
