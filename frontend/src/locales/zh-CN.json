@@ -3049,7 +3049,8 @@
     "enabled-rules": "开启的规则数",
     "rule-detail": "规则详情",
     "view-definition": "查看定义",
-    "other-engines": "其他数据库类型"
+    "other-engines": "其他数据库类型",
+    "all-checks-passed": "所有检查都通过了。"
   },
   "audit-log": {
     "no-logs": "暂无审计日志",
