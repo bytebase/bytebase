@@ -16,10 +16,10 @@ import type { DataTableColumn } from "naive-ui";
 import { NDataTable } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { useRouter } from "vue-router";
+import { RouterLink, useRouter } from "vue-router";
 import { BBAvatar } from "@/bbkit";
 import { getTimeForPbTimestamp, type ComposedRollout } from "@/types";
-import { humanizeTs } from "@/utils";
+import { extractIssueUID, humanizeTs } from "@/utils";
 
 const props = withDefaults(
   defineProps<{
@@ -42,8 +42,37 @@ const columnList = computed(
   (): (DataTableColumn<ComposedRollout> & { hide?: boolean })[] => {
     const columns: (DataTableColumn<ComposedRollout> & { hide?: boolean })[] = [
       {
+        key: "issue",
+        title: t("common.issue"),
+        width: 96,
+        render: (rollout) => {
+          const uid = extractIssueUID(rollout.issue);
+          if (!uid) return "-";
+
+          return (
+            <RouterLink
+              to={{
+                path: `/${rollout.issue}`,
+              }}
+              custom={true}
+            >
+              {{
+                default: ({ href }: { href: string }) => (
+                  <a
+                    href={href}
+                    class="normal-link"
+                    onClick={(e: MouseEvent) => e.stopPropagation()}
+                  >
+                    #{uid}
+                  </a>
+                ),
+              }}
+            </RouterLink>
+          );
+        },
+      },
+      {
         key: "title",
-        width: 160,
         title: t("common.title"),
         render: (rollout) => {
           return (
