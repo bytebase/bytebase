@@ -25,6 +25,15 @@ service SheetService {
     option (bytebase.v1.auth_method) = IAM;
   }
 
+  rpc BatchCreateSheet(BatchCreateSheetRequest) returns (BatchCreateSheetResponse) {
+    option (google.api.http) = {
+      post: "/v1/{parent=projects/*}/sheets:batchCreate"
+      body: "*"
+    };
+    option (bytebase.v1.permission) = "bb.sheets.create";
+    option (bytebase.v1.auth_method) = IAM;
+  }
+
   rpc GetSheet(GetSheetRequest) returns (Sheet) {
     option (google.api.http) = {get: "/v1/{name=projects/*/sheets/*}"};
     option (google.api.method_signature) = "name";
@@ -53,6 +62,21 @@ message CreateSheetRequest {
 
   // The sheet to create.
   Sheet sheet = 2 [(google.api.field_behavior) = REQUIRED];
+}
+
+message BatchCreateSheetRequest {
+  // The parent resource where all sheets will be created.
+  // Format: projects/{project}
+  string parent = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Project"}
+  ];
+
+  repeated CreateSheetRequest requests = 2 [(google.api.field_behavior) = REQUIRED];
+}
+
+message BatchCreateSheetResponse {
+  repeated Sheet sheets = 1;
 }
 
 message GetSheetRequest {
