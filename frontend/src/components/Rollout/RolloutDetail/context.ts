@@ -1,7 +1,8 @@
+import type { ClientError } from "nice-grpc-common";
 import type { ComputedRef, InjectionKey, Ref } from "vue";
 import { computed, inject, provide, watchEffect } from "vue";
 import { useRoute } from "vue-router";
-import { useProjectV1Store, useRolloutStore } from "@/store";
+import { pushNotification, useProjectV1Store, useRolloutStore } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import type { ComposedProject, ComposedRollout } from "@/types";
 import { unknownProject, unknownRollout } from "@/types";
@@ -33,7 +34,17 @@ export const provideRolloutDetailContext = (rolloutName: string) => {
   });
 
   watchEffect(async () => {
-    await rolloutStore.fetchRolloutByName(rolloutName);
+    try {
+      await rolloutStore.fetchRolloutByName(rolloutName);
+    } catch (error) {
+      pushNotification({
+        module: "bytebase",
+        style: "CRITICAL",
+        title: "Failed to get rollout",
+        description: (error as ClientError).details,
+        manualHide: true,
+      });
+    }
   });
 
   const rollout = computed(() => {
