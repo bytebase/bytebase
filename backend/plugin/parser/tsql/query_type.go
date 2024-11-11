@@ -38,7 +38,9 @@ func (l *queryTypeListener) getQueryTypeForBatchWithoutGo(batch parser.IBatch_wi
 	case len(batch.AllSql_clauses()) != 0 && batch.Execute_body_batch() == nil:
 		return l.getQueryTypeForSQLClause(batch.Sql_clauses(0))
 	case batch.Batch_level_statement() != nil:
+		return l.getQueryTypeForBatchLevelStatement(batch.Batch_level_statement())
 	case batch.Execute_body_batch() != nil:
+		return l.getQueryTypeForExecuteBodyBatch(batch.Execute_body_batch())
 	}
 
 	return base.QueryTypeUnknown, nil
@@ -67,7 +69,7 @@ func (*queryTypeListener) getQueryTypeForBatchLevelStatement(parser.IBatch_level
 	return base.DDL, nil
 }
 
-func (*queryTypeListener) getQueryTypeForExecuteBodyBatch(parser.IExecute_bodyContext) (base.QueryType, error) {
+func (*queryTypeListener) getQueryTypeForExecuteBodyBatch(parser.IExecute_body_batchContext) (base.QueryType, error) {
 	// Call stored procedure or function. Do not detect the type for now.
 	return base.QueryTypeUnknown, nil
 }
