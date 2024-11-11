@@ -63,11 +63,11 @@ func (l *queryTypeListener) getQueryTypeForSQLClause(clause parser.ISql_clausesC
 	return base.QueryTypeUnknown, nil
 }
 
-func (l *queryTypeListener) getQueryTypeForBatchLevelStatement(parser.IBatch_level_statementContext) (base.QueryType, error) {
+func (*queryTypeListener) getQueryTypeForBatchLevelStatement(parser.IBatch_level_statementContext) (base.QueryType, error) {
 	return base.DDL, nil
 }
 
-func (l *queryTypeListener) getQueryTypeForExecuteBodyBatch(parser.IExecute_bodyContext) (base.QueryType, error) {
+func (*queryTypeListener) getQueryTypeForExecuteBodyBatch(parser.IExecute_bodyContext) (base.QueryType, error) {
 	// Call stored procedure or function. Do not detect the type for now.
 	return base.QueryTypeUnknown, nil
 }
