@@ -1,5 +1,7 @@
 <template>
-  <div class="w-full min-h-full flex flex-col items-start gap-y-4 relative">
+  <div
+    class="w-full min-h-full flex flex-col items-start gap-y-4 relative py-4"
+  >
     <BasicInfo />
     <NTabs
       v-model:value="state.selectedTab"
@@ -10,9 +12,6 @@
     >
       <NTabPane name="overview" :tab="$t('common.overview')">
         <Overview />
-      </NTabPane>
-      <NTabPane name="stages" :tab="$t('common.stages')">
-        <Stages />
       </NTabPane>
       <NTabPane name="tasks" :tab="$t('common.tasks')">
         <Tasks />
@@ -25,17 +24,17 @@
 import { NTabs, NTabPane } from "naive-ui";
 import { computed, reactive, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
+import { useBodyLayoutContext } from "@/layouts/common";
 import { PROJECT_V1_ROUTE_ROLLOUT_DETAIL } from "@/router/dashboard/projectV1";
 import BasicInfo from "./BasicInfo.vue";
 import Overview from "./Panels/Overview.vue";
-import Stages from "./Panels/Stages.vue";
 import Tasks from "./Panels/Tasks.vue";
 import { useRolloutDetailContext } from "./context";
 
-const hashList = ["overview", "stages", "tasks"] as const;
+const hashList = ["overview", "tasks"] as const;
 
 interface LocalState {
-  selectedTab?: "overview" | "stages" | "tasks";
+  selectedTab?: "overview" | "tasks";
 }
 
 const route = useRoute();
@@ -80,4 +79,7 @@ watch(
   },
   { immediate: true }
 );
+
+const { overrideMainContainerClass } = useBodyLayoutContext();
+overrideMainContainerClass("!py-0");
 </script>

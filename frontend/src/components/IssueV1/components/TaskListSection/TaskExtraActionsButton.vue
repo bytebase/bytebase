@@ -11,6 +11,7 @@
       quaternary
       size="tiny"
       style="--n-padding: 0 1px; --n-icon-size: 20px"
+      @click="($event) => $event.stopPropagation()"
     >
       <template #icon>
         <heroicons:ellipsis-vertical-solid class="w-5 h-5" />
