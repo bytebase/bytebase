@@ -31,7 +31,7 @@
       ]
     }
   querySpan:
-    type: 0
+    type: 1
     results:
         - name: uuid
           sourcecolumns: []
@@ -69,7 +69,7 @@
       ]
     }
   querySpan:
-    type: 0
+    type: 1
     results:
         - name: a
           sourcecolumns:
@@ -118,7 +118,7 @@
       ]
     }
   querySpan:
-    type: 0
+    type: 1
     results:
         - name: a
           sourcecolumns:
@@ -167,7 +167,7 @@
       ]
     }
   querySpan:
-    type: 0
+    type: 1
     results:
         - name: a
           sourcecolumns:
@@ -227,7 +227,7 @@
       ]
     }
   querySpan:
-    type: 0
+    type: 1
     results:
         - name: SELECTMAX(d)FROMMyTable2
           sourcecolumns:
@@ -285,7 +285,7 @@
       ]
     }
   querySpan:
-    type: 0
+    type: 1
     results:
         - name: a
           sourcecolumns:
@@ -348,7 +348,7 @@
       ]
     }
   querySpan:
-    type: 0
+    type: 1
     results:
         - name: a
           sourcecolumns:
@@ -427,7 +427,7 @@
       ]
     }
   querySpan:
-    type: 0
+    type: 1
     results:
         - name: a
           sourcecolumns:
@@ -506,7 +506,7 @@
       ]
     }
   querySpan:
-    type: 0
+    type: 1
     results:
         - name: a
           sourcecolumns:
@@ -566,7 +566,7 @@
       ]
     }
   querySpan:
-    type: 0
+    type: 1
     results:
         - name: aa
           sourcecolumns:
@@ -638,7 +638,7 @@
       ]
     }
   querySpan:
-    type: 0
+    type: 1
     results:
         - name: aa
           sourcecolumns:
@@ -718,7 +718,7 @@
       ]
     }
   querySpan:
-    type: 0
+    type: 1
     results:
         - name: c1
           sourcecolumns:

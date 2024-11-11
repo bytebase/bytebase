@@ -116,6 +116,7 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string)
 	}
 
 	return &base.QuerySpan{
+		Type:          queryTypeListener.result,
 		SourceColumns: accessTables,
 		Results:       listener.result,
 	}, nil
