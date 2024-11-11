@@ -22,6 +22,7 @@ type PipelineMessage struct {
 	CreatedTs  int64
 	UpdaterUID int
 	UpdatedTs  int64
+	IssueID    *int
 }
 
 // PipelineFind is the API message for finding pipelines.
@@ -122,11 +123,13 @@ func (s *Store) ListPipelineV2(ctx context.Context, find *PipelineFind) ([]*Pipe
 			pipeline.updater_id,
 			pipeline.updated_ts,
 			project.resource_id,
-			pipeline.name
+			pipeline.name,
+			issue.id
 		FROM pipeline
 		LEFT JOIN project ON pipeline.project_id = project.id
+		LEFT JOIN issue ON pipeline.id = issue.pipeline_id
 		WHERE %s
-		ORDER BY id DESC`, strings.Join(where, " AND "))
+		ORDER BY pipeline.id DESC`, strings.Join(where, " AND "))
 	if v := find.Limit; v != nil {
 		query += fmt.Sprintf(" LIMIT %d", *v)
 	}
@@ -157,6 +160,7 @@ func (s *Store) ListPipelineV2(ctx context.Context, find *PipelineFind) ([]*Pipe
 			&pipeline.UpdatedTs,
 			&pipeline.ProjectID,
 			&pipeline.Name,
+			&pipeline.IssueID,
 		); err != nil {
 			return nil, err
 		}

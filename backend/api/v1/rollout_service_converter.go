@@ -640,6 +640,10 @@ func convertToRollout(ctx context.Context, s *store.Store, project *store.Projec
 		rolloutV1.Plan = fmt.Sprintf("%s%s/%s%d", common.ProjectNamePrefix, project.ResourceID, common.PlanPrefix, plan.UID)
 	}
 
+	if rollout.IssueID != nil {
+		rolloutV1.Issue = fmt.Sprintf("%s%s/%s%d", common.ProjectNamePrefix, project.ResourceID, common.IssueNamePrefix, *rollout.IssueID)
+	}
+
 	taskIDToName := map[int]string{}
 	for _, stage := range rollout.Stages {
 		environment, err := s.GetEnvironmentV2(ctx, &store.FindEnvironmentMessage{
