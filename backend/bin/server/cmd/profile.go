@@ -24,7 +24,7 @@ func getBaseProfile(dataDir string) *config.Profile {
 		SampleDatabasePort:   sampleDatabasePort,
 		Readonly:             flags.readonly,
 		SaaS:                 flags.saas,
-		EnableJsonLogging:    flags.enableJsonLogging,
+		EnableJSONLogging:    flags.enableJSONLogging,
 		Debug:                flags.debug,
 		IsDocker:             isDocker(),
 		DataDir:              dataDir,
