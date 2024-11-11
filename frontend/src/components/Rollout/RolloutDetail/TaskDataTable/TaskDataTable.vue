@@ -75,7 +75,7 @@ const columnList = computed(
         title: t("common.database"),
         render: (task) => {
           return (
-            <div class="w-auto flex flex-row items-center text-sm truncate">
+            <div class="w-auto flex flex-row items-center truncate">
               <InstanceV1EngineIcon
                 class="inline-block mr-1"
                 instance={
