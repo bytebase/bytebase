@@ -22,6 +22,9 @@ func (s *Store) GetRollout(ctx context.Context, rolloutID int) (*PipelineMessage
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get pipeline")
 	}
+	if pipline == nil {
+		return nil, nil
+	}
 	rollout := *pipline
 	rollout.Stages = stages
 
