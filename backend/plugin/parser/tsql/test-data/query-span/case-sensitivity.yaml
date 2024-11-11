@@ -25,6 +25,7 @@
       ]
     }
   querySpan:
+    type: 1
     results:
         - name: a
           sourcecolumns:
