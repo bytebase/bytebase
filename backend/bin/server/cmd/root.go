@@ -71,6 +71,8 @@ var (
 		readonly bool
 		// saas means the Bytebase is running in SaaS mode, several features is only controlled by us instead of users under this mode.
 		saas bool
+		// output logs in json format
+		enableJSONLogging bool
 		// demoName is the name of the demo and should be one of the subpath name in the ../migrator/demo directory.
 		// empty means no demo.
 		demoName string
@@ -120,6 +122,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&flags.dataDir, "data", ".", "not recommended for production. Directory where Bytebase stores data if --pg is not specified. If relative path is supplied, then the path is relative to the directory where Bytebase is under")
 	rootCmd.PersistentFlags().BoolVar(&flags.readonly, "readonly", false, "whether to run in read-only mode")
 	rootCmd.PersistentFlags().BoolVar(&flags.saas, "saas", false, "whether to run in SaaS mode")
+	rootCmd.PersistentFlags().BoolVar(&flags.enableJSONLogging, "enable-json-logging", false, "enable output logs in bytebase in json format")
 	// Must be one of the subpath name in the ../migrator/demo directory
 	rootCmd.PersistentFlags().StringVar(&flags.demoName, "demo", "", "name of the demo to use. Empty means not running in demo mode.")
 	rootCmd.PersistentFlags().BoolVar(&flags.debug, "debug", false, "whether to enable debug level logging")
@@ -165,7 +168,7 @@ func start() {
 	if flags.debug {
 		log.LogLevel.Set(slog.LevelDebug)
 	}
-	if flags.saas {
+	if flags.saas || flags.enableJSONLogging {
 		slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{AddSource: true, Level: log.LogLevel, ReplaceAttr: log.Replace})))
 	} else {
 		slog.SetDefault(slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{AddSource: true, Level: log.LogLevel, ReplaceAttr: log.Replace})))
