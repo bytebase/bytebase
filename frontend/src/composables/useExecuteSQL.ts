@@ -35,7 +35,7 @@ import {
 import { extractGrpcErrorMessage } from "@/utils/grpcweb";
 
 // SKIP_CHECK_THRESHOLD is the MaxSheetCheckSize in the backend.
-const SKIP_CHECK_THRESHOLD = 1024 * 1024;
+const SKIP_CHECK_THRESHOLD = 2 * 1024 * 1024;
 // QUERY_INTERVAL_LIMIT is the minimal gap between two queries
 const QUERY_INTERVAL_LIMIT = 1000;
 

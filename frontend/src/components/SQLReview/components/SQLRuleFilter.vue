@@ -13,7 +13,7 @@
         }"
       >
         <div
-          class="flex flex-col justify-start items-start md:flex-row md:items-center md:justify-between"
+          class="mt-2 flex flex-col justify-start items-start md:flex-row md:items-center md:justify-between"
         >
           <SQLReviewLevelFilter
             v-if="!hideLevelFilter"
@@ -21,6 +21,18 @@
             :is-checked-level="(level) => params.checkedLevel.has(level)"
             @toggle-checked-level="$emit('toggle-checked-level', $event)"
           />
+          <div v-if="supportSelect" class="flex items-center space-x-2">
+            <NCheckbox
+              :checked="selectedRuleCount === ruleList.length"
+              :indeterminate="
+                selectedRuleCount > 0 && selectedRuleCount !== ruleList.length
+              "
+              @update:checked="$emit('toggle-select-all', $event)"
+            />
+            <span class="text-xl text-main font-medium">
+              {{ $t("sql-review.select-all") }}
+            </span>
+          </div>
           <SearchBox
             ref="searchField"
             class="ml-auto mt-2 md:mt-0 md:!max-w-72"
@@ -30,6 +42,7 @@
             @update:value="$emit('change-search-text', $event)"
           />
         </div>
+        <NDivider />
         <slot :rule-list="filterRuleList(ruleListFilteredByCategory)" />
       </template>
     </SQLReviewCategoryTabFilter>
@@ -37,6 +50,7 @@
 </template>
 
 <script lang="ts" setup>
+import { NCheckbox, NDivider } from "naive-ui";
 import { SearchBox } from "@/components/v2";
 import type { RuleTemplateV2 } from "@/types";
 import { getRuleLocalization } from "@/types";
@@ -46,14 +60,24 @@ import type { RuleListWithCategory } from "./SQLReviewCategoryTabFilter.vue";
 import SQLReviewLevelFilter from "./SQLReviewLevelFilter.vue";
 import type { SQLRuleFilterParams } from "./useSQLRuleFilter";
 
-const props = defineProps<{
-  ruleList: RuleTemplateV2[];
-  params: SQLRuleFilterParams;
-  hideLevelFilter?: boolean;
-}>();
+const props = withDefaults(
+  defineProps<{
+    ruleList: RuleTemplateV2[];
+    params: SQLRuleFilterParams;
+    hideLevelFilter?: boolean;
+    supportSelect?: boolean;
+    selectedRuleCount?: number;
+  }>(),
+  {
+    hideLevelFilter: false,
+    supportSelect: false,
+    selectedRuleCount: 0,
+  }
+);
 
 defineEmits<{
   (event: "toggle-checked-level", level: SQLReviewRuleLevel): void;
+  (event: "toggle-select-all", select: boolean): void;
   (event: "change-category", category: string): void;
   (event: "change-search-text", keyword: string): void;
 }>();

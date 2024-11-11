@@ -1,34 +1,20 @@
 import { EMPTY_ID, UNKNOWN_ID } from "@/types/const";
 import {
-  Rollout,
   Stage,
   Task,
   Task_Type,
   TaskRun,
   TaskRunLog,
 } from "@/types/proto/v1/rollout_service";
+import { EMPTY_ROLLOUT_NAME, UNKNOWN_ROLLOUT_NAME } from "@/types/rollout";
 import {
   EMPTY_ENVIRONMENT_NAME,
   UNKNOWN_ENVIRONMENT_NAME,
 } from "../environment";
 
-export const EMPTY_ROLLOUT_NAME = `projects/${EMPTY_ID}/rollouts/${EMPTY_ID}`;
-export const UNKNOWN_ROLLOUT_NAME = `projects/${UNKNOWN_ID}/rollouts/${UNKNOWN_ID}`;
-export const emptyRollout = () => {
-  return Rollout.fromJSON({
-    name: EMPTY_ROLLOUT_NAME,
-    uid: String(EMPTY_ID),
-  });
-};
-export const unknownRollout = () => {
-  return Rollout.fromJSON({
-    name: UNKNOWN_ROLLOUT_NAME,
-    uid: String(UNKNOWN_ID),
-  });
-};
-
 export const EMPTY_STAGE_NAME = `${EMPTY_ROLLOUT_NAME}/stages/${EMPTY_ID}`;
 export const UNKNOWN_STAGE_NAME = `${UNKNOWN_ROLLOUT_NAME}/stages/${UNKNOWN_ID}`;
+
 export const emptyStage = () => {
   return Stage.fromJSON({
     name: EMPTY_STAGE_NAME,

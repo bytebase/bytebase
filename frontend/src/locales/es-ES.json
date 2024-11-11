@@ -97,6 +97,7 @@
     "snapshot": "Instantánea",
     "status": "Estado",
     "stage": "Etapa",
+    "stages": "Etapas",
     "task": "Tarea",
     "tasks": "Tareas",
     "blocking-task": "Tarea de bloqueo",
@@ -1284,7 +1285,7 @@
         "admin": "El entorno {environment} no ha configurado la política de revisión de SQL. {link}",
         "developer": "El entorno {environment} no ha configurado la política de revisión de SQL. \nSolicite a su DBA que configure."
       },
-      "statement-is-too-large": "Como el tamaño de la declaración actual supera 1 MB, se omitirá la comprobación de SQL.",
+      "statement-is-too-large": "Como el tamaño de la declaración actual supera 2MB, se omitirá la comprobación de SQL.",
       "back-to-edit": "Volver a editar",
       "continue-anyway": "De todas maneras, continúe",
       "sql-review-violations": "Infracciones de revisión de SQL"
@@ -2216,7 +2217,7 @@
       "delete-success": "Se elimina el conector GitOps"
     },
     "masking-access": {
-      "self": "Enmascaramiento de acceso",
+      "self": "Acceso enmascarado",
       "grant-access": "Conceder acceso",
       "revoke-access-title": "¿Eliminar el acceso de exportación y consulta para {member}?"
     }
@@ -2987,6 +2988,8 @@
     "no-policy-set": "Sin política de revisión de SQL",
     "create-policy": "Crear política",
     "select-review": "Seleccione revisión SQL",
+    "select-review-rules": "Seleccionar reglas de revisión de SQL",
+    "select-all": "Seleccionar todo",
     "select-review-label": "Puede adjuntar una política de revisión de SQL existente al recurso o {create}.",
     "duplicate-policy": "Duplicar política de revisión de SQL",
     "configure-policy": "Configurar política",
@@ -3047,7 +3050,8 @@
     "enabled-rules": "Reglas habilitadas",
     "rule-detail": "Detalle de la regla",
     "view-definition": "Ver definición",
-    "other-engines": "Otros motores"
+    "other-engines": "Otros motores",
+    "all-checks-passed": "Todos los controles pasaron."
   },
   "audit-log": {
     "no-logs": "Sin registros de auditoría",

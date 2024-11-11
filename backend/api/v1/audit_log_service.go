@@ -55,7 +55,7 @@ func (s *AuditLogService) SearchAuditLogs(ctx context.Context, request *v1pb.Sea
 	offset, err := parseLimitAndOffset(&pageSize{
 		token:   request.PageToken,
 		limit:   int(request.PageSize),
-		maximum: 10000,
+		maximum: 5000,
 	})
 	if err != nil {
 		return nil, err

@@ -125,7 +125,8 @@ func (s *Store) ListPipelineV2(ctx context.Context, find *PipelineFind) ([]*Pipe
 			pipeline.name
 		FROM pipeline
 		LEFT JOIN project ON pipeline.project_id = project.id
-		WHERE %s`, strings.Join(where, " AND "))
+		WHERE %s
+		ORDER BY id DESC`, strings.Join(where, " AND "))
 	if v := find.Limit; v != nil {
 		query += fmt.Sprintf(" LIMIT %d", *v)
 	}
