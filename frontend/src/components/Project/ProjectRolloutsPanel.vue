@@ -4,7 +4,7 @@
       :key="project.name"
       :session-key="`project-${project.name}-releases`"
       :project="project.name"
-      :page-size="50"
+      :page-size="20"
     >
       <template #table="{ rolloutList, loading }">
         <RolloutDataTable

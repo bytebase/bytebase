@@ -1,6 +1,6 @@
 <template>
   <div
-    class="task px-2 py-1 pr-1 cursor-pointer border rounded lg:flex-1 flex justify-between items-stretch overflow-hidden gap-x-1"
+    class="task px-2 py-1 pt-2 pr-1 cursor-pointer border rounded lg:flex-1 flex justify-between items-stretch overflow-hidden gap-x-1"
     :class="taskClass"
     :data-task-name="isCreating ? '-creating-' : task.name"
     @click="onClickTask(task)"
@@ -15,11 +15,10 @@
             :task="task"
             class="transform scale-75"
           />
-          <div class="name flex-1 space-x-1 overflow-x-hidden">
-            <heroicons:arrow-small-right
-              v-if="active"
-              class="w-5 h-5 inline-block mb-0.5"
-            />
+          <div
+            class="name flex-1 inline-flex gap-x-1 items-center flex-wrap overflow-x-hidden"
+          >
+            <ArrowRightIcon v-if="active" class="w-4 h-4 inline-block" />
             <span>{{ databaseForTask(issue, task).databaseName }}</span>
             <NTag v-if="schemaVersion" class="font-normal" size="small" round>
               {{ schemaVersion }}
@@ -51,6 +50,7 @@
 </template>
 
 <script setup lang="ts">
+import { ArrowRightIcon } from "lucide-vue-next";
 import { NTag } from "naive-ui";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
