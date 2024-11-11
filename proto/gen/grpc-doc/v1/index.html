@@ -2695,6 +2695,14 @@
             <ul>
               
                 <li>
+                  <a href="#bytebase.v1.BatchCreateSheetRequest"><span class="badge">M</span>BatchCreateSheetRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.BatchCreateSheetResponse"><span class="badge">M</span>BatchCreateSheetResponse</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.CreateSheetRequest"><span class="badge">M</span>CreateSheetRequest</a>
                 </li>
               
@@ -29144,6 +29152,62 @@ The access is the same as BatchRunTasks().</p></td>
       <p></p>
 
       
+        <h3 id="bytebase.v1.BatchCreateSheetRequest">BatchCreateSheetRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>parent</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The parent resource where all sheets will be created.
+Format: projects/{project} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>requests</td>
+                  <td><a href="#bytebase.v1.CreateSheetRequest">CreateSheetRequest</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.BatchCreateSheetResponse">BatchCreateSheetResponse</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>sheets</td>
+                  <td><a href="#bytebase.v1.Sheet">Sheet</a></td>
+                  <td>repeated</td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.CreateSheetRequest">CreateSheetRequest</h3>
         <p></p>
 
@@ -29462,6 +29526,13 @@ Only support update the following fields for now:
               </tr>
             
               <tr>
+                <td>BatchCreateSheet</td>
+                <td><a href="#bytebase.v1.BatchCreateSheetRequest">BatchCreateSheetRequest</a></td>
+                <td><a href="#bytebase.v1.BatchCreateSheetResponse">BatchCreateSheetResponse</a></td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
                 <td>GetSheet</td>
                 <td><a href="#bytebase.v1.GetSheetRequest">GetSheetRequest</a></td>
                 <td><a href="#bytebase.v1.Sheet">Sheet</a></td>
@@ -29500,6 +29571,16 @@ Only support update the following fields for now:
                 <td>POST</td>
                 <td>/v1/{parent=projects/*}/sheets</td>
                 <td>sheet</td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>BatchCreateSheet</td>
+                <td>POST</td>
+                <td>/v1/{parent=projects/*}/sheets:batchCreate</td>
+                <td>*</td>
               </tr>
               
             

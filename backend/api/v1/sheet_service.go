@@ -112,6 +112,92 @@ func (s *SheetService) CreateSheet(ctx context.Context, request *v1pb.CreateShee
 	return v1pbSheet, nil
 }
 
+func (s *SheetService) BatchCreateSheet(ctx context.Context, request *v1pb.BatchCreateSheetRequest) (*v1pb.BatchCreateSheetResponse, error) {
+	if len(request.Requests) == 0 {
+		return nil, status.Errorf(codes.InvalidArgument, "requests must be set")
+	}
+	user, ok := ctx.Value(common.UserContextKey).(*store.UserMessage)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, "user not found")
+	}
+
+	projectResourceID, err := common.GetProjectID(request.Parent)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+	project, err := s.store.GetProjectV2(ctx, &store.FindProjectMessage{
+		ResourceID: &projectResourceID,
+	})
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get project with resource id %q, err: %v", projectResourceID, err)
+	}
+	if project == nil {
+		return nil, status.Errorf(codes.NotFound, "project with resource id %q not found", projectResourceID)
+	}
+	if project.Deleted {
+		return nil, status.Errorf(codes.NotFound, "project with resource id %q had deleted", projectResourceID)
+	}
+
+	var sheetCreates []*store.SheetMessage
+	for _, r := range request.Requests {
+		if r.Parent != "" && r.Parent != request.Parent {
+			return nil, status.Errorf(codes.InvalidArgument, "Sheet Parent %q does not match BatchCreateSheetRequest.Parent %q", r.Parent, request.Parent)
+		}
+
+		var databaseUID *int
+		if r.Sheet.Database != "" {
+			instanceResourceID, databaseName, err := common.GetInstanceDatabaseID(r.Sheet.Database)
+			if err != nil {
+				return nil, status.Error(codes.InvalidArgument, err.Error())
+			}
+			instance, err := s.store.GetInstanceV2(ctx, &store.FindInstanceMessage{
+				ResourceID: &instanceResourceID,
+			})
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to get instance with resource id %q, err: %v", instanceResourceID, err)
+			}
+			if instance == nil {
+				return nil, status.Errorf(codes.NotFound, "instance with resource id %q not found", instanceResourceID)
+			}
+
+			find := &store.FindDatabaseMessage{
+				ProjectID:           &projectResourceID,
+				InstanceID:          &instanceResourceID,
+				DatabaseName:        &databaseName,
+				IgnoreCaseSensitive: store.IgnoreDatabaseAndTableCaseSensitive(instance),
+			}
+			database, err := s.store.GetDatabaseV2(ctx, find)
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to get database with name %q, err: %s", databaseName, err)
+			}
+			if database == nil {
+				return nil, status.Errorf(codes.NotFound, "database with name %q not found in project %q instance %q", databaseName, projectResourceID, instanceResourceID)
+			}
+			databaseUID = &database.UID
+		}
+		storeSheetCreate, err := convertToStoreSheetMessage(ctx, project.UID, databaseUID, user.ID, r.Sheet)
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "failed to convert sheet: %v", err)
+		}
+
+		sheetCreates = append(sheetCreates, storeSheetCreate)
+	}
+
+	sheets, err := s.sheetManager.BatchCreateSheet(ctx, sheetCreates, project.UID, user.ID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to create sheet: %v", err)
+	}
+	response := &v1pb.BatchCreateSheetResponse{}
+	for _, sheet := range sheets {
+		v1pbSheet, err := s.convertToAPISheetMessage(ctx, sheet)
+		if err != nil {
+			return nil, err
+		}
+		response.Sheets = append(response.Sheets, v1pbSheet)
+	}
+	return response, nil
+}
+
 // GetSheet returns the requested sheet, cutoff the content if the content is too long and the `raw` flag in request is false.
 func (s *SheetService) GetSheet(ctx context.Context, request *v1pb.GetSheetRequest) (*v1pb.Sheet, error) {
 	projectResourceID, sheetUID, err := common.GetProjectResourceIDSheetUID(request.Name)
