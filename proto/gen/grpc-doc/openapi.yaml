@@ -6454,6 +6454,37 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
+    /v1/projects/{project}/sheets:batchCreate:
+        post:
+            tags:
+                - SheetService
+            operationId: SheetService_BatchCreateSheet
+            parameters:
+                - name: project
+                  in: path
+                  description: The project id.
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/BatchCreateSheetRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/BatchCreateSheetResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
     /v1/projects/{project}/slowQueries:
         get:
             tags:
@@ -9049,6 +9080,28 @@ components:
         BatchCancelTaskRunsResponse:
             type: object
             properties: {}
+        BatchCreateSheetRequest:
+            required:
+                - parent
+                - requests
+            type: object
+            properties:
+                parent:
+                    type: string
+                    description: |-
+                        The parent resource where all sheets will be created.
+                         Format: projects/{project}
+                requests:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/CreateSheetRequest'
+        BatchCreateSheetResponse:
+            type: object
+            properties:
+                sheets:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/Sheet'
         BatchDeparseRequest:
             type: object
             properties:
@@ -9691,6 +9744,21 @@ components:
                         - $ref: '#/components/schemas/GenerationMetadata'
                     description: The generation is the generation of a column.
             description: ColumnMetadata is the metadata for columns.
+        CreateSheetRequest:
+            required:
+                - parent
+                - sheet
+            type: object
+            properties:
+                parent:
+                    type: string
+                    description: |-
+                        The parent resource where this sheet will be created.
+                         Format: projects/{project}
+                sheet:
+                    allOf:
+                        - $ref: '#/components/schemas/Sheet'
+                    description: The sheet to create.
         DataClassificationConfig_DataClassification:
             type: object
             properties:

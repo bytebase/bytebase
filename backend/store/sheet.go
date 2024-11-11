@@ -277,6 +277,90 @@ func (s *Store) CreateSheet(ctx context.Context, create *SheetMessage) (*SheetMe
 	return create, nil
 }
 
+// BatchCreateSheet creates a new sheet.
+// You should not use this function directly to create sheets.
+// Use BatchCreateSheet in component/sheet instead.
+func (s *Store) BatchCreateSheet(ctx context.Context, projectUID int, creates []*SheetMessage, creatorUID int) ([]*SheetMessage, error) {
+	var databaseIDs []*int
+	var names []string
+	var statements []string
+	var payloads [][]byte
+
+	for _, c := range creates {
+		databaseIDs = append(databaseIDs, c.DatabaseUID)
+		names = append(names, c.Title)
+		statements = append(statements, c.Statement)
+		if c.Payload == nil {
+			c.Payload = &storepb.SheetPayload{}
+		}
+		payload, err := protojson.Marshal(c.Payload)
+		if err != nil {
+			return nil, err
+		}
+		payloads = append(payloads, payload)
+	}
+
+	query := `
+		INSERT INTO sheet (
+			creator_id,
+			updater_id,
+			project_id,
+			database_id,
+			name,
+			statement,
+			payload
+		) SELECT
+			$1,
+			$2,
+			$3,
+			unnest(CAST($4 AS INTEGER[])),
+			unnest(CAST($5 AS TEXT[])),
+			unnest(CAST($6 AS TEXT[])),
+			unnest(CAST($7 AS JSONB[]))
+		RETURNING id, created_ts, updated_ts, OCTET_LENGTH(statement), encode(sha256(convert_to(sheet.statement, 'UTF8')), 'hex')
+	`
+
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to begin tx")
+	}
+	defer tx.Rollback()
+
+	rows, err := tx.QueryContext(ctx, query, creatorUID, creatorUID, projectUID, databaseIDs, names, statements, payloads)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to query")
+	}
+	defer rows.Close()
+
+	for i := 0; rows.Next(); i++ {
+		creates[i].UpdaterID = creatorUID
+		creates[i].CreatorID = creatorUID
+
+		if err := rows.Scan(
+			&creates[i].UID,
+			&creates[i].createdTs,
+			&creates[i].updatedTs,
+			&creates[i].Size,
+			&creates[i].Sha256,
+		); err != nil {
+			return nil, errors.Wrapf(err, "failed to scan")
+		}
+
+		creates[i].CreatedTime = time.Unix(creates[i].createdTs, 0)
+		creates[i].UpdatedTime = time.Unix(creates[i].updatedTs, 0)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, errors.Wrapf(err, "rows err")
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, errors.Wrapf(err, "failed to commit tx")
+	}
+
+	return creates, nil
+}
+
 // PatchSheet updates a sheet.
 func (s *Store) PatchSheet(ctx context.Context, patch *PatchSheetMessage) (*SheetMessage, error) {
 	tx, err := s.db.BeginTx(ctx, nil)
