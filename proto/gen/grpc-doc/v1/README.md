@@ -9980,6 +9980,7 @@ When paginating, all other parameters provided to `ListTaskRuns` must match the 
 | creator | [string](#string) |  | Format: users/hello@world.com |
 | create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| issue | [string](#string) |  | The issue associated with the rollout. Could be empty. Format: projects/{project}/issues/{issue} |
 
 
 
