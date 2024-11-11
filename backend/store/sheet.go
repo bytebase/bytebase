@@ -281,7 +281,6 @@ func (s *Store) CreateSheet(ctx context.Context, create *SheetMessage) (*SheetMe
 // You should not use this function directly to create sheets.
 // Use BatchCreateSheet in component/sheet instead.
 func (s *Store) BatchCreateSheet(ctx context.Context, projectUID int, creates []*SheetMessage, creatorUID int) ([]*SheetMessage, error) {
-
 	var databaseIDs []*int
 	var names []string
 	var statements []string
@@ -349,6 +348,10 @@ func (s *Store) BatchCreateSheet(ctx context.Context, projectUID int, creates []
 
 		creates[i].CreatedTime = time.Unix(creates[i].createdTs, 0)
 		creates[i].UpdatedTime = time.Unix(creates[i].updatedTs, 0)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, errors.Wrapf(err, "rows err")
 	}
 
 	if err := tx.Commit(); err != nil {
