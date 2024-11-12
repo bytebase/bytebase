@@ -38,6 +38,11 @@ func (l *queryTypeListener) EnterSimpleStatement(ctx *mysql.SimpleStatementConte
 		ctx.ReplicationStatement() != nil,
 		ctx.PreparedStatement() != nil:
 		l.result = base.DML
+	case ctx.SetStatement() != nil:
+		if len(ctx.SetStatement().StartOptionValueList().AllPASSWORD_SYMBOL()) == 0 {
+			// Treat SAFE SET as select statement.
+			l.result = base.Select
+		}
 	case ctx.ShowStatement() != nil:
 		l.result = base.SelectInfoSchema
 	case ctx.UtilityStatement() != nil:

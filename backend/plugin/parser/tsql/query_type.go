@@ -59,6 +59,12 @@ func (l *queryTypeListener) getQueryTypeForSQLClause(clause parser.ISql_clausesC
 		return base.DML, nil
 	case clause.Ddl_clause() != nil:
 		return base.DDL, nil
+	case clause.Another_statement() != nil:
+		// Treat SAFE SET as select statement.
+		if clause.Another_statement().Set_statement() != nil || clause.Another_statement().Setuser_statement() != nil {
+			return base.Select, nil
+		}
+		return base.QueryTypeUnknown, nil
 	case clause.Cfl_statement() != nil, clause.Another_statement() != nil, clause.Dbcc_clause() != nil, clause.Backup_statement() != nil:
 		return base.QueryTypeUnknown, nil
 	}
