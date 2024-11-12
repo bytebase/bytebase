@@ -62,7 +62,7 @@
         <NButton
           v-else
           tertiary
-          size="tiny"
+          size="small"
           @click.prevent="$emit('reset-service-key', user)"
         >
           <template #icon>
