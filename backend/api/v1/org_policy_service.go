@@ -593,7 +593,20 @@ func (s *OrgPolicyService) convertPolicyPayloadToString(ctx context.Context, pol
 		}
 		payloadBytes, err := protojson.Marshal(payload)
 		if err != nil {
-			return "", errors.Wrap(err, "failed to marshal masking policy")
+			return "", errors.Wrap(err, "failed to marshal policy")
+		}
+		return string(payloadBytes), nil
+	case v1pb.PolicyType_DATA_EXPORT:
+		if err := s.licenseService.IsFeatureEnabled(api.FeatureAccessControl); err != nil {
+			return "", status.Error(codes.PermissionDenied, err.Error())
+		}
+		payload, err := convertToExportDataPolicyPayload(policy.GetExportDataPolicy())
+		if err != nil {
+			return "", status.Error(codes.InvalidArgument, err.Error())
+		}
+		payloadBytes, err := protojson.Marshal(payload)
+		if err != nil {
+			return "", errors.Wrap(err, "failed to marshal policy")
 		}
 		return string(payloadBytes), nil
 	case v1pb.PolicyType_MASKING_RULE:
@@ -708,6 +721,13 @@ func (s *OrgPolicyService) convertToPolicy(ctx context.Context, parentPath strin
 	case api.PolicyTypeDisableCopyData:
 		pType = v1pb.PolicyType_DISABLE_COPY_DATA
 		payload, err := convertToV1PBDisableCopyDataPolicy(policyMessage.Payload)
+		if err != nil {
+			return nil, err
+		}
+		policy.Policy = payload
+	case api.PolicyTypeExportData:
+		pType = v1pb.PolicyType_DATA_EXPORT
+		payload, err := convertToV1PBExportDataPolicy(policyMessage.Payload)
 		if err != nil {
 			return nil, err
 		}
@@ -960,9 +980,27 @@ func convertToV1PBDisableCopyDataPolicy(payloadStr string) (*v1pb.Policy_Disable
 	}, nil
 }
 
+func convertToV1PBExportDataPolicy(payloadStr string) (*v1pb.Policy_ExportDataPolicy, error) {
+	payload := &storepb.ExportDataPolicy{}
+	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(payloadStr), payload); err != nil {
+		return nil, errors.Wrapf(err, "failed to unmarshal disable copy policy payload")
+	}
+	return &v1pb.Policy_ExportDataPolicy{
+		ExportDataPolicy: &v1pb.ExportDataPolicy{
+			Disable: payload.Disable,
+		},
+	}, nil
+}
+
 func convertToDisableCopyDataPolicyPayload(policy *v1pb.DisableCopyDataPolicy) (*storepb.DisableCopyDataPolicy, error) {
 	return &storepb.DisableCopyDataPolicy{
 		Active: policy.Active,
+	}, nil
+}
+
+func convertToExportDataPolicyPayload(policy *v1pb.ExportDataPolicy) (*storepb.ExportDataPolicy, error) {
+	return &storepb.ExportDataPolicy{
+		Disable: policy.Disable,
 	}, nil
 }
 
@@ -1115,6 +1153,8 @@ func convertPolicyType(pType string) (api.PolicyType, error) {
 		return api.PolicyTypeSlowQuery, nil
 	case v1pb.PolicyType_DISABLE_COPY_DATA.String():
 		return api.PolicyTypeDisableCopyData, nil
+	case v1pb.PolicyType_DATA_EXPORT.String():
+		return api.PolicyTypeExportData, nil
 	case v1pb.PolicyType_RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW.String():
 		return api.PolicyTypeRestrictIssueCreationForSQLReview, nil
 	case v1pb.PolicyType_DATA_SOURCE_QUERY.String():

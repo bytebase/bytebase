@@ -11,7 +11,7 @@
           :override-scope-id-list="overrideSearchScopeIdList"
         >
           <template #searchbox-suffix>
-            <NTooltip :disabled="allowExportData">
+            <NTooltip v-if="!disableDataExport" :disabled="allowExportData">
               <template #trigger>
                 <NButton
                   type="primary"
@@ -23,6 +23,7 @@
               </template>
               {{ $t("export-center.permission-denied") }}
             </NTooltip>
+            <div v-else />
           </template>
         </IssueSearch>
       </div>
@@ -66,9 +67,14 @@ import DataExportPrepForm from "@/components/DataExportPrepForm";
 import IssueSearch from "@/components/IssueV1/components/IssueSearch/IssueSearch.vue";
 import PagedIssueTableV1 from "@/components/IssueV1/components/PagedIssueTableV1.vue";
 import { Drawer } from "@/components/v2";
-import { useCurrentUserV1, useProjectV1Store } from "@/store";
+import {
+  useCurrentUserV1,
+  useProjectV1Store,
+  usePolicyByParentAndType,
+} from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { Issue_Type } from "@/types/proto/v1/issue_service";
+import { PolicyType } from "@/types/proto/v1/org_policy_service";
 import {
   buildIssueFilterBySearchParams,
   extractProjectResourceName,
@@ -93,6 +99,13 @@ const specificProject = computed(() => {
     `${projectNamePrefix}${props.projectId}`
   );
 });
+
+const exportDataPolicy = usePolicyByParentAndType(
+  computed(() => ({
+    parentPath: "",
+    policyType: PolicyType.DATA_EXPORT,
+  }))
+);
 
 const readonlyScopes = computed((): SearchScope[] => {
   return [
@@ -154,6 +167,10 @@ const mergedIssueFilter = computed(() => {
     type: Issue_Type.DATABASE_DATA_EXPORT,
   });
 });
+
+const disableDataExport = computed(
+  () => exportDataPolicy.value?.exportDataPolicy?.disable ?? false
+);
 
 const allowExportData = computed(() => {
   if (specificProject.value) {

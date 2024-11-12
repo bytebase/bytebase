@@ -31,6 +31,8 @@ const (
 	PolicyTypeSlowQuery PolicyType = "bb.policy.slow-query"
 	// PolicyTypeDisableCopyData is the disable copy data policy type.
 	PolicyTypeDisableCopyData PolicyType = "bb.policy.disable-copy-data"
+	// PolicyTypeExportData is the policy type for data export control.
+	PolicyTypeExportData PolicyType = "bb.policy.export-data"
 	// PolicyTypeMaskingRule is the masking rule policy type.
 	PolicyTypeMaskingRule PolicyType = "bb.policy.masking-rule"
 	// PolicyTypeRestrictIssueCreationForSQLReview is the policy type for restricting issue creation for SQL review.
@@ -78,6 +80,7 @@ var (
 		PolicyTypeMasking:                           {PolicyResourceTypeDatabase},
 		PolicyTypeSlowQuery:                         {PolicyResourceTypeInstance},
 		PolicyTypeDisableCopyData:                   {PolicyResourceTypeEnvironment, PolicyResourceTypeProject},
+		PolicyTypeExportData:                        {PolicyResourceTypeWorkspace},
 		PolicyTypeMaskingRule:                       {PolicyResourceTypeWorkspace},
 		PolicyTypeMaskingException:                  {PolicyResourceTypeProject},
 		PolicyTypeRestrictIssueCreationForSQLReview: {PolicyResourceTypeWorkspace, PolicyResourceTypeProject},

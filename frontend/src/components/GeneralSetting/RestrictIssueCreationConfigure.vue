@@ -27,9 +27,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed, watchEffect } from "vue";
+import { computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { hasFeature, pushNotification, usePolicyV1Store } from "@/store";
+import {
+  hasFeature,
+  pushNotification,
+  usePolicyV1Store,
+  usePolicyByParentAndType,
+} from "@/store";
 import {
   PolicyResourceType,
   PolicyType,
@@ -54,28 +59,28 @@ const allowEdit = computed(() => {
   );
 });
 
-watchEffect(async () => {
-  await policyV1Store.getOrFetchPolicyByParentAndType({
+const policy = usePolicyByParentAndType(
+  computed(() => ({
     parentPath: props.resource,
     policyType: PolicyType.RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW,
-  });
-});
+  }))
+);
 
 const restrictIssueCreationForSQLReview = computed((): boolean => {
   return (
-    policyV1Store.getPolicyByParentAndType({
-      parentPath: props.resource,
-      policyType: PolicyType.RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW,
-    })?.restrictIssueCreationForSqlReviewPolicy?.disallow ?? false
+    policy.value?.restrictIssueCreationForSqlReviewPolicy?.disallow ?? false
   );
 });
 
 const handleRestrictIssueCreationForSQLReviewToggle = async (on: boolean) => {
-  await policyV1Store.createPolicy(props.resource, {
-    type: PolicyType.RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW,
-    resourceType: PolicyResourceType.PROJECT,
-    restrictIssueCreationForSqlReviewPolicy: {
-      disallow: on,
+  await policyV1Store.upsertPolicy({
+    parentPath: props.resource,
+    policy: {
+      type: PolicyType.RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW,
+      resourceType: PolicyResourceType.PROJECT,
+      restrictIssueCreationForSqlReviewPolicy: {
+        disallow: on,
+      },
     },
   });
 

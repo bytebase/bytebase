@@ -446,6 +446,7 @@
     - [DataSourceQueryPolicy](#bytebase-v1-DataSourceQueryPolicy)
     - [DeletePolicyRequest](#bytebase-v1-DeletePolicyRequest)
     - [DisableCopyDataPolicy](#bytebase-v1-DisableCopyDataPolicy)
+    - [ExportDataPolicy](#bytebase-v1-ExportDataPolicy)
     - [GetPolicyRequest](#bytebase-v1-GetPolicyRequest)
     - [ListPoliciesRequest](#bytebase-v1-ListPoliciesRequest)
     - [ListPoliciesResponse](#bytebase-v1-ListPoliciesResponse)
@@ -7380,6 +7381,21 @@ DataSourceQueryPolicy is the policy configuration for running statements in the 
 
 
 
+<a name="bytebase-v1-ExportDataPolicy"></a>
+
+### ExportDataPolicy
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| disable | [bool](#bool) |  |  |
+
+
+
+
+
+
 <a name="bytebase-v1-GetPolicyRequest"></a>
 
 ### GetPolicyRequest
@@ -7554,6 +7570,7 @@ MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
 | restrict_issue_creation_for_sql_review_policy | [RestrictIssueCreationForSQLReviewPolicy](#bytebase-v1-RestrictIssueCreationForSQLReviewPolicy) |  |  |
 | tag_policy | [TagPolicy](#bytebase-v1-TagPolicy) |  |  |
 | data_source_query_policy | [DataSourceQueryPolicy](#bytebase-v1-DataSourceQueryPolicy) |  |  |
+| export_data_policy | [ExportDataPolicy](#bytebase-v1-ExportDataPolicy) |  |  |
 | enforce | [bool](#bool) |  |  |
 | resource_type | [PolicyResourceType](#bytebase-v1-PolicyResourceType) |  | The resource type for the policy. |
 
@@ -7740,6 +7757,7 @@ The policy&#39;s `name` field is used to identify the instance to update. Format
 | RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW | 12 |  |
 | TAG | 13 |  |
 | DATA_SOURCE_QUERY | 14 |  |
+| DATA_EXPORT | 15 |  |
 
 
 

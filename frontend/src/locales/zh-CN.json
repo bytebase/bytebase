@@ -677,6 +677,10 @@
           "only-admin-can-edit": "仅管理员可以更新水印设置",
           "enable": "开启水印"
         },
+        "data-export": {
+          "enable": "启用数据导出",
+          "description": "允许用户导出数据"
+        },
         "disallow-signup": {
           "enable": "禁用自助注册",
           "description": "禁用之后，新用户将无法自助注册，只能通过管理员邀请来创建账户。"
