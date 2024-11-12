@@ -285,7 +285,7 @@ func NewRange(statement, singleSQL string) *storepb.Range {
 	}
 }
 
-// REFACTOR(zp): Put it in here to avoid circular import for now.
+// REFACTOR(zp): Put it here to avoid circular import for now.
 var (
 	showplanReg = regexp.MustCompile(`(?mi)^\s*SET\s+SHOWPLAN_(ALL|XML|TEXT)\s+(?P<status>(ON|OFF))\s*;?$`)
 )
