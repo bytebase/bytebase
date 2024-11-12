@@ -43,7 +43,7 @@
           <FeatureBadge feature="bb.feature.access-control" />
         </div>
         <div class="mt-1 mb-3 text-sm text-gray-400">
-          {{ $t("settings.general.workspace.watermark.description") }}
+          {{ $t("settings.general.workspace.data-export.description") }}
         </div>
       </div>
       <RestrictIssueCreationConfigure :resource="''" :allow-edit="allowEdit" />
