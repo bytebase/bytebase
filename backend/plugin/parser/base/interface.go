@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"regexp"
+	"strings"
 	"sync"
 
 	"github.com/pkg/errors"
@@ -196,10 +198,12 @@ func GetQuerySpan(ctx context.Context, gCtx GetQuerySpanContext, engine storepb.
 		return nil, err
 	}
 	var results []*QuerySpan
+	var nonEmptyStatement []string
 	for _, stmt := range statements {
 		if stmt.Empty {
 			continue
 		}
+		nonEmptyStatement = append(nonEmptyStatement, stmt.Text)
 		result, err := f(ctx, gCtx, stmt.Text, database, schema, ignoreCaseSensitive)
 		if err != nil {
 			// Try to unwrap the error to see if it's a ResourceNotFoundError to decrease the error noise.
@@ -215,6 +219,9 @@ func GetQuerySpan(ctx context.Context, gCtx GetQuerySpanContext, engine storepb.
 			return nil, err
 		}
 		results = append(results, result)
+	}
+	if engine == storepb.Engine_MSSQL {
+		TSQLRecognizeExplainType(results, nonEmptyStatement)
 	}
 	return results, nil
 }
@@ -275,5 +282,45 @@ func NewRange(statement, singleSQL string) *storepb.Range {
 	return &storepb.Range{
 		Start: int32(start),
 		End:   int32(start + len(singleSQLBytes)),
+	}
+}
+
+// REFACTOR(zp): Put it in here to avoid circular import for now.
+var (
+	showplanReg = regexp.MustCompile(`(?mi)^\s*SET\s+SHOWPLAN_(ALL|XML|TEXT)\s+(?P<status>(ON|OFF))\s*;?$`)
+)
+
+// TSQLRecognizeExplainType walks the spans, and rewrite the select type to explain type if previous statement is SET SHOWPLAN_ALL.
+func TSQLRecognizeExplainType(spans []*QuerySpan, stmt []string) {
+	if len(spans) != len(stmt) {
+		return
+	}
+	on := false
+	for i := range spans {
+		matches := showplanReg.FindStringSubmatch(stmt[i])
+		if matches != nil {
+			for k, name := range showplanReg.SubexpNames() {
+				if k != 0 && name == "status" {
+					switch strings.ToLower(matches[k]) {
+					case "on":
+						on = true
+					case "off":
+						on = false
+					}
+				}
+			}
+		}
+		if on {
+			if matches != nil {
+				spans[i].Type = Explain
+			} else if spans[i].Type == Select {
+				spans[i].Type = Explain
+			}
+		} else {
+			// SET SHOW_PLANALL OFF, this statement is explain either.
+			if matches != nil {
+				spans[i].Type = Explain
+			}
+		}
 	}
 }
