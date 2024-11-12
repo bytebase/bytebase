@@ -30,6 +30,9 @@ import { WorksheetServiceDefinition } from "@/types/proto/v1/worksheet_service";
 import { WorkspaceServiceDefinition } from "@/types/proto/v1/workspace_service";
 
 // The code of audit field in generated method options.
+// A workaround code for the outdated ts-proto version in buf community plugins.
+// This hack can be removed once the ts-proto version is upgraded.
+// TODO(steven): remove me later.
 const AUDIT_TAG_CODE = "800024";
 
 // The methods that have audit field in their options.
