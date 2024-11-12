@@ -26,7 +26,6 @@ const upsertReviewConfigTag = async (
   await Promise.all(
     resources.map(async (resourcePath) => {
       await policyStore.upsertPolicy({
-        updateMask: ["payload"],
         parentPath: resourcePath,
         policy: {
           name: getTagPolicyName(resourcePath),

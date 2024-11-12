@@ -560,6 +560,9 @@ const updateExceptionPolicy = async () => {
     ...(policy.maskingExceptionPolicy ?? {}),
     maskingExceptions: unChangedExceptions,
   };
-  await policyStore.updatePolicy(["payload"], policy);
+  await policyStore.upsertPolicy({
+    parentPath: props.project,
+    policy,
+  });
 };
 </script>

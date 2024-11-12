@@ -197,7 +197,6 @@ const updatePolicy = async (params: {
 
   const updatedPolicy = await policyV1Store.upsertPolicy({
     parentPath: environment.name,
-    updateMask: ["payload"],
     policy,
   });
   switch (policyType) {
