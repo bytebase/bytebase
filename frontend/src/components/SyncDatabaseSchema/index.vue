@@ -255,7 +255,7 @@ const tryFinishSetup = async () => {
       sqlMap[db.name] = diff.edited;
     }
   });
-  query.databaseList = Object.keys(sqlMap);
+  query.databaseList = Object.keys(sqlMap).join(",");
   const sqlMapStorageKey = `bb.issues.sql-map.${uuidv4()}`;
   localStorage.setItem(sqlMapStorageKey, JSON.stringify(sqlMap));
   query.sqlMapStorageKey = sqlMapStorageKey;
