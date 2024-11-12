@@ -24,20 +24,30 @@
             databaseForTask(rollout.projectEntity, task).instanceResource
           "
         />
-        <span class="truncate flex items-center">
-          {{
-            databaseForTask(rollout.projectEntity, task).instanceResource.title
-          }}
-          <ChevronRightIcon class="inline opacity-60 mx-0.5 w-5" />
-          {{ databaseForTask(rollout.projectEntity, task).databaseName }}
-        </span>
+        <span>{{
+          databaseForTask(rollout.projectEntity, task).instanceResource.title
+        }}</span>
+        <ChevronRightIcon class="inline opacity-60 mx-0.5 w-5" />
+        <span>{{
+          databaseForTask(rollout.projectEntity, task).databaseName
+        }}</span>
       </p>
     </div>
     <div class="mt-3 space-x-2">
-      <NTag round>{{ semanticTaskType(task.type) }}</NTag>
-      <NTag v-if="extractSchemaVersionFromTask(task)" round>
-        {{ extractSchemaVersionFromTask(task) }}
-      </NTag>
+      <NTooltip>
+        <template #trigger>
+          <NTag round>{{ semanticTaskType(task.type) }}</NTag>
+        </template>
+        {{ $t("common.type") }}
+      </NTooltip>
+      <NTooltip v-if="extractSchemaVersionFromTask(task)">
+        <template #trigger>
+          <NTag round>
+            {{ extractSchemaVersionFromTask(task) }}
+          </NTag>
+        </template>
+        {{ $t("common.version") }}
+      </NTooltip>
     </div>
     <template v-if="latestTaskRun">
       <NDivider />
@@ -72,7 +82,13 @@
 <script lang="ts" setup>
 import { head, isEqual } from "lodash-es";
 import { ClipboardIcon, ChevronRightIcon } from "lucide-vue-next";
-import { NBreadcrumb, NBreadcrumbItem, NDivider, NTag } from "naive-ui";
+import {
+  NBreadcrumb,
+  NBreadcrumbItem,
+  NDivider,
+  NTag,
+  NTooltip,
+} from "naive-ui";
 import { computed, ref, watchEffect } from "vue";
 import { useRouter } from "vue-router";
 import { semanticTaskType } from "@/components/IssueV1";
