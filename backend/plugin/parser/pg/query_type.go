@@ -27,6 +27,9 @@ func getQueryType(node *pgquery.Node, allSystems bool) base.QueryType {
 		}
 
 		return base.Select
+	case *pgquery.Node_VariableSetStmt:
+		// Treat SAFE SET as select statement.
+		return base.Select
 	case *pgquery.Node_AlterTableStmt,
 		*pgquery.Node_AlterCollationStmt,
 		*pgquery.Node_AlterDomainStmt,

@@ -28,42 +28,47 @@ func TestGetQuerySpan(t *testing.T) {
 	}
 
 	const (
-		record       = false
-		testDataPath = "test-data/query_span.yaml"
+		record = false
+	)
+
+	var (
+		testDataPaths = []string{"test-data/query_span.yaml", "test-data/query_type.yaml"}
 	)
 
 	a := require.New(t)
-	yamlFile, err := os.Open(testDataPath)
-	a.NoError(err)
-
-	var testCases []testCase
-	byteValue, err := io.ReadAll(yamlFile)
-	a.NoError(err)
-	a.NoError(yamlFile.Close())
-	a.NoError(yaml.Unmarshal(byteValue, &testCases))
-
-	for i, tc := range testCases {
-		metadata := &storepb.DatabaseSchemaMetadata{}
-		a.NoError(common.ProtojsonUnmarshaler.Unmarshal([]byte(tc.Metadata), metadata))
-		databaseMetadataGetter, databaseNameLister := buildMockDatabaseMetadataGetter([]*storepb.DatabaseSchemaMetadata{metadata})
-		result, err := GetQuerySpan(context.TODO(), base.GetQuerySpanContext{
-			GetDatabaseMetadataFunc: databaseMetadataGetter,
-			ListDatabaseNamesFunc:   databaseNameLister,
-		}, tc.Statement, tc.DefaultDatabase, "", false)
+	for _, testDataPath := range testDataPaths {
+		yamlFile, err := os.Open(testDataPath)
 		a.NoError(err)
-		resultYaml := result.ToYaml()
-		if record {
-			testCases[i].QuerySpan = resultYaml
-		} else {
-			a.Equal(tc.QuerySpan, resultYaml, "statement: %s", tc.Statement)
+
+		var testCases []testCase
+		byteValue, err := io.ReadAll(yamlFile)
+		a.NoError(err)
+		a.NoError(yamlFile.Close())
+		a.NoError(yaml.Unmarshal(byteValue, &testCases))
+
+		for i, tc := range testCases {
+			metadata := &storepb.DatabaseSchemaMetadata{}
+			a.NoError(common.ProtojsonUnmarshaler.Unmarshal([]byte(tc.Metadata), metadata))
+			databaseMetadataGetter, databaseNameLister := buildMockDatabaseMetadataGetter([]*storepb.DatabaseSchemaMetadata{metadata})
+			result, err := GetQuerySpan(context.TODO(), base.GetQuerySpanContext{
+				GetDatabaseMetadataFunc: databaseMetadataGetter,
+				ListDatabaseNamesFunc:   databaseNameLister,
+			}, tc.Statement, tc.DefaultDatabase, "", false)
+			a.NoError(err)
+			resultYaml := result.ToYaml()
+			if record {
+				testCases[i].QuerySpan = resultYaml
+			} else {
+				a.Equal(tc.QuerySpan, resultYaml, "statement: %s", tc.Statement)
+			}
 		}
-	}
 
-	if record {
-		byteValue, err := yaml.Marshal(testCases)
-		a.NoError(err)
-		err = os.WriteFile(testDataPath, byteValue, 0644)
-		a.NoError(err)
+		if record {
+			byteValue, err := yaml.Marshal(testCases)
+			a.NoError(err)
+			err = os.WriteFile(testDataPath, byteValue, 0644)
+			a.NoError(err)
+		}
 	}
 }
 

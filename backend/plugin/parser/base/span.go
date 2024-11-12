@@ -16,7 +16,7 @@ import (
 type QueryType int
 
 const (
-	// The read-only query.
+	// Type can not be recognized for now.
 	QueryTypeUnknown QueryType = iota
 	// The read-only select query.
 	Select
