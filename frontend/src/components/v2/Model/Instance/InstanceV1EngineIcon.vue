@@ -1,7 +1,7 @@
 <template>
   <NTooltip :disabled="!tooltip || !instance.engineVersion">
     <template #trigger>
-      <div class="relative w-4 shrink-0" v-bind="$attrs">
+      <div :class="sizeClass" class="relative shrink-0" v-bind="$attrs">
         <EngineIcon class="w-full h-auto" :engine="instance.engine" />
         <div
           v-if="showStatus"
@@ -16,6 +16,7 @@
 
 <script lang="ts" setup>
 import { NTooltip } from "naive-ui";
+import { computed } from "vue";
 import type { PropType } from "vue";
 import { EngineIcon } from "@/components/Icon";
 import type {
@@ -23,7 +24,9 @@ import type {
   InstanceResource,
 } from "@/types/proto/v1/instance_service";
 
-defineProps({
+type Size = "small" | "medium" | "large";
+
+const props = defineProps({
   instance: {
     required: true,
     type: Object as PropType<Instance | InstanceResource>,
@@ -36,5 +39,19 @@ defineProps({
     type: Boolean,
     default: true,
   },
+  size: {
+    type: String as PropType<Size>,
+    default: "small", // default to small.
+  },
+});
+
+const sizeClass = computed(() => {
+  if (props.size === "large") {
+    return "w-6";
+  } else if (props.size === "medium") {
+    return "w-5";
+  } else {
+    return "w-4";
+  }
 });
 </script>
