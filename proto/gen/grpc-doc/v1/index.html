@@ -1875,6 +1875,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.ExportDataPolicy"><span class="badge">M</span>ExportDataPolicy</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.GetPolicyRequest"><span class="badge">M</span>GetPolicyRequest</a>
                 </li>
               
@@ -20647,6 +20651,30 @@ Database resource name: instances/instance-id/databases/database-name. </p></td>
 
         
       
+        <h3 id="bytebase.v1.ExportDataPolicy">ExportDataPolicy</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>disable</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.GetPolicyRequest">GetPolicyRequest</h3>
         <p></p>
 
@@ -21078,6 +21106,13 @@ Database resource name: instances/instance-id/databases/database-name. </p></td>
                 <tr>
                   <td>data_source_query_policy</td>
                   <td><a href="#bytebase.v1.DataSourceQueryPolicy">DataSourceQueryPolicy</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>export_data_policy</td>
+                  <td><a href="#bytebase.v1.ExportDataPolicy">ExportDataPolicy</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
@@ -21523,6 +21558,12 @@ In this situation, `update_mask` is ignored. </p></td>
               <tr>
                 <td>DATA_SOURCE_QUERY</td>
                 <td>14</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>DATA_EXPORT</td>
+                <td>15</td>
                 <td><p></p></td>
               </tr>
             

@@ -153,6 +153,30 @@ func (s *Store) GetRolloutPolicy(ctx context.Context, environmentID int) (*store
 	return p, nil
 }
 
+func (s *Store) GetDataExportPolicy(ctx context.Context) (*storepb.ExportDataPolicy, error) {
+	resourceType := api.PolicyResourceTypeWorkspace
+	pType := api.PolicyTypeExportData
+	policy, err := s.GetPolicyV2(ctx, &FindPolicyMessage{
+		ResourceType: &resourceType,
+		Type:         &pType,
+	})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get policy")
+	}
+	if policy == nil {
+		return &storepb.ExportDataPolicy{
+			Disable: false,
+		}, nil
+	}
+
+	p := &storepb.ExportDataPolicy{}
+	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(policy.Payload), p); err != nil {
+		return nil, errors.Wrapf(err, "failed to unmarshal data export policy")
+	}
+
+	return p, nil
+}
+
 // GetReviewConfigForDatabase will get the review config for a database.
 func (s *Store) GetReviewConfigForDatabase(ctx context.Context, database *DatabaseMessage) (*storepb.ReviewConfigPayload, error) {
 	resources := []DatabaseReviewConfig{

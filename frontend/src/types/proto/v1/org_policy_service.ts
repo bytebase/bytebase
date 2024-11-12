@@ -34,6 +34,7 @@ export enum PolicyType {
   RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW = "RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW",
   TAG = "TAG",
   DATA_SOURCE_QUERY = "DATA_SOURCE_QUERY",
+  DATA_EXPORT = "DATA_EXPORT",
   UNRECOGNIZED = "UNRECOGNIZED",
 }
 
@@ -69,6 +70,9 @@ export function policyTypeFromJSON(object: any): PolicyType {
     case 14:
     case "DATA_SOURCE_QUERY":
       return PolicyType.DATA_SOURCE_QUERY;
+    case 15:
+    case "DATA_EXPORT":
+      return PolicyType.DATA_EXPORT;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -98,6 +102,8 @@ export function policyTypeToJSON(object: PolicyType): string {
       return "TAG";
     case PolicyType.DATA_SOURCE_QUERY:
       return "DATA_SOURCE_QUERY";
+    case PolicyType.DATA_EXPORT:
+      return "DATA_EXPORT";
     case PolicyType.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
@@ -126,6 +132,8 @@ export function policyTypeToNumber(object: PolicyType): number {
       return 13;
     case PolicyType.DATA_SOURCE_QUERY:
       return 14;
+    case PolicyType.DATA_EXPORT:
+      return 15;
     case PolicyType.UNRECOGNIZED:
     default:
       return -1;
@@ -390,6 +398,7 @@ export interface Policy {
   restrictIssueCreationForSqlReviewPolicy?: RestrictIssueCreationForSQLReviewPolicy | undefined;
   tagPolicy?: TagPolicy | undefined;
   dataSourceQueryPolicy?: DataSourceQueryPolicy | undefined;
+  exportDataPolicy?: ExportDataPolicy | undefined;
   enforce: boolean;
   /** The resource type for the policy. */
   resourceType: PolicyResourceType;
@@ -412,6 +421,10 @@ export interface SlowQueryPolicy {
 
 export interface DisableCopyDataPolicy {
   active: boolean;
+}
+
+export interface ExportDataPolicy {
+  disable: boolean;
 }
 
 export interface MaskingPolicy {
@@ -1110,6 +1123,7 @@ function createBasePolicy(): Policy {
     restrictIssueCreationForSqlReviewPolicy: undefined,
     tagPolicy: undefined,
     dataSourceQueryPolicy: undefined,
+    exportDataPolicy: undefined,
     enforce: false,
     resourceType: PolicyResourceType.RESOURCE_TYPE_UNSPECIFIED,
   };
@@ -1155,6 +1169,9 @@ export const Policy: MessageFns<Policy> = {
     }
     if (message.dataSourceQueryPolicy !== undefined) {
       DataSourceQueryPolicy.encode(message.dataSourceQueryPolicy, writer.uint32(178).fork()).join();
+    }
+    if (message.exportDataPolicy !== undefined) {
+      ExportDataPolicy.encode(message.exportDataPolicy, writer.uint32(186).fork()).join();
     }
     if (message.enforce !== false) {
       writer.uint32(104).bool(message.enforce);
@@ -1259,6 +1276,13 @@ export const Policy: MessageFns<Policy> = {
 
           message.dataSourceQueryPolicy = DataSourceQueryPolicy.decode(reader, reader.uint32());
           continue;
+        case 23:
+          if (tag !== 186) {
+            break;
+          }
+
+          message.exportDataPolicy = ExportDataPolicy.decode(reader, reader.uint32());
+          continue;
         case 13:
           if (tag !== 104) {
             break;
@@ -1306,6 +1330,7 @@ export const Policy: MessageFns<Policy> = {
       dataSourceQueryPolicy: isSet(object.dataSourceQueryPolicy)
         ? DataSourceQueryPolicy.fromJSON(object.dataSourceQueryPolicy)
         : undefined,
+      exportDataPolicy: isSet(object.exportDataPolicy) ? ExportDataPolicy.fromJSON(object.exportDataPolicy) : undefined,
       enforce: isSet(object.enforce) ? globalThis.Boolean(object.enforce) : false,
       resourceType: isSet(object.resourceType)
         ? policyResourceTypeFromJSON(object.resourceType)
@@ -1352,6 +1377,9 @@ export const Policy: MessageFns<Policy> = {
     }
     if (message.dataSourceQueryPolicy !== undefined) {
       obj.dataSourceQueryPolicy = DataSourceQueryPolicy.toJSON(message.dataSourceQueryPolicy);
+    }
+    if (message.exportDataPolicy !== undefined) {
+      obj.exportDataPolicy = ExportDataPolicy.toJSON(message.exportDataPolicy);
     }
     if (message.enforce !== false) {
       obj.enforce = message.enforce;
@@ -1402,6 +1430,9 @@ export const Policy: MessageFns<Policy> = {
       (object.dataSourceQueryPolicy !== undefined && object.dataSourceQueryPolicy !== null)
         ? DataSourceQueryPolicy.fromPartial(object.dataSourceQueryPolicy)
         : undefined;
+    message.exportDataPolicy = (object.exportDataPolicy !== undefined && object.exportDataPolicy !== null)
+      ? ExportDataPolicy.fromPartial(object.exportDataPolicy)
+      : undefined;
     message.enforce = object.enforce ?? false;
     message.resourceType = object.resourceType ?? PolicyResourceType.RESOURCE_TYPE_UNSPECIFIED;
     return message;
@@ -1628,6 +1659,63 @@ export const DisableCopyDataPolicy: MessageFns<DisableCopyDataPolicy> = {
   fromPartial(object: DeepPartial<DisableCopyDataPolicy>): DisableCopyDataPolicy {
     const message = createBaseDisableCopyDataPolicy();
     message.active = object.active ?? false;
+    return message;
+  },
+};
+
+function createBaseExportDataPolicy(): ExportDataPolicy {
+  return { disable: false };
+}
+
+export const ExportDataPolicy: MessageFns<ExportDataPolicy> = {
+  encode(message: ExportDataPolicy, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.disable !== false) {
+      writer.uint32(8).bool(message.disable);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ExportDataPolicy {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseExportDataPolicy();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 8) {
+            break;
+          }
+
+          message.disable = reader.bool();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ExportDataPolicy {
+    return { disable: isSet(object.disable) ? globalThis.Boolean(object.disable) : false };
+  },
+
+  toJSON(message: ExportDataPolicy): unknown {
+    const obj: any = {};
+    if (message.disable !== false) {
+      obj.disable = message.disable;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ExportDataPolicy>): ExportDataPolicy {
+    return ExportDataPolicy.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ExportDataPolicy>): ExportDataPolicy {
+    const message = createBaseExportDataPolicy();
+    message.disable = object.disable ?? false;
     return message;
   },
 };

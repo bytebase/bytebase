@@ -203,7 +203,6 @@ const onSubmit = async () => {
     await policyStore.upsertPolicy({
       parentPath: props.projectName,
       policy: pendingUpdate,
-      updateMask: ["payload"],
     });
     pushNotification({
       module: "bytebase",

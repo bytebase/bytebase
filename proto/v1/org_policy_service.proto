@@ -245,6 +245,7 @@ message Policy {
     RestrictIssueCreationForSQLReviewPolicy restrict_issue_creation_for_sql_review_policy = 20;
     TagPolicy tag_policy = 21;
     DataSourceQueryPolicy data_source_query_policy = 22;
+    ExportDataPolicy export_data_policy = 23;
   }
 
   bool enforce = 13;
@@ -266,6 +267,7 @@ enum PolicyType {
   RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW = 12;
   TAG = 13;
   DATA_SOURCE_QUERY = 14;
+  DATA_EXPORT = 15;
 }
 
 enum PolicyResourceType {
@@ -292,6 +294,10 @@ message SlowQueryPolicy {
 
 message DisableCopyDataPolicy {
   bool active = 1;
+}
+
+message ExportDataPolicy {
+  bool disable = 1;
 }
 
 message MaskingPolicy {

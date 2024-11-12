@@ -308,7 +308,6 @@ const upsertMaskingPolicy = async () => {
   await policyStore.upsertPolicy({
     parentPath: props.column.database.name,
     policy: upsert,
-    updateMask: ["payload"],
   });
 };
 

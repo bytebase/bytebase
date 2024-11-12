@@ -203,6 +203,7 @@
     - [DataSourceQueryPolicy](#bytebase-store-DataSourceQueryPolicy)
     - [DisableCopyDataPolicy](#bytebase-store-DisableCopyDataPolicy)
     - [EnvironmentTierPolicy](#bytebase-store-EnvironmentTierPolicy)
+    - [ExportDataPolicy](#bytebase-store-ExportDataPolicy)
     - [IamPolicy](#bytebase-store-IamPolicy)
     - [MaskData](#bytebase-store-MaskData)
     - [MaskingExceptionPolicy](#bytebase-store-MaskingExceptionPolicy)
@@ -3249,6 +3250,21 @@ EnvironmentTierPolicy is the tier of an environment.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | environment_tier | [EnvironmentTierPolicy.EnvironmentTier](#bytebase-store-EnvironmentTierPolicy-EnvironmentTier) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-ExportDataPolicy"></a>
+
+### ExportDataPolicy
+ExportDataPolicy is the policy configuration for export data.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| disable | [bool](#bool) |  |  |
 
 
 

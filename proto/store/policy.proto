@@ -131,6 +131,11 @@ message DisableCopyDataPolicy {
   bool active = 1;
 }
 
+// ExportDataPolicy is the policy configuration for export data.
+message ExportDataPolicy {
+  bool disable = 1;
+}
+
 // RestrictIssueCreationForSQLReviewPolicy is the policy configuration for restricting issue creation for SQL review.
 message RestrictIssueCreationForSQLReviewPolicy {
   bool disallow = 1;

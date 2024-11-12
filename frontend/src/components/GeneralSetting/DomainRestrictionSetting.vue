@@ -1,5 +1,5 @@
 <template>
-  <div class="mb-7 mt-4 lg:mt-0">
+  <div>
     <h3
       id="domain-restriction"
       class="font-medium flex flex-row justify-start items-center"

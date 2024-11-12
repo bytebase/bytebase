@@ -677,6 +677,10 @@
           "only-admin-can-edit": "Only workspace admin can update watermark setting.",
           "enable": "Enable watermark"
         },
+        "data-export": {
+          "enable": "Enable data export",
+          "description": "Allow users to export data"
+        },
         "disallow-signup": {
           "enable": "Disallow self-service signup",
           "description": "Users cannot self-service signup and can only be invited by the workspace admin."

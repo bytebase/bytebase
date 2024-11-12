@@ -263,7 +263,6 @@ const doCreate = async (params: {
   const requests = [
     policyV1Store.upsertPolicy({
       parentPath: createdEnvironment.name,
-      updateMask: ["payload"],
       policy: rolloutPolicy,
     }),
   ];
