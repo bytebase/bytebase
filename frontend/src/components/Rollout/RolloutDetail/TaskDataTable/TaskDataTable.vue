@@ -36,6 +36,8 @@ const props = withDefaults(
 const { t } = useI18n();
 const router = useRouter();
 
+const stages = computed(() => props.rollout.stages);
+
 const columnList = computed(
   (): (DataTableColumn<Task> & { hide?: boolean })[] => {
     const columns: (DataTableColumn<Task> & { hide?: boolean })[] = [
@@ -48,27 +50,21 @@ const columnList = computed(
         },
       },
       {
+        key: "stage",
+        title: t("common.stage"),
+        width: 96,
+        render: (task) =>
+          stages.value.find((stage) =>
+            stage.tasks.find((t) => t.name === task.name)
+          )?.title ?? "-",
+      },
+      {
         key: "type",
         width: 96,
         title: t("common.type"),
         render: (task) => {
           return semanticTaskType(task.type);
         },
-      },
-      {
-        key: "environment",
-        title: t("common.environment"),
-        width: 128,
-        render: (task) => (
-          <EnvironmentV1Name
-            environment={
-              databaseForTask(props.rollout.projectEntity, task)
-                .effectiveEnvironmentEntity
-            }
-            link={false}
-            tag="div"
-          />
-        ),
       },
       {
         key: "database",
@@ -90,6 +86,15 @@ const columnList = computed(
                 }
               </span>
               <ChevronRightIcon class="inline opacity-60 w-4 shrink-0" />
+              <EnvironmentV1Name
+                class="text-gray-400 mr-1"
+                environment={
+                  databaseForTask(props.rollout.projectEntity, task)
+                    .effectiveEnvironmentEntity
+                }
+                link={false}
+                tag="span"
+              />
               <span class="truncate">
                 {
                   databaseForTask(props.rollout.projectEntity, task)
