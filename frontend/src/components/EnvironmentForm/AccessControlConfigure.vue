@@ -187,10 +187,13 @@ const allowUpdatePolicy = computed(() => {
 });
 
 const updateDisableCopyDataPolicy = async (on: boolean) => {
-  await policyStore.createPolicy(props.resource, {
-    type: PolicyType.DISABLE_COPY_DATA,
-    disableCopyDataPolicy: {
-      active: on,
+  await policyStore.upsertPolicy({
+    parentPath: props.resource,
+    policy: {
+      type: PolicyType.DISABLE_COPY_DATA,
+      disableCopyDataPolicy: {
+        active: on,
+      },
     },
   });
   pushNotification({
@@ -220,7 +223,6 @@ const updateAdminDataSourceQueryRestrctionPolicy = async (
         ...policy,
       }),
     },
-    updateMask: ["payload"],
   });
   pushNotification({
     module: "bytebase",

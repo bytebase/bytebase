@@ -29,7 +29,7 @@
               {{ $t("settings.general.workspace.require-2fa.enable") }}
             </span>
           </div>
-          <div class="mb-3 text-sm text-gray-400">
+          <div class="mt-1 mb-3 text-sm text-gray-400">
             {{ $t("settings.general.workspace.require-2fa.description") }}
           </div>
         </div>
@@ -45,7 +45,7 @@
               {{ $t("settings.general.workspace.disallow-signup.enable") }}
             </span>
           </div>
-          <div class="mb-3 text-sm text-gray-400">
+          <div class="mt-1 mb-3 text-sm text-gray-400">
             {{ $t("settings.general.workspace.disallow-signup.description") }}
           </div>
         </div>
@@ -63,7 +63,7 @@
               }}
             </span>
           </div>
-          <div class="mb-3 text-sm text-gray-400">
+          <div class="mt-1 mb-3 text-sm text-gray-400">
             {{
               $t(
                 "settings.general.workspace.disallow-password-signin.description"

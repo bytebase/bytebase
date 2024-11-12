@@ -152,30 +152,12 @@ export const usePolicyV1Store = defineStore("policy_v1", {
     getPolicyByName(name: string) {
       return this.policyMapByName.get(replacePolicyTypeNameToLowerCase(name));
     },
-    async createPolicy(parent: string, policy: Partial<Policy>) {
-      const createdPolicy = await policyServiceClient.createPolicy({
-        parent,
-        policy,
-      });
-      this.policyMapByName.set(createdPolicy.name, createdPolicy);
-      return createdPolicy;
-    },
-    async updatePolicy(updateMask: string[], policy: Partial<Policy>) {
-      const updatedPolicy = await policyServiceClient.updatePolicy({
-        policy,
-        updateMask,
-      });
-      this.policyMapByName.set(updatedPolicy.name, updatedPolicy);
-      return updatedPolicy;
-    },
     async upsertPolicy({
       parentPath,
       policy,
-      updateMask,
     }: {
       parentPath: string;
       policy: Partial<Policy>;
-      updateMask?: string[];
     }) {
       if (!policy.type) {
         throw new Error("policy type is required");
@@ -185,7 +167,7 @@ export const usePolicyV1Store = defineStore("policy_v1", {
       );
       const updatedPolicy = await policyServiceClient.updatePolicy({
         policy,
-        updateMask,
+        updateMask: ["payload"],
         allowMissing: true,
       });
       this.policyMapByName.set(updatedPolicy.name, updatedPolicy);

@@ -472,6 +472,7 @@ paths:
                         - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
                         - TAG
                         - DATA_SOURCE_QUERY
+                        - DATA_EXPORT
                     type: string
                     format: enum
                 - name: pageSize
@@ -539,6 +540,7 @@ paths:
                         - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
                         - TAG
                         - DATA_SOURCE_QUERY
+                        - DATA_EXPORT
                     type: string
                     format: enum
             requestBody:
@@ -1865,6 +1867,7 @@ paths:
                         - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
                         - TAG
                         - DATA_SOURCE_QUERY
+                        - DATA_EXPORT
                     type: string
                     format: enum
                 - name: pageSize
@@ -1938,6 +1941,7 @@ paths:
                         - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
                         - TAG
                         - DATA_SOURCE_QUERY
+                        - DATA_EXPORT
                     type: string
                     format: enum
             requestBody:
@@ -2740,6 +2744,7 @@ paths:
                         - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
                         - TAG
                         - DATA_SOURCE_QUERY
+                        - DATA_EXPORT
                     type: string
                     format: enum
                 - name: pageSize
@@ -2807,6 +2812,7 @@ paths:
                         - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
                         - TAG
                         - DATA_SOURCE_QUERY
+                        - DATA_EXPORT
                     type: string
                     format: enum
             requestBody:
@@ -3314,6 +3320,7 @@ paths:
                         - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
                         - TAG
                         - DATA_SOURCE_QUERY
+                        - DATA_EXPORT
                     type: string
                     format: enum
                 - name: pageSize
@@ -3385,6 +3392,7 @@ paths:
                         - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
                         - TAG
                         - DATA_SOURCE_QUERY
+                        - DATA_EXPORT
                     type: string
                     format: enum
             requestBody:
@@ -5414,6 +5422,7 @@ paths:
                         - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
                         - TAG
                         - DATA_SOURCE_QUERY
+                        - DATA_EXPORT
                     type: string
                     format: enum
                 - name: pageSize
@@ -5481,6 +5490,7 @@ paths:
                         - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
                         - TAG
                         - DATA_SOURCE_QUERY
+                        - DATA_EXPORT
                     type: string
                     format: enum
             requestBody:
@@ -10371,6 +10381,11 @@ components:
                         A token to retrieve next page of log entities.
                          Pass this value in the page_token field in the subsequent call
                          to retrieve the next page of log entities.
+        ExportDataPolicy:
+            type: object
+            properties:
+                disable:
+                    type: boolean
         ExportRequest:
             required:
                 - name
@@ -12354,6 +12369,7 @@ components:
                         - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
                         - TAG
                         - DATA_SOURCE_QUERY
+                        - DATA_EXPORT
                     type: string
                     format: enum
                 rolloutPolicy:
@@ -12374,6 +12390,8 @@ components:
                     $ref: '#/components/schemas/TagPolicy'
                 dataSourceQueryPolicy:
                     $ref: '#/components/schemas/DataSourceQueryPolicy'
+                exportDataPolicy:
+                    $ref: '#/components/schemas/ExportDataPolicy'
                 enforce:
                     type: boolean
                 resourceType:
