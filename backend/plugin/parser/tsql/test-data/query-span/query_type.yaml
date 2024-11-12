@@ -1,0 +1,44 @@
+- description: Treat set statement as select
+  statement: SET DATEFIRST 7;
+  defaultDatabase: db
+  metadata: |-
+    {
+      "name":  "db"
+    }
+  querySpan:
+    type: 1
+    results: []
+    sourcecolumns: []
+- description: DML
+  statement: INSERT INTO dbo.t VALUES (1);
+  defaultDatabase: db
+  metadata: |-
+    {
+      "name":  "db"
+    }
+  querySpan:
+    type: 5
+    results: []
+    sourcecolumns: []
+- description: DDL
+  statement: ALTER TABLE dbo.doc_exa ADD column_b VARCHAR(20) NULL, column_c INT NULL;
+  defaultDatabase: db
+  metadata: |-
+    {
+      "name":  "db"
+    }
+  querySpan:
+    type: 4
+    results: []
+    sourcecolumns: []
+- description: system query
+  statement: SELECT * FROM INFORMATION_SCHEMA.TABLES;
+  defaultDatabase: db
+  metadata: |-
+    {
+      "name":  "db"
+    }
+  querySpan:
+    type: 3
+    results: []
+    sourcecolumns: []

@@ -26,6 +26,9 @@ func getQueryType(node tidbast.Node, allSystem bool) base.QueryType {
 		return base.DML
 	case tidbast.DDLNode:
 		return base.DDL
+	case *tidbast.SetStmt, *tidbast.SetConfigStmt, *tidbast.SetResourceGroupStmt, *tidbast.SetRoleStmt, *tidbast.SetBindingStmt:
+		// Treat SAFE SET as select statement.
+		return base.Select
 	}
 
 	return base.QueryTypeUnknown

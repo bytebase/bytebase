@@ -190,6 +190,10 @@ func (q *querySpanExtractor) extractTableSourceFromNode(node *pgquery.Node) (bas
 		return q.extractTableSourceFromJoin(node)
 	case *pgquery.Node_RangeFunction:
 		return q.extractTableSourceFromRangeFunction(node)
+	case *pgquery.Node_VariableSetStmt:
+		return &base.PseudoTable{
+			Columns: []base.QuerySpanResult{},
+		}, nil
 	}
 	return nil, newTypeNotSupportedErrorByNode(node)
 }
