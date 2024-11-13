@@ -383,7 +383,7 @@ func (s *Store) BatchCreateSheetBlob(ctx context.Context, sha256s [][]byte, cont
 // PatchSheet updates a sheet.
 func (s *Store) PatchSheet(ctx context.Context, patch *PatchSheetMessage) (*SheetMessage, error) {
 	if patch.Statement == nil {
-		return nil, errors.Errorf("nothing to update")
+		return s.GetSheet(ctx, &FindSheetMessage{UID: &patch.UID})
 	}
 
 	h := sha256.Sum256([]byte(*patch.Statement))
