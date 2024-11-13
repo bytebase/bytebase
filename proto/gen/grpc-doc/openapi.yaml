@@ -11768,8 +11768,6 @@ components:
                         Not used. A token, which can be sent as `page_token` to retrieve the next page.
                          If this field is omitted, there are no subsequent pages.
         LoginRequest:
-            required:
-                - idpName
             type: object
             properties:
                 email:
@@ -11806,6 +11804,10 @@ components:
                     type: string
                 requireResetPassword:
                     type: boolean
+                user:
+                    allOf:
+                        - $ref: '#/components/schemas/User'
+                    description: The user of successful login.
         LogoutRequest:
             type: object
             properties: {}
