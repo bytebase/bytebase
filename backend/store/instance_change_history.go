@@ -533,7 +533,7 @@ func (s *Store) ListInstanceChangeHistory(ctx context.Context, find *FindInstanc
 			instance_change_history.version,
 			instance_change_history.description,
 			%s,
-			OCTET_LENGTH(COALESCE(sheet.statement, instance_change_history.statement)),
+			OCTET_LENGTH(COALESCE(sheet_blob.content, instance_change_history.statement)),
 			%s,
 			OCTET_LENGTH(instance_change_history.schema),
 			%s,
