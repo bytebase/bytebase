@@ -1,18 +1,35 @@
 <template>
   <div class="flex justify-end">
     <template v-if="allowEdit">
+      <NPopconfirm v-if="allowDeleteUser" @positive-click="handleArchiveUser">
+        <template #trigger>
+          <NButton quaternary circle @click.stop>
+            <template #icon>
+              <Trash2Icon class="w-4 h-auto" />
+            </template>
+          </NButton>
+        </template>
+
+        <template #default>
+          <div>
+            {{ $t("settings.members.action.deactivate-confirm-title") }}
+          </div>
+        </template>
+      </NPopconfirm>
+
       <NButton
-        v-if="allowUpdateUser(user)"
+        v-if="allowUpdateUser"
         quaternary
         circle
-        @click="$emit('update-user')"
+        @click="(e) => $emit('click-user', user, e)"
       >
         <template #icon>
           <PencilIcon class="w-4 h-auto" />
         </template>
       </NButton>
+
       <BBButtonConfirm
-        v-if="allowReactiveUser(user)"
+        v-if="allowReactiveUser"
         :type="'RESTORE'"
         :require-confirm="true"
         :ok-text="$t('settings.members.action.reactivate')"
@@ -20,54 +37,74 @@
           'settings.members.action.reactivate-confirm-title'
         )} '${user.title}'?`"
         :confirm-description="''"
-        @confirm="changeRowStatus(user, State.ACTIVE)"
+        @confirm="changeRowStatus(State.ACTIVE)"
       />
     </template>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { PencilIcon } from "lucide-vue-next";
-import { NButton } from "naive-ui";
+import { PencilIcon, Trash2Icon } from "lucide-vue-next";
+import { NButton, NPopconfirm } from "naive-ui";
 import { computed } from "vue";
+import { useI18n } from "vue-i18n";
 import { BBButtonConfirm } from "@/bbkit";
-import { useUserStore } from "@/store";
-import { PresetRoleType, SYSTEM_BOT_USER_NAME } from "@/types";
-import { type User } from "@/types/proto/v1/auth_service";
+import { useUserStore, pushNotification, useCurrentUserV1 } from "@/store";
+import { PresetRoleType } from "@/types";
+import { type User, UserType } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
 import { hasWorkspaceLevelRole } from "@/utils";
 
-defineProps<{
+const props = defineProps<{
   user: User;
 }>();
 
 defineEmits<{
-  (event: "update-user"): void;
+  (event: "click-user", user: User, e: MouseEvent): void;
 }>();
 
 const userStore = useUserStore();
+const { t } = useI18n();
+const me = useCurrentUserV1();
 
 const allowEdit = computed(() => {
   // Only allow workspace admin to manage user.
   return hasWorkspaceLevelRole(PresetRoleType.WORKSPACE_ADMIN);
 });
 
-const allowUpdateUser = (user: User) => {
-  if (user.name === SYSTEM_BOT_USER_NAME) {
+const allowUpdateUser = computed(() => {
+  if (props.user.userType === UserType.SYSTEM_BOT) {
     return false;
   }
-  return allowEdit.value && user.state === State.ACTIVE;
+  return props.user.state === State.ACTIVE;
+});
+
+const allowDeleteUser = computed(() => {
+  if (!allowUpdateUser.value) {
+    return false;
+  }
+  // cannot delete self.
+  return me.value.name !== props.user.name;
+});
+
+const handleArchiveUser = async () => {
+  await userStore.archiveUser(props.user!);
+  pushNotification({
+    module: "bytebase",
+    style: "INFO",
+    title: t("common.archived"),
+  });
 };
 
-const allowReactiveUser = (user: User) => {
-  return allowEdit.value && user.state === State.DELETED;
-};
+const allowReactiveUser = computed(() => {
+  return allowEdit.value && props.user.state === State.DELETED;
+});
 
-const changeRowStatus = (user: User, state: State) => {
+const changeRowStatus = (state: State) => {
   if (state === State.ACTIVE) {
-    userStore.restoreUser(user);
+    userStore.restoreUser(props.user);
   } else {
-    userStore.archiveUser(user);
+    userStore.archiveUser(props.user);
   }
 };
 </script>
