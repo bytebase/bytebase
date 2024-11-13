@@ -4,6 +4,7 @@ import {
   getGroupEmailInBinding,
   groupBindingPrefix,
 } from "@/types";
+import { State } from "@/types/proto/v1/common";
 import { IamPolicy } from "@/types/proto/v1/iam_policy";
 import type { MemberBinding } from "./types";
 
@@ -36,7 +37,9 @@ const getMemberBinding = (
     if (!user) {
       return undefined;
     }
-
+    if (user.state !== State.ACTIVE) {
+      return undefined;
+    }
     memberBinding = {
       type: "users",
       title: user.title,
