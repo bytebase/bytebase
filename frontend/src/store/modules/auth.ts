@@ -2,7 +2,6 @@ import { useLocalStorage } from "@vueuse/core";
 import axios from "axios";
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
-import { restartAppRoot } from "@/AppRootContext";
 import { authServiceClient } from "@/grpcweb";
 import { router } from "@/router";
 import {
@@ -131,22 +130,16 @@ export const useAuthStore = defineStore("auth_v1", () => {
     } catch {
       // nothing
     } finally {
-      currentUserId.value = undefined;
-      restartAppRoot();
-
       const pathname = location.pathname;
-      router
-        .push({
-          name: AUTH_SIGNIN_MODULE,
-          query: {
-            redirect:
-              getRedirectQuery() ||
-              (pathname.startsWith("/auth") ? undefined : pathname),
-          },
-        })
-        .then(() => {
-          window.location.reload();
-        });
+      // Replace the current page with the login page.
+      window.location.href = router.resolve({
+        name: AUTH_SIGNIN_MODULE,
+        query: {
+          redirect:
+            getRedirectQuery() ||
+            (pathname.startsWith("/auth") ? undefined : pathname),
+        },
+      }).fullPath;
     }
   };
 
