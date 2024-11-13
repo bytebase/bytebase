@@ -140,6 +140,9 @@ const getUpdateMaskFromEnvironments = (
   if (!isUndefined(update.tier) && !isEqual(origin.tier, update.tier)) {
     updateMask.push("tier");
   }
+  if (!isUndefined(update.color) && !isEqual(origin.color, update.color)) {
+    updateMask.push("color");
+  }
   return updateMask;
 };
 
