@@ -70,8 +70,6 @@ const isCurrentTab = computed(() => props.tab.id === tabStore.currentTabId);
 const environment = computed(() => {
   const { database } = connectionForSQLEditorTab(props.tab);
   const environment = database?.effectiveEnvironmentEntity;
-  console.log("environment");
-  console.log(environment);
   if (environment?.name === UNKNOWN_ENVIRONMENT_NAME) {
     return;
   }
