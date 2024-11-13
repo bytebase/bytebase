@@ -312,7 +312,7 @@ func getResponseString(response any) (string, error) {
 		case *v1pb.ExportResponse:
 			return nil
 		case *v1pb.LoginResponse:
-			return nil
+			return redactLoginResponse(r)
 		case *v1pb.User:
 			return redactUser(r)
 		case *v1pb.Instance:
@@ -341,7 +341,7 @@ func redactLoginRequest(r *v1pb.LoginRequest) *v1pb.LoginRequest {
 		return nil
 	}
 
-	//  sensitive fields blacklist.
+	// Mask sensitive fields.
 	if r.Password != "" {
 		r.Password = maskedString
 	}
@@ -492,6 +492,20 @@ func redactQueryResponse(r *v1pb.QueryResponse) *v1pb.QueryResponse {
 			Statement:       result.Statement,
 			DetailedError:   result.DetailedError,
 		})
+	}
+	return n
+}
+
+func redactLoginResponse(r *v1pb.LoginResponse) *v1pb.LoginResponse {
+	if r == nil {
+		return nil
+	}
+
+	n := &v1pb.LoginResponse{
+		RequireResetPassword: r.RequireResetPassword,
+	}
+	if r.User != nil {
+		n.User = redactUser(r.User)
 	}
 	return n
 }
