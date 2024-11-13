@@ -184,7 +184,7 @@ const columns = computed(() => {
             },
           });
         },
-        render: (row) => {
+        render: (row, rowIndex) => {
           const cell = row.getVisibleCells()[colIndex];
           const value = cell.getValue() as RowValue;
           return h(TableCell, {
@@ -193,7 +193,7 @@ const columns = computed(() => {
             width: tableResize.getColumnWidth(colIndex),
             keyword: keyword.value,
             setIndex: props.setIndex,
-            rowIndex: props.offset + row.index,
+            rowIndex: props.offset + rowIndex,
             colIndex,
             class: row.index % 2 === 1 && "bg-gray-100/50 dark:bg-gray-700/50",
           });

@@ -30,7 +30,7 @@ import GitIcon from "@/components/GitIcon.vue";
 import SystemBotTag from "@/components/misc/SystemBotTag.vue";
 import YouTag from "@/components/misc/YouTag.vue";
 import { ProjectV1Name } from "@/components/v2";
-import ALL_METHODS from "@/grpcweb/methods";
+import { ALL_METHODS_WITH_AUDIT } from "@/grpcweb/methods";
 import { useCurrentUserV1, useProjectV1List, useUserStore } from "@/store";
 import { SYSTEM_BOT_USER_NAME } from "@/types";
 import { AuditLog_Severity } from "@/types/proto/v1/audit_log_service";
@@ -121,7 +121,7 @@ const scopeOptions = computed((): ScopeOption[] => {
       id: "method",
       title: t("audit-log.advanced-search.scope.method.title"),
       description: t("audit-log.advanced-search.scope.method.description"),
-      options: ALL_METHODS.map((method) => {
+      options: ALL_METHODS_WITH_AUDIT.map((method) => {
         return {
           value: method,
           keywords: [method],

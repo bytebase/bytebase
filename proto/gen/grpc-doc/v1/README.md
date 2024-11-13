@@ -446,6 +446,7 @@
     - [DataSourceQueryPolicy](#bytebase-v1-DataSourceQueryPolicy)
     - [DeletePolicyRequest](#bytebase-v1-DeletePolicyRequest)
     - [DisableCopyDataPolicy](#bytebase-v1-DisableCopyDataPolicy)
+    - [ExportDataPolicy](#bytebase-v1-ExportDataPolicy)
     - [GetPolicyRequest](#bytebase-v1-GetPolicyRequest)
     - [ListPoliciesRequest](#bytebase-v1-ListPoliciesRequest)
     - [ListPoliciesResponse](#bytebase-v1-ListPoliciesResponse)
@@ -659,6 +660,8 @@
     - [RolloutService](#bytebase-v1-RolloutService)
   
 - [v1/sheet_service.proto](#v1_sheet_service-proto)
+    - [BatchCreateSheetRequest](#bytebase-v1-BatchCreateSheetRequest)
+    - [BatchCreateSheetResponse](#bytebase-v1-BatchCreateSheetResponse)
     - [CreateSheetRequest](#bytebase-v1-CreateSheetRequest)
     - [GetSheetRequest](#bytebase-v1-GetSheetRequest)
     - [Sheet](#bytebase-v1-Sheet)
@@ -5705,6 +5708,7 @@ When paginating, all other parameters provided to `ListUsers` must match the cal
 | token | [string](#string) |  |  |
 | mfa_temp_token | [string](#string) | optional |  |
 | require_reset_password | [bool](#bool) |  |  |
+| user | [User](#bytebase-v1-User) |  | The user of successful login. |
 
 
 
@@ -6655,6 +6659,7 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | title | [string](#string) |  |  |
 | order | [int32](#int32) |  |  |
 | tier | [EnvironmentTier](#bytebase-v1-EnvironmentTier) |  |  |
+| color | [string](#string) |  |  |
 
 
 
@@ -7378,6 +7383,21 @@ DataSourceQueryPolicy is the policy configuration for running statements in the 
 
 
 
+<a name="bytebase-v1-ExportDataPolicy"></a>
+
+### ExportDataPolicy
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| disable | [bool](#bool) |  |  |
+
+
+
+
+
+
 <a name="bytebase-v1-GetPolicyRequest"></a>
 
 ### GetPolicyRequest
@@ -7552,6 +7572,7 @@ MaskingExceptionPolicy is the allowlist of users who can access sensitive data.
 | restrict_issue_creation_for_sql_review_policy | [RestrictIssueCreationForSQLReviewPolicy](#bytebase-v1-RestrictIssueCreationForSQLReviewPolicy) |  |  |
 | tag_policy | [TagPolicy](#bytebase-v1-TagPolicy) |  |  |
 | data_source_query_policy | [DataSourceQueryPolicy](#bytebase-v1-DataSourceQueryPolicy) |  |  |
+| export_data_policy | [ExportDataPolicy](#bytebase-v1-ExportDataPolicy) |  |  |
 | enforce | [bool](#bool) |  |  |
 | resource_type | [PolicyResourceType](#bytebase-v1-PolicyResourceType) |  | The resource type for the policy. |
 
@@ -7738,6 +7759,7 @@ The policy&#39;s `name` field is used to identify the instance to update. Format
 | RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW | 12 |  |
 | TAG | 13 |  |
 | DATA_SOURCE_QUERY | 14 |  |
+| DATA_EXPORT | 15 |  |
 
 
 
@@ -9980,6 +10002,7 @@ When paginating, all other parameters provided to `ListTaskRuns` must match the 
 | creator | [string](#string) |  | Format: users/hello@world.com |
 | create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| issue | [string](#string) |  | The issue associated with the rollout. Could be empty. Format: projects/{project}/issues/{issue} |
 
 
 
@@ -10605,6 +10628,37 @@ Read from `pg_stat_activity`
 
 
 
+<a name="bytebase-v1-BatchCreateSheetRequest"></a>
+
+### BatchCreateSheetRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The parent resource where all sheets will be created. Format: projects/{project} |
+| requests | [CreateSheetRequest](#bytebase-v1-CreateSheetRequest) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-v1-BatchCreateSheetResponse"></a>
+
+### BatchCreateSheetResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| sheets | [Sheet](#bytebase-v1-Sheet) | repeated |  |
+
+
+
+
+
+
 <a name="bytebase-v1-CreateSheetRequest"></a>
 
 ### CreateSheetRequest
@@ -10739,6 +10793,7 @@ Type of the SheetPayload.
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
 | CreateSheet | [CreateSheetRequest](#bytebase-v1-CreateSheetRequest) | [Sheet](#bytebase-v1-Sheet) |  |
+| BatchCreateSheet | [BatchCreateSheetRequest](#bytebase-v1-BatchCreateSheetRequest) | [BatchCreateSheetResponse](#bytebase-v1-BatchCreateSheetResponse) |  |
 | GetSheet | [GetSheetRequest](#bytebase-v1-GetSheetRequest) | [Sheet](#bytebase-v1-Sheet) |  |
 | UpdateSheet | [UpdateSheetRequest](#bytebase-v1-UpdateSheetRequest) | [Sheet](#bytebase-v1-Sheet) |  |
 

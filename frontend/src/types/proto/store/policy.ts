@@ -248,6 +248,7 @@ export interface IamPolicy {
 /** EnvironmentTierPolicy is the tier of an environment. */
 export interface EnvironmentTierPolicy {
   environmentTier: EnvironmentTierPolicy_EnvironmentTier;
+  color: string;
 }
 
 export enum EnvironmentTierPolicy_EnvironmentTier {
@@ -311,6 +312,11 @@ export interface SlowQueryPolicy {
 /** DisableCopyDataPolicy is the policy configuration for disabling copying data. */
 export interface DisableCopyDataPolicy {
   active: boolean;
+}
+
+/** ExportDataPolicy is the policy configuration for export data. */
+export interface ExportDataPolicy {
+  disable: boolean;
 }
 
 /** RestrictIssueCreationForSQLReviewPolicy is the policy configuration for restricting issue creation for SQL review. */
@@ -1457,13 +1463,16 @@ export const IamPolicy: MessageFns<IamPolicy> = {
 };
 
 function createBaseEnvironmentTierPolicy(): EnvironmentTierPolicy {
-  return { environmentTier: EnvironmentTierPolicy_EnvironmentTier.ENVIRONMENT_TIER_UNSPECIFIED };
+  return { environmentTier: EnvironmentTierPolicy_EnvironmentTier.ENVIRONMENT_TIER_UNSPECIFIED, color: "" };
 }
 
 export const EnvironmentTierPolicy: MessageFns<EnvironmentTierPolicy> = {
   encode(message: EnvironmentTierPolicy, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.environmentTier !== EnvironmentTierPolicy_EnvironmentTier.ENVIRONMENT_TIER_UNSPECIFIED) {
       writer.uint32(8).int32(environmentTierPolicy_EnvironmentTierToNumber(message.environmentTier));
+    }
+    if (message.color !== "") {
+      writer.uint32(18).string(message.color);
     }
     return writer;
   },
@@ -1482,6 +1491,13 @@ export const EnvironmentTierPolicy: MessageFns<EnvironmentTierPolicy> = {
 
           message.environmentTier = environmentTierPolicy_EnvironmentTierFromJSON(reader.int32());
           continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.color = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1496,6 +1512,7 @@ export const EnvironmentTierPolicy: MessageFns<EnvironmentTierPolicy> = {
       environmentTier: isSet(object.environmentTier)
         ? environmentTierPolicy_EnvironmentTierFromJSON(object.environmentTier)
         : EnvironmentTierPolicy_EnvironmentTier.ENVIRONMENT_TIER_UNSPECIFIED,
+      color: isSet(object.color) ? globalThis.String(object.color) : "",
     };
   },
 
@@ -1503,6 +1520,9 @@ export const EnvironmentTierPolicy: MessageFns<EnvironmentTierPolicy> = {
     const obj: any = {};
     if (message.environmentTier !== EnvironmentTierPolicy_EnvironmentTier.ENVIRONMENT_TIER_UNSPECIFIED) {
       obj.environmentTier = environmentTierPolicy_EnvironmentTierToJSON(message.environmentTier);
+    }
+    if (message.color !== "") {
+      obj.color = message.color;
     }
     return obj;
   },
@@ -1514,6 +1534,7 @@ export const EnvironmentTierPolicy: MessageFns<EnvironmentTierPolicy> = {
     const message = createBaseEnvironmentTierPolicy();
     message.environmentTier = object.environmentTier ??
       EnvironmentTierPolicy_EnvironmentTier.ENVIRONMENT_TIER_UNSPECIFIED;
+    message.color = object.color ?? "";
     return message;
   },
 };
@@ -1628,6 +1649,63 @@ export const DisableCopyDataPolicy: MessageFns<DisableCopyDataPolicy> = {
   fromPartial(object: DeepPartial<DisableCopyDataPolicy>): DisableCopyDataPolicy {
     const message = createBaseDisableCopyDataPolicy();
     message.active = object.active ?? false;
+    return message;
+  },
+};
+
+function createBaseExportDataPolicy(): ExportDataPolicy {
+  return { disable: false };
+}
+
+export const ExportDataPolicy: MessageFns<ExportDataPolicy> = {
+  encode(message: ExportDataPolicy, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.disable !== false) {
+      writer.uint32(8).bool(message.disable);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ExportDataPolicy {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseExportDataPolicy();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 8) {
+            break;
+          }
+
+          message.disable = reader.bool();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ExportDataPolicy {
+    return { disable: isSet(object.disable) ? globalThis.Boolean(object.disable) : false };
+  },
+
+  toJSON(message: ExportDataPolicy): unknown {
+    const obj: any = {};
+    if (message.disable !== false) {
+      obj.disable = message.disable;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<ExportDataPolicy>): ExportDataPolicy {
+    return ExportDataPolicy.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<ExportDataPolicy>): ExportDataPolicy {
+    const message = createBaseExportDataPolicy();
+    message.disable = object.disable ?? false;
     return message;
   },
 };

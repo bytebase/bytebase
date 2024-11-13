@@ -206,6 +206,7 @@ const doCreate = async (params: {
     name: environment.name,
     title: environment.title,
     order: environmentList.value.length,
+    color: environment.color,
     tier: environmentTier,
   });
   await environmentV1Store.fetchEnvironments();
@@ -213,7 +214,6 @@ const doCreate = async (params: {
   const requests = [
     policyV1Store.upsertPolicy({
       parentPath: createdEnvironment.name,
-      updateMask: ["payload"],
       policy: rolloutPolicy,
     }),
   ];

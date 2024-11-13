@@ -3,11 +3,14 @@
     <NBreadcrumbItem @click="router.push(`/${rollout.name}`)">
       {{ rollout.title }}
     </NBreadcrumbItem>
-    <NBreadcrumbItem @click="router.push(`/${rollout.name}#stages`)">
+    <NBreadcrumbItem :clickable="false">
+      {{ stage.title }}
+    </NBreadcrumbItem>
+    <NBreadcrumbItem @click="router.push(`/${rollout.name}#tasks`)">
       {{ $t("common.tasks") }}
     </NBreadcrumbItem>
     <NBreadcrumbItem :clickable="false">
-      {{ taskId }}
+      {{ task.title }}
     </NBreadcrumbItem>
   </NBreadcrumb>
   <div v-if="task" class="w-full flex flex-col">
@@ -15,29 +18,47 @@
       <TaskStatus :size="'large'" :status="task.status" />
       <p class="text-2xl flex flex-row items-center">
         <InstanceV1EngineIcon
-          class="inline-block mr-1 w-6"
+          class="mr-1"
+          :size="'large'"
           :instance="
             databaseForTask(rollout.projectEntity, task).instanceResource
           "
         />
-        <span class="truncate flex items-center">
-          {{
-            databaseForTask(rollout.projectEntity, task).instanceResource.title
-          }}
-          <ChevronRightIcon class="inline opacity-60 mx-0.5 w-5" />
-          {{ databaseForTask(rollout.projectEntity, task).databaseName }}
-        </span>
+        <span>{{
+          databaseForTask(rollout.projectEntity, task).instanceResource.title
+        }}</span>
+        <ChevronRightIcon class="inline opacity-60 mx-0.5 w-5" />
+        <span>{{
+          databaseForTask(rollout.projectEntity, task).databaseName
+        }}</span>
       </p>
     </div>
-    <p class="mt-2 text-sm text-gray-500">
-      {{ task.title }}
-    </p>
-    <div class="mt-2 space-x-2">
-      <NTag round>{{ semanticTaskType(task.type) }}</NTag>
-      <NTag v-if="extractSchemaVersionFromTask(task)" round>{{
-        extractSchemaVersionFromTask(task)
-      }}</NTag>
+    <div class="mt-3 space-x-2">
+      <NTooltip>
+        <template #trigger>
+          <NTag round>{{ semanticTaskType(task.type) }}</NTag>
+        </template>
+        {{ $t("common.type") }}
+      </NTooltip>
+      <NTooltip v-if="extractSchemaVersionFromTask(task)">
+        <template #trigger>
+          <NTag round>
+            {{ extractSchemaVersionFromTask(task) }}
+          </NTag>
+        </template>
+        {{ $t("common.version") }}
+      </NTooltip>
     </div>
+    <template v-if="latestTaskRun">
+      <NDivider />
+      <p class="w-auto flex items-center text-base text-main mb-2">
+        {{ $t("issue.task-run.logs") }}
+      </p>
+      <TaskRunLogTable
+        :task-run="latestTaskRun"
+        :sheet="sheetStore.getSheetByName(sheetNameOfTaskV1(task))"
+      />
+    </template>
     <NDivider />
     <p class="w-auto flex items-center text-base text-main mb-2">
       {{ $t("common.statement") }}
@@ -55,23 +76,19 @@
       :readonly="true"
       :auto-height="{ min: 256, max: 512 }"
     />
-    <NDivider />
-    <div v-if="latestTaskRun">
-      <p class="w-auto flex items-center text-base text-main mb-2">
-        {{ $t("issue.task-run.logs") }}
-      </p>
-      <TaskRunLogTable
-        :task-run="latestTaskRun"
-        :sheet="sheetStore.getSheetByName(sheetNameOfTaskV1(task))"
-      />
-    </div>
   </div>
 </template>
 
 <script lang="ts" setup>
 import { head, isEqual } from "lodash-es";
 import { ClipboardIcon, ChevronRightIcon } from "lucide-vue-next";
-import { NBreadcrumb, NBreadcrumbItem, NDivider, NTag } from "naive-ui";
+import {
+  NBreadcrumb,
+  NBreadcrumbItem,
+  NDivider,
+  NTag,
+  NTooltip,
+} from "naive-ui";
 import { computed, ref, watchEffect } from "vue";
 import { useRouter } from "vue-router";
 import { semanticTaskType } from "@/components/IssueV1";
@@ -80,7 +97,7 @@ import { MonacoEditor } from "@/components/MonacoEditor";
 import { InstanceV1EngineIcon } from "@/components/v2";
 import { rolloutServiceClient } from "@/grpcweb";
 import { pushNotification, useSheetV1Store } from "@/store";
-import { unknownTask } from "@/types";
+import { unknownStage, unknownTask } from "@/types";
 import type { TaskRun } from "@/types/proto/v1/rollout_service";
 import {
   extractSchemaVersionFromTask,
@@ -103,11 +120,18 @@ const { rollout } = useRolloutDetailContext();
 const sheetStore = useSheetV1Store();
 const latestTaskRun = ref<TaskRun | undefined>(undefined);
 
+const stage = computed(() => {
+  return (
+    rollout.value.stages.find((stage) =>
+      stage.name.endsWith(`/${props.stageId}`)
+    ) || unknownStage()
+  );
+});
+
 const task = computed(() => {
   return (
-    rollout.value.stages
-      .flatMap((stage) => stage.tasks)
-      .find((task) => task.name.endsWith(`/${props.taskId}`)) || unknownTask()
+    stage.value.tasks.find((task) => task.name.endsWith(`/${props.taskId}`)) ||
+    unknownTask()
   );
 });
 

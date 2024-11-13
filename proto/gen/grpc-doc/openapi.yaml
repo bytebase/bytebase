@@ -472,6 +472,7 @@ paths:
                         - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
                         - TAG
                         - DATA_SOURCE_QUERY
+                        - DATA_EXPORT
                     type: string
                     format: enum
                 - name: pageSize
@@ -539,6 +540,7 @@ paths:
                         - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
                         - TAG
                         - DATA_SOURCE_QUERY
+                        - DATA_EXPORT
                     type: string
                     format: enum
             requestBody:
@@ -1865,6 +1867,7 @@ paths:
                         - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
                         - TAG
                         - DATA_SOURCE_QUERY
+                        - DATA_EXPORT
                     type: string
                     format: enum
                 - name: pageSize
@@ -1938,6 +1941,7 @@ paths:
                         - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
                         - TAG
                         - DATA_SOURCE_QUERY
+                        - DATA_EXPORT
                     type: string
                     format: enum
             requestBody:
@@ -2740,6 +2744,7 @@ paths:
                         - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
                         - TAG
                         - DATA_SOURCE_QUERY
+                        - DATA_EXPORT
                     type: string
                     format: enum
                 - name: pageSize
@@ -2807,6 +2812,7 @@ paths:
                         - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
                         - TAG
                         - DATA_SOURCE_QUERY
+                        - DATA_EXPORT
                     type: string
                     format: enum
             requestBody:
@@ -3314,6 +3320,7 @@ paths:
                         - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
                         - TAG
                         - DATA_SOURCE_QUERY
+                        - DATA_EXPORT
                     type: string
                     format: enum
                 - name: pageSize
@@ -3385,6 +3392,7 @@ paths:
                         - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
                         - TAG
                         - DATA_SOURCE_QUERY
+                        - DATA_EXPORT
                     type: string
                     format: enum
             requestBody:
@@ -5414,6 +5422,7 @@ paths:
                         - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
                         - TAG
                         - DATA_SOURCE_QUERY
+                        - DATA_EXPORT
                     type: string
                     format: enum
                 - name: pageSize
@@ -5481,6 +5490,7 @@ paths:
                         - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
                         - TAG
                         - DATA_SOURCE_QUERY
+                        - DATA_EXPORT
                     type: string
                     format: enum
             requestBody:
@@ -6448,6 +6458,37 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Sheet'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v1/projects/{project}/sheets:batchCreate:
+        post:
+            tags:
+                - SheetService
+            operationId: SheetService_BatchCreateSheet
+            parameters:
+                - name: project
+                  in: path
+                  description: The project id.
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/BatchCreateSheetRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/BatchCreateSheetResponse'
                 default:
                     description: Default error response
                     content:
@@ -9049,6 +9090,28 @@ components:
         BatchCancelTaskRunsResponse:
             type: object
             properties: {}
+        BatchCreateSheetRequest:
+            required:
+                - parent
+                - requests
+            type: object
+            properties:
+                parent:
+                    type: string
+                    description: |-
+                        The parent resource where all sheets will be created.
+                         Format: projects/{project}
+                requests:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/CreateSheetRequest'
+        BatchCreateSheetResponse:
+            type: object
+            properties:
+                sheets:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/Sheet'
         BatchDeparseRequest:
             type: object
             properties:
@@ -9691,6 +9754,21 @@ components:
                         - $ref: '#/components/schemas/GenerationMetadata'
                     description: The generation is the generation of a column.
             description: ColumnMetadata is the metadata for columns.
+        CreateSheetRequest:
+            required:
+                - parent
+                - sheet
+            type: object
+            properties:
+                parent:
+                    type: string
+                    description: |-
+                        The parent resource where this sheet will be created.
+                         Format: projects/{project}
+                sheet:
+                    allOf:
+                        - $ref: '#/components/schemas/Sheet'
+                    description: The sheet to create.
         DataClassificationConfig_DataClassification:
             type: object
             properties:
@@ -10207,6 +10285,8 @@ components:
                         - UNPROTECTED
                     type: string
                     format: enum
+                color:
+                    type: string
         ExecuteRequest:
             required:
                 - name
@@ -10303,6 +10383,11 @@ components:
                         A token to retrieve next page of log entities.
                          Pass this value in the page_token field in the subsequent call
                          to retrieve the next page of log entities.
+        ExportDataPolicy:
+            type: object
+            properties:
+                disable:
+                    type: boolean
         ExportRequest:
             required:
                 - name
@@ -11685,8 +11770,6 @@ components:
                         Not used. A token, which can be sent as `page_token` to retrieve the next page.
                          If this field is omitted, there are no subsequent pages.
         LoginRequest:
-            required:
-                - idpName
             type: object
             properties:
                 email:
@@ -11723,6 +11806,10 @@ components:
                     type: string
                 requireResetPassword:
                     type: boolean
+                user:
+                    allOf:
+                        - $ref: '#/components/schemas/User'
+                    description: The user of successful login.
         LogoutRequest:
             type: object
             properties: {}
@@ -12286,6 +12373,7 @@ components:
                         - RESTRICT_ISSUE_CREATION_FOR_SQL_REVIEW
                         - TAG
                         - DATA_SOURCE_QUERY
+                        - DATA_EXPORT
                     type: string
                     format: enum
                 rolloutPolicy:
@@ -12306,6 +12394,8 @@ components:
                     $ref: '#/components/schemas/TagPolicy'
                 dataSourceQueryPolicy:
                     $ref: '#/components/schemas/DataSourceQueryPolicy'
+                exportDataPolicy:
+                    $ref: '#/components/schemas/ExportDataPolicy'
                 enforce:
                     type: boolean
                 resourceType:
@@ -13144,6 +13234,12 @@ components:
                     readOnly: true
                     type: string
                     format: date-time
+                issue:
+                    readOnly: true
+                    type: string
+                    description: |-
+                        The issue associated with the rollout. Could be empty.
+                         Format: projects/{project}/issues/{issue}
         RolloutPolicy:
             type: object
             properties:

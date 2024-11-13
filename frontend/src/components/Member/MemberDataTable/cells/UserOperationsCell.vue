@@ -1,5 +1,21 @@
 <template>
-  <div class="flex justify-end">
+  <div v-if="allowEdit" class="flex justify-end">
+    <NPopconfirm v-if="allowUpdate" @positive-click="handleRevoke">
+      <template #trigger>
+        <NButton quaternary circle @click.stop>
+          <template #icon>
+            <Trash2Icon class="w-4 h-auto" />
+          </template>
+        </NButton>
+      </template>
+
+      <template #default>
+        <div>
+          {{ $t("settings.members.revoke-access-alert") }}
+        </div>
+      </template>
+    </NPopconfirm>
+
     <NButton
       v-if="allowUpdate"
       quaternary
@@ -14,10 +30,13 @@
 </template>
 
 <script lang="ts" setup>
-import { PencilIcon } from "lucide-vue-next";
-import { NButton } from "naive-ui";
+import { PencilIcon, Trash2Icon } from "lucide-vue-next";
+import { NButton, NPopconfirm } from "naive-ui";
 import { computed } from "vue";
-import { SYSTEM_BOT_USER_NAME, unknownUser } from "@/types";
+import { useI18n } from "vue-i18n";
+import { useWorkspaceV1Store, pushNotification } from "@/store";
+import { unknownUser } from "@/types";
+import { UserType } from "@/types/proto/v1/auth_service";
 import { State } from "@/types/proto/v1/common";
 import type { MemberBinding } from "../../types";
 
@@ -30,15 +49,32 @@ defineEmits<{
   (event: "update-binding"): void;
 }>();
 
+const workspaceStore = useWorkspaceV1Store();
+const { t } = useI18n();
+
 const allowUpdate = computed(() => {
   if (props.binding.type === "groups") {
     return props.allowEdit;
   }
 
   const user = props.binding.user ?? unknownUser();
-  if (user.name === SYSTEM_BOT_USER_NAME) {
+  if (user.userType === UserType.SYSTEM_BOT) {
     return false;
   }
-  return props.allowEdit && user.state === State.ACTIVE;
+  return user.state === State.ACTIVE;
 });
+
+const handleRevoke = async () => {
+  await workspaceStore.patchIamPolicy([
+    {
+      member: props.binding.binding,
+      roles: [],
+    },
+  ]);
+  pushNotification({
+    module: "bytebase",
+    style: "INFO",
+    title: t("settings.members.revoked"),
+  });
+};
 </script>

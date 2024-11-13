@@ -677,6 +677,10 @@
           "only-admin-can-edit": "Solo el administrador del espacio de trabajo puede actualizar la configuración de la marca de agua.",
           "enable": "Activar marca de agua"
         },
+        "data-export": {
+          "enable": "Habilitar la exportación de datos",
+          "description": "Permitir a los usuarios exportar datos"
+        },
         "disallow-signup": {
           "enable": "Deshabilitar el registro de autoservicio",
           "description": "Una vez deshabilitado, los usuarios no pueden registrarse por sí mismos y solo pueden ser invitados por el administrador del espacio de trabajo."

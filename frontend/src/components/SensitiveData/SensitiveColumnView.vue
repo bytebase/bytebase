@@ -298,12 +298,15 @@ const removeSensitiveColumn = async (sensitiveColumn: SensitiveColumn) => {
     // so we don't need to re-fetch the whole list.
     maskData.splice(index, 1);
 
-    await policyStore.updatePolicy(["payload"], {
-      name: policy.name,
-      type: PolicyType.MASKING,
-      resourceType: PolicyResourceType.DATABASE,
-      maskingPolicy: {
-        maskData,
+    await policyStore.upsertPolicy({
+      parentPath: sensitiveColumn.database.name,
+      policy: {
+        name: policy.name,
+        type: PolicyType.MASKING,
+        resourceType: PolicyResourceType.DATABASE,
+        maskingPolicy: {
+          maskData,
+        },
       },
     });
     await removeMaskingExceptions(sensitiveColumn);
@@ -329,7 +332,10 @@ const removeMaskingExceptions = async (sensitiveColumn: SensitiveColumn) => {
     ...(policy.maskingExceptionPolicy ?? {}),
     maskingExceptions: exceptions,
   };
-  await policyStore.updatePolicy(["payload"], policy);
+  await policyStore.upsertPolicy({
+    parentPath: sensitiveColumn.database.project,
+    policy,
+  });
 };
 
 const onColumnRemove = async (column: SensitiveColumn) => {

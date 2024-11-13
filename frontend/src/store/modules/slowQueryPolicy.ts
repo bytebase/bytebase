@@ -49,7 +49,6 @@ export const useSlowQueryPolicyStore = defineStore("slow-query-policy", () => {
           active,
         },
       },
-      updateMask: ["payload"],
     });
 
     if (policy) {

@@ -16,7 +16,7 @@ import (
 type QueryType int
 
 const (
-	// The read-only query.
+	// Type can not be recognized for now.
 	QueryTypeUnknown QueryType = iota
 	// The read-only select query.
 	Select
@@ -28,9 +28,6 @@ const (
 	DDL
 	// The DML query that changes table data.
 	DML
-	// The explain analyze query is different from explain and select query.
-	// Explain analyze queries exactly run but return nothing data.
-	ExplainAnalyze
 )
 
 var (

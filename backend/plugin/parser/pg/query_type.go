@@ -7,7 +7,7 @@ import (
 )
 
 // no session, so we don't need to check prepare and execute.
-func getQueryType(node *pgquery.Node, allSystems bool) base.QueryType {
+func getQueryType(node *pgquery.Node, allSystems bool) (base.QueryType, bool) {
 	switch n := node.Node.(type) {
 	case *pgquery.Node_InsertStmt,
 		*pgquery.Node_UpdateStmt,
@@ -15,18 +15,21 @@ func getQueryType(node *pgquery.Node, allSystems bool) base.QueryType {
 		*pgquery.Node_CopyStmt,
 		*pgquery.Node_RefreshMatViewStmt,
 		*pgquery.Node_DeleteStmt:
-		return base.DML
+		return base.DML, false
 	case *pgquery.Node_SelectStmt:
 		// SELECT INTO — define a new table from the results of a query
 		if n.SelectStmt.IntoClause != nil {
-			return base.DDL
+			return base.DDL, false
 		}
 
 		if allSystems {
-			return base.SelectInfoSchema
+			return base.SelectInfoSchema, false
 		}
 
-		return base.Select
+		return base.Select, false
+	case *pgquery.Node_VariableSetStmt:
+		// Treat SAFE SET as select statement.
+		return base.Select, false
 	case *pgquery.Node_AlterTableStmt,
 		*pgquery.Node_AlterCollationStmt,
 		*pgquery.Node_AlterDomainStmt,
@@ -104,18 +107,19 @@ func getQueryType(node *pgquery.Node, allSystems bool) base.QueryType {
 		*pgquery.Node_AlterSubscriptionStmt,
 		*pgquery.Node_DropSubscriptionStmt,
 		*pgquery.Node_CreateSchemaStmt:
-		return base.DDL
+		return base.DDL, false
 	case *pgquery.Node_VariableShowStmt:
-		return base.SelectInfoSchema
+		return base.SelectInfoSchema, false
 	case *pgquery.Node_ExplainStmt:
 		for _, option := range n.ExplainStmt.Options {
 			if defElem, ok := option.Node.(*pgquery.Node_DefElem); ok && defElem.DefElem.Defname == "analyze" {
-				return base.ExplainAnalyze
+				t, _ := getQueryType(n.ExplainStmt.Query, allSystems)
+				return t, true
 			}
 		}
 
-		return base.Explain
+		return base.Explain, false
 	}
 
-	return base.QueryTypeUnknown
+	return base.QueryTypeUnknown, false
 }

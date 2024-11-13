@@ -134,6 +134,9 @@ const doUpdate = (environmentPatch: Environment) => {
   if (environmentPatch.tier !== pendingUpdate.tier) {
     pendingUpdate.tier = environmentPatch.tier;
   }
+  if (environmentPatch.color !== pendingUpdate.color) {
+    pendingUpdate.color = environmentPatch.color;
+  }
 
   environmentV1Store
     .updateEnvironment(pendingUpdate)
@@ -197,7 +200,6 @@ const updatePolicy = async (params: {
 
   const updatedPolicy = await policyV1Store.upsertPolicy({
     parentPath: environment.name,
-    updateMask: ["payload"],
     policy,
   });
   switch (policyType) {

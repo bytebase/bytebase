@@ -193,7 +193,14 @@ export interface Rollout {
   /** Format: users/hello@world.com */
   creator: string;
   createTime: Timestamp | undefined;
-  updateTime: Timestamp | undefined;
+  updateTime:
+    | Timestamp
+    | undefined;
+  /**
+   * The issue associated with the rollout. Could be empty.
+   * Format: projects/{project}/issues/{issue}
+   */
+  issue: string;
 }
 
 export interface Stage {
@@ -2049,7 +2056,16 @@ export const GetTaskRunLogRequest: MessageFns<GetTaskRunLogRequest> = {
 };
 
 function createBaseRollout(): Rollout {
-  return { name: "", plan: "", title: "", stages: [], creator: "", createTime: undefined, updateTime: undefined };
+  return {
+    name: "",
+    plan: "",
+    title: "",
+    stages: [],
+    creator: "",
+    createTime: undefined,
+    updateTime: undefined,
+    issue: "",
+  };
 }
 
 export const Rollout: MessageFns<Rollout> = {
@@ -2074,6 +2090,9 @@ export const Rollout: MessageFns<Rollout> = {
     }
     if (message.updateTime !== undefined) {
       Timestamp.encode(message.updateTime, writer.uint32(66).fork()).join();
+    }
+    if (message.issue !== "") {
+      writer.uint32(74).string(message.issue);
     }
     return writer;
   },
@@ -2134,6 +2153,13 @@ export const Rollout: MessageFns<Rollout> = {
 
           message.updateTime = Timestamp.decode(reader, reader.uint32());
           continue;
+        case 9:
+          if (tag !== 74) {
+            break;
+          }
+
+          message.issue = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2152,6 +2178,7 @@ export const Rollout: MessageFns<Rollout> = {
       creator: isSet(object.creator) ? globalThis.String(object.creator) : "",
       createTime: isSet(object.createTime) ? fromJsonTimestamp(object.createTime) : undefined,
       updateTime: isSet(object.updateTime) ? fromJsonTimestamp(object.updateTime) : undefined,
+      issue: isSet(object.issue) ? globalThis.String(object.issue) : "",
     };
   },
 
@@ -2178,6 +2205,9 @@ export const Rollout: MessageFns<Rollout> = {
     if (message.updateTime !== undefined) {
       obj.updateTime = fromTimestamp(message.updateTime).toISOString();
     }
+    if (message.issue !== "") {
+      obj.issue = message.issue;
+    }
     return obj;
   },
 
@@ -2197,6 +2227,7 @@ export const Rollout: MessageFns<Rollout> = {
     message.updateTime = (object.updateTime !== undefined && object.updateTime !== null)
       ? Timestamp.fromPartial(object.updateTime)
       : undefined;
+    message.issue = object.issue ?? "";
     return message;
   },
 };

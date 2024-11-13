@@ -264,6 +264,7 @@ import {
   UserType,
   type User,
 } from "@/types/proto/v1/auth_service";
+import { State } from "@/types/proto/v1/common";
 import { displayRoleTitle, hasWorkspacePermissionV2, sortRoles } from "@/utils";
 
 interface LocalState {
@@ -360,6 +361,9 @@ const allowEdit = computed(() => {
     user.value.name === SYSTEM_BOT_USER_NAME ||
     user.value.email === ALL_USERS_USER_EMAIL
   ) {
+    return false;
+  }
+  if (user.value.state !== State.ACTIVE) {
     return false;
   }
   return isSelf.value || hasWorkspacePermissionV2("bb.policies.update");

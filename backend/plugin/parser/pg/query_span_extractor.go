@@ -128,11 +128,20 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*ba
 	}
 	ast := res.Stmts[0]
 
-	queryType := getQueryType(ast.Stmt, allSystems)
+	queryType, isExplainAnalyze := getQueryType(ast.Stmt, allSystems)
 	if queryType != base.Select {
 		return &base.QuerySpan{
 			Type:          queryType,
 			SourceColumns: base.SourceColumnSet{},
+			Results:       []base.QuerySpanResult{},
+		}, nil
+	}
+
+	// For EXPLAIN ANALYZE SELECT, we determine the query type and access tables based on the inner query.
+	if isExplainAnalyze {
+		return &base.QuerySpan{
+			Type:          queryType,
+			SourceColumns: accessTables,
 			Results:       []base.QuerySpanResult{},
 		}, nil
 	}
@@ -190,6 +199,10 @@ func (q *querySpanExtractor) extractTableSourceFromNode(node *pgquery.Node) (bas
 		return q.extractTableSourceFromJoin(node)
 	case *pgquery.Node_RangeFunction:
 		return q.extractTableSourceFromRangeFunction(node)
+	case *pgquery.Node_VariableSetStmt:
+		return &base.PseudoTable{
+			Columns: []base.QuerySpanResult{},
+		}, nil
 	}
 	return nil, newTypeNotSupportedErrorByNode(node)
 }

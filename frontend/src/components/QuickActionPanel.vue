@@ -112,6 +112,7 @@ import {
   useProjectV1Store,
   useInstanceResourceList,
   useAppFeature,
+  usePolicyByParentAndType,
 } from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import {
@@ -119,6 +120,7 @@ import {
   type FeatureType,
   PresetRoleType,
 } from "@/types";
+import { PolicyType } from "@/types/proto/v1/org_policy_service";
 import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
 import { hasProjectPermissionV2 } from "@/utils";
 import { FeatureModal } from "./FeatureGuard";
@@ -157,6 +159,13 @@ const databaseChangeMode = useAppFeature("bb.feature.database-change-mode");
 const hasDBAWorkflowFeature = computed(() => {
   return subscriptionStore.hasFeature("bb.feature.dba-workflow");
 });
+
+const exportDataPolicy = usePolicyByParentAndType(
+  computed(() => ({
+    parentPath: "",
+    policyType: PolicyType.DATA_EXPORT,
+  }))
+);
 
 const state = reactive<LocalState>({
   quickActionType: undefined,
@@ -266,7 +275,9 @@ const availableQuickActionList = computed((): QuickAction[] => {
     {
       type: "quickaction.bb.issue.grant.request.exporter",
       title: t("custom-approval.risk-rule.risk.namespace.request_export"),
-      hide: !hasDBAWorkflowFeature.value,
+      hide:
+        !hasDBAWorkflowFeature.value ||
+        (exportDataPolicy.value?.exportDataPolicy?.disable ?? false),
       action: () =>
         (state.quickActionType = "quickaction.bb.issue.grant.request.exporter"),
       icon: h(FileDownIcon),

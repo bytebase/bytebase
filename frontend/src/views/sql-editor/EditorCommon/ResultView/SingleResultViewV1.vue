@@ -215,6 +215,8 @@ import {
   useConnectionOfCurrentSQLEditorTab,
   useSQLEditorStore,
   useAppFeature,
+  pushNotification,
+  usePolicyByParentAndType,
 } from "@/store";
 import { useExportData } from "@/store/modules/export";
 import type {
@@ -225,6 +227,7 @@ import type {
 import { isValidDatabaseName, isValidInstanceName } from "@/types";
 import { ExportFormat } from "@/types/proto/v1/common";
 import { Engine } from "@/types/proto/v1/common";
+import { PolicyType } from "@/types/proto/v1/org_policy_service";
 import type {
   QueryResult,
   QueryRow,
@@ -282,9 +285,24 @@ const editorStore = useSQLEditorStore();
 const { exportData } = useExportData();
 const currentTab = computed(() => tabStore.currentTab);
 const { instance: connectedInstance } = useConnectionOfCurrentSQLEditorTab();
-const disallowExportQueryData = useAppFeature(
-  "bb.feature.sql-editor.disallow-export-query-data"
+
+const exportDataPolicy = usePolicyByParentAndType(
+  computed(() => ({
+    parentPath: "",
+    policyType: PolicyType.DATA_EXPORT,
+  }))
 );
+
+const disallowExportQueryData = computed(() => {
+  const disableDataExport =
+    exportDataPolicy.value?.exportDataPolicy?.disable ?? false;
+
+  const appFeatureDisallowExport = useAppFeature(
+    "bb.feature.sql-editor.disallow-export-query-data"
+  );
+
+  return disableDataExport || appFeatureDisallowExport;
+});
 
 const viewMode = computed((): ViewMode => {
   const { result } = props;
@@ -455,21 +473,30 @@ const handleExportBtnClick = async (
   const admin = tabStore.currentTab?.mode === "ADMIN";
   const limit = options.limit ?? (admin ? 0 : editorStore.resultRowsLimit);
 
-  const content = await exportData({
-    database,
-    // TODO(lj): support data source id similar to queries.
-    dataSourceId: "",
-    format: options.format,
-    statement,
-    limit,
-    admin,
-    password: options.password,
-  });
+  try {
+    const content = await exportData({
+      database,
+      // TODO(lj): support data source id similar to queries.
+      dataSourceId: "",
+      format: options.format,
+      statement,
+      limit,
+      admin,
+      password: options.password,
+    });
 
-  callback(
-    content,
-    `export-data.${dayjs(new Date()).format("YYYY-MM-DDTHH-mm-ss")}`
-  );
+    callback(
+      content,
+      `export-data.${dayjs(new Date()).format("YYYY-MM-DDTHH-mm-ss")}`
+    );
+  } catch (e) {
+    pushNotification({
+      module: "bytebase",
+      style: "CRITICAL",
+      title: t("common.error"),
+      description: String(e),
+    });
+  }
 };
 
 const handleRequestExport = async () => {

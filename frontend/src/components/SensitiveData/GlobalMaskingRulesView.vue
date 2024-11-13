@@ -304,7 +304,6 @@ const onPolicyUpsert = async () => {
   await policyStore.upsertPolicy({
     parentPath: "",
     policy: patch,
-    updateMask: ["payload"],
   });
 };
 
