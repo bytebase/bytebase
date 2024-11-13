@@ -501,7 +501,7 @@ func (s *Store) ListInstanceChangeHistory(ctx context.Context, find *FindInstanc
 		where = append(where, fmt.Sprintf("instance_change_history.type IN (%s)", strings.Join(changeTypes, ",")))
 	}
 
-	statementField := "COALESCE(sheet.statement, instance_change_history.statement)"
+	statementField := "COALESCE(sheet_blob.content, instance_change_history.statement)"
 	if !find.ShowFull {
 		statementField = fmt.Sprintf("LEFT(%s, %d)", statementField, find.TruncateSize)
 	}
@@ -545,6 +545,7 @@ func (s *Store) ListInstanceChangeHistory(ctx context.Context, find *FindInstanc
 			COALESCE(db.name, '')
 		FROM instance_change_history
 		LEFT JOIN sheet ON sheet.id = instance_change_history.sheet_id
+		LEFT JOIN sheet_blob ON sheet.sha256 = sheet_blob.sha256
 		LEFT JOIN instance on instance.id = instance_change_history.instance_id
 		LEFT JOIN db on db.id = instance_change_history.database_id
 		WHERE `+strings.Join(where, " AND ")+` ORDER BY instance_change_history.instance_id, instance_change_history.database_id, instance_change_history.sequence DESC`,
