@@ -83,6 +83,7 @@ func (s *EnvironmentService) CreateEnvironment(ctx context.Context, request *v1p
 		Title:      request.Environment.Title,
 		Order:      request.Environment.Order,
 		Protected:  request.Environment.Tier == v1pb.EnvironmentTier_PROTECTED,
+		Color:      request.Environment.Color,
 	}
 	if pendingCreate.Protected {
 		if err := s.licenseService.IsFeatureEnabled(api.FeatureEnvironmentTierPolicy); err != nil {
@@ -136,6 +137,8 @@ func (s *EnvironmentService) UpdateEnvironment(ctx context.Context, request *v1p
 				}
 			}
 			patch.Protected = &protected
+		case "color":
+			patch.Color = &request.Environment.Color
 		}
 	}
 
@@ -235,5 +238,6 @@ func convertToEnvironment(environment *store.EnvironmentMessage) *v1pb.Environme
 		Title: environment.Title,
 		Order: environment.Order,
 		Tier:  tier,
+		Color: environment.Color,
 	}
 }

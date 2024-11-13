@@ -21,6 +21,7 @@ type EnvironmentMessage struct {
 	Title      string
 	Order      int32
 	Protected  bool
+	Color      string
 
 	// The following fields are output only and not used for create().
 	UID     int
@@ -42,6 +43,7 @@ type UpdateEnvironmentMessage struct {
 	Order     *int32
 	Protected *bool
 	Delete    *bool
+	Color     *string
 }
 
 // GetEnvironmentV2 gets environment by resource ID.
@@ -142,7 +144,10 @@ func (s *Store) CreateEnvironmentV2(ctx context.Context, create *EnvironmentMess
 	if create.Protected {
 		value = storepb.EnvironmentTierPolicy_PROTECTED
 	}
-	payload, err := protojson.Marshal(&storepb.EnvironmentTierPolicy{EnvironmentTier: value})
+	payload, err := protojson.Marshal(&storepb.EnvironmentTierPolicy{
+		EnvironmentTier: value,
+		Color:           create.Color,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -166,6 +171,7 @@ func (s *Store) CreateEnvironmentV2(ctx context.Context, create *EnvironmentMess
 		Title:      create.Title,
 		Order:      create.Order,
 		Protected:  create.Protected,
+		Color:      create.Color,
 		UID:        uid,
 		Deleted:    false,
 	}
@@ -216,19 +222,43 @@ func (s *Store) UpdateEnvironmentV2(ctx context.Context, environmentID string, p
 	}
 
 	// TODO(d): consider moving tier to environment table to simplify things.
-	if patch.Protected != nil {
-		value := storepb.EnvironmentTierPolicy_UNPROTECTED
-		if *patch.Protected {
-			value = storepb.EnvironmentTierPolicy_PROTECTED
+	if patch.Protected != nil || patch.Color != nil {
+		resourceType := api.PolicyResourceTypeEnvironment
+		policyType := api.PolicyTypeEnvironmentTier
+		policy, err := s.GetPolicyV2(ctx, &FindPolicyMessage{
+			ResourceType: &resourceType,
+			Type:         &policyType,
+			ResourceUID:  &environmentUID,
+		})
+		if err != nil {
+			return nil, err
 		}
-		payload, err := protojson.Marshal(&storepb.EnvironmentTierPolicy{EnvironmentTier: value})
+		environmentPolicy := &storepb.EnvironmentTierPolicy{
+			EnvironmentTier: storepb.EnvironmentTierPolicy_UNPROTECTED,
+		}
+		if policy != nil {
+			if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(policy.Payload), environmentPolicy); err != nil {
+				return nil, errors.Wrapf(err, "failed to unmarshal environment policy payload")
+			}
+		}
+		if patch.Protected != nil {
+			value := storepb.EnvironmentTierPolicy_UNPROTECTED
+			if *patch.Protected {
+				value = storepb.EnvironmentTierPolicy_PROTECTED
+			}
+			environmentPolicy.EnvironmentTier = value
+		}
+		if v := patch.Color; v != nil {
+			environmentPolicy.Color = *v
+		}
+		payload, err := protojson.Marshal(environmentPolicy)
 		if err != nil {
 			return nil, err
 		}
 		if _, err := upsertPolicyV2Impl(ctx, tx, &PolicyMessage{
-			ResourceType:      api.PolicyResourceTypeEnvironment,
+			ResourceType:      resourceType,
 			ResourceUID:       environmentUID,
-			Type:              api.PolicyTypeEnvironmentTier,
+			Type:              policyType,
 			InheritFromParent: true,
 			Payload:           string(payload),
 			Enforce:           true,
@@ -315,6 +345,7 @@ func listEnvironmentImplV2(ctx context.Context, tx *Tx, find *FindEnvironmentMes
 				return nil, err
 			}
 			environment.Protected = policy.EnvironmentTier == storepb.EnvironmentTierPolicy_PROTECTED
+			environment.Color = policy.Color
 		}
 
 		environments = append(environments, &environment)

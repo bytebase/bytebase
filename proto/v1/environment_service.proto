@@ -167,6 +167,8 @@ message Environment {
   int32 order = 5;
 
   EnvironmentTier tier = 6;
+
+  string color = 7;
 }
 
 enum EnvironmentTier {

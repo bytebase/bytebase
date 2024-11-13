@@ -255,6 +255,7 @@ const doCreate = async (params: {
   const createdEnvironment = await environmentV1Store.createEnvironment({
     name: environment.name,
     title: environment.title,
+    color: environment.color,
     order: environmentList.value.length,
     tier: environmentTier,
   });

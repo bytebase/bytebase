@@ -10285,6 +10285,8 @@ components:
                         - UNPROTECTED
                     type: string
                     format: enum
+                color:
+                    type: string
         ExecuteRequest:
             required:
                 - name

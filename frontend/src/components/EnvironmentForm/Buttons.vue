@@ -36,9 +36,9 @@
 
 <script setup lang="ts">
 import { cloneDeep, isEqual } from "lodash-es";
+import { NButton } from "naive-ui";
 import { PolicyType } from "@/types/proto/v1/org_policy_service";
 import { useEnvironmentFormContext } from "./context";
-import { NButton } from "naive-ui";
 
 const {
   state,
@@ -64,6 +64,7 @@ const createEnvironment = () => {
     environment: {
       name: resourceIdField.value?.resourceId,
       title: state.value.environment.title,
+      color: state.value.environment.color,
     },
     rolloutPolicy: state.value.rolloutPolicy,
     environmentTier: state.value.environmentTier,
@@ -74,12 +75,14 @@ const updateEnvironment = () => {
   const env = cloneDeep(environment.value);
   if (
     state.value.environment.title !== env.title ||
-    state.value.environmentTier !== env.tier
+    state.value.environmentTier !== env.tier ||
+    state.value.environment.color !== env.color
   ) {
     const environmentPatch = {
       ...env,
       title: state.value.environment.title,
       tier: state.value.environmentTier,
+      color: state.value.environment.color,
     };
     events.emit("update", environmentPatch);
   }

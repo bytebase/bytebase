@@ -248,6 +248,7 @@ export interface IamPolicy {
 /** EnvironmentTierPolicy is the tier of an environment. */
 export interface EnvironmentTierPolicy {
   environmentTier: EnvironmentTierPolicy_EnvironmentTier;
+  color: string;
 }
 
 export enum EnvironmentTierPolicy_EnvironmentTier {
@@ -1462,13 +1463,16 @@ export const IamPolicy: MessageFns<IamPolicy> = {
 };
 
 function createBaseEnvironmentTierPolicy(): EnvironmentTierPolicy {
-  return { environmentTier: EnvironmentTierPolicy_EnvironmentTier.ENVIRONMENT_TIER_UNSPECIFIED };
+  return { environmentTier: EnvironmentTierPolicy_EnvironmentTier.ENVIRONMENT_TIER_UNSPECIFIED, color: "" };
 }
 
 export const EnvironmentTierPolicy: MessageFns<EnvironmentTierPolicy> = {
   encode(message: EnvironmentTierPolicy, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.environmentTier !== EnvironmentTierPolicy_EnvironmentTier.ENVIRONMENT_TIER_UNSPECIFIED) {
       writer.uint32(8).int32(environmentTierPolicy_EnvironmentTierToNumber(message.environmentTier));
+    }
+    if (message.color !== "") {
+      writer.uint32(18).string(message.color);
     }
     return writer;
   },
@@ -1487,6 +1491,13 @@ export const EnvironmentTierPolicy: MessageFns<EnvironmentTierPolicy> = {
 
           message.environmentTier = environmentTierPolicy_EnvironmentTierFromJSON(reader.int32());
           continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.color = reader.string();
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1501,6 +1512,7 @@ export const EnvironmentTierPolicy: MessageFns<EnvironmentTierPolicy> = {
       environmentTier: isSet(object.environmentTier)
         ? environmentTierPolicy_EnvironmentTierFromJSON(object.environmentTier)
         : EnvironmentTierPolicy_EnvironmentTier.ENVIRONMENT_TIER_UNSPECIFIED,
+      color: isSet(object.color) ? globalThis.String(object.color) : "",
     };
   },
 
@@ -1508,6 +1520,9 @@ export const EnvironmentTierPolicy: MessageFns<EnvironmentTierPolicy> = {
     const obj: any = {};
     if (message.environmentTier !== EnvironmentTierPolicy_EnvironmentTier.ENVIRONMENT_TIER_UNSPECIFIED) {
       obj.environmentTier = environmentTierPolicy_EnvironmentTierToJSON(message.environmentTier);
+    }
+    if (message.color !== "") {
+      obj.color = message.color;
     }
     return obj;
   },
@@ -1519,6 +1534,7 @@ export const EnvironmentTierPolicy: MessageFns<EnvironmentTierPolicy> = {
     const message = createBaseEnvironmentTierPolicy();
     message.environmentTier = object.environmentTier ??
       EnvironmentTierPolicy_EnvironmentTier.ENVIRONMENT_TIER_UNSPECIFIED;
+    message.color = object.color ?? "";
     return message;
   },
 };
