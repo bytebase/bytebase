@@ -131,7 +131,7 @@ export const useAuthStore = defineStore("auth_v1", () => {
       // nothing
     } finally {
       const pathname = location.pathname;
-      // Replace the current page with the login page.
+      // Replace and reload the page to clear frontend state directly.
       window.location.href = router.resolve({
         name: AUTH_SIGNIN_MODULE,
         query: {
