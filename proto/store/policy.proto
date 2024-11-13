@@ -119,6 +119,7 @@ message EnvironmentTierPolicy {
   }
 
   EnvironmentTier environment_tier = 1;
+  string color = 2;
 }
 
 // SlowQueryPolicy is the policy configuration for slow query.

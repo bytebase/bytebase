@@ -3250,6 +3250,7 @@ EnvironmentTierPolicy is the tier of an environment.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | environment_tier | [EnvironmentTierPolicy.EnvironmentTier](#bytebase-store-EnvironmentTierPolicy-EnvironmentTier) |  |  |
+| color | [string](#string) |  |  |
 
 
 

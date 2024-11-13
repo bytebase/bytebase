@@ -6659,6 +6659,7 @@ This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
 | title | [string](#string) |  |  |
 | order | [int32](#int32) |  |  |
 | tier | [EnvironmentTier](#bytebase-v1-EnvironmentTier) |  |  |
+| color | [string](#string) |  |  |
 
 
 
