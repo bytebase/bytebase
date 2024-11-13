@@ -527,7 +527,7 @@ func executeWithTimeout(ctx context.Context, driver db.Driver, conn *sql.Conn, s
 	select {
 	case <-ctx.Done():
 		// canceled or timed out
-		return nil, time.Since(start), errors.Errorf("timeout reached: %v", timeout)
+		return nil, time.Since(start), errors.Errorf("timeout reached: %v", ctxTimeout)
 	default:
 		// So the select will not block
 	}
