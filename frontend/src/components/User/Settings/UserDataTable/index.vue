@@ -110,8 +110,12 @@ const columns = computed(() => {
       render: (user: User) => {
         return h(UserOperationsCell, {
           user,
-          "onUpdate-user": () => {
-            emit("update-user", user);
+          "onClick-user": (user: User, e: MouseEvent) => {
+            if (props.onClickUser) {
+              props.onClickUser(user, e);
+            } else {
+              emit("update-user", user);
+            }
           },
         });
       },

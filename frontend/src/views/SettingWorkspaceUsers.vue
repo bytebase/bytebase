@@ -176,6 +176,7 @@ import CreateUserDrawer from "@/components/User/Settings/CreateUserDrawer.vue";
 import UserDataTable from "@/components/User/Settings/UserDataTable/index.vue";
 import UserDataTableByGroup from "@/components/User/Settings/UserDataTableByGroup/index.vue";
 import { SearchBox } from "@/components/v2";
+import { WORKSPACE_ROUTE_USER_PROFILE } from "@/router/dashboard/workspaceRoutes";
 import {
   useSubscriptionV1Store,
   useUserStore,
@@ -379,7 +380,11 @@ const handleCreateUser = () => {
 };
 
 const handleUpdateUser = (user: User) => {
-  state.editingUser = user;
-  state.showCreateUserDrawer = true;
+  router.push({
+    name: WORKSPACE_ROUTE_USER_PROFILE,
+    params: {
+      principalEmail: user.email,
+    },
+  });
 };
 </script>
