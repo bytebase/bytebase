@@ -14,23 +14,15 @@
 
 <script lang="ts" setup>
 import { WrenchIcon } from "lucide-vue-next";
-import type { PropType } from "vue";
 import { computed } from "vue";
 import { useWorkSheetStore } from "@/store";
 import type { SQLEditorTab } from "@/types";
 import { Worksheet_Visibility } from "@/types/proto/v1/worksheet_service";
 import { SheetConnectionIcon } from "../../EditorCommon";
 
-const props = defineProps({
-  tab: {
-    type: Object as PropType<SQLEditorTab>,
-    required: true,
-  },
-  index: {
-    type: Number,
-    required: true,
-  },
-});
+const props = defineProps<{
+  tab: SQLEditorTab;
+}>();
 
 const sheetV1Store = useWorkSheetStore();
 
