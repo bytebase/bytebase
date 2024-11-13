@@ -85,7 +85,7 @@ func (s *EnvironmentService) CreateEnvironment(ctx context.Context, request *v1p
 		Protected:  request.Environment.Tier == v1pb.EnvironmentTier_PROTECTED,
 		Color:      request.Environment.Color,
 	}
-	if pendingCreate.Protected {
+	if pendingCreate.Protected || pendingCreate.Color != "" {
 		if err := s.licenseService.IsFeatureEnabled(api.FeatureEnvironmentTierPolicy); err != nil {
 			return nil, status.Error(codes.PermissionDenied, err.Error())
 		}
@@ -131,14 +131,15 @@ func (s *EnvironmentService) UpdateEnvironment(ctx context.Context, request *v1p
 			patch.Order = &request.Environment.Order
 		case "tier":
 			protected := request.Environment.Tier == v1pb.EnvironmentTier_PROTECTED
-			if protected {
-				if err := s.licenseService.IsFeatureEnabled(api.FeatureEnvironmentTierPolicy); err != nil {
-					return nil, status.Error(codes.PermissionDenied, err.Error())
-				}
-			}
 			patch.Protected = &protected
 		case "color":
 			patch.Color = &request.Environment.Color
+		}
+	}
+
+	if patch.Protected != nil || patch.Color != nil {
+		if err := s.licenseService.IsFeatureEnabled(api.FeatureEnvironmentTierPolicy); err != nil {
+			return nil, status.Error(codes.PermissionDenied, err.Error())
 		}
 	}
 
