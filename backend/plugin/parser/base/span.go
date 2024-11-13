@@ -28,9 +28,6 @@ const (
 	DDL
 	// The DML query that changes table data.
 	DML
-	// The explain analyze query is different from explain and select query.
-	// Explain analyze queries exactly run but return nothing data.
-	ExplainAnalyze
 )
 
 var (
