@@ -134,6 +134,9 @@ const doUpdate = (environmentPatch: Environment) => {
   if (environmentPatch.tier !== pendingUpdate.tier) {
     pendingUpdate.tier = environmentPatch.tier;
   }
+  if (environmentPatch.color !== pendingUpdate.color) {
+    pendingUpdate.color = environmentPatch.color;
+  }
 
   environmentV1Store
     .updateEnvironment(pendingUpdate)

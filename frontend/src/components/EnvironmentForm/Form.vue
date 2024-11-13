@@ -2,10 +2,15 @@
   <div>
     <div class="flex flex-col gap-y-6">
       <div v-if="features.includes('BASE')" class="flex flex-col gap-y-2">
-        <label for="name" class="textlabel">
-          {{ $t("common.environment-name") }}
-          <span class="text-red-600">*</span>
-        </label>
+        <div for="name" class="flex item-center space-x-2">
+          <div class="w-4 h-4 relative">
+            <component :is="renderColorPicker()" />
+          </div>
+          <span for="name" class="textlabel">
+            {{ $t("common.environment-name") }}
+            <span class="text-red-600">*</span>
+          </span>
+        </div>
         <NInput
           v-model:value="state.environment.title"
           :disabled="!allowEdit"
@@ -133,8 +138,8 @@
   </div>
 </template>
 
-<script lang="ts" setup>
-import { NCheckbox, NInput } from "naive-ui";
+<script lang="tsx" setup>
+import { NCheckbox, NInput, NColorPicker } from "naive-ui";
 import { Status } from "nice-grpc-common";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
@@ -194,6 +199,28 @@ const allowArchive = computed(() => {
 const allowRestore = computed(() => {
   return hasPermission("bb.environments.undelete");
 });
+
+const renderColorPicker = () => {
+  return (
+    <NColorPicker
+      class="!w-full !h-full"
+      modes={["hex"]}
+      showAlpha={false}
+      value={state.value.environment.color || "#4f46e5"}
+      renderLabel={() => (
+        <div
+          class="w-5 h-5 rounded cursor-pointer relative"
+          style={{
+            backgroundColor: state.value.environment.color || "#4f46e5",
+          }}
+        ></div>
+      )}
+      onUpdateValue={(color: string) => {
+        state.value.environment.color = color;
+      }}
+    />
+  );
+};
 
 const validateResourceId = async (
   resourceId: ResourceId
