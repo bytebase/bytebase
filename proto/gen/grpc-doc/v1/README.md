@@ -5708,6 +5708,7 @@ When paginating, all other parameters provided to `ListUsers` must match the cal
 | token | [string](#string) |  |  |
 | mfa_temp_token | [string](#string) | optional |  |
 | require_reset_password | [bool](#bool) |  |  |
+| user | [User](#bytebase-v1-User) |  | The user of successful login. |
 
 
 

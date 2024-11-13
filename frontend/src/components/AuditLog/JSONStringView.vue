@@ -5,7 +5,7 @@
     <p class="line-clamp-2">
       <code class="text-sm break-all">{{ jsonString }}</code>
     </p>
-    <div class="hidden group-hover:block shrink-0">
+    <div class="hidden group-hover:block shrink-0 h-[22px]">
       <NButton :size="'tiny'" @click="showModal = true">
         <template #icon>
           <Maximize2Icon />
