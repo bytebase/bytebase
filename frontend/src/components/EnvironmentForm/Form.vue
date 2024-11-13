@@ -144,7 +144,12 @@ import { Status } from "nice-grpc-common";
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { BBButtonConfirm } from "@/bbkit";
-import { useEnvironmentV1List, useEnvironmentV1Store } from "@/store";
+import {
+  useEnvironmentV1List,
+  useEnvironmentV1Store,
+  hasFeature,
+  pushNotification,
+} from "@/store";
 import { environmentNamePrefix } from "@/store/modules/v1/common";
 import type { ResourceId, ValidatedMessage } from "@/types";
 import { State } from "@/types/proto/v1/common";
@@ -184,11 +189,16 @@ const {
   state,
   allowEdit,
   valueChanged,
+  missingFeature,
   hasPermission,
   events,
   resourceIdField,
 } = useEnvironmentFormContext();
 const environmentList = useEnvironmentV1List();
+
+const hasEnvironmentPolicyFeature = computed(() =>
+  hasFeature("bb.feature.environment-tier-policy")
+);
 
 const allowArchive = computed(() => {
   return (
@@ -216,6 +226,19 @@ const renderColorPicker = () => {
         ></div>
       )}
       onUpdateValue={(color: string) => {
+        if (!hasEnvironmentPolicyFeature.value) {
+          missingFeature.value = "bb.feature.environment-tier-policy";
+          return;
+        }
+        if (color.toUpperCase() === "#FFFFFF") {
+          pushNotification({
+            module: "bytebase",
+            style: "WARN",
+            title: t("common.warning"),
+            description: "Invalid color",
+          });
+          return;
+        }
         state.value.environment.color = color;
       }}
     />

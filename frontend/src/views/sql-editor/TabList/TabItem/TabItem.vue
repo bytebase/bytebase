@@ -5,7 +5,6 @@
       {
         current: isCurrentTab,
         hovering: state.hovering,
-        admin: tab.mode === 'ADMIN',
       },
       tab.status.toLowerCase(),
     ]"
@@ -16,20 +15,31 @@
     @mouseenter="state.hovering = true"
     @mouseleave="state.hovering = false"
   >
-    <div class="body">
-      <Prefix :tab="tab" :index="index" />
-      <Label v-if="tab.mode === 'WORKSHEET'" :tab="tab" :index="index" />
-      <AdminLabel v-else :tab="tab" :index="index" />
-      <Suffix :tab="tab" :index="index" @close="$emit('close', tab, index)" />
+    <div
+      class="body"
+      :style="
+        backgroundColorRgb.length > 0
+          ? {
+              backgroundColor: `rgba(${backgroundColorRgb[0]}, ${backgroundColorRgb[1]}, ${backgroundColorRgb[2]}, 0.5)`,
+              borderTopColor: `rgb(${backgroundColorRgb[0]}, ${backgroundColorRgb[1]}, ${backgroundColorRgb[2]})`,
+              color: `rgb(${backgroundColorRgb[0]}, ${backgroundColorRgb[1]}, ${backgroundColorRgb[2]})`,
+            }
+          : {}
+      "
+    >
+      <Prefix :tab="tab" />
+      <Label v-if="tab.mode === 'WORKSHEET'" :tab="tab" />
+      <AdminLabel v-else :tab="tab" />
+      <Suffix :tab="tab" @close="$emit('close', tab, index)" />
     </div>
   </div>
 </template>
 
 <script lang="ts" setup>
-import type { PropType } from "vue";
 import { computed, reactive } from "vue";
 import { useSQLEditorTabStore } from "@/store";
-import type { SQLEditorTab } from "@/types";
+import { type SQLEditorTab, UNKNOWN_ENVIRONMENT_NAME } from "@/types";
+import { connectionForSQLEditorTab, hexToRgb } from "@/utils";
 import AdminLabel from "./AdminLabel.vue";
 import Label from "./Label.vue";
 import Prefix from "./Prefix.vue";
@@ -39,16 +49,10 @@ type LocalState = {
   hovering: boolean;
 };
 
-const props = defineProps({
-  tab: {
-    type: Object as PropType<SQLEditorTab>,
-    required: true,
-  },
-  index: {
-    type: Number,
-    required: true,
-  },
-});
+const props = defineProps<{
+  tab: SQLEditorTab;
+  index: number;
+}>();
 
 defineEmits<{
   (e: "select", tab: SQLEditorTab, index: number): void;
@@ -62,6 +66,25 @@ const state = reactive<LocalState>({
 const tabStore = useSQLEditorTabStore();
 
 const isCurrentTab = computed(() => props.tab.id === tabStore.currentTabId);
+
+const environment = computed(() => {
+  const { database } = connectionForSQLEditorTab(props.tab);
+  const environment = database?.effectiveEnvironmentEntity;
+  if (environment?.name === UNKNOWN_ENVIRONMENT_NAME) {
+    return;
+  }
+  return environment;
+});
+
+const backgroundColorRgb = computed(() => {
+  if (!isCurrentTab.value) {
+    return [];
+  }
+  if (!environment.value || !environment.value.color) {
+    return hexToRgb("#4f46e5");
+  }
+  return hexToRgb(environment.value.color);
+});
 </script>
 
 <style scoped lang="postcss">
@@ -79,7 +102,7 @@ const isCurrentTab = computed(() => props.tab.id === tabStore.currentTabId);
   @apply flex items-center justify-between gap-x-1 pl-2 pr-1 border-t pt-[4px] h-[36px];
 }
 .current .body {
-  @apply relative bg-white text-accent border-t-accent border-t-[3px] pt-[2px];
+  @apply relative bg-white border-t-[3px] pt-[2px];
 }
 
 .tab-item.admin .body {

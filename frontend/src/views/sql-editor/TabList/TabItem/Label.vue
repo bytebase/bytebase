@@ -26,7 +26,6 @@
 </template>
 <script lang="ts" setup>
 import { NEllipsis } from "naive-ui";
-import type { PropType } from "vue";
 import { computed, nextTick, reactive, ref, watch } from "vue";
 import { useEmitteryEventListener } from "@/composables/useEmitteryEventListener";
 import { useSQLEditorTabStore, useWorkSheetStore } from "@/store";
@@ -38,16 +37,9 @@ type LocalState = {
   title: string;
 };
 
-const props = defineProps({
-  tab: {
-    type: Object as PropType<SQLEditorTab>,
-    required: true,
-  },
-  index: {
-    type: Number,
-    required: true,
-  },
-});
+const props = defineProps<{
+  tab: SQLEditorTab;
+}>();
 
 const state = reactive<LocalState>({
   editing: false,
