@@ -214,6 +214,11 @@
       ]
     }
   querySpan:
-    type: 6
+    type: 1
     results: []
-    sourcecolumns: []
+    sourcecolumns:
+        - server: ""
+          database: db
+          schema: public
+          table: t1
+          column: ""

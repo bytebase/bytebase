@@ -84,7 +84,7 @@
       ]
     }
   querySpan:
-    type: 6
+    type: 1
     results: []
     sourcecolumns: []
 - description: Test Explain

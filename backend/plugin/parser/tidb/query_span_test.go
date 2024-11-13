@@ -32,7 +32,10 @@ func TestGetQuerySpan(t *testing.T) {
 	)
 
 	var (
-		testDataPaths = []string{"test-data/query_span.yaml"}
+		testDataPaths = []string{
+			"test-data/query_span.yaml",
+			"test-data/query_type.yaml",
+		}
 	)
 
 	a := require.New(t)
