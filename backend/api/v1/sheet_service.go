@@ -2,6 +2,7 @@ package v1
 
 import (
 	"context"
+	"crypto/sha256"
 	"fmt"
 
 	"google.golang.org/grpc/codes"
@@ -324,20 +325,6 @@ func (s *SheetService) findSheet(ctx context.Context, find *store.FindSheetMessa
 }
 
 func (s *SheetService) convertToAPISheetMessage(ctx context.Context, sheet *store.SheetMessage) (*v1pb.Sheet, error) {
-	databaseParent := ""
-	if sheet.DatabaseUID != nil {
-		database, err := s.store.GetDatabaseV2(ctx, &store.FindDatabaseMessage{
-			UID: sheet.DatabaseUID,
-		})
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to get database: %v", err)
-		}
-		if database == nil {
-			return nil, status.Errorf(codes.NotFound, "database with id %d not found", *sheet.DatabaseUID)
-		}
-		databaseParent = fmt.Sprintf("%s%s/%s%s", common.InstanceNamePrefix, database.InstanceID, common.DatabaseIDPrefix, database.DatabaseName)
-	}
-
 	creator, err := s.store.GetUserByID(ctx, sheet.CreatorID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get creator: %v", err)
@@ -369,7 +356,6 @@ func (s *SheetService) convertToAPISheetMessage(ctx context.Context, sheet *stor
 
 	return &v1pb.Sheet{
 		Name:        fmt.Sprintf("%s%s/%s%d", common.ProjectNamePrefix, project.ResourceID, common.SheetIDPrefix, sheet.UID),
-		Database:    databaseParent,
 		Title:       sheet.Title,
 		Creator:     fmt.Sprintf("users/%s", creator.Email),
 		CreateTime:  timestamppb.New(sheet.CreatedTime),
@@ -382,13 +368,14 @@ func (s *SheetService) convertToAPISheetMessage(ctx context.Context, sheet *stor
 }
 
 func convertToStoreSheetMessage(ctx context.Context, projectUID int, databaseUID *int, creatorID int, sheet *v1pb.Sheet) (*store.SheetMessage, error) {
+	h := sha256.Sum256(sheet.Content)
 	sheetMessage := &store.SheetMessage{
-		ProjectUID:  projectUID,
-		DatabaseUID: databaseUID,
-		CreatorID:   creatorID,
-		Title:       sheet.Title,
-		Statement:   string(sheet.Content),
-		Payload:     &storepb.SheetPayload{},
+		ProjectUID: projectUID,
+		CreatorID:  creatorID,
+		Title:      sheet.Title,
+		Statement:  string(sheet.Content),
+		Sha256:     h[:],
+		Payload:    &storepb.SheetPayload{},
 	}
 	sheetMessage.Payload.Engine = convertEngine(sheet.Engine)
 	if sheet.Payload != nil {

@@ -2,7 +2,9 @@ package store
 
 import (
 	"context"
+	"crypto/sha256"
 	"database/sql"
+	"encoding/hex"
 	"fmt"
 	"strings"
 	"time"
@@ -17,10 +19,6 @@ import (
 // SheetMessage is the message for a sheet.
 type SheetMessage struct {
 	ProjectUID int
-	// The DatabaseUID is optional.
-	// If not NULL, the sheet ProjectID should always be equal to the id of the database related project.
-	// A project must remove all linked sheets for a particular database before that database can be transferred to a different project.
-	DatabaseUID *int
 
 	CreatorID int
 	UpdaterID int
@@ -29,10 +27,8 @@ type SheetMessage struct {
 	Statement string
 	Payload   *storepb.SheetPayload
 
-	// Sha256 is the Sha256 hash of the statement in hexadecimal format.
-	// This field is available in dev.
-	// TODO(p0ny): move to prod and backfill.
-	Sha256 string
+	// Sha256 is the Sha256 hash of the statement.
+	Sha256 []byte
 
 	// Output only fields
 	UID         int
@@ -43,6 +39,10 @@ type SheetMessage struct {
 	// Internal fields
 	createdTs int64
 	updatedTs int64
+}
+
+func (s *SheetMessage) GetSha256Hex() string {
+	return hex.EncodeToString(s.Sha256)
 }
 
 // FindSheetMessage is the API message for finding sheets.
@@ -133,14 +133,9 @@ func (s *Store) listSheets(ctx context.Context, find *FindSheetMessage) ([]*Shee
 	}
 
 	// Domain fields
-	statementField := fmt.Sprintf("LEFT(sheet.statement, %d)", common.MaxSheetSize)
+	statementField := fmt.Sprintf("LEFT(sheet_blob.content, %d)", common.MaxSheetSize)
 	if find.LoadFull {
-		statementField = "sheet.statement"
-	}
-
-	sha256Field := "''"
-	if common.IsDev() {
-		sha256Field = "encode(sha256(convert_to(sheet.statement, 'UTF8')), 'hex')"
+		statementField = "sheet_blob.content"
 	}
 
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
@@ -157,14 +152,14 @@ func (s *Store) listSheets(ctx context.Context, find *FindSheetMessage) ([]*Shee
 			sheet.updater_id,
 			sheet.updated_ts,
 			sheet.project_id,
-			sheet.database_id,
 			sheet.name,
 			%s,
-			%s,
+			sheet.sha256,
 			sheet.payload,
-			OCTET_LENGTH(sheet.statement)
+			OCTET_LENGTH(sheet_blob.content)
 		FROM sheet
-		WHERE %s`, statementField, sha256Field, strings.Join(where, " AND ")),
+		LEFT JOIN sheet_blob ON sheet.sha256 = sheet_blob.sha256
+		WHERE %s`, statementField, strings.Join(where, " AND ")),
 		args...,
 	)
 	if err != nil {
@@ -183,7 +178,6 @@ func (s *Store) listSheets(ctx context.Context, find *FindSheetMessage) ([]*Shee
 			&sheet.UpdaterID,
 			&sheet.updatedTs,
 			&sheet.ProjectUID,
-			&sheet.DatabaseUID,
 			&sheet.Title,
 			&sheet.Statement,
 			&sheet.Sha256,
@@ -227,18 +221,21 @@ func (s *Store) CreateSheet(ctx context.Context, create *SheetMessage) (*SheetMe
 		return nil, err
 	}
 
+	if err := s.BatchCreateSheetBlob(ctx, [][]byte{create.Sha256}, []string{create.Statement}); err != nil {
+		return nil, errors.Wrapf(err, "failed to create sheet blobs")
+	}
+
 	query := `
 		INSERT INTO sheet (
 			creator_id,
 			updater_id,
 			project_id,
-			database_id,
 			name,
-			statement,
+			sha256,
 			payload
 		)
 		VALUES ($1, $2, $3, $4, $5, $6, $7)
-		RETURNING id, created_ts, updated_ts, OCTET_LENGTH(statement), encode(sha256(convert_to(sheet.statement, 'UTF8')), 'hex')
+		RETURNING id, created_ts, updated_ts
 	`
 
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -251,16 +248,13 @@ func (s *Store) CreateSheet(ctx context.Context, create *SheetMessage) (*SheetMe
 		create.CreatorID,
 		create.CreatorID,
 		create.ProjectUID,
-		create.DatabaseUID,
 		create.Title,
-		create.Statement,
+		create.Sha256,
 		payload,
 	).Scan(
 		&create.UID,
 		&create.createdTs,
 		&create.updatedTs,
-		&create.Size,
-		&create.Sha256,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
@@ -271,25 +265,44 @@ func (s *Store) CreateSheet(ctx context.Context, create *SheetMessage) (*SheetMe
 		return nil, errors.Wrapf(err, "failed to commit transaction")
 	}
 
+	create.Size = int64(len(create.Statement))
 	create.CreatedTime = time.Unix(create.createdTs, 0)
 	create.UpdatedTime = time.Unix(create.updatedTs, 0)
 
 	return create, nil
 }
 
+func (s *Store) BatchCreateSheetBlob(ctx context.Context, sha256s [][]byte, contents []string) error {
+	query := `
+		INSERT INTO sheet_blob (
+			sha256,
+			content
+		) SELECT
+		 	unnest(CAST($1 AS BYTEA[])),
+			unnest(CAST($2 AS TEXT[]))
+		ON CONFLICT DO NOTHING
+	`
+
+	if _, err := s.db.db.ExecContext(ctx, query, sha256s, contents); err != nil {
+		return errors.Wrapf(err, "failed to exec")
+	}
+
+	return nil
+}
+
 // BatchCreateSheet creates a new sheet.
 // You should not use this function directly to create sheets.
 // Use BatchCreateSheet in component/sheet instead.
 func (s *Store) BatchCreateSheet(ctx context.Context, projectUID int, creates []*SheetMessage, creatorUID int) ([]*SheetMessage, error) {
-	var databaseIDs []*int
 	var names []string
 	var statements []string
+	var sha256s [][]byte
 	var payloads [][]byte
 
 	for _, c := range creates {
-		databaseIDs = append(databaseIDs, c.DatabaseUID)
 		names = append(names, c.Title)
 		statements = append(statements, c.Statement)
+		sha256s = append(sha256s, c.Sha256)
 		if c.Payload == nil {
 			c.Payload = &storepb.SheetPayload{}
 		}
@@ -300,24 +313,26 @@ func (s *Store) BatchCreateSheet(ctx context.Context, projectUID int, creates []
 		payloads = append(payloads, payload)
 	}
 
+	if err := s.BatchCreateSheetBlob(ctx, sha256s, statements); err != nil {
+		return nil, errors.Wrapf(err, "failed to create sheet blobs")
+	}
+
 	query := `
 		INSERT INTO sheet (
 			creator_id,
 			updater_id,
 			project_id,
-			database_id,
 			name,
-			statement,
+			sha256,
 			payload
 		) SELECT
 			$1,
 			$2,
 			$3,
-			unnest(CAST($4 AS INTEGER[])),
-			unnest(CAST($5 AS TEXT[])),
-			unnest(CAST($6 AS TEXT[])),
-			unnest(CAST($7 AS JSONB[]))
-		RETURNING id, created_ts, updated_ts, OCTET_LENGTH(statement), encode(sha256(convert_to(sheet.statement, 'UTF8')), 'hex')
+			unnest(CAST($4 AS TEXT[])),
+			unnest(CAST($5 AS BYTEA[])),
+			unnest(CAST($6 AS JSONB[]))
+		RETURNING id, created_ts, updated_ts
 	`
 
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -326,7 +341,7 @@ func (s *Store) BatchCreateSheet(ctx context.Context, projectUID int, creates []
 	}
 	defer tx.Rollback()
 
-	rows, err := tx.QueryContext(ctx, query, creatorUID, creatorUID, projectUID, databaseIDs, names, statements, payloads)
+	rows, err := tx.QueryContext(ctx, query, creatorUID, creatorUID, projectUID, names, sha256s, payloads)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to query")
 	}
@@ -340,12 +355,11 @@ func (s *Store) BatchCreateSheet(ctx context.Context, projectUID int, creates []
 			&creates[i].UID,
 			&creates[i].createdTs,
 			&creates[i].updatedTs,
-			&creates[i].Size,
-			&creates[i].Sha256,
 		); err != nil {
 			return nil, errors.Wrapf(err, "failed to scan")
 		}
 
+		creates[i].Size = int64(len(creates[i].Statement))
 		creates[i].CreatedTime = time.Unix(creates[i].createdTs, 0)
 		creates[i].UpdatedTime = time.Unix(creates[i].updatedTs, 0)
 	}
@@ -363,77 +377,41 @@ func (s *Store) BatchCreateSheet(ctx context.Context, projectUID int, creates []
 
 // PatchSheet updates a sheet.
 func (s *Store) PatchSheet(ctx context.Context, patch *PatchSheetMessage) (*SheetMessage, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to begin transaction")
+	if patch.Statement == nil {
+		return nil, errors.Errorf("nothing to update")
 	}
 
-	sheet, err := patchSheetImpl(ctx, tx, patch)
-	if err != nil {
-		return nil, err
+	h := sha256.Sum256([]byte(*patch.Statement))
+
+	if err := s.BatchCreateSheetBlob(ctx, [][]byte{h[:]}, []string{*patch.Statement}); err != nil {
+		return nil, errors.Wrapf(err, "failed to create sheet blobs")
 	}
 
-	if err := tx.Commit(); err != nil {
-		return nil, errors.Wrapf(err, "failed to commit transaction")
-	}
-	if v := patch.Statement; v != nil {
-		s.sheetStatementCache.Add(patch.UID, *v)
-	}
-
-	s.sheetCache.Remove(patch.UID)
-	return sheet, nil
-}
-
-// patchSheetImpl updates a sheet's name/statement/payload/database_id/project_id.
-func patchSheetImpl(ctx context.Context, tx *Tx, patch *PatchSheetMessage) (*SheetMessage, error) {
-	set, args := []string{"updater_id = $1", "updated_ts = $2"}, []any{patch.UpdaterID, time.Now().Unix()}
-	if v := patch.Statement; v != nil {
-		set, args = append(set, fmt.Sprintf("statement = $%d", len(args)+1)), append(args, *v)
-	}
-
-	args = append(args, patch.UID)
-
-	var sheet SheetMessage
-	var payload []byte
-	databaseID := sql.NullInt32{}
-
-	if err := tx.QueryRowContext(ctx, fmt.Sprintf(`
+	var uid int
+	if err := s.db.db.QueryRowContext(ctx, `
 		UPDATE sheet
-		SET `+strings.Join(set, ", ")+`
-		WHERE id = $%d
-		RETURNING id, creator_id, created_ts, updater_id, updated_ts, project_id, database_id, name, LEFT(statement, %d), payload, OCTET_LENGTH(statement)
-	`, len(args), common.MaxSheetSize),
-		args...,
+		SET 
+			updater_id = $1,
+			updated_ts = $2,
+			sha256 = $3
+		WHERE id = $4
+		RETURNING id
+	`,
+		patch.UpdaterID,
+		time.Now().Unix(),
+		h[:],
+		patch.UID,
 	).Scan(
-		&sheet.UID,
-		&sheet.CreatorID,
-		&sheet.createdTs,
-		&sheet.UpdaterID,
-		&sheet.updatedTs,
-		&sheet.ProjectUID,
-		&databaseID,
-		&sheet.Title,
-		&sheet.Statement,
-		&payload,
-		&sheet.Size,
+		&uid,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("sheet ID not found: %d", patch.UID)}
 		}
-		return nil, err
+		return nil, errors.Wrapf(err, "failed to update sheet")
 	}
-	sheetPayload := &storepb.SheetPayload{}
-	if err := common.ProtojsonUnmarshaler.Unmarshal(payload, sheetPayload); err != nil {
-		return nil, err
-	}
-	sheet.Payload = sheetPayload
 
-	if databaseID.Valid {
-		value := int(databaseID.Int32)
-		sheet.DatabaseUID = &value
-	}
-	sheet.CreatedTime = time.Unix(sheet.createdTs, 0)
-	sheet.UpdatedTime = time.Unix(sheet.updatedTs, 0)
+	s.sheetStatementCache.Add(patch.UID, *patch.Statement)
+	s.sheetCache.Remove(patch.UID)
 
-	return &sheet, nil
+	return s.GetSheet(ctx, &FindSheetMessage{UID: &patch.UID})
 }

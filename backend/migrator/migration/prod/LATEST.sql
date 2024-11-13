@@ -336,6 +336,11 @@ CREATE UNIQUE INDEX idx_data_source_unique_instance_id_name ON data_source(insta
 
 ALTER SEQUENCE data_source_id_seq RESTART WITH 101;
 
+CREATE TABLE sheet_blob (
+	sha256 BYTEA NOT NULL PRIMARY KEY,
+	content TEXT NOT NULL
+);
+
 -- sheet table stores general statements.
 CREATE TABLE sheet (
     id SERIAL PRIMARY KEY,
@@ -345,9 +350,7 @@ CREATE TABLE sheet (
     updater_id INTEGER NOT NULL REFERENCES principal (id),
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     project_id INTEGER NOT NULL REFERENCES project (id),
-    database_id INTEGER NULL REFERENCES db (id),
     name TEXT NOT NULL,
-    statement TEXT NOT NULL,
     payload JSONB NOT NULL DEFAULT '{}'
 );
 
@@ -358,8 +361,6 @@ CREATE INDEX idx_sheet_project_id ON sheet(project_id);
 CREATE INDEX idx_sheet_name ON sheet(name);
 
 CREATE INDEX idx_sheet_project_id_row_status ON sheet(project_id, row_status);
-
-CREATE INDEX idx_sheet_database_id_row_status ON sheet(database_id, row_status);
 
 ALTER SEQUENCE sheet_id_seq RESTART WITH 101;
 
