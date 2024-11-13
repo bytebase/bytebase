@@ -344,7 +344,7 @@ func convertReleaseFiles(ctx context.Context, s *store.Store, files []*v1pb.Rele
 			Id:          f.Id,
 			Path:        f.Path,
 			Sheet:       f.Sheet,
-			SheetSha256: sheet.Sha256,
+			SheetSha256: sheet.GetSha256Hex(),
 			Type:        storepb.ReleaseFileType(f.Type),
 			Version:     f.Version,
 		})

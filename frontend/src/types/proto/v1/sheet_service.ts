@@ -75,12 +75,6 @@ export interface Sheet {
    * Format: projects/{project}/sheets/{sheet}
    */
   name: string;
-  /**
-   * The database resource name.
-   * Format: instances/{instance}/databases/{database}
-   * If the database parent doesn't exist, the database field is empty.
-   */
-  database: string;
   /** The title of the sheet. */
   title: string;
   /**
@@ -534,7 +528,6 @@ export const UpdateSheetRequest: MessageFns<UpdateSheetRequest> = {
 function createBaseSheet(): Sheet {
   return {
     name: "",
-    database: "",
     title: "",
     creator: "",
     createTime: undefined,
@@ -550,9 +543,6 @@ export const Sheet: MessageFns<Sheet> = {
   encode(message: Sheet, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
-    }
-    if (message.database !== "") {
-      writer.uint32(18).string(message.database);
     }
     if (message.title !== "") {
       writer.uint32(26).string(message.title);
@@ -594,13 +584,6 @@ export const Sheet: MessageFns<Sheet> = {
           }
 
           message.name = reader.string();
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.database = reader.string();
           continue;
         case 3:
           if (tag !== 26) {
@@ -670,7 +653,6 @@ export const Sheet: MessageFns<Sheet> = {
   fromJSON(object: any): Sheet {
     return {
       name: isSet(object.name) ? globalThis.String(object.name) : "",
-      database: isSet(object.database) ? globalThis.String(object.database) : "",
       title: isSet(object.title) ? globalThis.String(object.title) : "",
       creator: isSet(object.creator) ? globalThis.String(object.creator) : "",
       createTime: isSet(object.createTime) ? fromJsonTimestamp(object.createTime) : undefined,
@@ -686,9 +668,6 @@ export const Sheet: MessageFns<Sheet> = {
     const obj: any = {};
     if (message.name !== "") {
       obj.name = message.name;
-    }
-    if (message.database !== "") {
-      obj.database = message.database;
     }
     if (message.title !== "") {
       obj.title = message.title;
@@ -723,7 +702,6 @@ export const Sheet: MessageFns<Sheet> = {
   fromPartial(object: DeepPartial<Sheet>): Sheet {
     const message = createBaseSheet();
     message.name = object.name ?? "";
-    message.database = object.database ?? "";
     message.title = object.title ?? "";
     message.creator = object.creator ?? "";
     message.createTime = (object.createTime !== undefined && object.createTime !== null)

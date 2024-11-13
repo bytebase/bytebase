@@ -61,7 +61,6 @@ import type { Plan_ExportDataConfig } from "@/types/proto/v1/plan_service";
 import { type Plan_ChangeDatabaseConfig } from "@/types/proto/v1/plan_service";
 import type { Sheet } from "@/types/proto/v1/sheet_service";
 import {
-  extractDatabaseGroupName,
   extractIssueUID,
   extractProjectResourceName,
   extractSheetUID,
@@ -203,7 +202,6 @@ const createSheets = async () => {
     if (uid.startsWith("-")) {
       // The sheet is pending create
       const sheet = getLocalSheetByName(config.sheet);
-      sheet.database = config.target;
       const engine = await databaseEngineForSpec(
         issue.value.projectEntity,
         spec
@@ -211,18 +209,13 @@ const createSheets = async () => {
       sheet.engine = engine;
       pendingCreateSheetMap.set(sheet.name, sheet);
 
-      await maybeFormatSQL(sheet, sheet.database);
+      await maybeFormatSQL(sheet, config.target);
     }
   }
   const pendingCreateSheetList = Array.from(pendingCreateSheetMap.values());
   const sheetNameMap = new Map<string, string>();
   for (let i = 0; i < pendingCreateSheetList.length; i++) {
     const sheet = pendingCreateSheetList[i];
-    if (extractDatabaseGroupName(sheet.database)) {
-      // If a sheet's target is a db group, it should be unset
-      // since it actually doesn't belongs to any exact database.
-      sheet.database = "";
-    }
     sheet.title = issue.value.title;
     const createdSheet = await sheetStore.createSheet(
       issue.value.project,

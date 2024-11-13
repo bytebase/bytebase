@@ -209,8 +209,7 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 	testSheet, err := s.sheetManager.CreateSheet(ctx, &store.SheetMessage{
 		CreatorID: api.SystemBotID,
 
-		ProjectUID:  project.UID,
-		DatabaseUID: &testDatabase.UID,
+		ProjectUID: project.UID,
 
 		Title:     "Alter table to test sample instance for sample issue",
 		Statement: "ALTER TABLE employee ADD COLUMN IF NOT EXISTS email TEXT DEFAULT '';",
@@ -226,8 +225,7 @@ func (s *Server) generateOnboardingData(ctx context.Context, user *store.UserMes
 	prodSheet, err := s.sheetManager.CreateSheet(ctx, &store.SheetMessage{
 		CreatorID: api.SystemBotID,
 
-		ProjectUID:  project.UID,
-		DatabaseUID: &prodDatabase.UID,
+		ProjectUID: project.UID,
 
 		Title:     "Alter table to prod sample instance for sample issue",
 		Statement: "ALTER TABLE employee ADD COLUMN IF NOT EXISTS email TEXT DEFAULT '';",

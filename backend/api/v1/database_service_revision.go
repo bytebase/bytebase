@@ -287,7 +287,7 @@ func convertRevision(revision *v1pb.Revision, database *store.DatabaseMessage, s
 			File:        revision.File,
 			Version:     revision.Version,
 			Sheet:       revision.Sheet,
-			SheetSha256: sheet.Sha256,
+			SheetSha256: sheet.GetSha256Hex(),
 			TaskRun:     revision.TaskRun,
 		},
 	}
