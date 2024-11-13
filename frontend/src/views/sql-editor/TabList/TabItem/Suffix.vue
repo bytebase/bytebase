@@ -15,14 +15,13 @@
     <heroicons-solid:x
       v-else-if="icon === 'close'"
       class="icon close"
-      @click.stop.prevent="$emit('close', tab, index)"
+      @click.stop.prevent="$emit('close')"
     />
     <span v-else class="icon dummy"></span>
   </div>
 </template>
 
 <script lang="ts" setup>
-import type { PropType } from "vue";
 import { computed, reactive } from "vue";
 import type { SQLEditorTab } from "@/types";
 
@@ -32,23 +31,16 @@ type LocalState = {
 
 type IconType = "unsaved" | "close";
 
-const props = defineProps({
-  tab: {
-    type: Object as PropType<SQLEditorTab>,
-    required: true,
-  },
-  index: {
-    type: Number,
-    required: true,
-  },
-});
+const props = defineProps<{
+  tab: SQLEditorTab;
+}>();
 
 const state = reactive<LocalState>({
   hovering: false,
 });
 
 defineEmits<{
-  (e: "close", tab: SQLEditorTab, index: number): void;
+  (e: "close"): void;
 }>();
 
 const icon = computed((): IconType | undefined => {
