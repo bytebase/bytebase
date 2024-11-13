@@ -184,7 +184,7 @@ message LoginRequest {
 
   // The name of the identity provider.
   // Format: idps/{idp}
-  string idp_name = 4 [(google.api.field_behavior) = REQUIRED];
+  string idp_name = 4;
 
   // The idp_context is using to get the user information from identity provider.
   IdentityProviderContext idp_context = 5;
@@ -218,6 +218,9 @@ message LoginResponse {
   optional string mfa_temp_token = 2;
 
   bool require_reset_password = 3;
+
+  // The user of successful login.
+  User user = 4;
 }
 
 message LogoutRequest {}
