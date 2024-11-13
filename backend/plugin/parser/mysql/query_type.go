@@ -11,6 +11,8 @@ type queryTypeListener struct {
 
 	allSystems bool
 	result     base.QueryType
+	// This is for skipping the query span.
+	isExplainAnalyze bool
 }
 
 func (l *queryTypeListener) EnterSimpleStatement(ctx *mysql.SimpleStatementContext) {
@@ -51,7 +53,16 @@ func (l *queryTypeListener) EnterSimpleStatement(ctx *mysql.SimpleStatementConte
 		}
 		if ctx.UtilityStatement().ExplainStatement() != nil {
 			if ctx.UtilityStatement().ExplainStatement().ANALYZE_SYMBOL() != nil {
-				l.result = base.ExplainAnalyze
+				l.isExplainAnalyze = true
+				explainableStatement := ctx.UtilityStatement().ExplainStatement().ExplainableStatement()
+				switch {
+				case explainableStatement.SelectStatement() != nil:
+					l.result = base.Select
+				case explainableStatement.DeleteStatement() != nil, explainableStatement.InsertStatement() != nil, explainableStatement.ReplaceStatement() != nil, explainableStatement.UpdateStatement() != nil:
+					l.result = base.DML
+				default:
+					l.result = base.Explain
+				}
 			} else {
 				l.result = base.Explain
 			}

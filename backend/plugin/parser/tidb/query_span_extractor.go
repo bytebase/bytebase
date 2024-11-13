@@ -56,7 +56,7 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string)
 		return nil, base.MixUserSystemTablesError
 	}
 
-	queryType := getQueryType(node, allSystems)
+	queryType, isExplainAnalyze := getQueryType(node, allSystems)
 	if skipQuerySpan(node, queryType) {
 		return &base.QuerySpan{
 			Type:          queryType,
@@ -65,13 +65,25 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, statement string)
 		}, nil
 	}
 
-	if explain, ok := node.(*tidbast.ExplainStmt); ok && queryType == base.Select && explain.Analyze {
-		node = explain.Stmt
+	// For EXPLAIN ANALYZE SELECT, we determine the query type and access tables from the inner SELECT statement.
+	if isExplainAnalyze {
+		return &base.QuerySpan{
+			Type:          queryType,
+			Results:       []base.QuerySpanResult{},
+			SourceColumns: accessTables,
+		}, nil
 	}
 
 	tableSource, err := q.extractTableSourceFromNode(node)
 	if err != nil {
 		return nil, err
+	}
+	if tableSource == nil {
+		return &base.QuerySpan{
+			Type:          queryType,
+			Results:       []base.QuerySpanResult{},
+			SourceColumns: accessTables,
+		}, nil
 	}
 
 	return &base.QuerySpan{

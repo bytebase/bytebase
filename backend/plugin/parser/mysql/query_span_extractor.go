@@ -91,6 +91,15 @@ func (q *querySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*ba
 		}, nil
 	}
 
+	// For Explain Analyze SELECT, we determine the query type and return the access tables.
+	if queryTypeListener.isExplainAnalyze {
+		return &base.QuerySpan{
+			Type:          queryTypeListener.result,
+			SourceColumns: accessTables,
+			Results:       []base.QuerySpanResult{},
+		}, nil
+	}
+
 	q.ctx = ctx
 	// We assumes the caller had handled the statement type case,
 	// so we only need to handle the determined statement type here.

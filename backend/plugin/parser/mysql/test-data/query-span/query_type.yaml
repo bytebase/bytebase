@@ -1,3 +1,19 @@
+- description: explain analyze query
+  statement: explain analyze select * from t
+  defaultDatabase: db
+  metadata: |-
+    {
+      "name":  "db"
+    }
+  querySpan:
+    type: 1
+    results: []
+    sourcecolumns:
+        - server: ""
+          database: db
+          schema: ""
+          table: t
+          column: ""
 - description: Treat set statement as select
   statement: SET CHARSET DEFAULT;
   defaultDatabase: db
@@ -53,11 +69,11 @@
     type: 1
     results: []
     sourcecolumns:
-      - server: ""
-        database: db
-        schema: ""
-        table: t
-        column: ""
+        - server: ""
+          database: db
+          schema: ""
+          table: t
+          column: ""
 - description: ddl
   statement: create table t(a int);
   defaultDatabase: db
