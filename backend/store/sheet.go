@@ -221,6 +221,9 @@ func (s *Store) CreateSheet(ctx context.Context, create *SheetMessage) (*SheetMe
 		return nil, err
 	}
 
+	h := sha256.Sum256([]byte(create.Statement))
+	create.Sha256 = h[:]
+
 	if err := s.BatchCreateSheetBlob(ctx, [][]byte{create.Sha256}, []string{create.Statement}); err != nil {
 		return nil, errors.Wrapf(err, "failed to create sheet blobs")
 	}
@@ -272,24 +275,6 @@ func (s *Store) CreateSheet(ctx context.Context, create *SheetMessage) (*SheetMe
 	return create, nil
 }
 
-func (s *Store) BatchCreateSheetBlob(ctx context.Context, sha256s [][]byte, contents []string) error {
-	query := `
-		INSERT INTO sheet_blob (
-			sha256,
-			content
-		) SELECT
-		 	unnest(CAST($1 AS BYTEA[])),
-			unnest(CAST($2 AS TEXT[]))
-		ON CONFLICT DO NOTHING
-	`
-
-	if _, err := s.db.db.ExecContext(ctx, query, sha256s, contents); err != nil {
-		return errors.Wrapf(err, "failed to exec")
-	}
-
-	return nil
-}
-
 // BatchCreateSheet creates a new sheet.
 // You should not use this function directly to create sheets.
 // Use BatchCreateSheet in component/sheet instead.
@@ -302,6 +287,8 @@ func (s *Store) BatchCreateSheet(ctx context.Context, projectUID int, creates []
 	for _, c := range creates {
 		names = append(names, c.Title)
 		statements = append(statements, c.Statement)
+		h := sha256.Sum256([]byte(c.Statement))
+		c.Sha256 = h[:]
 		sha256s = append(sha256s, c.Sha256)
 		if c.Payload == nil {
 			c.Payload = &storepb.SheetPayload{}
@@ -373,6 +360,24 @@ func (s *Store) BatchCreateSheet(ctx context.Context, projectUID int, creates []
 	}
 
 	return creates, nil
+}
+
+func (s *Store) BatchCreateSheetBlob(ctx context.Context, sha256s [][]byte, contents []string) error {
+	query := `
+		INSERT INTO sheet_blob (
+			sha256,
+			content
+		) SELECT
+		 	unnest(CAST($1 AS BYTEA[])),
+			unnest(CAST($2 AS TEXT[]))
+		ON CONFLICT DO NOTHING
+	`
+
+	if _, err := s.db.db.ExecContext(ctx, query, sha256s, contents); err != nil {
+		return errors.Wrapf(err, "failed to exec")
+	}
+
+	return nil
 }
 
 // PatchSheet updates a sheet.

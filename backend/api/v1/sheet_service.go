@@ -2,7 +2,6 @@ package v1
 
 import (
 	"context"
-	"crypto/sha256"
 	"fmt"
 
 	"google.golang.org/grpc/codes"
@@ -306,13 +305,11 @@ func (s *SheetService) convertToAPISheetMessage(ctx context.Context, sheet *stor
 }
 
 func convertToStoreSheetMessage(ctx context.Context, projectUID int, creatorID int, sheet *v1pb.Sheet) (*store.SheetMessage, error) {
-	h := sha256.Sum256(sheet.Content)
 	sheetMessage := &store.SheetMessage{
 		ProjectUID: projectUID,
 		CreatorID:  creatorID,
 		Title:      sheet.Title,
 		Statement:  string(sheet.Content),
-		Sha256:     h[:],
 		Payload:    &storepb.SheetPayload{},
 	}
 	sheetMessage.Payload.Engine = convertEngine(sheet.Engine)
