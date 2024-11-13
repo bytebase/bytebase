@@ -3420,7 +3420,7 @@
       "re-request-review-issue": "イシューの承認を再度リクエストしますか?",
       "sent-back-issue": "イシューを却下する",
       "re-requested-review": "イシューの承認を再度リクエストします",
-      "no-one-matches-role": "このロールに一致するユーザーはいません。プロジェクト管理者に連絡してロールを割り当ててください。",
+      "no-one-matched": "このロールに一致するユーザーはいません。プロジェクト管理者に連絡してロールを割り当ててください。",
       "any-n-role-can-approve": "任意の {role} を承認できます",
       "approved-by-n": "{approver} によって承認されました",
       "issue-creators-cannot-approve-their-own-issue": "イシュー作成者は自分の問題を承認できません"
