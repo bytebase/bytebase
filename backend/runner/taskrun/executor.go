@@ -631,7 +631,7 @@ func endMigration(ctx context.Context, storeInstance *store.Store, startedNs int
 				}
 				if mc.sheet != nil {
 					r.Payload.Sheet = mc.sheetName
-					r.Payload.SheetSha256 = mc.sheet.Sha256
+					r.Payload.SheetSha256 = mc.sheet.GetSha256Hex()
 				}
 
 				revision, err := storeInstance.CreateRevision(ctx, r, mc.task.CreatorID)
