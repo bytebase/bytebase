@@ -350,7 +350,6 @@ const handlePreviewIssue = async () => {
     }
   }
   const sheet = Sheet.fromPartial({
-    database: db.name,
     engine: db.instanceResource.engine,
     payload: {
       type: SheetPayload_Type.SCHEMA_DESIGN,
