@@ -351,6 +351,7 @@ CREATE TABLE sheet (
     updated_ts BIGINT NOT NULL DEFAULT extract(epoch from now()),
     project_id INTEGER NOT NULL REFERENCES project (id),
     name TEXT NOT NULL,
+    sha256 BYTEA NOT NULL,
     payload JSONB NOT NULL DEFAULT '{}'
 );
 
