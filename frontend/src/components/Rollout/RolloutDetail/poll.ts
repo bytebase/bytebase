@@ -1,7 +1,8 @@
 import { useProgressivePoll } from "@/composables/useProgressivePoll";
 import { useRolloutStore } from "@/store";
+import { type EventsEmmiter } from "./context";
 
-export const usePollRollout = (rolloutName: string) => {
+export const usePollRollout = (rolloutName: string, emmiter: EventsEmmiter) => {
   const rolloutStore = useRolloutStore();
 
   const refreshRollout = async () => {
@@ -18,4 +19,10 @@ export const usePollRollout = (rolloutName: string) => {
   });
 
   poller.start();
+
+  // When any task status action is triggered, we need to refresh the rollout.
+  emmiter.on("task-status-action", () => {
+    refreshRollout();
+    poller.restart();
+  });
 };
