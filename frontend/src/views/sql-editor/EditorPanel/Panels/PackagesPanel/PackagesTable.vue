@@ -5,7 +5,7 @@
       ref="dataTableRef"
       size="small"
       :row-key="
-        ({ procedure, position }) => keyWithPosition(procedure.name, position)
+        ({ package: pack, position }) => keyWithPosition(pack.name, position)
       "
       :columns="columns"
       :data="layoutReady ? filteredPackages : []"

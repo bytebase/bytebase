@@ -1,7 +1,7 @@
 <template>
   <div v-if="metadata?.schema" class="h-full overflow-hidden flex flex-col">
     <div
-      v-show="!metadata.procedure"
+      v-show="!metadata.package"
       class="w-full h-[44px] py-2 px-2 border-b flex flex-row gap-x-2 justify-between items-center"
     >
       <div class="flex items-center justify-start gap-2">
@@ -16,25 +16,25 @@
         />
       </div>
     </div>
-    <ProceduresTable
-      v-show="!metadata.procedure"
+    <PackagesTable
+      v-show="!metadata.package"
       :db="database"
       :database="metadata.database"
       :schema="metadata.schema"
-      :procedures="metadata.schema.procedures"
+      :packages="metadata.schema.packages"
       :keyword="state.keyword"
       @click="select"
     />
 
-    <template v-if="metadata.procedure">
+    <template v-if="metadata.package">
       <CodeViewer
         :db="database"
-        :title="metadata.procedure.name"
-        :code="metadata.procedure.definition"
+        :title="metadata.package.name"
+        :code="metadata.package.definition"
         @back="deselect"
       >
         <template #title-icon>
-          <ProcedureIcon class="w-4 h-4 text-main" />
+          <PackageIcon class="w-4 h-4 text-main" />
         </template>
       </CodeViewer>
     </template>
@@ -43,7 +43,7 @@
 
 <script setup lang="ts">
 import { computed, reactive } from "vue";
-import { ProcedureIcon } from "@/components/Icon";
+import { PackageIcon } from "@/components/Icon";
 import { SearchBox } from "@/components/v2";
 import {
   useConnectionOfCurrentSQLEditorTab,
@@ -52,7 +52,7 @@ import {
 import {
   DatabaseMetadata,
   DatabaseMetadataView,
-  ProcedureMetadata,
+  PackageMetadata,
   SchemaMetadata,
 } from "@/types/proto/v1/database_service";
 import {
@@ -62,7 +62,7 @@ import {
 import DatabaseChooser from "@/views/sql-editor/EditorCommon/DatabaseChooser.vue";
 import { useEditorPanelContext } from "../../context";
 import { SchemaSelectToolbar, CodeViewer } from "../common";
-import ProceduresTable from "./ProceduresTable.vue";
+import PackagesTable from "./PackagesTable.vue";
 
 const { database } = useConnectionOfCurrentSQLEditorTab();
 const { viewState, updateViewState } = useEditorPanelContext();
@@ -82,23 +82,23 @@ const metadata = computed(() => {
     (s) => s.name === viewState.value?.schema
   );
   const [name, position] = extractKeyWithPosition(
-    viewState.value?.detail?.procedure ?? ""
+    viewState.value?.detail?.package ?? ""
   );
-  const procedure = schema?.procedures.find(
+  const pack = schema?.packages.find(
     (p, i) => p.name === name && i === position
   );
-  return { database, schema, procedure };
+  return { database, schema, package: pack };
 });
 
 const select = (selected: {
   database: DatabaseMetadata;
   schema: SchemaMetadata;
-  procedure: ProcedureMetadata;
+  package: PackageMetadata;
   position: number;
 }) => {
   updateViewState({
     detail: {
-      procedure: keyWithPosition(selected.procedure.name, selected.position),
+      package: keyWithPosition(selected.package.name, selected.position),
     },
   });
 };
