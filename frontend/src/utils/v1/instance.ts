@@ -264,6 +264,13 @@ export const instanceV1SupportsExternalTable = (
   return [Engine.POSTGRES, Engine.HIVE].includes(engine);
 };
 
+export const instanceV1SupportsPackage = (
+  instanceOrEngine: Instance | InstanceResource | Engine
+) => {
+  const engine = engineOfInstanceV1(instanceOrEngine);
+  return [Engine.ORACLE, Engine.OCEANBASE_ORACLE].includes(engine);
+};
+
 export const engineOfInstanceV1 = (
   instanceOrEngine: Instance | InstanceResource | Engine
 ) => {

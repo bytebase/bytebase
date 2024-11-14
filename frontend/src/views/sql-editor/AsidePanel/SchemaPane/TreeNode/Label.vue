@@ -32,6 +32,9 @@
   <template v-if="type === 'procedure'">
     <ProcedureNode :node="node" :keyword="keyword" />
   </template>
+  <template v-if="type === 'package'">
+    <PackageNode :node="node" :keyword="keyword" />
+  </template>
   <template v-if="type === 'function'">
     <FunctionNode :node="node" :keyword="keyword" />
   </template>
@@ -54,6 +57,7 @@ import ExternalTableNode from "./ExternalTableNode.vue";
 import ForeignKeyNode from "./ForeignKeyNode.vue";
 import FunctionNode from "./FunctionNode.vue";
 import IndexNode from "./IndexNode.vue";
+import PackageNode from "./PackageNode.vue";
 import PartitionTableNode from "./PartitionTableNode.vue";
 import ProcedureNode from "./ProcedureNode.vue";
 import SchemaNode from "./SchemaNode.vue";

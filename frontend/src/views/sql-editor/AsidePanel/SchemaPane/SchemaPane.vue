@@ -275,6 +275,7 @@ const selectedKeys = computed(() => {
       procedure,
       func,
       externalTable,
+      package: pack,
       partition,
       index,
       foreignKey,
@@ -307,6 +308,8 @@ const selectedKeys = computed(() => {
     parts.push(`functions/${func}`);
   } else if (externalTable) {
     parts.push(`externalTables/${externalTable}`);
+  } else if (pack) {
+    parts.push(`packages/${pack}`);
   }
 
   return [parts.join("/")];
@@ -404,7 +407,7 @@ watch(
 );
 
 useEventListener(treeContainerElRef, "keydown", (e) => {
-  searchBoxRef.value?.inputRef?.focus()
+  searchBoxRef.value?.inputRef?.focus();
 });
 </script>
 
