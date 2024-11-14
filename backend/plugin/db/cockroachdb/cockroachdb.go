@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
 
 	"cloud.google.com/go/cloudsqlconn"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -427,7 +428,11 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 			case isSuperuserStatement(command.Text):
 				// Use superuser privilege to run privileged statements.
 				slog.Info("Use superuser privilege to run privileged statements", slog.String("statement", command.Text))
-				command.Text = fmt.Sprintf("SET LOCAL ROLE NONE;%sSET LOCAL ROLE '%s';", command.Text, owner)
+				ct := command.Text
+				if !strings.HasSuffix(strings.TrimRightFunc(ct, unicode.IsSpace), ";") {
+					ct += ";"
+				}
+				command.Text = fmt.Sprintf("SET LOCAL ROLE NONE;%sSET LOCAL ROLE '%s';", ct, owner)
 			}
 			tmpCommands = append(tmpCommands, command)
 			tmpOriginalIndex = append(tmpOriginalIndex, originalIndex[i])
@@ -649,7 +654,7 @@ func IsNonTransactionStatement(stmt string) bool {
 }
 
 func isSuperuserStatement(stmt string) bool {
-	upperCaseStmt := strings.ToUpper(strings.TrimLeft(stmt, " \n\t"))
+	upperCaseStmt := strings.ToUpper(strings.TrimLeftFunc(stmt, unicode.IsSpace))
 	if strings.HasPrefix(upperCaseStmt, "GRANT") || strings.HasPrefix(upperCaseStmt, "CREATE EXTENSION") || strings.HasPrefix(upperCaseStmt, "CREATE EVENT TRIGGER") || strings.HasPrefix(upperCaseStmt, "COMMENT ON EVENT TRIGGER") {
 		return true
 	}
