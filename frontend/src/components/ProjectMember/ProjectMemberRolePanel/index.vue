@@ -530,14 +530,14 @@ const extractDatabaseName = (databaseResource?: DatabaseResource) => {
     return "*";
   }
   const database = databaseStore.getDatabaseByName(
-    String(databaseResource.databaseName)
+    databaseResource.databaseFullName
   );
   return database.databaseName;
 };
 
 const extractDatabase = (databaseResource: DatabaseResource) => {
   const database = databaseStore.getDatabaseByName(
-    String(databaseResource.databaseName)
+    databaseResource.databaseFullName
   );
   return database;
 };

@@ -184,7 +184,7 @@ export const parseStringToResource = (
 ): DatabaseResource | undefined => {
   const sections = key.split("/");
   const resource: DatabaseResource = {
-    databaseName: "",
+    databaseFullName: "",
   };
 
   while (sections.length > 0) {
@@ -194,12 +194,18 @@ export const parseStringToResource = (
     switch (keyword) {
       case "instances":
         resource.instanceResourceId = data;
+        if (resource.databaseResourceId) {
+          resource.databaseFullName = `${instanceNamePrefix}${resource.instanceResourceId}/${databaseNamePrefix}${resource.databaseResourceId}`;
+        }
         break;
       case "databases":
         if (!resource.instanceResourceId) {
           return;
         }
-        resource.databaseName = `${instanceNamePrefix}${resource.instanceResourceId}/${databaseNamePrefix}${data}`;
+        resource.databaseResourceId = data;
+        if (resource.instanceResourceId) {
+          resource.databaseFullName = `${instanceNamePrefix}${resource.instanceResourceId}/${databaseNamePrefix}${resource.databaseResourceId}`;
+        }
         break;
       case "schemas":
         resource.schema = data;
@@ -215,7 +221,7 @@ export const parseStringToResource = (
     }
   }
 
-  if (!resource.databaseName) {
+  if (!resource.databaseFullName) {
     return;
   }
 
