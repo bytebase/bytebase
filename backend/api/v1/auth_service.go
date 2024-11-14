@@ -344,11 +344,11 @@ func (s *AuthService) UpdateUser(ctx context.Context, request *v1pb.UpdateUserRe
 			if err := validateEmail(request.User.Email, allowedDomains, user.Type == api.ServiceAccount); err != nil {
 				return nil, status.Errorf(codes.InvalidArgument, "invalid email %q, error: %v", request.User.Email, err)
 			}
-			user, err := s.store.GetUserByEmail(ctx, request.User.Email)
+			existedUser, err := s.store.GetUserByEmail(ctx, request.User.Email)
 			if err != nil {
 				return nil, status.Errorf(codes.Internal, "failed to find user list, error: %v", err)
 			}
-			if user != nil {
+			if existedUser != nil && existedUser.ID != user.ID {
 				return nil, status.Errorf(codes.AlreadyExists, "email %s is already existed", request.User.Email)
 			}
 			patch.Email = &request.User.Email

@@ -261,9 +261,13 @@ const introList = computed(() => {
   );
 });
 
+const isWorkspaceAdmin = computed(() =>
+  hasWorkspaceLevelRole(PresetRoleType.WORKSPACE_ADMIN)
+);
+
 const showQuickstart = computed(() => {
   // Only show quickstart for those who have workspace admin role.
-  if (!hasWorkspaceLevelRole(PresetRoleType.WORKSPACE_ADMIN)) {
+  if (!isWorkspaceAdmin.value) {
     return false;
   }
   if (!show.value) return false;
@@ -274,7 +278,7 @@ const showQuickstart = computed(() => {
 const showBookDemo = computed(() => {
   if (!show.value) return false;
   if (showQuickstart.value) return false;
-  return true;
+  return isWorkspaceAdmin.value;
 });
 
 const currentStep = computed(() => {

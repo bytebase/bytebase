@@ -10,6 +10,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/iam"
+	api "github.com/bytebase/bytebase/backend/legacyapi"
 	"github.com/bytebase/bytebase/backend/store"
 	storepb "github.com/bytebase/bytebase/proto/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/proto/generated-go/v1"
@@ -236,6 +237,9 @@ func (s *GroupService) convertToGroupPayload(ctx context.Context, group *v1pb.Gr
 		}
 		if user == nil {
 			return nil, status.Errorf(codes.InvalidArgument, "cannot found member %s", member.Member)
+		}
+		if user.Type != api.EndUser {
+			return nil, status.Errorf(codes.InvalidArgument, "only allow add end users to the group")
 		}
 
 		m := &storepb.GroupMember{
