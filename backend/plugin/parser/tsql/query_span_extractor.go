@@ -1156,7 +1156,11 @@ func (q *querySpanExtractor) getQuerySpanResultFromExpr(ctx antlr.RuleContext) (
 			}
 			return querySpanResult, nil
 		}
-		panic("never reach here")
+		// Select local variable or null, we do not need to check the sensitive fields.
+		return base.QuerySpanResult{
+			Name:          ctx.GetText(),
+			SourceColumns: make(base.SourceColumnSet),
+		}, nil
 	case *parser.Primitive_constantContext:
 		return base.QuerySpanResult{
 			Name:          ctx.GetText(),
