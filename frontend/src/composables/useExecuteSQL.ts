@@ -2,11 +2,7 @@ import Emittery from "emittery";
 import { head, isEmpty } from "lodash-es";
 import { Status } from "nice-grpc-common";
 import { markRaw, reactive } from "vue";
-import {
-  parseSQL,
-  isDDLStatement,
-  isDMLStatement,
-} from "@/components/MonacoEditor/sqlParser";
+import { parseSQL } from "@/components/MonacoEditor/sqlParser";
 import { sqlServiceClient } from "@/grpcweb";
 import { t } from "@/plugins/i18n";
 import {
@@ -17,7 +13,6 @@ import {
   useSQLStore,
   useSQLEditorQueryHistoryStore,
   useAppFeature,
-  usePolicyV1Store,
 } from "@/store";
 import type {
   ComposedDatabase,
@@ -27,7 +22,6 @@ import type {
   SQLEditorTab,
 } from "@/types";
 import { isValidDatabaseName } from "@/types";
-import { PolicyType } from "@/types/proto/v1/org_policy_service";
 import {
   Advice,
   Advice_Status,
@@ -62,13 +56,8 @@ const useExecuteSQL = () => {
   const databaseStore = useDatabaseV1Store();
   const tabStore = useSQLEditorTabStore();
   const sqlEditorStore = useSQLEditorStore();
-  const policyStore = usePolicyV1Store();
   const sqlCheckStyle = useAppFeature("bb.feature.sql-editor.sql-check-style");
 
-  const changeMode =
-    useAppFeature("bb.feature.database-change-mode").value === "EDITOR"
-      ? "RW"
-      : "RO";
   const notify = (
     type: BBNotificationStyle,
     title: string,
@@ -124,7 +113,7 @@ const useExecuteSQL = () => {
     if (!params) {
       return { passed: false };
     }
-    if (new Blob([params.statement]).size> SKIP_CHECK_THRESHOLD) {
+    if (new Blob([params.statement]).size > SKIP_CHECK_THRESHOLD) {
       return { passed: true };
     }
     const response = await sqlServiceClient.check(
@@ -316,62 +305,27 @@ const useExecuteSQL = () => {
         continue;
       }
 
-      const policy = await policyStore.getOrFetchPolicyByParentAndType({
-        parentPath: database.effectiveEnvironment,
-        policyType: PolicyType.DATA_SOURCE_QUERY,
-      });
-
       try {
-        let resultSet: SQLResultSetV1;
-        let useExec = changeMode !== "RO";
-        if (changeMode === "RO") {
-          const isDDL = isDDLStatement(data, "some") || false;
-          const isDML = isDMLStatement(data, "some") || false;
+        const instance = isValidDatabaseName(database.name)
+          ? database.instance
+          : params.connection.instance;
+        const dataSourceId =
+          instance === params.connection.instance
+            ? (params.connection.dataSourceId ?? "")
+            : "";
+        const resultSet = await sqlStore.query(
+          {
+            name: database.name,
+            dataSourceId: dataSourceId,
+            statement: params.statement,
+            limit: sqlEditorStore.resultRowsLimit,
+            explain: params.explain,
+            schema: params.connection.schema,
+            timeout: undefined, // TODO: make this param configurable
+          },
+          abortController.signal
+        );
 
-          if (
-            (isDDL && policy?.dataSourceQueryPolicy?.disallowDdl) ||
-            (isDML && policy?.dataSourceQueryPolicy?.disallowDml)
-          ) {
-            sqlEditorStore.isShowExecutingHint = true;
-            sqlEditorStore.executingHintDatabase = database;
-            return cleanup();
-          }
-
-          useExec = isDDL || isDML;
-        }
-
-        if (!useExec) {
-          const instance = isValidDatabaseName(database.name)
-            ? database.instance
-            : params.connection.instance;
-          const dataSourceId =
-            instance === params.connection.instance
-              ? (params.connection.dataSourceId ?? "")
-              : "";
-          resultSet = await sqlStore.queryReadonly(
-            {
-              name: database.name,
-              dataSourceId: dataSourceId,
-              statement: params.statement,
-              limit: sqlEditorStore.resultRowsLimit,
-              explain: params.explain,
-              schema: params.connection.schema,
-              timeout: undefined, // TODO: make this param configurable
-            },
-            abortController.signal
-          );
-        } else {
-          resultSet = await sqlStore.executeStandard(
-            {
-              name: database.name,
-              statement: params.statement,
-              limit: sqlEditorStore.resultRowsLimit,
-              schema: params.connection.schema,
-              timeout: undefined, // TODO: make this param configurable
-            },
-            abortController.signal
-          );
-        }
         if (checkBehavior === "NOTIFICATION") {
           const combinedAdvices =
             resultSet.advices.length > 0
@@ -382,10 +336,7 @@ const useExecuteSQL = () => {
 
         if (resultSet.error) {
           // The error message should be consistent with the one from the backend.
-          if (
-            resultSet.error === "Support SELECT sql statement only" &&
-            resultSet.status === Status.INVALID_ARGUMENT
-          ) {
+          if (isOnlySelectError(resultSet)) {
             const database = databaseStore.getDatabaseByName(
               params.connection.database
             );
@@ -420,6 +371,22 @@ const useExecuteSQL = () => {
     events,
     execute,
   };
+};
+
+const isOnlySelectError = (resultSet: SQLResultSetV1) => {
+  if (
+    resultSet.error === "Support SELECT sql statement only" &&
+    resultSet.status === Status.INVALID_ARGUMENT
+  ) {
+    return true;
+  }
+  if (
+    resultSet.error.match(/disallow execute (DML|DDL) statement/) &&
+    resultSet.status === Status.PERMISSION_DENIED
+  ) {
+    return true;
+  }
+  return false;
 };
 
 export { useExecuteSQL };

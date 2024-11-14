@@ -8,7 +8,6 @@ import type {
   ExportRequest,
   QueryRequest,
   GenerateRestoreSQLRequest,
-  ExecuteRequest,
 } from "@/types/proto/v1/sql_service";
 import { Advice, Advice_Status } from "@/types/proto/v1/sql_service";
 import { extractGrpcErrorMessage } from "@/utils/grpcweb";
@@ -43,7 +42,7 @@ const getSqlReviewReports = (err: unknown): Advice[] => {
 };
 
 export const useSQLStore = defineStore("sql", () => {
-  const queryReadonly = async (
+  const query = async (
     params: QueryRequest,
     signal: AbortSignal
   ): Promise<SQLResultSetV1> => {
@@ -58,35 +57,6 @@ export const useSQLStore = defineStore("sql", () => {
 
       return {
         error: "",
-        ...response,
-      };
-    } catch (err) {
-      return {
-        error: extractGrpcErrorMessage(err),
-        results: [],
-        advices: getSqlReviewReports(err),
-        allowExport: false,
-        status: err instanceof ClientError ? err.code : Status.UNKNOWN,
-      };
-    }
-  };
-
-  const executeStandard = async (
-    params: ExecuteRequest,
-    signal: AbortSignal
-  ): Promise<SQLResultSetV1> => {
-    try {
-      const response = await sqlServiceClient.execute(params, {
-        // Skip global error handling since we will handle and display
-        // errors manually.
-        ignoredCodes: [Status.PERMISSION_DENIED],
-        silent: true,
-        signal,
-      });
-
-      return {
-        error: "",
-        allowExport: false, // TODO: should be judged by server-side
         ...response,
       };
     } catch (err) {
@@ -115,8 +85,7 @@ export const useSQLStore = defineStore("sql", () => {
   };
 
   return {
-    queryReadonly,
-    executeStandard,
+    query,
     exportData,
     generateRestoreSQL,
   };
