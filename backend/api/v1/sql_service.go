@@ -51,6 +51,15 @@ const (
 	oracleBackupDatabaseName = "BBDATAARCHIVE"
 )
 
+var (
+	queryNewACLSupportEngines = map[storepb.Engine]bool{
+		storepb.Engine_MYSQL:    true,
+		storepb.Engine_POSTGRES: true,
+		storepb.Engine_ORACLE:   true,
+		storepb.Engine_MSSQL:    true,
+	}
+)
+
 // SQLService is the service for SQL.
 type SQLService struct {
 	v1pb.UnimplementedSQLServiceServer
@@ -170,7 +179,7 @@ func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1
 
 	// Validate the request.
 	// New query ACL experience.
-	if !request.Explain && instance.Engine != storepb.Engine_MYSQL {
+	if !request.Explain && !queryNewACLSupportEngines[instance.Engine] {
 		if err := validateQueryRequest(instance, statement); err != nil {
 			return nil, err
 		}
@@ -989,8 +998,7 @@ func (s *SQLService) accessCheck(
 
 	for _, span := range spans {
 		// New query ACL experience.
-		switch instance.Engine {
-		case storepb.Engine_MYSQL, storepb.Engine_POSTGRES, storepb.Engine_ORACLE, storepb.Engine_TIDB, storepb.Engine_MSSQL:
+		if queryNewACLSupportEngines[instance.Engine] {
 			var permission iam.Permission
 			switch span.Type {
 			case base.QueryTypeUnknown:

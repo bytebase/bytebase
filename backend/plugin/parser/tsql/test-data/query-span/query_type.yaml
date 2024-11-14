@@ -1,3 +1,25 @@
+- description: Go
+  statement: GO
+  defaultDatabase: db
+  metadata: |-
+    {
+      "name":  "db"
+    }
+  querySpan:
+    type: 1
+    results: []
+    sourcecolumns: []
+- description: Declare variable
+  statement: DECLARE @a INT = 1;
+  defaultDatabase: db
+  metadata: |-
+    {
+      "name":  "db"
+    }
+  querySpan:
+    type: 1
+    results: []
+    sourcecolumns: []
 - description: Treat set statement as select
   statement: SET DATEFIRST 7;
   defaultDatabase: db

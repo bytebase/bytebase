@@ -10,7 +10,6 @@ import (
 	parser "github.com/bytebase/tsql-parser"
 
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	"github.com/bytebase/bytebase/backend/utils"
 )
 
 type ParseResult struct {
@@ -20,7 +19,6 @@ type ParseResult struct {
 
 // ParseTSQL parses the given SQL statement by using antlr4. Returns the AST and token stream if no error.
 func ParseTSQL(statement string) (*ParseResult, error) {
-	statement = strings.TrimRightFunc(statement, utils.IsSpaceOrSemicolon) + "\n;"
 	inputStream := antlr.NewInputStream(statement)
 	lexer := parser.NewTSqlLexer(inputStream)
 	stream := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
