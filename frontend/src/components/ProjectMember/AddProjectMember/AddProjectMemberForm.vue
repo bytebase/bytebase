@@ -225,7 +225,7 @@ const generateConditionTitle = () => {
 
 const getDatabaseResourceName = (databaseResource: DatabaseResource) => {
   const { databaseName } = extractDatabaseResourceName(
-    databaseResource.databaseName
+    databaseResource.databaseFullName
   );
   if (databaseResource.table) {
     if (databaseResource.schema) {

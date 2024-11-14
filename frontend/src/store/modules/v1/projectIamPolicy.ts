@@ -201,7 +201,7 @@ export const checkQuerierPermission = (
         conditionExpr.databaseResources.length > 0
       ) {
         for (const databaseResource of conditionExpr.databaseResources) {
-          if (databaseResource.databaseName === database.name) {
+          if (databaseResource.databaseFullName === database.name) {
             if (isUndefined(schema) && isUndefined(table)) {
               return true;
             } else {
