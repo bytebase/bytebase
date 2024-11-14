@@ -2,7 +2,7 @@
   <NTooltip :disabled="!tooltip || !instance.engineVersion">
     <template #trigger>
       <div :class="sizeClass" class="relative shrink-0" v-bind="$attrs">
-        <EngineIcon class="w-full h-auto" :engine="instance.engine" />
+        <EngineIcon :engine="instance.engine" />
         <div
           v-if="showStatus"
           class="bg-green-400 border-surface-high rounded-full absolute border-2"
