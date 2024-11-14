@@ -61,7 +61,7 @@ func (l *queryTypeListener) getQueryTypeForSQLClause(clause parser.ISql_clausesC
 		return base.DDL, nil
 	case clause.Another_statement() != nil:
 		// Treat SAFE SET as select statement.
-		if clause.Another_statement().Set_statement() != nil || clause.Another_statement().Setuser_statement() != nil {
+		if clause.Another_statement().Set_statement() != nil || clause.Another_statement().Setuser_statement() != nil || clause.Another_statement().Declare_statement() != nil {
 			return base.Select, nil
 		}
 		return base.QueryTypeUnknown, nil
