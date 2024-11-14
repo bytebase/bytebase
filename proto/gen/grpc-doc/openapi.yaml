@@ -2501,43 +2501,6 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
-    /v1/instances/{instance}/databases/{database}:execute:
-        post:
-            tags:
-                - SQLService
-            operationId: SQLService_Execute
-            parameters:
-                - name: instance
-                  in: path
-                  description: The instance id.
-                  required: true
-                  schema:
-                    type: string
-                - name: database
-                  in: path
-                  description: The database id.
-                  required: true
-                  schema:
-                    type: string
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/ExecuteRequest'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/ExecuteResponse'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
     /v1/instances/{instance}/databases/{database}:export:
         post:
             tags:
@@ -10287,43 +10250,6 @@ components:
                     format: enum
                 color:
                     type: string
-        ExecuteRequest:
-            required:
-                - name
-            type: object
-            properties:
-                name:
-                    type: string
-                    description: |-
-                        The name is the instance name to execute the query against.
-                         Format: instances/{instance}/databases/{databaseName}
-                statement:
-                    type: string
-                    description: The SQL statement to execute.
-                limit:
-                    type: integer
-                    description: The maximum number of rows to return.
-                    format: int32
-                timeout:
-                    pattern: ^-?(?:0|[1-9][0-9]{0,11})(?:\.[0-9]{1,9})?s$
-                    type: string
-                    description: The timeout for the request.
-                schema:
-                    type: string
-                    description: The default schema to execute the statement. Equals to the current schema in Oracle and search path in Postgres.
-        ExecuteResponse:
-            type: object
-            properties:
-                results:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/QueryResult'
-                    description: The execute results.
-                advices:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/Advice'
-                    description: The execute advices.
         ExportAuditLogsRequest:
             required:
                 - parent
