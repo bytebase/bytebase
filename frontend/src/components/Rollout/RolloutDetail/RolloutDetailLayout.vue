@@ -21,7 +21,6 @@ const rolloutName = computed(
     `${projectNamePrefix}${route.params.projectId}/rollouts/${route.params.rolloutId}`
 );
 
-const { rollout } = provideRolloutDetailContext(rolloutName.value);
-
-usePollRollout(rolloutName.value);
+const { rollout, emmiter } = provideRolloutDetailContext(rolloutName.value);
+usePollRollout(rolloutName.value, emmiter);
 </script>
