@@ -142,6 +142,35 @@
           />
         </div>
       </div>
+
+      <div
+        v-if="instanceV1SupportsPackage(database.instanceResource)"
+        class="flex flex-col gap-2"
+      >
+        <div class="flex items-center justify-between">
+          <h2 class="text-lg">{{ $t("db.packages") }}</h2>
+          <SearchBox v-model:value="state.keywords.packages" />
+        </div>
+        <div class="max-h-[16rem] overflow-x-auto overflow-y-hidden">
+          <PackagesTable
+            v-if="metadata.schema"
+            :db="database"
+            :database="metadata.database"
+            :schema="metadata.schema"
+            :packages="metadata.schema.packages"
+            :keyword="state.keywords.packages"
+            :max-height="230"
+            @click="
+              updateViewState({
+                view: 'PACKAGES',
+                detail: {
+                  package: $event.package.name,
+                },
+              })
+            "
+          />
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -155,11 +184,15 @@ import {
   useDBSchemaV1Store,
 } from "@/store";
 import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
-import { instanceV1SupportsExternalTable } from "@/utils";
+import {
+  instanceV1SupportsExternalTable,
+  instanceV1SupportsPackage,
+} from "@/utils";
 import DatabaseChooser from "@/views/sql-editor/EditorCommon/DatabaseChooser.vue";
 import { useEditorPanelContext } from "../../context";
 import ExternalTablesTable from "../ExternalTablesPanel/ExternalTablesTable.vue";
 import FunctionsTable from "../FunctionsPanel/FunctionsTable.vue";
+import PackagesTable from "../PackagesPanel/PackagesTable.vue";
 import ProceduresTable from "../ProceduresPanel/ProceduresTable.vue";
 import TablesTable from "../TablesPanel/TablesTable.vue";
 import ViewsTable from "../ViewsPanel/ViewsTable.vue";
@@ -172,6 +205,7 @@ const state = reactive({
     functions: "",
     procedures: "",
     externalTables: "",
+    packages: "",
   },
 });
 
