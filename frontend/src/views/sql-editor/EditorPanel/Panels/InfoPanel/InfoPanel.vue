@@ -106,7 +106,10 @@
               updateViewState({
                 view: 'PROCEDURES',
                 detail: {
-                  procedure: $event.procedure.name,
+                  procedure: keyWithPosition(
+                    $event.procedure.name,
+                    $event.position
+                  ),
                 },
               })
             "
@@ -164,7 +167,10 @@
               updateViewState({
                 view: 'PACKAGES',
                 detail: {
-                  package: $event.package.name,
+                  package: keyWithPosition(
+                    $event.package.name,
+                    $event.position
+                  ),
                 },
               })
             "
@@ -188,6 +194,7 @@ import {
   instanceV1SupportsExternalTable,
   instanceV1SupportsPackage,
 } from "@/utils";
+import { keyWithPosition } from "@/views/sql-editor/EditorCommon";
 import DatabaseChooser from "@/views/sql-editor/EditorCommon/DatabaseChooser.vue";
 import { useEditorPanelContext } from "../../context";
 import ExternalTablesTable from "../ExternalTablesPanel/ExternalTablesTable.vue";
