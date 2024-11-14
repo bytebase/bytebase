@@ -208,7 +208,6 @@ func getTaskCreatesFromCreateDatabaseConfig(ctx context.Context, s *store.Store,
 			ProjectUID: project.UID,
 			Title:      fmt.Sprintf("Sheet for creating database %v", databaseName),
 			Statement:  statement,
-
 			Payload: &storepb.SheetPayload{
 				Engine: instance.Engine,
 			},

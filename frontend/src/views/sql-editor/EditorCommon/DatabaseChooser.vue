@@ -21,6 +21,11 @@
       "
       class="flex flex-row items-center text-main"
     >
+      <EnvironmentV1Name
+        :environment="database.effectiveEnvironmentEntity"
+        :link="false"
+      />
+      <ChevronRightIcon class="shrink-0 h-4 w-4 text-control-light" />
       <div class="flex items-center gap-1">
         <InstanceV1EngineIcon
           :instance="instance"
@@ -46,7 +51,7 @@ import { ChevronRightIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { storeToRefs } from "pinia";
 import { DatabaseIcon } from "@/components/Icon";
-import { InstanceV1EngineIcon } from "@/components/v2";
+import { InstanceV1EngineIcon, EnvironmentV1Name } from "@/components/v2";
 import {
   useConnectionOfCurrentSQLEditorTab,
   useSQLEditorStore,

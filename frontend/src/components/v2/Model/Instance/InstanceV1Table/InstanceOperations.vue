@@ -92,7 +92,6 @@ const actions = computed((): Action[] => {
     list.push({
       icon: h(GraduationCapIcon),
       text: t("subscription.instance-assignment.assign-license"),
-      disabled: props.instanceList.length < 1,
       click: () => (state.showAssignLicenseDrawer = true),
     });
   }
