@@ -14,111 +14,55 @@
     </NBreadcrumbItem>
   </NBreadcrumb>
   <div v-if="task" class="w-full flex flex-col">
-    <div class="w-full flex flex-row items-center gap-2">
-      <TaskStatus :size="'large'" :status="task.status" />
-      <p class="text-2xl flex flex-row items-center">
-        <InstanceV1EngineIcon
-          class="mr-1"
-          :size="'large'"
-          :instance="
-            databaseForTask(rollout.projectEntity, task).instanceResource
-          "
-        />
-        <span>{{
-          databaseForTask(rollout.projectEntity, task).instanceResource.title
-        }}</span>
-        <ChevronRightIcon class="inline opacity-60 mx-0.5 w-5" />
-        <span>{{
-          databaseForTask(rollout.projectEntity, task).databaseName
-        }}</span>
-      </p>
-    </div>
-    <div class="mt-3 space-x-2">
-      <NTooltip>
-        <template #trigger>
-          <NTag round>{{ semanticTaskType(task.type) }}</NTag>
-        </template>
-        {{ $t("common.type") }}
-      </NTooltip>
-      <NTooltip v-if="extractSchemaVersionFromTask(task)">
-        <template #trigger>
-          <NTag round>
-            {{ extractSchemaVersionFromTask(task) }}
-          </NTag>
-        </template>
-        {{ $t("common.version") }}
-      </NTooltip>
-    </div>
-    <template v-if="latestTaskRun">
-      <NDivider />
-      <p class="w-auto flex items-center text-base text-main mb-2">
-        {{ $t("issue.task-run.logs") }}
-      </p>
-      <TaskRunLogTable
-        :task-run="latestTaskRun"
-        :sheet="sheetStore.getSheetByName(sheetNameOfTaskV1(task))"
-      />
-    </template>
-    <NDivider />
-    <p class="w-auto flex items-center text-base text-main mb-2">
-      {{ $t("common.statement") }}
-      <button
-        tabindex="-1"
-        class="btn-icon ml-1"
-        @click.prevent="copyStatement"
+    <BasicInfo :task="task" />
+    <NTabs
+      v-model:value="state.selectedTab"
+      class="mt-2 w-full grow"
+      type="line"
+    >
+      <NTabPane name="overview" :tab="$t('common.overview')">
+        <Overview :task="task" :latest-task-run="head(state.taskRuns)" />
+      </NTabPane>
+      <NTabPane
+        v-if="state.taskRuns.length > 0"
+        name="logs"
+        :tab="$t('issue.task-run.logs')"
       >
-        <ClipboardIcon class="w-4 h-4" />
-      </button>
-    </p>
-    <MonacoEditor
-      class="h-auto max-h-[480px] min-h-[120px] border rounded-[3px] text-sm overflow-clip relative"
-      :content="statement"
-      :readonly="true"
-      :auto-height="{ min: 256, max: 512 }"
-    />
+        <TaskRunLogs :task="task" :task-runs="state.taskRuns" />
+      </NTabPane>
+    </NTabs>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { head, isEqual } from "lodash-es";
-import { ClipboardIcon, ChevronRightIcon } from "lucide-vue-next";
-import {
-  NBreadcrumb,
-  NBreadcrumbItem,
-  NDivider,
-  NTag,
-  NTooltip,
-} from "naive-ui";
-import { computed, ref, watchEffect } from "vue";
+import { isEqual, head, sortBy } from "lodash-es";
+import { NBreadcrumb, NBreadcrumbItem, NTabs, NTabPane } from "naive-ui";
+import { computed, reactive, watchEffect } from "vue";
 import { useRouter } from "vue-router";
-import { semanticTaskType } from "@/components/IssueV1";
-import TaskRunLogTable from "@/components/IssueV1/components/TaskRunSection/TaskRunLogTable/TaskRunLogTable.vue";
-import { MonacoEditor } from "@/components/MonacoEditor";
-import { InstanceV1EngineIcon } from "@/components/v2";
 import { rolloutServiceClient } from "@/grpcweb";
-import { pushNotification, useSheetV1Store } from "@/store";
-import { unknownStage, unknownTask } from "@/types";
-import type { TaskRun } from "@/types/proto/v1/rollout_service";
-import {
-  extractSchemaVersionFromTask,
-  getSheetStatement,
-  isValidTaskName,
-  sheetNameOfTaskV1,
-  toClipboard,
-} from "@/utils";
-import TaskStatus from "../Panels/kits/TaskStatus.vue";
+import { getDateForPbTimestamp, unknownStage, unknownTask } from "@/types";
+import { TaskRun } from "@/types/proto/v1/rollout_service";
+import { isValidTaskName } from "@/utils";
 import { useRolloutDetailContext } from "../context";
-import { databaseForTask } from "../utils";
+import BasicInfo from "./BasicInfo.vue";
+import Overview from "./Panels/Overview.vue";
+import TaskRunLogs from "./Panels/TaskRunLogs.vue";
 
 const props = defineProps<{
   stageId: string;
   taskId: string;
 }>();
 
+interface LocalState {
+  selectedTab?: "overview" | "logs";
+  taskRuns: TaskRun[];
+}
+
 const router = useRouter();
 const { rollout } = useRolloutDetailContext();
-const sheetStore = useSheetV1Store();
-const latestTaskRun = ref<TaskRun | undefined>(undefined);
+const state = reactive<LocalState>({
+  taskRuns: [],
+});
 
 const stage = computed(() => {
   return (
@@ -135,41 +79,20 @@ const task = computed(() => {
   );
 });
 
-const statement = computed(() => {
-  const sheet = sheetStore.getSheetByName(sheetNameOfTaskV1(task.value));
-  if (sheet) {
-    return getSheetStatement(sheet);
-  }
-  return "";
-});
-
 watchEffect(async () => {
   if (!isValidTaskName(task.value.name)) {
     return;
   }
 
-  // Prepare the sheet for the task.
-  const sheet = sheetNameOfTaskV1(task.value);
-  if (sheet) {
-    await sheetStore.getOrFetchSheetByName(sheet);
-  }
-
-  // Prepare the latest task run logs.
+  // Prepare task runs.
   const { taskRuns } = await rolloutServiceClient.listTaskRuns({
     parent: task.value.name,
   });
-  if (!isEqual(latestTaskRun.value, head(taskRuns))) {
-    latestTaskRun.value = head(taskRuns);
+  const sorted = sortBy(taskRuns, (t) =>
+    getDateForPbTimestamp(t.createTime)
+  ).reverse();
+  if (!isEqual(sorted, state.taskRuns)) {
+    state.taskRuns = sorted;
   }
 });
-
-const copyStatement = async () => {
-  toClipboard(statement.value).then(() => {
-    pushNotification({
-      module: "bytebase",
-      style: "SUCCESS",
-      title: `Statement copied to clipboard.`,
-    });
-  });
-};
 </script>
