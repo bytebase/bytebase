@@ -1,3 +1,4 @@
+import Emittery from "emittery";
 import type { ClientError } from "nice-grpc-common";
 import type { ComputedRef, InjectionKey, Ref } from "vue";
 import { computed, inject, provide, watchEffect } from "vue";
@@ -7,9 +8,18 @@ import { projectNamePrefix } from "@/store/modules/v1/common";
 import type { ComposedProject, ComposedRollout } from "@/types";
 import { unknownProject, unknownRollout } from "@/types";
 
+type Events = {
+  "task-status-action": undefined;
+};
+
+export type EventsEmmiter = Emittery<Events>;
+
 export type RolloutDetailContext = {
   rollout: Ref<ComposedRollout>;
   project: ComputedRef<ComposedProject>;
+
+  // The events emmiter.
+  emmiter: EventsEmmiter;
 };
 
 export const KEY = Symbol(
@@ -24,6 +34,7 @@ export const provideRolloutDetailContext = (rolloutName: string) => {
   const route = useRoute();
   const projectV1Store = useProjectV1Store();
   const rolloutStore = useRolloutStore();
+  const emmiter: EventsEmmiter = new Emittery<Events>();
 
   const project = computed(() => {
     const projectId = route.params.projectId as string;
@@ -54,6 +65,7 @@ export const provideRolloutDetailContext = (rolloutName: string) => {
   const context: RolloutDetailContext = {
     rollout,
     project,
+    emmiter,
   };
 
   provide(KEY, context);
