@@ -1426,7 +1426,8 @@
     "successfully-synced-schema": "Successfully synced schema",
     "create": "Create database",
     "procedures": "Procedures",
-    "partitions": "Partitions"
+    "partitions": "Partitions",
+    "packages": "Packages"
   },
   "instance": {
     "select": "Select instance",

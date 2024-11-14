@@ -5,6 +5,7 @@ import ExternalTableIcon from "./ExternalTableIcon.vue";
 import ForeignKeyIcon from "./ForeignKeyIcon.vue";
 import FunctionIcon from "./FunctionIcon.vue";
 import IndexIcon from "./IndexIcon.vue";
+import PackageIcon from "./PackageIcon.vue";
 import PrimaryKeyIcon from "./PrimaryKeyIcon.vue";
 import ProcedureIcon from "./ProcedureIcon.vue";
 import SchemaIcon from "./SchemaIcon.vue";
@@ -28,4 +29,5 @@ export {
   ColumnIcon,
   TablePartitionIcon,
   ForeignKeyIcon,
+  PackageIcon,
 };
