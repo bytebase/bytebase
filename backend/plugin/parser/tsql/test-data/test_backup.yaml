@@ -21,8 +21,7 @@
           UNION ALL
           SELECT "db"."dbo"."test".* FROM test WHERE test.b1 = 6
           UNION ALL
-          SELECT "db"."dbo"."test".* FROM test WHERE test.b1 = 7
-        ) AS backup_table;
+          SELECT "db"."dbo"."test".* FROM test WHERE test.b1 = 7) AS backup_table;
       sourceschema: dbo
       sourcetablename: test
       targettablename: rollback_test
@@ -30,16 +29,14 @@
         line: 1
         column: 0
       endposition:
-        line: 8
-        column: 0
+        line: 7
+        column: 45
 - input: |-
     DELETE FROM t_alias
     FROM test AS t_alias
     WHERE t_alias.c1 = 1;
   result:
-    - statement: |-
-        SELECT "t_alias".* INTO "backupDB"."dbo"."rollback_0_test" FROM test AS t_alias WHERE t_alias.c1 = 1
-        ;
+    - statement: SELECT "t_alias".* INTO "backupDB"."dbo"."rollback_0_test" FROM test AS t_alias WHERE t_alias.c1 = 1;
       sourceschema: dbo
       sourcetablename: test
       targettablename: rollback_0_test
@@ -47,34 +44,15 @@
         line: 1
         column: 0
       endposition:
-        line: 4
-        column: 0
+        line: 3
+        column: 20
 - input: |-
     UPDATE t_alias
     SET t_alias.c1 = 2
     FROM test AS t_alias
     WHERE t_alias.c1 = 1;
   result:
-    - statement: |-
-        SELECT "t_alias".* INTO "backupDB"."dbo"."rollback_0_test" FROM test AS t_alias WHERE t_alias.c1 = 1
-        ;
-      sourceschema: dbo
-      sourcetablename: test
-      targettablename: rollback_0_test
-      startposition:
-        line: 1
-        column: 0
-      endposition:
-        line: 5
-        column: 0
-- input: |-
-    DELETE FROM test
-    FROM test JOIN test2 ON test.c1 = test2.c1
-    WHERE test.c1 = 1;
-  result:
-    - statement: |-
-        SELECT "db"."dbo"."test".* INTO "backupDB"."dbo"."rollback_0_test" FROM test JOIN test2 ON test.c1 = test2.c1 WHERE test.c1 = 1
-        ;
+    - statement: SELECT "t_alias".* INTO "backupDB"."dbo"."rollback_0_test" FROM test AS t_alias WHERE t_alias.c1 = 1;
       sourceschema: dbo
       sourcetablename: test
       targettablename: rollback_0_test
@@ -83,16 +61,13 @@
         column: 0
       endposition:
         line: 4
-        column: 0
+        column: 20
 - input: |-
-    UPDATE test
-    SET test.c1 = 2
+    DELETE FROM test
     FROM test JOIN test2 ON test.c1 = test2.c1
     WHERE test.c1 = 1;
   result:
-    - statement: |-
-        SELECT "db"."dbo"."test".* INTO "backupDB"."dbo"."rollback_0_test" FROM test JOIN test2 ON test.c1 = test2.c1 WHERE test.c1 = 1
-        ;
+    - statement: SELECT "db"."dbo"."test".* INTO "backupDB"."dbo"."rollback_0_test" FROM test JOIN test2 ON test.c1 = test2.c1 WHERE test.c1 = 1;
       sourceschema: dbo
       sourcetablename: test
       targettablename: rollback_0_test
@@ -100,8 +75,24 @@
         line: 1
         column: 0
       endposition:
-        line: 5
+        line: 3
+        column: 17
+- input: |-
+    UPDATE test
+    SET test.c1 = 2
+    FROM test JOIN test2 ON test.c1 = test2.c1
+    WHERE test.c1 = 1;
+  result:
+    - statement: SELECT "db"."dbo"."test".* INTO "backupDB"."dbo"."rollback_0_test" FROM test JOIN test2 ON test.c1 = test2.c1 WHERE test.c1 = 1;
+      sourceschema: dbo
+      sourcetablename: test
+      targettablename: rollback_0_test
+      startposition:
+        line: 1
         column: 0
+      endposition:
+        line: 4
+        column: 17
 - input: |-
     DELETE FROM test WHERE c1 = 1;
     UPDATE test SET test.c1 = 2 WHERE test.c1 = 1;
@@ -116,9 +107,7 @@
       endposition:
         line: 1
         column: 29
-    - statement: |-
-        SELECT "db"."dbo"."test".* INTO "backupDB"."dbo"."rollback_1_test" FROM test WHERE test.c1 = 1
-        ;
+    - statement: SELECT "db"."dbo"."test".* INTO "backupDB"."dbo"."rollback_1_test" FROM test WHERE test.c1 = 1;
       sourceschema: dbo
       sourcetablename: test
       targettablename: rollback_1_test
@@ -126,13 +115,11 @@
         line: 2
         column: 0
       endposition:
-        line: 3
-        column: 0
+        line: 2
+        column: 45
 - input: DELETE FROM test WHERE c1 = 1;
   result:
-    - statement: |-
-        SELECT "db"."dbo"."test".* INTO "backupDB"."dbo"."rollback_0_test" FROM test WHERE c1 = 1
-        ;
+    - statement: SELECT "db"."dbo"."test".* INTO "backupDB"."dbo"."rollback_0_test" FROM test WHERE c1 = 1;
       sourceschema: dbo
       sourcetablename: test
       targettablename: rollback_0_test
@@ -140,13 +127,11 @@
         line: 1
         column: 0
       endposition:
-        line: 2
-        column: 0
+        line: 1
+        column: 29
 - input: UPDATE test SET c1 = 1 WHERE c1=2;
   result:
-    - statement: |-
-        SELECT "db"."dbo"."test".* INTO "backupDB"."dbo"."rollback_0_test" FROM test WHERE c1=2
-        ;
+    - statement: SELECT "db"."dbo"."test".* INTO "backupDB"."dbo"."rollback_0_test" FROM test WHERE c1=2;
       sourceschema: dbo
       sourcetablename: test
       targettablename: rollback_0_test
@@ -154,8 +139,8 @@
         line: 1
         column: 0
       endposition:
-        line: 2
-        column: 0
+        line: 1
+        column: 33
 - input: |-
     UPDATE test SET test.c1 = 2 WHERE test.c1 = 1 ;
     UPDATE test SET test.c1 = 3 WHERE test.c1 = 5 ;
@@ -170,9 +155,7 @@
       endposition:
         line: 1
         column: 46
-    - statement: |-
-        SELECT "db"."dbo"."test".* INTO "backupDB"."dbo"."rollback_1_test" FROM test WHERE test.c1 = 5
-        ;
+    - statement: SELECT "db"."dbo"."test".* INTO "backupDB"."dbo"."rollback_1_test" FROM test WHERE test.c1 = 5 ;
       sourceschema: dbo
       sourcetablename: test
       targettablename: rollback_1_test
@@ -180,5 +163,5 @@
         line: 2
         column: 0
       endposition:
-        line: 3
-        column: 0
+        line: 2
+        column: 46
