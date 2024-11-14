@@ -63,7 +63,7 @@ const { project } = useProjectByName(props.projectName);
 
 const parseResourceToKey = (resource: DatabaseResource): string => {
   const data = [
-    resource.databaseName,
+    resource.databaseFullName,
     "schemas",
     resource.schema,
     "tables",

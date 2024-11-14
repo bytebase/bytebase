@@ -36,7 +36,7 @@ const gotoSQLEditor = async () => {
     conditionExpression.databaseResources.length > 0
   ) {
     const databaseResourceName = conditionExpression.databaseResources[0]
-      .databaseName as string;
+      .databaseFullName as string;
     const db =
       await useDatabaseV1Store().getOrFetchDatabaseByName(databaseResourceName);
     if (isValidDatabaseName(db.name)) {

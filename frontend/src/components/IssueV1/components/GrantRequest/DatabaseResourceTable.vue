@@ -52,7 +52,7 @@ const databaseStore = useDatabaseV1Store();
 
 const extractDatabaseName = (databaseResource: DatabaseResource) => {
   const database = databaseStore.getDatabaseByName(
-    String(databaseResource.databaseName)
+    databaseResource.databaseFullName
   );
   return database.databaseName;
 };
@@ -71,7 +71,7 @@ const extractTableName = (databaseResource: DatabaseResource) => {
 
 const extractComposedDatabase = (databaseResource: DatabaseResource) => {
   const database = databaseStore.getDatabaseByName(
-    String(databaseResource.databaseName)
+    databaseResource.databaseFullName
   );
   return database;
 };
@@ -81,7 +81,7 @@ watch(
   async () => {
     for (const databaseResource of props.databaseResourceList) {
       await databaseStore.getOrFetchDatabaseByName(
-        databaseResource.databaseName
+        databaseResource.databaseFullName
       );
     }
   },

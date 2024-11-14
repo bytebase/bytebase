@@ -41,11 +41,11 @@ const showPanel = ref(false);
 const dbStore = useDatabaseV1Store();
 
 const database = computed(() =>
-  dbStore.getDatabaseByName(props.databaseResource.databaseName)
+  dbStore.getDatabaseByName(props.databaseResource.databaseFullName)
 );
 
 const available = computed(() => {
-  if (!isValidDatabaseName(props.databaseResource.databaseName)) {
+  if (!isValidDatabaseName(props.databaseResource.databaseFullName)) {
     return false;
   }
 

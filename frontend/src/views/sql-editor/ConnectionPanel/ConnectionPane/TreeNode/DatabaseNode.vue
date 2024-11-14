@@ -27,7 +27,7 @@
     <RequestQueryButton
       v-if="!disallowRequestQuery && !canQuery"
       :database-resource="{
-        databaseName: database.name,
+        databaseFullName: database.name,
       }"
       :size="'tiny'"
     />

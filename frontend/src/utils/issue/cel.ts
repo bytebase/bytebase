@@ -1,4 +1,4 @@
-import { cloneDeep, last } from "lodash-es";
+import { cloneDeep } from "lodash-es";
 import type { SimpleExpr } from "@/plugins/cel";
 import { isRawStringExpr, resolveCELExpr } from "@/plugins/cel";
 import {
@@ -43,18 +43,18 @@ export const stringifyDatabaseResources = (resources: DatabaseResource[]) => {
     if (resource.table === undefined && resource.schema === undefined) {
       // Database level
       conditionList.push({
-        database: [resource.databaseName],
+        database: [resource.databaseFullName],
       });
     } else if (resource.schema !== undefined && resource.table === undefined) {
       // Schema level
       conditionList.push({
-        database: resource.databaseName,
+        database: resource.databaseFullName,
         schema: [resource.schema],
       });
     } else if (resource.schema !== undefined && resource.table !== undefined) {
       // Table level
       conditionList.push({
-        database: resource.databaseName,
+        database: resource.databaseFullName,
         schema: resource.schema,
         table: [resource.table],
       });
@@ -199,7 +199,7 @@ export const convertFromExpr = (expr: Expr): ConditionExpression => {
         if (property === "resource.database") {
           for (const value of values) {
             const databaseResource: DatabaseResource = {
-              databaseName: value as string,
+              databaseFullName: value as string,
             };
             conditionExpression.databaseResources!.push(databaseResource);
           }
@@ -231,51 +231,47 @@ export const convertFromExpr = (expr: Expr): ConditionExpression => {
       const [left, right] = expr.args;
       if (typeof left === "string") {
         if (typeof right === "string") {
-          const databaseResource = last(conditionExpression.databaseResources);
+          let databaseResource = conditionExpression.databaseResources?.pop();
+          if (!databaseResource) {
+            databaseResource = {
+              databaseFullName: "",
+            };
+          }
           switch (left) {
             case "resource.instance_id": {
-              const databaseResource: DatabaseResource = {
-                instanceResourceId: right,
-                databaseName: "",
-              };
-              conditionExpression.databaseResources!.push(databaseResource);
+              databaseResource.instanceResourceId = right;
+              if (databaseResource.databaseResourceId) {
+                databaseResource.databaseFullName = `${instanceNamePrefix}${databaseResource.instanceResourceId}/${databaseNamePrefix}${databaseResource.databaseResourceId}`;
+              }
               break;
             }
             case "resource.database_name": {
-              if (!databaseResource?.instanceResourceId) {
-                return;
+              databaseResource.databaseResourceId = right;
+              if (databaseResource.instanceResourceId) {
+                databaseResource.databaseFullName = `${instanceNamePrefix}${databaseResource.instanceResourceId}/${databaseNamePrefix}${databaseResource.databaseResourceId}`;
               }
-              databaseResource.databaseName = `${instanceNamePrefix}${databaseResource.instanceResourceId}/${databaseNamePrefix}${right}`;
               break;
             }
             case "resource.database": {
-              const databaseResource: DatabaseResource = {
-                databaseName: right,
-              };
-              conditionExpression.databaseResources!.push(databaseResource);
+              databaseResource.databaseFullName = right;
               break;
             }
             case "resource.schema":
             case "resource.schema_name": {
-              if (databaseResource) {
-                databaseResource.schema = right;
-              }
+              databaseResource.schema = right;
               break;
             }
             case "resource.table":
             case "resource.table_name": {
-              if (databaseResource) {
-                databaseResource.table = right;
-              }
+              databaseResource.table = right;
               break;
             }
             case "resource.column_name": {
-              if (databaseResource) {
-                databaseResource.column = right;
-              }
+              databaseResource.column = right;
               break;
             }
           }
+          conditionExpression.databaseResources?.push(databaseResource);
         } else if (typeof right === "number") {
           // Deprecated. Use _<=_ instead.
           if (left === "request.row_limit") {
