@@ -1036,7 +1036,7 @@ func (s *SQLService) accessCheck(
 	for _, span := range spans {
 		// New query ACL experience.
 		switch instance.Engine {
-		case storepb.Engine_MYSQL, storepb.Engine_POSTGRES, storepb.Engine_ORACLE, storepb.Engine_TIDB:
+		case storepb.Engine_MYSQL, storepb.Engine_POSTGRES, storepb.Engine_ORACLE, storepb.Engine_TIDB, storepb.Engine_MSSQL:
 			var permission iam.Permission
 			switch span.Type {
 			case base.QueryTypeUnknown:
