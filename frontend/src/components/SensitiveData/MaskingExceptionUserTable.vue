@@ -96,9 +96,8 @@ const getDatabaseAccessResource = (access: AccessUser): VNodeChild => {
   if (!access.databaseResource) {
     return <div class="textinfo">{t("database.all")}</div>;
   }
-  // const databaseFullName
   const database = databaseStore.getDatabaseByName(
-    access.databaseResource.databaseName
+    access.databaseResource.databaseFullName
   );
 
   return (

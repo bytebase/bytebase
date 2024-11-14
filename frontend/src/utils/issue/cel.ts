@@ -271,7 +271,7 @@ export const convertFromExpr = (expr: Expr): ConditionExpression => {
               break;
             }
           }
-          conditionExpression.databaseResources!.push(databaseResource);
+          conditionExpression.databaseResources?.push(databaseResource);
         } else if (typeof right === "number") {
           // Deprecated. Use _<=_ instead.
           if (left === "request.row_limit") {
