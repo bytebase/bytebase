@@ -168,6 +168,7 @@ export const useActions = () => {
       "view",
       "dependent-column",
       "procedure",
+      "package",
       "function",
       "index",
       "foreign-key",
@@ -245,6 +246,7 @@ export const useActions = () => {
       | "column"
       | "view"
       | "procedure"
+      | "package"
       | "function"
       | "external-table"
       | "index"
@@ -320,6 +322,10 @@ export const useActions = () => {
     if (type === "procedure") {
       const { procedure, position } = target as NodeTarget<"procedure">;
       detail.procedure = keyWithPosition(procedure.name, position);
+    }
+    if (type === "package") {
+      const { package: pack, position } = target as NodeTarget<"package">;
+      detail.package = keyWithPosition(pack.name, position);
     }
     if (type === "function") {
       const { function: func, position } = target as NodeTarget<"function">;

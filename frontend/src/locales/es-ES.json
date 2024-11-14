@@ -1426,7 +1426,8 @@
     "successfully-synced-schema": "Esquema sincronizado correctamente",
     "create": "Crear base de datos",
     "procedures": "Trámites",
-    "partitions": "Particiones"
+    "partitions": "Particiones",
+    "packages": "Paquetes"
   },
   "instance": {
     "select": "Seleccionar instancia",

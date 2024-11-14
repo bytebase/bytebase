@@ -1426,7 +1426,8 @@
     "successfully-synced-schema": "Schema 同步完成",
     "create": "创建数据库",
     "procedures": "存储过程",
-    "partitions": "分区"
+    "partitions": "分区",
+    "packages": "包"
   },
   "instance": {
     "select": "选择实例",

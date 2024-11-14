@@ -140,6 +140,17 @@
             :task-list="taskList"
           />
         </template>
+
+        <template v-if="instanceV1SupportsPackage(databaseEngine)">
+          <div class="mt-6 text-lg leading-6 font-medium text-main mb-4">
+            {{ $t("db.packages") }}
+          </div>
+          <PackageDataTable
+            :database="database"
+            :schema-name="state.selectedSchemaName"
+            :package-list="packageList"
+          />
+        </template>
       </template>
     </div>
   </div>
@@ -167,7 +178,8 @@ import type { ComposedDatabase } from "@/types";
 import type { Anomaly } from "@/types/proto/v1/anomaly_service";
 import { Engine } from "@/types/proto/v1/common";
 import { DatabaseMetadataView } from "@/types/proto/v1/database_service";
-import { hasSchemaProperty } from "@/utils";
+import { hasSchemaProperty, instanceV1SupportsPackage } from "@/utils";
+import PackageDataTable from "../PackageDataTable.vue";
 import { SearchBox } from "../v2";
 import DatabaseOverviewInfo from "./DatabaseOverviewInfo.vue";
 
@@ -328,6 +340,20 @@ const taskList = computed(() => {
   return dbSchemaStore
     .getDatabaseMetadata(props.database.name)
     .schemas.map((schema) => schema.tasks)
+    .flat();
+});
+
+const packageList = computed(() => {
+  if (hasSchemaPropertyV1.value) {
+    return (
+      schemaList.value.find(
+        (schema) => schema.name === state.selectedSchemaName
+      )?.packages || []
+    );
+  }
+  return dbSchemaStore
+    .getDatabaseMetadata(props.database.name)
+    .schemas.map((schema) => schema.packages)
     .flat();
 });
 
