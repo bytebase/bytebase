@@ -30,16 +30,6 @@ service SQLService {
     option (bytebase.v1.audit) = true;
   }
 
-  rpc Execute(ExecuteRequest) returns (ExecuteResponse) {
-    option (google.api.http) = {
-      post: "/v1/{name=instances/*/databases/*}:execute"
-      body: "*"
-    };
-    option (bytebase.v1.permission) = "bb.databases.execute";
-    option (bytebase.v1.auth_method) = IAM;
-    option (bytebase.v1.audit) = true;
-  }
-
   rpc AdminExecute(stream AdminExecuteRequest) returns (stream AdminExecuteResponse) {
     // GRPC streaming / websocket requires GET method instead of POST.
     option (google.api.http) = {get: "/v1:adminExecute"};

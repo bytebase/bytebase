@@ -155,52 +155,6 @@ func (s *SQLService) AdminExecute(server v1pb.SQLService_AdminExecuteServer) err
 	}
 }
 
-// Execute executes the SQL statement.
-func (s *SQLService) Execute(ctx context.Context, request *v1pb.ExecuteRequest) (*v1pb.ExecuteResponse, error) {
-	// Prepare related message.
-	user, instance, database, err := s.prepareRelatedMessage(ctx, request.Name)
-	if err != nil {
-		return nil, err
-	}
-
-	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{})
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get database driver: %v", err)
-	}
-	defer driver.Close(ctx)
-	var conn *sql.Conn
-	sqlDB := driver.GetDB()
-	if sqlDB != nil {
-		conn, err = sqlDB.Conn(ctx)
-		if err != nil {
-			return nil, status.Errorf(codes.Internal, "failed to get database connection: %v", err)
-		}
-		defer conn.Close()
-	}
-
-	queryContext := db.QueryContext{OperatorEmail: user.Email}
-	if request.Schema != nil {
-		queryContext.Schema = *request.Schema
-	}
-	results, duration, queryErr := executeWithTimeout(ctx, driver, conn, request.Statement, request.Timeout, queryContext)
-
-	if err := s.createQueryHistory(ctx, database, store.QueryHistoryTypeQuery, request.Statement, user.ID, duration, queryErr); err != nil {
-		slog.Error("failed to post admin execute activity", log.BBError(err))
-	}
-
-	response := &v1pb.ExecuteResponse{}
-	if queryErr != nil {
-		response.Results = []*v1pb.QueryResult{
-			{
-				Error: queryErr.Error(),
-			},
-		}
-	} else {
-		response.Results = results
-	}
-	return response, nil
-}
-
 func (s *SQLService) Query(ctx context.Context, request *v1pb.QueryRequest) (*v1pb.QueryResponse, error) {
 	// Prepare related message.
 	user, instance, database, err := s.prepareRelatedMessage(ctx, request.Name)

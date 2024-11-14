@@ -20,7 +20,6 @@ const _ = grpc.SupportPackageIsVersion9
 
 const (
 	SQLService_Query_FullMethodName                = "/bytebase.v1.SQLService/Query"
-	SQLService_Execute_FullMethodName              = "/bytebase.v1.SQLService/Execute"
 	SQLService_AdminExecute_FullMethodName         = "/bytebase.v1.SQLService/AdminExecute"
 	SQLService_SearchQueryHistories_FullMethodName = "/bytebase.v1.SQLService/SearchQueryHistories"
 	SQLService_Export_FullMethodName               = "/bytebase.v1.SQLService/Export"
@@ -36,7 +35,6 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type SQLServiceClient interface {
 	Query(ctx context.Context, in *QueryRequest, opts ...grpc.CallOption) (*QueryResponse, error)
-	Execute(ctx context.Context, in *ExecuteRequest, opts ...grpc.CallOption) (*ExecuteResponse, error)
 	AdminExecute(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[AdminExecuteRequest, AdminExecuteResponse], error)
 	// SearchQueryHistories searches query histories for the caller.
 	SearchQueryHistories(ctx context.Context, in *SearchQueryHistoriesRequest, opts ...grpc.CallOption) (*SearchQueryHistoriesResponse, error)
@@ -61,16 +59,6 @@ func (c *sQLServiceClient) Query(ctx context.Context, in *QueryRequest, opts ...
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(QueryResponse)
 	err := c.cc.Invoke(ctx, SQLService_Query_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *sQLServiceClient) Execute(ctx context.Context, in *ExecuteRequest, opts ...grpc.CallOption) (*ExecuteResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ExecuteResponse)
-	err := c.cc.Invoke(ctx, SQLService_Execute_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -165,7 +153,6 @@ func (c *sQLServiceClient) GenerateRestoreSQL(ctx context.Context, in *GenerateR
 // for forward compatibility.
 type SQLServiceServer interface {
 	Query(context.Context, *QueryRequest) (*QueryResponse, error)
-	Execute(context.Context, *ExecuteRequest) (*ExecuteResponse, error)
 	AdminExecute(grpc.BidiStreamingServer[AdminExecuteRequest, AdminExecuteResponse]) error
 	// SearchQueryHistories searches query histories for the caller.
 	SearchQueryHistories(context.Context, *SearchQueryHistoriesRequest) (*SearchQueryHistoriesResponse, error)
@@ -188,9 +175,6 @@ type UnimplementedSQLServiceServer struct{}
 
 func (UnimplementedSQLServiceServer) Query(context.Context, *QueryRequest) (*QueryResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Query not implemented")
-}
-func (UnimplementedSQLServiceServer) Execute(context.Context, *ExecuteRequest) (*ExecuteResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Execute not implemented")
 }
 func (UnimplementedSQLServiceServer) AdminExecute(grpc.BidiStreamingServer[AdminExecuteRequest, AdminExecuteResponse]) error {
 	return status.Errorf(codes.Unimplemented, "method AdminExecute not implemented")
@@ -251,24 +235,6 @@ func _SQLService_Query_Handler(srv interface{}, ctx context.Context, dec func(in
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(SQLServiceServer).Query(ctx, req.(*QueryRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _SQLService_Execute_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ExecuteRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(SQLServiceServer).Execute(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: SQLService_Execute_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SQLServiceServer).Execute(ctx, req.(*ExecuteRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -416,10 +382,6 @@ var SQLService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Query",
 			Handler:    _SQLService_Query_Handler,
-		},
-		{
-			MethodName: "Execute",
-			Handler:    _SQLService_Execute_Handler,
 		},
 		{
 			MethodName: "SearchQueryHistories",
