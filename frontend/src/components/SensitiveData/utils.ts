@@ -13,7 +13,7 @@ export const getMaskDataIdentifier = (maskData: MaskData): string => {
 export const convertSensitiveColumnToDatabaseResource = (
   sensitiveColumn: SensitiveColumn
 ): DatabaseResource => ({
-  databaseName: sensitiveColumn.database.name,
+  databaseFullName: sensitiveColumn.database.name,
   schema: sensitiveColumn.maskData.schema,
   table: sensitiveColumn.maskData.table,
   column: sensitiveColumn.maskData.column,
@@ -41,12 +41,12 @@ export const isCurrentColumnException = (
 export const getExpressionsForDatabaseResource = (
   databaseResource: DatabaseResource
 ): string[] => {
-  const resourceName = extractDatabaseResourceName(
-    databaseResource.databaseName
+  const { instanceName, databaseName } = extractDatabaseResourceName(
+    databaseResource.databaseFullName
   );
   const expressions = [
-    `resource.instance_id == "${resourceName.instanceName}"`,
-    `resource.database_name == "${resourceName.databaseName}"`,
+    `resource.instance_id == "${instanceName}"`,
+    `resource.database_name == "${databaseName}"`,
   ];
   if (databaseResource.schema) {
     expressions.push(`resource.schema_name == "${databaseResource.schema}"`);

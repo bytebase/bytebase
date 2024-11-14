@@ -133,7 +133,7 @@ const extractDatabaseResourcesFromProps = (): Pick<
   const { databaseResource } = props;
   if (
     !databaseResource ||
-    !isValidDatabaseName(databaseResource.databaseName)
+    !isValidDatabaseName(databaseResource.databaseFullName)
   ) {
     return {
       databaseResources: [],
@@ -180,7 +180,7 @@ const doCreateIssue = async () => {
         ? "bb.issue.grant.request.querier"
         : "bb.issue.grant.request.exporter",
       state.databaseResources?.map(
-        (databaseResource) => databaseResource.databaseName
+        (databaseResource) => databaseResource.databaseFullName
       ) ?? []
     ),
     description: state.description,
