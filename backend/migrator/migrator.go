@@ -679,7 +679,7 @@ func ExecuteMigrationWithFunc(ctx context.Context, driverCtx context.Context, s 
 func BeginMigration(ctx context.Context, stores *store.Store, m *dbdriver.MigrationInfo, prevSchema, statement string, sheetID *int) (string, error) {
 	// Phase 1 - Pre-check before executing migration
 	// Check if the same migration version has already been applied.
-	if list, err := stores.ListInstanceChangeHistory(ctx, &store.FindInstanceChangeHistoryMessage{
+	if list, err := stores.ListInstanceChangeHistoryForMigrator(ctx, &store.FindInstanceChangeHistoryMessage{
 		InstanceID: m.InstanceID,
 		DatabaseID: m.DatabaseID,
 		Version:    &m.Version,
