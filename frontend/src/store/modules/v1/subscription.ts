@@ -52,6 +52,9 @@ export const useSubscriptionV1Store = defineStore("subscription_v1", {
           return limit;
         default: {
           const seatCount = state.subscription?.seatCount ?? 0;
+          if (seatCount < 0) {
+            return Number.MAX_VALUE;
+          }
           if (seatCount === 0) {
             return limit;
           }

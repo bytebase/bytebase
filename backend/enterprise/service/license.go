@@ -139,6 +139,9 @@ func (s *LicenseService) GetPlanLimitValue(ctx context.Context, name enterprise.
 				// to compatible with old license.
 				return limit
 			}
+			if subscription.Seat < 0 {
+				return math.MaxInt
+			}
 			return subscription.Seat
 		}
 	}
