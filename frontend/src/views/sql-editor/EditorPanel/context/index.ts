@@ -10,7 +10,10 @@ import {
 } from "vue";
 import { useConnectionOfCurrentSQLEditorTab } from "@/store";
 import type { SQLEditorTab } from "@/types";
-import { instanceV1SupportsExternalTable } from "@/utils";
+import {
+  instanceV1SupportsExternalTable,
+  instanceV1SupportsPackage,
+} from "@/utils";
 import {
   defaultViewState,
   typeToView,
@@ -45,6 +48,9 @@ export const provideEditorPanelContext = (base: {
     ];
     if (instanceV1SupportsExternalTable(instance.value)) {
       views.push("EXTERNAL_TABLES");
+    }
+    if (instanceV1SupportsPackage(instance.value)) {
+      views.push("PACKAGES");
     }
     views.push("DIAGRAM");
     return views;

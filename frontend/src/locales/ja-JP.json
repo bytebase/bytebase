@@ -1426,7 +1426,8 @@
     "successfully-synced-schema": "スキーマの同期が完了しました",
     "create": "データベースの作成",
     "procedures": "ストアドプロシージャ",
-    "partitions": "パーティション"
+    "partitions": "パーティション",
+    "packages": "パッケージ"
   },
   "instance": {
     "select": "インスタンスの選択",

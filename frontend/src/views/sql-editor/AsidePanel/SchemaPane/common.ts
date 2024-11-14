@@ -11,6 +11,7 @@ import type {
   ForeignKeyMetadata,
   FunctionMetadata,
   IndexMetadata,
+  PackageMetadata,
   ProcedureMetadata,
   SchemaMetadata,
   TableMetadata,
@@ -28,6 +29,7 @@ export type NodeType =
   | "view"
   | "procedure"
   | "function"
+  | "package"
   | "partition-table"
   | "column"
   | "index"
@@ -76,6 +78,10 @@ export type RichProcedureMetadata = RichSchemaMetadata & {
   procedure: ProcedureMetadata;
   position: number;
 };
+export type RichPackageMetadata = RichSchemaMetadata & {
+  package: PackageMetadata;
+  position: number;
+};
 export type RichFunctionMetadata = RichSchemaMetadata & {
   function: FunctionMetadata;
   position: number;
@@ -114,13 +120,15 @@ export type NodeTarget<T extends NodeType = NodeType> = T extends "database"
                     ? RichViewMetadata
                     : T extends "procedure"
                       ? RichProcedureMetadata
-                      : T extends "function"
-                        ? RichFunctionMetadata
-                        : T extends "expandable-text"
-                          ? TextTarget<true, any>
-                          : T extends "error"
-                            ? ErrorTarget
-                            : never;
+                      : T extends "package"
+                        ? RichPackageMetadata
+                        : T extends "function"
+                          ? RichFunctionMetadata
+                          : T extends "expandable-text"
+                            ? TextTarget<true, any>
+                            : T extends "error"
+                              ? ErrorTarget
+                              : never;
 
 export type TreeState = "UNSET" | "LOADING" | "READY";
 
@@ -149,6 +157,7 @@ export const LeafNodeTypes: readonly NodeType[] = [
   "index",
   "foreign-key",
   "procedure",
+  "package",
   "function",
   "dependent-column",
   "error",
@@ -248,6 +257,19 @@ export const keyForNodeTarget = <T extends NodeType>(
       `procedures/${keyWithPosition(procedure.name, position)}`,
     ].join("/");
   }
+  if (type === "package") {
+    const {
+      db,
+      schema,
+      package: pack,
+      position,
+    } = target as NodeTarget<"package">;
+    return [
+      db.name,
+      `schemas/${schema.name}`,
+      `packages/${keyWithPosition(pack.name, position)}`,
+    ].join("/");
+  }
   if (type === "function") {
     const {
       db,
@@ -313,6 +335,9 @@ const readableTextForNodeTarget = <T extends NodeType>(
   if (type === "procedure") {
     return (target as RichProcedureMetadata).procedure.name;
   }
+  if (type === "package") {
+    return (target as RichPackageMetadata).package.name;
+  }
   if (type === "function") {
     return (target as RichFunctionMetadata).function.name;
   }
@@ -361,6 +386,7 @@ const createDummyNode = (
     | "table"
     | "view"
     | "procedure"
+    | "package"
     | "function",
   parent: TreeNode,
   key: string | number = 0,
@@ -650,6 +676,19 @@ const mapProcedureNodes = (
   }
   return children;
 };
+const mapPackageNodes = (
+  target: NodeTarget<"schema">,
+  parent: TreeNode<"expandable-text">
+) => {
+  const { schema } = target;
+  const children = schema.packages.map((pack, position) =>
+    mapTreeNodeByType("package", { ...target, package: pack, position }, parent)
+  );
+  if (children.length === 0) {
+    return [createDummyNode("package", parent)];
+  }
+  return children;
+};
 const mapFunctionNodes = (
   target: NodeTarget<"schema">,
   parent: TreeNode<"expandable-text">
@@ -722,6 +761,15 @@ const buildSchemaNodeChildren = (
     );
     procedureNode.children = mapProcedureNodes(target, procedureNode);
     children.push(procedureNode);
+  }
+
+  // Show "Packages" if there's at least 1 package
+  if (schema.packages.length > 0) {
+    const packageNode = createExpandableTextNode("package", parent, () =>
+      t("db.packages")
+    );
+    packageNode.children = mapPackageNodes(target, packageNode);
+    children.push(packageNode);
   }
 
   // Show "Functions" if there's at least 1 function
