@@ -67,12 +67,11 @@ const syncNow = async () => {
       /* refresh */ true
     );
 
-    const updated = await useDBSchemaV1Store().getOrFetchDatabaseMetadata({
+    await useDBSchemaV1Store().getOrFetchDatabaseMetadata({
       database: database.value.name,
       skipCache: true,
       view: DatabaseMetadataView.DATABASE_METADATA_VIEW_FULL,
     });
-    console.log(JSON.stringify(updated, null, "  "));
   } finally {
     isSyncing.value = false;
   }
