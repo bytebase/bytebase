@@ -1,3 +1,14 @@
+- description: Go
+  statement: GO
+  defaultDatabase: db
+  metadata: |-
+    {
+      "name":  "db"
+    }
+  querySpan:
+    type: 1
+    results: []
+    sourcecolumns: []
 - description: Declare variable
   statement: DECLARE @a INT = 1;
   defaultDatabase: db
