@@ -25,7 +25,7 @@ func (l *queryTypeListener) EnterTsql_file(ctx *parser.Tsql_fileContext) {
 func (l *queryTypeListener) getQueryTypeForTSqlFile(file parser.ITsql_fileContext) (base.QueryType, error) {
 	if len(file.AllBatch_without_go()) == 0 {
 		// Multiple go statement only.
-		return base.QueryTypeUnknown, nil
+		return base.Select, nil
 	}
 
 	// TODO(zp): Make sure the splitter had handled the GO statement.
@@ -61,7 +61,7 @@ func (l *queryTypeListener) getQueryTypeForSQLClause(clause parser.ISql_clausesC
 		return base.DDL, nil
 	case clause.Another_statement() != nil:
 		// Treat SAFE SET as select statement.
-		if clause.Another_statement().Set_statement() != nil || clause.Another_statement().Setuser_statement() != nil {
+		if clause.Another_statement().Set_statement() != nil || clause.Another_statement().Setuser_statement() != nil || clause.Another_statement().Declare_statement() != nil {
 			return base.Select, nil
 		}
 		return base.QueryTypeUnknown, nil
