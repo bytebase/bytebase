@@ -336,10 +336,7 @@ const useExecuteSQL = () => {
 
         if (resultSet.error) {
           // The error message should be consistent with the one from the backend.
-          if (
-            resultSet.error === "Support SELECT sql statement only" &&
-            resultSet.status === Status.INVALID_ARGUMENT
-          ) {
+          if (isOnlySelectError(resultSet)) {
             const database = databaseStore.getDatabaseByName(
               params.connection.database
             );
@@ -374,6 +371,22 @@ const useExecuteSQL = () => {
     events,
     execute,
   };
+};
+
+const isOnlySelectError = (resultSet: SQLResultSetV1) => {
+  if (
+    resultSet.error === "Support SELECT sql statement only" &&
+    resultSet.status === Status.INVALID_ARGUMENT
+  ) {
+    return true;
+  }
+  if (
+    resultSet.error.match(/disallow execute (DML|DDL) statement/) &&
+    resultSet.status === Status.PERMISSION_DENIED
+  ) {
+    return true;
+  }
+  return false;
 };
 
 export { useExecuteSQL };
