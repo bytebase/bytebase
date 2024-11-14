@@ -1,5 +1,9 @@
 <template>
-  <img class="h-4 w-auto mx-auto" :class="customClass" :src="icon" />
+  <img
+    class="h-4 w-auto mx-auto object-contain"
+    :class="customClass"
+    :src="icon"
+  />
 </template>
 
 <script lang="ts" setup>
