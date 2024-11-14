@@ -432,7 +432,7 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 				if !strings.HasSuffix(strings.TrimRightFunc(ct, unicode.IsSpace), ";") {
 					ct += ";"
 				}
-				command.Text = fmt.Sprintf("SET LOCAL ROLE NONE;%sSET LOCAL ROLE '%s';", command.Text, owner)
+				command.Text = fmt.Sprintf("SET LOCAL ROLE NONE;%sSET LOCAL ROLE '%s';", ct, owner)
 			}
 			tmpCommands = append(tmpCommands, command)
 			tmpOriginalIndex = append(tmpOriginalIndex, originalIndex[i])
