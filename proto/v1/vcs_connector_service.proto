@@ -22,6 +22,7 @@ service VCSConnectorService {
     option (google.api.method_signature) = "parent,vcsConnector";
     option (bytebase.v1.permission) = "bb.vcsConnectors.create";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = true;
   }
 
   rpc GetVCSConnector(GetVCSConnectorRequest) returns (VCSConnector) {
@@ -46,6 +47,7 @@ service VCSConnectorService {
     option (google.api.method_signature) = "vcs_connector,update_mask";
     option (bytebase.v1.permission) = "bb.vcsConnectors.update";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = true;
   }
 
   rpc DeleteVCSConnector(DeleteVCSConnectorRequest) returns (google.protobuf.Empty) {
@@ -53,6 +55,7 @@ service VCSConnectorService {
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.vcsConnectors.delete";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = true;
   }
 }
 

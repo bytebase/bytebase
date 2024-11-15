@@ -5522,6 +5522,7 @@ export const RolloutServiceDefinition = {
             new Uint8Array([18, 98, 98, 46, 114, 111, 108, 108, 111, 117, 116, 115, 46, 99, 114, 101, 97, 116, 101]),
           ],
           800016: [new Uint8Array([1])],
+          800024: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               43,

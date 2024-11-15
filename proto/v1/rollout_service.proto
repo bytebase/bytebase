@@ -36,6 +36,7 @@ service RolloutService {
     option (google.api.method_signature) = "parent,rollout";
     option (bytebase.v1.permission) = "bb.rollouts.create";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = true;
   }
 
   rpc PreviewRollout(PreviewRolloutRequest) returns (Rollout) {
