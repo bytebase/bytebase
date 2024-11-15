@@ -266,6 +266,24 @@ func getCreateTaskRunLog(ctx context.Context, taskRunUID int, s *store.Store, pr
 	}
 }
 
+func getUseDatabaseOwner(ctx context.Context, stores *store.Store, instance *store.InstanceMessage, database *store.DatabaseMessage) (bool, error) {
+	if instance.Engine != storepb.Engine_POSTGRES {
+		return false, nil
+	}
+
+	// Check the project setting to see if we should use the database owner.
+	project, err := stores.GetProjectV2(ctx, &store.FindProjectMessage{ResourceID: &database.ProjectID})
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to get project")
+	}
+
+	if project.Setting == nil {
+		return false, nil
+	}
+
+	return project.Setting.PostgresDatabaseTenantMode, nil
+}
+
 func doMigration(
 	ctx context.Context,
 	driverCtx context.Context,
@@ -280,7 +298,13 @@ func doMigration(
 	instance := mc.instance
 	database := mc.database
 
-	driver, err := dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{})
+	useDBOwner, err := getUseDatabaseOwner(ctx, stores, instance, database)
+	if err != nil {
+		return "", "", errors.Wrapf(err, "failed to check if we should use database owner")
+	}
+	driver, err := dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{
+		UseDatabaseOwner: useDBOwner,
+	})
 	if err != nil {
 		return "", "", errors.Wrapf(err, "failed to get driver connection for instance %q", instance.ResourceID)
 	}

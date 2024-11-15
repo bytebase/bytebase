@@ -1322,7 +1322,12 @@ func (s *SQLService) SQLReviewCheck(
 		return storepb.Advice_ERROR, nil, status.Errorf(codes.Internal, "failed to create a catalog: %v", err)
 	}
 
-	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{UseDatabaseOwner: true})
+	// todo: do not use database owner for QUERY()
+	useDatabaseOwner, err := getUseDatabaseOwner(ctx, s.store, instance, database)
+	if err != nil {
+		return storepb.Advice_ERROR, nil, status.Errorf(codes.Internal, "failed to get use database owner: %v", err)
+	}
+	driver, err := s.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{UseDatabaseOwner: useDatabaseOwner})
 	if err != nil {
 		return storepb.Advice_ERROR, nil, status.Errorf(codes.Internal, "failed to get database driver: %v", err)
 	}
@@ -1376,6 +1381,24 @@ func (s *SQLService) SQLReviewCheck(
 	}
 
 	return adviceLevel, advices, nil
+}
+
+func getUseDatabaseOwner(ctx context.Context, stores *store.Store, instance *store.InstanceMessage, database *store.DatabaseMessage) (bool, error) {
+	if instance.Engine != storepb.Engine_POSTGRES {
+		return false, nil
+	}
+
+	// Check the project setting to see if we should use the database owner.
+	project, err := stores.GetProjectV2(ctx, &store.FindProjectMessage{ResourceID: &database.ProjectID})
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to get project")
+	}
+
+	if project.Setting == nil {
+		return false, nil
+	}
+
+	return project.Setting.PostgresDatabaseTenantMode, nil
 }
 
 func convertToV1Advice(advice *storepb.Advice) *v1pb.Advice {
