@@ -173,7 +173,12 @@ func (e *StatementAdviseExecutor) runReview(
 		return nil, common.Wrapf(err, common.Internal, "failed to create a catalog")
 	}
 
-	driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{UseDatabaseOwner: true})
+	// todo: do not use database owner for QUERY()
+	useDatabaseOwner, err := getUseDatabaseOwner(ctx, e.store, instance, database)
+	if err != nil {
+		return nil, common.Wrapf(err, common.Internal, "failed to get use database owner")
+	}
+	driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{UseDatabaseOwner: useDatabaseOwner})
 	if err != nil {
 		return nil, err
 	}
