@@ -176,7 +176,13 @@ func (exec *DataUpdateExecutor) backupData(
 		defer backupDriver.Close(driverCtx)
 	}
 
-	driver, err := exec.dbFactory.GetAdminDatabaseDriver(driverCtx, instance, database, db.ConnectionContext{})
+	useDatabaseOwner, err := getUseDatabaseOwner(ctx, exec.store, instance, database)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to check use database owner")
+	}
+	driver, err := exec.dbFactory.GetAdminDatabaseDriver(driverCtx, instance, database, db.ConnectionContext{
+		UseDatabaseOwner: useDatabaseOwner,
+	})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get database driver")
 	}

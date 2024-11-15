@@ -440,9 +440,11 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 	}
 
 	if isPlsql {
-		// USE SET SESSION ROLE to set the role for the current session.
-		if _, err := conn.ExecContext(ctx, fmt.Sprintf("SET SESSION ROLE '%s'", owner)); err != nil {
-			return 0, errors.Wrapf(err, "failed to set role to database owner %q", owner)
+		if driver.connectionCtx.UseDatabaseOwner {
+			// USE SET SESSION ROLE to set the role for the current session.
+			if _, err := conn.ExecContext(ctx, fmt.Sprintf("SET SESSION ROLE '%s'", owner)); err != nil {
+				return 0, errors.Wrapf(err, "failed to set role to database owner %q", owner)
+			}
 		}
 		opts.LogCommandExecute([]int32{0})
 		if _, err := conn.ExecContext(ctx, statement); err != nil {
@@ -481,9 +483,11 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 				opts.LogTransactionControl(storepb.TaskRunLog_TransactionControl_ROLLBACK, rerr)
 			}()
 
-			// Set the current transaction role to the database owner so that the owner of created objects will be the same as the database owner.
-			if _, err := tx.Exec(ctx, fmt.Sprintf("SET LOCAL ROLE '%s'", owner)); err != nil {
-				return err
+			if driver.connectionCtx.UseDatabaseOwner {
+				// Set the current transaction role to the database owner so that the owner of created objects will be the same as the database owner.
+				if _, err := tx.Exec(ctx, fmt.Sprintf("SET LOCAL ROLE '%s'", owner)); err != nil {
+					return err
+				}
 			}
 
 			for i, command := range commands {
@@ -534,9 +538,11 @@ func (driver *Driver) Execute(ctx context.Context, statement string, opts db.Exe
 		}
 	}
 
-	// USE SET SESSION ROLE to set the role for the current session.
-	if _, err := conn.ExecContext(ctx, fmt.Sprintf("SET SESSION ROLE '%s'", owner)); err != nil {
-		return 0, errors.Wrapf(err, "failed to set role to database owner %q", owner)
+	if driver.connectionCtx.UseDatabaseOwner {
+		// USE SET SESSION ROLE to set the role for the current session.
+		if _, err := conn.ExecContext(ctx, fmt.Sprintf("SET SESSION ROLE '%s'", owner)); err != nil {
+			return 0, errors.Wrapf(err, "failed to set role to database owner %q", owner)
+		}
 	}
 	// Run non-transaction statements at the end.
 	for i, stmt := range nonTransactionAndSetRoleStmts {
