@@ -514,12 +514,9 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, request *v1pb.BatchR
 		return nil, status.Errorf(codes.NotFound, "rollout %v not found", rolloutID)
 	}
 
-	issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &rolloutID})
+	issueN, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &rolloutID})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to find issue, error: %v", err)
-	}
-	if issue == nil {
-		return nil, status.Errorf(codes.NotFound, "issue not found for rollout %v", rolloutID)
 	}
 
 	stages, err := s.store.ListStageV2(ctx, rolloutID)
@@ -570,7 +567,7 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, request *v1pb.BatchR
 		return nil, status.Errorf(codes.Internal, "user not found")
 	}
 
-	ok, err = s.canUserRunStageTasks(ctx, user, issue, stageToRun)
+	ok, err = s.canUserRunStageTasks(ctx, user, project, issueN, stageToRun, rollout.CreatorUID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to check if the user can run tasks, error: %v", err)
 	}
@@ -578,16 +575,22 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, request *v1pb.BatchR
 		return nil, status.Errorf(codes.PermissionDenied, "Not allowed to run tasks")
 	}
 
-	approved, err := utils.CheckIssueApproved(issue)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to check if the issue is approved, error: %v", err)
-	}
+	// Don't need to check if issue is approved if
+	// the user has bb.taskruns.create permission.
 	ok, err = s.iamManager.CheckPermission(ctx, iam.PermissionTaskRunsCreate, user)
 	if err != nil {
 		return nil, err
 	}
-	if !approved && !ok {
-		return nil, status.Errorf(codes.FailedPrecondition, "cannot run the tasks because the issue is not approved")
+	if !ok {
+		if issueN != nil {
+			approved, err := utils.CheckIssueApproved(issueN)
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "failed to check if the issue is approved, error: %v", err)
+			}
+			if !approved {
+				return nil, status.Errorf(codes.FailedPrecondition, "cannot run the tasks because the issue is not approved")
+			}
+		}
 	}
 
 	var taskRunCreates []*store.TaskRunMessage
@@ -616,21 +619,22 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, request *v1pb.BatchR
 		return nil, status.Errorf(codes.Internal, "failed to create pending task runs, error %v", err)
 	}
 
-	if err := s.store.CreateIssueCommentTaskUpdateStatus(ctx, issue.UID, request.Tasks, storepb.IssueCommentPayload_TaskUpdate_PENDING, user.ID, request.Reason); err != nil {
-		slog.Warn("failed to create issue comment", "issueUID", issue.UID, log.BBError(err))
+	if issueN != nil {
+		if err := s.store.CreateIssueCommentTaskUpdateStatus(ctx, issueN.UID, request.Tasks, storepb.IssueCommentPayload_TaskUpdate_PENDING, user.ID, request.Reason); err != nil {
+			slog.Warn("failed to create issue comment", "issueUID", issueN.UID, log.BBError(err))
+		}
+		s.webhookManager.CreateEvent(ctx, &webhook.Event{
+			Actor:   user,
+			Type:    webhook.EventTypeTaskRunStatusUpdate,
+			Comment: request.Reason,
+			Issue:   webhook.NewIssue(issueN),
+			Project: webhook.NewProject(issueN.Project),
+			TaskRunStatusUpdate: &webhook.EventTaskRunStatusUpdate{
+				Title:  issueN.Title,
+				Status: api.TaskRunPending.String(),
+			},
+		})
 	}
-
-	s.webhookManager.CreateEvent(ctx, &webhook.Event{
-		Actor:   user,
-		Type:    webhook.EventTypeTaskRunStatusUpdate,
-		Comment: request.Reason,
-		Issue:   webhook.NewIssue(issue),
-		Project: webhook.NewProject(issue.Project),
-		TaskRunStatusUpdate: &webhook.EventTaskRunStatusUpdate{
-			Title:  issue.Title,
-			Status: api.TaskRunPending.String(),
-		},
-	})
 
 	// Tickle task run scheduler.
 	s.stateCfg.TaskRunTickleChan <- 0
@@ -662,12 +666,9 @@ func (s *RolloutService) BatchSkipTasks(ctx context.Context, request *v1pb.Batch
 		return nil, status.Errorf(codes.NotFound, "rollout %v not found", rolloutID)
 	}
 
-	issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &rolloutID})
+	issueN, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &rolloutID})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to find issue, error: %v", err)
-	}
-	if issue == nil {
-		return nil, status.Errorf(codes.NotFound, "issue not found for rollout %v", rolloutID)
 	}
 
 	tasks, err := s.store.ListTasks(ctx, &api.TaskFind{PipelineID: &rolloutID})
@@ -714,7 +715,7 @@ func (s *RolloutService) BatchSkipTasks(ctx context.Context, request *v1pb.Batch
 		if !ok {
 			return nil, status.Errorf(codes.Internal, "stage ID %v not found in stages of rollout %v", stageID, rolloutID)
 		}
-		ok, err = s.canUserSkipStageTasks(ctx, user, issue, stage)
+		ok, err = s.canUserSkipStageTasks(ctx, user, project, issueN, stage, rollout.CreatorUID)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to check if the user can run tasks, error: %v", err)
 		}
@@ -731,22 +732,24 @@ func (s *RolloutService) BatchSkipTasks(ctx context.Context, request *v1pb.Batch
 		s.stateCfg.TaskSkippedOrDoneChan <- task.ID
 	}
 
-	if err := s.store.CreateIssueCommentTaskUpdateStatus(ctx, issue.UID, request.Tasks, storepb.IssueCommentPayload_TaskUpdate_SKIPPED, user.ID, request.Reason); err != nil {
-		slog.Warn("failed to create issue comment", "issueUID", issue.UID, log.BBError(err))
-	}
+	if issueN != nil {
+		if err := s.store.CreateIssueCommentTaskUpdateStatus(ctx, issueN.UID, request.Tasks, storepb.IssueCommentPayload_TaskUpdate_SKIPPED, user.ID, request.Reason); err != nil {
+			slog.Warn("failed to create issue comment", "issueUID", issueN.UID, log.BBError(err))
+		}
 
-	s.webhookManager.CreateEvent(ctx, &webhook.Event{
-		Actor:   user,
-		Type:    webhook.EventTypeTaskRunStatusUpdate,
-		Comment: request.Reason,
-		Issue:   webhook.NewIssue(issue),
-		Project: webhook.NewProject(issue.Project),
-		TaskRunStatusUpdate: &webhook.EventTaskRunStatusUpdate{
-			Title:         issue.Title,
-			Status:        api.TaskRunSkipped.String(),
-			SkippedReason: request.Reason,
-		},
-	})
+		s.webhookManager.CreateEvent(ctx, &webhook.Event{
+			Actor:   user,
+			Type:    webhook.EventTypeTaskRunStatusUpdate,
+			Comment: request.Reason,
+			Issue:   webhook.NewIssue(issueN),
+			Project: webhook.NewProject(issueN.Project),
+			TaskRunStatusUpdate: &webhook.EventTaskRunStatusUpdate{
+				Title:         issueN.Title,
+				Status:        api.TaskRunSkipped.String(),
+				SkippedReason: request.Reason,
+			},
+		})
+	}
 
 	return &v1pb.BatchSkipTasksResponse{}, nil
 }
@@ -780,12 +783,9 @@ func (s *RolloutService) BatchCancelTaskRuns(ctx context.Context, request *v1pb.
 		return nil, status.Errorf(codes.NotFound, "rollout %v not found", rolloutID)
 	}
 
-	issue, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &rolloutID})
+	issueN, err := s.store.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &rolloutID})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to find issue, error: %v", err)
-	}
-	if issue == nil {
-		return nil, status.Errorf(codes.NotFound, "issue not found for rollout %v", rolloutID)
 	}
 
 	stages, err := s.store.ListStageV2(ctx, rolloutID)
@@ -819,7 +819,7 @@ func (s *RolloutService) BatchCancelTaskRuns(ctx context.Context, request *v1pb.
 		return nil, status.Errorf(codes.NotFound, "user %v not found", principalID)
 	}
 
-	ok, err = s.canUserCancelStageTaskRun(ctx, user, issue, stage)
+	ok, err = s.canUserCancelStageTaskRun(ctx, user, project, issueN, stage, rollout.CreatorUID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to check if the user can run tasks, error: %v", err)
 	}
@@ -866,21 +866,23 @@ func (s *RolloutService) BatchCancelTaskRuns(ctx context.Context, request *v1pb.
 		return nil, status.Errorf(codes.Internal, "failed to batch patch task run status to canceled, error: %v", err)
 	}
 
-	if err := s.store.CreateIssueCommentTaskUpdateStatus(ctx, issue.UID, taskNames, storepb.IssueCommentPayload_TaskUpdate_CANCELED, user.ID, request.Reason); err != nil {
-		slog.Warn("failed to create issue comment", "issueUID", issue.UID, log.BBError(err))
-	}
+	if issueN != nil {
+		if err := s.store.CreateIssueCommentTaskUpdateStatus(ctx, issueN.UID, taskNames, storepb.IssueCommentPayload_TaskUpdate_CANCELED, user.ID, request.Reason); err != nil {
+			slog.Warn("failed to create issue comment", "issueUID", issueN.UID, log.BBError(err))
+		}
 
-	s.webhookManager.CreateEvent(ctx, &webhook.Event{
-		Actor:   user,
-		Type:    webhook.EventTypeTaskRunStatusUpdate,
-		Comment: request.Reason,
-		Issue:   webhook.NewIssue(issue),
-		Project: webhook.NewProject(issue.Project),
-		TaskRunStatusUpdate: &webhook.EventTaskRunStatusUpdate{
-			Title:  issue.Title,
-			Status: api.TaskRunCanceled.String(),
-		},
-	})
+		s.webhookManager.CreateEvent(ctx, &webhook.Event{
+			Actor:   user,
+			Type:    webhook.EventTypeTaskRunStatusUpdate,
+			Comment: request.Reason,
+			Issue:   webhook.NewIssue(issueN),
+			Project: webhook.NewProject(issueN.Project),
+			TaskRunStatusUpdate: &webhook.EventTaskRunStatusUpdate{
+				Title:  issueN.Title,
+				Status: api.TaskRunCanceled.String(),
+			},
+		})
+	}
 
 	return &v1pb.BatchCancelTaskRunsResponse{}, nil
 }
@@ -1357,9 +1359,9 @@ func GetValidRolloutPolicyForStage(ctx context.Context, stores *store.Store, lic
 }
 
 // canUserRunStageTasks returns if a user can run the tasks in a stage.
-func (s *RolloutService) canUserRunStageTasks(ctx context.Context, user *store.UserMessage, issue *store.IssueMessage, stage *store.StageMessage) (bool, error) {
+func (s *RolloutService) canUserRunStageTasks(ctx context.Context, user *store.UserMessage, project *store.ProjectMessage, issue *store.IssueMessage, stage *store.StageMessage, creatorUID int) (bool, error) {
 	// For data export issues, only the creator can run tasks.
-	if issue.Type == api.IssueDatabaseDataExport {
+	if issue != nil && issue.Type == api.IssueDatabaseDataExport {
 		return issue.Creator.ID == user.ID, nil
 	}
 
@@ -1378,9 +1380,9 @@ func (s *RolloutService) canUserRunStageTasks(ctx context.Context, user *store.U
 		return false, err
 	}
 
-	policy, err := s.store.GetProjectIamPolicy(ctx, issue.Project.UID)
+	policy, err := s.store.GetProjectIamPolicy(ctx, project.UID)
 	if err != nil {
-		return false, common.Wrapf(err, common.Internal, "failed to get project %d policy", issue.Project.UID)
+		return false, common.Wrapf(err, common.Internal, "failed to get project %d policy", project.UID)
 	}
 
 	roles := utils.GetUserFormattedRolesMap(ctx, s.store, user, policy.Policy)
@@ -1400,7 +1402,7 @@ func (s *RolloutService) canUserRunStageTasks(ctx context.Context, user *store.U
 		}
 	}
 
-	if user.ID == issue.Creator.ID {
+	if user.ID == creatorUID {
 		for _, issueRole := range p.IssueRoles {
 			if issueRole == "roles/CREATOR" {
 				return true, nil
@@ -1408,10 +1410,12 @@ func (s *RolloutService) canUserRunStageTasks(ctx context.Context, user *store.U
 		}
 	}
 
-	if lastApproverUID := getLastApproverUID(issue.Payload.GetApproval()); lastApproverUID != nil && *lastApproverUID == user.ID {
-		for _, issueRole := range p.IssueRoles {
-			if issueRole == "roles/LAST_APPROVER" {
-				return true, nil
+	if issue != nil {
+		if lastApproverUID := getLastApproverUID(issue.Payload.GetApproval()); lastApproverUID != nil && *lastApproverUID == user.ID {
+			for _, issueRole := range p.IssueRoles {
+				if issueRole == "roles/LAST_APPROVER" {
+					return true, nil
+				}
 			}
 		}
 	}
@@ -1420,12 +1424,12 @@ func (s *RolloutService) canUserRunStageTasks(ctx context.Context, user *store.U
 }
 
 // canUserCancelStageTaskRun returns if a user can cancel the task runs in a stage.
-func (s *RolloutService) canUserCancelStageTaskRun(ctx context.Context, user *store.UserMessage, issue *store.IssueMessage, stage *store.StageMessage) (bool, error) {
-	return s.canUserRunStageTasks(ctx, user, issue, stage)
+func (s *RolloutService) canUserCancelStageTaskRun(ctx context.Context, user *store.UserMessage, project *store.ProjectMessage, issue *store.IssueMessage, stage *store.StageMessage, creatorUID int) (bool, error) {
+	return s.canUserRunStageTasks(ctx, user, project, issue, stage, creatorUID)
 }
 
-func (s *RolloutService) canUserSkipStageTasks(ctx context.Context, user *store.UserMessage, issue *store.IssueMessage, stage *store.StageMessage) (bool, error) {
-	return s.canUserRunStageTasks(ctx, user, issue, stage)
+func (s *RolloutService) canUserSkipStageTasks(ctx context.Context, user *store.UserMessage, project *store.ProjectMessage, issue *store.IssueMessage, stage *store.StageMessage, creatorUID int) (bool, error) {
+	return s.canUserRunStageTasks(ctx, user, project, issue, stage, creatorUID)
 }
 
 func getLastApproverUID(approval *storepb.IssuePayloadApproval) *int {
