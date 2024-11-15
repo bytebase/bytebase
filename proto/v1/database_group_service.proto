@@ -36,6 +36,7 @@ service DatabaseGroupService {
     option (google.api.method_signature) = "parent,databaseGroup";
     option (bytebase.v1.permission) = "bb.projects.update";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = true;
   }
 
   rpc UpdateDatabaseGroup(UpdateDatabaseGroupRequest) returns (DatabaseGroup) {
@@ -46,6 +47,7 @@ service DatabaseGroupService {
     option (google.api.method_signature) = "database_group,update_mask";
     option (bytebase.v1.permission) = "bb.projects.update";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = true;
   }
 
   rpc DeleteDatabaseGroup(DeleteDatabaseGroupRequest) returns (google.protobuf.Empty) {
@@ -53,6 +55,7 @@ service DatabaseGroupService {
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.projects.update";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = true;
   }
 }
 

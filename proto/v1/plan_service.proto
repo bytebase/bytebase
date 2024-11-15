@@ -48,6 +48,7 @@ service PlanService {
     option (google.api.method_signature) = "parent,plan";
     option (bytebase.v1.permission) = "bb.plans.create";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = true;
   }
 
   // UpdatePlan updates the plan.
@@ -60,6 +61,7 @@ service PlanService {
     option (google.api.method_signature) = "plan,update_mask";
     option (bytebase.v1.permission) = "bb.plans.update";
     option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.audit) = true;
   }
 
   rpc ListPlanCheckRuns(ListPlanCheckRunsRequest) returns (ListPlanCheckRunsResponse) {

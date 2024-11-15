@@ -36,6 +36,7 @@ service GroupService {
     option (google.api.method_signature) = "group";
     option (bytebase.v1.permission) = "bb.groups.create";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = true;
   }
 
   // UpdateGroup updates the group.
@@ -48,6 +49,7 @@ service GroupService {
     option (google.api.method_signature) = "group,update_mask";
     option (bytebase.v1.permission) = "bb.groups.update";
     option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.audit) = true;
   }
 
   rpc DeleteGroup(DeleteGroupRequest) returns (google.protobuf.Empty) {
@@ -55,6 +57,7 @@ service GroupService {
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.groups.delete";
     option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.audit) = true;
   }
 }
 

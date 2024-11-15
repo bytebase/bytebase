@@ -31,6 +31,7 @@ service IssueService {
     // XXX: issues.action needs respective plans.action and rollouts.action permissions if the issue type is change database.
     option (bytebase.v1.permission) = "bb.issues.create";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = true;
   }
 
   rpc ListIssues(ListIssuesRequest) returns (ListIssuesResponse) {
@@ -58,6 +59,7 @@ service IssueService {
     option (google.api.method_signature) = "issue,update_mask";
     option (bytebase.v1.permission) = "bb.issues.update";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = true;
   }
 
   rpc ListIssueComments(ListIssueCommentsRequest) returns (ListIssueCommentsResponse) {
@@ -75,6 +77,7 @@ service IssueService {
     option (google.api.method_signature) = "parent,issue_comment";
     option (bytebase.v1.permission) = "bb.issueComments.create";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = true;
   }
 
   rpc UpdateIssueComment(UpdateIssueCommentRequest) returns (IssueComment) {
@@ -85,6 +88,7 @@ service IssueService {
     option (google.api.method_signature) = "parent,issue_comment,update_mask";
     option (bytebase.v1.permission) = "bb.issueComments.update";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = true;
   }
 
   rpc BatchUpdateIssuesStatus(BatchUpdateIssuesStatusRequest) returns (BatchUpdateIssuesStatusResponse) {
@@ -94,6 +98,7 @@ service IssueService {
     };
     option (bytebase.v1.permission) = "bb.issues.update";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = true;
   }
 
   // ApproveIssue approves the issue.
@@ -104,6 +109,7 @@ service IssueService {
       body: "*"
     };
     option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.audit) = true;
   }
 
   // RejectIssue rejects the issue.
@@ -114,6 +120,7 @@ service IssueService {
       body: "*"
     };
     option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.audit) = true;
   }
 
   // RequestIssue requests the issue.
@@ -124,6 +131,7 @@ service IssueService {
       body: "*"
     };
     option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.audit) = true;
   }
 }
 
