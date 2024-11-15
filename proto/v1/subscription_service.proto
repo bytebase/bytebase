@@ -16,11 +16,13 @@ service SubscriptionService {
     option (google.api.method_signature) = "";
     option (bytebase.v1.allow_without_credential) = true;
   }
+
   rpc GetFeatureMatrix(GetFeatureMatrixRequest) returns (FeatureMatrix) {
     option (google.api.http) = {get: "/v1/feature"};
     option (google.api.method_signature) = "";
     option (bytebase.v1.allow_without_credential) = true;
   }
+
   rpc UpdateSubscription(UpdateSubscriptionRequest) returns (Subscription) {
     option (google.api.http) = {
       patch: "/v1/subscription"

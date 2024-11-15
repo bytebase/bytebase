@@ -4202,6 +4202,7 @@ export const PlanServiceDefinition = {
           8410: [new Uint8Array([11, 112, 97, 114, 101, 110, 116, 44, 112, 108, 97, 110])],
           800010: [new Uint8Array([15, 98, 98, 46, 112, 108, 97, 110, 115, 46, 99, 114, 101, 97, 116, 101])],
           800016: [new Uint8Array([1])],
+          800024: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               37,
@@ -4262,6 +4263,7 @@ export const PlanServiceDefinition = {
           8410: [new Uint8Array([16, 112, 108, 97, 110, 44, 117, 112, 100, 97, 116, 101, 95, 109, 97, 115, 107])],
           800010: [new Uint8Array([15, 98, 98, 46, 112, 108, 97, 110, 115, 46, 117, 112, 100, 97, 116, 101])],
           800016: [new Uint8Array([2])],
+          800024: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               42,

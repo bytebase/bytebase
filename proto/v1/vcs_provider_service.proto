@@ -37,6 +37,7 @@ service VCSProviderService {
     option (google.api.method_signature) = "";
     option (bytebase.v1.permission) = "bb.vcsProviders.create";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = true;
   }
 
   rpc UpdateVCSProvider(UpdateVCSProviderRequest) returns (VCSProvider) {
@@ -47,12 +48,14 @@ service VCSProviderService {
     option (google.api.method_signature) = "vcs_provider,update_mask";
     option (bytebase.v1.permission) = "bb.vcsProviders.update";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = true;
   }
 
   rpc DeleteVCSProvider(DeleteVCSProviderRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {delete: "/v1/{name=vcsProviders/*}"};
     option (bytebase.v1.permission) = "bb.vcsProviders.delete";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = true;
   }
 
   rpc SearchVCSProviderRepositories(SearchVCSProviderRepositoriesRequest) returns (SearchVCSProviderRepositoriesResponse) {

@@ -1172,6 +1172,7 @@ export const VCSProviderServiceDefinition = {
             ]),
           ],
           800016: [new Uint8Array([1])],
+          800024: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               32,
@@ -1277,6 +1278,7 @@ export const VCSProviderServiceDefinition = {
             ]),
           ],
           800016: [new Uint8Array([1])],
+          800024: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               54,
@@ -1375,6 +1377,7 @@ export const VCSProviderServiceDefinition = {
             ]),
           ],
           800016: [new Uint8Array([1])],
+          800024: [new Uint8Array([1])],
           578365826: [
             new Uint8Array([
               27,
