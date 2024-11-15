@@ -155,7 +155,13 @@ func (e *StatementReportExecutor) runReport(ctx context.Context, instance *store
 	var explainCalculator getAffectedRowsFromExplain
 	var sqlTypes []string
 	var defaultSchema string
-	driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{})
+	useDatabaseOwner, err := getUseDatabaseOwner(ctx, e.store, instance, database)
+	if err != nil {
+		return nil, err
+	}
+	driver, err := e.dbFactory.GetAdminDatabaseDriver(ctx, instance, database, db.ConnectionContext{
+		UseDatabaseOwner: useDatabaseOwner,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -242,6 +248,24 @@ func (e *StatementReportExecutor) runReport(ctx context.Context, instance *store
 			},
 		},
 	}, nil
+}
+
+func getUseDatabaseOwner(ctx context.Context, stores *store.Store, instance *store.InstanceMessage, database *store.DatabaseMessage) (bool, error) {
+	if instance.Engine != storepb.Engine_POSTGRES {
+		return false, nil
+	}
+
+	// Check the project setting to see if we should use the database owner.
+	project, err := stores.GetProjectV2(ctx, &store.FindProjectMessage{ResourceID: &database.ProjectID})
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to get project")
+	}
+
+	if project.Setting == nil {
+		return false, nil
+	}
+
+	return project.Setting.PostgresDatabaseTenantMode, nil
 }
 
 type getAffectedRowsFromExplain func(context.Context, string) (int64, error)
