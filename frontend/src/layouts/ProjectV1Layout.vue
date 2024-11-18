@@ -10,11 +10,25 @@
           {{ $t("project.overview.info-slot-content") }}
         </BBAttention>
       </template>
-      <QuickActionPanel
+
+      <div
         v-if="!hideQuickActionPanel"
-        :quick-action-list="quickActionList"
-        class="mb-4"
-      />
+        class="overflow-hidden grid grid-cols-3 gap-x-2 gap-y-4 md:inline-flex items-stretch mb-4"
+      >
+        <NButton
+          v-for="(quickAction, index) in quickActionList"
+          :key="index"
+          @click="quickAction.action"
+        >
+          <template #icon>
+            <component :is="quickAction.icon" class="h-4 w-4" />
+          </template>
+          <NEllipsis>
+            {{ quickAction.title }}
+          </NEllipsis>
+        </NButton>
+      </div>
+
       <router-view
         v-if="hasPermission"
         :project-id="projectId"
@@ -30,17 +44,26 @@
   >
     <NSpin />
   </div>
+
+  <GrantRequestPanel
+    v-if="!!state.requestRole"
+    :project-name="project.name"
+    :role="state.requestRole"
+    @close="state.requestRole = undefined"
+  />
 </template>
 
 <script lang="ts" setup>
-import { NSpin } from "naive-ui";
+import { FileSearchIcon, FileDownIcon } from "lucide-vue-next";
+import { NButton, NEllipsis, NSpin } from "naive-ui";
 import type { ClientError } from "nice-grpc-web";
-import { computed, watchEffect } from "vue";
+import { computed, watchEffect, h, reactive } from "vue";
+import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 import { BBAttention } from "@/bbkit";
 import ArchiveBanner from "@/components/ArchiveBanner.vue";
+import GrantRequestPanel from "@/components/GrantRequestPanel";
 import { useRecentProjects } from "@/components/Project/useRecentProjects";
-import QuickActionPanel from "@/components/QuickActionPanel.vue";
 import NoPermissionPlaceholder from "@/components/misc/NoPermissionPlaceholder.vue";
 import {
   PROJECT_V1_ROUTE_DETAIL,
@@ -48,27 +71,44 @@ import {
 } from "@/router/dashboard/projectV1";
 import { WORKSPACE_ROUTE_MY_ISSUES } from "@/router/dashboard/workspaceRoutes";
 import { useRecentVisit } from "@/router/useRecentVisit";
-import { useAppFeature, useProjectV1Store, pushNotification } from "@/store";
+import {
+  hasFeature,
+  useAppFeature,
+  useProjectV1Store,
+  pushNotification,
+  usePermissionStore,
+  usePolicyByParentAndType,
+} from "@/store";
 import { projectNamePrefix } from "@/store/modules/v1/common";
 import { useDatabaseV1List } from "@/store/modules/v1/databaseList";
 import {
-  type QuickActionType,
   UNKNOWN_PROJECT_NAME,
   DEFAULT_PROJECT_NAME,
+  PresetRoleType,
 } from "@/types";
-import type { Permission } from "@/types/iam/permission";
 import { State } from "@/types/proto/v1/common";
+import { PolicyType } from "@/types/proto/v1/org_policy_service";
 import { hasProjectPermissionV2 } from "@/utils";
+
+interface LocalState {
+  requestRole?:
+    | PresetRoleType.PROJECT_QUERIER
+    | PresetRoleType.PROJECT_EXPORTER;
+}
 
 const props = defineProps<{
   projectId: string;
 }>();
+
+const state = reactive<LocalState>({});
 
 const route = useRoute();
 const router = useRouter();
 const recentProjects = useRecentProjects();
 const projectStore = useProjectV1Store();
 const { remove: removeVisit } = useRecentVisit();
+const permissionStore = usePermissionStore();
+const { t } = useI18n();
 
 const hideQuickAction = useAppFeature("bb.feature.console.hide-quick-action");
 const hideDefaultProject = useAppFeature("bb.feature.project.hide-default");
@@ -108,6 +148,13 @@ const project = computed(() =>
   projectStore.getProjectByName(projectName.value)
 );
 
+const exportDataPolicy = usePolicyByParentAndType(
+  computed(() => ({
+    parentPath: "",
+    policyType: PolicyType.DATA_EXPORT,
+  }))
+);
+
 const initialized = computed(
   () => project.value.name !== UNKNOWN_PROJECT_NAME && databaseListReady.value
 );
@@ -128,6 +175,10 @@ const hasPermission = computed(() => {
   );
 });
 
+const hasDBAWorkflowFeature = computed(() => {
+  return hasFeature("bb.feature.dba-workflow");
+});
+
 const allowEdit = computed(() => {
   if (project.value.state === State.DELETED) {
     return false;
@@ -136,43 +187,37 @@ const allowEdit = computed(() => {
   return hasProjectPermissionV2(project.value, "bb.projects.update");
 });
 
-// Permission check for project level quick actions.
-const quickActionProjectPermissionMap: Map<QuickActionType, Permission[]> =
-  new Map([
-    ["quickaction.bb.project.database.transfer", ["bb.projects.update"]],
-    [
-      "quickaction.bb.database.create",
-      ["bb.instances.list", "bb.issues.create"],
-    ],
-    ["quickaction.bb.issue.grant.request.querier", ["bb.issues.create"]],
-    ["quickaction.bb.issue.grant.request.exporter", ["bb.issues.create"]],
-  ]);
+const isProjectOwner = computed(() => {
+  const roles = permissionStore.currentRoleListInProjectV1(project.value);
+  return roles.includes(PresetRoleType.PROJECT_OWNER);
+});
 
-const getQuickActionList = (list: QuickActionType[]): QuickActionType[] => {
-  return list.filter((action) => {
-    if (!quickActionProjectPermissionMap.has(action)) {
-      return false;
-    }
-    const hasPermission = quickActionProjectPermissionMap
-      .get(action)
-      ?.every((permission) =>
-        hasProjectPermissionV2(project.value, permission)
-      );
-    return hasPermission;
-  });
-};
-
-const quickActionListForDatabase = computed((): QuickActionType[] => {
+const quickActionListForDatabase = computed(() => {
   if (project.value.state !== State.ACTIVE) {
     return [];
   }
 
-  const actions: QuickActionType[] = [
-    "quickaction.bb.database.create",
-    "quickaction.bb.project.database.transfer",
-    "quickaction.bb.issue.grant.request.querier",
-    "quickaction.bb.issue.grant.request.exporter",
-  ];
+  const actions = [];
+
+  if (
+    !isProjectOwner.value &&
+    hasProjectPermissionV2(project.value, "bb.issues.create") &&
+    hasDBAWorkflowFeature.value
+  ) {
+    actions.push({
+      title: t("custom-approval.risk-rule.risk.namespace.request_query"),
+      icon: () => h(FileSearchIcon),
+      action: () => (state.requestRole = PresetRoleType.PROJECT_QUERIER),
+    });
+
+    if (!exportDataPolicy.value?.exportDataPolicy?.disable) {
+      actions.push({
+        title: t("custom-approval.risk-rule.risk.namespace.request_export"),
+        icon: () => h(FileDownIcon),
+        action: () => (state.requestRole = PresetRoleType.PROJECT_EXPORTER),
+      });
+    }
+  }
 
   return actions;
 });
@@ -180,7 +225,7 @@ const quickActionListForDatabase = computed((): QuickActionType[] => {
 const quickActionList = computed(() => {
   switch (route.name) {
     case PROJECT_V1_ROUTE_DATABASES:
-      return getQuickActionList(quickActionListForDatabase.value);
+      return quickActionListForDatabase.value;
   }
   return [];
 });

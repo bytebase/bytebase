@@ -1,5 +1,29 @@
 <template>
-  <div class="w-full flex flex-col gap-4 py-4 px-2 overflow-y-auto">
+  <div class="w-full flex flex-col gap-4 px-2 overflow-y-auto">
+    <div class="flex items-center justify-end space-x-2 px-2">
+      <NButton
+        v-if="hasWorkspacePermissionV2('bb.environments.create')"
+        type="primary"
+        @click="createEnvironment"
+      >
+        <template #icon>
+          <PlusIcon class="h-4 w-4" />
+        </template>
+        {{ $t("environment.create") }}
+      </NButton>
+      <NButton
+        v-if="
+          hasWorkspacePermissionV2('bb.environments.list') &&
+          hasWorkspacePermissionV2('bb.environments.update')
+        "
+        @click="startReorder"
+      >
+        <template #icon>
+          <ListOrderedIcon class="h-4 w-4" />
+        </template>
+        {{ $t("common.reorder") }}
+      </NButton>
+    </div>
     <NTabs
       type="line"
       :bar-width="200"
@@ -56,7 +80,12 @@
 </template>
 
 <script lang="ts" setup>
-import { ChevronLeftIcon, ChevronRightIcon } from "lucide-vue-next";
+import {
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  PlusIcon,
+  ListOrderedIcon,
+} from "lucide-vue-next";
 import { NTabs, NTabPane, NButton } from "naive-ui";
 import { onMounted, computed, reactive, watch, h } from "vue";
 import { useRouter } from "vue-router";
@@ -71,7 +100,6 @@ import { EnvironmentV1Name, MiniActionButton } from "@/components/v2";
 import { useBodyLayoutContext } from "@/layouts/common";
 import { ENVIRONMENT_V1_ROUTE_DASHBOARD } from "@/router/dashboard/workspaceRoutes";
 import {
-  useRegisterCommand,
   useUIStateStore,
   useEnvironmentV1Store,
   defaultEnvironmentTier,
@@ -88,7 +116,11 @@ import type {
 } from "@/types/proto/v1/environment_service";
 import type { Policy } from "@/types/proto/v1/org_policy_service";
 import { PolicyResourceType } from "@/types/proto/v1/org_policy_service";
-import { arraySwap, extractEnvironmentResourceName } from "@/utils";
+import {
+  arraySwap,
+  extractEnvironmentResourceName,
+  hasWorkspacePermissionV2,
+} from "@/utils";
 import EnvironmentDetail from "@/views/EnvironmentDetail.vue";
 
 const DEFAULT_NEW_ROLLOUT_POLICY: Policy = getEmptyRolloutPolicy(
@@ -145,21 +177,6 @@ onMounted(() => {
       newState: true,
     });
   }
-});
-
-useRegisterCommand({
-  id: "bb.environment.create",
-  registerId: "environment.dashboard",
-  run: () => {
-    createEnvironment();
-  },
-});
-useRegisterCommand({
-  id: "bb.environment.reorder",
-  registerId: "environment.dashboard",
-  run: () => {
-    startReorder();
-  },
 });
 
 watch(

@@ -12,7 +12,7 @@
       </span>
     </div>
     <div class="flex-1 lg:px-4">
-      <div class="mb-7 mt-4 lg:mt-0">
+      <div class="mt-4 lg:mt-0">
         <p class="mb-2 textinfolabel">
           {{ $t("settings.general.workspace.ai-assistant.description") }}
           <LearnMoreLink

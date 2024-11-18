@@ -286,8 +286,12 @@ const allowMailDeliveryActionButton = computed(() => {
 });
 
 onMounted(async () => {
-  await store.fetchMailDeliverySetting();
-  discardChanges();
+  try {
+    await store.fetchMailDeliverySetting();
+    discardChanges();
+  } catch {
+    // nothing
+  }
 });
 
 const updateMailDeliverySetting = async () => {

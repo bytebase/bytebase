@@ -8,6 +8,9 @@
     </div>
     <div class="flex flex-row items-center justify-end gap-x-2">
       <NButton v-if="allowCreate" type="primary" @click="createConnector">
+        <template #icon>
+          <PlusIcon class="h-4 w-4" />
+        </template>
         {{ $t("project.gitops-connector.add") }}
       </NButton>
     </div>
@@ -21,6 +24,7 @@
 </template>
 
 <script setup lang="ts">
+import { PlusIcon } from "lucide-vue-next";
 import { NButton, NDataTable } from "naive-ui";
 import type { DataTableColumn } from "naive-ui";
 import { computed, h, watchEffect } from "vue";

@@ -231,6 +231,7 @@ const defaultScopeIds = computed(() => {
 });
 const tabItemList = computed((): TabFilterItem<TabValue>[] => {
   const items: (TabFilterItem<TabValue> & { hide?: boolean })[] = [
+    { value: "ALL", label: t("common.all") },
     { value: "CREATED", label: t("common.created") },
     {
       value: "WAITING_APPROVAL",
@@ -242,7 +243,6 @@ const tabItemList = computed((): TabFilterItem<TabValue>[] => {
       hide: databaseChangeMode.value === DatabaseChangeMode.EDITOR,
     },
     { value: "SUBSCRIBED", label: t("common.subscribed") },
-    { value: "ALL", label: t("common.all") },
   ];
   return items.filter((item) => !item.hide);
 });
