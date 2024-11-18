@@ -71,7 +71,7 @@ func (checker *tableDisallowDDLChecker) EnterAlterTable(ctx *mysql.AlterTableCon
 }
 
 func (checker *tableDisallowDDLChecker) EnterCreateTable(ctx *mysql.CreateTableContext) {
-	_, tableName := mysqlparser.NormalizeMySQLTableRef(ctx.TableRef())
+	_, tableName := mysqlparser.NormalizeMySQLTableName(ctx.TableName())
 	if tableName == "" {
 		return
 	}
