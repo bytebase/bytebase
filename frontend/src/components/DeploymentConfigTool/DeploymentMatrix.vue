@@ -1,32 +1,32 @@
 <template>
-  <div class="space-y-2 w-192 px-1">
-      <div class="flex justify-end items-center">
-        <NInputGroup style="width: auto" class="py-0.5">
-          <NInputGroupLabel
-            :bordered="false"
-            style="--n-group-label-color: transparent"
-          >
-            Group by
-          </NInputGroupLabel>
-          <YAxisRadioGroup
-            v-model:label="state.label"
-            :database-list="databaseList"
-          />
-          <SearchBox
-            v-if="showSearchBox"
-            v-model:value="state.keyword"
-            :placeholder="$t('common.filter-by-name')"
-          />
-        </NInputGroup>
-      </div>
-      <div class="w-full overflow-x-auto">
-        <DeploymentMatrixDataTable
-          :database-list="filteredDatabaseList"
-          :label="state.label"
-          :environment-list="environmentList"
-          :deployment="deployment"
+  <div class="space-y-4 w-192 px-1">
+    <div class="flex justify-end items-center">
+      <NInputGroup style="width: auto" class="py-0.5">
+        <NInputGroupLabel
+          :bordered="false"
+          style="--n-group-label-color: transparent"
+        >
+          Group by
+        </NInputGroupLabel>
+        <YAxisRadioGroup
+          v-model:label="state.label"
+          :database-list="databaseList"
         />
-      </div>
+        <SearchBox
+          v-if="showSearchBox"
+          v-model:value="state.keyword"
+          :placeholder="$t('common.filter-by-name')"
+        />
+      </NInputGroup>
+    </div>
+    <div class="w-full overflow-x-auto">
+      <DeploymentMatrixDataTable
+        :database-list="filteredDatabaseList"
+        :label="state.label"
+        :environment-list="environmentList"
+        :deployment="deployment"
+      />
+    </div>
   </div>
 </template>
 

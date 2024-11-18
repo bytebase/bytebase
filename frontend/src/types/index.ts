@@ -23,7 +23,6 @@ export * from "./workspaceApprovalSetting";
 export * from "./review";
 export * from "./slowQuery";
 export * from "./dbGroup";
-export * from "./quickAction";
 export * from "./setting";
 export * from "./changeHistory";
 export * from "./semanticTypes";

@@ -1,9 +1,18 @@
 <template>
   <div class="w-full flex flex-col gap-4 py-4 overflow-y-auto">
-    <div
-      class="grid grid-cols-3 px-4 gap-x-2 gap-y-4 md:inline-flex items-stretch"
-    >
-      <NButton @click="handleClickAddInstance">
+    <FeatureAttention
+      v-if="remainingInstanceCount <= 3"
+      feature="bb.feature.instance-count"
+      :description="instanceCountAttention"
+    />
+    <div class="px-4 flex items-center space-x-2">
+      <AdvancedSearch
+        v-model:params="state.params"
+        :autofocus="false"
+        :placeholder="$t('instance.filter-instance-name')"
+        :scope-options="scopeOptions"
+      />
+      <NButton type="primary" @click="handleClickAddInstance">
         <template #icon>
           <PlusIcon class="h-4 w-4" />
         </template>
@@ -12,19 +21,6 @@
         </NEllipsis>
       </NButton>
     </div>
-
-    <FeatureAttention
-      v-if="remainingInstanceCount <= 3"
-      feature="bb.feature.instance-count"
-      :description="instanceCountAttention"
-    />
-    <AdvancedSearch
-      v-model:params="state.params"
-      :autofocus="false"
-      class="px-4"
-      :placeholder="$t('instance.filter-instance-name')"
-      :scope-options="scopeOptions"
-    />
     <InstanceV1Table
       :bordered="false"
       :loading="!ready"

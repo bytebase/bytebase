@@ -1,26 +1,17 @@
 <template>
-  <div class="flex flex-row items-center justify-between">
-    <div class="flex items-center justify-start">
-      <ProjectSelect
-        v-if="!disableProjectSelect"
-        v-model:project-name="projectName"
-        :include-all="true"
-      />
+  <div class="flex flex-row items-center gap-x-2">
+    <div v-if="!disableProjectSelect" class="flex items-center justify-start">
+      <ProjectSelect v-model:project-name="projectName" :include-all="true" />
     </div>
-    <div class="flex items-center justify-end gap-x-2">
-      <SearchBox
-        v-model:value="filter.keyword"
-        :placeholder="$t('common.filter-by-name')"
-      />
-      <NButton
-        v-if="allowCreate"
-        type="primary"
-        @click="showCreatePanel = true"
-      >
-        <heroicons-solid:plus class="w-4 h-auto mr-0.5" />
-        {{ $t("changelist.new") }}
-      </NButton>
-    </div>
+    <SearchBox
+      v-model:value="filter.keyword"
+      style="max-width: 100%"
+      :placeholder="$t('common.filter-by-name')"
+    />
+    <NButton v-if="allowCreate" type="primary" @click="showCreatePanel = true">
+      <heroicons-solid:plus class="w-4 h-auto mr-0.5" />
+      {{ $t("changelist.new") }}
+    </NButton>
   </div>
 </template>
 
