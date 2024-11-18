@@ -555,14 +555,15 @@ func convertToSchedulerInfoWaitingCause(ctx context.Context, s *store.Store, c *
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get issue by pipeline %v", task.PipelineID)
 		}
-		if issue == nil {
-			return nil, errors.Errorf("issue not found by pipeline %v", task.PipelineID)
+		var issueName string
+		if issue != nil {
+			issueName = common.FormatIssue(issue.Project.ResourceID, issue.UID)
 		}
 		return &v1pb.TaskRun_SchedulerInfo_WaitingCause{
 			Cause: &v1pb.TaskRun_SchedulerInfo_WaitingCause_Task_{
 				Task: &v1pb.TaskRun_SchedulerInfo_WaitingCause_Task{
 					Task:  common.FormatTask(issue.Project.ResourceID, task.PipelineID, task.StageID, task.ID),
-					Issue: common.FormatIssue(issue.Project.ResourceID, issue.UID),
+					Issue: issueName,
 				},
 			},
 		}, nil
