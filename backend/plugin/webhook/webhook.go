@@ -177,6 +177,10 @@ func (c *Context) GetMetaListZh() []Meta {
 			Name:  "工单",
 			Value: c.Issue.Name,
 		})
+		m = append(m, Meta{
+			Name:  "工单创建者",
+			Value: fmt.Sprintf("%s (%s)", c.Issue.Creator.Name, c.Issue.Creator.Email),
+		})
 		// For VCS workflow, the generated issue description is composed of file names in the push event.
 		// So the description could be long, which is hard to display if merged into the issue name.
 		// We also trim it to 200 bytes to limit the message size in the webhook body, so that users can
