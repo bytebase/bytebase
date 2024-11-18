@@ -17,7 +17,7 @@
             @update:checked="toggleEngineCheck(item)"
           >
             <div class="flex items-center gap-x-1 text-sm text-gray-600">
-              <EngineIcon :engine="item" class="ml-0 mr-1" />
+              <EngineIcon :engine="item" custom-class="ml-0 mr-1" />
               <span
                 class="items-center text-xs px-2 py-0.5 rounded-full bg-gray-200 text-gray-800"
               >
