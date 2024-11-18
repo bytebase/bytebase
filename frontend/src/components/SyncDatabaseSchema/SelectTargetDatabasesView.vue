@@ -35,7 +35,7 @@
               class="normal-link inline-flex items-center"
               :href="databaseV1Url(getSourceDatabase()!)"
             >
-              <EngineIcon class="mr-1" :engine="engine" />
+              <EngineIcon custom-class="mr-1" :engine="engine" />
               {{ getSourceDatabase()!.databaseName }}
             </a>
           </div>
@@ -68,7 +68,7 @@
               class="normal-link inline-flex items-center"
               @click="state.showViewRawSQLPanel = true"
             >
-              <EngineIcon class="mr-1" :engine="engine" />
+              <EngineIcon custom-class="mr-1" :engine="engine" />
               <span>{{ $t("schema-editor.raw-sql") }}</span>
             </span>
           </div>

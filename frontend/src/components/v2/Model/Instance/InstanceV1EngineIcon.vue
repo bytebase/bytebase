@@ -2,7 +2,7 @@
   <NTooltip :disabled="!tooltip || !instance.engineVersion">
     <template #trigger>
       <div :class="sizeClass" class="relative shrink-0" v-bind="$attrs">
-        <EngineIcon :engine="instance.engine" />
+        <EngineIcon custom-class="w-full h-full" :engine="instance.engine" />
         <div
           v-if="showStatus"
           class="bg-green-400 border-surface-high rounded-full absolute border-2"
@@ -47,11 +47,11 @@ const props = defineProps({
 
 const sizeClass = computed(() => {
   if (props.size === "large") {
-    return "w-6";
+    return "w-6 h-6";
   } else if (props.size === "medium") {
-    return "w-5";
+    return "w-5 h-5";
   } else {
-    return "w-4";
+    return "w-4 h-4";
   }
 });
 </script>
