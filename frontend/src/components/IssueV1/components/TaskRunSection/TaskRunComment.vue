@@ -4,21 +4,22 @@
       <span>{{ comment }}</span>
     </NEllipsis>
     <template v-if="commentLink.link">
-      <template v-if="commentLink.link.startsWith('/')">
-        <router-link class="inline normal-link" :to="commentLink.link">
-          {{ commentLink.title }}
-        </router-link>
-      </template>
-      <template v-else>
-        <a
-          class="inline normal-link"
-          :href="commentLink.link"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          {{ commentLink.title }}
-        </a>
-      </template>
+      <router-link
+        v-if="commentLink.link.startsWith('/')"
+        class="inline normal-link shrink-0"
+        :to="commentLink.link"
+      >
+        {{ commentLink.title }}
+      </router-link>
+      <a
+        v-else
+        class="inline normal-link shrink-0"
+        :href="commentLink.link"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        {{ commentLink.title }}
+      </a>
     </template>
   </div>
 </template>
