@@ -58,7 +58,7 @@ import {
   NInput,
 } from "naive-ui";
 import type { CSSProperties } from "vue";
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import type { DefaultValueOption } from "@/components/SchemaEditorLite/utils";
 import {
@@ -122,6 +122,7 @@ const options = computed((): DefaultValueSelectOption[] => {
       value: DEFAULT_NULL_OPTION.key,
       label: t("schema-editor.default.null"),
       defaults: DEFAULT_NULL_OPTION,
+      disabled: !props.column.nullable,
     },
     {
       key: DEFAULT_STRING_OPTION.key,
@@ -185,6 +186,15 @@ const inputStyle = computed(() => {
 
   return style;
 });
+
+watch(
+  () => props.column.nullable,
+  (nullable) => {
+    if (!nullable && props.column.defaultNull) {
+      handleSelect(NO_DEFAULT_OPTION.key);
+    }
+  }
+);
 </script>
 
 <style lang="postcss" scoped>
