@@ -719,6 +719,7 @@ export interface TaskRunLogEntry {
   databaseSync: TaskRunLogEntry_DatabaseSync | undefined;
   taskRunStatusUpdate: TaskRunLogEntry_TaskRunStatusUpdate | undefined;
   transactionControl: TaskRunLogEntry_TransactionControl | undefined;
+  priorBackup: TaskRunLogEntry_PriorBackup | undefined;
 }
 
 export enum TaskRunLogEntry_Type {
@@ -728,6 +729,7 @@ export enum TaskRunLogEntry_Type {
   DATABASE_SYNC = "DATABASE_SYNC",
   TASK_RUN_STATUS_UPDATE = "TASK_RUN_STATUS_UPDATE",
   TRANSACTION_CONTROL = "TRANSACTION_CONTROL",
+  PRIOR_BACKUP = "PRIOR_BACKUP",
   UNRECOGNIZED = "UNRECOGNIZED",
 }
 
@@ -751,6 +753,9 @@ export function taskRunLogEntry_TypeFromJSON(object: any): TaskRunLogEntry_Type 
     case 5:
     case "TRANSACTION_CONTROL":
       return TaskRunLogEntry_Type.TRANSACTION_CONTROL;
+    case 6:
+    case "PRIOR_BACKUP":
+      return TaskRunLogEntry_Type.PRIOR_BACKUP;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -772,6 +777,8 @@ export function taskRunLogEntry_TypeToJSON(object: TaskRunLogEntry_Type): string
       return "TASK_RUN_STATUS_UPDATE";
     case TaskRunLogEntry_Type.TRANSACTION_CONTROL:
       return "TRANSACTION_CONTROL";
+    case TaskRunLogEntry_Type.PRIOR_BACKUP:
+      return "PRIOR_BACKUP";
     case TaskRunLogEntry_Type.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
@@ -792,6 +799,8 @@ export function taskRunLogEntry_TypeToNumber(object: TaskRunLogEntry_Type): numb
       return 4;
     case TaskRunLogEntry_Type.TRANSACTION_CONTROL:
       return 5;
+    case TaskRunLogEntry_Type.PRIOR_BACKUP:
+      return 6;
     case TaskRunLogEntry_Type.UNRECOGNIZED:
     default:
       return -1;
@@ -961,6 +970,13 @@ export function taskRunLogEntry_TransactionControl_TypeToNumber(
     default:
       return -1;
   }
+}
+
+export interface TaskRunLogEntry_PriorBackup {
+  startTime: Timestamp | undefined;
+  endTime: Timestamp | undefined;
+  priorBackupDetail: TaskRun_PriorBackupDetail | undefined;
+  error: string;
 }
 
 export interface GetTaskRunSessionRequest {
@@ -4036,6 +4052,7 @@ function createBaseTaskRunLogEntry(): TaskRunLogEntry {
     databaseSync: undefined,
     taskRunStatusUpdate: undefined,
     transactionControl: undefined,
+    priorBackup: undefined,
   };
 }
 
@@ -4064,6 +4081,9 @@ export const TaskRunLogEntry: MessageFns<TaskRunLogEntry> = {
     }
     if (message.transactionControl !== undefined) {
       TaskRunLogEntry_TransactionControl.encode(message.transactionControl, writer.uint32(58).fork()).join();
+    }
+    if (message.priorBackup !== undefined) {
+      TaskRunLogEntry_PriorBackup.encode(message.priorBackup, writer.uint32(66).fork()).join();
     }
     return writer;
   },
@@ -4131,6 +4151,13 @@ export const TaskRunLogEntry: MessageFns<TaskRunLogEntry> = {
 
           message.transactionControl = TaskRunLogEntry_TransactionControl.decode(reader, reader.uint32());
           continue;
+        case 8:
+          if (tag !== 66) {
+            break;
+          }
+
+          message.priorBackup = TaskRunLogEntry_PriorBackup.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -4156,6 +4183,7 @@ export const TaskRunLogEntry: MessageFns<TaskRunLogEntry> = {
       transactionControl: isSet(object.transactionControl)
         ? TaskRunLogEntry_TransactionControl.fromJSON(object.transactionControl)
         : undefined,
+      priorBackup: isSet(object.priorBackup) ? TaskRunLogEntry_PriorBackup.fromJSON(object.priorBackup) : undefined,
     };
   },
 
@@ -4185,6 +4213,9 @@ export const TaskRunLogEntry: MessageFns<TaskRunLogEntry> = {
     if (message.transactionControl !== undefined) {
       obj.transactionControl = TaskRunLogEntry_TransactionControl.toJSON(message.transactionControl);
     }
+    if (message.priorBackup !== undefined) {
+      obj.priorBackup = TaskRunLogEntry_PriorBackup.toJSON(message.priorBackup);
+    }
     return obj;
   },
 
@@ -4212,6 +4243,9 @@ export const TaskRunLogEntry: MessageFns<TaskRunLogEntry> = {
       : undefined;
     message.transactionControl = (object.transactionControl !== undefined && object.transactionControl !== null)
       ? TaskRunLogEntry_TransactionControl.fromPartial(object.transactionControl)
+      : undefined;
+    message.priorBackup = (object.priorBackup !== undefined && object.priorBackup !== null)
+      ? TaskRunLogEntry_PriorBackup.fromPartial(object.priorBackup)
       : undefined;
     return message;
   },
@@ -4773,6 +4807,118 @@ export const TaskRunLogEntry_TransactionControl: MessageFns<TaskRunLogEntry_Tran
   fromPartial(object: DeepPartial<TaskRunLogEntry_TransactionControl>): TaskRunLogEntry_TransactionControl {
     const message = createBaseTaskRunLogEntry_TransactionControl();
     message.type = object.type ?? TaskRunLogEntry_TransactionControl_Type.TYPE_UNSPECIFIED;
+    message.error = object.error ?? "";
+    return message;
+  },
+};
+
+function createBaseTaskRunLogEntry_PriorBackup(): TaskRunLogEntry_PriorBackup {
+  return { startTime: undefined, endTime: undefined, priorBackupDetail: undefined, error: "" };
+}
+
+export const TaskRunLogEntry_PriorBackup: MessageFns<TaskRunLogEntry_PriorBackup> = {
+  encode(message: TaskRunLogEntry_PriorBackup, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.startTime !== undefined) {
+      Timestamp.encode(message.startTime, writer.uint32(10).fork()).join();
+    }
+    if (message.endTime !== undefined) {
+      Timestamp.encode(message.endTime, writer.uint32(18).fork()).join();
+    }
+    if (message.priorBackupDetail !== undefined) {
+      TaskRun_PriorBackupDetail.encode(message.priorBackupDetail, writer.uint32(26).fork()).join();
+    }
+    if (message.error !== "") {
+      writer.uint32(34).string(message.error);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): TaskRunLogEntry_PriorBackup {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseTaskRunLogEntry_PriorBackup();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.startTime = Timestamp.decode(reader, reader.uint32());
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.endTime = Timestamp.decode(reader, reader.uint32());
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.priorBackupDetail = TaskRun_PriorBackupDetail.decode(reader, reader.uint32());
+          continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.error = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): TaskRunLogEntry_PriorBackup {
+    return {
+      startTime: isSet(object.startTime) ? fromJsonTimestamp(object.startTime) : undefined,
+      endTime: isSet(object.endTime) ? fromJsonTimestamp(object.endTime) : undefined,
+      priorBackupDetail: isSet(object.priorBackupDetail)
+        ? TaskRun_PriorBackupDetail.fromJSON(object.priorBackupDetail)
+        : undefined,
+      error: isSet(object.error) ? globalThis.String(object.error) : "",
+    };
+  },
+
+  toJSON(message: TaskRunLogEntry_PriorBackup): unknown {
+    const obj: any = {};
+    if (message.startTime !== undefined) {
+      obj.startTime = fromTimestamp(message.startTime).toISOString();
+    }
+    if (message.endTime !== undefined) {
+      obj.endTime = fromTimestamp(message.endTime).toISOString();
+    }
+    if (message.priorBackupDetail !== undefined) {
+      obj.priorBackupDetail = TaskRun_PriorBackupDetail.toJSON(message.priorBackupDetail);
+    }
+    if (message.error !== "") {
+      obj.error = message.error;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<TaskRunLogEntry_PriorBackup>): TaskRunLogEntry_PriorBackup {
+    return TaskRunLogEntry_PriorBackup.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<TaskRunLogEntry_PriorBackup>): TaskRunLogEntry_PriorBackup {
+    const message = createBaseTaskRunLogEntry_PriorBackup();
+    message.startTime = (object.startTime !== undefined && object.startTime !== null)
+      ? Timestamp.fromPartial(object.startTime)
+      : undefined;
+    message.endTime = (object.endTime !== undefined && object.endTime !== null)
+      ? Timestamp.fromPartial(object.endTime)
+      : undefined;
+    message.priorBackupDetail = (object.priorBackupDetail !== undefined && object.priorBackupDetail !== null)
+      ? TaskRun_PriorBackupDetail.fromPartial(object.priorBackupDetail)
+      : undefined;
     message.error = object.error ?? "";
     return message;
   },
