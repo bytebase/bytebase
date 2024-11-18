@@ -31,7 +31,7 @@ export type AppFeatures = {
     | "EXPORT-DATA"
     | "SYNC-SCHEMA"
     | "EDIT-LABELS"
-    | "TRANSFER-INT"
+    | "TRANSFER-IN"
     | "TRANSFER-OUT"
   >;
   "bb.feature.databases.hide-unassigned": boolean;
@@ -82,7 +82,7 @@ export const defaultAppProfile = (): AppProfile => ({
     "bb.feature.issue.hide-subscribers": false,
     "bb.feature.sql-check.hide-doc-link": false,
     "bb.feature.databases.operations": new Set([
-      "TRANSFER-INT",
+      "TRANSFER-IN",
       "EDIT-SCHEMA",
       "CHANGE-DATA",
       "EXPORT-DATA",
