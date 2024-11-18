@@ -148,7 +148,7 @@ interface LocalState {
   showSchemaEditorModal: boolean;
   showUnassignAlert: boolean;
   showLabelEditorDrawer: boolean;
-  transferOutDatabaseType?: "TRANSFER-INT" | "TRANSFER-OUT";
+  transferOutDatabaseType?: "TRANSFER-IN" | "TRANSFER-OUT";
 }
 
 const props = withDefaults(
@@ -420,13 +420,13 @@ const actions = computed((): DatabaseAction[] => {
           },
         });
         break;
-      case "TRANSFER-INT": {
+      case "TRANSFER-IN": {
         if (operationsInProjectDetail.value) {
           resp.push({
             icon: h(ChevronsDownIcon),
             text: t("quick-action.transfer-in-db"),
             disabled: !allowTransferInProject.value,
-            click: () => (state.transferOutDatabaseType = "TRANSFER-INT"),
+            click: () => (state.transferOutDatabaseType = "TRANSFER-IN"),
             tooltip: (action) => {
               if (!allowTransferInProject.value) {
                 return t("database.batch-action-permission-denied", {
