@@ -54,14 +54,20 @@
   />
 
   <Drawer
-    :show="state.showTransferOutDatabaseForm"
+    :show="!!state.transferOutDatabaseType"
     :auto-focus="true"
-    @close="state.showTransferOutDatabaseForm = false"
+    @close="state.transferOutDatabaseType = undefined"
   >
     <TransferOutDatabaseForm
+      v-if="state.transferOutDatabaseType === 'TRANSFER-OUT'"
       :database-list="props.databases"
       :selected-database-names="selectedDatabaseNameList"
-      @dismiss="state.showTransferOutDatabaseForm = false"
+      @dismiss="state.transferOutDatabaseType = undefined"
+    />
+    <TransferDatabaseForm
+      v-else
+      :project-name="projectName"
+      @dismiss="state.transferOutDatabaseType = undefined"
     />
   </Drawer>
 
@@ -90,6 +96,7 @@ import {
   PenSquareIcon,
   ArrowRightLeftIcon,
   DownloadIcon,
+  ChevronsDownIcon,
 } from "lucide-vue-next";
 import { NButton, NTooltip } from "naive-ui";
 import type { VNode } from "vue";
@@ -99,6 +106,7 @@ import { useRouter } from "vue-router";
 import { BBAlert } from "@/bbkit";
 import SchemaEditorModal from "@/components/AlterSchemaPrepForm/SchemaEditorModal.vue";
 import LabelEditorDrawer from "@/components/LabelEditorDrawer.vue";
+import { TransferDatabaseForm } from "@/components/TransferDatabaseForm";
 import TransferOutDatabaseForm from "@/components/TransferOutDatabaseForm";
 import { Drawer } from "@/components/v2";
 import { PROJECT_V1_ROUTE_ISSUE_DETAIL } from "@/router/dashboard/projectV1";
@@ -140,7 +148,7 @@ interface LocalState {
   showSchemaEditorModal: boolean;
   showUnassignAlert: boolean;
   showLabelEditorDrawer: boolean;
-  showTransferOutDatabaseForm: boolean;
+  transferOutDatabaseType?: "TRANSFER-INT" | "TRANSFER-OUT";
 }
 
 const props = withDefaults(
@@ -156,7 +164,7 @@ const state = reactive<LocalState>({
   showSchemaEditorModal: false,
   showUnassignAlert: false,
   showLabelEditorDrawer: false,
-  showTransferOutDatabaseForm: false,
+  transferOutDatabaseType: undefined,
 });
 
 const { t } = useI18n();
@@ -220,12 +228,17 @@ const allowChangeData = computed(() => {
   );
 });
 
-const allowTransferProject = computed(() => {
+const allowTransferOutProject = computed(() => {
   return props.databases.every(
     (db) =>
       !isArchivedDatabaseV1(db) &&
       hasProjectPermissionV2(db.projectEntity, "bb.projects.update")
   );
+});
+
+const allowTransferInProject = computed(() => {
+  const project = projectStore.getProjectByName(props.projectName);
+  return hasProjectPermissionV2(project, "bb.projects.update");
 });
 
 const allowExportData = computed(() => {
@@ -407,15 +420,35 @@ const actions = computed((): DatabaseAction[] => {
           },
         });
         break;
-      case "TRANSFER":
+      case "TRANSFER-INT": {
+        if (operationsInProjectDetail.value) {
+          resp.push({
+            icon: h(ChevronsDownIcon),
+            text: t("quick-action.transfer-in-db"),
+            disabled: !allowTransferInProject.value,
+            click: () => (state.transferOutDatabaseType = "TRANSFER-INT"),
+            tooltip: (action) => {
+              if (!allowTransferInProject.value) {
+                return t("database.batch-action-permission-denied", {
+                  action,
+                });
+              }
+              return getDisabledTooltip(action);
+            },
+          });
+        }
+        break;
+      }
+      case "TRANSFER-OUT":
         if (!operationsInProjectDetail.value) {
           resp.push({
             icon: h(ArrowRightLeftIcon),
             text: t("database.transfer-project"),
-            disabled: !allowTransferProject.value || props.databases.length < 1,
-            click: () => (state.showTransferOutDatabaseForm = true),
+            disabled:
+              !allowTransferOutProject.value || props.databases.length < 1,
+            click: () => (state.transferOutDatabaseType = "TRANSFER-OUT"),
             tooltip: (action) => {
-              if (!allowTransferProject.value) {
+              if (!allowTransferOutProject.value) {
                 return t("database.batch-action-permission-denied", {
                   action,
                 });
@@ -427,10 +460,11 @@ const actions = computed((): DatabaseAction[] => {
           resp.push({
             icon: h(UnlinkIcon),
             text: t("database.unassign"),
-            disabled: !allowTransferProject.value || props.databases.length < 1,
+            disabled:
+              !allowTransferOutProject.value || props.databases.length < 1,
             click: () => (state.showUnassignAlert = true),
             tooltip: (action) => {
-              if (!allowTransferProject.value) {
+              if (!allowTransferOutProject.value) {
                 return t("database.batch-action-permission-denied", {
                   action,
                 });

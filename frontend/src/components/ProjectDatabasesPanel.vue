@@ -27,6 +27,16 @@
         :database-list="databaseList"
         :placement="'left-start'"
       />
+      <NButton
+        v-if="allowToCreateDB"
+        type="primary"
+        @click="state.showCreateDrawer = true"
+      >
+        <template #icon>
+          <PlusIcon class="h-4 w-4" />
+        </template>
+        {{ $t("quick-action.new-db") }}
+      </NButton>
     </div>
     <div class="space-y-2">
       <DatabaseOperations
@@ -43,11 +53,26 @@
       />
     </div>
   </div>
+  <Drawer
+    :auto-focus="true"
+    :close-on-esc="true"
+    :show="state.showCreateDrawer"
+    @close="state.showCreateDrawer = false"
+  >
+    <CreateDatabasePrepPanel
+      :project-name="project.name"
+      @dismiss="state.showCreateDrawer = false"
+    />
+  </Drawer>
 </template>
 
 <script lang="ts" setup>
+import { PlusIcon } from "lucide-vue-next";
+import { NButton } from "naive-ui";
 import { reactive, computed } from "vue";
 import { useRouter } from "vue-router";
+import { CreateDatabasePrepPanel } from "@/components/CreateDatabasePrepForm";
+import { Drawer } from "@/components/v2";
 import DatabaseV1Table from "@/components/v2/Model/DatabaseV1Table";
 import type { ComposedDatabase, ComposedProject } from "@/types";
 import { UNKNOWN_ID } from "@/types";
@@ -58,6 +83,7 @@ import {
   extractEnvironmentResourceName,
   extractInstanceResourceName,
   databaseV1Url,
+  hasWorkspacePermissionV2,
 } from "@/utils";
 import AdvancedSearch from "./AdvancedSearch";
 import { useCommonSearchScopeOptions } from "./AdvancedSearch/useCommonSearchScopeOptions";
@@ -67,6 +93,7 @@ interface LocalState {
   selectedDatabaseNames: Set<string>;
   selectedLabels: { key: string; value: string }[];
   params: SearchParams;
+  showCreateDrawer: boolean;
 }
 
 const props = defineProps<{
@@ -83,6 +110,14 @@ const state = reactive<LocalState>({
     query: "",
     scopes: [],
   },
+  showCreateDrawer: false,
+});
+
+const allowToCreateDB = computed(() => {
+  return (
+    hasWorkspacePermissionV2("bb.instances.list") &&
+    hasWorkspacePermissionV2("bb.issues.create")
+  );
 });
 
 const scopeOptions = useCommonSearchScopeOptions(

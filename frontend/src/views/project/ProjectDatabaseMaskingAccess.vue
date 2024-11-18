@@ -1,7 +1,7 @@
 <template>
   <div class="space-y-4">
     <div
-      class="flex flex-col lg:flex-row gap-y-4 justify-between items-end lg:items-center"
+      class="flex flex-col lg:flex-row gap-y-4 justify-between items-end lg:items-center gap-x-2"
     >
       <NInputGroup style="width: auto">
         <DatabaseSelect
@@ -25,9 +25,10 @@
         />
       </NInputGroup>
 
-      <div class="flex flex-row items-center justify-end gap-x-2">
+      <div class="flex-1 flex flex-row items-center justify-end gap-x-2">
         <SearchBox
           ref="searchField"
+          style="max-width: 100%"
           v-model:value="state.searchText"
           :placeholder="$t('settings.members.search-member')"
         />

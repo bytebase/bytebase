@@ -112,21 +112,6 @@
           class="md:min-w-0 flex-1 overflow-y-auto py-4"
           :class="mainContainerClasses"
         >
-          <template v-if="!hideQuickAction">
-            <div class="w-full mx-auto md:flex">
-              <div class="md:min-w-0 md:flex-1">
-                <div
-                  class="w-full flex flex-row justify-between items-center flex-wrap px-4 gap-x-4"
-                >
-                  <QuickActionPanel
-                    v-if="quickActionList.length > 0"
-                    :quick-action-list="quickActionList"
-                    class="flex-1 pb-4"
-                  />
-                </div>
-              </div>
-            </div>
-          </template>
           <!-- Start main area-->
           <router-view name="content" />
           <!-- End main area -->
@@ -159,11 +144,7 @@ import ReleaseRemindModal from "@/components/ReleaseRemindModal.vue";
 import TrialModal from "@/components/TrialModal.vue";
 import { WORKSPACE_ROOT_MODULE } from "@/router/dashboard/workspaceRoutes";
 import { useActuatorV1Store, useAppFeature } from "@/store";
-import type { QuickActionType } from "@/types";
-import { QuickActionPermissionMap } from "@/types";
-import { hasWorkspacePermissionV2 } from "@/utils";
 import DashboardHeader from "@/views/DashboardHeader.vue";
-import QuickActionPanel from "../components/QuickActionPanel.vue";
 import Quickstart from "../components/Quickstart.vue";
 import { provideBodyLayoutContext } from "./common";
 
@@ -195,7 +176,6 @@ const sidebarView = computed(() => {
   return windowWidth.value >= 768 ? "DESKTOP" : "MOBILE";
 });
 
-const hideQuickAction = useAppFeature("bb.feature.console.hide-quick-action");
 const hideSidebar = useAppFeature("bb.feature.console.hide-sidebar");
 const hideHeader = useAppFeature("bb.feature.console.hide-header");
 const hideQuickStart = useAppFeature("bb.feature.hide-quick-start");
@@ -203,26 +183,6 @@ const hideReleaseRemind = useAppFeature("bb.feature.hide-release-remind");
 
 actuatorStore.tryToRemindRelease().then((openRemindModal) => {
   state.showReleaseModal = openRemindModal;
-});
-
-const getQuickActionList = (list: QuickActionType[]): QuickActionType[] => {
-  return list.filter((action) => {
-    if (!QuickActionPermissionMap.has(action)) {
-      return false;
-    }
-    return QuickActionPermissionMap.get(action)?.every((permission) =>
-      hasWorkspacePermissionV2(permission)
-    );
-  });
-};
-
-const quickActionList = computed(() => {
-  const quickActionListFunc = router.currentRoute.value.meta.getQuickActionList;
-  const listByRole = quickActionListFunc
-    ? quickActionListFunc(router.currentRoute.value)
-    : [];
-
-  return getQuickActionList(listByRole);
 });
 
 const { mainContainerClasses } = provideBodyLayoutContext({

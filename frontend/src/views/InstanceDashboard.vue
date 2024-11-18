@@ -5,13 +5,24 @@
       feature="bb.feature.instance-count"
       :description="instanceCountAttention"
     />
-    <AdvancedSearch
-      v-model:params="state.params"
-      class="px-4"
-      :autofocus="false"
-      :placeholder="$t('instance.filter-instance-name')"
-      :scope-options="scopeOptions"
-    />
+    <div class="px-4 flex items-center space-x-2">
+      <AdvancedSearch
+        v-model:params="state.params"
+        :autofocus="false"
+        :placeholder="$t('instance.filter-instance-name')"
+        :scope-options="scopeOptions"
+      />
+      <NButton
+        v-if="hasWorkspacePermissionV2('bb.instances.create')"
+        type="primary"
+        @click="showCreateInstanceDrawer"
+      >
+        <template #icon>
+          <PlusIcon class="h-4 w-4" />
+        </template>
+        {{ $t("quick-action.add-instance") }}
+      </NButton>
+    </div>
     <InstanceV1Table
       :bordered="false"
       :loading="!ready"
@@ -20,10 +31,32 @@
       :default-expand-data-source="state.dataSourceToggle"
     />
   </div>
+  <Drawer
+    :auto-focus="true"
+    :close-on-esc="true"
+    :show="state.showCreateDrawer"
+    @close="state.showCreateDrawer = false"
+  >
+    <InstanceForm :drawer="true" @dismiss="state.showCreateDrawer = false">
+      <DrawerContent :title="$t('quick-action.add-instance')">
+        <InstanceFormBody />
+        <template #footer>
+          <InstanceFormButtons />
+        </template>
+      </DrawerContent>
+    </InstanceForm>
+  </Drawer>
+
+  <FeatureModal
+    :open="state.showFeatureModal"
+    :feature="'bb.feature.instance-count'"
+    @cancel="state.showFeatureModal = false"
+  />
 </template>
 
 <script lang="tsx" setup>
-import { NTag } from "naive-ui";
+import { PlusIcon } from "lucide-vue-next";
+import { NTag, NButton } from "naive-ui";
 import { computed, onMounted, reactive, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import AdvancedSearch from "@/components/AdvancedSearch";
@@ -32,14 +65,21 @@ import type {
   ValueOption,
 } from "@/components/AdvancedSearch/types";
 import { useCommonSearchScopeOptions } from "@/components/AdvancedSearch/useCommonSearchScopeOptions";
-import { FeatureAttention } from "@/components/FeatureGuard";
+import { FeatureAttention, FeatureModal } from "@/components/FeatureGuard";
+import {
+  InstanceForm,
+  Form as InstanceFormBody,
+  Buttons as InstanceFormButtons,
+} from "@/components/InstanceForm/";
 import { InstanceV1Table } from "@/components/v2";
+import { Drawer, DrawerContent } from "@/components/v2";
 import {
   useUIStateStore,
   useSubscriptionV1Store,
   useEnvironmentV1List,
   useInstanceV1List,
   useInstanceV1Store,
+  useInstanceResourceList,
 } from "@/store";
 import { PlanType } from "@/types/proto/v1/subscription_service";
 import {
@@ -48,10 +88,13 @@ import {
   readableDataSourceType,
   sortInstanceV1ListByEnvironmentV1,
   extractEnvironmentResourceName,
+  hasWorkspacePermissionV2,
 } from "@/utils";
 
 interface LocalState {
   params: SearchParams;
+  showCreateDrawer: boolean;
+  showFeatureModal: boolean;
   dataSourceToggle: string[];
 }
 
@@ -67,6 +110,8 @@ const state = reactive<LocalState>({
     query: "",
     scopes: [],
   },
+  showCreateDrawer: false,
+  showFeatureModal: false,
   dataSourceToggle: [],
 });
 
@@ -81,6 +126,15 @@ const selectedAddress = computed(() => {
     state.params.scopes.find((scope) => scope.id === "address")?.value ?? ""
   );
 });
+
+const showCreateInstanceDrawer = () => {
+  const instanceList = useInstanceResourceList();
+  if (subscriptionStore.instanceCountLimit <= instanceList.value.length) {
+    state.showFeatureModal = true;
+    return;
+  }
+  state.showCreateDrawer = true;
+};
 
 watch(
   () => selectedAddress.value,

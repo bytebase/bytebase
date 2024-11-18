@@ -48,6 +48,9 @@
           :disabled="!allowEdit || !hasSensitiveDataFeature"
           @click="onUpload"
         >
+          <template #icon>
+            <ImportIcon class="h-4 w-4" />
+          </template>
           {{ $t("settings.sensitive-data.classification.upload") }}
         </NButton>
         <input
@@ -94,6 +97,7 @@
 
 <script lang="ts" setup>
 import { head, isEqual, isEmpty } from "lodash-es";
+import { ImportIcon } from "lucide-vue-next";
 import { NSwitch, useDialog, NDivider, NButton } from "naive-ui";
 import { v4 as uuidv4 } from "uuid";
 import { computed, reactive, ref } from "vue";

@@ -18,6 +18,9 @@
                   :disabled="!allowExportData"
                   @click="state.showRequestExportPanel = true"
                 >
+                  <template #icon>
+                    <DownloadIcon class="h-4 w-4" />
+                  </template>
                   {{ $t("quick-action.request-export-data") }}
                 </NButton>
               </template>
@@ -61,6 +64,7 @@
 </template>
 
 <script lang="ts" setup>
+import { DownloadIcon } from "lucide-vue-next";
 import { NButton, NTooltip } from "naive-ui";
 import { computed, reactive } from "vue";
 import DataExportPrepForm from "@/components/DataExportPrepForm";

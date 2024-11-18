@@ -11,7 +11,7 @@
 
     <NTabs>
       <template #suffix>
-        <div class="space-x-2">
+        <div class="flex items-center space-x-2">
           <InstanceSyncButton
             v-if="instance.state === State.ACTIVE"
             @sync-schema="syncSchema"
@@ -21,6 +21,9 @@
             type="primary"
             @click.prevent="createDatabase"
           >
+            <template #icon>
+              <PlusIcon class="h-4 w-4" />
+            </template>
             {{ $t("instance.new-database") }}
           </NButton>
         </div>
@@ -65,6 +68,7 @@
 
 <script lang="tsx" setup>
 import { useTitle } from "@vueuse/core";
+import { PlusIcon } from "lucide-vue-next";
 import { NButton, NTabPane, NTabs } from "naive-ui";
 import { computed, reactive } from "vue";
 import { useI18n } from "vue-i18n";

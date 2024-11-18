@@ -14,6 +14,18 @@
         :database-list="databaseV1List"
         :placement="'left-start'"
       />
+      <NButton
+        v-if="
+          allowToCreateDB && databaseChangeMode !== DatabaseChangeMode.EDITOR
+        "
+        type="primary"
+        @click="state.showCreateDrawer = true"
+      >
+        <template #icon>
+          <PlusIcon class="h-4 w-4" />
+        </template>
+        {{ $t("quick-action.new-db") }}
+      </NButton>
     </div>
 
     <div class="space-y-2">
@@ -30,13 +42,25 @@
       />
     </div>
   </div>
+  <Drawer
+    :auto-focus="true"
+    :close-on-esc="true"
+    :show="state.showCreateDrawer"
+    @close="state.showCreateDrawer = false"
+  >
+    <CreateDatabasePrepPanel @dismiss="state.showCreateDrawer = false" />
+  </Drawer>
 </template>
 
 <script lang="ts" setup>
+import { PlusIcon } from "lucide-vue-next";
+import { NButton } from "naive-ui";
 import { computed, onMounted, reactive, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import AdvancedSearch from "@/components/AdvancedSearch";
 import { useCommonSearchScopeOptions } from "@/components/AdvancedSearch/useCommonSearchScopeOptions";
+import { CreateDatabasePrepPanel } from "@/components/CreateDatabasePrepForm";
+import { Drawer } from "@/components/v2";
 import DatabaseV1Table, {
   DatabaseLabelFilter,
   DatabaseOperations,
@@ -51,6 +75,7 @@ import { projectNamePrefix } from "@/store/modules/v1/common";
 import { useDatabaseV1List } from "@/store/modules/v1/databaseList";
 import type { ComposedDatabase } from "@/types";
 import { DEFAULT_PROJECT_NAME } from "@/types";
+import { DatabaseChangeMode } from "@/types/proto/v1/setting_service";
 import type { SearchParams } from "@/utils";
 import {
   filterDatabaseV1ByKeyword,
@@ -63,11 +88,13 @@ import {
   buildSearchParamsBySearchText,
   databaseV1Url,
   wrapRefAsPromise,
+  hasWorkspacePermissionV2,
 } from "@/utils";
 
 interface LocalState {
   selectedDatabaseNameList: Set<string>;
   params: SearchParams;
+  showCreateDrawer: boolean;
   selectedLabels: { key: string; value: string }[];
 }
 
@@ -86,6 +113,8 @@ const { projectList } = useProjectV1List();
 const hideUnassignedDatabases = useAppFeature(
   "bb.feature.databases.hide-unassigned"
 );
+const databaseChangeMode = useAppFeature("bb.feature.database-change-mode");
+
 const loading = ref(false);
 
 const defaultSearchParams = () => {
@@ -112,8 +141,16 @@ const initializeSearchParamsFromQuery = () => {
 
 const state = reactive<LocalState>({
   selectedDatabaseNameList: new Set(),
+  showCreateDrawer: false,
   params: initializeSearchParamsFromQuery(),
   selectedLabels: [],
+});
+
+const allowToCreateDB = computed(() => {
+  return (
+    hasWorkspacePermissionV2("bb.instances.list") &&
+    hasWorkspacePermissionV2("bb.issues.create")
+  );
 });
 
 const scopeOptions = useCommonSearchScopeOptions(

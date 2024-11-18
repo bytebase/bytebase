@@ -1,11 +1,23 @@
 <template>
   <div class="w-full space-y-4">
+    <div class="textinfolabel">
+      {{ $t("settings.sensitive-data.algorithms.upload-label") }}
+      <span
+        class="normal-link cursor-pointer hover:underline"
+        @click="state.showExampleModal = true"
+      >
+        {{ $t("settings.sensitive-data.view-example") }}
+      </span>
+    </div>
     <div class="flex items-center justify-end space-x-2">
       <NButton
         :loading="state.processing"
         :disabled="!hasPermission || !hasSensitiveDataFeature"
         @click="onUpload"
       >
+        <template #icon>
+          <ImportIcon class="h-4 w-4" />
+        </template>
         {{ $t("settings.sensitive-data.algorithms.upload") }}
         <input
           ref="uploader"
@@ -21,17 +33,11 @@
         :disabled="!hasPermission || !hasSensitiveDataFeature"
         @click="onCreate"
       >
+        <template #icon>
+          <PlusIcon class="h-4 w-4" />
+        </template>
         {{ $t("common.add") }}
       </NButton>
-    </div>
-    <div class="textinfolabel">
-      {{ $t("settings.sensitive-data.algorithms.upload-label") }}
-      <span
-        class="normal-link cursor-pointer hover:underline"
-        @click="state.showExampleModal = true"
-      >
-        {{ $t("settings.sensitive-data.view-example") }}
-      </span>
     </div>
     <div class="space-y-5 divide-y-2 pb-10 divide-gray-100">
       <MaskingAlgorithmsTable
@@ -55,6 +61,7 @@
 </template>
 
 <script lang="ts" setup>
+import { PlusIcon, ImportIcon } from "lucide-vue-next";
 import { NButton, useDialog } from "naive-ui";
 import { v4 as uuidv4 } from "uuid";
 import { computed, reactive, ref } from "vue";

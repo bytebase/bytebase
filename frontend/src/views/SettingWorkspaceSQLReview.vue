@@ -15,6 +15,7 @@
     <div class="flex justify-end items-center space-x-2">
       <SearchBox
         v-model:value="searchText"
+        style="max-width: 100%"
         :autofocus="true"
         :placeholder="$t('sql-review.search-by-name')"
       />
@@ -23,7 +24,10 @@
         type="primary"
         @click="createSQLReview"
       >
-        {{ $t("common.add") }}
+        <template #icon>
+          <PlusIcon class="h-4 w-4" />
+        </template>
+        {{ $t("sql-review.create-policy") }}
       </NButton>
     </div>
 
@@ -48,6 +52,7 @@
 </template>
 
 <script lang="ts" setup>
+import { PlusIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { watchEffect, ref, computed } from "vue";
 import { useRouter } from "vue-router";

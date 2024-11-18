@@ -60,9 +60,6 @@ const workspaceRoutes: RouteRecordRaw[] = [
     name: PROJECT_V1_ROUTE_DASHBOARD,
     meta: {
       title: () => t("common.projects"),
-      getQuickActionList: () => {
-        return ["quickaction.bb.project.create"];
-      },
     },
     components: {
       content: () => import("@/views/ProjectDashboard.vue"),
@@ -75,9 +72,6 @@ const workspaceRoutes: RouteRecordRaw[] = [
     name: INSTANCE_ROUTE_DASHBOARD,
     meta: {
       title: () => t("common.instances"),
-      getQuickActionList: () => {
-        return ["quickaction.bb.instance.create"];
-      },
       requiredWorkspacePermissionList: () => ["bb.instances.list"],
     },
     components: {
@@ -91,9 +85,6 @@ const workspaceRoutes: RouteRecordRaw[] = [
     name: DATABASE_ROUTE_DASHBOARD,
     meta: {
       title: () => t("common.databases"),
-      getQuickActionList: () => {
-        return ["quickaction.bb.database.create"];
-      },
       requiredWorkspacePermissionList: () => ["bb.databases.list"],
     },
     components: {
@@ -107,12 +98,6 @@ const workspaceRoutes: RouteRecordRaw[] = [
     name: ENVIRONMENT_V1_ROUTE_DASHBOARD,
     meta: {
       title: () => t("common.environments"),
-      getQuickActionList: () => {
-        return [
-          "quickaction.bb.environment.create",
-          "quickaction.bb.environment.reorder",
-        ];
-      },
       requiredWorkspacePermissionList: () => ["bb.environments.list"],
     },
     components: {

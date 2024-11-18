@@ -10,12 +10,13 @@
         <NButton
           :quaternary="size === 'tiny'"
           :size="size"
+          type="primary"
           :loading="state.isRequesting"
           :disabled="state.isRequesting || disabled"
           @click="handleClickExportButton"
         >
           <template #icon>
-            <heroicons-outline:download class="h-5 w-5" />
+            <DownloadIcon class="h-4 w-4" />
           </template>
           <span v-if="size !== 'tiny'">
             {{ t("common.export") }}
@@ -112,6 +113,7 @@
 
 <script lang="ts" setup>
 import { asyncComputed } from "@vueuse/core";
+import { DownloadIcon } from "lucide-vue-next";
 import type { FormInst, FormRules } from "naive-ui";
 import {
   NButton,
