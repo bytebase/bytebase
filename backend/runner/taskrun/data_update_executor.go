@@ -80,8 +80,19 @@ func (exec *DataUpdateExecutor) RunOnce(ctx context.Context, driverCtx context.C
 		return true, nil, errors.Wrapf(err, "failed to find issue for pipeline %v", task.PipelineID)
 	}
 
+	exec.store.CreateTaskRunLogS(ctx, taskRunUID, time.Now(), exec.profile.DeployID, &storepb.TaskRunLog{
+		Type:             storepb.TaskRunLog_PRIOR_BACKUP_START,
+		PriorBackupStart: &storepb.TaskRunLog_PriorBackupStart{},
+	})
+
 	priorBackupDetail, backupErr := exec.backupData(ctx, driverCtx, statement, payload, task, issueN, instance, database)
 	if backupErr != nil {
+		exec.store.CreateTaskRunLogS(ctx, taskRunUID, time.Now(), exec.profile.DeployID, &storepb.TaskRunLog{
+			Type: storepb.TaskRunLog_PRIOR_BACKUP_END,
+			PriorBackupEnd: &storepb.TaskRunLog_PriorBackupEnd{
+				Error: backupErr.Error(),
+			},
+		})
 		// Create issue comment for backup error.
 		if issueN != nil {
 			if _, err := exec.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
@@ -106,6 +117,13 @@ func (exec *DataUpdateExecutor) RunOnce(ctx context.Context, driverCtx context.C
 		if !skip {
 			return true, nil, backupErr
 		}
+	} else {
+		exec.store.CreateTaskRunLogS(ctx, taskRunUID, time.Now(), exec.profile.DeployID, &storepb.TaskRunLog{
+			Type: storepb.TaskRunLog_PRIOR_BACKUP_END,
+			PriorBackupEnd: &storepb.TaskRunLog_PriorBackupEnd{
+				PriorBackupDetail: priorBackupDetail,
+			},
+		})
 	}
 	version := model.Version{Version: payload.SchemaVersion}
 	terminated, result, err := runMigration(ctx, driverCtx, exec.store, exec.dbFactory, exec.stateCfg, exec.schemaSyncer, exec.profile, task, taskRunUID, db.Data, statement, version, &sheetID)
