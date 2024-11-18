@@ -245,6 +245,9 @@ watch(
 </script>
 
 <style lang="postcss" scoped>
+:deep(.n-data-table-base-table-body) {
+  height: auto;
+}
 :deep(.n-data-table-th .n-data-table-resize-button::after) {
   @apply bg-control-bg h-2/3;
 }
