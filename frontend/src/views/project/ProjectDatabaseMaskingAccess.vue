@@ -28,6 +28,7 @@
       <div class="flex-1 flex flex-row items-center justify-end gap-x-2">
         <SearchBox
           ref="searchField"
+          style="max-width: 100%"
           v-model:value="state.searchText"
           style="max-width: 100%"
           :placeholder="$t('settings.members.search-member')"
