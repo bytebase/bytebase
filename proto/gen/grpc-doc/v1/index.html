@@ -2632,6 +2632,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.TaskRunLogEntry.PriorBackup"><span class="badge">M</span>TaskRunLogEntry.PriorBackup</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.TaskRunLogEntry.SchemaDump"><span class="badge">M</span>TaskRunLogEntry.SchemaDump</a>
                 </li>
               
@@ -28239,6 +28243,13 @@ Format: instances/{instance}/databases/{database} </p></td>
                   <td><p> </p></td>
                 </tr>
               
+                <tr>
+                  <td>prior_backup</td>
+                  <td><a href="#bytebase.v1.TaskRunLogEntry.PriorBackup">TaskRunLogEntry.PriorBackup</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -28350,6 +28361,51 @@ Format: instances/{instance}/databases/{database} </p></td>
                 <tr>
                   <td>end_time</td>
                   <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>error</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.TaskRunLogEntry.PriorBackup">TaskRunLogEntry.PriorBackup</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>start_time</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>end_time</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>prior_backup_detail</td>
+                  <td><a href="#bytebase.v1.TaskRun.PriorBackupDetail">TaskRun.PriorBackupDetail</a></td>
                   <td></td>
                   <td><p> </p></td>
                 </tr>
@@ -28958,6 +29014,12 @@ Format: instances/{instance}/databases/{database} </p></td>
               <tr>
                 <td>TRANSACTION_CONTROL</td>
                 <td>5</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>PRIOR_BACKUP</td>
+                <td>6</td>
                 <td><p></p></td>
               </tr>
             
