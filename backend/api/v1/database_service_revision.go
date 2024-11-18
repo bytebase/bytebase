@@ -257,10 +257,9 @@ func convertToRevision(ctx context.Context, s *store.Store, parent string, revis
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get issue by rollout %q", rolloutUID)
 		}
-		if issue == nil {
-			return nil, errors.Errorf("issue not found by rollout %q", rolloutUID)
+		if issue != nil {
+			issueName = fmt.Sprintf("%s%s/%s%d", common.ProjectNamePrefix, issue.Project.ResourceID, common.IssueNamePrefix, issue.UID)
 		}
-		issueName = fmt.Sprintf("%s%s/%s%d", common.ProjectNamePrefix, issue.Project.ResourceID, common.IssueNamePrefix, issue.UID)
 	}
 
 	return &v1pb.Revision{

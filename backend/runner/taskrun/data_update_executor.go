@@ -75,31 +75,29 @@ func (exec *DataUpdateExecutor) RunOnce(ctx context.Context, driverCtx context.C
 	if database == nil {
 		return true, nil, errors.Errorf("database not found for task %v", task.ID)
 	}
-	issue, err := exec.store.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &task.PipelineID})
+	issueN, err := exec.store.GetIssueV2(ctx, &store.FindIssueMessage{PipelineID: &task.PipelineID})
 	if err != nil {
 		return true, nil, errors.Wrapf(err, "failed to find issue for pipeline %v", task.PipelineID)
 	}
-	if issue == nil {
-		return true, nil, errors.Errorf("issue not found for pipeline %v", task.PipelineID)
-	}
 
-	priorBackupDetail, backupErr := exec.backupData(ctx, driverCtx, statement, payload, task, issue, instance, database)
+	priorBackupDetail, backupErr := exec.backupData(ctx, driverCtx, statement, payload, task, issueN, instance, database)
 	if backupErr != nil {
 		// Create issue comment for backup error.
-		if _, err := exec.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
-			IssueUID: issue.UID,
-			Payload: &storepb.IssueCommentPayload{
-				Event: &storepb.IssueCommentPayload_TaskPriorBackup_{
-					TaskPriorBackup: &storepb.IssueCommentPayload_TaskPriorBackup{
-						Task:  common.FormatTask(issue.Project.ResourceID, task.PipelineID, task.StageID, task.ID),
-						Error: backupErr.Error(),
+		if issueN != nil {
+			if _, err := exec.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
+				IssueUID: issueN.UID,
+				Payload: &storepb.IssueCommentPayload{
+					Event: &storepb.IssueCommentPayload_TaskPriorBackup_{
+						TaskPriorBackup: &storepb.IssueCommentPayload_TaskPriorBackup{
+							Task:  common.FormatTask(issueN.Project.ResourceID, task.PipelineID, task.StageID, task.ID),
+							Error: backupErr.Error(),
+						},
 					},
 				},
-			},
-		}, api.SystemBotID); err != nil {
-			slog.Warn("failed to create issue comment", "task", task.ID, log.BBError(err), "backup error", backupErr)
+			}, api.SystemBotID); err != nil {
+				slog.Warn("failed to create issue comment", "task", task.ID, log.BBError(err), "backup error", backupErr)
+			}
 		}
-
 		// Check if we should skip backup error and continue to run migration.
 		skip, err := exec.shouldSkipBackupError(ctx, task)
 		if err != nil {
@@ -142,7 +140,7 @@ func (exec *DataUpdateExecutor) backupData(
 	statement string,
 	payload *storepb.TaskDatabaseUpdatePayload,
 	task *store.TaskMessage,
-	issue *store.IssueMessage,
+	issueN *store.IssueMessage,
 	instance *store.InstanceMessage,
 	database *store.DatabaseMessage,
 ) (*storepb.PriorBackupDetail, error) {
@@ -210,17 +208,21 @@ func (exec *DataUpdateExecutor) backupData(
 	}
 
 	priorBackupDetail := &storepb.PriorBackupDetail{}
+	bbSource := fmt.Sprintf("task %d", task.ID)
+	if issueN != nil {
+		bbSource = fmt.Sprintf("issue %d", issueN.UID)
+	}
 	for _, statement := range statements {
 		if _, err := driver.Execute(driverCtx, statement.Statement, db.ExecuteOptions{}); err != nil {
 			return nil, errors.Wrapf(err, "failed to execute backup statement %q", statement.Statement)
 		}
 		switch instance.Engine {
 		case storepb.Engine_TIDB:
-			if _, err := driver.Execute(driverCtx, fmt.Sprintf("ALTER TABLE `%s`.`%s` COMMENT = 'issue %d, source table (%s, %s)'", backupDatabaseName, statement.TargetTableName, issue.UID, database.DatabaseName, statement.SourceTableName), db.ExecuteOptions{}); err != nil {
+			if _, err := driver.Execute(driverCtx, fmt.Sprintf("ALTER TABLE `%s`.`%s` COMMENT = '%s, source table (%s, %s)'", backupDatabaseName, statement.TargetTableName, bbSource, database.DatabaseName, statement.SourceTableName), db.ExecuteOptions{}); err != nil {
 				return nil, errors.Wrap(err, "failed to set table comment")
 			}
 		case storepb.Engine_MYSQL:
-			if _, err := driver.Execute(driverCtx, fmt.Sprintf("ALTER TABLE `%s`.`%s` COMMENT = 'issue %d, source table (%s, %s)'", backupDatabaseName, statement.TargetTableName, issue.UID, database.DatabaseName, statement.SourceTableName), db.ExecuteOptions{}); err != nil {
+			if _, err := driver.Execute(driverCtx, fmt.Sprintf("ALTER TABLE `%s`.`%s` COMMENT = '%s, source table (%s, %s)'", backupDatabaseName, statement.TargetTableName, bbSource, database.DatabaseName, statement.SourceTableName), db.ExecuteOptions{}); err != nil {
 				return nil, errors.Wrap(err, "failed to set table comment")
 			}
 		case storepb.Engine_MSSQL:
@@ -228,7 +230,7 @@ func (exec *DataUpdateExecutor) backupData(
 			if schemaName == "" {
 				schemaName = "dbo"
 			}
-			if _, err := backupDriver.Execute(driverCtx, fmt.Sprintf("EXEC sp_addextendedproperty 'MS_Description', 'issue %d, source table (%s, %s, %s)', 'SCHEMA', 'dbo', 'TABLE', '%s'", issue.UID, database.DatabaseName, schemaName, statement.SourceTableName, statement.TargetTableName), db.ExecuteOptions{}); err != nil {
+			if _, err := backupDriver.Execute(driverCtx, fmt.Sprintf("EXEC sp_addextendedproperty 'MS_Description', '%s, source table (%s, %s, %s)', 'SCHEMA', 'dbo', 'TABLE', '%s'", bbSource, database.DatabaseName, schemaName, statement.SourceTableName, statement.TargetTableName), db.ExecuteOptions{}); err != nil {
 				return nil, errors.Wrap(err, "failed to set table comment")
 			}
 		case storepb.Engine_POSTGRES:
@@ -236,11 +238,11 @@ func (exec *DataUpdateExecutor) backupData(
 			if schemaName == "" {
 				schemaName = "public"
 			}
-			if _, err := driver.Execute(driverCtx, fmt.Sprintf(`COMMENT ON TABLE "%s"."%s" IS 'issue %d, source table (%s, %s)'`, backupDatabaseName, statement.TargetTableName, issue.UID, schemaName, statement.SourceTableName), db.ExecuteOptions{}); err != nil {
+			if _, err := driver.Execute(driverCtx, fmt.Sprintf(`COMMENT ON TABLE "%s"."%s" IS '%s, source table (%s, %s)'`, backupDatabaseName, statement.TargetTableName, bbSource, schemaName, statement.SourceTableName), db.ExecuteOptions{}); err != nil {
 				return nil, errors.Wrap(err, "failed to set table comment")
 			}
 		case storepb.Engine_ORACLE:
-			if _, err := driver.Execute(driverCtx, fmt.Sprintf(`COMMENT ON TABLE "%s"."%s" IS 'issue %d, source table (%s, %s)'`, backupDatabaseName, statement.TargetTableName, issue.UID, database.DatabaseName, statement.SourceTableName), db.ExecuteOptions{}); err != nil {
+			if _, err := driver.Execute(driverCtx, fmt.Sprintf(`COMMENT ON TABLE "%s"."%s" IS '%s, source table (%s, %s)'`, backupDatabaseName, statement.TargetTableName, bbSource, database.DatabaseName, statement.SourceTableName), db.ExecuteOptions{}); err != nil {
 				return nil, errors.Wrap(err, "failed to set table comment")
 			}
 		}
@@ -269,24 +271,26 @@ func (exec *DataUpdateExecutor) backupData(
 		}
 		priorBackupDetail.Items = append(priorBackupDetail.Items, item)
 
-		if _, err := exec.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
-			IssueUID: issue.UID,
-			Payload: &storepb.IssueCommentPayload{
-				Event: &storepb.IssueCommentPayload_TaskPriorBackup_{
-					TaskPriorBackup: &storepb.IssueCommentPayload_TaskPriorBackup{
-						Task:     common.FormatTask(issue.Project.ResourceID, task.PipelineID, task.StageID, task.ID),
-						Database: backupDatabaseName,
-						Tables: []*storepb.IssueCommentPayload_TaskPriorBackup_Table{
-							{
-								Schema: "",
-								Table:  statement.TargetTableName,
+		if issueN != nil {
+			if _, err := exec.store.CreateIssueComment(ctx, &store.IssueCommentMessage{
+				IssueUID: issueN.UID,
+				Payload: &storepb.IssueCommentPayload{
+					Event: &storepb.IssueCommentPayload_TaskPriorBackup_{
+						TaskPriorBackup: &storepb.IssueCommentPayload_TaskPriorBackup{
+							Task:     common.FormatTask(issueN.Project.ResourceID, task.PipelineID, task.StageID, task.ID),
+							Database: backupDatabaseName,
+							Tables: []*storepb.IssueCommentPayload_TaskPriorBackup_Table{
+								{
+									Schema: "",
+									Table:  statement.TargetTableName,
+								},
 							},
 						},
 					},
 				},
-			},
-		}, api.SystemBotID); err != nil {
-			slog.Warn("failed to create issue comment", "task", task.ID, log.BBError(err))
+			}, api.SystemBotID); err != nil {
+				slog.Warn("failed to create issue comment", "task", task.ID, log.BBError(err))
+			}
 		}
 	}
 
