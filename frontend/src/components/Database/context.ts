@@ -75,7 +75,7 @@ export const provideDatabaseDetailContext = (
     );
   });
   const allowTransferDatabase = computed(() => {
-    if (!databaseOperations.value.has("TRANSFER")) return false;
+    if (!databaseOperations.value.has("TRANSFER-OUT")) return false;
 
     if (database.value.project === DEFAULT_PROJECT_NAME) {
       return true;

@@ -101,7 +101,7 @@ const overrideAppFeatures = (
       "bb.feature.databases.operations": new Set([
         "SYNC-SCHEMA",
         "EDIT-LABELS",
-        "TRANSFER",
+        "TRANSFER-OUT",
       ]),
     });
   } else {

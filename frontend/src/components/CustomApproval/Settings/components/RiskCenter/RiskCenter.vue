@@ -3,6 +3,9 @@
     <RiskFilter class="my-4">
       <template #suffix>
         <NButton type="primary" :disabled="!allowCreateRisk" @click="addRisk">
+          <template #icon>
+            <PlusIcon class="h-4 w-4" />
+          </template>
           {{ $t("common.add") }}
         </NButton>
       </template>
@@ -21,6 +24,7 @@
 
 <script lang="ts" setup>
 import { groupBy } from "lodash-es";
+import { PlusIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { computed, watch } from "vue";
 import { useRiskStore } from "@/store";

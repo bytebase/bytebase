@@ -6,6 +6,9 @@
         class="capitalize"
         @click.prevent="addProjectWebhook"
       >
+        <template #icon>
+          <PlusIcon class="h-4 w-4" />
+        </template>
         {{ $t("project.webhook.add-a-webhook") }}
       </NButton>
     </div>
@@ -19,6 +22,7 @@
 </template>
 
 <script lang="ts" setup>
+import { PlusIcon } from "lucide-vue-next";
 import { NButton, NDataTable } from "naive-ui";
 import type { DataTableColumn } from "naive-ui";
 import { computed, h } from "vue";

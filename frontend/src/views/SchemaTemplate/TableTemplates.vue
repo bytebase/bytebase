@@ -40,6 +40,9 @@
           :disabled="readonly"
           @click="createSchemaTemplate"
         >
+          <template #icon>
+            <PlusIcon class="h-4 w-4" />
+          </template>
           {{ $t("common.add") }}
         </NButton>
       </div>
@@ -63,6 +66,7 @@
 </template>
 
 <script lang="ts" setup>
+import { PlusIcon } from "lucide-vue-next";
 import { NButton, NCheckbox } from "naive-ui";
 import { v1 as uuidv1 } from "uuid";
 import { reactive, computed, onMounted } from "vue";

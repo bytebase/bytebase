@@ -14,6 +14,9 @@
         class="capitalize"
         @click.prevent="addVCSProvider"
       >
+        <template #icon>
+          <PlusIcon class="h-4 w-4" />
+        </template>
         {{ $t("gitops.setting.add-git-provider.self") }}
       </NButton>
     </div>
@@ -30,10 +33,11 @@
   </div>
 </template>
 
-<script lang="ts" setup>
+<script lang="tsx" setup>
+import { PlusIcon } from "lucide-vue-next";
 import { NButton, NDataTable } from "naive-ui";
 import type { DataTableColumn } from "naive-ui";
-import { computed, watchEffect, h, ref } from "vue";
+import { computed, watchEffect, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import LearnMoreLink from "@/components/LearnMoreLink.vue";
@@ -79,11 +83,12 @@ const columnList = computed((): DataTableColumn<VCSProvider>[] => {
     {
       key: "title",
       title: t("common.name"),
-      render: (vcs) =>
-        h("div", { class: "flex items-center gap-x-2" }, [
-          h(VCSIcon, { type: vcs.type, customClass: "h-5" }),
-          vcs.title,
-        ]),
+      render: (vcs) => (
+        <div class="flex items-center gap-x-2">
+          <VCSIcon type={vcs.type} customClass={"h-5"} />
+          {vcs.title}
+        </div>
+      ),
     },
     {
       key: "instance_url",
@@ -93,26 +98,23 @@ const columnList = computed((): DataTableColumn<VCSProvider>[] => {
     {
       key: "view",
       title: "",
-      render: (vcs) =>
-        h(
-          "div",
-          { class: "flex justify-end" },
-          h(
-            NButton,
-            {
-              size: "small",
-              onClick: () => {
-                router.push({
-                  name: WORKSPACE_ROUTE_GITOPS_DETAIL,
-                  params: {
-                    vcsResourceId: getVCSProviderId(vcs.name),
-                  },
-                });
-              },
-            },
-            t("common.view")
-          )
-        ),
+      render: (vcs) => (
+        <div class="flex justify-end">
+          <NButton
+            size={"small"}
+            onClick={() => {
+              router.push({
+                name: WORKSPACE_ROUTE_GITOPS_DETAIL,
+                params: {
+                  vcsResourceId: getVCSProviderId(vcs.name),
+                },
+              });
+            }}
+          >
+            {t("common.view")}
+          </NButton>
+        </div>
+      ),
     },
   ];
 });

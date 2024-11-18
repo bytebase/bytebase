@@ -1,27 +1,20 @@
 <template>
   <div class="w-full flex flex-col gap-4 py-4 px-4 overflow-y-auto">
-    <div
-      class="flex flex-col items-start gap-2 sm:flex-row sm:justify-between sm:items-center"
-    >
-      <div class="flex justify-start items-center">
-        <NButton @click="handleClickNewProject">
-          <template #icon>
-            <PlusIcon class="h-4 w-4" />
-          </template>
-          <NEllipsis>
-            {{ $t("quick-action.new-project") }}
-          </NEllipsis>
-        </NButton>
-      </div>
-
-      <div class="flex justify-end items-center">
-        <SearchBox
-          v-model:value="state.keyword"
-          class="!max-w-full md:!max-w-[18rem]"
-          :placeholder="$t('common.filter-by-name')"
-          :autofocus="true"
-        />
-      </div>
+    <div class="flex items-center space-x-2">
+      <SearchBox
+        v-model:value="state.keyword"
+        style="max-width: 100%"
+        :placeholder="$t('common.filter-by-name')"
+        :autofocus="true"
+      />
+      <NButton type="primary" @click="handleClickNewProject">
+        <template #icon>
+          <PlusIcon class="h-4 w-4" />
+        </template>
+        <NEllipsis>
+          {{ $t("quick-action.new-project") }}
+        </NEllipsis>
+      </NButton>
     </div>
 
     <ProjectV1Table

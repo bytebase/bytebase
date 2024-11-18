@@ -1,5 +1,8 @@
 <template>
   <div class="w-full space-y-4">
+    <div class="textinfolabel">
+      {{ $t("settings.sensitive-data.semantic-types.label") }}
+    </div>
     <div class="flex items-center justify-end space-x-2">
       <NButton
         :disabled="!hasPermission || !hasSensitiveDataFeature"
@@ -12,11 +15,11 @@
         :disabled="!hasPermission || !hasSensitiveDataFeature"
         @click="onAdd"
       >
+        <template #icon>
+          <PlusIcon class="h-4 w-4" />
+        </template>
         {{ $t("common.add") }}
       </NButton>
-    </div>
-    <div class="textinfolabel">
-      {{ $t("settings.sensitive-data.semantic-types.label") }}
     </div>
     <SemanticTypesTable
       v-if="state.semanticItemList.length > 0"
@@ -36,6 +39,7 @@
   />
 </template>
 <script lang="ts" setup>
+import { PlusIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { v4 as uuidv4 } from "uuid";
 import { computed, reactive, onMounted } from "vue";

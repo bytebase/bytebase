@@ -21,7 +21,7 @@
     class="flex items-center justify-end gap-x-3"
     v-bind="$attrs"
   >
-    <NButton :disabled="!valueChanged()" @click.prevent="revertEnvironment">
+    <NButton v-if="valueChanged()" @click.prevent="revertEnvironment">
       {{ $t("common.revert") }}
     </NButton>
     <NButton

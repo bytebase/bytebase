@@ -135,13 +135,13 @@ const readonlyScopes = computed((): SearchScope[] => {
 });
 const tabItemList = computed((): TabFilterItem<TabValue>[] => {
   const items: TabFilterItem<TabValue>[] = [
+    { value: "ALL", label: t("common.all") },
     { value: "CREATED", label: t("common.created") },
     {
       value: "WAITING_APPROVAL",
       label: t("issue.waiting-approval"),
     },
     { value: "WAITING_ROLLOUT", label: t("issue.waiting-rollout") },
-    { value: "ALL", label: t("common.all") },
   ];
   return items;
 });

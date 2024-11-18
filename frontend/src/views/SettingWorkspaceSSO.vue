@@ -1,6 +1,6 @@
 <template>
   <div class="w-full space-y-4">
-    <div class="textinfolabel mr-4">
+    <div class="textinfolabel">
       {{ $t("settings.sso.description") }}
       <a
         href="https://bytebase.com/docs/administration/sso/overview?source=console"
@@ -17,6 +17,9 @@
         :disabled="!allowCreateSSO"
         @click="handleCreateSSO"
       >
+        <template #icon>
+          <PlusIcon class="h-4 w-4" />
+        </template>
         <FeatureBadge
           :feature="'bb.feature.sso'"
           custom-class="mr-1 text-white"
@@ -42,6 +45,7 @@
 </template>
 
 <script lang="ts" setup>
+import { PlusIcon } from "lucide-vue-next";
 import { NButton, NDataTable } from "naive-ui";
 import type { DataTableColumn } from "naive-ui";
 import { computed, onMounted, reactive, h } from "vue";

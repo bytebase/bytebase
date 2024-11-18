@@ -68,7 +68,7 @@
     "helpName": ""
   },
   {
-    "routeName": "setting.workspace.member",
+    "routeName": "workspace.users",
     "helpName": "help.member"
   },
   {
@@ -105,10 +105,10 @@
   },
   {
     "routeName": "workspace.issue",
-    "helpName": ""
+    "helpName": "help.issue.detail"
   },
   {
-    "routeName": "workspace.environment.dashboard",
+    "routeName": "workspace.environment",
     "helpName": "help.environment"
   },
   {

@@ -4,9 +4,13 @@
   >
     <div
       v-if="allowCreate || allowReorder"
-      class="grid grid-cols-3 gap-x-2 gap-y-4 md:inline-flex items-stretch"
+      class="flex items-center justify-end space-x-2 px-2"
     >
-      <NButton v-if="allowCreate" @click="handleClickCreateEnvironment">
+      <NButton
+        v-if="allowCreate"
+        type="primary"
+        @click="handleClickCreateEnvironment"
+      >
         <template #icon>
           <PlusIcon class="h-4 w-4" />
         </template>

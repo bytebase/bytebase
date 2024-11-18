@@ -1,23 +1,26 @@
 <template>
   <div class="space-y-4">
-    <div class="w-full flex flex-row justify-between items-center">
-      <div class="textinfolabel">
-        {{ $t("role.setting.description") }}
-        <a
-          href="https://www.bytebase.com/docs/administration/custom-roles?source=console"
-          class="normal-link text-sm inline-flex flex-row items-center"
-          target="_blank"
-        >
-          {{ $t("common.learn-more") }}
-          <heroicons-outline:external-link class="w-4 h-4" />
-        </a>
-      </div>
+    <div class="textinfolabel">
+      {{ $t("role.setting.description") }}
+      <a
+        href="https://www.bytebase.com/docs/administration/custom-roles?source=console"
+        class="normal-link text-sm inline-flex flex-row items-center"
+        target="_blank"
+      >
+        {{ $t("common.learn-more") }}
+        <heroicons-outline:external-link class="w-4 h-4" />
+      </a>
+    </div>
+    <div class="w-full flex flex-row justify-end items-center">
       <NButton
         type="primary"
         class="capitalize"
         :disabled="!allowCreateRole"
         @click="addRole"
       >
+        <template #icon>
+          <PlusIcon class="h-4 w-4" />
+        </template>
         <FeatureBadge
           feature="bb.feature.custom-role"
           custom-class="mr-1 text-white"
@@ -54,6 +57,7 @@
 
 <script lang="ts" setup>
 import { sortBy } from "lodash-es";
+import { PlusIcon } from "lucide-vue-next";
 import { NButton } from "naive-ui";
 import { computed, onMounted, reactive, ref } from "vue";
 import { BBSpin } from "@/bbkit";
